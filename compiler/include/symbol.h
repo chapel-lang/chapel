@@ -201,6 +201,9 @@ class FnSymbol : public Symbol {
   DECLARE_SYMBOL_COPY(FnSymbol);
   FnSymbol* getFnSymbol(void);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  
+  FnSymbol* partialCopy(SymbolMap* map);
+  void finishCopy(const FnSymbol* const orig, SymbolMap* map);
 
   // Returns an LLVM type or a C-cast expression
   GenRet codegenFunctionType(bool forHeader);

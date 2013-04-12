@@ -278,34 +278,49 @@ void subSymbol(BaseAST* ast, Symbol* oldSym, Symbol* newSym) {
   AST_CHILDREN_CALL(ast, subSymbol, oldSym, newSym);
 }
 
+#include "../resolution/trace.h"
 
 void sibling_insert_help(BaseAST* sibling, BaseAST* ast) {
-  Expr* parentExpr = NULL;
+  Expr* parentExpr     = NULL;
   Symbol* parentSymbol = NULL;
+  
   if (Expr* expr = toExpr(sibling)) {
     parentExpr = expr->parentExpr;
     parentSymbol = expr->parentSymbol;
-  } else if (sibling)
+    
+  } else if (sibling) {
     INT_FATAL(ast, "major error in sibling_insert_help");
-  if (parentSymbol)
+  }
+  
+  if (parentSymbol) {
     insert_help(ast, parentExpr, parentSymbol);
+  }
 }
 
-
 void parent_insert_help(BaseAST* parent, Expr* ast) {
-  if (!parent || !parent->inTree())
+  // FIXME: Decide which of these two guards to use.
+  //~ if (not parent or not parent->inTree()) {
+  if (not parent) {
     return;
-  Expr* parentExpr = NULL;
+  }
+  
+  Expr* parentExpr     = NULL;
   Symbol* parentSymbol = NULL;
+  
   if (Expr* expr = toExpr(parent)) {
     parentExpr = expr;
     parentSymbol = expr->parentSymbol;
+    
   } else if (Symbol* symbol = toSymbol(parent)) {
     parentSymbol = symbol;
+    
   } else if (Type* type = toType(parent)) {
     parentSymbol = type->symbol;
-  } else
+    
+  } else {
     INT_FATAL(ast, "major error in parent_insert_help");
+  }
+  
   insert_help(ast, parentExpr, parentSymbol);
 }
 
@@ -313,14 +328,18 @@ void parent_insert_help(BaseAST* parent, Expr* ast) {
 void insert_help(BaseAST* ast,
                  Expr* parentExpr,
                  Symbol* parentSymbol) {
+  
   if (Symbol* sym = toSymbol(ast)) {
     parentSymbol = sym;
-    parentExpr = NULL;
+    parentExpr   = NULL;
+    
   } else if (Expr* expr = toExpr(ast)) {
     expr->parentSymbol = parentSymbol;
-    expr->parentExpr = parentExpr;
+    expr->parentExpr   = parentExpr;
+    
     parentExpr = expr;
   }
+  
   AST_CHILDREN_CALL(ast, insert_help, parentExpr, parentSymbol);
 }
 

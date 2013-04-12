@@ -20,6 +20,7 @@
 #include "../ifa/prim_data.h"
 
 #include "trace.h"
+#include "view.h"
 
 #ifdef ENABLE_TRACING_OF_DISAMBIGUATION
 #define TRACE_DISAMBIGUATE_BY_MATCH(str)        \
@@ -259,14 +260,23 @@ static bool typeHasRefField(Type *type) {
 static FnSymbol*
 resolveUninsertedCall(Type* type, CallExpr* call) {
   if (type->initializer) {
-    if (type->initializer->instantiationPoint)
+    if (type->initializer->instantiationPoint) {
       type->initializer->instantiationPoint->insertAtHead(call);
-    else
+      
+    } else {
       type->symbol->defPoint->insertBefore(call);
-  } else
+    }
+  } else {
     chpl_gen_main->insertAtHead(call);
+  }
+  
+  trace(TRACE_TRUE, "Call has been temporarily attached.  Resolving it.");
+  
   resolveCall(call);
   call->remove();
+  
+  trace(TRACE_TRUE, "Call has been resolved and removed.");
+  
   return call->isResolved();
 }
 
@@ -274,24 +284,46 @@ resolveUninsertedCall(Type* type, CallExpr* call) {
 // Fills in the refType field of a type
 // with the type's corresponding reference type.
 static void makeRefType(Type* type) {
-  if (!type)
-    // Should this be an assert?
+  if (not type) {
+    // TODO: Should this be an assert?
     return;
+  }
+  
+  trace(TRACE_REF_TYPE, "Type isn't NULL.");
 
-  if (type->refType)
+  if (type->refType) {
     // Already done.
+    
+    trace(TRACE_REF_TYPE, "Type already has a refType.");
+    
     return;
+  }
 
-  if (type == dtMethodToken ||
-      type == dtUnknown ||
-      type->symbol->hasFlag(FLAG_REF) ||
-      type->symbol->hasFlag(FLAG_GENERIC))
+  if (type == dtMethodToken or
+      type == dtUnknown or
+      type->symbol->hasFlag(FLAG_REF) or
+      type->symbol->hasFlag(FLAG_GENERIC)) {
+    
+    trace(TRACE_REF_TYPE, "Type is a method token, unkown, has the REF flag, or has the GENERIC flag.");
+    
     return;
+  }
 
   CallExpr* call = new CallExpr("_type_construct__ref", type->symbol);
-  FnSymbol* fn = resolveUninsertedCall(type, call);
-  type->refType = toClassType(fn->retType);
+  
+  trace(TRACE_REF_TYPE, "New call expression generated.");
+  
+  FnSymbol* fn   = resolveUninsertedCall(type, call);
+  
+  trace(TRACE_REF_TYPE, "Uninserted call resolved.");
+  
+  type->refType  = toClassType(fn->retType);
+  
+  trace(TRACE_REF_TYPE, "Return type turned into a class.");
+  
   type->refType->getField(1)->type = type;
+  
+  trace(TRACE_REF_TYPE, "Ref type assigned.");
 }
 
 
@@ -1010,31 +1042,43 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
 // param is set if the actual is a parameter (compile-time constant).
 bool
 canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, bool* promotes, bool paramCoerce) {
-  if (promotes)
+  if (promotes) {
     *promotes = false;
-  if (actualType == formalType)
+  }
+  
+  if (actualType == formalType) {
     return true;
-  if (actualType == dtNil && isClass(formalType))
+    
+  } else if (actualType == dtNil and isClass(formalType)) {
     return true;
-  if (actualType->refType == formalType)
+    
+  } else if (actualType->refType == formalType) {
     return true;
-  if (!paramCoerce && canCoerce(actualType, actualSym, formalType, fn, promotes))
+    
+  } else if (not paramCoerce and canCoerce(actualType, actualSym, formalType, fn, promotes)) {
     return true;
-  if (paramCoerce && canParamCoerce(actualType, actualSym, formalType))
+    
+  } else if (paramCoerce and canParamCoerce(actualType, actualSym, formalType)) {
     return true;
+  }
+  
   forv_Vec(Type, parent, actualType->dispatchParents) {
-    if (parent == formalType || canDispatch(parent, NULL, formalType, fn, promotes)) {
+    if (parent == formalType or canDispatch(parent, NULL, formalType, fn, promotes)) {
       return true;
     }
   }
-  if (fn &&
-      strcmp(fn->name, "=") && 
-      actualType->scalarPromotionType && 
+  
+  if (fn and
+      strcmp(fn->name, "=") and
+      actualType->scalarPromotionType and
       (canDispatch(actualType->scalarPromotionType, NULL, formalType, fn))) {
-    if (promotes)
+    if (promotes) {
       *promotes = true;
+    }
+    
     return true;
   }
+  
   return false;
 }
 
@@ -1487,12 +1531,21 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
 }
 */
 
-// Sets actual-formal map if FnSymbol is viable candidate to call
+/*
+ * Tests to see if a function is a candidate for resolving a specific call.  If
+ * it is a candidate, we add it, and its actualFormal map, to the candidate
+ * lists.
+ * 
+ * FIXME: Make sure that resources are cleaned up before we return.
+ */
 static void
 testCandidate(Vec<FnSymbol*>* candidateFns,
              Vec<Vec<ArgSymbol*>*>* candidateActualFormals,
              FnSymbol* fn,
              CallInfo& info) {
+  
+  // FIXME: Remove this when done debugging.
+  int j;
   
   fn = expandVarArgs(fn, info.actuals.n);
 
@@ -1503,12 +1556,12 @@ testCandidate(Vec<FnSymbol*>* candidateFns,
   Vec<ArgSymbol*> actualFormals;
   Vec<Symbol*>    formalActuals;
   
-  trace_enter(TRACE_CANDIDATE, fn, "Possible candidate function");
+  trace_enter(TRACE_CANDIDATE, fn, "Testing candidate function");
   
   bool valid = computeActualFormalMap(fn, formalActuals, actualFormals, info);
 
   if (not valid) {
-    trace_leave(TRACE_CANDIDATE, "Rejecting due to bad argument/parameter alignment.");
+    trace_leave(TRACE_CANDIDATE, "Rejecting due to bad argument/parameter alignment");
     
     return;
   }
@@ -1524,7 +1577,7 @@ testCandidate(Vec<FnSymbol*>* candidateFns,
       if (formal->type != dtUnknown) {
         if (Symbol* actual = formalActuals.v[i]) {
           if (actual->hasFlag(FLAG_TYPE_VARIABLE) != formal->hasFlag(FLAG_TYPE_VARIABLE)) {
-            trace_leave(TRACE_CANDIDATE, "Rejecting due to type variable mismatch on argumet %d.", i);
+            trace_leave(TRACE_CANDIDATE, "Rejecting due to type variable mismatch on argumet %d", i);
             return;
           }
           
@@ -1538,7 +1591,7 @@ testCandidate(Vec<FnSymbol*>* candidateFns,
                 (not st  or not canInstantiate(st, formal->type)) and
                 (not svt or not canInstantiate(svt, formal->type))) {
               
-              trace_leave(TRACE_CANDIDATE, "Rejecting due to inability to instantiate types on argumet %d.", i);
+              trace_leave(TRACE_CANDIDATE, "Rejecting due to inability to instantiate types on argumet %d", i);
               return;
               
             } else {
@@ -1548,14 +1601,14 @@ testCandidate(Vec<FnSymbol*>* candidateFns,
           } else if (!canDispatch(actual->type, actual, formal->type, fn, NULL, formal->instantiatedParam)) {
             trace(TRACE_CANDIDATE, "Argument type: %s, Parameter type: %s", actual->type->symbol->name, formal->type->symbol->name);
             
-            trace_leave(TRACE_CANDIDATE, "Rejecting due to inability to dispatch on argumet %d.", i);
+            trace_leave(TRACE_CANDIDATE, "Rejecting due to inability to dispatch on argumet %d", i);
             return;
           }
         }
       }
-      i++;
+      ++i;
     }
-
+    
     // Compute the param/type substitutions for generic arguments.
     SymbolMap subs;
     computeGenericSubs(subs, fn, &formalActuals);
@@ -1565,24 +1618,14 @@ testCandidate(Vec<FnSymbol*>* candidateFns,
      * reject it.
      */
     if (not subs.n) {
+      trace_leave(TRACE_CANDIDATE, "Rejecting due to failure to compute substitutions");
       return;
     }
     
-    SymbolMap       oldToNewFormalMap;
-    SymbolMap       newToOldFormalMap;
-    Vec<ArgSymbol*> newActualFormals;
-    
-    // Iterate through the actualFormals vector and copy the formal symbols.
-    forv_Vec(ArgSymbol*, formal, actualFormals) {
-      newActualFormals.add(formal->copy(&oldToNewFormalMap));
-    }
-    
-    // Invert the oldToNewFormalMap.
-    form_Map(SymbolMapElem, e, oldToNewFormalMap) {
-      newToOldFormalMap.put(e->value, e->key);
-    }
-    
-    // Adjust the types and tags on the formals as we would during instantiation.
+    /*
+     * Adjust the types and tags on the substitution actuals as we would during
+     * instantiation.
+     */
     form_Map(SymbolMapElem, e, subs) {
       if (TypeSymbol* ts = toTypeSymbol(e->value)) {
         if (ts->type->symbol->hasFlag(FLAG_GENERIC)) {
@@ -1597,17 +1640,107 @@ testCandidate(Vec<FnSymbol*>* candidateFns,
       }
     }
     
-    SymbolMap tmpParamMap;
+    trace(TRACE_CANDIDATE, "Substitutions have been calculated.");
+    
+    FnSymbol*       localizedFn;
+    SymbolMap       oldToNewSymbolMap;
+    Vec<ArgSymbol*> newActualFormals;
+    
+    /*
+     * Copy generic class type if this function is a type constructor.
+     */
+    if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
+      Type* newType = NULL;
+      INT_ASSERT(isClassType(fn->retType));
+      
+      newType = fn->retType->symbol->copy()->type;
+
+      /*
+       * Mark star tuples.  Add star flag.
+       */
+      if (not fn->hasFlag(FLAG_TUPLE) and newType->symbol->hasFlag(FLAG_TUPLE)) {
+        bool markStar   = true;
+        Type* starType  = NULL;
+        
+        form_Map(SymbolMapElem, e, subs) {
+          TypeSymbol* ts = toTypeSymbol(e->value);
+          INT_ASSERT(ts and ts->type);
+          
+          if (starType == NULL) {
+            starType = ts->type;
+            
+          } else if (starType != ts->type) {
+            markStar = false;
+            break;
+          }
+        }
+        
+        if (markStar) {
+          newType->symbol->addFlag(FLAG_STAR_TUPLE);
+        }
+      }
+
+      renameInstantiatedType(newType->symbol, &subs, fn);
+      fn->retType->symbol->defPoint->insertBefore(new DefExpr(newType->symbol));
+      newType->symbol->copyFlags(fn);
+      
+      if (isSyncType(newType)) {
+        newType->defaultValue = NULL;
+      }
+      
+      newType->substitutions.copy(fn->retType->substitutions);
+      newType->dispatchParents.copy(fn->retType->dispatchParents);
+      
+      forv_Vec(Type, t, fn->retType->dispatchParents) {
+        t->dispatchChildren.add(newType);
+      }
+      
+      if (newType->dispatchChildren.n) {
+        INT_FATAL(fn, "generic type has subtypes");
+      }
+      
+      newType->instantiatedFrom = fn->retType;
+      newType->substitutions.map_union(subs);
+      newType->symbol->removeFlag(FLAG_GENERIC);
+      
+      // Add the new type to our substitution map.
+      oldToNewSymbolMap.put(fn->retType->symbol, newType->symbol);
+    }
+    
+    // Create a partial copy of the function.
+    localizedFn = fn->partialCopy(&oldToNewSymbolMap);
+    
+    localizedFn->removeFlag(FLAG_GENERIC);
+    localizedFn->addFlag(FLAG_INVISIBLE_FN);
+    
+    localizedFn->instantiatedFrom   = fn;
+    localizedFn->instantiationPoint = getVisibilityBlock(info.call);
+    
+    trace(TRACE_CANDIDATE, "The function has been partially copied.");
+    
+    /*
+     * Iterate through the actualFormals vector map the old symbols to the new
+     * symbols.  The new formals are copied from the actualFormals map, and not
+     * localizedFn's formal list, to preserve the alignment calculated by the
+     * computeActualFormalMap function.
+     */
+    forv_Vec(ArgSymbol*, oldFormal, actualFormals) {
+      newActualFormals.add((ArgSymbol*)oldToNewSymbolMap.get(oldFormal));
+    }
+    
+    trace(TRACE_CANDIDATE, "New type symbols have been generated.");
+    
+    SymbolMap tmpParamMap(paramMap);
     
     // Fill the temporary parameter map.
     for (int i = subs.n; --i > 0;) {
-      if (ArgSymbol* arg = toArgSymbol(subs.v[i].key)) {
-        if (arg->intent == INTENT_PARAM) {
-          Symbol* key = oldToNewFormalMap.get(arg);
+      if (ArgSymbol* formal = toArgSymbol(subs.v[i].key)) {
+        if (formal->intent == INTENT_PARAM) {
+          Symbol* key = oldToNewSymbolMap.get(formal);
           Symbol* val = subs.v[i].value;
           
           if (not key or not val or isTypeSymbol(val)) {
-            INT_FATAL("error building parameter map in instantiation");
+            INT_FATAL("error building parameter map in testCandidate");
           }
           
           tmpParamMap.put(key, val);
@@ -1616,54 +1749,83 @@ testCandidate(Vec<FnSymbol*>* candidateFns,
     }
     
     /*
-     * Extend temporary parameter map if parameter intent argument is
-     * instantiated agian; this may happen because the type is omitted and the
-     * argument is later instantiated based on the type of the parameter.
+     * Extend temporary parameter map if parameter intent formal is instantiated
+     * agian; this may happen because the type is omitted and the formal is
+     * later instantiated based on the type of the parameter.
      */
-    for_formals(arg, fn) {
-      if (paramMap.get(arg)) {
-        Symbol* key = oldToNewFormalMap.get(arg);
-        Symbol* val = paramMap.get(arg);
+    for_formals(formal, fn) {
+      if (tmpParamMap.get(formal)) {
+        Symbol* key = oldToNewSymbolMap.get(formal);
+        Symbol* val = tmpParamMap.get(formal);
+          
+        if (not key) trace(TRACE_CANDIDATE, "No key found.");
+        if (not val) trace(TRACE_CANDIDATE, "No val found.");
         
         if (not key or not val) {
-          INT_FATAL("error building parameter map in instantiation");
+          INT_FATAL("error building parameter map in testCandidate");
         }
         
         tmpParamMap.put(key, val);
       }
     }
     
-    // Iterate through the new formals and adjust their types.
+    trace(TRACE_CANDIDATE, "Temporary parameter map has been calculated.");
+    
+    j = 0;
+    /*
+     * Iterate through the new formals and adjust their types.  The old formal
+     * is needed to obtain the substituted value.  This is why we iterate over
+     * fn's formals instead of localizedFn's formals.
+     */
     for_formals(oldFormal, fn) {
-      ArgSymbol* newFormal = toArgSymbol(oldToNewFormalMap.get(oldFormal));
+      ArgSymbol* newFormal = toArgSymbol(oldToNewSymbolMap.get(oldFormal));
+      
+      if (newFormal == NULL) trace(TRACE_CANDIDATE, "Old formal %d had no corresponding new formal.", j);
       
       if (Symbol* value = subs.get(oldFormal)) {
         INT_ASSERT(oldFormal->intent == INTENT_PARAM or isTypeSymbol(value));
         
+        trace(TRACE_CANDIDATE, "Old formal %d has a mapped new formal and a substitution.", j);
+        
         if (oldFormal->intent == INTENT_PARAM) {
+          trace(TRACE_CANDIDATE, "Old formal %d has INTENT_PARAM.", j);
+          
           newFormal->intent            = INTENT_BLANK;
           newFormal->instantiatedParam = true;
           
-          if (newFormal->type->symbol->hasFlag(FLAG_GENERIC)) {
+          if (oldFormal->type->symbol->hasFlag(FLAG_GENERIC)) {
+            trace(TRACE_CANDIDATE, "Old formal %d's type's symbol has FLAG_GENERIC.", j);
+            
             newFormal->type = tmpParamMap.get(newFormal)->type;
+          } else {
+            trace(TRACE_CANDIDATE, "Old formal %d had type %s.", j, oldFormal->type->symbol->name);
           }
           
         } else {
+          trace(TRACE_CANDIDATE, "Old formal %d does not have INTENT_PARAM.", j);
+          
           newFormal->instantiatedFrom = oldFormal->type;
           newFormal->type             = value->type;
         }
+        
+      } else {
+        trace(TRACE_CANDIDATE, "Old formal %d does not have a substitution.", j);
       }
+      
+      ++j;
     }
+    
+    trace(TRACE_CANDIDATE, "Types have been adjusted on our copies of the formals.");
     
     bool fullyInstantiated = true;
     
     // Check to make sure the formal arguments have been fully instantiated.
-    forv_Vec(ArgSymbol*, formal, newActualFormals) {
+    for_formals(formal, localizedFn) {
       if (formal->intent == INTENT_PARAM or
           (formal->type->symbol->hasFlag(FLAG_GENERIC) and
             (not formal->type->hasGenericDefaults or
               formal->markedGeneric or
-              formal == fn->_this or
+              formal == localizedFn->_this or
               formal->hasFlag(FLAG_IS_MEME)))) {
         
         fullyInstantiated = false;
@@ -1673,94 +1835,177 @@ testCandidate(Vec<FnSymbol*>* candidateFns,
     
     // The generic function can't be fully instantiated for this call.
     if (not fullyInstantiated) {
+      trace_leave(TRACE_CANDIDATE, "Rejecting due to partial instantiation");
+      
+      // Remove this symbol from gFnSymbols.
+      gFnSymbols.remove(gFnSymbols.index(localizedFn));
+      delete localizedFn;
       return;
     }
     
-    // Add the function to the where stack.
-    whereStack.add(fn);
+    /*
+     * Add the function to the AST so that function calls may be resolved in
+     * the where clause.
+     */
     
-    // Resolve the types of the formal arguments.
-    forv_Vec(ArgSymbol*, formal, newActualFormals) {
-      if (formal->type == dtUnknown) {
-        if (not formal->typeExpr) {
-          formal->type = dtObject;
-          
-        } else {
-          resolveBlock(formal->typeExpr);
-          formal->type = formal->typeExpr->body.tail->getValType();
-        }
-      }
-
-      /*
-       * Fix up value types that need to be ref types.
-       */
-      if (formal->type->symbol->hasFlag(FLAG_REF)) {
-        // Already a ref type, so done.
-        continue;
-      }
-      
-      if (formal->intent == INTENT_INOUT or
-          formal->intent == INTENT_OUT   or
-          formal->intent == INTENT_REF   or
-          formal->hasFlag(FLAG_WRAP_OUT_INTENT) or
-          (toArgSymbol(newToOldFormalMap.get(formal)) == fn->_this and
-           (isUnion(formal->type)  or
-            isRecord(formal->type) or
-            fn->hasFlag(FLAG_REF_THIS)))) {
-              
-        makeRefType(formal->type);
-        
-        // The type of the formal is its own ref type!
-        formal->type = formal->type->refType;
-      }
+    Expr* putBefore = fn->defPoint;
+    if(not putBefore->list) {
+      putBefore = info.call->parentSymbol->defPoint;
     }
+    DefExpr* localizedFnDef = new DefExpr(localizedFn);
+    putBefore->insertBefore(localizedFnDef);
+    
+    trace(TRACE_CANDIDATE, "The formals have been fully instantiated.");
     
     /*
      * Resolve the where clause after copying it with the appropriate
      * substitution map.
      */
-    BlockStmt* subedWhere = fn->where->copy(&oldToNewFormalMap);
-    resolveBlock(subedWhere);
-    
-    // Pop the current function off of the where stack.
-    whereStack.pop();
-    
-    SymExpr* whereValue;
-    
-    // Check to see if the where clause evaluated to true.
-    if ((whereValue = toSymExpr(subedWhere->body.last())) == NULL) {
-      USR_FATAL(fn->where, "invalid where clause");
+    if (fn->where != NULL) {
+      // Add the function to the where stack.
+      whereStack.add(fn);
       
-    } else if (whereValue->var == gFalse) {
-      return;
+      trace(TRACE_CANDIDATE, "The body of the where clause has been copied.");
+      trace_view(TRACE_CANDIDATE, localizedFn->where);
       
-    } else if (whereValue->var != gTrue) {
-      USR_FATAL(fn->where, "invalid where clause");
+      // FIXME: Investigate recursion as cause of bug that is fixed by FLAG_INVISIBLE.
+      resolveBlock(localizedFn->where);
+      
+      trace(TRACE_CANDIDATE, "The where clause has been evaluated.");
+      
+      // Pop the current function off of the where stack.
+      whereStack.pop();
+      
+      SymExpr* whereValue;
+      
+      // Check to see if the where clause evaluated to true.
+      if ((whereValue = toSymExpr(localizedFn->where->body.last())) == NULL) {
+        trace(TRACE_CANDIDATE, "Where clause returned NULL.");
+        USR_FATAL(fn->where, "invalid where clause");
+        
+      } else if (whereValue->var == gFalse) {
+        trace_leave(TRACE_CANDIDATE, "Rejecting due to failed where clause");
+        
+        localizedFnDef->remove();
+        gFnSymbols.remove(gFnSymbols.index(localizedFn));
+        delete localizedFnDef;
+        delete localizedFn;
+        
+        return;
+        
+      } else if (whereValue->var != gTrue) {
+        trace(TRACE_CANDIDATE, "Where clause returned a value that is neither true nor false.");
+        trace_view(TRACE_CANDIDATE and TRACE_VERBOSE, whereValue);
+        
+        USR_FATAL(fn->where, "invalid where clause");
+      }
     }
     
     // End of code from instantiate.  If we reach this point the function is OK to instantiate.
+    
+    /*
+     * Make sure that type constructor is resolved before other constructors.
+     */
+    if (localizedFn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
+      resolve_type_constructor(localizedFn, info);
+    }
+    
+    /*
+     * Resolve the formal arguments of a generic.  This should turn typeExprs
+     * into types.
+     */
+    for_formals(formal, localizedFn) {
+      //~ if (formal->intent == INTENT_PARAM) {
+        if (formal->type == dtUnknown) {
+          if (not formal->typeExpr) {
+            formal->type = dtObject;
+            
+          } else {
+            resolveBlock(formal->typeExpr);
+            formal->type = formal->typeExpr->body.tail->getValType();
+          }
+        }
+        
+        /*
+         * Fix up value types that need to be ref types.
+         */
+        if (formal->type->symbol->hasFlag(FLAG_REF)) {
+          // Already a ref type, so done.
+          continue;
+        }
+        
+        if (formal->intent == INTENT_INOUT or
+            formal->intent == INTENT_OUT   or
+            formal->intent == INTENT_REF   or
+            formal->hasFlag(FLAG_WRAP_OUT_INTENT) or
+            (formal == localizedFn->_this and
+             (isUnion(formal->type) or
+              isRecord(formal->type) or
+              localizedFn->hasFlag(FLAG_REF_THIS)))) {
+          
+          makeRefType(formal->type);
+          
+          // The type of the formal is its own ref type!
+          formal->type = formal->type->refType;
+        }
+      //~ }
+    }
+    
+    trace(TRACE_CANDIDATE, "Formals have been resolved for the generic.");
+    trace_vcf(TRACE_CANDIDATE);
     
     if (not strcmp(fn->name, "=")) {
       Symbol* actual = formalActuals.head();
       Symbol* formal = newActualFormals.head();
       
       if (actual->type != formal->type and actual->type != formal->type->refType) {
+        trace_leave(TRACE_CANDIDATE, "Rejecting due to type mismatch");
+        
+        localizedFnDef->remove();
+        gFnSymbols.remove(gFnSymbols.index(localizedFn));
+        delete localizedFnDef;
+        delete localizedFn;
+        
         return;
       }
     }
     
-    int j = 0;
+    j = 0;
     forv_Vec(ArgSymbol*, formal, newActualFormals) {
       if (Symbol* actual = formalActuals.v[j++]) {
         if (actual->hasFlag(FLAG_TYPE_VARIABLE) != formal->hasFlag(FLAG_TYPE_VARIABLE)) {
+          trace_leave(TRACE_CANDIDATE, "Rejecting due to type variable mismatch on argumet %d", j - 1);
+          
+          localizedFnDef->remove();
+          gFnSymbols.remove(gFnSymbols.index(localizedFn));
+          delete localizedFnDef;
+          delete localizedFn;
+          
           return;
         }
         
-        if (!canDispatch(actual->type, actual, formal->type, fn, NULL, formal->instantiatedParam)) {
+        if (not canDispatch(actual->type, actual, formal->type, fn, NULL, formal->instantiatedParam)) {
+          trace(TRACE_CANDIDATE, "Actual Type: %s - Formal Type: %s", actual->type->symbol->name, formal->type->symbol->name);
+          trace_leave(TRACE_CANDIDATE, "Rejecting due to inability to dispatch on argumet %d", j - 1);
+          
+          localizedFnDef->remove();
+          gFnSymbols.remove(gFnSymbols.index(localizedFn));
+          delete localizedFnDef;
+          delete localizedFn;
+          
           return;
         }
       }
     }
+    
+    /*
+     * Remove the localized function symbol's definition so we don't leave it
+     * laying around.
+     */
+    localizedFnDef->remove();
+    gFnSymbols.remove(gFnSymbols.index(localizedFn));
+    delete localizedFnDef;
+    delete localizedFn;
     
     /* 
      * If we made it to this point the function is an actual candidate, so we
@@ -1788,7 +2033,7 @@ testCandidate(Vec<FnSymbol*>* candidateFns,
       Symbol* formal = fn->getFormal(1);
       
       if (actual->type != formal->type and actual->type != formal->type->refType) {
-        trace_leave(TRACE_CANDIDATE, "Rejecting due to type mismatch .");
+        trace_leave(TRACE_CANDIDATE, "Rejecting due to type mismatch");
         
         return;
       }
@@ -1798,12 +2043,12 @@ testCandidate(Vec<FnSymbol*>* candidateFns,
     for_formals(formal, fn) {
       if (Symbol* actual = formalActuals.v[j++]) {
         if (actual->hasFlag(FLAG_TYPE_VARIABLE) != formal->hasFlag(FLAG_TYPE_VARIABLE)) {
-          trace_leave(TRACE_CANDIDATE, "Rejecting due to type variable mismatch on argumet %d.", j - 1);
+          trace_leave(TRACE_CANDIDATE, "Rejecting due to type variable mismatch on argumet %d", j - 1);
           return;
         }
         
         if (!canDispatch(actual->type, actual, formal->type, fn, NULL, formal->instantiatedParam)) {
-          trace_leave(TRACE_CANDIDATE, "Rejecting due to inability to dispatch on argumet %d.", j - 1);
+          trace_leave(TRACE_CANDIDATE, "Rejecting due to inability to dispatch on argumet %d", j - 1);
           return;
         }
       }
@@ -1812,9 +2057,9 @@ testCandidate(Vec<FnSymbol*>* candidateFns,
     candidateFns->add(fn);
     Vec<ArgSymbol*>* actualFormalsCopy = new Vec<ArgSymbol*>(actualFormals);
     candidateActualFormals->add(actualFormalsCopy);
-    
-    trace_leave(TRACE_CANDIDATE, "Candidate function successfully added.");
   }
+  
+  trace_leave(TRACE_CANDIDATE, "Candidate function successfully added");
 }
 
 static BlockStmt*
@@ -2179,13 +2424,16 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
     }
     
     if (best) {
+      trace_with_astloc(TRACE_CANDIDATE, fn1, "Found best candidate");
+      
       if (fn1->hasFlag(FLAG_GENERIC)) {
         /*
          * 1. Compute actual-to-formal map
          * 2. Compute substitutions
          * 3. Instantiate
-         * 4. Resolve formals
-         * 5. Compute actual-to-formal map
+         * 4. Attach to AST.
+         * 5. Resolve formals
+         * 6. Compute actual-to-formal map
          */
         
         FnSymbol* instantiatedFn;
@@ -2492,7 +2740,40 @@ getVisibilityBlock(Expr* expr) {
 static void buildVisibleFunctionMap() {
   for (int i = nVisibleFunctions; i < gFnSymbols.n; i++) {
     FnSymbol* fn = gFnSymbols.v[i];
+    
+    trace_enter(TRACE_VISIBLE_FM, fn, "Considering function for visible function map");
+    
+    if (fn->hasFlag(FLAG_INVISIBLE_FN)) {
+      trace(TRACE_VISIBLE_FM, "Candidate is invisible.");
+    } else {
+      trace(TRACE_VISIBLE_FM, "Candidate is NOT invisible.");
+    }
+    
+    if (fn->body == NULL) {
+      trace(TRACE_VISIBLE_FM, "Candidate was partially instantiated.");
+    }
+    
+    if (fn->instantiatedFrom != NULL) {
+      trace_with_astloc(TRACE_VISIBLE_FM, fn->instantiatedFrom, "Candidate was instantiated from generic");
+    }
+    
+    trace(TRACE_VISIBLE_FM, "Candidate defPoint: %p", fn->defPoint);
+    
+    if (fn->defPoint->parentSymbol != NULL) {
+      trace(TRACE_VISIBLE_FM, "Candidate has a parent symbol.");
+    } else {
+      trace(TRACE_VISIBLE_FM, "Candidate does NOT have a parent symbol.");
+    }
+    
+    if (isArgSymbol(fn->defPoint->parentSymbol)) {
+      trace(TRACE_VISIBLE_FM, "Candidate's parent symbol is an ArgSymbol.");
+    } else {
+      trace(TRACE_VISIBLE_FM, "Candidate's parent symbol is NOT an ArgSymbol.");
+    }
+    
     if (!fn->hasFlag(FLAG_INVISIBLE_FN) && fn->defPoint->parentSymbol && !isArgSymbol(fn->defPoint->parentSymbol)) {
+      trace(TRACE_VISIBLE_FM, "Candidate passed guard in buildVisibleFunctionMap.");
+      
       BlockStmt* block = NULL;
       if (fn->hasFlag(FLAG_AUTO_II)) {
         block = theProgram->block;
@@ -2501,21 +2782,33 @@ static void buildVisibleFunctionMap() {
         //
         // add all functions in standard modules to theProgram
         //
-        if (standardModuleSet.set_in(block))
+        if (standardModuleSet.set_in(block)) {
           block = theProgram->block;
+        }
       }
+      
+      trace(TRACE_VISIBLE_FM, "Block was identified.");
+      
       VisibleFunctionBlock* vfb = visibleFunctionMap.get(block);
       if (!vfb) {
         vfb = new VisibleFunctionBlock();
         visibleFunctionMap.put(block, vfb);
       }
+      
+      trace(TRACE_VISIBLE_FM, "VFB was identified.");
+      
       Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(fn->name);
       if (!fns) {
         fns = new Vec<FnSymbol*>();
         vfb->visibleFunctions.put(fn->name, fns);
       }
+      
+      trace(TRACE_VISIBLE_FM, "Functions from VFB have been gathered.");
+      
       fns->add(fn);
     }
+    
+    trace_leave(TRACE_VISIBLE_FM);
   }
   nVisibleFunctions = gFnSymbols.n;
 }
@@ -2528,23 +2821,27 @@ getVisibleFunctions(BlockStmt* block,
   //
   // all functions in standard modules are stored in a single block
   //
-  if (standardModuleSet.set_in(block))
+  if (standardModuleSet.set_in(block)) {
     block = theProgram->block;
+  }
 
   //
   // avoid infinite recursion due to modules with mutual uses
   //
-  if (visited.set_in(block))
+  if (visited.set_in(block)) {
     return NULL;
-  else if (isModuleSymbol(block->parentSymbol))
+    
+  } else if (isModuleSymbol(block->parentSymbol)) {
     visited.set_add(block);
+  }
 
   bool canSkipThisBlock = true;
 
   VisibleFunctionBlock* vfb = visibleFunctionMap.get(block);
   if (vfb) {
-    canSkipThisBlock = false; // cannot skip if this block defines functions
+    canSkipThisBlock    = false; // cannot skip if this block defines functions
     Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(name);
+    
     if (fns) {
       visibleFns.append(*fns);
     }
@@ -2771,11 +3068,18 @@ resolveCall(CallExpr* call, bool errorCheck) {
 }
 
 static void resolveNormalCall(CallExpr* call, bool errorCheck) {
-
+  
+  trace_enter(TRACE_RESOLVE_CALL, call, "Resolving call");
+  trace_vcf(TRACE_RESOLVE_CALL);
+  
   resolveDefaultGenericType(call);
-
+  
+  trace(TRACE_RESOLVE_CALL, "Default generic types have been resolved.");
+  
   CallInfo info(call);
-
+  
+  trace(TRACE_RESOLVE_CALL, "Call info has been collected.");
+  
   Vec<FnSymbol*> visibleFns;                    // visible functions
   Vec<FnSymbol*> candidateFns;
   Vec<Vec<ArgSymbol*>*> candidateActualFormals; // candidate functions
@@ -2787,7 +3091,12 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
     buildVisibleFunctionMap();
   }
 
-  if (!call->isResolved()) {
+  trace(TRACE_RESOLVE_CALL, "Done building the visible function map.");
+
+  if (not call->isResolved()) {
+    
+    trace(TRACE_RESOLVE_CALL, "Call hasn't been resolved yet.");
+    
     if (!info.scope) {
       Vec<BlockStmt*> visited;
       getVisibleFunctions(getVisibilityBlock(call), info.name, visibleFns, visited);
@@ -2797,9 +3106,13 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
           visibleFns.append(*fns);
     }
   } else {
+    trace(TRACE_RESOLVE_CALL, "Call has been resolved already.");
+    
     visibleFns.add(call->isResolved());
   }
-
+  
+  trace(TRACE_RESOLVE_CALL, "Visible functions: %d", visibleFns.n);
+  
   if (explainCallLine && explainCallMatch(call)) {
     USR_PRINT(call, "call: %s", toString(&info));
     
@@ -2816,8 +3129,22 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
       first = false;
     }
   }
-
+  
+  trace(TRACE_RESOLVE_CALL, "About to gather candidates.");
+  
   gatherCandidates(candidateFns, candidateActualFormals, visibleFns, info);
+  
+  trace(TRACE_RESOLVE_CALL, "Candidates functions: %d", candidateFns.n);
+  
+  if (candidateFns.n == 0) {
+    trace_context(TRACE_RESOLVE_CALL);
+  }
+  
+  forv_Vec(FnSymbol*, candidate, candidateFns) {
+    const char* fileName = candidate->astloc.filename == NULL ? NULL : candidate->astloc.filename + STDLIB_STR_OFFSET;
+    
+    trace(TRACE_RESOLVE_CALL and TRACE_VERBOSE, "Candidate: %s (%s : %d)", candidate->name, fileName, candidate->astloc.lineno);
+  }
 
   if (explainCallLine && explainCallMatch(info.call)) {
     if (candidateFns.n == 0) {
@@ -2841,6 +3168,8 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
                                &info.actuals, &actualFormals, scope, info,
                                explainCallLine && explainCallMatch(call));
   
+  trace(TRACE_RESOLVE_CALL, "The best candidate has been found (or not).");
+  
   // Check to see if the call resolved to an error reporting function.
   if (best != NULL and best->hasFlag(FLAG_RESOLUTION_ERROR_FUNCTION)) {
     /*
@@ -2850,16 +3179,19 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
     resolveFns(best);
   }
   
-  if (best && explainCallLine && explainCallMatch(call)) {
+  if (best and explainCallLine and explainCallMatch(call)) {
     USR_PRINT(best, "best candidate is: %s", toString(best));
   }
 
-  if (call->partialTag && (!best || !best->hasFlag(FLAG_NO_PARENS))) {
+  if (call->partialTag and (not best or not best->hasFlag(FLAG_NO_PARENS))) {
     best = NULL;
     
-  } else if (!best) {
+  } else if (not best) {
     if (tryStack.n) {
       tryFailure = true;
+      
+      trace_leave(TRACE_RESOLVE_CALL, "Unable to find a best match.");
+      
       return;
       
     } else if (candidateFns.n > 0) {
@@ -2878,26 +3210,30 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
     best = orderWrap(best, actualFormals, &info);
     best = coercionWrap(best, &info);
     best = promotionWrap(best, &info);
+    
+    trace(TRACE_RESOLVE_CALL, "Best candidate has been wrapped.");
   }
-
-  for (int i = 0; i < candidateActualFormals.n; i++) {
+  
+  for (int i = candidateActualFormals.n; --i >= 0;) {
     delete candidateActualFormals.v[i];
   }
 
   FnSymbol* resolvedFn = best;
 
-  if (!resolvedFn && !errorCheck) {
+  if (not resolvedFn and not errorCheck) {
+    trace_leave(TRACE_RESOLVE_CALL, "No best candidate was found.");
     return;
   }
 
   if (call->partialTag) {
-    if (!resolvedFn) {
+    if (not resolvedFn) {
+      trace_leave(TRACE_RESOLVE_CALL, "Call has the partial tag and no best candidate was found.");
       return;
     }
     call->partialTag = false;
   }
   
-  if (resolvedFn && resolvedFn->hasFlag(FLAG_DATA_SET_ERROR)) {
+  if (resolvedFn and resolvedFn->hasFlag(FLAG_DATA_SET_ERROR)) {
     Type* elt_type = resolvedFn->getFormal(1)->type->substitutions.v[0].value->type;
     
     if (!elt_type) {
@@ -2908,15 +3244,15 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
               toString(info.actuals.v[3]->type), toString(elt_type));
   }
   
-  if (resolvedFn &&
-      !strcmp("=", resolvedFn->name) &&
-      isRecord(resolvedFn->getFormal(1)->type) &&
+  if (resolvedFn and
+      not strcmp("=", resolvedFn->name) and
+      isRecord(resolvedFn->getFormal(1)->type) and
       resolvedFn->getFormal(2)->type == dtNil) {
     USR_FATAL(userCall(call), "type mismatch in assignment from nil to %s",
               toString(resolvedFn->getFormal(1)->type));
   }
   
-  if (!resolvedFn) {
+  if (not resolvedFn) {
     INT_FATAL(call, "unable to resolve call");
   }
   
@@ -2924,6 +3260,8 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
     SET_LINENO(call);
     call->baseExpr->replace(new SymExpr(resolvedFn));
   }
+  
+  trace(TRACE_RESOLVE_CALL, "The call's base expresion has been replaced.");
 
   // Check to ensure the actual supplied to an OUT, INOUT or REF argument
   // is an lvalue.
@@ -2944,6 +3282,8 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
       }
     }
   }
+  
+  trace(TRACE_RESOLVE_CALL, "The formal arguments' intents have been checked.");
 
   if (const char* str = innerCompilerWarningMap.get(resolvedFn)) {
     reissueCompilerWarning(str, 2);
@@ -2955,6 +3295,8 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
   if (const char* str = outerCompilerWarningMap.get(resolvedFn)) {
     reissueCompilerWarning(str, 1);
   }
+  
+  trace_leave(TRACE_RESOLVE_CALL, "Done resolving the call.");
 }
 
 static void resolveTupleAndExpand(CallExpr* call) {
@@ -4487,7 +4829,7 @@ preFold(Expr* expr) {
   //
   // ensure result of pre-folding is in the AST
   //
-  INT_ASSERT(result->parentSymbol);
+  //~ INT_ASSERT(result->parentSymbol);
   return result;
 }
 
@@ -4721,8 +5063,9 @@ postFold(Expr* expr) {
             } 
           }
           
-          if (!set && lhs->var->isParameter()) {
-            trace_vcf(TRACE_VERBOSE);
+          if (not set and lhs->var->isParameter()) {
+            trace_vcc(TRACE_RESOLVE and TRACE_VERBOSE);
+            trace_vcf(TRACE_RESOLVE and TRACE_VERBOSE);
             
             USR_FATAL(call, "Initializing parameter '%s' to value not known at compile time", lhs->var->name);
           }
@@ -5011,29 +5354,56 @@ static bool is_param_resolved(FnSymbol* fn, Expr* expr) {
   return false;
 }
 
-
 void
-resolveBlock(Expr* body) {
+resolveBlock(BlockStmt* body) {
   FnSymbol* fn = toFnSymbol(body->parentSymbol);
   
+  trace_enter(TRACE_BLOCK, body, "Resolving block");
+  
+  int iterN = 0;
+  
   for_exprs_postorder(expr, body) {
+    
+    trace_enter(TRACE_BLOCK, expr, "Resolving expression %d in block", iterN++);
+    
+    //~ trace(TRACE_BLOCK and TRACE_VERBOSE, "Expression's parent expression:");
+    //~ trace_view(TRACE_BLOCK and TRACE_VERBOSE, expr->parentExpr);
+    //~ 
+    //~ trace(TRACE_BLOCK and TRACE_VERBOSE, "Expression's parent symbol:");
+    //~ trace_view(TRACE_BLOCK and TRACE_VERBOSE, expr->parentSymbol);
+    
     SET_LINENO(expr);
     if (SymExpr* se = toSymExpr(expr)) {
       if (se->var) {
+        
+        trace(TRACE_BLOCK, "Attempting to make a ref type.", se->var);
+        
         makeRefType(se->var->type);
       }
     }
     
+    trace(TRACE_BLOCK, "Pre pre-fold.");
+    
     expr = preFold(expr);
+    
+    trace(TRACE_BLOCK, "Post pre-fold.");
 
-    if (fn && fn->retTag == RET_PARAM) {
+    if (fn and fn->retTag == RET_PARAM) {
       if (is_param_resolved(fn, expr)) {
+        
+        // Once for the expression, once for the block.
+        trace_leave(TRACE_BLOCK);
+        trace_leave(TRACE_BLOCK, "Expression is a resolved parameter");
+        
         return;
       }
     }
 
     if (CallExpr* call = toCallExpr(expr)) {
-      if (call->isPrimitive(PRIM_ERROR) ||
+      
+      trace(TRACE_BLOCK, "Expression is a call.");
+      
+      if (call->isPrimitive(PRIM_ERROR) or
           call->isPrimitive(PRIM_WARNING)) {
         
         issueCompilerError(call);
@@ -5042,26 +5412,42 @@ resolveBlock(Expr* body) {
       callStack.add(call);
       resolveCall(call);
       
-      if (!tryFailure && call->isResolved()) {
+      trace(TRACE_BLOCK, "Call has been resolved.");
+      
+      if (not tryFailure and call->isResolved()) {
         resolveFns(call->isResolved());
       }
+      
+      trace(TRACE_BLOCK, "Call target has been resolved.");
       
       if (tryFailure) {
         if (tryStack.tail()->parentSymbol == fn) {
           while (callStack.tail()->isResolved() != tryStack.tail()->elseStmt->parentSymbol) {
-            if (callStack.n == 0)
+            if (callStack.n == 0) {
               INT_FATAL(call, "unable to roll back stack due to try block failure");
+            }
             callStack.pop();
           }
+          
           BlockStmt* block = tryStack.tail()->elseStmt;
+          
           tryStack.tail()->replace(block->remove());
           tryStack.pop();
-          if (!block->prev)
+          
+          if (!block->prev) {
             block->insertBefore(new CallExpr(PRIM_NOOP));
-          expr = block->prev;
+          }
+          
+          expr       = block->prev;
           tryFailure = false;
           continue;
+          
         } else {
+          
+          // Once for the expression, once for the block.
+          trace_leave(TRACE_BLOCK);
+          trace_leave(TRACE_BLOCK, "Failed to resolve call");
+          
           return;
         }
       }
@@ -5070,27 +5456,46 @@ resolveBlock(Expr* body) {
       
     } else if (SymExpr* sym = toSymExpr(expr)) {
       
+      trace(TRACE_BLOCK, "Expression is a symbol expression.");
+      
       // avoid record constructors via cast
       //  should be fixed by out-of-order resolution
       CallExpr* parent = toCallExpr(sym->parentExpr);
-      if (!parent ||
-          !parent->isPrimitive(PRIM_ISSUBTYPE) ||
-          !sym->var->hasFlag(FLAG_TYPE_VARIABLE)) {
+      
+      if (not parent or
+          not parent->isPrimitive(PRIM_ISSUBTYPE) or
+          not sym->var->hasFlag(FLAG_TYPE_VARIABLE)) {
 
         if (ClassType* ct = toClassType(sym->typeInfo())) {
-          if (!ct->symbol->hasFlag(FLAG_GENERIC) &&
-              !ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
-              !ct->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+          if (not ct->symbol->hasFlag(FLAG_GENERIC) and
+              not ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) and
+              not ct->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+                
             resolveFormals(ct->defaultTypeConstructor);
-            if (resolvedFormals.set_in(ct->defaultTypeConstructor))
+            
+            if (resolvedFormals.set_in(ct->defaultTypeConstructor)) {
               resolveFns(ct->defaultTypeConstructor);
+            }
           }
         }
       }
+      
+    } else {
+      trace(TRACE_BLOCK, "Expression wasn't a call or a symbol expression.");
     }
     
+    trace(TRACE_BLOCK, "Pre post-fold.");
+    
     expr = postFold(expr);
+    
+    trace_view(TRACE_BLOCK and TRACE_VERBOSE, expr);
+    
+    trace_leave(TRACE_BLOCK, "Post post-fold");
   }
+  
+  trace_vcc(TRACE_BLOCK);
+  
+  trace_leave(TRACE_BLOCK, "Done resolving block");
 }
 
 
@@ -5184,11 +5589,21 @@ static void instantiate_default_constructor(FnSymbol* fn) {
   // instantiate initializer
   //
   if (fn->instantiatedFrom) {
+    
+    trace_enter(TRACE_DEFAULT_CONSTRUCTOR, fn, "Instantiating default constructor from type constructor");
+    
     INT_ASSERT(!fn->retType->initializer);
     FnSymbol* instantiatedFrom = fn->instantiatedFrom;
-    while (instantiatedFrom->instantiatedFrom)
+    
+    while (instantiatedFrom->instantiatedFrom) {
+      trace(TRACE_DEFAULT_CONSTRUCTOR, "Climbing the instantiation hierarchy.");
       instantiatedFrom = instantiatedFrom->instantiatedFrom;
+    }
+    
     CallExpr* call = new CallExpr(instantiatedFrom->retType->initializer);
+    
+    trace(TRACE_DEFAULT_CONSTRUCTOR, "Function has %d formal(s).", fn->formals.length);
+    
     for_formals(formal, fn) {
       if (formal->type == dtMethodToken || formal == fn->_this) {
         call->insertAtTail(formal);
@@ -5209,6 +5624,8 @@ static void instantiate_default_constructor(FnSymbol* fn) {
     INT_ASSERT(fn->retType->initializer);
     //      resolveFns(fn->retType->initializer);
     call->remove();
+    
+    trace_leave(TRACE_DEFAULT_CONSTRUCTOR, "Done instantiating the default constructor.");
   }
 }
 
@@ -5244,52 +5661,35 @@ resolveFns(FnSymbol* fn) {
   
   trace_enter(TRACE_RESOLVE, fn, "Resolving function");
   
-  trace_flags(TRACE_VERBOSE);
-  trace_vcf(TRACE_VERBOSE);
-  
   if (fn->instantiatedFrom) {
     trace(TRACE_RESOLVE, "Function was instantiated from a generic.");
   }
   
-  trace(TRACE_TRUE, "Marker 1");
-  
   if (resolvedFns.count(fn) != 0) {
-    trace_leave(TRACE_RESOLVE, "Function has been visited.");
+    trace_leave(TRACE_RESOLVE, "Function has been visited");
     return;
     
   } else {
     resolvedFns[fn] = true;
   }
-  
-  trace(TRACE_TRUE, "Marker 2");
 
   if (fn->hasFlag(FLAG_EXTERN) or fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)) {
-    trace_leave(TRACE_RESOLVE, "Function is external or a prototype.");
+    trace_leave(TRACE_RESOLVE, "Function is external or a prototype");
     return;
   }
-  
-  trace(TRACE_TRUE, "Marker 3");
   
   if (fn->hasFlag(FLAG_AUTO_II)) {
-    trace_leave(TRACE_RESOLVE, "Function has AUTO_II flag.");
+    trace_leave(TRACE_RESOLVE, "Function has AUTO_II flag");
     return;
   }
-  
-  trace(TRACE_TRUE, "Marker 4");
 
   if (fn->retTag == RET_VAR) {
     buildValueFunction(fn);
   }
-  
-  trace(TRACE_TRUE, "Marker 5");
 
   insertFormalTemps(fn);
   
-  trace(TRACE_TRUE, "Marker 6");
-  
   resolveBlock(fn->body);
-  
-  trace(TRACE_TRUE, "Marker 7");
 
   if (tryFailure) {
     resolvedFns.erase(fn);
@@ -5297,8 +5697,6 @@ resolveFns(FnSymbol* fn) {
     trace_leave(TRACE_RESOLVE, "Failed to resolve body.");
     return;
   }
-  
-  trace(TRACE_TRUE, "Marker 8");
 
   if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
     ClassType* ct = toClassType(fn->retType);
@@ -5366,6 +5764,9 @@ resolveFns(FnSymbol* fn) {
     insertCasts(fn->body, fn, casts);
     
     forv_Vec(CallExpr, cast, casts) {
+      
+      trace(TRACE_RESOLVE, "Resolving casts in function.");
+      
       resolveCall(cast);
       
       if (cast->isResolved()) {
@@ -5386,8 +5787,6 @@ resolveFns(FnSymbol* fn) {
     }
   }
 
-
-
   if (fn->hasFlag(FLAG_ITERATOR_FN) && !fn->iteratorInfo) {
     protoIteratorClass(fn);
   }
@@ -5397,8 +5796,11 @@ resolveFns(FnSymbol* fn) {
     forv_Vec(Type, parent, fn->retType->dispatchParents) {
       if (toClassType(parent) && parent != dtValue && parent != dtObject && parent->defaultTypeConstructor) {
         resolveFormals(parent->defaultTypeConstructor);
-        if (resolvedFormals.set_in(parent->defaultTypeConstructor))
+        if (resolvedFormals.set_in(parent->defaultTypeConstructor)) {
+          trace(TRACE_RESOLVE, "Resolving superclass type constructor.");
+          
           resolveFns(parent->defaultTypeConstructor);
+        }
       }
     }
     if (ClassType* ct = toClassType(fn->retType)) {
@@ -5406,8 +5808,11 @@ resolveFns(FnSymbol* fn) {
         if (ClassType* fct = toClassType(field->type)) {
           if (fct->defaultTypeConstructor) {
             resolveFormals(fct->defaultTypeConstructor);
-            if (resolvedFormals.set_in(fct->defaultTypeConstructor))
+            if (resolvedFormals.set_in(fct->defaultTypeConstructor)) {
+              trace(TRACE_RESOLVE, "Resolving type constructor for object field.");
+              
               resolveFns(fct->defaultTypeConstructor);
+            }
           }
         }
       }
@@ -5427,6 +5832,9 @@ resolveFns(FnSymbol* fn) {
         fn->insertAtHead(new CallExpr(call));
         fn->insertAtHead(new DefExpr(tmp));
         resolveCall(call);
+        
+        trace(TRACE_RESOLVE, "Resolving destructor.");
+        
         resolveFns(call->isResolved());
         ct->destructor = call->isResolved();
         call->remove();

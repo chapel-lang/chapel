@@ -81,13 +81,17 @@ void BlockStmt::verify() {
 BlockStmt*
 BlockStmt::copyInner(SymbolMap* map) {
   BlockStmt* _this = new BlockStmt();
-  _this->blockTag = blockTag;
-  for_alist(expr, body)
+  _this->blockTag  = blockTag;
+  
+  for_alist(expr, body) {
     _this->insertAtTail(COPY_INT(expr));
-  _this->blockInfo = COPY_INT(blockInfo);
-  _this->modUses = COPY_INT(modUses);
-  _this->breakLabel = breakLabel;
+  }
+  
+  _this->blockInfo     = COPY_INT(blockInfo);
+  _this->modUses       = COPY_INT(modUses);
+  _this->breakLabel    = breakLabel;
   _this->continueLabel = continueLabel;
+  
   return _this;
 }
 

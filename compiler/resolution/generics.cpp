@@ -356,7 +356,7 @@ static void renameInstantiatedTypeString(TypeSymbol* sym, VarSymbol* var)
   }                   
 }
 
-static void
+void
 renameInstantiatedType(TypeSymbol* sym, SymbolMap* subs, FnSymbol* fn) {
   if (sym->name[strlen(sym->name)-1] == ')') {
     // avoid "strange" instantiated type names based on partial instantiation

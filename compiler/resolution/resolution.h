@@ -28,9 +28,11 @@ void parseExplainFlag(char* flag, int* line, ModuleSymbol** module);
 void copyGenericSub(SymbolMap& subs, FnSymbol* root, FnSymbol* fn, Symbol* key, Symbol* value);
 TypeSymbol* getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* value);
 FnSymbol* instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call);
+void renameInstantiatedType(TypeSymbol* sym, SymbolMap* subs, FnSymbol* fn);
+
 void resolveFormals(FnSymbol* fn);
 void resolveCall(CallExpr* call, bool errorCheck = true);
-void resolveBlock(Expr* body);
+void resolveBlock(BlockStmt* body);
 
 FnSymbol* defaultWrap(FnSymbol* fn, Vec<ArgSymbol*>* actualFormals,  CallInfo* info);
 FnSymbol* orderWrap(FnSymbol* fn, Vec<ArgSymbol*>* actualFormals,  CallInfo* info);

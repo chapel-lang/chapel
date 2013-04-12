@@ -885,12 +885,18 @@ FnSymbol::FnSymbol(const char* initName) :
 
 
 FnSymbol::~FnSymbol() {
-  if (iteratorInfo)
+  if (iteratorInfo) {
     delete iteratorInfo;
+  }
+  
   BasicBlock::clear(this);
-  delete basicBlocks; basicBlocks = 0;
-  if (calledBy)
+  
+  delete basicBlocks;
+  basicBlocks = 0;
+  
+  if (calledBy) {
     delete calledBy;
+  }
 }
 
 
@@ -919,27 +925,68 @@ FnSymbol* FnSymbol::getFnSymbol(void) {
   return this;
 }
 
+FnSymbol* FnSymbol::partialCopy(SymbolMap* map) {
+  FnSymbol* _this = new FnSymbol(this->name);
+  
+  // Copy formals.
+  for_formals(formal, this) {
+    _this->insertFormalAtTail(COPY_INT(formal->defPoint));
+  }
+  
+  // Copy select members.
+  _this->where              = COPY_INT(this->where);
+  _this->thisTag            = this->thisTag;
+  _this->_this              = this->_this;
+  _this->_outer             = this->_outer;
+  _this->astloc             = this->astloc;
+  
+  // Copy flags.
+  _this->copyFlags(this);
+  
+  // Add the new function symbol to the map.
+  map->put(this, _this);
+  
+  // Update all references to old symbols to references to the new copies.
+  update_symbols(_this, map);
+  
+  return _this;
+}
+
+void FnSymbol::finishCopy(const FnSymbol* const orig, SymbolMap* map) {
+  // Copy all members that weren't copied in the partialCopy method.
+  this->setter      = COPY_INT(orig->setter);
+  this->retType     = orig->retType;
+  this->body        = COPY_INT(orig->body);
+  this->retTag      = orig->retTag;
+  this->retExprType = COPY_INT(orig->retExprType);
+  this->cname       = orig->cname;
+}
 
 FnSymbol*
 FnSymbol::copyInner(SymbolMap* map) {
   FnSymbol* copy = new FnSymbol(name);
-  if (hasFlag(FLAG_CONSTRUCTOR))
+  
+  if (hasFlag(FLAG_CONSTRUCTOR)) {
     copy->addFlag(FLAG_CONSTRUCTOR);
+  }
+  
   for_formals(formal, this) {
     copy->insertFormalAtTail(COPY_INT(formal->defPoint));
   }
-  copy->setter = COPY_INT(setter);
-  copy->retType = retType;
-  copy->where = COPY_INT(where);
-  copy->body = COPY_INT(body);
-  copy->thisTag = thisTag;
-  copy->retTag = retTag;
-  copy->retExprType = COPY_INT(retExprType);
-  copy->cname = cname;
-  copy->_this = _this;
-  copy->_outer = _outer;
-  copy->instantiatedFrom = instantiatedFrom;
+  
+  copy->setter             = COPY_INT(setter);
+  copy->retType            = retType;
+  copy->where              = COPY_INT(where);
+  copy->body               = COPY_INT(body);
+  copy->thisTag            = thisTag;
+  copy->retTag             = retTag;
+  copy->retExprType        = COPY_INT(retExprType);
+  copy->cname              = cname;
+  copy->_this              = _this;
+  copy->_outer             = _outer;
+  copy->instantiatedFrom   = instantiatedFrom;
   copy->instantiationPoint = instantiationPoint;
+  
   return copy;
 }
 
@@ -1382,19 +1429,14 @@ hasGenericArgs(FnSymbol* fn) {
   trace_enter(TRACE_GENERICS, fn, "Checking if function is generic");
   
   for_formals(formal, fn) {
-    bool genericFormal = false;
-    
-    genericFormal =
-      formal->intent == INTENT_PARAM or
-      (formal->type->symbol->hasFlag(FLAG_GENERIC) and
-        (not formal->type->hasGenericDefaults or
-        formal->markedGeneric or
-        formal == fn->_this or
-        formal->hasFlag(FLAG_IS_MEME)));
-    
     if (formal->intent == INTENT_PARAM) trace(TRACE_GENERICS, "Formal argument has PARAM intent.");
     
-    if (genericFormal) {
+    if (formal->intent == INTENT_PARAM or
+        (formal->type->symbol->hasFlag(FLAG_GENERIC) and
+          (not formal->type->hasGenericDefaults or
+          formal->markedGeneric or
+          formal == fn->_this or
+          formal->hasFlag(FLAG_IS_MEME)))) {
       isGeneric = true;
       
       if (not formal->defaultExpr) {
