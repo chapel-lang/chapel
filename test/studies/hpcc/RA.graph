@@ -1,13 +1,13 @@
-perfkeys: Performance (GUPS) =, Performance (GUPS) =
-graphkeys: RA-dist, RA-nodist
-files: ./RA/bradc/parallel/ra-dist.dat, ./serial-v0.7/ra.dat
+perfkeys: Performance (GUPS) =
+graphkeys: RA-dist
+files: ./RA/bradc/parallel/ra-dist.dat
 ylabel: Performance (GUPS)
 graphname: RA-promote-performance
 graphtitle: RA using Promotion
 
-perfkeys: Execution time =, Execution time =
-graphkeys: RA-dist, RA-nodist
-files: ./RA/bradc/parallel/ra-dist.dat, ./serial-v0.7/ra.dat
+perfkeys: Execution time =
+graphkeys: RA-dist
+files: ./RA/bradc/parallel/ra-dist.dat
 ylabel: Time (seconds)
 graphname: RA-promote-time
 graphtitle: RA using Promotion

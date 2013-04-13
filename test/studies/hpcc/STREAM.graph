@@ -28,16 +28,16 @@ ylabel: Time (seconds)
 graphname: STREAM-global-time
 graphtitle: Global STREAM
 
-perfkeys: Performance (GB/s) =, Performance (GB/s) =
-graphkeys: Global-STREAM-promote, Global-STREAM-promote-nodist
-files: ./STREAMS/bradc/stream-block1d-promote.dat, ./serial-v0.7/stream.dat
+perfkeys: Performance (GB/s) =
+graphkeys: Global-STREAM-promote
+files: ./STREAMS/bradc/stream-block1d-promote.dat
 ylabel: Performance (GB/s)
 graphname: STREAM-global-promote-performance
 graphtitle: Global STREAM using Promotion
 
-perfkeys: min =, avg =, min =, avg =
-graphkeys: Global-STREAM-promote, Global-STREAM-promote, Global-STREAM-promote-nodist, Global-STREAM-promote-nodist
-files: ./STREAMS/bradc/stream-block1d-promote.dat, ./STREAMS/bradc/stream-block1d-promote.dat, ./serial-v0.7/stream.dat, ./serial-v0.7/stream.dat
+perfkeys: min =, avg =
+graphkeys: Global-STREAM-promote, Global-STREAM-promote
+files: ./STREAMS/bradc/stream-block1d-promote.dat, ./STREAMS/bradc/stream-block1d-promote.dat
 ylabel: Time (seconds)
 graphname: STREAM-global-promote-time
 graphtitle: Global STREAM using Promotion

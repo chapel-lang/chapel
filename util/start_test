@@ -1010,21 +1010,6 @@ if ("$dirlist" == "" && "$testlist" == "") then
     endif
 endif
 
-# Generate graphs for top level .graph files
-if ($performance || $gengraphs) then
-    # We do the exact same thing below for each test directory, but since
-    #  I do not know how to write functions in csh, this will have to do
-    set graphfiles = `find . -maxdepth 1 -name \*.graph`
-    foreach gfile ($graphfiles)
-        set graphfile = `basename $gfile`
-        echo "[Executing createGraphs for $graphfile in $perfdir]" |& $tee -a $logfile
-        $createGraphs "$graphfile" "$perfdir" "$startdate" |& $tee -a $logfile
-        if ($? == 0) then
-            echo "[Success generating graphs for $graphfile in $perfdir]" |& $tee -a $logfile
-        endif
-    end
-endif
-
 # get absolute path for each directory
 set absdirs = ""
 foreach dir ($dirlist)

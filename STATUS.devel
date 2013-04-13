@@ -18,7 +18,6 @@
 #        # OMITTED: path/to/future/blah.future
 #        #   b/c it's too difficult to explain
 #
-# For release 1.5: current to r19951.
 #
 ============================
 Chapel Implementation Status
@@ -699,9 +698,12 @@ Cray XE/XK/XC:
 Cray XT:
 - The memory limit for Chapel programs may need to be set manually.
   See doc/platforms/README.cray for details.
+- PrgEnv-gnu with CHPL_GMP=system do not link properly.
 
 PGI compilers (and possibly others):
 - Floating point literals of -0.0 may not work as intended.
+- Multi-locale programs (and those compiled with --no-local) do not
+  compile due to a possible PGI compiler bug.
 
 IEEE floating-point standard conformance:
   The --ieee-float flag is implemented by passing appropriate flags to
