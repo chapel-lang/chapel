@@ -527,10 +527,13 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
   // args = (ct*)malloc(sizeof(ct));
   VarSymbol* argBundle = newTemp("argBundle", ct);
   iteratorFnCall->insertBefore(new DefExpr(argBundle));
-  iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, argBundle,
-                                            new CallExpr(PRIM_CHPL_ALLOC,
-                                              ts,
-                                              newMemDesc("compiler-inserted argument bundle"))));
+  // TODO: This should really go through chpl_here_alloc, but requires resolving that
+  // code after resolution is complete.  I'm not certain that the compiler can resolve
+  // more functions after the functionResolution pass is complete, so I'm leaving this
+  // changes as a separate work item.
+  CallExpr* argBundleMem =
+    new CallExpr(PRIM_CHPL_ALLOC, ts, newMemDesc("compiler-inserted argument bundle"));
+  iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, argBundle, argBundleMem));
   iteratorFnCall->insertAtTail(argBundle);
   iteratorFnCall->insertAfter(new CallExpr(PRIM_CHPL_FREE, argBundle));
 

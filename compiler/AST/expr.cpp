@@ -4138,8 +4138,37 @@ GenRet CallExpr::codegen() {
 
       break;
     }
-    case PRIM_CHPL_ALLOC:
+    case PRIM_SIZEOF:
     {
+      Type* type = get(1)->typeInfo();
+      if (type->symbol->hasFlag(FLAG_WIDE_CLASS) ||
+          type->symbol->hasFlag(FLAG_WIDE))
+        // If wide, get the value type.
+        type = toClassType(type)->getField("addr", true)->typeInfo();
+
+      GenRet size;
+      if (ClassType* ct = toClassType(type)) {
+        // If Chapel class or record
+        size = codegenSizeof(ct->classStructName(true));
+      } else {
+        size = codegenSizeof(type);
+      }
+
+      ret = size;
+      break;
+    }
+    case PRIM_MALLOC:
+    { // (void*)chpl_mem_alloc(nbytes, md, lineno, filenam);
+      const char* fn = "chpl_mem_alloc";
+      GenRet size = codegenValue(get(1));
+      GenRet description = codegenAdd(get(2), codegenUseGlobal("CHPL_RT_MD_NUM"));
+      GenRet allocated;
+      allocated = codegenCallExpr(fn, size, description, get(3), get(4));
+      ret = codegenCast(typeInfo()->symbol->cname, allocated);
+      break;
+    }
+    case PRIM_CHPL_ALLOC:
+    { // (resultType*)chpl_mem_alloc(sizeof(x), md, lineno, filenam);
       GenRet size;
 
       // If Chapel class or record
@@ -4157,7 +4186,9 @@ GenRet CallExpr::codegen() {
       ret = codegenCast(typeInfo()->symbol->cname, allocated);
       break;
     }
-    case PRIM_CHPL_FREE: {
+    case PRIM_FREE: // This version is called from Chapel code.
+    case PRIM_CHPL_FREE: // This version is used internally.
+    {
       if (fNoMemoryFrees)
         break;
       INT_ASSERT(numActuals() == 3);

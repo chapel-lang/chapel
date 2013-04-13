@@ -540,7 +540,10 @@ protoIteratorClass(FnSymbol* fn) {
   ii->iclass = new ClassType(CLASS_CLASS);
   TypeSymbol* cts = new TypeSymbol(astr("_ic_", className), ii->iclass);
   cts->addFlag(FLAG_ITERATOR_CLASS);
+  // Maybe add NO_OBJECT instead?
+  add_root_type(ii->iclass);	// Add super : dtObject.
   fn->defPoint->insertBefore(new DefExpr(cts));
+
   ii->irecord = new ClassType(CLASS_RECORD);
   TypeSymbol* rts = new TypeSymbol(astr("_ir_", className), ii->irecord);
   rts->addFlag(FLAG_ITERATOR_RECORD);
@@ -1751,9 +1754,13 @@ printResolutionError(const char* error,
                 toString(info->actuals.v[1]->type),
                 toString(info->actuals.v[0]->type));
     }
-  } else if (info->actuals.n == 2 &&
-             info->actuals.v[0]->type == dtMethodToken &&
-             !strcmp("these", info->name)) {
+  } else if (!strcmp("free", info->name)) {
+    if (info->actuals.n > 0 &&
+        isRecord(info->actuals.v[2]->type))
+      USR_FATAL(call, "delete not allowed on records");
+  } else if (!strcmp("these", info->name)) {
+    if (info->actuals.n == 2 &&
+        info->actuals.v[0]->type == dtMethodToken)
     USR_FATAL(call, "cannot iterate over values of type %s",
               toString(info->actuals.v[1]->type));
   } else if (!strcmp("_type_construct__tuple", info->name)) {
@@ -4586,9 +4593,6 @@ resolveFns(FnSymbol* fn) {
   if ((fn->hasFlag(FLAG_EXTERN))||(fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)))
     return;
 
-  if (fn->hasFlag(FLAG_AUTO_II))
-    return;
-
   if (fn->retTag == RET_VAR)
     buildValueFunction(fn);
 
@@ -4850,6 +4854,19 @@ addToVirtualMaps(FnSymbol* pfn, ClassType* ct) {
                 fn->retType->dispatchParents.add_exclusive(pfn->retType);
                 Type* pic = pfn->retType->initializer->iteratorInfo->iclass;
                 Type* ic = fn->retType->initializer->iteratorInfo->iclass;
+                // Assumes single inheritance:
+                if (ic->dispatchParents.n) {
+                  // We need to remove <object> if it has already been added.
+                  // This is pretty kludgy.  See call to add_root_type in 
+                  // protoIterator() above.
+
+                  // Can be consolidated if "only" is added to vec.h.
+                  INT_ASSERT(ic->dispatchParents.n == 1);
+                  Type* parent = ic->dispatchParents.first();
+                  int item = parent->dispatchChildren.index(ic);
+                  parent->dispatchChildren.remove(item);
+                  ic->dispatchParents.remove(0);
+                }
                 pic->dispatchChildren.add_exclusive(ic);
                 ic->dispatchParents.add_exclusive(pic);
                 continue; // do not add to virtualChildrenMap; handle in _getIterator
@@ -5282,47 +5299,52 @@ static void resolveRecordInitializers() {
   // resolve PRIM_INITs for records
   //
   forv_Vec(CallExpr, init, inits) {
-    if (init->parentSymbol) {
-      SET_LINENO(init);
-      Type* type = init->get(1)->typeInfo();
-      if (!type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-        if (type->symbol->hasFlag(FLAG_REF))
-          type = type->getValType();
-        if (type->defaultValue) {
-          INT_FATAL(init, "PRIM_INIT should have been replaced already");
-        } else if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-          // why??  --sjd
-          init->replace(init->get(1)->remove());
-        } else if (type->symbol->hasFlag(FLAG_DISTRIBUTION)) {
-          Symbol* tmp = newTemp("_distribution_tmp_");
-          init->getStmtExpr()->insertBefore(new DefExpr(tmp));
-          CallExpr* classCall = new CallExpr(type->getField("_valueType")->type->initializer);
-          CallExpr* move = new CallExpr(PRIM_MOVE, tmp, classCall);
-          init->getStmtExpr()->insertBefore(move);
-          resolveCall(classCall);
-          resolveFns(classCall->isResolved());
-          resolveCall(move);
-          CallExpr* distCall = new CallExpr("chpl__buildDistValue", tmp);
-          init->replace(distCall);
-          resolveCall(distCall);
-          resolveFns(distCall->isResolved());
-        } else if (type->symbol->hasFlag(FLAG_EXTERN)) {
-          // We don't expect initialization code for an externally defined type,
-          // so remove the flag which tells checkReturnPaths() to expect it.
-          FnSymbol* fn = toFnSymbol(init->parentSymbol);
-          if (fn)
-            fn->removeFlag(FLAG_SPECIFIED_RETURN_TYPE);
+
+    if (!init->parentSymbol)
+      continue;
+
+    Type* type = init->get(1)->typeInfo();
+    if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))
+      continue;
+
+    if (type->symbol->hasFlag(FLAG_REF))
+      type = type->getValType();
+
+    if (type->defaultValue)
+      INT_FATAL(init, "PRIM_INIT should have been replaced already");
+
+    SET_LINENO(init);
+    if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+      // why??  --sjd
+      init->replace(init->get(1)->remove());
+    } else if (type->symbol->hasFlag(FLAG_DISTRIBUTION)) {
+      Symbol* tmp = newTemp("_distribution_tmp_");
+      init->getStmtExpr()->insertBefore(new DefExpr(tmp));
+      CallExpr* classCall = new CallExpr(type->getField("_valueType")->type->initializer);
+      CallExpr* move = new CallExpr(PRIM_MOVE, tmp, classCall);
+      init->getStmtExpr()->insertBefore(move);
+      resolveCall(classCall);
+      resolveFns(classCall->isResolved());
+      resolveCall(move);
+      CallExpr* distCall = new CallExpr("chpl__buildDistValue", tmp);
+      init->replace(distCall);
+      resolveCall(distCall);
+      resolveFns(distCall->isResolved());
+    } else if (type->symbol->hasFlag(FLAG_EXTERN)) {
+      // We don't expect initialization code for an externally defined type,
+      // so remove the flag which tells checkReturnPaths() to expect it.
+      FnSymbol* fn = toFnSymbol(init->parentSymbol);
+      if (fn)
+        fn->removeFlag(FLAG_SPECIFIED_RETURN_TYPE);
 //          init->replace(init->get(1)->remove());
-          init->parentExpr->remove();
-        } else {
-          INT_ASSERT(type->initializer);
-          CallExpr* call = new CallExpr(type->initializer);
-          init->replace(call);
-          resolveCall(call);
-          if (call->isResolved())
-            resolveFns(call->isResolved());
-        }
-      }
+      init->parentExpr->remove();
+    } else {
+      INT_ASSERT(type->initializer);
+      CallExpr* call = new CallExpr(type->initializer);
+      init->replace(call);
+      resolveCall(call);
+      if (call->isResolved())
+        resolveFns(call->isResolved());
     }
   }
 }

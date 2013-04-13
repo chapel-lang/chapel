@@ -291,7 +291,9 @@ isFastPrimitive(CallExpr *call) {
   case PRIM_EXECUTE_TASKS_IN_LIST:
   case PRIM_FREE_TASK_LIST:
   case PRIM_CHPL_ALLOC:
+  case PRIM_MALLOC:
   case PRIM_CHPL_FREE:
+  case PRIM_FREE:
   case PRIM_ARRAY_ALLOC:
   case PRIM_ARRAY_FREE:
   case PRIM_ARRAY_FREE_ELTS:

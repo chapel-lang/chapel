@@ -618,13 +618,6 @@ rebuildIterator(IteratorInfo* ii,
                 SymbolMap& local2field,
                 Vec<Symbol*>& locals) {
 
-  if (ii->iclass->dispatchParents.n == 0) {
-    // Insert this iterator class into the iterator class hierarchy at the top level
-    // (just below 'object').
-    ii->iclass->dispatchParents.add(dtObject);
-    dtObject->dispatchChildren.add(ii->iclass);
-  }
-
   // Remove the original iterator function.
   FnSymbol* fn = ii->iterator;
   for_alist(expr, fn->body->body)
@@ -697,12 +690,6 @@ static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
                                       SymbolMap& local2field, SymbolMap& local2rfield)
 {
   IteratorInfo* ii = fn->iteratorInfo;
-
-  // The iterator class derives from dtObject.
-  // This gives it a cid, so it can have polymorphic behavior.
-  Symbol* super = new VarSymbol("super", dtObject);
-  super->addFlag(FLAG_SUPER_CLASS);
-  ii->iclass->fields.insertAtTail(new DefExpr(super));
 
   int i = 0;    // This numbers the fields.
   forv_Vec(Symbol, local, locals) {

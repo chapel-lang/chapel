@@ -5,17 +5,29 @@
          prior to merging the hierarchical_locales branch back to trunk
 
 
-o Get rid of calls to PRIM_CHPL_ALLOC in generated code
+NEW/CHANGED:
 
+o Replace all calls to PRIM_CHPL_ALLOC with chpl_here_alloc.
+  > Fix deallocation-before-breakLabel (memory leak) bug.
+   
 o Whether to interpose an alloc(loc, nbytes, md) layer between chpl_here_alloc()
   and locale.alloc()
   i The intent is to avoid dynamic dispatch through "here"
     i Works only if binding of code to allocators can be made at compile time
 
+o Fix deallocation-before-breakLabel bug, so we can use LAMM to allocate
+  iterator state data.
+
+o Ensure that all important cases are covered by chpl_maybeAutoDestroyed().
+
 * Whether to pass the destination locale to chpl_here_alloc() [no]
   i Not necessary using the "proxy" model
 
 
+RESOLVED/UNCHANGED:
 
 
-Key:	o -- open	- -- in progress	! -- blocked	* -- done	i -- information
+
+
+Key:	o -- open		- -- in progress	* -- done	a -- abandoned
+		! -- blocked	> -- dependency		i -- information

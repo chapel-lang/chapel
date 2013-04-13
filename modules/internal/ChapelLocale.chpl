@@ -119,6 +119,14 @@ module ChapelLocale {
     // They should be overridden in concrete locale classes as necessary.
     proc taskInit() : void {}
     proc taskExit() : void {}
+
+    proc alloc(nbytes:int, md) {
+      return __primitive("malloc", nbytes, md);
+    }
+
+    proc free(x:object) {
+      __primitive("free", x);
+    }
     //------------------------------------------------------------------------}
   }
 
@@ -141,6 +149,19 @@ module ChapelLocale {
   // Its type should probably be renamed dummyLocale or something representative.
   // The dummy locale provides system-default tasking and memory management.
   __primitive("_task_set_here", new locale());
+
+  // Here be dragons: If the return type is specified, then normalize.cpp inserts
+  // an initializer for the return value which calls its construct, which calls
+  // chpl_here_alloc ad infinitum.  But if the return type is left off, it works!!!
+  proc chpl_here_alloc(x, md:int(16)) {
+    var nbytes = __primitive("sizeof", x);
+    var mem = here.alloc(nbytes, md);
+    return __primitive("cast", x.type, mem);
+  }
+
+  proc chpl_here_free(x) {
+    here.free(x);
+  }
 
   proc chpl_getPrivatizedCopy(type objectType, objectPid:int): objectType
     return __primitive("chpl_getPrivatizedClass", nil:objectType, objectPid);

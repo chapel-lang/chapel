@@ -27,7 +27,6 @@ module ChapelSyncvar {
 
   pragma "sync"
     pragma "no default functions"
-    pragma "no object"
     class _syncvar {
       type base_type;
       var  value: base_type;       // actual data - may need to be declared specially on some targets!
@@ -179,7 +178,6 @@ module ChapelSyncvar {
   pragma "sync"
     pragma "single"
     pragma "no default functions"
-    pragma "no object"
     class _singlevar {
       type base_type;
       var  value: base_type;     // actual data - may need to be declared specially on some targets!
@@ -288,6 +286,22 @@ module ChapelSyncvar {
 
   pragma "dont disable remote value forwarding"
   inline proc chpl__autoCopy(x: single) return x;
+
+  // These permit chpl_here_free to be called with sync and single objects.
+  inline proc _cast(type t, x: sync) where t == object
+    return __primitive("cast", t, x);
+
+  inline proc _cast(type t, x: single) where t == object
+    return __primitive("cast", t, x);
+
+  // Because "no object" was removed from _syncvar and _singlevar, it is
+  // now possible to cast _syncvar to object.  But this caused resolution to fail
+  // because chpl__maybeAutoDestroyed(sync(int)) resolving to
+  // chpl_maybeAutoDestroyed(object) caused the visible function set for
+  // chpl_maybeAutoDestroyed(int) to shrink to chpl_maybeAutoDestroyed(object).
+  // This is a workaround until that quirk in resolution can be resolved.
+  inline proc chpl__maybeAutoDestroyed(x: _syncvar) param return false;
+  inline proc chpl__maybeAutoDestroyed(x: _singlevar) param return false;
 
   inline proc chpl__autoDestroy(x: _syncvar) {
     delete x;

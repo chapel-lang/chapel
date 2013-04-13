@@ -20,11 +20,11 @@
 //
 static void build_type_constructor(ClassType* ct);
 static void build_constructor(ClassType* ct);
-static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr);
-static void resolveModuleCall(CallExpr* call);
+static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
+                                     Vec<UnresolvedSymExpr*>& skipSet);
+static void resolveModuleCall(CallExpr* call,
+                              Vec<UnresolvedSymExpr*>& skipSet);
 
-
-static Vec<UnresolvedSymExpr*> skipSet;
 
 
 //
@@ -663,7 +663,7 @@ static void build_constructor(ClassType* ct) {
   if (ct->symbol->hasFlag(FLAG_REF) ||
       isSyncType(ct)) {
     // For ref, sync and single classes, just allocate space.
-    allocCall = new CallExpr(PRIM_CHPL_ALLOC, fn->_this,
+    allocCall = new CallExpr("chpl_here_alloc", fn->_this,
                          newMemDesc(ct->symbol->name));
     fn->insertAtTail(new CallExpr(PRIM_MOVE, fn->_this, allocCall));
   } else if (!ct->symbol->hasFlag(FLAG_TUPLE)) {
@@ -941,6 +941,27 @@ process_import_expr(CallExpr* call) {
   call->getStmtExpr()->remove();
 }
 
+void add_root_type(ClassType* ct)
+{
+  // make root records inherit from value
+  // make root classes inherit from object
+  if (ct->inherits.length == 0 && !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
+    SET_LINENO(ct);
+    if (isRecord(ct)) {
+      ct->dispatchParents.add(dtValue);
+      // Assume that this addition is unique; report if not.
+      INT_ASSERT(dtValue->dispatchChildren.add_exclusive(ct));
+    } else if (isClass(ct)) {
+      ct->dispatchParents.add(dtObject);
+      // Assume that this addition is unique; report if not.
+      INT_ASSERT(dtObject->dispatchChildren.add_exclusive(ct));
+      VarSymbol* super = new VarSymbol("super", dtObject);
+      super->addFlag(FLAG_SUPER_CLASS);
+      ct->fields.insertAtHead(new DefExpr(super));
+    }
+  }
+}
+
 //
 // Compute dispatchParents and dispatchChildren vectors; add base
 // class fields to subclasses; identify cyclic or illegal class or
@@ -961,21 +982,7 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
     return;
   globalSeen.set_add(ct);
 
-  // make root records inherit from value
-  // make root classes inherit from object
-  if (ct->inherits.length == 0 && !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
-    if (isRecord(ct)) {
-      ct->dispatchParents.add(dtValue);
-      dtValue->dispatchChildren.add(ct);
-    } else if (isClass(ct)) {
-      SET_LINENO(ct);
-      ct->dispatchParents.add(dtObject);
-      dtObject->dispatchChildren.add(ct);
-      VarSymbol* super = new VarSymbol("super", dtObject);
-      super->addFlag(FLAG_SUPER_CLASS);
-      ct->fields.insertAtHead(new DefExpr(super));
-    }
-  }
+  add_root_type(ct);
 
   // Walk the base class list, and add parents into the class hierarchy.
   for_alist(expr, ct->inherits) {
@@ -1002,7 +1009,7 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
     localSeenPtr->set_add(ct);
     add_class_to_hierarchy(pt, localSeenPtr);
     ct->dispatchParents.add(pt);
-    pt->dispatchChildren.add(ct);
+    INT_ASSERT(pt->dispatchChildren.add_exclusive(ct));
     expr->remove();
     if (isClass(ct)) {
       SET_LINENO(ct);
@@ -1198,7 +1205,7 @@ void scopeResolve(void) {
   resolveGotoLabels();
 
 
-  skipSet.clear();
+  Vec<UnresolvedSymExpr*> skipSet;
 
   //
   // Translate M.x where M is a ModuleSymbol into just x where x is
@@ -1209,12 +1216,12 @@ void scopeResolve(void) {
   int max_resolved = 0;
 
   forv_Vec(UnresolvedSymExpr, unresolvedSymExpr, gUnresolvedSymExprs) {
-    resolveUnresolvedSymExpr(unresolvedSymExpr);
+    resolveUnresolvedSymExpr(unresolvedSymExpr, skipSet);
     max_resolved++;
   }
 
   forv_Vec(CallExpr, call, gCallExprs) {
-    resolveModuleCall(call);
+    resolveModuleCall(call, skipSet);
   }
 
   int i = 0;
@@ -1232,7 +1239,7 @@ void scopeResolve(void) {
   forv_Vec(UnresolvedSymExpr, unresolvedSymExpr, gUnresolvedSymExprs) {
     // Only try resolving symbols that are new after last attempt.
     if( i >= max_resolved ) {
-      resolveUnresolvedSymExpr(unresolvedSymExpr);
+      resolveUnresolvedSymExpr(unresolvedSymExpr, skipSet);
     }
     i++;
   }
@@ -1251,7 +1258,8 @@ void scopeResolve(void) {
 }
 
 static
-void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr) {
+void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
+                              Vec<UnresolvedSymExpr*>& skipSet) {
   {
     if (skipSet.set_in(unresolvedSymExpr))
       return;
@@ -1398,13 +1406,13 @@ void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr) {
 #ifdef HAVE_LLVM
     if (!sym && externC && tryCResolve(unresolvedSymExpr->getModule(), name)) {
       //try resolution again since the symbol should exist now
-      resolveUnresolvedSymExpr(unresolvedSymExpr);
+      resolveUnresolvedSymExpr(unresolvedSymExpr, skipSet);
     }
 #endif
   }
 }
 
-static void resolveModuleCall(CallExpr* call) {
+static void resolveModuleCall(CallExpr* call, Vec<UnresolvedSymExpr*>& skipSet) {
   {
     if (call->isNamed(".")) {
       if (SymExpr* se = toSymExpr(call->get(1))) {
@@ -1455,9 +1463,9 @@ static void resolveModuleCall(CallExpr* call) {
             call->replace(new SymExpr(sym));
 #ifdef HAVE_LLVM
           } else if (!sym && externC && tryCResolve(call->getModule(),mbr_name)) {
-              //Try to resolve again now that the symbol should
-              //  be in the table
-              resolveModuleCall(call);
+            // Try to resolve again now that the symbol should
+            // be in the table
+            resolveModuleCall(call, skipSet);
 #endif
           } else {
             USR_FATAL_CONT(call, "Symbol '%s' undeclared in module '%s'",

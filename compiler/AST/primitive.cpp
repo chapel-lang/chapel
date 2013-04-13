@@ -457,8 +457,15 @@ initPrimitive() {
   prim_def(PRIM_GET_SERIAL, "task_get_serial", returnInfoBool);
   prim_def(PRIM_SET_SERIAL, "task_set_serial", returnInfoVoid, true);
 
+  // These are used for task-aware allocation.
+  prim_def(PRIM_SIZEOF, "sizeof", returnInfoDefaultInt);
+  prim_def(PRIM_MALLOC, "malloc", returnInfoChplAlloc, true, true);
+  prim_def(PRIM_FREE, "free", returnInfoVoid, true, true);
+
+  // These are satisfied directly by the runtime.
   prim_def(PRIM_CHPL_ALLOC, "chpl_mem_alloc", returnInfoChplAlloc, true, true);
   prim_def(PRIM_CHPL_FREE, "chpl_mem_free", returnInfoVoid, true, true);
+
   prim_def(PRIM_INIT_FIELDS, "chpl_init_record", returnInfoVoid, true);
   prim_def(PRIM_PTR_EQUAL, "ptr_eq", returnInfoBool);
   prim_def(PRIM_PTR_NOTEQUAL, "ptr_neq", returnInfoBool);

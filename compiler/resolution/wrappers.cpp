@@ -482,7 +482,20 @@ buildCoercionWrapper(FnSymbol* fn,
         // apply readFF or readFE to single or sync actual unless this
         // is a member access of the sync or single actual
         //
-        if (fn->numFormals() >= 2 &&
+        if (fn->numFormals() == 3 &&
+            !strcmp(fn->name, "free"))
+          // Special case: Don't do anything special with a sync var when deleting it.
+          call->insertAtTail(new CallExpr("_cast", formal->type->symbol, wrapperFormal));
+        // One could argue that all of the following are in fact the special cases.
+        // Another approach would be to push this complexity out of the resolution step 
+        // (isn't it complex enough already?), by running sync variable accesses through
+        // a normalization: Assuming that sync variables have accessors, this would be a
+        // matter of applying the accessor function in strategic places so that
+        // var x:sync(int); x = 3; would be internally translated to 
+        // var x:sync(int); x.value = 3;.  x.value has the same type as the base
+        // of the syncvar, so types work out, resolution is happy, and all of this
+        // complexity can be removed.
+        else if (fn->numFormals() >= 2 &&
             fn->getFormal(1)->type == dtMethodToken &&
             formal == fn->_this)
           call->insertAtTail(new CallExpr("value", gMethodToken, wrapperFormal));

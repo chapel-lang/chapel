@@ -96,6 +96,10 @@ enum PrimitiveTag {
   PRIM_GET_SERIAL,              // get serial state
   PRIM_SET_SERIAL,              // set serial state to true or false
 
+  PRIM_SIZEOF,
+  PRIM_MALLOC,
+  PRIM_FREE,
+
   PRIM_CHPL_ALLOC,
   PRIM_CHPL_FREE,               // only for variables on heap?
   PRIM_INIT_FIELDS,             // initialize fields of a temporary record
