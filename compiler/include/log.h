@@ -43,12 +43,15 @@ class ArgumentState;
 
 // Used in passlist.h to match up pass designator letters (used on the command line
 // with these slightly more mnemonic #defines.
+
+// These entries should be kept in the same order as the entries in passlist.h.
 #define LOG_parse               'p'
 #define LOG_checkParsed         NUL
-#define LOG_docs                NUL
+#define LOG_readExternC         'c'
 #define LOG_cleanup             'u'
 #define LOG_scopeResolve        'S'
 #define LOG_flattenClasses      'b'
+#define LOG_docs                NUL
 #define LOG_normalize           'N'
 #define LOG_checkNormalized     NUL
 #define LOG_buildDefaultFunctions 'D'
@@ -80,7 +83,6 @@ class ArgumentState;
 #define LOG_repositionDefExpressions 'f'
 #define LOG_codegen             'E'
 #define LOG_makeBinary          NUL
-#define LOG_readExternC         'c'
 #define LOG_ANY -1
 
 void init_logs();
