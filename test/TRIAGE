@@ -41,6 +41,11 @@ timeouts this week:
   linux64.gnu.none.fifo.pthreads.tcmalloc: 4/9/13
   [Error: Timed out compilation for studies/hpcc/RA/bradc/ra-iter] 
 
+  cray-xt.cray-prgenv-pgi.none.fifo.pthreads--linux64.gnu: 4/13/13
+  [Error matching program output for parallel/cobegin/stonea/reports (execopts: 3)] 
+  [Error matching program output for parallel/cobegin/stonea/reports (execopts: 4)] 
+
+
 cygwin errors (don't have access to the log file, so can't diagnose):
    4/14/13:
    [Error matching program output for release/examples/programs/jacobi] 
