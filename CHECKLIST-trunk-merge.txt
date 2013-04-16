@@ -7,26 +7,39 @@
 
 NEW/CHANGED:
 
-o Replace all calls to PRIM_CHPL_ALLOC with chpl_here_alloc.
-  > Fix deallocation-before-breakLabel (memory leak) bug.
-   
-o Whether to interpose an alloc(loc, nbytes, md) layer between chpl_here_alloc()
-  and locale.alloc()
+o Replace all calls to PRIM_CHPL_ALLOC with chpl_here_alloc. [hilde]
+  - Fix deallocation-before-breakLabel (memory leak) bug. (moved to trunk)
+    * OK to leak memory pending fix on trunk
+    o Create a future against trunk to demo the bug.
+
+- Whether to interpose an alloc(loc, nbytes, md) layer between chpl_here_alloc()
+  and locale.alloc() [yes]
   i The intent is to avoid dynamic dispatch through "here"
     i Works only if binding of code to allocators can be made at compile time
+  o Have chpl_here_alloc() call an architecturally-defined alloc() routine after
+    the architecture is initialized.
+  o Implement alloc() as part of the DefaultArchitecture (part of architecture interface)
+    o Allow that version to be controlled by a config param, to allow SxS
+      testing of "flat" versus dynamically-dispatched allocations.
+  o Use the config param to characterize the impact of flat MM vs. LAMM.
 
-o Fix deallocation-before-breakLabel bug, so we can use LAMM to allocate
-  iterator state data.
+o Characterize language impacts of allowing sync vars to be dispatched as objects.
+
+! Get allocCleanup patch reviewed and checked into trunk. [vass]
+
+o Create a future for dispatch of sync as object. [bradc]
+
+o Move mem tracking into chpl_here_alloc.
+  o Preserve filename/lineno information in the memory descriptor (expanded from
+    an int(16) into an opaque structure: md + filename + lineno).
+
+
+RESOLVED/UNCHANGED:
 
 o Ensure that all important cases are covered by chpl_maybeAutoDestroyed().
 
 * Whether to pass the destination locale to chpl_here_alloc() [no]
   i Not necessary using the "proxy" model
-
-
-RESOLVED/UNCHANGED:
-
-
 
 
 Key:	o -- open		- -- in progress	* -- done	a -- abandoned
