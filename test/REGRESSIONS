@@ -361,12 +361,8 @@ compilation timeouts (10/19/11)
 
 ==============================================================
 pgi-specific regressions (in addition to cray-xt errors above) 
-(Checked for accuracy 2/26/2013)
+(Checked for accuracy 4/16/2013)
 ==============================================================
-
-binary output mismatch
-----------------------
-[Error matching program output for io/ferguson/writefbinary]
 
 illegal type conversion/too many initializers/error limit exceeded
  This applies to all no-local tests.  Possibly related to 
@@ -397,19 +393,6 @@ illegal type conversion/too many initializers/error limit exceeded
 Some sort of gdb issue with 'bool' not being found in symtab
 ------------------------------------------------------------
 [Error matching compiler output for compflags/bradc/gdbddash/declint]
-
-Some sort of internal error MIS0275
------------------------------------
-[Error matching compiler output for compflags/bradc/html/testit (compopts: 1)]
-
-integral value trauncated in wctype.h
--------------------------------------
-[Error matching compiler output for exercises/EstimatePi7]
-[Error matching compiler output for functions/bradc/typeFns/misresolve]
-[Error matching compiler output for link/sungeun/static_dynamic (compopts: 1)]
-[Error matching compiler output for link/sungeun/static_dynamic (compopts: 2)]
-[Error matching compiler output for link/sungeun/static_dynamic (compopts: 3)]
-[Error matching compiler output for parsing/sungeun/empty_statement]
 
 signal 11
 ---------
@@ -447,18 +430,13 @@ signal 11
 [Error matching program output for studies/shootout/thread-ring/thread-ring (compopts: 2, execopts: 1)]
 [Error matching program output for studies/shootout/thread-ring/thread-ring (compopts: 2, execopts: 2)]
 
+identifier names too long
+-------------------------
+[Error matching program output for distributions/dm/t5a]
+
 gdb prints paths differently
 ----------------------------
 [Error matching program output for execflags/bradc/gdbddash/declint2]
-
-missing newline at end of file
-------------------------------
-[Error matching program output for io/ferguson/writeint]
-[Error matching program output for io/ferguson/writestring]
-[Error matching program output for trivial/bradc/declprintint]
-[Error matching program output for types/file/fwriteIntFile]
-[Error matching program output for types/file/fwriteIntStdout]
-[Error matching program output for types/file/fwriteMultipleInts]
 
 Numerical accuracy issues (started 05/24/08)
 --------------------------------------------
@@ -469,22 +447,10 @@ Numerical accuracy issues (started 05/24/08)
 [Error matching program output for studies/madness/dinan/mad_chapel/test_diff]
 [Error matching program output for studies/madness/dinan/mad_chapel/test_likepy]
 
-output mismatch
----------------
-[Error matching program output for studies/shootout/mandelbrot/ferguson/mandelbrot2-opt]
-[Error matching program output for studies/shootout/mandelbrot/ferguson/mandelbrot-opt2]
-[Error matching program output for studies/shootout/mandelbrot/mandelbrot-complex]
-[Error matching program output for studies/shootout/mandelbrot/mandelbrot-dist]
-[Error matching program output for studies/shootout/mandelbrot/mandelbrot-fancy]
-
 negative floating point 0.0 not supported
 -----------------------------------------
 [Error matching program output for types/complex/bradc/negateimaginary3] 
-[Error matching program output for types/complex/bradc/negativeimaginaryliteral] 
-
-integral value truncated in chpl__header.h
-------------------------------------------
-[Error matching program output for types/enum/ferguson/enum_mintype_test]
+[Error matching program output for types/complex/bradc/negativeimaginaryliteral]
 
 alignment error in output
 -------------------------
