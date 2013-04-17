@@ -1531,6 +1531,16 @@ static bool considerParamMatches(Type* actualtype,
   if (actualtype == arg1type && actualtype != arg2type) {
     return true;
   }
+  // If we don't have an exact match in the previous line, let's see if
+  // we have a bool(w1) passed to bool(w2) or non-bool case;  This is
+  // based on the enum case developed in r20208
+  if (is_bool_type(actualtype) && is_bool_type(arg1type) && !is_bool_type(arg2type)) {
+    return true;
+  }
+  // Otherwise, have bool cast to default-sized integer over a smaller size
+  if (is_bool_type(actualtype) && actualtype != arg1type && actualtype != arg2type) {
+    return considerParamMatches(dtInt[INT_SIZE_DEFAULT], arg1type, arg2type);
+  }
   if (is_enum_type(actualtype) && actualtype != arg1type && actualtype != arg2type) {
     return considerParamMatches(dtInt[INT_SIZE_DEFAULT], arg1type, arg2type);
   }
