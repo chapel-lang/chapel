@@ -887,6 +887,21 @@ for testname in testsrc:
             printTestVariation(compoptsnum);
             sys.stdout.write(']\n')
 
+            if (result != 0 and futuretest != ''):
+                badfile=execname+'.bad'
+                if os.access(badfile, os.R_OK):
+                    badresult = DiffFiles(badfile, complog)
+                    if badresult==0:
+                        os.unlink(complog);
+                        sys.stdout.write('[Clean match against .bad file for %s/%s'%
+                                         (localdir, execname))
+                    else:
+                        # bad file doesn't match, which is bad
+                        sys.stdout.write('[Error matching .bad file for %s/%s'%
+                                         (localdir, execname))
+                        printTestVariation(compoptsnum);
+                        sys.stdout.write(']\n');
+
             cleanup(execname)
             continue # on to next compopts
         else:
@@ -1141,6 +1156,22 @@ for testname in testsrc:
                     if result!=0:
                         printTestVariation(compoptsnum, execoptsnum);
                     sys.stdout.write(']\n')
+
+                    if (result != 0 and futuretest != ''):
+                        badfile=execname+'.bad'
+                        if os.access(badfile, os.R_OK):
+                            badresult = DiffFiles(badfile, execlog)
+                            if badresult==0:
+                                os.unlink(execlog);
+                                sys.stdout.write('[Clean match against .bad file for %s/%s'%
+                                                 (localdir, execname))
+                            else:
+                                # bad file doesn't match, which is bad
+                                sys.stdout.write('[Error matching .bad file for %s/%s'%
+                                                 (localdir, execname))
+                                printTestVariation(compoptsnum);
+                                sys.stdout.write(']\n');
+
 
             if perftest:
                 if not os.path.isdir(perfdir) and not os.path.isfile(perfdir):
