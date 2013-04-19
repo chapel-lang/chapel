@@ -1,0 +1,2 @@
+smallIntParamCoerceMsg.chpl:7: error: unresolved call 'foo(1)'
+smallIntParamCoerceMsg.chpl:1: note: candidates are: foo(x: int(16))
