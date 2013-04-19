@@ -5292,15 +5292,30 @@ static void resolveRecordInitializers() {
   // resolve PRIM_INITs for records
   //
   forv_Vec(CallExpr, init, inits) {
-    if (init->parentSymbol) {
+
+    // Ignore if dead.
+    if (!init->parentSymbol)
+      continue;
+
+    Type* type = init->get(1)->typeInfo();
+
+    // Don't resolve initializers for runtime types.
+    // I think this should be dead code because runtime type expressions
+    // are all resolved during resolution (and this function is called
+    // after that).
+    if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))
+      continue;
+
+    // Extract the value type.
+    if (type->symbol->hasFlag(FLAG_REF))
+      type = type->getValType();
+
+    // This could be an assert...
+    if (type->defaultValue)
+      INT_FATAL(init, "PRIM_INIT should have been replaced already");
+
       SET_LINENO(init);
-      Type* type = init->get(1)->typeInfo();
-      if (!type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-        if (type->symbol->hasFlag(FLAG_REF))
-          type = type->getValType();
-        if (type->defaultValue) {
-          INT_FATAL(init, "PRIM_INIT should have been replaced already");
-        } else if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+        if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
           // why??  --sjd
           init->replace(init->get(1)->remove());
         } else if (type->symbol->hasFlag(FLAG_DISTRIBUTION)) {
@@ -5332,8 +5347,6 @@ static void resolveRecordInitializers() {
           if (call->isResolved())
             resolveFns(call->isResolved());
         }
-      }
-    }
   }
 }
 

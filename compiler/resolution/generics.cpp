@@ -508,7 +508,8 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
     newType->substitutions.copy(fn->retType->substitutions);
     newType->dispatchParents.copy(fn->retType->dispatchParents);
     forv_Vec(Type, t, fn->retType->dispatchParents) {
-      t->dispatchChildren.add(newType);
+      bool inserted = t->dispatchChildren.add_exclusive(newType);
+      INT_ASSERT(inserted);
     }
     if (newType->dispatchChildren.n)
       INT_FATAL(fn, "generic type has subtypes");
