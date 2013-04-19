@@ -1,0 +1,13 @@
+writeln(typeToString((1:int(8).. by 10 align 3:int(16)).type));
+writeln(typeToString((1:int(8).. by 10 align 3:int(32)).type));
+writeln(typeToString((1:int(8).. by 10 align 3:uint(8)).type));
+writeln(typeToString((1:int(8).. by 10 align 3:uint(16)).type));
+writeln(typeToString((1:int(16).. by 10 align 3:int(32)).type));
+writeln(typeToString((1:int(16).. by 10 align 3:uint(16)).type));
+writeln(typeToString((1:uint(8).. by 10 align 3:int(8)).type));
+writeln(typeToString((1:uint(8).. by 10 align 3:int(16)).type));
+writeln(typeToString((1:uint(8).. by 10 align 3:int(32)).type));
+writeln(typeToString((1:uint(8).. by 10 align 3:uint(16)).type));
+writeln(typeToString((1:uint(16).. by 10 align 3:int(8)).type));
+writeln(typeToString((1:uint(16).. by 10 align 3:int(16)).type));
+writeln(typeToString((1:uint(16).. by 10 align 3:int(32)).type));

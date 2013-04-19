@@ -1,0 +1,12 @@
+writeln(typeToString((1:int(8).. by 10:int(16)).type));
+writeln(typeToString((1:int(8).. by 10:int(32)).type));
+writeln(typeToString((1:int(8).. by 10:uint(16)).type));
+writeln(typeToString((1:int(8).. by 10:uint(32)).type));
+writeln(typeToString((1:int(16).. by 10:int(32)).type));
+writeln(typeToString((1:int(16).. by 10:uint(32)).type));
+writeln(typeToString((1:uint(8).. by 10:int(16)).type));
+writeln(typeToString((1:uint(8).. by 10:int(32)).type));
+writeln(typeToString((1:uint(8).. by 10:uint(16)).type));
+writeln(typeToString((1:uint(8).. by 10:uint(32)).type));
+writeln(typeToString((1:uint(16).. by 10:int(32)).type));
+writeln(typeToString((1:uint(16).. by 10:uint(32)).type));
