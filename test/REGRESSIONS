@@ -364,32 +364,6 @@ pgi-specific regressions (in addition to cray-xt errors above)
 (Checked for accuracy 4/16/2013)
 ==============================================================
 
-illegal type conversion/too many initializers/error limit exceeded
- This applies to all no-local tests.  Possibly related to 
- the use of C99 anonymous struct initializer syntax in codegen
- (since accepting the LLVM backend support).
-------------------------------------------------------------------
-[Error matching compiler output for arrays/deitz/jacobi5-no-local (compopts: 1)]
-[Error matching compiler output for arrays/deitz/jacobi-no-local (compopts: 1)]
-[Error matching compiler output for classes/diten/dynamic_cast_instantiated_generic (compopts: 1)]
-[Error matching compiler output for extern/bradc/defaultArgsNoLocal (compopts: 1)]
-[Error matching compiler output for functions/iterators/bradc/iterWithOnInGenericConstr (compopts: 1)]
-[Error matching compiler output for functions/iterators/bradc/leadFollow/localfollow2 (compopts: 1)]
-[Error matching compiler output for functions/iterators/bradc/leadFollow/localfollow (compopts: 1)]
-[Error matching compiler output for memory/figueroa/LeakedMemory5 (compopts: 1)]
-[Error matching compiler output for multilocale/diten/nolocalArgDefaultGlobal/defaultValueGlobalTuple]
-[Error matching compiler output for multilocale/diten/nolocalArgDefaultGlobal/fieldDefaultGlobalArray]
-[Error matching compiler output for multilocale/diten/nolocalArgDefaultGlobal/fieldDefaultGlobalClassMember]
-[Error matching compiler output for multilocale/diten/nolocalArgDefaultGlobal/fieldDefaultGlobalRecordMember]
-[Error matching compiler output for multilocale/diten/nolocalArgDefaultGlobal/fieldDefaultGlobalTuple]
-[Error matching compiler output for multilocale/diten/nolocalArgDefaultGlobal/recordFieldDefaultGlobalTuple]
-[Error matching compiler output for multilocale/diten/nolocalArgDefaultGlobal/simpleDefaultValueGlobal]
-[Error matching compiler output for studies/hpcc/RA/bradc/parallel/ra-dist (compopts: 1)]
-[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-fragmented (compopts: 1)]
-[Error matching compiler output for trivial/bradc/wideref2string (compopts: 1)]
-[Error matching compiler output for trivial/diten/classRef2string-nolocal (compopts: 1)]
-[Error matching compiler output for users/ferguson/extern_string_test (compopts: 1)]
-
 Some sort of gdb issue with 'bool' not being found in symtab
 ------------------------------------------------------------
 [Error matching compiler output for compflags/bradc/gdbddash/declint]
