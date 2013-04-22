@@ -355,14 +355,20 @@ compilation timeouts (10/19/11)
 [Error: Timed out compilation for optimizations/bulkcomm/alberto/perfTest (compopts: 1)]
 [Error: Timed out compilation for optimizations/bulkcomm/alberto/perfTest_v2 (compopts: 1)]
 [Error: Timed out compilation for sparse/parallel/sparse-iter-dom-arr-zipper]
-[Error: Timed out compilation for studies/ssca2/test-rmatalt/nondet
-(compopts: 1)]
 
 
 ==============================================================
 pgi-specific regressions (in addition to cray-xt errors above) 
 (Checked for accuracy 4/16/2013)
 ==============================================================
+
+building compiler with PGI fails
+--------------------------------
+The PGI compiler version was upated to 13.3.0 and now gets an internal
+error while compiling functionResolution.cpp.  Backing up to version
+12.9.0 fixes it. Backing the Chapel source down to revision 20834 also
+fixes it.  Turning optimization down to -O1 also fixes it.  Bugzilla
+bug 796017.
 
 Some sort of gdb issue with 'bool' not being found in symtab
 ------------------------------------------------------------
