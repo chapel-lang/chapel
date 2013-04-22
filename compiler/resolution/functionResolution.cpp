@@ -2657,15 +2657,15 @@ static void
 insertFormalTemps(FnSymbol* fn) {
   if (!strcmp(fn->name, "_init") ||
       !strcmp(fn->name, "_cast") ||
-      !strcmp(fn->name, "chpl__initCopy") ||
-      !strcmp(fn->name, "chpl__autoCopy") ||
+      fn->hasFlag(FLAG_AUTO_COPY_FN) ||
+      fn->hasFlag(FLAG_AUTO_DESTROY_FN) ||
+      fn->hasFlag(FLAG_INIT_COPY_FN) ||
       !strcmp(fn->name, "_getIterator") ||
       !strcmp(fn->name, "_getIteratorHelp") ||
       !strcmp(fn->name, "iteratorIndex") ||
       !strcmp(fn->name, "iteratorIndexHelp") ||
       !strcmp(fn->name, "=") ||
       !strcmp(fn->name, "_createFieldDefault") ||
-      !strcmp(fn->name, "chpl__autoDestroy") ||
       !strcmp(fn->name, "chpldev_refToString") ||
       fn->hasFlag(FLAG_ALLOW_REF) ||
       fn->hasFlag(FLAG_REF))
@@ -4002,20 +4002,40 @@ insertValueTemp(Expr* insertPoint, Expr* actual) {
 // returns resolved function if the function requires an implicit
 // destroy of its returned value (i.e. reference count)
 //
+// Currently, FLAG_DONOR_FN is only relevant when placed on
+// chpl__autoCopy().
+//
 FnSymbol*
 requiresImplicitDestroy(CallExpr* call) {
   if (FnSymbol* fn = call->isResolved()) {
     FnSymbol* parent = call->getFunction();
     INT_ASSERT(parent);
-    if (strcmp(parent->name, "chpl__autoCopy") &&
+
+    if (fn->retType->symbol->hasFlag(FLAG_REF) &&
+        isRefCountedType(fn->retType)) {
+      USR_WARN(fn->retType, "hi");
+    }
+
+
+    if (!parent->hasFlag(FLAG_DONOR_FN) &&
+        // No autocopy/destroy calls in a donor function (this might
+        // need to change when this flag is used more generally)).
+        // Currently, this assumes we have thoughtfully written
+        // chpl__autoCopy functions.
+
+        // Return type is a record (which includes array, record, and
+        // dist) or a ref counted type that is passed by reference
         (isRecord(fn->retType) ||
          (fn->retType->symbol->hasFlag(FLAG_REF) &&
           isRefCountedType(fn->retType->getValType()))) &&
+
+        // These are special functions where we don't want to destroy
+        // the result
         !fn->hasFlag(FLAG_NO_IMPLICIT_COPY) &&
         !fn->hasFlag(FLAG_ITERATOR_FN) &&
         !fn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) &&
-        strcmp(fn->name, "chpl__initCopy") &&
-        strcmp(fn->name, "chpl__autoCopy") &&
+        !fn->hasFlag(FLAG_DONOR_FN) &&
+        !fn->hasFlag(FLAG_INIT_COPY_FN) &&
         strcmp(fn->name, "=") &&
         !fn->hasFlag(FLAG_AUTO_II) &&
         !fn->hasFlag(FLAG_CONSTRUCTOR) &&

@@ -518,6 +518,7 @@ proc =(ref ret:regexp, x:regexp)
 }
 
 // TODO -- shouldn't have to write this this way!
+pragma "init copy fn"
 proc chpl__initCopy(x: regexp) {
   on x.home {
     qio_regexp_retain(x._regexp);

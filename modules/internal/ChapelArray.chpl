@@ -2164,11 +2164,13 @@ module ChapelArray {
               (..._toFastFollowerZip(x, leaderIndex, dim+1)));
   }
   
+  pragma "init copy fn"
   proc chpl__initCopy(a: _distribution) {
     pragma "no copy" var b = chpl__autoCopy(a.clone());
     return b;
   }
   
+  pragma "init copy fn"
   proc chpl__initCopy(a: domain) {
     var b: a.type;
     if isRectangularDom(a) && isRectangularDom(b) {
@@ -2186,12 +2188,14 @@ module ChapelArray {
     return b;
   }
   
+  pragma "init copy fn"
   proc chpl__initCopy(a: []) {
     var b : [a._dom] a.eltType;
     b = a;
     return b;
   }
   
+  pragma "init copy fn"
   proc chpl__initCopy(ir: _iteratorRecord) {
     iter _ir_copy_recursive(ir) {
       for e in ir do

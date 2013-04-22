@@ -935,6 +935,7 @@ module ChapelBase {
     return x;
   }
   
+  pragma "init copy fn"
   inline proc chpl__initCopy(a) {
     if a.type == string then
       return __primitive("string_copy", a);
@@ -942,52 +943,72 @@ module ChapelBase {
       return a;
   }
   
+  pragma "init copy fn"
   inline proc chpl__initCopy(type t) {
     compilerError("illegal assignment of type to value");
   }
   
   pragma "ref"
+  pragma "init copy fn"
   inline proc chpl__initCopy(r: _ref) return chpl__initCopy(__primitive("deref", r));
   
+  pragma "init copy fn"
   inline proc chpl__initCopy(x: _tuple) { 
     // body inserted during generic instantiation
   }
   
   pragma "dont disable remote value forwarding"
-  pragma "removable auto copy" proc chpl__autoCopy(x: _distribution) {
+  pragma "removable auto copy"
+  pragma "donor fn"
+  pragma "auto copy fn" proc chpl__autoCopy(x: _distribution) {
     if !noRefCount then
       if x._value then x._value._distCnt.add(1);
     return x;
   }
   
   pragma "dont disable remote value forwarding"
-  pragma "removable auto copy" proc chpl__autoCopy(x: domain) {
+  pragma "removable auto copy"
+  pragma "donor fn"
+  pragma "auto copy fn"  proc chpl__autoCopy(x: domain) {
     if !noRefCount then
       x._value._domCnt.add(1);
     return x;
   }
   
   pragma "dont disable remote value forwarding"
-  pragma "removable auto copy" proc chpl__autoCopy(x: []) {
+  pragma "removable auto copy"
+  pragma "donor fn"
+  pragma "auto copy fn" proc chpl__autoCopy(x: []) {
     if !noRefCount then
       x._value._arrCnt.add(1);
     return x;
   }
   
+
+  pragma "donor fn"
+  pragma "auto copy fn"
   inline proc chpl__autoCopy(x: _tuple) {
     // body inserted during generic instantiation
   }
   
+  pragma "donor fn"
+  pragma "auto copy fn"
   inline proc chpl__autoCopy(ir: _iteratorRecord) {
     // body modified during call destructors pass
     return ir;
   }
   
+  pragma "donor fn"
+  pragma "auto copy fn"
   inline proc chpl__autoCopy(x) return chpl__initCopy(x);
   
   pragma "ref" 
+  pragma "donor fn"
+  pragma "auto copy fn"
   inline proc chpl__autoCopy(r: _ref) var return r;
   
+  pragma "donor fn"
+  pragma "auto copy fn"
   inline proc chpl__autoCopy(type t) type return t;
   
   inline proc chpl__maybeAutoDestroyed(x) param
@@ -997,24 +1018,29 @@ module ChapelBase {
   inline proc chpl__maybeAutoDestroyed(x: enumerated) param return false;
   inline proc chpl__maybeAutoDestroyed(x: object) param return false;
   
-  inline proc chpl__autoDestroy(x: object) { }
-  inline proc chpl__autoDestroy(type t)  { }
+  pragma "auto destroy fn" inline proc chpl__autoDestroy(x: object) { }
+  pragma "auto destroy fn" inline proc chpl__autoDestroy(type t)  { }
+  pragma "auto destroy fn"
   inline proc chpl__autoDestroy(x: ?t) {
     __primitive("call destructor", x);
   }
+  pragma "auto destroy fn"
   inline proc chpl__autoDestroy(ir: _iteratorRecord) {
     // body inserted during call destructors pass
   }
   pragma "dont disable remote value forwarding"
-  pragma "removable auto destroy" proc chpl__autoDestroy(x: _distribution) {
+  pragma "removable auto destroy"
+  pragma "auto destroy fn" proc chpl__autoDestroy(x: _distribution) {
     __primitive("call destructor", x);
   }
   pragma "dont disable remote value forwarding"
-  pragma "removable auto destroy" proc chpl__autoDestroy(x: domain) {
+  pragma "removable auto destroy"
+  pragma "auto destroy fn" proc chpl__autoDestroy(x: domain) {
     __primitive("call destructor", x);
   }
   pragma "dont disable remote value forwarding"
-  pragma "removable auto destroy" proc chpl__autoDestroy(x: []) {
+  pragma "removable auto destroy"
+  pragma "auto destroy fn" proc chpl__autoDestroy(x: []) {
     __primitive("call destructor", x);
   }
   

@@ -614,11 +614,11 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
       fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE))
     instantiate_tuple_hash(newFn);
 
-  if (!strcmp(fn->name, "chpl__initCopy") &&
+  if (fn->hasFlag(FLAG_INIT_COPY_FN) &&
       fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE))
     instantiate_tuple_initCopy(newFn);
 
-  if (!strcmp(fn->name, "chpl__autoCopy") &&
+  if (fn->hasFlag(FLAG_AUTO_COPY_FN) &&
       fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE))
     instantiate_tuple_autoCopy(newFn);
 
