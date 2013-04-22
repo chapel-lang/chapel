@@ -7,10 +7,10 @@
 
 NEW/CHANGED:
 
-o Replace all calls to PRIM_CHPL_ALLOC with chpl_here_alloc. [hilde]
-  - Fix deallocation-before-breakLabel (memory leak) bug. (moved to trunk)
+- Replace all calls to PRIM_CHPL_ALLOC with chpl_here_alloc. [hilde]
+  d Fix deallocation-before-breakLabel (memory leak) bug. (moved to trunk)
     * OK to leak memory pending fix on trunk
-    o Create a future against trunk to demo the bug.
+    d Create a future against trunk to demo the bug.
 
 - Whether to interpose an alloc(loc, nbytes, md) layer between chpl_here_alloc()
   and locale.alloc() [yes]
@@ -23,24 +23,38 @@ o Replace all calls to PRIM_CHPL_ALLOC with chpl_here_alloc. [hilde]
       testing of "flat" versus dynamically-dispatched allocations.
   o Use the config param to characterize the impact of flat MM vs. LAMM.
 
-o Characterize language impacts of allowing sync vars to be dispatched as objects.
+* Characterize language impacts of allowing sync vars to be dispatched as objects.
+  i Greg says this is OK.
+  o Create a future for dispatch of sync as object. [bradc]
 
-! Get allocCleanup patch reviewed and checked into trunk. [vass]
+* Get allocCleanup patch reviewed and checked into trunk. [vass]
 
-o Create a future for dispatch of sync as object. [bradc]
+* Move mem tracking into chpl_here_alloc.
+  * Preserve filename/lineno information: md + filename + lineno.
+  * Preserve pre/post checks.
+  o Package pre/post checks in hook functions (restore control by CHPL_MEM_DEBUG &c).[gbt]
+  o Mem counts are different because we call string_copy when passing the
+    filename arguments into chpl_here_alloc and chpl_here_free now.
+    i We probably just want to disable the copy for cases in which the source
+      string is const.
 
-o Move mem tracking into chpl_here_alloc.
-  o Preserve filename/lineno information in the memory descriptor (expanded from
-    an int(16) into an opaque structure: md + filename + lineno).
+o Merge DefaultArchitecture, RootLocale out from trunk (to pick up Vass-inspired
+  changes).
+
+- Passes relevant regression tests
+  * Standard
+  * No-local
+  o Parallel
 
 
 RESOLVED/UNCHANGED:
 
-o Ensure that all important cases are covered by chpl_maybeAutoDestroyed().
+d Ensure that all important cases are covered by chpl_maybeAutoDestroyed().
 
 * Whether to pass the destination locale to chpl_here_alloc() [no]
   i Not necessary using the "proxy" model
 
 
-Key:	o -- open		- -- in progress	* -- done	a -- abandoned
-		! -- blocked	> -- dependency		i -- information
+Key:	o -- open		- -- in progress	* -- done		! -- blocked
+	> -- dependency		i -- information	d -- deferred   a -- abandoned
+
