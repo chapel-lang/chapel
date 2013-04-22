@@ -86,8 +86,18 @@ static void addPragmaFlags(Symbol* sym, Vec<const char*>* pragmas) {
     Flag flag = pragma2flag(str);
     if (flag == FLAG_UNKNOWN)
       USR_FATAL_CONT(sym, "unknown pragma: \"%s\"", str);
-    else
+    else {
       sym->addFlag(flag);
+      //
+      // Propagate export init flag to module's init function
+      //
+      if (flag == FLAG_EXPORT_INIT) {
+        ModuleSymbol* mod = toModuleSymbol(sym);
+        INT_ASSERT(mod);
+        INT_ASSERT(mod->initFn);
+        mod->initFn->addFlag(FLAG_EXPORT);
+      }
+    }
   }
 }
 
@@ -398,6 +408,11 @@ buildExternBlockStmt(const char* c_code) {
   return buildChapelStmt(new ExternBlockStmt(c_code));
 }
 
+//
+// TODO: This should probably be moved into its own post-parsing pass
+// if possible; in a quick check, it appears to be at least not
+// completely trivial.
+//
 void createInitFn(ModuleSymbol* mod) {
   SET_LINENO(mod);
 
@@ -407,6 +422,10 @@ void createInitFn(ModuleSymbol* mod) {
   mod->initFn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
   // All module initialization functions should be exported.
   // But that means we have to adopt some new naming conventions.
+  //
+  // BLC: Actually, I think we should only be exporting module
+  // initialization functions for modules that have exported symbols.
+  //
   // mod->initFn->addFlag(FLAG_EXPORT);
 
   //

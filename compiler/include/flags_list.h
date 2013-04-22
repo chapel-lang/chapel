@@ -46,6 +46,7 @@ symbolFlag( FLAG_DONOR_FN, ypr, "donor fn" , "function donates ownership of the 
 symbolFlag( FLAG_DONT_DISABLE_REMOTE_VALUE_FORWARDING , ypr, "dont disable remote value forwarding" , ncm )
 symbolFlag( FLAG_EXPAND_TUPLES_WITH_VALUES , ypr, "expand tuples with values" , ncm )
 symbolFlag( FLAG_EXPORT , ypr, "export" , ncm )
+symbolFlag( FLAG_EXPORT_INIT, ypr, "export init", "indicate that the module's initialization function should be exported" )
 symbolFlag( FLAG_EXPR_TEMP , npr, "expr temp" , "temporary that stores the result of an expression" )
 symbolFlag( FLAG_EXTERN , npr, "extern" , "extern variables, types, and functions" )
 symbolFlag( FLAG_FAST_ON , npr, "fast on" , "with FLAG_ON/FLAG_ON_BLOCK, \"on block\" , use fast spawning option (if available)" )

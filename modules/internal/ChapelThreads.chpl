@@ -13,14 +13,18 @@
 // threads to use.
 //
 pragma "no use ChapelStandard"
+pragma "export init"
 module ChapelThreads {
   
   use ChapelBase; // for uint().
   
   
+  pragma "export"
   config const numThreadsPerLocale = 0;
   
   extern proc chpl_maxThreads(): int(32);
+
+  pragma "export"
   const chpl__maxThreadsPerLocale = chpl_maxThreads();
   
   //
@@ -39,6 +43,7 @@ module ChapelThreads {
   //
   // the size of a call stack
   //
+  pragma "export"
   config const callStackSize: int = 0;
   
 }

@@ -541,7 +541,7 @@ static void zeroInitializeRecord(FILE* outfile, ClassType* ct) {
 }
 
 
-void VarSymbol::codegenDefC() {
+void VarSymbol::codegenDefC(bool global) {
   GenInfo* info = gGenInfo;
   if (this->hasFlag(FLAG_EXTERN))
     return;
@@ -552,7 +552,14 @@ void VarSymbol::codegenDefC() {
   std::string typestr =  (this->hasFlag(FLAG_SUPER_CLASS) ?
                           std::string(ct->classStructName(true)) :
                           type->codegen().c);
-  std::string str = typestr + " " + cname;
+
+  //
+  // a variable can be codegen'd as static if it is global and neither
+  // exported nor external.
+  //
+  bool isStatic =  global && !hasFlag(FLAG_EXPORT) && !hasFlag(FLAG_EXTERN);
+
+  std::string str = (isStatic ? "static " : "") + typestr + " " + cname;
   if (ct) {
     if (ct->classTag == CLASS_CLASS) {
       if (isFnSymbol(defPoint->parentSymbol)) {
@@ -571,7 +578,7 @@ void VarSymbol::codegenGlobalDef() {
   GenInfo* info = gGenInfo;
 
   if( info->cfile ) {
-    codegenDefC();
+    codegenDefC(/*global=*/true);
   } else {
 #ifdef HAVE_LLVM
     if(type == dtVoid) {
@@ -1109,6 +1116,13 @@ void FnSymbol::codegenHeaderC(void) {
   if (hasFlag(FLAG_GPU_ON))
     fprintf(outfile, "__global__ ");
 
+  //
+  // A function prototype can be labeled static if it is neither
+  // exported nor external
+  //
+  if (!hasFlag(FLAG_EXPORT) && !hasFlag(FLAG_EXTERN)) {
+    fprintf(outfile, "static ");
+  }
   fprintf(outfile, "%s", codegenFunctionType(true).c.c_str());
 }
 
