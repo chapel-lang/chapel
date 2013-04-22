@@ -20,11 +20,11 @@
 //
 static void build_type_constructor(ClassType* ct);
 static void build_constructor(ClassType* ct);
-static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr);
-static void resolveModuleCall(CallExpr* call);
-
-
-static Vec<UnresolvedSymExpr*> skipSet;
+static void resolveUnresolveSymExprs();
+static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
+                                     Vec<UnresolvedSymExpr*>& skipSet);
+static void resolveModuleCall(CallExpr* call,
+                              Vec<UnresolvedSymExpr*>& skipSet);
 
 
 //
@@ -1002,7 +1002,8 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
     localSeenPtr->set_add(ct);
     add_class_to_hierarchy(pt, localSeenPtr);
     ct->dispatchParents.add(pt);
-    pt->dispatchChildren.add(ct);
+    bool inserted = pt->dispatchChildren.add_exclusive(ct);
+    INT_ASSERT(inserted);
     expr->remove();
     if (isClass(ct)) {
       SET_LINENO(ct);
@@ -1197,8 +1198,23 @@ void scopeResolve(void) {
 
   resolveGotoLabels();
 
+  resolveUnresolveSymExprs();
 
-  skipSet.clear();
+  resolveEnumeratedTypes();
+
+  destroyTable();
+
+  destroyModuleUsesCaches();
+
+  renameDefaultTypesToReflectWidths();
+
+  cleanupExternC();
+}
+
+
+static void resolveUnresolveSymExprs()
+{
+  Vec<UnresolvedSymExpr*> skipSet;
 
   //
   // Translate M.x where M is a ModuleSymbol into just x where x is
@@ -1209,12 +1225,12 @@ void scopeResolve(void) {
   int max_resolved = 0;
 
   forv_Vec(UnresolvedSymExpr, unresolvedSymExpr, gUnresolvedSymExprs) {
-    resolveUnresolvedSymExpr(unresolvedSymExpr);
+    resolveUnresolvedSymExpr(unresolvedSymExpr, skipSet);
     max_resolved++;
   }
 
   forv_Vec(CallExpr, call, gCallExprs) {
-    resolveModuleCall(call);
+    resolveModuleCall(call, skipSet);
   }
 
   int i = 0;
@@ -1232,26 +1248,18 @@ void scopeResolve(void) {
   forv_Vec(UnresolvedSymExpr, unresolvedSymExpr, gUnresolvedSymExprs) {
     // Only try resolving symbols that are new after last attempt.
     if( i >= max_resolved ) {
-      resolveUnresolvedSymExpr(unresolvedSymExpr);
+      resolveUnresolvedSymExpr(unresolvedSymExpr, skipSet);
     }
     i++;
   }
 
-  resolveEnumeratedTypes();
-
   skipSet.clear();
-
-  destroyTable();
-
-  destroyModuleUsesCaches();
-
-  renameDefaultTypesToReflectWidths();
-
-  cleanupExternC();
 }
 
+
 static
-void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr) {
+void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
+                              Vec<UnresolvedSymExpr*>& skipSet) {
   {
     if (skipSet.set_in(unresolvedSymExpr))
       return;
@@ -1398,13 +1406,13 @@ void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr) {
 #ifdef HAVE_LLVM
     if (!sym && externC && tryCResolve(unresolvedSymExpr->getModule(), name)) {
       //try resolution again since the symbol should exist now
-      resolveUnresolvedSymExpr(unresolvedSymExpr);
+      resolveUnresolvedSymExpr(unresolvedSymExpr, skipSet);
     }
 #endif
   }
 }
 
-static void resolveModuleCall(CallExpr* call) {
+static void resolveModuleCall(CallExpr* call, Vec<UnresolvedSymExpr*>& skipSet) {
   {
     if (call->isNamed(".")) {
       if (SymExpr* se = toSymExpr(call->get(1))) {
@@ -1455,9 +1463,9 @@ static void resolveModuleCall(CallExpr* call) {
             call->replace(new SymExpr(sym));
 #ifdef HAVE_LLVM
           } else if (!sym && externC && tryCResolve(call->getModule(),mbr_name)) {
-              //Try to resolve again now that the symbol should
-              //  be in the table
-              resolveModuleCall(call);
+            // Try to resolve again now that the symbol should
+            // be in the table
+            resolveModuleCall(call, skipSet);
 #endif
           } else {
             USR_FATAL_CONT(call, "Symbol '%s' undeclared in module '%s'",

@@ -634,7 +634,7 @@ makeHeapAllocations() {
           call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(2)->remove()));
           call->replace(new CallExpr(PRIM_SET_MEMBER, call->get(1)->copy(), heapType->getField(1), tmp));
         } else if (call->isResolved() &&
-                   !strcmp("chpl__autoDestroy", call->isResolved()->name)) {
+                   call->isResolved()->hasFlag(FLAG_AUTO_DESTROY_FN)) {
           call->remove();
         } else {
           VarSymbol* tmp = newTemp(var->type);
@@ -657,7 +657,7 @@ makeHeapAllocations() {
             call->replace(new CallExpr(PRIM_GET_MEMBER, use->var, heapType->getField(1)));
           }
         } else if (call->isResolved()) {
-          if (!strcmp("chpl__autoDestroy", call->isResolved()->name)) {
+          if (call->isResolved()->hasFlag(FLAG_AUTO_DESTROY_FN)) {
             call->remove();
           } else if (actual_to_formal(use)->type == heapType) {
             // do nothing
@@ -1229,6 +1229,31 @@ static void handleLocalBlocks() {
 }
 
 
+// Add symbols bearing the FLAG_HEAP flag to a list of heapVars.
+static void getHeapVars(Vec<Symbol*>& heapVars)
+{
+  // Look at all def expressions.
+  forv_Vec(DefExpr, def, gDefExprs)
+  {
+    // We are interested only in var symbols.
+    if (!isVarSymbol(def->sym))
+      continue;
+
+    // We only want symbols at the module level.
+    if (!isModuleSymbol(def->parentSymbol))
+      continue;
+
+    // But we don't want any from the root module.
+    if (def->parentSymbol == rootModule)
+      continue;
+
+    // Okey-dokey.  List up those heap variables.
+    if (def->sym->type->symbol->hasFlag(FLAG_HEAP))
+      heapVars.add(def->sym);
+  }
+}
+
+
 //
 // change all classes into wide classes
 // change all references into wide references
@@ -1246,16 +1271,10 @@ insertWideReferences(void) {
     return;
   }
 
+  INT_ASSERT(!fLocal);
+
   Vec<Symbol*> heapVars;
-  forv_Vec(DefExpr, def, gDefExprs) {
-    if (!fLocal &&
-        isModuleSymbol(def->parentSymbol) &&
-        def->parentSymbol != rootModule &&
-        isVarSymbol(def->sym) &&
-        def->sym->type->symbol->hasFlag(FLAG_HEAP)) {
-      heapVars.add(def->sym);
-    }
-  }
+  getHeapVars(heapVars);
 
   convertNilToObject();
   wideClassMap.clear();

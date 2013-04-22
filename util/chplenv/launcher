@@ -32,6 +32,8 @@ if ($preset_launcher eq "") {
     } elsif ($comm eq "gasnet") {
         if ($substrate eq "udp") {
             $launcher = "amudprun";
+        } elsif ($substrate eq "mpi") {
+            $launcher = "gasnetrun_mpi";
         } elsif ($substrate eq "ibv") {
 	    if ($platform eq "pwr6") {
 #

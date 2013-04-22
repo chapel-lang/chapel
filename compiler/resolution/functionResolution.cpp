@@ -1531,6 +1531,16 @@ static bool considerParamMatches(Type* actualtype,
   if (actualtype == arg1type && actualtype != arg2type) {
     return true;
   }
+  // If we don't have an exact match in the previous line, let's see if
+  // we have a bool(w1) passed to bool(w2) or non-bool case;  This is
+  // based on the enum case developed in r20208
+  if (is_bool_type(actualtype) && is_bool_type(arg1type) && !is_bool_type(arg2type)) {
+    return true;
+  }
+  // Otherwise, have bool cast to default-sized integer over a smaller size
+  if (is_bool_type(actualtype) && actualtype != arg1type && actualtype != arg2type) {
+    return considerParamMatches(dtInt[INT_SIZE_DEFAULT], arg1type, arg2type);
+  }
   if (is_enum_type(actualtype) && actualtype != arg1type && actualtype != arg2type) {
     return considerParamMatches(dtInt[INT_SIZE_DEFAULT], arg1type, arg2type);
   }
@@ -2647,15 +2657,15 @@ static void
 insertFormalTemps(FnSymbol* fn) {
   if (!strcmp(fn->name, "_init") ||
       !strcmp(fn->name, "_cast") ||
-      !strcmp(fn->name, "chpl__initCopy") ||
-      !strcmp(fn->name, "chpl__autoCopy") ||
+      fn->hasFlag(FLAG_AUTO_COPY_FN) ||
+      fn->hasFlag(FLAG_AUTO_DESTROY_FN) ||
+      fn->hasFlag(FLAG_INIT_COPY_FN) ||
       !strcmp(fn->name, "_getIterator") ||
       !strcmp(fn->name, "_getIteratorHelp") ||
       !strcmp(fn->name, "iteratorIndex") ||
       !strcmp(fn->name, "iteratorIndexHelp") ||
       !strcmp(fn->name, "=") ||
       !strcmp(fn->name, "_createFieldDefault") ||
-      !strcmp(fn->name, "chpl__autoDestroy") ||
       !strcmp(fn->name, "chpldev_refToString") ||
       fn->hasFlag(FLAG_ALLOW_REF) ||
       fn->hasFlag(FLAG_REF))
@@ -3992,20 +4002,40 @@ insertValueTemp(Expr* insertPoint, Expr* actual) {
 // returns resolved function if the function requires an implicit
 // destroy of its returned value (i.e. reference count)
 //
+// Currently, FLAG_DONOR_FN is only relevant when placed on
+// chpl__autoCopy().
+//
 FnSymbol*
 requiresImplicitDestroy(CallExpr* call) {
   if (FnSymbol* fn = call->isResolved()) {
     FnSymbol* parent = call->getFunction();
     INT_ASSERT(parent);
-    if (strcmp(parent->name, "chpl__autoCopy") &&
+
+    if (fn->retType->symbol->hasFlag(FLAG_REF) &&
+        isRefCountedType(fn->retType)) {
+      USR_WARN(fn->retType, "hi");
+    }
+
+
+    if (!parent->hasFlag(FLAG_DONOR_FN) &&
+        // No autocopy/destroy calls in a donor function (this might
+        // need to change when this flag is used more generally)).
+        // Currently, this assumes we have thoughtfully written
+        // chpl__autoCopy functions.
+
+        // Return type is a record (which includes array, record, and
+        // dist) or a ref counted type that is passed by reference
         (isRecord(fn->retType) ||
          (fn->retType->symbol->hasFlag(FLAG_REF) &&
           isRefCountedType(fn->retType->getValType()))) &&
+
+        // These are special functions where we don't want to destroy
+        // the result
         !fn->hasFlag(FLAG_NO_IMPLICIT_COPY) &&
         !fn->hasFlag(FLAG_ITERATOR_FN) &&
         !fn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) &&
-        strcmp(fn->name, "chpl__initCopy") &&
-        strcmp(fn->name, "chpl__autoCopy") &&
+        !fn->hasFlag(FLAG_DONOR_FN) &&
+        !fn->hasFlag(FLAG_INIT_COPY_FN) &&
         strcmp(fn->name, "=") &&
         !fn->hasFlag(FLAG_AUTO_II) &&
         !fn->hasFlag(FLAG_CONSTRUCTOR) &&
@@ -5282,15 +5312,30 @@ static void resolveRecordInitializers() {
   // resolve PRIM_INITs for records
   //
   forv_Vec(CallExpr, init, inits) {
-    if (init->parentSymbol) {
+
+    // Ignore if dead.
+    if (!init->parentSymbol)
+      continue;
+
+    Type* type = init->get(1)->typeInfo();
+
+    // Don't resolve initializers for runtime types.
+    // I think this should be dead code because runtime type expressions
+    // are all resolved during resolution (and this function is called
+    // after that).
+    if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))
+      continue;
+
+    // Extract the value type.
+    if (type->symbol->hasFlag(FLAG_REF))
+      type = type->getValType();
+
+    // This could be an assert...
+    if (type->defaultValue)
+      INT_FATAL(init, "PRIM_INIT should have been replaced already");
+
       SET_LINENO(init);
-      Type* type = init->get(1)->typeInfo();
-      if (!type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-        if (type->symbol->hasFlag(FLAG_REF))
-          type = type->getValType();
-        if (type->defaultValue) {
-          INT_FATAL(init, "PRIM_INIT should have been replaced already");
-        } else if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+        if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
           // why??  --sjd
           init->replace(init->get(1)->remove());
         } else if (type->symbol->hasFlag(FLAG_DISTRIBUTION)) {
@@ -5322,8 +5367,6 @@ static void resolveRecordInitializers() {
           if (call->isResolved())
             resolveFns(call->isResolved());
         }
-      }
-    }
   }
 }
 

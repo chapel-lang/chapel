@@ -21,6 +21,7 @@ proc =(ret:myrecord, x:myrecord)
   delete ret.c;
   ret.c = new MyClass(x.c.x);
 }
+pragma "init copy fn"
 proc chpl__initCopy(x:myrecord)
 {
   return new myrecord(new MyClass(x.c.x));

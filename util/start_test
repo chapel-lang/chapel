@@ -380,11 +380,22 @@
 # Subsequent lines can contain notes and will be ignored by the
 # testing system.
 #
+# [Deprecated feature: The interpreter has long since been retired]:
 # As mentioned above, running the test system in interpreter mode
 # does not attempt to execute tests with .future files.  The
 # interpreter mode of the testing system has a parallel mechanism
 # for creating future tests using a .ifuture file (the "i"
 # stands for interpreter)
+#
+# .future tests may also have optional .bad files that express the
+# current, undesired behavior of the test.  The advantage of filing a
+# .bad file is that it ensures that the test will continue failing in
+# the same mode or generate an Error if it doesn't.  This is designed
+# to guard against cases in which a .future starts failing for
+# different reasons that mask the original intent of the future.  For
+# example, if the syntax of the language changes, and the future test
+# is not updated, it will fail forever with "Syntax Error" and never
+# pass.
 #
 # If the test-writer wants to redirect standard input from a file,
 # they may do so by supplying a .stdin file with the same base
@@ -1008,21 +1019,6 @@ if ("$dirlist" == "" && "$testlist" == "") then
     else
         set dirlist = "."
     endif
-endif
-
-# Generate graphs for top level .graph files
-if ($performance || $gengraphs) then
-    # We do the exact same thing below for each test directory, but since
-    #  I do not know how to write functions in csh, this will have to do
-    set graphfiles = `find . -maxdepth 1 -name \*.graph`
-    foreach gfile ($graphfiles)
-        set graphfile = `basename $gfile`
-        echo "[Executing createGraphs for $graphfile in $perfdir]" |& $tee -a $logfile
-        $createGraphs "$graphfile" "$perfdir" "$startdate" |& $tee -a $logfile
-        if ($? == 0) then
-            echo "[Success generating graphs for $graphfile in $perfdir]" |& $tee -a $logfile
-        endif
-    end
 endif
 
 # get absolute path for each directory

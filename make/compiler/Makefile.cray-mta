@@ -22,6 +22,13 @@ OPT_CFLAGS =
 CFLAGS = 
 
 #
+# The following is to work around a limit in EDG that worries that
+# if there are more than 30 template instantiations, it might be in
+# an infinite loop.  Apparently our compiler triggers this.
+#
+LDFLAGS += -no_template_limits
+
+#
 # -WR 682 says ignore full/empty on less than word-sized data; the theory
 # being that we've padded things appropriately
 # -WR 654 and -WR 656 ignore the problem with noalias pragmas when you give

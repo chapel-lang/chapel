@@ -128,6 +128,7 @@ module Buffers {
 
 
   // TODO -- shouldn't have to write this this way!
+  pragma "init copy fn"
   proc chpl__initCopy(x: bytes) {
     if x.home == here {
       qbytes_retain(x._bytes_internal);
@@ -185,6 +186,7 @@ module Buffers {
     this._bufit_internal = qbuffer_iter_null();
   }
   /* don't believe this is necessary...
+  pragma "init copy fn"
   proc chpl__initCopy(x: buffer_iterator) {
     return x;
   }
@@ -227,6 +229,7 @@ module Buffers {
   }
 
   // TODO -- shouldn't have to write this this way!
+  pragma "init copy fn"
   proc chpl__initCopy(x: buffer) {
     if x.home == here {
       qbuffer_retain(x._buf_internal);

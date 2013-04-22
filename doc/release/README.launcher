@@ -42,6 +42,7 @@ Currently-supported launchers include:
   amudprun          : GASNet launcher for programs running over UDP
   aprun             : Cray XT application launcher using aprun
   gasnetrun_ibv     : GASNet launcher for programs running over Infiniband
+  gasnetrun_mpi     : GASNet launcher for programs using the MPI conduit
   loadleveler       : launch using IBM loadleveler (still needs refining)
   lsf-gasnetrun_ibv : GASNet launcher using LSF (bsub) over Infiniband
   marenostrum       : launch using MareNostrum's mnsubmit script
@@ -67,6 +68,7 @@ environment variable.  If left unset, a default is picked as follows:
   + CHPL_COMM_SUBSTRATE=ibv
     + CHPL_TARGET_PLATFORM=pwr6 -> none
     (otherwise)                 -> gasnetrun_ibv
+  + CHPL_COMM_SUBSTRATE=mpi     -> gasnetrun_mpi
   + CHPL_COMM_SUBSTRATE=udp     -> amudprun
   (otherwise)                   -> none
 

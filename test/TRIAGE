@@ -30,20 +30,31 @@
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
-qio error 3/13/13 (Fergie):
-  io/bradc/multilocale/testdistwrite failed for fifo
-  gasnet-everything.  Running under valgrind showed an invalid write
-  in qio_channel_style_element.  This does not happen for comm none.
-  Michael's r21139 supposedly fixed this issue.  FYI, the following is
-  in the REGRESSIONS file for gasnet-fast, so assuming it's the same
-  issue it should be removed if the regression goes away:
+timeouts this week:
 
-  runtime segfault (02/09/13) (Tom)
-  ---------------------------
-  [Error matching program output for io/bradc/multilocale/testdistwrite]
+  linux64.gnu.gasnet.fifo.pthreads.tcmalloc: 4/8/13
+  [Error: Timed out executing program release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4)] 
 
-  Update: this test succeeded for gasnet-fast on 3/19/13.
-  I am not updating TRIAGE/REGRESSIONS for now, waiting to see if the fix is permanent.
+  linux64.gnu.none.fifo.pthreads (baseline: 4/9/13
+  [Error: Timed out compilation for types/file/unableToOpenFile] 
+
+  linux64.gnu.none.fifo.pthreads.tcmalloc: 4/9/13
+  [Error: Timed out compilation for studies/hpcc/RA/bradc/ra-iter] 
+
+  cray-xt.cray-prgenv-pgi.none.fifo.pthreads--linux64.gnu: 4/13/13
+  [Error matching program output for parallel/cobegin/stonea/reports (execopts: 3)] 
+  [Error matching program output for parallel/cobegin/stonea/reports (execopts: 4)] 
+
+
+cygwin errors (don't have access to the log file, so can't diagnose):
+   4/14/13:
+   [Error matching program output for release/examples/programs/jacobi] 
+
+    4/11/13:
+   [Error matching compiler output for release/examples/spec/Data_Parallelism/promotion] 
+   [Error matching compiler output for release/examples/spec/Modules/init] 
+
+
 
 sub_test failure 3/15/13:
   See below for documented cases
@@ -155,6 +166,7 @@ is correct.
 - release/examples/benchmarks/hpcc/ra (compopts: 1) (3/12/13)
 - release/examples/hello6-taskpar-dist (3/14/13)
 - multilocale/deitz/linked/test_linked1 (3/26/13)
+- distributions/bradc/blkCyc/loopBlkCyc (4/9/13, maybe same as next?)
 
 bradc: (3/2/13, 3/27/13): distributions/bradc/blkCyc/loopBlkCyc got a seg fault
 

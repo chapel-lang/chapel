@@ -16,6 +16,9 @@ usedvi:
 	ps2pdf spec.ps spec.pdf
 	./collect_syntax.pl # again to show errors
 
+publish:
+	cp spec.pdf ../doc/release/chapelLanguageSpec.pdf
+
 clean:
 	rm -f *.aux *.blg *.bbl *.dvi *.log
 

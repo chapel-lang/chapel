@@ -228,7 +228,7 @@ example, in C the l in %ld is specifying the type of the argument for integer
 able to use type information from the call.
 
 Format strings in Chapel consist of:
- - conversion specifications e.g. "%xi" (described below)
+ - conversion specifiers e.g. "%xi" (described below)
  - newline e.g. "\n"
     when writing - prints a newline
     when reading - reads any amount of non-newline whitespace and then
@@ -242,7 +242,7 @@ Format strings in Chapel consist of:
     when writing - prints the specified text
     when reading - matches the specified text
 
-#### Numbers
+# Specifiers
 ------------
 Simply display how many digits to use when printing a floating-point number by
 using the # sign to stand for digits. The fractional portion of the number will
@@ -254,11 +254,15 @@ too small:
 This syntax also works for numbers without a decimal point by rounding them
 appropriately.
 
-This # syntax for writing or reading numbers only works if the first character
-in the conversion specifier is a #. For example, if we start with a .
+A # specifier must start with a '#'. For example, if we start with a '.'
 it will interpret the . as a literal, as in:
 > writef(".###\n", 0.777);
 < .  1
+
+A # specifier extends to include the '.' and then the fractional '#'
+when they follow the first group of '#' immediately. For example:
+> writef("(#.##.#.)\n", 1.2, 3);
+< (1.20. 3)
 
 % Specifiers
 ------------

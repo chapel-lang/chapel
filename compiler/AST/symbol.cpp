@@ -985,6 +985,14 @@ FnSymbol::copyInner(SymbolMap* map) {
   FnSymbol* copy = new FnSymbol(name);
   if (hasFlag(FLAG_CONSTRUCTOR))
     copy->addFlag(FLAG_CONSTRUCTOR);
+  else if (hasFlag(FLAG_INIT_COPY_FN))
+    copy->addFlag(FLAG_INIT_COPY_FN);
+  else if (hasFlag(FLAG_AUTO_COPY_FN))
+    copy->addFlag(FLAG_AUTO_COPY_FN);
+  else if (hasFlag(FLAG_AUTO_DESTROY_FN))
+    copy->addFlag(FLAG_AUTO_DESTROY_FN);
+  if (hasFlag(FLAG_DONOR_FN))
+    copy->addFlag(FLAG_DONOR_FN);
   for_formals(formal, this) {
     copy->insertFormalAtTail(COPY_INT(formal->defPoint));
   }

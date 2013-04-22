@@ -1372,7 +1372,7 @@ static void reconstructIRautoCopyAutoDestroy()
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->numFormals() == 1 && fn->getFormal(1)->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
       SET_LINENO(fn);
-      if (!strcmp(fn->name, "chpl__autoCopy")) {
+      if (fn->hasFlag(FLAG_AUTO_COPY_FN)) {
         Symbol* arg = fn->getFormal(1);
         Symbol* ret = fn->getReturnSymbol();
         BlockStmt* block = new BlockStmt();
@@ -1398,7 +1398,7 @@ static void reconstructIRautoCopyAutoDestroy()
         block->insertAtTail(new CallExpr(PRIM_RETURN, ret));
         fn->body->replace(block);
       }
-      if (!strcmp(fn->name, "chpl__autoDestroy")) {
+      if (fn->hasFlag(FLAG_AUTO_DESTROY_FN)) {
         SET_LINENO(fn);
         Symbol* arg = fn->getFormal(1);
         BlockStmt* block = new BlockStmt();

@@ -6,7 +6,7 @@ x ^ y = false
 x | y = true
 x & y = true
 x + y = 2
-numBits(x + y) = 32
+numBits(x + y) = 64
 x is true
 
 !x = false
@@ -17,7 +17,7 @@ x ^ y = false
 x | y = true
 x & y = true
 x + y = 2
-numBits(x + y) = 32
+numBits(x + y) = 64
 x is true
 
 !x = false
@@ -28,7 +28,7 @@ x ^ y = false
 x | y = true
 x & y = true
 x + y = 2
-numBits(x + y) = 32
+numBits(x + y) = 64
 x is true
 
 !x = false
@@ -39,7 +39,7 @@ x ^ y = false
 x | y = true
 x & y = true
 x + y = 2
-numBits(x + y) = 32
+numBits(x + y) = 64
 x is true
 
 !x = false
@@ -50,7 +50,7 @@ x ^ y = false
 x | y = true
 x & y = true
 x + y = 2
-numBits(x + y) = 32
+numBits(x + y) = 64
 x is true
 
 !x = false
@@ -61,7 +61,7 @@ x ^ y = false
 x | y = true
 x & y = true
 x + y = 2
-numBits(x + y) = 32
+numBits(x + y) = 64
 x is true
 
 !x = false
@@ -72,7 +72,7 @@ x ^ y = false
 x | y = true
 x & y = true
 x + y = 2
-numBits(x + y) = 32
+numBits(x + y) = 64
 x is true
 
 !x = false
@@ -83,7 +83,7 @@ x ^ y = false
 x | y = true
 x & y = true
 x + y = 2
-numBits(x + y) = 32
+numBits(x + y) = 64
 x is true
 
 !x = false
@@ -94,7 +94,7 @@ x ^ y = false
 x | y = true
 x & y = true
 x + y = 2
-numBits(x + y) = 32
+numBits(x + y) = 64
 x is true
 
 !x = false
@@ -105,7 +105,7 @@ x ^ y = false
 x | y = true
 x & y = true
 x + y = 2
-numBits(x + y) = 32
+numBits(x + y) = 64
 x is true
 
 !x = false
@@ -116,7 +116,7 @@ x ^ y = false
 x | y = true
 x & y = true
 x + y = 2
-numBits(x + y) = 32
+numBits(x + y) = 64
 x is true
 
 !x = false
@@ -127,7 +127,7 @@ x ^ y = false
 x | y = true
 x & y = true
 x + y = 2
-numBits(x + y) = 32
+numBits(x + y) = 64
 x is true
 
 !x = false
@@ -138,7 +138,7 @@ x ^ y = false
 x | y = true
 x & y = true
 x + y = 2
-numBits(x + y) = 32
+numBits(x + y) = 64
 x is true
 
 !x = false
@@ -149,7 +149,7 @@ x ^ y = false
 x | y = true
 x & y = true
 x + y = 2
-numBits(x + y) = 32
+numBits(x + y) = 64
 x is true
 
 !x = false
@@ -160,7 +160,7 @@ x ^ y = false
 x | y = true
 x & y = true
 x + y = 2
-numBits(x + y) = 32
+numBits(x + y) = 64
 x is true
 
 !x = false
@@ -171,7 +171,7 @@ x ^ y = false
 x | y = true
 x & y = true
 x + y = 2
-numBits(x + y) = 32
+numBits(x + y) = 64
 x is true
 
 !x = false
@@ -182,7 +182,7 @@ x ^ y = false
 x | y = true
 x & y = true
 x + y = 2
-numBits(x + y) = 32
+numBits(x + y) = 64
 x is true
 
 !x = false
@@ -193,7 +193,7 @@ x ^ y = false
 x | y = true
 x & y = true
 x + y = 2
-numBits(x + y) = 32
+numBits(x + y) = 64
 x is true
 
 !x = false
@@ -204,7 +204,7 @@ x ^ y = false
 x | y = true
 x & y = true
 x + y = 2
-numBits(x + y) = 32
+numBits(x + y) = 64
 x is true
 
 !x = false
@@ -215,7 +215,7 @@ x ^ y = false
 x | y = true
 x & y = true
 x + y = 2
-numBits(x + y) = 32
+numBits(x + y) = 64
 x is true
 
 !x = false
@@ -226,7 +226,7 @@ x ^ y = false
 x | y = true
 x & y = true
 x + y = 2
-numBits(x + y) = 32
+numBits(x + y) = 64
 x is true
 
 !x = false
@@ -237,7 +237,7 @@ x ^ y = false
 x | y = true
 x & y = true
 x + y = 2
-numBits(x + y) = 32
+numBits(x + y) = 64
 x is true
 
 !x = false
@@ -248,7 +248,7 @@ x ^ y = false
 x | y = true
 x & y = true
 x + y = 2
-numBits(x + y) = 32
+numBits(x + y) = 64
 x is true
 
 !x = false
@@ -259,7 +259,7 @@ x ^ y = false
 x | y = true
 x & y = true
 x + y = 2
-numBits(x + y) = 32
+numBits(x + y) = 64
 x is true
 
 !x = false
@@ -270,6 +270,6 @@ x ^ y = false
 x | y = true
 x & y = true
 x + y = 2
-numBits(x + y) = 32
+numBits(x + y) = 64
 x is true
 

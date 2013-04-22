@@ -508,7 +508,8 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
     newType->substitutions.copy(fn->retType->substitutions);
     newType->dispatchParents.copy(fn->retType->dispatchParents);
     forv_Vec(Type, t, fn->retType->dispatchParents) {
-      t->dispatchChildren.add(newType);
+      bool inserted = t->dispatchChildren.add_exclusive(newType);
+      INT_ASSERT(inserted);
     }
     if (newType->dispatchChildren.n)
       INT_FATAL(fn, "generic type has subtypes");
@@ -613,11 +614,11 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
       fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE))
     instantiate_tuple_hash(newFn);
 
-  if (!strcmp(fn->name, "chpl__initCopy") &&
+  if (fn->hasFlag(FLAG_INIT_COPY_FN) &&
       fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE))
     instantiate_tuple_initCopy(newFn);
 
-  if (!strcmp(fn->name, "chpl__autoCopy") &&
+  if (fn->hasFlag(FLAG_AUTO_COPY_FN) &&
       fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE))
     instantiate_tuple_autoCopy(newFn);
 

@@ -183,10 +183,8 @@ module ChapelBase {
   // equality comparison on primitive types
   //
   inline proc ==(a: bool, b: bool) return __primitive("==", a, b);
-  inline proc ==(a: int(32), b: int(32)) return __primitive("==", a, b);
-  inline proc ==(a: int(64), b: int(64)) return __primitive("==", a, b);
-  inline proc ==(a: uint(32), b: uint(32)) return __primitive("==", a, b);
-  inline proc ==(a: uint(64), b: uint(64)) return __primitive("==", a, b);
+  inline proc ==(a: int(?w), b: int(w)) return __primitive("==", a, b);
+  inline proc ==(a: uint(?w), b: uint(w)) return __primitive("==", a, b);
   inline proc ==(a: real(?w), b: real(w)) return __primitive("==", a, b);
   inline proc ==(a: imag(?w), b: imag(w)) return __primitive("==", a, b);
   inline proc ==(a: complex(?w), b: complex(w)) return a.re == b.re && a.im == b.im;
@@ -194,10 +192,8 @@ module ChapelBase {
   inline proc ==(a: object, b: object) return __primitive("ptr_eq", a, b);
   
   inline proc !=(a: bool, b: bool) return __primitive("!=", a, b);
-  inline proc !=(a: int(32), b: int(32)) return __primitive("!=", a, b);
-  inline proc !=(a: int(64), b: int(64)) return __primitive("!=", a, b);
-  inline proc !=(a: uint(32), b: uint(32)) return __primitive("!=", a, b);
-  inline proc !=(a: uint(64), b: uint(64)) return __primitive("!=", a, b);
+  inline proc !=(a: int(?w), b: int(w)) return __primitive("!=", a, b);
+  inline proc !=(a: uint(?w), b: uint(w)) return __primitive("!=", a, b);
   inline proc !=(a: real(?w), b: real(w)) return __primitive("!=", a, b);
   inline proc !=(a: imag(?w), b: imag(w)) return __primitive("!=", a, b);
   inline proc !=(a: complex(?w), b: complex(w)) return a.re != b.re || a.im != b.im;
@@ -205,123 +201,95 @@ module ChapelBase {
   inline proc !=(a: object, b: object) return __primitive("ptr_neq", a, b);
   
   inline proc ==(param a: bool, param b: bool) param return __primitive("==", a, b);
-  inline proc ==(param a: int(32), param b: int(32)) param return __primitive("==", a, b);
-  inline proc ==(param a: int(64), param b: int(64)) param return __primitive("==", a, b);
-  inline proc ==(param a: uint(32), param b: uint(32)) param return __primitive("==", a, b);
-  inline proc ==(param a: uint(64), param b: uint(64)) param return __primitive("==", a, b);
+  inline proc ==(param a: int(?w), param b: int(w)) param return __primitive("==", a, b);
+  inline proc ==(param a: uint(?w), param b: uint(w)) param return __primitive("==", a, b);
   inline proc ==(param a: enumerated, param b: enumerated) param return __primitive("==", a, b);
   inline proc ==(param a: string, param b: string) param return __primitive("chpl_string_compare", a, b) == 0;
   
   inline proc !=(param a: bool, param b: bool) param return __primitive("!=", a, b);
-  inline proc !=(param a: int(32), param b: int(32)) param return __primitive("!=", a, b);
-  inline proc !=(param a: int(64), param b: int(64)) param return __primitive("!=", a, b);
-  inline proc !=(param a: uint(32), param b: uint(32)) param return __primitive("!=", a, b);
-  inline proc !=(param a: uint(64), param b: uint(64)) param return __primitive("!=", a, b);
+  inline proc !=(param a: int(?w), param b: int(w)) param return __primitive("!=", a, b);
+  inline proc !=(param a: uint(?w), param b: uint(w)) param return __primitive("!=", a, b);
   inline proc !=(param a: enumerated, param b: enumerated) param return __primitive("!=", a, b);
   inline proc !=(param a: string, param b: string) param return __primitive("chpl_string_compare", a, b) != 0;
   
   //
   // ordered comparison on primitive types
   //
-  inline proc <=(a: int(32), b: int(32)) return __primitive("<=", a, b);
-  inline proc <=(a: int(64), b: int(64)) return __primitive("<=", a, b);
-  inline proc <=(a: uint(32), b: uint(32)) return __primitive("<=", a, b);
-  inline proc <=(a: uint(64), b: uint(64)) return __primitive("<=", a, b);
+  inline proc <=(a: int(?w), b: int(w)) return __primitive("<=", a, b);
+  inline proc <=(a: uint(?w), b: uint(w)) return __primitive("<=", a, b);
   inline proc <=(a: real(?w), b: real(w)) return __primitive("<=", a, b);
   inline proc <=(a: imag(?w), b: imag(w)) return __primitive("<=", a, b);
   inline proc <=(a: string, b: string) return (__primitive("chpl_string_compare", a, b) <= 0);
   
-  inline proc >=(a: int(32), b: int(32)) return __primitive(">=", a, b);
-  inline proc >=(a: int(64), b: int(64)) return __primitive(">=", a, b);
-  inline proc >=(a: uint(32), b: uint(32)) return __primitive(">=", a, b);
-  inline proc >=(a: uint(64), b: uint(64)) return __primitive(">=", a, b);
+  inline proc >=(a: int(?w), b: int(w)) return __primitive(">=", a, b);
+  inline proc >=(a: uint(?w), b: uint(w)) return __primitive(">=", a, b);
   inline proc >=(a: real(?w), b: real(w)) return __primitive(">=", a, b);
   inline proc >=(a: imag(?w), b: imag(w)) return __primitive(">=", a, b);
   inline proc >=(a: string, b: string) return (__primitive("chpl_string_compare", a, b) >= 0);
   
-  inline proc <(a: int(32), b: int(32)) return __primitive("<", a, b);
-  inline proc <(a: int(64), b: int(64)) return __primitive("<", a, b);
-  inline proc <(a: uint(32), b: uint(32)) return __primitive("<", a, b);
-  inline proc <(a: uint(64), b: uint(64)) return __primitive("<", a, b);
+  inline proc <(a: int(?w), b: int(w)) return __primitive("<", a, b);
+  inline proc <(a: uint(?w), b: uint(w)) return __primitive("<", a, b);
   inline proc <(a: real(?w), b: real(w)) return __primitive("<", a, b);
   inline proc <(a: imag(?w), b: imag(w)) return __primitive("<", a, b);
   inline proc <(a: string, b: string) return (__primitive("chpl_string_compare", a, b) < 0);
   
-  inline proc >(a: int(32), b: int(32)) return __primitive(">", a, b);
-  inline proc >(a: int(64), b: int(64)) return __primitive(">", a, b);
-  inline proc >(a: uint(32), b: uint(32)) return __primitive(">", a, b);
-  inline proc >(a: uint(64), b: uint(64)) return __primitive(">", a, b);
+  inline proc >(a: int(?w), b: int(w)) return __primitive(">", a, b);
+  inline proc >(a: uint(?w), b: uint(w)) return __primitive(">", a, b);
   inline proc >(a: real(?w), b: real(w)) return __primitive(">", a, b);
   inline proc >(a: imag(?w), b: imag(w)) return __primitive(">", a, b);
   inline proc >(a: string, b: string) return (__primitive("chpl_string_compare", a, b) > 0);
   
-  inline proc <=(param a: int(32), param b: int(32)) param return __primitive("<=", a, b);
-  inline proc <=(param a: int(64), param b: int(64)) param return __primitive("<=", a, b);
-  inline proc <=(param a: uint(32), param b: uint(32)) param return __primitive("<=", a, b);
-  inline proc <=(param a: uint(64), param b: uint(64)) param return __primitive("<=", a, b);
+  inline proc <=(param a: int(?w), param b: int(w)) param return __primitive("<=", a, b);
+  inline proc <=(param a: uint(?w), param b: uint(w)) param return __primitive("<=", a, b);
   inline proc <=(param a: enumerated, param b: enumerated) param return __primitive("<=", a, b);
   inline proc <=(param a: string, param b: string) param return __primitive("chpl_string_compare", a, b) <= 0;
   
-  inline proc >=(param a: int(32), param b: int(32)) param return __primitive(">=", a, b);
-  inline proc >=(param a: int(64), param b: int(64)) param return __primitive(">=", a, b);
-  inline proc >=(param a: uint(32), param b: uint(32)) param return __primitive(">=", a, b);
-  inline proc >=(param a: uint(64), param b: uint(64)) param return __primitive(">=", a, b);
+  inline proc >=(param a: int(?w), param b: int(w)) param return __primitive(">=", a, b);
+  inline proc >=(param a: uint(?w), param b: uint(w)) param return __primitive(">=", a, b);
   inline proc >=(param a: enumerated, param b: enumerated) param return __primitive(">=", a, b);
   inline proc >=(param a: string, param b: string) param return __primitive("chpl_string_compare", a, b) >= 0;
   
-  inline proc <(param a: int(32), param b: int(32)) param return __primitive("<", a, b);
-  inline proc <(param a: int(64), param b: int(64)) param return __primitive("<", a, b);
-  inline proc <(param a: uint(32), param b: uint(32)) param return __primitive("<", a, b);
-  inline proc <(param a: uint(64), param b: uint(64)) param return __primitive("<", a, b);
+  inline proc <(param a: int(?w), param b: int(w)) param return __primitive("<", a, b);
+  inline proc <(param a: uint(?w), param b: uint(w)) param return __primitive("<", a, b);
   inline proc <(param a: enumerated, param b: enumerated) param return __primitive("<", a, b);
   inline proc <(param a: string, param b: string) param return __primitive("chpl_string_compare", a, b) < 0;
   
-  inline proc >(param a: int(32), param b: int(32)) param return __primitive(">", a, b);
-  inline proc >(param a: int(64), param b: int(64)) param return __primitive(">", a, b);
-  inline proc >(param a: uint(32), param b: uint(32)) param return __primitive(">", a, b);
-  inline proc >(param a: uint(64), param b: uint(64)) param return __primitive(">", a, b);
+  inline proc >(param a: int(?w), param b: int(w)) param return __primitive(">", a, b);
+  inline proc >(param a: uint(?w), param b: uint(w)) param return __primitive(">", a, b);
   inline proc >(param a: enumerated, param b: enumerated) param return __primitive(">", a, b);
   inline proc >(param a: string, param b: string) param return (__primitive("chpl_string_compare", a, b) > 0);
   
   //
   // unary + and - on primitive types
   //
-  inline proc +(a: int(32)) return a;
-  inline proc +(a: int(64)) return a;
-  inline proc +(a: uint(32)) return a;
-  inline proc +(a: uint(64)) return a;
+  inline proc +(a: int(?w)) return a;
+  inline proc +(a: uint(?w)) return a;
   inline proc +(a: real(?w)) return a;
   inline proc +(a: imag(?w)) return a;
   inline proc +(a: complex(?w)) return a;
   
-  inline proc -(a: int(32)) return __primitive("u-", a);
-  inline proc -(a: int(64)) return __primitive("u-", a);
+  inline proc -(a: int(?w)) return __primitive("u-", a);
   inline proc -(a: uint(64)) { compilerError("illegal use of '-' on operand of type ", typeToString(a.type)); }
   inline proc -(a: real(?w)) return __primitive("u-", a);
   inline proc -(a: imag(?w)) return __primitive("u-", a);
   inline proc -(a: complex(?w)) return (-a.re, -a.im):complex(w);
   
-  inline proc +(param a: int(32)) param return a;
-  inline proc +(param a: int(64)) param return a;
-  inline proc +(param a: uint(32)) param return a;
-  inline proc +(param a: uint(64)) param return a;
+  inline proc +(param a: int(?w)) param return a;
+  inline proc +(param a: uint(?w)) param return a;
   
-  inline proc -(param a: int(32)) param return __primitive("u-", a);
-  inline proc -(param a: int(64)) param return __primitive("u-", a);
-  inline proc -(param a: uint(64)) param {
-    if (a:int(64) < 0) then
+  inline proc -(param a: int(?w)) param return __primitive("u-", a);
+  inline proc -(param a: uint(?w)) param {
+    if (a:int(w) < 0) then
       compilerError("illegal use of '-' on operand of type ", typeToString(a.type));
     else
-      return -(a:int(64));
+      return -(a:int(w));
   }
   
   //
-  // binary + and - on primitive types
+  // binary + and - on primitive types for runtime values
   //
-  inline proc +(a: int(32), b: int(32)) return __primitive("+", a, b);
-  inline proc +(a: int(64), b: int(64)) return __primitive("+", a, b);
-  inline proc +(a: uint(32), b: uint(32)) return __primitive("+", a, b);
-  inline proc +(a: uint(64), b: uint(64)) return __primitive("+", a, b);
+  inline proc +(a: int(?w), b: int(w)) return __primitive("+", a, b);
+  inline proc +(a: uint(?w), b: uint(w)) return __primitive("+", a, b);
   inline proc +(a: real(?w), b: real(w)) return __primitive("+", a, b);
   inline proc +(a: imag(?w), b: imag(w)) return __primitive("+", a, b);
   inline proc +(a: complex(?w), b: complex(w)) return (a.re+b.re, a.im+b.im):complex(w);
@@ -334,10 +302,8 @@ module ChapelBase {
   inline proc +(a: imag(?w), b: complex(w*2)) return (b.re, _i2r(a)+b.im):complex(w*2);
   inline proc +(a: complex(?w), b: imag(w/2)) return (a.re, a.im+_i2r(b)):complex(w);
   
-  inline proc -(a: int(32), b: int(32)) return __primitive("-", a, b);
-  inline proc -(a: int(64), b: int(64)) return __primitive("-", a, b);
-  inline proc -(a: uint(32), b: uint(32)) return __primitive("-", a, b);
-  inline proc -(a: uint(64), b: uint(64)) return __primitive("-", a, b);
+  inline proc -(a: int(?w), b: int(w)) return __primitive("-", a, b);
+  inline proc -(a: uint(?w), b: uint(w)) return __primitive("-", a, b);
   inline proc -(a: real(?w), b: real(w)) return __primitive("-", a, b);
   inline proc -(a: imag(?w), b: imag(w)) return __primitive("-", a, b);
   inline proc -(a: complex(?w), b: complex(w)) return (a.re-b.re, a.im-b.im):complex(w);
@@ -348,25 +314,22 @@ module ChapelBase {
   inline proc -(a: complex(?w), b: real(w/2)) return (a.re-b, a.im):complex(w);
   inline proc -(a: imag(?w), b: complex(w*2)) return (-b.re, _i2r(a)-b.im):complex(w*2);
   inline proc -(a: complex(?w), b: imag(w/2)) return (a.re, a.im-_i2r(b)):complex(w);
-  
-  inline proc +(param a: int(32), param b: int(32)) param return __primitive("+", a, b);
-  inline proc +(param a: int(64), param b: int(64)) param return __primitive("+", a, b);
-  inline proc +(param a: uint(32), param b: uint(32)) param return __primitive("+", a, b);
-  inline proc +(param a: uint(64), param b: uint(64)) param return __primitive("+", a, b);
+
+  //
+  // binary + and - on param values
+  //
+  inline proc +(param a: int(?w), param b: int(w)) param return __primitive("+", a, b);
+  inline proc +(param a: uint(?w), param b: uint(w)) param return __primitive("+", a, b);
   inline proc +(param a: string, param b: string) param return __primitive("string_concat", a, b);
   
-  inline proc -(param a: int(32), param b: int(32)) param return __primitive("-", a, b);
-  inline proc -(param a: int(64), param b: int(64)) param return __primitive("-", a, b);
-  inline proc -(param a: uint(32), param b: uint(32)) param return __primitive("-", a, b);
-  inline proc -(param a: uint(64), param b: uint(64)) param return __primitive("-", a, b);
+  inline proc -(param a: int(?w), param b: int(w)) param return __primitive("-", a, b);
+  inline proc -(param a: uint(?w), param b: uint(w)) param return __primitive("-", a, b);
   
   //
   // * and / on primitive types
   //
-  inline proc *(a: int(32), b: int(32)) return __primitive("*", a, b);
-  inline proc *(a: int(64), b: int(64)) return __primitive("*", a, b);
-  inline proc *(a: uint(32), b: uint(32)) return __primitive("*", a, b);
-  inline proc *(a: uint(64), b: uint(64)) return __primitive("*", a, b);
+  inline proc *(a: int(?w), b: int(w)) return __primitive("*", a, b);
+  inline proc *(a: uint(?w), b: uint(w)) return __primitive("*", a, b);
   inline proc *(a: real(?w), b: real(w)) return __primitive("*", a, b);
   inline proc *(a: imag(?w), b: imag(w)) return _i2r(__primitive("*", -a, b));
   inline proc *(a: complex(?w), b: complex(w)) return (a.re*b.re-a.im*b.im, a.im*b.re+a.re*b.im):complex(w);
@@ -378,10 +341,8 @@ module ChapelBase {
   inline proc *(a: imag(?w), b: complex(w*2)) return (-_i2r(a)*b.im, _i2r(a)*b.re):complex(w*2);
   inline proc *(a: complex(?w), b: imag(w/2)) return (-a.im*_i2r(b), a.re*_i2r(b)):complex(w);
   
-  inline proc /(a: int(32), b: int(32)) return __primitive("/", a, b);
-  inline proc /(a: int(64), b: int(64)) return __primitive("/", a, b);
-  inline proc /(a: uint(32), b: uint(32)) return __primitive("/", a, b);
-  inline proc /(a: uint(64), b: uint(64)) return __primitive("/", a, b);
+  inline proc /(a: int(?w), b: int(w)) return __primitive("/", a, b);
+  inline proc /(a: uint(?w), b: uint(w)) return __primitive("/", a, b);
   inline proc /(a: real(?w), b: real(w)) return __primitive("/", a, b);
   inline proc /(a: imag(?w), b: imag(w)) return _i2r(__primitive("/", a, b));
   inline proc /(a: complex(?w), b: complex(w))
@@ -402,28 +363,20 @@ module ChapelBase {
     return let d = _i2r(b)*_i2r(b) in
     (a.im/_i2r(b), -a.re/_i2r(b)):complex(w);
   
-  inline proc *(param a: int(32), param b: int(32)) param return __primitive("*", a, b);
-  inline proc *(param a: int(64), param b: int(64)) param return __primitive("*", a, b);
-  inline proc *(param a: uint(32), param b: uint(32)) param return __primitive("*", a, b);
-  inline proc *(param a: uint(64), param b: uint(64)) param return __primitive("*", a, b);
+  inline proc *(param a: int(?w), param b: int(w)) param return __primitive("*", a, b);
+  inline proc *(param a: uint(?w), param b: uint(w)) param return __primitive("*", a, b);
   
-  inline proc /(param a: int(32), param b: int(32)) param return __primitive("/", a, b);
-  inline proc /(param a: int(64), param b: int(64)) param return __primitive("/", a, b);
-  inline proc /(param a: uint(32), param b: uint(32)) param return __primitive("/", a, b);
-  inline proc /(param a: uint(64), param b: uint(64)) param return __primitive("/", a, b);
+  inline proc /(param a: int(?w), param b: int(w)) param return __primitive("/", a, b);
+  inline proc /(param a: uint(?w), param b: uint(w)) param return __primitive("/", a, b);
   
   //
   // % on primitive types
   //
-  inline proc %(a: int(32), b: int(32)) return __primitive("%", a, b);
-  inline proc %(a: int(64), b: int(64)) return __primitive("%", a, b);
-  inline proc %(a: uint(32), b: uint(32)) return __primitive("%", a, b);
-  inline proc %(a: uint(64), b: uint(64)) return __primitive("%", a, b);
+  inline proc %(a: int(?w), b: int(w)) return __primitive("%", a, b);
+  inline proc %(a: uint(?w), b: uint(w)) return __primitive("%", a, b);
   
-  inline proc %(param a: int(32), param b: int(32)) param return __primitive("%", a, b);
-  inline proc %(param a: int(64), param b: int(64)) param return __primitive("%", a, b);
-  inline proc %(param a: uint(32), param b: uint(32)) param return __primitive("%", a, b);
-  inline proc %(param a: uint(64), param b: uint(64)) param return __primitive("%", a, b);
+  inline proc %(param a: int(?w), param b: int(w)) param return __primitive("%", a, b);
+  inline proc %(param a: uint(?w), param b: uint(w)) param return __primitive("%", a, b);
   
   //
   // ** on primitive types
@@ -445,17 +398,13 @@ module ChapelBase {
     return y;
   }
   
-  inline proc **(a: int(32), b: int(32)) return _intExpHelp(a, b);
-  inline proc **(a: int(64), b: int(64)) return _intExpHelp(a, b);
-  inline proc **(a: uint(32), b: uint(32)) return _intExpHelp(a, b);
-  inline proc **(a: uint(64), b: uint(64)) return _intExpHelp(a, b);
+  inline proc **(a: int(?w), b: int(w)) return _intExpHelp(a, b);
+  inline proc **(a: uint(?w), b: uint(w)) return _intExpHelp(a, b);
   inline proc **(a: real(?w), b: real(w)) return __primitive("**", a, b);
-  
-  proc **(param a: int(32), param b: int(32)) param return __primitive("**", a, b);
-  proc **(param a: int(64), param b: int(64)) param return __primitive("**", a, b);
-  proc **(param a: uint(32), param b: uint(32)) param return __primitive("**", a, b);
-  proc **(param a: uint(64), param b: uint(64)) param return __primitive("**", a, b);
-  
+
+  proc **(param a: int(?w), param b: int(w)) param return __primitive("**", a, b);
+  proc **(param a: uint(?w), param b: uint(w)) param return __primitive("**", a, b);
+
   inline proc _expHelp(a, param b: integral) {
     if b == 0 then
       return 1:a.type;
@@ -479,10 +428,8 @@ module ChapelBase {
   
   proc _canOptimizeExp(param b: integral) param return b >= 0 && b <= 8 && b != 7;
   
-  inline proc **(a: int(32), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
-  inline proc **(a: int(64), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
-  inline proc **(a: uint(32), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
-  inline proc **(a: uint(64), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
+  inline proc **(a: int(?w), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
+  inline proc **(a: uint(?w), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
   inline proc **(a: real(?w), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
   
   //
@@ -501,99 +448,63 @@ module ChapelBase {
   // bitwise operations on primitive types
   //
   inline proc ~(a: bool) return __primitive("u~", a);
-  inline proc ~(a: int(32)) return __primitive("u~", a);
-  inline proc ~(a: int(64)) return __primitive("u~", a);
-  inline proc ~(a: uint(32)) return __primitive("u~", a);
-  inline proc ~(a: uint(64)) return __primitive("u~", a);
+  inline proc ~(a: int(?w)) return __primitive("u~", a);
+  inline proc ~(a: uint(?w)) return __primitive("u~", a);
   
   inline proc &(a: bool, b: bool) return __primitive("&", a, b);
-  inline proc &(a: int(32), b: int(32)) return __primitive("&", a, b);
-  inline proc &(a: int(64), b: int(64)) return __primitive("&", a, b);
-  inline proc &(a: uint(32), b: uint(32)) return __primitive("&", a, b);
-  inline proc &(a: uint(64), b: uint(64)) return __primitive("&", a, b);
-  inline proc &(a: uint(32), b: int(32)) return __primitive("&", a, b:uint(32));
-  inline proc &(a: int(32), b: uint(32)) return __primitive("&", a:uint(32), b);
-  inline proc &(a: uint(64), b: int(64)) return __primitive("&", a, b:uint(64));
-  inline proc &(a: int(64), b: uint(64)) return __primitive("&", a:uint(64), b);
+  inline proc &(a: int(?w), b: int(w)) return __primitive("&", a, b);
+  inline proc &(a: uint(?w), b: uint(w)) return __primitive("&", a, b);
+  inline proc &(a: uint(?w), b: int(w)) return __primitive("&", a, b:uint(w));
+  inline proc &(a: int(?w), b: uint(w)) return __primitive("&", a:uint(w), b);
   
   inline proc |(a: bool, b: bool) return __primitive("|", a, b);
-  inline proc |(a: int(32), b: int(32)) return __primitive("|", a, b);
-  inline proc |(a: int(64), b: int(64)) return __primitive("|", a, b);
-  inline proc |(a: uint(32), b: uint(32)) return __primitive("|", a, b);
-  inline proc |(a: uint(64), b: uint(64)) return __primitive("|", a, b);
-  inline proc |(a: uint(32), b: int(32)) return __primitive("|", a, b:uint(32));
-  inline proc |(a: int(32), b: uint(32)) return __primitive("|", a:uint(32), b);
-  inline proc |(a: uint(64), b: int(64)) return __primitive("|", a, b:uint(64));
-  inline proc |(a: int(64), b: uint(64)) return __primitive("|", a:uint(64), b);
+  inline proc |(a: int(?w), b: int(w)) return __primitive("|", a, b);
+  inline proc |(a: uint(?w), b: uint(w)) return __primitive("|", a, b);
+  inline proc |(a: uint(?w), b: int(w)) return __primitive("|", a, b:uint(w));
+  inline proc |(a: int(?w), b: uint(w)) return __primitive("|", a:uint(w), b);
   
   inline proc ^(a: bool, b: bool) return __primitive("^", a, b);
-  inline proc ^(a: int(32), b: int(32)) return __primitive("^", a, b);
-  inline proc ^(a: int(64), b: int(64)) return __primitive("^", a, b);
-  inline proc ^(a: uint(32), b: uint(32)) return __primitive("^", a, b);
-  inline proc ^(a: uint(64), b: uint(64)) return __primitive("^", a, b);
-  inline proc ^(a: uint(32), b: int(32)) return __primitive("^", a, b:uint(32));
-  inline proc ^(a: int(32), b: uint(32)) return __primitive("^", a:uint(32), b);
-  inline proc ^(a: uint(64), b: int(64)) return __primitive("^", a, b:uint(64));
-  inline proc ^(a: int(64), b: uint(64)) return __primitive("^", a:uint(64), b);
+  inline proc ^(a: int(?w), b: int(w)) return __primitive("^", a, b);
+  inline proc ^(a: uint(?w), b: uint(w)) return __primitive("^", a, b);
+  inline proc ^(a: uint(?w), b: int(w)) return __primitive("^", a, b:uint(w));
+  inline proc ^(a: int(?w), b: uint(w)) return __primitive("^", a:uint(w), b);
   
   inline proc ~(param a: bool) param return __primitive("u~", a);
-  inline proc ~(param a: int(32)) param return __primitive("u~", a);
-  inline proc ~(param a: int(64)) param return __primitive("u~", a);
-  inline proc ~(param a: uint(32)) param return __primitive("u~", a);
-  inline proc ~(param a: uint(64)) param return __primitive("u~", a);
+  inline proc ~(param a: int(?w)) param return __primitive("u~", a);
+  inline proc ~(param a: uint(?w)) param return __primitive("u~", a);
   
   inline proc &(param a: bool, param b: bool) param return __primitive("&", a, b);
-  inline proc &(param a: int(32), param b: int(32)) param return __primitive("&", a, b);
-  inline proc &(param a: int(64), param b: int(64)) param return __primitive("&", a, b);
-  inline proc &(param a: uint(32), param b: uint(32)) param return __primitive("&", a, b);
-  inline proc &(param a: uint(64), param b: uint(64)) param return __primitive("&", a, b);
-  inline proc &(param a: uint(32), param b: int(32)) param return __primitive("&", a, b:uint(32));
-  inline proc &(param a: int(32), param b: uint(32)) param return __primitive("&", a:uint(32), b);
-  inline proc &(param a: uint(64), param b: int(64)) param return __primitive("&", a, b:uint(64));
-  inline proc &(param a: int(64), param b: uint(64)) param return __primitive("&", a:uint(64), b);
+  inline proc &(param a: int(?w), param b: int(w)) param return __primitive("&", a, b);
+  inline proc &(param a: uint(?w), param b: uint(w)) param return __primitive("&", a, b);
+  inline proc &(param a: uint(?w), param b: int(w)) param return __primitive("&", a, b:uint(w));
+  inline proc &(param a: int(?w), param b: uint(w)) param return __primitive("&", a:uint(w), b);
   
   inline proc |(param a: bool, param b: bool) param return __primitive("|", a, b);
-  inline proc |(param a: int(32), param b: int(32)) param return __primitive("|", a, b);
-  inline proc |(param a: int(64), param b: int(64)) param return __primitive("|", a, b);
-  inline proc |(param a: uint(32), param b: uint(32)) param return __primitive("|", a, b);
-  inline proc |(param a: uint(64), param b: uint(64)) param return __primitive("|", a, b);
-  inline proc |(param a: uint(32), param b: int(32)) param return __primitive("|", a, b:uint(32));
-  inline proc |(param a: int(32), param b: uint(32)) param return __primitive("|", a:uint(32), b);
-  inline proc |(param a: uint(64), param b: int(64)) param return __primitive("|", a, b:uint(64));
-  inline proc |(param a: int(64), param b: uint(64)) param return __primitive("|", a:uint(64), b);
+  inline proc |(param a: int(?w), param b: int(w)) param return __primitive("|", a, b);
+  inline proc |(param a: uint(?w), param b: uint(w)) param return __primitive("|", a, b);
+  inline proc |(param a: uint(?w), param b: int(w)) param return __primitive("|", a, b:uint(w));
+  inline proc |(param a: int(?w), param b: uint(w)) param return __primitive("|", a:uint(w), b);
   
   inline proc ^(param a: bool, param b: bool) param return __primitive("^", a, b);
-  inline proc ^(param a: int(32), param b: int(32)) param return __primitive("^", a, b);
-  inline proc ^(param a: int(64), param b: int(64)) param return __primitive("^", a, b);
-  inline proc ^(param a: uint(32), param b: uint(32)) param return __primitive("^", a, b);
-  inline proc ^(param a: uint(64), param b: uint(64)) param return __primitive("^", a, b);
-  inline proc ^(param a: uint(32), param b: int(32)) param return __primitive("^", a, b:uint(32));
-  inline proc ^(param a: int(32), param b: uint(32)) param return __primitive("^", a:uint(32), b);
-  inline proc ^(param a: uint(64), param b: int(64)) param return __primitive("^", a, b:uint(64));
-  inline proc ^(param a: int(64), param b: uint(64)) param return __primitive("^", a:uint(64), b);
+  inline proc ^(param a: int(?w), param b: int(w)) param return __primitive("^", a, b);
+  inline proc ^(param a: uint(?w), param b: uint(w)) param return __primitive("^", a, b);
+  inline proc ^(param a: uint(?w), param b: int(w)) param return __primitive("^", a, b:uint(w));
+  inline proc ^(param a: int(?w), param b: uint(w)) param return __primitive("^", a:uint(w), b);
   
   //
   // left and right shift on primitive types
   //
-  inline proc <<(a: int(32), b: integral) return __primitive("<<", a, b);
-  inline proc <<(a: int(64), b: integral) return __primitive("<<", a, b);
-  inline proc <<(a: uint(32), b: integral) return __primitive("<<", a, b);
-  inline proc <<(a: uint(64), b: integral) return __primitive("<<", a, b);
+  inline proc <<(a: int(?w), b: integral) return __primitive("<<", a, b);
+  inline proc <<(a: uint(?w), b: integral) return __primitive("<<", a, b);
   
-  inline proc >>(a: int(32), b: integral) return __primitive(">>", a, b);
-  inline proc >>(a: int(64), b: integral) return __primitive(">>", a, b);
-  inline proc >>(a: uint(32), b: integral) return __primitive(">>", a, b);
-  inline proc >>(a: uint(64), b: integral) return __primitive(">>", a, b);
+  inline proc >>(a: int(?w), b: integral) return __primitive(">>", a, b);
+  inline proc >>(a: uint(?w), b: integral) return __primitive(">>", a, b);
   
-  inline proc <<(param a: int(32), param b: integral) param return __primitive("<<", a, b);
-  inline proc <<(param a: int(64), param b: integral) param return __primitive("<<", a, b);
-  inline proc <<(param a: uint(32), param b: integral) param return __primitive("<<", a, b);
-  inline proc <<(param a: uint(64), param b: integral) param return __primitive("<<", a, b);
+  inline proc <<(param a: int(?w), param b: integral) param return __primitive("<<", a, b);
+  inline proc <<(param a: uint(?w), param b: integral) param return __primitive("<<", a, b);
   
-  inline proc >>(param a: int(32), param b: integral) param return __primitive(">>", a, b);
-  inline proc >>(param a: int(64), param b: integral) param return __primitive(">>", a, b);
-  inline proc >>(param a: uint(32), param b: integral) param return __primitive(">>", a, b);
-  inline proc >>(param a: uint(64), param b: integral) param return __primitive(">>", a, b);
+  inline proc >>(param a: int(?w), param b: integral) param return __primitive(">>", a, b);
+  inline proc >>(param a: uint(?w), param b: integral) param return __primitive(">>", a, b);
   
   //
   // These functions are to handle symbols at statement level such as
@@ -1024,6 +935,7 @@ module ChapelBase {
     return x;
   }
   
+  pragma "init copy fn"
   inline proc chpl__initCopy(a) {
     if a.type == string then
       return __primitive("string_copy", a);
@@ -1031,52 +943,72 @@ module ChapelBase {
       return a;
   }
   
+  pragma "init copy fn"
   inline proc chpl__initCopy(type t) {
     compilerError("illegal assignment of type to value");
   }
   
   pragma "ref"
+  pragma "init copy fn"
   inline proc chpl__initCopy(r: _ref) return chpl__initCopy(__primitive("deref", r));
   
+  pragma "init copy fn"
   inline proc chpl__initCopy(x: _tuple) { 
     // body inserted during generic instantiation
   }
   
   pragma "dont disable remote value forwarding"
-  pragma "removable auto copy" proc chpl__autoCopy(x: _distribution) {
+  pragma "removable auto copy"
+  pragma "donor fn"
+  pragma "auto copy fn" proc chpl__autoCopy(x: _distribution) {
     if !noRefCount then
       if x._value then x._value._distCnt.add(1);
     return x;
   }
   
   pragma "dont disable remote value forwarding"
-  pragma "removable auto copy" proc chpl__autoCopy(x: domain) {
+  pragma "removable auto copy"
+  pragma "donor fn"
+  pragma "auto copy fn"  proc chpl__autoCopy(x: domain) {
     if !noRefCount then
       x._value._domCnt.add(1);
     return x;
   }
   
   pragma "dont disable remote value forwarding"
-  pragma "removable auto copy" proc chpl__autoCopy(x: []) {
+  pragma "removable auto copy"
+  pragma "donor fn"
+  pragma "auto copy fn" proc chpl__autoCopy(x: []) {
     if !noRefCount then
       x._value._arrCnt.add(1);
     return x;
   }
   
+
+  pragma "donor fn"
+  pragma "auto copy fn"
   inline proc chpl__autoCopy(x: _tuple) {
     // body inserted during generic instantiation
   }
   
+  pragma "donor fn"
+  pragma "auto copy fn"
   inline proc chpl__autoCopy(ir: _iteratorRecord) {
     // body modified during call destructors pass
     return ir;
   }
   
+  pragma "donor fn"
+  pragma "auto copy fn"
   inline proc chpl__autoCopy(x) return chpl__initCopy(x);
   
   pragma "ref" 
+  pragma "donor fn"
+  pragma "auto copy fn"
   inline proc chpl__autoCopy(r: _ref) var return r;
   
+  pragma "donor fn"
+  pragma "auto copy fn"
   inline proc chpl__autoCopy(type t) type return t;
   
   inline proc chpl__maybeAutoDestroyed(x) param
@@ -1086,24 +1018,29 @@ module ChapelBase {
   inline proc chpl__maybeAutoDestroyed(x: enumerated) param return false;
   inline proc chpl__maybeAutoDestroyed(x: object) param return false;
   
-  inline proc chpl__autoDestroy(x: object) { }
-  inline proc chpl__autoDestroy(type t)  { }
+  pragma "auto destroy fn" inline proc chpl__autoDestroy(x: object) { }
+  pragma "auto destroy fn" inline proc chpl__autoDestroy(type t)  { }
+  pragma "auto destroy fn"
   inline proc chpl__autoDestroy(x: ?t) {
     __primitive("call destructor", x);
   }
+  pragma "auto destroy fn"
   inline proc chpl__autoDestroy(ir: _iteratorRecord) {
     // body inserted during call destructors pass
   }
   pragma "dont disable remote value forwarding"
-  pragma "removable auto destroy" proc chpl__autoDestroy(x: _distribution) {
+  pragma "removable auto destroy"
+  pragma "auto destroy fn" proc chpl__autoDestroy(x: _distribution) {
     __primitive("call destructor", x);
   }
   pragma "dont disable remote value forwarding"
-  pragma "removable auto destroy" proc chpl__autoDestroy(x: domain) {
+  pragma "removable auto destroy"
+  pragma "auto destroy fn" proc chpl__autoDestroy(x: domain) {
     __primitive("call destructor", x);
   }
   pragma "dont disable remote value forwarding"
-  pragma "removable auto destroy" proc chpl__autoDestroy(x: []) {
+  pragma "removable auto destroy"
+  pragma "auto destroy fn" proc chpl__autoDestroy(x: []) {
     __primitive("call destructor", x);
   }
   
@@ -1244,24 +1181,34 @@ module ChapelBase {
   // comment needs to change, please update that file and regenerate these operators
   
   
-  // non-param/non-param
+  //
+  // non-param/non-param -- these are designed to throw an error
+  // stating that these combinations are not supported; it's an
+  // open topic of discussion whether we should support them and
+  // have the return type default to int or uint; and/or whether
+  // this error case should be made a lower-priority fallback,
+  // permitting the user to define their own overloads (or 'use'
+  // a module which does).
+  //
   inline proc +(a: uint(64), b: int(64)) { _throwOpError("+"); }
   inline proc +(a: int(64), b: uint(64)) { _throwOpError("+"); }
   
-  // param/param
-  inline proc +(param a: uint(64), param b: int(64)) param {
-    if b < 0 then _throwOpError("+"); else return a + b:uint(64);
+  //
+  // non-param/param and param/non-param cases -- these cases
+  // are provided to support operations on runtime uint and
+  // param uint combinations.  The param/non-param int cases
+  // don't need to be explicitly given because they will default
+  // to the normal int/int cases above.  If these overloads are
+  // not provided, these functions will dispatch to the error
+  // cases just above, which is inconsistent (i.e., one should
+  // be able to add "1" to a uint variable given that "1" is a
+  // legal uint param).
+  //
+  inline proc +(a: uint(64), param b: uint(64)) {
+    return __primitive("+", a, b);
   }
-  inline proc +(param a: int(64), param b: uint(64)) param {
-    if a < 0 then _throwOpError("+"); else return a:uint(64) + b;
-  }
-  
-  // non-param/param and param/non-param
-  inline proc +(a: uint(64), param b: int(64)) {
-    if b < 0 then _throwOpError("+"); else return a + b:uint(64);
-  }
-  inline proc +(param a: int(64), b: uint(64)) {
-    if a < 0 then _throwOpError("+"); else return a:uint(64) + b;
+  inline proc +(param a: uint(64), b: uint(64)) {
+    return __primitive("+", a, b);
   }
   
   
@@ -1269,20 +1216,12 @@ module ChapelBase {
   inline proc -(a: uint(64), b: int(64)) { _throwOpError("-"); }
   inline proc -(a: int(64), b: uint(64)) { _throwOpError("-"); }
   
-  // param/param
-  inline proc -(param a: uint(64), param b: int(64)) param {
-    if b < 0 then _throwOpError("-"); else return a - b:uint(64);
-  }
-  inline proc -(param a: int(64), param b: uint(64)) param {
-    if a < 0 then _throwOpError("-"); else return a:uint(64) - b;
-  }
-  
   // non-param/param and param/non-param
-  inline proc -(a: uint(64), param b: int(64)) {
-    if b < 0 then _throwOpError("-"); else return a - b:uint(64);
+  inline proc -(a: uint(64), param b: uint(64)) {
+    return __primitive("-", a, b);
   }
-  inline proc -(param a: int(64), b: uint(64)) {
-    if a < 0 then _throwOpError("-"); else return a:uint(64) - b;
+  inline proc -(param a: uint(64), b: uint(64)) {
+    return __primitive("-", a, b);
   }
   
   
@@ -1290,20 +1229,12 @@ module ChapelBase {
   inline proc *(a: uint(64), b: int(64)) { _throwOpError("*"); }
   inline proc *(a: int(64), b: uint(64)) { _throwOpError("*"); }
   
-  // param/param
-  inline proc *(param a: uint(64), param b: int(64)) param {
-    if b < 0 then _throwOpError("*"); else return a * b:uint(64);
-  }
-  inline proc *(param a: int(64), param b: uint(64)) param {
-    if a < 0 then _throwOpError("*"); else return a:uint(64) * b;
-  }
-  
   // non-param/param and param/non-param
-  inline proc *(a: uint(64), param b: int(64)) {
-    if b < 0 then _throwOpError("*"); else return a * b:uint(64);
+  inline proc *(a: uint(64), param b: uint(64)) {
+    return __primitive("*", a, b);
   }
-  inline proc *(param a: int(64), b: uint(64)) {
-    if a < 0 then _throwOpError("*"); else return a:uint(64) * b;
+  inline proc *(param a: uint(64), b: uint(64)) {
+    return __primitive("*", a, b);
   }
   
   
@@ -1311,20 +1242,12 @@ module ChapelBase {
   inline proc /(a: uint(64), b: int(64)) { _throwOpError("/"); }
   inline proc /(a: int(64), b: uint(64)) { _throwOpError("/"); }
   
-  // param/param
-  inline proc /(param a: uint(64), param b: int(64)) param {
-    if b < 0 then _throwOpError("/"); else return a / b:uint(64);
-  }
-  inline proc /(param a: int(64), param b: uint(64)) param {
-    if a < 0 then _throwOpError("/"); else return a:uint(64) / b;
-  }
-  
   // non-param/param and param/non-param
-  inline proc /(a: uint(64), param b: int(64)) {
-    if b < 0 then _throwOpError("/"); else return a / b:uint(64);
+  inline proc /(a: uint(64), param b: uint(64)) {
+    return __primitive("/", a, b);
   }
-  inline proc /(param a: int(64), b: uint(64)) {
-    if a < 0 then _throwOpError("/"); else return a:uint(64) / b;
+  inline proc /(param a: uint(64), b: uint(64)) {
+    return __primitive("/", a, b);
   }
   
   
@@ -1332,20 +1255,12 @@ module ChapelBase {
   inline proc **(a: uint(64), b: int(64)) { _throwOpError("**"); }
   inline proc **(a: int(64), b: uint(64)) { _throwOpError("**"); }
   
-  // param/param
-  inline proc **(param a: uint(64), param b: int(64)) param {
-    if b < 0 then _throwOpError("**"); else return a ** b:uint(64);
-  }
-  inline proc **(param a: int(64), param b: uint(64)) param {
-    if a < 0 then _throwOpError("**"); else return a:uint(64) ** b;
-  }
-  
   // non-param/param and param/non-param
-  inline proc **(a: uint(64), param b: int(64)) {
-    if b < 0 then _throwOpError("**"); else return a ** b:uint(64);
+  inline proc **(a: uint(64), param b: uint(64)) {
+    return __primitive("**", a, b);
   }
-  inline proc **(param a: int(64), b: uint(64)) {
-    if a < 0 then _throwOpError("**"); else return a:uint(64) ** b;
+  inline proc **(param a: uint(64), b: uint(64)) {
+    return __primitive("**", a, b);
   }
   
   
@@ -1353,20 +1268,12 @@ module ChapelBase {
   inline proc %(a: uint(64), b: int(64)) { _throwOpError("%"); }
   inline proc %(a: int(64), b: uint(64)) { _throwOpError("%"); }
   
-  // param/param
-  inline proc %(param a: uint(64), param b: int(64)) param {
-    if b < 0 then _throwOpError("%"); else return a % b:uint(64);
-  }
-  inline proc %(param a: int(64), param b: uint(64)) param {
-    if a < 0 then _throwOpError("%"); else return a:uint(64) % b;
-  }
-  
   // non-param/param and param/non-param
-  inline proc %(a: uint(64), param b: int(64)) {
-    if b < 0 then _throwOpError("%"); else return a % b:uint(64);
+  inline proc %(a: uint(64), param b: uint(64)) {
+    return __primitive("%", a, b);
   }
-  inline proc %(param a: int(64), b: uint(64)) {
-    if a < 0 then _throwOpError("%"); else return a:uint(64) % b;
+  inline proc %(param a: uint(64), b: uint(64)) {
+    return __primitive("%", a, b);
   }
   
   
@@ -1374,20 +1281,12 @@ module ChapelBase {
   inline proc ==(a: uint(64), b: int(64)) { _throwOpError("=="); }
   inline proc ==(a: int(64), b: uint(64)) { _throwOpError("=="); }
   
-  // param/param
-  inline proc ==(param a: uint(64), param b: int(64)) param {
-    if b < 0 then _throwOpError("=="); else return a == b:uint(64);
-  }
-  inline proc ==(param a: int(64), param b: uint(64)) param {
-    if a < 0 then _throwOpError("=="); else return a:uint(64) == b;
-  }
-  
   // non-param/param and param/non-param
-  inline proc ==(a: uint(64), param b: int(64)) {
-    if b < 0 then _throwOpError("=="); else return a == b:uint(64);
+  inline proc ==(a: uint(64), param b: uint(64)) {
+    return __primitive("==", a, b);
   }
-  inline proc ==(param a: int(64), b: uint(64)) {
-    if a < 0 then _throwOpError("=="); else return a:uint(64) == b;
+  inline proc ==(param a: uint(64), b: uint(64)) {
+    return __primitive("==", a, b);
   }
   
   
@@ -1395,20 +1294,12 @@ module ChapelBase {
   inline proc !=(a: uint(64), b: int(64)) { _throwOpError("!="); }
   inline proc !=(a: int(64), b: uint(64)) { _throwOpError("!="); }
   
-  // param/param
-  inline proc !=(param a: uint(64), param b: int(64)) param {
-    if b < 0 then _throwOpError("!="); else return a != b:uint(64);
-  }
-  inline proc !=(param a: int(64), param b: uint(64)) param {
-    if a < 0 then _throwOpError("!="); else return a:uint(64) != b;
-  }
-  
   // non-param/param and param/non-param
-  inline proc !=(a: uint(64), param b: int(64)) {
-    if b < 0 then _throwOpError("!="); else return a != b:uint(64);
+  inline proc !=(a: uint(64), param b: uint(64)) {
+    return __primitive("!=", a, b);
   }
-  inline proc !=(param a: int(64), b: uint(64)) {
-    if a < 0 then _throwOpError("!="); else return a:uint(64) != b;
+  inline proc !=(param a: uint(64), b: uint(64)) {
+    return __primitive("!=", a, b);
   }
   
   
@@ -1416,41 +1307,24 @@ module ChapelBase {
   inline proc >(a: uint(64), b: int(64)) { _throwOpError(">"); }
   inline proc >(a: int(64), b: uint(64)) { _throwOpError(">"); }
   
-  // param/param
-  inline proc >(param a: uint(64), param b: int(64)) param {
-    if b < 0 then _throwOpError(">"); else return a > b:uint(64);
-  }
-  inline proc >(param a: int(64), param b: uint(64)) param {
-    if a < 0 then _throwOpError(">"); else return a:uint(64) > b;
-  }
-  
   // non-param/param and param/non-param
-  inline proc >(a: uint(64), param b: int(64)) {
-    if b < 0 then _throwOpError(">"); else return a > b:uint(64);
+  inline proc >(a: uint(64), param b: uint(64)) {
+    return __primitive(">", a, b);
   }
-  inline proc >(param a: int(64), b: uint(64)) {
-    if a < 0 then _throwOpError(">"); else return if a == 0 then false else a:uint(64) > b;
+  inline proc >(param a: uint(64), b: uint(64)) {
+    return __primitive(">", a, b);
   }
-  
   
   // non-param/non-param
   inline proc <(a: uint(64), b: int(64)) { _throwOpError("<"); }
   inline proc <(a: int(64), b: uint(64)) { _throwOpError("<"); }
   
-  // param/param
-  inline proc <(param a: uint(64), param b: int(64)) param {
-    if b < 0 then _throwOpError("<"); else return a < b:uint(64);
-  }
-  inline proc <(param a: int(64), param b: uint(64)) param {
-    if a < 0 then _throwOpError("<"); else return a:uint(64) < b;
-  }
-  
   // non-param/param and param/non-param
-  inline proc <(a: uint(64), param b: int(64)) {
-    if b < 0 then _throwOpError("<"); else return if b == 0 then false else a < b:uint(64);
+  inline proc <(a: uint(64), param b: uint(64)) {
+    return __primitive("<", a, b);
   }
-  inline proc <(param a: int(64), b: uint(64)) {
-    if a < 0 then _throwOpError("<"); else return a:uint(64) < b;
+  inline proc <(param a: uint(64), b: uint(64)) {
+    return __primitive("<", a, b);
   }
   
   
@@ -1458,20 +1332,12 @@ module ChapelBase {
   inline proc >=(a: uint(64), b: int(64)) { _throwOpError(">="); }
   inline proc >=(a: int(64), b: uint(64)) { _throwOpError(">="); }
   
-  // param/param
-  inline proc >=(param a: uint(64), param b: int(64)) param {
-    if b < 0 then _throwOpError(">="); else return a >= b:uint(64);
-  }
-  inline proc >=(param a: int(64), param b: uint(64)) param {
-    if a < 0 then _throwOpError(">="); else return a:uint(64) >= b;
-  }
-  
   // non-param/param and param/non-param
-  inline proc >=(a: uint(64), param b: int(64)) {
-    if b < 0 then _throwOpError(">="); else return if b == 0 then true else a >= b:uint(64);
+  inline proc >=(a: uint(64), param b: uint(64)) {
+    return __primitive(">=", a, b);
   }
-  inline proc >=(param a: int(64), b: uint(64)) {
-    if a < 0 then _throwOpError(">="); else return a:uint(64) >= b;
+  inline proc >=(param a: uint(64), b: uint(64)) {
+    return __primitive(">=", a, b);
   }
   
   
@@ -1479,22 +1345,14 @@ module ChapelBase {
   inline proc <=(a: uint(64), b: int(64)) { _throwOpError("<="); }
   inline proc <=(a: int(64), b: uint(64)) { _throwOpError("<="); }
   
-  // param/param
-  inline proc <=(param a: uint(64), param b: int(64)) param {
-    if b < 0 then _throwOpError("<="); else return a <= b:uint(64);
-  }
-  inline proc <=(param a: int(64), param b: uint(64)) param {
-    if a < 0 then _throwOpError("<="); else return a:uint(64) <= b;
-  }
-  
   // non-param/param and param/non-param
-  inline proc <=(a: uint(64), param b: int(64)) {
-    if b < 0 then _throwOpError("<="); else return a <= b:uint(64);
+  inline proc <=(a: uint(64), param b: uint(64)) {
+    return __primitive("<=", a, b);
   }
-  inline proc <=(param a: int(64), b: uint(64)) {
-    if a < 0 then _throwOpError("<="); else return if a == 0 then true else a:uint(64) <= b;
+  inline proc <=(param a: uint(64), b: uint(64)) {
+    return __primitive("<=", a, b);
   }
-  
+
   proc numFields(type t) param {
     return __primitive("num fields", t);
   }

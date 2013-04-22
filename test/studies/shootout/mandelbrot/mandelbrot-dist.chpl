@@ -46,7 +46,7 @@ var OutputArray: [ByteDom] uint(8);
 for (i,j) in ByteDom do {
   for k in 0..7 do {
     OutputArray(i,j) <<= 1;
-    OutputArray(i,j) |= !Bitmap((i<<3)+k,j);
+    OutputArray(i,j) |= (!Bitmap((i<<3)+k,j)):uint(8);
   }
  }
 

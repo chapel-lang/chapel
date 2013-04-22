@@ -659,6 +659,7 @@ static void build_record_copy_function(ClassType* ct) {
   INT_ASSERT(!ct->symbol->hasFlag(FLAG_TUPLE));
 
   FnSymbol* fn = new FnSymbol("chpl__initCopy");
+  fn->addFlag(FLAG_INIT_COPY_FN);
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
   arg->markedGeneric = true;
   fn->insertFormalAtTail(arg);
