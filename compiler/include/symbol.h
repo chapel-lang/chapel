@@ -284,13 +284,36 @@ class LabelSymbol : public Symbol {
 };
 
 
+// Creates a new string literal with the given value.
 VarSymbol *new_StringSymbol(const char *s);
+
+// Creates a new boolean literal with the given value and bit-width.
 VarSymbol *new_BoolSymbol(bool b, IF1_bool_type size=BOOL_SIZE_SYS);
+
+// Creates a new (signed) integer literal with the given value and bit-width.
 VarSymbol *new_IntSymbol(int64_t b, IF1_int_type size=INT_SIZE_64);
+
+// Creates a new unsigned integer literal with the given value and bit-width.
 VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size=INT_SIZE_64);
-VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size=FLOAT_SIZE_64);
-VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size=FLOAT_SIZE_64);
-VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_complex_type size=COMPLEX_SIZE_128);
+
+// Creates a new real literal with the given value and bit-width.
+// n is used for the cname of the new symbol,
+// but only if the value has not already been cached.
+VarSymbol *new_RealSymbol(const char *n, long double b,
+                          IF1_float_type size=FLOAT_SIZE_64);
+
+// Creates a new imaginary literal with the given value and bit-width.
+// n is used for the cname of the new symbol,
+// but only if the value has not already been cached.
+VarSymbol *new_ImagSymbol(const char *n, long double b,
+                          IF1_float_type size=FLOAT_SIZE_64);
+
+// Creates a new complex literal with the given value and bit-width.
+// n is used for the cname of the new symbol,
+// but only if the value has not already been cached.
+VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i,
+                             IF1_complex_type size=COMPLEX_SIZE_128);
+
 VarSymbol *new_ImmediateSymbol(Immediate *imm);
 void resetTempID();
 FlagSet getRecordWrappedFlags(Symbol* s);

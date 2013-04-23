@@ -1332,8 +1332,6 @@ static void localizeCall(CallExpr* call) {
               rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             insertLocalTemp(rhs->get(1));
             if (!rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
-              INT_ASSERT(rhs->get(1)->typeInfo() == dtString);
-              // special handling for wide strings
               rhs->replace(rhs->get(1)->remove());
             }
           }

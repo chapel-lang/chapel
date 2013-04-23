@@ -1,0 +1,2 @@
+bug: This test is disabled temporarily while memory checking is not yet
+     implemented in chpl_here_alloc().

@@ -55,9 +55,10 @@ void normalize(void) {
       call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(1)->remove()));
       call->insertBefore(new CallExpr("~chpl_destroy", gMethodToken, tmp));
 
-      CallExpr* freeExpr = (call->numActuals() > 0) ?
-        new CallExpr("chpl_here_free", tmp, call->get(1)->remove()) :
-        new CallExpr("chpl_here_free", tmp);
+      // TODO: What about the version of PRIM_DELETE that takes two args?
+      CallExpr* freeExpr = new CallExpr("chpl_here_free", tmp,
+                                        new_IntSymbol(call->astloc.lineno),
+                                        new_StringSymbol(call->astloc.filename));
       if (fLocal) {
         call->insertBefore(freeExpr);
       } else {

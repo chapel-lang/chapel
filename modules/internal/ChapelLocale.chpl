@@ -120,8 +120,8 @@ module ChapelLocale {
     proc taskInit() : void {}
     proc taskExit() : void {}
 
-    proc alloc(nbytes:int, md) {
-      return __primitive("malloc", nbytes, md);
+    proc alloc(nbytes:int) {
+      return __primitive("malloc", nbytes);
     }
 
     proc free(x:object) {
@@ -151,15 +151,25 @@ module ChapelLocale {
   __primitive("_task_set_here", new locale());
 
   // Here be dragons: If the return type is specified, then normalize.cpp inserts
-  // an initializer for the return value which calls its construct, which calls
-  // chpl_here_alloc ad infinitum.  But if the return type is left off, it works!!!
-  proc chpl_here_alloc(x, md:int(16)) {
+  // an initializer for the return value which calls its constructor, which calls
+  // chpl_here_alloc ad infinitum.  But if the return type is left off, it works!
+  proc chpl_here_alloc(x, md:int(16), lineno:int(32), filename:string) {
+    extern proc chpl_track_malloc(ptr:opaque, chunk:int, number:int, size:int,
+                                  md:int(16), lineno:int(32), filename:string)
+      :void;
     var nbytes = __primitive("sizeof", x);
-    var mem = here.alloc(nbytes, md);
+    var mem = here.alloc(nbytes);
+    chpl_track_malloc(mem, nbytes, 1, nbytes, md, lineno, filename);
     return __primitive("cast", x.type, mem);
   }
 
-  proc chpl_here_free(x) {
+  proc chpl_here_free(x, lineno:int(32), filename:string) {
+    // TODO: The pointer should really be of type opaque, but we don't 
+    // handle object ==> opaque casts correctly.  (In codegen, opaque behaves 
+    // like an lvalue, but in the type system it isn't one.)
+    extern proc chpl_track_free(ptr:object, lineno:int(32), filename:string)
+      :void;
+    chpl_track_free(x:object, lineno, filename);
     here.free(x);
   }
 
@@ -167,7 +177,7 @@ module ChapelLocale {
     return __primitive("chpl_getPrivatizedClass", nil:objectType, objectPid);
   
 
-//################################################################################{
+//########################################################################{
 //# Locale diagnostics
 //#
 
@@ -206,6 +216,6 @@ module ChapelLocale {
     return blockedTasks;
   }
 
-//################################################################################}
+//########################################################################}
 
 }

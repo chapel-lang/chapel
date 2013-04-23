@@ -1,3 +1,6 @@
+// The module wrapper is required because module names and type names can conflict.
+// This is a known bug: test/modules/hilde/Writer.future
+module Opaque {
 /*
  * Opaque Primer
  *
@@ -283,3 +286,4 @@ proc createRandomGraph() {
   delete myRandNums;
 }
 
+}

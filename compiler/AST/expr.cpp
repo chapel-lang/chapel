@@ -1271,10 +1271,10 @@ GenRet codegenDeref(GenRet r)
   GenRet ret;
 
   INT_ASSERT(r.chplType);
-  if ( r.chplType->symbol->hasFlag(FLAG_WIDE) ){
+  if (r.chplType->symbol->hasEitherFlag(FLAG_WIDE, FLAG_WIDE_CLASS)) {
     ret = codegenValue(r);
     ret.isLVPtr = GEN_WIDE_PTR;
-    ret.chplType = r.chplType->getValType(); 
+    ret.chplType = r.chplType->getValType();
   } else if ( r.chplType->symbol->hasFlag(FLAG_REF) ){
     return codegenLocalDeref(r);
   } else {
@@ -4158,13 +4158,11 @@ GenRet CallExpr::codegen() {
       break;
     }
     case PRIM_MALLOC:
-    { // (void*)chpl_mem_alloc(nbytes, md, lineno, filenam);
-      const char* fn = "chpl_mem_alloc";
+    { // (void*)chpl_malloc(nbytes);
       GenRet size = codegenValue(get(1));
-      GenRet description = codegenAdd(get(2), codegenUseGlobal("CHPL_RT_MD_NUM"));
       GenRet allocated;
-      allocated = codegenCallExpr(fn, size, description, get(3), get(4));
-      ret = codegenCast(typeInfo()->symbol->cname, allocated);
+      allocated = codegenCallExpr("chpl_malloc", size);
+      ret = codegenCastToVoidStar(allocated); // Needed?
       break;
     }
     case PRIM_CHPL_ALLOC:
@@ -4178,20 +4176,16 @@ GenRet CallExpr::codegen() {
         size = codegenSizeof(typeInfo());
       }
 
-      const char* fn = "chpl_mem_alloc";
       GenRet description = codegenAdd(get(2), codegenUseGlobal("CHPL_RT_MD_NUM"));
       GenRet allocated;
-      allocated = codegenCallExpr(fn, size, description, get(3), get(4));
+      allocated = codegenCallExpr("chpl_mem_alloc", size,
+                                  description, get(3), get(4));
 
       ret = codegenCast(typeInfo()->symbol->cname, allocated);
       break;
     }
     case PRIM_FREE: // This version is called from Chapel code.
-    case PRIM_CHPL_FREE: // This version is used internally.
     {
-      if (fNoMemoryFrees)
-        break;
-      INT_ASSERT(numActuals() == 3);
       Expr * ptrExpr = get(1);
       if( ptrExpr->typeInfo()->symbol->hasFlag(FLAG_DATA_CLASS))
         INT_FATAL(this, "cannot delete data class");
@@ -4200,11 +4194,29 @@ GenRet CallExpr::codegen() {
       if (ptrExpr->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         ptr = codegenRaddr(ptr);
       }
-      codegenCall("chpl_mem_free", codegenCastToVoidStar(ptr), get(2), get(3));
+      codegenCall("chpl_free", codegenCastToVoidStar(ptr));
       // MPF - note we do not set the pointer to NULL here
       // because it would not change any copies of the pointer
       // and we're toast in any case of use-after-free.
       // Arguably, it could be put back in for earlier error detection.
+      break;
+    }
+    case PRIM_CHPL_FREE: // This version is used internally.
+    {
+      if (fNoMemoryFrees)
+        break;
+      INT_ASSERT(numActuals() == 3);
+
+      Expr * ptrExpr = get(1);
+      if( ptrExpr->typeInfo()->symbol->hasFlag(FLAG_DATA_CLASS))
+        INT_FATAL(this, "cannot delete data class");
+      GenRet ptr; 
+      ptr = codegenValue(ptrExpr);
+      if (ptrExpr->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+        ptr = codegenRaddr(ptr);
+      }
+      codegenCall("chpl_mem_free", codegenCastToVoidStar(ptr),
+                  get(2), get(3));
       break;
     }
     case PRIM_CAST: 

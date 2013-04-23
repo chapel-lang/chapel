@@ -1,11 +1,13 @@
+// primitive.cpp
+
 #include "expr.h"
 #include "iterator.h"
 #include "primitive.h"
 #include "type.h"
 
 static Type*
-returnInfoBool(CallExpr* call) {
-  return dtBool;
+returnInfoUnknown(CallExpr* call) {
+  return dtUnknown;
 }
 
 static Type*
@@ -14,8 +16,13 @@ returnInfoVoid(CallExpr* call) {
 }
 
 static Type*
-returnInfoUnknown(CallExpr* call) {
-  return dtUnknown;
+returnInfoOpaque(CallExpr* call) {
+  return dtOpaque;
+}
+
+static Type*
+returnInfoBool(CallExpr* call) {
+  return dtBool;
 }
 
 static Type*
@@ -459,7 +466,7 @@ initPrimitive() {
 
   // These are used for task-aware allocation.
   prim_def(PRIM_SIZEOF, "sizeof", returnInfoDefaultInt);
-  prim_def(PRIM_MALLOC, "malloc", returnInfoChplAlloc, true, true);
+  prim_def(PRIM_MALLOC, "malloc", returnInfoOpaque, true, true);
   prim_def(PRIM_FREE, "free", returnInfoVoid, true, true);
 
   // These are satisfied directly by the runtime.

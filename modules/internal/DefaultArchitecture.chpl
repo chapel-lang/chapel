@@ -13,9 +13,6 @@ module DefaultArchitecture {
   use RootLocale;
   use Sys;
 
-  const emptyLocaleSpace: domain(1) = {1..0};
-  const emptyLocales: [emptyLocaleSpace] locale;
-
   // We would really like a class-static storage class.(C++ nomenclature)
   var doneCreatingLocales: bool = false;
 
