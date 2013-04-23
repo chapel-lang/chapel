@@ -4186,7 +4186,13 @@ GenRet CallExpr::codegen() {
     }
     case PRIM_FREE: // This version is called from Chapel code.
     {
+      if (fNoMemoryFrees)
+        break;
+
       Expr * ptrExpr = get(1);
+      if (ptrExpr->typeInfo()->getValType() == dtString &&
+          ! ptrExpr->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
+        break; // Leak local strings like crazy.
       if( ptrExpr->typeInfo()->symbol->hasFlag(FLAG_DATA_CLASS))
         INT_FATAL(this, "cannot delete data class");
       GenRet ptr; 
@@ -4208,6 +4214,9 @@ GenRet CallExpr::codegen() {
       INT_ASSERT(numActuals() == 3);
 
       Expr * ptrExpr = get(1);
+      if (ptrExpr->typeInfo()->getValType() == dtString &&
+          ! ptrExpr->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
+        break; // Leak local strings like crazy.
       if( ptrExpr->typeInfo()->symbol->hasFlag(FLAG_DATA_CLASS))
         INT_FATAL(this, "cannot delete data class");
       GenRet ptr; 
@@ -4351,12 +4360,14 @@ GenRet CallExpr::codegen() {
       break;
     case PRIM_STRING_COPY:
     {
+      GenRet cpyFrom = get(1)->codegen();
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        GenRet cpyTo = get(1)->codegen();
-        cpyTo.isLVPtr = GEN_VAL;
-        ret = codegenCallExpr("chpl_wide_string_copy", cpyTo, get(2), get(3));
+        cpyFrom.isLVPtr = GEN_VAL; // Prevent &(char*) syntax.
+        ret = codegenCallExpr("chpl_wide_string_copy", cpyFrom, get(2), get(3));
       } else
-        ret = codegenBasicPrimitiveExpr(this);
+        // Only copy wide string.
+        // Local strings are shared.
+        ret = codegenValue(cpyFrom);
       break;
     }
     case PRIM_RT_ERROR:
