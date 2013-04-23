@@ -68,7 +68,8 @@ class Type : public BaseAST {
   virtual void codegenDef();
   virtual void codegenPrototype();
 
-  // only used for emitting CUDA
+  // only used for heterogeneous compilations in which we need to define
+  // what our data structures are for the point of conversions
   virtual int codegenStructure(FILE* outfile, const char* baseoffset);
   
   virtual Symbol* getField(const char* name, bool fatal=true);

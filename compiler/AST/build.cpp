@@ -1842,20 +1842,6 @@ BlockStmt*
 buildOnStmt(Expr* expr, Expr* stmt) {
   checkControlFlow(stmt, "on statement");
 
-  /* GPU Case */
-  if (CallExpr* call = toCallExpr(expr)) {
-    if (call->isPrimitive(PRIM_ON_GPU)) {
-      BlockStmt* block = buildChapelStmt();
-      BlockStmt* onBlock = new BlockStmt(stmt);
-      //Expr *arg1 = call->get(1)->remove(); 
-      //Expr *arg2 = call->get(1)->remove(); 
-      //onBlock->blockInfo = new CallExpr(PRIM_ON_GPU, arg1, arg2);
-      onBlock->blockInfo = call;
-      block->insertAtTail(onBlock);
-      return block;
-    }
-  }
-
   CallExpr* onExpr = new CallExpr(PRIM_DEREF, extractLocaleID(expr));
 
   BlockStmt* body = toBlockStmt(stmt);

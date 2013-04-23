@@ -23,18 +23,11 @@ CHPL_RT_INC_DIR = $(RUNTIME_INCLS)
 
 CHPL_RT_LIB_DIR = $(CHPL_MAKE_HOME)/$(LIB_RT_DIR)
 
-ifdef NVCC
-TMPBINNAME_GPU=$(TMPBINNAME).gpu
-endif
-
 printincludesanddefines:
 	@echo $(RUNTIME_DEFS) $(RUNTIME_INCLS)
 
 printcompileline:
 	@echo $(CC) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) $(CHPL_RT_INC_DIR)
-ifdef NVCC
-	@echo $(NVCC) $(HEADER_CFLAGS) $(RUNTIME_CUDA_CFLAGS) $(CHPL_RT_INC_DIR)
-endif
 
 printlibraries:
 	@echo $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) -L$(CHPL_RT_LIB_DIR) -lchpl -lm $(LIBS)

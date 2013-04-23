@@ -1611,28 +1611,6 @@ module ChapelArray {
     return a;
   }
   
-  inline proc =(a: [], b : []) where (a._value.canCopyFromHost && b._value.canCopyFromHost) {
-    if a.rank != b.rank then
-      compilerError("rank mismatch in array assignment");
-    compilerError("GPU to GPU transfers not yet implemented");
-  }
-  
-  inline proc =(a: [], b : []) where (a._value.canCopyFromDevice && b._value.canCopyFromHost) {
-    if a.rank != b.rank then
-      compilerError("rank mismatch in array assignment");
-    __primitive("copy_gpu_to_host", 
-                a._value.data, b._value.data, b._value.eltType, b._value.size);
-    return a;
-  }
-  
-  inline proc =(a: [], b : []) where (a._value.canCopyFromHost && b._value.canCopyFromDevice) {
-    if a.rank != b.rank then
-      compilerError("rank mismatch in array assignment");
-    __primitive("copy_host_to_gpu", 
-                a._value.data, b._value.data, b._value.eltType, b._value.size);
-    return a;
-  }
-  
   proc chpl__serializeAssignment(a: [], b) param {
     if a.rank != 1 && chpl__isRange(b) then
       return true;

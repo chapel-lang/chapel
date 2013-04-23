@@ -421,8 +421,6 @@ module DefaultRectangular {
     var noinit: bool = false;
     //var numelm: int = -1; // for correctness checking
   
-    proc canCopyFromDevice param return true;
-  
     // end class definition here, then defined secondary methods below
   
     proc dsiDisplayRepresentation() {

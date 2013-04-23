@@ -2858,34 +2858,6 @@ GenRet CallExpr::codegen() {
       codegenAssign(dst, alloced);
       break;
     }
-    case PRIM_GPU_ALLOC:
-    {
-      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        codegenCall("_GPU_ALLOC", get(1),
-           getDataClassType(get(1)->typeInfo()->getField("addr")->type->symbol),
-           get(3));
-      } else {
-        codegenCall("_GPU_ALLOC",
-            get(1),
-            toClassType(get(1)->typeInfo())->codegenClassStructType(),
-            get(2),
-            get(3)->typeInfo()->symbol);
-      }
-      break;
-    }
-    case PRIM_COPY_HOST_GPU:
-      codegenCall("_GPU_COPY_HOST_GPU", get(1), get(2), get(3), get(4));
-      break;
-    case PRIM_COPY_GPU_HOST:
-      codegenCall("_GPU_COPY_GPU_HOST", get(1), get(2), get(3), get(4));
-      break;
-    case PRIM_GPU_FREE:
-    {
-      if (fNoMemoryFrees)
-        break;
-      codegenCall("_GPU_FREE", get(1));
-      break;
-    }
     case PRIM_ARRAY_FREE:
     {
       if (fNoMemoryFrees)
@@ -3145,18 +3117,6 @@ GenRet CallExpr::codegen() {
           }
           break;
         }
-        if (call->isPrimitive(PRIM_GPU_GET_VALUE)) {
-          codegenCall("_GPU_GET_VALUE", get(1), call->get(1), call->get(2));
-          break;
-        }
-        if (call->isPrimitive(PRIM_GPU_GET_VAL)) {
-          codegenCall("_GPU_GET_VAL", get(1), call->get(1), call->get(2));
-          break;
-        }
-        if (call->isPrimitive(PRIM_GPU_GET_ARRAY)) {
-          codegenCall("_GPU_GET_ARRAY", get(1), call->get(1));
-          break;
-        }
         if (call->isPrimitive(PRIM_GET_UNION_ID)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
             codegenAssign(get(1), codegenFieldUidPtr(call->get(1)));
@@ -3280,9 +3240,6 @@ GenRet CallExpr::codegen() {
     case PRIM_GET_PRIV_CLASS:
     case PRIM_ARRAY_GET:
     case PRIM_ARRAY_GET_VALUE:
-    case PRIM_GPU_GET_VALUE:
-    case PRIM_GPU_GET_VAL:
-    case PRIM_GPU_GET_ARRAY:
       // generated during generation of PRIM_MOVE
       break;
     case PRIM_ADDR_OF:
@@ -4674,25 +4631,11 @@ GenRet CallExpr::codegen() {
 
   GenRet base = baseExpr->codegen();
 
-  if (fn->hasFlag(FLAG_GPU_ON)) {
-    INT_ASSERT(c);
-    base.c += "<<<";
-    base.c += get(1)->codegen().c;
-    base.c += ",";
-    base.c += get(2)->codegen().c;
-    base.c += ">>>";
-  }
-
   std::vector<GenRet> args(numActuals());
 
-  int count = 0;
   int i = 0;
   for_formals_actuals(formal, actual, this) {
     Type* actualType = actual->typeInfo();
-    if (fn->hasFlag(FLAG_GPU_ON) && count < 2) {
-      count++;
-      continue; // do not print nBlocks and numThreadsPerBlock
-    }
 
     GenRet arg;
 
@@ -4757,19 +4700,6 @@ GenRet CallExpr::codegen() {
 
   if (c && getStmtExpr() && getStmtExpr() == this)
     info->cStatements.push_back(ret.c + ";\n");
-
-  if (fn->hasFlag(FLAG_GPU_ON)) {
-    INT_ASSERT(c);
-    info->cStatements.push_back("cudaThreadSynchronize();\n");
-    info->cStatements.push_back("cudaError_t err = cudaGetLastError();\n");
-    info->cStatements.push_back("if( cudaSuccess != err) {");
-    info->cStatements.push_back("fprintf(stderr, \"CUDA error: Kernel "
-                                "Execution Failed in file <%%s>, line %%i"
-                                " : %%s.\\n\", __FILE__, __LINE__, "
-                                "cudaGetErrorString( err) );\n");
-    info->cStatements.push_back("chpl_exit_any(-1);\n");
-    info->cStatements.push_back("}\n");
-  }
 
   return ret;
 }

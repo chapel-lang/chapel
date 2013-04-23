@@ -432,7 +432,7 @@ void genIncludeCommandLineHeaders(FILE* outfile) {
 }
 
 
-void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
+void codegen_makefile(fileinfo* mainfile) {
   fileinfo makefile;
   openCFile(&makefile, "Makefile");
   const char* tmpDirName = intDirName;
@@ -510,10 +510,6 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
 
   fprintf(makefile.fptr, "CHPLSRC = \\\n");
   fprintf(makefile.fptr, "\t%s \\\n\n", mainfile->pathname);
-  if (fGPU) {
-    fprintf(makefile.fptr, "CHPL_GPU_SRC = \\\n");
-    fprintf(makefile.fptr, "\t%s \\\n\n", gpusrcfile->pathname);
-  }
   genCFiles(makefile.fptr);
   genObjFiles(makefile.fptr);
   fprintf(makefile.fptr, "\nLIBS =");

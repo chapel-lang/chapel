@@ -3,7 +3,6 @@ OPTIMIZATIONS_SRCS = \
 	complex2record.cpp \
 	copyPropagation.cpp \
 	deadCodeElimination.cpp \
-	gpuFlattenArgs.cpp \
 	inlineFunctions.cpp \
 	liveVariableAnalysis.cpp \
 	localizeGlobals.cpp \
