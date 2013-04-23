@@ -23,22 +23,17 @@ NEW/CHANGED:
       testing of "flat" versus dynamically-dispatched allocations.
   o Use the config param to characterize the impact of flat MM vs. LAMM.
 
-* Characterize language impacts of allowing sync vars to be dispatched as objects.
-  i Greg says this is OK.
-  o Create a future for dispatch of sync as object. [bradc]
-
-* Get allocCleanup patch reviewed and checked into trunk. [vass]
-
 * Move mem tracking into chpl_here_alloc.
   * Preserve filename/lineno information: md + filename + lineno.
   * Preserve pre/post checks.
-  o Package pre/post checks in hook functions (restore control by CHPL_MEM_DEBUG &c).[gbt]
-  o Mem counts are different because we call string_copy when passing the
+  * Package pre/post checks in hook functions (restore control by CHPL_MEM_DEBUG &c).[gbt]
+    - Call these functions from the module code.
+      o Implement PRIM_CAST_TO_VOID_STAR.
+  * Mem counts are different because we call string_copy when passing the
     filename arguments into chpl_here_alloc and chpl_here_free now.
-    i We probably just want to disable the copy for cases in which the source
-      string is const.
+    * Local strings are shared (and leaked).
 
-o Merge DefaultArchitecture, RootLocale out from trunk (to pick up Vass-inspired
+- Merge DefaultArchitecture, RootLocale out from trunk (to pick up Vass-inspired
   changes).
 
 - Passes relevant regression tests
@@ -49,12 +44,20 @@ o Merge DefaultArchitecture, RootLocale out from trunk (to pick up Vass-inspired
 
 RESOLVED/UNCHANGED:
 
+o Merge to trunk environment setting of numThreadsPerLocale and callStackSize? [gbt]
+
+* Characterize language impacts of allowing sync vars to be dispatched as objects.
+  i Greg says this is OK.
+  * Create a future for dispatch of sync as object. [bradc]
+
+* Get allocCleanup patch reviewed and checked into trunk. [vass]
+
 d Ensure that all important cases are covered by chpl_maybeAutoDestroyed().
 
 * Whether to pass the destination locale to chpl_here_alloc() [no]
   i Not necessary using the "proxy" model
 
 
-Key:	o -- open		- -- in progress	* -- done		! -- blocked
-	> -- dependency		i -- information	d -- deferred   a -- abandoned
+Key:    o -- open       - -- in progress    * -- done       ! -- blocked
+    > -- dependency     i -- information    d -- deferred   a -- abandoned
 
