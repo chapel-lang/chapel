@@ -56,7 +56,9 @@ static void recordExecutionCommand(int argc, char *argv[]) {
   for (i = 0; i < argc; i++) {
     length += strlen(argv[i]) + 1;
   }
-  chpl_executionCommand = (char*)chpl_mem_allocMany(length+1, sizeof(char), CHPL_RT_EXECUTION_COMMAND, 0, 0);
+  chpl_executionCommand =
+    (char*)chpl_mem_allocMany(length+1, sizeof(char),
+                              CHPL_RT_MD_EXECUTION_COMMAND, 0, 0);
   sprintf(chpl_executionCommand, "%s", argv[0]);
   for (i = 1; i < argc; i++) {
     strcat(chpl_executionCommand, " ");

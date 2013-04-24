@@ -13,6 +13,8 @@ COMMON_NOGEN_SRCS = \
 	chplio.c \
 	chplgmp.c \
 	chpl-mem.c \
+	chpl-mem-desc.c \
+	chpl-mem-hook.c \
 	chplmemtrack.c \
 	chplsys.c \
 	chpl-timers.c \
