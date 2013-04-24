@@ -65,7 +65,7 @@
 # LASTEXECOPTS: Test program flags to be put at the end of the command line
 # NUMLOCALES: Number of locales to use
 # CATFILES: List of files whose contents are added to end of test output
-# PREDIFF: Script to execute before diff'ing output (arguments: <test>,
+# PREDIFF: Script to execute before diff'ing output (arguments: <test
 #    executable>, <log>, <compiler executable>)
 # PREEXEC: Script to execute before executing test program (arguments: <test
 #    executable>, <log>, <compiler executable>)
