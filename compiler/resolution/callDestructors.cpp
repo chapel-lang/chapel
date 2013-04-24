@@ -120,8 +120,8 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
     if (CallExpr* useCall = toCallExpr(use->parentExpr)) {
       if (FnSymbol* useFn = useCall->isResolved()) {
         if (!strcmp(useFn->name, "=") ||
-            !strcmp(useFn->name, "chpl__initCopy") ||
-            !strcmp(useFn->name, "chpl__autoCopy")) {
+            useFn->hasFlag(FLAG_AUTO_COPY_FN) ||
+            useFn->hasFlag(FLAG_INIT_COPY_FN)) {
 
 //           printf("CALL SITE\n");
 //           list_view(move->getFunction());

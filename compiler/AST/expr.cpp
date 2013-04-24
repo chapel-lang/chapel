@@ -19,8 +19,8 @@
 static GenRet codegenCallExpr(const char* fnName);
 static void codegenAssign(GenRet to_ptr, GenRet from);
 static GenRet codegenCast(Type* t, GenRet value, bool Cparens = true);
-GenRet createTempVarWith(GenRet v);
-GenRet createTempVar(Type* t);
+static GenRet createTempVar(Type* t);
+static GenRet createTempRef(Type* t);
 
 static GenRet codegenRaddrMaybePtr(GenRet wide);
 static GenRet codegenRaddr(GenRet wide);
@@ -449,13 +449,25 @@ GenRet DefExpr::codegen() {
   return ret;
 }
 
-// Generates code to load the wide version of an address.
+// Generates code to load the wide version of an address and returns an
+// expression that evaluates to this address.
+//
+// For the C language backend, it creates a temporary of the wide pointer type,
+// and then sets the locale ID and address fields within that temporary.
+// Those loads create statements which go immediately into the output stream.
+// The name of the symbol is returned in the .c field of the GenRet structure.
+//
+// For the LLVM backend, the output has more of a parse tree structure.
+// A temp is created of the wide pointer type, and the locale and address
+// inputs are cast to the types of their respective fields as needed.
+// Then, each field is loaded in turn and the modified wide pointer temp
+// is returned.
+//
 static
 GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
 {
   GenInfo* info = gGenInfo;
   GenRet ret;
-  ret.isLVPtr = GEN_WIDE_PTR;
   Type* wideRefType = NULL;
   if( raddr.chplType && !wideType ) {
     INT_ASSERT(raddr.isLVPtr != GEN_WIDE_PTR);
@@ -477,16 +489,13 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
   }
   
   INT_ASSERT(wideRefType);
-  ret.chplType = wideRefType->getValType(); // or raddr.chplType; ?
   
   if( info->cfile ) {
-    ret.c += "(" + wideRefType->codegen().c + ")";
-
-    // This requires C99 - we could also do it with an
-    // inline function and a cast, or with a local
-    // variable and some stores.
-    ret.c += "{ .locale = " + locale.c +
-               ", .addr = " + raddr.c + " }";
+    ret = createTempVar(wideRefType);
+    std::string localeAssign = codegenValue(ret).c + ".locale = " + locale.c + ";\n";
+    info->cStatements.push_back(localeAssign);
+    std::string addrAssign = codegenValue(ret).c + ".addr = " + raddr.c + ";\n";
+    info->cStatements.push_back(addrAssign);
   } else {
 #ifdef HAVE_LLVM
     {
@@ -527,6 +536,8 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
     }
 #endif
   }
+  ret.chplType = wideRefType->getValType(); // or raddr.chplType; ?
+  ret.isLVPtr = GEN_WIDE_PTR;
   return ret;
 }
 
@@ -599,12 +610,14 @@ GenRet codegenLocaleID(GenRet node, GenRet subloc)
   GenRet ret;
   if (info->cfile)
   {
+    // This uses C99 syntax for anonymous structs.
+    // Alternatively, we could store values into fields in a temp.
     ret.c = "(" + dtLocaleID->codegen().c + ")";
     ret.c += "{ .node = " + node.c + ", .subloc = " + subloc.c + " }";
   } else {
 #ifdef HAVE_LLVM
 
-    GenRet temp = createTempVar(dtLocaleID);
+    GenRet temp = createTempRef(dtLocaleID);
     GenRet ptrNode = codegenFieldPtr(temp, "node");
     GenRet ptrSubloc = codegenFieldPtr(temp, "subloc");
 
@@ -1082,11 +1095,10 @@ GenRet createTempVar(const char* ctype)
   char name[32];
   sprintf(name, "chpl_macro_tmp_%d", codegen_tmp++);
   
-  ret.isLVPtr = GEN_PTR;
   if( info->cfile ) {
     // Add a temporary variable
     info->cLocalDecls.push_back(std::string(ctype) + " " + name);
-    ret.c = std::string("&") + name;
+    ret.c = name;
   } else {
 #ifdef HAVE_LLVM
     ret.val = createTempVarLLVM(info->lvt->getType(ctype), name);
@@ -1095,8 +1107,20 @@ GenRet createTempVar(const char* ctype)
   return ret;
 }
 
+static GenRet createTempRef(Type* t)
+{
+  GenInfo* info = gGenInfo;
+  GenRet ret = createTempVar(t);
+  ret.isLVPtr = GEN_PTR;
+  if (info->cfile)
+    ret.c = std::string("&") + ret.c;
+
+  // No difference for LLVM?
+  return ret;
+}
+
 // use this function for chplTypes
-GenRet createTempVar(Type* t)
+static GenRet createTempVar(Type* t)
 {
   GenRet ret = createTempVar(t->symbol->cname);
   ret.chplType = t;
@@ -1108,7 +1132,7 @@ GenRet createTempVarWith(GenRet v)
   GenInfo* info = gGenInfo;
   Type* t = v.chplType;
   INT_ASSERT(t);
-  GenRet ret = createTempVar(t);
+  GenRet ret = createTempRef(t);
   ret.isUnsigned = v.isUnsigned;
   // now store into the temp var the value we have.
   if( info->cfile ) {
@@ -1142,7 +1166,7 @@ GenRet codegenValue(GenRet r)
     // Emit a temporary.
     // Assign from wide pointer value into temporary
     // Return local pointer to temporary
-    ret = createTempVar(r.chplType);
+    ret = createTempRef(r.chplType);
     codegenAssign(ret, r);
     return codegenValue(ret);
   }
@@ -1210,8 +1234,7 @@ GenRet codegenValuePtr(GenRet r)
 // Converts an L-value pointer into a
 // pointer value, so that it can for example
 // be stored in another pointer.
-static
-GenRet codegenAddrOf(GenRet r)
+static GenRet codegenAddrOf(GenRet r)
 {
   GenRet ret = r;
 

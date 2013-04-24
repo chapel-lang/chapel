@@ -692,7 +692,7 @@ makeHeapAllocations() {
           call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(2)->remove()));
           call->replace(new CallExpr(PRIM_SET_MEMBER, call->get(1)->copy(), heapType->getField(1), tmp));
         } else if (call->isResolved() &&
-                   !strcmp("chpl__autoDestroy", call->isResolved()->name)) {
+                   call->isResolved()->hasFlag(FLAG_AUTO_DESTROY_FN)) {
           call->remove();
         } else {
           VarSymbol* tmp = newTemp(var->type);
@@ -715,7 +715,7 @@ makeHeapAllocations() {
             call->replace(new CallExpr(PRIM_GET_MEMBER, use->var, heapType->getField(1)));
           }
         } else if (call->isResolved()) {
-          if (!strcmp("chpl__autoDestroy", call->isResolved()->name)) {
+          if (call->isResolved()->hasFlag(FLAG_AUTO_DESTROY_FN)) {
             call->remove();
           } else if (actual_to_formal(use)->type == heapType) {
             // do nothing
@@ -1523,6 +1523,7 @@ void
 insertWideReferences(void) {
   SET_LINENO(baseModule);
   FnSymbol* heapAllocateGlobals = new FnSymbol("chpl__heapAllocateGlobals");
+  heapAllocateGlobals->addFlag(FLAG_EXPORT);
   heapAllocateGlobals->retType = dtVoid;
   theProgram->block->insertAtTail(new DefExpr(heapAllocateGlobals));
   heapAllocateGlobals->insertAtHead(new CallExpr(PRIM_ALLOC_GVR));
@@ -1815,7 +1816,7 @@ static void narrowWideClassesThroughCalls()
           } else if (var->type->symbol->hasEitherFlag(FLAG_REF,FLAG_DATA_CLASS))
             call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, sym->copy()));
           else
-            call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_DEREF, sym->copy())));
+            call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, sym->copy()));
           call->getStmtExpr()->insertAfter(new CallExpr(PRIM_MOVE, sym->copy(), var));
           sym->replace(new SymExpr(var));
         }

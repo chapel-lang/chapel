@@ -203,7 +203,6 @@ llvm::Value* createTempVarLLVM(llvm::Type* type, const char* name);
 llvm::Value* createTempVarLLVM(llvm::Type* type);
 #endif
 GenRet createTempVarWith(GenRet v);
-GenRet createTempVar(Type *t);
 
 GenRet codegenDeref(GenRet toDeref);
 GenRet codegenLocalDeref(GenRet toDeref);

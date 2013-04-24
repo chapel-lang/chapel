@@ -8,7 +8,9 @@
 // threads to use.
 //
 pragma "no use ChapelStandard"
-module ChapelThreads {
+pragma "export init"
+module ChapelThreads
+{
   extern proc chpl_task_getenvNumThreadsPerLocale(): int(32);
   config const numThreadsPerLocale: int = chpl_task_getenvNumThreadsPerLocale();
 

@@ -20,11 +20,11 @@
 //
 static void build_type_constructor(ClassType* ct);
 static void build_constructor(ClassType* ct);
+static void resolveUnresolvedSymExprs();
 static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
                                      Vec<UnresolvedSymExpr*>& skipSet);
 static void resolveModuleCall(CallExpr* call,
                               Vec<UnresolvedSymExpr*>& skipSet);
-
 
 
 //
@@ -1011,7 +1011,8 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
     localSeenPtr->set_add(ct);
     add_class_to_hierarchy(pt, localSeenPtr);
     ct->dispatchParents.add(pt);
-    INT_ASSERT(pt->dispatchChildren.add_exclusive(ct));
+    bool inserted = pt->dispatchChildren.add_exclusive(ct);
+    INT_ASSERT(inserted);
     expr->remove();
     if (isClass(ct)) {
       SET_LINENO(ct);
@@ -1206,7 +1207,22 @@ void scopeResolve(void) {
 
   resolveGotoLabels();
 
+  resolveUnresolvedSymExprs();
 
+  resolveEnumeratedTypes();
+
+  destroyTable();
+
+  destroyModuleUsesCaches();
+
+  renameDefaultTypesToReflectWidths();
+
+  cleanupExternC();
+}
+
+
+static void resolveUnresolvedSymExprs()
+{
   Vec<UnresolvedSymExpr*> skipSet;
 
   //
@@ -1246,18 +1262,9 @@ void scopeResolve(void) {
     i++;
   }
 
-  resolveEnumeratedTypes();
-
   skipSet.clear();
-
-  destroyTable();
-
-  destroyModuleUsesCaches();
-
-  renameDefaultTypesToReflectWidths();
-
-  cleanupExternC();
 }
+
 
 static
 void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,

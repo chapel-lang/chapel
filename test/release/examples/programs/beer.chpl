@@ -4,74 +4,81 @@
  * by Brad Chamberlain and Steve Deitz
  *
  * Original version written 07/13/2006 in Knoxville airport while
- * waiting for flight home from HPLS workshop.
+ * waiting for flight home from HPLS workshop.  Updated since then to
+ * reflect syntax changes and language improvements.
  *
- * For more information, contact: chapel_info@cray.com
- *
- * modified 08/02/2006 to remove a workaround in the original version
- * modified 08/16/2006 to update syntax (fun -> def)
- * modified 06/12/2007 to clean up for June 2007 release: added main()
- *                     and some comments
+ * For more information, see http://chapel.cray.com
  *
  * Notes: 
  * o as in all good parallel computations, boundary conditions
- *   constitute the vast bulk of complexity in this code (invite Brad to
- *   tell you about his zany boundary condition simplification scheme)
- * o uses type inference for variables, arguments
- * o relies on integer->string coercions
- * o uses named argument passing (for documentation purposes only)
+ *   constitute the vast bulk of complexity in this code
+ * o uses type inference for most variables, arguments
+ * o uses named argument passing for documentation purposes
  ***********************************************************************/
 
-// allow executable command-line specification of number of bottles 
-// (e.g., ./a.out -snumBottles=999999)
+//
+// Support executable command-line specification of number of bottles 
+// (e.g., ./beer --numBottles=999999)
+//
 config const numBottles = 99;
 
-// the program's entry point
-proc main {
-  // the number of verses to compute
-  const numVerses = numBottles+1;
 
-  // a domain to describe the space of lyrics
-  var LyricsSpace: domain(1) = {1..numVerses};
+//
+// Global constants and variables
+//
+const numVerses = numBottles+1;       // the number of verses to compute
 
-  // array of lyrics
-  var Lyrics: [LyricsSpace] string;
+const LyricsSpace  = {1..numVerses};  // the index set for the lyrics
+var Lyrics: [LyricsSpace] string;     // array of lyrics
 
-  // parallel computation of lyrics array using a forall expression
-  //   "forall verse in LyricsSpace, Lyrics(verse) = ..."
-  [verse in LyricsSpace] Lyrics(verse) = computeLyric(verse, numVerses);
 
-  // as in any good parallel language, I/O to stdout is serialized.  ;)
-  // (Note that I/O to a file could be parallelized using a parallel
-  // prefix computation on the verse strings' lengths with file seeking)
-  writeln(Lyrics);
+//
+// compute the array of lyrics in parallel using a forall loop
+//
+forall verse in LyricsSpace do
+  Lyrics[verse] = computeLyrics(verse);
+
+
+//
+// print the lyrics out to the console
+//
+writeln(Lyrics);
+
+
+// ------------ Helper functions -------------
+
+//
+// Compute the lyrics for the verse #verseNum
+//
+proc computeLyrics(verseNum) {
+  const bottleNum = numBottles - verseNum + 1,               // what are we on?
+        nextBottle = (bottleNum + numVerses - 1)%numVerses;  // what's next?
+
+  return "\n"
+        + describeBottles(bottleNum, startOfVerse=true) + " on the wall, "
+        + describeBottles(bottleNum) + ".\n"
+        + computeAction(bottleNum)
+        + describeBottles(nextBottle) + " on the wall.\n";
 }
 
 
-// HELPER FUNCTIONS:
-
-proc computeLyric(verseNum, numVerses) {
-  var bottleNum = numBottles - (verseNum - 1);
-  var nextBottle = (bottleNum + numVerses - 1)%numVerses;
-  return "\n" // disguise space used to separate elements in array I/O
-       + describeBottles(bottleNum, startOfVerse=true) + " on the wall, "
-       + describeBottles(bottleNum) + ".\n"
-       + computeAction(bottleNum)
-       + describeBottles(nextBottle) + " on the wall.\n";
-}
-
-
+//
+// Given a bottle number and whether or not we're at the start of the
+// verse, generate the string "# bottles of beer on the wall" where
+// # should result in "[N/n]o more" for zero bottles.
+//
 proc describeBottles(bottleNum, startOfVerse = false) {
-  var bottleDescription = if (bottleNum) then bottleNum:string
-                                         else (if startOfVerse then "N" 
-                                                               else "n") 
-                                              + "o more";
-  return bottleDescription 
-       + " bottle" + (if (bottleNum == 1) then "" else "s") 
-       + " of beer";
+  return (if (bottleNum) then bottleNum:string
+                         else (if startOfVerse then "N" 
+                                               else "n") + "o more")
+          + " bottle" + (if (bottleNum != 1) then "s" else "") 
+          + " of beer";
 }
 
 
+//
+// Compute whether we'll go to the store or take another one down
+//
 proc computeAction(bottleNum) {
   return if (bottleNum == 0) then "Go to the store and buy some more, "
                              else "Take one down and pass it around, ";

@@ -109,7 +109,7 @@ class VarSymbol : public Symbol {
   const char* doc;
 
   GenRet codegen();
-  void codegenDefC();
+  void codegenDefC(bool global = false);
   void codegenDef();
   // global vars are different ...
   void codegenGlobalDef();

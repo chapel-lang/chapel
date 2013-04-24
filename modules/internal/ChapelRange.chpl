@@ -104,27 +104,11 @@ module ChapelRange {
   //////////////////////////////////////////////////////////////////////////////////
   // Range builders for bounded ranges
   // Range builders are used by the parser to create literal ranges.
-  // hilde sez: I think that these need to be spelled out explicitly
-  // because param loop unrolling is performed before generic expansion.
   //
-  /* BLC: I think we want to add these eventually... maybe soon
-  proc _build_range(low: int(8), high: int(8))
-    return new range(idxType = int(8), _low = low, _high = high);
-  proc _build_range(low: uint(8), high: uint(8))
-    return new range(uint(8), _low = low, _high = high);
-  proc _build_range(low: int(16), high: int(16))
-    return new range(idxType = int(16), _low = low, _high = high);
-  proc _build_range(low: uint(16), high: uint(16))
-    return new range(uint(16), _low = low, _high = high);
-  */
-  proc _build_range(low: int(32), high: int(32))
-    return new range(idxType = int(32), _low = low, _high = high);
-  proc _build_range(low: uint(32), high: uint(32))
-    return new range(uint(32), _low = low, _high = high);
-  proc _build_range(low: int(64), high: int(64))
-    return new range(int(64), _low = low, _high = high);
-  proc _build_range(low: uint(64), high: uint(64))
-    return new range(uint(64), _low = low, _high = high);
+  proc _build_range(low: int(?w), high: int(w))
+    return new range(idxType = int(w), _low = low, _high = high);
+  proc _build_range(low: uint(?w), high: uint(w))
+    return new range(uint(w), _low = low, _high = high);
   proc _build_range(low, high) {
     compilerError("Bounds of '..' must be integers of compatible types, when specified.");
   }
@@ -132,26 +116,11 @@ module ChapelRange {
   
   //////////////////////////////////////////////////////////////////////////////////
   // Range builders for unbounded ranges
-  // hilde sez: Ditto here: Generic types don't work.
   //
-  /*
-  proc _build_range(param bt: BoundedRangeType, bound: int(8))
-    return new range(int(8), bt, false, bound, bound);
-  proc _build_range(param bt: BoundedRangeType, bound: uint(8))
-    return new range(uint(8), bt, false, bound, bound);
-  proc _build_range(param bt: BoundedRangeType, bound: int(16))
-    return new range(int(16), bt, false, bound, bound);
-  proc _build_range(param bt: BoundedRangeType, bound: uint(16))
-    return new range(uint(16), bt, false, bound, bound);
-  */
-  proc _build_range(param bt: BoundedRangeType, bound: int(32))
-    return new range(int(32), bt, false, bound, bound);
-  proc _build_range(param bt: BoundedRangeType, bound: uint(32))
-    return new range(uint(32), bt, false, bound, bound);
-  proc _build_range(param bt: BoundedRangeType, bound: int(64))
-    return new range(int(64), bt, false, bound, bound);
-  proc _build_range(param bt: BoundedRangeType, bound: uint(64))
-    return new range(uint(64), bt, false, bound, bound);
+  proc _build_range(param bt: BoundedRangeType, bound: int(?w))
+    return new range(int(w), bt, false, bound, bound);
+  proc _build_range(param bt: BoundedRangeType, bound: uint(?w))
+    return new range(uint(w), bt, false, bound, bound);
   proc _build_range(param bt: BoundedRangeType)
     return new range(int, bt);
   

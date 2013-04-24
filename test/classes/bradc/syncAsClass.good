@@ -1,0 +1,2 @@
+syncAsClass.chpl:7: error: unresolved call 'foo(_syncvar(int(64)))'
+syncAsClass.chpl:1: note: candidates are: foo(o: object)

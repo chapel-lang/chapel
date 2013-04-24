@@ -503,6 +503,7 @@ proc file.isOpen: bool {
 }
 
 // TODO -- shouldn't have to write this this way!
+pragma "init copy fn"
 proc chpl__initCopy(x: file) {
   on x.home {
     qio_file_retain(x._file_internal);
@@ -752,6 +753,7 @@ record channel {
 }
 
 // TODO -- shouldn't have to write this this way!
+pragma "init copy fn"
 proc chpl__initCopy(x: channel) {
   on x.home {
     qio_channel_retain(x._channel_internal);

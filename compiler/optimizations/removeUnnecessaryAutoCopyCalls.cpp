@@ -113,7 +113,7 @@ void removeUnnecessaryAutoCopyCalls() {
   Vec<Type*> primitiveInitCopyTypeSet;
   
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (!strcmp(fn->name, "chpl__initCopy") &&
+    if (fn->hasFlag(FLAG_INIT_COPY_FN) &&
         fn->numFormals() == 1 &&
         fn->getFormal(1)->type == fn->retType) {
       if (isPrimitiveInitCopy(primitiveInitCopyTypeSet, fn->retType)) {

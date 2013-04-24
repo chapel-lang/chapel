@@ -22,6 +22,7 @@
 # - chapelexecopts
 # - chapelprediff
 # - chapeloutput|chapelprintoutput
+# - chapelwideoutput
 #
 # GENERAL CAVEATS:
 # - All environments may contain special formatting due the fact that
@@ -112,6 +113,7 @@ def ClearLists():
     del chapelexecopts[:]
     del chapelprediff[:]
     del chapeloutput[:]
+    del chapelwideoutput[:]
     del chapelprintoutput[:]
 
 # Write out the test files
@@ -195,6 +197,11 @@ def OutputTest(lineno, currTestName):
         fh = open(testName+'.good', 'w')
         fh.close()
 
+    # write out .no-local.good file if it exists.
+    if len(chapelwideoutput) > 0:
+        WriteGoodFile(fh, chapelwideoutput, testName+'.no-local')
+        WriteGoodFile(fh, chapelprintoutput, testName+'.no-local')
+
     ClearLists()
 
 
@@ -216,6 +223,7 @@ chapelcompopts = list()
 chapelexecopts = list()
 chapelprediff = list()
 chapeloutput = list()
+chapelwideoutput = list()
 chapelprintoutput = list()
 current = None
 currTestNames = list()
@@ -361,6 +369,9 @@ for infile in args:
             elif line.find('output}', pos) == pos:
                 printToOutfile = True
                 current = chapeloutput;
+            elif line.find('wideoutput}', pos) == pos:
+                printToOutfile = True
+                current = chapelwideoutput;
             elif line.find('printoutput}', pos) == pos:
                 printToOutfile = True
                 current = chapelprintoutput;

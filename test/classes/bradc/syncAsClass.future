@@ -1,0 +1,11 @@
+unimplemented: Should diagnose on an attempt to coerce to type object.
+
+Right now, there is no way to specify separate behavior for coercion in the
+class itself.  Standard behavior allows coercion to a base class type without an
+explicit cast, and there is no way to override this on a per-class basis.  Look
+for coercion as a language feature to allow overriding the default behavior, or
+special-case code to disable this coercion along with very special code to allow
+syncvars to be cast pursuant to being freed/reallocated.
+
+Designer take note! To disallow coercion and then permit an explicit cast, the
+casting behavior (where provided) must dominate.

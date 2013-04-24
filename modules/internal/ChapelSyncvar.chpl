@@ -273,18 +273,24 @@ module ChapelSyncvar {
     return init;
   }
   
+  pragma "init copy fn"
   inline proc chpl__initCopy(sv: sync) {
     return sv.readFE();
   }
   
+  pragma "init copy fn"
   inline proc chpl__initCopy(sv: single) {
     return sv.readFF();
   }
 
   pragma "dont disable remote value forwarding"
+  pragma "donor fn"
+  pragma "auto copy fn"
   inline proc chpl__autoCopy(x: sync) return x;
 
   pragma "dont disable remote value forwarding"
+  pragma "donor fn"
+  pragma "auto copy fn"
   inline proc chpl__autoCopy(x: single) return x;
 
   // These permit chpl_here_free to be called with sync and single objects.
@@ -303,9 +309,11 @@ module ChapelSyncvar {
   inline proc chpl__maybeAutoDestroyed(x: _syncvar) param return false;
   inline proc chpl__maybeAutoDestroyed(x: _singlevar) param return false;
 
+  pragma "auto destroy fn"
   inline proc chpl__autoDestroy(x: _syncvar) {
     delete x;
   }
+  pragma "auto destroy fn"
   inline proc chpl__autoDestroy(x: _singlevar) {
     delete x;
   }
