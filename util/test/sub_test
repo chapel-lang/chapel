@@ -61,6 +61,7 @@
 # COMPSTDIN: Get stdin from this file (default /dev/null)
 # COMPOPTS: Compiler flags
 # LASTCOMPOPTS: Compiler flags to be put at the end of the command line
+# EXECENV: Environment variables to be applied to the entire directory
 # EXECOPTS: Test program flags to be applied to the entire directory
 # LASTEXECOPTS: Test program flags to be put at the end of the command line
 # NUMLOCALES: Number of locales to use
@@ -82,7 +83,9 @@
 # .perfcompopts: Additional compiler options for performance testing
 # .lastcompopts: Additional compiler options to be added at the end of the
 #    command line
+# .execenv: Additional environment variables for the test
 # .execopts: Additional test options
+# .perfexecenv: Additional environment variables for performance testing
 # .perfexecopts: Additional test options for performance testing
 # .notest: Do not run this test
 # .numlocales: Number of locales to use (overrides NUMLOCALES)
@@ -460,6 +463,7 @@ else:
 
 if os.getenv('CHPL_TEST_PERF')!=None:
     compoptssuffix='.perfcompopts'
+    execenvsuffix='.perfexecenv'
     execoptssuffix='.perfexecopts'
     perftest=True
     if os.getenv('CHPL_TEST_PERF_DIR')!=None:
@@ -468,6 +472,7 @@ if os.getenv('CHPL_TEST_PERF')!=None:
         perfdir='./perfdat/'+machine
 else:
     compoptssuffix='.compopts'
+    execenvsuffix='.execenv'
     execoptssuffix='.execopts'
     perftest=False
 # sys.stdout.write('perftest=%d\n'%(perftest))
@@ -485,6 +490,15 @@ envCompopts = os.getenv('COMPOPTS')
 if envCompopts != None:
     globalCompopts += shlex.split(envCompopts)
 # sys.stdout.write('globalCompopts=%s\n'%(globalCompopts))
+
+#
+# Global EXECENV
+#
+if os.access('./EXECENV',os.R_OK):
+    globalExecenv=ReadFileWithComments('./EXECENV')
+else:
+    globalExecenv=list()
+# sys.stdout.write('globalExecenv=%s\n'%(globalExecenv))
 
 #
 # Global EXECOPTS
@@ -599,6 +613,7 @@ for testname in testsrc:
         # Deal with these later
         if (suffix == '.good' or
             suffix=='.compopts' or suffix=='.perfcompopts' or
+            suffix=='.execenv' or suffix=='.perfexecenv' or
             suffix=='.execopts' or suffix=='.perfexecopts'):
             continue # on to next file
 
@@ -701,6 +716,22 @@ for testname in testsrc:
         compoptslist = ReadFileWithComments(execname+compoptssuffix, False)
     else:
         compoptslist = list(' ')
+
+    # The test environment is that of this process, augmented as specified
+    if os.access(execname+execenvsuffix, os.R_OK):
+        execenv = ReadFileWithComments(execname+execenvsuffix)
+    else:
+        execenv = list()
+
+    if len(globalExecenv)==0 and len(execenv)==0:
+        testenv = os.environ
+    else:
+        testenv = os.environ.copy()
+        for tev in globalExecenv:
+            testenv[tev.split('=')[0].strip()] = tev.split('=')[1].strip()
+        for tev in execenv:
+            testenv[tev.split('=')[0].strip()] = tev.split('=')[1].strip()
+        del tev
 
     # Get list of test specific exec options
     if os.access(execname+execoptssuffix, os.R_OK):
@@ -1003,6 +1034,7 @@ for testname in testsrc:
                 else:
                     my_stdin=file(redirectin, 'r')
                 p = subprocess.Popen([cmd]+LauncherTimeoutArgs(timeout)+args,
+                                     env=testenv,
                                      stdin=my_stdin,
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT)
@@ -1026,6 +1058,7 @@ for testname in testsrc:
                 else:
                     my_stdin = file(redirectin, 'r')
                 p = subprocess.Popen([timedexec, str(timeout), wholecmd],
+                                     env=testenv,
                                      stdin=my_stdin,
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT)
@@ -1046,7 +1079,9 @@ for testname in testsrc:
                     my_stdin = None
                 else:
                     my_stdin=file(redirectin, 'r')
-                p = subprocess.Popen([cmd]+args, stdin=my_stdin,
+                p = subprocess.Popen([cmd]+args,
+                                     env=testenv,
+                                     stdin=my_stdin,
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT)
                 try:
