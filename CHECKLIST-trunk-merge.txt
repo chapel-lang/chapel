@@ -11,6 +11,11 @@ NEW/CHANGED:
   d Fix deallocation-before-breakLabel (memory leak) bug. (moved to trunk)
     * OK to leak memory pending fix on trunk
     d Create a future against trunk to demo the bug.
+  - parallel.cpp (3)
+  - wrappers.cpp
+  - lowerIterators.cpp (2)
+  * functionResolution.cpp
+  - runtime
 
 - Whether to interpose an alloc(loc, nbytes, md) layer between chpl_here_alloc()
   and locale.alloc() [yes]

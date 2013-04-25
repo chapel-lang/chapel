@@ -85,6 +85,7 @@ isFastPrimitive(CallExpr *call) {
   case PRIM_TASK_GET_HERE:
 
   case PRIM_STRING_COPY:
+  case PRIM_SIZEOF:
 
   case PRIM_NEXT_UINT32:
   case PRIM_GET_USER_LINE:

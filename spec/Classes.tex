@@ -919,21 +919,6 @@ Number of leaked allocations
 ==============================================================
 ==============================================================
 \end{chapeloutput}
-\begin{chapelwideoutput}
-
-====================
-Leaked Memory Report
-==============================================================
-Number of leaked allocations
-           Total leaked memory (bytes)
-                      Description of allocation
-==============================================================
-1          32         C
-==============================================================
-\end{chapelwideoutput}
-% The reason for the no-local .good file is that calls to mem tracking now
-% add wide string copies that are apparently leaked (or at least held while
-% mem tracking proceeds.
 \end{chapelexample}
 
 \begin{openissue}
