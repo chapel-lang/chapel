@@ -1,0 +1,2 @@
+# --baseline masks the problem this is currently a .future for.
+COMPOPTS <= --baseline
