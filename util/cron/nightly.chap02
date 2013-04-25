@@ -16,4 +16,5 @@ setenv GASNET_QUIET Y
 # Set these to use oversubscription to help with timeouts
 setenv QT_AFFINITY no
 setenv CHPL_QTHREAD_TESTING 1
-$CHPL_HOME/util/cron/nightly -cron -multilocale -no-futures -execopts --numThreadsPerLocale=2 >&! ~/tmp/nightly.qthreads-gasnet.out
+setenv CHPL_RT_NUM_THREADS_PER_LOCALE 2
+$CHPL_HOME/util/cron/nightly -cron -multilocale -no-futures >&! ~/tmp/nightly.qthreads-gasnet.out

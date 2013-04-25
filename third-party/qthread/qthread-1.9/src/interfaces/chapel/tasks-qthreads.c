@@ -339,24 +339,17 @@ static void *initializer(void *junk)
 }
 #endif /* ! QTHREAD_MULTINODE */
 
-void chpl_task_init(int32_t  numThreadsPerLocale,
-                    int32_t  maxThreadsPerLocale,
-                    int      numCommTasks,
-                    uint64_t callStackSize)
+void chpl_task_init(void)
 {
-#ifdef QTHREAD_MULTINODE
-    // Warning: running with SPR drops support for influencing the intra-node
-    // tasking environment setup using the --numThreadsPerLocale and
-    // --callStackSize commandline arguments.
-    if ((0 != numThreadsPerLocale) || (0 != callStackSize)) {
-        chpl_msg(2, "Warning: --numThreadsPerLocale and --callStackSize commandline options not available when running with CHPL_COMM=spr\n");
-    }
-#else
+    int32_t   numThreadsPerLocale;
+    uint64_t  callStackSize;
     pthread_t initer;
     char      newenv_sheps[100] = { 0 };
     char      newenv_stack[100] = { 0 };
 
     // Set up available hardware parallelism
+    if ((numThreadsPerLocale = chpl_task_getenvNumThreadsPerLocale()) == 0)
+        numThreadsPerLocale = chpl_comm_getMaxThreads();
     if (0 < numThreadsPerLocale) {
         // We are assuming the user wants to constrain the hardware
         // resources used during this run of the application.
@@ -391,14 +384,15 @@ void chpl_task_init(int32_t  numThreadsPerLocale,
     }
 
     // Precendence (high-to-low):
-    // 1) --callStackSize option
+    // 1) CHPL_RT_CALL_STACK_SIZE
     // 2) QTHREAD_STACK_SIZE
     // 3) Chapel default
+    callStackSize = chpl_task_getenvCallStackSize();
     if (callStackSize != 0) {
         snprintf(newenv_stack, 99, "%lu", (unsigned long)callStackSize);
-        setenv("QT_STACK_SIZE", newenv_stack, 1);
+        setenv("QT_STACK_SIZE", getenv("CHPL_RT_CALL_STACK_SIZE"), 1);
     } else if (qt_internal_get_env_str("STACK_SIZE", NULL) == NULL) {
-        callStackSize = 32 * 1024 * sizeof(size_t);
+        uint64_t callStackSize = 32 * 1024 * sizeof(size_t);
         snprintf(newenv_stack, 99, "%lu", (unsigned long)callStackSize);
         setenv("QT_STACK_SIZE", newenv_stack, 1);
     }
@@ -416,7 +410,6 @@ void chpl_task_init(int32_t  numThreadsPerLocale,
             perror("Could not register SIGINT handler");
         }
     }
-#endif /* QTHREAD_MULTINODE */
 }
 
 void chpl_task_exit(void)

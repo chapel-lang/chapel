@@ -15,35 +15,11 @@
 pragma "no use ChapelStandard"
 pragma "export init"
 module ChapelThreads {
-  
-  use ChapelBase; // for uint().
-  
-  
+  extern proc chpl_task_getenvNumThreadsPerLocale(): int(32);
   pragma "export"
-  config const numThreadsPerLocale = 0;
-  
-  extern proc chpl_maxThreads(): int(32);
+  config const numThreadsPerLocale: int = chpl_task_getenvNumThreadsPerLocale();
 
+  extern proc chpl_task_getenvCallStackSize(): int(64);
   pragma "export"
-  const chpl__maxThreadsPerLocale = chpl_maxThreads();
-  
-  //
-  // Legality check for numThreadsPerLocale
-  //
-  if numThreadsPerLocale < 0 {
-    halt("numThreadsPerLocale must be >= 0");
-  }
-  if chpl__maxThreadsPerLocale != 0 then
-    if (numThreadsPerLocale > chpl__maxThreadsPerLocale) then
-      warning("specified value of " + numThreadsPerLocale
-                  + " for numThreadsPerLocale is too high; limit is " 
-                  + chpl__maxThreadsPerLocale);
-  
-  
-  //
-  // the size of a call stack
-  //
-  pragma "export"
-  config const callStackSize: int = 0;
-  
+  config const callStackSize: int = chpl_task_getenvCallStackSize();
 }

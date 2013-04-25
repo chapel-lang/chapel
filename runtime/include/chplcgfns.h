@@ -31,10 +31,6 @@ typedef struct __chpl_localeID_t {
 } chpl_localeID_t;
 #endif
 
-extern int64_t numThreadsPerLocale;
-extern int32_t chpl__maxThreadsPerLocale;
-extern int64_t callStackSize;
-
 extern const char* chpl_compileCommand;
 extern const char* chpl_compileVersion;
 extern const char* CHPL_HOST_PLATFORM;

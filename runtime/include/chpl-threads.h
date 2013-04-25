@@ -15,7 +15,7 @@
 //
 // Initialize the threading layer.
 //
-void chpl_thread_init(int32_t, int32_t, uint64_t, void(*)(void*), void(*)(void));
+void chpl_thread_init(void(*)(void*), void(*)(void));
 
 //
 // Create a thread for a communication task to run function 'fn' with
