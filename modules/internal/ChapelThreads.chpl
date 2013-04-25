@@ -13,13 +13,10 @@
 // threads to use.
 //
 pragma "no use ChapelStandard"
-pragma "export init"
 module ChapelThreads {
   extern proc chpl_task_getenvNumThreadsPerLocale(): int(32);
-  pragma "export"
   config const numThreadsPerLocale: int = chpl_task_getenvNumThreadsPerLocale();
 
   extern proc chpl_task_getenvCallStackSize(): int(64);
-  pragma "export"
   config const callStackSize: int = chpl_task_getenvCallStackSize();
 }
