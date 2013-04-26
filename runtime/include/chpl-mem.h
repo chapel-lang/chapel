@@ -25,15 +25,6 @@ void chpl_mem_exit(void);
 int chpl_mem_inited(void);
 
 
-//
-// Inform callers as to the memory layer's actual starting address
-// and length for the shared heap, if that is known.  The *start_p
-// value will be set to NULL if the memory layer does not know this
-// information.
-//
-void chpl_mem_actualSharedHeap(void** start_p, size_t* size_p);
-
-
 static ___always_inline
 void* chpl_mem_allocMany(size_t number, size_t size,
                          chpl_mem_descInt_t description,
@@ -90,7 +81,6 @@ void* chpl_mem_realloc(void* memAlloc, size_t number, size_t size,
 
 void chpl_mem_layerInit(void);
 void chpl_mem_layerExit(void);
-void chpl_mem_layerActualSharedHeap(void**, size_t*);
 void* chpl_mem_layerAlloc(size_t, int32_t, chpl_string);
 void* chpl_mem_layerRealloc(void*, size_t, int32_t, chpl_string);
 void chpl_mem_layerFree(void*, int32_t, chpl_string);

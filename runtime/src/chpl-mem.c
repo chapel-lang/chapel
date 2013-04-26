@@ -25,9 +25,3 @@ void chpl_mem_exit(void) {
 int chpl_mem_inited(void) {
   return heapInitialized;
 }
-
-
-void chpl_mem_actualSharedHeap(void** start_p, size_t* size_p) {
-  chpl_mem_layerActualSharedHeap(start_p, size_p);
-}
-
