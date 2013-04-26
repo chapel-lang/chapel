@@ -997,7 +997,9 @@ int API_FUNC qthread_initialize(void)
     GUARD_PAGES = qt_internal_get_env_bool("GUARD_PAGES", 1);
 #endif
     if (GUARD_PAGES) {
-        print_status("Guard Pages Enabled\n");
+        if (print_info) {
+            print_status("Guard Pages Enabled\n");
+        }
         /* round stack size to nearest page */
         if (qlib->qthread_stack_size % pagesize) {
             qlib->qthread_stack_size +=
