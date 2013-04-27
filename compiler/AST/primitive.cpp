@@ -469,6 +469,12 @@ initPrimitive() {
   prim_def(PRIM_MALLOC, "malloc", returnInfoOpaque, true, true);
   prim_def(PRIM_FREE, "free", returnInfoVoid, true, true);
 
+  // These go through the task-specific allocator functions.
+  prim_def(PRIM_TASK_ALLOC, "task_alloc", returnInfoOpaque, true, false);
+  prim_def(PRIM_TASK_CALLOC, "task_calloc", returnInfoOpaque, true, false);
+  prim_def(PRIM_TASK_REALLOC, "task_realloc", returnInfoOpaque, true, false);
+  prim_def(PRIM_TASK_FREE, "task_free", returnInfoVoid, true, false);
+
   // These are satisfied directly by the runtime.
   prim_def(PRIM_CHPL_ALLOC, "chpl_mem_alloc", returnInfoChplAlloc, true, true);
   prim_def(PRIM_CHPL_FREE, "chpl_mem_free", returnInfoVoid, true, true);
@@ -576,6 +582,7 @@ initPrimitive() {
   prim_def("ascii", returnInfoInt32);
   prim_def("string_index", returnInfoString, true, true);
   prim_def(PRIM_STRING_COPY, "string_copy", returnInfoString, false, true);
+  prim_def(PRIM_CAST_TO_VOID_STAR, "cast_to_void_star", returnInfoOpaque, true, false);
   prim_def("string_select", returnInfoString, true, true);
   prim_def("string_strided_select", returnInfoString, true, true);
   prim_def("sleep", returnInfoVoid, true);

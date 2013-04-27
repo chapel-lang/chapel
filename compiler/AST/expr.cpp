@@ -4188,6 +4188,40 @@ GenRet CallExpr::codegen() {
       ret = codegenCastToVoidStar(allocated); // Needed?
       break;
     }
+    case PRIM_TASK_ALLOC:
+    {
+      ret = codegenCallExpr("chpl_task_alloc", codegenValue(get(1)));
+      break;
+    }
+    case PRIM_TASK_CALLOC:
+    {
+      ret = codegenCallExpr("chpl_task_calloc", codegenValue(get(1)), codegenValue(get(2)));
+      break;
+    }
+    case PRIM_TASK_REALLOC:
+    {
+      Expr* ptrExpr = get(1);
+      GenRet ptr = codegenValue(get(1));
+      if (ptrExpr->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
+        ptr = codegenRaddr(ptr);
+      ret = codegenCallExpr("chpl_task_realloc", codegenCastToVoidStar(ptr), codegenValue(get(2)));
+      break;
+    }
+    case PRIM_TASK_FREE:
+    {
+      Expr* ptrExpr = get(1);
+      // TODO: This test probably belongs in the module code, and it is just an expedient anyway.
+      // We share and leak local strings to keep memory usage down, since string_copy is called
+      // when passing the filename string to chpl_here_alloc and kin.
+      if (ptrExpr->typeInfo()->getValType() == dtString &&
+          ! ptrExpr->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
+        break; // Leak local strings like crazy.
+      GenRet ptr = codegenValue(get(1));
+      if (ptrExpr->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
+        ptr = codegenRaddr(ptr);
+      codegenCallExpr("chpl_task_free", codegenCastToVoidStar(ptr));
+      break;
+    }
     case PRIM_CHPL_ALLOC:
     { // (resultType*)chpl_mem_alloc(sizeof(x), md, lineno, filenam);
       GenRet size;
@@ -4389,8 +4423,19 @@ GenRet CallExpr::codegen() {
         ret = codegenCallExpr("chpl_wide_string_copy", cpyFrom, get(2), get(3));
       } else
         // Only copy wide string.
-        // Local strings are shared.
+        // Local strings are shared, for now.  See comment in PRIM_TASK_FREE,
+        // and similar leak in PRIM_CHPL_FREE.
         ret = codegenValue(cpyFrom);
+      break;
+    }
+    case PRIM_CAST_TO_VOID_STAR:
+    {
+      Type* t = get(1)->typeInfo();
+      if (t->symbol->hasEitherFlag(FLAG_WIDE, FLAG_WIDE_CLASS))
+        INT_FATAL("cast_to_void_star expects a local argument");
+      if (!t->symbol->hasFlag(FLAG_REF))
+        INT_FATAL("cast_to_void_star expects a pointer argument");
+      ret = codegenCastToVoidStar(codegenValue(get(1)));
       break;
     }
     case PRIM_RT_ERROR:

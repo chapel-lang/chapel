@@ -329,6 +329,8 @@ void chpl_task_exit(void)
 void chpl_task_callMain(void (*chpl_main)(void))
 {
         //Call main function
+  // TODO (gbt): Need to set task-private allocators here.
+  // Set localeID to 0 and "here" to NULL.
         chpl_main();
 }
 

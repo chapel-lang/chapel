@@ -68,13 +68,12 @@ bundleArgs(CallExpr* fcall) {
   // create the class variable instance and allocate it
   VarSymbol *tempc = newTemp(astr("_args_for", fn->name), ctype);
   fcall->insertBefore( new DefExpr( tempc));
-  CallExpr *tempc_alloc = new CallExpr(PRIM_CHPL_ALLOC,
-                                       ctype->symbol,
+  // This needs a helper function....
+  CallExpr *tempc_alloc = new CallExpr(PRIM_CHPL_ALLOC, ctype->symbol,
                                        newMemDesc("compiler-inserted argument bundle"));
-  fcall->insertBefore( new CallExpr( PRIM_MOVE,
-                                     tempc,
-                                     tempc_alloc));
-
+  fcall->insertBefore(new CallExpr(PRIM_MOVE, tempc,
+                                   new CallExpr(PRIM_CAST, ctype->symbol, tempc_alloc)));
+  
   // set the references in the class instance
   i = 1;
   for_actuals(arg, fcall) {
@@ -158,7 +157,6 @@ static void create_block_fn_wrapper(CallExpr* fcall, ClassType* ctype, VarSymbol
     DefExpr* localeArg = toDefExpr(fn->formals.get(1)->remove());
     wrap_fn->insertFormalAtTail(localeArg);
   }
-
 
   ArgSymbol *wrap_c = new ArgSymbol( INTENT_BLANK, "c", ctype);
   wrap_fn->insertFormalAtTail(wrap_c);
@@ -678,8 +676,12 @@ makeHeapAllocations() {
     if (!isModuleSymbol(var->defPoint->parentSymbol) &&
         ((useMap.get(var) && useMap.get(var)->n > 0) ||
          (defMap.get(var) && defMap.get(var)->n > 0))) {
-      SET_LINENO(var->defPoint);
-      var->defPoint->getStmtExpr()->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_CHPL_ALLOC, heapType->symbol, newMemDesc("local heap-converted data"))));
+      CallExpr* alloc_call =
+        new CallExpr(PRIM_CHPL_ALLOC, heapType->symbol,
+                     newMemDesc("local heap-converted data"));
+      var->defPoint->getStmtExpr()->insertAfter(
+        new CallExpr(PRIM_MOVE, var,
+                     new CallExpr(PRIM_CAST, heapType->symbol, alloc_call)));
       heapAllocatedVars.add(var);
     }
 

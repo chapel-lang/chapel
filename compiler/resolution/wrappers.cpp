@@ -151,8 +151,7 @@ buildDefaultWrapper(FnSymbol* fn,
     if (defaults->v[defaults->n-1]->hasFlag(FLAG_IS_MEME)) {
       if (!isRecord(fn->_this->type) && !isUnion(fn->_this->type)) {
         wrapper->insertAtTail(new CallExpr(PRIM_MOVE, wrapper->_this,
-                                new CallExpr(PRIM_CHPL_ALLOC, wrapper->_this,
-                                newMemDesc(fn->_this->type->symbol->name))));
+                                           here_alloc(wrapper->_this)));
         wrapper->insertAtTail(new CallExpr(PRIM_SETCID, wrapper->_this));
       }
     }

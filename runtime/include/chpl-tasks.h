@@ -11,6 +11,30 @@
 #endif
 
 
+///// Type definitions /////
+
+// Allocator function signatures
+typedef void* (*chpl_alloc_fn)(size_t size);
+typedef void* (*chpl_calloc_fn)(size_t count, size_t size);
+typedef void* (*chpl_realloc_fn)(void* ptr, size_t size);
+typedef void  (*chpl_free_fn)(void* ptr);
+
+// This is task-private data used by the compiler code and runtime implementation.
+typedef struct chpl_task_private_data_s
+{
+  chpl_bool serial_state;	// True if execution is to be serialized; false otherwise.
+  c_locale_t localeID;		// Stores the current localeID.  This may be obsolete.
+  void* here;				// Stores a (local) pointer to the "here" locale.
+
+  // These are the memory-management functions
+  // copied from the locale implementation at task-creation time.
+  chpl_alloc_fn alloc;
+  chpl_calloc_fn calloc;
+  chpl_realloc_fn realloc;
+  chpl_free_fn free;
+
+} chpl_task_private_data_t;
+
 // Defined in the generated Chapel code:
 
 
@@ -160,6 +184,25 @@ void chpl_task_yield(void);
 // Suspend.
 //
 void chpl_task_sleep(int);
+
+//
+// Get a pointer to the task-private data used for language support.
+//
+chpl_task_private_data_t* chpl_task_getPrivateData(void);
+// TODO: Do we also need a createPrivateData function?
+
+//////////////////////////////////////////////////////////////////////////
+// Locale-aware memory allocator interface (for code generation).
+//
+static ___always_inline void* chpl_task_alloc(size_t nbytes)
+{ return (chpl_task_getPrivateData()->alloc)(nbytes); }
+static ___always_inline void* chpl_task_calloc(size_t count, size_t size)
+{ return (chpl_task_getPrivateData()->calloc)(count, size); }
+static ___always_inline void* chpl_task_realloc(void* ptr, size_t nbytes)
+{ return (chpl_task_getPrivateData()->realloc)(ptr, nbytes); }
+static ___always_inline void chpl_task_free(void* ptr)
+{ (chpl_task_getPrivateData()->free)(ptr); }
+
 
 //
 // Get and set dynamic serial state.

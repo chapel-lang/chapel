@@ -152,6 +152,8 @@ int chpl_task_createCommTask(chpl_fn_p fn, void* arg) {
 
 void chpl_task_callMain(void (*chpl_main)(void)) {
   s_serial_state = false;
+  // TODO (gbt): Need to set up the task-private allocator calls here.
+  // Set localeID to zero and "here" to NULL.
   chpl_main();
 }
 

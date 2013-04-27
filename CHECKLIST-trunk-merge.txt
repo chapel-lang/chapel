@@ -12,7 +12,7 @@ NEW/CHANGED:
     * OK to leak memory pending fix on trunk
     d Create a future against trunk to demo the bug.
   - parallel.cpp (3)
-  - wrappers.cpp
+  * wrappers.cpp
   - lowerIterators.cpp (2)
   * functionResolution.cpp
   - runtime
@@ -21,12 +21,15 @@ NEW/CHANGED:
   and locale.alloc() [yes]
   i The intent is to avoid dynamic dispatch through "here"
     i Works only if binding of code to allocators can be made at compile time
-  o Have chpl_here_alloc() call an architecturally-defined alloc() routine after
+  a Have chpl_here_alloc() call an architecturally-defined alloc() routine after
     the architecture is initialized.
-  o Implement alloc() as part of the DefaultArchitecture (part of architecture interface)
-    o Allow that version to be controlled by a config param, to allow SxS
-      testing of "flat" versus dynamically-dispatched allocations.
-  o Use the config param to characterize the impact of flat MM vs. LAMM.
+    o Implement alloc() as part of the DefaultArchitecture (part of architecture interface)
+      o Allow that version to be controlled by a config param, to allow SxS
+        testing of "flat" versus dynamically-dispatched allocations.
+    o Use the config param to characterize the impact of flat MM vs. LAMM.
+  * The above has been replaced by calls through task-private allocator
+    interfaces.
+  o Update generated wrapper code to redirect allocators to locale-specific versions.
 
 * Move mem tracking into chpl_here_alloc.
   * Preserve filename/lineno information: md + filename + lineno.

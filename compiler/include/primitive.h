@@ -100,6 +100,10 @@ enum PrimitiveTag {
   PRIM_MALLOC,
   PRIM_FREE,
 
+  PRIM_TASK_ALLOC,				// Task-specific malloc
+  PRIM_TASK_CALLOC,				// Task-specific calloc
+  PRIM_TASK_REALLOC,			// Task-specific realloc
+  PRIM_TASK_FREE,				// Task-specific free.
   PRIM_CHPL_ALLOC,
   PRIM_CHPL_FREE,               // only for variables on heap?
   PRIM_INIT_FIELDS,             // initialize fields of a temporary record
@@ -198,6 +202,7 @@ enum PrimitiveTag {
   PRIM_CREATE_FN_TYPE,
 
   PRIM_STRING_COPY,
+  PRIM_CAST_TO_VOID_STAR,		// Cast the object argument to void*.
 
   PRIM_RT_ERROR,
   PRIM_RT_WARNING,

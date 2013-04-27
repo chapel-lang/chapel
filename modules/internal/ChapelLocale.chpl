@@ -158,7 +158,7 @@ module ChapelLocale {
                                   md:int(16), lineno:int(32), filename:string)
       :void;
     var nbytes = __primitive("sizeof", x);
-    var mem = here.alloc(nbytes);
+    var mem = __primitive("task_alloc", nbytes);
     chpl_track_malloc(mem, nbytes, 1, nbytes, md, lineno, filename);
     return __primitive("cast", x.type, mem);
   }
@@ -170,7 +170,7 @@ module ChapelLocale {
     extern proc chpl_track_free(ptr:object, lineno:int(32), filename:string)
       :void;
     chpl_track_free(x:object, lineno, filename);
-    here.free(x);
+    __primitive("task_free", x);
   }
 
   proc chpl_getPrivatizedCopy(type objectType, objectPid:int): objectType

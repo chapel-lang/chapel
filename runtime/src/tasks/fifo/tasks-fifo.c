@@ -33,16 +33,14 @@ typedef struct task_pool_struct* task_pool_p;
 typedef struct task_pool_struct {
   chpl_taskID_t    id;           // task identifier
   chpl_fn_p        fun;          // function to call for task
-  c_locale_t       locale;       // The localeID associated with this task.
-  void*            here;         // Local pointer to the "here" object.
   void*            arg;          // argument to the function
-  chpl_bool        serial_state; // whether new tasks can be created while executing fun
   chpl_bool        begun;        // whether execution of this task has begun
   chpl_task_list_p ltask;        // points to the task list entry, if there is one
   chpl_string      filename;
   int              lineno;
   task_pool_p      next;
   task_pool_p      prev;
+  chpl_task_private_data_t chpl_data;
 } task_pool_t;
 
 
@@ -267,17 +265,22 @@ void chpl_task_init(void) {
                                              0, 0);
     tp->ptask->id           = get_next_task_id();
     tp->ptask->fun          = NULL;
-    tp->ptask->locale       = 0;
-    tp->ptask->here         = NULL;
     tp->ptask->arg          = NULL;
-    tp->ptask->serial_state = true;     // Set to false in chpl_task_callMain().
     tp->ptask->ltask        = NULL;
     tp->ptask->begun        = true;
     tp->ptask->filename     = "main program";
     tp->ptask->lineno       = 0;
     tp->ptask->next         = NULL;
+    tp->lockRprt 			= NULL;
 
-    tp->lockRprt = NULL;
+    // Set up task-private data for locale (architectural) support.
+    tp->ptask->chpl_data.localeID     	= 0;
+    tp->ptask->chpl_data.here         	= NULL;
+    tp->ptask->chpl_data.serial_state 	= true;     // Set to false in chpl_task_callMain().
+    tp->ptask->chpl_data.alloc 		  	= chpl_malloc;
+    tp->ptask->chpl_data.calloc 		= chpl_calloc;
+    tp->ptask->chpl_data.realloc 		= chpl_realloc;
+    tp->ptask->chpl_data.free 			= chpl_free;
 
     chpl_thread_setPrivateData(tp);
   }
@@ -342,14 +345,15 @@ static void comm_task_wrapper(void* arg) {
                                            0, 0);
   tp->ptask->id           = get_next_task_id();
   tp->ptask->fun          = comm_task_fn;
-  tp->ptask->locale       = 0;  // Set below.
   tp->ptask->arg          = arg;
-  tp->ptask->serial_state = true;
   tp->ptask->ltask        = NULL;
   tp->ptask->begun        = true;
   tp->ptask->filename     = "communication task";
   tp->ptask->lineno       = 0;
   tp->ptask->next         = NULL;
+  tp->ptask->chpl_data.here         = NULL;  // Set below.
+  tp->ptask->chpl_data.localeID     = 0;  // Set below.
+  tp->ptask->chpl_data.serial_state = true;
 
   tp->lockRprt = NULL;
 
@@ -427,7 +431,7 @@ void chpl_task_processTaskList(chpl_task_list_p task_list) {
 
   curr_ptask = get_current_ptask();
 
-  if (curr_ptask->serial_state) {
+  if (curr_ptask->chpl_data.serial_state) {
     do {
       ltask = next_task;
       (*ltask->fun)(ltask->arg);
@@ -447,7 +451,7 @@ void chpl_task_processTaskList(chpl_task_list_p task_list) {
       do {
         ltask = next_task;
         ltask->ptask = add_to_task_pool(ltask->fun, ltask->arg,
-                                        curr_ptask->serial_state, ltask);
+                                        curr_ptask->chpl_data.serial_state, ltask);
         assert(ltask->ptask == NULL
                || ltask->ptask->ltask == ltask);
         next_task = ltask->next;
@@ -464,14 +468,17 @@ void chpl_task_processTaskList(chpl_task_list_p task_list) {
     // before continuing beyond the cobegin or coforall it's in.
     nested_task.id           = get_next_task_id();
     nested_task.fun          = first_task->fun;
-    nested_task.locale       = chpl_task_getLocaleID();
-    nested_task.here         = chpl_task_getHere();
     nested_task.arg          = first_task->arg;
-    nested_task.serial_state = false;
     nested_task.ltask        = first_task;
     nested_task.begun        = true;
     nested_task.filename     = first_task->filename;
     nested_task.lineno       = first_task->lineno;
+
+    // Memcopy locale-specific data ...
+    nested_task.chpl_data	 = *chpl_task_getPrivateData();
+    // ... and then set the serial state to false.
+    nested_task.chpl_data.serial_state = false;
+
     set_current_ptask(&nested_task);
 
     if (taskreport) {
@@ -692,13 +699,17 @@ void chpl_task_sleep(int secs) {
   sleep(secs);
 }
 
+chpl_task_private_data_t* chpl_task_getPrivateData(void)
+{
+  return &(get_thread_private_data()->ptask->chpl_data);
+}
 
 chpl_bool chpl_task_getSerial(void) {
-  return get_thread_private_data()->ptask->serial_state;
+  return chpl_task_getPrivateData()->serial_state;
 }
 
 void chpl_task_setSerial(chpl_bool state) {
-  get_thread_private_data()->ptask->serial_state = state;
+  chpl_task_getPrivateData()->serial_state = state;
 }
 
 void* chpl_task_getHere(void) {
@@ -716,11 +727,11 @@ void* chpl_task_getHere(void) {
   if (tp == 0) 
     return 0;
 
-  return tp->ptask->here;
+  return tp->ptask->chpl_data.here;
 }
 
 void chpl_task_setHere(void* new_here) {
-  get_thread_private_data()->ptask->here = new_here;
+  chpl_task_getPrivateData()->here = new_here;
 }
 
 c_locale_t chpl_task_getLocaleID(void) {
@@ -738,11 +749,11 @@ c_locale_t chpl_task_getLocaleID(void) {
   if (tp == 0) 
     return 0;
 
-  return tp->ptask->locale;
+  return tp->ptask->chpl_data.localeID;
 }
 
 void chpl_task_setLocaleID(c_locale_t new_locale) {
-  get_thread_private_data()->ptask->locale = new_locale;
+  chpl_task_getPrivateData()->localeID = new_locale;
 }
 
 chpl_task_subLoc_t chpl_task_getNumSubLocales(void) {
@@ -1310,12 +1321,12 @@ static task_pool_p add_to_task_pool(chpl_fn_p fp,
                                         0, 0);
   ptask->id           = get_next_task_id();
   ptask->fun          = fp;
-  ptask->locale       = chpl_task_getLocaleID();  // Inherit the current locale ID
-  ptask->here         = chpl_task_getHere();      // and local "here" pointer.
   ptask->arg          = a;
-  ptask->serial_state = serial;
   ptask->ltask        = ltask;
   ptask->begun        = false;
+
+  // Inherit all locale-specific data from the parent task.
+  ptask->chpl_data = *chpl_task_getPrivateData();
 
   if (ltask) {
     ptask->filename = ltask->filename;

@@ -85,6 +85,7 @@ isFastPrimitive(CallExpr *call) {
   case PRIM_TASK_GET_HERE:
 
   case PRIM_STRING_COPY:
+  case PRIM_CAST_TO_VOID_STAR:
   case PRIM_SIZEOF:
 
   case PRIM_NEXT_UINT32:
@@ -283,14 +284,12 @@ isFastPrimitive(CallExpr *call) {
     INT_FATAL("This primitive is obsolete and should not be used.");
     break;
 
-    // Temporarily unclassified (legacy) cases.
-    // These formerly defaulted to false (slow), so we leave them
-    // here until they are proven fast.
-  case PRIM_GET_END_COUNT:
-  case PRIM_SET_END_COUNT:
-  case PRIM_PROCESS_TASK_LIST:
-  case PRIM_EXECUTE_TASKS_IN_LIST:
+    // Allocator calls can block.  Why?
   case PRIM_FREE_TASK_LIST:
+  case PRIM_TASK_ALLOC:
+  case PRIM_TASK_CALLOC:
+  case PRIM_TASK_REALLOC:
+  case PRIM_TASK_FREE:
   case PRIM_CHPL_ALLOC:
   case PRIM_MALLOC:
   case PRIM_CHPL_FREE:
@@ -298,6 +297,15 @@ isFastPrimitive(CallExpr *call) {
   case PRIM_ARRAY_ALLOC:
   case PRIM_ARRAY_FREE:
   case PRIM_ARRAY_FREE_ELTS:
+    return false;
+
+    // Temporarily unclassified (legacy) cases.
+    // These formerly defaulted to false (slow), so we leave them
+    // here until they are proven fast.
+  case PRIM_GET_END_COUNT:
+  case PRIM_SET_END_COUNT:
+  case PRIM_PROCESS_TASK_LIST:
+  case PRIM_EXECUTE_TASKS_IN_LIST:
   case PRIM_TO_LEADER:
   case PRIM_TO_FOLLOWER:
   case PRIM_DELETE:
