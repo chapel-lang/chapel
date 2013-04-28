@@ -16,9 +16,7 @@
 #include <limits.h>              /* for INT_MAX */
 #include <qthread/qthread-int.h> /* for UINT8_MAX */
 #include <string.h>              /* for memset() */
-#ifdef QTHREAD_GUARD_PAGES
-# include <unistd.h>           /* for getpagesize() */
-#endif
+#include <unistd.h>              /* for getpagesize() */
 #if !HAVE_MEMCPY
 # define memcpy(d, s, n)  bcopy((s), (d), (n))
 # define memmove(d, s, n) bcopy((s), (d), (n))
@@ -32,10 +30,8 @@
 #ifdef QTHREAD_USE_VALGRIND
 # include <valgrind/memcheck.h>
 #endif
-#ifdef QTHREAD_GUARD_PAGES
-# include <sys/types.h>
-# include <sys/mman.h>
-#endif
+#include <sys/types.h>
+#include <sys/mman.h>
 #include <errno.h>
 #ifdef SST
 # include <ppcPimCalls.h>
@@ -136,6 +132,12 @@ QTHREAD_FASTLOCK_TYPE concurrentthreads_lock;
 QTHREAD_FASTLOCK_TYPE effconcurrentthreads_lock;
 #endif
 
+#ifdef QTHREAD_GUARD_PAGES
+int GUARD_PAGES = 1;
+#else
+#define GUARD_PAGES 0
+#endif
+
 /* Internal Prototypes */
 #ifdef QTHREAD_MAKECONTEXT_SPLIT
 static void qthread_wrapper(unsigned int high,
@@ -182,37 +184,45 @@ qt_mpool generic_big_qthread_pool = NULL;
 # ifdef QTHREAD_GUARD_PAGES
 static QINLINE void *ALLOC_STACK(void)
 {                      /*{{{ */
-    uint8_t *tmp = valloc(qlib->qthread_stack_size + sizeof(struct qthread_runtime_data_s) + (2 * getpagesize()));
+    if (GUARD_PAGES) {
+        uint8_t *tmp = valloc(qlib->qthread_stack_size + sizeof(struct qthread_runtime_data_s) + (2 * getpagesize()));
 
-    assert(tmp != NULL);
-    if (tmp == NULL) {
-        return NULL;
+        assert(tmp != NULL);
+        if (tmp == NULL) {
+            return NULL;
+        }
+        ALLOC_SCRIBBLE(tmp, qlib->qthread_stack_size + sizeof(struct qthread_runtime_data_s) + (2 * getpagesize()));
+        if (mprotect(tmp, getpagesize(), PROT_NONE) != 0) {
+            perror("mprotect in ALLOC_STACK (1)");
+        }
+        if (mprotect(tmp + qlib->qthread_stack_size + getpagesize(), getpagesize(), PROT_NONE) != 0) {
+            perror("mprotect in ALLOC_STACK (2)");
+        }
+        return tmp + getpagesize();
+    } else {
+        return MALLOC(qlib->qthread_stack_size + sizeof(struct qthread_runtime_data_s));
     }
-    ALLOC_SCRIBBLE(tmp, qlib->qthread_stack_size + sizeof(struct qthread_runtime_data_s) + (2 * getpagesize()));
-    if (mprotect(tmp, getpagesize(), PROT_NONE) != 0) {
-        perror("mprotect in ALLOC_STACK (1)");
-    }
-    if (mprotect(tmp + qlib->qthread_stack_size + getpagesize(), getpagesize(), PROT_NONE) != 0) {
-        perror("mprotect in ALLOC_STACK (2)");
-    }
-    return tmp + getpagesize();
 }                      /*}}} */
 
 static QINLINE void FREE_STACK(void *t)
 {                      /*{{{ */
-    uint8_t *tmp = t;
+    if (GUARD_PAGES) {
+        uint8_t *tmp = t;
 
-    assert(t);
-    tmp -= getpagesize();
-    if (mprotect(tmp, getpagesize(), PROT_READ | PROT_WRITE) != 0) {
-        perror("mprotect in FREE_STACK (1)");
+        assert(t);
+        tmp -= getpagesize();
+        if (mprotect(tmp, getpagesize(), PROT_READ | PROT_WRITE) != 0) {
+            perror("mprotect in FREE_STACK (1)");
+        }
+        if (mprotect(tmp + qlib->qthread_stack_size + getpagesize(),
+                    getpagesize(),
+                    PROT_READ | PROT_WRITE) != 0) {
+            perror("mprotect in FREE_STACK (2)");
+        }
+        FREE(tmp, qlib->qthread_stack_size + sizeof(struct qthread_runtime_data_s) + (2 * getpagesize()));
+    } else {
+        FREE(t, qlib->qthread_stack_size); /* XXX: this size seems wrong */
     }
-    if (mprotect(tmp + qlib->qthread_stack_size + getpagesize(),
-                 getpagesize(),
-                 PROT_READ | PROT_WRITE) != 0) {
-        perror("mprotect in FREE_STACK (2)");
-    }
-    FREE(tmp, qlib->qthread_stack_size + sizeof(struct qthread_runtime_data_s) + (2 * getpagesize()));
 }                      /*}}} */
 
 # else /* ifdef QTHREAD_GUARD_PAGES */
@@ -224,38 +234,42 @@ static qt_mpool generic_stack_pool = NULL;
 # ifdef QTHREAD_GUARD_PAGES
 static QINLINE void *ALLOC_STACK(void)
 {                      /*{{{ */
-    uint8_t *tmp = qt_mpool_alloc(generic_stack_pool);
+    if (GUARD_PAGES) {
+        uint8_t *tmp = qt_mpool_alloc(generic_stack_pool);
 
-    assert(tmp);
-    if (tmp == NULL) {
-        return NULL;
+        assert(tmp);
+        if (tmp == NULL) {
+            return NULL;
+        }
+        if (mprotect(tmp, getpagesize(), PROT_NONE) != 0) {
+            perror("mprotect in ALLOC_STACK (1)");
+        }
+        if (mprotect(tmp + qlib->qthread_stack_size + getpagesize(),
+                    getpagesize(),
+                    PROT_NONE) != 0) {
+            perror("mprotect in ALLOC_STACK (2)");
+        }
+        return tmp + getpagesize();
+    } else {
+        return qt_mpool_alloc(generic_stack_pool);
     }
-    if (mprotect(tmp, getpagesize(), PROT_NONE) != 0) {
-        perror("mprotect in ALLOC_STACK (1)");
-    }
-    if (mprotect(tmp + qlib->qthread_stack_size + getpagesize(),
-                 getpagesize(),
-                 PROT_NONE) != 0) {
-        perror("mprotect in ALLOC_STACK (2)");
-    }
-    return tmp + getpagesize();
 }                      /*}}} */
 
 static QINLINE void FREE_STACK(void *t)
 {                      /*{{{ */
-    uint8_t *tmp = t;
-
-    assert(t);
-    tmp -= getpagesize();
-    if (mprotect(tmp, getpagesize(), PROT_READ | PROT_WRITE) != 0) {
-        perror("mprotect in FREE_STACK (1)");
+    if (GUARD_PAGES) {
+        assert(t);
+        t = (uint8_t*)t - getpagesize();
+        if (mprotect(t, getpagesize(), PROT_READ | PROT_WRITE) != 0) {
+            perror("mprotect in FREE_STACK (1)");
+        }
+        if (mprotect(((uint8_t*)t) + qlib->qthread_stack_size + getpagesize(),
+                    getpagesize(),
+                    PROT_READ | PROT_WRITE) != 0) {
+            perror("mprotect in FREE_STACK (2)");
+        }
     }
-    if (mprotect(tmp + qlib->qthread_stack_size + getpagesize(),
-                 getpagesize(),
-                 PROT_READ | PROT_WRITE) != 0) {
-        perror("mprotect in FREE_STACK (2)");
-    }
-    qt_mpool_free(generic_stack_pool, tmp);
+    qt_mpool_free(generic_stack_pool, t);
 }                      /*}}} */
 
 # else /* ifdef QTHREAD_GUARD_PAGES */
@@ -341,11 +355,11 @@ static QINLINE void alloc_rdata(qthread_shepherd_t *me,
     } else {
         stack = ALLOC_STACK();
         assert(stack);
-#ifdef QTHREAD_GUARD_PAGES
-        rdata = t->rdata = (struct qthread_runtime_data_s *)(((uint8_t *)stack) + getpagesize() + qlib->qthread_stack_size);
-#else
-        rdata = t->rdata = (struct qthread_runtime_data_s *)(((uint8_t *)stack) + qlib->qthread_stack_size);
-#endif
+        if (GUARD_PAGES) {
+            rdata = t->rdata = (struct qthread_runtime_data_s *)(((uint8_t *)stack) + getpagesize() + qlib->qthread_stack_size);
+        } else {
+            rdata = t->rdata = (struct qthread_runtime_data_s *)(((uint8_t *)stack) + qlib->qthread_stack_size);
+        }
     }
     rdata->tasklocal_size = 0;
     rdata->criticalsect   = 0;
@@ -980,14 +994,18 @@ int API_FUNC qthread_initialize(void)
                                                        QTHREAD_DEFAULT_STACK_SIZE);
     qthread_debug(CORE_DETAILS, "qthread stack size: %u\n", qlib->qthread_stack_size);
 #ifdef QTHREAD_GUARD_PAGES
-    {
+    GUARD_PAGES = qt_internal_get_env_bool("GUARD_PAGES", 1);
+#endif
+    if (GUARD_PAGES) {
+        if (print_info) {
+            print_status("Guard Pages Enabled\n");
+        }
         /* round stack size to nearest page */
         if (qlib->qthread_stack_size % pagesize) {
             qlib->qthread_stack_size +=
                 pagesize - (qlib->qthread_stack_size % pagesize);
         }
     }
-#endif
     if (print_info) {
         print_status("Using %u byte stack size.\n", qlib->qthread_stack_size);
     }
@@ -1033,15 +1051,7 @@ int API_FUNC qthread_initialize(void)
         qassert_ret(qlib->shepherds[i].workers, QTHREAD_MALLOC_ERROR);
 #endif
     }
-    {
-        const char *aff = qt_internal_get_env_str("AFFINITY", "yes");
-
-        if (aff && !strncmp(aff, "no", 3)) {
-            qaffinity = 0;
-        } else {
-            qaffinity = 1;
-        }
-    }
+    qaffinity = qt_internal_get_env_bool("AFFINITY", 1);
     qthread_debug(AFFINITY_DETAILS, "qaffinity = %i\n", qaffinity);
 #ifndef QTHREAD_NO_ASSERTS
     qthread_library_initialized = 1;
@@ -1070,13 +1080,13 @@ int API_FUNC qthread_initialize(void)
 #ifndef UNPOOLED
     generic_qthread_pool     = qt_mpool_create_aligned(sizeof(qthread_t) + sizeof(void *) + qlib->qthread_tasklocal_size, qthread_cacheline());
     generic_big_qthread_pool = qt_mpool_create(sizeof(qthread_t) + qlib->qthread_argcopy_size + qlib->qthread_tasklocal_size);
-    generic_stack_pool       =
-# ifdef QTHREAD_GUARD_PAGES
-        qt_mpool_create_aligned(qlib->qthread_stack_size + sizeof(struct qthread_runtime_data_s) +
-                                (2 * getpagesize()), getpagesize());
-# else
-        qt_mpool_create_aligned(sizeof(struct qthread_runtime_data_s) + qlib->qthread_stack_size, QTHREAD_STACK_ALIGNMENT); // stacks on most platforms must be 16-byte aligned (or less)
-# endif
+    if (GUARD_PAGES) {
+        generic_stack_pool =
+            qt_mpool_create_aligned(qlib->qthread_stack_size + sizeof(struct qthread_runtime_data_s) +
+                                    (2 * getpagesize()), getpagesize());
+    } else {
+        generic_stack_pool = qt_mpool_create_aligned(qlib->qthread_stack_size + sizeof(struct qthread_runtime_data_s), QTHREAD_STACK_ALIGNMENT);     // stacks on most platforms must be 16-byte aligned (or less)
+    }
     generic_rdata_pool = qt_mpool_create(sizeof(struct qthread_runtime_data_s));
 #endif /* ifndef UNPOOLED */
     initialize_hazardptrs();

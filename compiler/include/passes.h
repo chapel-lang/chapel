@@ -25,7 +25,6 @@ void deadCodeElimination();
 void docs();
 void flattenClasses();
 void flattenFunctions();
-void gpuFlattenArgs();
 void inlineFunctions();
 void insertLineNumbers();
 void insertWideReferences();

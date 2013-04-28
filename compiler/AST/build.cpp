@@ -1821,17 +1821,6 @@ BlockStmt*
 buildOnStmt(Expr* expr, Expr* stmt) {
   checkControlFlow(stmt, "on statement");
 
-  /* GPU Case */
-  if (CallExpr* call = toCallExpr(expr)) {
-    if (call->isPrimitive(PRIM_ON_GPU)) {
-      BlockStmt* block = buildChapelStmt();
-      BlockStmt* onBlock = new BlockStmt(stmt);
-      onBlock->blockInfo = call;
-      block->insertAtTail(onBlock);
-      return block;
-    }
-  }
-
   if (fLocal) {
     BlockStmt* block = new BlockStmt(stmt);
     // evaluate the expression for side effects

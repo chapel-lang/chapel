@@ -506,15 +506,6 @@ initPrimitive() {
   prim_def(PRIM_ARRAY_SET, "array_set", returnInfoVoid, true, true);
   prim_def(PRIM_ARRAY_SET_FIRST, "array_set_first", returnInfoVoid, true, true);
 
-  prim_def(PRIM_GPU_GET_ARRAY, "get_gpu_array", returnInfoArrayIndex, false, true);
-  prim_def(PRIM_GPU_GET_VALUE, "get_gpu_value", returnInfoArrayIndex, false, true);
-  prim_def(PRIM_GPU_GET_VAL, "get_gpu_val", returnInfoArrayIndex, false, true);
-  prim_def(PRIM_GPU_ALLOC, "gpu_alloc", returnInfoVoid, true, true);
-  prim_def(PRIM_COPY_HOST_GPU, "copy_host_to_gpu", returnInfoVoid, true, false);
-  prim_def(PRIM_COPY_GPU_HOST, "copy_gpu_to_host", returnInfoVoid, true, false);
-  prim_def(PRIM_GPU_FREE, "gpu_free", returnInfoVoid, true, true);
-  prim_def(PRIM_ON_GPU, "chpl_on_gpu", returnInfoInt32);
-
   prim_def(PRIM_ERROR, "error", returnInfoVoid, true);
   prim_def(PRIM_WARNING, "warning", returnInfoVoid, true);
   prim_def(PRIM_WHEN, "when case expressions", returnInfoVoid);

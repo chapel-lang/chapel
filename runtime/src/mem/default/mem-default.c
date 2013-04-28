@@ -22,11 +22,3 @@ void chpl_mem_layerInit(void) {
 
 
 void chpl_mem_layerExit(void) { }
-
-
-void chpl_mem_layerActualSharedHeap(void** start_p, size_t* size_p) {
-  *start_p = NULL;
-  *size_p  = 0;
-}
-
-

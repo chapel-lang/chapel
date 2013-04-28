@@ -106,7 +106,6 @@ bool fSerial;  // initialized in setupOrderedGlobals() below
 int fLinkStyle = LS_DEFAULT; // use backend compiler's default
 bool fLocal;   // initialized in setupOrderedGlobals() below
 bool fHeterogeneous = false; // re-initialized in setupOrderedGlobals() below
-bool fGPU;
 bool fieeefloat = true;
 bool report_inlining = false;
 char fExplainCall[256] = "";
@@ -332,8 +331,6 @@ static void setupOrderedGlobals(const char* argv0) {
              || !strcmp(CHPL_TARGET_COMPILER, "cray-prgenv-pgi");
   // conservatively how much is needed for the current PGI compiler
   if (gotPGI) fMaxCIdentLen = 1020;
-  // Enable if we are going to use Nvidia's NVCC compiler
-  fGPU = !strcmp(CHPL_TARGET_COMPILER, "nvidia");
 }
 
 

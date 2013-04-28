@@ -11,7 +11,6 @@ void removeUnusedLabels(FnSymbol* fn);
 void localCopyPropagation(FnSymbol* fn);
 void localReferencePropagation(FnSymbol* fn);
 void globalCopyPropagation(FnSymbol* fn);
-void gpuFlattenArgs();
 void eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                                         Map<Symbol*,Vec<SymExpr*>*>& useMap,
                                         Symbol* var);

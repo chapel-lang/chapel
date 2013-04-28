@@ -26,6 +26,9 @@ ifneq (, $(CHPL_QTHREAD_TESTING))
 CHPL_QTHREAD_CFG_OPTIONS += --enable-oversubscription
 endif
 
+# enable guard pages for stack overflow detection
+CHPL_QTHREAD_CFG_OPTIONS += --enable-guard-pages
+
 default: all
 
 all: qthread

@@ -329,6 +329,42 @@ CHPL_TASKS == none, CHPL_THREADS == none
   is either serial or like FIFO tasking with a single thread.
 
 
+-----------------------------
+Detecting Call Stack Overflow
+-----------------------------
+
+Chapel does not yet have a consistent, layer-independent way to deal
+with task call stack overflow detection, though we are working on one.
+For the time being, the various tasking layers support stack overflow
+detection as follows.
+
+CHPL_TASKS == fifo, CHPL_THREADS == pthreads:
+  No stack overflow detection is available.
+
+CHPL_TASKS == massivethreads, CHPL_THREADS == none
+  No stack overflow detection is available.
+
+CHPL_TASKS == qthreads, CHPL_THREADS == none
+  Stack overflow detection is configured by default, through the use of
+  the --enable-guard-pages option when configuring qthreads.  It is
+  enabled (the default) and disabled at execution time by setting the
+  QT_GUARD_PAGES environment variable to 1/yes/true or 0/no/false,
+  respectively.  If stack overflow detection is configured and enabled
+  there is a performance cost, which we have not yet characterized.  If
+  it is configured but disabled, the performance cost is quite small,
+  probably not measurable, although again we have not characterized this
+  cost).  Developers needed to remove even that small performance cost
+  can do so by removing the --enable-guard-pages qthreads configuration
+  option and rebuilding qthreads.
+
+CHPL_TASKS == mta, CHPL_THREADS == none
+  Stack overflow detection is not needed, because stacks on XMT systems
+  grow and shrink dynamically.
+
+CHPL_TASKS == none, CHPL_THREADS == none
+  No stack overflow detection is available.
+
+
 -------------------------
 Future Tasking Directions
 -------------------------

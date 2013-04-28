@@ -256,9 +256,6 @@ module ChapelDistribution {
   
     proc dsiStaticFastFollowCheck(type leadType) param return false;
   
-    proc canCopyFromDevice param return false;
-    proc canCopyFromHost param return false;
-  
     proc dsiGetBaseDom(): BaseDom {
       halt("internal error: dsiGetBaseDom is not implemented");
       return nil;

@@ -586,11 +586,6 @@ static void codegen_header() {
   FILE* hdrfile = info->cfile;
   genComment("Compilation Info");
 
-  if (fGPU) {
-    INT_ASSERT(hdrfile);
-    fprintf(hdrfile, "#ifndef ENABLE_GPU\n");
-  }
-
   genGlobalString("chpl_compileCommand", compileCommand);
   genGlobalString("chpl_compileVersion", compileVersion);
   genGlobalString("CHPL_HOST_PLATFORM", CHPL_HOST_PLATFORM);
@@ -600,20 +595,6 @@ static void codegen_header() {
   genGlobalString("CHPL_TASKS", CHPL_TASKS);
   genGlobalString("CHPL_THREADS", CHPL_THREADS);
   genGlobalString("CHPL_COMM", CHPL_COMM);
-
-  if (fGPU) {
-    INT_ASSERT(hdrfile);
-    fprintf(hdrfile, "#else\n");
-    fprintf(hdrfile, "extern const char* chpl_compileCommand;\n");
-    fprintf(hdrfile, "extern const char* chpl_compileVersion;\n");
-    fprintf(hdrfile, "extern const char* CHPL_HOST_PLATFORM;\n");
-    fprintf(hdrfile, "extern const char* CHPL_TARGET_PLATFORM;\n");
-    fprintf(hdrfile, "extern const char* CHPL_HOST_COMPILER;\n");
-    fprintf(hdrfile, "extern const char* CHPL_TARGET_COMPILER;\n");
-    fprintf(hdrfile, "extern const char* CHPL_TASKS;\n");
-    fprintf(hdrfile, "extern const char* CHPL_COMM;\n");
-    fprintf(hdrfile, "#endif\n");
-  }
 
   if( hdrfile ) {
     // This is done in runClang for LLVM version.
@@ -694,21 +675,9 @@ static void codegen_header() {
 
   genComment("Function Prototypes");
   forv_Vec(FnSymbol, fnSymbol, functions) {
-    if (fnSymbol->hasFlag(FLAG_GPU_ON)) {
-      INT_ASSERT(hdrfile);
-      fprintf(hdrfile, "\n#ifdef ENABLE_GPU\n");
-      fnSymbol->codegenPrototype();
-      fprintf(hdrfile, "#endif\n");
-      continue;
-    }
     fnSymbol->codegenPrototype();
   }
     
-  if (fGPU) {
-    INT_ASSERT(hdrfile);
-    fprintf(hdrfile, "\n#ifndef ENABLE_GPU\n");
-  }
-
   genComment("Function Pointer Table");
   forv_Vec(FnSymbol, fn, functions) {
     if (fn->hasFlag(FLAG_BEGIN_BLOCK) ||
@@ -721,20 +690,8 @@ static void codegen_header() {
 
   genFtable(ftableVec);
 
-  if (fGPU) {
-    INT_ASSERT(hdrfile);
-    fprintf(hdrfile, "#else\n");
-    fprintf(hdrfile, "extern chpl_fn_p chpl_ftable[];\n");
-    fprintf(hdrfile, "#endif\n");
-  }
-
   genComment("Virtual Method Table");
   genVirtualMethodTable(types);
-
-  if (fGPU) {
-    INT_ASSERT(hdrfile);
-    fprintf(hdrfile, "\n#ifndef ENABLE_GPU\n");
-  }
 
   genComment("Global Variables");
   forv_Vec(VarSymbol, varSymbol, globals) {
@@ -895,26 +852,6 @@ static void codegen_header() {
 #endif
   }
 
-  if (fGPU) {
-    INT_ASSERT(hdrfile);
-    fprintf(hdrfile, "#else\n");
-    forv_Vec(VarSymbol, varSymbol, globals) {
-      fprintf(hdrfile,"extern ");
-      varSymbol->codegenDef();
-    }
-
-    fprintf(hdrfile, "\nextern const int chpl_numGlobalsOnHeap;\n");
-    fprintf(hdrfile, "\nextern void** chpl_globals_registry;\n");
-    fprintf(hdrfile, "\nextern void* chpl_globals_registry_static[];\n");
-    fprintf(hdrfile, "\nconst int chpl_heterogeneous = ");
-    if (fHeterogeneous)
-      fprintf(hdrfile, " 1;\n");
-    else
-      fprintf(hdrfile, " 0;\n");
-    fprintf(hdrfile, "\nextern const char* chpl_mem_descs[];\n");
-    fprintf(hdrfile, "\nextern const int chpl_mem_numDescs;\n");
-    fprintf(hdrfile, "#endif\n");
-  }
 
   if (hdrfile) {
     fprintf(hdrfile, "#include \"chpl-gen-includes.h\"\n");
@@ -1060,16 +997,15 @@ void codegen(void) {
 
   SET_LINENO(rootModule);
 
-  fileinfo hdrfile, mainfile, gpusrcfile;
+  fileinfo hdrfile, mainfile;
   GenInfo *info = gGenInfo;
   INT_ASSERT(info);
   if( llvmCodegen ) {
 #ifdef HAVE_LLVM
     fileinfo nullfile = {NULL, NULL, NULL};
-    hdrfile = mainfile = gpusrcfile = nullfile; 
+    hdrfile = mainfile = nullfile; 
     if( fHeterogeneous )
       INT_FATAL("fHeretogeneous not yet supported with LLVM");
-    if (fGPU) INT_FATAL("fGPU not yet supported with LLVM"); 
     prepareCodegenLLVM();
 #endif
   } else {
@@ -1077,21 +1013,7 @@ void codegen(void) {
     openCFile(&mainfile, "_main", "c");
     fprintf(mainfile.fptr, "#include \"chpl__header.h\"\n");
 
-    if (fGPU) {
-      openCFile(&gpusrcfile, "chplGPU", "cu");
-      forv_Vec(FnSymbol, fn, gFnSymbols) {
-        if (fn->hasFlag(FLAG_GPU_ON)) {
-          fprintf(gpusrcfile.fptr, "extern \"C\" \x7b\n");
-          fprintf(gpusrcfile.fptr, "#include \"chpl__header.h\"\n");
-          fprintf(gpusrcfile.fptr,"\x7d\n"); // acsii for the "{" character
-          break;
-        }
-      }
-      codegen_makefile(&mainfile, &gpusrcfile);
-      closeCFile(&gpusrcfile);
-    }
-    else
-      codegen_makefile(&mainfile);
+    codegen_makefile(&mainfile);
   }
 
   // This dumps the generated sources into the build directory.

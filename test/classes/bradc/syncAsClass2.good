@@ -1,0 +1,1 @@
+syncAsClass2.chpl:5: error: type mismatch in assignment from int(64) to object

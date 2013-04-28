@@ -273,17 +273,6 @@ isFastPrimitive(CallExpr *call) {
     INT_FATAL("This primitive should have been removed from the tree by now.");
     break;
 
-  case PRIM_GPU_GET_ARRAY:
-  case PRIM_GPU_GET_VALUE:
-  case PRIM_GPU_GET_VAL:
-  case PRIM_GPU_ALLOC:
-  case PRIM_COPY_HOST_GPU:
-  case PRIM_COPY_GPU_HOST:
-  case PRIM_GPU_FREE:
-  case PRIM_ON_GPU:
-    INT_FATAL("This primitive is obsolete and should not be used.");
-    break;
-
     // Allocator calls can block.  Why?
   case PRIM_FREE_TASK_LIST:
   case PRIM_TASK_ALLOC:

@@ -75,7 +75,6 @@ class ArgumentState;
 #define LOG_localizeGlobals     'l'
 #define LOG_prune2              'Y'
 #define LOG_returnStarTuplesByRefArgs 's'
-#define LOG_gpuFlattenArgs      'a'
 #define LOG_insertWideReferences 'W'
 #define LOG_optimizeOnClauses   'o'
 #define LOG_addInitCalls        'M'

@@ -15,18 +15,14 @@
 #include "tcmalloc-interface.h"
 
 
-static void*  saved_heap_base = NULL;
-static size_t saved_heap_size = 0;
-
-
 void chpl_mem_layerInit(void)
 {
-  void* addr;
-  size_t size;
+  void*  heap_base;
+  size_t heap_size;
 
-  chpl_comm_desired_shared_heap(&addr, &size);
+  chpl_comm_desired_shared_heap(&heap_base, &heap_size);
 
-  if (addr != NULL && size == 0)
+  if (heap_base != NULL && heap_size == 0)
     chpl_internal_error("if heap address is specified, size must be also");
 
   //
@@ -41,13 +37,10 @@ void chpl_mem_layerInit(void)
     tc_free(p);
   }
 
-  saved_heap_base = addr;
-  saved_heap_size = size;
-
   //
   // Initialize our tcmalloc system allocator.
   //
-  tcmallocChapelInit_c(addr, size);
+  tcmallocChapelInit_c(heap_base, heap_size);
 
   //
   // If the heap has to come from the memory supplied to us (say, in
@@ -60,7 +53,7 @@ void chpl_mem_layerInit(void)
   // Note that this can waste up to twice INITIAL_USE_UP_SIZE bytes
   // of the memory supplied to us, plus overhead.
   //
-  if (addr != NULL) {
+  if (heap_base != NULL) {
 #define INITIAL_USE_UP_SIZE ((size_t) 4 * 1024)
 
     size_t size;
@@ -70,8 +63,8 @@ void chpl_mem_layerInit(void)
       do {
         p = tc_malloc(size);
       } while (p != NULL
-               && (p < (char*) saved_heap_base
-                   || p > (char*) saved_heap_base + saved_heap_size));
+               && (p < (char*) heap_base
+                   || p > (char*) heap_base + heap_size));
 
 #undef INITIAL_USE_UP_SIZE
     }
@@ -80,12 +73,3 @@ void chpl_mem_layerInit(void)
 
 
 void chpl_mem_layerExit(void) { }
-
-
-void chpl_mem_layerActualSharedHeap(void** addr_p, size_t* size_p)
-{
-  *addr_p = saved_heap_base;
-  *size_p = saved_heap_size;
-}
-
-

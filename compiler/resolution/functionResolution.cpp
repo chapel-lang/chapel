@@ -4314,7 +4314,6 @@ postFold(Expr* expr) {
     } else if (call->isPrimitive(PRIM_RSH)) {
       FOLD_CALL2(P_prim_rsh);
     } else if (call->isPrimitive(PRIM_ARRAY_ALLOC) ||
-               call->isPrimitive(PRIM_GPU_ALLOC) ||
                call->isPrimitive(PRIM_SYNC_INIT) ||
                call->isPrimitive(PRIM_SYNC_LOCK) ||
                call->isPrimitive(PRIM_SYNC_UNLOCK) ||

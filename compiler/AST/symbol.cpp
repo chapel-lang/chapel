@@ -1057,10 +1057,6 @@ GenRet FnSymbol::codegenFunctionType(bool forHeader) {
       for_formals(formal, this) {
         if (formal->defPoint == formals.head && hasFlag(FLAG_ON_BLOCK))
           continue; // do not print locale argument for on blocks
-        if (hasFlag(FLAG_GPU_ON) && count < 2) {
-          count++;
-          continue; // do not print nBlocks and numThreadsPerBlock
-        }
         if (count > 0)
           str += ", ";
         str += formal->codegenType().c;
@@ -1082,10 +1078,6 @@ GenRet FnSymbol::codegenFunctionType(bool forHeader) {
     for_formals(formal, this) {
       if (formal->defPoint == formals.head && hasFlag(FLAG_ON_BLOCK))
         continue; // do not print locale argument for on blocks
-      if (hasFlag(FLAG_GPU_ON) && count < 2) {
-        count++;
-        continue; // do not print nBlocks and numThreadsPerBlock
-      }
       argumentTypes.push_back(formal->codegenType().type);
       count++;
     }
@@ -1113,8 +1105,6 @@ void FnSymbol::codegenHeaderC(void) {
   if (fGenIDS)
     fprintf(outfile, "/* %7d */ ", id);
   // Prepend function header with necessary __global__ declaration
-  if (hasFlag(FLAG_GPU_ON))
-    fprintf(outfile, "__global__ ");
 
   //
   // A function prototype can be labeled static if it is neither
@@ -1296,10 +1286,6 @@ void FnSymbol::codegenDef() {
     for_formals(arg, this) {
       if (arg->defPoint == formals.head && hasFlag(FLAG_ON_BLOCK))
         continue; // do not print locale argument for on blocks
-      if (hasFlag(FLAG_GPU_ON) && count < 2) {
-        count++;
-        continue; // do not print nBlocks and numThreadsPerBlock
-      }
       //llvm::Type *argType = arg->codegenType().type;
 
       if (arg->requiresCPtr()){
@@ -1625,9 +1611,6 @@ static int compareLineno(const void* v1, const void* v2) {
 
 void ModuleSymbol::codegenDef() {
   GenInfo* info = gGenInfo;
-  FILE* outfile = info->cfile;
-  fileinfo gpufile;
-  gpufile.fptr = NULL;
 
   info->filename = fname();
   info->lineno = linenum();
@@ -1647,19 +1630,7 @@ void ModuleSymbol::codegenDef() {
   }
   qsort(fns.v, fns.n, sizeof(fns.v[0]), compareLineno);
   forv_Vec(FnSymbol, fn, fns) {
-    // Create external file to be compiled by GPU compiler
-    if (fn->hasFlag(FLAG_GPU_ON) || fn->hasFlag(FLAG_GPU_CALL)) {
-      INT_ASSERT(outfile); // not working with LLVM yet.
-      appendCFile(&gpufile,"chplGPU","cu");
-      FILE* wasfile = info->cfile;
-      info->cfile = gpufile.fptr;
-      fn->codegenDef();
-      flushStatements();
-      info->cfile = wasfile;
-      closeCFile(&gpufile); 
-    }
-    else
-      fn->codegenDef();
+    fn->codegenDef();
   }
   flushStatements();
   return;

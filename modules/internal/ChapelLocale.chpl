@@ -154,12 +154,39 @@ module ChapelLocale {
   // an initializer for the return value which calls its constructor, which calls
   // chpl_here_alloc ad infinitum.  But if the return type is left off, it works!
   proc chpl_here_alloc(x, md:int(16), lineno:int(32), filename:string) {
-    extern proc chpl_track_malloc(ptr:opaque, chunk:int, number:int, size:int,
-                                  md:int(16), lineno:int(32), filename:string)
-      :void;
+    extern proc chpl_memhook_malloc_pre(number:int, size:int, md:int(16),
+                                        lineno:int(32), filename:string) : void;
+    extern proc chpl_memhook_malloc_post(ptr:opaque, number:int, size:int, md:int(16),
+                                         lineno:int(32), filename:string) : void;
     var nbytes = __primitive("sizeof", x);
+    chpl_memhook_malloc_pre(1, nbytes, md, lineno, filename);
     var mem = __primitive("task_alloc", nbytes);
-    chpl_track_malloc(mem, nbytes, 1, nbytes, md, lineno, filename);
+    chpl_memhook_malloc_post(mem, 1, nbytes, md, lineno, filename);
+    return __primitive("cast", x.type, mem);
+  }
+
+  proc chpl_here_calloc(x, number:int, md:int(16), lineno:int(32), filename:string) {
+    extern proc chpl_memhook_malloc_pre(number:int, size:int, md:int(16),
+                                        lineno:int(32), filename:string) : void;
+    extern proc chpl_memhook_malloc_post(ptr:opaque, number:int, size:int, md:int(16),
+                                         lineno:int(32), filename:string) : void;
+    var nbytes = __primitive("sizeof", x);
+    chpl_memhook_malloc_pre(number, nbytes, md, lineno, filename);
+    var mem = __primitive("task_calloc", number, nbytes);
+    chpl_memhook_malloc_post(mem, number, nbytes, md, lineno, filename);
+    return __primitive("cast", x.type, mem);
+  }
+
+  proc chpl_here_realloc(x, md:int(16), lineno:int(32), filename:string) {
+    extern proc chpl_memhook_realloc_pre(ptr:object, number:int, size:int, md:int(16),
+                                        lineno:int(32), filename:string) : void;
+    extern proc chpl_memhook_realloc_post(newPtr:opaque, ptr:object,
+                                         number:int, size:int, md:int(16),
+                                         lineno:int(32), filename:string) : void;
+    var nbytes = __primitive("sizeof", x);
+    chpl_memhook_realloc_pre(x, 1, nbytes, md, lineno, filename);
+    var mem = __primitive("task_realloc", x:object, nbytes);
+    chpl_memhook_malloc_post(mem, x, 1, nbytes, md, lineno, filename);
     return __primitive("cast", x.type, mem);
   }
 
@@ -167,9 +194,9 @@ module ChapelLocale {
     // TODO: The pointer should really be of type opaque, but we don't 
     // handle object ==> opaque casts correctly.  (In codegen, opaque behaves 
     // like an lvalue, but in the type system it isn't one.)
-    extern proc chpl_track_free(ptr:object, lineno:int(32), filename:string)
-      :void;
-    chpl_track_free(x:object, lineno, filename);
+    extern proc chpl_memhook_free_pre(ptr:object, lineno:int(32), filename:string)
+      : void;
+    chpl_memhook_free_pre(x:object, lineno, filename);
     __primitive("task_free", x);
   }
 

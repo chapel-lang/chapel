@@ -132,7 +132,6 @@ static void create_block_fn_wrapper(CallExpr* fcall, ClassType* ctype, VarSymbol
   FnSymbol *wrap_fn = new FnSymbol( astr("wrap", fn->name));
   // Add a special flag to the wrapper-function as appropriate.
   // These control aspects of code generation.
-  if (fn->hasFlag(FLAG_GPU_ON))                 wrap_fn->addFlag(FLAG_GPU_CALL);
   if (fn->hasFlag(FLAG_ON))                     wrap_fn->addFlag(FLAG_ON_BLOCK);
   if (fn->hasFlag(FLAG_NON_BLOCKING))           wrap_fn->addFlag(FLAG_NON_BLOCKING);
   if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL))    wrap_fn->addFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK);
@@ -226,7 +225,7 @@ static void create_block_fn_wrapper(CallExpr* fcall, ClassType* ctype, VarSymbol
                                   new CallExpr(PRIM_WIDE_GET_ADDR, oldHere)));
   }
 
-  if (fn->hasFlag(FLAG_ON) || fn->hasFlag(FLAG_GPU_ON))
+  if (fn->hasFlag(FLAG_ON))
     fcall->insertAfter(new CallExpr(PRIM_CHPL_FREE, tempc));
   else
     wrap_fn->insertAtTail(new CallExpr(PRIM_CHPL_FREE, wrap_c));
@@ -854,17 +853,6 @@ static void createNestedFunctions(Vec<FnSymbol*>& nestedFunctions)
         ArgSymbol* locarg = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtLocale);
         fn->insertFormalAtTail(locarg);
       }
-      else if (info->isPrimitive(PRIM_ON_GPU)) {
-        fn = new FnSymbol("on_gpu_kernel");
-        fn->addFlag(FLAG_GPU_ON);
-        //Add two formal arguments:
-        // nBlocks = Number of Thread blocks
-        // threadsPerBlock = Number of threads per single thread block
-        ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "nBlocks", dtInt[INT_SIZE_DEFAULT]);
-        ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "threadsPerBlock", dtInt[INT_SIZE_DEFAULT]);
-        fn->insertFormalAtTail(arg1);
-        fn->insertFormalAtTail(arg2);
-      }
       else if (// info->isPrimitive(PRIM_BLOCK_PARAM_LOOP) || // resolution should remove this case.
                info->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
                info->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP) ||
@@ -883,10 +871,6 @@ static void createNestedFunctions(Vec<FnSymbol*>& nestedFunctions)
         if (block->blockInfo->isPrimitive(PRIM_BLOCK_ON) ||
             block->blockInfo->isPrimitive(PRIM_BLOCK_ON_NB)) {
           // This puts the target locale ID and address at the start of the call.
-          call->insertAtTail(block->blockInfo->get(1)->remove());
-        }
-        else if (block->blockInfo->isPrimitive(PRIM_ON_GPU)) {
-          call->insertAtTail(block->blockInfo->get(1)->remove());
           call->insertAtTail(block->blockInfo->get(1)->remove());
         }
 
