@@ -69,8 +69,11 @@ bundleArgs(CallExpr* fcall) {
   VarSymbol *tempc = newTemp(astr("_args_for", fn->name), ctype);
   fcall->insertBefore( new DefExpr( tempc));
   // This needs a helper function....
-  CallExpr *tempc_alloc = new CallExpr(PRIM_CHPL_ALLOC, ctype->symbol,
-                                       newMemDesc("compiler-inserted argument bundle"));
+  // Make up the allocator call from whole cloth.
+  // TODO: We can call the pre and post-memcheck stuff here, but
+  // argument bundles are transient and internal, so ...
+  CallExpr* tempc_size = new CallExpr(PRIM_SIZEOF, ctype->symbol);
+  CallExpr* tempc_alloc = new CallExpr(PRIM_TASK_ALLOC, tempc_size);
   fcall->insertBefore(new CallExpr(PRIM_MOVE, tempc,
                                    new CallExpr(PRIM_CAST, ctype->symbol, tempc_alloc)));
   
