@@ -32,12 +32,19 @@ Problems analyzed and assigned that should be fixed soon:
 
 gbt, 04-26-13: r21322 broke parallel/taskPool/figueroa/TooManyThreads.
                I fixed this in r21327, but it may show up as a Resolved
-               Error or even a New Error for a few days hence.
+               Error for a few days more.
 
 
 ==============================================
 These things regularly cause noise in testing:
 ==============================================
+
+compflags/diten/noInlineAndHtml (future)
+----------------------------------------
+Sometimes this segfaults the compiler and sometimes it doesn't.  We
+haven't yet figured what differentiates encountering it vs. not, so
+we haven't been able to constrain it to only run when it will fail.
+
 
 linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
 ---------------------------------------------
@@ -203,7 +210,7 @@ examples of what times out:
  distributions/nelson/MultiBlockDist2DLocales (maybe resolved?)
  distributions/robust/arithmetic/modules/test_module_Sort (maybe resolved?)
  distributions/robust/arithmetic/stress/test_many_domains (08/13)
- distributions/robust/arithmetic/stress/test_many_array (11/10/12)
+ distributions/robust/arithmetic/stress/test_many_array (4/29/13)
  distributions/dm/t2 (2012/08/15)
  test_array_slicing3 (06/08/12, 6/16, 3/29/13, 4/23/13)
  release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4) (04/08/13)
