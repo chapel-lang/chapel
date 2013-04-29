@@ -4976,6 +4976,23 @@ get_constant(Expr *e) {
 }
 
 
+// This builds an allocation of enough space to hold a variable of the given type.
+// It is effectively the body of chpl_here_alloc() instantiated with the
+// desired return type.
+// (Which is unfortunate, because it means we have duplicate implementations
+// of the same idiom.  We should choose one or the other.)
+// The memory tracking hooks are not called, because the variables created here
+// are just used internally to pass variables to the bodies of parallel constructs.
+// (But they can be added easily if desire/needed.)
+CallExpr* heapAllocate(Type* t)
+{
+  CallExpr* nbytes = new CallExpr(PRIM_SIZEOF, t->symbol);
+  CallExpr* alloc =  new CallExpr(PRIM_TASK_ALLOC, nbytes);
+  CallExpr* cast_alloc = new CallExpr(PRIM_CAST, t->symbol, alloc);
+  return cast_alloc;
+}
+
+
 // getNextExpr(expr) returns the lexically next expr in a normalized
 // tree
 #define AST_RET_CHILD(_t, _m) \

@@ -445,9 +445,8 @@ createArgBundleCopyFn(ClassType* ct, FnSymbol* loopBodyFnWrapper) {
   BlockStmt* block = new BlockStmt();
   Symbol* argBundle = newTemp("argBundle", ct);
   block->insertAtTail(new DefExpr(argBundle));
-  block->insertAtTail(new CallExpr(PRIM_MOVE, argBundle,
-                                   new CallExpr(PRIM_CHPL_ALLOC, ct->symbol,
-                                     newMemDesc("compiler-inserted argument bundle"))));
+  CallExpr* bundle_alloc = heapAllocate(ct);
+  block->insertAtTail(new CallExpr(PRIM_MOVE, argBundle, bundle_alloc));
   Symbol* loopBodyFnArgsTmp = newTemp("loopBodyFnArgsTmp", ct);
   block->insertAtTail(new DefExpr(loopBodyFnArgsTmp));
   block->insertAtTail(new CallExpr(PRIM_MOVE, loopBodyFnArgsTmp, new CallExpr(PRIM_CAST, ct->symbol, loopBodyFnArgsArg)));
@@ -530,8 +529,7 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
   // code after resolution is complete.  I'm not certain that the compiler can resolve
   // more functions after the functionResolution pass is complete, so I'm leaving this
   // changes as a separate work item.
-  CallExpr* argBundleMem =
-    new CallExpr(PRIM_CHPL_ALLOC, ts, newMemDesc("compiler-inserted argument bundle"));
+  CallExpr* argBundleMem = heapAllocate(ct);
   iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, argBundle, argBundleMem));
   iteratorFnCall->insertAtTail(argBundle);
   iteratorFnCall->insertAfter(new CallExpr(PRIM_CHPL_FREE, argBundle));
