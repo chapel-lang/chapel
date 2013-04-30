@@ -1,0 +1,9 @@
+bug: Destructor not called with --no-local.
+
+The call to the destructor is removed at line 717 of parallel.cpp by the clause:
+716          if (call->isResolved()->hasFlag(FLAG_AUTO_DESTROY_FN)) {
+717            call->remove();
+because the function has the FLAG_AUTO_DESTROY_FN flag attached.
+
+So either the flag needs to be removed or the clause does.  Some experimentation required.
+

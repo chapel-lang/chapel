@@ -223,9 +223,9 @@ static void create_block_fn_wrapper(CallExpr* fcall, ClassType* ctype, VarSymbol
   }
 
   if (fn->hasFlag(FLAG_ON))
-    fcall->insertAfter(new CallExpr(PRIM_CHPL_FREE, tempc));
+    fcall->insertAfter(new CallExpr(PRIM_TASK_FREE, tempc));
   else
-    wrap_fn->insertAtTail(new CallExpr(PRIM_CHPL_FREE, wrap_c));
+    wrap_fn->insertAtTail(new CallExpr(PRIM_TASK_FREE, wrap_c));
 
   wrap_fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
