@@ -279,6 +279,7 @@ isFastPrimitive(CallExpr *call) {
   case PRIM_TASK_CALLOC:
   case PRIM_TASK_REALLOC:
   case PRIM_TASK_FREE:
+  case PRIM_CHPL_MEMHOOK_FREE:
   case PRIM_CHPL_ALLOC:
   case PRIM_MALLOC:
   case PRIM_CHPL_FREE:

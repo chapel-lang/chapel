@@ -474,6 +474,7 @@ initPrimitive() {
   prim_def(PRIM_TASK_CALLOC, "task_calloc", returnInfoOpaque, true, false);
   prim_def(PRIM_TASK_REALLOC, "task_realloc", returnInfoOpaque, true, false);
   prim_def(PRIM_TASK_FREE, "task_free", returnInfoVoid, true, false);
+  prim_def(PRIM_CHPL_MEMHOOK_FREE, "chpl_memhook_free_pre", returnInfoVoid, true, true);
 
   // These are satisfied directly by the runtime.
   prim_def(PRIM_CHPL_ALLOC, "chpl_mem_alloc", returnInfoChplAlloc, true, true);

@@ -4223,7 +4223,20 @@ GenRet CallExpr::codegen() {
       GenRet ptr = codegenValue(get(1));
       if (ptrExpr->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         ptr = codegenRaddr(ptr);
-      codegenCallExpr("chpl_task_free", codegenCastToVoidStar(ptr));
+      codegenCall("chpl_task_free", codegenCastToVoidStar(ptr));
+      break;
+    }
+    case PRIM_CHPL_MEMHOOK_FREE:
+    { // void chpl_memhook_free_pre(void* ptr, int lineno, string filename);
+      Expr* ptrExpr = get(1);
+      if (ptrExpr->typeInfo()->getValType() == dtString &&
+          ! ptrExpr->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
+        break; // Leak local strings like crazy.
+      GenRet ptr = codegenValue(get(1));
+      if (ptrExpr->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
+        ptr = codegenRaddr(ptr);
+      codegenCall("chpl_memhook_free_pre", codegenCastToVoidStar(ptr),
+                  get(2), get(3));
       break;
     }
     case PRIM_CHPL_ALLOC:
