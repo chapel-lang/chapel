@@ -4011,12 +4011,6 @@ requiresImplicitDestroy(CallExpr* call) {
     FnSymbol* parent = call->getFunction();
     INT_ASSERT(parent);
 
-    if (fn->retType->symbol->hasFlag(FLAG_REF) &&
-        isRefCountedType(fn->retType)) {
-      USR_WARN(fn->retType, "hi");
-    }
-
-
     if (!parent->hasFlag(FLAG_DONOR_FN) &&
         // No autocopy/destroy calls in a donor function (this might
         // need to change when this flag is used more generally)).
