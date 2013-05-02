@@ -324,7 +324,9 @@ createArgBundleFreeFn(ClassType* ct, FnSymbol* loopBodyFnWrapper) {
     argBundleFreeFn = new FnSymbol("chpl__freeRecursiveIteratorArgumentBundle");
     argBundleFreeFn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "loopBodyFnID", dtInt[INT_SIZE_DEFAULT]));
     argBundleFreeFn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "loopBodyFnArgs", argBundleType));
-    argBundleFreeFn->insertAtTail(new CallExpr(PRIM_CHPL_FREE, argBundleFreeFn->getFormal(2)));
+    // Arg bundles are allocated locally and tracked.
+    argBundleFreeFn->insertAtTail(new CallExpr(PRIM_CHPL_MEMHOOK_FREE, argBundleFreeFn->getFormal(2)));
+    argBundleFreeFn->insertAtTail(new CallExpr(PRIM_TASK_FREE, argBundleFreeFn->getFormal(2)));
     argBundleFreeFn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
     argBundleFreeFn->retType = dtVoid;
     ct->symbol->defPoint->insertBefore(new DefExpr(argBundleFreeFn));
@@ -532,7 +534,8 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
   CallExpr* argBundleMem = heapAllocate(ct);
   iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, argBundle, argBundleMem));
   iteratorFnCall->insertAtTail(argBundle);
-  iteratorFnCall->insertAfter(new CallExpr(PRIM_CHPL_FREE, argBundle));
+  iteratorFnCall->insertAfter(new CallExpr(PRIM_CHPL_MEMHOOK_FREE, argBundle));
+  iteratorFnCall->insertAfter(new CallExpr(PRIM_TASK_FREE, argBundle));
 
   // loopBodyWrapper(int index, ct* fn_args) {
   //   loopBodyFn(index);
