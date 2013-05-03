@@ -38,9 +38,9 @@ typedef struct task_pool_struct {
   chpl_task_list_p ltask;        // points to the task list entry, if there is one
   chpl_string      filename;
   int              lineno;
+  chpl_task_private_data_t chpl_data;
   task_pool_p      next;
   task_pool_p      prev;
-  chpl_task_private_data_t chpl_data;
 } task_pool_t;
 
 
@@ -271,16 +271,16 @@ void chpl_task_init(void) {
     tp->ptask->filename     = "main program";
     tp->ptask->lineno       = 0;
     tp->ptask->next         = NULL;
-    tp->lockRprt 			= NULL;
+    tp->lockRprt            = NULL;
 
     // Set up task-private data for locale (architectural) support.
-    tp->ptask->chpl_data.localeID     	= 0;
-    tp->ptask->chpl_data.here         	= NULL;
-    tp->ptask->chpl_data.serial_state 	= true;     // Set to false in chpl_task_callMain().
-    tp->ptask->chpl_data.alloc 		  	= chpl_malloc;
-    tp->ptask->chpl_data.calloc 		= chpl_calloc;
-    tp->ptask->chpl_data.realloc 		= chpl_realloc;
-    tp->ptask->chpl_data.free 			= chpl_free;
+    tp->ptask->chpl_data.localeID       = 0;
+    tp->ptask->chpl_data.here           = NULL;
+    tp->ptask->chpl_data.serial_state   = true;     // Set to false in chpl_task_callMain().
+    tp->ptask->chpl_data.alloc          = chpl_malloc;
+    tp->ptask->chpl_data.calloc         = chpl_calloc;
+    tp->ptask->chpl_data.realloc        = chpl_realloc;
+    tp->ptask->chpl_data.free           = chpl_free;
 
     chpl_thread_setPrivateData(tp);
   }
@@ -351,9 +351,33 @@ static void comm_task_wrapper(void* arg) {
   tp->ptask->filename     = "communication task";
   tp->ptask->lineno       = 0;
   tp->ptask->next         = NULL;
-  tp->ptask->chpl_data.here         = NULL;  // Set below.
-  tp->ptask->chpl_data.localeID     = 0;  // Set below.
+
+  //
+  // The comm (polling) task shouldn't need any of this information,
+  // really.
   tp->ptask->chpl_data.serial_state = true;
+  tp->ptask->chpl_data.localeID     = 0;
+  tp->ptask->chpl_data.here         = NULL;
+  tp->ptask->chpl_data.alloc        = NULL;
+  tp->ptask->chpl_data.calloc       = NULL;
+  tp->ptask->chpl_data.realloc      = NULL;
+  tp->ptask->chpl_data.free         = NULL;
+
+  //
+  // TODO: (This is a HACK.)  Set the allocator function pointers so
+  // that they refer to the system allocator implementation layer.  The
+  // comm task doesn't actually need these itself, but they will be
+  // inherited from the comm task by any "on" body tasks queued by it.
+  // Since we do not currently (as of 5/1/13) do anything in such "on"
+  // bodies to set the allocator function pointers to the proper thing
+  // for the target locale before attempting any allocations, if we
+  // leave them NULL here they will be NULL in the "on" bodies, and all
+  // attempts to call through them will segfault.
+  //
+  tp->ptask->chpl_data.alloc   = chpl_malloc;
+  tp->ptask->chpl_data.calloc  = chpl_calloc;
+  tp->ptask->chpl_data.realloc = chpl_realloc;
+  tp->ptask->chpl_data.free    = chpl_free;
 
   tp->lockRprt = NULL;
 
@@ -473,11 +497,7 @@ void chpl_task_processTaskList(chpl_task_list_p task_list) {
     nested_task.begun        = true;
     nested_task.filename     = first_task->filename;
     nested_task.lineno       = first_task->lineno;
-
-    // Memcopy locale-specific data ...
-    nested_task.chpl_data	 = *chpl_task_getPrivateData();
-    // ... and then set the serial state to false.
-    nested_task.chpl_data.serial_state = false;
+    nested_task.chpl_data    = curr_ptask->chpl_data;
 
     set_current_ptask(&nested_task);
 
@@ -1325,8 +1345,10 @@ static task_pool_p add_to_task_pool(chpl_fn_p fp,
   ptask->ltask        = ltask;
   ptask->begun        = false;
 
-  // Inherit all locale-specific data from the parent task.
+  // Inherit all locale-specific data except serial state from the
+  // parent task.
   ptask->chpl_data = *chpl_task_getPrivateData();
+  ptask->chpl_data.serial_state = serial;
 
   if (ltask) {
     ptask->filename = ltask->filename;
