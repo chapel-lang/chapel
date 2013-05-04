@@ -951,12 +951,12 @@ module DefaultRectangular {
     //CASE 1: when the data in destination array is stored "here", it will use "chpl_comm_get_strd". 
     if A.data.locale==here
     {
-      var dest = A.data;
-      var src = B.data;
+      const dest = A.data;
+      const src = B.data;
       
-      var dststr=dstStride._value.data;
-      var srcstr=srcStride._value.data;
-      var cnt=count._value.data;
+      const dststr=dstStride._value.data;
+      const srcstr=srcStride._value.data;
+      const cnt=count._value.data;
   
       if debugBulkTransfer {
         writeln("Case 1");
@@ -981,9 +981,9 @@ module DefaultRectangular {
       if debugDefaultDistBulkTransfer then
         writeln("\tlocal put() to ", A.locale.id);
       
-      var dststr=dstStride._value.data;
-      var srcstr=srcStride._value.data;
-      var cnt=count._value.data;
+      const dststr=dstStride._value.data;
+      const srcstr=srcStride._value.data;
+      const cnt=count._value.data;
       
       if debugBulkTransfer {
         writeln("Case 2");
@@ -994,9 +994,9 @@ module DefaultRectangular {
         writeln("Blk: ",blk);
       }
       
-      var dest = A.data;
-      var src = B.data;
-      var destlocale =A.data.locale.id : int(32);
+      const dest = A.data;
+      const src = B.data;
+      const destlocale =A.data.locale.id : int(32);
   
       __primitive("chpl_comm_put_strd",
                   __primitive("array_get",dest,A.getDataIndex(Alo)),
@@ -1010,21 +1010,18 @@ module DefaultRectangular {
     //CASE 3: other case, it will use "chpl_comm_get_strd". 
     else on A.data.locale
     {   
-      var dest = A.data;
-      var src = B.data;
+      const dest = A.data;
+      const src = B.data;
   
       //We are in a locale that doesn't store neither A nor B so we need to copy the auxiliarry
       //arrays to the locale that hosts A. This should translate into some more gets...
-      var count:[1..(stridelevels+1)] int(32);
-      count=count:int(32);
-  
-      var dststrides,srcstrides:[1..stridelevels] int(32);
-      srcstrides=srcStride:int(32);
-      dststrides=dstStride:int(32);
+      const countAux=count:int(32);
+      const srcstrides=srcStride:int(32);
+      const dststrides=dstStride:int(32);
       
-      var dststr=dststrides._value.data;
-      var srcstr=srcstrides._value.data;
-      var cnt=count._value.data;
+      const dststr=dststrides._value.data;
+      const srcstr=srcstrides._value.data;
+      const cnt=countAux._value.data;
       
       if debugBulkTransfer {
         writeln("Case 3");
@@ -1034,13 +1031,13 @@ module DefaultRectangular {
         writeln("srcstrides: ",srcstrides);
       }
       
-      var srclocale =B.data.locale.id : int(32);
+      const srclocale =B.data.locale.id : int(32);
          __primitive("chpl_comm_get_strd",
                       __primitive("array_get",dest, A.getDataIndex(Alo)),
                       __primitive("array_get",dststr,dststrides._value.getDataIndex(1)), 
                       srclocale,
                       __primitive("array_get",src, B.getDataIndex(Blo)),
-                      __primitive("array_get",srcstr,dststrides._value.getDataIndex(1)),
+                      __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
                       __primitive("array_get",cnt, count._value.getDataIndex(1)),
                       stridelevels);   
     }
@@ -1334,4 +1331,22 @@ module DefaultRectangular {
     return result;
   }
   
+  proc DefaultRectangularArr.bulkReindex(d: DefaultRectangularDom)
+  {
+    
+    for param i in 1..rank {
+      var s: idxType;
+      // NOTE: Not bothering to check to see if this can fit into idxType
+      if chpl__signedType(idxType)==idxType {
+        s = (dom.dsiDim(i).stride / str(i)) : d.idxType;
+      } else { // unsigned type, signed stride
+        assert((dom.dsiDim(i).stride<0 && str(i)<0) ||
+               (dom.dsiDim(i).stride>0 && str(i)>0));
+        s = dom.dsiDim(i).stride / str(i) : d.idxType;
+      }
+      blk(i) = blk(i) * s;
+      off(i) = d.dsiDim(i).low;
+      str(i) = d.dsiDim(i).stride;
+    }
+  }
 }

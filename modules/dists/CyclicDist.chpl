@@ -1078,14 +1078,13 @@ proc CyclicArr.doiBulkTransferToDR(Barg)
         const slice = B.dsiSlice(d._value);
         //Necessary to calculate the value of blk variable in DR
         //with the new domain r1
-        const slice2 = slice.dsiReindex(d._value);
+        slice.bulkReindex(d._value);
      
         if debugCyclicDistBulkTransfer then 
           writeln(" A[",(...r1),"] = B[",(...r2), "]");
       
-        slice2.doiBulkTransferStride(A.locArr[j].myElems[(...r2)]._value);
+        slice.doiBulkTransferStride(A.locArr[j].myElems[(...r2)]._value);
         delete slice;
-        delete slice2;
       }
     }
 }
@@ -1127,11 +1126,10 @@ proc CyclicArr.doiBulkTransferFromDR(Barg)
         const slice = B.dsiSlice(d._value);
         //this step it's necessary to calculate the value of blk variable in DR
         //with the new domain r1
-        const slice2 = slice.dsiReindex(d._value);
+        slice.bulkReindex(d._value);
       
-        A.locArr[j].myElems[(...r2)]._value.doiBulkTransferStride(slice2);
+        A.locArr[j].myElems[(...r2)]._value.doiBulkTransferStride(slice);
         delete slice;
-        delete slice2;
       }
     }
 }

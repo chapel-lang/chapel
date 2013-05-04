@@ -9,8 +9,8 @@ module ChapelArray {
   var privatizeLock$: sync int;
   
   config param debugBulkTransfer = false;
-  config param useBulkTransfer = true;
-  config param useBulkTransferStride = false;
+  config param useBulkTransfer = false;
+  config param useBulkTransferStride = true;
   
   pragma "privatized class"
   proc _isPrivatized(value) param
@@ -1676,8 +1676,8 @@ module ChapelArray {
   proc chpl__supportedDataTypeForBulkTransfer(x: single) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: domain) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: []) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x: _distribution) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where _isComplexType(t) return false;
+  proc chpl__supportedDataTypeForBulkTransfer(x: _distribution) param return true;
+  proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where _isComplexType(t) return true;
   proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where t: value return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: object) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x) param return true;
@@ -1709,11 +1709,9 @@ module ChapelArray {
     if a._value.isDefaultRectangular() {
       if b._value.isDefaultRectangular() {
         // implemented in DefaultRectangular
-        const sliceA = a._value.dsiReindex({(...a._value.dom.dsiDims())}._value);
-        const sliceB = b._value.dsiReindex({(...b._value.dom.dsiDims())}._value);
-        sliceA.doiBulkTransferStride(sliceB);
-        delete sliceA;
-        delete sliceB;
+        a._value.bulkReindex({(...a._value.dom.dsiDims())}._value);
+        b._value.bulkReindex({(...b._value.dom.dsiDims())}._value);
+        a._value.doiBulkTransferStride(b._value);
       }
       else
         // b's domain map must implement this

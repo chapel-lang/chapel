@@ -4,10 +4,11 @@ Array is "manually" distributed on locales so each locale has a DR subblock
 Halo communications are implemented a la MPI: 
 explicit Data[localeA].DR[sliceHalo]=Data[localeB].DR[sliceSource]
 */
-
+use Time;
 use BlockDist;
 use util;
 
+config const timer : bool =false;
 config const n=2, m=3: int;
 config const g=3, h=3;
 const gridDom = {1..g, 1..h};
@@ -15,6 +16,7 @@ var gridLocales: [gridDom] locale;
 setupGridLocales();
 
 type elType = real;
+var t1,t2,t3,t4 :real;
 //const adjcoords = ((0,-1), (-1,0), (0,1), (1,0));
 
 record localInfo {
@@ -140,14 +142,20 @@ proc fetch(oddphase: bool) {
 var i=0;
 proc progress() {
   i=i+1;
-  fetch(true);          showfetch(true); 
+  if timer then t1=getCurrentTime();
+  fetch(true);
+  if timer then t2=getCurrentTime();
+  showfetch(true); 
   compute(true, delta); showme(true, delta, "After odd phase: "+i);
   refcomp(true, refdelta); showref(true);
   verify(true);
   if delta < epsilon then return true;
 
   i=i+1;
-  fetch(false);          showfetch(false);
+  if timer then t3=getCurrentTime();
+  fetch(false);
+  if timer then t4=getCurrentTime();
+  showfetch(false);
   compute(false, delta); showme(false, delta, "After even phase: "+i);
   refcomp(false, refdelta);showref(false);
   verify(false);
@@ -161,3 +169,8 @@ do {} while !progress();
 
 writeln("Converged with delta=",delta," after ",i," iterations.");
 if errCount > 0 then writeln("Got ", errCount, " ERRORS.");
+if timer then
+{
+  writeln("Time Phase 1:",t2-t1);
+  writeln("Time Phase 2:",t4-t3);
+}
