@@ -4536,13 +4536,13 @@ GenRet CallExpr::codegen() {
       GenRet ptrToFnPtr;
       GenRet index;
       FnSymbol* fn = NULL;
-      int startArgs = 3;    // Where actual arguments begin
-      SymExpr* se = toSymExpr(get(1));  // The function symbol
+      int startArgs = 3;    // Where actual arguments begin.
+      SymExpr* se = toSymExpr(get(1));  // the function symbol
       INT_ASSERT(se);
       fn = toFnSymbol(se->var);
       INT_ASSERT(fn);
       {
-        GenRet i = codegenValue(get(2));    // The cid.
+        GenRet i = codegenValue(get(2));    // the cid
         GenRet j = new_IntSymbol(virtualMethodMap.get(fn), INT_SIZE_64);
         INT_ASSERT(gMaxVMT >= 0);
         GenRet maxVMTConst = new_IntSymbol(gMaxVMT, INT_SIZE_64);

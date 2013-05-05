@@ -186,13 +186,14 @@ fragmentLocalBlocks() {
       DefExpr* def = toDefExpr(current);
 
       //
-      // if this statement is a yield, a return, a label definition, a
+      // If this statement is a yield, a return, a label definition, a
       // goto, a conditional, or a block, insert a new local block
       // that contains all the statements seen to this point (by
       // setting insertNewLocal to true) and add the first statements
       // of blocks and conditional blocks to the queue; otherwise, if
       // this statement is a definition, add it to preVec; otherwise,
       // add this statement to inVec.
+      // Blocks and conditionals are visited in turn (breadth-first).
       //
       if ((call && (call->isPrimitive(PRIM_YIELD) ||
                     call->isPrimitive(PRIM_RETURN))) ||
@@ -217,11 +218,9 @@ fragmentLocalBlocks() {
       } else {
         inVec.add(current);
       }
-      // Note that yield and return statements are removed, as are
-      // gotos and labels.  Blocks and conditionals are unwrapped.
 
       //
-      // if ready to insert a new local block or we are on the last
+      // If ready to insert a new local block or we are on the last
       // statement in a block, insert a new local block containing all
       // the statements in inVec; move all the statements in preVec to
       // a point just before this new local block.
@@ -878,7 +877,6 @@ expandIteratorInline(CallExpr* call) {
         map.put(index, yieldedIndex);
         BlockStmt* bodyCopy = body->copy(&map);
 
-        // ??? Is this really necessary?  Why?
         if (int count = countEnclosingLocalBlocks(call, ibody)) {
           for (int i = 0; i < count; i++) {
             bodyCopy = new BlockStmt(bodyCopy);
