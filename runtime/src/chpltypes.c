@@ -21,6 +21,8 @@
 const char* _default_format_write_complex64 = "%g + %gi";
 const char* _default_format_write_complex128 = "%g + %gi";
 
+// Uses the system allocator.  Should not be used to create user-visible data
+// (error messages are OK).
 char* chpl_glom_strings(int numstrings, ...) {
   va_list ap;
   int i, len;
@@ -88,10 +90,10 @@ chpl_string_widen(chpl____wide_chpl_string* x, chpl_string from)
 {
   size_t len = strlen(from) + 1;
   x->locale = chpl_gen_getLocaleID();
-  x->addr = chpl_mem_allocMany(len, sizeof(char),
+  x->addr = chpl_tracked_task_calloc(len, sizeof(char),
                                CHPL_RT_MD_SET_WIDE_STRING, 0, 0);
   strncpy((char*)x->addr, from, len);
-  x->size = len;
+  x->size = len;	// This size includes the terminating NUL.
 }
 
 // un-macro'd CHPL_COMM_WIDE_GET_STRING
@@ -99,7 +101,7 @@ void
 chpl_comm_wide_get_string(chpl_string* local, struct chpl_chpl____wide_chpl_string_s* x, int32_t tid, int32_t lineno, chpl_string filename)
 {
   char* chpl_macro_tmp =
-      chpl_mem_allocMany(x->size, sizeof(char),
+      chpl_tracked_task_calloc(x->size, sizeof(char),
                          CHPL_RT_MD_GET_WIDE_STRING, -1, "<internal>");
     if (chpl_nodeID == x->locale.node)
       memcpy(chpl_macro_tmp, x->addr, x->size);
@@ -119,11 +121,11 @@ string_copy(chpl_string x, int32_t lineno, chpl_string filename)
 {
   char *z;
 
-  // hilde sez: if the input string is null, just return null.
+  // If the input string is null, just return null.
   if (x == NULL)
     return NULL;
 
-  z = (char*)chpl_mem_allocMany(strlen(x)+1, sizeof(char),
+  z = (char*)chpl_tracked_task_calloc(strlen(x)+1, sizeof(char),
                                       CHPL_RT_MD_STRING_COPY_DATA,
                                       lineno, filename);
   return strcpy(z, x);
@@ -132,7 +134,7 @@ string_copy(chpl_string x, int32_t lineno, chpl_string filename)
 
 chpl_string
 string_concat(chpl_string x, chpl_string y, int32_t lineno, chpl_string filename) {
-  char *z = (char*)chpl_mem_allocMany(strlen(x)+strlen(y)+1, sizeof(char),
+  char *z = (char*)chpl_tracked_task_calloc(strlen(x)+strlen(y)+1, sizeof(char),
                                       CHPL_RT_MD_STRING_CONCAT_DATA,
                                       lineno, filename);
   z[0] = '\0';
@@ -152,7 +154,7 @@ string_strided_select(chpl_string x, int low, int high, int stride, int32_t line
   if (low < 1 || low > length || high > length) {
     chpl_error("string index out of bounds", lineno, filename);
   }
-  result = chpl_mem_allocMany(size + 2, sizeof(char),
+  result = chpl_tracked_task_calloc(size + 2, sizeof(char),
                               CHPL_RT_MD_STRING_STRIDED_SELECT_DATA,
                               lineno, filename);
   dst = result;
@@ -168,7 +170,8 @@ string_strided_select(chpl_string x, int low, int high, int stride, int32_t line
     }
   }
   *dst = '\0';
-  return chpl_glom_strings(1, result);
+  // result is already a copy, so we don't have to copy  it again.
+  return result;
 }
 
 chpl_string
@@ -178,11 +181,13 @@ string_select(chpl_string x, int low, int high, int32_t lineno, chpl_string file
 
 chpl_string
 string_index(chpl_string x, int i, int32_t lineno, chpl_string filename) {
-  char buffer[2];
+  char* buffer = chpl_tracked_task_calloc(2, sizeof(char),
+                                          CHPL_RT_MD_STRING_COPY_DATA,
+                                          lineno, filename);
   if (i-1 < 0 || i-1 >= string_length(x))
     chpl_error("string index out of bounds", lineno, filename);
   sprintf(buffer, "%c", x[i-1]);
-  return chpl_glom_strings(1, buffer);
+  return buffer;
 }
 
 

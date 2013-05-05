@@ -24,6 +24,7 @@ void chpl_newPrivatizedClass(void* v) {
   chpl_numPrivateObjects += 1;
   if (chpl_numPrivateObjects == 1) {
     chpl_capPrivateObjects = 8;
+    // "private" means "node-private", so we can use the system allocator.
     chpl_privateObjects = chpl_mem_allocMany(chpl_capPrivateObjects, sizeof(void*), CHPL_RT_MD_COMM_PRIVATE_OBJECTS_ARRAY, 0, "");
   } else {
     if (chpl_numPrivateObjects > chpl_capPrivateObjects) {

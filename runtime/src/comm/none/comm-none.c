@@ -214,8 +214,10 @@ void  chpl_comm_put_strd(void* dstaddr_arg, void* dststrides, int32_t dstlocale,
       total = total*cnt[i+1];
 
     //displacement from the dstaddr and srcaddr start points
-    srcdisp = chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
-    dstdisp = chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
+    // We want these allocations to be locale-aware, since computing these stripes is 
+    // a kind of kernel code.
+    srcdisp = chpl_tracked_task_calloc(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
+    dstdisp = chpl_tracked_task_calloc(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
 
     for (j=0; j<total; j++) {
       carry = 1;
@@ -237,8 +239,8 @@ void  chpl_comm_put_strd(void* dstaddr_arg, void* dststrides, int32_t dstlocale,
         }
       }
     }  // for j
-    chpl_mem_free(srcdisp,0,0);
-    chpl_mem_free(dstdisp,0,0);
+    chpl_tracked_task_free(srcdisp,0,0);
+    chpl_tracked_task_free(dstdisp,0,0);
     break;
   }
 }
@@ -365,8 +367,8 @@ void  chpl_comm_get_strd(void* dstaddr_arg, void* dststrides, int32_t srclocale,
       total = total*cnt[i+1];
 
     //displacement from the dstaddr and srcaddr start points
-    srcdisp = chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
-    dstdisp = chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
+    srcdisp = chpl_tracked_task_calloc(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
+    dstdisp = chpl_tracked_task_calloc(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
 
     for (j=0; j<total; j++) {
       carry = 1;
@@ -388,8 +390,8 @@ void  chpl_comm_get_strd(void* dstaddr_arg, void* dststrides, int32_t srclocale,
         }
       }
     }  // for j
-    chpl_mem_free(srcdisp,0,0);
-    chpl_mem_free(dstdisp,0,0);
+    chpl_tracked_task_free(srcdisp,0,0);
+    chpl_tracked_task_free(dstdisp,0,0);
     break;
   }
 }

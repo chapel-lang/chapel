@@ -512,6 +512,7 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
   done_t* done;
   int numOffsets=1;
 
+  // This can use the system allocator because it involves internode communication.
   done = (done_t*) chpl_mem_allocManyZero(chpl_numNodes, sizeof(*done),
                                           CHPL_RT_MD_COMM_FORK_DONE_FLAG,
                                           0, 0);
@@ -759,7 +760,7 @@ void  chpl_comm_put_strd(void* dstaddr, void* dststrides, c_nodeid_t dstnode_id,
   size_t srcstr[strlvls];
   size_t cnt[strlvls+1];
 
-  //Only count[0] and strides are meassured in number of bytes.
+  //Only count[0] and strides are measured in number of bytes.
   cnt[0] = ((int32_t*)count)[0] * elemSize;
   if (strlvls>0) {
     srcstr[0] = ((int32_t*)srcstrides)[0] * elemSize;
@@ -874,9 +875,11 @@ void  chpl_comm_fork_nb(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
     if (arg_size)
       memcpy(&(info->arg), arg, arg_size);
   } else {
-      argCopy = chpl_mem_allocMany(1, arg_size, CHPL_RT_MD_COMM_FORK_SEND_NB_LARGE_ARG, 0, 0);
+    // If the arg bundle is too large to fit in fork_t (i.e. passArg == false), 
+    // Copy the args into auxilliary memory and pass a pointer to this instead.
+    argCopy = chpl_mem_allocMany(1, arg_size, CHPL_RT_MD_COMM_FORK_SEND_NB_LARGE_ARG, 0, 0);
     memcpy(argCopy, arg, arg_size);
-    memcpy(&(info->arg), &argCopy, sizeof(void*));
+    *(void**)(&(info->arg)) = argCopy;
   }
 
   if (chpl_nodeID == node) {

@@ -172,6 +172,7 @@ struct chpl_chpl____wide_chpl_string_s;
 chpl_string chpl_format(chpl_string format, ...)
   __attribute__((format(printf, 1, 2)));
 
+// Uses the system allocator.
 char* chpl_glom_strings(int numstrings, ...);
 
 chpl_bool string_contains(chpl_string x, chpl_string y);

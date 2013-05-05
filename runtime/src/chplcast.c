@@ -313,7 +313,7 @@ _define_string_to_type(uint, 64)
       } else {                                                          \
         message = "Empty string when converting from string to " #base "(" #width ")"; \
       }                                                                 \
-      chpl_error(message, lineno, filename);                           \
+      chpl_error(message, lineno, filename);                            \
     }                                                                   \
     return val;                                                         \
   }
@@ -333,7 +333,7 @@ _define_string_to_real_type(complex, 128)
   chpl_string type##_to_chpl_string(type x) {   \
     char buffer[256];                           \
     sprintf(buffer, format, x);                 \
-    return chpl_glom_strings(1, buffer);        \
+    return string_copy(buffer, 0, NULL);        \
   }
 
 integral_to_string(int8_t, "%" PRId8)
@@ -369,18 +369,18 @@ static void ensureDecimal(char* buffer) {
 #define real_to_string(type, format)           \
   chpl_string type##_to_chpl_string(type x) {  \
     if (isnan(x)) {                            \
-      return chpl_glom_strings(1, NANSTRING);  \
+      return string_copy(NANSTRING, 0, NULL);  \
     } else if (isinf(x)) {                     \
       if (x < 0) {                             \
-        return chpl_glom_strings(1, NEGINFSTRING); \
+        return string_copy(NEGINFSTRING, 0, NULL);  \
       } else {                                 \
-        return chpl_glom_strings(1, POSINFSTRING); \
+        return string_copy(POSINFSTRING, 0, NULL);  \
       }                                        \
     } else {                                   \
       char buffer[256];                        \
       sprintf(buffer, format, x);              \
       ensureDecimal(buffer);                   \
-      return chpl_glom_strings(1, buffer);     \
+      return string_copy(buffer, 0, NULL);     \
     }                                          \
   }
 
