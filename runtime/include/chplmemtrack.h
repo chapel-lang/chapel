@@ -25,11 +25,11 @@ void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
                        chpl_mem_descInt_t description,
                        int32_t lineno, chpl_string filename);
 void chpl_track_free(void* memAlloc, int32_t lineno, chpl_string filename);
-void chpl_track_realloc1(void* memAlloc, size_t number, size_t size,
+void chpl_track_realloc_pre(void* memAlloc, size_t size,
                          chpl_mem_descInt_t description,
                          int32_t lineno, chpl_string filename);
-void chpl_track_realloc2(void* moreMemAlloc,
-                         void* memAlloc, size_t number, size_t size,
+void chpl_track_realloc_post(void* moreMemAlloc,
+                         void* memAlloc, size_t size,
                          chpl_mem_descInt_t description,
                          int32_t lineno, chpl_string filename);
 

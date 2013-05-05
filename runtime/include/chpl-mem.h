@@ -61,19 +61,20 @@ void chpl_mem_free(void* memAlloc, int32_t lineno, chpl_string filename) {
 }
 
 static ___always_inline
-void* chpl_mem_realloc(void* memAlloc, size_t number, size_t size, 
+void* chpl_mem_realloc(void* memAlloc, size_t size,
                        chpl_mem_descInt_t description,
                        int32_t lineno, chpl_string filename) {
   void* moreMemAlloc;
 
-  chpl_memhook_realloc_pre(memAlloc, number, size, description,
+  chpl_memhook_realloc_pre(memAlloc, size, description,
                            lineno, filename);
-  if( number == 0 || size == 0 ) {
+  if (size == 0)
+  {
     chpl_mem_free(memAlloc, lineno, filename);
     return NULL;
   }
-  moreMemAlloc = chpl_realloc(memAlloc, number*size);
-  chpl_memhook_realloc_post(moreMemAlloc, memAlloc, number, size, description,
+  moreMemAlloc = chpl_realloc(memAlloc, size);
+  chpl_memhook_realloc_post(moreMemAlloc, memAlloc, size, description,
                             lineno, filename);
   return moreMemAlloc;
 }

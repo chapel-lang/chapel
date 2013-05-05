@@ -178,15 +178,15 @@ module ChapelLocale {
   }
 
   proc chpl_here_realloc(x, md:int(16), lineno:int(32), filename:string) {
-    extern proc chpl_memhook_realloc_pre(ptr:object, number:int, size:int, md:int(16),
+    extern proc chpl_memhook_realloc_pre(ptr:object, size:int, md:int(16),
                                         lineno:int(32), filename:string) : void;
     extern proc chpl_memhook_realloc_post(newPtr:opaque, ptr:object,
-                                         number:int, size:int, md:int(16),
+                                         size:int, md:int(16),
                                          lineno:int(32), filename:string) : void;
     var nbytes = __primitive("sizeof", x);
-    chpl_memhook_realloc_pre(x, 1, nbytes, md, lineno, filename);
+    chpl_memhook_realloc_pre(x, nbytes, md, lineno, filename);
     var mem = __primitive("task_realloc", x:object, nbytes);
-    chpl_memhook_malloc_post(mem, x, 1, nbytes, md, lineno, filename);
+    chpl_memhook_realloc_post(mem, x, nbytes, md, lineno, filename);
     return __primitive("cast", x.type, mem);
   }
 
