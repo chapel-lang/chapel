@@ -2,6 +2,7 @@
 
 #include "chplfp.h"
 #include "chpl-mem.h"
+#include "chpl-mem-desc.h"
 #include "chplcgfns.h"
 #include "chpl-comm.h"
 #include "error.h"
@@ -116,6 +117,22 @@ chpl_comm_wide_get_string(chpl_string* local, struct chpl_chpl____wide_chpl_stri
 #endif
 
 
+//
+// We need an allocator for the rest of the code, but for the user
+// program it needs to be a locale-aware one with tracking, while for
+// the launcher the regular system one will do.
+//
+static ___always_inline void*
+chpltypes_malloc(size_t size, chpl_mem_descInt_t description,
+                 int32_t lineno, chpl_string filename) {
+#ifndef LAUNCHER
+  return chpl_tracked_task_alloc(size, description, lineno, filename);
+#else
+  return malloc(size);
+#endif
+}
+
+
 chpl_string
 string_copy(chpl_string x, int32_t lineno, chpl_string filename)
 {
@@ -125,18 +142,17 @@ string_copy(chpl_string x, int32_t lineno, chpl_string filename)
   if (x == NULL)
     return NULL;
 
-  z = (char*)chpl_tracked_task_calloc(strlen(x)+1, sizeof(char),
-                                      CHPL_RT_MD_STRING_COPY_DATA,
-                                      lineno, filename);
+  z = (char*)chpltypes_malloc(strlen(x)+1, CHPL_RT_MD_STRING_COPY_DATA,
+                              lineno, filename);
   return strcpy(z, x);
 }
 
 
 chpl_string
 string_concat(chpl_string x, chpl_string y, int32_t lineno, chpl_string filename) {
-  char *z = (char*)chpl_tracked_task_calloc(strlen(x)+strlen(y)+1, sizeof(char),
-                                      CHPL_RT_MD_STRING_CONCAT_DATA,
-                                      lineno, filename);
+  char *z = (char*)chpltypes_malloc(strlen(x)+strlen(y)+1,
+                                    CHPL_RT_MD_STRING_CONCAT_DATA,
+                                    lineno, filename);
   z[0] = '\0';
   strcat(z, x);
   strcat(z, y);
@@ -154,9 +170,8 @@ string_strided_select(chpl_string x, int low, int high, int stride, int32_t line
   if (low < 1 || low > length || high > length) {
     chpl_error("string index out of bounds", lineno, filename);
   }
-  result = chpl_tracked_task_calloc(size + 2, sizeof(char),
-                              CHPL_RT_MD_STRING_STRIDED_SELECT_DATA,
-                              lineno, filename);
+  result = chpltypes_malloc(size + 2, CHPL_RT_MD_STRING_STRIDED_SELECT_DATA,
+                            lineno, filename);
   dst = result;
   if (stride > 0) {
     while (src - x <= high - 1) {
@@ -181,9 +196,8 @@ string_select(chpl_string x, int low, int high, int32_t lineno, chpl_string file
 
 chpl_string
 string_index(chpl_string x, int i, int32_t lineno, chpl_string filename) {
-  char* buffer = chpl_tracked_task_calloc(2, sizeof(char),
-                                          CHPL_RT_MD_STRING_COPY_DATA,
-                                          lineno, filename);
+  char* buffer = chpltypes_malloc(2, CHPL_RT_MD_STRING_COPY_DATA,
+                                  lineno, filename);
   if (i-1 < 0 || i-1 >= string_length(x))
     chpl_error("string index out of bounds", lineno, filename);
   sprintf(buffer, "%c", x[i-1]);
