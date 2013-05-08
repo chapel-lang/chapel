@@ -26,6 +26,7 @@ module ChapelSyncvar {
   }
 
   pragma "sync"
+    pragma "no object" // Optimize out the object base pointer.
     pragma "no default functions"
     class _syncvar {
       type base_type;
@@ -177,6 +178,7 @@ module ChapelSyncvar {
   // single variable support
   pragma "sync"
     pragma "single"
+    pragma "no object" // Optimize out the object base pointer.
     pragma "no default functions"
     class _singlevar {
       type base_type;
@@ -293,12 +295,42 @@ module ChapelSyncvar {
   pragma "auto copy fn"
   inline proc chpl__autoCopy(x: single) return x;
 
-  // These permit chpl_here_free to be called with sync and single objects.
-  inline proc _cast(type t, x: sync) where t == object
-    return __primitive("cast", t, x);
+//  // These permit chpl_here_free to be called with sync and single objects.
+//  inline proc _cast(type t, x: sync) where t == object
+//    return __primitive("cast", t, x);
+//
+//  inline proc _cast(type t, x: single) where t == object
+//    return __primitive("cast", t, x);
 
-  inline proc _cast(type t, x: single) where t == object
-    return __primitive("cast", t, x);
+  // These implement chpl_here_free for sync and single objects (permitting their
+  // representations to be reclaimed under hierarchical locales).
+  // The resulting code duplication is undesirable, but necessary for two reasons:
+  // 1) We do not wish to allow the implicit coercion of syncs and singles to objects, and
+  // 2) We do not yet have an implementation for user-definable coercions which would allow
+  //    us to detect and diagnose this attempted coercion
+  // We could detect and diagnose this undesirable coercion in the compiler, but that is even worse
+  // (in terms of maintainability) than the code duplication appearing here.
+  proc chpl_here_free(x:sync, lineno:int(32), filename:string) {
+    // TODO: The pointer should really be of type opaque, but we don't 
+    // handle object ==> opaque casts correctly.  (In codegen, opaque behaves 
+    // like an lvalue, but in the type system it isn't one.)
+    extern proc chpl_memhook_free_pre(ptr:opaque, lineno:int(32), filename:string)
+      : void;
+    chpl_memhook_free_pre(__primitive("cast_to_void_star", x), lineno, filename);
+    __primitive("task_free", x);
+  }
+
+  proc chpl_here_free(x:single, lineno:int(32), filename:string) {
+    // TODO: The pointer should really be of type opaque, but we don't 
+    // handle object ==> opaque casts correctly.  (In codegen, opaque behaves 
+    // like an lvalue, but in the type system it isn't one.)
+    extern proc chpl_memhook_free_pre(ptr:opaque, lineno:int(32), filename:string)
+      : void;
+    chpl_memhook_free_pre(__primitive("cast_to_void_star", x), lineno, filename);
+    __primitive("task_free", x);
+  }
+
+
 
   // Because "no object" was removed from _syncvar and _singlevar, it is
   // now possible to cast _syncvar to object.  But this caused resolution to fail

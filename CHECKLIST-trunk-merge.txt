@@ -7,11 +7,66 @@
 
 NEW/CHANGED:
 
-o Workaround for increased memory usage
-  i Copying filename in calls to memory tracking.
-  o try using ref intent?
+- Merge DefaultArchitecture, RootLocale out from trunk (to pick up Vass-inspired
+  changes).
 
-- Replace all calls to PRIM_CHPL_ALLOC with chpl_here_alloc. [hilde]
+- Passes relevant regression tests
+  * Standard
+  * No-local
+  - Multilocale
+    - Patch launcher to use its own memory allocator [gbt]
+
+- Review added futures
+  * Delete test/memory/shannon/memmaxExceedsLineno2.future
+  - Move to trunk test/classes/figueroa/RecordDestructor1.future [bradc]
+  o test/classes/bradc/syncAsClass.future
+    o Try removing cast from chpl_here_alloc.
+  o test/types/records/sungeun/destructor2.future
+    o Try removing cast from chpl_here_free.
+  - Resolve test/functions/deitz/nested/test_nested_var_iterator2.future
+    * Clone and add execopts to force error to appear on trunk (LeakedMemory6).
+
+* Investigate/understand changed memory counts
+  * Disable "shared local strings" kludge.
+  * Try using ref intent
+    a Simplest test case fails to build.
+  * Disable string_copy in chpl__initCopy(a:string);
+    * Works!!!
+  * Resolve or futurize all regressions.
+    * Standard (--local) build
+    * No-local build.
+
+o Investigate/understand changed comm counts
+  o Characterize and report back to group.
+  o Locales array not privatized?
+  o What are the 12*k increased get counts?
+  o Immediate fixes/workarounds
+  o Proposal for better long-term solution(s)
+
+o Ensure performance delta reasonable
+  - Analyze differences
+    - Understand causes
+  - Group discussion
+  o Memleaks testing: Similar output?
+    o Format same?
+    o Numbers comparable except in strings?
+
+o Characterize main difference and get reviews on appropriate pieces
+  - Break up in to logical components for review.
+
+
+POST MERGE:
+
+o Load allocator pointers in wrapon_fn.
+o Start moved task through locale interface.
+  - Package up allocator pointers with argument bundle
+
+
+RESOLVED/UNCHANGED:
+
+* Merge to trunk environment setting of numThreadsPerLocale and callStackSize? [gbt]
+
+* Replace all calls to PRIM_CHPL_ALLOC with chpl_here_alloc. [hilde]
   d Fix deallocation-before-breakLabel (memory leak) bug. (moved to trunk)
     * OK to leak memory pending fix on trunk
     d Create a future against trunk to demo the bug.
@@ -34,51 +89,6 @@ o Workaround for increased memory usage
   * The above has been replaced by calls through task-private allocator
     interfaces.
   * Update generated wrapper code to redirect allocators to locale-specific versions.
-
-* Merge to trunk environment setting of numThreadsPerLocale and callStackSize? [gbt]
-
-- Merge DefaultArchitecture, RootLocale out from trunk (to pick up Vass-inspired
-  changes).
-
-- Passes relevant regression tests
-  * Standard
-  * No-local
-  o Multilocale
-    d Patch launcher to use its own memory allocator
-
-o Ensure performance delta reasonable
-  - Analyze differences
-    - Understand causes
-  - Group discussion
-
-o Review added futures
-  - remove memmaxExceedsLineno2.future from merged files.
-  - Experiment with allowing sync type thingies to flow through to deallocator
-  prim without cast, and seek compliance with syncAsClass test.
-  - destructor2. See if we can add a new case for records/values.
-  - Add standalone test for test_var_iterator_inline2 with compopts set to
-  elicit undesired behavior (leaking iterator class data).
-
-o Memleaks testing: Similar output?
-  o Format same?
-  o Numbers comparable except in strings?
-
-o Increased comm counts.
-  o Characterize and report back to group.
-  o Locales array not privatized?
-  o What are the 12*k increased get counts?
-
-o Characterize main difference and get reviews on appropriate pieces
-  - Break up in to logical components for review.
-
-
-POST-MERGE:
-
-o Moved task in a locale-aware manner
-  - Package up allocator pointers with argument bundle
-
-
-RESOLVED/UNCHANGED:
 
 * Move mem tracking into chpl_here_alloc.
   * Preserve filename/lineno information: md + filename + lineno.

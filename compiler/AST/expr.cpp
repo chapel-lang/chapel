@@ -4435,8 +4435,6 @@ GenRet CallExpr::codegen() {
       Type* t = get(1)->typeInfo();
       if (t->symbol->hasEitherFlag(FLAG_WIDE, FLAG_WIDE_CLASS))
         INT_FATAL("cast_to_void_star expects a local argument");
-      if (!t->symbol->hasFlag(FLAG_REF))
-        INT_FATAL("cast_to_void_star expects a pointer argument");
       ret = codegenCastToVoidStar(codegenValue(get(1)));
       break;
     }
