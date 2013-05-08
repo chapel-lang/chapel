@@ -33,6 +33,13 @@
 
 #endif
 
+// Returns the starting number for memory descriptors for use by Chapel code.
+static ___always_inline
+chpl_mem_descInt_t chpl_memhook_md_num(void)
+{
+  return CHPL_RT_MD_NUM;
+}
+
 
 void chpl_memhook_check_pre(size_t number, size_t size,
                             chpl_mem_descInt_t description,

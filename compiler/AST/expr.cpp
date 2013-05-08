@@ -4214,12 +4214,6 @@ GenRet CallExpr::codegen() {
     case PRIM_TASK_FREE:
     {
       Expr* ptrExpr = get(1);
-      // TODO: This test probably belongs in the module code, and it is just an expedient anyway.
-      // We share and leak local strings to keep memory usage down, since string_copy is called
-      // when passing the filename string to chpl_here_alloc and kin.
-      if (ptrExpr->typeInfo()->getValType() == dtString &&
-          ! ptrExpr->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
-        break; // Leak local strings like crazy.
       GenRet ptr = codegenValue(get(1));
       if (ptrExpr->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         ptr = codegenRaddr(ptr);
@@ -4229,9 +4223,6 @@ GenRet CallExpr::codegen() {
     case PRIM_CHPL_MEMHOOK_FREE:
     { // void chpl_memhook_free_pre(void* ptr, int lineno, string filename);
       Expr* ptrExpr = get(1);
-      if (ptrExpr->typeInfo()->getValType() == dtString &&
-          ! ptrExpr->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
-        break; // Leak local strings like crazy.
       GenRet ptr = codegenValue(get(1));
       if (ptrExpr->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         ptr = codegenRaddr(ptr);
@@ -4288,9 +4279,6 @@ GenRet CallExpr::codegen() {
       INT_ASSERT(numActuals() == 3);
 
       Expr * ptrExpr = get(1);
-      if (ptrExpr->typeInfo()->getValType() == dtString &&
-          ! ptrExpr->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
-        break; // Leak local strings like crazy.
       if( ptrExpr->typeInfo()->symbol->hasFlag(FLAG_DATA_CLASS))
         INT_FATAL(this, "cannot delete data class");
       GenRet ptr; 
@@ -4439,10 +4427,7 @@ GenRet CallExpr::codegen() {
         cpyFrom.isLVPtr = GEN_VAL; // Prevent &(char*) syntax.
         ret = codegenCallExpr("chpl_wide_string_copy", cpyFrom, get(2), get(3));
       } else
-        // Only copy wide string.
-        // Local strings are shared, for now.  See comment in PRIM_TASK_FREE,
-        // and similar leak in PRIM_CHPL_FREE.
-        ret = codegenValue(cpyFrom);
+        ret = codegenBasicPrimitiveExpr(this);
       break;
     }
     case PRIM_CAST_TO_VOID_STAR:

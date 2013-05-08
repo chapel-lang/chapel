@@ -941,9 +941,10 @@ module ChapelBase {
   
   pragma "init copy fn"
   inline proc chpl__initCopy(a) {
-    if a.type == string then
-      return __primitive("string_copy", a);
-    else
+// Strings are constant, so just don't copy them.
+//    if a.type == string then
+//      return __primitive("string_copy", a);
+//    else
       return a;
   }
   

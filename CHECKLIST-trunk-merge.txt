@@ -7,6 +7,10 @@
 
 NEW/CHANGED:
 
+o Workaround for increased memory usage
+  i Copying filename in calls to memory tracking.
+  o try using ref intent?
+
 - Replace all calls to PRIM_CHPL_ALLOC with chpl_here_alloc. [hilde]
   d Fix deallocation-before-breakLabel (memory leak) bug. (moved to trunk)
     * OK to leak memory pending fix on trunk
@@ -15,7 +19,7 @@ NEW/CHANGED:
   * wrappers.cpp
   * lowerIterators.cpp (2)
   * functionResolution.cpp
-  - runtime
+  * runtime
 
 * Whether to interpose an alloc(loc, nbytes, md) layer between chpl_here_alloc()
   and locale.alloc() [yes]
@@ -31,6 +35,51 @@ NEW/CHANGED:
     interfaces.
   * Update generated wrapper code to redirect allocators to locale-specific versions.
 
+* Merge to trunk environment setting of numThreadsPerLocale and callStackSize? [gbt]
+
+- Merge DefaultArchitecture, RootLocale out from trunk (to pick up Vass-inspired
+  changes).
+
+- Passes relevant regression tests
+  * Standard
+  * No-local
+  o Multilocale
+    d Patch launcher to use its own memory allocator
+
+o Ensure performance delta reasonable
+  - Analyze differences
+    - Understand causes
+  - Group discussion
+
+o Review added futures
+  - remove memmaxExceedsLineno2.future from merged files.
+  - Experiment with allowing sync type thingies to flow through to deallocator
+  prim without cast, and seek compliance with syncAsClass test.
+  - destructor2. See if we can add a new case for records/values.
+  - Add standalone test for test_var_iterator_inline2 with compopts set to
+  elicit undesired behavior (leaking iterator class data).
+
+o Memleaks testing: Similar output?
+  o Format same?
+  o Numbers comparable except in strings?
+
+o Increased comm counts.
+  o Characterize and report back to group.
+  o Locales array not privatized?
+  o What are the 12*k increased get counts?
+
+o Characterize main difference and get reviews on appropriate pieces
+  - Break up in to logical components for review.
+
+
+POST-MERGE:
+
+o Moved task in a locale-aware manner
+  - Package up allocator pointers with argument bundle
+
+
+RESOLVED/UNCHANGED:
+
 * Move mem tracking into chpl_here_alloc.
   * Preserve filename/lineno information: md + filename + lineno.
   * Preserve pre/post checks.
@@ -40,19 +89,6 @@ NEW/CHANGED:
   * Mem counts are different because we call string_copy when passing the
     filename arguments into chpl_here_alloc and chpl_here_free now.
     * Local strings are shared (and leaked).
-
-- Merge DefaultArchitecture, RootLocale out from trunk (to pick up Vass-inspired
-  changes).
-
-- Passes relevant regression tests
-  * Standard
-  * No-local
-  o Parallel
-
-
-RESOLVED/UNCHANGED:
-
-o Merge to trunk environment setting of numThreadsPerLocale and callStackSize? [gbt]
 
 * Characterize language impacts of allowing sync vars to be dispatched as objects.
   i Greg says this is OK.
