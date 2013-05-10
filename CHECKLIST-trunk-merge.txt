@@ -19,10 +19,19 @@ NEW/CHANGED:
 - Review added futures
   * Delete test/memory/shannon/memmaxExceedsLineno2.future
   - Move to trunk test/classes/figueroa/RecordDestructor1.future [bradc]
-  o test/classes/bradc/syncAsClass.future
-    o Try removing cast from chpl_here_alloc.
-  o test/types/records/sungeun/destructor2.future
-    o Try removing cast from chpl_here_free.
+  * test/classes/bradc/syncAsClass.future
+    * Try removing cast from chpl_here_free.
+      a Cannot resolve arguments of chpl_memhook_free_pre().
+    * Give sync and single classes their own deallocators.
+    * remove future
+  * test/types/records/sungeun/destructor2.future
+    * Try removing cast from chpl_here_free.
+      a Cannot resolve to chpl_memhook_free_pre().
+    * Add cast_to_void_pointer
+      * Now gives an even less helpful error message.
+    * See if we can get a better error message than a C compiler error.
+      * Yes, updated semanticChecks to catch this error the right way
+        (i.e. testing semantics rather than structure).
   - Resolve test/functions/deitz/nested/test_nested_var_iterator2.future
     * Clone and add execopts to force error to appear on trunk (LeakedMemory6).
 

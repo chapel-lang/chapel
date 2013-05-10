@@ -197,9 +197,9 @@ module ChapelLocale {
     // TODO: The pointer should really be of type opaque, but we don't 
     // handle object ==> opaque casts correctly.  (In codegen, opaque behaves 
     // like an lvalue, but in the type system it isn't one.)
-    extern proc chpl_memhook_free_pre(ptr:object, lineno:int(32), filename:string)
+    extern proc chpl_memhook_free_pre(ptr:opaque, lineno:int(32), filename:string)
       : void;
-    chpl_memhook_free_pre(x:object, lineno, filename);
+    chpl_memhook_free_pre(__primitive("cast_to_void_star", x), lineno, filename);
     __primitive("task_free", x);
   }
 

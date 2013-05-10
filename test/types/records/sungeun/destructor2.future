@@ -1,8 +1,0 @@
-error message: The cast to object type in chpl_here_free() is encountered 
-before we attempt to call free on it, so the "invalid cast" error fires first.
-
-This is due to having replaced the call to chpl_mem_free with chpl_here_free(), 
-and the fact that the call to chpl_track_free occurs before the call to free.
-
-The cure is to run this semantic check earlier and remove it from resolution.
-(Resolution should only report resolution related errors.)
