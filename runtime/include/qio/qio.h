@@ -145,7 +145,9 @@ err_t qio_send(fd_t sockfd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t
 typedef enum {
   QIO_CH_ALWAYS_UNBUFFERED = 1,
   QIO_CH_ALWAYS_BUFFERED,
-  QIO_CH_BUFFERED
+  QIO_CH_BUFFERED,
+  QIO_CHTYPEMASK = 0x000f,
+  QIO_CHTYPE_CLOSED = 0x000f
 } qio_chtype_t;
 
 #define QIO_CH_DEFAULT 0
@@ -167,8 +169,6 @@ char* qio_chtype_to_string(qio_chtype_t type);
      -- force_readwrite
  */
 
-#define QIO_CHTYPEMASK 0x000f
-#define QIO_CHTYPE_CLOSED 0x000f
 #define QIO_HINT_AFTERCHTYPE 0x0010
 
 typedef enum {
@@ -245,6 +245,9 @@ char* qio_hints_to_string(qio_hint_t hint)
         break;
       case QIO_CH_BUFFERED:
         strcat(buf, "buffered"); ok = 1;
+        break;
+      case QIO_CHTYPE_CLOSED:
+        strcat(buf, "closed"); ok = 1;
         break;
     }
   }

@@ -9,8 +9,6 @@
 #ifdef HAVE_LLVM
 // need llvm::Value, BasicBlock, Type, and
 // a bunch of clang stuff.
-#include "llvm/Module.h"
-#include "llvm/Value.h"
 #include "llvmUtil.h"
 #include "clangSupport.h"
 #endif

@@ -4430,7 +4430,7 @@ GenRet CallExpr::codegen() {
       break;
     }
     case PRIM_VMT_CALL: {
-      GenRet ptrToFnPtr;
+      GenRet fnPtr;
       GenRet index;
       FnSymbol* fn = NULL;
       int startArgs = 3;    // Where actual arguments begin.
@@ -4446,17 +4446,22 @@ GenRet CallExpr::codegen() {
         // indexExpr = maxVMT * i + j
         index = codegenAdd(codegenMul(maxVMTConst, i), j);
       }
-      GenRet base;
       if (info->cfile){
-        base = codegenUseGlobal("chpl_vmtable");
+        fnPtr.c = std::string("chpl_vmtable") + "[" + index.c + "]";
       } else {
 #ifdef HAVE_LLVM
-        base = info->lvt->getValue("chpl_vmtable");
+        GenRet table = info->lvt->getValue("chpl_vmtable");
+        llvm::Value* fnPtrPtr;
+        llvm::Value* GEPLocs[1];
+        //GEPLocs[0] = llvm::Constant::getNullValue(
+        //    llvm::IntegerType::getInt64Ty(info->module->getContext()));
+        GEPLocs[0] = index.val;
+        fnPtrPtr = info->builder->CreateInBoundsGEP(table.val, GEPLocs);
+        fnPtr.val = info->builder->CreateLoad(fnPtrPtr);
 #endif
       }
-      ptrToFnPtr = codegenElementPtr(base, index);
       // the function expression to call.
-      GenRet fngen = fn->codegenCast(codegenValue(ptrToFnPtr));
+      GenRet fngen = fn->codegenCast(fnPtr);
 
       std::vector<GenRet> args;
       int i = startArgs;
@@ -4733,6 +4738,7 @@ GenRet CallExpr::codegen() {
 
   //INT_ASSERT(base);
   ret = codegenCallExpr(base, args, fn, true);
+
   if(!c) {
 #ifdef HAVE_LLVM
     // We might have to convert the return from the function

@@ -1276,17 +1276,14 @@ void FnSymbol::codegenDef() {
     llvm::BasicBlock *block =
       llvm::BasicBlock::Create(info->module->getContext(), "entry", func);
     
-    //info->builder = new llvm::IRBuilder<>(info->module->getContext());
     info->builder->SetInsertPoint(block);
     
     info->lvt->addLayer();
 
     llvm::Function::arg_iterator ai = func->arg_begin();
-    int count = 0;
     for_formals(arg, this) {
       if (arg->defPoint == formals.head && hasFlag(FLAG_ON_BLOCK))
         continue; // do not print locale argument for on blocks
-      //llvm::Type *argType = arg->codegenType().type;
 
       if (arg->requiresCPtr()){
         info->lvt->addValue(arg->cname, ai,  GEN_PTR, !is_signed(type));
