@@ -21,7 +21,8 @@ ifeq ($(OPTIMIZE),1)
 RUNTIME_DEFS += -DCHPL_OPTIMIZE
 endif
 
-RUNTIME_INCLS = \
+# Some tasking layers put something in RUNTIME_INCLS first.
+RUNTIME_INCLS += \
         -I. \
         -I$(RUNTIME_INCLUDE_ROOT)/comm/$(CHPL_MAKE_COMM) \
         -I$(RUNTIME_INCLUDE_ROOT)/tasks/$(CHPL_MAKE_TASKS) \
