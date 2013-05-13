@@ -568,6 +568,8 @@ proc DimensionalDom.dsiGetIndices(): domainT {
   return whole;
 }
 
+proc DimensionalDom.dsiDims() return whole.dims();
+
 
 /// array ///////////////////////////////////////////////////////////////////
 

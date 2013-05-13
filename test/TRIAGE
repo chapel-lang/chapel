@@ -206,13 +206,13 @@ The following configurations are affected:
  linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc
  linux64.gnu.gasnet-everything.fifo.pthreads
 examples of what times out:
- distributions/robust/arithmetic/kernels/jacobi (still timing out 4/23/13)
+ distributions/robust/arithmetic/kernels/jacobi (still timing out 5/5/13)
  distributions/nelson/MultiBlockDist2DLocales (maybe resolved?)
  distributions/robust/arithmetic/modules/test_module_Sort (maybe resolved?)
  distributions/robust/arithmetic/stress/test_many_domains (08/13)
  distributions/robust/arithmetic/stress/test_many_array (4/29/13)
  distributions/dm/t2 (2012/08/15)
- test_array_slicing3 (06/08/12, 6/16, 3/29/13, 4/23/13)
+ test_array_slicing3 (06/08/12, 6/16, 3/29/13, 5/3/13)
  release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4) (04/08/13)
  etc.
 
@@ -307,3 +307,7 @@ The following compiler segfaults(?) appeared only once on 9/28/12
 [Error matching compiler output for release/examples/spec/Generics/fillTuple2]
 [Error matching compiler output for release/examples/spec/Iterators/as-arrays]
 [Error matching compiler output for release/examples/spec/Ranges/alignedNegStride]
+
+cray-xt.cray-prgenv-cray.none.fifo.pthreads
+--------------------------------------
+[Error: Timed out compilation for studies/ssca2/test-rmatalt/nondet (compopts: 1)] (5/4/13)
