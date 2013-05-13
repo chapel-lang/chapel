@@ -1,7 +1,0 @@
-bug: We do not call the destructor for a global record that is of wide type.
-
-I think we just don't clean up after any wide heap allocated types.  This
-should be fixed in insertGlobalAutoDestroyCalls() in callDestructors.cpp.
-
-This passes normal comm none testing but not when using the --no-local flag.
-
