@@ -199,6 +199,7 @@ module ChapelLocale {
     // like an lvalue, but in the type system it isn't one.)
     extern proc chpl_memhook_free_pre(ptr:opaque, lineno:int(32), filename:string)
       : void;
+    __primitive("local_check", x, lineno, filename);
     chpl_memhook_free_pre(__primitive("cast_to_void_star", x), lineno, filename);
     __primitive("task_free", x);
   }

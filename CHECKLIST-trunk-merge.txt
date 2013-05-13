@@ -63,6 +63,15 @@ o Ensure performance delta reasonable
 o Characterize main difference and get reviews on appropriate pieces
   - Break up in to logical components for review.
 
+o Memleaks testing: Similar output?
+  o Format same?
+  o Numbers comparable except in strings?
+
+o Increased comm counts.
+  o Characterize and report back to group.
+  o Locales array not privatized?
+  o What are the 12*k increased get counts?
+
 
 POST MERGE:
 

@@ -53,10 +53,10 @@ type-tests.chpl:25: warning: tuple-2 is a union:  false
 type-tests.chpl:26: warning: tuple-3 is a class:  false
 type-tests.chpl:26: warning: tuple-3 is a record: false
 type-tests.chpl:26: warning: tuple-3 is a union:  false
-type-tests.chpl:31: warning: sync - class:  true
+type-tests.chpl:31: warning: sync - class:  false
 type-tests.chpl:31: warning: sync - record: false
 type-tests.chpl:31: warning: sync - union:  false
-type-tests.chpl:32: warning: single - class:  true
+type-tests.chpl:32: warning: single - class:  false
 type-tests.chpl:32: warning: single - record: false
 type-tests.chpl:32: warning: single - union:  false
 type-tests.chpl:33: error: done

@@ -3781,11 +3781,12 @@ GenRet CallExpr::codegen() {
         ptr = codegenRaddr(ptr);
       codegenCall("chpl_check_nil", ptr, info->lineno, info->filename); 
       break; }
-    case PRIM_LOCAL_CHECK: {
+    case PRIM_LOCAL_CHECK:
+    {
       // arguments are (wide ptr, line, function/file, error string)
       const char *error;
-      INT_ASSERT(get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
-                 get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS));
+      if (!get(1)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE, FLAG_WIDE_CLASS))
+        break;
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
           get(1)->typeInfo()->getField("addr")->typeInfo()->symbol->
             hasFlag(FLAG_EXTERN)) {
@@ -3793,9 +3794,16 @@ GenRet CallExpr::codegen() {
       } else {
         error = "cannot access remote data in local block";
       }
+      GenRet filename;
+      if (get(3)->typeInfo() == wideStringType)
+        // We expect that the filename string will always be local.
+        filename = codegenRaddr(get(3));
+      else
+        filename = GenRet(get(3));
       codegenCall("chpl_check_local",
-                  codegenRnode(get(1)), get(2), get(3), error); 
-      break; }
+                  codegenRnode(get(1)), get(2), filename, error); 
+      break;
+    }
     case PRIM_SYNC_INIT:
     case PRIM_SYNC_DESTROY:{
       GenRet fieldPtr = codegenLocalAddrOf(codegenFieldPtr(get(1), "sync_aux"));
@@ -4433,9 +4441,15 @@ GenRet CallExpr::codegen() {
     case PRIM_CAST_TO_VOID_STAR:
     {
       Type* t = get(1)->typeInfo();
+      GenRet ptr;
       if (t->symbol->hasEitherFlag(FLAG_WIDE, FLAG_WIDE_CLASS))
-        INT_FATAL("cast_to_void_star expects a local argument");
-      ret = codegenCastToVoidStar(codegenValue(get(1)));
+        // Get the local address.
+        // Assume that we have already tested to ensure that this wide pointer
+        // is local.  That is, caller should have called chpl_check_local.
+        ptr = codegenRaddr(get(1));
+      else
+        ptr = codegenValue(get(1));
+      ret = codegenCastToVoidStar(ptr);
       break;
     }
     case PRIM_RT_ERROR:
