@@ -218,7 +218,7 @@ examples of what times out:
 
 wrong answer for atomic operations with gasnet-everything on 2/1/13 (Sungeun)
 -----------------------------------------------------------------------------
-types/atomic/sungeun/atomic_vars (02/01/13, 02/19/13, no-local on 3/16)
+types/atomic/sungeun/atomic_vars (02/01/13, 02/19/13, 05/10/13, no-local on 3/16)
 
 minus_equals nondeterminism (sungeun)
 ----------------------------------------

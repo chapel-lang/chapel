@@ -24,10 +24,8 @@ An optimization bypasses a semantic check (Tom - on hold)
 ---------------------------------------------------------
 [Error matching program output for multilocale/deitz/oneOrMoreLocales/test_dot_locale_error]
 
-Unresolved call to DimensionalDom.dsiDims() (regressed after -r21105)
----------------------------------------------------------------------
-[Error matching compiler output for users/vass/crash2VarSymbolTypeNULL]
-
+Fail to match the expected memory leak amount in .bad file
+[Error matching .bad file for memory/figueroa/LeakedMemory6 (compopts: 1)]
 
 ==============================================
 linux64 regressions (in addition to the above)
@@ -124,10 +122,6 @@ so the warning does not apply and is not raised, and .good is not matched.
 no-local regressions
 (Checked for accuracy 2/26/2013)
 ====================
-
-not freeing heap-allocated globals (08/29/09)
----------------------------------------------
-[Error matching program output for classes/figueroa/RecordDestructor1]
 
 memory stuff in flux (05/28/09)
 -------------------------------
