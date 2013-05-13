@@ -874,13 +874,15 @@ static void codegen_header_addons() {
 static void
 codegen_config() {
   GenInfo* info = gGenInfo;
-  if( info->cfile ) {
+
+  // LLVM backend need _config.c generated for the launcher,
+  // so we produce the C for it either way.
+  {
     FILE* mainfile = info->cfile;
-    FILE* outfile = info->cfile;
-    fprintf(outfile, "#include \"_config.c\"\n");
+    if( mainfile ) fprintf(mainfile, "#include \"_config.c\"\n");
     fileinfo configFile;
     openCFile(&configFile, "_config.c");
-    outfile = configFile.fptr;
+    FILE* outfile = configFile.fptr;
     info->cfile = outfile;
 
     fprintf(outfile, "#include \"error.h\"\n\n");
@@ -913,7 +915,10 @@ codegen_config() {
 
     closeCFile(&configFile);
     info->cfile = mainfile;
-  } else {
+  }
+ 
+ 
+  if( llvmCodegen ) {
 #ifdef HAVE_LLVM
     llvm::FunctionType *createConfigType;
     llvm::Function *createConfigFunc;

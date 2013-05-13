@@ -342,10 +342,12 @@ module ChapelSyncvar {
   inline proc chpl__maybeAutoDestroyed(x: _singlevar) param return false;
 
   pragma "auto destroy fn"
+  pragma "auto destroy fn sync"
   inline proc chpl__autoDestroy(x: _syncvar) {
     delete x;
   }
   pragma "auto destroy fn"
+  pragma "auto destroy fn sync"
   inline proc chpl__autoDestroy(x: _singlevar) {
     delete x;
   }

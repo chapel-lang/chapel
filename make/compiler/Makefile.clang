@@ -16,7 +16,7 @@ RANLIB = ranlib
 #
 
 DEBUG_CFLAGS = -g
-OPT_CFLAGS = -O4
+OPT_CFLAGS = -O3
 #PROFILE_CFLAGS = -pg
 #PROFILE_LFLAGS = -pg
 

@@ -12,8 +12,10 @@ clean: FORCE
 	cd dlmalloc && $(MAKE) clean
 	cd gasnet && $(MAKE) clean
 	cd gmp && $(MAKE) clean
+	cd llvm && $(MAKE) clean
 	cd massivethreads && $(MAKE) clean
 	cd qthread && $(MAKE) clean
+	cd re2 && $(MAKE) clean
 	cd tcmalloc && $(MAKE) clean
 
 clobber: FORCE
@@ -21,8 +23,10 @@ clobber: FORCE
 	cd dlmalloc && $(MAKE) clobber
 	cd gasnet && $(MAKE) clobber
 	cd gmp && $(MAKE) clobber
+	cd llvm && $(MAKE) clobber
 	cd massivethreads && $(MAKE) clobber
 	cd qthread && $(MAKE) clobber
+	cd re2 && $(MAKE) clobber
 	cd tcmalloc && $(MAKE) clobber
 
 depend:

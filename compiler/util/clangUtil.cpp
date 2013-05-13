@@ -41,11 +41,6 @@ void cleanupExternC(void) {
 using namespace clang;
 using namespace llvm;
 
-#define GLOBAL_PTR_SPACE 100
-#define GLOBAL_PTR_SIZE 16
-#define GLOBAL_PTR_ABI_ALIGN 8
-#define GLOBAL_PTR_PREF_ALIGN 8
-
 // TODO - add functionality to clang so that we don't
 // have to have what are basically copies of
 // ModuleBuilder.cpp 
@@ -56,7 +51,6 @@ using namespace llvm;
 #include "CodeGenModule.h"
 #include "CGRecordLayout.h"
 #include "clang/CodeGen/BackendUtil.h"
-
 
 static
 void setupClangContext(GenInfo* info, ASTContext* Ctx)
@@ -84,7 +78,7 @@ void setupClangContext(GenInfo* info, ASTContext* Ctx)
 
 
 static
-VarSymbol *handleMacro(IdentifierInfo* id, MacroInfo* macro)
+VarSymbol *handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
 {
   GenInfo* info = gGenInfo;
   Preprocessor &preproc = info->Clang->getPreprocessor();
@@ -248,7 +242,11 @@ void readMacrosClang(void) {
       i != preproc.macro_end();
       i++) {
 
+#if HAVE_LLVM_VER >= 33
+    handleMacro(i->first, i->second->getMacroInfo());
+#else
     handleMacro(i->first, i->second);
+#endif
   }
 };
 
@@ -428,8 +426,10 @@ void setupClang(GenInfo* info, std::string mainFile)
     clangArgs.push_back(info->clangOtherArgs[i].c_str());
   }
 
-  if (llvmCodegen)
+  if (llvmCodegen) {
     clangArgs.push_back("-emit-llvm");
+  }
+
   //clangArgs.push_back("-c");
   clangArgs.push_back(mainFile.c_str()); // chpl - always compile rt file
 
@@ -470,8 +470,13 @@ void setupClang(GenInfo* info, std::string mainFile)
     CI->getHeaderSearchOpts().ResourceDir = P.str();
     sys::Path P2(P);
     P.appendComponent("include");
+#if HAVE_LLVM_VER >= 33
+    CI->getHeaderSearchOpts().AddPath(
+        P.str(), frontend::System,false, false);
+#else
     CI->getHeaderSearchOpts().AddPath(
         P.str(), frontend::System,false, false, false, true, false);
+#endif
   }
 
   // Create a compiler instance to handle the actual work.
@@ -485,7 +490,11 @@ void setupClang(GenInfo* info, std::string mainFile)
 
   // Create the compilers actual diagnostics engine.
   // Create the compilers actual diagnostics engine.
+#if HAVE_LLVM_VER >= 33
+  info->Clang->createDiagnostics();
+#else
   info->Clang->createDiagnostics(int(clangArgs.size()),&clangArgs[0]);
+#endif
   if (!info->Clang->hasDiagnostics())
     INT_FATAL("Bad diagnostics from clang");
 }
@@ -535,7 +544,12 @@ void prepareCodegenLLVM()
   info->FPM_postgen->doInitialization();
 }
 
+#if HAVE_LLVM_VER >= 33
+static void handleErrorLLVM(void* user_data, const std::string& reason,
+                            bool gen_crash_diag)
+#else
 static void handleErrorLLVM(void* user_data, const std::string& reason)
+#endif
 {
   INT_FATAL("llvm fatal error: %s", reason.c_str());
 }
@@ -972,9 +986,6 @@ void LayeredValueTable::addBlock(StringRef name, llvm::BasicBlock *block) {
 
 GenRet LayeredValueTable::getValue(StringRef name) {
   if(Storage *store = get(name)) {
-    if( std::string(name) == std::string("QIO_FILE_PTR_NULL") ) {
-      gdbShouldBreakHere();
-    }
     if( store->u.value && isa<Value>(store->u.value) ) {
       GenRet ret;
       ret.val = store->u.value;
@@ -1205,10 +1216,25 @@ void makeBinaryLLVM(void) {
     options += " -g";
   }
 
-  // Run linker...
-  std::string command = clangInstall + "/bin/clang " + options + " " +
+  // Now, if we're doing a multilocale build, we have to make a launcher.
+  // For this reason, we create a makefile. codegen_makefile
+  // also gives us the name of the temporary place to save
+  // the generated program.
+  fileinfo mainfile;
+  mainfile.filename = "chpl__module.bc";
+  mainfile.pathname = moduleFilename.c_str();
+  const char* tmpbinname = NULL;
+
+  codegen_makefile(&mainfile, &tmpbinname, true);
+  INT_ASSERT(tmpbinname);
+
+  // Run linker... we always use clang++ since some relevant libraries
+  //  (like tcmalloc, GASNet, etc) are actually written with C++
+  //  and need C++ support. With the C backend, this switcheroo is
+  //  accomplished in the Makefiles somewhere....
+  std::string command = clangInstall + "/bin/clang++ " + options + " " +
                         moduleFilename + " " + maino +
-                        " -o " + executableFilename;
+                        " -o " + tmpbinname;
   for( size_t i = 0; i < dotOFiles.size(); i++ ) {
     command += " ";
     command += dotOFiles[i];
@@ -1221,6 +1247,14 @@ void makeBinaryLLVM(void) {
   }
 
   mysystem(command.c_str(), "Make Binary - Linking");
+
+  // Now run the makefile to move from tmpbinname to the proper program
+  // name and to build a launcher (if necessary).
+  const char* makeflags = printSystemCommands ? "-f " : "-s -f ";
+  const char* makecmd = astr(astr(CHPL_MAKE, " "),
+                             makeflags,
+                             getIntermediateDirName(), "/Makefile");
+  mysystem(makecmd, "Make Binary - Building Launcher and Copying");
 }
 
 #endif

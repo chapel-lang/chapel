@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <assert.h>
 
 // Helper functions
 
@@ -84,12 +85,16 @@ void chpl_comm_exit(int all, int status) { }
 void  chpl_comm_put(void* addr, int32_t locale, void* raddr,
                     int32_t size, int32_t typeIndex, int32_t len,
                     int ln, chpl_string fn) {
+  assert(locale==0);
+
   memmove(raddr, addr, size*len);
 }
 
 void  chpl_comm_get(void* addr, int32_t locale, void* raddr,
                     int32_t size, int32_t typeIndex, int32_t len,
                     int ln, chpl_string fn) {
+  assert(locale==0);
+
   memmove(addr, raddr, size*len);
 }
 
@@ -109,6 +114,8 @@ void  chpl_comm_put_strd(void* dstaddr_arg, void* dststrides, int32_t dstlocale,
   size_t dststr[strlvls];
   size_t srcstr[strlvls];
   size_t cnt[strlvls+1];
+
+  assert(dstlocale==0);
 
   //Only count[0] and strides are meassured in number of bytes.
   cnt[0] = ((int32_t*)count)[0] * elemSize;
@@ -260,6 +267,8 @@ void  chpl_comm_get_strd(void* dstaddr_arg, void* dststrides, int32_t srclocale,
   size_t dststr[strlvls];
   size_t srcstr[strlvls];
   size_t cnt[strlvls+1];
+
+  assert(srclocale==0);
 
   //Only count[0] and strides are meassured in number of bytes.
   cnt[0] = ((int32_t*)count)[0] * elemSize;
@@ -415,6 +424,8 @@ void chpl_comm_fork_nb(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
   fork_t *info;
   int     info_size;
 
+  assert(node==0);
+
   info_size = sizeof(fork_t) + arg_size;
   info = (fork_t*)chpl_mem_allocMany(info_size, sizeof(char), CHPL_RT_MD_COMM_FORK_SEND_NB_INFO, 0, 0);
   info->fid = fid;
@@ -427,12 +438,16 @@ void chpl_comm_fork_nb(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
 
 void chpl_comm_fork(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
                     int32_t arg_size, int32_t arg_tid) {
+  assert(node==0);
+
   (*chpl_ftable[fid])(arg);
 }
 
 // Same as chpl_comm_fork()
 void chpl_comm_fork_fast(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
                          int32_t arg_size, int32_t arg_tid) {
+  assert(node==0);
+
   (*chpl_ftable[fid])(arg);
 }
 
