@@ -21,19 +21,19 @@ module ChapelLocale {
   // is instead provided in Chapel architectural descriptions, then a greater variety of 
   // runtime facilities can be accommodated.  For example, the single type c_nodeid_t 
 
-
-  pragma "no object"
-  record chpl_localeID_t {
+  extern record chpl_localeID_t {
     var node : c_nodeid_t;
     var subloc : c_subloc_t;
   };
+  extern proc chpl_localeID_get_node(loc:chpl_localeID_t):int(64);
+  extern proc chpl_localeID_get_subloc(loc:chpl_localeID_t):int(64);
+  extern proc chpl_localeID_equals(loc:chpl_localeID_t):int(64);
 
   proc ==(a:chpl_localeID_t, b:chpl_localeID_t)
-    return __primitive("==", a.node, b.node) &&
-           __primitive("==", a.subloc, b.subloc);
+    return chpl_localeID_equals(a,b) != 0;
 
   proc !=(a:chpl_localeID_t, b:chpl_localeID_t)
-    return ! (a == b);
+    return chpl_localeID_equals(a,b) == 0;
 
 
   const emptyLocaleSpace: domain(1) = {1..0};

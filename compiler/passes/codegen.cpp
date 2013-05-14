@@ -983,6 +983,12 @@ void codegen(void) {
   if (no_codegen)
     return;
 
+  if (0 == strcmp(CHPL_WIDE_POINTERS, "struct") ) {
+    // OK
+  } else {
+    USR_FATAL("code generation for packed pointers not yet supported");
+  }
+
   if( llvmCodegen ) {
 #ifndef HAVE_LLVM
     USR_FATAL("This compiler was built without LLVM support");
