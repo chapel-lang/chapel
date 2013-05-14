@@ -16,9 +16,9 @@ NEW/CHANGED:
   - Multilocale
     - Patch launcher to use its own memory allocator [gbt]
 
-- Review added futures
+* Review added futures
   * Delete test/memory/shannon/memmaxExceedsLineno2.future
-  - Move to trunk test/classes/figueroa/RecordDestructor1.future [bradc]
+  * Move to trunk test/classes/figueroa/RecordDestructor1.future [bradc]
   * test/classes/bradc/syncAsClass.future
     * Try removing cast from chpl_here_free.
       a Cannot resolve arguments of chpl_memhook_free_pre().
@@ -32,18 +32,9 @@ NEW/CHANGED:
     * See if we can get a better error message than a C compiler error.
       * Yes, updated semanticChecks to catch this error the right way
         (i.e. testing semantics rather than structure).
-  - Resolve test/functions/deitz/nested/test_nested_var_iterator2.future
-    * Clone and add execopts to force error to appear on trunk (LeakedMemory6).
-
-* Investigate/understand changed memory counts
-  * Disable "shared local strings" kludge.
-  * Try using ref intent
-    a Simplest test case fails to build.
-  * Disable string_copy in chpl__initCopy(a:string);
-    * Works!!!
-  * Resolve or futurize all regressions.
-    * Standard (--local) build
-    * No-local build.
+  * Clone and add execopts to force leaked iterator data error to appear on trunk (LeakedMemory6).
+  * Resolve test/functions/deitz/nested/test_nested_var_iterator2.future
+    * Add a future to get copy propagation error to appear on trunk.
 
 o Investigate/understand changed comm counts
   o Characterize and report back to group.
@@ -59,18 +50,13 @@ o Ensure performance delta reasonable
   o Memleaks testing: Similar output?
     o Format same?
     o Numbers comparable except in strings?
+  o Increased comm counts.
+    o Characterize and report back to group.
+    o Locales array not privatized?
+    o What are the 12*k increased get counts?
 
 o Characterize main difference and get reviews on appropriate pieces
   - Break up in to logical components for review.
-
-o Memleaks testing: Similar output?
-  o Format same?
-  o Numbers comparable except in strings?
-
-o Increased comm counts.
-  o Characterize and report back to group.
-  o Locales array not privatized?
-  o What are the 12*k increased get counts?
 
 
 POST MERGE:
@@ -81,6 +67,16 @@ o Start moved task through locale interface.
 
 
 RESOLVED/UNCHANGED:
+
+* Investigate/understand changed memory counts
+  * Disable "shared local strings" kludge.
+  * Try using ref intent
+    a Simplest test case fails to build.
+  * Disable string_copy in chpl__initCopy(a:string);
+    * Works!!!
+  * Resolve or futurize all regressions.
+    * Standard (--local) build
+    * No-local build.
 
 * Merge to trunk environment setting of numThreadsPerLocale and callStackSize? [gbt]
 

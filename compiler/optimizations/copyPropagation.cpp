@@ -12,7 +12,10 @@
 static bool isCandidateForCopyPropagation(FnSymbol* fn, VarSymbol* var) {
   return
     var != fn->getReturnSymbol() &&
-    var->type->refType &&
+    var->type->refType && // hilde sez: This makes no sense!
+    // It appears that this test is intended to ensure that the selected var has value
+    // semantics, but there can be refs of refs, so it doesn't really.
+    // TODO: Try removing the above line or replacing the test with what is really meant.
     !var->hasFlag(FLAG_CONCURRENTLY_ACCESSED);
 }
 
@@ -563,6 +566,7 @@ void singleAssignmentRefPropagation(FnSymbol* fn) {
   Vec<Symbol*> refSet;
   Vec<Symbol*> refVec;
   Vec<SymExpr*> symExprs;
+  // Walk the asts in this function, and build lists of reference variables and sym exprs.
   forv_Vec(BaseAST, ast, asts) {
     if (VarSymbol* var = toVarSymbol(ast)) {
       if (isReferenceType(var->type)) {
@@ -574,15 +578,21 @@ void singleAssignmentRefPropagation(FnSymbol* fn) {
     }
   }
 
+  // Build def/use maps across all symexprs in the function, 
+  // but restricted to only the ref variables therein.
   Map<Symbol*,Vec<SymExpr*>*> defMap;
   Map<Symbol*,Vec<SymExpr*>*> useMap;
   buildDefUseMaps(refSet, symExprs, defMap, useMap);
 
+  // Walk the list of reference vars
   forv_Vec(Symbol, var, refVec) {
     if (var) {
+      // Get the move that defines this reference
       if (CallExpr* move = findRefDef(defMap, var)) {
         if (SymExpr* rhs = toSymExpr(move->get(2))) {
+          // If it is defined from another reference, these two are mutual aliases.
           if (isReferenceType(rhs->var->type)) {
+            // Replace each use of the new name with the old name.
             for_uses(se, useMap, var) {
               if (se->parentExpr) {
                 SET_LINENO(se);
@@ -591,6 +601,8 @@ void singleAssignmentRefPropagation(FnSymbol* fn) {
                 addUse(useMap, rhsCopy);
               }
             }
+            // Other than the original definition, replace
+            // definitions of the new name with defs of the old.
             for_defs(se, defMap, var) {
               CallExpr* parent = toCallExpr(se->parentExpr);
               if (parent && parent != move) {
