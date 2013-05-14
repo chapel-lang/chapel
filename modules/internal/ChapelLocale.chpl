@@ -153,6 +153,9 @@ module ChapelLocale {
   // Here be dragons: If the return type is specified, then normalize.cpp inserts
   // an initializer for the return value which calls its constructor, which calls
   // chpl_here_alloc ad infinitum.  But if the return type is left off, it works!
+
+  // The allocator pragma is used by scalar replacement.
+  pragma "allocator"
   proc chpl_here_alloc(x, md:int(16), lineno:int(32), filename:string) {
     extern proc chpl_memhook_malloc_pre(number:int, size:int, md:int(16),
                                         lineno:int(32), filename:string) : void;

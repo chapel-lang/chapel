@@ -177,7 +177,12 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
   if (!move || !move->isPrimitive(PRIM_MOVE))
     return false;
   CallExpr* alloc = toCallExpr(move->get(2));
-  if (!alloc || !alloc->isPrimitive(PRIM_CHPL_ALLOC))
+  if (!alloc)
+    return false;
+  if (!
+      (alloc->isPrimitive(PRIM_CHPL_ALLOC) ||
+       (alloc->isResolved() &&
+        alloc->isResolved()->hasFlag(FLAG_ALLOCATOR))))
     return false;
 
   //
@@ -199,7 +204,9 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
             call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
             call->isPrimitive(PRIM_SETCID) ||
             call->isPrimitive(PRIM_TASK_FREE) ||
-            call->isPrimitive(PRIM_CHPL_FREE)))
+            call->isPrimitive(PRIM_CHPL_FREE) ||
+            (call->isResolved() &&
+             call->isResolved()->hasFlag(FLAG_ALLOCATOR))))
         return false;
     }
   }

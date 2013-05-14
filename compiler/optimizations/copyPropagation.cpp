@@ -404,6 +404,9 @@ void globalCopyPropagation(FnSymbol* fn) {
 }
 
 
+// If there is exactly one definition of var by something of reference type, 
+// then return the call that defines it.
+// Otherwise, return NULL.
 static CallExpr*
 findRefDef(Map<Symbol*,Vec<SymExpr*>*>& defMap, Symbol* var) {
   CallExpr* ret = NULL;
