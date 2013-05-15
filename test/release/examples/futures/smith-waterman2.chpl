@@ -22,19 +22,12 @@ class ArrayData {
 
 class Tile {
 
-  var f: future(bool);
   var border: bool;
   var ad: ArrayData;
 
   proc Tile(b: bool) {
     this.border = b;
     this.ad = new ArrayData();
-  }
-
-  proc get(): void {
-    if (!this.border) {
-      this.f.get();
-    }
   }
 
   proc bottomRow(idx: int) var {
