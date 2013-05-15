@@ -159,7 +159,6 @@ proc main(): void {
   const endTimeCopies = getCurrentTime();
   writeln("Main: initialized copies of A and B in ", (endTimeCopies - startTimeCopies), " seconds."); stdout.flush();
 
-  writeln("Main: allocating tiles"); stdout.flush();
   const startTimeAlloc = getCurrentTime();
 
   var unmapped_tile_matrix_space = {0..tmHeight, 0..tmWidth};
@@ -170,22 +169,17 @@ proc main(): void {
   const endTimeAlloc = getCurrentTime();
   writeln("Main: allocated tiles in ", (endTimeAlloc - startTimeAlloc), " seconds."); stdout.flush();
 
-  var tileAvailability: [mapped_tile_matrix_space] int;
-
   on tileMatrix(0,0).locale do {
       tileMatrix(0, 0).initializeData();
       tileMatrix(0, 0).setBorder();
-      tileAvailability(0, 0) = 9;
   }
 
-  writeln("Main: initializing boundaries"); stdout.flush();
   const startTimeBoun = getCurrentTime();
   [i in {1..tmHeight}] { on tileMatrix(i, 0).locale do { tileMatrix(i, 0).initializeData(); } }
   [j in {1..tmWidth}]  { on tileMatrix(0, j).locale do { tileMatrix(0, j).initializeData(); } }
   const endTimeBoun = getCurrentTime();
   writeln("Main: initialized boundaries in ", (endTimeBoun - startTimeBoun), " seconds."); stdout.flush();
 
-  writeln("Main: initializing rows"); stdout.flush();
   const startTimeRow = getCurrentTime();
   [(i,j) in {1..tmWidth, 0..#tileWidth}] on tileMatrix(0, i).locale do {
     tileMatrix(0, i).bottomRow(j) = -1 * ((i - 1) * tileWidth + j + 1);
@@ -193,22 +187,17 @@ proc main(): void {
   const endTimeRow = getCurrentTime();
   writeln("Main: initialized rows in ", (endTimeRow - startTimeRow), " seconds."); stdout.flush();
 
-  writeln("Main: initializing columns"); stdout.flush();
   const startTimeCol = getCurrentTime();
   [(i,j) in {1..tmHeight, 0..#tileHeight}]
     on tileMatrix(i, 0).locale do { tileMatrix(i, 0).rightColumn(j) = -1 * ((i - 1) * tileHeight + j + 1); }
   const endTimeCol = getCurrentTime();
   writeln("Main: initialized columns in ", (endTimeCol - startTimeCol), " seconds."); stdout.flush();
 
-  writeln("Main: initializing tileAvailability"); stdout.flush();
   const startTimeAvail = getCurrentTime();
-  [i in {1..tmHeight}] { on tileMatrix(i, 0).locale do { tileAvailability(i, 0) = 9; } }
-  [j in {1..tmWidth}]  { on tileMatrix(0, j).locale do { tileAvailability(0, j) = 9; } }
-  writeln("Main: doing boundary puts"); stdout.flush();
   [i in {1..tmHeight}] { on tileMatrix(i, 0).locale do { tileMatrix(i, 0).setBorder(); } }
   [j in {1..tmWidth}]  { on tileMatrix(0, j).locale do { tileMatrix(0, j).setBorder(); } }
   const endTimeAvail = getCurrentTime();
-  writeln("Main: initialized availability in ", (endTimeAvail - startTimeAvail), " seconds."); stdout.flush();
+  writeln("Main: boundary puts in ", (endTimeAvail - startTimeAvail), " seconds."); stdout.flush();
 
   writeln("Main: starting computation..."); stdout.flush();
   const startTimeComp = getCurrentTime();
