@@ -187,8 +187,9 @@ proc main(): void {
 
   writeln("Main: initializing rows"); stdout.flush();
   const startTimeRow = getCurrentTime();
-  [(i,j) in {1..tmWidth, 0..#tileWidth}]
-    on tileMatrix(0, i).locale do { tileMatrix(0, i).bottomRow(j) = -1 * ((i - 1) * tileWidth + j + 1); }
+  [(i,j) in {1..tmWidth, 0..#tileWidth}] on tileMatrix(0, i).locale do {
+    tileMatrix(0, i).bottomRow(j) = -1 * ((i - 1) * tileWidth + j + 1);
+  }
   const endTimeRow = getCurrentTime();
   writeln("Main: initialized rows in ", (endTimeRow - startTimeRow), " seconds."); stdout.flush();
 
@@ -219,9 +220,6 @@ proc main(): void {
   const tileWidth_1_domain = {1..tileWidth};
 
   sync {
-
-    var tasksCreated: atomic int; tasksCreated.write(0);
-    var tasksResumed: atomic int; tasksResumed.write(0);
 
     for (i, j) in tm_1_2d_domain do {
 
