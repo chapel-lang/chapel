@@ -22,11 +22,9 @@ class ArrayData {
 
 class Tile {
 
-  var border: bool;
   var ad: ArrayData;
 
-  proc Tile(b: bool) {
-    this.border = b;
+  proc Tile() {
     this.ad = new ArrayData();
   }
 
@@ -169,7 +167,7 @@ proc main(): void {
 
         var f1 = begin : Tile {
 
-          var tile = new Tile(i1 == 0 || j1 == 0);
+          var tile = new Tile();
 
           if (i1 == 0) {
             [k in 0..#tileWidth] tile.bottomRow(k) = -1 * ((j1 - 1) * tileWidth + k + 1);
