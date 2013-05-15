@@ -2448,15 +2448,29 @@ void codegenAssign(GenRet to_ptr, GenRet from)
       //         ...);
       
       // Generate a GET
-      codegenCall("chpl_gen_comm_get",
-                   codegenCastToVoidStar(to_ptr),
-                   codegenRnode(from),
-                   codegenRaddr(from),
-                   codegenSizeof(type),
-                   genTypeStructureIndex(type->symbol),
-                   codegenOne(),
-                   info->lineno, info->filename 
-                  );
+      if (type == wideStringType)
+        // Special case for wide strings:
+        // We perform a deep copy to obtain a char* that can be referred to locally.
+        // Currently, the local character buffer is always leaked. :(
+        codegenCall("chpl_gen_comm_wide_string_get",
+                    codegenCastToVoidStar(to_ptr),
+                    codegenRnode(from),
+                    codegenRaddr(from),
+                    codegenSizeof(type),
+                    genTypeStructureIndex(type->symbol),
+                    codegenOne(),
+                    info->lineno, info->filename 
+          );
+      else
+        codegenCall("chpl_gen_comm_get",
+                    codegenCastToVoidStar(to_ptr),
+                    codegenRnode(from),
+                    codegenRaddr(from),
+                    codegenSizeof(type),
+                    genTypeStructureIndex(type->symbol),
+                    codegenOne(),
+                    info->lineno, info->filename 
+          );
     } else {
       // Generate a PUT
       // to is already a pointer.
