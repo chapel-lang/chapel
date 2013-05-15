@@ -21,7 +21,4 @@ int64_t chpl_comm_default_num_locales(void);
 //
 void chpl_comm_verify_num_locales(int64_t proposedNumLocales);
 
-// Functions for pulling apart and creating wide pointers
-#include "chpl-wide-ptr-fns.h"
-
 #endif
