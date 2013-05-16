@@ -137,33 +137,33 @@ module ChapelArray {
   //
   // Support for domain types
   //
-  pragma "has runtime type"
+  pragma "runtime type init fn"
   proc chpl__buildDomainRuntimeType(d: _distribution, param rank: int,
                                    type idxType = int,
-                                   param stridable: bool = false) type
+                                   param stridable: bool = false)
     return _newDomain(d.newRectangularDom(rank, idxType, stridable));
   
-  pragma "has runtime type"
+  pragma "runtime type init fn"
   proc chpl__buildDomainRuntimeType(d: _distribution, type idxType,
-                                    param parSafe: bool = true) type
+                                    param parSafe: bool = true)
     return _newDomain(d.newAssociativeDom(idxType, parSafe));
   
-  pragma "has runtime type"
+  pragma "runtime type init fn"
   proc chpl__buildDomainRuntimeType(d: _distribution, type idxType,
-                                    param parSafe: bool = true) type
+                                    param parSafe: bool = true)
    where idxType == _OpaqueIndex
     return _newDomain(d.newOpaqueDom(idxType, parSafe));
   
-  // This function has no 'has runtime type' pragma since the idxType of
+  // This function has no 'runtime type init fn' pragma since the idxType of
   // opaque domains is _OpaqueIndex, not opaque.  This function is
   // essentially a wrapper around the function that actually builds up
   // the runtime type.
   proc chpl__buildDomainRuntimeType(d: _distribution, type idxType) type
    where idxType == opaque
     return chpl__buildDomainRuntimeType(d, _OpaqueIndex);
-  
-  pragma "has runtime type"
-  proc chpl__buildSparseDomainRuntimeType(d: _distribution, dom: domain) type
+
+  pragma "runtime type init fn"
+  proc chpl__buildSparseDomainRuntimeType(d: _distribution, dom: domain) 
     return _newDomain(d.newSparseDom(dom.rank, dom._value.idxType, dom));
   
   proc chpl__convertValueToRuntimeType(dom: domain) type
@@ -191,8 +191,8 @@ module ChapelArray {
   //
   // Support for array types
   //
-  pragma "has runtime type"
-  proc chpl__buildArrayRuntimeType(dom: domain, type eltType) type
+  pragma "runtime type init fn"
+  proc chpl__buildArrayRuntimeType(dom: domain, type eltType)
     return dom.buildArray(eltType);
 
   /*
