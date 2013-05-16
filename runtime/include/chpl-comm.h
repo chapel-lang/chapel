@@ -209,6 +209,17 @@ void  chpl_comm_get_strd(void* dstaddr, void* dststrides, int32_t srclocale,
                      int ln, chpl_string fn);
 
 //
+// Get a local copy of a wide string.
+//
+// The local copy is also a wide string pointer, but its addr field points to 
+// a locally-allocated char[] and the locale field is set to "here".
+// The local char[] buffer is leaked. :(
+//
+void chpl_gen_comm_wide_string_get(void* addr,
+  int32_t node, void* raddr, int32_t elemSize, int32_t typeIndex, int32_t len,
+                                   int ln, chpl_string fn);
+
+//
 // remote fork should launch a thread on locale that runs function f
 // passing it arg where the size of arg is stored in arg_size
 // notes:
