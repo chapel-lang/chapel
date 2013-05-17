@@ -55,7 +55,6 @@ void verify();
 
 // parallel.cpp
 bool passingWideStringToExtern(Type* t);
-bool isWideString(Type* t);
 Type* getOrMakeRefTypeDuringCodegen(Type* type);
 Type* getOrMakeWideTypeDuringCodegen(Type* refType);
 

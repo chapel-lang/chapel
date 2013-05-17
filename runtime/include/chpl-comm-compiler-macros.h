@@ -80,12 +80,13 @@ void chpl_test_local(int32_t node, int32_t ln, const char* file, const char* err
   }
 }
 
-static ___always_inline
-void chpl_heap_register_global_var(int i, wide_ptr_t *ptr_to_wide_ptr)
-{
-  chpl_globals_registry[i] = ptr_to_wide_ptr;
-  CHPL_HEAP_REGISTER_GLOBAL_VAR_EXTRA(i, *ptr_to_wide_ptr);
-}
+#define CHPL_HEAP_REGISTER_GLOBAL_VAR(i, wide)             \
+  do {                                                     \
+    (wide).locale.node = 0;                                \
+    (wide).locale.subloc = 0;                              \
+    chpl_globals_registry[i] = (&((wide).addr));           \
+    CHPL_HEAP_REGISTER_GLOBAL_VAR_EXTRA(i, wide)           \
+  } while (0)
 
 //
 // If we're in serial mode, we should use blocking rather than

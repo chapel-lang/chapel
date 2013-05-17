@@ -58,6 +58,14 @@ chpl_string chpl_format(chpl_string format, ...) {
 
 
 #ifndef LAUNCHER
+// TODO: This declaration should actually come from chplcgfns.h
+// but some factoring of the runtime includes is required to make this work.
+// See the comment ca. chplcgfns.h:21 for more info.
+typedef struct __chpl_localeID_t {
+  c_nodeid_t node;
+  c_subloc_t subloc;
+} chpl_localeID_t;
+
 struct chpl_chpl____wide_chpl_string_s {
   chpl_localeID_t locale;
   chpl_string addr;

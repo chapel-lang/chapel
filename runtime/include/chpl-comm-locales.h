@@ -21,4 +21,5 @@ int64_t chpl_comm_default_num_locales(void);
 //
 void chpl_comm_verify_num_locales(int64_t proposedNumLocales);
 
+
 #endif

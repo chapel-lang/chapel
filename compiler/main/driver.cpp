@@ -49,7 +49,6 @@ const char* CHPL_GASNET_SEGMENT = NULL;
 const char* CHPL_ATOMICS = NULL;
 const char* CHPL_NETWORK_ATOMICS = NULL;
 const char* CHPL_GMP = NULL;
-const char* CHPL_WIDE_POINTERS = NULL;
 const char* CHPL_MAKE = NULL;
 
 int fdump_html = 0;
@@ -321,7 +320,6 @@ static void setupOrderedGlobals(const char* argv0) {
   SETUP_ENV_VAR(CHPL_ATOMICS, "chplenv/atomics");
   SETUP_ENV_VAR(CHPL_NETWORK_ATOMICS, "chplenv/atomics --network");
   SETUP_ENV_VAR(CHPL_GMP, "chplenv/gmp");
-  SETUP_ENV_VAR(CHPL_WIDE_POINTERS, "chplenv/widePointers");
   SETUP_ENV_VAR(CHPL_MAKE, "chplenv/chplmake");
 
   // These depend on the environment variables being set
