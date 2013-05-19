@@ -180,7 +180,7 @@ module ChapelBase {
   inline proc =(a: real(?w), b: real(w)) return b;
   inline proc =(a: imag(?w), b: imag(w)) return b;
   inline proc =(a: complex(?w), b: complex(w)) return b;
-  inline proc =(a: string, b: string) return __primitive("string_copy", b);
+  inline proc =(a: string, b: string) return b;
   inline proc =(a, b) return b;
   
   //

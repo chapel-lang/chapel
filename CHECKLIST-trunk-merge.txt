@@ -10,11 +10,64 @@ NEW/CHANGED:
 - Merge DefaultArchitecture, RootLocale out from trunk (to pick up Vass-inspired
   changes).
 
-- Passes relevant regression tests
+* Passes relevant regression tests
   * Standard
   * No-local
   - Multilocale
-    - Patch launcher to use its own memory allocator [gbt]
+    * examples (0 failures)
+    - distributions (8 failures)
+      o robust/arithmetic/performance/alloc]
+        > (put = +12, fork = 2, fork_nb = 3) (get = +13, put = 1, fork = +4) (get = +13, put = 1, fork = +4) (get = +13, put = 1, fork = +4)
+        > (put = +12, fork = 2, fork_nb = 3) (get = +13, put = 1, fork = +4) (get = +13, put = 1, fork = +4) (get = +13, put = 1, fork = +4)
+        > (put = +12, fork = 2, fork_nb = 3) (get = +13, put = 1, fork = +4) (get = +13, put = 1, fork = +4) (get = +13, put = 1, fork = +4)
+        > (put = +12, fork = 2, fork_nb = 3) (get = +13, put = 1, fork = +4) (get = +13, put = 1, fork = +4) (get = +13, put = 1, fork = +4)
+        > (put = +12, fork = 2, fork_nb = 3) (get = +13, put = 1, fork = +4) (get = +13, put = 1, fork = +4) (get = +13, put = 1, fork = +4)
+      * robust/arithmetic/performance/reduce]
+        > (get = 9, put = +12, fork_nb = 3) (get = +8, fork = +4) (get = +8, fork = +4) (get = +8, fork = +4)
+        From node 0, additional puts are the results from localeIDtoLocale().
+        Gets (2 per) are retrieval of rootLocale?, additional for is handler to
+        receive the result.
+      o robust/arithmetic/performance/reduceAlias]
+        > (put = 9, fork = 2) (get = +11, fork = +3) (get = +11, fork = +3) (get = +11, fork = +3)
+        > (get = 9, put = 12, fork_nb = 3) (get = +8, fork = +4) (get = +8, fork = +4) (get = +8, fork = +4)
+      o robust/arithmetic/performance/reduceSlice]
+        > (get = 9, put = +33, fork = 11, fork_nb = 15) (get = +27, put = 3, fork = +11) (get = +27, put = 3, fork = +11) (get = +27, put = 3, fork = +11)
+      o robust/arithmetic/performance/assignAlias]
+        > (put = 9, fork = 2) (get = +11, fork = +3) (get = +11, fork = +3) (get = +11, fork = +3)
+        > (put = +3, fork_nb = 3) (get = +2, fork = +1) (get = +2, fork = +1) (get = +2, fork = +1)
+      o robust/arithmetic/performance/assignSlice]
+        > (put = +24, fork = 11, fork_nb = 15) (get = +21, put = 3, fork = +8) (get = +21, put = 3, fork = +8) (get = +21, put = 3, fork = +8)
+      o robust/arithmetic/performance/alloc_all]
+        > (get = +18, put = +45, fork = 11, fork_nb = 6) (get = +46, put = 3, fork = +15, fork_nb = 3) (get = +46, put = 3, fork = +15, fork_nb = 3) (get = +46, put = 3, fork = +15, fork_nb = 3)
+        > (get = +18, put = +45, fork = 11, fork_nb = 6) (get = +46, put = 3, fork = +15, fork_nb = 3) (get = +46, put = 3, fork = +15, fork_nb = 3) (get = +46, put = 3, fork = +15, fork_nb = 3)
+        > (get = +18, put = +45, fork = 11, fork_nb = 6) (get = +46, put = 3, fork = +15, fork_nb = 3) (get = +46, put = 3, fork = +15, fork_nb = 3) (get = +46, put = 3, fork = +15, fork_nb = 3)
+        > (get = +18, put = +45, fork = 11, fork_nb = 6) (get = +46, put = 3, fork = +15, fork_nb = 3) (get = +46, put = 3, fork = +15, fork_nb = 3) (get = +46, put = 3, fork = +15, fork_nb = 3)
+        > (get = +18, put = +45, fork = 11, fork_nb = 6) (get = +46, put = 3, fork = +15, fork_nb = 3) (get = +46, put = 3, fork = +15, fork_nb = 3) (get = +46, put = 3, fork = +15, fork_nb = 3)
+      * robust/arithmetic/performance/assign]
+        > (put = +3, fork_nb = 3) (get = +2, fork = +1) (get = +2, fork = +1)(get = +2, fork = +1)
+        All changes due to calls to chpl_localeID_to_locale().
+    * multilocale (4 failures)
+      Updating the _endCount for the program runs locally on node 0, but
+      involves looking up the destination locale using chpl_localeID_to_locale()
+      on remote nodes.  Since the end count lives on node zero a number of gets
+      are required to prepare and perform the remote update:
+      Two to load the root locale pointer and 10 to perform the call to
+      localeIDtoLocale(id).  This comm burden is reduced to 2 if we run the
+      lookup on the root node.
+      * deitz/needMultiLocales/raCommCheck (compopts: 1, execopts: 1)]
+        > (get = +12, fork = 850)
+        > (get = +12, fork = 873)
+        > (get = +12, fork = 838)
+      * deitz/needMultiLocales/raCommCheck (compopts: 2, execopts: 1)]
+        > (get = +12, fork = 769)
+        > (get = +12, fork = 769)
+        > (get = +12, fork = 769)
+      * deitz/needMultiLocales/streamCommCheck]
+        > (fork_nb = +0) (get = +12, fork = +0)
+      * deitz/needMultiLocales/dist/test_private_space]
+        > (fork_nb = +0) (get = +12, fork = +0)
+        > (fork_nb = +0) (get = +24, fork = +0)
+    - performance ()
 
 * Review added futures
   * Delete test/memory/shannon/memmaxExceedsLineno2.future
@@ -36,24 +89,28 @@ NEW/CHANGED:
   * Resolve test/functions/deitz/nested/test_nested_var_iterator2.future
     * Add a future to get copy propagation error to appear on trunk.
 
-o Investigate/understand changed comm counts
-  o Characterize and report back to group.
-  o Locales array not privatized?
-  o What are the 12*k increased get counts?
-  o Immediate fixes/workarounds
-  o Proposal for better long-term solution(s)
+* Investigate/understand changed comm counts
+  - Characterize and report back to group.
+    * Due to calls to chpl_localeID_to_locale.
+  o Try privatizing locales array.
+  * What are the 12*k increased get counts?
+    * Number of additional gets to run localeIDtoLocale on rootLocale when it is
+      remote == 12.
+  - Immediate fixes/workarounds
+    * Now run localeIDtoLocale on root node
+      (2 gets and 1 fork on remote node, one put on root node)
+  * Proposal for better long-term solution(s)
+    1 Use sublocale IDs and a registration scheme, so locales can be looked up locally.
+    2 Store entire wide locale pointer in a wide pointer, so it doesn't have to
+      be looked up at all.
 
-o Ensure performance delta reasonable
-  - Analyze differences
-    - Understand causes
+* Ensure performance delta reasonable
+  * Analyze differences
+    * Understand causes
   - Group discussion
   o Memleaks testing: Similar output?
     o Format same?
     o Numbers comparable except in strings?
-  o Increased comm counts.
-    o Characterize and report back to group.
-    o Locales array not privatized?
-    o What are the 12*k increased get counts?
 
 o Characterize main difference and get reviews on appropriate pieces
   - Break up in to logical components for review.
@@ -67,6 +124,8 @@ o Start moved task through locale interface.
 
 
 RESOLVED/UNCHANGED:
+
+* Patch launcher to use its own memory allocator [gbt]
 
 * Investigate/understand changed memory counts
   * Disable "shared local strings" kludge.

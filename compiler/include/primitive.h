@@ -194,6 +194,7 @@ enum PrimitiveTag {
   PRIM_CREATE_FN_TYPE,
 
   PRIM_STRING_COPY,
+  PRIM_STRING_NORMALIZE,        // Set the size field in a (wide) string.
   PRIM_CAST_TO_VOID_STAR,		// Cast the object argument to void*.
 
   PRIM_RT_ERROR,

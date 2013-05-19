@@ -41,6 +41,8 @@ module RootLocale {
     // The _is_here test examines only localeIDs, so is local and very fast.
     // Evaluating "here" is also local and very fast.
     if __primitive("_is_here", id) then return here;
-    return (rootLocale:RootLocale).localeIDtoLocale(id);
+    var ret:locale;
+    on rootLocale do ret = (rootLocale:RootLocale).localeIDtoLocale(id);
+    return ret;
   }
 }

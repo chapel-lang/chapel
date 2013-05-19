@@ -615,8 +615,10 @@ proc file.getPath(out error:syserr) : string {
     var tmp:string;
     var tmp2:string;
     error = qio_file_path(_file_internal, tmp);
+    __primitive("string_normalize", tmp);
     if !error {
       error = qio_shortest_path(tmp2, tmp);
+      __primitive("string_normalize", tmp2);
     }
     if !error {
       ret = tmp2;
@@ -859,6 +861,10 @@ proc channel._ch_ioerror(error:syserr, msg:string) {
     var tmp_offset:int(64);
     var err:syserr = ENOERR;
     err = qio_channel_path_offset(locking, _channel_internal, tmp_path, tmp_offset);
+    // We have to fix up wide strings after extern calls,
+    // because strings are narrowed through externs.
+    var len = __primitive("string_length", tmp_path);
+    __primitive("string_normalize", tmp_path);
     if !err {
       path = tmp_path;
       offset = tmp_offset;
@@ -874,6 +880,7 @@ proc channel._ch_ioerror(errstr:string, msg:string) {
     var tmp_offset:int(64);
     var err:syserr = ENOERR;
     err = qio_channel_path_offset(locking, _channel_internal, tmp_path, tmp_offset);
+    __primitive("string_normalize", tmp_path);
     if !err {
       path = tmp_path;
       offset = tmp_offset;
@@ -1097,7 +1104,11 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
   } else if t == string {
     // handle string
     var len:ssize_t;
-    return qio_channel_scan_string(false, _channel_internal, x, len, -1);
+    var ret = qio_channel_scan_string(false, _channel_internal, x, len, -1);
+    // This primitive copies len into the size field of a wide string.
+    // If the string is narrow, it does nothing.
+    __primitive("string_normalize", x, len);
+    return ret;
   } else if _isEnumeratedType(t) {
     var err:syserr = ENOERR;
     for i in chpl_enumerate(t) {
@@ -1200,7 +1211,9 @@ inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param byt
   } else if t == string {
     // handle string
     var len:ssize_t;
-    return qio_channel_read_string(false, byteorder, qio_channel_str_style(_channel_internal), _channel_internal, x, len, -1);
+    var ret = qio_channel_read_string(false, byteorder, qio_channel_str_style(_channel_internal), _channel_internal, x, len, -1);
+    __primitive("string_normalize", x, len+1);
+    return ret;
   } else if _isEnumeratedType(t) {
     var i:enum_mintype(t);
     var err:syserr = ENOERR;
@@ -3210,6 +3223,7 @@ proc channel._extractMatch(m:reMatch, ref arg:string, ref error:syserr) {
   if ! error {
     var gotlen:ssize_t;
     error = qio_channel_read_string(false, iokind.native, stringStyleExactLen(len), _channel_internal, s, gotlen, len);
+    __primitive("string_normalize", s, gotlen+1);
   }
  
   if ! error {
