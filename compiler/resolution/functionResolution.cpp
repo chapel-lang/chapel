@@ -1401,7 +1401,6 @@ resolve_type_constructor(FnSymbol* fn, CallInfo& info) {
     typeConstructorCall->remove();
 }
 
-/*
 // Sets actual-formal map if FnSymbol is viable candidate to call
 static void
 addCandidate(Vec<FnSymbol*>* candidateFns,
@@ -1529,7 +1528,6 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
     trace_leave(TRACE_CANDIDATE, "Candidate function successfully added.");
   }
 }
-*/
 
 /*
  * Tests to see if a function is a candidate for resolving a specific call.  If
@@ -1906,9 +1904,9 @@ testCandidate(Vec<FnSymbol*>* candidateFns,
     /*
      * Make sure that type constructor is resolved before other constructors.
      */
-    if (localizedFn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
-      resolve_type_constructor(localizedFn, info);
-    }
+    //~ if (localizedFn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
+      //~ resolve_type_constructor(localizedFn, info);
+    //~ }
     
     /*
      * Resolve the formal arguments of a generic.  This should turn typeExprs
@@ -2447,6 +2445,13 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
         computeGenericSubs(subs, fn1, &formalActuals);
         
         instantiatedFn = instantiate(fn1, &subs, info.call);
+        
+        /*
+         * Make sure that type constructor is resolved before other constructors.
+         */
+        if (instantiatedFn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
+          resolve_type_constructor(instantiatedFn, info);
+        }
         
         resolveFormals(instantiatedFn);
         

@@ -749,9 +749,9 @@ module ChapelBase {
   }
   
   
-  inline proc _cast(type t, x) where t:_ddata && x:_nilType {
-    return __primitive("cast", t, x);
-  }
+  //inline proc _cast(type t, x) where t:_ddata && x:_nilType {
+  //  return __primitive("cast", t, x);
+  //}
   
   inline proc _ddata_allocate(type eltType, size: integral) {
     var ret:_ddata(eltType);
