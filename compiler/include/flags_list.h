@@ -112,6 +112,8 @@ symbolFlag( FLAG_REF_ITERATOR_CLASS , npr, "ref iterator class" , ncm )
 symbolFlag( FLAG_REF_THIS , ypr, "ref this" , ncm )
 symbolFlag( FLAG_REMOVABLE_AUTO_COPY , ypr, "removable auto copy" , ncm )
 symbolFlag( FLAG_REMOVABLE_AUTO_DESTROY , ypr, "removable auto destroy" , ncm )
+// See buildRuntimeTypeToValueFns() in functionResolution.cpp for more info on FLAG_RUNTIME_TYPE_INIT_FN
+symbolFlag( FLAG_RUNTIME_TYPE_INIT_FN , ypr, "runtime type init fn" , "function for initializing runtime time types" )
 symbolFlag( FLAG_RUNTIME_TYPE_VALUE , npr, "runtime type value" , "associated runtime type (value)" )
 symbolFlag( FLAG_SINGLE , ypr, "single" , ncm )
 // Based on how this is used, I suggest renaming it to return_value_has_initializer

@@ -1,0 +1,152 @@
+bug: Constant propagation is improperly applied when aliases are present.
+
+The expected output is 2, the actual output is 1.  Here's an extract from the
+generated code:
+
+/* test_nested_var_iterator2.chpl:1 */
+static void foo(void) {
+  int64_t x;
+  _ref_int64_t T = NULL;
+  _ic_bar _ic_ = NULL;
+  _ref_int64_t x2 = NULL;
+  x = 0;
+  T = &x;
+  _ic_ = chpl_here_alloc8(_ic_, 27, 11, "test_nested_var_iterator2.chpl");
+  ((object)(_ic_))->chpl__cid = chpl__cid__ic_bar;
+  (_ic_)->more = 1;
+  (_ic_)->F0_x = T;
+  x2 = (_ic_)->F0_x;
+  *(x2) = 2;
+  chpl_mem_free(((void*)(_ic_)), 4, "test_nested_var_iterator2.chpl");
+  writeln3(1);
+  return;
+}
+
+It can easily be observed that a constant "1" has been generated as the argument
+to writeln3().  In the hierloc branch, changing the allocator temporarily
+disabled scalar replacement, which made this error surface, but it can be
+duplicated easily by turning off scalar replacement explicitly.
+
+Examining the code, i becomes an alias for x in the "for" statement.  This is
+handled correctly in the body of the iterator, but not in the body of the loop.
+Since the variables (x and y) declared inside foo are visible within bar, optimization
+that is ignorant of the implementation of bar must assume that they are both
+volatile.  If the body of bar is inlined into foo, then x and i should be folded
+into the same symbol.  In that case, constant propagation can be applied, the
+body of the function will be greatly simplified, and the correct answer will be
+printed.
+
+Basically:
+  ref i = x; // i can be replaced by x wherever it appears.
+  x = 1;
+  x = 2;
+  y = x;
+  writeln(y);
+devolves to 
+  writeln(2);
+
+
+These are code snippets at singleAssignmentRefPropagation
+Before:
+    (1109960 CallExpr move
+      (1109961 SymExpr'_yieldedIndex[1109967]:_ref(int(64))[397705]')
+      (1109962 SymExpr'x[1109996]:_ref(int(64))[397705]'))
+    (1109970 DefExpr 'i[1109969]:_ref(int(64))[397705]')
+    (1109971 CallExpr move
+      (1109972 SymExpr'i[1109969]:_ref(int(64))[397705]')
+      (1109973 SymExpr'_yieldedIndex[1109967]:_ref(int(64))[397705]'))
+    (1155748 DefExpr 'ret[1155747]:int(64)[70]')
+    (1155749 CallExpr move
+      (1155750 SymExpr'ret[1155747]:int(64)[70]')
+      (1155751 SymExpr 1'_literal_75[6282]:int(64)[70]'))
+    (1109975 CallExpr move
+      (1109976 SymExpr'x[111563]:int(64)[70]')
+      (1155753 SymExpr'ret[1155747]:int(64)[70]'))
+    (1170394 DefExpr '_tmp[1170393]:int(64)[70]')
+    (1170395 CallExpr move
+      (1170396 SymExpr'_tmp[1170393]:int(64)[70]')
+      (1170397 SymExpr 2'_literal_68[4029]:int(64)[70]'))
+    (1109981 CallExpr move
+      (1109982 SymExpr'i[1109969]:_ref(int(64))[397705]')
+      (1170399 SymExpr'_tmp[1170393]:int(64)[70]'))
+
+
+After:
+    (1109960 CallExpr move
+      (1109961 SymExpr'_yieldedIndex[1109967]:_ref(int(64))[397705]')
+      (1109962 SymExpr'x[1109996]:_ref(int(64))[397705]'))
+    (1109970 DefExpr 'i[1109969]:_ref(int(64))[397705]')
+    (1109971 CallExpr move
+      (1109972 SymExpr'i[1109969]:_ref(int(64))[397705]')
+      (1342682 SymExpr'x[1109996]:_ref(int(64))[397705]'))
+    (1155748 DefExpr 'ret[1155747]:int(64)[70]')
+    (1155749 CallExpr move
+      (1155750 SymExpr'ret[1155747]:int(64)[70]')
+      (1155751 SymExpr 1'_literal_75[6282]:int(64)[70]'))
+    (1109975 CallExpr move
+      (1109976 SymExpr'x[111563]:int(64)[70]')
+      (1155753 SymExpr'ret[1155747]:int(64)[70]'))
+    (1170394 DefExpr '_tmp[1170393]:int(64)[70]')
+    (1170395 CallExpr move
+      (1170396 SymExpr'_tmp[1170393]:int(64)[70]')
+      (1170397 SymExpr 2'_literal_68[4029]:int(64)[70]'))
+    (1109981 CallExpr move
+      (1342683 SymExpr'x[1109996]:_ref(int(64))[397705]')
+      (1170399 SymExpr'_tmp[1170393]:int(64)[70]'))
+
+So far, things seem correct.  However, after copyPropagation is applied, the AST
+is semantically incorrect.
+
+Before:
+    (1109975 CallExpr move
+      (1109976 SymExpr'x[111563]:int(64)[70]')
+      (1155753 SymExpr'ret[1155747]:int(64)[70]'))
+    (1170394 DefExpr '_tmp[1170393]:int(64)[70]')
+    (1170395 CallExpr move
+      (1170396 SymExpr'_tmp[1170393]:int(64)[70]')
+      (1170397 SymExpr 2'_literal_68[4029]:int(64)[70]'))
+    (1109981 CallExpr move
+      (1342683 SymExpr'x[1109996]:_ref(int(64))[397705]') // Updates the real x.
+      (1170399 SymExpr'_tmp[1170393]:int(64)[70]'))
+    (1155756 DefExpr 'ret[1155755]:int(64)[70]')
+    (1155757 CallExpr move
+      (1155758 SymExpr'ret[1155755]:int(64)[70]')
+      (1155759 SymExpr'x[111563]:int(64)[70]')) // The value of 111563 must not be propagated here.
+    (1109987 CallExpr move
+      (1109988 SymExpr'y[111567]:int(64)[70]')
+      (1155761 SymExpr'ret[1155755]:int(64)[70]'))
+    (1219591 CallExpr chpl_mem_free
+      (1219592 SymExpr'_ic_[1219561]:_ic_bar[780436]'))
+    (111627 CallExpr
+      (780964 SymExpr'fn writeln[780938]:void[17]')
+      (190760 SymExpr'y[111567]:int(64)[70]'))
+
+After:
+    (1109975 CallExpr move
+      (1109976 SymExpr'x[111563]:int(64)[70]')
+      (1155753 SymExpr 1'_literal_75[6282]:int(64)[70]')) // OK
+    (1170394 DefExpr '_tmp[1170393]:int(64)[70]')
+    (1170395 CallExpr move
+      (1170396 SymExpr'_tmp[1170393]:int(64)[70]')
+      (1170397 SymExpr 2'_literal_68[4029]:int(64)[70]')) // No change.
+    (1109981 CallExpr move
+      (1342683 SymExpr'x[1109996]:_ref(int(64))[397705]')
+      (1170399 SymExpr 2'_literal_68[4029]:int(64)[70]')) // OK
+    (1155756 DefExpr 'ret[1155755]:int(64)[70]')
+    (1155757 CallExpr move
+      (1155758 SymExpr'ret[1155755]:int(64)[70]')
+      (1155759 SymExpr 1'_literal_75[6282]:int(64)[70]')) // Oops!
+    (1109987 CallExpr move
+      (1109988 SymExpr'y[111567]:int(64)[70]')
+      (1155761 SymExpr 1'_literal_75[6282]:int(64)[70]')) // Wrong
+    (1219591 CallExpr chpl_mem_free
+      (1219592 SymExpr'_ic_[1219561]:_ic_bar[780436]'))
+    (111627 CallExpr
+      (780964 SymExpr'fn writeln[780938]:void[17]')
+      (190760 SymExpr 1'_literal_75[6282]:int(64)[70]'))
+
+The problem arises because the assignment 1109975 establishes a new available
+copy pair x <- 1 in spite of the fact that x has been aliased to 'ref x'
+[1109996] (==&x) and i.  The assignment to *&x in 1109981 should invalidate the
+'x <- 1' acp, but doesn't.  So 'x <- 1' propagates to 1155757 and 1109987.  This
+latter substitution is what causes the incorrect answer '1' to be printed.

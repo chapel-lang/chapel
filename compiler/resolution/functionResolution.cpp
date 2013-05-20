@@ -208,7 +208,7 @@ static void initializeClass(Expr* stmt, Symbol* sym);
 static void pruneResolvedTree();
 static void removeUnusedFunctions();
 static void removeUnusedTypes();
-static void buildRuntimeTypeExpressions();
+static void buildRuntimeTypeInitFns();
 static void removeRandomJunk();
 static void removeUnusedFormals();
 static void insertRuntimeInitTemps();
@@ -2574,7 +2574,7 @@ static void resolveMove(CallExpr* call) {
 
     if (lhs->hasFlag(FLAG_TYPE_VARIABLE) && !isTypeExpr(rhs)) {
       if (lhs == fn->getReturnSymbol()) {
-        if (!fn->hasFlag(FLAG_HAS_RUNTIME_TYPE))
+        if (!fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN))
           USR_FATAL(call, "illegal return of value where type is expected");
       } else {
         USR_FATAL(call, "illegal assignment of value to type");
@@ -5625,7 +5625,7 @@ pruneResolvedTree() {
   removeUnusedTypes();
   // Ideally positioned to lose the "best function name" contest. Suggestions?
   removeRandomJunk();
-  buildRuntimeTypeExpressions();  // Another WAG.
+  buildRuntimeTypeInitFns();
   removeUnusedFormals();
   insertRuntimeInitTemps();
   removeMootFields();
@@ -5782,29 +5782,78 @@ static void removeRandomJunk() {
   }
 }
 
-static void buildRuntimeTypeExpressions() {
+//
+// buildRuntimeTypeInitFns: Build a 'chpl__convertRuntimeTypeToValue'
+// (value) function for all functions tagged as runtime type
+// initialization functions.  Also, build a function to return the
+// runtime type for all runtime type initialization functions.
+//
+// Functions flagged with the "runtime type init fn" pragma
+// (FLAG_RUNTIME_TYPE_INIT_FN during compilation) are designed to
+// specify to the compiler how to create a new value of a given type
+// from the arguments to the function.  These arguments effectively
+// supply whatever static and/or runtime information is required to
+// build such a value (and therefore effectively represent the
+// "type").  Any non-static arguments are bundled into a runtime type
+// (record) by the compiler and passed around to represent the type at
+// execution time.  In practice, we currently use these to create
+// runtime types for domains and arrays (via procedures named
+// 'chpl__buildDOmainRuntimeType' and 'chpl__buildArrayRuntimeType',
+// respectively).
+//
+// For each such flagged function:
+//
+//   - Clone the function, naming it 'chpl__convertRuntimeTypeToValue'
+//     and change it to a value function
+//
+//   - Replace the body of the original function with a new function
+//     that returns the dynamic runtime type info
+//
+// Subsequently, the functions as written in the modules are now
+// called 'chpl__convertRuntimeTypeToValue' and used to initialize
+// variables with runtime types later in insertRuntimeInitTemps().
+//
+// Notice also that the original functions had been marked as type
+// functions during parsing even though they were not written as such
+// (see addPragmaFlags() in build.cpp for more info).  Now they are
+// actually type functions.
+//
+static void buildRuntimeTypeInitFns() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->defPoint && fn->defPoint->parentSymbol) {
-      if (fn->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+      if (fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN)) {
         INT_ASSERT(fn->retType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE));
         SET_LINENO(fn);
+        // Build a new runtime type for this function
         Type* runtimeType = buildRuntimeTypeInfo(fn);
         runtimeTypeMap.put(fn->retType, runtimeType);
 
+        //
+        // Build chpl__convertRuntimeTypeToValue()
+        //
+        // Clone the original function
         FnSymbol* runtimeTypeToValueFn = fn->copy();
         runtimeTypeToValueFn->name = astr("chpl__convertRuntimeTypeToValue");
         runtimeTypeToValueFn->cname = runtimeTypeToValueFn->name;
-        runtimeTypeToValueFn->removeFlag(FLAG_HAS_RUNTIME_TYPE);
+        // Clean up flags
+        runtimeTypeToValueFn->removeFlag(FLAG_RUNTIME_TYPE_INIT_FN);
+        // Make this a value function
         runtimeTypeToValueFn->getReturnSymbol()->removeFlag(FLAG_TYPE_VARIABLE);
         runtimeTypeToValueFn->retTag = RET_VALUE;
         fn->defPoint->insertBefore(new DefExpr(runtimeTypeToValueFn));
         runtimeTypeToValueMap.put(runtimeType, runtimeTypeToValueFn);
 
+        // Build a function to return the runtime type by modifying
+        // the original function.
+        //
+        // Change the return type
         fn->retType = runtimeType;
         fn->getReturnSymbol()->type = runtimeType;
+        // Build the new body
         BlockStmt* block = new BlockStmt();
         VarSymbol* var = newTemp("_return_tmp_", fn->retType);
         block->insertAtTail(new DefExpr(var));
+        // Bundle all non-static arguments into the runtime type record
         for_formals(formal, fn) {
           if (!formal->instantiatedParam) {
             Symbol* field = runtimeType->getField(formal->name);
