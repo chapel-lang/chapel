@@ -56,7 +56,9 @@ static void recordExecutionCommand(int argc, char *argv[]) {
   for (i = 0; i < argc; i++) {
     length += strlen(argv[i]) + 1;
   }
-  chpl_executionCommand = (char*)chpl_mem_allocMany(length+1, sizeof(char), CHPL_RT_EXECUTION_COMMAND, 0, 0);
+  chpl_executionCommand =
+    (char*)chpl_mem_allocMany(length+1, sizeof(char),
+                              CHPL_RT_MD_EXECUTION_COMMAND, 0, 0);
   sprintf(chpl_executionCommand, "%s", argv[0]);
   for (i = 1; i < argc; i++) {
     strcat(chpl_executionCommand, " ");
@@ -93,7 +95,6 @@ static void chpl_main(void) {
 int main(int argc, char* argv[]) {
   int32_t execNumLocales;
   int runInGDB;
-  int numPollingTasks;
 
   // Check that we can get the page size.
   assert( sys_page_size() > 0 );
@@ -146,22 +147,9 @@ int main(int argc, char* argv[]) {
   chpl__init_preInit(0, myFilename);
  
   //
-  // initialize the task management layer
+  // Initialize the task management layer.
   //
-  //
-  // This is an early call to initialize the ChapelThreads module so
-  // that its config consts (numThreadsPerLocale and callStackSize)
-  // can be used to initialize the tasking layer.  
-  //
-  chpl__init_ChapelThreads(0, myFilename);
-  // (Can we grab those constants directly, and stay out of the module code?)
-  //
-  numPollingTasks = chpl_comm_numPollingTasks();
-  if (numPollingTasks != 0 && numPollingTasks != 1) {
-    chpl_internal_error("chpl_comm_numPollingTasks() returned illegal value");
-  }
-  chpl_task_init(numThreadsPerLocale, chpl__maxThreadsPerLocale, 
-                 numPollingTasks, callStackSize); 
+  chpl_task_init();
 
   //
   // Some comm layer initialization may have to be done after the

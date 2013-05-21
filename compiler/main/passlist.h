@@ -59,7 +59,6 @@ PassInfo passlist[] = {
   RUN(prune2),              // prune AST of dead functions and types again
 
   RUN(returnStarTuplesByRefArgs),
-  RUN(gpuFlattenArgs),      // Flatten out arguments used to call in gpu kernel
 
   RUN(insertWideReferences),// inserts wide references for on clauses
   RUN(optimizeOnClauses),   // Optimize on clauses

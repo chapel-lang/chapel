@@ -424,5 +424,175 @@ module ChapelTuple {
         return true;
     return false;
   }
+
+
+  // standard overloaded binary operators on homog tuple / scalar pairs
   
+  inline proc +(x: _tuple, y: x(1).type) where isHomogeneousTuple(x) {
+    if x.size == 1 then
+      return (x(1)+y,);
+    else
+      return (x(1)+y, (...chpl__tupleRest(x)+y));
+  }
+
+  inline proc +(x: ?t, y: _tuple) where isHomogeneousTuple(y) && 
+                                       t: (y(1).type)  {
+    if y.size == 1 then
+      return (x+y(1),);
+    else
+      return (x+y(1), (...x+chpl__tupleRest(y)));
+  }
+
+  inline proc -(x: _tuple, y: x(1).type) where isHomogeneousTuple(x) {
+    if x.size == 1 then
+      return (x(1)-y,);
+    else
+      return (x(1)-y, (...chpl__tupleRest(x)-y));
+  }
+
+  inline proc -(x: ?t, y: _tuple) where isHomogeneousTuple(y) && 
+                                       t: (y(1).type)  {
+    if y.size == 1 then
+      return (x-y(1),);
+    else
+      return (x-y(1), (...x-chpl__tupleRest(y)));
+  }
+
+  inline proc *(x: _tuple, y: x(1).type) where isHomogeneousTuple(x) {
+    if x.size == 1 then
+      return (x(1)*y,);
+    else
+      return (x(1)*y, (...chpl__tupleRest(x)*y));
+  }
+
+  inline proc *(x: ?t, y: _tuple) where isHomogeneousTuple(y) && 
+                                       x: (y(1).type)  {
+    if y.size == 1 then
+      return (x*y(1),);
+    else
+      return (x*y(1), (...x*chpl__tupleRest(y)));
+  }
+
+  inline proc /(x: _tuple, y: x(1).type) where isHomogeneousTuple(x) {
+    if x.size == 1 then
+      return (x(1)/y,);
+    else
+      return (x(1)/y, (...chpl__tupleRest(x)/y));
+  }
+
+  inline proc /(x: ?t, y: _tuple) where isHomogeneousTuple(y) && 
+                                       t: (y(1).type)  {
+    if y.size == 1 then
+      return (x/y(1),);
+    else
+      return (x/y(1), (...x/chpl__tupleRest(y)));
+  }
+
+  inline proc %(x: _tuple, y: x(1).type) where isHomogeneousTuple(x) {
+    if x.size == 1 then
+      return (x(1)%y,);
+    else
+      return (x(1)%y, (...chpl__tupleRest(x)%y));
+  }
+
+  inline proc %(x: ?t, y: _tuple) where isHomogeneousTuple(y) && 
+                                       t: (y(1).type)  {
+    if y.size == 1 then
+      return (x%y(1),);
+    else
+      return (x%y(1), (...x%chpl__tupleRest(y)));
+  }
+
+  inline proc **(x: _tuple, y: x(1).type) where isHomogeneousTuple(x) {
+    if x.size == 1 then
+      return (x(1)**y,);
+    else
+      return (x(1)**y, (...chpl__tupleRest(x)**y));
+  }
+
+  inline proc **(x: ?t, y: _tuple) where isHomogeneousTuple(y) && 
+                                       t: (y(1).type)  {
+    if y.size == 1 then
+      return (x**y(1),);
+    else
+      return (x**y(1), (...x**chpl__tupleRest(y)));
+  }
+
+  inline proc &(x: _tuple, y: x(1).type) where isHomogeneousTuple(x) {
+    if x.size == 1 then
+      return (x(1)&y,);
+    else
+      return (x(1)&y, (...chpl__tupleRest(x)&y));
+  }
+
+  inline proc &(x: ?t, y: _tuple) where isHomogeneousTuple(y) && 
+                                       t: (y(1).type)  {
+    if y.size == 1 then
+      return (x&y(1),);
+    else
+      return (x&y(1), (...x&chpl__tupleRest(y)));
+  }
+
+  inline proc |(x: _tuple, y: x(1).type) where isHomogeneousTuple(x) {
+    if x.size == 1 then
+      return (x(1)|y,);
+    else
+      return (x(1)|y, (...chpl__tupleRest(x)|y));
+  }
+
+  inline proc |(x: ?t, y: _tuple) where isHomogeneousTuple(y) && 
+                                       t: (y(1).type)  {
+    if y.size == 1 then
+      return (x|y(1),);
+    else
+      return (x|y(1), (...x|chpl__tupleRest(y)));
+  }
+
+  inline proc ^(x: _tuple, y: x(1).type) where isHomogeneousTuple(x) {
+    if x.size == 1 then
+      return (x(1)^y,);
+    else
+      return (x(1)^y, (...chpl__tupleRest(x)^y));
+  }
+
+  inline proc ^(x: ?t, y: _tuple) where isHomogeneousTuple(y) && 
+                                       t: (y(1).type)  {
+    if y.size == 1 then
+      return (x^y(1),);
+    else
+      return (x^y(1), (...x^chpl__tupleRest(y)));
+  }
+
+  inline proc <<(x: _tuple, y: x(1).type) where isHomogeneousTuple(x) {
+    if x.size == 1 then
+      return (x(1)<<y,);
+    else
+      return (x(1)<<y, (...chpl__tupleRest(x)<<y));
+  }
+
+  inline proc <<(x: ?t, y: _tuple) where isHomogeneousTuple(y) && 
+                                       t: (y(1).type)  {
+    if y.size == 1 then
+      return (x<<y(1),);
+    else
+      return (x<<y(1), (...x<<chpl__tupleRest(y)));
+  }
+
+  inline proc >>(x: _tuple, y: x(1).type) where isHomogeneousTuple(x) {
+    if x.size == 1 then
+      return (x(1)>>y,);
+    else
+      return (x(1)>>y, (...chpl__tupleRest(x)>>y));
+  }
+
+  inline proc >>(x: ?t, y: _tuple) where isHomogeneousTuple(y) && 
+                                       t: (y(1).type)  {
+    if y.size == 1 then
+      return (x>>y(1),);
+    else
+      return (x>>y(1), (...x>>chpl__tupleRest(y)));
+  }
+
+
+
 }

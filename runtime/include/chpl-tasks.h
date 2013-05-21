@@ -63,21 +63,7 @@ void chpl_single_destroyAux(chpl_sync_aux_t * s) { chpl_sync_destroyAux(s); }
 // chpl_task_init() is called by the main task on each locale to initialize
 //   the tasking layer
 //
-// - numThreadsPerLocale is a user-specified limit on the number of
-//   threads the tasking layer should use; 0 means unlimited
-// - maxThreadsPerLocale is the maximum number of threads the tasking
-//   layer should use; 0 means unlimited
-// - numCommTasks indicates the number of communication tasks that the
-//   communication layer is going to request through chpl_task_createCommTask()
-// - callStackSize is the user-specified size of the callstack each
-//   task should use; 0 means use the default
-//
-// These values should be checked for legality and tucked away for later use
-// by the tasking layer as necessary.  This is a reasonable place to print
-// out warnings about bad values.
-//
-void chpl_task_init(int32_t numThreadsPerLocale, int32_t maxThreadsPerLocale,
-                    int numCommTasks, uint64_t callStackSize);
+void chpl_task_init(void);
 void chpl_task_exit(void);        // called by the main task
 
 //
@@ -216,6 +202,21 @@ uint32_t chpl_task_getNumThreads(void);
 // returns the number of threads that are currently idle
 //
 uint32_t chpl_task_getNumIdleThreads(void);
+
+
+//
+// This gets any per-locale thread count specified in the environment.
+// It is common to all tasking implementations and so is implemented
+// in runtime/src/chpl-tasks.c.
+//
+int32_t chpl_task_getenvNumThreadsPerLocale(void);
+
+//
+// This gets any call stack size specified in the environment.  It
+// is common to all tasking implementations and so is implemented
+// in runtime/src/chpl-tasks.c.
+//
+int64_t chpl_task_getenvCallStackSize(void);
 
 #else // LAUNCHER
 

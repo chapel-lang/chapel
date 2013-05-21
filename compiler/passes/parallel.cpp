@@ -132,7 +132,6 @@ static void create_block_fn_wrapper(CallExpr* fcall, ClassType* ctype, VarSymbol
 
   // Add special flags to the wrapper-function as appropriate.
   // These control aspects of code generation.
-  if (fn->hasFlag(FLAG_GPU_ON))                 wrap_fn->addFlag(FLAG_GPU_CALL);
   if (fn->hasFlag(FLAG_ON))                     wrap_fn->addFlag(FLAG_ON_BLOCK);
   if (fn->hasFlag(FLAG_NON_BLOCKING))           wrap_fn->addFlag(FLAG_NON_BLOCKING);
   if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL))    wrap_fn->addFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK);
@@ -172,7 +171,7 @@ static void create_block_fn_wrapper(CallExpr* fcall, ClassType* ctype, VarSymbol
 
   wrap_fn->retType = dtVoid;
   wrap_fn->insertAtTail(call_orig);     // add new call
-  if (fn->hasFlag(FLAG_ON) || fn->hasFlag(FLAG_GPU_ON))
+  if (fn->hasFlag(FLAG_ON))
     fcall->insertAfter(new CallExpr(PRIM_CHPL_FREE, tempc));
   else
     wrap_fn->insertAtTail(new CallExpr(PRIM_CHPL_FREE, wrap_c));
@@ -657,7 +656,19 @@ makeHeapAllocations() {
             call->replace(new CallExpr(PRIM_GET_MEMBER, use->var, heapType->getField(1)));
           }
         } else if (call->isResolved()) {
-          if (call->isResolved()->hasFlag(FLAG_AUTO_DESTROY_FN)) {
+          if (call->isResolved()->hasFlag(FLAG_AUTO_DESTROY_FN_SYNC)) {
+            //
+            // We don't move sync vars to the heap and don't do the
+            // analysis to determine whether or not they outlive a
+            // task that refers to them, so conservatively remove
+            // their autodestroy calls to avoid freeing them before
+            // all tasks are done with them.  While this is
+            // unfortunate and needs to be fixed in the future to
+            // avoid leaks (TODO), it is better than the previous
+            // version of this code that would remove all autodestroy
+            // calls in this conditional.  See the commit message for
+            // this commenet for more detail.
+            //
             call->remove();
           } else if (actual_to_formal(use)->type == heapType) {
             // do nothing
@@ -796,17 +807,6 @@ parallel(void) {
         fn->insertAtTail(new CallExpr(PRIM_MOVE, oldSubLoc, new CallExpr(PRIM_GET_SUBLOC_ID)));
         fn->insertAtTail(new CallExpr(PRIM_SET_SUBLOC_ID, new CallExpr(PRIM_LOC_GET_SUBLOC, arg)));
       }
-      else if (info->isPrimitive(PRIM_ON_GPU)) {
-        fn = new FnSymbol("on_gpu_kernel");
-        fn->addFlag(FLAG_GPU_ON);
-        //Add two formal arguments:
-        // nBlocks = Number of Thread blocks
-        // threadsPerBlock = Number of threads per single thread block
-        ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "nBlocks", dtInt[INT_SIZE_DEFAULT]);
-        ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "threadsPerBlock", dtInt[INT_SIZE_DEFAULT]);
-        fn->insertFormalAtTail(arg1);
-        fn->insertFormalAtTail(arg2);
-      }
       else if (// info->isPrimitive(PRIM_BLOCK_PARAM_LOOP) || // resolution should remove this case.
                info->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
                info->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP) ||
@@ -826,10 +826,6 @@ parallel(void) {
             block->blockInfo->isPrimitive(PRIM_BLOCK_ON_NB))
           // This puts the target locale expression "onExpr" at the start of the call.
           call->insertAtTail(block->blockInfo->get(1)->remove());
-        else if (block->blockInfo->isPrimitive(PRIM_ON_GPU)) {
-          call->insertAtTail(block->blockInfo->get(1)->remove());
-          call->insertAtTail(block->blockInfo->get(1)->remove());
-        }
 
         block->insertBefore(new DefExpr(fn));
         block->insertBefore(call);
@@ -1262,6 +1258,7 @@ void
 insertWideReferences(void) {
   SET_LINENO(baseModule);
   FnSymbol* heapAllocateGlobals = new FnSymbol("chpl__heapAllocateGlobals");
+  heapAllocateGlobals->addFlag(FLAG_EXPORT);
   heapAllocateGlobals->retType = dtVoid;
   theProgram->block->insertAtTail(new DefExpr(heapAllocateGlobals));
   heapAllocateGlobals->insertAtHead(new CallExpr(PRIM_ALLOC_GVR));

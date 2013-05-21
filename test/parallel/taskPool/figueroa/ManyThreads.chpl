@@ -1,5 +1,5 @@
 // This test is intended to ensure that a warning message is emitted when
-// the specified value of maxThreadsPerLocale is higher than the
+// the specified value of CHPL_RT_NUM_THREADS_PER_LOCALE is higher than the
 // system supports (256 for gasnet, for example).
 
 use Time;

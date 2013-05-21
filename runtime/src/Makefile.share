@@ -13,18 +13,13 @@ COMMON_NOGEN_SRCS = \
 	chplio.c \
 	chplgmp.c \
 	chpl-mem.c \
+	chpl-mem-desc.c \
+	chpl-mem-hook.c \
 	chplmemtrack.c \
 	chplsys.c \
+	chpl-tasks.c \
 	chpl-timers.c \
 	gdb.c \
-
-ifdef NVCC
-CUDA_SRCS = \
-	chplgpu.cu
-else
-CUDA_SRCS = \
-	chplgpu_stub.c
-endif
 
 MAIN_SRCS = \
 	main.c \
@@ -43,14 +38,6 @@ SRCS = $(SVN_SRCS) \
 
 COMMON_OBJS = \
 	$(COMMON_SRCS:%.c=$(COMMON_OBJDIR)/%.o)
-
-ifdef NVCC
-COMMON_OBJS += \
-	$(CUDA_SRCS:%.cu=$(COMMON_OBJDIR)/%.o)
-else
-COMMON_OBJS += \
-	$(CUDA_SRCS:%.c=$(COMMON_OBJDIR)/%.o)
-endif
 
 MAIN_OBJS = \
 	$(MAIN_SRCS:%.c=$(COMMON_OBJDIR)/%.o)

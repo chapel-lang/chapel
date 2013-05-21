@@ -11,6 +11,8 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include <cctype>
+#include <vector>
+#include "stlUtil.h"
 
 bool normalized = false;
 
@@ -154,15 +156,15 @@ void normalize(BaseAST* base) {
     processSyntacticDistributions(call);
   }
 
-  Vec<Symbol*> symbols;
-  collectSymbols(base, symbols);
-  forv_Vec(Symbol, symbol, symbols) {
+  std::vector<Symbol*> symbols;
+  collectSymbolsSTL(base, symbols);
+  for_vector(Symbol, symbol, symbols) {
     if (FnSymbol* fn = toFnSymbol(symbol))
       normalize_returns(fn);
   }
 
-  forv_Vec(Symbol, symbol, symbols) {
-    if (VarSymbol* var = toVarSymbol(symbol))
+  for_vector(Symbol, symbol2, symbols) {
+    if (VarSymbol* var = toVarSymbol(symbol2))
       if (isFnSymbol(var->defPoint->parentSymbol))
         fix_def_expr(var);
   }

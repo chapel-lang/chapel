@@ -52,11 +52,13 @@
   close
   fwrite
   fread
+  fsync
   main
   open
   pow
   printf
   scanf
+  sync
   quad
   read
   sleep

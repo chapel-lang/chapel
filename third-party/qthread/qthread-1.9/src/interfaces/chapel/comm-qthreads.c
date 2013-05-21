@@ -208,9 +208,6 @@ int32_t chpl_comm_getMaxThreads(void)
 // notes:
 //   * Called with the argc/argv pair passed to main()
 //
-// Warning: running with spr drops support for influencing the intra-node
-// tasking environment setup using the --numthreadsperlocale and
-// --callstacksize commandline arguments.
 void chpl_comm_init(int *argc_p, char ***argv_p)
 {
     qthread_debug(CHAPEL_CALLS, "[%d] begin\n", chpl_localeID);
@@ -583,11 +580,11 @@ static inline void spawn(int locale, chpl_fn_int_t fid, void *arg,
 {
     qthread_debug(CHAPEL_CALLS, "[%d] begin: locale=%d, fid=%d, arg_size=%d\n", chpl_localeID, locale, fid, arg_size);
 
-	spawn_wrapper_args_t *wargs;
+        spawn_wrapper_args_t *wargs;
     size_t const wargs_size = sizeof(spawn_wrapper_args_t) + arg_size;
 
     wargs = (spawn_wrapper_args_t *)chpl_mem_allocMany(1, wargs_size, CHPL_RT_MD_COMM_FORK_SEND_INFO, 0, 0);
-	wargs->serial_state = chpl_task_getSerial();
+        wargs->serial_state = chpl_task_getSerial();
     wargs->fid = fid;
     wargs->arg_size = arg_size;
     memcpy(&(wargs->arg), arg, arg_size);

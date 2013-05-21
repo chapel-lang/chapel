@@ -86,8 +86,35 @@ static void addPragmaFlags(Symbol* sym, Vec<const char*>* pragmas) {
     Flag flag = pragma2flag(str);
     if (flag == FLAG_UNKNOWN)
       USR_FATAL_CONT(sym, "unknown pragma: \"%s\"", str);
-    else
+    else {
       sym->addFlag(flag);
+      //
+      // Propagate export init flag to module's init function
+      //
+      if (flag == FLAG_EXPORT_INIT) {
+        ModuleSymbol* mod = toModuleSymbol(sym);
+        INT_ASSERT(mod);
+        INT_ASSERT(mod->initFn);
+        mod->initFn->addFlag(FLAG_EXPORT);
+      } else if (flag == FLAG_RUNTIME_TYPE_INIT_FN) {
+        //
+        // These functions must be marked as type functions early in
+        // compilation, as calls to them are inserted by the compiler
+        // at the declaration points for arrays and domains.  In the
+        // past, they had to be defined as type functions in the
+        // modules, but most of us found that very confusing because
+        // the code in the functions actually returns a value.  See
+        // buildRuntimTypeToValueFns() in functionResolution.cpp for
+        // more info on what happens to these functions.
+        //
+        FnSymbol* fn = toFnSymbol(sym);
+        INT_ASSERT(fn);
+        if (fn->retTag != RET_VALUE) {
+          USR_WARN(fn, "function's return type is not a value type.  Ignoring.");
+        }
+        fn->retTag = RET_TYPE;
+      }
+    }
   }
 }
 
@@ -398,6 +425,11 @@ buildExternBlockStmt(const char* c_code) {
   return buildChapelStmt(new ExternBlockStmt(c_code));
 }
 
+//
+// TODO: This should probably be moved into its own post-parsing pass
+// if possible; in a quick check, it appears to be at least not
+// completely trivial.
+//
 void createInitFn(ModuleSymbol* mod) {
   SET_LINENO(mod);
 
@@ -407,6 +439,10 @@ void createInitFn(ModuleSymbol* mod) {
   mod->initFn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
   // All module initialization functions should be exported.
   // But that means we have to adopt some new naming conventions.
+  //
+  // BLC: Actually, I think we should only be exporting module
+  // initialization functions for modules that have exported symbols.
+  //
   // mod->initFn->addFlag(FLAG_EXPORT);
 
   //
@@ -1822,20 +1858,6 @@ static Expr* extractLocaleID(Expr* expr) {
 BlockStmt*
 buildOnStmt(Expr* expr, Expr* stmt) {
   checkControlFlow(stmt, "on statement");
-
-  /* GPU Case */
-  if (CallExpr* call = toCallExpr(expr)) {
-    if (call->isPrimitive(PRIM_ON_GPU)) {
-      BlockStmt* block = buildChapelStmt();
-      BlockStmt* onBlock = new BlockStmt(stmt);
-      //Expr *arg1 = call->get(1)->remove(); 
-      //Expr *arg2 = call->get(1)->remove(); 
-      //onBlock->blockInfo = new CallExpr(PRIM_ON_GPU, arg1, arg2);
-      onBlock->blockInfo = call;
-      block->insertAtTail(onBlock);
-      return block;
-    }
-  }
 
   CallExpr* onExpr = new CallExpr(PRIM_DEREF, extractLocaleID(expr));
 

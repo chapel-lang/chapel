@@ -5,6 +5,7 @@
 #include <stdlib.h> /* for getenv() and strtoul() */
 #include <stdio.h>  /* for fprintf() */
 #include <string.h>
+#include <strings.h> /* for strcasecmp() */
 
 #include "qt_visibility.h"
 #include "qt_envariables.h"
@@ -106,6 +107,37 @@ unsigned long INTERNAL qt_internal_get_env_num(const char   *envariable,
         } else {
             qthread_debug(CORE_DETAILS, "envariable %s parsed as %u\n", envariable, tmp);
         }
+    }
+    return tmp;
+}
+
+unsigned char INTERNAL qt_internal_get_env_bool(const char   *envariable,
+                                                unsigned char dflt)
+{
+    const char   *str;
+    unsigned char tmp = dflt;
+    const char   *dflt_str;
+
+    if (dflt) {
+        dflt_str = "yes";
+    } else {
+        dflt_str = "no";
+    }
+    str = qt_internal_get_env_str(envariable, dflt_str);
+    if (str && *str) {
+        char *errptr;
+        tmp = (strtoul(str, &errptr, 0) != 0);
+        if (*errptr != 0) {
+            if (!strcasecmp(str, "yes") || !strcasecmp(str, "true")) {
+                tmp = 1;
+            } else if (!strcasecmp(str, "no") || !strcasecmp(str, "false")) {
+                tmp = 0;
+            } else {
+                fprintf(stderr, "unparsable %s (%s)\n", envariable, str);
+                tmp = dflt;
+            }
+        }
+        qthread_debug(CORE_DETAILS, "envariable %s parsed as %s\n", envariable, tmp?"TRUE":"FALSE");
     }
     return tmp;
 }

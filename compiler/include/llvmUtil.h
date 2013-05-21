@@ -6,12 +6,30 @@
 #include <utility>
 
 #include "llvm/Config/llvm-config.h"
-#include "llvm/Module.h"
 
 #if LLVM_VERSION_MAJOR > 3 || (LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR > 1 )
+#if LLVM_VERSION_MAJOR > 3 || (LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR > 2 )
+#define HAVE_LLVM_VER 33
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Value.h"
+#include "llvm/IR/Intrinsics.h"
+#include "llvm/IR/Attributes.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/DataLayout.h"
+#define LLVM_TARGET_DATA llvm::DataLayout
+#define LLVM_ATTRIBUTE llvm::Attribute
+static inline bool llvm_fn_param_has_attr(llvm::Function* f, unsigned idx, llvm::Attribute::AttrKind v)
+{
+  return f->getAttributes().hasAttribute(idx, v);
+}
+#else
 #define HAVE_LLVM_VER 32
+#include "llvm/Module.h"
+#include "llvm/Value.h"
 #include "llvm/IRBuilder.h"
 #include "llvm/DataLayout.h"
+#include "llvm/Intrinsics.h"
+#include "llvm/Attributes.h"
 #define LLVM_TARGET_DATA llvm::DataLayout
 #define LLVM_ATTRIBUTE llvm::Attributes
 static inline bool llvm_fn_param_has_attr(llvm::Function* f, unsigned idx, llvm::Attributes::AttrVal v)
@@ -19,10 +37,16 @@ static inline bool llvm_fn_param_has_attr(llvm::Function* f, unsigned idx, llvm:
   //return f->getAttributes().getParamAttributes(idx).hasAttribute(v);
   return f->getParamAttributes(idx).hasAttribute(v);
 }
+#endif
+
 #else
 #define HAVE_LLVM_VER 31
+#include "llvm/Module.h"
+#include "llvm/Value.h"
 #include "llvm/Support/IRBuilder.h"
 #include "llvm/Target/TargetData.h"
+#include "llvm/Intrinsics.h"
+#include "llvm/Attributes.h"
 #define LLVM_TARGET_DATA llvm::TargetData
 #define LLVM_ATTRIBUTE llvm::Attribute
 static inline bool llvm_fn_param_has_attr(llvm::Function* f, unsigned idx, llvm::AttrConst v)
@@ -31,8 +55,6 @@ static inline bool llvm_fn_param_has_attr(llvm::Function* f, unsigned idx, llvm:
 }
 
 #endif
-#include "llvm/Intrinsics.h"
-#include "llvm/Attributes.h"
 
 struct PromotedPair {
   llvm::Value* a;

@@ -2,6 +2,7 @@
 
 #include "chplmemtrack.h"
 #include "chpl-mem.h"
+#include "chpl-mem-desc.h"
 #include "chpl-tasks.h"
 #include "chpl-comm.h"
 #include "chplcgfns.h"
@@ -12,10 +13,7 @@
 #include <stdlib.h>
 #include <inttypes.h>
 
-//
-// This is global because it's referenced in chpl-mem.h and thus needs
-// to be available anywhere that is #included.
-//
+
 chpl_bool chpl_memTrack = false;
 
 #undef malloc
@@ -437,8 +435,10 @@ void chpl_printMemTable(int64_t threshold, int32_t lineno, chpl_string filename)
 }
 
 
-void chpl_track_malloc(void* memAlloc, size_t chunk, size_t number, size_t size, chpl_mem_descInt_t description, int32_t lineno, chpl_string filename) {
-  if (chunk > memThreshold) {
+void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
+                       chpl_mem_descInt_t description,
+                       int32_t lineno, chpl_string filename) {
+  if (number * size > memThreshold) {
     if (chpl_memTrack) {
       chpl_sync_lock(&memTrack_sync);
       addMemTableEntry(memAlloc, number, size, description, lineno, filename);
@@ -468,7 +468,9 @@ void chpl_track_free(void* memAlloc, int32_t lineno, chpl_string filename) {
 }
 
 
-void chpl_track_realloc1(void* memAlloc, size_t number, size_t size, chpl_mem_descInt_t description, int32_t lineno, chpl_string filename) {
+void chpl_track_realloc1(void* memAlloc, size_t number, size_t size,
+                         chpl_mem_descInt_t description,
+                         int32_t lineno, chpl_string filename) {
   memTableEntry* memEntry = NULL;
 
   if (chpl_memTrack && number*size > memThreshold) {
@@ -483,8 +485,11 @@ void chpl_track_realloc1(void* memAlloc, size_t number, size_t size, chpl_mem_de
 }
 
 
-void chpl_track_realloc2(void* moreMemAlloc, size_t newChunk, void* memAlloc, size_t number, size_t size, chpl_mem_descInt_t description, int32_t lineno, chpl_string filename) {
-  if (newChunk > memThreshold) {
+void chpl_track_realloc2(void* moreMemAlloc,
+                         void* memAlloc, size_t number, size_t size,
+                         chpl_mem_descInt_t description,
+                         int32_t lineno, chpl_string filename) {
+  if (number * size > memThreshold) {
     if (chpl_memTrack) {
       chpl_sync_lock(&memTrack_sync);
       addMemTableEntry(moreMemAlloc, number, size, description, lineno, filename);

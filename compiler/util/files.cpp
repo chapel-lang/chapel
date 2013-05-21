@@ -432,15 +432,22 @@ void genIncludeCommandLineHeaders(FILE* outfile) {
 }
 
 
-void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
+void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_compile_link) {
   fileinfo makefile;
   openCFile(&makefile, "Makefile");
   const char* tmpDirName = intDirName;
   const char* strippedExeFilename = stripdirectories(executableFilename);
   const char* exeExt = "";
+  const char* tmpbin = "";
 
   fprintf(makefile.fptr, "CHPL_MAKE_HOME = %s\n\n", CHPL_HOME);
   fprintf(makefile.fptr, "TMPDIRNAME = %s\n", tmpDirName);
+
+  // LLVM builds just use the makefile for the launcher and
+  // so want to skip the actual program generation.
+  if( skip_compile_link ) {
+    fprintf(makefile.fptr, "SKIP_COMPILE_LINK = skip\n");
+  }
 
   if (fLibraryCompile) {
     if (fLinkStyle==LS_DYNAMIC) exeExt = ".so";
@@ -449,8 +456,9 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
   fprintf(makefile.fptr, "BINNAME = %s%s\n\n", executableFilename, exeExt);
   // BLC: This munging is done so that cp won't complain if the source
   // and destination are the same file (e.g., a.out and ./a.out)
-  fprintf(makefile.fptr, "TMPBINNAME = $(TMPDIRNAME)/%s.tmp%s\n", 
-          strippedExeFilename, exeExt);  
+  tmpbin = astr(tmpDirName, "/", strippedExeFilename, ".tmp", exeExt);
+  if( tmpbinname ) *tmpbinname = tmpbin;
+  fprintf(makefile.fptr, "TMPBINNAME = %s\n", tmpbin);
   // BLC: We generate a TMPBINNAME which is the name that will be used
   // by the C compiler in creating the executable, and is in the
   // --savec directory (a /tmp directory by default).  We then copy it
@@ -510,10 +518,6 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
 
   fprintf(makefile.fptr, "CHPLSRC = \\\n");
   fprintf(makefile.fptr, "\t%s \\\n\n", mainfile->pathname);
-  if (fGPU) {
-    fprintf(makefile.fptr, "CHPL_GPU_SRC = \\\n");
-    fprintf(makefile.fptr, "\t%s \\\n\n", gpusrcfile->pathname);
-  }
   genCFiles(makefile.fptr);
   genObjFiles(makefile.fptr);
   fprintf(makefile.fptr, "\nLIBS =");

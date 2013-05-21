@@ -1,6 +1,7 @@
 // ChapelStandard.chpl
 //
 pragma "no use ChapelStandard"
+pragma "export init"
 module ChapelStandard {
   // Internal modules.
   use ChapelBase;

@@ -873,7 +873,7 @@ sub numfailures {
 sub numfutures {
   $mystr = $_[0];
   $mystr =~ s/.* #Futures = //;
-  $mystr =~ s/]//;
+  $mystr =~ s/ \|.*//;
   $mystr;
 }
 

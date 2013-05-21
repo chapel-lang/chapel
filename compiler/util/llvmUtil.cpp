@@ -194,6 +194,10 @@ llvm::Value *convertValueToType(
 
   //Pointers
   if(newType->isPointerTy() && curType->isPointerTy()) {
+    if( newType->getPointerAddressSpace() !=
+        curType->getPointerAddressSpace() ) {
+      assert( 0 && "Can't convert pointer to different address space");
+    }
     return info->builder->CreatePointerCast(value, newType);
   }
 

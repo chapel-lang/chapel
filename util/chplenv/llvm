@@ -20,7 +20,7 @@ if ($preset_llvm eq "") {
   } else {
     $subdir = $home . "/third-party/llvm/install/" .
               $hostplatform . "-" . $hostcompiler;
-    if ( -d $subdir && -f "$subdir/include/llvm/Type.h" ) {
+    if ( -d $subdir && -f "$subdir/include/llvm/PassSupport.h" ) {
       $llvm = 'llvm';
     } else {
       $llvm = 'none';

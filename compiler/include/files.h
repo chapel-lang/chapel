@@ -21,7 +21,7 @@ struct fileinfo {
   const char* pathname;
 };
 
-void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile = NULL);
+void codegen_makefile(fileinfo* mainfile, const char** tmpbinname=NULL, bool skip_compile_link=false);
 
 void ensureDirExists(const char* /* dirname */, const char* /* explanation */);
 void deleteTmpDir(void);

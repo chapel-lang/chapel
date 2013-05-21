@@ -114,8 +114,10 @@ $ source util/setchplenv.bash # for bash users
 # compile your program
 $ chpl -o hello hello.chpl
 
-# Number of worker threads and stack size can be controlled from arguments
-$ ./hello --numThreadsPerLocale=4 --callStackSize=32768
+# Number of worker threads and stack size can be controlled from environment
+$ export CHPL_RT_NUM_THREADS_PER_LOCALE=4
+$ export CHPL_RT_CALL_STACK_SIZE=32768
+$ ./hello
 
 [4] Contact
 

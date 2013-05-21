@@ -632,6 +632,7 @@ module ChapelBase {
     // some otherwise useless code to do that.
     // This code could be removed if we had some other way
     // making sure the reference type is created.
+    pragma "no codegen"
     proc setbyref(inout zz:t) { }
     var unused:t;
     setbyref(unused);

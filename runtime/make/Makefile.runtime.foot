@@ -43,11 +43,6 @@ $(RUNTIME_OBJ_DIR)/%.o: %.c $(RUNTIME_OBJ_DIR_STAMP)
 	@if [ `grep "chplrt.h" $< | wc -l` -ne 1 ]; then echo "PROBLEM:  $< does not include 'chplrt.h'."; exit 1; fi
 	$(CC) -c $(RUNTIME_CFLAGS) $($(subst -,_,$(<:.c=))_CFLAGS) $(RUNTIME_INCLS) -o $@ $<
 
-ifdef NVCC
-$(RUNTIME_OBJ_DIR)/%.o: %.cu $(RUNTIME_OBJ_DIR_STAMP)
-	$(NVCC) -c $(RUNTIME_CUDA_CFLAGS) $(RUNTIME_INCLS) -o $@ $<
-endif	
-
 $(LAUNCHER_OBJ_DIR)/%.o: %.c $(LAUNCHER_OBJ_DIR_STAMP)
 	$(CC) -c $(LAUNCHER_CFLAGS) $(LAUNCHER_INCLS) -o $@ $<
 

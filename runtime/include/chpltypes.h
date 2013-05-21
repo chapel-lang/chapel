@@ -105,16 +105,9 @@ typedef void* chpl_opaque;
 #define UINT64( i) (i ## ULL)
 
 
-// Cuda does not support c99 bools
-#ifndef ENABLE_GPU
-
-// ... and neither does C++
+// C++ does not support c99 bools
 #ifndef __cplusplus
 typedef _Bool chpl_bool;
-#else
-typedef bool chpl_bool;
-#endif
-
 #else
 typedef bool chpl_bool;
 #endif
