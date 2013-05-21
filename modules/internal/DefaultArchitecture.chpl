@@ -164,6 +164,15 @@ module DefaultArchitecture {
         if __primitive("_wide_get_node", loc) != locIdx then
           halt("In this architecture, we expect the locale whose index is x to live on node x.");
       }
+
+      // Programs traditionally expect the startup process to run on Locales[0], so
+      // this is how we mimic that behavior.
+      // Note that this means we have to ask for here.parent or rootLocale to get 
+      // the root locale of the default architecture.
+      var loc = myLocales[0];
+      __primitive("_task_set_here", loc);
+      var locID : chpl_localeID_t; // Init'd to {0,0}.
+      __primitive("_task_set_locale", locID);
     }
 
     // Has to be globally unique and not equal to a node ID.
@@ -198,12 +207,9 @@ module DefaultArchitecture {
 
     proc localeIDtoLocale(id : chpl_localeID_t) {
       // In the default architecture, there are only nodes and no sublocales.
-      // What is more, the nodeID portion of a wide pointer is the same as the index into
-      // myLocales that yields the locale representing that node.
-      if id.node == __primitive("chpl_nodeID") then
-        return here;
-      else
-        return myLocales[id.node];
+      // What is more, the nodeID portion of a wide pointer is the same as
+      // the index into myLocales that yields the locale representing that node.
+      return myLocales[id.node];
     }
   }
   
