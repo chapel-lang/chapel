@@ -1026,7 +1026,7 @@ module DefaultRectangular {
       if debugBulkTransfer {
         writeln("Case 3");
         writeln("stridelevel: ", stridelevels);
-        writeln("Count: ",count);
+        writeln("Count: ",countAux);
         writeln("dststrides: ",dststrides);
         writeln("srcstrides: ",srcstrides);
       }
@@ -1038,7 +1038,7 @@ module DefaultRectangular {
                       srclocale,
                       __primitive("array_get",src, B.getDataIndex(Blo)),
                       __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
-                      __primitive("array_get",cnt, count._value.getDataIndex(1)),
+                      __primitive("array_get",cnt, countAux._value.getDataIndex(1)),
                       stridelevels);   
     }
   }
