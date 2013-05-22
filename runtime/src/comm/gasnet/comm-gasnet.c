@@ -401,7 +401,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
     // of the global variable locations; everyone else will just peek at its copy.  So
     // locale 0 sets up its segment to an appropriate size:
     //
-    int global_table_size = chpl_numGlobalsOnHeap * sizeof(void*) + GASNETT_PAGESIZE;
+    int global_table_size = chpl_numGlobalsOnHeap * sizeof(wide_ptr_t) + GASNETT_PAGESIZE;
     void* global_table = malloc(global_table_size);
     seginfo_table[0].addr = ((void *)(((uint8_t*)global_table) + 
                                       (((((uintptr_t)global_table)%GASNETT_PAGESIZE) == 0)? 0 : 
@@ -477,10 +477,10 @@ void chpl_comm_rollcall(void) {
 
 void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p) {
 #if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
-  *start_p = chpl_numGlobalsOnHeap * sizeof(void*) 
+  *start_p = chpl_numGlobalsOnHeap * sizeof(wide_ptr_t) 
              + (char*)seginfo_table[chpl_nodeID].addr;
   *size_p  = seginfo_table[chpl_nodeID].size
-             - chpl_numGlobalsOnHeap * sizeof(void*);
+             - chpl_numGlobalsOnHeap * sizeof(wide_ptr_t);
 #else /* GASNET_SEGMENT_EVERYTHING */
   *start_p = NULL;
   *size_p  = 0;
@@ -496,8 +496,8 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
   if (chpl_nodeID != 0) {
     for (i = 0; i < numGlobals; i++) {
       chpl_comm_get(chpl_globals_registry[i], 0,
-                    &((void**)seginfo_table[0].addr)[i],
-                    sizeof(void*), -1 /*typeIndex: unused*/, 1, 0, "");
+                    &((wide_ptr_t*)seginfo_table[0].addr)[i],
+                    sizeof(wide_ptr_t), -1 /*typeIndex: unused*/, 1, 0, "");
     }
   }
 }
@@ -1041,8 +1041,8 @@ uint64_t chpl_numCommNBForks(void) {
 }
 
 
-void chpl_comm_gasnet_help_register_global_var(int i, void* addr) {
+void chpl_comm_gasnet_help_register_global_var(int i, wide_ptr_t wide_addr) {
   if (chpl_nodeID == 0) {
-    ((void**)seginfo_table[0].addr)[i] = addr;
+    ((wide_ptr_t*)seginfo_table[0].addr)[i] = wide_addr;
   }
 }

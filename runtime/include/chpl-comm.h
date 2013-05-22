@@ -41,8 +41,15 @@ extern void* chpl_getPrivatizedClass(int32_t);
 extern void chpl__heapAllocateGlobals(void);
 
 extern const int chpl_numGlobalsOnHeap;
-extern void** chpl_globals_registry;
-extern void* chpl_globals_registry_static[];
+
+// chpl_globals_registry may just be a pointer to chpl_globals_registry_static.
+// Both are arrays of size chpl_numGlobalsOnHeap storing ptr_wide_ptr_t,
+// that is, pointers to wide pointers. All registered globals are wide pointers.
+// Locales other than 0 need to set their registered globals to the wide
+// pointers received from Locale 0, which is why these have type
+// ptr_wide_ptr_t.
+extern ptr_wide_ptr_t* chpl_globals_registry;
+extern ptr_wide_ptr_t chpl_globals_registry_static[];
 
 extern void* const chpl_private_broadcast_table[];
 

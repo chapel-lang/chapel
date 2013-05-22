@@ -1024,6 +1024,14 @@ bool passingWideStringToExtern(Type* t) {
   return false;
 }
 
+bool isWideString(Type* t) {
+  if (fLocal) return false; // no wide string type will exist if fLocal
+  INT_ASSERT(wideStringType); // should only be called after it exists!
+  if (t == NULL) return false;
+  if( t == wideStringType ) return true;
+  return false;
+}
+
 //
 // The argument expr is a use of a wide reference. Insert a check to ensure
 // that it is on the current locale, then drop its wideness by moving the

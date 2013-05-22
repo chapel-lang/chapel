@@ -49,7 +49,10 @@ const char* CHPL_GASNET_SEGMENT = NULL;
 const char* CHPL_ATOMICS = NULL;
 const char* CHPL_NETWORK_ATOMICS = NULL;
 const char* CHPL_GMP = NULL;
+const char* CHPL_WIDE_POINTERS = NULL;
 const char* CHPL_MAKE = NULL;
+
+bool widePointersStruct;
 
 int fdump_html = 0;
 bool fdump_html_incude_system_modules = true;
@@ -320,6 +323,7 @@ static void setupOrderedGlobals(const char* argv0) {
   SETUP_ENV_VAR(CHPL_ATOMICS, "chplenv/atomics");
   SETUP_ENV_VAR(CHPL_NETWORK_ATOMICS, "chplenv/atomics --network");
   SETUP_ENV_VAR(CHPL_GMP, "chplenv/gmp");
+  SETUP_ENV_VAR(CHPL_WIDE_POINTERS, "chplenv/widePointers");
   SETUP_ENV_VAR(CHPL_MAKE, "chplenv/chplmake");
 
   // These depend on the environment variables being set
@@ -330,6 +334,12 @@ static void setupOrderedGlobals(const char* argv0) {
              || !strcmp(CHPL_TARGET_COMPILER, "cray-prgenv-pgi");
   // conservatively how much is needed for the current PGI compiler
   if (gotPGI) fMaxCIdentLen = 1020;
+  
+  if( 0 == strcmp(CHPL_WIDE_POINTERS, "struct") ) {
+    widePointersStruct = true;
+  } else {
+    widePointersStruct = false;
+  }
 }
 
 
