@@ -1,6 +1,9 @@
 #!/bin/tcsh
-#
+echo Starting $0 on `hostname`.; module list; printenv; echo
 
 # run cyclic dist regressions
-source ~/.chplcron.dists.cshrc && ~/chapel/util/cron/nightly -cron -dist cyclic >&! ~/tmp/nightly.cyclic.out
+set LOGFILE = $HOME/tmp/nightly.cyclic.out
+echo "Testing cyclic distribution on `date`.  Log file: $LOGFILE"
+source ~/.chplcron.dists.cshrc && ~/chapel/util/cron/nightly -cron -dist cyclic >&! $LOGFILE
 
+echo Finished $0 on `date`.
