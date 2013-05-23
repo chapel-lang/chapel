@@ -12,10 +12,22 @@ endif
 #
 # determine what platform we're running on
 #
+ifndef CHPL_MAKE_HOST_PLATFORM
 include $(CHPL_MAKE_HOME)/make/Makefile.platform
+endif
 
-ifndef CHPL_MAKE_COMPILER
+ifndef CHPL_MAKE_HOST_COMPILER
 include $(CHPL_MAKE_HOME)/make/Makefile.compiler
+endif
+
+# Set compiler and platform variables that depend
+# on CHPL_MAKE_HOST_TARGET to the HOST or TARGET versions.
+ifeq ($(strip $(CHPL_MAKE_HOST_TARGET)),--target)
+CHPL_MAKE_COMPILER = $(CHPL_MAKE_TARGET_COMPILER)
+CHPL_MAKE_PLATFORM = $(CHPL_MAKE_TARGET_PLATFORM)
+else
+CHPL_MAKE_COMPILER = $(CHPL_MAKE_HOST_COMPILER)
+CHPL_MAKE_PLATFORM = $(CHPL_MAKE_HOST_PLATFORM)
 endif
 
 ifndef CHPL_MAKE_TASKS
