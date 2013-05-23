@@ -1,3 +1,1 @@
-bug: channel is not flushed when file is closed
-
-Data that was written to the channel is missing after the file is closed.
+feature request: when closing a file, close its channels first
