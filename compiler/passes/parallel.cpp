@@ -140,11 +140,11 @@ static void create_block_fn_wrapper(CallExpr* fcall, ClassType* ctype, VarSymbol
   if (fn->hasFlag(FLAG_ON)) {
     // The wrapper function for 'on' block has an additional argument,
     // which is how we pass the destination node ID to the forking function.
-    ArgSymbol* locale = new ArgSymbol(INTENT_BLANK, "_locale_arg", dtLocaleID);
+    ArgSymbol* locale = new ArgSymbol(INTENT_CONST_IN, "_locale_arg", dtLocaleID);
     wrap_fn->insertFormalAtTail(locale);
   }
 
-  ArgSymbol *wrap_c = new ArgSymbol( INTENT_BLANK, "c", ctype);
+  ArgSymbol *wrap_c = new ArgSymbol( INTENT_CONST_REF, "c", ctype);
   wrap_fn->insertFormalAtTail( wrap_c);
 
   mod->block->insertAtTail(new DefExpr(wrap_fn));
@@ -195,7 +195,7 @@ insertEndCount(FnSymbol* fn,
     endCountMap.put(fn, var);
     queue.add(fn);
   } else {
-    ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_endCount", endCountType);
+    ArgSymbol* arg = new ArgSymbol(INTENT_CONST_REF, "_endCount", endCountType);
     fn->insertFormalAtTail(arg);
     VarSymbol* var = newTemp("_endCount", endCountType);
     fn->insertAtHead(new CallExpr(PRIM_MOVE, var, arg));
@@ -797,7 +797,7 @@ parallel(void) {
         if (block->blockInfo->isPrimitive(PRIM_BLOCK_ON_NB))
           fn->addFlag(FLAG_NON_BLOCKING);
         // This is now a real locale arg.
-        ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_locale_arg", dtLocaleID);
+        ArgSymbol* arg = new ArgSymbol(INTENT_CONST_IN, "_locale_arg", dtLocaleID);
         fn->insertFormalAtTail(arg);
         // Special case for the first argument of an on_fn, which carries the destination locale ID.
         // We set the sublocale field in task-private data before executing the body of the task,

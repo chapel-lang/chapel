@@ -93,6 +93,10 @@ void printIntent(std::ofstream *file, IntentTag intent) {
     *file << "out "; break;
   case INTENT_CONST:
     *file << "const "; break;
+  case INTENT_CONST_IN:
+    *file << "const in "; break;
+  case INTENT_CONST_REF:
+    *file << "const ref "; break;
   case INTENT_REF:
     *file << "ref "; break;
   case INTENT_PARAM:

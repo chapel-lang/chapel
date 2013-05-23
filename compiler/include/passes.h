@@ -5,6 +5,7 @@
 
 extern bool normalized;
 extern bool resolved;
+extern bool intentsResolved;
 
 
 //
@@ -45,6 +46,7 @@ void removeWrapRecords();
 void repositionDefExpressions();
 void returnStarTuplesByRefArgs();
 void resolve();
+void resolveIntents();
 void scalarReplace();
 void scopeResolve();
 void verify();

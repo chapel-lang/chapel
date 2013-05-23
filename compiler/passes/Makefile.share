@@ -15,6 +15,7 @@ PASSES_SRCS = \
         normalize.cpp \
         parallel.cpp \
         repositionDefExpressions.cpp \
+        resolveIntents.cpp \
         returnStarTuplesByRefArgs.cpp \
         scopeResolve.cpp \
         semanticChecks.cpp

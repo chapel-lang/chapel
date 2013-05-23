@@ -688,6 +688,14 @@ ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName,
   instantiatedParam(false),
   markedGeneric(false)
 {
+  if (intentsResolved) {
+    if (iIntent == INTENT_BLANK || iIntent == INTENT_CONST) {
+      INT_FATAL(this, "You can't create an argument with blank/const intent once intents have been resolved; please be more specific");
+      // NOTE: One way to be more specific is to use the blankIntentForType()/
+      // constIntentForType() routines to map a (possibly unknown) type to
+      // the intent that blank/const would use for that type.
+    }
+  }
   if (!iTypeExpr)
     typeExpr = NULL;
   else if (BlockStmt* block = toBlockStmt(iTypeExpr))
@@ -728,6 +736,11 @@ void ArgSymbol::verify() {
         (!toDefExpr(defPoint->next)->sym ||
          !toArgSymbol(toDefExpr(defPoint->next)->sym)))
     INT_FATAL(this, "Bad ArgSymbol::defPoint->next");
+  if (intentsResolved) {
+    if (intent == INTENT_BLANK || intent == INTENT_CONST) {
+      INT_FATAL(this, "Arg '%s' (%d) has blank/const intent post-resolve", this->name, this->id);
+    }
+  }
 }
 
 
@@ -772,6 +785,9 @@ bool ArgSymbol::requiresCPtr(void) {
 
 
 bool ArgSymbol::isConstant(void) {
+  if (intent == INTENT_CONST_IN || intent == INTENT_CONST_REF) {
+    return true;
+  }
   return (intent == INTENT_BLANK || intent == INTENT_CONST) &&
     !isReferenceType(type) &&
     !isRecordWrappedType(type) /* array, domain, distribution */;

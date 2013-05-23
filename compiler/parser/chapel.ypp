@@ -628,6 +628,8 @@ opt_intent_tag:
 | TINOUT  { $$ = INTENT_INOUT; }
 | TOUT    { $$ = INTENT_OUT; }
 | TCONST  { $$ = INTENT_CONST; }
+| TCONST TIN { $$ = INTENT_CONST_IN; }
+| TCONST TREF { $$ = INTENT_CONST_REF; }
 | TPARAM  { $$ = INTENT_PARAM; }
 | TREF    { $$ = INTENT_REF; }
 | TTYPE   { $$ = INTENT_TYPE; }

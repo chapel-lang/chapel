@@ -813,7 +813,7 @@ buildForLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool
   //
   FnSymbol* sifn = new FnSymbol(iteratorName);
   sifn->addFlag(FLAG_ITERATOR_FN);
-  ArgSymbol* sifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
+  ArgSymbol* sifnIterator = new ArgSymbol(INTENT_CONST_IN, "iterator", dtAny);
   sifn->insertFormalAtTail(sifnIterator);
   fn->insertAtHead(new DefExpr(sifn));
   Expr* stmt = new CallExpr(PRIM_YIELD, expr);
