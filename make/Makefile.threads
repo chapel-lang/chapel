@@ -3,5 +3,5 @@
 #
 #
 #
-CHPL_MAKE_THREADS      := $(shell $(CHPL_MAKE_HOME)/util/chplenv/threads)
-CHPL_MAKE_THREADS_UBAR := $(subst -,_,$(CHPL_MAKE_THREADS))
+export CHPL_MAKE_THREADS      := $(shell $(CHPL_MAKE_HOME)/util/chplenv/threads)
+export CHPL_MAKE_THREADS_UBAR := $(subst -,_,$(CHPL_MAKE_THREADS))

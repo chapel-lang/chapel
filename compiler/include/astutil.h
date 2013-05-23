@@ -21,16 +21,26 @@ void normalize(BaseAST* base);
 void collectFnCalls(BaseAST* ast, Vec<CallExpr*>& calls);
 
 // collect Stmts and Exprs in the AST and return them in vectors
+// Versions ending in 'STL' use the C++ std::vector class
 void collect_asts(BaseAST* ast, Vec<BaseAST*>& asts);
+void collect_asts_STL(BaseAST* ast, std::vector<BaseAST*>& asts);
 void collect_asts_postorder(BaseAST*, Vec<BaseAST*>& asts);
+void collect_asts_postorder_STL(BaseAST*, std::vector<BaseAST*>& asts);
 void collect_top_asts(BaseAST* ast, Vec<BaseAST*>& asts);
+void collect_top_asts_STL(BaseAST* ast, std::vector<BaseAST*>& asts);
 void collect_stmts(BaseAST* ast, Vec<Expr*>& stmts);
+void collect_stmts_STL(BaseAST* ast, std::vector<Expr*>& stmts);
 void collectDefExprs(BaseAST* ast, Vec<DefExpr*>& defExprs);
+void collectDefExprsSTL(BaseAST* ast, std::vector<DefExpr*>& defExprs);
 void collectCallExprs(BaseAST* ast, Vec<CallExpr*>& callExprs);
+void collectCallExprsSTL(BaseAST* ast, std::vector<CallExpr*>& callExprs);
 void collectMyCallExprs(BaseAST* ast, Vec<CallExpr*>& callExprs, FnSymbol* fn);
 void collectGotoStmts(BaseAST* ast, Vec<GotoStmt*>& gotoStmts);
+void collectGotoStmtsSTL(BaseAST* ast, std::vector<GotoStmt*>& gotoStmts);
 void collectSymExprs(BaseAST* ast, Vec<SymExpr*>& symExprs);
+void collectSymExprsSTL(BaseAST* ast, std::vector<SymExpr*>& symExprs);
 void collectSymbols(BaseAST* ast, Vec<Symbol*>& symbols);
+void collectSymbolsSTL(BaseAST* ast, std::vector<Symbol*>& symbols);
 
 // utility routines for clearing and resetting lineno and filename
 void reset_ast_loc(BaseAST* destNode, astlocT astloc);

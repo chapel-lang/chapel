@@ -2,9 +2,9 @@
 
 #include "chplfp.h"
 #include "chpl-mem.h"
-#include "chpl-mem-desc.h"
 #include "chplcgfns.h"
 #include "chpl-comm.h"
+#include "chpl-comm-compiler-macros.h"
 #include "error.h"
 
 #include <inttypes.h>
@@ -60,9 +60,6 @@ chpl_string chpl_format(chpl_string format, ...) {
 
 
 #ifndef LAUNCHER
-
-#include "chplcgtypes.h"
-
 struct chpl_chpl____wide_chpl_string_s {
   chpl_localeID_t locale;
   chpl_string addr;

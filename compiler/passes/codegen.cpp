@@ -702,19 +702,20 @@ static void codegen_header() {
   genGlobalInt("chpl_numGlobalsOnHeap", numGlobalsOnHeap);
   int globals_registry_static_size = (numGlobalsOnHeap ? numGlobalsOnHeap : 1);
   if( hdrfile ) {
-    fprintf(hdrfile, "\nvoid** chpl_globals_registry;\n");
-    fprintf(hdrfile, "\nvoid* chpl_globals_registry_static[%d];\n",
+    fprintf(hdrfile, "\nptr_wide_ptr_t* chpl_globals_registry;\n");
+    fprintf(hdrfile, "\nptr_wide_ptr_t chpl_globals_registry_static[%d];\n",
                      globals_registry_static_size);
   } else {
 #ifdef HAVE_LLVM
-    llvm::Type* voidstarstar =
-      llvm::PointerType::get(
-          llvm::IntegerType::getInt8PtrTy(info->module->getContext()), 0);
+    llvm::Type* ptr_wide_ptr_t = info->lvt->getType("ptr_wide_ptr_t");
+    INT_ASSERT(ptr_wide_ptr_t);
+
+    llvm::Type* ptr_ptr_wide_ptr_t = llvm::PointerType::get(ptr_wide_ptr_t, 0);
 
     llvm::GlobalVariable *chpl_globals_registryGVar =
       llvm::cast<llvm::GlobalVariable>(
           info->module->getOrInsertGlobal("chpl_globals_registry",
-            voidstarstar));
+            ptr_ptr_wide_ptr_t));
     chpl_globals_registryGVar->setInitializer(
         llvm::Constant::getNullValue(
           chpl_globals_registryGVar->getType()->getContainedType(0)));
@@ -729,7 +730,7 @@ static void codegen_header() {
       llvm::cast<llvm::GlobalVariable>(
           info->module->getOrInsertGlobal("chpl_globals_registry_static",
             llvm::ArrayType::get(
-              llvm::IntegerType::getInt8PtrTy(info->module->getContext()),
+              ptr_wide_ptr_t,
               globals_registry_static_size)));
     chpl_globals_registry_staticGVar->setInitializer(
         llvm::Constant::getNullValue(
@@ -986,6 +987,13 @@ codegen_config() {
 void codegen(void) {
   if (no_codegen)
     return;
+
+  if( widePointersStruct ) {
+    // OK
+  } else {
+    if( ! llvmCodegen )
+      USR_FATAL("C code generation for packed pointers not yet supported");
+  }
 
   if( llvmCodegen ) {
 #ifndef HAVE_LLVM

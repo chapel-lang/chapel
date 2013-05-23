@@ -8,6 +8,7 @@
 #include "symbol.h"
 #include "type.h"
 #include "vec.h"
+#include "passes.h" // for isWideString
 
 #include "intlimits.h"
 
@@ -774,7 +775,25 @@ void ClassType::codegenDef() {
       // if it's a record, we make the new type now.
       // if it's a class, we update the existing type.
       
-      {
+      if( symbol->hasEitherFlag(FLAG_WIDE, FLAG_WIDE_CLASS) &&
+          (! isWideString(this)) &&
+          (! widePointersStruct ) ) {
+        // Reach this branch when generating a wide/wide class as a
+        // global pointer!
+        unsigned globalAddressSpace = 0;
+        Type* baseType = this->getField("addr")->type;
+        llvm::Type* llBaseType = baseType->symbol->codegen().type;
+        INT_ASSERT(llBaseType);
+        llvm::Type *globalPtrTy = NULL;
+
+        // Remove one level of indirection since the addr field
+        // of a wide pointer is always a local address.
+        llBaseType = llBaseType->getPointerElementType();
+        INT_ASSERT(llBaseType);
+
+        globalPtrTy = llvm::PointerType::get(llBaseType, globalAddressSpace);
+        type = globalPtrTy; // set to use alternative address space ptr
+      } else {
         // Normal (wide or struct) code path.
         //
         // need to define _cname (for CLASS_CLASS) or cname

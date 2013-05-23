@@ -56,6 +56,11 @@ module ChapelBase {
   if (CHPL_GMP == "unset") {
     compilerWarning("CHPL_GMP not set");
   }
+ 
+  config param CHPL_WIDE_POINTERS: string = "unset";
+  if (CHPL_WIDE_POINTERS == "unset") {
+    compilerWarning("CHPL_WIDE_POINTERS not set");
+  }
   
   config param CHPL_MAKE: string = "unset";
   if (CHPL_MAKE == "unset") {

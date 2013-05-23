@@ -3,4 +3,4 @@
 #
 #
 #
-CHPL_MAKE_REGEXP = $(shell $(CHPL_MAKE_HOME)/util/chplenv/regexp $(CHPL_MAKE_HOST_TARGET))
+export CHPL_MAKE_REGEXP = $(shell $(CHPL_MAKE_HOME)/util/chplenv/regexp $(CHPL_MAKE_HOST_TARGET))

@@ -24,10 +24,25 @@ void collect_stmts(BaseAST* ast, Vec<Expr*>& stmts) {
   }
 }
 
+void collect_stmts_STL(BaseAST* ast, std::vector<Expr*>& stmts) {
+  if (Expr* expr = toExpr(ast)) {
+    stmts.push_back(expr);
+    if (isBlockStmt(expr) || isCondStmt(expr)) {
+      AST_CHILDREN_CALL(ast, collect_stmts_STL, stmts);
+    }
+  }
+}
+
 void collectDefExprs(BaseAST* ast, Vec<DefExpr*>& defExprs) {
   AST_CHILDREN_CALL(ast, collectDefExprs, defExprs);
   if (DefExpr* defExpr = toDefExpr(ast))
     defExprs.add(defExpr);
+}
+
+void collectDefExprsSTL(BaseAST* ast, std::vector<DefExpr*>& defExprs) {
+  AST_CHILDREN_CALL(ast, collectDefExprsSTL, defExprs);
+  if (DefExpr* defExpr = toDefExpr(ast))
+    defExprs.push_back(defExpr);
 }
 
 void collectCallExprs(BaseAST* ast, Vec<CallExpr*>& callExprs) {
@@ -50,10 +65,22 @@ void collectGotoStmts(BaseAST* ast, Vec<GotoStmt*>& gotoStmts) {
     gotoStmts.add(gotoStmt);
 }
 
+void collectGotoStmtsSTL(BaseAST* ast, std::vector<GotoStmt*>& gotoStmts) {
+  AST_CHILDREN_CALL(ast, collectGotoStmtsSTL, gotoStmts);
+  if (GotoStmt* gotoStmt = toGotoStmt(ast))
+    gotoStmts.push_back(gotoStmt);
+}
+
 void collectSymExprs(BaseAST* ast, Vec<SymExpr*>& symExprs) {
   AST_CHILDREN_CALL(ast, collectSymExprs, symExprs);
   if (SymExpr* symExpr = toSymExpr(ast))
     symExprs.add(symExpr);
+}
+
+void collectSymExprsSTL(BaseAST* ast, std::vector<SymExpr*>& symExprs) {
+  AST_CHILDREN_CALL(ast, collectSymExprsSTL, symExprs);
+  if (SymExpr* symExpr = toSymExpr(ast))
+    symExprs.push_back(symExpr);
 }
 
 void collectSymbols(BaseAST* ast, Vec<Symbol*>& symbols) {
@@ -62,14 +89,30 @@ void collectSymbols(BaseAST* ast, Vec<Symbol*>& symbols) {
     symbols.add(symbol);
 }
 
+void collectSymbolsSTL(BaseAST* ast, std::vector<Symbol*>& symbols) {
+  AST_CHILDREN_CALL(ast, collectSymbolsSTL, symbols);
+  if (Symbol* symbol = toSymbol(ast))
+    symbols.push_back(symbol);
+}
+
 void collect_asts(BaseAST* ast, Vec<BaseAST*>& asts) {
   asts.add(ast);
   AST_CHILDREN_CALL(ast, collect_asts, asts);
 }
 
+void collect_asts_STL(BaseAST* ast, std::vector<BaseAST*>& asts) {
+  asts.push_back(ast);
+  AST_CHILDREN_CALL(ast, collect_asts_STL, asts);
+}
+
 void collect_asts_postorder(BaseAST* ast, Vec<BaseAST*>& asts) {
   AST_CHILDREN_CALL(ast, collect_asts_postorder, asts);
   asts.add(ast);
+}
+
+void collect_asts_postorder_STL(BaseAST* ast, std::vector<BaseAST*>& asts) {
+  AST_CHILDREN_CALL(ast, collect_asts_postorder_STL, asts);
+  asts.push_back(ast);
 }
 
 static void collect_top_asts_internal(BaseAST* ast, Vec<BaseAST*>& asts) {
@@ -82,6 +125,25 @@ static void collect_top_asts_internal(BaseAST* ast, Vec<BaseAST*>& asts) {
 void collect_top_asts(BaseAST* ast, Vec<BaseAST*>& asts) {
   AST_CHILDREN_CALL(ast, collect_top_asts_internal, asts);
   asts.add(ast);
+}
+              
+static void collect_top_asts_internal_STL(BaseAST* ast, std::vector<BaseAST*>& asts) {
+  if (!isSymbol(ast) || isArgSymbol(ast)) {
+    AST_CHILDREN_CALL(ast, collect_top_asts_internal_STL, asts);
+    asts.push_back(ast);
+  }
+}
+
+//
+// Collect only top-level AST nodes, i.e., expressions but not
+// symbols, but also includes arg symbols and types (not sure why).
+// In fact, current uses of this function seem like they could be
+// replaced by more specific traversals implemented in this file.
+// Something to check out another day.
+//
+void collect_top_asts_STL(BaseAST* ast, std::vector<BaseAST*>& asts) {
+  AST_CHILDREN_CALL(ast, collect_top_asts_internal_STL, asts);
+  asts.push_back(ast);
 }
               
 void reset_ast_loc(BaseAST* destNode, BaseAST* sourceNode) {

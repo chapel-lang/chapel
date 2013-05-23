@@ -13,18 +13,19 @@ module ChapelLocale {
   // This module now controls the allocation of bits within a chpl_localeID_t.
 
 
-  record chpl_localeID_t {
+  extern record chpl_localeID_t {
     var node : chpl_nodeID_t;
     var subloc : chpl_sublocID_t;
   };
+  extern proc chpl_localeID_get_node(loc:chpl_localeID_t):int(64);
+  extern proc chpl_localeID_get_subloc(loc:chpl_localeID_t):int(64);
+  extern proc chpl_localeID_equals(loc:chpl_localeID_t):int(64);
 
-  proc ==(a:chpl_localeID_t, b:chpl_localeID_t) {
-    extern proc chpl_gen_localeID_to_int(loc : chpl_localeID_t) : int(64);
-    return chpl_gen_localeID_to_int(a) == chpl_gen_localeID_to_int(b);
-  }
+  proc ==(a:chpl_localeID_t, b:chpl_localeID_t)
+    return chpl_localeID_equals(a,b) != 0;
 
   proc !=(a:chpl_localeID_t, b:chpl_localeID_t)
-    return ! (a == b);
+    return chpl_localeID_equals(a,b) == 0;
 
 
   //

@@ -8,56 +8,56 @@ language:
 
 Contributors to the current release
 -----------------------------------
-Rafael Asenjo
-Brad Chamberlain
-Sung-Eun Choi
-Martha Dumler
-Michael Ferguson
-Tom Hildebrandt
-David Iten
-Jessica Jueckstock
-John Koenig
-Vassily Litvinov
-Alberto Sanz
-Greg Titus
+Rafael Asenjo, University of Malaga
+Brad Chamberlain, Cray Inc.
+Sung-Eun Choi, Cray Inc.
+Martha Dumler, Cray Inc.
+Michael Ferguson, LTS
+Tom Hildebrandt, Cray Inc.
+David Iten, Cray Inc.
+Jessica Jueckstock, MITRE
+John Koenig, Cray Inc.
+Vassily Litvinov, Cray Inc.
+Alberto Sanz, University of Malaga
+Greg Titus, Cray Inc.
 
 Contributors to previous releases
 ---------------------------------
-Matthew Baker
-Steve Balensiefer
-Robert Bocchino
-Dan Bonachea
-David Callahan
-Lydia Davis
-Steve Deitz
-Joel Denny
-Roxana Diaconescu
-James Dinan
-Samuel Figueroa
-Roald Frederickx
-Paul Hargrove
-Hannah Hemmaplardh
-Steven Hemmy
-Shannon Hoffswell
-Mary Beth Hribar
-Mark James
-Mackale Joyner
-Matthew Lentz
-Juan Lopez
-Jun Nakashima
-Maria Angeles Navarro
-Jacob Nelson
-John Plevyak
-Lee Prokowich
-Albert Sidelnik
-Rachel Sobel
-Srinivas Sridharan
-Andy Stone
+Matthew Baker, ORNL
+Steve Balensiefer, University of Washington
+Robert Bocchino, Cray Inc./University of Illinois, Urbana-Champaign
+Dan Bonachea, UC Berkeley
+David Callahan, Cray Inc.
+Lydia Davis, Cray Inc./University of Washington
+Steve Deitz, Cray Inc.
+Joel Denny, ETI
+Roxana Diaconescu, CalTech
+James Dinan, Cray Inc./The Ohio State University
+Samuel Figueroa, Cray Inc.
+Roald Frederickx, personal
+Paul Hargrove, Lawrence Berkeley National Laboratory
+Hannah Hemmaplardh, Cray Inc./University of Washington
+Steven Hemmy, Cray Inc.
+Shannon Hoffswell, Cray Inc.
+Mary Beth Hribar, Cray Inc.
+Mark James, JPL
+Mackale Joyner, Cray Inc./Rice University
+Matthew Lentz, University of Maryland
+Juan Lopez, University of Malaga
+Jun Nakashima, University of Tokyo
+Maria Angeles Navarro, University of Malaga
+Jacob Nelson, Cray Inc./University of Washington
+John Plevyak, Cray Inc.
+Lee Prokowich, Cray Inc.
+Albert Sidelnik, Cray Inc./University of Illinois, Urbana-Champaign
+Rachel Sobel, Cray Inc./University of Washington
+Srinivas Sridharan, University of Notre Dame/ORNL
+Andy Stone, Cray Inc./University of Colorado
 Chris Swenson
-Jonathan Turner
-Wayne Wong
-Joe Yan
-Hans Zima
+Jonathan Turner, Cray Inc./CU Boulder
+Wayne Wong, Cray Inc.
+Joe Yan, University of Maryland
+Hans Zima, CalTech/JPL
 
 
 We are grateful to our many enthusiastic and vocal users for helping

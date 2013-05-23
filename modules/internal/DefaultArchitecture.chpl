@@ -136,8 +136,10 @@ module DefaultArchitecture {
       // access 'Locales' and 'here', which are not yet initialized.
       for locIdx in myLocaleSpace 
       {
-        var locID : chpl_localeID_t;
-        locID.node = locIdx : chpl_nodeID_t;
+        // A bootstrap routine that returns (chpl_localeID_t){.node = <arg>, .subloc = 0}.
+        extern proc chpl_return_localeID_node(node:int(32)) : chpl_localeID_t;
+
+        var locID = chpl_return_localeID_node(locIdx:int(32));
         on __primitive("chpl_on_locale_num", locID)
         {
           // chpl_on_locale_num sets the localeID portion of "here", but 

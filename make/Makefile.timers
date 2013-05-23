@@ -3,5 +3,5 @@
 #
 #
 #
-CHPL_MAKE_TIMERS      := $(shell $(CHPL_MAKE_HOME)/util/chplenv/timers)
-CHPL_MAKE_TIMERS_UBAR := $(subst -,_,$(CHPL_MAKE_TIMERS))
+export CHPL_MAKE_TIMERS      := $(shell $(CHPL_MAKE_HOME)/util/chplenv/timers)
+export CHPL_MAKE_TIMERS_UBAR := $(subst -,_,$(CHPL_MAKE_TIMERS))

@@ -64,5 +64,7 @@ $gmp = `$utildirname/gmp`; chomp($gmp);
 print "CHPL_GMP: $gmp\n";
 $regexp = `$utildirname/regexp`; chomp($regexp);
 print "CHPL_REGEXP: $regexp\n";
+$wide_ptrs = `$utildirname/widePointers`; chomp($wide_ptrs);
+print "CHPL_WIDE_POINTERS: $wide_ptrs\n";
 $llvm = `$utildirname/llvm`; chomp($llvm);
 print "CHPL_LLVM: $llvm\n";

@@ -5,11 +5,12 @@ Getting Started
 It is recommended that all Chapel developers get aquainted with the
 project via the following steps:
 
-* Start taking notes as you undertake these steps in order to track suggestions,
-  any points of confusion and areas for possible improvement.  You'll
-  only be new to Chapel once, so this is the best way of making things
-  clearer and easier for users.  And soon you'll be in the position of
-  being able to start helping to make things better.
+* Start taking notes as you undertake these steps in order to track
+  suggestions, any points of confusion and areas for possible
+  improvement.  You'll only be new to Chapel once, so this is the best
+  way of making things clearer and easier for users.  And soon you'll
+  be in the position of being able to start helping to make things
+  better.
 
 * Download the official Chapel release from SourceForge and put
   yourself in the shoes of a Chapel user.  Start from the top-level

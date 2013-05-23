@@ -83,7 +83,14 @@ extern const char* CHPL_THREADS;
 extern const char* CHPL_COMM;
 extern const char* CHPL_COMM_SUBSTRATE;
 extern const char* CHPL_GASNET_SEGMENT;
+extern const char* CHPL_WIDE_POINTERS;
 extern const char* CHPL_MAKE;
+
+// Set true if CHPL_WIDE_POINTERS==struct.
+// In that case, the code generator emits structures
+// for wide pointers. Otherwise, wide pointers are
+// packed into a wide pointer type.
+extern bool widePointersStruct;
 
 extern char fExplainCall[256];
 extern char fExplainInstantiation[256];

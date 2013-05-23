@@ -37,4 +37,7 @@
 
 #include "chplgmp.h"
 
+#include "chpl-comm-compiler-macros.h"
+#include "chpl-wide-ptr-fns.h"
+
 #endif
