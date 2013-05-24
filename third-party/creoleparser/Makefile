@@ -2,7 +2,7 @@ ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(shell pwd)/../..
 endif
 
-CHPL_MAKE_HOST_TARGET = --target
+CHPL_MAKE_HOST_TARGET = --host
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 #
