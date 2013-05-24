@@ -1,0 +1,2 @@
+intents-int.chpl:12: In function 'bar':
+intents-int.chpl:15: error: illegal lvalue in assignment

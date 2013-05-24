@@ -1,0 +1,2 @@
+intents-strings.chpl:34: In function 'goo':
+intents-strings.chpl:37: error: illegal lvalue in assignment
