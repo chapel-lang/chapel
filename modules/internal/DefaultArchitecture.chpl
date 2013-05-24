@@ -129,6 +129,9 @@ module DefaultArchitecture {
   
     proc DefaultRootLocale()
     {
+      // A bootstrap routine that returns (chpl_localeID_t){.node = <arg>, .subloc = 0}.
+      extern proc chpl_return_localeID_node(node:int(32)) : chpl_localeID_t;
+
       parent = nil;
       numCores = 0;
 
@@ -136,9 +139,6 @@ module DefaultArchitecture {
       // access 'Locales' and 'here', which are not yet initialized.
       for locIdx in myLocaleSpace 
       {
-        // A bootstrap routine that returns (chpl_localeID_t){.node = <arg>, .subloc = 0}.
-        extern proc chpl_return_localeID_node(node:int(32)) : chpl_localeID_t;
-
         var locID = chpl_return_localeID_node(locIdx:int(32));
         on __primitive("chpl_on_locale_num", locID)
         {
@@ -173,7 +173,7 @@ module DefaultArchitecture {
       // the root locale of the default architecture.
       var loc = myLocales[0];
       __primitive("_task_set_here", loc);
-      var locID : chpl_localeID_t; // Init'd to {0,0}.
+      var locID = chpl_return_localeID_node(0:int(32));
       __primitive("_task_set_locale", locID);
     }
 
