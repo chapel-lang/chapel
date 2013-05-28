@@ -484,8 +484,9 @@ if ($buildruntime == 0) {
     $shortstatus = "Passed";
 
     $mailsubject = "$subjectid ($fullplatform) $shortstatus";
-    $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
+    $mailcommand = "| $mailer -s \"$mailsubject \" $nochangerecipient";
     
+    print "Mailing to minimal group\n";
     open(MAIL, $mailcommand);
     
     print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime, $crontab);
