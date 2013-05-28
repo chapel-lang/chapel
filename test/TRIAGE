@@ -283,6 +283,13 @@ studies/sudoku/dinan/sudoku
 ---------------------------
 [Error: Timed out executing program studies/sudoku/dinan/sudoku] (cray-xt.cray-prgenv-gnu.none.fifo.pthreads--linux64.gnu 11/16/12, 11/26/12)
 
+distributions/robust/arithmetic/performance/reduceAlias
+-------------------------------------------------------
+Timed out compilation - only on 5/17/2013, but a few other tests
+time out in compilation for the same configurations:
+ linux64.gnu.gasnet.fifo.pthreads.tcmalloc
+ linux64.gnu.gasnet.fifo.pthreads
+
 ===========================================
 Not noisy, but need some attention sometime
 ===========================================

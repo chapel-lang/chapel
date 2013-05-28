@@ -1,4 +1,5 @@
 #!/usr/bin/env tcsh
+echo Starting $0 on `hostname`.; module list; printenv; echo
 
 #
 # Test a GASNet compile using the default segment (everything for linux64)
@@ -6,5 +7,8 @@
 source ~/.chapelcshrc-cron-gasnet
 setenv CHPL_GASNET_SEGMENT everything
 setenv CHPL_GASNET_CFG_OPTIONS --disable-ibv
-$CHPL_HOME/util/cron/nightly -cron >&! ~/tmp/nightly-gasnet-everything.out
+set LOGFILE = $HOME/tmp/nightly-gasnet-cron-$CHPL_GASNET_SEGMENT.out
+echo "Testing GASNet using segment $CHPL_GASNET_SEGMENT on `date`.  Log file: $LOGFILE"
+$CHPL_HOME/util/cron/nightly -cron >&! $LOGFILE
 
+echo Finished $0 on `date`.

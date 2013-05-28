@@ -20,7 +20,10 @@ void returnStarTuplesByRefArgs() {
       // change function interface to take a reference
       //
       Symbol* ret = fn->getReturnSymbol();
-      ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_ret", ret->type->refType);
+      //
+      // Is it redundant to make this both have ref intent and ref type?
+      //
+      ArgSymbol* arg = new ArgSymbol(INTENT_REF, "_ret", ret->type->refType);
       fn->insertFormalAtTail(arg);
       fn->retType = dtVoid;
       fn->insertBeforeReturn(new CallExpr(PRIM_MOVE, arg, ret));

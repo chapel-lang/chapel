@@ -2,6 +2,7 @@
 #include "expr.h"
 #include "passes.h"
 #include "resolution.h"
+#include "resolveIntents.h"
 #include "stmt.h"
 #include "symbol.h"
 #include "view.h"
@@ -146,7 +147,7 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
           if (!newFn) {
             SET_LINENO(fn);
             newFn = fn->copy();
-            ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_retArg", useFn->retType->refType);
+            ArgSymbol* arg = new ArgSymbol(blankIntentForType(useFn->retType->refType), "_retArg", useFn->retType->refType);
             newFn->insertFormalAtTail(arg);
             Symbol* ret = newFn->getReturnSymbol();
             newFn->body->body.tail->replace(new CallExpr(PRIM_RETURN, gVoid));

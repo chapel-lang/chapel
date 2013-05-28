@@ -15,6 +15,14 @@ void collectFnCalls(BaseAST* ast, Vec<CallExpr*>& calls) {
 }
 
 
+void collectFnCallsSTL(BaseAST* ast, std::vector<CallExpr*>& calls) {
+  AST_CHILDREN_CALL(ast, collectFnCallsSTL, calls);
+  if (CallExpr* call = toCallExpr(ast))
+    if (call->isResolved())
+      calls.push_back(call);
+}
+
+
 void collect_stmts(BaseAST* ast, Vec<Expr*>& stmts) {
   if (Expr* expr = toExpr(ast)) {
     stmts.add(expr);
@@ -51,12 +59,26 @@ void collectCallExprs(BaseAST* ast, Vec<CallExpr*>& callExprs) {
     callExprs.add(callExpr);
 }
 
+void collectCallExprsSTL(BaseAST* ast, std::vector<CallExpr*>& callExprs) {
+  AST_CHILDREN_CALL(ast, collectCallExprsSTL, callExprs);
+  if (CallExpr* callExpr = toCallExpr(ast))
+    callExprs.push_back(callExpr);
+}
+
 void collectMyCallExprs(BaseAST* ast, Vec<CallExpr*>& callExprs,
                         FnSymbol* parent_fn) {
   AST_CHILDREN_CALL(ast, collectMyCallExprs, callExprs, parent_fn);
   if (CallExpr* callExpr = toCallExpr(ast))
     if (callExpr->parentSymbol == parent_fn)
       callExprs.add(callExpr);
+}
+
+void collectMyCallExprsSTL(BaseAST* ast, std::vector<CallExpr*>& callExprs,
+                           FnSymbol* parent_fn) {
+  AST_CHILDREN_CALL(ast, collectMyCallExprsSTL, callExprs, parent_fn);
+  if (CallExpr* callExpr = toCallExpr(ast))
+    if (callExpr->parentSymbol == parent_fn)
+      callExprs.push_back(callExpr);
 }
 
 void collectGotoStmts(BaseAST* ast, Vec<GotoStmt*>& gotoStmts) {

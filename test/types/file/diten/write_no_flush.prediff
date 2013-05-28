@@ -1,0 +1,10 @@
+#!/bin/bash
+
+testname=$1
+outfile=$2
+
+echo $testname
+echo $outfile
+wc -c < $testname.tmp > $testname.prediff.tmp
+mv $testname.prediff.tmp $outfile
+rm $testname.tmp

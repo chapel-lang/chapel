@@ -35,6 +35,7 @@ PassInfo passlist[] = {
 
   // Function resolution and shallow type inference
   RUN(resolve),             // resolves function calls and types
+  RUN(resolveIntents),      // resolve argument intents
   RUN(checkResolved),       // checks semantics of resolved AST
 
   // Post-resolution cleanup

@@ -7,6 +7,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "iterator.h"
+#include "resolveIntents.h"
 
 
 // This consistency check should probably be moved earlier in the compilation.
@@ -321,8 +322,8 @@ createArgBundleFreeFn(ClassType* ct, FnSymbol* loopBodyFnWrapper) {
   if (argBundleFreeFn == NULL) {
     // Create the shared function that frees recursive argument bundles.
     argBundleFreeFn = new FnSymbol("chpl__freeRecursiveIteratorArgumentBundle");
-    argBundleFreeFn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "loopBodyFnID", dtInt[INT_SIZE_DEFAULT]));
-    argBundleFreeFn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "loopBodyFnArgs", argBundleType));
+    argBundleFreeFn->insertFormalAtTail(new ArgSymbol(INTENT_CONST_IN, "loopBodyFnID", dtInt[INT_SIZE_DEFAULT]));
+    argBundleFreeFn->insertFormalAtTail(new ArgSymbol(INTENT_CONST_IN, "loopBodyFnArgs", argBundleType));
     // Arg bundles are allocated locally and tracked.
     argBundleFreeFn->insertAtTail(new CallExpr(PRIM_CHPL_MEMHOOK_FREE, argBundleFreeFn->getFormal(2)));
     argBundleFreeFn->insertAtTail(new CallExpr(PRIM_TASK_FREE, argBundleFreeFn->getFormal(2)));
@@ -417,8 +418,8 @@ createArgBundleCopyFn(ClassType* ct, FnSymbol* loopBodyFnWrapper) {
     //    return tmp;
     //  }
     argBundleCopyFn = new FnSymbol("chpl__copyRecursiveIteratorArgumentBundle");
-    argBundleCopyFn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "loopBodyFnID", dtInt[INT_SIZE_DEFAULT]));
-    argBundleCopyFn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "loopBodyFnArgs", argBundleType));
+    argBundleCopyFn->insertFormalAtTail(new ArgSymbol(INTENT_CONST_IN, "loopBodyFnID", dtInt[INT_SIZE_DEFAULT]));
+    argBundleCopyFn->insertFormalAtTail(new ArgSymbol(INTENT_CONST_IN, "loopBodyFnArgs", argBundleType));
     Symbol* tmp = newTemp("dummyBundle", argBundleType);
     argBundleCopyFn->insertAtTail(new DefExpr(tmp));
     argBundleCopyFn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, gNil));
@@ -541,7 +542,7 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
   // }
   ArgSymbol* wrapperIndexArg = loopBodyFn->getFormal(1)->copy();
   loopBodyFnWrapper->insertFormalAtTail(wrapperIndexArg);
-  ArgSymbol* wrapperArgsArg = new ArgSymbol(INTENT_BLANK, "fn_args", ct);
+  ArgSymbol* wrapperArgsArg = new ArgSymbol(INTENT_CONST_IN, "fn_args", ct);
   loopBodyFnWrapper->insertFormalAtTail(wrapperArgsArg);
   CallExpr* loopBodyFnWrapperCall = new CallExpr(loopBodyFn, wrapperIndexArg);
 
@@ -737,12 +738,12 @@ createIteratorFn(FnSymbol* iterator, CallExpr* iteratorFnCall, Symbol* index,
   iterator->defPoint->insertBefore(new DefExpr(iteratorFn));
   Vec<BaseAST*> asts;
   collect_asts(iteratorFn, asts);
-  ArgSymbol* icArg = new ArgSymbol(INTENT_BLANK, "_ic", ic->type);
+  ArgSymbol* icArg = new ArgSymbol(blankIntentForType(ic->type), "_ic", ic->type);
   iteratorFn->insertFormalAtTail(icArg);
   replaceIteratorFormalsWithIteratorFields(iterator, icArg, asts);
-  ArgSymbol* loopBodyFnIDArg = new ArgSymbol(INTENT_BLANK, "_loopBodyFnID", dtInt[INT_SIZE_DEFAULT]);
+  ArgSymbol* loopBodyFnIDArg = new ArgSymbol(INTENT_CONST_IN, "_loopBodyFnID", dtInt[INT_SIZE_DEFAULT]);
   iteratorFn->insertFormalAtTail(loopBodyFnIDArg);
-  ArgSymbol* loopBodyFnArgArgs = new ArgSymbol(INTENT_BLANK, "_loopBodyFnArgs", argsBundleType);
+  ArgSymbol* loopBodyFnArgArgs = new ArgSymbol(INTENT_CONST_IN, "_loopBodyFnArgs", argsBundleType);
   iteratorFn->insertFormalAtTail(loopBodyFnArgArgs);
 
   localizeReturnSymbols(iteratorFn, asts);
@@ -773,7 +774,7 @@ expandRecursiveIteratorInline(CallExpr* call)
 
   // The index is passed to the loop body function as its first argument.
   Symbol* index = toSymExpr(call->get(1))->var;
-  ArgSymbol* indexArg = new ArgSymbol(INTENT_BLANK, "_index", index->type);
+  ArgSymbol* indexArg = new ArgSymbol(blankIntentForType(index->type), "_index", index->type);
   loopBodyFn->insertFormalAtTail(indexArg);
 
   // The recursive iterator loop wrapper is ... .

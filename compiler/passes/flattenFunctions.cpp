@@ -2,6 +2,7 @@
 #include "astutil.h"
 #include "expr.h"
 #include "passes.h"
+#include "resolveIntents.h"
 #include "stmt.h"
 
 
@@ -133,7 +134,7 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
            an LHS expr. */
         type = type->refType;
       SET_LINENO(sym);
-      ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, sym->name, type);
+      ArgSymbol* arg = new ArgSymbol(blankIntentForType(type), sym->name, type);
       if (sym->hasFlag(FLAG_ARG_THIS))
         arg->addFlag(FLAG_ARG_THIS);
       fn->insertFormalAtTail(new DefExpr(arg));

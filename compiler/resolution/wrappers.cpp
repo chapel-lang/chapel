@@ -91,7 +91,7 @@ static ArgSymbol* copyFormalForWrapper(ArgSymbol* formal) {
       formal->hasFlag(FLAG_WRAP_WRITTEN_FORMAL)) {
     wrapperFormal->addFlag(FLAG_WRAP_WRITTEN_FORMAL);
   }
-  if (formal->intent != INTENT_REF) {
+  if (formal->intent != INTENT_REF && formal->intent != INTENT_CONST_REF) {
     wrapperFormal->intent = INTENT_BLANK;
   }
   return wrapperFormal;

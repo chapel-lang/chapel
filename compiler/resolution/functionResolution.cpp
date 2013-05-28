@@ -699,6 +699,7 @@ resolveFormals(FnSymbol* fn) {
       if (formal->intent == INTENT_INOUT ||
           formal->intent == INTENT_OUT ||
           formal->intent == INTENT_REF ||
+          formal->intent == INTENT_CONST_REF ||
           formal->hasFlag(FLAG_WRAP_WRITTEN_FORMAL) ||
           (formal == fn->_this &&
            (isUnion(formal->type) ||
@@ -2653,6 +2654,7 @@ formalRequiresTemp(ArgSymbol* formal) {
   if (formal->intent == INTENT_PARAM ||
       formal->intent == INTENT_TYPE ||
       formal->intent == INTENT_REF ||
+      formal->intent == INTENT_CONST_REF ||
       (formal->intent == INTENT_BLANK &&
        formal->type->symbol->hasFlag(FLAG_REF)))
     return false;
@@ -2704,7 +2706,8 @@ insertFormalTemps(FnSymbol* fn) {
       VarSymbol* tmp = newTemp(astr("_formal_tmp_", formal->name));
       Type* formalType = formal->type->getValType();
       if ((formal->intent == INTENT_BLANK ||
-           formal->intent == INTENT_CONST) &&
+           formal->intent == INTENT_CONST ||
+           formal->intent == INTENT_CONST_IN) &&
           !isSyncType(formalType) &&
           !isRefCountedType(formalType))
         tmp->addFlag(FLAG_CONST);
@@ -2734,7 +2737,7 @@ insertFormalTemps(FnSymbol* fn) {
           fn->insertAtHead(new DefExpr(refTmp));
           fn->insertAtHead(new DefExpr(typeTmp));
         }
-      } else if (formal->intent == INTENT_INOUT || formal->intent == INTENT_IN) {
+      } else if (formal->intent == INTENT_INOUT || formal->intent == INTENT_IN || formal->intent == INTENT_CONST_IN) {
         fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr("chpl__initCopy", formal)));
         tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
       } else {
@@ -2743,7 +2746,9 @@ insertFormalTemps(FnSymbol* fn) {
             !ts->hasFlag(FLAG_ITERATOR_CLASS) &&
             !ts->hasFlag(FLAG_ITERATOR_RECORD) &&
             !getSyncFlags(ts).any() &&
-            !ts->hasFlag(FLAG_REF)) {
+            !ts->hasFlag(FLAG_REF) &&
+            formal->intent != INTENT_REF &&
+            formal->intent != INTENT_CONST_REF) {
           fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr("chpl__autoCopy", formal)));
           // WORKAROUND:
           // This is a temporary bug fix that results in leaked memory.

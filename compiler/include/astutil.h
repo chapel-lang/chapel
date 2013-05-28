@@ -19,6 +19,7 @@ void normalize(BaseAST* base);
 
 // return vec of CallExprs of FnSymbols (no primitives)
 void collectFnCalls(BaseAST* ast, Vec<CallExpr*>& calls);
+void collectFnCallsSTL(BaseAST* ast, std::vector<CallExpr*>& calls);
 
 // collect Stmts and Exprs in the AST and return them in vectors
 // Versions ending in 'STL' use the C++ std::vector class
@@ -35,6 +36,7 @@ void collectDefExprsSTL(BaseAST* ast, std::vector<DefExpr*>& defExprs);
 void collectCallExprs(BaseAST* ast, Vec<CallExpr*>& callExprs);
 void collectCallExprsSTL(BaseAST* ast, std::vector<CallExpr*>& callExprs);
 void collectMyCallExprs(BaseAST* ast, Vec<CallExpr*>& callExprs, FnSymbol* fn);
+void collectMyCallExprsSTL(BaseAST* ast, std::vector<CallExpr*>& callExprs, FnSymbol* fn);
 void collectGotoStmts(BaseAST* ast, Vec<GotoStmt*>& gotoStmts);
 void collectGotoStmtsSTL(BaseAST* ast, std::vector<GotoStmt*>& gotoStmts);
 void collectSymExprs(BaseAST* ast, Vec<SymExpr*>& symExprs);

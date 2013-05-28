@@ -25,7 +25,7 @@ static Map<FnSymbol*,ArgSymbol*> linenoMap; // fn to line number argument
 static Map<FnSymbol*,ArgSymbol*> filenameMap; // fn to filename argument
 
 static ArgSymbol* newLine(FnSymbol* fn) {
-  ArgSymbol* line = new ArgSymbol(INTENT_BLANK, "_ln", dtInt[INT_SIZE_DEFAULT]);
+  ArgSymbol* line = new ArgSymbol(INTENT_CONST_IN, "_ln", dtInt[INT_SIZE_DEFAULT]);
   fn->insertFormalAtTail(line);
   linenoMap.put(fn, line);
   if (Vec<FnSymbol*>* rootFns = virtualRootsMap.get(fn)) {
@@ -41,7 +41,7 @@ static ArgSymbol* newLine(FnSymbol* fn) {
 }
 
 static ArgSymbol* newFile(FnSymbol* fn) {
-  ArgSymbol* file = new ArgSymbol(INTENT_BLANK, "_fn", dtString);
+  ArgSymbol* file = new ArgSymbol(INTENT_CONST_REF, "_fn", dtString);
   fn->insertFormalAtTail(file);
   filenameMap.put(fn, file);
   queue.add(fn);

@@ -24,9 +24,6 @@ An optimization bypasses a semantic check (Tom - on hold)
 ---------------------------------------------------------
 [Error matching program output for multilocale/deitz/oneOrMoreLocales/test_dot_locale_error]
 
-Fail to match the expected memory leak amount in .bad file
-[Error matching .bad file for memory/figueroa/LeakedMemory6 (compopts: 1)]
-
 ==============================================
 linux64 regressions (in addition to the above)
 ==============================================
@@ -82,12 +79,12 @@ stack overflow
 --------------
 [Error matching program output for parallel/cobegin/gbt/cobegin-stacksize]
 
+
 time outs
 ---------
 [Error: Timed out executing program studies/lulesh/bradc/xyztuple/lulesh-dense-3tuple] (started when tested for the first time on 10/27/2012)
 
-I don't know when the lulesh examples test started timing out, but I
-noticed it on 4/8/13 (sungeun):
+The following tests started timing out on 3/02/2013:
 [Error: Timed out executing program release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4)]
 [Error: Timed out executing program release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4)]
 
@@ -116,6 +113,13 @@ missing "unable to create more than 0000 threads" warning
 "maxThreadsPerLocale is unbounded, but unable to create more than 0000 threads"
 But under valgrind, the program is executed with --numThreadsPerLocale=100,
 so the warning does not apply and is not raised, and .good is not matched.
+
+
+"Unrecognised instruction"
+--------------------------
+observed on 5/18/2013:
+[Error matching program output for types/atomic/ferguson/atomictest]
+[Error matching program output for types/atomic/sungeun/atomic_vars]
 
 
 ====================
@@ -163,6 +167,11 @@ missed on-clause optimization
 missing -nl option
 ------------------
 (see gasnet-everything)
+
+execution timeouts
+------------------
+[Error: Timed out executing program domains/johnk/capacityParSafe (compopts: 1)] (since 12/16/2012)
+in this configuration: linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc
 
 
 =======================
