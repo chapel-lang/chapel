@@ -676,8 +676,8 @@ libqthread_la_SOURCES = aligned_alloc.c cacheline.c envariables.c \
 @COMPILE_CHAPEL_INTERFACE_TRUE@@COMPILE_MULTINODE_TRUE@libqthread_chpl_locales_la_SOURCES = \
 @COMPILE_CHAPEL_INTERFACE_TRUE@@COMPILE_MULTINODE_TRUE@	interfaces/chapel/comm-qthreads-locales.c
 
-@COMPILE_CHAPEL_INTERFACE_TRUE@@COMPILE_MULTINODE_TRUE@libqthread_chpl_locales_la_CFLAGS = -I@CHPL_HOME@/runtime/include -I@CHPL_HOME@/runtime/include/mem/$(CHPL_MEM) -I$(top_srcdir)/include -I$(top_srcdir)/include/qthread -I$(top_srcdir)/src/interfaces/chapel
-@COMPILE_CHAPEL_INTERFACE_TRUE@libqthread_chpl_la_CFLAGS = -I@CHPL_HOME@/runtime/include -I@CHPL_HOME@/runtime/include/mem/$(CHPL_MEM) -I$(top_srcdir)/include -I$(top_srcdir)/include/qthread -I$(top_srcdir)/src/interfaces/chapel
+@COMPILE_CHAPEL_INTERFACE_TRUE@@COMPILE_MULTINODE_TRUE@libqthread_chpl_locales_la_CFLAGS = -I@CHPL_HOME@/runtime/include -I@CHPL_HOME@/runtime/include/mem/$(CHPL_MAKE_MEM) -I$(top_srcdir)/include -I$(top_srcdir)/include/qthread -I$(top_srcdir)/src/interfaces/chapel
+@COMPILE_CHAPEL_INTERFACE_TRUE@libqthread_chpl_la_CFLAGS = -I@CHPL_HOME@/runtime/include -I@CHPL_HOME@/runtime/include/mem/$(CHPL_MAKE_MEM) -I$(top_srcdir)/include -I$(top_srcdir)/include/qthread -I$(top_srcdir)/src/interfaces/chapel
 @COMPILE_CHAPEL_INTERFACE_TRUE@include_HEADERS = interfaces/chapel/tasks-qthreads.h \
 @COMPILE_CHAPEL_INTERFACE_TRUE@	$(am__append_12)
 
