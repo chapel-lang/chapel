@@ -2,6 +2,7 @@
 
 #include "chplfp.h"
 #include "chpl-mem.h"
+#include "chpl-mem-desc.h"
 #include "chplcgfns.h"
 #include "chpl-comm.h"
 #include "chpl-comm-compiler-macros.h"
