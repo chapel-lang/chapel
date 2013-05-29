@@ -55,6 +55,7 @@ class ArgumentState;
 #define LOG_normalize           'N'
 #define LOG_checkNormalized     NUL
 #define LOG_buildDefaultFunctions 'D'
+#define LOG_createTaskFunctions       NUL
 #define LOG_resolve             'R'
 #define LOG_resolveIntents      'i'
 #define LOG_checkResolved       NUL

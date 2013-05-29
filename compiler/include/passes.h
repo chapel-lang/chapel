@@ -20,6 +20,7 @@ void checkResolved();
 void cleanup();
 void codegen();
 void complex2record();
+void createTaskFunctions();
 void copyPropagation();
 void cullOverReferences();
 void deadCodeElimination();

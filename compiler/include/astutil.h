@@ -41,6 +41,8 @@ void collectGotoStmts(BaseAST* ast, Vec<GotoStmt*>& gotoStmts);
 void collectGotoStmtsSTL(BaseAST* ast, std::vector<GotoStmt*>& gotoStmts);
 void collectSymExprs(BaseAST* ast, Vec<SymExpr*>& symExprs);
 void collectSymExprsSTL(BaseAST* ast, std::vector<SymExpr*>& symExprs);
+void collectMySymExprs(Symbol* me, Vec<SymExpr*>& symExprs);
+void collectMySymExprs(Symbol* me, std::vector<SymExpr*>& symExprs);
 void collectSymbols(BaseAST* ast, Vec<Symbol*>& symbols);
 void collectSymbolsSTL(BaseAST* ast, std::vector<Symbol*>& symbols);
 

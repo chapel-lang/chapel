@@ -11,7 +11,9 @@
 
 
 // This consistency check should probably be moved earlier in the compilation.
+// It needs to be after resolution because it sets FLAG_INLINE_ITERATOR.
 // Does it need to be recursive? (Currently, it is not.)
+static void nonLeaderParCheckInt(FnSymbol* fn, bool allowYields);
 static void nonLeaderParCheck()
 {
   //
@@ -19,34 +21,48 @@ static void nonLeaderParCheck()
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_ITERATOR_FN) && !fn->hasFlag(FLAG_INLINE_ITERATOR)) {
+      nonLeaderParCheckInt(fn, true);
+    }
+  }
+  USR_STOP();
+}
+static void nonLeaderParCheckInt(FnSymbol* fn, bool allowYields)
+{
       Vec<CallExpr*> calls;
       collectCallExprs(fn, calls);
       forv_Vec(CallExpr, call, calls) {
         if ((call->isPrimitive(PRIM_BLOCK_BEGIN)) ||
             (call->isPrimitive(PRIM_BLOCK_COBEGIN)) ||
-            (call->isPrimitive(PRIM_BLOCK_COFORALL)) ||
+            (call->isPrimitive(PRIM_BLOCK_COFORALL))) {
+          // begin/cobegin/coforall *blocks* are eliminated earlier.
+          // If they are not, need issue the USR_FATAL_CONT like below.
+          INT_ASSERT(false);
+        }
+        FnSymbol* taskFn = resolvedToTaskFun(call);
+        bool isParallelConstruct = taskFn &&
+          (taskFn->hasFlag(FLAG_BEGIN) ||
+           taskFn->hasFlag(FLAG_COBEGIN_OR_COFORALL));
+        if (isParallelConstruct ||
             (call->isNamed("_toLeader"))) {
           USR_FATAL_CONT(call, "invalid use of parallel construct in serial iterator");
         }
         if ((call->isPrimitive(PRIM_BLOCK_ON)) ||
             (call->isPrimitive(PRIM_BLOCK_ON_NB))) {
-          BlockStmt* onBlock = toBlockStmt(call->parentExpr);
-          if (!onBlock || onBlock->blockInfo != call) {
-            INT_FATAL(call, "mis-assumption about structure of on blocks in "
-                      "lowerIterators pass");
-          }
-          Vec<CallExpr*> callsWithinOn;
-          collectCallExprs(onBlock, callsWithinOn);
-          forv_Vec(CallExpr, call, callsWithinOn) {
+          // begin/cobegin/coforall *blocks* are eliminated earlier.
+          // If they are not, check for PRIM_YIELD like below.
+          INT_ASSERT(false);
+        }
+        if (!allowYields) {
             if (call->isPrimitive(PRIM_YIELD)) {
               USR_FATAL_CONT(call, "invalid use of 'yield' within 'on' in serial iterator");
             }
-          }
+        }
+        if (taskFn) {
+          // This used to be the body of the parallel or 'on' construct
+          // so need to descend into it.
+          nonLeaderParCheckInt(taskFn, !taskFn->hasFlag(FLAG_ON));
         }
       }
-    }
-  }
-  USR_STOP();
 }
 
 
@@ -88,9 +104,18 @@ static bool find_recursive_caller(FnSymbol* fn, FnSymbol* iter, Vec<FnSymbol*>& 
 
 
 //
+// Task functions in this set are like their enclosing recursive iterators -
+// they are to be ignored when inlining.
+// This property of course does not transfer upon function->copy().
+//
+static Vec<Symbol*> taskFunInRecursiveIteratorSet;
+
+
+//
 // Mark as recursive those iterators which call themselves (directly or indirectly).
 // When dealing with recursive iterators, we only inline the body of the loop,
 // not the iterator as a whole.
+// Also mark the task functions in those iterators.
 //
 static void computeRecursiveIteratorSet() {
   compute_call_sites();
@@ -107,6 +132,37 @@ static void computeRecursiveIteratorSet() {
     if (find_recursive_caller(iter, iter, fnSet))
       // If so, add the recursive iterator flag.
       iter->addFlag(FLAG_RECURSIVE_ITERATOR);
+  }
+
+  // Mark task functions, too, by adding to taskFunInRecursiveIteratorSet
+  forv_Vec(FnSymbol, taskFn, gFnSymbols) {
+    if (!isTaskFun(taskFn))
+      continue;
+
+    // Assend the callers until we find a non-task function.
+    FnSymbol* currFn = taskFn;
+    while (true) {
+      if (currFn->calledBy->n == 0) {
+        // dunno what to do - ignore it
+        break;
+      }
+
+      // If there are multiple callers, they should be clones of
+      // each other, so any one will do(??).  We grab the first one.
+      currFn = toFnSymbol(currFn->calledBy->v[0]->parentSymbol);
+      INT_ASSERT(currFn);
+
+      if (isTaskFun(currFn)) {
+        // Task functions are not recursive by construction.
+        // Otherwise this is an infinite loop.
+        INT_ASSERT(currFn != taskFn);
+      } else {
+        // Found it!
+        if (currFn && currFn->hasFlag(FLAG_RECURSIVE_ITERATOR))
+          taskFunInRecursiveIteratorSet.set_add(taskFn);
+        break;
+      }
+    }
   }
 }
 
@@ -131,6 +187,12 @@ static bool leaveLocalBlockUnfragmented(BlockStmt* block) {
     if (call &&
         (call->isPrimitive(PRIM_YIELD) || call->isPrimitive(PRIM_RETURN)))
       return false;     // Yes, FAIL.
+
+    // Check coforall et al. recursively.
+    if (call)
+      if (FnSymbol* taskFn = resolvedToTaskFun(call))
+        if (!leaveLocalBlockUnfragmented(taskFn->body))
+          return false;
 
     // See if it is an unlocal block.
     BlockStmt* block = toBlockStmt(ast);
@@ -214,6 +276,12 @@ fragmentLocalBlocks() {
           if (cond->elseStmt && cond->elseStmt->body.head)
             queue.add(cond->elseStmt->body.head);
         }
+      } else if (call && resolvedToTaskFun(call)) {
+        // Do what the above would have done to a coforall/etc. block.
+        insertNewLocal = true;
+        Expr* taskfnBodyHead = call->isResolved()->body->body.head;
+        if (taskfnBodyHead)
+          queue.add(taskfnBodyHead);
       } else if (isDefExpr(current)) {
         preVec.add(current);
       } else {
@@ -553,6 +621,8 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
 
     if (field->type->symbol->hasFlag(FLAG_REF) &&
         field->getValType()->symbol->hasFlag(FLAG_LOOP_BODY_ARGUMENT_CLASS)) {
+      // Does anything need to be done here if the iterator invokes
+      // task function(s)?
       if (iteratorFn->hasFlag(FLAG_ITERATOR_WITH_ON)) {
 
         // For recursive args in forked bodies,
@@ -611,6 +681,7 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
 //
 // return the number of local blocks that lexically enclose 'expr',
 // stopping the search outward when encountering the outer block
+// todo: should this count carry across calls to task functions?
 //
 static int
 countEnclosingLocalBlocks(Expr* expr, BlockStmt* outer = NULL) {
@@ -661,8 +732,76 @@ static void localizeReturnSymbols(FnSymbol* iteratorFn, Vec<BaseAST*> asts)
 }
 
 
+static Map<FnSymbol*,FnSymbol*> loopBodyFnArgsSuppliedMap;
+
+//
+// Thread loopBodyFnIDArg, loopBodyFnArgArgs through calls to task functions.
+// We assume that threadLoopBodyFnArgs() sees each call at most once.
+// The call needs to be augmented to pass these two things as actuals.
+//
+// The callee taskFn needs to be augmented with two new formals.
+// Note that the original taskFn needs to be left around unmodified.
+// That's because it is likely invoked from the original recursive iterator
+// before (in the AST nesting sense, that is) the point where we
+// implement recursion with (loopBodyFnIDArg, loopBodyFnArgArgs).
+//
+// The call needs to be redirected to this augmented taskFn copy.
+// 'taskFnP' is updated to point to this copy as well.
+//
+static void threadLoopBodyFnArgs(CallExpr* call,
+                                 ArgSymbol* loopBodyFnIDArg,
+                                 ArgSymbol* loopBodyFnArgArgs,
+                                 FnSymbol**  taskFnP,
+                                 ArgSymbol** newIdArgP,
+                                 ArgSymbol** newArgArgsP)
+{
+  FnSymbol* origTFn = *taskFnP; // same as call->isResolved()
+  FnSymbol* copyTFn = loopBodyFnArgsSuppliedMap.get(origTFn);
+
+  if (copyTFn) {
+    // This might happen. It should work by removing the assert,
+    // but has not been tested.
+    INT_ASSERT(false);
+
+    int nf = copyTFn->numFormals();
+    *newIdArgP = copyTFn->getFormal(nf-1);
+    *newArgArgsP = copyTFn->getFormal(nf);
+
+  } else {
+    // Created an augmented copy.
+    copyTFn = origTFn->copy();
+    copyTFn->name = astr("rec_iter_task_fn_", copyTFn->name);
+    origTFn->defPoint->insertBefore(new DefExpr(copyTFn));
+    loopBodyFnArgsSuppliedMap.put(origTFn, copyTFn);
+
+    // Add the formals, created just like in createIteratorFn().
+    ArgSymbol* newIdArg = new ArgSymbol(INTENT_CONST_IN, loopBodyFnIDArg->name, loopBodyFnIDArg->type);
+    copyTFn->insertFormalAtTail(newIdArg);
+    ArgSymbol* newArgArgs = new ArgSymbol(INTENT_CONST_IN, loopBodyFnArgArgs->name, loopBodyFnArgArgs->type);
+    copyTFn->insertFormalAtTail(newArgArgs);
+
+    *newIdArgP = newIdArg;
+    *newArgArgsP = newArgArgs;
+  }
+
+  // This 'call' has not been processed yet. If it has been,
+  // it should not be modified again.
+  INT_ASSERT(call->numActuals() + 2 == copyTFn->numFormals());
+
+  // Augment the call as well.
+  call->insertAtTail(loopBodyFnIDArg);
+  call->insertAtTail(loopBodyFnArgArgs);
+
+  // Redirect call to the taskFn copy.
+  call->baseExpr->replace(new SymExpr(copyTFn));
+  *taskFnP = copyTFn;
+}
+
+
 // Replace each yield with a call to the loop body function,
 // and remove return statements.
+// If 'asts' are the body of a task function, the return statement
+// must stay because it is a required part of a function.
 static void convertYieldsAndReturns(Vec<BaseAST*>& asts, Symbol* index,
                                     ArgSymbol* loopBodyFnIDArg, ArgSymbol* loopBodyFnArgArgs)
 {
@@ -686,9 +825,20 @@ static void convertYieldsAndReturns(Vec<BaseAST*>& asts, Symbol* index,
           callOrBlk = blk;
         }
         call->replace(callOrBlk);
-      } else if (call->isPrimitive(PRIM_RETURN)) {
+      } else if (call->isPrimitive(PRIM_RETURN) && !isTaskFun(toFnSymbol(call->parentSymbol))) {
         // Just remove a return.
         call->remove();
+      } else if (FnSymbol* taskFn = resolvedToTaskFun(call)) {
+        // Process yields within (a clone of) taskFn.
+        // Todo: do this only if taskFn has yields (directly or not).
+        ArgSymbol *tIDArg, *tArgArgs;
+        threadLoopBodyFnArgs(call, loopBodyFnIDArg, loopBodyFnArgArgs,
+                             &taskFn, &tIDArg, &tArgArgs);
+        // both 'taskFn' and 'call' are updated by threadLoopBodyFnArgs()
+        INT_ASSERT(call->isResolved() == taskFn);
+        Vec<BaseAST*> taskAsts;
+        collect_asts(taskFn, taskAsts);
+        convertYieldsAndReturns(taskAsts, index, tIDArg, tArgArgs);
       }
     }
   }
@@ -696,6 +846,7 @@ static void convertYieldsAndReturns(Vec<BaseAST*>& asts, Symbol* index,
 
 
 // Returns true if the given function contains an on statement; false otherwise.
+// "Contains" includes "had a coforall/etc. block, now replaced with a call".
 static bool fnContainsOn(FnSymbol* fn)
 {
   Vec<CallExpr*> calls;
@@ -704,6 +855,9 @@ static bool fnContainsOn(FnSymbol* fn)
     if (call->isPrimitive(PRIM_BLOCK_ON) ||
         call->isPrimitive(PRIM_BLOCK_ON_NB))
       return true;
+    if (FnSymbol* taskFn = resolvedToTaskFun(call))
+      if (fnContainsOn(taskFn))
+        return true;
   }
   return false;
 }
@@ -823,6 +977,11 @@ expandRecursiveIteratorInline(CallExpr* call)
 }
 
 
+typedef Map<FnSymbol*,FnSymbol*> TaskFnCopyMap;
+
+static void
+expandBodyForIteratorInline(BlockStmt* body, Expr* bodyMarker, BlockStmt* ibody, Vec<BaseAST*>& asts, Symbol* index, bool removeReturn, TaskFnCopyMap& taskFnCopies);
+
 static void
 expandIteratorInline(CallExpr* call) {
   Symbol* ic = toSymExpr(call->get(2))->var;
@@ -835,6 +994,10 @@ expandIteratorInline(CallExpr* call) {
     // to be handled in the recursive iterator function
     //
     if (call->parentSymbol->hasFlag(FLAG_RECURSIVE_ITERATOR))
+      return;
+
+    // ditto for task functions called from recursive iterators
+    if (taskFunInRecursiveIteratorSet.set_in(call->parentSymbol))
       return;
 
     expandRecursiveIteratorInline(call);
@@ -856,11 +1019,21 @@ expandIteratorInline(CallExpr* call) {
   // and the expression enclosing the call is replaced by the iterator body.
   body->replace(ibody);
 
+  Vec<BaseAST*> asts;
+  TaskFnCopyMap taskFnCopies;
+  expandBodyForIteratorInline(body, ibody, ibody, asts, index, true, taskFnCopies);
+
+  replaceIteratorFormalsWithIteratorFields(iterator, ic, asts);
+}
+
+static void
+expandBodyForIteratorInline(BlockStmt* body, Expr* bodyMarker, BlockStmt* ibody, Vec<BaseAST*>& asts, Symbol* index, bool removeReturn, TaskFnCopyMap& taskFnCopies)
+{
   // Now replace yield statements in the inlined body with copies of the
   // expression that called the iterator, substituting the yielded index for the
   // iterator formal.
-  Vec<BaseAST*> asts;
   collect_asts(ibody, asts);
+
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->isPrimitive(PRIM_YIELD)) {
@@ -899,10 +1072,62 @@ expandIteratorInline(CallExpr* call) {
         }
       }
       if (call->isPrimitive(PRIM_RETURN)) // remove return
+      {
+       if (removeReturn)
         call->remove();
+      }
+      if (FnSymbol* cfn = resolvedToTaskFun(call)) {
+        // Todo: skip this handling of 'cfn' if it does not have yields
+        // in itself or any other taskFns it may call.
+
+        // This holds because we flatten everything right away.
+        // We need it so that we can place the def of 'fcopy' anywhere
+        // while preserving correct scoping of its SymExprs.
+        INT_ASSERT(isGlobal(cfn));
+
+        FnSymbol* fcopy = taskFnCopies.get(cfn);
+        if (!fcopy) {
+          // Clone the function. Just once per 'body' should suffice.
+          fcopy = cfn->copy();
+
+          // Note that 'fcopy' will likely get a copy of 'body',
+          // so we need to preserve correct scoping of its SymExprs.
+          call->insertBefore(new DefExpr(fcopy));
+
+          // I don't expect invocation of expandBodyForIteratorInline() below
+          // to encounter another call to 'cfn'. But even if does, 'fcopy'
+          // will be fetched from 'taskFnCopies', avoiding recursion.
+          //
+          taskFnCopies.put(cfn, fcopy);
+
+          // Repeat, recursively.
+          Vec<BaseAST*> recAsts;
+          expandBodyForIteratorInline(body, bodyMarker, fcopy->body, recAsts, index, false, taskFnCopies);
+
+        } else {
+          // Indeed, 'cfn' is encountered only once per 'body',
+          // although I cannot explain why this is *always* the case.
+          // ('cfn' may be encountered more than once overall.)
+          // If it *is* seen more than once, everything should still work,
+          // so this assertion should be OK to remove.
+          // (If using flattenOneFunction() below, need to get more calls
+          // to its actual argument.)
+          INT_ASSERT(false);
+        }
+
+        // Call 'fcopy' instead
+        call->baseExpr->replace(new SymExpr(fcopy));
+
+        // Note: this is an expensive operation due to compute_call_sites().
+        // We do it because it may eliminate further cloning of 'fcopy'
+        // e.g. when the enclosing fn or block are copied for any reason.
+        // Ideally, replace with flattenOneFunction().
+        Vec<FnSymbol*> nestedFnVec;
+        nestedFnVec.add(fcopy);
+        flattenNestedFunctions(nestedFnVec);
+      }
     }
   }
-  replaceIteratorFormalsWithIteratorFields(iterator, ic, asts);
 }
 
 
@@ -916,9 +1141,15 @@ canInlineIterator(FnSymbol* iterator) {
   int count = 0;
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast))
+    {
       if (call->isPrimitive(PRIM_YIELD))
         count++;
+      else if (FnSymbol* taskFn = resolvedToTaskFun(call))
+        // Need to descend into 'taskFn' - append to 'asts'.
+        collect_asts(taskFn->body, asts);
+    }
   }
+  // count==0 e.g. in users/biesack/test_recursive_iterator.chpl
   if (count == 1)
     return true;
   return false;
@@ -959,6 +1190,14 @@ canInlineSingleYieldIterator(Symbol* gIterator) {
       if (call && call->isPrimitive(PRIM_YIELD)) {
         numYields++;
         if (iterator->body != call->parentExpr) return false;
+      }
+      if (call) {
+        if (FnSymbol* taskFn = resolvedToTaskFun(call)) {
+          // Need to descend into 'taskFn' - append to 'asts'.
+          // If there are any yields there, they will trigger
+          // 'return false' above.
+          collect_asts(taskFn->body, asts);
+        }
       }
     }
     if (numYields != 1) return false;
@@ -1109,6 +1348,9 @@ inlineSingleYieldIterator(CallExpr* call) {
           afterYield = true;
           noop->insertAfter(new CallExpr(PRIM_MOVE, indices.v[i], curr_expr->get(1)->remove()));
         } else if (!curr_expr->isPrimitive(PRIM_RETURN)) {
+          if (resolvedToTaskFun(curr_expr))
+            // what should we do in this case?
+            INT_FATAL(curr_expr, "inlineSingleYieldIterator is not implemented for outlined coforall/cobegin/begin blocks");
           if (!afterYield)
             noop->insertBefore(curr_expr->remove());
           else 

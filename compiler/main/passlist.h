@@ -30,8 +30,8 @@ PassInfo passlist[] = {
   RUN(normalize),           // normalization transformations
   RUN(checkNormalized),     // check semantics of normalized AST
 
-  // Creation of default functions
   RUN(buildDefaultFunctions), // build default functions
+  RUN(createTaskFunctions),   // convert 'begin' et al. to functions
 
   // Function resolution and shallow type inference
   RUN(resolve),             // resolves function calls and types

@@ -85,6 +85,31 @@ print_user_internal_error() {
 }
 
 
+// find a caller (direct or not) that is not in a task function,
+// for line number reporting
+static FnSymbol*
+findNonTaskCaller(FnSymbol* fn) {
+  if (!fn || !fn->inTree()) return fn;
+  while (true) {
+    if (!isTaskFun(fn)) return fn;
+
+    // who calls this?
+    FnSymbol* caller = NULL;
+    forv_Vec(CallExpr, call, gCallExprs) {
+      if (call->inTree()) {
+        if (FnSymbol* cfn = call->isResolved()) {
+          if (cfn == fn) {
+            caller = toFnSymbol(call->parentSymbol);
+            break;
+          }
+        }
+      }
+    }
+    if (!caller) return fn; // or should it return the original value of 'fn'?
+    fn = caller;
+  }
+}
+
 void
 setupError(const char *filename, int lineno, int tag) {
   err_filename = filename;
@@ -106,6 +131,7 @@ printDevelErrorHeader(BaseAST* ast) {
       if (isArgSymbol(parent))
         parent = parent->defPoint->parentSymbol;
       FnSymbol* fn = toFnSymbol(parent);
+      fn = findNonTaskCaller(fn);
       if (fn && fn != err_fn) {
         err_fn = fn;
         while ((fn = toFnSymbol(err_fn->defPoint->parentSymbol))) {

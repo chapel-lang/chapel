@@ -8,6 +8,7 @@ PASSES_SRCS = \
         codegen.cpp \
 	docs.cpp \
 	externCResolve.cpp \
+        createTaskFunctions.cpp \
         filesToAST.cpp \
         flattenClasses.cpp \
         flattenFunctions.cpp \

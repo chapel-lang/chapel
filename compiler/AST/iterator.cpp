@@ -607,6 +607,20 @@ addAllLocalVariables(Vec<Symbol*>& syms, Vec<BaseAST*>& asts) {
   }
 }
 
+// Is 'theCall' the only call to 'callee' ?
+static bool
+noOtherCalls(FnSymbol* callee, CallExpr* theCall) {
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call != theCall && call->inTree()) {
+      if (FnSymbol* rc = call->isResolved()) {
+        if (rc == callee)
+          return false;
+      }
+    }
+  }
+  return true;
+}
+
 
 // Preceding calls to the various build...() functions have copied out interesting parts
 // of the iterator function.
@@ -627,6 +641,17 @@ rebuildIterator(IteratorInfo* ii,
 
   // Remove the original iterator function.
   FnSymbol* fn = ii->iterator;
+  Vec<CallExpr*> icalls;
+  collectCallExprs(fn, icalls);
+  // ... and the task functions that it calls.
+  forv_Vec(CallExpr, call, icalls) {
+    if (FnSymbol* taskFn = resolvedToTaskFun(call)) {
+      // What to do if multiple calls? may or may not cause unwanted deletion.
+      if (false) // this assert is expensive to compute
+        INT_ASSERT(noOtherCalls(taskFn, call));
+      taskFn->defPoint->remove();
+    }
+  }
   for_alist(expr, fn->body->body)
     expr->remove();
   fn->defPoint->remove();

@@ -105,6 +105,33 @@ void collectSymExprsSTL(BaseAST* ast, std::vector<SymExpr*>& symExprs) {
     symExprs.push_back(symExpr);
 }
 
+static void collectMySymExprsHelp(BaseAST* ast, Vec<SymExpr*>& symExprs) {
+  if (isSymbol(ast)) return; // do not descend into nested symbols
+  AST_CHILDREN_CALL(ast, collectMySymExprsHelp, symExprs);
+  if (SymExpr* se = toSymExpr(ast))
+    symExprs.add(se);
+}
+
+static void collectMySymExprsHelp(BaseAST* ast, std::vector<SymExpr*>& symExprs) {
+  if (isSymbol(ast)) return; // do not descend into nested symbols
+  AST_CHILDREN_CALL(ast, collectMySymExprsHelp, symExprs);
+  if (SymExpr* se = toSymExpr(ast))
+    symExprs.push_back(se);
+}
+
+// Collect the SymExprs only *directly* under 'me'.
+// Do not include those in nested functions/other nested symbols.
+void collectMySymExprs(Symbol* me, Vec<SymExpr*>& symExprs) {
+  // skip the isSymbol(ast) check in collectMySymExprsHelp()
+  AST_CHILDREN_CALL(me, collectMySymExprsHelp, symExprs);
+}
+
+// The same for std::vector.
+void collectMySymExprs(Symbol* me, std::vector<SymExpr*>& symExprs) {
+  // skip the isSymbol(ast) check in collectMySymExprsHelp()
+  AST_CHILDREN_CALL(me, collectMySymExprsHelp, symExprs);
+}
+
 void collectSymbols(BaseAST* ast, Vec<Symbol*>& symbols) {
   AST_CHILDREN_CALL(ast, collectSymbols, symbols);
   if (Symbol* symbol = toSymbol(ast))
