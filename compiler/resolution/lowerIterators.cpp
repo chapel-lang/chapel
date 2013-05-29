@@ -28,41 +28,41 @@ static void nonLeaderParCheck()
 }
 static void nonLeaderParCheckInt(FnSymbol* fn, bool allowYields)
 {
-      Vec<CallExpr*> calls;
-      collectCallExprs(fn, calls);
-      forv_Vec(CallExpr, call, calls) {
-        if ((call->isPrimitive(PRIM_BLOCK_BEGIN)) ||
-            (call->isPrimitive(PRIM_BLOCK_COBEGIN)) ||
-            (call->isPrimitive(PRIM_BLOCK_COFORALL))) {
-          // begin/cobegin/coforall *blocks* are eliminated earlier.
-          // If they are not, need issue the USR_FATAL_CONT like below.
-          INT_ASSERT(false);
-        }
-        FnSymbol* taskFn = resolvedToTaskFun(call);
-        bool isParallelConstruct = taskFn &&
-          (taskFn->hasFlag(FLAG_BEGIN) ||
-           taskFn->hasFlag(FLAG_COBEGIN_OR_COFORALL));
-        if (isParallelConstruct ||
-            (call->isNamed("_toLeader"))) {
-          USR_FATAL_CONT(call, "invalid use of parallel construct in serial iterator");
-        }
-        if ((call->isPrimitive(PRIM_BLOCK_ON)) ||
-            (call->isPrimitive(PRIM_BLOCK_ON_NB))) {
-          // begin/cobegin/coforall *blocks* are eliminated earlier.
-          // If they are not, check for PRIM_YIELD like below.
-          INT_ASSERT(false);
-        }
-        if (!allowYields) {
-            if (call->isPrimitive(PRIM_YIELD)) {
-              USR_FATAL_CONT(call, "invalid use of 'yield' within 'on' in serial iterator");
-            }
-        }
-        if (taskFn) {
-          // This used to be the body of the parallel or 'on' construct
-          // so need to descend into it.
-          nonLeaderParCheckInt(taskFn, !taskFn->hasFlag(FLAG_ON));
-        }
+  Vec<CallExpr*> calls;
+  collectCallExprs(fn, calls);
+  forv_Vec(CallExpr, call, calls) {
+    if ((call->isPrimitive(PRIM_BLOCK_BEGIN)) ||
+        (call->isPrimitive(PRIM_BLOCK_COBEGIN)) ||
+        (call->isPrimitive(PRIM_BLOCK_COFORALL))) {
+      // begin/cobegin/coforall *blocks* are eliminated earlier.
+      // If they are not, need issue the USR_FATAL_CONT like below.
+      INT_ASSERT(false);
+    }
+    FnSymbol* taskFn = resolvedToTaskFun(call);
+    bool isParallelConstruct = taskFn &&
+      (taskFn->hasFlag(FLAG_BEGIN) ||
+       taskFn->hasFlag(FLAG_COBEGIN_OR_COFORALL));
+    if (isParallelConstruct ||
+        (call->isNamed("_toLeader"))) {
+      USR_FATAL_CONT(call, "invalid use of parallel construct in serial iterator");
+    }
+    if ((call->isPrimitive(PRIM_BLOCK_ON)) ||
+        (call->isPrimitive(PRIM_BLOCK_ON_NB))) {
+      // begin/cobegin/coforall *blocks* are eliminated earlier.
+      // If they are not, check for PRIM_YIELD like below.
+      INT_ASSERT(false);
+    }
+    if (!allowYields) {
+      if (call->isPrimitive(PRIM_YIELD)) {
+        USR_FATAL_CONT(call, "invalid use of 'yield' within 'on' in serial iterator");
       }
+    }
+    if (taskFn) {
+      // This used to be the body of the parallel or 'on' construct
+      // so need to descend into it.
+      nonLeaderParCheckInt(taskFn, !taskFn->hasFlag(FLAG_ON));
+    }
+  }
 }
 
 
@@ -1709,5 +1709,3 @@ void lowerIterators() {
 
   reconstructIRautoCopyAutoDestroy();
 }
-
-

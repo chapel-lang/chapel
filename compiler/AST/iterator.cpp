@@ -820,4 +820,3 @@ void lowerIterator(FnSymbol* fn) {
   rebuildIterator(ii, local2rfield, locals);
   rebuildGetIterator(ii);
 }
-

@@ -152,17 +152,17 @@ bundleArgs(FnSymbol* fn, CallExpr* fcall, BundleArgsFnData &baData) {
           fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp, new CallExpr(PRIM_DEREF, var)));
         }
         fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp, new CallExpr(autoCopyFn, valTmp)));
-       // modify 'fn' only once
-       if (baData.firstCall) {
-        VarSymbol* derefTmp = newTemp(baseType);
-        fn->insertBeforeReturnAfterLabel(new DefExpr(derefTmp));
-        if (baseType == arg->typeInfo()) {
-          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, derefTmp, new SymExpr(actual_to_formal(arg))));
-        } else {
-          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, derefTmp, new CallExpr(PRIM_DEREF, new SymExpr(actual_to_formal(arg)))));
-        }
-        fn->insertBeforeReturnAfterLabel(new CallExpr(autoDestroyFn, derefTmp));
-       } // if firstCall
+        // modify 'fn' only once
+        if (baData.firstCall) {
+          VarSymbol* derefTmp = newTemp(baseType);
+          fn->insertBeforeReturnAfterLabel(new DefExpr(derefTmp));
+          if (baseType == arg->typeInfo()) {
+            fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, derefTmp, new SymExpr(actual_to_formal(arg))));
+          } else {
+            fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, derefTmp, new CallExpr(PRIM_DEREF, new SymExpr(actual_to_formal(arg)))));
+          }
+          fn->insertBeforeReturnAfterLabel(new CallExpr(autoDestroyFn, derefTmp));
+        } // if firstCall
       }
     }
   }
