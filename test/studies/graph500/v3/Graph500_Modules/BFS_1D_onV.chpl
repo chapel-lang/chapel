@@ -18,6 +18,7 @@ proc BFS ( root : vertex_id, ParentTree, G )
   type Vertex_List = domain (index(vertex_domain) );
   var visited$ : [vertex_domain] sync int = -1;
 
+  use UtilReplicatedVar;
   var Active_Level: [rcDomain] Level_Set (Vertex_List);
   var Next_Level: [rcDomain] Level_Set (Vertex_List);
   var Active_Remaining: [LocaleSpace] bool = true;
