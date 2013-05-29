@@ -3663,7 +3663,7 @@ preFold(Expr* expr) {
           // check legal lvalue
           if (SymExpr* rhs = toSymExpr(call->get(1))) {
             if (rhs->var->hasFlag(FLAG_EXPR_TEMP) || rhs->var->isConstant() || rhs->var->isParameter())
-              USR_FATAL(call, "illegal lvalue in assignment");
+              USR_FATAL_CONT(call, "illegal lvalue in assignment");
           }
         }
       }
@@ -4080,7 +4080,7 @@ postFold(Expr* expr) {
         if (!lhs)
           INT_FATAL(call, "unexpected case");
         if (lhs->var->hasFlag(FLAG_EXPR_TEMP) || lhs->var->isConstant() || lhs->var->isParameter())
-          USR_FATAL(call, "illegal lvalue in assignment");
+          USR_FATAL_CONT(call, "illegal lvalue in assignment");
       }
     } else if (call->isPrimitive(PRIM_MOVE)) {
       bool set = false;
