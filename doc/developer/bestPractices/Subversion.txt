@@ -8,11 +8,11 @@ The subversion repository for the project is set up as follows:
 
 * URL: svn://svn.code.sf.net/p/chapel/code
          branches/
-           collaborations/     -- used for external collaborators
-           release/            -- used to capture release branches
-         tags/                 -- used to tag releases
-         third-party-norelease -- third party code not yet intended for release
-         trunk/                -- our main development branch ($CHPL_HOME)
+           collaborations/      -- used for external collaborators
+           release/             -- used to capture release branches
+         tags/                  -- used to tag releases
+         third-party-norelease/ -- third party code not intended for release
+         trunk/                 -- our main development branch ($CHPL_HOME)
 
 * Anyone can read the repository.
 
@@ -27,39 +27,31 @@ The subversion repository for the project is set up as follows:
   in a project-specific branch in the branches/collaborations/ space.
 
 
-External Contributor Notes
---------------------------
-In general, external contributors should work using the following
-guidelines, which are designed to protect the core Chapel team's
-ability to make forward progress and meet their contractual
-requirements:
+Contributor Notes
+-----------------
+
+In general, contributors should work using the following guidelines,
+which are designed to protect the broad Chapel team's ability to make
+forward progress:
 
 * Recall that commits to subversion are extremely difficult to remove
   from the source tree's history, so be very careful not to commit
-  anything that you will regret later.
+  anything that you might regret later (e.g., sensitive code, code
+  owned by anyone other than yourself).
 
-* Please avoid committing third-party source code to any part of the
-  repository without clearing it with a member of the core Chapel
-  team.
+* Apropos of the above, please avoid committing third-party source
+  code to any part of the repository without clearing it with a member
+  of the core Chapel team.
 
-* Commit changes to your branch as often as you find worthwhile; when
-  committing merges of trunk/ into your branch, please try to minimize
-  the number of commits required in order to avoid creating too much
-  noise for developers or users who may be tracking the commits
-  through email or RSS feeds.
+* Commit changes to your branch as often as you find worthwhile.
 
-* Most commits to trunk/ should be done with someone on the main
-  development team in the loop in order to avoid stepping on toes.  If
-  you have changes in your branch that you believe are ready and
-  worthwhile to migrate to trunk, please work with someone on the main
-  development team to review the changes and approve their inclusion.
-
-* Adding new tests or future tests to trunk/test can generally be done
-  without prior approval; just be sure that the tests work well within
-  the testing system and that they are sorted into a reasonable
+* Any non-test commits to code or documentation to trunk/ should go
+  through a pre-commit review with someone on the core development
+  team.  Adding new tests or future tests to trunk/test can generally
+  be done without a review; just be sure that the tests work well
+  within the testing system and that they are sorted into a reasonable
   location in the test hierarchy.
 
-* Other improvements, such as fixes to the documentation or vim/emacs
-  highlighting modes, are also valued.  Minor changes can be committed
-  to trunk/ without review; more major changes should get approval
-  from the core team as with code changes.
+* Experienced developers may make minor fixes to code or documentation
+  without review, but the changes should generally be quite minor and
+  innocuous in scope.
