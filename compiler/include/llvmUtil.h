@@ -67,9 +67,11 @@ struct PromotedPair {
 };
 
 llvm::Constant* codegenSizeofLLVM(llvm::Type* type);
-
+llvm::Value* createTempVarLLVM(llvm::Type* type, const char* name);
 llvm::Value *convertValueToType(llvm::Value *value, llvm::Type *newType, bool isSigned = false);
 PromotedPair convertValuesToLarger(llvm::Value *value1, llvm::Value *value2, bool isSigned1 = false, bool isSigned2 = false);
+
+bool isTypeSizeSmallerThan(LLVM_TARGET_DATA * layout, llvm::Type* ty, uint64_t max_size_bytes);
 
 #endif //HAVE_LLVM
 

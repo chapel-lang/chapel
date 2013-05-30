@@ -57,6 +57,7 @@ extern bool fNoInline;
 extern bool fNoLiveAnalysis;
 extern bool fNoLocalChecks;
 extern bool fNoNilChecks;
+extern bool fLLVMWideOpt;
 
 extern bool fNoRemoteValueForwarding;
 extern bool fNoRemoveCopyCalls;

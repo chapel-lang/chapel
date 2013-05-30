@@ -673,6 +673,14 @@ static void codegen_header() {
     next.clear();
   }
 
+  if( ! info->cfile ) { 
+    // Codegen any type annotations that are necessary.
+    forv_Vec(TypeSymbol, typeSymbol, types) {
+      typeSymbol->codegenMetadata();
+    }
+  }
+
+
   genComment("Function Prototypes");
   forv_Vec(FnSymbol, fnSymbol, functions) {
     fnSymbol->codegenPrototype();
@@ -984,11 +992,33 @@ void codegen(void) {
   if (no_codegen)
     return;
 
+  if( fLLVMWideOpt ) {
+    // --llvm-wide-opt is picky about other settings.
+    // Check them here.
+    if (!llvmCodegen ) USR_FATAL("--llvm-wide-opt requires --llvm");
+    if ( widePointersStruct ) {
+      // generating global pointers of size > 64 bits is not
+      // possible with LLVM 3.3; it might be possible in the future.
+
+      // If we have -fLLVMWideOpt, we must use packed wide
+      // pointers (because optimizations assume pointer size
+      //  is the same - at most 64 bits - for all address spaces.
+      //  'multiple address space' patch series, submitted to LLVM 3.2,
+      //  was backed out mostly for lack of testing. Perhaps the situation
+      //  will be resolved in LLVM 3.4).
+      USR_FATAL("--llvm-wide-opt requires packed wide pointers; " \
+                "try export CHPL_WIDE_POINTERS=node16");
+    }
+  }
+
   if( widePointersStruct ) {
     // OK
   } else {
+    // While the C code generator can emit packed pointers,
+    // it does so only to help make sure that packed pointer code
+    // generation is correct. It is not a "supported configuration".
     if( ! llvmCodegen )
-      USR_FATAL("C code generation for packed pointers not yet supported");
+      USR_WARN("C code generation for packed pointers not supported");
   }
 
   if( llvmCodegen ) {
@@ -1154,7 +1184,8 @@ GenInfo::GenInfo(
            Clang(NULL), clangTargetOptions(), clangLangOptions(),
            moduleName("root"), llvmContext(), Ctx(NULL),
            targetData(NULL), cgBuilder(NULL), cgAction(NULL),
-           targetLayout(),
+           tbaaRootNode(NULL), tbaaFtableNode(NULL), tbaaVmtableNode(NULL),
+           targetLayout(), globalToWideInfo(),
            FPM_postgen(NULL)
 {
   std::string home(CHPL_HOME);

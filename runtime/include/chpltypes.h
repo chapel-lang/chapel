@@ -98,7 +98,6 @@ typedef wide_ptr_t* ptr_wide_ptr_t;
 // It's useful to have the type for a wide pointer-to-void.
 // This is the packed pointer version (the other version would be {{node,subloc}, address}).
 #ifdef CHPL_WIDE_POINTER_PACKED
-//typedef void __attribute__((address_space(CHPL_WIDE_PTR_SPACE)))* wide_ptr_t;
 typedef void * wide_ptr_t;
 typedef wide_ptr_t* ptr_wide_ptr_t;
 #ifndef CHPL_WIDE_POINTER_NODE_BITS

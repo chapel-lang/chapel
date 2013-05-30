@@ -1,6 +1,7 @@
 UTIL_SRCS = \
 	clangUtil.cpp \
 	files.cpp \
+	llvmGlobalToWide.cpp \
 	llvmUtil.cpp \
 	misc.cpp \
 	mysystem.cpp \
