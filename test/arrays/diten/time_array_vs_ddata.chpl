@@ -16,7 +16,7 @@ proc main {
     }
   }
   t.stop();
-  writeln(A[n-1]);
+
   if printTimes {
     writeln("array ", t.elapsed());
   }
@@ -30,7 +30,7 @@ proc main {
     }
   }
   t.stop();
-  writeln(AA[n-1]);
+  writeln(AA[n-1] == A[n-1]);
   if printTimes {
     writeln("ddata ", t.elapsed());
   }
