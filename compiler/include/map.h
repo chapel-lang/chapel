@@ -112,12 +112,6 @@ class StringHashFns : public HashFns<const char*> {
   static int equal(const char *a, const char *b) { return !strcmp(a, b); }
 };
 
-class PointerHashFns : public HashFns<const void *> {
- public:
-  static unsigned int hash(const void *s) { return (unsigned int)(uintptr_t)s; }
-  static int equal(const void *a, const void *b) { return a == b; }
-};
-
 template <class C, class AHashFns> class ChainHash : public Map<unsigned int, List<C> > {
  public:
   using Map<unsigned int, List<C> >::n;

@@ -349,7 +349,6 @@ replaceIteratorFormalsWithIteratorFields(FnSymbol* iterator, Symbol* ic,
 
 
 static Map<FnSymbol*,FnSymbol*> iteratorFnMap;
-static Vec<FnSymbol*> iteratorWithOnStatementSet;
 static FnSymbol* argBundleCopyFn = NULL;
 static FnSymbol* argBundleFreeFn = NULL;
 static ClassType*  argBundleType = NULL;
@@ -1136,18 +1135,15 @@ expandBodyForIteratorInline(BlockStmt* body, Expr* bodyMarker, BlockStmt* ibody,
 // It can be inlined if it contains exactly one yield statement.
 static bool
 canInlineIterator(FnSymbol* iterator) {
-  Vec<BaseAST*> asts;
-  collect_asts(iterator, asts);
+  Vec<CallExpr*> calls;
+  collectCallExprs(iterator, calls);
   int count = 0;
-  forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* call = toCallExpr(ast))
-    {
+  forv_Vec(CallExpr, call, calls) {
       if (call->isPrimitive(PRIM_YIELD))
         count++;
       else if (FnSymbol* taskFn = resolvedToTaskFun(call))
-        // Need to descend into 'taskFn' - append to 'asts'.
-        collect_asts(taskFn->body, asts);
-    }
+        // Need to descend into 'taskFn' - append to 'calls'.
+        collectCallExprs(taskFn->body, calls);
   }
   // count==0 e.g. in users/biesack/test_recursive_iterator.chpl
   if (count == 1)
@@ -1181,12 +1177,11 @@ canInlineSingleYieldIterator(Symbol* gIterator) {
     BlockStmt *block = iterator->body;
 
     INT_ASSERT(block);
-    Vec<BaseAST*> asts;
-    collect_asts(block, asts);
+    Vec<CallExpr*> calls;
+    collectCallExprs(block, calls);
 
     int numYields = 0;
-    forv_Vec(BaseAST, ast, asts) {
-      CallExpr* call = toCallExpr(ast);
+    forv_Vec(CallExpr, call, calls) {
       if (call && call->isPrimitive(PRIM_YIELD)) {
         numYields++;
         if (iterator->body != call->parentExpr) return false;
@@ -1196,7 +1191,7 @@ canInlineSingleYieldIterator(Symbol* gIterator) {
           // Need to descend into 'taskFn' - append to 'asts'.
           // If there are any yields there, they will trigger
           // 'return false' above.
-          collect_asts(taskFn->body, asts);
+          collectCallExprs(taskFn->body, calls);
         }
       }
     }
@@ -1661,6 +1656,14 @@ static void reconstructIRautoCopyAutoDestroy()
 }
 
 
+// release some memory
+static void cleanupTemporaryVectors() {
+  taskFunInRecursiveIteratorSet.clear();
+  iteratorFnMap.clear();
+  loopBodyFnArgsSuppliedMap.clear();
+}
+
+
 void lowerIterators() {
   nonLeaderParCheck();
 
@@ -1708,4 +1711,6 @@ void lowerIterators() {
   handlePolymorphicIterators();
 
   reconstructIRautoCopyAutoDestroy();
+
+  cleanupTemporaryVectors();
 }

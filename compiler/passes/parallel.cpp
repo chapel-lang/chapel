@@ -842,13 +842,12 @@ reprivatizeIterators() {
 
 void
 parallel(void) {
-  // This name is for historical reasons.
-  Vec<FnSymbol*> nestedFunctions;
+  Vec<FnSymbol*> taskFunctions;
 
   // Collect the task functions for processing.
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (isTaskFun(fn)) {
-      nestedFunctions.add(fn);
+      taskFunctions.add(fn);
       // Would need to flatten them if they are not already.
       INT_ASSERT(isGlobal(fn));
     }
@@ -856,7 +855,7 @@ parallel(void) {
 
   compute_call_sites();
 
-  remoteValueForwarding(nestedFunctions);
+  remoteValueForwarding(taskFunctions);
 
   reprivatizeIterators();
 
@@ -891,7 +890,7 @@ parallel(void) {
     }
   }
 
-  forv_Vec(FnSymbol, fn, nestedFunctions) {
+  forv_Vec(FnSymbol, fn, taskFunctions) {
     BundleArgsFnData baData = bundleArgsFnDataInit;
     forv_Vec(CallExpr, call, *fn->calledBy) {
       SET_LINENO(call);

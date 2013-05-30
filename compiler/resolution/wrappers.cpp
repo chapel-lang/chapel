@@ -638,9 +638,10 @@ buildPromotionWrapper(FnSymbol* fn,
 
       BlockStmt* body = new BlockStmt(new CallExpr(PRIM_YIELD, leaderIndex));
       BlockStmt* loop = buildForLoopStmt(new SymExpr(leaderIndex), new SymExpr(leaderIterator), body, false, zippered);
-      body->insertAtHead(new DefExpr(leaderIndex));
       lifn->insertAtTail(loop);
       theProgram->block->insertAtTail(new DefExpr(lifn));
+      INT_ASSERT(body->parentExpr && toBlockStmt(body->parentExpr));
+      toBlockStmt(body->parentExpr)->insertAtHead(new DefExpr(leaderIndex));
       normalize(lifn);
       lifn->instantiationPoint = getVisibilityBlock(info->call);
 

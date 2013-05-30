@@ -1,4 +1,4 @@
-#ifndef _PASSES_H
+#ifndef _PASSES_H_
 #define _PASSES_H_
 
 #include "symbol.h"

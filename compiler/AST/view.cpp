@@ -216,6 +216,7 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
     }
 
     if (SymExpr* sym = toSymExpr(expr)) {
+      printf(" ");
       view_sym(sym->var, number, mark);
     } else if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(expr)) {
       printf(" '%s'", sym->unresolved);

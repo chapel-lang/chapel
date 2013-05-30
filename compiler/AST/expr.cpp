@@ -2725,6 +2725,8 @@ void CallExpr::verify() {
   }
   if (argList.parent != this)
     INT_FATAL(this, "Bad AList::parent in CallExpr");
+  if (baseExpr && baseExpr->parentExpr != this)
+    INT_FATAL(this, "Bad baseExpr::parent in CallExpr");
   if (normalized && isPrimitive(PRIM_RETURN)) {
     FnSymbol* fn = toFnSymbol(parentSymbol);
     SymExpr* sym = toSymExpr(get(1));
@@ -2747,6 +2749,37 @@ void CallExpr::verify() {
             INT_FATAL(this, "actual formal type mismatch");
         }
       }
+    }
+  }
+  if (primitive) {
+    if (!(PRIM_UNKNOWN <= primitive->tag && primitive->tag < NUM_KNOWN_PRIMS))
+      INT_FATAL(this, "invalid primitive->tag");
+    switch (primitive->tag) {
+    case(PRIM_BLOCK_PARAM_LOOP):
+    case(PRIM_BLOCK_WHILEDO_LOOP):
+    case(PRIM_BLOCK_DOWHILE_LOOP):
+    case(PRIM_BLOCK_FOR_LOOP):
+    case(PRIM_BLOCK_BEGIN):
+    case(PRIM_BLOCK_COBEGIN):
+    case(PRIM_BLOCK_COFORALL):
+    case(PRIM_BLOCK_XMT_PRAGMA_FORALL_I_IN_N):
+    case(PRIM_BLOCK_XMT_PRAGMA_NOALIAS):
+    case(PRIM_BLOCK_ON):
+    case(PRIM_BLOCK_ON_NB):
+    case(PRIM_BLOCK_LOCAL):
+      if (toBlockStmt(parentExpr)) {
+        // does not pass:
+        //if (toBlockStmt(parentExpr)->blockInfo != this)
+        //  INT_FATAL(this, "blockInfo-type CallExpr not parent's blockInfo");
+      } else {
+        INT_FATAL(this, "blockInfo-type CallExpr not in a BlockStmt");
+      }
+      break;
+    case(PRIM_BLOCK_UNLOCAL):
+      INT_FATAL("PRIM_BLOCK_UNLOCAL between passes");
+      break;
+    default:
+      break; // do nothing
     }
   }
 }
