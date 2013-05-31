@@ -6,20 +6,19 @@ To build the compiler with LLVM support:
  make
 
 Notes:
- -- if you have already built the compiler,
-    you'll need to do a clean build in order to get
-    LLVM support. Also, if you have a built llvm
-    in third-party/llvm/install, even if you forget
-    to export CHPL_LLVM=llvm, the default will be
-    to use the built llvm.
- -- the Makefile in third-party/llvm will use
-    svn to download the latest llvm and clang.
-    We expect this code to work with LLVM
-    3.1 and 3.2.
+  -- if you have already built the compiler, you'll need to do a clean
+     build in order to get LLVM support. Also, if you have a built llvm in
+     third-party/llvm/install, even if you forget to export CHPL_LLVM=llvm,
+     the default will be to use the built llvm.
 
+  -- the Makefile in third-party/llvm
+     will use svn to download the latest llvm and clang.  We expect this code
+     to work with LLVM 3.1, 3.2, and 3.3.
 
-To compile a program using the LLVM backend, add
---llvm to the chpl command line. If you pass a
---savec directory, the LLVM backend will emit
-a .bc file in that directory.
+To compile a program using the LLVM backend, add --llvm to the chpl command
+line. If you pass a --savec directory, the LLVM backend will emit a .bc file in
+that directory.
 
+Additionally, if you build your compiler with CHPL_WIDE_POINTERS=node16
+and then compile a program with --llvm --llvm-wide-opt --fast, you will
+activate communication optimization within LLVM.
