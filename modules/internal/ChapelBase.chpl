@@ -1083,51 +1083,41 @@ module ChapelBase {
   proc isIterator(ir: _iteratorRecord) param return true;
   proc isIterator(not_an_iterator) param return false;
   
-  proc typesRequireCastForOpEqual(type ltype, type rtype) param {
-    return ltype == rtype || (_isIntegralType(ltype) && _isBooleanType(rtype));
-  }
-  
   
   /* op= operators
-   * The cast is required when the types match in order to allow
-   * e.g.  int(8) op= int(8);
-   * but disallow e.g. int(8) op= int(16);
-   * Also, need to add a cast for integral op= bool
    */
   inline proc +=(ref lhs, rhs) where !chpl__isDomain(lhs) && !isIterator(lhs) {
-    lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type)
-          then (lhs+rhs):lhs.type else (lhs+rhs);
+    lhs = lhs + rhs;
   }
   inline proc -=(ref lhs, rhs) where !chpl__isDomain(lhs) && !isIterator(lhs) {
-    lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs-rhs):lhs.type else (lhs-rhs);
+    lhs = lhs - rhs;
   }
   inline proc *=(ref lhs, rhs) where !isIterator(lhs) {
-    lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs*rhs):lhs.type else (lhs*rhs);
+    lhs = lhs * rhs;
   }
   inline proc /=(ref lhs, rhs) where !isIterator(lhs) {
-    lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs/rhs):lhs.type else (lhs/rhs);
+    lhs = lhs / rhs;
   }
   inline proc %=(ref lhs, rhs) where !isIterator(lhs) {
-    lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs%rhs):lhs.type else (lhs%rhs);
+    lhs = lhs % rhs;
   }
   inline proc **=(ref lhs, rhs) where !isIterator(lhs) {
-    lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs**rhs):lhs.type else (lhs**rhs);
+    lhs = lhs ** rhs;
   }
   inline proc &=(ref lhs, rhs) where !isIterator(lhs) {
-    lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs&rhs):lhs.type else (lhs&rhs);
+    lhs = lhs & rhs;
   }
   inline proc |=(ref lhs, rhs) where !isIterator(lhs) {
-    lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type)
-          then (lhs|rhs):lhs.type else (lhs|rhs);
+    lhs = lhs | rhs;
   }
   inline proc ^=(ref lhs, rhs) where !isIterator(lhs) {
-    lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs^rhs):lhs.type else (lhs^rhs);
+    lhs = lhs ^ rhs;
   }
   inline proc >>=(ref lhs, rhs) where !isIterator(lhs) {
-    lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs>>rhs):lhs.type else (lhs>>rhs);
+    lhs = lhs >> rhs;
   }
   inline proc <<=(ref lhs, rhs) where !isIterator(lhs) {
-    lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs<<rhs):lhs.type else (lhs<<rhs);
+    lhs = lhs << rhs;
   }
   
   /* This set of overloads should not be required, but the fully generic versions
