@@ -181,7 +181,10 @@ module ChapelBase {
   inline proc =(a: real(?w), b: real(w)) return b;
   inline proc =(a: imag(?w), b: imag(w)) return b;
   inline proc =(a: complex(?w), b: complex(w)) return b;
-  inline proc =(a: string, b: string) return __primitive("string_copy", b);
+  // This implies that the *representation* of strings is shared.
+  // If strings are reimplemented as classes or records, a less trivial
+  // implementation for assignment will become necessary.
+  inline proc =(a: string, b: string) return b;
   inline proc =(a, b) return b;
   
   //
@@ -943,9 +946,8 @@ module ChapelBase {
   
   pragma "init copy fn"
   inline proc chpl__initCopy(a) {
-    if a.type == string then
-      return __primitive("string_copy", a);
-    else
+    // Currently, string representations are shared.
+    // (See note on proc =(a:string, b:string) above.)
       return a;
   }
   

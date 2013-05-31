@@ -310,11 +310,15 @@ fixupDestructors() {
                   new CallExpr(PRIM_GET_MEMBER_VALUE, fn->_this, field)));
           fn->insertBeforeReturnAfterLabel(new CallExpr(autoDestroyFn, tmp));
         } else if (field->type == dtString && !ct->symbol->hasFlag(FLAG_TUPLE)) {
-          VarSymbol* tmp = newTemp("_field_destructor_tmp_", dtString);
-          fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
-          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
-            new CallExpr(PRIM_GET_MEMBER_VALUE, fn->_this, field)));
-          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_CHPL_FREE, tmp));
+// Temporary expedient: Leak strings like crazy.
+// See note about not freeing narrow strings in expr.cpp near PRIM_CHPL_FREE.
+//          VarSymbol* tmp = newTemp("_field_destructor_tmp_", dtString);
+//          fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
+//          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
+//            new CallExpr(PRIM_GET_MEMBER_VALUE, fn->_this, field)));
+//          fn->insertBeforeReturnAfterLabel(
+//            new CallExpr(PRIM_CHPL_MEMHOOK_FREE, tmp));
+//          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_TASK_FREE, tmp));
         }
       }
 

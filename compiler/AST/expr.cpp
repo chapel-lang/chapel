@@ -41,7 +41,6 @@ static GenRet codegenRlocale(GenRet wide);
 static GenRet codegenRnode(GenRet wide);
 static GenRet codegenRsubloc(GenRet wide);
 
-
 static GenRet codegenAddrOf(GenRet r);
 
 /* Note well the difference between codegenCall and codegenCallExpr.
@@ -766,9 +765,7 @@ GenRet codegenLocaleID(GenRet node, GenRet subloc)
   return ret;
 }
 
-// A construct which gives the current localeID (c_localeID_t)
-// This is a partial implementation; it always uses 0 for the sublocale
-// portion of the locale ID.
+// A construct which gives the current locale ID.
 static
 GenRet codegenGetLocaleID(void)
 {
@@ -861,6 +858,7 @@ static GenRet codegenWideStringField(GenRet ws, const char* field)
 
   INT_ASSERT(isWideString(ws.chplType));
 
+  ClassType *classType = toClassType(ws.chplType);
   if( info->cfile ) {
     if (ws.isLVPtr == GEN_PTR) {
       ret.isLVPtr = GEN_PTR;
@@ -873,7 +871,6 @@ static GenRet codegenWideStringField(GenRet ws, const char* field)
     }
   } else {
 #ifdef HAVE_LLVM
-    ClassType *classType = toClassType(ws.chplType);
     if (ws.val->getType()->isPointerTy()){
       ret.isLVPtr = GEN_PTR;
       ret.val = info->builder->CreateConstInBoundsGEP2_32(ws.val, 0, classType->getMemberGEP(field));
@@ -883,7 +880,8 @@ static GenRet codegenWideStringField(GenRet ws, const char* field)
     }
 #endif
   }
-
+  Symbol* fieldSymbol = classType->getField("size", true);
+  ret.chplType = fieldSymbol->typeInfo();
   return ret;
 }
 
@@ -1012,6 +1010,16 @@ static GenRet codegenRlocale(GenRet wide)
   }
   ret.isLVPtr = GEN_VAL;
   ret.chplType = type;
+  return ret;
+}
+
+// Applies to wide strings only.
+// Returns a reference to the size field in a wide string struct.
+static GenRet codegenRsize(GenRet wideString)
+{
+  Type* type = wideString.chplType;
+  INT_ASSERT(isWideString(type));
+  GenRet ret = codegenWideStringField(wideString, "size");
   return ret;
 }
 
@@ -1638,7 +1646,7 @@ GenRet codegenDeref(GenRet r)
   GenRet ret;
 
   INT_ASSERT(r.chplType);
-  if ( r.chplType->symbol->hasFlag(FLAG_WIDE) ){
+  if (r.chplType->symbol->hasEitherFlag(FLAG_WIDE, FLAG_WIDE_CLASS)) {
     ret = codegenValue(r);
     ret.isLVPtr = GEN_WIDE_PTR;
     ret.chplType = r.chplType->getValType();
@@ -2836,7 +2844,7 @@ void codegenAssign(GenRet to_ptr, GenRet from)
   }
 
   if( (to_ptr.isLVPtr != GEN_WIDE_PTR && from.isLVPtr != GEN_WIDE_PTR )) {
-    // Neither are wide.
+    // Neither is wide.
     if( isStarTuple ) {
       // Homogenous tuples are pointers even when GEN_VAL is set.
       // Homogeneous tuples are copied specially
@@ -2910,15 +2918,29 @@ void codegenAssign(GenRet to_ptr, GenRet from)
       //         ...);
 
       // Generate a GET
-      codegenCall("chpl_gen_comm_get",
-                   codegenCastToVoidStar(to_ptr),
-                   codegenRnode(from),
-                   codegenRaddr(from),
-                   codegenSizeof(type),
-                   genTypeStructureIndex(type->symbol),
-                   codegenOne(),
-                   info->lineno, info->filename
-                  );
+      if (type == wideStringType)
+        // Special case for wide strings:
+        // We perform a deep copy to obtain a char* that can be referred to locally.
+        // Currently, the local character buffer is always leaked. :(
+        codegenCall("chpl_gen_comm_wide_string_get",
+                    codegenCastToVoidStar(to_ptr),
+                    codegenRnode(from),
+                    codegenRaddr(from),
+                    codegenSizeof(type),
+                    genTypeStructureIndex(type->symbol),
+                    codegenOne(),
+                    info->lineno, info->filename 
+          );
+      else
+        codegenCall("chpl_gen_comm_get",
+                    codegenCastToVoidStar(to_ptr),
+                    codegenRnode(from),
+                    codegenRaddr(from),
+                    codegenSizeof(type),
+                    genTypeStructureIndex(type->symbol),
+                    codegenOne(),
+                    info->lineno, info->filename 
+          );
     } else {
       // Generate a PUT
       // to is already a pointer.
@@ -4273,11 +4295,12 @@ GenRet CallExpr::codegen() {
         ptr = codegenRaddr(ptr);
       codegenCall("chpl_check_nil", ptr, info->lineno, info->filename); 
       break; }
-    case PRIM_LOCAL_CHECK: {
+    case PRIM_LOCAL_CHECK:
+    {
       // arguments are (wide ptr, line, function/file, error string)
       const char *error;
-      INT_ASSERT(get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
-                 get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS));
+      if (!get(1)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE, FLAG_WIDE_CLASS))
+        break;
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
           get(1)->typeInfo()->getField("addr")->typeInfo()->symbol->
             hasFlag(FLAG_EXTERN)) {
@@ -4285,9 +4308,16 @@ GenRet CallExpr::codegen() {
       } else {
         error = "cannot access remote data in local block";
       }
-      codegenCall("chpl_test_local",
-                  codegenRnode(get(1)), get(2), get(3), error); 
-      break; }
+      GenRet filename;
+      if (get(3)->typeInfo() == wideStringType)
+        // We expect that the filename string will always be local.
+        filename = codegenRaddr(get(3));
+      else
+        filename = GenRet(get(3));
+      codegenCall("chpl_check_local",
+                  codegenRnode(get(1)), get(2), filename, error); 
+      break;
+    }
     case PRIM_SYNC_INIT:
     case PRIM_SYNC_DESTROY:{
       GenRet fieldPtr = codegenLocalAddrOf(codegenFieldPtr(get(1), "sync_aux"));
@@ -4696,6 +4726,14 @@ GenRet CallExpr::codegen() {
         break;
       INT_ASSERT(numActuals() == 3);
       Expr * ptrExpr = get(1);
+      if (ptrExpr->typeInfo()->getValType() == dtString &&
+          ! ptrExpr->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
+        // The representation of a local string may be shared among several
+        // variables.  We can't (yet) tell who owns the data, so we can't
+        // release it ever.  Otherwise, we'll get double-deletion errors.
+        // This unfortunate situation will change when
+        // string representations are reference-counted.
+        break;
       if( ptrExpr->typeInfo()->symbol->hasFlag(FLAG_DATA_CLASS))
         INT_FATAL(this, "cannot delete data class");
       GenRet ptr; 
@@ -4843,12 +4881,38 @@ GenRet CallExpr::codegen() {
       break;
     case PRIM_STRING_COPY:
     {
+      GenRet cpyFrom = get(1)->codegen();
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        GenRet cpyTo = get(1)->codegen();
-        cpyTo.isLVPtr = GEN_VAL;
-        ret = codegenCallExpr("chpl_wide_string_copy", cpyTo, get(2), get(3));
+        cpyFrom.isLVPtr = GEN_VAL; // Prevent &(char*) syntax.
+        ret = codegenCallExpr("chpl_wide_string_copy", cpyFrom, get(2), get(3));
       } else
         ret = codegenBasicPrimitiveExpr(this);
+      break;
+    }
+    case PRIM_STRING_NORMALIZE:
+     // string_normalize(ptr, len);
+     // string_normalize(ptr);
+    {
+      // If this is a wide string, overwrite the size field with the second arg
+      // (if present) or the internally-computed length.  Otherwise, do nothing.
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+        // This applies only to wide strings.
+        GenRet ptr = get(1);
+        GenRet size = codegenRsize(ptr);    // Get a pointer to the size field.
+        GenRet len;
+
+        // Use the len argument if present, otherwise use string_length().
+        if (numActuals() > 1)
+          len = codegenValue(get(2));
+        else
+        {
+          GenRet strlen = codegenCallExpr("string_length", codegenRaddr(get(1)));
+          len = codegenAdd(codegenOne(), strlen);
+        }
+
+        // Set the value of the size field.
+        codegenAssign(size, len);
+      }
       break;
     }
     case PRIM_RT_ERROR:

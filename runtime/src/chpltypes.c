@@ -22,6 +22,8 @@
 const char* _default_format_write_complex64 = "%g + %gi";
 const char* _default_format_write_complex128 = "%g + %gi";
 
+// Uses the system allocator.  Should not be used to create user-visible data
+// (error messages are OK).
 char* chpl_glom_strings(int numstrings, ...) {
   va_list ap;
   int i, len;
@@ -78,6 +80,46 @@ chpl_wide_string_copy(chpl____wide_chpl_string* x, int32_t lineno, chpl_string f
   }
 }
 
+// This copies the remote string data into a local wide string representation
+// of the same.
+// This routine performs a deep copy of the character array data 
+// after fetching the string descriptor from the remote node.  (The char*
+// field in the local copy of the remote descriptor has no meaning in the 
+// context of the local node, since it refers to elements in the address 
+// space on the remote node.)  
+// In chpl_comm_wide_get_string() a buffer of the right size is allocated 
+// to receive the bytes copied from the remote node.  This buffer will be leaked,
+// since no corresponding free is added to the generated code.
+void chpl_gen_comm_wide_string_get(void* addr,
+  int32_t node, void* raddr, int32_t elemSize, int32_t typeIndex, int32_t len,
+  int ln, chpl_string fn)
+{
+  // This part just copies the descriptor.
+  if (chpl_nodeID == node) {
+    memcpy(addr, raddr, elemSize*len);
+  } else {
+#ifdef CHPL_TASK_COMM_GET
+    chpl_task_comm_get(addr, node, raddr, elemSize, typeIndex, len, ln, fn);
+#else
+    chpl_comm_get(addr, node, raddr, elemSize, typeIndex, len, ln, fn);
+#endif
+  }
+
+  // And now we copy the bytes in the string itself.
+  {
+    struct chpl_chpl____wide_chpl_string_s* local_str =
+      (struct chpl_chpl____wide_chpl_string_s*) addr;
+    // Accessing the addr field of the incomplete struct declaration
+    // would not work in this context except that this function
+    // is always inlined.
+    chpl_comm_wide_get_string((chpl_string*) &(local_str->addr),
+                              local_str, typeIndex, ln, fn);
+    // The bytes live locally, so we have to update the locale.
+    local_str->locale.node = chpl_nodeID;
+    local_str->locale.subloc = chpl_task_getSubLoc();
+  }
+}
+
 // un-macro'd CHPL_WIDEN_STRING
 void
 chpl_string_widen(chpl____wide_chpl_string* x, chpl_string from)
@@ -88,7 +130,9 @@ chpl_string_widen(chpl____wide_chpl_string* x, chpl_string from)
   x->addr = chpl_mem_allocMany(len, sizeof(char),
                                CHPL_RT_MD_SET_WIDE_STRING, 0, 0);
   strncpy((char*)x->addr, from, len);
-  x->size = len;
+  if (*((len-1)+(char*)x->addr) != '\0')
+    chpl_internal_error("String missing terminating NUL.");
+  x->size = len;    // This size includes the terminating NUL.
 }
 
 // un-macro'd CHPL_COMM_WIDE_GET_STRING
@@ -165,7 +209,8 @@ string_strided_select(chpl_string x, int low, int high, int stride, int32_t line
     }
   }
   *dst = '\0';
-  return chpl_glom_strings(1, result);
+  // result is already a copy, so we don't have to copy  it again.
+  return result;
 }
 
 chpl_string
@@ -175,11 +220,12 @@ string_select(chpl_string x, int low, int high, int32_t lineno, chpl_string file
 
 chpl_string
 string_index(chpl_string x, int i, int32_t lineno, chpl_string filename) {
-  char buffer[2];
+  char* buffer = chpl_mem_allocMany(2, sizeof(char), CHPL_RT_MD_STRING_COPY_DATA,
+                                  lineno, filename);
   if (i-1 < 0 || i-1 >= string_length(x))
     chpl_error("string index out of bounds", lineno, filename);
   sprintf(buffer, "%c", x[i-1]);
-  return chpl_glom_strings(1, buffer);
+  return buffer;
 }
 
 

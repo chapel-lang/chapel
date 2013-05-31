@@ -1,3 +1,5 @@
+// primitive.cpp
+
 #include "expr.h"
 #include "iterator.h"
 #include "primitive.h"
@@ -551,6 +553,7 @@ initPrimitive() {
   prim_def("ascii", returnInfoInt32);
   prim_def("string_index", returnInfoString, true, true);
   prim_def(PRIM_STRING_COPY, "string_copy", returnInfoString, false, true);
+  prim_def(PRIM_STRING_NORMALIZE, "string_normalize", returnInfoVoid, true, false);
   prim_def("string_select", returnInfoString, true, true);
   prim_def("string_strided_select", returnInfoString, true, true);
   prim_def("sleep", returnInfoVoid, true);
