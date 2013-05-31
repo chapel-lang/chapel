@@ -197,7 +197,7 @@ void setupClangContext(GenInfo* info, ASTContext* Ctx)
   // Always set the module layout. This works around an apparent bug in
   // clang or LLVM (trivial/deitz/test_array_low.chpl would print out the
   // wrong answer  because some i64s were stored at the wrong alignment).
-  info->module->setDataLayout(layout);
+  if( info->module ) info->module->setDataLayout(layout);
 
   info->targetData =
     new LLVM_TARGET_DATA(info->Ctx->getTargetInfo().getTargetDescription());
