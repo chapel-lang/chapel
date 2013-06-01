@@ -3,5 +3,5 @@
 #
 #
 #
-CHPL_MAKE_WIDE_POINTERS = $(shell $(CHPL_MAKE_HOME)/util/chplenv/widePointers)
-CHPL_MAKE_WIDE_POINTERS_DEFINES = $(shell $(CHPL_MAKE_HOME)/util/chplenv/widePointers --define)
+export CHPL_MAKE_WIDE_POINTERS = $(shell $(CHPL_MAKE_HOME)/util/chplenv/widePointers)
+export CHPL_MAKE_WIDE_POINTERS_DEFINES = $(shell $(CHPL_MAKE_HOME)/util/chplenv/widePointers --define)

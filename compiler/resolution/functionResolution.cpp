@@ -2738,6 +2738,9 @@ insertFormalTemps(FnSymbol* fn) {
           fn->insertAtHead(new DefExpr(typeTmp));
         }
       } else if (formal->intent == INTENT_INOUT || formal->intent == INTENT_IN || formal->intent == INTENT_CONST_IN) {
+        // TODO: Adding a formal temp for INTENT_CONST_IN is conservative.
+        // If the compiler verifies in a separate pass that it is never written,
+        // we don't have to copy it.  
         fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr("chpl__initCopy", formal)));
         tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
       } else {
@@ -3690,7 +3693,7 @@ preFold(Expr* expr) {
           // check legal lvalue
           if (SymExpr* rhs = toSymExpr(call->get(1))) {
             if (rhs->var->hasFlag(FLAG_EXPR_TEMP) || rhs->var->isConstant() || rhs->var->isParameter())
-              USR_FATAL(call, "illegal lvalue in assignment");
+              USR_FATAL_CONT(call, "illegal lvalue in assignment");
           }
         }
       }
@@ -4107,7 +4110,7 @@ postFold(Expr* expr) {
         if (!lhs)
           INT_FATAL(call, "unexpected case");
         if (lhs->var->hasFlag(FLAG_EXPR_TEMP) || lhs->var->isConstant() || lhs->var->isParameter())
-          USR_FATAL(call, "illegal lvalue in assignment");
+          USR_FATAL_CONT(call, "illegal lvalue in assignment");
       }
     } else if (call->isPrimitive(PRIM_MOVE)) {
       bool set = false;

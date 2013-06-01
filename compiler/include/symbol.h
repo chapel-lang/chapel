@@ -154,11 +154,18 @@ class TypeSymbol : public Symbol {
   // and cache it if it has.
 #ifdef HAVE_LLVM
   llvm::Type* llvmType;
+  llvm::MDNode* llvmTbaaNode;
+  llvm::MDNode* llvmConstTbaaNode;
+  llvm::MDNode* llvmTbaaStructNode;
+  llvm::MDNode* llvmConstTbaaStructNode;
 #else
   // Keep same layout so toggling HAVE_LLVM
   // will not lead to build errors without make clean
-  // For C, we will store a pointer to the cname here
   void* llvmType;
+  void* llvmTbaaNode;
+  void* llvmConstTbaaNode;
+  void* llvmTbaaStructNode;
+  void* llvmConstTbaaStructNode;
 #endif
   bool codegenned;
 
@@ -169,6 +176,9 @@ class TypeSymbol : public Symbol {
   GenRet codegen();
   void codegenDef();
   void codegenPrototype();
+  // This function is used to code generate the LLVM TBAA metadata
+  // after all of the types have been defined.
+  void codegenMetadata();
 };
 
 

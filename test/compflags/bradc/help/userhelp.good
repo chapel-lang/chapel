@@ -75,6 +75,8 @@ C Code Compilation Options:
 
 LLVM Code Generation Options:
       --[no-]llvm                     [Don't] use the LLVM code generator
+      --[no-]llvm-wide-opt            Enable [disable] LLVM wide pointer
+                                      optimizations
 
 Documentation Options:
       --[no-]docs                     Runs documentation on the source file

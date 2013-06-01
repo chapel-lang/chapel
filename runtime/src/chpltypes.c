@@ -81,8 +81,6 @@ chpl_wide_string_copy(chpl____wide_chpl_string* x, int32_t lineno, chpl_string f
   }
 }
 
-#include "chpl-gen-includes.h" // for chpl_gen_getLocaleID
-
 // This copies the remote string data into a local wide string representation
 // of the same.
 // This routine performs a deep copy of the character array data 
@@ -118,7 +116,7 @@ void chpl_gen_comm_wide_string_get(void* addr,
     chpl_comm_wide_get_string((chpl_string*) &(local_str->addr),
                               local_str, typeIndex, ln, fn);
     // The bytes live locally, so we have to update the locale.
-    local_str->locale = chpl_gen_getLocaleID();
+    local_str->locale = chpl_gen_getLocaleID();n
   }
 }
 
@@ -131,7 +129,9 @@ chpl_string_widen(chpl____wide_chpl_string* x, chpl_string from)
   x->addr = chpl_tracked_task_calloc(len, sizeof(char),
                                CHPL_RT_MD_SET_WIDE_STRING, 0, 0);
   strncpy((char*)x->addr, from, len);
-  x->size = len;	// This size includes the terminating NUL.
+  if (*((len-1)+(char*)x->addr) != '\0')
+    chpl_internal_error("String missing terminating NUL.");
+  x->size = len;    // This size includes the terminating NUL.
 }
 
 // un-macro'd CHPL_COMM_WIDE_GET_STRING
@@ -286,3 +286,41 @@ const char* chpl_get_argument_i(chpl_main_argument* args, int32_t i)
   if( i > args->argc ) return NULL;
   return args->argv[i];
 }
+
+#include "chpl-wide-ptr-fns.h"
+
+// These functions are used by the LLVM wide optimization
+
+// Extract the local address portion of a packed/wide pointer
+void* chpl_wide_ptr_get_address_sym(wide_ptr_t ptr);
+
+// Read the locale information from a wide pointer.
+void chpl_wide_ptr_read_localeID_sym(wide_ptr_t ptr, chpl_localeID_t* loc);
+
+// Read the node number from a wide pointer.
+c_nodeid_t chpl_wide_ptr_get_node_sym(wide_ptr_t ptr);
+
+// Build a wide pointer from locale information and an address.
+wide_ptr_t chpl_return_wide_ptr_loc_sym(const chpl_localeID_t* loc, void * addr);
+
+void* chpl_wide_ptr_get_address_sym(wide_ptr_t ptr)
+{
+  return chpl_wide_ptr_get_address(ptr);
+}
+
+void chpl_wide_ptr_read_localeID_sym(wide_ptr_t ptr, chpl_localeID_t* loc)
+{
+  *loc = chpl_wide_ptr_get_localeID(ptr);
+}
+
+c_nodeid_t chpl_wide_ptr_get_node_sym(wide_ptr_t ptr)
+{
+  return chpl_wide_ptr_get_node(ptr);
+}
+
+wide_ptr_t chpl_return_wide_ptr_loc_sym(const chpl_localeID_t* loc, void * addr)
+{
+  return chpl_return_wide_ptr_loc(*loc, addr);
+}
+
+

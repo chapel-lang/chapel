@@ -102,37 +102,23 @@ bool isTypeEquivalent(llvm::Type* a, llvm::Type* b)
   return false;
 }
 
-/*
-  // Try flattening and converting.
-  std::vector<llvm::Type*> af;
-  std::vector<llvm::Type*> bf;
-
-  accumulateBasicTypes(a, af);
-  accumulateBasicTypes(b, bf);
-
-  if( af.size() != bf.size() ) return false;
-
-  unsigned ai, bi;
-  ai = bi = 0;
-  // Now try comparing them.
-  while( ai < af.size() && bi < bf.size() ) {
-    if( af[ai] == bf[bi] ) {
-      ai++;
-      bi++;
-    } else if( af[ai]->isEmptyTy() ) {
-      ai++;
-    } else if( bf[ai]->isEmptyTy() ) {
-      bi++;
-    } else {
-      // Not equivalent.
-      return false;
-    }
+llvm::Value* createTempVarLLVM(llvm::Type* type, const char* name)
+{
+  GenInfo* info = gGenInfo;
+  // It's important to alloca at the front of the function in order
+  // to avoid having an alloca in a loop which is a good way to achieve
+  // stack overflow.
+  llvm::Function *func = info->builder->GetInsertBlock()->getParent();
+  if(llvm::Instruction *i = func->getEntryBlock().getTerminator()) {
+    info->builder->SetInsertPoint(i);
+  } else {
+    info->builder->SetInsertPoint(&func->getEntryBlock());
   }
-  if( ai != af.size() ||
-      bi != bf.size() ) return false;
-  return true;
+
+  llvm::AllocaInst *tempVar = info->builder->CreateAlloca(type, 0, name);
+  info->builder->SetInsertPoint(&func->back());
+  return tempVar;
 }
-*/
 
 llvm::Value *convertValueToType(
     llvm::Value *value,
@@ -208,7 +194,7 @@ llvm::Value *convertValueToType(
     if( isTypeEquivalent(curType, newType) ) {
       // We turn it into a store/load to convert the type
       // since LLVM does not allow bit casts on structure types.
-      llvm::Value* tmp = info->builder->CreateAlloca(newType);
+      llvm::Value* tmp = createTempVarLLVM(newType, "");
       llvm::Type* fromType = curType->getPointerTo();
       llvm::Value* tmp2 = info->builder->CreatePointerCast(tmp, fromType);
       info->builder->CreateStore(value, tmp2);
@@ -406,6 +392,17 @@ PromotedPair convertValuesToLarger(
   }
   
   return PromotedPair(NULL, NULL, false);
+}
+
+bool isTypeSizeSmallerThan(LLVM_TARGET_DATA * layout, llvm::Type* ty, uint64_t max_size_bytes)
+{
+  if( ! ty->isSized() ) return false; // who knows how big it is!
+
+  uint64_t sz = layout->getTypeSizeInBits(ty);
+  sz *= 8; // now in bytes.
+
+  if( sz < max_size_bytes ) return true;
+  return false;
 }
 
 #endif

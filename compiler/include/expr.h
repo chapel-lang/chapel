@@ -180,6 +180,27 @@ static inline bool isAlive(Type* type) {
 #define isRootModuleWithType(ast, type)  \
   (E_##type == E_ModuleSymbol && ((ModuleSymbol*)(ast)) == rootModule)
 
+static inline bool isGlobal(Symbol* symbol) {
+  return isModuleSymbol(symbol->defPoint->parentSymbol);
+}
+
+static inline bool isTaskFun(FnSymbol* fn) {
+  INT_ASSERT(fn);
+  // Testing individual flags is more efficient than ops on entire FlagSet?
+  return fn->hasFlag(FLAG_BEGIN) ||
+         fn->hasFlag(FLAG_COBEGIN_OR_COFORALL) ||
+         fn->hasFlag(FLAG_ON);
+}
+
+static inline FnSymbol* resolvedToTaskFun(CallExpr* call) {
+  INT_ASSERT(call);
+  if (FnSymbol* cfn = call->isResolved()) {
+    if (isTaskFun(cfn))
+      return cfn;
+  }
+  return NULL;
+}
+
 
 bool get_int(Expr* e, int64_t* i); // false is failure
 bool get_uint(Expr *e, uint64_t *i); // false is failure

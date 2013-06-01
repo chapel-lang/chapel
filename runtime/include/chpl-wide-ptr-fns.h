@@ -177,6 +177,18 @@ chpl_localeID_t chpl_wide_ptr_get_localeID(wide_ptr_t ptr)
 }
 
 static WIDE_PTR_INLINE
+wide_ptr_t chpl_return_wide_ptr_add(wide_ptr_t ptr, size_t amt)
+{
+#ifndef CHPL_WIDE_POINTER_PACKED
+  ptr.addr = (void*) (((unsigned char*)ptr.addr) + amt);
+  return ptr;
+#else
+  return (wide_ptr_t) (((unsigned char*)ptr) + amt);
+#endif
+}
+
+
+static WIDE_PTR_INLINE
 int32_t chpl_localeID_equals(chpl_localeID_t a, chpl_localeID_t b)
 {
   c_nodeid_t anode, bnode;

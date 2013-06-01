@@ -41,6 +41,14 @@ void cleanupExternC(void) {
 using namespace clang;
 using namespace llvm;
 
+#define GLOBAL_PTR_SPACE 100
+#define WIDE_PTR_SPACE 101
+#define GLOBAL_PTR_SIZE 64
+#define GLOBAL_PTR_ABI_ALIGN 64
+#define GLOBAL_PTR_PREF_ALIGN 64
+
+#include "llvmGlobalToWide.h"
+
 // TODO - add functionality to clang so that we don't
 // have to have what are basically copies of
 // ModuleBuilder.cpp 
@@ -52,6 +60,85 @@ using namespace llvm;
 #include "CGRecordLayout.h"
 #include "clang/CodeGen/BackendUtil.h"
 
+static void setupForGlobalToWide(void);
+
+static
+VarSymbol *minMaxConstant(int nbits, bool isSigned, bool isMin)
+{
+  if( nbits == 8 && isSigned && isMin )
+    return new_IntSymbol(INT8_MIN, INT_SIZE_8);
+  else if( nbits == 8 && isSigned && !isMin )
+    return new_IntSymbol(INT8_MAX, INT_SIZE_8);
+  else if( nbits == 8 && !isSigned && isMin )
+    return new_IntSymbol(0, INT_SIZE_8);
+  else if( nbits == 8 && !isSigned && !isMin )
+    return new_IntSymbol(UINT8_MAX, INT_SIZE_8);
+
+  else if( nbits == 16 && isSigned && isMin )
+    return new_IntSymbol(INT16_MIN, INT_SIZE_16);
+  else if( nbits == 16 && isSigned && !isMin )
+    return new_IntSymbol(INT16_MAX, INT_SIZE_16);
+  else if( nbits == 16 && !isSigned && isMin )
+    return new_IntSymbol(0, INT_SIZE_16);
+  else if( nbits == 16 && !isSigned && !isMin )
+    return new_IntSymbol(UINT16_MAX, INT_SIZE_16);
+
+  else if( nbits == 32 && isSigned && isMin )
+    return new_IntSymbol(INT32_MIN, INT_SIZE_32);
+  else if( nbits == 32 && isSigned && !isMin )
+    return new_IntSymbol(INT32_MAX, INT_SIZE_32);
+  else if( nbits == 32 && !isSigned && isMin )
+    return new_IntSymbol(0, INT_SIZE_32);
+  else if( nbits == 32 && !isSigned && !isMin )
+    return new_IntSymbol(UINT32_MAX, INT_SIZE_32);
+
+  else if( nbits == 64 && isSigned && isMin )
+    return new_IntSymbol(INT64_MIN, INT_SIZE_64);
+  else if( nbits == 64 && isSigned && !isMin )
+    return new_IntSymbol(INT64_MAX, INT_SIZE_64);
+  else if( nbits == 64 && !isSigned && isMin )
+    return new_IntSymbol(0, INT_SIZE_64);
+  else if( nbits == 64 && !isSigned && !isMin )
+    return new_IntSymbol(UINT64_MAX, INT_SIZE_64);
+
+  else INT_ASSERT(0 && "Bad options for minMaxConstant");
+  return NULL;
+}
+
+static
+void addMinMax(const char* prefix, int nbits, bool isSigned)
+{
+  GenInfo* info = gGenInfo;
+  LayeredValueTable *lvt = info->lvt;
+
+  astlocT prevloc = currentAstLoc;
+
+  currentAstLoc.lineno = 0;
+  currentAstLoc.filename = astr("<internal>");
+
+  const char* min_name = astr(prefix, "_MIN");
+  const char* max_name = astr(prefix, "_MAX");
+
+  if( isSigned ) {
+    // only signed versions have a meaningful min.
+    lvt->addGlobalVarSymbol(min_name, minMaxConstant(nbits, isSigned, true));
+  }
+  // but signed and unsigned both have a max
+  lvt->addGlobalVarSymbol(max_name, minMaxConstant(nbits, isSigned, false));
+
+  currentAstLoc = prevloc;
+}
+
+static
+void addMinMax(ASTContext* Ctx, const char* prefix, clang::CanQualType qt)
+{
+  const clang::Type* ct = qt.getTypePtr();
+  int nbits = Ctx->getTypeSize(ct);
+  bool isSigned = ct->isSignedIntegerType();
+
+  addMinMax(prefix, nbits, isSigned);
+}
+
 static
 void setupClangContext(GenInfo* info, ASTContext* Ctx)
 {
@@ -61,10 +148,56 @@ void setupClangContext(GenInfo* info, ASTContext* Ctx)
   if( ! info->parseOnly ) {
     info->module->setTargetTriple(
         info->Ctx->getTargetInfo().getTriple().getTriple());
+
+    // Also setup some basic TBAA metadata nodes.
+    llvm::LLVMContext& cx = info->module->getContext();
+    // Create the TBAA root node
+    {
+      llvm::Value* Ops[1];
+      Ops[0] = llvm::MDString::get(cx, "Chapel types");
+      info->tbaaRootNode = llvm::MDNode::get(cx, Ops);
+    }
+    // Create type for ftable
+    {
+      llvm::Value* Ops[3];
+      Ops[0] = llvm::MDString::get(cx, "Chapel ftable");
+      Ops[1] = info->tbaaRootNode;
+      // and mark it as constant
+      Ops[2] = ConstantInt::get(llvm::Type::getInt64Ty(cx), 1);
+
+      info->tbaaFtableNode = llvm::MDNode::get(cx, Ops);
+    }
+    {
+      llvm::Value* Ops[3];
+      Ops[0] = llvm::MDString::get(cx, "Chapel vmtable");
+      Ops[1] = info->tbaaRootNode;
+      // and mark it as constant
+      Ops[2] = ConstantInt::get(llvm::Type::getInt64Ty(cx), 1);
+
+      info->tbaaVmtableNode = llvm::MDNode::get(cx, Ops);
+    }
+
   }
 
   info->targetLayout = info->Ctx->getTargetInfo().getTargetDescription();
   layout = info->targetLayout;
+
+  if( fLLVMWideOpt && ! info->parseOnly ) {
+    char buf[200]; //needs to store up to 8 32-bit numbers in decimal
+
+    assert(GLOBAL_PTR_SIZE == GLOBAL_PTR_BITS);
+
+    // Add global pointer info to layout.
+    snprintf(buf, sizeof(buf), "-p%u:%u:%u:%u-p%u:%u:%u:%u", GLOBAL_PTR_SPACE, GLOBAL_PTR_SIZE, GLOBAL_PTR_ABI_ALIGN, GLOBAL_PTR_PREF_ALIGN, WIDE_PTR_SPACE, GLOBAL_PTR_SIZE, GLOBAL_PTR_ABI_ALIGN, GLOBAL_PTR_PREF_ALIGN);
+    layout += buf;
+    // Save the global address space we are using in info.
+    info->globalToWideInfo.globalSpace = GLOBAL_PTR_SPACE;
+    info->globalToWideInfo.wideSpace = WIDE_PTR_SPACE;
+  }
+  // Always set the module layout. This works around an apparent bug in
+  // clang or LLVM (trivial/deitz/test_array_low.chpl would print out the
+  // wrong answer  because some i64s were stored at the wrong alignment).
+  if( info->module ) info->module->setDataLayout(layout);
 
   info->targetData =
     new LLVM_TARGET_DATA(info->Ctx->getTargetInfo().getTargetDescription());
@@ -73,6 +206,22 @@ void setupClangContext(GenInfo* info, ASTContext* Ctx)
                               info->codegenOptions,
                               *info->module,
                               *info->targetData, *info->Diags);
+  }
+
+
+  // Set up some  constants that depend on the Clang context.
+  {
+    addMinMax(Ctx, "CHAR", Ctx->CharTy);
+    addMinMax(Ctx, "SCHAR", Ctx->SignedCharTy);
+    addMinMax(Ctx, "UCHAR", Ctx->UnsignedCharTy);
+    addMinMax(Ctx, "SHRT", Ctx->ShortTy);
+    addMinMax(Ctx, "USHRT", Ctx->UnsignedShortTy);
+    addMinMax(Ctx, "INT", Ctx->IntTy);
+    addMinMax(Ctx, "UINT", Ctx->UnsignedIntTy);
+    addMinMax(Ctx, "LONG", Ctx->LongTy);
+    addMinMax(Ctx, "ULONG", Ctx->UnsignedLongTy);
+    addMinMax(Ctx, "LLONG", Ctx->LongLongTy);
+    addMinMax(Ctx, "ULLONG", Ctx->UnsignedLongLongTy);
   }
 }
 
@@ -90,6 +239,7 @@ VarSymbol *handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
 
   //Handling only simple string or integer defines
   if(macro->getNumArgs() > 0) {
+    if( debugPrint) printf("macro function!\n");
     return ret; // TODO -- handle macro functions.
   }
 
@@ -123,6 +273,7 @@ VarSymbol *handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
       ntokens - left_parens - right_parens == 1 ) {
     // OK!
   } else {
+    if( debugPrint) printf("too complicated or empty!\n");
     return ret; // we don't handle complicated expressions like A+B
   }
 
@@ -200,6 +351,10 @@ VarSymbol *handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
   }
   return ret;
 }
+
+
+
+
 static
 void readMacrosClang(void) {
   GenInfo* info = gGenInfo;
@@ -212,18 +367,16 @@ void readMacrosClang(void) {
   // special stuff to get the right constant width, but they
   // are all known integer values.
   lvt->addGlobalVarSymbol("NULL", new_IntSymbol(0, INT_SIZE_64));
-  lvt->addGlobalVarSymbol("INT8_MIN", new_IntSymbol(INT8_MIN, INT_SIZE_8));
-  lvt->addGlobalVarSymbol("INT8_MAX", new_IntSymbol(INT8_MAX, INT_SIZE_8));
-  lvt->addGlobalVarSymbol("UINT8_MAX", new_IntSymbol(UINT8_MAX, INT_SIZE_8));
-  lvt->addGlobalVarSymbol("INT16_MIN", new_IntSymbol(INT16_MIN, INT_SIZE_16));
-  lvt->addGlobalVarSymbol("INT16_MAX", new_IntSymbol(INT16_MAX, INT_SIZE_16));
-  lvt->addGlobalVarSymbol("UINT16_MAX", new_IntSymbol(UINT16_MAX, INT_SIZE_16));
-  lvt->addGlobalVarSymbol("INT32_MIN", new_IntSymbol(INT32_MIN, INT_SIZE_32));
-  lvt->addGlobalVarSymbol("INT32_MAX", new_IntSymbol(INT32_MAX, INT_SIZE_32));
-  lvt->addGlobalVarSymbol("UINT32_MAX", new_IntSymbol(UINT32_MAX, INT_SIZE_32));
-  lvt->addGlobalVarSymbol("INT64_MIN", new_IntSymbol(INT64_MIN, INT_SIZE_64));
-  lvt->addGlobalVarSymbol("INT64_MAX", new_IntSymbol(INT64_MAX, INT_SIZE_64));
-  lvt->addGlobalVarSymbol("UINT64_MAX", new_IntSymbol(UINT64_MAX, INT_SIZE_64));
+
+  // Add INT{8,16,32,64}_{MIN,MAX} and INT_MAX and friends.
+  addMinMax("INT8", 8, true);
+  addMinMax("UINT8", 8, false);
+  addMinMax("INT16", 16, true);
+  addMinMax("UINT16", 16, false);
+  addMinMax("INT32", 32, true);
+  addMinMax("UINT32", 32, false);
+  addMinMax("INT64", 64, true);
+  addMinMax("UINT64", 64, false);
 
   //printf("Running ReadMacrosAction\n");
   Preprocessor &preproc = info->Clang->getPreprocessor();
@@ -503,6 +656,9 @@ void setupClang(GenInfo* info, std::string mainFile)
 void finishCodegenLLVM() {
   GenInfo* info = gGenInfo;
 
+  // Codegen extra stuff for global-to-wide optimization.
+  setupForGlobalToWide();
+
   // Finish up our cleanup optimizers...
   info->FPM_postgen->doFinalization();
 
@@ -631,10 +787,9 @@ void runClang(const char* just_parse_filename) {
 
   clangCCArgs.push_back(ccflags);
 
-  clangLDArgs.push_back(ldflags);
+  clangCCArgs.push_back("-pthread");
 
-  for (int i=0; i<numLibFlags; i++)
-    clangLDArgs.push_back(libFlag[i]);
+  // libFlag and ldflags are handled during linking later.
 
   clangCCArgs.push_back("-DCHPL_GEN_CODE");
 
@@ -1095,9 +1250,9 @@ bool LayeredValueTable::markAddedToChapelAST(llvm::StringRef name)
     return true;
   } else {
     // Otherwise, make a new entry.
-    Storage store;
-    store.addedToChapelAST = true;
-    (layers.back())[name] = store;
+    Storage toStore;
+    toStore.addedToChapelAST = true;
+    (layers.back())[name] = toStore;
     return true;
   }
 }
@@ -1146,6 +1301,39 @@ bool isBuiltinExternCFunction(const char* cname)
   else return false;
 }
 
+static
+void addGlobalToWide(const PassManagerBuilder &Builder, PassManagerBase &PM) {
+  GenInfo* info = gGenInfo;
+  if( fLLVMWideOpt ) {
+    PM.add(createGlobalToWide(&info->globalToWideInfo, info->targetLayout));
+  }
+}
+
+// If we're using the LLVM wide optimizations, we have to add
+// some functions to call put/get into the Chapel runtime layers
+// (the optimization is meant to be portable to other languages)
+static
+void setupForGlobalToWide(void) {
+  if( ! fLLVMWideOpt ) return;
+
+  GenInfo* ginfo = gGenInfo;
+  GlobalToWideInfo* info = &ginfo->globalToWideInfo;
+
+  info->localeIdType = ginfo->lvt->getType("c_locale_t");
+  assert(info->localeIdType);
+  info->nodeIdType = ginfo->lvt->getType("c_nodeid_t");
+  assert(info->nodeIdType);
+
+  info->addrFnName = "chpl_wide_ptr_get_address_sym";
+  info->locFnName = "chpl_wide_ptr_read_localeID_sym";
+  info->nodeFnName = "chpl_wide_ptr_get_node_sym";
+  info->makeFnName = "chpl_return_wide_ptr_loc_sym";
+  info->getFnName = "chpl_gen_comm_get_ctl_sym";
+  info->putFnName = "chpl_gen_comm_put_ctl_sym";
+  info->getPutFnName = "chpl_gen_comm_getput_sym";
+  info->memsetFnName = "chpl_gen_comm_memset_sym";
+}
+
 
 void makeBinaryLLVM(void) {
   GenInfo* info = gGenInfo;
@@ -1171,6 +1359,10 @@ void makeBinaryLLVM(void) {
                            errorInfo,
                            raw_fd_ostream::F_Binary));
  
+  // Add the Global to Wide optimization if necessary.
+  PassManagerBuilder::addGlobalExtension(PassManagerBuilder::EP_ScalarOptimizerLate, addGlobalToWide);
+  PassManagerBuilder::addGlobalExtension(PassManagerBuilder::EP_EnabledOnOptLevel0, addGlobalToWide);
+
   EmitBackendOutput(*info->Diags, info->codegenOptions,
                     info->clangTargetOptions, info->clangLangOptions,
                     info->module, Backend_EmitBC, &output->os());
@@ -1214,6 +1406,16 @@ void makeBinaryLLVM(void) {
 
   if(debugCCode) {
     options += " -g";
+  }
+
+  options += " ";
+  options += ldflags;
+
+  options += " -pthread";
+
+  for (int i=0; i<numLibFlags; i++) {
+    options += " ";
+    options += libFlag[i];
   }
 
   // Now, if we're doing a multilocale build, we have to make a launcher.

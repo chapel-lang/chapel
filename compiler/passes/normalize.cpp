@@ -599,7 +599,6 @@ static void insert_call_temps(CallExpr* call)
   VarSymbol* tmp = newTemp("call_tmp");
   if (!parentCall || !parentCall->isNamed("chpl__initCopy"))
     tmp->addFlag(FLAG_EXPR_TEMP);
-  // On the face of it, this seems like a bad idea.
   if (call->isPrimitive(PRIM_NEW))
     tmp->addFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
   tmp->addFlag(FLAG_MAYBE_PARAM);

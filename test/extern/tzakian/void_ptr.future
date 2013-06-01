@@ -1,0 +1,23 @@
+bad: "void*" in extern #include causes assertion error in CallInfo.cpp [line 37]
+
+Support for void* in external C code used inside Chapel, via 
+extern #includes (only LLVM support)
+
+In externCResolve.cpp, there's the case:
+
+     if (!pointee) { //void *
+       pointee = new DefExpr(new ArgSymbol(INTENT_BLANK, 
+                             astr("void", istr(query_uid++)), dtAny));
+     }
+
+after which, pointee is used as follows:
+
+     return new CallExpr(new UnresolvedSymExpr("_ddata"), 
+                         new CallExpr(PRIM_ACTUALS_LIST, pointee));
+
+This appears to me as though a DefExpr of a formal argument (pointee) is
+being used as an actual argument (the one for the _ddata call), which
+strikes me as being questionable.  Later, an assertion in callinfo.cpp
+stumbles over precisely this issue ("Why is the argument to a function
+something other than a SymExpr()?") -- line 32.
+

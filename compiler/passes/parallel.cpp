@@ -12,10 +12,21 @@
 #include "stringutil.h"
 #include "driver.h"
 #include "files.h"
+#include "stlUtil.h"
+
+typedef struct {
+  bool firstCall;
+  ClassType* ctype;
+  FnSymbol*  wrap_fn;
+} BundleArgsFnData;
+
+// bundleArgsFnDataInit: the initial value for BundleArgsFnData
+static BundleArgsFnData bundleArgsFnDataInit = { true, NULL, NULL };
 
 static void insertEndCounts();
 static void passArgsToNestedFns(Vec<FnSymbol*>& nestedFunctions);
-static void create_block_fn_wrapper(CallExpr* fcall, ClassType* ctype, VarSymbol* tempc);
+static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnData &baData);
+static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol* tempc, FnSymbol *wrap_fn);
 static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec);
 static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                                 Vec<Symbol*>& refSet, Vec<Symbol*>& refVec,
@@ -41,11 +52,28 @@ static CallExpr* optimizeOnCall(CallExpr* call);
 // created by the previous parallel pass. This is a way to pass along
 // multiple args through the limitation of one arg in the runtime's
 // thread creation interface. 
-static void
-bundleArgs(CallExpr* fcall) {
-  SET_LINENO(fcall);
-  ModuleSymbol* mod = fcall->getModule();
-  FnSymbol* fn = fcall->isResolved();
+//
+// Implemented using BundleArgsFnData and the functions:
+//   create_arg_bundle_class
+//   bundleArgs
+//   create_block_fn_wrapper
+//   call_block_fn_wrapper
+
+// Even though the arg bundle class depends only on the iterator,
+// current code unfortunately uses the call site for some information
+// If there are multiple call sites, the first one is used.
+
+static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol* mod, BundleArgsFnData &baData) {
+  INT_ASSERT(!baData.ctype);
+  SET_LINENO(fn);
+
+// Here, 'fcall' is the first of fn's callees and so it acts as a
+// representative of all the other callees, if any.
+// As of this writing, this should be OK because the callees are
+// obtained by duplicating the original call, which resulted in
+// outlining a block into 'fn' and so is unique.
+// To eliminate 'fcall' in create_arg_bundle_class(), we need
+// to rely on fn's formal types instead of fcall's actual types.
 
   // create a new class to capture refs to locals
   ClassType* ctype = new ClassType( CLASS_CLASS);
@@ -63,7 +91,25 @@ bundleArgs(CallExpr* fcall) {
     ctype->fields.insertAtTail(new DefExpr(field));
     i++;
   }
+  // BTW 'mod' may differ from fn->defPoint->getModule()
+  // e.g. due to iterator inlining.
   mod->block->insertAtHead(new DefExpr(new_c));
+
+  baData.ctype = ctype;
+}
+
+static void
+bundleArgs(FnSymbol* fn, CallExpr* fcall, BundleArgsFnData &baData) {
+  SET_LINENO(fcall);
+  ModuleSymbol* mod = fcall->getModule();
+  // The code had referred to 'fcall->isResolved()' instead of 'fn',
+  // so we verify that the two are the same.
+  INT_ASSERT(fn == fcall->isResolved());
+
+  const bool firstCall = baData.firstCall;
+  if (firstCall)
+    create_arg_bundle_class(fn, fcall, mod, baData);
+  ClassType* ctype = baData.ctype;
 
   // create the class variable instance and allocate space for it
   VarSymbol *tempc = newTemp(astr("_args_for", fn->name), ctype);
@@ -72,7 +118,7 @@ bundleArgs(CallExpr* fcall) {
   fcall->insertBefore(new CallExpr(PRIM_MOVE, tempc, tempc_alloc));
   
   // set the references in the class instance
-  i = 1;
+  int i = 1;
   for_actuals(arg, fcall) {
     SymExpr *s = toSymExpr(arg);
     Symbol  *var = s->var; // var or arg
@@ -105,28 +151,38 @@ bundleArgs(CallExpr* fcall) {
           fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp, new CallExpr(PRIM_DEREF, var)));
         }
         fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp, new CallExpr(autoCopyFn, valTmp)));
-        VarSymbol* derefTmp = newTemp(baseType);
-        fn->insertBeforeReturnAfterLabel(new DefExpr(derefTmp));
-        if (baseType == arg->typeInfo()) {
-          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, derefTmp, new SymExpr(actual_to_formal(arg))));
-        } else {
-          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, derefTmp, new CallExpr(PRIM_DEREF, new SymExpr(actual_to_formal(arg)))));
-        }
-        fn->insertBeforeReturnAfterLabel(new CallExpr(autoDestroyFn, derefTmp));
+        // modify 'fn' only once
+        if (baData.firstCall) {
+          VarSymbol* derefTmp = newTemp(baseType);
+          fn->insertBeforeReturnAfterLabel(new DefExpr(derefTmp));
+          if (baseType == arg->typeInfo()) {
+            fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, derefTmp, new SymExpr(actual_to_formal(arg))));
+          } else {
+            fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, derefTmp, new CallExpr(PRIM_DEREF, new SymExpr(actual_to_formal(arg)))));
+          }
+          fn->insertBeforeReturnAfterLabel(new CallExpr(autoDestroyFn, derefTmp));
+        } // if firstCall
       }
     }
   }
 
   // create wrapper-function that uses the class instance
-  create_block_fn_wrapper(fcall, ctype, tempc);
+  create_block_fn_wrapper(fn, fcall, baData);
+  call_block_fn_wrapper(fn, fcall, tempc, baData.wrap_fn);
+  baData.firstCall = false;
 }
 
 
-static void create_block_fn_wrapper(CallExpr* fcall, ClassType* ctype, VarSymbol* tempc)
+static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnData &baData)
 {
   ModuleSymbol* mod = fcall->getModule();
-  FnSymbol* fn = fcall->isResolved();
+
+  INT_ASSERT(baData.firstCall == !baData.wrap_fn);
+  if (!baData.firstCall) return;
+
+  ClassType* ctype = baData.ctype;
   FnSymbol *wrap_fn = new FnSymbol( astr("wrap", fn->name));
+
   // Add a special flag to the wrapper-function as appropriate.
   // These control aspects of code generation.
   if (fn->hasFlag(FLAG_ON))                     wrap_fn->addFlag(FLAG_ON_BLOCK);
@@ -147,10 +203,11 @@ static void create_block_fn_wrapper(CallExpr* fcall, ClassType* ctype, VarSymbol
     //  wrapon_fn(wrapped_args)
     // (without the locale arg).
 
-    // The locale arg is originally attached to the on_fn, but we steal it here.
+    // The locale arg is originally attached to the on_fn, but we copy it 
+    // into the wrapper here, and then later on remove it completely.
     // The on_fn does not need this extra argument, and can find out its locale
     // by reading the task-private "here" pointer.
-    DefExpr* localeArg = toDefExpr(fn->formals.get(1)->remove());
+    DefExpr* localeArg = toDefExpr(fn->formals.get(1)->copy());
     wrap_fn->insertFormalAtTail(localeArg);
   }
 
@@ -158,15 +215,6 @@ static void create_block_fn_wrapper(CallExpr* fcall, ClassType* ctype, VarSymbol
   wrap_fn->insertFormalAtTail(wrap_c);
 
   mod->block->insertAtTail(new DefExpr(wrap_fn));
-
-  // The wrapper function is called with the bundled argument list.
-  if (fn->hasFlag(FLAG_ON))
-    // For an on block, the first argument is also passed directly
-    // to the wrapper function.
-    // The forking function uses this to fork a task on the target locale.
-    fcall->insertBefore(new CallExpr(wrap_fn, fcall->get(1)->remove(), tempc));
-  else
-    fcall->insertBefore(new CallExpr(wrap_fn, tempc));
 
   // Create a call to the original function
   CallExpr *call_orig = new CallExpr( (toSymExpr(fcall->baseExpr))->var);
@@ -197,7 +245,7 @@ static void create_block_fn_wrapper(CallExpr* fcall, ClassType* ctype, VarSymbol
   if (fn->hasFlag(FLAG_ON))
   {
     // Special case for the first argument of an on_fn, which carries
-    // the destination locale ID.
+    // the destination locale.
     // We save off the current values on the stack and then
     // set the task-private values to those passed in.
     // The saved values are restored when the on block is exited.
@@ -223,17 +271,41 @@ static void create_block_fn_wrapper(CallExpr* fcall, ClassType* ctype, VarSymbol
   }
 
   if (fn->hasFlag(FLAG_ON))
-    fcall->insertAfter(new CallExpr(PRIM_TASK_FREE, tempc));
+    ; // the caller will free the actual
   else
     wrap_fn->insertAtTail(new CallExpr(PRIM_TASK_FREE, wrap_c));
 
+//  normalize(wrap_fn);
+// Inserting call temps at this point would require hand-resolution of
+// their types.  We just add the required return by hand.
   wrap_fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
-  DefExpr  *fcall_def= (toSymExpr( fcall->baseExpr))->var->defPoint;
-  fcall->remove();                     // remove orig. call
-  fcall_def->remove();                 // move orig. def
-  mod->block->insertAtTail(fcall_def); // to top-level
-//  normalize(wrap_fn);
+  // 'fn' has already been flattened and hoisted to the top level.
+  // We leave 'fn' in the module where it was placed originally,
+  // whereas 'wrap_fn' is in fcall's module.
+  // These two modules may be different, e.g. due to iterator inlining.
+  INT_ASSERT(isGlobal(fn));
+
+  baData.wrap_fn = wrap_fn;
+}
+
+static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol* tempc, FnSymbol *wrap_fn)
+{
+  // The wrapper function is called with the bundled argument list.
+  if (fn->hasFlag(FLAG_ON)) {
+    // For an on block, the first argument is also passed directly
+    // to the wrapper function.
+    // The forking function uses this to fork a task on the target locale.
+    fcall->insertBefore(new CallExpr(wrap_fn, fcall->get(1)->remove(), tempc));
+  } else
+    fcall->insertBefore(new CallExpr(wrap_fn, tempc));
+
+  if (fn->hasFlag(FLAG_ON))
+    fcall->insertAfter(new CallExpr(PRIM_CHPL_FREE, tempc));
+  else
+    ; // wrap_fn will free the formal
+
+  fcall->remove();                     // rm orig. call
 }
 
 
@@ -673,9 +745,11 @@ makeHeapAllocations() {
     if (!isModuleSymbol(var->defPoint->parentSymbol) &&
         ((useMap.get(var) && useMap.get(var)->n > 0) ||
          (defMap.get(var) && defMap.get(var)->n > 0))) {
+      SET_LINENO(var->defPoint);
       CallExpr* alloc_call =
         new CallExpr(PRIM_CHPL_ALLOC, heapType->symbol,
                      newMemDesc("local heap-converted data"));
+      // TODO: Ensure that this cast is necessary.
       var->defPoint->getStmtExpr()->insertAfter(
         new CallExpr(PRIM_MOVE, var,
                      new CallExpr(PRIM_CAST, heapType->symbol, alloc_call)));
@@ -828,87 +902,22 @@ reprivatizeIterators() {
 }
 
 
-// Converts blocks implementing various parallel constructs into functions, 
-// so they can be invoked through a fork.
-// The body of the original block becomes the body of the function,
-// and the inline location of the parallel block is replaced by a call
-// to the implementing function.
-// A subsequent step (flattenNesteFunctions) adds arguments to these functions
-// to pass in values or references from the context which are used in the body
-// of the block.
-// As a special case, the target locale is prepended to the arguments passed 
-// to the "on" function.
-static void createNestedFunctions(Vec<FnSymbol*>& nestedFunctions)
-{
-  forv_Vec(BlockStmt, block, gBlockStmts) {
-    if (CallExpr* info = block->blockInfo) {
-      SET_LINENO(block);
-      FnSymbol* fn = NULL;
-      if (info->isPrimitive(PRIM_BLOCK_BEGIN)) {
-        fn = new FnSymbol("begin_fn");
-        fn->addFlag(FLAG_BEGIN);
-      } else if (info->isPrimitive(PRIM_BLOCK_COBEGIN)) {
-        fn = new FnSymbol("cobegin_fn");
-        fn->addFlag(FLAG_COBEGIN_OR_COFORALL);
-      } else if (info->isPrimitive(PRIM_BLOCK_COFORALL)) {
-        fn = new FnSymbol("coforall_fn");
-        fn->addFlag(FLAG_COBEGIN_OR_COFORALL);
-      } else if (info->isPrimitive(PRIM_BLOCK_ON) ||
-                 info->isPrimitive(PRIM_BLOCK_ON_NB)) {
-        fn = new FnSymbol("on_fn");
-        fn->addFlag(FLAG_ON);
-        if (block->blockInfo->isPrimitive(PRIM_BLOCK_ON_NB))
-          fn->addFlag(FLAG_NON_BLOCKING);
-
-        ArgSymbol* locarg = new ArgSymbol(INTENT_CONST_IN, "_dummy_locale_arg", dtLocale);
-        fn->insertFormalAtTail(locarg);
-      }
-      else if (// info->isPrimitive(PRIM_BLOCK_PARAM_LOOP) || // resolution should remove this case.
-               info->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
-               info->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP) ||
-               info->isPrimitive(PRIM_BLOCK_FOR_LOOP) ||
-               info->isPrimitive(PRIM_BLOCK_XMT_PRAGMA_FORALL_I_IN_N) ||
-               info->isPrimitive(PRIM_BLOCK_XMT_PRAGMA_NOALIAS) ||
-               info->isPrimitive(PRIM_BLOCK_LOCAL) ||
-               info->isPrimitive(PRIM_BLOCK_UNLOCAL))
-        ; // Not a parallel block construct, so do nothing special.
-      else
-        INT_FATAL(block, "Unhandled blockInfo case.");
-
-      if (fn) {
-        nestedFunctions.add(fn);
-        CallExpr* call = new CallExpr(fn);
-        if (block->blockInfo->isPrimitive(PRIM_BLOCK_ON) ||
-            block->blockInfo->isPrimitive(PRIM_BLOCK_ON_NB)) {
-          // This puts the target locale ID and address at the start of the call.
-          call->insertAtTail(block->blockInfo->get(1)->remove());
-        }
-
-        block->insertBefore(new DefExpr(fn));
-        block->insertBefore(call);
-        block->blockInfo->remove();
-        // This block becomes the body of the new function.
-        fn->insertAtTail(block->remove());
-        fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
-        fn->retType = dtVoid;
-      }
-    }
-  }
-}
-
-
 void
 parallel(void) {
-  // convert begin/cobegin/coforall/on blocks into nested functions and flatten
-  Vec<FnSymbol*> nestedFunctions;
+  Vec<FnSymbol*> taskFunctions;
 
-  createNestedFunctions(nestedFunctions);
-
-  flattenNestedFunctions(nestedFunctions);
+  // Collect the task functions for processing.
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (isTaskFun(fn)) {
+      taskFunctions.add(fn);
+      // Would need to flatten them if they are not already.
+      INT_ASSERT(isGlobal(fn));
+    }
+  }
 
   compute_call_sites();
 
-  remoteValueForwarding(nestedFunctions);
+  remoteValueForwarding(taskFunctions);
 
   reprivatizeIterators();
 
@@ -916,7 +925,7 @@ parallel(void) {
 
   insertEndCounts();
 
-  passArgsToNestedFns(nestedFunctions);
+  passArgsToNestedFns(taskFunctions);
 }
 
 
@@ -1167,15 +1176,35 @@ static CallExpr* optimizeOnCall(CallExpr* call)
 static void passArgsToNestedFns(Vec<FnSymbol*>& nestedFunctions)
 {
   forv_Vec(FnSymbol, fn, nestedFunctions) {
-    // We assume that there is a one-to-one relation between nested function callers and callees.
-    CallExpr* call = (fn->calledBy)->only();
 
-    SET_LINENO(call);
+    BundleArgsFnData baData = bundleArgsFnDataInit;
+
+    forv_Vec(CallExpr, call, *fn->calledBy) {
+
+      SET_LINENO(call);
+
+      if (fn->hasFlag(FLAG_ON))
+        call = optimizeOnCall(call);
+    
+      bundleArgs(fn, call, baData);
+    }
 
     if (fn->hasFlag(FLAG_ON))
-      call = optimizeOnCall(call);
-    
-    bundleArgs(call);
+    {
+      // Now we can remove the dummy locale arg from the on_fn
+      DefExpr* localeArg = toDefExpr(fn->formals.get(1));
+      std::vector<SymExpr*> symExprs;
+      collectSymExprsSTL(fn->body, symExprs);
+      for_vector(SymExpr, sym, symExprs)
+      {
+        if (sym->var->defPoint == localeArg)
+        {
+          sym->getStmtExpr()->remove();
+          break;
+        }
+      }
+      localeArg->remove();
+    }
   }
 }
 
@@ -1336,6 +1365,8 @@ static void localizeCall(CallExpr* call) {
               rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             insertLocalTemp(rhs->get(1));
             if (!rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+              INT_ASSERT(rhs->get(1)->typeInfo() == dtString);
+              // special handling for wide strings
               rhs->replace(rhs->get(1)->remove());
             }
           }
@@ -1820,7 +1851,7 @@ static void narrowWideClassesThroughCalls()
           } else if (var->type->symbol->hasEitherFlag(FLAG_REF,FLAG_DATA_CLASS))
             call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, sym->copy()));
           else
-            call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, sym->copy()));
+            call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_DEREF, sym->copy())));
           call->getStmtExpr()->insertAfter(new CallExpr(PRIM_MOVE, sym->copy(), var));
           sym->replace(new SymExpr(var));
         }

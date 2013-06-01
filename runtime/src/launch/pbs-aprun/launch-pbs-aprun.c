@@ -27,8 +27,8 @@ const char* getCoresPerLocaleStr(void);
 int getCoresPerLocale(void);
 const char* getLocalesPerNodeStr(void);
 int getLocalesPerNode(void);
-const char* getCPUsPerNodeStr(void);
-int getCPUsPerNode(void);
+const char* getCPUsPerCUStr(void);
+int getCPUsPerCU(void);
 const char* getNumLocalesStr(void);
 const char* getAprunArgStr(aprun_arg_t arg); // possibly inline
 int getAprunArg(aprun_arg_t argt);           // possibly inline
@@ -195,7 +195,7 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
   FILE *outfile;
   pid_t mypid;
   int numCoresPerLocale;
-  int CPUsPerNode;
+  int CPUsPerCU;
   int LocalesPerNode;
   const char *ccArg = _ccArg ? _ccArg : "none";
 
@@ -216,7 +216,7 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
 
   initAprunAttributes();
   numCoresPerLocale = getCoresPerLocale();
-  CPUsPerNode = getCPUsPerNode();
+  CPUsPerCU = getCPUsPerCU();
   LocalesPerNode = getLocalesPerNode();
 
   qsubOptions = genQsubOptions(basenamePtr, projectString,
@@ -288,8 +288,8 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
               getCoresPerLocaleStr(), numCoresPerLocale,
               getNumLocalesStr(), 1 /* only run on one locale */,
               getLocalesPerNodeStr(), LocalesPerNode);
-      if (CPUsPerNode != -1) {
-        fprintf(expectFile, "%s%d ", getCPUsPerNodeStr(), CPUsPerNode);
+      if (CPUsPerCU >= 0) {
+        fprintf(expectFile, "%s%d ", getCPUsPerCUStr(), CPUsPerCU);
       }
       fprintf(expectFile, "ls %s\\n\"\n", chpl_get_real_binary_name());
       fprintf(expectFile, "expect {\n");
@@ -317,8 +317,8 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
           getCoresPerLocaleStr(), numCoresPerLocale,
           getNumLocalesStr(), numLocales,
           getLocalesPerNodeStr(), LocalesPerNode);
-  if (CPUsPerNode != -1) {
-    fprintf(outfile, "%s%d ", getCPUsPerNodeStr(), CPUsPerNode);
+  if (CPUsPerCU >= 0) {
+    fprintf(outfile, "%s%d ", getCPUsPerCUStr(), CPUsPerCU);
   }
   fprintf(outfile, "%s", chpl_get_real_binary_name());
   for (i=1; i<argc; i++) {

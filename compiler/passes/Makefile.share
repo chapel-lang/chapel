@@ -1,13 +1,14 @@
 GEN_HEADERS = \
-	reservedSymbolNames.h
+        reservedSymbolNames.h
 
 PASSES_SRCS = \
         addInitGuards.cpp \
         buildDefaultFunctions.cpp \
         cleanup.cpp \
         codegen.cpp \
-	docs.cpp \
-	externCResolve.cpp \
+        docs.cpp \
+        externCResolve.cpp \
+        createTaskFunctions.cpp \
         filesToAST.cpp \
         flattenClasses.cpp \
         flattenFunctions.cpp \
@@ -24,4 +25,4 @@ SVN_SRCS = $(PASSES_SRCS)
 SRCS = $(SVN_SRCS)
 
 PASSES_OBJS = \
-	$(PASSES_SRCS:%.cpp=$(PASSES_OBJDIR)/%.$(OBJ_SUFFIX))
+        $(PASSES_SRCS:%.cpp=$(PASSES_OBJDIR)/%.$(OBJ_SUFFIX))

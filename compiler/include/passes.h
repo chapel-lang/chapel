@@ -1,4 +1,4 @@
-#ifndef _PASSES_H
+#ifndef _PASSES_H_
 #define _PASSES_H_
 
 #include "symbol.h"
@@ -20,6 +20,7 @@ void checkResolved();
 void cleanup();
 void codegen();
 void complex2record();
+void createTaskFunctions();
 void copyPropagation();
 void cullOverReferences();
 void deadCodeElimination();

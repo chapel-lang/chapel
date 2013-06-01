@@ -71,8 +71,8 @@ void chpl_gen_comm_put_strd(void *addr, void *dststr, int32_t node, void *raddr,
 #endif
 }
 
-// Returns true if the given node (image) ID matches the ID of the currently-running image, 
-// false otherwise.
+// Returns true if the given node (image) ID matches the ID of the currently-running 
+// image, false otherwise.
 static ___always_inline
 chpl_bool chpl_is_node_local(int32_t node)
 { return node == chpl_nodeID; }

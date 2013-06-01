@@ -224,8 +224,6 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
   }
 
   forv_Vec(FnSymbol, fn, fns) {
-    INT_ASSERT(fn->calledBy->n == 1);
-    CallExpr* call = fn->calledBy->v[0];
 
     //
     // For each reference arg that is safe to dereference
@@ -242,13 +240,17 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
       if (arg->type->symbol->hasFlag(FLAG_REF) &&
           isSafeToDeref(arg, defMap, useMap, NULL, NULL)) {
 
+       // Dereference the arg type.
+       Type* prevArgType = arg->type;
+       arg->type = arg->getValType();
+
+       forv_Vec(CallExpr, call, *fn->calledBy) {
         //
-        // Find actual for arg and dereference arg type.
+        // Find actual for arg.
         //
         SymExpr* actual = toSymExpr(formal_to_actual(call, arg));
-        INT_ASSERT(actual && actual->var->type == arg->type);
+        INT_ASSERT(actual && actual->var->type == prevArgType);
         SET_LINENO(actual);
-        arg->type = arg->getValType();
         
         //
         // Insert de-reference temp of value.
@@ -258,6 +260,7 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
         call->insertBefore(new CallExpr(PRIM_MOVE, deref,
                                         new CallExpr(PRIM_DEREF, actual->var)));
         actual->replace(new SymExpr(deref));
+       }  // for call
         
         //
         // Insert re-reference temps at use points.
@@ -271,7 +274,7 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
             use->replace(new CallExpr(PRIM_ADDR_OF, arg));
           } else {
             Expr* stmt = use->getStmtExpr();
-            VarSymbol* reref = newTemp("rvfRerefTmp", actual->var->type);
+            VarSymbol* reref = newTemp("rvfRerefTmp", prevArgType);
             stmt->insertBefore(new DefExpr(reref));
             stmt->insertBefore(new CallExpr(PRIM_MOVE, reref,
                                             new CallExpr(PRIM_ADDR_OF, arg)));

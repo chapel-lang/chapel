@@ -2,6 +2,8 @@
 //
 // Inline functions used in code generation.
 //
+// TODO: Check if any of these are redundant with functions in chpl-wide-ptr-fns.h.
+//
 
 #include "chpl-comm-compiler-macros.h"
 
