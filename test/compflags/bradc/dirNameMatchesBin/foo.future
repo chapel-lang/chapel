@@ -1,0 +1,4 @@
+bug: confusion when -o name matches directory name
+
+The compiler isn't very helpful when the name given to the -o flag
+matches a pre-existing directory name.
