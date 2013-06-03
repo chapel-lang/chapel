@@ -39,74 +39,35 @@ gbt, 04-26-13: r21322 broke parallel/taskPool/figueroa/TooManyThreads.
 These things regularly cause noise in testing:
 ==============================================
 
-compflags/diten/noInlineAndHtml (future)
-----------------------------------------
-Sometimes this segfaults the compiler and sometimes it doesn't.  We
-haven't yet figured what differentiates encountering it vs. not, so
-we haven't been able to constrain it to only run when it will fail.
-
+building compiler with PGI fails
+--------------------------------
+The PGI compiler version was upated to 13.3.0 and now gets an internal
+error while compiling functionResolution.cpp.  Backing up to version
+12.9.0 fixes it. Backing the Chapel source down to revision 20834 also
+fixes it.  Turning optimization down to -O1 also fixes it.  Bugzilla
+bug 796017.
 
 linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
 ---------------------------------------------
-NOTE: These seem to happen on program exit, as the rest of the output
-is correct.
-- release/examples/benchmarks/hpcc/stream-ep (04/04/13)
-- release/examples/benchmarks/hpcc/ra-atomics (compopts: 1) (3/11/13)
-- release/examples/benchmarks/hpcc/ra (compopts: 1) (3/12/13)
-- release/examples/hello6-taskpar-dist (3/14/13)
-- multilocale/deitz/linked/test_linked1 (3/26/13)
-- distributions/bradc/blkCyc/loopBlkCyc (4/9/13, maybe same as next?)
+Our main noisy failures currently are as follows:
 
-gbt: 4/26/13: Committed stack overflow detection in qthreads based on
-guard pages.  By default it is turned on.  Hopefully this will result in
-dependable failures, based on which we can figure out where to set the
-default stack size.  (Note that the current default is 256 KiB.)
+  distributions/robust/arithmetic/kernels/jacobi.chpl
+  distributions/robust/arithmetic/stress/test_many_array
+  distributions/robust/arithmetic/stress/test_many_domains
 
-bradc: (3/2/13, 3/27/13): distributions/bradc/blkCyc/loopBlkCyc got a seg fault
+I don't know that it's worth tracking when these pass fail currently.
+Greg looked into the execution times and found that the problem is
+that their execution time is very close to the timeout and
+significantly longer than fifo.  Dylan and Brad looked into the cause
+and narrowed it down to privatization (e.g., if all lines other than
+the domain declarations are removed from test_many_domains, the
+execution time is still very high and close to the timeout), but have
+not yet gotten further than that to determine what the problem is --
+e.g., a busy-wait loop, excess communication, slow handling of active
+messages due to not having a thread per task as in fifo, or ...?
 
-bradc: week of 2/25: continue getting noise, particularly on
-test_many_domains, streap-ep, jacobi; sometimes timeouts, sometimes
-seg faults (stream-ep, e.g.)
-
-gbt: 1/14/13.  Here the list of failure counts for the last 7 days.
-(Thank you, grep|cut|sed|sort|uniq!)  I've sent this to Kyle and
-Dylan.  76 of these are with comm=none, and 28 with comm=gasnet.
-      2 distributions/robust/arithmetic/slicing/test_array_slicing3
-     12 distributions/robust/arithmetic/stress/test_many_domains
-      8 domains/sungeun/assoc/stress
-      2 execflags/bradc/gdbddash/gdbSetConfig
-      6 exercises/RandomNumber6
-      2 memory/figueroa/LeakedMemory5
-     14 multilocale/diten/needMultiLocales/beginInOn
-      4 parallel/begin/deitz/test_begin_error_lineno
-      8 parallel/begin/marybeth/test_forbegin
-      2 parallel/begin/marybeth/test_forbegin2
-      6 parallel/begin/marybeth/test_forbegin3
-      6 parallel/cobegin/bradc/exitone
-      4 stress/deitz/test_10k_coforall
-     10 studies/shootout/thread-ring/thread-ring
-      2 studies/sudoku/dinan/search/sudoku-reduce
-      6 users/shetag/fock/fock-1
-      6 users/shetag/fock/fock-1-begin-blc
-      4 users/shetag/fock/fock-2
-
-sungeun: 12/7/12.  Enabled oversubscription (and disable affinity).
-Dylan says that in this configuration the timeouts all passed.  It's
-possible that some of these other failures might be due to callstack
-size.
-
-sungeun: 10/18/12.  Things seem quieter, but not perfect
-- Got a seg fault (06/06/12, 6/16, stream-ep 8/23/12, 02/28/13)
-- Intermitent seg fault on exit (7/7 7/9, 7/12, 7/13)
--  seg fault during program execution (same as as previous):
-   distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_tuple (7/10)
-   release/examples/spec/Classes/delete (7/12)
-- Intermitent time outs:
-  [Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3] (intermittent since prior to 11/25/12)
-  [Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi] (11/26/12: intermittent since 9/17/12)
-  [Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_array] (11/26/12: intermittent since 9/29/12)
-  [Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains] (11/22/12: almost every day since 9/26/22)
-  [Error: Timed out executing program distributions/robust/arithmetic/kernels/hpl (compopts: 1)] (11/28/12: likely earlier as well)
+I've deleted historical notes on this entry that seem less useful
+at present.  See the archives for more detail.
 
 
 ==============================================================================
@@ -136,6 +97,14 @@ same directory as the /tmp directory it is looking for.
 Not so noisy as to be familiar annoyances, but worth noting to see if they
 come up again
 ==========================================================================
+
+libmpich_intel.so failure for
+cray-xt.cray-prgenv-intel.none.fifo.pthreads--linux64 (May 27, 2013)
+> ld: warning: libmpich_intel.so.1, needed by /opt/cray/libsci/12.0.02/intel/130/istanbul/lib/libsci_intel_mp.so, not found (try using -rpath or -rpath-link)
+--------------------------------------------------------------------
+[Error matching compiler output for link/sungeun/static_dynamic (compopts: 4)] 
+[Error matching compiler output for link/sungeun/static_dynamic (compopts: 5)] 
+
 
 undiagnosed cygwin failures
 ---------------------------
