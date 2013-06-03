@@ -1,4 +1,3 @@
-/*
 Traspose a given matrix B to matrix A
 Array is "manually" distributed on locales so each locale has a DR subblock 
 Rows to columns communications are implemented a la MPI: 
@@ -7,9 +6,17 @@ explicit Data[localeA].DR[slicedest]=Data[localeB].DR[sliceSource]
 
 use BlockDist;
 use util;
+use Time;
+//use PrintComms;
 
 config const n=2, m=4: int;
 config const g=3, h=3;
+config const doDiagnostics=false;
+config const printComm=false;
+config const timer : bool =false;
+
+//Timing variables
+var t1,t2 :real;
 const gridDom = {1..g, 1..h};
 var gridLocales: [gridDom] locale;
 setupGridLocales();
@@ -39,9 +46,20 @@ var errCount: atomic int;
 
 //showfetch(true);
 init();
-transpose();          
+//if doDiagnostics then startCommDiagnostics();
+if timer then t1=getCurrentTime();
+transpose();
+if timer then t2=getCurrentTime();
+/*if doDiagnostics {
+  if printComm{
+    stopCommDiagnostics();
+    myPrintComms("");
+  }
+}*/
+if timer then writeln("Time doing transpose(): ",t2-t1);
 showfetch(false);
 verify();
+
 //writeln("Done");
 if errCount.read() != 0 then writeln(errCount.read(), " ERRORS");
 

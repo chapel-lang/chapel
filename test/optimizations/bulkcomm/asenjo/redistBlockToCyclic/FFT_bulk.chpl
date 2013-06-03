@@ -1,143 +1,3 @@
-proc copyBtoC(A:[], B:[])
-{
-  A._value.copyBtoC(B);
-}
-
-proc copyCtoB(A:[], B:[])
-{
-  A._value.copyCtoB(B);
-}
-
-proc BlockArr.copyBtoC(B)
-{
-  coforall loc in Locales do on loc
-  {
-    param stridelevels=1;
-    var dststrides:[1..#stridelevels] int(32); 
-    var srcstrides: [1..#stridelevels] int(32);
-    var count: [1..#(stridelevels+1)] int(32);
-    var lid=loc.id; 
-
-    var numLocales: int(32)=dom.dist.targetLocDom.dim(1).length:int(32);
-    var n:int(32)=dom.dist.boundingBox.dim(1).length:int(32);
-    var src = locArr[lid].myElems._value.data;
-
-    dststrides[1]=1;
-    srcstrides[1]=numLocales;
-
-    var dststr=dststrides._value.data;
-    var srcstr=srcstrides._value.data;
-    var cnt=count._value.data;
-
-    //Domain size (n) and first index (arrayini)
-
-    var arrayini:int(32)=dom.dsiLow:int(32);
-
-    //writeln("Domain: ",dom.whole.dims());
-
-    //a,b: first and last global indices in each locale
-    var a: int(32)=dom.locDoms[lid].myBlock.low:int(32); 
-    var b: int(32)=dom.locDoms[lid].myBlock.high:int(32);
-    var blksize=b-a+1;
-    //writeln("Locale", here.id," : blksize ",blksize," subblock first index  a ",a,
-
-    var t1,t2: real;
-    var schunkini: int;
-    var chunksize: int(32);
-    //Loop of strided chunk sends (chpl_comm_put_strd)
-    for k in 0..#numLocales do {
-
-      var dst=(lid+k)%numLocales;
-
-      //Compute the chunk first index in src locale to be send to locale dst.
-      if (dst-a%numLocales+arrayini)<0 then schunkini=a+numLocales +(dst-a%numLocales+arrayini);
-      else schunkini=a+(dst-a%numLocales+arrayini)%numLocales;
-
-      //Compute chunk size
-      if (schunkini+(blksize/numLocales)*numLocales>b) then chunksize=blksize/numLocales;
-      else chunksize=blksize/numLocales+1;
-
-      //var destr = privB.locArr[dst].myElems._value.data;
-      var destr = B._value.locArr[dst].myElems._value.data;
-      count[1]=1;
-      count[2]=chunksize;
-
-      __primitive("chpl_comm_put_strd",
-		  __primitive("array_get",destr,
-			      B._value.locArr[dst].myElems._value.getDataIndex(schunkini)),
-		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
-		  dst,
-		  __primitive("array_get",src,
-			      locArr[lid].myElems._value.getDataIndex(schunkini)),  
-		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
-		  __primitive("array_get",cnt, count._value.getDataIndex(1)),
-		  stridelevels);
-
-    } // end for dst
-  } // end coforall loc
-} // end proc
-
-proc  BlockArr.copyCtoB(B)
-{
- 
-  coforall loc in Locales do on loc
-  {
-    param stridelevels=1;
-    var dststrides:[1..#stridelevels] int(32);
-    var srcstrides: [1..#stridelevels] int(32);
-    var count: [1..#(stridelevels+1)] int(32); 
-    var lid=loc.id;
-    var numLocales: int=dom.dist.targetLocDom.dim(1).length;
-    var n:int(32)=dom.dist.boundingBox.dim(1).length:int(32);
-
-    var dststr=dststrides._value.data;
-    var srcstr=srcstrides._value.data;
-    var cnt=count._value.data;
-
-    //On each locale (src) we compute the chunk that goes to each dst
-    var num: int;
-    var schunkini: int;
-    var chunksize: int;
-    var a: int(32)=dom.locDoms[lid].myBlock.low:int(32); 
-    var b: int(32)=dom.locDoms[lid].myBlock.high:int(32);
-    num=b-a+1;
-
-    var src = locArr[lid].myElems._value.data;
-    var arrayini:int(32)=dom.dsiLow:int(32);
-
-    var t,t1,t2: real;
-    t=0.0;
-    //Compute the starting index of the src chunk with destination dst
-
-    for dst in 0..#numLocales do {
-      if (dst-a%numLocales+arrayini)<0 then schunkini=a+numLocales+(dst-a%numLocales+arrayini);
-      else schunkini=a+(dst-a%numLocales+arrayini)%numLocales;
-
-      //Compute the size of the chunk. The number of elements of src subarray is num
-      if (schunkini+(num/numLocales)*numLocales>b) then chunksize=num/numLocales;
-      else chunksize=num/numLocales+1;
-
-      var destr = B._value.locArr[dst].myElems._value.data;
-      dststrides[1]=numLocales:int(32);
-      srcstrides[1]=1;
-      count[1]=1;
-      count[2]=chunksize:int(32);
-
-      __primitive("chpl_comm_get_strd",
-		  __primitive("array_get",src,
-			        locArr[lid].myElems._value.getDataIndex(schunkini)),
-		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
-		  dst,
-		  __primitive("array_get",destr,
-			      B._value.locArr[dst].myElems._value.getDataIndex(schunkini)),
-		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
-		  __primitive("array_get",cnt,count._value.getDataIndex(1)),
-		  stridelevels);
-    } //end for dst
-  }//end for loc
-} //end proc copyCtoB
-
-
 /* This implementation of the FFT benchmark uses radix-4 butterflies
    and is divided into two main phases: one which uses a Block
    distribution and the second which uses a Cyclic distribution.  When
@@ -170,6 +30,7 @@ type idxType = int(64);        // the index type of the vectors
 //
 config const n = 8;//computeProblemSize(numVectors, elemType, returnLog2 = true);
 const m = 2**n;
+config const timer : bool =false;
 
 //
 // Configuration constants defining the epsilon and threshold values
@@ -192,7 +53,7 @@ config const useRandomSeed = true,
 //
 config const printParams = false,
   printArrays = false,
-  printStats = false;
+  printStats = true;
 
 //
 // The program entry point
@@ -248,21 +109,22 @@ proc main() {
   [(a,b) in zip(Zblk, z)] a = conjg(b);      // store the conjugate of z in Zblk
 
   //Comm y tieme bitReverse 
-  t1=getCurrentTime();
+  if timer then t1=getCurrentTime();
   bitReverseShuffle(Zblk);                // permute Zblk
-  t2=getCurrentTime();
+  if timer then t2=getCurrentTime();
   T1=t2-t1;
 
   //Comm and Time dfft  
-  t1=getCurrentTime();
+  if timer then t1=getCurrentTime();
   dfft(Zblk, Twiddles, cyclicPhase=false); // compute the DFFT, block phases
   t2=getCurrentTime();
-  T2=t2-t1;
+  if timer then T2=t2-t1;
 
   //Comm and Time first forall
-  t1=getCurrentTime();
-  copyBtoC(Zblk,Zcyc);
-  t2=getCurrentTime();
+  if timer then t1=getCurrentTime();
+  Zcyc=Zblk;
+  //copyBtoC(Zblk,Zcyc);
+  if timer then  t2=getCurrentTime();
   T3=t2-t1;
 
   /*
@@ -272,21 +134,21 @@ proc main() {
     writeln("ERROR = ",e);
     if (e==0.0) then writeln("Correct"); else writeln("Wrong!");
   */
-  t1=getCurrentTime();
+  if timer then t1=getCurrentTime();
   dfft(Zcyc, Twiddles, cyclicPhase=true); // compute the DFFT, cyclic phases
-  t2=getCurrentTime();
+  if timer then t2=getCurrentTime();
   T2=T2+t2-t1; 
  
-  t1=getCurrentTime();
+  if timer then t1=getCurrentTime();
   //    forall (b, c) in zip(Zblk, Zcyc) do        // copy vector back to Block storage
-  //   b = c;
-  copyCtoB(Zblk,Zcyc);
-  t2=getCurrentTime();
+     Zblk = Zcyc;
+  //copyCtoB(Zblk,Zcyc);
+  if timer then t2=getCurrentTime();
   T4=t2-t1;
 
   const execTime = getCurrentTime() - startTime;     // store the elapsed time
   //  writeln("bitReverse Time = ",T1);  
-  //  writeln("dffts Time = ",T2," copyBtoC time= ",T3, " copyCtoB time= ",T4);
+    if timer then  writeln("dffts Time = ",T2," copyBtoC time= ",T3, " copyCtoB time= ",T4);
 
   const validAnswer = verifyResults(z, Zblk, Zcyc, Twiddles); // validate answer
   printResults(validAnswer, execTime);               // print the results
@@ -367,7 +229,7 @@ proc dfft(A: [?ADom], W, cyclicPhase) {
             const a = A(lo),
 	      b = A(lo+str);
             A(lo)     = a + b;
-            A(lo+str) = a - b;
+	    A(lo+str) = a - b;
           }
   }
 }
@@ -415,7 +277,6 @@ proc printConfiguration() {
     printProblemSize(elemType, numVectors, m);
   }
 }
-
 
 //
 // Initialize the twiddle vector and random input vector and
