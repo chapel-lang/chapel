@@ -230,7 +230,7 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
         new CallExpr(PRIM_GET_MEMBER_VALUE, wrap_c, field)));
 
     // Special case: 
-    // If this is an on block,  remember the first field,
+    // If this is an on block, remember the first field,
     // but don't add to the list of actuals passed to the original on_fn.
     // It contains the locale on which the new task is launched.
     if (first && fn->hasFlag(FLAG_ON))

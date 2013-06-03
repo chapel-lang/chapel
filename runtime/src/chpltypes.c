@@ -60,7 +60,11 @@ chpl_string chpl_format(chpl_string format, ...) {
 }
 
 
+// TODO: This should be placed in a separate file never included in the launcher build.
+// Maybe rename chpl-gen-includes and place this in the corresponding C file....
 #ifndef LAUNCHER
+#include "chpl-gen-includes.h"
+
 struct chpl_chpl____wide_chpl_string_s {
   chpl_localeID_t locale;
   chpl_string addr;
@@ -116,7 +120,7 @@ void chpl_gen_comm_wide_string_get(void* addr,
     chpl_comm_wide_get_string((chpl_string*) &(local_str->addr),
                               local_str, typeIndex, ln, fn);
     // The bytes live locally, so we have to update the locale.
-    local_str->locale = chpl_gen_getLocaleID();n
+    local_str->locale = chpl_gen_getLocaleID();
   }
 }
 

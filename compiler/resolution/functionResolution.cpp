@@ -971,24 +971,6 @@ canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn,
   if (paramCoerce && canParamCoerce(actualType, actualSym, formalType))
     return true;
 
-// TODO: This is disabled for now on the hierloc branch, to be re-enabled
-// when I have a more general solution for freeing sync variables.
-#if 0
-  // This is special-case code which will go away after coercion is implemented
-  // as a language feature.  The error can be moved into the implementation
-  // for the coerce function on sync/single types, while explicit conversion 
-  // enabled through the cast function.
-  // Note that per-class implementation of coerce also allows a more specific
-  // error message to be issued, e.g. explaining why
-  // the coercion of sync/single to object is disallowed.
-  if (isSyncType(actualType) && formalType == dtObject)
-    // Do not attempt to dispatch to the object type.
-    // We single out cast-to-object, because it may be desirable
-    // to cast a sync type to a base implementation type, depending
-    // on how different varieties of sync var are implemented.
-    return false;
-#endif
-
   forv_Vec(Type, parent, actualType->dispatchParents) {
     if (parent == formalType || canDispatch(parent, NULL, formalType, fn, promotes)) {
       return true;

@@ -295,13 +295,6 @@ module ChapelSyncvar {
   pragma "auto copy fn"
   inline proc chpl__autoCopy(x: single) return x;
 
-//  // These permit chpl_here_free to be called with sync and single objects.
-//  inline proc _cast(type t, x: sync) where t == object
-//    return __primitive("cast", t, x);
-//
-//  inline proc _cast(type t, x: single) where t == object
-//    return __primitive("cast", t, x);
-
   // These implement chpl_here_free for sync and single objects (permitting their
   // representations to be reclaimed under hierarchical locales).
   // The resulting code duplication is undesirable, but necessary for two reasons:
@@ -330,14 +323,7 @@ module ChapelSyncvar {
     __primitive("task_free", x);
   }
 
-
-
-  // Because "no object" was removed from _syncvar and _singlevar, it is
-  // now possible to cast _syncvar to object.  But this caused resolution to fail
-  // because chpl__maybeAutoDestroyed(sync(int)) resolving to
-  // chpl_maybeAutoDestroyed(object) caused the visible function set for
-  // chpl_maybeAutoDestroyed(int) to shrink to chpl_maybeAutoDestroyed(object).
-  // This is a workaround until that quirk in resolution can be resolved.
+  // Be explicit about whether syncs and singles are auto-destroyed.
   inline proc chpl__maybeAutoDestroyed(x: _syncvar) param return false;
   inline proc chpl__maybeAutoDestroyed(x: _singlevar) param return false;
 

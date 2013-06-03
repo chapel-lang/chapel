@@ -6,6 +6,7 @@
 //
 
 #include "chpl-comm-compiler-macros.h"
+#include "chpl-tasks.h"
 
 // used for converting between the Chapel idea of a locale ID: chpl_localeID_t
 // and the runtime idea of a locale ID: c_locale_t.
