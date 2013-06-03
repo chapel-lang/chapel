@@ -1,5 +1,0 @@
-bug: writeln for string in record in class not correct
-
-The generated code show that the code is correct, so something is
-going wrong in the printing. 
-
