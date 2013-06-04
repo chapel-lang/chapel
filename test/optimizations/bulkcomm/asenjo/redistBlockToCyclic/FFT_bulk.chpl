@@ -53,7 +53,7 @@ config const useRandomSeed = true,
 //
 config const printParams = false,
   printArrays = false,
-  printStats = true;
+  printStats = false;
 
 //
 // The program entry point

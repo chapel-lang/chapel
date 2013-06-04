@@ -1,4 +1,4 @@
-Traspose a given matrix B to matrix A
+/*Traspose a given matrix B to matrix A
 Array is "manually" distributed on locales so each locale has a DR subblock 
 Rows to columns communications are implemented a la MPI: 
 explicit Data[localeA].DR[slicedest]=Data[localeB].DR[sliceSource]
