@@ -114,7 +114,7 @@ bundleArgs(FnSymbol* fn, CallExpr* fcall, BundleArgsFnData &baData) {
   // create the class variable instance and allocate space for it
   VarSymbol *tempc = newTemp(astr("_args_for", fn->name), ctype);
   fcall->insertBefore( new DefExpr( tempc));
-  CallExpr* tempc_alloc = heapAllocate(ctype);
+  CallExpr* tempc_alloc = callTaskAlloc(ctype);
   fcall->insertBefore(new CallExpr(PRIM_MOVE, tempc, tempc_alloc));
   
   // set the references in the class instance
@@ -176,6 +176,7 @@ bundleArgs(FnSymbol* fn, CallExpr* fcall, BundleArgsFnData &baData) {
 static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnData &baData)
 {
   ModuleSymbol* mod = fcall->getModule();
+  INT_ASSERT(fn == fcall->isResolved());
 
   INT_ASSERT(baData.firstCall == !baData.wrap_fn);
   if (!baData.firstCall) return;
@@ -208,6 +209,11 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
     // The on_fn does not need this extra argument, and can find out its locale
     // by reading the task-private "here" pointer.
     DefExpr* localeArg = toDefExpr(fn->formals.get(1)->copy());
+    // The above copy() used to be a remove(), based on the assumption that there was
+    // exactly one wrapper for each on.  Now, the on_fn is outlined early and has
+    // several callers, therefore severall wrapon_fns are generated.
+    // So, we leave the extra locale arg in place here and remove it later 
+    // (see the last if (fn->hasFlag(FLAG_ON)) clause in passArgsToNestedFns()).
     wrap_fn->insertFormalAtTail(localeArg);
   }
 
@@ -217,7 +223,7 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
   mod->block->insertAtTail(new DefExpr(wrap_fn));
 
   // Create a call to the original function
-  CallExpr *call_orig = new CallExpr( (toSymExpr(fcall->baseExpr))->var);
+  CallExpr *call_orig = new CallExpr(fn);
   VarSymbol* locTemp = NULL;
   bool first = true;
   for_fields(field, ctype)
@@ -248,14 +254,16 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
     // the destination locale.
     // We save off the current values on the stack and then
     // set the task-private values to those passed in.
-    // The saved values are restored when the on block is exited.
+    // The saved values are restored when the on block is exited (below).
+    // The save-restore is needed because an on block may re-use the same task
+    // e.g. when the node is the same but sublocales differ.
     oldHere = newTemp(dtLocale);
     wrap_fn->insertAtTail(new DefExpr(oldHere));
     wrap_fn->insertAtTail(new CallExpr(PRIM_MOVE, oldHere,
-                                       new CallExpr(PRIM_TASK_GET_HERE)));
-    wrap_fn->insertAtTail(new CallExpr(PRIM_TASK_SET_LOCALE,
+                                       new CallExpr(PRIM_TASK_GET_HERE_PTR)));
+    wrap_fn->insertAtTail(new CallExpr(PRIM_TASK_SET_LOCALE_ID,
                                        new CallExpr(PRIM_WIDE_GET_LOCALE, locTemp)));
-    wrap_fn->insertAtTail(new CallExpr(PRIM_TASK_SET_HERE,
+    wrap_fn->insertAtTail(new CallExpr(PRIM_TASK_SET_HERE_PTR,
                                        new CallExpr(PRIM_WIDE_GET_ADDR, locTemp)));
   }
 
@@ -264,9 +272,9 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
 
   if (fn->hasFlag(FLAG_ON)) {
     // Restore old here value
-    wrap_fn->insertAtTail(new CallExpr(PRIM_TASK_SET_LOCALE,
+    wrap_fn->insertAtTail(new CallExpr(PRIM_TASK_SET_LOCALE_ID,
                                   new CallExpr(PRIM_WIDE_GET_LOCALE, oldHere)));
-    wrap_fn->insertAtTail(new CallExpr(PRIM_TASK_SET_HERE,
+    wrap_fn->insertAtTail(new CallExpr(PRIM_TASK_SET_HERE_PTR,
                                   new CallExpr(PRIM_WIDE_GET_ADDR, oldHere)));
   }
 
@@ -275,9 +283,6 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
   else
     wrap_fn->insertAtTail(new CallExpr(PRIM_TASK_FREE, wrap_c));
 
-//  normalize(wrap_fn);
-// Inserting call temps at this point would require hand-resolution of
-// their types.  We just add the required return by hand.
   wrap_fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
   // 'fn' has already been flattened and hoisted to the top level.
@@ -526,7 +531,8 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
         }
         FnSymbol* fn = toFnSymbol(move->parentSymbol);
         SET_LINENO(var);
-        // These were allocated using the system allocator, so do not have to use PRIM_TASK_FREE.
+        // These were allocated using the system allocator, so we must use PRIM_CHPL_FREE
+        // (not PRIM_TASK_FREE).
         if (fn && innermostBlock == fn->body)
           fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_CHPL_FREE, move->get(1)->copy()));
         else {
@@ -746,6 +752,7 @@ makeHeapAllocations() {
         ((useMap.get(var) && useMap.get(var)->n > 0) ||
          (defMap.get(var) && defMap.get(var)->n > 0))) {
       SET_LINENO(var->defPoint);
+      // TODO: Consider whether we should use PRIM_TASK_ALLOC here.
       CallExpr* alloc_call =
         new CallExpr(PRIM_CHPL_ALLOC, heapType->symbol,
                      newMemDesc("local heap-converted data"));
@@ -1107,7 +1114,7 @@ static CallExpr* optimizeOnCall(CallExpr* call)
   // to the "on" clause was dtLocale (or derived from dtLocale).
   Expr* destLocale = findDestLocale(localeLookup, defMap);
 
-  // If the dest object is a locale object, bridge out the localeID_to_lcoale call.
+  // If the dest object is a locale object, bridge out the localeID_to_locale call.
   CallExpr* forkedCall = call;
   if (destLocale)
   {

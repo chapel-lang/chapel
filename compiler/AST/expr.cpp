@@ -3651,7 +3651,7 @@ GenRet CallExpr::codegen() {
           codegenAssign(get(1), r);
           break;
          }
-         case PRIM_TASK_GET_HERE:
+         case PRIM_TASK_GET_HERE_PTR:
          {
           GenRet addr = codegenCallExpr("chpl_task_getHere");
           GenRet tmp;
@@ -3759,7 +3759,7 @@ GenRet CallExpr::codegen() {
     case PRIM_GET_PRIV_CLASS:
     case PRIM_ARRAY_GET:
     case PRIM_ARRAY_GET_VALUE:
-    case PRIM_TASK_GET_HERE:
+    case PRIM_TASK_GET_HERE_PTR:
     case PRIM_ON_LOCALE_NUM:
       // generated during generation of PRIM_MOVE
       break;
@@ -4510,7 +4510,7 @@ GenRet CallExpr::codegen() {
     case PRIM_SET_SERIAL:
       codegenCall("chpl_task_setSerial", codegenValue(get(1)));
       break;
-    case PRIM_TASK_SET_HERE:
+    case PRIM_TASK_SET_HERE_PTR:
     {
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
           get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
@@ -4519,10 +4519,10 @@ GenRet CallExpr::codegen() {
         codegenCall("chpl_task_setHere", get(1));
       break;
     }
-    case PRIM_TASK_SET_LOCALE:
+    case PRIM_TASK_SET_LOCALE_ID:
       codegenCall("chpl_gen_setLocaleID", codegenValue(get(1)));
       break;
-    case PRIM_TASK_GET_LOCALE:
+    case PRIM_TASK_GET_LOCALE_ID:
       ret = codegenCallExpr("chpl_gen_getLocaleID");
       break;
     case PRIM_CHPL_COMM_GET:
@@ -5578,7 +5578,7 @@ get_constant(Expr *e) {
 // The memory tracking hooks are not called, because the variables created here
 // are just used internally to pass variables to the bodies of parallel constructs.
 // (But they can be added easily if desire/needed.)
-CallExpr* heapAllocate(Type* t)
+CallExpr* callTaskAlloc(Type* t)
 {
   CallExpr* nbytes = new CallExpr(PRIM_SIZEOF, t->symbol);
   CallExpr* alloc =  new CallExpr(PRIM_TASK_ALLOC, nbytes);

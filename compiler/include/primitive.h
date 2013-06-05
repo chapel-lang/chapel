@@ -178,10 +178,10 @@ enum PrimitiveTag {
   PRIM_IS_HERE,                 // Returns true if the arg matches the current locale ID.
   PRIM_NODE_ID,                 // Returns the current (GASNet) node ID.
   PRIM_ON_LOCALE_NUM,           // specify a particular localeID for an on clause.
-  PRIM_TASK_SET_LOCALE,         // Set the locale ID (here ID) in task-private data.
-  PRIM_TASK_GET_LOCALE,         // Get the locale ID (here ID) from task-private data.
-  PRIM_TASK_SET_HERE,           // Set the (local) address of here in task-private data.
-  PRIM_TASK_GET_HERE,           // Get the (local) address of here from task-private data.
+  PRIM_TASK_SET_LOCALE_ID,         // Set the locale ID (here ID) in task-private data.
+  PRIM_TASK_GET_LOCALE_ID,         // Get the locale ID (here ID) from task-private data.
+  PRIM_TASK_SET_HERE_PTR,           // Set the (local) address of here in task-private data.
+  PRIM_TASK_GET_HERE_PTR,           // Get the (local) address of here from task-private data.
 
   PRIM_ALLOC_GVR,               // allocate space for global vars registry
   PRIM_HEAP_REGISTER_GLOBAL_VAR,

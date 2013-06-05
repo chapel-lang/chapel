@@ -218,7 +218,7 @@ inline CallExpr* here_alloc(Symbol* dest)
                       new_StringSymbol(currentAstLoc.filename));
 }
 
-CallExpr* heapAllocate(Type* t);
+CallExpr* callTaskAlloc(Type* t);
 
 #define for_exprs_postorder(e, expr)                            \
   for (Expr* e = getFirstExpr(expr); e; e = getNextExpr(e))

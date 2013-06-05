@@ -194,7 +194,7 @@ static void addTaskMgtInOnBlocks() {
           continue;
 
         // This is an on or on ... begin block.
-        CallExpr* here = new CallExpr(PRIM_TASK_GET_HERE);
+        CallExpr* here = new CallExpr(PRIM_TASK_GET_HERE_PTR);
         CallExpr* taskInitPartial = new CallExpr(".", here,
                                                  new_StringSymbol("taskInit"));
         block->insertAtHead(new CallExpr(taskInitPartial));

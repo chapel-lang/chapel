@@ -142,14 +142,14 @@ module ChapelLocale {
   // otherwise, a wide pointer.
   //
   // Perhaps we can move this into the compiler as a special keyword....
-  inline proc here return __primitive("_task_get_here");
+  inline proc here return __primitive("_task_get_here_ptr");
   
   // We need a temporary value for "here" before the architecture is defined.
   // This is due to the fact that "here" is used for memory and task control
   // in setting up the architecture itself.
   // Its type should probably be renamed dummyLocale or something representative.
   // The dummy locale provides system-default tasking and memory management.
-  __primitive("_task_set_here", new locale());
+  __primitive("_task_set_here_ptr", new locale());
 
   // Here be dragons: If the return type is specified, then normalize.cpp inserts
   // an initializer for the return value which calls its constructor, which calls

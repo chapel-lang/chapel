@@ -190,7 +190,7 @@ TYPE_EXTERN PrimitiveType* dtTaskList;
 // a fairly special wide type
 extern ClassType* wideStringType;
 
-// standard module types
+// Well-known types
 TYPE_EXTERN ClassType* dtArray;
 TYPE_EXTERN ClassType* dtReader;
 TYPE_EXTERN ClassType* dtWriter;

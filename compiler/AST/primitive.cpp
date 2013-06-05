@@ -552,10 +552,10 @@ initPrimitive() {
   prim_def(PRIM_IS_HERE, "_is_here", returnInfoBool);
   prim_def(PRIM_NODE_ID, "chpl_nodeID", returnInfoNodeID);    // Our GASNet node ID.
   prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoLocale);
-  prim_def(PRIM_TASK_SET_LOCALE, "_task_set_locale", returnInfoVoid, true);
-  prim_def(PRIM_TASK_GET_LOCALE, "_task_get_locale", returnInfoLocaleID);
-  prim_def(PRIM_TASK_SET_HERE, "_task_set_here", returnInfoVoid, true);
-  prim_def(PRIM_TASK_GET_HERE, "_task_get_here", returnInfoLocale);
+  prim_def(PRIM_TASK_SET_LOCALE_ID, "_task_set_locale_id", returnInfoVoid, true);
+  prim_def(PRIM_TASK_GET_LOCALE_ID, "_task_get_locale_id", returnInfoLocaleID);
+  prim_def(PRIM_TASK_SET_HERE_PTR, "_task_set_here_ptr", returnInfoVoid, true);
+  prim_def(PRIM_TASK_GET_HERE_PTR, "_task_get_here_ptr", returnInfoLocale);
 
   prim_def(PRIM_ALLOC_GVR, "allocchpl_globals_registry", returnInfoVoid);
   prim_def(PRIM_HEAP_REGISTER_GLOBAL_VAR, "_heap_register_global_var", returnInfoVoid, true, true);

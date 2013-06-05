@@ -949,11 +949,13 @@ void add_root_type(ClassType* ct)
     if (isRecord(ct)) {
       ct->dispatchParents.add(dtValue);
       // Assume that this addition is unique; report if not.
-      INT_ASSERT(dtValue->dispatchChildren.add_exclusive(ct));
+      bool inserted = dtValue->dispatchChildren.add_exclusive(ct);
+      INT_ASSERT(inserted);
     } else if (isClass(ct)) {
       ct->dispatchParents.add(dtObject);
       // Assume that this addition is unique; report if not.
-      INT_ASSERT(dtObject->dispatchChildren.add_exclusive(ct));
+      bool inserted = dtObject->dispatchChildren.add_exclusive(ct);
+      INT_ASSERT(inserted);
       VarSymbol* super = new VarSymbol("super", dtObject);
       super->addFlag(FLAG_SUPER_CLASS);
       ct->fields.insertAtHead(new DefExpr(super));

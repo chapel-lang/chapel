@@ -148,7 +148,7 @@ module DefaultArchitecture {
 
           // So immediately after creating a new locale to represent here, we
           // have to call this primitive to insert it into task-private storage.
-          __primitive("_task_set_here", node);
+          __primitive("_task_set_here_ptr", node);
 
           myLocales[locIdx] = node;
           numCores += node.numCores;
@@ -172,9 +172,9 @@ module DefaultArchitecture {
       // Note that this means we have to ask for here.parent or rootLocale to get 
       // the root locale of the default architecture.
       var loc = myLocales[0];
-      __primitive("_task_set_here", loc);
+      __primitive("_task_set_here_ptr", loc);
       var locID = chpl_return_localeID_node(0:int(32));
-      __primitive("_task_set_locale", locID);
+      __primitive("_task_set_locale_id", locID);
     }
 
     // Has to be globally unique and not equal to a node ID.

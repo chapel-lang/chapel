@@ -540,7 +540,6 @@ protoIteratorClass(FnSymbol* fn) {
   ii->iclass = new ClassType(CLASS_CLASS);
   TypeSymbol* cts = new TypeSymbol(astr("_ic_", className), ii->iclass);
   cts->addFlag(FLAG_ITERATOR_CLASS);
-  // Maybe add NO_OBJECT instead?
   add_root_type(ii->iclass);	// Add super : dtObject.
   fn->defPoint->insertBefore(new DefExpr(cts));
 
@@ -3141,7 +3140,8 @@ createFunctionAsValue(CallExpr *call) {
   call->parentExpr->insertBefore(new DefExpr(ts));
   
   ct->dispatchParents.add(parent);
-  INT_ASSERT(parent->dispatchChildren.add_exclusive(ct));
+  bool inserted = parent->dispatchChildren.add_exclusive(ct);
+  INT_ASSERT(inserted);
   VarSymbol* super = new VarSymbol("super", parent);
   super->addFlag(FLAG_SUPER_CLASS);
   ct->fields.insertAtHead(new DefExpr(super));
@@ -4846,6 +4846,7 @@ addToVirtualMaps(FnSymbol* pfn, ClassType* ct) {
         collectInstantiatedClassTypes(types, ct);
       else
         types.add(ct);
+
       forv_Vec(Type, type, types) {
         SymbolMap subs;
         if (ct->symbol->hasFlag(FLAG_GENERIC))
@@ -4887,15 +4888,15 @@ addToVirtualMaps(FnSymbol* pfn, ClassType* ct) {
                 fn->retType->dispatchParents.add_exclusive(pfn->retType);
                 Type* pic = pfn->retType->initializer->iteratorInfo->iclass;
                 Type* ic = fn->retType->initializer->iteratorInfo->iclass;
-                // Assumes single inheritance:
-                if (ic->dispatchParents.n) {
-                  // We need to remove <object> if it has already been added.
-                  // This is pretty kludgy.  See call to add_root_type in 
-                  // protoIterator() above.
+                INT_ASSERT(ic->symbol->hasFlag(FLAG_ITERATOR_CLASS));
 
-                  // Can be consolidated if "only" is added to vec.h.
-                  INT_ASSERT(ic->dispatchParents.n == 1);
-                  Type* parent = ic->dispatchParents.first();
+                // Iterator classes are created as normal top-level classes (inheriting
+                // from dtObject).  Here, we want to re-parent ic with pic, so
+                // we need to remove and replace the object base class.
+                INT_ASSERT(ic->dispatchParents.n == 1);
+                Type* parent = ic->dispatchParents.only();
+                if (parent == dtObject)
+                {
                   int item = parent->dispatchChildren.index(ic);
                   parent->dispatchChildren.remove(item);
                   ic->dispatchParents.remove(0);
