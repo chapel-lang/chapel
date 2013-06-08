@@ -30,9 +30,14 @@
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
-gbt, 04-26-13: r21322 broke parallel/taskPool/figueroa/TooManyThreads.
-               I fixed this in r21327, but it may show up as a Resolved
-               Error for a few days more.
+cray-prgenv-gnu (sungeun 6/5/13): PrgEnv-gnu failed with "ERROR:
+gcc/48 does not support mpich2/5.6.5. Please swap gcc or mpich2
+versions".  After a couple of iterations with Ryan, committed a fix
+that should swap in the correct mpich version.  We should consider
+making chplbld01 and chpbld02 behave similarly.  According to Ryan,
+chplbld01 is begin treated like an XT white box (at our
+request?). There are no longer XT PE updates, and this may be periodic
+module woes.
 
 
 ==============================================
@@ -46,6 +51,20 @@ error while compiling functionResolution.cpp.  Backing up to version
 12.9.0 fixes it. Backing the Chapel source down to revision 20834 also
 fixes it.  Turning optimization down to -O1 also fixes it.  Bugzilla
 bug 796017.
+
+
+atomics nondeterminisms (sungeun)
+---------------------------------
+release/examples/primers/atomics:
+- xt-intel: 06/30/12, 3/19/13
+- linux32: 07/04/12
+- cray-xt: 08/14/12
+- prgenv-gnu: 3/22/13
+types/atomic/sungeun/atomic_vars:
+- gasnet-everything, 02/01/13, 02/19/13, 05/10/13
+- no-local:3/16/13
+- baseline:6/7/13
+
 
 linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
 ---------------------------------------------
@@ -73,6 +92,7 @@ at present.  See the archives for more detail.
 ==============================================================================
 Were once flagged as causing noise regularly, but not as familiar as the above
 ==============================================================================
+
 
 SSCA2_main (UNASSIGNED)
 -----------------------
@@ -185,10 +205,6 @@ examples of what times out:
  release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4) (04/08/13)
  etc.
 
-wrong answer for atomic operations with gasnet-everything on 2/1/13 (Sungeun)
------------------------------------------------------------------------------
-types/atomic/sungeun/atomic_vars (02/01/13, 02/19/13, 05/10/13, no-local on 3/16)
-
 minus_equals nondeterminism (sungeun)
 ----------------------------------------
 (week of 07/02, still present 10/2, 10/9/12, 1/6/13, 2/1/13)
@@ -211,10 +227,6 @@ In the case of the val iterator, it write the actual value.  Since all
 tasks performing the coforall share the same memory location passed in
 from the promotion wrapper,
 
-
-atomics nondeterminisms (UNASSIGNED)
-------------------------------------
-release/examples/primers/atomics (06/30/12:xt-intel, 07/04/12:linux32, 08/14/12:cray-xt, 3/19/13:intel, 3/22/13:prgenv-gnu)
 
 no-local nondeterminisms (UNASSIGNED)
 -------------------------------------

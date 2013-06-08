@@ -20,6 +20,13 @@
 general regressions (seem to happen in most configurations)
 ===========================================================
 
+counts leaked by domainMaps changed after shifted array pointer commit
+(6/4/13)
+--------------------------------------------------------------------
+[Error matching program output for memory/sungeun/refCount/domainMaps]
+Will update after thaw.  Note this test still has an issue for
+no-local compilations that is in Vass' court.
+
 Started failing with Tom's local strings sharing (06/01/13)
 -----------------------------------------------------------
 [Error matching program output for users/ferguson/extern_string_test (compopts: 1)]
@@ -135,6 +142,9 @@ counts leaked by domainMaps changed after Vass' task function commit
 (05/30/13)
 --------------------------------------------------------------------
 [Error matching program output for memory/sungeun/refCount/domainMaps]
+Current state: Tom updated this on accident with his strings commit,
+so it passed for a couple night until the shifted array pointer
+commit.  The original problem still exists.
 
 
 ====================================================
@@ -151,6 +161,11 @@ fast-on optimization changed due to Vass' task functions commit (05/31/13)
 gasnet-fast regressions (other than the above)
 (checked for accuracy 6/3/2013)
 ==============================================
+
+incorrect comm counts (6/4/13)
+------------------------------
+[Error matching program output for studies/ssca2/performance/SSCA2_commDiags]
+Due to shifted array pointer commit.  Will update after code thaw.
 
 recursive iterator issue believed to be due to Vass' task functions
 commit (05/31/13)
@@ -198,8 +213,7 @@ communication counts changed due to Vass' task functions commit (05/30/13)
 
 communication counts changed (sungeun)
 --------------------------------------
-[Error matching program output for distributions/robust/arithmetic/performance/alloc]
-[Error matching program output for distributions/robust/arithmetic/performance/alloc_all]
+FYI: These were updated with the shifted array pointer commit with comm counts from prior to Vass's task functions commit.
 [Error matching program output for distributions/robust/arithmetic/performance/assignAlias]
 [Error matching program output for distributions/robust/arithmetic/performance/assignSlice]
 [Error matching program output for distributions/robust/arithmetic/performance/reduceAlias]
@@ -468,6 +482,43 @@ alignment mismatch in output (04/08/12)
 ========================
 xt-gnu specific failures
 ========================
+
+New gcc warning for 4.8 (6/7/13)
+--------------------------------
+[Error matching program output for optimizations/sungeun/RADOpt/access2d (compopts: 1)]
+[Error matching program output for studies/hpcc/PTRANS/jglewis/ptrans_2011]
+[Error matching program output for studies/hpcc/PTRANS/jglewis/ptrans_2011-blkcyc]
+[Error matching program output for studies/ssca2/rachels/SSCA2_test (compopts: 3, execopts: 1)]
+
+  > In file included from /tmp/chpl-chapelu-8226.deleteme/_main.c:13:0:
+  > /tmp/chpl-chapelu-8226.deleteme/DSIUtil.c: In function '_factor.isra.281':
+  > /tmp/chpl-chapelu-8226.deleteme/ChapelTuple.c:20:21: warning: iteration 2305843009213693951u invokes undefined behavior [-Waggressive-loop-optimizations]
+  >    ret = *(*(this30) + (i - 1));
+  >                      ^
+  > In file included from /tmp/chpl-chapelu-8226.deleteme/_main.c:38:0:
+  > /tmp/chpl-chapelu-8226.deleteme/DSIUtil.c:932:11: note: containing loop
+  >      while (T15) {
+  >            ^
+
+I think that this is a case of gcc's warning being more thorough.  I'm
+not sure if there's a general workaround for this particular case
+other than silencing the warning.  One worry is that gcc is spending
+extra time optimizing due to the above code, but not sure what we can
+do about it.
+
+
+Dwarf incompatibility issue (6/7/13)
+------------------------------------
+[Error matching compiler output for compflags/bradc/gdbddash/declint]
+[Error matching program output for execflags/bradc/gdbddash/declint2]
+[Error matching program output for execflags/bradc/gdbddash/gdbSetConfig]
+[Error matching program output for execflags/bradc/gdbddash/declint]
+
+The gcc 4.8 does dwarf 4, but our default gdb does not.  A work around
+is to give gcc -gdwarf-3.  FYI, Greg has confirmed this works.
+Another option is to wait for the gdb update.
+
+
 
 ========================
 cygwin-specific failures
