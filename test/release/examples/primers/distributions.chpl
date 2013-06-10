@@ -56,7 +56,7 @@ var BA: [BlockSpace] int;
 // locale ID that stores that index/element/iteration.
 //
 forall ba in BA do
-  ba = __primitive("_wide_get_node", here);
+  ba = here.id;
 
 //
 // Output the Block-distributed array to visually see how the elements
