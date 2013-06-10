@@ -30,10 +30,14 @@
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
-cray-prgenv-gnu (sungeun 6/5/13): PrgEnv-gnu failed with "ERROR:
-gcc/48 does not support mpich2/5.6.5. Please swap gcc or mpich2
-versions".  After a couple of iterations with Ryan, committed a fix
-that should swap in the correct mpich version.  We should consider
+cray-prgenv-cray (weekend) (sungeun 6/7/13): Two link errors caused
+all tests to fail.  "cannot find -lsci_cray_mp" and "cannot find
+-lscicpp_cray".
+
+cray-prgenv-gnu (weekday) (sungeun 6/5/13): PrgEnv-gnu failed with
+"ERROR: gcc/48 does not support mpich2/5.6.5. Please swap gcc or
+mpich2 versions".  After a couple of iterations with Ryan, committed a
+fix that should swap in the correct mpich version.  We should consider
 making chplbld01 and chpbld02 behave similarly.  According to Ryan,
 chplbld01 is begin treated like an XT white box (at our
 request?). There are no longer XT PE updates, and this may be periodic
