@@ -30,7 +30,7 @@
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
-cray-prgenv-cray (weekend) (sungeun 6/7/13): Two link errors caused
+cray-prgenv-cray (weekday) (sungeun 6/7/13): Two link errors caused
 all tests to fail.  "cannot find -lsci_cray_mp" and "cannot find
 -lscicpp_cray".
 
