@@ -122,11 +122,23 @@ module ChapelLocale {
     proc taskExit() : void {}
 
     proc alloc(nbytes:int) {
-      return __primitive("malloc", nbytes);
+      extern proc chpl_malloc(nbytes:int) : opaque;
+      return chpl_malloc(nbytes);
+    }
+
+    proc calloc(count:int, nbytes:int) {
+      extern proc chpl_calloc(count:int, nbytes:int) : opaque;
+      return chpl_calloc(count, nbytes);
+    }
+
+    proc realloc(x:object, nbytes:int) {
+      extern proc chpl_realloc(x:object, nbytes:int) : opaque;
+      return chpl_realloc(x, nbytes);
     }
 
     proc free(x:object) {
-      __primitive("free", x);
+      extern proc chpl_free(x:object) : void;
+      chpl_free(x);
     }
     //------------------------------------------------------------------------}
   }
@@ -151,6 +163,20 @@ module ChapelLocale {
   // The dummy locale provides system-default tasking and memory management.
   __primitive("_task_set_here_ptr", new locale());
 
+
+  extern proc chpl_memhook_malloc_pre(number:int, size:int, md:int(16),
+                                      lineno:int(32), filename:string) : void;
+  extern proc chpl_memhook_malloc_post(ptr:opaque, number:int, size:int, md:int(16),
+                                       lineno:int(32), filename:string) : void;
+  extern proc chpl_memhook_realloc_pre(ptr:object, size:int, md:int(16),
+                                       lineno:int(32), filename:string) : void;
+  extern proc chpl_memhook_realloc_post(newPtr:opaque, ptr:object,
+                                        size:int, md:int(16),
+                                        lineno:int(32), filename:string) : void;
+  extern proc chpl_memhook_free_pre(ptr:opaque, lineno:int(32), filename:string)
+    : void;
+  extern proc chpl_memhook_md_num() : int(16);
+
   // Here be dragons: If the return type is specified, then normalize.cpp inserts
   // an initializer for the return value which calls its constructor, which calls
   // chpl_here_alloc ad infinitum.  But if the return type is left off, it works!
@@ -158,11 +184,6 @@ module ChapelLocale {
   // The allocator pragma is used by scalar replacement.
   pragma "allocator"
   proc chpl_here_alloc(x, md:int(16), lineno:int(32), filename:string) {
-    extern proc chpl_memhook_malloc_pre(number:int, size:int, md:int(16),
-                                        lineno:int(32), filename:string) : void;
-    extern proc chpl_memhook_malloc_post(ptr:opaque, number:int, size:int, md:int(16),
-                                         lineno:int(32), filename:string) : void;
-    extern proc chpl_memhook_md_num() : int(16);
     var nbytes = __primitive("sizeof", x);
     chpl_memhook_malloc_pre(1, nbytes, md + chpl_memhook_md_num(), lineno, filename);
     var mem = __primitive("task_alloc", nbytes);
@@ -170,26 +191,18 @@ module ChapelLocale {
     return __primitive("cast", x.type, mem);
   }
 
+  pragma "allocator"
   proc chpl_here_calloc(x, number:int, md:int(16), lineno:int(32), filename:string) {
-    extern proc chpl_memhook_malloc_pre(number:int, size:int, md:int(16),
-                                        lineno:int(32), filename:string) : void;
-    extern proc chpl_memhook_malloc_post(ptr:opaque, number:int, size:int, md:int(16),
-                                         lineno:int(32), filename:string) : void;
-    extern proc chpl_memhook_md_num() : int(16);
+    extern proc chpl_task_calloc(number:int, nbytes:int) : opaque;
     var nbytes = __primitive("sizeof", x);
     chpl_memhook_malloc_pre(number, nbytes, md + chpl_memhook_md_num(), lineno, filename);
-    var mem = __primitive("task_calloc", number, nbytes);
+    var mem = chpl_task_calloc(number, nbytes);
     chpl_memhook_malloc_post(mem, number, nbytes, md + chpl_memhook_md_num(), lineno, filename);
     return __primitive("cast", x.type, mem);
   }
 
+  pragma "allocator"
   proc chpl_here_realloc(x, md:int(16), lineno:int(32), filename:string) {
-    extern proc chpl_memhook_realloc_pre(ptr:object, size:int, md:int(16),
-                                        lineno:int(32), filename:string) : void;
-    extern proc chpl_memhook_realloc_post(newPtr:opaque, ptr:object,
-                                         size:int, md:int(16),
-                                         lineno:int(32), filename:string) : void;
-    extern proc chpl_memhook_md_num() : int(16);
     var nbytes = __primitive("sizeof", x);
     chpl_memhook_realloc_pre(x, nbytes, md + chpl_memhook_md_num(), lineno, filename);
     var mem = __primitive("task_realloc", x:object, nbytes);
@@ -201,8 +214,6 @@ module ChapelLocale {
     // TODO: The pointer should really be of type opaque, but we don't 
     // handle object ==> opaque casts correctly.  (In codegen, opaque behaves 
     // like an lvalue, but in the type system it isn't one.)
-    extern proc chpl_memhook_free_pre(ptr:opaque, lineno:int(32), filename:string)
-      : void;
     __primitive("local_check", x, lineno, filename);
     chpl_memhook_free_pre(__primitive("cast_to_void_star", x), lineno, filename);
     __primitive("task_free", x);

@@ -757,24 +757,6 @@ GenRet codegenGetLocaleID(void)
   return ret;
 }
 
-#if 0
-static
-GenRet codegenLocaleID(GenRet node, GenRet subloc)
-{
-  GenRet ret;
-  Type* localeType = LOCALE_ID_TYPE;
-
-  ret = codegenCallExpr("chpl_return_localeID", node, subloc);
-  if( ret.val ) {
-#ifdef HAVE_LLVM
-    GenRet expectType = LOCALE_ID_TYPE;
-    ret.val = convertValueToType(ret.val, expectType.type);
-#endif
-  }
-  ret.chplType = localeType;
-  return ret;
-}
-#endif
 
 static
 GenRet codegenUseGlobal(std::string str)
@@ -2495,13 +2477,6 @@ GenRet codegenBasicPrimitiveExpr(CallExpr* call) {
   return codegenCallExpr(call->primitive->name, args);
 }
 
-#if 0
-static
-GenRet codegenZero()
-{
-  return new_IntSymbol(0, INT_SIZE_64)->codegen();
-}
-#endif
 
 static
 GenRet codegenOne()
@@ -4733,22 +4708,9 @@ GenRet CallExpr::codegen() {
       ret = size;
       break;
     }
-    case PRIM_MALLOC:
-    { // (void*)chpl_malloc(nbytes);
-      GenRet size = codegenValue(get(1));
-      GenRet allocated;
-      allocated = codegenCallExpr("chpl_malloc", size);
-      ret = codegenCastToVoidStar(allocated); // Needed?
-      break;
-    }
     case PRIM_TASK_ALLOC:
     {
       ret = codegenCallExpr("chpl_task_alloc", codegenValue(get(1)));
-      break;
-    }
-    case PRIM_TASK_CALLOC:
-    {
-      ret = codegenCallExpr("chpl_task_calloc", codegenValue(get(1)), codegenValue(get(2)));
       break;
     }
     case PRIM_TASK_REALLOC:
@@ -4796,34 +4758,6 @@ GenRet CallExpr::codegen() {
                                   description, get(3), get(4));
 
       ret = codegenCast(typeInfo()->symbol->cname, allocated);
-      break;
-    }
-    case PRIM_FREE: // This version is called from Chapel code.
-    {
-      if (fNoMemoryFrees)
-        break;
-
-      Expr * ptrExpr = get(1);
-      if (ptrExpr->typeInfo()->getValType() == dtString &&
-          ! ptrExpr->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
-        // The representation of a local string may be shared among several
-        // variables.  We can't (yet) tell who owns the data, so we can't
-        // release it ever.  Otherwise, we'll get double-deletion errors.
-        // This unfortunate situation will change when
-        // string representations are reference-counted.
-        break;
-      if( ptrExpr->typeInfo()->symbol->hasFlag(FLAG_DATA_CLASS))
-        INT_FATAL(this, "cannot delete data class");
-      GenRet ptr; 
-      ptr = codegenValue(ptrExpr);
-      if (ptrExpr->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        ptr = codegenRaddr(ptr);
-      }
-      codegenCall("chpl_free", codegenCastToVoidStar(ptr));
-      // MPF - note we do not set the pointer to NULL here
-      // because it would not change any copies of the pointer
-      // and we're toast in any case of use-after-free.
-      // Arguably, it could be put back in for earlier error detection.
       break;
     }
     case PRIM_CHPL_FREE: // This version is used internally.

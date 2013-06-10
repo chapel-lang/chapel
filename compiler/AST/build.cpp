@@ -1834,14 +1834,21 @@ static Expr* extractLocale(Expr* expr) {
   return new CallExpr("chpl_localeID_to_locale", lid);
 }
 
+
 BlockStmt*
 buildOnStmt(Expr* expr, Expr* stmt) {
   checkControlFlow(stmt, "on statement");
 
+  // "on" clauses use the locale object extracted from the input "on" expression. 
+  // That is, if the "on" expression is not already a locale, extra code is inserted
+  // to look up the locale given the localeID portion of the "on" expression's wide 
+  // address.
+  Expr* onExpr = extractLocale(expr);
+
   if (fLocal) {
     BlockStmt* block = new BlockStmt(stmt);
     // evaluate the expression for side effects
-    block->insertAtHead(extractLocale(expr));
+    block->insertAtHead(onExpr);
     return buildChapelStmt(block);
   }
 
@@ -1878,9 +1885,8 @@ buildOnStmt(Expr* expr, Expr* stmt) {
 
     // Execute the construct "on x begin ..." asynchronously.
     Symbol* tmp = newTemp();
-    body->insertAtHead(new CallExpr(PRIM_MOVE, tmp, extractLocale(expr)));
+    body->insertAtHead(new CallExpr(PRIM_MOVE, tmp, onExpr));
     body->insertAtHead(new DefExpr(tmp));
-    beginBlock->blockInfo = new CallExpr(PRIM_BLOCK_ON, tmp);
     beginBlock->blockInfo = new CallExpr(PRIM_BLOCK_ON, tmp);
     beginBlock->blockInfo->primitive = primitives[PRIM_BLOCK_ON_NB];
     return body;
@@ -1891,10 +1897,10 @@ buildOnStmt(Expr* expr, Expr* stmt) {
     //    on tmp ...
     //  }
     BlockStmt* block = buildChapelStmt();
-    BlockStmt* onBlock = new BlockStmt(stmt);
     Symbol* tmp = newTemp();
     block->insertAtTail(new DefExpr(tmp));
-    block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, extractLocale(expr)));
+    block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, onExpr));
+    BlockStmt* onBlock = new BlockStmt(stmt);
     onBlock->blockInfo = new CallExpr(PRIM_BLOCK_ON, tmp);
     block->insertAtTail(onBlock);
     return block;

@@ -466,12 +466,9 @@ initPrimitive() {
 
   // These are used for task-aware allocation.
   prim_def(PRIM_SIZEOF, "sizeof", returnInfoDefaultInt);
-  prim_def(PRIM_MALLOC, "malloc", returnInfoOpaque, true, true);
-  prim_def(PRIM_FREE, "free", returnInfoVoid, true, true);
 
   // These go through the task-specific allocator functions.
   prim_def(PRIM_TASK_ALLOC, "task_alloc", returnInfoOpaque, true, false);
-  prim_def(PRIM_TASK_CALLOC, "task_calloc", returnInfoOpaque, true, false);
   prim_def(PRIM_TASK_REALLOC, "task_realloc", returnInfoOpaque, true, false);
   prim_def(PRIM_TASK_FREE, "task_free", returnInfoVoid, true, false);
   prim_def(PRIM_CHPL_MEMHOOK_FREE, "chpl_memhook_free_pre", returnInfoVoid, true, true);

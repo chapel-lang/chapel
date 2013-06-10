@@ -976,14 +976,13 @@ findLocaleLookup(CallExpr* onBlockCall, Map<Symbol*, Vec<SymExpr*>*>& defMap)
 {
   // The first argument of an on block call is the locale ID or object passed to the on statement.
   Expr* onExpr = onBlockCall->get(1);
-  INT_ASSERT_AND_RETURN_NULL(onExpr);
+
   // Assume that the on expression is a temp.
   SymExpr* locTemp = toSymExpr(onExpr);
-  INT_ASSERT_AND_RETURN_NULL(locTemp);
 
   // Extract its definition.
   Expr* locDef = defMap.get(locTemp->var)->only()->parentExpr;
-  INT_ASSERT_AND_RETURN_NULL(locDef);
+
   CallExpr* toLocMove = toCallExpr(locDef);
   INT_ASSERT(toLocMove->isPrimitive(PRIM_MOVE));
 
@@ -1004,7 +1003,6 @@ static Expr* findDestinationLocaleID(CallExpr* toLocMove)
 {
   // This is somewhat fragile, because other substitutions could have been made.
   CallExpr* toLocCall = toCallExpr(toLocMove->get(2));
-  INT_ASSERT_AND_RETURN_NULL(toLocCall);
 
 // toLocCall should be a call to chpl_localeID_to_locale or the chpl_on_locale_num primitive.
   Expr* locID = NULL;
@@ -1019,8 +1017,7 @@ static Expr* findDestinationLocaleID(CallExpr* toLocMove)
       locID = toLocCall->get(1);
   }
 
-  INT_ASSERT_AND_RETURN_NULL(locID);
-  INT_ASSERT_AND_RETURN_NULL(locID->typeInfo() == dtLocaleID);
+  INT_ASSERT(locID->typeInfo() == dtLocaleID);
   return locID;
 }
 
@@ -1029,7 +1026,6 @@ static Expr* findDestinationLocaleID(CallExpr* toLocMove)
 static Expr* findDestLocale(CallExpr* toLocMove, Map<Symbol*, Vec<SymExpr*>*>& defMap)
 {
   CallExpr* toLocCall = toCallExpr(toLocMove->get(2));
-  INT_ASSERT_AND_RETURN_NULL(toLocCall);
 
 // toLocCall should be a call to chpl_localeID_to_locale or the chpl_on_locale_num primitive.
   Expr* locID = NULL;
@@ -1042,22 +1038,18 @@ static Expr* findDestLocale(CallExpr* toLocMove, Map<Symbol*, Vec<SymExpr*>*>& d
   FnSymbol* locFn = toLocCall->isResolved();
   if (!strcmp(locFn->name, "chpl_localeID_to_locale"))
     locID = toLocCall->get(1);
-  INT_ASSERT_AND_RETURN_NULL(locID);
 
   // We expect locID to be a temp.
   SymExpr* locIDTemp = toSymExpr(locID);
-  INT_ASSERT_AND_RETURN_NULL(locIDTemp);
 
   // Extract its definition.
   Expr* locIDDef = defMap.get(locIDTemp->var)->only()->parentExpr;
-  INT_ASSERT_AND_RETURN_NULL(locIDDef);
   CallExpr* locIDMove = toCallExpr(locIDDef);
-  INT_ASSERT_AND_RETURN_NULL(locIDMove->isPrimitive(PRIM_MOVE));
+  INT_ASSERT(locIDMove->isPrimitive(PRIM_MOVE));
 
   // We expect only PRIM_WIDE_GET_LOCALE here.
   CallExpr* locIDget = toCallExpr(locIDMove->get(2));
-  INT_ASSERT_AND_RETURN_NULL(locIDget);
-  INT_ASSERT_AND_RETURN_NULL(locIDget->isPrimitive(PRIM_WIDE_GET_LOCALE));
+  INT_ASSERT(locIDget->isPrimitive(PRIM_WIDE_GET_LOCALE));
 
   // Get the operand of the primitive.
   Expr* obj = locIDget->get(1);
@@ -1379,18 +1371,6 @@ static void localizeCall(CallExpr* call) {
           }
           break;
         } 
-#if 0
-        else if (rhs->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
-                 rhs->isPrimitive(PRIM_WIDE_GET_NODE) ||
-                 rhs->isPrimitive(PRIM_WIDE_GET_SUBLOC)) {
-          if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
-            if (rhs->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-              insertLocalTemp(rhs->get(1));
-            }
-          }
-          break;
-        }
-#endif
         else if (rhs->isPrimitive(PRIM_GET_MEMBER) ||
                    rhs->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
                    rhs->isPrimitive(PRIM_GET_MEMBER_VALUE) ||

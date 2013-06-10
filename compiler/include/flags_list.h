@@ -13,6 +13,11 @@
 #define npr false /* NO, cannot be set via a pragma */
 #define ncm ""    /* no comment */
 
+
+// This flag is used in scalarReplace.cpp to determine if an assignment of a ref
+// has an allocator as the RHS.  If so, then it is not creating an alias, since
+// the allocator function does not retain a reference to the referenced object.
+symbolFlag( FLAG_ALLOCATOR , ypr, "allocator" , "allocates heap storage" )
 symbolFlag( FLAG_ALLOW_REF , ypr, "allow ref" , ncm )
 symbolFlag( FLAG_ARG_THIS, npr, "arg this", "the hidden object argument")
 symbolFlag( FLAG_ARRAY , ypr, "array" , ncm )
@@ -39,7 +44,6 @@ symbolFlag( FLAG_CONSTRUCTOR , npr, "constructor" , "constructor (but not type c
 symbolFlag( FLAG_DATA_CLASS , ypr, "data class" , ncm )
 symbolFlag( FLAG_DATA_SET_ERROR , npr, "data set error" , ncm )
 symbolFlag( FLAG_DEFAULT_CONSTRUCTOR , npr, "default constructor" , ncm )
-symbolFlag( FLAG_ALLOCATOR , ypr, "allocator" , "allocates heap storage" )
 symbolFlag( FLAG_DESTRUCTOR , npr, "destructor" , ncm )
 symbolFlag( FLAG_DISTRIBUTION , ypr, "distribution" , ncm )
 symbolFlag( FLAG_DOMAIN , ypr, "domain" , ncm )

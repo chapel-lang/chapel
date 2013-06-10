@@ -651,7 +651,7 @@ void chpl_comm_exit(int all, int status) {
   }
 }
 
-void  chpl_comm_put(void* addr, int32_t node, void* raddr,
+void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
                     int32_t elemSize, int32_t typeIndex, int32_t len,
                     int ln, chpl_string fn) {
   const int size = elemSize*len;
@@ -672,7 +672,7 @@ void  chpl_comm_put(void* addr, int32_t node, void* raddr,
 ////GASNET - pass trace info to gasnet_get
 ////GASNET - define GASNET_E_ PUTGET always REMOTE
 ////GASNET - look at GASNET tools at top of README.tools has atomic counters
-void  chpl_comm_get(void* addr, int32_t node, void* raddr,
+void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
                     int32_t elemSize, int32_t typeIndex, int32_t len,
                     int ln, chpl_string fn) {
   const int size = elemSize*len;

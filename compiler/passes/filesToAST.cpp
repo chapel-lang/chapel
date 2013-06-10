@@ -142,8 +142,6 @@ static void gatherWellKnownTypes()
 }
 
 
-// TODO: Add a check that each of the module-defined types is a class type.
-// (This happens to be uniform at present.)
 void parse(void) {
   yydebug = debugParserLevel;
 

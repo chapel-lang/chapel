@@ -14,8 +14,8 @@
 
 // Copied verbatim from chpl__header.h.
 typedef struct chpl_chpl_localeID_t_s {
-  int32_t node;
-  int32_t subloc;
+  c_nodeid_t node;
+  c_subloc_t subloc;
 } chpl_localeID_t;
 
 #endif

@@ -276,14 +276,11 @@ isFastPrimitive(CallExpr *call) {
     // Allocator calls can block.  Why?
   case PRIM_FREE_TASK_LIST:
   case PRIM_TASK_ALLOC:
-  case PRIM_TASK_CALLOC:
   case PRIM_TASK_REALLOC:
   case PRIM_TASK_FREE:
   case PRIM_CHPL_MEMHOOK_FREE:
   case PRIM_CHPL_ALLOC:
-  case PRIM_MALLOC:
   case PRIM_CHPL_FREE:
-  case PRIM_FREE:
   case PRIM_ARRAY_ALLOC:
   case PRIM_ARRAY_FREE:
   case PRIM_ARRAY_FREE_ELTS:

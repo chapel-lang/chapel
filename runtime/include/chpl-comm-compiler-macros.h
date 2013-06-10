@@ -14,7 +14,7 @@
 
 
 static ___always_inline
-void chpl_gen_comm_get(void *addr, int32_t node, void* raddr,
+void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
                        int32_t elemSize, int32_t typeIndex, int32_t len,
                        int ln, chpl_string fn)
 {
@@ -30,7 +30,7 @@ void chpl_gen_comm_get(void *addr, int32_t node, void* raddr,
 }
 
 static ___always_inline
-void chpl_gen_comm_put(void* addr, int32_t node, void* raddr,
+void chpl_gen_comm_put(void* addr, c_nodeid_t node, void* raddr,
                        int32_t elemSize, int32_t typeIndex, int32_t len,
                        int ln, chpl_string fn)
 {
@@ -46,7 +46,7 @@ void chpl_gen_comm_put(void* addr, int32_t node, void* raddr,
 }
 
 static ___always_inline
-void chpl_gen_comm_get_strd(void *addr, void *dststr, int32_t node, void *raddr,
+void chpl_gen_comm_get_strd(void *addr, void *dststr, c_nodeid_t node, void *raddr,
                        void *srcstr, void *count, int32_t strlevels, 
                        int32_t elemSize, int32_t typeIndex,
                        int ln, chpl_string fn)
@@ -59,7 +59,7 @@ void chpl_gen_comm_get_strd(void *addr, void *dststr, int32_t node, void *raddr,
 }
 
 static ___always_inline
-void chpl_gen_comm_put_strd(void *addr, void *dststr, int32_t node, void *raddr,
+void chpl_gen_comm_put_strd(void *addr, void *dststr, c_nodeid_t node, void *raddr,
                        void *srcstr, void *count, int32_t strlevels, 
                        int32_t elemSize, int32_t typeIndex,
                        int ln, chpl_string fn)
@@ -71,17 +71,18 @@ void chpl_gen_comm_put_strd(void *addr, void *dststr, int32_t node, void *raddr,
 #endif
 }
 
-// Returns true if the given node (image) ID matches the ID of the currently-running 
-// image, false otherwise.
+// Returns true if the given node ID matches the ID of the currently node,
+// false otherwise.
 static ___always_inline
-chpl_bool chpl_is_node_local(int32_t node)
+chpl_bool chpl_is_node_local(c_nodeid_t node)
 { return node == chpl_nodeID; }
 
 // Assert that the given node ID matches that of the currently-running image
 // If not, format the given error message with the given filename and line number
-// and then halt the current task.  (The exact behavior is dictated by chpl_error()).
+// and then halt the current task.  (The exact behavior is dictated by 
+// chpl_error()).
 static ___always_inline
-void chpl_check_local(int32_t node, int32_t ln, const char* file, const char* error)
+void chpl_check_local(c_nodeid_t node, int32_t ln, const char* file, const char* error)
 {
   if (! chpl_is_node_local(node))
     chpl_error(error, ln, file);
@@ -101,7 +102,7 @@ void chpl_heap_register_global_var(int i, wide_ptr_t *ptr_to_wide_ptr)
 // for a motivating example that didn't work before this change.
 //
 static ___always_inline
-void chpl_comm_nonblocking_on(int32_t node, chpl_fn_int_t fid,
+void chpl_comm_nonblocking_on(c_nodeid_t node, chpl_fn_int_t fid,
                               void *arg, int32_t arg_size, int32_t arg_tid) {
   if (chpl_task_getSerial()) {
     chpl_comm_fork(node, fid, arg, arg_size, arg_tid);

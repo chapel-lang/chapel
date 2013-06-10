@@ -275,11 +275,12 @@ checkResolved(void) {
     }
   }
 
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (!call->isResolved())
-      continue;
+  forv_Vec(CallExpr, call, gCallExprs)
+  {
+    FnSymbol* fn = call->isResolved();
 
-    if (call->isResolved()->hasFlag(FLAG_DESTRUCTOR)) {
+    // Note that fn can (legally) be null if the call is primitive.
+    if (fn && fn->hasFlag(FLAG_DESTRUCTOR)) {
       // Statements of the form 'delete x' (PRIM_DELETE) are replaced
       //  during the normalize pass with a call to the destructor
       //  followed by a call to chpl_mem_free(), so here we just check

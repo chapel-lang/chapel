@@ -413,8 +413,6 @@ createArgBundleFreeFn(ClassType* ct, FnSymbol* loopBodyFnWrapper) {
   block->insertAtTail(new CallExpr(PRIM_MOVE, loopBodyFnArgsTmp, new CallExpr(PRIM_CAST, ct->symbol, loopBodyFnArgsArg)));
 
   // The last field contains the index used to select the recursive iterator argument bundle.
-
-  // The last field contains ...
   Symbol* lastField = NULL; // assume function pointer for function argument bundle
   for_fields(field, ct) {
     // If the bundle contains a pointer to another bundle, 
@@ -664,9 +662,6 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
     
     iteratorFnCall->insertBefore(new CallExpr(PRIM_SET_MEMBER, argBundle, field, actual));
     VarSymbol* tmp = newTemp(field->name, field->type);
-
-    // In the wrapper function, moves the current arg bundle field into a temp 
-    // (unbundles it) and adds it to the args used  to call the loop body function.
 
     // In the wrapper function, moves the current arg bundle field into a temp 
     // (unbundles it) and adds it to the args used  to call the loop body function.

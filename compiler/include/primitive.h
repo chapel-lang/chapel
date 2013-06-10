@@ -97,11 +97,8 @@ enum PrimitiveTag {
   PRIM_SET_SERIAL,              // set serial state to true or false
 
   PRIM_SIZEOF,
-  PRIM_MALLOC,
-  PRIM_FREE,
 
   PRIM_TASK_ALLOC,				// Task-specific malloc
-  PRIM_TASK_CALLOC,				// Task-specific calloc
   PRIM_TASK_REALLOC,			// Task-specific realloc
   PRIM_TASK_FREE,				// Task-specific free.
   PRIM_CHPL_MEMHOOK_FREE,		// The free hook function.

@@ -13,6 +13,8 @@ module DefaultArchitecture {
   use RootLocale;
   use Sys;
 
+  config param debugDefaultArchitecture = false;
+
   // We would really like a class-static storage class.(C++ nomenclature)
   var doneCreatingLocales: bool = false;
 
@@ -32,12 +34,15 @@ module DefaultArchitecture {
       if doneCreatingLocales {
         halt("Cannot create additional DefaultNode instances");
       }
-      init;
+      init();
     }
 
     proc DefaultNode(parent_loc : locale) {
+      if doneCreatingLocales {
+        halt("Cannot create additional DefaultNode instances");
+      }
       parent = parent_loc;
-      init;
+      init();
     }
 
     // chpl_nodeID is the node ID associated with the running image.
@@ -89,7 +94,7 @@ module DefaultArchitecture {
     //------------------------------------------------------------------------{
     //- Implementation (private)
     //-
-    proc init {
+    proc init() {
       _node_id = __primitive("cast", int(64), __primitive("chpl_nodeID"));
 
       // chpl_nodeName is defined in chplsys.c.
@@ -161,11 +166,12 @@ module DefaultArchitecture {
       // At the top level, this lets us look up the locale representing the node on which
       // an object o lives by executing
       //  myLocales[__primitive("_wide_get_node", o)].
-      for locIdx in myLocaleSpace {
-        var loc = myLocales[locIdx];
-        if __primitive("_wide_get_node", loc) != locIdx then
-          halt("In this architecture, we expect the locale whose index is x to live on node x.");
-      }
+      if (debugDefaultArchitecture) then
+        for locIdx in myLocaleSpace {
+          var loc = myLocales[locIdx];
+          if __primitive("_wide_get_node", loc) != locIdx then
+            halt("In this architecture, we expect the locale whose index is x to live on node x.");
+        }
 
       // Programs traditionally expect the startup process to run on Locales[0], so
       // this is how we mimic that behavior.
@@ -214,13 +220,14 @@ module DefaultArchitecture {
       return myLocales[id.node];
     }
   }
-  
+
+  // Use the DefaultArchitecture only if no other architecture has already been defined.
   if (rootLocale == nil) then
     rootLocale = new DefaultRootLocale();
 
   // Expose the underlying locales array (and its domain) 
   // for user convenience and backward compatibility.
-  // The downcase is because we cannot move the domain and array return types
+  // The downcast is because we cannot move the domain and array return types
   // into the base (abstract) locale class.
   // That would make locales depend on arrays which depend on locales....
   // If we had a way to express domain and array return types abstractly,
