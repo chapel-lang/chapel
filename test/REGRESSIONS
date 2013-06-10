@@ -291,6 +291,11 @@ cray-xt-cray/cce-specific regressions
 (Checked for accuracy 2/26/2013)
 =====================================
 
+seg fault (6/9/13)
+------------------
+[Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic]
+[Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_record]
+
 seg fault in distribution robustness suite (3/11/13)
 ----------------------------------------------------
 
@@ -440,6 +445,11 @@ alignment error in output
 xt-intel-specific regressions (in addition to cray-xt errors above)
 (Checked for accuracy 2/26/2013)
 ===================================================================
+
+seg fault (6/10/13)
+-------------------
+[Error matching program output for distributions/robust/arithmetic/basics/test_array_assignment]
+[Error matching program output for distributions/robust/arithmetic/basics/test_infer_array_type]
 
 binary output mismatches (03/04/13 -- new tests)
 ------------------------------------------------
