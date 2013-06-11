@@ -1,0 +1,3 @@
+# suppressing nondeterministic compilation timeouts for XMT
+CHPL_TARGET_PLATFORM == cray-xmt
+CHPL_TARGET_PLATFORM == cray-xmt-sim
