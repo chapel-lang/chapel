@@ -205,12 +205,9 @@ getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* value) {
         // unless sync is explicitly specified as the generic
         if (isSyncType(key->type))
           return value;
-        if (!strcmp(fn->name, "chpl_here_alloc") ||
-            !strcmp(fn->name, "chpl_here_calloc") ||
-            !strcmp(fn->name, "chpl_here_realloc") ||
-            !strcmp(fn->name, "chpl_here_free"))
-          // Special case for the alloc and free functions, wherein want to free
-          // the _sync object and not the variable it wraps.
+        if (fn->hasFlag(FLAG_NO_SYNC_DEMOTION))
+          // Special case for the chpl_here_alloc and free functions, wherein want to 
+          // allocate and free the _sync object and not the variable it wraps.
           // Sync variables are handled specially, so they normally appear to have the
           // type of the value they wrap, and moves involving them cause read?? and
           // write?? calls to be inserted as needed.

@@ -11,21 +11,21 @@ module ChapelLocale {
   type chpl_nodeID_t = int(32);
   type chpl_sublocID_t = int(32);
   // This module now controls the allocation of bits within a chpl_localeID_t.
-
-
   extern record chpl_localeID_t {
     var node : chpl_nodeID_t;
     var subloc : chpl_sublocID_t;
   };
-  extern proc chpl_localeID_get_node(loc:chpl_localeID_t):int(64);
-  extern proc chpl_localeID_get_subloc(loc:chpl_localeID_t):int(64);
-  extern proc chpl_localeID_equals(loc:chpl_localeID_t):int(64);
+  // It can be removed if references to the node and subloc fields are removed from the code generation implementation.
 
-  proc ==(a:chpl_localeID_t, b:chpl_localeID_t)
-    return chpl_localeID_equals(a,b) != 0;
+//  extern proc chpl_localeID_get_node(loc:chpl_localeID_t):int(64);
+//  extern proc chpl_localeID_get_subloc(loc:chpl_localeID_t):int(64);
+//  extern proc chpl_localeID_equals(loc:chpl_localeID_t):int(64);
 
-  proc !=(a:chpl_localeID_t, b:chpl_localeID_t)
-    return chpl_localeID_equals(a,b) == 0;
+//  proc ==(a:chpl_localeID_t, b:chpl_localeID_t)
+//    return chpl_localeID_equals(a,b) != 0;
+
+//  proc !=(a:chpl_localeID_t, b:chpl_localeID_t)
+//    return chpl_localeID_equals(a,b) == 0;
 
 
   //
@@ -95,9 +95,7 @@ module ChapelLocale {
     }
   
     proc getChild(idx:int) : locale {
-// Needs to be enabled for now, because tasking code calls getChild directly.
-// Probably can be reinstated after we call through rootLocale.localeIDtoLocale().
-//      _throwPVFCError();
+      _throwPVFCError();
       return this;
     }
 
@@ -183,6 +181,7 @@ module ChapelLocale {
 
   // The allocator pragma is used by scalar replacement.
   pragma "allocator"
+  pragma "no sync demotion"
   proc chpl_here_alloc(x, md:int(16), lineno:int(32), filename:string) {
     var nbytes = __primitive("sizeof", x);
     chpl_memhook_malloc_pre(1, nbytes, md + chpl_memhook_md_num(), lineno, filename);
@@ -192,6 +191,7 @@ module ChapelLocale {
   }
 
   pragma "allocator"
+  pragma "no sync demotion"
   proc chpl_here_calloc(x, number:int, md:int(16), lineno:int(32), filename:string) {
     extern proc chpl_task_calloc(number:int, nbytes:int) : opaque;
     var nbytes = __primitive("sizeof", x);
@@ -202,6 +202,7 @@ module ChapelLocale {
   }
 
   pragma "allocator"
+  pragma "no sync demotion"
   proc chpl_here_realloc(x, md:int(16), lineno:int(32), filename:string) {
     var nbytes = __primitive("sizeof", x);
     chpl_memhook_realloc_pre(x, nbytes, md + chpl_memhook_md_num(), lineno, filename);
@@ -210,6 +211,7 @@ module ChapelLocale {
     return __primitive("cast", x.type, mem);
   }
 
+  pragma "no sync demotion"
   proc chpl_here_free(x, lineno:int(32), filename:string) {
     // TODO: The pointer should really be of type opaque, but we don't 
     // handle object ==> opaque casts correctly.  (In codegen, opaque behaves 
