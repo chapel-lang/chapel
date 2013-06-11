@@ -20,6 +20,17 @@
 general regressions (seem to happen in most configurations)
 ===========================================================
 
+counts leaked by domainMaps changed after shifted array pointer commit
+(6/4/13)
+--------------------------------------------------------------------
+[Error matching program output for memory/sungeun/refCount/domainMaps]
+Will update after thaw.  Note this test still has an issue for
+no-local compilations that is in Vass' court.
+
+Started failing with Tom's local strings sharing (06/01/13)
+-----------------------------------------------------------
+[Error matching program output for users/ferguson/extern_string_test (compopts: 1)]
+
 An optimization bypasses a semantic check (Tom - on hold)
 ---------------------------------------------------------
 [Error matching program output for multilocale/deitz/oneOrMoreLocales/test_dot_locale_error]
@@ -55,14 +66,10 @@ memory leaks regressions
 ========================
 
 
-=============================
+===============================
 valgrind-specific regressions
-(Checked for accuracy 2/26/2013)
-=============================
-
-conditional jump or move depends on uninitialized values (new test)
--------------------------------------------------------------------
-[Error matching program output for io/ferguson/writef_readf]
+(Checked for accuracy 6/3/2013)
+===============================
 
 random failures due to being out of memory (on purpose)
 -------------------------------------------------------
@@ -79,6 +86,19 @@ stack overflow
 --------------
 [Error matching program output for parallel/cobegin/gbt/cobegin-stacksize]
 
+missing "unable to create more than 0000 threads" warning
+---------------------------------------------------------
+[Error matching program output for parallel/taskPool/figueroa/TooManyThreads (compopts: 1)]
+  Perhaps not a real error: The program is expected to raise the warning
+"maxThreadsPerLocale is unbounded, but unable to create more than 0000 threads"
+But under valgrind, the program is executed with --numThreadsPerLocale=100,
+so the warning does not apply and is not raised, and .good is not matched.
+
+"Unrecognised instruction"
+--------------------------
+observed on 5/18/2013:
+[Error matching program output for types/atomic/ferguson/atomictest]
+[Error matching program output for types/atomic/sungeun/atomic_vars]
 
 time outs
 ---------
@@ -106,67 +126,60 @@ The following tests have been timing out since 8/18/2012 or earlier:
 [Error: Timed out executing program types/single/sungeun/stress]
 
 
-missing "unable to create more than 0000 threads" warning
----------------------------------------------------------
-[Error matching program output for parallel/taskPool/figueroa/TooManyThreads (compopts: 1)]
-  Perhaps not a real error: The program is expected to raise the warning
-"maxThreadsPerLocale is unbounded, but unable to create more than 0000 threads"
-But under valgrind, the program is executed with --numThreadsPerLocale=100,
-so the warning does not apply and is not raised, and .good is not matched.
 
 
-"Unrecognised instruction"
---------------------------
-observed on 5/18/2013:
-[Error matching program output for types/atomic/ferguson/atomictest]
-[Error matching program output for types/atomic/sungeun/atomic_vars]
 
-
-====================
+===============================
 no-local regressions
-(Checked for accuracy 2/26/2013)
-====================
+(Checked for accuracy 6/3/2013)
+===============================
 
-memory stuff in flux (05/28/09)
--------------------------------
-[Error matching program output for memory/shannon/memstatPrint]
-[Error matching program output for memory/shannon/printFinalMemStat]
+error message changed after Tom's local string sharing change (06/01/13)
+------------------------------------------------------------------------
+[Error matching program output for memory/shannon/memmaxExceedsLineno2]
 
-??? (???)
----------
-[Error matching program output for parallel/cobegin/deitz/test_big_recursive_cobegin]
-
-strings for path names are garbled in error messages (11/10/11)
----------------------------------------------------------------
-[Error matching program output for types/file/freadIntFailed]
-[Error matching program output for types/file/fwriteIntFailed]
+counts leaked by domainMaps changed after Vass' task function commit
+(05/30/13)
+--------------------------------------------------------------------
+[Error matching program output for memory/sungeun/refCount/domainMaps]
+Current state: Tom updated this on accident with his strings commit,
+so it passed for a couple night until the shifted array pointer
+commit.  The original problem still exists.
 
 
 ====================================================
 gasnet-everything regressions (other than the above)
-(Checked for accuracy 2/26/2013)
+(Checked for accuracy 6/3/2013)
 ====================================================
 
-missing -nl option
-------------------
-[Error matching widecols.chpl] (io/ferguson/utf8cols/)
+fast-on optimization changed due to Vass' task functions commit (05/31/13)
+--------------------------------------------------------------------------
+[Error matching compiler output for optimizations/sungeun/optimized-on/test_OptimizedOn_RA (compopts: 1)]
 
 
 ==============================================
 gasnet-fast regressions (other than the above)
+(checked for accuracy 6/3/2013)
 ==============================================
 
-too many threads error (~01/13/12)
-----------------------------------
-[Error matching program output for distributions/bradc/extremeBlock]
+incorrect comm counts (6/4/13)
+------------------------------
+[Error matching program output for studies/ssca2/performance/SSCA2_commDiags]
+Due to shifted array pointer commit.  Will update after code thaw.
 
-missed on-clause optimization
------------------------------
-(see gasnet-everything)
+recursive iterator issue believed to be due to Vass' task functions
+commit (05/31/13)
+-------------------------------------------------------------------
+[Error matching program output for functions/deitz/iterators/leader_follower/test_recursive_leader3]
+[Error matching program output for multilocale/vass/recursive-iterator-twice-multiloc]
 
-missing -nl option
-------------------
-(see gasnet-everything)
+memory doesn't match (05/28/09)
+-------------------------------
+[Error matching program output for memory/shannon/memstatPrint]
+
+unable to start polling thread (???)
+------------------------------------
+[Error matching program output for memory/shannon/outofmemory/mallocOutOfMemory]
 
 execution timeouts
 ------------------
@@ -193,10 +206,14 @@ block distribution regressions
 cyclic distribution regressions
 ===============================
 
+communication counts changed due to Vass' task functions commit (05/30/13)
+--------------------------------------------------------------------------
+[Error matching program output for distributions/robust/arithmetic/performance/assign]
+[Error matching program output for distributions/robust/arithmetic/performance/reduce]
+
 communication counts changed (sungeun)
-----------------------------
-[Error matching program output for distributions/robust/arithmetic/performance/alloc]
-[Error matching program output for distributions/robust/arithmetic/performance/alloc_all]
+--------------------------------------
+FYI: These were updated with the shifted array pointer commit with comm counts from prior to Vass's task functions commit.
 [Error matching program output for distributions/robust/arithmetic/performance/assignAlias]
 [Error matching program output for distributions/robust/arithmetic/performance/assignSlice]
 [Error matching program output for distributions/robust/arithmetic/performance/reduceAlias]
@@ -207,8 +224,10 @@ communication counts changed (sungeun)
 darwin-/mac-specific regressions
 ================================
 
-ptr-to-ssize_t/ptr-to-int32_t warnings
---------------------------------------
+ptr-to-ssize_t/ptr-to-int32_t warnings (Proposed fix is to preserve type
+alias identifiers through codegen rather than dropping them in the compiler
+as we currently do)
+---------------------------------------------------------------------------
 [Error matching compiler output for release/examples/primers/fileIO]
 [Error matching program output for studies/amr/advection/amr/AMR_AdvectionCTU_driver]
 [Error matching program output for studies/amr/advection/grid/Grid_AdvectionCTU_driver]
@@ -271,6 +290,11 @@ diff seems to think output file is binary? (09/26/11 -- first run in ages)
 cray-xt-cray/cce-specific regressions
 (Checked for accuracy 2/26/2013)
 =====================================
+
+seg fault (6/9/13)
+------------------
+[Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic]
+[Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_record]
 
 seg fault in distribution robustness suite (3/11/13)
 ----------------------------------------------------
@@ -339,7 +363,6 @@ precision issues (?) -- is there a floating point flag we need to throw?
 
 compilation timeouts (10/19/11)
 -------------------------------
-[Error: Timed out compilation for distributions/dm/t5a]
 [Error: Timed out compilation for optimizations/bulkcomm/alberto/3dStrideTest]
 [Error: Timed out compilation for optimizations/bulkcomm/alberto/perfTest (compopts: 1)]
 [Error: Timed out compilation for optimizations/bulkcomm/alberto/perfTest_v2 (compopts: 1)]
@@ -350,14 +373,6 @@ compilation timeouts (10/19/11)
 pgi-specific regressions (in addition to cray-xt errors above) 
 (Checked for accuracy 4/16/2013)
 ==============================================================
-
-building compiler with PGI fails
---------------------------------
-The PGI compiler version was upated to 13.3.0 and now gets an internal
-error while compiling functionResolution.cpp.  Backing up to version
-12.9.0 fixes it. Backing the Chapel source down to revision 20834 also
-fixes it.  Turning optimization down to -O1 also fixes it.  Bugzilla
-bug 796017.
 
 Some sort of gdb issue with 'bool' not being found in symtab
 ------------------------------------------------------------
@@ -431,6 +446,11 @@ xt-intel-specific regressions (in addition to cray-xt errors above)
 (Checked for accuracy 2/26/2013)
 ===================================================================
 
+seg fault (6/10/13)
+-------------------
+[Error matching program output for distributions/robust/arithmetic/basics/test_array_assignment]
+[Error matching program output for distributions/robust/arithmetic/basics/test_infer_array_type]
+
 binary output mismatches (03/04/13 -- new tests)
 ------------------------------------------------
 [Error matching program output for io/ferguson/writefbinary]
@@ -472,6 +492,43 @@ alignment mismatch in output (04/08/12)
 ========================
 xt-gnu specific failures
 ========================
+
+New gcc warning for 4.8 (6/7/13)
+--------------------------------
+[Error matching program output for optimizations/sungeun/RADOpt/access2d (compopts: 1)]
+[Error matching program output for studies/hpcc/PTRANS/jglewis/ptrans_2011]
+[Error matching program output for studies/hpcc/PTRANS/jglewis/ptrans_2011-blkcyc]
+[Error matching program output for studies/ssca2/rachels/SSCA2_test (compopts: 3, execopts: 1)]
+
+  > In file included from /tmp/chpl-chapelu-8226.deleteme/_main.c:13:0:
+  > /tmp/chpl-chapelu-8226.deleteme/DSIUtil.c: In function '_factor.isra.281':
+  > /tmp/chpl-chapelu-8226.deleteme/ChapelTuple.c:20:21: warning: iteration 2305843009213693951u invokes undefined behavior [-Waggressive-loop-optimizations]
+  >    ret = *(*(this30) + (i - 1));
+  >                      ^
+  > In file included from /tmp/chpl-chapelu-8226.deleteme/_main.c:38:0:
+  > /tmp/chpl-chapelu-8226.deleteme/DSIUtil.c:932:11: note: containing loop
+  >      while (T15) {
+  >            ^
+
+I think that this is a case of gcc's warning being more thorough.  I'm
+not sure if there's a general workaround for this particular case
+other than silencing the warning.  One worry is that gcc is spending
+extra time optimizing due to the above code, but not sure what we can
+do about it.
+
+
+Dwarf incompatibility issue (6/7/13)
+------------------------------------
+[Error matching compiler output for compflags/bradc/gdbddash/declint]
+[Error matching program output for execflags/bradc/gdbddash/declint2]
+[Error matching program output for execflags/bradc/gdbddash/gdbSetConfig]
+[Error matching program output for execflags/bradc/gdbddash/declint]
+
+The gcc 4.8 does dwarf 4, but our default gdb does not.  A work around
+is to give gcc -gdwarf-3.  FYI, Greg has confirmed this works.
+Another option is to wait for the gdb update.
+
+
 
 ========================
 cygwin-specific failures

@@ -982,8 +982,9 @@ if ("$dirlist" == "" && "$testlist" == "") then
     pushd $CHPL_HOME >& /dev/null
     set chplhome = $cwd
     if (("$invocationDir" == "$CHPL_HOME" || "$invocationDir" == "$CHPL_HOME/test") && ($clean_only == 0)) then
-        echo \[Generating tests from the Chapel Spec in $chplhome/spec\] |& $tee -a $logfile
         if ($performance) then
+            # Track the number of spec examples being tested
+            echo \[Generating tests from the Chapel Spec in $chplhome/spec\] |& $tee -a $logfile
             set blah=`make spectests >& test/spectests.exec.out.tmp`
             set exitval = $?            
             if ( $exitval != 0 ) then
@@ -994,6 +995,7 @@ if ("$dirlist" == "" && "$testlist" == "") then
             if (! -e $perfdir) then
                 mkdir -p $perfdir
             endif
+            echo \[Computing stats for spec examples\] |& $tee -a $logfile
             set blah=`$utildir/computePerfStats spectests "$perfdir"`
             set exitval = $?
             if ( $exitval != 0 ) then
@@ -1003,7 +1005,8 @@ if ("$dirlist" == "" && "$testlist" == "") then
             rm spectests.exec.out.tmp
             popd >& /dev/null
         else
-            if ("$gengraphs" == "") then
+            if ("$gengraphs" == 0) then
+                echo \[Generating tests from the Chapel Spec in $chplhome/spec\] |& $tee -a $logfile
                 set autogen=`make spectests` # capture output to keep it quiet
                 set exitval = $?
                 if ( $exitval != 0 ) then
@@ -1205,7 +1208,7 @@ foreach testType ($testTypes)
         # if specified to start in a specific directory, start there
         set basedir = $absdir
         cd $basedir
-        echo "[Working from directory $absdir]"
+        echo "[Working from directory $absdir]" |& $tee -a $logfile
 
         # Recursively list all directories, ignoring some (should we really do
         # this?  Maybe add NOTEST files instead?)
@@ -1230,31 +1233,33 @@ foreach testType ($testTypes)
             echo " " |& $tee -a $logfile
             echo "[Working on directory $dir]" |& $tee -a $logfile
 
-            # Skip this directory if there is a SKIPIF file
-            # and the condition it contains evaluates to true.
-            cd $dir
-            if (-e ./SKIPIF) then
-                set skiptest = `$utildir/testEnv ./SKIPIF`
-                if ($skiptest == 1) then
-                    echo "[Skipping directory based on SKIPIF environment settings]"
+            if ($clean_only == 0) then
+                cd $dir
+                # Skip this directory if there is a SKIPIF file
+                # and the condition it contains evaluates to true.
+                if (-e ./SKIPIF) then
+                    set skiptest = `$utildir/testEnv ./SKIPIF`
+                    if ($skiptest == 1) then
+                        echo "[Skipping directory based on SKIPIF environment settings]" |& $tee -a $logfile
+                        continue
+                    endif
+                endif
+
+                # Skip this directory if there is any matching
+                # <dir>.skipif file returning true, where <dir> is the
+                # current directory up to $basedir.
+                set pruneif = 0
+                while (! $pruneif && $cwd != $basedir)
+                    set skipfilen = $cwd.skipif
+                    if (-e $skipfilen) then
+                        set pruneif = `$utildir/testEnv $skipfilen`
+                    endif
+                    cd ..
+                end
+                if ($pruneif) then
+                    echo "[Skipping directory based on ancestor .skipif environment settings in $skipfilen]" |& $tee -a $logfile
                     continue
                 endif
-            endif
-
-            # Skip this directory if there is any matching <dir>.skipif file
-            # returning true, where <dir> is the current directory up to $basedir.
-            cd $dir
-            set pruneif = 0
-            while (! $pruneif && $cwd != $basedir)
-                set skipfilen = $cwd.skipif
-                if (-e $skipfilen) then
-                    set pruneif = `$utildir/testEnv $skipfilen`
-                endif
-                cd ..
-            end
-            if ($pruneif) then
-                echo "[Skipping directory based on ancestor .skipif environment settings in $skipfilen]"
-                continue
             endif
 
             cd $dir

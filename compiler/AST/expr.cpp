@@ -602,7 +602,7 @@ GenRet codegenWideAddrWithAddr(GenRet base, GenRet newAddr, Type* wideType = NUL
   // NOTE - if computing the entire localeID becomes one day
   // expensive, and it can be inferred from the pointer part,
   // update this to just use the node part.
-  return codegenWideAddr(codegenRlocale(base), newAddr);
+  return codegenWideAddr(codegenRlocale(base), newAddr, wideType);
 }
 
 #ifdef HAVE_LLVM
@@ -1329,9 +1329,11 @@ GenRet codegenFieldUidPtr(GenRet base) {
 //
 // This is equivalent to C (assuming ptr is a pointer type)
 //   ptr + i
+// If ddataPtr is true, we return a pointer to the element.  This is
+//  currently only used for the PRIM_ARRAY_SHIFT_BASE_POINTER case.
 //
 static
-GenRet codegenElementPtr(GenRet base, GenRet index) {
+GenRet codegenElementPtr(GenRet base, GenRet index, bool ddataPtr=false) {
   GenRet ret;
   GenInfo* info = gGenInfo;
   Type* baseType = NULL;
@@ -1358,8 +1360,17 @@ GenRet codegenElementPtr(GenRet base, GenRet index) {
     // Convert wide pointer operations to the local counterparts.
     if( base.isLVPtr == GEN_WIDE_PTR ||
         baseType->symbol->hasFlag(FLAG_WIDE_CLASS) ) {
-      GenRet newAddr = codegenElementPtr(codegenRaddr(base), index);
-      return codegenWideAddrWithAddr(base, newAddr);
+      GenRet newAddr = codegenElementPtr(codegenRaddr(base), index, ddataPtr);
+      if (ddataPtr) {
+        GenRet ret = codegenWideAddrWithAddr(base, newAddr, baseType);
+        // Tell the compiler this is a ddata pointer not a ref to an element
+        ret.isLVPtr = GEN_PTR;
+        ret.chplType = base.chplType;
+        ret.isUnsigned = true;
+        return ret;
+      } else {
+        return codegenWideAddrWithAddr(base, newAddr);
+      }
     }
   }
 
@@ -1376,7 +1387,13 @@ GenRet codegenElementPtr(GenRet base, GenRet index) {
     isStarTuple = false;
   }
 
-  ret.chplType = eltType;
+  if (ddataPtr) {
+    // Tell the compiler this is a ddata pointer not a ref to an element
+    ret.chplType = baseType;
+    ret.isUnsigned = true;
+  } else {
+    ret.chplType = eltType;
+  }
 
   index = codegenValue(index);
   if( !isStarTuple ) base = codegenValue(base);
@@ -3334,6 +3351,18 @@ GenRet CallExpr::codegen() {
         codegenAssign(elementPtr, get(3));
         break;
       }
+    case PRIM_ARRAY_SHIFT_BASE_POINTER:
+    {
+      GenRet ret = get(1);
+      GenRet addr = get(2);
+      GenRet shifted = codegenElementPtr(addr, get(3), true);
+      if (ret.isLVPtr != GEN_WIDE_PTR) {
+        codegenAssign(ret, codegenAddrOf(shifted));
+      } else {
+        codegenWideAddrWithAddr(ret, shifted, ret.chplType);
+      }
+      break;
+    }
     case PRIM_ARRAY_ALLOC:
     {
       GenRet dst = get(1);

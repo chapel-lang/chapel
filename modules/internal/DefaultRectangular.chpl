@@ -10,6 +10,7 @@ module DefaultRectangular {
   
   config param defaultDoRADOpt = true;
   config param defaultDisableLazyRADOpt = false;
+  config param earlyShiftData = true;
   
   class DefaultDist: BaseDist {
     proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool)
@@ -385,6 +386,7 @@ module DefaultRectangular {
     var origin: idxType;
     var factoredOffs: idxType;
     var data: _ddata(eltType);
+    var shiftedData: _ddata(eltType);
   }
   
   //
@@ -418,6 +420,7 @@ module DefaultRectangular {
     var origin: idxType;
     var factoredOffs: idxType;
     var data : _ddata(eltType);
+    var shiftedData : _ddata(eltType);
     var noinit: bool = false;
     //var numelm: int = -1; // for correctness checking
   
@@ -454,6 +457,13 @@ module DefaultRectangular {
       _ddata_free(data);
     }
   
+    inline proc theData var {
+      if earlyShiftData && !stridable then
+        return shiftedData;
+      else
+        return data;
+    }
+
     iter these() var {
       type strType = chpl__signedType(idxType);
       if rank == 1 {
@@ -466,7 +476,7 @@ module DefaultRectangular {
           var step = (second-first):strType;
           var last = first + (dom.dsiNumIndices-1) * step:idxType;
           for i in first..last by step do
-            yield data(i);
+            yield theData(i);
         } else {
           const stride = dom.ranges(1).stride: idxType,
                 start  = dom.ranges(1).first,
@@ -507,7 +517,21 @@ module DefaultRectangular {
         factoredOffs = factoredOffs + blk(i) * off(i);
       }
     }
-    
+
+    inline proc initShiftedData() {
+      if earlyShiftData && !stridable {
+        if dom.dsiNumIndices > 0 {
+          if _isSignedType(idxType) then
+            shiftedData = _ddata_shift(eltType, data, origin-factoredOffs);
+          else
+            // Not bothering to check for over/underflow
+            shiftedData = _ddata_shift(eltType, data,
+                                       origin:chpl__signedType(idxType)-
+                                       factoredOffs:chpl__signedType(idxType));
+        }
+      }
+    }
+
     // change name to setup and call after constructor call sites
     // we want to get rid of all initialize functions everywhere
     proc initialize() {
@@ -522,22 +546,47 @@ module DefaultRectangular {
       computeFactoredOffs();
       var size = blk(1) * dom.dsiDim(1).length;
       data = _ddata_allocate(eltType, size);
+      initShiftedData();
     }
   
     inline proc getDataIndex(ind: idxType ...1) where rank == 1
       return getDataIndex(ind);
   
     inline proc getDataIndex(ind: rank* idxType) {
+      if stridable {
+        var sum = origin;
+        for param i in 1..rank do
+          sum += (ind(i) - off(i)) * blk(i) / abs(str(i)):idxType;
+        return sum;
+      } else {
+        var sum = if earlyShiftData then 0:idxType else origin;
+        for param i in 1..rank do
+          sum += ind(i) * blk(i);
+        if !earlyShiftData then sum -= factoredOffs;
+        return sum;
+      }
+    }
+
+    // These are cloned versions of the getDataIndex except without
+    // shifting.  Currently, they are used only in the bulk transfer
+    // optimization code.  I originally tried to add an optional param
+    // argument to the above functions, but then some of the uses
+    // lowerIterators had not be instantiated.
+    inline proc getUnshiftedDataIndex(ind: idxType ...1) where rank == 1
+      return getUnshiftedDataIndex(ind);
+  
+    inline proc getUnshiftedDataIndex(ind: rank* idxType) {
       var sum = origin;
       if stridable {
         for param i in 1..rank do
           sum += (ind(i) - off(i)) * blk(i) / abs(str(i)):idxType;
+        return sum;
       } else {
         for param i in 1..rank do
           sum += ind(i) * blk(i);
         sum -= factoredOffs;
+        return sum;
       }
-      return sum;
     }
   
     // only need second version because wrapper record can pass a 1-tuple
@@ -552,7 +601,7 @@ module DefaultRectangular {
       //assert(dataInd >= 0);
       //assert(numelm >= 0); // ensure it has been initialized
       //assert(dataInd: uint(64) < numelm: uint(64));
-      return data(dataInd);
+      return theData(dataInd);
     }
   
     inline proc dsiLocalAccess(i) var {
@@ -583,6 +632,7 @@ module DefaultRectangular {
       }
       alias.origin = origin:d.idxType;
       alias.computeFactoredOffs();
+      alias.initShiftedData();
       return alias;
     }
   
@@ -607,6 +657,7 @@ module DefaultRectangular {
         }
       }
       alias.computeFactoredOffs();
+      alias.initShiftedData();
       return alias;
     }
   
@@ -634,6 +685,7 @@ module DefaultRectangular {
         }
       }
       alias.computeFactoredOffs();
+      alias.initShiftedData();
       return alias;
     }
   
@@ -652,6 +704,12 @@ module DefaultRectangular {
         factoredOffs = copy.factoredOffs;
         dsiDestroyData();
         data = copy.data;
+        // We can't call initShiftedData here because the new domain
+        // has not yet been updated (this is called from within the
+        // = function for domains.
+        if earlyShiftData && !d._value.stridable then
+          if d.numIndices > 0 then
+            shiftedData = copy.shiftedData;
         //numelm = copy.numelm;
         delete copy;
       } else {
@@ -671,6 +729,8 @@ module DefaultRectangular {
       rad.origin = origin;
       rad.factoredOffs = factoredOffs;
       rad.data = data;
+      if earlyShiftData && !stridable then
+        if dom.dsiNumIndices > 0 then rad.shiftedData = shiftedData;
       return rad;
     }
   }
@@ -786,8 +846,8 @@ module DefaultRectangular {
     if this.data.locale.id==here.id {
       if debugDefaultDistBulkTransfer then //See bug in test/optimizations/bulkcomm/alberto/rafatest2.chpl
         writeln("\tlocal get() from ", B._value.locale.id);
-      var dest = this.data;
-      var src = B._value.data;
+      const dest = this.theData;
+      const src = B._value.theData;
       __primitive("chpl_comm_get",
                   __primitive("array_get", dest, getDataIndex(Alo)),
                   B._value.data.locale.id,
@@ -796,8 +856,8 @@ module DefaultRectangular {
     } else if B._value.data.locale.id==here.id {
       if debugDefaultDistBulkTransfer then
         writeln("\tlocal put() to ", this.locale.id);
-      var dest = this.data;
-      var src = B._value.data;
+      const dest = this.theData;
+      const src = B._value.theData;
       __primitive("chpl_comm_put",
                   __primitive("array_get", src, B._value.getDataIndex(Blo)),
                   this.data.locale.id,
@@ -806,8 +866,8 @@ module DefaultRectangular {
     } else on this.data.locale {
       if debugDefaultDistBulkTransfer then
         writeln("\tremote get() on ", here.id, " from ", B.locale.id);
-      var dest = this.data;
-      var src = B._value.data;
+      const dest = this.theData;
+      const src = B._value.theData;
       __primitive("chpl_comm_get",
                   __primitive("array_get", dest, getDataIndex(Alo)),
                   B._value.data.locale.id,
@@ -952,9 +1012,9 @@ module DefaultRectangular {
       var dest = A.data;
       var src = B.data;
       
-      var dststr=dstStride._value.data;
-      var srcstr=srcStride._value.data;
-      var cnt=count._value.data;
+      const dststr=dstStride._value.theData;
+      const srcstr=srcStride._value.theData;
+      const cnt=count._value.theData;
   
       if debugBulkTransfer {
         writeln("Case 1");
@@ -965,12 +1025,12 @@ module DefaultRectangular {
       }
       var srclocale = B.data.locale.id : int(32);
          __primitive("chpl_comm_get_strd",
-                      __primitive("array_get",dest, A.getDataIndex(Alo)),
-                      __primitive("array_get",dststr,dstStride._value.getDataIndex(1)), 
+                     __primitive("array_get",dest, A.getUnshiftedDataIndex(Alo)),
+                     __primitive("array_get",dststr,dstStride._value.getDataIndex(1)), 
             srclocale,
-                      __primitive("array_get",src, B.getDataIndex(Blo)),
-                      __primitive("array_get",srcstr,srcStride._value.getDataIndex(1)),
-                      __primitive("array_get",cnt, count._value.getDataIndex(1)),
+                     __primitive("array_get",src, B.getUnshiftedDataIndex(Blo)),
+                     __primitive("array_get",srcstr,srcStride._value.getDataIndex(1)),
+                     __primitive("array_get",cnt, count._value.getDataIndex(1)),
                       stridelevels);
     }
     //CASE 2: when the data in source array is stored "here", it will use "chpl_comm_put_strd". 
@@ -979,9 +1039,9 @@ module DefaultRectangular {
       if debugDefaultDistBulkTransfer then
         writeln("\tlocal put() to ", A.locale.id);
       
-      var dststr=dstStride._value.data;
-      var srcstr=srcStride._value.data;
-      var cnt=count._value.data;
+      const dststr=dstStride._value.theData;
+      const srcstr=srcStride._value.theData;
+      const cnt=count._value.theData;
       
       if debugBulkTransfer {
         writeln("Case 2");
@@ -992,15 +1052,15 @@ module DefaultRectangular {
         writeln("Blk: ",blk);
       }
       
-      var dest = A.data;
-      var src = B.data;
+      const dest = A.data;
+      const src = B.data;
       var destlocale =A.data.locale.id : int(32);
   
       __primitive("chpl_comm_put_strd",
-                  __primitive("array_get",dest,A.getDataIndex(Alo)),
+                  __primitive("array_get",dest,A.getUnshiftedDataIndex(Alo)),
                   __primitive("array_get",dststr,dstStride._value.getDataIndex(1)),
                     destlocale,
-                    __primitive("array_get",src,B.getDataIndex(Blo)),
+                  __primitive("array_get",src,B.getUnshiftedDataIndex(Blo)),
                   __primitive("array_get",srcstr,srcStride._value.getDataIndex(1)),
                   __primitive("array_get",cnt, count._value.getDataIndex(1)),
                   stridelevels);
@@ -1019,11 +1079,11 @@ module DefaultRectangular {
       var dststrides,srcstrides:[1..stridelevels] int(32);
       srcstrides=srcStride:int(32);
       dststrides=dstStride:int(32);
-      
-      var dststr=dststrides._value.data;
-      var srcstr=srcstrides._value.data;
-      var cnt=count._value.data;
-      
+
+      var dststr=dststrides._value.theData;
+      var srcstr=srcstrides._value.theData;
+      var cnt=count._value.theData;
+
       if debugBulkTransfer {
         writeln("Case 3");
         writeln("stridelevel: ", stridelevels);
@@ -1034,13 +1094,14 @@ module DefaultRectangular {
       
       var srclocale =B.data.locale.id : int(32);
          __primitive("chpl_comm_get_strd",
-                      __primitive("array_get",dest, A.getDataIndex(Alo)),
-                      __primitive("array_get",dststr,dststrides._value.getDataIndex(1)), 
-                      srclocale,
-                      __primitive("array_get",src, B.getDataIndex(Blo)),
-                      __primitive("array_get",srcstr,dststrides._value.getDataIndex(1)),
-                      __primitive("array_get",cnt, count._value.getDataIndex(1)),
-                      stridelevels);   
+                     __primitive("array_get",dest, A.getUnshiftedDataIndex(Alo)),
+                     __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
+                     srclocale,
+                     __primitive("array_get",src, B.getUnshiftedDataIndex(Blo)),
+                     __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
+                     __primitive("array_get",cnt, count._value.getDataIndex(1)),
+                     stridelevels);
+
     }
   }
   

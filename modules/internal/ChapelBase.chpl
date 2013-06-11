@@ -681,7 +681,13 @@ module ChapelBase {
   inline proc _cast(type t, x) where t:_ddata && x:_nilType {
     return __primitive("cast", t, x);
   }
-  
+
+  inline proc _ddata_shift(type eltType, data: _ddata(eltType), shift: integral) {
+    var ret: _ddata(eltType);
+     __primitive("shift_base_pointer", ret, data, shift);
+    return ret;
+  }
+
   inline proc _ddata_allocate(type eltType, size: integral) {
     var ret:_ddata(eltType);
     __primitive("array_alloc", ret, eltType, size);

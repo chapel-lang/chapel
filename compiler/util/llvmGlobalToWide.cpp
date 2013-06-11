@@ -747,12 +747,9 @@ namespace {
               myReplaceInstWithInst(call, putget);
             } else if( isa<MemSetInst>(call) ) {
               // handle memset.
-              unsigned dstSpace;
               Value* gDst = call->getArgOperand(0);
               Value* c = call->getArgOperand(1);
               Value* n = call->getArgOperand(2);
-
-              dstSpace = gDst->getType()->getPointerAddressSpace();
 
               Value* wDst = callGlobalToWideFn(gDst, call);
 
