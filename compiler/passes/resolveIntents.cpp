@@ -75,7 +75,7 @@ void resolveArgIntent(ArgSymbol* arg) {
     }
   }
   if (arg->intent == INTENT_CONST) {
-    arg->intent = blankIntentForType(arg->type);
+    arg->intent = constIntentForType(arg->type);
   }
 }
 
