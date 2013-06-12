@@ -540,7 +540,7 @@ protoIteratorClass(FnSymbol* fn) {
   ii->iclass = new ClassType(CLASS_CLASS);
   TypeSymbol* cts = new TypeSymbol(astr("_ic_", className), ii->iclass);
   cts->addFlag(FLAG_ITERATOR_CLASS);
-  add_root_type(ii->iclass);	// Add super : dtObject.
+  add_root_type(ii->iclass);    // Add super : dtObject.
   fn->defPoint->insertBefore(new DefExpr(cts));
 
   ii->irecord = new ClassType(CLASS_RECORD);

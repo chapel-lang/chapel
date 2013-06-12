@@ -22,9 +22,9 @@ typedef void  (*chpl_free_fn)(void* ptr);
 // This is task-private data used by the compiler code and runtime implementation.
 typedef struct chpl_task_private_data_s
 {
-  chpl_bool serial_state;	// True if execution is to be serialized; false otherwise.
-  c_locale_t localeID;		// Stores the current localeID.  This may be obsolete.
-  void* here;				// Stores a (local) pointer to the "here" locale.
+  chpl_bool serial_state;   // True if execution is to be serialized; false otherwise.
+  c_locale_t localeID;      // Stores the current localeID.  This may be obsolete.
+  void* here;               // Stores a (local) pointer to the "here" locale.
 
   // These are the memory-management functions
   // copied from the locale implementation at task-creation time.

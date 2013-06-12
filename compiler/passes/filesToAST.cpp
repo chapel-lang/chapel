@@ -89,15 +89,15 @@ struct WellKnownType
 
 // These types are a required part of the compiler/module interface.
 WellKnownType wellKnownTypes[] = {
-  {"_array",			&dtArray,		false},
-  {"_tuple",			&dtTuple,		false},
-  {"locale",			&dtLocale,		true},
-  {"chpl_localeID_t",	&dtLocaleID,	false},
-  {"BaseArr",			&dtBaseArr,		true},
-  {"BaseDom",			&dtBaseDom,		true},
-  {"BaseDist",			&dtDist,		true},
-  {"Writer",			&dtWriter,		true},
-  {"Reader",			&dtReader,		true},
+  {"_array",            &dtArray,       false},
+  {"_tuple",            &dtTuple,       false},
+  {"locale",            &dtLocale,      true},
+  {"chpl_localeID_t",   &dtLocaleID,    false},
+  {"BaseArr",           &dtBaseArr,     true},
+  {"BaseDom",           &dtBaseDom,     true},
+  {"BaseDist",          &dtDist,        true},
+  {"Writer",            &dtWriter,      true},
+  {"Reader",            &dtReader,      true},
   {"chpl_main_argument",&dtMainArgument,false}
 };
 
