@@ -1,1 +1,1 @@
-createNewLocale.chpl:1: error: cannot create instances of the 'locale' class
+myNewLoc = createNewLocale.chpl:2: error: halt reached - Pure virtual function called.

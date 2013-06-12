@@ -73,17 +73,12 @@ typedef int32_t c_nodeid_t;
 #define FORMAT_c_nodeid_t PRId32
 typedef int32_t c_subloc_t;
 #define FORMAT_c_subloc_t PRId32
+typedef int64_t c_locale_t;
 
 // It is unfortunate that we need this definition in parallel with the module definition.
-// If runtime routines that depend on c_locale_t can be eliminated, then this
+// If runtime routines that depend on chpl_localeID_t can be eliminated, then this
 // definition can be moved entirely within the module code.
-typedef struct
-{
-  c_nodeid_t node;    // This is the comm node index.
-  c_subloc_t subloc;  // This carries the sublocale index if there is one, otherwise zero.
-} c_locale_t;
-
-typedef c_locale_t chpl_localeID_t;
+#include "chplcgtypes.h"
 
 // The type for wide-pointer-to-void. This is used in the runtime in order to
 // store and transmit global variable addresses. It is needed in order to make
@@ -209,6 +204,7 @@ struct chpl_chpl____wide_chpl_string_s;
 chpl_string chpl_format(chpl_string format, ...)
   __attribute__((format(printf, 1, 2)));
 
+// Uses the system allocator.
 char* chpl_glom_strings(int numstrings, ...);
 
 chpl_bool string_contains(chpl_string x, chpl_string y);

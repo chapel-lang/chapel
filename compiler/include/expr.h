@@ -208,6 +208,16 @@ bool get_string(Expr *e, const char **s); // false is failure
 const char* get_string(Expr* e); // fatal on failure
 VarSymbol *get_constant(Expr *e);
 
+inline CallExpr* here_alloc(Symbol* dest)
+{
+  return new CallExpr("chpl_here_alloc", dest, 
+                      newMemDesc(dest->typeInfo()->symbol->name),
+                      new_IntSymbol(currentAstLoc.lineno, INT_SIZE_32),
+                      new_StringSymbol(currentAstLoc.filename));
+}
+
+CallExpr* callTaskAlloc(Type* t);
+
 #define for_exprs_postorder(e, expr)                            \
   for (Expr* e = getFirstExpr(expr); e; e = getNextExpr(e))
 

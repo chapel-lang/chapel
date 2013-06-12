@@ -612,6 +612,9 @@ static bool
 noOtherCalls(FnSymbol* callee, CallExpr* theCall) {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call != theCall && call->inTree()) {
+      // TODO: This forv + filter casts a wide net.
+      // Try to make the filter reject as many cases as possible
+      // by first matching on the callee and then testing if call == theCall.
       if (FnSymbol* rc = call->isResolved()) {
         if (rc == callee)
           return false;
@@ -631,13 +634,6 @@ static void
 rebuildIterator(IteratorInfo* ii,
                 SymbolMap& local2field,
                 Vec<Symbol*>& locals) {
-
-  if (ii->iclass->dispatchParents.n == 0) {
-    // Insert this iterator class into the iterator class hierarchy at the top level
-    // (just below 'object').
-    ii->iclass->dispatchParents.add(dtObject);
-    dtObject->dispatchChildren.add(ii->iclass);
-  }
 
   // Remove the original iterator function.
   FnSymbol* fn = ii->iterator;
@@ -722,12 +718,6 @@ static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
                                       SymbolMap& local2field, SymbolMap& local2rfield)
 {
   IteratorInfo* ii = fn->iteratorInfo;
-
-  // The iterator class derives from dtObject.
-  // This gives it a cid, so it can have polymorphic behavior.
-  Symbol* super = new VarSymbol("super", dtObject);
-  super->addFlag(FLAG_SUPER_CLASS);
-  ii->iclass->fields.insertAtTail(new DefExpr(super));
 
   int i = 0;    // This numbers the fields.
   forv_Vec(Symbol, local, locals) {

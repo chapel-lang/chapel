@@ -111,7 +111,11 @@ module ChapelBase {
   proc _throwOpError(param op: string) {
       compilerError("illegal use of '", op, "' on operands of type uint(64) and signed integer");
   }
-  
+
+  proc _throwPVFCError() {
+    halt("Pure virtual function called.");
+  }
+
   proc compilerError(param x:string ...?n, param errorDepth:int) {
     __primitive("error", (...x));
   }
@@ -160,7 +164,7 @@ module ChapelBase {
   
   proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4, param arg5, argrest...)
   { if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4, arg5, " [...]"); }
-  
+
   proc typeToString(type t) param {
     return __primitive("typeToString", t);
   }
@@ -1024,14 +1028,12 @@ module ChapelBase {
   pragma "donor fn"
   pragma "auto copy fn"
   inline proc chpl__autoCopy(type t) type return t;
-  
-  inline proc chpl__maybeAutoDestroyed(x) param
-    return !(_isPrimitiveType(x.type) ||
-             _isImagType(x.type) ||
-             _isComplexType(x.type));
+
+  inline proc chpl__maybeAutoDestroyed(x: numeric) param return false;
   inline proc chpl__maybeAutoDestroyed(x: enumerated) param return false;
   inline proc chpl__maybeAutoDestroyed(x: object) param return false;
-  
+  inline proc chpl__maybeAutoDestroyed(x) param return true;
+
   pragma "auto destroy fn" inline proc chpl__autoDestroy(x: object) { }
   pragma "auto destroy fn" inline proc chpl__autoDestroy(type t)  { }
   pragma "auto destroy fn"

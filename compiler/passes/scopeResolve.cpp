@@ -20,7 +20,7 @@
 //
 static void build_type_constructor(ClassType* ct);
 static void build_constructor(ClassType* ct);
-static void resolveUnresolveSymExprs();
+static void resolveUnresolvedSymExprs();
 static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
                                      Vec<UnresolvedSymExpr*>& skipSet);
 static void resolveModuleCall(CallExpr* call,
@@ -663,8 +663,7 @@ static void build_constructor(ClassType* ct) {
   if (ct->symbol->hasFlag(FLAG_REF) ||
       isSyncType(ct)) {
     // For ref, sync and single classes, just allocate space.
-    allocCall = new CallExpr(PRIM_CHPL_ALLOC, fn->_this,
-                         newMemDesc(ct->symbol->name));
+    allocCall = here_alloc(fn->_this);
     fn->insertAtTail(new CallExpr(PRIM_MOVE, fn->_this, allocCall));
   } else if (!ct->symbol->hasFlag(FLAG_TUPLE)) {
     // Create a meme (whatever that is).
@@ -941,6 +940,29 @@ process_import_expr(CallExpr* call) {
   call->getStmtExpr()->remove();
 }
 
+void add_root_type(ClassType* ct)
+{
+  // make root records inherit from value
+  // make root classes inherit from object
+  if (ct->inherits.length == 0 && !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
+    SET_LINENO(ct);
+    if (isRecord(ct)) {
+      ct->dispatchParents.add(dtValue);
+      // Assume that this addition is unique; report if not.
+      bool inserted = dtValue->dispatchChildren.add_exclusive(ct);
+      INT_ASSERT(inserted);
+    } else if (isClass(ct)) {
+      ct->dispatchParents.add(dtObject);
+      // Assume that this addition is unique; report if not.
+      bool inserted = dtObject->dispatchChildren.add_exclusive(ct);
+      INT_ASSERT(inserted);
+      VarSymbol* super = new VarSymbol("super", dtObject);
+      super->addFlag(FLAG_SUPER_CLASS);
+      ct->fields.insertAtHead(new DefExpr(super));
+    }
+  }
+}
+
 //
 // Compute dispatchParents and dispatchChildren vectors; add base
 // class fields to subclasses; identify cyclic or illegal class or
@@ -961,21 +983,7 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
     return;
   globalSeen.set_add(ct);
 
-  // make root records inherit from value
-  // make root classes inherit from object
-  if (ct->inherits.length == 0 && !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
-    if (isRecord(ct)) {
-      ct->dispatchParents.add(dtValue);
-      dtValue->dispatchChildren.add(ct);
-    } else if (isClass(ct)) {
-      SET_LINENO(ct);
-      ct->dispatchParents.add(dtObject);
-      dtObject->dispatchChildren.add(ct);
-      VarSymbol* super = new VarSymbol("super", dtObject);
-      super->addFlag(FLAG_SUPER_CLASS);
-      ct->fields.insertAtHead(new DefExpr(super));
-    }
-  }
+  add_root_type(ct);
 
   // Walk the base class list, and add parents into the class hierarchy.
   for_alist(expr, ct->inherits) {
@@ -1198,7 +1206,7 @@ void scopeResolve(void) {
 
   resolveGotoLabels();
 
-  resolveUnresolveSymExprs();
+  resolveUnresolvedSymExprs();
 
   resolveEnumeratedTypes();
 
@@ -1212,7 +1220,7 @@ void scopeResolve(void) {
 }
 
 
-static void resolveUnresolveSymExprs()
+static void resolveUnresolvedSymExprs()
 {
   Vec<UnresolvedSymExpr*> skipSet;
 

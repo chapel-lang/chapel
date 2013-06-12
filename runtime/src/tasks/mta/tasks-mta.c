@@ -12,8 +12,6 @@
 #include <stdlib.h>
 
 
-static void init_task_private_data(void);
-
 // Sync variables
 
 void chpl_sync_lock(chpl_sync_aux_t *s) {
@@ -87,8 +85,26 @@ void chpl_task_init(void) {
     chpl_warning("setting CHPL_RT_CALL_STACK_SIZE has no effect "
                  "on XMT systems", 0, NULL);
 
-  init_task_private_data();
-  chpl_task_setSerial(true);
+  //
+  // Set up task-private data for locale (architectural) support.
+  //
+  {
+    chpl_task_private_data_t* p =
+      (chpl_task_private_data_t*) malloc(sizeof(chpl_task_private_data_t));
+    if (!p)
+      chpl_internal_error("out of memory trying to allocate task-private "
+                          "data.");
+
+    p->localeID      = 0;
+    p->here          = NULL;
+    p->serial_state  = true;     // Set to false in chpl_task_callMain().
+    p->alloc         = chpl_malloc;
+    p->calloc        = chpl_calloc;
+    p->realloc       = chpl_realloc;
+    p->free          = chpl_free;
+
+    (void) mta_register_task_data(p);
+  }
 }
 
 void chpl_task_exit(void) {
@@ -100,13 +116,18 @@ void chpl_task_callMain(void (*chpl_main)(void)) {
 }
 
 void chpl_task_addToTaskList(chpl_fn_int_t fid,
-                           void* arg,
-                           chpl_task_list_p *task_list,
-                           int32_t task_list_locale,
-                           chpl_bool is_begin_stmt,
-                           int lineno,
-                           chpl_string filename) {
+                             void* arg,
+                             chpl_task_subLoc_t subLoc,
+                             chpl_task_list_p *task_list,
+                             int32_t task_list_locale,
+                             chpl_bool is_begin_stmt,
+                             int lineno,
+                             chpl_string filename) {
   chpl_fn_p fp = chpl_ftable[fid];
+
+  assert(subLoc == 0
+         || subLoc == chpl_task_anySubLoc
+         || subLoc == chpl_task_currSubLoc);
 
   if (chpl_task_getSerial())
     (*fp)(arg);
@@ -128,6 +149,7 @@ void chpl_task_freeTaskList(chpl_task_list_p task_list) { }
 
 void chpl_task_startMovedTask(chpl_fn_p fp,
                               void* arg,
+                              chpl_task_subLoc_t subLoc,
                               chpl_taskID_t id,
                               chpl_bool serial_state) {
   //
@@ -135,6 +157,16 @@ void chpl_task_startMovedTask(chpl_fn_p fp,
   // we don't ever do a remote fork.
   //
   chpl_internal_error("chpl_task_startMovedTask() called");
+}
+
+chpl_task_subLoc_t chpl_task_getSubLoc(void) {
+  return 0;
+}
+
+void chpl_task_setSubLoc(chpl_task_subLoc_t subLoc) {
+  assert(subLoc == 0
+         || subLoc == chpl_task_anySubLoc
+         || subLoc == chpl_task_currSubLoc);
 }
 
 chpl_taskID_t chpl_task_getId(void) {
@@ -145,74 +177,71 @@ void chpl_task_sleep(int secs) {
   sleep(secs);
 }
 
-typedef struct {
-  chpl_bool serial_state;
-  c_subloc_t sublocale_id;
-  // Add fields here as needed....
-} chpl_task_private_data_t;
-
 //////////////////////////////////////////////////////////////////////////////////
 //
 // Routines for handling task-private data.
 //
 
-static void init_task_private_data(void)
-{
-  chpl_task_private_data_t* p =
-    (chpl_task_private_data_t*) malloc(sizeof(chpl_task_private_data_t));
-  if (!p)
-    chpl_internal_error("out of memory trying to allocate task-private data.");
-  mta_register_task_data(p);
+chpl_task_private_data_t* chpl_task_getPrivateData(void) {
+  static chpl_task_private_data_t non_task_chpl_data =
+      { .serial_state = true,
+        .localeID = 0,
+        .here = NULL,
+        .alloc = chpl_malloc,
+        .calloc = chpl_calloc,
+        .realloc = chpl_realloc,
+        .free = chpl_free
+      };
+
+  chpl_task_private_data_t* p;
+
+  if ((p = (chpl_task_private_data_t*) mta_register_task_data(NULL)) == NULL)
+    p = &non_task_chpl_data;
+  else
+    (void) mta_register_task_data(p); // Put back the value retrieved above.
+  return p;
 }
 
 chpl_bool chpl_task_getSerial(void) {
-  chpl_task_private_data_t *p = NULL;
-  p = (chpl_task_private_data_t*) mta_register_task_data(p);
-  if (p == NULL)
-    return false;
-  else {
-    mta_register_task_data(p); // Put back the value retrieved above.
-    return p->serial_state;
-  }
-}
-
-c_subloc_t chpl_task_getSubLoc(void) {
-  chpl_task_private_data_t *p = NULL;
-  p = (chpl_task_private_data_t*) mta_register_task_data(p);
-  if (p == NULL)
-    return 0;
-  else {
-    mta_register_task_data(p); // Put back the value retrieved above.
-    return p->sublocale_id;
-  }
+  return chpl_task_getPrivateData()->serial_state;
 }
 
 void chpl_task_setSerial(chpl_bool state) {
-  chpl_task_private_data_t *p = NULL;
-  p = (chpl_task_private_data_t*) mta_register_task_data(p);
+  chpl_task_private_data_t* p = chpl_task_getPrivateData();
   if (p == NULL)
     chpl_internal_error("no task-private data in chpl_task_setSerial.");
   else
-  {
     p->serial_state = state;
-    mta_register_task_data(p);
-  }
 }
 
-void chpl_task_setSubLoc(c_subloc_t subloc) {
-  chpl_task_private_data_t *p = NULL;
-  p = (chpl_task_private_data_t*) mta_register_task_data(p);
+void* chpl_task_getHere(void) {
+  return chpl_task_getPrivateData()->here;
+}
+
+void chpl_task_setHere(void* here) {
+  chpl_task_private_data_t* p = chpl_task_getPrivateData();
   if (p == NULL)
-    chpl_internal_error("no task-private data in chpl_task_setSubLoc.");
+    chpl_internal_error("no task-private data in chpl_task_setHere.");
   else
-  {
-    p->sublocale_id = subloc;
-    mta_register_task_data(p);
-  }
+    p->here = here;
+}
+
+c_locale_t chpl_task_getLocaleID(void) {
+  return chpl_task_getPrivateData()->localeID;
+}
+
+void chpl_task_setLocaleID(c_locale_t locale) {
+  chpl_task_private_data_t* p = chpl_task_getPrivateData();
+  if (p == NULL)
+    chpl_internal_error("no task-private data in chpl_task_setLocaleID.");
+  else
+    p->localeID = locale;
 }
 
 //
 //////////////////////////////////////////////////////////////////////////////////
+
+chpl_task_subLoc_t chpl_task_getNumSubLocales(void) { return 1; }
 
 uint64_t chpl_task_getCallStackSize(void) { return 0; }
 

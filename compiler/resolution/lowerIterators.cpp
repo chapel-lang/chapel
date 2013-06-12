@@ -139,11 +139,12 @@ static void computeRecursiveIteratorSet() {
     if (!isTaskFun(taskFn))
       continue;
 
-    // Assend the callers until we find a non-task function.
+    // Ascend the callers until we find a non-task function.
     FnSymbol* currFn = taskFn;
     while (true) {
       if (currFn->calledBy->n == 0) {
-        // dunno what to do - ignore it
+        // currFn has on callers, so by inference neither does taskFn.
+        // That being the case, we can bail -- no harm done.
         break;
       }
 
@@ -391,7 +392,9 @@ createArgBundleFreeFn(ClassType* ct, FnSymbol* loopBodyFnWrapper) {
     argBundleFreeFn = new FnSymbol("chpl__freeRecursiveIteratorArgumentBundle");
     argBundleFreeFn->insertFormalAtTail(new ArgSymbol(INTENT_CONST_IN, "loopBodyFnID", dtInt[INT_SIZE_DEFAULT]));
     argBundleFreeFn->insertFormalAtTail(new ArgSymbol(INTENT_CONST_IN, "loopBodyFnArgs", argBundleType));
-    argBundleFreeFn->insertAtTail(new CallExpr(PRIM_CHPL_FREE, argBundleFreeFn->getFormal(2)));
+    // Arg bundles are allocated locally and tracked.
+    argBundleFreeFn->insertAtTail(new CallExpr(PRIM_CHPL_MEMHOOK_FREE, argBundleFreeFn->getFormal(2)));
+    argBundleFreeFn->insertAtTail(new CallExpr(PRIM_TASK_FREE, argBundleFreeFn->getFormal(2)));
     argBundleFreeFn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
     argBundleFreeFn->retType = dtVoid;
     ct->symbol->defPoint->insertBefore(new DefExpr(argBundleFreeFn));
@@ -510,10 +513,8 @@ createArgBundleCopyFn(ClassType* ct, FnSymbol* loopBodyFnWrapper) {
   BlockStmt* block = new BlockStmt();
   Symbol* argBundle = newTemp("argBundle", ct);
   block->insertAtTail(new DefExpr(argBundle));
-  block->insertAtTail(new CallExpr(PRIM_MOVE, argBundle,
-                                   new CallExpr(PRIM_CHPL_ALLOC,
-                                     ct->symbol,
-                                     newMemDesc("compiler-inserted argument bundle"))));
+  CallExpr* bundle_alloc = callTaskAlloc(ct);
+  block->insertAtTail(new CallExpr(PRIM_MOVE, argBundle, bundle_alloc));
   Symbol* loopBodyFnArgsTmp = newTemp("loopBodyFnArgsTmp", ct);
   block->insertAtTail(new DefExpr(loopBodyFnArgsTmp));
   block->insertAtTail(new CallExpr(PRIM_MOVE, loopBodyFnArgsTmp, new CallExpr(PRIM_CAST, ct->symbol, loopBodyFnArgsArg)));
@@ -592,12 +593,15 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
   // args = (ct*)malloc(sizeof(ct));
   VarSymbol* argBundle = newTemp("argBundle", ct);
   iteratorFnCall->insertBefore(new DefExpr(argBundle));
-  iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, argBundle,
-                                            new CallExpr(PRIM_CHPL_ALLOC,
-                                              ts,
-                                              newMemDesc("compiler-inserted argument bundle"))));
+  // TODO: This should really go through chpl_here_alloc, but requires resolving that
+  // code after resolution is complete.  I'm not certain that the compiler can resolve
+  // more functions after the functionResolution pass is complete, so I'm leaving this
+  // change as a separate work item.
+  CallExpr* argBundleMem = callTaskAlloc(ct);
+  iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, argBundle, argBundleMem));
   iteratorFnCall->insertAtTail(argBundle);
-  iteratorFnCall->insertAfter(new CallExpr(PRIM_CHPL_FREE, argBundle));
+  iteratorFnCall->insertAfter(new CallExpr(PRIM_CHPL_MEMHOOK_FREE, argBundle));
+  iteratorFnCall->insertAfter(new CallExpr(PRIM_TASK_FREE, argBundle));
 
   // loopBodyWrapper(int index, ct* fn_args) {
   //   loopBodyFn(index);

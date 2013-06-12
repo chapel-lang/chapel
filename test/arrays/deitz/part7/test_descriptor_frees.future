@@ -1,0 +1,4 @@
+bug: This is a duplicate of test/functions/deitz/nested/test_nested_var_iterator2.future
+
+See test/memory/figueroa/LeakedMemory5.future for details.
+

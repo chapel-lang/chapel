@@ -10,6 +10,7 @@
 #include "chpl-mem.h"
 #include "chplmemtrack.h"
 #include "chpl-tasks.h"
+#include "chplsys.h"
 #include "config.h"
 #include "error.h"
 

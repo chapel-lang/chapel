@@ -151,8 +151,7 @@ buildDefaultWrapper(FnSymbol* fn,
     if (defaults->v[defaults->n-1]->hasFlag(FLAG_IS_MEME)) {
       if (!isRecord(fn->_this->type) && !isUnion(fn->_this->type)) {
         wrapper->insertAtTail(new CallExpr(PRIM_MOVE, wrapper->_this,
-                                new CallExpr(PRIM_CHPL_ALLOC, wrapper->_this,
-                                newMemDesc(fn->_this->type->symbol->name))));
+                                           here_alloc(wrapper->_this)));
         wrapper->insertAtTail(new CallExpr(PRIM_SETCID, wrapper->_this));
       }
     }
@@ -482,7 +481,11 @@ buildCoercionWrapper(FnSymbol* fn,
         // apply readFF or readFE to single or sync actual unless this
         // is a member access of the sync or single actual
         //
-        if (fn->numFormals() >= 2 &&
+        if (fn->numFormals() == 3 &&
+            !strcmp(fn->name, "free"))
+          // Special case: Don't insert a readFE or readFF when deleting a sync/single.
+          call->insertAtTail(new CallExpr("_cast", formal->type->symbol, wrapperFormal));
+        else if (fn->numFormals() >= 2 &&
             fn->getFormal(1)->type == dtMethodToken &&
             formal == fn->_this)
           call->insertAtTail(new CallExpr("value", gMethodToken, wrapperFormal));
@@ -640,7 +643,6 @@ buildPromotionWrapper(FnSymbol* fn,
       BlockStmt* loop = buildForLoopStmt(new SymExpr(leaderIndex), new SymExpr(leaderIterator), body, false, zippered);
       lifn->insertAtTail(loop);
       theProgram->block->insertAtTail(new DefExpr(lifn));
-      INT_ASSERT(body->parentExpr && toBlockStmt(body->parentExpr));
       toBlockStmt(body->parentExpr)->insertAtHead(new DefExpr(leaderIndex));
       normalize(lifn);
       lifn->instantiationPoint = getVisibilityBlock(info->call);

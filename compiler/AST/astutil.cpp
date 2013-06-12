@@ -228,9 +228,12 @@ void compute_call_sites() {
   }
 }
 
-
+// builds the def and use maps for every variable/argument
+// in the entire program.
 void buildDefUseMaps(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                      Map<Symbol*,Vec<SymExpr*>*>& useMap) {
+  // Collect the set of symbols to track by extracting all var and arg
+  // symbols from among all def expressions.
   Vec<Symbol*> symSet;
   forv_Vec(DefExpr, def, gDefExprs) {
     if (def->parentSymbol) {
@@ -239,10 +242,15 @@ void buildDefUseMaps(Map<Symbol*,Vec<SymExpr*>*>& defMap,
       }
     }
   }
+
+  // The set of uses is the set of all SymExprs.
   buildDefUseMaps(symSet, gSymExprs, defMap, useMap);
 }
 
 
+// Within the current AST element, recursively collect
+// the set of all symbols appearing in var or arg declarations
+// and the set of all uses (i.e. SymExprs).
 void collectSymbolSetSymExprVec(BaseAST* ast,
                                 Vec<Symbol*>& symSet,
                                 Vec<SymExpr*>& symExprs) {
@@ -256,23 +264,29 @@ void collectSymbolSetSymExprVec(BaseAST* ast,
   AST_CHILDREN_CALL(ast, collectSymbolSetSymExprVec, symSet, symExprs);
 }
 
-
+// builds the vectors for every variable/argument in 'fn' and looks
+// for uses and defs only in 'fn'
 void buildDefUseMaps(FnSymbol* fn,
                      Map<Symbol*,Vec<SymExpr*>*>& defMap,
                      Map<Symbol*,Vec<SymExpr*>*>& useMap) {
   Vec<Symbol*> symSet;
   Vec<SymExpr*> symExprs;
+  // Collect symbols and sym expressions on within the given function
   collectSymbolSetSymExprVec(fn, symSet, symExprs);
   buildDefUseMaps(symSet, symExprs, defMap, useMap);
 }
 
-
-void buildDefUseMaps(Vec<Symbol*>& symSet,
+// builds the vectors for every variable declaration in the given block
+// and looks for uses and defs within the same block (scope).
+void buildDefUseMaps(BlockStmt* block,
                      Map<Symbol*,Vec<SymExpr*>*>& defMap,
                      Map<Symbol*,Vec<SymExpr*>*>& useMap) {
-  buildDefUseMaps(symSet, gSymExprs, defMap, useMap);
+  Vec<Symbol*> symSet;
+  Vec<SymExpr*> symExprs;
+  // Collect symbols and sym expressions only within the given block.
+  collectSymbolSetSymExprVec(block, symSet, symExprs);
+  buildDefUseMaps(symSet, symExprs, defMap, useMap);
 }
-
 
 static void addUseOrDef(Map<Symbol*,Vec<SymExpr*>*>& ses, SymExpr* se) {
   Vec<SymExpr*>* sev = ses.get(se->var);

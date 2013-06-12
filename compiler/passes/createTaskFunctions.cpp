@@ -2,6 +2,16 @@
 #include "passes.h"
 #include "stmt.h"
 
+// Converts blocks implementing various parallel constructs into functions, 
+// so they can be invoked through a fork.
+// The body of the original block becomes the body of the function,
+// and the inline location of the parallel block is replaced by a call
+// to the implementing function.
+// A subsequent step (flattenNesteFunctions) adds arguments to these functions
+// to pass in values or references from the context which are used in the body
+// of the block.
+// As a special case, the target locale is prepended to the arguments passed 
+// to the "on" function.
 void createTaskFunctions(void) {
   // Process task-creating constructs. We include 'on' blocks, too.
   // This code used to be in parallel().
@@ -9,7 +19,6 @@ void createTaskFunctions(void) {
     if (CallExpr* info = block->blockInfo) {
       SET_LINENO(block);
       FnSymbol* fn = NULL;
-      VarSymbol* oldSubLoc = NULL;
       if (info->isPrimitive(PRIM_BLOCK_BEGIN)) {
         fn = new FnSymbol("begin_fn");
         fn->addFlag(FLAG_BEGIN);
@@ -25,16 +34,9 @@ void createTaskFunctions(void) {
         fn->addFlag(FLAG_ON);
         if (block->blockInfo->isPrimitive(PRIM_BLOCK_ON_NB))
           fn->addFlag(FLAG_NON_BLOCKING);
-        // This is now a real locale arg.
-        ArgSymbol* arg = new ArgSymbol(INTENT_CONST_IN, "_locale_arg", dtLocaleID);
+
+        ArgSymbol* arg = new ArgSymbol(INTENT_CONST_IN, "dummy_locale_arg", dtLocale);
         fn->insertFormalAtTail(arg);
-        // Special case for the first argument of an on_fn, which carries the destination locale ID.
-        // We set the sublocale field in task-private data before executing the body of the task,
-        // saving off a copy for restoration at the end of the on block.
-        oldSubLoc = newTemp(dtInt[INT_SIZE_32]);
-        fn->insertAtTail(new DefExpr(oldSubLoc));
-        fn->insertAtTail(new CallExpr(PRIM_MOVE, oldSubLoc, new CallExpr(PRIM_GET_SUBLOC_ID)));
-        fn->insertAtTail(new CallExpr(PRIM_SET_SUBLOC_ID, new CallExpr(PRIM_LOC_GET_SUBLOC, arg)));
       }
       else if (info->isPrimitive(PRIM_BLOCK_PARAM_LOOP) || // resolution will remove this case.
                info->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
@@ -61,8 +63,6 @@ void createTaskFunctions(void) {
         block->blockInfo->remove();
         // This block becomes the body of the new function.
         fn->insertAtTail(block->remove());
-        if (oldSubLoc) // only true for ON blocks
-          fn->insertAtTail(new CallExpr(PRIM_SET_SUBLOC_ID, oldSubLoc));
         fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
         fn->retType = dtVoid;
 

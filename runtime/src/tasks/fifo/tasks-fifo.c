@@ -33,13 +33,12 @@ typedef struct task_pool_struct* task_pool_p;
 typedef struct task_pool_struct {
   chpl_taskID_t    id;           // task identifier
   chpl_fn_p        fun;          // function to call for task
-  c_subloc_t       sublocale;    // The sublocale associated with this task.
   void*            arg;          // argument to the function
-  chpl_bool        serial_state; // whether new tasks can be created while executing fun
   chpl_bool        begun;        // whether execution of this task has begun
   chpl_task_list_p ltask;        // points to the task list entry, if there is one
   chpl_string      filename;
   int              lineno;
+  chpl_task_private_data_t chpl_data;
   task_pool_p      next;
   task_pool_p      prev;
 } task_pool_t;
@@ -266,16 +265,22 @@ void chpl_task_init(void) {
                                              0, 0);
     tp->ptask->id           = get_next_task_id();
     tp->ptask->fun          = NULL;
-    tp->ptask->sublocale    = 0;
     tp->ptask->arg          = NULL;
-    tp->ptask->serial_state = true;     // Set to false in chpl_task_callMain().
     tp->ptask->ltask        = NULL;
     tp->ptask->begun        = true;
     tp->ptask->filename     = "main program";
     tp->ptask->lineno       = 0;
     tp->ptask->next         = NULL;
+    tp->lockRprt            = NULL;
 
-    tp->lockRprt = NULL;
+    // Set up task-private data for locale (architectural) support.
+    tp->ptask->chpl_data.localeID       = 0;
+    tp->ptask->chpl_data.here           = NULL;
+    tp->ptask->chpl_data.serial_state   = true;     // Set to false in chpl_task_callMain().
+    tp->ptask->chpl_data.alloc          = chpl_malloc;
+    tp->ptask->chpl_data.calloc         = chpl_calloc;
+    tp->ptask->chpl_data.realloc        = chpl_realloc;
+    tp->ptask->chpl_data.free           = chpl_free;
 
     chpl_thread_setPrivateData(tp);
   }
@@ -340,14 +345,39 @@ static void comm_task_wrapper(void* arg) {
                                            0, 0);
   tp->ptask->id           = get_next_task_id();
   tp->ptask->fun          = comm_task_fn;
-  tp->ptask->sublocale    = 0;  // Set below.
   tp->ptask->arg          = arg;
-  tp->ptask->serial_state = true;
   tp->ptask->ltask        = NULL;
   tp->ptask->begun        = true;
   tp->ptask->filename     = "communication task";
   tp->ptask->lineno       = 0;
   tp->ptask->next         = NULL;
+
+  //
+  // The comm (polling) task shouldn't need any of this information,
+  // really.
+  tp->ptask->chpl_data.serial_state = true;
+  tp->ptask->chpl_data.localeID     = 0;
+  tp->ptask->chpl_data.here         = NULL;
+  tp->ptask->chpl_data.alloc        = NULL;
+  tp->ptask->chpl_data.calloc       = NULL;
+  tp->ptask->chpl_data.realloc      = NULL;
+  tp->ptask->chpl_data.free         = NULL;
+
+  //
+  // TODO: (This is a HACK.)  Set the allocator function pointers so
+  // that they refer to the system allocator implementation layer.  The
+  // comm task doesn't actually need these itself, but they will be
+  // inherited from the comm task by any "on" body tasks queued by it.
+  // Since we do not currently (as of 5/1/13) do anything in such "on"
+  // bodies to set the allocator function pointers to the proper thing
+  // for the target locale before attempting any allocations, if we
+  // leave them NULL here they will be NULL in the "on" bodies, and all
+  // attempts to call through them will segfault.
+  //
+  tp->ptask->chpl_data.alloc   = chpl_malloc;
+  tp->ptask->chpl_data.calloc  = chpl_calloc;
+  tp->ptask->chpl_data.realloc = chpl_realloc;
+  tp->ptask->chpl_data.free    = chpl_free;
 
   tp->lockRprt = NULL;
 
@@ -358,11 +388,16 @@ static void comm_task_wrapper(void* arg) {
 
 
 void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg,
-                           chpl_task_list_p *task_list,
-                           int32_t task_list_locale,
-                           chpl_bool is_begin_stmt,
-                           int lineno,
-                           chpl_string filename) {
+                             chpl_task_subLoc_t subLoc,
+                             chpl_task_list_p *task_list,
+                             int32_t task_list_locale,
+                             chpl_bool is_begin_stmt,
+                             int lineno,
+                             chpl_string filename) {
+  assert(subLoc == 0
+         || subLoc == chpl_task_anySubLoc
+         || subLoc == chpl_task_currSubLoc);
+
   if (task_list_locale == chpl_nodeID) {
     chpl_task_list_p ltask;
 
@@ -420,7 +455,7 @@ void chpl_task_processTaskList(chpl_task_list_p task_list) {
 
   curr_ptask = get_current_ptask();
 
-  if (curr_ptask->serial_state) {
+  if (curr_ptask->chpl_data.serial_state) {
     do {
       ltask = next_task;
       (*ltask->fun)(ltask->arg);
@@ -440,7 +475,7 @@ void chpl_task_processTaskList(chpl_task_list_p task_list) {
       do {
         ltask = next_task;
         ltask->ptask = add_to_task_pool(ltask->fun, ltask->arg,
-                                        curr_ptask->serial_state, ltask);
+                                        curr_ptask->chpl_data.serial_state, ltask);
         assert(ltask->ptask == NULL
                || ltask->ptask->ltask == ltask);
         next_task = ltask->next;
@@ -458,11 +493,12 @@ void chpl_task_processTaskList(chpl_task_list_p task_list) {
     nested_task.id           = get_next_task_id();
     nested_task.fun          = first_task->fun;
     nested_task.arg          = first_task->arg;
-    nested_task.serial_state = false;
     nested_task.ltask        = first_task;
     nested_task.begun        = true;
     nested_task.filename     = first_task->filename;
     nested_task.lineno       = first_task->lineno;
+    nested_task.chpl_data    = curr_ptask->chpl_data;
+
     set_current_ptask(&nested_task);
 
     if (taskreport) {
@@ -640,8 +676,10 @@ void chpl_task_freeTaskList(chpl_task_list_p task_list) {
 
 void chpl_task_startMovedTask(chpl_fn_p fp,
                               void* a,
+                              chpl_task_subLoc_t subLoc,
                               chpl_taskID_t id,
                               chpl_bool serial_state) {
+  assert(subLoc == 0 || subLoc == chpl_task_anySubLoc);
   assert(id == chpl_nullTaskID);
 
   // begin critical section
@@ -652,6 +690,18 @@ void chpl_task_startMovedTask(chpl_fn_p fp,
 
   // end critical section
   chpl_thread_mutexUnlock(&threading_lock);
+}
+
+
+chpl_task_subLoc_t chpl_task_getSubLoc(void) {
+  return 0;
+}
+
+
+void chpl_task_setSubLoc(chpl_task_subLoc_t subLoc) {
+  assert(subLoc == 0
+         || subLoc == chpl_task_anySubLoc
+         || subLoc == chpl_task_currSubLoc);
 }
 
 
@@ -669,16 +719,20 @@ void chpl_task_sleep(int secs) {
   sleep(secs);
 }
 
+chpl_task_private_data_t* chpl_task_getPrivateData(void)
+{
+  return &(get_thread_private_data()->ptask->chpl_data);
+}
 
 chpl_bool chpl_task_getSerial(void) {
-  return get_thread_private_data()->ptask->serial_state;
+  return chpl_task_getPrivateData()->serial_state;
 }
 
 void chpl_task_setSerial(chpl_bool state) {
-  get_thread_private_data()->ptask->serial_state = state;
+  chpl_task_getPrivateData()->serial_state = state;
 }
 
-c_subloc_t chpl_task_getSubLoc(void) {
+void* chpl_task_getHere(void) {
   thread_private_data_t* tp;
 
   // Quick exit if we have no threads yet.
@@ -693,11 +747,37 @@ c_subloc_t chpl_task_getSubLoc(void) {
   if (tp == 0) 
     return 0;
 
-  return tp->ptask->sublocale;
+  return tp->ptask->chpl_data.here;
 }
 
-void chpl_task_setSubLoc(c_subloc_t new_subloc) {
-  get_thread_private_data()->ptask->sublocale = new_subloc;
+void chpl_task_setHere(void* new_here) {
+  chpl_task_getPrivateData()->here = new_here;
+}
+
+c_locale_t chpl_task_getLocaleID(void) {
+  thread_private_data_t* tp;
+
+  // Quick exit if we have no threads yet.
+  if (!initialized)
+    return 0;
+
+  tp = (thread_private_data_t*) chpl_thread_getPrivateData();   // May be null.
+  // If the thread has no private data, that must mean that it is the root thread
+  // [for the process running our image] on the current node.
+  // Moving to a sublocale will *always* entail launching a new thread, so there will be
+  // thread-private storage available if the sublocale wants to be anything but zero.
+  if (tp == 0) 
+    return 0;
+
+  return tp->ptask->chpl_data.localeID;
+}
+
+void chpl_task_setLocaleID(c_locale_t new_locale) {
+  chpl_task_getPrivateData()->localeID = new_locale;
+}
+
+chpl_task_subLoc_t chpl_task_getNumSubLocales(void) {
+  return 1;
 }
 
 uint64_t chpl_task_getCallStackSize(void) {
@@ -1262,9 +1342,13 @@ static task_pool_p add_to_task_pool(chpl_fn_p fp,
   ptask->id           = get_next_task_id();
   ptask->fun          = fp;
   ptask->arg          = a;
-  ptask->serial_state = serial;
   ptask->ltask        = ltask;
   ptask->begun        = false;
+
+  // Inherit all locale-specific data except serial state from the
+  // parent task.
+  ptask->chpl_data = *chpl_task_getPrivateData();
+  ptask->chpl_data.serial_state = serial;
 
   if (ltask) {
     ptask->filename = ltask->filename;

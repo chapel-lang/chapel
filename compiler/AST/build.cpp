@@ -233,26 +233,11 @@ Expr* buildStringLiteral(const char* pch) {
 
 
 Expr* buildDotExpr(BaseAST* base, const char* member) {
-  // The following optimization was added to avoid calling chpl_int_to_locale
-  // when all we end up doing is extracting the locale id, thus:
-  // OPTIMIZATION: chpl_int_to_locale(_get_locale_id(x)).id ==> _get_locale_id(x)
 
-  // This broke when realms were removed and uid was renamed as id.
-  // It might be better coding practice to label very special module code
-  // (i.e. types, fields, values known to the compiler) using pragmas. <hilde>
-  // TODO: We shouldn't have optimizations in the parser.
-
-  // Now "id" returns just the node ID portion of a locale ID.
-  if (!strcmp("id", member))
-    if (CallExpr* intToLocale = toCallExpr(base))
-      if (intToLocale->isNamed("chpl_int_to_locale"))
-        if (CallExpr* getLocale = toCallExpr(intToLocale->get(1)))
-          if (getLocale->isPrimitive(PRIM_WIDE_GET_LOCALE))
-            return new CallExpr(PRIM_WIDE_GET_NODE, getLocale->get(1)->remove());
-
-  // MAGIC: "x.locale" member access expressions are rendered as chpl_int_to_locale(_wide_get_node(x)).
+  // MAGIC: "x.locale" member access expressions are rendered as
+  // chpl_localeID_to_locale(_wide_get_node(x)).
   if (!strcmp("locale", member))
-    return new CallExpr("chpl_int_to_locale", 
+    return new CallExpr("chpl_localeID_to_locale", 
                         new CallExpr(PRIM_WIDE_GET_LOCALE, base));
   else
     return new CallExpr(".", base, new_StringSymbol(member));
@@ -1831,27 +1816,22 @@ BlockStmt* buildLocalStmt(Expr* stmt) {
 }
 
 
-static Expr* extractLocaleID(Expr* expr) {
-  // If the on <x> expression is a primitive_on_locale_num, we just 
-  // return the primitive.
+// The input expression can be either a localeID or an object.
+// If a locale ID, we look up the corresponding locale object.
+// If an object, we extract the localeID from the wide pointer to that object
+// and then look up the corresponding locale object.
+// If the object passed in a locale object, we assume it has already been
+// "dereferenced" by the programmer.
+static Expr* extractLocale(Expr* expr) {
 
-  // PRIM_ON_LOCAL_NUM is now passed through to codegen,
-  // but we don't want to wrap it in PRIM_WIDE_GET_LOCALE.
-  if (CallExpr* call = toCallExpr(expr)) {
-    if (call->isPrimitive(PRIM_ON_LOCALE_NUM)) {
-      // Can probably use some semantic checks, like the number of args being 1 or 2, etc.
-      return expr;
-    }
-  }
+  if (expr->typeInfo() == dtLocale)
+    // Already a locale object, so just return it.
+    return expr;
 
-  // Otherwise, we need to wrap the expression in a primitive to query
-  // the locale ID of the expression
-  // TODO: Review all clients of this routine and see whether they expect the whole
-  // locale ID or just the node ID.  Split this routine into extractLocaleID()
-  // and extractNodeID().
-  // The current implementation expects localeID == nodeID, so we return
-  // just the node portion of the localeID (so this is really extractNodeID()).
-  return new CallExpr(PRIM_WIDE_GET_LOCALE, expr);
+  // Otherwise, an ordinary object.
+  // Look up its locale object by extracting the locale ID from its wide pointer.
+  Expr* lid = new CallExpr(PRIM_WIDE_GET_LOCALE, expr);
+  return new CallExpr("chpl_localeID_to_locale", lid);
 }
 
 
@@ -1859,7 +1839,18 @@ BlockStmt*
 buildOnStmt(Expr* expr, Expr* stmt) {
   checkControlFlow(stmt, "on statement");
 
-  CallExpr* onExpr = new CallExpr(PRIM_DEREF, extractLocaleID(expr));
+  // "on" clauses use the locale object extracted from the input "on" expression. 
+  // That is, if the "on" expression is not already a locale, extra code is inserted
+  // to look up the locale given the localeID portion of the "on" expression's wide 
+  // address.
+  Expr* onExpr = extractLocale(expr);
+
+  if (fLocal) {
+    BlockStmt* block = new BlockStmt(stmt);
+    // evaluate the expression for side effects
+    block->insertAtHead(onExpr);
+    return buildChapelStmt(block);
+  }
 
   BlockStmt* body = toBlockStmt(stmt);
 
@@ -1869,6 +1860,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
   BlockStmt* beginBlock = NULL;
   BlockStmt* tmp = body;
   while (tmp) {
+    
     if (BlockStmt* b = toBlockStmt(tmp->body.tail)) {
       if (b->blockInfo && b->blockInfo->isPrimitive(PRIM_BLOCK_BEGIN)) {
         beginBlock = b;
@@ -1881,12 +1873,6 @@ buildOnStmt(Expr* expr, Expr* stmt) {
         tmp = NULL;
     } else
       tmp = NULL;
-  }
-
-  if (fLocal) {
-    BlockStmt* block = new BlockStmt(stmt);
-    block->insertAtHead(onExpr); // evaluate the expression for side effects
-    return buildChapelStmt(block);
   }
 
   if (beginBlock) {
@@ -1905,7 +1891,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
     beginBlock->blockInfo->primitive = primitives[PRIM_BLOCK_ON_NB];
     return body;
   } else {
-    // Otherwise, wait for the "on" statement to complete.
+    // Otherwise, wait for the "on" statement to complete before proceeding.
     BlockStmt* block = buildChapelStmt();
     Symbol* tmp = newTemp();
     block->insertAtTail(new DefExpr(tmp));

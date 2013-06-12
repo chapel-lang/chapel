@@ -300,7 +300,12 @@ fixupDestructors() {
             if (isSyncType(fct) &&
                 ((ct->getModule()->modTag==MOD_INTERNAL) ||
                  (ct->getModule()->modTag==MOD_STANDARD)))
-              fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_CHPL_FREE, tmp));
+            {
+              // Call the free hook.
+              fn->insertBeforeReturnAfterLabel(
+                new CallExpr(PRIM_CHPL_MEMHOOK_FREE, tmp));
+              fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_TASK_FREE, tmp));
+            }
           }
         } else if (FnSymbol* autoDestroyFn = autoDestroyMap.get(field->type)) {
           VarSymbol* tmp = newTemp("_field_destructor_tmp_", field->type);

@@ -42,6 +42,12 @@
 %   'chapelprintoutput' scope is also outputted in the spec itself and
 %   thus may contain LaTeX formatting (see GENERAL CAVEATS below)
 %   
+% - chapelwideoutput
+%   Provides the test output for no-local tests, if that differs from the
+%   normal test output.  The content of this environment is dumped into a
+%   <test>.no-local.good file, along with a copy of the content of 
+%   chplprintoutput.
+%
 
 %
 % GENERAL CAVEATS:
@@ -107,6 +113,15 @@
 % .good file
 %
 \newenvironment{chapeloutput} {\begin{lrbox}{\teststuff}
+\begin{minipage}{6in}}
+{\end{minipage}\end{lrbox}}
+
+%
+% .no-local.good file
+% (The naming feature mentioned above does not yet work, so this
+% environment is a Q&D way to get a .no-local.good file.)
+%
+\newenvironment{chapelwideoutput} {\begin{lrbox}{\teststuff}
 \begin{minipage}{6in}}
 {\end{minipage}\end{lrbox}}
 

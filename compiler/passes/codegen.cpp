@@ -861,6 +861,10 @@ static void codegen_header() {
 #endif
   }
 
+
+  if (hdrfile) {
+    fprintf(hdrfile, "#include \"chpl-gen-includes.h\"\n");
+  }
 }
 
 // Sometimes we have to define a type while code generating.
@@ -1082,8 +1086,7 @@ void codegen(void) {
     forv_Vec(TypeSymbol, ts, gTypeSymbols) {
       if ((ts->type != dtOpaque) &&
           (!toPrimitiveType(ts->type) ||
-           (toPrimitiveType(ts->type) &&
-            !toPrimitiveType(ts->type)->isInternalType))) {
+           !toPrimitiveType(ts->type)->isInternalType)) {
         registerTypeToStructurallyCodegen(ts);
       }
     }

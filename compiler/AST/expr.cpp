@@ -65,7 +65,7 @@ static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3);
 //static void codegenCallNotValues(const char* fnName, GenRet a1, GenRet a2, GenRet a3);
 static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4);
 
-static GenRet codegenZero();
+//static GenRet codegenZero();
 static GenRet codegenOne();
 
 static GenRet codegenFieldPtr(GenRet base, const char* field);
@@ -748,29 +748,15 @@ GenRet codegenGetSublocID(void)
   return ret;
 }
 
-static
-GenRet codegenLocaleID(GenRet node, GenRet subloc)
-{
-  GenRet ret;
-  Type* localeType = LOCALE_ID_TYPE;
-
-  ret = codegenCallExpr("chpl_return_localeID", node, subloc);
-  if( ret.val ) {
-#ifdef HAVE_LLVM
-    GenRet expectType = LOCALE_ID_TYPE;
-    ret.val = convertValueToType(ret.val, expectType.type);
-#endif
-  }
-  ret.chplType = localeType;
-  return ret;
-}
-
 // A construct which gives the current locale ID.
 static
 GenRet codegenGetLocaleID(void)
 {
-  return codegenLocaleID(codegenGetNodeID(), codegenGetSublocID());
+  GenRet ret =  codegenCallExpr("chpl_gen_getLocaleID");
+  ret.chplType = LOCALE_ID_TYPE;
+  return ret;
 }
+
 
 static
 GenRet codegenUseGlobal(std::string str)
@@ -2508,11 +2494,6 @@ GenRet codegenBasicPrimitiveExpr(CallExpr* call) {
   return codegenCallExpr(call->primitive->name, args);
 }
 
-static
-GenRet codegenZero()
-{
-  return new_IntSymbol(0, INT_SIZE_64)->codegen();
-}
 
 static
 GenRet codegenOne()
@@ -3449,76 +3430,6 @@ GenRet CallExpr::codegen() {
         bool handled = true;
         switch (call->primitive->tag)
         {
-         case PRIM_WIDE_GET_LOCALE:
-         {
-          if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
-            if (call->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-              // TODO: Is the remote get really necessary?
-              // i.e. will the localeID field of the remotely fetched pointer
-              // ever differ from that in our local copy of the pointer?
-              // I hope not.  Otherwise my understanding of a wide pointer
-              // is "incomplete". <hilde>
-              
-              // To implement the test, replace the result of a get with a
-              // test that codegenRlocale(call->get(1)) == the current result,
-              // and if false
-              // print a runtime error.  If the error code never fires, we can
-              // just codegen the "else" form, i.e. :
-              //   codegenAssign(get(1), codegenRlocale(call->get(1)));
-
-              // get locale field of wide class via wide reference
-
-              // We have a wide reference to a wide class; we
-              // want to load the wide class pointer and return its locale.
-              //
-
-              GenRet classPtr = codegenValue(codegenDeref(call->get(1)));
-              codegenAssign(get(1), codegenRlocale(classPtr));
-            } else {
-              codegenAssign(get(1), codegenRlocale(call->get(1)));
-            }
-          } else if(call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)){
-            codegenAssign(get(1), codegenRlocale(call->get(1)));
-          } else {
-            // Needs to assign both fields.
-            codegenAssign(get(1), codegenGetLocaleID());
-          }
-          break;
-         }
-         case PRIM_WIDE_GET_NODE:
-         {
-          if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
-            if (call->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-              // get locale field of wide class via wide reference
-              GenRet classPtr = codegenValue(codegenDeref(call->get(1)));
-              codegenAssign(get(1), codegenRnode(classPtr));
-            } else {
-              codegenAssign(get(1), codegenRnode(call->get(1)) );
-            }
-          } else if(call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)){
-            codegenAssign(get(1), codegenRnode(call->get(1)) );
-          } else {
-            codegenAssign(get(1), codegenGetNodeID());
-          }
-          break;
-         }
-         case PRIM_WIDE_GET_SUBLOC:
-         {
-          if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
-            if (call->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-              // get locale field of wide class via wide reference
-              GenRet classPtr = codegenValue(codegenDeref(call->get(1)));
-              codegenAssign(get(1), codegenRsubloc(classPtr));
-            } else {
-              codegenAssign(get(1), codegenRsubloc(call->get(1)) );
-            }
-          } else if(call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)){
-            codegenAssign(get(1), codegenRsubloc(call->get(1)) );
-          } else {
-            codegenAssign(get(1), codegenGetSublocID());
-          }
-          break;
-         }
          case PRIM_DEREF:
          {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
@@ -3744,6 +3655,41 @@ GenRet CallExpr::codegen() {
           codegenAssign(get(1), r);
           break;
          }
+         case PRIM_TASK_GET_HERE_PTR:
+         {
+          GenRet addr = codegenCallExpr("chpl_task_getHere");
+          GenRet tmp;
+          Type* lhsType = get(1)->typeInfo();
+          if (lhsType->symbol->hasFlag(FLAG_WIDE_CLASS))
+            // If the destination is wide, make the result wide by prepending the locale ID.
+            tmp = codegenAddrOf(codegenWideAddr(codegenCallExpr("chpl_gen_getLocaleID"),
+                                                addr, lhsType));
+          else
+            tmp = addr;
+          codegenAssign(get(1), tmp);
+          break;
+         }
+         case PRIM_ON_LOCALE_NUM:
+         {
+          // This primitive expects an argument of type chpl_localeID_t.
+          INT_ASSERT(call->get(1)->typeInfo() == dtLocaleID);
+
+          GenRet addr = codegenNullPointer();
+          GenRet tmp;
+          Type* lhsType = get(1)->typeInfo();
+          if (lhsType->symbol->hasFlag(FLAG_WIDE_CLASS))
+          {
+            // Create a wide pointer with the given locale ID.
+            // The addr portion of the wide pointer is NULL.
+            GenRet locID = codegenValue(call->get(1));
+            tmp = codegenAddrOf(codegenWideAddr(locID, addr, lhsType));
+          }
+          else
+            tmp = addr;
+
+          codegenAssign(get(1), tmp);
+          break;
+         }
          default:
           // OK, we did not handle the RHS as a special case.
           handled = false;
@@ -3814,15 +3760,53 @@ GenRet CallExpr::codegen() {
     case PRIM_DEREF:
     case PRIM_GET_SVEC_MEMBER_VALUE:
     case PRIM_GET_MEMBER_VALUE:
-    case PRIM_WIDE_GET_LOCALE:
-    case PRIM_WIDE_GET_NODE:
-    case PRIM_WIDE_GET_SUBLOC:
     case PRIM_GET_PRIV_CLASS:
     case PRIM_ARRAY_GET:
     case PRIM_ARRAY_GET_VALUE:
+    case PRIM_TASK_GET_HERE_PTR:
+    case PRIM_ON_LOCALE_NUM:
       // generated during generation of PRIM_MOVE
       break;
-
+    case PRIM_WIDE_GET_LOCALE:
+    {
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+          get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+        ret = codegenRlocale(get(1));
+      } else {
+        ret = codegenGetLocaleID();
+      }
+      break;
+    }
+    case PRIM_WIDE_GET_NODE:
+    {
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+          get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+        ret = codegenRnode(get(1));
+      } else {
+        ret = codegenGetNodeID();
+      }
+      break;
+    }
+    case PRIM_WIDE_GET_SUBLOC:
+    {
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+          get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+        ret = codegenRsubloc(get(1));
+      } else {
+        ret = codegenGetSublocID();
+      }
+      break;
+    }
+    case PRIM_WIDE_GET_ADDR:
+    {
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+          get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+        ret = codegenRaddr(get(1));
+      } else {
+        ret = get(1);
+      }
+      break;
+    }
     case PRIM_ADDR_OF:
     {
       ret = codegenAddrOf(get(1));
@@ -4530,17 +4514,20 @@ GenRet CallExpr::codegen() {
     case PRIM_SET_SERIAL:
       codegenCall("chpl_task_setSerial", codegenValue(get(1)));
       break;
-    case PRIM_GET_SUBLOC_ID:
-      ret = codegenCallExpr("chpl_task_getSubLoc");
+    case PRIM_TASK_SET_HERE_PTR:
+    {
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+          get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
+        codegenCall("chpl_task_setHere", codegenRaddr(get(1)));
+      else
+        codegenCall("chpl_task_setHere", get(1));
       break;
-    case PRIM_SET_SUBLOC_ID:
-      codegenCall("chpl_task_setSubLoc", codegenValue(get(1)));
+    }
+    case PRIM_TASK_SET_LOCALE_ID:
+      codegenCall("chpl_gen_setLocaleID", codegenValue(get(1)));
       break;
-    case PRIM_LOC_GET_NODE:
-      ret = codegenValue(codegenFieldPtr(get(1), "node"));
-      break;
-    case PRIM_LOC_GET_SUBLOC:
-      ret = codegenValue(codegenFieldPtr(get(1), "subloc"));
+    case PRIM_TASK_GET_LOCALE_ID:
+      ret = codegenCallExpr("chpl_gen_getLocaleID");
       break;
     case PRIM_CHPL_COMM_GET:
     case PRIM_CHPL_COMM_PUT: {
@@ -4731,8 +4718,60 @@ GenRet CallExpr::codegen() {
 
       break;
     }
-    case PRIM_CHPL_ALLOC:
+    case PRIM_SIZEOF:
     {
+      Type* type = get(1)->typeInfo();
+      if (type->symbol->hasFlag(FLAG_WIDE_CLASS) ||
+          type->symbol->hasFlag(FLAG_WIDE))
+        // If wide, get the value type.
+        type = toClassType(type)->getField("addr", true)->typeInfo();
+
+      GenRet size;
+      if (ClassType* ct = toClassType(type)) {
+        // If Chapel class or record
+        size = codegenSizeof(ct->classStructName(true));
+      } else {
+        size = codegenSizeof(type);
+      }
+
+      ret = size;
+      break;
+    }
+    case PRIM_TASK_ALLOC:
+    {
+      ret = codegenCallExpr("chpl_task_alloc", codegenValue(get(1)));
+      break;
+    }
+    case PRIM_TASK_REALLOC:
+    {
+      Expr* ptrExpr = get(1);
+      GenRet ptr = codegenValue(get(1));
+      if (ptrExpr->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
+        ptr = codegenRaddr(ptr);
+      ret = codegenCallExpr("chpl_task_realloc", codegenCastToVoidStar(ptr), codegenValue(get(2)));
+      break;
+    }
+    case PRIM_TASK_FREE:
+    {
+      Expr* ptrExpr = get(1);
+      GenRet ptr = codegenValue(get(1));
+      if (ptrExpr->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
+        ptr = codegenRaddr(ptr);
+      codegenCall("chpl_task_free", codegenCastToVoidStar(ptr));
+      break;
+    }
+    case PRIM_CHPL_MEMHOOK_FREE:
+    { // void chpl_memhook_free_pre(void* ptr, int lineno, string filename);
+      Expr* ptrExpr = get(1);
+      GenRet ptr = codegenValue(get(1));
+      if (ptrExpr->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
+        ptr = codegenRaddr(ptr);
+      codegenCall("chpl_memhook_free_pre", codegenCastToVoidStar(ptr),
+                  get(2), get(3));
+      break;
+    }
+    case PRIM_CHPL_ALLOC:
+    { // (resultType*)chpl_mem_alloc(sizeof(x), md, lineno, filenam);
       GenRet size;
 
       // If Chapel class or record
@@ -4750,19 +4789,13 @@ GenRet CallExpr::codegen() {
       ret = codegenCast(typeInfo()->symbol->cname, allocated);
       break;
     }
-    case PRIM_CHPL_FREE: {
+    case PRIM_CHPL_FREE: // This version is used internally.
+    {
       if (fNoMemoryFrees)
         break;
       INT_ASSERT(numActuals() == 3);
+
       Expr * ptrExpr = get(1);
-      if (ptrExpr->typeInfo()->getValType() == dtString &&
-          ! ptrExpr->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
-        // The representation of a local string may be shared among several
-        // variables.  We can't (yet) tell who owns the data, so we can't
-        // release it ever.  Otherwise, we'll get double-deletion errors.
-        // This unfortunate situation will change when
-        // string representations are reference-counted.
-        break;
       if( ptrExpr->typeInfo()->symbol->hasFlag(FLAG_DATA_CLASS))
         INT_FATAL(this, "cannot delete data class");
       GenRet ptr; 
@@ -4770,11 +4803,8 @@ GenRet CallExpr::codegen() {
       if (ptrExpr->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         ptr = codegenRaddr(ptr);
       }
-      codegenCall("chpl_mem_free", codegenCastToVoidStar(ptr), get(2), get(3));
-      // MPF - note we do not set the pointer to NULL here
-      // because it would not change any copies of the pointer
-      // and we're toast in any case of use-after-free.
-      // Arguably, it could be put back in for earlier error detection.
+      codegenCall("chpl_mem_free", codegenCastToVoidStar(ptr),
+                  get(2), get(3));
       break;
     }
     case PRIM_CAST: 
@@ -4851,14 +4881,14 @@ GenRet CallExpr::codegen() {
     case PRIM_GC_CLEANUP:
       INT_FATAL("GC primitives not supported");
       break;
+    case PRIM_LOCALE_ID:
+      ret = codegenGetLocaleID();
+      break;
+    case PRIM_IS_HERE:
+      ret = codegenCallExpr("chpl_is_here", codegenValue(get(1)));
+      break;
     case PRIM_NODE_ID:
       ret = codegenGetNodeID();
-      break;
-    case PRIM_ON_LOCALE_NUM:
-      if (numActuals() < 2)
-        ret = codegenLocaleID(codegenValue(get(1)), codegenZero());
-      else
-        ret = codegenLocaleID(codegenValue(get(1)), codegenValue(get(2)));
       break;
     case PRIM_ALLOC_GVR:
       codegenCall("chpl_comm_alloc_registry",
@@ -4942,6 +4972,20 @@ GenRet CallExpr::codegen() {
         // Set the value of the size field.
         codegenAssign(size, len);
       }
+      break;
+    }
+    case PRIM_CAST_TO_VOID_STAR:
+    {
+      Type* t = get(1)->typeInfo();
+      GenRet ptr;
+      if (t->symbol->hasEitherFlag(FLAG_WIDE, FLAG_WIDE_CLASS))
+        // Get the local address.
+        // Assume that we have already tested to ensure that this wide pointer
+        // is local.  That is, caller should have called chpl_check_local.
+        ptr = codegenRaddr(get(1));
+      else
+        ptr = codegenValue(get(1));
+      ret = codegenCastToVoidStar(ptr);
       break;
     }
     case PRIM_RT_ERROR:
@@ -5125,7 +5169,7 @@ GenRet CallExpr::codegen() {
 
   if (fn->hasFlag(FLAG_BEGIN_BLOCK)) {
     // get(1) is a class containing bundled arguments
-    std::vector<GenRet> args(7);
+    std::vector<GenRet> args(8);
     args[0] = new_IntSymbol(ftableMap.get(fn), INT_SIZE_64);
 
     if (Expr *actuals = get(1)) {
@@ -5154,25 +5198,25 @@ GenRet CallExpr::codegen() {
     } else {
       taskList = codegenLocalAddrOf(codegenFieldPtr(endCountValue, "taskList"));
     }
-    args[2] = taskList;
+    args[2] = new_IntSymbol(-1 /* chpl_task_anySubLoc */, INT_SIZE_32);
+    args[3] = taskList;
     if (bundledArgsType->getField(lastField)->typeInfo()->symbol->
         hasFlag(FLAG_WIDE_CLASS)) {
-      args[3] = codegenRnode(endCountPtr);
+      args[4] = codegenRnode(endCountPtr);
     } else {
-      args[3] = codegenGetNodeID();
+      args[4] = codegenGetNodeID();
     }
 
-    args[4] = new_BoolSymbol(true, BOOL_SIZE_8);
-    args[5] = fn->linenum();
-    args[6] = fn->fname();
-
+    args[5] = new_BoolSymbol(true, BOOL_SIZE_8);
+    args[6] = fn->linenum();
+    args[7] = fn->fname();
 
     genComment(fn->cname, true);
     codegenCall("chpl_task_addToTaskList", args);
     return ret;
   } else if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)) {
     // get(1) is a class containing bundled arguments
-    std::vector<GenRet> args(7);
+    std::vector<GenRet> args(8);
     args[0] = new_IntSymbol(ftableMap.get(fn), INT_SIZE_64);
 
     if (Expr *actuals = get(1)) {
@@ -5233,12 +5277,12 @@ GenRet CallExpr::codegen() {
     } else {
       taskList = codegenLocalAddrOf(codegenFieldPtr(endCountValue, "taskList"));
     }
-    args[2] = taskList;
-    args[3] = codegenGetNodeID(),
-    args[4] = new_BoolSymbol(false, BOOL_SIZE_8);
-    args[5] = fn->linenum();
-    args[6] = fn->fname();
-
+    args[2] = new_IntSymbol(-1 /* chpl_task_anySubLoc */, INT_SIZE_32);
+    args[3] = taskList;
+    args[4] = codegenGetNodeID(),
+    args[5] = new_BoolSymbol(false, BOOL_SIZE_8);
+    args[6] = fn->linenum();
+    args[7] = fn->fname();
 
     genComment(fn->cname, true);
     codegenCall("chpl_task_addToTaskList", args);
@@ -5264,7 +5308,7 @@ GenRet CallExpr::codegen() {
     std::string ctype = ct->classStructName(true);
 
     genComment(fn->cname, true);
-    GenRet nodeVal = codegenValue(codegenFieldPtr(get(1), "node"));
+    GenRet nodeVal = codegenRnode(get(1));
     codegenCall(fname,
     // Note that we select just the node portion of the localeID.
     // The comm routines only care about nodes, not sublocales.
@@ -5486,6 +5530,23 @@ get_constant(Expr *e) {
     }
   }
   return 0;
+}
+
+
+// This builds an allocation of enough space to hold a variable of the given type.
+// It is effectively the body of chpl_here_alloc() instantiated with the
+// desired return type.
+// (Which is unfortunate, because it means we have duplicate implementations
+// of the same idiom.  We should choose one or the other.)
+// The memory tracking hooks are not called, because the variables created here
+// are just used internally to pass variables to the bodies of parallel constructs.
+// (But they can be added easily if desire/needed.)
+CallExpr* callTaskAlloc(Type* t)
+{
+  CallExpr* nbytes = new CallExpr(PRIM_SIZEOF, t->symbol);
+  CallExpr* alloc =  new CallExpr(PRIM_TASK_ALLOC, nbytes);
+  CallExpr* cast_alloc = new CallExpr(PRIM_CAST, t->symbol, alloc);
+  return cast_alloc;
 }
 
 

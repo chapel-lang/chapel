@@ -73,14 +73,20 @@ isFastPrimitive(CallExpr *call) {
 
   case PRIM_BLOCK_LOCAL:
 
+  case PRIM_LOCALE_ID:
+  case PRIM_IS_HERE:
   case PRIM_NODE_ID:
   case PRIM_ON_LOCALE_NUM:
   case PRIM_GET_SERIAL:
   case PRIM_SET_SERIAL:
-  case PRIM_SET_SUBLOC_ID:
-  case PRIM_GET_SUBLOC_ID:
+  case PRIM_TASK_SET_LOCALE_ID:
+  case PRIM_TASK_GET_LOCALE_ID:
+  case PRIM_TASK_SET_HERE_PTR:
+  case PRIM_TASK_GET_HERE_PTR:
 
   case PRIM_STRING_COPY:
+  case PRIM_CAST_TO_VOID_STAR:
+  case PRIM_SIZEOF:
 
   case PRIM_NEXT_UINT32:
   case PRIM_GET_USER_LINE:
@@ -96,6 +102,9 @@ isFastPrimitive(CallExpr *call) {
 #ifdef DEBUG
       printf(" *** OK (PRIM_MOVE 0): %s\n", call->primitive->name);
 #endif
+      // TODO: The rhs is evaluated for its side effects, so 
+      // we should not return true here.  We should recurse on the rhs instead,
+      // in case that expression contains a "slow" call.
       return true;
     }
     if (!isCallExpr(call->get(2))) {
@@ -113,15 +122,6 @@ isFastPrimitive(CallExpr *call) {
       return true;
     }
     break;
-
-  case PRIM_LOC_GET_NODE:
-  case PRIM_LOC_SET_NODE:
-  case PRIM_LOC_GET_SUBLOC:
-  case PRIM_LOC_SET_SUBLOC:
-#ifdef DEBUG
-    printf(" *** OK (PRIM_LOC_GET_NODE, etc.): %s\n", call->primitive->name);
-#endif
-    return true;
 
 // I think these can always return true. <hilde>
 // But that works only if the remote get is removed from code generation.
@@ -273,6 +273,19 @@ isFastPrimitive(CallExpr *call) {
     INT_FATAL("This primitive should have been removed from the tree by now.");
     break;
 
+    // Allocator calls can block.  Why?
+  case PRIM_FREE_TASK_LIST:
+  case PRIM_TASK_ALLOC:
+  case PRIM_TASK_REALLOC:
+  case PRIM_TASK_FREE:
+  case PRIM_CHPL_MEMHOOK_FREE:
+  case PRIM_CHPL_ALLOC:
+  case PRIM_CHPL_FREE:
+  case PRIM_ARRAY_ALLOC:
+  case PRIM_ARRAY_FREE:
+  case PRIM_ARRAY_FREE_ELTS:
+    return false;
+
     // Temporarily unclassified (legacy) cases.
     // These formerly defaulted to false (slow), so we leave them
     // here until they are proven fast.
@@ -280,12 +293,6 @@ isFastPrimitive(CallExpr *call) {
   case PRIM_SET_END_COUNT:
   case PRIM_PROCESS_TASK_LIST:
   case PRIM_EXECUTE_TASKS_IN_LIST:
-  case PRIM_FREE_TASK_LIST:
-  case PRIM_CHPL_ALLOC:
-  case PRIM_CHPL_FREE:
-  case PRIM_ARRAY_ALLOC:
-  case PRIM_ARRAY_FREE:
-  case PRIM_ARRAY_FREE_ELTS:
   case PRIM_TO_LEADER:
   case PRIM_TO_FOLLOWER:
   case PRIM_DELETE:

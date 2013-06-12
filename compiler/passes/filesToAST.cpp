@@ -77,6 +77,71 @@ static void countTokensInCmdLineFiles(void) {
 }
 
 
+// This structure and the following array provide a list of types that must be
+// defined in module code.  At this point, they are all classes.
+struct WellKnownType
+{
+  const char* name;
+  ClassType** type_;
+  bool isClass;
+};
+
+
+// These types are a required part of the compiler/module interface.
+WellKnownType wellKnownTypes[] = {
+  {"_array",			&dtArray,		false},
+  {"_tuple",			&dtTuple,		false},
+  {"locale",			&dtLocale,		true},
+  {"chpl_localeID_t",	&dtLocaleID,	false},
+  {"BaseArr",			&dtBaseArr,		true},
+  {"BaseDom",			&dtBaseDom,		true},
+  {"BaseDist",			&dtDist,		true},
+  {"Writer",			&dtWriter,		true},
+  {"Reader",			&dtReader,		true},
+  {"chpl_main_argument",&dtMainArgument,false}
+};
+
+
+// Gather well-known types from among types known at this point.
+static void gatherWellKnownTypes()
+{
+  static const char* mult_def_message = "'%s' defined more than once in Chapel internal modules.";
+  static const char* class_reqd_message = "The '%s' type must be a class.";
+  static const char* wkt_reqd_message = "Type '%s' must be defined in the Chapel internal modules.";
+  int nEntries = sizeof(wellKnownTypes) / sizeof(WellKnownType);
+
+  // Harvest well-known types from among the global type definitions.
+  // We check before assigning to the well-known type dt<typename>, to ensure that it
+  // is null.  In that way we can flag duplicate definitions.
+  forv_Vec(TypeSymbol, ts, gTypeSymbols)
+  {
+    for (int i = 0; i < nEntries; ++i)
+    {
+      WellKnownType& wkt = wellKnownTypes[i];
+      if (!strcmp(ts->name, wkt.name))
+      {
+        if (*wkt.type_ != NULL)
+          USR_WARN(ts, mult_def_message, wkt.name);
+        INT_ASSERT(ts->type); // We expect the symbol to be defined.
+        if (wkt.isClass && !isClass(ts->type))
+          USR_FATAL_CONT(ts->type, class_reqd_message, wkt.name);
+        *wkt.type_ = toClassType(ts->type);
+      }
+    }
+  }
+
+  // Make sure all well-known types are defined.
+  for (int i = 0; i < nEntries; ++i)
+  {
+    WellKnownType& wkt = wellKnownTypes[i];
+    if (*wkt.type_ == NULL)
+      USR_FATAL_CONT(wkt_reqd_message, wkt.name);
+  }
+
+  USR_STOP();
+}
+
+
 void parse(void) {
   yydebug = debugParserLevel;
 
@@ -87,86 +152,7 @@ void parse(void) {
 
   parseDependentModules(MOD_INTERNAL);
 
-  // These types are a required part of the compiler/module interface
-  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (!strcmp(ts->name, "_array")) {
-      if (dtArray) {
-        USR_WARN("'_array' defined more than once in Chapel Internal modules.");
-      }
-      dtArray = toClassType(ts->type);
-    } else if (!strcmp(ts->name, "_tuple")) {
-      if (dtTuple) {
-        USR_WARN("'_tuple' defined more than once in Chapel Internal modules.");
-      }
-      dtTuple = toClassType(ts->type);
-    } else if (!strcmp(ts->name, "chpl_localeID_t")) {
-      if (dtLocaleID) {
-        USR_WARN("'chpl_localeID_t' defined more than once in Chapel Internal modules.");
-      }
-      dtLocaleID = toClassType(ts->type);
-      ts->addFlag(FLAG_PRIMITIVE_TYPE);
-    } else if (!strcmp(ts->name, "BaseArr")) {
-      if (dtBaseArr) {
-        USR_WARN("'BaseArr' defined more than once in Chapel Internal modules.");
-      }
-      dtBaseArr = toClassType(ts->type);
-    } else if (!strcmp(ts->name, "BaseDom")) {
-      if (dtBaseDom) {
-        USR_WARN("'BaseDom' dfined more than once in Chapel Internal modules.");
-      }
-      dtBaseDom = toClassType(ts->type);
-    } else if (!strcmp(ts->name, "BaseDist")) {
-      if (dtDist) {
-        USR_WARN("'BaseDist' defined more than once in Chapel Internal modules.");
-      }
-      dtDist = toClassType(ts->type);
-    }
-    else if (!strcmp(ts->name, "Writer")) {
-      if (dtWriter) {
-        USR_WARN("'Writer' defined more than once in Chapel Internal modules.");
-      }
-      dtWriter = toClassType(ts->type);
-    } else if (!strcmp(ts->name, "Reader")) {
-      if (dtReader) {
-        USR_WARN("'Reader' defined more than once in Chapel Internal modules.");
-      }
-      dtReader = toClassType(ts->type);
-    } else if (!strcmp(ts->name, "chpl_main_argument")) {
-      if (dtMainArgument) {
-        USR_WARN("'chpl_main_argument' defined more than once in Chapel Internal modules.");
-      }
-      dtMainArgument = toClassType(ts->type);
-    }
-  }
-
-  if (!dtArray) {
-    USR_FATAL_CONT("'_array' not defined in Chapel Internal modules.");
-  }
-  if (!dtTuple) {
-    USR_FATAL_CONT("'_tuple' not defined in Chapel Internal modules.");
-  }
-  if (!dtLocaleID) {
-    USR_FATAL_CONT("'locale' not defined in Chapel Internal modules.");
-  }
-  if (!dtBaseArr) {
-    USR_FATAL_CONT("'BaseArr' not defined in Chapel Internal modules.");
-  }
-  if (!dtBaseDom) {
-    USR_FATAL_CONT("'BaseDom' not defined in Chapel Internal modules.");
-  }
-  if (!dtDist) {
-    USR_FATAL_CONT("'BaseDist' not defined in Chapel Internal modules.");
-  }
-  if (!dtWriter) {
-    USR_FATAL_CONT("'Writer' not defined in Chapel Internal modules.");
-  }
-  if (!dtReader) {
-    USR_FATAL_CONT("'Reader' not defined in Chapel Internal modules.");
-  }
-  if (!dtMainArgument) {
-    USR_FATAL_CONT("'chpl_main_argument' not defined in Chapel Internal modules.");
-  }
-  USR_STOP();
+  gatherWellKnownTypes();
 
   int filenum = 0;
   const char* inputFilename;

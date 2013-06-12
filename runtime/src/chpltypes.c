@@ -2,6 +2,7 @@
 
 #include "chplfp.h"
 #include "chpl-mem.h"
+#include "chpl-mem-desc.h"
 #include "chplcgfns.h"
 #include "chpl-comm.h"
 #include "chpl-comm-compiler-macros.h"
@@ -59,7 +60,11 @@ chpl_string chpl_format(chpl_string format, ...) {
 }
 
 
+// TODO: This should be placed in a separate file never included in the launcher build.
+// Maybe rename chpl-gen-includes and place this in the corresponding C file....
 #ifndef LAUNCHER
+#include "chpl-gen-includes.h"
+
 struct chpl_chpl____wide_chpl_string_s {
   chpl_localeID_t locale;
   chpl_string addr;
@@ -91,7 +96,7 @@ chpl_wide_string_copy(chpl____wide_chpl_string* x, int32_t lineno, chpl_string f
 // to receive the bytes copied from the remote node.  This buffer will be leaked,
 // since no corresponding free is added to the generated code.
 void chpl_gen_comm_wide_string_get(void* addr,
-  int32_t node, void* raddr, int32_t elemSize, int32_t typeIndex, int32_t len,
+  c_nodeid_t node, void* raddr, int32_t elemSize, int32_t typeIndex, int32_t len,
   int ln, chpl_string fn)
 {
   // This part just copies the descriptor.
@@ -115,8 +120,7 @@ void chpl_gen_comm_wide_string_get(void* addr,
     chpl_comm_wide_get_string((chpl_string*) &(local_str->addr),
                               local_str, typeIndex, ln, fn);
     // The bytes live locally, so we have to update the locale.
-    local_str->locale.node = chpl_nodeID;
-    local_str->locale.subloc = chpl_task_getSubLoc();
+    local_str->locale = chpl_gen_getLocaleID();
   }
 }
 
@@ -125,9 +129,8 @@ void
 chpl_string_widen(chpl____wide_chpl_string* x, chpl_string from)
 {
   size_t len = strlen(from) + 1;
-  x->locale.node = chpl_nodeID;
-  x->locale.subloc = chpl_task_getSubLoc();
-  x->addr = chpl_mem_allocMany(len, sizeof(char),
+  x->locale = chpl_gen_getLocaleID();
+  x->addr = chpl_tracked_task_calloc(len, sizeof(char),
                                CHPL_RT_MD_SET_WIDE_STRING, 0, 0);
   strncpy((char*)x->addr, from, len);
   if (*((len-1)+(char*)x->addr) != '\0')
@@ -140,7 +143,7 @@ void
 chpl_comm_wide_get_string(chpl_string* local, struct chpl_chpl____wide_chpl_string_s* x, int32_t tid, int32_t lineno, chpl_string filename)
 {
   char* chpl_macro_tmp =
-      chpl_mem_allocMany(x->size, sizeof(char),
+      chpl_tracked_task_calloc(x->size, sizeof(char),
                          CHPL_RT_MD_GET_WIDE_STRING, -1, "<internal>");
     if (chpl_nodeID == x->locale.node)
       memcpy(chpl_macro_tmp, x->addr, x->size);
@@ -155,27 +158,42 @@ chpl_comm_wide_get_string(chpl_string* local, struct chpl_chpl____wide_chpl_stri
 #endif
 
 
+//
+// We need an allocator for the rest of the code, but for the user
+// program it needs to be a locale-aware one with tracking, while for
+// the launcher the regular system one will do.
+//
+static ___always_inline void*
+chpltypes_malloc(size_t size, chpl_mem_descInt_t description,
+                 int32_t lineno, chpl_string filename) {
+#ifndef LAUNCHER
+  return chpl_tracked_task_alloc(size, description, lineno, filename);
+#else
+  return malloc(size);
+#endif
+}
+
+
 chpl_string
 string_copy(chpl_string x, int32_t lineno, chpl_string filename)
 {
   char *z;
 
-  // hilde sez: if the input string is null, just return null.
+  // If the input string is null, just return null.
   if (x == NULL)
     return NULL;
 
-  z = (char*)chpl_mem_allocMany(strlen(x)+1, sizeof(char),
-                                      CHPL_RT_MD_STRING_COPY_DATA,
-                                      lineno, filename);
+  z = (char*)chpltypes_malloc(strlen(x)+1, CHPL_RT_MD_STRING_COPY_DATA,
+                              lineno, filename);
   return strcpy(z, x);
 }
 
 
 chpl_string
 string_concat(chpl_string x, chpl_string y, int32_t lineno, chpl_string filename) {
-  char *z = (char*)chpl_mem_allocMany(strlen(x)+strlen(y)+1, sizeof(char),
-                                      CHPL_RT_MD_STRING_CONCAT_DATA,
-                                      lineno, filename);
+  char *z = (char*)chpltypes_malloc(strlen(x)+strlen(y)+1,
+                                    CHPL_RT_MD_STRING_CONCAT_DATA,
+                                    lineno, filename);
   z[0] = '\0';
   strcat(z, x);
   strcat(z, y);
@@ -193,9 +211,8 @@ string_strided_select(chpl_string x, int low, int high, int stride, int32_t line
   if (low < 1 || low > length || high > length) {
     chpl_error("string index out of bounds", lineno, filename);
   }
-  result = chpl_mem_allocMany(size + 2, sizeof(char),
-                              CHPL_RT_MD_STRING_STRIDED_SELECT_DATA,
-                              lineno, filename);
+  result = chpltypes_malloc(size + 2, CHPL_RT_MD_STRING_STRIDED_SELECT_DATA,
+                            lineno, filename);
   dst = result;
   if (stride > 0) {
     while (src - x <= high - 1) {
@@ -220,7 +237,7 @@ string_select(chpl_string x, int low, int high, int32_t lineno, chpl_string file
 
 chpl_string
 string_index(chpl_string x, int i, int32_t lineno, chpl_string filename) {
-  char* buffer = chpl_mem_allocMany(2, sizeof(char), CHPL_RT_MD_STRING_COPY_DATA,
+  char* buffer = chpltypes_malloc(2, CHPL_RT_MD_STRING_COPY_DATA,
                                   lineno, filename);
   if (i-1 < 0 || i-1 >= string_length(x))
     chpl_error("string index out of bounds", lineno, filename);

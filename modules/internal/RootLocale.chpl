@@ -7,25 +7,42 @@ pragma "no use ChapelStandard"
 module RootLocale {
 
   use ChapelLocale;
-  use DefaultArchitecture;
+  use DefaultRectangular;
 
-  if (rootLocale == nil) then
-    rootLocale = new DefaultRootLocale();
+  const emptyLocaleSpace: domain(1) = {1..0};
+  const emptyLocales: [emptyLocaleSpace] locale;
 
-  // Now a misnomer; should be chpl_localeID_to_locale, or chpl_lookup_locale.
-  // Returns a wide pointer to the locale with the given id.
-  // When hierarchical locales are fully implemented, the lookup will be
-  // done mostly in the runtime (through the sublocale registry),
-  // rather than being a simple array lookup.  (The Locales[] array
-  // will become obsolete -- for locale lookup purposes, at least.)
-  proc chpl_int_to_locale(id) {
-    // The primitive extracts just the node portion of the locale ID.
-    // This is a hobbled implementation (sublocales are not yet implemented).
-    return rootLocale.getChild(__primitive("_loc_get_node", id));
-  }
+  class RootLocale : locale {
+
+    // These functions are used to establish values for Locales[] and 
+    // LocaleSpace -- an array of locales and its correponding domain
+    // which are used as the default set of targetLocales in many 
+    // distributions.
+    proc getDefaultLocaleSpace() {
+      _throwPVFCError();
+      return emptyLocaleSpace;
+    }      
   
-  // Expose the underlying locales array (and its domain) 
-  // for user convenience and backward compatibility.
-  const Locales => rootLocale.getChildArray();
-  const LocaleSpace = rootLocale.getChildSpace();
+    proc getDefaultLocaleArray() {
+      _throwPVFCError();
+      return emptyLocales;
+    }
+
+    proc localeIDtoLocale(id : chpl_localeID_t) : locale {
+      _throwPVFCError();
+      return this;
+    }
+  }
+
+  // Returns a wide pointer to the locale with the given id.
+  // When hierarchical locales are fully implemented, the lookup may be
+  // done mostly in the runtime (through the sublocale registry).
+  proc chpl_localeID_to_locale(id : chpl_localeID_t) : locale {
+    // The _is_here test examines only localeIDs, so is local and very fast.
+    // Evaluating "here" is also local and very fast.
+    if __primitive("_is_here", id) then return here;
+    var ret:locale;
+    on rootLocale do ret = (rootLocale:RootLocale).localeIDtoLocale(id);
+    return ret;
+  }
 }

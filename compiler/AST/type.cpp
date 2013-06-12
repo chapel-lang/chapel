@@ -1511,6 +1511,18 @@ bool isSyncType(Type* t) {
   return getSyncFlags(t->symbol).any();
 }
 
+bool isSubClass(Type* type, Type* baseType)
+{
+  if (type == baseType)
+    return true;
+
+  forv_Vec(Type, pt, type->dispatchParents)
+    if (isSubClass(pt, baseType))
+      return true;
+
+  return false;
+}
+
 bool
 isDistClass(Type* type) {
   if (type->symbol->hasFlag(FLAG_BASE_DIST))

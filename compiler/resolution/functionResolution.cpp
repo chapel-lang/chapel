@@ -540,7 +540,9 @@ protoIteratorClass(FnSymbol* fn) {
   ii->iclass = new ClassType(CLASS_CLASS);
   TypeSymbol* cts = new TypeSymbol(astr("_ic_", className), ii->iclass);
   cts->addFlag(FLAG_ITERATOR_CLASS);
+  add_root_type(ii->iclass);	// Add super : dtObject.
   fn->defPoint->insertBefore(new DefExpr(cts));
+
   ii->irecord = new ClassType(CLASS_RECORD);
   TypeSymbol* rts = new TypeSymbol(astr("_ir_", className), ii->irecord);
   rts->addFlag(FLAG_ITERATOR_RECORD);
@@ -579,7 +581,8 @@ protoIteratorClass(FnSymbol* fn) {
   ii->getIterator->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "ir", ii->irecord));
   VarSymbol* ret = newTemp("_ic_", ii->iclass);
   ii->getIterator->insertAtTail(new DefExpr(ret));
-  ii->getIterator->insertAtTail(new CallExpr(PRIM_MOVE, ret, new CallExpr(PRIM_CHPL_ALLOC, ii->iclass->symbol, newMemDesc("iterator data"))));
+  CallExpr* icAllocCall = here_alloc(ret);
+  ii->getIterator->insertAtTail(new CallExpr(PRIM_MOVE, ret, icAllocCall));
   ii->getIterator->insertAtTail(new CallExpr(PRIM_SETCID, ret));
   ii->getIterator->insertAtTail(new CallExpr(PRIM_RETURN, ret));
   fn->defPoint->insertBefore(new DefExpr(ii->getIterator));
@@ -966,6 +969,7 @@ canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn,
     return true;
   if (paramCoerce && canParamCoerce(actualType, actualSym, formalType))
     return true;
+
   forv_Vec(Type, parent, actualType->dispatchParents) {
     if (parent == formalType || canDispatch(parent, NULL, formalType, fn, promotes)) {
       return true;
@@ -1762,9 +1766,13 @@ printResolutionError(const char* error,
                 toString(info->actuals.v[1]->type),
                 toString(info->actuals.v[0]->type));
     }
-  } else if (info->actuals.n == 2 &&
-             info->actuals.v[0]->type == dtMethodToken &&
-             !strcmp("these", info->name)) {
+  } else if (!strcmp("free", info->name)) {
+    if (info->actuals.n > 0 &&
+        isRecord(info->actuals.v[2]->type))
+      USR_FATAL(call, "delete not allowed on records");
+  } else if (!strcmp("these", info->name)) {
+    if (info->actuals.n == 2 &&
+        info->actuals.v[0]->type == dtMethodToken)
     USR_FATAL(call, "cannot iterate over values of type %s",
               toString(info->actuals.v[1]->type));
   } else if (!strcmp("_type_construct__tuple", info->name)) {
@@ -2711,6 +2719,9 @@ insertFormalTemps(FnSymbol* fn) {
           fn->insertAtHead(new DefExpr(typeTmp));
         }
       } else if (formal->intent == INTENT_INOUT || formal->intent == INTENT_IN || formal->intent == INTENT_CONST_IN) {
+        // TODO: Adding a formal temp for INTENT_CONST_IN is conservative.
+        // If the compiler verifies in a separate pass that it is never written,
+        // we don't have to copy it.  
         fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr("chpl__initCopy", formal)));
         tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
       } else {
@@ -3129,7 +3140,8 @@ createFunctionAsValue(CallExpr *call) {
   call->parentExpr->insertBefore(new DefExpr(ts));
   
   ct->dispatchParents.add(parent);
-  INT_ASSERT(parent->dispatchChildren.add_exclusive(ct));
+  bool inserted = parent->dispatchChildren.add_exclusive(ct);
+  INT_ASSERT(inserted);
   VarSymbol* super = new VarSymbol("super", parent);
   super->addFlag(FLAG_SUPER_CLASS);
   ct->fields.insertAtHead(new DefExpr(super));
@@ -3668,7 +3680,7 @@ preFold(Expr* expr) {
         }
       }
     } else if (call->isPrimitive(PRIM_DEREF)) {
-      // remove get ref if already a value
+      // remove deref if arg is already a value
       if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
         result = call->get(1)->remove();
         call->replace(result);
@@ -4614,9 +4626,6 @@ resolveFns(FnSymbol* fn) {
   if ((fn->hasFlag(FLAG_EXTERN))||(fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)))
     return;
 
-  if (fn->hasFlag(FLAG_AUTO_II))
-    return;
-
   if (fn->retTag == RET_VAR)
     buildValueFunction(fn);
 
@@ -4837,6 +4846,7 @@ addToVirtualMaps(FnSymbol* pfn, ClassType* ct) {
         collectInstantiatedClassTypes(types, ct);
       else
         types.add(ct);
+
       forv_Vec(Type, type, types) {
         SymbolMap subs;
         if (ct->symbol->hasFlag(FLAG_GENERIC))
@@ -4878,6 +4888,19 @@ addToVirtualMaps(FnSymbol* pfn, ClassType* ct) {
                 fn->retType->dispatchParents.add_exclusive(pfn->retType);
                 Type* pic = pfn->retType->initializer->iteratorInfo->iclass;
                 Type* ic = fn->retType->initializer->iteratorInfo->iclass;
+                INT_ASSERT(ic->symbol->hasFlag(FLAG_ITERATOR_CLASS));
+
+                // Iterator classes are created as normal top-level classes (inheriting
+                // from dtObject).  Here, we want to re-parent ic with pic, so
+                // we need to remove and replace the object base class.
+                INT_ASSERT(ic->dispatchParents.n == 1);
+                Type* parent = ic->dispatchParents.only();
+                if (parent == dtObject)
+                {
+                  int item = parent->dispatchChildren.index(ic);
+                  parent->dispatchChildren.remove(item);
+                  ic->dispatchParents.remove(0);
+                }
                 pic->dispatchChildren.add_exclusive(ic);
                 ic->dispatchParents.add_exclusive(pic);
                 continue; // do not add to virtualChildrenMap; handle in _getIterator
@@ -5309,8 +5332,8 @@ static void resolveRecordInitializers() {
   //
   // resolve PRIM_INITs for records
   //
-  forv_Vec(CallExpr, init, inits) {
-
+  forv_Vec(CallExpr, init, inits)
+  {
     // Ignore if dead.
     if (!init->parentSymbol)
       continue;
@@ -5332,39 +5355,39 @@ static void resolveRecordInitializers() {
     if (type->defaultValue)
       INT_FATAL(init, "PRIM_INIT should have been replaced already");
 
-      SET_LINENO(init);
-        if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-          // why??  --sjd
-          init->replace(init->get(1)->remove());
-        } else if (type->symbol->hasFlag(FLAG_DISTRIBUTION)) {
-          Symbol* tmp = newTemp("_distribution_tmp_");
-          init->getStmtExpr()->insertBefore(new DefExpr(tmp));
-          CallExpr* classCall = new CallExpr(type->getField("_valueType")->type->initializer);
-          CallExpr* move = new CallExpr(PRIM_MOVE, tmp, classCall);
-          init->getStmtExpr()->insertBefore(move);
-          resolveCall(classCall);
-          resolveFns(classCall->isResolved());
-          resolveCall(move);
-          CallExpr* distCall = new CallExpr("chpl__buildDistValue", tmp);
-          init->replace(distCall);
-          resolveCall(distCall);
-          resolveFns(distCall->isResolved());
-        } else if (type->symbol->hasFlag(FLAG_EXTERN)) {
-          // We don't expect initialization code for an externally defined type,
-          // so remove the flag which tells checkReturnPaths() to expect it.
-          FnSymbol* fn = toFnSymbol(init->parentSymbol);
-          if (fn)
-            fn->removeFlag(FLAG_SPECIFIED_RETURN_TYPE);
+    SET_LINENO(init);
+    if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+      // why??  --sjd
+      init->replace(init->get(1)->remove());
+    } else if (type->symbol->hasFlag(FLAG_DISTRIBUTION)) {
+      Symbol* tmp = newTemp("_distribution_tmp_");
+      init->getStmtExpr()->insertBefore(new DefExpr(tmp));
+      CallExpr* classCall = new CallExpr(type->getField("_valueType")->type->initializer);
+      CallExpr* move = new CallExpr(PRIM_MOVE, tmp, classCall);
+      init->getStmtExpr()->insertBefore(move);
+      resolveCall(classCall);
+      resolveFns(classCall->isResolved());
+      resolveCall(move);
+      CallExpr* distCall = new CallExpr("chpl__buildDistValue", tmp);
+      init->replace(distCall);
+      resolveCall(distCall);
+      resolveFns(distCall->isResolved());
+    } else if (type->symbol->hasFlag(FLAG_EXTERN)) {
+      // We don't expect initialization code for an externally defined type,
+      // so remove the flag which tells checkReturnPaths() to expect it.
+      FnSymbol* fn = toFnSymbol(init->parentSymbol);
+      if (fn)
+        fn->removeFlag(FLAG_SPECIFIED_RETURN_TYPE);
 //          init->replace(init->get(1)->remove());
-          init->parentExpr->remove();
-        } else {
-          INT_ASSERT(type->initializer);
-          CallExpr* call = new CallExpr(type->initializer);
-          init->replace(call);
-          resolveCall(call);
-          if (call->isResolved())
-            resolveFns(call->isResolved());
-        }
+      init->parentExpr->remove();
+    } else {
+      INT_ASSERT(type->initializer);
+      CallExpr* call = new CallExpr(type->initializer);
+      init->replace(call);
+      resolveCall(call);
+      if (call->isResolved())
+        resolveFns(call->isResolved());
+    }
   }
 }
 

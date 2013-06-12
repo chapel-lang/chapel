@@ -56,10 +56,9 @@ void normalize(void) {
       call->insertBefore(new DefExpr(tmp));
       call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(1)->remove()));
       call->insertBefore(new CallExpr("~chpl_destroy", gMethodToken, tmp));
-
-      CallExpr* freeExpr = (call->numActuals() > 0) ?
-        new CallExpr(PRIM_CHPL_FREE, tmp, call->get(1)->remove()) :
-        new CallExpr(PRIM_CHPL_FREE, tmp);
+      CallExpr* freeExpr = new CallExpr("chpl_here_free", tmp,
+                                        new_IntSymbol(call->astloc.lineno),
+                                        new_StringSymbol(call->astloc.filename));
       if (fLocal) {
         call->insertBefore(freeExpr);
       } else {
@@ -123,7 +122,7 @@ void normalize(void) {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_DESTRUCTOR)) {
       if (fn->formals.length < 2
-          || toDefExpr(fn->formals.get(1))->sym->typeInfo() != gMethodToken->typeInfo()) {
+          || fn->getFormal(1)->typeInfo() != gMethodToken->typeInfo()) {
         USR_FATAL(fn, "destructors must be methods");
       } else if (fn->formals.length > 2) {
         USR_FATAL(fn, "destructors must not have arguments");
@@ -141,7 +140,7 @@ void normalize(void) {
     // make sure methods don't attempt to overload operators
     else if (!isalpha(*fn->name) && *fn->name != '_'
              && fn->formals.length > 1
-             && toDefExpr(fn->formals.get(1))->sym->typeInfo() == gMethodToken->typeInfo()) {
+             && fn->getFormal(1)->typeInfo() == gMethodToken->typeInfo()) {
       USR_FATAL(fn, "invalid method name");
     }
   }
@@ -193,8 +192,8 @@ void normalize(BaseAST* base) {
 static void
 checkUseBeforeDefs() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->defPoint->parentSymbol) {
-
+    if (fn->defPoint->parentSymbol)
+    {
       ModuleSymbol* mod = fn->getModule();
       Vec<const char*> undeclared;
       Vec<Symbol*> undefined;
@@ -435,10 +434,16 @@ static void normalize_returns(FnSymbol* fn) {
           if (TypeSymbol* retSym = toTypeSymbol(lastRTE->var))
             if (retSym->type == dtVoid)
               USR_FATAL_CONT(fn, "an iterator's return type cannot be 'void'; if specified, it must be the type of the expressions the iterator yields");
-
+      fn->addFlag(FLAG_SPECIFIED_RETURN_TYPE);
+// I recommend a rework of function representation in the AST.
+// Because we strip type information off of variable declarations and use 
+// the type of the initializer instead, initialization is obligatory.
+// I think we should definitely heed the declared type.  
+// Then at least these two lines can go away, and other simplifications may follow.
+      {
       fn->insertAtHead(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_INIT, retExprType->body.tail->remove())));
       fn->insertAtHead(retExprType);
-      fn->addFlag(FLAG_SPECIFIED_RETURN_TYPE);
+      }
     }
     fn->insertAtHead(new DefExpr(retval));
     fn->insertAtTail(new CallExpr(PRIM_RETURN, retval));
@@ -561,11 +566,16 @@ static void applyGetterTransform(CallExpr* call) {
   }
 }
 
-static void insert_call_temps(CallExpr* call) {
+static void insert_call_temps(CallExpr* call)
+{
+  // Ignore call if it is not in the tree.
   if (!call->parentExpr || !call->getStmtExpr())
     return;
 
-  if (call == call->getStmtExpr())
+  Expr* stmt = call->getStmtExpr();
+
+  // Call is already at statement level, so no need to flatten.
+  if (call == stmt)
     return;
   
   if (toDefExpr(call->parentExpr))
@@ -584,7 +594,6 @@ static void insert_call_temps(CallExpr* call) {
     return;
 
   SET_LINENO(call);
-  Expr* stmt = call->getStmtExpr();
   VarSymbol* tmp = newTemp("call_tmp");
   if (!parentCall || !parentCall->isNamed("chpl__initCopy"))
     tmp->addFlag(FLAG_EXPR_TEMP);

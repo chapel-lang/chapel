@@ -6,8 +6,8 @@
 #include "type.h"
 
 static Type*
-returnInfoBool(CallExpr* call) {
-  return dtBool;
+returnInfoUnknown(CallExpr* call) {
+  return dtUnknown;
 }
 
 static Type*
@@ -16,8 +16,13 @@ returnInfoVoid(CallExpr* call) {
 }
 
 static Type*
-returnInfoUnknown(CallExpr* call) {
-  return dtUnknown;
+returnInfoOpaque(CallExpr* call) {
+  return dtOpaque;
+}
+
+static Type*
+returnInfoBool(CallExpr* call) {
+  return dtBool;
 }
 
 static Type*
@@ -26,22 +31,26 @@ returnInfoString(CallExpr* call) {
 }
 
 static Type*
+returnInfoLocale(CallExpr* call) {
+  // Return the wide version of dtLocale if there is one.
+  Type* t1 = wideClassMap.get(dtLocale);
+  if (t1) return t1;
+  return dtLocale;
+}
+
+static Type*
 returnInfoLocaleID(CallExpr* call) {
   return dtLocaleID;
 }
 
-// This is a crutch.
-// It would be nice to be able to pick up and use backend types here
-// (and in returnInfoSublocID).
-// For now, we just use a hardcoded int32.
 static Type*
 returnInfoNodeID(CallExpr* call) {
-  return dtInt[INT_SIZE_32];
+  return dtLocaleID->getField("node")->type;
 }
 
 static Type*
 returnInfoSublocID(CallExpr* call) {
-  return dtInt[INT_SIZE_32];
+  return dtLocaleID->getField("subloc")->type;
 }
 
 static Type*
@@ -455,8 +464,19 @@ initPrimitive() {
   prim_def(PRIM_GET_SERIAL, "task_get_serial", returnInfoBool);
   prim_def(PRIM_SET_SERIAL, "task_set_serial", returnInfoVoid, true);
 
+  // These are used for task-aware allocation.
+  prim_def(PRIM_SIZEOF, "sizeof", returnInfoDefaultInt);
+
+  // These go through the task-specific allocator functions.
+  prim_def(PRIM_TASK_ALLOC, "task_alloc", returnInfoOpaque, true, false);
+  prim_def(PRIM_TASK_REALLOC, "task_realloc", returnInfoOpaque, true, false);
+  prim_def(PRIM_TASK_FREE, "task_free", returnInfoVoid, true, false);
+  prim_def(PRIM_CHPL_MEMHOOK_FREE, "chpl_memhook_free_pre", returnInfoVoid, true, true);
+
+  // These are satisfied directly by the runtime.
   prim_def(PRIM_CHPL_ALLOC, "chpl_mem_alloc", returnInfoChplAlloc, true, true);
   prim_def(PRIM_CHPL_FREE, "chpl_mem_free", returnInfoVoid, true, true);
+
   prim_def(PRIM_INIT_FIELDS, "chpl_init_record", returnInfoVoid, true);
   prim_def(PRIM_PTR_EQUAL, "ptr_eq", returnInfoBool);
   prim_def(PRIM_PTR_NOTEQUAL, "ptr_neq", returnInfoBool);
@@ -521,21 +541,19 @@ initPrimitive() {
   prim_def(PRIM_LOGICAL_FOLDER, "_paramFoldLogical", returnInfoBool);
 
   prim_def(PRIM_WIDE_GET_LOCALE, "_wide_get_locale", returnInfoLocaleID, false, true);
-  // These two are unnecessary after Chapel understands the c_locale_t structure.
+  // These two are unnecessary after Chapel understands the chpl_localeID_t structure.
   prim_def(PRIM_WIDE_GET_NODE, "_wide_get_node", returnInfoNodeID, false, true);
   prim_def(PRIM_WIDE_GET_SUBLOC, "_wide_get_subloc", returnInfoSublocID, false, true);
   prim_def(PRIM_WIDE_GET_ADDR, "_wide_get_addr", returnInfoInt64, false, true);
 
-  // These will go away after code up c_locale_t as a record in Chapel.
-  prim_def(PRIM_LOC_GET_NODE, "_loc_get_node", returnInfoNodeID);
-  prim_def(PRIM_LOC_SET_NODE, "_loc_set_node", returnInfoVoid);
-  prim_def(PRIM_LOC_GET_SUBLOC, "_loc_get_subloc", returnInfoSublocID);
-  prim_def(PRIM_LOC_SET_SUBLOC, "_loc_set_subloc", returnInfoVoid);
-
+  prim_def(PRIM_LOCALE_ID, "_hereID", returnInfoLocaleID);
+  prim_def(PRIM_IS_HERE, "_is_here", returnInfoBool);
   prim_def(PRIM_NODE_ID, "chpl_nodeID", returnInfoNodeID);    // Our GASNet node ID.
-  prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoLocaleID);
-  prim_def(PRIM_SET_SUBLOC_ID, "_set_subloc_id", returnInfoVoid, true);
-  prim_def(PRIM_GET_SUBLOC_ID, "_get_subloc_id", returnInfoSublocID);
+  prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoLocale);
+  prim_def(PRIM_TASK_SET_LOCALE_ID, "_task_set_locale_id", returnInfoVoid, true);
+  prim_def(PRIM_TASK_GET_LOCALE_ID, "_task_get_locale_id", returnInfoLocaleID);
+  prim_def(PRIM_TASK_SET_HERE_PTR, "_task_set_here_ptr", returnInfoVoid, true);
+  prim_def(PRIM_TASK_GET_HERE_PTR, "_task_get_here_ptr", returnInfoLocale);
 
   prim_def(PRIM_ALLOC_GVR, "allocchpl_globals_registry", returnInfoVoid);
   prim_def(PRIM_HEAP_REGISTER_GLOBAL_VAR, "_heap_register_global_var", returnInfoVoid, true, true);
@@ -555,6 +573,7 @@ initPrimitive() {
   prim_def("string_index", returnInfoString, true, true);
   prim_def(PRIM_STRING_COPY, "string_copy", returnInfoString, false, true);
   prim_def(PRIM_STRING_NORMALIZE, "string_normalize", returnInfoVoid, true, false);
+  prim_def(PRIM_CAST_TO_VOID_STAR, "cast_to_void_star", returnInfoOpaque, true, false);
   prim_def("string_select", returnInfoString, true, true);
   prim_def("string_strided_select", returnInfoString, true, true);
   prim_def("sleep", returnInfoVoid, true);

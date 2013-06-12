@@ -96,6 +96,12 @@ enum PrimitiveTag {
   PRIM_GET_SERIAL,              // get serial state
   PRIM_SET_SERIAL,              // set serial state to true or false
 
+  PRIM_SIZEOF,
+
+  PRIM_TASK_ALLOC,				// Task-specific malloc
+  PRIM_TASK_REALLOC,			// Task-specific realloc
+  PRIM_TASK_FREE,				// Task-specific free.
+  PRIM_CHPL_MEMHOOK_FREE,		// The free hook function.
   PRIM_CHPL_ALLOC,
   PRIM_CHPL_FREE,               // only for variables on heap?
   PRIM_INIT_FIELDS,             // initialize fields of a temporary record
@@ -166,15 +172,14 @@ enum PrimitiveTag {
   PRIM_WIDE_GET_SUBLOC,         // Get just the sublocale portion of a wide pointer.
   PRIM_WIDE_GET_ADDR,           // Get just the address portion of a wide pointer.
 
-  PRIM_LOC_GET_NODE,            // Get the node part of a c_locale_t.
-  PRIM_LOC_SET_NODE,            // Set <ditto>.
-  PRIM_LOC_GET_SUBLOC,          // Get the sublocale part of a c_locale_t.
-  PRIM_LOC_SET_SUBLOC,          // Set <ditto>.
-
+  PRIM_LOCALE_ID,               // Returns the current locale ID (nodeID + sublocID).
+  PRIM_IS_HERE,                 // Returns true if the arg matches the current locale ID.
   PRIM_NODE_ID,                 // Returns the current (GASNet) node ID.
-  PRIM_ON_LOCALE_NUM,           // specify a particular (node,subloc) for an on clause.
-  PRIM_SET_SUBLOC_ID,           // Set the sublocale ID in task-private data.
-  PRIM_GET_SUBLOC_ID,           // Get the sublocale ID from task-private data.
+  PRIM_ON_LOCALE_NUM,           // specify a particular localeID for an on clause.
+  PRIM_TASK_SET_LOCALE_ID,      // Set the locale ID (here ID) in task-private data.
+  PRIM_TASK_GET_LOCALE_ID,      // Get the locale ID (here ID) from task-private data.
+  PRIM_TASK_SET_HERE_PTR,       // Set the (local) address of here in task-private data.
+  PRIM_TASK_GET_HERE_PTR,       // Get the (local) address of here from task-private data.
 
   PRIM_ALLOC_GVR,               // allocate space for global vars registry
   PRIM_HEAP_REGISTER_GLOBAL_VAR,
@@ -188,6 +193,7 @@ enum PrimitiveTag {
 
   PRIM_STRING_COPY,
   PRIM_STRING_NORMALIZE,        // Set the size field in a (wide) string.
+  PRIM_CAST_TO_VOID_STAR,		// Cast the object argument to void*.
 
   PRIM_RT_ERROR,
   PRIM_RT_WARNING,
