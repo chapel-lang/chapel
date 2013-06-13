@@ -65,7 +65,8 @@ passableByVal(Type* type) {
 }
 
 
-// Should we pass 'sym' by reference?
+// Should we pass 'sym' by reference? This is needed if 'sym' may be modified.
+// Otherwise passing by value is more efficient.
 static bool
 passByRef(Symbol* sym) {
 
@@ -81,6 +82,10 @@ passByRef(Symbol* sym) {
     // object *can* change, however.
     return false;
   }
+
+  if (sym->hasFlag(FLAG_ARG_THIS))
+    // This is also constant. TODO: mark with FLAG_CONST.
+    return false;
 
   Type* type = sym->type;
 
