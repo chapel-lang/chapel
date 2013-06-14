@@ -338,32 +338,24 @@ module ChapelSyncvar {
     delete x;
   }
 
-  /* op= for sync variables */
-  inline proc +=(lhs: sync, rhs)  { lhs = lhs + rhs; }
-  inline proc -=(lhs: sync, rhs)  { lhs = lhs - rhs; }
-  inline proc *=(lhs: sync, rhs)  { lhs = lhs * rhs; }
-  inline proc /=(lhs: sync, rhs)  { lhs = lhs / rhs; }
-  inline proc %=(lhs: sync, rhs)  { lhs = lhs % rhs; }
-  inline proc **=(lhs: sync, rhs) { lhs = lhs ** rhs; }
-  inline proc &=(lhs: sync, rhs)  { lhs = lhs & rhs; }
-  inline proc |=(lhs: sync, rhs)  { lhs = lhs | rhs; }
-  inline proc ^=(lhs: sync, rhs)  { lhs = lhs ^ rhs; }
-  inline proc >>=(lhs: sync, rhs) { lhs = lhs >> rhs; }
-  inline proc <<=(lhs: sync, rhs) { lhs = lhs << rhs; }
-  
-  /* op= for sync variables with param rhs */
-  inline proc +=(lhs: sync, param rhs)  { lhs = lhs + rhs; }
-  inline proc -=(lhs: sync, param rhs)  { lhs = lhs - rhs; }
-  inline proc *=(lhs: sync, param rhs)  { lhs = lhs * rhs; }
-  inline proc /=(lhs: sync, param rhs)  { lhs = lhs / rhs; }
-  inline proc %=(lhs: sync, param rhs)  { lhs = lhs % rhs; }
-  inline proc **=(lhs: sync, param rhs) { lhs = lhs ** rhs; }
-  inline proc &=(lhs: sync, param rhs)  { lhs = lhs & rhs; }
-  inline proc |=(lhs: sync, param rhs)  { lhs = lhs | rhs; }
-  inline proc ^=(lhs: sync, param rhs)  { lhs = lhs ^ rhs; }
-  inline proc >>=(lhs: sync, param rhs) { lhs = lhs >> rhs; }
-  inline proc <<=(lhs: sync, param rhs) { lhs = lhs << rhs; }
+  proc chpl__syncBaseType(s) type {
+    var x = s;
+    return x.type;
+  }
 
+  /* op= for sync variables */
+  inline proc  +=(lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs  + rhs; }
+  inline proc  -=(lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs  - rhs; }
+  inline proc  *=(lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs  * rhs; }
+  inline proc  /=(lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs  / rhs; }
+  inline proc  %=(lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs  % rhs; }
+  inline proc **=(lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs ** rhs; }
+  inline proc  &=(lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs  & rhs; }
+  inline proc  |=(lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs  | rhs; }
+  inline proc  ^=(lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs  ^ rhs; }
+  inline proc >>=(lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs >> rhs; }
+  inline proc <<=(lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs << rhs; }
+  
   inline proc <=>(lhs: sync, ref rhs) {
     const tmp = lhs;
     lhs = rhs;

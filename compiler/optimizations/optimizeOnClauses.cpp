@@ -307,6 +307,22 @@ isFastPrimitive(CallExpr *call) {
   case PRIM_VMT_CALL:
     return false;
 
+  case PRIM_ADD_ASSIGN:
+  case PRIM_SUBTRACT_ASSIGN:
+  case PRIM_MULT_ASSIGN:
+  case PRIM_DIV_ASSIGN:
+  case PRIM_MOD_ASSIGN:
+  case PRIM_LSH_ASSIGN:
+  case PRIM_RSH_ASSIGN:
+  case PRIM_AND_ASSIGN:
+  case PRIM_OR_ASSIGN:
+  case PRIM_XOR_ASSIGN:
+    //
+    // If the LHS is remote relative to the RHS, we require gets/puts
+    // to fetch it and this cannot be fast.
+    //
+    return false;
+
   default:
     INT_FATAL("Unhandled case.");
     break;

@@ -1094,79 +1094,173 @@ module ChapelBase {
   
   /* op= operators
    */
-  inline proc +=(ref lhs, rhs) where !chpl__isDomain(lhs) && !isIterator(lhs) {
+  inline proc +=(ref lhs:int(?w), rhs:int(w)) {
+    __primitive("+=", lhs, rhs);
+  }
+  inline proc +=(ref lhs:uint(?w), rhs:uint(w)) {
+    __primitive("+=", lhs, rhs);
+  }
+  inline proc +=(ref lhs:real(?w), rhs:real(w)) {
+    __primitive("+=", lhs, rhs);
+  }
+  inline proc +=(ref lhs:imag(?w), rhs:imag(w)) {
+    __primitive("+=", lhs, rhs);
+  }
+  inline proc +=(ref lhs, rhs) {
     lhs = lhs + rhs;
   }
-  inline proc -=(ref lhs, rhs) where !chpl__isDomain(lhs) && !isIterator(lhs) {
+
+  inline proc -=(ref lhs:int(?w), rhs:int(w)) {
+    __primitive("-=", lhs, rhs);
+  }
+  inline proc -=(ref lhs:uint(?w), rhs:uint(w)) {
+    __primitive("-=", lhs, rhs);
+  }
+  inline proc -=(ref lhs:real(?w), rhs:real(w)) {
+    __primitive("-=", lhs, rhs);
+  }
+  inline proc -=(ref lhs:imag(?w), rhs:imag(w)) {
+    __primitive("-=", lhs, rhs);
+  }
+  inline proc -=(ref lhs, rhs) {
     lhs = lhs - rhs;
   }
-  inline proc *=(ref lhs, rhs) where !isIterator(lhs) {
+
+  inline proc *=(ref lhs:int(?w), rhs:int(w)) {
+    __primitive("*=", lhs, rhs);
+  }
+  inline proc *=(ref lhs:uint(?w), rhs:uint(w)) {
+    __primitive("*=", lhs, rhs);
+  }
+  inline proc *=(ref lhs:real(?w), rhs:real(w)) {
+    __primitive("*=", lhs, rhs);
+  }
+  inline proc *=(ref lhs:imag(?w), rhs:imag(w)) {
+    __primitive("*=", lhs, rhs);
+  }
+  inline proc *=(ref lhs, rhs) {
     lhs = lhs * rhs;
   }
-  inline proc /=(ref lhs, rhs) where !isIterator(lhs) {
+
+  inline proc /=(ref lhs:int(?w), rhs:int(w)) {
+    __primitive("/=", lhs, rhs);
+  }
+  inline proc /=(ref lhs:uint(?w), rhs:uint(w)) {
+    __primitive("/=", lhs, rhs);
+  }
+  inline proc /=(ref lhs:real(?w), rhs:real(w)) {
+    __primitive("/=", lhs, rhs);
+  }
+  inline proc /=(ref lhs:imag(?w), rhs:imag(w)) {
+    __primitive("/=", lhs, rhs);
+  }
+  inline proc /=(ref lhs, rhs) {
     lhs = lhs / rhs;
   }
-  inline proc %=(ref lhs, rhs) where !isIterator(lhs) {
+
+  inline proc %=(ref lhs:int(?w), rhs:int(w)) {
+    __primitive("%=", lhs, rhs);
+  }
+  inline proc %=(ref lhs:uint(?w), rhs:uint(w)) {
+    __primitive("%=", lhs, rhs);
+  }
+  inline proc %=(ref lhs:real(?w), rhs:real(w)) {
+    __primitive("%=", lhs, rhs);
+  }
+  inline proc %=(ref lhs:imag(?w), rhs:imag(w)) {
+    __primitive("%=", lhs, rhs);
+  }
+  inline proc %=(ref lhs, rhs) {
     lhs = lhs % rhs;
   }
-  inline proc **=(ref lhs, rhs) where !isIterator(lhs) {
+
+  //
+  // This overload provides param coercion for cases like uint **= true;
+  //
+  inline proc **=(ref lhs, rhs) {
     lhs = lhs ** rhs;
   }
-  inline proc &=(ref lhs, rhs) where !isIterator(lhs) {
+
+  inline proc &=(ref lhs:int(?w), rhs:int(w)) {
+    __primitive("&=", lhs, rhs);
+  }
+  inline proc &=(ref lhs:uint(?w), rhs:uint(w)) {
+    __primitive("&=", lhs, rhs);
+  }
+  inline proc &=(ref lhs:real(?w), rhs:real(w)) {
+    __primitive("&=", lhs, rhs);
+  }
+  inline proc &=(ref lhs:imag(?w), rhs:imag(w)) {
+    __primitive("&=", lhs, rhs);
+  }
+  inline proc &=(ref lhs, rhs) {
     lhs = lhs & rhs;
   }
-  inline proc |=(ref lhs, rhs) where !isIterator(lhs) {
+
+
+  inline proc |=(ref lhs:int(?w), rhs:int(w)) {
+    __primitive("|=", lhs, rhs);
+  }
+  inline proc |=(ref lhs:uint(?w), rhs:uint(w)) {
+    __primitive("|=", lhs, rhs);
+  }
+  inline proc |=(ref lhs:real(?w), rhs:real(w)) {
+    __primitive("|=", lhs, rhs);
+  }
+  inline proc |=(ref lhs:imag(?w), rhs:imag(w)) {
+    __primitive("|=", lhs, rhs);
+  }
+  inline proc |=(ref lhs, rhs) {
     lhs = lhs | rhs;
   }
-  inline proc ^=(ref lhs, rhs) where !isIterator(lhs) {
+
+  inline proc ^=(ref lhs:int(?w), rhs:int(w)) {
+    __primitive("^=", lhs, rhs);
+  }
+  inline proc ^=(ref lhs:uint(?w), rhs:uint(w)) {
+    __primitive("^=", lhs, rhs);
+  }
+  inline proc ^=(ref lhs:real(?w), rhs:real(w)) {
+    __primitive("^=", lhs, rhs);
+  }
+  inline proc ^=(ref lhs:imag(?w), rhs:imag(w)) {
+    __primitive("^=", lhs, rhs);
+  }
+  inline proc ^=(ref lhs, rhs) {
     lhs = lhs ^ rhs;
   }
-  inline proc >>=(ref lhs, rhs) where !isIterator(lhs) {
+
+  inline proc >>=(ref lhs:int(?w), rhs:int(w)) {
+    __primitive(">>=", lhs, rhs);
+  }
+  inline proc >>=(ref lhs:uint(?w), rhs:uint(w)) {
+    __primitive(">>=", lhs, rhs);
+  }
+  inline proc >>=(ref lhs:real(?w), rhs:real(w)) {
+    __primitive(">>=", lhs, rhs);
+  }
+  inline proc >>=(ref lhs:imag(?w), rhs:imag(w)) {
+    __primitive(">>=", lhs, rhs);
+  }
+  inline proc >>=(ref lhs, rhs) {
     lhs = lhs >> rhs;
   }
-  inline proc <<=(ref lhs, rhs) where !isIterator(lhs) {
+
+  inline proc <<=(ref lhs:int(?w), rhs:int(w)) {
+    __primitive("<<=", lhs, rhs);
+  }
+  inline proc <<=(ref lhs:uint(?w), rhs:uint(w)) {
+    __primitive("<<=", lhs, rhs);
+  }
+  inline proc <<=(ref lhs:real(?w), rhs:real(w)) {
+    __primitive("<<=", lhs, rhs);
+  }
+  inline proc <<=(ref lhs:imag(?w), rhs:imag(w)) {
+    __primitive("<<=", lhs, rhs);
+  }
+  inline proc <<=(ref lhs, rhs) {
     lhs = lhs << rhs;
   }
-  
-  /* This set of overloads should not be required, but the fully generic versions
-   * are leaking memory when passed two arrays.
-   */
-  inline proc +=(lhs:[], rhs:[]) { lhs = lhs + rhs; }
-  inline proc -=(lhs:[], rhs:[]) { lhs = lhs - rhs; }
-  inline proc *=(lhs:[], rhs:[]) { lhs = lhs * rhs; }
-  inline proc /=(lhs:[], rhs:[]) { lhs = lhs / rhs; }
-  inline proc %=(lhs:[], rhs:[]) { lhs = lhs % rhs; }
-  inline proc **=(lhs:[], rhs:[]) { lhs = lhs ** rhs; }
-  inline proc &=(lhs:[], rhs:[]) { lhs = lhs & rhs; }
-  inline proc |=(lhs:[], rhs:[]) { lhs = lhs | rhs; }
-  inline proc ^=(lhs:[], rhs:[]) { lhs = lhs ^ rhs; }
-  inline proc >>=(lhs:[], rhs:[]) { lhs = lhs >> rhs; }
-  inline proc <<=(lhs:[], rhs:[]) { lhs = lhs << rhs; }
-  
-  inline proc +=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs + rhs; }
-  inline proc -=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs - rhs; }
-  inline proc *=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs * rhs; }
-  inline proc /=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs / rhs; }
-  inline proc %=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs % rhs; }
-  inline proc **=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs ** rhs; }
-  inline proc &=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs & rhs; }
-  inline proc |=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs | rhs; }
-  inline proc ^=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs ^ rhs; }
-  inline proc >>=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs >> rhs; }
-  inline proc <<=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs << rhs; }
-  
-  /* second argument is param to handle e.g. uint(64) += 1; where 1 is int(64) */
-  inline proc +=(ref lhs, param rhs)  where !chpl__isDomain(lhs) && !isIterator(lhs) { lhs = (lhs + rhs):lhs.type; }
-  inline proc -=(ref lhs, param rhs)  where !chpl__isDomain(lhs) && !isIterator(lhs) { lhs = (lhs - rhs):lhs.type; }
-  inline proc *=(ref lhs, param rhs)  { lhs = (lhs * rhs):lhs.type; }
-  inline proc /=(ref lhs, param rhs)  { lhs = (lhs / rhs):lhs.type; }
-  inline proc %=(ref lhs, param rhs)  { lhs = (lhs % rhs):lhs.type; }
-  inline proc **=(ref lhs, param rhs) { lhs = (lhs ** rhs):lhs.type; }
-  inline proc &=(ref lhs, param rhs)  { lhs = (lhs & rhs):lhs.type; }
-  inline proc |=(ref lhs, param rhs)  { lhs = (lhs | rhs):lhs.type; }
-  inline proc ^=(ref lhs, param rhs)  { lhs = (lhs ^ rhs):lhs.type; }
-  inline proc >>=(ref lhs, param rhs) { lhs = (lhs >> rhs):lhs.type; }
-  inline proc <<=(ref lhs, param rhs) { lhs = (lhs << rhs):lhs.type; }
   
   /* domain += and -= add and remove indices */
   inline proc +=(D: domain, idx) { D.add(idx); }

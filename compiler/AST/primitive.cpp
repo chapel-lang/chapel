@@ -399,6 +399,17 @@ initPrimitive() {
   prim_def(PRIM_XOR, "^", returnInfoFirst);
   prim_def(PRIM_POW, "**", returnInfoNumericUp);
 
+  prim_def(PRIM_ADD_ASSIGN, "+=", returnInfoVoid, true);
+  prim_def(PRIM_SUBTRACT_ASSIGN, "-=", returnInfoVoid, true);
+  prim_def(PRIM_MULT_ASSIGN, "*=", returnInfoVoid, true);
+  prim_def(PRIM_DIV_ASSIGN, "/=", returnInfoVoid, true);
+  prim_def(PRIM_MOD_ASSIGN, "%=", returnInfoVoid, true);
+  prim_def(PRIM_LSH_ASSIGN, "<<=", returnInfoVoid, true);
+  prim_def(PRIM_RSH_ASSIGN, ">>=", returnInfoVoid, true);
+  prim_def(PRIM_AND_ASSIGN, "&=", returnInfoVoid, true);
+  prim_def(PRIM_OR_ASSIGN, "|=", returnInfoVoid, true);
+  prim_def(PRIM_XOR_ASSIGN, "^=", returnInfoVoid, true);
+
   prim_def(PRIM_MIN, "_min", returnInfoFirst);
   prim_def(PRIM_MAX, "_max", returnInfoFirst);
 

@@ -1854,6 +1854,169 @@ GenRet codegenMul(GenRet a, GenRet b)
 }
 
 
+static
+GenRet codegenDiv(GenRet a, GenRet b)
+{
+  GenInfo* info = gGenInfo;
+  GenRet ret;
+  GenRet av = codegenValue(a);
+  GenRet bv = codegenValue(b);
+  if( info->cfile ) ret.c = "(" + av.c + " / " + bv.c + ")";
+  else {
+#ifdef HAVE_LLVM
+    PromotedPair values =
+      convertValuesToLarger(av.val, bv.val, 
+                            is_signed(a.chplType), 
+                            is_signed(b.chplType));
+    if(values.a->getType()->isFPOrFPVectorTy()) {
+      ret.val = info->builder->CreateFDiv(values.a, values.b);
+    } else {
+      if(!values.isSigned) {
+        ret.val = info->builder->CreateUDiv(values.a, values.b);
+      } else {
+        ret.val = info->builder->CreateSDiv(values.a, values.b);
+      }
+    }
+#endif
+  }
+  return ret;
+}
+
+static
+GenRet codegenMod(GenRet a, GenRet b)
+{
+  GenInfo* info = gGenInfo;
+  GenRet ret;
+  GenRet av = codegenValue(a);
+  GenRet bv = codegenValue(b);
+  if( info->cfile ) ret.c = "(" + av.c + " % " + bv.c + ")";
+  else {
+#ifdef HAVE_LLVM
+    PromotedPair values =
+      convertValuesToLarger(av.val, bv.val,
+                            is_signed(a.chplType), 
+                            is_signed(b.chplType));
+    if(values.a->getType()->isFPOrFPVectorTy()) {
+      ret.val = info->builder->CreateFRem(a.val, b.val);
+    } else {
+      if(!values.isSigned) {
+        ret.val = info->builder->CreateURem(a.val, b.val);
+      } else {
+        ret.val = info->builder->CreateSRem(a.val, b.val);
+      }
+    }
+#endif
+  }
+  return ret;
+}
+
+
+static
+GenRet codegenLsh(GenRet a, GenRet b)
+{
+  GenInfo* info = gGenInfo;
+  GenRet ret;
+  GenRet av = codegenValue(a);
+  GenRet bv = codegenValue(b);
+  if( info->cfile ) ret.c = "(" + av.c + " << " + bv.c + ")";
+  else {
+#ifdef HAVE_LLVM
+    ret.val = info->builder->CreateShl(a.val,
+                                       convertValueToType(b.val, a.val->getType(),
+                                                          is_signed(b.chplType)));
+#endif
+  }
+  return ret;
+}
+
+static
+GenRet codegenRsh(GenRet a, GenRet b)
+{
+  GenInfo* info = gGenInfo;
+  GenRet ret;
+  GenRet av = codegenValue(a);
+  GenRet bv = codegenValue(b);
+  if( info->cfile ) ret.c = "(" + av.c + " >> " + bv.c + ")";
+  else {
+    
+#ifdef HAVE_LLVM
+    if(!is_signed(a.chplType)) {
+      ret.val = info->builder->CreateLShr(a.val,
+                                          convertValueToType(b.val, 
+                                                             a.val->getType(),
+                                                             is_signed(b.chplType)));
+    } else {
+      ret.val = info->builder->CreateAShr(a.val,
+                                          convertValueToType(b.val, 
+                                                             a.val->getType(),
+                                                             is_signed(b.chplType)));
+    }
+#endif
+  }
+  return ret;
+}
+
+static
+GenRet codegenAnd(GenRet a, GenRet b)
+{
+  GenInfo* info = gGenInfo;
+  GenRet ret;
+  GenRet av = codegenValue(a);
+  GenRet bv = codegenValue(b);
+  if( info->cfile ) ret.c = "(" + av.c + " & " + bv.c + ")";
+  else {
+#ifdef HAVE_LLVM
+    PromotedPair values =
+      convertValuesToLarger(av.val, bv.val,
+                            is_signed(a.chplType), 
+                            is_signed(b.chplType));
+    ret.val = info->builder->CreateAnd(values.a, values.b);
+#endif
+  }
+  return ret;
+}
+
+static
+GenRet codegenOr(GenRet a, GenRet b)
+{
+  GenInfo* info = gGenInfo;
+  GenRet ret;
+  GenRet av = codegenValue(a);
+  GenRet bv = codegenValue(b);
+  if( info->cfile ) ret.c = "(" + av.c + " | " + bv.c + ")";
+  else {
+#ifdef HAVE_LLVM
+    PromotedPair values =
+      convertValuesToLarger(av.val, bv.val,
+                            is_signed(a.chplType), 
+                            is_signed(b.chplType));
+    ret.val = info->builder->CreateOr(values.a, values.b);
+#endif
+  }
+  return ret;
+}
+
+static
+GenRet codegenXor(GenRet a, GenRet b)
+{
+  GenInfo* info = gGenInfo;
+  GenRet ret;
+  GenRet av = codegenValue(a);
+  GenRet bv = codegenValue(b);
+  if( info->cfile ) ret.c = "(" + av.c + " ^ " + bv.c + ")";
+  else {
+#ifdef HAVE_LLVM
+    PromotedPair values =
+      convertValuesToLarger(av.val, bv.val,
+                            is_signed(a.chplType), 
+                            is_signed(b.chplType));
+    ret.val = info->builder->CreateXor(values.a, values.b);
+#endif
+  }
+  return ret;
+}
+
+
 
 static
 GenRet codegenTernary(GenRet cond, GenRet ifTrue, GenRet ifFalse)
@@ -3300,6 +3463,54 @@ void CallExpr::prettyPrint(std::ofstream *o) {
   }
 }
 
+
+//
+// Codegen assignments like a += b, a -= b, a *= b, etc.
+//   op is the C string for the operator (e.g., " += ")
+//   codegenOp is a function pointer to the codegenAdd()-style
+//     routine that would be used to generate the operator
+//     itself in a normal context (used by LLVM)
+//
+static
+void codegenOpAssign(GenRet a, GenRet b, const char* op,
+                     GenRet (*codegenOp)(GenRet a, GenRet b))
+{
+  GenInfo* info = gGenInfo;
+
+  GenRet ap = codegenDeref(a);  // deref 'a' since it's a 'ref' argument
+  GenRet bv = codegenValue(b);  // get the value of 'b'
+
+  if( info->cfile ) {
+    bool aIsRemote = ap.isLVPtr == GEN_WIDE_PTR;
+    GenRet aLocal;              // a guaranteed-local copy of a
+
+    // For a wide pointer, we copy in and copy out...
+    if( aIsRemote ) {
+      // copy in -- will result in a chpl_comm_get(...)
+      aLocal = createTempVar(ap.chplType);
+      codegenAssign(aLocal, ap);
+    } else {
+      // otherwise, it's already local
+      aLocal = ap;
+    }
+
+    // generate the local C statement
+    std::string stmt = codegenValue(aLocal).c + op + bv.c + ";\n";
+    info->cStatements.push_back(stmt);
+
+    if( aIsRemote ) {
+      // copy out -- will result in a chpl_comm_put(...)
+      codegenAssign(ap, aLocal);
+    }
+  }
+  else {
+#ifdef HAVE_LLVM
+    codegenAssign(ap, codegenOp(codegenValue(ap), bv));
+#endif
+  }
+}
+
+
 /* Notes about code generation:
  *  Intermediate expressions are returned from Expr::codegen
  *  Local variables, array elements, tuple elements, and fields
@@ -3878,91 +4089,18 @@ GenRet CallExpr::codegen() {
       ret = codegenMul(get(1), get(2));
       break;
     case PRIM_DIV:
-      {
-        GenRet a = codegenValue(get(1));
-        GenRet b = codegenValue(get(2));
-        if( c ) ret.c = "(" + a.c + " / " + b.c + ")";
-        else {
-#ifdef HAVE_LLVM
-          PromotedPair values =
-            convertValuesToLarger(
-                a.val, b.val,
-                is_signed(get(1)->typeInfo()), is_signed(get(2)->typeInfo()));
-          if(values.a->getType()->isFPOrFPVectorTy()) {
-            ret.val = info->builder->CreateFDiv(values.a, values.b);
-          } else {
-            if(!values.isSigned) {
-              ret.val = info->builder->CreateUDiv(values.a, values.b);
-            } else {
-              ret.val = info->builder->CreateSDiv(values.a, values.b);
-            }
-          }
-#endif
-        }
-      }
+      ret = codegenDiv(get(1), get(2));
       break;
     case PRIM_MOD:
-      {
-        GenRet a = codegenValue(get(1));
-        GenRet b = codegenValue(get(2));
-        if( c ) ret.c = "(" + a.c + " % " + b.c + ")";
-        else {
-#ifdef HAVE_LLVM
-          PromotedPair values =
-            convertValuesToLarger(
-                a.val, b.val,
-                is_signed(get(1)->typeInfo()), is_signed(get(2)->typeInfo()));
-          if(values.a->getType()->isFPOrFPVectorTy()) {
-            ret.val = info->builder->CreateFRem(a.val, b.val);
-          } else {
-            if(!values.isSigned) {
-              ret.val = info->builder->CreateURem(a.val, b.val);
-            } else {
-              ret.val = info->builder->CreateSRem(a.val, b.val);
-            }
-          }
-#endif
-        }
-      }
+      ret = codegenMod(get(1), get(2));
       break;
     case PRIM_LSH:
-      {
-        GenRet a = codegenValue(get(1));
-        GenRet b = codegenValue(get(2));
-        if( c ) ret.c = "(" + a.c + " << " + b.c + ")";
-        else {
-#ifdef HAVE_LLVM
-          ret.val = info->builder->CreateShl(
-              a.val,
-              convertValueToType(b.val, a.val->getType(),
-                                 is_signed(get(2)->typeInfo())));
-#endif
-        }
-      }
+      ret = codegenLsh(get(1), get(2));
       break;
     case PRIM_RSH:
-      {
-        GenRet a = codegenValue(get(1));
-        GenRet b = codegenValue(get(2));
-        if( c ) ret.c = "(" + a.c + " >> " + b.c + ")";
-        else {
-
-#ifdef HAVE_LLVM
-          if(!is_signed(get(1)->typeInfo())) {
-            ret.val = info->builder->CreateLShr(
-                a.val,
-                convertValueToType(b.val, a.val->getType(),
-                                   is_signed(get(2)->typeInfo())));
-          } else {
-            ret.val = info->builder->CreateAShr(
-                a.val,
-                convertValueToType(b.val, a.val->getType(),
-                                   is_signed(get(2)->typeInfo())));
-          }
-#endif
-        }
-      }
+      ret = codegenRsh(get(1), get(2));
       break;
+
     case PRIM_PTR_EQUAL:
     case PRIM_EQUAL:
      // TODO: Need subloc field as well.
@@ -4103,53 +4241,46 @@ GenRet CallExpr::codegen() {
       }
       break;
     case PRIM_AND:
-      {
-        GenRet a = codegenValue(get(1));
-        GenRet b = codegenValue(get(2));
-        if( c ) ret.c = "(" + a.c + " & " + b.c + ")";
-        else {
-#ifdef HAVE_LLVM
-          PromotedPair values =
-            convertValuesToLarger(
-                a.val, b.val,
-                is_signed(get(1)->typeInfo()), is_signed(get(2)->typeInfo()));
-          ret.val = info->builder->CreateAnd(values.a, values.b);
-#endif
-        }
-      }
+      ret = codegenAnd(get(1), get(2));
       break;
     case PRIM_OR:
-      {
-        GenRet a = codegenValue(get(1));
-        GenRet b = codegenValue(get(2));
-        if( c ) ret.c = "(" + a.c + " | " + b.c + ")";
-        else {
-#ifdef HAVE_LLVM
-          PromotedPair values =
-            convertValuesToLarger(
-                a.val, b.val,
-                is_signed(get(1)->typeInfo()), is_signed(get(2)->typeInfo()));
-          ret.val = info->builder->CreateOr(values.a, values.b);
-#endif
-        }
-      }
+      ret = codegenOr(get(1), get(2));
       break;
     case PRIM_XOR:
-      {
-        GenRet a = codegenValue(get(1));
-        GenRet b = codegenValue(get(2));
-        if( c ) ret.c = "(" + a.c + " ^ " + b.c + ")";
-        else {
-#ifdef HAVE_LLVM
-          PromotedPair values =
-            convertValuesToLarger(
-                a.val, b.val,
-                is_signed(get(1)->typeInfo()), is_signed(get(2)->typeInfo()));
-          ret.val = info->builder->CreateXor(values.a, values.b);
-#endif
-        }
-      }
+      ret = codegenXor(get(1), get(2));
       break;
+
+    case PRIM_ADD_ASSIGN:
+      codegenOpAssign(get(1), get(2), " += ", codegenAdd);
+      break;
+    case PRIM_SUBTRACT_ASSIGN:
+      codegenOpAssign(get(1), get(2), " -= ", codegenSub);
+      break;
+    case PRIM_MULT_ASSIGN:
+      codegenOpAssign(get(1), get(2), " *= ", codegenMul);
+      break;
+    case PRIM_DIV_ASSIGN:
+      codegenOpAssign(get(1), get(2), " /= ", codegenDiv);
+      break;
+    case PRIM_MOD_ASSIGN:
+      codegenOpAssign(get(1), get(2), " %= ", codegenMod);
+      break;
+    case PRIM_LSH_ASSIGN:
+      codegenOpAssign(get(1), get(2), " <<= ", codegenLsh);
+      break;
+    case PRIM_RSH_ASSIGN:
+      codegenOpAssign(get(1), get(2), " >>= ", codegenRsh);
+      break;
+    case PRIM_AND_ASSIGN:
+      codegenOpAssign(get(1), get(2), " &= ", codegenAnd);
+      break;
+    case PRIM_OR_ASSIGN:
+      codegenOpAssign(get(1), get(2), " |= ", codegenOr);
+      break;
+    case PRIM_XOR_ASSIGN:
+      codegenOpAssign(get(1), get(2), " ^= ", codegenXor);
+      break;
+
     case PRIM_POW:
       ret = codegenCallExpr("pow", get(1), get(2));
       break;
