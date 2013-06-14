@@ -691,6 +691,7 @@ wrong output (02/16/12 -- first run in awhile)
 ----------------------------------------------
 [Error matching program output for arrays/deitz/part7/test_descriptor_frees]
 [Error matching program output for memory/figueroa/LeakedMemory2]
+[Error matching program output for memory/figueroa/LeakedMemory5 (compopts: 1)]
 [Error matching program output for memory/figueroa/LeakedMemoryArrayOfClasses]
 
 ??? (wrong output)
@@ -729,8 +730,18 @@ cray-xmt specific regressions
 problem after int->64-bit commit was checked in (03/27/12)
 ----------------------------------------------------------
 *all*
+6/11/13: due to one or more of the following compilation errors:
+-- most tests, since (08/??/12):
+translate(tile tree creation): internal error, process aborted
+-- few tests:
+error: nested for all streams pragmas are not allowed.
+error: expression must have pointer type
+warning: statement is unreachable
+-- an oddball:
+> SSCA2_Modules/io_RMAT_graph.chpl:217: error: unresolved call 'domain(1,int(64),false).locDoms'
+> $CHPL_HOME/modules/dists/BlockDist.chpl:144: note: candidates are: BlockDom.locDoms
+[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1)]
 
-*compiler always fails on first link; XMT alerted but not developing compiler*
 
 warnings due to: (02/10/12 after months of broken builds)
 - full-empty bit on non-word data
@@ -759,18 +770,16 @@ warnings due to: (02/10/12 after months of broken builds)
 [Error: Timed out compilation for release/examples/hello]
 
 
-assertion failed: f.is_FILBlock() || f.is_FILScope() || f.is_FILEndScope()
+assert failed: f.is_FILBlock() || f.is_FILScope() || f.is_FILEndScope()
 --------------------------------------------------------------------------
 [Error matching compiler output for release/examples/benchmarks/hpcc/fft]
 [Error matching compiler output for release/examples/primers/arrays]
+[Error matching compiler output for release/examples/primers/fileIO] (6/11/13)
+
 
 unresolved sync variable calls (04/09/11 -- once spec examples added)
 ---------------------------------------------------------------------
 [Error matching compiler output for release/examples/spec/Task_Parallelism_and_Synchronization/syncMethods]
-
-internal translate errors (08/??/12)
------------------------------------
-A few tests report "translate(tile tree creation): internal error"
 
 
 ============================================================
