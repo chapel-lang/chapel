@@ -1,0 +1,4 @@
+perfkeys: Execution time:
+graphkeys: time
+ylabel: Time (seconds)
+graphtitle: Fannkuch (redux)
