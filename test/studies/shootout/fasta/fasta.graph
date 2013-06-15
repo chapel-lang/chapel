@@ -1,4 +1,13 @@
 perfkeys: Time elapsed :
 graphkeys: fasta
+files: fasta.dat
 graphtitle: Fasta Shootout Benchmark
 ylabel: Time (seconds)
+graphname: fasta
+
+perfkeys: Time elapsed :
+files: fasta.25000000.dat
+graphkeys: fasta (25,000,000)
+graphtitle: Fasta Shootout Benchmark (full problem size)
+ylabel: Time (seconds)
+graphname: fasta.25000000
