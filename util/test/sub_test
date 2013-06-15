@@ -94,6 +94,7 @@
 # .noexec: Do not execute this test
 # .skipif: Skip this test if certain environment conditions hold true
 # .timeout: Test timeout (overrides TIMEOUT)
+# .perftimeout: Performance test timeout
 # .killtimeout: Kill timeout (overrides KILLTIMEOUT)
 # .catfiles: Additional list of files whose contents are added to end of
 #    test output
@@ -465,6 +466,7 @@ if os.getenv('CHPL_TEST_PERF')!=None:
     compoptssuffix='.perfcompopts'
     execenvsuffix='.perfexecenv'
     execoptssuffix='.perfexecopts'
+    timeoutsuffix='.perftimeout'
     perftest=True
     if os.getenv('CHPL_TEST_PERF_DIR')!=None:
         perfdir=os.getenv('CHPL_TEST_PERF_DIR')
@@ -474,6 +476,7 @@ else:
     compoptssuffix='.compopts'
     execenvsuffix='.execenv'
     execoptssuffix='.execopts'
+    timeoutsuffix='.timeout'
     perftest=False
 # sys.stdout.write('perftest=%d\n'%(perftest))
 
@@ -637,8 +640,9 @@ for testname in testsrc:
             if do_not_test:
                 break
 
-        elif (suffix=='.timeout' and os.access(f, os.R_OK)):
+        elif (suffix==timeoutsuffix and os.access(f, os.R_OK)):
             timeout=ReadIntegerValue(f, localdir)
+            sys.stdout.write('[Overriding default timeout with %d]\n'%(timeout))
 
         elif (suffix=='.killtimeout' and os.access(f, os.R_OK)):
             killtimeout=ReadIntegerValue(f, localdir)
