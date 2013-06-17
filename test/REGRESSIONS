@@ -27,13 +27,11 @@ counts leaked by domainMaps changed after shifted array pointer commit
 Will update after thaw.  Note this test still has an issue for
 no-local compilations that is in Vass' court.
 
-Started failing with Tom's local strings sharing (06/01/13)
------------------------------------------------------------
-[Error matching program output for users/ferguson/extern_string_test (compopts: 1)]
+opequals2.chpl:3: error: type mismatch in assignment from complex(128) to imag(64) (started 6/16/13) (Brad)
+------------------------------------------------------------------
+[Error matching .bad file for types/imag/opequals2]
+Seems like op= commit changed the behavior of this future.
 
-An optimization bypasses a semantic check (Tom - on hold)
----------------------------------------------------------
-[Error matching program output for multilocale/deitz/oneOrMoreLocales/test_dot_locale_error]
 
 ==============================================
 linux64 regressions (in addition to the above)
@@ -126,17 +124,10 @@ The following tests have been timing out since 8/18/2012 or earlier:
 [Error: Timed out executing program types/single/sungeun/stress]
 
 
-
-
-
 ===============================
 no-local regressions
 (Checked for accuracy 6/3/2013)
 ===============================
-
-error message changed after Tom's local string sharing change (06/01/13)
-------------------------------------------------------------------------
-[Error matching program output for memory/shannon/memmaxExceedsLineno2]
 
 counts leaked by domainMaps changed after Vass' task function commit
 (05/30/13)
@@ -152,9 +143,41 @@ gasnet-everything regressions (other than the above)
 (Checked for accuracy 6/3/2013)
 ====================================================
 
+error message changed after Tom's local string sharing change (06/01/13)
+------------------------------------------------------------------------
+[Error matching program output for memory/shannon/memmaxExceedsLineno2]
+
 fast-on optimization changed due to Vass' task functions commit (05/31/13)
 --------------------------------------------------------------------------
 [Error matching compiler output for optimizations/sungeun/optimized-on/test_OptimizedOn_RA (compopts: 1)]
+
+communication counts changed due to Tom's HL branch merge (06/11/13)
+--------------------------------------------------------------------
+[Error matching program output for distributions/robust/arithmetic/performance/alloc]
+[Error matching program output for distributions/robust/arithmetic/performance/alloc_all]
+[Error matching program output for distributions/robust/arithmetic/performance/assignAlias]
+[Error matching program output for distributions/robust/arithmetic/performance/assignSlice]
+[Error matching program output for distributions/robust/arithmetic/performance/assign]
+[Error matching program output for distributions/robust/arithmetic/performance/reduceAlias]
+[Error matching program output for distributions/robust/arithmetic/performance/reduceSlice]
+[Error matching program output for distributions/robust/arithmetic/performance/reduce]
+[Error matching program output for multilocale/deitz/needMultiLocales/dist/test_private_space]
+[Error matching program output for multilocale/deitz/needMultiLocales/raCommCheck (compopts: 1, execopts: 1)]
+[Error matching program output for multilocale/deitz/needMultiLocales/raCommCheck (compopts: 2, execopts: 1)]
+[Error matching program output for multilocale/deitz/needMultiLocales/streamCommCheck]
+[Error matching program output for parallel/taskPar/sungeun/barrier/commDiags]
+[Error matching program output for performance/sungeun/multilocale/atomics]
+[Error matching program output for performance/sungeun/multilocale/syncsingle]
+[Error matching program output for studies/hpcc/CommDiags/ra_commDiags (compopts: 1, execopts: 1)]
+[Error matching program output for studies/hpcc/CommDiags/ra_commDiags (compopts: 2, execopts: 1)]
+[Error matching program output for studies/hpcc/CommDiags/stream_commDiags (compopts: 1)]
+[Error matching program output for studies/hpcc/CommDiags/stream-ep_commDiags (compopts: 1)] (observed only for linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc)
+
+fast-on optimization not firing due to Brad' op= commit (6/14/13)
+-----------------------------------------------------------------
+[Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic]
+[Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_record]
+[Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_tuple]
 
 
 ==============================================
@@ -201,6 +224,10 @@ Sometimes also "malloc.c:3091: sYSMALLOc: Assertion ..... failed."
 block distribution regressions
 ==============================
 
+communication counts changed due to Tom's HL branch merge (06/11/13)
+--------------------------------------------------------------------
+see gasnet-everything above for distributions/robust/arithmetic/performance/*
+
 
 ===============================
 cyclic distribution regressions
@@ -210,6 +237,12 @@ communication counts changed due to Vass' task functions commit (05/30/13)
 --------------------------------------------------------------------------
 [Error matching program output for distributions/robust/arithmetic/performance/assign]
 [Error matching program output for distributions/robust/arithmetic/performance/reduce]
+
+communication counts changed due to Tom's HL branch merge (06/11/13)
+--------------------------------------------------------------------
+[Error matching program output for distributions/robust/arithmetic/performance/alloc]
+[Error matching program output for distributions/robust/arithmetic/performance/alloc_all]
+
 
 communication counts changed (sungeun)
 --------------------------------------
@@ -453,11 +486,13 @@ seg fault (6/10/13)
 
 binary output mismatches (03/04/13 -- new tests)
 ------------------------------------------------
+6/11/13: both succeeded for linux64.intel.none.fifo.pthreads on chpbld02
 [Error matching program output for io/ferguson/writefbinary]
 [Error matching program output for io/ferguson/writef_readf]
 
 runtime assertion (started 10/15/12)
 ------------------------------------
+6/11/13: succeeded for linux64.intel.none.fifo.pthreads on chpbld02
 [Error matching program output for io/ferguson/io_test]
 
 numeric discrepancies

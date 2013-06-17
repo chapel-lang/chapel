@@ -26,6 +26,46 @@
 # if appropriate.
 
 
+======================
+Global config problems
+======================
+
+cray-prgenv-intel, when compiling Chapel-generated code (on chpbld01)
+---------------------------------------------------------------------
+ld: cannot find -lscicpp_intel
+6/15/13 cray-xt.cray-prgenv-intel.none.fifo.pthreads
+6/16/13 cray-xt.cray-prgenv-intel.none.fifo.pthreads--linux64.gnu
+
+cray-prgenv-gnu, when building the runtime (on chpbld01)
+--------------------------------------------------------
+ERROR: gcc/48 does not support libsci/12.1.00.3. You must load a newer xt-libsci or an older gcc.
+6/16/13 cray-xt.cray-prgenv-gnu.none.fifo.pthreads--linux64.gnu
+6/16/13 cray-xt.cray-prgenv-gnu.none.fifo.pthreads
+
+cray-prgenv-pgi, when compiling Chapel-generated code
+-----------------------------------------------------
+/usr/bin/ld: cannot find -lscicpp_pgi
+* 6/15/13 cray-xt.cray-prgenv-pgi.none.fifo.pthreads--linux64.gnu on chpbld02 (weekend): the following tests got affected (mid-way through testing):
+[Error matching compiler output for trivial/marybeth/casts1]
+[Error matching compiler output for trivial/marybeth/select1]
+[Error matching compiler output for trivial/marybeth/typeselect]
+[Error matching compiler output for trivial/roxana/test_dead_var_decl]
+[Error matching compiler output for trivial/roxana/test_param_decl]
+[Error matching compiler output for trivial/roxana/test_param_decl1]
+[Error matching compiler output for trivial/roxana/test_param_init]
+[Error matching compiler output for trivial/sungeun/runningTasks2]
+[Error matching compiler output for trivial/waynew/float32-64]
+[Error matching compiler output for trivial/waynew/int8-64]
+[Error matching compiler output for trivial/waynew/int8b]
+[Error matching compiler output for trivial/waynew/maxtest]
+[Error matching compiler output for trivial/waynew/mintest]
+[Error matching compiler output for trivial/waynew/uint2int]
+[Error matching compiler output for trivial/waynew/uintliteral]
+* 6/16/13 all tests on chpbld01 (weekday)
+cray-xt.cray-prgenv-pgi.none.fifo.pthreads--linux64.gnu
+cray-xt.cray-prgenv-pgi.none.fifo.pthreads
+
+
 =========================================================
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
@@ -34,6 +74,7 @@ cray-prgenv-cray (weekday) (sungeun 6/7/13): Two link errors caused
 all tests to fail.  "cannot find -lsci_cray_mp" and "cannot find
 -lscicpp_cray".
 
+vass 6/16/13: the following seems resolved now - see the new failure above
 cray-prgenv-gnu (weekday) (sungeun 6/5/13): PrgEnv-gnu failed with
 "ERROR: gcc/48 does not support mpich2/5.6.5. Please swap gcc or
 mpich2 versions".  After a couple of iterations with Ryan, committed a
@@ -42,11 +83,6 @@ making chplbld01 and chpbld02 behave similarly.  According to Ryan,
 chplbld01 is begin treated like an XT white box (at our
 request?). There are no longer XT PE updates, and this may be periodic
 module woes.
-
-xmt (6/7/13, 6/10/13):
-[Error: Timed out compilation for release/examples/benchmarks/lulesh/lulesh (compopts: 1)]
-[Error: Timed out compilation for release/examples/benchmarks/lulesh/lulesh (compopts: 2)]
-
 
 
 ==============================================
@@ -214,6 +250,10 @@ examples of what times out:
  release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4) (04/08/13)
  etc.
 
+non-deterministic compilation timeouts with gasnet (UNASSIGNED)
+---------------------------------------------------------------
+distributions/robust/arithmetic/kernels/hpl (cyclic, 6/12/13)
+
 minus_equals nondeterminism (sungeun)
 ----------------------------------------
 (week of 07/02, still present 10/2, 10/9/12, 1/6/13, 2/1/13)
@@ -309,3 +349,6 @@ cray-xt.cray-prgenv-cray.none.fifo.pthreads
 --------------------------------------
 [Error: Timed out compilation for studies/ssca2/test-rmatalt/nondet (compopts: 1)] (5/4/13, 6/9/13)
 
+extern_string_test output mismatch
+----------------------------------
+[Error matching .bad file for users/ferguson/extern_string_test (compopts: 1)] (cray-xt.cray-prgenv-cray.none.fifo.pthreads--linux64.gnu on chpbld02, 6/16/13) (observed once - is it intermittent or just started?)
