@@ -556,12 +556,16 @@ module DefaultRectangular {
       if stridable {
         var sum = origin;
         for param i in 1..rank do
-          sum += (ind(i) - off(i)) * blk(i) / abs(str(i)):idxType;
+          // TODO: Change this back to += once 'ref' arguments are no
+          // longer considered wide in all cases
+          sum = sum + (ind(i) - off(i)) * blk(i) / abs(str(i)):idxType;
         return sum;
       } else {
         var sum = if earlyShiftData then 0:idxType else origin;
         for param i in 1..rank do
-          sum += ind(i) * blk(i);
+          // TODO: Change this back to += once 'ref' arguments are no
+          // longer considered wide in all cases
+          sum = sum + ind(i) * blk(i);
         if !earlyShiftData then sum -= factoredOffs;
         return sum;
       }

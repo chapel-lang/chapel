@@ -1,0 +1,19 @@
+performance: enable fast-on for op= assignments
+
+This test shows that the fast-on optimization does not fire for op=
+assignments, though it does if this op= assignment is written out
+longhand.  The reason for this is that op= assignments are implemented
+with ref arguments, and in the current implementation, ref arguments
+are always treated as wide, whether or not they need to be; and the
+fast-on optimization is conservative around wide types because it
+can't do communication within a fast-on.
+
+The fix is to narrow reference arguments when possible and make the
+analysis for op= under the fast-on optimization behave like normal
+assignment in terms of considering the width of the RHS and LHS.
+(the analysis in trunk/HEAD at the time of this writing is that
+it conservatively always disables the optimization).
+
+When this is fixed, the TODOs checked into DefaultRectangular with
+this same commit should be found and 'a = a + b' idioms changed
+back into 'a += b'.
