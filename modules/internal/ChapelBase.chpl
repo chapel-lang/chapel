@@ -1135,9 +1135,6 @@ module ChapelBase {
   inline proc *=(ref lhs:real(?w), rhs:real(w)) {
     __primitive("*=", lhs, rhs);
   }
-  inline proc *=(ref lhs:imag(?w), rhs:imag(w)) {
-    __primitive("*=", lhs, rhs);
-  }
   inline proc *=(ref lhs, rhs) {
     lhs = lhs * rhs;
   }
@@ -1151,9 +1148,6 @@ module ChapelBase {
   inline proc /=(ref lhs:real(?w), rhs:real(w)) {
     __primitive("/=", lhs, rhs);
   }
-  inline proc /=(ref lhs:imag(?w), rhs:imag(w)) {
-    __primitive("/=", lhs, rhs);
-  }
   inline proc /=(ref lhs, rhs) {
     lhs = lhs / rhs;
   }
@@ -1165,9 +1159,6 @@ module ChapelBase {
     __primitive("%=", lhs, rhs);
   }
   inline proc %=(ref lhs:real(?w), rhs:real(w)) {
-    __primitive("%=", lhs, rhs);
-  }
-  inline proc %=(ref lhs:imag(?w), rhs:imag(w)) {
     __primitive("%=", lhs, rhs);
   }
   inline proc %=(ref lhs, rhs) {
@@ -1187,12 +1178,6 @@ module ChapelBase {
   inline proc &=(ref lhs:uint(?w), rhs:uint(w)) {
     __primitive("&=", lhs, rhs);
   }
-  inline proc &=(ref lhs:real(?w), rhs:real(w)) {
-    __primitive("&=", lhs, rhs);
-  }
-  inline proc &=(ref lhs:imag(?w), rhs:imag(w)) {
-    __primitive("&=", lhs, rhs);
-  }
   inline proc &=(ref lhs, rhs) {
     lhs = lhs & rhs;
   }
@@ -1202,12 +1187,6 @@ module ChapelBase {
     __primitive("|=", lhs, rhs);
   }
   inline proc |=(ref lhs:uint(?w), rhs:uint(w)) {
-    __primitive("|=", lhs, rhs);
-  }
-  inline proc |=(ref lhs:real(?w), rhs:real(w)) {
-    __primitive("|=", lhs, rhs);
-  }
-  inline proc |=(ref lhs:imag(?w), rhs:imag(w)) {
     __primitive("|=", lhs, rhs);
   }
   inline proc |=(ref lhs, rhs) {
@@ -1220,12 +1199,6 @@ module ChapelBase {
   inline proc ^=(ref lhs:uint(?w), rhs:uint(w)) {
     __primitive("^=", lhs, rhs);
   }
-  inline proc ^=(ref lhs:real(?w), rhs:real(w)) {
-    __primitive("^=", lhs, rhs);
-  }
-  inline proc ^=(ref lhs:imag(?w), rhs:imag(w)) {
-    __primitive("^=", lhs, rhs);
-  }
   inline proc ^=(ref lhs, rhs) {
     lhs = lhs ^ rhs;
   }
@@ -1236,12 +1209,6 @@ module ChapelBase {
   inline proc >>=(ref lhs:uint(?w), rhs:uint(w)) {
     __primitive(">>=", lhs, rhs);
   }
-  inline proc >>=(ref lhs:real(?w), rhs:real(w)) {
-    __primitive(">>=", lhs, rhs);
-  }
-  inline proc >>=(ref lhs:imag(?w), rhs:imag(w)) {
-    __primitive(">>=", lhs, rhs);
-  }
   inline proc >>=(ref lhs, rhs) {
     lhs = lhs >> rhs;
   }
@@ -1250,12 +1217,6 @@ module ChapelBase {
     __primitive("<<=", lhs, rhs);
   }
   inline proc <<=(ref lhs:uint(?w), rhs:uint(w)) {
-    __primitive("<<=", lhs, rhs);
-  }
-  inline proc <<=(ref lhs:real(?w), rhs:real(w)) {
-    __primitive("<<=", lhs, rhs);
-  }
-  inline proc <<=(ref lhs:imag(?w), rhs:imag(w)) {
     __primitive("<<=", lhs, rhs);
   }
   inline proc <<=(ref lhs, rhs) {
