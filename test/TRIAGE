@@ -106,9 +106,11 @@ release/examples/primers/atomics:
 - cray-xt: 08/14/12
 - prgenv-gnu: 3/22/13
 types/atomic/sungeun/atomic_vars:
+e.g. real(64): ERROR: x=108.0 (should be 120)
 - gasnet-everything, 02/01/13, 02/19/13, 05/10/13
 - no-local:3/16/13
 - baseline:6/7/13
+- comm=none: fails intermittently, but has not been observed in nightly testing
 
 
 linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
