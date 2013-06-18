@@ -1,4 +1,1 @@
-1.0i
-1.0i
-0.0i
-0.0i
+opequals2.chpl:3: error: type mismatch in assignment from complex(128) to imag(64)
