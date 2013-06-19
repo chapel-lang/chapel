@@ -1,2 +1,2 @@
---fast              # parOpEquals.local.dat
---fast --no-local   # parOpEquals.no-local.dat
+--fast              # parOpEquals.local
+--fast --no-local   # parOpEquals.no-local
