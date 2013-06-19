@@ -1,7 +1,7 @@
 CF machines
 ===========
 chap01 : linux64 (comm none, default everything)
-chap02 : qthreads (comm none examples, gasnet multilocale-examples)
+chap02 : gasnet: segment fast (M,W,F,Su), segment everything (Tu,Thu,Sa)
 chap03 : linux64 performance (comm none, default everything) -- old HW
 chap04 : linux64 performance (comm none, default everything) -- new HW
 chap05 : --no-local
@@ -17,7 +17,7 @@ cflbs32  : linux32 (comm none, default everything)
 Seattle machines
 ================
 chap09    : valgrind (comm none)
-chap10    : gasnet: segment fast (M,W,F,Su), segment everything (Tu,Thu,Sa)
+chap10    : qthreads (comm none examples, gasnet multilocale-examples)
 bradc-lnx : 11pm update of ~chapelu/chapel, release testing, linxu64 performance, token count, tab check
 lnx-vass  : block, memory leaks; historify-logs
 lnx-hilde : (no testing)
