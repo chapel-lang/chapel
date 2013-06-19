@@ -137,6 +137,7 @@ extern bool printSearchDirs;
 extern bool printModuleFiles;
 extern bool ignore_warnings;
 extern bool ignore_errors;
+extern bool ignore_errors_for_pass;
 extern int squelch_header_errors;
 
 extern bool fReportOptimizedOn;

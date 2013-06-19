@@ -76,6 +76,7 @@ static void runPass(const char *passName, void (*pass)(void), char log_tag) {
   if (printPasses) {
     gettimeofday(&startTimeBetweenPasses, &timezone);
   }
+  considerExitingEndOfPass();
   cleanAst();
   verify();
   //printPrimitiveCounts(passName);

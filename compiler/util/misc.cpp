@@ -27,6 +27,7 @@ void gdbShouldBreakHere(void) {
 
 static bool exit_immediately = true;
 static bool exit_eventually = false;
+static bool exit_end_of_pass = false;
 
 static const char* err_filename;
 static int err_lineno;
@@ -235,8 +236,12 @@ void handleError(const char *fmt, ...) {
 
   printCallStackOnError();
 
-  if (exit_immediately && !ignore_errors) {
-    clean_exit(1);
+  if (exit_immediately) {
+    if (ignore_errors_for_pass) {
+      exit_end_of_pass = true;
+    } else if (!ignore_errors) {
+      clean_exit(1);
+    }
   }
 }
 
@@ -280,15 +285,32 @@ static void vhandleError(FILE* file, BaseAST* ast, const char *fmt, va_list args
   if (file == stderr)
     printCallStackOnError();
 
-  if (exit_immediately && !ignore_errors) {
-    clean_exit(1);
+  if (exit_immediately) {
+    if (ignore_errors_for_pass) {
+      exit_end_of_pass = true;
+    } else if (!ignore_errors) {
+      clean_exit(1);
+    }
   }
 }
 
 
 void exitIfFatalErrorsEncountered() {
-  if (exit_eventually && !ignore_errors) {
-    clean_exit(1);
+  if (exit_eventually) {
+    if (ignore_errors_for_pass) {
+      exit_end_of_pass = true;
+    } else if (!ignore_errors) {
+      clean_exit(1);
+    }
+  }
+}
+
+
+void considerExitingEndOfPass() {
+  if (exit_end_of_pass) {
+    if (!ignore_errors) {
+      clean_exit(1);
+    }
   }
 }
 

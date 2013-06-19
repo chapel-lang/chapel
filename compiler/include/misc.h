@@ -34,6 +34,7 @@ void handleError(const char* fmt, ...);
 void handleError(BaseAST* ast, const char* fmt, ...);
 void handleError(FILE* file, BaseAST* ast, const char* fmt, ...);
 void exitIfFatalErrorsEncountered(void);
+void considerExitingEndOfPass(void);
 void printCallStack(bool force, bool shortModule, FILE* out);
 
 void startCatchingSignals(void);
