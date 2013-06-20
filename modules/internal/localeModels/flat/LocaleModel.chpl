@@ -1,11 +1,14 @@
-// DefaultArchitecture.chpl
+// LocaleModel.chpl
 //
-// Provides a default architectural description.
-// This architectural description is backward compatible with
-// the architecture implicitly provided by releases 1.6 and preceding.
+// This provides a flat locale model architectural description.  The
+// locales contain memory and a multi-core processor with homogeneous
+// cores, and we ignore any affinity (NUMA effects) between the
+// processor cores and the memory.  This architectural description is
+// backward compatible with the architecture implicitly provided by
+// releases 1.6 and preceding.
 //
 pragma "no use ChapelStandard"
-module DefaultArchitecture {
+module LocaleModel {
 
   use ChapelLocale;
   use DefaultRectangular;
@@ -13,7 +16,7 @@ module DefaultArchitecture {
   use RootLocale;
   use Sys;
 
-  config param debugDefaultArchitecture = false;
+  config param debugLocaleModel = false;
 
   // We would really like a class-static storage class.(C++ nomenclature)
   var doneCreatingLocales: bool = false;
@@ -21,7 +24,7 @@ module DefaultArchitecture {
   //
   // A concrete class representing the nodes in this architecture.
   //
-  class DefaultNode : locale {
+  class LocaleModel : locale {
     const callStackSize: int;
     const _node_id : int;
     const local_name : string;
@@ -30,16 +33,16 @@ module DefaultArchitecture {
     // that it is intended to represent.  This trick is used
     // to establish the equivalence the "locale" field of the locale object
     // and the node ID portion of any wide pointer referring to it.
-    proc DefaultNode() {
+    proc LocaleModel() {
       if doneCreatingLocales {
-        halt("Cannot create additional DefaultNode instances");
+        halt("Cannot create additional LocaleModel instances");
       }
       init();
     }
 
-    proc DefaultNode(parent_loc : locale) {
+    proc LocaleModel(parent_loc : locale) {
       if doneCreatingLocales {
-        halt("Cannot create additional DefaultNode instances");
+        halt("Cannot create additional LocaleModel instances");
       }
       parent = parent_loc;
       init();
@@ -56,16 +59,16 @@ module DefaultArchitecture {
       // but here it is defined thus for backward compatibility.
       f <~> new ioLiteral("LOCALE") <~> _node_id;
     }
-  
+
     proc getChildSpace() return emptyLocaleSpace;
-  
+
     proc getChildCount() return 0;
-  
+
     iter getChildIndices() : int {
       for idx in emptyLocaleSpace do
         yield idx;
     }
-  
+
     proc getChild(idx:int) : locale {
       // This is a temporary implementation, where an index of zero is forced
       // to mean "here".  A better solution is on the way.
@@ -73,10 +76,10 @@ module DefaultArchitecture {
       if idx == 0 then return this;
       else
         if boundsChecking then
-          halt("requesting a child from a DefaultNode locale");
+          halt("requesting a child from a LocaleModel locale");
       return nil;
     }
-  
+
     iter getChldren() : locale  {
       for loc in emptyLocales do
         yield loc;
@@ -118,10 +121,10 @@ module DefaultArchitecture {
     }
     //------------------------------------------------------------------------}
   }
-  
+
   //
   // An instance of this class is the default contents 'rootLocale'.
-  // 
+  //
   // In the current implementation a platform-specific architectural description
   // may overwrite this instance or any of its children to establish a more customized
   // representation of the system resources.
@@ -131,7 +134,7 @@ module DefaultArchitecture {
     // Would like to make myLocaleSpace distributed with one index per node.
     const myLocaleSpace: domain(1) = {0..numLocales-1};
     const myLocales: [myLocaleSpace] locale;
-  
+
     proc DefaultRootLocale()
     {
       // A bootstrap routine that returns (chpl_localeID_t){.node = <arg>, .subloc = 0}.
@@ -142,14 +145,14 @@ module DefaultArchitecture {
 
       // We cannot use a forall here because the default leader iterator will
       // access 'Locales' and 'here', which are not yet initialized.
-      for locIdx in myLocaleSpace 
+      for locIdx in myLocaleSpace
       {
         var locID = chpl_return_localeID_node(locIdx:int(32));
         on __primitive("chpl_on_locale_num", locID)
         {
-          // chpl_on_locale_num sets the localeID portion of "here", but 
+          // chpl_on_locale_num sets the localeID portion of "here", but
           // leaves the addr portion as a NULL pointer.
-          const node = new DefaultNode(this);
+          const node = new LocaleModel(this);
 
           // So immediately after creating a new locale to represent here, we
           // have to call this primitive to insert it into task-private storage.
@@ -166,7 +169,7 @@ module DefaultArchitecture {
       // At the top level, this lets us look up the locale representing the node on which
       // an object o lives by executing
       //  myLocales[__primitive("_wide_get_node", o)].
-      if (debugDefaultArchitecture) then
+      if (debugLocaleModel) then
         for locIdx in myLocaleSpace {
           var loc = myLocales[locIdx];
           if __primitive("_wide_get_node", loc) != locIdx then
@@ -175,7 +178,7 @@ module DefaultArchitecture {
 
       // Programs traditionally expect the startup process to run on Locales[0], so
       // this is how we mimic that behavior.
-      // Note that this means we have to ask for here.parent or rootLocale to get 
+      // Note that this means we have to ask for here.parent or rootLocale to get
       // the root locale of the default architecture.
       var loc = myLocales[0];
       __primitive("_task_set_here_ptr", loc);
@@ -193,7 +196,7 @@ module DefaultArchitecture {
     proc readWriteThis(f) {
       f <~> name;
     }
-  
+
     proc getChildCount() return this.myLocaleSpace.numIndices;
 
     proc getChildSpace() return this.myLocaleSpace;
@@ -202,9 +205,9 @@ module DefaultArchitecture {
       for idx in this.myLocaleSpace do
         yield idx;
     }
-  
+
     proc getChild(idx:int) return this.myLocales[idx];
-  
+
     iter getChldren() : locale  {
       for loc in this.myLocales do
         yield loc;
@@ -225,7 +228,7 @@ module DefaultArchitecture {
   if (rootLocale == nil) then
     rootLocale = new DefaultRootLocale();
 
-  // Expose the underlying locales array (and its domain) 
+  // Expose the underlying locales array (and its domain)
   // for user convenience and backward compatibility.
   // The downcast is because we cannot move the domain and array return types
   // into the base (abstract) locale class.

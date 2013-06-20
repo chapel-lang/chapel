@@ -24,6 +24,9 @@ $targcompiler = `$utildirname/compiler --target`; chomp($targcompiler);
 print "CHPL_TARGET_PLATFORM: $targplatform\n";
 print "CHPL_TARGET_COMPILER: $targcompiler\n";
 
+$localeModel = `$utildirname/localeModel`; chomp($localeModel);
+print "CHPL_LOCALE_MODEL: $localeModel\n";
+
 $comm = `$utildirname/comm`; chomp($comm);
 print "CHPL_COMM: $comm\n";
 if ($comm eq "none" || $comm eq "ugni") {

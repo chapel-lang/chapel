@@ -25,6 +25,11 @@ module ChapelBase {
     compilerWarning("CHPL_TARGET_COMPILER not set");
   }
   
+  config param CHPL_LOCALE_MODEL: string = "unset";
+  if (CHPL_LOCALE_MODEL == "unset") {
+    compilerWarning("CHPL_LOCALE_MODEL not set");
+  }
+  
   config param CHPL_TASKS: string = "unset";
   if (CHPL_TASKS == "unset") {
     compilerWarning("CHPL_TASKS not set");
