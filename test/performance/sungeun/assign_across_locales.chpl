@@ -22,15 +22,29 @@ proc dit (A, param ttype: testTypes) {
       if ttype != testTypes.init then B = loc.id+1;
       if loc.id != 0 then
         l[loc.id];
-      if doCommDiag then startCommDiagnostics();
-      var st = getCurrentTime();
+      if doCommDiag {
+        resetCommDiagnostics();
+        startCommDiagnostics();
+      }
+      var dt: real;
       select ttype {
-        when testTypes.init do A = loc.id+1;
-        when testTypes.lhs do A = B;
-        when testTypes.rhs do B = A;
+        when testTypes.init {
+          var st = getCurrentTime();
+          A = loc.id+1;
+          dt = getCurrentTime()-st;
+        }
+        when testTypes.lhs {
+          var st = getCurrentTime();
+          A = B;
+          dt = getCurrentTime()-st;
+        }
+        when testTypes.rhs {
+          var st = getCurrentTime();
+          B = A;
+          dt = getCurrentTime()-st;
+        }
         when testTypes.both do compilerError("Both is stupid.\n");
         }
-      var dt = getCurrentTime()-st;
       if doCommDiag then stopCommDiagnostics();
       if printOutput {
         writeln("Remote ", ttype:string, " (Locale ", loc.id, "):");
@@ -41,10 +55,9 @@ proc dit (A, param ttype: testTypes) {
       }
       if doCommDiag {
         var Diagnostics = getCommDiagnostics();
-        writeln("Remote ", ttype:string, " (Locale ", loc.id,
-                "): (gets, puts, forks, fast forks, non-blocking forks)");
         for (lid, diagnostics) in zip(1..,Diagnostics) do
-          writeln(lid, ": ", diagnostics);
+          writeln("Remote ", ttype:string, " (from Locale ", loc.id,
+                  ") (Locale ", lid-1, "): ", diagnostics);
       }
       if printTiming {
         writeln("Remote ", ttype:string, " (Locale ", loc.id, "): ", dt);
