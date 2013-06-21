@@ -7,13 +7,11 @@ $utildirname = dirname($0);
 $preset_comm=$ENV{'CHPL_COMM'};
 
 if ($preset_comm eq "") {
-    $platform = `$utildirname/platform --target`;
-    chomp($platform);
-
-# eventually, we'll want to pick defaults based on platforms, but for
-# today things are impoverished enough for us to want to pick "none"
-# by default
-
+    # eventually, we'll want to pick defaults based on platforms, but for
+    # today things are impoverished enough for us to want to pick "none"
+    # by default
+    #$platform = `$utildirname/platform --target`;
+    #chomp($platform);
     $comm = "none";
 } else {
     $comm = $preset_comm;
