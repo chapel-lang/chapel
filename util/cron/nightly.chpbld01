@@ -61,14 +61,14 @@ for compiler in $compilers ; do
   module load PrgEnv-${compiler}${PrgEnv_Version}
   if [ $compiler == "cray" ] ; then   # avoid loading gemini libraries
       module load craype-target-petest
-  elif [ $compiler == "gnu" ] ; then # swap out incompatible mpich module
-      # Will we have to do this for other compilers soon?
-      module swap xt-mpich2 cray-mpich
   fi
+  # Our PrgEnv modules are old.  Swap in a more recent mpich and libsci
+  module swap xt-mpich2 cray-mpich
+  module swap xt-libsci cray-libsci
   module list
   export CHPL_HOST_PLATFORM=cray-xt
   export CHPL_TARGET_PLATFORM=cray-xt
-  export CHPL_HOST_COMPILER=cray-xt-$compiler
+  export CHPL_HOST_COMPILER=cray-prgenv-$compiler
   $NIGHTLY -combinedir -cron $EXAMPLES
 )
 done

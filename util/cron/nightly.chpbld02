@@ -60,7 +60,7 @@ done
 #  module list
 #  export CHPL_HOST_PLATFORM=cray-xt
 #  export CHPL_TARGET_PLATFORM=cray-xt
-#  export CHPL_HOST_COMPILER=cray-xt-$compiler
+#  export CHPL_HOST_COMPILER=cray-prgenv-$compiler
 #  $NIGHTLY -combinedir -cron $EXAMPLES
 #)
 #done
