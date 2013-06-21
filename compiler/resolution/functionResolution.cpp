@@ -652,6 +652,23 @@ determineQueriedField(CallExpr* call) {
 }
 
 
+//
+// For some types, e.g. _domain/_array records, implementing
+// Chapel's ref/out/... intents can be done simply by passing the
+// value itself, rather than address-of. This function flags such cases
+// by returning false, meaning "not OK to convert".
+// 
+static bool
+okToConvertFormalToRefType(Type* type) {
+  if (isRecordWrappedType(type))
+    // no, don't
+    return false;
+
+  // otherwise, proceed with the original plan
+  return true;
+}
+
+
 static void
 resolveSpecifiedReturnType(FnSymbol* fn) {
   resolveBlock(fn->retExprType);
@@ -704,9 +721,11 @@ resolveFormals(FnSymbol* fn) {
            (isUnion(formal->type) ||
             isRecord(formal->type) ||
             fn->hasFlag(FLAG_REF_THIS)))) {
-        makeRefType(formal->type);
-        formal->type = formal->type->refType;
-        // The type of the formal is its own ref type!
+        if (okToConvertFormalToRefType(formal->type)) {
+          makeRefType(formal->type);
+          formal->type = formal->type->refType;
+          // The type of the formal is its own ref type!
+        }
       }
     }
     if (fn->retExprType)
@@ -2365,12 +2384,14 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
           formal->intent == INTENT_REF) {
         if (SymExpr* se = toSymExpr(actual)) {
           if (se->var->hasFlag(FLAG_EXPR_TEMP) || se->var->isConstant() || se->var->isParameter()) {
-            if (formal->intent == INTENT_OUT) {
-              USR_FATAL(se, "non-lvalue actual passed to out argument");
-            } else if (formal->intent == INTENT_REF) {
-              USR_FATAL(se, "non-lvalue actual passed to ref argument");
-            } else {
-              USR_FATAL(se, "non-lvalue actual passed to inout argument");
+            if (okToConvertFormalToRefType(formal->type)) {
+              if (formal->intent == INTENT_OUT) {
+                USR_FATAL(se, "non-lvalue actual passed to out argument");
+              } else if (formal->intent == INTENT_REF) {
+                USR_FATAL(se, "non-lvalue actual passed to ref argument");
+              } else {
+                USR_FATAL(se, "non-lvalue actual passed to inout argument");
+              }
             }
           }
         }
