@@ -1,0 +1,182 @@
+/* ====================== TODO's/FIXME's ========================
+ * 
+ * Need to make sure that it is seeking properly in the file when we have blocks
+ of one file spread across many hosts.
+
+ * Need to look at host selection, apparently what I thought was happening actually
+ wasnt... so we need to look at this as well
+
+ * Need to look at what we would want in a reduce
+
+ * Look at $CHPL_HOME/modules/standard/UtilReplicatedVar.chpl to use them here
+
+ */
+
+use Sys, HDFS, HDFStools, UtilReplicatedVar;
+
+// It appears as though we can get around the locale issue with the c_ptrs
+// with some locale magic/foo look at __primitive("wide_get_locale")
+
+iter HDFSmap(dataFile: string, namenode: string = "default", port: int(32) = 0,
+    domainSuffix: string = "", blockOverlap: int = 1024, closeFile: bool = true) {
+  var hdfsFS: c_ptr = HDFS.hdfsConnect(namenode, port);
+  var fileInfo = HDFS.chadoopGetFileInfo(hdfsFS, dataFile);
+  var blockHosts = HDFS.hdfsGetHosts(hdfsFS, dataFile, 0, fileInfo.mSize); // incr 0?
+  var blockCount = HDFS.chadoopGetBlockCount(blockHosts);
+  // QUESTION: Might be worth it to put this on the locale
+  var dataFileLocal = HDFS.hdfsOpenFile(hdfsFS, dataFile, O_RDONLY, 0, 0, 0);
+  assert(HDFS.IS_NULL(dataFileLocal) == HDFS.IS_NULL_FALSE, "Failed to open dataFileLocal");
+  var length = (fileInfo.mBlockSize + blockOverlap): int(32);
+
+  var Blocks: [LocaleSpace] domain(int);
+  // Setup a mapping loc --> block
+
+  for i in 0..#blockCount {
+
+    // need to do the magic-foo that was referenced above
+    //  var owner = HDFS.chadoopGetHost(blockHosts, i: int(32), (i % fileInfo.mReplication): int(32));
+    // FIXME: I feel this is FAR to fragile and domain specific to the problem at
+    //        hand to be used widely. The easiest/most obvious option that I could think
+    //        of was to add the domainSuffix. I feel as though we should keep it in
+    //        case people want to use it, but that we should fix the problem with
+    //        owner/locale names better and more elegantly. (Also it means we have to do
+    //        string manipulation which is not all that great..)
+    var owner_tmp = HDFS.chadoopGetHost(blockHosts, i: int(32), (i % fileInfo.mReplication): int(32)) + domainSuffix;
+    var IDX = indexOf(".", owner_tmp, 1);
+    var owner = owner_tmp.substring(1..IDX-1);
+
+    for loc in Locales {
+      writeln("owner: ", owner, " loc name: ", loc.name, " locale ", loc, " block ", i);
+      if (loc.name == owner)
+        then Blocks[loc.id] += i;
+    }
+  }
+
+  writeln("Blocks are: ", Blocks);
+  // Now need to setup a mapping loc --> {block1, block2, ...}
+  // TODO: At this point, we probably (we do...) want to consolidate all
+  //       blocks owned by a particular locale (i.e we want to reduce to an
+  //       array of length numLocales). I think this would give us the semantics
+  //       that Brad is wanting/talking about.
+  //       Essentially, we want to go to a per-locale work-queue
+  // TODO: Need to write one of these. Need to make it threadsafe (??)
+
+  writeln("computing on ", here.name);
+
+  for loc in Locales {
+    for block in Blocks[loc.id] {
+      var startByte = block * fileInfo.mBlockSize;
+      if ((length + startByte) >= fileInfo.mSize) {
+        length = (fileInfo.mSize - startByte): int(32);
+      }
+
+      // Take in the array of blocks and iterate through them, sending
+      // each s from each block on to the follower.
+      // TODO: We will change this to instead build up a queue of these instead of
+      //       the singles that we are doing right now
+      var s = HDFS.chadoopReadFilePositional(hdfsFS, dataFileLocal, startByte, length);
+      // TODO: If we make a per-locale work queue, we could simply ield that, and then we
+      //       could iterate over it in the follower 
+      yield s; // owner is the locale that "owns" that block
+    }
+  }
+
+  if (closeFile) {
+    hdfsCloseFile(hdfsFS, dataFileLocal);
+    writeln("closing file");
+  }
+}
+
+
+///// Leader-follower iterators that should implement the above in parallel /////
+iter HDFSmap(param tag: iterKind, dataFile: string, namenode: string = "default",
+    port: int(32) = 0, domainSuffix: string = "", blockOverlap: int = 1024,
+    closeFile: bool = true)
+where tag == iterKind.leader {
+  // Connect, get blocks and blockHosts etc.
+  writeln(here.name);
+  var hdfsFS: c_ptr = HDFS.hdfsConnect(namenode, port);
+  var fileInfo = HDFS.chadoopGetFileInfo(hdfsFS, dataFile);
+  var blockHosts = HDFS.hdfsGetHosts(hdfsFS, dataFile, 0, fileInfo.mSize);
+  var blockCount = HDFS.chadoopGetBlockCount(blockHosts);
+  // QUESTION: Might be worth it to put this on the locale
+  var dataFileLocal = HDFS.hdfsOpenFile(hdfsFS, dataFile, O_RDONLY, 0, 0, 0);
+  assert(HDFS.IS_NULL(dataFileLocal) == HDFS.IS_NULL_FALSE, "Failed to open dataFileLocal");
+  var length = (fileInfo.mBlockSize + blockOverlap): int(32);
+
+  var LocaleBlockArray: [0..#blockCount] (locale, int(64)); // tuple of (locale, blockOnlocale)
+
+
+  var Blocks: [LocaleSpace] domain(int);
+
+
+  // Setup a mapping loc --> block
+  for i in 0..#blockCount {
+
+    // need to do the magic-foo that was referenced above
+    //  var owner = HDFS.chadoopGetHost(blockHosts, i: int(32), (i % fileInfo.mReplication): int(32));
+    // FIXME: I feel this is FAR to fragile and domain specific to the problem at
+    //        hand to be used widely. The easiest/most obvious option that I could think
+    //        of was to add the domainSuffix. I feel as though we should keep it in
+    //        case people want to use it, but that we should fix the problem with
+    //        owner/locale names better and more elegantly. (Also it means we have to do
+    //        string manipulation which is not all that great..)
+    var owner_tmp = HDFS.chadoopGetHost(blockHosts, i: int(32), (i % fileInfo.mReplication): int(32)) + domainSuffix;
+    var IDX = indexOf(".", owner_tmp, 1);
+    var owner = owner_tmp.substring(1..IDX-1);
+
+    for loc in Locales {
+      writeln("owner: ", owner, " loc name: ", loc.name, " locale ", loc, " block ", i);
+      if (loc.name == owner)
+        then Blocks[loc.id] += i;
+    }
+  }
+
+  writeln("Blocks are: ", Blocks);
+  // Now need to setup a mapping loc --> {block1, block2, ...}
+  // TODO: At this point, we probably (we do...) want to consolidate all
+  //       blocks owned by a particular locale (i.e we want to reduce to an
+  //       array of length numLocales). I think this would give us the semantics
+  //       that Brad is wanting/talking about.
+  //       Essentially, we want to go to a per-locale work-queue
+  // TODO: Need to write one of these. Need to make it threadsafe (??)
+
+  coforall loc in Locales { 
+    on loc {
+      writeln("computing on ", here.name);
+
+      for block in Blocks[loc.id] {
+        var startByte = block * fileInfo.mBlockSize;
+        if ((length + startByte) >= fileInfo.mSize) {
+          length = (fileInfo.mSize - startByte): int(32);
+        }
+
+        // Take in the array of blocks and iterate through them, sending
+        // each s from each block on to the follower.
+        // TODO: We will change this to instead build up a queue of these instead of
+        //       the singles that we are doing right now
+        var s = HDFS.chadoopReadFilePositional(hdfsFS, dataFileLocal, startByte, length);
+        // TODO: If we make a per-locale work queue, we could simply ield that, and then we
+        //       could iterate over it in the follower 
+        yield s; // owner is the locale that "owns" that block
+      }
+    }
+  }
+  if (closeFile) {
+    hdfsCloseFile(hdfsFS, dataFileLocal);
+    writeln("closing file");
+  }
+}
+
+iter HDFSmap(param tag: iterKind, dataFile: string, namenode: string = "default",
+    port: int(32) = 0, domainSuffix: string = "", blockOverlap: int = 1024,
+    closeFile: bool = true, followThis)
+  where tag == iterKind.follower {
+  // FIXME: Look at the comments before and in the coforall in the leader for an
+  //        explanation for why we want/need this fixme
+  //for f in followThis do
+  yield followThis;
+}
+
+
+

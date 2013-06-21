@@ -1,0 +1,1 @@
+-g -I/data/sea/cascade/chapel/HDFS_tools/jdk1.7.0_21/include -I/data/sea/cascade/chapel/HDFS_tools/jdk1.7.0_21/include/linux -L/data/sea/cascade/chapel/HDFS_tools/jdk1.7.0_21/jre/lib/amd64/server -I/data/sea/cascade/chapel/HDFS_tools/hadoop-1.1.2/src/c++/libhdfs -L/data/sea/cascade/chapel/HDFS_tools/hadoop-1.1.2/c++/Linux-amd64-64/lib -lhdfs -ljvm hdfs.h chadoop.h chadoop.c
