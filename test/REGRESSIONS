@@ -20,17 +20,10 @@
 general regressions (seem to happen in most configurations)
 ===========================================================
 
-counts leaked by domainMaps changed after shifted array pointer commit
-(6/4/13)
 --------------------------------------------------------------------
-[Error matching program output for memory/sungeun/refCount/domainMaps]
-Will update after thaw.  Note this test still has an issue for
-no-local compilations that is in Vass' court.
 
 opequals2.chpl:3: error: type mismatch in assignment from complex(128) to imag(64) (started 6/16/13) (Brad)
 ------------------------------------------------------------------
-[Error matching .bad file for types/imag/opequals2]
-Seems like op= commit changed the behavior of this future.
 
 
 ==============================================
@@ -172,12 +165,6 @@ communication counts changed due to Tom's HL branch merge (06/11/13)
 [Error matching program output for studies/hpcc/CommDiags/ra_commDiags (compopts: 2, execopts: 1)]
 [Error matching program output for studies/hpcc/CommDiags/stream_commDiags (compopts: 1)]
 [Error matching program output for studies/hpcc/CommDiags/stream-ep_commDiags (compopts: 1)] (observed only for linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc)
-
-fast-on optimization not firing due to Brad' op= commit (6/14/13)
------------------------------------------------------------------
-[Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic]
-[Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_record]
-[Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_tuple]
 
 
 ==============================================

@@ -30,73 +30,24 @@
 Global config problems
 ======================
 
-cray-prgenv-intel, when compiling Chapel-generated code (on chpbld01)
----------------------------------------------------------------------
-ld: cannot find -lscicpp_intel
-6/15/13 cray-xt.cray-prgenv-intel.none.fifo.pthreads
-6/16/13 cray-xt.cray-prgenv-intel.none.fifo.pthreads--linux64.gnu
-
-cray-prgenv-gnu, when building the runtime (on chpbld01)
---------------------------------------------------------
-ERROR: gcc/48 does not support libsci/12.1.00.3. You must load a newer xt-libsci or an older gcc.
-6/16/13 cray-xt.cray-prgenv-gnu.none.fifo.pthreads--linux64.gnu
-6/16/13 cray-xt.cray-prgenv-gnu.none.fifo.pthreads
-
-cray-prgenv-pgi, when compiling Chapel-generated code
------------------------------------------------------
-/usr/bin/ld: cannot find -lscicpp_pgi
-* 6/15/13 cray-xt.cray-prgenv-pgi.none.fifo.pthreads--linux64.gnu on chpbld02 (weekend): the following tests got affected (mid-way through testing):
-[Error matching compiler output for trivial/marybeth/casts1]
-[Error matching compiler output for trivial/marybeth/select1]
-[Error matching compiler output for trivial/marybeth/typeselect]
-[Error matching compiler output for trivial/roxana/test_dead_var_decl]
-[Error matching compiler output for trivial/roxana/test_param_decl]
-[Error matching compiler output for trivial/roxana/test_param_decl1]
-[Error matching compiler output for trivial/roxana/test_param_init]
-[Error matching compiler output for trivial/sungeun/runningTasks2]
-[Error matching compiler output for trivial/waynew/float32-64]
-[Error matching compiler output for trivial/waynew/int8-64]
-[Error matching compiler output for trivial/waynew/int8b]
-[Error matching compiler output for trivial/waynew/maxtest]
-[Error matching compiler output for trivial/waynew/mintest]
-[Error matching compiler output for trivial/waynew/uint2int]
-[Error matching compiler output for trivial/waynew/uintliteral]
-* 6/16/13 all tests on chpbld01 (weekday)
-cray-xt.cray-prgenv-pgi.none.fifo.pthreads--linux64.gnu
-cray-xt.cray-prgenv-pgi.none.fifo.pthreads
-
+The nightly.chap02 and nightly.chap10 scripts swapped computers. They are still
+named for their previous computers and need their names updated.
 
 =========================================================
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
-cray-prgenv-cray (weekday) (sungeun 6/7/13): Two link errors caused
-all tests to fail.  "cannot find -lsci_cray_mp" and "cannot find
--lscicpp_cray".
-
-vass 6/16/13: the following seems resolved now - see the new failure above
-cray-prgenv-gnu (weekday) (sungeun 6/5/13): PrgEnv-gnu failed with
-"ERROR: gcc/48 does not support mpich2/5.6.5. Please swap gcc or
-mpich2 versions".  After a couple of iterations with Ryan, committed a
-fix that should swap in the correct mpich version.  We should consider
-making chplbld01 and chpbld02 behave similarly.  According to Ryan,
-chplbld01 is begin treated like an XT white box (at our
-request?). There are no longer XT PE updates, and this may be periodic
-module woes.
+cray-prgenv-* (weekday) (sungeun 6/5/13, diten 6/21/13):
+This causes frequent problems as some components get updated on chpbld01, but
+not others.  It is currently running successfully.  We should consider making
+chplbld01 and chpbld02 behave similarly.  According to Ryan, chplbld01 is
+being treated like an XT white box (at our request?).  There are no longer XT
+PE updates, and this may cause periodic module woes.
 
 
 ==============================================
 These things regularly cause noise in testing:
 ==============================================
-
-building compiler with PGI fails
---------------------------------
-The PGI compiler version was upated to 13.3.0 and now gets an internal
-error while compiling functionResolution.cpp.  Backing up to version
-12.9.0 fixes it. Backing the Chapel source down to revision 20834 also
-fixes it.  Turning optimization down to -O1 also fixes it.  Bugzilla
-bug 796017.
-
 
 atomics nondeterminisms (sungeun)
 ---------------------------------
@@ -110,7 +61,7 @@ e.g. real(64): ERROR: x=108.0 (should be 120)
 - gasnet-everything, 02/01/13, 02/19/13, 05/10/13
 - no-local:3/16/13
 - baseline:6/7/13
-- comm=none: fails intermittently, but has not been observed in nightly testing
+- comm=none: 6/21/13
 
 
 linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
@@ -120,6 +71,18 @@ Our main noisy failures currently are as follows:
   distributions/robust/arithmetic/kernels/jacobi.chpl
   distributions/robust/arithmetic/stress/test_many_array
   distributions/robust/arithmetic/stress/test_many_domains
+
+After moving these tests to a slower machine (chap02->chap10) several more
+timed out including the three above plus:
+
+  distributions/jglewis/cyclicOnEvenNumLocales.chpl
+  distributions/bradc/extremeBlock.chpl
+  distributions/robust/arithmetic/basics/test_array_of_distributed_array2.chpl
+  distributions/robust/arithmetic/slicing/test_array_slicing3.chpl
+  distributions/robust/arithmetic/modules/test_module_Sort.chpl
+  distributions/robust/arithmetic/kernels/hpl (compopts: 1).chpl
+  distributions/dm/t8.chpl
+
 
 I don't know that it's worth tracking when these pass fail currently.
 Greg looked into the execution times and found that the problem is
@@ -134,6 +97,42 @@ messages due to not having a thread per task as in fifo, or ...?
 
 I've deleted historical notes on this entry that seem less useful
 at present.  See the archives for more detail.
+
+Perf (linux64.gnu.none.fifo.pthreads)
+-------------------------------------
+[Error: Timed out executing program studies/hpcc/RA/bradc/parallel/ra-dist (compopts: 1)] (06/20/13)
+
+Perf Warnings from createGraphs
+-------------------------------
+[Warning (createGraphs): 'parOpEquals.local.perfkeys' does not exist, using default perfkeys file 'parOpEquals.perfkeys']
+[Warning (createGraphs): 'parOpEquals.no-local.perfkeys' does not exist, using default perfkeys file 'parOpEquals.perfkeys']
+[Warning (createGraphs): 'copy_to_local.16384.perfkeys' does not exist, using default perfkeys file 'copy_to_local.perfkeys']
+[Warning (createGraphs): 'copy_to_local.32768.perfkeys' does not exist, using default perfkeys file 'copy_to_local.perfkeys']
+[Warning (createGraphs): 'copy_to_local.65536.perfkeys' does not exist, using default perfkeys file 'copy_to_local.perfkeys']
+[Warning (createGraphs): 'copy_to_local.8192.perfkeys' does not exist, using default perfkeys file 'copy_to_local.perfkeys']
+[Warning (createGraphs): 'fasta.25000000.perfkeys' does not exist, using default perfkeys file 'fasta.perfkeys']
+[Warning (createGraphs): 'hpcc-ra-atomics.perfkeys' does not exist, using default perfkeys file 'ra.perfkeys']
+[Warning (createGraphs): 'hpcc-ra-atomics.perfkeys' does not exist, using default perfkeys file 'ra.perfkeys']
+[Warning (createGraphs): 'hpcc-ra.perfkeys' does not exist, using default perfkeys file 'ra.perfkeys']
+[Warning (createGraphs): 'hpcc-ra.perfkeys' does not exist, using default perfkeys file 'ra.perfkeys']
+[Warning (createGraphs): 'hpcc-stream-ep.perfkeys' does not exist, using default perfkeys file 'stream-ep.perfkeys']
+[Warning (createGraphs): 'hpcc-stream-ep.perfkeys' does not exist, using default perfkeys file 'stream-ep.perfkeys']
+[Warning (createGraphs): 'hpcc-stream-ep.perfkeys' does not exist, using default perfkeys file 'stream-ep.perfkeys']
+[Warning (createGraphs): 'hpcc-stream-ep.perfkeys' does not exist, using default perfkeys file 'stream-ep.perfkeys']
+[Warning (createGraphs): 'hpcc-stream-ep.perfkeys' does not exist, using default perfkeys file 'stream-ep.perfkeys']
+[Warning (createGraphs): 'hpcc-stream-ep.perfkeys' does not exist, using default perfkeys file 'stream-ep.perfkeys']
+[Warning (createGraphs): 'hpcc-stream.perfkeys' does not exist, using default perfkeys file 'stream.perfkeys']
+[Warning (createGraphs): 'hpcc-stream.perfkeys' does not exist, using default perfkeys file 'stream.perfkeys']
+[Warning (createGraphs): 'hpcc-stream.perfkeys' does not exist, using default perfkeys file 'stream.perfkeys']
+[Warning (createGraphs): 'init.1024.perfkeys' does not exist, using default perfkeys file 'init.perfkeys']
+[Warning (createGraphs): 'init.1024.perfkeys' does not exist, using default perfkeys file 'init.perfkeys']
+[Warning (createGraphs): 'init.1024.perfkeys' does not exist, using default perfkeys file 'init.perfkeys']
+[Warning (createGraphs): 'init.1024.perfkeys' does not exist, using default perfkeys file 'init.perfkeys']
+[Warning (createGraphs): 'init.256.perfkeys' does not exist, using default perfkeys file 'init.perfkeys']
+[Warning (createGraphs): 'init.256.perfkeys' does not exist, using default perfkeys file 'init.perfkeys']
+[Warning (createGraphs): 'init.256.perfkeys' does not exist, using default perfkeys file 'init.perfkeys']
+[Warning (createGraphs): 'init.256.perfkeys' does not exist, using default perfkeys file 'init.perfkeys']
+[Warning (createGraphs): 'lulesh.block-dense.perfkeys' does not exist, using default perfkeys file 'lulesh-dense.perfkeys']
 
 
 ==============================================================================
@@ -183,7 +182,7 @@ undiagnosed cygwin failures
 incorrect answer suggestive of a --no-local race : iteration terminated
 too early or too late (?)
 -----------------------------------------------------------------------
-studies/jacobi/waynew/example2 (02/26/13)
+studies/jacobi/waynew/example2 (02/26/13) (06/22/13)
 
 intermittent valgrind error
 ---------------------------
@@ -250,6 +249,7 @@ examples of what times out:
  distributions/dm/t2 (2012/08/15)
  test_array_slicing3 (06/08/12, 6/16, 3/29/13, 5/3/13)
  release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4) (04/08/13)
+ studies/cholesky/jglewis/version2/performance/test_cholesky_performance (06/20/13)
  etc.
 
 non-deterministic compilation timeouts with gasnet (UNASSIGNED)
