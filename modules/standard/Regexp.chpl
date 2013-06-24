@@ -564,7 +564,7 @@ proc string.match(pattern: regexp, ref captures ...?k):reMatch
   return pattern.match(this, (...captures));
 }
 
-iter string.spit(pattern: regexp, maxsplit: int = 0)
+iter string.split(pattern: regexp, maxsplit: int = 0)
 {
   for v in pattern.split(this, maxsplit) {
     yield v;
