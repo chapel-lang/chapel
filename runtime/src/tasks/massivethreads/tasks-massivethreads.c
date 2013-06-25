@@ -322,7 +322,7 @@ static void *ns_task_wrapper(void *args)
 
 void chpl_task_addToTaskList(chpl_fn_int_t fid,
                              void* arg,
-                             chpl_task_subLoc_t subLoc,
+                             c_sublocid_t subLoc,
                              chpl_task_list_p *task_list,
                              int32_t task_list_locale,
                              chpl_bool is_begin_stmt,
@@ -333,8 +333,8 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid,
         myth_thread_t th;
 
         assert(subLoc == 0
-               || subLoc == chpl_task_anySubLoc
-               || subLoc == chpl_task_currSubLoc);
+               || subLoc == c_sublocid_any
+               || subLoc == c_sublocid_curr);
 
         if (serial_state){
                 SAVE_STATE();
@@ -383,13 +383,13 @@ void chpl_task_freeTaskList(chpl_task_list_p task_list)
 
 void chpl_task_startMovedTask(chpl_fn_p fp,
                               void* a,
-                              chpl_task_subLoc_t subLoc,
+                              c_sublocid_t subLoc,
                               chpl_taskID_t id,
                               chpl_bool serial_state)
 {
         myth_thread_t th;
 
-        assert(subLoc == 0 || subLoc == chpl_task_anySubLoc);
+        assert(subLoc == 0 || subLoc == c_sublocid_any);
         assert(id == chpl_nullTaskID);
 
         //Create one task
@@ -418,16 +418,16 @@ void chpl_task_startMovedTask(chpl_fn_p fp,
         myth_detach(th);
 }
 
-chpl_task_subLoc_t chpl_task_getSubLoc(void)
+c_sublocid_t chpl_task_getSubLoc(void)
 {
         return 0;
 }
 
-void chpl_task_setSubLoc(chpl_task_subLoc_t subLoc)
+void chpl_task_setSubLoc(c_sublocid_t subLoc)
 {
         assert(subLoc == 0
-               || subLoc == chpl_task_anySubLoc
-               || subLoc == chpl_task_currSubLoc);
+               || subLoc == c_sublocid_any
+               || subLoc == c_sublocid_curr);
 }
 
 chpl_taskID_t chpl_task_getId(void)
@@ -492,7 +492,7 @@ void chpl_task_setHere(void* new_here)
         chpl_task_getPrivateData()->here = new_here;
 }
 
-chpl_task_subLoc_t chpl_task_getNumSubLocales(void)
+c_sublocid_t chpl_task_getNumSubLocales(void)
 {
         return 1;
 }

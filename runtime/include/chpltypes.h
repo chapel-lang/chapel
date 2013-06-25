@@ -75,6 +75,11 @@ typedef int32_t c_sublocid_t;
 #define FORMAT_c_sublocid_t PRId32
 typedef int64_t c_localeid_t;
 
+// These are special values that mean "any sublocale" and "the current
+// sublocale".
+#define c_sublocid_any  ((c_sublocid_t) -1)
+#define c_sublocid_curr ((c_sublocid_t) -2)
+
 // It is unfortunate that we need this definition in parallel with the module definition.
 // If runtime routines that depend on chpl_localeID_t can be eliminated, then this
 // definition can be moved entirely within the module code.

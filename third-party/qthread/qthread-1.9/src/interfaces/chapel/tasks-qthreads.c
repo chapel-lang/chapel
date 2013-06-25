@@ -491,7 +491,7 @@ int chpl_task_createCommTask(chpl_fn_p fn,
 
 void chpl_task_addToTaskList(chpl_fn_int_t     fid,
                              void             *arg,
-                             chpl_task_subLoc_t subLoc,
+                             c_sublocid       _t subLoc,
                              chpl_task_list_p *task_list,
                              int32_t           task_list_locale,
                              chpl_bool         is_begin_stmt,
@@ -507,8 +507,8 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
     PROFILE_INCR(profile_task_addToTaskList,1);
 
     assert(subLoc == 0
-           || subLoc == chpl_task_anySubLoc
-           || subLoc == chpl_task_currSubLoc);
+           || subLoc == c_sublocid_any
+           || subLoc == c_sublocid_curr);
 
     if (serial_state) {
         syncvar_t ret = SYNCVAR_STATIC_EMPTY_INITIALIZER;
@@ -539,11 +539,11 @@ void chpl_task_freeTaskList(chpl_task_list_p task_list)
 
 void chpl_task_startMovedTask(chpl_fn_p      fp,
                               void          *arg,
-                              chpl_task_subLoc_t subLoc,
+                              c_sublocid_t   subLoc,
                               chpl_taskID_t  id,
                               chpl_bool      serial_state)
 {
-    assert(subLoc == 0 || subLoc == chpl_task_anySubLoc);
+    assert(subLoc == 0 || subLoc == c_sublocid_any);
     assert(id == chpl_nullTaskID);
 
     chapel_wrapper_args_t wrapper_args = 
@@ -556,16 +556,16 @@ void chpl_task_startMovedTask(chpl_fn_p      fp,
                                   sizeof(chapel_wrapper_args_t), NULL);
 }
 
-chpl_task_subLoc_t chpl_task_getSubLoc(void)
+c_sublocid_t chpl_task_getSubLoc(void)
 {
   return 0;
 }
 
-void chpl_task_setSubLoc(chpl_task_subLoc_t subLoc)
+void chpl_task_setSubLoc(c_sublocid_t subLoc)
 {
   assert(subLoc == 0
-         || subLoc == chpl_task_anySubLoc
-         || subLoc == chpl_task_currSubLoc);
+         || subLoc == c_sublocid_any
+         || subLoc == c_sublocid_curr);
 }
 
 // Returns '(unsigned int)-1' if called outside of the tasking layer.
@@ -653,7 +653,7 @@ void chpl_task_setLocaleID(c_localeid_t new_localeID)
     }
 }
 
-chpl_task_subLoc_t chpl_task_getNumSubLocales(void)
+c_sublocid_t chpl_task_getNumSubLocales(void)
 {
     return 1;
 }

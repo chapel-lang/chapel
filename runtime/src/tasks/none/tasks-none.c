@@ -159,15 +159,15 @@ void chpl_task_callMain(void (*chpl_main)(void)) {
 
 void chpl_task_addToTaskList(chpl_fn_int_t fid,
                              void* arg,
-                             chpl_task_subLoc_t subLoc,
+                             c_sublocid_t subLoc,
                              chpl_task_list_p *task_list,
                              int32_t task_list_locale,
                              chpl_bool is_begin_stmt,
                              int lineno,
                              chpl_string filename) {
   assert(subLoc == 0
-         || subLoc == chpl_task_anySubLoc
-         || subLoc == chpl_task_currSubLoc);
+         || subLoc == c_sublocid_any
+         || subLoc == c_sublocid_curr);
 
   if (s_chpl_data.serial_state) {
     //
@@ -208,14 +208,14 @@ void chpl_task_freeTaskList(chpl_task_list_p task_list) { }
 
 void chpl_task_startMovedTask(chpl_fn_p fp,
                               void* a,
-                              chpl_task_subLoc_t subLoc,
+                              c_sublocid_t subLoc,
                               chpl_taskID_t id,
                               chpl_bool serial_state) {
   // create a task from the given function pointer and arguments
   // and append it to the end of the task pool for later execution
   chpl_task_pool_p task;
 
-  assert(subLoc == 0 || subLoc == chpl_task_anySubLoc);
+  assert(subLoc == 0 || subLoc == c_sublocid_any);
   assert(id == chpl_nullTaskID);
 
   task = (chpl_task_pool_p)chpl_mem_alloc(sizeof(task_pool_t),
@@ -238,12 +238,12 @@ void chpl_task_startMovedTask(chpl_fn_p fp,
   queued_cnt++;
 }
 
-chpl_task_subLoc_t chpl_task_getSubLoc(void) { return 0; }
+c_sublocid_t chpl_task_getSubLoc(void) { return 0; }
 
-void chpl_task_setSubLoc(chpl_task_subLoc_t subLoc) {
+void chpl_task_setSubLoc(c_sublocid_t subLoc) {
   assert(subLoc == 0
-         || subLoc == chpl_task_anySubLoc
-         || subLoc == chpl_task_currSubLoc);
+         || subLoc == c_sublocid_any
+         || subLoc == c_sublocid_curr);
 }
 
 chpl_taskID_t chpl_task_getId(void) { return curr_taskID; }
@@ -275,7 +275,7 @@ void chpl_task_setLocaleID(c_localeid_t new_localeID) {
   s_chpl_data.localeID = new_localeID;
 }
 
-chpl_task_subLoc_t chpl_task_getNumSubLocales(void) { return 1; }
+c_sublocid_t chpl_task_getNumSubLocales(void) { return 1; }
 
 uint64_t chpl_task_getCallStackSize(void) {
   return taskCallStackSize;

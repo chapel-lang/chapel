@@ -388,15 +388,15 @@ static void comm_task_wrapper(void* arg) {
 
 
 void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg,
-                             chpl_task_subLoc_t subLoc,
+                             c_sublocid_t subLoc,
                              chpl_task_list_p *task_list,
                              int32_t task_list_locale,
                              chpl_bool is_begin_stmt,
                              int lineno,
                              chpl_string filename) {
   assert(subLoc == 0
-         || subLoc == chpl_task_anySubLoc
-         || subLoc == chpl_task_currSubLoc);
+         || subLoc == c_sublocid_any
+         || subLoc == c_sublocid_curr);
 
   if (task_list_locale == chpl_nodeID) {
     chpl_task_list_p ltask;
@@ -676,10 +676,10 @@ void chpl_task_freeTaskList(chpl_task_list_p task_list) {
 
 void chpl_task_startMovedTask(chpl_fn_p fp,
                               void* a,
-                              chpl_task_subLoc_t subLoc,
+                              c_sublocid_t subLoc,
                               chpl_taskID_t id,
                               chpl_bool serial_state) {
-  assert(subLoc == 0 || subLoc == chpl_task_anySubLoc);
+  assert(subLoc == 0 || subLoc == c_sublocid_any);
   assert(id == chpl_nullTaskID);
 
   // begin critical section
@@ -693,15 +693,15 @@ void chpl_task_startMovedTask(chpl_fn_p fp,
 }
 
 
-chpl_task_subLoc_t chpl_task_getSubLoc(void) {
+c_sublocid_t chpl_task_getSubLoc(void) {
   return 0;
 }
 
 
-void chpl_task_setSubLoc(chpl_task_subLoc_t subLoc) {
+void chpl_task_setSubLoc(c_sublocid_t subLoc) {
   assert(subLoc == 0
-         || subLoc == chpl_task_anySubLoc
-         || subLoc == chpl_task_currSubLoc);
+         || subLoc == c_sublocid_any
+         || subLoc == c_sublocid_curr);
 }
 
 
@@ -776,7 +776,7 @@ void chpl_task_setLocaleID(c_localeid_t new_localeID) {
   chpl_task_getPrivateData()->localeID = new_localeID;
 }
 
-chpl_task_subLoc_t chpl_task_getNumSubLocales(void) {
+c_sublocid_t chpl_task_getNumSubLocales(void) {
   return 1;
 }
 
