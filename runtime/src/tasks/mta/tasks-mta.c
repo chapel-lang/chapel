@@ -226,16 +226,16 @@ void chpl_task_setHere(void* here) {
     p->here = here;
 }
 
-c_locale_t chpl_task_getLocaleID(void) {
+c_localeid_t chpl_task_getLocaleID(void) {
   return chpl_task_getPrivateData()->localeID;
 }
 
-void chpl_task_setLocaleID(c_locale_t locale) {
+void chpl_task_setLocaleID(c_localeid_t localeID) {
   chpl_task_private_data_t* p = chpl_task_getPrivateData();
   if (p == NULL)
     chpl_internal_error("no task-private data in chpl_task_setLocaleID.");
   else
-    p->localeID = locale;
+    p->localeID = localeID;
 }
 
 //

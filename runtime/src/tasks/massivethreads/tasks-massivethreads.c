@@ -468,16 +468,16 @@ void chpl_task_setSerial(chpl_bool new_state)
         chpl_task_getPrivateData()->serial_state = new_state;
 }
 
-c_locale_t chpl_task_getLocaleID(void)
+c_localeid_t chpl_task_getLocaleID(void)
 {
         //get dynamic locale ID
         return chpl_task_getPrivateData()->localeID;
 }
 
-void chpl_task_setLocaleID(c_locale_t new_locale)
+void chpl_task_setLocaleID(c_localeid_t new_localeID)
 {
         //set dynamic locale ID
-        chpl_task_getPrivateData()->localeID = new_locale;
+        chpl_task_getPrivateData()->localeID = new_localeID;
 }
 
 void* chpl_task_getHere(void)

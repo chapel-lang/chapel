@@ -67,13 +67,13 @@ typedef struct _chpl_fieldType {
 } chpl_fieldType;
 
 // This allocation of bits is arbitrary.
-// Seemingly, 64 bits is enough to represent both the node_id and sublocale_id portions 
-// of a locale ID, and an even split is a good first guess.
+// Seemingly, 64 bits is enough to represent both the node_id and sublocale_id
+// portions  of a locale ID, and an even split is a good first guess.
 typedef int32_t c_nodeid_t;
 #define FORMAT_c_nodeid_t PRId32
-typedef int32_t c_subloc_t;
-#define FORMAT_c_subloc_t PRId32
-typedef int64_t c_locale_t;
+typedef int32_t c_sublocid_t;
+#define FORMAT_c_sublocid_t PRId32
+typedef int64_t c_localeid_t;
 
 // It is unfortunate that we need this definition in parallel with the module definition.
 // If runtime routines that depend on chpl_localeID_t can be eliminated, then this

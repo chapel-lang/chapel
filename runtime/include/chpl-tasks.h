@@ -23,7 +23,7 @@ typedef void  (*chpl_free_fn)(void* ptr);
 typedef struct chpl_task_private_data_s
 {
   chpl_bool serial_state;   // True if execution is to be serialized; false otherwise.
-  c_locale_t localeID;      // Stores the current localeID.  This may be obsolete.
+  c_localeid_t localeID;    // Stores the current localeID.  This may be obsolete.
   void* here;               // Stores a (local) pointer to the "here" locale.
 
   // These are the memory-management functions
@@ -225,8 +225,8 @@ void        chpl_task_setHere(void*);
 //
 // Get and set task-specific localeID information.
 //
-c_locale_t  chpl_task_getLocaleID(void);
-void        chpl_task_setLocaleID(c_locale_t);
+c_localeid_t  chpl_task_getLocaleID(void);
+void          chpl_task_setLocaleID(c_localeid_t);
 
 //
 // Returns the the number of sublocales the tasking layer knows about,

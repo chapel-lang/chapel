@@ -28,7 +28,7 @@
 // since one can't cast a structure...
 
 static WIDE_PTR_INLINE
-c_subloc_t chpl_local_ptr_to_subloc(void* ptr)
+c_sublocid_t chpl_local_ptr_to_subloc(void* ptr)
 {
   // This should be platform specific.
   return 0;
@@ -111,7 +111,7 @@ c_nodeid_t chpl_localeID_get_node(chpl_localeID_t loc)
 }
 
 static WIDE_PTR_INLINE
-c_subloc_t chpl_localeID_get_subloc(chpl_localeID_t loc)
+c_sublocid_t chpl_localeID_get_subloc(chpl_localeID_t loc)
 {
   return loc.subloc;
 }
@@ -126,7 +126,7 @@ chpl_localeID_t chpl_return_localeID_node(c_nodeid_t node)
 }
 
 static WIDE_PTR_INLINE
-chpl_localeID_t chpl_return_localeID(c_nodeid_t node, c_subloc_t subloc)
+chpl_localeID_t chpl_return_localeID(c_nodeid_t node, c_sublocid_t subloc)
 {
   chpl_localeID_t loc;
   loc.node = node;
@@ -192,7 +192,7 @@ static WIDE_PTR_INLINE
 int32_t chpl_localeID_equals(chpl_localeID_t a, chpl_localeID_t b)
 {
   c_nodeid_t anode, bnode;
-  c_subloc_t asub, bsub;
+  c_sublocid_t asub, bsub;
   anode = chpl_localeID_get_node(a);
   bnode = chpl_localeID_get_node(b);
   asub = chpl_localeID_get_subloc(a);

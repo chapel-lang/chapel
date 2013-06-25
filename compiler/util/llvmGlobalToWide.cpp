@@ -1016,9 +1016,9 @@ namespace {
         madeInfo = true;
         info->globalSpace = 100;
         info->wideSpace = 101;
-        info->localeIdType = M.getTypeByName("struct.c_locale_t");
+        info->localeIdType = M.getTypeByName("struct.c_localeid_t");
         if( ! info->localeIdType ) {
-          StructType* t = StructType::create(M.getContext(), "struct.c_locale_t");
+          StructType* t = StructType::create(M.getContext(), "struct.c_localeid_t");
           t->setBody(Type::getInt32Ty(M.getContext()), Type::getInt32Ty(M.getContext()), NULL);
           info->localeIdType = t;
         }

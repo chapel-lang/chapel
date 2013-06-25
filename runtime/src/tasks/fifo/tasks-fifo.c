@@ -754,7 +754,7 @@ void chpl_task_setHere(void* new_here) {
   chpl_task_getPrivateData()->here = new_here;
 }
 
-c_locale_t chpl_task_getLocaleID(void) {
+c_localeid_t chpl_task_getLocaleID(void) {
   thread_private_data_t* tp;
 
   // Quick exit if we have no threads yet.
@@ -772,8 +772,8 @@ c_locale_t chpl_task_getLocaleID(void) {
   return tp->ptask->chpl_data.localeID;
 }
 
-void chpl_task_setLocaleID(c_locale_t new_locale) {
-  chpl_task_getPrivateData()->localeID = new_locale;
+void chpl_task_setLocaleID(c_localeid_t new_localeID) {
+  chpl_task_getPrivateData()->localeID = new_localeID;
 }
 
 chpl_task_subLoc_t chpl_task_getNumSubLocales(void) {

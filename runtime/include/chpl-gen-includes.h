@@ -9,10 +9,10 @@
 #include "chpl-tasks.h"
 
 // used for converting between the Chapel idea of a locale ID: chpl_localeID_t
-// and the runtime idea of a locale ID: c_locale_t.
+// and the runtime idea of a locale ID: c_localeid_t.
 typedef union {
   chpl_localeID_t as_struct;
-  c_locale_t as_int;
+  c_localeid_t as_int;
 } localeID_u;
 
 static ___always_inline

@@ -269,9 +269,9 @@ void* chpl_task_getHere(void) { return s_chpl_data.here; }
 
 void chpl_task_setHere(void* new_here) { s_chpl_data.here = new_here; }
 
-c_locale_t chpl_task_getLocaleID(void) { return s_chpl_data.localeID; }
+c_localeid_t chpl_task_getLocaleID(void) { return s_chpl_data.localeID; }
 
-void chpl_task_setLocaleID(c_locale_t new_localeID) {
+void chpl_task_setLocaleID(c_localeid_t new_localeID) {
   s_chpl_data.localeID = new_localeID;
 }
 

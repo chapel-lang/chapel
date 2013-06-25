@@ -153,7 +153,7 @@ static inline chapel_tls_t * chapel_get_tasklocal_possibly_from_non_task(void)
 }
 
 // Default locale id.
-static c_locale_t const default_locale_id = 0;
+static c_localeid_t const default_locale_id = 0;
 
 // Default serial state is used outside of the tasking layer.
 static chpl_bool default_serial_state = true;
@@ -454,7 +454,7 @@ static aligned_t chapel_wrapper(void *arg)
 void chpl_task_callMain(void (*chpl_main)(void))
 {
     const chpl_bool initial_serial_state = false;
-    const c_locale_t initial_locale_id = default_locale_id;
+    const c_localeid_t initial_locale_id = default_locale_id;
     const chapel_wrapper_args_t wrapper_args = 
         {chpl_main, NULL, NULL, 0,
          {initial_serial_state, initial_locale_id, NULL,
@@ -635,7 +635,7 @@ void chpl_task_setHere(void * new_here)
     }
 }
 
-c_locale_t chpl_task_getLocaleID(void)
+c_localeid_t chpl_task_getLocaleID(void)
 {
     // FIXME: this method attempts to access task-local data, even though
     // it is called from outside of a task.
@@ -643,13 +643,13 @@ c_locale_t chpl_task_getLocaleID(void)
     return (NULL==data) ? 0 : data->chpl_data.localeID;
 }
 
-void chpl_task_setLocaleID(c_locale_t new_locale)
+void chpl_task_setLocaleID(c_localeid_t new_localeID)
 {
     // FIXME: this method attempts to access task-local data, even though
     // it is called from outside of a task.
     chapel_tls_t * data = chapel_get_tasklocal_possibly_from_non_task();
     if (NULL != data) {
-        data->chpl_data.localeID = new_locale;
+        data->chpl_data.localeID = new_localeID;
     }
 }
 
