@@ -23,7 +23,7 @@ perfkeys: Elapsed time for Edge Generation:, Elapsed time for Kernel 1:
 graphkeys: Edge Generation, Kernel 1
 files: SSCA2_main.dat, SSCA2_main.dat
 ylabel: Time (seconds)
-graphtitle: SSC#2 Graph Construction (SCALE=8)
+graphtitle: SSCA#2 Graph Construction (SCALE=8)
 graphname: SSCA2-Graph-Construction-for-SCALE=8
 
 perfkeys: Elapsed time for SSCA#2:
