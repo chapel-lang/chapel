@@ -433,7 +433,7 @@ void chpl_comm_fork_nb(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
   if (arg_size)
     memcpy(&(info->arg), arg, arg_size);
   chpl_task_startMovedTask((chpl_fn_p)fork_nb_wrapper, (void*)info,
-                           chpl_task_anySubLoc, chpl_nullTaskID, false);
+                           c_sublocid_any, chpl_nullTaskID, false);
 }
 
 void chpl_comm_fork(c_nodeid_t node, chpl_fn_int_t fid, void *arg,

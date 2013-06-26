@@ -154,7 +154,7 @@ static void AM_fork(gasnet_token_t token, void* buf, size_t nbytes) {
   fork_t *f = (fork_t*)chpl_mem_allocMany(nbytes, sizeof(char), CHPL_RT_MD_COMM_FORK_RECV_INFO, 0, 0);
   memcpy(f, buf, nbytes);
   chpl_task_startMovedTask((chpl_fn_p)fork_wrapper, (void*)f,
-                           chpl_task_anySubLoc, chpl_nullTaskID,
+                           c_sublocid_any, chpl_nullTaskID,
                            f->serial_state);
 }
 
@@ -187,7 +187,7 @@ static void AM_fork_large(gasnet_token_t token, void* buf, size_t nbytes) {
   fork_t* f = (fork_t*)chpl_mem_allocMany(1, nbytes, CHPL_RT_MD_COMM_FORK_RECV_LARGE_INFO, 0, 0);
   memcpy(f, buf, nbytes);
   chpl_task_startMovedTask((chpl_fn_p)fork_large_wrapper, (void*)f,
-                           chpl_task_anySubLoc, chpl_nullTaskID,
+                           c_sublocid_any, chpl_nullTaskID,
                            f->serial_state);
 }
 
@@ -206,7 +206,7 @@ static void AM_fork_nb(gasnet_token_t  token,
                                           CHPL_RT_MD_COMM_FORK_RECV_NB_INFO, 0, 0);
   memcpy(f, buf, nbytes);
   chpl_task_startMovedTask((chpl_fn_p)fork_nb_wrapper, (void*)f,
-                           chpl_task_anySubLoc, chpl_nullTaskID,
+                           c_sublocid_any, chpl_nullTaskID,
                            f->serial_state);
 }
 
@@ -232,7 +232,7 @@ static void AM_fork_nb_large(gasnet_token_t token, void* buf, size_t nbytes) {
   fork_t* f = (fork_t*)chpl_mem_allocMany(1, nbytes, CHPL_RT_MD_COMM_FORK_RECV_NB_LARGE_INFO, 0, 0);
   memcpy(f, buf, nbytes);
   chpl_task_startMovedTask((chpl_fn_p)fork_nb_large_wrapper, (void*)f,
-                           chpl_task_anySubLoc, chpl_nullTaskID,
+                           c_sublocid_any, chpl_nullTaskID,
                            f->serial_state);
 }
 
@@ -887,7 +887,7 @@ void  chpl_comm_fork_nb(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
       fork_nb_wrapper(info);
     else
       chpl_task_startMovedTask((chpl_fn_p)fork_nb_wrapper, (void*)info,
-                               chpl_task_anySubLoc, chpl_nullTaskID,
+                               c_sublocid_any, chpl_nullTaskID,
                                info->serial_state);
   } else {
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
