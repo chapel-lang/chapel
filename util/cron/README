@@ -6,8 +6,6 @@ chap03 : linux64 performance (comm none, default everything) -- old HW
 chap04 : linux64 performance (comm none, default everything) -- new HW
 chap05 : --no-local
 chap06 : --baseline
-chap07 : tcmalloc (comm none, gasnet multilocale-examples)
-chap08 : XMT
 chpbld01 : XT/XE PrgEnvs examples, nightly
 chpbld02 : XT/XE PrgEnvs all, weekly
 chpbld03 : (no testing - non-standard: RHEL5.7 with Tilera PCI card)
@@ -29,6 +27,8 @@ Discontinued testing
 ====================
 - opts   (start_opt_test, nightly-opts-all.cron, nightly-opts-examples.cron)
 - mpi    (was: nightly.chap04     up to r19116)
+- tcmalloc (comm none, gasnet multilocale-examples, preserved as nightly.tcmalloc)
+- XMT (was nightly.chap07, preserved as nightly.xmt)
 
 
 Other notes
