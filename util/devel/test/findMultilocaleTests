@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+if [ ! -z "$CHPL_HOME" ]; then
+    testDir=$CHPL_HOME/test
+else
+    echo >&2 "$CHPL_HOME is not set.  Using '.'"
+    testDir='.'
+fi
+
+pushd $testDir >& /dev/null
+
+mltests=`find . -name .svn -prune -o \( -name NUMLOCALES -o -name \*.numlocales \) -print`
+
+popd $testDir >& /dev/null
+
+suff=numlocales
+for t in $mltests; do
+    t1=${t##*\.}
+    if [ "$t1" == "$suff" ]; then
+        echo ${t%.$suff}.chpl
+    else
+        echo "${t%/*}"
+    fi
+done
