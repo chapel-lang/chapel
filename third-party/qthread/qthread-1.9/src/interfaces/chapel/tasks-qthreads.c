@@ -17,10 +17,11 @@
 #include "chplrt.h"
 #include "chplsys.h"
 #include "tasks-qthreads.h"
-#include "chpl-tasks.h"
-#include "chpl-comm.h" // for chpl_localeID
-#include "chpl-mem.h"  // for chpl_malloc(), etc.
 #include "chplcgfns.h" // for chpl_ftable()
+#include "chpl-comm.h" // for chpl_localeID
+#include "chpl-locale-model.h" // for sublocale information
+#include "chpl-mem.h"  // for chpl_malloc(), etc.
+#include "chpl-tasks.h"
 #include "config.h"   // for chpl_config_get_value()
 #include "error.h"    // for chpl_warning()
 #include "arg.h"      // for blockreport and taskreport
@@ -655,7 +656,18 @@ void chpl_task_setLocaleID(c_localeid_t new_localeID)
 
 c_sublocid_t chpl_task_getNumSubLocales(void)
 {
-    return 1;
+    c_sublocid_t num_sublocs = (c_sublocid_t) qthread_num_shepherds();
+
+    // FIXME: What we really want here is the number of NUMA
+    // sublocales we are supporting.  For now we use the number of
+    // shepherds as a proxy for that.
+#ifdef CHPL_LOCALE_MODEL_NUM_SUBLOCALES
+    return ((num_sublocs < CHPL_LOCALE_MODEL_NUM_SUBLOCALES)
+            ? num_sublocs
+            : CHPL_LOCALE_MODEL_NUM_SUBLOCALES);
+#else
+    return (c_sublocid_t) num_sublocs;
+#endif
 }
 
 uint64_t chpl_task_getCallStackSize(void)

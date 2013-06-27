@@ -12,6 +12,7 @@
 #include "chplcgfns.h"
 #include "chpl-comm.h"
 #include "chplexit.h"
+#include "chpl-locale-model.h"
 #include "chpl-mem.h"
 #include "chpl-tasks.h"
 #include "error.h"
@@ -777,7 +778,11 @@ void chpl_task_setLocaleID(c_localeid_t new_localeID) {
 }
 
 c_sublocid_t chpl_task_getNumSubLocales(void) {
-  return 1;
+#ifdef CHPL_LOCALE_MODEL_NUM_SUBLOCALES
+  return CHPL_LOCALE_MODEL_NUM_SUBLOCALES;
+#else
+  return 0;
+#endif
 }
 
 uint64_t chpl_task_getCallStackSize(void) {

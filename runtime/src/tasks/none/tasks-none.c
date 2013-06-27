@@ -4,10 +4,11 @@
 #endif
 
 #include "chplrt.h"
-#include "chpl-mem.h"
-#include "chplcast.h"
-#include "chpl-tasks.h"
 #include "chplcgfns.h" // for chpl_ftable
+#include "chplcast.h"
+#include "chpl-locale-model.h"
+#include "chpl-mem.h"
+#include "chpl-tasks.h"
 #include "error.h"
 #include <assert.h>
 #include <stdint.h>
@@ -275,7 +276,13 @@ void chpl_task_setLocaleID(c_localeid_t new_localeID) {
   s_chpl_data.localeID = new_localeID;
 }
 
-c_sublocid_t chpl_task_getNumSubLocales(void) { return 1; }
+c_sublocid_t chpl_task_getNumSubLocales(void) {
+#ifdef CHPL_LOCALE_MODEL_NUM_SUBLOCALES
+  return CHPL_LOCALE_MODEL_NUM_SUBLOCALES;
+#else
+  return 0;
+#endif
+}
 
 uint64_t chpl_task_getCallStackSize(void) {
   return taskCallStackSize;
