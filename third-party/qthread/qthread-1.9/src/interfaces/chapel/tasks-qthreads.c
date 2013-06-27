@@ -491,7 +491,7 @@ int chpl_task_createCommTask(chpl_fn_p fn,
 
 void chpl_task_addToTaskList(chpl_fn_int_t     fid,
                              void             *arg,
-                             c_sublocid       _t subLoc,
+                             c_sublocid_t      subLoc,
                              chpl_task_list_p *task_list,
                              int32_t           task_list_locale,
                              chpl_bool         is_begin_stmt,
