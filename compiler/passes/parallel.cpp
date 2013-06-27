@@ -1063,31 +1063,33 @@ static Expr* findDestLocale(CallExpr* toLocMove, Map<Symbol*, Vec<SymExpr*>*>& d
 
 
 // Perform optimizations related to on_fn calls.
-// Overhead is high for on statements, since in general they call a forking function.
-// The main optimization is to insert a conditional, so the forking function is called
-// only if needed.
-// If locale==here and the call to on_fn is supposed to block, we can run the on_fn
-// in the same task and thus avoid the fork.  This is done by calling on_fn() directly
-// rather than creating a fork to wrapon_fn().
-// For on_fn() calls marked as non-blocking, we could also perform this optimization if
-// the serial state is true.  To do that, we would have to hoist the relevant code into
-// the compiler generated code from the codegen function in which it currently resides
-// (chpl_comm_nonblocking_on).
 //
-// One other optimizations are applied here: Calls to chpl_localeID_to_locale() 
+// Overhead is high for on statements, since in general they end up calling
+// the runtime.  The main optimization is to insert a conditional, so the
+// runtime is called only if needed.
+//
+// If locale==here and the call to on-body is supposed to block, we can call
+// the on_fn directly and avoid the runtime.  For on_fn() calls marked as
+// non-blocking, we could also perform this optimization if the serial state
+// is true.  To do that, we would have to hoist the relevant code into the
+// compiler generated code from the function chpl_ExecuteOnNB() in the
+// LocaleModel module, where it currently resides.
+//
+// One other optimization is applied here: Calls to chpl_localeID_to_locale() 
 // are short-circuited if the expression x passed to the "on" clause 
 //
 //  blockInfo = new CallExpr(PRIM_BLOCK_ON, x);
 //
-// has type dtLocale.  The type of the "on" expression can be any lvalue type, but the
-// parser inserts a call to chpl_localeID_to_locale so every on expression has type 
-// dtLocale:
+// has type dtLocale.  The type of the "on" expression can be any lvalue type,
+// but the parser inserts a call to chpl_localeID_to_locale so every on
+// expression has type dtLocale:
 //
-//  x->replace(new CallExpr("chpl_localeID_to_locale", new CallExpr(PRIM_WIDE_GET_LOCALE, x)));
+//  x->replace(new CallExpr("chpl_localeID_to_locale",
+//                          new CallExpr(PRIM_WIDE_GET_LOCALE, x)));
 //
-// Obviously, this is not needed if x is of type dtLocale -- but the type of x is not 
-// known to the parser.  That's why we put the code in then, and selectively take it back
-// out now.
+// Obviously, this is not needed if x is of type dtLocale -- but the type of x
+// is not known to the parser.  That's why we put the code in then, and
+// selectively take it back out now.
 static CallExpr* optimizeOnCall(CallExpr* call)
 {
   FnSymbol* fn = call->isResolved();

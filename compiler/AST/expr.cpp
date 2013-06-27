@@ -5329,7 +5329,7 @@ GenRet CallExpr::codegen() {
     } else {
       taskList = codegenLocalAddrOf(codegenFieldPtr(endCountValue, "taskList"));
     }
-    args[2] = new_IntSymbol(-1 /* chpl_task_anySubLoc */, INT_SIZE_32);
+    args[2] = new_IntSymbol(-1 /* c_sublocid_any */, INT_SIZE_32);
     args[3] = taskList;
     if (bundledArgsType->getField(lastField)->typeInfo()->symbol->
         hasFlag(FLAG_WIDE_CLASS)) {
@@ -5408,7 +5408,7 @@ GenRet CallExpr::codegen() {
     } else {
       taskList = codegenLocalAddrOf(codegenFieldPtr(endCountValue, "taskList"));
     }
-    args[2] = new_IntSymbol(-1 /* chpl_task_anySubLoc */, INT_SIZE_32);
+    args[2] = new_IntSymbol(-1 /* chp_sublocid_any */, INT_SIZE_32);
     args[3] = taskList;
     args[4] = codegenGetNodeID(),
     args[5] = new_BoolSymbol(false, BOOL_SIZE_8);
@@ -5421,11 +5421,11 @@ GenRet CallExpr::codegen() {
   } else if (fn->hasFlag(FLAG_ON_BLOCK)) {
     const char* fname = NULL;
     if (fn->hasFlag(FLAG_NON_BLOCKING))
-      fname = "chpl_comm_nonblocking_on";
+      fname = "chpl_executeOnNB";
     else if (fn->hasFlag(FLAG_FAST_ON))
-      fname = "chpl_comm_fork_fast";
+      fname = "chpl_executeOnFast";
     else
-      fname = "chpl_comm_fork";
+      fname = "chpl_executeOn";
 
     TypeSymbol* argType = toTypeSymbol(get(2)->typeInfo()->symbol);
     if (argType == NULL) {
@@ -5438,17 +5438,18 @@ GenRet CallExpr::codegen() {
     }
     std::string ctype = ct->classStructName(true);
 
+    GenRet locale_id = codegenRlocale(get(1));
+
+    std::vector<GenRet> args(6);
+    args[0] = codegenLocalAddrOf(codegenValuePtr(locale_id));
+    args[1] = new_IntSymbol(ftableMap.get(fn), INT_SIZE_32);
+    args[2] = get(2);
+    args[3] = codegenSizeof(ctype.c_str());
+    args[4] = fn->linenum();
+    args[5] = fn->fname();
+
     genComment(fn->cname, true);
-    GenRet nodeVal = codegenRnode(get(1));
-    codegenCall(fname,
-    // Note that we select just the node portion of the localeID.
-    // The comm routines only care about nodes, not sublocales.
-    // The sublocale ID is passed to the called routine via the bundled args.
-               nodeVal,
-               new_IntSymbol(ftableMap.get(fn), INT_SIZE_32),
-               get(2),
-               codegenSizeof(ctype.c_str()),
-               genTypeStructureIndex(argType) );
+    codegenCall(fname, args);
     return ret;
   }
 

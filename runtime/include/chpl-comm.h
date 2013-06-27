@@ -232,20 +232,20 @@ void chpl_gen_comm_wide_string_get(void* addr,
 // notes:
 //   multiple forks to the same locale should be handled concurrently
 //
-void chpl_comm_fork(c_nodeid_t node, chpl_fn_int_t fid,
-                    void *arg, int32_t arg_size, int32_t arg_tid);
+void chpl_comm_fork(c_nodeid_t node, c_sublocid_t subloc,
+                    chpl_fn_int_t fid, void *arg, int32_t arg_size);
 
 //
 // non-blocking fork
 //
-void chpl_comm_fork_nb(c_nodeid_t node, chpl_fn_int_t fid,
-                       void *arg, int32_t arg_size, int32_t arg_tid);
+void chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
+                       chpl_fn_int_t fid, void *arg, int32_t arg_size);
 
 //
 // fast (non-forking) fork (i.e., run in handler)
 //
-void chpl_comm_fork_fast(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
-                         int32_t arg_size, int32_t arg_tid);
+void chpl_comm_fork_fast(c_nodeid_t node, c_sublocid_t subloc,
+                         chpl_fn_int_t fid, void *arg, int32_t arg_size);
 
 
 //

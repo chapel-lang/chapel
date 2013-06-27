@@ -95,22 +95,6 @@ void chpl_heap_register_global_var(int i, wide_ptr_t *ptr_to_wide_ptr)
   CHPL_HEAP_REGISTER_GLOBAL_VAR_EXTRA(i, *ptr_to_wide_ptr);
 }
 
-//
-// If we're in serial mode, we should use blocking rather than
-// non-blocking comm forks in order to serialize the forks.
-// See test/parallel/serial/bradc/serialDistributedForall.chpl
-// for a motivating example that didn't work before this change.
-//
-static ___always_inline
-void chpl_comm_nonblocking_on(c_nodeid_t node, chpl_fn_int_t fid,
-                              void *arg, int32_t arg_size, int32_t arg_tid) {
-  if (chpl_task_getSerial()) {
-    chpl_comm_fork(node, fid, arg, arg_size, arg_tid);
-  } else {
-    chpl_comm_fork_nb(node, fid, arg, arg_size, arg_tid);
-  }
-}
-
 #ifdef DEBUG_COMM_INIT
 #define CHPL_COMM_DEBUG_BROADCAST_GLOBAL_VARS(numGlobals) \
   for (int i = 0; i < numGlobals; i++) \

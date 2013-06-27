@@ -237,4 +237,60 @@ module LocaleModel {
   // that problem would go away. <hilde>
   const Locales => (rootLocale:RootLocale).getDefaultLocaleArray();
   const LocaleSpace = Locales.domain;
+
+  //////////////////////////////////////////
+  //
+  // runtime interface
+  //
+
+  extern proc chpl_comm_fork(loc_id: int, subloc_id: int,
+                             fn: int, args: c_ptr, arg_size: int(32));
+  extern proc chpl_comm_fork_fast(loc_id: int, subloc_id: int,
+                                  fn: int, args: c_ptr, args_size: int(32));
+  extern proc chpl_comm_fork_nb(loc_id: int, subloc_id: int,
+                                fn: int, args: c_ptr, args_size: int(32));
+
+  //
+  // regular "on"
+  //
+  export
+  proc chpl_executeOn(loc: chpl_localeID_t, // target locale
+                      fn: int,              // on-body function idx
+                      args: c_ptr,          // function args
+                      args_size: int(32)    // args size
+                     ) {
+    chpl_comm_fork(loc.node, loc.subloc, fn, args, args_size);
+  }
+
+  //
+  // fast "on" (doesn't do anything that could deadlock a comm layer,
+  // in the Active Messages sense)
+  //
+  export
+  proc chpl_executeOnFast(loc: chpl_localeID_t, // target locale
+                          fn: int,              // on-body function idx
+                          args: c_ptr,          // function args
+                          args_size: int(32)    // args size
+                         ) {
+    chpl_comm_fork_fast(loc.node, loc.subloc, fn, args, args_size);
+  }
+
+  //
+  // nonblocking "on" (doesn't wait for completion)
+  //
+  export
+  proc chpl_executeOnNB(loc: chpl_localeID_t, // target locale
+                        fn: int,              // on-body function idx
+                        args: c_ptr,          // function args
+                        args_size: int(32)    // args size
+                       ) {
+    //
+    // If we're in serial mode, we should use blocking rather than
+    // non-blocking "on" in order to serialize the forks.
+    //
+    if __primitive("task_get_serial") then
+      chpl_comm_fork(loc.node, loc.subloc, fn, args, args_size);
+    else
+      chpl_comm_fork_nb(loc.node, loc.subloc, fn, args, args_size);
+  }
 }

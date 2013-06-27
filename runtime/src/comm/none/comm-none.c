@@ -411,6 +411,13 @@ typedef struct {
   char          arg[0];       // variable-sized data here
 } fork_t;
 
+void chpl_comm_fork(c_nodeid_t node, c_sublocid_t subloc,
+                    chpl_fn_int_t fid, void *arg, int32_t arg_size) {
+  assert(node==0);
+
+  (*chpl_ftable[fid])(arg);
+}
+
 static void fork_nb_wrapper(fork_t* f) {
   if (f->arg_size)
     (*chpl_ftable[f->fid])(&f->arg);
@@ -419,33 +426,27 @@ static void fork_nb_wrapper(fork_t* f) {
   chpl_mem_free(f, 0, 0);
 }
 
-void chpl_comm_fork_nb(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
-                       int32_t arg_size, int32_t arg_tid) {
+void chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
+                       chpl_fn_int_t fid, void *arg, int32_t arg_size) {
   fork_t *info;
   int     info_size;
 
   assert(node==0);
 
   info_size = sizeof(fork_t) + arg_size;
-  info = (fork_t*)chpl_mem_allocMany(info_size, sizeof(char), CHPL_RT_MD_COMM_FORK_SEND_NB_INFO, 0, 0);
+  info = (fork_t*)chpl_mem_allocMany(info_size, sizeof(char),
+                                     CHPL_RT_MD_COMM_FORK_SEND_NB_INFO, 0, 0);
   info->fid = fid;
   info->arg_size = arg_size;
   if (arg_size)
     memcpy(&(info->arg), arg, arg_size);
   chpl_task_startMovedTask((chpl_fn_p)fork_nb_wrapper, (void*)info,
-                           c_sublocid_any, chpl_nullTaskID, false);
-}
-
-void chpl_comm_fork(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
-                    int32_t arg_size, int32_t arg_tid) {
-  assert(node==0);
-
-  (*chpl_ftable[fid])(arg);
+                           subloc, chpl_nullTaskID, false);
 }
 
 // Same as chpl_comm_fork()
-void chpl_comm_fork_fast(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
-                         int32_t arg_size, int32_t arg_tid) {
+void chpl_comm_fork_fast(c_nodeid_t node, c_sublocid_t subloc,
+                         chpl_fn_int_t fid, void *arg, int32_t arg_size) {
   assert(node==0);
 
   (*chpl_ftable[fid])(arg);
