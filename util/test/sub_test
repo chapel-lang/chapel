@@ -363,6 +363,18 @@ else:
     globalTimeout=300
 # sys.stdout.write('globalTimeout=%d\n'%(globalTimeout))
 
+#
+# Check for global PERFTIMEEXEC option
+#
+# TODO: Eventually, we could store the time command to use within this
+# file itself to permit various other options to be used; on the other
+# hand, that could be considered a potential security risk...
+#
+if os.access('./PERFTIMEEXEC',os.R_OK):
+    globalTimeExec=True
+else:
+    globalTimeExec=False
+
 # Get global timeout for kill
 if os.access('./KILLTIMEOUT',os.R_OK):
     globalKillTimeout = ReadIntegerValue('./KILLTIMEOUT', localdir)
@@ -482,9 +494,18 @@ else:
 
 
 #
-# Global COMPOPTS
+# Global COMPOPTS/PERFCOMPOPTS:
 #
-if os.access('./COMPOPTS',os.R_OK):
+#   Prefer PERFCOMPOPTS if doing performance testing; otherwise, use
+#   COMPOPTS.  Note that COMPOPTS is used for performance testing
+#   currently in the absence of a PERFCOMPOPTS file.  Not sure whether
+#   or not this is a good idea, but preserving it for now for backwards
+#   compatibility.
+#
+if (perftest and os.access('./PERFCOMPOPTS',os.R_OK)):
+    tgco=ReadFileWithComments('./PERFCOMPOPTS')
+    globalCompopts = shlex.split(tgco[0])
+elif os.access('./COMPOPTS',os.R_OK):
     tgco=ReadFileWithComments('./COMPOPTS')
     globalCompopts = shlex.split(tgco[0])
 else:
@@ -504,10 +525,19 @@ else:
 # sys.stdout.write('globalExecenv=%s\n'%(globalExecenv))
 
 #
-# Global EXECOPTS
+# Global EXECOPTS/PERFEXECOPTS
 #
-globalExecopts=list()
-if os.access('./EXECOPTS',os.R_OK):
+#
+#   Prefer PERFEXECOPTS if doing performance testing; otherwise, use
+#   EXECOPTS.  Note that EXECOPTS is used for performance testing
+#   currently in the absence of a PERFEXECOPTS file.  Not sure whether
+#   or not this is a good idea, but preserving it for now for backwards
+#   compatibility.
+#
+if (perftest and os.access('./PERFEXECOPTS',os.R_OK)):
+    tgeo=ReadFileWithComments('./PERFEXECOPTS')
+    globalExecopts= shlex.split(tgeo[0])
+elif os.access('./EXECOPTS',os.R_OK):
     tgeo=ReadFileWithComments('./EXECOPTS')
     globalExecopts= shlex.split(tgeo[0])
 else:
@@ -588,6 +618,10 @@ for testname in testsrc:
 
     timeout = globalTimeout
     killtimeout = globalKillTimeout
+    if (perftest):
+        timeExec = globalTimeExec
+    else:
+        timeExec = False;
     futuretest=''
     executebin=execute
     testfuturesfile=False
@@ -643,6 +677,8 @@ for testname in testsrc:
         elif (suffix==timeoutsuffix and os.access(f, os.R_OK)):
             timeout=ReadIntegerValue(f, localdir)
             sys.stdout.write('[Overriding default timeout with %d]\n'%(timeout))
+        elif (perftest and suffix=='.perftimeexec' and os.access(f, os.R_OK)):
+            timeExec = True
 
         elif (suffix=='.killtimeout' and os.access(f, os.R_OK)):
             killtimeout=ReadIntegerValue(f, localdir)
@@ -1006,7 +1042,10 @@ for testname in testsrc:
                 break; # on to next compopts
 
             args=list()
-            if launchcmd:
+            if timeExec:
+                cmd='time'
+                args+=['-p']+['./'+execname]
+            elif launchcmd:
                 cmd=launchcmd
                 args+=['./'+execname]
             elif valgrindbin:

@@ -166,12 +166,30 @@
 # compiler options (to specify optimization, turn off bounds
 # checking) and execution options (to request timings and other
 # unpredictable values to be printed out, whereas they're likely
-# to be squelched in the correctness run).
+# to be squelched in the correctness run).  These can also be
+# set at the directory level using PERFCOMPOPTS / PERFEXECOPTS.
 #
 # Success/failure summaries after a performance run indicate
 # whether all the performance keys for a test were matched or not.
 # In particular, a failure indicates that a test's performance
 # keys couldn't all be found.
+#
+# Performance tests can also be timed via the UNIX 'time' command by
+# supplying a PERFTIMEEXEC or .perftimeexec file (contents don't
+# matter).  This has the effect of executing the program with 
+# 'time -p' on the command line such that the output of the 'time'
+# command gets appended to the end of the .exec.out.tmp file.  A
+# .perfkeys entry can then be read to read these values as with any
+# other key/value pair in performance testing.  The intent of this
+# feature is to time the whole Chapel program externally rather than
+# using Chapel-level timing mechanisms, either to time
+# startup/shutdown code that's normally outside of the user's ability
+# to time; or to avoid cluttering the sources with timing-related
+# code.  If desired, we can also add a PERFTIMECOMP/.perftimecomp
+# capability; we've also discussed the idea of adding the ability to
+# specify the timing routine within the file's contents, though we
+# should consider whether the flexibility is worth the confusion/
+# potential for problems.
 #
 # After all the performance tests are run, a second pass is taken
 # through the list of files or directories to generate graphs.  You
