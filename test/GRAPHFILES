@@ -1,0 +1,63 @@
+# suite: Whole system performance
+memleaks.graph
+spectests.graph
+# suite: Release examples
+release/examples/benchmarks/ssca2/SSCA2_main.graph
+release/examples/benchmarks/lulesh/lulesh.graph
+release/examples/benchmarks/hpcc/stream.graph
+release/examples/benchmarks/hpcc/ra.graph
+release/examples/benchmarks/hpcc/stream-ep.graph
+# suite: HPCC
+studies/hpcc/RA.graph
+studies/hpcc/STREAM.graph
+# suite: LULESH
+studies/lulesh/sungeun/lulesh.sungeun.graph
+studies/lulesh/bradc/lulesh-dense.graph
+# suite: Para-CR
+studies/paracr/asenjo/PARACR-BC.graph
+# suite: PARASEC
+studies/parsec/blackscholes.graph
+studies/parsec/blackscholes_promote.graph
+# suite: Shootout
+studies/shootout/fannkuch-redux/fannkuch-redux.graph
+studies/shootout/binary-trees/binary-trees.graph
+studies/shootout/binary-trees/binary-trees_iter.graph
+studies/shootout/spectral-norm/spectralnorm_2.graph
+studies/shootout/spectral-norm/spectralnorm.graph
+studies/shootout/chameneos-redux/chameneos-redux-all.graph
+studies/shootout/nbody/nbody.graph
+studies/shootout/fasta/fasta.graph
+# suite: SSCA2
+studies/ssca2/memory/SSCA2_mem.graph
+# suite: Array performance
+arrays/diten/arrayPerformance-2d.graph
+arrays/diten/arrayPerformance-1d.graph
+arrays/diten/time_iterate.graph
+arrays/diten/time_array_vs_tuple.graph
+arrays/diten/time_array_vs_ddata.graph
+performance/sungeun/copy_to_local.graph
+performance/sungeun/assign.256.graph
+performance/sungeun/dgemm.128.graph
+performance/sungeun/assign.1024.graph
+performance/sungeun/assign_across_locales.256.graph
+performance/sungeun/dgemm.64.graph
+performance/sungeun/assign_across_locales.1024.graph
+performance/sungeun/init.graph
+distributions/robust/associative/performance/array_iter.graph
+distributions/robust/associative/performance/domain_iter.graph
+# suite: Dynamic iterators
+functions/iterators/angeles/dynamic.graph
+functions/iterators/angeles/distAdaptativeWSv1.graph
+functions/iterators/angeles/distAdaptativeWSv2.graph
+functions/iterators/angeles/guided.graph
+functions/iterators/angeles/distAdaptativeWS.graph
+# suite: Compiler performance
+performance/compiler/bradc/fft-timecomp.graph
+performance/compiler/bradc/compSampler-timecomp.graph
+performance/compiler/bradc/cg-sparse-timecomp.graph
+performance/compiler/bradc/AllCompTime.graph
+# suite: Misc
+npb/cg/bradc/cg-sparse.graph
+users/franzf/v0/chpl/main.graph
+studies/jacobi/jacobi.graph
+domains/bradc/domEqualityPerf.graph

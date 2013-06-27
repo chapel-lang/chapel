@@ -968,11 +968,20 @@ endif
 
 # Set up vars for performance testing/graphing
 if ($performance || $gengraphs) then
+    set perftestname = `uname -n | sed 's@\..*@@'`
     if ($?CHPL_TEST_PERF_DIR) then
         set perfdir = $CHPL_TEST_PERF_DIR
     else
-    set perfdir = ./perfdat/`uname -n | sed 's@\..*@@'`
+        set perfdir = ./perfdat/$perftestname
     endif
+    set perfhtmldir = $perfdir/html
+    if ($startdate != "") then
+        set startdate = "-s"$startdate
+        echo "############"
+        echo $startdate
+    endif
+    echo $startdate
+    set createCoolerGraphs = $utildir/genGraphs
     set createGraphs = $utildir/createGraphs
     set viewGraphs = $utildir/viewGraphs
 endif
@@ -1158,6 +1167,19 @@ foreach test ($testlist)
             if (-e $graphfile) then
                 echo "[Executing createGraphs for $basedir/$graphfile in $perfdir]" |& $tee -a $logfile
                 $createGraphs "$graphfile" "$perfdir" "$startdate" |& $tee -a $logfile
+                if ($? == 0) then
+                    echo "[Success generating old-style graphs for $graphfile in $perfdir]" |& $tee -a $logfile
+                 else
+                    echo "[Error generating old-style graphs for $graphfile in $perfdir]" |& $tee -a $logfile
+                 endif
+                # new performance graph stuff
+                echo "[Executing genGraphs for $basedir/$graphfile in $perfhtmldir]" |& $tee -a $logfile
+                $createCoolerGraphs -p "$perfdir" -o "$perfhtmldir" -n "$perftestname" "$startdate" "$graphfile" |& $tee -a $logfile
+                if ($? == 0) then
+                    echo "[Success generating graphs for $basedir/$graphfile in $perfhtmldir]" |& $tee -a $logfile
+                 else
+                    echo "[Error generating graphs for $basedir/$graphfile in $perfhtmldir]" |& $tee -a $logfile
+                 endif
             endif
         endif
     endif
@@ -1303,10 +1325,22 @@ foreach testType ($testTypes)
                     echo "[Executing createGraphs for $graphfile in $perfdir]" |& $tee -a $logfile
                     $createGraphs "$graphfile" "$perfdir" "$startdate" |& $tee -a $logfile
                     if ($? == 0) then
-                        echo "[Success generating graphs for $graphfile in $perfdir]" |& $tee -a $logfile
+                        echo "[Success generating old-style graphs for $graphfile in $perfdir]" |& $tee -a $logfile
+                    else
+                        echo "[Error generating old-style graphs for $graphfile in $perfdir]" |& $tee -a $logfile
                     endif
                 end
-
+                # new performance graph stuff
+                if (! $?CHPL_TEST_PERF_DIR && "$graphfiles" != "") then
+                    echo "[Executing genGraphs for graphfiles in $dir in $perfhtmldir]" |& $tee -a $logfile
+                    $createCoolerGraphs -p "$perfdir" -o "$perfhtmldir" -n "$perftestname" "$startdate" $graphfiles |& $tee -a $logfile
+                    if ($? == 0) then
+                        echo "[Success generating graphs for $graphfile in $perfhtmldir]" |& $tee -a $logfile
+                    else
+                        echo "[Error generating graphs for $graphfile in $perfhtmldir]" |& $tee -a $logfile
+                    endif
+                endif
+                set graphfiles = ""
             endif
         end
     end
@@ -1316,9 +1350,17 @@ if ($gengraphs && $?CHPL_TEST_PERF_DIR) then
     echo "[Executing viewGraphs for $graphfile in $perfdir]" |& $tee -a $logfile
     $viewGraphs "$perfdir" |& $tee -a $logfile
     if ($? == 0) then
-        echo "[Success generating graph views in $perfdir]" |& $tee -a $logfile
+        echo "[Success generating old-style graph views in $perfdir]" |& $tee -a $logfile
     else
-        echo "[Error generating graph views in $perfdir]" |& $tee -a $logfile
+        echo "[Error generating old-style graph views in $perfdir]" |& $tee -a $logfile
+    endif
+    # new performance graph stuff
+    echo "[Executing genGraphs for $CHPL_HOME/test/GRAPHFILES in $perfhtmldir]" |& $tee -a $logfile
+    $createCoolerGraphs  -p "$perfdir" -o "$perfhtmldir" -t "$CHPL_HOME/test" -n "$perftestname" "$startdate" -g "$CHPL_HOME/test/GRAPHFILES" |& $tee -a $logfile
+    if ($? == 0) then
+        echo "[Success generating graphs from $CHPL_HOME/test/GRAPHFILES in $perfhtmldir]" |& $tee -a $logfile
+    else
+        echo "[Error generating graphs from $CHPL_HOME/test/GRAPHFILES in $perfhtmldir]" |& $tee -a $logfile
     endif
 endif
 

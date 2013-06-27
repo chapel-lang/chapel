@@ -1,0 +1,34 @@
+body {
+    font-family: "Arial";
+}
+.graph {
+    vertical-align: top;
+    white-space: nowrap;
+    font-size: 11px;
+}
+div.perfGraph {
+    vertical-align: top;
+    width: 700px;
+    height: 300px;
+}
+div.gspacer {
+    width: 700px;
+    height: 30px;
+}
+div.perfLegend {
+    vertical-align: top;
+    width: 300px;
+    height: 300px;
+    overflow: auto
+}
+div.lspacer {
+    width: 300px;
+    height: 30px;
+}
+.graphList {
+    vertical-align: top;
+    width: 200px;
+    padding-left: 20px;
+    padding-right: 20px;
+    border-right: 1px solid black;
+}
