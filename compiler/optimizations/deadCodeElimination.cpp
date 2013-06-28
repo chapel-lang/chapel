@@ -204,7 +204,9 @@ static bool deadBlockElimination(FnSymbol* fn)
       continue;
 
     // If this block has no predecessors, then it is dead.
-    if (bb->ins.size() == 0)
+    // If it is its own only predecessor (e.g. a loop) it is also dead.
+    if (bb->ins.size() == 0 ||
+        (bb->ins.size() == 1 && bb->ins[0] == bb))
     {
       if (bb->exprs.size() > 0)
       {
@@ -227,16 +229,17 @@ static bool deadBlockElimination(FnSymbol* fn)
         }
       }
 
-#if 0
       // Get more out of one pass by removing this BB from the predecessor
       // lists of its successors.
-      // FIXME: This causes memory corruption in std::vectors.
-      // Or ... stop trying to be so clever and just remove this block.
-      for_vector(BasicBlock, succ, bb->outs)
-        for_vector(BasicBlock, self, succ->ins)
-          if (self == bb)
-            succ->ins.erase(self);
-#endif
+      for_vector(BasicBlock, succ, bb->outs) {
+        for(std::vector<BasicBlock*>::iterator it = succ->ins.begin();
+            it != succ->ins.end(); ++it) {
+          if (*it == bb) {
+            succ->ins.erase(it);
+            break;
+          }
+        }
+      }
       // We leave the "dead" bb structure in place.
       // The next time we construct basic blocks for this fn, it should be gone.
     }
