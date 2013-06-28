@@ -253,6 +253,7 @@ module LocaleModel {
   //
   // regular "on"
   //
+  pragma "insert line file info"
   export
   proc chpl_executeOn(loc: chpl_localeID_t, // target locale
                       fn: int,              // on-body function idx
@@ -266,6 +267,7 @@ module LocaleModel {
   // fast "on" (doesn't do anything that could deadlock a comm layer,
   // in the Active Messages sense)
   //
+  pragma "insert line file info"
   export
   proc chpl_executeOnFast(loc: chpl_localeID_t, // target locale
                           fn: int,              // on-body function idx
@@ -278,6 +280,7 @@ module LocaleModel {
   //
   // nonblocking "on" (doesn't wait for completion)
   //
+  pragma "insert line file info"
   export
   proc chpl_executeOnNB(loc: chpl_localeID_t, // target locale
                         fn: int,              // on-body function idx
