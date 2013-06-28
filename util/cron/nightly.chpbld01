@@ -44,9 +44,9 @@ for compiler in $compilers ; do
   if [ $compiler == "cray" ] ; then   # avoid loading gemini libraries
       module load craype-target-petest
   fi
-  # Our PrgEnv modules are old.  Swap in a more recent mpich and libsci
+  # Our PrgEnv modules are old.  Swap in a more recent mpich and unload libsci
   module swap xt-mpich2 cray-mpich
-  module swap xt-libsci cray-libsci
+  module unload xt-libsci
   module list
   export CHPL_TARGET_PLATFORM=cray-xt
   $NIGHTLY -combinedir -cron $EXAMPLES
@@ -62,9 +62,9 @@ for compiler in $compilers ; do
   if [ $compiler == "cray" ] ; then   # avoid loading gemini libraries
       module load craype-target-petest
   fi
-  # Our PrgEnv modules are old.  Swap in a more recent mpich and libsci
+  # Our PrgEnv modules are old.  Swap in a more recent mpich and unload libsci
   module swap xt-mpich2 cray-mpich
-  module swap xt-libsci cray-libsci
+  module unload xt-libsci
   module list
   export CHPL_HOST_PLATFORM=cray-xt
   export CHPL_TARGET_PLATFORM=cray-xt
@@ -76,7 +76,7 @@ done
 
 # Test using $compiler as HOST and TARGET compiler without the Cray wrapper scripts
 # cray compiler cannot be used without Cray wrapper scripts
-compilers="gnu pgi intel" # pathscale"
+compilers="gnu pgi intel"
 
 for compiler in $compilers ; do
 (  # fire up a new shell
