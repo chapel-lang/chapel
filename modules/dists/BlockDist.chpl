@@ -973,6 +973,7 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) v
 //
 proc BlockArr.dsiSerialWrite(f: Writer) {
   type strType = chpl__signedType(idxType);
+  var binary = f.binary();
   if dom.dsiNumIndices == 0 then return;
   var i : rank*idxType;
   for dim in 1..rank do
@@ -980,7 +981,7 @@ proc BlockArr.dsiSerialWrite(f: Writer) {
   label next while true {
     f.write(dsiAccess(i));
     if i(rank) <= (dom.dsiDim(rank).high - dom.dsiDim(rank).stride:strType) {
-      if ! f.binary then f.write(" ");
+      if ! binary then f.write(" ");
       i(rank) += dom.dsiDim(rank).stride:strType;
     } else {
       for dim in 1..rank-1 by -1 {

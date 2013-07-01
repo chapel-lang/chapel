@@ -1762,7 +1762,7 @@ proc read(type t ...?numTypes) {
 class ChannelWriter : Writer {
   var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
   var err:syserr = ENOERR;
-  proc binary:bool {
+  proc binary():bool {
     var ret:uint(8);
     on this {
       ret = qio_channel_binary(_channel_internal);
@@ -1803,7 +1803,7 @@ class ChannelWriter : Writer {
 class ChannelReader : Reader {
   var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
   var err:syserr = ENOERR;
-  proc binary:bool {
+  proc binary():bool {
     var ret:uint(8);
     on this {
       ret = qio_channel_binary(_channel_internal);

@@ -149,6 +149,7 @@ module ChapelTuple {
     var start:ioLiteral;
     var comma:ioLiteral;
     var end:ioLiteral;
+    var binary = f.binary();
 
     if st == QIO_TUPLE_FORMAT_SPACE {
       start = new ioLiteral("");
@@ -164,19 +165,19 @@ module ChapelTuple {
       end = new ioLiteral(")");
     }
 
-    if !f.binary {
+    if !binary {
       f <~> start;
     }
     if size != 0 {
       f <~> this(1);
       for param i in 2..size {
-        if !f.binary {
+        if !binary {
           f <~> comma;
         }
         f <~> this(i);
       }
     }
-    if !f.binary {
+    if !binary {
       f <~> end;
     }
   }

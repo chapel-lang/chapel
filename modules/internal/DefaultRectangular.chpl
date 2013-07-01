@@ -751,6 +751,7 @@ module DefaultRectangular {
   
   proc DefaultRectangularArr.dsiSerialReadWrite(f /*: Reader or Writer*/) {
     proc recursiveArrayWriter(in idx: rank*idxType, dim=1, in last=false) {
+      var binary = f.binary();
       type strType = chpl__signedType(idxType);
       var makeStridePositive = if dom.ranges(dim).stride > 0 then 1:strType else (-1):strType;
       if dim == rank {
@@ -758,7 +759,7 @@ module DefaultRectangular {
         if debugDefaultDist && f.writing then f.writeln(dom.ranges(dim));
         for j in dom.ranges(dim) by makeStridePositive {
           if first then first = false;
-          else if ! f.binary then f <~> new ioLiteral(" ");
+          else if ! binary then f <~> new ioLiteral(" ");
           idx(dim) = j;
           f <~> dsiAccess(idx);
         }
@@ -770,7 +771,7 @@ module DefaultRectangular {
                                last=(last || dim == 1) && (j == lastIdx));
         }
       }
-      if !last && dim != 1 && ! f.binary then
+      if !last && dim != 1 && ! binary then
         f <~> new ioNewline();
     }
     const zeroTup: rank*idxType;
