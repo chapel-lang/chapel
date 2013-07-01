@@ -1762,8 +1762,8 @@ GenRet codegenAdd(GenRet a, GenRet b)
 #ifdef HAVE_LLVM
     bool a_signed = false;
     bool b_signed = false;
-    if( a.chplType ) a_signed = is_signed(a.chplType);
-    if( b.chplType ) b_signed = is_signed(b.chplType);
+    if( av.chplType ) a_signed = is_signed(av.chplType);
+    if( bv.chplType ) b_signed = is_signed(bv.chplType);
     PromotedPair values =
       convertValuesToLarger(av.val, bv.val, a_signed, b_signed);
     if(values.a->getType()->isFPOrFPVectorTy()) {
@@ -1789,8 +1789,8 @@ GenRet codegenSub(GenRet a, GenRet b)
 #ifdef HAVE_LLVM
     bool a_signed = false;
     bool b_signed = false;
-    if( a.chplType ) a_signed = is_signed(a.chplType);
-    if( b.chplType ) b_signed = is_signed(b.chplType);
+    if( av.chplType ) a_signed = is_signed(av.chplType);
+    if( bv.chplType ) b_signed = is_signed(bv.chplType);
     PromotedPair values =
       convertValuesToLarger(av.val, bv.val, a_signed, b_signed);
     if(values.a->getType()->isFPOrFPVectorTy()) {
@@ -1838,8 +1838,8 @@ GenRet codegenMul(GenRet a, GenRet b)
 #ifdef HAVE_LLVM
     bool a_signed = false;
     bool b_signed = false;
-    if( a.chplType ) a_signed = is_signed(a.chplType);
-    if( b.chplType ) b_signed = is_signed(b.chplType);
+    if( av.chplType ) a_signed = is_signed(av.chplType);
+    if( bv.chplType ) b_signed = is_signed(bv.chplType);
     PromotedPair values =
       convertValuesToLarger(av.val, bv.val, a_signed, b_signed);
     if(values.a->getType()->isFPOrFPVectorTy()) {
@@ -1866,8 +1866,8 @@ GenRet codegenDiv(GenRet a, GenRet b)
 #ifdef HAVE_LLVM
     PromotedPair values =
       convertValuesToLarger(av.val, bv.val, 
-                            is_signed(a.chplType), 
-                            is_signed(b.chplType));
+                            is_signed(av.chplType), 
+                            is_signed(bv.chplType));
     if(values.a->getType()->isFPOrFPVectorTy()) {
       ret.val = info->builder->CreateFDiv(values.a, values.b);
     } else {
@@ -1894,15 +1894,15 @@ GenRet codegenMod(GenRet a, GenRet b)
 #ifdef HAVE_LLVM
     PromotedPair values =
       convertValuesToLarger(av.val, bv.val,
-                            is_signed(a.chplType), 
-                            is_signed(b.chplType));
+                            is_signed(av.chplType), 
+                            is_signed(bv.chplType));
     if(values.a->getType()->isFPOrFPVectorTy()) {
-      ret.val = info->builder->CreateFRem(a.val, b.val);
+      ret.val = info->builder->CreateFRem(values.a, values.b);
     } else {
       if(!values.isSigned) {
-        ret.val = info->builder->CreateURem(a.val, b.val);
+        ret.val = info->builder->CreateURem(values.a, values.b);
       } else {
-        ret.val = info->builder->CreateSRem(a.val, b.val);
+        ret.val = info->builder->CreateSRem(values.a, values.b);
       }
     }
 #endif
@@ -1921,9 +1921,9 @@ GenRet codegenLsh(GenRet a, GenRet b)
   if( info->cfile ) ret.c = "(" + av.c + " << " + bv.c + ")";
   else {
 #ifdef HAVE_LLVM
-    ret.val = info->builder->CreateShl(a.val,
-                                       convertValueToType(b.val, a.val->getType(),
-                                                          is_signed(b.chplType)));
+    llvm::Value* amt = convertValueToType(bv.val, av.val->getType(),
+                                          is_signed(bv.chplType));
+    ret.val = info->builder->CreateShl(av.val, amt);
 #endif
   }
   return ret;
@@ -1940,16 +1940,12 @@ GenRet codegenRsh(GenRet a, GenRet b)
   else {
     
 #ifdef HAVE_LLVM
+    llvm::Value* amt = convertValueToType(bv.val, av.val->getType(),
+                                          is_signed(bv.chplType));
     if(!is_signed(a.chplType)) {
-      ret.val = info->builder->CreateLShr(a.val,
-                                          convertValueToType(b.val, 
-                                                             a.val->getType(),
-                                                             is_signed(b.chplType)));
+      ret.val = info->builder->CreateLShr(av.val, amt);
     } else {
-      ret.val = info->builder->CreateAShr(a.val,
-                                          convertValueToType(b.val, 
-                                                             a.val->getType(),
-                                                             is_signed(b.chplType)));
+      ret.val = info->builder->CreateAShr(av.val, amt);
     }
 #endif
   }
@@ -1968,8 +1964,8 @@ GenRet codegenAnd(GenRet a, GenRet b)
 #ifdef HAVE_LLVM
     PromotedPair values =
       convertValuesToLarger(av.val, bv.val,
-                            is_signed(a.chplType), 
-                            is_signed(b.chplType));
+                            is_signed(av.chplType), 
+                            is_signed(bv.chplType));
     ret.val = info->builder->CreateAnd(values.a, values.b);
 #endif
   }
@@ -1988,8 +1984,8 @@ GenRet codegenOr(GenRet a, GenRet b)
 #ifdef HAVE_LLVM
     PromotedPair values =
       convertValuesToLarger(av.val, bv.val,
-                            is_signed(a.chplType), 
-                            is_signed(b.chplType));
+                            is_signed(av.chplType), 
+                            is_signed(bv.chplType));
     ret.val = info->builder->CreateOr(values.a, values.b);
 #endif
   }
@@ -2008,8 +2004,8 @@ GenRet codegenXor(GenRet a, GenRet b)
 #ifdef HAVE_LLVM
     PromotedPair values =
       convertValuesToLarger(av.val, bv.val,
-                            is_signed(a.chplType), 
-                            is_signed(b.chplType));
+                            is_signed(av.chplType), 
+                            is_signed(bv.chplType));
     ret.val = info->builder->CreateXor(values.a, values.b);
 #endif
   }

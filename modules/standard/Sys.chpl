@@ -30,28 +30,29 @@ module Sys {
   extern const O_TRUNC:c_int;
 
   // Linux flags (make them 0 if not on linux, please)
-  extern const O_ASYNC:c_int;
-  extern const O_CLOEXEC:c_int;
-  extern const O_DIRECT:c_int;
-  extern const O_DIRECTORY:c_int;
-  extern const O_LARGEFILE:c_int;
-  extern const O_NOATIME:c_int;
-  extern const O_NOFOLLOW:c_int;
-  extern const O_NDELAY:c_int;
+  //extern const O_ASYNC:c_int;
+  //extern const O_CLOEXEC:c_int;
+  //extern const O_DIRECT:c_int;
+  //extern const O_DIRECTORY:c_int;
+  //extern const O_LARGEFILE:c_int;
+  //extern const O_NOATIME:c_int;
+  //extern const O_NOFOLLOW:c_int;
+  //extern const O_NDELAY:c_int;
 
   // open permission flags.
-  extern const S_IRWXU:c_int;
-  extern const S_IRUSR:c_int;
-  extern const S_IWUSR:c_int;
-  extern const S_IXUSR:c_int;
-  extern const S_IRWXG:c_int;
-  extern const S_IRGRP:c_int;
-  extern const S_IWGRP:c_int;
-  extern const S_IXGRP:c_int;
-  extern const S_IRWXO:c_int;
-  extern const S_IROTH:c_int;
-  extern const S_IWOTH:c_int;
-  extern const S_IXOTH:c_int;
+  // These are too complicated for the LLVM backend!
+  //extern const S_IRWXU:c_int;
+  //extern const S_IRUSR:c_int;
+  //extern const S_IWUSR:c_int;
+  //extern const S_IXUSR:c_int;
+  //extern const S_IRWXG:c_int;
+  //extern const S_IRGRP:c_int;
+  //extern const S_IWGRP:c_int;
+  //extern const S_IXGRP:c_int;
+  //extern const S_IRWXO:c_int;
+  //extern const S_IROTH:c_int;
+  //extern const S_IWOTH:c_int;
+  //extern const S_IXOTH:c_int;
 
   // socket domains
   extern const AF_UNIX:c_int;
@@ -138,9 +139,9 @@ module Sys {
   extern const IPV6_PKTINFO:c_int;
   extern const IPV6_RTHDR:c_int;
   extern const IPV6_AUTHHDR:c_int;
-  extern const IPV6_DSTOPS:c_int;
+  extern const IPV6_DSTOPTS:c_int;
   extern const IPV6_HOPOPTS:c_int;
-  extern const IPV6_FLOWINFO:c_int;
+  //extern const IPV6_FLOWINFO:c_int;
   extern const IPV6_HOPLIMIT:c_int;
   extern const IPV6_RECVERR:c_int;
   extern const IPV6_ROUTER_ALERT:c_int;
@@ -157,12 +158,12 @@ module Sys {
   extern const TCP_LINGER2:c_int;
   extern const TCP_MAXSEG:c_int;
   extern const TCP_NODELAY:c_int;
-  extern const TCY_QUICKACK:c_int;
-  extern const SYNCNT:c_int;
+  extern const TCP_QUICKACK:c_int;
+  extern const TCP_SYNCNT:c_int;
   extern const TCP_WINDOW_CLAMP:c_int;
 
   // UDP socket options
-  extern const UDP_CORK:c_int;
+  //extern const UDP_CORK:c_int;
 
 
   /* SOCKET STRUCTURE TYPES */
