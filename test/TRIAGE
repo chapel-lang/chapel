@@ -212,6 +212,7 @@ prgenv-* compilation timeouts (maybe due to system updates or ...?)
 [Error: Timed out compilation for users/jglewis/locClassSegFault-nongeneric] (prgenv-pgi: 12/01/12)
 [Error: Timed out compilation for release/examples/spec/Tuples/expansion] (prgenv-cray: 12/02/12)
 [Error: Timed out compilation for distributions/dm/t5a] (prgenv-intel: 12/03/12)
+[Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/perfTest_v2 (compopts: 1)] (07/01/13)
 
 occasional segfault on reports tests for prgenv-pgi
 ---------------------------------------------------
@@ -232,6 +233,12 @@ unknown cause - baseline (06/17/12)
 timeout studies/shootout/fannkuch-redux/fannkuch-redux (UNASSIGNED)
 -------------------------------------------------------------------
 under cray-xt.cray-prgenv-gnu.none.fifo.pthreads--linux64.gnu (3/22/13)
+
+nondeterministic timedexec timeouts
+-----------------------------------
+test_array_assignment -- cray-xt.cray-prgenv-intel.none.fifo.pthreads--linux64.gnu (2013/06/24)
+test_infer_array_type -- cray-xt.cray-prgenv-intel.none.fifo.pthreads--linux64.gnu (2013/06/24)
+[Error: Timed out executing program studies/shootout/nbody/nbody_rangesub_5] (07/01/13)
 
 non-deterministic timeouts with gasnet (UNASSIGNED)
 ---------------------------------------------------
@@ -284,9 +291,13 @@ no-local nondeterminisms (UNASSIGNED)
 cg-sparse-timecomp (06/05/12)
 studies/ssca2/atomic/SSCA2_main_atomic (07/04/12)
 
-non-deterministic compilation timeouts (04/09/13)
+non-deterministic compilation timeouts (UNASSIGNED)
 -------------------------------------------------
-linux64.gnu.none.fifo.pthreads (baseline: 4/9/13
+cray-xt.cray-prgenv-cray.none.fifo.pthreads--linux64.gnu-exm (06/27/13)
+[Error: Timed out compilation for release/examples/benchmarks/lulesh/lulesh (compopts: 2)]
+linux64.gnu.none.fifo.pthreads
+[Error: Timed out compilation for distributions/dm/t5a] (07/01/13)
+linux64.gnu.none.fifo.pthreads (baseline: 4/9/13)
 [Error: Timed out compilation for types/file/unableToOpenFile] 
 linux64.gnu.none.fifo.pthreads.tcmalloc: 4/9/13
 [Error: Timed out compilation for studies/hpcc/RA/bradc/ra-iter] 
