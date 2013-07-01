@@ -237,7 +237,7 @@ checkUseBeforeDefs() {
                 (sym->var->defPoint->parentSymbol == fn ||
                  (sym->var->defPoint->parentSymbol == mod && mod->initFn == fn))) {
               if (!defined.set_in(sym->var) && !undefined.set_in(sym->var)) {
-                if (!sym->var->hasFlag(FLAG_ARG_THIS)) {
+                if (!sym->var->hasEitherFlag(FLAG_ARG_THIS,FLAG_EXTERN)) {
                   USR_FATAL_CONT(sym, "'%s' used before defined (first used here)", sym->var->name);
                   undefined.set_add(sym->var);
                 }

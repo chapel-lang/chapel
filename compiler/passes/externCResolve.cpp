@@ -34,11 +34,13 @@ static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Ve
         return new UnresolvedSymExpr("string"); 
     }
 
-    if (!pointee) { //void *
-      pointee = new DefExpr(new ArgSymbol(INTENT_BLANK, astr("void", istr(query_uid++)), dtAny));
+    // void *  generates as c_ptr.
+    if(!pointee) {
+      return new UnresolvedSymExpr("c_ptr");
     }
 
-    //Pointers (other than char*) are represented as calls to _ddata(chapel_type).
+    //Pointers (other than char*) are represented as calls to
+    //_ddata(chapel_type).
     return new CallExpr(new UnresolvedSymExpr("_ddata"), new CallExpr(PRIM_ACTUALS_LIST, pointee));
 
   //structs
@@ -146,11 +148,12 @@ static void convertMacroToChpl(ModuleSymbol* module, const char* name, Type* chp
 
   VarSymbol* v = new VarSymbol(name, chplType);
   v->addFlag(FLAG_EXTERN);
+  v->addFlag(FLAG_CONST);
   results.add(new DefExpr(v));
   forv_Vec(Expr*, result, results) {
     if (!result->inTree()) {
       SET_LINENO(result);
-      module->initFn->insertAtTail(result);
+      module->initFn->insertAtHead(result);
     }
   }
   setAlreadyConvertedExtern(module, name);
