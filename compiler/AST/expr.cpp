@@ -754,6 +754,15 @@ GenRet codegenGetLocaleID(void)
 {
   GenRet ret =  codegenCallExpr("chpl_gen_getLocaleID");
   ret.chplType = LOCALE_ID_TYPE;
+#ifdef HAVE_LLVM
+  GenInfo* info = gGenInfo;
+  if (!info->cfile ) {
+    // Make sure that the result of gen_getLocaleID is
+    // the right type (since clang likes to fold int32/int32 into int32).
+    GenRet expectType = LOCALE_ID_TYPE;
+    ret.val = convertValueToType(ret.val, expectType.type);
+  }
+#endif
   return ret;
 }
 
@@ -3476,33 +3485,31 @@ void codegenOpAssign(GenRet a, GenRet b, const char* op,
   GenRet ap = codegenDeref(a);  // deref 'a' since it's a 'ref' argument
   GenRet bv = codegenValue(b);  // get the value of 'b'
 
+  bool aIsRemote = ap.isLVPtr == GEN_WIDE_PTR;
+  GenRet aLocal;              // a guaranteed-local copy of a
+
+  // For a wide pointer, we copy in and copy out...
+  if( aIsRemote ) {
+    // copy in -- will result in a chpl_comm_get(...)
+    aLocal = createTempVar(ap.chplType);
+    codegenAssign(aLocal, ap);
+  } else {
+    // otherwise, it's already local
+    aLocal = ap;
+  }
+
   if( info->cfile ) {
-    bool aIsRemote = ap.isLVPtr == GEN_WIDE_PTR;
-    GenRet aLocal;              // a guaranteed-local copy of a
-
-    // For a wide pointer, we copy in and copy out...
-    if( aIsRemote ) {
-      // copy in -- will result in a chpl_comm_get(...)
-      aLocal = createTempVar(ap.chplType);
-      codegenAssign(aLocal, ap);
-    } else {
-      // otherwise, it's already local
-      aLocal = ap;
-    }
-
     // generate the local C statement
     std::string stmt = codegenValue(aLocal).c + op + bv.c + ";\n";
     info->cStatements.push_back(stmt);
-
-    if( aIsRemote ) {
-      // copy out -- will result in a chpl_comm_put(...)
-      codegenAssign(ap, aLocal);
-    }
+  } else {
+    // LLVM version of a += b is just a = a + b.
+    codegenAssign(aLocal, codegenOp(codegenValue(ap), bv));
   }
-  else {
-#ifdef HAVE_LLVM
-    codegenAssign(ap, codegenOp(codegenValue(ap), bv));
-#endif
+
+  if( aIsRemote ) {
+    // copy out -- will result in a chpl_comm_put(...)
+    codegenAssign(ap, aLocal);
   }
 }
 
@@ -3869,7 +3876,7 @@ GenRet CallExpr::codegen() {
           Type* lhsType = get(1)->typeInfo();
           if (lhsType->symbol->hasFlag(FLAG_WIDE_CLASS))
             // If the destination is wide, make the result wide by prepending the locale ID.
-            tmp = codegenAddrOf(codegenWideAddr(codegenCallExpr("chpl_gen_getLocaleID"),
+            tmp = codegenAddrOf(codegenWideAddr(codegenGetLocaleID(),
                                                 addr, lhsType));
           else
             tmp = addr;
@@ -4654,7 +4661,7 @@ GenRet CallExpr::codegen() {
       codegenCall("chpl_gen_setLocaleID", codegenValue(get(1)));
       break;
     case PRIM_TASK_GET_LOCALE_ID:
-      ret = codegenCallExpr("chpl_gen_getLocaleID");
+      ret = codegenGetLocaleID();
       break;
     case PRIM_CHPL_COMM_GET:
     case PRIM_CHPL_COMM_PUT: {

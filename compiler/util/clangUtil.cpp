@@ -1319,7 +1319,7 @@ void setupForGlobalToWide(void) {
   GenInfo* ginfo = gGenInfo;
   GlobalToWideInfo* info = &ginfo->globalToWideInfo;
 
-  info->localeIdType = ginfo->lvt->getType("c_localeid_t");
+  info->localeIdType = ginfo->lvt->getType("chpl_localeID_t");
   assert(info->localeIdType);
   info->nodeIdType = ginfo->lvt->getType("c_nodeid_t");
   assert(info->nodeIdType);
