@@ -4630,16 +4630,17 @@ GenRet CallExpr::codegen() {
     }
     case PRIM_PROCESS_TASK_LIST: {
       GenRet taskListPtr = codegenFieldPtr(get(1), "taskList");
-      codegenCall("chpl_task_processTaskList", codegenValue(taskListPtr));
-      break; }
+      codegenCall("chpl_taskListProcess", codegenValue(taskListPtr), get(2), get(3));
+      break;
+    }
     case PRIM_EXECUTE_TASKS_IN_LIST:
-      codegenCall("chpl_task_executeTasksInList", get(1));
+      codegenCall("chpl_taskListExecute", get(1), get(2), get(3));
       break;
     case PRIM_FREE_TASK_LIST:
     {
       if (fNoMemoryFrees)
         break;
-      codegenCall("chpl_task_freeTaskList", get(1));
+      codegenCall("chpl_taskListFree", get(1), get(2), get(3));
       break;
     }
     case PRIM_GET_SERIAL:
@@ -5303,13 +5304,14 @@ GenRet CallExpr::codegen() {
 
   if (fn->hasFlag(FLAG_BEGIN_BLOCK)) {
     // get(1) is a class containing bundled arguments
-    std::vector<GenRet> args(8);
-    args[0] = new_IntSymbol(ftableMap.get(fn), INT_SIZE_64);
+    std::vector<GenRet> args(7);
+    args[0] = new_IntSymbol(-1 /* c_sublocid_any */, INT_SIZE_32);
+    args[1] = new_IntSymbol(ftableMap.get(fn), INT_SIZE_64);
 
     if (Expr *actuals = get(1)) {
-      args[1] = codegenCastToVoidStar(codegenValue(actuals));
+      args[2] = codegenCastToVoidStar(codegenValue(actuals));
     } else {
-      args[1] = codegenNullPointer();
+      args[2] = codegenNullPointer();
     }
     ClassType *bundledArgsType = toClassType(toSymExpr(get(1))->typeInfo());
     // lastField is the _endCount field.
@@ -5332,7 +5334,6 @@ GenRet CallExpr::codegen() {
     } else {
       taskList = codegenLocalAddrOf(codegenFieldPtr(endCountValue, "taskList"));
     }
-    args[2] = new_IntSymbol(-1 /* c_sublocid_any */, INT_SIZE_32);
     args[3] = taskList;
     if (bundledArgsType->getField(lastField)->typeInfo()->symbol->
         hasFlag(FLAG_WIDE_CLASS)) {
@@ -5341,22 +5342,22 @@ GenRet CallExpr::codegen() {
       args[4] = codegenGetNodeID();
     }
 
-    args[5] = new_BoolSymbol(true, BOOL_SIZE_8);
-    args[6] = fn->linenum();
-    args[7] = fn->fname();
+    args[5] = fn->linenum();
+    args[6] = fn->fname();
 
     genComment(fn->cname, true);
-    codegenCall("chpl_task_addToTaskList", args);
+    codegenCall("chpl_taskListAddBegin", args);
     return ret;
   } else if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)) {
     // get(1) is a class containing bundled arguments
-    std::vector<GenRet> args(8);
-    args[0] = new_IntSymbol(ftableMap.get(fn), INT_SIZE_64);
+    std::vector<GenRet> args(7);
+    args[0] = new_IntSymbol(-1 /* c_sublocid_any */, INT_SIZE_32);
+    args[1] = new_IntSymbol(ftableMap.get(fn), INT_SIZE_64);
 
     if (Expr *actuals = get(1)) {
-      args[1] = codegenCastToVoidStar(codegenValue(actuals));
+      args[2] = codegenCastToVoidStar(codegenValue(actuals));
     } else {
-      args[1] = codegenNullPointer();
+      args[2] = codegenNullPointer();
     }
     ClassType *bundledArgsType = toClassType(toSymExpr(get(1))->typeInfo());
     int endCountField = 0;
@@ -5411,15 +5412,13 @@ GenRet CallExpr::codegen() {
     } else {
       taskList = codegenLocalAddrOf(codegenFieldPtr(endCountValue, "taskList"));
     }
-    args[2] = new_IntSymbol(-1 /* chp_sublocid_any */, INT_SIZE_32);
     args[3] = taskList;
     args[4] = codegenGetNodeID(),
-    args[5] = new_BoolSymbol(false, BOOL_SIZE_8);
-    args[6] = fn->linenum();
-    args[7] = fn->fname();
+    args[5] = fn->linenum();
+    args[6] = fn->fname();
 
     genComment(fn->cname, true);
-    codegenCall("chpl_task_addToTaskList", args);
+    codegenCall("chpl_taskListAddCoStmt", args);
     return ret;
   } else if (fn->hasFlag(FLAG_ON_BLOCK)) {
     const char* fname = NULL;

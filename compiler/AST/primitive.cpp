@@ -467,9 +467,9 @@ initPrimitive() {
   prim_def(PRIM_GET_END_COUNT, "get end count", returnInfoEndCount);
   prim_def(PRIM_SET_END_COUNT, "set end count", returnInfoVoid, true);
 
-  prim_def(PRIM_PROCESS_TASK_LIST, "process task list", returnInfoVoid, true);
-  prim_def(PRIM_EXECUTE_TASKS_IN_LIST, "execute tasks in list", returnInfoVoid, true);
-  prim_def(PRIM_FREE_TASK_LIST, "free task list", returnInfoVoid, true);
+  prim_def(PRIM_PROCESS_TASK_LIST, "process task list", returnInfoVoid, true, true);
+  prim_def(PRIM_EXECUTE_TASKS_IN_LIST, "execute tasks in list", returnInfoVoid, true, true);
+  prim_def(PRIM_FREE_TASK_LIST, "free task list", returnInfoVoid, true, true);
 
   // task primitives
   prim_def(PRIM_GET_SERIAL, "task_get_serial", returnInfoBool);
