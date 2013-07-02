@@ -16,7 +16,7 @@ var gridLocales: [gridDom] locale;
 setupGridLocales();
 
 type elType = real;
-var t1,t2,t3,t4 :real;
+var t1,t2,t3,t4,t5,t6 :real;
 //const adjcoords = ((0,-1), (-1,0), (0,1), (1,0));
 
 record localInfo {
@@ -145,6 +145,7 @@ proc progress() {
   if timer then t1=getCurrentTime();
   fetch(true);
   if timer then t2=getCurrentTime();
+  t5+=t2-t1;
   showfetch(true); 
   compute(true, delta); showme(true, delta, "After odd phase: "+i);
   refcomp(true, refdelta); showref(true);
@@ -155,6 +156,7 @@ proc progress() {
   if timer then t3=getCurrentTime();
   fetch(false);
   if timer then t4=getCurrentTime();
+  t6+=t4-t3;
   showfetch(false);
   compute(false, delta); showme(false, delta, "After even phase: "+i);
   refcomp(false, refdelta);showref(false);
@@ -171,6 +173,7 @@ writeln("Converged with delta=",delta," after ",i," iterations.");
 if errCount > 0 then writeln("Got ", errCount, " ERRORS.");
 if timer then
 {
-  writeln("Time Phase 1:",t2-t1);
-  writeln("Time Phase 2:",t4-t3);
+  writeln("Size: m=",m," n=",n, " in ",numLocales," locales");
+  writeln("Time Phase 1:",t5);
+  writeln("Time Phase 2:",t6);
 }
