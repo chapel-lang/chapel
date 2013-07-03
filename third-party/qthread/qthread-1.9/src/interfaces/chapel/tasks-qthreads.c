@@ -507,19 +507,21 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
 
     PROFILE_INCR(profile_task_addToTaskList,1);
 
-    assert(subLoc == 0
-           || subLoc == c_sublocid_any
-           || subLoc == c_sublocid_curr);
-
     if (serial_state) {
         syncvar_t ret = SYNCVAR_STATIC_EMPTY_INITIALIZER;
         qthread_fork_syncvar_copyargs_to(chapel_wrapper, &wrapper_args,
                                          sizeof(chapel_wrapper_args_t), &ret,
                                          here_shep_id);
         qthread_syncvar_readFF(NULL, &ret);
-    } else {
+    } else if (subLoc == c_sublocid_any) {
         qthread_fork_syncvar_copyargs(chapel_wrapper, &wrapper_args,
                                       sizeof(chapel_wrapper_args_t), NULL);
+    } else {
+        if (subLoc == c_sublocid_curr)
+            subLoc = (c_sublocid_t) here_shep_id;
+        qthread_fork_syncvar_copyargs_to(chapel_wrapper, &wrapper_args,
+                                         sizeof(chapel_wrapper_args_t), NULL,
+                                         (qthread_shepherd_id_t) subLoc);
     }
 }
 
@@ -544,7 +546,7 @@ void chpl_task_startMovedTask(chpl_fn_p      fp,
                               chpl_taskID_t  id,
                               chpl_bool      serial_state)
 {
-    assert(subLoc == 0 || subLoc == c_sublocid_any);
+    assert(subLoc != c_sublocid_curr);
     assert(id == chpl_nullTaskID);
 
     chapel_wrapper_args_t wrapper_args = 
@@ -553,20 +555,49 @@ void chpl_task_startMovedTask(chpl_fn_p      fp,
 
     PROFILE_INCR(profile_task_startMovedTask,1);
 
-    qthread_fork_syncvar_copyargs(chapel_wrapper, &wrapper_args,
-                                  sizeof(chapel_wrapper_args_t), NULL);
+#if 1
+    // We are timing out when the subLoc is passed as 0 (zero).  Can
+    // we not time share tasks on a single shepherd?  Perhaps we can
+    // only time share as many tasks on a shepherd as that shepherd
+    // has workers?  For now, force the subLoc to be "any".
+    subLoc = c_sublocid_any;
+#endif
+    if (subLoc == c_sublocid_any) {
+        qthread_fork_syncvar_copyargs(chapel_wrapper, &wrapper_args,
+                                      sizeof(chapel_wrapper_args_t), NULL);
+    } else {
+        qthread_fork_syncvar_copyargs_to(chapel_wrapper, &wrapper_args,
+                                         sizeof(chapel_wrapper_args_t), NULL,
+                                         (qthread_shepherd_id_t) subLoc);
+    }
 }
 
 c_sublocid_t chpl_task_getSubLoc(void)
 {
-  return 0;
+    return (c_sublocid_t) qthread_shep();
 }
 
 void chpl_task_setSubLoc(c_sublocid_t subLoc)
 {
-  assert(subLoc == 0
-         || subLoc == c_sublocid_any
-         || subLoc == c_sublocid_curr);
+    qthread_shepherd_id_t curr_shep;
+
+    // Only change sublocales if the caller asked for a particular one,
+    // which is not the current one, and we're a (movable) task.
+    //
+    // Note: It's likely that this won't work in all cases where we need
+    //       it.  In particular, we envision needing to move execution
+    //       from sublocale to sublocale while initializing the memory
+    //       layer, in order to get the NUMA domain affinity right for
+    //       the subparts of the heap.  But this will be happening well
+    //       before tasking init and in any case would be done from the
+    //       main thread of execution, which doesn't have a shepherd.
+    //       The code below wouldn't work in that situation.
+    if (subLoc != c_sublocid_any &&
+        subLoc != c_sublocid_curr &&
+        (curr_shep = qthread_shep()) != NO_SHEPHERD &&
+        (qthread_shepherd_id_t) subLoc != curr_shep) {
+        qthread_migrate_to((qthread_shepherd_id_t) subLoc);
+    }
 }
 
 // Returns '(unsigned int)-1' if called outside of the tasking layer.
@@ -666,7 +697,7 @@ c_sublocid_t chpl_task_getNumSubLocales(void)
             ? num_sublocs
             : CHPL_LOCALE_MODEL_NUM_SUBLOCALES);
 #else
-    return (c_sublocid_t) num_sublocs;
+    return (c_sublocid_t) ((num_sublocs < 2) ? 0 : num_sublocs);
 #endif
 }
 
