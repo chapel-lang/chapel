@@ -48,14 +48,40 @@ function genDygraph(graphInfo, parent, legend) {
 }
 
 function perfGraphInit() {
-    var parent = document.getElementById('graphlist');
+    // set the title
+    var titleElem = document.getElementById('titleElem');
+    titleElem.innerHTML = document.title;
+
+    // generate the suite menu
+    var suiteMenu = document.getElementById('suiteMenu');
+    var f = document.createElement('form');
+    f.name = "form1";
+    var fselect = document.createElement('select');
+    fselect.setAttribute('name', "jumpmenu");
+    fselect.setAttribute('onChange',  "jumpto(document.form1.jumpmenu.options[document.form1.jumpmenu.options.selectedIndex].value)");
+    f.appendChild(fselect);
+    var o = document.createElement('option');
+    o.innerHTML = "None";
+    o.setAttribute('value', "");
+    fselect.appendChild(o);
+    for (var i = 0; i < perfSuites.length; i++) {
+        var o = document.createElement('option');
+        o.innerHTML = perfSuites[i].suite;
+        o.setAttribute('value', perfSuites[i].suite);
+        fselect.appendChild(o);
+    }
+    suiteMenu.appendChild(f);
+
+    // generate the graph list
+    var graphlist = document.getElementById('graphlist');
     for (var i = 0; i < allGraphs.length; i++) {
         var elem = document.createElement('div');
         elem.className = 'graph';
         elem.innerHTML = '<input id="graph' + i + '" type="checkbox">' + allGraphs[i].title;
-        parent.appendChild(elem);
+        graphlist.appendChild(elem);
     }
 }
+
 
 function selectAllGraphs() {
     checkAll(true)

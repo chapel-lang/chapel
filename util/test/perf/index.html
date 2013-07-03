@@ -7,18 +7,15 @@
         <script type="text/javascript"
                 src="http://dygraphs.com/excanvas.js"></script>
         <![endif]-->
-    <!-- <script type="text/javascript"
-            src="http://dygraphs.com/dygraph-combined.js"></script>
-      -->
     <script type="text/javascript"
+            src="http://dygraphs.com/dygraph-combined.js"></script>
+    <!-- <script type="text/javascript"
             src="http://dygraphs.com/dygraph-dev.js"></script>
+      -->
     <script src="graphdata.js"></script>
-    <!-- yucky, fix me! -->
-    <script>document.write('<title>'+pageTitle+'</title>')</script>
   </head>
   <body onload="perfGraphInit()">
-    <!-- yucky, fix me! -->
-    <script>document.write('<center><h1>'+pageTitle+'</h1></center>')</script>
+    <center><h1 id="titleElem"></h1></center>
     <script language="javascript" type="text/javascript" >
       <!-- hide
            function jumpto(x){
@@ -32,16 +29,7 @@
       <tr>
         <td class="graphList">
           <p><em>Select a test suite</em></p>
-          <form name="form1">
-            <select name="jumpmenu" onChange="jumpto(document.form1.jumpmenu.options[document.form1.jumpmenu.options.selectedIndex].value)">
-              <option value=""><i>None</i></option>
-              <script>
-                for (var i = 0; i < perfSuites.length; i++) {
-                    document.write('<option value="'+perfSuites[i].suite+'">'+perfSuites[i].suite+'</option>')
-                }
-               </script>
-            </select>
-          </form>
+          <div id="suiteMenu"></div>
           <p><strong>OR</strong></p>
           <p><em>Select and display specific tests</em></p>
           <input type="button" onclick="displaySelectedGraphs()"

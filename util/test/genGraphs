@@ -74,8 +74,10 @@ class GraphStuff:
             sys.stderr.write('ERROR: Could not open file: %s\n'%(self.gfname))
             raise
         self.gfile.write('// AUTOMATICALLY GENERATED GRAPH DESCRIPTION\n')
+        self.gfile.write('document.title = "%s";\n'%(self.title))
         self.gfile.write('var pageTitle = "%s";\n'%(self.title))
         self.gfile.write('var allGraphs = [\n')
+        self.firstGraph = True
         return 0
 
     def __str__(self):
@@ -90,14 +92,24 @@ class GraphStuff:
 
     def finish(self):
         if self.gfile:
-            self.gfile.write('];\n')
+            self.gfile.write('\n];\n')
+            first = True
             self.gfile.write('var perfSuites = [\n')
             for s in self.suites:
-                self.gfile.write('{ suite: "%s" },\n'%(s))
-            self.gfile.write('];\n')
+                if not first:
+                    self.gfile.write(',\n')
+                else:
+                    first = False
+                self.gfile.write('{ "suite" : "%s" }'%(s))
+            self.gfile.write('\n];\n')
             self.gfile.close()
 
     def genGraphInfo(self, ginfo):
+        if not self.firstGraph:
+            self.gfile.write(',\n')
+        else:
+            self.firstGraph = False
+
         self.gfile.write('{\n')
         if ginfo.title != '':
             self.gfile.write('   "title" : "%s",\n'%(ginfo.title))
@@ -112,7 +124,7 @@ class GraphStuff:
         self.gfile.write('   "ylabel" : "%s",\n'%(ginfo.ylabel))
         self.gfile.write('   "startdate" : "%s",\n'%(ginfo.startdate))
         self.gfile.write('   "enddate" : "%s"\n'%(ginfo.enddate))
-        self.gfile.write('},\n')
+        self.gfile.write('}')
 
 
     def genGraphStuff(self, fname, suite):
@@ -196,11 +208,11 @@ class GraphClass:
         l += '\tgraphname: '+self.graphname+'\n'
         l += '\tylabel: '+self.ylabel+'\n'
         if self.startdate != None:
-            l += '\tstartdate: '+time.strftime('%m/%d/%y',self.startdate)+'\n'
+            l += '\tstartdate: '+time.strftime('%Y-%m-%d',self.startdate)+'\n'
         else:
             l += '\tstartdate: Not specified\n'
         if self.enddate != None:
-            l += '\tenddate: '+time.strftime('%m/%d/%y',self.enddate)+'\n'
+            l += '\tenddate: '+time.strftime('%Y-%m-%d',self.enddate)+'\n'
         else:
             l += '\tenddate: Not specified\n'
         l += '\tperfkeys: '+list.__str__(self.perfkeys)+'\n'
@@ -289,7 +301,7 @@ class GraphClass:
                 first = False
 
             # write out the data for this date
-            f.write(time.strftime('%m/%d/%y', minDate))
+            f.write(time.strftime('%Y-%m-%d', minDate))
             for i in range(numKeys):
                 if currLines[i] != None:
                     df = datfiles[self.datfilenames[i]]
@@ -321,13 +333,13 @@ class GraphClass:
         if enddate == None:
             self.enddate = startdate
         if graphInfo.startdate != None:
-            self.startdate = time.strftime('%m/%d/%y', graphInfo.startdate)
+            self.startdate = time.strftime('%Y-%m-%d', graphInfo.startdate)
         else:
-            self.startdate = time.strftime('%m/%d/%y', startdate)
+            self.startdate = time.strftime('%Y-%m-%d', startdate)
         if graphInfo.enddate != None:
-            self.enddate = time.strftime('%m/%d/%y', graphInfo.enddate)
+            self.enddate = time.strftime('%Y-%m-%d', graphInfo.enddate)
         elif enddate != None:
-            self.enddate = time.strftime('%m/%d/%y', enddate)
+            self.enddate = time.strftime('%Y-%m-%d', enddate)
 
 
 
