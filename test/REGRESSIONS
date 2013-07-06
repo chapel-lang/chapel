@@ -20,11 +20,6 @@
 general regressions (seem to happen in most configurations)
 ===========================================================
 
---------------------------------------------------------------------
-
-opequals2.chpl:3: error: type mismatch in assignment from complex(128) to imag(64) (started 6/16/13) (Brad)
-------------------------------------------------------------------
-
 
 ==============================================
 linux64 regressions (in addition to the above)
@@ -87,17 +82,20 @@ so the warning does not apply and is not raised, and .good is not matched.
 
 "Unrecognised instruction"
 --------------------------
-observed on 5/18/2013:
+started 5/18/2013:
 [Error matching program output for types/atomic/ferguson/atomictest]
 [Error matching program output for types/atomic/sungeun/atomic_vars]
 
 time outs
 ---------
-[Error: Timed out executing program studies/lulesh/bradc/xyztuple/lulesh-dense-3tuple] (started when tested for the first time on 10/27/2012)
+[Error: Timed out compilation for distributions/dm/t5a] (on 6/29/2013)
+[Error: Timed out executing program studies/shootout/nbody/nbody_rangesub_5] (on 6/29/2013)
 
 The following tests started timing out on 3/02/2013:
 [Error: Timed out executing program release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4)]
 [Error: Timed out executing program release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4)]
+
+[Error: Timed out executing program studies/lulesh/bradc/xyztuple/lulesh-dense-3tuple] (started when tested for the first time on 10/27/2012)
 
 The following tests started timing out on 9/1/2012:
 [Error: Timed out executing program parallel/begin/sungeun/captureAppearsToWork]
@@ -164,7 +162,6 @@ communication counts changed due to Tom's HL branch merge (06/11/13)
 [Error matching program output for studies/hpcc/CommDiags/ra_commDiags (compopts: 1, execopts: 1)]
 [Error matching program output for studies/hpcc/CommDiags/ra_commDiags (compopts: 2, execopts: 1)]
 [Error matching program output for studies/hpcc/CommDiags/stream_commDiags (compopts: 1)]
-[Error matching program output for studies/hpcc/CommDiags/stream-ep_commDiags (compopts: 1)] (observed only for linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc) (resolved 07/01/13)
 
 
 ==============================================
@@ -195,6 +192,10 @@ execution timeouts
 ------------------
 [Error: Timed out executing program domains/johnk/capacityParSafe (compopts: 1)] (since 12/16/2012)
 in this configuration: linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc
+
+incorrect comm counts (6/11/13)
+------------------------------
+[Error matching program output for studies/hpcc/CommDiags/stream-ep_commDiags (compopts: 1)] (observed only for linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc) (succeeded once 06/29/13)
 
 
 =======================
@@ -290,7 +291,11 @@ chpbld02 (PrgEnv test system) failures
 
 gets "that wasn't very random looking" failure
 ------------------------------------------------------------------------------
-[Error matching program output for modules/standard/Random/diten/testRandomSeed] (first mentioned 09/26/11; still observed intermittently on chpbld02 in 8'2012 and 9'2012; consistently for prgenv-gnu since 8'2012)
+[Error matching program output for modules/standard/Random/diten/testRandomSeed]
+first mentioned 09/26/11
+still observed intermittently on chpbld02 in 8'2012 and 9'2012
+consistently for prgenv-gnu since 8'2012
+fairly consistently for all seven chpbld02 configurations since 1'2013 or earlier
 
 
 ====================================================
@@ -344,8 +349,9 @@ information, making debugging pretty difficult.  (3/12/13: sungeun)
      distributions/robust/arithmetic/reindexing/test_reindexing7
      distributions/robust/arithmetic/trivial/test_writeln
 
-
-
+extern_string_test output mismatch
+----------------------------------
+[Error matching .bad file for users/ferguson/extern_string_test (compopts: 1)] (cray-xt.cray-prgenv-cray.none.fifo.pthreads--linux64.gnu on chpbld02, 6/16/13)
 
 compilation timeouts due to removing --fast and non-default timeouts (02/28/13)
 David's analysis suggests that Inter Procedural Analysis is the culprit
@@ -396,7 +402,7 @@ pgi-specific regressions (in addition to cray-xt errors above)
 
 Some sort of gdb issue with 'bool' not being found in symtab
 ------------------------------------------------------------
-[Error matching compiler output for compflags/bradc/gdbddash/declint]
+[Error matching compiler output for compflags/bradc/gdbddash/declint] (Succeeded on 7/1/13, assumed succeeding later as well)
 
 signal 11
 ---------
@@ -470,6 +476,14 @@ seg fault (6/10/13)
 -------------------
 [Error matching program output for distributions/robust/arithmetic/basics/test_array_assignment]
 [Error matching program output for distributions/robust/arithmetic/basics/test_infer_array_type]
+
+seg fault for linux64.intel.none.fifo.pthreads on chpbld02 (7/3/13) (Brad)
+--------------------------------------------------------------------------
+these are due to r21501
+[Error matching program output for distributions/robust/arithmetic/basics/test_array_assignment]
+[Error matching program output for distributions/robust/arithmetic/basics/test_infer_array_type]
+[Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_record]
+[Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_tuple]
 
 binary output mismatches (03/04/13 -- new tests)
 ------------------------------------------------

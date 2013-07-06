@@ -61,7 +61,7 @@ e.g. real(64): ERROR: x=108.0 (should be 120)
 - gasnet-everything, 02/01/13, 02/19/13, 05/10/13
 - no-local:3/16/13
 - baseline:6/7/13
-- comm=none: 6/21/13
+- comm=none: 6/21/13, 7/03/13
 
 
 linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
@@ -80,6 +80,7 @@ timed out including the three above plus:
   distributions/robust/arithmetic/basics/test_array_of_distributed_array2.chpl
   distributions/robust/arithmetic/slicing/test_array_slicing3.chpl
   distributions/robust/arithmetic/modules/test_module_Sort.chpl
+  distributions/robust/arithmetic/modules/test_module_Norm.chpl
   distributions/robust/arithmetic/kernels/hpl (compopts: 1).chpl
   distributions/dm/t8.chpl
 
@@ -257,6 +258,7 @@ examples of what times out:
  test_array_slicing3 (06/08/12, 6/16, 3/29/13, 5/3/13)
  release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4) (04/08/13)
  studies/cholesky/jglewis/version2/performance/test_cholesky_performance (06/20/13)
+ multilocale/diten/needMultiLocales/coforallon_maxThreads (07/04/13)
  etc.
 
 non-deterministic compilation timeouts with gasnet (UNASSIGNED)
@@ -333,6 +335,12 @@ time out in compilation for the same configurations:
  linux64.gnu.gasnet.fifo.pthreads.tcmalloc
  linux64.gnu.gasnet.fifo.pthreads
 
+numeric discrepancy under linux64.intel.none.fifo.pthreads (chpbld02)
+---------------------------------------------------------------------
+Seems intermittent (7/3/2013)
+[Error matching program output for studies/jacobi/waynew/example2]
+
+
 ===========================================
 Not noisy, but need some attention sometime
 ===========================================
@@ -361,7 +369,3 @@ The following compiler segfaults(?) appeared only once on 9/28/12
 cray-xt.cray-prgenv-cray.none.fifo.pthreads
 --------------------------------------
 [Error: Timed out compilation for studies/ssca2/test-rmatalt/nondet (compopts: 1)] (5/4/13, 6/9/13)
-
-extern_string_test output mismatch
-----------------------------------
-[Error matching .bad file for users/ferguson/extern_string_test (compopts: 1)] (cray-xt.cray-prgenv-cray.none.fifo.pthreads--linux64.gnu on chpbld02, 6/16/13) (observed once - is it intermittent or just started?)
