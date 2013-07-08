@@ -1,0 +1,5 @@
+perfkeys: real, real, real
+files: mandelbrot-complex.dat, mandelbrot-dist.dat, mandelbrot-fancy.dat
+graphkeys: mandelbrot-complex, mandelbrot-dist, mandelbrot-fancy
+ylabel: Time (seconds)
+graphtitle: Mandelbrot variations
