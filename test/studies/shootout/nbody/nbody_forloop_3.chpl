@@ -8,15 +8,10 @@
  *
 */
 
-use Time;
-
 config var n = 10000;
-config const timer : bool = false;
 param PI = 3.141592653589793;
 const solar_mass = (4 * PI * PI);
 param days_per_year = 365.24;
-
-var t : Timer;
 
 record Planet {
 	var x, y, z : real;
@@ -76,9 +71,6 @@ proc offset_momentum(B : [] Planet) {
 }
 
 proc main() {
-	if timer then
-		t.start();
-
 	param NBODIES = 5;
 	var bodies : [0..#NBODIES] Planet;
 
@@ -125,9 +117,4 @@ proc main() {
 		advance(bodies, 0.01);
 	}
 	writeln(format("#.#########", energy(bodies)));
-	if timer then {
-		t.stop();
-		writeln("Time elapsed : ", t.elapsed(), " seconds");
-	}
-
 }

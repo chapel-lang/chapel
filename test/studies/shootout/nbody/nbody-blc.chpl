@@ -5,10 +5,6 @@
    modified by Brad Chamberlain
 */
 
-use Time;
-
-config const doTiming=true;
-
 const pi = 3.141592653589793,
       solarMass = 4 * pi**2,
       daysPerYear = 365.24;
@@ -104,7 +100,6 @@ record NBodySystem {
 }
 
 proc main(args: [] string) {
-  const startTime = getCurrentTime();
   const n = args[1]:int;
 
   var bodies: NBodySystem;
@@ -112,9 +107,5 @@ proc main(args: [] string) {
   writef("%.9r\n", bodies.energy());
   for 1..n do
     bodies.advance(0.01);
-  if doTiming then
-    write("Final energy: ");
   writef("%.9r\n", bodies.energy());
-  if doTiming then
-    writeln("Execution time: ", getCurrentTime() - startTime);
 }
