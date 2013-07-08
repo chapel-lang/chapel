@@ -35,23 +35,17 @@
 
 ***/
 
-use Time;
-
 config param debug: int = 0;
 config const N: int = 7;
 config const num2print = 30;
-config const doTiming = true;
 var P: domain(1) = {1..N};
 
 proc main() {
-  const startTime = getCurrentTime();
   var maxflips: sync int;
 
   begin maxflips = fannkuch();
 
   writeln("Pfannkuchen(", N, ") = ", maxflips);
-  if doTiming then
-    writeln("Execution time: ", getCurrentTime() - startTime);
 }
 
 proc fannkuch() {
