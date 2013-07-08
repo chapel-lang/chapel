@@ -6,9 +6,6 @@
  * Conversion to Chapel by Albert Sidelnik
  */
 
-use Time;
-config const timer : bool = false;
-var t : Timer;
 config const NUM = 500;
 
 use barrierWF;
@@ -75,11 +72,5 @@ proc spectral_game(N : int) : real
 }
 
 proc main() {
-	if timer then
-		t.start();
 	writeln(spectral_game(NUM), new iostyle(precision=10));
-	if timer then {
-		t.stop();
-		writeln("Time elapsed : ", t.elapsed(), " seconds");
-	}
 }

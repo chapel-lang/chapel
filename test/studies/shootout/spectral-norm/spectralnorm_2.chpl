@@ -6,9 +6,7 @@
  * Conversion to Chapel by Albert Sidelnik
  */
 
-use Time, BlockDist;
-config const timer : bool = false;
-var t : Timer;
+use BlockDist;
 config const NUM = 500 : int(64);
 
 
@@ -64,11 +62,5 @@ proc spectral_game(N) : real
 }
 
 proc main() {
-	if timer then
-		t.start();
 	writeln(spectral_game(NUM));
-	if timer then {
-		t.stop();
-		writeln("Time elapsed : ", t.elapsed(), " seconds");
-	}
 }
