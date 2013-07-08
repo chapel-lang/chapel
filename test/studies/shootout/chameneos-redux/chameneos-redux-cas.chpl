@@ -1,7 +1,5 @@
 extern proc chpl_task_yield();
 
-use Time;
-
 /*	- The Chameneos game is as follows: 
 	  	A population of n chameneos gathers at a common meeting place, where 
 	  	m meetings will take place (n and m may be distinct).  At any time, only one
@@ -192,8 +190,6 @@ proc main() {
 	if (numChameneos1 < 2 || numChameneos2 < 2 || numMeetings < 0) {
 		writeln("Please specify numChameneos1 and numChameneos2 of at least 2, and numMeetings of at least 0.");
 	} else 	{	
-		var start_time = getCurrentTime();
-		
 		printColorChanges();	
 
 		const forest : MeetingPlace = new MeetingPlace();	
@@ -202,24 +198,14 @@ proc main() {
 		const population2 = populate(numChameneos2);
 		
 		if (verbose) {
-			var startTime1 = getCurrentTime();
 			run(population1, forest);
-			var endTime1 = getCurrentTime();
-			writeln("time for chameneos1 to meet = ", endTime1 - startTime1);	
 			printInfo(population1);
 
-			var startTime2 = getCurrentTime();
 			run(population2, forest);
-			var endTime2 = getCurrentTime();
-			writeln("time for chameneos2 to meet = ", endTime2 - startTime2);
 			printInfo(population2);
 		} else {
 			runQuiet(population1, forest);
 			runQuiet(population2, forest);
-		}
-		var end_time = getCurrentTime();
-		if (verbose) {
-			writeln("total execution time = ", end_time - start_time);
 		}
 	}
 }
