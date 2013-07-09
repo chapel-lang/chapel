@@ -1,3 +1,28 @@
+// Release branch info
+// For now, I'm not using the release or revision fields
+var branchInfo = [
+                  { "release" : "1.1",
+                    "branchDate" : "2010-04-09",
+                    "revision" : "r17089"},
+                  { "release" : "1.2",
+                    "branchDate" : "2010-10-14",
+                    "revision" : "r17927"},
+                  { "release" : "1.3",
+                    "branchDate" : "2011-04-12",
+                    "revision" : "r18702"},
+                  { "release" : "1.4",
+                    "branchDate" : "2011-10-11",
+                    "revision" : "r19321"},
+                  { "release" : "1.5",
+                    "branchDate" : "2012-04-10",
+                    "revision" : "r19962"},
+                  { "release" : "1.6",
+                    "branchDate" : "2012-10-08",
+                    "revision" : "r20668"},
+                  { "release" : "1.7",
+                    "branchDate" : "2013-04-05",
+                    "revision" : "r21261"}
+                  ];
 // stuff for dygraph
 var gs = []; // array of current graphs
 var blockRedraw = false;
@@ -22,6 +47,9 @@ function genDygraph(graphInfo, parent, legend) {
                         {
                             title: graphInfo.title,
                             ylabel: graphInfo.ylabel,
+                            drawXGrid: false,
+                            drawYGrid: true,
+                            includeZero: true,
                             showRoller: true,
                             legend: 'always',
                             labelsDiv: ldiv,
@@ -41,6 +69,19 @@ function genDygraph(graphInfo, parent, legend) {
                                              } )
                                 }
                                 blockRedraw = false;
+                            },
+                            underlayCallback: function(canvas, area, g) {
+                                function markReleaseDate(date) {
+                                    var xval = g.toDomXCoord(new Date(date));
+                                    canvas.beginPath();
+                                    canvas.moveTo(xval, area.y);
+                                    canvas.lineTo(xval, area.y+area.h);
+                                    canvas.strokeStyle = '#e0af1b';
+                                    canvas.stroke();
+                                }
+                                for (var i = 0; i < branchInfo.length; i++) {
+                                    markReleaseDate(branchInfo[i].branchDate);
+                                }
                             }
                         }
                         )
