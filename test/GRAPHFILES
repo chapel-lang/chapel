@@ -28,7 +28,7 @@ studies/shootout/nbody/nbody.graph
 studies/shootout/fasta/fasta.graph
 studies/shootout/thread-ring/thread-ring.graph
 ### studies/shootout/mandelbrot/mandelbrot.graph
-studies/shootout/pidigits/pidigits.graph
+studies/shootout/pidigits/bradc/pidigits.graph
 # suite: SSCA2
 studies/ssca2/memory/SSCA2_mem.graph
 # suite: Array performance
