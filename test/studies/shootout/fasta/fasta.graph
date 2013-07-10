@@ -1,13 +1,13 @@
 perfkeys: real
+files: fasta.25000000.dat
+graphkeys: fasta
+graphtitle: Fasta Shootout Benchmark (n=25,000,000)
+ylabel: Time (seconds)
+graphname: fasta.25000000
+
+perfkeys: real
 graphkeys: fasta
 files: fasta.dat
 graphtitle: Fasta Shootout Benchmark
 ylabel: Time (seconds)
 graphname: fasta
-
-perfkeys: real
-files: fasta.25000000.dat
-graphkeys: fasta (25,000,000)
-graphtitle: Fasta Shootout Benchmark (full problem size)
-ylabel: Time (seconds)
-graphname: fasta.25000000
