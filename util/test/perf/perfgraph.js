@@ -1,27 +1,39 @@
 // Release branch info
 // For now, I'm not using the release or revision fields
 var branchInfo = [
+                  { "release" : "0.9",
+                    "branchDate" : "2009-04-08", // no actual branch
+                    "revision" : "r15461" },
+                  { "release" : "1.0",
+                    "branchDate" : "2009-10-16",
+                    "revision" : "r16229" },
+                  { "release" : "1.01",
+                    "branchDate" : "2009-10-30",
+                    "revision" : "r16330" },
+                  { "release" : "1.02",
+                    "branchDate" : "2009-11-13",
+                    "revision" : "r16423" },
                   { "release" : "1.1",
                     "branchDate" : "2010-04-09",
-                    "revision" : "r17089"},
+                    "revision" : "r17087"},
                   { "release" : "1.2",
                     "branchDate" : "2010-10-14",
-                    "revision" : "r17927"},
+                    "revision" : "r17926"},
                   { "release" : "1.3",
                     "branchDate" : "2011-04-12",
-                    "revision" : "r18702"},
+                    "revision" : "r18701"},
                   { "release" : "1.4",
                     "branchDate" : "2011-10-11",
-                    "revision" : "r19321"},
+                    "revision" : "r19320"},
                   { "release" : "1.5",
                     "branchDate" : "2012-04-10",
-                    "revision" : "r19962"},
+                    "revision" : "r19961"},
                   { "release" : "1.6",
                     "branchDate" : "2012-10-08",
-                    "revision" : "r20668"},
+                    "revision" : "r20667"},
                   { "release" : "1.7",
                     "branchDate" : "2013-04-05",
-                    "revision" : "r21261"}
+                    "revision" : "r21260"}
                   ];
 // stuff for dygraph
 var gs = []; // array of current graphs
