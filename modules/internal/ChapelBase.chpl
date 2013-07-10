@@ -117,7 +117,7 @@ module ChapelBase {
       compilerError("illegal use of '", op, "' on operands of type uint(64) and signed integer");
   }
 
-  proc _throwPVFCError() {
+  inline proc _throwPVFCError() {
     halt("Pure virtual function called.");
   }
 
