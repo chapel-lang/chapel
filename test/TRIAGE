@@ -61,7 +61,7 @@ e.g. real(64): ERROR: x=108.0 (should be 120)
 - gasnet-everything, 02/01/13, 02/19/13, 05/10/13
 - no-local:3/16/13
 - baseline:6/7/13
-- comm=none: 6/21/13, 7/03/13
+- comm=none: 6/21/13, 7/03/13, 07/11/13, 07/13/13
 
 
 linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
@@ -165,6 +165,15 @@ Not so noisy as to be familiar annoyances, but worth noting to see if they
 come up again
 ==========================================================================
 
+nondet. seg fault for prgenv-cray on chpbld01
+---------------------------------------------
+[Error matching compiler output for release/examples/spec/Classes/declaration] (07/09/13)
+[Error matching compiler output for release/examples/spec/Records/recordInheritance] (07/14/13)
+
+nondet. timeout on gasnet-everything
+------------------------------------
+[Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dBDtoDRTest] (07/08/13)
+
 libmpich_intel.so failure for
 cray-xt.cray-prgenv-intel.none.fifo.pthreads--linux64 (May 27, 2013)
 > ld: warning: libmpich_intel.so.1, needed by /opt/cray/libsci/12.0.02/intel/130/istanbul/lib/libsci_intel_mp.so, not found (try using -rpath or -rpath-link)
@@ -255,7 +264,7 @@ examples of what times out:
  distributions/robust/arithmetic/stress/test_many_domains (08/13)
  distributions/robust/arithmetic/stress/test_many_array (4/29/13)
  distributions/dm/t2 (2012/08/15)
- test_array_slicing3 (06/08/12, 6/16, 3/29/13, 5/3/13)
+ test_array_slicing3 (07/12/13, 06/08/12, 6/16, 3/29/13, 5/3/13)
  release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4) (04/08/13)
  studies/cholesky/jglewis/version2/performance/test_cholesky_performance (06/20/13)
  multilocale/diten/needMultiLocales/coforallon_maxThreads (07/04/13)

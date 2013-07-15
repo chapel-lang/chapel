@@ -35,6 +35,12 @@ linux32 regressions (in addition to the above)
 performance-specific regressions
 ================================
 
+thread-ring times out ever since it was made into a performance test
+--------------------------------------------------------------------
+[Error (createGraphs): 'gnuplot' command failed for thread-ring.graph]
+[Error generating old-style graphs for thread-ring.graph in /data/sea/cascade/chapel/NightlyPerformance/chap04]
+[Error: Timed out executing program studies/shootout/thread-ring/thread-ring]
+
 lulesh decreasing performance (~10/20/12 and 1/23/13)
 -----------------------------------------------------
 gbt, 3/11/13: I've taken ownership of this.
@@ -67,6 +73,7 @@ overlapping memcpy (root cause should be eliminated)
 [Error matching program output for io/bradc/readWholeArr]
 [Error matching program output for io/ferguson/readThis/readarr]
 [Error matching program output for users/ferguson/bulkerr]
+[Error matching program output for io/ferguson/writebinaryarray]
 
 stack overflow
 --------------
