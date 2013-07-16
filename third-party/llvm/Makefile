@@ -29,7 +29,7 @@ default: $(LLVM_FILE)
 all: $(LLVM_FILE)
 
 clean: FORCE
-	cd $(LLVM_BUILD_DIR) && make clean
+	rm -rf $(LLVM_BUILD_DIR)
 
 clobber: FORCE
 	rm -rf build install
