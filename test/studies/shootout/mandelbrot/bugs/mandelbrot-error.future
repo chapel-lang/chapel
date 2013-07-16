@@ -1,0 +1,19 @@
+bug: this idiom generates a gcc warning for some reason (error w/ -Werror)
+
+This is a reduced case from mandelbrot-fancy.chpl, which has been
+failing its performance test since it was established due to the
+presence of the --fast flag.
+
+If we chose to, we could disable this warning using
+-Wno-strict-overflow, or we could disable the optimization that is
+triggering the warning using -fwrapv or -fno-strict-overflow (see
+stackoverflow Q&A at:
+
+     http://stackoverflow.com/questions/12984861/dont-understand-assuming-signed-overflow-warning
+
+for more detail).  
+
+Yet it seems beneficial to understand better what is causing this
+behavior, and why it is unique to this test, rather than simply
+disabling it.  Offhand, I can't even recall whether we rely on integer
+overflow in our range iterators.
