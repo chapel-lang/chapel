@@ -10,9 +10,10 @@ release/examples/benchmarks/hpcc/stream-ep.graph
 # suite: HPCC
 studies/hpcc/RA.graph
 studies/hpcc/STREAM.graph
-# suite: LULESH
+# suite: DOE benchmarks
 studies/lulesh/sungeun/lulesh.sungeun.graph
 studies/lulesh/bradc/lulesh-dense.graph
+studies/miniMD/miniMD.graph
 # suite: Para-CR
 studies/paracr/asenjo/PARACR-BC.graph
 # suite: PARASEC
@@ -63,3 +64,4 @@ npb/cg/bradc/cg-sparse.graph
 users/franzf/v0/chpl/main.graph
 studies/jacobi/jacobi.graph
 domains/bradc/domEqualityPerf.graph
+studies/miniMD/miniMD.graph
