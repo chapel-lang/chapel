@@ -11,8 +11,8 @@
 # - Region starts with the first call to getCurrentTime() in the program text
 # - Region end with the last call to getCurrentTime() in the program text
 # - Occurance of getCurrentTime() is the last line of the statement
-# - SPECIAL CASE for stream-ep: Sum up comm locally in timed regions and
-#   output once at the end
+# - SPECIAL CASE for stream-ep: To get consistent results, include the outer
+#   coforall loop in the comm counts.
 #
 
 import sys, shutil
@@ -50,20 +50,21 @@ found = False
 for l in lines:
     if testname == 'stream-ep':
         if l.strip().find('printResults') == 0:
+            f.write('stopCommDiagnostics();\n')
             f.write('writeln(getCommDiagnostics());\n')
+        if l.strip().find('coforall loc in Locales') == 0:
+            f.write('resetCommDiagnostics();\n')
+            f.write('startCommDiagnostics();\n')
 
     if l.strip().find(timerstr) >= 0:
         if not found:
             found = True
             f.write(l)
-            if testname == 'stream-ep':
-                f.write('startCommDiagnosticsHere();\n')
-            else:
+            if testname != 'stream-ep':
+                f.write('resetCommDiagnostics();\n')
                 f.write('startCommDiagnostics();\n')
         else:
-            if testname == 'stream-ep':
-                f.write('stopCommDiagnosticsHere();\n')
-            else:
+            if testname != 'stream-ep':
                 f.write('stopCommDiagnostics();\nwriteln(getCommDiagnostics());\n')
             f.write(l)
             found = False
