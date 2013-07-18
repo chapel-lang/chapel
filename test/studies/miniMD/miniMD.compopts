@@ -1,0 +1,1 @@
+-sprintCorrect=true -sprintPerf=false helpers/force.chpl helpers/thermo.chpl helpers/system.chpl helpers/integrate.chpl helpers/config.chpl
