@@ -1,0 +1,5 @@
+The reference version of the largest size of IS we can run on a desktop (size C)
+takes ~20 seconds to run.  Due to implementation issues, however, the Chapel
+version (as of revision 21580) of IS takes more than 10x that to run the
+algorithm, and more than 200x that for setup, the algorithm, and verification.
+So, for now we are allowing IS to run for 800 seconds.

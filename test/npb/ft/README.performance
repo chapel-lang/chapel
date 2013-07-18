@@ -1,0 +1,3 @@
+The reference version for the largest size of FT we can run (size B) takes
+~100 seconds to complete.  The Chapel version of this size takes roughly 500
+seconds to complete, so we should let it go around 700 just to be safe

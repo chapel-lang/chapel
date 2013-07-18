@@ -1,0 +1,3 @@
+perfkeys: Execution time =
+graphkeys: runtime - S
+graphtitle: NAS Parallel Benchmarks: CG timings - size S

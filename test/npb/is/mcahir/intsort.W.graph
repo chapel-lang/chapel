@@ -1,0 +1,3 @@
+perfkeys:  Elapsed time for setup    =,  Elapsed time for key sort =,  Elapsed time for full verify =,  Time in seconds =
+graphkeys: setup time - W, key sort time - W, verify time - W, total time - W
+graphtitle: NAS Parallel Benchmarks: IS timings - size W

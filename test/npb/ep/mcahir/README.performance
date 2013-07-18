@@ -1,0 +1,6 @@
+The reference version of EP for the largest size (size D) takes ~2,400 seconds
+on a desktop machine.  For a good balance of reasonable comparison numbers 
+versus performance tests taking too long, it would be optimal for Chapel's
+version to be allowed to run for ~7,200 seconds.  However, that is over 2 hours.
+As of revision 21580, we will run it with 500 seconds and allow size D to time
+out, even though it does complete if given enough time.
