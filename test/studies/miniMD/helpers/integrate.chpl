@@ -49,12 +49,9 @@ module MDInteg {
 				if (i % sys.con.neigh_every) == 0 {
 					sys.buildNeighbors();
 				}
-				// if we're computing thermo this turn, accumulate force data
-				force.evflag = i % thermo.nstat == 0;
-
 				tim.start();
 
-				force.compute(sys);
+				force.compute(sys, i % thermo.nstat == 0);
 
 				forceTime += tim.elapsed();
 				tim.stop();

@@ -61,11 +61,10 @@ module MDSystem {
 		var nbin : v3int;
 		var binsize : v3;
 		var bininv : v3;
-		var binSpace : domain(1);
-		var bins : [binSpace] int(32); // size atomsPerbin*natoms. get to bin i by i*atomsPerbin 
-		var atomsPerBin : int = 8;
-		var countSpace : domain(1);
-		var binCount : [countSpace] int(32);
+		var binSpace : domain(3);
+		var perBinSpace : domain(1) = {1..8};
+		var bins : [binSpace] [perBinSpace] int(32); 
+		var binCount : [binSpace] int(32);
 
 		// ghosts
 		var ghostSpace : domain(1);
@@ -82,7 +81,7 @@ module MDSystem {
 		const factor = .999;
 
 		var stencilSpace : domain(1);
-		var stencil : [stencilSpace] int;
+		var stencil : [stencilSpace] (int,int,int);
 		var nstencil : int;
 		var cutneigh : real;
 		var cutneighsq : real;
@@ -219,7 +218,7 @@ module MDSystem {
 
 			if con.half_neigh && ghost_newton { // where to put ghost newton?
 				kstart = 0;
-				stencil[nstencil] = 0;
+				stencil[nstencil] = (0,0,0);
 				nstencil += 1;
 			}
 
@@ -228,8 +227,7 @@ module MDSystem {
 					for i in -next.x .. next.x {
 						if !ghost_newton || !con.half_neigh || (k > 0 || j > 0 || (j == 0 && i > 0)) {
 							if bindist(i,j,k) < cutneighsq {
-								var t = k * mbin.y * mbin.x + j * mbin.x + i;
-								stencil[nstencil] = t;
+								stencil[nstencil] = (i,j,k);
 								nstencil += 1;  
 							}
 						}
@@ -237,8 +235,7 @@ module MDSystem {
 				}
 			}
 			mbins = mbin.x * mbin.y * mbin.z;
-			countSpace = 1..mbins;
-			binSpace = 1 .. (mbins * atomsPerBin);
+			binSpace = {1..mbin.x, 1..mbin.y, 1..mbin.z};
 		}
 
 		proc finish(thermo : Thermo) {
@@ -342,12 +339,6 @@ module MDSystem {
 			vtot.x = + reduce forall a in atoms do a.v.x;
 			vtot.y = + reduce forall a in atoms do a.v.y;
 			vtot.z = + reduce forall a in atoms do a.v.z;
-			/*
-			for a in atoms {
-				vtot.x += a.v.x;
-				vtot.y += a.v.y;
-				vtot.z += a.v.z;
-			}*/
 
 			vtot.x /= natoms;
 			vtot.y /= natoms;
@@ -391,27 +382,32 @@ module MDSystem {
 			return ans;
 		}
 
+		proc numGhosts(v : v3) {
+			var c = cutneigh;
+			var foundx = false;
+			var foundy = false;
+			var ghostc = 0;
+
+			if v.x <= xlo+c || v.x >= xhi-c { ghostc += 1; foundx = true; }
+			if v.y <= ylo+c || v.y >= yhi-c { 
+				foundy = true; 
+				ghostc += 1;
+				if foundx then ghostc += 1;
+			}
+			if v.z <= zlo+c || v.z >= zhi-c {
+				ghostc += 1;
+				if foundx then ghostc += 1;
+				if foundy then ghostc += 1;
+				if foundx && foundy then ghostc += 1;
+			}
+			return ghostc;
+		}
+
 		proc findGhosts() {
 			var ghostc = 0;
-			var c = cutneigh;
 
 			// first, count # ghosts to establish our array size
-			for (a,i) in zip(atoms,atoms.domain) {
-				var foundx = false;
-				var foundy = false;
-				if a.x.x <= xlo+c || a.x.x >= xhi-c { ghostc += 1; foundx = true; }
-				if a.x.y <= ylo+c || a.x.y >= yhi-c { 
-					foundy = true; 
-					ghostc += 1;
-					if foundx then ghostc += 1;
-				}
-				if a.x.z <= zlo+c || a.x.z >= zhi-c {
-					ghostc += 1;
-					if foundx then ghostc += 1;
-					if foundy then ghostc += 1;
-					if foundx && foundy then ghostc += 1;
-				}
-			}
+			ghostc = + reduce forall a in atoms do numGhosts(a.x);
 			ghostSpace = {1..ghostc};
 			ghostc = 1;
 			
@@ -533,13 +529,12 @@ module MDSystem {
 			
 			pbc();
 			findGhosts();
-			
 			commTime += tim.elapsed();
 			tim.stop();
 			tim.clear();
 			tim.start();
 
-			binatoms();
+			binatoms(); // not the source of lag, maybe a little at the start
 			forall i in atoms.domain {
 				var a = atoms[i];
 				a.ncount = 0;
@@ -548,8 +543,8 @@ module MDSystem {
 				for q in 1..nstencil-1 { // for each surrounding bin
 					var s = stencil[q];
 					var other_bin = binc + s;
-					for x in 0..binCount[other_bin]-1 { // for each atom in that bin
-						var j = bins[other_bin*atomsPerBin + x];
+					for x in 1..binCount[other_bin] { // for each atom in that bin
+						var j = bins[other_bin][x];
 						var n : v3;
 						if j <= natoms then n = atoms[j].x;
 						else {
@@ -584,65 +579,51 @@ module MDSystem {
 		proc binatoms() {
 			var resizing = true;
 			// fetchadd bincount?
-			while resizing {
-				resizing = false;
-
-				forall b in binCount { 
-					b = 0;
+			forall b in binCount { 
+				b = 0;
+			}
+			for i in atoms.domain {
+				var a = atoms[i];
+				var binc = coord2bin(a.x);
+				// do we have room?
+				var offset = binCount[binc];
+				binCount[binc] += 1;
+				if binCount[binc] >= perBinSpace.high { // resize this bin's atom list
+					var h = (perBinSpace.high * 1.2) : int;
+					perBinSpace = {1..h};
 				}
-				for i in atoms.domain {
-					var a = atoms[i];
-					if !resizing {
-						var binc : int = coord2bin(a.x);
-						// do we have room?
-						if binCount[binc] < atomsPerBin {
-							var offset = binCount[binc];
-							binCount[binc] += 1;
-							bins[binc * atomsPerBin + offset] = (i : int(32));
-						} else resizing = true;
-					}
+				bins[binc][offset+1] = (i : int(32));
+			}
+			for i in ghosts.domain {
+				var g = ghosts[i];
+				var t = g(2);
+				t = t + atoms[g(1)].x;
+				var binc = coord2bin(t);
+				var offset = binCount[binc];
+				binCount[binc] += 1;
+				if binCount[binc] >= perBinSpace.high {
+					var h = (perBinSpace.high * 1.2) : int;
+					perBinSpace = {1..h};
 				}
-				if !resizing {
-					for i in ghosts.domain {
-						var g = ghosts[i];
-						if !resizing {
-							var t = g(2);
-							t = t + atoms[g(1)].x;
-							var binc : int = coord2bin(t);
-							if binCount[binc] < atomsPerBin {
-								var offset = binCount[binc];
-								binCount[binc] += 1;
-								bins[binc * atomsPerBin + offset] = (natoms+i) : int(32);
-							} else resizing = true;
-						}
-					}
-				}
-
-				if resizing {
-					atomsPerBin *= 2;
-					binSpace = 1 .. mbins * atomsPerBin;
-				}
+				bins[binc][offset+1] = (natoms+i) : int(32);
 			}
 		}
 
-		proc coord2bin(x : v3) : int {
+		proc coord2bin(x : v3){
 			var cur : v3int;
 
 			if x.x >= dim.x then cur.x = ((x.x - dim.x) * bininv.x + nbin.x - mbinlo.x) : int;
-			else if x.x >= 0.0 then cur.x = ((x.x * bininv.x) - mbinlo.x) : int;
 			else cur.x = ((x.x * bininv.x) - mbinlo.x) : int;
 
 
 			if x.y >= dim.y then cur.y = ((x.y - dim.y) * bininv.y + nbin.y - mbinlo.y) : int;
-			else if x.y >= 0.0 then cur.y = ((x.y * bininv.y) - mbinlo.y) : int;
 			else cur.y = ((x.y * bininv.y) - mbinlo.y) : int;
 
 
 			if x.z >= dim.z then cur.z = ((x.z - dim.z) * bininv.z + nbin.z - mbinlo.z) : int;
-			else if x.z >= 0.0 then cur.z = ((x.z * bininv.z) - mbinlo.z) : int;
 			else cur.z = ((x.z * bininv.z) - mbinlo.z) : int;
 
-			return (cur.z * mbin.y * mbin.x + cur.y * mbin.x + cur.x + 1 + 1);
+			return (cur.x, cur.y, cur.z);
 		}
 		
 	} 

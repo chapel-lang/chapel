@@ -38,8 +38,7 @@ proc main(args : [] string) {
 	con.print(mdsys);
 		
 	// initial force computation pass
-	force.evflag = true;
-	force.compute(mdsys);
+	force.compute(mdsys, true);
 
 	// initial thermo pass
 	if printOriginal then writeln("# Starting dynamics ...\n# Timestep T U P Time");
@@ -55,8 +54,7 @@ proc main(args : [] string) {
 	totalTime = tim.elapsed();
 
 	// get final thermo data
-	force.evflag = true;
-	force.compute(mdsys);
+	force.compute(mdsys, true);
 	thermo.compute(-1, mdsys, force, tim);
 
 	if printPerf then writef("Time: %.6dr\n", totalTime);
