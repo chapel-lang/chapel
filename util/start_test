@@ -1122,6 +1122,18 @@ if ($performance) then
     echo ""
 endif
 
+#
+# I put this in a separate script b/c it would be too
+# painful/ugly/slow to do in csh.  Maybe the above code that checks
+# the .dat file names should be rolled into this script also.  Or
+# maybe start_test should just be re-written in a more modern
+# scripting language.
+#
+if ($gengraphs) then
+    echo ""
+    echo "[Checking that all .graph files appear in $CHPL_HOME/test/GRAPHFILES]" |& $tee -a $logfile
+    $utildir/checkGraphfiles |& tee -a $logfile
+endif
 
 #
 # Environment setup complete, print out the current Chapel environment
