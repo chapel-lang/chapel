@@ -311,6 +311,31 @@ void addUse(Map<Symbol*,Vec<SymExpr*>*>& useMap, SymExpr* use) {
 
 
 //
+// Checks if a callExpr is one of the op= primitives
+// Note, this does not check if a callExpr is an 
+// op= function call (such as before inlining)
+//
+bool isOpEqualPrim(CallExpr* call) {
+  if (call->isPrimitive(PRIM_ADD_ASSIGN) ||
+      call->isPrimitive(PRIM_SUBTRACT_ASSIGN) ||
+      call->isPrimitive(PRIM_MULT_ASSIGN) ||
+      call->isPrimitive(PRIM_DIV_ASSIGN) ||
+      call->isPrimitive(PRIM_MOD_ASSIGN) ||
+      call->isPrimitive(PRIM_LSH_ASSIGN) ||
+      call->isPrimitive(PRIM_RSH_ASSIGN) ||
+      call->isPrimitive(PRIM_AND_ASSIGN) ||
+      call->isPrimitive(PRIM_OR_ASSIGN) ||
+      call->isPrimitive(PRIM_XOR_ASSIGN)) {
+    return true;      
+    }
+    //otherwise false
+    return false;
+}
+
+
+//
+// TODO this should be fixed to include PRIM_SET_MEMBER
+// See notes in iterator.cpp or loopInvariantCodeMotion.cpp
 // return & 1 is true if se is a def
 // return & 2 is true if se is a use
 //
@@ -318,6 +343,8 @@ int isDefAndOrUse(SymExpr* se) {
   if (CallExpr* call = toCallExpr(se->parentExpr)) {
     if (call->isPrimitive(PRIM_MOVE) && call->get(1) == se) {
       return 1;
+    } else if (isOpEqualPrim(call) && call->get(1) == se) {
+      return 3;
     } else if (FnSymbol* fn = call->isResolved()) {
       ArgSymbol* arg = actual_to_formal(se);
       if (arg->intent == INTENT_REF ||

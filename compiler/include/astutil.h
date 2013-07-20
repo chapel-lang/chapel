@@ -64,6 +64,13 @@ void collectSymbolSetSymExprVec(BaseAST* ast,
                                 Vec<SymExpr*>& symExprs);
 
 //
+// Checks if a callExpr is one of the op= primitives
+// Note, this does not check if a callExpr is an 
+// op= function call (such as before inlining)
+//
+bool isOpEqualPrim(CallExpr* call);
+
+//
 // Return value & 1 is true if se is a def
 // Return value & 2 is true if se is a use
 //
