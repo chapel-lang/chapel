@@ -26,16 +26,24 @@
 # if appropriate.
 
 
-======================
-Global config problems
-======================
-
-The nightly.chap02 and nightly.chap10 scripts swapped computers. They are still
-named for their previous computers and need their names updated.
-
 =========================================================
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
+
+Future (bug: this idiom generates a gcc warning for some reason (error w/ -Werror)) [Success matching program output for studies/shootout/mandelbrot/bugs/mandelbrot-error] (bradc 7/19/13):
+Brad has taken care of most of these with the skipif, but there was
+one remaining passing version for the weekend test of cray-xt,
+PrgEnv-gnu.
+
+
+studies/hpcc/CommDiags/stream-ep_commDiags.chpl (sungeun 7/17/13):
+For gasnet-fast, this test has been failing nearly every night since
+the h-loc merge (6/11/13), but it did succeed once (6/29/13).  On
+7/17/13, it failed for gasnet-everything.  I changed the test to
+include the coforall, so while it's not exactly counting the comms in
+the inner loop, this will lead to less variability.  This should pass
+all gasnet tests now.
+
 
 cray-prgenv-* (weekday) (sungeun 6/5/13, diten 6/21/13):
 This causes frequent problems as some components get updated on chpbld01, but
@@ -52,25 +60,39 @@ These things regularly cause noise in testing:
 atomics nondeterminisms (sungeun)
 ---------------------------------
 release/examples/primers/atomics:
-- xt-intel: 06/30/12, 3/19/13
-- linux32: 07/04/12
-- cray-xt: 08/14/12
-- prgenv-gnu: 3/22/13
+
+  7/16/13: Fixed a bug in the test program.  Tested by running in loop
+  for ~30 minutes (each test takes almost 0 time) This entry can
+  probably be removed.
+
+  - xt-intel: 06/30/12, 3/19/13
+  - linux32: 07/04/12
+  - cray-xt: 08/14/12
+  - prgenv-gnu: 3/22/13
+
 types/atomic/sungeun/atomic_vars:
-e.g. real(64): ERROR: x=108.0 (should be 120)
-- gasnet-everything, 02/01/13, 02/19/13, 05/10/13
-- no-local:3/16/13
-- baseline:6/7/13
-- comm=none: 6/21/13, 7/03/13, 07/11/13, 07/13/13
+  e.g. real(64): ERROR: x=108.0 (should be 120)
 
+  7/16/14: Fixed a bug in compareExchange implementation in the
+  intrinsics implementation for reals.  Tested in loop for ~15 minutes
+  (each test takes almost 0 time) This entry can probably be removed.
 
-linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
----------------------------------------------
+  - gasnet-everything, 02/01/13, 02/19/13, 05/10/13
+  - no-local:3/16/13
+  - baseline:6/7/13, 7/16/13,
+  - comm=none: 6/21/13, 7/03/13, 07/11/13, 07/13/13
+
+linux64.gnu.gasnet.qthreads.none (sungeun)
+------------------------------------------
+7/16/13: I moved qthreads testing to chap05, and most of these
+timeouts were resolved, minus test_many_domains.
+
 Our main noisy failures currently are as follows:
 
   distributions/robust/arithmetic/kernels/jacobi.chpl
   distributions/robust/arithmetic/stress/test_many_array
   distributions/robust/arithmetic/stress/test_many_domains
+
 
 After moving these tests to a slower machine (chap02->chap10) several more
 timed out including the three above plus:
@@ -173,6 +195,8 @@ nondet. seg fault for prgenv-cray on chpbld01
 nondet. timeout on gasnet-everything
 ------------------------------------
 [Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dBDtoDRTest] (07/08/13)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (7/15/13)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (7/19/13)
 
 libmpich_intel.so failure for
 cray-xt.cray-prgenv-intel.none.fifo.pthreads--linux64 (May 27, 2013)

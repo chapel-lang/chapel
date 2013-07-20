@@ -200,11 +200,6 @@ execution timeouts
 [Error: Timed out executing program domains/johnk/capacityParSafe (compopts: 1)] (since 12/16/2012)
 in this configuration: linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc
 
-incorrect comm counts (6/11/13)
-------------------------------
-[Error matching program output for studies/hpcc/CommDiags/stream-ep_commDiags (compopts: 1)] (observed only for linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc) (succeeded once 06/29/13)
-
-
 =======================
 tcmalloc-specific tests
 =======================
@@ -322,6 +317,13 @@ diff seems to think output file is binary? (09/26/11 -- first run in ages)
 cray-xt-cray/cce-specific regressions
 (Checked for accuracy 2/26/2013)
 =====================================
+
+New CCE 8.2 warning: An unsigned integer is being compared to zero (7/16/13)
+----------------------------------------------------------------------------
+[Error matching program output for release/examples/benchmarks/hpcc/ra-atomics (compopts: 1)]
+[Error matching program output for release/examples/benchmarks/hpcc/ra (compopts: 1)]
+[Error matching program output for release/examples/benchmarks/hpcc/variants/ra-cleanloop (compopts: 1)]
+
 
 seg fault (6/9/13)
 ------------------
