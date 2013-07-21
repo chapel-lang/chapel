@@ -57,7 +57,7 @@ void computeDominators(std::vector<BitVec*>& dominators, std::vector<BasicBlock*
       if(temp.equals(*dominators[i]) == false) {
         changed = true;
         dominators[i]->reset();
-	      dominators[i]->disjunction(temp);
+	dominators[i]->disjunction(temp);
       }
     }
   }
