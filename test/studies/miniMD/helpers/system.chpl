@@ -18,6 +18,13 @@ module MDSystem {
 		}
 
 	}
+	// stores information about an atom
+	record atom {
+		var x, v, f : v3; // position, velocity, force
+		var nspace : domain(1) = {1..100};
+		var neighs : [nspace] int;
+		var ncount : int = 0;
+	}
 	proc +(left : v3, right : v3) : v3 {
 		var r : v3;
 		r.x = left.x + right.x;
@@ -138,9 +145,9 @@ module MDSystem {
 				this.mass = mass;
 
 				// get atoms' positions and velocities
-				readAttribute("Atoms", atoms, r, false);
+				readAttribute("Atoms", r, false);
 
-				readAttribute("Velocities", atoms, r, true);
+				readAttribute("Velocities", r, true);
 				r.close();
 				indata.close();
 
@@ -295,7 +302,7 @@ module MDSystem {
 						v.y = pmrand(n);
 						for m in 1..5 { pmrand(n); }
 						v.z = pmrand(n);
-						atoms[cura] = new atom();
+						//atoms[cura] = new atom();
 						atoms[cura].x = temp;
 						atoms[cura].v = v;
 						cura += 1;
@@ -496,11 +503,11 @@ module MDSystem {
 			return del.dot(del);
 		}
 
-		proc readAttribute(title : string, atoms :[] atom, rdr, isvel) {
+		proc readAttribute(title : string, rdr, isvel) {
 			var titlestr = rdr.readln(string);
 			assert(titlestr == title);
 			for (a,i) in zip(atoms,atoms.domain) {
-				if a == nil then a = new atom();
+				//if a == nil then a = new atom();
 				rdr.read(int, int);
 				if isvel then // bit messy, probably a better way than a flag
 					rdr.readln(a.v.x,a.v.y,a.v.z);
@@ -535,8 +542,7 @@ module MDSystem {
 			tim.start();
 
 			binatoms(); // not the source of lag, maybe a little at the start
-			forall i in atoms.domain {
-				var a = atoms[i];
+			forall (a,i) in zip(atoms,atoms.domain) {
 				a.ncount = 0;
 				var binc = coord2bin(a.x);
 
@@ -582,8 +588,7 @@ module MDSystem {
 			forall b in binCount { 
 				b = 0;
 			}
-			for i in atoms.domain {
-				var a = atoms[i];
+			for (a,i) in zip(atoms,atoms.domain) {
 				var binc = coord2bin(a.x);
 				// do we have room?
 				var offset = binCount[binc];
@@ -594,8 +599,7 @@ module MDSystem {
 				}
 				bins[binc][offset+1] = (i : int(32));
 			}
-			for i in ghosts.domain {
-				var g = ghosts[i];
+			for (g,i) in zip(ghosts,ghosts.domain) {
 				var t = g(2);
 				t = t + atoms[g(1)].x;
 				var binc = coord2bin(t);
@@ -627,12 +631,4 @@ module MDSystem {
 		}
 		
 	} 
-
-	// stores information about an atom
-	class atom {
-		var x, v, f : v3; // position, velocity, force
-		var nspace : domain(1) = {1..100};
-		var neighs : [nspace] int;
-		var ncount : int = 0;
-	}
 }

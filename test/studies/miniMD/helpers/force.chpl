@@ -250,21 +250,19 @@ use MDSystem;
 						nx = nx + sys.atoms[gi].x;
 					}
 
-					if a != n {
-						var del = a.x - nx;
-						var rsq = del.dot(del);
+					var del = a.x - nx;
+					var rsq = del.dot(del);
 
-						if rsq < cutforcesq {
-							var p = sqrt(rsq) * rdr + 1.0;
-							var m : int = p : int;
-							if m >= nr - 1 then m = nr - 1;
-							p -= m;
-							if p >= 1.0 then p = 1.0;
-							var val : real = ((rhor_spline[m*7 + 3] * p + rhor_spline[m * 7 + 4]) * p + rhor_spline[m*7+5]) * p + rhor_spline[m*7+6];
-							rhoi += val;
-							if j <= sys.natoms && sys.con.half_neigh { // not a ghost?
-								rho[j] += val;
-							}
+					if rsq < cutforcesq {
+						var p = sqrt(rsq) * rdr + 1.0;
+						var m : int = p : int;
+						if m >= nr - 1 then m = nr - 1;
+						p -= m;
+						if p >= 1.0 then p = 1.0;
+						var val : real = ((rhor_spline[m*7 + 3] * p + rhor_spline[m * 7 + 4]) * p + rhor_spline[m*7+5]) * p + rhor_spline[m*7+6];
+						rhoi += val;
+						if j <= sys.natoms && sys.con.half_neigh { // not a ghost?
+							rho[j] += val;
 						}
 					}
 				}
@@ -390,19 +388,16 @@ use MDSystem;
 
 			// for each atom, compute force between itself and its neighbors
 			// can make outer loop parallel if we can make force modifications atomic
-			for i in sys.atoms.domain {
-				var a = sys.atoms[i];
+			for a in sys.atoms {
 				var fx, fy, fz : real;
 				for q in 1..a.ncount { 
 					var j = a.neighs[q];
-					var n : atom;
 					var nx : v3;
 					var gi : int;
 
 					// handle ghost
 					if j <= sys.natoms {
-						n = sys.atoms[j];
-						nx = n.x;
+						nx = sys.atoms[j].x;
 					} else {
 						nx = sys.ghosts[j-sys.natoms](2);
 						gi = sys.ghosts[j-sys.natoms](1);
@@ -427,9 +422,9 @@ use MDSystem;
 						// this needs to be atomic
 						if sys.con.half_neigh {
 							if j <= sys.natoms {
-								n.f.x -= rx;
-								n.f.y -= ry;
-								n.f.z -= rz;
+								sys.atoms[j].f.x -= rx;
+								sys.atoms[j].f.y -= ry;
+								sys.atoms[j].f.z -= rz;
 							} else if sys.ghost_newton {
 								sys.atoms[gi].f.x -= rx;
 								sys.atoms[gi].f.y -= ry;
@@ -453,6 +448,7 @@ use MDSystem;
 				a.f.y += fy;
 				a.f.z += fz;
 			}
+
 		}
 	} 
 }
