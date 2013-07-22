@@ -2,5 +2,5 @@
 --problem_class=W # ft.W
 --problem_class=A # ft.A
 --problem_class=B # ft.B
---problem_class=C # ft.C
---problem_class=D # ft.D
+#--problem_class=C # ft.C
+#--problem_class=D # ft.D

@@ -3,3 +3,7 @@ takes ~20 seconds to run.  Due to implementation issues, however, the Chapel
 version (as of revision 21580) of IS takes more than 10x that to run the
 algorithm, and more than 200x that for setup, the algorithm, and verification.
 So, for now we are allowing IS to run for 800 seconds.
+
+Note: when the timeout was extended to 800 seconds, on bradc-lnx size C ran out
+of memory instead of timing out or completing.  Because of this, we are
+disabling it until we've written a better version of IS.
