@@ -1,0 +1,31 @@
+bug: a variable is heap-allocated, but not initialized
+
+For this Chapel code:
+
+  // at module level
+  var rr = new RR();
+
+the generated code is:
+
+  static heap_RR rr; // in chpl__header.h
+
+  static void chpl__init_test1(chpl___EndCount _endCount, int64_t _ln, chpl_string _fn) {
+    ... no assignment to 'rr' prior to the following ...
+    wrap_call_tmp = _construct_RR(0, &this8);
+    chpl_check_nil(rr, 12, "test1.chpl");
+    (rr)->value = wrap_call_tmp;
+    ....
+
+so the nil test fails.
+
+I can observe this bug only with --local.
+
+Note: this behavior is covered by this test:
+
+  test/parallel/taskPar/vass/this-in-taskfns-in-ctors.chpl
+
+When this bug is fixed, the present test
+  this-in-begin-in-method.*
+can be removed altogether - instead enable the following test:
+  this-in-taskfns-in-ctors.chpl
+for all configurations, by removing its skipif.

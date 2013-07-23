@@ -58,7 +58,7 @@ passableByVal(Type* type) {
       0)
     return true;
 
-  // TODO: allow reasonably-sized records.
+  // TODO: allow reasonably-sized records. NB this-in-taskfns-in-ctors.chpl
   // TODO: allow reasonably-sized tuples - heterogeneous and homogeneous.
 
   return false;
@@ -83,11 +83,13 @@ passByRef(Symbol* sym) {
     return false;
   }
 
-  if (sym->hasFlag(FLAG_ARG_THIS))
-    // This is also constant. TODO: mark with FLAG_CONST.
-    return false;
-
   Type* type = sym->type;
+
+  if (sym->hasFlag(FLAG_ARG_THIS))
+   if (passableByVal(type)) // NB this-in-taskfns-in-ctors.chpl
+    // This is also constant. TODO: mark with FLAG_CONST.
+    // TODO: join with the passableByVal(type) test below.
+    return false;
 
   // These simply document the current state.
   INT_ASSERT(type->symbol->hasFlag(FLAG_REF) == (type->refType == NULL));
