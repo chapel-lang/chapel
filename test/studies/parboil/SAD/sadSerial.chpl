@@ -1,9 +1,9 @@
 config param useConfigFiles = true;
 config param printTimers = false;
 
-config var filename1 = "./frame.bin";
-config var filename2 = "./reference.bin";
-config var outfilename = "./outfile.bin";
+config var filename1 = "image1.img";
+config var filename2 = "image2.img";
+config var outfilename = "output.bin";
 
 param MAX_POS = 1089;
 param MAX_POS_PADDED = 1092;
@@ -39,6 +39,7 @@ proc main(args:[] string) {
   if refImage.width % 16 != 0 || refImage.height % 16 != 0 {
     halt("Input image size must be an integral multiple of 16");
   }
+
   const imageSizeBytes: int = refImage.width * refImage.height * 2;
   const imageWidthMacroblocks: int = refImage.width / 16;
   const imageHeightMacroblocks: int = refImage.height / 16;
@@ -70,7 +71,8 @@ proc loadImage(filename: string) {
   r.read(height);
 
   var img = new image(width, height, {0..#width*height});
-  for a in img.data do r.read(a);
+
+  r.read(img.data);
   r.close();
   f.close();
   return img;
