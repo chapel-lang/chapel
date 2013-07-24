@@ -12,3 +12,13 @@ should either both return 'A' by value or both by reference.
 
 The .good corresponds to the "both return 'A' by value" scenario,
 but the other option could be the answer, too.
+
+An afterthought: since arrays are passed in by reference by default
+(i.e. by blank intent), they should also be returned by reference
+by default. This implies that an array will always be returned by reference,
+'var' or no 'var'. But that's OK, because the user can simulate
+return by value: declare a fresh array in the iterator, initialize
+it as desired, then return it by reference. Right?
+
+In other words, right now I am leaning towards "the other option" above.
+I am not changing .good, though, until we reach a consensus.
