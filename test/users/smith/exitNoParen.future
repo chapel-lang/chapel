@@ -1,0 +1,6 @@
+bug: compiler crashes when it sees 'exit;' without parens/args
+
+Reported by Darren Smith.
+
+I don't know what error message the compiler should issue here,
+so I made up something for .good.
