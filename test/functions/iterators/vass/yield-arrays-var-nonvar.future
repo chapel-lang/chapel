@@ -1,0 +1,14 @@
+bug: iterator returning an array does so by value vs. by reference depending on whether the return type is specified explicitly
+
+The intention of this future is to require that by-ref-ness do not
+depend on whether the iterator's return type is specified in the source
+program or inferred by the compiler. In the simplest case, these two
+iterators:
+
+  iter iter1() : [D]int { var A: [D]int; yield A; }
+  iter iter2()          { var A: [D]int; yield A; }
+
+should either both return 'A' by value or both by reference.
+
+The .good corresponds to the "both return 'A' by value" scenario,
+but the other option could be the answer, too.
