@@ -1,0 +1,8 @@
+bug: Generated C code fails to compile when the != operator is used between records containing an array.
+
+Compiler output:
+In file included from /tmp/chpl-bharshbarg-602.deleteme/_main.c:32:
+/tmp/chpl-bharshbarg-602.deleteme/recordArrNotEq.c: In function ‘chpl___EXCLAMATION__ASSIGN_’:
+/tmp/chpl-bharshbarg-602.deleteme/recordArrNotEq.c:137: error: used struct type value where scalar is required
+gmake: *** [/tmp/chpl-bharshbarg-602.deleteme/a.out.tmp] Error 1
+error: compiling generated source
