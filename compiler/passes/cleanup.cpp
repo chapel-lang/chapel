@@ -143,6 +143,8 @@ static void flatten_primary_methods(FnSymbol* fn) {
       fn->addFlag(FLAG_SYNC);
     if (ts->hasFlag(FLAG_SINGLE))
       fn->addFlag(FLAG_SINGLE);
+    if (ts->hasFlag(FLAG_ATOMIC_TYPE))
+      fn->addFlag(FLAG_ATOMIC_TYPE);
   }
 }
 

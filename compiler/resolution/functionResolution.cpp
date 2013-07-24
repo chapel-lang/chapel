@@ -283,6 +283,9 @@ static void makeRefType(Type* type) {
   FnSymbol* fn = resolveUninsertedCall(type, call);
   type->refType = toClassType(fn->retType);
   type->refType->getField(1)->type = type;
+ 
+  if (type->symbol->hasFlag(FLAG_ATOMIC_TYPE))
+    type->refType->symbol->addFlag(FLAG_ATOMIC_TYPE);
 }
 
 

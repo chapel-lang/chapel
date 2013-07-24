@@ -162,6 +162,8 @@ static void build_getter(ClassType* ct, Symbol *field) {
     fn->addFlag(FLAG_SYNC);
   if (ct->symbol->hasFlag(FLAG_SINGLE)) 
     fn->addFlag(FLAG_SINGLE);
+  if (ct->symbol->hasFlag(FLAG_ATOMIC_TYPE))
+    fn->addFlag(FLAG_ATOMIC_TYPE);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
   _this->addFlag(FLAG_ARG_THIS);

@@ -887,6 +887,12 @@ TypeSymbol::copyInner(SymbolMap* map) {
   TypeSymbol* new_type_symbol = new TypeSymbol(name, new_type);
   new_type->addSymbol(new_type_symbol);
   new_type_symbol->cname = cname;
+  if (this->hasFlag(FLAG_SYNC))
+    new_type_symbol->addFlag(FLAG_SYNC);
+  if (this->hasFlag(FLAG_SINGLE))
+    new_type_symbol->addFlag(FLAG_SINGLE);
+  if (this->hasFlag(FLAG_ATOMIC_TYPE))
+    new_type_symbol->addFlag(FLAG_ATOMIC_TYPE);
   return new_type_symbol;
 }
 

@@ -17,6 +17,7 @@
 // This flag is used in scalarReplace.cpp to determine if an assignment of a ref
 // has an allocator as the RHS.  If so, then it is not creating an alias, since
 // the allocator function does not retain a reference to the referenced object.
+symbolFlag( FLAG_ATOMIC_TYPE , ypr, "atomic type" , "type that implements an atomic" )
 symbolFlag( FLAG_ALLOCATOR , ypr, "allocator" , "allocates heap storage" )
 symbolFlag( FLAG_ALLOW_REF , ypr, "allow ref" , ncm )
 symbolFlag( FLAG_ARG_THIS, npr, "arg this", "the hidden object argument")
