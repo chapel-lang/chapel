@@ -110,11 +110,12 @@ isFastPrimitive(CallExpr *call) {
     if (!isCallExpr(call->get(2))) {
       if (!(call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
             !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
-            !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)))
+            !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF))) {
 #ifdef DEBUG
         printf(" *** OK (PRIM_MOVE 1): %s\n", call->primitive->name);
 #endif
         return true;
+      }
     } else {
 #ifdef DEBUG
       printf(" *** OK (PRIM_MOVE 3): %s\n", call->primitive->name);

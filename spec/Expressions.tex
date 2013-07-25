@@ -1189,7 +1189,7 @@ proc !=(a: object, b: object): bool
 \end{chapel}
 The result of \chpl{a == b} is true if \chpl{a} and \chpl{b} reference
 the same storage location; otherwise the result is false.  The result
-of \chpl{a != b} is equivalent to \chpl{!(a == b)}.
+of \chpl{a \!= b} is equivalent to \chpl{\!(a == b)}.
 
 Default equality comparison operators are generated for records if the
 user does not define them.  These operators are described
