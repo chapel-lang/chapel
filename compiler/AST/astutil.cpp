@@ -335,7 +335,9 @@ bool isOpEqualPrim(CallExpr* call) {
 
 //
 // TODO this should be fixed to include PRIM_SET_MEMBER
-// See notes in iterator.cpp or loopInvariantCodeMotion.cpp
+// See notes in iterator.cpp and/or loopInvariantCodeMotion.cpp
+// TODO this should also be fixed to include the PRIM_SVEC_SET_MEMBER
+// which gets inserted from the returnStartTuplesByRefArgs pass 
 // return & 1 is true if se is a def
 // return & 2 is true if se is a use
 //
