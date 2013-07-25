@@ -30,11 +30,26 @@
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
+compiler loopInvariantCodeMotion.cpp problems (eronagha 7/25/13,
+r21614): Use-before-def error with gnu gen compiler, undefined external
+with PGI gen compiler.  Elliot expects to fix these before 7/26 testing
+starts.
+
+Segfaults in tests (eronagha 7/25/13, r21614):
+  functions/iterators/angeles/distAdaptativeWS
+                          .../distAdaptativeWSv1
+                          .../distAdaptativeWSv2
+                          .../dynamic
+                          .../guided
+Elliot is working on these.
+
+
 XT PrgEnv-cray non-deterministic compiler internal errors (eronagha
 7/20/13): These started showing up after Elliot's commit on both
 chpbld01 and chpbld02.  I didn't see anything about a major update to
 CCE or the front-end, but I guess it's still possible that this could
 be a CCE issue.
+- gbt: The MIS0324 errors occurred on 7/22, 7/23, 7/25.
 
 
 ft-serial performance tests either time out or run out of memory:
@@ -174,7 +189,7 @@ nondet. seg fault for prgenv-cray on chpbld01
 nondet. timeout on gasnet-everything
 ------------------------------------
 [Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dBDtoDRTest] (07/08/13)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (7/15/13)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (7/22/13)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (7/19/13)
 
 libmpich_intel.so failure for
@@ -216,7 +231,7 @@ The type of Bar.super is at least partially corrupt at that point.
 "that wasn't very random looking"
 ---------------------------------
 [Error matching program output for modules/standard/Random/diten/testRandomSeed]
-linux64.gnu.none.fifo.pthreads (2/4/2013)
+linux64.gnu.none.fifo.pthreads (7/22/2013)
 other configurations are quite consistent - see REGRESSIONS
 
 prgenv-* compilation timeouts (maybe due to system updates or ...?)
@@ -267,7 +282,7 @@ examples of what times out:
  distributions/robust/arithmetic/stress/test_many_domains (08/13)
  distributions/robust/arithmetic/stress/test_many_array (4/29/13)
  distributions/dm/t2 (2012/08/15)
- test_array_slicing3 (07/12/13, 06/08/12, 6/16, 3/29/13, 5/3/13)
+ test_array_slicing3 (07/24/13, 07/12/13, 06/08/12, 6/16, 3/29/13, 5/3/13)
  release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4) (04/08/13)
  studies/cholesky/jglewis/version2/performance/test_cholesky_performance (06/20/13)
  multilocale/diten/needMultiLocales/coforallon_maxThreads (07/04/13)
