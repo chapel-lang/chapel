@@ -166,12 +166,10 @@ class Loop {
     unsigned size() {
       return loopBlocks->size();
     }
-    
+
     //used for sorting a collection of loops (to organize from most to least nested)
-    static struct LoopSort {
-      bool operator() (Loop* a, Loop* b) const {return a->size() < b->size();}
-    }LoopSort;
-   
+     static bool LoopSort(Loop* a, Loop* b) {return a->size() < b->size();}
+
 };
 
 typedef std::vector<BasicBlock*> BasicBlocks;
@@ -385,7 +383,7 @@ static bool isLoopInvariantPrimitive(PrimitiveOp* primitiveOp)
     
       case PRIM_ADDR_OF:            
       case PRIM_DEREF:    
-        return true; break;
+        return true;
     default:
       break;
     }
@@ -541,7 +539,7 @@ static bool allOperandsAreLoopInvariant(Expr* expr, std::set<SymExpr*>& loopInva
     //else check if there is only one def for the symExpr. That the 
     //def is invariant, and that the def occurs before this symExpr
     int numDefs = 0;
-    SymExpr* def;
+    SymExpr* def = NULL;
     
     if(actualDefs.count(symExpr) == 1) {
       numDefs += actualDefs[symExpr].size();
@@ -550,7 +548,7 @@ static bool allOperandsAreLoopInvariant(Expr* expr, std::set<SymExpr*>& loopInva
       }
     }
     
-    if(numDefs > 1) {
+    if(numDefs > 1 || def == NULL) {
       return false;
     }
     
@@ -703,8 +701,8 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop* l
   
   //now we want to iteratively search for all of the variables that have 
   //operands that themselves are loop invariant. 
-  unsigned oldNumInvariants = -1;
-  while(oldNumInvariants !=  loopInvariantInstructions.size()) {
+  unsigned oldNumInvariants = 0;
+  do {
     oldNumInvariants = loopInvariantInstructions.size();  
 
     for_vector(SymExpr, symExpr2, loopSymExprs) {
@@ -733,7 +731,7 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop* l
         }
       }
     }
-  } 
+  }  while(oldNumInvariants != loopInvariantInstructions.size());
   
  
 #if debugHoisting
