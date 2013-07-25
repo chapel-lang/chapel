@@ -132,6 +132,12 @@ OPTIONS
                     floating point conformance. The default is --ieee-float,
                     which ensures IEEE conformance.
 
+  --[no-]loop-invariant-code-motion   Enable [disable] the optimization that
+                    moves loop invariant code from loop runs into the loop's
+                    "pre-header." By default invariant code is moved. This is
+                    currently a rather conservative pass in the sense that 
+                    it may not identify all code that is truly invariant.
+
   --[no-]inline     Enable [disable] function inlining.
 
   --[no-]inline-iterators   Enable [disable] iterator inlining. When

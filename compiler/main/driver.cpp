@@ -98,6 +98,7 @@ static bool fNoWarnSpecial = true;
 static bool fNoWarnDomainLiteral = true;
 static bool fNoWarnTupleIteration = true;
 
+bool fNoloopInvariantCodeMotion = false;
 bool fNoChecks = false;
 bool fNoInline = false;
 bool fNoPrivatization = false;
@@ -498,6 +499,7 @@ static void setFastFlag(ArgumentState* arg, char* unused) {
   fNoCopyPropagation = false;
   fNoDeadCodeElimination = false;
   fNoFastFollowers = false;
+  fNoloopInvariantCodeMotion= false;
   fNoInline = false;
   fNoInlineIterators = false;
   fNoOptimizeLoopIterators = false;
@@ -523,6 +525,7 @@ static void setBaselineFlag(ArgumentState* arg, char* unused) {
   fNoCopyPropagation = true;
   fNoDeadCodeElimination = true;
   fNoFastFollowers = true;
+  fNoloopInvariantCodeMotion = true;
   fNoInline = true;
   fNoInlineIterators = true;
   fNoLiveAnalysis = true;
@@ -607,6 +610,7 @@ static ArgumentDescription arg_desc[] = {
  {"fast", ' ', NULL, "Use fast default settings", "F", &fFastFlag, NULL, setFastFlag},
  {"fast-followers", ' ', NULL, "Enable [disable] fast followers", "n", &fNoFastFollowers, "CHPL_DISABLE_FAST_FOLLOWERS", NULL},
  {"ieee-float", ' ', NULL, "Generate code that is strict [lax] with respect to IEEE compliance", "N", &fieeefloat, "CHPL_IEEE_FLOAT", NULL},
+ {"loop-invariant-code-motion", ' ', NULL, "Enable [disable] loop invariant code motion", "n", &fNoloopInvariantCodeMotion, NULL, NULL},
  {"inline", ' ', NULL, "Enable [disable] function inlining", "n", &fNoInline, NULL, NULL},
  {"inline-iterators", ' ', NULL, "Enable [disable] iterator inlining", "n", &fNoInlineIterators, "CHPL_DISABLE_INLINE_ITERATORS", NULL},
  {"live-analysis", ' ', NULL, "Enable [disable] live variable analysis", "n", &fNoLiveAnalysis, "CHPL_DISABLE_LIVE_ANALYSIS", NULL},

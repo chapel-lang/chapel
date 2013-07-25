@@ -24,6 +24,9 @@ Optimization Control Options:
       --[no-]fast-followers           Enable [disable] fast followers
       --[no-]ieee-float               Generate code that is strict [lax] with
                                       respect to IEEE compliance
+      --[no-]loop-invariant-code-motion
+                                      Enable [disable] loop invariant code
+                                      motion
       --[no-]inline                   Enable [disable] function inlining
       --[no-]inline-iterators         Enable [disable] iterator inlining
       --[no-]live-analysis            Enable [disable] live variable analysis

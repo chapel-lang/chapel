@@ -75,6 +75,7 @@ class ArgumentState;
 #define LOG_removeWrapRecords   'w'
 #define LOG_removeEmptyRecords  'm'
 #define LOG_localizeGlobals     'l'
+#define LOG_loopInvariantCodeMotion 'q'
 #define LOG_prune2              'Y'
 #define LOG_returnStarTuplesByRefArgs 's'
 #define LOG_insertWideReferences 'W'

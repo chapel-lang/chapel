@@ -31,6 +31,7 @@ void inlineFunctions();
 void insertLineNumbers();
 void insertWideReferences();
 void localizeGlobals();
+void loopInvariantCodeMotion();
 void lowerIterators();
 void makeBinary();
 void normalize();

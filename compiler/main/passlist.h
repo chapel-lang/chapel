@@ -64,6 +64,7 @@ PassInfo passlist[] = {
   RUN(insertWideReferences),// inserts wide references for on clauses
   RUN(optimizeOnClauses),   // Optimize on clauses
   RUN(addInitCalls),        // Add module initialization calls and guards.  
+  RUN(loopInvariantCodeMotion),// move loop invarient code above loop runs
   // AST to C or LLVM
   RUN(insertLineNumbers),   // insert line numbers for error messages
   RUN(repositionDefExpressions), // put defPoints just before first usage
