@@ -217,7 +217,7 @@ use MDSystem;
 
 		// combines halfneigh and fullneigh versions from c++
 		proc compute(sys : System, evflag : bool) {
-			var evdwl : real = 0.0;
+			/*var evdwl : real = 0.0;
 			virial = 0;
 
 			// adjust to accomodate changes in # ghosts
@@ -243,12 +243,10 @@ use MDSystem;
 					var gi : int;
 					if j <= sys.natoms {
 						n = sys.atoms[j];
-						nx = n.x;
 					} else {
-						nx = sys.ghosts[j-sys.natoms](2);
-						gi = sys.ghosts[j-sys.natoms](1);
-						nx = nx + sys.atoms[gi].x;
+						n = sys.ghosts[j-sys.natoms];
 					}
+					nx = n.x;
 
 					var del = a.x - nx;
 					var rsq = del.dot(del);
@@ -285,7 +283,7 @@ use MDSystem;
 
 			// communicate atoms (update ghosts)
 			for (g,i) in zip(sys.ghosts,sys.ghostSpace) {
-				fp[sys.natoms+i] = fp[g(1)];
+				fp[sys.natoms+i] = fp[g.ghostof];
 			}
 
 			// apply forces
@@ -299,12 +297,10 @@ use MDSystem;
 					var gi : int;
 					if j <= sys.natoms {
 						n = sys.atoms[j];
-						nx = n.x;
 					} else {
-						nx = sys.ghosts[j-sys.natoms](2);
-						gi = sys.ghosts[j-sys.natoms](1);
-						nx = nx + sys.atoms[gi].x;
+						n = sys.ghosts[j-sys.natoms];
 					}
+					nx = n.x;
 
 					var del = a.x - nx;
 					var rsq = del.dot(del);
@@ -332,9 +328,9 @@ use MDSystem;
 						fz += del.z * fpair;
 
 						if j <= sys.natoms && sys.con.half_neigh {
-							n.f.x -= del.x * fpair;
-							n.f.y -= del.y * fpair;
-							n.f.z -= del.z * fpair;
+							sys.atoms[j].f.x -= del.x * fpair;
+							sys.atoms[j].f.y -= del.y * fpair;
+							sys.atoms[j].f.z -= del.z * fpair;
 						} else fpair *= .5;
 
 						if evflag {
@@ -360,8 +356,9 @@ use MDSystem;
 			} // end of third pass
 			if sys.con.half_neigh then eng_vdwl = evdwl;
 			else eng_vdwl += 2.0 * evdwl;
+		*/
 		}
-		
+		// TODO: do ghost comms	
 	}
 
 	// Lennard-Jones potential
@@ -380,75 +377,70 @@ use MDSystem;
 			virial = 0;
 
 			// wipe old forces
-			forall a in sys.atoms {
-				a.f.x = 0;
-				a.f.y = 0;
-				a.f.z = 0;
+			for b in sys.binSpace {
+				for i in 1..sys.binCount[b] {
+					sys.bins[b][i].f.x = 0;
+					sys.bins[b][i].f.y = 0;
+					sys.bins[b][i].f.z = 0;
+				}
 			}
 
 			// for each atom, compute force between itself and its neighbors
 			// can make outer loop parallel if we can make force modifications atomic
-			for a in sys.atoms {
-				var fx, fy, fz : real;
-				for q in 1..a.ncount { 
-					var j = a.neighs[q];
-					var nx : v3;
-					var gi : int;
+			for r in sys.realStencil {
+				for i in 1..sys.binCount[r] {
+					var fx, fy, fz : real;
+					for q in 1..sys.bins[r][i].ncount { 
+						var (b,idx) = sys.bins[r][i].neighs[q];
 
-					// handle ghost
-					if j <= sys.natoms {
-						nx = sys.atoms[j].x;
-					} else {
-						nx = sys.ghosts[j-sys.natoms](2);
-						gi = sys.ghosts[j-sys.natoms](1);
-						nx = nx + sys.atoms[gi].x;
-					}
+						var del = sys.bins[r][i].x - sys.bins[b][idx].x;
+						var rsq = del.dot(del);
 
-					var del = a.x - nx;
-					var rsq = del.dot(del);
+						// if the atoms are close enough, do some physics
+						if rsq < cutforcesq {
+							var sr2: real = 1.0 / rsq;
+							var sr6 : real = sr2 * sr2 * sr2;
+							var force : real = 48.0 * sr6 * (sr6 - .5) * sr2;
+							var rx = del.x * force;
+							var ry = del.y * force;
+							var rz = del.z * force;
+							fx += rx;
+							fy += ry;
+							fz += rz;
 
-					// if the atoms are close enough, do some physics
-					if rsq < cutforcesq {
-						var sr2: real = 1.0 / rsq;
-						var sr6 : real = sr2 * sr2 * sr2;
-						var force : real = 48.0 * sr6 * (sr6 - .5) * sr2;
-						var rx = del.x * force;
-						var ry = del.y * force;
-						var rz = del.z * force;
-						fx += rx;
-						fy += ry;
-						fz += rz;
-
-						// this needs to be atomic
-						if sys.con.half_neigh {
-							if j <= sys.natoms {
-								sys.atoms[j].f.x -= rx;
-								sys.atoms[j].f.y -= ry;
-								sys.atoms[j].f.z -= rz;
-							} else if sys.ghost_newton {
-								sys.atoms[gi].f.x -= rx;
-								sys.atoms[gi].f.y -= ry;
-								sys.atoms[gi].f.z -= rz;
-							}
-						}
-						if evflag { // if we care about data this iteration
+							// this needs to be atomic
 							if sys.con.half_neigh {
-								if sys.ghost_newton || j <= sys.natoms then scale = 1.0;
-								else scale = .5;
-								eng_vdwl += scale * (4.0 * sr6 * (sr6 - 1.0));
-								virial += scale * rsq * force;
-							} else { // fullneigh
-								eng_vdwl += 4.0 * sr6 * (sr6 - 1.0);
-								virial += .5 * rsq * force;
+								if sys.ghost_newton || sys.bins[b][idx].ghostof(2) == -1 {
+									sys.bins[b][idx].f.x -= rx;
+									sys.bins[b][idx].f.y -= ry;
+									sys.bins[b][idx].f.z -= rz;
+								}
+							}
+							if evflag { // if we care about data this iteration
+								if sys.con.half_neigh {
+									if sys.ghost_newton || sys.bins[b][idx].ghostof(2) == -1  then scale = 1.0;
+									else scale = .5;
+									eng_vdwl += scale * (4.0 * sr6 * (sr6 - 1.0));
+									virial += scale * rsq * force;
+								} else { // fullneigh
+									eng_vdwl += 4.0 * sr6 * (sr6 - 1.0);
+									virial += .5 * rsq * force;
+								}
 							}
 						}
 					}
+					sys.bins[r][i].f.x += fx;
+					sys.bins[r][i].f.y += fy;
+					sys.bins[r][i].f.z += fz;
 				}
-				a.f.x += fx;
-				a.f.y += fy;
-				a.f.z += fz;
 			}
-
+			for g in sys.ghostStencil {
+				for i in 1..sys.binCount[g] {
+					var (r,idx) = sys.bins[g][i].ghostof;
+					sys.bins[r][idx].f += sys.bins[g][i].f;
+					sys.bins[g][i].x = sys.bins[g][i].x - sys.bins[r][idx].x;
+				}
+			}
 		}
 	} 
 }

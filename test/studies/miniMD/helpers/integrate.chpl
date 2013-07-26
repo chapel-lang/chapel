@@ -8,34 +8,47 @@ module MDInteg {
 	class Integrator {
 		var dt : real;
 		var dtforce : real;
-		var ntimes : int;
 		var forceTime : real;
 
 		proc Integrator(con : Config) {
 			this.dt = con.dt;
-			this.ntimes = con.ntimes;
 			this.dtforce = 0.5 * dt;
 		}
 
 		// update positions and velocities based on forces
 		proc initialIntegrate(sys : System) {
-				forall a in sys.atoms {
-					a.v.x += dtforce * a.f.x;
-					a.v.y += dtforce * a.f.y;
-					a.v.z += dtforce * a.f.z;
-					
-					a.x.x += dt * a.v.x;
-					a.x.y += dt * a.v.y;
-					a.x.z += dt * a.v.z;
+				forall r in sys.realStencil {
+					for i in 1..sys.binCount[r] {
+						sys.bins[r][i].v.x += dtforce * sys.bins[r][i].f.x;
+						sys.bins[r][i].v.y += dtforce * sys.bins[r][i].f.y;
+						sys.bins[r][i].v.z += dtforce * sys.bins[r][i].f.z;
+						
+						sys.bins[r][i].x.x += dt * sys.bins[r][i].v.x;
+						sys.bins[r][i].x.y += dt * sys.bins[r][i].v.y;
+						sys.bins[r][i].x.z += dt * sys.bins[r][i].v.z;
+					}
+				}
+
+				// a non-obvious state of the ghost here is that after
+				// the force computation, we have the ghost store the 
+				// offset to the real atom it represents. This is done 
+				// so we don't have to redo the dt * a.v computation
+				// for all ghosts
+				forall g in sys.ghostStencil {
+					for i in 1..sys.binCount[g] {
+						sys.bins[g][i].x += sys.bins[sys.bins[g][i].ghostof(1)][sys.bins[g][i].ghostof(2)].x; // oh dear, this is ugly
+					}
 				}
 		}
 
 		// update velocities
 		proc finalIntegrate(sys : System) {
-			forall a in sys.atoms {
-				a.v.x += dtforce * a.f.x;
-				a.v.y += dtforce * a.f.y;
-				a.v.z += dtforce * a.f.z;
+			forall r in sys.realStencil {
+				for i in 1..sys.binCount[r] {
+					sys.bins[r][i].v.x += dtforce * sys.bins[r][i].f.x;
+					sys.bins[r][i].v.y += dtforce * sys.bins[r][i].f.y;
+					sys.bins[r][i].v.z += dtforce * sys.bins[r][i].f.z;
+				}
 			}
 		}
 

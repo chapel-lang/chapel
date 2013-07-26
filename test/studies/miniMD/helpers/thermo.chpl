@@ -23,7 +23,7 @@ module MDThermo {
 		proc Thermo(inter : Integrator, sys : System, con : Config) {
 			this.rho = con.rho;
 			this.nstat = con.thermo_nstat;
-			this.ntimes = inter.ntimes;
+			this.ntimes = sys.con.ntimes;
 			var dims = sys.dim;
 			
 			var maxstat : int;
@@ -92,7 +92,7 @@ module MDThermo {
 
 		proc temperature(sys : System) {
 			t_act = 0;
-			t_act = + reduce forall a in sys.atoms do (a.v.dot(a.v) * sys.mass);
+			t_act = + reduce forall r in sys.realStencil do + reduce forall i in 1..sys.binCount[r] do (sys.bins[r][i].v.dot(sys.bins[r][i].v) * sys.mass);
 
 			return t_act * t_scale;
 		}
