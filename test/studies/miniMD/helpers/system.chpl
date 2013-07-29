@@ -399,9 +399,10 @@ module MDSystem {
 			return ans;
 		}
 
+		// idea: only make copies for x/yres, otherwise assign directly to bin location
 		proc findGhosts() {
 			forall g in ghostStencil do binCount[g] = 0;
-			for r in realStencil {
+			forall r in realStencil {
 				for i in 1..binCount[r] {
 					var c = cutneigh;
 					var t = bins[r][i].x;
@@ -483,7 +484,7 @@ module MDSystem {
 
 		// if atoms moved outside the box, adjust their locations 
 		proc pbc() {
-			for r in realStencil {
+			forall r in realStencil {
 				for i in 1..binCount[r] {
 					if bins[r][i].x.x < 0 then bins[r][i].x.x += dim.x;
 					if bins[r][i].x.x >= dim.x then bins[r][i].x.x -= dim.x;
@@ -518,7 +519,7 @@ module MDSystem {
 			tim.stop();
 			tim.clear();
 			tim.start();
-			for r in realStencil {
+			forall r in realStencil {
 				for i in 1..binCount[r] {
 					bins[r][i].ncount = 0;
 

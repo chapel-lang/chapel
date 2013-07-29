@@ -1,7 +1,8 @@
 
 module MDForce {
 
-use MDSystem;
+	use MDSystem;
+	use Time;
 	enum ForceStyle { FORCELJ, FORCEEAM };
 
 	class Force {
@@ -377,7 +378,7 @@ use MDSystem;
 			virial = 0;
 
 			// wipe old forces
-			for b in sys.binSpace {
+			forall b in sys.binSpace {
 				for i in 1..sys.binCount[b] {
 					sys.bins[b][i].f.x = 0;
 					sys.bins[b][i].f.y = 0;
@@ -389,51 +390,16 @@ use MDSystem;
 			// can make outer loop parallel if we can make force modifications atomic
 			for r in sys.realStencil {
 				for i in 1..sys.binCount[r] {
-					var fx, fy, fz : real;
-					for q in 1..sys.bins[r][i].ncount { 
-						var (b,idx) = sys.bins[r][i].neighs[q];
-
-						var del = sys.bins[r][i].x - sys.bins[b][idx].x;
-						var rsq = del.dot(del);
-
-						// if the atoms are close enough, do some physics
-						if rsq < cutforcesq {
-							var sr2: real = 1.0 / rsq;
-							var sr6 : real = sr2 * sr2 * sr2;
-							var force : real = 48.0 * sr6 * (sr6 - .5) * sr2;
-							var rx = del.x * force;
-							var ry = del.y * force;
-							var rz = del.z * force;
-							fx += rx;
-							fy += ry;
-							fz += rz;
-
-							// this needs to be atomic
-							if sys.con.half_neigh {
-								if sys.ghost_newton || sys.bins[b][idx].ghostof(2) == -1 {
-									sys.bins[b][idx].f.x -= rx;
-									sys.bins[b][idx].f.y -= ry;
-									sys.bins[b][idx].f.z -= rz;
-								}
-							}
-							if evflag { // if we care about data this iteration
-								if sys.con.half_neigh {
-									if sys.ghost_newton || sys.bins[b][idx].ghostof(2) == -1  then scale = 1.0;
-									else scale = .5;
-									eng_vdwl += scale * (4.0 * sr6 * (sr6 - 1.0));
-									virial += scale * rsq * force;
-								} else { // fullneigh
-									eng_vdwl += 4.0 * sr6 * (sr6 - 1.0);
-									virial += .5 * rsq * force;
-								}
-							}
-						}
-					}
+					var fx, fy, fz,e,v : real;
+					(fx,fy,fz,e,v) = + reduce forall q in 1..sys.bins[r][i].ncount do forceBetween(r,i,q, sys, evflag);
 					sys.bins[r][i].f.x += fx;
 					sys.bins[r][i].f.y += fy;
 					sys.bins[r][i].f.z += fz;
+					eng_vdwl += e;
+					virial += v;
 				}
 			}
+			
 			for g in sys.ghostStencil {
 				for i in 1..sys.binCount[g] {
 					var (r,idx) = sys.bins[g][i].ghostof;
@@ -441,6 +407,46 @@ use MDSystem;
 					sys.bins[g][i].x = sys.bins[g][i].x - sys.bins[r][idx].x;
 				}
 			}
+		}
+
+		proc forceBetween(r : (int,int,int), i, q : int, sys : System, evflag : int) {
+			var (b,idx) = sys.bins[r][i].neighs[q];
+
+			var del = sys.bins[r][i].x - sys.bins[b][idx].x;
+			var rsq = del.dot(del);
+			var rx, ry, rz, e, v : real;
+
+			// if the atoms are close enough, do some physics
+			if rsq < cutforcesq {
+				var sr2: real = 1.0 / rsq;
+				var sr6 : real = sr2 * sr2 * sr2;
+				var force : real = 48.0 * sr6 * (sr6 - .5) * sr2;
+				rx = del.x * force;
+				ry = del.y * force;
+				rz = del.z * force;
+
+				// this needs to be atomic
+				if sys.con.half_neigh {
+					if sys.ghost_newton || sys.bins[b][idx].ghostof(2) == -1 {
+						sys.bins[b][idx].f.x -= rx;
+						sys.bins[b][idx].f.y -= ry;
+						sys.bins[b][idx].f.z -= rz;
+					}
+				}
+				if evflag { // if we care about data this iteration
+					if sys.con.half_neigh {
+						if sys.ghost_newton || sys.bins[b][idx].ghostof(2) == -1  then scale = 1.0;
+						else scale = .5;
+						e += scale * (4.0 * sr6 * (sr6 - 1.0));
+						v += scale * rsq * force;
+					} else { // fullneigh
+						e += 4.0 * sr6 * (sr6 - 1.0);
+						v += .5 * rsq * force;
+					}
+				}
+			}
+
+			return (rx,ry,rz,e,v);
 		}
 	} 
 }
