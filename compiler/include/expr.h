@@ -211,9 +211,7 @@ VarSymbol *get_constant(Expr *e);
 inline CallExpr* here_alloc(Symbol* dest)
 {
   return new CallExpr("chpl_here_alloc", dest, 
-                      newMemDesc(dest->typeInfo()->symbol->name),
-                      new_IntSymbol(currentAstLoc.lineno, INT_SIZE_32),
-                      new_StringSymbol(currentAstLoc.filename));
+                      newMemDesc(dest->typeInfo()->symbol->name));
 }
 
 CallExpr* callTaskAlloc(Type* t);

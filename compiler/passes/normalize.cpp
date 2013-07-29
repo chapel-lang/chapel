@@ -56,9 +56,7 @@ void normalize(void) {
       call->insertBefore(new DefExpr(tmp));
       call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(1)->remove()));
       call->insertBefore(new CallExpr("~chpl_destroy", gMethodToken, tmp));
-      CallExpr* freeExpr = new CallExpr("chpl_here_free", tmp,
-                                        new_IntSymbol(call->astloc.lineno),
-                                        new_StringSymbol(call->astloc.filename));
+      CallExpr* freeExpr = new CallExpr("chpl_here_free", tmp);
       if (fLocal) {
         call->insertBefore(freeExpr);
       } else {

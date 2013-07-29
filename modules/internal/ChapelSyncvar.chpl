@@ -303,23 +303,23 @@ module ChapelSyncvar {
   //    us to detect and diagnose this attempted coercion
   // We could detect and diagnose this undesirable coercion in the compiler, but that is even worse
   // (in terms of maintainability) than the code duplication appearing here.
-  proc chpl_here_free(x:sync, lineno:int(32), filename:string) {
+  proc chpl_here_free(x:sync) {
     // TODO: The pointer should really be of type opaque, but we don't 
     // handle object ==> opaque casts correctly.  (In codegen, opaque behaves 
     // like an lvalue, but in the type system it isn't one.)
-    extern proc chpl_memhook_free_pre(ptr:opaque, lineno:int(32), filename:string)
-      : void;
-    chpl_memhook_free_pre(__primitive("cast_to_void_star", x), lineno, filename);
+    pragma "insert line file info"
+    extern proc chpl_memhook_free_pre(ptr:opaque): void;
+    chpl_memhook_free_pre(__primitive("cast_to_void_star", x));
     __primitive("task_free", x);
   }
 
-  proc chpl_here_free(x:single, lineno:int(32), filename:string) {
+  proc chpl_here_free(x:single) {
     // TODO: The pointer should really be of type opaque, but we don't 
     // handle object ==> opaque casts correctly.  (In codegen, opaque behaves 
     // like an lvalue, but in the type system it isn't one.)
-    extern proc chpl_memhook_free_pre(ptr:opaque, lineno:int(32), filename:string)
-      : void;
-    chpl_memhook_free_pre(__primitive("cast_to_void_star", x), lineno, filename);
+    pragma "insert line file info"
+    extern proc chpl_memhook_free_pre(ptr:opaque): void;
+    chpl_memhook_free_pre(__primitive("cast_to_void_star", x));
     __primitive("task_free", x);
   }
 
