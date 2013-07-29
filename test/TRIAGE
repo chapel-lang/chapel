@@ -1,4 +1,4 @@
-# USAGE:
+	# USAGE:
 #
 # Current notes on triage results, sorted into the following categories:
 #
@@ -30,6 +30,14 @@
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
+Execution timeout in studies/miniMD/miniMD (compopts: 1)
+07/27/13 on chap06 (baseline): /data/sea/cascade/chapel/Nightly/day6-Sat-linux64.gnu.none.fifo.pthreads-npt.log
+07/28/13 on chpbld02: /data/sea/cascade/chapel/Nightly/day6-Sat-cray-prgenv-cray.none.fifo.pthreads--linux64.gnu-std.log
+07/29/13 on chap09: /data/sea/cascade/chapel/Nightly/day6-Sat-linux64.gnu.none.fifo.pthreads-vgr.log
+07/29/13 on chpbld02: /data/sea/cascade/chapel/Nightly/weekend/day1-Mon-linux64.gnu.none.fifo.pthreads-std.log
+These will probably be fixed by adding a perftimeout file.
+
+
 Segfaults in tests (eronagha 7/25/13 and continuing, due to r21614):
   functions/iterators/angeles/distAdaptativeWS
                           .../distAdaptativeWSv1
@@ -37,6 +45,9 @@ Segfaults in tests (eronagha 7/25/13 and continuing, due to r21614):
                           .../dynamic
                           .../guided
 Elliot is working on these.
+7/27: distAdaptativeWSv2 worked.
+7/28: distAdaptativeWSv2 failed, dynamic worked.
+7/29: dynamic failed.
 
 
 XT PrgEnv-cray non-deterministic compiler internal errors (eronagha
@@ -44,7 +55,8 @@ XT PrgEnv-cray non-deterministic compiler internal errors (eronagha
 chpbld01 and chpbld02.  I didn't see anything about a major update to
 CCE or the front-end, but I guess it's still possible that this could
 be a CCE issue.
-- gbt: The MIS0324 errors occurred on 7/22, 7/23, 7/25, 7/26.
+These MIS0324 errors occurred on 7/22, 7/23, 7/25, 7/26, 7/27, 7/28, 7/29.
+This problem is covered by Bug 800520.
 
 
 ft-serial performance tests either time out or run out of memory:
