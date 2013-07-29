@@ -378,23 +378,22 @@ module MDForce {
 			virial = 0;
 
 			// wipe old forces
-			forall b in sys.binSpace {
-				for i in 1..sys.binCount[b] {
-					sys.bins[b][i].f.x = 0;
-					sys.bins[b][i].f.y = 0;
-					sys.bins[b][i].f.z = 0;
+			forall (b,c) in zip(sys.bins,sys.binCount) {
+				for i in 1..c {
+					b[i].f.x = 0;
+					b[i].f.y = 0;
+					b[i].f.z = 0;
 				}
 			}
 
 			// for each atom, compute force between itself and its neighbors
 			// can make outer loop parallel if we can make force modifications atomic
-			for r in sys.realStencil {
-				for i in 1..sys.binCount[r] {
-					var fx, fy, fz,e,v : real;
-					(fx,fy,fz,e,v) = + reduce forall q in 1..sys.bins[r][i].ncount do forceBetween(r,i,q, sys, evflag);
-					sys.bins[r][i].f.x += fx;
-					sys.bins[r][i].f.y += fy;
-					sys.bins[r][i].f.z += fz;
+			for (b,c) in zip(sys.bins[sys.realStencil], sys.binCount[sys.realStencil]) {
+				for i in 1..c {
+					var (fx,fy,fz,e,v) = + reduce forall q in 1..b[i].ncount do forceBetween(b,i,q, sys, evflag);
+					b[i].f.x += fx;
+					b[i].f.y += fy;
+					b[i].f.z += fz;
 					eng_vdwl += e;
 					virial += v;
 				}
@@ -404,15 +403,15 @@ module MDForce {
 				for i in 1..sys.binCount[g] {
 					var (r,idx) = sys.bins[g][i].ghostof;
 					sys.bins[r][idx].f += sys.bins[g][i].f;
-					sys.bins[g][i].x = sys.bins[g][i].x - sys.bins[r][idx].x;
+					sys.bins[g][i].x -= sys.bins[r][idx].x;
 				}
 			}
 		}
 
-		proc forceBetween(r : (int,int,int), i, q : int, sys : System, evflag : int) {
-			var (b,idx) = sys.bins[r][i].neighs[q];
+		proc forceBetween(ref bin : [] atom, i, q : int, sys : System, evflag : int) {
+			var (b,idx) = bin[i].neighs[q];
 
-			var del = sys.bins[r][i].x - sys.bins[b][idx].x;
+			var del =bin[i].x - sys.bins[b][idx].x;
 			var rsq = del.dot(del);
 			var rx, ry, rz, e, v : real;
 
@@ -427,7 +426,7 @@ module MDForce {
 
 				// this needs to be atomic
 				if sys.con.half_neigh {
-					if sys.ghost_newton || sys.bins[b][idx].ghostof(2) == -1 {
+					if sys.ghost_newton || sys.ghostStencil.member(b) {
 						sys.bins[b][idx].f.x -= rx;
 						sys.bins[b][idx].f.y -= ry;
 						sys.bins[b][idx].f.z -= rz;
@@ -435,7 +434,7 @@ module MDForce {
 				}
 				if evflag { // if we care about data this iteration
 					if sys.con.half_neigh {
-						if sys.ghost_newton || sys.bins[b][idx].ghostof(2) == -1  then scale = 1.0;
+						if sys.ghost_newton || sys.ghostStencil.member(b)  then scale = 1.0;
 						else scale = .5;
 						e += scale * (4.0 * sr6 * (sr6 - 1.0));
 						v += scale * rsq * force;

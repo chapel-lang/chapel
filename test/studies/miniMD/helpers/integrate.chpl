@@ -17,15 +17,15 @@ module MDInteg {
 
 		// update positions and velocities based on forces
 		proc initialIntegrate(sys : System) {
-				forall r in sys.realStencil {
-					for i in 1..sys.binCount[r] {
-						sys.bins[r][i].v.x += dtforce * sys.bins[r][i].f.x;
-						sys.bins[r][i].v.y += dtforce * sys.bins[r][i].f.y;
-						sys.bins[r][i].v.z += dtforce * sys.bins[r][i].f.z;
+				forall (b,c) in zip(sys.bins[sys.realStencil],sys.binCount[sys.realStencil]) {
+					for i in 1..c {
+						b[i].v.x += dtforce * b[i].f.x;
+						b[i].v.y += dtforce * b[i].f.y;
+						b[i].v.z += dtforce * b[i].f.z;
 						
-						sys.bins[r][i].x.x += dt * sys.bins[r][i].v.x;
-						sys.bins[r][i].x.y += dt * sys.bins[r][i].v.y;
-						sys.bins[r][i].x.z += dt * sys.bins[r][i].v.z;
+						b[i].x.x += dt * b[i].v.x;
+						b[i].x.y += dt * b[i].v.y;
+						b[i].x.z += dt * b[i].v.z;
 					}
 				}
 
@@ -43,11 +43,11 @@ module MDInteg {
 
 		// update velocities
 		proc finalIntegrate(sys : System) {
-			forall r in sys.realStencil {
-				for i in 1..sys.binCount[r] {
-					sys.bins[r][i].v.x += dtforce * sys.bins[r][i].f.x;
-					sys.bins[r][i].v.y += dtforce * sys.bins[r][i].f.y;
-					sys.bins[r][i].v.z += dtforce * sys.bins[r][i].f.z;
+			forall (b,c) in zip(sys.bins[sys.realStencil],sys.binCount[sys.realStencil]) {
+				for i in 1..c {
+					b[i].v.x += dtforce * b[i].f.x;
+					b[i].v.y += dtforce * b[i].f.y;
+					b[i].v.z += dtforce * b[i].f.z;
 				}
 			}
 		}

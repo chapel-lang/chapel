@@ -259,7 +259,6 @@ module MDSystem {
 			setupNeighbors();
 			create_atoms();
 			create_velocity(con.t_request, thermo);
-			var cur = 0;
 		}
 
 		proc create_atoms() {
@@ -402,23 +401,23 @@ module MDSystem {
 		// idea: only make copies for x/yres, otherwise assign directly to bin location
 		proc findGhosts() {
 			forall g in ghostStencil do binCount[g] = 0;
-			forall r in realStencil {
-				for i in 1..binCount[r] {
+			forall (b,r,c) in zip(bins[realStencil],realStencil,binCount[realStencil]) {
+				for i in 1..c {
 					var c = cutneigh;
-					var t = bins[r][i].x;
+					var t = b[i].x;
 					var foundx = false;
 					var foundy = false;
 					var xres, yres : v3;
-					if bins[r][i].x.x <= xlo+c || bins[r][i].x.x >= xhi-c {
-						if bins[r][i].x.x <= xlo + c then t.x += dim.x;
+					if b[i].x.x <= xlo+c || b[i].x.x >= xhi-c {
+						if b[i].x.x <= xlo + c then t.x += dim.x;
 						else t.x -= dim.x;
 						xres = t;
 						addGhost(t,(r,i));
 						foundx = true;
 					}
-					if bins[r][i].x.y <= ylo+c || bins[r][i].x.y >= yhi-c {
-						var q = bins[r][i].x;
-						if bins[r][i].x.y <= ylo + c then q.y += dim.x;
+					if b[i].x.y <= ylo+c || b[i].x.y >= yhi-c {
+						var q = b[i].x;
+						if b[i].x.y <= ylo + c then q.y += dim.x;
 						else q.y -= dim.x;
 						yres = q;
 						addGhost(q,(r,i));
@@ -429,9 +428,9 @@ module MDSystem {
 						}
 						foundy = true;
 					}
-					if bins[r][i].x.z <= zlo+c || bins[r][i].x.z >= zhi-c {
-						var q = bins[r][i].x;
-						if bins[r][i].x.z <= zlo + c then q.z += dim.x;
+					if b[i].x.z <= zlo+c || b[i].x.z >= zhi-c {
+						var q = b[i].x;
+						if b[i].x.z <= zlo + c then q.z += dim.x;
 						else q.z -= dim.x;
 						addGhost(q, (r,i));
 
@@ -484,16 +483,16 @@ module MDSystem {
 
 		// if atoms moved outside the box, adjust their locations 
 		proc pbc() {
-			forall r in realStencil {
-				for i in 1..binCount[r] {
-					if bins[r][i].x.x < 0 then bins[r][i].x.x += dim.x;
-					if bins[r][i].x.x >= dim.x then bins[r][i].x.x -= dim.x;
+			forall (b,c) in zip(bins[realStencil],binCount[realStencil]) {
+				for i in 1..c {
+					if b[i].x.x < 0 then b[i].x.x += dim.x;
+					if b[i].x.x >= dim.x then b[i].x.x -= dim.x;
 
-					if bins[r][i].x.y < 0 then bins[r][i].x.y += dim.y;
-					if bins[r][i].x.y >= dim.y then bins[r][i].x.y -= dim.y;
+					if b[i].x.y < 0 then b[i].x.y += dim.y;
+					if b[i].x.y >= dim.y then b[i].x.y -= dim.y;
 
-					if bins[r][i].x.z < 0 then bins[r][i].x.z += dim.z;
-					if bins[r][i].x.z >= dim.z then bins[r][i].x.z -= dim.z;
+					if b[i].x.z < 0 then b[i].x.z += dim.z;
+					if b[i].x.z >= dim.z then b[i].x.z -= dim.z;
 				}
 			}
 		}
@@ -519,9 +518,9 @@ module MDSystem {
 			tim.stop();
 			tim.clear();
 			tim.start();
-			forall r in realStencil {
-				for i in 1..binCount[r] {
-					bins[r][i].ncount = 0;
+			forall (b,r,c) in zip(bins[realStencil],realStencil, binCount[realStencil]) {
+				for i in 1..c {
+					b[i].ncount = 0;
 
 					for q in 1..nstencil-1 { // for each surrounding bin
 						var s = stencil[q];
@@ -535,17 +534,17 @@ module MDSystem {
 							if r == other_bin {
 								if x == i then continue; // same atom, ignore
 								if con.half_neigh && ghost_newton && (lookedAt || ((bins[other_bin][x].ghostof(2) != -1) && 
-											((n.z < bins[r][i].x.z) || (n.z == bins[r][i].x.z && n.y < bins[r][i].x.y) ||
-											 (n.z == bins[r][i].x.z && n.y == bins[r][i].x.y && n.x < bins[r][i].x.x)))) then continue;
+											((n.z < b[i].x.z) || (n.z == b[i].x.z && n.y < b[i].x.y) ||
+											 (n.z == b[i].x.z && n.y == b[i].x.y && n.x < b[i].x.x)))) then continue;
 							}
-							var del = bins[r][i].x - n;
+							var del = b[i].x - n;
 							var rsq = del.dot(del);
 							if rsq <= cutneighsq {
-								bins[r][i].ncount += 1;
-								if bins[r][i].ncount > bins[r][i].nspace.high { // resize neighbor list of necessary
-									bins[r][i].nspace = {1..(bins[r][i].nspace.high*1.2 : int)};
+								b[i].ncount += 1;
+								if b[i].ncount > b[i].nspace.high { // resize neighbor list of necessary
+									b[i].nspace = {1..(b[i].nspace.high*1.2 : int)};
 								}
-								bins[r][i].neighs[bins[r][i].ncount] = (other_bin,x);
+								b[i].neighs[b[i].ncount] = (other_bin,x);
 							}
 						}
 					}
@@ -556,7 +555,7 @@ module MDSystem {
 
 		// adds atom 'a' to bin 'b'
 		// consider addint a addatom(a : atom) method
-		proc addatom(a : atom, b : (int,int,int)) {
+		inline proc addatom(a : atom, b : (int,int,int)) {
 			binCount[b] += 1;
 			if binCount[b] >= perBinSpace.high {
 				var h = (perBinSpace.high * 1.2) : int;
@@ -569,17 +568,16 @@ module MDSystem {
 			var mspace : domain(1) = {1..50};
 			var moved : [mspace] (atom,(int,int,int));
 			var m = 0;
-			for r in realStencil {
-				var binc = binCount[r];
+			for (b,r,c) in zip(bins[realStencil],realStencil,binCount[realStencil]) {
 				var cur = 1;
-				while(cur <= binCount[r]) {
-					var destBin = coord2bin(bins[r][cur].x);
+				while(cur <= c) {
+					var destBin = coord2bin(b[cur].x);
 					if destBin != r { // atom moved
 						m += 1;
 						if m >= mspace.high then mspace = {1..mspace.high * 2};
-						moved[m] = (bins[r][cur], destBin);
-						if cur < binCount[r] then bins[r][cur] = bins[r][binCount[r]]; // replace with atom at end of list, if one exists
-						binCount[r] -= 1; // correct this bin's counter
+						moved[m] = (b[cur], destBin);
+						if cur < c then b[cur] = b[c]; // replace with atom at end of list, if one exists
+						c -= 1; // correct this bin's counter
 					} else cur += 1;
 				}
 			}
