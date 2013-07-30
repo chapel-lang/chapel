@@ -500,6 +500,7 @@ static void call_constructor_for_class(CallExpr* call) {
   if (SymExpr* se = toSymExpr(call->baseExpr)) {
     if (TypeSymbol* ts = toTypeSymbol(se->var)) {
       if (ClassType* ct = toClassType(ts->type)) {
+        // Select symExprs of class (or record) type.
         SET_LINENO(call);
 
         // These tests can be moved up to a general ClassType object verifier.
@@ -512,17 +513,22 @@ static void call_constructor_for_class(CallExpr* call) {
         CallExpr* parentParent = NULL;
         if (parent)
           parentParent = toCallExpr(parent->parentExpr);
+
         if (parent && parent->isPrimitive(PRIM_NEW)) {
+          // Transform "new C ( ... )" into _construct_C ( ... ).
           se->replace(new UnresolvedSymExpr(ct->initializer->name));
           parent->replace(call->remove());
         } else if (parentParent && parentParent->isPrimitive(PRIM_NEW) &&
                    call->partialTag) {
+          // Transform "new C ( (_partial C) ... )" into _construct_C ( ... ).
           se->replace(new UnresolvedSymExpr(ct->initializer->name));
           parentParent->replace(parent->remove());
         } else {
           if (ct->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION))
+            // Call chpl__buildDistType for syntactic distributions.
             se->replace(new UnresolvedSymExpr("chpl__buildDistType"));
           else
+            // Transform C ( ... ) into _type_construct_C ( ... ) .
             se->replace(new UnresolvedSymExpr(ct->defaultTypeConstructor->name));
         }
       }
@@ -638,11 +644,14 @@ fix_def_expr(VarSymbol* var) {
   //
   FnSymbol* fn = toFnSymbol(var->defPoint->parentSymbol);
   INT_ASSERT(fn);
-  if (!var->hasFlag(FLAG_NO_AUTO_DESTROY) &&
-      !var->hasFlag(FLAG_PARAM) &&
+  if (!var->hasFlag(FLAG_NO_AUTO_DESTROY) && // Not explicily marked "no auto destroy"
+      !var->hasFlag(FLAG_PARAM) && // Not a param variable.  (Note 1)
+      // The variables initialized in a module initializer are global,
+      // and therefore should not be autodestroyed.
+      // There is a special global destructor function for that.
       var->defPoint->parentExpr != fn->getModule()->initFn->body &&
-      !fn->hasFlag(FLAG_INIT_COPY_FN) &&
-      fn->_this != var &&
+      !fn->hasFlag(FLAG_INIT_COPY_FN) && // Note 3.
+      fn->_this != var && // Note 2.
       !fn->hasFlag(FLAG_TYPE_CONSTRUCTOR))
     var->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
@@ -764,6 +773,7 @@ fix_def_expr(VarSymbol* var) {
 
   } else {
 
+    // See Note 4.
     //
     // initialize untyped variable with initialization expression
     //
@@ -1174,3 +1184,20 @@ static void change_method_into_constructor(FnSymbol* fn) {
   // (in disambiguateByMatch()).
 //  ct->initializer->addFlag(FLAG_INVISIBLE_FN);
 }
+
+// Note 1: Since param variables can only be of primitive or enumerated type,
+// their destructors are trivial.  Allowing this case to proceed could result in
+// a regularization (reduction in # of conditionals == reduction in code
+// complexity).
+// Note 2: "this" should be passed by reference.  Then, no constructor call is
+// made, and therefore no autodestroy call is needed.
+// Note 3: If a record arg to an init copy function is passed by value, infinite
+// recursion would ensue.  This is an unreachable case (assuming that magic
+// conversions from R -> ref R are removed and all existing implementations of
+// chpl__initCopy are rewritten using "ref" or "const ref" intent on the record
+// argument).
+// Note 4: These two cases should be regularized.  Either the copy constructor
+// should *always* be called (and the corresponding destructor always called),
+// or we should ensure that the destructor is called only if a constructor is
+// called on the same variable.  The latter case is an optimization, so the
+// simplest implementation calls the copy-constructor in both cases.

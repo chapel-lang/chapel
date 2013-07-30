@@ -306,6 +306,7 @@ buildDefaultWrapper(FnSymbol* fn,
         if (formal->intent != INTENT_INOUT) {
           wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, wrapper->body->body.tail->remove()));
         } else {
+          // This calls the copy-construtor, to copy the return value into the calling context.
           wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr("chpl__initCopy", wrapper->body->body.tail->remove())));
           INT_ASSERT(!temp->hasFlag(FLAG_EXPR_TEMP));
           temp->removeFlag(FLAG_MAYBE_PARAM);

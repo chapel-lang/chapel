@@ -39,7 +39,7 @@ class Type : public BaseAST {
 
   TypeSymbol* symbol;
   Symbol* defaultValue;
-  FnSymbol* initializer;
+  FnSymbol* initializer; // This is the compiler-supplied initializer function.
   FnSymbol* defaultTypeConstructor;
   FnSymbol* destructor;
   Vec<FnSymbol*> methods;

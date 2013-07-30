@@ -27,6 +27,8 @@ module DefaultRectangular {
   
     proc dsiIndexToLocale(ind) return this.locale;
   
+    // Right now, the default distribution acts like a singleton.
+    // So we don't have to copy it when a clone is requested.
     proc dsiClone() return this;
   
     proc dsiAssign(other: this.type) { }

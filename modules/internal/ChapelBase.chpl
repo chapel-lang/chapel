@@ -1030,10 +1030,6 @@ module ChapelBase {
   pragma "auto copy fn"
   inline proc chpl__autoCopy(r: _ref) var return r;
   
-  pragma "donor fn"
-  pragma "auto copy fn"
-  inline proc chpl__autoCopy(type t) type return t;
-
   inline proc chpl__maybeAutoDestroyed(x: numeric) param return false;
   inline proc chpl__maybeAutoDestroyed(x: enumerated) param return false;
   inline proc chpl__maybeAutoDestroyed(x: object) param return false;

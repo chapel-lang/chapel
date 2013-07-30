@@ -150,6 +150,7 @@ static void resolveSetMember(CallExpr* call);
 static void resolveMove(CallExpr* call);
 static bool formalRequiresTemp(ArgSymbol* formal);
 static void insertFormalTemps(FnSymbol* fn);
+static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars);
 static Type* param_for_index_type(CallExpr* loop);
 static void fold_param_for(CallExpr* loop);
 static Expr* dropUnnecessaryCast(CallExpr* call);
@@ -1383,6 +1384,10 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
     resolve_type_constructor(fn, info);
   }
 
+  //
+  // A derived generic type will use the type of its parent, and expects this to
+  // be instantiated before it is.
+  // 
   resolveFormals(fn);
 
   if (!strcmp(fn->name, "=")) {
@@ -2720,14 +2725,55 @@ insertFormalTemps(FnSymbol* fn) {
     }
   }
   if (formals2vars.n > 0) {
+    // The names of formals in the body of this function are replaced with the
+    // names of their corresponding local temporaries.
     update_symbols(fn->body, &formals2vars);
+
+    // Add calls to chpl__initCopy to create local copies as necessary.
+    // Add writeback code for out and inout intents.
+    addLocalCopiesAndWritebacks(fn, formals2vars);
+  }
+}
+
+
+// Given the map from formals to local "_formal_tmp_" variables, this function
+// adds code as necessary 
+//  - to copy the formal into the temporary at the start of the function
+//  - and copy it back when done.
+// The copy in is needed for "inout", "in" and "const in" intents.
+// The copy out is needed for "inout" and "out" intents.
+// Blank intent is treated like "const", and normally copies the formal through
+// chpl__autoCopy.
+// Note that autoCopy is called in this case, but not for "inout", "in" and "const in".
+// Either record-wrapped types are always passed by ref, or some unexpected
+// behavior will result by applying "in" intents to them.
+static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
+{
+    // Enumerate the formals that have local temps.
     form_Map(SymbolMapElem, e, formals2vars) {
-      ArgSymbol* formal = toArgSymbol(e->key);
+      ArgSymbol* formal = toArgSymbol(e->key); // Get the formal.
+      Symbol* tmp = e->value; // Get the temp.
+
       SET_LINENO(formal);
-      Symbol* tmp = e->value;
-      // This adds the extra code inside the current function required
-      // to implement the ref-to-value and copy-back semantics, where needed.
-      if (formal->intent == INTENT_OUT) {
+
+      // This switch adds the extra code inside the current function necessary
+      // to implement the ref-to-value semantics, where needed.
+      switch (formal->intent)
+      {
+        // Make sure we handle every case.
+       default:
+        INT_FATAL("Unhandled INTENT case.");
+        break;
+
+        // These cases are weeded out by formalRequiresTemp() above.
+       case INTENT_PARAM:
+       case INTENT_TYPE:
+       case INTENT_REF:
+       case INTENT_CONST_REF:
+        INT_FATAL("Unexpected INTENT case.");
+        break;
+
+       case INTENT_OUT:
         if (formal->defaultExpr && formal->defaultExpr->body.tail->typeInfo() != dtTypeDefaultToken) {
           BlockStmt* defaultExpr = formal->defaultExpr->copy();
           fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, defaultExpr->body.tail->remove()));
@@ -2742,21 +2788,33 @@ insertFormalTemps(FnSymbol* fn) {
           fn->insertAtHead(new DefExpr(refTmp));
           fn->insertAtHead(new DefExpr(typeTmp));
         }
-      } else if (formal->intent == INTENT_INOUT || formal->intent == INTENT_IN || formal->intent == INTENT_CONST_IN) {
+        break;
+
+       case INTENT_INOUT:
+       case INTENT_IN:
+       case INTENT_CONST_IN:
         // TODO: Adding a formal temp for INTENT_CONST_IN is conservative.
         // If the compiler verifies in a separate pass that it is never written,
         // we don't have to copy it.  
         fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr("chpl__initCopy", formal)));
         tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
-      } else {
+        break;
+
+       case INTENT_BLANK:
+       case INTENT_CONST:
+       {
         TypeSymbol* ts = formal->type->symbol;
+
         if (!getRecordWrappedFlags(ts).any() &&
             !ts->hasFlag(FLAG_ITERATOR_CLASS) &&
             !ts->hasFlag(FLAG_ITERATOR_RECORD) &&
-            !getSyncFlags(ts).any() &&
-            !ts->hasFlag(FLAG_REF) &&
-            formal->intent != INTENT_REF &&
-            formal->intent != INTENT_CONST_REF) {
+            !getSyncFlags(ts).any()) {
+          // Note that because we reject the case of record-wrapped types above,
+          // the only way we can get a formal whose call to chpl__autoCopy does
+          // anything different from calling chpl__initCopy is if the formal is a
+          // tuple containing a record-wrapped type.  This is probably not
+          // intentional: It gives tuple-wrapped record-wrapped types different
+          // behavior from bare record-wrapped types.
           fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr("chpl__autoCopy", formal)));
           // WORKAROUND:
           // This is a temporary bug fix that results in leaked memory.
@@ -2784,18 +2842,25 @@ insertFormalTemps(FnSymbol* fn) {
               (isRecord(formal->type) &&
                ((formal->type->getModule()->modTag==MOD_INTERNAL) ||
                 (formal->type->getModule()->modTag==MOD_STANDARD))) ||
-              (isClassType(formal->type) && !typeHasRefField(formal->type)))
+              !typeHasRefField(formal->type))
             tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
         } else
           fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, formal));
+        break;
+       }
       }
+
       fn->insertAtHead(new DefExpr(tmp));
+
+      // For inout or out intent, this assigns the modified value back to the
+      // formal at the end of the function body.
       if (formal->intent == INTENT_INOUT || formal->intent == INTENT_OUT) {
-        fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, formal, new CallExpr("=", formal, tmp)));
+        fn->insertBeforeReturnAfterLabel
+          (new CallExpr(PRIM_MOVE, formal, new CallExpr("=", formal, tmp)));
       }
     }
-  }
 }
+
 
 //
 // Calculate the index type for a param for loop by checking the type of
@@ -5462,7 +5527,7 @@ static void insertDynamicDispatchCalls() {
       VarSymbol* cid = newTemp("_virtual_method_tmp_", dtInt[INT_SIZE_32]);
       call->getStmtExpr()->insertBefore(new DefExpr(cid));
       call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, cid, new CallExpr(PRIM_GETCID, call->get(2)->copy())));
-      // hilde sez: "remove" here means VMT calls are not really "resolved".
+      // "remove" here means VMT calls are not really "resolved".
       // That is, calls to isResolved() return NULL.
       call->get(1)->replace(call->baseExpr->remove());
       call->get(2)->insertBefore(new SymExpr(cid));
@@ -5811,7 +5876,15 @@ static void removeRandomJunk() {
 // build such a value (and therefore effectively represent the
 // "type").  Any non-static arguments are bundled into a runtime type
 // (record) by the compiler and passed around to represent the type at
-// execution time.  In practice, we currently use these to create
+// execution time.  
+//
+// The actual type specified is fully-resolved during function resolution.  So
+// the "runtime type" mechanism is a way to create a parameterized type, but up
+// to a point handle it uniformly in the compiler.  
+// Perhaps a more complete implementation of generic types with inheritance
+// would get rid of the need for this specialized machinery.
+//
+// In practice, we currently use these to create
 // runtime types for domains and arrays (via procedures named
 // 'chpl__buildDOmainRuntimeType' and 'chpl__buildArrayRuntimeType',
 // respectively).
@@ -5837,6 +5910,7 @@ static void buildRuntimeTypeInitFns() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->defPoint && fn->defPoint->parentSymbol) {
       if (fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN)) {
+        // Look only at functions flagged as "runtime type init fn".
         INT_ASSERT(fn->retType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE));
         SET_LINENO(fn);
         // Build a new runtime type for this function
@@ -5949,14 +6023,21 @@ static void insertRuntimeInitTemps() {
   Vec<BaseAST*> asts;
   collect_asts_postorder(rootModule, asts);
 
+  // Collect asts which are definitions of VarSymbols that are type variables
+  // and are flagged as runtime types.
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast)) {
       if (isVarSymbol(def->sym) &&
           def->sym->hasFlag(FLAG_TYPE_VARIABLE) &&
           def->sym->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+
+        // Collapse these through the runtimeTypeMap ...
         Type* rt = runtimeTypeMap.get(def->sym->type);
         INT_ASSERT(rt);
         def->sym->type = rt;
+
+        // ... and remove the type variable flag
+        // (Make these declarations look like normal vars.)
         def->sym->removeFlag(FLAG_TYPE_VARIABLE);
       }
     }
@@ -5965,6 +6046,7 @@ static void insertRuntimeInitTemps() {
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->parentSymbol && call->isPrimitive(PRIM_INIT)) {
+        // call is an 'init' primitive.
         SymExpr* se = toSymExpr(call->get(1));
         Type* rt =se->var->type;
         if (rt->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {

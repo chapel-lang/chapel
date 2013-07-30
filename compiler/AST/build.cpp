@@ -707,7 +707,7 @@ handleArrayTypeCase(FnSymbol* fn, Expr* indices, Expr* iteratorExpr, Expr* expr)
   // expressions are not pulled all the way out during cleanup
   //
   // second, so that types and functions declared in this nested
-  // function do not get removed from the IR when the type lbock gets
+  // function do not get removed from the IR when the type block gets
   // removed
   //
   FnSymbol* isArrayTypeFn = new FnSymbol("_isArrayTypeFn");
