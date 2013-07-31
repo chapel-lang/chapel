@@ -605,7 +605,7 @@ proc findGhosts() {
 }
 
 inline proc addGhost(x : v3, b : ((int,int,int),int(32))) {
-	const temp = coord2bin(x);
+	var temp = coord2bin(x);
 	binCount[temp] += 1;
 	bins[temp][binCount[temp]].x = x;
 	bins[temp][binCount[temp]].ghostof = b;
