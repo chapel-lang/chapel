@@ -1,7 +1,7 @@
 
 module MDForce {
 
-	use MDSystem;
+	use initMD;
 	use Time;
 	enum ForceStyle { FORCELJ, FORCEEAM };
 
@@ -11,9 +11,10 @@ module MDForce {
 		var reneigh : int;
 
 		var style : ForceStyle;
+		var wipetime, maintime, gtime : real;
 
 		proc Force();
-		proc compute(sys : System, evflag : bool) : void {}
+		proc compute(evflag : bool) : void {}
 	}
 
 	// 'Embedded atom model'
@@ -217,7 +218,7 @@ module MDForce {
 		}
 
 		// combines halfneigh and fullneigh versions from c++
-		proc compute(sys : System, evflag : bool) {
+		proc compute(evflag : bool) {
 			/*var evdwl : real = 0.0;
 			virial = 0;
 
@@ -364,8 +365,6 @@ module MDForce {
 
 	// Lennard-Jones potential
 	class ForceLJ : Force {
-		var scale : real = 1.0;
-
 		proc ForceLJ(cf : real) {
 			cutforce = cf;
 			cutforcesq = cf * cf;
@@ -373,69 +372,79 @@ module MDForce {
 			style = ForceStyle.FORCELJ;
 		}
 
-		proc compute(sys : System, evflag : bool) : void {
+		proc compute(evflag : bool) : void {
 			eng_vdwl = 0;
 			virial = 0;
-
+			var tim : Timer;
 			// wipe old forces
-			forall (b,c) in zip(sys.bins,sys.binCount) {
-				for i in 1..c {
-					b[i].f.x = 0;
-					b[i].f.y = 0;
-					b[i].f.z = 0;
+			tim.start();
+			forall (b,c) in zip(bins,binCount) {
+				for a in b[1..c] {
+					a.f.x = 0;
+					a.f.y = 0;
+					a.f.z = 0;
 				}
 			}
+			wipetime += tim.elapsed();
+			tim.stop();
+			tim.clear();
 
 			// for each atom, compute force between itself and its neighbors
 			// can make outer loop parallel if we can make force modifications atomic
-			for (b,c) in zip(sys.bins[sys.realStencil], sys.binCount[sys.realStencil]) {
-				for i in 1..c {
-					var (fx,fy,fz,e,v) = + reduce forall q in 1..b[i].ncount do forceBetween(b,i,q, sys, evflag);
-					b[i].f.x += fx;
-					b[i].f.y += fy;
-					b[i].f.z += fz;
+			tim.start();
+			for (b,c) in zip(bins[realStencil], binCount[realStencil]) {
+				for a in b[1..c] {
+					var (fx,fy,fz,e,v) = + reduce forall (q,idx) in a.neighs[1..a.ncount] do 
+						forceBetween(a.x,bins[q][idx], half_neigh,ghost_newton, evflag);
+					a.f.x += fx;
+					a.f.y += fy;
+					a.f.z += fz;
 					eng_vdwl += e;
 					virial += v;
 				}
 			}
+			maintime += tim.elapsed();
+			tim.stop();
+			tim.clear();
 			
-			for g in sys.ghostStencil {
-				for i in 1..sys.binCount[g] {
-					var (r,idx) = sys.bins[g][i].ghostof;
-					sys.bins[r][idx].f += sys.bins[g][i].f;
-					sys.bins[g][i].x -= sys.bins[r][idx].x;
+			tim.start();
+			// add ghost forces to the original, store offset (use to restore position after integration)
+			for g in ghostStencil {
+				for i in 1..binCount[g] {
+					var (r,idx) = bins[g][i].ghostof;
+					bins[r][idx].f += bins[g][i].f;
+					bins[g][i].x -= bins[r][idx].x;
 				}
 			}
+			gtime += tim.elapsed();
 		}
 
-		proc forceBetween(ref bin : [] atom, i, q : int, sys : System, evflag : int) {
-			var (b,idx) = bin[i].neighs[q];
-
-			var del =bin[i].x - sys.bins[b][idx].x;
-			var rsq = del.dot(del);
+		proc forceBetween(ref x : v3, ref n : atom, hf, gn, evflag : bool) {
+			const del = x - n.x;
+			const rsq = del.dot(del);
 			var rx, ry, rz, e, v : real;
 
 			// if the atoms are close enough, do some physics
 			if rsq < cutforcesq {
-				var sr2: real = 1.0 / rsq;
-				var sr6 : real = sr2 * sr2 * sr2;
-				var force : real = 48.0 * sr6 * (sr6 - .5) * sr2;
+				const sr2: real = 1.0 / rsq;
+				const sr6 : real = sr2 * sr2 * sr2;
+				const force : real = 48.0 * sr6 * (sr6 - .5) * sr2;
 				rx = del.x * force;
 				ry = del.y * force;
 				rz = del.z * force;
 
-				// this needs to be atomic
-				if sys.con.half_neigh {
-					if sys.ghost_newton || sys.ghostStencil.member(b) {
-						sys.bins[b][idx].f.x -= rx;
-						sys.bins[b][idx].f.y -= ry;
-						sys.bins[b][idx].f.z -= rz;
+				// this would be an atomic statement, if that feature was available right now
+				if hf {
+					if gn || n.ghostof(2) == -1 {
+						n.f.x -= rx;
+						n.f.y -= ry;
+						n.f.z -= rz;
 					}
 				}
 				if evflag { // if we care about data this iteration
-					if sys.con.half_neigh {
-						if sys.ghost_newton || sys.ghostStencil.member(b)  then scale = 1.0;
-						else scale = .5;
+					if hf {
+						const scale : real = if gn || n.ghostof(2) == -1 then 1.0
+											else .5;
 						e += scale * (4.0 * sr6 * (sr6 - 1.0));
 						v += scale * rsq * force;
 					} else { // fullneigh
