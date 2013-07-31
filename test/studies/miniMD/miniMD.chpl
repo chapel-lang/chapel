@@ -101,5 +101,5 @@ proc run(f : Force, total : Timer) {
 
 		if nstat > 0 then compute(i, f, total);
 	}
-	writeln("wipe: ", f.wipetime, ", main: ", f.maintime, ", ghost: ", f.gtime);
+	//writeln("wipe: ", f.wipetime, ", main: ", f.maintime, ", ghost: ", f.gtime);
 } 
