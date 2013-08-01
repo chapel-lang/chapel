@@ -3,19 +3,7 @@
 
 #ifdef HAVE_LLVM
 
-//#include "llvmUtil.h"
-#include "llvm/Config/llvm-config.h"
-
-#if LLVM_VERSION_MAJOR > 3 || (LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR > 2 )
-#include "llvm/IR/Module.h"
-#include "llvm/IR/Intrinsics.h"
-#include "llvm/IR/Attributes.h"
-#else
-#include "llvm/Module.h"
-#include "llvm/Intrinsics.h"
-#include "llvm/Attributes.h"
-#endif
-
+#include "llvmUtil.h"
 
 #include "llvm/PassManager.h"
 #include "llvm/ADT/DenseMap.h"

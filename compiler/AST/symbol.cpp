@@ -582,6 +582,11 @@ void VarSymbol::codegenDefC(bool global) {
 void VarSymbol::codegenGlobalDef() {
   GenInfo* info = gGenInfo;
 
+  if( breakOnCodegenCname[0] &&
+      0 == strcmp(cname, breakOnCodegenCname) ) {
+    gdbShouldBreakHere();
+  }
+
   if( info->cfile ) {
     codegenDefC(/*global=*/true);
   } else {

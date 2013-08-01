@@ -48,6 +48,7 @@ using namespace llvm;
 #define GLOBAL_PTR_PREF_ALIGN 64
 
 #include "llvmGlobalToWide.h"
+#include "llvmAggregateGlobalOps.h"
 
 // TODO - add functionality to clang so that we don't
 // have to have what are basically copies of
@@ -1302,6 +1303,14 @@ bool isBuiltinExternCFunction(const char* cname)
 }
 
 static
+void addAggregateGlobalOps(const PassManagerBuilder &Builder, PassManagerBase &PM) {
+  GenInfo* info = gGenInfo;
+  if( fLLVMWideOpt ) {
+    PM.add(createAggregateGlobalOpsOptPass(info->globalToWideInfo.globalSpace));
+  }
+}
+
+static
 void addGlobalToWide(const PassManagerBuilder &Builder, PassManagerBase &PM) {
   GenInfo* info = gGenInfo;
   if( fLLVMWideOpt ) {
@@ -1359,9 +1368,14 @@ void makeBinaryLLVM(void) {
                            errorInfo,
                            raw_fd_ostream::F_Binary));
  
-  // Add the Global to Wide optimization if necessary.
-  PassManagerBuilder::addGlobalExtension(PassManagerBuilder::EP_ScalarOptimizerLate, addGlobalToWide);
-  PassManagerBuilder::addGlobalExtension(PassManagerBuilder::EP_EnabledOnOptLevel0, addGlobalToWide);
+  static bool addedGlobalExts = false;
+  if( ! addedGlobalExts ) {
+    // Add the Global to Wide optimization if necessary.
+    PassManagerBuilder::addGlobalExtension(PassManagerBuilder::EP_ScalarOptimizerLate, addAggregateGlobalOps);
+    PassManagerBuilder::addGlobalExtension(PassManagerBuilder::EP_ScalarOptimizerLate, addGlobalToWide);
+    PassManagerBuilder::addGlobalExtension(PassManagerBuilder::EP_EnabledOnOptLevel0, addGlobalToWide);
+    addedGlobalExts = true;
+  }
 
   EmitBackendOutput(*info->Diags, info->codegenOptions,
                     info->clangTargetOptions, info->clangLangOptions,

@@ -20,25 +20,7 @@
 
 #define DEBUG_TYPE "global-to-wide"
 
-#include "llvm/Config/llvm-config.h"
-
-#if LLVM_VERSION_MAJOR > 3 || (LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR > 2 )
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/IR/Instructions.h"
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/IntrinsicInst.h"
-#include "llvm/IR/TypeBuilder.h"
-#include "llvm/IR/Function.h"
-#include "llvm/IR/Module.h"
-#else
-#include "llvm/DerivedTypes.h"
-#include "llvm/Instructions.h"
-#include "llvm/BasicBlock.h"
-#include "llvm/IntrinsicInst.h"
-#include "llvm/TypeBuilder.h"
-#include "llvm/Function.h"
-#include "llvm/Module.h"
-#endif
+#include "llvmUtil.h"
 
 #include "llvm/Pass.h"
 #include "llvm/Support/raw_ostream.h"
@@ -53,13 +35,11 @@
 
 using namespace llvm;
 
-STATISTIC(GlobalToWideCounter, "Counts number of functions greeted");
-
 namespace {
 
   static const bool debugAllPassOne = false;
   static const bool debugAllPassTwo = false;
-  static const bool extraChecks = true;
+  static const bool extraChecks = false;
   // Set a function name here to get lots of debugging output.
   static const char* debugThisFn = "";
 
@@ -998,8 +978,6 @@ namespace {
     virtual bool runOnModule(Module &M) {
       bool madeInfo = false;
 
-      ++GlobalToWideCounter;
-
       if( debugThisFn[0] || debugAllPassOne || debugAllPassTwo ) {
         errs() << "GlobalToWide: ";
         errs().write_escaped(M.getModuleIdentifier()) << '\n';
@@ -1446,7 +1424,7 @@ namespace {
           if( debugPassTwo ) F->dump();
           errs() << "-----------------------------\n";
         }
-        
+ 
         /*
          for all functions
             for all basic blocks
@@ -1469,7 +1447,7 @@ namespace {
         for (Function::iterator BI = F->begin(), BE = F->end(); BI != BE; ) {
           BasicBlock* BB = BI;
           ++BI;
- 
+
           for (BasicBlock::iterator I = BB->begin(), E = BB->end(); I != E; ) {
             Instruction *insn = &*I;
             Instruction *prev = NULL;
