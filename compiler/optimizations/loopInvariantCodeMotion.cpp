@@ -39,6 +39,7 @@ Timer calculateActualDefsTimer;
 Timer buildBBTimer;
 Timer computeDominatorTimer;
 Timer collectNaturalLoopsTimer;
+Timer canPerformCodeMotionTimer;
 Timer buildLocalDefMapsTimer;
 Timer computeLoopInvariantsTimer;
 Timer overallTimer;
@@ -645,7 +646,6 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop* l
   }
   stopTimer(computeAliasTimer);
   
-
   //calculate the actual defs of a symbol including the defs of 
   //its aliases. If there are no defs or we have a constant, 
   //add it to the list of invariants
@@ -664,8 +664,7 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop* l
     if(isConst(symExpr)) {
       loopInvariantOperands.insert(symExpr);
     }    
-    
-    
+        
     //calculate defs of the aliases
     if(aliases.count(symExpr->var) == 1) {
       for_set(Symbol, symbol, aliases[symExpr->var]) {
@@ -818,29 +817,88 @@ static bool defDominatesAllExits(Loop* loop, SymExpr* def, std::vector<BitVec*>&
 
 
 /*
+ * Collect all of the function symbols that belong to function calls 
+ * and nested function calls that occur from baseAST. In other words
+ * look through the baseAST and find all the function and nested function
+ * calls and collect their fnsymbols. 
+ */
+static void collectUsedFnSymbolsSTL(BaseAST* ast, std::set<FnSymbol*>& fnSymbols) {
+  AST_CHILDREN_CALL(ast, collectUsedFnSymbolsSTL, fnSymbols);
+  //if there is a function call, get the FnSymbol associated with it 
+  //and look through that FnSymbol for other function calls. Do not 
+  //look through an already visited FnSymbol, or you'll have an infinite
+  //loop in the case of recursion. 
+  if (CallExpr* call = toCallExpr(ast)) {
+    if (FnSymbol* fnSymbol = call->isResolved()) {
+      if(fnSymbols.count(fnSymbol) == 0) {
+        fnSymbols.insert(fnSymbol);
+        for_alist(expr, fnSymbol->body->body) {
+          AST_CHILDREN_CALL(expr, collectUsedFnSymbolsSTL, fnSymbols);
+        }
+      }
+    }
+  }
+}
+
+
+/*
+ * Collects the uses and defs of symbols the baseAST 
+ * and checks for any synchronization variables such as 
+ * atomics, syncs, and singles. 
+ */
+static bool containsSynchronizationVar(BaseAST* ast) {
+  std::vector<SymExpr*> symExprs;
+  collectSymExprsSTL(ast, symExprs);
+  for_vector(SymExpr, symExpr, symExprs) {
+    
+    if(isVarSymbol(symExpr->var) || isArgSymbol(symExpr->var)) {
+      bool isSync = symExpr->var->type->symbol->hasFlag(FLAG_SYNC);
+      bool isSingle = symExpr->var->type->symbol->hasFlag(FLAG_SINGLE);
+      bool isAtomic = symExpr->var->type->symbol->hasFlag(FLAG_ATOMIC_TYPE);
+
+      if(isSync || isSingle || isAtomic) {
+        return true;
+      }
+    }  
+  }
+  return false;
+}
+
+
+// TODO Looking for synchronization variables is very 
+// similar to what is currently being done in remote
+// value forwarding. It would be a good idea to unify
+// the two implementations. 
+
+/*
  * Checks if a loop can have loop invariant code motion 
  * performed on it. Specifically we do not want to hoist
  * from loops that have sync, single, or atomic vars in 
- * them, though there may be others in the future. 
+ * them, though there may be others in the future. Also, 
+ * Do not perform code motion if any function calls or
+ * nested function calls contains syncs, atomics, or 
+ * singles. 
  */
 static bool canPerformCodeMotion(Loop* loop) {
-
+  
   for_vector(BasicBlock, block, *loop->getBlocks()) {
     for_vector(Expr, expr, block->exprs) {
-      std::vector<SymExpr*> symExprs;
-      collectSymExprsSTL(expr, symExprs);
-      for_vector(SymExpr, symExpr, symExprs) {
-        
-        if(isVarSymbol(symExpr->var) || isArgSymbol(symExpr->var)) {
-          bool isSync = symExpr->var->type->symbol->hasFlag(FLAG_SYNC);
-          bool isSingle = symExpr->var->type->symbol->hasFlag(FLAG_SINGLE);
-          bool isAtomic = symExpr->var->type->symbol->hasFlag(FLAG_ATOMIC_TYPE);
-
-          if(isSync || isSingle || isAtomic) {
-            return false;
-          }
-        }  
+  
+      //Check for nested function calls containing 
+      //synchronization variables 
+      std::set<FnSymbol*> fnSymbols;
+      collectUsedFnSymbolsSTL(expr, fnSymbols);
+      for_set(FnSymbol, fnSymbol2, fnSymbols) {
+        if(containsSynchronizationVar(fnSymbol2)) {
+          return false;
+        }
       }
+    
+      //Check if there are any synchronization variables
+      //in the current expr 
+      if(containsSynchronizationVar(expr)) {
+        return false;
+      } 
     }
   }
   return true;
@@ -882,7 +940,6 @@ void loopInvariantCodeMotion(void) {
     unsigned nBlocks = basicBlocks.size();
     stopTimer(buildBBTimer);
     
-    
     //compute the dominators 
     startTimer(computeDominatorTimer);
     std::vector<BitVec*> dominators;
@@ -892,23 +949,24 @@ void loopInvariantCodeMotion(void) {
     computeDominators(dominators, basicBlocks);
     stopTimer(computeDominatorTimer);
 
-    
     //Collect all of the loops 
     startTimer(collectNaturalLoopsTimer);
     std::vector<Loop*> loops;
     collectNaturalLoops(loops, basicBlocks, entryBlock, dominators);
     stopTimer(collectNaturalLoopsTimer);
 
-    
     //For each loop found 
     for_vector(Loop, curLoop, loops) {
       
       //check that this loop doesn't have anything that 
       //would prevent code motion from occurring
-      if(canPerformCodeMotion(curLoop) == false) {
+      startTimer(canPerformCodeMotionTimer);
+      bool performCodeMotion = canPerformCodeMotion(curLoop);
+      stopTimer(canPerformCodeMotionTimer);
+      if(performCodeMotion == false) {
         continue;
       }
-
+      
       //build the defUseMaps 
       startTimer(buildLocalDefMapsTimer);
       symToVecSymExprMap localDefMap;
@@ -917,13 +975,11 @@ void loopInvariantCodeMotion(void) {
       buildLocalDefUseMaps(curLoop, localDefMap, localUseMap, localMap);
       stopTimer(buildLocalDefMapsTimer);
 
-
       //and use the defUseMaps to compute loop invariants 
       startTimer(computeLoopInvariantsTimer);
       std::vector<SymExpr*> loopInvariants;
       computeLoopInvariants(loopInvariants, curLoop, localDefMap);
       stopTimer(computeLoopInvariantsTimer);
-
 
       //For each invariant, only move it if its def, dominates all uses and all exits 
       for_vector(SymExpr, symExpr, loopInvariants) {
@@ -957,7 +1013,7 @@ void loopInvariantCodeMotion(void) {
   FILE *timingFile;
   FILE *maxTimeFile;
   timingFile = stdout;
-  maxTimFile = stdout;
+  maxTimeFile = stdout;
   //timingFile = fopen("/data/cf/gtmp/chapel/eronagha/timing.txt", "a");    //TODO Where's an appropriate location?
   //maxTimeFile = fopen("/data/cf/gtmp/chapel/eronagha/maxTime.txt", "a");
 
@@ -966,10 +1022,11 @@ void loopInvariantCodeMotion(void) {
   fprintf(timingFile, "Spent %2.3f seconds computing dominators       \n", computeDominatorTimer.elapsed()); 
   fprintf(timingFile, "Spent %2.3f seconds collecting natural loops   \n", collectNaturalLoopsTimer.elapsed()); 
   fprintf(timingFile, "Spent %2.3f seconds building local def maps    \n", buildLocalDefMapsTimer.elapsed()); 
+  fprintf(timingFile, "Spent %2.3f seconds on can perform code motion \n", canPerformCodeMotionTimer.elapsed());
   fprintf(timingFile, "Spent %2.3f seconds computing loop invariants  \n", computeLoopInvariantsTimer.elapsed()); 
    
   double estimateOverall = buildBBTimer.elapsed() + computeDominatorTimer.elapsed() + collectNaturalLoopsTimer.elapsed() + \
-  buildLocalDefMapsTimer.elapsed() + computeLoopInvariantsTimer.elapsed();
+  buildLocalDefMapsTimer.elapsed() + canPerformCodeMotionTimer.elapsed() + computeLoopInvariantsTimer.elapsed();
   
   
   fprintf(timingFile, "Spent %2.3f seconds loop hoisting on %ld loops \n", overallTimer.elapsed(), numLoops);
@@ -998,74 +1055,4 @@ void loopInvariantCodeMotion(void) {
 #endif
 
 }
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-
-
-  std::vector<Symbol*> symbols;
-      collectSymbolsSTL(expr->getStmtExpr(), symbols);
-      for_vector(Symbol, symbol, symbols) {
-       
-       
-       
-       if(DefExpr* defExpr = toDefExpr(expr)) {
-        
-         
-          bool isSyncDef =  defExpr->sym->type->symbol->hasFlag(FLAG_SYNC);
-          bool isSingleDef =  defExpr->sym->type->symbol->hasFlag(FLAG_SINGLE);
-          bool isAtomicDef =  defExpr->sym->type->symbol->hasFlag(FLAG_ATOMIC_TYPE);
-          
-          if(isSyncDef || isSingleDef || isAtomicDef) {
-       //   printf("False\n");
-        printf("Will not perform code motion in fn %s of module %s because of variable %s %d \n", defExpr->sym->getFunction()->name,defExpr->sym->getFunction()->getModule()->name, defExpr->sym->name, defExpr->sym->id);
-          return false;
-        }
-       }
-       
-       
-       
-       
-        bool isSync = symbol->type->symbol->hasFlag(FLAG_SYNC);
-        bool isSingle = symbol->type->symbol->hasFlag(FLAG_SINGLE);
-        bool isAtomic = symbol->type->symbol->hasFlag(FLAG_ATOMIC_TYPE);
-
-        if(isSync || isSingle || isAtomic) {
-       //   printf("False\n");
-        printf("Will not perform code motion in fn %s of module %s because of variable %s %d \n", symbol->getFunction()->name,symbol->getFunction()->getModule()->name, symbol->name, symbol->id);
-          return false;
-        }
- 
-
-      }
-      if(CallExpr* callExpr = toCallExpr(expr)) {
-        if(FnSymbol* fn = callExpr->isResolved()) {
-
-          bool isSyncFn = fn->type->symbol->hasFlag(FLAG_SYNC);
-          bool isSingleFn = fn->type->symbol->hasFlag(FLAG_SINGLE);
-          bool isAtomicFn = fn->type->symbol->hasFlag(FLAG_ATOMIC_TYPE);
-
-          if(isSyncFn || isSingleFn || isAtomicFn) {
-     //       printf("False fn\n");
-            return false;
-          }
- 
-        }
-      }
-*/
-
-
 
