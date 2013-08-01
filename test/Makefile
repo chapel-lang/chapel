@@ -20,6 +20,6 @@ ifneq ($(NO_INTERACTIVE), 1)
 endif
 
 clobber: clean
-	rm -rf $(RM_FLAGS) spec
+	rm -rf $(RM_FLAGS) ./release/examples/spec
 	find . -name .svn -prune $(FIND_FILES) | xargs $(XARGS_FLAGS) --null rm $(RM_FLAGS)
 
