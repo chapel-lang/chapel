@@ -2,22 +2,6 @@
 //
 pragma "no use ChapelStandard"
 module ChapelLocale {
-
-  // The chpl_localeID_t type is used internally.  It should not be exposed to the user.
-  // It allows the compiler to parse out the fields of the localeID portion
-  // of a wide pointer.
-  type chpl_nodeID_t = int(32);
-  type chpl_sublocID_t = int(32);
-  // This module used to control the allocation of bits within a chpl_localeID_t, but that
-  // responsibility has been moved into code generation.
-  // TODO: Remove this record and the above definitions.
-  // It can be removed after references to the "node" and "subloc" fields of this type
-  // are removed from the code generation implementation.
-  extern record chpl_localeID_t {
-    var node : chpl_nodeID_t;
-    var subloc : chpl_sublocID_t;
-  };
-
 // TODO: Check if these are these needed by the LLVM codegen routines
 // and uncomment them if so.
 //  extern proc chpl_localeID_get_node(loc:chpl_localeID_t):int(64);
@@ -58,6 +42,7 @@ module ChapelLocale {
     // As an accessor, it is statically bound, which is also a problem....
     proc id : int return chpl_id();
     proc name return chpl_name();
+    //------------------------------------------------------------------------}
 
     //------------------------------------------------------------------------{
     //- User Interface Methods (overridable)
@@ -144,10 +129,43 @@ module ChapelLocale {
     //------------------------------------------------------------------------}
   }
 
-  // TODO: This wants to live in RootLocale.chpl
-  // It is here because it needs to be defined before the array return type
-  // is used in the definition of class RootLocale.
+  class RootLocale : locale {
+    // These functions are used to establish values for Locales[] and
+    // LocaleSpace -- an array of locales and its correponding domain
+    // which are used as the default set of targetLocales in many
+    // distributions.
+    proc getDefaultLocaleSpace() {
+      _throwPVFCError();
+      const emptyLocaleSpace: domain(1) = {1..0};
+      return emptyLocaleSpace;
+    }
+
+    proc getDefaultLocaleArray() {
+      _throwPVFCError();
+      const emptyLocaleSpace: domain(1) = {1..0};
+      const emptyLocales: [emptyLocaleSpace] locale;
+      return emptyLocales;
+    }
+
+    proc localeIDtoLocale(id : chpl_localeID_t) : locale {
+      _throwPVFCError();
+      return this;
+    }
+  }
+
   var rootLocale : locale = nil;
+
+  // Returns a wide pointer to the locale with the given id.
+  // When hierarchical locales are fully implemented, the lookup may be
+  // done mostly in the runtime (through the sublocale registry).
+  proc chpl_localeID_to_locale(id : chpl_localeID_t) : locale {
+    // The _is_here test examines only localeIDs, so is local and very fast.
+    // Evaluating "here" is also local and very fast.
+    if __primitive("_is_here", id) then return here;
+    var ret:locale;
+    on rootLocale do ret = (rootLocale:RootLocale).localeIDtoLocale(id);
+    return ret;
+  }
 
   // This returns the current "here" pointer.
   // It uses a primitive to suck the here pointer out of task-private storage.

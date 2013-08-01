@@ -5,7 +5,8 @@ module ChapelArray {
   
   use ChapelBase; // For opaque type.
   use ChapelTuple;
-  
+  use ChapelLocale;
+
   var privatizeLock$: sync int;
   
   config param debugBulkTransfer = false;

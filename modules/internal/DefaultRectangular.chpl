@@ -3,7 +3,7 @@
 pragma "no use ChapelStandard"
 module DefaultRectangular {
   
-  use DSIUtil;
+  use DSIUtil, ChapelArray;
   config param debugDefaultDist = false;
   config param debugDefaultDistBulkTransfer = false;
   config param debugDataPar = false;

@@ -13,13 +13,32 @@ module LocaleModel {
   use ChapelLocale;
   use DefaultRectangular;
   use ChapelNumLocales;
-  use RootLocale;
   use Sys;
 
   config param debugLocaleModel = false;
 
   // We would really like a class-static storage class.(C++ nomenclature)
   var doneCreatingLocales: bool = false;
+
+  // The chpl_localeID_t type is used internally.  It should not be exposed to
+  // the user.  It allows the compiler to parse out the fields of the localeID
+  // portion of a wide pointer.
+
+  // using these type aliases in chpl_localeID_t causes problems because
+  // the LocaleModel init function hasn't been resolved yet before
+  // chpl_localeID_t is used in another module
+  type chpl_nodeID_t = int(32);
+  type chpl_sublocID_t = int(32);
+
+  extern record chpl_localeID_t {
+    var node   : int(32); // : chpl_nodeID_t;
+    var subloc : int(32); // : chpl_sublocID_t;
+  };
+
+//  type chpl_localeID_t = int(64);
+
+  const chpl_emptyLocaleSpace: domain(1) = {1..0};
+  const chpl_emptyLocales: [chpl_emptyLocaleSpace] locale;
 
   //
   // A concrete class representing the nodes in this architecture.
@@ -60,12 +79,12 @@ module LocaleModel {
       f <~> new ioLiteral("LOCALE") <~> _node_id;
     }
 
-    proc getChildSpace() return emptyLocaleSpace;
+    proc getChildSpace() return chpl_emptyLocaleSpace;
 
     proc getChildCount() return 0;
 
     iter getChildIndices() : int {
-      for idx in emptyLocaleSpace do
+      for idx in chpl_emptyLocaleSpace do
         yield idx;
     }
 
@@ -81,12 +100,12 @@ module LocaleModel {
     }
 
     iter getChildren() : locale  {
-      for loc in emptyLocales do
+      for loc in chpl_emptyLocales do
         yield loc;
     }
 
     proc getChildArray() {
-      return emptyLocales;
+      return chpl_emptyLocales;
     }
 
     // Part of the public interface required by the compiler
