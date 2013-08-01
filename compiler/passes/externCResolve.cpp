@@ -41,7 +41,8 @@ static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Ve
 
     //Pointers (other than char*) are represented as calls to
     //_ddata(chapel_type).
-    return new CallExpr(new UnresolvedSymExpr("_ddata"), new CallExpr(PRIM_ACTUALS_LIST, pointee));
+    // PRIM_ACTUALS_LIST is not needed here.
+    return new CallExpr(new UnresolvedSymExpr("_ddata"), pointee);
 
   //structs
   } else if (type->isStructureType()) { 
