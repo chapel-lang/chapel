@@ -301,7 +301,7 @@ extern proc qio_file_path_for_fp(fp:_file, inout path:string):err_t;
 pragma "no prototype" // FIXME
 extern proc qio_file_path(f:qio_file_ptr_t, inout path:string):err_t;
 pragma "no prototype" // FIXME
-extern proc qio_shortest_path(inout path_out:string, path_in:string):err_t;
+extern proc qio_shortest_path(fl: qio_file_ptr_t, inout path_out:string, path_in:string):err_t;
 
 extern proc qio_channel_read_int(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t, issigned:c_int):err_t;
 pragma "no prototype" // FIXME
@@ -618,7 +618,7 @@ proc file.getPath(out error:syserr) : string {
     // Wide strings must be fixed up after extern calls (see Note 1).
     __primitive("string_normalize", tmp);
     if !error {
-      error = qio_shortest_path(tmp2, tmp);
+      error = qio_shortest_path(_file_internal, tmp2, tmp);
       __primitive("string_normalize", tmp2);    // See Note 1.
     }
     if !error {

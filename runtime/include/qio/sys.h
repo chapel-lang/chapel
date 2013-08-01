@@ -1,4 +1,3 @@
-
 #ifndef _SYS_H_
 #define _SYS_H_
 
@@ -121,6 +120,7 @@ err_t sys_sysconf(int name, long* val_out);
 
 err_t sys_posix_fallocate(fd_t fd, off_t offset, off_t len);
 
+int64_t sys_iov_total_bytes(const struct iovec* iov, int iovcnt);
 err_t sys_mmap(void* addr, size_t length, int prot, int flags, fd_t fd, off_t offset, void** ret);
 
 err_t sys_munmap(void* addr, size_t length);

@@ -708,8 +708,7 @@ err_t sys_pwrite(int fd, const void* buf, size_t count, off_t offset, ssize_t* n
 }
 
 // Return the total number of bytes in an IO vector
-static
-int64_t _iov_total_bytes(const struct iovec* iov, int iovcnt)
+int64_t sys_iov_total_bytes(const struct iovec* iov, int iovcnt)
 {
   int64_t tot = 0;
   int i;
@@ -741,12 +740,12 @@ err_t sys_readv(fd_t fd, const struct iovec* iov, int iovcnt, ssize_t* num_read_
       err_out = errno;
       break;
     }
-    if( got != _iov_total_bytes(&iov[i], niovs) ) {
+    if( got != sys_iov_total_bytes(&iov[i], niovs) ) {
       break;
     }
   }
 
-  if( err_out == 0 && got_total == 0 && _iov_total_bytes(iov, iovcnt) != 0 ) err_out = EEOF;
+  if( err_out == 0 && got_total == 0 && sys_iov_total_bytes(iov, iovcnt) != 0 ) err_out = EEOF;
 
   *num_read_out = got_total;
 
@@ -779,7 +778,7 @@ err_t sys_writev(fd_t fd, const struct iovec* iov, int iovcnt, ssize_t* num_writ
       err_out = errno;
       break;
     }
-    if( got != _iov_total_bytes(&iov[i], niovs) ) {
+    if( got != sys_iov_total_bytes(&iov[i], niovs) ) {
       break;
     }
   }
@@ -819,12 +818,12 @@ err_t sys_preadv(fd_t fd, const struct iovec* iov, int iovcnt, off_t seek_to_off
       err_out = errno;
       break;
     }
-    if( got != _iov_total_bytes(&iov[i], niovs) ) {
+    if( got != sys_iov_total_bytes(&iov[i], niovs) ) {
       break;
     }
   }
 
-  if( err_out == 0 && got_total == 0 && _iov_total_bytes(iov, iovcnt) != 0 ) err_out = EEOF;
+  if( err_out == 0 && got_total == 0 && sys_iov_total_bytes(iov, iovcnt) != 0 ) err_out = EEOF;
 
   *num_read_out = got_total;
 
@@ -862,7 +861,7 @@ err_t sys_preadv(fd_t fd, const struct iovec* iov, int iovcnt, off_t seek_to_off
     }
   }
 
-  if( err_out == 0 && got_total == 0 && _iov_total_bytes(iov, iovcnt) != 0 ) err_out = EEOF;
+  if( err_out == 0 && got_total == 0 && sys_iov_total_bytes(iov, iovcnt) != 0 ) err_out = EEOF;
 
   *num_read_out = got_total;
 
@@ -897,7 +896,7 @@ err_t sys_pwritev(fd_t fd, const struct iovec* iov, int iovcnt, off_t seek_to_of
       err_out = errno;
       break;
     }
-    if( got != _iov_total_bytes(&iov[i], niovs) ) {
+    if( got != sys_iov_total_bytes(&iov[i], niovs) ) {
       break;
     }
   }
