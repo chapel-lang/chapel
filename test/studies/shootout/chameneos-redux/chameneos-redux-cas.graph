@@ -1,6 +1,7 @@
 perfkeys: real
 graphkeys: chameneos-redux-cas
 files: chameneos-redux-cas.dat
+startdate: 07/08/13
 graphtitle: Chameneos Redux Shootout Benchmark (n=6,000,000)
 ylabel: Time (seconds)
 graphname: chameneos-redux-cas
