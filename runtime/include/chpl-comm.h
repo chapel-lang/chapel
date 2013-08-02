@@ -5,10 +5,10 @@
 
 #include <stdint.h>
 #include "chpltypes.h"
-#include <chpl-comm-impl.h>
-#include <chpl-comm-heap-macros.h>
+#include "chpl-comm-impl.h"
+#include "chpl-comm-heap-macros.h"
 #include "chpl-tasks.h"
-#include <chpl-comm-task-decls.h>
+#include "chpl-comm-task-decls.h"
 #include "chpl-comm-locales.h"
 
 //
