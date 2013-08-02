@@ -1,7 +1,7 @@
 use Time;
 
-/*  - The Chameneos game is as follows: 
-      A population of n chameneos gathers at a common meeting place, where 
+/*  - The Chameneos game is as follows:
+      A population of n chameneos gathers at a common meeting place, where
       m meetings will take place (n and m may be distinct).  At any time, only
       one meeting may take place between exactly two chameneos, and each
       chameneos may be either blue, red, or yellow.  During a meeting, the
@@ -10,55 +10,55 @@ use Time;
       original color and the other chameneos' color.  (The complement is
       respective to two colors, its own and its partner's, such that if both
       colors are the same, no change, otherwise each chameneos changes to the
-      color you and your partner both are not.)  
-      
+      color you and your partner both are not.)
+
     - (description of benchmark: http://shootout.alioth.debian.org/u32q/benchmark.php?test=chameneosredux&lang=all */
 
 config const numMeetings : int = 6000000; // number of meetings to take place
 config const numChameneos1 : int = 3;     // size of population 1
 config const numChameneos2 : int = 10;    // size of population 2
-enum color {blue=0, red=1, yellow=2};    
-enum digit {zero, one, two, three, four,  
+enum color {blue=0, red=1, yellow=2};
+enum digit {zero, one, two, three, four,
             five, six, seven, eight, nine};
 config const verbose = false;
 // if verbose is true, prints out non-det output, otherwise prints det output
 config const peek = false;
-// if peek is true, allows chameneos to peek at spotsLeft$ in 
+// if peek is true, allows chameneos to peek at spotsLeft$ in
 // MeetingPlace.meet() then immediately return
 
 class MeetingPlace {
   var spotsLeft$ : sync int = 0; // no need to initialize to 0?
-  var color2$: sync color;  
+  var color2$: sync color;
   var color1 : color;
   var id1 : int;
-  var id2 : int;  
+  var id2 : int;
 
-  /* constructor for MeetingPlace, sets the 
+  /* constructor for MeetingPlace, sets the
      number of meetings to take place */
   proc MeetingPlace() {
     spotsLeft$.writeXF(numMeetings*2);
   }
-  
-  /* reset must be called after meet, 
+
+  /* reset must be called after meet,
      to reset numMeetings for a subsequent call of meet */
   proc reset() {
     spotsLeft$.writeXF(numMeetings*2);
   }
 
-  /* meet, if called on by the chameneos who arrives 1st, 
+  /* meet, if called on by the chameneos who arrives 1st,
      returns the color of the chameneos who arrives 2nd,
      otherwise returns the color of the chameneos who arrives 1st
      (denies meetings of 3+ chameneos) */
 
   proc meet(chameneos : Chameneos) {
-    /* peek at spotsLeft$ */      
-    if (peek) { 
+    /* peek at spotsLeft$ */
+    if (peek) {
       if (spotsLeft$.readXX() == 0) {
         return (true, chameneos.myColor);
       }
     }
-    
-    var spotsLeft = spotsLeft$;   
+
+    var spotsLeft = spotsLeft$;
     var otherColor : color;
 
     if (spotsLeft == 0) {
@@ -67,18 +67,18 @@ class MeetingPlace {
     }
     if (spotsLeft % 2 == 0) {
       color1 = chameneos.myColor;
-      id1 = chameneos.id; 
-      spotsLeft$ = spotsLeft - 1;   
-      otherColor = color2$; 
-      if (id1 == id2) {   
+      id1 = chameneos.id;
+      spotsLeft$ = spotsLeft - 1;
+      otherColor = color2$;
+      if (id1 == id2) {
         halt("halt: meetingsWithSelf count is nonzero");
-        chameneos.meetingsWithSelf += 1;      
-      } 
-      spotsLeft$ = spotsLeft - 2;     
+        chameneos.meetingsWithSelf += 1;
+      }
+      spotsLeft$ = spotsLeft - 2;
     } else if (spotsLeft % 2 == 1) {
       otherColor = color1;
       id2 = chameneos.id;
-      color2$ = chameneos.myColor;      
+      color2$ = chameneos.myColor;
     }
     chameneos.meetings += 1;
     //sleep(10);
@@ -102,7 +102,7 @@ class Chameneos {
   var meetings: int;
   var meetingsWithSelf: int;
 
-  /* start tells a Chameneos to go to a given MeetingPlace, where it may meet 
+  /* start tells a Chameneos to go to a given MeetingPlace, where it may meet
      with another Chameneos.  If it does, it will get the complement of the
      color of the Chameneos it met with, and change to the complement of that
      color. */
@@ -112,8 +112,8 @@ class Chameneos {
     var otherColor : color;
     while (!stop) {
       (stop, otherColor) = meetingPlace.meet(this);
-      myColor = getComplement(myColor, otherColor); 
-    } 
+      myColor = getComplement(myColor, otherColor);
+    }
   }
 }
 
@@ -135,7 +135,7 @@ proc printColorChanges() {
 proc populate (size : int) {
   const colorsDefault10  = (color.blue, color.red, color.yellow, color.red,
                             color.yellow, color.blue, color.red, color.yellow,
-                            color.red, color.blue); 
+                            color.red, color.blue);
   const D : domain(1) = {1..size};
   var population : [D] Chameneos;
 
@@ -143,7 +143,7 @@ proc populate (size : int) {
     for i in D {
       population(i) = new Chameneos(i, colorsDefault10(i));
     }
-  } else { 
+  } else {
     for i in D {
       population(i) = new Chameneos(i, ((i-1) % 3):color);
     }
@@ -196,7 +196,7 @@ proc printInfoQuiet(totalMeetings : int, totalMeetingsWithSelf : int) {
   } else {
     writeln("total meetings actual = ", totalMeetings, ", total meetings expected = ", numMeetings*2);
   }
-  
+
   if (totalMeetingsWithSelf == 0) {
     writeln("total meetings with self PASS");
   } else {
@@ -220,19 +220,19 @@ proc main() {
     writeln("Please specify numChameneos1 and numChameneos2 of at least 2, and numMeetings of at least 0.");
   } else  {
     var startTimeTotal = getCurrentTime();
-    
-    printColorChanges();  
 
-    const forest : MeetingPlace = new MeetingPlace(); 
+    printColorChanges();
+
+    const forest : MeetingPlace = new MeetingPlace();
 
     const population1 = populate(numChameneos1);
     const population2 = populate(numChameneos2);
-    
+
     if (verbose) {
       var startTime = getCurrentTime();
       run(population1, forest);
       var endTime = getCurrentTime();
-      writeln("time for chameneos1 to meet = ", endTime - startTime); 
+      writeln("time for chameneos1 to meet = ", endTime - startTime);
       printInfo(population1);
 
       startTime = getCurrentTime();

@@ -7,7 +7,7 @@
       complement of its original color and the other chameneos' color.  (The
       complement is respective to two colors, its own, and its partner's, such
       that if both colors are the same, no change, otherwise each chameneos
-      changes to the color you and your partner both are not.)  
+      changes to the color you and your partner both are not.)
 
     - (description of benchmark: http://shootout.alioth.debian.org/u32q/benchmark.php?test=chameneosredux&lang=all */
 
@@ -17,44 +17,43 @@ config const numChameneos2 : int = 10;
 enum color {blue = 0, red = 1, yellow = 2};
 
 class MeetingPlace {
-  var color1$, color2$: sync Color;   
-  var id1$, id2$: sync int; 
+  var color1$, color2$: sync Color;
+  var id1$, id2$: sync int;
   var meetingsLeft$ : sync int;
 
   proc fill(numMeetings : int) {
     meetingsLeft$.writeXF(numMeetings);
   }
-      
 
-  /* if called by chameneos who arrives 1st, 
+  /* if called by chameneos who arrives 1st,
      returns color of chameneos who arrives 2nd
      otherwise returns color of chameneos who arrives 1st
      (denies meetings of 3+ chameneos) */
   proc meet(chameneos : Chameneos) {
     var otherColor : Color;
-    var meetingsLeftTemp = meetingsLeft$;   
-    writeln("id = " + chameneos.id + ", meetingsLeftTemp = " + meetingsLeftTemp); 
+    var meetingsLeftTemp = meetingsLeft$;
+    writeln("id = " + chameneos.id + ", meetingsLeftTemp = " + meetingsLeftTemp);
     if (meetingsLeftTemp == 0) {
       meetingsLeft$ = 0;
       return (false, chameneos.color);
     }
 
-    if (meetingsLeftTemp % 2 == 0) {  
-      meetingsLeft$ = meetingsLeftTemp - 1;   
-      color1$ = chameneos.color; 
+    if (meetingsLeftTemp % 2 == 0) {
+      meetingsLeft$ = meetingsLeftTemp - 1;
+      color1$ = chameneos.color;
       id1$ = chameneos.id;
-      otherColor = color2$; 
-      writeln("id = " + chameneos.id + ", otherColor = " + otherColor.string());    
-      if (id1$ == id2$) {   
+      otherColor = color2$;
+      writeln("id = " + chameneos.id + ", otherColor = " + otherColor.string());
+      if (id1$ == id2$) {
         halt("AH! I met with myself!");
-        chameneos.meetingsWithSelf += 1;      
-      } 
-    } else if (meetingsLeftTemp % 2 == 1) { 
-      id2$ = chameneos.id;    
-      color2$ = chameneos.color;      
+        chameneos.meetingsWithSelf += 1;
+      }
+    } else if (meetingsLeftTemp % 2 == 1) {
+      id2$ = chameneos.id;
+      color2$ = chameneos.color;
       otherColor = color1$;
-      writeln("id = " + chameneos.id + ", otherColor = " + otherColor.string());    
-      meetingsLeft$ = meetingsLeftTemp - 1;     
+      writeln("id = " + chameneos.id + ", otherColor = " + otherColor.string());
+      meetingsLeft$ = meetingsLeftTemp - 1;
     }
     chameneos.meetings += 1;
     return (true, otherColor);
@@ -62,9 +61,9 @@ class MeetingPlace {
 }
 
 class Color {
-  var value: int;         
-  
-  
+  var value: int;
+
+
   /* returns the compliment of this and another color:
      if this and the other color are of the same value, return own value
      otherwise return the color that is neither this or the other color */
@@ -87,7 +86,6 @@ class Color {
       otherwise return "unexpected color value: " + value;
     }
   }
-
 }
 
 class Chameneos {
@@ -112,13 +110,13 @@ class Chameneos {
   }
 }
 
-proc printColorChange(meetingPlace : MeetingPlace, color1 : Color,  
+proc printColorChange(meetingPlace : MeetingPlace, color1 : Color,
                       color2 : Color) {
   /* use enum for colors instead of string (clumsy).. ?*/
   var ch1 : Chameneos = new Chameneos(0, meetingPlace, color1);
   var ch2 : Chameneos = new Chameneos(1, meetingPlace, color2);
 
-  write(ch1.color.string() + " + " + ch2.color.string() + " -> "); 
+  write(ch1.color.string() + " + " + ch2.color.string() + " -> ");
 
   meetingPlace.fill(N*2);
   cobegin {
@@ -137,7 +135,7 @@ proc printColorChange(meetingPlace : MeetingPlace, color1 : Color,
 proc main() {
   // throw exception if numChameneos or numMeetings < 0, or if numChameneos < 2
   const forest : MeetingPlace = new MeetingPlace();
-  
+
   const blue : Color = new Color(0);
   const red : Color = new Color(1);
   const yellow : Color = new Color(2);
@@ -176,11 +174,11 @@ proc main() {
 
   
   /* second run with population size of 10 */
-  const colors2 : [D2] Color = (blue, red, yellow, red, yellow, 
-          blue, red, yellow, red, blue);  
+  const colors2 : [D2] Color = (blue, red, yellow, red, yellow,
+                                blue, red, yellow, red, blue);
   const population2: [D2] Chameneos;
   for i in [D2] {
-    population2(i) = new Chameneos(i, forest, colors2(i)); 
+    population2(i) = new Chameneos(i, forest, colors2(i));
     write(" " + population2(i).color.string());
   }
   writeln();
@@ -192,6 +190,6 @@ proc main() {
     writeln(chameneos.meetings + " " + chameneos.meetingsWithSelf);
   }
 
-  
+
 }
 
