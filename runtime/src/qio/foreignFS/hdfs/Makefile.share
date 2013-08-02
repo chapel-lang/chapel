@@ -1,0 +1,18 @@
+FOREIGN_FS_SRCS = qio_plugin_hdfs.c
+
+SVN_SRCS = $(FOREIGN_FS_SRCS)
+SRCS = $(SVN_SRCS)
+
+FOREIGN_FS_OBJS = \
+      $(addprefix $(FOREIGN_FS_OBJDIR)/,$(addsuffix .o,$(basename $(FOREIGN_FS_SRCS))))
+
+RUNTIME_INCLS += \
+				-I$(JAVA_INSTALL)/include \
+				-I$(JAVA_INSTALL)/include/linux \
+				-L$(JAVA_INSTALL)/jre/lib/amd64/server \
+				-I$(HADOOP_INSTALL)/src/c++/libhdfs \
+				-L$(HADOOP_INSTALL)/c++/Linux-amd64-64/lib \
+
+$(RUNTIME_OBJ_DIR)/qio_plugin_hdfs.o: qio_plugin_hdfs.c \
+                                         $(RUNTIME_OBJ_DIR_STAMP)
+	$(CXX) -c $(RUNTIME_CXXFLAGS) $(RUNTIME_INCLS) -o $@ $<

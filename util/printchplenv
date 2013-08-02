@@ -71,3 +71,5 @@ $wide_ptrs = `$utildirname/widePointers`; chomp($wide_ptrs);
 print "CHPL_WIDE_POINTERS: $wide_ptrs\n";
 $llvm = `$utildirname/llvm`; chomp($llvm);
 print "CHPL_LLVM: $llvm\n";
+$hdfs = `$utildirname/hdfs`; chomp($hdfs);
+print "CHPL_FOREIGN_FS: $hdfs\n";

@@ -7,7 +7,6 @@ QIO_SRCS = \
 	sys.c \
 	sys_xsi_strerror_r.c \
 
-
 QIO_OBJS = \
 	$(QIO_SRCS:%.c=$(QIO_OBJDIR)/%.o)
 

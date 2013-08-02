@@ -81,6 +81,10 @@ ifndef CHPL_MAKE_LLVM
 include $(CHPL_MAKE_HOME)/make/Makefile.llvm
 endif
 
+ifndef CHPL_MAKE_FOREIGN_FS
+include $(CHPL_MAKE_HOME)/make/Makefile.foreignFS
+endif
+
 #
 # default CFLAGS, based on other settings
 #

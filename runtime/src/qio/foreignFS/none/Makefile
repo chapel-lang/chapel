@@ -1,29 +1,19 @@
-RUNTIME_ROOT = ../..
-RUNTIME_SUBDIR = src/qio
+RUNTIME_ROOT = ../../../..
+RUNTIME_SUBDIR = src/qio/foreignFS/none
 
 ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(shell pwd)/$(RUNTIME_ROOT)/..
 endif
 
-#
-# standard header
-#
 include $(RUNTIME_ROOT)/make/Makefile.runtime.head
+ 
+FOREIGN_FS_OBJDIR = $(RUNTIME_OBJDIR)
 
-QIO_OBJDIR = $(RUNTIME_OBJDIR)
 include Makefile.share
 
-SUBDIRS = regexp/$(CHPL_MAKE_REGEXP)
-SUBDIRS += foreignFS/$(CHPL_MAKE_FOREIGN_FS)
-TARGETS = $(QIO_OBJS)
-
+TARGETS = $(FOREIGN_FS_OBJS)
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.subdirrules
 
-
-FORCE:
-
-#
-# standard footer
-#
 include $(RUNTIME_ROOT)/make/Makefile.runtime.foot
+
