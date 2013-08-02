@@ -37,9 +37,8 @@ qioerr hdfs_disconnect(void* fs)
 
 char **alloc_array(int num_locales) 
 {
-  char** foo;
   chpl_internal_error("No HDFS Support");
-  return foo;
+  return NULL;
 }
 
 void create_locale_mapping(char ***char_arr, int num, char *loc_name) 
@@ -55,9 +54,8 @@ hdfs_block_byte_map_t hdfs_index_array(hdfs_block_byte_map_t* locs, int index)
 
 qio_file_functions_ptr_t hdfs_create_file_functions(void* fs) 
 {
-  qio_file_functions_ptr_t s;
   chpl_internal_error("No HDFS Support");
-  return s;
+  return NULL;
 }
 
 qioerr hdfs_get_owners(qio_file_t* file, hdfs_block_byte_map_t** locs, int* out_num_blocks, char** locale_array, int num_locales)
