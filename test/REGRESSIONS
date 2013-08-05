@@ -149,6 +149,11 @@ fast-on optimization changed due to Vass' task functions commit (05/31/13)
 --------------------------------------------------------------------------
 [Error matching compiler output for optimizations/sungeun/optimized-on/test_OptimizedOn_RA (compopts: 1)]
 
+"array_alloc" name conflict after 21646. Should be fixed in 21649.
+------------------------------------------------------------------
+[Error matching compiler output for distributions/robust/arithmetic/performance/alloc]
+[Error matching compiler output for distributions/robust/arithmetic/performance/alloc_all]
+
 communication counts changed due to Tom's HL branch merge (06/11/13)
 --------------------------------------------------------------------
 [Error matching program output for distributions/robust/arithmetic/performance/alloc]
@@ -613,6 +618,8 @@ sig_send: wait for sig_complete event failed
 =======================
 qthreads-specific tests
 =======================
+
+gbt: -r21643 qthreads builds fail with failure to find include file.
 
 NOTE: Began testing the entire test suite for CHPL_COMM=none on 12/7/12
 

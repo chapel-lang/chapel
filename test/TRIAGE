@@ -38,18 +38,6 @@ Execution timeout in studies/miniMD/miniMD (compopts: 1)
 These will probably be fixed by adding a perftimeout file.
 
 
-Segfaults in tests (eronagha 7/25/13 and continuing, due to r21614):
-  functions/iterators/angeles/distAdaptativeWS
-                          .../distAdaptativeWSv1
-                          .../distAdaptativeWSv2
-                          .../dynamic
-                          .../guided
-Elliot is working on these.
-7/27: distAdaptativeWSv2 worked.
-7/28: distAdaptativeWSv2 failed, dynamic worked.
-7/29: dynamic failed.
-
-
 XT PrgEnv-cray non-deterministic compiler internal errors (eronagha
 7/20/13): These started showing up after Elliot's commit on both
 chpbld01 and chpbld02.  I didn't see anything about a major update to
