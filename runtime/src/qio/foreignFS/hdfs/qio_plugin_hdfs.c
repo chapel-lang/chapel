@@ -337,12 +337,12 @@ char* get_locale_name(char *loc)
 }
 
 // char_arr is already allocated
-void create_locale_mapping(char ***char_arr, int num, char *loc_name) 
+void hdfs_create_locale_mapping(char ***char_arr, int num, char *loc_name) 
 {
   (*char_arr)[num] = loc_name;
 }
 
-char **alloc_array(int num_locales) 
+char **hdfs_alloc_array(int num_locales) 
 {
   return (char**)qio_calloc(sizeof(char*), num_locales);
 }

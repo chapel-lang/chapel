@@ -35,13 +35,13 @@ qioerr hdfs_disconnect(void* fs)
   return qio_int_to_err(ENOSYS);
 }
 
-char **alloc_array(int num_locales) 
+char **hdfs_alloc_array(int num_locales) 
 {
   chpl_internal_error("No HDFS Support");
   return NULL;
 }
 
-void create_locale_mapping(char ***char_arr, int num, char *loc_name) 
+void hdfs_create_locale_mapping(char ***char_arr, int num, char *loc_name) 
 {
   chpl_internal_error("No HDFS Support");
 }

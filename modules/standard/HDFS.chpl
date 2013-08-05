@@ -19,11 +19,11 @@ extern proc hdfs_connect(inout fs: c_ptr, path: string, port: int): syserr;
 extern proc hdfs_disconnect(fs: c_ptr): syserr;
 
 // Allocate an array for our locale mappings
-extern proc alloc_array(n: int): char_ptr_ptr;
+extern proc hdfs_alloc_array(n: int): char_ptr_ptr;
 
 // Create a mapping locale_name -> locale_id (need this due to hdfs and since we cant
 // pass strings inside extern records when multilocale)
-extern proc create_locale_mapping(inout arr: char_ptr_ptr, num: int, loc_name: string);
+extern proc hdfs_create_locale_mapping(inout arr: char_ptr_ptr, num: int, loc_name: string);
 
 // Return arr[i]
 extern proc hdfs_index_array(locs: qio_locale_map_ptr_t, i: int): hdfs_block_byte_map_t;
@@ -186,9 +186,9 @@ proc hdfs_chapel_connect(out error:syserr, path:string, port: int): hdfsChapelFi
 proc getHosts(f: file) {
   var ret: hdfsChapelFile_local;
   var ret_num: c_int;
-  var arr: char_ptr_ptr = alloc_array(numLocales);
+  var arr: char_ptr_ptr = hdfs_alloc_array(numLocales);
   for loc in Locales {
-    create_locale_mapping(arr, loc.id, loc.name);
+    hdfs_create_locale_mapping(arr, loc.id, loc.name);
   }
   var err = hdfs_get_owners(f._file_internal, ret._internal_, ret_num, arr, numLocales);
   if err then ioerror(err, "Unable to get owners for HDFS file");

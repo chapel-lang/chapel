@@ -53,9 +53,9 @@ qio_file_functions_ptr_t hdfs_create_file_functions(void* fs);
 // ----- multilocale ------
 typedef char** char_ptr_ptr;
 
-void create_locale_mapping(char ***char_arr, int num, char *loc_name);
+void hdfs_create_locale_mapping(char ***char_arr, int num, char *loc_name);
 
-char** alloc_array(int num_locales); 
+char** hdfs_alloc_array(int num_locales); 
 
 qioerr hdfs_get_owners_for_bytes(qio_file_t* file, hdfs_block_byte_map_t** locs, int* out_num_blocks, char** locale_array, int num_locales, off_t start_byte, off_t len);
 
