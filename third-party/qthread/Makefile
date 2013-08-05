@@ -30,6 +30,12 @@ endif
 # enable guard pages for stack overflow detection
 CHPL_QTHREAD_CFG_OPTIONS += --enable-guard-pages
 
+# optionally enable printing compilation commands, etc. (to help diagnose
+# build problems)
+ifneq (, $(CHPL_QTHREAD_LOUD_RULES))
+CHPL_QTHREAD_CFG_OPTIONS += --disable-silent-rules
+endif
+
 default: all
 
 all: qthread
