@@ -127,14 +127,6 @@ no-local regressions
 (Checked for accuracy 6/3/2013)
 ===============================
 
-counts leaked by domainMaps changed after Vass' task function commit
-(05/30/13)
---------------------------------------------------------------------
-[Error matching program output for memory/sungeun/refCount/domainMaps]
-Current state: Tom updated this on accident with his strings commit,
-so it passed for a couple night until the shifted array pointer
-commit.  The original problem still exists.
-
 
 ====================================================
 gasnet-everything regressions (other than the above)
