@@ -199,7 +199,8 @@
 # where the contents of the .graph specify what data should be graphed,
 # and basic information about the format of the graph. The graphs are
 # generated using gnuplot (gnuplot must be in your path) and dumped out
-# in .gif format.  In each $CHPL_TEST_PERF_DIR, an html index is created
+# in .gif format, and you must have updated your $CHPL_HOME/test/GRAPHFILES
+# file to include it.  In each $CHPL_TEST_PERF_DIR, an html index is created
 # that includes all the .gif files in that directory.
 #
 # The graphing is performed in a second pass so that a single .graph file

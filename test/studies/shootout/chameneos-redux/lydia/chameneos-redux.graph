@@ -1,0 +1,7 @@
+perfkeys: real, real, real
+graphkeys: chameneos-spin-loop, chameneos-waitFor, chameneos-yield-loop
+files: chameneos-redux.dat, chameneos-redux-waiting.dat, chameneos-redux-spin-yield.dat
+graphtitle: Chameneos Redux Shootout Benchmark (n=6,000,000)
+ylabel: Time (seconds)
+graphname: chameneos-redux
+

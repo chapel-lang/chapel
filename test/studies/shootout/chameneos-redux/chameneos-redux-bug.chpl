@@ -1,5 +1,5 @@
 /*  - The Chameneos game is as follows:
-      A population of n chameneos gathers at a common meeting place, where 
+      A population of n chameneos gathers at a common meeting place, where
       m meetings take place (n and m are also distinct).  A meeting may take
       place between exactly 2 chameneos, where each chameneos may be either
       blue, red, or yellow. At each meeting, the chameneos exchange information
@@ -106,7 +106,7 @@ class Chameneos {
       (openToMeet, otherColor) = meetingPlace.meet(this);
       // meet at meeting place
       color = color.getComplement(otherColor);  // change color
-    } 
+    }
   }
 }
 
@@ -127,7 +127,7 @@ proc printColorChange(meetingPlace : MeetingPlace, color1 : Color,
   if (ch1.color.value == ch2.color.value) {
     writeln(ch1.color.string());
   } else {
-    writeln("unsuccessful color change: ch1 is " + ch1.color.string() + 
+    writeln("unsuccessful color change: ch1 is " + ch1.color.string() +
             ", ch2 is " + ch2.color.string());
   }
 }
@@ -150,10 +150,10 @@ proc main() {
   printColorChange(forest, yellow, red);
   printColorChange(forest, yellow, yellow);
   writeln();
-  
+
   const D1 : domain(1) = [1..numChameneos1];
   const D2 : domain(1) = [1..numChameneos2];
-  
+
   /* first run with population size of 3 */
   const colors1 : [D1] Color = (blue, red, yellow);
   const population1 : [D1] Chameneos;
@@ -172,7 +172,7 @@ proc main() {
   writeln();
 
 
-  
+
   /* second run with population size of 10 */
   const colors2 : [D2] Color = (blue, red, yellow, red, yellow,
                                 blue, red, yellow, red, blue);

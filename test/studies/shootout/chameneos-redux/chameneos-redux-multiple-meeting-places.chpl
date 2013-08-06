@@ -116,7 +116,7 @@ proc printColorChange(meetingPlace : MeetingPlace, color1 : color,
   var ch1 : Chameneos = new Chameneos(0, color1);
   var ch2 : Chameneos = new Chameneos(1, color2);
 
-  write(ch1.myColor, " + ",  ch2.myColor,  " -> "); 
+  write(ch1.myColor, " + ",  ch2.myColor,  " -> ");
 
   cobegin {
     ch1.start(meetingPlace);
