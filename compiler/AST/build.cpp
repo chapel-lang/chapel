@@ -1814,9 +1814,39 @@ static Expr* extractLocale(Expr* expr) {
     return expr;
 
   // Otherwise, an ordinary object.
-  // Look up its locale object by extracting the locale ID from its wide pointer.
+  // Look up its locale object by extracting the locale ID from its
+  // wide pointer.
   Expr* lid = new CallExpr(PRIM_WIDE_GET_LOCALE, expr);
-  return new CallExpr("chpl_localeID_to_locale", lid);
+
+  //
+  // In the event that we're compiling for multiple locales, we want
+  // to make the standard form of the on-clause take a locale rather
+  // than a locale ID.  Wrapping the 'lid' expression with the call
+  // chpl_localeID_to_locale() does this.
+  //
+  // If compiling for a single locale, the chpl_localeID_to_locale()
+  // call is not necessary and simply constitutes unnecessary runtime
+  // overhead, so we don't insert it (the call is not removed as dead
+  // code for some reason; but why insert something that you know
+  // you're just going to remove anyway?).
+  //
+  // TODO: On second look, hilde notes that it would be better not to
+  // rely on looking up this call via a string as he has done here,
+  // but rather to attach a pragma to the routine in
+  // ChapelLocale.chpl, store a pointer to it at parse-time, and use
+  // that pointer here.  He also argues that none of this manipulation
+  // of the on-clauses should be done at parse-/build-time, but rather
+  // by a later compiler pass.
+  //
+  // TODO: Vass suggests that we may want to/be able to pass the
+  // locale ID directly to the locale model rather than using a locale
+  // value for that purpose/interface.
+  //
+  if (!fLocal) {
+    lid = new CallExpr("chpl_localeID_to_locale", lid);
+  }
+
+  return lid;
 }
 
 
@@ -1824,15 +1854,29 @@ BlockStmt*
 buildOnStmt(Expr* expr, Expr* stmt) {
   checkControlFlow(stmt, "on statement");
 
-  // "on" clauses use the locale object extracted from the input "on" expression. 
-  // That is, if the "on" expression is not already a locale, extra code is inserted
-  // to look up the locale given the localeID portion of the "on" expression's wide 
-  // address.
+  // "on" clauses use the locale object extracted from the argument
+  // expression.  That is, if the "on" expression is not already a
+  // locale, extra code is inserted to look up the locale given the
+  // localeID portion of the "on" expression's wide address.
+  //
   Expr* onExpr = extractLocale(expr);
 
+  //
+  // If we're compiling --local, then we don't actually need to build
+  // an on-stmt, so instead we take the on-expression, execute it to
+  // evaluate it for side effects, and then evaluate the body.
+  //
+  // Possible TODO: It seems suboptimal that we need to insert the
+  // result of extractLocale() (with its PRIM_WIDE_GET_LOCALE call)
+  // rather than simply inserting the original 'expr' itself.  In
+  // attempting to use the 'expr' directly, the behavior is an
+  // infinite recursion in the event that the expression is a sync var
+  // because its evaluation becomes a .readFE() which itself contains
+  // an 'on this' clause.  Still, it seems like there's the potential
+  // for some clean-up here.
+  //
   if (fLocal) {
     BlockStmt* block = new BlockStmt(stmt);
-    // evaluate the expression for side effects
     block->insertAtHead(onExpr);
     return buildChapelStmt(block);
   }
