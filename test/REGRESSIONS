@@ -133,6 +133,11 @@ gasnet-everything regressions (other than the above)
 (Checked for accuracy 6/3/2013)
 ====================================================
 
+incorrect comm counts - never passed, expected -r21640 to fix but it didn't (mppf)
+--------------------------------------------------------------------------
+[Error matching program output for performance/ferguson/remote-array-read-1]
+[Error matching program output for performance/ferguson/remote-array-write-1]
+
 error message changed after Tom's local string sharing change (06/01/13)
 ------------------------------------------------------------------------
 [Error matching program output for memory/shannon/memmaxExceedsLineno2]
@@ -141,7 +146,7 @@ fast-on optimization changed due to Vass' task functions commit (05/31/13)
 --------------------------------------------------------------------------
 [Error matching compiler output for optimizations/sungeun/optimized-on/test_OptimizedOn_RA (compopts: 1)]
 
-"array_alloc" name conflict after 21646. Should be fixed in 21649.
+"array_alloc" name conflict after 21646. Should be fixed in 21649. (Lydia)
 ------------------------------------------------------------------
 [Error matching compiler output for distributions/robust/arithmetic/performance/alloc]
 [Error matching compiler output for distributions/robust/arithmetic/performance/alloc_all]
@@ -172,6 +177,18 @@ communication counts changed due to Tom's HL branch merge (06/11/13)
 gasnet-fast regressions (other than the above)
 (checked for accuracy 6/3/2013)
 ==============================================
+
+incorrect comm counts - never passed, I expected -r21640 to fix but it didn't (mppf)
+A SKIPIF was added in -r21660 for these
+--------------------------------------------------------------------------
+[Error matching program output for performance/ferguson/remote-array-read]
+[Error matching program output for performance/ferguson/remote-class-read]
+[Error matching program output for performance/ferguson/remote-record-read-1]
+[Error matching program output for performance/ferguson/remote-record-read]
+[Error matching program output for performance/ferguson/remote-tuple-read-1]
+[Error matching program output for performance/ferguson/remote-tuple-read-small-1]
+[Error matching program output for performance/ferguson/remote-tuple-read-small]
+[Error matching program output for performance/ferguson/remote-tuple-read] 
 
 incorrect comm counts (6/4/13)
 ------------------------------
