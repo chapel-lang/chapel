@@ -103,7 +103,7 @@ class Chameneos {
           meetings += 1;
           meetingsWithSelf += is_same;
         } else {
-          waitUntilDone();
+          waitUntilCompleted();
 
           meetingCompleted.write(false, memory_order_release);
           stateTemp = meetingPlace.state.read(memory_order_acquire);
