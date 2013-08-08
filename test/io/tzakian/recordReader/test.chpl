@@ -1,5 +1,4 @@
-use recordParser;
-
+use RecordParser;
 var f = open("input1.txt", iomode.rw);
 var ff = open("input2_beer.txt", iomode.rw);
 var fr = f.reader();
@@ -10,15 +9,13 @@ record Bar {
   var Name: string;
 }
 
-//var str = "\\s*beer\\s*(.*?)\\s*Name\\s*(.*?)\\s*";
-var str = "\\s*beer\\s*(.*?)\\s*Name\\s*(.*?)\\s*";
-
 var M = new RecordReader(Bar, fr);
 
 writeln("======== test of get() ============");
 var c = M.get();
 var d = M.get();
 writeln(c, " ", d);
+
 writeln("========== test of stream() ==============");
 for r in M.stream() do
   writeln(r);
