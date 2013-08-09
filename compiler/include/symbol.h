@@ -364,6 +364,7 @@ extern VarSymbol *gTryToken; // try token for conditional function resolution
 extern VarSymbol *gBoundsChecking;
 extern VarSymbol *gPrivatization;
 extern VarSymbol *gLocal;
+extern VarSymbol *gNodeID;
 extern Symbol *gCLine, *gCFile;
 
 extern Symbol *gSyncVarAuxFields;

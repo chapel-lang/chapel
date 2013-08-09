@@ -1578,8 +1578,8 @@ insertWideReferences(void) {
   derefWideRefsToWideClasses();
   widenGetPrivClass();
 
-  CallExpr* nodeID = new CallExpr(PRIM_NODE_ID);
-  VarSymbol* tmp = newTemp(nodeID->typeInfo());
+  SymExpr* nodeID = new SymExpr(gNodeID);
+  VarSymbol* tmp = newTemp(gNodeID->type);
   VarSymbol* tmpBool = newTemp(dtBool);
 
   heapAllocateGlobals->insertAtTail(new DefExpr(tmp));

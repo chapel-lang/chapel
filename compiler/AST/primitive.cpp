@@ -559,7 +559,6 @@ initPrimitive() {
 
   prim_def(PRIM_LOCALE_ID, "_hereID", returnInfoLocaleID);
   prim_def(PRIM_IS_HERE, "_is_here", returnInfoBool);
-  prim_def(PRIM_NODE_ID, "chpl_nodeID", returnInfoNodeID);    // Our GASNet node ID.
   prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoLocale);
   prim_def(PRIM_TASK_SET_LOCALE_ID, "_task_set_locale_id", returnInfoVoid, true);
   prim_def(PRIM_TASK_GET_LOCALE_ID, "_task_get_locale_id", returnInfoLocaleID);

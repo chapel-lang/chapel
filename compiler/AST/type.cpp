@@ -1359,6 +1359,11 @@ void initCompilerGlobals(void) {
     *gLocal->immediate = *gFalse->immediate;
   }
 
+  // defined and maintained by the runtime
+  gNodeID = new VarSymbol("chpl_nodeID", dtInt[INT_SIZE_32]);
+  gNodeID->addFlag(FLAG_EXTERN);
+  rootModule->block->insertAtTail(new DefExpr(gNodeID));
+
 }
 
 bool is_void_type(Type* t) {

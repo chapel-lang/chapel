@@ -53,6 +53,7 @@ VarSymbol *gTryToken = NULL;
 VarSymbol *gBoundsChecking = NULL;
 VarSymbol* gPrivatization = NULL;
 VarSymbol* gLocal = NULL;
+VarSymbol* gNodeID = NULL;
 Symbol *gCLine = NULL;
 Symbol *gCFile = NULL;
 

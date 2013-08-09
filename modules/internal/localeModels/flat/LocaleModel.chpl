@@ -67,8 +67,7 @@ module LocaleModel {
       init();
     }
 
-    // chpl_nodeID is the node ID associated with the running image.
-    proc chpl_id() return _node_id;
+    proc chpl_id() return _node_id;     // top-level locale (node) number
     proc chpl_name() return local_name;
 
 
@@ -117,7 +116,8 @@ module LocaleModel {
     //- Implementation (private)
     //-
     proc init() {
-      _node_id = __primitive("cast", int(64), __primitive("chpl_nodeID"));
+      extern var chpl_nodeID: int(32);
+      _node_id = chpl_nodeID: int;
 
       // chpl_nodeName is defined in chplsys.c.
       // It supplies a node name obtained by running uname(3) on the current node.

@@ -75,7 +75,6 @@ isFastPrimitive(CallExpr *call) {
 
   case PRIM_LOCALE_ID:
   case PRIM_IS_HERE:
-  case PRIM_NODE_ID:
   case PRIM_ON_LOCALE_NUM:
   case PRIM_GET_SERIAL:
   case PRIM_SET_SERIAL:

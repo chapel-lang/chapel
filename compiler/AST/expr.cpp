@@ -5054,9 +5054,6 @@ GenRet CallExpr::codegen() {
     case PRIM_IS_HERE:
       ret = codegenCallExpr("chpl_is_here", codegenValue(get(1)));
       break;
-    case PRIM_NODE_ID:
-      ret = codegenGetNodeID();
-      break;
     case PRIM_ALLOC_GVR:
       codegenCall("chpl_comm_alloc_registry",
                   new_IntSymbol(numGlobalsOnHeap, INT_SIZE_32));
