@@ -40,8 +40,7 @@ refNecessary(SymExpr* se,
       } else if (call->isPrimitive(PRIM_RETURN)) {
         return true;
       } else if (call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
-                 call->isPrimitive(PRIM_WIDE_GET_NODE) ||
-                 call->isPrimitive(PRIM_WIDE_GET_SUBLOC)) {
+                 call->isPrimitive(PRIM_WIDE_GET_NODE)) {
         // If we are extracting a field from the wide pointer, we need to keep it as a pointer.
         // Dereferencing would be premature.
         return true;

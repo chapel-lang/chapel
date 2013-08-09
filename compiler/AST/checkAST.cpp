@@ -257,9 +257,7 @@ void checkPrimitives()
      case PRIM_LOGICAL_FOLDER:          // Help fold logical && and ||
      case PRIM_WIDE_GET_LOCALE:         // Returns the "locale" portion of a wide pointer.
      case PRIM_WIDE_GET_NODE:           // Get just the node portion of a wide pointer.
-     case PRIM_WIDE_GET_SUBLOC:         // Get just the sublocale portion of a wide pointer.
      case PRIM_WIDE_GET_ADDR:           // Get just the address portion of a wide pointer.
-     case PRIM_LOCALE_ID:               // Returns the current locale ID (nodeID + sublocID).
      case PRIM_IS_HERE:                 // Returns true if the arg matches the current locale ID.
      case PRIM_ON_LOCALE_NUM:           // specify a particular localeID for an on clause.
      case PRIM_TASK_SET_LOCALE_ID:      // Set the locale ID (here ID) in task-private data.

@@ -21,21 +21,43 @@ module LocaleModel {
   var doneCreatingLocales: bool = false;
 
   // The chpl_localeID_t type is used internally.  It should not be exposed to
-  // the user.  It allows the compiler to parse out the fields of the localeID
-  // portion of a wide pointer.
+  // the user.  The runtime defines the actual type, as well as a functional
+  // interface for assembling and disassembling chpl_localeID_t values.  This
+  // module then provides the interface the compiler-emitted code uses to do
+  // the same.
 
-  // using these type aliases in chpl_localeID_t causes problems because
-  // the LocaleModel init function hasn't been resolved yet before
-  // chpl_localeID_t is used in another module
   type chpl_nodeID_t = int(32);
   type chpl_sublocID_t = int(32);
 
   extern record chpl_localeID_t {
-    var node   : int(32); // : chpl_nodeID_t;
-    var subloc : int(32); // : chpl_sublocID_t;
+    // We need to know that this is a record type in order to pass it to and
+    // return it from runtime functions properly, but we don't need or want
+    // to see its contents.
   };
 
-//  type chpl_localeID_t = int(64);
+  // Runtime interface for manipulating global locale IDs.
+  extern
+    proc chpl_rt_buildLocaleID(node: chpl_nodeID_t,
+                               subloc: chpl_sublocID_t): chpl_localeID_t;
+
+  extern
+    proc chpl_rt_nodeFromLocaleID(loc: chpl_localeID_t): chpl_nodeID_t;
+
+  extern
+    proc chpl_rt_sublocFromLocaleID(loc: chpl_localeID_t): chpl_sublocID_t;
+
+  // Compiler (and module code) interface for manipulating global locale IDs..
+  pragma "insert line file info"
+  proc chpl_buildLocaleID(node: chpl_nodeID_t, subloc: chpl_sublocID_t)
+    return chpl_rt_buildLocaleID(node, subloc);
+
+  pragma "insert line file info"
+  proc chpl_nodeFromLocaleID(loc: chpl_localeID_t)
+    return chpl_rt_nodeFromLocaleID(loc);
+
+  pragma "insert line file info"
+  proc chpl_sublocFromLocaleID(loc: chpl_localeID_t)
+    return chpl_rt_sublocFromLocaleID(loc);
 
   const chpl_emptyLocaleSpace: domain(1) = {1..0};
   const chpl_emptyLocales: [chpl_emptyLocaleSpace] locale;
@@ -156,9 +178,6 @@ module LocaleModel {
 
     proc DefaultRootLocale()
     {
-      // A bootstrap routine that returns (chpl_localeID_t){.node = <arg>, .subloc = 0}.
-      extern proc chpl_return_localeID_node(node:int(32)) : chpl_localeID_t;
-
       parent = nil;
       numCores = 0;
 
@@ -166,7 +185,7 @@ module LocaleModel {
       // access 'Locales' and 'here', which are not yet initialized.
       for locIdx in myLocaleSpace
       {
-        var locID = chpl_return_localeID_node(locIdx:int(32));
+        var locID = chpl_buildLocaleID(locIdx:chpl_nodeID_t, 0);
         on __primitive("chpl_on_locale_num", locID)
         {
           // chpl_on_locale_num sets the localeID portion of "here", but
@@ -195,13 +214,13 @@ module LocaleModel {
             halt("In this architecture, we expect the locale whose index is x to live on node x.");
         }
 
-      // Programs traditionally expect the startup process to run on Locales[0], so
-      // this is how we mimic that behavior.
-      // Note that this means we have to ask for here.parent or rootLocale to get
-      // the root locale of the default architecture.
+      // Programs traditionally expect the startup process to run on
+      // Locales[0], so this is how we mimic that behavior.
+      // Note that this means we have to ask for here.parent or rootLocale
+      // to get the root locale of the default architecture.
       var loc = myLocales[0];
       __primitive("_task_set_here_ptr", loc);
-      var locID = chpl_return_localeID_node(0:int(32));
+      var locID = chpl_buildLocaleID(0, 0);
       __primitive("_task_set_locale_id", locID);
     }
 
@@ -238,8 +257,9 @@ module LocaleModel {
     proc localeIDtoLocale(id : chpl_localeID_t) {
       // In the default architecture, there are only nodes and no sublocales.
       // What is more, the nodeID portion of a wide pointer is the same as
-      // the index into myLocales that yields the locale representing that node.
-      return myLocales[id.node];
+      // the index into myLocales that yields the locale representing that
+      // node.
+      return myLocales[chpl_rt_nodeFromLocaleID(id)];
     }
   }
 
@@ -282,7 +302,9 @@ module LocaleModel {
                       args: c_ptr,          // function args
                       args_size: int(32)    // args size
                      ) {
-    chpl_comm_fork(loc.node, loc.subloc, fn, args, args_size);
+    chpl_comm_fork(chpl_nodeFromLocaleID(loc),
+                   chpl_sublocFromLocaleID(loc),
+                   fn, args, args_size);
   }
 
   //
@@ -296,7 +318,9 @@ module LocaleModel {
                           args: c_ptr,          // function args
                           args_size: int(32)    // args size
                          ) {
-    chpl_comm_fork_fast(loc.node, loc.subloc, fn, args, args_size);
+    chpl_comm_fork_fast(chpl_nodeFromLocaleID(loc),
+                        chpl_sublocFromLocaleID(loc),
+                        fn, args, args_size);
   }
 
   //
@@ -314,9 +338,13 @@ module LocaleModel {
     // non-blocking "on" in order to serialize the forks.
     //
     if __primitive("task_get_serial") then
-      chpl_comm_fork(loc.node, loc.subloc, fn, args, args_size);
+      chpl_comm_fork(chpl_nodeFromLocaleID(loc),
+                     chpl_sublocFromLocaleID(loc),
+                     fn, args, args_size);
     else
-      chpl_comm_fork_nb(loc.node, loc.subloc, fn, args, args_size);
+      chpl_comm_fork_nb(chpl_nodeFromLocaleID(loc),
+                        chpl_sublocFromLocaleID(loc),
+                        fn, args, args_size);
   }
 
   //////////////////////////////////////////

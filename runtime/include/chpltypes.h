@@ -80,15 +80,16 @@ typedef int64_t c_localeid_t;
 #define c_sublocid_any  ((c_sublocid_t) -1)
 #define c_sublocid_curr ((c_sublocid_t) -2)
 
-// It is unfortunate that we need this definition in parallel with the module definition.
-// If runtime routines that depend on chpl_localeID_t can be eliminated, then this
-// definition can be moved entirely within the module code.
-#include "chplcgtypes.h"
+#ifndef LAUNCHER
 
 // The type for wide-pointer-to-void. This is used in the runtime in order to
 // store and transmit global variable addresses. It is needed in order to make
 // that code able to support packed multilocale pointers.
 #ifdef CHPL_WIDE_POINTER_STRUCT
+// We can't include chpl-locale-model.h until we'after ve defined the node and
+// sublocale types and constants.
+#include "chpl-locale-model.h"
+
 typedef struct wide_ptr_s {
   chpl_localeID_t locale;
   void* addr;
@@ -96,7 +97,8 @@ typedef struct wide_ptr_s {
 typedef wide_ptr_t* ptr_wide_ptr_t;
 #else
 // It's useful to have the type for a wide pointer-to-void.
-// This is the packed pointer version (the other version would be {{node,subloc}, address}).
+// This is the packed pointer version (the other version would be
+// {{node,subloc}, address}).
 #ifdef CHPL_WIDE_POINTER_PACKED
 typedef void * wide_ptr_t;
 typedef wide_ptr_t* ptr_wide_ptr_t;
@@ -118,6 +120,7 @@ typedef void* ptr_wide_ptr_t;
 
 #endif
 
+#endif // LAUNCHER
 
 #define nil 0 
 typedef void* _nilType;

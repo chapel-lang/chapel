@@ -74,7 +74,7 @@ typedef struct chpl_chpl____wide_chpl_string_s chpl____wide_chpl_string;
 
 chpl_string
 chpl_wide_string_copy(chpl____wide_chpl_string* x, int32_t lineno, chpl_string filename) {
-  if (x->locale.node == chpl_nodeID)
+  if (chpl_rt_nodeFromLocaleID(x->locale) == chpl_nodeID)
     return string_copy(x->addr, lineno, filename);
   else {
     chpl_string s;
@@ -145,13 +145,14 @@ chpl_comm_wide_get_string(chpl_string* local, struct chpl_chpl____wide_chpl_stri
   char* chpl_macro_tmp =
       chpl_tracked_task_calloc(x->size, sizeof(char),
                          CHPL_RT_MD_GET_WIDE_STRING, -1, "<internal>");
-    if (chpl_nodeID == x->locale.node)
-      memcpy(chpl_macro_tmp, x->addr, x->size);
-    else
-      chpl_comm_get((void*) &(*chpl_macro_tmp), x->locale.node,
-                    (void*)(x->addr),
-                    sizeof(char), tid, x->size, lineno, filename);
-    *local = chpl_macro_tmp;
+  if (chpl_nodeID == chpl_rt_nodeFromLocaleID(x->locale))
+    memcpy(chpl_macro_tmp, x->addr, x->size);
+  else
+    chpl_comm_get((void*) &(*chpl_macro_tmp),
+                  chpl_rt_nodeFromLocaleID(x->locale),
+                  (void*)(x->addr),
+                  sizeof(char), tid, x->size, lineno, filename);
+  *local = chpl_macro_tmp;
 }
 
 
@@ -291,6 +292,8 @@ const char* chpl_get_argument_i(chpl_main_argument* args, int32_t i)
   return args->argv[i];
 }
 
+#ifndef LAUNCHER
+
 #include "chpl-wide-ptr-fns.h"
 
 // These functions are used by the LLVM wide optimization
@@ -327,4 +330,4 @@ wide_ptr_t chpl_return_wide_ptr_loc_sym(const chpl_localeID_t* loc, void * addr)
   return chpl_return_wide_ptr_loc(*loc, addr);
 }
 
-
+#endif // #LAUNCHER

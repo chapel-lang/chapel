@@ -2,18 +2,6 @@
 //
 pragma "no use ChapelStandard"
 module ChapelLocale {
-// TODO: Check if these are these needed by the LLVM codegen routines
-// and uncomment them if so.
-//  extern proc chpl_localeID_get_node(loc:chpl_localeID_t):int(64);
-//  extern proc chpl_localeID_get_subloc(loc:chpl_localeID_t):int(64);
-//  extern proc chpl_localeID_equals(loc:chpl_localeID_t):int(64);
-
-//  proc ==(a:chpl_localeID_t, b:chpl_localeID_t)
-//    return chpl_localeID_equals(a,b) != 0;
-
-//  proc !=(a:chpl_localeID_t, b:chpl_localeID_t)
-//    return chpl_localeID_equals(a,b) == 0;
-
 
   //
   // An abstract class. Specifies the required locale interface.

@@ -45,12 +45,7 @@ returnInfoLocaleID(CallExpr* call) {
 
 static Type*
 returnInfoNodeID(CallExpr* call) {
-  return dtLocaleID->getField("node")->type;
-}
-
-static Type*
-returnInfoSublocID(CallExpr* call) {
-  return dtLocaleID->getField("subloc")->type;
+  return NODE_ID_TYPE;
 }
 
 static Type*
@@ -552,12 +547,11 @@ initPrimitive() {
   prim_def(PRIM_LOGICAL_FOLDER, "_paramFoldLogical", returnInfoBool);
 
   prim_def(PRIM_WIDE_GET_LOCALE, "_wide_get_locale", returnInfoLocaleID, false, true);
-  // These two are unnecessary after Chapel understands the chpl_localeID_t structure.
+  // This will be unnecessary once the module code calls the corresponding
+  // function directly.
   prim_def(PRIM_WIDE_GET_NODE, "_wide_get_node", returnInfoNodeID, false, true);
-  prim_def(PRIM_WIDE_GET_SUBLOC, "_wide_get_subloc", returnInfoSublocID, false, true);
   prim_def(PRIM_WIDE_GET_ADDR, "_wide_get_addr", returnInfoInt64, false, true);
 
-  prim_def(PRIM_LOCALE_ID, "_hereID", returnInfoLocaleID);
   prim_def(PRIM_IS_HERE, "_is_here", returnInfoBool);
   prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoLocale);
   prim_def(PRIM_TASK_SET_LOCALE_ID, "_task_set_locale_id", returnInfoVoid, true);

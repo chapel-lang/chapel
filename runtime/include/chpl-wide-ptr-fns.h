@@ -27,13 +27,6 @@
 // a variety of wide pointer types with the structure representation,
 // since one can't cast a structure...
 
-static WIDE_PTR_INLINE
-c_sublocid_t chpl_local_ptr_to_subloc(void* ptr)
-{
-  // This should be platform specific.
-  return 0;
-}
-
 #ifdef CHPL_WIDE_POINTER_PACKED
   #define CHPL_WIDE_PTR_MARK_BITS 1
   #define CHPL_WIDE_PTR_MARK 1
@@ -49,8 +42,7 @@ wide_ptr_t chpl_return_wide_ptr_node(c_nodeid_t node, void* addr)
 {
 #ifndef CHPL_WIDE_POINTER_PACKED
   wide_ptr_t dst;
-  dst.locale.node = node;
-  dst.locale.subloc = chpl_local_ptr_to_subloc(addr);
+  dst.locale = chpl_rt_buildLocaleID(node, 0);
   dst.addr = addr;
   return dst;
 #else
@@ -75,7 +67,7 @@ static WIDE_PTR_INLINE
 void chpl_check_wide_ptr(wide_ptr_t ptr)
 {
 #ifndef CHPL_WIDE_POINTER_PACKED
-  if( ptr.locale.node < 0 )
+  if( chpl_rt_nodeFromLocaleID(ptr.locale) < 0 )
     chpl_internal_error("Bad wide pointer");
 #else
   uint64_t uptr = (uint64_t) ptr;
@@ -91,47 +83,15 @@ wide_ptr_t chpl_return_wide_ptr_loc(chpl_localeID_t loc, void * addr)
 {
 #ifndef CHPL_WIDE_POINTER_PACKED
   wide_ptr_t dst;
-  dst.locale.node = loc.node;
-  dst.locale.subloc = loc.subloc;
+  dst.locale = loc;
   dst.addr = addr;
   return dst;
 #else
   // packed wide pointers do not store sublocale,
   // so we just throw that info away
   // and reconstruct it later from the local address.
-  return chpl_return_wide_ptr_node(loc.node, addr);
+  return chpl_return_wide_ptr_node(chpl_rt_nodeFromLocaleID(loc), addr);
 #endif
-}
-
-
-static WIDE_PTR_INLINE
-c_nodeid_t chpl_localeID_get_node(chpl_localeID_t loc)
-{
-  return loc.node;
-}
-
-static WIDE_PTR_INLINE
-c_sublocid_t chpl_localeID_get_subloc(chpl_localeID_t loc)
-{
-  return loc.subloc;
-}
-
-static WIDE_PTR_INLINE
-chpl_localeID_t chpl_return_localeID_node(c_nodeid_t node)
-{
-  chpl_localeID_t loc;
-  loc.node = node;
-  loc.subloc = 0;
-  return loc;
-}
-
-static WIDE_PTR_INLINE
-chpl_localeID_t chpl_return_localeID(c_nodeid_t node, c_sublocid_t subloc)
-{
-  chpl_localeID_t loc;
-  loc.node = node;
-  loc.subloc = subloc;
-  return loc;
 }
 
 static WIDE_PTR_INLINE
@@ -139,7 +99,7 @@ c_nodeid_t chpl_wide_ptr_get_node(wide_ptr_t ptr)
 {
 #ifndef CHPL_WIDE_POINTER_PACKED
   chpl_check_wide_ptr(ptr);
-  return ptr.locale.node;
+  return chpl_rt_nodeFromLocaleID(ptr.locale);
 #else
   uint64_t uptr = (uint64_t) ptr;
   chpl_check_wide_ptr(ptr);
@@ -169,9 +129,8 @@ chpl_localeID_t chpl_wide_ptr_get_localeID(wide_ptr_t ptr)
 #ifndef CHPL_WIDE_POINTER_PACKED
   loc = ptr.locale;
 #else
-  loc.node = chpl_wide_ptr_get_node(ptr);
-  // packed wide pointers do not store sublocale - reconstruct from the address
-  loc.subloc = chpl_local_ptr_to_subloc(chpl_wide_ptr_get_address(ptr));
+  // packed wide pointers do not store sublocale
+  loc = chpl_rt_buildLocaleID(chpl_wide_ptr_get_node(ptr), 0);
 #endif
   return loc;
 }
@@ -185,19 +144,6 @@ wide_ptr_t chpl_return_wide_ptr_add(wide_ptr_t ptr, size_t amt)
 #else
   return (wide_ptr_t) (((unsigned char*)ptr) + amt);
 #endif
-}
-
-
-static WIDE_PTR_INLINE
-int32_t chpl_localeID_equals(chpl_localeID_t a, chpl_localeID_t b)
-{
-  c_nodeid_t anode, bnode;
-  c_sublocid_t asub, bsub;
-  anode = chpl_localeID_get_node(a);
-  bnode = chpl_localeID_get_node(b);
-  asub = chpl_localeID_get_subloc(a);
-  bsub = chpl_localeID_get_subloc(b);
-  return anode == bnode && asub == bsub;
 }
 
 #endif

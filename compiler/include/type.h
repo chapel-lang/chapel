@@ -256,7 +256,6 @@ GenRet codegenImmediate(Immediate* i);
 #define SIZE_TYPE dtInt[INT_SIZE_64]
 #define LOCALE_TYPE dtLocale->typeInfo()
 #define LOCALE_ID_TYPE dtLocaleID->typeInfo()
-#define NODE_ID_TYPE dtLocaleID->getField("node")->typeInfo()
-#define SUBLOC_ID_TYPE dtLocaleID->getField("subloc")->typeInfo()
+#define NODE_ID_TYPE dtInt[INT_SIZE_32]
 
 #endif

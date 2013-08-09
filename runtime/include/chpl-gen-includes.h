@@ -7,38 +7,37 @@
 
 #include "chpl-comm-compiler-macros.h"
 #include "chpl-tasks.h"
+#include "chpltypes.h"
 
 // used for converting between the Chapel idea of a locale ID: chpl_localeID_t
 // and the runtime idea of a locale ID: c_localeid_t.
-typedef union {
-  chpl_localeID_t as_struct;
-  c_localeid_t as_int;
-} localeID_u;
+static ___always_inline
+c_localeid_t id_pub2rt(chpl_localeID_t s)
+{
+  return
+    ((c_localeid_t) s.node << 32) | ((c_localeid_t) s.subloc & 0xffffffff);
+}
+
+static ___always_inline
+chpl_localeID_t id_rt2pub(c_localeid_t i)
+{
+  return (chpl_localeID_t) { .node = i >> 32, .subloc = i & 0xffffffff };
+}
 
 static ___always_inline
 chpl_localeID_t chpl_gen_getLocaleID(void)
 {
-  return ((localeID_u){.as_int = chpl_task_getLocaleID()}).as_struct;
+  return id_rt2pub(chpl_task_getLocaleID());
 }
 
 static ___always_inline
 void chpl_gen_setLocaleID(chpl_localeID_t locale)
 {
-  chpl_task_setLocaleID(((localeID_u){.as_struct = locale}).as_int);
-}
-
-static ___always_inline
-int64_t chpl_gen_localeID_to_int(chpl_localeID_t locale)
-{
-  return ((localeID_u){.as_struct = locale}).as_int;
+  chpl_task_setLocaleID(id_pub2rt(locale));
 }
 
 static ___always_inline
 chpl_bool chpl_is_here(chpl_localeID_t locale)
 {
-  return chpl_gen_localeID_to_int(locale) == chpl_task_getLocaleID();
+  return id_pub2rt(locale) == chpl_task_getLocaleID();
 }
-
-
-
-

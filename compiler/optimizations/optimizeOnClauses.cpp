@@ -73,7 +73,6 @@ isFastPrimitive(CallExpr *call) {
 
   case PRIM_BLOCK_LOCAL:
 
-  case PRIM_LOCALE_ID:
   case PRIM_IS_HERE:
   case PRIM_ON_LOCALE_NUM:
   case PRIM_GET_SERIAL:
@@ -127,7 +126,6 @@ isFastPrimitive(CallExpr *call) {
 // But that works only if the remote get is removed from code generation.
   case PRIM_WIDE_GET_LOCALE:
   case PRIM_WIDE_GET_NODE:
-  case PRIM_WIDE_GET_SUBLOC:
   case PRIM_WIDE_GET_ADDR:
     // If this test is true, a remote get is required.
     if (!(call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&

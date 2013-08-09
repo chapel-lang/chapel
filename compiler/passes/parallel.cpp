@@ -468,8 +468,7 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
                   call->isPrimitive(PRIM_GET_MEMBER) ||
                   call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
                   call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
-                  call->isPrimitive(PRIM_WIDE_GET_NODE) ||
-                  call->isPrimitive(PRIM_WIDE_GET_SUBLOC))
+                  call->isPrimitive(PRIM_WIDE_GET_NODE))
                 // Treat the use of these primitives as a use of their arguments.
                 call = toCallExpr(call->parentExpr);
               if (call->isPrimitive(PRIM_MOVE))
@@ -823,7 +822,6 @@ makeHeapAllocations() {
                     call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE) ||
                     call->isPrimitive(PRIM_WIDE_GET_LOCALE) || //I'm not sure this is cricket.
                     call->isPrimitive(PRIM_WIDE_GET_NODE) ||// what member are we extracting?
-                    call->isPrimitive(PRIM_WIDE_GET_SUBLOC) ||
                     call->isPrimitive(PRIM_SET_SVEC_MEMBER) ||
                     call->isPrimitive(PRIM_SET_MEMBER)) &&
                    call->get(1) == use) {
@@ -1980,7 +1978,6 @@ static void derefWideRefsToWideClasses()
         call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
         call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
         call->isPrimitive(PRIM_WIDE_GET_NODE) ||
-        call->isPrimitive(PRIM_WIDE_GET_SUBLOC) ||
         call->isPrimitive(PRIM_WIDE_GET_ADDR) ||
         call->isPrimitive(PRIM_SET_MEMBER)) {
       if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&

@@ -180,10 +180,8 @@ enum PrimitiveTag {
   PRIM_WIDE_GET_LOCALE,         // Returns the "locale" portion of a wide pointer.
 
   PRIM_WIDE_GET_NODE,           // Get just the node portion of a wide pointer.
-  PRIM_WIDE_GET_SUBLOC,         // Get just the sublocale portion of a wide pointer.
   PRIM_WIDE_GET_ADDR,           // Get just the address portion of a wide pointer.
 
-  PRIM_LOCALE_ID,               // Returns the current locale ID (nodeID + sublocID).
   PRIM_IS_HERE,                 // Returns true if the arg matches the current locale ID.
   PRIM_ON_LOCALE_NUM,           // specify a particular localeID for an on clause.
   PRIM_TASK_SET_LOCALE_ID,      // Set the locale ID (here ID) in task-private data.
