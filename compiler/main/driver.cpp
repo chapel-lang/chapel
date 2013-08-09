@@ -67,6 +67,7 @@ bool no_codegen = false;
 bool genExternPrototypes = false;
 int debugParserLevel = 0;
 bool developer = false;
+bool fParanoid = false;
 bool ignore_errors = false;
 bool ignore_errors_for_pass = false;
 bool ignore_warnings = false;
@@ -700,6 +701,7 @@ static ArgumentDescription arg_desc[] = {
  {"log-ids", ' ', NULL, "[Don't] include BaseAST::ids in log files", "N", &fLogIds, "CHPL_LOG_IDS", NULL},
  {"log-module", ' ', "<module-name>", "Restrict IR dump to the named module", "S256", log_module, "CHPL_LOG_MODULE", NULL},
 // {"log-symbol", ' ', "<symbol-name>", "Restrict IR dump to the named symbol(s)", "S256", log_symbol, "CHPL_LOG_SYMBOL", NULL}, // This doesn't work yet.
+ {"paranoid", ' ', NULL, "Run extra consistency checks during compilation", "N", &fParanoid, "CHPL_PARANOID", NULL},
  {"parser-debug", 'D', NULL, "Set parser debug level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},
  {"print-dispatch", ' ', NULL, "Print dynamic dispatch table", "F", &fPrintDispatch, NULL, NULL},
  {"print-statistics", ' ', "[n|k|t]", "Print AST statistics", "S256", fPrintStatistics, NULL, NULL},

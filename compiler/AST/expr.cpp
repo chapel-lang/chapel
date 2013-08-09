@@ -163,7 +163,7 @@ Expr* Expr::remove(void) {
 
 
 void Expr::replace(Expr* new_ast) {
-  if (new_ast->parentSymbol)
+  if (new_ast->parentSymbol || new_ast->parentExpr)
     INT_FATAL(new_ast, "Argument is already in AST in Expr::replace");
   if (new_ast->list)
     INT_FATAL(new_ast, "Argument is in a list in Expr::replace");
@@ -194,7 +194,7 @@ void Expr::replace(Expr* new_ast) {
 
 
 void Expr::insertBefore(Expr* new_ast) {
-  if (new_ast->parentSymbol)
+  if (new_ast->parentSymbol || new_ast->parentExpr)
     INT_FATAL(new_ast, "Argument is already in AST in Expr::insertBefore");
   if (!list)
     INT_FATAL(this, "Cannot call insertBefore on Expr not in a list");
@@ -215,7 +215,7 @@ void Expr::insertBefore(Expr* new_ast) {
 
 
 void Expr::insertAfter(Expr* new_ast) {
-  if (new_ast->parentSymbol)
+  if (new_ast->parentSymbol || new_ast->parentExpr)
     INT_FATAL(new_ast, "Argument is already in AST in Expr::insertAfter");
   if (!list)
     INT_FATAL(this, "Cannot call insertAfter on Expr not in a list");

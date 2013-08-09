@@ -15,6 +15,7 @@
 #include "yy.h"
 #include "config.h"
 
+bool parsed = false;
 
 static ModuleSymbol* parseInternalModule(const char* name) {
 
@@ -196,9 +197,14 @@ void parse(void) {
 
   checkConfigs();
 
- {
-  SET_LINENO(baseModule);
-  baseModule->block->addUse(rootModule);
- }
+  // This block is necessary because SET_LINENO is scoped (it declares a local
+  // variable).
+  {
+    SET_LINENO(baseModule);
+    baseModule->block->addUse(rootModule);
+  }
+
   finishCountingTokens();
+
+  parsed = true;
 }

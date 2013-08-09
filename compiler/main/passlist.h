@@ -1,12 +1,14 @@
 #ifndef _PASSLIST_H_
 #define _PASSLIST_H_
 
-#include "passes.h"
+#include "passes.h" // For pass function prototypes.
+#include "checks.h" // For check function prototypes.
 #include "log.h"    // For LOG_<passname> #defines.
 
 #define FIRST {NULL, NULL, NUL}
 #define LAST {NULL, NULL, NUL}
-#define RUN(x) {x, #x, LOG_ ## x}
+#define RUN(x) {x, check_ ## x, #x, LOG_ ## x}
+
 //
 // passlist: contains passes in the order that they are called
 //
