@@ -1,133 +1,202 @@
-=======================================================
+====================================================
 Support for the Hadoop Distributed Filesystem (HDFS)
-=======================================================
+====================================================
 
-This README describes the support for HDFS that we have added. If you have not yet
-setup HDFS see Setting up Hadoop in this file.
+This README describes Chapel support for HDFS.  It also provides some
+simple instructions for getting started with installing HDFS for those
+who are unfamiliar with it.
+
+
+Dependencies
+------------
+
+The HDFS functionality in Chapel is dependent upon both Hadoop and
+Java being installed.  Your HADOOP_INSTALL, JAVA_INSTALL and CLASSPATH
+environment variables must be set as described below in 'Setting up
+Hadoop.' Without this it will not compile with HDFS even if the flags
+are set.
+
 
 Enabling HDFS Support
-----------------------------------------
+---------------------
 
-Setting the environment variable CHPL_FOREIGN_FS to hdfs will enable HDFS support:
+Once you have ensured that Hadoop and Java are installed and have the
+three variables above, defined, set the environment variable
+CHPL_FOREIGN_FS to 'hdfs' to enable HDFS support:
 
-export CHPL_FOREIGN_FS=hdfs
+  export CHPL_FOREIGN_FS=hdfs
 
-Then, rebuild Chapel. As part of the make, the compiler makes sure that the general
-libraries that it needs from HDFS are available, if they are not available it will continue
-compiling but will not compile with HDFS support enabled. To see what libraries it is
-dependent upon, see the bottom of this README.
+Then, rebuild Chapel by executing 'make' from $CHPL_HOME.
 
-Note: if HDFS support is not enabled (which is the default), all features described
-below will compile successfully but will result in an internal error at runtime,
-saying: "No HDFS Support".
+Note: if HDFS support is not enabled (which is the default), all
+features described below will compile successfully but will result in
+an error at runtime, saying: "No HDFS Support".
 
-Using HDFS Support
-------------------
 
+Using HDFS Support in Chapel
+----------------------------
+
+Here's is a simple code snippet demonstrating HDFS usage within
+Chapel:
+
+---------------------------------------------------------------------------
 use HDFS;
 
-var hdfs = hdfsChapelConnect("default", 0); // or whatever username you want
-var gfl  = hdfs.hdfsOpen("/user/johnDoe/isThisAfile.txt", iomode.r); // Create a file per
-                                                                    // locale
-...
-// On some locale (or even in a serial program)
-var fl = gfl.getLocal(); // Get the local file for the locale we are on
+// Connect to HDFS via the default username (or whichever you want)
+//
+var hdfs = hdfsChapelConnect("default", 0);
 
-Which returns a file. You can then deal with this as you normally would any other file. 
-When you are done and want to close the files and disconnect from HDFS you can do:
+//
+// Create a file per locale
+//
+var gfl  = hdfs.hdfsOpen("/user/johnDoe/isThisAfile.txt", iomode.r);
+
 ...
+//
+// On any given locale, you can get the local file for the locale that
+// the task is currently running on via:
+//
+var fl = gfl.getLocal();
+
+// This file can be used as with a traditional file in Chapel, by
+// creating reader channels on it.
+
+// When you are done and want to close the files and disconnect from
+// HDFS, use:
+
 gfl.hdfsClose();
 hdfs.hdfsChapelDisconnect();
+---------------------------------------------------------------------------
 
-The HDFS module file also supports non-replicated values across locales. So if you only
-wanted to connect to HDFS and open a file on locale 1 you could do:
+The HDFS module file also supports non-replicated values across
+locales. So if you only wanted to connect to HDFS and open a file on
+locale 1 you could do:
 
+---------------------------------------------------------------------------
 on Locales[1] {
   var hdfs = hdfs_chapel_connect("default", 0);
-  var fl = hdfs.hdfs_chapel_open("/user/johnDoe/isThisAFile.txt", iomode.cw);
+  var fl = hdfs.hdfs_chapel_open("/user/johnDoe/myFile.txt", iomode.cw);
   ...
   var read = fl.reader();
   ...
   fl.close();
   hdfs.hdfs_chapel_disconnect();
 }
+---------------------------------------------------------------------------
 
-The only stipulations are that you cannot open a file in both read and write mode at
-the same time. (i.e iomode.r and iomode.cw are the only modes that are supported due
-to HDFS limitations).
+The only stipulations are that you cannot open a file in both read and
+write mode at the same time. (i.e iomode.r and iomode.cw are the only
+modes that are supported, due to HDFS limitations).
 
-Dependencies
-------------
-
-The HDFS functionality in Chapel is dependent upon both Hadoop and Java being installed and your
-HADOOP_INSTALL, JAVA_INSTALL and CLASSPATH environment variables must be set as
-described below in Setting up Hadoop. Without this it will not compile with HDFS even if the
-flags are set.
 
 ---------------------------
 Setting up Hadoop 
 ---------------------------
 
-If you have a working Hadoop already, you can skip this except for how to setup your
-CLASSPATH environment variable. Also this is designed so that
-people without sudo permission can install and use HDFS. If you do have sudo permissions, 
+If you have a working installation of Hadoop already, you can skip
+this section, other than to set up your CLASSPATH environment
+variable.  This section is written so that people without sudo
+permission can install and use HDFS.  If you do have sudo permissions,
 you can usually install all of these via a package manager.
 
-The general layout of these instructions are: 
-  (1) How to setup Hadoop in psuedo distributed mode
-  (2) Setting everything up to work with Chapel/libhdfs/C
+The general outline for these instructions is: 
+  (1) Install and point to the jdk to provide code Chapel needs to
+      compile against libhdfs
+  (2) Install Hadoop
+  (3) Set up Hadoop on (a) the local host or (b) a cluster of hosts
+  (4) Start up HDFS
+  (5) Stop HDFS when you're done
 
-First reflect your directory structure and version numbers (etc) in the code at the
-bottom of this page and put it in your .bashrc (or .bash_profile -- your choice) and source 
-whichever one you put it into.
+First reflect your directory structure and version numbers (etc) in
+the code at the bottom of this page and put it in your .bashrc (or
+.bash_profile -- your choice) and source whichever one you put it
+into.
 
 (1) 
+   * Make sure you have a SERVER edition of the jdk installed and
+     point JAVA_INSTALL to it (see the same .bashrc below)
+
+(2) 
    * Download the latest version of Hadoop and unpack it
    * Now in the unpacked directory, open conf/hadoop-env.sh and edit:
      - JAVA_INSTALL to be the part before bin/... when you do: which java
      - HADOOP_CLASSPATH=$HADOOP_HOME/*:$HADOOP_HOME/lib/*:
-   * Now in conf/hdfs-site.xml put the replication number that you want for the field
-     dfs.replication (this will set the replication of blocks of the files in HDFS)
-   * Now setup passwordless ssh:
+   * Now in conf/hdfs-site.xml put the replication number that you
+     want for the field 'dfs.replication' (this will set the
+     replication of blocks of the files in HDFS)
+   * Now set up passwordless ssh, if you haven't:
      -  ssh-keygen -t dsa -P '' -f ~/.ssh/id_dsa
      -  cat ~/.ssh/id_dsa.pub >> ~/.ssh/authorized_keys
-   * Now all we need to do is format the namenode: (in $HADOOP_HOME/bin)
-     - ./hadoop namenode -format
-     - ./start-all.sh  (This will start hdfs and the tasktracker/jobtracker)
-     - You can make sure everything is running by going to these two sites:
+
+(3a)
+   * See the Hadoop website for good documentation on how to do this.
+
+(3b)
+   * If you want to run Hadoop over a cluster, there are good
+     tutorials online. Although it is usually as easy as making
+     edits to the following files in $HADOOP_HOME/conf:
+     - adding the name of the nodes to 'slaves'
+     - putting what you want to be the namenode in 'masters'
+     - putting the master node in 'core-site.xml' and 'mapred-site.xml'
+     - running:
+       - hadoop-daemon.sh start datanode
+       - hadoop-daemon.sh start tasktracker
+
+     After this go to your datanode site and you should see a new
+     datanode.
+
+(4)
+   * Now all we need to do is format the namenode and start things up:
+     - hadoop namenode -format
+     - start-all.sh  (This will start hdfs and the tasktracker/jobtracker)
+
+   * In general, hadoop has the same type of commands as bash,
+     usually in the form:
+         hadoop dfs -<command> <regular args to that command>
+
+   * At this point, you can compile and run Chapel programs using HDFS
+
+   * You can check the status of Hadoop via http, for example on a local
+     host (e.g., for ea above), using:
        -  http://localhost:50070/
        -  http://localhost:50030/
-     - ./stop-all.sh   (This will stop hdfs and mapreduce)
-     - In general, hadoop has the same type of commands as bash, usually in the
-       form: hadoop dfs -<command> <regular args to that command>
 
-(2) In general, if things work with Java, they should also work here. 
-  [2.1] Download: jdk (NOTE: you want the SERVER edition)
+     For cluster mode (3b), you'll use the name of the master host in the
+     URL and its port (see the web for details).
 
- [2.2] If you want to run a cluster, there are good tutorials online. Although it is
-       usually as easy as adding the name of the nodes to the slaves file in
-       $HADOOP_HOME/conf/ and put what you want to be the namenode in the master
-       file and then running: (again from $HADOOP_HOME/bin)
-        - ./hadoop-daemon.sh start datanode
-        - ./hadoop-daemon.sh start tasktracker
-       After this go to your datanode site and you should see a new datanode.
+(5)
+   * Shut things down:
+     - stop-all.sh   (This will stop hdfs and mapreduce)
 
-NOTE: These are what I needed to install in order to get things working, 
-you very well might already have the correct Java version installed.
+Here is a sample .bashrc for using Hadoop within Chapel:
 
-Also note that if you have exported PATH as below, you dont need to be in
-$HADOOP_HOME/bin to run these commands.
-
-In case you are interested, this is what my .bashrc looks like for Hadoop:
-
+---------------------------------------------------------------------------
+#
 # For Hadoop
+#
 export HADOOP_INSTALL=<Place where you have Hadoop installed>
 export HADOOP_HOME=$HADOOP_INSTALL
 export HADOOP_VERSION=<Your Hadoop version number>
 
-# So we can run things such as start-all.sh etc. from anywhere and don't need to be in $HADOOP_INSTALL
+#
+# So we can run things such as start-all.sh etc. from anywhere and
+# don't need to be in $HADOOP_INSTALL
+#
 export PATH=$PATH:$HADOOP_INSTALL/bin
 
-# So we don't have to "install" these things
-export LD_LIBRARY_PATH=$HADOOP_HOME/c++/Linux-amd64-64/lib:$HADOOP_HOME/src/c++/libhdfs:$JAVA_INSTALL/jre/lib/amd64/server:$JAVA_INSTALL:$HADOOP_HOME/lib:$JAVA_INSTALL/jre/lib/amd64:$CLASSPATH
+#
+# Point to the JDK installation
+#
+export JAVA_INSTALL=<Place where you have the jdk installed>
 
+#
+# Add Hadoop directories to the Java class path
+#
+export CLASSPATH=$CLASSPATH:$HADOOP_HOME/*:$HADOOP_HOME/lib/*:$HADOOP_HOME/conf/*:$(hadoop classpath):
+
+#
+# So we don't have to "install" these things
+#
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HADOOP_HOME/c++/Linux-amd64-64/lib:$HADOOP_HOME/src/c++/libhdfs:$JAVA_INSTALL/jre/lib/amd64/server:$JAVA_INSTALL:$HADOOP_HOME/lib:$JAVA_INSTALL/jre/lib/amd64:$CLASSPATH
+
+---------------------------------------------------------------------------
