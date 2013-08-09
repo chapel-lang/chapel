@@ -33,8 +33,9 @@ proc main() {
   if use_coforall {
     // Could use a coforall here (and have thread "0" start everyone)
     // - threads thats start coforall grabs an iteration
-    for i in 0..nthreads do
-     begin ring_link(i);
+    for i in 0..nthreads do {
+      begin ring_link(i);
+		}
   } else {
     // start the N threads
     for i in D do
@@ -53,10 +54,10 @@ proc ring_link(id: int) {
     while (true) {
       const t = token(id).readFE();
       if t <= N {
-	token(id%nthreads+1).writeEF(t+1);
+        token(id%nthreads+1).writeEF(t+1);
       } else {
-	writeln(id);
-	exit(0);
+        writeln(id);
+        exit(0);
       }
     }
   } else {
