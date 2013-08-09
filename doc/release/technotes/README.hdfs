@@ -8,12 +8,12 @@ setup HDFS see Setting up Hadoop in this file.
 Enabling HDFS Support
 ----------------------------------------
 
-Setting the environment variable CHPL_HDFS to hdfs will enable HDFS support:
+Setting the environment variable CHPL_FOREIGN_FS to hdfs will enable HDFS support:
 
-export CHPL_HDFS=hdfs
+export CHPL_FOREIGN_FS=hdfs
 
 Then, rebuild Chapel. As part of the make, the compiler makes sure that the general
-directories that it needs are available, if they are not available it will continue
+libraries that it needs from HDFS are available, if they are not available it will continue
 compiling but will not compile with HDFS support enabled. To see what libraries it is
 dependent upon, see the bottom of this README.
 
@@ -31,7 +31,7 @@ var gfl  = hdfs.hdfsOpen("/user/johnDoe/isThisAfile.txt", iomode.r); // Create a
                                                                     // locale
 ...
 // On some locale (or even in a serial program)
-var fl = gfl.getLocal(); // Get the local file for the locale we are only
+var fl = gfl.getLocal(); // Get the local file for the locale we are on
 
 Which returns a file. You can then deal with this as you normally would any other file. 
 When you are done and want to close the files and disconnect from HDFS you can do:
@@ -68,7 +68,8 @@ flags are set.
 Setting up Hadoop 
 ---------------------------
 
-If you have a working Hadoop already setup, you can skip this. Also this is designed so that
+If you have a working Hadoop already, you can skip this except for how to setup your
+CLASSPATH environment variable. Also this is designed so that
 people without sudo permission can install and use HDFS. If you do have sudo permissions, 
 you can usually install all of these via a package manager.
 
@@ -86,7 +87,7 @@ whichever one you put it into.
      - JAVA_INSTALL to be the part before bin/... when you do: which java
      - HADOOP_CLASSPATH=$HADOOP_HOME/*:$HADOOP_HOME/lib/*:
    * Now in conf/hdfs-site.xml put the replication number that you want for the field
-     dfs.replication
+     dfs.replication (this will set the replication of blocks of the files in HDFS)
    * Now setup passwordless ssh:
      -  ssh-keygen -t dsa -P '' -f ~/.ssh/id_dsa
      -  cat ~/.ssh/id_dsa.pub >> ~/.ssh/authorized_keys
@@ -96,7 +97,7 @@ whichever one you put it into.
      - You can make sure everything is running by going to these two sites:
        -  http://localhost:50070/
        -  http://localhost:50030/
-     - ./stop-all.sh   (This will stop dfs and mapreduce)
+     - ./stop-all.sh   (This will stop hdfs and mapreduce)
      - In general, hadoop has the same type of commands as bash, usually in the
        form: hadoop dfs -<command> <regular args to that command>
 
@@ -113,6 +114,9 @@ whichever one you put it into.
 
 NOTE: These are what I needed to install in order to get things working, 
 you very well might already have the correct Java version installed.
+
+Also note that if you have exported PATH as below, you dont need to be in
+$HADOOP_HOME/bin to run these commands.
 
 In case you are interested, this is what my .bashrc looks like for Hadoop:
 
