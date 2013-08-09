@@ -20,10 +20,10 @@ if ($preset_hdfs eq "hdfs"){
   $hdfs_subdir = $ENV{'HADOOP_INSTALL'};
   # This will not check that all dependencies are satisfied..
   if (-d $java_subdir && -d $hdfs_subdir && -f "$hdfs_subdir/src/c++/libhdfs/hdfs.h" && -d "$java_subdir/include") {
-    $hdfs = 'hdfs';
   } else {
-    $hdfs = 'none';
+      warn "WARNING: Can't find your Java and Hadoop installations\n";
   }
+  $hdfs = 'hdfs';
 } else {
   $hdfs = 'none';
 }
