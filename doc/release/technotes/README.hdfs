@@ -130,6 +130,7 @@ into.
 
 (3a)
    * See the Hadoop website for good documentation on how to do this.
+     http://hadoop.apache.org/docs/stable/single_node_setup.html
 
 (3b)
    * If you want to run Hadoop over a cluster, there are good
@@ -144,6 +145,9 @@ into.
 
      After this go to your datanode site and you should see a new
      datanode.
+
+     A good online tutorial for this as well can be found here:
+     http://hadoop.apache.org/docs/stable/cluster_setup.html
 
 (4)
    * Now all we need to do is format the namenode and start things up:
