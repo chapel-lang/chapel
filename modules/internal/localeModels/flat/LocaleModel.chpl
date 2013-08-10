@@ -33,6 +33,14 @@ module LocaleModel {
     // We need to know that this is a record type in order to pass it to and
     // return it from runtime functions properly, but we don't need or want
     // to see its contents.
+    //
+    // Note: r21672, which added these, caused a --baseline failure on
+    // 10-Aug-13 in arrays/bradc/arrayassign and a number of other tests.
+    // Explicitly listing the members, even though they're not referenced
+    // anywhere, resolves that failure.  So, I'm doing that as a stopgap
+    // while I figure out a real fix.
+    var node:   int(32);
+    var subloc: int(32);
   };
 
   // Runtime interface for manipulating global locale IDs.

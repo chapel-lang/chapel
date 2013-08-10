@@ -13,9 +13,15 @@
 // The type of a global locale ID, and functions to assemble and
 // disassemble global locale IDs.
 //
+// Note: these should be declared as in r21672, as bitfields.  But, they
+// needed to be changed to regular 32-bit ints in order to work with a
+// change in modules/internal/localeModels/flat/LocaleModel.chpl which
+// solved a --baseline failure on 10-Aug-13 in arrays/bradc/arrayassign
+// and a number of other tests.
+//
 typedef struct {
-  int node  : 32;
-  int subloc:  1;    // just enough to fit the value of c_sublocid_any
+  int32_t node;
+  int32_t subloc;
 } chpl_localeID_t;
 
 static ___always_inline
