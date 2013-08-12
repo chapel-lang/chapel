@@ -166,14 +166,14 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
             } else {
               CallExpr* call = toCallExpr(se->parentExpr);
               INT_ASSERT(call);
-              FnSymbol* fn = call->isResolved();
+              FnSymbol* fnc = call->isResolved();
               if ((call->isPrimitive(PRIM_MOVE) && call->get(1) == se) ||
                   (call->isPrimitive(PRIM_SET_MEMBER) && call->get(1) == se) ||
                   (call->isPrimitive(PRIM_GET_MEMBER)) ||
                   (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) ||
                   (call->isPrimitive(PRIM_WIDE_GET_LOCALE)) ||
                   (call->isPrimitive(PRIM_WIDE_GET_NODE)) ||
-                  (fn && arg->type == actual_to_formal(se)->type)) {
+                  (fnc && arg->type == actual_to_formal(se)->type)) {
                 se->var = arg; // do not dereference argument in these cases
               } else if (call->isPrimitive(PRIM_ADDR_OF)) {
                 SET_LINENO(se);
@@ -269,6 +269,9 @@ flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
 
       //
       // call not in a nested function; handle the toFollower/toLeader cases
+      // Note: outerCall=true implies the 'call' does not see defPoint
+      // of the var 'use->key' anywhere in call's enclosing scopes. With
+      // toFollower/toLeader, the 'call' does not see defPoint of 'fn' either.
       //
       bool outerCall = false;
       if (FnSymbol* parent = toFnSymbol(call->parentSymbol)) {

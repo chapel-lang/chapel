@@ -11,6 +11,7 @@
 //
 static void
 inlineCall(FnSymbol* fn, CallExpr* call) {
+  INT_ASSERT(call->isResolved() == fn);
   SET_LINENO(call);
 
   Expr* stmt = call->getStmtExpr();

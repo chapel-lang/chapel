@@ -277,12 +277,11 @@ static void replaceLocalWithFieldTemp(SymExpr* se, Symbol* ic, Symbol* field,
 // with references to fields in the iterator class instead.
 static void
 replaceLocalsWithFields(FnSymbol* fn,           // the iterator function
-                        Vec<BaseAST*>& asts,    // the asts in that function, listed postorder.*
+                        Vec<BaseAST*>& asts,    // the asts in that function, listed postorder.
                         SymbolMap& local2field, // Map: local symbol --> class field
                         Vec<Symbol*>& yldSymSet,// The set of locals that appear in yields.
                         Symbol* valField,       // ic.value field - value being yielded.
                         Vec<Symbol*>& locals) { // The list of live locals in the iterator body.
-// *TODO: Can we just regenerate this ast list locally?
 
   IteratorInfo* ii = fn->iteratorInfo;
   Symbol* ic = ii->advance->getFormal(1);   // The iterator class

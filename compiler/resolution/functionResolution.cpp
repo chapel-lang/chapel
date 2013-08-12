@@ -6046,7 +6046,6 @@ static void insertRuntimeInitTemps() {
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->parentSymbol && call->isPrimitive(PRIM_INIT)) {
-        // call is an 'init' primitive.
         SymExpr* se = toSymExpr(call->get(1));
         Type* rt =se->var->type;
 
