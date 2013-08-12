@@ -1,4 +1,4 @@
-	# USAGE:
+# USAGE:
 #
 # Current notes on triage results, sorted into the following categories:
 #
@@ -186,6 +186,7 @@ nondet. timeout on gasnet-everything
 [Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dBDtoDRTest] (07/08/13)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (7/22/13)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (7/19/13)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff] (8/9/13)
 
 libmpich_intel.so failure for
 cray-xt.cray-prgenv-intel.none.fifo.pthreads--linux64 (May 27, 2013)
@@ -392,3 +393,5 @@ The following compiler segfaults(?) appeared only once on 9/28/12
 cray-xt.cray-prgenv-cray.none.fifo.pthreads
 --------------------------------------
 [Error: Timed out compilation for studies/ssca2/test-rmatalt/nondet (compopts: 1)] (5/4/13, 6/9/13)
+[Error matching compiler output for release/examples/spec/Statements/use] (8/3/13) (unassigned)
+  Segfault in compiler.

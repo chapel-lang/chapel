@@ -326,6 +326,9 @@ diff seems to think output file is binary? (09/26/11 -- first run in ages)
 --------------------------------------------------------------------------
 [Error matching program output for compflags/bradc/html/testit]
 
+incorrect output -- Memory leakage numbers are negative (!) or higher than expected
+----------------------------------------------------------------------------------------
+[Error matching program output for memory/figueroa/LeakedMemory5 (compopts: 1)]
 
 =====================================
 cray-xt-cray/cce-specific regressions
