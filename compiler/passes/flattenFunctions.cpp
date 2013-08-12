@@ -200,6 +200,8 @@ addVarsToActuals(CallExpr* call, SymbolMap* vars, bool outerCall) {
     if (Symbol* sym = e->key) {
       SET_LINENO(sym);
       if (!outerCall && passByRef(sym)) {
+        // This is only a performance issue.
+        INT_ASSERT(!sym->hasFlag(FLAG_SHOULD_NOT_PASS_BY_REF));
         /* NOTE: See note above in addVarsToFormals() */
         VarSymbol* tmp = newTemp(sym->type->refType);
         call->getStmtExpr()->insertBefore(new DefExpr(tmp));
@@ -213,70 +215,8 @@ addVarsToActuals(CallExpr* call, SymbolMap* vars, bool outerCall) {
 }
 
 
-//
-// If there are yield(s) in a task function, change them
-// to use a variable that's local to the task function.
-// Ideally, each yield uses its own temp (then we would not need
-// localizeYieldSymbolsInTaskFun() at all), but we have
-// not converted the compiler to that, yet.
-// See also localizeReturnSymbols() in lowerIterators.cpp.
-//
-static void
-localizeYieldSymbolsInTaskFun(FnSymbol* taskFn) {
-  if (!isTaskFun(taskFn)) return;
-
-  // Find the yield variable, if there are yields at all.
-  // We could collectMySymExprs() right away, but if there are
-  // no yields, we get away with a smaller 'calls' vec.
-
-  Symbol* oldRet = NULL;
-  Vec<CallExpr*> calls;
-  collectMyCallExprs(taskFn, calls, taskFn);
-  forv_Vec(CallExpr, call, calls) {
-    if (call->isPrimitive(PRIM_YIELD)) {
-      SymExpr* retSE = toSymExpr(call->get(1));
-      INT_ASSERT(retSE);
-      oldRet = retSE->var;
-      break;
-    }
-  }
-
-  if (!oldRet)
-    // No yields, nothing to localize.
-    return;
-
-  // oldRet is declared in the enclosing iterator, not taskFn.
-  INT_ASSERT(oldRet->defPoint->parentSymbol != taskFn);
-
-  // Switch to a new, local return temp.
-  Symbol* newRet;
-  {
-    SET_LINENO(oldRet);
-    newRet = oldRet->copy();
-    newRet->name = astr("tfn_", oldRet->name);
-    taskFn->insertAtHead(new DefExpr(newRet));
-  }
-
-  Vec<SymExpr*> symexprs;
-  collectMySymExprs(taskFn, symexprs);
-  forv_Vec(SymExpr, se, symexprs) {
-    // All yields need to reference the same variable,
-    // in order for this code to work.
-    if (CallExpr* parent = toCallExpr(se->parentExpr))
-      if (parent->isPrimitive(PRIM_YIELD))
-        INT_ASSERT(se->var == oldRet);
-    // Switch it!
-    if (se->var == oldRet)
-      se->var = newRet;
-  }
-}
-
-
 void
 flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
-  forv_Vec(FnSymbol, fn, nestedFunctions)
-    localizeYieldSymbolsInTaskFun(fn);
-
   compute_call_sites();
 
   Vec<FnSymbol*> nestedFunctionSet;

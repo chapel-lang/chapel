@@ -59,6 +59,7 @@ class ArgumentState;
 #define LOG_resolve             'R'
 #define LOG_resolveIntents      'i'
 #define LOG_checkResolved       NUL
+#define LOG_processIteratorYields NUL
 #define LOG_flattenFunctions    'e'
 #define LOG_cullOverReferences  'O'
 #define LOG_callDestructors     'd'

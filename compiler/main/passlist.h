@@ -41,6 +41,7 @@ PassInfo passlist[] = {
   RUN(checkResolved),       // checks semantics of resolved AST
 
   // Post-resolution cleanup
+  RUN(processIteratorYields), // adjustments to iterators
   RUN(flattenFunctions),    // denest nested functions
   RUN(cullOverReferences),  // remove excess references
   RUN(callDestructors),

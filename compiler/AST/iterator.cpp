@@ -26,6 +26,87 @@ IteratorInfo::IteratorInfo() :
 {}
 
 
+// Return the PRIM_YIELD CallExpr* or NULL.
+static inline CallExpr* asYieldExpr(BaseAST* e) {
+  if (CallExpr* call = toCallExpr(e))
+    if (call->isPrimitive(PRIM_YIELD))
+      return call;
+  return NULL;
+}
+static inline CallExpr* parentYieldExpr(SymExpr* se) {
+  return asYieldExpr(se->parentExpr);
+}
+
+
+// The set of FnSymbols where we have removed the initialization
+// (via PRIM_INIT) of 'ret' symbols.
+Vec<FnSymbol*> iteratorsWithRemovedRetInitSet;
+
+// Helper for removeRetSymbolAndUses().
+static inline void
+removeRetInitialization(DefExpr* rdef, Symbol* rsym) {
+  for (Expr* stmt = rdef->next; stmt; stmt = stmt->next) {
+    // If the iterator has a declared return type, 'sym' is
+    // initialized to its type's default value.
+    // Find that and yank it.
+    if (CallExpr* call = toCallExpr(stmt)) {
+      if (call->isPrimitive(PRIM_MOVE)) {
+        if (SymExpr* callTarget = toSymExpr(call->get(1))) {
+          if (callTarget->var == rsym) {
+            call->remove();
+            return;
+          }
+        }
+      }
+    }
+  }
+
+  // We did not find the initialization even though we expected it.
+  //
+  // BTW the above is executed only when we expect the initialization.
+  // I.e. when the return type was specified explicitly and we have
+  // not removed the initialization. Otherwise we avoid traversing the
+  // (top-level?) statement list (from rdef->next), in the name of
+  // reducing the compilation time.
+  //
+  INT_ASSERT(false);
+}
+
+
+//
+// Now that we have localized yield symbols, the return symbol
+// and the PRIM_RETURN CallExpr are not needed and would cause trouble.
+// Returns the type yielded by the iterator. (fn->retType is not it.)
+//
+static Type*
+removeRetSymbolAndUses(FnSymbol* fn) {
+  // follows getReturnSymbol()
+  CallExpr* ret = toCallExpr(fn->body->body.last());
+  INT_ASSERT(ret && ret->isPrimitive(PRIM_RETURN));
+  SymExpr* rse = toSymExpr(ret->get(1));
+  INT_ASSERT(rse);
+  Symbol*  rsym = rse->var;
+  DefExpr* rdef = rsym->defPoint;
+
+  // Yank the return statement.
+  ret->remove();
+  // Yank rsym's initialization. We expect it only when
+  // the iterator's return type was specified explicitly.
+  if (fn->hasFlag(FLAG_SPECIFIED_RETURN_TYPE) &&
+      !iteratorsWithRemovedRetInitSet.set_in(fn))
+    removeRetInitialization(rdef, rsym);
+  // Yank rsym's definition.
+  rdef->remove();
+
+  // We could assert here that no uses of rsym remain.
+  // But that's expensive for large iterators. Instead,
+  // if we overlooked something, we will get a verification
+  // failure "SymExpr::var::defPoint is not in AST".
+
+  return rsym->type;
+}
+
+
 //
 // Determines that an iterator has a single loop with a single yield
 // in it by checking the following conditions:
@@ -198,6 +279,8 @@ static void
 replaceLocalsWithFields(FnSymbol* fn,           // the iterator function
                         Vec<BaseAST*>& asts,    // the asts in that function, listed postorder.*
                         SymbolMap& local2field, // Map: local symbol --> class field
+                        Vec<Symbol*>& yldSymSet,// The set of locals that appear in yields.
+                        Symbol* valField,       // ic.value field - value being yielded.
                         Vec<Symbol*>& locals) { // The list of live locals in the iterator body.
 // *TODO: Can we just regenerate this ast list locally?
 
@@ -216,8 +299,26 @@ replaceLocalsWithFields(FnSymbol* fn,           // the iterator function
       if (!se->parentSymbol)
         continue;
 
-      // SymExpr is among those we are interested in: def or use of a live local.
-      if (useSet.set_in(se) || defSet.set_in(se)) {
+      if (CallExpr* pc = parentYieldExpr(se)) {
+        // SymExpr is in a yield.
+
+        Symbol* ySym = se->var;
+        if (ySym->defPoint->parentSymbol == fn) {
+          // This is a local symbol. It must have been assigned to,
+          // and that assignment must have been converted to a store
+          // to ic.value. No need to do anything. The yield remains as-is.
+
+          // While here, sanity-check a couple of things.
+          INT_ASSERT(yldSymSet.set_in(ySym));
+          INT_ASSERT(local2field.get(ySym) == valField);
+
+        } else {
+          // This is a non-local symbol. We do not track assignments to these.
+          // So we need to assign it to ic.value. The yield remains as-is.
+          pc->insertBefore(new CallExpr(PRIM_SET_MEMBER, ic, valField, ySym));
+        }
+      } else if (useSet.set_in(se) || defSet.set_in(se)) {
+        // SymExpr is among those we are interested in: def or use of a live local.
 
         // Get the corresponding field in the iterator class.
         Symbol* field = local2field.get(se->var);
@@ -390,11 +491,13 @@ buildAdvance(FnSymbol* fn,
         call->remove();
         i++;
       } else if (call->isPrimitive(PRIM_RETURN)) {
-        call->insertBefore(new CallExpr(PRIM_SET_MEMBER, ic, ii->iclass->getField("more"), new_IntSymbol(0)));
-        call->remove(); // remove old return
+        INT_ASSERT(false); // should have been removed with removeRetSymbolAndUses()
       }
     }
   }
+
+  // iterator is done ==> more=0
+  end->defPoint->insertBefore(new CallExpr(PRIM_SET_MEMBER, ic, ii->iclass->getField("more"), new_IntSymbol(0)));
 
   // insert jump table at head of advance
   i = 2;
@@ -492,19 +595,20 @@ static void collectLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStm
 }
 
 
-static bool containsRefVar(Vec<Symbol*>& syms, FnSymbol* fn)
+static bool containsRefVar(Vec<Symbol*>& syms, FnSymbol* fn,
+                           Vec<Symbol*>& yldSymSet)
 {
-  Symbol* ret = fn->getReturnSymbol();
-
   forv_Vec(Symbol, sym, syms)
-    if (sym != ret && !isArgSymbol(sym) && sym->type->symbol->hasFlag(FLAG_REF))
+    if (!isArgSymbol(sym) && sym->type->symbol->hasFlag(FLAG_REF) &&
+        !yldSymSet.set_in(sym))
       return true;
 
   return false;
 }
 
 
-static void insertLocalsForRefs(Vec<Symbol*>& syms, FnSymbol* fn)
+static void insertLocalsForRefs(Vec<Symbol*>& syms, FnSymbol* fn,
+                                Vec<Symbol*>& yldSymSet)
 {
   Map<Symbol*,Vec<SymExpr*>*> defMap;
   Map<Symbol*,Vec<SymExpr*>*> useMap;
@@ -512,9 +616,8 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms, FnSymbol* fn)
 
   // Walk the variables in this (iterator) function
   // which are not the return symbol nor argument, and are ref symbols.
-  Symbol* ret = fn->getReturnSymbol();
   forv_Vec(Symbol, sym, syms) {
-    if (sym == ret || isArgSymbol(sym))
+    if (isArgSymbol(sym) || yldSymSet.set_in(sym))
       continue;
 
     if (sym->type->symbol->hasFlag(FLAG_REF)) {
@@ -556,7 +659,9 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms, FnSymbol* fn)
 
 
 static void
-addLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop) {
+addLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop,
+                      Vec<Symbol*>& yldSymSet)
+{
   buildBasicBlocks(fn);
 
 #ifdef DEBUG_LIVE
@@ -590,8 +695,8 @@ addLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop) {
   // time of this comment, the two yields kept foo from being
   // inlined.
   //
-  if (containsRefVar(syms, fn))
-    insertLocalsForRefs(syms, fn);
+  if (containsRefVar(syms, fn, yldSymSet))
+    insertLocalsForRefs(syms, fn, yldSymSet);
 }
 
 
@@ -711,42 +816,121 @@ rebuildGetIterator(IteratorInfo* ii) {
 }
 
 
+// All "newRet" symbols used in yield expressions will need special handling,
+// so we collect them into a set.
+static void
+collectYieldSymbols(FnSymbol* fn, Vec<BaseAST*>& asts, Vec<Symbol*>& yldSymSet)
+{
+  forv_Vec(BaseAST, ast, asts) {
+    if (CallExpr* yCall = asYieldExpr(ast)) {
+      SymExpr* ySymExpr = toSymExpr(yCall->get(1));
+      INT_ASSERT(ySymExpr);
+      Symbol* ySym = ySymExpr->var;
+      if (ySym->defPoint->parentSymbol == fn) {
+        // It is a local symbol, add it.
+        yldSymSet.set_add(ySym);
+      } else {
+        // Non-local symbols should not be considered.
+        // FYI. Or can this be anything else?
+        INT_ASSERT(ySym->isConstant() || ySym->isParameter());
+      }
+    }
+  }
+}
+
+
+// Apparently the yield symbols are not considered "live" at yield points.
+// So have to add them manually.
+static void
+addYieldSymbols(Vec<Symbol*>& locals, Vec<Symbol*>& yldSymSet) {
+  forv_Vec(Symbol, ySym, yldSymSet) {
+    if (ySym)
+      locals.add_exclusive(ySym);
+  }
+}
+
+
+// After replaceLocalsWithFields() all locals are replaced with field accesses.
+static void
+removeLocals(Vec<Symbol*>& locals, Vec<BaseAST*>& asts, Vec<Symbol*>& yldSymSet, FnSymbol* fn) {
+  forv_Vec(Symbol, l, locals) {
+    INT_ASSERT(l->defPoint->parentSymbol == fn);
+    if (!isArgSymbol(l))
+      l->defPoint->remove();
+  }
+}
+
+
+// Creates (and returns) an iterator class field.
+// 'type' is used if local==NULL.
+static inline Symbol* createICField(int& i, Symbol* local, Type* type,
+                                    bool isYieldSym, FnSymbol* fn) {
+  // The field name is "value" for the return value of the iterator,
+  // or F<int>_<local->name> otherwise.
+  const char* fieldName = isYieldSym
+    ? "value"
+    : astr("F", istr(i++), "_", local->name);
+
+  if (local) {
+    type = local->type;
+    // The return value is automatically dereferenced (I guess).
+    if (local == fn->_this && type->symbol->hasFlag(FLAG_REF))
+      type = type->getValType();
+  }
+
+  // Add a field to the class
+  Symbol* field = new VarSymbol(fieldName, type);
+  fn->iteratorInfo->iclass->fields.insertAtTail(new DefExpr(field));
+
+  return field;
+}
+
 // Fills in the iterator class and record types with fields corresponding to the 
 // local variables defined in the iterator function (or its static context)
 // and live at any yield.
 static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn, 
+                                      Vec<Symbol*>& yldSymSet, Type* yieldedType,
+                                      Symbol** valFieldRef,
                                       SymbolMap& local2field, SymbolMap& local2rfield)
 {
   IteratorInfo* ii = fn->iteratorInfo;
+  Symbol* valField = NULL;
 
   int i = 0;    // This numbers the fields.
   forv_Vec(Symbol, local, locals) {
+    Symbol* field;
+    bool isYieldSym = yldSymSet.set_in(local);
+    if (isYieldSym) {
+      INT_ASSERT(local->type == yieldedType);
+    }
 
-    // The field name is "value" for the return value of the iterator,
-    // or F<int>_<local->name> otherwise.
-    const char* fieldName = (local == fn->getReturnSymbol())
-      ? "value"
-      : astr("F", istr(i++), "_", local->name);
+    if (isYieldSym && valField) {
+      // We have already computed the corresponding field.
+      // Return symbols are never arguments, so not in local2rfield.
+      local2field.put(local, valField);
 
-    // The return value is automatically dereferenced (I guess).
-    Type* type = local->type;
-    if (type->symbol->hasFlag(FLAG_REF) && local == fn->_this)
-      type = type->getValType();
-
-    // Add a field to the class
-    Symbol* field = new VarSymbol(fieldName, type);
-    local2field.put(local, field);
-    ii->iclass->fields.insertAtTail(new DefExpr(field));
+    } else {
+      field = createICField(i, local, NULL, isYieldSym, fn);
+      local2field.put(local, field);
+      if (isYieldSym) {
+        valField = field;
+      }
+    }
 
     // Only (live) arguments are added to the record.
     if (isArgSymbol(local)) {
-      Symbol* rfield = new VarSymbol(fieldName, type);
+      Symbol* rfield = new VarSymbol(field->name, field->type);
       local2rfield.put(local, rfield);
       ii->irecord->fields.insertAtTail(new DefExpr(rfield));
     }
   }
-  // Is this not a Boolean?
+
   ii->iclass->fields.insertAtTail(new DefExpr(new VarSymbol("more", dtInt[INT_SIZE_DEFAULT])));
+
+  if (!valField) {
+    valField = createICField(i, NULL, yieldedType, true, fn);
+  }
+  *valFieldRef = valField;
 }
 
 
@@ -756,6 +940,7 @@ void lowerIterator(FnSymbol* fn) {
 
   SET_LINENO(fn);
   Vec<BaseAST*> asts;
+  Type* yieldedType = removeRetSymbolAndUses(fn);
   collect_asts_postorder(fn, asts);
 
   BlockStmt* singleLoop = NULL;
@@ -771,19 +956,27 @@ void lowerIterator(FnSymbol* fn) {
   SymbolMap local2field;  // map from arg/local to class field
   SymbolMap local2rfield; // map from arg to record field
   Vec<Symbol*> locals;
+  Vec<Symbol*> yldSymSet;
+  Symbol* valField;
 
   for_formals(formal, fn)
     locals.add(formal);
 
+  collectYieldSymbols(fn, asts, yldSymSet);
+
   if (fNoLiveAnalysis)
     addAllLocalVariables(locals, asts);
   else
-    addLiveLocalVariables(locals, fn, singleLoop);
-  locals.add_exclusive(fn->getReturnSymbol());
+    addLiveLocalVariables(locals, fn, singleLoop, yldSymSet);
 
-  addLocalsToClassAndRecord(locals, fn, local2field, local2rfield);
+  addYieldSymbols(locals, yldSymSet);
 
-  replaceLocalsWithFields(fn, asts, local2field, locals);
+  addLocalsToClassAndRecord(locals, fn, yldSymSet, yieldedType, &valField,
+                            local2field, local2rfield);
+
+  replaceLocalsWithFields(fn, asts, local2field, yldSymSet, valField, locals);
+
+  removeLocals(locals, asts, yldSymSet, fn);
 
   IteratorInfo* ii = fn->iteratorInfo;
   if (!fn->hasFlag(FLAG_INLINE_ITERATOR)) {

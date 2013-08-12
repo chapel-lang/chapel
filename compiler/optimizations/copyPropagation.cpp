@@ -10,6 +10,8 @@
 //#define DEBUG_CP
 
 static bool isCandidateForCopyPropagation(FnSymbol* fn, VarSymbol* var) {
+  // Note: iterator yield symbols are distinct from the return symbol
+  // and so are not ruled out by the first test below.
   return
     var != fn->getReturnSymbol() &&
     var->type->refType && // hilde sez: This makes no sense!

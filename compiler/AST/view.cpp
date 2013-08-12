@@ -891,34 +891,58 @@ log_ast_fnsymbol(FILE* file, FnSymbol* fn) {
   }
 }
 
-void map_view(SymbolMap* map, const char* msg) {
-  if (msg) printf("SymbolMap %s\n", msg);
+void map_view(SymbolMap& map);
+void map_view(SymbolMap& map) {
+  printf("SymbolMap at %p\n", &map);
   int cnt = 0;
   bool temp_log_need_space = log_need_space;
   log_need_space = true;
   
-  form_Map(SymbolMapElem, elm, *map) {
+  form_Map(SymbolMapElem, elm, map) {
     Symbol* key = elm->key;
     Symbol* val = elm->value;
     if (key || val) {
       cnt++;
       printf(" ");
       if (key) {
+        if (!fLogIds) printf(" [%d]", key->id);
         log_ast_symbol(stdout, key, true);
-        printf(" %c", key->hasFlag(FLAG_CONST) ? 'c' : 'v');
       } else {
         printf("NULL");
       }
       if (val != NULL && val != gNil) {
-        printf(" => ");
+        printf("  => ");
+        if (!fLogIds) printf(" [%d]", val->id);
         log_ast_symbol(stdout, val, true);
-        printf(" %c", val->hasFlag(FLAG_CONST) ? 'c' : 'v');
       } else {
         // nothing
       }
       printf("\n");
     }
   }
-  printf("  %d elms\n", cnt);
+  printf("  %d elm(s)\n", cnt);
   log_need_space = temp_log_need_space;
+}
+
+void map_view(SymbolMap* map);
+void map_view(SymbolMap* map) {
+  map_view(*map);
+}
+
+void vec_view(Vec<Symbol*,VEC_INTEGRAL_SIZE>& v);
+void vec_view(Vec<Symbol*,VEC_INTEGRAL_SIZE>& v)
+{
+  printf("Vec %d elm(s)\n", v.n);
+  for (int i = 0; i < v.n; i++) {
+    Symbol* elm = v.v[i];
+    if (elm)
+      printf("%3d %8d  %s\n", i, elm->id, elm->name);
+    else
+      printf("%3d <null>\n", i);
+  }
+}
+
+void vec_view(Vec<Symbol*,VEC_INTEGRAL_SIZE>* v);
+void vec_view(Vec<Symbol*,VEC_INTEGRAL_SIZE>* v) {
+  vec_view(*v);
 }

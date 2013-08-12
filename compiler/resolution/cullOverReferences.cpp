@@ -37,7 +37,8 @@ refNecessary(SymExpr* se,
       } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
         if (!call->get(2)->typeInfo()->refType)
           return true;
-      } else if (call->isPrimitive(PRIM_RETURN)) {
+      } else if (call->isPrimitive(PRIM_RETURN) ||
+                 call->isPrimitive(PRIM_YIELD)) {
         return true;
       } else if (call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
                  call->isPrimitive(PRIM_WIDE_GET_NODE)) {

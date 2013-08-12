@@ -722,8 +722,9 @@ static void localizeReturnSymbols(FnSymbol* iteratorFn, Vec<BaseAST*> asts)
           if (Symbol* repl = retReplacementMap.get(block)) {
             se->var = repl;
           } else {
+            SET_LINENO(se);
             Symbol* newRet = newTemp("newRet", ret->type);
-            block->insertAtHead(new CallExpr(PRIM_MOVE, newRet, ret));
+            newRet->addFlag(FLAG_SHOULD_NOT_PASS_BY_REF);
             block->insertAtHead(new DefExpr(newRet));
             se->var = newRet;
             retReplacementMap.put(block, newRet);
@@ -732,6 +733,82 @@ static void localizeReturnSymbols(FnSymbol* iteratorFn, Vec<BaseAST*> asts)
       }
     }
   }
+}
+
+
+//
+// Invokes localizeReturnSymbols() on all iterators.
+//
+// Q: What about yields in task functions?
+// A: Since this is done before flattenFunctions, task functions
+// are still nested in their respective iterators. So their yields
+// will be included in 'asts' and handled when 'fn' is the inclosing
+// iterator.
+//
+static void localizeIteratorReturnSymbols() {
+  forv_Vec(FnSymbol, iterFn, gFnSymbols) {
+    if (iterFn->inTree() && iterFn->hasFlag(FLAG_ITERATOR_FN)) {
+      Vec<BaseAST*> asts;
+      collect_asts(iterFn, asts);
+      localizeReturnSymbols(iterFn, asts);
+    }
+  }
+}
+
+
+//
+// Convert:
+// (248842 CallExpr move
+//   (248843 SymExpr 'ret[248825]:[domain(...)] int(64)[803094]')
+//   (248839 CallExpr
+//     (838015 SymExpr 'fn =[835984]:[domain(...)] int(64)[803094]')
+//     (248841 SymExpr 'ret[248825]:[domain(...)] int(64)[803094]')
+//     (193499 SymExpr 'p[113796]:[domain(...)] int(64)[803094]'))
+// to:
+// (248842 CallExpr move
+//   (248843 SymExpr 'ret[248825]:[domain(...)] int(64)[803094]')
+//   (193499 SymExpr 'p[113796]:[domain(...)] int(64)[803094]'))
+//
+static void
+yieldArraysByRef() {
+  forv_Vec(CallExpr, call, gCallExprs) {
+    // The ifs are ordered with simpler checks first.
+    // Watch out for *initializations* of 'ret' - they look similar.
+    if (call->isPrimitive(PRIM_MOVE)) {
+      if (FnSymbol* fn = toFnSymbol(call->parentSymbol)) {
+        if (fn->hasFlag(FLAG_ITERATOR_FN) &&
+            fn->hasFlag(FLAG_SPECIFIED_RETURN_TYPE))
+        {
+          Symbol* ret = fn->getReturnSymbol();
+          INT_ASSERT(ret);
+          if (ret->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+            if (SymExpr* dest = toSymExpr(call->get(1))) {
+              if (dest->var == ret) {
+                CallExpr* source = toCallExpr(call->get(2));
+                INT_ASSERT(source);
+                FnSymbol* sourceFun = source->isResolved();
+                INT_ASSERT(sourceFun);
+                INT_ASSERT(!strcmp(sourceFun->name, "="));
+                SymExpr* sourceArg1 = toSymExpr(source->get(1));
+                INT_ASSERT(sourceArg1);
+                INT_ASSERT(sourceArg1->var == ret);
+                Expr* sourceArg2 = source->get(2);
+                INT_ASSERT(sourceArg2);
+                // OK, got it. Do the replacement.
+                source->replace(sourceArg2->remove());
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+void processIteratorYields() {
+  yieldArraysByRef();
+  localizeIteratorReturnSymbols();
 }
 
 
