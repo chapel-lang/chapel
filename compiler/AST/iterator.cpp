@@ -898,7 +898,7 @@ static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
 
   int i = 0;    // This numbers the fields.
   forv_Vec(Symbol, local, locals) {
-    Symbol* field;
+    Symbol* field = NULL;
     bool isYieldSym = yldSymSet.set_in(local);
     if (isYieldSym) {
       INT_ASSERT(local->type == yieldedType);
@@ -919,6 +919,8 @@ static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
 
     // Only (live) arguments are added to the record.
     if (isArgSymbol(local)) {
+      // 'field' is NULL only if isYieldSym - but then 'local' is not an arg.
+      INT_ASSERT(field);
       Symbol* rfield = new VarSymbol(field->name, field->type);
       local2rfield.put(local, rfield);
       ii->irecord->fields.insertAtTail(new DefExpr(rfield));
