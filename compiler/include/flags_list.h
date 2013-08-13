@@ -83,6 +83,7 @@ symbolFlag( FLAG_ITERATOR_WITH_ON , npr, "iterator with on" , "iterator which co
 symbolFlag( FLAG_LABEL_BREAK , npr, "label break" , ncm )
 symbolFlag( FLAG_LABEL_CONTINUE , npr, "label continue" , ncm )
 symbolFlag( FLAG_LOCAL , ypr, "local" , "local, e.g. exported function arguments should not be wide" )
+symbolFlag( FLAG_LOCAL_FN , npr, "local fn" , "function is completely local (no communication)" )
 symbolFlag( FLAG_LOOP_BODY_ARGUMENT_CLASS , npr, "loop body argument class" , ncm )
 symbolFlag( FLAG_MAYBE_PARAM , npr, "maybe param" , "symbol can resolve to a param" )
 symbolFlag( FLAG_MAYBE_TYPE , npr, "maybe type" , "symbol can resolve to a type" )

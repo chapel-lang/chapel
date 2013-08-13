@@ -1490,6 +1490,7 @@ static void handleLocalBlocks() {
         } else {
           if (!fn->hasFlag(FLAG_EXTERN)) {
             FnSymbol* local = fn->copy();
+            local->addFlag(FLAG_LOCAL_FN);
             local->name = astr("_local_", fn->name);
             local->cname = astr("_local_", fn->cname);
             fn->defPoint->insertBefore(new DefExpr(local));

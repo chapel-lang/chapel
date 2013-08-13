@@ -5,19 +5,19 @@
 //  the handler (rather than creating a new task).
 //
 
+#include <vector>
+#include "stlUtil.h"
 #include "astutil.h"
 #include "expr.h"
-#include "passes.h"
-#ifdef DEBUG
 #include "stmt.h"
-#endif
+#include "passes.h"
 
 //
 // Return true if this primitive function is safe for fast on optimization
 // (e.g., no communication, no sync/single accesses)
 //
 static bool
-isFastPrimitive(CallExpr *call) {
+isFastPrimitive(CallExpr *call, bool isLocal) {
   INT_ASSERT(call->primitive);
   // Check primitives for communication
   switch (call->primitive->tag) {
@@ -100,15 +100,25 @@ isFastPrimitive(CallExpr *call) {
 #ifdef DEBUG
       printf(" *** OK (PRIM_MOVE 0): %s\n", call->primitive->name);
 #endif
-      // TODO: The rhs is evaluated for its side effects, so 
-      // we should not return true here.  We should recurse on the rhs instead,
-      // in case that expression contains a "slow" call.
+      // Not necessarily true, but we return true because if it
+      // is a callExpr, it will be checked in the calling function
+      //
+      INT_ASSERT(0);
       return true;
     }
-    if (!isCallExpr(call->get(2))) {
-      if (!(call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
-            !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
-            !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF))) {
+  case PRIM_ADD_ASSIGN:
+  case PRIM_SUBTRACT_ASSIGN:
+  case PRIM_MULT_ASSIGN:
+  case PRIM_DIV_ASSIGN:
+  case PRIM_MOD_ASSIGN:
+  case PRIM_LSH_ASSIGN:
+  case PRIM_RSH_ASSIGN:
+  case PRIM_AND_ASSIGN:
+  case PRIM_OR_ASSIGN:
+  case PRIM_XOR_ASSIGN:
+    if (!isCallExpr(call->get(2))) { // callExprs checked in calling function
+      if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
+          !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
 #ifdef DEBUG
         printf(" *** OK (PRIM_MOVE 1): %s\n", call->primitive->name);
 #endif
@@ -116,8 +126,10 @@ isFastPrimitive(CallExpr *call) {
       }
     } else {
 #ifdef DEBUG
-      printf(" *** OK (PRIM_MOVE 3): %s\n", call->primitive->name);
+      printf(" *** OK (PRIM_MOVE 2): %s\n", call->primitive->name);
 #endif
+      // Not necessarily true, but we return true because
+      // the callExpr will be checked in the calling function
       return true;
     }
     break;
@@ -181,7 +193,7 @@ isFastPrimitive(CallExpr *call) {
   case PRIM_CHPL_COMM_PUT:
   case PRIM_CHPL_COMM_GET_STRD:
   case PRIM_CHPL_COMM_PUT_STRD:
-    // These always involve communication, so are deemed slow.
+    // These may involve communication, so are deemed slow.
     return false;
 
   case PRIM_SYNC_INIT: // Maybe fast?
@@ -271,7 +283,9 @@ isFastPrimitive(CallExpr *call) {
     INT_FATAL("This primitive should have been removed from the tree by now.");
     break;
 
-    // Allocator calls can block.  Why?
+    // These don't block in the Chapel sense, but they may require a system
+    // call so we don't consider them eligible.
+    //
   case PRIM_FREE_TASK_LIST:
   case PRIM_TASK_ALLOC:
   case PRIM_TASK_REALLOC:
@@ -305,25 +319,21 @@ isFastPrimitive(CallExpr *call) {
   case PRIM_VMT_CALL:
     return false;
 
-  case PRIM_ADD_ASSIGN:
-  case PRIM_SUBTRACT_ASSIGN:
-  case PRIM_MULT_ASSIGN:
-  case PRIM_DIV_ASSIGN:
-  case PRIM_MOD_ASSIGN:
-  case PRIM_LSH_ASSIGN:
-  case PRIM_RSH_ASSIGN:
-  case PRIM_AND_ASSIGN:
-  case PRIM_OR_ASSIGN:
-  case PRIM_XOR_ASSIGN:
-    //
-    // If the LHS is remote relative to the RHS, we require gets/puts
-    // to fetch it and this cannot be fast.
-    //
-    return false;
-
   default:
     INT_FATAL("Unhandled case.");
     break;
+  }
+
+  return isLocal;
+}
+
+static bool
+inLocalBlock(CallExpr *call) {
+  for (Expr* parent = call->parentExpr; parent; parent = parent->parentExpr) {
+    if (BlockStmt* blk = toBlockStmt(parent)) {
+      if (blk->blockInfo && blk->blockInfo->isPrimitive(PRIM_BLOCK_LOCAL))
+        return true;
+    }
   }
   return false;
 }
@@ -333,22 +343,29 @@ markFastSafeFn(FnSymbol *fn, int recurse, Vec<FnSymbol*> *visited) {
   if (fn->hasFlag(FLAG_FAST_ON))
     return true;
 
-  if (fn->hasFlag(FLAG_NON_BLOCKING))
-    return false;
+  if (fn->hasFlag(FLAG_EXPORT))
+    return true;
 
-  if (fn->hasFlag(FLAG_EXTERN))
+  if (fn->hasFlag(FLAG_EXTERN)) {
+    // consider a pragma to indicate that it would be "fast"
+    return false;
+  }
+
+  if (fn->hasFlag(FLAG_NON_BLOCKING))
     return false;
 
   visited->add_exclusive(fn);
 
-  Vec<CallExpr*> calls;
+  std::vector<CallExpr*> calls;
 
-  collectCallExprs(fn, calls);
+  collectCallExprsSTL(fn, calls);
 
-  forv_Vec(CallExpr, call, calls) {
+  for_vector(CallExpr, call, calls) {
 #ifdef DEBUG
     printf("\tcall %p (id=%d): ", call, call->id);
 #endif
+    bool isLocal = fn->hasFlag(FLAG_LOCAL_FN) || inLocalBlock(call);
+
     if (!call->primitive) {
 #ifdef DEBUG
       printf("(non-primitive CALL)\n");
@@ -394,7 +411,7 @@ markFastSafeFn(FnSymbol *fn, int recurse, Vec<FnSymbol*> *visited) {
 #endif
         return false;
       }
-    } else if (isFastPrimitive(call)) {
+    } else if (isFastPrimitive(call, isLocal)) {
 #ifdef DEBUG
       printf(" (FAST primitive CALL)\n");
 #endif
