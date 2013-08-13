@@ -1,4 +1,4 @@
-// checks.cpp
+// checkAST.cpp
 //
 // Additional structural checks on the health of the AST.
 //
@@ -6,7 +6,7 @@
 #include "passes.h"
 
 #include "expr.h"
-#include "driver.h" // For fParanoid.
+#include "driver.h" // For prototypes.
 
 //#include <unordered_set> // C++11 (not fully supported yet)
 #include <set>

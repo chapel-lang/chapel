@@ -311,12 +311,9 @@ void check_makeBinary()
 // Extra structural checks on the AST, applicable to all passes.
 void check_afterEveryPass()
 {
-  // TODO: This should probably be a paranoid check, too.
-  verify();
-
-  // These are paranoid checks.  (Don't run normally.)
-  if (fParanoid) 
+  if (fVerify) 
   {
+    verify();
     checkForDuplicateUses();
     checkForMissingDefs();
   }
@@ -325,7 +322,7 @@ void check_afterEveryPass()
 // Checks that should remain true after the normalization pass is complete.
 static void check_afterNormalization()
 {
-  if (fParanoid)
+  if (fVerify)
   {
     checkNormalized();
   }
@@ -334,7 +331,7 @@ static void check_afterNormalization()
 // Checks that should remain true after the resolution pass is complete.
 static void check_afterResolution()
 {
-  if (fParanoid)
+  if (fVerify)
   {
     checkResolved();
     checkNoUnresolveds();

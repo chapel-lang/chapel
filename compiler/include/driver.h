@@ -125,7 +125,7 @@ extern bool fLibraryCompile;
 extern bool no_codegen;
 extern bool genExternPrototypes;
 extern bool developer;
-extern bool fParanoid;
+extern bool fVerify;
 extern int num_constants_per_variable;
 extern bool printCppLineno;
 
