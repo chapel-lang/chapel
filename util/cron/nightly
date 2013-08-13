@@ -18,6 +18,7 @@ $nofutures = 0;
 $suppressions = "";
 $parnodefile = "";
 $nolocal = 0;
+$verify = 0;
 $combinedir = 0;
 $dist = "";
 $memleaks = "";
@@ -77,6 +78,8 @@ while (@ARGV) {
         $parnodefile = shift @ARGV;
     } elsif ($flag eq "-no-local") {
         $nolocal = 1;
+    } elsif ($flag eq "-verify") {
+        $verify = 1;
     } elsif ($flag eq "-combinedir") {
       $combinedir = 1;
     } elsif ($flag eq "-r") {
@@ -281,6 +284,8 @@ if ($debug == 1) {
         $statfile = "$statdir/nightly-baseline.$fullplatform-debug.dat";
     } elsif ($nolocal == 1) {
         $statfile = "$statdir/nightly-nolocal.$fullplatform-debug.dat";
+    } elsif ($verify == 1) {
+        $statfile = "$statdir/nightly-verify.$fullplatform-debug.dat";
     } else {
         $statfile = "$statdir/nightly.$fullplatform-debug.dat";
     }
@@ -291,6 +296,8 @@ if ($debug == 1) {
         $statfile = "$statdir/nightly-baseline.$fullplatform-cron.dat";
     } elsif ($nolocal == 1) {
         $statfile = "$statdir/nightly-nolocal.$fullplatform-cron.dat";
+    } elsif ($verify == 1) {
+        $statfile = "$statdir/nightly-verify.$fullplatform-cron.dat";
     } else {
         $statfile = "$statdir/nightly.$fullplatform-cron.dat";
     }
@@ -308,6 +315,8 @@ if ($performance == 1) {
     $subjectid = " Memory-Leaks";
 } elsif ($nolocal == 1) {
     $subjectid = " No-local";
+} elsif ($nolocal == 1) {
+    $subjectid = " Verify";
 } elsif ($runtests == 0) {
     $subjectid = " Build-only";
 } elsif ($buildruntime == 0) {
@@ -376,6 +385,9 @@ if ($valgrind == 1) {
 } elsif ($nolocal == 1) {
     $threechars = "nlc";
     $morechars = "nolocal";
+} elsif ($nolocal == 1) {
+    $threechars = "vfy";
+    $morechars = "verify";
 } elsif ($examples == 1) {
     $threechars = "exm";
     if ($multilocale == 1) {
@@ -581,6 +593,9 @@ if (!($memleaks eq "")) {
 if ($nolocal == 1) {
     $testflags = "$testflags -compopts --no-local";
     $ENV{'CHPL_TEST_NO_LOCAL'} = true;
+}
+if ($verify == 1) {
+    $testflags = "$testflags -compopts --verify";
 }
 if (!($suppressions eq "")) {
     $testflags = "$testflags -suppress $suppressions";

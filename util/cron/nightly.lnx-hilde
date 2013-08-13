@@ -23,6 +23,6 @@ NIGHTLY="$CHPL_HOME/util/cron/nightly"
 
 echo "Running verifications on `date`.  Log file: $LOGFILE"
 
-$NIGHTLY -cron $EXAMPLES -compopts --verify
+$NIGHTLY -cron $EXAMPLES -verify
 
 echo Finished $0 on `date`.
