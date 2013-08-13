@@ -3,6 +3,7 @@
 
 #ifndef LAUNCHER
 
+#include "chpl-comm.h"
 #include "chpl-mem.h"
 #include "error.h"
 

@@ -6,8 +6,20 @@
 //
 
 #include "chpl-comm-compiler-macros.h"
+#include "chplcgfns.h"
 #include "chpl-tasks.h"
 #include "chpltypes.h"
+
+//
+// Call a function in the compiler-produced function table, passing it
+// one argument.
+//
+static ___always_inline
+void chpl_ftable_call(chpl_fn_int_t fid, void* arg)
+{
+  (*chpl_ftable[fid])(arg);
+}
+
 
 // used for converting between the Chapel idea of a locale ID: chpl_localeID_t
 // and the runtime idea of a locale ID: c_localeid_t.

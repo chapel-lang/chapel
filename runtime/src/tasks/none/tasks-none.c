@@ -4,7 +4,8 @@
 #endif
 
 #include "chplrt.h"
-#include "chplcgfns.h" // for chpl_ftable
+#include "chplcgfns.h"
+#include "chpl-gen-includes.h"
 #include "chplcast.h"
 #include "chpl-locale-model.h"
 #include "chpl-mem.h"
@@ -175,7 +176,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid,
     // We're serial, so this doesn't create a new task in the Chapel
     // sense.  Just invoke the body of the construct.
     //
-    (*chpl_ftable[fid])(arg);
+    chpl_ftable_call(fid, arg);
   } else {
     // create a task from the given function pointer and arguments
     // and append it to the end of the task pool for later execution

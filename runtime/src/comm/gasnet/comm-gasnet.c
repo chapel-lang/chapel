@@ -8,7 +8,8 @@
 #include "chpl-mem.h"
 #include "chplsys.h"
 #include "chpl-tasks.h"
-#include "chplcgfns.h" // for chpl_ftable
+#include "chplcgfns.h"
+#include "chpl-gen-includes.h"
 #include "chpl-atomics.h"
 #include "error.h"
 
@@ -131,9 +132,9 @@ static void AM_fork_fast(gasnet_token_t token, void* buf, size_t nbytes) {
   }
 
   if (f->arg_size)
-    (*chpl_ftable[f->fid])(&f->arg);
+    chpl_ftable_call(f->fid, &f->arg);
   else
-    (*chpl_ftable[f->fid])(0);
+    chpl_ftable_call(f->fid, NULL);
 
   // Signal that the handler has completed
   GASNET_Safe(gasnet_AMReplyShort2(token, SIGNAL,
@@ -142,9 +143,9 @@ static void AM_fork_fast(gasnet_token_t token, void* buf, size_t nbytes) {
 
 static void fork_wrapper(fork_t *f) {
   if (f->arg_size)
-    (*chpl_ftable[f->fid])(&f->arg);
+    chpl_ftable_call(f->fid, &f->arg);
   else
-    (*chpl_ftable[f->fid])(0);
+    chpl_ftable_call(f->fid, NULL);
   GASNET_Safe(gasnet_AMRequestShort2(f->caller, SIGNAL,
                                      AckArg0(f->ack), AckArg1(f->ack)));
 
@@ -175,7 +176,7 @@ static void fork_large_wrapper(fork_t* f) {
 
   chpl_comm_get(arg, f->caller, f_arg,
                 f->arg_size, -1 /*typeIndex: unused*/, 1, 0, "fork large");
-  (*chpl_ftable[f->fid])(arg);
+  chpl_ftable_call(f->fid, arg);
   GASNET_Safe(gasnet_AMRequestShort2(f->caller, SIGNAL,
                                      AckArg0(f->ack), AckArg1(f->ack)));
 
@@ -198,9 +199,9 @@ static void AM_fork_large(gasnet_token_t token, void* buf, size_t nbytes) {
 
 static void fork_nb_wrapper(fork_t *f) {
   if (f->arg_size)
-    (*chpl_ftable[f->fid])(&f->arg);
+    chpl_ftable_call(f->fid, &f->arg);
   else
-    (*chpl_ftable[f->fid])(0);
+    chpl_ftable_call(f->fid, NULL);
   chpl_mem_free(f, 0, 0);
 }
 
@@ -230,7 +231,7 @@ static void fork_nb_large_wrapper(fork_t* f) {
                                       FREE,
                                       &(f->ack),
                                       sizeof(f->ack)));
-  (*chpl_ftable[f->fid])(arg);
+  chpl_ftable_call(f->fid, arg);
   chpl_mem_free(f, 0, 0);
   chpl_mem_free(arg, 0, 0);
 }
@@ -817,7 +818,7 @@ void  chpl_comm_fork(c_nodeid_t node, c_sublocid_t subloc,
   int     passArg = sizeof(fork_t) + arg_size <= gasnet_AMMaxMedium();
 
   if (chpl_nodeID == node) {
-    (*chpl_ftable[fid])(arg);
+    chpl_ftable_call(fid, arg);
   } else {
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: remote task created on %d\n", chpl_nodeID, node);
@@ -930,7 +931,7 @@ void  chpl_comm_fork_fast(c_nodeid_t node, c_sublocid_t subloc,
   int     passArg = info_size <= gasnet_AMMaxMedium();
 
   if (chpl_nodeID == node) {
-    (*chpl_ftable[fid])(arg);
+    chpl_ftable_call(fid, arg);
   } else {
     if (passArg) {
       if (chpl_verbose_comm && !chpl_comm_no_debug_private)

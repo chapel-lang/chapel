@@ -6,7 +6,8 @@
 #include "chpl-mem.h"
 #include "chpl-tasks.h"
 
-#include "chplcgfns.h"  // for chpl_ftable
+#include "chplcgfns.h"
+#include "chpl-gen-includes.h"
 
 #include <errno.h>
 #include <stdio.h>
@@ -415,14 +416,14 @@ void chpl_comm_fork(c_nodeid_t node, c_sublocid_t subloc,
                     chpl_fn_int_t fid, void *arg, int32_t arg_size) {
   assert(node==0);
 
-  (*chpl_ftable[fid])(arg);
+  chpl_ftable_call(fid, arg);
 }
 
 static void fork_nb_wrapper(fork_t* f) {
   if (f->arg_size)
-    (*chpl_ftable[f->fid])(&f->arg);
+    chpl_ftable_call(f->fid, &f->arg);
   else
-    (*chpl_ftable[f->fid])(0);
+    chpl_ftable_call(f->fid, NULL);
   chpl_mem_free(f, 0, 0);
 }
 
@@ -449,7 +450,7 @@ void chpl_comm_fork_fast(c_nodeid_t node, c_sublocid_t subloc,
                          chpl_fn_int_t fid, void *arg, int32_t arg_size) {
   assert(node==0);
 
-  (*chpl_ftable[fid])(arg);
+  chpl_ftable_call(fid, arg);
 }
 
 int chpl_comm_numPollingTasks(void) { return 0; }
