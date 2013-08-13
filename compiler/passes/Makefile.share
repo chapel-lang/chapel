@@ -4,11 +4,14 @@ GEN_HEADERS = \
 PASSES_SRCS = \
         addInitGuards.cpp \
         buildDefaultFunctions.cpp \
+        checkNormalized.cpp \
+        checkParsed.cpp \
+        checkResolved.cpp \
         cleanup.cpp \
         codegen.cpp \
+        createTaskFunctions.cpp \
         docs.cpp \
         externCResolve.cpp \
-        createTaskFunctions.cpp \
         filesToAST.cpp \
         flattenClasses.cpp \
         flattenFunctions.cpp \
@@ -18,8 +21,7 @@ PASSES_SRCS = \
         repositionDefExpressions.cpp \
         resolveIntents.cpp \
         returnStarTuplesByRefArgs.cpp \
-        scopeResolve.cpp \
-        semanticChecks.cpp
+        scopeResolve.cpp
 
 SVN_SRCS = $(PASSES_SRCS)
 SRCS = $(SVN_SRCS)
