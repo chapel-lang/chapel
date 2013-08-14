@@ -117,7 +117,12 @@ module ChapelLocale {
     //------------------------------------------------------------------------}
   }
 
-  class RootLocale : locale {
+  class AbstractLocaleModel : locale {
+    // This will be used for interfaces that will be common to all
+    // (non-RootLocale) locale models
+  }
+
+  class AbstractRootLocale : locale {
     // These functions are used to establish values for Locales[] and
     // LocaleSpace -- an array of locales and its correponding domain
     // which are used as the default set of targetLocales in many
@@ -151,7 +156,7 @@ module ChapelLocale {
     // Evaluating "here" is also local and very fast.
     if __primitive("_is_here", id) then return here;
     var ret:locale;
-    on rootLocale do ret = (rootLocale:RootLocale).localeIDtoLocale(id);
+    on rootLocale do ret = (rootLocale:AbstractRootLocale).localeIDtoLocale(id);
     return ret;
   }
 

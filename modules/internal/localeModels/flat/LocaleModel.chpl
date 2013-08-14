@@ -73,7 +73,7 @@ module LocaleModel {
   //
   // A concrete class representing the nodes in this architecture.
   //
-  class LocaleModel : locale {
+  class LocaleModel : AbstractLocaleModel {
     const callStackSize: int;
     const _node_id : int;
     const local_name : string;
@@ -178,13 +178,13 @@ module LocaleModel {
   // may overwrite this instance or any of its children to establish a more customized
   // representation of the system resources.
   //
-  class DefaultRootLocale : RootLocale {
+  class RootLocale : AbstractRootLocale {
 
     // Would like to make myLocaleSpace distributed with one index per node.
     const myLocaleSpace: domain(1) = {0..numLocales-1};
     const myLocales: [myLocaleSpace] locale;
 
-    proc DefaultRootLocale()
+    proc RootLocale()
     {
       parent = nil;
       numCores = 0;
@@ -273,7 +273,7 @@ module LocaleModel {
 
   // Use the DefaultArchitecture only if no other architecture has already been defined.
   if (rootLocale == nil) then
-    rootLocale = new DefaultRootLocale();
+    rootLocale = new RootLocale();
 
   // Expose the underlying locales array (and its domain)
   // for user convenience and backward compatibility.
