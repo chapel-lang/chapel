@@ -72,7 +72,7 @@ void checkForMissingDefs();
 //
 
 // parallel.cpp
-bool passingWideStringToExtern(Type* t);
+bool isRefWideString(Type* t);
 bool isWideString(Type* t);
 Type* getOrMakeRefTypeDuringCodegen(Type* type);
 Type* getOrMakeWideTypeDuringCodegen(Type* refType);

@@ -1296,17 +1296,19 @@ Type* getOrMakeWideTypeDuringCodegen(Type* refType) {
 
  
 //
-// This is a utility function that handles a case when wide strings
-// are passed to extern functions.  If strings were a little better
-// behaved, it arguably wouldn't/shouldn't be required.
+// Returns true if the type t is a reference to a wide string
 //
-bool passingWideStringToExtern(Type* t) {
-  ClassType* ct = toClassType(t);
-  if (ct) {
+// This is used to handle cases where wide strings are passed to
+// functions that require local arguments.  If strings were a little
+// better behaved, it arguably wouldn't/shouldn't be required.
+//
+bool isRefWideString(Type* t) {
+  if (isReferenceType(t)) {
+    ClassType* ct = toClassType(t);
+    INT_ASSERT(ct);
     Symbol* valField = ct->getField("_val", false);
-    if (valField && valField->type == wideStringType) {
-      return true;
-    }
+    INT_ASSERT(valField);
+    return isWideString(valField->type);
   }
   return false;
 }
@@ -1675,13 +1677,14 @@ static void widenClasses()
 
     if (FnSymbol* fn = toFnSymbol(def->sym)) {
       if (Type* wide = wideClassMap.get(fn->retType))
-        if (!fn->hasEitherFlag(FLAG_EXTERN,FLAG_LOCAL))
+        if (!fn->hasEitherFlag(FLAG_EXTERN,FLAG_LOCAL_ARGS))
           fn->retType = wide;
     } else if (!isTypeSymbol(def->sym)) {
       if (Type* wide = wideClassMap.get(def->sym->type)) {
-        if (def->parentSymbol->hasEitherFlag(FLAG_EXTERN,FLAG_LOCAL)) {
+        if (def->parentSymbol->hasFlag(FLAG_EXTERN)) {
           if (toArgSymbol(def->sym))
-            continue; // don't change extern function's arguments
+            // don't change function arguments that are local
+            continue;
         }
         def->sym->type = wide;
       }
@@ -1762,7 +1765,8 @@ static void insertElementAccessTemps()
         if (var->immediate) {
           if (CallExpr* call = toCallExpr(se->parentExpr)) {
             if (call->isPrimitive(PRIM_VMT_CALL) ||
-                (call->isResolved() && !call->isResolved()->hasEitherFlag(FLAG_EXTERN,FLAG_LOCAL))) {
+                (call->isResolved() &&
+                 !call->isResolved()->hasEitherFlag(FLAG_EXTERN,FLAG_LOCAL_ARGS))) {
               if (Type* type = actual_to_formal(se)->typeInfo()) {
                 VarSymbol* tmp = newTemp(type);
                 SET_LINENO(se);
@@ -1809,12 +1813,14 @@ static void insertElementAccessTemps()
 static void narrowWideClassesThroughCalls()
 {
   //
-  // Turn calls to extern functions involving wide classes into moves
-  // of the wide class into a non-wide type and then use that in the call.
-  // After the call, copy the value back into the wide class.
+  // Turn calls to functions with local arguments (i.e., extern or
+  // export functions with FLAG_LOCAL_ARGS) involving wide classes
+  // into moves of the wide class into a non-wide type and then use
+  // that in the call.  After the call, copy the value back into the
+  // wide class.
   //
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isResolved() && call->isResolved()->hasEitherFlag(FLAG_EXTERN,FLAG_LOCAL)) {
+    if (call->isResolved() && call->isResolved()->hasFlag(FLAG_LOCAL_ARGS)) {
       for_alist(arg, call->argList) {
         SymExpr* sym = toSymExpr(arg);
         INT_ASSERT(sym);
@@ -1827,14 +1833,15 @@ static void narrowWideClassesThroughCalls()
           SET_LINENO(call);
           call->getStmtExpr()->insertBefore(new DefExpr(var));
           if ((symType->symbol->hasFlag(FLAG_WIDE_CLASS) &&
-               var->type->symbol->hasEitherFlag(FLAG_EXTERN,FLAG_LOCAL)) ||
-              passingWideStringToExtern(narrowType)) {
+               var->type->symbol->hasFlag(FLAG_EXTERN)) ||
+              isRefWideString(narrowType)) {
             // Insert a local check because we cannot reflect any changes
             // made to the class back to another locale
             if (!fNoLocalChecks)
               call->getStmtExpr()->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, sym->copy()));
-            // If we pass a extern class to an extern function, we must treat
-            // it like a reference (this is by definition)
+            // If we pass a extern class to an extern/export function,
+            // we must treat it like a reference (this is by
+            // definition)
             call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, sym->copy()));
           } else if (var->type->symbol->hasEitherFlag(FLAG_REF,FLAG_DATA_CLASS))
             call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, sym->copy()));

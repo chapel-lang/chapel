@@ -488,9 +488,11 @@ linkage_spec:
                   @$.comment = yylloc.comment; yylloc.comment = NULL;}
 | TEXPORT ident { $$ = new FnSymbol($2); $$->addFlag(FLAG_EXPORT);  
                   @$.comment = yylloc.comment; yylloc.comment = NULL;}
-| TEXTERN       { $$ = new FnSymbol(""); $$->addFlag(FLAG_EXTERN);  
+| TEXTERN       { $$ = new FnSymbol(""); $$->addFlag(FLAG_EXTERN);
+                  $$->addFlag(FLAG_LOCAL_ARGS);
                   @$.comment = yylloc.comment; yylloc.comment = NULL;}
 | TEXTERN ident { $$ = new FnSymbol($2); $$->addFlag(FLAG_EXTERN);  
+                  $$->addFlag(FLAG_LOCAL_ARGS);
                   @$.comment = yylloc.comment; yylloc.comment = NULL;}
 
 fn_decl_stmt:

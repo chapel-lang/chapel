@@ -5480,7 +5480,7 @@ GenRet CallExpr::codegen() {
     if (fn->hasFlag(FLAG_EXTERN)) {
       if (actualType == dtString)
         arg = codegenCastToCharStar(codegenValue(arg));
-      else if (passingWideStringToExtern(actualType))// checks for ref(widestr)
+      else if (isRefWideString(actualType))// checks for ref(widestr)
         arg = codegenAddrOf(codegenWideStringField(codegenDeref(arg),"addr"));
       else if( actualType->symbol->hasFlag(FLAG_WIDE) ||
                arg.isLVPtr == GEN_WIDE_PTR) {

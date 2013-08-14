@@ -244,6 +244,7 @@ void convertDeclToChpl(ModuleSymbol* module, const char* name, Vec<Expr*> & resu
   } else if (clang::FunctionDecl *fd = llvm::dyn_cast<clang::FunctionDecl>(cdecl)) { 
     FnSymbol* f = new FnSymbol(name);
     f->addFlag(FLAG_EXTERN);
+    f->addFlag(FLAG_LOCAL_ARGS);
     f->addFlag(FLAG_FUNCTION_PROTOTYPE);
     f->addFlag(FLAG_USER_NAMED);
     Expr* chpl_type = convertToChplType(module, fd->getResultType().getTypePtr(), results);
