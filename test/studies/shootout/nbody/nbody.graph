@@ -1,4 +1,4 @@
-perfkeys: real, real, real, real, real, real, real, real, real
+perfkeys: real, real, real, real, real, real, real, real, real, real
 files: nbody_orig_1.dat, nbody_record_2.dat, nbody_record_domain_2a.dat, nbody_forloop_3.dat, nbody_vector_4.dat, nbody_rangesub_5.dat, nbody_reductions_6.dat, nbody_iterator_7.dat, nbody-blc.dat, nbody-blc-slice.dat
 graphkeys: original, record, record domain, forloop, vector, rangesub, reductions, iterator, blc version, slice-based blc version
 ylabel: Time (seconds)
