@@ -20,6 +20,7 @@ export CHPL_NIGHTLY_LOGDIR=/data/sea/cascade/chapel/Nightly${dayType}
 
 CHPL_HOME="$HOME/chapel"
 NIGHTLY="$CHPL_HOME/util/cron/nightly"
+LOGFILE="$HOME/tmp/nightly.verify.out"
 
 echo "Running verifications on `date`.  Log file: $LOGFILE"
 
