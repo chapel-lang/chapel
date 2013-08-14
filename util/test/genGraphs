@@ -226,10 +226,16 @@ class GraphClass:
             self.visited = -1
             self.curr = None
             self.mykeys = {}
-            self.dfile = open(_filename, 'r')
-            # First line must be a comment and must be a tab separated list
-            #  of the performance keys
-            self.perfkeys = [ l.strip() for l in self.dfile.readline()[1:].split('\t') ]
+            try:
+                self.dfile = open(_filename, 'r')
+                # First line must be a comment and must be a tab separated list
+                #  of the performance keys
+                self.perfkeys = [ l.strip() for l in self.dfile.readline()[1:].split('\t') ]
+            except IOError:
+                print "WARNING: could not find file " + _filename
+                # Allows some performance tests to be graphed when you aren't
+                # running over every single performance test
+            
 
         def add(self, _i, _k):
             # the _ith data stream comes from the column of the _kth perfkey
@@ -242,7 +248,8 @@ class GraphClass:
             return l
 
         def __del__(self):
-            self.dfile.close()
+            if hasattr(self, 'dfile'):
+                self.dfile.close()
 
     # Generate the new data file inline in CSV format
     def generateData(self, graphInfo, datfiles):
@@ -391,7 +398,14 @@ class GraphClass:
             if not datfiles.has_key(d):
                 datfiles[d] = self.DatFileClass(d)
             try:
-                datfiles[d].add(i, self.perfkeys[i])
+                if hasattr(self, 'dfile'):
+                    # May not have a dfile if the specific performance test
+                    # was not previously run and dumped into this folder
+                    # should distinguish this case from cases where there are 
+                    # legitimately no perfkeys
+                    datfiles[d].add(i, self.perfkeys[i])
+                else:
+                    return
             except ValueError:
                 sys.stderr.write('ERROR: Could not find perfkey \'%s\' in %s\n'%(self.perfkeys[i], self.datfilenames[i]))
                 raise
