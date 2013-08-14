@@ -24,8 +24,7 @@ studies/shootout/fannkuch-redux/fannkuch-redux.graph
 studies/shootout/binary-trees/binary-trees.graph
 studies/shootout/spectral-norm/spectralnorm.graph
 ### studies/shootout/chameneos-redux/chameneos-redux-all.graph
-### studies/shootout/chameneos-redux/chameneos-redux-cas.graph
-studies/shootout/chameneos-redux/lydia/chameneos-redux-lydia.graph
+studies/shootout/chameneos-redux/chameneos-redux.graph
 studies/shootout/nbody/nbody.graph
 studies/shootout/fasta/fasta.graph
 studies/shootout/thread-ring/thread-ring.graph
