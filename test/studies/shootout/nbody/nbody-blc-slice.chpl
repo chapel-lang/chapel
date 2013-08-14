@@ -63,7 +63,6 @@ inline proc sumOfSquares(x:_tuple) where isHomogeneousTuple(x) {
 
 record NBodySystem {
   var bodies = [sun, jupiter, saturn, uranus, neptune];
-  const numbodies = bodies.numElements;
 
   proc initialize() {
     var p: 3*real;
@@ -74,8 +73,7 @@ record NBodySystem {
 
   proc advance(dt) {
     for (b1, i) in zip(bodies, bodies.domain.low..) {
-      for j in i+1..numbodies-1 {
-        const b2 = bodies[j];
+      for b2 in bodies[i+1..] {
         const dpos = b1.pos - b2.pos,
               mag = dt / sqrt(sumOfSquares(dpos))**3;
         b1.v -= dpos * b2.mass * mag; // TODO: make sure scalars mult'd first?
@@ -92,8 +90,7 @@ record NBodySystem {
 
     for (b1, i) in zip(bodies, bodies.domain.low..) {
       e += 0.5 * b1.mass * sumOfSquares(b1.v);
-      for j in i+1..numbodies-1 {
-        const b2 = bodies[j];
+      for b2 in bodies[i+1..] {
         e -= (b1.mass * b2.mass) / sqrt(sumOfSquares(b1.pos - b2.pos));
       }
     }
