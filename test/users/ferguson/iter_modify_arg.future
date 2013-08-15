@@ -1,4 +1,0 @@
-Why are iterator arguments behaving differently from a
-proc argument? I should be able to modify the local copy
-of the argument.
-
