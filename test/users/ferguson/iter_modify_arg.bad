@@ -1,0 +1,2 @@
+iter_modify_arg.chpl:1: In iterator 'myiter':
+iter_modify_arg.chpl:2: error: illegal lvalue in assignment
