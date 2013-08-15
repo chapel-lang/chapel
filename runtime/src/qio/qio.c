@@ -932,19 +932,23 @@ err_t _qio_file_do_close(qio_file_t* f)
   }
 
   if( f->fp ) {
-    rc = fclose(f->fp);
-    if( rc ) err = errno;
+    if (f->hints & QIO_HINT_OWNED) {
+      rc = fclose(f->fp);
+      if( rc ) err = errno;
+    }
     f->fp = NULL;
     f->fd = -1;
   }
 
-  if(f->fsfns) {
-    err_api = f->fsfns->close(f->info);
+  if (f->fsfns) {
+    if (f->hints & QIO_HINT_OWNED)	// Should always be true
+      err_api = f->fsfns->close(f->info);
     err = qio_err_to_int(err_api);
   }
 
   if( f->fd >= 0 ) {
-    err = sys_close(f->fd);
+    if (f->hints & QIO_HINT_OWNED)
+      err = sys_close(f->fd);
     if( err ) {
       newerr = qio_file_path(f, &path);
       if( newerr ) {
@@ -1093,7 +1097,8 @@ err_t qio_file_open(qio_file_t** file_out, const char* pathname, int flags, mode
     return err;
   }
 
-  return qio_file_init(file_out, fp, fd, iohints, style, fp != NULL);
+  // We opened this file, so file_out owns it.
+  return qio_file_init(file_out, fp, fd, iohints | QIO_HINT_OWNED, style, fp != NULL);
 }
 
 err_t qio_file_open_usr(qio_file_t** file_out, const char* pathname, int flags, mode_t mode, qio_hint_t iohints, qio_style_t* style, qio_file_functions_t* s)
@@ -1114,7 +1119,8 @@ err_t qio_file_open_usr(qio_file_t** file_out, const char* pathname, int flags, 
     return err;
   }
 
-  return qio_file_init_usr(file_out, info, iohints, flags, style, s);
+  // We opened this file, so file_out owns it.
+  return qio_file_init_usr(file_out, info, iohints | QIO_HINT_OWNED, flags, style, s);
 }
 
 // If buf is NULL, we create a new buffer. flags indicates readable/writeable/seekable.
@@ -1248,7 +1254,7 @@ err_t qio_file_open_tmp(qio_file_t** file_out, qio_hint_t iohints, qio_style_t* 
     return errno;
   }
 
-  err = qio_file_init(file_out, fp, -1, iohints, style, 0);
+  err = qio_file_init(file_out, fp, -1, iohints | QIO_HINT_OWNED, style, 0);
   return err;
 }
 

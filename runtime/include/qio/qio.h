@@ -282,6 +282,12 @@ enum {
 
   // This disables the 'fast path' for buffered channels; this is for testing.
   QIO_HINT_NOFAST       = QIO_HINT_NOREUSE<<1,
+
+  // We don't own stdin, stdout and stderr, so it would be impolite to close
+  // them.  This bit is set only if the qio_file_s is created with a file that
+  // is opened within the qio implementation.  Otherwise, the user (or system)
+  // has to close it.
+  QIO_HINT_OWNED		= QIO_HINT_NOFAST<<1,
 };
 
 
@@ -357,6 +363,7 @@ char* qio_hints_to_string(qio_hint_t hint)
   if( hint & QIO_HINT_DIRECT ) strcat(buf, " direct");
   if( hint & QIO_HINT_NOREUSE ) strcat(buf, " noreuse");
   if( hint & QIO_HINT_NOFAST ) strcat(buf, " nofast");
+  if( hint & QIO_HINT_OWNED ) strcat(buf, " owned");
 
   return qio_strdup(buf);
 }
@@ -730,13 +737,15 @@ void _qio_channel_destroy(qio_channel_t* ch);
 
 static inline
 void qio_channel_retain(qio_channel_t* ch) {
-  //if( DEBUG_QIO ) fprintf(stdout, "Channel retain %p\n", ch);
   DO_RETAIN(ch);
+  if (ch && DEBUG_QIO)
+    fprintf(stdout, "Channel retain %p, ref_cnt = %ld\n", ch, ch->ref_cnt);
 }
 
 static inline
 void qio_channel_release(qio_channel_t* ch) {
-  //if( DEBUG_QIO ) fprintf(stdout, "Channel release %p\n", ch);
+  if (ch && DEBUG_QIO)
+    fprintf(stdout, "Channel release %p, ref_cnt = %ld\n", ch, ch->ref_cnt);
   DO_RELEASE(ch, _qio_channel_destroy);
 }
 
