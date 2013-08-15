@@ -162,14 +162,14 @@ static char* genQsubOptions(char* genFilename, char* projectString, qsubVersion 
     break;
   case nccs:
     if (generate_qsub_script) {
-      fprintf(qsubScript, "#PBS -l size=%d\n", numCoresPerLocale*numLocales);
+      fprintf(qsubScript, "#PBS -l nodes=%d\n", numCoresPerLocale*numLocales);
     } else {
       if (!queue && !walltime)
         chpl_error("An execution time must be specified for the NCCS launcher if no queue is\n"
                    "specified -- use the CHPL_LAUNCHER_WALLTIME and/or CHPL_LAUNCHER_QUEUE\n"
                    "environment variables", 0, 0);
       length += snprintf(optionString + length, maxOptLength - length,
-                         " -l size=%d\n", numCoresPerLocale*numLocales);
+                         " -l nodes=%d\n", numCoresPerLocale*numLocales);
     }
     break;
   }
