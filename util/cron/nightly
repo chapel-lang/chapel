@@ -385,7 +385,7 @@ if ($valgrind == 1) {
 } elsif ($nolocal == 1) {
     $threechars = "nlc";
     $morechars = "nolocal";
-} elsif ($nolocal == 1) {
+} elsif ($verify == 1) {
     $threechars = "vfy";
     $morechars = "verify";
 } elsif ($examples == 1) {

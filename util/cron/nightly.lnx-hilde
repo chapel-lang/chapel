@@ -16,14 +16,9 @@ fi
 
 echo Starting $0 on `hostname`. EXAMPLES=$EXAMPLES. dayType=$dayType.; module list; printenv; echo
 
-export CHPL_NIGHTLY_LOGDIR=/data/sea/cascade/chapel/Nightly${dayType}
-
-CHPL_HOME="$HOME/chapel"
-NIGHTLY="$CHPL_HOME/util/cron/nightly"
-LOGFILE="$HOME/tmp/nightly.verify.out"
+LOGFILE="~/tmp/nightly.verify.out"
 
 echo "Running verifications on `date`.  Log file: $LOGFILE"
-
-$NIGHTLY -cron $EXAMPLES -verify
+source ~/.chapelcshrc-cron && $CHPL_HOME/util/cron/nightly -cron $EXAMPLES -verify > $LOGFILE 2>&1
 
 echo Finished $0 on `date`.
