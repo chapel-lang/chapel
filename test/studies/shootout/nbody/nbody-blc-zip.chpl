@@ -68,23 +68,19 @@ record NBodySystem {
   proc initialize() {
     var p: 3*real;
     for b in bodies do
-      p += b.v * b.mass;  // TODO: reduce?
+      p += b.v * b.mass;
     bodies[1].offsetMomentum(p);
   }
 
   proc advance(dt) {
-    // TODO: Can we use a triangular iterator without hurting performance
-    for i in 1..numbodies {
+    for (b1, i) in zip(bodies, bodies.domain.low..) {
       for j in i+1..numbodies {
-        updateVelocities(bodies[i], bodies[j]);
-
-        inline proc updateVelocities(ref b1, ref b2) {
-          const dpos = b1.pos - b2.pos,
-                mag = dt / sqrt(sumOfSquares(dpos))**3;
-          
-          b1.v -= dpos * b2.mass * mag; // TODO: make sure scalars mult'd first?
-          b2.v += dpos * b1.mass * mag;
-        }
+        var b2 = bodies[j];  // TODO: add ref support (?)
+        const dpos = b1.pos - b2.pos,
+              mag = dt / sqrt(sumOfSquares(dpos))**3;
+        b1.v -= dpos * b2.mass * mag; // TODO: make sure scalars mult'd first?
+        b2.v += dpos * b1.mass * mag;
+        bodies[j] = b2;
       }
     }
 
@@ -92,28 +88,19 @@ record NBodySystem {
       b.pos += dt * b.v;
   }
 
-
-
   proc energy() {
     var e = 0.0;
 
-    // TODO: want to use triangular iterator here too, except that we need
-    // code in between the two loops
-    for i in 1..numbodies {
-      const b1 = bodies[i];
-
+    for (b1, i) in zip(bodies, bodies.domain.low..) {
       e += 0.5 * b1.mass * sumOfSquares(b1.v);
-
       for j in i+1..numbodies {
         const b2 = bodies[j];
-
         e -= (b1.mass * b2.mass) / sqrt(sumOfSquares(b1.pos - b2.pos));
       }
     }
 
     return e;
   }
-  
 }
 
 proc main(args: [] string) {
