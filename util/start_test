@@ -940,10 +940,6 @@ else
 endif
 
 if ($gengraphs) then
-    if (! $?CHPL_TEST_PERF_DIR) then
-        echo \[Error: CHPL_TEST_PERF_DIR must be set for generating performance graphs.\] |& $tee -a $logfile
-        exit 1
-    endif
     echo \[performance graph generation: ON\] |& $tee -a $logfile
 else
     echo \[performance graph generation: OFF\] |& $tee -a $logfile
@@ -1002,7 +998,9 @@ if ($performance || $gengraphs) then
     if ($?CHPL_TEST_PERF_DIR) then
         set perfdir = $CHPL_TEST_PERF_DIR
     else
-        set perfdir = ./perfdat/$perftestname
+        echo \[Warning: CHPL_TEST_PERF_DIR must be set for generating performance graphs, using default $CHPL_HOME/perfdat/\] |& $tee -a $logfile
+        setenv CHPL_TEST_PERF_DIR $CHPL_HOME/test/perfdat
+        set perfdir = $CHPL_HOME/test/perfdat
     endif
     set perfhtmldir = $perfdir/html
     if ($startdate != "") then
