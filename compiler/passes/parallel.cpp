@@ -306,7 +306,7 @@ static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol* temp
     fcall->insertBefore(new CallExpr(wrap_fn, tempc));
 
   if (fn->hasFlag(FLAG_ON))
-    fcall->insertAfter(new CallExpr(PRIM_CHPL_FREE, tempc));
+    fcall->insertAfter(new CallExpr(PRIM_TASK_FREE, tempc));
   else
     ; // wrap_fn will free the formal
 

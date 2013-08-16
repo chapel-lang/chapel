@@ -4415,6 +4415,7 @@ postFold(Expr* expr) {
                call->isPrimitive(PRIM_EXECUTE_TASKS_IN_LIST) ||
                call->isPrimitive(PRIM_FREE_TASK_LIST) ||
                call->isPrimitive(PRIM_CHPL_FREE) ||
+               call->isPrimitive(PRIM_HERE_FREE) ||
                (call->primitive && 
                 (!strncmp("_fscan", call->primitive->name, 6) ||
                  !strcmp("_readToEndOfLine", call->primitive->name) ||
