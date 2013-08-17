@@ -941,7 +941,7 @@ err_t _qio_file_do_close(qio_file_t* f)
   }
 
   if (f->fsfns) {
-    if (f->hints & QIO_HINT_OWNED)	// Should always be true
+    if (f->hints & QIO_HINT_OWNED)  // Should always be true
       err_api = f->fsfns->close(f->info);
     err = qio_err_to_int(err_api);
   }

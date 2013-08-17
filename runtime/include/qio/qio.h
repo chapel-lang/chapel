@@ -287,7 +287,7 @@ enum {
   // them.  This bit is set only if the qio_file_s is created with a file that
   // is opened within the qio implementation.  Otherwise, the user (or system)
   // has to close it.
-  QIO_HINT_OWNED		= QIO_HINT_NOFAST<<1,
+  QIO_HINT_OWNED        = QIO_HINT_NOFAST<<1,
 };
 
 
