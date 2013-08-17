@@ -65,11 +65,11 @@
 #   -compopts  <option list>          "--cc-warnings"
 #   -execopts  <option list>          ""
 #   -launchcmd <launcher command>     ""
-#   -no-old-graphs
 #   -norecurse
 #   -comp-only
 #   -performance
-#   -generate-graphs
+#   -gen-old-graphs
+#   -gen-graphs
 #   -startdate <MM/DD/YY>
 #   -futures
 #   -futuresonly
@@ -656,7 +656,7 @@ set valgrind = 0
 set valgrindexe = 0
 set interpret = 0
 set performance = 0
-set oldgraphs = 1
+set oldgraphs = 0
 set gengraphs = 0
 set startdate = ""
 set testfutures = 0
@@ -754,15 +754,17 @@ while ( $#argv > 0 )
                 set performance = 1
                 set gengraphs = 1
                 breaksw
+        case --gen-graphs:
+        case -gen-graphs:
         case --generate-graphs:
         case -generate-graphs:
                 shift
                 set gengraphs = 1
                 breaksw
-        case --no-old-graphs:
-        case -no-old-graphs:
+        case --gen-old-graphs:
+        case -gen-old-graphs:
                 shift
-                set oldgraphs = 0
+                set oldgraphs = 1
                 breaksw
     case --startdate:
     case -startdate:
@@ -995,13 +997,11 @@ endif
 # Set up vars for performance testing/graphing
 if ($performance || $gengraphs) then
     set perftestname = `uname -n | sed 's@\..*@@'`
-    if ($?CHPL_TEST_PERF_DIR) then
-        set perfdir = $CHPL_TEST_PERF_DIR
-    else
+    if (! $?CHPL_TEST_PERF_DIR) then
         echo \[Warning: CHPL_TEST_PERF_DIR must be set for generating performance graphs, using default $CHPL_HOME/perfdat/\] |& $tee -a $logfile
-        setenv CHPL_TEST_PERF_DIR $CHPL_HOME/test/perfdat
-        set perfdir = $CHPL_HOME/test/perfdat
+        setenv CHPL_TEST_PERF_DIR $CHPL_HOME/test/perfdat/$perftestname
     endif
+    set perfdir = $CHPL_TEST_PERF_DIR
     set perfhtmldir = $perfdir/html
     if ($startdate != "") then
         set startdate_t = "-s"$startdate

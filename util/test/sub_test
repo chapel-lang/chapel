@@ -483,7 +483,7 @@ if os.getenv('CHPL_TEST_PERF')!=None:
     if os.getenv('CHPL_TEST_PERF_DIR')!=None:
         perfdir=os.getenv('CHPL_TEST_PERF_DIR')
     else:
-        perfdir='./perfdat/'+machine
+        Fatal('$CHPL_TEST_PERF_DIR must be set')
 else:
     compoptssuffix='.compopts'
     execenvsuffix='.execenv'
