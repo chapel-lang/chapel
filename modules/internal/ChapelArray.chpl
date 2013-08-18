@@ -1687,8 +1687,8 @@ module ChapelArray {
     if a._value.isDefaultRectangular() {
       if b._value.isDefaultRectangular() {
         // implemented in DefaultRectangular
-        a._value.bulkReindex({(...a._value.dom.dsiDims())}._value);
-        b._value.bulkReindex({(...b._value.dom.dsiDims())}._value);
+        a._value.adjustBlkOffStrForNewDomain({(...a._value.dom.dsiDims())}._value);
+        b._value.adjustBlkOffStrForNewDomain({(...b._value.dom.dsiDims())}._value);
         a._value.doiBulkTransferStride(b._value);
       }
       else

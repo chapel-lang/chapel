@@ -563,10 +563,19 @@ module DefaultRectangular {
       var alias = new DefaultRectangularArr(eltType=eltType, rank=d.rank,
                                            idxType=d.idxType,
                                            stridable=d.stridable,
-                                           dom=d, noinit=true);
+                                           dom=d, noinit=true,
+                                           str=str,
+                                           blk=blk);
       alias.data = data;
       //alias.numelm = numelm;
-      //writeln("DR.dsiReindex blk: ", blk, " stride: ",dom.dsiDim(1).stride," str:",str(1));
+      alias.adjustBlkOffStrForNewDomain(d);
+      alias.origin = origin:d.idxType;
+      alias.computeFactoredOffs();
+      return alias;
+    }
+  
+  
+    proc adjustBlkOffStrForNewDomain(d: DefaultRectangularDom) {
       for param i in 1..rank {
         var s: idxType;
         // NOTE: Not bothering to check to see if this can fit into idxType
@@ -577,13 +586,10 @@ module DefaultRectangular {
                  (dom.dsiDim(i).stride>0 && str(i)>0));
           s = dom.dsiDim(i).stride / str(i) : d.idxType;
         }
-        alias.off(i) = d.dsiDim(i).low;
-        alias.blk(i) = blk(i) * s;
-        alias.str(i) = d.dsiDim(i).stride;
+        off(i) = d.dsiDim(i).low;
+        blk(i) = blk(i) * s;
+        str(i) = d.dsiDim(i).stride;
       }
-      alias.origin = origin:d.idxType;
-      alias.computeFactoredOffs();
-      return alias;
     }
   
     proc dsiSlice(d: DefaultRectangularDom) {
@@ -1329,22 +1335,4 @@ module DefaultRectangular {
     return result;
   }
   
-  proc DefaultRectangularArr.bulkReindex(d: DefaultRectangularDom)
-  {
-    
-    for param i in 1..rank {
-      var s: idxType;
-      // NOTE: Not bothering to check to see if this can fit into idxType
-      if chpl__signedType(idxType)==idxType {
-        s = (dom.dsiDim(i).stride / str(i)) : d.idxType;
-      } else { // unsigned type, signed stride
-        assert((dom.dsiDim(i).stride<0 && str(i)<0) ||
-               (dom.dsiDim(i).stride>0 && str(i)>0));
-        s = dom.dsiDim(i).stride / str(i) : d.idxType;
-      }
-      blk(i) = blk(i) * s;
-      off(i) = d.dsiDim(i).low;
-      str(i) = d.dsiDim(i).stride;
-    }
-  }
 }
