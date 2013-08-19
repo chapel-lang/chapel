@@ -348,6 +348,7 @@ const char* astTagName[E_BaseAST+1] = {
   "BlockStmt",
   "CondStmt",
   "GotoStmt",
+  "ExternBlockStmt",
   "Expr",
 
   "ModuleSymbol",

@@ -1,0 +1,2 @@
+error: ambiguous call 'foo(1)' [functionResolution.cpp:1815]
+

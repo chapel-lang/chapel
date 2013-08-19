@@ -1,13 +1,17 @@
 GEN_HEADERS = \
-	reservedSymbolNames.h
+        reservedSymbolNames.h
 
 PASSES_SRCS = \
         addInitGuards.cpp \
         buildDefaultFunctions.cpp \
+        checkNormalized.cpp \
+        checkParsed.cpp \
+        checkResolved.cpp \
         cleanup.cpp \
         codegen.cpp \
-	docs.cpp \
-	externCResolve.cpp \
+        createTaskFunctions.cpp \
+        docs.cpp \
+        externCResolve.cpp \
         filesToAST.cpp \
         flattenClasses.cpp \
         flattenFunctions.cpp \
@@ -15,12 +19,12 @@ PASSES_SRCS = \
         normalize.cpp \
         parallel.cpp \
         repositionDefExpressions.cpp \
+        resolveIntents.cpp \
         returnStarTuplesByRefArgs.cpp \
-        scopeResolve.cpp \
-        semanticChecks.cpp
+        scopeResolve.cpp
 
 SVN_SRCS = $(PASSES_SRCS)
 SRCS = $(SVN_SRCS)
 
 PASSES_OBJS = \
-	$(PASSES_SRCS:%.cpp=$(PASSES_OBJDIR)/%.$(OBJ_SUFFIX))
+        $(PASSES_SRCS:%.cpp=$(PASSES_OBJDIR)/%.$(OBJ_SUFFIX))

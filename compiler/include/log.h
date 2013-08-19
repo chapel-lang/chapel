@@ -55,8 +55,11 @@ class ArgumentState;
 #define LOG_normalize           'N'
 #define LOG_checkNormalized     NUL
 #define LOG_buildDefaultFunctions 'D'
+#define LOG_createTaskFunctions NUL
 #define LOG_resolve             'R'
+#define LOG_resolveIntents      'i'
 #define LOG_checkResolved       NUL
+#define LOG_processIteratorYields NUL
 #define LOG_flattenFunctions    'e'
 #define LOG_cullOverReferences  'O'
 #define LOG_callDestructors     'd'
@@ -73,6 +76,7 @@ class ArgumentState;
 #define LOG_removeWrapRecords   'w'
 #define LOG_removeEmptyRecords  'm'
 #define LOG_localizeGlobals     'l'
+#define LOG_loopInvariantCodeMotion 'q'
 #define LOG_prune2              'Y'
 #define LOG_returnStarTuplesByRefArgs 's'
 #define LOG_insertWideReferences 'W'

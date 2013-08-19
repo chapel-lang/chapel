@@ -41,6 +41,7 @@ const char* CHPL_HOST_PLATFORM = NULL;
 const char* CHPL_TARGET_PLATFORM = NULL;
 const char* CHPL_HOST_COMPILER = NULL;
 const char* CHPL_TARGET_COMPILER = NULL;
+const char* CHPL_LOCALE_MODEL = NULL;
 const char* CHPL_TASKS = NULL;
 const char* CHPL_THREADS = NULL;
 const char* CHPL_COMM = NULL;
@@ -49,7 +50,10 @@ const char* CHPL_GASNET_SEGMENT = NULL;
 const char* CHPL_ATOMICS = NULL;
 const char* CHPL_NETWORK_ATOMICS = NULL;
 const char* CHPL_GMP = NULL;
+const char* CHPL_WIDE_POINTERS = NULL;
 const char* CHPL_MAKE = NULL;
+
+bool widePointersStruct;
 
 int fdump_html = 0;
 bool fdump_html_incude_system_modules = true;
@@ -63,7 +67,9 @@ bool no_codegen = false;
 bool genExternPrototypes = false;
 int debugParserLevel = 0;
 bool developer = false;
+bool fVerify = true;    // On by default for user and developer modes.
 bool ignore_errors = false;
+bool ignore_errors_for_pass = false;
 bool ignore_warnings = false;
 int trace_level = 0;
 int fcg = 0;
@@ -85,11 +91,15 @@ bool fNoBoundsChecks = false;
 bool fNoLocalChecks = false;
 bool fNoNilChecks = false;
 
+// flag for llvmWideOpt
+bool fLLVMWideOpt = false;
+
 // Enable all extra special warnings
 static bool fNoWarnSpecial = true;
 static bool fNoWarnDomainLiteral = true;
 static bool fNoWarnTupleIteration = true;
 
+bool fNoloopInvariantCodeMotion = false;
 bool fNoChecks = false;
 bool fNoInline = false;
 bool fNoPrivatization = false;
@@ -150,6 +160,7 @@ Timer timer3;
 Timer timer4;
 Timer timer5;
 
+bool fTaskHooks = false;
 bool fNoMemoryFrees = false;
 int numGlobalsOnHeap = 0;
 bool preserveInlinedLineNumbers = false;
@@ -312,6 +323,7 @@ static void setupOrderedGlobals(const char* argv0) {
   SETUP_ENV_VAR(CHPL_TARGET_PLATFORM, "chplenv/platform --target");
   SETUP_ENV_VAR(CHPL_HOST_COMPILER, "chplenv/compiler --host");
   SETUP_ENV_VAR(CHPL_TARGET_COMPILER, "chplenv/compiler --target");
+  SETUP_ENV_VAR(CHPL_LOCALE_MODEL, "chplenv/localeModel");
   SETUP_ENV_VAR(CHPL_TASKS, "chplenv/tasks");
   SETUP_ENV_VAR(CHPL_THREADS, "chplenv/threads");
   SETUP_ENV_VAR(CHPL_COMM, "chplenv/comm");
@@ -320,6 +332,7 @@ static void setupOrderedGlobals(const char* argv0) {
   SETUP_ENV_VAR(CHPL_ATOMICS, "chplenv/atomics");
   SETUP_ENV_VAR(CHPL_NETWORK_ATOMICS, "chplenv/atomics --network");
   SETUP_ENV_VAR(CHPL_GMP, "chplenv/gmp");
+  SETUP_ENV_VAR(CHPL_WIDE_POINTERS, "chplenv/widePointers");
   SETUP_ENV_VAR(CHPL_MAKE, "chplenv/chplmake");
 
   // These depend on the environment variables being set
@@ -330,6 +343,12 @@ static void setupOrderedGlobals(const char* argv0) {
              || !strcmp(CHPL_TARGET_COMPILER, "cray-prgenv-pgi");
   // conservatively how much is needed for the current PGI compiler
   if (gotPGI) fMaxCIdentLen = 1020;
+  
+  if( 0 == strcmp(CHPL_WIDE_POINTERS, "struct") ) {
+    widePointersStruct = true;
+  } else {
+    widePointersStruct = false;
+  }
 }
 
 
@@ -481,6 +500,7 @@ static void setFastFlag(ArgumentState* arg, char* unused) {
   fNoCopyPropagation = false;
   fNoDeadCodeElimination = false;
   fNoFastFollowers = false;
+  fNoloopInvariantCodeMotion= false;
   fNoInline = false;
   fNoInlineIterators = false;
   fNoOptimizeLoopIterators = false;
@@ -506,6 +526,7 @@ static void setBaselineFlag(ArgumentState* arg, char* unused) {
   fNoCopyPropagation = true;
   fNoDeadCodeElimination = true;
   fNoFastFollowers = true;
+  fNoloopInvariantCodeMotion = true;
   fNoInline = true;
   fNoInlineIterators = true;
   fNoLiveAnalysis = true;
@@ -590,6 +611,7 @@ static ArgumentDescription arg_desc[] = {
  {"fast", ' ', NULL, "Use fast default settings", "F", &fFastFlag, NULL, setFastFlag},
  {"fast-followers", ' ', NULL, "Enable [disable] fast followers", "n", &fNoFastFollowers, "CHPL_DISABLE_FAST_FOLLOWERS", NULL},
  {"ieee-float", ' ', NULL, "Generate code that is strict [lax] with respect to IEEE compliance", "N", &fieeefloat, "CHPL_IEEE_FLOAT", NULL},
+ {"loop-invariant-code-motion", ' ', NULL, "Enable [disable] loop invariant code motion", "n", &fNoloopInvariantCodeMotion, NULL, NULL},
  {"inline", ' ', NULL, "Enable [disable] function inlining", "n", &fNoInline, NULL, NULL},
  {"inline-iterators", ' ', NULL, "Enable [disable] iterator inlining", "n", &fNoInlineIterators, "CHPL_DISABLE_INLINE_ITERATORS", NULL},
  {"live-analysis", ' ', NULL, "Enable [disable] live variable analysis", "n", &fNoLiveAnalysis, "CHPL_DISABLE_LIVE_ANALYSIS", NULL},
@@ -603,7 +625,7 @@ static ArgumentDescription arg_desc[] = {
  {"scalar-replace-limit", ' ', "<limit>", "Limit on the size of tuples being replaced during scalar replacement", "I", &scalar_replace_limit, "CHPL_SCALAR_REPLACE_TUPLE_LIMIT", NULL},
  {"tuple-copy-opt", ' ', NULL, "Enable [disable] tuple (memcpy) optimization", "n", &fNoTupleCopyOpt, "CHPL_DISABLE_TUPLE_COPY_OPT", NULL},
  {"tuple-copy-limit", ' ', "<limit>", "Limit on the size of tuples considered for optimization", "I", &tuple_copy_limit, "CHPL_TUPLE_COPY_LIMIT", NULL},
-
+ 
  {"", ' ', NULL, "Run-time Semantic Check Options", NULL, NULL, NULL, NULL},
  {"no-checks", ' ', NULL, "Disable all following run-time checks", "F", &fNoChecks, "CHPL_NO_CHECKS", turnOffChecks},
  {"bounds-checks", ' ', NULL, "Enable [disable] bounds checking", "n", &fNoBoundsChecks, "CHPL_NO_BOUNDS_CHECKING", NULL},
@@ -631,6 +653,7 @@ static ArgumentDescription arg_desc[] = {
 
  {"", ' ', NULL, "LLVM Code Generation Options", NULL, NULL, NULL, NULL},
  {"llvm", ' ', NULL, "[Don't] use the LLVM code generator", "N", &llvmCodegen, "CHPL_LLVM_CODEGEN", NULL},
+ {"llvm-wide-opt", ' ', NULL, "Enable [disable] LLVM wide pointer optimizations", "N", &fLLVMWideOpt, "CHPL_LLVM_WIDE_OPTS", NULL},
 
  {"", ' ', NULL, "Documentation Options", NULL, NULL, NULL, NULL},
  {"docs", ' ', NULL, "Runs documentation on the source file", "N", &fDocs, "CHPL_DOC", NULL },
@@ -678,6 +701,7 @@ static ArgumentDescription arg_desc[] = {
  {"log-ids", ' ', NULL, "[Don't] include BaseAST::ids in log files", "N", &fLogIds, "CHPL_LOG_IDS", NULL},
  {"log-module", ' ', "<module-name>", "Restrict IR dump to the named module", "S256", log_module, "CHPL_LOG_MODULE", NULL},
 // {"log-symbol", ' ', "<symbol-name>", "Restrict IR dump to the named symbol(s)", "S256", log_symbol, "CHPL_LOG_SYMBOL", NULL}, // This doesn't work yet.
+ {"verify", ' ', NULL, "Run consistency checks during compilation", "N", &fVerify, "CHPL_VERIFY", NULL},
  {"parser-debug", 'D', NULL, "Set parser debug level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},
  {"print-dispatch", ' ', NULL, "Print dynamic dispatch table", "F", &fPrintDispatch, NULL, NULL},
  {"print-statistics", ' ', "[n|k|t]", "Print AST statistics", "S256", fPrintStatistics, NULL, NULL},
@@ -695,6 +719,7 @@ static ArgumentDescription arg_desc[] = {
  {"gdb", ' ', NULL, "Run compiler in gdb", "F", &rungdb, NULL, NULL},
  {"heterogeneous", ' ', NULL, "Compile for heterogeneous nodes", "F", &fHeterogeneous, "", NULL},
  {"ignore-errors", ' ', NULL, "[Don't] attempt to ignore errors", "N", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
+ {"ignore-errors-for-pass", ' ', NULL, "[Don't] attempt to ignore errors until the end of the pass in which they occur", "N", &ignore_errors_for_pass, "CHPL_IGNORE_ERRORS_FOR_PASS", NULL},
  {"library", ' ', NULL, "Generate a Chapel library file", "F", &fLibraryCompile, NULL, NULL},
  {"localize-global-consts", ' ', NULL, "Enable [disable] optimization of global constants", "n", &fNoGlobalConstOpt, "CHPL_DISABLE_GLOBAL_CONST_OPT", NULL},
  {"local-temp-names", ' ', NULL, "[Don't] Generate locally-unique temp names", "N", &localTempNames, "CHPL_LOCAL_TEMP_NAMES", NULL},
@@ -705,6 +730,7 @@ static ArgumentDescription arg_desc[] = {
  {"remove-empty-records", ' ', NULL, "Enable [disable] empty record removal", "n", &fNoRemoveEmptyRecords, "CHPL_DISABLE_REMOVE_EMPTY_RECORDS", NULL},
  {"reposition-def-expressions", ' ', NULL, "Enable [disable] repositioning of def expressions to usage points", "n", &fNoRepositionDefExpr, "CHPL_DISABLE_REPOSITION_DEF_EXPR", NULL},
  {"ignore-internal-modules", ' ', NULL, "Enable [disable] skipping internal module initialization in generated code (for testing)", "N", &fNoInternalModules, "CHPL_DISABLE_INTERNAL_MODULES", NULL},
+ {"task-hooks", ' ', NULL, "Enable [disable] calls to taskInit and taskExit routines", "f", &fTaskHooks, "CHPL_TASKS_HOOKS", NULL},
  {"timers", ' ', NULL, "[Don't] Enable general timers one to five", "N", &fEnableTimers, "CHPL_ENABLE_TIMERS", NULL},
  {"print-chpl-home", ' ', NULL, "Print CHPL_HOME and path to this executable and exit", "F", &printChplHome, NULL, NULL},
  {0}

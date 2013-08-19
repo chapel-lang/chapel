@@ -6,7 +6,8 @@
 #include "chpl-mem.h"
 #include "chpl-tasks.h"
 
-#include "chplcgfns.h"  // for chpl_ftable
+#include "chplcgfns.h"
+#include "chpl-gen-includes.h"
 
 #include <errno.h>
 #include <stdio.h>
@@ -221,8 +222,10 @@ void  chpl_comm_put_strd(void* dstaddr_arg, void* dststrides, int32_t dstlocale,
       total = total*cnt[i+1];
 
     //displacement from the dstaddr and srcaddr start points
-    srcdisp = chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
-    dstdisp = chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
+    // We want these allocations to be locale-aware, since computing these stripes is 
+    // a kind of kernel code.
+    srcdisp = chpl_tracked_task_calloc(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
+    dstdisp = chpl_tracked_task_calloc(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
 
     for (j=0; j<total; j++) {
       carry = 1;
@@ -244,8 +247,8 @@ void  chpl_comm_put_strd(void* dstaddr_arg, void* dststrides, int32_t dstlocale,
         }
       }
     }  // for j
-    chpl_mem_free(srcdisp,0,0);
-    chpl_mem_free(dstdisp,0,0);
+    chpl_tracked_task_free(srcdisp,0,0);
+    chpl_tracked_task_free(dstdisp,0,0);
     break;
   }
 }
@@ -374,8 +377,8 @@ void  chpl_comm_get_strd(void* dstaddr_arg, void* dststrides, int32_t srclocale,
       total = total*cnt[i+1];
 
     //displacement from the dstaddr and srcaddr start points
-    srcdisp = chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
-    dstdisp = chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
+    srcdisp = chpl_tracked_task_calloc(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
+    dstdisp = chpl_tracked_task_calloc(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
 
     for (j=0; j<total; j++) {
       carry = 1;
@@ -397,8 +400,8 @@ void  chpl_comm_get_strd(void* dstaddr_arg, void* dststrides, int32_t srclocale,
         }
       }
     }  // for j
-    chpl_mem_free(srcdisp,0,0);
-    chpl_mem_free(dstdisp,0,0);
+    chpl_tracked_task_free(srcdisp,0,0);
+    chpl_tracked_task_free(dstdisp,0,0);
     break;
   }
 }
@@ -409,44 +412,45 @@ typedef struct {
   char          arg[0];       // variable-sized data here
 } fork_t;
 
+void chpl_comm_fork(c_nodeid_t node, c_sublocid_t subloc,
+                    chpl_fn_int_t fid, void *arg, int32_t arg_size) {
+  assert(node==0);
+
+  chpl_ftable_call(fid, arg);
+}
+
 static void fork_nb_wrapper(fork_t* f) {
   if (f->arg_size)
-    (*chpl_ftable[f->fid])(&f->arg);
+    chpl_ftable_call(f->fid, &f->arg);
   else
-    (*chpl_ftable[f->fid])(0);
+    chpl_ftable_call(f->fid, NULL);
   chpl_mem_free(f, 0, 0);
 }
 
-void chpl_comm_fork_nb(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
-                       int32_t arg_size, int32_t arg_tid) {
+void chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
+                       chpl_fn_int_t fid, void *arg, int32_t arg_size) {
   fork_t *info;
   int     info_size;
 
   assert(node==0);
 
   info_size = sizeof(fork_t) + arg_size;
-  info = (fork_t*)chpl_mem_allocMany(info_size, sizeof(char), CHPL_RT_MD_COMM_FORK_SEND_NB_INFO, 0, 0);
+  info = (fork_t*)chpl_mem_allocMany(info_size, sizeof(char),
+                                     CHPL_RT_MD_COMM_FORK_SEND_NB_INFO, 0, 0);
   info->fid = fid;
   info->arg_size = arg_size;
   if (arg_size)
     memcpy(&(info->arg), arg, arg_size);
   chpl_task_startMovedTask((chpl_fn_p)fork_nb_wrapper, (void*)info,
-                           chpl_nullTaskID, false);
-}
-
-void chpl_comm_fork(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
-                    int32_t arg_size, int32_t arg_tid) {
-  assert(node==0);
-
-  (*chpl_ftable[fid])(arg);
+                           subloc, chpl_nullTaskID, false);
 }
 
 // Same as chpl_comm_fork()
-void chpl_comm_fork_fast(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
-                         int32_t arg_size, int32_t arg_tid) {
+void chpl_comm_fork_fast(c_nodeid_t node, c_sublocid_t subloc,
+                         chpl_fn_int_t fid, void *arg, int32_t arg_size) {
   assert(node==0);
 
-  (*chpl_ftable[fid])(arg);
+  chpl_ftable_call(fid, arg);
 }
 
 int chpl_comm_numPollingTasks(void) { return 0; }

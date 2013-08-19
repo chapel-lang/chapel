@@ -3,7 +3,9 @@
 
 #ifndef LAUNCHER
 
+#include "chpl-comm.h"
 #include "chpl-mem.h"
+#include "error.h"
 
 //
 // Multi-locale macros used for compiler code generation
@@ -13,7 +15,7 @@
 
 
 static ___always_inline
-void chpl_gen_comm_get(void *addr, int32_t node, void* raddr,
+void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
                        int32_t elemSize, int32_t typeIndex, int32_t len,
                        int ln, chpl_string fn)
 {
@@ -29,7 +31,7 @@ void chpl_gen_comm_get(void *addr, int32_t node, void* raddr,
 }
 
 static ___always_inline
-void chpl_gen_comm_put(void* addr, int32_t node, void* raddr,
+void chpl_gen_comm_put(void* addr, c_nodeid_t node, void* raddr,
                        int32_t elemSize, int32_t typeIndex, int32_t len,
                        int ln, chpl_string fn)
 {
@@ -45,7 +47,7 @@ void chpl_gen_comm_put(void* addr, int32_t node, void* raddr,
 }
 
 static ___always_inline
-void chpl_gen_comm_get_strd(void *addr, void *dststr, int32_t node, void *raddr,
+void chpl_gen_comm_get_strd(void *addr, void *dststr, c_nodeid_t node, void *raddr,
                        void *srcstr, void *count, int32_t strlevels, 
                        int32_t elemSize, int32_t typeIndex,
                        int ln, chpl_string fn)
@@ -58,7 +60,7 @@ void chpl_gen_comm_get_strd(void *addr, void *dststr, int32_t node, void *raddr,
 }
 
 static ___always_inline
-void chpl_gen_comm_put_strd(void *addr, void *dststr, int32_t node, void *raddr,
+void chpl_gen_comm_put_strd(void *addr, void *dststr, c_nodeid_t node, void *raddr,
                        void *srcstr, void *count, int32_t strlevels, 
                        int32_t elemSize, int32_t typeIndex,
                        int ln, chpl_string fn)
@@ -70,38 +72,28 @@ void chpl_gen_comm_put_strd(void *addr, void *dststr, int32_t node, void *raddr,
 #endif
 }
 
-#include "error.h"
-
+// Returns true if the given node ID matches the ID of the currently node,
+// false otherwise.
 static ___always_inline
-void chpl_test_local(int32_t node, int32_t ln, const char* file, const char* error)
+chpl_bool chpl_is_node_local(c_nodeid_t node)
+{ return node == chpl_nodeID; }
+
+// Assert that the given node ID matches that of the currently-running image
+// If not, format the given error message with the given filename and line number
+// and then halt the current task.  (The exact behavior is dictated by 
+// chpl_error()).
+static ___always_inline
+void chpl_check_local(c_nodeid_t node, int32_t ln, const char* file, const char* error)
 {
-  if( node != chpl_nodeID ) {
+  if (! chpl_is_node_local(node))
     chpl_error(error, ln, file);
-  }
 }
 
-#define CHPL_HEAP_REGISTER_GLOBAL_VAR(i, wide)             \
-  do {                                                     \
-    (wide).locale.node = 0;                                \
-    (wide).locale.subloc = 0;                              \
-    chpl_globals_registry[i] = (&((wide).addr));           \
-    CHPL_HEAP_REGISTER_GLOBAL_VAR_EXTRA(i, wide)           \
-  } while (0)
-
-//
-// If we're in serial mode, we should use blocking rather than
-// non-blocking comm forks in order to serialize the forks.
-// See test/parallel/serial/bradc/serialDistributedForall.chpl
-// for a motivating example that didn't work before this change.
-//
 static ___always_inline
-void chpl_comm_nonblocking_on(int32_t node, chpl_fn_int_t fid,
-                              void *arg, int32_t arg_size, int32_t arg_tid) {
-  if (chpl_task_getSerial()) {
-    chpl_comm_fork(node, fid, arg, arg_size, arg_tid);
-  } else {
-    chpl_comm_fork_nb(node, fid, arg, arg_size, arg_tid);
-  }
+void chpl_heap_register_global_var(int i, wide_ptr_t *ptr_to_wide_ptr)
+{
+  chpl_globals_registry[i] = ptr_to_wide_ptr;
+  CHPL_HEAP_REGISTER_GLOBAL_VAR_EXTRA(i, *ptr_to_wide_ptr);
 }
 
 #ifdef DEBUG_COMM_INIT
@@ -130,7 +122,7 @@ void chpl_check_nil(void* ptr, int32_t lineno, const char* filename)
 
 static ___always_inline
 void* chpl_array_alloc(size_t nmemb, size_t eltSize, int32_t lineno, const char* filename) {
-  return (nmemb == 0) ? (void*)(0x0) : chpl_mem_allocMany(nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS, lineno, filename);
+  return chpl_tracked_task_calloc(nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS, lineno, filename);
 }
 
 static ___always_inline
@@ -143,7 +135,7 @@ void* chpl_wide_array_alloc(int32_t dstNode, size_t nmemb, size_t eltSize, int32
 static ___always_inline
 void chpl_array_free(void* x, int32_t lineno, const char* filename)
 {
-  chpl_mem_free(x, lineno, filename);
+  chpl_tracked_task_free(x, lineno, filename);
 }
 
 static ___always_inline

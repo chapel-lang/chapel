@@ -321,6 +321,7 @@ CHPL_TASKS == mta, CHPL_THREADS == none
   overflow stacks that are too small.
 
 CHPL_TASKS == none, CHPL_THREADS == none
+
   The default task call stack size is the system stack limit (typically
   8 MiB for Linux systems).  If CHPL_RT_CALL_STACK_SIZE is present, its
   value is used to set the stack size for the process.  Tasks inherit

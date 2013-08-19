@@ -8,7 +8,8 @@
 #include "chpl-mem.h"
 #include "chplsys.h"
 #include "chpl-tasks.h"
-#include "chplcgfns.h" // for chpl_ftable
+#include "chplcgfns.h"
+#include "chpl-gen-includes.h"
 #include "chpl-atomics.h"
 #include "error.h"
 
@@ -82,6 +83,7 @@ typedef struct {
 
 typedef struct {
   int           caller;
+  c_sublocid_t  subloc;
   void*         ack;
   chpl_bool     serial_state; // true if not allowed to spawn new threads
   chpl_fn_int_t fid;
@@ -130,9 +132,9 @@ static void AM_fork_fast(gasnet_token_t token, void* buf, size_t nbytes) {
   }
 
   if (f->arg_size)
-    (*chpl_ftable[f->fid])(&f->arg);
+    chpl_ftable_call(f->fid, &f->arg);
   else
-    (*chpl_ftable[f->fid])(0);
+    chpl_ftable_call(f->fid, NULL);
 
   // Signal that the handler has completed
   GASNET_Safe(gasnet_AMReplyShort2(token, SIGNAL,
@@ -141,9 +143,9 @@ static void AM_fork_fast(gasnet_token_t token, void* buf, size_t nbytes) {
 
 static void fork_wrapper(fork_t *f) {
   if (f->arg_size)
-    (*chpl_ftable[f->fid])(&f->arg);
+    chpl_ftable_call(f->fid, &f->arg);
   else
-    (*chpl_ftable[f->fid])(0);
+    chpl_ftable_call(f->fid, NULL);
   GASNET_Safe(gasnet_AMRequestShort2(f->caller, SIGNAL,
                                      AckArg0(f->ack), AckArg1(f->ack)));
 
@@ -151,14 +153,17 @@ static void fork_wrapper(fork_t *f) {
 }
 
 static void AM_fork(gasnet_token_t token, void* buf, size_t nbytes) {
-  fork_t *f = (fork_t*)chpl_mem_allocMany(nbytes, sizeof(char), CHPL_RT_MD_COMM_FORK_RECV_INFO, 0, 0);
+  fork_t *f = (fork_t*)chpl_mem_allocMany(nbytes, sizeof(char),
+                                          CHPL_RT_MD_COMM_FORK_RECV_INFO, 0, 0);
   memcpy(f, buf, nbytes);
   chpl_task_startMovedTask((chpl_fn_p)fork_wrapper, (void*)f,
-                           chpl_nullTaskID, f->serial_state);
+                           f->subloc, chpl_nullTaskID,
+                           f->serial_state);
 }
 
 static void fork_large_wrapper(fork_t* f) {
-  void* arg = chpl_mem_allocMany(1, f->arg_size, CHPL_RT_MD_COMM_FORK_RECV_LARGE_ARG, 0, 0);
+  void* arg = chpl_mem_allocMany(1, f->arg_size,
+                                 CHPL_RT_MD_COMM_FORK_RECV_LARGE_ARG, 0, 0);
 
   // A note on strict aliasing:
   // We used to say something like *(void**)f->arg,
@@ -171,7 +176,7 @@ static void fork_large_wrapper(fork_t* f) {
 
   chpl_comm_get(arg, f->caller, f_arg,
                 f->arg_size, -1 /*typeIndex: unused*/, 1, 0, "fork large");
-  (*chpl_ftable[f->fid])(arg);
+  chpl_ftable_call(f->fid, arg);
   GASNET_Safe(gasnet_AMRequestShort2(f->caller, SIGNAL,
                                      AckArg0(f->ack), AckArg1(f->ack)));
 
@@ -183,17 +188,20 @@ static void fork_large_wrapper(fork_t* f) {
 ////           hide data copy by making get non-blocking
 ////GASNET - can we allocate f big enough so as not to need malloc in wrapper
 static void AM_fork_large(gasnet_token_t token, void* buf, size_t nbytes) {
-  fork_t* f = (fork_t*)chpl_mem_allocMany(1, nbytes, CHPL_RT_MD_COMM_FORK_RECV_LARGE_INFO, 0, 0);
+  fork_t* f = (fork_t*)chpl_mem_allocMany(1, nbytes,
+                                          CHPL_RT_MD_COMM_FORK_RECV_LARGE_INFO,
+                                          0, 0);
   memcpy(f, buf, nbytes);
   chpl_task_startMovedTask((chpl_fn_p)fork_large_wrapper, (void*)f,
-                           chpl_nullTaskID, f->serial_state);
+                           f->subloc, chpl_nullTaskID,
+                           f->serial_state);
 }
 
 static void fork_nb_wrapper(fork_t *f) {
   if (f->arg_size)
-    (*chpl_ftable[f->fid])(&f->arg);
+    chpl_ftable_call(f->fid, &f->arg);
   else
-    (*chpl_ftable[f->fid])(0);
+    chpl_ftable_call(f->fid, NULL);
   chpl_mem_free(f, 0, 0);
 }
 
@@ -201,14 +209,17 @@ static void AM_fork_nb(gasnet_token_t  token,
                         void           *buf,
                         size_t          nbytes) {
   fork_t *f = (fork_t*)chpl_mem_allocMany(nbytes, sizeof(char),
-                                          CHPL_RT_MD_COMM_FORK_RECV_NB_INFO, 0, 0);
+                                          CHPL_RT_MD_COMM_FORK_RECV_NB_INFO,
+                                          0, 0);
   memcpy(f, buf, nbytes);
   chpl_task_startMovedTask((chpl_fn_p)fork_nb_wrapper, (void*)f,
-                           chpl_nullTaskID, f->serial_state);
+                           f->subloc, chpl_nullTaskID,
+                           f->serial_state);
 }
 
 static void fork_nb_large_wrapper(fork_t* f) {
-  void* arg = chpl_mem_allocMany(1, f->arg_size, CHPL_RT_MD_COMM_FORK_RECV_NB_LARGE_ARG, 0, 0);
+  void* arg = chpl_mem_allocMany(1, f->arg_size,
+                                 CHPL_RT_MD_COMM_FORK_RECV_NB_LARGE_ARG, 0, 0);
 
   // See "A note on strict aliasing" in fork_large_wrapper
   void* f_arg;
@@ -220,16 +231,19 @@ static void fork_nb_large_wrapper(fork_t* f) {
                                       FREE,
                                       &(f->ack),
                                       sizeof(f->ack)));
-  (*chpl_ftable[f->fid])(arg);
+  chpl_ftable_call(f->fid, arg);
   chpl_mem_free(f, 0, 0);
   chpl_mem_free(arg, 0, 0);
 }
 
 static void AM_fork_nb_large(gasnet_token_t token, void* buf, size_t nbytes) {
-  fork_t* f = (fork_t*)chpl_mem_allocMany(1, nbytes, CHPL_RT_MD_COMM_FORK_RECV_NB_LARGE_INFO, 0, 0);
+  fork_t* f = (fork_t*)chpl_mem_allocMany(1, nbytes,
+                                          CHPL_RT_MD_COMM_FORK_RECV_NB_LARGE_INFO,
+                                          0, 0);
   memcpy(f, buf, nbytes);
   chpl_task_startMovedTask((chpl_fn_p)fork_nb_large_wrapper, (void*)f,
-                           chpl_nullTaskID, f->serial_state);
+                           f->subloc, chpl_nullTaskID,
+                           f->serial_state);
 }
 
 static void AM_signal(gasnet_token_t token, gasnet_handlerarg_t a0, gasnet_handlerarg_t a1) {
@@ -401,7 +415,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
     // of the global variable locations; everyone else will just peek at its copy.  So
     // locale 0 sets up its segment to an appropriate size:
     //
-    int global_table_size = chpl_numGlobalsOnHeap * sizeof(void*) + GASNETT_PAGESIZE;
+    int global_table_size = chpl_numGlobalsOnHeap * sizeof(wide_ptr_t) + GASNETT_PAGESIZE;
     void* global_table = malloc(global_table_size);
     seginfo_table[0].addr = ((void *)(((uint8_t*)global_table) + 
                                       (((((uintptr_t)global_table)%GASNETT_PAGESIZE) == 0)? 0 : 
@@ -477,10 +491,10 @@ void chpl_comm_rollcall(void) {
 
 void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p) {
 #if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
-  *start_p = chpl_numGlobalsOnHeap * sizeof(void*) 
+  *start_p = chpl_numGlobalsOnHeap * sizeof(wide_ptr_t) 
              + (char*)seginfo_table[chpl_nodeID].addr;
   *size_p  = seginfo_table[chpl_nodeID].size
-             - chpl_numGlobalsOnHeap * sizeof(void*);
+             - chpl_numGlobalsOnHeap * sizeof(wide_ptr_t);
 #else /* GASNET_SEGMENT_EVERYTHING */
   *start_p = NULL;
   *size_p  = 0;
@@ -496,8 +510,8 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
   if (chpl_nodeID != 0) {
     for (i = 0; i < numGlobals; i++) {
       chpl_comm_get(chpl_globals_registry[i], 0,
-                    &((void**)seginfo_table[0].addr)[i],
-                    sizeof(void*), -1 /*typeIndex: unused*/, 1, 0, "");
+                    &((wide_ptr_t*)seginfo_table[0].addr)[i],
+                    sizeof(wide_ptr_t), -1 /*typeIndex: unused*/, 1, 0, "");
     }
   }
 }
@@ -508,6 +522,7 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
   done_t* done;
   int numOffsets=1;
 
+  // This can use the system allocator because it involves internode communication.
   done = (done_t*) chpl_mem_allocManyZero(chpl_numNodes, sizeof(*done),
                                           CHPL_RT_MD_COMM_FORK_DONE_FLAG,
                                           0, 0);
@@ -646,7 +661,7 @@ void chpl_comm_exit(int all, int status) {
   }
 }
 
-void  chpl_comm_put(void* addr, int32_t node, void* raddr,
+void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
                     int32_t elemSize, int32_t typeIndex, int32_t len,
                     int ln, chpl_string fn) {
   const int size = elemSize*len;
@@ -667,7 +682,7 @@ void  chpl_comm_put(void* addr, int32_t node, void* raddr,
 ////GASNET - pass trace info to gasnet_get
 ////GASNET - define GASNET_E_ PUTGET always REMOTE
 ////GASNET - look at GASNET tools at top of README.tools has atomic counters
-void  chpl_comm_get(void* addr, int32_t node, void* raddr,
+void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
                     int32_t elemSize, int32_t typeIndex, int32_t len,
                     int ln, chpl_string fn) {
   const int size = elemSize*len;
@@ -704,7 +719,7 @@ void  chpl_comm_get_strd(void* dstaddr, void* dststrides, c_nodeid_t srcnode_id,
   size_t srcstr[strlvls];
   size_t cnt[strlvls+1];
 
-  //Only count[0] and strides are meassured in number of bytes.
+  // Only count[0] and strides are measured in number of bytes.
   cnt[0] = ((int32_t*)count)[0] * elemSize;
 
   if (strlvls>0) {
@@ -755,7 +770,7 @@ void  chpl_comm_put_strd(void* dstaddr, void* dststrides, c_nodeid_t dstnode_id,
   size_t srcstr[strlvls];
   size_t cnt[strlvls+1];
 
-  //Only count[0] and strides are meassured in number of bytes.
+  // Only count[0] and strides are measured in number of bytes.
   cnt[0] = ((int32_t*)count)[0] * elemSize;
   if (strlvls>0) {
     srcstr[0] = ((int32_t*)srcstrides)[0] * elemSize;
@@ -795,15 +810,15 @@ void  chpl_comm_put_strd(void* dstaddr, void* dststrides, c_nodeid_t dstnode_id,
 
 ////GASNET - introduce locale-int size
 ////GASNET - is caller in fork_t redundant? active message can determine this.
-void  chpl_comm_fork(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
-                     int32_t arg_size, int32_t arg_tid) {
+void  chpl_comm_fork(c_nodeid_t node, c_sublocid_t subloc,
+                     chpl_fn_int_t fid, void *arg, int32_t arg_size) {
   fork_t* info;
   int     info_size;
   done_t  done;
   int     passArg = sizeof(fork_t) + arg_size <= gasnet_AMMaxMedium();
 
   if (chpl_nodeID == node) {
-    (*chpl_ftable[fid])(arg);
+    chpl_ftable_call(fid, arg);
   } else {
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: remote task created on %d\n", chpl_nodeID, node);
@@ -818,8 +833,10 @@ void  chpl_comm_fork(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
     } else {
       info_size = sizeof(fork_t) + sizeof(void*);
     }
-    info = (fork_t*)chpl_mem_allocMany(1, info_size, CHPL_RT_MD_COMM_FORK_SEND_INFO, 0, 0);
+    info = (fork_t*)chpl_mem_allocMany(1, info_size,
+                                       CHPL_RT_MD_COMM_FORK_SEND_INFO, 0, 0);
     info->caller = chpl_nodeID;
+    info->subloc = subloc;
     info->ack = &done;
     info->serial_state = chpl_task_getSerial();
     info->fid = fid;
@@ -847,11 +864,12 @@ void  chpl_comm_fork(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
   }
 }
 
-void  chpl_comm_fork_nb(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
-                        int32_t arg_size, int32_t arg_tid) {
+void  chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
+                        chpl_fn_int_t fid, void *arg, int32_t arg_size) {
   fork_t *info;
   int     info_size;
-  int     passArg = chpl_nodeID == node || sizeof(fork_t) + arg_size <= gasnet_AMMaxMedium();
+  int     passArg = (chpl_nodeID == node
+                     || sizeof(fork_t) + arg_size <= gasnet_AMMaxMedium());
 
   void* argCopy = NULL;
 
@@ -862,6 +880,7 @@ void  chpl_comm_fork_nb(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
   }
   info = (fork_t*)chpl_mem_allocMany(info_size, sizeof(char), CHPL_RT_MD_COMM_FORK_SEND_NB_INFO, 0, 0);
   info->caller = chpl_nodeID;
+  info->subloc = subloc;
   info->ack = info; // pass address to free after get in large case
   info->serial_state = chpl_task_getSerial();
   info->fid = fid;
@@ -870,9 +889,12 @@ void  chpl_comm_fork_nb(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
     if (arg_size)
       memcpy(&(info->arg), arg, arg_size);
   } else {
-      argCopy = chpl_mem_allocMany(1, arg_size, CHPL_RT_MD_COMM_FORK_SEND_NB_LARGE_ARG, 0, 0);
+    // If the arg bundle is too large to fit in fork_t (i.e. passArg == false), 
+    // Copy the args into auxilliary memory and pass a pointer to this instead.
+    argCopy = chpl_mem_allocMany(1, arg_size,
+                                 CHPL_RT_MD_COMM_FORK_SEND_NB_LARGE_ARG, 0, 0);
     memcpy(argCopy, arg, arg_size);
-    memcpy(&(info->arg), &argCopy, sizeof(void*));
+    *(void**)(&(info->arg)) = argCopy;
   }
 
   if (chpl_nodeID == node) {
@@ -880,7 +902,8 @@ void  chpl_comm_fork_nb(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
       fork_nb_wrapper(info);
     else
       chpl_task_startMovedTask((chpl_fn_p)fork_nb_wrapper, (void*)info,
-                               chpl_nullTaskID, info->serial_state);
+                               subloc, chpl_nullTaskID,
+                               info->serial_state);
   } else {
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: remote non-blocking task created on %d\n", chpl_nodeID, node);
@@ -899,8 +922,8 @@ void  chpl_comm_fork_nb(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
 }
 
 // GASNET - should only be called for "small" functions
-void  chpl_comm_fork_fast(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
-                          int32_t arg_size, int32_t arg_tid) {
+void  chpl_comm_fork_fast(c_nodeid_t node, c_sublocid_t subloc,
+                          chpl_fn_int_t fid, void *arg, int32_t arg_size) {
   char infod[gasnet_AMMaxMedium()];
   fork_t* info;
   int     info_size = sizeof(fork_t) + arg_size;
@@ -908,7 +931,7 @@ void  chpl_comm_fork_fast(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
   int     passArg = info_size <= gasnet_AMMaxMedium();
 
   if (chpl_nodeID == node) {
-    (*chpl_ftable[fid])(arg);
+    chpl_ftable_call(fid, arg);
   } else {
     if (passArg) {
       if (chpl_verbose_comm && !chpl_comm_no_debug_private)
@@ -922,6 +945,7 @@ void  chpl_comm_fork_fast(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
       info = (fork_t *) &infod;
 
       info->caller = chpl_nodeID;
+      info->subloc = subloc;
       info->ack = &done;
       info->serial_state = chpl_task_getSerial();
       info->fid = fid;
@@ -943,7 +967,7 @@ void  chpl_comm_fork_fast(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
 #endif
     } else {
       // Call the normal chpl_comm_fork()
-      chpl_comm_fork(node, fid, arg, arg_size, arg_tid);
+      chpl_comm_fork(node, subloc, fid, arg, arg_size);
     }
   }
 }
@@ -1041,8 +1065,8 @@ uint64_t chpl_numCommNBForks(void) {
 }
 
 
-void chpl_comm_gasnet_help_register_global_var(int i, void* addr) {
+void chpl_comm_gasnet_help_register_global_var(int i, wide_ptr_t wide_addr) {
   if (chpl_nodeID == 0) {
-    ((void**)seginfo_table[0].addr)[i] = addr;
+    ((wide_ptr_t*)seginfo_table[0].addr)[i] = wide_addr;
   }
 }

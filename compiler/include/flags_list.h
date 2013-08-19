@@ -13,6 +13,12 @@
 #define npr false /* NO, cannot be set via a pragma */
 #define ncm ""    /* no comment */
 
+
+// This flag is used in scalarReplace.cpp to determine if an assignment of a ref
+// has an allocator as the RHS.  If so, then it is not creating an alias, since
+// the allocator function does not retain a reference to the referenced object.
+symbolFlag( FLAG_ATOMIC_TYPE , ypr, "atomic type" , "type that implements an atomic" )
+symbolFlag( FLAG_ALLOCATOR , ypr, "allocator" , "allocates heap storage" )
 symbolFlag( FLAG_ALLOW_REF , ypr, "allow ref" , ncm )
 symbolFlag( FLAG_ARG_THIS, npr, "arg this", "the hidden object argument")
 symbolFlag( FLAG_ARRAY , ypr, "array" , ncm )
@@ -43,7 +49,6 @@ symbolFlag( FLAG_DESTRUCTOR , npr, "destructor" , ncm )
 symbolFlag( FLAG_DISTRIBUTION , ypr, "distribution" , ncm )
 symbolFlag( FLAG_DOMAIN , ypr, "domain" , ncm )
 symbolFlag( FLAG_DONOR_FN, ypr, "donor fn" , "function donates ownership of the returned object to the calling function" )
-
 symbolFlag( FLAG_DONT_DISABLE_REMOTE_VALUE_FORWARDING , ypr, "dont disable remote value forwarding" , ncm )
 symbolFlag( FLAG_EXPAND_TUPLES_WITH_VALUES , ypr, "expand tuples with values" , ncm )
 symbolFlag( FLAG_EXPORT , ypr, "export" , ncm )
@@ -77,7 +82,8 @@ symbolFlag( FLAG_ITERATOR_RECORD , npr, "iterator record" , ncm )
 symbolFlag( FLAG_ITERATOR_WITH_ON , npr, "iterator with on" , "iterator which contains an on block" )
 symbolFlag( FLAG_LABEL_BREAK , npr, "label break" , ncm )
 symbolFlag( FLAG_LABEL_CONTINUE , npr, "label continue" , ncm )
-symbolFlag( FLAG_LOCAL , ypr, "local" , "local, e.g. exported function arguments should not be wide" )
+symbolFlag( FLAG_LOCAL_ARGS , ypr, "local args" , "assume calls to this function are all local (arguments and return value should not be wide)" )
+symbolFlag( FLAG_LOCAL_FN , npr, "local fn" , "function is completely local (no communication)" )
 symbolFlag( FLAG_LOOP_BODY_ARGUMENT_CLASS , npr, "loop body argument class" , ncm )
 symbolFlag( FLAG_MAYBE_PARAM , npr, "maybe param" , "symbol can resolve to a param" )
 symbolFlag( FLAG_MAYBE_TYPE , npr, "maybe type" , "symbol can resolve to a type" )
@@ -94,6 +100,11 @@ symbolFlag( FLAG_NO_INSTANTIATION_LIMIT , ypr, "no instantiation limit", "The in
 symbolFlag( FLAG_NO_OBJECT , ypr, "no object" , ncm )
 symbolFlag( FLAG_NO_PARENS , npr, "no parens" , "function without parentheses" )
 symbolFlag( FLAG_NO_PROTOTYPE , ypr, "no prototype" , "do not generate a prototype this symbol" )
+
+// When a sync type is instantiated as the argument type of a generic function, it is normally
+// unwrapped to reveal the underlying type.  This flag prevents that unwrapping, 
+// so the called routine gets to see the sync object as a whole.
+symbolFlag( FLAG_NO_SYNC_DEMOTION , ypr, "no sync demotion" , "prevents a sync type from being unwrapped" )
 symbolFlag( FLAG_NO_WIDE_CLASS , npr, "no wide class" , ncm )
 symbolFlag( FLAG_NON_BLOCKING , npr, "non blocking" , "with FLAG_ON/FLAG_ON_BLOCK, non-blocking on functions" )
 symbolFlag( FLAG_OBJECT_CLASS , npr, "object class" , ncm )
@@ -115,6 +126,7 @@ symbolFlag( FLAG_REMOVABLE_AUTO_DESTROY , ypr, "removable auto destroy" , ncm )
 // See buildRuntimeTypeToValueFns() in functionResolution.cpp for more info on FLAG_RUNTIME_TYPE_INIT_FN
 symbolFlag( FLAG_RUNTIME_TYPE_INIT_FN , ypr, "runtime type init fn" , "function for initializing runtime time types" )
 symbolFlag( FLAG_RUNTIME_TYPE_VALUE , npr, "runtime type value" , "associated runtime type (value)" )
+symbolFlag( FLAG_SHOULD_NOT_PASS_BY_REF, npr, "should not pass by ref", "this symbol should be passed by value (not by reference) for performance, not for correctness")
 symbolFlag( FLAG_SINGLE , ypr, "single" , ncm )
 // Based on how this is used, I suggest renaming it to return_value_has_initializer
 // or something similar <hilde>.

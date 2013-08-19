@@ -1,7 +1,7 @@
 
 iter f() {
   var Arr: [0..10] int;
-  for (c, d) in (Arr, 0..10) {
+  for (c, d) in zip (Arr, 0..10) {
     c = d; // nil dereference in assigning to "c"
   }
   for elem in Arr do

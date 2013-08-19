@@ -1,0 +1,539 @@
+#!/usr/bin/env python
+
+import sys, os, shutil, time
+import fileReadHelp
+from optparse import OptionParser
+
+usage =  '%prog [options] <graphfiles>'
+parser = OptionParser(usage=usage)
+parser.add_option('-g', '--graphlist', dest='graphlist',
+                  help='file with list of graphfiles', metavar='FILE')
+parser.add_option('-t', '--testdir', dest='testdir',
+                  help='test directory', metavar='DIR',
+                  default='.')
+parser.add_option('-o', '--outdir', dest='outdir',
+                  help='output directory', metavar='DIR',
+                  default=None)
+parser.add_option('-p', '--perfdir', dest='perfdir',
+                  help='performance data directory', metavar='DIR',
+                  default=None)
+parser.add_option('-n', '--name', dest='name',
+                  help='Test platform name', metavar='NAME',
+                  default=None)
+parser.add_option('-s', '--startdate', dest='startdate',
+                  help='graph start date', metavar='DATE')
+parser.add_option('-e', '--enddate', dest='enddate',
+                  help='graph end date', metavar='DATE')
+parser.add_option('-v', '--verbose', dest='verbose',
+                  action='store_true', default=False)
+parser.add_option('-d', '--debug', dest='debug',
+                  action='store_true', default=False)
+
+dygraphDir = os.getenv('DYGRAPHS_DIR')
+if dygraphDir == None:
+    dygraphDir = 'http://dygraphs.com'
+
+debug = False
+verbose = False
+
+############
+
+# Global info about generating graphs
+class GraphStuff:
+    def __init__(self, _name, _testdir, _perfdir, _outdir, _startdate, _enddate):
+        self.numGraphs = 0;
+        self.testdir = _testdir
+        self.perfdir = _perfdir
+        self.outdir = _outdir
+        self.datdir = self.outdir+'/'+'CSVfiles'
+        self.title = 'Chapel Performance Graphs'
+        if _name != None:
+            self.title += ' for '+_name
+        self.gfname = self.outdir+'/'+'graphdata.js'
+        self.gfile = None
+        self.suites = list()
+        self.startdate = _startdate
+        self.enddate = _enddate
+
+    def init(self):
+        if not os.path.exists(self.outdir):
+            try:
+                os.makedirs(self.outdir)
+            except OSError:
+                sys.stderr.write('ERROR: Could not create directory: %s\n'%(self.outdir))
+                raise
+        if not os.path.exists(self.datdir):
+            try:
+                os.makedirs(self.datdir)
+            except OSError:
+                sys.stderr.write('ERROR: Could not create directory: %s\n'%(self.datdir))
+                raise
+        try:
+            self.gfile = open(self.gfname, 'w')
+        except IOError:
+            sys.stderr.write('ERROR: Could not open file: %s\n'%(self.gfname))
+            raise
+        self.gfile.write('// AUTOMATICALLY GENERATED GRAPH DESCRIPTION\n')
+        self.gfile.write('document.title = "%s";\n'%(self.title))
+        self.gfile.write('var pageTitle = "%s";\n'%(self.title))
+        self.gfile.write('var allGraphs = [\n')
+        self.firstGraph = True
+        return 0
+
+    def __str__(self):
+        s = 'Number of unique graphs = '+str(self.numGraphs)
+        s += 'test dir = '+self.testdir
+        s += 'performance data dir = '+self.perfdir
+        s += 'output dir = '+self.outdir
+        s += 'start date = '+self.startdate
+        s += 'end date = '+self.enddate
+        s += ': '+str(len(self.dygarphs))+' dygraphs'
+        return s
+
+    def finish(self):
+        if self.gfile:
+            self.gfile.write('\n];\n')
+            first = True
+            self.gfile.write('var perfSuites = [\n')
+            for s in self.suites:
+                if not first:
+                    self.gfile.write(',\n')
+                else:
+                    first = False
+                self.gfile.write('{ "suite" : "%s" }'%(s))
+            self.gfile.write('\n];\n')
+            self.gfile.close()
+
+    def genGraphInfo(self, ginfo):
+        if not self.firstGraph:
+            self.gfile.write(',\n')
+        else:
+            self.firstGraph = False
+
+        self.gfile.write('{\n')
+        if ginfo.title != '':
+            self.gfile.write('   "title" : "%s",\n'%(ginfo.title))
+        elif ginfo.graphname != '':
+            sys.stdout.write('WARNING: \'graphname\' is deprecated.  Use \'graphtitle\' instead.\n')
+            self.gfile.write('   "title" : "%s",\n'%(ginfo.graphname))
+        else:
+            sys.stdout.write('WARNING: No graph title found.\n')
+            self.gfile.write('   "title" : "%s",\n'%(ginfo.name))
+        self.gfile.write('   "suite" : "%s",\n'%(ginfo.suite))
+        self.gfile.write('   "datfname" : "%s",\n'%(ginfo.datfname))
+        self.gfile.write('   "ylabel" : "%s",\n'%(ginfo.ylabel))
+        self.gfile.write('   "startdate" : "%s",\n'%(ginfo.startdate))
+        self.gfile.write('   "enddate" : "%s"\n'%(ginfo.enddate))
+        self.gfile.write('}')
+
+
+    def genGraphStuff(self, fname, suite):
+        fullFname = self.testdir+'/'+fname
+        if not os.path.exists(fullFname):
+            fullFname = './'+fname
+        if verbose:
+            sys.stdout.write('Reading %s...\n'%(fullFname))
+        lines=fileReadHelp.ReadFileWithComments(fullFname)
+        if lines==None:
+            sys.stdout.write('WARNING: Could not read graph description from %s.  Ignoring.\n'%(fullFname))
+            return
+
+        basename = os.path.splitext(os.path.basename(fname))[0]
+
+        graphs=list()
+        currgraph=-1
+        firstGraphNum = self.numGraphs
+        for l in lines:
+            key = l.split(':')[0].strip()
+            rest = l[l.index(':')+1:].strip()
+            if key == 'perfkeys' :
+                if currgraph != -1:
+                    try:
+                        graphs[currgraph].generateGraphData(self, currgraph)
+                    except (ValueError, IOError, OSError):
+                        raise
+                # new graph
+                currgraph += 1
+                graphs.append(GraphClass(basename, firstGraphNum+currgraph, suite, self.startdate, self.enddate))
+                graphs[currgraph].perfkeys += [ s.strip() for s in rest.split(', ') ]
+            elif key == 'graphkeys' :
+                graphs[currgraph].graphkeys += [ s.strip() for s in rest.split(',') ] 
+            elif key == 'files' :
+                graphs[currgraph].datfilenames += [ s.strip() for s in rest.split(',') ]
+            elif key == 'graphtitle':
+                graphs[currgraph].title = rest.strip()
+            elif key == 'graphname':
+                # deprecated
+                graphs[currgraph].graphname = rest.strip()
+            elif key == 'ylabel':
+                graphs[currgraph].ylabel = rest.strip()
+            elif key == 'startdate':
+                graphs[currgraph].startdate = time.strptime(rest.strip(), '%m/%d/%y')
+            elif key == 'enddate':
+                graphs[currgraph].enddate = time.strptime(rest.strip(), '%m/%d/%y')
+
+        try:
+            graphs[currgraph].generateGraphData(self, currgraph)
+        except (ValueError, IOError, OSError):
+            raise
+
+        return (currgraph+1)
+
+
+############
+
+# graph class
+class GraphClass:
+    gid = 1
+    def __init__(self, _name, _graphNum, _suite='', _startdate=None, _enddate=None):
+        self.id = GraphClass.gid
+        GraphClass.gid += 1
+        self.name = _name.strip()
+        self.srcdatfname = self.name+'.dat'
+        self.title = ''
+        self.suite = _suite
+        self.graphname = ''
+        self.ylabel = ''
+        self.startdate = _startdate
+        self.enddate = _enddate
+        self.graphNum = _graphNum
+        self.perfkeys = list()
+        self.graphkeys = list()
+        self.datfilenames = list()
+
+    def __str__(self):
+        l  = 'Graph: '+str(self.name)+' (id='+str(self.id)+')\n'
+        l += '\ttitle: '+self.title+'\n'
+        l += '\tsuite: '+self.suite+'\n'
+        l += '\tgraphname: '+self.graphname+'\n'
+        l += '\tylabel: '+self.ylabel+'\n'
+        if self.startdate != None:
+            l += '\tstartdate: '+time.strftime('%Y-%m-%d',self.startdate)+'\n'
+        else:
+            l += '\tstartdate: Not specified\n'
+        if self.enddate != None:
+            l += '\tenddate: '+time.strftime('%Y-%m-%d',self.enddate)+'\n'
+        else:
+            l += '\tenddate: Not specified\n'
+        l += '\tperfkeys: '+list.__str__(self.perfkeys)+'\n'
+        l += '\tgraphkeys: '+list.__str__(self.graphkeys)+'\n'
+        l += '\tdatfilenames: '+list.__str__(self.datfilenames)+'\n'
+        return l
+
+    # For each unique data file
+    class DatFileClass:
+        def __init__(self, _filename):
+            self.visited = -1
+            self.curr = None
+            self.mykeys = {}
+            try:
+                self.dfile = open(_filename, 'r')
+                # First line must be a comment and must be a tab separated list
+                #  of the performance keys
+                self.perfkeys = [ l.strip() for l in self.dfile.readline()[1:].split('\t') ]
+            except IOError:
+                pass
+                # Allows some performance tests to be graphed when you aren't
+                # running over every single performance test
+            
+            except:
+                raise
+
+        def add(self, _i, _k):
+            # the _ith data stream comes from the column of the _kth perfkey
+            self.mykeys[_i] = self.perfkeys.index(_k)
+
+        def __str__(self):
+            l  = '\tperfkeys: '+list.__str__(self.perfkeys)+'\n'
+            l += '\tmykeys: '+dict.__str__(self.mykeys)+'\n'
+            l += '\tcurr: '+str(self.curr)
+            return l
+
+        def __del__(self):
+            if hasattr(self, 'dfile'):
+                self.dfile.close()
+
+    # Generate the new data file inline in CSV format
+    def generateData(self, graphInfo, datfiles):
+        # An alternative is to have an off-line process incrementally
+        # update a CSV data file.  Since we would still have to open
+        # potentially multiple data files and read thru them and look
+        # at every line for the appropriate date, I opted for
+        # regenerating.
+        fname = graphInfo.datdir+'/'+self.datfname
+        f = open(fname, 'w')
+        f.write('Date, ')
+        for i in range(len(self.graphkeys)):
+            f.write(self.graphkeys[i])
+            if i < len(self.graphkeys)-1:
+                f.write(', ')
+            else:
+                f.write('\n')
+
+        numKeys = len(self.perfkeys)
+        currLines = [None]*numKeys
+        startdate = self.startdate
+        enddate = self.enddate
+        minDate = None
+
+        first = True
+        done = False
+        while not done:
+            done = True
+            for i in range(numKeys):
+                # The file may be missing (in the case where only a subdirectory
+                # has been tested for performance).  If so, we don't want to
+                # try to access a non-existent datfile
+                if self.datfilenames[i] in datfiles:
+                    datfiles[self.datfilenames[i]].visited = -1
+            for i in range(numKeys):
+                # The file may be missing (in the case where only a subdirectory
+                # has been tested for performance).  If so, we don't want to
+                # try to access a non-existent datfile
+                if not self.datfilenames[i] in datfiles:
+                    continue
+                
+                # find the min date
+                df = datfiles[self.datfilenames[i]]
+                if currLines[i] == None:
+                    if  df.visited == -1:
+                        df.visited = i
+                        currLines[i]=fileReadHelp.ReadNextNonCommentLine(df.dfile)
+                    else:
+                        currLines[i]=currLines[df.visited]
+                l = currLines[i]
+                if l != None:
+                    done = False
+                    fields = l.split()
+                    myDate=time.strptime(fields[0].strip(),'%m/%d/%y')
+                    if minDate==None or myDate<minDate:
+                        minDate = myDate
+                        if startdate==None:
+                            startdate = minDate
+
+            if done:
+                break
+
+            if not first:
+                f.write('\n ')
+            else:
+                first = False
+
+            # write out the data for this date
+            f.write(time.strftime('%Y-%m-%d', minDate))
+            for i in range(numKeys):
+                if currLines[i] != None:
+                    df = datfiles[self.datfilenames[i]]
+                    fields = currLines[i].split()
+                    myDate=time.strptime(fields[0].strip(),'%m/%d/%y')
+                    if myDate==minDate:
+                        # consume this line
+                        f.write(',')
+                        if len(fields)>df.mykeys[i] and fields[df.mykeys[i]] != '-':
+                            f.write(fields[df.mykeys[i]])
+                        currLines[i] = None
+                    else:
+                        # no data for this date
+                        f.write(',')
+                else:
+                    # no data for this date
+                    f.write(',')
+
+            if self.enddate==None:
+                enddate = minDate
+            else:
+                enddate = self.enddate
+            minDate = None
+
+        f.close()
+
+        if startdate == None:
+            startdate = time.localtime()
+        if enddate == None:
+            self.enddate = startdate
+        if graphInfo.startdate != None:
+            self.startdate = time.strftime('%Y-%m-%d', graphInfo.startdate)
+        else:
+            self.startdate = time.strftime('%Y-%m-%d', startdate)
+        if graphInfo.enddate != None:
+            self.enddate = time.strftime('%Y-%m-%d', graphInfo.enddate)
+        elif enddate != None:
+            self.enddate = time.strftime('%Y-%m-%d', enddate)
+
+
+
+    def generateGraphData(self, graphInfo, gnum):
+        if debug:
+            print '==='
+            print self
+
+        if verbose:
+            sys.stdout.write('Generating graph data for %s (graph #%d)\n'%(self.name, gnum))
+
+        self.datfname = self.name+str(gnum)+'.txt'
+
+        nperfkeys = len(self.perfkeys)
+        if nperfkeys != len(self.graphkeys):
+            start = len(self.graphkeys)
+            for i in range(start,nperfkeys):
+                self.graphkeys.append(self.perfkeys[i])
+
+        for i in range(nperfkeys):
+            for j in range(nperfkeys):
+                if (i != j) and (self.graphkeys[i]==self.graphkeys[j]):
+                    sys.stdout.write('WARNING: Duplicate graph label (%s)\n'%(self.graphkeys[i]))
+
+        defaultFilename = self.srcdatfname
+        if nperfkeys != len(self.datfilenames):
+            start = len(self.datfilenames)
+            for i in range(start,nperfkeys):
+                self.datfilenames.append(defaultFilename)
+
+        # fix path to dat files
+        for i in range(nperfkeys):
+            fn = self.datfilenames[i]
+            idx = fn.rfind('/')
+            if idx != -1:
+                if graphInfo.perfdir[0] == '/':
+                    # absolute path (prepend path and strip relative path)
+                    self.datfilenames[i] = graphInfo.perfdir+fn[idx:]
+                else:
+                    # relative path (find .dat file in the subdir)
+                    self.datfilenames[i] = './'+fn[0:idx]+'/'+graphInfo.perfdir+fn[idx:]
+            else:
+                self.datfilenames[i] = graphInfo.perfdir+'/'+fn
+
+        # create a hashmap of open datfiles
+        datfiles = {}
+        for i in range(nperfkeys):
+            d = self.datfilenames[i]
+            if not datfiles.has_key(d):
+                datfiles[d] = self.DatFileClass(d)
+            try:
+                if hasattr(datfiles[d], 'dfile'):
+                    # May not have a dfile if the specific performance test
+                    # was not previously run and dumped into this folder
+                    # Should distinguish this case from cases where there are
+                    # legitimately no perfkeys
+                    datfiles[d].add(i, self.perfkeys[i])
+                else:
+                    # We don't have a dfile for that file name.  Delete the
+                    # created DatFileClass so it doesn't mess us up
+                    del datfiles[d]
+            except ValueError:
+                sys.stderr.write('ERROR: Could not find perfkey \'%s\' in %s\n'%(self.perfkeys[i], self.datfilenames[i]))
+                raise
+
+        # generate the new data files
+        self.generateData(graphInfo, datfiles)
+        graphInfo.genGraphInfo(self)
+
+        for n, d in datfiles.iteritems():
+            del d
+
+
+####################
+
+def main():
+    (options, args) = parser.parse_args()
+
+    global debug
+    debug = options.debug
+    global verbose
+    verbose = options.verbose
+
+    if options.perfdir != None:
+        perfdir = options.perfdir
+    else:
+        perfdir = './perfdat/'+os.uname()[1]
+
+    if options.outdir != None:
+        outdir = options.outdir
+    else:
+        outdir = perfdir+'/html'
+
+    if options.startdate != None:
+        startdate = time.strptime(options.startdate,'%m/%d/%y')
+    else:
+        startdate = None
+
+    if options.enddate != None:
+        enddate = time.strptime(options.enddate,'%m/%d/%y')
+    else:
+        enddate = time.localtime()
+
+    graphInfo = GraphStuff(options.name, options.testdir, perfdir, outdir, startdate, enddate)
+    try:
+        graphInfo.init()
+    except (IOError, OSError):
+        return -1
+
+    # get the list of .graph files
+    lines = list()
+    # command line .graph files
+    for a in args:
+        lines.append(a)
+    # .graph files from the specified  file
+    graphlist = options.graphlist
+    if graphlist != None:
+        try:
+            f = open(graphlist, 'r')
+            try:
+                lines += f.readlines()
+            finally:
+                f.close()
+        except IOError:
+            sys.stderr.write('ERROR: Could not open graph file: %s\n'%(graphlist))
+            return -1
+    
+    currSuite = None
+    numSuites = 0
+    numGraphfiles = 0
+    graphList = list()
+    # Generate graphs
+    for line in lines:
+        l = line.strip()
+        if l != '':
+            if l[0] != '#':
+                if graphList.count(l) > 0:
+                    sys.stdout.write('WARNING: Duplicate graph (%s)\n'%(l))
+                else:
+                    graphList.append(l)
+                try:
+                    graphInfo.genGraphStuff(l, currSuite)
+                except (ValueError, IOError, OSError):
+                    return -1
+                numGraphfiles += 1
+            else:
+                # parse for suite name
+                ls = l[1:].split(':')
+                if ls[0].strip() == 'suite':
+                    currSuite = ls[1].strip()
+                    graphInfo.suites.append(currSuite)
+                    numSuites += 1
+                    if verbose:
+                        sys.stdout.write('suite: %s\n'%(currSuite))
+
+    # Copy the index.html and support css and js files
+    auxdir = os.path.dirname(os.path.realpath(__file__))+'/perf'
+    try:
+        shutil.copy(auxdir+'/index.html', outdir)
+    except IOError:
+        sys.stderr.write('WARNING: Could not copy index.html')
+    try:
+        shutil.copy(auxdir+'/perfgraph.css', outdir)
+    except IOError:
+        sys.stderr.write('WARNING: Could not copy perfgraph.css')
+    try:
+        shutil.copy(auxdir+'/perfgraph.js', outdir)
+    except IOError:
+        sys.stderr.write('WARNING: Could not copy perfgraph.js')
+
+    graphInfo.finish()
+
+    sys.stdout.write('Read %d graph files in %d suites\n'%(numGraphfiles, numSuites))
+    return 0
+
+if __name__ == '__main__':
+    sys.exit(main())
+

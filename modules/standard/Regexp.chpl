@@ -549,22 +549,22 @@ proc string.search(needle: string, ignorecase=false):reMatch
 }
 proc string.search(needle: regexp):reMatch
 {
-  return re.search(this);
+  return needle.search(this);
 }
 proc string.search(needle: regexp, ref captures ...?k):reMatch
 {
-  return re.search(this, (...captures));
+  return needle.search(this, (...captures));
 }
 proc string.match(pattern: regexp):reMatch
 {
-  return re.match(this);
+  return pattern.match(this);
 }
 proc string.match(pattern: regexp, ref captures ...?k):reMatch
 {
-  return re.match(this, (...captures));
+  return pattern.match(this, (...captures));
 }
 
-iter string.spit(pattern: regexp, maxsplit: int = 0)
+iter string.split(pattern: regexp, maxsplit: int = 0)
 {
   for v in pattern.split(this, maxsplit) {
     yield v;

@@ -1,0 +1,2 @@
+intents-strings.chpl:4: In function 'foo':
+intents-strings.chpl:7: error: illegal lvalue in assignment

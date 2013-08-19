@@ -210,6 +210,7 @@ static inline chpl_bool atomic_compare_exchange_strong_explicit_ ## type(atomic_
   uinttype volatile desired_as_uint; \
   uinttype volatile * expected_as_uint_p; \
   uinttype volatile * desired_as_uint_p; \
+  __sync_synchronize();                                 \
   expected_as_uint_p = (uinttype volatile *) &expected; \
   desired_as_uint_p = (uinttype volatile *) &desired; \
   expected_as_uint = *expected_as_uint_p; \

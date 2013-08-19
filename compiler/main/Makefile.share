@@ -1,8 +1,9 @@
 MAIN_SRCS = \
-        arg.cpp \
+	arg.cpp \
+	checks.cpp \
 	config.cpp \
 	driver.cpp \
-        log.cpp \
+	log.cpp \
 	runpasses.cpp \
 	version.cpp
 

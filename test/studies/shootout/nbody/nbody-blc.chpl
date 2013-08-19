@@ -63,21 +63,28 @@ inline proc sumOfSquares(x:_tuple) where isHomogeneousTuple(x) {
 
 record NBodySystem {
   var bodies = [sun, jupiter, saturn, uranus, neptune];
+  const numbodies = bodies.numElements;
 
   proc initialize() {
     var p: 3*real;
     for b in bodies do
-      p += b.v * b.mass;
+      p += b.v * b.mass;  // TODO: reduce?
     bodies[1].offsetMomentum(p);
   }
 
   proc advance(dt) {
-    for (b1, i) in zip(bodies, bodies.domain.low..) {
-      for b2 in bodies[i+1..] {
-        const dpos = b1.pos - b2.pos,
-              mag = dt / sqrt(sumOfSquares(dpos))**3;
-        b1.v -= dpos * b2.mass * mag; // TODO: make sure scalars mult'd first?
-        b2.v += dpos * b1.mass * mag;
+    // TODO: Can we use a triangular iterator without hurting performance
+    for i in 1..numbodies {
+      for j in i+1..numbodies {
+        updateVelocities(bodies[i], bodies[j]);
+
+        inline proc updateVelocities(ref b1, ref b2) {
+          const dpos = b1.pos - b2.pos,
+                mag = dt / sqrt(sumOfSquares(dpos))**3;
+          
+          b1.v -= dpos * b2.mass * mag; // TODO: make sure scalars mult'd first?
+          b2.v += dpos * b1.mass * mag;
+        }
       }
     }
 
@@ -85,18 +92,28 @@ record NBodySystem {
       b.pos += dt * b.v;
   }
 
+
+
   proc energy() {
     var e = 0.0;
 
-    for (b1, i) in zip(bodies, bodies.domain.low..) {
+    // TODO: want to use triangular iterator here too, except that we need
+    // code in between the two loops
+    for i in 1..numbodies {
+      const b1 = bodies[i];
+
       e += 0.5 * b1.mass * sumOfSquares(b1.v);
-      for b2 in bodies[i+1..] {
+
+      for j in i+1..numbodies {
+        const b2 = bodies[j];
+
         e -= (b1.mass * b2.mass) / sqrt(sumOfSquares(b1.pos - b2.pos));
       }
     }
 
     return e;
   }
+  
 }
 
 proc main(args: [] string) {

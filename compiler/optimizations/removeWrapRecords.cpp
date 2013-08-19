@@ -2,6 +2,7 @@
 #include "expr.h"
 #include "optimizations.h"
 #include "passes.h"
+#include "resolveIntents.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -119,7 +120,7 @@ removeWrapRecords() {
   }
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
     if (Type* type = getWrapRecordBaseType(arg->type)) {
-      arg->intent = INTENT_BLANK; // see test/arrays/deitz/test_out_array
+      arg->intent = blankIntentForType(type); // see test/arrays/deitz/part7/test_out_array
       arg->type = type;
     }
   }

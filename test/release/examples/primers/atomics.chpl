@@ -106,19 +106,23 @@ coforall id in R do a.add(id*id);
 //
 var expected = n*(n+1)*(2*n+1)/6; 
 if a.read() != expected then
-  halt("Error: a=", a, " (should be", expected, ")");
+  halt("Error: a=", a, " (should be ", expected, ")");
 
 // In the following example, we create n tasks to atomically increment
-// the atomic variable a with the square of the task's given id.  If
-// the returned value is (n-1)*(n)*(2*(n-1)+1)/6 (last task to
-// arrive), check the results.
+// the atomic variable a with the square of the task's given id.  The
+// sum of this finite series is n(n+1)*(2n+1)/6. If the returned value
+// is the expected value less id*id (last task to arrive), check the
+// results.
 //
 a.write(0);
+const sumOfSq = n*(n+1)*(2*n+1)/6;
 coforall id in R {
-  if a.fetchAdd(id*id)==(n-1)*(n)*(2*(n-1)+1)/6 {
-    // The sum of this finite series should be n(n+1)*(2n+1)/6
+  const mySq = id*id;
+  const last = a.fetchAdd(mySq);
+  if sumOfSq-mySq == last {
     //
-    if a.read() != n*(n+1)*(2*n+1)/6 then
-      halt("Error: a=", a, " (should be", n*(n+1)*(2*n+1)/6, ")");
+    const t = a.read();
+    if t != n*(n+1)*(2*n+1)/6 then
+      halt("Error: a=", t, " (should be ", sumOfSq, ") id=", id);
   }
 }

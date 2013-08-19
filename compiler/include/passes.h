@@ -1,10 +1,12 @@
-#ifndef _PASSES_H
+#ifndef _PASSES_H_
 #define _PASSES_H_
 
 #include "symbol.h"
 
+extern bool parsed;
 extern bool normalized;
 extern bool resolved;
+extern bool intentsResolved;
 
 
 //
@@ -19,6 +21,7 @@ void checkResolved();
 void cleanup();
 void codegen();
 void complex2record();
+void createTaskFunctions();
 void copyPropagation();
 void cullOverReferences();
 void deadCodeElimination();
@@ -29,12 +32,14 @@ void inlineFunctions();
 void insertLineNumbers();
 void insertWideReferences();
 void localizeGlobals();
+void loopInvariantCodeMotion();
 void lowerIterators();
 void makeBinary();
 void normalize();
 void optimizeOnClauses();
 void parallel();
 void parse();
+void processIteratorYields();
 void prune();
 void prune2();
 void readExternC();
@@ -45,16 +50,30 @@ void removeWrapRecords();
 void repositionDefExpressions();
 void returnStarTuplesByRefArgs();
 void resolve();
+void resolveIntents();
 void scalarReplace();
 void scopeResolve();
 void verify();
+
+//
+// prototypes for functions called as post-pass checks.
+//
+void checkInvariants(char log_tag);
+void checkPrimitives();                 // constrains primitive use
+void checkPostResolution();
+void checkNoUnresolveds();
+void checkNoRecordDeletes();
+// These checks can be applied after any pass.
+void checkForDuplicateUses();
+void checkForMissingDefs();
 
 //
 // utility functions in pass-containing code files
 //
 
 // parallel.cpp
-bool passingWideStringToExtern(Type* t);
+bool isRefWideString(Type* t);
+bool isWideString(Type* t);
 Type* getOrMakeRefTypeDuringCodegen(Type* type);
 Type* getOrMakeWideTypeDuringCodegen(Type* refType);
 

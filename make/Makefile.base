@@ -12,10 +12,16 @@ endif
 #
 # determine what platform we're running on
 #
+ifndef CHPL_MAKE_HOST_PLATFORM
 include $(CHPL_MAKE_HOME)/make/Makefile.platform
+endif
 
-ifndef CHPL_MAKE_COMPILER
+ifndef CHPL_MAKE_HOST_COMPILER
 include $(CHPL_MAKE_HOME)/make/Makefile.compiler
+endif
+
+ifndef CHPL_MAKE_LOCALE_MODEL
+include $(CHPL_MAKE_HOME)/make/Makefile.localeModel
 endif
 
 ifndef CHPL_MAKE_TASKS
@@ -38,9 +44,22 @@ ifndef CHPL_MAKE_LAUNCHER
 include $(CHPL_MAKE_HOME)/make/Makefile.launcher
 endif
 
-ifndef CHPL_MAKE_MEM
+ifndef CHPL_MAKE_HOST_MEM
 include $(CHPL_MAKE_HOME)/make/Makefile.mem
 endif
+
+# Set compiler and platform variables that depend
+# on CHPL_MAKE_HOST_TARGET to the HOST or TARGET versions.
+ifeq ($(strip $(CHPL_MAKE_HOST_TARGET)),--target)
+CHPL_MAKE_COMPILER = $(CHPL_MAKE_TARGET_COMPILER)
+CHPL_MAKE_PLATFORM = $(CHPL_MAKE_TARGET_PLATFORM)
+CHPL_MAKE_MEM = $(CHPL_MAKE_TARGET_MEM)
+else
+CHPL_MAKE_COMPILER = $(CHPL_MAKE_HOST_COMPILER)
+CHPL_MAKE_PLATFORM = $(CHPL_MAKE_HOST_PLATFORM)
+CHPL_MAKE_MEM = $(CHPL_MAKE_HOST_MEM)
+endif
+
 
 ifndef CHPL_MAKE_ATOMICS
 include $(CHPL_MAKE_HOME)/make/Makefile.atomics
@@ -54,8 +73,16 @@ ifndef CHPL_MAKE_REGEXP
 include $(CHPL_MAKE_HOME)/make/Makefile.regexp
 endif
 
+ifndef CHPL_MAKE_WIDE_POINTERS
+include $(CHPL_MAKE_HOME)/make/Makefile.widePointers
+endif
+
 ifndef CHPL_MAKE_LLVM
 include $(CHPL_MAKE_HOME)/make/Makefile.llvm
+endif
+
+ifndef CHPL_MAKE_FOREIGN_FS
+include $(CHPL_MAKE_HOME)/make/Makefile.foreignFS
 endif
 
 #
@@ -107,6 +134,8 @@ printplatform:
 	@echo "CHPL_MAKE_HOST_PLATFORM   = $(CHPL_MAKE_HOST_PLATFORM)"
 	@echo "CHPL_MAKE_TARGET_PLATFORM = $(CHPL_MAKE_TARGET_PLATFORM)"
 	@echo "CHPL_MAKE_COMPILER        = $(CHPL_MAKE_COMPILER)"
+	@echo "CHPL_MAKE_LOCALE_MODEL    = $(CHPL_MAKE_LOCALE_MODEL)"
+	@echo "CHPL_MAKE_TASKS           = $(CHPL_MAKE_TASKS)"
 	@echo "CHPL_MAKE_THREADS         = $(CHPL_MAKE_THREADS)"
 	@echo "CHPL_MAKE_TIMERS          = $(CHPL_MAKE_TIMERS)"
 	@echo "CHPL_MAKE_COMM            = $(CHPL_MAKE_COMM)"
@@ -138,8 +167,8 @@ OBJ_SUBDIR_SAFESLASH = $(subst /,\\/, $(OBJ_SUBDIR))
 	@mkdir -p $*
 	@-touch $*/.timestamp
 
-COMMON_LAYER_SUBDIR = comm-$(CHPL_MAKE_COMM)$(CHPL_MAKE_COMM_EXTRAS)/substrate-$(CHPL_MAKE_COMM_SUBSTRATE)/seg-$(CHPL_MAKE_COMM_SEGMENT)/mem-$(CHPL_MAKE_MEM)
-RUNTIME_LAYER_SUBDIR = $(COMMON_LAYER_SUBDIR)/tasks-$(CHPL_MAKE_TASKS)/threads-$(CHPL_MAKE_THREADS)/atomics-$(CHPL_MAKE_ATOMICS)
+COMMON_LAYER_SUBDIR = localeModel-$(CHPL_MAKE_LOCALE_MODEL)/comm-$(CHPL_MAKE_COMM)$(CHPL_MAKE_COMM_EXTRAS)/substrate-$(CHPL_MAKE_COMM_SUBSTRATE)/seg-$(CHPL_MAKE_COMM_SEGMENT)/mem-$(CHPL_MAKE_MEM)
+RUNTIME_LAYER_SUBDIR = $(COMMON_LAYER_SUBDIR)/tasks-$(CHPL_MAKE_TASKS)/threads-$(CHPL_MAKE_THREADS)/atomics-$(CHPL_MAKE_ATOMICS)/wide-$(CHPL_MAKE_WIDE_POINTERS)
 LAUNCHER_LAYER_SUBDIR = $(COMMON_LAYER_SUBDIR)/launch-$(CHPL_MAKE_LAUNCHER)
 TARGET_COMPILER_SUBDIR = $(CHPL_MAKE_TARGET_PLATFORM)/$(CHPL_MAKE_COMPILER)
 RT_LN_OBJ_SUBDIR = $(GEN_SUBDIR)/$(TARGET_COMPILER_SUBDIR)
@@ -191,7 +220,6 @@ EXE_SUFFIX =
 #
 -include $(CHPL_MAKE_HOME)/make/compiler/Makefile.$(CHPL_MAKE_COMPILER)
 -include $(CHPL_MAKE_HOME)/make/platform/Makefile.$(CHPL_MAKE_PLATFORM)
--include $(CHPL_MAKE_HOME)/make/comm/Makefile.$(CHPL_MAKE_COMM)
 -include $(CHPL_MAKE_HOME)/make/tasks/Makefile.$(CHPL_MAKE_TASKS)
 
 .SECONDARY: $(OBJ_SUBDIR_TIMESTAMP)

@@ -53,6 +53,7 @@ VarSymbol *gTryToken = NULL;
 VarSymbol *gBoundsChecking = NULL;
 VarSymbol* gPrivatization = NULL;
 VarSymbol* gLocal = NULL;
+VarSymbol* gNodeID = NULL;
 Symbol *gCLine = NULL;
 Symbol *gCFile = NULL;
 
@@ -567,8 +568,13 @@ void VarSymbol::codegenDefC(bool global) {
       }
     } else if (ct->symbol->hasFlag(FLAG_WIDE) ||
                ct->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-      if (isFnSymbol(defPoint->parentSymbol))
-        str += " = {{0,0},NULL}";
+      if (isFnSymbol(defPoint->parentSymbol)) {
+        if( widePointersStruct || isWideString(ct) ) {
+          str += " = {{0,0},NULL}";
+        } else {
+          str += " = ((wide_ptr_t) NULL)";
+        }
+      }
     }
   }
   info->cLocalDecls.push_back(str);
@@ -576,6 +582,11 @@ void VarSymbol::codegenDefC(bool global) {
 
 void VarSymbol::codegenGlobalDef() {
   GenInfo* info = gGenInfo;
+
+  if( breakOnCodegenCname[0] &&
+      0 == strcmp(cname, breakOnCodegenCname) ) {
+    gdbShouldBreakHere();
+  }
 
   if( info->cfile ) {
     codegenDefC(/*global=*/true);
@@ -688,6 +699,14 @@ ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName,
   instantiatedParam(false),
   markedGeneric(false)
 {
+  if (intentsResolved) {
+    if (iIntent == INTENT_BLANK || iIntent == INTENT_CONST) {
+      INT_FATAL(this, "You can't create an argument with blank/const intent once intents have been resolved; please be more specific");
+      // NOTE: One way to be more specific is to use the blankIntentForType()/
+      // constIntentForType() routines to map a (possibly unknown) type to
+      // the intent that blank/const would use for that type.
+    }
+  }
   if (!iTypeExpr)
     typeExpr = NULL;
   else if (BlockStmt* block = toBlockStmt(iTypeExpr))
@@ -728,6 +747,11 @@ void ArgSymbol::verify() {
         (!toDefExpr(defPoint->next)->sym ||
          !toArgSymbol(toDefExpr(defPoint->next)->sym)))
     INT_FATAL(this, "Bad ArgSymbol::defPoint->next");
+  if (intentsResolved) {
+    if (intent == INTENT_BLANK || intent == INTENT_CONST) {
+      INT_FATAL(this, "Arg '%s' (%d) has blank/const intent post-resolve", this->name, this->id);
+    }
+  }
 }
 
 
@@ -755,6 +779,10 @@ void ArgSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 bool argMustUseCPtr(Type* type) {
+  // Don't pass global ptrs by ref
+  if( fLLVMWideOpt && type->symbol->hasEitherFlag(FLAG_WIDE,FLAG_WIDE_CLASS) )
+    return false;
+
   if (isRecord(type) || isUnion(type))
     return true;
   return false;
@@ -772,6 +800,9 @@ bool ArgSymbol::requiresCPtr(void) {
 
 
 bool ArgSymbol::isConstant(void) {
+  if (intent == INTENT_CONST_IN || intent == INTENT_CONST_REF) {
+    return true;
+  }
   return (intent == INTENT_BLANK || intent == INTENT_CONST) &&
     !isReferenceType(type) &&
     !isRecordWrappedType(type) /* array, domain, distribution */;
@@ -833,7 +864,10 @@ GenRet ArgSymbol::codegen() {
 
 TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
   Symbol(E_TypeSymbol, init_name, init_type),
-    llvmType(NULL), codegenned(false)
+    llvmType(NULL),
+    llvmTbaaNode(NULL), llvmConstTbaaNode(NULL),
+    llvmTbaaStructNode(NULL), llvmConstTbaaStructNode(NULL),
+    codegenned(false)
 {
   addFlag(FLAG_TYPE_VARIABLE);
   if (!type)
@@ -859,6 +893,12 @@ TypeSymbol::copyInner(SymbolMap* map) {
   TypeSymbol* new_type_symbol = new TypeSymbol(name, new_type);
   new_type->addSymbol(new_type_symbol);
   new_type_symbol->cname = cname;
+  if (this->hasFlag(FLAG_SYNC))
+    new_type_symbol->addFlag(FLAG_SYNC);
+  if (this->hasFlag(FLAG_SINGLE))
+    new_type_symbol->addFlag(FLAG_SINGLE);
+  if (this->hasFlag(FLAG_ATOMIC_TYPE))
+    new_type_symbol->addFlag(FLAG_ATOMIC_TYPE);
   return new_type_symbol;
 }
 
@@ -905,6 +945,119 @@ void TypeSymbol::codegenDef() {
   }
 }
 
+void TypeSymbol::codegenMetadata() {
+#ifdef HAVE_LLVM
+  // Don't do anything if we've already visited this type.
+  if( llvmTbaaNode ) return;
+
+  GenInfo* info = gGenInfo;
+  llvm::LLVMContext& ctx = info->module->getContext();
+  // Create the TBAA root node if necessary.
+  if( ! info->tbaaRootNode ) {
+    llvm::Value* Ops[1];
+    Ops[0] = llvm::MDString::get(ctx, "Chapel types");
+    info->tbaaRootNode = llvm::MDNode::get(ctx, Ops);
+  }
+
+  // Set the llvmTbaaNode to non-NULL so that we can
+  // avoid recursing.
+  llvmTbaaNode = info->tbaaRootNode;
+
+  ClassType* ct = toClassType(type);
+
+  Type* superType = NULL;
+  // Recursively generate the TBAA nodes for this type.
+  if( ct ) {
+    for_fields(field, ct) {
+      ClassType* fct = toClassType(field->type);
+      if(fct && field->hasFlag(FLAG_SUPER_CLASS)) {
+        superType = field->type;
+      }
+      field->type->symbol->codegenMetadata();
+    }
+  }
+
+  llvm::MDNode* parent = info->tbaaRootNode;
+  llvm::MDNode* constParent = info->tbaaRootNode;
+  if( superType ) {
+    parent = superType->symbol->llvmTbaaNode;
+    constParent = superType->symbol->llvmConstTbaaNode;
+    INT_ASSERT( parent );
+    INT_ASSERT( constParent );
+  }
+
+  // Ref and _ddata are really the same, and can conceivably
+  // alias, so we normalize _ddata to be ref for the purposes of TBAA.
+  if( hasFlag(FLAG_DATA_CLASS) ) {
+    Type* eltType = getDataClassType(this)->typeInfo();
+    Type* refType = getOrMakeRefTypeDuringCodegen(eltType);
+    refType->symbol->codegenMetadata();
+    this->llvmTbaaNode = refType->symbol->llvmTbaaNode;
+    this->llvmConstTbaaNode = refType->symbol->llvmConstTbaaNode;
+    return;
+  }
+
+  // Now create tbaa metadata, one for const and one for not.
+  {
+    llvm::Value* Ops[2];
+    Ops[0] = llvm::MDString::get(ctx, cname);
+    Ops[1] = parent;
+    llvmTbaaNode = llvm::MDNode::get(ctx, Ops);
+  }
+  {
+    llvm::Value* Ops[3];
+    Ops[0] = llvm::MDString::get(ctx, cname);
+    Ops[1] = constParent;
+    Ops[2] = llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), 1);
+    llvmConstTbaaNode = llvm::MDNode::get(ctx, Ops);
+  }
+  // Don't try to create tbaa.struct metadata for non-struct.
+  if( isUnion(type) ||
+      hasFlag(FLAG_STAR_TUPLE) ||
+      hasFlag(FLAG_FIXED_STRING) ||
+      hasFlag(FLAG_REF) ||
+      hasFlag(FLAG_DATA_CLASS) ||
+      hasEitherFlag(FLAG_WIDE,FLAG_WIDE_CLASS) ) {
+    return;
+  }
+
+  if( ct ) {
+    // Now create the tbaa.struct metadata nodes.
+    llvm::SmallVector<llvm::Value*, 16> Ops;
+    llvm::SmallVector<llvm::Value*, 16> ConstOps;
+
+    const char* struct_name = ct->classStructName(true);
+    llvm::Type* struct_type_ty = info->lvt->getType(struct_name);
+    llvm::StructType* struct_type = NULL;
+    INT_ASSERT(struct_type_ty);
+    struct_type = llvm::dyn_cast<llvm::StructType>(struct_type_ty);
+    INT_ASSERT(struct_type);
+
+    for_fields(field, ct) {
+      llvm::Type* fieldType = field->type->symbol->codegen().type;
+      ClassType* fct = toClassType(field->type);
+      if(fct && field->hasFlag(FLAG_SUPER_CLASS)) {
+        fieldType = info->lvt->getType(fct->classStructName(true));
+      }
+      INT_ASSERT(fieldType);
+      if( ct ) {
+        unsigned gep = ct->getMemberGEP(field->cname);
+        llvm::Constant* off = llvm::ConstantExpr::getOffsetOf(struct_type, gep);
+        llvm::Constant* sz = llvm::ConstantExpr::getSizeOf(fieldType);
+        Ops.push_back(off);
+        Ops.push_back(sz);
+        Ops.push_back(field->type->symbol->llvmTbaaNode);
+        ConstOps.push_back(off);
+        ConstOps.push_back(sz);
+        ConstOps.push_back(field->type->symbol->llvmConstTbaaNode);
+        llvmTbaaStructNode = llvm::MDNode::get(ctx, Ops);
+        llvmConstTbaaStructNode = llvm::MDNode::get(ctx, ConstOps);
+      }
+    }
+  }
+#endif
+}
+
 GenRet TypeSymbol::codegen() {
   GenInfo *info = gGenInfo;
   GenRet ret;
@@ -913,7 +1066,13 @@ GenRet TypeSymbol::codegen() {
     ret.c = cname;
   } else {
 #ifdef HAVE_LLVM
-    if( ! llvmType ) codegenDef();
+    if( ! llvmType ) {
+      // If we don't have an LLVM type yet, the type hasn't been
+      // code generated, so code generate it now. This can get called
+      // when adding types partway through code generation.
+      codegenDef();
+      // codegenMetadata(); TODO -- enable TBAA generation in the future.
+    }
     ret.type = llvmType;
 #endif
   }

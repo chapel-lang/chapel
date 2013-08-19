@@ -8,11 +8,8 @@
 
 BlockStmt* buildPragmaStmt(Vec<const char*>*, BlockStmt*);
 
-/* The start of an incomplete zero-tuple implementation
-CallExpr* buildZeroTuple(void);
-*/
 CallExpr* buildOneTuple(Expr* elem);
-Expr* buildParenExpr(CallExpr* call);
+CallExpr* buildTuple(CallExpr* call);
 
 Expr* buildSquareCallExpr(Expr* base, CallExpr* args);
 

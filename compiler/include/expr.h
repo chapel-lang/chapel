@@ -180,12 +180,41 @@ static inline bool isAlive(Type* type) {
 #define isRootModuleWithType(ast, type)  \
   (E_##type == E_ModuleSymbol && ((ModuleSymbol*)(ast)) == rootModule)
 
+static inline bool isGlobal(Symbol* symbol) {
+  return isModuleSymbol(symbol->defPoint->parentSymbol);
+}
+
+static inline bool isTaskFun(FnSymbol* fn) {
+  INT_ASSERT(fn);
+  // Testing individual flags is more efficient than ops on entire FlagSet?
+  return fn->hasFlag(FLAG_BEGIN) ||
+         fn->hasFlag(FLAG_COBEGIN_OR_COFORALL) ||
+         fn->hasFlag(FLAG_ON);
+}
+
+static inline FnSymbol* resolvedToTaskFun(CallExpr* call) {
+  INT_ASSERT(call);
+  if (FnSymbol* cfn = call->isResolved()) {
+    if (isTaskFun(cfn))
+      return cfn;
+  }
+  return NULL;
+}
+
 
 bool get_int(Expr* e, int64_t* i); // false is failure
 bool get_uint(Expr *e, uint64_t *i); // false is failure
 bool get_string(Expr *e, const char **s); // false is failure
 const char* get_string(Expr* e); // fatal on failure
 VarSymbol *get_constant(Expr *e);
+
+inline CallExpr* here_alloc(Symbol* dest)
+{
+  return new CallExpr("chpl_here_alloc", dest, 
+                      newMemDesc(dest->typeInfo()->symbol->name));
+}
+
+CallExpr* callTaskAlloc(Type* t);
 
 #define for_exprs_postorder(e, expr)                            \
   for (Expr* e = getFirstExpr(expr); e; e = getNextExpr(e))

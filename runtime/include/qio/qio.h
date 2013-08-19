@@ -44,6 +44,80 @@ typedef uint32_t qio_hint_t;
 //    a.writeThis() which calls
 //        write(16) for example
 
+// ---- Typedefs for plugin API -----
+
+typedef qioerr (*qio_readv_fptr)(void*, // plugin file pointer
+                const struct iovec*,    // Data to write into
+                int,                    // number of elements in iovec
+                ssize_t*);              // Amount that was written into iovec
+
+typedef qioerr (*qio_writev_fptr) (void*, // plugin fp
+                const struct iovec*,      // data to write from
+                int,                      // Number of elements in iovec
+                ssize_t*);                // Amount written on return
+
+typedef qioerr (*qio_preadv_fptr) (void*, // plugin fp
+                const struct iovec*,      // Data to write into
+                int,                      // number of elements in iovec
+                off_t,                    // Offset to read from
+                ssize_t*);                // Amount that was written into iovec
+
+typedef qioerr (*qio_pwritev_fptr) (void*,//plugin fp
+                const struct iovec*,      // data to write from
+                int,                      // Number of elements in iovec 
+                off_t,                    // offset to write 
+                ssize_t*);                // Amount written on return
+
+typedef qioerr (*qio_seek_fptr)(void*,  // plugin fp
+                                off_t,  // offset to seek from
+                                int,    // Amount to seek
+                                off_t*);// Offset on return from seek
+
+typedef qioerr (*qio_filelength_fptr)(void*,     // file information 
+                                      int64_t*); // length on return
+
+typedef qioerr (*qio_getpath_fptr)(void*,        // file information
+                                   const char**);// string/path on return
+
+typedef qioerr (*qio_open_fptr)(void**,      // file information on return
+                                const char*, // pathname to file
+                                int*,        // flags. User can change these if they wish
+                                mode_t,      // mode
+                                qio_hint_t,  // Hints for opening the file
+                                void*);      // The configured filesystem
+
+typedef qioerr (*qio_close_fptr)(void*); // file information
+
+typedef qioerr (*qio_fsync_fptr)(void*); // file information
+
+typedef qioerr (*qio_getcwd_fptr)(void*, // file information
+                                  const char**); // path on return
+
+typedef struct qio_file_functions_s {
+  qio_writev_fptr  writev; 
+  qio_readv_fptr   readv;
+
+  qio_pwritev_fptr pwritev;
+  qio_preadv_fptr  preadv;
+
+  qio_close_fptr   close;
+  qio_open_fptr    open;
+
+  qio_seek_fptr   seek;
+
+  qio_filelength_fptr filelength;
+  qio_getpath_fptr getpath;
+
+  qio_fsync_fptr fsync;
+  qio_getcwd_fptr getcwd;
+
+  void* fs; // Holds the configured filesystem
+
+} qio_file_functions_t;
+
+typedef qio_file_functions_t* qio_file_functions_ptr_t;
+// -- end --
+
 #ifdef _chplrt_H_
 // also export iohint_t and fdflag_t
 typedef qio_hint_t iohints;
@@ -120,10 +194,6 @@ extern ssize_t qio_mmap_chunk_iobufs;
 /* Wrap system calls readv, writev, preadv, pwritev
  * to take a buffer.
  */
-err_t qio_readv(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, ssize_t* num_read);
-err_t qio_writev(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, ssize_t* num_written);
-err_t qio_preadv(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, int64_t seek_to_offset, ssize_t* num_read);
-err_t qio_pwritev(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, int64_t seek_to_offset, ssize_t* num_written);
 
 err_t qio_freadv(FILE* fp, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, ssize_t* num_read);
 err_t qio_fwritev(FILE* fp, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, ssize_t* num_written);
@@ -212,6 +282,12 @@ enum {
 
   // This disables the 'fast path' for buffered channels; this is for testing.
   QIO_HINT_NOFAST       = QIO_HINT_NOREUSE<<1,
+
+  // We don't own stdin, stdout and stderr, so it would be impolite to close
+  // them.  This bit is set only if the qio_file_s is created with a file that
+  // is opened within the qio implementation.  Otherwise, the user (or system)
+  // has to close it.
+  QIO_HINT_OWNED        = QIO_HINT_NOFAST<<1,
 };
 
 
@@ -287,6 +363,7 @@ char* qio_hints_to_string(qio_hint_t hint)
   if( hint & QIO_HINT_DIRECT ) strcat(buf, " direct");
   if( hint & QIO_HINT_NOREUSE ) strcat(buf, " noreuse");
   if( hint & QIO_HINT_NOFAST ) strcat(buf, " nofast");
+  if( hint & QIO_HINT_OWNED ) strcat(buf, " owned");
 
   return qio_strdup(buf);
 }
@@ -310,6 +387,9 @@ typedef struct qio_file_s {
                   // Note a qbuffer is not thread-safe, and
                   // so access to this must be protected
                   // by the file's lock.
+
+  qio_file_functions_t* fsfns; // Holds the functions for the filesystem
+  void* info; // Holds the filesystem information (as a user defined struct)
 
   qio_fdflag_t fdflags;
   qio_hint_t hints;
@@ -359,6 +439,10 @@ typedef struct qio_file_s {
 
 typedef qio_file_t* qio_file_ptr_t;
 #define QIO_FILE_PTR_NULL NULL
+err_t qio_readv(qio_file_t* file, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, ssize_t* num_read);
+err_t qio_writev(qio_file_t* file, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, ssize_t* num_written);
+err_t qio_preadv(qio_file_t* file, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, int64_t seek_to_offset, ssize_t* num_read);
+err_t qio_pwritev(qio_file_t* file, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, int64_t seek_to_offset, ssize_t* num_written);
 
 // if fp is not null, fd is ignored; if fp is null, we use fd.
 // the QIO file takes ownership of fp or fd, closing it when the QIO file is closed.
@@ -369,6 +453,18 @@ err_t qio_file_open_mem_ext(qio_file_t** file_out, qbuffer_t* buf, qio_fdflag_t 
 err_t qio_file_open_mem(qio_file_t** file_out, qbuffer_t* buf, qio_style_t* style);
 
 err_t qio_file_open_tmp(qio_file_t** file_out, qio_hint_t iohints, qio_style_t* style);
+
+err_t qio_file_open_usr(qio_file_t** file_out, const char* pathname, 
+                        int flags, mode_t mode, qio_hint_t iohints, 
+                        qio_style_t* style, qio_file_functions_t* s);
+
+err_t qio_file_init_usr(qio_file_t** file_out, void* file_info, 
+                        qio_hint_t iohints, int flags, qio_style_t* style, 
+                        qio_file_functions_t* fns);
+
+err_t qio_file_open_access_usr(qio_file_t** file_out, const char* pathname, 
+                               const char* access, qio_hint_t iohints, 
+                               qio_style_t* style, qio_file_functions_t* s);
 
 // This can be called to run close and to check the return value.
 // That's important because some implementations (such as NFS)
@@ -677,7 +773,7 @@ err_t qio_channel_create(qio_channel_t** ch_out, qio_file_t* file, qio_hint_t hi
 
 
 err_t qio_relative_path(const char** path_out, const char* cwd, const char* path);
-err_t qio_shortest_path(const char** path_out, const char* path_in);
+err_t qio_shortest_path(qio_file_t* file, const char** path_out, const char* path_in);
 
 err_t qio_channel_path_offset(const int threadsafe, qio_channel_t* ch, const char** string_out, int64_t* offset_out);
 
@@ -1418,6 +1514,7 @@ unlock:
 
   return err;
 }
+
 
 #ifdef __cplusplus
 } // end extern "C"

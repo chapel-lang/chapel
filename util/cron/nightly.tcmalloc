@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# tcmalloc testing
+
+. /etc/profile
+
+# export CHPL_HOME_REPOSITORY=svn://svn.code.sf.net/p/chapel/code/trunk
+export CHPL_NIGHTLY_LOGDIR=/data/sea/cascade/chapel/Nightly
+export CHPL_NIGHTLY_STATDIR=$CHPL_NIGHTLY_LOGDIR/Stats
+export CHPL_HOME=$HOME/chapel
+
+export CHPL_DEVELOPER=true
+
+module load cpkg all/append
+module load subversion
+echo Starting $0 on `hostname`.; module list; printenv; echo
+
+# tcmalloc with comm none
+LOGFILE=$HOME/tmp/nightly.tcmalloc.out
+echo "Testing CHPL_TASKS=tcmalloc on `date`.  Log file: $LOGFILE"
+export CHPL_MEM=tcmalloc
+$CHPL_HOME/util/cron/nightly -cron -no-futures &> $LOGFILE
+
+# tcmalloc with comm gasnet for examples
+LOGFILE=$HOME/tmp/nightly.tcmalloc-gasnet.out
+echo "Testing CHPL_TASKS=tcmalloc CHPL_COMM=gasnet on `date`.  Log file: $LOGFILE"
+export CHPL_COMM=gasnet
+export GASNET_SPAWNFN=L
+export GASNET_ROUTE_OUTPUT=0
+export CHPL_GASNET_CFG_OPTIONS=--disable-ibv
+export GASNET_QUIET=Y
+$CHPL_HOME/util/cron/nightly -cron -multilocale -no-futures &> $LOGFILE
+
+echo Finished $0 on `date`.

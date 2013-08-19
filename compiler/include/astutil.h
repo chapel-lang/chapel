@@ -19,6 +19,7 @@ void normalize(BaseAST* base);
 
 // return vec of CallExprs of FnSymbols (no primitives)
 void collectFnCalls(BaseAST* ast, Vec<CallExpr*>& calls);
+void collectFnCallsSTL(BaseAST* ast, std::vector<CallExpr*>& calls);
 
 // collect Stmts and Exprs in the AST and return them in vectors
 // Versions ending in 'STL' use the C++ std::vector class
@@ -35,10 +36,13 @@ void collectDefExprsSTL(BaseAST* ast, std::vector<DefExpr*>& defExprs);
 void collectCallExprs(BaseAST* ast, Vec<CallExpr*>& callExprs);
 void collectCallExprsSTL(BaseAST* ast, std::vector<CallExpr*>& callExprs);
 void collectMyCallExprs(BaseAST* ast, Vec<CallExpr*>& callExprs, FnSymbol* fn);
+void collectMyCallExprsSTL(BaseAST* ast, std::vector<CallExpr*>& callExprs, FnSymbol* fn);
 void collectGotoStmts(BaseAST* ast, Vec<GotoStmt*>& gotoStmts);
 void collectGotoStmtsSTL(BaseAST* ast, std::vector<GotoStmt*>& gotoStmts);
 void collectSymExprs(BaseAST* ast, Vec<SymExpr*>& symExprs);
 void collectSymExprsSTL(BaseAST* ast, std::vector<SymExpr*>& symExprs);
+void collectMySymExprs(Symbol* me, Vec<SymExpr*>& symExprs);
+void collectMySymExprs(Symbol* me, std::vector<SymExpr*>& symExprs);
 void collectSymbols(BaseAST* ast, Vec<Symbol*>& symbols);
 void collectSymbolsSTL(BaseAST* ast, std::vector<Symbol*>& symbols);
 
@@ -60,6 +64,13 @@ void collectSymbolSetSymExprVec(BaseAST* ast,
                                 Vec<SymExpr*>& symExprs);
 
 //
+// Checks if a callExpr is one of the op= primitives
+// Note, this does not check if a callExpr is an 
+// op= function call (such as before inlining)
+//
+bool isOpEqualPrim(CallExpr* call);
+
+//
 // Return value & 1 is true if se is a def
 // Return value & 2 is true if se is a use
 //
@@ -70,29 +81,38 @@ int isDefAndOrUse(SymExpr* se);
 // their defs and useMap is a map from symbols to their uses; these
 // vectors are built differently depending on the other arguments
 //
-void buildDefUseMaps(Map<Symbol*,Vec<SymExpr*>*>& defMap,
-                     Map<Symbol*,Vec<SymExpr*>*>& useMap);
-// builds the vectors for every variable/argument in the entire
-// program
 
-void buildDefUseMaps(FnSymbol* fn,
-                     Map<Symbol*,Vec<SymExpr*>*>& defMap,
-                     Map<Symbol*,Vec<SymExpr*>*>& useMap);
-// builds the vectors for every variable/argument in 'fn' and looks
-// for uses and defs only in 'fn'
-
-void buildDefUseMaps(Vec<Symbol*>& symSet,
-                     Map<Symbol*,Vec<SymExpr*>*>& defMap,
-                     Map<Symbol*,Vec<SymExpr*>*>& useMap);
 // builds the vectors for every variable/argument in 'symSet' and
-// looks for uses and defs in the entire program
-
+// looks for uses and defs only in 'symExprs'
 void buildDefUseMaps(Vec<Symbol*>& symSet,
                      Vec<SymExpr*>& symExprs,
                      Map<Symbol*,Vec<SymExpr*>*>& defMap,
                      Map<Symbol*,Vec<SymExpr*>*>& useMap);
+
+// builds the vectors for every variable/argument in the entire
+// program
+void buildDefUseMaps(Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                     Map<Symbol*,Vec<SymExpr*>*>& useMap);
+
+// builds the vectors for every variable/argument in 'fn' and looks
+// for uses and defs only in 'fn'
+void buildDefUseMaps(FnSymbol* fn,
+                     Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                     Map<Symbol*,Vec<SymExpr*>*>& useMap);
+
+// builds the vectors for every variable declaration in the given block
+// and looks for uses and defs within the same block (scope).
+void buildDefUseMaps(BlockStmt* block,
+                     Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                     Map<Symbol*,Vec<SymExpr*>*>& useMap);
+
 // builds the vectors for every variable/argument in 'symSet' and
-// looks for uses and defs only in 'symExprs'
+// looks for uses and defs in the entire program
+inline void buildDefUseMaps(Vec<Symbol*>& symSet,
+                     Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                     Map<Symbol*,Vec<SymExpr*>*>& useMap) {
+  buildDefUseMaps(symSet, gSymExprs, defMap, useMap);
+}
 
 //
 // add a def to a defMap or a use to a useMap

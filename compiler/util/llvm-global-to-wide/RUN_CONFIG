@@ -1,0 +1,12 @@
+#!/bin/sh
+#./configure --with-llvmsrc=../../../third-party/llvm/llvm/ --with-llvmobj=../../../third-party/llvm/build/linux64-gnu/ --enable-shared
+autoconf
+./configure
+ln -s ../llvmGlobalToWide.cpp llvmGlobalToWide.cpp
+ln -s ../llvmUtil.cpp llvmUtil.cpp
+ln -s ../llvmAggregateGlobalOps.cpp llvmAggregateGlobalOps.cpp
+cd include
+ln -s ../../../include/llvmGlobalToWide.h llvmGlobalToWide.h
+ln -s ../../../include/llvmUtil.h llvmUtil.h
+ln -s ../../../include/llvmAggregateGlobalOps.h llvmAggregateGlobalOps.h
+cd ..

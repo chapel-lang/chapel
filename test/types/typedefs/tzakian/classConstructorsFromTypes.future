@@ -1,0 +1,9 @@
+bug: Compiler does not allow calling 'new' on a type symbol
+
+Compiler output:
+classConstructorsFromTypes.chpl:5: In function 'bar':
+classConstructorsFromTypes.chpl:6: error: invalid use of 'new' [normalize.cpp:101]
+
+Similar futures are filed in:
+test/types/typedefs/bradc/newTypedef.future
+test/types/typedefs/lydia/def-new-on-type-alias.chpl

@@ -1,0 +1,2 @@
+CHPL_FOREIGN_FS!=hdfs
+CHPL_REGEXP!=re2

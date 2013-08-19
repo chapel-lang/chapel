@@ -41,7 +41,7 @@ var partialVerifyVals: [0..4] int;
 
 var keyArray, buffer, keyBuff2: [D] int;
 var keyBuff1: [E] int;
-var bucketSize: [0..numBuckets-1] int;
+var bucketSize: [0..numBuckets-1] atomic int;
 var bucketPtrs: [0..numBuckets-1] int;
  
 var passedVerifications = 0;
@@ -132,12 +132,12 @@ proc rank(iteration: int) {
   partialVerifyVals = keyArray(testIndexArray);
 
   if useBuckets {
-    bucketSize = 0;
-    bucketSize(keyArray >> shift) += 1;
+    bucketSize.write(0);
+    bucketSize(keyArray >> shift).add(1);
 
     bucketPtrs(0) = 0;
     for i in 1..numBuckets-1 do
-      bucketPtrs(i) = bucketPtrs(i-1) + bucketSize(i-1);
+      bucketPtrs(i) = bucketPtrs(i-1) + bucketSize(i-1).read();
     for i in D {
       var key = keyArray(i);
       keyBuff2(bucketPtrs(key >> shift)) = key;

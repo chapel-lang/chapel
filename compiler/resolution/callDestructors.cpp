@@ -2,6 +2,7 @@
 #include "expr.h"
 #include "passes.h"
 #include "resolution.h"
+#include "resolveIntents.h"
 #include "stmt.h"
 #include "symbol.h"
 #include "view.h"
@@ -146,7 +147,7 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
           if (!newFn) {
             SET_LINENO(fn);
             newFn = fn->copy();
-            ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_retArg", useFn->retType->refType);
+            ArgSymbol* arg = new ArgSymbol(blankIntentForType(useFn->retType->refType), "_retArg", useFn->retType->refType);
             newFn->insertFormalAtTail(arg);
             Symbol* ret = newFn->getReturnSymbol();
             newFn->body->body.tail->replace(new CallExpr(PRIM_RETURN, gVoid));
@@ -299,7 +300,12 @@ fixupDestructors() {
             if (isSyncType(fct) &&
                 ((ct->getModule()->modTag==MOD_INTERNAL) ||
                  (ct->getModule()->modTag==MOD_STANDARD)))
-              fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_CHPL_FREE, tmp));
+            {
+              // Call the free hook.
+              fn->insertBeforeReturnAfterLabel(
+                new CallExpr(PRIM_CHPL_MEMHOOK_FREE, tmp));
+              fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_TASK_FREE, tmp));
+            }
           }
         } else if (FnSymbol* autoDestroyFn = autoDestroyMap.get(field->type)) {
           VarSymbol* tmp = newTemp("_field_destructor_tmp_", field->type);
@@ -309,11 +315,15 @@ fixupDestructors() {
                   new CallExpr(PRIM_GET_MEMBER_VALUE, fn->_this, field)));
           fn->insertBeforeReturnAfterLabel(new CallExpr(autoDestroyFn, tmp));
         } else if (field->type == dtString && !ct->symbol->hasFlag(FLAG_TUPLE)) {
-          VarSymbol* tmp = newTemp("_field_destructor_tmp_", dtString);
-          fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
-          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
-            new CallExpr(PRIM_GET_MEMBER_VALUE, fn->_this, field)));
-          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_CHPL_FREE, tmp));
+// Temporary expedient: Leak strings like crazy.
+// See note about not freeing narrow strings in expr.cpp near PRIM_CHPL_FREE.
+//          VarSymbol* tmp = newTemp("_field_destructor_tmp_", dtString);
+//          fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
+//          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
+//            new CallExpr(PRIM_GET_MEMBER_VALUE, fn->_this, field)));
+//          fn->insertBeforeReturnAfterLabel(
+//            new CallExpr(PRIM_CHPL_MEMHOOK_FREE, tmp));
+//          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_TASK_FREE, tmp));
         }
       }
 

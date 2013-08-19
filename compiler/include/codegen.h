@@ -8,6 +8,7 @@
 
 #ifdef HAVE_LLVM
 #include "clangUtil.h"
+#include "llvmGlobalToWide.h"
 #endif
 
 #include "files.h"
@@ -85,9 +86,25 @@ struct GenInfo {
   clang::CodeGen::CodeGenModule *cgBuilder;
   CCodeGenAction *cgAction;
 
+  llvm::MDNode* tbaaRootNode;
+  llvm::MDNode* tbaaFtableNode;
+  llvm::MDNode* tbaaVmtableNode;
 
   // We stash the layout that Clang would like to use here.
+  // With fLLVMWideOpt, this will be the layout that we
+  // pass to the code generator even though we modify the
+  // version in the module (to add global pointer types)
+  // before running optimization.
   std::string targetLayout;
+
+  // Information used to generate code with fLLVMWideOpt. Instead of
+  // generating wide pointers with puts and gets, we generate
+  // address space 100 (e.g.) pointers and use loads, stores, or memcpy,
+  // which will be optimized by normal LLVM optimizations. Then, an
+  // LLVM pass translates these address space 100 pointers and operations
+  // on them back into wide pointers and puts/gets.
+  GlobalToWideInfo globalToWideInfo;
+
   // Optimizations to apply immediately after code-generating a fn
   llvm::FunctionPassManager* FPM_postgen;
 

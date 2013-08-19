@@ -2,6 +2,7 @@
 #include "astutil.h"
 #include "expr.h"
 #include "passes.h"
+#include "resolveIntents.h"
 #include "stmt.h"
 
 
@@ -57,14 +58,15 @@ passableByVal(Type* type) {
       0)
     return true;
 
-  // TODO: allow reasonably-sized records.
+  // TODO: allow reasonably-sized records. NB this-in-taskfns-in-ctors.chpl
   // TODO: allow reasonably-sized tuples - heterogeneous and homogeneous.
 
   return false;
 }
 
 
-// Should we pass 'sym' by reference?
+// Should we pass 'sym' by reference? This is needed if 'sym' may be modified.
+// Otherwise passing by value is more efficient.
 static bool
 passByRef(Symbol* sym) {
 
@@ -82,6 +84,12 @@ passByRef(Symbol* sym) {
   }
 
   Type* type = sym->type;
+
+  if (sym->hasFlag(FLAG_ARG_THIS))
+   if (passableByVal(type)) // NB this-in-taskfns-in-ctors.chpl
+    // This is also constant. TODO: mark with FLAG_CONST.
+    // TODO: join with the passableByVal(type) test below.
+    return false;
 
   // These simply document the current state.
   INT_ASSERT(type->symbol->hasFlag(FLAG_REF) == (type->refType == NULL));
@@ -133,7 +141,7 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
            an LHS expr. */
         type = type->refType;
       SET_LINENO(sym);
-      ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, sym->name, type);
+      ArgSymbol* arg = new ArgSymbol(blankIntentForType(type), sym->name, type);
       if (sym->hasFlag(FLAG_ARG_THIS))
         arg->addFlag(FLAG_ARG_THIS);
       fn->insertFormalAtTail(new DefExpr(arg));
@@ -158,15 +166,14 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
             } else {
               CallExpr* call = toCallExpr(se->parentExpr);
               INT_ASSERT(call);
-              FnSymbol* fn = call->isResolved();
+              FnSymbol* fnc = call->isResolved();
               if ((call->isPrimitive(PRIM_MOVE) && call->get(1) == se) ||
                   (call->isPrimitive(PRIM_SET_MEMBER) && call->get(1) == se) ||
                   (call->isPrimitive(PRIM_GET_MEMBER)) ||
                   (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) ||
                   (call->isPrimitive(PRIM_WIDE_GET_LOCALE)) ||
                   (call->isPrimitive(PRIM_WIDE_GET_NODE)) ||
-                  (call->isPrimitive(PRIM_WIDE_GET_SUBLOC)) ||
-                  (fn && arg->type == actual_to_formal(se)->type)) {
+                  (fnc && arg->type == actual_to_formal(se)->type)) {
                 se->var = arg; // do not dereference argument in these cases
               } else if (call->isPrimitive(PRIM_ADDR_OF)) {
                 SET_LINENO(se);
@@ -193,6 +200,8 @@ addVarsToActuals(CallExpr* call, SymbolMap* vars, bool outerCall) {
     if (Symbol* sym = e->key) {
       SET_LINENO(sym);
       if (!outerCall && passByRef(sym)) {
+        // This is only a performance issue.
+        INT_ASSERT(!sym->hasFlag(FLAG_SHOULD_NOT_PASS_BY_REF));
         /* NOTE: See note above in addVarsToFormals() */
         VarSymbol* tmp = newTemp(sym->type->refType);
         call->getStmtExpr()->insertBefore(new DefExpr(tmp));
@@ -260,6 +269,9 @@ flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
 
       //
       // call not in a nested function; handle the toFollower/toLeader cases
+      // Note: outerCall=true implies the 'call' does not see defPoint
+      // of the var 'use->key' anywhere in call's enclosing scopes. With
+      // toFollower/toLeader, the 'call' does not see defPoint of 'fn' either.
       //
       bool outerCall = false;
       if (FnSymbol* parent = toFnSymbol(call->parentSymbol)) {

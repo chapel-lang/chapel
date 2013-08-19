@@ -1,0 +1,8 @@
+#!/bin/tcsh
+echo Starting $0 on `hostname`.; module list; printenv; echo
+
+set LOGFILE = $HOME/tmp/nightly-nolocal.out
+echo "Testing --no-local on `date`.  Log file: $LOGFILE"
+source ~/.chapelcshrc-cron && ~/chapel/util/cron/nightly -cron -no-local >&! $LOGFILE
+
+echo Finished $0 on `date`.

@@ -2,3 +2,15 @@
 LLVM README for Chapel
 ==========================
 
+Chapel can be built (by setting CHPL_LLVM=llvm) to include LLVM
+(http://llvm.org) in order to enable extern block support and LLVM code
+generation.
+
+For more information on the current support for LLVM within Chapel,
+please refer to $CHPL_HOME/doc/technotes/README.llvm.  For more
+information about LLVM itself, please refer to the website above or to
+the README in the llvm/ subdirectory of this directory.
+
+The version of LLVM used here is 3.3 modified to fix bug 15907, which prevents
+the LLVM backend from performing communication optimization. See
+http://llvm.org/bugs/show_bug.cgi?id=15907 for the bug report and patch.

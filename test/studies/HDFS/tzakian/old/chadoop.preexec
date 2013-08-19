@@ -1,0 +1,5 @@
+#!/bin/bash
+
+/data/sea/cascade/chapel/HDFS_tools/hadoop-1.1.2/bin/start-all.sh # > /dev/null
+
+echo "Hadoop started and classpaths etc. sourced"

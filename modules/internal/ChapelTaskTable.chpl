@@ -59,8 +59,8 @@ module ChapelTaskTable {
   //- Code to initialize the task table on each locale.
   //-
   proc chpldev_taskTable_init() {
-    for locid in 0..numLocales-1 do
-      on __primitive("chpl_on_locale_num", locid) {
+    for loc in Locales do
+      on loc {
         // Task tables require that the local default distribution be initialized first.
         if (defaultDist._value == nil) then
           defaultDist = new dmap(new DefaultDist());

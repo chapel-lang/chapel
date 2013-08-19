@@ -3,4 +3,4 @@
 #
 #
 #
-CHPL_MAKE_LLVM = $(shell $(CHPL_MAKE_HOME)/util/chplenv/llvm $(CHPL_MAKE_HOST_TARGET))
+export CHPL_MAKE_LLVM = $(shell $(CHPL_MAKE_HOME)/util/chplenv/llvm)

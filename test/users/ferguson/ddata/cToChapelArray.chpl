@@ -19,7 +19,7 @@
 
 param size = 10;
 
-pragma "local"
+pragma "local args"
 export proc chapelProc( array: _ddata(c_int) )
 {
   writeln("in chapelProc");

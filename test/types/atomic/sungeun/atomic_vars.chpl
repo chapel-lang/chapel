@@ -13,14 +13,17 @@ proc doit(type myType) {
 
   on Locales[numLocales-1] do ax.write(min(myType));
   if ax.read() != min(myType) then
-    writeln(typeToString(myType), ": ERROR: ax=", ax.read(),
+    writeln(typeToString(myType), ": ERROR: (read) ax=", ax.read(),
             " (should be ", min(myType), ")");
   if printResults then writeln(ax.read());
 
-  ax.exchange(max(myType));
+  for i in 1..99 {
+    var a = if i%100 then max(myType) else 0:myType;
+    ax.exchange(a);
+  }
   if printResults then writeln(ax.read());
   if ax.read() != max(myType) then
-    writeln(typeToString(myType), ": ERROR: ax=", ax.read(),
+    writeln(typeToString(myType), ": ERROR: (exchange) ax=", ax.read(),
             " (should be ", max(myType), ")");
 
   ax.write(0:myType);
@@ -30,7 +33,7 @@ proc doit(type myType) {
     }
   x = ax.read();
   if x != 120:myType then
-    writeln(typeToString(myType), ": ERROR: x=", x, " (should be 120)");
+    writeln(typeToString(myType), ": ERROR: (fetchAdd/compareExchange) x=", x, " (should be 120)");
   if printResults then writeln(x);
 
   ax.write(0:myType);
@@ -40,7 +43,7 @@ proc doit(type myType) {
     }
   x = ax.read();
   if x != 120:myType then
-    writeln(typeToString(myType), ": ERROR: x=", x, " (should be 120)");
+    writeln(typeToString(myType), ": ERROR: (fetchAdd/compareExchangeStrong) x=", x, " (should be 120)");
   if printResults then writeln(x);
 
   ax.write(0:myType);
@@ -50,7 +53,7 @@ proc doit(type myType) {
     }
   x = ax.read();
   if x != 120:myType then
-    writeln(typeToString(myType), ": ERROR: x=", x, " (should be 120)");
+    writeln(typeToString(myType), ": ERROR: (fetchAdd/compareExchangeWeak) x=", x, " (should be 120)");
   if printResults then writeln(x);
 
   var b: atomic bool;
@@ -59,7 +62,7 @@ proc doit(type myType) {
     ax.waitFor(120:myType);
     const x = ax.read();
     if x != 120:myType then
-      writeln(typeToString(myType), ": ERROR: x=", x, " (should be 120)");
+      writeln(typeToString(myType), ": ERROR: (waitFor/add) x=", x, " (should be 120)");
     if printResults then writeln(x);
     b.testAndSet();
   }
@@ -73,7 +76,7 @@ proc doit(type myType) {
     ax.waitFor(0:myType);
     const x = ax.read();
     if x != 0:myType then
-      writeln(typeToString(myType), ": ERROR: x=", x, " (should be 0)");
+      writeln(typeToString(myType), ": ERROR: (waitFor/sub) x=", x, " (should be 0)");
     if printResults then writeln(x);
     b.testAndSet();
   }
@@ -89,7 +92,7 @@ proc doit(type myType) {
       ax.waitFor(0:myType);
       const x = ax.read();
       if x != 0:myType then
-        writeln(typeToString(myType), ": ERROR: x=", x, " (should be 1)");
+        writeln(typeToString(myType), ": ERROR: (waitFor/and) x=", x, " (should be 1)");
       if printResults then writeln(x);
       b.testAndSet();
     }
@@ -105,7 +108,7 @@ proc doit(type myType) {
       ax.waitFor(max(int(8)):myType);
       const x = ax.read();
       if x != max(int(8)):myType then
-        writeln(typeToString(myType), ": ERROR: x=", x, " (should be ", max(int(8)), ")");
+        writeln(typeToString(myType), ": ERROR: (waitFor/or) x=", x, " (should be ", max(int(8)), ")");
       if printResults then writeln(x);
       b.testAndSet();
     }
@@ -121,7 +124,7 @@ proc doit(type myType) {
       ax.waitFor(max(int(8)):myType);
       const x = ax.read();
       if x != max(int(8)):myType then
-        writeln(typeToString(myType), ": ERROR: x=", x, " (should be ", max(int(8)), ")");
+        writeln(typeToString(myType), ": ERROR: (waitfOr/xor) x=", x, " (should be ", max(int(8)), ")");
       if printResults then writeln(x);
       b.testAndSet();
     }

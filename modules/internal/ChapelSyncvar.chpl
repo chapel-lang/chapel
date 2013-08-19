@@ -26,8 +26,8 @@ module ChapelSyncvar {
   }
 
   pragma "sync"
+    pragma "no object" // Optimize out the object base pointer.
     pragma "no default functions"
-    pragma "no object"
     class _syncvar {
       type base_type;
       var  value: base_type;       // actual data - may need to be declared specially on some targets!
@@ -178,8 +178,8 @@ module ChapelSyncvar {
   // single variable support
   pragma "sync"
     pragma "single"
+    pragma "no object" // Optimize out the object base pointer.
     pragma "no default functions"
-    pragma "no object"
     class _singlevar {
       type base_type;
       var  value: base_type;     // actual data - may need to be declared specially on some targets!
@@ -295,6 +295,38 @@ module ChapelSyncvar {
   pragma "auto copy fn"
   inline proc chpl__autoCopy(x: single) return x;
 
+  // These implement chpl_here_free for sync and single objects (permitting their
+  // representations to be reclaimed under hierarchical locales).
+  // The resulting code duplication is undesirable, but necessary for two reasons:
+  // 1) We do not wish to allow the implicit coercion of syncs and singles to objects, and
+  // 2) We do not yet have an implementation for user-definable coercions which would allow
+  //    us to detect and diagnose this attempted coercion
+  // We could detect and diagnose this undesirable coercion in the compiler, but that is even worse
+  // (in terms of maintainability) than the code duplication appearing here.
+  proc chpl_here_free(x:sync) {
+    // TODO: The pointer should really be of type opaque, but we don't 
+    // handle object ==> opaque casts correctly.  (In codegen, opaque behaves 
+    // like an lvalue, but in the type system it isn't one.)
+    pragma "insert line file info"
+    extern proc chpl_memhook_free_pre(ptr:opaque): void;
+    chpl_memhook_free_pre(__primitive("cast_to_void_star", x));
+    __primitive("task_free", x);
+  }
+
+  proc chpl_here_free(x:single) {
+    // TODO: The pointer should really be of type opaque, but we don't 
+    // handle object ==> opaque casts correctly.  (In codegen, opaque behaves 
+    // like an lvalue, but in the type system it isn't one.)
+    pragma "insert line file info"
+    extern proc chpl_memhook_free_pre(ptr:opaque): void;
+    chpl_memhook_free_pre(__primitive("cast_to_void_star", x));
+    __primitive("task_free", x);
+  }
+
+  // Be explicit about whether syncs and singles are auto-destroyed.
+  inline proc chpl__maybeAutoDestroyed(x: _syncvar) param return false;
+  inline proc chpl__maybeAutoDestroyed(x: _singlevar) param return false;
+
   pragma "auto destroy fn"
   pragma "auto destroy fn sync"
   inline proc chpl__autoDestroy(x: _syncvar) {
@@ -306,32 +338,24 @@ module ChapelSyncvar {
     delete x;
   }
 
-  /* op= for sync variables */
-  inline proc +=(lhs: sync, rhs)  { lhs = lhs + rhs; }
-  inline proc -=(lhs: sync, rhs)  { lhs = lhs - rhs; }
-  inline proc *=(lhs: sync, rhs)  { lhs = lhs * rhs; }
-  inline proc /=(lhs: sync, rhs)  { lhs = lhs / rhs; }
-  inline proc %=(lhs: sync, rhs)  { lhs = lhs % rhs; }
-  inline proc **=(lhs: sync, rhs) { lhs = lhs ** rhs; }
-  inline proc &=(lhs: sync, rhs)  { lhs = lhs & rhs; }
-  inline proc |=(lhs: sync, rhs)  { lhs = lhs | rhs; }
-  inline proc ^=(lhs: sync, rhs)  { lhs = lhs ^ rhs; }
-  inline proc >>=(lhs: sync, rhs) { lhs = lhs >> rhs; }
-  inline proc <<=(lhs: sync, rhs) { lhs = lhs << rhs; }
-  
-  /* op= for sync variables with param rhs */
-  inline proc +=(lhs: sync, param rhs)  { lhs = lhs + rhs; }
-  inline proc -=(lhs: sync, param rhs)  { lhs = lhs - rhs; }
-  inline proc *=(lhs: sync, param rhs)  { lhs = lhs * rhs; }
-  inline proc /=(lhs: sync, param rhs)  { lhs = lhs / rhs; }
-  inline proc %=(lhs: sync, param rhs)  { lhs = lhs % rhs; }
-  inline proc **=(lhs: sync, param rhs) { lhs = lhs ** rhs; }
-  inline proc &=(lhs: sync, param rhs)  { lhs = lhs & rhs; }
-  inline proc |=(lhs: sync, param rhs)  { lhs = lhs | rhs; }
-  inline proc ^=(lhs: sync, param rhs)  { lhs = lhs ^ rhs; }
-  inline proc >>=(lhs: sync, param rhs) { lhs = lhs >> rhs; }
-  inline proc <<=(lhs: sync, param rhs) { lhs = lhs << rhs; }
+  proc chpl__syncBaseType(s) type {
+    var x = s;
+    return x.type;
+  }
 
+  /* op= for sync variables */
+  inline proc  +=(lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs  + rhs; }
+  inline proc  -=(lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs  - rhs; }
+  inline proc  *=(lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs  * rhs; }
+  inline proc  /=(lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs  / rhs; }
+  inline proc  %=(lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs  % rhs; }
+  inline proc **=(lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs ** rhs; }
+  inline proc  &=(lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs  & rhs; }
+  inline proc  |=(lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs  | rhs; }
+  inline proc  ^=(lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs  ^ rhs; }
+  inline proc >>=(lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs >> rhs; }
+  inline proc <<=(lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs << rhs; }
+  
   inline proc <=>(lhs: sync, ref rhs) {
     const tmp = lhs;
     lhs = rhs;

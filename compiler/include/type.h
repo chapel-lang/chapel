@@ -39,7 +39,7 @@ class Type : public BaseAST {
 
   TypeSymbol* symbol;
   Symbol* defaultValue;
-  FnSymbol* initializer;
+  FnSymbol* initializer; // This is the compiler-supplied initializer function.
   FnSymbol* defaultTypeConstructor;
   FnSymbol* destructor;
   Vec<FnSymbol*> methods;
@@ -190,7 +190,7 @@ TYPE_EXTERN PrimitiveType* dtTaskList;
 // a fairly special wide type
 extern ClassType* wideStringType;
 
-// standard module types
+// Well-known types
 TYPE_EXTERN ClassType* dtArray;
 TYPE_EXTERN ClassType* dtReader;
 TYPE_EXTERN ClassType* dtWriter;
@@ -198,6 +198,7 @@ TYPE_EXTERN ClassType* dtBaseArr;
 TYPE_EXTERN ClassType* dtBaseDom;
 TYPE_EXTERN ClassType* dtDist;
 TYPE_EXTERN ClassType* dtTuple;
+TYPE_EXTERN ClassType* dtLocale;
 TYPE_EXTERN ClassType* dtLocaleID;
 TYPE_EXTERN ClassType* dtMainArgument;
 
@@ -234,6 +235,7 @@ bool isRefCountedType(Type* t);
 bool isRecordWrappedType(Type* t);
 bool isSyncType(Type* t);
 
+bool isSubClass(Type* type, Type* baseType);
 bool isDistClass(Type* type);
 bool isDomainClass(Type* type);
 bool isArrayClass(Type* type);
@@ -252,8 +254,8 @@ GenRet codegenImmediate(Immediate* i);
 #define CLASS_ID_TYPE dtInt[INT_SIZE_32]
 #define UNION_ID_TYPE dtInt[INT_SIZE_64]
 #define SIZE_TYPE dtInt[INT_SIZE_64]
-#define NODE_ID_TYPE dtLocaleID->getField("node")->typeInfo()
-#define SUBLOC_ID_TYPE dtLocaleID->getField("subloc")->typeInfo()
+#define LOCALE_TYPE dtLocale->typeInfo()
 #define LOCALE_ID_TYPE dtLocaleID->typeInfo()
+#define NODE_ID_TYPE dtInt[INT_SIZE_32]
 
 #endif

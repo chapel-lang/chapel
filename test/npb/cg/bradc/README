@@ -55,6 +55,9 @@ cg-printa.chpl -- a version of the above that prints out the sparse
                   domain and array
 
 
+Performance
+-----------
+see README.performance
 
 Misc tests
 ----------

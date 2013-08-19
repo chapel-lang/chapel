@@ -252,7 +252,7 @@ qio_bool qio_regexp_match(qio_regexp_t* regexp, const char* text, int64_t text_l
 {
   StringPiece textp(text, text_len);
   bool ret;
-  RE2::Anchor ranchor;
+  RE2::Anchor ranchor = RE2::UNANCHORED;
   MAYBE_STACK_SPACE(StringPiece, onstack);
   StringPiece* spPtr;
   RE2* re = (RE2*) regexp->regexp;
@@ -353,11 +353,12 @@ err_t qio_regexp_channel_match(qio_regexp_t* regexp, const int threadsafe, struc
   err_t err;
   void* bufstart = NULL;
   void* bufend = NULL;
-  RE2::Anchor ranchor;
+  RE2::Anchor ranchor = RE2::UNANCHORED;
   int64_t need;
   int64_t start_offset, offset, end_offset; 
   int64_t end;
-  int64_t match_start, match_len;
+  int64_t match_start = -1;
+  int64_t match_len = 0;
   StringPiece buffer;
   FilePiece text;
   FilePiece* locs;

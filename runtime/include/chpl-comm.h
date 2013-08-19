@@ -5,10 +5,10 @@
 
 #include <stdint.h>
 #include "chpltypes.h"
-#include <chpl-comm-impl.h>
-#include <chpl-comm-heap-macros.h>
+#include "chpl-comm-impl.h"
+#include "chpl-comm-heap-macros.h"
 #include "chpl-tasks.h"
-#include <chpl-comm-task-decls.h>
+#include "chpl-comm-task-decls.h"
 #include "chpl-comm-locales.h"
 
 //
@@ -16,7 +16,7 @@
 //
 extern c_nodeid_t chpl_nodeID; // unique ID for each node: 0, 1, 2, ...
 // Note that this is the comm node ID: it carries only the .node
-// portion of the c_locale_t structure that represents the locale on which
+// portion of the chpl_localeID_t structure that represents the locale on which
 // the current task is running.
 // Note also that this value is set only in chpl_comm_init to a value which is
 // (hopefully) unique to the running image, and never changed again.
@@ -41,8 +41,15 @@ extern void* chpl_getPrivatizedClass(int32_t);
 extern void chpl__heapAllocateGlobals(void);
 
 extern const int chpl_numGlobalsOnHeap;
-extern void** chpl_globals_registry;
-extern void* chpl_globals_registry_static[];
+
+// chpl_globals_registry may just be a pointer to chpl_globals_registry_static.
+// Both are arrays of size chpl_numGlobalsOnHeap storing ptr_wide_ptr_t,
+// that is, pointers to wide pointers. All registered globals are wide pointers.
+// Locales other than 0 need to set their registered globals to the wide
+// pointers received from Locale 0, which is why these have type
+// ptr_wide_ptr_t.
+extern ptr_wide_ptr_t* chpl_globals_registry;
+extern ptr_wide_ptr_t chpl_globals_registry_static[];
 
 extern void* const chpl_private_broadcast_table[];
 
@@ -209,25 +216,36 @@ void  chpl_comm_get_strd(void* dstaddr, void* dststrides, int32_t srclocale,
                      int ln, chpl_string fn);
 
 //
+// Get a local copy of a wide string.
+//
+// The local copy is also a wide string pointer, but its addr field points to 
+// a locally-allocated char[] and the locale field is set to "here".
+// The local char[] buffer is leaked. :(
+//
+void chpl_gen_comm_wide_string_get(void* addr,
+  c_nodeid_t node, void* raddr, int32_t elemSize, int32_t typeIndex, int32_t len,
+                                   int ln, chpl_string fn);
+
+//
 // remote fork should launch a thread on locale that runs function f
 // passing it arg where the size of arg is stored in arg_size
 // notes:
 //   multiple forks to the same locale should be handled concurrently
 //
-void chpl_comm_fork(c_nodeid_t node, chpl_fn_int_t fid,
-                    void *arg, int32_t arg_size, int32_t arg_tid);
+void chpl_comm_fork(c_nodeid_t node, c_sublocid_t subloc,
+                    chpl_fn_int_t fid, void *arg, int32_t arg_size);
 
 //
 // non-blocking fork
 //
-void chpl_comm_fork_nb(c_nodeid_t node, chpl_fn_int_t fid,
-                       void *arg, int32_t arg_size, int32_t arg_tid);
+void chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
+                       chpl_fn_int_t fid, void *arg, int32_t arg_size);
 
 //
 // fast (non-forking) fork (i.e., run in handler)
 //
-void chpl_comm_fork_fast(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
-                         int32_t arg_size, int32_t arg_tid);
+void chpl_comm_fork_fast(c_nodeid_t node, c_sublocid_t subloc,
+                         chpl_fn_int_t fid, void *arg, int32_t arg_size);
 
 
 //

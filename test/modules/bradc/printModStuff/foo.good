@@ -22,6 +22,7 @@ Parsing module files:
   ./bah.chpl
   $CHPL_HOME/modules/standard/Types.chpl
   $CHPL_HOME/modules/standard/Math.chpl
+  $CHPL_HOME/modules/standard/Sys.chpl
   $CHPL_HOME/modules/standard/List.chpl
   $CHPL_HOME/modules/standard/SysBasic.chpl
   $CHPL_HOME/modules/standard/IO.chpl

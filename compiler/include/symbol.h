@@ -38,6 +38,8 @@ enum IntentTag {
   INTENT_INOUT,
   INTENT_OUT,
   INTENT_CONST,
+  INTENT_CONST_IN,
+  INTENT_CONST_REF,
   INTENT_REF,
   INTENT_PARAM,
   INTENT_TYPE
@@ -152,11 +154,18 @@ class TypeSymbol : public Symbol {
   // and cache it if it has.
 #ifdef HAVE_LLVM
   llvm::Type* llvmType;
+  llvm::MDNode* llvmTbaaNode;
+  llvm::MDNode* llvmConstTbaaNode;
+  llvm::MDNode* llvmTbaaStructNode;
+  llvm::MDNode* llvmConstTbaaStructNode;
 #else
   // Keep same layout so toggling HAVE_LLVM
   // will not lead to build errors without make clean
-  // For C, we will store a pointer to the cname here
   void* llvmType;
+  void* llvmTbaaNode;
+  void* llvmConstTbaaNode;
+  void* llvmTbaaStructNode;
+  void* llvmConstTbaaStructNode;
 #endif
   bool codegenned;
 
@@ -167,6 +176,9 @@ class TypeSymbol : public Symbol {
   GenRet codegen();
   void codegenDef();
   void codegenPrototype();
+  // This function is used to code generate the LLVM TBAA metadata
+  // after all of the types have been defined.
+  void codegenMetadata();
 };
 
 
@@ -284,13 +296,36 @@ class LabelSymbol : public Symbol {
 };
 
 
+// Creates a new string literal with the given value.
 VarSymbol *new_StringSymbol(const char *s);
+
+// Creates a new boolean literal with the given value and bit-width.
 VarSymbol *new_BoolSymbol(bool b, IF1_bool_type size=BOOL_SIZE_SYS);
+
+// Creates a new (signed) integer literal with the given value and bit-width.
 VarSymbol *new_IntSymbol(int64_t b, IF1_int_type size=INT_SIZE_64);
+
+// Creates a new unsigned integer literal with the given value and bit-width.
 VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size=INT_SIZE_64);
-VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size=FLOAT_SIZE_64);
-VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size=FLOAT_SIZE_64);
-VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_complex_type size=COMPLEX_SIZE_128);
+
+// Creates a new real literal with the given value and bit-width.
+// n is used for the cname of the new symbol,
+// but only if the value has not already been cached.
+VarSymbol *new_RealSymbol(const char *n, long double b,
+                          IF1_float_type size=FLOAT_SIZE_64);
+
+// Creates a new imaginary literal with the given value and bit-width.
+// n is used for the cname of the new symbol,
+// but only if the value has not already been cached.
+VarSymbol *new_ImagSymbol(const char *n, long double b,
+                          IF1_float_type size=FLOAT_SIZE_64);
+
+// Creates a new complex literal with the given value and bit-width.
+// n is used for the cname of the new symbol,
+// but only if the value has not already been cached.
+VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i,
+                             IF1_complex_type size=COMPLEX_SIZE_128);
+
 VarSymbol *new_ImmediateSymbol(Immediate *imm);
 void resetTempID();
 FlagSet getRecordWrappedFlags(Symbol* s);
@@ -329,6 +364,7 @@ extern VarSymbol *gTryToken; // try token for conditional function resolution
 extern VarSymbol *gBoundsChecking;
 extern VarSymbol *gPrivatization;
 extern VarSymbol *gLocal;
+extern VarSymbol *gNodeID;
 extern Symbol *gCLine, *gCFile;
 
 extern Symbol *gSyncVarAuxFields;

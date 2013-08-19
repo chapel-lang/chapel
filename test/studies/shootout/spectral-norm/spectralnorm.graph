@@ -1,4 +1,6 @@
-perfkeys: Time elapsed :
-graphkeys: spectral-norm
+perfkeys: real, real
+graphkeys: spectralnorm, spectralnorm_2
+files: spectralnorm.dat, spectralnorm_2.dat
 graphtitle: Spectral Norm Shootout Benchmark
 ylabel: Time (seconds)
+graphname: spectralnorm

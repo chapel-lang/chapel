@@ -14,7 +14,8 @@
 bool printPasses = false;
 
 struct PassInfo {
-  void (*fn)(void);
+  void (*pass_fn)(void); // The function which implements the pass.
+  void (*check_fn)(void); // per-pass check function
   const char *name;
   char log_tag;
 };
@@ -22,7 +23,7 @@ struct PassInfo {
 #include "passlist.h"
 
 
-static void runPass(const char *passName, void (*pass)(void), char log_tag) {
+static void runPass(const char *passName, void (*pass)(void), void (*check)(), char log_tag) {
   static struct timeval startTimeBetweenPasses;
   static struct timeval stopTimeBetweenPasses;
   static double timeBetweenPasses = -1.0;
@@ -76,8 +77,9 @@ static void runPass(const char *passName, void (*pass)(void), char log_tag) {
   if (printPasses) {
     gettimeofday(&startTimeBetweenPasses, &timezone);
   }
+  considerExitingEndOfPass();
   cleanAst();
-  verify();
+  (*check)(); // Run per-pass check function.
   //printPrimitiveCounts(passName);
 }
 
@@ -148,7 +150,7 @@ void runPasses(void) {
     fDocs = true;
   while (pass->name != NULL) {
     advanceCurrentPass(pass->name);
-    runPass(pass->name, pass->fn, pass->log_tag);
+    runPass(pass->name, pass->pass_fn, pass->check_fn, pass->log_tag);
     USR_STOP(); // quit if fatal errors were encountered in pass
     if (chpldoc && (strcmp(pass->name, "docs") == 0)) {
       break;

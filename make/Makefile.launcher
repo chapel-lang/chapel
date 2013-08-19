@@ -3,4 +3,4 @@
 #
 #
 #
-CHPL_MAKE_LAUNCHER = $(shell $(CHPL_MAKE_HOME)/util/chplenv/launcher)
+export CHPL_MAKE_LAUNCHER = $(shell $(CHPL_MAKE_HOME)/util/chplenv/launcher)

@@ -20,7 +20,6 @@
 
 // INT_ASSERT is intended to become no-op in production builds of compiler
 #define INT_ASSERT(x) do { if (!(x)) INT_FATAL("assertion error"); } while (0)
-
 #define iterKindTypename "iterKind"
 #define iterKindLeaderTagname "leader"
 #define iterKindFollowerTagname "follower"
@@ -35,6 +34,7 @@ void handleError(const char* fmt, ...);
 void handleError(BaseAST* ast, const char* fmt, ...);
 void handleError(FILE* file, BaseAST* ast, const char* fmt, ...);
 void exitIfFatalErrorsEncountered(void);
+void considerExitingEndOfPass(void);
 void printCallStack(bool force, bool shortModule, FILE* out);
 
 void startCatchingSignals(void);

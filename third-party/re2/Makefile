@@ -3,8 +3,8 @@ export CHPL_MAKE_HOME=$(shell pwd)/../..
 endif
 
 #CHPL_MAKE_HOST_TARGET = --target
-#include $(CHPL_MAKE_HOME)/make/Makefile.base
-include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.include
+include $(CHPL_MAKE_HOME)/make/Makefile.base
+#include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.include
 
 #
 # set up the directories

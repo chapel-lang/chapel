@@ -1,0 +1,32 @@
+#!/usr/bin/env perl
+
+use File::Basename;
+
+$utildirname = dirname($0);
+
+$home = $ENV{'CHPL_HOME'};
+if ( ! -d $home ) {
+  $home = $utildirname . "/../../";
+}
+
+$preset_hdfs = $ENV{'CHPL_FOREIGN_FS'};
+
+if ($preset_hdfs eq "") {
+  $hdfs = 'none';
+} 
+
+if ($preset_hdfs eq "hdfs"){
+  $java_subdir = $ENV{'JAVA_INSTALL'};
+  $hdfs_subdir = $ENV{'HADOOP_INSTALL'};
+  # This will not check that all dependencies are satisfied..
+  if (-d $java_subdir && -d $hdfs_subdir && -f "$hdfs_subdir/src/c++/libhdfs/hdfs.h" && -d "$java_subdir/include") {
+  } else {
+      warn "WARNING: Can't find your Java and Hadoop installations\n";
+  }
+  $hdfs = 'hdfs';
+} else {
+  $hdfs = 'none';
+}
+
+print "$hdfs\n";
+exit(0);

@@ -5,11 +5,18 @@
 //  the handler (rather than creating a new task).
 //
 
+#include <vector>
+#include "stlUtil.h"
 #include "astutil.h"
 #include "expr.h"
-#include "passes.h"
-#ifdef DEBUG
 #include "stmt.h"
+#include "passes.h"
+
+/* Print lots of debugging messages when DEBUG is defined */
+#ifdef DEBUG
+  #define DEBUG_PRINTF(...) printf(__VA_ARGS__)
+#else
+  #define DEBUG_PRINTF(...)
 #endif
 
 //
@@ -17,7 +24,7 @@
 // (e.g., no communication, no sync/single accesses)
 //
 static bool
-isFastPrimitive(CallExpr *call) {
+isFastPrimitive(CallExpr *call, bool isLocal) {
   INT_ASSERT(call->primitive);
   // Check primitives for communication
   switch (call->primitive->tag) {
@@ -73,68 +80,68 @@ isFastPrimitive(CallExpr *call) {
 
   case PRIM_BLOCK_LOCAL:
 
-  case PRIM_NODE_ID:
+  case PRIM_IS_HERE:
   case PRIM_ON_LOCALE_NUM:
   case PRIM_GET_SERIAL:
   case PRIM_SET_SERIAL:
-  case PRIM_SET_SUBLOC_ID:
-  case PRIM_GET_SUBLOC_ID:
+  case PRIM_TASK_SET_LOCALE_ID:
+  case PRIM_TASK_GET_LOCALE_ID:
+  case PRIM_TASK_SET_HERE_PTR:
+  case PRIM_TASK_GET_HERE_PTR:
 
   case PRIM_STRING_COPY:
+  case PRIM_CAST_TO_VOID_STAR:
+  case PRIM_SIZEOF:
 
   case PRIM_NEXT_UINT32:
   case PRIM_GET_USER_LINE:
   case PRIM_GET_USER_FILE:
-
-#ifdef DEBUG
-    printf(" *** OK (default): %s\n", call->primitive->name);
-#endif
+    DEBUG_PRINTF(" *** OK (default): %s\n", call->primitive->name);
     return true;
 
   case PRIM_MOVE:
     if (call->get(1)->typeInfo() == dtVoid) {
-#ifdef DEBUG
-      printf(" *** OK (PRIM_MOVE 0): %s\n", call->primitive->name);
-#endif
+      DEBUG_PRINTF(" *** OK (PRIM_MOVE 0): %s\n", call->primitive->name);
+      // Not necessarily true, but we return true because if it
+      // is a callExpr, it will be checked in the calling function
+      //
+      INT_ASSERT(0);
       return true;
     }
-    if (!isCallExpr(call->get(2))) {
-      if (!(call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
-            !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
-            !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)))
-#ifdef DEBUG
-        printf(" *** OK (PRIM_MOVE 1): %s\n", call->primitive->name);
-#endif
+  case PRIM_ADD_ASSIGN:
+  case PRIM_SUBTRACT_ASSIGN:
+  case PRIM_MULT_ASSIGN:
+  case PRIM_DIV_ASSIGN:
+  case PRIM_MOD_ASSIGN:
+  case PRIM_LSH_ASSIGN:
+  case PRIM_RSH_ASSIGN:
+  case PRIM_AND_ASSIGN:
+  case PRIM_OR_ASSIGN:
+  case PRIM_XOR_ASSIGN:
+    if (!isCallExpr(call->get(2))) { // callExprs checked in calling function
+      if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
+          !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+        DEBUG_PRINTF(" *** OK (PRIM_MOVE 1): %s\n", call->primitive->name);
         return true;
+      }
     } else {
-#ifdef DEBUG
-      printf(" *** OK (PRIM_MOVE 3): %s\n", call->primitive->name);
-#endif
+      DEBUG_PRINTF(" *** OK (PRIM_MOVE 2): %s\n", call->primitive->name);
+      // Not necessarily true, but we return true because
+      // the callExpr will be checked in the calling function
       return true;
     }
     break;
-
-  case PRIM_LOC_GET_NODE:
-  case PRIM_LOC_SET_NODE:
-  case PRIM_LOC_GET_SUBLOC:
-  case PRIM_LOC_SET_SUBLOC:
-#ifdef DEBUG
-    printf(" *** OK (PRIM_LOC_GET_NODE, etc.): %s\n", call->primitive->name);
-#endif
-    return true;
 
 // I think these can always return true. <hilde>
 // But that works only if the remote get is removed from code generation.
   case PRIM_WIDE_GET_LOCALE:
   case PRIM_WIDE_GET_NODE:
-  case PRIM_WIDE_GET_SUBLOC:
   case PRIM_WIDE_GET_ADDR:
     // If this test is true, a remote get is required.
     if (!(call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
           call->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS))) {
-#ifdef DEBUG
-      printf(" *** OK (PRIM_WIDE_GET_LOCALE, etc.): %s\n", call->primitive->name);
-#endif
+      DEBUG_PRINTF(" *** OK (PRIM_WIDE_GET_LOCALE, etc.): %s\n",
+                   call->primitive->name);
       return true;
     }
     break;
@@ -145,9 +152,8 @@ isFastPrimitive(CallExpr *call) {
   case PRIM_GET_SVEC_MEMBER_VALUE:
     if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
       return true;
-#ifdef DEBUG
-      printf(" *** OK (PRIM_SET_UNION_ID, etc.): %s\n", call->primitive->name);
-#endif
+      DEBUG_PRINTF(" *** OK (PRIM_SET_UNION_ID, etc.): %s\n",
+                   call->primitive->name);
     }
     break;
 
@@ -160,9 +166,8 @@ isFastPrimitive(CallExpr *call) {
   case PRIM_ARRAY_GET_VALUE:
   case PRIM_DYNAMIC_CAST:
     if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-#ifdef DEBUG
-      printf(" *** OK (PRIM_ARRAY_SET, etc.): %s\n", call->primitive->name);
-#endif
+      DEBUG_PRINTF(" *** OK (PRIM_ARRAY_SET, etc.): %s\n",
+                   call->primitive->name);
       return true;
     }
     break;
@@ -172,9 +177,7 @@ isFastPrimitive(CallExpr *call) {
   case PRIM_SET_SVEC_MEMBER:
     if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
         !call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-#ifdef DEBUG
-      printf(" *** OK (PRIM_DEREF, etc.): %s\n", call->primitive->name);
-#endif
+      DEBUG_PRINTF(" *** OK (PRIM_DEREF, etc.): %s\n", call->primitive->name);
       return true;
     }
     break;
@@ -183,7 +186,7 @@ isFastPrimitive(CallExpr *call) {
   case PRIM_CHPL_COMM_PUT:
   case PRIM_CHPL_COMM_GET_STRD:
   case PRIM_CHPL_COMM_PUT_STRD:
-    // These always involve communication, so are deemed slow.
+    // These may involve communication, so are deemed slow.
     return false;
 
   case PRIM_SYNC_INIT: // Maybe fast?
@@ -273,6 +276,21 @@ isFastPrimitive(CallExpr *call) {
     INT_FATAL("This primitive should have been removed from the tree by now.");
     break;
 
+    // These don't block in the Chapel sense, but they may require a system
+    // call so we don't consider them eligible.
+    //
+  case PRIM_FREE_TASK_LIST:
+  case PRIM_TASK_ALLOC:
+  case PRIM_TASK_REALLOC:
+  case PRIM_TASK_FREE:
+  case PRIM_CHPL_MEMHOOK_FREE:
+  case PRIM_CHPL_ALLOC:
+  case PRIM_CHPL_FREE:
+  case PRIM_ARRAY_ALLOC:
+  case PRIM_ARRAY_FREE:
+  case PRIM_ARRAY_FREE_ELTS:
+    return false;
+
     // Temporarily unclassified (legacy) cases.
     // These formerly defaulted to false (slow), so we leave them
     // here until they are proven fast.
@@ -280,12 +298,6 @@ isFastPrimitive(CallExpr *call) {
   case PRIM_SET_END_COUNT:
   case PRIM_PROCESS_TASK_LIST:
   case PRIM_EXECUTE_TASKS_IN_LIST:
-  case PRIM_FREE_TASK_LIST:
-  case PRIM_CHPL_ALLOC:
-  case PRIM_CHPL_FREE:
-  case PRIM_ARRAY_ALLOC:
-  case PRIM_ARRAY_FREE:
-  case PRIM_ARRAY_FREE_ELTS:
   case PRIM_TO_LEADER:
   case PRIM_TO_FOLLOWER:
   case PRIM_DELETE:
@@ -304,6 +316,18 @@ isFastPrimitive(CallExpr *call) {
     INT_FATAL("Unhandled case.");
     break;
   }
+
+  return isLocal;
+}
+
+static bool
+inLocalBlock(CallExpr *call) {
+  for (Expr* parent = call->parentExpr; parent; parent = parent->parentExpr) {
+    if (BlockStmt* blk = toBlockStmt(parent)) {
+      if (blk->blockInfo && blk->blockInfo->isPrimitive(PRIM_BLOCK_LOCAL))
+        return true;
+    }
+  }
   return false;
 }
 
@@ -312,76 +336,64 @@ markFastSafeFn(FnSymbol *fn, int recurse, Vec<FnSymbol*> *visited) {
   if (fn->hasFlag(FLAG_FAST_ON))
     return true;
 
-  if (fn->hasFlag(FLAG_NON_BLOCKING))
-    return false;
+  if (fn->hasFlag(FLAG_EXPORT))
+    return true;
 
-  if (fn->hasFlag(FLAG_EXTERN))
+  if (fn->hasFlag(FLAG_EXTERN)) {
+    // consider a pragma to indicate that it would be "fast"
+    return false;
+  }
+
+  if (fn->hasFlag(FLAG_NON_BLOCKING))
     return false;
 
   visited->add_exclusive(fn);
 
-  Vec<CallExpr*> calls;
+  std::vector<CallExpr*> calls;
 
-  collectCallExprs(fn, calls);
+  collectCallExprsSTL(fn, calls);
 
-  forv_Vec(CallExpr, call, calls) {
-#ifdef DEBUG
-    printf("\tcall %p (id=%d): ", call, call->id);
-#endif
+  for_vector(CallExpr, call, calls) {
+    DEBUG_PRINTF("\tcall %p (id=%d): ", call, call->id);
+    bool isLocal = fn->hasFlag(FLAG_LOCAL_FN) || inLocalBlock(call);
+
     if (!call->primitive) {
-#ifdef DEBUG
-      printf("(non-primitive CALL)\n");
-#endif
+      DEBUG_PRINTF("(non-primitive CALL)\n");
       if ((recurse>0) && call->isResolved()) {
         if (call->isResolved()->hasFlag(FLAG_ON_BLOCK)) {
           visited->add_exclusive(call->isResolved());
           call->isResolved()->removeFlag(FLAG_FAST_ON);
-#ifdef DEBUG
-          printf("%d: recurse FAILED (nested on block, id=%d).\n",
-                 recurse-1, call->id);
-#endif
+          DEBUG_PRINTF("%d: recurse FAILED (nested on block, id=%d).\n",
+                       recurse-1, call->id);
           return false;
         }
         if (!visited->in(call->isResolved())) {
-#ifdef DEBUG
-          printf("%d: recurse %p (block=%p, id=%d)\n", recurse-1,
-                 call->isResolved(), call->isResolved()->body,
-                 call->isResolved()->id);
-          printf("\tlength=%d\n", call->isResolved()->body->length());
-#endif
+          DEBUG_PRINTF("%d: recurse %p (block=%p, id=%d)\n", recurse-1,
+                       call->isResolved(), call->isResolved()->body,
+                       call->isResolved()->id);
+          DEBUG_PRINTF("\tlength=%d\n", call->isResolved()->body->length());
           if (!markFastSafeFn(call->isResolved(), recurse-1, visited)) {
-#ifdef DEBUG
-            printf("%d: recurse FAILED (id=%d).\n", recurse-1, call->id);
-#endif
+            DEBUG_PRINTF("%d: recurse FAILED (id=%d).\n", recurse-1, call->id);
             return false;
           }
         } else {
-#ifdef DEBUG
-          printf("%d: recurse ALREADY VISITED %p (id=%d)\n", recurse-1,
-                 call->isResolved(), call->isResolved()->id);
-          printf("\tlength=%d\n", call->isResolved()->body->length());
-#endif
+          DEBUG_PRINTF("%d: recurse ALREADY VISITED %p (id=%d)\n", recurse-1,
+                       call->isResolved(), call->isResolved()->id);
+          DEBUG_PRINTF("\tlength=%d\n", call->isResolved()->body->length());
         }
-#ifdef DEBUG
-        printf("%d: recurse DONE.\n", recurse-1);
-#endif
+        DEBUG_PRINTF("%d: recurse DONE.\n", recurse-1);
       } else {
         // No function calls allowed
-#ifdef DEBUG
-        printf("%d: recurse FAILED (%s, id=%d).\n", recurse-1,
-               recurse == 1 ? "too deep" : "function not resolved", call->id);
-#endif
+        DEBUG_PRINTF("%d: recurse FAILED (%s, id=%d).\n", recurse-1,
+                     recurse == 1 ? "too deep" : "function not resolved",
+                     call->id);
         return false;
       }
-    } else if (isFastPrimitive(call)) {
-#ifdef DEBUG
-      printf(" (FAST primitive CALL)\n");
-#endif
+    } else if (isFastPrimitive(call, isLocal)) {
+      DEBUG_PRINTF(" (FAST primitive CALL)\n");
     } else {
-#ifdef DEBUG
-      printf("%d: FAILED (non-FAST primitive CALL: %s, id=%d)\n",
-             recurse-1, call->primitive->name, call->id);
-#endif
+      DEBUG_PRINTF("%d: FAILED (non-FAST primitive CALL: %s, id=%d)\n",
+                   recurse-1, call->primitive->name, call->id);
       return false;
     }
   }
@@ -399,18 +411,15 @@ optimizeOnClauses(void) {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (!fn->hasFlag(FLAG_ON_BLOCK))
       continue;
-#ifdef DEBUG
-    printf("%p (%s in %s:%d): FLAG_ON_BLOCK (block=%p, id=%d)\n",
-           fn, fn->cname, toModuleSymbol(fn->defPoint->parentSymbol)->filename,
-           fn->linenum(), fn->body, fn->id);
-    printf("\tlength=%d\n", fn->body->length());
-#endif
+    DEBUG_PRINTF("%p (%s in %s:%d): FLAG_ON_BLOCK (block=%p, id=%d)\n",
+                 fn, fn->cname,
+                 toModuleSymbol(fn->defPoint->parentSymbol)->filename,
+                 fn->linenum(), fn->body, fn->id);
+    DEBUG_PRINTF("\tlength=%d\n", fn->body->length());
     Vec<FnSymbol*> visited;
 
     if (markFastSafeFn(fn, optimize_on_clause_limit, &visited)) {
-#ifdef DEBUG
-      printf("\t[CANDIDATE FOR FAST FORK]\n");
-#endif
+      DEBUG_PRINTF("\t[CANDIDATE FOR FAST FORK]\n");
       fn->addFlag(FLAG_FAST_ON);
 
       if (fReportOptimizedOn) {

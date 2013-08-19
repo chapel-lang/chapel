@@ -18,12 +18,14 @@ else
   fi
 fi
 
+echo Starting $0 on `hostname`. EXAMPLES=$EXAMPLES. dayType=$dayType.; module list; printenv; echo
+
 
 export CHPL_NIGHTLY_LOGDIR=/data/sea/cascade/chapel/Nightly${dayType}
 export CHPL_NIGHTLY_STATDIR=/data/sea/cascade/chapel/Nightly${dayType}/Stats
 export CHPL_NIGHTLY_CRON_LOGDIR="$CHPL_NIGHTLY_LOGDIR"
 
-CHPL_HOME="/users/chapelu/chapel"
+CHPL_HOME="$HOME/chapel"
 NIGHTLY="$CHPL_HOME/util/cron/nightly"
 
 PrgEnv_Version=""
@@ -37,11 +39,14 @@ compilers="gnu pgi cray intel" # pathscale
 # Test using $compiler as TARGET compiler
 for compiler in $compilers ; do
 (  # fire up a new shell
+  echo "Testing PrgEnv-${compiler}${PrgEnv_Version} as TARGET compiler on `date`."
   module load PrgEnv-${compiler}${PrgEnv_Version}
   if [ $compiler == "cray" ] ; then   # avoid loading gemini libraries
       module load craype-target-petest
-      module load mpich2
   fi
+  # Our PrgEnv modules are old.  Swap in a more recent mpich and unload libsci
+  module swap xt-mpich2 cray-mpich
+  module unload xt-libsci
   module list
   export CHPL_TARGET_PLATFORM=cray-xt
   $NIGHTLY -combinedir -cron $EXAMPLES
@@ -52,25 +57,30 @@ done
 # Test using $compiler as HOST and TARGET compiler
 for compiler in $compilers ; do
 (  # fire up a new shell
+  echo "Testing PrgEnv-${compiler}${PrgEnv_Version} as HOST and TARGET compiler on `date`."
   module load PrgEnv-${compiler}${PrgEnv_Version}
   if [ $compiler == "cray" ] ; then   # avoid loading gemini libraries
       module load craype-target-petest
-      module load mpich2
   fi
+  # Our PrgEnv modules are old.  Swap in a more recent mpich and unload libsci
+  module swap xt-mpich2 cray-mpich
+  module unload xt-libsci
   module list
   export CHPL_HOST_PLATFORM=cray-xt
   export CHPL_TARGET_PLATFORM=cray-xt
-  export CHPL_HOST_COMPILER=cray-xt-$compiler
+  export CHPL_HOST_COMPILER=cray-prgenv-$compiler
   $NIGHTLY -combinedir -cron $EXAMPLES
 )
 done
 
+
 # Test using $compiler as HOST and TARGET compiler without the Cray wrapper scripts
 # cray compiler cannot be used without Cray wrapper scripts
-compilers="gnu pgi intel" # pathscale"
+compilers="gnu pgi intel"
 
 for compiler in $compilers ; do
 (  # fire up a new shell
+  echo "Testing ${compiler} as HOST and TARGET compiler (no Cray wrapper scripts) on `date`."
   module load $compiler
   module list
   unset CHPL_HOST_PLATFORM
@@ -80,3 +90,4 @@ for compiler in $compilers ; do
 )
 done
 
+echo Finished $0 on `date`.

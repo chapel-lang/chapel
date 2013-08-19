@@ -55,6 +55,7 @@ module NetworkAtomics {
                                              ln:int(32), fn:string);
 
   // int(64)
+  pragma "atomic type"
   record ratomic_int64 {
     var _v: int(64);
     inline proc read() {
@@ -241,6 +242,7 @@ module NetworkAtomics {
                                              ln:int(32), fn:string);
 
   // int32
+  pragma "atomic type"
   record ratomic_int32 {
     var _v: int(32);
     inline proc read() {
@@ -427,6 +429,7 @@ module NetworkAtomics {
                                              ln:int(32), fn:string);
 
   // uint(64)
+  pragma "atomic type"
   record ratomic_uint64 {
     var _v: uint(64);
     inline proc read() {
@@ -613,6 +616,7 @@ module NetworkAtomics {
                                              ln:int(32), fn:string);
 
   // uint(32)
+  pragma "atomic type"
   record ratomic_uint32 {
     var _v: uint(32);
     inline proc read() {
@@ -747,6 +751,7 @@ module NetworkAtomics {
 
 
   // bool, implemented with int(64)
+  pragma "atomic type"
   record ratomicflag {
     var _v: int(64);
     inline proc read() {
@@ -863,6 +868,7 @@ module NetworkAtomics {
                                               ref result:bool(32),
                                               ln:int(32), fn:string);
   
+  pragma "atomic type"
   record ratomic_real64 {
     var _v: real(64);
     inline proc read() {

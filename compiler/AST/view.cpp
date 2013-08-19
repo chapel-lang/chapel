@@ -216,6 +216,7 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
     }
 
     if (SymExpr* sym = toSymExpr(expr)) {
+      printf(" ");
       view_sym(sym->var, number, mark);
     } else if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(expr)) {
       printf(" '%s'", sym->unresolved);
@@ -474,6 +475,8 @@ html_view_ast(BaseAST* ast, FILE* html_file, int pass) {
           case INTENT_INOUT: fprintf(html_file, "<B>inout</B> "); break;
           case INTENT_OUT: fprintf(html_file, "<B>out</B> "); break;
           case INTENT_CONST: fprintf(html_file, "<B>const</B> "); break;
+          case INTENT_CONST_IN: fprintf(html_file, "<B>const in</B> "); break;
+          case INTENT_CONST_REF: fprintf(html_file, "<B>const ref</B> "); break;
           case INTENT_REF: fprintf(html_file, "<B>ref</B> "); break;
           case INTENT_PARAM: fprintf(html_file, "<B>param</B> "); break;
           case INTENT_TYPE: fprintf(html_file, "<B>type</B> "); break;
@@ -814,6 +817,8 @@ log_ast_symbol(FILE* file, Symbol* sym, bool def) {
        case INTENT_INOUT:   fprintf(file, "inout");     break;
        case INTENT_OUT:     fprintf(file, "out");       break;
        case INTENT_CONST:   fprintf(file, "const");     break;
+       case INTENT_CONST_IN:  fprintf(file, "const in");  break;
+       case INTENT_CONST_REF: fprintf(file, "const ref"); break;
        case INTENT_REF:     fprintf(file, "ref");       break;
        case INTENT_PARAM:   fprintf(file, "param");     break;
        case INTENT_TYPE:    fprintf(file, "type");      break;

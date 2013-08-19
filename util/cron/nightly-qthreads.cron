@@ -1,0 +1,27 @@
+#!/usr/bin/env tcsh
+echo Starting $0 on `hostname`.; module list; printenv; echo
+
+#
+# Test Qthreads with CHPL_COMM=none
+#
+set LOGFILE = $HOME/tmp/nightly.qthreads.out
+echo "Testing Qthreads with CHPL_COMM=none on `date`.  Log file: $LOGFILE"
+source ~/.chapelcshrc-cron
+setenv CHPL_TASKS qthreads
+$CHPL_HOME/util/cron/nightly -cron -examples -no-futures >&! $LOGFILE
+
+#
+# Test Qthreads with CHPL_COMM=gasnet
+#
+set LOGFILE = $HOME/tmp/nightly.qthreads-gasnet.out
+echo "Testing Qthreads with CHPL_COMM=gasnet on `date`.  Log file: $LOGFILE"
+source ~/.chapelcshrc-cron-gasnet
+setenv CHPL_GASNET_CFG_OPTIONS --disable-ibv
+setenv GASNET_QUIET Y
+# Set these to use oversubscription to help with timeouts
+setenv QT_AFFINITY no
+setenv CHPL_QTHREAD_TESTING 1
+setenv CHPL_RT_NUM_THREADS_PER_LOCALE 2
+$CHPL_HOME/util/cron/nightly -cron -multilocale -no-futures >&! $LOGFILE
+
+echo Finished $0 on `date`.

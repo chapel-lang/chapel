@@ -1,6 +1,6 @@
 // NAS FT - Initial port to Chapel based on ZPL
 
-use BitOps;
+use BitOps, Time;
 
 config const
   verbose         = true,
@@ -58,23 +58,32 @@ proc randlc(n : int) : real {
 
 enum classes {S = 1, W, A, B, C, D};
 
-/*
-var class_defaults : [S..D] (string, int, int, int, int) =
-  ( ('S',   64,   64,   64,  6),
-    ('W',   32,  128,  128,  6),
-    ('A',  128,  256,  512,  6),
-    ('B',  256,  256,  512, 20),
-    ('C',  512,  512,  512, 20),
-    ('D', 1024, 1024, 2048, 25) );
+const Class: domain(classes);
+
+/* Values associate with the problem class type in order specified 
+   by classes */
+const class_nx: [Class] int = (64, 32, 128, 256, 512, 1024);
+var class_ny: [Class] int = (64, 128, 256, 256, 512, 1024);
+var class_nz: [Class] int  = (64, 128, 256, 512, 512, 2048);
+var class_niter: [Class] int = (6, 6, 6, 20, 20, 25);
+
+
+/* More readable format
+   ('S',   64,   64,   64,  6),
+   ('W',   32,  128,  128,  6),
+   ('A',  128,  256,  256,  6),
+   ('B',  256,  256,  512, 20),
+   ('C',  512,  512,  512, 20),
+   ('D', 1024, 1024, 2048, 25)
 */
 
-config const problem_class = 1;
+config const problem_class = classes.S;
 
-config var
-  nx : int = 64,
-  ny : int = 64,
-  nz : int = 64,
-  niter : int = 6;
+config var 
+  nx : int = class_nx[problem_class],
+  ny : int = class_ny[problem_class],
+  nz : int = class_nz[problem_class],
+  niter : int = class_niter[problem_class];
 
 const
   alpha = 1.0e-6,
@@ -87,6 +96,10 @@ var
   U1 : [DXYZ] complex,
   U2 : [DXYZ] complex,
   Twiddle : [DXYZ] real;
+
+writeln(" NAS Parallel Benchmarks 2.4  -- FT Benchmark");
+writeln(" Size       : ", format("%15ld", nx*ny*nz));
+writeln(" Iterations : ", format("%15d", niter));
 
 proc compute_initial_conditions(X1) {
   for (i,j,k) in DXYZ { // serial to ensure proper repeatable results
@@ -356,6 +369,8 @@ fft(1, U1, U0);
 //
 // Restart benchmark
 //
+var totalTime: Timer;
+totalTime.start();
 
 compute_index_map(Twiddle);
 compute_initial_conditions(U1);
@@ -368,8 +383,26 @@ for iterNo in 1..niter {
   checksum(iterNo, U2);
 }
 
-if verify() {
+writeln();
+var verified = verify();
+if verified {
   writeln("Result verification successful.");
 } else {
   writeln("Result verification failed.");
 }
+
+totalTime.stop(); // Do I want to stop here?
+var tm = totalTime.elapsed();
+
+writeln();
+writeln(" FT Benchmark Completed.");
+writeln(" Class           =                        ", problem_class);
+writeln(" Size            = ", format("%24ld", nx*ny*nz));
+writeln(" Iterations      = ", format("%24d", niter));
+if timers_enabled then {
+  writeln(" Time in seconds = ", format("%24g", tm));
+ }
+writeln(" Operation type  =           floating point");
+writeln(" Verification    = ", if verified then
+						   "              SUCCESSFUL" else
+						   "                  FAILED");

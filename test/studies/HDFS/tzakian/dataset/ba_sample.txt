@@ -1,0 +1,1680 @@
+beer/name: Sausa Weizen
+beer/beerId: 47986
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: Hefeweizen
+review/appearance: 2.5
+review/aroma: 2
+review/palate: 1.5
+review/taste: 1.5
+review/overall: 1.5
+review/time: 1234817823
+review/profileName: stcules
+review/text: A lot of foam. But a lot.  In the smell some banana, and then lactic and tart. Not a good start.   Quite dark orange in color, with a lively carbonation (now visible, under the foam).    Again tending to lactic sourness.       Same for the taste. With some yeast and banana.
+
+beer/name: Red Moon
+beer/beerId: 48213
+beer/brewerId: 10325
+beer/ABV: 6.20
+beer/style: English Strong Ale
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235915097
+review/profileName: stcules
+review/text: Dark red color, light beige foam, average. In the smell malt and caramel, not really light.        Again malt and caramel in the taste, not bad in the end.        Maybe a note of honey in teh back, and a light fruitiness.      Average body.   In the aftertaste a light bitterness, with the malt and red fruit.eer.
+
+beer/name: Black Horse Black Beer
+beer/beerId: 48215
+beer/brewerId: 10325
+beer/ABV: 6.50
+beer/style: Foreign / Export Stout
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235916604
+review/profileName: stcules
+review/text: Almost totally black. Beige foam, quite compact, not bad.  Light smell, just a bit of roast, and some hop. A bit too light.        The taste is light oo, and drinkable, with some malt, roast, hints of coffee.   Nothing exceptional, but after all drinkable and pleasant. to average body.  In the aftertaste some dust, somr roast, hint of caramel, and a bit of bitterness.      No defect, drinkable, not bad.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Weizen
+beer/beerId: 47986
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: Hefeweizen
+review/appearance: 2.5
+review/aroma: 2
+review/palate: 1.5
+review/taste: 1.5
+review/overall: 1.5
+review/time: 1234817823
+review/profileName: stcules
+review/text: A lot of foam. But a lot.  In the smell some banana, and then lactic and tart. Not a good start.   Quite dark orange in color, with a lively carbonation (now visible, under the foam).    Again tending to lactic sourness.       Same for the taste. With some yeast and banana.
+
+beer/name: Red Moon
+beer/beerId: 48213
+beer/brewerId: 10325
+beer/ABV: 6.20
+beer/style: English Strong Ale
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235915097
+review/profileName: stcules
+review/text: Dark red color, light beige foam, average. In the smell malt and caramel, not really light.        Again malt and caramel in the taste, not bad in the end.        Maybe a note of honey in teh back, and a light fruitiness.      Average body.   In the aftertaste a light bitterness, with the malt and red fruit.eer.
+
+beer/name: Black Horse Black Beer
+beer/beerId: 48215
+beer/brewerId: 10325
+beer/ABV: 6.50
+beer/style: Foreign / Export Stout
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235916604
+review/profileName: stcules
+review/text: Almost totally black. Beige foam, quite compact, not bad.  Light smell, just a bit of roast, and some hop. A bit too light.        The taste is light oo, and drinkable, with some malt, roast, hints of coffee.   Nothing exceptional, but after all drinkable and pleasant. to average body.  In the aftertaste some dust, somr roast, hint of caramel, and a bit of bitterness.      No defect, drinkable, not bad.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Weizen
+beer/beerId: 47986
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: Hefeweizen
+review/appearance: 2.5
+review/aroma: 2
+review/palate: 1.5
+review/taste: 1.5
+review/overall: 1.5
+review/time: 1234817823
+review/profileName: stcules
+review/text: A lot of foam. But a lot.  In the smell some banana, and then lactic and tart. Not a good start.   Quite dark orange in color, with a lively carbonation (now visible, under the foam).    Again tending to lactic sourness.       Same for the taste. With some yeast and banana.
+
+beer/name: Red Moon
+beer/beerId: 48213
+beer/brewerId: 10325
+beer/ABV: 6.20
+beer/style: English Strong Ale
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235915097
+review/profileName: stcules
+review/text: Dark red color, light beige foam, average. In the smell malt and caramel, not really light.        Again malt and caramel in the taste, not bad in the end.        Maybe a note of honey in teh back, and a light fruitiness.      Average body.   In the aftertaste a light bitterness, with the malt and red fruit.eer.
+
+beer/name: Black Horse Black Beer
+beer/beerId: 48215
+beer/brewerId: 10325
+beer/ABV: 6.50
+beer/style: Foreign / Export Stout
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235916604
+review/profileName: stcules
+review/text: Almost totally black. Beige foam, quite compact, not bad.  Light smell, just a bit of roast, and some hop. A bit too light.        The taste is light oo, and drinkable, with some malt, roast, hints of coffee.   Nothing exceptional, but after all drinkable and pleasant. to average body.  In the aftertaste some dust, somr roast, hint of caramel, and a bit of bitterness.      No defect, drinkable, not bad.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Weizen
+beer/beerId: 47986
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: Hefeweizen
+review/appearance: 2.5
+review/aroma: 2
+review/palate: 1.5
+review/taste: 1.5
+review/overall: 1.5
+review/time: 1234817823
+review/profileName: stcules
+review/text: A lot of foam. But a lot.  In the smell some banana, and then lactic and tart. Not a good start.   Quite dark orange in color, with a lively carbonation (now visible, under the foam).    Again tending to lactic sourness.       Same for the taste. With some yeast and banana.
+
+beer/name: Red Moon
+beer/beerId: 48213
+beer/brewerId: 10325
+beer/ABV: 6.20
+beer/style: English Strong Ale
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235915097
+review/profileName: stcules
+review/text: Dark red color, light beige foam, average. In the smell malt and caramel, not really light.        Again malt and caramel in the taste, not bad in the end.        Maybe a note of honey in teh back, and a light fruitiness.      Average body.   In the aftertaste a light bitterness, with the malt and red fruit.eer.
+
+beer/name: Black Horse Black Beer
+beer/beerId: 48215
+beer/brewerId: 10325
+beer/ABV: 6.50
+beer/style: Foreign / Export Stout
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235916604
+review/profileName: stcules
+review/text: Almost totally black. Beige foam, quite compact, not bad.  Light smell, just a bit of roast, and some hop. A bit too light.        The taste is light oo, and drinkable, with some malt, roast, hints of coffee.   Nothing exceptional, but after all drinkable and pleasant. to average body.  In the aftertaste some dust, somr roast, hint of caramel, and a bit of bitterness.      No defect, drinkable, not bad.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Weizen
+beer/beerId: 47986
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: Hefeweizen
+review/appearance: 2.5
+review/aroma: 2
+review/palate: 1.5
+review/taste: 1.5
+review/overall: 1.5
+review/time: 1234817823
+review/profileName: stcules
+review/text: A lot of foam. But a lot.  In the smell some banana, and then lactic and tart. Not a good start.   Quite dark orange in color, with a lively carbonation (now visible, under the foam).    Again tending to lactic sourness.       Same for the taste. With some yeast and banana.
+
+beer/name: Red Moon
+beer/beerId: 48213
+beer/brewerId: 10325
+beer/ABV: 6.20
+beer/style: English Strong Ale
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235915097
+review/profileName: stcules
+review/text: Dark red color, light beige foam, average. In the smell malt and caramel, not really light.        Again malt and caramel in the taste, not bad in the end.        Maybe a note of honey in teh back, and a light fruitiness.      Average body.   In the aftertaste a light bitterness, with the malt and red fruit.eer.
+
+beer/name: Black Horse Black Beer
+beer/beerId: 48215
+beer/brewerId: 10325
+beer/ABV: 6.50
+beer/style: Foreign / Export Stout
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235916604
+review/profileName: stcules
+review/text: Almost totally black. Beige foam, quite compact, not bad.  Light smell, just a bit of roast, and some hop. A bit too light.        The taste is light oo, and drinkable, with some malt, roast, hints of coffee.   Nothing exceptional, but after all drinkable and pleasant. to average body.  In the aftertaste some dust, somr roast, hint of caramel, and a bit of bitterness.      No defect, drinkable, not bad.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Weizen
+beer/beerId: 47986
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: Hefeweizen
+review/appearance: 2.5
+review/aroma: 2
+review/palate: 1.5
+review/taste: 1.5
+review/overall: 1.5
+review/time: 1234817823
+review/profileName: stcules
+review/text: A lot of foam. But a lot.  In the smell some banana, and then lactic and tart. Not a good start.   Quite dark orange in color, with a lively carbonation (now visible, under the foam).    Again tending to lactic sourness.       Same for the taste. With some yeast and banana.
+
+beer/name: Red Moon
+beer/beerId: 48213
+beer/brewerId: 10325
+beer/ABV: 6.20
+beer/style: English Strong Ale
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235915097
+review/profileName: stcules
+review/text: Dark red color, light beige foam, average. In the smell malt and caramel, not really light.        Again malt and caramel in the taste, not bad in the end.        Maybe a note of honey in teh back, and a light fruitiness.      Average body.   In the aftertaste a light bitterness, with the malt and red fruit.eer.
+
+beer/name: Black Horse Black Beer
+beer/beerId: 48215
+beer/brewerId: 10325
+beer/ABV: 6.50
+beer/style: Foreign / Export Stout
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235916604
+review/profileName: stcules
+review/text: Almost totally black. Beige foam, quite compact, not bad.  Light smell, just a bit of roast, and some hop. A bit too light.        The taste is light oo, and drinkable, with some malt, roast, hints of coffee.   Nothing exceptional, but after all drinkable and pleasant. to average body.  In the aftertaste some dust, somr roast, hint of caramel, and a bit of bitterness.      No defect, drinkable, not bad.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Weizen
+beer/beerId: 47986
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: Hefeweizen
+review/appearance: 2.5
+review/aroma: 2
+review/palate: 1.5
+review/taste: 1.5
+review/overall: 1.5
+review/time: 1234817823
+review/profileName: stcules
+review/text: A lot of foam. But a lot.  In the smell some banana, and then lactic and tart. Not a good start.   Quite dark orange in color, with a lively carbonation (now visible, under the foam).    Again tending to lactic sourness.       Same for the taste. With some yeast and banana.
+
+beer/name: Red Moon
+beer/beerId: 48213
+beer/brewerId: 10325
+beer/ABV: 6.20
+beer/style: English Strong Ale
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235915097
+review/profileName: stcules
+review/text: Dark red color, light beige foam, average. In the smell malt and caramel, not really light.        Again malt and caramel in the taste, not bad in the end.        Maybe a note of honey in teh back, and a light fruitiness.      Average body.   In the aftertaste a light bitterness, with the malt and red fruit.eer.
+
+beer/name: Black Horse Black Beer
+beer/beerId: 48215
+beer/brewerId: 10325
+beer/ABV: 6.50
+beer/style: Foreign / Export Stout
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235916604
+review/profileName: stcules
+review/text: Almost totally black. Beige foam, quite compact, not bad.  Light smell, just a bit of roast, and some hop. A bit too light.        The taste is light oo, and drinkable, with some malt, roast, hints of coffee.   Nothing exceptional, but after all drinkable and pleasant. to average body.  In the aftertaste some dust, somr roast, hint of caramel, and a bit of bitterness.      No defect, drinkable, not bad.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Weizen
+beer/beerId: 47986
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: Hefeweizen
+review/appearance: 2.5
+review/aroma: 2
+review/palate: 1.5
+review/taste: 1.5
+review/overall: 1.5
+review/time: 1234817823
+review/profileName: stcules
+review/text: A lot of foam. But a lot.  In the smell some banana, and then lactic and tart. Not a good start.   Quite dark orange in color, with a lively carbonation (now visible, under the foam).    Again tending to lactic sourness.       Same for the taste. With some yeast and banana.
+
+beer/name: Red Moon
+beer/beerId: 48213
+beer/brewerId: 10325
+beer/ABV: 6.20
+beer/style: English Strong Ale
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235915097
+review/profileName: stcules
+review/text: Dark red color, light beige foam, average. In the smell malt and caramel, not really light.        Again malt and caramel in the taste, not bad in the end.        Maybe a note of honey in teh back, and a light fruitiness.      Average body.   In the aftertaste a light bitterness, with the malt and red fruit.eer.
+
+beer/name: Black Horse Black Beer
+beer/beerId: 48215
+beer/brewerId: 10325
+beer/ABV: 6.50
+beer/style: Foreign / Export Stout
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235916604
+review/profileName: stcules
+review/text: Almost totally black. Beige foam, quite compact, not bad.  Light smell, just a bit of roast, and some hop. A bit too light.        The taste is light oo, and drinkable, with some malt, roast, hints of coffee.   Nothing exceptional, but after all drinkable and pleasant. to average body.  In the aftertaste some dust, somr roast, hint of caramel, and a bit of bitterness.      No defect, drinkable, not bad.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Weizen
+beer/beerId: 47986
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: Hefeweizen
+review/appearance: 2.5
+review/aroma: 2
+review/palate: 1.5
+review/taste: 1.5
+review/overall: 1.5
+review/time: 1234817823
+review/profileName: stcules
+review/text: A lot of foam. But a lot.  In the smell some banana, and then lactic and tart. Not a good start.   Quite dark orange in color, with a lively carbonation (now visible, under the foam).    Again tending to lactic sourness.       Same for the taste. With some yeast and banana.
+
+beer/name: Red Moon
+beer/beerId: 48213
+beer/brewerId: 10325
+beer/ABV: 6.20
+beer/style: English Strong Ale
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235915097
+review/profileName: stcules
+review/text: Dark red color, light beige foam, average. In the smell malt and caramel, not really light.        Again malt and caramel in the taste, not bad in the end.        Maybe a note of honey in teh back, and a light fruitiness.      Average body.   In the aftertaste a light bitterness, with the malt and red fruit.eer.
+
+beer/name: Black Horse Black Beer
+beer/beerId: 48215
+beer/brewerId: 10325
+beer/ABV: 6.50
+beer/style: Foreign / Export Stout
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235916604
+review/profileName: stcules
+review/text: Almost totally black. Beige foam, quite compact, not bad.  Light smell, just a bit of roast, and some hop. A bit too light.        The taste is light oo, and drinkable, with some malt, roast, hints of coffee.   Nothing exceptional, but after all drinkable and pleasant. to average body.  In the aftertaste some dust, somr roast, hint of caramel, and a bit of bitterness.      No defect, drinkable, not bad.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Weizen
+beer/beerId: 47986
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: Hefeweizen
+review/appearance: 2.5
+review/aroma: 2
+review/palate: 1.5
+review/taste: 1.5
+review/overall: 1.5
+review/time: 1234817823
+review/profileName: stcules
+review/text: A lot of foam. But a lot.  In the smell some banana, and then lactic and tart. Not a good start.   Quite dark orange in color, with a lively carbonation (now visible, under the foam).    Again tending to lactic sourness.       Same for the taste. With some yeast and banana.
+
+beer/name: Red Moon
+beer/beerId: 48213
+beer/brewerId: 10325
+beer/ABV: 6.20
+beer/style: English Strong Ale
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235915097
+review/profileName: stcules
+review/text: Dark red color, light beige foam, average. In the smell malt and caramel, not really light.        Again malt and caramel in the taste, not bad in the end.        Maybe a note of honey in teh back, and a light fruitiness.      Average body.   In the aftertaste a light bitterness, with the malt and red fruit.eer.
+
+beer/name: Black Horse Black Beer
+beer/beerId: 48215
+beer/brewerId: 10325
+beer/ABV: 6.50
+beer/style: Foreign / Export Stout
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235916604
+review/profileName: stcules
+review/text: Almost totally black. Beige foam, quite compact, not bad.  Light smell, just a bit of roast, and some hop. A bit too light.        The taste is light oo, and drinkable, with some malt, roast, hints of coffee.   Nothing exceptional, but after all drinkable and pleasant. to average body.  In the aftertaste some dust, somr roast, hint of caramel, and a bit of bitterness.      No defect, drinkable, not bad.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Weizen
+beer/beerId: 47986
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: Hefeweizen
+review/appearance: 2.5
+review/aroma: 2
+review/palate: 1.5
+review/taste: 1.5
+review/overall: 1.5
+review/time: 1234817823
+review/profileName: stcules
+review/text: A lot of foam. But a lot.  In the smell some banana, and then lactic and tart. Not a good start.   Quite dark orange in color, with a lively carbonation (now visible, under the foam).    Again tending to lactic sourness.       Same for the taste. With some yeast and banana.
+
+beer/name: Red Moon
+beer/beerId: 48213
+beer/brewerId: 10325
+beer/ABV: 6.20
+beer/style: English Strong Ale
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235915097
+review/profileName: stcules
+review/text: Dark red color, light beige foam, average. In the smell malt and caramel, not really light.        Again malt and caramel in the taste, not bad in the end.        Maybe a note of honey in teh back, and a light fruitiness.      Average body.   In the aftertaste a light bitterness, with the malt and red fruit.eer.
+
+beer/name: Black Horse Black Beer
+beer/beerId: 48215
+beer/brewerId: 10325
+beer/ABV: 6.50
+beer/style: Foreign / Export Stout
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235916604
+review/profileName: stcules
+review/text: Almost totally black. Beige foam, quite compact, not bad.  Light smell, just a bit of roast, and some hop. A bit too light.        The taste is light oo, and drinkable, with some malt, roast, hints of coffee.   Nothing exceptional, but after all drinkable and pleasant. to average body.  In the aftertaste some dust, somr roast, hint of caramel, and a bit of bitterness.      No defect, drinkable, not bad.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Weizen
+beer/beerId: 47986
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: Hefeweizen
+review/appearance: 2.5
+review/aroma: 2
+review/palate: 1.5
+review/taste: 1.5
+review/overall: 1.5
+review/time: 1234817823
+review/profileName: stcules
+review/text: A lot of foam. But a lot.  In the smell some banana, and then lactic and tart. Not a good start.   Quite dark orange in color, with a lively carbonation (now visible, under the foam).    Again tending to lactic sourness.       Same for the taste. With some yeast and banana.
+
+beer/name: Red Moon
+beer/beerId: 48213
+beer/brewerId: 10325
+beer/ABV: 6.20
+beer/style: English Strong Ale
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235915097
+review/profileName: stcules
+review/text: Dark red color, light beige foam, average. In the smell malt and caramel, not really light.        Again malt and caramel in the taste, not bad in the end.        Maybe a note of honey in teh back, and a light fruitiness.      Average body.   In the aftertaste a light bitterness, with the malt and red fruit.eer.
+
+beer/name: Black Horse Black Beer
+beer/beerId: 48215
+beer/brewerId: 10325
+beer/ABV: 6.50
+beer/style: Foreign / Export Stout
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235916604
+review/profileName: stcules
+review/text: Almost totally black. Beige foam, quite compact, not bad.  Light smell, just a bit of roast, and some hop. A bit too light.        The taste is light oo, and drinkable, with some malt, roast, hints of coffee.   Nothing exceptional, but after all drinkable and pleasant. to average body.  In the aftertaste some dust, somr roast, hint of caramel, and a bit of bitterness.      No defect, drinkable, not bad.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Weizen
+beer/beerId: 47986
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: Hefeweizen
+review/appearance: 2.5
+review/aroma: 2
+review/palate: 1.5
+review/taste: 1.5
+review/overall: 1.5
+review/time: 1234817823
+review/profileName: stcules
+review/text: A lot of foam. But a lot.  In the smell some banana, and then lactic and tart. Not a good start.   Quite dark orange in color, with a lively carbonation (now visible, under the foam).    Again tending to lactic sourness.       Same for the taste. With some yeast and banana.
+
+beer/name: Red Moon
+beer/beerId: 48213
+beer/brewerId: 10325
+beer/ABV: 6.20
+beer/style: English Strong Ale
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235915097
+review/profileName: stcules
+review/text: Dark red color, light beige foam, average. In the smell malt and caramel, not really light.        Again malt and caramel in the taste, not bad in the end.        Maybe a note of honey in teh back, and a light fruitiness.      Average body.   In the aftertaste a light bitterness, with the malt and red fruit.eer.
+
+beer/name: Black Horse Black Beer
+beer/beerId: 48215
+beer/brewerId: 10325
+beer/ABV: 6.50
+beer/style: Foreign / Export Stout
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235916604
+review/profileName: stcules
+review/text: Almost totally black. Beige foam, quite compact, not bad.  Light smell, just a bit of roast, and some hop. A bit too light.        The taste is light oo, and drinkable, with some malt, roast, hints of coffee.   Nothing exceptional, but after all drinkable and pleasant. to average body.  In the aftertaste some dust, somr roast, hint of caramel, and a bit of bitterness.      No defect, drinkable, not bad.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Weizen
+beer/beerId: 47986
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: Hefeweizen
+review/appearance: 2.5
+review/aroma: 2
+review/palate: 1.5
+review/taste: 1.5
+review/overall: 1.5
+review/time: 1234817823
+review/profileName: stcules
+review/text: A lot of foam. But a lot.  In the smell some banana, and then lactic and tart. Not a good start.   Quite dark orange in color, with a lively carbonation (now visible, under the foam).    Again tending to lactic sourness.       Same for the taste. With some yeast and banana.
+
+beer/name: Red Moon
+beer/beerId: 48213
+beer/brewerId: 10325
+beer/ABV: 6.20
+beer/style: English Strong Ale
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235915097
+review/profileName: stcules
+review/text: Dark red color, light beige foam, average. In the smell malt and caramel, not really light.        Again malt and caramel in the taste, not bad in the end.        Maybe a note of honey in teh back, and a light fruitiness.      Average body.   In the aftertaste a light bitterness, with the malt and red fruit.eer.
+
+beer/name: Black Horse Black Beer
+beer/beerId: 48215
+beer/brewerId: 10325
+beer/ABV: 6.50
+beer/style: Foreign / Export Stout
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235916604
+review/profileName: stcules
+review/text: Almost totally black. Beige foam, quite compact, not bad.  Light smell, just a bit of roast, and some hop. A bit too light.        The taste is light oo, and drinkable, with some malt, roast, hints of coffee.   Nothing exceptional, but after all drinkable and pleasant. to average body.  In the aftertaste some dust, somr roast, hint of caramel, and a bit of bitterness.      No defect, drinkable, not bad.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Weizen
+beer/beerId: 47986
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: Hefeweizen
+review/appearance: 2.5
+review/aroma: 2
+review/palate: 1.5
+review/taste: 1.5
+review/overall: 1.5
+review/time: 1234817823
+review/profileName: stcules
+review/text: A lot of foam. But a lot.  In the smell some banana, and then lactic and tart. Not a good start.   Quite dark orange in color, with a lively carbonation (now visible, under the foam).    Again tending to lactic sourness.       Same for the taste. With some yeast and banana.
+
+beer/name: Red Moon
+beer/beerId: 48213
+beer/brewerId: 10325
+beer/ABV: 6.20
+beer/style: English Strong Ale
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235915097
+review/profileName: stcules
+review/text: Dark red color, light beige foam, average. In the smell malt and caramel, not really light.        Again malt and caramel in the taste, not bad in the end.        Maybe a note of honey in teh back, and a light fruitiness.      Average body.   In the aftertaste a light bitterness, with the malt and red fruit.eer.
+
+beer/name: Black Horse Black Beer
+beer/beerId: 48215
+beer/brewerId: 10325
+beer/ABV: 6.50
+beer/style: Foreign / Export Stout
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235916604
+review/profileName: stcules
+review/text: Almost totally black. Beige foam, quite compact, not bad.  Light smell, just a bit of roast, and some hop. A bit too light.        The taste is light oo, and drinkable, with some malt, roast, hints of coffee.   Nothing exceptional, but after all drinkable and pleasant. to average body.  In the aftertaste some dust, somr roast, hint of caramel, and a bit of bitterness.      No defect, drinkable, not bad.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Weizen
+beer/beerId: 47986
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: Hefeweizen
+review/appearance: 2.5
+review/aroma: 2
+review/palate: 1.5
+review/taste: 1.5
+review/overall: 1.5
+review/time: 1234817823
+review/profileName: stcules
+review/text: A lot of foam. But a lot.  In the smell some banana, and then lactic and tart. Not a good start.   Quite dark orange in color, with a lively carbonation (now visible, under the foam).    Again tending to lactic sourness.       Same for the taste. With some yeast and banana.
+
+beer/name: Red Moon
+beer/beerId: 48213
+beer/brewerId: 10325
+beer/ABV: 6.20
+beer/style: English Strong Ale
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235915097
+review/profileName: stcules
+review/text: Dark red color, light beige foam, average. In the smell malt and caramel, not really light.        Again malt and caramel in the taste, not bad in the end.        Maybe a note of honey in teh back, and a light fruitiness.      Average body.   In the aftertaste a light bitterness, with the malt and red fruit.eer.
+
+beer/name: Black Horse Black Beer
+beer/beerId: 48215
+beer/brewerId: 10325
+beer/ABV: 6.50
+beer/style: Foreign / Export Stout
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235916604
+review/profileName: stcules
+review/text: Almost totally black. Beige foam, quite compact, not bad.  Light smell, just a bit of roast, and some hop. A bit too light.        The taste is light oo, and drinkable, with some malt, roast, hints of coffee.   Nothing exceptional, but after all drinkable and pleasant. to average body.  In the aftertaste some dust, somr roast, hint of caramel, and a bit of bitterness.      No defect, drinkable, not bad.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Weizen
+beer/beerId: 47986
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: Hefeweizen
+review/appearance: 2.5
+review/aroma: 2
+review/palate: 1.5
+review/taste: 1.5
+review/overall: 1.5
+review/time: 1234817823
+review/profileName: stcules
+review/text: A lot of foam. But a lot.  In the smell some banana, and then lactic and tart. Not a good start.   Quite dark orange in color, with a lively carbonation (now visible, under the foam).    Again tending to lactic sourness.       Same for the taste. With some yeast and banana.
+
+beer/name: Red Moon
+beer/beerId: 48213
+beer/brewerId: 10325
+beer/ABV: 6.20
+beer/style: English Strong Ale
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235915097
+review/profileName: stcules
+review/text: Dark red color, light beige foam, average. In the smell malt and caramel, not really light.        Again malt and caramel in the taste, not bad in the end.        Maybe a note of honey in teh back, and a light fruitiness.      Average body.   In the aftertaste a light bitterness, with the malt and red fruit.eer.
+
+beer/name: Black Horse Black Beer
+beer/beerId: 48215
+beer/brewerId: 10325
+beer/ABV: 6.50
+beer/style: Foreign / Export Stout
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235916604
+review/profileName: stcules
+review/text: Almost totally black. Beige foam, quite compact, not bad.  Light smell, just a bit of roast, and some hop. A bit too light.        The taste is light oo, and drinkable, with some malt, roast, hints of coffee.   Nothing exceptional, but after all drinkable and pleasant. to average body.  In the aftertaste some dust, somr roast, hint of caramel, and a bit of bitterness.      No defect, drinkable, not bad.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Weizen
+beer/beerId: 47986
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: Hefeweizen
+review/appearance: 2.5
+review/aroma: 2
+review/palate: 1.5
+review/taste: 1.5
+review/overall: 1.5
+review/time: 1234817823
+review/profileName: stcules
+review/text: A lot of foam. But a lot.  In the smell some banana, and then lactic and tart. Not a good start.   Quite dark orange in color, with a lively carbonation (now visible, under the foam).    Again tending to lactic sourness.       Same for the taste. With some yeast and banana.
+
+beer/name: Red Moon
+beer/beerId: 48213
+beer/brewerId: 10325
+beer/ABV: 6.20
+beer/style: English Strong Ale
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235915097
+review/profileName: stcules
+review/text: Dark red color, light beige foam, average. In the smell malt and caramel, not really light.        Again malt and caramel in the taste, not bad in the end.        Maybe a note of honey in teh back, and a light fruitiness.      Average body.   In the aftertaste a light bitterness, with the malt and red fruit.eer.
+
+beer/name: Black Horse Black Beer
+beer/beerId: 48215
+beer/brewerId: 10325
+beer/ABV: 6.50
+beer/style: Foreign / Export Stout
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235916604
+review/profileName: stcules
+review/text: Almost totally black. Beige foam, quite compact, not bad.  Light smell, just a bit of roast, and some hop. A bit too light.        The taste is light oo, and drinkable, with some malt, roast, hints of coffee.   Nothing exceptional, but after all drinkable and pleasant. to average body.  In the aftertaste some dust, somr roast, hint of caramel, and a bit of bitterness.      No defect, drinkable, not bad.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Weizen
+beer/beerId: 47986
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: Hefeweizen
+review/appearance: 2.5
+review/aroma: 2
+review/palate: 1.5
+review/taste: 1.5
+review/overall: 1.5
+review/time: 1234817823
+review/profileName: stcules
+review/text: A lot of foam. But a lot.  In the smell some banana, and then lactic and tart. Not a good start.   Quite dark orange in color, with a lively carbonation (now visible, under the foam).    Again tending to lactic sourness.       Same for the taste. With some yeast and banana.
+
+beer/name: Red Moon
+beer/beerId: 48213
+beer/brewerId: 10325
+beer/ABV: 6.20
+beer/style: English Strong Ale
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235915097
+review/profileName: stcules
+review/text: Dark red color, light beige foam, average. In the smell malt and caramel, not really light.        Again malt and caramel in the taste, not bad in the end.        Maybe a note of honey in teh back, and a light fruitiness.      Average body.   In the aftertaste a light bitterness, with the malt and red fruit.eer.
+
+beer/name: Black Horse Black Beer
+beer/beerId: 48215
+beer/brewerId: 10325
+beer/ABV: 6.50
+beer/style: Foreign / Export Stout
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235916604
+review/profileName: stcules
+review/text: Almost totally black. Beige foam, quite compact, not bad.  Light smell, just a bit of roast, and some hop. A bit too light.        The taste is light oo, and drinkable, with some malt, roast, hints of coffee.   Nothing exceptional, but after all drinkable and pleasant. to average body.  In the aftertaste some dust, somr roast, hint of caramel, and a bit of bitterness.      No defect, drinkable, not bad.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Weizen
+beer/beerId: 47986
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: Hefeweizen
+review/appearance: 2.5
+review/aroma: 2
+review/palate: 1.5
+review/taste: 1.5
+review/overall: 1.5
+review/time: 1234817823
+review/profileName: stcules
+review/text: A lot of foam. But a lot.  In the smell some banana, and then lactic and tart. Not a good start.   Quite dark orange in color, with a lively carbonation (now visible, under the foam).    Again tending to lactic sourness.       Same for the taste. With some yeast and banana.
+
+beer/name: Red Moon
+beer/beerId: 48213
+beer/brewerId: 10325
+beer/ABV: 6.20
+beer/style: English Strong Ale
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235915097
+review/profileName: stcules
+review/text: Dark red color, light beige foam, average. In the smell malt and caramel, not really light.        Again malt and caramel in the taste, not bad in the end.        Maybe a note of honey in teh back, and a light fruitiness.      Average body.   In the aftertaste a light bitterness, with the malt and red fruit.eer.
+
+beer/name: Black Horse Black Beer
+beer/beerId: 48215
+beer/brewerId: 10325
+beer/ABV: 6.50
+beer/style: Foreign / Export Stout
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235916604
+review/profileName: stcules
+review/text: Almost totally black. Beige foam, quite compact, not bad.  Light smell, just a bit of roast, and some hop. A bit too light.        The taste is light oo, and drinkable, with some malt, roast, hints of coffee.   Nothing exceptional, but after all drinkable and pleasant. to average body.  In the aftertaste some dust, somr roast, hint of caramel, and a bit of bitterness.      No defect, drinkable, not bad.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Weizen
+beer/beerId: 47986
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: Hefeweizen
+review/appearance: 2.5
+review/aroma: 2
+review/palate: 1.5
+review/taste: 1.5
+review/overall: 1.5
+review/time: 1234817823
+review/profileName: stcules
+review/text: A lot of foam. But a lot.  In the smell some banana, and then lactic and tart. Not a good start.   Quite dark orange in color, with a lively carbonation (now visible, under the foam).    Again tending to lactic sourness.       Same for the taste. With some yeast and banana.
+
+beer/name: Red Moon
+beer/beerId: 48213
+beer/brewerId: 10325
+beer/ABV: 6.20
+beer/style: English Strong Ale
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235915097
+review/profileName: stcules
+review/text: Dark red color, light beige foam, average. In the smell malt and caramel, not really light.        Again malt and caramel in the taste, not bad in the end.        Maybe a note of honey in teh back, and a light fruitiness.      Average body.   In the aftertaste a light bitterness, with the malt and red fruit.eer.
+
+beer/name: Black Horse Black Beer
+beer/beerId: 48215
+beer/brewerId: 10325
+beer/ABV: 6.50
+beer/style: Foreign / Export Stout
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235916604
+review/profileName: stcules
+review/text: Almost totally black. Beige foam, quite compact, not bad.  Light smell, just a bit of roast, and some hop. A bit too light.        The taste is light oo, and drinkable, with some malt, roast, hints of coffee.   Nothing exceptional, but after all drinkable and pleasant. to average body.  In the aftertaste some dust, somr roast, hint of caramel, and a bit of bitterness.      No defect, drinkable, not bad.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Weizen
+beer/beerId: 47986
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: Hefeweizen
+review/appearance: 2.5
+review/aroma: 2
+review/palate: 1.5
+review/taste: 1.5
+review/overall: 1.5
+review/time: 1234817823
+review/profileName: stcules
+review/text: A lot of foam. But a lot.  In the smell some banana, and then lactic and tart. Not a good start.   Quite dark orange in color, with a lively carbonation (now visible, under the foam).    Again tending to lactic sourness.       Same for the taste. With some yeast and banana.
+
+beer/name: Red Moon
+beer/beerId: 48213
+beer/brewerId: 10325
+beer/ABV: 6.20
+beer/style: English Strong Ale
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235915097
+review/profileName: stcules
+review/text: Dark red color, light beige foam, average. In the smell malt and caramel, not really light.        Again malt and caramel in the taste, not bad in the end.        Maybe a note of honey in teh back, and a light fruitiness.      Average body.   In the aftertaste a light bitterness, with the malt and red fruit.eer.
+
+beer/name: Black Horse Black Beer
+beer/beerId: 48215
+beer/brewerId: 10325
+beer/ABV: 6.50
+beer/style: Foreign / Export Stout
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235916604
+review/profileName: stcules
+review/text: Almost totally black. Beige foam, quite compact, not bad.  Light smell, just a bit of roast, and some hop. A bit too light.        The taste is light oo, and drinkable, with some malt, roast, hints of coffee.   Nothing exceptional, but after all drinkable and pleasant. to average body.  In the aftertaste some dust, somr roast, hint of caramel, and a bit of bitterness.      No defect, drinkable, not bad.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Weizen
+beer/beerId: 47986
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: Hefeweizen
+review/appearance: 2.5
+review/aroma: 2
+review/palate: 1.5
+review/taste: 1.5
+review/overall: 1.5
+review/time: 1234817823
+review/profileName: stcules
+review/text: A lot of foam. But a lot.  In the smell some banana, and then lactic and tart. Not a good start.   Quite dark orange in color, with a lively carbonation (now visible, under the foam).    Again tending to lactic sourness.       Same for the taste. With some yeast and banana.
+
+beer/name: Red Moon
+beer/beerId: 48213
+beer/brewerId: 10325
+beer/ABV: 6.20
+beer/style: English Strong Ale
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235915097
+review/profileName: stcules
+review/text: Dark red color, light beige foam, average. In the smell malt and caramel, not really light.        Again malt and caramel in the taste, not bad in the end.        Maybe a note of honey in teh back, and a light fruitiness.      Average body.   In the aftertaste a light bitterness, with the malt and red fruit.eer.
+
+beer/name: Black Horse Black Beer
+beer/beerId: 48215
+beer/brewerId: 10325
+beer/ABV: 6.50
+beer/style: Foreign / Export Stout
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235916604
+review/profileName: stcules
+review/text: Almost totally black. Beige foam, quite compact, not bad.  Light smell, just a bit of roast, and some hop. A bit too light.        The taste is light oo, and drinkable, with some malt, roast, hints of coffee.   Nothing exceptional, but after all drinkable and pleasant. to average body.  In the aftertaste some dust, somr roast, hint of caramel, and a bit of bitterness.      No defect, drinkable, not bad.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Weizen
+beer/beerId: 47986
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: Hefeweizen
+review/appearance: 2.5
+review/aroma: 2
+review/palate: 1.5
+review/taste: 1.5
+review/overall: 1.5
+review/time: 1234817823
+review/profileName: stcules
+review/text: A lot of foam. But a lot.  In the smell some banana, and then lactic and tart. Not a good start.   Quite dark orange in color, with a lively carbonation (now visible, under the foam).    Again tending to lactic sourness.       Same for the taste. With some yeast and banana.
+
+beer/name: Red Moon
+beer/beerId: 48213
+beer/brewerId: 10325
+beer/ABV: 6.20
+beer/style: English Strong Ale
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235915097
+review/profileName: stcules
+review/text: Dark red color, light beige foam, average. In the smell malt and caramel, not really light.        Again malt and caramel in the taste, not bad in the end.        Maybe a note of honey in teh back, and a light fruitiness.      Average body.   In the aftertaste a light bitterness, with the malt and red fruit.eer.
+
+beer/name: Black Horse Black Beer
+beer/beerId: 48215
+beer/brewerId: 10325
+beer/ABV: 6.50
+beer/style: Foreign / Export Stout
+review/appearance: 3
+review/aroma: 2.5
+review/palate: 3
+review/taste: 3
+review/overall: 3
+review/time: 1235916604
+review/profileName: stcules
+review/text: Almost totally black. Beige foam, quite compact, not bad.  Light smell, just a bit of roast, and some hop. A bit too light.        The taste is light oo, and drinkable, with some malt, roast, hints of coffee.   Nothing exceptional, but after all drinkable and pleasant. to average body.  In the aftertaste some dust, somr roast, hint of caramel, and a bit of bitterness.      No defect, drinkable, not bad.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+
+beer/name: Sausa Pils
+beer/beerId: 47969
+beer/brewerId: 10325
+beer/ABV: 5.00
+beer/style: German Pilsener
+review/appearance: 3.5
+review/aroma: 3
+review/palate: 2.5
+review/taste: 3
+review/overall: 3
+review/time: 1234725145
+review/profileName: stcules
+review/text: Golden yellow color. White, compact foam, quite creamy. Good appearance.   Fresh smell, with good hop. Quite dry, with a good grassy note. Hay. Fresh and pleasant.        More sweet in the mouth, with honey. The hop comes back in the end, and in the aftertaste.   Not bad, but a bit too sweet for a pils.        In the end some vanilla and camomile note.      In the aftertaste, too. Though the hop, a bit too sweet.        Honest.
+

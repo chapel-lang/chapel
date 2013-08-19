@@ -24,6 +24,9 @@ $targcompiler = `$utildirname/compiler --target`; chomp($targcompiler);
 print "CHPL_TARGET_PLATFORM: $targplatform\n";
 print "CHPL_TARGET_COMPILER: $targcompiler\n";
 
+$localeModel = `$utildirname/localeModel`; chomp($localeModel);
+print "CHPL_LOCALE_MODEL: $localeModel\n";
+
 $comm = `$utildirname/comm`; chomp($comm);
 print "CHPL_COMM: $comm\n";
 if ($comm eq "none" || $comm eq "ugni") {
@@ -64,5 +67,9 @@ $gmp = `$utildirname/gmp`; chomp($gmp);
 print "CHPL_GMP: $gmp\n";
 $regexp = `$utildirname/regexp`; chomp($regexp);
 print "CHPL_REGEXP: $regexp\n";
+$wide_ptrs = `$utildirname/widePointers`; chomp($wide_ptrs);
+print "CHPL_WIDE_POINTERS: $wide_ptrs\n";
 $llvm = `$utildirname/llvm`; chomp($llvm);
 print "CHPL_LLVM: $llvm\n";
+$hdfs = `$utildirname/hdfs`; chomp($hdfs);
+print "CHPL_FOREIGN_FS: $hdfs\n";

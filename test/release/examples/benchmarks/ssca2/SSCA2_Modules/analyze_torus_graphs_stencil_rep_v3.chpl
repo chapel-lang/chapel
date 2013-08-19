@@ -62,18 +62,18 @@ module analyze_torus_graphs {
     iter Neighbors (v_ : index (vertices) ){
       const v = if vertex_domain.rank == 1 then (v_,) else v_;
       for s_ in torus_stencil do {
-	const s = if vertex_domain.rank == 1 then (s_,) else s_;
-	var neighbor : vertex_tuple; 
-	for d in 1..dimensions {
-	    neighbor (d) =
-	      if v (d) + s (d) < vertex_domain.dim(d).low then
-	         vertex_domain.dim(d).high
-	      else if v (d) + s (d) > vertex_domain.dim(d).high then
-	         vertex_domain.dim(d).low
-	      else
-		 v (d) + s (d);
-	}
-	yield if vertex_domain.rank == 1 then neighbor (1) else neighbor;
+    const s = if vertex_domain.rank == 1 then (s_,) else s_;
+    var neighbor : vertex_tuple; 
+    for d in 1..dimensions {
+        neighbor (d) =
+          if v (d) + s (d) < vertex_domain.dim(d).low then
+             vertex_domain.dim(d).high
+          else if v (d) + s (d) > vertex_domain.dim(d).high then
+             vertex_domain.dim(d).low
+          else
+         v (d) + s (d);
+    }
+    yield if vertex_domain.rank == 1 then neighbor (1) else neighbor;
       }
     }
 
@@ -105,8 +105,8 @@ module analyze_torus_graphs {
 
     if dense_stencil.rank > 1 then
       for s in dense_stencil do {
-	if ( + reduce [d in 1..G.dimensions] abs (s(d)) ) == 1 then
-	  G.torus_stencil.add (s);
+    if ( + reduce [d in 1..G.dimensions] abs (s(d)) ) == 1 then
+      G.torus_stencil.add (s);
       }
     else 
       { G.torus_stencil.add (-1);  G.torus_stencil.add (+1);}
@@ -119,17 +119,17 @@ module analyze_torus_graphs {
 
     for d in 1 .. G.dimensions do 
       writeln ( format ("########", d), 
-		format ("########", vertex_domain.dim(d).low),  
-		format ("########", vertex_domain.dim(d).high) );
+        format ("########", vertex_domain.dim(d).low),  
+        format ("########", vertex_domain.dim(d).high) );
 
     writeln ( "fully implicit stencil representation");
     writeln ( "-------------------------------------" );
     writeln ();
-	  
+      
     if DEBUG_GRAPH_GENERATOR then {
       writeln ("vertex   Neighbors");
       forall i in G.vertices do 
-	writeln ( i, ":    ", G.Neighbors (i) );
+    writeln ( i, ":    ", G.Neighbors (i) );
     }
     
     torus_random_edge_weights ( MAX_EDGE_WEIGHT, G );
@@ -160,7 +160,7 @@ module analyze_torus_graphs {
 
     writeln ();
     writeln ("One D Torus: all nodes should have",
-	     " exact betweenness centrality: ", exact_between_centrality );
+         " exact betweenness centrality: ", exact_between_centrality );
     writeln ("             (upper bound on approximate or filtered", 
                          " betweenness centrality)");
     writeln ();
@@ -187,12 +187,12 @@ module analyze_torus_graphs {
     const vertex_domain = 
      if DISTRIBUTION_TYPE == "BLOCK" then
        { Torus_Base_Index..#d1,
-	 Torus_Base_Index..#d2 } 
-	 dmapped Block ( { Torus_Base_Index..#d1,
-			   Torus_Base_Index..#d2 } )
+     Torus_Base_Index..#d2 } 
+     dmapped Block ( { Torus_Base_Index..#d1,
+               Torus_Base_Index..#d2 } )
      else
        { Torus_Base_Index..#d1,
-	 Torus_Base_Index..#d2 };
+     Torus_Base_Index..#d2 };
 
     const dense_stencil = {-1..1, -1..1};
 
@@ -203,11 +203,11 @@ module analyze_torus_graphs {
                                  - 2**SCALE + 1;
     else
       exact_between_centrality = 2 ** ( (3*SCALE/2) - 1)
-	                         - 2**SCALE + 1;
+                             - 2**SCALE + 1;
 
     writeln ();
     writeln ("Two D Torus: all nodes should have",
-	     " exact betweenness centrality: ", exact_between_centrality );
+         " exact betweenness centrality: ", exact_between_centrality );
     writeln ("             (upper bound on approximate or filtered", 
                          " betweenness centrality)");
     writeln ();
@@ -223,7 +223,7 @@ module analyze_torus_graphs {
   // dimensional torus with  2^SCALE vertices, then 
   // execute Kernels 2, 3 and 4 of SSCA #2
   // ===============================================
-	    
+        
   proc generate_and_analyze_3D_torus {
 
     const lg2d1 : int = SCALE / 3,
@@ -237,15 +237,15 @@ module analyze_torus_graphs {
     const vertex_domain = 
      if DISTRIBUTION_TYPE == "BLOCK" then
        { Torus_Base_Index..#d1, 
-	 Torus_Base_Index..#d2, 
-	 Torus_Base_Index..#d3 }
-	 dmapped Block ( { Torus_Base_Index..#d1,
-			   Torus_Base_Index..#d2, 
-			   Torus_Base_Index..#d3 } )
+     Torus_Base_Index..#d2, 
+     Torus_Base_Index..#d3 }
+     dmapped Block ( { Torus_Base_Index..#d1,
+               Torus_Base_Index..#d2, 
+               Torus_Base_Index..#d3 } )
      else
        { Torus_Base_Index..#d1, 
-	 Torus_Base_Index..#d2, 
-	 Torus_Base_Index..#d3 };
+     Torus_Base_Index..#d2, 
+     Torus_Base_Index..#d3 };
 
     const dense_stencil = {-1..1, -1..1, -1..1};
 
@@ -275,18 +275,18 @@ module analyze_torus_graphs {
     const vertex_domain = 
      if DISTRIBUTION_TYPE == "BLOCK" then 
        { Torus_Base_Index..#d1, 
-	 Torus_Base_Index..#d2, 
-	 Torus_Base_Index..#d3, 
-	 Torus_Base_Index..#d4 }
-	 dmapped Block ( { Torus_Base_Index..#d1,
-			   Torus_Base_Index..#d2, 
-			   Torus_Base_Index..#d3, 
-			   Torus_Base_Index..#d4 })
+     Torus_Base_Index..#d2, 
+     Torus_Base_Index..#d3, 
+     Torus_Base_Index..#d4 }
+     dmapped Block ( { Torus_Base_Index..#d1,
+               Torus_Base_Index..#d2, 
+               Torus_Base_Index..#d3, 
+               Torus_Base_Index..#d4 })
      else
        { Torus_Base_Index..#d1, 
-	 Torus_Base_Index..#d2, 
-	 Torus_Base_Index..#d3, 
-	 Torus_Base_Index..#d4 };
+     Torus_Base_Index..#d2, 
+     Torus_Base_Index..#d3, 
+     Torus_Base_Index..#d4 };
 
     const dense_stencil = {-1..1, -1..1, -1..1, -1..1 };
 

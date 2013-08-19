@@ -1,0 +1,6 @@
+perfkeys: real
+graphkeys: thread-ring
+files: thread-ring.dat
+graphtitle: Thread Ring Shootout Benchmark (n=50,000,000)
+ylabel: Time (seconds)
+graphname: thread-ring

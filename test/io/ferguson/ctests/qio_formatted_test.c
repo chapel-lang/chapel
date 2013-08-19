@@ -1035,6 +1035,13 @@ void test_scanmatch()
 
   qio_channel_release(reading);
 
+  err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL);
+  assert(!err);
+  err = qio_channel_scan_literal(true, reading, " match", 5, 1);
+  assert(err == 0);
+
+  qio_channel_release(reading);
+ 
   qio_file_release(f);
   f = NULL;
 

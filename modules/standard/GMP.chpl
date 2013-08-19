@@ -399,7 +399,7 @@ module GMP {
     proc get_ui():c_ulong
     {
       var x:c_ulong;
-      on this do x = mpz_getui(this.mpz);
+      on this do x = mpz_get_ui(this.mpz);
       return x;
     }
     proc get_si():c_long
@@ -1065,7 +1065,7 @@ module GMP {
       var ret:c_int;
       on this {
         var (bcopy,b_) = b.maybeCopy();
-        ret=mpz_cmp(this.mpz,b_);
+        ret=mpz_cmp(this.mpz,b_.mpz);
         if bcopy then delete b_;
       }
       return ret;
@@ -1099,7 +1099,7 @@ module GMP {
       var ret:c_int;
       on this {
         var (acopy,b_) = b.maybeCopy();
-        ret=mpz_cmpabs(this.mpz,b_);
+        ret=mpz_cmpabs(this.mpz,b_.mpz);
         if acopy then delete b_;
       }
       return ret;

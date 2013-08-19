@@ -1,8 +1,0 @@
-bug: a default class type constructor does not get resolved with certain 'use' decls
-
-This is a variation on SSCA2-with-Private-1.chpl with slightly bigger
-'use' tree.
-
-It was intended to have the tree of 'use' statements directly a subset
-of what's in test/release/examples/ssca2.  But there there are more
-occurrences of the modules listed in SSCA2-with-Private-2.chpl.

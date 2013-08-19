@@ -1,0 +1,30 @@
+#!/usr/bin/env python
+#
+# Check that all .graph files are listed in $CHPL_HOME/test/GRAPHFILES
+#
+# NOTE: If this is combined with the .dat file check that is currently
+# in start_test, consider using os.walk()
+#
+#
+
+import sys, os, subprocess
+import fileReadHelp
+
+testdir=os.getenv('CHPL_HOME', '.')+'/test'
+
+lines=fileReadHelp.ReadFileWithComments(testdir+'/GRAPHFILES')
+
+p=subprocess.Popen(['find', testdir, '-name', '.svn', '-prune', '-o', '-name', '*.graph', '-print'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+graphfiles = p.communicate()[0].split()
+
+for g in graphfiles:
+    graphfilename = g[len(testdir)+1:]
+    try:
+        lines.index(graphfilename)
+    except ValueError:
+        sys.stdout.write('[Warning: %s missing from GRAPHFILES]\n'%(graphfilename))
+
+sys.exit(0)
+
+
+

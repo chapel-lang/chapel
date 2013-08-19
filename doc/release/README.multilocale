@@ -85,6 +85,10 @@ To run Chapel on multiple locales, the following steps are required:
            to use normal ssh-agent/ssh-add capabilities to support
            password-less ssh-ing.
 
+           Note that it is possible to configure GASNet to launch jobs
+           with SLURM using the following command:
+              export GASNET_CSPAWN_CMD="srun -N%N %C"
+
        (ii) To simulate multiple Chapel locales with one workstation,
             you can request that GASNet spawn its child functions on
             your local machine using:

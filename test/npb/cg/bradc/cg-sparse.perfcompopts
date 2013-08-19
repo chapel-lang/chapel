@@ -1,1 +1,1 @@
-cg-makea.chpl -O --no-checks
+cg-makea.chpl --fast --no-checks

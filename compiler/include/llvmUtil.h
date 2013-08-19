@@ -13,6 +13,7 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Value.h"
 #include "llvm/IR/Intrinsics.h"
+#include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/Attributes.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/DataLayout.h"
@@ -29,6 +30,7 @@ static inline bool llvm_fn_param_has_attr(llvm::Function* f, unsigned idx, llvm:
 #include "llvm/IRBuilder.h"
 #include "llvm/DataLayout.h"
 #include "llvm/Intrinsics.h"
+#include "llvm/IntrinsicInst.h"
 #include "llvm/Attributes.h"
 #define LLVM_TARGET_DATA llvm::DataLayout
 #define LLVM_ATTRIBUTE llvm::Attributes
@@ -46,6 +48,7 @@ static inline bool llvm_fn_param_has_attr(llvm::Function* f, unsigned idx, llvm:
 #include "llvm/Support/IRBuilder.h"
 #include "llvm/Target/TargetData.h"
 #include "llvm/Intrinsics.h"
+#include "llvm/IntrinsicInst.h"
 #include "llvm/Attributes.h"
 #define LLVM_TARGET_DATA llvm::TargetData
 #define LLVM_ATTRIBUTE llvm::Attribute
@@ -67,9 +70,13 @@ struct PromotedPair {
 };
 
 llvm::Constant* codegenSizeofLLVM(llvm::Type* type);
+llvm::AllocaInst* makeAlloca(llvm::Type* type, const char* name, llvm::Instruction* insertBefore, unsigned n=1, unsigned align=0);
 
-llvm::Value *convertValueToType(llvm::Value *value, llvm::Type *newType, bool isSigned = false);
-PromotedPair convertValuesToLarger(llvm::Value *value1, llvm::Value *value2, bool isSigned1 = false, bool isSigned2 = false);
+llvm::Value* createTempVarLLVM(llvm::IRBuilder<>* builder, llvm::Type* type, const char* name);
+llvm::Value *convertValueToType(llvm::IRBuilder<> *builder, LLVM_TARGET_DATA * targetData, llvm::Value *value, llvm::Type *newType, bool isSigned = false);
+PromotedPair convertValuesToLarger(llvm::IRBuilder<> *builder, llvm::Value *value1, llvm::Value *value2, bool isSigned1 = false, bool isSigned2 = false);
+
+bool isTypeSizeSmallerThan(LLVM_TARGET_DATA * layout, llvm::Type* ty, uint64_t max_size_bytes);
 
 #endif //HAVE_LLVM
 

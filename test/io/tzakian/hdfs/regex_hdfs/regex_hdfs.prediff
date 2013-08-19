@@ -1,0 +1,5 @@
+#!/usr/bin/env perl
+
+system("hadoop dfs -rm /tmp/tmp.txt");
+
+

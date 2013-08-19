@@ -1,0 +1,10 @@
+#!/bin/bash
+
+outfile=$2
+
+head -6 $outfile |
+sed -e 's/^\(In file included from \).*:$/\1FILE_LINE:/' \
+    -e 's/^.*\(: error: conflicting types for .i2rec.\)/FILE_LINE\1/' \
+    -e 's/^.*\(: error: previous declaration of .i2rec. was here\)/FILE_LINE\1/' \
+    > $outfile.tmp
+mv $outfile.tmp $outfile

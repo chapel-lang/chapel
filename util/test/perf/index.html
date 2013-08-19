@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=EmulateIE7; IE=EmulateIE9">
+    <link rel="stylesheet" href="perfgraph.css">
+    <!--[if IE]>
+        <script type="text/javascript"
+                src="http://dygraphs.com/excanvas.js"></script>
+        <![endif]-->
+    <script type="text/javascript"
+            src="http://dygraphs.com/dygraph-combined.js"></script>
+    <!-- <script type="text/javascript"
+            src="http://dygraphs.com/dygraph-dev.js"></script>
+      -->
+    <script src="graphdata.js"></script>
+  </head>
+  <body onload="perfGraphInit()">
+    <center><h1 id="titleElem"></h1></center>
+    <script language="javascript" type="text/javascript" >
+      <!-- hide
+           function jumpto(x){
+             if (document.form1.jumpmenu.value != "null") {
+             selectSuite(x)
+             }
+           }
+           // end hide -->
+    </script>
+    <table>
+      <tr>
+        <td class="graphList">
+          <p><em>Select a test suite</em></p>
+          <div id="suiteMenu"></div>
+          <p><strong>OR</strong></p>
+          <p><em>Select and display specific tests</em></p>
+          <input type="button" onclick="displaySelectedGraphs()"
+          value="Display"><br>
+          <input type="button" onclick="selectAllGraphs()"
+          value="Select All">
+          <input type="button" onclick="unselectAllGraphs()"
+          value="Unselect All">
+          <div id="graphlist"></div>
+        <td id="graphdisplay" valign="top">
+        </td>
+        <td id="legenddisplay" valign="top">
+        </td>
+      </tr>
+    </table>
+
+    <script src="perfgraph.js"></script>
+  </body>
+</html>
+
+

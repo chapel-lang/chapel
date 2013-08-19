@@ -1,12 +1,14 @@
 #ifndef _PASSLIST_H_
 #define _PASSLIST_H_
 
-#include "passes.h"
+#include "passes.h" // For pass function prototypes.
+#include "checks.h" // For check function prototypes.
 #include "log.h"    // For LOG_<passname> #defines.
 
 #define FIRST {NULL, NULL, NUL}
 #define LAST {NULL, NULL, NUL}
-#define RUN(x) {x, #x, LOG_ ## x}
+#define RUN(x) {x, check_ ## x, #x, LOG_ ## x}
+
 //
 // passlist: contains passes in the order that they are called
 //
@@ -30,14 +32,16 @@ PassInfo passlist[] = {
   RUN(normalize),           // normalization transformations
   RUN(checkNormalized),     // check semantics of normalized AST
 
-  // Creation of default functions
   RUN(buildDefaultFunctions), // build default functions
+  RUN(createTaskFunctions),   // convert 'begin' et al. to functions
 
   // Function resolution and shallow type inference
   RUN(resolve),             // resolves function calls and types
+  RUN(resolveIntents),      // resolve argument intents
   RUN(checkResolved),       // checks semantics of resolved AST
 
   // Post-resolution cleanup
+  RUN(processIteratorYields), // adjustments to iterators
   RUN(flattenFunctions),    // denest nested functions
   RUN(cullOverReferences),  // remove excess references
   RUN(callDestructors),
@@ -63,6 +67,7 @@ PassInfo passlist[] = {
   RUN(insertWideReferences),// inserts wide references for on clauses
   RUN(optimizeOnClauses),   // Optimize on clauses
   RUN(addInitCalls),        // Add module initialization calls and guards.  
+  RUN(loopInvariantCodeMotion),// move loop invarient code above loop runs
   // AST to C or LLVM
   RUN(insertLineNumbers),   // insert line numbers for error messages
   RUN(repositionDefExpressions), // put defPoints just before first usage

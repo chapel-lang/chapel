@@ -1,13 +1,11 @@
 CF machines
 ===========
 chap01 : linux64 (comm none, default everything)
-chap02 : qthreads (comm none examples, gasnet multilocale-examples)
+chap02 : gasnet: segment fast (M,W,F,Su), segment everything (Tu,Thu,Sa)
 chap03 : linux64 performance (comm none, default everything) -- old HW
 chap04 : linux64 performance (comm none, default everything) -- new HW
-chap05 : --no-local
+chap05 : qthreads (comm none examples, gasnet multilocale-examples)
 chap06 : --baseline
-chap07 : tcmalloc (comm none, gasnet multilocale-examples)
-chap08 : XMT
 chpbld01 : XT/XE PrgEnvs examples, nightly
 chpbld02 : XT/XE PrgEnvs all, weekly
 chpbld03 : (no testing - non-standard: RHEL5.7 with Tilera PCI card)
@@ -17,7 +15,7 @@ cflbs32  : linux32 (comm none, default everything)
 Seattle machines
 ================
 chap09    : valgrind (comm none)
-chap10    : gasnet: segment fast (M,W,F,Su), segment everything (Tu,Thu,Sa)
+chap10    : --no-local
 bradc-lnx : 11pm update of ~chapelu/chapel, release testing, linxu64 performance, token count, tab check
 lnx-vass  : block, memory leaks; historify-logs
 lnx-hilde : (no testing)
@@ -29,6 +27,8 @@ Discontinued testing
 ====================
 - opts   (start_opt_test, nightly-opts-all.cron, nightly-opts-examples.cron)
 - mpi    (was: nightly.chap04     up to r19116)
+- tcmalloc (comm none, gasnet multilocale-examples, preserved as nightly.tcmalloc)
+- XMT (was nightly.chap07, preserved as nightly.xmt)
 
 
 Other notes

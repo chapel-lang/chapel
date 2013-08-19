@@ -6,21 +6,13 @@
    Bartlett, Mellor).
 */
 
-use GMP, Time;
+use GMP;
 
 config const n = 50;	// Compute 50 digits of Pi, by default
-config param printTiming = false;
 
 proc main() {
-  var t: Timer;
-
-  if printTiming then t.start();
   // Produce the number of digits of Pi specified in n.
   pidigits();
-  if printTiming then t.stop();
-
-  if printTiming then
-    writeln("Elapsed time = ", t.elapsed(TimeUnits.seconds));
 }
 
 

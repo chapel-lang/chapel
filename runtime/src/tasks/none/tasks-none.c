@@ -4,10 +4,12 @@
 #endif
 
 #include "chplrt.h"
-#include "chpl-mem.h"
+#include "chplcgfns.h"
+#include "chpl-gen-includes.h"
 #include "chplcast.h"
+#include "chpl-locale-model.h"
+#include "chpl-mem.h"
 #include "chpl-tasks.h"
-#include "chplcgfns.h" // for chpl_ftable
 #include "error.h"
 #include <assert.h>
 #include <stdint.h>
@@ -22,11 +24,10 @@
 typedef struct chpl_pool_struct* chpl_task_pool_p;
 
 typedef struct chpl_pool_struct {
-  chpl_taskID_t id;       // task identifier
-  chpl_fn_p fun;          // function to call for task
-  void*     arg;          // argument to the function
-  chpl_bool serial_state; // whether new tasks can be created while executing fun
-  c_subloc_t sublocale;  // subloc id associated with the current task.
+  chpl_taskID_t            id;         // task identifier
+  chpl_fn_p                fun;        // function to call for task
+  void*                    arg;        // argument to the function
+  chpl_task_private_data_t chpl_data;  // task private data
   chpl_task_pool_p next;
 } task_pool_t;
 
@@ -86,8 +87,14 @@ void chpl_sync_destroyAux(chpl_sync_aux_t *s) { }
 
 static chpl_taskID_t next_taskID = chpl_nullTaskID + 1;
 static chpl_taskID_t curr_taskID;
-static chpl_bool serial_state;
-static c_subloc_t sublocale;
+static chpl_task_private_data_t s_chpl_data = { .serial_state = true,
+                                                .localeID     = 0,
+                                                .here         = NULL,
+                                                .alloc        = chpl_malloc,
+                                                .calloc       = chpl_calloc,
+                                                .realloc      = chpl_realloc,
+                                                .free         = chpl_free
+                                              };
 static uint64_t taskCallStackSize = 0;
 
 void chpl_task_init(void) {
@@ -135,7 +142,6 @@ void chpl_task_init(void) {
   }
 
   curr_taskID = next_taskID++;
-  serial_state = true;  // Likely makes no difference, except for testing/debugging.
 
   task_pool_head = task_pool_tail = NULL;
   queued_cnt = 0;
@@ -149,27 +155,28 @@ int chpl_task_createCommTask(chpl_fn_p fn, void* arg) {
 }
 
 void chpl_task_callMain(void (*chpl_main)(void)) {
-  serial_state = false;
+  s_chpl_data.serial_state = false;
   chpl_main();
 }
 
 void chpl_task_addToTaskList(chpl_fn_int_t fid,
-                           void* arg,
-                           chpl_task_list_p *task_list,
-                           int32_t task_list_locale,
-                           chpl_bool is_begin_stmt,
-                           int lineno,
-                           chpl_string filename) {
-  if (chpl_task_getSerial()) {
+                             void* arg,
+                             c_sublocid_t subLoc,
+                             chpl_task_list_p *task_list,
+                             int32_t task_list_locale,
+                             chpl_bool is_begin_stmt,
+                             int lineno,
+                             chpl_string filename) {
+  assert(subLoc == 0
+         || subLoc == c_sublocid_any
+         || subLoc == c_sublocid_curr);
+
+  if (s_chpl_data.serial_state) {
     //
-    // save and restore current task's serial state before and after
-    // invoking new task
+    // We're serial, so this doesn't create a new task in the Chapel
+    // sense.  Just invoke the body of the construct.
     //
-    chpl_taskID_t saved_taskID = curr_taskID;
-    chpl_bool saved_serial_state = chpl_task_getSerial();
-    (*chpl_ftable[fid])(arg);
-    chpl_task_setSerial(saved_serial_state);
-    curr_taskID = saved_taskID;
+    chpl_ftable_call(fid, arg);
   } else {
     // create a task from the given function pointer and arguments
     // and append it to the end of the task pool for later execution
@@ -181,7 +188,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid,
     task->id = next_taskID++;
     task->fun = chpl_ftable[fid];
     task->arg = arg;
-    task->serial_state = false;
+    task->chpl_data = s_chpl_data;
     task->next = NULL;
 
     if (task_pool_tail) {
@@ -203,12 +210,14 @@ void chpl_task_freeTaskList(chpl_task_list_p task_list) { }
 
 void chpl_task_startMovedTask(chpl_fn_p fp,
                               void* a,
+                              c_sublocid_t subLoc,
                               chpl_taskID_t id,
                               chpl_bool serial_state) {
   // create a task from the given function pointer and arguments
   // and append it to the end of the task pool for later execution
   chpl_task_pool_p task;
 
+  assert(subLoc == 0 || subLoc == c_sublocid_any);
   assert(id == chpl_nullTaskID);
 
   task = (chpl_task_pool_p)chpl_mem_alloc(sizeof(task_pool_t),
@@ -217,7 +226,8 @@ void chpl_task_startMovedTask(chpl_fn_p fp,
   task->id = next_taskID++;
   task->fun = fp;
   task->arg = a;
-  task->serial_state = serial_state;
+  task->chpl_data = s_chpl_data;
+  task->chpl_data.serial_state = serial_state;
   task->next = NULL;
 
   if (task_pool_tail) {
@@ -230,6 +240,14 @@ void chpl_task_startMovedTask(chpl_fn_p fp,
   queued_cnt++;
 }
 
+c_sublocid_t chpl_task_getSubLoc(void) { return 0; }
+
+void chpl_task_setSubLoc(c_sublocid_t subLoc) {
+  assert(subLoc == 0
+         || subLoc == c_sublocid_any
+         || subLoc == c_sublocid_curr);
+}
+
 chpl_taskID_t chpl_task_getId(void) { return curr_taskID; }
 
 void chpl_task_yield(void) {
@@ -239,16 +257,33 @@ void chpl_task_sleep(int secs) {
   sleep(secs);
 }
 
-chpl_bool chpl_task_getSerial(void) { return serial_state; }
-
-void chpl_task_setSerial(chpl_bool new_state) {
-  serial_state = new_state;
+chpl_task_private_data_t* chpl_task_getPrivateData(void) {
+  return &s_chpl_data;
 }
 
-c_subloc_t chpl_task_getSubLoc(void) { return sublocale; }
+chpl_bool chpl_task_getSerial(void) { return s_chpl_data.serial_state; }
 
-void chpl_task_setSubLoc(c_subloc_t new_subloc)
-{ sublocale = new_subloc; }
+void chpl_task_setSerial(chpl_bool new_state) {
+  s_chpl_data.serial_state = new_state;
+}
+
+void* chpl_task_getHere(void) { return s_chpl_data.here; }
+
+void chpl_task_setHere(void* new_here) { s_chpl_data.here = new_here; }
+
+c_localeid_t chpl_task_getLocaleID(void) { return s_chpl_data.localeID; }
+
+void chpl_task_setLocaleID(c_localeid_t new_localeID) {
+  s_chpl_data.localeID = new_localeID;
+}
+
+c_sublocid_t chpl_task_getNumSubLocales(void) {
+#ifdef CHPL_LOCALE_MODEL_NUM_SUBLOCALES
+  return CHPL_LOCALE_MODEL_NUM_SUBLOCALES;
+#else
+  return 0;
+#endif
+}
 
 uint64_t chpl_task_getCallStackSize(void) {
   return taskCallStackSize;
@@ -267,7 +302,7 @@ int32_t  chpl_task_getNumBlockedTasks(void) { return 0; }
 static chpl_bool
 launch_next_task(void) {
   chpl_taskID_t saved_taskID;
-  chpl_bool saved_serial_state;
+  chpl_task_private_data_t saved_chpl_data;
 
   if (task_pool_head) {
     // retrieve the first task from the task pool
@@ -280,19 +315,19 @@ launch_next_task(void) {
     queued_cnt--;
 
     //
-    // set state to reflect new state
+    // save old state and call new task body in new state
     //
     saved_taskID = curr_taskID;
-    saved_serial_state = chpl_task_getSerial();
-    chpl_task_setSerial(task->serial_state);
+    saved_chpl_data = s_chpl_data;
+    s_chpl_data = task->chpl_data;
 
     (*task->fun)(task->arg);
     chpl_mem_free(task, 0, 0);
 
     //
-    // restore state
+    // restore old state
     //
-    chpl_task_setSerial(saved_serial_state);
+    s_chpl_data = saved_chpl_data;
     curr_taskID = saved_taskID;
 
     return true;

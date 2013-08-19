@@ -1,0 +1,7 @@
+GEN_LFLAGS += -I$(JAVA_INSTALL)/include \
+							-I$(JAVA_INSTALL)/include/linux \
+							-I$(HADOOP_INSTALL)/src/c++/libhdfs \
+							-L$(JAVA_INSTALL)/jre/lib/amd64/server \
+							-L$(HADOOP_INSTALL)/c++/Linux-amd64-64/lib 
+
+LIBS += -lhdfs -ljvm

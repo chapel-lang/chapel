@@ -17,9 +17,11 @@
 #include "chplrt.h"
 #include "chplsys.h"
 #include "tasks-qthreads.h"
-#include "chpl-tasks.h"
-#include "chpl-comm.h" // for chpl_localeID
 #include "chplcgfns.h" // for chpl_ftable()
+#include "chpl-comm.h" // for chpl_localeID
+#include "chpl-locale-model.h" // for sublocale information
+#include "chpl-mem.h"  // for chpl_malloc(), etc.
+#include "chpl-tasks.h"
 #include "config.h"   // for chpl_config_get_value()
 #include "error.h"    // for chpl_warning()
 #include "arg.h"      // for blockreport and taskreport
@@ -112,20 +114,17 @@ struct chpl_task_list {
 };
 
 typedef struct {
-    void       *fn;
-    void       *args;
-    chpl_string task_filename;
-    int         lineno;
-    chpl_bool   serial_state;
-    c_subloc_t  sublocale_id;
+    void                     *fn;
+    void                     *args;
+    chpl_string              task_filename;
+    int                      lineno;
+    chpl_task_private_data_t chpl_data;
 } chapel_wrapper_args_t;
 
 // Structure of task-local storage
 typedef struct chapel_tls_s {
-    /* Serial state */
-    chpl_bool  serial_state;
-    /* Sublocales */
-    c_subloc_t sublocale_id;
+    /* Task private data: serial state, locale ID, etc. */
+    chpl_task_private_data_t chpl_data;
     /* Reports */
     chpl_string lock_filename;
     size_t      lock_lineno;
@@ -154,8 +153,8 @@ static inline chapel_tls_t * chapel_get_tasklocal_possibly_from_non_task(void)
     return tls;
 }
 
-// Default sublocale id.
-static c_subloc_t const default_sublocale_id = 1;
+// Default locale id.
+static c_localeid_t const default_locale_id = 0;
 
 // Default serial state is used outside of the tasking layer.
 static chpl_bool default_serial_state = true;
@@ -438,10 +437,9 @@ static aligned_t chapel_wrapper(void *arg)
     chapel_wrapper_args_t *rarg = arg;
     chapel_tls_t * data = chapel_get_tasklocal();
 
-    data->serial_state = rarg->serial_state;
-    data->sublocale_id = rarg->sublocale_id;
     data->task_filename = rarg->task_filename;
     data->task_lineno = rarg->lineno;
+    data->chpl_data = rarg->chpl_data;
     data->lock_filename = NULL;
     data->lock_lineno = 0;
 
@@ -457,9 +455,11 @@ static aligned_t chapel_wrapper(void *arg)
 void chpl_task_callMain(void (*chpl_main)(void))
 {
     const chpl_bool initial_serial_state = false;
-    const c_subloc_t initial_sublocale_id = default_sublocale_id;
+    const c_localeid_t initial_locale_id = default_locale_id;
     const chapel_wrapper_args_t wrapper_args = 
-        {chpl_main, NULL, NULL, 0, initial_serial_state, initial_sublocale_id};
+        {chpl_main, NULL, NULL, 0,
+         {initial_serial_state, initial_locale_id, NULL,
+          chpl_malloc, chpl_calloc, chpl_realloc, chpl_free}};
 
     qthread_debug(CHAPEL_CALLS, "[%d] begin chpl_task_callMain()\n", chpl_localeID);
 
@@ -492,6 +492,7 @@ int chpl_task_createCommTask(chpl_fn_p fn,
 
 void chpl_task_addToTaskList(chpl_fn_int_t     fid,
                              void             *arg,
+                             c_sublocid_t      subLoc,
                              chpl_task_list_p *task_list,
                              int32_t           task_list_locale,
                              chpl_bool         is_begin_stmt,
@@ -499,10 +500,10 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
                              chpl_string       filename)
 {
     qthread_shepherd_id_t const here_shep_id = qthread_shep();
-    c_subloc_t const here_locale_id = here_shep_id + 1;
-    chpl_bool serial_state = chpl_task_getSerial();
+    chpl_task_private_data_t *parent_chpl_data = chpl_task_getPrivateData();
+    chpl_bool serial_state = parent_chpl_data->serial_state;
     chapel_wrapper_args_t wrapper_args = 
-        {chpl_ftable[fid], arg, filename, lineno, serial_state, here_locale_id};
+        {chpl_ftable[fid], arg, filename, lineno, *parent_chpl_data};
 
     PROFILE_INCR(profile_task_addToTaskList,1);
 
@@ -512,9 +513,15 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
                                          sizeof(chapel_wrapper_args_t), &ret,
                                          here_shep_id);
         qthread_syncvar_readFF(NULL, &ret);
-    } else {
+    } else if (subLoc == c_sublocid_any) {
         qthread_fork_syncvar_copyargs(chapel_wrapper, &wrapper_args,
                                       sizeof(chapel_wrapper_args_t), NULL);
+    } else {
+        if (subLoc == c_sublocid_curr)
+            subLoc = (c_sublocid_t) here_shep_id;
+        qthread_fork_syncvar_copyargs_to(chapel_wrapper, &wrapper_args,
+                                         sizeof(chapel_wrapper_args_t), NULL,
+                                         (qthread_shepherd_id_t) subLoc);
     }
 }
 
@@ -535,20 +542,62 @@ void chpl_task_freeTaskList(chpl_task_list_p task_list)
 
 void chpl_task_startMovedTask(chpl_fn_p      fp,
                               void          *arg,
+                              c_sublocid_t   subLoc,
                               chpl_taskID_t  id,
                               chpl_bool      serial_state)
 {
+    assert(subLoc != c_sublocid_curr);
     assert(id == chpl_nullTaskID);
 
-    qthread_shepherd_id_t const here_shep_id = qthread_shep();
-    c_subloc_t const here_locale_id = here_shep_id + 1;
     chapel_wrapper_args_t wrapper_args = 
-        {fp, arg, NULL, 0, serial_state, here_locale_id};
+        {fp, arg, NULL, 0, *chpl_task_getPrivateData()};
+    wrapper_args.chpl_data.serial_state = serial_state;
 
     PROFILE_INCR(profile_task_startMovedTask,1);
 
-    qthread_fork_syncvar_copyargs(chapel_wrapper, &wrapper_args,
-                                  sizeof(chapel_wrapper_args_t), NULL);
+#if 1
+    // We are timing out when the subLoc is passed as 0 (zero).  Can
+    // we not time share tasks on a single shepherd?  Perhaps we can
+    // only time share as many tasks on a shepherd as that shepherd
+    // has workers?  For now, force the subLoc to be "any".
+    subLoc = c_sublocid_any;
+#endif
+    if (subLoc == c_sublocid_any) {
+        qthread_fork_syncvar_copyargs(chapel_wrapper, &wrapper_args,
+                                      sizeof(chapel_wrapper_args_t), NULL);
+    } else {
+        qthread_fork_syncvar_copyargs_to(chapel_wrapper, &wrapper_args,
+                                         sizeof(chapel_wrapper_args_t), NULL,
+                                         (qthread_shepherd_id_t) subLoc);
+    }
+}
+
+c_sublocid_t chpl_task_getSubLoc(void)
+{
+    return (c_sublocid_t) qthread_shep();
+}
+
+void chpl_task_setSubLoc(c_sublocid_t subLoc)
+{
+    qthread_shepherd_id_t curr_shep;
+
+    // Only change sublocales if the caller asked for a particular one,
+    // which is not the current one, and we're a (movable) task.
+    //
+    // Note: It's likely that this won't work in all cases where we need
+    //       it.  In particular, we envision needing to move execution
+    //       from sublocale to sublocale while initializing the memory
+    //       layer, in order to get the NUMA domain affinity right for
+    //       the subparts of the heap.  But this will be happening well
+    //       before tasking init and in any case would be done from the
+    //       main thread of execution, which doesn't have a shepherd.
+    //       The code below wouldn't work in that situation.
+    if (subLoc != c_sublocid_any &&
+        subLoc != c_sublocid_curr &&
+        (curr_shep = qthread_shep()) != NO_SHEPHERD &&
+        (qthread_shepherd_id_t) subLoc != curr_shep) {
+        qthread_migrate_to((qthread_shepherd_id_t) subLoc);
+    }
 }
 
 // Returns '(unsigned int)-1' if called outside of the tasking layer.
@@ -564,6 +613,23 @@ void chpl_task_sleep(int secs)
     sleep(secs); // goes into the syscall interception system
 }
 
+chpl_task_private_data_t* chpl_task_getPrivateData(void)
+{
+    // FIXME: this method attempts to access task-local data, even though
+    // it is called from outside of a task.
+    static chpl_task_private_data_t non_task_chpl_data =
+        { .serial_state = true,
+          .localeID = 0,
+          .here = NULL,
+          .alloc = chpl_malloc,
+          .calloc = chpl_calloc,
+          .realloc = chpl_realloc,
+          .free = chpl_free
+        };
+    chapel_tls_t * data = chapel_get_tasklocal_possibly_from_non_task();
+    return (NULL==data) ? &non_task_chpl_data : &data->chpl_data;
+}
+
 /* The get- and setSerial() methods assume the beginning of the task-local
  * data segment holds a chpl_bool denoting the serial state. */
 chpl_bool chpl_task_getSerial(void)
@@ -572,33 +638,67 @@ chpl_bool chpl_task_getSerial(void)
 
     PROFILE_INCR(profile_task_getSerial,1);
 
-    return data->serial_state;
+    return data->chpl_data.serial_state;
 }
 
 void chpl_task_setSerial(chpl_bool state)
 {
     chapel_tls_t * data = chapel_get_tasklocal();
-    data->serial_state = state;
+    data->chpl_data.serial_state = state;
 
     PROFILE_INCR(profile_task_setSerial,1);
 }
 
-c_subloc_t chpl_task_getSubLoc(void)
+void * chpl_task_getHere(void)
 {
     // FIXME: this method attempts to access task-local data, even though
     // it is called from outside of a task.
     chapel_tls_t * data = chapel_get_tasklocal_possibly_from_non_task();
-    return (NULL==data) ? 0 : data->sublocale_id;
+    return (NULL==data) ? NULL : data->chpl_data.here;
 }
 
-void chpl_task_setSubLoc(c_subloc_t target_id)
+void chpl_task_setHere(void * new_here)
 {
     // FIXME: this method attempts to access task-local data, even though
     // it is called from outside of a task.
     chapel_tls_t * data = chapel_get_tasklocal_possibly_from_non_task();
     if (NULL != data) {
-        data->sublocale_id = target_id;
+        data->chpl_data.here = new_here;
     }
+}
+
+c_localeid_t chpl_task_getLocaleID(void)
+{
+    // FIXME: this method attempts to access task-local data, even though
+    // it is called from outside of a task.
+    chapel_tls_t * data = chapel_get_tasklocal_possibly_from_non_task();
+    return (NULL==data) ? 0 : data->chpl_data.localeID;
+}
+
+void chpl_task_setLocaleID(c_localeid_t new_localeID)
+{
+    // FIXME: this method attempts to access task-local data, even though
+    // it is called from outside of a task.
+    chapel_tls_t * data = chapel_get_tasklocal_possibly_from_non_task();
+    if (NULL != data) {
+        data->chpl_data.localeID = new_localeID;
+    }
+}
+
+c_sublocid_t chpl_task_getNumSubLocales(void)
+{
+    c_sublocid_t num_sublocs = (c_sublocid_t) qthread_num_shepherds();
+
+    // FIXME: What we really want here is the number of NUMA
+    // sublocales we are supporting.  For now we use the number of
+    // shepherds as a proxy for that.
+#ifdef CHPL_LOCALE_MODEL_NUM_SUBLOCALES
+    return ((num_sublocs < CHPL_LOCALE_MODEL_NUM_SUBLOCALES)
+            ? num_sublocs
+            : CHPL_LOCALE_MODEL_NUM_SUBLOCALES);
+#else
+    return (c_sublocid_t) ((num_sublocs < 2) ? 0 : num_sublocs);
+#endif
 }
 
 uint64_t chpl_task_getCallStackSize(void)

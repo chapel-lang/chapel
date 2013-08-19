@@ -14,7 +14,9 @@ QIO_OBJDIR = $(RUNTIME_OBJDIR)
 include Makefile.share
 
 SUBDIRS = regexp/$(CHPL_MAKE_REGEXP)
+SUBDIRS += foreignFS/$(CHPL_MAKE_FOREIGN_FS)
 TARGETS = $(QIO_OBJS)
+
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.subdirrules
 

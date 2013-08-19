@@ -67,23 +67,60 @@ typedef struct _chpl_fieldType {
 } chpl_fieldType;
 
 // This allocation of bits is arbitrary.
-// Seemingly, 64 bits is enough to represent both the node_id and sublocale_id portions 
-// of a locale ID, and an even split is a good first guess.
+// Seemingly, 64 bits is enough to represent both the node_id and sublocale_id
+// portions  of a locale ID, and an even split is a good first guess.
 typedef int32_t c_nodeid_t;
 #define FORMAT_c_nodeid_t PRId32
-typedef int32_t c_subloc_t;
-#define FORMAT_c_subloc_t PRId32
+typedef int32_t c_sublocid_t;
+#define FORMAT_c_sublocid_t PRId32
+typedef int64_t c_localeid_t;
 
-// It is unfortunate that we need this definition in parallel with the module definition.
-// If runtime routines that depend on c_locale_t can be eliminated, then this
-// definition can be moved entirely within the module code.
-typedef struct
-{
-  c_nodeid_t node;    // This is the comm node index.
-  c_subloc_t subloc;  // This carries the sublocale index if there is one, otherwise zero.
-} c_locale_t;
+// These are special values that mean "any sublocale" and "the current
+// sublocale".
+#define c_sublocid_any  ((c_sublocid_t) -1)
+#define c_sublocid_curr ((c_sublocid_t) -2)
 
-//extern const c_locale_t _rootLocaleID;
+#ifndef LAUNCHER
+
+// The type for wide-pointer-to-void. This is used in the runtime in order to
+// store and transmit global variable addresses. It is needed in order to make
+// that code able to support packed multilocale pointers.
+#ifdef CHPL_WIDE_POINTER_STRUCT
+// We can't include chpl-locale-model.h until we'after ve defined the node and
+// sublocale types and constants.
+#include "chpl-locale-model.h"
+
+typedef struct wide_ptr_s {
+  chpl_localeID_t locale;
+  void* addr;
+} wide_ptr_t;
+typedef wide_ptr_t* ptr_wide_ptr_t;
+#else
+// It's useful to have the type for a wide pointer-to-void.
+// This is the packed pointer version (the other version would be
+// {{node,subloc}, address}).
+#ifdef CHPL_WIDE_POINTER_PACKED
+typedef void * wide_ptr_t;
+typedef wide_ptr_t* ptr_wide_ptr_t;
+#ifndef CHPL_WIDE_POINTER_NODE_BITS
+#error Missing packed wide pointer definition CHPL_WIDE_POINTER_NODE_BITS
+#endif
+
+#else
+// Just don't define wide_ptr_t. That way, other programs
+// (like the launcher) can still use chpltypes.h but anything
+// using it that doesn't get a wide pointer definition will
+// fail.
+//
+// We define ptr_wide_ptr_t however so some things, like qthreads
+// builds using chpl-comm.h (which uses that type to declare the
+// global variables registry), can continue to work.
+typedef void* ptr_wide_ptr_t;
+#endif
+
+#endif
+
+#endif // LAUNCHER
 
 #define nil 0 
 typedef void* _nilType;
@@ -175,6 +212,7 @@ struct chpl_chpl____wide_chpl_string_s;
 chpl_string chpl_format(chpl_string format, ...)
   __attribute__((format(printf, 1, 2)));
 
+// Uses the system allocator.
 char* chpl_glom_strings(int numstrings, ...);
 
 chpl_bool string_contains(chpl_string x, chpl_string y);

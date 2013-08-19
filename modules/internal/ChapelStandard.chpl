@@ -17,8 +17,7 @@ module ChapelStandard {
   use ChapelReduce;
   use ChapelSyncvar;
   use ChapelLocale;
-  use DefaultArchitecture;
-  use RootLocale;
+  use LocaleModel;
   use ChapelArray;
   use ChapelDistribution;
   use ChapelIO;

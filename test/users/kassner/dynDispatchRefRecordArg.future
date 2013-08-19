@@ -1,0 +1,17 @@
+bug: Dynamic dispatch with 'ref' record arguments fails to work
+
+This test shows that passing a record argument by 'ref' as a method
+to dynamic dispatch fails to work.  
+
+Changing the argument to 'inout' doesn't seem to help, so it probably
+can't be blamed on the new-ness of 'ref' arguments as I initially
+thought.
+
+A workaround is to compile with --conditional-dynamic-dispatch-limit
+set >= 2.
+
+Looking at the generated code, it seems that we copy the record a few
+times before taking a reference and passing it to the method, and that
+as a result, we end up modifying one of the copies rather than the
+original variable.
+

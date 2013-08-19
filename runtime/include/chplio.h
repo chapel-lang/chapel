@@ -22,8 +22,9 @@ typedef FILE* _cfile;
 
 static inline _cfile chpl_cnullfile(void) { return (_cfile) 0; }
 
-char* chpl_refToString(void* ref);
-char* chpl_wideRefToString(c_nodeid_t node, void* addr);
+// These return the Chapel idea of a (narrow) string.
+chpl_string chpl_refToString(void* ref);
+chpl_string chpl_wideRefToString(c_nodeid_t node, void* addr);
 
 typedef FILE* c_file;
 static inline c_file chpl_cstdin(void) { return stdin; }

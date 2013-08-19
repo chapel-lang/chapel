@@ -25,6 +25,11 @@ module ChapelBase {
     compilerWarning("CHPL_TARGET_COMPILER not set");
   }
   
+  config param CHPL_LOCALE_MODEL: string = "unset";
+  if (CHPL_LOCALE_MODEL == "unset") {
+    compilerWarning("CHPL_LOCALE_MODEL not set");
+  }
+  
   config param CHPL_TASKS: string = "unset";
   if (CHPL_TASKS == "unset") {
     compilerWarning("CHPL_TASKS not set");
@@ -55,6 +60,11 @@ module ChapelBase {
   config param CHPL_GMP: string = "unset";
   if (CHPL_GMP == "unset") {
     compilerWarning("CHPL_GMP not set");
+  }
+ 
+  config param CHPL_WIDE_POINTERS: string = "unset";
+  if (CHPL_WIDE_POINTERS == "unset") {
+    compilerWarning("CHPL_WIDE_POINTERS not set");
   }
   
   config param CHPL_MAKE: string = "unset";
@@ -106,7 +116,11 @@ module ChapelBase {
   proc _throwOpError(param op: string) {
       compilerError("illegal use of '", op, "' on operands of type uint(64) and signed integer");
   }
-  
+
+  inline proc _throwPVFCError() {
+    halt("Pure virtual function called.");
+  }
+
   proc compilerError(param x:string ...?n, param errorDepth:int) {
     __primitive("error", (...x));
   }
@@ -155,7 +169,7 @@ module ChapelBase {
   
   proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4, param arg5, argrest...)
   { if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4, arg5, " [...]"); }
-  
+
   proc typeToString(type t) param {
     return __primitive("typeToString", t);
   }
@@ -176,7 +190,10 @@ module ChapelBase {
   inline proc =(a: real(?w), b: real(w)) return b;
   inline proc =(a: imag(?w), b: imag(w)) return b;
   inline proc =(a: complex(?w), b: complex(w)) return b;
-  inline proc =(a: string, b: string) return __primitive("string_copy", b);
+  // This implies that the *representation* of strings is shared.
+  // If strings are reimplemented as classes or records, a less trivial
+  // implementation for assignment will become necessary.
+  inline proc =(a: string, b: string) return b;
   inline proc =(a, b) return b;
   
   //
@@ -669,7 +686,13 @@ module ChapelBase {
   inline proc _cast(type t, x) where t:_ddata && x:_nilType {
     return __primitive("cast", t, x);
   }
-  
+
+  inline proc _ddata_shift(type eltType, data: _ddata(eltType), shift: integral) {
+    var ret: _ddata(eltType);
+     __primitive("shift_base_pointer", ret, data, shift);
+    return ret;
+  }
+
   inline proc _ddata_allocate(type eltType, size: integral) {
     var ret:_ddata(eltType);
     __primitive("array_alloc", ret, eltType, size);
@@ -938,9 +961,8 @@ module ChapelBase {
   
   pragma "init copy fn"
   inline proc chpl__initCopy(a) {
-    if a.type == string then
-      return __primitive("string_copy", a);
-    else
+    // Currently, string representations are shared.
+    // (See note on proc =(a:string, b:string) above.)
       return a;
   }
   
@@ -1008,17 +1030,11 @@ module ChapelBase {
   pragma "auto copy fn"
   inline proc chpl__autoCopy(r: _ref) var return r;
   
-  pragma "donor fn"
-  pragma "auto copy fn"
-  inline proc chpl__autoCopy(type t) type return t;
-  
-  inline proc chpl__maybeAutoDestroyed(x) param
-    return !(_isPrimitiveType(x.type) ||
-             _isImagType(x.type) ||
-             _isComplexType(x.type));
+  inline proc chpl__maybeAutoDestroyed(x: numeric) param return false;
   inline proc chpl__maybeAutoDestroyed(x: enumerated) param return false;
   inline proc chpl__maybeAutoDestroyed(x: object) param return false;
-  
+  inline proc chpl__maybeAutoDestroyed(x) param return true;
+
   pragma "auto destroy fn" inline proc chpl__autoDestroy(x: object) { }
   pragma "auto destroy fn" inline proc chpl__autoDestroy(type t)  { }
   pragma "auto destroy fn"
@@ -1076,92 +1092,137 @@ module ChapelBase {
   proc isIterator(ir: _iteratorRecord) param return true;
   proc isIterator(not_an_iterator) param return false;
   
-  proc typesRequireCastForOpEqual(type ltype, type rtype) param {
-    return ltype == rtype || (_isIntegralType(ltype) && _isBooleanType(rtype));
-  }
-  
   
   /* op= operators
-   * The cast is required when the types match in order to allow
-   * e.g.  int(8) op= int(8);
-   * but disallow e.g. int(8) op= int(16);
-   * Also, need to add a cast for integral op= bool
    */
-  inline proc +=(ref lhs, rhs) where !chpl__isDomain(lhs) && !isIterator(lhs) {
-    lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type)
-          then (lhs+rhs):lhs.type else (lhs+rhs);
+  inline proc +=(ref lhs:int(?w), rhs:int(w)) {
+    __primitive("+=", lhs, rhs);
   }
-  inline proc -=(ref lhs, rhs) where !chpl__isDomain(lhs) && !isIterator(lhs) {
-    lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs-rhs):lhs.type else (lhs-rhs);
+  inline proc +=(ref lhs:uint(?w), rhs:uint(w)) {
+    __primitive("+=", lhs, rhs);
   }
-  inline proc *=(ref lhs, rhs) where !isIterator(lhs) {
-    lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs*rhs):lhs.type else (lhs*rhs);
+  inline proc +=(ref lhs:real(?w), rhs:real(w)) {
+    __primitive("+=", lhs, rhs);
   }
-  inline proc /=(ref lhs, rhs) where !isIterator(lhs) {
-    lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs/rhs):lhs.type else (lhs/rhs);
+  inline proc +=(ref lhs:imag(?w), rhs:imag(w)) {
+    __primitive("+=", lhs, rhs);
   }
-  inline proc %=(ref lhs, rhs) where !isIterator(lhs) {
-    lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs%rhs):lhs.type else (lhs%rhs);
+  inline proc +=(ref lhs, rhs) {
+    lhs = lhs + rhs;
   }
-  inline proc **=(ref lhs, rhs) where !isIterator(lhs) {
-    lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs**rhs):lhs.type else (lhs**rhs);
+
+  inline proc -=(ref lhs:int(?w), rhs:int(w)) {
+    __primitive("-=", lhs, rhs);
   }
-  inline proc &=(ref lhs, rhs) where !isIterator(lhs) {
-    lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs&rhs):lhs.type else (lhs&rhs);
+  inline proc -=(ref lhs:uint(?w), rhs:uint(w)) {
+    __primitive("-=", lhs, rhs);
   }
-  inline proc |=(ref lhs, rhs) where !isIterator(lhs) {
-    lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type)
-          then (lhs|rhs):lhs.type else (lhs|rhs);
+  inline proc -=(ref lhs:real(?w), rhs:real(w)) {
+    __primitive("-=", lhs, rhs);
   }
-  inline proc ^=(ref lhs, rhs) where !isIterator(lhs) {
-    lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs^rhs):lhs.type else (lhs^rhs);
+  inline proc -=(ref lhs:imag(?w), rhs:imag(w)) {
+    __primitive("-=", lhs, rhs);
   }
-  inline proc >>=(ref lhs, rhs) where !isIterator(lhs) {
-    lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs>>rhs):lhs.type else (lhs>>rhs);
+  inline proc -=(ref lhs, rhs) {
+    lhs = lhs - rhs;
   }
-  inline proc <<=(ref lhs, rhs) where !isIterator(lhs) {
-    lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs<<rhs):lhs.type else (lhs<<rhs);
+
+  inline proc *=(ref lhs:int(?w), rhs:int(w)) {
+    __primitive("*=", lhs, rhs);
   }
-  
-  /* This set of overloads should not be required, but the fully generic versions
-   * are leaking memory when passed two arrays.
-   */
-  inline proc +=(lhs:[], rhs:[]) { lhs = lhs + rhs; }
-  inline proc -=(lhs:[], rhs:[]) { lhs = lhs - rhs; }
-  inline proc *=(lhs:[], rhs:[]) { lhs = lhs * rhs; }
-  inline proc /=(lhs:[], rhs:[]) { lhs = lhs / rhs; }
-  inline proc %=(lhs:[], rhs:[]) { lhs = lhs % rhs; }
-  inline proc **=(lhs:[], rhs:[]) { lhs = lhs ** rhs; }
-  inline proc &=(lhs:[], rhs:[]) { lhs = lhs & rhs; }
-  inline proc |=(lhs:[], rhs:[]) { lhs = lhs | rhs; }
-  inline proc ^=(lhs:[], rhs:[]) { lhs = lhs ^ rhs; }
-  inline proc >>=(lhs:[], rhs:[]) { lhs = lhs >> rhs; }
-  inline proc <<=(lhs:[], rhs:[]) { lhs = lhs << rhs; }
-  
-  inline proc +=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs + rhs; }
-  inline proc -=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs - rhs; }
-  inline proc *=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs * rhs; }
-  inline proc /=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs / rhs; }
-  inline proc %=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs % rhs; }
-  inline proc **=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs ** rhs; }
-  inline proc &=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs & rhs; }
-  inline proc |=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs | rhs; }
-  inline proc ^=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs ^ rhs; }
-  inline proc >>=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs >> rhs; }
-  inline proc <<=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs << rhs; }
-  
-  /* second argument is param to handle e.g. uint(64) += 1; where 1 is int(64) */
-  inline proc +=(ref lhs, param rhs)  where !chpl__isDomain(lhs) && !isIterator(lhs) { lhs = (lhs + rhs):lhs.type; }
-  inline proc -=(ref lhs, param rhs)  where !chpl__isDomain(lhs) && !isIterator(lhs) { lhs = (lhs - rhs):lhs.type; }
-  inline proc *=(ref lhs, param rhs)  { lhs = (lhs * rhs):lhs.type; }
-  inline proc /=(ref lhs, param rhs)  { lhs = (lhs / rhs):lhs.type; }
-  inline proc %=(ref lhs, param rhs)  { lhs = (lhs % rhs):lhs.type; }
-  inline proc **=(ref lhs, param rhs) { lhs = (lhs ** rhs):lhs.type; }
-  inline proc &=(ref lhs, param rhs)  { lhs = (lhs & rhs):lhs.type; }
-  inline proc |=(ref lhs, param rhs)  { lhs = (lhs | rhs):lhs.type; }
-  inline proc ^=(ref lhs, param rhs)  { lhs = (lhs ^ rhs):lhs.type; }
-  inline proc >>=(ref lhs, param rhs) { lhs = (lhs >> rhs):lhs.type; }
-  inline proc <<=(ref lhs, param rhs) { lhs = (lhs << rhs):lhs.type; }
+  inline proc *=(ref lhs:uint(?w), rhs:uint(w)) {
+    __primitive("*=", lhs, rhs);
+  }
+  inline proc *=(ref lhs:real(?w), rhs:real(w)) {
+    __primitive("*=", lhs, rhs);
+  }
+  inline proc *=(ref lhs, rhs) {
+    lhs = lhs * rhs;
+  }
+
+  inline proc /=(ref lhs:int(?w), rhs:int(w)) {
+    __primitive("/=", lhs, rhs);
+  }
+  inline proc /=(ref lhs:uint(?w), rhs:uint(w)) {
+    __primitive("/=", lhs, rhs);
+  }
+  inline proc /=(ref lhs:real(?w), rhs:real(w)) {
+    __primitive("/=", lhs, rhs);
+  }
+  inline proc /=(ref lhs, rhs) {
+    lhs = lhs / rhs;
+  }
+
+  inline proc %=(ref lhs:int(?w), rhs:int(w)) {
+    __primitive("%=", lhs, rhs);
+  }
+  inline proc %=(ref lhs:uint(?w), rhs:uint(w)) {
+    __primitive("%=", lhs, rhs);
+  }
+  inline proc %=(ref lhs:real(?w), rhs:real(w)) {
+    __primitive("%=", lhs, rhs);
+  }
+  inline proc %=(ref lhs, rhs) {
+    lhs = lhs % rhs;
+  }
+
+  //
+  // This overload provides param coercion for cases like uint **= true;
+  //
+  inline proc **=(ref lhs, rhs) {
+    lhs = lhs ** rhs;
+  }
+
+  inline proc &=(ref lhs:int(?w), rhs:int(w)) {
+    __primitive("&=", lhs, rhs);
+  }
+  inline proc &=(ref lhs:uint(?w), rhs:uint(w)) {
+    __primitive("&=", lhs, rhs);
+  }
+  inline proc &=(ref lhs, rhs) {
+    lhs = lhs & rhs;
+  }
+
+
+  inline proc |=(ref lhs:int(?w), rhs:int(w)) {
+    __primitive("|=", lhs, rhs);
+  }
+  inline proc |=(ref lhs:uint(?w), rhs:uint(w)) {
+    __primitive("|=", lhs, rhs);
+  }
+  inline proc |=(ref lhs, rhs) {
+    lhs = lhs | rhs;
+  }
+
+  inline proc ^=(ref lhs:int(?w), rhs:int(w)) {
+    __primitive("^=", lhs, rhs);
+  }
+  inline proc ^=(ref lhs:uint(?w), rhs:uint(w)) {
+    __primitive("^=", lhs, rhs);
+  }
+  inline proc ^=(ref lhs, rhs) {
+    lhs = lhs ^ rhs;
+  }
+
+  inline proc >>=(ref lhs:int(?w), rhs:int(w)) {
+    __primitive(">>=", lhs, rhs);
+  }
+  inline proc >>=(ref lhs:uint(?w), rhs:uint(w)) {
+    __primitive(">>=", lhs, rhs);
+  }
+  inline proc >>=(ref lhs, rhs) {
+    lhs = lhs >> rhs;
+  }
+
+  inline proc <<=(ref lhs:int(?w), rhs:int(w)) {
+    __primitive("<<=", lhs, rhs);
+  }
+  inline proc <<=(ref lhs:uint(?w), rhs:uint(w)) {
+    __primitive("<<=", lhs, rhs);
+  }
+  inline proc <<=(ref lhs, rhs) {
+    lhs = lhs << rhs;
+  }
   
   /* domain += and -= add and remove indices */
   inline proc +=(D: domain, idx) { D.add(idx); }

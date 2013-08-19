@@ -86,7 +86,7 @@ void qio_unlock(qio_lock_t* x) {
 }
 #endif
 
-err_t qio_readv(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, ssize_t* num_read)
+err_t qio_readv(qio_file_t* file, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, ssize_t* num_read)
 {
   ssize_t nread = 0;
   int64_t num_bytes = qbuffer_iter_num_bytes(start, end);
@@ -95,6 +95,7 @@ err_t qio_readv(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t en
   size_t iovcnt;
   MAYBE_STACK_SPACE(struct iovec, iov_onstack);
   err_t err;
+  qioerr err_api = 0;
  
   if( num_bytes < 0 || num_parts < 0 || num_parts > INT_MAX ) {
     return EINVAL;
@@ -112,7 +113,15 @@ err_t qio_readv(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t en
   if( err ) goto error;
 
   // read into our buffer.
-  err = sys_readv(fd, iov, iovcnt, &nread);
+  if (file->fd != -1) // See if we have an fd
+    err = sys_readv(file->fd, iov, iovcnt, &nread);
+  else // Dont have an fd
+    if(file->fsfns){ // We have a foreign function?
+      if (file->fsfns->readv) { // Do we have readv?
+        err_api = file->fsfns->readv(file->info, iov, iovcnt, &nread);
+        err = qio_err_to_int(err_api);
+      } else return ENOSYS; // Dont have readv
+    } else return ENOSYS; // Dont have fsfns
 
 error:
   MAYBE_STACK_FREE(iov, iov_onstack);
@@ -124,7 +133,7 @@ error:
   return err;
 }
 
-err_t qio_writev(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, ssize_t* num_written)
+err_t qio_writev(qio_file_t* file, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, ssize_t* num_written)
 {
   ssize_t nwritten = 0;
   int64_t num_bytes = qbuffer_iter_num_bytes(start, end);
@@ -133,6 +142,7 @@ err_t qio_writev(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t e
   size_t iovcnt;
   MAYBE_STACK_SPACE(struct iovec, iov_onstack);
   err_t err;
+  qioerr err_api = 0;
  
   if( num_bytes < 0 || num_parts < 0 || num_parts > INT_MAX ) {
     return EINVAL;
@@ -150,7 +160,15 @@ err_t qio_writev(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t e
   if( err ) goto error;
 
   // write from our buffer
-  err = sys_writev(fd, iov, iovcnt, &nwritten);
+  if (file->fd != -1) // Have fd?
+    err = sys_writev(file->fd, iov, iovcnt, &nwritten);
+  else // Dont have an fd
+    if (file->fsfns) { // We have something 
+      if (file->fsfns->writev) {// So see if we have writev
+        err_api = file->fsfns->writev(file->info, iov, iovcnt, &nwritten);
+        err = qio_err_to_int(err_api);
+      } else return ENOSYS;// No writev
+    } else return ENOSYS; // No functions 
 
 error:
   MAYBE_STACK_FREE(iov, iov_onstack);
@@ -162,7 +180,7 @@ error:
   return err;
 }
 
-err_t qio_preadv(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, int64_t seek_to_offset, ssize_t* num_read)
+err_t qio_preadv(qio_file_t* file, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, int64_t seek_to_offset, ssize_t* num_read)
 {
   ssize_t nread = 0;
   int64_t num_bytes = qbuffer_iter_num_bytes(start, end);
@@ -171,6 +189,7 @@ err_t qio_preadv(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t e
   size_t iovcnt;
   MAYBE_STACK_SPACE(struct iovec, iov_onstack);
   err_t err;
+  qioerr err_api = 0;
  
   if( num_bytes < 0 || num_parts < 0 || num_parts > INT_MAX ) {
     return EINVAL;
@@ -188,7 +207,15 @@ err_t qio_preadv(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t e
   if( err ) goto error;
 
   // read into our buffer.
-  err = sys_preadv(fd, iov, iovcnt, seek_to_offset, &nread);
+  if (file->fd != -1) // Do we have an fd?
+    err = sys_preadv(file->fd, iov, iovcnt, seek_to_offset, &nread);
+  else 
+  if (file->fsfns){ // Have something
+    if (file->fsfns->preadv) {// We have preadv
+      err_api = file->fsfns->preadv(file->info, iov, iovcnt, seek_to_offset, &nread);
+      err = qio_err_to_int(err_api); // For now we convert back..
+    }else return ENOSYS;// dont have preadv
+  } else return ENOSYS; // Dont have any functions
 
 error:
   MAYBE_STACK_FREE(iov, iov_onstack);
@@ -297,7 +324,7 @@ error:
 
 
 
-err_t qio_pwritev(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, int64_t seek_to_offset, ssize_t* num_written)
+err_t qio_pwritev(qio_file_t* file, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, int64_t seek_to_offset, ssize_t* num_written)
 {
   ssize_t nwritten = 0;
   int64_t num_bytes = qbuffer_iter_num_bytes(start, end);
@@ -306,6 +333,7 @@ err_t qio_pwritev(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t 
   size_t iovcnt;
   MAYBE_STACK_SPACE(struct iovec, iov_onstack);
   err_t err;
+  qioerr err_api = 0;
  
   if( num_bytes < 0 || num_parts < 0 || num_parts > INT_MAX ) {
     return EINVAL;
@@ -323,7 +351,15 @@ err_t qio_pwritev(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t 
   if( err ) goto error;
 
   // write from our buffer
-  err = sys_pwritev(fd, iov, iovcnt, seek_to_offset, &nwritten);
+  if (file->fd != -1) // So see if we have an fd we can use
+    err = sys_pwritev(file->fd, iov, iovcnt, seek_to_offset, &nwritten);
+  else // Don't have an fd
+  if (file->fsfns) { // We have something
+    if (file->fsfns->pwritev) { // Do we have pwritev
+      err_api = file->fsfns->pwritev(file->info, iov, iovcnt, seek_to_offset, &nwritten);
+      err = qio_err_to_int(err_api); // TODO..
+    } else return ENOSYS; // Dont have pwritev. 
+  } else return ENOSYS;
 
 error:
   MAYBE_STACK_FREE(iov, iov_onstack);
@@ -447,8 +483,9 @@ error:
 }
 
 static
-qio_hint_t choose_io_method(qio_fdflag_t fdflags, qio_hint_t hints, qio_hint_t default_hints, int64_t file_size, int reading, int writing, int isfilestar)
+qio_hint_t choose_io_method(qio_file_t* file, qio_hint_t hints, qio_hint_t default_hints, int64_t file_size, int reading, int writing, int isfilestar)
 {
+  qio_fdflag_t fdflags = file->fdflags;
   qio_hint_t method = (qio_hint_t) (hints & QIO_METHODMASK);
   qio_chtype_t type = (qio_chtype_t) (hints & QIO_CHTYPEMASK);
   qio_hint_t ret = hints;
@@ -458,39 +495,62 @@ qio_hint_t choose_io_method(qio_fdflag_t fdflags, qio_hint_t hints, qio_hint_t d
   // 'or' in hints from default_hints.
   ret |= (default_hints & ~(QIO_METHODMASK|QIO_CHTYPEMASK));
 
-  if( method < QIO_MIN_METHOD || method > QIO_MAX_METHOD ) {
-    // bad method number. Use default, or choose one.
-    if( default_hints & QIO_METHODMASK ) {
-      method = default_hints & QIO_METHODMASK;
-    } else {
-      // Choose one.
-      if( isfilestar ) {
-        // Always default to fread/fwrite with FILE* file pointers.
-        method = QIO_METHOD_FREADFWRITE;
-      } else if( fdflags & QIO_FDFLAG_SEEKABLE ) {
-        if( hints & QIO_HINT_NOREUSE ) method = QIO_METHOD_PREADPWRITE;
-        else if( hints & QIO_HINT_CACHED ) method = QIO_METHOD_MMAP;
-        else {
-          // default case
-          if( qio_allow_default_mmap && (!writing) &&
-              qio_too_small_for_default_mmap <= file_size &&
-              file_size < SSIZE_MAX &&
-              file_size < qio_too_large_for_default_mmap &&
-              (qbytes_iobuf_size & 4095) == 0) {
-            // not writing, not too small, not too big, iobuf size multiple of 4k.
-            method = QIO_METHOD_MMAP;
-          } else {
-            method = QIO_METHOD_PREADPWRITE;
-          }
-        }
+  if (file->fsfns) { // We have a foreign FS
+    if(fdflags & QIO_FDFLAG_SEEKABLE) { // We can seek
+    // Read only
+    if((fdflags & QIO_FDFLAG_READABLE)    && 
+        !(fdflags & QIO_FDFLAG_WRITEABLE) && 
+        file->fsfns->preadv)
+      method = QIO_METHOD_PREADPWRITE;
+    
+    // Write only
+    if((fdflags & QIO_FDFLAG_WRITEABLE)  && 
+        !(fdflags & QIO_FDFLAG_READABLE) &&
+        file->fsfns->pwritev)
+      method = QIO_METHOD_PREADPWRITE;
+
+    // Read and write
+    if((fdflags & QIO_FDFLAG_WRITEABLE)  && 
+        (fdflags & QIO_FDFLAG_WRITEABLE) &&
+        file->fsfns->preadv && file->fsfns->pwritev)
+      method = QIO_METHOD_PREADPWRITE;
+    } else method = QIO_METHOD_READWRITE; // Else we can't seek, so set to use readv and writev
+
+  } else { // Regular FS. So do what we did before
+    if( method < QIO_MIN_METHOD || method > QIO_MAX_METHOD ) {
+      // bad method number. Use default, or choose one.
+      if( default_hints & QIO_METHODMASK ) {
+        method = default_hints & QIO_METHODMASK;
       } else {
-        // TODO: use libevent
-        // for now, we just use READWRITE.
-        method = QIO_METHOD_READWRITE;
+        // Choose one.
+        if( isfilestar ) {
+          // Always default to fread/fwrite with FILE* file pointers.
+          method = QIO_METHOD_FREADFWRITE;
+        } else if( fdflags & QIO_FDFLAG_SEEKABLE ) {
+          if( hints & QIO_HINT_NOREUSE ) method = QIO_METHOD_PREADPWRITE;
+          else if( hints & QIO_HINT_CACHED ) method = QIO_METHOD_MMAP;
+          else {
+            // default case
+            if( qio_allow_default_mmap && (!writing) &&
+                qio_too_small_for_default_mmap <= file_size &&
+                file_size < SSIZE_MAX &&
+                file_size < qio_too_large_for_default_mmap &&
+                (qbytes_iobuf_size & 4095) == 0) {
+              // not writing, not too small, not too big, iobuf size multiple of 4k.
+              method = QIO_METHOD_MMAP;
+            } else {
+              method = QIO_METHOD_PREADPWRITE;
+            }
+          }
+        } else {
+          // TODO: use libevent
+          // for now, we just use READWRITE.
+          method = QIO_METHOD_READWRITE;
+        }
       }
+    } else {
+      // method already chosen in hints.
     }
-  } else {
-    // method already chosen in hints.
   }
 
   // Always use fread/fwrite with FILE*
@@ -730,10 +790,11 @@ err_t qio_file_init(qio_file_t** file_out, FILE* fp, fd_t fd, qio_hint_t iohints
   file->fdflags = fdflags;
   file->initial_length = initial_length;
   file->initial_pos = initial_pos;
+  file->fsfns = NULL; // Dont have anything so set it to NULL
 
   hinted_type = (qio_chtype_t) (iohints & QIO_METHODMASK);
 
-  file->hints = choose_io_method(fdflags, iohints, 0, initial_length,
+  file->hints = choose_io_method(file, iohints, 0, initial_length,
                                  (fdflags & QIO_FDFLAG_READABLE) > 0,
                                  (fdflags & QIO_FDFLAG_WRITEABLE) > 0,
                                  file->fp != 0 && file->use_fp );
@@ -766,6 +827,84 @@ error:
   return err;
 }
 
+err_t qio_file_init_usr(qio_file_t** file_out, void* file_info, qio_hint_t iohints, int flags, qio_style_t* style, qio_file_functions_t* fns)
+{
+  off_t initial_pos = 0;
+  off_t initial_length = 0;
+//  int rc;
+  err_t err = 0;
+  qioerr err_api = 0;
+  qio_file_t* file = NULL;
+  off_t seek_ret;
+  qio_chtype_t hinted_type;
+  int seekable = 0;
+
+  if(fns->seek) { // we have seek in our FS
+    // try to seek.
+    err_api = fns->seek(file_info, 0, SEEK_CUR, &seek_ret);
+    err = qio_err_to_int(err_api);
+    if( err == ESPIPE ) {
+      // not seekable. Don't worry about it.
+      seekable = 0;
+    } else if( err ) {
+      return err;
+    } else {
+      seekable = 1;
+    }
+  }
+
+  if( seekable ) {
+    // seekable.
+    flags = (qio_fdflag_t) (flags | QIO_FDFLAG_SEEKABLE);
+    initial_pos = seek_ret;
+    if (fns->filelength) { // We can get length in our FS
+      err_api = fns->filelength(file_info, &initial_length);
+      err = qio_err_to_int(err_api);
+    }
+  } else {
+     // Not seekable.
+    initial_pos = 0;
+  }
+  
+  file = (qio_file_t*) qio_calloc(sizeof(qio_file_t), 1);
+  if( ! file ) {
+    return ENOMEM;
+  }
+
+  DO_INIT_REFCNT(file);
+  file->fp = NULL;
+  file->fd = -1;
+  file->use_fp = 0;
+  file->buf = NULL;
+  file->fdflags = flags;
+  file->initial_length = initial_length;
+  file->initial_pos = initial_pos;
+  file->fsfns = fns; // Put our functions in
+  file->info  = file_info;
+
+  hinted_type = (qio_chtype_t) (iohints & QIO_METHODMASK);
+
+  file->hints = choose_io_method(file, iohints, 0, initial_length,
+                                 (flags & QIO_FDFLAG_READABLE) > 0,
+                                 (flags & QIO_FDFLAG_WRITEABLE) > 0,
+                                 file->fp != 0 && file->use_fp );
+
+  file->mmap = NULL;
+  err = qio_lock_init(&file->lock);
+  if( err ) goto error;
+  file->max_initial_position = -1;
+
+  if( style ) qio_style_copy(&file->style, style);
+  else qio_style_init_default(&file->style);
+
+  *file_out = file;
+  return 0;
+
+error:
+  qio_free(file);
+  return err;
+}
+
 static
 err_t _qio_file_do_close(qio_file_t* f)
 {
@@ -773,6 +912,7 @@ err_t _qio_file_do_close(qio_file_t* f)
   err_t newerr;
   const char* path;
   int rc;
+  qioerr err_api = 0;
 
   //printf("closing %p fd %i fp %p\n", f, f->fd, f->fp);
 
@@ -792,14 +932,23 @@ err_t _qio_file_do_close(qio_file_t* f)
   }
 
   if( f->fp ) {
-    rc = fclose(f->fp);
-    if( rc ) err = errno;
+    if (f->hints & QIO_HINT_OWNED) {
+      rc = fclose(f->fp);
+      if( rc ) err = errno;
+    }
     f->fp = NULL;
     f->fd = -1;
   }
-  
+
+  if (f->fsfns) {
+    if (f->hints & QIO_HINT_OWNED)  // Should always be true
+      err_api = f->fsfns->close(f->info);
+    err = qio_err_to_int(err_api);
+  }
+
   if( f->fd >= 0 ) {
-    err = sys_close(f->fd);
+    if (f->hints & QIO_HINT_OWNED)
+      err = sys_close(f->fd);
     if( err ) {
       newerr = qio_file_path(f, &path);
       if( newerr ) {
@@ -948,7 +1097,30 @@ err_t qio_file_open(qio_file_t** file_out, const char* pathname, int flags, mode
     return err;
   }
 
-  return qio_file_init(file_out, fp, fd, iohints, style, fp != NULL);
+  // We opened this file, so file_out owns it.
+  return qio_file_init(file_out, fp, fd, iohints | QIO_HINT_OWNED, style, fp != NULL);
+}
+
+err_t qio_file_open_usr(qio_file_t** file_out, const char* pathname, int flags, mode_t mode, qio_hint_t iohints, qio_style_t* style, qio_file_functions_t* s)
+{
+  err_t err = 0;
+  qioerr err_api = 0;
+  void* info;
+
+  if (s->open) { // We have open
+    err_api = s->open(&info, pathname, &flags, mode, iohints, s->fs);
+    err = qio_err_to_int(err_api);
+    if (flags & O_WRONLY) // Specific to HDFS. 
+     s->seek = NULL;  // We can only seek when opened in O_RDONLY
+  } else return ENOSYS;
+
+  if( err ) {
+    *file_out = NULL;
+    return err;
+  }
+
+  // We opened this file, so file_out owns it.
+  return qio_file_init_usr(file_out, info, iohints | QIO_HINT_OWNED, flags, style, s);
 }
 
 // If buf is NULL, we create a new buffer. flags indicates readable/writeable/seekable.
@@ -977,7 +1149,7 @@ err_t qio_file_open_mem_ext(qio_file_t** file_out, qbuffer_t* buf, qio_fdflag_t 
   file->fp = NULL;
   file->fd = -1;
   file->fdflags = fdflags;
-  file->hints = choose_io_method(fdflags, iohints, 0, qbuffer_len(file->buf),
+  file->hints = choose_io_method(file, iohints, 0, qbuffer_len(file->buf),
                                  (fdflags & QIO_FDFLAG_READABLE) > 0,
                                  (fdflags & QIO_FDFLAG_WRITEABLE) > 0,
                                  0);
@@ -1026,6 +1198,18 @@ err_t qio_file_open_access(qio_file_t** file_out, const char* pathname, const ch
   return qio_file_open(file_out, pathname, flags, mode, iohints, style);
 }
 
+err_t qio_file_open_access_usr(qio_file_t** file_out, const char* pathname, const char* access, qio_hint_t iohints, qio_style_t* style, qio_file_functions_t* s)
+{
+  err_t err = 0;
+  int flags = 0;
+  mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP |  S_IWGRP |  S_IROTH  |  S_IWOTH;
+
+  err = open_flags_for_string(access, &flags);
+  if( err ) return err;
+
+  return qio_file_open_usr(file_out, pathname, flags, mode, iohints, style, s);
+}
+
 err_t qio_file_open_tmp(qio_file_t** file_out, qio_hint_t iohints, qio_style_t* style)
 {
   /*char* tmp;
@@ -1070,7 +1254,7 @@ err_t qio_file_open_tmp(qio_file_t** file_out, qio_hint_t iohints, qio_style_t* 
     return errno;
   }
 
-  err = qio_file_init(file_out, fp, -1, iohints, style, 0);
+  err = qio_file_init(file_out, fp, -1, iohints | QIO_HINT_OWNED, style, 0);
   return err;
 }
 
@@ -1113,14 +1297,25 @@ err_t qio_file_path_for_fp(FILE* fp, const char** string_out)
 // string_out must be freed by the caller.
 err_t qio_file_path(qio_file_t* f, const char** string_out)
 {
-  return qio_file_path_for_fd(f->fd, string_out);
-}
+  qioerr err_api = 0;
 
+  if (f->fd != -1)
+    return qio_file_path_for_fd(f->fd, string_out);
+  else {
+    if (f->fsfns){ 
+      if(f->fsfns->getpath) {
+        err_api = f->fsfns->getpath(f->info, string_out);
+        return qio_err_to_int(err_api);
+      } else return ENOSYS;
+    } else return ENOSYS;
+  }
+}
 
 err_t qio_file_length(qio_file_t* f, int64_t *len_out)
 {
   struct stat stats;
   err_t err;
+  qioerr err_api = 0;
 
   // Lock necessary for MEMORY buffers
   // but not necessary for file descriptors
@@ -1130,11 +1325,17 @@ err_t qio_file_length(qio_file_t* f, int64_t *len_out)
   if( f->buf ) {
     err = 0;
     *len_out = qbuffer_len(f->buf);
-  } else {
+  } else if (f->fd != -1) {
     stats.st_size = 0;
     err = sys_fstat(f->fd, &stats);
     *len_out = stats.st_size;
-  }
+  } else if(f->fsfns) {
+    if (f->fsfns->filelength){
+      err_api = f->fsfns->filelength(f->info, len_out);
+      err = qio_err_to_int(err_api);
+    } else err = ENOSYS;
+  } else err = ENOSYS;
+
 
   qio_unlock(& f->lock);
 
@@ -1174,12 +1375,13 @@ err_t _qio_channel_init_file_internal(qio_channel_t* ch, qio_file_t* file, qio_h
   if( readable && ! (file->fdflags & QIO_FDFLAG_READABLE) ) {
     return EINVAL;
   }
+
   if( writeable && ! (file->fdflags & QIO_FDFLAG_WRITEABLE) ) {
     return EINVAL;
   }
 
   // now normalize it!
-  use_hints = choose_io_method(file->fdflags, hints, file->hints,
+  use_hints = choose_io_method(file, hints, file->hints,
                                file->initial_length, readable, writeable,
                                file->fp != NULL && file->use_fp);
   //method = use_hints & QIO_METHODMASK;
@@ -1343,10 +1545,11 @@ err_t _qio_channel_init_file(qio_channel_t* ch, qio_file_t* file, qio_hint_t hin
 err_t qio_channel_create(qio_channel_t** ch_out, qio_file_t* file, qio_hint_t hints, int readable, int writeable, int64_t start, int64_t end, qio_style_t* style)
 {
   qio_channel_t* ret;
-  err_t err;
+  err_t err = 0;
 
   ret = (qio_channel_t*) qio_calloc(1, sizeof(qio_channel_t));
   if( !ret ) return ENOMEM;
+
 
   err = _qio_channel_init_file(ret, file, hints, readable, writeable, start, end, style);
   if( err ) {
@@ -1437,13 +1640,20 @@ err_t qio_relative_path(const char** path_out, const char* cwd, const char* path
 /* Try to find the shortest way to write the absolute path in path_in
  * relative to the current working directory.
  */
-err_t qio_shortest_path(const char** path_out, const char* path_in)
+err_t qio_shortest_path(qio_file_t* file, const char** path_out, const char* path_in)
 {
   const char* cwd = NULL;
   const char* relpath = NULL;
   err_t err;
+  qioerr err_api = 0;
 
-  err = sys_getcwd(&cwd);
+  if (file->fsfns) {
+    if (file->fsfns->getcwd) {
+      err_api = file->fsfns->getcwd(file->info, &cwd);
+      err = qio_err_to_int(err_api);
+    } else err = sys_getcwd(&cwd);
+  } else err = sys_getcwd(&cwd);
+
   if( err ) return err;
 
   err = qio_relative_path(&relpath, cwd, path_in);
@@ -1482,7 +1692,7 @@ err_t qio_channel_path_offset(const int threadsafe, qio_channel_t* ch, const cha
 
   err = qio_file_path(ch->file, &tmp);
   if( !err ) {
-    err = qio_shortest_path(string_out, tmp);
+    err = qio_shortest_path(ch->file, string_out, tmp);
   }
 
   qio_free((void*) tmp);
@@ -1974,10 +2184,10 @@ err_t _buffered_read_atleast(qio_channel_t* ch, int64_t amt)
     num_read = 0;
     switch (method) {
       case QIO_METHOD_READWRITE:
-        err = qio_readv(ch->file->fd, &ch->buf, read_start, read_end, &num_read);
+        err = qio_readv(ch->file, &ch->buf, read_start, read_end, &num_read);
         break;
       case QIO_METHOD_PREADPWRITE:
-        err = qio_preadv(ch->file->fd, &ch->buf, read_start, read_end, read_start.offset, &num_read);
+        err = qio_preadv(ch->file, &ch->buf, read_start, read_end, read_start.offset, &num_read);
         break;
       case QIO_METHOD_FREADFWRITE:
         err = qio_freadv(ch->file->fp, &ch->buf, read_start, read_end, &num_read);
@@ -2203,10 +2413,10 @@ err_t _qio_buffered_behind(qio_channel_t* ch, int flushall)
       num_written = 0;
       switch (method) {
         case QIO_METHOD_READWRITE:
-          err = qio_writev(ch->file->fd, &ch->buf, write_start, write_end, &num_written);
+          err = qio_writev(ch->file, &ch->buf, write_start, write_end, &num_written);
           break;
         case QIO_METHOD_PREADPWRITE:
-          err = qio_pwritev(ch->file->fd, &ch->buf, write_start, write_end, write_start.offset, &num_written);
+          err = qio_pwritev(ch->file, &ch->buf, write_start, write_end, write_start.offset, &num_written);
           break;
         case QIO_METHOD_FREADFWRITE:
           err = qio_fwritev(ch->file->fp, &ch->buf, write_start, write_end, &num_written);

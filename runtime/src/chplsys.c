@@ -99,7 +99,7 @@ chpl_string chpl_nodeName(void) {
   newnamelen = strlen(utsinfo.nodename)+1;
   if (newnamelen > namelen) {
     namelen = newnamelen;
-    namespace = chpl_mem_realloc(namespace, newnamelen, sizeof(char), 
+    namespace = chpl_mem_realloc(namespace, newnamelen * sizeof(char), 
                                  CHPL_RT_MD_LOCALE_NAME_BUFFER, 0, NULL);
   }
   strcpy(namespace, utsinfo.nodename);

@@ -691,7 +691,7 @@ err_t qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch,
     // If we're skipping whitespace,
     // ignore leading or trailing whitespace
     // in the pattern.
-    for( nread = 0; nread < len; nread += nbytes ) {
+    for( ; nread < len; nread += nbytes ) {
       err = qio_decode_char_buf(&wchr, &nbytes, &match[nread], len - nread);
       if( err ) return err;
       if( ! iswspace(wchr) ) {
@@ -742,7 +742,7 @@ err_t qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch,
   }
 
   if( err == 0 ) {
-    for( nread = 0; nread < len; nread++ ) {
+    for( ; nread < len; nread++ ) {
       err = qio_channel_read_amt(false, ch, &chr, 1);
       if( err ) break;
       if( chr != match[nread]) break;

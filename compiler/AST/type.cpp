@@ -8,6 +8,7 @@
 #include "symbol.h"
 #include "type.h"
 #include "vec.h"
+#include "passes.h" // for isWideString
 
 #include "intlimits.h"
 
@@ -671,45 +672,60 @@ void ClassType::codegenDef() {
     }
   } else {
     if( outfile ) {
-      fprintf(outfile, "typedef struct %s", this->classStructName(false));
-      if (classTag == CLASS_CLASS && dispatchParents.n > 0) {
-        /* Add a comment to class definitions listing super classes */
-        bool first = true;
-        fprintf(outfile, " /* : ");
-        forv_Vec(Type, parent, dispatchParents) {
-          if (parent) {
-            if (!first) {
-              fprintf(outfile, ", ");
+      if( symbol->hasEitherFlag(FLAG_WIDE, FLAG_WIDE_CLASS) &&
+          (! isWideString(this)) &&
+          (! widePointersStruct ) ) {
+        // Reach this branch when generating a wide/wide class as a
+        // global pointer!
+        Type* baseType = this->getField("addr")->type;
+        GenRet c = baseType;
+ 
+        // could use __attribute__(address_space(101))
+        //  if we wanted to emit packed pointers in a different AS with clang.
+        fprintf(outfile, "typedef %s * %s;\n",
+            baseType->symbol->codegen().c.c_str(),
+            this->classStructName(true));
+      } else {
+        fprintf(outfile, "typedef struct %s", this->classStructName(false));
+        if (classTag == CLASS_CLASS && dispatchParents.n > 0) {
+          /* Add a comment to class definitions listing super classes */
+          bool first = true;
+          fprintf(outfile, " /* : ");
+          forv_Vec(Type, parent, dispatchParents) {
+            if (parent) {
+              if (!first) {
+                fprintf(outfile, ", ");
+              }
+              fprintf(outfile, "%s", parent->symbol->codegen().c.c_str());
+              first = false;
             }
-            fprintf(outfile, "%s", parent->symbol->codegen().c.c_str());
-            first = false;
+          }
+          fprintf(outfile, " */");
+        }
+        fprintf(outfile, " {\n");
+        if (symbol->hasFlag(FLAG_OBJECT_CLASS) && classTag == CLASS_CLASS) {
+          fprintf(outfile, "chpl__class_id chpl__cid;\n");
+        } else if (classTag == CLASS_UNION) {
+          fprintf(outfile, "int64_t _uid;\n");
+          if (this->fields.length != 0)
+            fprintf(outfile, "union {\n");
+        } else if (this->fields.length == 0) {
+          fprintf(outfile, "int dummyFieldToAvoidWarning;\n");
+        }
+
+        if (this->fields.length != 0) {
+          for_fields(field, this) {
+            field->codegenDef();
           }
         }
-        fprintf(outfile, " */");
-      }
-      fprintf(outfile, " {\n");
-      if (symbol->hasFlag(FLAG_OBJECT_CLASS) && classTag == CLASS_CLASS) {
-        fprintf(outfile, "chpl__class_id chpl__cid;\n");
-      } else if (classTag == CLASS_UNION) {
-        fprintf(outfile, "int64_t _uid;\n");
-        if (this->fields.length != 0)
-          fprintf(outfile, "union {\n");
-      } else if (this->fields.length == 0) {
-        fprintf(outfile, "int dummyFieldToAvoidWarning;\n");
-      }
+        flushStatements();
 
-      if (this->fields.length != 0) {
-        for_fields(field, this) {
-          field->codegenDef();
+        if (classTag == CLASS_UNION) {
+          if (this->fields.length != 0)
+            fprintf(outfile, "} _u;\n");
         }
+        fprintf(outfile, "} %s;\n\n", this->classStructName(true));
       }
-      flushStatements();
-
-      if (classTag == CLASS_UNION) {
-        if (this->fields.length != 0)
-          fprintf(outfile, "} _u;\n");
-      }
-      fprintf(outfile, "} %s;\n\n", this->classStructName(true));
     } else {
 #ifdef HAVE_LLVM
       int paramID = 0;
@@ -774,7 +790,42 @@ void ClassType::codegenDef() {
       // if it's a record, we make the new type now.
       // if it's a class, we update the existing type.
       
-      {
+      if( symbol->hasEitherFlag(FLAG_WIDE, FLAG_WIDE_CLASS) &&
+          (! isWideString(this)) &&
+          (! widePointersStruct ) ) {
+        // Reach this branch when generating a wide/wide class as a
+        // global pointer!
+        unsigned globalAddressSpace = 0;
+        if( fLLVMWideOpt )
+          globalAddressSpace = info->globalToWideInfo.globalSpace; 
+
+        Type* baseType = this->getField("addr")->type;
+        llvm::Type* llBaseType = baseType->symbol->codegen().type;
+        INT_ASSERT(llBaseType);
+        llvm::Type *globalPtrTy = NULL;
+
+        // Remove one level of indirection since the addr field
+        // of a wide pointer is always a local address.
+        llBaseType = llBaseType->getPointerElementType();
+        INT_ASSERT(llBaseType);
+
+        globalPtrTy = llvm::PointerType::get(llBaseType, globalAddressSpace);
+        type = globalPtrTy; // set to use alternative address space ptr
+
+        if( fLLVMWideOpt ) {
+          // These are here so that the types are generated during codegen..
+          if( ! info->globalToWideInfo.localeIdType ) {
+            Type* localeType = LOCALE_ID_TYPE;
+            info->globalToWideInfo.localeIdType = localeType->codegen().type;
+          }
+          if( ! info->globalToWideInfo.nodeIdType ) {
+            Type* nodeType = NODE_ID_TYPE;
+            info->globalToWideInfo.nodeIdType = nodeType->codegen().type;
+          }
+          // populateFunctions
+          populateFunctionsForGlobalType(info->module, &info->globalToWideInfo, globalPtrTy);
+        }
+      } else {
         // Normal (wide or struct) code path.
         //
         // need to define _cname (for CLASS_CLASS) or cname
@@ -1308,6 +1359,11 @@ void initCompilerGlobals(void) {
     *gLocal->immediate = *gFalse->immediate;
   }
 
+  // defined and maintained by the runtime
+  gNodeID = new VarSymbol("chpl_nodeID", dtInt[INT_SIZE_32]);
+  gNodeID->addFlag(FLAG_EXTERN);
+  rootModule->block->insertAtTail(new DefExpr(gNodeID));
+
 }
 
 bool is_void_type(Type* t) {
@@ -1460,6 +1516,18 @@ bool isSyncType(Type* t) {
   return getSyncFlags(t->symbol).any();
 }
 
+bool isSubClass(Type* type, Type* baseType)
+{
+  if (type == baseType)
+    return true;
+
+  forv_Vec(Type, pt, type->dispatchParents)
+    if (isSubClass(pt, baseType))
+      return true;
+
+  return false;
+}
+
 bool
 isDistClass(Type* type) {
   if (type->symbol->hasFlag(FLAG_BASE_DIST))
@@ -1489,7 +1557,6 @@ isArrayClass(Type* type) {
       return true;
   return false;
 }
-
 
 static Vec<TypeSymbol*> typesToStructurallyCodegen;
 static Vec<TypeSymbol*> typesToStructurallyCodegenList;

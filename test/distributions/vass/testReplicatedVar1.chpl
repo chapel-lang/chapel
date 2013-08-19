@@ -1,4 +1,4 @@
-use ReplicatedDist;
+use ReplicatedDist, UtilReplicatedVar;
 
 {
   writeln("\nsimple case");

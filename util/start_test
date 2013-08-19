@@ -68,7 +68,8 @@
 #   -norecurse
 #   -comp-only
 #   -performance
-#   -generate-graphs
+#   -gen-old-graphs
+#   -gen-graphs
 #   -startdate <MM/DD/YY>
 #   -futures
 #   -futuresonly
@@ -166,12 +167,30 @@
 # compiler options (to specify optimization, turn off bounds
 # checking) and execution options (to request timings and other
 # unpredictable values to be printed out, whereas they're likely
-# to be squelched in the correctness run).
+# to be squelched in the correctness run).  These can also be
+# set at the directory level using PERFCOMPOPTS / PERFEXECOPTS.
 #
 # Success/failure summaries after a performance run indicate
 # whether all the performance keys for a test were matched or not.
 # In particular, a failure indicates that a test's performance
 # keys couldn't all be found.
+#
+# Performance tests can also be timed via the UNIX 'time' command by
+# supplying a PERFTIMEEXEC or .perftimeexec file (contents don't
+# matter).  This has the effect of executing the program with 
+# 'time -p' on the command line such that the output of the 'time'
+# command gets appended to the end of the .exec.out.tmp file.  A
+# .perfkeys entry can then be read to read these values as with any
+# other key/value pair in performance testing.  The intent of this
+# feature is to time the whole Chapel program externally rather than
+# using Chapel-level timing mechanisms, either to time
+# startup/shutdown code that's normally outside of the user's ability
+# to time; or to avoid cluttering the sources with timing-related
+# code.  If desired, we can also add a PERFTIMECOMP/.perftimecomp
+# capability; we've also discussed the idea of adding the ability to
+# specify the timing routine within the file's contents, though we
+# should consider whether the flexibility is worth the confusion/
+# potential for problems.
 #
 # After all the performance tests are run, a second pass is taken
 # through the list of files or directories to generate graphs.  You
@@ -180,7 +199,8 @@
 # where the contents of the .graph specify what data should be graphed,
 # and basic information about the format of the graph. The graphs are
 # generated using gnuplot (gnuplot must be in your path) and dumped out
-# in .gif format.  In each $CHPL_TEST_PERF_DIR, an html index is created
+# in .gif format, and you must have updated your $CHPL_HOME/test/GRAPHFILES
+# file to include it.  In each $CHPL_TEST_PERF_DIR, an html index is created
 # that includes all the .gif files in that directory.
 #
 # The graphing is performed in a second pass so that a single .graph file
@@ -636,6 +656,7 @@ set valgrind = 0
 set valgrindexe = 0
 set interpret = 0
 set performance = 0
+set oldgraphs = 0
 set gengraphs = 0
 set startdate = ""
 set testfutures = 0
@@ -733,10 +754,17 @@ while ( $#argv > 0 )
                 set performance = 1
                 set gengraphs = 1
                 breaksw
+        case --gen-graphs:
+        case -gen-graphs:
         case --generate-graphs:
         case -generate-graphs:
                 shift
                 set gengraphs = 1
+                breaksw
+        case --gen-old-graphs:
+        case -gen-old-graphs:
+                shift
+                set oldgraphs = 1
                 breaksw
     case --startdate:
     case -startdate:
@@ -968,11 +996,19 @@ endif
 
 # Set up vars for performance testing/graphing
 if ($performance || $gengraphs) then
-    if ($?CHPL_TEST_PERF_DIR) then
-        set perfdir = $CHPL_TEST_PERF_DIR
-    else
-    set perfdir = ./perfdat/`uname -n | sed 's@\..*@@'`
+    set perftestname = `uname -n | sed 's@\..*@@'`
+    if (! $?CHPL_TEST_PERF_DIR) then
+        echo \[Warning: CHPL_TEST_PERF_DIR must be set for generating performance graphs, using default $CHPL_HOME/perfdat/\] |& $tee -a $logfile
+        setenv CHPL_TEST_PERF_DIR $CHPL_HOME/test/perfdat/$perftestname
     endif
+    set perfdir = $CHPL_TEST_PERF_DIR
+    set perfhtmldir = $perfdir/html
+    if ($startdate != "") then
+        set startdate_t = "-s"$startdate
+    else
+        set startdate_t = ""
+    endif
+    set createCoolerGraphs = $utildir/genGraphs
     set createGraphs = $utildir/createGraphs
     set viewGraphs = $utildir/viewGraphs
 endif
@@ -982,8 +1018,9 @@ if ("$dirlist" == "" && "$testlist" == "") then
     pushd $CHPL_HOME >& /dev/null
     set chplhome = $cwd
     if (("$invocationDir" == "$CHPL_HOME" || "$invocationDir" == "$CHPL_HOME/test") && ($clean_only == 0)) then
-        echo \[Generating tests from the Chapel Spec in $chplhome/spec\] |& $tee -a $logfile
         if ($performance) then
+            # Track the number of spec examples being tested
+            echo \[Generating tests from the Chapel Spec in $chplhome/spec\] |& $tee -a $logfile
             set blah=`make spectests >& test/spectests.exec.out.tmp`
             set exitval = $?            
             if ( $exitval != 0 ) then
@@ -994,6 +1031,7 @@ if ("$dirlist" == "" && "$testlist" == "") then
             if (! -e $perfdir) then
                 mkdir -p $perfdir
             endif
+            echo \[Computing stats for spec examples\] |& $tee -a $logfile
             set blah=`$utildir/computePerfStats spectests "$perfdir"`
             set exitval = $?
             if ( $exitval != 0 ) then
@@ -1003,7 +1041,8 @@ if ("$dirlist" == "" && "$testlist" == "") then
             rm spectests.exec.out.tmp
             popd >& /dev/null
         else
-            if ("$gengraphs" == "") then
+            if ("$gengraphs" == 0) then
+                echo \[Generating tests from the Chapel Spec in $chplhome/spec\] |& $tee -a $logfile
                 set autogen=`make spectests` # capture output to keep it quiet
                 set exitval = $?
                 if ( $exitval != 0 ) then
@@ -1086,6 +1125,18 @@ if ($performance) then
     echo ""
 endif
 
+#
+# I put this in a separate script b/c it would be too
+# painful/ugly/slow to do in csh.  Maybe the above code that checks
+# the .dat file names should be rolled into this script also.  Or
+# maybe start_test should just be re-written in a more modern
+# scripting language.
+#
+if ($gengraphs) then
+    echo ""
+    echo "[Checking that all .graph files appear in $CHPL_HOME/test/GRAPHFILES]" |& $tee -a $logfile
+    $utildir/checkGraphfiles |& tee -a $logfile
+endif
 
 #
 # Environment setup complete, print out the current Chapel environment
@@ -1153,8 +1204,23 @@ foreach test ($testlist)
             # For single tests, we only look for a $testname.graph file
             set graphfile = `basename $testname .chpl`.graph
             if (-e $graphfile) then
-                echo "[Executing createGraphs for $basedir/$graphfile in $perfdir]" |& $tee -a $logfile
-                $createGraphs "$graphfile" "$perfdir" "$startdate" |& $tee -a $logfile
+                if ($oldgraphs) then
+                    echo "[Executing createGraphs for $basedir/$graphfile in $perfdir]" |& $tee -a $logfile
+                    $createGraphs "$graphfile" "$perfdir" "$startdate" |& $tee -a $logfile
+                    if ($? == 0) then
+                        echo "[Success generating old-style graphs for $graphfile in $perfdir]" |& $tee -a $logfile
+                    else
+                        echo "[Error generating old-style graphs for $graphfile in $perfdir]" |& $tee -a $logfile
+                    endif
+                endif
+                # new performance graph stuff
+                echo "[Executing genGraphs for $basedir/$graphfile in $perfhtmldir]" |& $tee -a $logfile
+                $createCoolerGraphs -p "$perfdir" -o "$perfhtmldir" -n "$perftestname" "$startdate_t" "$graphfile" |& $tee -a $logfile
+                if ($? == 0) then
+                    echo "[Success generating graphs for $basedir/$graphfile in $perfhtmldir]" |& $tee -a $logfile
+                 else
+                    echo "[Error generating graphs for $basedir/$graphfile in $perfhtmldir]" |& $tee -a $logfile
+                 endif
             endif
         endif
     endif
@@ -1205,7 +1271,7 @@ foreach testType ($testTypes)
         # if specified to start in a specific directory, start there
         set basedir = $absdir
         cd $basedir
-        echo "[Working from directory $absdir]"
+        echo "[Working from directory $absdir]" |& $tee -a $logfile
 
         # Recursively list all directories, ignoring some (should we really do
         # this?  Maybe add NOTEST files instead?)
@@ -1230,31 +1296,33 @@ foreach testType ($testTypes)
             echo " " |& $tee -a $logfile
             echo "[Working on directory $dir]" |& $tee -a $logfile
 
-            # Skip this directory if there is a SKIPIF file
-            # and the condition it contains evaluates to true.
-            cd $dir
-            if (-e ./SKIPIF) then
-                set skiptest = `$utildir/testEnv ./SKIPIF`
-                if ($skiptest == 1) then
-                    echo "[Skipping directory based on SKIPIF environment settings]"
+            if ($clean_only == 0) then
+                cd $dir
+                # Skip this directory if there is a SKIPIF file
+                # and the condition it contains evaluates to true.
+                if (-e ./SKIPIF) then
+                    set skiptest = `$utildir/testEnv ./SKIPIF`
+                    if ($skiptest == 1) then
+                        echo "[Skipping directory based on SKIPIF environment settings]" |& $tee -a $logfile
+                        continue
+                    endif
+                endif
+
+                # Skip this directory if there is any matching
+                # <dir>.skipif file returning true, where <dir> is the
+                # current directory up to $basedir.
+                set pruneif = 0
+                while (! $pruneif && $cwd != $basedir)
+                    set skipfilen = $cwd.skipif
+                    if (-e $skipfilen) then
+                        set pruneif = `$utildir/testEnv $skipfilen`
+                    endif
+                    cd ..
+                end
+                if ($pruneif) then
+                    echo "[Skipping directory based on ancestor .skipif environment settings in $skipfilen]" |& $tee -a $logfile
                     continue
                 endif
-            endif
-
-            # Skip this directory if there is any matching <dir>.skipif file
-            # returning true, where <dir> is the current directory up to $basedir.
-            cd $dir
-            set pruneif = 0
-            while (! $pruneif && $cwd != $basedir)
-                set skipfilen = $cwd.skipif
-                if (-e $skipfilen) then
-                    set pruneif = `$utildir/testEnv $skipfilen`
-                endif
-                cd ..
-            end
-            if ($pruneif) then
-                echo "[Skipping directory based on ancestor .skipif environment settings in $skipfilen]"
-                continue
             endif
 
             cd $dir
@@ -1293,27 +1361,51 @@ foreach testType ($testTypes)
                 # generate performance graphs
                 # do this in a somewhat kludgy way to avoid stderr output
                 set graphfiles = `find . -maxdepth 1 -name \*.graph`
-                foreach gfile ($graphfiles)
-                    set graphfile = `basename $gfile`
-                    echo "[Executing createGraphs for $graphfile in $perfdir]" |& $tee -a $logfile
-                    $createGraphs "$graphfile" "$perfdir" "$startdate" |& $tee -a $logfile
+                if ($oldgraphs) then
+                    foreach gfile ($graphfiles)
+                        set graphfile = `basename $gfile`
+                        echo "[Executing createGraphs for $graphfile in $perfdir]" |& $tee -a $logfile
+                        $createGraphs "$graphfile" "$perfdir" "$startdate" |& $tee -a $logfile
+                        if ($? == 0) then
+                            echo "[Success generating old-style graphs for $graphfile in $perfdir]" |& $tee -a $logfile
+                        else
+                            echo "[Error generating old-style graphs for $graphfile in $perfdir]" |& $tee -a $logfile
+                        endif
+                    end
+                endif
+                # new performance graph stuff
+                if (! $?CHPL_TEST_PERF_DIR && "$graphfiles" != "") then
+                    echo "[Executing genGraphs for graphfiles in $dir in $perfhtmldir]" |& $tee -a $logfile
+                    $createCoolerGraphs -p "$perfdir" -o "$perfhtmldir" -n "$perftestname" "$startdate_t" $graphfiles |& $tee -a $logfile
                     if ($? == 0) then
-                        echo "[Success generating graphs for $graphfile in $perfdir]" |& $tee -a $logfile
+                        echo "[Success generating graphs for $graphfile in $perfhtmldir]" |& $tee -a $logfile
+                    else
+                        echo "[Error generating graphs for $graphfile in $perfhtmldir]" |& $tee -a $logfile
                     endif
-                end
-
+                endif
+                set graphfiles = ""
             endif
         end
     end
 end
 
 if ($gengraphs && $?CHPL_TEST_PERF_DIR) then
-    echo "[Executing viewGraphs for $graphfile in $perfdir]" |& $tee -a $logfile
-    $viewGraphs "$perfdir" |& $tee -a $logfile
+    if ($oldgraphs) then
+        echo "[Executing viewGraphs for $graphfile in $perfdir]" |& $tee -a $logfile
+        $viewGraphs "$perfdir" |& $tee -a $logfile
+        if ($? == 0) then
+            echo "[Success generating old-style graph views in $perfdir]" |& $tee -a $logfile
+        else
+            echo "[Error generating old-style graph views in $perfdir]" |& $tee -a $logfile
+        endif
+    endif
+    # new performance graph stuff
+    echo "[Executing genGraphs for $CHPL_HOME/test/GRAPHFILES in $perfhtmldir]" |& $tee -a $logfile
+    $createCoolerGraphs  -p "$perfdir" -o "$perfhtmldir" -t "$CHPL_HOME/test" -n "$perftestname" "$startdate_t" -g "$CHPL_HOME/test/GRAPHFILES" |& $tee -a $logfile
     if ($? == 0) then
-        echo "[Success generating graph views in $perfdir]" |& $tee -a $logfile
+        echo "[Success generating graphs from $CHPL_HOME/test/GRAPHFILES in $perfhtmldir]" |& $tee -a $logfile
     else
-        echo "[Error generating graph views in $perfdir]" |& $tee -a $logfile
+        echo "[Error generating graphs from $CHPL_HOME/test/GRAPHFILES in $perfhtmldir]" |& $tee -a $logfile
     endif
 endif
 

@@ -3,4 +3,4 @@
 #
 #
 #
-CHPL_MAKE_ATOMICS = $(shell $(CHPL_MAKE_HOME)/util/chplenv/atomics $(CHPL_MAKE_HOST_TARGET))
+export CHPL_MAKE_ATOMICS = $(shell $(CHPL_MAKE_HOME)/util/chplenv/atomics --default)

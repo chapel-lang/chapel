@@ -17,10 +17,8 @@ int handlePossibleConfigVar(int* argc, char* argv[], int argnum,
 void parseConfigFile(const char* configFilename, 
                      int32_t lineno, chpl_string filename);
 
-static inline chpl_bool chpl_config_has_value(chpl_string v, chpl_string m)
-{ return lookupSetValue(v, m) != NULL; }
-static inline chpl_string chpl_config_get_value(chpl_string v, chpl_string m)
-{ return lookupSetValue(v, m); }
+chpl_bool chpl_config_has_value(chpl_string v, chpl_string m);
+chpl_string chpl_config_get_value(chpl_string v, chpl_string m);
 
 extern const int mainHasArgs;
 extern chpl_main_argument chpl_gen_main_arg;

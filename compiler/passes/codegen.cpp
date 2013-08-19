@@ -592,6 +592,7 @@ static void codegen_header() {
   genGlobalString("CHPL_TARGET_PLATFORM", CHPL_TARGET_PLATFORM);
   genGlobalString("CHPL_HOST_COMPILER", CHPL_HOST_COMPILER);
   genGlobalString("CHPL_TARGET_COMPILER", CHPL_TARGET_COMPILER);
+  genGlobalString("CHPL_LOCALE_MODEL", CHPL_LOCALE_MODEL);
   genGlobalString("CHPL_TASKS", CHPL_TASKS);
   genGlobalString("CHPL_THREADS", CHPL_THREADS);
   genGlobalString("CHPL_COMM", CHPL_COMM);
@@ -673,6 +674,14 @@ static void codegen_header() {
     next.clear();
   }
 
+  if( ! info->cfile ) { 
+    // Codegen any type annotations that are necessary.
+    forv_Vec(TypeSymbol, typeSymbol, types) {
+      typeSymbol->codegenMetadata();
+    }
+  }
+
+
   genComment("Function Prototypes");
   forv_Vec(FnSymbol, fnSymbol, functions) {
     fnSymbol->codegenPrototype();
@@ -702,19 +711,20 @@ static void codegen_header() {
   genGlobalInt("chpl_numGlobalsOnHeap", numGlobalsOnHeap);
   int globals_registry_static_size = (numGlobalsOnHeap ? numGlobalsOnHeap : 1);
   if( hdrfile ) {
-    fprintf(hdrfile, "\nvoid** chpl_globals_registry;\n");
-    fprintf(hdrfile, "\nvoid* chpl_globals_registry_static[%d];\n",
+    fprintf(hdrfile, "\nptr_wide_ptr_t* chpl_globals_registry;\n");
+    fprintf(hdrfile, "\nptr_wide_ptr_t chpl_globals_registry_static[%d];\n",
                      globals_registry_static_size);
   } else {
 #ifdef HAVE_LLVM
-    llvm::Type* voidstarstar =
-      llvm::PointerType::get(
-          llvm::IntegerType::getInt8PtrTy(info->module->getContext()), 0);
+    llvm::Type* ptr_wide_ptr_t = info->lvt->getType("ptr_wide_ptr_t");
+    INT_ASSERT(ptr_wide_ptr_t);
+
+    llvm::Type* ptr_ptr_wide_ptr_t = llvm::PointerType::get(ptr_wide_ptr_t, 0);
 
     llvm::GlobalVariable *chpl_globals_registryGVar =
       llvm::cast<llvm::GlobalVariable>(
           info->module->getOrInsertGlobal("chpl_globals_registry",
-            voidstarstar));
+            ptr_ptr_wide_ptr_t));
     chpl_globals_registryGVar->setInitializer(
         llvm::Constant::getNullValue(
           chpl_globals_registryGVar->getType()->getContainedType(0)));
@@ -729,7 +739,7 @@ static void codegen_header() {
       llvm::cast<llvm::GlobalVariable>(
           info->module->getOrInsertGlobal("chpl_globals_registry_static",
             llvm::ArrayType::get(
-              llvm::IntegerType::getInt8PtrTy(info->module->getContext()),
+              ptr_wide_ptr_t,
               globals_registry_static_size)));
     chpl_globals_registry_staticGVar->setInitializer(
         llvm::Constant::getNullValue(
@@ -852,6 +862,10 @@ static void codegen_header() {
 #endif
   }
 
+
+  if (hdrfile) {
+    fprintf(hdrfile, "#include \"chpl-gen-includes.h\"\n");
+  }
 }
 
 // Sometimes we have to define a type while code generating.
@@ -983,6 +997,35 @@ void codegen(void) {
   if (no_codegen)
     return;
 
+  if( fLLVMWideOpt ) {
+    // --llvm-wide-opt is picky about other settings.
+    // Check them here.
+    if (!llvmCodegen ) USR_FATAL("--llvm-wide-opt requires --llvm");
+    if ( widePointersStruct ) {
+      // generating global pointers of size > 64 bits is not
+      // possible with LLVM 3.3; it might be possible in the future.
+
+      // If we have -fLLVMWideOpt, we must use packed wide
+      // pointers (because optimizations assume pointer size
+      //  is the same - at most 64 bits - for all address spaces.
+      //  'multiple address space' patch series, submitted to LLVM 3.2,
+      //  was backed out mostly for lack of testing. Perhaps the situation
+      //  will be resolved in LLVM 3.4).
+      USR_FATAL("--llvm-wide-opt requires packed wide pointers; " \
+                "try export CHPL_WIDE_POINTERS=node16");
+    }
+  }
+
+  if( widePointersStruct ) {
+    // OK
+  } else {
+    // While the C code generator can emit packed pointers,
+    // it does so only to help make sure that packed pointer code
+    // generation is correct. It is not a "supported configuration".
+    if( ! llvmCodegen )
+      USR_WARN("C code generation for packed pointers not supported");
+  }
+
   if( llvmCodegen ) {
 #ifndef HAVE_LLVM
     USR_FATAL("This compiler was built without LLVM support");
@@ -1044,8 +1087,7 @@ void codegen(void) {
     forv_Vec(TypeSymbol, ts, gTypeSymbols) {
       if ((ts->type != dtOpaque) &&
           (!toPrimitiveType(ts->type) ||
-           (toPrimitiveType(ts->type) &&
-            !toPrimitiveType(ts->type)->isInternalType))) {
+           !toPrimitiveType(ts->type)->isInternalType)) {
         registerTypeToStructurallyCodegen(ts);
       }
     }
@@ -1146,7 +1188,8 @@ GenInfo::GenInfo(
            Clang(NULL), clangTargetOptions(), clangLangOptions(),
            moduleName("root"), llvmContext(), Ctx(NULL),
            targetData(NULL), cgBuilder(NULL), cgAction(NULL),
-           targetLayout(),
+           tbaaRootNode(NULL), tbaaFtableNode(NULL), tbaaVmtableNode(NULL),
+           targetLayout(), globalToWideInfo(),
            FPM_postgen(NULL)
 {
   std::string home(CHPL_HOME);

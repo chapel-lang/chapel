@@ -27,6 +27,7 @@ void gdbShouldBreakHere(void) {
 
 static bool exit_immediately = true;
 static bool exit_eventually = false;
+static bool exit_end_of_pass = false;
 
 static const char* err_filename;
 static int err_lineno;
@@ -85,6 +86,31 @@ print_user_internal_error() {
 }
 
 
+// find a caller (direct or not) that is not in a task function,
+// for line number reporting
+static FnSymbol*
+findNonTaskCaller(FnSymbol* fn) {
+  if (!fn || !fn->inTree()) return fn;
+  while (true) {
+    if (!isTaskFun(fn)) return fn;
+
+    // who calls this?
+    FnSymbol* caller = NULL;
+    forv_Vec(CallExpr, call, gCallExprs) {
+      if (call->inTree()) {
+        if (FnSymbol* cfn = call->isResolved()) {
+          if (cfn == fn) {
+            caller = toFnSymbol(call->parentSymbol);
+            break;
+          }
+        }
+      }
+    }
+    if (!caller) return fn; // or should it return the original value of 'fn'?
+    fn = caller;
+  }
+}
+
 void
 setupError(const char *filename, int lineno, int tag) {
   err_filename = filename;
@@ -106,6 +132,7 @@ printDevelErrorHeader(BaseAST* ast) {
       if (isArgSymbol(parent))
         parent = parent->defPoint->parentSymbol;
       FnSymbol* fn = toFnSymbol(parent);
+      fn = findNonTaskCaller(fn);
       if (fn && fn != err_fn) {
         err_fn = fn;
         while ((fn = toFnSymbol(err_fn->defPoint->parentSymbol))) {
@@ -209,8 +236,12 @@ void handleError(const char *fmt, ...) {
 
   printCallStackOnError();
 
-  if (exit_immediately && !ignore_errors) {
-    clean_exit(1);
+  if (exit_immediately) {
+    if (ignore_errors_for_pass) {
+      exit_end_of_pass = true;
+    } else if (!ignore_errors) {
+      clean_exit(1);
+    }
   }
 }
 
@@ -254,15 +285,32 @@ static void vhandleError(FILE* file, BaseAST* ast, const char *fmt, va_list args
   if (file == stderr)
     printCallStackOnError();
 
-  if (exit_immediately && !ignore_errors) {
-    clean_exit(1);
+  if (exit_immediately) {
+    if (ignore_errors_for_pass) {
+      exit_end_of_pass = true;
+    } else if (!ignore_errors) {
+      clean_exit(1);
+    }
   }
 }
 
 
 void exitIfFatalErrorsEncountered() {
-  if (exit_eventually && !ignore_errors) {
-    clean_exit(1);
+  if (exit_eventually) {
+    if (ignore_errors_for_pass) {
+      exit_end_of_pass = true;
+    } else if (!ignore_errors) {
+      clean_exit(1);
+    }
+  }
+}
+
+
+void considerExitingEndOfPass() {
+  if (exit_end_of_pass) {
+    if (!ignore_errors) {
+      clean_exit(1);
+    }
   }
 }
 

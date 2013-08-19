@@ -33,6 +33,13 @@
 
 #endif
 
+// Returns the starting number for memory descriptors for use by Chapel code.
+static ___always_inline
+chpl_mem_descInt_t chpl_memhook_md_num(void)
+{
+  return CHPL_RT_MD_NUM;
+}
+
 
 void chpl_memhook_check_pre(size_t number, size_t size,
                             chpl_mem_descInt_t description,
@@ -75,26 +82,25 @@ void chpl_memhook_free_pre(void* memAlloc,
 
 
 static ___always_inline
-void chpl_memhook_realloc_pre(void* memAlloc,
-                              size_t number, size_t size,
+void chpl_memhook_realloc_pre(void* memAlloc, size_t size,
                               chpl_mem_descInt_t description,
                               int32_t lineno, chpl_string filename) {
   if (CHPL_MEMHOOKS_ACTIVE) {
-    chpl_memhook_check_pre(number, size, description, lineno, filename);
-    chpl_track_realloc1(memAlloc, number, size, description, lineno, filename);
+    chpl_memhook_check_pre(1, size, description, lineno, filename);
+    chpl_track_realloc_pre(memAlloc, size, description, lineno, filename);
   }
 }
 
 
 static ___always_inline
 void chpl_memhook_realloc_post(void* moreMemAlloc, void* memAlloc,
-                               size_t number, size_t size,
+                               size_t size,
                                chpl_mem_descInt_t description,
                                int32_t lineno, chpl_string filename) {
   if (CHPL_MEMHOOKS_ACTIVE || moreMemAlloc == NULL)
     chpl_memhook_check_post(moreMemAlloc, description, lineno, filename);
   if (CHPL_MEMHOOKS_ACTIVE)
-    chpl_track_realloc2(moreMemAlloc, memAlloc, number, size, description,
+    chpl_track_realloc_post(moreMemAlloc, memAlloc, size, description,
                        lineno, filename);
 }
 

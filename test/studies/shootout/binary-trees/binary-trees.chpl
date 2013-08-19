@@ -2,12 +2,7 @@
 //http://shootout.alioth.debian.org
 //Casey Battaglino
 
-use Time;
-
 config const n = 10;
-config const timer : bool = false;
-
-var t : Timer;
 
 class Tree {
   var item: int;
@@ -15,9 +10,6 @@ class Tree {
 }
 
 proc main() {
-  if timer then
-    t.start();
-
   const minDepth = 4, maxDepth = max(minDepth + 2, n);
   const stretchDepth = maxDepth + 1;
   var stretchTree = bottomUpTree(0,stretchDepth);
@@ -48,11 +40,6 @@ proc main() {
   }
 
   writeln("long lived tree of depth ",maxDepth,"\t check: ",itemCheck(longLivedTree));
-
-  if timer then {
-    t.stop();
-    writeln("Time elapsed : ", t.elapsed(), " seconds");
-  }
 
   free(longLivedTree);
 }

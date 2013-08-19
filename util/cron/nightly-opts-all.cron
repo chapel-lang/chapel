@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+echo Starting $0 on `hostname`.; module list; printenv; echo
 
-rm -f /tmp/nightly.opts.long.out
-export CHPL_HOME_REPOSITORY=svn://svn.code.sf.net/p/chapel/code/trunk && /users/chapelu/chapel/util/cron/start_opt_test -cron -all >& /tmp/nightly.opts.long.out
+LOGFILE=$HOME/tmp/nightly.opts.long.out
+echo "Testing -cron -all on `date`.  Log file: $LOGFILE"
+export CHPL_HOME_REPOSITORY=svn://svn.code.sf.net/p/chapel/code/trunk && ~/chapel/util/cron/start_opt_test -cron -all >& $LOGFILE
+
+echo Finished $0 on `date`.

@@ -6,6 +6,7 @@ OPTIMIZATIONS_SRCS = \
 	inlineFunctions.cpp \
 	liveVariableAnalysis.cpp \
 	localizeGlobals.cpp \
+        loopInvariantCodeMotion.cpp \
 	narrowWideReferences.cpp \
 	optimizeOnClauses.cpp \
 	reachingDefinitionsAnalysis.cpp \

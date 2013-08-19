@@ -2,6 +2,7 @@
 
 #include "chplfp.h"
 #include "chpl-mem.h"
+#include "chpl-mem-desc.h"
 #include "chplcgfns.h"
 #include "chpl-comm.h"
 #include "chpl-comm-compiler-macros.h"
@@ -22,6 +23,8 @@
 const char* _default_format_write_complex64 = "%g + %gi";
 const char* _default_format_write_complex128 = "%g + %gi";
 
+// Uses the system allocator.  Should not be used to create user-visible data
+// (error messages are OK).
 char* chpl_glom_strings(int numstrings, ...) {
   va_list ap;
   int i, len;
@@ -57,14 +60,10 @@ chpl_string chpl_format(chpl_string format, ...) {
 }
 
 
+// TODO: This should be placed in a separate file never included in the launcher build.
+// Maybe rename chpl-gen-includes and place this in the corresponding C file....
 #ifndef LAUNCHER
-// TODO: This declaration should actually come from chplcgfns.h
-// but some factoring of the runtime includes is required to make this work.
-// See the comment ca. chplcgfns.h:21 for more info.
-typedef struct __chpl_localeID_t {
-  c_nodeid_t node;
-  c_subloc_t subloc;
-} chpl_localeID_t;
+#include "chpl-gen-includes.h"
 
 struct chpl_chpl____wide_chpl_string_s {
   chpl_localeID_t locale;
@@ -75,7 +74,7 @@ typedef struct chpl_chpl____wide_chpl_string_s chpl____wide_chpl_string;
 
 chpl_string
 chpl_wide_string_copy(chpl____wide_chpl_string* x, int32_t lineno, chpl_string filename) {
-  if (x->locale.node == chpl_nodeID)
+  if (chpl_rt_nodeFromLocaleID(x->locale) == chpl_nodeID)
     return string_copy(x->addr, lineno, filename);
   else {
     chpl_string s;
@@ -86,17 +85,57 @@ chpl_wide_string_copy(chpl____wide_chpl_string* x, int32_t lineno, chpl_string f
   }
 }
 
+// This copies the remote string data into a local wide string representation
+// of the same.
+// This routine performs a deep copy of the character array data 
+// after fetching the string descriptor from the remote node.  (The char*
+// field in the local copy of the remote descriptor has no meaning in the 
+// context of the local node, since it refers to elements in the address 
+// space on the remote node.)  
+// In chpl_comm_wide_get_string() a buffer of the right size is allocated 
+// to receive the bytes copied from the remote node.  This buffer will be leaked,
+// since no corresponding free is added to the generated code.
+void chpl_gen_comm_wide_string_get(void* addr,
+  c_nodeid_t node, void* raddr, int32_t elemSize, int32_t typeIndex, int32_t len,
+  int ln, chpl_string fn)
+{
+  // This part just copies the descriptor.
+  if (chpl_nodeID == node) {
+    memcpy(addr, raddr, elemSize*len);
+  } else {
+#ifdef CHPL_TASK_COMM_GET
+    chpl_task_comm_get(addr, node, raddr, elemSize, typeIndex, len, ln, fn);
+#else
+    chpl_comm_get(addr, node, raddr, elemSize, typeIndex, len, ln, fn);
+#endif
+  }
+
+  // And now we copy the bytes in the string itself.
+  {
+    struct chpl_chpl____wide_chpl_string_s* local_str =
+      (struct chpl_chpl____wide_chpl_string_s*) addr;
+    // Accessing the addr field of the incomplete struct declaration
+    // would not work in this context except that this function
+    // is always inlined.
+    chpl_comm_wide_get_string((chpl_string*) &(local_str->addr),
+                              local_str, typeIndex, ln, fn);
+    // The bytes live locally, so we have to update the locale.
+    local_str->locale = chpl_gen_getLocaleID();
+  }
+}
+
 // un-macro'd CHPL_WIDEN_STRING
 void
 chpl_string_widen(chpl____wide_chpl_string* x, chpl_string from)
 {
   size_t len = strlen(from) + 1;
-  x->locale.node = chpl_nodeID;
-  x->locale.subloc = chpl_task_getSubLoc();
-  x->addr = chpl_mem_allocMany(len, sizeof(char),
+  x->locale = chpl_gen_getLocaleID();
+  x->addr = chpl_tracked_task_calloc(len, sizeof(char),
                                CHPL_RT_MD_SET_WIDE_STRING, 0, 0);
   strncpy((char*)x->addr, from, len);
-  x->size = len;
+  if (*((len-1)+(char*)x->addr) != '\0')
+    chpl_internal_error("String missing terminating NUL.");
+  x->size = len;    // This size includes the terminating NUL.
 }
 
 // un-macro'd CHPL_COMM_WIDE_GET_STRING
@@ -104,19 +143,36 @@ void
 chpl_comm_wide_get_string(chpl_string* local, struct chpl_chpl____wide_chpl_string_s* x, int32_t tid, int32_t lineno, chpl_string filename)
 {
   char* chpl_macro_tmp =
-      chpl_mem_allocMany(x->size, sizeof(char),
+      chpl_tracked_task_calloc(x->size, sizeof(char),
                          CHPL_RT_MD_GET_WIDE_STRING, -1, "<internal>");
-    if (chpl_nodeID == x->locale.node)
-      memcpy(chpl_macro_tmp, x->addr, x->size);
-    else
-      chpl_comm_get((void*) &(*chpl_macro_tmp), x->locale.node,
-                    (void*)(x->addr),
-                    sizeof(char), tid, x->size, lineno, filename);
-    *local = chpl_macro_tmp;
+  if (chpl_nodeID == chpl_rt_nodeFromLocaleID(x->locale))
+    memcpy(chpl_macro_tmp, x->addr, x->size);
+  else
+    chpl_comm_get((void*) &(*chpl_macro_tmp),
+                  chpl_rt_nodeFromLocaleID(x->locale),
+                  (void*)(x->addr),
+                  sizeof(char), tid, x->size, lineno, filename);
+  *local = chpl_macro_tmp;
 }
 
 
 #endif
+
+
+//
+// We need an allocator for the rest of the code, but for the user
+// program it needs to be a locale-aware one with tracking, while for
+// the launcher the regular system one will do.
+//
+static ___always_inline void*
+chpltypes_malloc(size_t size, chpl_mem_descInt_t description,
+                 int32_t lineno, chpl_string filename) {
+#ifndef LAUNCHER
+  return chpl_tracked_task_alloc(size, description, lineno, filename);
+#else
+  return malloc(size);
+#endif
+}
 
 
 chpl_string
@@ -124,22 +180,21 @@ string_copy(chpl_string x, int32_t lineno, chpl_string filename)
 {
   char *z;
 
-  // hilde sez: if the input string is null, just return null.
+  // If the input string is null, just return null.
   if (x == NULL)
     return NULL;
 
-  z = (char*)chpl_mem_allocMany(strlen(x)+1, sizeof(char),
-                                      CHPL_RT_MD_STRING_COPY_DATA,
-                                      lineno, filename);
+  z = (char*)chpltypes_malloc(strlen(x)+1, CHPL_RT_MD_STRING_COPY_DATA,
+                              lineno, filename);
   return strcpy(z, x);
 }
 
 
 chpl_string
 string_concat(chpl_string x, chpl_string y, int32_t lineno, chpl_string filename) {
-  char *z = (char*)chpl_mem_allocMany(strlen(x)+strlen(y)+1, sizeof(char),
-                                      CHPL_RT_MD_STRING_CONCAT_DATA,
-                                      lineno, filename);
+  char *z = (char*)chpltypes_malloc(strlen(x)+strlen(y)+1,
+                                    CHPL_RT_MD_STRING_CONCAT_DATA,
+                                    lineno, filename);
   z[0] = '\0';
   strcat(z, x);
   strcat(z, y);
@@ -157,9 +212,8 @@ string_strided_select(chpl_string x, int low, int high, int stride, int32_t line
   if (low < 1 || low > length || high > length) {
     chpl_error("string index out of bounds", lineno, filename);
   }
-  result = chpl_mem_allocMany(size + 2, sizeof(char),
-                              CHPL_RT_MD_STRING_STRIDED_SELECT_DATA,
-                              lineno, filename);
+  result = chpltypes_malloc(size + 2, CHPL_RT_MD_STRING_STRIDED_SELECT_DATA,
+                            lineno, filename);
   dst = result;
   if (stride > 0) {
     while (src - x <= high - 1) {
@@ -173,7 +227,8 @@ string_strided_select(chpl_string x, int low, int high, int stride, int32_t line
     }
   }
   *dst = '\0';
-  return chpl_glom_strings(1, result);
+  // result is already a copy, so we don't have to copy  it again.
+  return result;
 }
 
 chpl_string
@@ -183,11 +238,12 @@ string_select(chpl_string x, int low, int high, int32_t lineno, chpl_string file
 
 chpl_string
 string_index(chpl_string x, int i, int32_t lineno, chpl_string filename) {
-  char buffer[2];
+  char* buffer = chpltypes_malloc(2, CHPL_RT_MD_STRING_COPY_DATA,
+                                  lineno, filename);
   if (i-1 < 0 || i-1 >= string_length(x))
     chpl_error("string index out of bounds", lineno, filename);
   sprintf(buffer, "%c", x[i-1]);
-  return chpl_glom_strings(1, buffer);
+  return buffer;
 }
 
 
@@ -235,3 +291,43 @@ const char* chpl_get_argument_i(chpl_main_argument* args, int32_t i)
   if( i > args->argc ) return NULL;
   return args->argv[i];
 }
+
+#ifndef LAUNCHER
+
+#include "chpl-wide-ptr-fns.h"
+
+// These functions are used by the LLVM wide optimization
+
+// Extract the local address portion of a packed/wide pointer
+void* chpl_wide_ptr_get_address_sym(wide_ptr_t ptr);
+
+// Read the locale information from a wide pointer.
+void chpl_wide_ptr_read_localeID_sym(wide_ptr_t ptr, chpl_localeID_t* loc);
+
+// Read the node number from a wide pointer.
+c_nodeid_t chpl_wide_ptr_get_node_sym(wide_ptr_t ptr);
+
+// Build a wide pointer from locale information and an address.
+wide_ptr_t chpl_return_wide_ptr_loc_sym(const chpl_localeID_t* loc, void * addr);
+
+void* chpl_wide_ptr_get_address_sym(wide_ptr_t ptr)
+{
+  return chpl_wide_ptr_get_address(ptr);
+}
+
+void chpl_wide_ptr_read_localeID_sym(wide_ptr_t ptr, chpl_localeID_t* loc)
+{
+  *loc = chpl_wide_ptr_get_localeID(ptr);
+}
+
+c_nodeid_t chpl_wide_ptr_get_node_sym(wide_ptr_t ptr)
+{
+  return chpl_wide_ptr_get_node(ptr);
+}
+
+wide_ptr_t chpl_return_wide_ptr_loc_sym(const chpl_localeID_t* loc, void * addr)
+{
+  return chpl_return_wide_ptr_loc(*loc, addr);
+}
+
+#endif // #LAUNCHER

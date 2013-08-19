@@ -1,0 +1,2 @@
+classConstructorsFromTypes.chpl:5: In function 'bar':
+classConstructorsFromTypes.chpl:6: error: invalid use of 'new'

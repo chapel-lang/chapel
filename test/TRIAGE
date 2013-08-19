@@ -30,88 +30,127 @@
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
-gbt, 04-26-13: r21322 broke parallel/taskPool/figueroa/TooManyThreads.
-               I fixed this in r21327, but it may show up as a Resolved
-               Error for a few days more.
+Execution timeout in studies/miniMD/miniMD (compopts: 1)
+07/27/13 on chap06 (baseline): /data/sea/cascade/chapel/Nightly/day6-Sat-linux64.gnu.none.fifo.pthreads-npt.log
+07/28/13 on chpbld02: /data/sea/cascade/chapel/Nightly/day6-Sat-cray-prgenv-cray.none.fifo.pthreads--linux64.gnu-std.log
+07/29/13 on chap09: /data/sea/cascade/chapel/Nightly/day6-Sat-linux64.gnu.none.fifo.pthreads-vgr.log
+07/29/13 on chpbld02: /data/sea/cascade/chapel/Nightly/weekend/day1-Mon-linux64.gnu.none.fifo.pthreads-std.log
+These will probably be fixed by adding a perftimeout file.
+
+
+XT PrgEnv-cray non-deterministic compiler internal errors (eronagha
+7/20/13): These started showing up after Elliot's commit on both
+chpbld01 and chpbld02.  I didn't see anything about a major update to
+CCE or the front-end, but I guess it's still possible that this could
+be a CCE issue.
+These MIS0324 errors occurred on 7/22, 7/23, 7/25, 7/26, 7/27, 7/28, 7/29.
+This problem is covered by Bug 800520.
+
+
+ft-serial performance tests either time out or run out of memory:
+(lydia 7/22/13): Class C & D seem to run out of memory when the don't
+time out first.
+
+
+Future (bug: this idiom generates a gcc warning for some reason (error
+w/ -Werror)) [Success matching program output for
+studies/shootout/mandelbrot/bugs/mandelbrot-error] (bradc 7/19/13):
+Brad's r21590 will hopefully take care of the remaining passing
+futures (i.e.,last week's weekend XT testing runs).
+
+
+cray-prgenv-* (weekday) (sungeun 6/5/13, diten 6/21/13):
+This causes frequent problems as some components get updated on chpbld01, but
+not others.  It is currently running successfully.  We should consider making
+chplbld01 and chpbld02 behave similarly.  According to Ryan, chplbld01 is
+being treated like an XT white box (at our request?).  There are no longer XT
+PE updates, and this may cause periodic module woes.
 
 
 ==============================================
 These things regularly cause noise in testing:
 ==============================================
 
-compflags/diten/noInlineAndHtml (future)
-----------------------------------------
-Sometimes this segfaults the compiler and sometimes it doesn't.  We
-haven't yet figured what differentiates encountering it vs. not, so
-we haven't been able to constrain it to only run when it will fail.
+linux64.gnu.gasnet.qthreads.none (sungeun)
+------------------------------------------
+7/16/13: I moved qthreads testing to chap05, and most of these
+timeouts were resolved, minus test_many_domains.
+
+Our main noisy failures currently are as follows:
+
+  distributions/robust/arithmetic/kernels/jacobi.chpl
+  distributions/robust/arithmetic/stress/test_many_array
+  distributions/robust/arithmetic/stress/test_many_domains
 
 
-linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
----------------------------------------------
-NOTE: These seem to happen on program exit, as the rest of the output
-is correct.
-- release/examples/benchmarks/hpcc/stream-ep (04/04/13)
-- release/examples/benchmarks/hpcc/ra-atomics (compopts: 1) (3/11/13)
-- release/examples/benchmarks/hpcc/ra (compopts: 1) (3/12/13)
-- release/examples/hello6-taskpar-dist (3/14/13)
-- multilocale/deitz/linked/test_linked1 (3/26/13)
-- distributions/bradc/blkCyc/loopBlkCyc (4/9/13, maybe same as next?)
+After moving these tests to a slower machine (chap02->chap10) several more
+timed out including the three above plus:
 
-gbt: 4/26/13: Committed stack overflow detection in qthreads based on
-guard pages.  By default it is turned on.  Hopefully this will result in
-dependable failures, based on which we can figure out where to set the
-default stack size.  (Note that the current default is 256 KiB.)
+  distributions/jglewis/cyclicOnEvenNumLocales.chpl
+  distributions/bradc/extremeBlock.chpl
+  distributions/robust/arithmetic/basics/test_array_of_distributed_array2.chpl
+  distributions/robust/arithmetic/slicing/test_array_slicing3.chpl
+  distributions/robust/arithmetic/modules/test_module_Sort.chpl
+  distributions/robust/arithmetic/modules/test_module_Norm.chpl
+  distributions/robust/arithmetic/kernels/hpl (compopts: 1).chpl
+  distributions/dm/t8.chpl
 
-bradc: (3/2/13, 3/27/13): distributions/bradc/blkCyc/loopBlkCyc got a seg fault
 
-bradc: week of 2/25: continue getting noise, particularly on
-test_many_domains, streap-ep, jacobi; sometimes timeouts, sometimes
-seg faults (stream-ep, e.g.)
+I don't know that it's worth tracking when these pass fail currently.
+Greg looked into the execution times and found that the problem is
+that their execution time is very close to the timeout and
+significantly longer than fifo.  Dylan and Brad looked into the cause
+and narrowed it down to privatization (e.g., if all lines other than
+the domain declarations are removed from test_many_domains, the
+execution time is still very high and close to the timeout), but have
+not yet gotten further than that to determine what the problem is --
+e.g., a busy-wait loop, excess communication, slow handling of active
+messages due to not having a thread per task as in fifo, or ...?
 
-gbt: 1/14/13.  Here the list of failure counts for the last 7 days.
-(Thank you, grep|cut|sed|sort|uniq!)  I've sent this to Kyle and
-Dylan.  76 of these are with comm=none, and 28 with comm=gasnet.
-      2 distributions/robust/arithmetic/slicing/test_array_slicing3
-     12 distributions/robust/arithmetic/stress/test_many_domains
-      8 domains/sungeun/assoc/stress
-      2 execflags/bradc/gdbddash/gdbSetConfig
-      6 exercises/RandomNumber6
-      2 memory/figueroa/LeakedMemory5
-     14 multilocale/diten/needMultiLocales/beginInOn
-      4 parallel/begin/deitz/test_begin_error_lineno
-      8 parallel/begin/marybeth/test_forbegin
-      2 parallel/begin/marybeth/test_forbegin2
-      6 parallel/begin/marybeth/test_forbegin3
-      6 parallel/cobegin/bradc/exitone
-      4 stress/deitz/test_10k_coforall
-     10 studies/shootout/thread-ring/thread-ring
-      2 studies/sudoku/dinan/search/sudoku-reduce
-      6 users/shetag/fock/fock-1
-      6 users/shetag/fock/fock-1-begin-blc
-      4 users/shetag/fock/fock-2
+I've deleted historical notes on this entry that seem less useful
+at present.  See the archives for more detail.
 
-sungeun: 12/7/12.  Enabled oversubscription (and disable affinity).
-Dylan says that in this configuration the timeouts all passed.  It's
-possible that some of these other failures might be due to callstack
-size.
+Perf (linux64.gnu.none.fifo.pthreads)
+-------------------------------------
+[Error: Timed out executing program studies/hpcc/RA/bradc/parallel/ra-dist (compopts: 1)] (06/20/13)
 
-sungeun: 10/18/12.  Things seem quieter, but not perfect
-- Got a seg fault (06/06/12, 6/16, stream-ep 8/23/12, 02/28/13)
-- Intermitent seg fault on exit (7/7 7/9, 7/12, 7/13)
--  seg fault during program execution (same as as previous):
-   distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_tuple (7/10)
-   release/examples/spec/Classes/delete (7/12)
-- Intermitent time outs:
-  [Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3] (intermittent since prior to 11/25/12)
-  [Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi] (11/26/12: intermittent since 9/17/12)
-  [Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_array] (11/26/12: intermittent since 9/29/12)
-  [Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains] (11/22/12: almost every day since 9/26/22)
-  [Error: Timed out executing program distributions/robust/arithmetic/kernels/hpl (compopts: 1)] (11/28/12: likely earlier as well)
+Perf Warnings from createGraphs
+-------------------------------
+[Warning (createGraphs): 'parOpEquals.local.perfkeys' does not exist, using default perfkeys file 'parOpEquals.perfkeys']
+[Warning (createGraphs): 'parOpEquals.no-local.perfkeys' does not exist, using default perfkeys file 'parOpEquals.perfkeys']
+[Warning (createGraphs): 'copy_to_local.16384.perfkeys' does not exist, using default perfkeys file 'copy_to_local.perfkeys']
+[Warning (createGraphs): 'copy_to_local.32768.perfkeys' does not exist, using default perfkeys file 'copy_to_local.perfkeys']
+[Warning (createGraphs): 'copy_to_local.65536.perfkeys' does not exist, using default perfkeys file 'copy_to_local.perfkeys']
+[Warning (createGraphs): 'copy_to_local.8192.perfkeys' does not exist, using default perfkeys file 'copy_to_local.perfkeys']
+[Warning (createGraphs): 'fasta.25000000.perfkeys' does not exist, using default perfkeys file 'fasta.perfkeys']
+[Warning (createGraphs): 'hpcc-ra-atomics.perfkeys' does not exist, using default perfkeys file 'ra.perfkeys']
+[Warning (createGraphs): 'hpcc-ra-atomics.perfkeys' does not exist, using default perfkeys file 'ra.perfkeys']
+[Warning (createGraphs): 'hpcc-ra.perfkeys' does not exist, using default perfkeys file 'ra.perfkeys']
+[Warning (createGraphs): 'hpcc-ra.perfkeys' does not exist, using default perfkeys file 'ra.perfkeys']
+[Warning (createGraphs): 'hpcc-stream-ep.perfkeys' does not exist, using default perfkeys file 'stream-ep.perfkeys']
+[Warning (createGraphs): 'hpcc-stream-ep.perfkeys' does not exist, using default perfkeys file 'stream-ep.perfkeys']
+[Warning (createGraphs): 'hpcc-stream-ep.perfkeys' does not exist, using default perfkeys file 'stream-ep.perfkeys']
+[Warning (createGraphs): 'hpcc-stream-ep.perfkeys' does not exist, using default perfkeys file 'stream-ep.perfkeys']
+[Warning (createGraphs): 'hpcc-stream-ep.perfkeys' does not exist, using default perfkeys file 'stream-ep.perfkeys']
+[Warning (createGraphs): 'hpcc-stream-ep.perfkeys' does not exist, using default perfkeys file 'stream-ep.perfkeys']
+[Warning (createGraphs): 'hpcc-stream.perfkeys' does not exist, using default perfkeys file 'stream.perfkeys']
+[Warning (createGraphs): 'hpcc-stream.perfkeys' does not exist, using default perfkeys file 'stream.perfkeys']
+[Warning (createGraphs): 'hpcc-stream.perfkeys' does not exist, using default perfkeys file 'stream.perfkeys']
+[Warning (createGraphs): 'init.1024.perfkeys' does not exist, using default perfkeys file 'init.perfkeys']
+[Warning (createGraphs): 'init.1024.perfkeys' does not exist, using default perfkeys file 'init.perfkeys']
+[Warning (createGraphs): 'init.1024.perfkeys' does not exist, using default perfkeys file 'init.perfkeys']
+[Warning (createGraphs): 'init.1024.perfkeys' does not exist, using default perfkeys file 'init.perfkeys']
+[Warning (createGraphs): 'init.256.perfkeys' does not exist, using default perfkeys file 'init.perfkeys']
+[Warning (createGraphs): 'init.256.perfkeys' does not exist, using default perfkeys file 'init.perfkeys']
+[Warning (createGraphs): 'init.256.perfkeys' does not exist, using default perfkeys file 'init.perfkeys']
+[Warning (createGraphs): 'init.256.perfkeys' does not exist, using default perfkeys file 'init.perfkeys']
+[Warning (createGraphs): 'lulesh.block-dense.perfkeys' does not exist, using default perfkeys file 'lulesh-dense.perfkeys']
 
 
 ==============================================================================
 Were once flagged as causing noise regularly, but not as familiar as the above
 ==============================================================================
+
 
 SSCA2_main (UNASSIGNED)
 -----------------------
@@ -137,6 +176,26 @@ Not so noisy as to be familiar annoyances, but worth noting to see if they
 come up again
 ==========================================================================
 
+nondet. seg fault for prgenv-cray on chpbld01
+---------------------------------------------
+[Error matching compiler output for release/examples/spec/Classes/declaration] (07/09/13)
+[Error matching compiler output for release/examples/spec/Records/recordInheritance] (07/14/13)
+
+nondet. timeout on gasnet-everything
+------------------------------------
+[Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dBDtoDRTest] (07/08/13)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (7/22/13)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (7/19/13)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff] (8/9/13)
+
+libmpich_intel.so failure for
+cray-xt.cray-prgenv-intel.none.fifo.pthreads--linux64 (May 27, 2013)
+> ld: warning: libmpich_intel.so.1, needed by /opt/cray/libsci/12.0.02/intel/130/istanbul/lib/libsci_intel_mp.so, not found (try using -rpath or -rpath-link)
+--------------------------------------------------------------------
+[Error matching compiler output for link/sungeun/static_dynamic (compopts: 4)] 
+[Error matching compiler output for link/sungeun/static_dynamic (compopts: 5)] 
+
+
 undiagnosed cygwin failures
 ---------------------------
 [Error matching compiler output for release/examples/spec/Data_Parallelism/promotion] (4/11/13)
@@ -147,7 +206,7 @@ undiagnosed cygwin failures
 incorrect answer suggestive of a --no-local race : iteration terminated
 too early or too late (?)
 -----------------------------------------------------------------------
-studies/jacobi/waynew/example2 (02/26/13)
+studies/jacobi/waynew/example2 (02/26/13) (06/22/13)
 
 intermittent valgrind error
 ---------------------------
@@ -168,7 +227,7 @@ The type of Bar.super is at least partially corrupt at that point.
 "that wasn't very random looking"
 ---------------------------------
 [Error matching program output for modules/standard/Random/diten/testRandomSeed]
-linux64.gnu.none.fifo.pthreads (2/4/2013)
+linux64.gnu.none.fifo.pthreads (7/22/2013)
 other configurations are quite consistent - see REGRESSIONS
 
 prgenv-* compilation timeouts (maybe due to system updates or ...?)
@@ -177,6 +236,7 @@ prgenv-* compilation timeouts (maybe due to system updates or ...?)
 [Error: Timed out compilation for users/jglewis/locClassSegFault-nongeneric] (prgenv-pgi: 12/01/12)
 [Error: Timed out compilation for release/examples/spec/Tuples/expansion] (prgenv-cray: 12/02/12)
 [Error: Timed out compilation for distributions/dm/t5a] (prgenv-intel: 12/03/12)
+[Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/perfTest_v2 (compopts: 1)] (07/01/13)
 
 occasional segfault on reports tests for prgenv-pgi
 ---------------------------------------------------
@@ -198,6 +258,12 @@ timeout studies/shootout/fannkuch-redux/fannkuch-redux (UNASSIGNED)
 -------------------------------------------------------------------
 under cray-xt.cray-prgenv-gnu.none.fifo.pthreads--linux64.gnu (3/22/13)
 
+nondeterministic timedexec timeouts
+-----------------------------------
+test_array_assignment -- cray-xt.cray-prgenv-intel.none.fifo.pthreads--linux64.gnu (2013/06/24)
+test_infer_array_type -- cray-xt.cray-prgenv-intel.none.fifo.pthreads--linux64.gnu (2013/06/24)
+[Error: Timed out executing program studies/shootout/nbody/nbody_rangesub_5] (07/01/13)
+
 non-deterministic timeouts with gasnet (UNASSIGNED)
 ---------------------------------------------------
 The following configurations are affected:
@@ -212,13 +278,16 @@ examples of what times out:
  distributions/robust/arithmetic/stress/test_many_domains (08/13)
  distributions/robust/arithmetic/stress/test_many_array (4/29/13)
  distributions/dm/t2 (2012/08/15)
- test_array_slicing3 (06/08/12, 6/16, 3/29/13, 5/3/13)
+ test_array_slicing3 (07/24/13, 07/12/13, 06/08/12, 6/16, 3/29/13, 5/3/13)
  release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4) (04/08/13)
+ studies/cholesky/jglewis/version2/performance/test_cholesky_performance (06/20/13)
+ multilocale/diten/needMultiLocales/coforallon_maxThreads (07/04/13)
  etc.
 
-wrong answer for atomic operations with gasnet-everything on 2/1/13 (Sungeun)
------------------------------------------------------------------------------
-types/atomic/sungeun/atomic_vars (02/01/13, 02/19/13, 05/10/13, no-local on 3/16)
+non-deterministic compilation timeouts with gasnet (UNASSIGNED)
+---------------------------------------------------------------
+distributions/robust/arithmetic/kernels/hpl (cyclic, 6/12/13)
+distributions/robust/arithmetic/performance/assignSlice (cyclic, 7/21/13)
 
 minus_equals nondeterminism (sungeun)
 ----------------------------------------
@@ -243,18 +312,18 @@ tasks performing the coforall share the same memory location passed in
 from the promotion wrapper,
 
 
-atomics nondeterminisms (UNASSIGNED)
-------------------------------------
-release/examples/primers/atomics (06/30/12:xt-intel, 07/04/12:linux32, 08/14/12:cray-xt, 3/19/13:intel, 3/22/13:prgenv-gnu)
-
 no-local nondeterminisms (UNASSIGNED)
 -------------------------------------
 cg-sparse-timecomp (06/05/12)
 studies/ssca2/atomic/SSCA2_main_atomic (07/04/12)
 
-non-deterministic compilation timeouts (04/09/13)
+non-deterministic compilation timeouts (UNASSIGNED)
 -------------------------------------------------
-linux64.gnu.none.fifo.pthreads (baseline: 4/9/13
+cray-xt.cray-prgenv-cray.none.fifo.pthreads--linux64.gnu-exm (06/27/13)
+[Error: Timed out compilation for release/examples/benchmarks/lulesh/lulesh (compopts: 2)]
+linux64.gnu.none.fifo.pthreads
+[Error: Timed out compilation for distributions/dm/t5a] (07/01/13)
+linux64.gnu.none.fifo.pthreads (baseline: 4/9/13)
 [Error: Timed out compilation for types/file/unableToOpenFile] 
 linux64.gnu.none.fifo.pthreads.tcmalloc: 4/9/13
 [Error: Timed out compilation for studies/hpcc/RA/bradc/ra-iter] 
@@ -283,6 +352,19 @@ studies/sudoku/dinan/sudoku
 ---------------------------
 [Error: Timed out executing program studies/sudoku/dinan/sudoku] (cray-xt.cray-prgenv-gnu.none.fifo.pthreads--linux64.gnu 11/16/12, 11/26/12)
 
+distributions/robust/arithmetic/performance/reduceAlias
+-------------------------------------------------------
+Timed out compilation - only on 5/17/2013, but a few other tests
+time out in compilation for the same configurations:
+ linux64.gnu.gasnet.fifo.pthreads.tcmalloc
+ linux64.gnu.gasnet.fifo.pthreads
+
+numeric discrepancy under linux64.intel.none.fifo.pthreads (chpbld02)
+---------------------------------------------------------------------
+Seems intermittent (7/3/2013)
+[Error matching program output for studies/jacobi/waynew/example2]
+
+
 ===========================================
 Not noisy, but need some attention sometime
 ===========================================
@@ -310,4 +392,6 @@ The following compiler segfaults(?) appeared only once on 9/28/12
 
 cray-xt.cray-prgenv-cray.none.fifo.pthreads
 --------------------------------------
-[Error: Timed out compilation for studies/ssca2/test-rmatalt/nondet (compopts: 1)] (5/4/13)
+[Error: Timed out compilation for studies/ssca2/test-rmatalt/nondet (compopts: 1)] (5/4/13, 6/9/13)
+[Error matching compiler output for release/examples/spec/Statements/use] (8/3/13) (unassigned)
+  Segfault in compiler.

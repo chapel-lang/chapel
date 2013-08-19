@@ -15,6 +15,14 @@ void collectFnCalls(BaseAST* ast, Vec<CallExpr*>& calls) {
 }
 
 
+void collectFnCallsSTL(BaseAST* ast, std::vector<CallExpr*>& calls) {
+  AST_CHILDREN_CALL(ast, collectFnCallsSTL, calls);
+  if (CallExpr* call = toCallExpr(ast))
+    if (call->isResolved())
+      calls.push_back(call);
+}
+
+
 void collect_stmts(BaseAST* ast, Vec<Expr*>& stmts) {
   if (Expr* expr = toExpr(ast)) {
     stmts.add(expr);
@@ -51,12 +59,26 @@ void collectCallExprs(BaseAST* ast, Vec<CallExpr*>& callExprs) {
     callExprs.add(callExpr);
 }
 
+void collectCallExprsSTL(BaseAST* ast, std::vector<CallExpr*>& callExprs) {
+  AST_CHILDREN_CALL(ast, collectCallExprsSTL, callExprs);
+  if (CallExpr* callExpr = toCallExpr(ast))
+    callExprs.push_back(callExpr);
+}
+
 void collectMyCallExprs(BaseAST* ast, Vec<CallExpr*>& callExprs,
                         FnSymbol* parent_fn) {
   AST_CHILDREN_CALL(ast, collectMyCallExprs, callExprs, parent_fn);
   if (CallExpr* callExpr = toCallExpr(ast))
     if (callExpr->parentSymbol == parent_fn)
       callExprs.add(callExpr);
+}
+
+void collectMyCallExprsSTL(BaseAST* ast, std::vector<CallExpr*>& callExprs,
+                           FnSymbol* parent_fn) {
+  AST_CHILDREN_CALL(ast, collectMyCallExprsSTL, callExprs, parent_fn);
+  if (CallExpr* callExpr = toCallExpr(ast))
+    if (callExpr->parentSymbol == parent_fn)
+      callExprs.push_back(callExpr);
 }
 
 void collectGotoStmts(BaseAST* ast, Vec<GotoStmt*>& gotoStmts) {
@@ -81,6 +103,33 @@ void collectSymExprsSTL(BaseAST* ast, std::vector<SymExpr*>& symExprs) {
   AST_CHILDREN_CALL(ast, collectSymExprsSTL, symExprs);
   if (SymExpr* symExpr = toSymExpr(ast))
     symExprs.push_back(symExpr);
+}
+
+static void collectMySymExprsHelp(BaseAST* ast, Vec<SymExpr*>& symExprs) {
+  if (isSymbol(ast)) return; // do not descend into nested symbols
+  AST_CHILDREN_CALL(ast, collectMySymExprsHelp, symExprs);
+  if (SymExpr* se = toSymExpr(ast))
+    symExprs.add(se);
+}
+
+static void collectMySymExprsHelp(BaseAST* ast, std::vector<SymExpr*>& symExprs) {
+  if (isSymbol(ast)) return; // do not descend into nested symbols
+  AST_CHILDREN_CALL(ast, collectMySymExprsHelp, symExprs);
+  if (SymExpr* se = toSymExpr(ast))
+    symExprs.push_back(se);
+}
+
+// Collect the SymExprs only *directly* under 'me'.
+// Do not include those in nested functions/other nested symbols.
+void collectMySymExprs(Symbol* me, Vec<SymExpr*>& symExprs) {
+  // skip the isSymbol(ast) check in collectMySymExprsHelp()
+  AST_CHILDREN_CALL(me, collectMySymExprsHelp, symExprs);
+}
+
+// The same for std::vector.
+void collectMySymExprs(Symbol* me, std::vector<SymExpr*>& symExprs) {
+  // skip the isSymbol(ast) check in collectMySymExprsHelp()
+  AST_CHILDREN_CALL(me, collectMySymExprsHelp, symExprs);
 }
 
 void collectSymbols(BaseAST* ast, Vec<Symbol*>& symbols) {
@@ -179,9 +228,12 @@ void compute_call_sites() {
   }
 }
 
-
+// builds the def and use maps for every variable/argument
+// in the entire program.
 void buildDefUseMaps(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                      Map<Symbol*,Vec<SymExpr*>*>& useMap) {
+  // Collect the set of symbols to track by extracting all var and arg
+  // symbols from among all def expressions.
   Vec<Symbol*> symSet;
   forv_Vec(DefExpr, def, gDefExprs) {
     if (def->parentSymbol) {
@@ -190,10 +242,15 @@ void buildDefUseMaps(Map<Symbol*,Vec<SymExpr*>*>& defMap,
       }
     }
   }
+
+  // The set of uses is the set of all SymExprs.
   buildDefUseMaps(symSet, gSymExprs, defMap, useMap);
 }
 
 
+// Within the current AST element, recursively collect
+// the set of all symbols appearing in var or arg declarations
+// and the set of all uses (i.e. SymExprs).
 void collectSymbolSetSymExprVec(BaseAST* ast,
                                 Vec<Symbol*>& symSet,
                                 Vec<SymExpr*>& symExprs) {
@@ -207,23 +264,29 @@ void collectSymbolSetSymExprVec(BaseAST* ast,
   AST_CHILDREN_CALL(ast, collectSymbolSetSymExprVec, symSet, symExprs);
 }
 
-
+// builds the vectors for every variable/argument in 'fn' and looks
+// for uses and defs only in 'fn'
 void buildDefUseMaps(FnSymbol* fn,
                      Map<Symbol*,Vec<SymExpr*>*>& defMap,
                      Map<Symbol*,Vec<SymExpr*>*>& useMap) {
   Vec<Symbol*> symSet;
   Vec<SymExpr*> symExprs;
+  // Collect symbols and sym expressions on within the given function
   collectSymbolSetSymExprVec(fn, symSet, symExprs);
   buildDefUseMaps(symSet, symExprs, defMap, useMap);
 }
 
-
-void buildDefUseMaps(Vec<Symbol*>& symSet,
+// builds the vectors for every variable declaration in the given block
+// and looks for uses and defs within the same block (scope).
+void buildDefUseMaps(BlockStmt* block,
                      Map<Symbol*,Vec<SymExpr*>*>& defMap,
                      Map<Symbol*,Vec<SymExpr*>*>& useMap) {
-  buildDefUseMaps(symSet, gSymExprs, defMap, useMap);
+  Vec<Symbol*> symSet;
+  Vec<SymExpr*> symExprs;
+  // Collect symbols and sym expressions only within the given block.
+  collectSymbolSetSymExprVec(block, symSet, symExprs);
+  buildDefUseMaps(symSet, symExprs, defMap, useMap);
 }
-
 
 static void addUseOrDef(Map<Symbol*,Vec<SymExpr*>*>& ses, SymExpr* se) {
   Vec<SymExpr*>* sev = ses.get(se->var);
@@ -248,6 +311,33 @@ void addUse(Map<Symbol*,Vec<SymExpr*>*>& useMap, SymExpr* use) {
 
 
 //
+// Checks if a callExpr is one of the op= primitives
+// Note, this does not check if a callExpr is an 
+// op= function call (such as before inlining)
+//
+bool isOpEqualPrim(CallExpr* call) {
+  if (call->isPrimitive(PRIM_ADD_ASSIGN) ||
+      call->isPrimitive(PRIM_SUBTRACT_ASSIGN) ||
+      call->isPrimitive(PRIM_MULT_ASSIGN) ||
+      call->isPrimitive(PRIM_DIV_ASSIGN) ||
+      call->isPrimitive(PRIM_MOD_ASSIGN) ||
+      call->isPrimitive(PRIM_LSH_ASSIGN) ||
+      call->isPrimitive(PRIM_RSH_ASSIGN) ||
+      call->isPrimitive(PRIM_AND_ASSIGN) ||
+      call->isPrimitive(PRIM_OR_ASSIGN) ||
+      call->isPrimitive(PRIM_XOR_ASSIGN)) {
+    return true;      
+    }
+    //otherwise false
+    return false;
+}
+
+
+//
+// TODO this should be fixed to include PRIM_SET_MEMBER
+// See notes in iterator.cpp and/or loopInvariantCodeMotion.cpp
+// TODO this should also be fixed to include the PRIM_SVEC_SET_MEMBER
+// which gets inserted from the returnStartTuplesByRefArgs pass 
 // return & 1 is true if se is a def
 // return & 2 is true if se is a use
 //
@@ -255,6 +345,8 @@ int isDefAndOrUse(SymExpr* se) {
   if (CallExpr* call = toCallExpr(se->parentExpr)) {
     if (call->isPrimitive(PRIM_MOVE) && call->get(1) == se) {
       return 1;
+    } else if (isOpEqualPrim(call) && call->get(1) == se) {
+      return 3;
     } else if (FnSymbol* fn = call->isResolved()) {
       ArgSymbol* arg = actual_to_formal(se);
       if (arg->intent == INTENT_REF ||

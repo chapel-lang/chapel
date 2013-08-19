@@ -119,11 +119,13 @@ proc setupPartialVerify() {
 
 
 proc rank(iteration: int) {
+  var accum: [E] atomic int;
+
   keyArray(iteration) = iteration;
   keyArray(iteration+Imax) = Bmax - iteration;
 
-  ranks = 0;
-  ranks(keyArray) += 1;
+  accum(keyArray).add(1);
+  ranks = accum.read();
 
   ranks = + scan ranks;
 

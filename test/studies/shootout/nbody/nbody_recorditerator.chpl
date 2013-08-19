@@ -7,17 +7,12 @@
  *
 */
 
-use Time;
-
 config var n = 500;
-config const timer : bool = false;
 param PI = 3.141592653589793;
 const solar_mass = (4 * PI * PI);
 param days_per_year = 365.24;
 const vecLen = [0..2];
 const NBODIES = [0..4];
-
-var t : Timer;
 
 record Planet {
 	var coord_vector : [vecLen] real; // x,y,z
@@ -67,9 +62,6 @@ proc offset_momentum(B : [] Planet) {
 }
 
 proc main() {
-	if timer then
-		t.start();
-
 	var bodies : [NBODIES] Planet;
 
 	var p0,v0 : [vecLen] real = (0,0,0);
@@ -109,8 +101,4 @@ proc main() {
 		advance(bodies, 0.01);
 	}
 	writeln(energy(bodies));
-	if timer then {
-		t.stop();
-		writeln("Time elapsed : ", t.elapsed(), " seconds");
-	}
 }

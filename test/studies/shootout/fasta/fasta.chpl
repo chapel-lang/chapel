@@ -1,14 +1,10 @@
 //Fasta Shootout
 //http://shootout.alioth.debian.org
 //Casey Battaglino
-use Time;
 config const LINE_LENGTH = 60;
 config const LOOKUP_SIZE = 4*1024;
 config const LOOKUP_SCALE : real = LOOKUP_SIZE - 1;
 config const n = 1000;
-config const timer : bool = false;
-
-var t : Timer;
 
 class Freq {
   var c: string;
@@ -128,16 +124,10 @@ proc repeatMake(desc : string, alu : string, n : int) {
 }
 
 proc main() {
-  if timer then
-    t.start();
   sumAndScale(IUB);
   sumAndScale(HomoSapiens);
   repeatMake(">ONE Homo sapiens alu\n", ALU, n * 2);
   randomMake(">TWO IUB ambiguity codes\n", IUB, n * 3);
   randomMake(">THREE Homo sapiens frequency\n", HomoSapiens, n * 5);
   writeln();
-  if timer then {
-    t.stop();
-    writeln("Time elapsed : ", t.elapsed(), " seconds");
-  }
 }

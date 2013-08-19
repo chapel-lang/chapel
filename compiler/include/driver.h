@@ -53,10 +53,12 @@ extern bool fNoDeadCodeElimination;
 extern bool fNoGlobalConstOpt;
 extern bool fNoFastFollowers;
 extern bool fNoInlineIterators;
+extern bool fNoloopInvariantCodeMotion;
 extern bool fNoInline;
 extern bool fNoLiveAnalysis;
 extern bool fNoLocalChecks;
 extern bool fNoNilChecks;
+extern bool fLLVMWideOpt;
 
 extern bool fNoRemoteValueForwarding;
 extern bool fNoRemoveCopyCalls;
@@ -78,12 +80,20 @@ extern const char* CHPL_HOST_PLATFORM;
 extern const char* CHPL_TARGET_PLATFORM;
 extern const char* CHPL_HOST_COMPILER;
 extern const char* CHPL_TARGET_COMPILER;
+extern const char* CHPL_LOCALE_MODEL;
 extern const char* CHPL_TASKS;
 extern const char* CHPL_THREADS;
 extern const char* CHPL_COMM;
 extern const char* CHPL_COMM_SUBSTRATE;
 extern const char* CHPL_GASNET_SEGMENT;
+extern const char* CHPL_WIDE_POINTERS;
 extern const char* CHPL_MAKE;
+
+// Set true if CHPL_WIDE_POINTERS==struct.
+// In that case, the code generator emits structures
+// for wide pointers. Otherwise, wide pointers are
+// packed into a wide pointer type.
+extern bool widePointersStruct;
 
 extern char fExplainCall[256];
 extern char fExplainInstantiation[256];
@@ -115,6 +125,7 @@ extern bool fLibraryCompile;
 extern bool no_codegen;
 extern bool genExternPrototypes;
 extern bool developer;
+extern bool fVerify;
 extern int num_constants_per_variable;
 extern bool printCppLineno;
 
@@ -129,6 +140,7 @@ extern bool printSearchDirs;
 extern bool printModuleFiles;
 extern bool ignore_warnings;
 extern bool ignore_errors;
+extern bool ignore_errors_for_pass;
 extern int squelch_header_errors;
 
 extern bool fReportOptimizedOn;
@@ -145,6 +157,7 @@ extern Timer timer3;
 extern Timer timer4;
 extern Timer timer5;
 
+extern bool fTaskHooks;
 extern bool fNoMemoryFrees;
 extern int numGlobalsOnHeap;
 extern bool preserveInlinedLineNumbers;

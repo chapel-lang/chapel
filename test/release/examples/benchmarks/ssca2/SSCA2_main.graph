@@ -1,24 +1,34 @@
 perfkeys: Elapsed time for Kernel 2:, Elapsed time for Kernel 3:
+graphkeys: Kernel 2, Kernel 3
 files: SSCA2_main.dat, SSCA2_main.dat
 ylabel: Time (seconds)
+graphtitle: SSCA#2 Kernels 2 & 3 (SCALE=8)
 graphname: SSCA2-Performance-for-SCALE=8
 
 perfkeys: Elapsed time for Kernel 4:
+graphkeys: Kernel 4
 files: SSCA2_main.dat
 ylabel: Time (seconds)
+graphtitle: SSCA#2 Kernel 4 (SCALE=8)
 graphname: SSCA2-Performance-for-kernel-4-SCALE=8
 
 perfkeys: TEPS:, edge count adjusted TEPS:
+graphkeys: TEPS, edge count adjusted TEPS
 files: SSCA2_main.dat, SSCA2_main.dat
 ylabel: Performance (TEPS)
+graphtitle: SSCA#2 Kernel 4 TEPS (SCALE=8)
 graphname: SSCA2-TEPS-for-SCALE=8
 
 perfkeys: Elapsed time for Edge Generation:, Elapsed time for Kernel 1:
+graphkeys: Edge Generation, Kernel 1
 files: SSCA2_main.dat, SSCA2_main.dat
 ylabel: Time (seconds)
+graphtitle: SSCA#2 Graph Construction (SCALE=8)
 graphname: SSCA2-Graph-Construction-for-SCALE=8
 
 perfkeys: Elapsed time for SSCA#2:
+graphkeys: Total time
 files: SSCA2_main.dat
 ylabel: Time (seconds)
+graphtitle: SSCA#2 (SCALE=8)
 graphname: SSCA2-Total-Time-SCALE=8

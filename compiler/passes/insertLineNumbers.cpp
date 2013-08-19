@@ -25,7 +25,7 @@ static Map<FnSymbol*,ArgSymbol*> linenoMap; // fn to line number argument
 static Map<FnSymbol*,ArgSymbol*> filenameMap; // fn to filename argument
 
 static ArgSymbol* newLine(FnSymbol* fn) {
-  ArgSymbol* line = new ArgSymbol(INTENT_BLANK, "_ln", dtInt[INT_SIZE_DEFAULT]);
+  ArgSymbol* line = new ArgSymbol(INTENT_CONST_IN, "_ln", dtInt[INT_SIZE_DEFAULT]);
   fn->insertFormalAtTail(line);
   linenoMap.put(fn, line);
   if (Vec<FnSymbol*>* rootFns = virtualRootsMap.get(fn)) {
@@ -41,7 +41,7 @@ static ArgSymbol* newLine(FnSymbol* fn) {
 }
 
 static ArgSymbol* newFile(FnSymbol* fn) {
-  ArgSymbol* file = new ArgSymbol(INTENT_BLANK, "_fn", dtString);
+  ArgSymbol* file = new ArgSymbol(INTENT_CONST_REF, "_fn", dtString);
   fn->insertFormalAtTail(file);
   filenameMap.put(fn, file);
   queue.add(fn);
@@ -220,19 +220,22 @@ void insertLineNumbers() {
         (fn->numFormals() > 1 && fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)) ||
         (fn->numFormals() > 1 && fn->hasFlag(FLAG_BEGIN_BLOCK))) {
 
+      // This task (wrapper) function is not actually called with lineno, fname
+      // arguments, so remove them.
       SET_LINENO(fn);
       DefExpr* fileArg = toDefExpr(fn->formals.tail);
       fileArg->remove();
       DefExpr* lineArg = toDefExpr(fn->formals.tail);
       lineArg->remove();
-      DefExpr* bundleArg = toDefExpr(fn->formals.tail);
 
+      // In the body of the wrapper, create local lineno and fname variables 
+      // initialized from the corresponding fields in the argument bundle.
+      DefExpr* bundleArg = toDefExpr(fn->formals.tail);
       ClassType* bundleType = toClassType(bundleArg->sym->typeInfo());
       VarSymbol* lineField = newTemp("_ln", lineArg->sym->typeInfo());
       bundleType->fields.insertAtTail(new DefExpr(lineField));
       VarSymbol* fileField = newTemp("_fn", fileArg->sym->typeInfo());
       bundleType->fields.insertAtTail(new DefExpr(fileField));
-
       VarSymbol* fileLocal = newTemp("_fn", fileArg->sym->typeInfo());
       VarSymbol* lineLocal = newTemp("_ln", lineArg->sym->typeInfo());
       fn->insertAtHead("'move'(%S, '.v'(%S, %S))", fileLocal, bundleArg->sym, fileField);
@@ -240,11 +243,16 @@ void insertLineNumbers() {
       fn->insertAtHead("'move'(%S, '.v'(%S, %S))", lineLocal, bundleArg->sym, lineField);
       fn->insertAtHead(new DefExpr(lineLocal));
 
+      // Replace references to the (removed) arguments with
+      // references to these local variables.
       SymbolMap update;
       update.put(fileArg->sym, fileLocal);
       update.put(lineArg->sym, lineLocal);
       update_symbols(fn->body, &update);
 
+      // In each direct caller of this wrapper function (are there any?),
+      // Remove actual arguments containing the lineno and filename.
+      // Put these in the argument bundle instead.
       forv_Vec(CallExpr, call, *fn->calledBy) {
         SET_LINENO(call);
         Expr* fileActual = call->argList.tail->remove();

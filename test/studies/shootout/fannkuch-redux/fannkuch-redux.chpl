@@ -46,7 +46,6 @@ proc main() {
   begin maxflips = fannkuch();
 
   writeln("Pfannkuchen(", N, ") = ", maxflips);
-
 }
 
 proc fannkuch() {
@@ -106,7 +105,7 @@ proc do_fannkuch(pos: int):int {
 
 // iterator for all possible permutations
 iter gen_perms(limit: int, swap:int=-1): [P] int {
-  var p: [P] int;
+  var p, result: [P] int;
   var count: [P] int;
   var r: int = N;
 
@@ -117,7 +116,8 @@ iter gen_perms(limit: int, swap:int=-1): [P] int {
   if swap!=-1 then p(swap)<=>p(N);
 
   label outer while (1) {
-    yield p;
+    result = p;
+    yield result;
 
     while (r > 1) {
       count(r) = r;

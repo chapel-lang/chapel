@@ -34,12 +34,15 @@ static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Ve
         return new UnresolvedSymExpr("string"); 
     }
 
-    if (!pointee) { //void *
-      pointee = new DefExpr(new ArgSymbol(INTENT_BLANK, astr("void", istr(query_uid++)), dtAny));
+    // void *  generates as c_ptr.
+    if(!pointee) {
+      return new UnresolvedSymExpr("c_ptr");
     }
 
-    //Pointers (other than char*) are represented as calls to _ddata(chapel_type).
-    return new CallExpr(new UnresolvedSymExpr("_ddata"), new CallExpr(PRIM_ACTUALS_LIST, pointee));
+    //Pointers (other than char*) are represented as calls to
+    //_ddata(chapel_type).
+    // PRIM_ACTUALS_LIST is not needed here.
+    return new CallExpr(new UnresolvedSymExpr("_ddata"), pointee);
 
   //structs
   } else if (type->isStructureType()) { 
@@ -71,10 +74,10 @@ static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Ve
 
           fields->insertAtTail(buildVarDecls(buildChapelStmt(
               new DefExpr(new VarSymbol(field_name), NULL, field_type)
-           ), FLAG_UNKNOWN, FLAG_UNKNOWN, '\0'));
+           ), FLAG_UNKNOWN, FLAG_UNKNOWN, NULL));
         }
 
-        DefExpr* strct = buildClassDefExpr(tmp_name, new ClassType(CLASS_RECORD), NULL, fields, FLAG_EXTERN, '\0');    
+        DefExpr* strct = buildClassDefExpr(tmp_name, new ClassType(CLASS_RECORD), NULL, fields, FLAG_EXTERN, NULL);
 
         //...and patch up the resulting struct so that its cname is
         //  correct and codegen can find it.       
@@ -146,11 +149,12 @@ static void convertMacroToChpl(ModuleSymbol* module, const char* name, Type* chp
 
   VarSymbol* v = new VarSymbol(name, chplType);
   v->addFlag(FLAG_EXTERN);
+  v->addFlag(FLAG_CONST);
   results.add(new DefExpr(v));
   forv_Vec(Expr*, result, results) {
     if (!result->inTree()) {
       SET_LINENO(result);
-      module->initFn->insertAtTail(result);
+      module->initFn->insertAtHead(result);
     }
   }
   setAlreadyConvertedExtern(module, name);
@@ -240,11 +244,12 @@ void convertDeclToChpl(ModuleSymbol* module, const char* name, Vec<Expr*> & resu
   } else if (clang::FunctionDecl *fd = llvm::dyn_cast<clang::FunctionDecl>(cdecl)) { 
     FnSymbol* f = new FnSymbol(name);
     f->addFlag(FLAG_EXTERN);
+    f->addFlag(FLAG_LOCAL_ARGS);
     f->addFlag(FLAG_FUNCTION_PROTOTYPE);
     f->addFlag(FLAG_USER_NAMED);
     Expr* chpl_type = convertToChplType(module, fd->getResultType().getTypePtr(), results);
     BlockStmt* result = buildFunctionDecl(
-       f, RET_VALUE, chpl_type, NULL, NULL, '\0');
+       f, RET_VALUE, chpl_type, NULL, NULL, NULL);
 
     //convert args
     for (clang::FunctionDecl::param_iterator it=fd->param_begin(); it < fd->param_end(); ++it) {

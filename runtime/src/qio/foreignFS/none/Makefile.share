@@ -1,0 +1,11 @@
+FOREIGN_FS_SRCS = fail-hdfs.c
+
+SVN_SRCS = $(FOREIGN_FS_SRCS)
+SRCS = $(SVN_SRCS)
+
+FOREIGN_FS_OBJS = \
+      $(addprefix $(FOREIGN_FS_OBJDIR)/,$(addsuffix .o,$(basename $(FOREIGN_FS_SRCS))))
+
+$(RUNTIME_OBJ_DIR)/fail-hdfs.o: fail-hdfs.c \
+                                         $(RUNTIME_OBJ_DIR_STAMP)
+	$(CC) -c $(RUNTIME_CFLAGS) $(RUNTIME_DEFS) $(RUNTIME_INCLS) -o $@ $<

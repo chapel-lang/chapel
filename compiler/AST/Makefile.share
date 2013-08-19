@@ -1,17 +1,19 @@
 AST_SRCS = \
-        alist.cpp \
-        astutil.cpp \
+	alist.cpp \
+	astutil.cpp \
 	baseAST.cpp \
-        bb.cpp \
-        build.cpp \
+	bb.cpp \
+	build.cpp \
+    checkAST.cpp \
+	dominator.cpp\
 	expr.cpp \
-        iterator.cpp \
+	iterator.cpp \
 	flags.cpp \
 	primitive.cpp \
 	stmt.cpp \
 	symbol.cpp \
 	type.cpp \
-        view.cpp
+	view.cpp
 
 SVN_SRCS = $(AST_SRCS)
 SRCS = $(SVN_SRCS)

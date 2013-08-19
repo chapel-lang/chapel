@@ -808,17 +808,23 @@ proc BlockArr.setup() {
 }
 
 inline proc _remoteAccessData.getDataIndex(param stridable, ind: rank*idxType) {
-  // modified from DefaultRectangularArr below
-  var sum = origin;
+  // modified from DefaultRectangularArr.getDataIndex
   if stridable {
+    var sum = origin;
     for param i in 1..rank do
-      sum += (ind(i) - off(i)) * blk(i) / abs(str(i)):idxType;
+      // TODO: Change this back to += once 'ref' arguments are no
+      // longer considered wide in all cases
+      sum = sum + (ind(i) - off(i)) * blk(i) / abs(str(i)):idxType;
+    return sum;
   } else {
+    var sum = if earlyShiftData then 0:idxType else origin;
     for param i in 1..rank do
-      sum += ind(i) * blk(i);
-    sum -= factoredOffs;
+      // TODO: Change this back to += once 'ref' arguments are no
+      // longer considered wide in all cases
+      sum = sum + ind(i) * blk(i);
+    if !earlyShiftData then sum -= factoredOffs;
+    return sum;
   }
-  return sum;
 }
 
 
@@ -864,9 +870,9 @@ proc BlockArr.dsiAccess(i: rank*idxType) var {
       }
       pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr.locRAD;
       pragma "no copy" pragma "no auto destroy" var radata = myLocRAD.RAD;
-      if radata(rlocIdx).data != nil {
-        var dataIdx = radata(rlocIdx).getDataIndex(stridable, i);
-        return radata(rlocIdx).data(dataIdx);
+      if radata(rlocIdx).shiftedData != nil {
+        var dataIdx = radata(rlocIdx).getDataIndex(myLocArr.stridable, i);
+        return radata(rlocIdx).shiftedData(dataIdx);
       }
     }
   }
@@ -967,6 +973,7 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) v
 //
 proc BlockArr.dsiSerialWrite(f: Writer) {
   type strType = chpl__signedType(idxType);
+  var binary = f.binary();
   if dom.dsiNumIndices == 0 then return;
   var i : rank*idxType;
   for dim in 1..rank do
@@ -974,7 +981,7 @@ proc BlockArr.dsiSerialWrite(f: Writer) {
   label next while true {
     f.write(dsiAccess(i));
     if i(rank) <= (dom.dsiDim(rank).high - dom.dsiDim(rank).stride:strType) {
-      if ! f.binary then f.write(" ");
+      if ! binary then f.write(" ");
       i(rank) += dom.dsiDim(rank).stride:strType;
     } else {
       for dim in 1..rank-1 by -1 {
@@ -1318,8 +1325,8 @@ proc BlockArr.doiBulkTransfer(B) {
           // NOTE: This does not work with --heterogeneous, but heterogeneous
           // compilation does not work right now.  This call should be changed
           // once that is fixed.
-          var dest = myLocArr.myElems._value.data;
-          const src = B._value.locArr[rid].myElems._value.data;
+          var dest = myLocArr.myElems._value.theData;
+          const src = B._value.locArr[rid].myElems._value.theData;
           __primitive("chpl_comm_get",
                       __primitive("array_get", dest,
                                   myLocArr.myElems._value.getDataIndex(lo)),
@@ -1341,8 +1348,8 @@ proc BlockArr.doiBulkTransfer(B) {
                                         "; lo=", lo,
                                         "; rlo=", rlo
                                         );
-          var dest = myLocArr.myElems._value.data;
-          const src = B._value.locArr[rid].myElems._value.data;
+          var dest = myLocArr.myElems._value.theData;
+          const src = B._value.locArr[rid].myElems._value.theData;
           __primitive("chpl_comm_get",
                       __primitive("array_get", dest,
                                   myLocArr.myElems._value.getDataIndex(lo)),

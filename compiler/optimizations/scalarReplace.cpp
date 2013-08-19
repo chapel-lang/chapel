@@ -177,7 +177,12 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
   if (!move || !move->isPrimitive(PRIM_MOVE))
     return false;
   CallExpr* alloc = toCallExpr(move->get(2));
-  if (!alloc || !alloc->isPrimitive(PRIM_CHPL_ALLOC))
+  if (!alloc)
+    return false;
+  if (!
+      (alloc->isPrimitive(PRIM_CHPL_ALLOC) ||
+       (alloc->isResolved() &&
+        alloc->isResolved()->hasFlag(FLAG_ALLOCATOR))))
     return false;
 
   //
@@ -186,12 +191,23 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
   for_uses(se, useMap, sym) {
     if (se->parentSymbol) {
       CallExpr* call = toCallExpr(se->parentExpr);
-      if (!call || !(call->isPrimitive(PRIM_SET_MEMBER) ||
-                     call->isPrimitive(PRIM_GET_MEMBER) ||
-                     call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
-                     call->isPrimitive(PRIM_SETCID) ||
-                     call->isPrimitive(PRIM_CHPL_FREE)) ||
-          !(call->get(1) == se))
+      if (!call)
+        return false;
+
+      // The use must appear as the first argument in the containing expression.
+      if (se != call->get(1))
+        return false;
+
+      // The use must be the first argument of one of the following primitives.
+      if (!(call->isPrimitive(PRIM_SET_MEMBER) ||
+            call->isPrimitive(PRIM_GET_MEMBER) ||
+            call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+            call->isPrimitive(PRIM_SETCID) ||
+            call->isPrimitive(PRIM_TASK_FREE) ||
+            call->isPrimitive(PRIM_CHPL_FREE) ||
+            call->isPrimitive(PRIM_HERE_FREE) ||
+            (call->isResolved() &&
+             call->isResolved()->hasFlag(FLAG_ALLOCATOR))))
         return false;
     }
   }
@@ -239,7 +255,9 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
         call->replace(use);
         addUse(useMap, use);
       } else if (call->isPrimitive(PRIM_SETCID) ||
-                 call->isPrimitive(PRIM_CHPL_FREE)) {
+                 call->isPrimitive(PRIM_TASK_FREE) ||
+                 call->isPrimitive(PRIM_CHPL_FREE) ||
+                 call->isPrimitive(PRIM_HERE_FREE)) {
         //
         // we can remove the setting of the cid because it is never
         // used and we are otherwise able to remove the class
