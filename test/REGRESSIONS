@@ -20,6 +20,13 @@
 general regressions (seem to happen in most configurations)
 ===========================================================
 
+Result of Greg's 21707 commit (08/19/13)
+----------------------------------------
+[Error matching compiler output for arrays/deitz/jacobi-unoptimized (compopts: 1)]
+[Error matching program output for arrays/deitz/part7/test_descriptor_frees]
+[Error matching program output for memory/figueroa/LeakedMemoryArrayOfClasses]
+
+
 
 ==============================================
 linux64 regressions (in addition to the above)
@@ -52,6 +59,7 @@ execution timeouts (08/29/09)
 [Error: Timed out executing program studies/shootout/nbody/nbody_reductions_6 (compopts: 1)]
 [Error: Timed out executing program studies/shootout/nbody/nbody_vector_4 (compopts: 1)]
 
+Time out on studies/shootout/binary-trees/binary-trees_iter.chpl (execopts: 2) on chap04 -> assigned to Greg (08/19/13)
 
 ========================
 memory leaks regressions
@@ -95,8 +103,8 @@ started 5/18/2013:
 
 time outs
 ---------
-[Error: Timed out compilation for distributions/dm/t5a] (on 6/29/2013)
-[Error: Timed out executing program studies/shootout/nbody/nbody_rangesub_5] (on 6/29/2013)
+[Error: Timed out compilation for distributions/dm/t5a]
+(on 6/29/2013, seen again on 8/12/2013, may be intermittent)
 
 The following tests started timing out on 3/02/2013:
 [Error: Timed out executing program release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4)]
@@ -121,6 +129,8 @@ The following tests have been timing out since 8/18/2012 or earlier:
 [Error: Timed out executing program types/range/bradc/overflowInComputeBlock]
 [Error: Timed out executing program types/single/sungeun/stress]
 
+functions/iterators/vass/yield-arrays-var-nonvar.chpl times out in compilation
+(08/19/13 - assigned to Vass)
 
 ===============================
 no-local regressions
@@ -462,8 +472,6 @@ seg fault for linux64.intel.none.fifo.pthreads on chpbld02 (7/3/13) (Brad)
 these are due to r21501 (op=)
 [Error matching program output for distributions/robust/arithmetic/basics/test_array_assignment]
 [Error matching program output for distributions/robust/arithmetic/basics/test_infer_array_type]
-[Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_record]
-[Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_tuple]
 
 
 numeric discrepancies
@@ -664,6 +672,11 @@ failed since adding more multilocale directories (01/31/12)
 baseline-specific tests
 (Checked for accuracy 2/26/2013)
 =======================
+
+Internal errors related to Greg's 21707 commit (8/19/13)
+-------------------------------------------------------
+~ 3,000 tests
+
 
 Tests suppressions that now succeed due to turning on inlining (12/7/12)
 ------------------------------------------------------------------------

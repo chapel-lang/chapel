@@ -30,13 +30,6 @@
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
-Execution timeout in studies/miniMD/miniMD (compopts: 1)
-07/27/13 on chap06 (baseline): /data/sea/cascade/chapel/Nightly/day6-Sat-linux64.gnu.none.fifo.pthreads-npt.log
-07/28/13 on chpbld02: /data/sea/cascade/chapel/Nightly/day6-Sat-cray-prgenv-cray.none.fifo.pthreads--linux64.gnu-std.log
-07/29/13 on chap09: /data/sea/cascade/chapel/Nightly/day6-Sat-linux64.gnu.none.fifo.pthreads-vgr.log
-07/29/13 on chpbld02: /data/sea/cascade/chapel/Nightly/weekend/day1-Mon-linux64.gnu.none.fifo.pthreads-std.log
-These will probably be fixed by adding a perftimeout file.
-
 
 XT PrgEnv-cray non-deterministic compiler internal errors (eronagha
 7/20/13): These started showing up after Elliot's commit on both
@@ -48,7 +41,7 @@ This problem is covered by Bug 800520.
 
 
 ft-serial performance tests either time out or run out of memory:
-(lydia 7/22/13): Class C & D seem to run out of memory when the don't
+(lydia 7/22/13): Class C & D seem to run out of memory when they don't
 time out first.
 
 
@@ -113,38 +106,6 @@ at present.  See the archives for more detail.
 Perf (linux64.gnu.none.fifo.pthreads)
 -------------------------------------
 [Error: Timed out executing program studies/hpcc/RA/bradc/parallel/ra-dist (compopts: 1)] (06/20/13)
-
-Perf Warnings from createGraphs
--------------------------------
-[Warning (createGraphs): 'parOpEquals.local.perfkeys' does not exist, using default perfkeys file 'parOpEquals.perfkeys']
-[Warning (createGraphs): 'parOpEquals.no-local.perfkeys' does not exist, using default perfkeys file 'parOpEquals.perfkeys']
-[Warning (createGraphs): 'copy_to_local.16384.perfkeys' does not exist, using default perfkeys file 'copy_to_local.perfkeys']
-[Warning (createGraphs): 'copy_to_local.32768.perfkeys' does not exist, using default perfkeys file 'copy_to_local.perfkeys']
-[Warning (createGraphs): 'copy_to_local.65536.perfkeys' does not exist, using default perfkeys file 'copy_to_local.perfkeys']
-[Warning (createGraphs): 'copy_to_local.8192.perfkeys' does not exist, using default perfkeys file 'copy_to_local.perfkeys']
-[Warning (createGraphs): 'fasta.25000000.perfkeys' does not exist, using default perfkeys file 'fasta.perfkeys']
-[Warning (createGraphs): 'hpcc-ra-atomics.perfkeys' does not exist, using default perfkeys file 'ra.perfkeys']
-[Warning (createGraphs): 'hpcc-ra-atomics.perfkeys' does not exist, using default perfkeys file 'ra.perfkeys']
-[Warning (createGraphs): 'hpcc-ra.perfkeys' does not exist, using default perfkeys file 'ra.perfkeys']
-[Warning (createGraphs): 'hpcc-ra.perfkeys' does not exist, using default perfkeys file 'ra.perfkeys']
-[Warning (createGraphs): 'hpcc-stream-ep.perfkeys' does not exist, using default perfkeys file 'stream-ep.perfkeys']
-[Warning (createGraphs): 'hpcc-stream-ep.perfkeys' does not exist, using default perfkeys file 'stream-ep.perfkeys']
-[Warning (createGraphs): 'hpcc-stream-ep.perfkeys' does not exist, using default perfkeys file 'stream-ep.perfkeys']
-[Warning (createGraphs): 'hpcc-stream-ep.perfkeys' does not exist, using default perfkeys file 'stream-ep.perfkeys']
-[Warning (createGraphs): 'hpcc-stream-ep.perfkeys' does not exist, using default perfkeys file 'stream-ep.perfkeys']
-[Warning (createGraphs): 'hpcc-stream-ep.perfkeys' does not exist, using default perfkeys file 'stream-ep.perfkeys']
-[Warning (createGraphs): 'hpcc-stream.perfkeys' does not exist, using default perfkeys file 'stream.perfkeys']
-[Warning (createGraphs): 'hpcc-stream.perfkeys' does not exist, using default perfkeys file 'stream.perfkeys']
-[Warning (createGraphs): 'hpcc-stream.perfkeys' does not exist, using default perfkeys file 'stream.perfkeys']
-[Warning (createGraphs): 'init.1024.perfkeys' does not exist, using default perfkeys file 'init.perfkeys']
-[Warning (createGraphs): 'init.1024.perfkeys' does not exist, using default perfkeys file 'init.perfkeys']
-[Warning (createGraphs): 'init.1024.perfkeys' does not exist, using default perfkeys file 'init.perfkeys']
-[Warning (createGraphs): 'init.1024.perfkeys' does not exist, using default perfkeys file 'init.perfkeys']
-[Warning (createGraphs): 'init.256.perfkeys' does not exist, using default perfkeys file 'init.perfkeys']
-[Warning (createGraphs): 'init.256.perfkeys' does not exist, using default perfkeys file 'init.perfkeys']
-[Warning (createGraphs): 'init.256.perfkeys' does not exist, using default perfkeys file 'init.perfkeys']
-[Warning (createGraphs): 'init.256.perfkeys' does not exist, using default perfkeys file 'init.perfkeys']
-[Warning (createGraphs): 'lulesh.block-dense.perfkeys' does not exist, using default perfkeys file 'lulesh-dense.perfkeys']
 
 
 ==============================================================================
@@ -223,6 +184,8 @@ Various numeric discrepancies, first occurred on 9/15/2012 or before.
 This is not a problem with chpldocs (should file a separate future).
 There is an intermittent compile-time segfault during cullOverReferences.
 The type of Bar.super is at least partially corrupt at that point.
+
+
 
 "that wasn't very random looking"
 ---------------------------------
