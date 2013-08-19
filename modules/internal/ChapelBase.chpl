@@ -6,72 +6,117 @@ module ChapelBase {
   
   extern proc chpl_config_has_value(name, module_name): bool;
   extern proc chpl_config_get_value(name, module_name): string;
-  
+
+  config param CHPL_HOME: string = "unset";
+  if (CHPL_HOME == "unset") {
+    compilerWarning("CHPL_HOME not set");
+  }
+
   config param CHPL_HOST_PLATFORM: string = "unset";
-  config param CHPL_TARGET_PLATFORM: string = "unset";
   if (CHPL_HOST_PLATFORM == "unset") {
     compilerWarning("CHPL_HOST_PLATFORM not set");
   }
+
+  config param CHPL_TARGET_PLATFORM: string = "unset";
   if (CHPL_TARGET_PLATFORM == "unset") {
     compilerWarning("CHPL_TARGET_PLATFORM not set");
   }
-  
+
   config param CHPL_HOST_COMPILER: string = "unset";
-  config param CHPL_TARGET_COMPILER: string = "unset";
   if (CHPL_HOST_COMPILER == "unset") {
     compilerWarning("CHPL_HOST_COMPILER not set");
   }
+
+  config param CHPL_TARGET_COMPILER: string = "unset";
   if (CHPL_TARGET_COMPILER == "unset") {
     compilerWarning("CHPL_TARGET_COMPILER not set");
   }
-  
+
   config param CHPL_LOCALE_MODEL: string = "unset";
   if (CHPL_LOCALE_MODEL == "unset") {
     compilerWarning("CHPL_LOCALE_MODEL not set");
   }
-  
-  config param CHPL_TASKS: string = "unset";
-  if (CHPL_TASKS == "unset") {
-    compilerWarning("CHPL_TASKS not set");
-  }
-  
-  config param CHPL_THREADS: string = "unset";
-  if (CHPL_THREADS == "unset") {
-    compilerWarning("CHPL_THREADS not set");
-  }
-  
-  config param CHPL_COMM_SUBSTRATE: string = "unset";
-  config param CHPL_GASNET_SEGMENT: string = "unset";
+
   config param CHPL_COMM: string = "unset";
   if (CHPL_COMM == "unset") {
     compilerWarning("CHPL_COMM not set");
   }
-  
-  config param CHPL_ATOMICS: string = "unset";
-  if (CHPL_ATOMICS == "unset") {
-    compilerWarning("CHPL_ATOMICS not set");
+
+  config param CHPL_COMM_SUBSTRATE: string = "unset";
+  if (CHPL_COMM_SUBSTRATE == "unset") {
+    compilerWarning("CHPL_COMM_SUBSTRATE not set");
   }
-  
-  config param CHPL_NETWORK_ATOMICS: string = "unset";
-  if (CHPL_NETWORK_ATOMICS == "unset") {
-    compilerWarning("CHPL_NETWORK_ATOMICS not set");
+
+  config param CHPL_GASNET_SEGMENT: string = "unset";
+  if (CHPL_GASNET_SEGMENT == "unset") {
+    compilerWarning("CHPL_SEGMENT not set");
   }
-  
-  config param CHPL_GMP: string = "unset";
-  if (CHPL_GMP == "unset") {
-    compilerWarning("CHPL_GMP not set");
+
+  config param CHPL_TASKS: string = "unset";
+  if (CHPL_TASKS == "unset") {
+    compilerWarning("CHPL_TASKS not set");
   }
- 
-  config param CHPL_WIDE_POINTERS: string = "unset";
-  if (CHPL_WIDE_POINTERS == "unset") {
-    compilerWarning("CHPL_WIDE_POINTERS not set");
+
+  config param CHPL_THREADS: string = "unset";
+  if (CHPL_THREADS == "unset") {
+    compilerWarning("CHPL_THREADS not set");
   }
-  
+
+  config param CHPL_LAUNCHER: string = "unset";
+  if (CHPL_LAUNCHER == "unset") {
+    compilerWarning("CHPL_LAUNCHER not set");
+  }
+
+  config param CHPL_TIMERS: string = "unset";
+  if (CHPL_TIMERS == "unset") {
+    compilerWarning("CHPL_TIMERS not set");
+  }
+
+  config param CHPL_MEM: string = "unset";
+  if (CHPL_MEM == "unset") {
+    compilerWarning("CHPL_MEM not set");
+  }
+
   config param CHPL_MAKE: string = "unset";
   if (CHPL_MAKE == "unset") {
     compilerWarning("CHPL_MAKE not set");
   }
-  
+
+  config param CHPL_ATOMICS: string = "unset";
+  if (CHPL_ATOMICS == "unset") {
+    compilerWarning("CHPL_ATOMICS not set");
+  }
+
+  config param CHPL_NETWORK_ATOMICS: string = "unset";
+  if (CHPL_NETWORK_ATOMICS == "unset") {
+    compilerWarning("CHPL_NETWORK_ATOMICS not set");
+  }
+
+  config param CHPL_GMP: string = "unset";
+  if (CHPL_GMP == "unset") {
+    compilerWarning("CHPL_GMP not set");
+  }
+
+  config param CHPL_REGEXP: string = "unset";
+  if (CHPL_REGEXP == "unset") {
+    compilerWarning("CHPL_REGEXP not set");
+  }
+
+  config param CHPL_WIDE_POINTERS: string = "unset";
+  if (CHPL_WIDE_POINTERS == "unset") {
+    compilerWarning("CHPL_WIDE_POINTERS not set");
+  }
+
+  config param CHPL_LLVM: string = "unset";
+  if (CHPL_LLVM == "unset") {
+    compilerWarning("CHPL_LLVM not set");
+  }
+
+  config param CHPL_AUX_FILESYS: string = "unset";
+  if (CHPL_AUX_FILESYS == "unset") {
+    compilerWarning("CHPL_AUX_FILESYS not set");
+  }
+
   config param noRefCount = false;
   
   config param warnMaximalRange = false;    // Warns if integer rollover will cause

@@ -9,7 +9,7 @@ include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.comm-$(CHPL_MAKE_COMM)
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.mem-$(CHPL_MAKE_MEM)
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.gmp-$(CHPL_MAKE_GMP)
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.regexp-$(CHPL_MAKE_REGEXP)
-include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.foreignFS-$(CHPL_MAKE_FOREIGN_FS)
+include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.auxFilesys-$(CHPL_MAKE_AUXFS)
 
 # Get runtime headers and required -D flags.
 # sets RUNTIME_INCLUDE_ROOT RUNTIME_CFLAGS RUNTIME_INCLS

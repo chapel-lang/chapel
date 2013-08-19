@@ -1,0 +1,4 @@
+#! /usr/bin/env bash
+
+$CHPL_HOME/util/printchplenv | grep -v '^\(uname -a\|script location\): ' \
+  > printchplenv.good

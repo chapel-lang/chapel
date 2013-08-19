@@ -38,20 +38,26 @@ const char* currentPassName = "starting up";
 char CHPL_HOME[FILENAME_MAX] = "";
 
 const char* CHPL_HOST_PLATFORM = NULL;
-const char* CHPL_TARGET_PLATFORM = NULL;
 const char* CHPL_HOST_COMPILER = NULL;
+const char* CHPL_TARGET_PLATFORM = NULL;
 const char* CHPL_TARGET_COMPILER = NULL;
 const char* CHPL_LOCALE_MODEL = NULL;
-const char* CHPL_TASKS = NULL;
-const char* CHPL_THREADS = NULL;
 const char* CHPL_COMM = NULL;
 const char* CHPL_COMM_SUBSTRATE = NULL;
 const char* CHPL_GASNET_SEGMENT = NULL;
+const char* CHPL_TASKS = NULL;
+const char* CHPL_THREADS = NULL;
+const char* CHPL_LAUNCHER = NULL;
+const char* CHPL_TIMERS = NULL;
+const char* CHPL_MEM = NULL;
+const char* CHPL_MAKE = NULL;
 const char* CHPL_ATOMICS = NULL;
 const char* CHPL_NETWORK_ATOMICS = NULL;
 const char* CHPL_GMP = NULL;
+const char* CHPL_REGEXP = NULL;
 const char* CHPL_WIDE_POINTERS = NULL;
-const char* CHPL_MAKE = NULL;
+const char* CHPL_LLVM = NULL;
+const char* CHPL_AUX_FILESYS = NULL;
 
 bool widePointersStruct;
 
@@ -283,6 +289,7 @@ static void setupChplHome(const char* argv0) {
 
   if( guess ) free(guess);
 
+  parseCmdLineConfig("CHPL_HOME", astr("\"", CHPL_HOME, "\""));
 }
 
 static void setCommentLabel(ArgumentState *arg_state, char* label) {
@@ -320,20 +327,26 @@ static void setupOrderedGlobals(const char* argv0) {
   
   // Then CHPL_* variables
   SETUP_ENV_VAR(CHPL_HOST_PLATFORM, "chplenv/platform --host");
-  SETUP_ENV_VAR(CHPL_TARGET_PLATFORM, "chplenv/platform --target");
   SETUP_ENV_VAR(CHPL_HOST_COMPILER, "chplenv/compiler --host");
+  SETUP_ENV_VAR(CHPL_TARGET_PLATFORM, "chplenv/platform --target");
   SETUP_ENV_VAR(CHPL_TARGET_COMPILER, "chplenv/compiler --target");
   SETUP_ENV_VAR(CHPL_LOCALE_MODEL, "chplenv/localeModel");
-  SETUP_ENV_VAR(CHPL_TASKS, "chplenv/tasks");
-  SETUP_ENV_VAR(CHPL_THREADS, "chplenv/threads");
   SETUP_ENV_VAR(CHPL_COMM, "chplenv/comm");
   SETUP_ENV_VAR(CHPL_COMM_SUBSTRATE, "chplenv/commSubstrate");
   SETUP_ENV_VAR(CHPL_GASNET_SEGMENT, "chplenv/commSegment");
+  SETUP_ENV_VAR(CHPL_TASKS, "chplenv/tasks");
+  SETUP_ENV_VAR(CHPL_THREADS, "chplenv/threads");
+  SETUP_ENV_VAR(CHPL_LAUNCHER, "chplenv/launcher");
+  SETUP_ENV_VAR(CHPL_TIMERS, "chplenv/timers");
+  SETUP_ENV_VAR(CHPL_MEM, "chplenv/mem");
+  SETUP_ENV_VAR(CHPL_MAKE, "chplenv/chplmake");
   SETUP_ENV_VAR(CHPL_ATOMICS, "chplenv/atomics");
   SETUP_ENV_VAR(CHPL_NETWORK_ATOMICS, "chplenv/atomics --network");
   SETUP_ENV_VAR(CHPL_GMP, "chplenv/gmp");
+  SETUP_ENV_VAR(CHPL_REGEXP, "chplenv/regexp");
   SETUP_ENV_VAR(CHPL_WIDE_POINTERS, "chplenv/widePointers");
-  SETUP_ENV_VAR(CHPL_MAKE, "chplenv/chplmake");
+  SETUP_ENV_VAR(CHPL_LLVM, "chplenv/llvm");
+  SETUP_ENV_VAR(CHPL_AUX_FILESYS, "chplenv/auxFilesys");
 
   // These depend on the environment variables being set
   fLocal = !strcmp(CHPL_COMM, "none");

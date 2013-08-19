@@ -13,8 +13,6 @@ export CHPL_MAKE_COMM_SUBSTRATE = $(shell export CHPL_COMM && CHPL_COMM=$(CHPL_C
 
 export CHPL_MAKE_COMM_SEGMENT = $(shell export CHPL_COMM && CHPL_COMM=$(CHPL_COMM) && $(CHPL_MAKE_HOME)/util/chplenv/commSegment)
 
-export CHPL_MAKE_COMM_MPI = $(shell export CHPL_COMM && $(CHPL_MAKE_HOME)/util/chplenv/chplmpi)
-
 ifeq ($(CHPL_COMM), gasnet)
 ifeq ($(CHPL_COMM_DEBUG),)
 export CHPL_MAKE_COMM_EXTRAS=-nodbg

@@ -81,8 +81,8 @@ ifndef CHPL_MAKE_LLVM
 include $(CHPL_MAKE_HOME)/make/Makefile.llvm
 endif
 
-ifndef CHPL_MAKE_FOREIGN_FS
-include $(CHPL_MAKE_HOME)/make/Makefile.foreignFS
+ifndef CHPL_MAKE_AUXFS
+include $(CHPL_MAKE_HOME)/make/Makefile.auxFilesys
 endif
 
 #

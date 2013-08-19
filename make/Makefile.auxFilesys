@@ -1,0 +1,6 @@
+#
+# CHPL_MAKE_AUXFS
+#
+#
+#
+export CHPL_MAKE_AUXFS= $(shell $(CHPL_MAKE_HOME)/util/chplenv/auxFilesys)

@@ -9,24 +9,24 @@ if ( ! -d $home ) {
   $home = $utildirname . "/../../";
 }
 
-$preset_hdfs = $ENV{'CHPL_FOREIGN_FS'};
+$preset_aux_fs = $ENV{'CHPL_AUX_FILESYS'};
 
-if ($preset_hdfs eq "") {
-  $hdfs = 'none';
+if ($preset_aux_fs eq "") {
+  $aux_fs = 'none';
 } 
 
-if ($preset_hdfs eq "hdfs"){
+if ($preset_aux_fs eq "hdfs"){
   $java_subdir = $ENV{'JAVA_INSTALL'};
-  $hdfs_subdir = $ENV{'HADOOP_INSTALL'};
+  $aux_fs_subdir = $ENV{'HADOOP_INSTALL'};
   # This will not check that all dependencies are satisfied..
-  if (-d $java_subdir && -d $hdfs_subdir && -f "$hdfs_subdir/src/c++/libhdfs/hdfs.h" && -d "$java_subdir/include") {
+  if (-d $java_subdir && -d $aux_fs_subdir && -f "$aux_fs_subdir/src/c++/libhdfs/hdfs.h" && -d "$java_subdir/include") {
   } else {
       warn "WARNING: Can't find your Java and Hadoop installations\n";
   }
-  $hdfs = 'hdfs';
+  $aux_fs = 'hdfs';
 } else {
-  $hdfs = 'none';
+  $aux_fs = 'none';
 }
 
-print "$hdfs\n";
+print "$aux_fs\n";
 exit(0);

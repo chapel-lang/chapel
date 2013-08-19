@@ -1,10 +1,10 @@
-FOREIGN_FS_SRCS = qio_plugin_hdfs.c
+AUXFS_SRCS = qio_plugin_hdfs.c
 
-SVN_SRCS = $(FOREIGN_FS_SRCS)
+SVN_SRCS = $(AUXFS_SRCS)
 SRCS = $(SVN_SRCS)
 
-FOREIGN_FS_OBJS = \
-      $(addprefix $(FOREIGN_FS_OBJDIR)/,$(addsuffix .o,$(basename $(FOREIGN_FS_SRCS))))
+AUXFS_OBJS = \
+      $(addprefix $(AUXFS_OBJDIR)/,$(addsuffix .o,$(basename $(AUXFS_SRCS))))
 
 RUNTIME_INCLS += \
 				-I$(JAVA_INSTALL)/include \

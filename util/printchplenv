@@ -8,7 +8,7 @@ $uname = `uname -a`;
 
 print "uname -a: $uname";
 
-print "\$CHPL_HOME: $ENV{'CHPL_HOME'}\n";
+print "CHPL_HOME: $ENV{'CHPL_HOME'}\n";
 print "script location: $utildirname\n";
 
 $hostplatform = `$utildirname/platform --host 1`; chomp($hostplatform);
@@ -33,11 +33,6 @@ if ($comm eq "none" || $comm eq "ugni") {
 } else {
     $commsubstrate = `$utildirname/commSubstrate`; chomp($commsubstrate);
     print "  CHPL_COMM_SUBSTRATE: $commsubstrate\n";
-    if (($comm eq "armci" && $commsubstrate eq "mpi") ||
-        ($comm eq "mpi")) {
-        $mpiver = `$utildirname/chplmpi`; chomp($mpiver);
-        print "  CHPL_MPI_VERSION: $mpiver\n";
-    }
     if ($comm eq "gasnet") {
         $commsegment = `$utildirname/commSegment`; chomp($commsegment);
         print "  CHPL_GASNET_SEGMENT: $commsegment\n";
@@ -71,5 +66,5 @@ $wide_ptrs = `$utildirname/widePointers`; chomp($wide_ptrs);
 print "CHPL_WIDE_POINTERS: $wide_ptrs\n";
 $llvm = `$utildirname/llvm`; chomp($llvm);
 print "CHPL_LLVM: $llvm\n";
-$hdfs = `$utildirname/hdfs`; chomp($hdfs);
-print "CHPL_FOREIGN_FS: $hdfs\n";
+$aux_fs = `$utildirname/aux_filesys`; chomp($aux_fs);
+print "CHPL_AUX_FILESYS: $aux_fs\n";
