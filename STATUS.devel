@@ -35,7 +35,6 @@ run into.
 #  b/c it seems a little obscure (it'd be nice to see an example with a non-standard module function)
 #
 # OMITTED: users/vass/crash1callDestructorsMain.future
-# OMITTED: users/vass/crash3tuple.future
 # OMITTED: users/vass/crash4replLclsWFlds.future
 # OMITTED: users/vass/iterator-cpp-assertion-crash.future
 #  b/c no explanation
@@ -86,7 +85,6 @@ General (see also portability section at the bottom of this file)
   - Data accessed in 'on' and/or 'begin' statements may be leaked
   - Sync and single variable record members may be leaked
   # memory/vass/memleak-array-of-records-1.future
-  # types/records/sungeun/destructor1.future
 - Separate compilation of Chapel files is not supported.
   # separate_compilation/jturner/use_classextern.future
   # separate_compilation/jturner/use_classextern2.future
@@ -170,8 +168,6 @@ Statements and Expressions
   loops.
   # statements/sungeun/break_nolabel_param.future
   # statements/sungeun/continue_nolabel_param.future
-- Imaginary op= statements support illegal assignments.
-  # types/imag/opequals2.future
 - On statement variable declarations are not yet supported.
   E.g., on Locales(1) var x: real;
   # multilocale/sungeun/on_statement_var_decl.future
@@ -433,7 +429,6 @@ Classes, Records, and Unions
   # arrays/dinan/array_of_records.future
 - Printing of a string field in a record in a class does not work.
   # types/records/sungeun/stringInRecordInClass.future
-  # types/string/sungeun/string1InRecordInClass.future
   # types/string/sungeun/string2InRecordInClass.future
 - Type select on unions is not implemented.
 
@@ -449,8 +444,6 @@ Domain Maps, Domains and Arrays
   rectangular domains.
 - PrivateDist must be used at the top-level scope.
   # distributions/sungeun/misc/useDummyDist.future
-  # modules/vass/SSCA2-with-Private-1.future
-  # modules/vass/SSCA2-with-Private-2.future
 - Subset checks on subdomains is not implemented.
 - Bounds checks on index types is not implemented.
 - Overloading operations such as multiplication for domain literals not
