@@ -27,13 +27,13 @@ proc initThermo() {
 		mvv2e = 1.0;
 		dof_boltz = natoms * 3 - 3;
 		t_scale = mvv2e / dof_boltz;
-		p_scale = 1.0 / 3 / dim.x / dim.y / dim.z;
+		p_scale = 1.0 / 3 / dim(1) / dim(2) / dim(3);
 		e_scale = 0.5;
 	} else {
 		mvv2e = 1.036427e-4;
 		dof_boltz = (natoms * 3 - 3) * 8.617343e-5;
 		t_scale = mvv2e / dof_boltz;
-		p_scale = 1.602176e6 / 3 / dim.x / dim.y / dim.z;
+		p_scale = 1.602176e6 / 3 / dim(1) / dim(2) / dim(3);
 		e_scale = 524287.985533;
 		dtforce /= mvv2e;
 	} 
@@ -83,7 +83,7 @@ proc energy(f : Force) {
 
 proc temperature() {
 	t_act = 0;
-	t_act = + reduce forall (b,c) in zip(bins[realStencil],binCount[realStencil]) do + reduce forall a in b[1..c] do (a.v.dot(a.v) * mass);
+	t_act = + reduce forall (b,c) in zip(bins[realStencil],binCount[realStencil]) do + reduce forall a in b[1..c] do (dot(a.v,a.v) * mass);
 
 	return t_act * t_scale;
 }

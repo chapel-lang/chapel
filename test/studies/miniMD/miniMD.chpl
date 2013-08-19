@@ -46,13 +46,13 @@ proc main() {
 proc initialIntegrate() {
 	forall (b,c) in zip(bins[realStencil],binCount[realStencil]) {
 		for a in b[1..c] {
-			a.v.x += dtforce * a.f.x;
-			a.v.y += dtforce * a.f.y;
-			a.v.z += dtforce * a.f.z;
+			a.v(1) += dtforce * a.f(1);
+			a.v(2) += dtforce * a.f(2);
+			a.v(3) += dtforce * a.f(3);
 			
-			a.x.x += dt * a.v.x;
-			a.x.y += dt * a.v.y;
-			a.x.z += dt * a.v.z;
+			a.x(1) += dt * a.v(1);
+			a.x(2) += dt * a.v(2);
+			a.x(3) += dt * a.v(3);
 		}
 	}
 
@@ -72,9 +72,9 @@ proc initialIntegrate() {
 proc finalIntegrate() {
 	forall (b,c) in zip(bins[realStencil],binCount[realStencil]) {
 		for a in b[1..c] {
-			a.v.x += dtforce * a.f.x;
-			a.v.y += dtforce * a.f.y;
-			a.v.z += dtforce * a.f.z;
+			a.v(1) += dtforce * a.f(1);
+			a.v(2) += dtforce * a.f(2);
+			a.v(3) += dtforce * a.f(3);
 		}
 	}
 }

@@ -380,9 +380,7 @@ module MDForce {
 			tim.start();
 			forall (b,c) in zip(bins,binCount) {
 				for a in b[1..c] {
-					a.f.x = 0;
-					a.f.y = 0;
-					a.f.z = 0;
+					a.f = (0.0,0.0,0.0);
 				}
 			}
 			wipetime += tim.elapsed();
@@ -396,9 +394,10 @@ module MDForce {
 				for a in b[1..c] {
 					var (fx,fy,fz,e,v) = + reduce forall (q,idx) in a.neighs[1..a.ncount] do 
 						forceBetween(a.x,bins[q][idx], half_neigh,ghost_newton, evflag);
-					a.f.x += fx;
-					a.f.y += fy;
-					a.f.z += fz;
+					a.f += (fx,fy,fz);
+					/*a.f(1) += fx;
+					a.f(2) += fy;
+					a.f(3) += fz;*/
 					eng_vdwl += e;
 					virial += v;
 				}
@@ -421,7 +420,7 @@ module MDForce {
 
 		proc forceBetween(ref x : v3, ref n : atom, hf, gn, evflag : bool) {
 			const del = x - n.x;
-			const rsq = del.dot(del);
+			const rsq = dot(del,del);
 			var rx, ry, rz, e, v : real;
 
 			// if the atoms are close enough, do some physics
@@ -429,16 +428,12 @@ module MDForce {
 				const sr2: real = 1.0 / rsq;
 				const sr6 : real = sr2 * sr2 * sr2;
 				const force : real = 48.0 * sr6 * (sr6 - .5) * sr2;
-				rx = del.x * force;
-				ry = del.y * force;
-				rz = del.z * force;
+				(rx,ry,rz) = del * force;
 
 				// this would be an atomic statement, if that feature was available right now
 				if hf {
 					if gn || n.ghostof(2) == -1 {
-						n.f.x -= rx;
-						n.f.y -= ry;
-						n.f.z -= rz;
+						n.f -= (rx,ry,rz);
 					}
 				}
 				if evflag { // if we care about data this iteration
