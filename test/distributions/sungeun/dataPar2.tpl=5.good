@@ -1,3 +1,7 @@
+### numTasks = 5
+### ignoreRunning = true
+### minIndicesPerTask = 1
+### numChunks=0 (parDim=-1)
 ### START ###
 ### numTasks = 5
 ### ignoreRunning = true

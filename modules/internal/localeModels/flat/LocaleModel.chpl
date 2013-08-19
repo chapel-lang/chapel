@@ -43,11 +43,12 @@ module LocaleModel {
     var subloc: int(32);
   };
 
+  extern var chpl_nodeID: chpl_nodeID_t;
+
   // Runtime interface for manipulating global locale IDs.
   extern
     proc chpl_rt_buildLocaleID(node: chpl_nodeID_t,
                                subloc: chpl_sublocID_t): chpl_localeID_t;
-
   extern
     proc chpl_rt_nodeFromLocaleID(loc: chpl_localeID_t): chpl_nodeID_t;
 
@@ -150,10 +151,10 @@ module LocaleModel {
       _node_id = chpl_nodeID: int;
 
       // chpl_nodeName is defined in chplsys.c.
-      // It supplies a node name obtained by running uname(3) on the current node.
-      // For this reason (as well), the constructor (or at least this init method)
-      // must be run on the node it is intended to describe.
-//      extern proc getenv(s:string) : string;
+      // It supplies a node name obtained by running uname(3) on the
+      // current node.  For this reason (as well), the constructor (or
+      // at least this init method) must be run on the node it is
+      // intended to describe.
       var comm, spawnfn : string;
       extern proc chpl_nodeName() : string;
       // sys_getenv returns zero on success.
@@ -184,52 +185,25 @@ module LocaleModel {
     const myLocaleSpace: domain(1) = {0..numLocales-1};
     const myLocales: [myLocaleSpace] locale;
 
-    proc RootLocale()
-    {
+    proc RootLocale() {
       parent = nil;
       numCores = 0;
+    }
 
-      // We cannot use a forall here because the default leader iterator will
-      // access 'Locales' and 'here', which are not yet initialized.
-      for locIdx in myLocaleSpace
-      {
-        var locID = chpl_buildLocaleID(locIdx:chpl_nodeID_t, 0);
-        on __primitive("chpl_on_locale_num", locID)
-        {
-          // chpl_on_locale_num sets the localeID portion of "here", but
-          // leaves the addr portion as a NULL pointer.
-          const node = new LocaleModel(this);
+    // The init() function must use initOnLocales() to iterate (in
+    // parallel) over the locales to set up the LocaleModel object.
+    // In addition, the initial 'here' must be set.
+    proc init() {
+      forall locIdx in initOnLocales() {
+        const node = new LocaleModel(this);
 
-          // So immediately after creating a new locale to represent here, we
-          // have to call this primitive to insert it into task-private storage.
-          __primitive("_task_set_here_ptr", node);
+        // So immediately after creating a new locale to represent here, we
+        // have to call this primitive to insert it into task-private storage.
+        __primitive("_task_set_here_ptr", node);
 
-          myLocales[locIdx] = node;
-          numCores += node.numCores;
-        }
+        myLocales[locIdx] = node;
+        numCores += node.numCores;
       }
-      doneCreatingLocales = true;
-
-      // Sanity check.
-      // Ensure that the locale representing node x has a nodeID of x.
-      // At the top level, this lets us look up the locale representing the node on which
-      // an object o lives by executing
-      //  myLocales[__primitive("_wide_get_node", o)].
-      if (debugLocaleModel) then
-        for locIdx in myLocaleSpace {
-          var loc = myLocales[locIdx];
-          if __primitive("_wide_get_node", loc) != locIdx then
-            halt("In this architecture, we expect the locale whose index is x to live on node x.");
-        }
-
-      // Programs traditionally expect the startup process to run on
-      // Locales[0], so this is how we mimic that behavior.
-      // Note that this means we have to ask for here.parent or rootLocale
-      // to get the root locale of the default architecture.
-      var loc = myLocales[0];
-      __primitive("_task_set_here_ptr", loc);
-      var locID = chpl_buildLocaleID(0, 0);
-      __primitive("_task_set_locale_id", locID);
     }
 
     // Has to be globally unique and not equal to a node ID.
@@ -271,19 +245,6 @@ module LocaleModel {
     }
   }
 
-  // Use the DefaultArchitecture only if no other architecture has already been defined.
-  if (rootLocale == nil) then
-    rootLocale = new RootLocale();
-
-  // Expose the underlying locales array (and its domain)
-  // for user convenience and backward compatibility.
-  // The downcast is because we cannot move the domain and array return types
-  // into the base (abstract) locale class.
-  // That would make locales depend on arrays which depend on locales....
-  // If we had a way to express domain and array return types abstractly,
-  // that problem would go away. <hilde>
-  const Locales => (rootLocale:RootLocale).getDefaultLocaleArray();
-  const LocaleSpace = Locales.domain;
 
   //////////////////////////////////////////
   //

@@ -38,10 +38,12 @@ module DefaultRectangular {
   }
   
   //
-  // Note that the replicated copies are set up in ChapelLocale on the
-  // other locales.  This just sets it up on this locale.
+  // Replicated copies are set up in InitPrivateGlobals.
   //
   pragma "private" var defaultDist = new dmap(new DefaultDist());
+  inline proc chpl_defaultDistInitPrivate() {
+    defaultDist = new dmap(new DefaultDist());
+  }
   
   class DefaultRectangularDom: BaseRectangularDom {
     param rank : int;

@@ -122,6 +122,32 @@ module ChapelLocale {
     // (non-RootLocale) locale models
   }
 
+  // rootLocale is declared to be of type locale rather than
+  // RootLocale because doing so would make locales depend on arrays
+  // which depend on locales, etc.
+  //
+  // If we had a way to express domain and array return types abstractly,
+  // that problem would go away. <hilde>
+  //
+  // The rootLocale is private to each locale.  It cannot be
+  // initialized until LocaleModel is initialized.  To disable this
+  // replication, set replicateRootLocale to false.
+  pragma "private" var rootLocale : locale = nil;
+  config param replicateRootLocale = true;
+
+  // The rootLocale needs to be initalized on all locales prior to
+  // initializing the Locales array.  Unfortunately, the rootLocale
+  // cannot be properly replicated until DefaultRectangular can be
+  // initialized (as the private copies of the defaultDist are
+  // needed).  We remedy this by initializing a rootLocale on locale 0
+  // (called origRootLocale), and setting all locales' rootLocale to
+  // origRootLocale.  Later, after DefaultRectangular can be
+  // initialized, we create local copies of the rootLocale (and the
+  // Locales array).  This is being done in the InitPrivateGlobals
+  // module.
+  //
+  var origRootLocale : locale = nil;
+
   class AbstractRootLocale : locale {
     // These functions are used to establish values for Locales[] and
     // LocaleSpace -- an array of locales and its correponding domain
@@ -144,21 +170,89 @@ module ChapelLocale {
       _throwPVFCError();
       return this;
     }
+
+    // These iterators are to be used by RootLocale:init() to
+    // initialize the LocaleModel.  The calling loop body cannot
+    // contain any non-local code, since the rootLocale is not yet
+    // initialized.
+    iter initOnLocales() {
+      if numLocales > 1 then
+        halt("The locales must be initialized in parallel");
+      for locIdx in (origRootLocale:RootLocale).getDefaultLocaleSpace() {
+        yield locIdx;
+        rootLocale = origRootLocale;
+      }
+    }
+
+    iter initOnLocales(param tag: iterKind)
+      where tag==iterKind.leader {
+      for locIdx in (origRootLocale:RootLocale).getDefaultLocaleSpace() {
+        var locID = chpl_buildLocaleID(locIdx:chpl_nodeID_t, 0:chpl_sublocID_t);
+        // sublocale part of locID needs to be any
+        on __primitive("chpl_on_locale_num", locID) {
+          yield locIdx;
+          rootLocale = origRootLocale;
+        }
+      }
+    }
+
+    iter initOnLocales(param tag: iterKind, followThis)
+      where tag==iterKind.follower {
+      yield followThis;
+    }
   }
 
-  var rootLocale : locale = nil;
+
+  // This function is called in the LocalesArray module to initialize
+  // the rootLocale.  It sets up the origRootLocale and also includes
+  // set up of the each locale's LocaleModel via DefaulRootLocale:init().
+  //
+  // The init() function must use chpl_rootLocale_locales() to iterate
+  // (in parallel) over the locales to set up the LocaleModel object.
+  // In addition, the initial 'here' must be set.
+  // 
+  proc chpl_init_rootLocale() {
+    origRootLocale = new RootLocale();
+
+    (origRootLocale:RootLocale).init();
+
+    // Programs traditionally expect the startup process to run on
+    // Locales[0], so this is how we mimic that behavior.
+    // Note that this means we have to ask for here.parent or rootLocale
+    // to get the root locale of the default architecture.
+    var loc = (origRootLocale:RootLocale).getDefaultLocaleArray()[0];
+    __primitive("_task_set_here_ptr", loc);
+    var locID = chpl_buildLocaleID(0:chpl_nodeID_t, 0:chpl_sublocID_t);
+    __primitive("_task_set_locale_id", locID);
+  }
+
+  // This function sets up a private copy of rootLocale by replicating
+  // origRootLocale and resets the Locales array to point to the local
+  // copy.  It should be called on every locale except locale 0 after
+  // it is safe to do so (after defaultDist is initialized).
+  proc chpl_rootLocaleInitPrivate() {
+    if !replicateRootLocale then return;
+    // set rootLocale to a local copy
+    var newRootLocale = new RootLocale();
+    newRootLocale.getDefaultLocaleArray() =
+      (origRootLocale:RootLocale).getDefaultLocaleArray();
+    rootLocale = newRootLocale;
+    // We mimic a private Locales array alias by using the move
+    // primitive.  Note that this leaks the original local Locales
+    // array wrapper.
+    __primitive("move", Locales, (rootLocale:RootLocale).getDefaultLocaleArray());
+  }
 
   // Returns a wide pointer to the locale with the given id.
-  // When hierarchical locales are fully implemented, the lookup may be
-  // done mostly in the runtime (through the sublocale registry).
   proc chpl_localeID_to_locale(id : chpl_localeID_t) : locale {
-    // The _is_here test examines only localeIDs, so is local and very fast.
-    // Evaluating "here" is also local and very fast.
-    if __primitive("_is_here", id) then return here;
-    var ret:locale;
-    on rootLocale do ret = (rootLocale:AbstractRootLocale).localeIDtoLocale(id);
-    return ret;
+    if rootLocale then
+      return (rootLocale:AbstractRootLocale).localeIDtoLocale(id);
+    else
+      // For code prior to rootLocale initialization
+      return here;
   }
+
+
 
   // This returns the current "here" pointer.
   // It uses a primitive to suck the here pointer out of task-private storage.

@@ -61,9 +61,6 @@ module ChapelTaskTable {
   proc chpldev_taskTable_init() {
     for loc in Locales do
       on loc {
-        // Task tables require that the local default distribution be initialized first.
-        if (defaultDist._value == nil) then
-          defaultDist = new dmap(new DefaultDist());
         chpldev_taskTable = new chpldev_taskTable_t();
       }
   }

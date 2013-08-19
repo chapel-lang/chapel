@@ -18,11 +18,13 @@ module ChapelStandard {
   use ChapelSyncvar;
   use ChapelLocale;
   use LocaleModel;
+  use LocalesArray;
   use ChapelArray;
   use ChapelDistribution;
   use ChapelIO;
   use LocaleTree;
-  use DefaultRectangular; // Must precede ChapelTaskTable.
+  use DefaultRectangular;
+  use InitPrivateGlobals;
   use DefaultAssociative;
   use DefaultSparse;
   use DefaultOpaque;
