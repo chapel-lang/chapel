@@ -1516,6 +1516,10 @@ bool isSyncType(Type* t) {
   return getSyncFlags(t->symbol).any();
 }
 
+bool isAtomicType(Type* t) {
+  return t->symbol->hasFlag(FLAG_ATOMIC_TYPE);
+}
+
 bool isSubClass(Type* type, Type* baseType)
 {
   if (type == baseType)

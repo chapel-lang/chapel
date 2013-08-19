@@ -852,11 +852,8 @@ static bool containsSynchronizationVar(BaseAST* ast) {
   for_vector(SymExpr, symExpr, symExprs) {
     
     if(isVarSymbol(symExpr->var) || isArgSymbol(symExpr->var)) {
-      bool isSync = symExpr->var->type->symbol->hasFlag(FLAG_SYNC);
-      bool isSingle = symExpr->var->type->symbol->hasFlag(FLAG_SINGLE);
-      bool isAtomic = symExpr->var->type->symbol->hasFlag(FLAG_ATOMIC_TYPE);
-
-      if(isSync || isSingle || isAtomic) {
+      Type* symType = symExpr->var->type;
+      if (isSyncType(symType) || isAtomicType(symType)) {
         return true;
       }
     }  
