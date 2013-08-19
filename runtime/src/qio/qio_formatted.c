@@ -2910,6 +2910,7 @@ err_t qio_channel_print_complex(const int threadsafe, qio_channel_t* restrict ch
       re_max = re_got + 1;
     }
   }
+
   // convert the imaginary part
   if( (style->complex_style & QIO_COMPLEX_FORMAT_PART) == QIO_COMPLEX_FORMAT_ABI ) {
     style->showplus = 0; // never put a + or - before the imag part.
@@ -2989,6 +2990,11 @@ err_t qio_channel_print_complex(const int threadsafe, qio_channel_t* restrict ch
   }
 
 rewind:
+  // Release the buffers used to format the real and imaginary parts.
+  MAYBE_STACK_FREE(re_buf, re_buf_onstack);
+  MAYBE_STACK_FREE(im_buf, im_buf_onstack);
+
+  // Revert the channel on error; otherwise, commit the change.
   if( err ) {
     qio_channel_revert_unlocked(ch);
   } else {

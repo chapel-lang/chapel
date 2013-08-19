@@ -461,7 +461,7 @@ typedef bool qio_bool;
 
 #define MAYBE_STACK_FREE(ptr, onstack) \
 { \
-  if( ptr != onstack ) { \
+  if (ptr && ptr != onstack) { \
     qio_free(ptr); \
   } \
 }
