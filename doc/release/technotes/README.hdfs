@@ -22,9 +22,9 @@ Enabling HDFS Support
 
 Once you have ensured that Hadoop and Java are installed and have the
 three variables above, defined, set the environment variable
-CHPL_FOREIGN_FS to 'hdfs' to enable HDFS support:
+CHPL_AUX_FILESYS to 'hdfs' to enable HDFS support:
 
-  export CHPL_FOREIGN_FS=hdfs
+  export CHPL_AUX_FILESYS=hdfs
 
 Then, rebuild Chapel by executing 'make' from $CHPL_HOME.
 
