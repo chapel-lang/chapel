@@ -2790,7 +2790,9 @@ err_t qio_channel_write_newline(const int threadsafe, qio_channel_t* restrict ch
 static err_t maybe_left_pad(qio_channel_t* restrict ch, int gotsize)
 {
   err_t err = 0;
-  if( ch->style.leftjustify ) {
+  // left justify == pad on the right
+  // right justify == pad on the left!
+  if( ! ch->style.leftjustify ) {
     while( gotsize < ch->style.min_width_columns && !err ) {
       err = qio_channel_write_char(false, ch, ch->style.pad_char);
       gotsize++;
@@ -2801,7 +2803,7 @@ static err_t maybe_left_pad(qio_channel_t* restrict ch, int gotsize)
 static err_t maybe_right_pad(qio_channel_t* restrict ch, int gotsize)
 {
   err_t err = 0;
-  if( ! ch->style.leftjustify ) {
+  if( ch->style.leftjustify ) {
     while( gotsize < ch->style.min_width_columns && !err ) {
       err = qio_channel_write_char(false, ch, ch->style.pad_char);
       gotsize++;
@@ -2830,6 +2832,7 @@ err_t qio_channel_print_complex(const int threadsafe, qio_channel_t* restrict ch
   qio_style_t* style;
   int save_show_plus;
   int save_min_columns;
+  style_char_t save_pad_char;
   int width;
   int base;
   bool imag_needs_i = false;
@@ -2864,8 +2867,17 @@ err_t qio_channel_print_complex(const int threadsafe, qio_channel_t* restrict ch
   if( base == 0 ) base = 10;
   save_show_plus = style->showplus;
   save_min_columns = style->min_width_columns;
+  save_pad_char = ch->style.pad_char;
   // clear min_width_columns so ftoa doesn't include the padding.
   style->min_width_columns = 0;
+
+  // force pad char to not be 0 since e.g. 0000(1,3) is a bad idea.
+  // We could emit e.g. 00001+2i for format ABI but it would complicate
+  // this routine to handle -0001+2i. And arguably for zero padding
+  // you might want to split the zeros among the two components. For now
+  // we just force it not to happen.
+  if( ch->style.pad_char == '0' ) ch->style.pad_char = ' ';
+
   pos_char = ch->style.positive_char;
   neg_char = ch->style.negative_char;
 
@@ -3004,6 +3016,7 @@ rewind:
 unlock:
   style->showplus = save_show_plus;
   style->min_width_columns = save_min_columns;
+  style->pad_char = save_pad_char;
   _qio_channel_set_error_unlocked(ch, err);
   if( threadsafe ) {
     qio_unlock(&ch->lock);
@@ -3402,6 +3415,10 @@ qioerr qio_conv_parse(const char* fmt,
     style_out->precision = num_after;
     style_out->min_width_columns = num_before + period + num_after;
     style_out->realfmt = 1; // %f
+    if( period && num_after == 0 ) {
+      // ie ##.
+      style_out->showpoint = 1;
+    }
     goto done;
   }
 
