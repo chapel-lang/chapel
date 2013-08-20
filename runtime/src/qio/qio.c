@@ -694,7 +694,7 @@ err_t qio_mmap_initial(qio_file_t* file)
 }
 
 
-err_t qio_file_init(qio_file_t** file_out, FILE* fp, fd_t fd, qio_hint_t iohints, qio_style_t* style, int usefilestar)
+err_t qio_file_init(qio_file_t** file_out, FILE* fp, fd_t fd, qio_hint_t iohints, const qio_style_t* style, int usefilestar)
 {
   off_t initial_pos = 0;
   off_t initial_length = 0;
@@ -827,16 +827,14 @@ error:
   return err;
 }
 
-err_t qio_file_init_usr(qio_file_t** file_out, void* file_info, qio_hint_t iohints, int flags, qio_style_t* style, qio_file_functions_t* fns)
+err_t qio_file_init_usr(qio_file_t** file_out, void* file_info, qio_hint_t iohints, int flags, const qio_style_t* style, qio_file_functions_t* fns)
 {
   off_t initial_pos = 0;
   off_t initial_length = 0;
-//  int rc;
   err_t err = 0;
   qioerr err_api = 0;
   qio_file_t* file = NULL;
   off_t seek_ret;
-  qio_chtype_t hinted_type;
   int seekable = 0;
 
   if(fns->seek) { // we have seek in our FS
@@ -882,8 +880,6 @@ err_t qio_file_init_usr(qio_file_t** file_out, void* file_info, qio_hint_t iohin
   file->fsfns = fns; // Put our functions in
   file->info  = file_info;
 
-  hinted_type = (qio_chtype_t) (iohints & QIO_METHODMASK);
-
   file->hints = choose_io_method(file, iohints, 0, initial_length,
                                  (flags & QIO_FDFLAG_READABLE) > 0,
                                  (flags & QIO_FDFLAG_WRITEABLE) > 0,
@@ -893,6 +889,10 @@ err_t qio_file_init_usr(qio_file_t** file_out, void* file_info, qio_hint_t iohin
   err = qio_lock_init(&file->lock);
   if( err ) goto error;
   file->max_initial_position = -1;
+
+  // MPF - qio_file_init puts file->hints back to DEFAULT if
+  // that's what we started with, should this function do that
+  // as well?
 
   if( style ) qio_style_copy(&file->style, style);
   else qio_style_init_default(&file->style);
@@ -1072,7 +1072,7 @@ int flags_for_mmap_open(int flags)
 
 // mode should default to S_IRUSR | S_IWUSR | S_IRGRP |  S_IWGRP |  S_IROTH  |  S_IWOTH
 // iohints should default to 0
-err_t qio_file_open(qio_file_t** file_out, const char* pathname, int flags, mode_t mode, qio_hint_t iohints, qio_style_t* style)
+err_t qio_file_open(qio_file_t** file_out, const char* pathname, int flags, mode_t mode, qio_hint_t iohints, const qio_style_t* style)
 {
   FILE* fp = NULL;
   fd_t fd = -1;
@@ -1101,7 +1101,7 @@ err_t qio_file_open(qio_file_t** file_out, const char* pathname, int flags, mode
   return qio_file_init(file_out, fp, fd, iohints | QIO_HINT_OWNED, style, fp != NULL);
 }
 
-err_t qio_file_open_usr(qio_file_t** file_out, const char* pathname, int flags, mode_t mode, qio_hint_t iohints, qio_style_t* style, qio_file_functions_t* s)
+err_t qio_file_open_usr(qio_file_t** file_out, const char* pathname, int flags, mode_t mode, qio_hint_t iohints, const qio_style_t* style, qio_file_functions_t* s)
 {
   err_t err = 0;
   qioerr err_api = 0;
@@ -1125,7 +1125,7 @@ err_t qio_file_open_usr(qio_file_t** file_out, const char* pathname, int flags, 
 
 // If buf is NULL, we create a new buffer. flags indicates readable/writeable/seekable.
 // (default fdflags should be QIO_FDFLAG_READABLE|QIO_FDFLAG_WRITEABLE|QIO_FDFLAG_SEEKABLE
-err_t qio_file_open_mem_ext(qio_file_t** file_out, qbuffer_t* buf, qio_fdflag_t fdflags, qio_hint_t iohints, qio_style_t* style)
+err_t qio_file_open_mem_ext(qio_file_t** file_out, qbuffer_t* buf, qio_fdflag_t fdflags, qio_hint_t iohints, const qio_style_t* style)
 {
   qio_file_t* file = NULL;
   err_t err;
@@ -1181,12 +1181,12 @@ error:
   return err;
 }
 
-err_t qio_file_open_mem(qio_file_t** file_out, qbuffer_t* buf, qio_style_t* style)
+err_t qio_file_open_mem(qio_file_t** file_out, qbuffer_t* buf, const qio_style_t* style)
 {
   return qio_file_open_mem_ext(file_out, buf, (qio_fdflag_t)(QIO_FDFLAG_READABLE|QIO_FDFLAG_WRITEABLE|QIO_FDFLAG_SEEKABLE), 0, style);
 }
 
-err_t qio_file_open_access(qio_file_t** file_out, const char* pathname, const char* access, qio_hint_t iohints, qio_style_t* style)
+err_t qio_file_open_access(qio_file_t** file_out, const char* pathname, const char* access, qio_hint_t iohints, const qio_style_t* style)
 {
   err_t err = 0;
   int flags = 0;
@@ -1198,7 +1198,7 @@ err_t qio_file_open_access(qio_file_t** file_out, const char* pathname, const ch
   return qio_file_open(file_out, pathname, flags, mode, iohints, style);
 }
 
-err_t qio_file_open_access_usr(qio_file_t** file_out, const char* pathname, const char* access, qio_hint_t iohints, qio_style_t* style, qio_file_functions_t* s)
+err_t qio_file_open_access_usr(qio_file_t** file_out, const char* pathname, const char* access, qio_hint_t iohints, const qio_style_t* style, qio_file_functions_t* s)
 {
   err_t err = 0;
   int flags = 0;
@@ -1210,7 +1210,7 @@ err_t qio_file_open_access_usr(qio_file_t** file_out, const char* pathname, cons
   return qio_file_open_usr(file_out, pathname, flags, mode, iohints, style, s);
 }
 
-err_t qio_file_open_tmp(qio_file_t** file_out, qio_hint_t iohints, qio_style_t* style)
+err_t qio_file_open_tmp(qio_file_t** file_out, qio_hint_t iohints, const qio_style_t* style)
 {
   /*char* tmp;
   char* fname = NULL;

@@ -227,13 +227,13 @@ qio_style_t qio_style_default(void)
 }
 
 static inline
-void qio_style_copy(qio_style_t* dst, qio_style_t* src)
+void qio_style_copy(qio_style_t* dst, const qio_style_t* src)
 {
   memcpy(dst, src, sizeof(qio_style_t));
 }
 
 static inline
-qio_style_t* qio_style_dup(qio_style_t* src)
+qio_style_t* qio_style_dup(const qio_style_t* src)
 {
   qio_style_t* ret = (qio_style_t*) qio_malloc(sizeof(qio_style_t));
   if( src ) qio_style_copy(ret, src);

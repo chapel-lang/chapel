@@ -1,7 +1,6 @@
 /* "channel" I/O contributed by Michael Ferguson
 
    Future Work:
-    - Regular expression support (currently favoring RE2 integration)
     - We would like to have a 'serialization' system, including allowing
       the writing of data structures with circular references, and
       encoding the types of classes.
@@ -229,17 +228,17 @@ extern record iostyle { // aka qio_style_t
   var tuple_style:uint(8) = 0;
 }
 
-extern proc qio_style_init_default(inout s: iostyle);
+extern proc qio_style_init_default(ref s: iostyle);
 
 /* Extern functions */
 extern proc qio_file_retain(f:qio_file_ptr_t);
 extern proc qio_file_release(f:qio_file_ptr_t);
 
 pragma "no prototype" // FIXME
-extern proc qio_file_init(inout file_out:qio_file_ptr_t, fp:_file, fd:fd_t, iohints:c_int, inout style:iostyle, usefilestar:c_int):err_t;
-extern proc qio_file_open_access(inout file_out:qio_file_ptr_t, path:string, access:string, iohints:c_int, inout style:iostyle):err_t;
-extern proc qio_file_open_tmp(inout file_out:qio_file_ptr_t, iohints:c_int, inout style:iostyle):err_t;
-extern proc qio_file_open_mem(inout file_out:qio_file_ptr_t, buf:qbuffer_ptr_t, inout style:iostyle):err_t;
+extern proc qio_file_init(ref file_out:qio_file_ptr_t, fp:_file, fd:fd_t, iohints:c_int, const ref style:iostyle, usefilestar:c_int):err_t;
+extern proc qio_file_open_access(ref file_out:qio_file_ptr_t, path:string, access:string, iohints:c_int, const ref style:iostyle):err_t;
+extern proc qio_file_open_tmp(ref file_out:qio_file_ptr_t, iohints:c_int, const ref style:iostyle):err_t;
+extern proc qio_file_open_mem(ref file_out:qio_file_ptr_t, buf:qbuffer_ptr_t, const ref style:iostyle):err_t;
 
 extern proc qio_file_close(f:qio_file_ptr_t):err_t;
 
@@ -250,14 +249,14 @@ extern proc qio_file_unlock(f:qio_file_ptr_t);
 extern proc qio_file_sync(f:qio_file_ptr_t):err_t;
 
 //extern proc qio_file_style_ptr(f:qio_file_ptr_t):qio_style_ptr_t;
-extern proc qio_file_get_style(f:qio_file_ptr_t, inout style:iostyle);
-extern proc qio_file_set_style(f:qio_file_ptr_t, inout style:iostyle);
+extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyle);
+extern proc qio_file_set_style(f:qio_file_ptr_t, const ref style:iostyle);
 
 pragma "no prototype" // FIXME
-extern proc qio_channel_create(inout ch:qio_channel_ptr_t, file:qio_file_ptr_t, hints:c_int, readable:c_int, writeable:c_int, start:int(64), end:int(64), inout style:iostyle):err_t;
+extern proc qio_channel_create(ref ch:qio_channel_ptr_t, file:qio_file_ptr_t, hints:c_int, readable:c_int, writeable:c_int, start:int(64), end:int(64), const ref style:iostyle):err_t;
 
 pragma "no prototype" // FIXME
-extern proc qio_channel_path_offset(threadsafe:c_int, ch:qio_channel_ptr_t, inout path:string, inout offset:int(64)):err_t;
+extern proc qio_channel_path_offset(threadsafe:c_int, ch:qio_channel_ptr_t, ref path:string, ref offset:int(64)):err_t;
 
 extern proc qio_channel_retain(ch:qio_channel_ptr_t);
 extern proc qio_channel_release(ch:qio_channel_ptr_t);
@@ -265,8 +264,8 @@ extern proc qio_channel_release(ch:qio_channel_ptr_t);
 extern proc qio_channel_lock(ch:qio_channel_ptr_t):err_t;
 extern proc qio_channel_unlock(ch:qio_channel_ptr_t);
 
-extern proc qio_channel_get_style(ch:qio_channel_ptr_t, inout style:iostyle);
-extern proc qio_channel_set_style(ch:qio_channel_ptr_t, inout style:iostyle);
+extern proc qio_channel_get_style(ch:qio_channel_ptr_t, ref style:iostyle);
+extern proc qio_channel_set_style(ch:qio_channel_ptr_t, const ref style:iostyle);
 
 extern proc qio_channel_binary(ch:qio_channel_ptr_t):uint(8);
 extern proc qio_channel_byteorder(ch:qio_channel_ptr_t):uint(8);
@@ -276,12 +275,12 @@ extern proc qio_channel_style_element(ch:qio_channel_ptr_t, element:int(64)):int
 extern proc qio_channel_flush(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
 extern proc qio_channel_close(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
 
-extern proc qio_channel_read(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:ssize_t, inout amt_read:ssize_t):err_t;
-extern proc qio_channel_read_amt(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:ssize_t):err_t;
+extern proc qio_channel_read(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:ssize_t, ref amt_read:ssize_t):err_t;
+extern proc qio_channel_read_amt(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:ssize_t):err_t;
 extern proc qio_channel_read_byte(threadsafe:c_int, ch:qio_channel_ptr_t):int(32);
 
-extern proc qio_channel_write(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:ssize_t, inout amt_written:ssize_t):err_t;
-extern proc qio_channel_write_amt(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:ssize_t):err_t;
+extern proc qio_channel_write(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:ssize_t, ref amt_written:ssize_t):err_t;
+extern proc qio_channel_write_amt(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:ssize_t):err_t;
 extern proc qio_channel_write_byte(threadsafe:c_int, ch:qio_channel_ptr_t, byte:uint(8)):err_t;
 
 extern proc qio_channel_offset_unlocked(ch:qio_channel_ptr_t):int(64);
@@ -292,65 +291,65 @@ extern proc qio_channel_commit_unlocked(ch:qio_channel_ptr_t);
 
 extern proc qio_channel_write_bits(threadsafe:c_int, ch:qio_channel_ptr_t, v:uint(64), nbits:int(8)):err_t;
 extern proc qio_channel_flush_bits(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
-extern proc qio_channel_read_bits(threadsafe:c_int, ch:qio_channel_ptr_t, inout v:uint(64), nbits:int(8)):err_t;
+extern proc qio_channel_read_bits(threadsafe:c_int, ch:qio_channel_ptr_t, ref v:uint(64), nbits:int(8)):err_t;
 
 pragma "no prototype" // FIXME
-extern proc qio_file_path_for_fd(fd:fd_t, inout path:string):err_t;
+extern proc qio_file_path_for_fd(fd:fd_t, ref path:string):err_t;
 pragma "no prototype" // FIXME
-extern proc qio_file_path_for_fp(fp:_file, inout path:string):err_t;
+extern proc qio_file_path_for_fp(fp:_file, ref path:string):err_t;
 pragma "no prototype" // FIXME
-extern proc qio_file_path(f:qio_file_ptr_t, inout path:string):err_t;
+extern proc qio_file_path(f:qio_file_ptr_t, ref path:string):err_t;
 pragma "no prototype" // FIXME
-extern proc qio_shortest_path(fl: qio_file_ptr_t, inout path_out:string, path_in:string):err_t;
+extern proc qio_shortest_path(fl: qio_file_ptr_t, ref path_out:string, path_in:string):err_t;
 
-extern proc qio_channel_read_int(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t, issigned:c_int):err_t;
+extern proc qio_channel_read_int(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, ref ptr, len:size_t, issigned:c_int):err_t;
 pragma "no prototype" // FIXME
-extern proc qio_channel_write_int(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t, issigned:c_int):err_t;
+extern proc qio_channel_write_int(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, const ref ptr, len:size_t, issigned:c_int):err_t;
 
-extern proc qio_channel_read_float(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t):err_t;
+extern proc qio_channel_read_float(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, ref ptr, len:size_t):err_t;
 pragma "no prototype" // FIXME
-extern proc qio_channel_write_float(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t):err_t;
+extern proc qio_channel_write_float(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, const ref ptr, len:size_t):err_t;
 
-extern proc qio_channel_read_complex(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout re_ptr, inout im_ptr, len:size_t):err_t;
-extern proc qio_channel_write_complex(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout re_ptr, inout im_ptr, len:size_t):err_t;
+extern proc qio_channel_read_complex(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, ref re_ptr, ref im_ptr, len:size_t):err_t;
+extern proc qio_channel_write_complex(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, const ref re_ptr, const ref im_ptr, len:size_t):err_t;
 
-extern proc qio_channel_read_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, inout s:string, inout len:ssize_t, maxlen:ssize_t):err_t;
-extern proc qio_channel_write_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, s:string, len:ssize_t):err_t;
+extern proc qio_channel_read_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, ref s:string, ref len:ssize_t, maxlen:ssize_t):err_t;
+extern proc qio_channel_write_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, const s:string, len:ssize_t):err_t;
 
-extern proc qio_channel_scan_int(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t, issigned:c_int):err_t;
+extern proc qio_channel_scan_int(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:size_t, issigned:c_int):err_t;
 pragma "no prototype" // FIXME
-extern proc qio_channel_print_int(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t, issigned:c_int):err_t;
+extern proc qio_channel_print_int(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:size_t, issigned:c_int):err_t;
 
-extern proc qio_channel_scan_float(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t):err_t;
+extern proc qio_channel_scan_float(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:size_t):err_t;
 pragma "no prototype" // FIXME
-extern proc qio_channel_print_float(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t):err_t;
+extern proc qio_channel_print_float(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:size_t):err_t;
 
 // These are the same as scan/print float but they assume an 'i' afterwards.
-extern proc qio_channel_scan_imag(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t):err_t;
+extern proc qio_channel_scan_imag(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:size_t):err_t;
 pragma "no prototype" // FIXME
-extern proc qio_channel_print_imag(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t):err_t;
+extern proc qio_channel_print_imag(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:size_t):err_t;
 
 
-extern proc qio_channel_scan_complex(threadsafe:c_int, ch:qio_channel_ptr_t, inout re_ptr, inout im_ptr, len:size_t):err_t;
-extern proc qio_channel_print_complex(threadsafe:c_int, ch:qio_channel_ptr_t, inout re_ptr, inout im_ptr, len:size_t):err_t;
+extern proc qio_channel_scan_complex(threadsafe:c_int, ch:qio_channel_ptr_t, ref re_ptr, ref im_ptr, len:size_t):err_t;
+extern proc qio_channel_print_complex(threadsafe:c_int, ch:qio_channel_ptr_t, const ref re_ptr, const ref im_ptr, len:size_t):err_t;
 
 
-extern proc qio_channel_read_char(threadsafe:c_int, ch:qio_channel_ptr_t, inout char:int(32)):err_t;
+extern proc qio_channel_read_char(threadsafe:c_int, ch:qio_channel_ptr_t, ref char:int(32)):err_t;
 
 extern proc qio_nbytes_char(chr:int(32)):c_int;
 extern proc qio_encode_to_string(chr:int(32)):string;
-extern proc qio_decode_char_buf(inout chr:int(32), inout nbytes:c_int, buf:string, buflen:ssize_t):err_t;
+extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int, buf:string, buflen:ssize_t):err_t;
 
 extern proc qio_channel_write_char(threadsafe:c_int, ch:qio_channel_ptr_t, char:int(32)):err_t;
 extern proc qio_channel_skip_past_newline(threadsafe:c_int, ch:qio_channel_ptr_t, skipOnlyWs:c_int):err_t;
 extern proc qio_channel_write_newline(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
 
-extern proc qio_channel_scan_string(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr:string, inout len:ssize_t, maxlen:ssize_t):err_t;
-extern proc qio_channel_print_string(threadsafe:c_int, ch:qio_channel_ptr_t, ptr:string, len:ssize_t):err_t;
+extern proc qio_channel_scan_string(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr:string, ref len:ssize_t, maxlen:ssize_t):err_t;
+extern proc qio_channel_print_string(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:string, len:ssize_t):err_t;
 
-extern proc qio_channel_scan_literal(threadsafe:c_int, ch:qio_channel_ptr_t, match:string, len:ssize_t, skipws:c_int):err_t;
+extern proc qio_channel_scan_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:string, len:ssize_t, skipws:c_int):err_t;
 extern proc qio_channel_scan_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_ptr, len:ssize_t, skipws:c_int):err_t;
-extern proc qio_channel_print_literal(threadsafe:c_int, ch:qio_channel_ptr_t, match:string, len:ssize_t):err_t;
+extern proc qio_channel_print_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:string, len:ssize_t):err_t;
 extern proc qio_channel_print_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_ptr, len:ssize_t):err_t;
 
 extern record qio_conv_t {
@@ -401,7 +400,7 @@ extern const QIO_CONV_SET_STRINGEND:c_int;
 extern const QIO_CONV_SET_CAPTURE:c_int;
 extern const QIO_CONV_SET_DONE:c_int;
 
-extern proc qio_conv_parse(fmt:string, start:size_t, inout end:size_t, scanning:c_int, inout spec:qio_conv_t, inout style:iostyle):syserr;
+extern proc qio_conv_parse(const fmt:string, start:size_t, ref end:size_t, scanning:c_int, ref spec:qio_conv_t, ref style:iostyle):syserr;
 
 extern proc qio_format_error_too_many_args():syserr;
 extern proc qio_format_error_too_few_args():syserr;
@@ -1253,8 +1252,8 @@ inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, param by
 }
 
 // Channel must be locked, must be running on this.home
-// x is inout because it might contain a literal string.
-inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, inout x:?t):syserr where _isIoPrimitiveTypeOrNewline(t) {
+// x is ref (vs out) because it might contain a literal string.
+inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, ref x:?t):syserr where _isIoPrimitiveTypeOrNewline(t) {
   var e:syserr = ENOERR;
   if t == ioNewline {
     return qio_channel_skip_past_newline(false, _channel_internal, x.skipWhitespaceOnly);
@@ -1315,7 +1314,7 @@ inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:
   return e;
 }
 
-inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, inout x:?t):syserr {
+inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, ref x:?t):syserr {
   var reader = new ChannelReader(_channel_internal=_channel_internal);
   var err:syserr = ENOERR;
   reader.read(x);
@@ -1335,7 +1334,7 @@ inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:
 
 /* Returns true if we read all the args,
    false if we encountered EOF (or possibly another error and didn't halt)*/
-inline proc channel.read(inout args ...?k,
+inline proc channel.read(ref args ...?k,
                   out error:syserr):bool {
   if writing then compilerError("read on write-only channel");
   error = ENOERR;
@@ -1364,19 +1363,19 @@ proc _args_to_proto(args ...?k,
   return err_args;
 }
 
-inline proc channel.read(inout args ...?k):bool {
+inline proc channel.read(ref args ...?k):bool {
   var e:syserr = ENOERR;
   this.read((...args), error=e);
   if !e then return true;
   else if e == EEOF then return false;
   else {
     this._ch_ioerror(e, "in channel.read(" +
-                        _args_to_proto((...args), preArg="inout ") +
+                        _args_to_proto((...args), preArg="ref ") +
                         ")");
     return false;
   }
 }
-proc channel.read(inout args ...?k,
+proc channel.read(ref args ...?k,
                   style:iostyle,
                   out error:syserr):bool {
   if writing then compilerError("read on write-only channel");
@@ -1395,7 +1394,7 @@ proc channel.read(inout args ...?k,
   }
   return !error;
 }
-proc channel.read(inout args ...?k,
+proc channel.read(ref args ...?k,
                   style:iostyle):bool {
   var e:syserr = ENOERR;
   this.read((...args), style=iostyle, error=e);
@@ -1403,13 +1402,13 @@ proc channel.read(inout args ...?k,
   else if e == EEOF then return false;
   else {
     this._ch_ioerror(e, "in channel.read(" +
-                        _args_to_proto((...args), preArg="inout ") +
+                        _args_to_proto((...args), preArg="ref ") +
                         "style:iostyle)");
     return false;
   }
 }
 
-proc channel.readline(inout arg:string, out error:syserr):bool {
+proc channel.readline(ref arg:string, out error:syserr):bool {
   if writing then compilerError("read on write-only channel");
   error = ENOERR;
   on this.home {
@@ -1425,13 +1424,13 @@ proc channel.readline(inout arg:string, out error:syserr):bool {
   }
   return !error;
 }
-proc channel.readline(inout arg:string):bool {
+proc channel.readline(ref arg:string):bool {
   var e:syserr = ENOERR;
   this.readline(arg, error=e);
   if !e then return true;
   else if e == EEOF then return false;
   else {
-    this._ch_ioerror(e, "in channel.readline(inout arg:string)");
+    this._ch_ioerror(e, "in channel.readline(ref arg:string)");
     return false;
   }
 }
@@ -1484,22 +1483,22 @@ proc channel.readln():bool {
 }
 
 
-proc channel.readln(inout args ...?k):bool {
+proc channel.readln(ref args ...?k):bool {
   var nl = new ioNewline();
   return this.read((...args), nl);
 }
-proc channel.readln(inout args ...?k,
+proc channel.readln(ref args ...?k,
                     out error:syserr):bool {
   var nl = new ioNewline();
   return this.read((...args), nl, error=error);
 }
-proc channel.readln(inout args ...?k,
+proc channel.readln(ref args ...?k,
                     style:iostyle,
                     out error:syserr):bool {
   var nl = new ioNewline();
   return this.read((...args), nl, style=style, error=error);
 }
-proc channel.readln(inout args ...?k,
+proc channel.readln(ref args ...?k,
                     style:iostyle):bool {
   var nl = new ioNewline();
   return this.read((...args), nl, style=style);
@@ -1742,10 +1741,10 @@ proc writeln() {
   stdout.writeln();
 }
 
-proc read(inout args ...?n):bool {
+proc read(ref args ...?n):bool {
   return stdin.read((...args));
 }
-proc readln(inout args ...?n):bool {
+proc readln(ref args ...?n):bool {
   return stdin.readln((...args));
 }
 proc readln():bool {
@@ -1827,7 +1826,7 @@ class ChannelReader : Reader {
   proc clearError() {
     err = ENOERR;
   }
-  proc readPrimitive(inout x:?t) where _isIoPrimitiveTypeOrNewline(t) {
+  proc readPrimitive(ref x:?t) where _isIoPrimitiveTypeOrNewline(t) {
     if !err {
       on this {
         err = _read_one_internal(_channel_internal, iokind.dynamic, x);
@@ -3575,7 +3574,7 @@ iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
 //  generated C code, the string argument in Chapel code becomes a reference 
 //  to the character data contained therein.  For example:
 //
-//    extern proc qio_file_path(f:qio_file_ptr_t, inout path:string):err_t;
+//    extern proc qio_file_path(f:qio_file_ptr_t, ref path:string):err_t;
 //
 //  matches
 //

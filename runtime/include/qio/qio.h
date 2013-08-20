@@ -446,25 +446,25 @@ err_t qio_pwritev(qio_file_t* file, qbuffer_t* buf, qbuffer_iter_t start, qbuffe
 
 // if fp is not null, fd is ignored; if fp is null, we use fd.
 // the QIO file takes ownership of fp or fd, closing it when the QIO file is closed.
-err_t qio_file_init(qio_file_t** file_out, FILE* fp, fd_t fd, qio_hint_t iohints, qio_style_t* style, int usefilestar);
-err_t qio_file_open(qio_file_t** file_out, const char* path, int flags, mode_t mode, qio_hint_t iohints, qio_style_t* style);
-err_t qio_file_open_access(qio_file_t** file_out, const char* pathname, const char* access, qio_hint_t iohints, qio_style_t* style);
-err_t qio_file_open_mem_ext(qio_file_t** file_out, qbuffer_t* buf, qio_fdflag_t fdflags, qio_hint_t iohints, qio_style_t* style);
-err_t qio_file_open_mem(qio_file_t** file_out, qbuffer_t* buf, qio_style_t* style);
+err_t qio_file_init(qio_file_t** file_out, FILE* fp, fd_t fd, qio_hint_t iohints, const qio_style_t* style, int usefilestar);
+err_t qio_file_open(qio_file_t** file_out, const char* path, int flags, mode_t mode, qio_hint_t iohints, const qio_style_t* style);
+err_t qio_file_open_access(qio_file_t** file_out, const char* pathname, const char* access, qio_hint_t iohints, const qio_style_t* style);
+err_t qio_file_open_mem_ext(qio_file_t** file_out, qbuffer_t* buf, qio_fdflag_t fdflags, qio_hint_t iohints, const qio_style_t* style);
+err_t qio_file_open_mem(qio_file_t** file_out, qbuffer_t* buf, const qio_style_t* style);
 
-err_t qio_file_open_tmp(qio_file_t** file_out, qio_hint_t iohints, qio_style_t* style);
+err_t qio_file_open_tmp(qio_file_t** file_out, qio_hint_t iohints, const qio_style_t* style);
 
 err_t qio_file_open_usr(qio_file_t** file_out, const char* pathname, 
                         int flags, mode_t mode, qio_hint_t iohints, 
-                        qio_style_t* style, qio_file_functions_t* s);
+                        const qio_style_t* style, qio_file_functions_t* s);
 
 err_t qio_file_init_usr(qio_file_t** file_out, void* file_info, 
-                        qio_hint_t iohints, int flags, qio_style_t* style, 
+                        qio_hint_t iohints, int flags, const qio_style_t* style, 
                         qio_file_functions_t* fns);
 
 err_t qio_file_open_access_usr(qio_file_t** file_out, const char* pathname, 
                                const char* access, qio_hint_t iohints, 
-                               qio_style_t* style, qio_file_functions_t* s);
+                               const qio_style_t* style, qio_file_functions_t* s);
 
 // This can be called to run close and to check the return value.
 // That's important because some implementations (such as NFS)
@@ -527,7 +527,7 @@ void qio_file_get_style(qio_file_t* f, qio_style_t* style)
   *style = f->style;
 }
 static inline
-void qio_file_set_style(qio_file_t* f, qio_style_t* style)
+void qio_file_set_style(qio_file_t* f, const qio_style_t* style)
 {
   f->style = *style;
 }
