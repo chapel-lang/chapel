@@ -141,6 +141,7 @@ class ArgSymbol : public Symbol {
   bool requiresCPtr(void);
   bool isConstant(void);
   bool isParameter(void);
+  const char* intentDescrString(void);
 
   GenRet codegen();
   GenRet codegenType();
@@ -388,5 +389,6 @@ extern Map<Type*,Vec<FnSymbol*>*> virtualMethodTable;
 extern Map<FnSymbol*,int> virtualMethodMap;
 extern Map<FnSymbol*,Vec<FnSymbol*>*> virtualChildrenMap;
 extern Map<FnSymbol*,Vec<FnSymbol*>*> virtualRootsMap;
+extern const char* intentDescrName[];
 
 #endif

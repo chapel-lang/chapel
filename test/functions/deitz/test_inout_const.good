@@ -1,1 +1,1 @@
-test_inout_const.chpl:9: error: non-lvalue actual passed to inout argument
+test_inout_const.chpl:9: error: non-lvalue actual is passed to 'inout' formal "x"

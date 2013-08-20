@@ -687,6 +687,21 @@ bool VarSymbol::isImmediate() {
 }
 
 
+// describes the intent (for use in an English sentence)
+const char* intentDescrName[INTENT_TYPE+1] = {
+  "blank intent",
+  "'in'",
+  "'inout'",
+  "'out'",
+  "'const'",
+  "'const in'",
+  "'const ref'",
+  "'ref'",
+  "'param'",
+  "'type'"
+};
+
+
 ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName, 
                      Type* iType, Expr* iTypeExpr,
                      Expr* iDefaultExpr, Expr* iVariableExpr) :
@@ -811,6 +826,12 @@ bool ArgSymbol::isConstant(void) {
 
 bool ArgSymbol::isParameter(void) {
   return (intent == INTENT_PARAM);
+}
+
+
+// describes this argument's intent (for use in an English sentence)
+const char* ArgSymbol::intentDescrString(void) {
+  return intentDescrName[intent];
 }
 
 

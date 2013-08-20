@@ -1,0 +1,3 @@
+const-ref-lvalue-error.chpl:8: error: non-lvalue actual is passed to 'const ref' formal "x_constref"
+const-ref-lvalue-error.chpl:9: error: non-lvalue actual is passed to 'inout' formal "x_inout"
+const-ref-lvalue-error.chpl:10: error: non-lvalue actual is passed to 'inout' formal "x_inout"

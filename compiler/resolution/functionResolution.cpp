@@ -842,6 +842,32 @@ static void ensureEnumTypeResolved(EnumType* etype) {
 }
 
 
+// Is this a legal actual argument where an l-value is required?
+// I.e. for an out/inout/ref formal.
+static bool
+isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual) {
+  if (SymExpr* se = toSymExpr(actual))
+    if (se->var->hasFlag(FLAG_EXPR_TEMP) || se->var->isConstant() || se->var->isParameter())
+      if (okToConvertFormalToRefType(formal->type))
+        return false;
+  // Perhaps more checks are needed.
+  return true;
+}
+
+
+// Is this a legal actual argument for a 'const ref' formal?
+// At present, params cannot be passed to 'const ref'.
+static bool
+isLegalConstRefActualArg(ArgSymbol* formal, Expr* actual) {
+  if (SymExpr* se = toSymExpr(actual))
+    if (se->var->isParameter())
+      if (okToConvertFormalToRefType(formal->type))
+        return false;
+  // Perhaps more checks are needed.
+  return true;
+}
+
+
 // Returns true iff dispatching the actualType to the formalType
 // results in an instantiation.
 static bool
@@ -2387,23 +2413,37 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
     // Check to ensure the actual supplied to an OUT, INOUT or REF argument
     // is an lvalue.
     for_formals_actuals(formal, actual, call) {
-      if (formal->intent == INTENT_OUT ||
-          formal->intent == INTENT_INOUT ||
-          formal->intent == INTENT_REF) {
-        if (SymExpr* se = toSymExpr(actual)) {
-          if (se->var->hasFlag(FLAG_EXPR_TEMP) || se->var->isConstant() || se->var->isParameter()) {
-            if (okToConvertFormalToRefType(formal->type)) {
-              if (formal->intent == INTENT_OUT) {
-                USR_FATAL(se, "non-lvalue actual passed to out argument");
-              } else if (formal->intent == INTENT_REF) {
-                USR_FATAL(se, "non-lvalue actual passed to ref argument");
-              } else {
-                USR_FATAL(se, "non-lvalue actual passed to inout argument");
-              }
-            }
-          }
-        }
+      const char* errorMsg = NULL;
+      switch (formal->intent) {
+      case INTENT_BLANK:
+      case INTENT_IN:
+      case INTENT_CONST:
+      case INTENT_CONST_IN:
+      case INTENT_PARAM:
+      case INTENT_TYPE:
+        // not checking them here
+        break;
+
+      case INTENT_INOUT:
+      case INTENT_OUT:
+      case INTENT_REF:
+        if (!isLegalLvalueActualArg(formal, actual))
+          errorMsg = "non-lvalue";
+        break;
+
+      case INTENT_CONST_REF:
+        if (!isLegalConstRefActualArg(formal, actual))
+          errorMsg = "non-lvalue";
+        break;
+
+      default:
+        // all intents should be covered above
+        INT_ASSERT(false);
+        break;
       }
+      if (errorMsg)
+        USR_FATAL_CONT(actual, "%s actual is passed to %s formal \"%s\"",
+                       errorMsg, formal->intentDescrString(), formal->name);
     }
 
     if (const char* str = innerCompilerWarningMap.get(resolvedFn)) {
@@ -5228,6 +5268,9 @@ static void unmarkDefaultedGenerics() {
   // '?' (queries) to mark such a type as generic.
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (!fn->inTree())
+      continue;
+
     bool unmark = fn->hasFlag(FLAG_GENERIC);
     for_formals(formal, fn) {
       if (formal->type->hasGenericDefaults) {
