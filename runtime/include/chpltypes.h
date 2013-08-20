@@ -85,11 +85,14 @@ typedef int64_t c_localeid_t;
 // The type for wide-pointer-to-void. This is used in the runtime in order to
 // store and transmit global variable addresses. It is needed in order to make
 // that code able to support packed multilocale pointers.
-#ifdef CHPL_WIDE_POINTER_STRUCT
-// We can't include chpl-locale-model.h until we'after ve defined the node and
-// sublocale types and constants.
-#include "chpl-locale-model.h"
 
+// We can't include chpl-locale-model.h until after we've defined the node and
+// sublocale types and constants, so these cases are also responsible to
+// include chpl-locale-model.h.  (note: moving it out of the #ifdef leads to
+// problems building the launcher).
+
+#ifdef CHPL_WIDE_POINTER_STRUCT
+#include "chpl-locale-model.h"
 typedef struct wide_ptr_s {
   chpl_localeID_t locale;
   void* addr;
@@ -100,6 +103,7 @@ typedef wide_ptr_t* ptr_wide_ptr_t;
 // This is the packed pointer version (the other version would be
 // {{node,subloc}, address}).
 #ifdef CHPL_WIDE_POINTER_PACKED
+#include "chpl-locale-model.h"
 typedef void * wide_ptr_t;
 typedef wide_ptr_t* ptr_wide_ptr_t;
 #ifndef CHPL_WIDE_POINTER_NODE_BITS
