@@ -290,7 +290,6 @@ module ChapelLocale {
   // The allocator pragma is used by scalar replacement.
   pragma "allocator"
   pragma "no sync demotion"
-  pragma "insert line file info"
   proc chpl_here_alloc(x, md:int(16)) {
     var nbytes = __primitive("sizeof", x);
     chpl_memhook_malloc_pre(1, nbytes, md + chpl_memhook_md_num());
@@ -301,7 +300,6 @@ module ChapelLocale {
 
   pragma "allocator"
   pragma "no sync demotion"
-  pragma "insert line file info"
   proc chpl_here_calloc(x, number:int, md:int(16)) {
     extern proc chpl_task_calloc(number:int, nbytes:int) : opaque;
     var nbytes = __primitive("sizeof", x);
@@ -313,7 +311,6 @@ module ChapelLocale {
 
   pragma "allocator"
   pragma "no sync demotion"
-  pragma "insert line file info"
   proc chpl_here_realloc(x, md:int(16)) {
     var nbytes = __primitive("sizeof", x);
     chpl_memhook_realloc_pre(x, nbytes, md + chpl_memhook_md_num());
@@ -323,7 +320,6 @@ module ChapelLocale {
   }
 
   pragma "no sync demotion"
-  pragma "insert line file info"
   proc chpl_here_free(x) {
     // TODO: The pointer should really be of type opaque, but we don't 
     // handle object ==> opaque casts correctly.  (In codegen, opaque behaves 
