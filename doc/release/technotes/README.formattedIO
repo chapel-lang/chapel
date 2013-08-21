@@ -36,9 +36,8 @@ Generic Numeric Conversions
           or complex arguments. Also works with integral arguments, but the
           decimal point is not printed.
 
-          In all cases, the output is padded (on the left, except a
-          complex number is padded on the right) to the total length of
-          the conversion specifier (6 in this example).  The output
+          In all cases, the output is padded on the left to the total length
+          of the conversion specifier (6 in this example).  The output
           can be longer, when needed to accomodate the number.
 
  ## - integral value padded out to 2 digits. Also works with real, imaginary
