@@ -26,6 +26,27 @@ Result of Greg's 21707 commit (08/19/13)
 [Error matching program output for arrays/deitz/part7/test_descriptor_frees]
 [Error matching program output for memory/figueroa/LeakedMemoryArrayOfClasses]
 
+There was a flurry of commits (21727, 21730, 21731) on 7/19 and 7/20 to
+resolve these and a few other problems, which did so but also added new
+ones.  As a result on the night of 7/20 there were numerous failures due
+to "cannot access data in local block" in:
+  linux32.gnu.gasnet.fifo.pthreads-exm
+  linux64.gnu.gasnet-everything.fifo.pthreads-std
+  linux64.gnu.gasnet.fifo.pthreads-distcyclic
+  linux64.gnu.gasnet.fifo.pthreads-distblock
+  linux64.gnu.gasnet.qthreads.none-exm
+  linux64.gnu.none.fifo.pthreads-npt
+  linux64.gnu.none.fifo.pthreads-prf
+  linux64.gnu.none.fifo.pthreads-std
+
+Most of these should be fixed by r21739.  However, failures due to small
+amounts of additional leaked memory will remain in the following:
+  [Error matching program output for arrays/deitz/part7/test_descriptor_frees]
+  [Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
+  [Error matching program output for memory/figueroa/LeakedMemory5 (compopts: 1)]
+  [Error matching program output for memory/figueroa/LeakedMemoryArrayOfClasses]
+  [Error matching program output for memory/figueroa/LeakedMemory2]
+  [Error matching program output for memory/sungeun/refCount/domainMaps]
 
 
 ==============================================
