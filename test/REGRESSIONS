@@ -22,31 +22,34 @@ general regressions (seem to happen in most configurations)
 
 Result of Greg's 21707 commit (08/19/13)
 ----------------------------------------
-[Error matching compiler output for arrays/deitz/jacobi-unoptimized (compopts: 1)]
-[Error matching program output for arrays/deitz/part7/test_descriptor_frees]
-[Error matching program output for memory/figueroa/LeakedMemoryArrayOfClasses]
-
-There was a flurry of commits (21727, 21730, 21731) on 7/19 and 7/20 to
-resolve these and a few other problems, which did so but also added new
-ones.  As a result on the night of 7/20 there were numerous failures due
-to "cannot access data in local block" in:
-  linux32.gnu.gasnet.fifo.pthreads-exm
-  linux64.gnu.gasnet-everything.fifo.pthreads-std
-  linux64.gnu.gasnet.fifo.pthreads-distcyclic
-  linux64.gnu.gasnet.fifo.pthreads-distblock
-  linux64.gnu.gasnet.qthreads.none-exm
-  linux64.gnu.none.fifo.pthreads-npt
-  linux64.gnu.none.fifo.pthreads-prf
-  linux64.gnu.none.fifo.pthreads-std
-
-Most of these should be fixed by r21739.  However, failures due to small
-amounts of additional leaked memory will remain in the following:
+There was a flurry of commits (21727, 21730, 21731, 21737, 21739) from
+7/19 through 7/21 to resolve these and a few other problems, which did
+so but also added new ones.  Failures due to small amounts of additional
+leaked memory remained in the following:
   [Error matching program output for arrays/deitz/part7/test_descriptor_frees]
   [Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
   [Error matching program output for memory/figueroa/LeakedMemory5 (compopts: 1)]
   [Error matching program output for memory/figueroa/LeakedMemoryArrayOfClasses]
   [Error matching program output for memory/figueroa/LeakedMemory2]
   [Error matching program output for memory/sungeun/refCount/domainMaps]
+
+We also had the following failures:
+messages like: fannkuch-redux.chpl:79: error: Out of memory allocating "_ic_these__ref_rangeBase_int64_t_bounded_F"
+  [Error matching performance keys for studies/shootout/fannkuch-redux/fannkuch-redux (compopts: 1)]
+    linux64.gnu.none.fifo.pthreads-prf (chap03)
+    linux64.gnu.none.fifo.pthreads-prf (chap04)
+  [Error matching performance keys for npb/cg/bradc/cg-sparse (compopts: 1, execopts: 4)]
+  [Error matching performance keys for npb/cg/bradc/cg-sparse (compopts: 1, execopts: 5)]
+  [Error matching performance keys for npb/cg/bradc/cg-sparse (compopts: 1, execopts: 6)]
+    linux64.gnu.none.fifo.pthreads-prf (chap03)
+
+no output; may be intermittent and not due to r21739?
+  [Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1, execopts: 1)]
+    linux64.gnu.gasnet.qthreads.none-exm
+
+In r21742 late on 8/22/13, I finally gave up and undid the whole of the
+21707 change.  Testing the morning of 8/23/13 should not have any of the
+above.
 
 
 ==============================================
@@ -208,6 +211,35 @@ execution timeouts
 ------------------
 [Error: Timed out executing program domains/johnk/capacityParSafe (compopts: 1)] (since 12/16/2012)
 in this configuration: linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc
+
+Result of Michael's 21733 commit (08/19/13)
+----------------------------------------
+[Error matching compiler output for functions/vass/ref-intent-bug-3med]
+[Error matching compiler output for functions/vass/ref-intent-bug-4begin]
+[Error matching compiler output for functions/vass/ref-intent-bug-1small]
+[Error matching compiler output for functions/vass/ref-intent-bug-2big]
+[Error matching compiler output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 1)]
+[Error matching compiler output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 2)]
+[Error matching compiler output for release/examples/primers/fileIO]
+[Error matching compiler output for types/file/freadClass]
+[Error matching compiler output for io/ferguson/writebinaryclass]
+[Error matching compiler output for io/ferguson/writebinarytuple]
+[Error matching compiler output for io/ferguson/writebinaryarray]
+[Error matching compiler output for io/ferguson/io_test]
+[Error matching compiler output for io/ferguson/writebinaryrecord]
+[Error matching compiler output for io/ferguson/readThis/readdom]
+[Error matching compiler output for io/ferguson/readThis/readrange]
+[Error matching compiler output for io/ferguson/readThis/readclass5]
+[Error matching compiler output for io/ferguson/readThis/readarr]
+[Error matching compiler output for io/ferguson/readThis/readclass2]
+[Error matching compiler output for io/ferguson/readThis/readclass3]
+[Error matching compiler output for io/ferguson/readThis/readtuple]
+[Error matching compiler output for io/ferguson/readThis/readclass]
+[Error matching compiler output for io/bradc/readTuple]
+[Error matching compiler output for io/bradc/readWholeArr]
+[Error matching compiler output for multilocale/deitz/needMultiLocales/test_remote_file_read_class]
+
+Mail sent, 8/22/13.
 
 =======================
 tcmalloc-specific tests
