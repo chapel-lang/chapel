@@ -23,33 +23,9 @@ general regressions (seem to happen in most configurations)
 Result of Greg's 21707 commit (08/19/13)
 ----------------------------------------
 There was a flurry of commits (21727, 21730, 21731, 21737, 21739) from
-7/19 through 7/21 to resolve these and a few other problems, which did
-so but also added new ones.  Failures due to small amounts of additional
-leaked memory remained in the following:
-  [Error matching program output for arrays/deitz/part7/test_descriptor_frees]
-  [Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
-  [Error matching program output for memory/figueroa/LeakedMemory5 (compopts: 1)]
-  [Error matching program output for memory/figueroa/LeakedMemoryArrayOfClasses]
-  [Error matching program output for memory/figueroa/LeakedMemory2]
-  [Error matching program output for memory/sungeun/refCount/domainMaps]
-
-We also had the following failures:
-messages like: fannkuch-redux.chpl:79: error: Out of memory allocating "_ic_these__ref_rangeBase_int64_t_bounded_F"
-  [Error matching performance keys for studies/shootout/fannkuch-redux/fannkuch-redux (compopts: 1)]
-    linux64.gnu.none.fifo.pthreads-prf (chap03)
-    linux64.gnu.none.fifo.pthreads-prf (chap04)
-  [Error matching performance keys for npb/cg/bradc/cg-sparse (compopts: 1, execopts: 4)]
-  [Error matching performance keys for npb/cg/bradc/cg-sparse (compopts: 1, execopts: 5)]
-  [Error matching performance keys for npb/cg/bradc/cg-sparse (compopts: 1, execopts: 6)]
-    linux64.gnu.none.fifo.pthreads-prf (chap03)
-
-no output; may be intermittent and not due to r21739?
-  [Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1, execopts: 1)]
-    linux64.gnu.gasnet.qthreads.none-exm
-
-In r21742 late on 8/22/13, I finally gave up and undid the whole of the
-21707 change.  Testing the morning of 8/23/13 should not have any of the
-above.
+7/19 through 7/21 to resolve problems with this, and then finally with
+r21742 late on 8/22/13, I undid 21707 entirely.  Thursday night testing
+showed the problems as having been cleared up.
 
 
 ==============================================
@@ -71,6 +47,20 @@ thread-ring times out ever since it was made into a performance test
 [Error (createGraphs): 'gnuplot' command failed for thread-ring.graph]
 [Error generating old-style graphs for thread-ring.graph in /data/sea/cascade/chapel/NightlyPerformance/chap04]
 [Error: Timed out executing program studies/shootout/thread-ring/thread-ring]
+
+mandelbrot-fancy gen compiler failures due to overflow analysis
+---------------------------------------------------------------
+[Error matching compiler output for studies/shootout/mandelbrot/mandelbrot-fancy]
+Gen compiler messages of the form:
+  /tmp/chpl-gbt-25650.deleteme/mandelbrot-fancy.c: In function 'coforall_fn13':
+  /tmp/chpl-gbt-25650.deleteme/mandelbrot-fancy.c:2104: error: assuming signed overflow does not occur when assuming that (X + c) < X is always false
+
+Has been happening since at least 6/27/13.  Curiously, it actually
+succeeded on 8/22/13.  Perhaps this was due to a temporary compiler
+behavior change as a result of the 21707 thashing?
+
+See NightlyPerformance/chap*/day?-???-linux64.gnu.none.fifo.pthreads-prf
+and history thereof.
 
 lulesh decreasing performance (~10/20/12 and 1/23/13)
 -----------------------------------------------------
@@ -725,11 +715,6 @@ failed since adding more multilocale directories (01/31/12)
 baseline-specific tests
 (Checked for accuracy 2/26/2013)
 =======================
-
-Internal errors related to Greg's 21707 commit (8/19/13)
--------------------------------------------------------
-~ 3,000 tests
-
 
 Tests suppressions that now succeed due to turning on inlining (12/7/12)
 ------------------------------------------------------------------------

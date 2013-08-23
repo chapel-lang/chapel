@@ -106,6 +106,7 @@ at present.  See the archives for more detail.
 Perf (linux64.gnu.none.fifo.pthreads)
 -------------------------------------
 [Error: Timed out executing program studies/hpcc/RA/bradc/parallel/ra-dist (compopts: 1)] (06/20/13)
+[Error: Timed out executing program npb/cg/bradc/cg-sparse (compopts: 1, execopts: 4..6)] (08/23/13)
 
 
 ==============================================================================
@@ -238,7 +239,7 @@ examples of what times out:
  distributions/robust/arithmetic/kernels/jacobi (still timing out 5/5/13)
  distributions/nelson/MultiBlockDist2DLocales (maybe resolved?)
  distributions/robust/arithmetic/modules/test_module_Sort (maybe resolved?)
- distributions/robust/arithmetic/stress/test_many_domains (08/13)
+ distributions/robust/arithmetic/stress/test_many_domains (08/22/13)
  distributions/robust/arithmetic/stress/test_many_array (4/29/13)
  distributions/dm/t2 (2012/08/15)
  test_array_slicing3 (07/24/13, 07/12/13, 06/08/12, 6/16, 3/29/13, 5/3/13)
@@ -297,8 +298,8 @@ tcmalloc failures (08/08/12)
 [Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi]
 [Error: Timed out executing program distributions/robust/arithmetic/modules/test_module_Sort]
 
-nondet. tmalloc failures
-------------------------
+nondet. tcmalloc failures
+-------------------------
 [Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains] (08/08/12)
 [Error matching program output for studies/nqueens/nqueens-2-par] (sYSMALLOc assertion failure in malloc.c:3091 - linux64.gnu.none.fifo.pthreads.tcmalloc - 11/15/12)
 
