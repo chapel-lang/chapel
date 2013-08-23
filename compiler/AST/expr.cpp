@@ -4950,24 +4950,6 @@ GenRet CallExpr::codegen() {
                   get(2), get(3));
       break;
     }
-    case PRIM_HERE_FREE: // This is used internally.
-    {
-      if (fNoMemoryFrees)
-        break;
-      INT_ASSERT(numActuals() == 3);
-
-      Expr * ptrExpr = get(1);
-      if( ptrExpr->typeInfo()->symbol->hasFlag(FLAG_DATA_CLASS))
-        INT_FATAL(this, "cannot delete data class");
-      GenRet ptr; 
-      ptr = codegenValue(ptrExpr);
-      if (ptrExpr->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        ptr = codegenRaddr(ptr);
-      }
-      codegenCall("chpl_here_free", codegenCastToVoidStar(ptr),
-                  get(2), get(3));
-      break;
-    }
     case PRIM_CAST: 
     {
       if (typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||

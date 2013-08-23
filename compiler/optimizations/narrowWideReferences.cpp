@@ -273,8 +273,7 @@ narrowSym(Symbol* sym, WideInfo* wi) {
           (call->isPrimitive(PRIM_STRING_COPY)) ||
           (call->isPrimitive(PRIM_SETCID)) ||
           (call->isPrimitive(PRIM_CHPL_ALLOC) && call->get(1) == use) ||
-          (call->isPrimitive(PRIM_CHPL_FREE) && call->get(1) == use) ||
-          (call->isPrimitive(PRIM_HERE_FREE) && call->get(1) == use))
+          (call->isPrimitive(PRIM_CHPL_FREE) && call->get(1) == use))
         continue;
       if (call->isResolved() ||
           (call->isPrimitive(PRIM_SET_MEMBER) && call->get(3) == use) ||

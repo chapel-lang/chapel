@@ -483,9 +483,6 @@ initPrimitive() {
   prim_def(PRIM_CHPL_ALLOC, "chpl_mem_alloc", returnInfoChplAlloc, true, true);
   prim_def(PRIM_CHPL_FREE, "chpl_mem_free", returnInfoVoid, true, true);
 
-  // These are (this is) satisfied by the module.
-  prim_def(PRIM_HERE_FREE, "chpl_here_free", returnInfoVoid, true, true);
-
   prim_def(PRIM_INIT_FIELDS, "chpl_init_record", returnInfoVoid, true);
   prim_def(PRIM_PTR_EQUAL, "ptr_eq", returnInfoBool);
   prim_def(PRIM_PTR_NOTEQUAL, "ptr_neq", returnInfoBool);
