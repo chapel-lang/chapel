@@ -544,6 +544,13 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
   }
 }
 
+// Returns false if 
+//  fLocal == true
+// or
+//  CHPL_COMM == "ugni"
+// of
+//  CHPL_COMM == "gasnet" && CHPL_GASNET_SEGMENT == "everything";
+// true otherwise.
 static bool
 needHeapVars() {
   if (fLocal) return false;
@@ -556,6 +563,10 @@ needHeapVars() {
   return true;
 }
 
+// Traverses all 'begin' or 'on' task functions flagged as needing heap
+// allocation (for its formals) or flagged as nonblockikng.
+// Traverses all ref formals of these functions and adds them to the refSet and
+// refVec.
 static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec)
 {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -573,6 +584,18 @@ static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec)
 }
 
 
+// Traverses all DefExprs.
+//  If the symbol is a coforall index expression,
+//   If it is of reference type,
+//    Add it to refSet and refVec.
+//   Otherwise, if it is not of primitive type or other undesired cases,
+//    Add it to varSet and varVec.
+//  Otherwise, select module-level vars that are not private or extern.
+//   If the var is const and has value semantics except record-wrapped types,
+//    Insert a prim_private_broadcast call after the def.
+//   Otherwise, if it is a record-wrapped type, replicate it.
+//   Otherwise,
+//    Add it to varSet and varVec, so it will be put on the heap.
 static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                                 Vec<Symbol*>& refSet, Vec<Symbol*>& refVec,
                                 Vec<Symbol*>& varSet, Vec<Symbol*>& varVec)
@@ -704,8 +727,22 @@ makeHeapAllocations() {
               }
             } else
               INT_FATAL(ref, "unexpected case");
-          } else
-            INT_FATAL(ref, "unexpected case");
+          } else { // !call->isPrimitive(PRIM_MOVE)
+            // This definition is created by passing the variable to a function
+            // by ref, out or inout intent.  We then assume that the function
+            // updates the reference.
+
+            // If the definition of the ref var does not appear in this
+            // function, then most likely it was established in an calling
+            // routine.
+            // We may need to distinguish between definition of the reference
+            // var itself (i.e. the establishment of an alias) as compared to
+            // when the variable being referenced is updated....
+            // In any case, it is safe to ignore this case, because either the
+            // value of the ref variable was established elsewhere, or it will
+            // appear in another def associated with the ref var.
+//            INT_FATAL(ref, "unexpected case");
+          }
         } else
           INT_FATAL(ref, "unexpected case");
       }

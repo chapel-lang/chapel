@@ -1,3 +1,0 @@
-# This test fails only for gasnet fast.
-CHPL_COMM == none
-CHPL_GASNET_SEGMENT != fast
