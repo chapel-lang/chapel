@@ -75,7 +75,7 @@ memory leaks regressions
 
 ===============================
 valgrind-specific regressions
-(Checked for accuracy 6/3/2013)
+(Checked for accuracy 8/26/13)
 ===============================
 
 random failures due to being out of memory (on purpose)
@@ -87,8 +87,8 @@ overlapping memcpy (root cause should be eliminated)
 ----------------------------------------------------
 [Error matching program output for io/bradc/readWholeArr]
 [Error matching program output for io/ferguson/readThis/readarr]
-[Error matching program output for users/ferguson/bulkerr]
 [Error matching program output for io/ferguson/writebinaryarray]
+[Error matching program output for users/ferguson/bulkerr]
 
 stack overflow
 --------------
@@ -102,9 +102,8 @@ missing "unable to create more than 0000 threads" warning
 But under valgrind, the program is executed with --numThreadsPerLocale=100,
 so the warning does not apply and is not raised, and .good is not matched.
 
-"Unrecognised instruction"
---------------------------
-started 5/18/2013:
+"Unrecognised instruction" (05/18/2013)
+---------------------------------------
 [Error matching program output for types/atomic/ferguson/atomictest]
 [Error matching program output for types/atomic/sungeun/atomic_vars]
 
@@ -139,15 +138,44 @@ The following tests have been timing out since 8/18/2012 or earlier:
 functions/iterators/vass/yield-arrays-var-nonvar.chpl times out in compilation
 (08/19/13 - assigned to Vass)
 
+
 ===============================
 no-local regressions
-(Checked for accuracy 6/3/2013)
+(Checked for accuracy 8/25/13)
 ===============================
+
+Compiler PAR0708 internal error resulting from r21733 commit (08/19/13)
+-----------------------------------------------------------------------
+[Error matching compiler output for io/bradc/readWholeArr]
+[Error matching compiler output for io/ferguson/io_test]
+[Error matching compiler output for io/ferguson/readThis/readarr]
+[Error matching compiler output for io/ferguson/readThis/readclass2]
+[Error matching compiler output for io/ferguson/readThis/readclass3]
+[Error matching compiler output for io/ferguson/readThis/readclass5]
+[Error matching compiler output for io/ferguson/readThis/readclass]
+[Error matching compiler output for io/ferguson/readThis/readdom]
+[Error matching compiler output for io/ferguson/readThis/readrange]
+[Error matching compiler output for io/ferguson/readThis/readtuple]
+[Error matching compiler output for io/ferguson/writebinaryarray]
+[Error matching compiler output for io/ferguson/writebinaryclass]
+[Error matching compiler output for io/ferguson/writebinaryrecord]
+[Error matching compiler output for io/ferguson/writebinarytuple]
+[Error matching compiler output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 1)]
+[Error matching compiler output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 2)]
+[Error matching compiler output for release/examples/primers/fileIO]
+[Error matching compiler output for types/file/freadClass]
+
+??? (??/??/13)
+--------------
+[Error matching compiler output for studies/parboil/SAD/sadSerial]
+[Error matching compiler output for studies/parboil/histo/histoSerial]
+[Error matching compiler output for studies/parboil/stencil/stencilSerial]
+
 
 
 ====================================================
 gasnet-everything regressions (other than the above)
-(Checked for accuracy 6/3/2013)
+(Checked for accuracy 8/26/13)
 ====================================================
 
 error message changed after Tom's local string sharing change (06/01/13)
@@ -160,27 +188,32 @@ communication counts changed due to Tom's HL branch merge (06/11/13)
 [Error matching program output for distributions/robust/arithmetic/performance/alloc_all]
 [Error matching program output for distributions/robust/arithmetic/performance/assignAlias]
 [Error matching program output for distributions/robust/arithmetic/performance/assignSlice]
-[Error matching program output for distributions/robust/arithmetic/performance/assign]
 [Error matching program output for distributions/robust/arithmetic/performance/reduceAlias]
 [Error matching program output for distributions/robust/arithmetic/performance/reduceSlice]
-[Error matching program output for distributions/robust/arithmetic/performance/reduce]
-[Error matching program output for multilocale/deitz/needMultiLocales/dist/test_private_space]
-[Error matching program output for multilocale/deitz/needMultiLocales/raCommCheck (compopts: 1, execopts: 1)]
-[Error matching program output for multilocale/deitz/needMultiLocales/raCommCheck (compopts: 2, execopts: 1)]
-[Error matching program output for multilocale/deitz/needMultiLocales/streamCommCheck]
-[Error matching program output for parallel/taskPar/sungeun/barrier/commDiags]
-[Error matching program output for performance/sungeun/multilocale/atomics]
-[Error matching program output for performance/sungeun/multilocale/syncsingle]
-[Error matching program output for studies/hpcc/CommDiags/ra_commDiags (compopts: 1, execopts: 1)]
-[Error matching program output for studies/hpcc/CommDiags/ra_commDiags (compopts: 2, execopts: 1)]
-[Error matching program output for studies/hpcc/CommDiags/stream_commDiags (compopts: 1)]
-[Error matching program output for studies/ssca2/performance/SSCA2_commDiags]
+[Error matching program output for studies/hpcc/CommDiags/stream-ep_commDiags (compopts: 1)]
+
+incorrect output (08/??/13)
+---------------------------
+[Error matching program output for modules/gbt/printchplenv]
+
+deadlock/livelock (??/??/13)
+----------------------------
+[Error: Timed out executing program multilocale/gbt/hello-numThreads-1]
+
 
 
 ==============================================
 gasnet-fast regressions (other than the above)
-(checked for accuracy 6/3/2013)
+(checked for accuracy 8/24/2013)
 ==============================================
+
+Compiler PAR0708 internal error resulting from r21733 commit (08/19/13)
+-----------------------------------------------------------------------
+[Error matching compiler output for multilocale/deitz/needMultiLocales/test_remote_file_read_class]
+
+Execution time segfault resulting from r21733 commit (08/19/13)
+---------------------------------------------------------------
+[Error matching program output for multilocale/deitz/needMultiLocales/test_remote_file_read]
 
 memory doesn't match (05/28/09)
 -------------------------------
@@ -191,44 +224,10 @@ unable to start polling thread (???)
 [Error matching program output for memory/shannon/outofmemory/mallocOutOfMemory]
 
 execution timeouts
+(in this configuration: linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc)
 ------------------
 [Error: Timed out executing program domains/johnk/capacityParSafe (compopts: 1)] (since 12/16/2012)
-in this configuration: linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc
 
-Execution time segfault resulting from r21733 commit (08/19/13)
----------------------------------------------------------------
-[Error matching program output for multilocale/deitz/needMultiLocales/test_remote_file_read]
-
-Mail sent 8/26/13.
-
-Compiler PAR0708 internal error resulting from r21733 commit (08/19/13)
------------------------------------------------------------------------
-[Error matching compiler output for functions/vass/ref-intent-bug-3med]
-[Error matching compiler output for functions/vass/ref-intent-bug-4begin]
-[Error matching compiler output for functions/vass/ref-intent-bug-1small]
-[Error matching compiler output for functions/vass/ref-intent-bug-2big]
-[Error matching compiler output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 1)]
-[Error matching compiler output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 2)]
-[Error matching compiler output for release/examples/primers/fileIO]
-[Error matching compiler output for types/file/freadClass]
-[Error matching compiler output for io/ferguson/writebinaryclass]
-[Error matching compiler output for io/ferguson/writebinarytuple]
-[Error matching compiler output for io/ferguson/writebinaryarray]
-[Error matching compiler output for io/ferguson/io_test]
-[Error matching compiler output for io/ferguson/writebinaryrecord]
-[Error matching compiler output for io/ferguson/readThis/readdom]
-[Error matching compiler output for io/ferguson/readThis/readrange]
-[Error matching compiler output for io/ferguson/readThis/readclass5]
-[Error matching compiler output for io/ferguson/readThis/readarr]
-[Error matching compiler output for io/ferguson/readThis/readclass2]
-[Error matching compiler output for io/ferguson/readThis/readclass3]
-[Error matching compiler output for io/ferguson/readThis/readtuple]
-[Error matching compiler output for io/ferguson/readThis/readclass]
-[Error matching compiler output for io/bradc/readTuple]
-[Error matching compiler output for io/bradc/readWholeArr]
-[Error matching compiler output for multilocale/deitz/needMultiLocales/test_remote_file_read_class]
-
-Mail sent 8/22/13.
 
 =======================
 tcmalloc-specific tests
@@ -335,6 +334,7 @@ diff seems to think output file is binary? (09/26/11 -- first run in ages)
 incorrect output -- Memory leakage numbers are negative (!) or higher than expected
 ----------------------------------------------------------------------------------------
 [Error matching program output for memory/figueroa/LeakedMemory5 (compopts: 1)]
+
 
 =====================================
 cray-xt-cray/cce-specific regressions
