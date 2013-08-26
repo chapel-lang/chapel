@@ -20,13 +20,6 @@
 general regressions (seem to happen in most configurations)
 ===========================================================
 
-Result of Greg's 21707 commit (08/19/13)
-----------------------------------------
-There was a flurry of commits (21727, 21730, 21731, 21737, 21739) from
-7/19 through 7/21 to resolve problems with this, and then finally with
-r21742 late on 8/22/13, I undid 21707 entirely.  Thursday night testing
-showed the problems as having been cleared up.
-
 
 ==============================================
 linux64 regressions (in addition to the above)
@@ -202,8 +195,14 @@ execution timeouts
 [Error: Timed out executing program domains/johnk/capacityParSafe (compopts: 1)] (since 12/16/2012)
 in this configuration: linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc
 
-Result of Michael's 21733 commit (08/19/13)
-----------------------------------------
+Execution time segfault resulting from r21733 commit (08/19/13)
+---------------------------------------------------------------
+[Error matching program output for multilocale/deitz/needMultiLocales/test_remote_file_read]
+
+Mail sent 8/26/13.
+
+Compiler PAR0708 internal error resulting from r21733 commit (08/19/13)
+-----------------------------------------------------------------------
 [Error matching compiler output for functions/vass/ref-intent-bug-3med]
 [Error matching compiler output for functions/vass/ref-intent-bug-4begin]
 [Error matching compiler output for functions/vass/ref-intent-bug-1small]
@@ -229,7 +228,7 @@ Result of Michael's 21733 commit (08/19/13)
 [Error matching compiler output for io/bradc/readWholeArr]
 [Error matching compiler output for multilocale/deitz/needMultiLocales/test_remote_file_read_class]
 
-Mail sent, 8/22/13.
+Mail sent 8/22/13.
 
 =======================
 tcmalloc-specific tests
@@ -505,12 +504,7 @@ xt-intel-specific regressions (in addition to cray-xt errors above)
 (Checked for accuracy 2/26/2013)
 ===================================================================
 
-seg fault (6/10/13)
--------------------
-[Error matching program output for distributions/robust/arithmetic/basics/test_array_assignment]
-[Error matching program output for distributions/robust/arithmetic/basics/test_infer_array_type]
-
-seg fault for linux64.intel.none.fifo.pthreads on chpbld02 (7/3/13) (Brad)
+seg fault for linux64.intel.none.fifo.pthreads on chpbld02 (7/3/13) (Greg)
 --------------------------------------------------------------------------
 these are due to r21501 (op=)
 [Error matching program output for distributions/robust/arithmetic/basics/test_array_assignment]
@@ -709,6 +703,11 @@ failed since adding more multilocale directories (01/31/12)
 -----------------------------------------------------------
 [Error: Timed out executing program distributions/bradc/extremeBlock]
 [Error: Timed out executing program distributions/nelson/MultiBlockDist2DLocales]
+
+*** FATAL ERROR: recursive failure in AMUDP_SPMDShutdown
+--------------------------------------------------------
+[Error matching program output for multilocale/local/diten/test_local2] (8/24/13, linux64.gnu.gasnet.qthreads.none-exm)
+  Worked when re-run; may be intermittent?
 
 
 =======================
