@@ -1334,7 +1334,7 @@ inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:
 
 /* Returns true if we read all the args,
    false if we encountered EOF (or possibly another error and didn't halt)*/
-inline proc channel.read(ref args ...?k,
+inline proc channel.read(inout args ...?k,
                   out error:syserr):bool {
   if writing then compilerError("read on write-only channel");
   error = ENOERR;
@@ -1375,7 +1375,7 @@ inline proc channel.read(ref args ...?k):bool {
     return false;
   }
 }
-proc channel.read(ref args ...?k,
+proc channel.read(inout args ...?k,
                   style:iostyle,
                   out error:syserr):bool {
   if writing then compilerError("read on write-only channel");
@@ -1408,7 +1408,7 @@ proc channel.read(ref args ...?k,
   }
 }
 
-proc channel.readline(ref arg:string, out error:syserr):bool {
+proc channel.readline(inout arg:string, out error:syserr):bool {
   if writing then compilerError("read on write-only channel");
   error = ENOERR;
   on this.home {

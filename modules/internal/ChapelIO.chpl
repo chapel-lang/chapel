@@ -189,7 +189,7 @@ module ChapelIO {
     proc setError(e:syserr) { }
     proc clearError() { }
   
-    proc readPrimitive(inout x:?t) where _isIoPrimitiveTypeOrNewline(t) {
+    proc readPrimitive(ref x:?t) where _isIoPrimitiveTypeOrNewline(t) {
       //compilerError("Generic Reader.readPrimitive called");
       halt("Generic Reader.readPrimitive called");
     }
@@ -209,17 +209,17 @@ module ChapelIO {
       }*/
       x.readThis(this);
     }
-    proc readIt(inout x:?t) where !isClassType(t) {
+    proc readIt(ref x:?t) where !isClassType(t) {
       if _isIoPrimitiveTypeOrNewline(t) {
         readPrimitive(x);
       } else {
         x.readThis(this);
       }
     }
-    proc readwrite(inout x) {
+    proc readwrite(ref x) {
       readIt(x);
     }
-    proc read(inout args ...?k):bool {
+    proc read(ref args ...?k):bool {
       for param i in 1..k {
         readIt(args(i));
       }
@@ -231,7 +231,7 @@ module ChapelIO {
         return true;
       }
     }
-    proc readln(inout args ...?k):bool {
+    proc readln(ref args ...?k):bool {
       for param i in 1..k {
         readIt(args(i));
       }
@@ -254,7 +254,7 @@ module ChapelIO {
         return true;
       }
     }
-    proc readThisFieldsDefaultImpl(type t, inout x, inout first:bool) {
+    proc readThisFieldsDefaultImpl(type t, ref x, inout first:bool) {
       param num_fields = __primitive("num fields", t);
       var isBinary = binary();
   
@@ -345,7 +345,7 @@ module ChapelIO {
   
       var first = true;
   
-      var obj = x; // make obj point to x so inout works
+      var obj = x; // make obj point to x so ref works
       readThisFieldsDefaultImpl(t, obj, first);
   
       if !binary() {
@@ -360,7 +360,7 @@ module ChapelIO {
         readIt(end);
       }
     }
-    proc readThisDefaultImpl(inout x:?t) where !isClassType(t){
+    proc readThisDefaultImpl(ref x:?t) where !isClassType(t){
       if !binary() {
         var st = styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
         var start:ioLiteral;
@@ -395,7 +395,7 @@ module ChapelIO {
     w.readwrite(x);
     return w;
   }
-  inline proc <~>(r: Reader, inout x):Reader {
+  inline proc <~>(r: Reader, ref x):Reader {
     r.readwrite(x);
     return r;
   }

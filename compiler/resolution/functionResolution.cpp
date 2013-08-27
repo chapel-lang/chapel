@@ -3879,9 +3879,11 @@ preFold(Expr* expr) {
       call->replace(result);
     } else if (call->isPrimitive(PRIM_NUM_FIELDS)) {
       ClassType* classtype = toClassType(toSymExpr(call->get(1))->var->type);
-      int fieldcount = 0;
-
       INT_ASSERT( classtype != NULL );
+      classtype = toClassType(classtype->getValType());
+      INT_ASSERT( classtype != NULL );
+
+      int fieldcount = 0;
 
       for_fields(field, classtype) {
         if( ! isNormalField(field) ) continue;
@@ -3894,7 +3896,8 @@ preFold(Expr* expr) {
       call->replace(result);
     } else if (call->isPrimitive(PRIM_FIELD_NUM_TO_NAME)) {
       ClassType* classtype = toClassType(toSymExpr(call->get(1))->var->type);
-
+      INT_ASSERT( classtype != NULL );
+      classtype = toClassType(classtype->getValType());
       INT_ASSERT( classtype != NULL );
 
       VarSymbol* var = toVarSymbol(toSymExpr(call->get(2))->var);
@@ -3916,7 +3919,8 @@ preFold(Expr* expr) {
       call->replace(result);
     } else if (call->isPrimitive(PRIM_FIELD_VALUE_BY_NUM)) {
       ClassType* classtype = toClassType(call->get(1)->typeInfo());
-
+      INT_ASSERT( classtype != NULL );
+      classtype = toClassType(classtype->getValType());
       INT_ASSERT( classtype != NULL );
 
       VarSymbol* var = toVarSymbol(toSymExpr(call->get(2))->var);
@@ -3925,6 +3929,7 @@ preFold(Expr* expr) {
 
       int fieldnum = var->immediate->int_value();
       int fieldcount = 0;
+
       for_fields(field, classtype) {
         if( ! isNormalField(field) ) continue;
 
@@ -3938,7 +3943,8 @@ preFold(Expr* expr) {
       call->replace(result);
     } else if (call->isPrimitive(PRIM_FIELD_ID_BY_NUM)) {
       ClassType* classtype = toClassType(call->get(1)->typeInfo());
-
+      INT_ASSERT( classtype != NULL );
+      classtype = toClassType(classtype->getValType());
       INT_ASSERT( classtype != NULL );
 
       VarSymbol* var = toVarSymbol(toSymExpr(call->get(2))->var);
@@ -3959,6 +3965,10 @@ preFold(Expr* expr) {
       call->replace(result);
     } else if (call->isPrimitive(PRIM_FIELD_VALUE_BY_NAME)) {
       ClassType* classtype = toClassType(call->get(1)->typeInfo());
+      INT_ASSERT( classtype != NULL );
+      classtype = toClassType(classtype->getValType());
+      INT_ASSERT( classtype != NULL );
+
       VarSymbol* var = toVarSymbol(toSymExpr(call->get(2))->var);
       INT_ASSERT( var != NULL );
 
