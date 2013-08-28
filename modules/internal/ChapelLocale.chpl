@@ -148,6 +148,7 @@ module ChapelLocale {
   //
   var origRootLocale : locale = nil;
 
+  config const minRootLocaleInitPerTask = 1;
   class AbstractRootLocale : locale {
     // These functions are used to establish values for Locales[] and
     // LocaleSpace -- an array of locales and its correponding domain
@@ -186,12 +187,25 @@ module ChapelLocale {
 
     iter initOnLocales(param tag: iterKind)
       where tag==iterKind.leader {
-      for locIdx in (origRootLocale:RootLocale).getDefaultLocaleSpace() {
-        var locID = chpl_buildLocaleID(locIdx:chpl_nodeID_t, 0:chpl_sublocID_t);
-        // sublocale part of locID needs to be any
-        on __primitive("chpl_on_locale_num", locID) {
-          yield locIdx;
-          rootLocale = origRootLocale;
+      // Simple blocking of locales.  Consider tree-based start-up
+      // We assume locales are number 0..numLocales-1
+      extern proc chpl_numCoresOnThisLocale(): int;
+      var numChunks = _computeNumChunks(chpl_numCoresOnThisLocale(),
+                                        true /* ignoreRunning*/,
+                                        minRootLocaleInitPerTask,
+                                        numLocales);
+      coforall chunk in 0..#numChunks {
+        const (lo, hi) = _computeBlock(numLocales, numChunks,
+                                       chunk, numLocales-1);
+        for locIdx in lo..hi {
+          extern var c_sublocid_any:chpl_sublocID_t;
+          // sublocale part of locID needs to be any
+          var locID = chpl_buildLocaleID(locIdx:chpl_nodeID_t,
+                                         c_sublocid_any:chpl_sublocID_t);
+          on __primitive("chpl_on_locale_num", locID) {
+            yield locIdx;
+            rootLocale = origRootLocale;
+          }
         }
       }
     }

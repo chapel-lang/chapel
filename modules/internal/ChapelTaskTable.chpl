@@ -59,10 +59,12 @@ module ChapelTaskTable {
   //- Code to initialize the task table on each locale.
   //-
   proc chpldev_taskTable_init() {
-    for loc in Locales do
-      on loc {
-        chpldev_taskTable = new chpldev_taskTable_t();
-      }
+    // Doing this in parallel should be safe as long as this module is
+    // initialized late (after DefaultRectangular and most other
+    // internal modules are already initialized)
+    forall loc in Locales do on loc {
+      chpldev_taskTable = new chpldev_taskTable_t();
+    }
   }
   
   chpldev_taskTable_init();
@@ -74,7 +76,8 @@ module ChapelTaskTable {
   //
   // Exported task table code.
   //
-  // In general, tasks may have been created before the task table was initialized.
+  // In general, tasks may have been created before the task table was
+  // initialized.
   // In that case, operations may be attempted on the task table using
   // taskIDs that are unknown to it.  That is why we check
   // for membership on all operations.
@@ -89,7 +92,9 @@ module ChapelTaskTable {
     if (chpldev_taskTable == nil) then return;
   
     if (!chpldev_taskTable.dom.member(taskID)) then
-      // This must be serial to avoid deadlock in a coforall. <hilde>
+      // This must be serial, because if add() results in parallelism
+      // (due to _resize), it may lead to deadlock (due to reentry
+      // into the runtime tasking layer for task table operations).
       serial true do
         chpldev_taskTable.dom.add(taskID);
   
@@ -102,7 +107,9 @@ module ChapelTaskTable {
     if (chpldev_taskTable == nil ||
         !chpldev_taskTable.dom.member(taskID)) then return;
   
-    // This must also be serial
+    // This must be serial, because if remove() results in parallelism
+    // (due to _resize), it may lead to deadlock (due to reentry into
+    // the runtime tasking layer for task table operations).
     serial true do
       chpldev_taskTable.dom.remove(taskID);
   }

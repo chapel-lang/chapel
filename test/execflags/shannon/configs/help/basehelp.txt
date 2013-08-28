@@ -21,6 +21,7 @@ Built-in config vars:
                  numLocales: int(64)
         numThreadsPerLocale: int(64) 
               callStackSize: int(64) 
+   minRootLocaleInitPerTask: int(64) 
       dataParTasksPerLocale: int(64)
   dataParIgnoreRunningTasks: bool
       dataParMinGranularity: int(64)
