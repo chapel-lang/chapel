@@ -7,4 +7,5 @@ record R {
 var a : R;
 var b : R;
 
+writeln(a == b);
 writeln(a != b);

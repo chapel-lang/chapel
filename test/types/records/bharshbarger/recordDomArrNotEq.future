@@ -1,8 +1,0 @@
-bug: Generated C code fails to compile when the != operator is used between records containing an array defined by a domain
-
-Compiler output:
-In file included from /tmp/chpl-bharshbarg-1050.deleteme/_main.c:32:
-/tmp/chpl-bharshbarg-1050.deleteme/recordDomArrNotEq.c: In function ‘chpl___EXCLAMATION__ASSIGN_2’:
-/tmp/chpl-bharshbarg-1050.deleteme/recordDomArrNotEq.c:203: error: used struct type value where scalar is required
-gmake: *** [/tmp/chpl-bharshbarg-1050.deleteme/a.out.tmp] Error 1
-error: compiling generated source
