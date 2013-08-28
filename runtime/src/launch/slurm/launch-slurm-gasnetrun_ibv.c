@@ -101,29 +101,25 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
   case slurmpro:
   case unknown:
     fprintf(slurmFile, "#SBATCH --nodes=%d\n", numLocales);
-//    fprintf(slurmFile, "#SBATCH --ntasks-per-node=%d\n", procsPerNode);
-    if (numCoresPerLocale)
-      fprintf(slurmFile, "#SBATCH --ntasks-per-node=%d\n", numCoresPerLocale);
 
       break;
   case slurm:
     fprintf(slurmFile, "#SBATCH --nodes=%d\n", numLocales);
     fprintf(slurmFile, "#SBATCH --ntasks-per-node=1\n");
-    /*
-    if (numCoresPerLocale) {
-      fprintf(slurmFile, "#SBATCH --ntasks-per-node=%d\n", numCoresPerLocale);
-//      fprintf(slurmFile, "#SBATCH --cpus=%d\n", numLocales*numCoresPerLocale );
-    } else fprintf(slurmFile, "#SBATCH --ntasks=%d\n", numLocales*16);
-    */
-    // This is specific for the Picasso computer in the University of Malaga
-   fprintf(slurmFile, "#SBATCH --constraint=cal\n");
+    // CUSTOMIZE
+    // This is specific for the Picasso computer at the University of Malaga
+    // Can be substituted with the desired constrain.
+    // fprintf(slurmFile, "#SBATCH --constraint=cal\n");
    fprintf(slurmFile, "#SBATCH --exclusive\n");
    
 
     break;
   case uma:
+    fprintf(slurmFile, "#SBATCH --constraint=cal\n");
     fprintf(slurmFile, "#SBATCH --nodes=%d\n", numLocales);
-    fprintf(slurmFile, "#SBATCH --cpus=%d\n", numLocales*16);
+    fprintf(slurmFile, "#SBATCH --ntasks-per-node=1\n");
+    //fprintf(slurmFile, "#SBATCH --cpus=%d\n", numLocales*16);
+    fprintf(slurmFile, "#SBATCH --exclusive\n");
     break;
   case torque:
     fprintf(slurmFile, "#SBATCH --nodes=%d\n", numLocales);
@@ -188,7 +184,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   fprintf(expectFile, "chmod +x %s\n",slurmFilename);
   fprintf(expectFile, "set prompt \"(%%|#|\\\\$|>) $\"\n");
 //  fprintf(expectFile, "spawn sbatch ");
-  fprintf(expectFile, "spawn srun ");
+  fprintf(expectFile, "spawn sbatch ");
   fprintf(expectFile, "-V "); // pass through all environment variables
   fprintf(expectFile, "-I %s\n", slurmFilename);
   fprintf(expectFile, "expect -re $prompt\n");
@@ -207,7 +203,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   sprintf(baseCommand, "expect %s", expectFilename);
   } else {
 //    sprintf(baseCommand, "sbatch %s\n", slurmFilename);
-    sprintf(baseCommand, "srun %s\n", slurmFilename);
+    sprintf(baseCommand, "sbatch %s\n", slurmFilename);
   }
 
   size = strlen(baseCommand) + 1;
