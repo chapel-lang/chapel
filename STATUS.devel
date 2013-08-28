@@ -55,6 +55,9 @@ run into.
 # OMITTED: distributions/bradc/clonedForall.future
 # OMITTED: performance/sungeun/multilocale/locale.future
 #  b/c minorish performance futures which we may one day start documenting
+#
+# OMITTED: performance/bradc/refArgIsWide.future
+#  b/c general performance future
 
 General (see also portability section at the bottom of this file)
 -----------------------------------------------------------------
@@ -77,6 +80,7 @@ General (see also portability section at the bottom of this file)
   # trivial/figueroa/UnmangledSymbols.future
   # users/vass/global-j1.future
 - There are several internal memory leaks:
+  # memory/figueroa/LeakedMemory6.future
   - All strings are leaked
   - Privatized domains and arrays (i.e., those that use the standard
     distributions) are leaked
@@ -97,6 +101,7 @@ General (see also portability section at the bottom of this file)
   # separate_compilation/jturner/use_subclass.future
 - Back-end compilers may emit warning messages.
   # memory/sungeun/no_unreachable_autoDestroy.future
+  # studies/shootout/mandelbrot/bugs/mandelbrot-error.future
 - The --gdb flag is only supported for single-locale platforms that
   support gdb.  Please ask us for help if you want to debug a
   multilocale program.
@@ -220,10 +225,7 @@ Functions and Iterators
   # functions/vass/arg-is-tuple-with-generic-class.future
 - Ref intent formals can result in an internal compiler error for
   multi-locale compilation.
-  # functions/vass/ref-intent-bug-1small.future
-  # functions/vass/ref-intent-bug-3med.future
   # functions/vass/ref-intent-bug-2big.future
-  # functions/vass/ref-intent-bug-4begin.future
 - Sync vars incorrectly passed to ref intent arguments.
   # functions/vass/sync-by-ref.future
 - Sync and single variables in records are not properly copied out
@@ -271,6 +273,11 @@ Functions and Iterators
 - The implicit 'setter' argument does not work in var iterators.
   # functions/deitz/iterators/iterator_uses_setter.future
   # functions/deitz/iterators/test_promote_var_function_and_iterate.future
+- Iterators yielding locale types result in an internal error.
+  # functions/iterators/sungeun/iterInClass.future
+- Iterators yielding arrays within begin/cobegin/coforall/on may
+  result in nil dereference.
+  # parallel/taskPar/vass/yield-arrays-in-task-funs.future
 
 
 Tuples
@@ -388,12 +395,15 @@ Classes, Records, and Unions
 - Incorrect casting of a class variable to a type that is not its
   superclass does not report an error.
   # classes/vass/subclass-cast-error.future
-- Declaring class member using type aliases is sensitive to textual ordering.
+- Declaring class members using type aliases may result in unresolved
+  type errors.
   # arrays/deitz/part5/test_array_type_field_type.future 
   # classes/diten/type_order_problem.future
+  # types/records/bharshbarger/nestedRecordInClass2.future
 - Cannot call 'new' on type aliases for classes and records
   # types/typedefs/bradc/newTypedef.future
   # types/typedefs/lydia/def-new-on-type-alias.future
+  # types/typedefs/tzakian/classConstructorsFromTypes.future
 - Iterator methods may not obey dynamic dispatch.
   # trivial/jturner/iter_overload_simple.future
   # functions/iterators/vass/dynamic-dispatch-iterators.future
@@ -418,8 +428,10 @@ Classes, Records, and Unions
   # types/records/vass/method-of-parent-record-1.future
 - Nested record inheritance results in a compilation error.
   # types/records/vass/nested-record-with-outer-1.future
-- A generic record declared in a generic classes results a failure to resolve the record's constructor.
+- A record declared in a class results in a failure to resolve the
+  record's copy constructor.
   # classes/bradc/innerGeneric/innerRecord.future
+  # types/records/bharshbarger/nestedRecordInClass1.future
 - Unused records defined in procedures result in an internal compiler error.
   # types/records/vass/unused-decl-in-proc-1.future
   # types/records/vass/unused-decl-in-proc-2.future
@@ -427,9 +439,16 @@ Classes, Records, and Unions
   compiler error.
   # types/records/sungeun/recursiveRecord.future
   # arrays/dinan/array_of_records.future
+- Records passed by ref intent to dynamically dispatched methods do
+  not work.
+  # users/kassner/dynDispatchRefRecordArg.future
 - Printing of a string field in a record in a class does not work.
   # types/records/sungeun/stringInRecordInClass.future
   # types/string/sungeun/string2InRecordInClass.future
+- Comparison (== or !=) of records with array or domain fields result
+  in a back-end C compiler error.
+  # types/records/bharshbarger/recordArrCmp.future
+  # types/records/bharshbarger/recordDomArrCmp.future
 - Type select on unions is not implemented.
 
 
@@ -454,6 +473,9 @@ Domain Maps, Domains and Arrays
   # functions/vass/arg-is-queried-domain.future
 - Array bounds checking is not complete.
   # e.g., arrays/claridge/arraySizeMismatch.future
+- Iterating over the inner array of arrays where the outer array is
+  dmapped BlockDist, results in a remote data access error.
+  # distributions/bharshbarg/arrOfArrDmap.future
 - Arrays of arrays where the inner arrays vary in size are not supported.
   # arrays/deitz/test_skyline_array.future
   # studies/590o/wk3/02arrOfArr-irregular.future
@@ -507,8 +529,6 @@ Input and Output
 - Using 'on' in a writeThis() method can lead to a deadlock.
   # multilocale/bradc/needMultiLocales/writeThisUsingOn.future
   # distributions/vass/dmap-writeln-default-value.future
-- Nil extern class references not properly handled.
-  # users/ferguson/extern_class_test.future
 - Calling writeln() of function names should be illegal, but currently
   results in unexpected output, obscure error messages, or compiler
   internal errors.
@@ -540,6 +560,8 @@ Task Parallelism and Synchronization
   # types/sync/vass/autodestroy-with-begin-2.future
   # types/sync/vass/autodestroy-with-begin-3.future
   # types/sync/vass/autodestroy-with-begin-ref.future
+- Sync variables cannot be used in conditional expressions
+  # types/sync/vass/if-sync-int.future
 
 
 Data Parallelism
@@ -627,6 +649,10 @@ Optimizations
 -------------
 # OMITTED: optimizations/rafa/rankChange.future
 #  b/c workaround put in place
+# OMITTED: functions/deitz/nested/test_nested_var_iterator3.future
+#  b/c it takes turning off scalar replacement to see this bug, and
+#  also the explanation wouldn't help a user too much as it refers to
+#  aliases via compiler inserted refs
 - Compiling with --baseline (or disabling specific optimizations) may
   result in incorrect code
   # functions/deitz/iterators/test_var_iter_in_iter.future
@@ -637,6 +663,12 @@ Optimizations
   sometimes resulting in an internal error.
   # users/vass/crash6defPointNotInAST.future
   # optimizations/sungeun/deadCodeElimination/elim.future
+- Disabling inlining may cause incorrect code to be generated.
+  # SEE NIGHTLY BASELINE TESTING NOTES
+- Disabling inlining with -t results in a compiler seg fault.
+  # compflags/diten/noInlineAndHtml.future
+- Fast-on optimization disabled for for on statements with op=
+  # performance/bradc/opequals.future
 
 
 Miscellaneous
@@ -648,6 +680,14 @@ Miscellaneous
 - Extern functions declared in a class result in an internal error
   (should be an error message).
   # extern/sungeun/externProcInClassShouldBeError.future
+- Nil extern class references not properly handled.
+  # users/ferguson/extern_class_test.future
+- Functions from extern includes that have naming conflicts with
+  internal functions result in a back-end C compiler error.
+  # extern/tzakian/shadow.future
+- An exported function that returns a record results in two versions
+  in the generated code.
+  # functions/gbt/retRecordMultiDef.future
 - An array variable and function that share the same name at the same
   scope result in one of the two being arbitrarily chosen.
   # functions/bradc/resolution/arrayVsFn.future
@@ -658,6 +698,9 @@ Miscellaneous
 - Compiler warning mechanism can result it lost warning if there are
   multiple warnings.
   # trivial/vass/repeated-warning-1.future
+- If the -o argument matches an existing directory name <dir>, the
+  resuling binary is placed in <dir>/<dir>.tmp.
+  # compflags/bradc/dirNameMatchesBin/foo.future
 - Programs requiring non-linear resolution may fail to compile.
   E.g., mutual module uses that access variables across both modules
 - Creating many domain types or arrays or tuples types causes the
@@ -684,19 +727,17 @@ Multi-locale/GASNet executions
 Portability
 -----------
 Cray XE/XK/XC:
-- Native GASNet conduit support is in beta and has not been tuned.
-  See doc/platforms/README.cray for details on how to use the
-  native conduit.
 
 Cray XT:
 - The memory limit for Chapel programs may need to be set manually.
   See doc/platforms/README.cray for details.
 - PrgEnv-gnu with CHPL_GMP=system do not link properly.
 
-PGI compilers (and possibly others):
+PGI compilers:
 - Floating point literals of -0.0 may not work as intended.
-- Multi-locale programs (and those compiled with --no-local) do not
-  compile due to a possible PGI compiler bug.
+
+Intel compilers:
+- Floating point literals of -0.0 may not work as intended.
 
 IEEE floating-point standard conformance:
   The --ieee-float flag is implemented by passing appropriate flags to
