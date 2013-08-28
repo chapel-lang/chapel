@@ -80,7 +80,13 @@ proc run(f : Force, total : Timer) {
 
 		if (i % neigh_every) == 0 {
 			buildNeighbors();
-		} else communicateCopies();
+		} else {
+			tim.start();
+			communicateCopies();
+			commTime += tim.elapsed();
+			tim.stop();
+			tim.clear();
+		}
 		tim.start();
 
 		f.compute(i % nstat == 0);

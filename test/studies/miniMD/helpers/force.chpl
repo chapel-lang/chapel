@@ -447,7 +447,7 @@ module MDForce {
 			gtime += tim.elapsed();
 		}
 
-		proc forceBetween(ref x : v3, ref n : atom, isReal, hf, gn, evflag : bool) {
+		inline proc forceBetween(ref x : v3, ref n : atom, isReal, hf, gn, evflag : bool) {
 			const del = x - n.x;
 			const rsq = dot(del,del);
 			var rx, ry, rz, e, v : real;

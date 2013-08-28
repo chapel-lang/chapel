@@ -20,6 +20,7 @@ config var force = ForceStyle.FORCELJ;
 config var data_file = "";
 config var yaml_output = 1;
 config var yaml_screen = false;
+config var debug = false;
 
 type v3 = 3*real;
 type v3int = 3*int;
@@ -93,7 +94,6 @@ var nstencil : int;
 var cutneighsq : real;
 var buildTime : real; // total buildNeighbors time (minus pbc and findghosts, so we can mimic c++)
 var commTime : real; // sort of a misnomer, but measures pbc and findghosts time
-
 
 inputFile();
 
@@ -174,16 +174,8 @@ const binSpace = {mbinhi(1) - nbin(1) + 1 .. mbinhi(1),
 // The 'special sauce'. Will distribute stuff across locales
 const DistSpace = binSpace dmapped Block(binSpace);
 var perBinSpace : domain(1) = {1..8};
-//var bins : [binSpace] [perBinSpace] atom; 
 var CountSpace : domain(3) = binSpace;
 var binCount : [CountSpace] int(32);
-
-// TODO: I don'think this will be necessary anymore. We should just be able to 
-//				reference things by binSpace or N/WSlices
-// build stencils for real and ghost bins, so we don't iterate over useless bins
-//const realStencil : subdomain(distBinSpace) = {mbinhi(1) - nbin(1) + 1 .. mbinhi(1), mbinhi(2) - nbin(2) + 1 .. mbinhi(2), mbinhi(3) - nbin(3) + 1 .. mbinhi(3)};
-// ghosts
-//var ghostStencil : sparse subdomain(binSpace);
 
 // locale's chunk of 'bins' (consists of whole bins)
 class Chunk {
@@ -244,10 +236,12 @@ proc setupComms() {
 		on LocaleGrid(i,j,k) {
 			// grab our chunk of the real domain
 			const MyLocDom = DistSpace._value.locDoms[i,j,k].myBlock;
+			if debug then writeln(here, " owns ", MyLocDom);
 
 			// expand the maximum distance we might need
 			// TODO: I think expand(nbin) would be OK, let's try the naive case first
 			const WithFluff = MyLocDom.expand(next);
+			if debug then writeln(here, "'s fluff: ", WithFluff);
 
 			const ND = {-next(1) .. next(1) by next(1),-next(2) .. next(2) by next(2),-next(3) .. next(3) by next(3)};
 			startBarrier();
@@ -262,11 +256,12 @@ proc setupComms() {
 			var WSlice => MyChunk.WSlice;
 			var Neighs => MyChunk.Neighs;
 
-			for xyz in ND {
+			forall xyz in ND {
 				NSlice[xyz] = MyLocDom.exterior(xyz);
 				WSlice[xyz] = NSlice[xyz];
 			}
 
+			// use so we can move atoms around more easily
 			BinToLocale[NSlice[0,0,0]] = (i,j,k);
 
 			startBarrier();
@@ -281,35 +276,37 @@ proc setupComms() {
 
 				// get the index of the neighboring Locale
 				var neighbor = (i,j,k) + xyz / next;
+				var offset = (0,0,0);
 				// var trans = (0,0,0); // TODO: assign trans, only do 1 translate at the end
 				if neighbor(1) < 0 {
 					neighbor(1) = LocaleGridDom.high(1);
-					WSlice[xyz] = WSlice[xyz].translate(binSpace.high(1)-NSlice[xyz].high(1),0,0);
+					offset(1) = binSpace.high(1)-NSlice[xyz].high(1);
 				}
 				else if neighbor(1) > LocaleGridDom.high(1) {
 					neighbor(1) = 0;
-					WSlice[xyz] = WSlice[xyz].translate(-binSpace.high(1)+binSpace.low(1)-1,0,0);
+					offset(1) = -binSpace.high(1)+binSpace.low(1)-1;
 				}	
 				if neighbor(2) < 0 {
 					neighbor(2) = LocaleGridDom.high(2);
-					WSlice[xyz] = WSlice[xyz].translate(0,binSpace.high(2)-NSlice[xyz].high(2),0);
+					offset(2) = binSpace.high(2)-NSlice[xyz].high(2);
 				}
 				else if neighbor(2) > LocaleGridDom.high(2) {
 					neighbor(2) = 0;
-					WSlice[xyz] = WSlice[xyz].translate(0,-binSpace.high(2)+binSpace.low(2)-1,0);
+					offset(2) = -binSpace.high(2)+binSpace.low(2)-1;
 				}
 				if neighbor(3) < 0 {
 					neighbor(3) = LocaleGridDom.high(3);
-					WSlice[xyz] = WSlice[xyz].translate(0,0,binSpace.high(3)-NSlice[xyz].high(3));
+					offset(3) = binSpace.high(3)-NSlice[xyz].high(3);
 				}
 				else if neighbor(3) > LocaleGridDom.high(3) {
 					neighbor(3) = 0;
-					WSlice[xyz] = WSlice[xyz].translate(0,0,-binSpace.high(3)+binSpace.low(3)-1);
+					offset(3) = -binSpace.high(3)+binSpace.low(3)-1;
 				}
+				WSlice[xyz] = WSlice[xyz].translate(offset);
 				Neighs[xyz] = neighbor;
+
+				if debug then writeln(WSlice[xyz], " is the remote neighbor of ", NSlice[xyz]);
 			}
-			//writeln("local neighs: ", NSlice);
-			//writeln("wrapped neighs: ", WSlice);
 		} // end of on statement
 	} // end of coforall
 }
@@ -435,9 +432,8 @@ proc printSim() {
 	writeln("\t# ghost newton: ", ghost_newton);
 }
 
+// establish bin and neighbor sizes/amounts
 proc setupNeighbors() {
-	// lines of code until end of constructor deal with
-	// non-trivial neighboring, a WIP
 	binsize = dim / nbin;
 	bininv = 1.0 / binsize;
 
@@ -466,7 +462,7 @@ proc setupNeighbors() {
 	mbinhi += 1;
 	mbin = mbinhi - mbinlo + 1;
 
-
+	// determines how many neighboring bins we need from other nodes
 	next(1) = (cutneigh * bininv(1)) : int;
 	if next(1) * binsize(1) < factor * cutneigh then next(1) += 1;
 
@@ -482,7 +478,8 @@ proc setupNeighbors() {
 	var kstart = -next(3);
 	nstencil = 1;
 
-	if half_neigh && ghost_newton { // where to put ghost newton?
+	// start at the halfway point
+	if half_neigh && ghost_newton {
 		kstart = 0;
 		stencil[nstencil] = (0,0,0);
 		nstencil += 1;
@@ -645,8 +642,6 @@ proc pmrand(ref n : int) : real {
 }
 
 proc communicateCopies() {
-	var tim : Timer;
-	tim.start();
 	coforall ijk in LocaleGridDom {
 		on LocaleGrid[ijk] {
 			for neigh in Bins[ijk].NeighDom {
@@ -662,7 +657,8 @@ proc communicateCopies() {
 				// copy over the binCount
 				binCount[NSlice[neigh]] = binCount[WSlice[neigh]];
 				
-				// if one of the dimensions is 'real', then we shouldn't offset
+				// if a dimension of the bin exists in adjacent 'real' chunk of bins, 
+				// we shouldn't offset
 				var dimtest = (1.0,1.0,1.0);
 				if NSlice[neigh].low(1) == WSlice[neigh].low(1) then dimtest(1) = 0.0;
 				if NSlice[neigh].low(2) == WSlice[neigh].low(2) then dimtest(2) = 0.0;
@@ -672,7 +668,7 @@ proc communicateCopies() {
 				const offset = (neigh/next) * dim * dimtest;
 
 				// for every atom in every bin, clone & wrap the position
-				for (N, W) in zip(NSlice[neigh], WSlice[neigh]) {
+				forall (N, W) in zip(NSlice[neigh], WSlice[neigh]) {
 					var c = binCount[N];
 					for (loc, rem) in zip(Data[N][1..c], Bins[Neighs[neigh]].Arr[W][1..c]) {
 						if N == W then loc.x = rem.x;
@@ -684,7 +680,6 @@ proc communicateCopies() {
 			}
 		}
 	}
-	commTime += tim.elapsed();
 }
 
 // compute distance between 'central' bin and bin ijk
@@ -728,6 +723,7 @@ proc pbc() {
 }
 
 proc buildNeighbors(pn = false) {
+	if debug then writeln("starting to build...");
 	var tim : Timer;
 	tim.start();
 	pbc();
@@ -740,8 +736,11 @@ proc buildNeighbors(pn = false) {
 
 	buildTime += tim.elapsed();
 	tim.stop();
+	tim.clear();
 	tim.start();
+	if debug then writeln("starting comms...");
   communicateCopies();
+	if debug then writeln("comms done...");
 
 	commTime += tim.elapsed();
 	tim.stop();
@@ -752,7 +751,7 @@ proc buildNeighbors(pn = false) {
 		on LocaleGrid[ijk] {
 			var Real = Bins[ijk].Real;
 			var Data => Bins[ijk].Arr;
-			for (b,r,c) in zip(Data[Real],Real, binCount[Real]) {
+			forall (b,r,c) in zip(Data[Real],Real, binCount[Real]) {
 				for (a,i) in zip(b[1..c],1..c) {
 					a.ncount = 0;
 
@@ -790,6 +789,7 @@ proc buildNeighbors(pn = false) {
 		}
 	}
 	buildTime += tim.elapsed();
+	if debug then writeln("building done...");
 } // end of buildNeighbors
 
 inline proc addatom(a : atom, b : (int,int,int)) {
@@ -801,6 +801,7 @@ inline proc addatom(a : atom, b : (int,int,int)) {
 	Bins[BinToLocale[b]].Arr[b][binCount[b]] = a;
 }
 
+// TODO: reduce communication here
 proc binatoms() {
 	var mspace : domain(1) = {1..50};
 	var moved : [mspace] (atom,(int,int,int));
