@@ -378,9 +378,15 @@ module MDForce {
 			var tim : Timer;
 			// wipe old forces
 			tim.start();
-			forall (b,c) in zip(bins,binCount) {
-				for a in b[1..c] {
-					a.f = (0.0,0.0,0.0);
+			coforall ijk in LocaleGridDom {
+				on LocaleGrid[ijk] {
+					var Data => Bins[ijk].Arr;
+					var Dom = Bins[ijk].Dom;
+					forall (b,c) in zip(Data,binCount[Dom]) {
+						for a in b[1..c] {
+							a.f = (0.0,0.0,0.0);
+						}
+					}
 				}
 			}
 			wipetime += tim.elapsed();
@@ -390,35 +396,58 @@ module MDForce {
 			// for each atom, compute force between itself and its neighbors
 			// can make outer loop parallel if we can make force modifications atomic
 			tim.start();
-			for (b,c) in zip(bins[realStencil], binCount[realStencil]) {
-				for a in b[1..c] {
-					var (fx,fy,fz,e,v) = + reduce forall (q,idx) in a.neighs[1..a.ncount] do 
-						forceBetween(a.x,bins[q][idx], half_neigh,ghost_newton, evflag);
-					a.f += (fx,fy,fz);
-					/*a.f(1) += fx;
-					a.f(2) += fy;
-					a.f(3) += fz;*/
-					eng_vdwl += e;
-					virial += v;
+		  var engs, virs : [LocaleGridDom] real;
+			coforall ijk in LocaleGridDom {
+				on LocaleGrid[ijk] {
+					var Data => Bins[ijk].Arr;
+					var Real = Bins[ijk].Real;
+					var eng, vir : real;
+					var hf = half_neigh;
+					var gn = ghost_newton;
+					var ev = evflag;
+					for (b,c,r) in zip(Data[Real], binCount[Real], Real) {
+						for (a,k) in zip(b[1..c],1..c) {
+							var (fx,fy,fz,e,v) = + reduce forall (q,idx) in a.neighs[1..a.ncount] do 
+											forceBetween(a.x,Data[q][idx], Real.member(q), hf, gn, ev);
+							a.f += (fx,fy,fz);
+							eng += e;
+							vir += v;
+						}
+					}
+					// cut down on communication
+					engs[ijk] = eng;
+					virs[ijk] = vir;
 				}
 			}
+			eng_vdwl = + reduce engs;
+			virial = + reduce virs;
 			maintime += tim.elapsed();
 			tim.stop();
 			tim.clear();
+
 			
 			tim.start();
 			// add ghost forces to the original, store offset (use to restore position after integration)
-			for g in ghostStencil {
-				for i in 1..binCount[g] {
-					var (r,idx) = bins[g][i].ghostof;
-					bins[r][idx].f += bins[g][i].f;
-					bins[g][i].x -= bins[r][idx].x;
+			for ijk in LocaleGridDom {
+				on LocaleGrid[ijk] {
+					for n in Bins[ijk].NeighDom {
+						if n == (0,0,0) then continue;
+						var LocData => Bins[ijk].Arr;
+						var RemData => Bins[Bins[ijk].Neighs[n]].Arr;
+						for (N,W) in zip(Bins[ijk].NSlice[n], Bins[ijk].WSlice[n]) {
+							for i in 1..binCount[W] {
+								if LocData[N][i].f == (0.0,0.0,0.0) then continue;
+								RemData[W][i].f += LocData[N][i].f;
+							}
+						}
+					}
 				}
 			}
+
 			gtime += tim.elapsed();
 		}
 
-		proc forceBetween(ref x : v3, ref n : atom, hf, gn, evflag : bool) {
+		proc forceBetween(ref x : v3, ref n : atom, isReal, hf, gn, evflag : bool) {
 			const del = x - n.x;
 			const rsq = dot(del,del);
 			var rx, ry, rz, e, v : real;
@@ -432,14 +461,14 @@ module MDForce {
 
 				// this would be an atomic statement, if that feature was available right now
 				if hf {
-					if gn || n.ghostof(2) == -1 {
+					if gn || isReal {
 						n.f -= (rx,ry,rz);
 					}
 				}
 				if evflag { // if we care about data this iteration
 					if hf {
-						const scale : real = if gn || n.ghostof(2) == -1 then 1.0
-											else .5;
+						const scale : real = if gn || isReal then 1.0
+							else .5;
 						e += scale * (4.0 * sr6 * (sr6 - 1.0));
 						v += scale * rsq * force;
 					} else { // fullneigh

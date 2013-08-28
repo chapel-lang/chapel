@@ -83,8 +83,18 @@ proc energy(f : Force) {
 
 proc temperature() {
 	t_act = 0;
-	t_act = + reduce forall (b,c) in zip(bins[realStencil],binCount[realStencil]) do + reduce forall a in b[1..c] do (dot(a.v,a.v) * mass);
-
+	//t_act = + reduce forall (b,c) in zip(bins[realStencil],binCount[realStencil]) do + reduce forall a in b[1..c] do (dot(a.v,a.v) * mass);
+	var acts : [LocaleGridDom] real;
+	coforall ijk in LocaleGridDom {
+					on LocaleGrid[ijk] {
+									var Data => Bins[ijk].Arr;
+									var Real = Bins[ijk].Real;
+									var m = mass;
+									acts[ijk] = + reduce forall (b,c) in zip(Data[Real],binCount[Real]) do 
+										+ reduce forall a in b[1..c] do (dot(a.v,a.v) * m);
+					}
+	}
+	t_act = + reduce acts;
 	return t_act * t_scale;
 }
 

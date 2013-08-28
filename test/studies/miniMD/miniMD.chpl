@@ -1,5 +1,3 @@
-
-
 use initMD;
 use MDForce;
 use thermo;
@@ -36,7 +34,9 @@ proc main() {
 	else if printOriginal {
 		writeln("# Performance Summary:");
 		writeln("# Locales Tasks nsteps natoms t_total, t_force t_neigh t_comm");
-		writef("   %i      %i     %i     %i  %.6dr %.6dr %.6dr %.6dr\n", numLocales, + reduce Locales.numCores, nsteps, natoms, totalTime, forceTime, buildTime, commTime);
+		writef("   %i      %i     %i     %i  %.6dr %.6dr %.6dr %.6dr\n", numLocales,
+				+ reduce Locales.numCores, nsteps, natoms, 
+				totalTime, forceTime, buildTime, commTime);
 	}
 	return 0;
 }
@@ -44,37 +44,29 @@ proc main() {
 
 // update positions and velocities based on forces
 proc initialIntegrate() {
-	forall (b,c) in zip(bins[realStencil],binCount[realStencil]) {
-		for a in b[1..c] {
-			a.v(1) += dtforce * a.f(1);
-			a.v(2) += dtforce * a.f(2);
-			a.v(3) += dtforce * a.f(3);
-			
-			a.x(1) += dt * a.v(1);
-			a.x(2) += dt * a.v(2);
-			a.x(3) += dt * a.v(3);
-		}
-	}
-
-	// a non-obvious state of the ghost here is that after
-	// the force computation, we have the ghost store the 
-	// offset to the real atom it represents. This is done 
-	// so we don't have to redo the dt * a.v computation
-	// for all ghosts
-	forall g in ghostStencil {
-		for a in bins[g][1..binCount[g]] {
-			a.x += bins[a.ghostof(1)][a.ghostof(2)].x; 
+	coforall ijk in LocaleGridDom {
+		on LocaleGrid[ijk] {
+			var Real = Bins[ijk].Real;
+			forall (b,c,r) in zip(Bins[ijk].Arr[Real], binCount[Real], Real) {
+				for (a,x) in zip(b[1..c],1..c) {
+					a.v += dtforce * a.f;
+					a.x += dt * a.v;
+				}
+			}
 		}
 	}
 }
 
 // update velocities
 proc finalIntegrate() {
-	forall (b,c) in zip(bins[realStencil],binCount[realStencil]) {
-		for a in b[1..c] {
-			a.v(1) += dtforce * a.f(1);
-			a.v(2) += dtforce * a.f(2);
-			a.v(3) += dtforce * a.f(3);
+	coforall ijk in LocaleGridDom {
+		on LocaleGrid[ijk] {
+			var Real = Bins[ijk].Real;
+			forall (b,c) in zip(Bins[ijk].Arr[Real], binCount[Real]) {
+				for a in b[1..c] {
+					a.v += dtforce * a.f;
+				}
+			}
 		}
 	}
 }
@@ -88,7 +80,7 @@ proc run(f : Force, total : Timer) {
 
 		if (i % neigh_every) == 0 {
 			buildNeighbors();
-		}
+		} else communicateCopies();
 		tim.start();
 
 		f.compute(i % nstat == 0);
