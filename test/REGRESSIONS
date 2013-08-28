@@ -141,46 +141,14 @@ functions/iterators/vass/yield-arrays-var-nonvar.chpl times out in compilation
 
 ===============================
 no-local regressions
-(Checked for accuracy 8/25/13)
+(Checked for accuracy 8/27/13)
 ===============================
-
-Compiler PAR0708 internal error resulting from r21733 commit (08/19/13)
------------------------------------------------------------------------
-[Error matching compiler output for io/bradc/readWholeArr]
-[Error matching compiler output for io/ferguson/io_test]
-[Error matching compiler output for io/ferguson/readThis/readarr]
-[Error matching compiler output for io/ferguson/readThis/readclass2]
-[Error matching compiler output for io/ferguson/readThis/readclass3]
-[Error matching compiler output for io/ferguson/readThis/readclass5]
-[Error matching compiler output for io/ferguson/readThis/readclass]
-[Error matching compiler output for io/ferguson/readThis/readdom]
-[Error matching compiler output for io/ferguson/readThis/readrange]
-[Error matching compiler output for io/ferguson/readThis/readtuple]
-[Error matching compiler output for io/ferguson/writebinaryarray]
-[Error matching compiler output for io/ferguson/writebinaryclass]
-[Error matching compiler output for io/ferguson/writebinaryrecord]
-[Error matching compiler output for io/ferguson/writebinarytuple]
-[Error matching compiler output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 1)]
-[Error matching compiler output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 2)]
-[Error matching compiler output for release/examples/primers/fileIO]
-[Error matching compiler output for types/file/freadClass]
-
-??? (??/??/13)
---------------
-[Error matching compiler output for studies/parboil/SAD/sadSerial]
-[Error matching compiler output for studies/parboil/histo/histoSerial]
-[Error matching compiler output for studies/parboil/stencil/stencilSerial]
-
 
 
 ====================================================
 gasnet-everything regressions (other than the above)
 (Checked for accuracy 8/26/13)
 ====================================================
-
-error message changed after Tom's local string sharing change (06/01/13)
-------------------------------------------------------------------------
-[Error matching program output for memory/shannon/memmaxExceedsLineno2]
 
 communication counts changed due to Tom's HL branch merge (06/11/13)
 --------------------------------------------------------------------
@@ -192,24 +160,20 @@ communication counts changed due to Tom's HL branch merge (06/11/13)
 [Error matching program output for distributions/robust/arithmetic/performance/reduceSlice]
 [Error matching program output for studies/hpcc/CommDiags/stream-ep_commDiags (compopts: 1)]
 
-incorrect output (08/??/13)
----------------------------
-[Error matching program output for modules/gbt/printchplenv]
+error message changed after Tom's local string sharing change (06/01/13)
+------------------------------------------------------------------------
+[Error matching program output for memory/shannon/memmaxExceedsLineno2]
 
-deadlock/livelock (??/??/13)
-----------------------------
+deadlock due to impact of small # of threads on root locale replication (08/21/13)
+-----------------------------------------------------------------------
 [Error: Timed out executing program multilocale/gbt/hello-numThreads-1]
 
 
 
 ==============================================
 gasnet-fast regressions (other than the above)
-(checked for accuracy 8/24/2013)
+(checked for accuracy 8/27/2013)
 ==============================================
-
-Compiler PAR0708 internal error resulting from r21733 commit (08/19/13)
------------------------------------------------------------------------
-[Error matching compiler output for multilocale/deitz/needMultiLocales/test_remote_file_read_class]
 
 Execution time segfault resulting from r21733 commit (08/19/13)
 ---------------------------------------------------------------
@@ -308,15 +272,12 @@ chpldoc sorting differences
 
 ======================================
 chpbld02 (PrgEnv test system) failures
+(checked for accuracy 08/27/13)
 ======================================
 
 gets "that wasn't very random looking" failure
 ------------------------------------------------------------------------------
 [Error matching program output for modules/standard/Random/diten/testRandomSeed]
-first mentioned 09/26/11
-still observed intermittently on chpbld02 in 8'2012 and 9'2012
-consistently for prgenv-gnu since 8'2012
-fairly consistently for all seven chpbld02 configurations since 1'2013 or earlier
 
 
 ====================================================
@@ -429,7 +390,7 @@ compilation timeouts (10/19/11)
 
 ==============================================================
 pgi-specific regressions (in addition to cray-xt errors above) 
-(Checked for accuracy 4/16/2013)
+(Checked for accuracy 8/27/2013)
 ==============================================================
 
 Some sort of gdb issue with 'bool' not being found in symtab
