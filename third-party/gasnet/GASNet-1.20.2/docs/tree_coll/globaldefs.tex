@@ -1,0 +1,116 @@
+\usepackage{latex8}
+\usepackage{times}
+\usepackage{tabularx}
+\usepackage{fancyvrb}
+\usepackage{xspace}
+\usepackage{amsmath}
+\usepackage{multicols}
+\usepackage{graphicx}
+\usepackage{wrapfig}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage[subnum]{cases}
+%\usepackage[boxed]{algorithm2e}
+\newcommand{\theHalgorithm}{\arabic{algorithm}}
+% used to control vertical space around wrapfigs
+\newlength{\saveintextsep}
+\setlength{\saveintextsep}{\intextsep}
+% Set up \ifpdf test for DVI vs. PDF support
+\newif\ifpdf
+\ifx\pdfoutput\undefined
+    \pdffalse
+\else
+    \pdftrue
+\fi
+\usepackage{epsfig}
+\usepackage[numbers,sort&compress]{natbib}
+\setlength{\bibsep}{0pt}
+%%% How graphics handled various with .PS or .PDF output
+% \ifpdf
+%     \usepackage[pdftex]{graphicx}
+%     \pdfcompresslevel=9
+% \else
+%     \usepackage{graphicx}
+%     \DeclareGraphicsExtensions{.epsi}
+% \fi
+%\usepackage{subfigure}
+\usepackage{calc}
+% Set \HalfWidth to help zplace two graphics side by side
+\newlength{\HalfWidthGap}
+\setlength\HalfWidthGap{0.25in}
+\newlength{\HalfWidth}
+\setlength\HalfWidth{0.5\textwidth - 0.5\HalfWidthGap}
+\usepackage{url}
+% \myurl makes URL text smaller...
+\newcommand\myurl{\begingroup \urlstyle{same}\footnotesize\Url}
+% Troublesome URLs (such as those containing underscores) may not work inside
+% \url{} command:  instead, define them as macros here, and refer to them in
+% .bib file inside '{}' to pass verbatim to latex.
+\urldef{\urlvia}\myurl{http://developer.intel.com/design/servers/vi/developer/ia_imp_guide.htm}
+\usepackage[
+    bookmarks,
+    bookmarksopen=true,
+    bookmarksnumbered=true,
+    breaklinks=true,
+    pdfpagemode=UseOutlines,
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    pagecolor=blue,
+    urlcolor=blue]{hyperref}  % should come last after all other usepackages
+\ifpdf
+\else
+\hypersetup{colorlinks=false,breaklinks=true} % disable color links for postscript output
+\fi
+% provide a list of all files used
+%\listfiles
+% Macros to gulp large vertical space after figures
+\newcommand{\GulpFig}{\vspace{-12pt}}
+% macros for 'put' and 'get' (\xspace prevent \PUT from gobbling space)
+\newcommand{\GET}{`get'\xspace}
+\newcommand{\GETS}{`gets'\xspace}
+\newcommand{\PUT}{`put'\xspace}
+\newcommand{\PUTS}{`puts'\xspace}
+\newcommand{\nx}{\mathsf{NX}}
+\newcommand{\ny}{\mathsf{NY}}
+\newcommand{\nz}{\mathsf{NZ}}
+\newcommand{\prefetch}{\mathsf{\eta}}
+\newcommand{\threads}{\mathsf{THREADS}}
+\newcommand{\mythread}{\mathsf{MYTHREAD}}
+\newcommand{\pencils}{\textit{Pencils}~}
+\newcommand{\slabs}{\textit{Slabs}~}
+\newcommand{\exchange}{\textit{Exchange}~}
+\newcommand{\slabsnospace}{\textit{Slabs}}
+\newcommand{\exchangenospace}{\textit{Exchange}}
+\newcommand{\spmvgatherbulk}{\textit{SPMV Bulk-Gather}~}
+\newcommand{\spmvgather}{\textit{SPMV Ga\-ther}~}
+\newcommand{\spmvscatter}{\textit{SPMV Sca\-tter}~}
+\newcommand{\alglabelref}[1]{#1(Alg.\ref{#1})}
+%\newcommand{\threads}{\mathsf{P}}
+\newcommand{\threadcols}{\mathsf{threadcols}}
+% It's very easy to forget the comma after i.e. or .e.g., or to forget to stop
+% the extra space after et al., etc.
+\newcommand{\ie}{i.e.,\xspace}
+\newcommand{\eg}{e.g.,\xspace}
+\newcommand{\etal}{et al.\@\xspace}
+\newcommand{\etc}{etc.\@\xspace}
+%defs for theorems, etc.
+%\newtheorem{theorem}{Theorem}
+%\newtheorem{lemma}[theorem]{Lemma}
+%\newtheorem{proposition}[theorem]{Proposition}
+%\newtheorem{claim}[theorem]{Claim}
+%\newtheorem{corollary}[theorem]{Corollary}
+%\newtheorem{definition}[theorem]{Definition}
+%\newtheorem{problem}[theorem]{Problem Definition}
+%\newenvironment{proof}{{\bf Proof:}}{\hfill\rule{2mm}{2mm}}
+\newcommand{\tablabel}[1]{\label{tab:#1}}
+\newcommand{\tabref}[1]{Table~\ref{tab:#1}}
+\newcommand{\figlabel}[1]{\label{fig:#1}}
+\newcommand{\figref}[1]{Figure~\ref{fig:#1}}
+\newcommand{\eqqlabel}[1]{\label{eq:#1}}
+\newcommand{\eqqref}[1]{\eqref{eq:#1}}
+\newcommand{\alglabel}[1]{\label{a:#1}}
+\newcommand{\algref}[1]{Algorithm~\ref{a:#1}}
+
+\newcommand{\jacquard}{Op\-te\-ron/In\-fini\-band~}
+\newcommand{\bassi}{Pow\-er5\-/Fed\-er\-a\-tion~}

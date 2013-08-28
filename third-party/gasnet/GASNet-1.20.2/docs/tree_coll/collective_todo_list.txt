@@ -1,0 +1,75 @@
+ToDo List:
+
++ General Code Cleanup
+	  + Add Better Comments
+	  + Updating Design Doc
+
++ Pipelining for large messages (fix or work around req for MERGE TO HEAD)
+
++ Gather/Scatter/All Gather
+	+ Sort of Done
+
++ Flush out Computational Collectives
+	+ Prefix Reduce/All reduce
+	+ Reduce
+
++ Code Walkthrough
+        + 
+
++ Multithreading
+	+ Locking
+	+ Multiple images (esp for non-rooted collectives)
+	+ non-rooted / local address
+	+ shared memory
+
++ Barrier Teams
+	+ Take a look at Pthread Barrier
+	
++ Teams (bigger open issue)
+	+ Team/Group Constructors
+	+ Team Collectives
+	+ Hooking it up to UPC level
+	+ Ensure that existing gasnet code works for teams
+	+ Team Tester
+	       + Take testcoll and modify it
+
++ Local Address (work-around) 
+	+ Non-seg aligned     
+	+ test rand implementation
+
++ Rendez-vous based approach for LOCAL collectives w/pipelining
+
++ Merge Collective Spec into Gasnet Spec 
+	+ formalization of the collectives.txt file
+
++ Shared Memory Style Collectives (optimization)
+	+ raw puts on shmem
+
++ Higher Radix Bruck's (low priority)
+
++ Scratch Space (Logging) (optimizations)
+
++ Better Tree Construction (optimization)
+	+ DFS ordering
+	+ MPICH a2a algorithms (permission to send?)
+
++ Better Geometry Cache (optimization)
+
++ Finishing Syncflags support (optimization)
+	+ Getting NO/NO performance 
+
++ Autotuning ... a ways off
+ 
++ Literature Search for collective implementations 
+
++ ASync Log for nonblocking collectives and out-no synch collectives
+
++ Conduit-specific tuning
+
+
+Incremental Merge 
++ gasnet_coll.h
++ Eager Threshold (tuneable)
++ spec  
+
+

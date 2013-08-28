@@ -1,0 +1,32 @@
+GASNet <conduitname>-conduit documentation
+Your Name <youremail@whereever.com> ###
+$Revision: 1.3 $
+
+User Information:
+-----------------
+
+Recognized environment variables:
+---------------------------------
+
+* All the standard GASNet environment variables (see top-level README)
+
+Optional compile-time settings:
+------------------------------
+
+* All the compile-time settings from extended-ref (see the extended-ref README)
+
+Known problems:
+---------------
+
+* See the Berkeley UPC Bugzilla server for details on known bugs.
+
+Future work:
+------------
+
+==============================================================================
+
+Design Overview:
+----------------
+
+### Provide overview of the design for your conduit
+

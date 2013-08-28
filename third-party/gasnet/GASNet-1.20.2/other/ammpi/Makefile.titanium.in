@@ -1,0 +1,30 @@
+#   $Source: /var/local/cvs/gasnet/other/ammpi/Makefile.titanium.in,v $
+#     $Date: 2006/06/06 16:03:27 $
+# $Revision: 1.14 $
+# Description: setup necessary variables needed by Makefile
+# Copyright 2000, Dan Bonachea <bonachea@cs.berkeley.edu>
+
+# variables added here should also go in Makefile.common, and vice-versa
+
+altincdir = $(srcdir)/..
+testdir = $(srcdir)/../amxtests
+
+# compiler
+CC = @MPI_CC@
+ccdebugflags = @MPI_CFLAGS@ -g 
+ccoptflags =   @MPI_CFLAGS@ 
+MPIRUN_CMD = @MPIRUN_CMD@
+
+@ENABLED_DEBUG_TRUE@  ccflags = $(set_debug_ccflags)
+@ENABLED_DEBUG_FALSE@ ccflags = $(set_opt_ccflags)
+
+# system utilities
+ranlib = @RANLIB@
+ar = @AR@
+PERL = @PERL@
+
+# stuff normally set by the pre-baked makefiles
+platform_defines = @TIC_MACHINE_DEFINES@ @INTTYPES_DEFINES@ -DUNIX
+platform_libraries = @LIBS@ @MPI_LIBS@
+platform_ldflags = @LDFLAGS@
+
