@@ -90,6 +90,7 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
                                  int32_t numCoresPerLocale) {
   char* queue = getenv("CHPL_LAUNCHER_QUEUE");
   char* walltime = getenv("CHPL_LAUNCHER_WALLTIME");
+  char* constraint = getenv("CHPL_LAUNCHER_CONSTRAINT");
 
   /*
   if (queue)
@@ -98,28 +99,25 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
   if (walltime) 
     fprintf(slurmFile, "#SBATCH --time=%s\n", walltime);
   switch (sbatch) {
+/* Only slurm has been tested
   case slurmpro:
   case unknown:
     fprintf(slurmFile, "#SBATCH --nodes=%d\n", numLocales);
+//    fprintf(slurmFile, "#SBATCH --ntasks-per-node=%d\n", procsPerNode);
+    if (numCoresPerLocale)
+      fprintf(slurmFile, "#SBATCH --ntasks-per-node=%d\n", numCoresPerLocale);
 
       break;
+      */
   case slurm:
     fprintf(slurmFile, "#SBATCH --nodes=%d\n", numLocales);
     fprintf(slurmFile, "#SBATCH --ntasks-per-node=1\n");
-    // CUSTOMIZE
-    // This is specific for the Picasso computer at the University of Malaga
-    // Can be substituted with the desired constrain.
-    // fprintf(slurmFile, "#SBATCH --constraint=cal\n");
-   fprintf(slurmFile, "#SBATCH --exclusive\n");
-   
-
-    break;
-  case uma:
-    fprintf(slurmFile, "#SBATCH --constraint=cal\n");
-    fprintf(slurmFile, "#SBATCH --nodes=%d\n", numLocales);
-    fprintf(slurmFile, "#SBATCH --ntasks-per-node=1\n");
-    //fprintf(slurmFile, "#SBATCH --cpus=%d\n", numLocales*16);
+    // If needed a constraint can be specified with the env var CHPL_LAUNCHER_CONSTRAINT
+    if (constraint) {
+      fprintf(slurmFile, "#SBATCH --constraint=%s\n", constraint);
+    }
     fprintf(slurmFile, "#SBATCH --exclusive\n");
+
     break;
   case torque:
     fprintf(slurmFile, "#SBATCH --nodes=%d\n", numLocales);
@@ -155,7 +153,6 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   sprintf(slurmFilename, "%s%d", baseSBATCHFilename, (int)mypid);
 
   slurmFile = fopen(slurmFilename, "w");
-  if ( determineQsubVersion() != uma )
     fprintf(slurmFile, "#!/bin/sh\n\n");
   fprintf(slurmFile, "#SBATCH -J Chpl-%.10s\n", basenamePtr);
   genNumLocalesOptions(slurmFile, determineQsubVersion(), numLocales, getNumCoresPerLocale());
