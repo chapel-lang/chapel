@@ -39,17 +39,18 @@ the program itself.
 
 Currently-supported launchers include:
 
-  amudprun          : GASNet launcher for programs running over UDP
-  aprun             : Cray XT application launcher using aprun
-  gasnetrun_ibv     : GASNet launcher for programs running over Infiniband
-  loadleveler       : launch using IBM loadleveler (still needs refining)
-  lsf-gasnetrun_ibv : GASNet launcher using LSF (bsub) over Infiniband
-  marenostrum       : launch using MareNostrum's mnsubmit script
-  mtarun            : Cray XMT application launcher using mtarun
-  pbs-aprun         : Cray XT application launcher using PBS (qsub) + aprun
-  pbs-gasnetrun_ibv : GASNet launcher using PBS (qsub) over Infiniband
-  tile-monitor      : launch using Tilera's tile monitor
-  none              : do not use a launcher
+  amudprun            : GASNet launcher for programs running over UDP
+  aprun               : Cray XT application launcher using aprun
+  gasnetrun_ibv       : GASNet launcher for programs running over Infiniband
+  loadleveler         : launch using IBM loadleveler (still needs refining)
+  lsf-gasnetrun_ibv   : GASNet launcher using LSF (bsub) over Infiniband
+  marenostrum         : launch using MareNostrum's mnsubmit script
+  mtarun              : Cray XMT application launcher using mtarun
+  pbs-aprun           : Cray XT application launcher using PBS (qsub) + aprun
+  pbs-gasnetrun_ibv   : GASNet launcher using PBS (qsub) over Infiniband
+  slurm-gasnetrun_ibv : GASNet launcher using slurm (sbatch) over Infiniband
+  tile-monitor        : launch using Tilera's tile monitor
+  none                : do not use a launcher
 
 A specific launcher can be requested by setting the CHPL_LAUNCHER
 environment variable.  If left unset, a default is picked as follows:
@@ -110,3 +111,22 @@ appropriate for your system:
   of them.  All intra-node parallelism is typically implemented using
   Chapel's threading layer (e.g., pthreads), so extra copies of the
   binary are not required per core.
+
+----------------------
+Slurm notes
+----------------------
+You can request a constraint to slurm if needed by putting it in the
+CHPL_LAUNCHER_CONSTRAINT environment variable, for example, to use the cal
+nodes as defined in slurm you need to define it as :
+
+export CHPL_LAUNCHER_CONSTRAINT=cal
+
+If not defined any node in the computer can be used.
+
+Right now it sends the job to the queue system, so it appears when using
+squeue, and will write the output in a file called name_of_the_exec.jobId.out
+
+The variable CHPL_LAUNCHER_USE_SRUN is reserved for when a new launch method
+gets implemented, so it will be easy to change between the different launch
+methods.  Meanwhile it must be undefined.
+
