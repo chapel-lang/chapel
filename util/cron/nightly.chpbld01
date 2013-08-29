@@ -43,12 +43,10 @@ for compiler in $compilers ; do
   module load PrgEnv-${compiler}${PrgEnv_Version}
   if [ $compiler == "cray" ] ; then   # avoid loading gemini libraries
       module load craype-target-petest
+      module load mpich2
   fi
-  # Our PrgEnv modules are old.  Swap in a more recent mpich and unload libsci
-  module swap xt-mpich2 cray-mpich
-  module unload xt-libsci
   module list
-  export CHPL_TARGET_PLATFORM=cray-xt
+  export CHPL_TARGET_PLATFORM=cray-xc
   $NIGHTLY -combinedir -cron $EXAMPLES
 )
 done
@@ -61,13 +59,11 @@ for compiler in $compilers ; do
   module load PrgEnv-${compiler}${PrgEnv_Version}
   if [ $compiler == "cray" ] ; then   # avoid loading gemini libraries
       module load craype-target-petest
+      module load mpich2
   fi
-  # Our PrgEnv modules are old.  Swap in a more recent mpich and unload libsci
-  module swap xt-mpich2 cray-mpich
-  module unload xt-libsci
   module list
-  export CHPL_HOST_PLATFORM=cray-xt
-  export CHPL_TARGET_PLATFORM=cray-xt
+  export CHPL_HOST_PLATFORM=cray-xc
+  export CHPL_TARGET_PLATFORM=cray-xc
   export CHPL_HOST_COMPILER=cray-prgenv-$compiler
   $NIGHTLY -combinedir -cron $EXAMPLES
 )
