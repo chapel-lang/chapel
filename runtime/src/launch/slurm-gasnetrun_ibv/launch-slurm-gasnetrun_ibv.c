@@ -158,7 +158,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   genNumLocalesOptions(slurmFile, determineQsubVersion(), numLocales, getNumCoresPerLocale());
   if (projectString && strlen(projectString) > 0)
     fprintf(slurmFile, "#SBATCH -A %s\n", projectString);
-  if (getenv("CHPL_LAUNCHER_USE_BATCH") != NULL) {
+  if (getenv("CHPL_LAUNCHER_USE_SRUN") == NULL) {
 //    fprintf(slurmFile, "#SBATCH -joe\n");
     fprintf(slurmFile, "#SBATCH -o %s.%%j.out\n", argv[0]);
 //    fprintf(slurmFile, "cd $SBATCH_O_WORKDIR\n");
@@ -172,7 +172,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   fclose(slurmFile);
   chmod( slurmFilename, 0755);
 
-  if (getenv("CHPL_LAUNCHER_USE_BATCH") == NULL) {
+  if (getenv("CHPL_LAUNCHER_USE_SRUN") != NULL) {
   expectFile = fopen(expectFilename, "w");
   if (verbosity < 2) {
     fprintf(expectFile, "log_user 0\n");
@@ -223,7 +223,7 @@ static void chpl_launch_cleanup(void) {
 //  sprintf(command, "rm %s", slurmFilename);
 //  system(command);
 
-  if (getenv("CHPL_LAUNCHER_USE_BATCH") == NULL) {
+  if (getenv("CHPL_LAUNCHER_USE_SRUN") != NULL) {
     sprintf(command, "rm %s", expectFilename);
     system(command);
   }
