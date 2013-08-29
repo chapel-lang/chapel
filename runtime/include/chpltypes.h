@@ -222,7 +222,7 @@ char* chpl_glom_strings(int numstrings, ...);
 chpl_bool string_contains(chpl_string x, chpl_string y);
 chpl_string string_copy(chpl_string x, int32_t lineno, chpl_string filename);
 chpl_string chpl_wide_string_copy(struct chpl_chpl____wide_chpl_string_s* x, int32_t lineno, chpl_string filename);
-void chpl_string_widen(struct chpl_chpl____wide_chpl_string_s* x, chpl_string from);
+void chpl_string_widen(struct chpl_chpl____wide_chpl_string_s* x, chpl_string from, int32_t lineno, chpl_string filename);
 void chpl_comm_wide_get_string(chpl_string* local, struct chpl_chpl____wide_chpl_string_s* x, int32_t tid, int32_t lineno, chpl_string filename);
 chpl_string string_concat(chpl_string x, chpl_string y, int32_t lineno, chpl_string filename);
 chpl_string string_index(chpl_string x, int i, int32_t lineno, chpl_string filename);

@@ -126,12 +126,12 @@ void chpl_gen_comm_wide_string_get(void* addr,
 
 // un-macro'd CHPL_WIDEN_STRING
 void
-chpl_string_widen(chpl____wide_chpl_string* x, chpl_string from)
+chpl_string_widen(chpl____wide_chpl_string* x, chpl_string from, int32_t lineno, chpl_string filename)
 {
   size_t len = strlen(from) + 1;
   x->locale = chpl_gen_getLocaleID();
   x->addr = chpl_tracked_task_calloc(len, sizeof(char),
-                               CHPL_RT_MD_SET_WIDE_STRING, 0, 0);
+                               CHPL_RT_MD_SET_WIDE_STRING, lineno, filename);
   strncpy((char*)x->addr, from, len);
   if (*((len-1)+(char*)x->addr) != '\0')
     chpl_internal_error("String missing terminating NUL.");

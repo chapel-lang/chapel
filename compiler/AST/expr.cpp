@@ -3940,7 +3940,8 @@ GenRet CallExpr::codegen() {
         if (get(2)->typeInfo() != dtString)
           codegenAssign(get(1), codegenAddrOf(codegenWideHere(get(2)))); 
         else
-          codegenCall("chpl_string_widen", codegenAddrOf(get(1)), get(2)); 
+          codegenCall("chpl_string_widen", codegenAddrOf(get(1)), get(2),
+                      get(3), get(4)); 
         break;
       }
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&

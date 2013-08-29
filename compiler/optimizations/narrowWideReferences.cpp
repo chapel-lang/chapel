@@ -464,6 +464,7 @@ narrowWideReferences() {
       Expr* stmt = key->getStmtExpr();
       stmt->insertBefore(new DefExpr(tmp));
       key->replace(new SymExpr(tmp));
+      SET_LINENO(stmt);
       stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, key));
     }
   }
