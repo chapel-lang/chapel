@@ -1,5 +1,5 @@
 RUNTIME_ROOT = ../../..
-RUNTIME_SUBDIR = src/launch/slurm
+RUNTIME_SUBDIR = src/launch/slurm-gasnetrun_ibv
 
 ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(shell pwd)/$(RUNTIME_ROOT)/..

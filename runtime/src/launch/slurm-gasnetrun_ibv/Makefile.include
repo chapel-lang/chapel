@@ -1,4 +1,4 @@
-LAUNCH_SUBDIR = src/launch/slurm
+LAUNCH_SUBDIR = src/launch/slurm-gasnetrun_ibv
 
 LAUNCH_OBJDIR = $(RUNTIME_ROOT)/$(LAUNCH_SUBDIR)/$(LAUNCHER_OBJDIR)
 
