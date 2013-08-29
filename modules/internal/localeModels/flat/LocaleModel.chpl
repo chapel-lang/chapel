@@ -245,6 +245,57 @@ module LocaleModel {
     }
   }
 
+  //////////////////////////////////////////
+  //
+  // support for memory management
+  //
+
+  // Here be dragons: If the return type is specified, then normalize.cpp
+  // inserts an initializer for the return value which calls its constructor,
+  // which calls chpl_here_alloc ad infinitum.  But if the return type is
+  // left off, it works!
+
+  // The allocator pragma is used by scalar replacement.
+  pragma "allocator"
+  pragma "no sync demotion"
+  proc chpl_here_alloc(x, md:int(16)) {
+    var nbytes = __primitive("sizeof", x);
+    chpl_memhook_malloc_pre(1, nbytes, md + chpl_memhook_md_num());
+    var mem = __primitive("task_alloc", nbytes);
+    chpl_memhook_malloc_post(mem, 1, nbytes, md + chpl_memhook_md_num());
+    return __primitive("cast", x.type, mem);
+  }
+
+  pragma "allocator"
+  pragma "no sync demotion"
+  proc chpl_here_calloc(x, number:int, md:int(16)) {
+    extern proc chpl_task_calloc(number:int, nbytes:int) : opaque;
+    var nbytes = __primitive("sizeof", x);
+    chpl_memhook_malloc_pre(number, nbytes, md + chpl_memhook_md_num());
+    var mem = chpl_task_calloc(number, nbytes);
+    chpl_memhook_malloc_post(mem, number, nbytes, md + chpl_memhook_md_num());
+    return __primitive("cast", x.type, mem);
+  }
+
+  pragma "allocator"
+  pragma "no sync demotion"
+  proc chpl_here_realloc(x, md:int(16)) {
+    var nbytes = __primitive("sizeof", x);
+    chpl_memhook_realloc_pre(x, nbytes, md + chpl_memhook_md_num());
+    var mem = __primitive("task_realloc", x:object, nbytes);
+    chpl_memhook_realloc_post(mem, x, nbytes, md + chpl_memhook_md_num());
+    return __primitive("cast", x.type, mem);
+  }
+
+  pragma "no sync demotion"
+  proc chpl_here_free(x) {
+    // TODO: The pointer should really be of type opaque, but we don't
+    // handle object ==> opaque casts correctly.  (In codegen, opaque behaves
+    // like an lvalue, but in the type system it isn't one.)
+    chpl_memhook_free_pre(__primitive("cast_to_void_star", x));
+    __primitive("task_free", x);
+  }
+
 
   //////////////////////////////////////////
   //
