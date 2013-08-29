@@ -158,7 +158,6 @@ communication counts changed due to Tom's HL branch merge (06/11/13)
 [Error matching program output for distributions/robust/arithmetic/performance/assignSlice]
 [Error matching program output for distributions/robust/arithmetic/performance/reduceAlias]
 [Error matching program output for distributions/robust/arithmetic/performance/reduceSlice]
-[Error matching program output for studies/hpcc/CommDiags/stream-ep_commDiags (compopts: 1)]
 
 error message changed after Tom's local string sharing change (06/01/13)
 ------------------------------------------------------------------------
@@ -174,10 +173,6 @@ deadlock due to impact of small # of threads on root locale replication (08/21/1
 gasnet-fast regressions (other than the above)
 (checked for accuracy 8/27/2013)
 ==============================================
-
-Execution time segfault resulting from r21733 commit (08/19/13)
----------------------------------------------------------------
-[Error matching program output for multilocale/deitz/needMultiLocales/test_remote_file_read]
 
 memory doesn't match (05/28/09)
 -------------------------------
