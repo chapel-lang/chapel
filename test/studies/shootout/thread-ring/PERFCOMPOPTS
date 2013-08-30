@@ -1,1 +1,1 @@
---fast
+--fast --ccflags -march=native

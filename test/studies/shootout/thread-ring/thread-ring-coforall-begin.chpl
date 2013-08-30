@@ -3,7 +3,8 @@
   thread-ring benchmark from The Computer Language Benchmarks Game
   http://shootout.alioth.debian.org/
 
-  Written by: Sung-Eun Choi (sungeun@cray.com)
+  Written by: Sung-Eun Choi (sungeun@cray.com), revisited by Lydia Duncan
+  (lydia@cray.com)
 
   Each program should create and keep alive 503 threads, explicity or
   implicitly linked in a ring, and pass a token between one thread and
@@ -19,8 +20,7 @@
 
 ***/
 
-config const N = 1000, nthreads = 503;
-config param use_coforall = true;
+config const N = 1000, nthreads = 503, verbose = false;
 var D: domain(1) = {1..nthreads};
 var token: [D] sync int;
 
@@ -28,25 +28,15 @@ proc main() {
   // init (not strictly needed, i.e., MTA semantics)
   [i in D] token(i).reset();
 
-  writeln(nthreads, " threads.  ", N, " trips.");
-
-  if use_coforall {
-    // Could use a coforall here (and have thread "0" start everyone)
-    // - threads thats start coforall grabs an iteration
-    for i in 0..nthreads do {
-      begin ring_link(i);
-		}
-  } else {
-    // start the N threads
-    for i in D do
-      begin ring_link(i);
-
-    // let's get it started!
-    token(1).writeEF(1);
-
-    // wait..  someone else will call exit
-    while (true) {}
+  if (verbose) {
+    writeln(nthreads, " threads.  ", N, " trips.");
   }
+
+  // Use a coforall here (and have thread "0" start everyone)
+	// - thread that starts coforall grabs an iteration
+	coforall i in 0..nthreads do {
+		begin ring_link(i);
+	}
 }
 
 proc ring_link(id: int) {
