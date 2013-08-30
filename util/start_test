@@ -158,8 +158,8 @@
 # characters after the key string until the next whitespace 
 # character).  These data values will then be written to a file
 # named $CHPL_TEST_PERF_DIR/<machine name>/foo.dat (where
-# $CHPL_TEST_PERF_DIR is "./perfdat" by default) in a TAB-separated
-# manner for graphing or display using gnuplot or Excel.
+# $CHPL_TEST_PERF_DIR is "$CHPL_HOME/test/perfdat" by default) in a
+# TAB-separated manner for graphing or display using gnuplot or Excel.
 #
 # When running with the -performance flag, compiler and executable
 # options are specified in files with .perfcompopts and 
@@ -998,7 +998,7 @@ endif
 if ($performance || $gengraphs) then
     set perftestname = `uname -n | sed 's@\..*@@'`
     if (! $?CHPL_TEST_PERF_DIR) then
-        echo \[Warning: CHPL_TEST_PERF_DIR must be set for generating performance graphs, using default $CHPL_HOME/perfdat/\] |& $tee -a $logfile
+        echo \[Warning: CHPL_TEST_PERF_DIR must be set for generating performance graphs, using default $CHPL_HOME/test/perfdat/\] |& $tee -a $logfile
         setenv CHPL_TEST_PERF_DIR $CHPL_HOME/test/perfdat/$perftestname
     endif
     set perfdir = $CHPL_TEST_PERF_DIR
