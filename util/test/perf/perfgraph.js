@@ -54,7 +54,13 @@ function genDygraph(graphInfo, parent, legend) {
     legend.appendChild(lspacer);
     ldiv.className = 'perfLegend';
     legend.appendChild(ldiv);
-    gs.push(new Dygraph(div,
+    // Date.parse with our date format (Subset of ISO 8601) will return UTC time
+    // so we'll need to adjust the start/end time to our local time
+    var date = new Date();
+    var localOffset = date.getTimezoneOffset() * 60 * 1000;
+    var startTime = Date.parse(graphInfo.startdate) + localOffset;
+    var endTime = Date.parse(graphInfo.enddate) + localOffset;
+    var g = new Dygraph(div,
                         'CSVfiles/'+graphInfo.datfname,
                         {
                             title: graphInfo.title,
@@ -64,27 +70,68 @@ function genDygraph(graphInfo, parent, legend) {
                             includeZero: true,
                             showRoller: true,
                             legend: 'always',
+                            // the options for the highlighted series 
+                            highlightSeriesOpts: {    
+                              strokeWidth: 2,
+                              strokeBorderWidth: 0,
+                              highlightCircleSize: 4,
+                            },
+                            // don't "dim" the  series when one is highlighted
+                            highlightSeriesBackgroundAlpha: 1, 
+                            rollPeriod: 7, 
+                            
+                            // So it's easier to zoom in on the right side
+                            rightGap: 15, 
+                            
+                            // Give yourself a little more space so the y axis
+                            // values don't overlap with the y label
+                            yAxisLabelWidth: 70,
                             labelsDiv: ldiv,
                             labelsSeparateLines: true,
-                            dateWindow: [ Date.parse(graphInfo.startdate),
-                                          Date.parse(graphInfo.enddate)],
+                            dateWindow: [startTime, endTime],
                             drawCallback: function(me, initial) {
-                                if (blockRedraw || initial) return;
+                                if (blockRedraw) return;
                                 blockRedraw = true;
-                                var range = me.xAxisRange();
-                                <!-- var yrange = me.yAxisRange(); -->
-                                for (var j = 0; j < numGraphs; j++) {
-                                    if (gs[j] == me) continue;
-                                    gs[j].updateOptions( {
-                                            dateWindow: range
-                                            <!-- valueRange: yrange -->
-                                             } )
+                                
+                                // Find the range we're displaying and adjust 
+                                // the number of decimals accordingly, the set
+                                // annotations is just because it wasn't 
+                                // actually updating the graph for some reason.
+                                // In the dygraph docs, this is how I saw you
+                                // could redraw the graph with no side effects, 
+                                // but there might be a better solution 
+                                var yRange = me.yAxisRange();
+                                var yDiff = yRange[1] - yRange[0];
+                                if (yDiff > 100.0) {
+                                    me.updateOptions({digitsAfterDecimal: 0} );
+                                    me.setAnnotations(me.annotations());
+                                }
+                                else if (yDiff > 1.0) {
+                                    me.updateOptions({digitsAfterDecimal: 2} );
+                                    me.setAnnotations(me.annotations());
+                                }
+                                else {
+                                    me.updateOptions({digitsAfterDecimal: 4} );
+                                    me.setAnnotations(me.annotations());
+                                }
+                                
+                                if(!initial) {  
+                                    var range = me.xAxisRange();
+                                    <!-- var yrange = me.yAxisRange(); -->
+                                    for (var j = 0; j < numGraphs; j++) {
+                                        if (gs[j] == me) continue;
+                                        gs[j].updateOptions( {
+                                                dateWindow: range
+                                                <!-- valueRange: yrange -->
+                                                 } )
+                                    }
                                 }
                                 blockRedraw = false;
                             },
                             underlayCallback: function(canvas, area, g) {
                                 function markReleaseDate(date) {
-                                    var xval = g.toDomXCoord(new Date(date));
+                                    var mDate = Date.parse(date) + localOffset;
+                                    var xval = g.toDomXCoord(new Date(mDate));
                                     canvas.beginPath();
                                     canvas.moveTo(xval, area.y);
                                     canvas.lineTo(xval, area.y+area.h);
@@ -97,7 +144,25 @@ function genDygraph(graphInfo, parent, legend) {
                             }
                         }
                         )
-            )
+    
+    // If you click on a graph, focus on the currently highlighted series 
+    // (highlighting isn't automatically switched, and don't change values 
+    // back to newest on unhighlight.) This is nice for following a particular 
+    // series. You can't do this as a regular option when the dygraph is created
+    // because the dygraph isn't passed as an argument to the callback function
+    // brad pointed out that it would be nice if you could enable this by
+    // clicking on the legend entry 
+    var onclick = function(ev) {
+      if (g.isSeriesLocked()) {
+        g.clearSelection();
+      } else {
+        g.setSelection(g.getSelection(), g.getHighlightSeries(), true);
+      }
+    };
+    g.setSelection(false);
+    g.updateOptions({clickCallback: onclick}, true);
+    
+    gs.push(g)
 }
 
 function perfGraphInit() {
