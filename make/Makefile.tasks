@@ -3,5 +3,4 @@
 #
 #
 #
-export CHPL_MAKE_TASKS      := $(shell $(CHPL_MAKE_HOME)/util/chplenv/tasks)
-export CHPL_MAKE_TASKS_UBAR := $(subst -,_,$(CHPL_MAKE_TASKS))
+export CHPL_MAKE_TASKS := $(shell $(CHPL_MAKE_HOME)/util/chplenv/tasks)
