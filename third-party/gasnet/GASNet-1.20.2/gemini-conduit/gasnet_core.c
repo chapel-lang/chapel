@@ -618,7 +618,7 @@ static int gasnetc_init(int *argc, char ***argv) {
   if (ret != GASNET_OK) return ret;
 
 #if GASNET_CONDUIT_ARIES
-    if (!gasneti_mynode) {
+    if (!gasneti_mynode && !getenv("CHPL_GASNET_QUIET")) {
       fflush(NULL);
       fprintf(stdout,
               "-----------------------------------------------------------------------\n"
