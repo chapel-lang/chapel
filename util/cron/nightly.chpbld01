@@ -43,7 +43,6 @@ for compiler in $compilers ; do
   module load PrgEnv-${compiler}${PrgEnv_Version}
   if [ $compiler == "cray" ] ; then   # avoid loading gemini libraries
       module load craype-target-petest
-      module load mpich2
   fi
   module list
   export CHPL_TARGET_PLATFORM=cray-xc
@@ -59,7 +58,6 @@ for compiler in $compilers ; do
   module load PrgEnv-${compiler}${PrgEnv_Version}
   if [ $compiler == "cray" ] ; then   # avoid loading gemini libraries
       module load craype-target-petest
-      module load mpich2
   fi
   module list
   export CHPL_HOST_PLATFORM=cray-xc
