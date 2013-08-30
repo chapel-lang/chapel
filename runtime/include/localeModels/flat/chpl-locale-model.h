@@ -24,6 +24,15 @@ typedef struct {
   int32_t subloc;
 } chpl_localeID_t;
 
+//
+// This is the external copy constructor for a chpl_localeID_t, specified
+// by the module code for a flat locale model.
+//
+static ___always_inline
+chpl_localeID_t chpl__initCopy_chpl_rt_localeID_t(chpl_localeID_t initial) {
+  return initial;
+}
+
 static ___always_inline
 chpl_localeID_t chpl_rt_buildLocaleID(c_nodeid_t node, c_sublocid_t subloc) {
   chpl_localeID_t loc = { node, c_sublocid_any };

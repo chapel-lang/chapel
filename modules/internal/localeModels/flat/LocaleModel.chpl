@@ -33,15 +33,13 @@ module LocaleModel {
     // We need to know that this is a record type in order to pass it to and
     // return it from runtime functions properly, but we don't need or want
     // to see its contents.
-    //
-    // Note: r21672, which added these, caused a --baseline failure on
-    // 10-Aug-13 in arrays/bradc/arrayassign and a number of other tests.
-    // Explicitly listing the members, even though they're not referenced
-    // anywhere, resolves that failure.  So, I'm doing that as a stopgap
-    // while I figure out a real fix.
-    var node:   int(32);
-    var subloc: int(32);
   };
+
+  // We need an explicit copy constructor because the compiler cannot create
+  // a correct one for a record type whose members are not known to it.
+  pragma "init copy fn"
+  extern chpl__initCopy_chpl_rt_localeID_t
+  proc chpl__initCopy(initial: chpl_localeID_t): chpl_localeID_t;
 
   extern var chpl_nodeID: chpl_nodeID_t;
 
