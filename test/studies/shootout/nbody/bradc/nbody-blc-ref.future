@@ -1,0 +1,37 @@
+feature request: ref declarations
+
+At the time that we were discussing adding 'ref' intents, we discussed
+the desire to also support standalone reference declarations, the idea
+being that you should be able to do something like:
+
+      ref a = A[i];
+
+      a += 1;
+
+as a means of modifying A[i] itself.  The idea was that if you can do
+this by passing the expression to a procedure, you ought to be able to
+do it without introducing a procedure.  In doing so, our assumptions
+were that:
+
+(1) a ref variable could not be pointed to something else.  That is,
+
+      a = A[j];
+
+would be equivalent to:
+
+      A[i] = A[j];
+
+not to pointing a to A[j]; and
+
+(2) ref variables would not stack.  That is,
+
+      ref b = a;
+
+    would create a second alias to A[i], not a reference to the
+    reference to A[i].
+
+
+This future shows a case that would benefit from this.  I used an
+inline proc in order to avoid recomputing/rewriting an expression like
+A[i].  Supporting 'ref' declarations would be a more
+straightforward/clean way of getting the same effect.
