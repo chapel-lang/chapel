@@ -133,6 +133,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   char* command;
   FILE* slurmFile, *expectFile;
   char* projectString = getenv(launcherAccountEnvvar);
+  char* constraint = getenv("CHPL_LAUNCHER_CONSTRAINT");
+  char* walltime = getenv("CHPL_LAUNCHER_WALLTIME");
   char* basenamePtr = strrchr(argv[0], '/');
   pid_t mypid;
 
@@ -158,7 +160,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   genNumLocalesOptions(slurmFile, determineQsubVersion(), numLocales, getNumCoresPerLocale());
   if (projectString && strlen(projectString) > 0)
     fprintf(slurmFile, "#SBATCH -A %s\n", projectString);
-  if (getenv("CHPL_LAUNCHER_USE_SRUN") == NULL) {
+  if (getenv("CHPL_LAUNCHER_USE_SBATCH") != NULL) {
 //    fprintf(slurmFile, "#SBATCH -joe\n");
     fprintf(slurmFile, "#SBATCH -o %s.%%j.out\n", argv[0]);
 //    fprintf(slurmFile, "cd $SBATCH_O_WORKDIR\n");
@@ -172,30 +174,41 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   fclose(slurmFile);
   chmod( slurmFilename, 0755);
 
-  if (getenv("CHPL_LAUNCHER_USE_SRUN") != NULL) {
+  if (getenv("CHPL_LAUNCHER_USE_SBATCH") == NULL) {
   expectFile = fopen(expectFilename, "w");
   if (verbosity < 2) {
-    fprintf(expectFile, "log_user 0\n");
+//    fprintf(expectFile, "log_user 0\n");
   }
   fprintf(expectFile, "set timeout -1\n");
-  fprintf(expectFile, "chmod +x %s\n",slurmFilename);
+//  fprintf(expectFile, "chmod +x %s\n",slurmFilename);
   fprintf(expectFile, "set prompt \"(%%|#|\\\\$|>) $\"\n");
+
 //  fprintf(expectFile, "spawn sbatch ");
-  fprintf(expectFile, "spawn sbatch ");
-  fprintf(expectFile, "-V "); // pass through all environment variables
-  fprintf(expectFile, "-I %s\n", slurmFilename);
-  fprintf(expectFile, "expect -re $prompt\n");
-//  fprintf(expectFile, "send \"cd \\$SBATCH_O_WORKDIR\\n\"\n");
-  fprintf(expectFile, "expect -re $prompt\n");
-  fprintf(expectFile, "send \"%s/gasnetrun_ibv -n %d %s ", 
+  fprintf(expectFile, "spawn -noecho srun ");
+//  fprintf(expectFile, "-J %s ",argv[0]); // pass through all environment variables
+  fprintf(expectFile, "-N %d ",numLocales); 
+  fprintf(expectFile, "--ntasks-per-node=1 ",numLocales); 
+  fprintf(expectFile, "--exclusive "); //  give exclusive access to the nodes
+  fprintf(expectFile, "--time=%s ",walltime); 
+  if (constraint) {
+	  fprintf(expectFile, " -C %s", constraint);
+  }
+//  fprintf(expectFile, "-I %s ", slurmFilename);
+  fprintf(expectFile, " %s/gasnetrun_ibv -n %d %s ", 
           WRAP_TO_STR(LAUNCH_PATH), numLocales, chpl_get_real_binary_name());
   for (i=1; i<argc; i++) {
-    fprintf(expectFile, " '%s'", argv[i]);
+    fprintf(expectFile, " %s", argv[i]);
   }
-  fprintf(expectFile, "\\n\"\n");
+//  fprintf(expectFile, "\\n\"\n");
+  fprintf(expectFile, "\n\n");
+//  fprintf(expectFile, "expect -re $prompt\n");
+//  fprintf(expectFile, "send \"cd \\$SBATCH_O_WORKDIR\\n\"\n");
+//  fprintf(expectFile, "expect -re $prompt\n");
+//  fprintf(expectFile, "sleep 10\n");
+//  fprintf(expectFile, "interact -o -re $prompt {return}\n");
+//  fprintf(expectFile, "send_user \"\\n\"\n");
+//  fprintf(expectFile, "send \"exit\\n\"\n");
   fprintf(expectFile, "interact -o -re $prompt {return}\n");
-  fprintf(expectFile, "send_user \"\\n\"\n");
-  fprintf(expectFile, "send \"exit\\n\"\n");
   fclose(expectFile);
   sprintf(baseCommand, "expect %s", expectFilename);
   } else {
@@ -223,9 +236,9 @@ static void chpl_launch_cleanup(void) {
 //  sprintf(command, "rm %s", slurmFilename);
 //  system(command);
 
-  if (getenv("CHPL_LAUNCHER_USE_SRUN") != NULL) {
+  if (getenv("CHPL_LAUNCHER_USE_SBATCH") == NULL) {
     sprintf(command, "rm %s", expectFilename);
-    system(command);
+//    system(command);
   }
 
 //  sprintf(command, "rm %s", sysFilename);
