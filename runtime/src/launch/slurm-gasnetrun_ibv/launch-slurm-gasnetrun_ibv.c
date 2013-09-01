@@ -184,7 +184,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   fprintf(expectFile, "set prompt \"(%%|#|\\\\$|>) $\"\n");
 
 //  fprintf(expectFile, "spawn sbatch ");
-  fprintf(expectFile, "spawn -noecho srun ");
+  fprintf(expectFile, "spawn -noecho salloc ");
 //  fprintf(expectFile, "-J %s ",argv[0]); // pass through all environment variables
   fprintf(expectFile, "-N %d ",numLocales); 
   fprintf(expectFile, "--ntasks-per-node=1 ",numLocales); 
