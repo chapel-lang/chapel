@@ -14,3 +14,9 @@ chpl_malloc calls caused little to no improvement on its own, but when combined
 with deletions of extraneous _ic_these_DefaultRectangularDom_1_int64_t_F alloc's
 and free's caused a fair improvement, although not as much as we would like.
 Utilizing writeXF instead of writeEF also seemed to give a slight improvement.
+
+Although the following are (probably?) not allowed in the benchmark game, their
+performance is nice enough that it should be noted:
+  - Using qthreads brings the time down to roughly 100 seconds
+  - Using the muxed tasking layer and soft threads brings the time down to 65-75
+    seconds
