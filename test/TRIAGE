@@ -146,7 +146,7 @@ nondet. seg fault for prgenv-cray on chpbld01
 nondet. timeout on gasnet-everything
 ------------------------------------
 [Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dBDtoDRTest] (07/08/13)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (7/22/13)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (7/22/13, 09/02/13)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (7/19/13)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff] (8/9/13)
 
