@@ -1,12 +1,14 @@
-
 use miniMD;
 use initMD;
 use MDForce;
 use Time;
 
-var mstat : int; // stores information about iterations
-var t_act, p_act, e_act : real; // 
-var t_scale, p_scale, e_scale, mvv2e, dof_boltz : real;
+var curStat : int;
+
+var temp, press, eng : real;
+
+// scientific constants
+var tempScale, pressScale, engScale, mvv2e, dof_boltz : real;
 
 // holds data regarding temperature, energy, pressure
 // later used in more verbose output (unimplemented)
@@ -17,92 +19,73 @@ var engs : [stepSpace] real;
 var prs : [stepSpace] real;
 
 proc initThermo() {
-  var maxstat : int;
-  if nstat == 0 then maxstat = 2;
-  else maxstat = nsteps / nstat + 2;
-  stepSpace = {1..maxstat};
+  const maxStats = if thermoEvery == 0 then 2
+    else numSteps / thermoEvery + 2;
+  stepSpace = {1..maxStats};
 
-  // from the c++ version, looks like scientific constants
+  // depending on the units, establish scientific variables
   if units == "lj" {
     mvv2e = 1.0;
-    dof_boltz = natoms * 3 - 3;
-    t_scale = mvv2e / dof_boltz;
-    p_scale = 1.0 / 3 / dim(1) / dim(2) / dim(3);
-    e_scale = 0.5;
+    dof_boltz = numAtoms * 3 - 3;
+    tempScale = mvv2e / dof_boltz;
+    pressScale = 1.0 / 3 / volume;
+    engScale = 0.5;
   } else {
     mvv2e = 1.036427e-4;
-    dof_boltz = (natoms * 3 - 3) * 8.617343e-5;
-    t_scale = mvv2e / dof_boltz;
-    p_scale = 1.602176e6 / 3 / dim(1) / dim(2) / dim(3);
-    e_scale = 524287.985533;
+    dof_boltz = (numAtoms * 3 - 3) * 8.617343e-5;
+    tempScale = mvv2e / dof_boltz;
+    pressScale = 1.602176e6 / 3 / volume;
+    engScale = 524287.985533;
     dtforce /= mvv2e;
   } 
 }
 
-proc compute( flag : int, f : Force, total : Timer) {
-  var t, eng, p : real;
-  if flag > 0 && (flag % nstat >= 1) then return;
-  if flag == -1 && nstat > 0 && (nsteps % nstat == 0) then return;
+proc computeThermo(step : int, total : Timer) {
 
-  t_act = 0;
-  e_act = 0;
-  p_act = 0;
+  // if not the 0th step and we shouldn't compute, leave
+  if step > 0 && (step % thermoEvery >= 1) then return;
+
+  // if this was called as the last compute, and we had just computed 
+  // during the last iteration, leave
+  if step == -1 && thermoEvery > 0 && (numSteps % thermoEvery == 0) then return;
 
   // calculate
-  t = temperature();
-  eng = energy(f);
-  p = pressure(t, f);
+  temperature();
+  eng = fobj.eng_vdwl * engScale / numAtoms;
+  press = (temp * dof_boltz + fobj.virial) * pressScale;
 
-  var istep = flag;
-  if flag == -1 then istep = nsteps;
-  if flag == 0 then mstat = 1;
+  // by convention, -1 will be used as the final compute
+  var istep = step;
+  if step == -1 then istep = numSteps;
+  if step == 0 then curStat = 1;
 
   // store data
-  steps[mstat] = istep;
-  temps[mstat] = t;
-  engs[mstat] = eng;
-  prs[mstat] = p;
+  steps[curStat] = istep;
+  temps[curStat] = temp;
+  engs[curStat] = eng;
+  prs[curStat] = press;
 
-  mstat += 1;
+  curStat += 1;
 
   var tval : real = 0.0;
   if istep != 0 then tval = total.elapsed();
-    if printOriginal then writef("%i %er %er %er %.6dr\n", istep, t, eng, p, tval);
-    else if printCorrect then  writef("%i %er %er %er\n", istep, t, eng, p);
-}
 
-proc energy(f : Force) {
-  e_act = f.eng_vdwl;
-
-  if half_neigh then e_act *= 2.0;
-
-  e_act *= e_scale;
-
-  return e_act / natoms;
+  if printOriginal then writef("%i %er %er %er %.6dr\n", istep, temp, eng, press, tval);
+  else if printCorrect then  writef("%i %er %er %er\n", istep, temp, eng, press);
 }
 
 proc temperature() {
-  t_act = 0;
+  temp = 0;
   var acts : [LocaleGridDom] real;
   coforall ijk in LocaleGridDom {
     on LocaleGrid[ijk] {
-      var Data => Bins[ijk].Arr;
-      var Real = Bins[ijk].Real;
+      var Data => Grid[ijk].Arr;
+      var Real = Grid[ijk].Real;
       var m = mass;
-      acts[ijk] = + reduce forall (b,c) in zip(Data[Real],binCount[Real]) do 
+      acts[ijk] = + reduce forall (b,c) in zip(Data[Real],Grid[ijk].Count[Real]) do 
         + reduce forall a in b[1..c] do (dot(a.v,a.v) * m);
-      // perhaps a clearer alternative:
-      /*
-      for (b,c) in zip(Data[Real], binCount[Real]) {
-        acts[ijk] += + reduce forall a in b[1..c] do (dot(a.v,a.v) * m);
-      }
-      */
     }
   }
-  t_act = + reduce acts;
-  return t_act * t_scale;
-}
-
-proc pressure(t : real, f : Force) {
-  return (t * dof_boltz + f.virial) * p_scale;
+  temp = (+ reduce acts) * tempScale;
+  return temp;
 }
