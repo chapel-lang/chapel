@@ -230,12 +230,12 @@ Expr* buildDotExpr(BaseAST* base, const char* member) {
       if (intToLocale->isNamed("chpl_localeID_to_locale"))
         if (CallExpr* getLocale = toCallExpr(intToLocale->get(1)))
           if (getLocale->isPrimitive(PRIM_WIDE_GET_LOCALE))
-            return new CallExpr(PRIM_WIDE_GET_LOCALE, getLocale->get(1)->remove());
+            return new CallExpr(PRIM_WIDE_GET_NODE, getLocale->get(1)->remove());
   }
 
   if (!strcmp("locale", member))
     // MAGIC: "x.locale" member access expressions are rendered as
-    // chpl_localeID_to_locale(_wide_get_locale(x)).
+    // chpl_localeID_to_locale(_wide_get_node(x)).
     return new CallExpr("chpl_localeID_to_locale", 
                         new CallExpr(PRIM_WIDE_GET_LOCALE, base));
   else
