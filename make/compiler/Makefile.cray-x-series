@@ -19,10 +19,6 @@ RANLIB = ranlib
 DEBUG_CFLAGS = -g
 OPT_CFLAGS = -O3
 
-CFLAGS  += -target=linux
-LFLAGS  += -target=linux
-LDFLAGS += -target=linux
-
 COMP_CFLAGS = $(CFLAGS) $(CRAYPE_COMP_CFLAGS)
 RUNTIME_CFLAGS = $(CFLAGS)
 RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
