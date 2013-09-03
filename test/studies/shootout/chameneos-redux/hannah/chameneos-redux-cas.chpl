@@ -70,7 +70,6 @@ class Chameneos {
     var peer : Chameneos;
     var peer_idx : uint(32);
     var xchg : uint(32);
-    var prev : uint;
     var is_same : int;
     var newColor : Color;
 

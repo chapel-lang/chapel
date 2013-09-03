@@ -66,12 +66,8 @@ class Chameneos {
      meeting has ended, setting both of their colors to this value. */
   proc start(population : [] Chameneos, meetingPlace: MeetingPlace) {
     var stateTemp : uint(32);
-    var peer : Chameneos;
     var peer_idx : uint(32);
     var xchg : uint(32);
-    var prev : uint;
-    var is_same : int;
-    var newColor : Color;
 
     stateTemp = meetingPlace.state.read(memory_order_acquire);
 
@@ -86,21 +82,10 @@ class Chameneos {
       }
       if (meetingPlace.state.compareExchangeStrong(stateTemp, xchg, memory_order_acq_rel)) {
         if (peer_idx) {
-          if (id == peer_idx) {
-            is_same = 1;
-            halt("halt: chameneos met with self");
-          }
-          peer = population[peer_idx:int(32)];
-          newColor = getComplement(color, peer.color);
-          peer.color = newColor;
-          peer.meetings += 1;
-          peer.meetingsWithSelf += is_same;
-          peer.meetingCompleted.write(true, memory_order_release);
-
-          color = newColor;
-          meetings += 1;
-          meetingsWithSelf += is_same;
+          runMeeting(population, peer_idx);
         } else {
+          // Attend meeting
+
           // Gives slightly better performance than waitFor, but is not "nicer"
           while (!meetingCompleted.read(memory_order_acquire)) {
             chpl_task_yield();
@@ -113,6 +98,28 @@ class Chameneos {
         stateTemp = meetingPlace.state.read(memory_order_acquire);
       }
     }
+  }
+
+  /* Given the id of its peer, finds and updates the data of its peer and
+     itself */
+  proc runMeeting (population : [] Chameneos, peer_idx : uint(32)) {
+    var peer : Chameneos;
+    var is_same : int;
+    var newColor : Color;
+    if (id == peer_idx) {
+      is_same = 1;
+      halt("halt: chameneos met with self");
+    }
+    peer = population[peer_idx:int(32)];
+    newColor = getComplement(color, peer.color);
+    peer.color = newColor;
+    peer.meetings += 1;
+    peer.meetingsWithSelf += is_same;
+    peer.meetingCompleted.write(true, memory_order_release);
+    
+    color = newColor;
+    meetings += 1;
+    meetingsWithSelf += is_same;
   }
 }
 
