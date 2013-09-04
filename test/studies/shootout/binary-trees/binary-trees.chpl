@@ -2,6 +2,8 @@
 //http://shootout.alioth.debian.org
 //Casey Battaglino
 
+use AdvancedIters;
+
 config const n = 10;
 
 class Tree {
@@ -21,7 +23,7 @@ proc main() {
   var results: [1..maxDepth, 1..2] int;
   var longLivedTree : Tree = bottomUpTree(0, maxDepth);
 
-  forall depth in minDepth..maxDepth by 2 {
+  forall depth in dynamic(minDepth..maxDepth by 2, 1) {
     var iterations: int = 1 << (maxDepth - depth + minDepth);
     var check: int = 0;
 			
