@@ -22,7 +22,9 @@ I can observe this bug only with --local.
 
 Note: this behavior is covered by this test:
 
-  test/parallel/taskPar/vass/this-in-taskfns-in-ctors.chpl
+  test/multilocale/vass/this-in-taskfns-in-ctors.chpl
+
+(wanna-be test/parallel/taskPar/vass/this-in-taskfns-in-ctors.chpl).
 
 When this bug is fixed, the present test
   this-in-begin-in-method.*
