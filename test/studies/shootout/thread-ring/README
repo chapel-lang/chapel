@@ -15,6 +15,10 @@ with deletions of extraneous _ic_these_DefaultRectangularDom_1_int64_t_F alloc's
 and free's caused a fair improvement, although not as much as we would like.
 Utilizing writeXF instead of writeEF also seemed to give a slight improvement.
 
+Skipping testing under valgrind because the current settings do not allow enough
+threads to complete even under the (comparatively) low number of threads for
+that sample size
+
 Although the following are (probably?) not allowed in the benchmark game, their
 performance is nice enough that it should be noted:
   - Using qthreads brings the time down to roughly 100 seconds
