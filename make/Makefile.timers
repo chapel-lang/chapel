@@ -1,6 +1,0 @@
-#
-# CHPL_MAKE_TIMERS stuff
-#
-#
-#
-export CHPL_MAKE_TIMERS := $(shell $(CHPL_MAKE_HOME)/util/chplenv/timers)

@@ -1,22 +1,22 @@
 #!/usr/bin/env perl
 
-use File::Basename;
+use FindBin;
+use lib $FindBin::Bin;
+use Run qw(ret run);
+use strict;
 
-$utildirname = dirname($0);
-
-$preset_comm=$ENV{'CHPL_COMM'};
+my $preset_comm=$ENV{'CHPL_COMM'};
+my $comm;
 
 if ($preset_comm eq "") {
     # eventually, we'll want to pick defaults based on platforms, but for
     # today things are impoverished enough for us to want to pick "none"
     # by default
-    #$platform = `$utildirname/platform --target`;
-    #chomp($platform);
     $comm = "none";
 } else {
     $comm = $preset_comm;
 }
 
 
-print "$comm\n";
-exit(0);
+ret($comm);
+print "$comm\n" unless caller;

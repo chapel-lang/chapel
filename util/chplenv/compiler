@@ -1,11 +1,13 @@
 #!/usr/bin/env perl
 
-use File::Basename;
-
-$utildirname = dirname($0);
-$platformscript = "$utildirname/platform";
+use FindBin;
+use lib $FindBin::Bin;
+use Run qw(ret run);
+use strict;
 
 my $flag = $ARGV[0];
+my $preset_compiler;
+my $compiler;
 
 if ($flag eq "" || $flag eq "--host") {
     $preset_compiler=$ENV{'CHPL_HOST_COMPILER'};
@@ -14,8 +16,7 @@ if ($flag eq "" || $flag eq "--host") {
 }
 
 if ($preset_compiler eq "") {
-    $platform = `$platformscript $flag`;
-    chomp($platform);
+    my $platform = run("platform");
     if ($platform =~ /^cray-xmt(-sim)?$/) {
 	$compiler = "cray-mta";
     } elsif ($platform eq "x1"     || $platform eq "x2" ||
@@ -25,7 +26,7 @@ if ($preset_compiler eq "") {
         if ($flag eq "--host") {
             $compiler = "gnu";
         } else {
-            $subcompiler = "-$ENV{'PE_ENV'}";
+            my $subcompiler = "-$ENV{'PE_ENV'}";
             if ($subcompiler eq "-") {
                 $subcompiler = "";
             } else {
@@ -38,7 +39,7 @@ if ($preset_compiler eq "") {
     } elsif ($platform eq "marenostrum") {
 	$compiler = "ibm";
     } else {
-	if (`$platformscript --host` eq `$platformscript --target`) {
+	if (run("platform", "--host") eq run("platform", "--target")) {
 	    $compiler=$ENV{'CHPL_HOST_COMPILER'};
 	}
 	if ($compiler eq "") {
@@ -49,6 +50,5 @@ if ($preset_compiler eq "") {
     $compiler = $preset_compiler;
 }
 
-
-print "$compiler\n";
-exit(0);
+ret($compiler);
+print "$compiler\n" unless caller;

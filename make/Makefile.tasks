@@ -1,6 +1,0 @@
-#
-# CHPL_MAKE_TASKS stuff
-#
-#
-#
-export CHPL_MAKE_TASKS := $(shell $(CHPL_MAKE_HOME)/util/chplenv/tasks)

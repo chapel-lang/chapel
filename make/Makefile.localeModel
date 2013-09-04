@@ -1,7 +1,0 @@
-#
-# CHPL_MAKE_LOCALE_MODEL stuff
-#
-#
-#
-export CHPL_MAKE_LOCALE_MODEL := \
-         $(shell $(CHPL_MAKE_HOME)/util/chplenv/localeModel)

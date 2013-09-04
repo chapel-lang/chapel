@@ -1,6 +1,0 @@
-#
-# CHPL_MAKE_GMP
-#
-#
-#
-export CHPL_MAKE_GMP = $(shell $(CHPL_MAKE_HOME)/util/chplenv/gmp)

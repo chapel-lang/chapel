@@ -1,9 +1,12 @@
 #!/usr/bin/env perl
 
-use File::Basename;
-use strict;
+#use FindBin;
+#use lib $FindBin::Bin;
 
-my $utildirname = dirname($0);
+use File::Basename;
+use lib (dirname(__FILE__));
+use Run qw(ret run);
+use strict;
 
 my $preset_atomics         = $ENV{'CHPL_ATOMICS'};
 my $preset_network_atomics = $ENV{'CHPL_NETWORK_ATOMICS'};
@@ -19,7 +22,7 @@ if ($flag eq "--network") {
 
 if ($network_atomics == 1) {
     if ($preset_network_atomics eq "") {
-        my $comm = `$utildirname/comm`; chomp($comm);
+        my $comm = run("comm");
         if ($comm eq "ugni") {
             $atomics = $comm;
         } else {
@@ -30,9 +33,8 @@ if ($network_atomics == 1) {
     }
 } elsif ($preset_atomics eq "") {
 
-    my $compiler = `$utildirname/compiler --target`;
-    chomp $compiler;
-    my $platform = `$utildirname/platform --target`; chomp($platform);
+    my $compiler = run("compiler", "--target");
+    my $platform = run("platform", "--target");
 
 #
 # our atomics assume a 64-bit platform, so for 32-bit platforms, we
@@ -63,5 +65,5 @@ if ($network_atomics == 1) {
     $atomics = $preset_atomics;
 }
 
-print "$atomics\n";
-exit(0);
+ret($atomics);
+print "$atomics\n" unless caller;

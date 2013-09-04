@@ -1,7 +1,0 @@
-#
-# CHPL_MAKE_MEM
-#
-#
-#
-export CHPL_MAKE_HOST_MEM = $(shell $(CHPL_MAKE_HOME)/util/chplenv/mem --host)
-export CHPL_MAKE_TARGET_MEM = $(shell $(CHPL_MAKE_HOME)/util/chplenv/mem --target)

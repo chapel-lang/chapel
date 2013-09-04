@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 
-@ARGV == 2 or die "usage: $0 task-model-name threads-model-name\n";
+@ARGV == 2 or die "usage: " . __FILE__ . " task-model-name threads-model-name\n";
 
 $tasks=$ARGV[0];
 $threads=$ARGV[1];
@@ -14,4 +14,3 @@ unless (($tasks =~ /^muxed|fifo$/ &&
     die "Tasks \"$tasks\" is incompatible with threads \"$threads\".\n";
 }
 
-exit(0);

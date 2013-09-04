@@ -1,25 +1,27 @@
 #!/usr/bin/env perl
 
-use File::Basename;
+use FindBin;
+use lib $FindBin::Bin;
+use Run qw(ret run);
+use strict;
 
-$utildirname = dirname($0);
-
-$home = $ENV{'CHPL_HOME'};
+my $home = $ENV{'CHPL_HOME'};
 if ( ! -d $home ) {
-  $home = $utildirname . "/../../";
+  $home = $FindBin::Bin . "/../../";
 }
 
-$preset_regexp = $ENV{'CHPL_REGEXP'};
+my $preset_regexp = $ENV{'CHPL_REGEXP'};
+my $regexp;
 
 if ($preset_regexp eq "") {
-  $targplatform = `$utildirname/platform --target`; chomp($targplatform);
-  $targcompiler = `$utildirname/compiler --target`; chomp($targcompiler);
+  my $targplatform = run("platform", "--target");
+  my $targcompiler = run("compiler", "--target");
 
   if ($targplatform =~ /^cray-xmt(-sim)?$/) {
     $regexp = 'none';
   } else {
-    $subdir = $home . "/third-party/re2/install/" .
-              $targplatform . "-" . $targcompiler;
+    my $subdir = $home . "/third-party/re2/install/" .
+                 $targplatform . "-" . $targcompiler;
     if ( -d $subdir && -f "$subdir/include/re2/re2.h" ) {
       $regexp = 're2';
     } else {
@@ -32,5 +34,5 @@ if ($preset_regexp eq "") {
   $regexp = $preset_regexp;
 }
 
-print "$regexp\n";
-exit(0);
+ret($regexp);
+print "$regexp\n" unless caller;

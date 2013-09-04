@@ -1,16 +1,17 @@
 #!/usr/bin/env perl
-use File::Basename;
 
-$utildirname = dirname($0);
+use FindBin;
+use lib $FindBin::Bin;
+use Run qw(ret run);
+use strict;
 
-$comm = `$utildirname/comm`;
-chomp($comm);
+my $comm = run("comm");
+my $segment;
 
 if ($comm eq "gasnet") {
-  $preset_segment = $ENV{'CHPL_GASNET_SEGMENT'};
+  my $preset_segment = $ENV{'CHPL_GASNET_SEGMENT'};
   if ($preset_segment eq "") {
-    $substrate = `$utildirname/commSubstrate`;
-    chomp($substrate);
+    my $substrate = run("commSubstrate");
 
     if (($substrate eq "portals") || ($substrate eq "gemini")) {
       $segment = "fast";
@@ -25,5 +26,5 @@ if ($comm eq "gasnet") {
   $segment = "none";
 }
 
-print "$segment\n";
-exit(0);
+ret($segment);
+print "$segment\n" unless caller;

@@ -1,35 +1,38 @@
 #!/usr/bin/env perl
 
-use File::Basename;
+use FindBin;
+use lib $FindBin::Bin;
+use Run qw(ret run);
 use strict;
 
-my $utildirname = dirname($0);
+my $preset_wide = $ENV{'CHPL_WIDE_POINTERS'};
+my $wide = "";
 
-my $preset = $ENV{'CHPL_WIDE_POINTERS'};
-my $set = "";
-
-if ($preset eq "") {
-  $set = "struct";
+if ($preset_wide eq "") {
+  $wide = "struct";
 } else {
-  $set = $preset;
+  $wide = $preset_wide;
 }
 
 my $define = "";
-if ($set eq "struct") {
+if ($wide eq "struct") {
   $define = "-DCHPL_WIDE_POINTER_STRUCT";
-} elsif ($set =~ /node(\d+)/) {
+} elsif ($wide =~ /node(\d+)/) {
   my $nodebits = $1;
   if( $nodebits < 2 || $nodebits > 60 ) {
     die "Bad node bit width: $nodebits";
   }
   $define = "-DCHPL_WIDE_POINTER_PACKED -DCHPL_WIDE_POINTER_NODE_BITS=$nodebits";
 } else {
-  die "Unknown wide pointer format: $set";
+  die "Unknown wide pointer format: $wide";
 }
 
 if( @ARGV > 0 && ($ARGV[0] eq "--define" || $ARGV[0] eq "--defines") ) {
-  print "$define\n";
+  ret($define);
+  print "$define\n" unless caller;;
 } else {
-  print "$set\n";
+  ret($wide);
+  print "$wide\n" unless caller;
 }
-exit(0);
+
+

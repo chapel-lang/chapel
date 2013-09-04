@@ -1,132 +1,163 @@
 #!/usr/bin/env perl
 
-use File::Basename;
+use FindBin;
+use lib ($FindBin::Bin . "/chplenv");
+use Run qw(ret run);
 use warnings;
 
-$utildirname = dirname($0)."/chplenv";
+# We put all the printing in a subroutine so that
+# it can be redone for --make where we want to also
+# print all the configuration in the object directory
+# name.
+sub go {
+  @ARGS=@_;
 
-# $mode can be compiler, runtime, launcher, sh, csh
-$first = 1;
-$mode = "default";
-if( defined $ARGV[0] ) {
-  $mode = $ARGV[0];
-  $mode =~ s/^-+//;
-}
+  # $mode can be compiler, runtime, launcher, sh, csh
+  $first = 1;
+  $mode = "default";
+  if( defined $ARGS[0] ) {
+    $mode = $ARGS[0];
+    $mode =~ s/^-+//;
+  }
 
-# Are we printing out a path component for lib/gen directories?
-$short = 0;
-if( $mode eq "default" or
-    $mode eq "sh" or
-    $mode eq "csh" ) {
-    # OK!
-} elsif( $mode eq "compiler" or
-         $mode eq "runtime" or
-         $mode eq "launcher" ) {
-    # OK!
-    $short = 1;
-} elsif( $mode =~ /help/ or $mode eq "h" ) {
-  print "Usage: $0 [--compiler|--runtime|--launcher|--sh|--csh\n";
-  print "       --compiler - print out path component for compiler objects\n";
-  print "       --runtime - print out path component for runtime objects\n";
-  print "       --launcher - print out path component for launcher objects\n";
-  print "       --sh - print out a sh/bash script to reproduce the environment\n";
-  print "       --csh - print out a csh/tcsh script to reproduce the environment\n";
-  exit(0);
-} else {
-  die "Unknown mode $mode";
-}
+  # Are we printing out a path component for lib/gen directories?
+  $short = 0;
+  if( $mode eq "default" or
+      $mode eq "sh" or
+      $mode eq "csh" or
+      $mode eq "make" ) {
+      # OK!
+  } elsif( $mode eq "compiler" or
+           $mode eq "runtime" or
+           $mode eq "launcher" ) {
+      # OK!
+      $short = 1;
+  } elsif( $mode =~ /help/ or $mode eq "h" ) {
+    print "Usage: $0 [--compiler|--runtime|--launcher|--sh|--csh\n";
+    print "       --compiler - print out path component for compiler objects\n";
+    print "       --runtime - print out path component for runtime objects\n";
+    print "       --launcher - print out path component for launcher objects\n";
+    print "       --sh - print out a sh/bash script to reproduce the environment\n";
+    print "       --csh - print out a csh/tcsh script to reproduce the environment\n";
+    exit(0);
+  } else {
+    die "Unknown mode $mode";
+  }
 
-$uname = `uname -a`;
+  $uname = `uname -a`;
 
-print "uname -a: $uname" if $mode eq "default";
+  print "uname -a: $uname" if $mode eq "default";
 
-$CHPL_HOME="";
-if( defined $ENV{'CHPL_HOME'} ) {
-  $CHPL_HOME = $ENV{'CHPL_HOME'};
-}
+  $CHPL_HOME="";
+  if( defined $ENV{'CHPL_HOME'} ) {
+    $CHPL_HOME = $ENV{'CHPL_HOME'};
+  }
 
-if( $mode eq "default" ) {
-  print "CHPL_HOME: $CHPL_HOME\n";
-  print "script location: $utildirname\n";
-# For sh and csh, we don't print out CHPL_HOME if
-# it is the empty string, which isn't a useful setting
-# for that environment variable anyway...
-} elsif ( $mode eq "sh" and $CHPL_HOME ne "" ) {
-  print "export CHPL_HOME=$CHPL_HOME\n";
-} elsif ( $mode eq "csh" and $CHPL_HOME ne "") {
-  print "setenv CHPL_HOME $CHPL_HOME\n";
-}
+  if( $mode eq "default" ) {
+    print "CHPL_HOME: $CHPL_HOME\n";
+    print "script location: $FindBin::Bin\n";
+  # For sh and csh, we don't print out CHPL_HOME if
+  # it is the empty string, which isn't a useful setting
+  # for that environment variable anyway...
+  } elsif ( $mode eq "sh" and $CHPL_HOME ne "" ) {
+    print "export CHPL_HOME=$CHPL_HOME\n";
+  } elsif ( $mode eq "csh" and $CHPL_HOME ne "") {
+    print "setenv CHPL_HOME $CHPL_HOME\n";
+  }
 
-$hostplatform = `$utildirname/platform --host 1`; chomp($hostplatform);
-$hostcompiler = `$utildirname/compiler --host`; chomp($hostcompiler);
+  $hostplatform = run("platform", "--host", "1");
+  $hostcompiler = run("compiler", "--host");
 
-if( $mode eq "runtime" ) {
-  # Don't print host platform/compiler for runtime
-} else {
-  printit("CHPL_HOST_PLATFORM", "", $hostplatform);
-  printit("CHPL_HOST_COMPILER", "", $hostcompiler);
-}
+  if( $mode eq "runtime" ) {
+    # Don't print host platform/compiler for runtime
+  } else {
+    printit("CHPL_HOST_PLATFORM", "", $hostplatform);
+    printit("CHPL_HOST_COMPILER", "", $hostcompiler);
+  }
 
-$targplatform = `$utildirname/platform --target`; chomp($targplatform);
-$targcompiler = `$utildirname/compiler --target`; chomp($targcompiler);
+  $targplatform = run("platform", "--target");
+  $targcompiler = run("compiler", "--target");
 
-if( $mode eq "compiler" or $mode eq "launcher" ) {
-  # Don't print target platform/compiler for compiler/launcher
-} else {
-  printit("CHPL_TARGET_PLATFORM", "", $targplatform);
-  printit("CHPL_TARGET_COMPILER", "", $targcompiler);
-}
+  if( $mode eq "compiler" or $mode eq "launcher" ) {
+    # Don't print target platform/compiler for compiler/launcher
+  } else {
+    printit("CHPL_TARGET_PLATFORM", "", $targplatform);
+    printit("CHPL_TARGET_COMPILER", "", $targcompiler);
+  }
 
-$localeModel = `$utildirname/localeModel`; chomp($localeModel);
-printit("CHPL_LOCALE_MODEL", "loc", $localeModel);
+  $localeModel = run("localeModel");
+  printit("CHPL_LOCALE_MODEL", "loc", $localeModel);
 
-$comm = `$utildirname/comm`; chomp($comm);
-printit("CHPL_COMM", "comm", $comm, "!compiler");
-if ($comm eq "none" || $comm eq "ugni") {
-} else {
-  $commsubstrate = `$utildirname/commSubstrate`; chomp($commsubstrate);
-  printit("  CHPL_COMM_SUBSTRATE", "", $commsubstrate, "runtime,launcher");
-  if ($comm eq "gasnet") {
-    $commsegment = `$utildirname/commSegment`; chomp($commsegment);
-    printit("  CHPL_GASNET_SEGMENT", "", $commsegment, "runtime,launcher");
+  $comm = run("comm");
+  printit("CHPL_COMM", "comm", $comm, "!compiler");
+  if ( $mode ne "make" and ($comm eq "none" || $comm eq "ugni") ) {
+  } else {
+    $commsubstrate = run("commSubstrate");
+    printit("  CHPL_COMM_SUBSTRATE", "", $commsubstrate, "runtime,launcher");
+    if ( $mode eq "make" or $comm eq "gasnet") {
+      $commsegment = run("commSegment");
+      printit("  CHPL_GASNET_SEGMENT", "", $commsegment, "runtime,launcher");
+    }
+  }
+
+  $tasks = run("tasks");
+  printit("CHPL_TASKS", "tasks", $tasks, "runtime,launcher");
+  $threads = run("threads");
+  printit("CHPL_THREADS", "", $threads, "runtime,launcher");
+  $launcher = run("launcher");
+  printit("CHPL_LAUNCHER", "launch", $launcher, "launcher");
+  $timer = run("timers");
+  printit("CHPL_TIMERS", "tmr", $timer, "runtime,launcher");
+  if( $mode eq "make" ) {
+    $hostmem = run("mem", "--host");
+    $tgtmem = run("mem", "--target");
+    printit("CHPL_HOST_MEM", "hostmem", $hostmem, "runtime,launcher");
+    printit("CHPL_TARGET_MEM", "tgtmem", $tgtmem, "runtime,launcher");
+  } else {
+    $mem = run("mem");
+    printit("CHPL_MEM", "mem", $mem, "runtime,launcher");
+  }
+  $make = run("chplmake");
+  if( ! $short ) {
+    printit("CHPL_MAKE", "make", $make);
+  }
+  $atomics = run("atomics");
+  printit("CHPL_ATOMICS", "atomics", $atomics, "runtime,launcher");
+  if ($comm eq "none") {
+  } else {
+    $network_atomics = run("atomics", "--network");
+    printit("  CHPL_NETWORK_ATOMICS", "", $network_atomics, "runtime,launcher");
+  }
+  $gmp = run("gmp");
+  printit("CHPL_GMP", "gmp", $gmp, "runtime");
+  $regexp = run("regexp");
+  printit("CHPL_REGEXP", "re", $regexp, "runtime");
+  $wide_ptrs = run("widePointers");
+  printit("CHPL_WIDE_POINTERS", "wide", $wide_ptrs);
+  if( $mode eq "make" ) {
+    $wide_ptrs_def = run("widePointers", "--define");
+    printit("CHPL_WIDE_POINTERS_DEFINES", "widedef", $wide_ptrs_def);
+  }
+  $llvm = run("llvm");
+  printit("CHPL_LLVM", "llvm", $llvm, "compiler");
+  $aux_fs = run("auxFilesys");
+  printit("CHPL_AUX_FILESYS", "fs", $aux_fs, "runtime");
+
+  if( $short ) {
+    print "\n";
+  }
+
+  if( $mode eq "make" ) {
+    print "CHPL_MAKE_COMPILER_SUBDIR=";
+    go("--compiler");
+    print "CHPL_MAKE_RUNTIME_SUBDIR=";
+    go("--runtime");
+    print "CHPL_MAKE_LAUNCHER_SUBDIR=";
+    go("--launcher");
   }
 }
 
-$tasks = `$utildirname/tasks`; chomp($tasks);
-printit("CHPL_TASKS", "tasks", $tasks, "runtime,launcher");
-$threads = `$utildirname/threads`; chomp($threads);
-printit("CHPL_THREADS", "", $threads, "runtime,launcher");
-$launcher = `$utildirname/launcher`; chomp($launcher);
-printit("CHPL_LAUNCHER", "launch", $launcher, "launcher");
-$timer = `$utildirname/timers`; chomp($timer);
-printit("CHPL_TIMERS", "tmr", $timer, "runtime,launcher");
-$mem = `$utildirname/mem`; chomp($mem);
-printit("CHPL_MEM", "mem", $mem, "runtime,launcher");
-$make = `$utildirname/chplmake`; chomp($make);
-if( ! $short ) {
-  printit("CHPL_MAKE", "make", $make);
-}
-$atomics = `$utildirname/atomics`; chomp($atomics);
-printit("CHPL_ATOMICS", "atomics", $atomics, "runtime,launcher");
-if ($comm eq "none") {
-} else {
-  $network_atomics = `$utildirname/atomics --network`; chomp($network_atomics);
-  printit("  CHPL_NETWORK_ATOMICS", "", $network_atomics, "runtime,launcher");
-}
-$gmp = `$utildirname/gmp`; chomp($gmp);
-printit("CHPL_GMP", "gmp", $gmp, "runtime");
-$regexp = `$utildirname/regexp`; chomp($regexp);
-printit("CHPL_REGEXP", "re", $regexp, "runtime");
-$wide_ptrs = `$utildirname/widePointers`; chomp($wide_ptrs);
-printit("CHPL_WIDE_POINTERS", "wide", $wide_ptrs);
-$llvm = `$utildirname/llvm`; chomp($llvm);
-printit("CHPL_LLVM", "llvm", $llvm, "compiler");
-$aux_fs = `$utildirname/auxFilesys`; chomp($aux_fs);
-printit("CHPL_AUX_FILESYS", "fs", $aux_fs, "runtime");
-
-if( $short ) {
-  print "\n";
-}
+go(@ARGV);
 
 sub printit {
   # first argument - the environment variable name
@@ -183,6 +214,11 @@ sub printit {
     print "export $envname='$value'\n";
   } elsif( $mode eq "csh" ) {
     print "setenv $envname '$value'\n";
+  } elsif( $mode eq "make" ) {
+    my $makename = $envname;
+    $makename =~ s/^\s+//;
+    $makename =~ s/^CHPL_/CHPL_MAKE_/;
+    print "$makename=$value\n";
   } else {
     die "Unknown mode $mode";
   }

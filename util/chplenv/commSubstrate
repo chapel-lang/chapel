@@ -1,14 +1,16 @@
 #!/usr/bin/env perl
 
-use File::Basename;
+use FindBin;
+use lib $FindBin::Bin;
+use Run qw(ret run);
+use strict;
 
-$utildirname = dirname($0);
-
-$preset_substrate=$ENV{'CHPL_COMM_SUBSTRATE'};
+my $preset_substrate=$ENV{'CHPL_COMM_SUBSTRATE'};
+my $substrate;
 
 if ($preset_substrate eq "") {
-    $comm = `$utildirname/comm --target`; chomp($comm);
-    $platform = `$utildirname/platform --target`; chomp($platform);
+    my $comm = run("comm", "--target");
+    my $platform = run("platform", "--target");
 
     if ($comm eq "gasnet") {
         if ($platform =~ /^cray-(xc|xe|xk|xt)$/) {
@@ -33,6 +35,5 @@ if ($preset_substrate eq "") {
     $substrate = $preset_substrate;
 }
 
-
-print "$substrate\n";
-exit(0);
+ret($substrate);
+print "$substrate\n" unless caller;

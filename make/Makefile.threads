@@ -1,6 +1,0 @@
-#
-# CHPL_MAKE_THREADS stuff
-#
-#
-#
-export CHPL_MAKE_THREADS := $(shell $(CHPL_MAKE_HOME)/util/chplenv/threads)

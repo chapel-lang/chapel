@@ -1,16 +1,17 @@
 #!/usr/bin/env perl
 
-use File::Basename;
+use FindBin;
+use lib $FindBin::Bin;
+use Run qw(ret run);
+use strict;
 
-$utildirname = dirname($0);
-
-$preset_tasks   = $ENV{'CHPL_TASKS'};
-$preset_threads = $ENV{'CHPL_THREADS'};
+my $preset_tasks   = $ENV{'CHPL_TASKS'};
+my $preset_threads = $ENV{'CHPL_THREADS'};
+my $threads;
 
 if ($preset_threads eq "") {
     if ($preset_tasks eq "") {
-	$preset_tasks = `$utildirname/tasks`;
-	chomp $preset_tasks;
+	$preset_tasks = run("tasks");
     }
 
     if ($preset_tasks eq "fifo") {
@@ -26,8 +27,7 @@ if ($preset_threads eq "") {
     } elsif ($preset_tasks eq "none") {
 	$threads = "none";
     } elsif ($preset_tasks eq "") {
-	$platform = `$utildirname/platform --target`;
-	chomp $platform;
+	my $platform = run("platform", "--target");
 	if ($platform =~ /^cray-xmt(-sim)?$/) {
 	    $threads = "none";
 	} elsif ($platform =~ /^x[12]-sim$/) {
@@ -43,10 +43,8 @@ if ($preset_threads eq "") {
 }
 
 if ($preset_tasks ne "") {
-  system("$utildirname/check-tasks-threads-compatibility",
-	 "$preset_tasks",
-	 "$threads") == 0 or exit(1);
+  run("check-tasks-threads-compatibility", $preset_tasks, $threads);
 }
 
-print "$threads\n";
-exit(0);
+ret($threads);
+print "$threads\n" unless caller;

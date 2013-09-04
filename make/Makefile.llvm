@@ -1,6 +1,0 @@
-#
-# CHPL_MAKE_LLVM
-#
-#
-#
-export CHPL_MAKE_LLVM = $(shell $(CHPL_MAKE_HOME)/util/chplenv/llvm)

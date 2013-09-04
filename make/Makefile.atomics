@@ -1,6 +1,0 @@
-#
-# CHPL_MAKE_ATOMICS
-#
-#
-#
-export CHPL_MAKE_ATOMICS = $(shell $(CHPL_MAKE_HOME)/util/chplenv/atomics --default)

@@ -1,19 +1,22 @@
 #!/usr/bin/env perl
 
-use File::Basename;
+use FindBin;
+use lib $FindBin::Bin;
+use Run qw(ret run);
+use strict;
 
-$utildirname = dirname($0);
 
-$home = $ENV{'CHPL_HOME'};
+my $home = $ENV{'CHPL_HOME'};
 if ( ! -d $home ) {
-  $home = $utildirname . "/../../";
+  $home = $FindBin::Bin . "/../../";
 }
 
-$preset_gmp = $ENV{'CHPL_GMP'};
+my $preset_gmp = $ENV{'CHPL_GMP'};
+my $gmp;
 
 if ($preset_gmp eq "") {
-  $targplatform = `$utildirname/platform --target`; chomp($targplatform);
-  $targcompiler = `$utildirname/compiler --target`; chomp($targcompiler);
+  my $targplatform = run("platform", "--target");
+  my $targcompiler = run("compiler", "--target");
 
   if ($targplatform =~ /^cray-xmt(-sim)?$/) {
       $gmp = 'none';
@@ -21,8 +24,8 @@ if ($preset_gmp eq "") {
 	   $targplatform eq "cray-xk" || $targplatform eq "cray-xc") {
       $gmp = 'system';
   } else {
-    $subdir = $home . "/third-party/gmp/install/" .
-              $targplatform . "-" . $targcompiler;
+    my $subdir = $home . "/third-party/gmp/install/" .
+                 $targplatform . "-" . $targcompiler;
     if ( -d $subdir && -f "$subdir/include/gmp.h" ) {
       $gmp = 'gmp'
     } else {
@@ -34,5 +37,5 @@ if ($preset_gmp eq "") {
   $gmp = $preset_gmp;
 }
 
-print "$gmp\n";
-exit(0);
+ret($gmp);
+print "$gmp\n" unless caller;

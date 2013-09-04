@@ -1,18 +1,19 @@
 #!/usr/bin/env perl
 
-use File::Basename;
-
-$utildirname = dirname($0);
+use FindBin;
+use lib $FindBin::Bin;
+use Run qw(ret run);
+use strict;
 
 my $flag = $ARGV[0];
-
-$preset_launcher=$ENV{'CHPL_LAUNCHER'};
+my $launcher;
+my $preset_launcher=$ENV{'CHPL_LAUNCHER'};
 
 if ($preset_launcher eq "") {
-    $comm = `$utildirname/comm --target`; chomp($comm);
-    $substrate = `$utildirname/commSubstrate`; chomp($substrate);
-    $platform = `$utildirname/platform --target`; chomp($platform);
-    $compiler = `$utildirname/compiler --target`; chomp($compiler);
+    my $comm = run("comm", "--target");
+    my $substrate = run("commSubstrate");
+    my $platform = run("platform", "--target");
+    my $compiler = run("compiler", "--target");
 
     $launcher = "none";
     if ($platform =~ /^cray-(xc|xe|xk|xt)$/) {
@@ -72,5 +73,5 @@ if ($preset_launcher eq "") {
     $launcher = $preset_launcher;
 }
 
-print "$launcher\n";
-exit(0);
+ret($launcher);
+print "$launcher\n" unless caller;

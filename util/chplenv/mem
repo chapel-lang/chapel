@@ -1,9 +1,12 @@
 #!/usr/bin/env perl
-use File::Basename;
 
-$utildirname = dirname($0);
+use FindBin;
+use lib $FindBin::Bin;
+use Run qw(ret run);
+use strict;
 
-$preset_mem=$ENV{'CHPL_MEM'};
+my $mem;
+my $preset_mem=$ENV{'CHPL_MEM'};
 
 if ($#ARGV != -1) {
   if ($ARGV[0] eq "--host") {
@@ -12,11 +15,9 @@ if ($#ARGV != -1) {
 }
 
 if ($preset_mem eq "") {
-  $comm = `$utildirname/comm`;
-  chomp($comm);
+  my $comm = run("comm");
   if ($comm eq "gasnet") {
-    $segment = `$utildirname/commSegment`;
-    chomp($segment);
+    my $segment = run("commSegment");
 
     if ($segment eq "none" ||
         $segment eq "everything") {
@@ -39,5 +40,5 @@ if ($preset_mem eq "") {
   $mem = $preset_mem;
 }
 
-print "$mem\n";
-exit(0);
+ret($mem);
+print "$mem\n" unless caller;
