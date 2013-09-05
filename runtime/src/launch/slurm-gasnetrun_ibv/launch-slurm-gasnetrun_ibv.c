@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include "chpllaunch.h"
 #include "chpl-mem.h"
@@ -185,7 +186,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
 //  fprintf(expectFile, "spawn sbatch ");
   fprintf(expectFile, "spawn -noecho salloc ");
-//  fprintf(expectFile, "-J %s ",argv[0]); // pass through all environment variables
+  fprintf(expectFile, "-J %.10s ",basenamePtr); // pass 
   fprintf(expectFile, "-N %d ",numLocales); 
   fprintf(expectFile, "--ntasks-per-node=1 ",numLocales); 
   fprintf(expectFile, "--exclusive "); //  give exclusive access to the nodes
