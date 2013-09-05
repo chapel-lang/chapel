@@ -28,7 +28,8 @@ if ($preset_compiler eq "") {
         } else {
             my $subcompiler = "-$ENV{'PE_ENV'}";
             if ($subcompiler eq "-") {
-                $subcompiler = "";
+                warn "WARNING: Compiling on $platform without a PrgEnv loaded";
+                $subcompiler = "none";
             } else {
                 $subcompiler =~ tr/A-Z/a-z/;
             }
