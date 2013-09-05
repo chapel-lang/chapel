@@ -7,6 +7,7 @@
 
 #include "chpl-comm-compiler-macros.h"
 #include "chplcgfns.h"
+#include "chpl-locale-model.h"
 #include "chpl-tasks.h"
 #include "chpltypes.h"
 
@@ -27,13 +28,14 @@ static ___always_inline
 c_localeid_t id_pub2rt(chpl_localeID_t s)
 {
   return
-    ((c_localeid_t) s.node << 32) | ((c_localeid_t) s.subloc & 0xffffffff);
+    ((c_localeid_t) chpl_rt_nodeFromLocaleID(s) << 32) |
+    ((c_localeid_t) chpl_rt_sublocFromLocaleID(s) & 0xffffffff);
 }
 
 static ___always_inline
 chpl_localeID_t id_rt2pub(c_localeid_t i)
 {
-  return (chpl_localeID_t) { .node = i >> 32, .subloc = i & 0xffffffff };
+  return chpl_rt_buildLocaleID(i >> 32, i & 0xffffffff);
 }
 
 static ___always_inline
