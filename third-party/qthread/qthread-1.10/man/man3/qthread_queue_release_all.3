@@ -1,0 +1,34 @@
+.TH qthread_queue_release 3 "AUGUST 2013" libqthread "libqthread"
+.SH NAME
+.B qthread_queue_release 
+\- activate the tasks in the queue for scheduling and execution
+.SH SYNOPSIS
+.B #include <qthread.h>
+
+.I int
+.br
+.B qthread_queue_release_one
+.RI "(qthread_queue_t " q ");"
+.PP
+.I int
+.br
+.B qthread_queue_release_all
+.RI "(qthread_queue_t " q ");"
+
+.SH DESCRIPTION
+These two functions are for emptying the specified queue
+.RB ( q )
+and handing the tasks in the queue to the scheduler for execution. The
+.BR qthread_queue_release_one ()
+function removes only a single task, in a fifo manner, and schedules it, while
+the
+.BR qthread_queue_release_all ()
+function removes all of the tasks and schedules them.
+
+.SH RETURN VALUES
+Both functions return QTHREAD_SUCCESS on success, and an error otherwise.
+.SH SEE ALSO
+.BR qthread_queue_create (3),
+.BR qthread_queue_destroy (3),
+.BR qthread_queue_join (3),
+.BR qthread_queue_length (3)
