@@ -20,16 +20,22 @@ iter dynamic(c:range(?), chunkSize:int, numTasks:int=0) {
 
 iter dynamic(param tag:iterKind, c:range(?), chunkSize:int, numTasks:int=0) 
 where tag == iterKind.leader
-{   
-  // Check if the number of tasks is 0, in that case it returns a default value  
-  const nTasks=defaultNumTasks(numTasks);
+{
+  assert(chunkSize > 0); // caller's responsibility
+
+  use UtilMath;
+  // # of tasks the range can fill. (fast) ceil so all work is represented
+  const chunkTasks = divceilpos(c.length, chunkSize): int;
+  
+  // Check if the number of tasks is 0, in that case it returns a default value
+  const nTasks = min(chunkTasks, defaultNumTasks(numTasks));
   type rType=c.type;
   // Check the size and do it serial if not enough work
   if c.length == 0 then halt("The range is empty");
-  if c.length/chunkSize < nTasks then {
-    writeln("Dynamic Iterator: serial execution because there is not enough work");
+  if nTasks == 1 then {
+    if debugAdvancedIters then
+      writeln("Dynamic Iterator: serial execution because there is not enough work");
     const totalRange:rType= densify(c,c);
-    //yield (c.translate(-c.low),) ;
     yield (totalRange,);
 
   }
@@ -157,7 +163,7 @@ where tag == iterKind.leader
   
 {   
   if (methodStealing > 2 || methodStealing < 0) then
-    halt("methodStealing value must be between 0 and 2");
+    compilerError("methodStealing value must be between 0 and 2");
 
   // Check if the number of tasks is 0, in that case it returns a default value  
   const nTasks=defaultNumTasks(numTasks);
@@ -348,6 +354,8 @@ proc defaultNumTasks(nTasks:int)
   if nTasks==0 then {
     if dataParTasksPerLocale==0 then dnTasks=here.numCores; 
       else dnTasks=dataParTasksPerLocale;
+  } else if nTasks<0 then {
+    halt("'numTasks' is negative");
   }
   return dnTasks;
 }
