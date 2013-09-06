@@ -93,12 +93,13 @@ iter guided(param tag:iterKind, c:range(?), numTasks:int=0)
 where tag == iterKind.leader 
 {   
   // Check if the number of tasks is 0, in that case it returns a default value  
-  const nTasks=defaultNumTasks(numTasks);
+  const nTasks=min(c.length, defaultNumTasks(numTasks));
   type rType=c.type;
   // Check the size and do it serial if not enough work
   if c.length == 0 then halt("The range is empty");
-  if c.length < nTasks then {
-    writeln("Guided Iterator: serial execution because there is not enoguh work");
+  if nTasks == 1 then {
+    if debugAdvancedIters then
+      writeln("Guided Iterator: serial execution because there is not enoguh work");
     const totalRange:rType= densify(c,c);
     yield (totalRange,); 
   }
@@ -166,12 +167,13 @@ where tag == iterKind.leader
     compilerError("methodStealing value must be between 0 and 2");
 
   // Check if the number of tasks is 0, in that case it returns a default value  
-  const nTasks=defaultNumTasks(numTasks);
+  const nTasks=min(c.length, defaultNumTasks(numTasks));
   type rType=c.type;
   // Check the size and do it serial if not enough work
   if c.length == 0 then halt("The range is empty");
-  if c.length < nTasks then {
-    writeln("Adaptive work-stealing Iterator: serial execution because there is not enough work");
+  if nTasks == 1 then {
+    if debugAdvancedIters then
+      writeln("Adaptive work-stealing Iterator: serial execution because there is not enough work");
     const totalRange:rType = densify(c,c);
     yield (totalRange,);
     
