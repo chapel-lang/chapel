@@ -79,10 +79,9 @@ proc temperature() {
   var acts : [LocaleGridDom] real;
   coforall ijk in LocaleGridDom {
     on LocaleGrid[ijk] {
-      var Data => Grid[ijk].Arr;
-      var Real = Grid[ijk].Real;
+      const Me = Grid[ijk];
       var m = mass;
-      acts[ijk] = + reduce forall (b,c) in zip(Data[Real],Grid[ijk].Count[Real]) do 
+      acts[ijk] = + reduce forall (b,c) in zip(Me.Bins[Me.Real],Me.Count[Me.Real]) do 
         + reduce forall a in b[1..c] do (dot(a.v,a.v) * m);
     }
   }

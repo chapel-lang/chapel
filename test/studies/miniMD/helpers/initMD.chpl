@@ -10,7 +10,6 @@ config param printCorrect = false;
 
 // Stores user-configurable variables
 // See printHelp for more information
-// TODO: strings vs enum for units/force?
 config var input_file = "in.lj.miniMD";
 config var numSteps = 100;
 config var size = 32;
@@ -60,15 +59,9 @@ inline proc dot(a,b : v3int) {
   return c(1) + c(2) + c(3);
 }
 
-// TODO: ghosts only need position. Can we split this record up 
-// in such a way that reduces the unnecessary variables used in 
-// ghost storage?
-//
-// Idea: pull position out and define based on the fluff domain/perbinspace, 
-// then define the rest with 'Real' and perbinspace
 record atom {
-  // position, velocity, force
-  var x, v, f : v3; 
+  // velocity, force
+  var v, f : v3; 
 
   // define storage for neighbor list, which stores the bin and index 
   // of a neighboring atom
@@ -206,10 +199,12 @@ class Chunk {
   var Fluff : domain(3);                          // real and ghost bins
   var Real : domain(3);                           // real bins
   var NeighDom : domain(3);                       // nearest neighbors
-  var Arr : [Fluff] [perBinSpace] atom;           // bin and atom storage
+  var Bins : [Real] [perBinSpace] atom;           // bin and atom storage
+  var Pos : [Fluff] [perBinSpace] v3;
   var Count : [Fluff] int(32);                    // # of actual atoms in a bin
   var DestSlice, SrcSlice : [NeighDom] domain(3); // local/remote ghost slices
   var Neighs : [NeighDom] (int,int,int);          // array of locale indices
+  var PosOffset : [NeighDom] v3;
 }
 
 // This breaks the abstraction layer a bit. hopefully we can push this into a 
@@ -226,7 +221,6 @@ const LocaleGridDom = DistSpace._value.dist.targetLocDom;
 const LocaleGrid = DistSpace._value.dist.targetLocales;
 
 // storage across all locales
-// TODO: rename to something a bit less ambiguous
 var Grid : [LocaleGridDom] Chunk;
 
 // map of bin (3*int) to LocaleGridDom index (3*int)
@@ -264,7 +258,7 @@ if generating {
     var v : v3;
     dataReader.read(int,int);
     dataReader.readln(v(1),v(2),v(3));
-    addatom(new atom(x,v), coord2bin(x));
+    addatom(new atom(v), x, coord2bin(x));
   }
 
   // cleanup
@@ -275,10 +269,10 @@ if generating {
 // setup/store slices and neighbors so we don't have to recompute them every 
 // time. Our neighbor bins won't change, and we'll always need the same slices.
 proc setupComms() {
-  coforall (i,j,k) in LocaleGridDom {
-    on LocaleGrid(i,j,k) {
+  coforall ijk in LocaleGridDom {
+    on LocaleGrid[ijk] {
       // grab our chunk of the real domain
-      const MyLocDom = DistSpace._value.locDoms[i,j,k].myBlock;
+      const MyLocDom = DistSpace._value.locDoms[ijk].myBlock;
       if debug then writeln(here, " owns ", MyLocDom);
 
       // expand the maximum distance we might need
@@ -289,34 +283,34 @@ proc setupComms() {
       const NeighDom = {-1..1, -1..1, -1..1};
 
       var MyChunk = new Chunk(Fluff=WithFluff, Real=MyLocDom, NeighDom=NeighDom);
-      Grid[i,j,k] = MyChunk;
+      Grid[ijk] = MyChunk;
 
       // alias to save typing
-      var Data => MyChunk.Arr;
       var DestSlice => MyChunk.DestSlice;
       var SrcSlice => MyChunk.SrcSlice;
       var Neighs => MyChunk.Neighs;
      
       // Create 3D slices representing an overlap
-      forall xyz in NeighDom {
-        // the number of bins (numNeed) we need in a direction (xyz)
-        DestSlice[xyz] = MyLocDom.exterior(xyz * numNeed);
+      forall (Src, Dest, neigh) in zip(SrcSlice, DestSlice, NeighDom) {
+        // the number of bins (numNeed) we need in a direction (neigh)
+        Dest = MyLocDom.exterior(neigh * numNeed);
 
         // in the case of many locales, most of the time source and destination 
         // will share the same indices. The wrapping case is handled soon.
-        SrcSlice[xyz] = DestSlice[xyz];
+        Src = Dest;
       }
 
       // use so we can move atoms around more easily
-      BinToLocale[MyLocDom] = (i,j,k);
+      BinToLocale[MyLocDom] = ijk;
 
       // adjust our remote-translated slices and neighbor pointer
       // store for future use
-      forall xyz in NeighDom {
+      forall (Src, Dest, PosOffset, neigh) in 
+        zip(SrcSlice, DestSlice, MyChunk.PosOffset, NeighDom) {
         // no comms with ourself, can't 'continue' inside a forall
-        if xyz != (0,0,0) {
+        if neigh != (0,0,0) {
           // Get the index of the neighboring Locale
-          var neighbor = (i,j,k) + xyz;
+          var neighbor = ijk + neigh;
 
           // some of our slices will overlap with 'real' cells, but slices
           // on the exterior will need their cells to be offset so we can index 
@@ -326,23 +320,28 @@ proc setupComms() {
           // Adjust the neighbor index so we're actually referencing an 
           // existing locale. Also compute the offset for source slices, 
           // if necessary.
-          //
-          // TODO: assign wslice inside for code readablility?
           for i in 1..3 {
             if neighbor(i) < 0 {
               neighbor(i) = LocaleGridDom.high(i);
-              SrcOffset(i) = binSpace.high(i)-DestSlice[xyz].high(i);
+              SrcOffset(i) = binSpace.high(i) - Dest.high(i);
             }
             else if neighbor(i) > LocaleGridDom.high(i) {
               neighbor(i) = 0;
-              SrcOffset(i) = -binSpace.high(i)+binSpace.low(i)-1;
+              SrcOffset(i) = -binSpace.high(i) + binSpace.low(i) - 1;
             }
           }
-          SrcSlice[xyz] = SrcSlice[xyz].translate(SrcOffset);
-          Neighs[xyz] = neighbor;
+          Src = Src.translate(SrcOffset);
+          Neighs[neigh] = neighbor;
+          
+          var mask = (1.0,1.0,1.0);
+          for i in 1..3 do 
+            if Dest.low(i) == Src.low(i) then mask(i) = 0.0;
+          
+          // ghost's position offset
+          PosOffset = (neigh) * box * mask;
 
           if debug 
-            then writeln(SrcSlice[xyz], " is the remote neighbor of ", DestSlice[xyz]);
+            then writeln(Src, " is the remote neighbor of ", Dest);
           }
       }
     } // end of on statement
@@ -503,7 +502,7 @@ proc create_atoms() {
           for m in 1..5 { pmrand(n); }
           v(i) = pmrand(n);
         }
-        addatom(new atom(temp,v), coord2bin(temp));
+        addatom(new atom(v), temp, coord2bin(temp));
       }
     }
 
@@ -543,8 +542,9 @@ proc create_velocity() {
   var vtotDist : [LocaleGridDom] v3;
   coforall (ijk) in LocaleGridDom {
     on LocaleGrid[ijk] {
-      vtotDist[ijk] = + reduce forall bin in Grid[ijk].Real do 
-      + reduce forall ind in 1..Grid[ijk].Count[bin] do Grid[ijk].Arr[bin][ind].v;
+      const Me = Grid[ijk];
+      vtotDist[ijk] = + reduce forall bin in Me.Real do 
+      + reduce forall ind in 1..Me.Count[bin] do Me.Bins[bin][ind].v;
     }
   }
   vtot = + reduce vtotDist;
@@ -555,8 +555,8 @@ proc create_velocity() {
   // adjust using average
   coforall (ijk) in LocaleGridDom {
     on LocaleGrid[ijk] {
-      var Real = Grid[ijk].Real;
-      forall (bin,c) in zip(Grid[ijk].Arr[Real], Grid[ijk].Count[Real]) {
+      const Me = Grid[ijk];
+      forall (bin,c) in zip(Me.Bins[Me.Real], Me.Count[Me.Real]) {
         for a in bin[1..c] {
           a.v -= vtot;
         }
@@ -568,9 +568,9 @@ proc create_velocity() {
 
   coforall (ijk) in LocaleGridDom {
     on LocaleGrid[ijk] {
-      var fac = (factor,factor,factor);
-      var Real = Grid[ijk].Real;
-      forall (bin,c) in zip(Grid[ijk].Arr[Real], Grid[ijk].Count[Real]) {
+      const fac = (factor,factor,factor);
+      const Me = Grid[ijk];
+      forall (bin,c) in zip(Me.Bins[Me.Real], Me.Count[Me.Real]) {
         for a in bin[1..c] {
           a.v *= fac;
         }
@@ -591,38 +591,24 @@ proc pmrand(ref n : int) : real {
   return ans;
 }
 
-// TODO: zipper variables relying on NeighDom
 proc updateFluff() {
   coforall ijk in LocaleGridDom {
     on LocaleGrid[ijk] {
-      for neigh in Grid[ijk].NeighDom {
+      const Me = Grid[ijk];
+      for (Src, Dest, Neighbor, Offset, neigh) in 
+        zip(Me.SrcSlice, Me.DestSlice, Grid[Me.Neighs], Me.PosOffset, Me.NeighDom) {
         // don't look at ourself
         if neigh == (0,0,0) then continue;
 
-        // ease of typing
-        var Data => Grid[ijk].Arr;
-        var Neighs => Grid[ijk].Neighs;
-        var DestSlice => Grid[ijk].DestSlice;
-        var SrcSlice => Grid[ijk].SrcSlice;
-
         // copy over the bins' counts
-        Grid[ijk].Count[DestSlice[neigh]] = Grid[Neighs[neigh]].Count[SrcSlice[neigh]];
+        Me.Count[Dest] = Neighbor.Count[Src];
         
-        // if a dimension of the bin exists in adjacent 'real' chunk of bins, 
-        // we shouldn't offset
-        var dimtest = (1.0,1.0,1.0);
-        for i in 1..3 do 
-          if DestSlice[neigh].low(i) == SrcSlice[neigh].low(i) then dimtest(i) = 0.0;
-        
-        // ghost's position offset
-        const offset = (neigh) * box * dimtest;
+        // copy over fluff atoms' positions
+        Me.Pos[Dest] = Neighbor.Pos[Src];
 
-        // for every atom in every bin, clone & wrap the position
-        forall (D, S) in zip(DestSlice[neigh], SrcSlice[neigh]) {
-          const c = Grid[ijk].Count[D];
-          for (loc, rem) in zip(Data[D][1..c], Grid[Neighs[neigh]].Arr[S][1..c]) {
-            loc.x = rem.x + (offset);
-          }
+        // offset atoms if necessary
+        if Offset != (0.0,0.0,0.0) {
+          forall p in Me.Pos[Dest] do p += Offset;
         }
       }
     }
@@ -633,12 +619,13 @@ proc updateFluff() {
 proc pbc() {
   coforall ijk in LocaleGridDom {
     on LocaleGrid[ijk] {
-      var Real = Grid[ijk].Real;
-      forall (b,c) in zip(Grid[ijk].Arr[Real],Grid[ijk].Count[Real]) {
-        for a in b[1..c] {
+      const Me = Grid[ijk];
+      const b = box;
+      forall (p,c) in zip(Me.Pos[Me.Real],Me.Count[Me.Real]) {
+        for x in p[1..c] {
           for i in 1..3 {
-            if a.x(i) < 0 then a.x(i) += box(i);
-            else if a.x(i) >= box(i) then a.x(i) -= box(i);
+            if x(i) < 0 then x(i) += b(i);
+            else if x(i) >= b(i) then x(i) -= b(i);
           }
         }
       }
@@ -682,22 +669,23 @@ proc buildNeighbors() {
 
   coforall ijk in LocaleGridDom {
     on LocaleGrid[ijk] {
-      var Real = Grid[ijk].Real;
-      var Data => Grid[ijk].Arr;
-      forall (b,r,c) in zip(Data[Real],Real, Grid[ijk].Count[Real]) {
-        for (a,i) in zip(b[1..c],1..c) {
+      const Me = Grid[ijk];
+      forall (bin,posBin,r,c) in zip(Me.Bins, Me.Pos[Me.Real],Me.Real, Me.Count[Me.Real]) {
+        const existing = 1..c;
+        for (a,pos,i) in zip(bin[existing],posBin[existing],existing) {
           // reset neighbor list
           a.ncount = 0;
 
           // for each surrounding bin
           for s in stencil {
             const o = r + s;
-            for (n,x) in zip(Data[o][1..Grid[ijk].Count[o]],1..Grid[ijk].Count[o]) {
+            const existing = 1..Me.Count[o];
+            for (npos,x) in zip(Me.Pos[o][existing],existing) {
               // if we're looking at ourself
               if r == o && x == i then continue; 
 
               // are we within range?
-              const del = a.x - n.x;
+              const del = pos - npos;
               const rsq = dot(del,del);
               if rsq <= cutneighsq {
                 a.ncount += 1;
@@ -726,20 +714,28 @@ proc buildNeighbors() {
 
 // add an atom 'a' to bin 'b'
 // resize if necessary
-inline proc addatom(a : atom, b : v3int) {
-  const loc = BinToLocale[b];
-  Grid[loc].Count[b] += 1;
-  if Grid[loc].Count[b] >= perBinSpace.high {
+inline proc addatom(a : atom, x : v3, b : v3int) {
+  const Target = Grid[BinToLocale[b]];
+ 
+  // increment bin's # of atoms
+  Target.Count[b] += 1;
+  const end = Target.Count[b];
+  
+  // resize bin storage if needed
+  if end >= perBinSpace.high {
     var h = (perBinSpace.high * 1.5) : int;
     perBinSpace = {1..h};
   }
-  Grid[loc].Arr[b][Grid[loc].Count[b]] = a;
+ 
+  // add to the end of the bin
+  Target.Bins[b][end] = a;
+  Target.Pos[b][end] = x;
 }
 
-// helper class for moving bins around
+// helper class for moving atoms around
 class Mov {
   var Space : domain(1) = {1..50};
-  var List : [Space] (atom, v3int);
+  var List : [Space] (atom, v3, v3int);
   var Count : int;
 }
 
@@ -748,30 +744,33 @@ proc binAtoms() {
   var Moved : [LocaleGridDom] Mov;
   coforall ijk in LocaleGridDom {
     on LocaleGrid[ijk] {
-      var M = new Mov();
-      Moved[ijk] = M;
-      var Real = Grid[ijk].Real;
-      for (b,r,c) in zip(Grid[ijk].Arr[Real] ,Real ,Grid[ijk].Count[Real]) {
+      var ToMove = new Mov();
+      Moved[ijk] = ToMove;
+      const Me = Grid[ijk];
+      for (bin, pos, r, c) in zip(Me.Bins, Me.Pos[Me.Real] ,Me.Real ,Me.Count[Me.Real]) {
         var cur = 1;
 
         // for each atom, check if moved
         // because we move from the end, this setup allows us to examine 
         // the atom pulled from the end
         while(cur <= c) {
-          const destBin = coord2bin(b[cur].x);
+          const destBin = coord2bin(pos[cur]);
 
           // atom moved
           if destBin != r { 
-            M.Count += 1;
+            ToMove.Count += 1;
 
             // resize storage as needed
-            if M.Count >= M.Space.high then 
-              M.Space = {1..M.Space.high * 2};
+            if ToMove.Count >= ToMove.Space.high then 
+              ToMove.Space = {1..ToMove.Space.high * 2};
 
-            M.List[M.Count] = (b[cur], destBin);
+            ToMove.List[ToMove.Count] = (bin[cur], pos[cur], destBin);
 
             // replace with atom at end of list, if one exists
-            if cur < c then b[cur] = b[c]; 
+            if cur < c {
+              bin[cur] = bin[c]; 
+              pos[cur] = pos[c];
+            }
 
             // correct bin count
             c -= 1; 
@@ -784,8 +783,8 @@ proc binAtoms() {
   // actually move the atoms
   for ijk in LocaleGridDom {
     on LocaleGrid[ijk] { 
-      for (a, b) in Moved[ijk].List[1..Moved[ijk].Count] {
-        addatom(a,b);
+      for (a, x, b) in Moved[ijk].List[1..Moved[ijk].Count] {
+        addatom(a,x,b);
       }
     }
   }

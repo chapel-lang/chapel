@@ -54,11 +54,11 @@ proc initialIntegrate() {
   // update the velocity and position of the bin's atoms
   coforall ijk in LocaleGridDom {
     on LocaleGrid[ijk] {
-      var Real = Grid[ijk].Real;
-      forall (b,c) in zip(Grid[ijk].Arr[Real], Grid[ijk].Count[Real]) {
-        for a in b[1..c] {
+      const Me = Grid[ijk];
+      forall (b,p,c) in zip(Me.Bins, Me.Pos[Me.Real], Me.Count[Me.Real]) {
+        for (a, x) in zip(b[1..c],p[1..c]) {
           a.v += dtforce * a.f;
-          a.x += dt * a.v;
+          x += dt * a.v;
         }
       }
     }
@@ -72,8 +72,8 @@ proc finalIntegrate() {
   // the thermo computation has up-to-date values to work with.
   coforall ijk in LocaleGridDom {
     on LocaleGrid[ijk] {
-      var Real = Grid[ijk].Real;
-      forall (b,c) in zip(Grid[ijk].Arr[Real], Grid[ijk].Count[Real]) {
+      const Me = Grid[ijk];
+      forall (b,c) in zip(Me.Bins, Me.Count[Me.Real]) {
         for a in b[1..c] {
           a.v += dtforce * a.f;
         }

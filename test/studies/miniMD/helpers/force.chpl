@@ -223,16 +223,14 @@ module MDForce {
       list[1] = list[2];
     }
 
-    // combines halfneigh and fullneigh versions from c++
     proc compute(store : bool) {
+      if debug then writeln("entering EAM compute...");
       var evdwl : real;
       virial = 0.0;
       coforall ijk in LocaleGridDom {
         on LocaleGrid[ijk] {
-          var Data => Grid[ijk].Arr;
-          var Fluff = Grid[ijk].Fluff;
-
-          forall (b,c) in zip(Data,Grid[ijk].Count[Fluff]) {
+          const Me = Grid[ijk];
+          forall (b,c) in zip(Me.Bins,Me.Count[Me.Real]) {
             for a in b[1..c] {
               a.f = (0.0,0.0,0.0);
             }
@@ -242,14 +240,14 @@ module MDForce {
 
       coforall ijk in LocaleGridDom {
         on LocaleGrid[ijk] do {
-          var Data => Grid[ijk].Arr;
-          var Real = Grid[ijk].Real;
+          const Me = Grid[ijk];
 
-          for (b,c,r) in zip(Data[Real], Grid[ijk].Count[Real], Real) {
-            for (a,i) in zip(b[1..c], 1..c) {
-              var rhoi : real;
-              for (n,x) in a.neighs[1..a.ncount] {
-                const del = a.x - Data[n][x].x;
+          for (b,p,c,r) in zip(Me.Bins,Me.Pos[Me.Real], Me.Count[Me.Real], Me.Real) {
+            const exist = 1..c;
+            for (a,x,i) in zip(b[exist],p[exist], exist) {
+              var rhoi : atomic real;
+              forall (n,j) in a.neighs[1..a.ncount] {
+                const del = x - Me.Pos[n][j];
                 const rsq = dot(del, del);
 
                 if rsq < cutforcesq {
@@ -259,11 +257,11 @@ module MDForce {
                   p -= m;
                   if p >= 1.0 then p = 1.0;
                   var val = ((rhor_spline[m*7 + 3] * p + rhor_spline[m * 7 + 4]) * p + rhor_spline[m*7+5]) * p + rhor_spline[m*7+6];
-                  rhoi += val;
+                  rhoi.add(val);
                 }
               }
 
-              var p = 1.0 * rhoi * rdrho + 1.0;
+              var p = 1.0 * rhoi.read() * rdrho + 1.0;
               var m = p : int;
               m = max(1, min(m, numDensity - 1));
               p -= m;
@@ -280,7 +278,8 @@ module MDForce {
 
       coforall ijk in LocaleGridDom {
         on LocaleGrid[ijk] {
-          for (Src, Dest, neigh) in zip(Grid[ijk].SrcSlice, Grid[ijk].DestSlice, Grid[ijk].Neighs) {
+          const Me = Grid[ijk];
+          for (Src, Dest, neigh) in zip(Me.SrcSlice, Me.DestSlice, Me.Neighs) {
             FP[ijk].Fp[Dest] = FP[neigh].Fp[Src];
           }
         }
@@ -288,14 +287,14 @@ module MDForce {
 
       coforall ijk in LocaleGridDom {
         on LocaleGrid[ijk] {
-          var Data => Grid[ijk].Arr;
-          var Real = Grid[ijk].Real;
+          const Me = Grid[ijk];
 
-          for (b,c,rbin) in zip(Data[Real], Grid[ijk].Count[Real], Real) {
-            for (a,i) in zip(b[1..c],1..c) {
+          for (b,p,c,rbin) in zip(Me.Bins, Me.Pos[Me.Real], Me.Count[Me.Real], Me.Real) {
+            const exist = 1..c;
+            for (a,x,i) in zip(b[exist],p[exist],exist) {
               var fx, fy, fz : real;
-              for (n,x) in a.neighs[1..a.ncount] {
-                const del = a.x - Data[n][x].x;
+              for (n,j) in a.neighs[1..a.ncount] {
+                const del = x - Me.Pos[n][j];
                 const rsq = dot(del, del);
 
                 if rsq < cutforcesq {
@@ -313,7 +312,7 @@ module MDForce {
                   var recip = 1.0/r;
                   var phi = z2 * recip;
                   var phip = z2p * recip - phi * recip;
-                  var psip = FP[ijk].Fp[rbin][i] * rhoip + FP[ijk].Fp[n][x] * rhoip + phip;
+                  var psip = FP[ijk].Fp[rbin][i] * rhoip + FP[ijk].Fp[n][j] * rhoip + phip;
                   var fpair = -psip * recip;
 
                   const res = del * fpair;
@@ -351,9 +350,8 @@ module MDForce {
       fTimer.start();
       coforall ijk in LocaleGridDom {
         on LocaleGrid[ijk] {
-          var Data => Grid[ijk].Arr;
-          var Fluff = Grid[ijk].Fluff;
-          forall (b,c) in zip(Data,Grid[ijk].Count[Fluff]) {
+          const Me = Grid[ijk];
+          forall (b,c) in zip(Me.Bins,Me.Count[Me.Real]) {
             for a in b[1..c] {
               a.f = (0.0,0.0,0.0);
             }
@@ -373,25 +371,35 @@ module MDForce {
       coforall ijk in LocaleGridDom {
         on LocaleGrid[ijk] {
           // bring stuff onto this locale
-          var Data => Grid[ijk].Arr;
-          var Real = Grid[ijk].Real;
-          var eng, vir : real;
-          var ev = store;
+          const Me = Grid[ijk];
 
-          // TODO: now that we're only doing fullneigh, re-examine parallelism here
-          for (b,c,r) in zip(Data[Real], Grid[ijk].Count[Real], Real) {
-            for (a,k) in zip(b[1..c],1..c) {
-              var (fx,fy,fz,e,v) = + reduce forall (q,idx) in a.neighs[1..a.ncount] do 
-                      forceBetween(a.x,Data[q][idx], Real.member(q), ev);
-              a.f += (fx,fy,fz);
-              eng += e;
-              vir += v;
+          // by using an atomic variable, we can make the outer loop parallel
+          var eng, vir : atomic real;
+
+          forall (b,p,c) in zip(Me.Bins, Me.Pos[Me.Real], Me.Count[Me.Real], Me.Real) {
+            for (a, x) in zip(b[1..c],p[1..c]) {
+              for(n,i) in a.neighs[1..a.ncount] {
+                const del = x - Me.Pos[n][i];
+                const rsq = dot(del,del);
+                
+                if rsq < cutforcesq {
+                  const sr2: real = 1.0 / rsq;
+                  const sr6 : real = sr2 * sr2 * sr2;
+                  const force : real = 48.0 * sr6 * (sr6 - .5) * sr2;
+                  a.f += del * force;
+
+                  if store {
+                    eng.add(4.0 * sr6 * (sr6 - 1.0));
+                    vir.add(.5 * rsq * force);
+                  }
+                }
+              }
             }
           }
 
           // cut down on communication
-          engs[ijk] = eng;
-          virs[ijk] = vir;
+          engs[ijk] = eng.read();
+          virs[ijk] = vir.read();
         }
       }
 
@@ -401,27 +409,6 @@ module MDForce {
 
       // higher resolution performance timings - look at the actual computation
       maintime += fTimer.elapsed();
-    }
-
-    inline proc forceBetween(ref x : v3, ref n : atom, isReal, store : bool) {
-      const del = x - n.x;
-      const rsq = dot(del,del);
-      var rx, ry, rz, e, v : real;
-
-      // if the atoms are close enough, do some physics
-      if rsq < cutforcesq {
-        const sr2: real = 1.0 / rsq;
-        const sr6 : real = sr2 * sr2 * sr2;
-        const force : real = 48.0 * sr6 * (sr6 - .5) * sr2;
-        (rx,ry,rz) = del * force;
-
-        if store {
-          e += 4.0 * sr6 * (sr6 - 1.0);
-          v += .5 * rsq * force;
-        }
-      }
-
-      return (rx,ry,rz,e,v);
     }
   } 
 }
