@@ -595,20 +595,20 @@ proc updateFluff() {
   coforall ijk in LocaleGridDom {
     on LocaleGrid[ijk] {
       const Me = Grid[ijk];
-      for (Src, Dest, Neighbor, Offset, neigh) in 
+      forall (Src, Dest, Neighbor, Offset, neigh) in 
         zip(Me.SrcSlice, Me.DestSlice, Grid[Me.Neighs], Me.PosOffset, Me.NeighDom) {
         // don't look at ourself
-        if neigh == (0,0,0) then continue;
+        if neigh != (0,0,0) {
+          // copy over the bins' counts
+          Me.Count[Dest] = Neighbor.Count[Src];
+          
+          // copy over fluff atoms' positions
+          Me.Pos[Dest] = Neighbor.Pos[Src];
 
-        // copy over the bins' counts
-        Me.Count[Dest] = Neighbor.Count[Src];
-        
-        // copy over fluff atoms' positions
-        Me.Pos[Dest] = Neighbor.Pos[Src];
-
-        // offset atoms if necessary
-        if Offset != (0.0,0.0,0.0) {
-          forall p in Me.Pos[Dest] do p += Offset;
+          // offset atoms if necessary
+          if Offset != (0.0,0.0,0.0) {
+            forall p in Me.Pos[Dest] do p += Offset;
+          }
         }
       }
     }
