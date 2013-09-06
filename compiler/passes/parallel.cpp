@@ -44,7 +44,6 @@ static void derefWideStringActuals();
 static void derefWideRefsToWideClasses();
 static void widenGetPrivClass();
 static void moveAddressSourcesToTemp(void);
-static CallExpr* findLocaleLookup(CallExpr* onBlockCall, Map<Symbol*, Vec<SymExpr*>*>& defMap);
 
 // Package args into a class and call a wrapper function with that
 // object. The wrapper function will then call the function
