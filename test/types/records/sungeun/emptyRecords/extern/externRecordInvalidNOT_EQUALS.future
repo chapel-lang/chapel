@@ -1,0 +1,7 @@
+bug: != between an empty extern record and an integer (non-record) compiles correctly and always returns false
+
+!= gets built in build_record_inequality_function().  The second arg
+is dtAny to handle sub-records, so the function gets instantiated
+during resolution with int.
+
+Not sure exactly what should happen in this case.
