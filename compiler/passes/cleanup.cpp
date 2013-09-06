@@ -185,18 +185,8 @@ static void addTaskMgtInOnBlocks() {
 
         SET_LINENO(block);
 
-        // Very special case:
-        // The private variable "here" is first initialized in the DefaultRootLocale constructor.
-        // We can't try to look up a sublocale in a "here" locale that doesn't exist, so
-        // we just leave that code out in the DefaultRootLocale constructor.
-        // A better approach would be to perform initialization of all node-private variables
-        // (including "here") before the program starts.  That has some advantage w.r.t. 
-        // program design, but also would make the DefaultRootLocale constructor trivial.
-        if (!strcmp(block->parentSymbol->name, "DefaultRootLocale"))
-          continue;
-
         // This is an on or on ... begin block.
-        CallExpr* here = new CallExpr(PRIM_TASK_GET_HERE_PTR);
+        CallExpr* here = new CallExpr(new_StringSymbol("here"));
         CallExpr* taskInitPartial = new CallExpr(".", here,
                                                  new_StringSymbol("taskInit"));
         block->insertAtHead(new CallExpr(taskInitPartial));

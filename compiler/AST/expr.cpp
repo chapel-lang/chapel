@@ -972,7 +972,6 @@ static GenRet codegenRlocale(GenRet wide)
   GenInfo* info = gGenInfo;
   Type* type = LOCALE_ID_TYPE;
 
-  // This function does not work on wide strings.
   if( wide.isLVPtr != GEN_WIDE_PTR && isWideString(wide.chplType)) {
     ret = codegenWideStringField(wide,"locale");
     ret.chplType = type;
@@ -1044,7 +1043,6 @@ static GenRet codegenRnode(GenRet wide){
   GenInfo* info = gGenInfo;
   Type* type = NODE_ID_TYPE;
 
-  // This function does not work on wide strings.
   if( wide.isLVPtr != GEN_WIDE_PTR && isWideString(wide.chplType)) {
     ret = codegenWideStringField(wide,"locale");
     ret.chplType = LOCALE_ID_TYPE;
@@ -3887,39 +3885,11 @@ GenRet CallExpr::codegen() {
           codegenAssign(get(1), r);
           break;
          }
-         case PRIM_TASK_GET_HERE_PTR:
-         {
-          GenRet addr = codegenCallExpr("chpl_task_getHere");
-          GenRet tmp;
-          Type* lhsType = get(1)->typeInfo();
-          if (lhsType->symbol->hasFlag(FLAG_WIDE_CLASS))
-            // If the destination is wide, make the result wide by prepending the locale ID.
-            tmp = codegenAddrOf(codegenWideAddr(codegenGetLocaleID(),
-                                                addr, lhsType));
-          else
-            tmp = addr;
-          codegenAssign(get(1), tmp);
-          break;
-         }
          case PRIM_ON_LOCALE_NUM:
          {
           // This primitive expects an argument of type chpl_localeID_t.
           INT_ASSERT(call->get(1)->typeInfo() == dtLocaleID);
-
-          GenRet addr = codegenNullPointer();
-          GenRet tmp;
-          Type* lhsType = get(1)->typeInfo();
-          if (lhsType->symbol->hasFlag(FLAG_WIDE_CLASS))
-          {
-            // Create a wide pointer with the given locale ID.
-            // The addr portion of the wide pointer is NULL.
-            GenRet locID = codegenValue(call->get(1));
-            tmp = codegenAddrOf(codegenWideAddr(locID, addr, lhsType));
-          }
-          else
-            tmp = addr;
-
-          codegenAssign(get(1), tmp);
+          codegenAssign(get(1), call->get(1));
           break;
          }
          default:
@@ -3996,7 +3966,6 @@ GenRet CallExpr::codegen() {
     case PRIM_GET_PRIV_CLASS:
     case PRIM_ARRAY_GET:
     case PRIM_ARRAY_GET_VALUE:
-    case PRIM_TASK_GET_HERE_PTR:
     case PRIM_ON_LOCALE_NUM:
       // generated during generation of PRIM_MOVE
       break;
@@ -4115,9 +4084,10 @@ GenRet CallExpr::codegen() {
 
     case PRIM_PTR_EQUAL:
     case PRIM_EQUAL:
-     // TODO: Need subloc field as well.
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
           get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+        // TODO: The locale model will eventually have to provide a function   
+        // to compare wide addresses.  Ditto for the NOTEQUAL case below.      
         GenRet a = get(1);
         GenRet b = get(2);
         GenRet addrNe = codegenNotEquals(codegenRaddr(a), codegenRaddr(b));
@@ -4137,9 +4107,10 @@ GenRet CallExpr::codegen() {
       break;
     case PRIM_PTR_NOTEQUAL:
     case PRIM_NOTEQUAL:
-     // TODO: Need subloc field as well.
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
           get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+        // TODO: The locale model will eventually have to provide a function   
+        // to compare wide addresses.  Ditto for the EQUAL case above.         
         GenRet a = get(1);
         GenRet b = get(2);
         GenRet addrNe = codegenNotEquals(codegenRaddr(a), codegenRaddr(b));
@@ -4657,21 +4628,6 @@ GenRet CallExpr::codegen() {
       break;
     case PRIM_SET_SERIAL:
       codegenCall("chpl_task_setSerial", codegenValue(get(1)));
-      break;
-    case PRIM_TASK_SET_HERE_PTR:
-    {
-      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
-          get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
-        codegenCall("chpl_task_setHere", codegenRaddr(get(1)));
-      else
-        codegenCall("chpl_task_setHere", get(1));
-      break;
-    }
-    case PRIM_TASK_SET_LOCALE_ID:
-      codegenCall("chpl_gen_setLocaleID", codegenValue(get(1)));
-      break;
-    case PRIM_TASK_GET_LOCALE_ID:
-      ret = codegenGetLocaleID();
       break;
     case PRIM_CHPL_COMM_GET:
     case PRIM_CHPL_COMM_PUT: {
@@ -5443,10 +5399,10 @@ GenRet CallExpr::codegen() {
     }
     std::string ctype = ct->classStructName(true);
 
-    GenRet locale_id = codegenRlocale(get(1));
+    GenRet locale_id = get(1);
 
     std::vector<GenRet> args(6);
-    args[0] = codegenLocalAddrOf(codegenValuePtr(locale_id));
+    args[0] = codegenLocalAddrOf(locale_id);
     args[1] = new_IntSymbol(ftableMap.get(fn), INT_SIZE_32);
     args[2] = get(2);
     args[3] = codegenSizeof(ctype.c_str());

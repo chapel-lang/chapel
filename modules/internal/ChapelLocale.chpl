@@ -227,17 +227,7 @@ module ChapelLocale {
   // 
   proc chpl_init_rootLocale() {
     origRootLocale = new RootLocale();
-
     (origRootLocale:RootLocale).init();
-
-    // Programs traditionally expect the startup process to run on
-    // Locales[0], so this is how we mimic that behavior.
-    // Note that this means we have to ask for here.parent or rootLocale
-    // to get the root locale of the default architecture.
-    var loc = (origRootLocale:RootLocale).getDefaultLocaleArray()[0];
-    __primitive("_task_set_here_ptr", loc);
-    var locID = chpl_buildLocaleID(0:chpl_nodeID_t, 0:chpl_sublocID_t);
-    __primitive("_task_set_locale_id", locID);
   }
 
   // This function sets up a private copy of rootLocale by replicating
@@ -257,31 +247,33 @@ module ChapelLocale {
     __primitive("move", Locales, (rootLocale:RootLocale).getDefaultLocaleArray());
   }
 
+  // We need a temporary value for "here" before the architecture is defined.
+  // This is due to the fact that "here" is used for memory and task control
+  // in setting up the architecture itself.
+  // Its type should probably be renamed dummyLocale or something
+  // representative.
+  // The dummy locale provides system-default tasking and memory management.
+  const dummyLocale = new locale();
+
+  extern proc chpl_task_getSubLoc(): chpl_sublocID_t;
+  extern var chpl_nodeID: int(32);
+  // Return the locale ID of the current locale
+  inline proc here_id {
+    return chpl_buildLocaleID(chpl_nodeID,chpl_task_getSubLoc());
+  }
+  // Return the current locale
+  inline proc here {
+    return chpl_localeID_to_locale(here_id);
+  }
+  
   // Returns a wide pointer to the locale with the given id.
   proc chpl_localeID_to_locale(id : chpl_localeID_t) : locale {
     if rootLocale then
       return (rootLocale:AbstractRootLocale).localeIDtoLocale(id);
     else
       // For code prior to rootLocale initialization
-      return here;
+      return dummyLocale;
   }
-
-
-
-  // This returns the current "here" pointer.
-  // It uses a primitive to suck the here pointer out of task-private storage.
-  // On local builds, the primitive returns a narrow pointer;
-  // otherwise, a wide pointer.
-  //
-  // Perhaps we can move this into the compiler as a special keyword....
-  inline proc here return __primitive("_task_get_here_ptr");
-  
-  // We need a temporary value for "here" before the architecture is defined.
-  // This is due to the fact that "here" is used for memory and task control
-  // in setting up the architecture itself.
-  // Its type should probably be renamed dummyLocale or something representative.
-  // The dummy locale provides system-default tasking and memory management.
-  __primitive("_task_set_here_ptr", new locale());
 
   pragma "insert line file info"
   extern proc chpl_memhook_malloc_pre(number:int, size:int, md:int(16)): void;

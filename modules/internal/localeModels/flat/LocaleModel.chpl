@@ -145,7 +145,6 @@ module LocaleModel {
     //- Implementation (private)
     //-
     proc init() {
-      extern var chpl_nodeID: int(32);
       _node_id = chpl_nodeID: int;
 
       // chpl_nodeName is defined in chplsys.c.
@@ -194,11 +193,6 @@ module LocaleModel {
     proc init() {
       forall locIdx in initOnLocales() {
         const node = new LocaleModel(this);
-
-        // So immediately after creating a new locale to represent here, we
-        // have to call this primitive to insert it into task-private storage.
-        __primitive("_task_set_here_ptr", node);
-
         myLocales[locIdx] = node;
         numCores += node.numCores;
       }
@@ -309,7 +303,7 @@ module LocaleModel {
                                   fn: int, args: c_ptr, args_size: int(32));
   extern proc chpl_comm_fork_nb(loc_id: int, subloc_id: int,
                                 fn: int, args: c_ptr, args_size: int(32));
-
+  extern proc chpl_ftable_call(fn: int, args: c_ptr): void;
   //
   // regular "on"
   //
@@ -320,9 +314,14 @@ module LocaleModel {
                       args: c_ptr,          // function args
                       args_size: int(32)    // args size
                      ) {
-    chpl_comm_fork(chpl_nodeFromLocaleID(loc),
-                   chpl_sublocFromLocaleID(loc),
-                   fn, args, args_size);
+    const node = chpl_nodeFromLocaleID(loc);
+    if (node == chpl_nodeID) {
+      // don't call the runtime fork function if we can stay local
+      chpl_ftable_call(fn, args);
+    } else {
+      chpl_comm_fork(node, chpl_sublocFromLocaleID(loc),
+                     fn, args, args_size);
+    }
   }
 
   //
@@ -336,9 +335,14 @@ module LocaleModel {
                           args: c_ptr,          // function args
                           args_size: int(32)    // args size
                          ) {
-    chpl_comm_fork_fast(chpl_nodeFromLocaleID(loc),
-                        chpl_sublocFromLocaleID(loc),
-                        fn, args, args_size);
+    const node = chpl_nodeFromLocaleID(loc);
+    if (node == chpl_nodeID) {
+      // don't call the runtime fast fork function if we can stay local
+      chpl_ftable_call(fn, args);
+    } else {
+      chpl_comm_fork_fast(node, chpl_sublocFromLocaleID(loc),
+                          fn, args, args_size);
+    }
   }
 
   //

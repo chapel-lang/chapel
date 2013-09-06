@@ -31,14 +31,6 @@ returnInfoString(CallExpr* call) {
 }
 
 static Type*
-returnInfoLocale(CallExpr* call) {
-  // Return the wide version of dtLocale if there is one.
-  Type* t1 = wideClassMap.get(dtLocale);
-  if (t1) return t1;
-  return dtLocale;
-}
-
-static Type*
 returnInfoLocaleID(CallExpr* call) {
   return dtLocaleID;
 }
@@ -553,11 +545,7 @@ initPrimitive() {
   prim_def(PRIM_WIDE_GET_ADDR, "_wide_get_addr", returnInfoInt64, false, true);
 
   prim_def(PRIM_IS_HERE, "_is_here", returnInfoBool);
-  prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoLocale);
-  prim_def(PRIM_TASK_SET_LOCALE_ID, "_task_set_locale_id", returnInfoVoid, true);
-  prim_def(PRIM_TASK_GET_LOCALE_ID, "_task_get_locale_id", returnInfoLocaleID);
-  prim_def(PRIM_TASK_SET_HERE_PTR, "_task_set_here_ptr", returnInfoVoid, true);
-  prim_def(PRIM_TASK_GET_HERE_PTR, "_task_get_here_ptr", returnInfoLocale);
+  prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoLocaleID);
 
   prim_def(PRIM_ALLOC_GVR, "allocchpl_globals_registry", returnInfoVoid);
   prim_def(PRIM_HEAP_REGISTER_GLOBAL_VAR, "_heap_register_global_var", returnInfoVoid, true, true);

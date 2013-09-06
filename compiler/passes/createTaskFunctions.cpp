@@ -2,14 +2,17 @@
 #include "passes.h"
 #include "stmt.h"
 
-// Converts blocks implementing various parallel constructs into functions, 
-// so they can be invoked through a fork.
+// Converts blocks implementing various task constructs into
+// functions, so they can be invoked by a separate task.
+//
 // The body of the original block becomes the body of the function,
-// and the inline location of the parallel block is replaced by a call
-// to the implementing function.
-// A subsequent step (flattenNesteFunctions) adds arguments to these functions
-// to pass in values or references from the context which are used in the body
-// of the block.
+// and the inline location of the block is replaced by a call to the
+// implementing function.
+//
+// A subsequent step (flattenNesteFunctions) adds arguments to these
+// functions to pass in values or references from the context which
+// are used in the body of the block.
+//
 // As a special case, the target locale is prepended to the arguments passed 
 // to the "on" function.
 void createTaskFunctions(void) {
@@ -35,7 +38,7 @@ void createTaskFunctions(void) {
         if (block->blockInfo->isPrimitive(PRIM_BLOCK_ON_NB))
           fn->addFlag(FLAG_NON_BLOCKING);
 
-        ArgSymbol* arg = new ArgSymbol(INTENT_CONST_IN, "dummy_locale_arg", dtLocale);
+        ArgSymbol* arg = new ArgSymbol(INTENT_CONST_IN, "dummy_locale_arg", dtLocaleID);
         fn->insertFormalAtTail(arg);
       }
       else if (info->isPrimitive(PRIM_BLOCK_PARAM_LOOP) || // resolution will remove this case.
