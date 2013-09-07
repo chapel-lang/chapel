@@ -82,11 +82,9 @@ Makefiles support the following targets:
      default     : Build the appropriate output files
      all        /  e.g. objects, libraries, executables
 
-     clean      : Remove the intermediate files specific to this
-                  configuration, but retain the final targets
+     clean      : Remove the intermediate files for this configuration
 
-     cleanall   : Remove the intermediate files for all 
-                  configurations, but retain the final targets
+     cleanall   : Remove the intermediate files for all configurations
 
      clobber    : Remove everything created by the Makefiles
 
