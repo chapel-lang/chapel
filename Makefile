@@ -29,8 +29,15 @@ third-party: FORCE
 
 clean: FORCE
 	cd compiler && $(MAKE) clean
-	cd runtime && $(MAKE) clean
 	cd modules && $(MAKE) clean
+	cd runtime && $(MAKE) clean
+	cd third-party && $(MAKE) clean
+
+cleanall: FORCE
+	cd compiler && $(MAKE) cleanall
+	cd modules && $(MAKE) cleanall
+	cd runtime && $(MAKE) cleanall
+	cd third-party && $(MAKE) cleanall
 
 cleandeps: FORCE
 	cd compiler && $(MAKE) cleandeps
@@ -38,8 +45,8 @@ cleandeps: FORCE
 
 clobber: FORCE
 	cd compiler && $(MAKE) clobber
-	cd runtime && $(MAKE) clobber
 	cd modules && $(MAKE) clobber
+	cd runtime && $(MAKE) clobber
 	cd third-party && $(MAKE) clobber
 	rm -rf bin
 	rm -rf lib

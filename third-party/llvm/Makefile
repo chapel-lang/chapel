@@ -31,6 +31,9 @@ all: $(LLVM_FILE)
 clean: FORCE
 	rm -rf $(LLVM_BUILD_DIR)
 
+cleanall: FORCE
+	rm -rf build
+
 clobber: FORCE
 	rm -rf build install
 

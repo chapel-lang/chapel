@@ -18,6 +18,17 @@ clean: FORCE
 	cd re2 && $(MAKE) clean
 	cd tcmalloc && $(MAKE) clean
 
+cleanall: FORCE
+	cd creoleparser && $(MAKE) cleanall
+	cd dlmalloc && $(MAKE) cleanall
+	cd gasnet && $(MAKE) cleanall
+	cd gmp && $(MAKE) cleanall
+	cd llvm && $(MAKE) cleanall
+	cd massivethreads && $(MAKE) cleanall
+	cd qthread && $(MAKE) cleanall
+	cd re2 && $(MAKE) cleanall
+	cd tcmalloc && $(MAKE) cleanall
+
 clobber: FORCE
 	cd creoleparser && $(MAKE) clobber
 	cd dlmalloc && $(MAKE) clobber

@@ -35,6 +35,9 @@ all: $(RE2_FILE)
 clean: FORCE
 	rm -rf $(RE2_BUILD_SUBDIR)
 
+cleanall: FORCE
+	rm -rf build
+
 clobber: FORCE
 	rm -rf build install
 

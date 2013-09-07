@@ -25,6 +25,9 @@ all: tcmalloc
 clean: FORCE
 	rm -rf $(TCMALLOC_BUILD_SUBDIR)
 
+cleanall: FORCE
+	rm -rf build
+
 clobber: FORCE
 	rm -rf build install
 

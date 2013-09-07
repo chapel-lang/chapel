@@ -19,6 +19,9 @@ all: massivethreads
 
 clean: FORCE
 
+cleanall: FORCE
+	rm -rf build
+
 clobber: FORCE
 	rm -rf build install
 

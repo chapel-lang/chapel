@@ -13,6 +13,9 @@ echoruntimedir:
 %.cleandir:
 	@cd $* && $(MAKE) clean
 
+%.cleanalldir:
+	@cd $* && $(MAKE) cleanall
+
 %.cleandirdeps:
 	@cd $* && $(MAKE) cleandeps
 

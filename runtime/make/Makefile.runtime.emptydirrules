@@ -2,6 +2,8 @@ all: echoruntimedir $(MAKEALLSUBDIRS)
 
 clean: echoruntimedir $(CLEANSUBDIRS)
 
+cleanall: echoruntimedir $(CLEANALLSUBDIRS)
+
 cleandeps: echoruntimedir $(CLEANSUBDIRDEPS)
 
 clobber: echoruntimedir $(CLOBBERSUBDIRS)

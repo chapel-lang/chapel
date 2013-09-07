@@ -10,6 +10,8 @@ depend:
 
 clean: clean.helpme
 
+cleanall: cleanall.helpme
+
 cleandeps: cleandeps.helpme
 
 clobber: clobber.helpme

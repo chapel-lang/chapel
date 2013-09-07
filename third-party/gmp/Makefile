@@ -20,6 +20,9 @@ all: gmp
 clean: FORCE
 	rm -rf $(GMP_BUILD_SUBDIR)
 
+cleanall: FORCE
+	rm -rf build
+
 clobber: FORCE
 	rm -rf build install
 

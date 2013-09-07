@@ -16,6 +16,8 @@ all: $(CREOLEPARSER_INSTALL_DIR)
 
 clean:
 
+cleanall:
+
 clobber: clean
 	rm -rf install
 

@@ -65,9 +65,12 @@ CLEAN_TARGS = \
 	$(GEN_SRCS) \
 	$(EXECS)
 
-CLOBBER_TARGS = \
+CLEANALL_TARGS = \
 	$(CLEAN_TARGS) \
-	./$(GEN_SUBDIR) \
+	./$(GEN_SUBDIR)
+
+CLOBBER_TARGS = \
+	$(CLEANALL_TARGS) \
 	*~
 
 
@@ -75,5 +78,6 @@ CLOBBER_TARGS = \
 
 MAKEALLSUBDIRS = $(SUBDIRS:%=%.makedir)
 CLEANSUBDIRS = $(SUBDIRS:%=%.cleandir)
+CLEANALLSUBDIRS = $(SUBDIRS:%=%.cleanalldir)
 CLEANSUBDIRDEPS = $(SUBDIRS:%=%.cleandirdeps)
 CLOBBERSUBDIRS = $(SUBDIRS:%=%.clobberdir)
