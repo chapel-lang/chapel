@@ -607,7 +607,7 @@ proc updateFluff() {
 
           // offset atoms if necessary
           if Offset != (0.0,0.0,0.0) {
-            forall p in Me.Pos[Dest] do p += Offset;
+            forall (p,c) in zip(Me.Pos[Dest], Me.Count[Dest]) do p[1..c] += Offset;
           }
         }
       }
