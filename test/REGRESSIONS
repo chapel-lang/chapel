@@ -20,6 +20,10 @@
 general regressions (seem to happen in most configurations)
 ===========================================================
 
+compilation timeouts (started 9/6/13) (eronagha)
+------------------------------------------------
+[Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/3dStrideTest]
+
 
 ==============================================
 linux64 regressions (in addition to the above)
@@ -28,6 +32,15 @@ linux64 regressions (in addition to the above)
 started regressing again with locale ID optimization change (08/30/13)
 ----------------------------------------------------------------------
 [Error matching program output for multilocale/deitz/oneOrMoreLocales/test_dot_locale_error]
+
+compilation timeouts
+--------------------
+the following tests have been seen to time out in various configurations
+since 9/6/13:
+[Error: Timed out compilation for optimizations/bulkcomm/alberto/Cyclic/perfTest (compopts: 1)]
+[Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/perfTest (compopts: 1)]
+[Error: Timed out compilation for users/franzf/v0/chpl/main (compopts: 1)]
+[Error: Timed out compilation for users/franzf/v1/chpl/main (compopts: 1)]
 
 
 ==============================================
@@ -71,6 +84,12 @@ execution timeouts (08/29/09)
 [Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_vector_4 (compopts: 1)]
 
 Time out on studies/shootout/binary-trees/binary-trees_iter.chpl (execopts: 2) on chap04 -> assigned to Greg (08/19/13)
+
+compilation timeouts (started 9/6/13) (eronagha)
+------------------------------------------------
+[Error: Timed out compilation for studies/lulesh/bradc/lulesh-dense (compopts: 1)]
+[Error: Timed out compilation for users/franzf/v0/chpl/main (compopts: 1)]
+
 
 ========================
 memory leaks regressions
@@ -124,14 +143,8 @@ The following tests started timing out on 3/02/2013:
 
 The following tests have been timing out since 9/2012, presumably
 because they rely on a large number of threads and Sung limited the
-number of threads for valgrind testing on 08/30/12):
+number of threads for valgrind testing on 08/30/12:
 [Error: Timed out executing program parallel/begin/sungeun/captureAppearsToWork]
-[Error: Timed out executing program studies/shootout/thread-ring/thread-ring-coforall (execopts: 1)]
-[Error: Timed out executing program studies/shootout/thread-ring/thread-ring-coforall (execopts: 2)]
-[Error: Timed out executing program studies/shootout/thread-ring/thread-ring-coforall-begin (execopts: 1)]
-[Error: Timed out executing program studies/shootout/thread-ring/thread-ring-coforall-begin (execopts: 2)]
-[Error: Timed out executing program studies/shootout/thread-ring/thread-ring-for-begin (execopts: 1)]
-[Error: Timed out executing program studies/shootout/thread-ring/thread-ring-for-begin (execopts: 2)]
 
 The following tests have been timing out since 8/18/2012 or earlier:
 [Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)]
@@ -146,11 +159,39 @@ The following tests have been timing out since 8/18/2012 or earlier:
 functions/iterators/vass/yield-arrays-var-nonvar.chpl times out in compilation
 (08/19/13 - assigned to Vass)
 
+compilation timeouts 9/9/13
+(seem related to timeouts in other configs that started 9/6/13)
+---------------------------------------------------------------
+[Error: Timed out compilation for multilocale/gbt/hello-numThreads-1]
+[Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/2dStrideTest]
+[Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/3dStrideTest]
+[Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/perfTest (compopts: 1)]
+[Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/perfTest_v2 (compopts: 1)]
+[Error: Timed out compilation for optimizations/bulkcomm/alberto/Cyclic/perfTest (compopts: 1)]
+[Error: Timed out compilation for optimizations/bulkcomm/alberto/Cyclic/perfTest_v2 (compopts: 1)]
+[Error: Timed out compilation for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 1)]
+[Error: Timed out compilation for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 2)]
+[Error: Timed out compilation for sparse/parallel/sparse-iter-dom-arr-zipper]
+[Error: Timed out compilation for users/franzf/v0/chpl/main (compopts: 1)]
+[Error: Timed out compilation for users/franzf/v1/chpl/main (compopts: 1)]
+[Error: Timed out compilation for users/franzf/v2/chpl/main (compopts: 1)]
+
 
 ===============================
 no-local regressions
-(Checked for accuracy 8/27/13)
 ===============================
+
+compilation timeouts (started 9/6/13) (eronagha)
+------------------------------------------------
+[Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/3dStrideTest]
+[Error: Timed out compilation for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 1)]
+[Error: Timed out compilation for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 2)]
+[Error: Timed out compilation for studies/lsms/shemmy/lsms-parallel-n1]
+[Error: Timed out compilation for studies/lsms/shemmy/lsms-parallel-n2]
+[Error: Timed out compilation for studies/lsms/shemmy/lsms-parallel-n4]
+[Error: Timed out compilation for studies/lulesh/bradc/lulesh-dense (compopts: 1)]
+[Error: Timed out compilation for users/franzf/v0/chpl/main (compopts: 1)]
+[Error: Timed out compilation for users/franzf/v1/chpl/main (compopts: 1)]
 
 
 ====================================================
@@ -165,7 +206,6 @@ amount of comm. went down with locale ID optimization change (08/30/13)
 deadlock due to impact of small # of threads on root locale replication (08/21/13)
 -----------------------------------------------------------------------
 [Error: Timed out executing program multilocale/gbt/hello-numThreads-1]
-
 
 
 ==============================================
@@ -265,7 +305,14 @@ chpldoc sorting differences
 
 
 ======================================
-chpbld02 (PrgEnv test system) failures
+chpbld01 (PrgEnv/XC test system) failures
+======================================
+
+build failures due to PE chaos (9/05/13) (bradc)
+
+
+======================================
+chpbld02 (PrgEnv/XE test system) failures
 (checked for accuracy 08/27/13)
 ======================================
 
@@ -422,10 +469,12 @@ signal 11
 [Error matching program output for sparse/vass/sparse-mismatch-dom-err-dom1dom2dom2]
 [Error matching program output for sparse/vass/sparse-mismatch-dom-err-domarr]
 [Error matching program output for sparse/vass/sparse-mismatch-dom-err-domdom]
-[Error matching program output for studies/shootout/thread-ring/thread-ring (compopts: 1, execopts: 1)]
-[Error matching program output for studies/shootout/thread-ring/thread-ring (compopts: 1, execopts: 2)]
-[Error matching program output for studies/shootout/thread-ring/thread-ring (compopts: 2, execopts: 1)]
-[Error matching program output for studies/shootout/thread-ring/thread-ring (compopts: 2, execopts: 2)]
+[Error matching program output for studies/shootout/thread-ring/thread-ring-coforall-begin (execopts: 1)]
+[Error matching program output for studies/shootout/thread-ring/thread-ring-coforall-begin (execopts: 2)]
+[Error matching program output for studies/shootout/thread-ring/thread-ring-coforall (execopts: 1)]
+[Error matching program output for studies/shootout/thread-ring/thread-ring-coforall (execopts: 2)]
+[Error matching program output for studies/shootout/thread-ring/thread-ring-for-begin (execopts: 1)]
+[Error matching program output for studies/shootout/thread-ring/thread-ring-for-begin (execopts: 2)]
 
 identifier names too long
 -------------------------
@@ -464,6 +513,17 @@ seg fault for linux64.intel.none.fifo.pthreads on chpbld02 (7/3/13) (Greg)
 these are due to r21501 (op=)
 [Error matching program output for distributions/robust/arithmetic/basics/test_array_assignment]
 [Error matching program output for distributions/robust/arithmetic/basics/test_infer_array_type]
+more similar-looking segfaults 9/8/13:
+[Error matching program output for distributions/robust/arithmetic/basics/test_array_iteration1]
+[Error matching program output for distributions/robust/arithmetic/basics/test_domain_iteration1]
+[Error matching program output for distributions/robust/arithmetic/reindexing/test_reindexing1]
+[Error matching program output for distributions/robust/arithmetic/reindexing/test_reindexing2]
+[Error matching program output for distributions/robust/arithmetic/reindexing/test_reindexing3]
+[Error matching program output for distributions/robust/arithmetic/reindexing/test_reindexing4]
+[Error matching program output for distributions/robust/arithmetic/reindexing/test_reindexing5]
+[Error matching program output for distributions/robust/arithmetic/reindexing/test_reindexing7]
+[Error matching program output for distributions/robust/arithmetic/trivial/test_writeln]
+
 
 numeric discrepancies
 ---------------------
@@ -830,7 +890,6 @@ Comm diags mismatch
   multilocale/deitz/needMultiLocales/dist/test_private_space
   multilocale/deitz/needMultiLocales/raCommCheck
   multilocale/deitz/needMultiLocales/streamCommCheck
-  multilocale/deitz/oneOrMoreLocales/test_dot_locale_error
   parallel/taskPar/sungeun/barrier/commDiags
 
 Output mismatch

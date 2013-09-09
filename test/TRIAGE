@@ -147,7 +147,7 @@ nondet. timeout on gasnet-everything
 ------------------------------------
 [Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dBDtoDRTest] (07/08/13)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (7/22/13, 09/02/13)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (7/19/13)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (7/19/13,9/4/13)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff] (8/9/13)
 
 libmpich_intel.so failure for
@@ -250,7 +250,7 @@ examples of what times out:
 
 non-deterministic compilation timeouts with gasnet (UNASSIGNED)
 ---------------------------------------------------------------
-distributions/robust/arithmetic/kernels/hpl (cyclic, 6/12/13)
+distributions/robust/arithmetic/kernels/hpl (cyclic, 6/12/13; block, 9/9/13)
 distributions/robust/arithmetic/performance/assignSlice (cyclic, 7/21/13)
 
 minus_equals nondeterminism (sungeun)
