@@ -136,6 +136,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   char* projectString = getenv(launcherAccountEnvvar);
   char* constraint = getenv("CHPL_LAUNCHER_CONSTRAINT");
   char* walltime = getenv("CHPL_LAUNCHER_WALLTIME");
+  char* outputfn = getenv("CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME");
   char* basenamePtr = strrchr(argv[0], '/');
   pid_t mypid;
 
@@ -155,26 +156,30 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   sprintf(expectFilename, "%s%d", baseExpectFilename, (int)mypid);
   sprintf(slurmFilename, "%s%d", baseSBATCHFilename, (int)mypid);
 
-  slurmFile = fopen(slurmFilename, "w");
-    fprintf(slurmFile, "#!/bin/sh\n\n");
-  fprintf(slurmFile, "#SBATCH -J Chpl-%.10s\n", basenamePtr);
-  genNumLocalesOptions(slurmFile, determineQsubVersion(), numLocales, getNumCoresPerLocale());
-  if (projectString && strlen(projectString) > 0)
-    fprintf(slurmFile, "#SBATCH -A %s\n", projectString);
   if (getenv("CHPL_LAUNCHER_USE_SBATCH") != NULL) {
-//    fprintf(slurmFile, "#SBATCH -joe\n");
-    fprintf(slurmFile, "#SBATCH -o %s.%%j.out\n", argv[0]);
+    slurmFile = fopen(slurmFilename, "w");
+    fprintf(slurmFile, "#!/bin/sh\n\n");
+    fprintf(slurmFile, "#SBATCH -J Chpl-%.10s\n", basenamePtr);
+    genNumLocalesOptions(slurmFile, determineQsubVersion(), numLocales, getNumCoresPerLocale());
+    if (projectString && strlen(projectString) > 0)
+      fprintf(slurmFile, "#SBATCH -A %s\n", projectString);
+    if (getenv("CHPL_LAUNCHER_USE_SBATCH") != NULL) {
+//    fprintf(slurmFile, "#SBATCH -joe\n");  
+    if (outputfn!=NULL) 
+      fprintf(slurmFile, "#SBATCH -o %s.%%j.out\n", outputfn);
+    else
+      fprintf(slurmFile, "#SBATCH -o %s.%%j.out\n", argv[0]);
 //    fprintf(slurmFile, "cd $SBATCH_O_WORKDIR\n");
-    fprintf(slurmFile, "%s/gasnetrun_ibv -n %d %s ",
-            WRAP_TO_STR(LAUNCH_PATH), numLocales, chpl_get_real_binary_name());
-    for (i=1; i<argc; i++) {
-      fprintf(slurmFile, " '%s'", argv[i]);
+      fprintf(slurmFile, "%s/gasnetrun_ibv -n %d %s ",
+              WRAP_TO_STR(LAUNCH_PATH), numLocales, chpl_get_real_binary_name());
+      for (i=1; i<argc; i++) {
+        fprintf(slurmFile, " '%s'", argv[i]);
+      }
+      fprintf(slurmFile, "\n");
     }
-    fprintf(slurmFile, "\n");
-  }
   fclose(slurmFile);
   chmod( slurmFilename, 0755);
-
+  }
   if (getenv("CHPL_LAUNCHER_USE_SBATCH") == NULL) {
   expectFile = fopen(expectFilename, "w");
   if (verbosity < 2) {
@@ -234,16 +239,16 @@ static void chpl_launch_cleanup(void) {
 #ifndef DEBUG_LAUNCH
   char command[1024];
 
-//  sprintf(command, "rm %s", slurmFilename);
-//  system(command);
-
   if (getenv("CHPL_LAUNCHER_USE_SBATCH") == NULL) {
     sprintf(command, "rm %s", expectFilename);
-//    system(command);
+    system(command);
+  } else {
+    sprintf(command, "rm %s", slurmFilename);
+    system(command);
+    sprintf(command, "rm %s", sysFilename);
+    system(command);
   }
 
-//  sprintf(command, "rm %s", sysFilename);
-//  system(command);
 #endif
 }
 
