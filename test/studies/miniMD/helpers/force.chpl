@@ -225,7 +225,7 @@ module MDForce {
 
     proc compute(store : bool) {
       if debug then writeln("entering EAM compute...");
-      var evdwl : real;
+      var evdwl, vir : atomic real;
       virial = 0.0;
       coforall ijk in LocaleGridDom {
         on LocaleGrid[ijk] {
@@ -269,7 +269,7 @@ module MDForce {
               FP[ijk].Fp[r][i] = (frho_spline[m*7+0] * p + frho_spline[m*7 + 1]) * p + frho_spline[m*7 + 2];
 
               if store {
-                evdwl += ((frho_spline[m*7+3] * p + frho_spline[m*7+4]) * p + frho_spline[m*7+5]) * p + frho_spline[m*7+6];
+                evdwl.add(((frho_spline[m*7+3] * p + frho_spline[m*7+4]) * p + frho_spline[m*7+5]) * p + frho_spline[m*7+6]);
               }
             }
           }
@@ -321,8 +321,8 @@ module MDForce {
                   fpair *= .5;
 
                   if store {
-                    virial += rsq * fpair;
-                    evdwl += .5 * phi;
+                    vir.add(rsq * fpair);
+                    evdwl.add(.5 * phi);
                   }
                 }
               }
@@ -331,7 +331,8 @@ module MDForce {
           }
         }
       }
-      eng_vdwl += 2.0 * evdwl;
+      eng_vdwl += 2.0 * evdwl.read();
+      virial = vir.read();
     }
   }
 
