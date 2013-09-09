@@ -7,28 +7,28 @@ use AdvancedIters;
 config const n = 10;
 
 class Tree {
-  var item: int;
-  var left, right: Tree;
+  const item: int;
+  const left, right: Tree;
 }
 
 proc main() {
   const minDepth = 4, maxDepth = max(minDepth + 2, n);
   const stretchDepth = maxDepth + 1;
-  var stretchTree = bottomUpTree(0,stretchDepth);
-  var check = itemCheck(stretchTree);
+  const stretchTree = bottomUpTree(0,stretchDepth);
+  const check = itemCheck(stretchTree);
   free(stretchTree);
 
   writeln("stretch tree of depth ",stretchDepth,"\t check: ",check);
 
   var results: [1..maxDepth, 1..2] int;
-  var longLivedTree : Tree = bottomUpTree(0, maxDepth);
+  const longLivedTree : Tree = bottomUpTree(0, maxDepth);
 
   forall depth in dynamic(minDepth..maxDepth by 2, 1) {
-    var iterations: int = 1 << (maxDepth - depth + minDepth);
+    const iterations: int = 1 << (maxDepth - depth + minDepth);
     var check: int = 0;
 			
     for i in 1..iterations {
-      var posT = bottomUpTree(i,depth), negT = bottomUpTree(-i,depth);
+      const posT = bottomUpTree(i,depth), negT = bottomUpTree(-i,depth);
       check += itemCheck(posT) + itemCheck(negT);
       free(posT);
       free(negT);
@@ -46,21 +46,17 @@ proc main() {
   free(longLivedTree);
 }
 
-proc bottomUpTree(item: int, depth: int): Tree {
-  var T = new Tree(item);
-  if depth > 0 {
-    T.left  = bottomUpTree(2*item-1, depth-1);
-    T.right = bottomUpTree(2*item, depth-1);
-  }
-  return T;
+proc bottomUpTree(const item: int, const depth: int): Tree {
+  if depth <= 0 then return new Tree(item);
+  else return new Tree(item, bottomUpTree(2*item-1, depth-1), bottomUpTree(2*item, depth-1));
 }
 
-proc itemCheck(T: Tree): int {
+proc itemCheck(const T: Tree): int {
   if (T.left==nil) then return T.item; 
   else return (T.item + itemCheck(T.left) - itemCheck(T.right));
 }
 
-proc free(T: Tree) {
+proc free(const T: Tree) {
   if (T.left!=nil) {
     free(T.left);
     free(T.right);
