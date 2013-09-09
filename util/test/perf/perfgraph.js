@@ -78,11 +78,8 @@ function genDygraph(graphInfo, parent, legend) {
                             },
                             // don't "dim" the  series when one is highlighted
                             highlightSeriesBackgroundAlpha: 1, 
-                            rollPeriod: 7, 
-                            
                             // So it's easier to zoom in on the right side
                             rightGap: 15, 
-                            
                             // Give yourself a little more space so the y axis
                             // values don't overlap with the y label
                             yAxisLabelWidth: 70,
