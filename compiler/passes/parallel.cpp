@@ -222,7 +222,6 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
 
   // Create a call to the original function
   CallExpr *call_orig = new CallExpr(fn);
-  VarSymbol* locTemp = NULL;
   bool first = true;
   for_fields(field, ctype)
   {
@@ -238,7 +237,7 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
     // but don't add to the list of actuals passed to the original on_fn.
     // It contains the locale on which the new task is launched.
     if (first && fn->hasFlag(FLAG_ON))
-      locTemp = tmp;
+      /* no-op */;
     else
       call_orig->insertAtTail(tmp);
 
