@@ -109,10 +109,6 @@ enum PrimitiveTag {
 
   PRIM_SIZEOF,
 
-  PRIM_TASK_ALLOC,              // Task-specific malloc
-  PRIM_TASK_REALLOC,            // Task-specific realloc
-  PRIM_TASK_FREE,               // Task-specific free.
-  PRIM_CHPL_MEMHOOK_FREE,       // The free hook function.
   PRIM_CHPL_ALLOC,
   PRIM_CHPL_FREE,               // only for variables on heap?
   PRIM_INIT_FIELDS,             // initialize fields of a temporary record

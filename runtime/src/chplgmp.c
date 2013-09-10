@@ -15,13 +15,13 @@
 #include "chpl-comm.h"
 
 static void* chpl_gmp_alloc(size_t sz) {
-  return chpl_tracked_task_alloc(sz, CHPL_RT_MD_GMP, __LINE__, __FILE__);
+  return chpl_mem_alloc(sz, CHPL_RT_MD_GMP, __LINE__, __FILE__);
 }
 static void* chpl_gmp_realloc(void* ptr, size_t old_size, size_t new_size) {
-  return chpl_tracked_task_realloc( ptr, new_size, CHPL_RT_MD_GMP, __LINE__, __FILE__);
+  return chpl_mem_realloc( ptr, new_size, CHPL_RT_MD_GMP, __LINE__, __FILE__);
 }
 static void chpl_gmp_free(void* ptr, size_t old_size) {
-  chpl_tracked_task_free( ptr, __LINE__, __FILE__);
+  chpl_mem_free( ptr, __LINE__, __FILE__);
 }
 
 void chpl_gmp_init(void) {
@@ -71,8 +71,7 @@ chpl_string chpl_gmp_mpz_get_str(int base, mpz_t x)
 {
   size_t len = mpz_sizeinbase(x, base);
 
-  char* str = (char*)chpl_tracked_task_calloc(len+1, sizeof(char),
-                                        CHPL_RT_MD_GLOM_STRINGS_DATA, 0, 0);
+  char* str = (char*)chpl_mem_calloc(len+1, CHPL_RT_MD_GLOM_STRINGS_DATA, 0, 0);
 
   mpz_get_str(str, base, x);
 

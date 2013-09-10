@@ -112,9 +112,9 @@ bundleArgs(FnSymbol* fn, CallExpr* fcall, BundleArgsFnData &baData) {
   // create the class variable instance and allocate space for it
   VarSymbol *tempc = newTemp(astr("_args_for", fn->name), ctype);
   fcall->insertBefore( new DefExpr( tempc));
-  CallExpr* tempc_alloc = callTaskAlloc(ctype);
+  CallExpr* tempc_alloc = callChplHereAlloc(ctype, newMemDesc("bundled args"));
   fcall->insertBefore(new CallExpr(PRIM_MOVE, tempc, tempc_alloc));
-  
+
   // set the references in the class instance
   int i = 1;
   for_actuals(arg, fcall) {
@@ -250,7 +250,7 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
   if (fn->hasFlag(FLAG_ON))
     ; // the caller will free the actual
   else
-    wrap_fn->insertAtTail(new CallExpr(PRIM_TASK_FREE, wrap_c));
+    wrap_fn->insertAtTail(callChplHereFree(wrap_c));
 
   wrap_fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
@@ -275,7 +275,7 @@ static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol* temp
     fcall->insertBefore(new CallExpr(wrap_fn, tempc));
 
   if (fn->hasFlag(FLAG_ON))
-    fcall->insertAfter(new CallExpr(PRIM_CHPL_FREE, tempc));
+    fcall->insertAfter(callChplHereFree(tempc));
   else
     ; // wrap_fn will free the formal
 
@@ -499,14 +499,12 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
         }
         FnSymbol* fn = toFnSymbol(move->parentSymbol);
         SET_LINENO(var);
-        // These were allocated using the system allocator, so we must use PRIM_CHPL_FREE
-        // (not PRIM_TASK_FREE).
         if (fn && innermostBlock == fn->body)
-          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_CHPL_FREE, move->get(1)->copy()));
+          fn->insertBeforeReturnAfterLabel(callChplHereFree(move->get(1)->copy()));
         else {
           BlockStmt* block = toBlockStmt(innermostBlock);
           INT_ASSERT(block);
-          block->insertAtTailBeforeGoto(new CallExpr(PRIM_CHPL_FREE, move->get(1)->copy()));
+          block->insertAtTailBeforeGoto(callChplHereFree(move->get(1)->copy()));
         }
       }
     }
@@ -757,14 +755,10 @@ makeHeapAllocations() {
         ((useMap.get(var) && useMap.get(var)->n > 0) ||
          (defMap.get(var) && defMap.get(var)->n > 0))) {
       SET_LINENO(var->defPoint);
-      // TODO: Consider whether we should use PRIM_TASK_ALLOC here.
       CallExpr* alloc_call =
-        new CallExpr(PRIM_CHPL_ALLOC, heapType->symbol,
-                     newMemDesc("local heap-converted data"));
-      // TODO: Ensure that this cast is necessary.
-      var->defPoint->getStmtExpr()->insertAfter(
-        new CallExpr(PRIM_MOVE, var,
-                     new CallExpr(PRIM_CAST, heapType->symbol, alloc_call)));
+	callChplHereAlloc(heapType, newMemDesc("local heap-converted data"));
+      var->defPoint->getStmtExpr()->insertAfter(new CallExpr(PRIM_MOVE, var,
+                                                             alloc_call));
       heapAllocatedVars.add(var);
     }
 
@@ -1393,7 +1387,7 @@ insertWideReferences(void) {
   heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_MOVE, tmpBool, new CallExpr(PRIM_EQUAL, tmp, new_IntSymbol(0))));
   BlockStmt* block = new BlockStmt();
   forv_Vec(Symbol, sym, heapVars) {
-    block->insertAtTail(new CallExpr(PRIM_MOVE, sym, new CallExpr(PRIM_CHPL_ALLOC, sym->type->getField("addr")->type->symbol, newMemDesc("global heap-converted data"))));
+    block->insertAtTail(new CallExpr(PRIM_MOVE, sym, callChplHereAlloc(sym->type->getField("addr")->type, newMemDesc("global heap-converted data"))));
   }
   heapAllocateGlobals->insertAtTail(new CondStmt(new SymExpr(tmpBool), block));
   int i = 0;

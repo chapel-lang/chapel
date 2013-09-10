@@ -300,12 +300,7 @@ fixupDestructors() {
             if (isSyncType(fct) &&
                 ((ct->getModule()->modTag==MOD_INTERNAL) ||
                  (ct->getModule()->modTag==MOD_STANDARD)))
-            {
-              // Call the free hook.
-              fn->insertBeforeReturnAfterLabel(
-                new CallExpr(PRIM_CHPL_MEMHOOK_FREE, tmp));
-              fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_TASK_FREE, tmp));
-            }
+              fn->insertBeforeReturnAfterLabel(callChplHereFree(tmp));
           }
         } else if (FnSymbol* autoDestroyFn = autoDestroyMap.get(field->type)) {
           VarSymbol* tmp = newTemp("_field_destructor_tmp_", field->type);
@@ -321,9 +316,7 @@ fixupDestructors() {
 //          fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
 //          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
 //            new CallExpr(PRIM_GET_MEMBER_VALUE, fn->_this, field)));
-//          fn->insertBeforeReturnAfterLabel(
-//            new CallExpr(PRIM_CHPL_MEMHOOK_FREE, tmp));
-//          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_TASK_FREE, tmp));
+//          fn->insertBeforeReturnAfterLabel(callChplHereFree(tmp));
         }
       }
 

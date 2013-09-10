@@ -276,10 +276,6 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
     // call so we don't consider them eligible.
     //
   case PRIM_FREE_TASK_LIST:
-  case PRIM_TASK_ALLOC:
-  case PRIM_TASK_REALLOC:
-  case PRIM_TASK_FREE:
-  case PRIM_CHPL_MEMHOOK_FREE:
   case PRIM_CHPL_ALLOC:
   case PRIM_CHPL_FREE:
   case PRIM_ARRAY_ALLOC:

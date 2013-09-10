@@ -38,7 +38,8 @@ void* chpl_mem_allocMany(size_t number, size_t size,
 }
 
 static ___always_inline
-void* chpl_mem_alloc(size_t size, chpl_mem_descInt_t description, int32_t lineno, chpl_string filename) {
+void* chpl_mem_alloc(size_t size, chpl_mem_descInt_t description,
+                     int32_t lineno, chpl_string filename) {
   return chpl_mem_allocMany(1, size, description, lineno, filename);
 }
 
@@ -55,9 +56,9 @@ void* chpl_mem_allocManyZero(size_t number, size_t size,
 }
 
 static ___always_inline
-void chpl_mem_free(void* memAlloc, int32_t lineno, chpl_string filename) {
-  chpl_memhook_free_pre(memAlloc, lineno, filename);
-  chpl_free(memAlloc);
+void* chpl_mem_calloc(size_t size, chpl_mem_descInt_t description,
+                      int32_t lineno, chpl_string filename) {
+  return chpl_mem_allocManyZero(1, size, description, lineno, filename);
 }
 
 static ___always_inline
@@ -68,9 +69,9 @@ void* chpl_mem_realloc(void* memAlloc, size_t size,
 
   chpl_memhook_realloc_pre(memAlloc, size, description,
                            lineno, filename);
-  if (size == 0)
-  {
-    chpl_mem_free(memAlloc, lineno, filename);
+  if (size == 0) {
+    chpl_memhook_free_pre(memAlloc, lineno, filename);
+    chpl_free(memAlloc);
     return NULL;
   }
   moreMemAlloc = chpl_realloc(memAlloc, size);
@@ -79,48 +80,12 @@ void* chpl_mem_realloc(void* memAlloc, size_t size,
   return moreMemAlloc;
 }
 
-
 static ___always_inline
-void* chpl_tracked_task_alloc(size_t size, chpl_mem_descInt_t description,
-                              int32_t lineno, chpl_string filename)
-{
-  void* memAlloc;
-  chpl_memhook_malloc_pre(1, size, description, lineno, filename);
-  memAlloc = chpl_task_alloc(size);
-  chpl_memhook_malloc_post(memAlloc, 1, size, description, lineno, filename);
-  return memAlloc;
+void chpl_mem_free(void* memAlloc, int32_t lineno, chpl_string filename) {
+  chpl_memhook_free_pre(memAlloc, lineno, filename);
+  chpl_free(memAlloc);
 }
 
-static ___always_inline
-void* chpl_tracked_task_calloc(size_t number, size_t size,
-                               chpl_mem_descInt_t description,
-                               int32_t lineno, chpl_string filename)
-{
-  void* memAlloc;
-  chpl_memhook_malloc_pre(number, size, description, lineno, filename);
-  memAlloc = chpl_task_calloc(number, size);
-  chpl_memhook_malloc_post(memAlloc, number, size, description, lineno, filename);
-  return memAlloc;
-}
-
-static ___always_inline
-void* chpl_tracked_task_realloc(void* ptr, size_t size,
-                               chpl_mem_descInt_t description,
-                                int32_t lineno, chpl_string filename)
-{
-  void* newPtr;
-  chpl_memhook_realloc_pre(ptr, size, description, lineno, filename);
-  newPtr = chpl_task_realloc(ptr , size);
-  chpl_memhook_realloc_post(newPtr, ptr, size, description, lineno, filename);
-  return newPtr;
-}
-
-static ___always_inline
-void chpl_tracked_task_free(void* ptr, int32_t lineno, chpl_string filename)
-{
-  chpl_memhook_free_pre(ptr, lineno, filename);
-  chpl_task_free(ptr);
-}
 
 void chpl_mem_layerInit(void);
 void chpl_mem_layerExit(void);

@@ -198,10 +198,6 @@ void checkPrimitives()
      case PRIM_GET_SERIAL:              // get serial state
      case PRIM_SET_SERIAL:              // set serial state to true or false
      case PRIM_SIZEOF:
-     case PRIM_TASK_ALLOC:              // Task-specific malloc
-     case PRIM_TASK_REALLOC:            // Task-specific realloc
-     case PRIM_TASK_FREE:               // Task-specific free.
-     case PRIM_CHPL_MEMHOOK_FREE:       // The free hook function.
      case PRIM_CHPL_ALLOC:
      case PRIM_CHPL_FREE:               // only for variables on heap?
      case PRIM_INIT_FIELDS:             // initialize fields of a temporary record

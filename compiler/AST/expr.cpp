@@ -4837,39 +4837,6 @@ GenRet CallExpr::codegen() {
       ret = size;
       break;
     }
-    case PRIM_TASK_ALLOC:
-    {
-      ret = codegenCallExpr("chpl_task_alloc", codegenValue(get(1)));
-      break;
-    }
-    case PRIM_TASK_REALLOC:
-    {
-      Expr* ptrExpr = get(1);
-      GenRet ptr = codegenValue(get(1));
-      if (ptrExpr->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
-        ptr = codegenRaddr(ptr);
-      ret = codegenCallExpr("chpl_task_realloc", codegenCastToVoidStar(ptr), codegenValue(get(2)));
-      break;
-    }
-    case PRIM_TASK_FREE:
-    {
-      Expr* ptrExpr = get(1);
-      GenRet ptr = codegenValue(get(1));
-      if (ptrExpr->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
-        ptr = codegenRaddr(ptr);
-      codegenCall("chpl_task_free", codegenCastToVoidStar(ptr));
-      break;
-    }
-    case PRIM_CHPL_MEMHOOK_FREE:
-    { // void chpl_memhook_free_pre(void* ptr, int lineno, string filename);
-      Expr* ptrExpr = get(1);
-      GenRet ptr = codegenValue(get(1));
-      if (ptrExpr->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
-        ptr = codegenRaddr(ptr);
-      codegenCall("chpl_memhook_free_pre", codegenCastToVoidStar(ptr),
-                  get(2), get(3));
-      break;
-    }
     case PRIM_CHPL_ALLOC:
     { // (resultType*)chpl_mem_alloc(sizeof(x), md, lineno, filenam);
       GenRet size;
@@ -5626,20 +5593,24 @@ get_constant(Expr *e) {
 }
 
 
-// This builds an allocation of enough space to hold a variable of the given type.
-// It is effectively the body of chpl_here_alloc() instantiated with the
-// desired return type.
-// (Which is unfortunate, because it means we have duplicate implementations
-// of the same idiom.  We should choose one or the other.)
-// The memory tracking hooks are not called, because the variables created here
-// are just used internally to pass variables to the bodies of parallel constructs.
-// (But they can be added easily if desire/needed.)
-CallExpr* callTaskAlloc(Type* t)
-{
-  CallExpr* nbytes = new CallExpr(PRIM_SIZEOF, t->symbol);
-  CallExpr* alloc =  new CallExpr(PRIM_TASK_ALLOC, nbytes);
-  CallExpr* cast_alloc = new CallExpr(PRIM_CAST, t->symbol, alloc);
-  return cast_alloc;
+// This builds an allocation of enough space to hold a variable of the
+// given type.
+//
+// For now we produce a PRIM_CHPL_ALLOC here.  Eventually it would be
+// nice to directly produce a call to chpl_here_alloc().  Currently we
+// can't do that because chpl_here_alloc() is generic in the types of
+// its first argument and its return, and some of the calls to this
+// function occur after resolution.  In addition, in several places in
+// the compiler we look specifically for PRIM_CHPL_ALLOC in the AST,
+// and we would presumably need to be able to find the equivalent AST
+// nodes even if we switched to emitting direct calls.
+CallExpr* callChplHereAlloc(Type* t, VarSymbol* md) {
+  return new CallExpr(PRIM_CHPL_ALLOC, t->symbol, md);
+}
+
+// Similar to callChplHereAlloc(), above.
+CallExpr* callChplHereFree(BaseAST* p) {
+  return new CallExpr(PRIM_CHPL_FREE, p);
 }
 
 

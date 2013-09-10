@@ -203,7 +203,6 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
             call->isPrimitive(PRIM_GET_MEMBER) ||
             call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
             call->isPrimitive(PRIM_SETCID) ||
-            call->isPrimitive(PRIM_TASK_FREE) ||
             call->isPrimitive(PRIM_CHPL_FREE) ||
             (call->isResolved() &&
              call->isResolved()->hasFlag(FLAG_ALLOCATOR))))
@@ -254,7 +253,6 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
         call->replace(use);
         addUse(useMap, use);
       } else if (call->isPrimitive(PRIM_SETCID) ||
-                 call->isPrimitive(PRIM_TASK_FREE) ||
                  call->isPrimitive(PRIM_CHPL_FREE)) {
         //
         // we can remove the setting of the cid because it is never

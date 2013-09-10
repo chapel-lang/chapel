@@ -122,7 +122,7 @@ void chpl_check_nil(void* ptr, int32_t lineno, const char* filename)
 
 static ___always_inline
 void* chpl_array_alloc(size_t nmemb, size_t eltSize, int32_t lineno, const char* filename) {
-  return chpl_tracked_task_calloc(nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS, lineno, filename);
+  return chpl_mem_allocManyZero(nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS, lineno, filename);
 }
 
 static ___always_inline
@@ -135,7 +135,7 @@ void* chpl_wide_array_alloc(int32_t dstNode, size_t nmemb, size_t eltSize, int32
 static ___always_inline
 void chpl_array_free(void* x, int32_t lineno, const char* filename)
 {
-  chpl_tracked_task_free(x, lineno, filename);
+  chpl_mem_free(x, lineno, filename);
 }
 
 static ___always_inline

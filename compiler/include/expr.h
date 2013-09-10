@@ -214,7 +214,8 @@ inline CallExpr* here_alloc(Symbol* dest)
                       newMemDesc(dest->typeInfo()->symbol->name));
 }
 
-CallExpr* callTaskAlloc(Type* t);
+CallExpr* callChplHereAlloc(Type* t, VarSymbol* md);
+CallExpr* callChplHereFree(BaseAST* p);
 
 #define for_exprs_postorder(e, expr)                            \
   for (Expr* e = getFirstExpr(expr); e; e = getNextExpr(e))

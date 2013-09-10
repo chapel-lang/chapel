@@ -130,8 +130,7 @@ chpl_string_widen(chpl____wide_chpl_string* x, chpl_string from, int32_t lineno,
 {
   size_t len = strlen(from) + 1;
   x->locale = chpl_gen_getLocaleID();
-  x->addr = chpl_tracked_task_calloc(len, sizeof(char),
-                               CHPL_RT_MD_SET_WIDE_STRING, lineno, filename);
+  x->addr = chpl_mem_calloc(len, CHPL_RT_MD_SET_WIDE_STRING, lineno, filename);
   strncpy((char*)x->addr, from, len);
   if (*((len-1)+(char*)x->addr) != '\0')
     chpl_internal_error("String missing terminating NUL.");
@@ -143,8 +142,7 @@ void
 chpl_comm_wide_get_string(chpl_string* local, struct chpl_chpl____wide_chpl_string_s* x, int32_t tid, int32_t lineno, chpl_string filename)
 {
   char* chpl_macro_tmp =
-      chpl_tracked_task_calloc(x->size, sizeof(char),
-                         CHPL_RT_MD_GET_WIDE_STRING, -1, "<internal>");
+      chpl_mem_calloc(x->size, CHPL_RT_MD_GET_WIDE_STRING, -1, "<internal>");
   if (chpl_nodeID == chpl_rt_nodeFromLocaleID(x->locale))
     memcpy(chpl_macro_tmp, x->addr, x->size);
   else
@@ -168,7 +166,7 @@ static ___always_inline void*
 chpltypes_malloc(size_t size, chpl_mem_descInt_t description,
                  int32_t lineno, chpl_string filename) {
 #ifndef LAUNCHER
-  return chpl_tracked_task_alloc(size, description, lineno, filename);
+  return chpl_mem_alloc(size, description, lineno, filename);
 #else
   return malloc(size);
 #endif

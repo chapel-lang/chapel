@@ -183,18 +183,6 @@ void chpl_task_sleep(int);
 chpl_task_private_data_t* chpl_task_getPrivateData(void);
 // TODO: Do we also need a createPrivateData function?
 
-//////////////////////////////////////////////////////////////////////////
-// Locale-aware memory allocator interface (for code generation).
-//
-static ___always_inline void* chpl_task_alloc(size_t nbytes)
-{ return (chpl_task_getPrivateData()->alloc)(nbytes); }
-static ___always_inline void* chpl_task_calloc(size_t count, size_t size)
-{ return (chpl_task_getPrivateData()->calloc)(count, size); }
-static ___always_inline void* chpl_task_realloc(void* ptr, size_t nbytes)
-{ return (chpl_task_getPrivateData()->realloc)(ptr, nbytes); }
-static ___always_inline void chpl_task_free(void* ptr)
-{ (chpl_task_getPrivateData()->free)(ptr); }
-
 
 //
 // Get and set dynamic serial state.
