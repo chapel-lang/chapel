@@ -221,22 +221,6 @@ Expr* buildDotExpr(BaseAST* base, const char* member) {
   // The following optimization was added to avoid calling
   // chpl_localeID_to_locale when all we end up doing is extracting
   // the locale id, thus: OPTIMIZATION:
-  // chpl_localeID_to_locale(_get_locale_id(x)).id ==> _get_locale_id(x)
- 
-  // This broke when realms were removed and uid was renamed as id.
-  // It might be better coding practice to label very special module code
-  // (i.e. types, fields, values known to the compiler) using pragmas. <hilde>
-  // TODO: We shouldn't have optimizations in the parser.
-  // Now "id" returns just the node ID portion of a locale ID.
-  if (!strcmp("id", member))
-    if (CallExpr* intToLocale = toCallExpr(base))
-      if (intToLocale->isNamed("chpl_localeID_to_locale"))
-        if (CallExpr* getLocale = toCallExpr(intToLocale->get(1)))
-          if (getLocale->isPrimitive(PRIM_WIDE_GET_LOCALE))
-            return new CallExpr(PRIM_WIDE_GET_NODE, getLocale->get(1)->remove());
-  // The following optimization was added to avoid calling
-  // chpl_localeID_to_locale when all we end up doing is extracting
-  // the locale id, thus: OPTIMIZATION:
   // chpl_localeID_to_locale(_get_locale_id(x)).id ==>
   // _get_locale_id(x)
   // TODO: We shouldn't have optimizations in the parser <hilde>
