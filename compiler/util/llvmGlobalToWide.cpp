@@ -1749,9 +1749,9 @@ void populateFunctionsForGlobalToWideType(Module *module, GlobalToWideInfo* info
 {
   llvm::Type *widePtrTy = NULL;
 
-  GlobalPointerInfo & r = info->gTypes[globalPtrTy];
-
   widePtrTy = convertTypeGlobalToWide(module, info, globalPtrTy);
+
+  GlobalPointerInfo & r = info->gTypes[globalPtrTy];
 
   if( ! r.globalToWideFn ) {
     llvm::Type* argTy[1];
