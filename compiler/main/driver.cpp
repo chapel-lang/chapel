@@ -61,6 +61,8 @@ const char* CHPL_AUX_FILESYS = NULL;
 
 bool widePointersStruct;
 
+static char makeArgument[256] = "";
+
 int fdump_html = 0;
 bool fdump_html_incude_system_modules = true;
 static char libraryFilename[FILENAME_MAX] = "";
@@ -426,6 +428,12 @@ handleLibPath(ArgumentState* arg_state, char* arg_unused) {
   addLibInfo(astr("-L", libraryFilename));
 }
 
+static void 
+handleMake(ArgumentState* arg_state, char* arg_unused) {
+  CHPL_MAKE = makeArgument;
+}
+
+
 static void handleIncDir(ArgumentState* arg_state, char* arg_unused) {
   addIncInfo(incFilename);
 }
@@ -659,7 +667,7 @@ static ArgumentDescription arg_desc[] = {
  {"ldflags", ' ', "<flags>", "Back-end C linker flags", "S256", ldflags, "CHPL_LD_FLAGS", NULL},
  {"lib-linkage", 'l', "<library>", "C library linkage", "P", libraryFilename, "CHPL_LIB_NAME", handleLibrary},
  {"lib-search-path", 'L', "<directory>", "C library search path", "P", libraryFilename, "CHPL_LIB_PATH", handleLibPath},
- {"make", ' ', "<make utility>", "Make utility for generated code", "S256", &CHPL_MAKE, "CHPL_MAKE", NULL},
+ {"make", ' ', "<make utility>", "Make utility for generated code", "S256", makeArgument, "CHPL_MAKE", handleMake},
  {"optimize", 'O', NULL, "[Don't] Optimize generated C code", "N", &optimizeCCode, "CHPL_OPTIMIZE", NULL},
  {"output", 'o', "<filename>", "Name output executable", "P", executableFilename, "CHPL_EXE_NAME", NULL},
  {"static", ' ', NULL, "Generate a statically linked binary", "F", &fLinkStyle, NULL, setStaticLink},
