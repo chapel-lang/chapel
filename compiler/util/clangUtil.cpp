@@ -251,6 +251,7 @@ VarSymbol *handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
   size_t right_parens = 0;
   ssize_t ntokens = macro->getNumTokens();
   ssize_t t_idx;
+  bool negate = false;
   if( ntokens > 0 ) {
       MacroInfo::tokens_iterator ti = macro->tokens_end() - 1;
       for( t_idx = ntokens - 1; t_idx >= 0; t_idx-- ) {
@@ -266,7 +267,10 @@ VarSymbol *handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
     for( t_idx = 0; t_idx < ntokens; t_idx++ ) {
       tok = *ti;
       if(tok.getKind() == tok::l_paren) left_parens++;
-      else break;
+      else if(tok.getKind() == tok::minus) {
+        negate = true;
+        ntokens--;
+      } else break;
       ++ti;
     }
   }
@@ -281,7 +285,10 @@ VarSymbol *handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
 
   switch(tok.getKind()) {
     case tok::numeric_constant: {
-      std::string numString (tok.getLiteralData(), tok.getLength());
+      std::string numString;
+      if( negate ) numString.append("-");
+      numString.append(tok.getLiteralData(), tok.getLength());
+
       if( debugPrint) printf("num = %s\n", numString.c_str());
 
       if(numString.find('.') == std::string::npos) {
