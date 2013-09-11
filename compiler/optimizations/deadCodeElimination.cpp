@@ -7,11 +7,14 @@
 #include "stmt.h"
 #include "view.h"
 
+#include <set>
+#include <queue>
+
 
 //
 // Static function declarations.
 //
-static bool deadBlockElimination(FnSymbol* fn);
+static void deadBlockElimination(FnSymbol* fn);
 // static void deadGotoElimination(FnSymbol* fn);
 
 // Static variables.
@@ -175,10 +178,7 @@ void deadCodeElimination() {
   if (!fNoDeadCodeElimination) {
     deadBlockCount = 0;
     forv_Vec(FnSymbol, fn, gFnSymbols) {
-      bool change = false;
-      do {
-        change = deadBlockElimination(fn);
-      } while (change);
+      deadBlockElimination(fn);
 //      deadGotoElimination(fn);
       deadCodeElimination(fn);
       deadVariableElimination(fn);
@@ -191,61 +191,73 @@ void deadCodeElimination() {
 }
 
 // Look for and remove unreachable blocks.
-static bool deadBlockElimination(FnSymbol* fn)
+// Muchnick says we can enumerate the unreachable blocks first and then just
+// remove them.  We only need to do this once, because removal of an
+// unreachable block cannot possibly make any reachable block unreachable.
+static void deadBlockElimination(FnSymbol* fn)
 {
-  // We need the basic block information to be right here.
+  // We need the basic block information to be correct, so recompute it.
   buildBasicBlocks(fn);
 
-  bool change = false;
-  for_vector(BasicBlock, bb, *fn->basicBlocks)
+  // Find the reachable basic blocks within this function.
+  std::set<BasicBlock*> reachable;
+
+  // We set up a work queue to perform a BFS on reachable blocks, and seed it
+  // with the first block in the function.
+  std::queue<BasicBlock*> work_queue;
+  work_queue.push((*fn->basicBlocks)[0]);
+
+  // Then we iterate until there are no more blocks to visit.
+  while (!work_queue.empty())
   {
-    // Ignore the first block.
-    if (bb == (*fn->basicBlocks)[0])
+    // Fetch and remove the next block.
+    BasicBlock* bb = work_queue.front(); 
+    work_queue.pop();
+
+    // Ignore it if we've already seen it.
+    if (reachable.count(bb))
       continue;
 
-    // If this block has no predecessors, then it is dead.
-    // If it is its own only predecessor (e.g. a loop) it is also dead.
-    if (bb->ins.size() == 0 ||
-        (bb->ins.size() == 1 && bb->ins[0] == bb))
-    {
-      if (bb->exprs.size() > 0)
-      {
-        change = true;
-        ++deadBlockCount;
-
-        // Remove all of its expressions.
-        for_vector(Expr, expr, bb->exprs)
-        {
-          if (! expr->parentExpr)
-            continue;   // This node is no longer in the tree.
-
-          CondStmt* cond = toCondStmt(expr->parentExpr);
-          if (cond && cond->condExpr == expr)
-            // If expr is the condition expression in an if statement,
-            // then remove the entire if.
-            cond->remove();
-          else
-            expr->remove();
-        }
-      }
-
-      // Get more out of one pass by removing this BB from the predecessor
-      // lists of its successors.
-      for_vector(BasicBlock, succ, bb->outs) {
-        for(std::vector<BasicBlock*>::iterator it = succ->ins.begin();
-            it != succ->ins.end(); ++it) {
-          if (*it == bb) {
-            succ->ins.erase(it);
-            break;
-          }
-        }
-      }
-      // We leave the "dead" bb structure in place.
-      // The next time we construct basic blocks for this fn, it should be gone.
-    }
+    // Otherwise, mark it as reachable, and append all of its successors to the
+    // work queue.
+    reachable.insert(bb);
+    for_vector(BasicBlock, out, bb->outs)
+      work_queue.push(out);
   }
 
-  return change;
+  // Now we simply visit all the blocks, deleting all those that are not
+  // rechable.
+  for_vector(BasicBlock, bb, *fn->basicBlocks)
+  {
+    if (reachable.count(bb))
+      continue;
+
+    ++deadBlockCount;
+
+    // Remove all of its expressions.
+    for_vector(Expr, expr, bb->exprs)
+    {
+      if (! expr->parentExpr)
+        continue;   // This node is no longer in the tree.
+
+      // Do not remove def expressions (for now)
+      // In some cases (associated with iterator code), defs appear in dead
+      // blocks but are used in later blocks, so removing the defs results
+      // in a verify error.
+      // TODO: Perhaps this reformulation of unreachable block removal does a better
+      // job and those blocks are now removed as well.  If so, this IF can be removed.
+      if (toDefExpr(expr))
+        continue;
+
+      CondStmt* cond = toCondStmt(expr->parentExpr);
+      if (cond && cond->condExpr == expr)
+        // If expr is the condition expression in an if statement,
+        // then remove the entire if.
+        cond->remove();
+      else
+        expr->remove();
+    }
+  }
 }
 
 //
