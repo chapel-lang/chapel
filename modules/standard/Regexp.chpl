@@ -38,7 +38,7 @@ extern record qio_regexp_string_piece_t {
 extern proc qio_regexp_string_piece_isnull(ref sp:qio_regexp_string_piece_t):bool;
 
 extern proc qio_regexp_match(ref re:qio_regexp_t, text:string, textlen:int(64), startpos:int(64), endpos:int(64), anchor:c_int, submatch:_ddata(qio_regexp_string_piece_t), nsubmatch:int(64)):bool;
-extern proc qio_regexp_replace(ref re:qio_regexp_t, repl:string, repllen:int(64), text:string, textlen:int(64), startpos:int(64), endpos:int(64), global:bool, ref replaced):int(64);
+extern proc qio_regexp_replace(ref re:qio_regexp_t, repl:string, repllen:int(64), text:string, textlen:int(64), startpos:int(64), endpos:int(64), global:bool, ref replaced:string, ref replaced_len:int(64)):int(64);
 
 // These two could be folded together if we had a way
 // to check if a default argument was supplied
@@ -453,11 +453,14 @@ record regexp {
     }
     var replaced:string;
     var nreplaced:int; 
+    var replaced_len:int(64); 
     if t == stringPart {
-      nreplaced = qio_regexp_replace(_regexp, repl, repl.size, text.from, text.from.size, pos, endpos, global, replaced);
+      nreplaced = qio_regexp_replace(_regexp, repl, repl.size, text.from, text.from.size, pos, endpos, global, replaced, replaced_len);
     } else {
-      nreplaced = qio_regexp_replace(_regexp, repl, repl.size, text, text.size, pos, endpos, global, replaced);
+      nreplaced = qio_regexp_replace(_regexp, repl, repl.size, text, text.size, pos, endpos, global, replaced, replaced_len);
     }
+    // See IO.chpl Note 1
+    __primitive("string_normalize", replaced, replaced_len+1);
     return (replaced, nreplaced);
   }
   proc sub(repl:string, text: ?t, global = true )

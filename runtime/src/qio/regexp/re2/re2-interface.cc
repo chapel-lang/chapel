@@ -286,7 +286,7 @@ qio_bool qio_regexp_match(qio_regexp_t* regexp, const char* text, int64_t text_l
   return ret;
 }
 
-int64_t qio_regexp_replace(qio_regexp_t* regexp, const char* repl, int64_t repl_len, const char* str, int64_t str_len, int64_t startpos, int64_t endpos, qio_bool global, const char** str_out)
+int64_t qio_regexp_replace(qio_regexp_t* regexp, const char* repl, int64_t repl_len, const char* str, int64_t str_len, int64_t startpos, int64_t endpos, qio_bool global, const char** str_out, int64_t* len_out)
 {
   // This could make fewer copies of everything...
   // ... but it will work for the moment and this is the
@@ -295,6 +295,7 @@ int64_t qio_regexp_replace(qio_regexp_t* regexp, const char* repl, int64_t repl_
   std::string s(str, str_len);
   RE2* re = (RE2*) regexp->regexp;
   int64_t ret = 0;
+  char* output = NULL;
   if( global ) {
     ret = RE2::GlobalReplace(&s, *re, rewrite);
   } else {
@@ -304,7 +305,11 @@ int64_t qio_regexp_replace(qio_regexp_t* regexp, const char* repl, int64_t repl_
       ret = 0;
     }
   }
-  *str_out = qio_strdup(s.c_str());
+  output = (char*) qio_malloc(s.length()+1);
+  memcpy(output, s.data(), s.length());
+  output[s.length()] = '\0';
+  *str_out = output;
+  *len_out = s.length();
   return ret;
 }
 

@@ -103,7 +103,7 @@ qio_regexp_string_piece_isnull(qio_regexp_string_piece_t* sp)
 // Returns true if we matched.
 qio_bool qio_regexp_match(qio_regexp_t* regexp, const char* str, int64_t str_len, int64_t startpos, int64_t endpos, int anchor, qio_regexp_string_piece_t* submatch, int64_t nsubmatch);
 
-int64_t qio_regexp_replace(qio_regexp_t* regexp, const char* repl, int64_t repl_len, const char* str, int64_t str_len, int64_t startpos, int64_t endpos, qio_bool global, const char** str_out);
+int64_t qio_regexp_replace(qio_regexp_t* regexp, const char* repl, int64_t repl_len, const char* str, int64_t str_len, int64_t startpos, int64_t endpos, qio_bool global, const char** str_out, int64_t* len_out);
 
 
 // Returns ENOERR if we matched, EFORMAT if we did not, or an IO error.

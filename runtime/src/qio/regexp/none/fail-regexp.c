@@ -59,7 +59,7 @@ bool qio_regexp_match(qio_regexp_t* regexp, const char* text, int64_t str_len, i
   return false;
 }
 
-int64_t qio_regexp_replace(qio_regexp_t* regexp, const char* repl, int64_t repl_len, const char* str, int64_t str_len, int64_t startpos, int64_t endpos, qio_bool global, const char** str_out)
+int64_t qio_regexp_replace(qio_regexp_t* regexp, const char* repl, int64_t repl_len, const char* str, int64_t str_len, int64_t startpos, int64_t endpos, qio_bool global, const char** str_out, int64_t* len_out)
 {
   chpl_internal_error("No Regexp Support");
   return 0;
