@@ -756,7 +756,7 @@ makeHeapAllocations() {
          (defMap.get(var) && defMap.get(var)->n > 0))) {
       SET_LINENO(var->defPoint);
       CallExpr* alloc_call =
-	callChplHereAlloc(heapType, newMemDesc("local heap-converted data"));
+        callChplHereAlloc(heapType, newMemDesc("local heap-converted data"));
       var->defPoint->getStmtExpr()->insertAfter(new CallExpr(PRIM_MOVE, var,
                                                              alloc_call));
       heapAllocatedVars.add(var);
