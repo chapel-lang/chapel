@@ -77,8 +77,8 @@ typedef int64_t c_localeid_t;
 
 // These are special values that mean "any sublocale" and "the current
 // sublocale".
-#define c_sublocid_any  ((c_sublocid_t) -1)
-#define c_sublocid_curr ((c_sublocid_t) -2)
+#define c_sublocid_any  (-1)
+#define c_sublocid_curr (-2)
 
 #ifndef LAUNCHER
 
