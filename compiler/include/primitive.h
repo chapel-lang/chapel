@@ -178,7 +178,6 @@ enum PrimitiveTag {
   PRIM_WIDE_GET_NODE,           // Get just the node portion of a wide pointer.
   PRIM_WIDE_GET_ADDR,           // Get just the address portion of a wide pointer.
 
-  PRIM_IS_HERE,                 // Returns true if the arg matches the current locale ID.
   PRIM_ON_LOCALE_NUM,           // specify a particular localeID for an on clause.
 
   PRIM_ALLOC_GVR,               // allocate space for global vars registry

@@ -43,9 +43,3 @@ chpl_localeID_t chpl_gen_getLocaleID(void)
 {
   return chpl_rt_buildLocaleID(chpl_nodeID, chpl_task_getSubLoc());
 }
-
-static ___always_inline
-chpl_bool chpl_is_here(chpl_localeID_t locale)
-{
-  return id_pub2rt(locale) == chpl_task_getLocaleID();
-}

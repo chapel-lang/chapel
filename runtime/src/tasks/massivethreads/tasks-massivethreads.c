@@ -29,6 +29,10 @@
 #include "myth.h"
 
 typedef struct{
+  chpl_bool serial_state;
+}chpl_task_private_data_t;
+
+typedef struct{
   int flag;
   chpl_task_private_data_t chpl_data;
 }thread_local_data;
@@ -38,46 +42,36 @@ static int worker_in_cs_beforeinit=0;
 static thread_local_data* s_tld;
 static const chpl_task_private_data_t s_def_chpl_data=
              { .serial_state = false,
-               .localeID     = 0,
-               .here         = NULL,
-               .alloc        = chpl_malloc,
-               .calloc       = chpl_calloc,
-               .realloc      = chpl_realloc,
-               .free         = chpl_free
              };
 static const uint64_t c_def_stack_size = 32 * 1024 * sizeof(size_t);
 
-static inline chpl_bool GET_SERIAL_STATE(void)
+static inline chpl_task_private_data_t* getTaskPrivateData(void)
 {
         if (tasking_layer_active){
         int rank=myth_get_worker_num();
-        return s_tld[rank].chpl_data.serial_state;
+        return &s_tld[rank].chpl_data;
         }
-        return s_def_chpl_data.serial_state;
+        return (chpl_task_private_data_t*) &s_def_chpl_data;
+}
+
+static inline chpl_bool GET_SERIAL_STATE(void)
+{
+        return getTaskPrivateData()->serial_state;
 }
 static inline void SET_SERIAL_STATE(chpl_bool newstate)
 {
         if (tasking_layer_active){
-        int rank=myth_get_worker_num();
-        s_tld[rank].chpl_data.serial_state=newstate;
+        getTaskPrivateData()->serial_state = newstate;
         }
 }
 static inline void GET_STATE(chpl_task_private_data_t* chpl_data_)
 {
-        if (tasking_layer_active){
-        int rank=myth_get_worker_num();
-        thread_local_data* tld = &s_tld[rank];
-        *chpl_data_ = tld->chpl_data;
-        } else {
-        *chpl_data_ = s_def_chpl_data;
-        }
+        *chpl_data_ = *getTaskPrivateData();
 }
 static inline void SET_STATE(chpl_task_private_data_t newdata)
 {
         if (tasking_layer_active){
-        int rank=myth_get_worker_num();
-        thread_local_data* tld = &s_tld[rank];
-        tld->chpl_data=newdata;
+        *getTaskPrivateData() = newdata;
         }
 }
 #define SAVE_STATE() chpl_task_private_data_t saved_chpl_data;  \
@@ -355,7 +349,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid,
                 ns_args=chpl_mem_alloc(sizeof(ns_task_wrapper_args), 0, 0, "");
                 ns_args->a=arg;
                 ns_args->fn=chpl_ftable[fid];
-                ns_args->chpl_data=*chpl_task_getPrivateData();
+                ns_args->chpl_data=*getTaskPrivateData();
                 th=myth_create_ex(ns_task_wrapper,ns_args,&opt);
         }
         else{
@@ -405,7 +399,7 @@ void chpl_task_startMovedTask(chpl_fn_p fp,
                 ns_args=chpl_mem_alloc(sizeof(ns_task_wrapper_args), 0, 0, "");
                 ns_args->a=a;
                 ns_args->fn=fp;
-                ns_args->chpl_data=*chpl_task_getPrivateData();
+                ns_args->chpl_data=*getTaskPrivateData();
                 ns_args->chpl_data.serial_state=serial_state;
                 th=myth_create_ex(ns_task_wrapper,ns_args,&opt);
         }
@@ -448,49 +442,16 @@ void chpl_task_sleep(int secs) {
         sleep(secs);
 }
 
-inline chpl_task_private_data_t* chpl_task_getPrivateData(void)
-{
-        if (tasking_layer_active){
-        int rank=myth_get_worker_num();
-        return &s_tld[rank].chpl_data;
-        }
-        return (chpl_task_private_data_t*) &s_def_chpl_data;
-}
-
 chpl_bool chpl_task_getSerial(void)
 {
         //get dynamic serial state
-        return chpl_task_getPrivateData()->serial_state;
+        return getTaskPrivateData()->serial_state;
 }
 
 void chpl_task_setSerial(chpl_bool new_state)
 {
         //set dynamic serial state
-        chpl_task_getPrivateData()->serial_state = new_state;
-}
-
-c_localeid_t chpl_task_getLocaleID(void)
-{
-        //get dynamic locale ID
-        return chpl_task_getPrivateData()->localeID;
-}
-
-void chpl_task_setLocaleID(c_localeid_t new_localeID)
-{
-        //set dynamic locale ID
-        chpl_task_getPrivateData()->localeID = new_localeID;
-}
-
-void* chpl_task_getHere(void)
-{
-        //get dynamic "here" pointer
-        return chpl_task_getPrivateData()->here;
-}
-
-void chpl_task_setHere(void* new_here)
-{
-        //set dynamic "here" pointer
-        chpl_task_getPrivateData()->here = new_here;
+        getTaskPrivateData()->serial_state = new_state;
 }
 
 c_sublocid_t chpl_task_getNumSubLocales(void)

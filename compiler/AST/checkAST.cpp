@@ -254,7 +254,6 @@ void checkPrimitives()
      case PRIM_WIDE_GET_LOCALE:         // Returns the "locale" portion of a wide pointer.
      case PRIM_WIDE_GET_NODE:           // Get just the node portion of a wide pointer.
      case PRIM_WIDE_GET_ADDR:           // Get just the address portion of a wide pointer.
-     case PRIM_IS_HERE:                 // Returns true if the arg matches the current locale ID.
      case PRIM_ON_LOCALE_NUM:           // specify a particular localeID for an on clause.
      case PRIM_ALLOC_GVR:               // allocate space for global vars registry
      case PRIM_HEAP_REGISTER_GLOBAL_VAR:

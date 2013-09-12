@@ -10,7 +10,7 @@ libqthread_chpl_la_SOURCES = \
 	interfaces/chapel/tasks-qthreads.c \
 	envariables.c
 
-chapel_rt_includes = -I@CHPL_HOME@/runtime/include/localeModels/$(CHPL_MAKE_LOCALE_MODEL) -I@CHPL_HOME@/runtime/include/localeModels -I@CHPL_HOME@/runtime/include/comm -I@CHPL_HOME@/runtime/include -I@CHPL_HOME@/runtime/include/mem/$(CHPL_MAKE_MEM)
+chapel_rt_includes = -I@CHPL_HOME@/runtime/include/localeModels/$(CHPL_MAKE_LOCALE_MODEL) -I@CHPL_HOME@/runtime/include/localeModels -I@CHPL_HOME@/runtime/include/comm -I@CHPL_HOME@/runtime/include
 
 if COMPILE_MULTINODE
 libqthread_chpl_la_SOURCES += \

@@ -80,7 +80,6 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
 
   case PRIM_BLOCK_LOCAL:
 
-  case PRIM_IS_HERE:
   case PRIM_ON_LOCALE_NUM:
   case PRIM_GET_SERIAL:
   case PRIM_SET_SERIAL:

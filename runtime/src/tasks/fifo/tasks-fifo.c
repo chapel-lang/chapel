@@ -31,6 +31,10 @@
 //
 typedef struct task_pool_struct* task_pool_p;
 
+typedef struct {
+  chpl_bool serial_state;  // true: serialize execution
+} task_private_data_t;
+
 typedef struct task_pool_struct {
   chpl_taskID_t    id;           // task identifier
   chpl_fn_p        fun;          // function to call for task
@@ -39,7 +43,7 @@ typedef struct task_pool_struct {
   chpl_task_list_p ltask;        // points to the task list entry, if there is one
   chpl_string      filename;
   int              lineno;
-  chpl_task_private_data_t chpl_data;
+  task_private_data_t chpl_data;
   task_pool_p      next;
   task_pool_p      prev;
 } task_pool_t;
@@ -275,13 +279,7 @@ void chpl_task_init(void) {
     tp->lockRprt            = NULL;
 
     // Set up task-private data for locale (architectural) support.
-    tp->ptask->chpl_data.localeID       = 0;
-    tp->ptask->chpl_data.here           = NULL;
-    tp->ptask->chpl_data.serial_state   = true;     // Set to false in chpl_task_callMain().
-    tp->ptask->chpl_data.alloc          = chpl_malloc;
-    tp->ptask->chpl_data.calloc         = chpl_calloc;
-    tp->ptask->chpl_data.realloc        = chpl_realloc;
-    tp->ptask->chpl_data.free           = chpl_free;
+    tp->ptask->chpl_data.serial_state = true;     // Set to false in chpl_task_callMain().
 
     chpl_thread_setPrivateData(tp);
   }
@@ -354,31 +352,8 @@ static void comm_task_wrapper(void* arg) {
   tp->ptask->next         = NULL;
 
   //
-  // The comm (polling) task shouldn't need any of this information,
-  // really.
+  // The comm (polling) task shouldn't really need this information.
   tp->ptask->chpl_data.serial_state = true;
-  tp->ptask->chpl_data.localeID     = 0;
-  tp->ptask->chpl_data.here         = NULL;
-  tp->ptask->chpl_data.alloc        = NULL;
-  tp->ptask->chpl_data.calloc       = NULL;
-  tp->ptask->chpl_data.realloc      = NULL;
-  tp->ptask->chpl_data.free         = NULL;
-
-  //
-  // TODO: (This is a HACK.)  Set the allocator function pointers so
-  // that they refer to the system allocator implementation layer.  The
-  // comm task doesn't actually need these itself, but they will be
-  // inherited from the comm task by any "on" body tasks queued by it.
-  // Since we do not currently (as of 5/1/13) do anything in such "on"
-  // bodies to set the allocator function pointers to the proper thing
-  // for the target locale before attempting any allocations, if we
-  // leave them NULL here they will be NULL in the "on" bodies, and all
-  // attempts to call through them will segfault.
-  //
-  tp->ptask->chpl_data.alloc   = chpl_malloc;
-  tp->ptask->chpl_data.calloc  = chpl_calloc;
-  tp->ptask->chpl_data.realloc = chpl_realloc;
-  tp->ptask->chpl_data.free    = chpl_free;
 
   tp->lockRprt = NULL;
 
@@ -720,61 +695,12 @@ void chpl_task_sleep(int secs) {
   sleep(secs);
 }
 
-chpl_task_private_data_t* chpl_task_getPrivateData(void)
-{
-  return &(get_thread_private_data()->ptask->chpl_data);
-}
-
 chpl_bool chpl_task_getSerial(void) {
-  return chpl_task_getPrivateData()->serial_state;
+  return get_current_ptask()->chpl_data.serial_state;
 }
 
 void chpl_task_setSerial(chpl_bool state) {
-  chpl_task_getPrivateData()->serial_state = state;
-}
-
-void* chpl_task_getHere(void) {
-  thread_private_data_t* tp;
-
-  // Quick exit if we have no threads yet.
-  if (!initialized)
-    return 0;
-
-  tp = (thread_private_data_t*) chpl_thread_getPrivateData();   // May be null.
-  // If the thread has no private data, that must mean that it is the root thread
-  // [for the process running our image] on the current node.
-  // Moving to a sublocale will *always* entail launching a new thread, so there will be
-  // thread-private storage available if the sublocale wants to be anything but zero.
-  if (tp == 0) 
-    return 0;
-
-  return tp->ptask->chpl_data.here;
-}
-
-void chpl_task_setHere(void* new_here) {
-  chpl_task_getPrivateData()->here = new_here;
-}
-
-c_localeid_t chpl_task_getLocaleID(void) {
-  thread_private_data_t* tp;
-
-  // Quick exit if we have no threads yet.
-  if (!initialized)
-    return 0;
-
-  tp = (thread_private_data_t*) chpl_thread_getPrivateData();   // May be null.
-  // If the thread has no private data, that must mean that it is the root thread
-  // [for the process running our image] on the current node.
-  // Moving to a sublocale will *always* entail launching a new thread, so there will be
-  // thread-private storage available if the sublocale wants to be anything but zero.
-  if (tp == 0) 
-    return 0;
-
-  return tp->ptask->chpl_data.localeID;
-}
-
-void chpl_task_setLocaleID(c_localeid_t new_localeID) {
-  chpl_task_getPrivateData()->localeID = new_localeID;
+  get_current_ptask()->chpl_data.serial_state = state;
 }
 
 c_sublocid_t chpl_task_getNumSubLocales(void) {
@@ -1350,9 +1276,6 @@ static task_pool_p add_to_task_pool(chpl_fn_p fp,
   ptask->ltask        = ltask;
   ptask->begun        = false;
 
-  // Inherit all locale-specific data except serial state from the
-  // parent task.
-  ptask->chpl_data = *chpl_task_getPrivateData();
   ptask->chpl_data.serial_state = serial;
 
   if (ltask) {

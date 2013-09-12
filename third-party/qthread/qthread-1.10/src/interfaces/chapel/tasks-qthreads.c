@@ -20,7 +20,6 @@
 #include "chplcgfns.h" // for chpl_ftable()
 #include "chpl-comm.h" // for chpl_localeID
 #include "chpl-locale-model.h" // for sublocale information
-#include "chpl-mem.h"  // for chpl_malloc(), etc.
 #include "chpl-tasks.h"
 #include "config.h"   // for chpl_config_get_value()
 #include "error.h"    // for chpl_warning()
@@ -114,17 +113,21 @@ struct chpl_task_list {
 };
 
 typedef struct {
+  chpl_bool serial_state;  // true: serialize execution
+} task_private_data_t;
+
+typedef struct {
     void                     *fn;
     void                     *args;
     chpl_string              task_filename;
     int                      lineno;
-    chpl_task_private_data_t chpl_data;
+    task_private_data_t      chpl_data;
 } chapel_wrapper_args_t;
 
 // Structure of task-local storage
 typedef struct chapel_tls_s {
-    /* Task private data: serial state, locale ID, etc. */
-    chpl_task_private_data_t chpl_data;
+    /* Task private data: serial state, etc. */
+    task_private_data_t chpl_data;
     /* Reports */
     chpl_string lock_filename;
     size_t      lock_lineno;
@@ -457,9 +460,7 @@ void chpl_task_callMain(void (*chpl_main)(void))
     const chpl_bool initial_serial_state = false;
     const c_localeid_t initial_locale_id = default_locale_id;
     const chapel_wrapper_args_t wrapper_args = 
-        {chpl_main, NULL, NULL, 0,
-         {initial_serial_state, initial_locale_id, NULL,
-          chpl_malloc, chpl_calloc, chpl_realloc, chpl_free}};
+        {chpl_main, NULL, NULL, 0, {initial_serial_state}};
 
     qthread_debug(CHAPEL_CALLS, "[%d] begin chpl_task_callMain()\n", chpl_localeID);
 
@@ -500,10 +501,9 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
                              chpl_string       filename)
 {
     qthread_shepherd_id_t const here_shep_id = qthread_shep();
-    chpl_task_private_data_t *parent_chpl_data = chpl_task_getPrivateData();
-    chpl_bool serial_state = parent_chpl_data->serial_state;
+    chpl_bool serial_state = chpl_task_getSerial();
     chapel_wrapper_args_t wrapper_args = 
-        {chpl_ftable[fid], arg, filename, lineno, *parent_chpl_data};
+      {chpl_ftable[fid], arg, filename, lineno, {serial_state}};
 
     PROFILE_INCR(profile_task_addToTaskList,1);
 
@@ -550,8 +550,7 @@ void chpl_task_startMovedTask(chpl_fn_p      fp,
     assert(id == chpl_nullTaskID);
 
     chapel_wrapper_args_t wrapper_args = 
-        {fp, arg, NULL, 0, *chpl_task_getPrivateData()};
-    wrapper_args.chpl_data.serial_state = serial_state;
+      {fp, arg, NULL, 0, {serial_state}};
 
     PROFILE_INCR(profile_task_startMovedTask,1);
 
@@ -613,23 +612,6 @@ void chpl_task_sleep(int secs)
     sleep(secs); // goes into the syscall interception system
 }
 
-chpl_task_private_data_t* chpl_task_getPrivateData(void)
-{
-    // FIXME: this method attempts to access task-local data, even though
-    // it is called from outside of a task.
-    static chpl_task_private_data_t non_task_chpl_data =
-        { .serial_state = true,
-          .localeID = 0,
-          .here = NULL,
-          .alloc = chpl_malloc,
-          .calloc = chpl_calloc,
-          .realloc = chpl_realloc,
-          .free = chpl_free
-        };
-    chapel_tls_t * data = chapel_get_tasklocal_possibly_from_non_task();
-    return (NULL==data) ? &non_task_chpl_data : &data->chpl_data;
-}
-
 /* The get- and setSerial() methods assume the beginning of the task-local
  * data segment holds a chpl_bool denoting the serial state. */
 chpl_bool chpl_task_getSerial(void)
@@ -647,42 +629,6 @@ void chpl_task_setSerial(chpl_bool state)
     data->chpl_data.serial_state = state;
 
     PROFILE_INCR(profile_task_setSerial,1);
-}
-
-void * chpl_task_getHere(void)
-{
-    // FIXME: this method attempts to access task-local data, even though
-    // it is called from outside of a task.
-    chapel_tls_t * data = chapel_get_tasklocal_possibly_from_non_task();
-    return (NULL==data) ? NULL : data->chpl_data.here;
-}
-
-void chpl_task_setHere(void * new_here)
-{
-    // FIXME: this method attempts to access task-local data, even though
-    // it is called from outside of a task.
-    chapel_tls_t * data = chapel_get_tasklocal_possibly_from_non_task();
-    if (NULL != data) {
-        data->chpl_data.here = new_here;
-    }
-}
-
-c_localeid_t chpl_task_getLocaleID(void)
-{
-    // FIXME: this method attempts to access task-local data, even though
-    // it is called from outside of a task.
-    chapel_tls_t * data = chapel_get_tasklocal_possibly_from_non_task();
-    return (NULL==data) ? 0 : data->chpl_data.localeID;
-}
-
-void chpl_task_setLocaleID(c_localeid_t new_localeID)
-{
-    // FIXME: this method attempts to access task-local data, even though
-    // it is called from outside of a task.
-    chapel_tls_t * data = chapel_get_tasklocal_possibly_from_non_task();
-    if (NULL != data) {
-        data->chpl_data.localeID = new_localeID;
-    }
 }
 
 c_sublocid_t chpl_task_getNumSubLocales(void)

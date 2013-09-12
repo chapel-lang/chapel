@@ -11,33 +11,6 @@
 #endif
 
 
-///// Type definitions /////
-
-// Allocator function signatures
-typedef void* (*chpl_alloc_fn)(size_t size);
-typedef void* (*chpl_calloc_fn)(size_t count, size_t size);
-typedef void* (*chpl_realloc_fn)(void* ptr, size_t size);
-typedef void  (*chpl_free_fn)(void* ptr);
-
-// This is task-private data used by the compiler code and runtime implementation.
-typedef struct chpl_task_private_data_s
-{
-  chpl_bool serial_state;   // True if execution is to be serialized; false otherwise.
-  c_localeid_t localeID;    // Stores the current localeID.  This may be obsolete.
-  void* here;               // Stores a (local) pointer to the "here" locale.
-
-  // These are the memory-management functions
-  // copied from the locale implementation at task-creation time.
-  chpl_alloc_fn alloc;
-  chpl_calloc_fn calloc;
-  chpl_realloc_fn realloc;
-  chpl_free_fn free;
-
-} chpl_task_private_data_t;
-
-// Defined in the generated Chapel code:
-
-
 // Sync variables
 
 void      chpl_sync_lock(chpl_sync_aux_t *);
@@ -178,35 +151,10 @@ void chpl_task_yield(void);
 void chpl_task_sleep(int);
 
 //
-// Get a pointer to the task-private data used for language support.
-//
-chpl_task_private_data_t* chpl_task_getPrivateData(void);
-// TODO: Do we also need a createPrivateData function?
-
-
-//
 // Get and set dynamic serial state.
 //
 chpl_bool chpl_task_getSerial(void);
 void      chpl_task_setSerial(chpl_bool);
-
-//
-// Get and set task-specific locale information.
-// The content of the void* is the local address of the locale object which 
-// represents the locale where the current task is running.
-// Use of this field is an *optimization*, since in general it may not be possible
-// to reach said object through a local address.  If chpl_task_getHere() returns
-// a null pointer, the object must be looked up using 
-//  chpl_localeID_to_locale(chpl_task_getLocaleID());
-//
-void*       chpl_task_getHere(void);
-void        chpl_task_setHere(void*);
-
-//
-// Get and set task-specific localeID information.
-//
-c_localeid_t  chpl_task_getLocaleID(void);
-void          chpl_task_setLocaleID(c_localeid_t);
 
 //
 // Returns the the number of sublocales the tasking layer knows about,

@@ -23,11 +23,15 @@
 //
 typedef struct chpl_pool_struct* chpl_task_pool_p;
 
+typedef struct {
+  chpl_bool serial_state;  // true: serialize execution
+} task_private_data_t;
+
 typedef struct chpl_pool_struct {
   chpl_taskID_t            id;         // task identifier
   chpl_fn_p                fun;        // function to call for task
   void*                    arg;        // argument to the function
-  chpl_task_private_data_t chpl_data;  // task private data
+  task_private_data_t      chpl_data;  // task private data
   chpl_task_pool_p next;
 } task_pool_t;
 
@@ -87,14 +91,7 @@ void chpl_sync_destroyAux(chpl_sync_aux_t *s) { }
 
 static chpl_taskID_t next_taskID = chpl_nullTaskID + 1;
 static chpl_taskID_t curr_taskID;
-static chpl_task_private_data_t s_chpl_data = { .serial_state = true,
-                                                .localeID     = 0,
-                                                .here         = NULL,
-                                                .alloc        = chpl_malloc,
-                                                .calloc       = chpl_calloc,
-                                                .realloc      = chpl_realloc,
-                                                .free         = chpl_free
-                                              };
+static task_private_data_t s_chpl_data = { .serial_state = true, };
 static uint64_t taskCallStackSize = 0;
 
 void chpl_task_init(void) {
@@ -226,7 +223,6 @@ void chpl_task_startMovedTask(chpl_fn_p fp,
   task->id = next_taskID++;
   task->fun = fp;
   task->arg = a;
-  task->chpl_data = s_chpl_data;
   task->chpl_data.serial_state = serial_state;
   task->next = NULL;
 
@@ -257,24 +253,10 @@ void chpl_task_sleep(int secs) {
   sleep(secs);
 }
 
-chpl_task_private_data_t* chpl_task_getPrivateData(void) {
-  return &s_chpl_data;
-}
-
 chpl_bool chpl_task_getSerial(void) { return s_chpl_data.serial_state; }
 
 void chpl_task_setSerial(chpl_bool new_state) {
   s_chpl_data.serial_state = new_state;
-}
-
-void* chpl_task_getHere(void) { return s_chpl_data.here; }
-
-void chpl_task_setHere(void* new_here) { s_chpl_data.here = new_here; }
-
-c_localeid_t chpl_task_getLocaleID(void) { return s_chpl_data.localeID; }
-
-void chpl_task_setLocaleID(c_localeid_t new_localeID) {
-  s_chpl_data.localeID = new_localeID;
 }
 
 c_sublocid_t chpl_task_getNumSubLocales(void) {
@@ -302,7 +284,7 @@ int32_t  chpl_task_getNumBlockedTasks(void) { return 0; }
 static chpl_bool
 launch_next_task(void) {
   chpl_taskID_t saved_taskID;
-  chpl_task_private_data_t saved_chpl_data;
+  task_private_data_t saved_chpl_data;
 
   if (task_pool_head) {
     // retrieve the first task from the task pool

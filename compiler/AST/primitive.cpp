@@ -538,7 +538,6 @@ initPrimitive() {
   prim_def(PRIM_WIDE_GET_NODE, "_wide_get_node", returnInfoNodeID, false, true);
   prim_def(PRIM_WIDE_GET_ADDR, "_wide_get_addr", returnInfoInt64, false, true);
 
-  prim_def(PRIM_IS_HERE, "_is_here", returnInfoBool);
   prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoLocaleID);
 
   prim_def(PRIM_ALLOC_GVR, "allocchpl_globals_registry", returnInfoVoid);
