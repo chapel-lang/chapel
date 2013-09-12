@@ -315,7 +315,7 @@ if ($performance == 1) {
     $subjectid = " Memory-Leaks";
 } elsif ($nolocal == 1) {
     $subjectid = " No-local";
-} elsif ($nolocal == 1) {
+} elsif ($verify == 1) {
     $subjectid = " Verify";
 } elsif ($runtests == 0) {
     $subjectid = " Build-only";
