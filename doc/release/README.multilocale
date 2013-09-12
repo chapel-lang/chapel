@@ -73,14 +73,14 @@ To run Chapel on multiple locales, the following steps are required:
            access via ssh, configure GASNet as follows:
 
              export GASNET_SPAWNFN=S
-             export SSH_SERVERS="host1 host2 host3 ..."
+             export GASNET_SSH_SERVERS="host1 host2 host3 ..."
              export SSH_CMD=ssh
              export SSH_OPTIONS=-x
 
            where host1, host2, host3, ... are the names of the
            workstations that will serve as your Chapel locales.  In
            order to run your Chapel program on k locales, you must
-           have k entries in the SSH_SERVERS variable.  To avoid
+           have k entries in the GASNET_SSH_SERVERS variable.  To avoid
            typing in passwords for each node, you will probably want
            to use normal ssh-agent/ssh-add capabilities to support
            password-less ssh-ing.
