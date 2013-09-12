@@ -1,5 +1,0 @@
-bug: == between an empty record and an integer (non-record) compiles correctly and always returns true
-
-== gets built in build_record_equality_function().  The second arg is
-dtAny to handle sub-records, so the function gets instantiated during
-resolution with int.
