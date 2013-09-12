@@ -220,16 +220,26 @@ Expr* buildStringLiteral(const char* pch) {
 Expr* buildDotExpr(BaseAST* base, const char* member) {
   // The following optimization was added to avoid calling
   // chpl_localeID_to_locale when all we end up doing is extracting
-  // the locale id, thus: OPTIMIZATION:
-  // chpl_localeID_to_locale(_get_locale_id(x)).id ==>
-  // _get_locale_id(x)
-  // TODO: We shouldn't have optimizations in the parser <hilde>
-  if (!strcmp("id", member)) {
+  // the locale id or the node id, thus: OPTIMIZATION:
+  //   chpl_localeID_to_locale(_get_locale_id(x)).localeid ==>
+  //      _get_locale_id(x)
+  // AND
+  //   chpl_localeID_to_locale(_get_locale_id(x)).id ==>
+  //      _get_locale_node_id(x)
+  //
+  // <hilde complaints paraphrased by sungeun, who agrees>
+  // - We shouldn't have optimizations in the parser
+  // - These strcmps suck
+  if (!strcmp("id", member) || !strcmp("localeid", member)) {
     if (CallExpr* intToLocale = toCallExpr(base))
       if (intToLocale->isNamed("chpl_localeID_to_locale"))
         if (CallExpr* getLocale = toCallExpr(intToLocale->get(1)))
-          if (getLocale->isPrimitive(PRIM_WIDE_GET_LOCALE))
-            return new CallExpr(PRIM_WIDE_GET_NODE, getLocale->get(1)->remove());
+          if (getLocale->isPrimitive(PRIM_WIDE_GET_LOCALE)) {
+            if (!strcmp("id", member))
+              return new CallExpr(PRIM_WIDE_GET_NODE, getLocale->get(1)->remove());
+            else
+              return new CallExpr(PRIM_WIDE_GET_LOCALE, getLocale->get(1)->remove());
+          }
   }
 
   if (!strcmp("locale", member))

@@ -25,10 +25,8 @@ module ChapelLocale {
     // To be removed from the required interface once legacy code is adjusted.
     const numCores: int;
 
-    // In legacy code, the id accessor is used to obtain the node id, so it
-    // should probably be renamed as node_id.
-    // As an accessor, it is statically bound, which is also a problem....
-    proc id : int return chpl_id();
+    proc id : int return chpl_id();  // just the node part
+    proc localeid : chpl_localeID_t return chpl_localeid(); // full locale id
     proc name return chpl_name();
     //------------------------------------------------------------------------}
 
@@ -36,11 +34,17 @@ module ChapelLocale {
     //- User Interface Methods (overridable)
     //-
 
-    // Returns a globally unique locale identifier.
-    // This routine is dynamically dispatched, so it can be overridden in concrete classes.
+    // These are dynamically dispatched, so they can be overridden in
+    // concrete classes.
     proc chpl_id() : int {
       _throwPVFCError();
       return -1;
+    }
+
+    proc chpl_localeid() : chpl_localeID_t {
+      _throwPVFCError();
+      extern const c_sublocid_any: chpl_sublocID_t;
+      return chpl_buildLocaleID(-1:chpl_nodeID_t, c_sublocid_any); 
     }
 
     proc chpl_name() : string {

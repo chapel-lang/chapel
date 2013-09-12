@@ -96,7 +96,11 @@ module LocaleModel {
       init();
     }
 
-    proc chpl_id() return _node_id;     // top-level locale (node) number
+    proc chpl_id() return _node_id; // top-level node number
+    proc chpl_localeid() {
+      extern const c_sublocid_any: chpl_sublocID_t;
+      return chpl_buildLocaleID(_node_id:chpl_nodeID_t, c_sublocid_any); 
+    }
     proc chpl_name() return local_name;
 
 
@@ -199,9 +203,14 @@ module LocaleModel {
     }
 
     // Has to be globally unique and not equal to a node ID.
-    // We return numLocales for now, since we expect nodes to be numbered less than this.
+    // We return numLocales for now, since we expect nodes to be
+    // numbered less than this.
     // -1 is used in the abstract locale class to specify an invalid node ID.
     proc chpl_id() return numLocales;
+    proc chpl_localeid() {
+      extern const c_sublocid_any: chpl_sublocID_t;
+      return chpl_buildLocaleID(numLocales:chpl_nodeID_t, c_sublocid_any); 
+    }
     proc chpl_name() return local_name();
     proc local_name() return "rootLocale";
 
