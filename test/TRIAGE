@@ -30,35 +30,56 @@
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
+no-local testing takes more than 24 hours
+-----------------------------------------
+9/10/13, 9/11/13
 
-XT PrgEnv-cray non-deterministic compiler internal errors (eronagha
-7/20/13): These started showing up after Elliot's commit on both
-chpbld01 and chpbld02.  I didn't see anything about a major update to
-CCE or the front-end, but I guess it's still possible that this could
-be a CCE issue.
-These MIS0324 errors occurred on 7/22, 7/23, 7/25, 7/26, 7/27, 7/28, 7/29.
-This problem is covered by Bug 800520.
+new valgrind timeouts (from 9/9/13)
+-----------------------------------
+These may be due to Elliot's LICM bug.
+
+[Error: Timed out compilation for multilocale/gbt/hello-numThreads-1]
+[Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/2dStrideTest]
+[Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/3dStrideTest]
+[Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/perfTest (compopts: 1)]
+[Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/perfTest_v2 (compopts: 1)]
+[Error: Timed out compilation for optimizations/bulkcomm/alberto/Cyclic/perfTest (compopts: 1)]
+[Error: Timed out compilation for optimizations/bulkcomm/alberto/Cyclic/perfTest_v2 (compopts: 1)]
+[Error: Timed out compilation for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 1)]
+[Error: Timed out compilation for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 2)]
+[Error: Timed out compilation for sparse/parallel/sparse-iter-dom-arr-zipper]
+[Error: Timed out compilation for users/franzf/v0/chpl/main (compopts: 1)]
+[Error: Timed out compilation for users/franzf/v1/chpl/main (compopts: 1)]
+[Error: Timed out compilation for users/franzf/v2/chpl/main (compopts: 1)]
 
 
-ft-serial performance tests either time out or run out of memory:
-(lydia 7/22/13): Class C & D seem to run out of memory when they don't
-time out first.
+regularly occuring compilation timeouts
+---------------------------------------
+[Moved here from REGRESSIONS (added by Vass)]
+These may be due to Elliot's LICM bug.
+The following tests have been seen to time out in various configurations
+since 9/6/13:
+[Error: Timed out compilation for optimizations/bulkcomm/alberto/Cyclic/perfTest (compopts: 1)]
+[Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/perfTest (compopts: 1)]
+[Error: Timed out compilation for users/franzf/v0/chpl/main (compopts: 1)]
+[Error: Timed out compilation for users/franzf/v1/chpl/main (compopts: 1)]
 
 
-Future (bug: this idiom generates a gcc warning for some reason (error
-w/ -Werror)) [Success matching program output for
-studies/shootout/mandelbrot/bugs/mandelbrot-error] (bradc 7/19/13):
+XT PrgEnv-cray non-deterministic compiler internal errors
+---------------------------------------------------------
+Determined to be a problem with CCE.  Filed bug 800520.
+
+
+New gcc warning (bradc)
+-----------------------
+Future (bug: this idiom generates a gcc warning for some reason (error w/ -Werror)) [Success matching program output for studies/shootout/mandelbrot/bugs/mandelbrot-error] (bradc 7/19/13):
 Brad's r21590 will hopefully take care of the remaining passing
 futures (i.e.,last week's weekend XT testing runs).
 
 
-cray-prgenv-* (weekday) (sungeun 6/5/13, diten 6/21/13):
-This causes frequent problems as some components get updated on chpbld01, but
-not others.  It is currently running successfully.  We should consider making
-chplbld01 and chpbld02 behave similarly.  According to Ryan, chplbld01 is
-being treated like an XT white box (at our request?).  There are no longer XT
-PE updates, and this may cause periodic module woes.
-
+chpbld01 testing (bradc)
+------------------------
+Not sure where this is currently, but Brad is struggling along.
 
 ==============================================
 These things regularly cause noise in testing:

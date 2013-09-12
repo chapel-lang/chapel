@@ -22,6 +22,8 @@ general regressions (seem to happen in most configurations)
 
 compilation timeouts (started 9/6/13) (eronagha)
 ------------------------------------------------
+Due to LICM bug
+
 [Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/3dStrideTest]
 
 
@@ -32,16 +34,6 @@ linux64 regressions (in addition to the above)
 started regressing again with locale ID optimization change (08/30/13)
 ----------------------------------------------------------------------
 [Error matching program output for multilocale/deitz/oneOrMoreLocales/test_dot_locale_error]
-
-compilation timeouts
---------------------
-the following tests have been seen to time out in various configurations
-since 9/6/13:
-[Error: Timed out compilation for optimizations/bulkcomm/alberto/Cyclic/perfTest (compopts: 1)]
-[Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/perfTest (compopts: 1)]
-[Error: Timed out compilation for users/franzf/v0/chpl/main (compopts: 1)]
-[Error: Timed out compilation for users/franzf/v1/chpl/main (compopts: 1)]
-
 
 ==============================================
 linux32 regressions (in addition to the above)
@@ -198,6 +190,12 @@ compilation timeouts (started 9/6/13) (eronagha)
 gasnet-everything regressions (other than the above)
 (Checked for accuracy 8/30/13)
 ====================================================
+
+memory doesn't match (09/11/13)
+-------------------------------
+sungeun (9/12/13): This is likely due to the fact that we started
+measuring something that uses compiler generated heap allocations.
+[Error matching program output for memory/shannon/memstatPrint]
 
 amount of comm. went down with locale ID optimization change (08/30/13)
 -----------------------------------------------------------------------
