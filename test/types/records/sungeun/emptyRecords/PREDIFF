@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+head -2 $2 > $2.tmp && mv $2.tmp $2
