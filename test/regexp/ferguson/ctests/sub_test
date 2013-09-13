@@ -75,11 +75,11 @@ runtest() {
 
 if [ $RETVAL -eq 0 ]
 then
-  echo "[Success compiling C I/O tests]"
+  echo "[Success compiling C Regexp tests]"
 
   runtest ./regexp_test "Regexp Test"
   runtest ./regexp_channel_test "Regexp Channels Test"
 else
-  echo "[Error compiling C I/O tests]"
+  echo "[Error compiling C Regexp tests]"
 fi
 
