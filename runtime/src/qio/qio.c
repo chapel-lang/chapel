@@ -874,7 +874,7 @@ err_t qio_file_init_usr(qio_file_t** file_out, void* file_info, qio_hint_t iohin
   file->fd = -1;
   file->use_fp = 0;
   file->buf = NULL;
-  file->fdflags = flags;
+  file->fdflags = (qio_fdflag_t) flags;
   file->initial_length = initial_length;
   file->initial_pos = initial_pos;
   file->fsfns = fns; // Put our functions in
