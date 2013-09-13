@@ -8,3 +8,6 @@ class-ref-one.c: In function 'doit':
 class-ref-one.c:212: error: passing argument 3 of 'foo' from incompatible pointer type
 class-ref-one.c:92: note: expected '_ref_C' but argument is of type 'CC'
 
+This should be a more reasonable Chapel-level error,
+but the program is incorrect.
+
