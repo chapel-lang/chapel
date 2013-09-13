@@ -1,0 +1,7 @@
+Passing a parent class type by reference to a function with cast
+
+If C and CC are classes, and CC : C, I expect
+to be able to pass a CC by reference into a
+function expecting a C using a cast:
+  var cc:CC; ...
+  foo(cc:C);
