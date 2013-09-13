@@ -44,7 +44,7 @@ Timer buildLocalDefMapsTimer;
 Timer computeLoopInvariantsTimer;
 Timer overallTimer;
 
-
+#define MAX_NUM_ALIASES 200000
 
 //TODO The alias analysis is extremely conservative. Beyond possibly not hoisting 
 //things that can be, it is also a performance issue because you have a lot more 
@@ -643,11 +643,40 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
     }
   }
   stopTimer(collectSymExprAndDefTimer);
-  
+ 
+  //Since the current alias analysis is pretty conservative, you can run into
+  //the case where you have so many aliases that you run of space in memory to
+  //hold all of the aliases (since we keep track of all pairs) , which leads to
+  //outrageous compilations times. Until the alias analysis is made less
+  //conservative we will just not hoist from a function if there are too many
+  //aliases. Note that this will affect very very few cases and thus will not
+  //prevent LICM in all but a few cases. The threshold is not a compiler option
+  //as it seems unlikely that anybody would be willing to wait the 2+ hours it
+  //takes for a program to actual compile. However, if compilation times become
+  //unpredictable a compiler flag can be added. With less conservative analysis
+  //though, this threshold should be eliminated. 
+  int numAliases = 0;
   //compute the map of aliases for each symbol 
   startTimer(computeAliasTimer);
   std::map<Symbol*, std::set<Symbol*> > aliases;
   for_vector(BasicBlock, block2, *fn->basicBlocks) {
+    //if there are too many aliases, just return. Since nothing has been added
+    //to the list of invariants, nothing will be hoisted from the current fn
+    if(numAliases > MAX_NUM_ALIASES) {
+#ifdef detailedTiming 
+       FILE* tooManyAliasesFile = fopen("/data/cf/gtmp/chapel/eronagha"  
+           "/tooManyAliases.txt", "a");
+       
+       fprintf(tooManyAliasesFile, "Skipping fn %s %d of module %s %d "
+           "because there were too many aliases\n", fn->name, fn->id, 
+           fn->getModule()->name, fn->getModule()->id);
+
+       fclose(tooManyAliasesFile);
+#endif
+      stopTimer(computeAliasTimer);
+      return;
+    }
+
     for_vector(Expr, expr, block2->exprs) {
       if(CallExpr* call = toCallExpr(expr)) {
         Symbol* rhs = rhsAlias(call);
@@ -664,12 +693,14 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
             
             aliases[rhsAlias].insert(lhs);
             aliases[lhs].insert(rhsAlias);
+            numAliases += 2;
           }
           printDebug(("%s %d aliases %s %d\n", lhs->name, lhs->id, rhs->name, 
             rhs->id));
           
           aliases[rhs].insert(lhs); 
           aliases[lhs].insert(rhs);
+          numAliases += 2;
         }
       }
     }
