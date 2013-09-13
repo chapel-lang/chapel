@@ -639,10 +639,8 @@ GenRet codegenWideAddrWithAddr(GenRet base, GenRet newAddr, Type* wideType = NUL
 
 // Set USE_TBAA to 0 to disable the emission of Type Based Alias Analysis
 // metadata when generating LLVM loads or stores.
-// Set USE_TBAA to emit TBAA metadata with loads and stores.
-// It is currently disabled until we gain more confidence in the
-// implementation.
-#define USE_TBAA 0
+// Set USE_TBAA to 1 to emit TBAA metadata with loads and stores.
+#define USE_TBAA 1
 
 // Create an LLVM store instruction possibly adding
 // appropriate metadata based upon the Chapel type of val.
