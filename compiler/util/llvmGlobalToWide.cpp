@@ -244,39 +244,63 @@ namespace {
       assert(voidPtrTy);
       assert(wideVoidPtrTy);
 
-      addrFn = M.getOrInsertFunction(info->addrFnName, voidPtrTy,
-                                     wideVoidPtrTy, NULL);
+      addrFn = info->addrFn;
+      if( ! addrFn ) {
+        addrFn = M.getOrInsertFunction("chpl_wide_ptr_get_address_sym",
+                                       voidPtrTy, wideVoidPtrTy, NULL);
+      }
       checkFunctionExistAndHasArgs(addrFn, 1);
 
-      locFn = M.getOrInsertFunction(info->locFnName, voidTy,
-                                    wideVoidPtrTy, ptrLocTy, NULL);
+      locFn = info->locFn;
+      if( ! locFn ) {
+        locFn = M.getOrInsertFunction("chpl_wide_ptr_read_localeID_sym",
+                                      voidTy, wideVoidPtrTy, ptrLocTy, NULL);
+      }
       checkFunctionExistAndHasArgs(locFn, 2);
 
-      nodeFn = M.getOrInsertFunction(info->nodeFnName, info->nodeIdType,
-                                     wideVoidPtrTy, NULL);
+      nodeFn = info->nodeFn;
+      if( ! nodeFn ) {
+        nodeFn = M.getOrInsertFunction("chpl_wide_ptr_get_node_sym",
+                                       info->nodeIdType, wideVoidPtrTy, NULL);
+      }
       checkFunctionExistAndHasArgs(nodeFn, 1);
 
-      makeFn = M.getOrInsertFunction(info->makeFnName, wideVoidPtrTy,
-                                     ptrLocTy, voidPtrTy, NULL);
+      makeFn = info->makeFn;
+      if( ! makeFn ) {
+        makeFn = M.getOrInsertFunction("chpl_return_wide_ptr_loc_sym",
+                                     wideVoidPtrTy, ptrLocTy, voidPtrTy, NULL);
+      }
       checkFunctionExistAndHasArgs(makeFn, 2);
 
-      getFn = M.getOrInsertFunction(info->getFnName, voidTy,
-                                    voidPtrTy, wideVoidPtrTy,
-                                    i64Ty, i64Ty, NULL);
+      getFn = info->getFn;
+      if( ! getFn ) {
+        getFn = M.getOrInsertFunction("chpl_gen_comm_get_ctl_sym", voidTy,
+                                      voidPtrTy, wideVoidPtrTy,
+                                      i64Ty, i64Ty, NULL);
+      }
       checkFunctionExistAndHasArgs(getFn, 4);
 
-      putFn = M.getOrInsertFunction(info->putFnName, voidTy,
-                                    wideVoidPtrTy, voidPtrTy,
-                                    i64Ty, i64Ty, NULL);
+      putFn = info->putFn;
+      if( ! putFn ) {
+        putFn = M.getOrInsertFunction("chpl_gen_comm_put_ctl_sym", voidTy,
+                                      wideVoidPtrTy, voidPtrTy,
+                                      i64Ty, i64Ty, NULL);
+      }
       checkFunctionExistAndHasArgs(putFn, 4);
 
-      getPutFn = M.getOrInsertFunction(info->getPutFnName, voidTy,
-                                       wideVoidPtrTy, wideVoidPtrTy,
-                                       i64Ty, NULL);
+      getPutFn = info->getPutFn;
+      if( ! getPutFn ) {
+        getPutFn = M.getOrInsertFunction("chpl_gen_comm_getput_sym", voidTy,
+                                         wideVoidPtrTy, wideVoidPtrTy,
+                                         i64Ty, NULL);
+      }
       checkFunctionExistAndHasArgs(getPutFn, 3);
 
-      memsetFn = M.getOrInsertFunction(info->memsetFnName, voidTy,
-                                       wideVoidPtrTy, i8Ty, i64Ty, NULL);
+      memsetFn = info->memsetFn;
+      if( ! memsetFn ) {
+        memsetFn = M.getOrInsertFunction("chpl_gen_comm_memset_sym", voidTy,
+                                         wideVoidPtrTy, i8Ty, i64Ty, NULL);
+      }
       checkFunctionExistAndHasArgs(memsetFn, 3);
     }
 
@@ -1002,15 +1026,6 @@ namespace {
         }
         info->nodeIdType = Type::getInt32Ty(M.getContext());
 
-        info->addrFnName = "chpl_wide_ptr_get_address_sym";
-        info->locFnName = "chpl_wide_ptr_read_localeID_sym";
-        info->nodeFnName = "chpl_wide_ptr_get_node_sym";
-        info->makeFnName = "chpl_return_wide_ptr_loc_sym";
-        info->getFnName = "chpl_gen_comm_get_ctl_sym";
-        info->putFnName = "chpl_gen_comm_put_ctl_sym";
-        info->getPutFnName = "chpl_gen_comm_getput_sym";
-        info->memsetFnName = "chpl_gen_comm_memset_sym";
-
         // Now go identify special functions in the module by name.
         for (Module::iterator next_func = M.begin(); next_func!= M.end(); )
         {
@@ -1584,6 +1599,16 @@ namespace {
         F->eraseFromParent();
       }
 
+      // Delete the dummy depedencies preserving function
+      Constant* cf = info->preservingFn;
+      if( cf ) {
+        Function* f = dyn_cast<Function>(cf);
+        if( f ) {
+          info->preservingFn = NULL;
+          f->eraseFromParent();
+        }
+      }
+
       // After it all, put the target info back.
       if( !madeInfo ) M.setDataLayout(layoutAfterwards);
       if( madeInfo ) delete info;
@@ -1602,6 +1627,14 @@ static RegisterPass<GlobalToWide> X("global-to-wide", "GlobalToWide Pass");
 
 ModulePass *createGlobalToWide(GlobalToWideInfo* info, std::string setLayout)
 {
+  assert(info->addrFn);
+  assert(info->locFn);
+  assert(info->nodeFn);
+  assert(info->makeFn);
+  assert(info->getFn);
+  assert(info->putFn);
+  assert(info->getPutFn);
+  assert(info->memsetFn);
   return new GlobalToWide(info, setLayout);
 }
 
@@ -1909,6 +1942,7 @@ Type* convertTypeGlobalToWide(Module* module, GlobalToWideInfo* info, Type* t)
  
   assert(0);
 }
+
 
 #endif
 

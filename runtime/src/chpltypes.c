@@ -292,40 +292,4 @@ const char* chpl_get_argument_i(chpl_main_argument* args, int32_t i)
 
 #ifndef LAUNCHER
 
-#include "chpl-wide-ptr-fns.h"
-
-// These functions are used by the LLVM wide optimization
-
-// Extract the local address portion of a packed/wide pointer
-void* chpl_wide_ptr_get_address_sym(wide_ptr_t ptr);
-
-// Read the locale information from a wide pointer.
-void chpl_wide_ptr_read_localeID_sym(wide_ptr_t ptr, chpl_localeID_t* loc);
-
-// Read the node number from a wide pointer.
-c_nodeid_t chpl_wide_ptr_get_node_sym(wide_ptr_t ptr);
-
-// Build a wide pointer from locale information and an address.
-wide_ptr_t chpl_return_wide_ptr_loc_sym(const chpl_localeID_t* loc, void * addr);
-
-void* chpl_wide_ptr_get_address_sym(wide_ptr_t ptr)
-{
-  return chpl_wide_ptr_get_address(ptr);
-}
-
-void chpl_wide_ptr_read_localeID_sym(wide_ptr_t ptr, chpl_localeID_t* loc)
-{
-  *loc = chpl_wide_ptr_get_localeID(ptr);
-}
-
-c_nodeid_t chpl_wide_ptr_get_node_sym(wide_ptr_t ptr)
-{
-  return chpl_wide_ptr_get_node(ptr);
-}
-
-wide_ptr_t chpl_return_wide_ptr_loc_sym(const chpl_localeID_t* loc, void * addr)
-{
-  return chpl_return_wide_ptr_loc(*loc, addr);
-}
-
 #endif // #LAUNCHER

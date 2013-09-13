@@ -6,6 +6,7 @@
 #include "chpl-comm.h"
 #include "chpl-mem.h"
 #include "error.h"
+#include "chpl-wide-ptr-fns.h"
 
 //
 // Multi-locale macros used for compiler code generation
@@ -145,6 +146,9 @@ void chpl_wide_array_free(int32_t dstNode, void* x, int32_t lineno, const char* 
     chpl_error("array vector data is not local", lineno, filename);
   chpl_array_free(x, lineno, filename);
 }
+
+// Include LLVM support functions for --llvm-wide-opt
+#include "chpl-comm-compiler-llvm-support.h"
 
 #endif // LAUNCHER
 

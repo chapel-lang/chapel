@@ -1340,14 +1340,67 @@ void setupForGlobalToWide(void) {
   info->nodeIdType = ginfo->lvt->getType("c_nodeid_t");
   assert(info->nodeIdType);
 
-  info->addrFnName = "chpl_wide_ptr_get_address_sym";
-  info->locFnName = "chpl_wide_ptr_read_localeID_sym";
-  info->nodeFnName = "chpl_wide_ptr_get_node_sym";
-  info->makeFnName = "chpl_return_wide_ptr_loc_sym";
-  info->getFnName = "chpl_gen_comm_get_ctl_sym";
-  info->putFnName = "chpl_gen_comm_put_ctl_sym";
-  info->getPutFnName = "chpl_gen_comm_getput_sym";
-  info->memsetFnName = "chpl_gen_comm_memset_sym";
+  info->addrFn = getFunctionLLVM("chpl_wide_ptr_get_address");
+  INT_ASSERT(info->addrFn);
+  info->locFn = getFunctionLLVM("chpl_wide_ptr_read_localeID");
+  INT_ASSERT(info->locFn);
+  info->nodeFn = getFunctionLLVM("chpl_wide_ptr_get_node");
+  INT_ASSERT(info->nodeFn);
+  info->makeFn = getFunctionLLVM("chpl_return_wide_ptr_loc_ptr");
+  INT_ASSERT(info->makeFn);
+  info->getFn = getFunctionLLVM("chpl_gen_comm_get_ctl");
+  INT_ASSERT(info->getFn);
+  info->putFn = getFunctionLLVM("chpl_gen_comm_put_ctl");
+  INT_ASSERT(info->putFn);
+  info->getPutFn = getFunctionLLVM("chpl_gen_comm_getput");
+  INT_ASSERT(info->getPutFn);
+  info->memsetFn = getFunctionLLVM("chpl_gen_comm_memset");
+  INT_ASSERT(info->memsetFn);
+
+  // Call these functions in a dummy externally visible
+  // function which GlobalToWide should remove. We need to do that
+  // in order to prevent the functions from being removed for
+  // not having references when they are inline/internal linkage.
+  // Our function here just returns a pointer to the i'th (i is the argument)
+  // such function - and since it is marked externally visible, there
+  // is no way that the compiler can completely remove the needed
+  // runtime functions.
+  const char* dummy = "chpl_wide_opt_dummy";
+  if( getFunctionLLVM(dummy) ) INT_FATAL("dummy function already exists");
+
+  llvm::Type* retType = llvm::Type::getInt8PtrTy(ginfo->module->getContext());
+  llvm::Type* argType = llvm::Type::getInt64Ty(ginfo->module->getContext());
+  llvm::Value* fval = ginfo->module->getOrInsertFunction(
+                          dummy, retType, argType, NULL);
+  llvm::Function* fn = llvm::dyn_cast<llvm::Function>(fval);
+
+  // Mark the function as external so that it will not be removed
+  fn->setLinkage(llvm::GlobalValue::ExternalLinkage);
+
+  llvm::BasicBlock* block = 
+     llvm::BasicBlock::Create(ginfo->module->getContext(), "entry", fn);
+  ginfo->builder->SetInsertPoint(block);
+
+  llvm::Constant* fns[] = {info->addrFn, info->locFn, info->nodeFn,
+                           info->makeFn, info->getFn, info->putFn,
+                           info->getPutFn, info->memsetFn, NULL};
+
+  llvm::Value* ret = llvm::Constant::getNullValue(retType);
+  llvm::Function::arg_iterator args = fn->arg_begin();
+  llvm::Value* arg = args++;
+
+  for( int i = 0; fns[i]; i++ ) {
+    llvm::Constant* f = fns[i];
+    llvm::Value* ptr = ginfo->builder->CreatePointerCast(f, retType); 
+    llvm::Value* id = llvm::ConstantInt::get(argType, i);
+    llvm::Value* eq = ginfo->builder->CreateICmpEQ(arg, id);
+    ret = ginfo->builder->CreateSelect(eq, ptr, ret);
+  }
+  ginfo->builder->CreateRet(ret);
+
+  llvm::verifyFunction(*fn);
+
+  info->preservingFn = fn;
 }
 
 

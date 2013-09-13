@@ -95,6 +95,13 @@ wide_ptr_t chpl_return_wide_ptr_loc(chpl_localeID_t loc, void * addr)
 }
 
 static WIDE_PTR_INLINE
+wide_ptr_t chpl_return_wide_ptr_loc_ptr(const chpl_localeID_t* loc, void * addr)
+{
+  return chpl_return_wide_ptr_loc(*loc, addr);
+}
+
+
+static WIDE_PTR_INLINE
 c_nodeid_t chpl_wide_ptr_get_node(wide_ptr_t ptr)
 {
 #ifndef CHPL_WIDE_POINTER_PACKED
@@ -136,6 +143,14 @@ chpl_localeID_t chpl_wide_ptr_get_localeID(wide_ptr_t ptr)
 }
 
 static WIDE_PTR_INLINE
+void chpl_wide_ptr_read_localeID(wide_ptr_t ptr,
+                                 chpl_localeID_t* loc)
+{
+  *loc = chpl_wide_ptr_get_localeID(ptr);
+}
+
+
+static WIDE_PTR_INLINE
 wide_ptr_t chpl_return_wide_ptr_add(wide_ptr_t ptr, size_t amt)
 {
 #ifndef CHPL_WIDE_POINTER_PACKED
@@ -145,5 +160,6 @@ wide_ptr_t chpl_return_wide_ptr_add(wide_ptr_t ptr, size_t amt)
   return (wide_ptr_t) (((unsigned char*)ptr) + amt);
 #endif
 }
+
 
 #endif

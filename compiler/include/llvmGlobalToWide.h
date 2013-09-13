@@ -8,6 +8,7 @@
 #include "llvm/PassManager.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/SmallPtrSet.h"
+#include "llvm/Support/ValueHandle.h"
 
 
 /* The LLVM Global to Wide transformation allows the Chapel code generator
@@ -28,11 +29,15 @@
  *
  * In order to lower global pointer operations into get/put communication
  * calls, and to lower the dummy functions operating on the global/wide
- * pointers themselves, this pass needs  addrFnName, getFnName, etc
- * to be passed in. These functions should be available externally (ie later
- * linked with the program). It would be nice to inline them but so far
- * that has proven difficult since they appear unused when the inliner
- * runs (since it runs before this pass) and so are removed by the inliner.
+ * pointers themselves, this pass needs  addrFn, getFn, etc
+ * to be passed in. These functions should be available when the pass is
+ * run (ie, not removed by an inliner if they are inline). The pass keeps
+ * track of them with a TrackingVH so we will have them if they are replaced.
+ * But we are out of luck if they are deleted. One way to prevent them from
+ * being deleted, if they are marked inline and internal, is to create
+ * a external-linkage function that uses the address of them. If you do
+ * that, and set preservingFn to it, GlobalToWide will delete that function
+ * when it finishes its work.
  *
  * It would be desireable for this pass to support wide pointers larger
  * than 64 bits. However, in order to prevent data type layouts from
@@ -94,6 +99,7 @@ struct GlobalPointerInfo {
 
 typedef llvm::DenseMap<llvm::Type*, GlobalPointerInfo> globalTypes_t;
 typedef llvm::SmallPtrSet<llvm::Function*, 32> specialFunctions_t;
+typedef llvm::TrackingVH<llvm::Constant> runtime_fn_t;
 
 struct GlobalToWideInfo {
   unsigned globalSpace;
@@ -104,33 +110,38 @@ struct GlobalToWideInfo {
   specialFunctions_t specialFunctions;
 
   // args:  packed wide ptr. Returns the address portion.
-  const char* addrFnName;
+  runtime_fn_t addrFn;
   // args:  packed wide ptr, &locale. sets locale = wide.locale.
   // It has the complicated signature in order to keep
   //  arguments passed by pointer (vs structure) to avoid
   //  some issues with passing/returning structures.
-  const char* locFnName;
+  runtime_fn_t locFn;
   // args:  packed wide ptr. Returns the node number portion.
-  const char* nodeFnName;
+  runtime_fn_t nodeFn;
   // args:  const locale*, address. Returns a packed wide pointer (void*).
-  const char* makeFnName;
+  runtime_fn_t makeFn;
 
   // args:  dst local address, wide address {locale,i8*}, num bytes, atomicness
-  const char* getFnName;
+  runtime_fn_t getFn;
   // args:  dst wide address {locale,i8*}, local address, num bytes, atomicness
-  const char* putFnName;
+  runtime_fn_t putFn;
 
   // args:  dst wide address {locale,i8*};
   //        src wide address {locale,i8*},
   //        num bytes
-  const char* getPutFnName;
+  runtime_fn_t getPutFn;
 
   // args:  dst wide address {locale,i8*}, c (byte), num bytes
-  const char* memsetFnName;
+  runtime_fn_t memsetFn;
+
+  // Dummy function storing the runtime dependencies
+  // so that they are not removed by the inliner.
+  // This function should be removed from the module
+  // once GlobalToWide completes.
+  runtime_fn_t preservingFn;
 
   GlobalToWideInfo()
-    : globalSpace(0), wideSpace(0), localeIdType(NULL), nodeIdType(NULL), gTypes(), specialFunctions(), addrFnName(NULL), locFnName(NULL), nodeFnName(NULL), makeFnName(NULL), getFnName(NULL), putFnName(NULL), getPutFnName(NULL), memsetFnName(NULL) {
-  }
+    : globalSpace(0), wideSpace(0), localeIdType(NULL), nodeIdType(NULL), gTypes(), specialFunctions() { }
 };
 
 llvm::ModulePass *createGlobalToWide(GlobalToWideInfo* info, std::string setLayout);
