@@ -63,6 +63,7 @@ static void codegenCall(const char* fnName, GenRet a1, GenRet a2);
 static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3);
 //static void codegenCallNotValues(const char* fnName, GenRet a1, GenRet a2, GenRet a3);
 static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4);
+static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4, GenRet a5);
 
 static GenRet codegenZero();
 static GenRet codegenOne();
@@ -512,8 +513,10 @@ PromotedPair convertValuesToLarger(llvm::Value *value1, llvm::Value *value2, boo
 #endif
 
 #define WIDE_GEP_LOC 0
-#define WIDE_GEP_LOC_NODE 0
 #define WIDE_GEP_ADDR 1
+#define WIDE_GEP_SIZE 2
+
+static const char* wide_fields[] = {"locale", "addr", "size", NULL};
 
 // Generates code to load the wide version of an address and returns an
 // expression that evaluates to this address.
@@ -666,6 +669,19 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
 {
   if( val.chplType && !valType ) valType = val.chplType;
   if( ptr.chplType && !valType ) valType = ptr.chplType->getValType();
+
+  llvm::Type* ptrValType = llvm::cast<llvm::PointerType>(
+                                      ptr.val->getType())->getElementType();
+ 
+  // implicit cast in C, needs to be made explicit in LLVM
+  // e.g. T3 = alloca i8; 
+  //      T3 = (T == T2);   // not actual LLVM syntax
+  // in LLVM, boolean type is i1
+  if (val.val->getType() != ptrValType){
+    val.val = convertValueToType(val.val, ptrValType, !val.isUnsigned);
+    INT_ASSERT(val.val);
+  }
+
   return codegenStoreLLVM(val.val, ptr.val, valType);
 }
 // Create an LLVM store instruction possibly adding
@@ -698,33 +714,6 @@ llvm::LoadInst* codegenLoadLLVM(GenRet ptr,
 #endif
 
 static
-GenRet codegenLocaleForNode(GenRet node)
-{
-  GenInfo* info = gGenInfo;
-  Type* localeType = LOCALE_ID_TYPE;
-  GenRet ret;
-
-  ret.chplType = localeType;
-  node = codegenValue(node);
-
-  if( info->cfile ) {
-    INT_ASSERT(0); // not implemented yet.
-  } else {
-#ifdef HAVE_LLVM
-    GenRet genType = localeType;
-    unsigned Idxs[1];
-    Idxs[0] = WIDE_GEP_LOC_NODE;
-    llvm::Value* v0 = llvm::ConstantAggregateZero::get(genType.type);
-    llvm::Value* v1 = info->builder->CreateInsertValue(v0, node.val, Idxs);
-    ret.val = v1;
-#endif
-  }
-
-  return ret;
-}
-
-
-static
 GenRet codegenUseGlobal(const char* global)
 {
   GenInfo* info = gGenInfo;
@@ -747,6 +736,23 @@ GenRet codegenUseGlobal(const char* global)
   ret.isLVPtr = GEN_VAL;
   return ret;
 }
+
+static
+GenRet codegenLocaleForNode(GenRet node)
+{
+  Type* localeType = LOCALE_ID_TYPE;
+  GenRet ret;
+
+  ret.chplType = localeType;
+  node = codegenValue(node);
+
+  GenRet tmp = createTempVar(localeType);
+  GenRet anySublocale = codegenUseGlobal("c_sublocid_any");
+  codegenCall("chpl_buildLocaleID", node, anySublocale, codegenAddrOf(tmp),
+              codegenZero(), codegenNullPointer());
+  return tmp;
+}
+
 
 static
 GenRet codegenUseCid(Type* classType)
@@ -858,44 +864,57 @@ static GenRet codegenCastWideToVoid(GenRet wide) {
   return codegenCast("wide_ptr_t", wide);
 }
 
-// Extract a field of a wide string, returning an lvalue-pointer to the that
-// field if we have a pointer to the wide string.  We need this function
+// Extract a field of a wide string/ptr, returning an lvalue-pointer to the that
+// field if we have a pointer to the wide string/ptr.  We need this function
 // because codegenRaddr and friends now work with void wide pointer data-types
 // (and wide strings are not the same as other wide types), and because
 // codegenFieldPtr doesn't work to extract wide string fields (since it thinks
 // it's supposed to be extracting fields from the class rather than from the
 // wide ptr).
-static GenRet codegenWideStringField(GenRet ws, const char* field)
+//
+// Works for wide strings or wide pointers.
+//
+// field is WIDE_GEP_LOC, WIDE_GEP_ADDR, or WIDE_GEP_SIZE.
+static GenRet codegenWideThingField(GenRet ws, int field)
 {
   GenRet ret;
   GenInfo* info = gGenInfo;
 
-  INT_ASSERT(isWideString(ws.chplType));
+  INT_ASSERT(field == WIDE_GEP_LOC ||
+             field == WIDE_GEP_ADDR ||
+             field == WIDE_GEP_SIZE );
 
-  ClassType *classType = toClassType(ws.chplType);
+  const char* fname = wide_fields[field];
+
   if( info->cfile ) {
     if (ws.isLVPtr == GEN_PTR) {
       ret.isLVPtr = GEN_PTR;
-      ret.c += "&((" + ws.c + ")->" + field + ")";
+      ret.c += "&((" + ws.c + ")->" + fname + ")";
     } else {
+      // This case handles GEN_WIDE_PTR or GEN_VAL
       // we don't have an l-value for this one.
       // Could be wide lv-ptr or GEN_VAL wide ref.
-      ret.isLVPtr = GEN_VAL;
-      ret.c += "(" + ws.c + ")." + field;
+      ret.isLVPtr = GEN_PTR;
+      ret.c += "&((" + ws.c + ")." + fname + ")";
     }
   } else {
 #ifdef HAVE_LLVM
     if (ws.val->getType()->isPointerTy()){
       ret.isLVPtr = GEN_PTR;
-      ret.val = info->builder->CreateConstInBoundsGEP2_32(ws.val, 0, classType->getMemberGEP(field));
+      ret.val = info->builder->CreateConstInBoundsGEP2_32(ws.val, 0, field);
     } else {
       ret.isLVPtr = GEN_VAL;
-      ret.val = info->builder->CreateExtractValue(ws.val, classType->getMemberGEP(field));
+      ret.val = info->builder->CreateExtractValue(ws.val, field);
     }
 #endif
   }
-  Symbol* fieldSymbol = classType->getField("size", true);
-  ret.chplType = fieldSymbol->typeInfo();
+
+  if( field == WIDE_GEP_SIZE ) {
+    ret.chplType = SIZE_TYPE;
+  } else if( field == WIDE_GEP_LOC ) {
+    ret.chplType = LOCALE_ID_TYPE;
+  }
+
   return ret;
 }
 
@@ -905,12 +924,11 @@ static GenRet codegenWideStringField(GenRet ws, const char* field)
 GenRet codegenRaddr(GenRet wide)
 {
   GenRet ret;
-  GenInfo* info = gGenInfo;
   Type* wideRefType = NULL;
   Type* type = NULL;
  
   if( wide.isLVPtr != GEN_WIDE_PTR && isWideString(wide.chplType)) {
-   ret = codegenWideStringField(wide,"addr");
+   ret = codegenWideThingField(wide, WIDE_GEP_ADDR);
    ret.chplType = dtString;
    return ret;
   }
@@ -918,28 +936,11 @@ GenRet codegenRaddr(GenRet wide)
   type = wideRefTypeToLocalRefType(wide, &wideRefType);
 
   if( widePointersStruct ) {
-    if (info->cfile ) {
-      if (wide.isLVPtr == GEN_PTR) {
-        ret.c += "(" + wide.c + ")->addr";
-      } else {
-        // could we GEN_WIDE_PTR or a wide reference.
-        ret.c += "(" + wide.c + ").addr";
-      }
-    } else {
-#ifdef HAVE_LLVM
-      if (wide.isLVPtr == GEN_PTR) {
-        llvm::Value* ptr = info->builder->CreateStructGEP(wide.val,
-                                                          WIDE_GEP_ADDR);
-        ret.val = info->builder->CreateLoad(ptr);
-      } else {
-        // if wide is not a pointer...
-        ret.val = info->builder->CreateExtractValue(wide.val, WIDE_GEP_ADDR);
-      }
-#endif
-    }
+    ret = codegenValue(codegenWideThingField(wide, WIDE_GEP_ADDR));
   } else {
     if( fLLVMWideOpt ) {
 #ifdef HAVE_LLVM
+      GenInfo* info = gGenInfo;
       if (wide.isLVPtr == GEN_PTR) wide = codegenValue(wide);
       GenRet wideTy = wideRefType; // get the LLVM type for the wide ref.
       llvm::PointerType *addrType = llvm::cast<llvm::PointerType>(wideTy.type);
@@ -951,14 +952,12 @@ GenRet codegenRaddr(GenRet wide)
       ret.val = info->builder->CreateCall(fn, wide.val);
 #endif
     } else {
-
       // Packed wide pointers
       ret = codegenCallExpr("chpl_wide_ptr_get_address",
                             codegenCastWideToVoid(wide));
     }
     ret = codegenCast(type, ret);
   }
-  ret.isLVPtr = GEN_VAL;
   ret.chplType = type;
   return ret;
 }
@@ -967,38 +966,20 @@ GenRet codegenRaddr(GenRet wide)
 static GenRet codegenRlocale(GenRet wide)
 {
   GenRet ret;
-  GenInfo* info = gGenInfo;
   Type* type = LOCALE_ID_TYPE;
 
   if( wide.isLVPtr != GEN_WIDE_PTR && isWideString(wide.chplType)) {
-    ret = codegenWideStringField(wide,"locale");
+    ret = codegenWideThingField(wide, WIDE_GEP_LOC);
     ret.chplType = type;
     return ret;
   }
 
   if( widePointersStruct ) {
-    if (info->cfile ) {
-      if (wide.isLVPtr == GEN_PTR) {
-        ret.c += "(" + wide.c + ")->locale";
-      } else {
-        // could we GEN_WIDE_PTR or a wide reference.
-        ret.c += "(" + wide.c + ").locale";
-      }
-    } else {
-#ifdef HAVE_LLVM
-      if (wide.isLVPtr == GEN_PTR) {
-        llvm::Value* ptr = info->builder->CreateStructGEP(wide.val,
-                                                          WIDE_GEP_LOC);
-        ret.val = info->builder->CreateLoad(ptr);
-      } else {
-        // if wide is not a pointer...
-        ret.val = info->builder->CreateExtractValue(wide.val, WIDE_GEP_LOC);
-      }
-#endif
-    }
+    ret = codegenWideThingField(wide, WIDE_GEP_LOC);
   } else {
     if( fLLVMWideOpt ) {
 #ifdef HAVE_LLVM
+      GenInfo* info = gGenInfo;
       if (wide.isLVPtr == GEN_PTR) wide = codegenValue(wide);
       GenRet wideTy = wide.chplType; // get the LLVM type for the wide ref.
       llvm::PointerType *addrType = llvm::cast<llvm::PointerType>(wideTy.type);
@@ -1021,7 +1002,6 @@ static GenRet codegenRlocale(GenRet wide)
       }
     }
   }
-  ret.isLVPtr = GEN_VAL;
   ret.chplType = type;
   return ret;
 }
@@ -1032,17 +1012,19 @@ static GenRet codegenRsize(GenRet wideString)
 {
   Type* type = wideString.chplType;
   INT_ASSERT(isWideString(type));
-  GenRet ret = codegenWideStringField(wideString, "size");
+  GenRet ret = codegenWideThingField(wideString, WIDE_GEP_SIZE);
   return ret;
 }
 
 static GenRet codegenRnode(GenRet wide){
   GenRet ret;
-  GenInfo* info = gGenInfo;
   Type* type = NODE_ID_TYPE;
 
   if( wide.isLVPtr != GEN_WIDE_PTR && isWideString(wide.chplType)) {
-    ret = codegenWideStringField(wide,"locale");
+    // This code might look duplicative but it has to be here
+    // for packed wide pointers since wide strings won't be packed
+    // wide pointers.
+    ret = codegenWideThingField(wide, WIDE_GEP_LOC);
     ret.chplType = LOCALE_ID_TYPE;
     ret = codegenCallExpr("chpl_nodeFromLocaleID", codegenAddrOf(ret),
                           codegenZero(), codegenNullPointer());
@@ -1051,30 +1033,12 @@ static GenRet codegenRnode(GenRet wide){
   }
 
   if( widePointersStruct ) {
-    if (info->cfile ) {
-      if (wide.isLVPtr == GEN_PTR) {
-        ret.c += "chpl_nodeFromLocaleID(&(" + wide.c + ")->locale, 0, NULL)";
-      } else {
-        // could we GEN_WIDE_PTR or a wide reference.
-        ret.c += "chpl_nodeFromLocaleID(&(" + wide.c + ").locale, 0, NULL)";
-      }
-    } else {
-#ifdef HAVE_LLVM
-      if (wide.isLVPtr == GEN_PTR) {
-        llvm::Value* ptr = info->builder->CreateStructGEP(wide.val,
-                                                          WIDE_GEP_LOC);
-        ptr = info->builder->CreateStructGEP(ptr, WIDE_GEP_LOC_NODE);
-        ret.val = info->builder->CreateLoad(ptr);
-      } else {
-        // if wide is not a pointer...
-        ret.val = info->builder->CreateExtractValue(wide.val, WIDE_GEP_LOC);
-        ret.val = info->builder->CreateExtractValue(ret.val, WIDE_GEP_LOC_NODE);
-      }
-#endif
-    }
+    ret = codegenCallExpr("chpl_nodeFromLocaleID",
+                          codegenAddrOf(codegenValuePtr(codegenWideThingField(wide,WIDE_GEP_LOC))), codegenZero(), codegenNullPointer());
   } else {
     if( fLLVMWideOpt ) {
 #ifdef HAVE_LLVM
+      GenInfo* info = gGenInfo;
       if (wide.isLVPtr == GEN_PTR) wide = codegenValue(wide);
       GenRet wideTy = wide.chplType; // get the LLVM type for the wide ref.
       llvm::PointerType *addrType = llvm::cast<llvm::PointerType>(wideTy.type);
@@ -1092,7 +1056,6 @@ static GenRet codegenRnode(GenRet wide){
   }
 
   ret.chplType = type;
-  ret.isLVPtr = GEN_VAL;
   return ret;
 }
 
@@ -3057,19 +3020,7 @@ void codegenAssign(GenRet to_ptr, GenRet from)
 #ifdef HAVE_LLVM
         // LLVM codegen assignment (non-wide, non-tuple)
         GenRet value = codegenValue(from);
-        llvm::Type* ptrValType =llvm::cast<llvm::PointerType>(
-            to_ptr.val->getType())->getElementType();
-        
-        // implicit cast in C, needs to be made explicit in LLVM
-        // e.g. T3 = alloca i8; 
-        //      T3 = (T == T2);   // not actual LLVM syntax
-        // in LLVM, boolean type is i1
-        if (value.val->getType() != ptrValType){
-          value.val =
-            convertValueToType(value.val, ptrValType, !value.isUnsigned);
-          INT_ASSERT(value.val);
-        }
-
+       
         codegenStoreLLVM(value, to_ptr, type);
 #endif
       }
@@ -5400,7 +5351,7 @@ GenRet CallExpr::codegen() {
       if (actualType == dtString)
         arg = codegenCastToCharStar(codegenValue(arg));
       else if (isRefWideString(actualType))// checks for ref(widestr)
-        arg = codegenAddrOf(codegenWideStringField(codegenDeref(arg),"addr"));
+        arg = codegenAddrOf(codegenWideThingField(codegenDeref(arg),WIDE_GEP_ADDR));
       else if( actualType->symbol->hasFlag(FLAG_WIDE) ||
                arg.isLVPtr == GEN_WIDE_PTR) {
         arg = codegenRaddr(codegenValue(arg));

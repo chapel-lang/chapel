@@ -429,9 +429,18 @@ GenRet VarSymbol::codegen() {
       }
     } else {
       // not immediate
-      ret.c = '&';
-      ret.c += cname;
-      ret.isLVPtr = GEN_PTR;
+      // is it a constant extern? If it is, it might be for example
+      // an enum or #define'd value, in which case taking the address
+      // of it is simply nonsense. Therefore, we code generate
+      // extern const symbols as GEN_VAL (ie not an lvalue).
+      if( hasFlag(FLAG_CONST) && hasFlag(FLAG_EXTERN) ) {
+        ret.isLVPtr = GEN_VAL;
+        ret.c = cname;
+      } else {
+        ret.c = '&';
+        ret.c += cname;
+        ret.isLVPtr = GEN_PTR;
+      }
     }
     return ret;
   } else {
@@ -464,7 +473,7 @@ GenRet VarSymbol::codegen() {
         GenRet boolVal = new_UIntSymbol(1, INT_SIZE_8)->codegen();
         return boolVal;
       }
-    }   
+    }
 
     if(!isImmediate()) {
       // check LVT for value 
@@ -513,7 +522,8 @@ GenRet VarSymbol::codegen() {
 #endif
   }
 
-  INT_ASSERT(0);
+  INT_FATAL("Could not code generate %s - "
+            "perhaps it is a complex macro?", cname);
   return ret;
 }
 
@@ -549,6 +559,7 @@ void VarSymbol::codegenDefC(bool global) {
 
   if (type == dtVoid)
     return;
+
   ClassType* ct = toClassType(type);
   std::string typestr =  (this->hasFlag(FLAG_SUPER_CLASS) ?
                           std::string(ct->classStructName(true)) :
@@ -626,6 +637,13 @@ void VarSymbol::codegenGlobalDef() {
 
 void VarSymbol::codegenDef() {
   GenInfo* info = gGenInfo;
+
+  // Local variable symbols should never be
+  // generated for extern or void types
+  if (this->hasFlag(FLAG_EXTERN))
+    return;
+  if (type == dtVoid)
+    return;
 
   if( info->cfile ) {
     codegenDefC();
