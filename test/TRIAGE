@@ -73,8 +73,12 @@ Determined to be a problem with CCE.  Filed bug 800520.
 New gcc warning (bradc)
 -----------------------
 Future (bug: this idiom generates a gcc warning for some reason (error w/ -Werror)) [Success matching program output for studies/shootout/mandelbrot/bugs/mandelbrot-error] (bradc 7/19/13):
-Brad's r21590 will hopefully take care of the remaining passing
-futures (i.e.,last week's weekend XT testing runs).
+Brad's r21590 was supposed to take care of this, but it hasn't.
+
+[Error matching compiler output for studies/sudoku/dinan/sudoku-smart]
+(9/13/13, same warnings, don't know when it started)
+
+
 
 
 chpbld01 testing (bradc)
@@ -126,9 +130,8 @@ at present.  See the archives for more detail.
 
 Perf (linux64.gnu.none.fifo.pthreads)
 -------------------------------------
-[Error: Timed out executing program studies/hpcc/RA/bradc/parallel/ra-dist (compopts: 1)] (06/20/13)
-[Error: Timed out executing program npb/cg/bradc/cg-sparse (compopts: 1, execopts: 4..6)] (08/23/13)
-
+[Error: Timed out executing program studies/hpcc/RA/bradc/parallel/ra-dist (compopts: 1)] (06/20/13, 9/13/13: chap04)
+[Error: Timed out executing program npb/cg/bradc/cg-sparse (compopts: 1, execopts: 4..6)] (08/23/13, 9/13/13)
 
 ==============================================================================
 Were once flagged as causing noise regularly, but not as familiar as the above

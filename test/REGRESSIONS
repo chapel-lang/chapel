@@ -20,20 +20,11 @@
 general regressions (seem to happen in most configurations)
 ===========================================================
 
-compilation timeouts (started 9/6/13) (eronagha)
-------------------------------------------------
-Due to LICM bug
-
-[Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/3dStrideTest]
-
 
 ==============================================
 linux64 regressions (in addition to the above)
 ==============================================
 
-started regressing again with locale ID optimization change (08/30/13)
-----------------------------------------------------------------------
-[Error matching program output for multilocale/deitz/oneOrMoreLocales/test_dot_locale_error]
 
 ==============================================
 linux32 regressions (in addition to the above)
@@ -190,12 +181,6 @@ compilation timeouts (started 9/6/13) (eronagha)
 gasnet-everything regressions (other than the above)
 (Checked for accuracy 8/30/13)
 ====================================================
-
-memory doesn't match (09/11/13)
--------------------------------
-sungeun (9/12/13): This is likely due to the fact that we started
-measuring something that uses compiler generated heap allocations.
-[Error matching program output for memory/shannon/memstatPrint]
 
 amount of comm. went down with locale ID optimization change (08/30/13)
 -----------------------------------------------------------------------
@@ -584,6 +569,14 @@ not sure if there's a general workaround for this particular case
 other than silencing the warning.  One worry is that gcc is spending
 extra time optimizing due to the above code, but not sure what we can
 do about it.
+
+
+Non-matching .bad
+-----------------
+[Error matching .bad file for functions/gbt/retRecordMultiDef]
+
+Looks like the error message format changed for newer versions of gcc.
+Just documenting so no one has to spend any time on it.
 
 
 
