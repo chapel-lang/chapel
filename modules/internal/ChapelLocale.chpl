@@ -93,12 +93,6 @@ module ChapelLocale {
     //- Compiler Interface Methods (overridable)
     //-
 
-    // Part of the required locale interface.
-    // These routines are called by the compiler to implement locale-aware task control.
-    // They should be overridden in concrete locale classes as necessary.
-    proc taskInit() : void {}
-    proc taskExit() : void {}
-
     proc alloc(nbytes:int) {
       extern proc chpl_malloc(nbytes:int) : opaque;
       return chpl_malloc(nbytes);

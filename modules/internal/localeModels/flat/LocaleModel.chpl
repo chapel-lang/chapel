@@ -140,11 +140,6 @@ module LocaleModel {
       return chpl_emptyLocales;
     }
 
-    // Part of the public interface required by the compiler
-    // These are dynamically dispatched, so cannot be inlined.
-    proc taskInit() {}
-    proc taskExit() {}
-
     //------------------------------------------------------------------------{
     //- Implementation (private)
     //-

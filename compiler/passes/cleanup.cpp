@@ -14,9 +14,6 @@
 #include "symbol.h"
 
 
-static void addTaskMgtInOnBlocks();
-
-
 //
 // Move the statements in a block out of the block
 //
@@ -165,39 +162,6 @@ static void change_cast_in_where(FnSymbol* fn) {
 }
 
 
-// MAGIC: 'on' blocks automatically call taskInit() and taskExit() w.r.t. the current 
-// sublocale, as in:
-// proc on_fn(<args>) : void {
-//  ChapelLocale.here.taskInit();
-//  <statements>
-//  ChapelLocale.here.taskExit();
-//  return;
-// }
-//
-// This transformation needs to take place before scopeResolve() 
-// so "here" gets resolved.
-//
-static void addTaskMgtInOnBlocks() {
-  forv_Vec(BlockStmt, block, gBlockStmts) {
-    if (CallExpr* info = block->blockInfo)
-      if (info->isPrimitive(PRIM_BLOCK_ON) ||
-          info->isPrimitive(PRIM_BLOCK_ON_NB)) {
-
-        SET_LINENO(block);
-
-        // This is an on or on ... begin block.
-        CallExpr* here = new CallExpr(new_StringSymbol("here"));
-        CallExpr* taskInitPartial = new CallExpr(".", here,
-                                                 new_StringSymbol("taskInit"));
-        block->insertAtHead(new CallExpr(taskInitPartial));
-
-        CallExpr* taskExitPartial = new CallExpr(".", here->copy(),
-                                                 new_StringSymbol("taskExit"));
-        block->insertAtTail(new CallExpr(taskExitPartial));
-      }
-  }
-}
-
 void cleanup(void) {
   Vec<BaseAST*> asts;
   collect_asts(rootModule, asts);
@@ -224,7 +188,4 @@ void cleanup(void) {
       }
     }
   }
-
-  if (fTaskHooks)
-    addTaskMgtInOnBlocks();
 }

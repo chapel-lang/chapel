@@ -168,7 +168,6 @@ Timer timer3;
 Timer timer4;
 Timer timer5;
 
-bool fTaskHooks = false;
 bool fNoMemoryFrees = false;
 int numGlobalsOnHeap = 0;
 bool preserveInlinedLineNumbers = false;
@@ -751,7 +750,6 @@ static ArgumentDescription arg_desc[] = {
  {"remove-empty-records", ' ', NULL, "Enable [disable] empty record removal", "n", &fNoRemoveEmptyRecords, "CHPL_DISABLE_REMOVE_EMPTY_RECORDS", NULL},
  {"reposition-def-expressions", ' ', NULL, "Enable [disable] repositioning of def expressions to usage points", "n", &fNoRepositionDefExpr, "CHPL_DISABLE_REPOSITION_DEF_EXPR", NULL},
  {"ignore-internal-modules", ' ', NULL, "Enable [disable] skipping internal module initialization in generated code (for testing)", "N", &fNoInternalModules, "CHPL_DISABLE_INTERNAL_MODULES", NULL},
- {"task-hooks", ' ', NULL, "Enable [disable] calls to taskInit and taskExit routines", "f", &fTaskHooks, "CHPL_TASKS_HOOKS", NULL},
  {"timers", ' ', NULL, "[Don't] Enable general timers one to five", "N", &fEnableTimers, "CHPL_ENABLE_TIMERS", NULL},
  {"print-chpl-home", ' ', NULL, "Print CHPL_HOME and path to this executable and exit", "F", &printChplHome, NULL, NULL},
  {0}
