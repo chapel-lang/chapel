@@ -6,7 +6,7 @@ proc bar(nm: string) {
 
   var dataFile = "/tmp/test.txt";
 
-  const hdfsFS: c_ptr = HDFS.hdfsConnect(nm, 0);
+  const hdfsFS: c_void_ptr = HDFS.hdfsConnect(nm, 0);
   const fileInfo = HDFS.chadoopGetFileInfo(hdfsFS, dataFile);
   const blockHosts = HDFS.hdfsGetHosts(hdfsFS, dataFile, 0, fileInfo.mSize); // incr 0?
   const blockCount = HDFS.chadoopGetBlockCount(blockHosts);

@@ -1,9 +1,3 @@
-/****** pointer helper functions ******/
-extern proc addrOf(ref x:?t):_ddata(t);
-
-proc typePtr(type t) type {
-  return _ddata(t);
-}
 /**************************************/
 module C { extern {
   #include "ptr.h"
@@ -51,20 +45,20 @@ var a: C.st;
 a.c = "a string";
 a.foo = 897234;
 
-var b: typePtr(C.st) = get_struct_ref();
+var b: c_ptr(C.st) = get_struct_ref();
 
-struct_ptr_test(addrOf(a));
+struct_ptr_test(c_ptrTo(a));
 struct_ptr_test(b);
 
 var y = get_int_ref();
 write_int_ref(y);
-var z:typePtr(typePtr(c_int)) = addrOf(y);
-var w = addrOf(z);
-var q = addrOf(w);
+var z:c_ptr(c_ptr(c_int)) = c_ptrTo(y);
+var w = c_ptrTo(z);
+var q = c_ptrTo(w);
 writeln(crazy_ptrs(q));
 writeln(C.foo);
 
 var x:c_int = 999;
-change_int_ref(addrOf(x));
+change_int_ref(c_ptrTo(x));
 writeln(x);
 

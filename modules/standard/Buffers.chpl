@@ -12,7 +12,7 @@ module BufferInternals {
   extern proc qbytes_retain(qb:qbytes_ptr_t);
   extern proc qbytes_release(qb:qbytes_ptr_t);
   extern proc qbytes_len(qb:qbytes_ptr_t):int(64);
-  extern proc qbytes_data(qb:qbytes_ptr_t):c_ptr;
+  extern proc qbytes_data(qb:qbytes_ptr_t):c_void_ptr;
 
   extern proc qbytes_create_iobuf(inout ret:qbytes_ptr_t):err_t;
   extern proc qbytes_create_calloc(inout ret:qbytes_ptr_t, len:int(64)):err_t;
@@ -58,7 +58,7 @@ module BufferInternals {
 
   extern proc bulk_get_bytes(src_locale:int, src_addr:qbytes_ptr_t):qbytes_ptr_t;
 
-  extern proc bulk_put_buffer(dst_locale:int, dst_addr:c_ptr, dst_len:int(64), buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t):err_t;
+  extern proc bulk_put_buffer(dst_locale:int, dst_addr:c_void_ptr, dst_len:int(64), buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t):err_t;
 
 }
 

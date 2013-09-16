@@ -93,7 +93,7 @@ sync coforall loc in Locales { // look at this more
     // 2) Find all the hosts/blocks for the file, from byte 0 to length
     // 3) On each locale, find the blocks you own and process them
     write("Connecting to HDFS on host " + here.name + "...");
-    var hdfsFS: c_ptr = HDFS.hdfsConnect(namenode, connectNumber);
+    var hdfsFS: c_void_ptr = HDFS.hdfsConnect(namenode, connectNumber);
     writeln("done");
     var fileInfo = HDFS.chadoopGetFileInfo(hdfsFS, dataFile);
     //      writeln("Info for file " + dataFile + ":");

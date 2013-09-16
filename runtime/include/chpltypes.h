@@ -22,10 +22,10 @@ typedef long long c_longlong;
 typedef unsigned long long c_ulonglong;
 typedef float c_float;
 typedef double c_double;
-typedef void* c_ptr;
+typedef void* c_void_ptr;
 #define c_nil NULL
 static inline c_int is_c_nil(void* x) { return x==NULL; }
-
+static inline void* c_ptrTo(void* x) { return x; }
 
 typedef enum {
   CHPL_TYPE_chpl_bool,

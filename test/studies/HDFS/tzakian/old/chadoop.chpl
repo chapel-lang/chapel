@@ -105,8 +105,8 @@ sync coforall loc in Locales { // look at this more
     // 2) Find all the hosts/blocks for the file, from byte 0 to length
     // 3) On each locale, find the blocks you own and process them
     //write("Connecting to HDFS on host " + here.name + "...");
-    //var hdfsFS: c_ptr = HDFS.hdfsConnect("default", 0);
-    var hdfsFS: c_ptr = HDFS.hdfsConnect(namenode, namenodeNum);
+    //var hdfsFS: c_void_ptr = HDFS.hdfsConnect("default", 0);
+    var hdfsFS: c_void_ptr = HDFS.hdfsConnect(namenode, namenodeNum);
     //writeln("done");
     var fileInfo = HDFS.chadoopGetFileInfo(hdfsFS, dataFile);
     //      writeln("Info for file " + dataFile + ":");
@@ -313,12 +313,12 @@ proc findFieldValueInt(s: string, fieldStart: string, base: int): (int, int) {
 }
 
 // Tests, not really that important
-proc testHdfs(hdfsFS: c_ptr) {
+proc testHdfs(hdfsFS: c_void_ptr) {
 
   var path = "/tmp/chadoop_test.txt";
 
   writeln("Opening " + path);
-  var writeFile: c_ptr = HDFS.hdfsOpenFile(hdfsFS, path, O_WRONLY, 0, 0, 0);
+  var writeFile: c_void_ptr = HDFS.hdfsOpenFile(hdfsFS, path, O_WRONLY, 0, 0, 0);
 
   if (HDFS.IS_NULL(writeFile) == HDFS.IS_NULL_TRUE) {
     writeln("Failed to open file for writing: " + path);

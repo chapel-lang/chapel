@@ -3739,6 +3739,12 @@ GenRet CallExpr::codegen() {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             codegenAssign(get(1),
                 codegenAddrOf(codegenElementPtr(call->get(1), call->get(2))));
+          } else if( get(1)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE,FLAG_WIDE_CLASS)) {
+            // resulting reference is wide, but the array is local.
+            // This can happen with c_ptr for extern integration...
+            codegenAssign(
+              get(1),
+              codegenAddrOf(codegenWideHere(codegenAddrOf(codegenElementPtr(call->get(1), call->get(2))))));
           } else {
             codegenAssign(
                 get(1),

@@ -42,7 +42,7 @@ END
 "UCHAR_MAX", "c_uchar",
 "SHRT_MAX", "c_short",
 "USHRT_MAX", "c_ushort",
-#"UINTPTR_MAX" => "c_ptr", # comment out if you want pointer opaque so no ptr arithmetic
+#"UINTPTR_MAX" => "c_void_ptr", # comment out if you want pointer opaque so no ptr arithmetic
 "SSIZE_MAX", "ssize_t",
 "SIZE_MAX", "size_t",
 );
@@ -169,7 +169,7 @@ for (my $i = 0; $i < @values; $i++ ) {
 }
 
 if( not $handled_c_ptr ) {
-  print "extern type c_ptr; // opaque; no ptr arithmetic in Chapel code!\n";
+  print "extern type c_void_ptr; // opaque; no ptr arithmetic in Chapel code!\n";
 }
 
 int(@values) == int(@rhstypes) or die "Got wrong number of type aliases";

@@ -34,15 +34,15 @@ static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Ve
         return new UnresolvedSymExpr("string"); 
     }
 
-    // void *  generates as c_ptr.
+    // void *  generates as c_void_ptr.
     if(!pointee) {
-      return new UnresolvedSymExpr("c_ptr");
+      return new UnresolvedSymExpr("c_void_ptr");
     }
 
     //Pointers (other than char*) are represented as calls to
     //_ddata(chapel_type).
     // PRIM_ACTUALS_LIST is not needed here.
-    return new CallExpr(new UnresolvedSymExpr("_ddata"), pointee);
+    return new CallExpr(new UnresolvedSymExpr("c_ptr"), pointee);
 
   //structs
   } else if (type->isStructureType()) { 

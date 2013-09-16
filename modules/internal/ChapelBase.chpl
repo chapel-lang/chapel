@@ -701,6 +701,8 @@ module ChapelBase {
   }
   
   // dynamic data block class
+  // (note that c_ptr(type) is similar, but local only,
+  //  and defined in SysBasic.chpl)
   pragma "data class"
   pragma "no object"
   pragma "no default functions"

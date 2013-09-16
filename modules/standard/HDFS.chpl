@@ -13,10 +13,10 @@ extern record hdfs_block_byte_map_t {
 }
 
 // Connect to HDFS
-extern proc hdfs_connect(inout fs: c_ptr, path: string, port: int): syserr; 
+extern proc hdfs_connect(inout fs: c_void_ptr, path: string, port: int): syserr; 
 
 // Disconnect from HDFS
-extern proc hdfs_disconnect(fs: c_ptr): syserr;
+extern proc hdfs_disconnect(fs: c_void_ptr): syserr;
 
 // Allocate an array for our locale mappings
 extern proc hdfs_alloc_array(n: int): char_ptr_ptr;
@@ -29,7 +29,7 @@ extern proc hdfs_create_locale_mapping(inout arr: char_ptr_ptr, num: int, loc_na
 extern proc hdfs_index_array(locs: qio_locale_map_ptr_t, i: int): hdfs_block_byte_map_t;
 
 // Populate function_ptr struct
-extern proc hdfs_create_file_functions(fs: c_ptr): qio_file_functions_ptr_t;
+extern proc hdfs_create_file_functions(fs: c_void_ptr): qio_file_functions_ptr_t;
 
 // Same as qio_file_open_access in IO.chpl, except this time we pass though our
 // struct that will initilize the file with the appropriate functions for that FS
@@ -50,14 +50,14 @@ record hdfsChapelFile {
 // Holds a configured HDFS filesystem per locale
 record hdfsChapelFileSystem {
   var home: locale;
-  var _internal_file: [rcDomain] c_ptr; // contains hdfsFS
+  var _internal_file: [rcDomain] c_void_ptr; // contains hdfsFS
 }
 
 // --------- Connecting/disconnecting ---------
 
 // Connect to HDFS
-proc hdfsChapelConnect(out error: syserr, path: string, port: int): c_ptr{
-  var ret: c_ptr;
+proc hdfsChapelConnect(out error: syserr, path: string, port: int): c_void_ptr{
+  var ret: c_void_ptr;
   error = hdfs_connect(ret, path, port);
   return ret;
 }
@@ -139,7 +139,7 @@ record hdfsChapelFile_local {
 
 record hdfsChapelFileSystem_local {
   var home: locale;
-  var _internal_: c_ptr;
+  var _internal_: c_void_ptr;
 }
 
 proc open(out error:syserr, path:string, mode:iomode, hints:iohints=IOHINT_NONE,

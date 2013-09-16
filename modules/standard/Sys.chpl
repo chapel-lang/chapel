@@ -203,14 +203,14 @@ module Sys {
   extern proc sys_open(pathname:string, flags:c_int, mode:mode_t, inout fd_out:fd_t):err_t;
   extern proc sys_close(fd:fd_t):err_t;
 
-  extern proc sys_mmap(addr:c_ptr, length:size_t, prot:c_int, flags:c_int, fd:fd_t, offset:off_t, inout ret_out:c_ptr):err_t;
-  extern proc sys_munmap(addr:c_ptr, length:size_t):err_t;
+  extern proc sys_mmap(addr:c_void_ptr, length:size_t, prot:c_int, flags:c_int, fd:fd_t, offset:off_t, inout ret_out:c_void_ptr):err_t;
+  extern proc sys_munmap(addr:c_void_ptr, length:size_t):err_t;
 
   // readv, writev, preadv, pwritev -- can't (yet) pass array.
   
   extern proc sys_fcntl(fd:fd_t, cmd:c_int, inout ret_out:c_int):err_t;
   extern proc sys_fcntl_long(fd:fd_t, cmd:c_int, arg:c_long, inout ret_out:c_int):err_t;
-  extern proc sys_fcntl_ptr(fd:fd_t, cmd:c_int, arg:c_ptr, inout ret_out:c_int):err_t;
+  extern proc sys_fcntl_ptr(fd:fd_t, cmd:c_int, arg:c_void_ptr, inout ret_out:c_int):err_t;
   extern proc sys_dup(oldfd:fd_t, inout fd_out:fd_t):err_t;
   extern proc sys_dup2(oldfd:fd_t, newfd:fd_t, inout fd_out:fd_t):err_t;
   extern proc sys_pipe(inout read_fd_out:fd_t, inout write_fd_out:fd_t):err_t;
@@ -232,8 +232,8 @@ module Sys {
 
   // TODO -- these should be generic, assuming caller knows what they
   // are doing.
-  extern proc sys_getsockopt(sockfd:fd_t, level:c_int, optname:c_int, optval:c_ptr, inout optlen:socklen_t):err_t;
-  extern proc sys_setsockopt(sockfd:fd_t, level:c_int, optname:c_int, optval:c_ptr, optlen:socklen_t):err_t;
+  extern proc sys_getsockopt(sockfd:fd_t, level:c_int, optname:c_int, optval:c_void_ptr, inout optlen:socklen_t):err_t;
+  extern proc sys_setsockopt(sockfd:fd_t, level:c_int, optname:c_int, optval:c_void_ptr, optlen:socklen_t):err_t;
 
   extern proc sys_listen(sockfd:fd_t, backlog:c_int):err_t;
   extern proc sys_shutdown(sockfd:fd_t, how:c_int):err_t;

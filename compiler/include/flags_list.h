@@ -105,7 +105,7 @@ symbolFlag( FLAG_NO_PROTOTYPE , ypr, "no prototype" , "do not generate a prototy
 // unwrapped to reveal the underlying type.  This flag prevents that unwrapping, 
 // so the called routine gets to see the sync object as a whole.
 symbolFlag( FLAG_NO_SYNC_DEMOTION , ypr, "no sync demotion" , "prevents a sync type from being unwrapped" )
-symbolFlag( FLAG_NO_WIDE_CLASS , npr, "no wide class" , ncm )
+symbolFlag( FLAG_NO_WIDE_CLASS , ypr, "no wide class" , ncm )
 symbolFlag( FLAG_NON_BLOCKING , npr, "non blocking" , "with FLAG_ON/FLAG_ON_BLOCK, non-blocking on functions" )
 symbolFlag( FLAG_OBJECT_CLASS , npr, "object class" , ncm )
 symbolFlag( FLAG_OMIT_FROM_CONSTRUCTOR , ypr, "omit from constructor" , ncm )

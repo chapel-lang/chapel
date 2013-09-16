@@ -348,9 +348,9 @@ extern proc qio_channel_scan_string(threadsafe:c_int, ch:qio_channel_ptr_t, ref 
 extern proc qio_channel_print_string(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:string, len:ssize_t):err_t;
 
 extern proc qio_channel_scan_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:string, len:ssize_t, skipws:c_int):err_t;
-extern proc qio_channel_scan_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_ptr, len:ssize_t, skipws:c_int):err_t;
+extern proc qio_channel_scan_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_void_ptr, len:ssize_t, skipws:c_int):err_t;
 extern proc qio_channel_print_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:string, len:ssize_t):err_t;
-extern proc qio_channel_print_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_ptr, len:ssize_t):err_t;
+extern proc qio_channel_print_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_void_ptr, len:ssize_t):err_t;
 
 extern record qio_conv_t {
   var preArg1:uint(8);
@@ -359,11 +359,11 @@ extern record qio_conv_t {
   var argType:uint(8);
   var literal_is_whitespace:uint(8);
   var literal_length:uint(32);
-  var literal:c_ptr;
+  var literal:c_void_ptr;
   var regexp_length:uint(32);
-  var regexp:c_ptr;
+  var regexp:c_void_ptr;
   var regexp_flags_length:uint(32);
-  var regexp_flags:c_ptr;
+  var regexp_flags:c_void_ptr;
 }
 
 extern const QIO_CONV_UNK:c_int;

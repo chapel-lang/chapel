@@ -16,7 +16,7 @@ extern proc qio_regexp_null():qio_regexp_t;
 extern proc qio_regexp_init_default_options(ref options:qio_regexp_options_t);
 extern proc qio_regexp_create_compile(str:string, strlen:int(64), ref options:qio_regexp_options_t, ref compiled:qio_regexp_t);
 extern proc qio_regexp_create_compile_flags(str:string, strlen:int(64), flags:string, flagslen:int(64), isUtf8:bool, ref compiled:qio_regexp_t);
-extern proc qio_regexp_create_compile_flags_2(str:c_ptr, strlen:int(64), flags:c_ptr, flagslen:int(64), isUtf8:bool, ref compiled:qio_regexp_t);
+extern proc qio_regexp_create_compile_flags_2(str:c_void_ptr, strlen:int(64), flags:c_void_ptr, flagslen:int(64), isUtf8:bool, ref compiled:qio_regexp_t);
 extern proc qio_regexp_retain(ref compiled:qio_regexp_t);
 extern proc qio_regexp_release(ref compiled:qio_regexp_t);
 

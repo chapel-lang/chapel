@@ -34,11 +34,69 @@ extern type err_t = c_int;
 extern type fd_t = c_int;
 
 // NULL
-extern const c_nil:c_ptr;
-// To generate legal C prototypes, we have to manually instantiate this prototype
-// for each pointer type that might be associated with 'x'.
+extern const c_nil:c_void_ptr;
+// To generate legal C prototypes, we have to manually instantiate this
+// prototype for each pointer type that might be associated with 'x'.
 pragma "no prototype"
 extern proc is_c_nil(x):c_int;
+
+// local C pointer class used in C integration.
+// Similar to _ddata from ChapelBase, but differs 
+// from _ddata because it can never be wide.
+pragma "data class"
+pragma "no object"
+pragma "no default functions"
+pragma "no wide class"
+class c_ptr {
+  type eltType;
+  inline proc this(i: integral) var {
+    return __primitive("array_get", this, i);
+  }
+  inline proc deref() var {
+    return __primitive("array_get", this, 0);
+  }
+}
+
+inline proc _cast(type t, x) where t:c_ptr && x:_nilType {
+  return __primitive("cast", t, x);
+}
+
+inline proc c_calloc(type eltType, size: integral) {
+  var ret:c_ptr(eltType);
+  __primitive("array_alloc", ret, eltType, size);
+  init_elts(ret, size, eltType);
+  return ret;
+}
+
+inline proc c_free(data: c_ptr) {
+  __primitive("array_free", data);
+}
+
+inline proc ==(a: c_ptr, b: c_ptr) where a.eltType == b.eltType {
+  return __primitive("ptr_eq", a, b);
+}
+inline proc ==(a: c_ptr, b: _nilType) {
+  return __primitive("ptr_eq", a, nil);
+}
+inline proc ==(a: _nilType, b: c_ptr) {
+  return __primitive("ptr_eq", nil, b);
+}
+
+inline proc !=(a: c_ptr, b: c_ptr) where a.eltType == b.eltType {
+  return __primitive("ptr_neq", a, b);
+}
+inline proc !=(a: c_ptr, b: _nilType) {
+  return __primitive("ptr_neq", a, nil);
+}
+inline proc !=(a: _nilType, b: c_ptr) {
+  return __primitive("ptr_neq", nil, b);
+}
+
+inline proc _cond_test(x: c_ptr) return x != nil;
+
+inline proc !(x: c_ptr) return x == nil;
+extern proc c_ptrTo(ref x:?t):c_ptr(t);
+
 
 // error numbers
 

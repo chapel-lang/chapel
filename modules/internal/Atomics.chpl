@@ -101,18 +101,18 @@ module Atomics {
   extern proc atomic_fetch_xor_explicit_uint_least64_t(ref obj:atomic_uint_least64_t, operand:uint(64), order:memory_order):uint(64);
 
   extern proc atomic_is_lock_free_uintptr_t(ref obj:atomic_uintptr_t):bool;
-  extern proc atomic_init_uintptr_t(ref obj:atomic_uintptr_t, value:c_ptr);
+  extern proc atomic_init_uintptr_t(ref obj:atomic_uintptr_t, value:c_void_ptr);
   extern proc atomic_destroy_uintptr_t(ref obj:atomic_uintptr_t);
-  extern proc atomic_store_explicit_uintptr_t(ref obj:atomic_uintptr_t, value:c_ptr, order:memory_order);
-  extern proc atomic_load_explicit_uintptr_t(ref obj:atomic_uintptr_t, order:memory_order):c_ptr;
-  extern proc atomic_exchange_explicit_uintptr_t(ref obj:atomic_uintptr_t, value:c_ptr, order:memory_order):c_ptr;
-  extern proc atomic_compare_exchange_strong_explicit_uintptr_t(ref obj:atomic_uintptr_t, expected:c_ptr, desired:c_ptr, order:memory_order):bool;
-  extern proc atomic_compare_exchange_weak_explicit_uintptr_t(ref obj:atomic_uintptr_t, expected:c_ptr, desired:c_ptr, order:memory_order):bool;
-  extern proc atomic_fetch_add_explicit_uintptr_t(ref obj:atomic_uintptr_t, operand:c_ptr, order:memory_order):c_ptr;
-  extern proc atomic_fetch_sub_explicit_uintptr_t(ref obj:atomic_uintptr_t, operand:c_ptr, order:memory_order):c_ptr;
-  extern proc atomic_fetch_or_explicit_uintptr_t(ref obj:atomic_uintptr_t, operand:c_ptr, order:memory_order):c_ptr;
-  extern proc atomic_fetch_and_explicit_uintptr_t(ref obj:atomic_uintptr_t, operand:c_ptr, order:memory_order):c_ptr;
-  extern proc atomic_fetch_xor_explicit_uintptr_t(ref obj:atomic_uintptr_t, operand:c_ptr, order:memory_order):c_ptr;
+  extern proc atomic_store_explicit_uintptr_t(ref obj:atomic_uintptr_t, value:c_void_ptr, order:memory_order);
+  extern proc atomic_load_explicit_uintptr_t(ref obj:atomic_uintptr_t, order:memory_order):c_void_ptr;
+  extern proc atomic_exchange_explicit_uintptr_t(ref obj:atomic_uintptr_t, value:c_void_ptr, order:memory_order):c_void_ptr;
+  extern proc atomic_compare_exchange_strong_explicit_uintptr_t(ref obj:atomic_uintptr_t, expected:c_void_ptr, desired:c_void_ptr, order:memory_order):bool;
+  extern proc atomic_compare_exchange_weak_explicit_uintptr_t(ref obj:atomic_uintptr_t, expected:c_void_ptr, desired:c_void_ptr, order:memory_order):bool;
+  extern proc atomic_fetch_add_explicit_uintptr_t(ref obj:atomic_uintptr_t, operand:c_void_ptr, order:memory_order):c_void_ptr;
+  extern proc atomic_fetch_sub_explicit_uintptr_t(ref obj:atomic_uintptr_t, operand:c_void_ptr, order:memory_order):c_void_ptr;
+  extern proc atomic_fetch_or_explicit_uintptr_t(ref obj:atomic_uintptr_t, operand:c_void_ptr, order:memory_order):c_void_ptr;
+  extern proc atomic_fetch_and_explicit_uintptr_t(ref obj:atomic_uintptr_t, operand:c_void_ptr, order:memory_order):c_void_ptr;
+  extern proc atomic_fetch_xor_explicit_uintptr_t(ref obj:atomic_uintptr_t, operand:c_void_ptr, order:memory_order):c_void_ptr;
 
   extern proc atomic_is_lock_free_int_least8_t(ref obj:atomic_int_least8_t):bool;
   extern proc atomic_init_int_least8_t(ref obj:atomic_int_least8_t, value:int(8));
