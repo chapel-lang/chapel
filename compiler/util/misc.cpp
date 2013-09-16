@@ -37,6 +37,13 @@ static int err_print;
 static int err_ignore;
 static FnSymbol* err_fn = NULL;
 
+bool requireWideReferences() {
+  return !fLocal || !strcmp(CHPL_LOCALE_MODEL, "numa");
+}
+
+bool requireOutlinedOn() {
+  return !fLocal || !strcmp(CHPL_LOCALE_MODEL, "numa");
+}
 
 const char* cleanFilename(const char* name) {
   static int chplHomeLen = strlen(CHPL_HOME);
@@ -46,7 +53,7 @@ const char* cleanFilename(const char* name) {
   } else {
     return name;
   }
-}  
+}
 
 
 static const char* cleanFilename(BaseAST* ast) {

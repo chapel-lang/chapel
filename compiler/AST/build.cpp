@@ -1875,11 +1875,10 @@ buildOnStmt(Expr* expr, Expr* stmt) {
       tmp = NULL;
   }
 
-  // If we're compiling --local, then we don't actually need to build
-  // an on-stmt, so instead we take the on-expression, execute it to
-  // evaluate it for side effects, and then evaluate the body.
-  //
-  if (fLocal) {
+  // If the locale model doesn't require outlined on functions and this is a
+  // --local compile, then we take the on-expression, execute it to evaluate
+  // it for side effects, and then evaluate the body directly.
+  if (!requireOutlinedOn()) {
     BlockStmt* block = new BlockStmt(stmt);
     block->insertAtHead(onExpr); // evaluate the expression for side effects
     return buildChapelStmt(block);

@@ -1112,7 +1112,7 @@ bool isRefWideString(Type* t) {
 }
 
 bool isWideString(Type* t) {
-  if (fLocal) return false; // no wide string type will exist if fLocal
+  if (!requireWideReferences()) return false; // no wide string type will exist if wide references weren't created
   INT_ASSERT(wideStringType); // should only be called after it exists!
   if (t == NULL) return false;
   if( t == wideStringType ) return true;
@@ -1351,12 +1351,12 @@ insertWideReferences(void) {
   theProgram->block->insertAtTail(new DefExpr(heapAllocateGlobals));
   heapAllocateGlobals->insertAtHead(new CallExpr(PRIM_ALLOC_GVR));
 
-  if (fLocal) {
+  if (!requireWideReferences()) {
     heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
     return;
   }
 
-  INT_ASSERT(!fLocal);
+  INT_ASSERT(requireWideReferences());
 
   Vec<Symbol*> heapVars;
   getHeapVars(heapVars);
