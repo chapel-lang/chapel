@@ -34,24 +34,6 @@ no-local testing takes more than 24 hours
 -----------------------------------------
 9/10/13, 9/11/13
 
-new valgrind timeouts (from 9/9/13)
------------------------------------
-These may be due to Elliot's LICM bug.
-
-[Error: Timed out compilation for multilocale/gbt/hello-numThreads-1]
-[Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/2dStrideTest]
-[Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/3dStrideTest]
-[Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/perfTest (compopts: 1)]
-[Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/perfTest_v2 (compopts: 1)]
-[Error: Timed out compilation for optimizations/bulkcomm/alberto/Cyclic/perfTest (compopts: 1)]
-[Error: Timed out compilation for optimizations/bulkcomm/alberto/Cyclic/perfTest_v2 (compopts: 1)]
-[Error: Timed out compilation for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 1)]
-[Error: Timed out compilation for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 2)]
-[Error: Timed out compilation for sparse/parallel/sparse-iter-dom-arr-zipper]
-[Error: Timed out compilation for users/franzf/v0/chpl/main (compopts: 1)]
-[Error: Timed out compilation for users/franzf/v1/chpl/main (compopts: 1)]
-[Error: Timed out compilation for users/franzf/v2/chpl/main (compopts: 1)]
-
 
 regularly occuring compilation timeouts
 ---------------------------------------
@@ -83,7 +65,7 @@ Brad's r21590 was supposed to take care of this, but it hasn't.
 
 chpbld01 testing (bradc)
 ------------------------
-Not sure where this is currently, but Brad is struggling along.
+"Somewhat horked up still" -- Brad
 
 ==============================================
 These things regularly cause noise in testing:
@@ -198,6 +180,9 @@ intermittent valgrind error
 ---------------------------
 - studies/madness/aniruddha/madchap/mytests/par-compress/test_compress
 (compopts: 1) (02/26/13)
+- distributions/dm/t5a
+(on 6/29/2013, 8/12/2013, 9/9/13)
+
 
 - studies/madness/aniruddha/madchap/mytests/par-refine/test_refine (compopts: 1)
 Got wrong answer for F3.norm2() on 10/29/12, 01/14/13.
