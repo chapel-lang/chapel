@@ -16,7 +16,7 @@ proc foo(n:int, ref p:real, ref q:int)
 proc doit() {
   var p = 0.0;
   var q = 1;
-  foo(100, p, q);
+  foo(10, p, q);
 
   writeln("p=", p, " q=", q);
 }

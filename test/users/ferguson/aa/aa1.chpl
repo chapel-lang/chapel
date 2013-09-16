@@ -16,9 +16,9 @@ proc foo(n:int, ref p:int, ref q:int)
 var p = 1;
 var q = 1;
 var s = 1;
-foo(100, q, q);
+foo(10, q, q);
 writeln("q=", q);
 
-foo(101, p, s);
-writeln("q=", q);
+foo(12, p, s);
+writeln("p=", p, " s=", s);
 
