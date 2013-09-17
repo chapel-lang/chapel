@@ -355,6 +355,13 @@ that should be considered and agreed upon rather than reflecting a way
 in which the compiler is incorrect w.r.t. the language definition (as
 I understand it.
 
+
+linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc (Sungeun)
+--------------------------------------------------------
+This failed with 1 fewer fork on the 4th locale than expected (9/7/2013) and
+passed the next time it was run.
+[Error matching program output for performance/sungeun/multilocale/syncsingle]
+
 cray-xt.cray-xt-cray.none.fifo.pthreads
 --------------------------------------
 The following compiler segfaults(?) appeared only once on 9/28/12
