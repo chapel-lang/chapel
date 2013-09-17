@@ -1,0 +1,1 @@
+--no-cc-warnings -sprintCorrect=true -sprintPerf=false helpers/force.chpl helpers/thermo.chpl helpers/initMD.chpl
