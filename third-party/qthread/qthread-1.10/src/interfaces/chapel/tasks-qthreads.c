@@ -113,7 +113,8 @@ struct chpl_task_list {
 };
 
 typedef struct {
-  chpl_bool serial_state;  // true: serialize execution
+  c_sublocid_t requestedSubloc;  // requested sublocal for task
+  chpl_bool    serial_state;     // true: serialize execution
 } task_private_data_t;
 
 typedef struct {
@@ -156,12 +157,7 @@ static inline chapel_tls_t * chapel_get_tasklocal_possibly_from_non_task(void)
     return tls;
 }
 
-// Default locale id.
-static c_localeid_t const default_locale_id = 0;
-
-// Default serial state is used outside of the tasking layer.
-static chpl_bool default_serial_state = true;
-static syncvar_t exit_ret             = SYNCVAR_STATIC_EMPTY_INITIALIZER;
+static syncvar_t exit_ret = SYNCVAR_STATIC_EMPTY_INITIALIZER;
 
 void chpl_task_yield(void)
 {
@@ -457,14 +453,10 @@ static aligned_t chapel_wrapper(void *arg)
 // not use methods that require task context (e.g., task-local storage).
 void chpl_task_callMain(void (*chpl_main)(void))
 {
-    const chpl_bool initial_serial_state = false;
-    const c_localeid_t initial_locale_id = default_locale_id;
     const chapel_wrapper_args_t wrapper_args = 
-        {chpl_main, NULL, NULL, 0, {initial_serial_state}};
+        {chpl_main, NULL, NULL, 0, {c_sublocid_any, false}};
 
     qthread_debug(CHAPEL_CALLS, "[%d] begin chpl_task_callMain()\n", chpl_localeID);
-
-    default_serial_state = initial_serial_state;
 
 #ifdef QTHREAD_MULTINODE
     qthread_debug(CHAPEL_BEHAVIOR, "[%d] calling spr_unify\n", chpl_localeID);
@@ -503,7 +495,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
     qthread_shepherd_id_t const here_shep_id = qthread_shep();
     chpl_bool serial_state = chpl_task_getSerial();
     chapel_wrapper_args_t wrapper_args = 
-      {chpl_ftable[fid], arg, filename, lineno, {serial_state}};
+        {chpl_ftable[fid], arg, filename, lineno, {subLoc, serial_state}};
 
     PROFILE_INCR(profile_task_addToTaskList,1);
 
@@ -550,7 +542,7 @@ void chpl_task_startMovedTask(chpl_fn_p      fp,
     assert(id == chpl_nullTaskID);
 
     chapel_wrapper_args_t wrapper_args = 
-      {fp, arg, NULL, 0, {serial_state}};
+        {fp, arg, NULL, 0, {subLoc, serial_state}};
 
     PROFILE_INCR(profile_task_startMovedTask,1);
 
@@ -591,11 +583,28 @@ void chpl_task_setSubLoc(c_sublocid_t subLoc)
     //       before tasking init and in any case would be done from the
     //       main thread of execution, which doesn't have a shepherd.
     //       The code below wouldn't work in that situation.
-    if (subLoc != c_sublocid_any &&
-        subLoc != c_sublocid_curr &&
-        (curr_shep = qthread_shep()) != NO_SHEPHERD &&
-        (qthread_shepherd_id_t) subLoc != curr_shep) {
-        qthread_migrate_to((qthread_shepherd_id_t) subLoc);
+    if (subLoc != c_sublocid_curr &&
+        (curr_shep = qthread_shep()) != NO_SHEPHERD) {
+        chapel_tls_t * data = chapel_get_tasklocal_possibly_from_non_task();
+        if (data) {
+            data->chpl_data.requestedSubloc = subLoc;
+        }
+
+        if (subLoc != c_sublocid_any &&
+            (qthread_shepherd_id_t) subLoc != curr_shep) {
+            qthread_migrate_to((qthread_shepherd_id_t) subLoc);
+        }
+    }
+}
+
+c_sublocid_t chpl_task_getRequestedSubLoc(void)
+{
+    chapel_tls_t * data = chapel_get_tasklocal_possibly_from_non_task();
+    if (data) {
+        return data->chpl_data.requestedSubloc;
+    }
+    else {
+        return c_sublocid_any;
     }
 }
 

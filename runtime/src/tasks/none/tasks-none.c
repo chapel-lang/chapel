@@ -24,7 +24,8 @@
 typedef struct chpl_pool_struct* chpl_task_pool_p;
 
 typedef struct {
-  chpl_bool serial_state;  // true: serialize execution
+  c_sublocid_t requestedSubloc;  // requested sublocal for task
+  chpl_bool    serial_state;     // true: serialize execution
 } task_private_data_t;
 
 typedef struct chpl_pool_struct {
@@ -91,7 +92,7 @@ void chpl_sync_destroyAux(chpl_sync_aux_t *s) { }
 
 static chpl_taskID_t next_taskID = chpl_nullTaskID + 1;
 static chpl_taskID_t curr_taskID;
-static task_private_data_t s_chpl_data = { .serial_state = true, };
+static task_private_data_t s_chpl_data = { c_sublocid_any, true };
 static uint64_t taskCallStackSize = 0;
 
 void chpl_task_init(void) {
@@ -185,7 +186,8 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid,
     task->id = next_taskID++;
     task->fun = chpl_ftable[fid];
     task->arg = arg;
-    task->chpl_data = s_chpl_data;
+    task->chpl_data.requestedSubloc = subLoc;
+    task->chpl_data.serial_state = s_chpl_data.serial_state;
     task->next = NULL;
 
     if (task_pool_tail) {
@@ -223,6 +225,7 @@ void chpl_task_startMovedTask(chpl_fn_p fp,
   task->id = next_taskID++;
   task->fun = fp;
   task->arg = a;
+  task->chpl_data.requestedSubloc = subLoc;
   task->chpl_data.serial_state = serial_state;
   task->next = NULL;
 
@@ -242,6 +245,11 @@ void chpl_task_setSubLoc(c_sublocid_t subLoc) {
   assert(subLoc == 0
          || subLoc == c_sublocid_any
          || subLoc == c_sublocid_curr);
+  s_chpl_data.requestedSubloc = subLoc;
+}
+
+c_sublocid_t chpl_task_getRequestedSubloc(void) {
+  return s_chpl_data.requestedSubloc;
 }
 
 chpl_taskID_t chpl_task_getId(void) { return curr_taskID; }

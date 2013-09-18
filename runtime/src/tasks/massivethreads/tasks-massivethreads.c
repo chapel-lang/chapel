@@ -29,29 +29,29 @@
 #include "myth.h"
 
 typedef struct{
-  chpl_bool serial_state;
-}chpl_task_private_data_t;
+  c_sublocid_t requestedSubloc;  // requested sublocal for task
+  chpl_bool    serial_state;     // true: serialize execution
+}task_private_data_t;
 
 typedef struct{
   int flag;
-  chpl_task_private_data_t chpl_data;
+  task_private_data_t chpl_data;
 }thread_local_data;
 
 static int tasking_layer_active=0;
 static int worker_in_cs_beforeinit=0;
 static thread_local_data* s_tld;
-static const chpl_task_private_data_t s_def_chpl_data=
-             { .serial_state = false,
-             };
+static const task_private_data_t s_def_chpl_data=
+             { c_sublocid_any, false };
 static const uint64_t c_def_stack_size = 32 * 1024 * sizeof(size_t);
 
-static inline chpl_task_private_data_t* getTaskPrivateData(void)
+static inline task_private_data_t* getTaskPrivateData(void)
 {
         if (tasking_layer_active){
         int rank=myth_get_worker_num();
         return &s_tld[rank].chpl_data;
         }
-        return (chpl_task_private_data_t*) &s_def_chpl_data;
+        return (task_private_data_t*) &s_def_chpl_data;
 }
 
 static inline chpl_bool GET_SERIAL_STATE(void)
@@ -64,17 +64,17 @@ static inline void SET_SERIAL_STATE(chpl_bool newstate)
         getTaskPrivateData()->serial_state = newstate;
         }
 }
-static inline void GET_STATE(chpl_task_private_data_t* chpl_data_)
+static inline void GET_STATE(task_private_data_t* chpl_data_)
 {
         *chpl_data_ = *getTaskPrivateData();
 }
-static inline void SET_STATE(chpl_task_private_data_t newdata)
+static inline void SET_STATE(task_private_data_t newdata)
 {
         if (tasking_layer_active){
         *getTaskPrivateData() = newdata;
         }
 }
-#define SAVE_STATE() chpl_task_private_data_t saved_chpl_data;  \
+#define SAVE_STATE() task_private_data_t saved_chpl_data;  \
   GET_STATE(&saved_chpl_data);
 #define RESTORE_STATE() SET_STATE(saved_chpl_data);
 
@@ -300,7 +300,7 @@ void chpl_task_callMain(void (*chpl_main)(void))
 typedef struct{
         chpl_fn_p fn;
         void *a;
-        chpl_task_private_data_t chpl_data;
+        task_private_data_t chpl_data;
 }ns_task_wrapper_args;
 
 static void *ns_task_wrapper(void *args)
@@ -326,6 +326,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid,
         //Create a new task directly
         chpl_bool serial_state = GET_SERIAL_STATE();
         myth_thread_t th;
+        task_private_data_t chpl_data={subLoc, serial_state};
 
         assert(subLoc == 0
                || subLoc == c_sublocid_any
@@ -349,11 +350,12 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid,
                 ns_args=chpl_mem_alloc(sizeof(ns_task_wrapper_args), 0, 0, "");
                 ns_args->a=arg;
                 ns_args->fn=chpl_ftable[fid];
-                ns_args->chpl_data=*getTaskPrivateData();
+                ns_args->chpl_data=chpl_data;
                 th=myth_create_ex(ns_task_wrapper,ns_args,&opt);
         }
         else{
                 SAVE_STATE();
+                SET_STATE(chpl_data);
                 th=myth_create((void*(*)(void*))chpl_ftable[fid],arg);
                 RESTORE_STATE();
         }
@@ -383,6 +385,7 @@ void chpl_task_startMovedTask(chpl_fn_p fp,
                               chpl_bool serial_state)
 {
         myth_thread_t th;
+        task_private_data_t chpl_data={subLoc, serial_state};
 
         assert(subLoc == 0 || subLoc == c_sublocid_any);
         assert(id == chpl_nullTaskID);
@@ -399,13 +402,12 @@ void chpl_task_startMovedTask(chpl_fn_p fp,
                 ns_args=chpl_mem_alloc(sizeof(ns_task_wrapper_args), 0, 0, "");
                 ns_args->a=a;
                 ns_args->fn=fp;
-                ns_args->chpl_data=*getTaskPrivateData();
-                ns_args->chpl_data.serial_state=serial_state;
+                ns_args->chpl_data=chpl_data;
                 th=myth_create_ex(ns_task_wrapper,ns_args,&opt);
         }
         else{
                 SAVE_STATE();
-                SET_SERIAL_STATE(serial_state);
+                SET_STATE(chpl_data);
                 th=myth_create((void*(*)(void*))fp,a);
                 RESTORE_STATE();
         }
@@ -423,6 +425,12 @@ void chpl_task_setSubLoc(c_sublocid_t subLoc)
         assert(subLoc == 0
                || subLoc == c_sublocid_any
                || subLoc == c_sublocid_curr);
+        getTaskPrivateData()->requestedSubloc=subLoc;
+}
+
+c_sublocid_t chpl_task_getRequestedSubloc(void)
+{
+        return getTaskPrivateData()->requestedSubloc;
 }
 
 chpl_taskID_t chpl_task_getId(void)

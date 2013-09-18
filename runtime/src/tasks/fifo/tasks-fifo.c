@@ -32,7 +32,8 @@
 typedef struct task_pool_struct* task_pool_p;
 
 typedef struct {
-  chpl_bool serial_state;  // true: serialize execution
+  c_sublocid_t requestedSubloc;  // requested sublocal for task
+  chpl_bool    serial_state;     // true: serialize execution
 } task_private_data_t;
 
 typedef struct task_pool_struct {
@@ -57,6 +58,7 @@ typedef struct task_pool_struct {
 struct chpl_task_list {
   chpl_fn_p fun;
   void* arg;
+  task_private_data_t chpl_data;
   volatile task_pool_p ptask; // when null, execution of the associated task has begun
   chpl_string filename;
   int lineno;
@@ -128,12 +130,13 @@ static void                    unset_block_loc(void);
 static void                    check_for_deadlock(void);
 static void                    thread_begin(void*);
 static void                    thread_end(void);
-static void                    begin_task(chpl_fn_p, void*, chpl_task_list_p);
+static void                    begin_task(chpl_fn_p, void*, task_private_data_t,
+                                          chpl_task_list_p);
 static void                    launch_next_task_in_new_thread(void);
 static void                    schedule_next_task(int);
 static task_pool_p             add_to_task_pool(chpl_fn_p,
                                                 void*,
-                                                chpl_bool,
+                                                task_private_data_t,
                                                 chpl_task_list_p);
 
 
@@ -279,6 +282,7 @@ void chpl_task_init(void) {
     tp->lockRprt            = NULL;
 
     // Set up task-private data for locale (architectural) support.
+    tp->ptask->chpl_data.requestedSubloc = c_sublocid_any;
     tp->ptask->chpl_data.serial_state = true;     // Set to false in chpl_task_callMain().
 
     chpl_thread_setPrivateData(tp);
@@ -353,6 +357,7 @@ static void comm_task_wrapper(void* arg) {
 
   //
   // The comm (polling) task shouldn't really need this information.
+  tp->ptask->chpl_data.requestedSubloc = c_sublocid_any;
   tp->ptask->chpl_data.serial_state = true;
 
   tp->lockRprt = NULL;
@@ -370,6 +375,8 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg,
                              chpl_bool is_begin_stmt,
                              int lineno,
                              chpl_string filename) {
+  task_private_data_t chpl_data = { subLoc, chpl_task_getSerial() };
+
   assert(subLoc == 0
          || subLoc == c_sublocid_any
          || subLoc == c_sublocid_curr);
@@ -385,8 +392,10 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg,
     ltask->fun      = chpl_ftable[fid];
     ltask->arg      = arg;
     ltask->ptask    = NULL;
+    ltask->chpl_data = chpl_data;
+
     if (is_begin_stmt)
-      begin_task(chpl_ftable[fid], arg, ltask);
+      begin_task(chpl_ftable[fid], arg, chpl_data, ltask);
 
     // begin critical section - not needed for cobegin or coforall statements
     if (is_begin_stmt)
@@ -409,7 +418,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg,
     // chpl_nodeID, then this function could not have been called from
     // the context of a cobegin or coforall statement.
     assert(is_begin_stmt);
-    begin_task(chpl_ftable[fid], arg, NULL);
+    begin_task(chpl_ftable[fid], arg, chpl_data, NULL);
   }
 }
 
@@ -451,7 +460,7 @@ void chpl_task_processTaskList(chpl_task_list_p task_list) {
       do {
         ltask = next_task;
         ltask->ptask = add_to_task_pool(ltask->fun, ltask->arg,
-                                        curr_ptask->chpl_data.serial_state, ltask);
+                                        ltask->chpl_data, ltask);
         assert(ltask->ptask == NULL
                || ltask->ptask->ltask == ltask);
         next_task = ltask->next;
@@ -655,13 +664,15 @@ void chpl_task_startMovedTask(chpl_fn_p fp,
                               c_sublocid_t subLoc,
                               chpl_taskID_t id,
                               chpl_bool serial_state) {
+  task_private_data_t chpl_data = { subLoc, serial_state };
+
   assert(subLoc == 0 || subLoc == c_sublocid_any);
   assert(id == chpl_nullTaskID);
 
   // begin critical section
   chpl_thread_mutexLock(&threading_lock);
 
-  (void) add_to_task_pool(fp, a, serial_state, NULL);
+  (void) add_to_task_pool(fp, a, chpl_data, NULL);
   schedule_next_task(1);
 
   // end critical section
@@ -678,6 +689,12 @@ void chpl_task_setSubLoc(c_sublocid_t subLoc) {
   assert(subLoc == 0
          || subLoc == c_sublocid_any
          || subLoc == c_sublocid_curr);
+  get_current_ptask()->chpl_data.requestedSubloc = subLoc;
+}
+
+
+c_sublocid_t chpl_task_getRequestedSubloc(void) {
+  return get_current_ptask()->chpl_data.requestedSubloc;
 }
 
 
@@ -1151,8 +1168,9 @@ static void thread_end(void)
 // interface function with begin-statement
 //
 static
-void begin_task(chpl_fn_p fp, void* a, chpl_task_list_p ltask) {
-  if (chpl_task_getSerial())
+void begin_task(chpl_fn_p fp, void* a, task_private_data_t chpl_data,
+                chpl_task_list_p ltask) {
+  if (chpl_data.serial_state)
     (*fp)(a);
   else {
     task_pool_p ptask = NULL;
@@ -1160,7 +1178,7 @@ void begin_task(chpl_fn_p fp, void* a, chpl_task_list_p ltask) {
     // begin critical section
     chpl_thread_mutexLock(&threading_lock);
 
-    ptask = add_to_task_pool(fp, a, false, ltask);
+    ptask = add_to_task_pool(fp, a, chpl_data, ltask);
 
     //
     // This task may begin executing before returning from this function,
@@ -1264,7 +1282,7 @@ static void schedule_next_task(int howMany) {
 // assumes threading_lock has already been acquired!
 static task_pool_p add_to_task_pool(chpl_fn_p fp,
                                     void* a,
-                                    chpl_bool serial,
+                                    task_private_data_t chpl_data,
                                     chpl_task_list_p ltask) {
   task_pool_p ptask =
     (task_pool_p) chpl_mem_alloc(sizeof(task_pool_t),
@@ -1275,8 +1293,7 @@ static task_pool_p add_to_task_pool(chpl_fn_p fp,
   ptask->arg          = a;
   ptask->ltask        = ltask;
   ptask->begun        = false;
-
-  ptask->chpl_data.serial_state = serial;
+  ptask->chpl_data    = chpl_data;
 
   if (ltask) {
     ptask->filename = ltask->filename;
