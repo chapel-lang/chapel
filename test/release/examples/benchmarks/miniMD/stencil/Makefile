@@ -9,8 +9,6 @@ TARGETS = \
 
 REALS = $(TARGETS:%=%_real)
 
-#initMD.chpl forces.chpl neighbor.chpl thermo.chpl
-
 default: all
 
 all: $(TARGETS)

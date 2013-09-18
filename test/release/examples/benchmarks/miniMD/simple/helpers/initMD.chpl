@@ -143,6 +143,8 @@ if generating {
 
   dataReader.readln(); // skip first line
 
+  numAtoms = dataReader.readln(int);
+
   // we can only have 1 atom type
   var types = dataReader.readln(int);
   assert(types == 1, "You can only have one type of atom.");
@@ -155,7 +157,8 @@ if generating {
 
   const masses = dataReader.readln(string);
   assert(masses == "Masses");
-  var (mass_type, mass) = dataReader.readln(int,real);
+  var mass_type: int; 
+  dataReader.readln(mass_type, mass);
   
   // density overriden if data file provided
   density = numAtoms / (volume);
@@ -244,20 +247,22 @@ if generating {
   create_atoms();
   create_velocity();
 } else {
-  dataReader.readln(); // skip 'Atoms' line
+  dataReader.readln(string); // skip 'Atoms' line
 
   // read in positions
   var tempPos : [1..numAtoms] v3;
   for x in tempPos {
-    dataReader.read(int,int);
-    dataReader.readln(x(1),x(2),x(3));
+    var a, b : int;
+    dataReader.readln(a ,b, x(1),x(2),x(3));
   }
+
+  dataReader.readln(string); // skip 'Velocities' line
 
   // read velocities and add 
   for x in tempPos {
     var v : v3;
-    dataReader.read(int,int);
-    dataReader.readln(v(1),v(2),v(3));
+    var a : int;
+    dataReader.readln(a, v(1),v(2),v(3));
     addatom(new atom(v), x, coord2bin(x));
   }
 
@@ -340,20 +345,16 @@ proc inputFile() {
 }
 
 proc printHelp() {
-  writeln("Commandline Options:");
-  writeln("\n  Chapel help:");
-  writeln("\t--chapel:                Show Chapel's command line options");
-  writeln("\n  Execution configuration:");
+  writeln("Command line Options:");
   writeln("\n  Simulation setup:");
   writeln("\t--input_file <string>:   set input file to be used (default: in.lj.miniMD)");
   writeln("\t--numSteps <int>:        set number of timesteps for simulation");
   writeln("\t--size <int>:            set linear dimension of systembox");
-  writeln("\t--num_bins <int>:      set linear dimension of neighbor bin grid");
+  writeln("\t--num_bins <int>:        set linear dimension of bin grid");
   writeln("\t--units <string>:        set units (lj or metal), see LAMMPS documentation");
   writeln("\t--force <string>:        set interaction model (lj or eam)");
   writeln("\t--data_file <string>:    read configuration from LAMMPS data file"); 
-  writeln("\n  Miscelaneous:");
-  writeln("\t                                within rcut_neighbor (outer force cutoff)");
+  writeln("\n  Miscellaneous:");
   writeln("\t--pHelp:                  display this help message");
   writeln("\t--------------------------------------------------"); 
   exit(0);

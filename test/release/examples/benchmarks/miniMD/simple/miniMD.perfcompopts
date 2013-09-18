@@ -1,1 +1,1 @@
---no-cc-warnings -snoRefCount --fast helpers/force.chpl helpers/thermo.chpl helpers/initMD.chpl
+--no-cc-warnings -snoRefCount --fast helpers/initMD.chpl helpers/forces.chpl helpers/thermo.chpl helpers/neighbor.chpl

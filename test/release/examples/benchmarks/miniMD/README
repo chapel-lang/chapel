@@ -11,8 +11,9 @@ Status
 ------
 
 The Chapel version of miniMD is a work-in-progress. To the best of our 
-knowledge, the current form is an accurate implementation of miniMD. 
-A number of improvements remain, see the TODOs section in this file.
+knowledge, the current form is an accurate implementation of most 
+miniMD features. A number of improvements remain, see the TODOs section in 
+this file.
 
 -----
 Files
@@ -20,18 +21,28 @@ Files
 
 This directory's contents are as follows:
 ./
-  miniMD.chpl           : entry point for miniMD, contains integration code
-  helpers/
-    initMD.chpl		: code to initialize and handle the system state
-    forces.chpl		: implementations for EAM and LJ force computations
-    thermo.chpl		: handles calculation of energy, temperature, pressure
-    neighbor.chpl       : handles the calculation and updating of neighbor atoms
+  explicit/
+    miniMD.chpl           : entry point for miniMD, contains integration code
+    helpers/
+      initMD.chpl         : code to initialize and handle the system state
+      forces.chpl         : implementations for EAM and LJ force computations
+      thermo.chpl	  : calculation of energy, temperature, pressure
+      neighbor.chpl       : calculation and updating of neighbor atoms
+  
+    miniMD.*              : other files used in the Chapel testing system
 
-Makefile                : builds miniMD. 'make fast' builds an optimized version
+    Makefile              : builds an optimized miniMD
+  simple/
+    same as explicit
+  stencil/
+    same as explicit, with
+    helpers/
+      StencilDist.chpl    : modified BlockDist with stencil features
+      DistPlus.chpl
 
-  miniMD.*				: other files used in the Chapel testing system
+  Makefile                : builds the various miniMD versions
 
-  README					: this file
+  README                  : this file
 
 
 -----------------------------------
@@ -43,7 +54,7 @@ that can be set on the chpl compiler command line using the flag:
 
   chpl -s<paramName>=[true|false] ...
 
-  paramName   default   description
+  paramName     default   description
 
 * printOriginal [false] : prints the same output as the c++ reference
 
@@ -54,27 +65,56 @@ that can be set on the chpl compiler command line using the flag:
 
 printPerf is true by default by convention in the Chapel testing system.
 
+To mimic the original C++ output, use the following:
+  -sprintOriginal=true -sprintPerf=false
+
 Chapel-specific optimizations:
 
 * Add the following to enable the BulkTransfer optimization:
   -sdebugBlockDistBulkTransfer -sdisableAliasedBulkTransfer=false
 
 * tcmalloc has yielded significant performance improvements:
-  As in the Chapel docs, do the following: export CHPL_MEM=tcmalloc
+  As in the Chapel docs, do the following: 
+    export CHPL_MEM=tcmalloc
 
 -------
 Running
 -------
 
-If intending to run in a distributed fashion, the user will always need to 
-run miniMD with the '-nl <number of nodes>' option. See Chapel documentation 
-for more on setting up GASNET and compiling for multilocales.
+While miniMD can read from input files, it does not require them. 
+
+For legal reasons, input files available from the C++ are not currently 
+bundled with this release of miniMD. However, you are free to visit 
+the mantevo website, download the reference version, and use those files.
 
 -----------------
 Execution Options
 -----------------
 
-use the '--help' flag to display a list of command line options (TODO)
+The following are config[uration] const[ant]s thatn can be used to
+modify the execution at program launch time. These can bet set on 
+the execution-time command line using the following flag styles:
+
+  ./miniMD --<constName>=<value>
+  ./miniMD --<constName> <value>
+  ./miniMD -s<constName>=<value>
+  ./miniMD -s<constName> <value>
+
+use the '--pHelp' flag to display a list of command line options:
+
+* input_file: string -- set input file to be used
+
+* numSteps: int -- set number of timesteps for simulation
+
+* size: int -- set linear dimension of systembox
+
+* num_bins: int -- set linear dimension of neighbor bin grid
+
+* units: string -- set units (lj or metal)
+
+* force: string -- set interaction mode (lj or eam)
+
+* data_file: string -- read configuration from LAMMPS data file
 
 ---------
 Callgraph
@@ -84,45 +124,38 @@ Callgraph
 
 entry point
 	-> inputFile
-	-> * create force object
 	-> * initialize problem bounds
-	-> setupNeighbors
 	-> initThermo
 	-> * define bin bounds
+	-> * create force object
 	-> setupComms
-		-> startBarrier
-		-> stopBarrier
 	-> * populate with atoms
-		if generating
-			-> create_atoms
-				-> pmrand
-				-> addatom
-			-> create_velocity
-		else
-			-> * read from data file
-			-> addatom
+          if generating
+            -> create_atoms
+              -> pmrand
+              -> addatom
+            -> create_velocity
+          else
+            -> * read from data file
+            -> addatom
 	proc main()
-		-> buildNeighbors
-			-> pbc
-			-> binatoms
-			-> communicateCopies
-		-> printSim
-		-> Force.compute
-			-> forceBetween
-		-> thermo.compute
-			-> temperature
-			-> energy
-			-> pressure
-		-> run
-			-> initialIntegrate
-			xor
-				-> buildNeighbors
-				-> communicateCopies
-			-> Force.compute
-			-> finalIntegrate
-			-> thermo.compute
-		-> Force.compute
-		-> thermo.compute
+          -> buildNeighbors
+            -> pbc
+            -> binatoms
+            -> updateFluff
+          -> printSim
+          -> Force.compute
+          -> thermo.compute
+            -> temperature
+          -> run
+            -> initialIntegrate
+            -> buildNeighbors <xor> updateFluff
+            -> Force.compute
+            -> finalIntegrate
+            -> thermo.compute
+          -> Force.compute
+          -> thermo.compute
+          -> cleanup
 
 ----------
 Vocabulary
@@ -157,18 +190,23 @@ Problem size:
 A) This code currently relies on the condition that we only need to look at the 
 nearest neighboring locale for ghost bins. This is influenced by simulation 
 settings like problem size and cutoff. You can use the debug flag to add a line 
-that writes the bin distribution and see what the program things it needs. 
+that writes the bin distribution and see what the program thinks it needs. 
 
 B) Make sure neighbor lists are correct. Incorrect ghost positions, force 
 computation, or binning can lead to bad neighbor lists. With a bad neighbor 
-list, results get more and more off.
+list, results can get worse and worse until a segfault.
 
 C) Inspect the position/velocity/force of atoms (requires correct reference)
 
-* Incorrect T/U/P results -  If your force computation is wrong after the 0th 
-iteration, the force computation is potentially wrong, and atoms didn't end up 
-in their correct positions. If the 0th iteration is wrong, there's probably an 
-issue with buildNeighbors.
+* Incorrect T/U/P results 
+  - If your force computation is wrong after the 0th iteration, it's 
+    possible atoms didn't end up in their correct positions. If the 
+    0th iteration is wrong, there's probably an issue with buildNeighbors.
+
+  - Make sure you're getting the data from the right Locale. This is
+    more of a problem with the Stencil version, as some of the
+    reading/writing is masked by the Distribution code. Printing the
+    '.locale' of data can help here.
 
 * Segfaults / Bad array accesses - With incorrect code an atom can 'shoot' out 
 of the problem space before boundary conditions can be re-asserted. 
@@ -187,6 +225,9 @@ appropriate files into each of the subdirectories
 
 * Ensure command-line options behave in the same way as in c++
 
+* Re-implement half-neighbors
+
+
 PERFORMANCE TODOs:
 ------------------
 
@@ -199,6 +240,7 @@ do this?
 the compiler)
 
 * Compiler and runtime improvements may yield additional performance increases.
+
 
 MISCELLANEOUS TODOs:
 --------------------
