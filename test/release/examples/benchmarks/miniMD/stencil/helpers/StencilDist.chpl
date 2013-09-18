@@ -529,9 +529,9 @@ proc BlockDom.dsiDisplayRepresentation() {
     writeln("locDoms[", tli, "].myBlock = ", locDoms[tli].myBlock);
 }
 
-proc BlockDom.dsiDims() return whole.expand(fluff).dims();
+proc BlockDom.dsiDims() return whole.dims();
 
-proc BlockDom.dsiDim(d: int) return whole.expand(fluff).dim(d);
+proc BlockDom.dsiDim(d: int) return whole.dim(d);
 
 // stopgap to avoid accessing locDoms field (and returning an array)
 proc BlockDom.getLocDom(localeIdx) return locDoms(localeIdx);
