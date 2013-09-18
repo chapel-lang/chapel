@@ -8,3 +8,10 @@ with_constref_arg(xxx); //OK
 with_constref_arg(5); // currently an error
 with_inout_arg(xxx);
 with_inout_arg(5);
+
+// intentionally check functions in internal modules
+var iii:int;
+xxx += 5;
+xxx <=> iii;
+iii <=> xxx;
+(new Reader()).readPrimitive(xxx);

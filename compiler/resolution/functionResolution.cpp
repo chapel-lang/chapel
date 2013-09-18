@@ -2441,9 +2441,22 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
         INT_ASSERT(false);
         break;
       }
-      if (errorMsg)
-        USR_FATAL_CONT(actual, "%s actual is passed to %s formal \"%s\"",
-                       errorMsg, formal->intentDescrString(), formal->name);
+      if (errorMsg) {
+        FnSymbol* calleeFn = toFnSymbol(formal->defPoint->parentSymbol);
+        ModuleSymbol* mod = calleeFn->getModule();
+        char cn1 = calleeFn->name[0];
+        const char* calleeParens = (isalpha(cn1) || cn1 == '_') ? "()" : "";
+        // Should this be the same condition as in insertLineNumber() ?
+        if (developer || mod->modTag == MOD_USER || mod->modTag == MOD_MAIN) {
+          USR_FATAL_CONT(actual, "%s actual is passed to %s formal '%s'"
+                         " of %s%s", errorMsg, formal->intentDescrString(),
+                         formal->name, calleeFn->name, calleeParens);
+        } else {
+          USR_FATAL_CONT(actual, "%s actual is passed to a %s formal of"
+                         " %s%s", errorMsg, formal->intentDescrString(),
+                         calleeFn->name, calleeParens);
+        }
+      }
     }
 
     if (const char* str = innerCompilerWarningMap.get(resolvedFn)) {
