@@ -597,7 +597,7 @@ void chpl_task_setSubLoc(c_sublocid_t subLoc)
     }
 }
 
-c_sublocid_t chpl_task_getRequestedSubLoc(void)
+c_sublocid_t chpl_task_getRequestedSubloc(void)
 {
     chapel_tls_t * data = chapel_get_tasklocal_possibly_from_non_task();
     if (data) {
