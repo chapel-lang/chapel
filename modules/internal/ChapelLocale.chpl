@@ -253,11 +253,11 @@ module ChapelLocale {
   // The dummy locale provides system-default tasking and memory management.
   const dummyLocale = new locale();
 
-  extern proc chpl_task_getRequestedSubLoc(): chpl_sublocID_t;
+  extern proc chpl_task_getRequestedSubloc(): chpl_sublocID_t;
   extern var chpl_nodeID: int(32);
   // Return the locale ID of the current locale
   inline proc here_id {
-    return chpl_buildLocaleID(chpl_nodeID,chpl_task_getRequestedSubLoc());
+    return chpl_buildLocaleID(chpl_nodeID,chpl_task_getRequestedSubloc());
   }
   // Return the current locale
   inline proc here {

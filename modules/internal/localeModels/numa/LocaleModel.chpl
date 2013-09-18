@@ -20,7 +20,7 @@ module LocaleModel {
   use ChapelNumLocales;
   use Sys;
 
-  extern proc chpl_task_getRequestedSubLoc(): int(32);
+  extern proc chpl_task_getRequestedSubloc(): int(32);
 
   config param debugLocaleModel = false;
 
@@ -221,7 +221,7 @@ module LocaleModel {
       numSubLocales = chpl_task_getNumSubLocales();
 
       childSpace = {0..#numSubLocales};
-      const origSubloc = chpl_task_getRequestedSubLoc(); // this should be any
+      const origSubloc = chpl_task_getRequestedSubloc(); // this should be any
       for i in childSpace {
         // allocate the structure on the domain?
         // MUST CHANGE SUBLOC HERE (prolly by primitive)
@@ -402,7 +402,7 @@ module LocaleModel {
       chpl_comm_fork(dnode, dsubloc, fn, args, args_size);
     } else {
       // run directly on this node
-      var origSubloc = chpl_task_getRequestedSubLoc();
+      var origSubloc = chpl_task_getRequestedSubloc();
       if (dsubloc == origSubloc) {
         chpl_ftable_call(fn, args);
       } else {
@@ -430,7 +430,7 @@ module LocaleModel {
     if dnode != chpl_nodeID {
       chpl_comm_fork_fast(dnode, dsubloc, fn, args, args_size);
     } else {
-      var origSubloc = chpl_task_getRequestedSubLoc();
+      var origSubloc = chpl_task_getRequestedSubloc();
       if (dsubloc == origSubloc) {
         chpl_ftable_call(fn, args);
       } else {
@@ -473,7 +473,7 @@ module LocaleModel {
       else
         chpl_comm_fork_nb(dnode, dsubloc, fn, args, args_size);
     } else {
-      var origSubloc = chpl_task_getRequestedSubLoc();
+      var origSubloc = chpl_task_getRequestedSubloc();
       // We'd like to call chpl_executeOnNBaux() here, but the begin
       //  statement seems to cause a problem
       if (dsubloc == origSubloc) {
