@@ -17,6 +17,8 @@ if ($preset_substrate eq "") {
             $substrate = "mpi";
         } elsif ($platform eq "cx-linux") {
             $substrate = "ibv";
+        } elsif ($platform eq "cray-cs") {
+            $substrate = "ibv";
         } elsif ($platform eq "marenostrum") {
             $substrate = "udp";
         } elsif ($platform eq "pwr5") {
