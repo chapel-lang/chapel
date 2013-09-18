@@ -4,7 +4,7 @@
 #include "astutil.h"
 #include "bb.h"
 #include "bitVec.h"
-
+#include <set>
 
 void computeDominators(std::vector<BitVec*>& dominators, std::vector<BasicBlock*>& basicBlocks);
 bool dominates(unsigned a, unsigned b, std::vector<BitVec*> & dominators);

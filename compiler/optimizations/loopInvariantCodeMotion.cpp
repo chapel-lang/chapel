@@ -204,7 +204,7 @@ void collectNaturalLoops(std::vector<Loop*>& loops, BasicBlocks& basicBlocks, Ba
 
   for_vector(BasicBlock, block, basicBlocks) {
     //Skip entry blocks
-    if(block == entryBlock || block->exprs.size() == 0){
+    if(block == entryBlock) {
       continue;
     }
     
@@ -675,6 +675,24 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
 #endif
       stopTimer(computeAliasTimer);
       return;
+    }
+ 
+    //Compute the aliases for the function's parameters. Any args passed by ref
+    //can potentially alias each other. 
+    for_alist(formal1, fn->formals) {
+      for_alist(formal2, fn->formals) {
+        if(formal1 == formal2) 
+          continue;
+        if(ArgSymbol* arg1 = toArgSymbol(toDefExpr(formal1)->sym)) {
+          if(ArgSymbol* arg2 = toArgSymbol(toDefExpr(formal2)->sym)) {
+            if(arg1->intent == INTENT_REF && arg2->intent == INTENT_REF) {
+              aliases[arg1].insert(arg2);
+              aliases[arg2].insert(arg1);
+            }
+
+          }
+        }
+      }
     }
 
     for_vector(Expr, expr, block2->exprs) {
