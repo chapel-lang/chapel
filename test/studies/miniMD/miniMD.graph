@@ -1,5 +1,0 @@
-perfkeys: Time:
-graphkeys: --size=10 (LJ)
-ylabel: Time (seconds)
-graphtitle: miniMD LJ Time
-graphname: miniMD

@@ -1,1 +1,0 @@
---no-cc-warnings -snoRefCount --fast helpers/force.chpl helpers/thermo.chpl helpers/initMD.chpl
