@@ -138,7 +138,7 @@ void chpl_task_setSubLoc(c_sublocid_t);
 //
 // Get the sublocale the caller specified at the time the task was created.
 //
-c_sublocid_t chpl_task_getRequestedSubLoc(void);
+c_sublocid_t chpl_task_getRequestedSubloc(void);
 
 //
 // Get ID.
