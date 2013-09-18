@@ -142,7 +142,7 @@ void
 chpl_comm_wide_get_string(chpl_string* local, struct chpl_chpl____wide_chpl_string_s* x, int32_t tid, int32_t lineno, chpl_string filename)
 {
   char* chpl_macro_tmp =
-      chpl_mem_calloc(x->size, CHPL_RT_MD_GET_WIDE_STRING, -1, "<internal>");
+      chpl_mem_calloc(x->size, CHPL_RT_MD_GET_WIDE_STRING, lineno, filename);
   if (chpl_nodeID == chpl_rt_nodeFromLocaleID(x->locale))
     memcpy(chpl_macro_tmp, x->addr, x->size);
   else
