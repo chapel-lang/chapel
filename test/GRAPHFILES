@@ -13,7 +13,7 @@ studies/hpcc/STREAM.graph
 # suite: DOE benchmarks
 studies/lulesh/sungeun/lulesh.sungeun.graph
 studies/lulesh/bradc/lulesh-dense.graph
-studies/miniMD/miniMD.graph
+release/examples/benchmarks/miniMD/stencil/miniMD.graph
 # suite: Para-CR
 studies/paracr/asenjo/PARACR-BC.graph
 # suite: PARASEC
