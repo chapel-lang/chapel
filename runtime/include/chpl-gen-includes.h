@@ -41,5 +41,5 @@ chpl_localeID_t id_rt2pub(c_localeid_t i)
 static ___always_inline
 chpl_localeID_t chpl_gen_getLocaleID(void)
 {
-  return chpl_rt_buildLocaleID(chpl_nodeID, chpl_task_getSubLoc());
+  return chpl_rt_buildLocaleID(chpl_nodeID, chpl_task_getRequestedSubLoc());
 }

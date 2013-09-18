@@ -13,12 +13,14 @@ module LocaleModel {
   // This should eventually be unified with
   // CHPL_LOCALE_MODEL_NUM_SUBLOCALES which is currently defined in the
   // runtime for any locale model that doesn't use sub locales
-  param localeModelHasSubLocales = false;
+  param localeModelHasSubLocales = true;
 
   use ChapelLocale;
   use DefaultRectangular;
   use ChapelNumLocales;
   use Sys;
+
+  extern proc chpl_task_getRequestedSubLoc(): int(32);
 
   config param debugLocaleModel = false;
 
@@ -52,6 +54,7 @@ module LocaleModel {
   extern
     proc chpl_rt_buildLocaleID(node: chpl_nodeID_t,
                                subloc: chpl_sublocID_t): chpl_localeID_t;
+
   extern
     proc chpl_rt_nodeFromLocaleID(loc: chpl_localeID_t): chpl_nodeID_t;
 
@@ -71,16 +74,64 @@ module LocaleModel {
   proc chpl_sublocFromLocaleID(loc: chpl_localeID_t)
     return chpl_rt_sublocFromLocaleID(loc);
 
-  const chpl_emptyLocaleSpace: domain(1) = {1..0};
-  const chpl_emptyLocales: [chpl_emptyLocaleSpace] locale;
 
   //
-  // A concrete class representing the nodes in this architecture.
+  // The NUMA sublocale model
+  //
+  class NumaDomain : AbstractLocaleModel {
+    const sid: chpl_sublocID_t;
+    const name: string;
+
+    proc chpl_id() return (parent:LocaleModel)._node_id; // top-level node id
+    proc chpl_localeid() {
+      return chpl_buildLocaleID((parent:LocaleModel)._node_id:chpl_nodeID_t,
+                                sid); 
+    }
+    proc chpl_name() return name;
+
+    proc NumaDomain() {
+    }
+
+    proc NumaDomain(_sid, _parent) {
+      sid = _sid;
+      name = "ND"+sid;
+      parent = _parent;
+    }
+
+    proc readWriteThis(f) {
+      parent.readWriteThis(f);
+      f <~> '.'+name;
+    }
+
+    proc getChildCount(): int { return 0; }
+    iter getChildIndices() : int {
+      halt("No children to iterate over.");
+      yield -1;
+    }
+    proc addChild(loc:locale) { halt("Cannot add children to this locale type."); }
+    proc getChild(idx:int) : locale { return nil; }
+
+    // This is commented out b/c it leads to an internal error during
+    // the resolveIntents pass.  See
+    // test/functions/iterators/sungeun/iterInClass.future
+    //
+    // iter getChildren() : locale {
+    //  halt("No children to iterate over.");
+    //  yield nil;
+    // }
+  }
+
+  //
+  // The node model
   //
   class LocaleModel : AbstractLocaleModel {
     const callStackSize: int;
     const _node_id : int;
     const local_name : string;
+
+    const numSubLocales: int;
+    var childSpace: domain(1);
+    var childLocales: [childSpace] NumaDomain;
 
     // This constructor must be invoked "on" the node
     // that it is intended to represent.  This trick is used
@@ -101,7 +152,7 @@ module LocaleModel {
       init();
     }
 
-    proc chpl_id() return _node_id; // top-level node number
+    proc chpl_id() return _node_id;     // top-level locale (node) number
     proc chpl_localeid() {
       extern const c_sublocid_any: chpl_sublocID_t;
       return chpl_buildLocaleID(_node_id:chpl_nodeID_t, c_sublocid_any); 
@@ -116,33 +167,29 @@ module LocaleModel {
       f <~> new ioLiteral("LOCALE") <~> _node_id;
     }
 
-    proc getChildSpace() return chpl_emptyLocaleSpace;
+    proc getChildSpace() return childSpace;
 
-    proc getChildCount() return 0;
+    proc getChildCount() return numSubLocales;
 
     iter getChildIndices() : int {
-      for idx in chpl_emptyLocaleSpace do
+      for idx in childSpace do
         yield idx;
     }
 
     proc getChild(idx:int) : locale {
-      // This is a temporary implementation, where an index of zero is forced
-      // to mean "here".  A better solution is on the way.
-      // TODO: Run index lookup through rootLocale.findLocale(lid:chpl_localeID_t);
-      if idx == 0 then return this;
-      else
-        if boundsChecking then
-          halt("requesting a child from a LocaleModel locale");
-      return nil;
+      if boundsChecking then
+        if (idx < 0) || (idx >= numSubLocales) then
+          halt("sublocale child index out of bounds (",idx,")");
+      return childLocales[idx];
     }
 
     iter getChildren() : locale  {
-      for loc in chpl_emptyLocales do
+      for loc in childLocales do
         yield loc;
     }
 
     proc getChildArray() {
-      return chpl_emptyLocales;
+      return childLocales;
     }
 
     //------------------------------------------------------------------------{
@@ -169,9 +216,25 @@ module LocaleModel {
 
       extern proc chpl_numCoresOnThisLocale(): int;
       numCores = chpl_numCoresOnThisLocale();
+
+      extern proc chpl_task_getNumSubLocales(): int(32);
+      numSubLocales = chpl_task_getNumSubLocales();
+
+      childSpace = {0..#numSubLocales};
+      const origSubloc = chpl_task_getRequestedSubLoc(); // this should be any
+      for i in childSpace {
+        // allocate the structure on the domain?
+        // MUST CHANGE SUBLOC HERE (prolly by primitive)
+        chpl_task_setSubLoc(i:chpl_sublocID_t);
+        childLocales[i] = new NumaDomain(i:chpl_sublocID_t, this);
+        childLocales[i].numCores = 1; // for now
+      }
+      chpl_task_setSubLoc(origSubloc);
     }
     //------------------------------------------------------------------------}
-  }
+
+    inline proc subloc return c_sublocid_any;
+ }
 
   //
   // An instance of this class is the default contents 'rootLocale'.
@@ -196,6 +259,7 @@ module LocaleModel {
     // In addition, the initial 'here' must be set.
     proc init() {
       forall locIdx in initOnLocales() {
+        chpl_task_setSubLoc(c_sublocid_any);
         const node = new LocaleModel(this);
         myLocales[locIdx] = node;
         numCores += node.numCores;
@@ -229,7 +293,7 @@ module LocaleModel {
 
     proc getChild(idx:int) return this.myLocales[idx];
 
-    iter getChildren() : locale  {
+    iter getChlidren() : locale  {
       for loc in this.myLocales do
         yield loc;
     }
@@ -238,11 +302,12 @@ module LocaleModel {
     proc getDefaultLocaleArray() return myLocales;
 
     proc localeIDtoLocale(id : chpl_localeID_t) {
-      // In the default architecture, there are only nodes and no sublocales.
-      // What is more, the nodeID portion of a wide pointer is the same as
-      // the index into myLocales that yields the locale representing that
-      // node.
-      return myLocales[chpl_rt_nodeFromLocaleID(id)];
+      const dnode = chpl_nodeFromLocaleID(id);
+      const dsubloc = chpl_sublocFromLocaleID(id);
+      if (dsubloc == c_sublocid_curr) || (dsubloc == c_sublocid_any) then
+        return (myLocales[dnode:int]):locale;
+      else
+        return (myLocales[dnode:int].getChild(dsubloc:int)):locale;
     }
   }
 
@@ -317,6 +382,10 @@ module LocaleModel {
   extern proc chpl_comm_fork_nb(loc_id: int, subloc_id: int,
                                 fn: int, args: c_void_ptr, args_size: int(32));
   extern proc chpl_ftable_call(fn: int, args: c_void_ptr): void;
+  extern proc chpl_task_setSubLoc(subLoc: int(32));
+  extern const c_sublocid_any: chpl_sublocID_t;
+  extern const c_sublocid_curr: chpl_sublocID_t;
+
   //
   // regular "on"
   //
@@ -324,16 +393,24 @@ module LocaleModel {
   export
   proc chpl_executeOn(loc: chpl_localeID_t, // target locale
                       fn: int,              // on-body function idx
-                      args: c_void_ptr,          // function args
+                      args: c_void_ptr,     // function args
                       args_size: int(32)    // args size
                      ) {
-    const node = chpl_nodeFromLocaleID(loc);
-    if (node == chpl_nodeID) {
-      // don't call the runtime fork function if we can stay local
-      chpl_ftable_call(fn, args);
+    const dnode =  chpl_nodeFromLocaleID(loc);
+    const dsubloc =  chpl_sublocFromLocaleID(loc);
+    if dnode != chpl_nodeID {
+      chpl_comm_fork(dnode, dsubloc, fn, args, args_size);
     } else {
-      chpl_comm_fork(node, chpl_sublocFromLocaleID(loc),
-                     fn, args, args_size);
+      // run directly on this node
+      var origSubloc = chpl_task_getRequestedSubLoc();
+      if (dsubloc == origSubloc) {
+        chpl_ftable_call(fn, args);
+      } else {
+        // move to a different sublocale
+        chpl_task_setSubLoc(dsubloc);
+        chpl_ftable_call(fn, args);
+        chpl_task_setSubLoc(origSubloc);
+      }
     }
   }
 
@@ -345,19 +422,35 @@ module LocaleModel {
   export
   proc chpl_executeOnFast(loc: chpl_localeID_t, // target locale
                           fn: int,              // on-body function idx
-                          args: c_void_ptr,          // function args
+                          args: c_void_ptr,     // function args
                           args_size: int(32)    // args size
                          ) {
-    const node = chpl_nodeFromLocaleID(loc);
-    if (node == chpl_nodeID) {
-      // don't call the runtime fast fork function if we can stay local
-      chpl_ftable_call(fn, args);
+    const dnode =  chpl_nodeFromLocaleID(loc);
+    const dsubloc =  chpl_sublocFromLocaleID(loc);
+    if dnode != chpl_nodeID {
+      chpl_comm_fork_fast(dnode, dsubloc, fn, args, args_size);
     } else {
-      chpl_comm_fork_fast(node, chpl_sublocFromLocaleID(loc),
-                          fn, args, args_size);
+      var origSubloc = chpl_task_getRequestedSubLoc();
+      if (dsubloc == origSubloc) {
+        chpl_ftable_call(fn, args);
+      } else {
+        // move to a different sublocale
+        chpl_task_setSubLoc(dsubloc);
+        chpl_ftable_call(fn, args);
+        chpl_task_setSubLoc(origSubloc);
+      }
     }
   }
 
+  // Unused for now due to bug in non-developer mode when using 'begin'
+  inline proc chpl_executeOnNBAux(fn: int,         // on-body function idx
+                                  args: c_void_ptr // function args
+                                  ) {
+    if __primitive("task_get_serial") then
+      chpl_ftable_call(fn, args);
+    else
+      begin chpl_ftable_call(fn, args);
+  }
   //
   // nonblocking "on" (doesn't wait for completion)
   //
@@ -365,21 +458,50 @@ module LocaleModel {
   export
   proc chpl_executeOnNB(loc: chpl_localeID_t, // target locale
                         fn: int,              // on-body function idx
-                        args: c_void_ptr,          // function args
+                        args: c_void_ptr,     // function args
                         args_size: int(32)    // args size
                        ) {
     //
     // If we're in serial mode, we should use blocking rather than
     // non-blocking "on" in order to serialize the forks.
     //
-    if __primitive("task_get_serial") then
-      chpl_comm_fork(chpl_nodeFromLocaleID(loc),
-                     chpl_sublocFromLocaleID(loc),
-                     fn, args, args_size);
-    else
-      chpl_comm_fork_nb(chpl_nodeFromLocaleID(loc),
-                        chpl_sublocFromLocaleID(loc),
-                        fn, args, args_size);
+    const dnode =  chpl_nodeFromLocaleID(loc);
+    const dsubloc =  chpl_sublocFromLocaleID(loc);
+    if dnode != chpl_nodeID {
+      if __primitive("task_get_serial") then
+        chpl_comm_fork(dnode, dsubloc, fn, args, args_size);
+      else
+        chpl_comm_fork_nb(dnode, dsubloc, fn, args, args_size);
+    } else {
+      var origSubloc = chpl_task_getRequestedSubLoc();
+      // We'd like to call chpl_executeOnNBaux() here, but the begin
+      //  statement seems to cause a problem
+      if (dsubloc == origSubloc) {
+        // run on this sublocale
+        if false {
+          chpl_executeOnNBAux(fn, args);
+        } else {
+          if __primitive("task_get_serial") then
+            chpl_ftable_call(fn, args);
+          else
+            // begin chpl_ftable_call(fn, args);
+            chpl_comm_fork_nb(dnode, dsubloc, fn, args, args_size);
+        }
+      } else {
+        // move to a different sublocale
+        chpl_task_setSubLoc(dsubloc);
+        if false {
+          chpl_executeOnNBAux(fn, args);
+        } else {
+          if __primitive("task_get_serial") then
+            chpl_ftable_call(fn, args);
+          else
+            // begin chpl_ftable_call(fn, args);
+            chpl_comm_fork_nb(dnode, dsubloc, fn, args, args_size);
+        }
+        chpl_task_setSubLoc(origSubloc);
+      }
+    }
   }
 
   //////////////////////////////////////////
@@ -405,7 +527,7 @@ module LocaleModel {
   export
   proc chpl_taskListAddBegin(subloc_id: int,        // target sublocale
                              fn: int,               // task body function idx
-                             args: c_void_ptr,           // function args
+                             args: c_void_ptr,      // function args
                              ref tlist: _task_list, // task list
                              tlist_node_id: int     // task list owner node
                             ) {
@@ -420,7 +542,7 @@ module LocaleModel {
   export
   proc chpl_taskListAddCoStmt(subloc_id: int,        // target sublocale
                               fn: int,               // task body function idx
-                              args: c_void_ptr,           // function args
+                              args: c_void_ptr,      // function args
                               ref tlist: _task_list, // task list
                               tlist_node_id: int     // task list owner node
                              ) {
