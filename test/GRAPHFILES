@@ -88,5 +88,4 @@ npb/is/mcahir/intsort.C.graph
 users/franzf/v0/chpl/main.graph
 studies/jacobi/jacobi.graph
 domains/bradc/domEqualityPerf.graph
-studies/miniMD/miniMD.graph
 parallel/taskCompare/lydia/loopCompare.graph
