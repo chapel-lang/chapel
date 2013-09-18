@@ -4,7 +4,6 @@
 #                         [-help|-h] [-nodefile n] [-logfile l] [-valgrind]
 #   -compopts s: s is a string that is passed with -compopts to start_test.
 #   -execopts s: s is a string that is passed with -execopts to start_test.
-#   -comm s    : s is a setting for CHPL_COMM, e.g., none or gasnet
 #   -dirfile  d: d is a file listing directories to test. Default is ".". Lines
 #                beginning with # are ignored.
 #   -filedist  : distribute work at the granularity of test files (directory
@@ -188,6 +187,7 @@ sub free_workers {
 # Of course, you'll have to wait on the client processes or kill them
 # manually.
 sub feed_nodes {
+    my $chplenv = $_[0];
     local (@readyidv, $logfile, @logs, $testdir, $node, $rem_cmd);
     $nodeCount = $#node_list + 1;
 
@@ -228,16 +228,17 @@ sub feed_nodes {
             unless ($pid = fork) {        # child
                 if ($node eq $localnode) {
                     $rem_exec_cmd = "";
+                    $chplenv = "\"$chplenv\"";
                     $compopts = "\"$compopts\"";
                     $execopts = "\"$execopts\"";
-                    $comm = "\"$comm\"";
                 } else {
                     $rem_exec_cmd = "$rem_exe $node";
+                    $chplenv = "\\\"$chplenv\\\"";
                     $compopts = "\\\"$compopts\\\"";
                     $execopts = "\\\"$execopts\\\"";
-                    $comm = "\\\"$comm\\\"";
                 }
-                $rem_cmd = "$rem_exec_cmd $client_script $readyid $pwd $testdir $incl_futures $valgrind $memleaksflag $compopts $execopts $comm";
+                # If the command line gets too long, consider using xargs
+                $rem_cmd = "$rem_exec_cmd $client_script $readyid $pwd $testdir $chplenv $incl_futures $valgrind $memleaksflag $compopts $execopts";
                 if ($verbose) {
                     systemd ($rem_cmd);
                 } else {
@@ -446,14 +447,6 @@ sub main {
                 print "missing -execopts arg\n";
                 exit (8);
             }
-        } elsif (/^-comm/) {
-            shift @ARGV;
-            if ($#ARGV >= 0) {
-                $comm = $ARGV[0];
-            } else {
-                print "missing -comm arg\n";
-                exit (8);
-            }
         } elsif (/^-filedist/) {
             $filedist = 1;
         } elsif (/^-dirfile/) {
@@ -564,8 +557,23 @@ sub main {
         systemd ("mkdir $synchdir"); 
     }
 
-    nodes_free ();     # signal that all nodes free
-    feed_nodes ();     # parallel testing
+    # Package up the environment
+    my $tmpchplenv = `$ENV{CHPL_HOME}/util/printchplenv --sh`;
+    my $chplenv = "";
+    my @lines = split(/\n/, $tmpchplenv);
+    for my $line (@lines) {
+        $line =~ s/export\s+//;
+        my ($key,$value) = split(/=/, $line, 2);
+        # Now remove the single quotes in the value.
+        if( $value =~ /^'.+'$/ ) {
+            $value =~ s/^'//;
+            $value =~ s/'$//;
+        }
+        $chplenv .= "$key=$value ";
+    }
+
+    nodes_free ();         # signal that all nodes free
+    feed_nodes ($chplenv); # parallel testing
 
     # cleanup - remove synch files and synch dir
     for ($id=0; $id<=$#node_list; $id++) {

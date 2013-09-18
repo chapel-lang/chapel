@@ -75,7 +75,6 @@
 #   -futuresonly
 #   -valgrind
 #   -valgrindexe
-#   -comm [none|gasnet|pvm]           $CHPL_HOME/util/chplenv/comm
 #   -suppress <suppression file>
 #   -interpret (DEPRECATED)
 #   -logfile   <log filename>         $testdir/Logs/<username>.<tgt-platform>.log
@@ -305,20 +304,6 @@
 # unifies the x-axis).  if in a .graph, there is a specified start date
 # for a particular graph, that graph will use the date in the .graph
 # and not the date by the -startdate option.  
-#
-# The -comm option requests that testing be performed with respect to
-# a specific comm layer.  At the time of this writing, none, gasnet,
-# and pvm are the three supported options.  Choosing something other
-# than "none" will cause "-nl 1" to be prefixed to the generated
-# executable's command-line options to set the number of locales.
-# Setting the number of locales to something other than 1 can be done
-# using NUMLOCALES and <testname>.numlocales files in the testing
-# directories themselves.  Using these mechanisms to set the number of
-# locales to 0 will cause the testing system to not use the -nl flag
-# by default.  Any directory or test that has a NUMLOCALES file, or
-# that has a .numlocales file specifying a number other than 0 or 1
-# will be skipped when using "none" as the communic layer (either
-# explicitly or by not specifying a -comm flag).
 #
 # The -nostdinredirect option makes the tests (but not the compiler)
 # run without redirecting stdin from /dev/null.  This is intended to
@@ -789,15 +774,6 @@ while ( $#argv > 0 )
                 shift
                 set valgrindexe = 1
                 breaksw
-        case -comm:
-        case --comm:
-                shift
-                set comm = $argv[1]
-                if ($comm == "") then
-                    set comm = "none"
-                endif
-                shift
-                breaksw
         case -suppress:
         case --suppress:
                 shift
@@ -835,7 +811,6 @@ while ( $#argv > 0 )
         echo "          -valgrind"
                 echo "          -valgrindexe"
                 echo "          -sysprediff <path>"
-                echo "          -comm [none|gasnet|pvm]  (currently: $comm)"
                 echo "          -suppress <filename>"
                 echo "          -nostdinredirect"
                 echo "          -launchertimeout pbs"
@@ -866,10 +841,6 @@ end
 
 if ($optionerr == 1) then
     exit 1
-endif
-
-if ($comm != "none") then
-    set numlocales = "1"
 endif
 
 set invocationDir = "$cwd"
@@ -972,6 +943,10 @@ setenv LAUNCHCMD "$launchcmd"
 echo \[comm: \"$comm\"\] |& $tee -a $logfile
 setenv CHPL_COMM $comm
 setenv CHPL_GASNET_SEGMENT `$CHPL_HOME/util/chplenv/commSegment`
+
+if ($comm != "none") then
+    set numlocales = "1"
+endif
 
 if ($numlocales == "0") then
     echo \[numlocales: \"\(default\)\"\] |& $tee -a $logfile
