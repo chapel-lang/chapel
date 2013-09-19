@@ -694,6 +694,8 @@ void chpl_task_setSubLoc(c_sublocid_t subLoc) {
 
 
 c_sublocid_t chpl_task_getRequestedSubloc(void) {
+  if (!initialized)
+    return c_sublocid_any;
   return get_current_ptask()->chpl_data.requestedSubloc;
 }
 
