@@ -31,8 +31,10 @@ CallInfo::CallInfo(CallExpr* icall) : call(icall), scope(NULL) {
     SymExpr* se = toSymExpr(actual);
     INT_ASSERT(se);
     Type* t = se->var->type;
-    if (t == dtUnknown || t->symbol->hasFlag(FLAG_GENERIC))
-      INT_FATAL(call, "the type of the actual argument '%s' is unknown or generic", se->var->name);
+    if (t == dtUnknown)
+      USR_FATAL(call, "use of '%s' before encountering its definition, type unknown", se->var->name);
+    if (t->symbol->hasFlag(FLAG_GENERIC))
+      INT_FATAL(call, "the type of the actual argument '%s' is generic", se->var->name);
     actuals.add(se->var);
   }
 }
