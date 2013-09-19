@@ -85,8 +85,12 @@ sub go {
     printit("CHPL_TARGET_COMPILER", "", $targcompiler);
   }
 
-  $localeModel = run("localeModel");
-  printit("CHPL_LOCALE_MODEL", "loc", $localeModel);
+  if ( $mode eq "compiler" ) {
+      # Don't print locale model for compiler
+  } else {
+      $localeModel = run("localeModel");
+      printit("CHPL_LOCALE_MODEL", "loc", $localeModel);
+  }
 
   $comm = run("comm");
   printit("CHPL_COMM", "comm", $comm, "!compiler");
