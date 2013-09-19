@@ -14,10 +14,8 @@ default: all
 all: $(SYS_CTYPES_MODULE)
 
 clean: FORCE
-	rm -rf $(SYS_MODULES_DIR)
 
 cleanall: FORCE
-	rm -rf standard/gen
 
 clobber: FORCE
 	rm -rf standard/gen

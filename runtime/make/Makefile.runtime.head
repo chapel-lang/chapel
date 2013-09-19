@@ -60,10 +60,8 @@ CLEAN_TARGS = \
 	core \
 	*.core \
 	*.gmon \
-	*.a \
         $(GEN_HEADERS) \
 	$(GEN_SRCS) \
-	$(EXECS)
 
 CLEANALL_TARGS = \
 	$(CLEAN_TARGS) \
@@ -71,6 +69,8 @@ CLEANALL_TARGS = \
 
 CLOBBER_TARGS = \
 	$(CLEANALL_TARGS) \
+	$(EXECS) \
+	*.a \
 	*~
 
 

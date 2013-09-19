@@ -87,8 +87,6 @@ else
 TARGETS = $(LAUNCHER_TARGETS)
 endif
 
-CLEAN_TARGS += $(RUNTIME_TARGETS) $(LAUNCHER_TARGETS)
-
 #
 # main rules
 #
