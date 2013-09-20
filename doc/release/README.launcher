@@ -1,4 +1,4 @@
-================
+>================
 Chapel launchers
 ================
 
@@ -122,7 +122,7 @@ SLURM notes
 To use SLURM (currently only compatible with using GASNet over
 Infiniband), you need to define the following environment variable:
 
-  export CHPL_LAUNCHER="slurm-gasnetrun_ibv"
+  export CHPL_LAUNCHER=slurm-gasnetrun_ibv
 
 As usual, to specify GASNet over Infiniband, set:
 
@@ -141,9 +141,10 @@ from SLURM.  For example, the following reuqests 15 minutes:
 
   export CHPL_LAUNCHER_WALLTIME=00:15:00
 
-If needed, you can request a specific node feature to SLURM by putting it in the
-CHPL_LAUNCHER_CONSTRAINT environment variable.  For example, to use nodes with
-the cal feature (as defined in the slurm.conf file), set:
+If needed, you can request a specific node feature to SLURM by putting
+it in the CHPL_LAUNCHER_CONSTRAINT environment variable.  For example,
+to use nodes with the 'cal' feature (as defined in the slurm.conf
+file), set:
 
   export CHPL_LAUNCHER_CONSTRAINT=cal
 
