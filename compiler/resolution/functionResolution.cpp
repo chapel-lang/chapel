@@ -5772,6 +5772,16 @@ pruneResolvedTree() {
   removeUnusedTypes();
   // Ideally positioned to lose the "best function name" contest. Suggestions?
   removeRandomJunk();
+
+  // insertRuntimeTypeTemps is also called earlier in resolve().  That call
+  // can insert variables that need autoCopies and inserting autoCopies can
+  // insert things that need runtime type temps.  These need to be fixed up
+  // by insertRuntimeTypeTemps before buildRuntimeTypeInitFns is called to
+  // update the type -> runtimeType mapping.  Without this, there is an
+  // actual/formal type mismatch (with --verify) for the code:
+  // record R { var A: [1..1][1..1] real; }
+  insertRuntimeTypeTemps();
+
   buildRuntimeTypeInitFns();
   removeUnusedFormals();
   insertRuntimeInitTemps();
