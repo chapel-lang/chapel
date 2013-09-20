@@ -39,18 +39,19 @@ the program itself.
 
 Currently-supported launchers include:
 
-  amudprun          : GASNet launcher for programs running over UDP
-  aprun             : Cray XT application launcher using aprun
-  gasnetrun_ibv     : GASNet launcher for programs running over Infiniband
-  gasnetrun_mpi     : GASNet launcher for programs using the MPI conduit
-  loadleveler       : launch using IBM loadleveler (still needs refining)
-  lsf-gasnetrun_ibv : GASNet launcher using LSF (bsub) over Infiniband
-  marenostrum       : launch using MareNostrum's mnsubmit script
-  mtarun            : Cray XMT application launcher using mtarun
-  pbs-aprun         : Cray XT application launcher using PBS (qsub) + aprun
-  pbs-gasnetrun_ibv : GASNet launcher using PBS (qsub) over Infiniband
-  tile-monitor      : launch using Tilera's tile monitor
-  none              : do not use a launcher
+  amudprun            : GASNet launcher for programs running over UDP
+  aprun               : Cray XT application launcher using aprun
+  gasnetrun_ibv       : GASNet launcher for programs running over Infiniband
+  gasnetrun_mpi       : GASNet launcher for programs using the MPI conduit
+  loadleveler         : launch using IBM loadleveler (still needs refining)
+  lsf-gasnetrun_ibv   : GASNet launcher using LSF (bsub) over Infiniband
+  marenostrum         : launch using MareNostrum's mnsubmit script
+  mtarun              : Cray XMT application launcher using mtarun
+  pbs-aprun           : Cray XT application launcher using PBS (qsub) + aprun
+  pbs-gasnetrun_ibv   : GASNet launcher using PBS (qsub) over Infiniband
+  slurm-gasnetrun_ibv : GASNet launcher using slurm over Infiniband
+  tile-monitor        : launch using Tilera's tile monitor
+  none                : do not use a launcher
 
 A specific launcher can be requested by setting the CHPL_LAUNCHER
 environment variable.  If left unset, a default is picked as follows:
@@ -116,6 +117,17 @@ appropriate for your system:
 ----------------------
 Slurm notes
 ----------------------
+To use slurm you need to define before compiling:
+
+export CHPL_LAUNCHER="slurm-gasnetrun_ibv"
+
+And it also needs:
+
+export CHPL_COMM=gasnet
+export CHPL_COMM_SUBSTRATE=ibv
+export GASNET_IBV_SPAWNER=mpi
+export CHPL_LAUNCHER_WALLTIME=00:15:00
+
 You can request a constraint to slurm if needed by putting it in the
 CHPL_LAUNCHER_CONSTRAINT environment variable, for example, to use the cal
 nodes as defined in slurm you need to define it as :
