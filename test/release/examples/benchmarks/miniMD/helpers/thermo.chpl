@@ -78,7 +78,7 @@ proc computeThermo(step : int, total : Timer) {
 
 proc temperature() {
   temp = 0;
-  const act = + reduce forall (b, c) in zip(Bins, Count) do
+  const act = + reduce forall (b, c) in zip(Bins, RealCount) do
     + reduce forall a in b[1..c] do (dot(a.v, a.v) * mass);
   temp = (act) * tempScale;
   return temp;

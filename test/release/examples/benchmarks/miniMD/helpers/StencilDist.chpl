@@ -1,12 +1,12 @@
 //
-// The Block distribution is defined with six classes:
+// The Stencil distribution is defined with six classes:
 //
-//   Block       : distribution class
-//   BlockDom    : domain class
-//   BlockArr    : array class
-//   LocBlock    : local distribution class (per-locale instances)
-//   LocBlockDom : local domain class (per-locale instances)
-//   LocBlockArr : local array class (per-locale instances)
+//   Stencil       : distribution class
+//   StencilDom    : domain class
+//   StencilArr    : array class
+//   LocStencil    : local distribution class (per-locale instances)
+//   LocStencilDom : local domain class (per-locale instances)
+//   LocStencilArr : local array class (per-locale instances)
 //
 // When a distribution, domain, or array class instance is created, a
 // correponding local class instance is created on each locale that is
@@ -19,13 +19,18 @@
 // 1. refactor pid fields from distribution, domain, and array classes
 //
 
+use BlockDist;
 use DSIUtil;
 use ChapelUtil;
 use CommDiagnostics;
 
+/*
+
+Commented out to reduce conflicts with BlockDist.
+
 //
 // These flags are used to output debug information and run extra
-// checks when using Block.  Should these be promoted so that they can
+// checks when using Stencil.  Should these be promoted so that they can
 // be used across all distributions?  This can be done by turning them
 // into compiler flags or adding config parameters to the internal
 // modules, perhaps called debugDists and checkDists.
@@ -43,7 +48,7 @@ config param debugBlockDistBulkTransfer = false;
 config const disableAliasedBulkTransfer = true;
 
 config param sanityCheckDistribution = false;
-
+*/
 //
 // If the testFastFollowerOptimization flag is set to true, the
 // follower will write output to indicate whether the fast follower is
@@ -55,10 +60,10 @@ config param testFastFollowerOptimization = false;
 //
 // This flag is used to disable lazy initialization of the RAD cache.
 //
-config param disableBlockLazyRAD = defaultDisableLazyRADOpt;
+config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
 
 //
-// Block Distribution Class
+// Stencil Distribution Class
 //
 //   The fields dataParTasksPerLocale, dataParIgnoreRunningTasks, and
 //   dataParMinGranularity can be changed, but changes are
@@ -91,7 +96,7 @@ config param disableBlockLazyRAD = defaultDisableLazyRADOpt;
 //
 // dataParTasksPerLocale: an integer that specifies the number of tasks to
 //                        use on each locale when iterating in parallel over
-//                        a Block-distributed domain or array
+//                        a Stencil-distributed domain or array
 //
 // dataParIgnoreRunningTasks: a boolean what dictates whether the number of
 //                            task use on each locale should be limited
@@ -100,13 +105,13 @@ config param disableBlockLazyRAD = defaultDisableLazyRADOpt;
 // dataParMinGranularity: the minimum required number of elements per
 //                        task created
 //
-class Block : BaseDist {
+class Stencil : BaseDist {
   param rank: int;
   type idxType = int;
   var boundingBox: domain(rank, idxType);
   var targetLocDom: domain(rank);
   var targetLocales: [targetLocDom] locale;
-  var locDist: [targetLocDom] LocBlock(rank, idxType);
+  var locDist: [targetLocDom] LocStencil(rank, idxType);
   var dataParTasksPerLocale: int;
   var dataParIgnoreRunningTasks: bool;
   var dataParMinGranularity: int;
@@ -116,20 +121,20 @@ class Block : BaseDist {
 }
 
 //
-// Local Block Distribution Class
+// Local Stencil Distribution Class
 //
-// rank : generic rank that matches Block.rank
-// idxType: generic index type that matches Block.idxType
+// rank : generic rank that matches Stencil.rank
+// idxType: generic index type that matches Stencil.idxType
 // myChunk: a non-distributed domain that defines this locale's indices
 //
-class LocBlock {
+class LocStencil {
   param rank: int;
   type idxType;
   const myChunk: domain(rank, idxType);
 }
 
 //
-// Block Domain Class
+// Stencil Domain Class
 //
 // rank:      generic domain rank
 // idxType:   generic domain index type
@@ -138,12 +143,12 @@ class LocBlock {
 // locDoms:   a non-distributed array of local domain classes
 // whole:     a non-distributed domain that defines the domain's indices
 //
-class BlockDom: BaseRectangularDom {
+class StencilDom: BaseRectangularDom {
   param rank: int;
   type idxType;
   param stridable: bool;
-  const dist: Block(rank, idxType);
-  var locDoms: [dist.targetLocDom] LocBlockDom(rank, idxType, stridable);
+  const dist: Stencil(rank, idxType);
+  var locDoms: [dist.targetLocDom] LocStencilDom(rank, idxType, stridable);
   const whole: domain(rank=rank, idxType=idxType, stridable=stridable);
   var pid: int = -1; // privatized object id (this should be factored out)
   var fluff: rank*idxType;
@@ -151,14 +156,14 @@ class BlockDom: BaseRectangularDom {
 }
 
 //
-// Local Block Domain Class
+// Local Stencil Domain Class
 //
 // rank: generic domain rank
 // idxType: generic domain index type
 // stridable: generic domain stridable parameter
 // myBlock: a non-distributed domain that defines the local indices
 //
-class LocBlockDom {
+class LocStencilDom {
   param rank: int;
   type idxType;
   param stridable: bool;
@@ -166,7 +171,7 @@ class LocBlockDom {
 }
 
 //
-// Block Array Class
+// Stencil Array Class
 //
 // eltType: generic array element type
 // rank: generic array rank
@@ -176,21 +181,21 @@ class LocBlockDom {
 // locArr: a non-distributed array of local array classes
 // myLocArr: optimized reference to here's local array class (or nil)
 //
-class BlockArr: BaseArr {
+class StencilArr: BaseArr {
   type eltType;
   param rank: int;
   type idxType;
   param stridable: bool;
   var doRADOpt: bool = defaultDoRADOpt;
-  var dom: BlockDom(rank, idxType, stridable);
-  var locArr: [dom.dist.targetLocDom] LocBlockArr(eltType, rank, idxType, stridable);
-  var myLocArr: LocBlockArr(eltType, rank, idxType, stridable);
+  var dom: StencilDom(rank, idxType, stridable);
+  var locArr: [dom.dist.targetLocDom] LocStencilArr(eltType, rank, idxType, stridable);
+  var myLocArr: LocStencilArr(eltType, rank, idxType, stridable);
   var pid: int = -1; // privatized object id (this should be factored out)
   const SENTINEL = max(rank*idxType);
 }
 
 //
-// Local Block Array Class
+// Local Stencil Array Class
 //
 // eltType: generic array element type
 // rank: generic array rank
@@ -199,12 +204,12 @@ class BlockArr: BaseArr {
 // locDom: reference to local domain class
 // myElems: a non-distributed array of local elements
 //
-class LocBlockArr {
+class LocStencilArr {
   type eltType;
   param rank: int;
   type idxType;
   param stridable: bool;
-  const locDom: LocBlockDom(rank, idxType, stridable);
+  const locDom: LocStencilDom(rank, idxType, stridable);
   var locRAD: LocRADCache(eltType, rank, idxType); // non-nil if doRADOpt=true
   var myElems: [locDom.myFluff] eltType;
   var NeighDom: domain(rank);
@@ -232,9 +237,9 @@ proc makeZero(param rank : int) {
 }
 
 //
-// Block constructor for clients of the Block distribution
+// Stencil constructor for clients of the Stencil distribution
 //
-proc Block.Block(boundingBox: domain,
+proc Stencil.Stencil(boundingBox: domain,
                 targetLocales: [] locale = Locales,
                 dataParTasksPerLocale=getDataParTasksPerLocale(),
                 dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
@@ -244,9 +249,9 @@ proc Block.Block(boundingBox: domain,
                 fluff: rank*idxType = makeZero(rank), 
                 periodic: bool = false) {
   if rank != boundingBox.rank then
-    compilerError("specified Block rank != rank of specified bounding box");
+    compilerError("specified Stencil rank != rank of specified bounding box");
   if idxType != boundingBox.idxType then
-    compilerError("specified Block index type != index type of specified bounding box");
+    compilerError("specified Stencil index type != index type of specified bounding box");
 
   this.boundingBox = boundingBox;
   this.fluff = fluff;
@@ -260,7 +265,7 @@ proc Block.Block(boundingBox: domain,
   const targetLocDomDims = targetLocDom.dims();
   coforall locid in targetLocDom do
     on this.targetLocales(locid) do
-      locDist(locid) =  new LocBlock(rank, idxType, locid, boundingBoxDims,
+      locDist(locid) =  new LocStencil(rank, idxType, locid, boundingBoxDims,
                                      targetLocDomDims);
 
   // NOTE: When these knobs stop using the global defaults, we will need
@@ -272,12 +277,12 @@ proc Block.Block(boundingBox: domain,
   this.dataParMinGranularity = dataParMinGranularity;
 
   if debugBlockDist {
-    writeln("Creating new Block distribution:");
+    writeln("Creating new Stencil distribution:");
     dsiDisplayRepresentation();
   }
 }
 
-proc Block.dsiAssign(other: this.type) {
+proc Stencil.dsiAssign(other: this.type) {
   coforall locid in targetLocDom do
     on targetLocales(locid) do
       delete locDist(locid);
@@ -292,24 +297,24 @@ proc Block.dsiAssign(other: this.type) {
 
   coforall locid in targetLocDom do
     on targetLocales(locid) do
-      locDist(locid) = new LocBlock(rank, idxType, locid, boundingBoxDims,
+      locDist(locid) = new LocStencil(rank, idxType, locid, boundingBoxDims,
                                     targetLocDomDims);
 }
 
-proc Block.dsiClone() {
-  return new Block(boundingBox, targetLocales,
+proc Stencil.dsiClone() {
+  return new Stencil(boundingBox, targetLocales,
                    dataParTasksPerLocale, dataParIgnoreRunningTasks,
                    dataParMinGranularity);
 }
 
-proc Block.dsiDestroyDistClass() {
+proc Stencil.dsiDestroyDistClass() {
   coforall ld in locDist do {
     on ld do
       delete ld;
   }
 }
 
-proc Block.dsiDisplayRepresentation() {
+proc Stencil.dsiDisplayRepresentation() {
   writeln("boundingBox = ", boundingBox);
   writeln("targetLocDom = ", targetLocDom);
   writeln("targetLocales = ", for tl in targetLocales do tl.id);
@@ -320,17 +325,17 @@ proc Block.dsiDisplayRepresentation() {
     writeln("locDist[", tli, "].myChunk = ", locDist[tli].myChunk);
 }
 
-proc Block.dsiNewRectangularDom(param rank: int, type idxType,
+proc Stencil.dsiNewRectangularDom(param rank: int, type idxType,
                               param stridable: bool) {
   if idxType != this.idxType then
-    compilerError("Block domain index type does not match distribution's");
+    compilerError("Stencil domain index type does not match distribution's");
   if rank != this.rank then
-    compilerError("Block domain rank does not match distribution's");
+    compilerError("Stencil domain rank does not match distribution's");
 
-  var dom = new BlockDom(rank=rank, idxType=idxType, dist=this, stridable=stridable, fluff=fluff, periodic=periodic);
+  var dom = new StencilDom(rank=rank, idxType=idxType, dist=this, stridable=stridable, fluff=fluff, periodic=periodic);
   dom.setup();
   if debugBlockDist {
-    writeln("Creating new Block domain:");
+    writeln("Creating new Stencil domain:");
     dom.dsiDisplayRepresentation();
   }
   return dom;
@@ -339,8 +344,8 @@ proc Block.dsiNewRectangularDom(param rank: int, type idxType,
 //
 // output distribution
 //
-proc Block.writeThis(x:Writer) {
-  x.writeln("Block");
+proc Stencil.writeThis(x:Writer) {
+  x.writeln("Stencil");
   x.writeln("-------");
   x.writeln("distributes: ", boundingBox);
   x.writeln("across locales: ", targetLocales);
@@ -350,11 +355,11 @@ proc Block.writeThis(x:Writer) {
     x.writeln("  [", locid, "] locale ", locDist(locid).locale.id, " owns chunk: ", locDist(locid).myChunk);
 }
 
-proc Block.dsiIndexToLocale(ind: idxType) where rank == 1 {
+proc Stencil.dsiIndexToLocale(ind: idxType) where rank == 1 {
   return targetLocales(targetLocsIdx(ind));
 }
 
-proc Block.dsiIndexToLocale(ind: rank*idxType) where rank > 1 {
+proc Stencil.dsiIndexToLocale(ind: rank*idxType) where rank > 1 {
   return targetLocales(targetLocsIdx(ind));
 }
 
@@ -362,7 +367,7 @@ proc Block.dsiIndexToLocale(ind: rank*idxType) where rank > 1 {
 // compute what chunk of inds is owned by a given locale -- assumes
 // it's being called on the locale in question
 //
-proc Block.getChunk(inds, locid) {
+proc Stencil.getChunk(inds, locid) {
   // use domain slicing to get the intersection between what the
   // locale owns and the domain's index set
   //
@@ -386,11 +391,11 @@ proc Block.getChunk(inds, locid) {
 //
 // get the index into the targetLocales array for a given distributed index
 //
-proc Block.targetLocsIdx(ind: idxType) where rank == 1 {
+proc Stencil.targetLocsIdx(ind: idxType) where rank == 1 {
   return targetLocsIdx((ind,));
 }
 
-proc Block.targetLocsIdx(ind: rank*idxType) {
+proc Stencil.targetLocsIdx(ind: rank*idxType) {
   var result: rank*int;
   for param i in 1..rank do
     result(i) = max(0, min((targetLocDom.dim(i).length-1):int,
@@ -400,7 +405,7 @@ proc Block.targetLocsIdx(ind: rank*idxType) {
   return if rank == 1 then result(1) else result;
 }
 
-proc Block.dsiCreateReindexDist(newSpace, oldSpace) {
+proc Stencil.dsiCreateReindexDist(newSpace, oldSpace) {
   proc anyStridable(space, param i=1) param
     return if i == space.size then space(i).stridable
            else space(i).stridable || anyStridable(space, i+1);
@@ -409,7 +414,7 @@ proc Block.dsiCreateReindexDist(newSpace, oldSpace) {
   if newSpace(1).idxType != oldSpace(1).idxType then
     compilerError("index type of reindex domain must match that of original domain");
   if anyStridable(newSpace) || anyStridable(oldSpace) then
-    compilerWarning("reindexing stridable Block arrays is not yet fully supported");
+    compilerWarning("reindexing stridable Stencil arrays is not yet fully supported");
 
   /* To shift the bounding box, we must perform the following operation for
    *  each dimension:
@@ -476,24 +481,24 @@ proc Block.dsiCreateReindexDist(newSpace, oldSpace) {
       if !valid then // try with high
         (myNewBbox(r)._base._low,valid) = adjustBound(myNewBbox(r).low,oldHigh,newHigh);
       if !valid then
-        halt("invalid reindex for Block: distribution bounding box (low) out of range in dimension ", r);
+        halt("invalid reindex for Stencil: distribution bounding box (low) out of range in dimension ", r);
 
       (myNewBbox(r)._base._high,valid) = adjustBound(myNewBbox(r).high,oldHigh,newHigh);
       if !valid then
         (myNewBbox(r)._base._high,valid) = adjustBound(myNewBbox(r).high,oldLow,newLow);
       if !valid then // try with low
-        halt("invalid reindex for Block: distribution bounding box (high) out of range in dimension ", r);
+        halt("invalid reindex for Stencil: distribution bounding box (high) out of range in dimension ", r);
     }
   }
   var d = {(...myNewBbox)};
-  var newDist = new Block(d, targetLocales, 
+  var newDist = new Stencil(d, targetLocales, 
                           dataParTasksPerLocale, dataParIgnoreRunningTasks,
                           dataParMinGranularity);
   return newDist;
 }
 
 
-proc LocBlock.LocBlock(param rank: int,
+proc LocStencil.LocStencil(param rank: int,
                       type idxType, 
                       locid, // the locale index from the target domain
                       boundingBox: rank*range(idxType),
@@ -521,20 +526,20 @@ proc LocBlock.LocBlock(param rank: int,
   }
 }
 
-proc BlockDom.dsiMyDist() return dist;
+proc StencilDom.dsiMyDist() return dist;
 
-proc BlockDom.dsiDisplayRepresentation() {
+proc StencilDom.dsiDisplayRepresentation() {
   writeln("whole = ", whole);
   for tli in dist.targetLocDom do
     writeln("locDoms[", tli, "].myBlock = ", locDoms[tli].myBlock);
 }
 
-proc BlockDom.dsiDims() return whole.dims();
+proc StencilDom.dsiDims() return whole.dims();
 
-proc BlockDom.dsiDim(d: int) return whole.dim(d);
+proc StencilDom.dsiDim(d: int) return whole.dim(d);
 
 // stopgap to avoid accessing locDoms field (and returning an array)
-proc BlockDom.getLocDom(localeIdx) return locDoms(localeIdx);
+proc StencilDom.getLocDom(localeIdx) return locDoms(localeIdx);
 
 
 //
@@ -561,7 +566,7 @@ proc _matchArgsShape(type rangeType, type scalarType, args) type {
 }
 
 
-proc Block.dsiCreateRankChangeDist(param newRank: int, args) {
+proc Stencil.dsiCreateRankChangeDist(param newRank: int, args) {
   var collapsedDimLocs: rank*idxType;
 
   for param i in 1..rank {
@@ -588,17 +593,17 @@ proc Block.dsiCreateRankChangeDist(param newRank: int, args) {
 
   const newBbox = boundingBox[(...collapsedBbox)];
   const newTargetLocales = targetLocales((...collapsedLocs));
-  return new Block(newBbox, newTargetLocales,
+  return new Stencil(newBbox, newTargetLocales,
                    dataParTasksPerLocale, dataParIgnoreRunningTasks,
                    dataParMinGranularity);
 }
 
-iter BlockDom.these() {
+iter StencilDom.these() {
   for i in whole do
     yield i;
 }
 
-iter BlockDom.these(param tag: iterKind) where tag == iterKind.leader {
+iter StencilDom.these(param tag: iterKind) where tag == iterKind.leader {
   type strType = chpl__signedType(idxType);
   const maxTasks = dist.dataParTasksPerLocale;
   const ignoreRunning = dist.dataParIgnoreRunningTasks;
@@ -607,23 +612,23 @@ iter BlockDom.these(param tag: iterKind) where tag == iterKind.leader {
   coforall locDom in locDoms do on locDom {
     // Use the internal function for untranslate to avoid having to do
     // extra work to negate the offset
-    var tmpBlock = locDom.myBlock.chpl__unTranslate(wholeLow);
+    var tmpStencil = locDom.myBlock.chpl__unTranslate(wholeLow);
     const (numTasks, parDim) =
       _computeChunkStuff(maxTasks, ignoreRunning, minSize,
                          locDom.myBlock.dims());
-    var locBlock: rank*range(idxType);
-    for param i in 1..tmpBlock.rank {
-      locBlock(i) = (tmpBlock.dim(i).first/tmpBlock.dim(i).stride:strType)..#(tmpBlock.dim(i).length);
+    var locStencil: rank*range(idxType);
+    for param i in 1..tmpStencil.rank {
+      locStencil(i) = (tmpStencil.dim(i).first/tmpStencil.dim(i).stride:strType)..#(tmpStencil.dim(i).length);
     }
     if (numTasks == 1) {
-      yield locBlock;
+      yield locStencil;
     } else {
       coforall taskid in 0..#numTasks {
-        var followMe: rank*range(idxType) = locBlock;
-        const (lo,hi) = _computeBlock(locBlock(parDim).length, numTasks, taskid,
-                                      locBlock(parDim).high,
-                                      locBlock(parDim).low,
-                                      locBlock(parDim).low);
+        var followMe: rank*range(idxType) = locStencil;
+        const (lo,hi) = _computeBlock(locStencil(parDim).length, numTasks, taskid,
+                                      locStencil(parDim).high,
+                                      locStencil(parDim).low,
+                                      locStencil(parDim).low);
         // If the following fails, we should make _computeChunkStuff()
         // return smaller numTasks in that case - for more even partitioning
         // of indices over tasks. Also, do not yield a tuple of ranges
@@ -648,12 +653,12 @@ iter BlockDom.these(param tag: iterKind) where tag == iterKind.leader {
 // natural composition and might help with my fears about how
 // stencil communication will be done on a per-locale basis.
 //
-iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
+iter StencilDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
   proc anyStridable(rangeTuple, param i: int = 1) param
       return if i == rangeTuple.size then rangeTuple(i).stridable
              else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
 
-  chpl__testPar("Block domain follower invoked on ", followThis);
+  chpl__testPar("Stencil domain follower invoked on ", followThis);
   var t: rank*range(idxType, stridable=stridable||anyStridable(followThis));
   type strType = chpl__signedType(idxType);
   for param i in 1..rank {
@@ -671,29 +676,29 @@ iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follo
 //
 // output domain
 //
-proc BlockDom.dsiSerialWrite(x:Writer) {
+proc StencilDom.dsiSerialWrite(x:Writer) {
   x.write(whole);
 }
 
 //
 // how to allocate a new array over this domain
 //
-proc BlockDom.dsiBuildArray(type eltType) {
-  var arr = new BlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
+proc StencilDom.dsiBuildArray(type eltType) {
+  var arr = new StencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
   arr.setup();
   return arr;
 }
 
-proc BlockDom.dsiNumIndices return whole.numIndices;
-proc BlockDom.dsiLow return whole.low;
-proc BlockDom.dsiHigh return whole.high;
-proc BlockDom.dsiStride return whole.stride;
+proc StencilDom.dsiNumIndices return whole.numIndices;
+proc StencilDom.dsiLow return whole.low;
+proc StencilDom.dsiHigh return whole.high;
+proc StencilDom.dsiStride return whole.stride;
 
 //
 // INTERFACE NOTES: Could we make dsiSetIndices() for a rectangular
 // domain take a domain rather than something else?
 //
-proc BlockDom.dsiSetIndices(x: domain) {
+proc StencilDom.dsiSetIndices(x: domain) {
   if x.rank != rank then
     compilerError("rank mismatch in domain assignment");
   if x._value.idxType != idxType then
@@ -701,12 +706,12 @@ proc BlockDom.dsiSetIndices(x: domain) {
   whole = x;
   setup();
   if debugBlockDist {
-    writeln("Setting indices of Block domain:");
+    writeln("Setting indices of Stencil domain:");
     dsiDisplayRepresentation();
   }
 }
 
-proc BlockDom.dsiSetIndices(x) {
+proc StencilDom.dsiSetIndices(x) {
   if x.size != rank then
     compilerError("rank mismatch in domain assignment");
   if x(1).idxType != idxType then
@@ -717,25 +722,25 @@ proc BlockDom.dsiSetIndices(x) {
   whole.setIndices(x);
   setup();
   if debugBlockDist {
-    writeln("Setting indices of Block domain:");
+    writeln("Setting indices of Stencil domain:");
     dsiDisplayRepresentation();
   }
 }
 
-proc BlockDom.dsiGetIndices() {
+proc StencilDom.dsiGetIndices() {
   return whole.getIndices();
 }
 
 // dsiLocalSlice
-proc BlockDom.dsiLocalSlice(param stridable: bool, ranges) {
+proc StencilDom.dsiLocalSlice(param stridable: bool, ranges) {
   return whole((...ranges));
 }
 
-proc BlockDom.setup() {
+proc StencilDom.setup() {
   if locDoms(dist.targetLocDom.low) == nil {
     coforall localeIdx in dist.targetLocDom {
       on dist.targetLocales(localeIdx) {
-        locDoms(localeIdx) = new LocBlockDom(rank, idxType, stridable,
+        locDoms(localeIdx) = new LocStencilDom(rank, idxType, stridable,
                                              dist.getChunk(whole, localeIdx));
         if !zeroTuple(fluff) && locDoms(localeIdx).myBlock.numIndices!=0 then {
           locDoms(localeIdx).myFluff = locDoms(localeIdx).myBlock.expand(fluff);
@@ -758,28 +763,28 @@ proc BlockDom.setup() {
   }
 }
 
-proc BlockDom.dsiMember(i) {
+proc StencilDom.dsiMember(i) {
   return whole.member(i);
 }
 
-proc BlockDom.dsiIndexOrder(i) {
+proc StencilDom.dsiIndexOrder(i) {
   return whole.indexOrder(i);
 }
 
 //
 // build a new rectangular domain using the given range
 //
-proc BlockDom.dsiBuildRectangularDom(param rank: int, type idxType,
+proc StencilDom.dsiBuildRectangularDom(param rank: int, type idxType,
                                    param stridable: bool,
                                    ranges: rank*range(idxType,
                                                       BoundedRangeType.bounded,
                                                       stridable)) {
   if idxType != dist.idxType then
-    compilerError("Block domain index type does not match distribution's");
+    compilerError("Stencil domain index type does not match distribution's");
   if rank != dist.rank then
-    compilerError("Block domain rank does not match distribution's");
+    compilerError("Stencil domain rank does not match distribution's");
 
-  var dom = new BlockDom(rank=rank, idxType=idxType,
+  var dom = new StencilDom(rank=rank, idxType=idxType,
                          dist=dist, stridable=stridable);
   dom.dsiSetIndices(ranges);
   return dom;
@@ -788,9 +793,9 @@ proc BlockDom.dsiBuildRectangularDom(param rank: int, type idxType,
 //
 // Added as a performance stopgap to avoid returning a domain
 //
-proc LocBlockDom.member(i) return myBlock.member(i);
+proc LocStencilDom.member(i) return myBlock.member(i);
 
-proc BlockArr.dsiDisplayRepresentation() {
+proc StencilArr.dsiDisplayRepresentation() {
   for tli in dom.dist.targetLocDom {
     writeln("locArr[", tli, "].myElems = ", for e in locArr[tli].myElems do e);
     if doRADOpt then
@@ -798,13 +803,13 @@ proc BlockArr.dsiDisplayRepresentation() {
   }
 }
 
-proc BlockArr.dsiGetBaseDom() return dom;
+proc StencilArr.dsiGetBaseDom() return dom;
 
 //
 // NOTE: Each locale's myElems array be initialized prior to setting up
 // the RAD cache.
 //
-proc BlockArr.setupRADOpt() {
+proc StencilArr.setupRADOpt() {
   for localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocales(localeIdx) {
       const myLocArr = locArr(localeIdx);
@@ -812,7 +817,7 @@ proc BlockArr.setupRADOpt() {
         delete myLocArr.locRAD;
         myLocArr.locRAD = nil;
       }
-      if disableBlockLazyRAD {
+      if disableStencilLazyRAD {
         myLocArr.locRAD = new LocRADCache(eltType, rank, idxType, dom.dist.targetLocDom);
         for l in dom.dist.targetLocDom {
           if l != localeIdx {
@@ -825,23 +830,23 @@ proc BlockArr.setupRADOpt() {
 }
 
 // hijacked for fluff/periodic features
-proc BlockArr.setup() {
+proc StencilArr.setup() {
   var thisid = this.locale.id;
-  coforall localeIdx in dom.dist.targetLocDom {
+  var nearest : rank*range;
+  for param i in 1..nearest.size do nearest(i) = -1..1;
+  for localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocales(localeIdx) {
       const locDom = dom.getLocDom(localeIdx);
 
       // -1..1 will point to nearest neighboring locales
-      var nearest : rank*range;
-      for param i in 1..nearest.size do nearest(i) = -1..1;
       const ND : domain(rank) = nearest;
 
-      locArr(localeIdx) = new LocBlockArr(eltType, rank, idxType, stridable, locDom, NeighDom=ND);
+      locArr(localeIdx) = new LocStencilArr(eltType, rank, idxType, stridable, locDom, NeighDom=ND);
       
       if !zeroTuple(dom.fluff) {
         for ij in ND {
           locArr(localeIdx).Dest[ij] = locDom.myBlock.exterior(ij * dom.fluff);
-          if dom.periodic then 
+          if dom.periodic then
             locArr(localeIdx).Src = locArr(localeIdx).Dest;
         }
 
@@ -866,7 +871,7 @@ proc BlockArr.setup() {
               stay = stay && false;
               if !dom.periodic then break;
               neighbor(i) = dom.dist.targetLocDom.low(i);
-              SrcOffset(i) = -dom.whole.high(i) + dom.whole.low(i) - 1;
+              SrcOffset(i) = -dom.whole.high(i);
             }
           }
           N = neighbor;
@@ -880,9 +885,10 @@ proc BlockArr.setup() {
     }
   }
 
-  if doRADOpt && disableBlockLazyRAD then setupRADOpt();
+  if doRADOpt && disableStencilLazyRAD then setupRADOpt();
 }
 
+/*
 inline proc _remoteAccessData.getDataIndex(param stridable, ind: rank*idxType) {
   // modified from DefaultRectangularArr.getDataIndex
   if stridable {
@@ -902,9 +908,9 @@ inline proc _remoteAccessData.getDataIndex(param stridable, ind: rank*idxType) {
     return sum;
   }
 }
+*/
 
-
-inline proc BlockArr.dsiLocalAccess(i: rank*idxType) var {
+inline proc StencilArr.dsiLocalAccess(i: rank*idxType) var {
   return myLocArr.this(i);
 }
 
@@ -912,7 +918,7 @@ proc _array.readRemote(i: _value.rank*_value.idxType) {
   return _value.dsiReadRemote(i);
 }
 
-proc BlockArr.dsiReadRemote(i: rank*idxType) {
+proc StencilArr.dsiReadRemote(i: rank*idxType) {
   local {
     if myLocArr != nil {
 
@@ -927,7 +933,7 @@ proc BlockArr.dsiReadRemote(i: rank*idxType) {
 //
 // TODO: Do we need a global bounds check here or in targetLocsIdx?
 //
-proc BlockArr.dsiAccess(i: rank*idxType) var {
+proc StencilArr.dsiAccess(i: rank*idxType) var {
   local {
     if myLocArr != nil {
 
@@ -945,7 +951,7 @@ proc BlockArr.dsiAccess(i: rank*idxType) var {
         if !dom.dsiMember(i) then
           halt("array index out of bounds: ", i);
       var rlocIdx = dom.dist.targetLocsIdx(i);
-      if !disableBlockLazyRAD {
+      if !disableStencilLazyRAD {
         if myLocArr.locRAD == nil {
           myLocArr.lockLocRAD();
           if myLocArr.locRAD == nil {
@@ -976,10 +982,10 @@ proc BlockArr.dsiAccess(i: rank*idxType) var {
   return locArr(dom.dist.targetLocsIdx(i))(i);
 }
 
-proc BlockArr.dsiAccess(i: idxType...rank) var
+proc StencilArr.dsiAccess(i: idxType...rank) var
   return dsiAccess(i);
 
-iter BlockArr.these() var {
+iter StencilArr.these() var {
   for i in dom do
     yield dsiAccess(i);
 }
@@ -989,32 +995,32 @@ iter BlockArr.these() var {
 // logic?  (e.g., can we forward the forall to the global domain
 // somehow?
 //
-iter BlockArr.these(param tag: iterKind) where tag == iterKind.leader {
+iter StencilArr.these(param tag: iterKind) where tag == iterKind.leader {
   for followThis in dom.these(tag) do
     yield followThis;
 }
 
-proc BlockArr.dsiStaticFastFollowCheck(type leadType) param
+proc StencilArr.dsiStaticFastFollowCheck(type leadType) param
   return leadType == this.type || leadType == this.dom.type;
 
-proc BlockArr.dsiDynamicFastFollowCheck(lead: [])
+proc StencilArr.dsiDynamicFastFollowCheck(lead: [])
   return lead.domain._value == this.dom;
 
-proc BlockArr.dsiDynamicFastFollowCheck(lead: domain)
+proc StencilArr.dsiDynamicFastFollowCheck(lead: domain)
   return lead._value == this.dom;
 
-iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) var where tag == iterKind.follower {
+iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false) var where tag == iterKind.follower {
   proc anyStridable(rangeTuple, param i: int = 1) param
       return if i == rangeTuple.size then rangeTuple(i).stridable
              else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
 
   if fast then
-    chpl__testPar("Block array fast follower invoked on ", followThis);
+    chpl__testPar("Stencil array fast follower invoked on ", followThis);
   else
-    chpl__testPar("Block array non-fast follower invoked on ", followThis);
+    chpl__testPar("Stencil array non-fast follower invoked on ", followThis);
 
   if testFastFollowerOptimization then
-    writeln((if fast then "fast" else "regular") + " follower invoked for Block array");
+    writeln((if fast then "fast" else "regular") + " follower invoked for Stencil array");
 
   var myFollowThis: rank*range(idxType=idxType, stridable=stridable || anyStridable(followThis));
   var lowIdx: rank*idxType;
@@ -1068,7 +1074,7 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) v
 //
 // output array
 //
-proc BlockArr.dsiSerialWrite(f: Writer) {
+proc StencilArr.dsiSerialWrite(f: Writer) {
   type strType = chpl__signedType(idxType);
   var binary = f.binary();
   if dom.dsiNumIndices == 0 then return;
@@ -1097,15 +1103,14 @@ proc BlockArr.dsiSerialWrite(f: Writer) {
 }
 
 // TODO: we should slice from fluff first, then remote
-proc BlockArr.dsiSlice(d: BlockDom) {
-  var alias = new BlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, dom=d, pid=pid);
+proc StencilArr.dsiSlice(d: StencilDom) {
+  var alias = new StencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, dom=d, pid=pid);
   var thisid = this.locale.id;
   coforall i in d.dist.targetLocDom {
     d.locDoms[i].myFluff = d.locDoms[i].myBlock;
     d.fluff = makeZero(d.rank);
     on d.dist.targetLocales(i) {
-      //writeln("slicing ", locArr[i].myElems.domain, " with ", d.locDoms[i].myBlock);
-      alias.locArr[i] = new LocBlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, locDom=d.locDoms[i], myElems=>locArr[i].myElems[d.locDoms[i].myBlock]);
+      alias.locArr[i] = new LocStencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, locDom=d.locDoms[i], myElems=>locArr[i].myElems[d.locDoms[i].myBlock]);
       if thisid == here.id then
         alias.myLocArr = alias.locArr[i];
     }
@@ -1114,14 +1119,12 @@ proc BlockArr.dsiSlice(d: BlockDom) {
   return alias;
 }
 
-proc BlockArr.dsiLocalSlice(ranges) {
-  //writeln("dsiLocalSlice: ", ranges);
+proc StencilArr.dsiLocalSlice(ranges) {
   var low: rank*idxType;
   for param i in 1..rank {
     low(i) = ranges(i).low;
   }
-  /*locArr(dom.dist.targetLocsIdx(low))*/
-  var A => myLocArr.myElems((...ranges));
+  var A => locArr(dom.dist.targetLocsIdx(low));
   return A;
 }
 
@@ -1157,8 +1160,8 @@ proc _extendTuple(type t, idx, args) {
 }
 
 
-proc BlockArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) {
-  var alias = new BlockArr(eltType=eltType, rank=newRank, idxType=idxType, stridable=stridable, dom=d);
+proc StencilArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) {
+  var alias = new StencilArr(eltType=eltType, rank=newRank, idxType=idxType, stridable=stridable, dom=d);
   var thisid = this.locale.id;
   coforall ind in d.dist.targetLocDom {
     on d.dist.targetLocales(ind) {
@@ -1200,7 +1203,7 @@ proc BlockArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) 
       }
 
       alias.locArr[ind] =
-        new LocBlockArr(eltType=eltType, rank=newRank, idxType=d.idxType,
+        new LocStencilArr(eltType=eltType, rank=newRank, idxType=d.idxType,
                         stridable=d.stridable, locDom=locDom,
                         myElems=>locArr[(...locArrInd)].myElems[(...locSlice)]);
 
@@ -1222,8 +1225,38 @@ iter _array.boundaries() {
   for d in _value.dsiBoundaries() do yield d;
 }
 
-iter BlockArr.dsiBoundaries() {
-  for d in myLocArr.Dest do yield d;
+iter _array.boundaries(param tag : iterKind) where tag == iterKind.leader {
+  forall d in _value.dsiBoundaries() do yield d;
+}
+
+iter _array.boundaries(param tag : iterKind, followThis) where tag == iterKind.follower {
+  yield followThis;
+}
+
+iter StencilArr.dsiBoundaries() {
+  for i in dom.dist.targetLocDom {
+    for (D, N, L) in zip(locArr[i].Dest, locArr[i].Neighs, locArr[i].NeighDom) {
+      if (i + L != N) {
+        for el in locArr[i].myElems[D] do yield (el, L);
+      }
+    }
+  }
+}
+
+iter StencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.leader {
+  coforall i in dom.dist.targetLocDom {
+    on dom.dist.targetLocales(i) {
+      for (D, N, L) in zip(locArr[i].Dest, locArr[i].Neighs, locArr[i].NeighDom) {
+        if (i + L != N) {
+          for el in locArr[i].myElems[D] do yield (el, L);
+        }
+      }
+    }
+  }
+}
+
+iter StencilArr.dsiBoundaries(param tag : iterKind, followThis) where tag == iterKind.follower {
+  yield followThis;
 }
 
 // wrapper
@@ -1231,36 +1264,26 @@ proc _array.updateFluff() {
   _value.dsiUpdateFluff();
 }
 
-// copy stuff over
-// TODO: is it possible to add a user-defined function that is applied 
-// to all array elements after being copied over?
-//
-// motivation/ex: in miniMD, we want to copy over the positions AND 
-//   offset them (because we're periodic)
-//
-// something like: f: func(elType, rank*idxType, void);
-//   takes the data (as ref?) to work with, the neighbor in case of indexing, and returns nothing
-proc BlockArr.dsiUpdateFluff() {
+// copy over into cache
+proc StencilArr.dsiUpdateFluff() {
   if zeroTuple(dom.fluff) then return;
   coforall i in dom.dist.targetLocDom {
     on dom.dist.targetLocales(i) {
       for (S, D, N, L) in zip(locArr[i].Src, locArr[i].Dest, 
           locArr[i].Neighs, locArr[i].NeighDom) {
         if !zeroTuple(L) {
-          if dom.periodic {
+          if !dom.dist.targetLocDom.member(i+L) && dom.periodic then
             locArr[i].myElems[D] = locArr[N].myElems[S];
-          } else {
-            if !dom.dist.targetLocDom.member(N) then continue;
+          else 
             locArr[i].myElems[D] = locArr[N].myElems[D];
-          }
         }
       }
     }
   }
 }
 
-proc BlockArr.dsiReindex(d: BlockDom) {
-  var alias = new BlockArr(eltType=eltType, rank=d.rank, idxType=d.idxType,
+proc StencilArr.dsiReindex(d: StencilDom) {
+  var alias = new StencilArr(eltType=eltType, rank=d.rank, idxType=d.idxType,
                            stridable=d.stridable, dom=d);
   const sameDom = d==dom;
 
@@ -1269,7 +1292,7 @@ proc BlockArr.dsiReindex(d: BlockDom) {
     on d.dist.targetLocales(i) {
       const locDom = d.getLocDom(i);
       var locAlias: [locDom.myBlock] => locArr[i].myElems;
-      alias.locArr[i] = new LocBlockArr(eltType=eltType,
+      alias.locArr[i] = new LocStencilArr(eltType=eltType,
                                         rank=rank, idxType=d.idxType,
                                         stridable=d.stridable,
                                         locDom=locDom,
@@ -1296,7 +1319,7 @@ proc BlockArr.dsiReindex(d: BlockDom) {
   return alias;
 }
 
-proc BlockArr.dsiReallocate(d: domain) {
+proc StencilArr.dsiReallocate(d: domain) {
   //
   // For the default rectangular array, this function changes the data
   // vector in the array class so that it is setup once the default
@@ -1310,12 +1333,12 @@ proc BlockArr.dsiReallocate(d: domain) {
   //
 }
 
-proc BlockArr.dsiPostReallocate() {
+proc StencilArr.dsiPostReallocate() {
   // Call this *after* the domain has been reallocated
   if doRADOpt then setupRADOpt();
 }
 
-proc BlockArr.setRADOpt(val=true) {
+proc StencilArr.setRADOpt(val=true) {
   doRADOpt = val;
   if doRADOpt then setupRADOpt();
 }
@@ -1323,14 +1346,14 @@ proc BlockArr.setRADOpt(val=true) {
 //
 // the accessor for the local array -- assumes the index is local
 //
-proc LocBlockArr.this(i) var {
+proc LocStencilArr.this(i) var {
   return myElems(i);
 }
 
 //
 // Privatization
 //
-proc Block.Block(other: Block, privateData,
+proc Stencil.Stencil(other: Stencil, privateData,
                 param rank = other.rank,
                 type idxType = other.idxType) {
   boundingBox = {(...privateData(1))};
@@ -1345,20 +1368,20 @@ proc Block.Block(other: Block, privateData,
   }
 }
 
-proc Block.dsiSupportsPrivatization() param return true;
+proc Stencil.dsiSupportsPrivatization() param return true;
 
-proc Block.dsiGetPrivatizeData() {
+proc Stencil.dsiGetPrivatizeData() {
   return (boundingBox.dims(), targetLocDom.dims(),
           dataParTasksPerLocale, dataParIgnoreRunningTasks, dataParMinGranularity);
 }
 
-proc Block.dsiPrivatize(privatizeData) {
-  return new Block(this, privatizeData);
+proc Stencil.dsiPrivatize(privatizeData) {
+  return new Stencil(this, privatizeData);
 }
 
-proc Block.dsiGetReprivatizeData() return boundingBox.dims();
+proc Stencil.dsiGetReprivatizeData() return boundingBox.dims();
 
-proc Block.dsiReprivatize(other, reprivatizeData) {
+proc Stencil.dsiReprivatize(other, reprivatizeData) {
   boundingBox = {(...reprivatizeData)};
   targetLocDom = other.targetLocDom;
   targetLocales = other.targetLocales;
@@ -1368,34 +1391,34 @@ proc Block.dsiReprivatize(other, reprivatizeData) {
   dataParMinGranularity = other.dataParMinGranularity;
 }
 
-proc BlockDom.dsiSupportsPrivatization() param return true;
+proc StencilDom.dsiSupportsPrivatization() param return true;
 
-proc BlockDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
+proc StencilDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
 
-proc BlockDom.dsiPrivatize(privatizeData) {
+proc StencilDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(1));
-  var c = new BlockDom(rank=rank, idxType=idxType, stridable=stridable, dist=privdist, fluff=fluff, periodic=periodic);
+  var c = new StencilDom(rank=rank, idxType=idxType, stridable=stridable, dist=privdist, fluff=fluff, periodic=periodic);
   for i in c.dist.targetLocDom do
     c.locDoms(i) = locDoms(i);
   c.whole = {(...privatizeData(2))};
   return c;
 }
 
-proc BlockDom.dsiGetReprivatizeData() return whole.dims();
+proc StencilDom.dsiGetReprivatizeData() return whole.dims();
 
-proc BlockDom.dsiReprivatize(other, reprivatizeData) {
+proc StencilDom.dsiReprivatize(other, reprivatizeData) {
   for i in dist.targetLocDom do
     locDoms(i) = other.locDoms(i);
   whole = {(...reprivatizeData)};
 }
 
-proc BlockArr.dsiSupportsPrivatization() param return true;
+proc StencilArr.dsiSupportsPrivatization() param return true;
 
-proc BlockArr.dsiGetPrivatizeData() return dom.pid;
+proc StencilArr.dsiGetPrivatizeData() return dom.pid;
 
-proc BlockArr.dsiPrivatize(privatizeData) {
+proc StencilArr.dsiPrivatize(privatizeData) {
   var privdom = chpl_getPrivatizedCopy(dom.type, privatizeData);
-  var c = new BlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
+  var c = new StencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
   for localeIdx in c.dom.dist.targetLocDom {
     c.locArr(localeIdx) = locArr(localeIdx);
     if c.locArr(localeIdx).locale.id == here.id then
@@ -1404,12 +1427,12 @@ proc BlockArr.dsiPrivatize(privatizeData) {
   return c;
 }
 
-proc BlockArr.dsiSupportsBulkTransfer() param return true;
-proc BlockArr.dsiSupportsBulkTransferInterface() param return true;
+proc StencilArr.dsiSupportsBulkTransfer() param return true;
+proc StencilArr.dsiSupportsBulkTransferInterface() param return true;
 
-proc BlockArr.doiCanBulkTransfer() {
+proc StencilArr.doiCanBulkTransfer() {
   if debugBlockDistBulkTransfer then
-    writeln("In BlockArr.doiCanBulkTransfer");
+    writeln("In StencilArr.doiCanBulkTransfer");
 
   if dom.stridable then
     for param i in 1..rank do
@@ -1422,18 +1445,18 @@ proc BlockArr.doiCanBulkTransfer() {
   return true;
 }
 
-proc BlockArr.doiCanBulkTransferStride() param {
+proc StencilArr.doiCanBulkTransferStride() param {
   if debugBlockDistBulkTransfer then
-    writeln("In BlockArr.doiCanBulkTransferStride");
+    writeln("In StencilArr.doiCanBulkTransferStride");
 
-  // A BlockArr is a bunch of DefaultRectangular arrays,
+  // A StencilArr is a bunch of DefaultRectangular arrays,
   // so strided bulk transfer gotta be always possible.
   return true;
 }
 
-proc BlockArr.doiBulkTransfer(B) {
+proc StencilArr.doiBulkTransfer(B) {
   if debugBlockDistBulkTransfer then
-    writeln("In BlockArr.doiBulkTransfer");
+    writeln("In StencilArr.doiBulkTransfer");
 
   if debugBlockDistBulkTransfer then resetCommDiagnostics();
   var sameDomain: bool;
@@ -1530,7 +1553,7 @@ iter ConsecutiveChunks(d1,d2,lid,lo) {
   }
 }
 
-iter ConsecutiveChunksD(d1,d2,i,lo) {
+/*iter ConsecutiveChunksD(d1,d2,i,lo) {
   const rank=d1.rank;
   var elemsToGet = d1.locDoms[i].myBlock.dim(rank).length;
   const offset   = d2.whole.low - d1.whole.low;
@@ -1543,9 +1566,9 @@ iter ConsecutiveChunksD(d1,d2,i,lo) {
     rlo(rank) += size;
     elemsToGet -= size;
   }
-}
+}*/
 
-proc BlockDom.numRemoteElems(rlo,rid){
+proc StencilDom.numRemoteElems(rlo,rid){
   // NOTE: Not bothering to check to see if rid+1, length, or rlo-1 used
   //  below can fit into idxType
   var blo,bhi:dist.idxType;
@@ -1561,7 +1584,7 @@ proc BlockDom.numRemoteElems(rlo,rid){
 
 //Brad's utility function. It drops from Domain D the dimensions
 //indicated by the subsequent parameters dims.
-proc dropDims(D: domain, dims...) {
+/*proc dropDims(D: domain, dims...) {
   var r = D.dims();
   var r2: (D.rank-dims.size)*r(1).type;
   var j = 1;
@@ -1573,14 +1596,14 @@ proc dropDims(D: domain, dims...) {
       }
   var DResult = {(...r2)};
   return DResult;
-}
+}*/
 
-//For assignments of the form: "any = Block"
+//For assignments of the form: "any = Stencil"
 //Currently not used, instead we use: doiBulkTransferFrom()
-proc BlockArr.doiBulkTransferTo(Barg)
+proc StencilArr.doiBulkTransferTo(Barg)
 {
   if debugBlockDistBulkTransfer then
-    writeln("In BlockArr.doiBulkTransferTo()");
+    writeln("In StencilArr.doiBulkTransferTo()");
   
   const B = this, A = Barg._value;
   type el = B.idxType;
@@ -1612,12 +1635,12 @@ proc BlockArr.doiBulkTransferTo(Barg)
       }
 }
 
-//For assignments of the form: "Block = any" 
+//For assignments of the form: "Stencil = any" 
 //where "any" means any array that implements the bulk transfer interface
-proc BlockArr.doiBulkTransferFrom(Barg)
+proc StencilArr.doiBulkTransferFrom(Barg)
 {
   if debugBlockDistBulkTransfer then
-    writeln("In BlockArr.doiBulkTransferFrom()");
+    writeln("In StencilArr.doiBulkTransferFrom()");
  
   const A = this, B = Barg._value;
   type el = A.idxType;
@@ -1649,12 +1672,12 @@ proc BlockArr.doiBulkTransferFrom(Barg)
     }
 }
  
-//For assignments of the form: DR = Block 
+//For assignments of the form: DR = Stencil 
 //(default rectangular array = block distributed array)
-proc BlockArr.doiBulkTransferToDR(Barg)
+proc StencilArr.doiBulkTransferToDR(Barg)
 {
   if debugBlockDistBulkTransfer then
-    writeln("In BlockArr.doiBulkTransferToDR()");
+    writeln("In StencilArr.doiBulkTransferToDR()");
 
   const A = this, B = Barg._value; //Always it is a DR
   type el = A.idxType;
@@ -1694,12 +1717,12 @@ proc BlockArr.doiBulkTransferToDR(Barg)
     }
 }
 
-//For assignments of the form: Block = DR 
+//For assignments of the form: Stencil = DR 
 //(block distributed array = default rectangular)
-proc BlockArr.doiBulkTransferFromDR(Barg) 
+proc StencilArr.doiBulkTransferFromDR(Barg) 
 {
   if debugBlockDistBulkTransfer then
-    writeln("In BlockArr.doiBulkTransferFromDR");
+    writeln("In StencilArr.doiBulkTransferFromDR");
 
   const A = this, B = Barg._value;
   type el = A.idxType;

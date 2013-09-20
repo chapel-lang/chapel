@@ -4,19 +4,33 @@ use initMD;
 
 // update ghost information
 proc updateFluff() {
-  forall (P, D, S) in zip(PosOffset, Dest, Src) {
-    Pos[D] = Pos[S];
-    Count[D] = Count[S];
+  if useStencilDist {
+    Pos.updateFluff();
+    Count.updateFluff();
 
     // offset positions
-    forall d in D do
-      Pos[d][1..Count[d]] += P;
+    // boundaries() yields a periodic array element, and the 
+    // neighbor panel value
+    forall (pos, N) in Pos.boundaries() {
+      //forall p in pos do
+       // p += PosOffset[N];
+      pos += PosOffset[N];
+    }
+  } else {
+    forall (P, D, S) in zip(PosOffset, Dest, Src) {
+      Pos[D] = Pos[S];
+      Count[D] = Count[S];
+
+      // offset positions
+      forall d in D do
+        Pos[d][1..Count[d]] += P;
+    }
   }
 }
 
 // if atoms moved outside the box, wrap them around 
 proc pbc() {
-  forall (pos, c) in zip(Pos[binSpace], Count[binSpace]) {
+  forall (pos, c) in zip(RealPos, RealCount) {
     for x in pos[1..c] {
       for i in 1..3 {
         if x(i) < 0 then x(i) += box(i);
@@ -61,10 +75,11 @@ proc buildNeighbors() {
   neighTimer.clear();
   neighTimer.start();
 
-  forall (bin, pos, r, c) in zip(Bins[binSpace], Pos[binSpace], 
-                                 binSpace, Count[binSpace]) {
+  forall (bin, pos, r, c) in zip(Bins, RealPos, 
+                                 binSpace, RealCount) {
     const existing = 1..c;
     for (a, p, i) in zip(bin[existing], pos[existing], existing) {
+  //    writeln("comparing to ", r, " at ", i, " with count ", c);
       a.ncount = 0;
 
       for s in stencil {
@@ -73,11 +88,13 @@ proc buildNeighbors() {
 
         for (n, x) in zip(Pos[o][existing], existing) {
           if r == o && x == i then continue; 
+    //      writeln("\t", o, " at ", x, " with pos ", n);
 
           // are we within range?
           const del = p - n;
           const rsq = dot(del,del);
           if rsq <= cutneighsq {
+      //      writeln("\t\tadded");
             a.ncount += 1;
 
             // resize neighbor list if necessary
@@ -105,7 +122,7 @@ proc buildNeighbors() {
 inline proc addatom(a : atom, x : v3, b : v3int) {
   // increment bin's # of atoms
   Count[b] += 1;
-  const end = Count[b];
+  const end = if useStencilDist then Count.readRemote(b) else Count[b];
   
   // resize bin storage if needed
   if end >= perBinSpace.high {
@@ -120,11 +137,7 @@ inline proc addatom(a : atom, x : v3, b : v3int) {
 }
 
 proc binAtoms() {
-  var MSpace : domain(1) = {1..50};
-  var MList: [MSpace] (atom, v3, v3int);
-  var MCount: int;
-
-  for (bin, pos, c, r) in zip(Bins[binSpace], Pos[binSpace], Count[binSpace], binSpace) {
+  for (bin, pos, c, r) in zip(Bins, RealPos, RealCount, binSpace) {
     var cur = 1;
 
     // for each atom, check if moved
@@ -135,13 +148,7 @@ proc binAtoms() {
 
       // atom moved
       if destBin != r { 
-        MCount += 1;
-
-        // resize storage as needed
-        if MCount >= MSpace.high then 
-          MSpace = {1..MSpace.high * 2};
-
-        MList[MCount] = (bin[cur], pos[cur], destBin);
+        addatom(bin[cur], pos[cur], destBin);
 
         // replace with atom at end of list, if one exists
         if cur < c {
@@ -153,11 +160,6 @@ proc binAtoms() {
         c -= 1; 
       } else cur += 1;
     }
-  }
-
-  // actually move the atoms
-  for (a, x, b) in MList[1..MCount] {
-    addatom(a,x,b);
   }
 }
 

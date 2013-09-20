@@ -122,6 +122,7 @@ proc run(master : Timer) {
 
     if thermoEvery > 0 then 
       computeThermo(step, master);
+    if debug then writeln("done with iteration ", step);
   }
   
   // Helpful in profiling performance

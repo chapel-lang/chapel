@@ -1,0 +1,2 @@
+--fast --no-cc-warnings -sprintCorrect=true -sprintPerf=false helpers/initMD.chpl helpers/forces.chpl helpers/thermo.chpl helpers/neighbor.chpl helpers/StencilDist.chpl
+--fast --no-cc-warnings -sprintCorrect=true -sprintPerf=false helpers/initMD.chpl helpers/forces.chpl helpers/thermo.chpl helpers/neighbor.chpl helpers/StencilDist.chpl -suseStencilDist=true -sdefaultDoRADOpt=false

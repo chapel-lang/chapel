@@ -5,12 +5,16 @@ use thermo;
 use forces;
 use neighbor;
 use StencilDist;
-use DistPlus;
+use BlockDist;
 
 // used in testing system
 config param printOriginal = false;
 config param printPerf = true;
 config param printCorrect = false;
+
+// if the user wants multilocale, use the Block distribution
+config param useStencilDist = false;
+config param useBlockDist = (CHPL_COMM != "none" && !useStencilDist);
 
 // Stores user-configurable variables
 // See printHelp for more information
@@ -150,14 +154,12 @@ if generating {
   // sim dimensions
   for i in 1..3 do
     (boxlo(i), boxhi(i)) = dataReader.readln(real,real);
-
   box = boxhi - boxlo;
   volume = box(1) * box(2) * box(3);
 
   const masses = dataReader.readln(string);
   assert(masses == "Masses");
-
-  var mass_type: int;
+  var mass_type: int; 
   dataReader.readln(mass_type, mass);
   
   // density overriden if data file provided
@@ -195,15 +197,17 @@ const stencil = {-numNeed(1) .. numNeed(1),
 
 // Defines the problem space
 const binSpace = {1..numBins(1), 1..numBins(2), 1..numBins(3)};
+const ghostSpace = binSpace.expand(numNeed);
 
-// Will define the bounds of our arrays and distribute across locales 
-// 
-// Note: this uses the modified version of BlockDist currently named 
-// StencilDist, until such time its features are moved into the 
-// standard BlockDist.
-const DistSpace = binSpace dmapped Block(binSpace, fluff=numNeed, periodic=true);
-const Space = binSpace dmapped Block(binSpace);
+// Will define the bounds of our arrays and distribute across locales
+const DistSpace = if useBlockDist then ghostSpace dmapped Block(ghostSpace) 
+                  else if useStencilDist then 
+                   binSpace dmapped Stencil(binSpace, fluff=numNeed, periodic=true)
+                  else ghostSpace;
 
+const Space = if useBlockDist then binSpace dmapped Block(binSpace)
+              else if useStencilDist then binSpace dmapped Stencil(binSpace)
+              else binSpace;
 
 // bin storage. we can likely assume that each bin will store 
 // about the same number of atoms, and that the size won't 
@@ -218,20 +222,20 @@ const NeighDom = {-1..1, -1..1, -1..1};
 
 // atom positions
 var Pos: [DistSpace] [perBinSpace] v3;
-
-// LocaleGrid consists of 'locale' objects to be used 
-// in an 'on' statement
-const LocaleGridDom = Pos.locGridDom();
-const LocaleGrid = Pos.locGrid();
+var RealPos => Pos[binSpace];
 
 // atom velocity, force, and neighbor lists
 var Bins: [Space] [perBinSpace] atom;
 
 // bin counts
 var Count: [DistSpace] int(32);
+var RealCount => Count[binSpace];
 
 // offsets used to wrap ghosts
-var PosOffset: [LocaleGridDom] [NeighDom] v3;
+var PosOffset: [NeighDom] v3;
+
+// for ease of copying ghosts around
+var Dest, Src: [NeighDom] domain(3);
 
 setupComms();
 
@@ -257,7 +261,7 @@ if generating {
   var tempPos : [1..numAtoms] v3;
   for x in tempPos {
     var a, b : int;
-    dataReader.readln(a, b, x(1),x(2),x(3));
+    dataReader.readln(a ,b, x(1),x(2),x(3));
   }
 
   dataReader.readln(string); // skip 'Velocities' line
@@ -278,21 +282,14 @@ if generating {
 // setup/store slices and neighbors so we don't have to recompute them every 
 // time. Our neighbor bins won't change, and we'll always need the same slices.
 proc setupComms() {
-  coforall ijk in LocaleGridDom {
-    on LocaleGrid[ijk] {
-      const loc = Pos.localDomain();
-      forall (neigh, off) in zip(NeighDom, PosOffset[ijk]) {
-        var mask = (1.0,1.0,1.0);
-       
-        // check if a dimension doesn't need to be offset for this section of fluff
-        for i in 1..3 { 
-          const coord = if neigh(i) > 0 then loc.high(i) else loc.low(i);
-          if binSpace.dim(i).member(coord + numNeed(i)*neigh(i)) then mask(i) = 0.0;
-        }
-        
-        // ghost's position offset
-        off = (neigh) * box * mask;
-      }
+  forall (P, D, S, N) in zip(PosOffset, Dest, Src, NeighDom) {
+    P = N * box;
+
+    if !useStencilDist {
+      D = binSpace.exterior(N * numNeed); // section of ghosts
+      S = D.translate(-N * numBins); // map to binSpace
+
+      if debug then writeln("Destination ", D, " maps to source ", S);
     }
   }
 }
@@ -359,6 +356,7 @@ proc inputFile() {
 }
 
 proc printHelp() {
+  writeln("Command line Options:");
   writeln("\n  Simulation setup:");
   writeln("\t--input_file <string>:   set input file to be used (default: in.lj.miniMD)");
   writeln("\t--numSteps <int>:        set number of timesteps for simulation");
@@ -479,28 +477,26 @@ proc create_atoms() {
       o(3) += 1;
     }
   }
-  Count.updateFluff();
+  if useStencilDist then Count.updateFluff();
 }
 
-// initialize velocities for each atom
 proc create_velocity() {
   var vtot : v3;
 
   // find the total velocity
-  var vtotDist : [LocaleGridDom] v3;
-  vtot += + reduce forall (bin, c) in zip(Bins, Count) do 
+  vtot += + reduce forall (bin, c) in zip(Bins, RealCount) do 
     + reduce forall a in bin[1..c] do a.v;
 
   // get the average
   vtot /= (numAtoms,numAtoms,numAtoms);
 
   // adjust using average
-  forall (bin, c) in zip(Bins, Count) do
+  forall (bin, c) in zip(Bins, RealCount) do
     for a in bin[1..c] do a.v -= vtot;
 
   const factor = sqrt(initialTemp / temperature());
 
-  forall (bin, c) in zip(Bins, Count) do
+  forall (bin, c) in zip(Bins, RealCount) do
     for a in bin[1..c] do a.v *= factor;
 }
 

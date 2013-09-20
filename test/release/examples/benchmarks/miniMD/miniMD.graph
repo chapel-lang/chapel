@@ -1,0 +1,6 @@
+perfkeys: Time:, Time:, Time:
+graphkeys: --size=10 (old), --size=10 (LJ simple), --size=10 (LJ stencil), --size 10 (LJ explicit)
+ylabel: Time (seconds)
+files: miniMD.dat, miniMD.simple.dat, miniMD.stencil.dat, miniMD.explicit.dat
+graphtitle: miniMD LJ Time
+graphname: miniMD

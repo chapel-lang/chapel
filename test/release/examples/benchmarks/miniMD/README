@@ -15,34 +15,55 @@ knowledge, the current form is an accurate implementation of most
 miniMD features. A number of improvements remain, see the TODOs section in 
 this file.
 
+Four versions of miniMD are included in this release. 
+
+The first three are in the 'distribution/' directory. Initially these 
+three versions were in separate directories, they shared much of the same code.
+They now exist in the same directory, occasionally using conditionals to 
+do things slightly differently.
+
+* The first version is single-node. It is compiled by default when 
+  CHPL_COMM=none.
+
+* The second version uses the Block distribution, and is compiled by default 
+  when CHPL_COMM=gasnet. It is the slowest version by far, as much of the 
+  communication is fine-grain. 
+
+* The third version uses a modified Block distribution, and is compiled by 
+  when the 'useStencilDist' compiler flag is true. This version optimizes 
+  communication by caching necessary values on each node. Thanks to the 
+  elegance of Chapel's distributions, most of the changes are hidden from 
+  the user. A significant difference is the need to manually call 'updateFluff',
+  which will cache necessary values (best done after writing to the array).
+
+* The fourth and final version exists in the 'explicit/' directory. This 
+  version is essentially SPMD, and served as a starting point for the 
+  StencilDist version.
+
+Chapel's distributed performance is a work in progress. These versions are much 
+slower when compared to the C++ MPI reference. Work in the compiler and in the 
+miniMD code itself will strive to improve performance in this area.
+
 -----
 Files
 -----
 
 This directory's contents are as follows:
 ./
-  explicit/
-    miniMD.chpl           : entry point for miniMD, contains integration code
-    helpers/
-      initMD.chpl         : code to initialize and handle the system state
-      forces.chpl         : implementations for EAM and LJ force computations
-      thermo.chpl	  : calculation of energy, temperature, pressure
-      neighbor.chpl       : calculation and updating of neighbor atoms
+  miniMD.chpl           : entry point for miniMD, contains integration code
+  helpers/
+    initMD.chpl         : code to initialize and handle the system state
+    forces.chpl         : implementations for EAM and LJ force computations
+    thermo.chpl         : calculation of energy, temperature, pressure
+    neighbor.chpl       : calculation and updating of neighbor atoms
   
-    miniMD.*              : other files used in the Chapel testing system
+  miniMD.*              : other files used in the Chapel testing system
 
-    Makefile              : builds an optimized miniMD
-  simple/
-    same as explicit
-  stencil/
-    same as explicit, with
-    helpers/
-      StencilDist.chpl    : modified BlockDist with stencil features
-      DistPlus.chpl
+  explicit/             : a SPMD version of miniMD
 
-  Makefile                : builds the various miniMD versions
+  Makefile              : builds an optimized miniMD
 
-  README                  : this file
+  README                : this file
 
 
 -----------------------------------
@@ -81,7 +102,7 @@ Chapel-specific optimizations:
 Running
 -------
 
-While miniMD can read from input files, it does not require them. 
+While miniMD can read from input files, it does not require them.
 
 For legal reasons, input files available from the C++ are not currently 
 bundled with this release of miniMD. However, you are free to visit 
@@ -123,39 +144,39 @@ Callgraph
 * - global code
 
 entry point
-	-> inputFile
-	-> * initialize problem bounds
-	-> initThermo
-	-> * define bin bounds
-	-> * create force object
-	-> setupComms
-	-> * populate with atoms
-          if generating
-            -> create_atoms
-              -> pmrand
-              -> addatom
-            -> create_velocity
-          else
-            -> * read from data file
-            -> addatom
-	proc main()
-          -> buildNeighbors
-            -> pbc
-            -> binatoms
-            -> updateFluff
-          -> printSim
-          -> Force.compute
-          -> thermo.compute
-            -> temperature
-          -> run
-            -> initialIntegrate
-            -> buildNeighbors <xor> updateFluff
-            -> Force.compute
-            -> finalIntegrate
-            -> thermo.compute
-          -> Force.compute
-          -> thermo.compute
-          -> cleanup
+  -> inputFile
+  -> * initialize problem bounds
+  -> initThermo
+  -> * define bin bounds
+  -> * create force object
+  -> setupComms
+  -> * populate with atoms
+    if generating
+      -> create_atoms
+        -> pmrand
+        -> addatom
+      -> create_velocity
+    else
+      -> * read from data file
+      -> addatom
+  proc main()
+    -> buildNeighbors
+      -> pbc
+      -> binatoms
+      -> updateFluff
+    -> printSim
+    -> Force.compute
+    -> thermo.compute
+      -> temperature
+    -> run
+      -> initialIntegrate
+      -> buildNeighbors <xor> updateFluff
+      -> Force.compute
+      -> finalIntegrate
+      -> thermo.compute
+    -> Force.compute
+    -> thermo.compute
+    -> cleanup
 
 ----------
 Vocabulary
@@ -234,12 +255,21 @@ PERFORMANCE TODOs:
 * Identify sections of code that can benefit from a local {} assertion.
 
 * A global 'perBinSpace' is a bit of a bottleneck. Is there a better way to 
-do this?
+  do this?
 
-* Look into high memory usage and leaks (the latter of which falls more onto 
-the compiler)
+* Check StencilDist on 1D
+
+* Is bulk transfer firing when we think it is?
+
+* param loops & variables
 
 * Compiler and runtime improvements may yield additional performance increases.
+
+* RADOpt is currently turned off for the stencil distribution version. More 
+  work needs to be done in StencilDist to support this, among some other 
+  features
+
+* Boundary iteration needs to be parallelized and optimized for communication.
 
 
 MISCELLANEOUS TODOs:
@@ -249,4 +279,4 @@ MISCELLANEOUS TODOs:
 
 * Are comments clear enough?
 
-* yaml output?
+* yaml output

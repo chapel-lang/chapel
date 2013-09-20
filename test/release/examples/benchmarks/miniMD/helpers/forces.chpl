@@ -217,13 +217,13 @@ class ForceEAM : Force  {
     if debug then writeln("entering EAM compute...");
     var evdwl, vir : atomic real;
     virial = 0.0;
-    forall (b,c) in zip(Bins[binSpace], Count[binSpace]) {
+    forall (b,c) in zip(Bins, RealCount) {
       for a in b[1..c] {
         a.f = (0.0,0.0,0.0);
       }
     }
 
-    forall (b,p,c,r) in zip(Bins[binSpace],Pos[binSpace], Count[binSpace], binSpace) {
+    forall (b,p,c,r) in zip(Bins,RealPos, RealCount, binSpace) {
       const exist = 1..c;
       for (a,x,i) in zip(b[exist],p[exist], exist) {
         var rhoi : atomic real;
@@ -255,11 +255,15 @@ class ForceEAM : Force  {
       }
     }
 
-    forall (D, S) in zip(Dest, Src) {
-      FP[D] = FP[S];
+    if useStencilDist then
+      FP.updateFluff();
+    else {
+      forall (D, S) in zip(Dest, Src) {
+        FP[D] = FP[S];
+      }
     }
 
-    forall (b,p,c,rbin) in zip(Bins[binSpace], Pos[binSpace], Count[binSpace], binSpace) {
+    forall (b,p,c,rbin) in zip(Bins, RealPos, RealCount, binSpace) {
       const exist = 1..c;
       for (a,x,i) in zip(b[exist],p[exist],exist) {
         var fx, fy, fz : real;
@@ -319,7 +323,7 @@ class ForceLJ : Force {
     // wipe old forces of real AND ghost atoms
     fTimer.start();
 
-    forall (b,c) in zip(Bins[binSpace],Count[binSpace]) {
+    forall (b,c) in zip(Bins,RealCount) {
       for a in b[1..c] {
         a.f = (0.0,0.0,0.0);
       }
@@ -333,7 +337,7 @@ class ForceLJ : Force {
     // for each atom, compute force between itself and its neighbors
     fTimer.start();
     var eng, vir : atomic real;
-    forall (b,p,c,r) in zip(Bins[binSpace], Pos[binSpace], Count[binSpace], binSpace) {
+    forall (b,p,c,r) in zip(Bins, RealPos, RealCount, binSpace) {
       for (a, x, j) in zip(b[1..c],p[1..c],1..c) {
         for(n,i) in a.neighs[1..a.ncount] {
           const del = x - Pos[n][i];
