@@ -54,7 +54,6 @@ Timer overallTimer;
 //loop in a nest you can ignore everything inside the inner loop(s) since you 
 //already know they can't be hoisted
 
-//TODO Look more into why there are empty basic blocks
  
 /*
 * This is really just a wrapper for the collection of basic blocks that
@@ -441,26 +440,27 @@ static void buildLocalDefUseMaps(Loop* loop, symToVecSymExprMap& localDefMap, sy
 
   for_vector(BasicBlock, block, *loop->getBlocks()) {
     for_vector(Expr, expr, block->exprs) {
-      //check if the current expr is a set member call and add the symExpr if it is 
       if(CallExpr* callExpr = toCallExpr(expr)) {
-        //if we have a prim set member .= then the "class" and field are defed
-        if(callExpr->isPrimitive(PRIM_SET_MEMBER)) {
+        //if we have a prim set member .= (or svec) then the field is defed
+        if(callExpr->isPrimitive(PRIM_SET_MEMBER) ||
+           callExpr->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
           if(SymExpr* symExpr = toSymExpr(callExpr->get(2))) {
             addDefOrUse(localDefMap, symExpr->var, symExpr);
           }
+          //and the "class" itself may also be defed. For instance if you change
+          //the field of a record or union you have to note that the
+          //record/union has also changed. This is not true in the case of an
+          //actual class (class_class), since it's just a pointer. If the
+          //pointer to a class is changed that will be detected by isDefAndOrUse
           if(SymExpr* symExpr = toSymExpr(callExpr->get(1))) {
-            addDefOrUse(localDefMap, symExpr->var, symExpr);
+            Type* type = symExpr->var->type->symbol->type;
+            if(ClassType* curClass = toClassType(type)) {
+              if(curClass->classTag != CLASS_CLASS) {
+                addDefOrUse(localDefMap, symExpr->var, symExpr);
+              }
+            }
           }
         } 
-        //similar rationale for prim set svec member 
-        else if(callExpr->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
-          if(SymExpr* symExpr = toSymExpr(callExpr->get(2))) {
-            addDefOrUse(localDefMap, symExpr->var, symExpr);
-          }
-          if(SymExpr* symExpr = toSymExpr(callExpr->get(1))) {
-            addDefOrUse(localDefMap, symExpr->var, symExpr);
-          }
-        }
       }
     
       //Check each symExpr to see if its a use and or def and add to the appropriate lists
