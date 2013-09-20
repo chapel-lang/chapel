@@ -46,6 +46,7 @@ for compiler in $compilers ; do
   fi
   module list
   export CHPL_TARGET_PLATFORM=cray-xc
+  export CHPL_COMM=none
   $NIGHTLY -combinedir -cron $EXAMPLES
 )
 done
@@ -63,6 +64,7 @@ for compiler in $compilers ; do
   export CHPL_HOST_PLATFORM=cray-xc
   export CHPL_TARGET_PLATFORM=cray-xc
   export CHPL_HOST_COMPILER=cray-prgenv-$compiler
+  export CHPL_COMM=none
   $NIGHTLY -combinedir -cron $EXAMPLES
 )
 done
@@ -80,6 +82,7 @@ for compiler in $compilers ; do
   unset CHPL_HOST_PLATFORM
   unset CHPL_TARGET_PLATFORM
   export CHPL_HOST_COMPILER=$compiler
+  export CHPL_COMM=none
   $NIGHTLY -combinedir -cron $EXAMPLES
 )
 done
