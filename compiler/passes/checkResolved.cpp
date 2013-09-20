@@ -1,13 +1,131 @@
 // checkResolved.cpp
 
 #include "passes.h"
+#include "driver.h"
 
 #include "stmt.h"
 #include "expr.h"
+#include "stlUtil.h"
 #include "astutil.h"
 
 static int isDefinedAllPaths(Expr* expr, Symbol* ret);
 static void checkReturnPaths(FnSymbol* fn);
+
+
+static bool
+loopBodyHasExits(BlockStmt* block) {
+  INT_ASSERT(block->isLoop()); // this function is intended for loops only
+  std::vector<Expr*> exprs;
+  collectExprs(block, exprs);
+  for_vector(Expr, node, exprs) {
+    if (CallExpr* call = toCallExpr(node)) {
+      // seems returns are gotos now
+      if (call->isPrimitive(PRIM_YIELD) || call->isPrimitive(PRIM_RETURN))
+        return true;
+    } else if (GotoStmt* gs = toGotoStmt(node)) {
+      if (gs->gotoTag == GOTO_RETURN || gs->gotoTag == GOTO_BREAK)
+        return true;
+    }
+  }
+  return false;
+}
+
+static void
+checkConstWhileLoop(BlockStmt* block) {
+  if (!loopBodyHasExits(block))
+    USR_WARN(block, "A while loop with a constant condition");
+}
+
+
+static void
+checkWhileLoopCondition(BlockStmt* block, Expr* condExp) {
+  if (SymExpr* condSE = toSymExpr(condExp)) {
+    Symbol* condSym = condSE->var;
+    if (condSym->isConstant()) {
+      checkConstWhileLoop(block);
+    }
+  }
+}
+
+static SymExpr*
+getWhileCondDef(BlockStmt* block, CallExpr* info, VarSymbol* condSym) {
+  std::vector<SymExpr*> symExprs;
+  collectSymExprsSTL(block, symExprs);
+  SymExpr* condDef = NULL;
+  for_vector(SymExpr, se, symExprs) {
+    if (se->var == condSym) {
+      if (se->parentExpr == info) {
+        // The reference is in blockInfo - not interesting.
+      } else if (condDef) {
+        // There are >1 references to condSym. Let us notify ourselves
+        // so we can adjust the code to handle this case as well.
+        // If desired, disable this assert - the only outcome of that may be
+        // that the warning will not be issued in some cases.
+        INT_ASSERT(false);
+      } else {
+        // This is what we are looking for.
+        condDef = se;
+      }
+    }
+  }
+  return condDef;
+}
+
+static void
+checkConstLoops(void) {
+  if (!fWarnConstLoops) return;
+  forv_Vec(BlockStmt, block, gBlockStmts) {
+    if (CallExpr* info = block->blockInfo) {
+      if (info->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
+          info->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP))
+      {
+        bool foundit = false;
+        if (SymExpr* condSE = toSymExpr(info->get(1))) {
+          if (VarSymbol* condSym = toVarSymbol(condSE->var)) {
+            SymExpr* condDef = getWhileCondDef(block, info, condSym);
+            if (condDef) {
+              // Parse the move expr.
+              if (CallExpr* outerCall = toCallExpr(condDef->parentExpr)) {
+                if (outerCall->get(1) == condDef) {
+                  if (outerCall->isPrimitive(PRIM_MOVE)) {
+                    if (CallExpr* innerCall = toCallExpr(outerCall->get(2))) {
+                      if (innerCall->numActuals() == 1) {
+                        if (innerCall->isNamed("_cond_test")) {
+                          // yay, the expr matched our expectation
+                          foundit = true;
+                          checkWhileLoopCondition(block, innerCall->get(1));
+                        }
+                      }
+                    } else if (SymExpr* moveSrc = toSymExpr(outerCall->get(2))) {
+                      // Sometimes _cond_test resolves to a param version, so
+                      // we get either true or false.
+                      if (moveSrc->var == gTrue) {
+                        foundit = true;
+                        // A loop with a param condition is most likely intentional,
+                        // so we skip the warning in this case.
+                        //checkConstWhileLoop(block);
+                      } else if (moveSrc->var == gFalse) {
+                        foundit = true;
+                        // while false do ...; -- probably nothing to worry about
+                      } else {
+                        // What else can it be?
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        // Let us notify ourselves if the block structure is something else,
+        // so we can adjust the code to handle those cases as well.
+        // If desired, disable this assert - the only outcome of that may be
+        // that the warning will not be issued in some cases.
+        INT_ASSERT(foundit);
+      }
+    }
+  }
+}
 
 
 void
@@ -34,6 +152,7 @@ checkResolved(void) {
     }
   }
   checkNoRecordDeletes();
+  checkConstLoops();
 }
 
 

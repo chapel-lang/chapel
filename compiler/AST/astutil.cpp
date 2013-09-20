@@ -22,6 +22,11 @@ void collectFnCallsSTL(BaseAST* ast, std::vector<CallExpr*>& calls) {
       calls.push_back(call);
 }
 
+void collectExprs(BaseAST* ast, std::vector<Expr*>& exprs) {
+  AST_CHILDREN_CALL(ast, collectExprs, exprs);
+  if (Expr* expr = toExpr(ast))
+    exprs.push_back(expr);
+}
 
 void collect_stmts(BaseAST* ast, Vec<Expr*>& stmts) {
   if (Expr* expr = toExpr(ast)) {

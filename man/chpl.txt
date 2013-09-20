@@ -349,6 +349,11 @@ OPTIONS
                      boolean configuration variables, the value can
                      be omitted, causing the default value to be toggled.
 
+  --[no-]warn-const-loops  Enable [disable] warnings for 'while' loops
+                     whose condition is a 'const' variable, because such
+                     a loop condition is likely unintended.  'While' loops
+                     with 'param' conditions do not trigger this warning.
+
   --[no-]warn-special  Enable [disable] all special compiler warnings
                      issued due to syntax and other language
                      changes. Currently, these include

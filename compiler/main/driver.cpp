@@ -102,6 +102,7 @@ bool fNoNilChecks = false;
 // flag for llvmWideOpt
 bool fLLVMWideOpt = false;
 
+bool fWarnConstLoops = true;
 // Enable all extra special warnings
 static bool fNoWarnSpecial = true;
 static bool fNoWarnDomainLiteral = true;
@@ -696,6 +697,7 @@ static ArgumentDescription arg_desc[] = {
  {"instantiate-max", ' ', "<max>", "Limit number of instantiations", "I", &instantiation_limit, "CHPL_INSTANTIATION_LIMIT", NULL},
  {"print-callstack-on-error", ' ', NULL, "print the Chapel call stack leading to each error or warning", "N", &fPrintCallStackOnError, "CHPL_PRINT_CALLSTACK_ON_ERROR", NULL},
  {"set", 's', "<name>[=<value>]", "Set config param value", "S", NULL, NULL, readConfig},
+ {"warn-const-loops", ' ', NULL, "Enable [disable] warnings for some 'while' loops with constant conditions", "N", &fWarnConstLoops, "CHPL_WARN_CONST_LOOPS", NULL},
  {"warn-special", ' ', NULL, "Enable [disable] special warnings", "n", &fNoWarnSpecial, "CHPL_WARN_SPECIAL", setWarnSpecial},
  {"warn-domain-literal", ' ', NULL, "Enable [disable] old domain literal syntax warnings", "n", &fNoWarnDomainLiteral, "CHPL_WARN_DOMAIN_LITERAL", setWarnDomainLiteral},
  {"warn-tuple-iteration", ' ', NULL, "Enable [disable] warnings for tuple iteration", "n", &fNoWarnTupleIteration, "CHPL_WARN_TUPLE_ITERATION", setWarnTupleIteration},

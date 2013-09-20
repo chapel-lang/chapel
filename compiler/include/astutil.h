@@ -29,6 +29,7 @@ void collect_asts_postorder(BaseAST*, Vec<BaseAST*>& asts);
 void collect_asts_postorder_STL(BaseAST*, std::vector<BaseAST*>& asts);
 void collect_top_asts(BaseAST* ast, Vec<BaseAST*>& asts);
 void collect_top_asts_STL(BaseAST* ast, std::vector<BaseAST*>& asts);
+void collectExprs(BaseAST* ast, std::vector<Expr*>& exprs);
 void collect_stmts(BaseAST* ast, Vec<Expr*>& stmts);
 void collect_stmts_STL(BaseAST* ast, std::vector<Expr*>& stmts);
 void collectDefExprs(BaseAST* ast, Vec<DefExpr*>& defExprs);
