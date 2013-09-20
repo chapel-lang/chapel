@@ -24,9 +24,6 @@ general regressions (seem to happen in most configurations)
 ==============================================
 linux64 regressions (in addition to the above)
 ==============================================
-Loop invariant code motion bug (Elliot has a fix out for review)
-----------------------------------------------------------------
-[Error matching program output for users/ferguson/aa/aa1]
 
 
 ==============================================
@@ -43,6 +40,8 @@ thread-ring times out ever since it was made into a performance test
 [Error (createGraphs): 'gnuplot' command failed for thread-ring.graph]
 [Error generating old-style graphs for thread-ring.graph in /data/sea/cascade/chapel/NightlyPerformance/chap04]
 [Error: Timed out executing program studies/shootout/thread-ring/thread-ring]
+[Error: Timed out executing program studies/shootout/thread-ring/thread-ring-coforall]
+[Error: Timed out executing program studies/shootout/thread-ring/thread-ring-for-begin]
 
 mandelbrot-fancy gen compiler failures due to overflow analysis
 ---------------------------------------------------------------
@@ -734,11 +733,6 @@ Tests suppressions that now succeed due to turning on inlining (12/7/12)
 never worked (02/24/11)
 -----------------------
 [Error matching compiler output for extern/bradc/copyExternRecord/extern_test (compopts: 1)]
-
-
-baseline doesn't do the optimization this test wants (skipif added -r21879)
----------------------------------------------------------------------------
-[Error matching compiler output for performance/bradc/opequals (compopts: 1)]
 
 problems in generated code (02/16/12 -- first run in awhile)
 ------------------------------------------------------------

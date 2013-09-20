@@ -114,6 +114,7 @@ Perf (linux64.gnu.none.fifo.pthreads)
 -------------------------------------
 [Error: Timed out executing program studies/hpcc/RA/bradc/parallel/ra-dist (compopts: 1)] (06/20/13, 9/13/13: chap04)
 [Error: Timed out executing program npb/cg/bradc/cg-sparse (compopts: 1, execopts: 4..6)] (08/23/13, 9/13/13)
+[Error: Timed out executing program npb/ep/mcahir/ep (compopts: 1, execopts: 6)]
 
 ==============================================================================
 Were once flagged as causing noise regularly, but not as familiar as the above
