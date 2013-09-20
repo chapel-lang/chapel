@@ -49,7 +49,7 @@ Currently-supported launchers include:
   mtarun              : Cray XMT application launcher using mtarun
   pbs-aprun           : Cray XT application launcher using PBS (qsub) + aprun
   pbs-gasnetrun_ibv   : GASNet launcher using PBS (qsub) over Infiniband
-  slurm-gasnetrun_ibv : GASNet launcher using slurm over Infiniband
+  slurm-gasnetrun_ibv : GASNet launcher using SLURM over Infiniband
   tile-monitor        : launch using Tilera's tile monitor
   none                : do not use a launcher
 
@@ -114,32 +114,46 @@ appropriate for your system:
   Chapel's threading layer (e.g., pthreads), so extra copies of the
   binary are not required per core.
 
-----------------------
-Slurm notes
-----------------------
-To use slurm you need to define before compiling:
 
-export CHPL_LAUNCHER="slurm-gasnetrun_ibv"
+-----------
+SLURM notes
+-----------
 
-And it also needs:
+To use SLURM (currently only compatible with using GASNet over
+Infiniband), you need to define the following environment variable:
 
-export CHPL_COMM=gasnet
-export CHPL_COMM_SUBSTRATE=ibv
-export GASNET_IBV_SPAWNER=mpi
-export CHPL_LAUNCHER_WALLTIME=00:15:00
+  export CHPL_LAUNCHER="slurm-gasnetrun_ibv"
 
-You can request a constraint to slurm if needed by putting it in the
-CHPL_LAUNCHER_CONSTRAINT environment variable, for example, to use the cal
-nodes as defined in slurm you need to define it as :
+As usual, to specify GASNet over Infiniband, set:
 
-export CHPL_LAUNCHER_CONSTRAINT=cal
+  export CHPL_COMM=gasnet
+  export CHPL_COMM_SUBSTRATE=ibv
 
-If not defined any node in the computer can be used.
+To have GASNet use mpirun to launch your program, set:
 
-If the variable CHPL_LAUNCHER_USE_SBATCH is defined then sbatch is used to
-launch the job to the queue system, instead of running it interactively as
-usual.  When using it the output will be writen by default to a file called
-name_of_the_exec.jobId.out. The environment variable
-CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME can be defined with the name of the output
-file, which will get added the jobid and .out 
+  export GASNET_IBV_SPAWNER=mpi
 
+At this point, rebuild your Chapel runtime ('make' from $CHPL_HOME),
+and compile your program.  
+
+Before running, you will need to set the amount of time to request
+from SLURM.  For example, the following reuqests 15 minutes:
+
+  export CHPL_LAUNCHER_WALLTIME=00:15:00
+
+If needed, you can request a constraint to SLURM by putting it in the
+CHPL_LAUNCHER_CONSTRAINT environment variable.  For example, to use
+the 'cal' nodes as defined in SLURM, set:
+
+  export CHPL_LAUNCHER_CONSTRAINT=cal
+
+If this environment variable is undefined, SLURM may use any node in
+the computer.
+
+If the environment variable CHPL_LAUNCHER_USE_SBATCH is defined then
+sbatch is used to launch the job to the queue system, rather than
+running it interactively as usual.  In this mode, the output will be
+writen by default to a file called <executableName>.<jobID>.out.  The
+environment variable CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME can be used
+to specify a different base filename than the executable's name, and
+the jobID and '.out' will be appended to it.
