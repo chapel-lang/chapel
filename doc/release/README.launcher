@@ -141,9 +141,9 @@ from SLURM.  For example, the following reuqests 15 minutes:
 
   export CHPL_LAUNCHER_WALLTIME=00:15:00
 
-If needed, you can request a constraint to SLURM by putting it in the
-CHPL_LAUNCHER_CONSTRAINT environment variable.  For example, to use
-the 'cal' nodes as defined in SLURM, set:
+If needed, you can request a specific node feature to SLURM by putting it in the
+CHPL_LAUNCHER_CONSTRAINT environment variable.  For example, to use nodes with
+the cal feature (as defined in the slurm.conf file), set:
 
   export CHPL_LAUNCHER_CONSTRAINT=cal
 
