@@ -28,8 +28,7 @@ us know at chapel_info@cray.com.)
 
 
 1) Set CHPL_HOST_PLATFORM to the appropriate string for your particular
-   Cray system, and set CHPL_COMM to gasnet.  These are the supported
-   systems and strings:
+   Cray system.  These are the supported systems and strings:
        Cray System     CHPL_HOST_PLATFORM
        ------------    ------------------
        Cray CS         cray-cs
@@ -41,10 +40,9 @@ us know at chapel_info@cray.com.)
    For example:
 
      export CHPL_HOST_PLATFORM=cray-xe
-     export CHPL_COMM=gasnet
 
-   See README.multilocale for further information about running using
-   multiple locales and GASNet.
+   This will automatically set CHPL_COMM to GASNet.  See README.multilocale for
+   further information about running using multiple locales and GASNet.
 
 
 2) If your Cray system requires PBS/qsub to launch jobs onto the compute

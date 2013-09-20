@@ -9,14 +9,16 @@ my $preset_comm=$ENV{'CHPL_COMM'};
 my $comm;
 
 if ($preset_comm eq "") {
-    # eventually, we'll want to pick defaults based on platforms, but for
-    # today things are impoverished enough for us to want to pick "none"
-    # by default
-    $comm = "none";
+    my $platform = run("platform", "--target");
+    # automatically uses gasnet when on a cray-x* or cray-cs machine
+    if ($platform =~ /^cray-(xc|xe|xk|xt|cs)$/) {
+        $comm = "gasnet";
+    } else {
+        $comm = "none";
+    }
 } else {
     $comm = $preset_comm;
 }
-
 
 ret($comm);
 print "$comm\n" unless caller;
