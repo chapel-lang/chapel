@@ -5180,63 +5180,24 @@ GenRet CallExpr::codegen() {
   FnSymbol* fn = isResolved();
   INT_ASSERT(fn);
 
+  // Process a begin/cobegin/coforall, i.e. local task creation.
+  bool gotBCbCf = false;
+  const char* genFnName = NULL;
+
   if (fn->hasFlag(FLAG_BEGIN_BLOCK)) {
-    // get(1) is a class containing bundled arguments
-    std::vector<GenRet> args(7);
-    args[0] = new_IntSymbol(-1 /* c_sublocid_any */, INT_SIZE_32);
-    args[1] = new_IntSymbol(ftableMap.get(fn), INT_SIZE_64);
-
-    if (Expr *actuals = get(1)) {
-      args[2] = codegenCastToVoidStar(codegenValue(actuals));
-    } else {
-      args[2] = codegenNullPointer();
-    }
-    ClassType *bundledArgsType = toClassType(toSymExpr(get(1))->typeInfo());
-    // lastField is the _endCount field.
-    int lastField = bundledArgsType->fields.length;
-    GenRet endCountPtr = codegenValue(
-        codegenFieldPtr(get(1), bundledArgsType->getField(lastField)));
-    // endCount is either an address or {locale, ptr}
-    GenRet endCountValue = codegenValue(endCountPtr);
-    GenRet taskList;
-
-    if (bundledArgsType->getField(lastField)->typeInfo()->symbol->
-        hasFlag(FLAG_WIDE_CLASS)) {
-      GenRet node = codegenRnode(endCountValue);
-      endCountValue = codegenRaddr(endCountValue);
-      taskList = codegenLocalAddrOf(codegenFieldPtr(endCountValue, "taskList"));
-      taskList = codegenTernary(
-                      codegenNotEquals(node, codegenGetNodeID()),
-                      codegenNullPointer(),
-                      taskList);
-    } else {
-      taskList = codegenLocalAddrOf(codegenFieldPtr(endCountValue, "taskList"));
-    }
-    args[3] = taskList;
-    if (bundledArgsType->getField(lastField)->typeInfo()->symbol->
-        hasFlag(FLAG_WIDE_CLASS)) {
-      args[4] = codegenRnode(endCountPtr);
-    } else {
-      args[4] = codegenGetNodeID();
-    }
-
-    args[5] = fn->linenum();
-    args[6] = fn->fname();
-
-    genComment(fn->cname, true);
-    codegenCall("chpl_taskListAddBegin", args);
-    return ret;
+    gotBCbCf = true;
+    genFnName = "chpl_taskListAddBegin";
   } else if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)) {
+    gotBCbCf = true;
+    genFnName = "chpl_taskListAddCoStmt";
+  }
+  if (gotBCbCf) {
     // get(1) is a class containing bundled arguments
     std::vector<GenRet> args(7);
     args[0] = new_IntSymbol(-1 /* c_sublocid_any */, INT_SIZE_32);
     args[1] = new_IntSymbol(ftableMap.get(fn), INT_SIZE_64);
+    args[2] = codegenCastToVoidStar(codegenValue(get(1)));
 
-    if (Expr *actuals = get(1)) {
-      args[2] = codegenCastToVoidStar(codegenValue(actuals));
-    } else {
-      args[2] = codegenNullPointer();
-    }
     ClassType *bundledArgsType = toClassType(toSymExpr(get(1))->typeInfo());
     int endCountField = 0;
     for (int i = 1; i <= bundledArgsType->fields.length; i++) {
@@ -5248,12 +5209,16 @@ GenRet CallExpr::codegen() {
                      "_EndCount")
           || !strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
                      "__wide__EndCount")) {
+        // Turns out there can be more than one such field. See e.g.
+        //   spectests:Task_Parallelism_and_Synchronization/singleVar.chpl
+        // INT_ASSERT(endCountField == 0);
         endCountField = i;
+        // We have historically picked the first such field.
         break;
       }
     }
-    if (endCountField == 0)
-      INT_FATAL(this, "cobegin/codegen codegen - _EndCount field not found");
+    // We need the endCountField.
+    INT_ASSERT(endCountField != 0);
 
     GenRet endCountPtr =
       codegenValue(
@@ -5290,13 +5255,20 @@ GenRet CallExpr::codegen() {
     } else {
       taskList = codegenLocalAddrOf(codegenFieldPtr(endCountValue, "taskList"));
     }
+
     args[3] = taskList;
-    args[4] = codegenGetNodeID(),
+
+    if (endCountType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+      args[4] = codegenRnode(endCountPtr);
+    } else {
+      args[4] = codegenGetNodeID();
+    }
+
     args[5] = fn->linenum();
     args[6] = fn->fname();
 
     genComment(fn->cname, true);
-    codegenCall("chpl_taskListAddCoStmt", args);
+    codegenCall(genFnName, args);
     return ret;
   } else if (fn->hasFlag(FLAG_ON_BLOCK)) {
     const char* fname = NULL;
