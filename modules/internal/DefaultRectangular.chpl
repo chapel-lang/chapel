@@ -616,10 +616,22 @@ module DefaultRectangular {
       var alias = new DefaultRectangularArr(eltType=eltType, rank=d.rank,
                                            idxType=d.idxType,
                                            stridable=d.stridable,
-                                           dom=d, noinit=true);
+                                           dom=d, noinit=true,
+                                           str=str,
+                                           blk=blk);
       alias.data = data;
       //alias.numelm = numelm;
       //writeln("DR.dsiReindex blk: ", blk, " stride: ",dom.dsiDim(1).stride," str:",str(1));
+      adjustBlkOffStrForNewDomain(d, alias);
+      alias.origin = origin:d.idxType;
+      alias.computeFactoredOffs();
+      alias.initShiftedData();
+      return alias;
+    }
+    
+    proc adjustBlkOffStrForNewDomain(d: DefaultRectangularDom,
+                                     alias: DefaultRectangularArr)
+    {
       for param i in 1..rank {
         var s: idxType;
         // NOTE: Not bothering to check to see if this can fit into idxType
@@ -634,10 +646,6 @@ module DefaultRectangular {
         alias.blk(i) = blk(i) * s;
         alias.str(i) = d.dsiDim(i).stride;
       }
-      alias.origin = origin:d.idxType;
-      alias.computeFactoredOffs();
-      alias.initShiftedData();
-      return alias;
     }
   
     proc dsiSlice(d: DefaultRectangularDom) {
@@ -1014,8 +1022,8 @@ module DefaultRectangular {
     //CASE 1: when the data in destination array is stored "here", it will use "chpl_comm_get_strd". 
     if A.data.locale==here
     {
-      var dest = A.data;
-      var src = B.data;
+      const dest = A.data;
+      const src = B.data;
       
       const dststr=dstStride._value.theData;
       const srcstr=srcStride._value.theData;
@@ -1059,7 +1067,7 @@ module DefaultRectangular {
       
       const dest = A.data;
       const src = B.data;
-      var destlocale =A.data.locale.id : int(32);
+      const destlocale =A.data.locale.id : int(32);
   
       __primitive("chpl_comm_put_strd",
                   __primitive("array_get",dest,A.getUnshiftedDataIndex(Alo)),
@@ -1073,38 +1081,35 @@ module DefaultRectangular {
     //CASE 3: other case, it will use "chpl_comm_get_strd". 
     else on A.data.locale
     {   
-      var dest = A.data;
-      var src = B.data;
+      const dest = A.data;
+      const src = B.data;
   
       //We are in a locale that doesn't store neither A nor B so we need to copy the auxiliarry
       //arrays to the locale that hosts A. This should translate into some more gets...
-      var count:[1..(stridelevels+1)] int(32);
-      count=count:int(32);
-  
-      var dststrides,srcstrides:[1..stridelevels] int(32);
-      srcstrides=srcStride:int(32);
-      dststrides=dstStride:int(32);
+      const countAux=count:int(32);
+      const srcstrides=srcStride:int(32);
+      const dststrides=dstStride:int(32);
 
-      var dststr=dststrides._value.theData;
-      var srcstr=srcstrides._value.theData;
-      var cnt=count._value.theData;
+      const dststr=dststrides._value.theData;
+      const srcstr=srcstrides._value.theData;
+      const cnt=count._value.theData;
 
       if debugBulkTransfer {
         writeln("Case 3");
         writeln("stridelevel: ", stridelevels);
-        writeln("Count: ",count);
+        writeln("Count: ",countAux);
         writeln("dststrides: ",dststrides);
         writeln("srcstrides: ",srcstrides);
       }
       
-      var srclocale =B.data.locale.id : int(32);
+      const srclocale =B.data.locale.id : int(32);
          __primitive("chpl_comm_get_strd",
                      __primitive("array_get",dest, A.getUnshiftedDataIndex(Alo)),
                      __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
                      srclocale,
                      __primitive("array_get",src, B.getUnshiftedDataIndex(Blo)),
                      __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
-                     __primitive("array_get",cnt, count._value.getDataIndex(1)),
+                     __primitive("array_get",cnt, countAux._value.getDataIndex(1)),
                      stridelevels);
 
     }

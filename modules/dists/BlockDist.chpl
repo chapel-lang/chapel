@@ -1531,12 +1531,11 @@ proc BlockArr.doiBulkTransferToDR(Barg)
         const slice = B.dsiSlice(d._value);
         //Necessary to calculate the value of blk variable in DR
         //with the new domain r1
-        const slice2 = slice.dsiReindex(d._value);
+        slice.adjustBlkOffStrForNewDomain(d._value, slice);
         
-        slice2.doiBulkTransferStride(A.locArr[j].myElems[(...r2)]._value);
+        slice.doiBulkTransferStride(A.locArr[j].myElems[(...r2)]._value);
         
         delete slice;
-        delete slice2;
       }
     }
 }
@@ -1576,11 +1575,10 @@ proc BlockArr.doiBulkTransferFromDR(Barg)
         const slice = B.dsiSlice(d._value);
         //this step it's necessary to calculate the value of blk variable in DR
         //with the new domain r1
-        const slice2 = slice.dsiReindex(d._value);
+        slice.adjustBlkOffStrForNewDomain(d._value, slice);
         
-        A.locArr[j].myElems[(...r2)]._value.doiBulkTransferStride(slice2);
+        A.locArr[j].myElems[(...r2)]._value.doiBulkTransferStride(slice);
         delete slice;
-        delete slice2;
       }
     }
 }
