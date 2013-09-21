@@ -2283,11 +2283,11 @@ proc channel._format_reader(
               error = EFORMAT;
             }
           } else {
-            error = qio_channel_scan_literal_2(false, _channel_internal, conv.literal, conv.literal_length, false);
+            error = qio_channel_scan_literal_2(false, _channel_internal, conv.literal, conv.literal_length:ssize_t, false);
           }
         } else {
           // when printing we don't care if it's just whitespace.
-          error = qio_channel_print_literal_2(false, _channel_internal, conv.literal, conv.literal_length);
+          error = qio_channel_print_literal_2(false, _channel_internal, conv.literal, conv.literal_length:ssize_t);
         }
       } else if conv.argType == QIO_CONV_ARG_TYPE_NONE_REGEXP_LITERAL {
         if ! isReadf {
@@ -3217,7 +3217,7 @@ proc channel._extractMatch(m:reMatch, ref arg:string, ref error:syserr) {
   var s:string;
   if ! error {
     var gotlen:ssize_t;
-    error = qio_channel_read_string(false, iokind.native, stringStyleExactLen(len), _channel_internal, s, gotlen, len);
+    error = qio_channel_read_string(false, iokind.native, stringStyleExactLen(len), _channel_internal, s, gotlen, len:ssize_t);
     __primitive("string_normalize", s, gotlen+1);   // See Note 1.
   }
  
