@@ -11,7 +11,7 @@ to the Chapel team at chapel-bugs@lists.sourceforge.net, as the cause
 is most likely due to Chapel's use of GASNet and not the GASNet
 library itself.
 
-The modifications that we have made to the official GASNet 1.20.0
+The modifications that we have made to the official GASNet 1.20.2
 release are as follows:
 
 * Added support for launching an xterm window running gdb in the udp
@@ -20,19 +20,10 @@ release are as follows:
   be innocuous for non-Chapel developers, and has been exceedingly
   useful for the Chapel development team.
 
-* Added use of CHPL_GASNET_QUIET environment variable to quiet Gemini
-  BETA warning messages (useful for testing) and fixed a small type-o
-  in the message itself.
+* Added use of CHPL_GASNET_QUIET environment variable to quiet Aries
+  BETA warning messages (useful for testing).
 
-* Added support for tilera targets.  The following five files have been modified:
-  Makefile
-  GASNet-1.*.*/
-               gasnet_atomic_bits.h
-               gasnet_membar.h
-               other/
-                     portable_platform.h
-                     contrib/
-                             cross-configure-tilera
+* Added support for tilera targets.
 
 The structure of this directory is as follows:
 
