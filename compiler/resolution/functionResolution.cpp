@@ -690,6 +690,45 @@ resolveSpecifiedReturnType(FnSymbol* fn) {
 }
 
 
+//
+// Generally, atomics must also be passed by reference when
+// passed by blank intent.  The following expression checks for
+// these cases by looking for atomics passed by blank intent and
+// changing their type to a ref type.  Interestingly, this
+// conversion does not seem to be required for single-locale
+// compilation, but it is for multi-locale.  Otherwise, updates
+// to atomics are lost (as demonstrated by
+// test/functions/bradc/intents/test_pass_atomic.chpl).
+//
+// I say "generally" because there are a few cases where passing
+// atomics by reference breaks things -- primarily in
+// constructors, assignment operators, and tuple construction.
+// So we have some unfortunate special checks that dance around
+// these cases.
+//
+// While I can't explain precisely why these special cases are
+// required yet, here are the tests that tend to have problems
+// without these special conditions:
+//
+//   test/release/examples/benchmarks/hpcc/ra-atomics.chpl
+//   test/types/atomic/sungeun/no_atomic_assign.chpl
+//   test/functions/bradc/intents/test_construct_atomic_intent.chpl
+//   test/users/vass/barrierWF.test-1.chpl
+//   test/studies/shootout/spectral-norm/spectralnorm.chpl
+//   test/release/examples/benchmarks/ssca2/SSCA2_main.chpl
+//   test/parallel/taskPar/sungeun/barrier/*.chpl
+//
+static bool convertAtomicFormalTypeToRef(ArgSymbol* formal, FnSymbol* fn) {
+  return (formal->intent == INTENT_BLANK && 
+          !formal->hasFlag(FLAG_TYPE_VARIABLE) &&
+          isAtomicType(formal->type)) 
+    && !fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)
+    && !fn->hasFlag(FLAG_CONSTRUCTOR)
+    && strcmp(fn->name,"=") != 0
+    && !fn->hasFlag(FLAG_BUILD_TUPLE);
+}
+
+
 void
 resolveFormals(FnSymbol* fn) {
   static Vec<FnSymbol*> done;
@@ -720,6 +759,7 @@ resolveFormals(FnSymbol* fn) {
           formal->intent == INTENT_OUT ||
           formal->intent == INTENT_REF ||
           formal->intent == INTENT_CONST_REF ||
+          convertAtomicFormalTypeToRef(formal, fn) ||
           formal->hasFlag(FLAG_WRAP_WRITTEN_FORMAL) ||
           (formal == fn->_this &&
            (isUnion(formal->type) ||
@@ -1010,7 +1050,16 @@ canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn,
     *promotes = false;
   if (actualType == formalType)
     return true;
-  if (actualType == dtNil && isClass(formalType))
+  //
+  // The following check against FLAG_REF ensures that 'nil' can't be
+  // passed to a by-ref argument (for example, an atomic type).  I
+  // found that without this, calls like autocopy(nil) became
+  // ambiguous when given the choice between the completely generic
+  // autocopy(x) and the autocopy(x: atomic int) (represented as
+  // autocopy(x: ref(atomic int)) internally).
+  //
+  if (actualType == dtNil && isClass(formalType) && 
+      !formalType->symbol->hasFlag(FLAG_REF))
     return true;
   if (actualType->refType == formalType)
     return true;
@@ -2719,7 +2768,8 @@ formalRequiresTemp(ArgSymbol* formal) {
       formal->intent == INTENT_REF ||
       formal->intent == INTENT_CONST_REF ||
       (formal->intent == INTENT_BLANK &&
-       formal->type->symbol->hasFlag(FLAG_REF)))
+       (formal->type->symbol->hasFlag(FLAG_REF) ||
+        isAtomicType(formal->type))))
     return false;
 
   // Some more obscure call-by-ref cases.

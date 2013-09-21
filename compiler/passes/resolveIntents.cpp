@@ -19,6 +19,7 @@ static IntentTag constIntentForType(Type* t) {
              is_enum_type(t) ||
              isClass(t) ||
              isUnion(t) ||
+             isAtomicType(t) ||
              t == dtOpaque ||
              t == dtTaskID ||
              t == dtFile ||
@@ -33,6 +34,7 @@ static IntentTag constIntentForType(Type* t) {
 
 IntentTag blankIntentForType(Type* t) {
   if (isSyncType(t) ||
+      isAtomicType(t) ||
       t->symbol->hasFlag(FLAG_ARRAY)) {
     return INTENT_REF;
   } else if (is_bool_type(t) ||

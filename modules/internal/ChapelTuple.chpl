@@ -12,17 +12,21 @@ module ChapelTuple {
   //
   // syntactic support for tuples
   //
+  pragma "build tuple"
   inline proc _build_tuple(x...) {
       return x;
   }
   
   pragma "allow ref" 
+  pragma "build tuple"
   inline proc _build_tuple_always_allow_ref(x ...?size)
     return x;
   
+  pragma "build tuple"
   inline proc _build_tuple(type t ...?size) type
     return t;
   
+  pragma "build tuple"
   inline proc _build_tuple_always(x ...?size)
     return x;
   
