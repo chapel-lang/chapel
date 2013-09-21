@@ -23,12 +23,18 @@ endif
 ifneq (, $(filter $(CHPL_MAKE_TARGET_PLATFORM),cray-xe cray-xc cray-xk))
 CHPL_GASNET_CFG_OPTIONS += --enable-pthreads
 ifeq ($(CHPL_MAKE_COMM_SUBSTRATE),gemini)
+else ifeq ($(CHPL_MAKE_COMM_SUBSTRATE),aries)
+CHPL_GASNET_CFG_OPTIONS += --enable-aries --disable-pshm
 else
 # We need to do this because the auto-dectect stuff for gemini is not
 #  yet working as well as the portals auto-detect
 CHPL_GASNET_CFG_OPTIONS += --disable-gemini --disable-pshm --disable-pshm-xpmem --enable-pshm-posix
 endif
+ifeq ($(CHPL_MAKE_TARGET_PLATFORM),cray-xc)
+CHPL_GASNET_CFG_SCRIPT=cross-configure-crayxc-linux
+else
 CHPL_GASNET_CFG_SCRIPT=cross-configure-crayxe-linux
+endif
 XTRA_CONFIG_COMMAND=cp --update $(GASNET_SUBDIR)/other/contrib/$(CHPL_GASNET_CFG_SCRIPT) $(GASNET_SUBDIR)
 XTRA_POST_INSTALL_COMMAND=rm -f $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT)
 else
