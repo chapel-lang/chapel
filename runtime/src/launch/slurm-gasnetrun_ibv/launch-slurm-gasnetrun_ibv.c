@@ -197,7 +197,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   fprintf(expectFile, "--exclusive "); //  give exclusive access to the nodes
   fprintf(expectFile, "--time=%s ",walltime); 
   if (constraint) {
-	  fprintf(expectFile, " -C %s", constraint);
+    fprintf(expectFile, " -C %s", constraint);
   }
 //  fprintf(expectFile, "-I %s ", slurmFilename);
   fprintf(expectFile, " %s/gasnetrun_ibv -n %d %s ", 
