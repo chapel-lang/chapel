@@ -2060,7 +2060,7 @@ proc _toChar(x:?t) where t == string
 {
   var chr:int(32);
   var nbytes:c_int;
-  qio_decode_char_buf(chr, nbytes, x, x.length);
+  qio_decode_char_buf(chr, nbytes, x, x.length:ssize_t);
   return (chr, true);
 }
 inline
