@@ -10,5 +10,5 @@ and uses a snapshot of obtained from the Qthreads team at:
 Any Chapel issues that seem to be related to Qthreads should be
 directed to the Chapel team at chapel-bugs@lists.sourceforge.net.
 
-This version of Qthreads includes a minor change in order to build correctly
-with C++ portions of the Chapel runtime.
+This version of Qthreads includes changes to the Chapel-Qthreads
+interface to better support emerging hierarchical locale work.
