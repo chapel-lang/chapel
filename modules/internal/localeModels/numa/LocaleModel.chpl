@@ -129,7 +129,7 @@ module LocaleModel {
     const _node_id : int;
     const local_name : string;
 
-    const numSubLocales: int;
+    const numSublocales: int;
     var childSpace: domain(1);
     var childLocales: [childSpace] NumaDomain;
 
@@ -169,7 +169,7 @@ module LocaleModel {
 
     proc getChildSpace() return childSpace;
 
-    proc getChildCount() return numSubLocales;
+    proc getChildCount() return numSublocales;
 
     iter getChildIndices() : int {
       for idx in childSpace do
@@ -178,7 +178,7 @@ module LocaleModel {
 
     proc getChild(idx:int) : locale {
       if boundsChecking then
-        if (idx < 0) || (idx >= numSubLocales) then
+        if (idx < 0) || (idx >= numSublocales) then
           halt("sublocale child index out of bounds (",idx,")");
       return childLocales[idx];
     }
@@ -218,18 +218,21 @@ module LocaleModel {
       numCores = chpl_numCoresOnThisLocale();
 
       extern proc chpl_task_getNumSubLocales(): int(32);
-      numSubLocales = chpl_task_getNumSubLocales();
+      numSublocales = chpl_task_getNumSubLocales();
 
-      childSpace = {0..#numSubLocales};
-      const origSubloc = chpl_task_getRequestedSubloc(); // this should be any
-      for i in childSpace {
-        // allocate the structure on the domain?
-        // MUST CHANGE SUBLOC HERE (prolly by primitive)
-        chpl_task_setSubLoc(i:chpl_sublocID_t);
-        childLocales[i] = new NumaDomain(i:chpl_sublocID_t, this);
-        childLocales[i].numCores = 1; // for now
+      if numSublocales >= 1 {
+        childSpace = {0..#numSublocales};
+        const numCoresPerNumaDomain = numCores/numSublocales;
+        const origSubloc = chpl_task_getRequestedSubloc(); // this should be any
+        for i in childSpace {
+          // allocate the structure on the domain?
+          // MUST CHANGE SUBLOC HERE (prolly by primitive)
+          chpl_task_setSubLoc(i:chpl_sublocID_t);
+          childLocales[i] = new NumaDomain(i:chpl_sublocID_t, this);
+          childLocales[i].numCores = numCoresPerNumaDomain;
+        }
+        chpl_task_setSubLoc(origSubloc);
       }
-      chpl_task_setSubLoc(origSubloc);
     }
     //------------------------------------------------------------------------}
 
