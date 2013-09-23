@@ -7,7 +7,7 @@ for loc in Locales do on loc {
             "] Wrong subloc (wanted ", c_sublocid_any,
             ", got ", chpl_task_getSubLoc(), ")");
 
-  for i in 0..#(here:LocaleModel).numSubLocales do
+  for i in 0..#(here:LocaleModel).numSublocales do
     on (here:LocaleModel).getChild(i) do
       if i!=chpl_task_getSubLoc() then
         writeln("[", here.id,

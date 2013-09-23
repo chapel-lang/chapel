@@ -5,7 +5,7 @@ inline proc writestuff(newLine=true) {
 
 writestuff();
 
-coforall i in 0..#(here:LocaleModel).numSubLocales do
+coforall i in 0..#(here:LocaleModel).numSublocales do
   on (here:LocaleModel).getChild(i) do writestuff(false);
 
 writeln();

@@ -12,7 +12,7 @@ on (Locales[numLocales-1]) {
 
 writestuff();
 
-const subloc = (Locales[numLocales-1]:LocaleModel).numSubLocales-1;
+const subloc = (Locales[numLocales-1]:LocaleModel).numSublocales-1;
 writeln((Locales[numLocales-1]:LocaleModel).getChild(subloc));
 on (Locales[numLocales-1]:LocaleModel).getChild(subloc) {
   writestuff();

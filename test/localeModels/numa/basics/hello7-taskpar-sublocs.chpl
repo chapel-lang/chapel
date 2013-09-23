@@ -32,7 +32,7 @@ coforall loc in Locales {
   // locale's memory).
   //
   on loc {
-    const numSubLocales = (here:LocaleModel).numSubLocales;
+    const numSublocales = (here:LocaleModel).numSublocales;
 
     //
     // Now create a number of tasks as specified by the tasksPerLocale
@@ -54,8 +54,8 @@ coforall loc in Locales {
         // If we're running more than one task per locale, specialize
         // the message according to the task ID.
         //
-        if (numSubLocales > 1) then
-          message += (here:NumaDomain).sid + " of " + numSubLocales + " named " + here.name + " on ";
+        if (numSublocales > 1) then
+          message += (here:NumaDomain).sid + " of " + numSublocales + " named " + here.name + " on ";
 
         //
         // Specialize the message based on the locale we're running on:
