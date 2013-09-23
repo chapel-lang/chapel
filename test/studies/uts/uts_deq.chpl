@@ -218,7 +218,7 @@ proc balance_load(inout state: LDBalanceState, inout q: DeQueue(TreeNode)): int 
       var tmp = thread_cnt; // Lock the access to threads_spawned
       threads_spawned += 1;
       thread_cnt = tmp + 1;
-      begin create_tree(work);
+      begin ref(work) create_tree(work);
       return 1;
     }
   }

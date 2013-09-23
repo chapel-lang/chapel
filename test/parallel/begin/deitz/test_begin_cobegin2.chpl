@@ -3,10 +3,10 @@ use Time;
 proc main {
   var x: int;
   var z: int;
-  begin {
+  begin ref(x, z) {
     x = 2;
     var y: int;
-    cobegin {
+    cobegin ref(y,z) {
       y = x + 1;
       z = x + 1;
     }

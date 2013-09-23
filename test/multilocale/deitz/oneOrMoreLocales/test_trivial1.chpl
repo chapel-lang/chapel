@@ -1,6 +1,6 @@
 proc main {
   var x: int;
-  coforall i in 0..numLocales-1 {
+  coforall i in 0..numLocales-1 ref(x) {
     var y: int;
     on Locales(i) {
       y = i+3628800;

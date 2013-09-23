@@ -35,7 +35,7 @@ proc main {
     //var unused = allocate();
     var e = allocate();
     up(e);
-    begin {
+    begin ref(a) {
       a += 1;
       down(e);
     }

@@ -1133,15 +1133,32 @@ buildForallLoopStmt(Expr* indices,
   return leadBlock;
 }
 
+static void
+addByrefVars(BlockStmt* target, CallExpr* byrefVarsSource) {
+  // nothing to do if there is no 'ref' clause
+  if (!byrefVarsSource) return;
+
+  // (a) Ensure we are adding the 'ref' clause to the right block.
+  // (b) Document the fact that blockInfo is specifically a CallExpr.
+  INT_ASSERT(isCallExpr(target->blockInfo));
+
+  // Could set byrefVars->parentExpr/Symbol right here.
+  target->byrefVars = byrefVarsSource;
+
+  // Note: the UnresolvedSymExprs in byrefVars
+  // will be automatically resolved in resolve().
+}    
 
 BlockStmt* buildCoforallLoopStmt(Expr* indices, 
-                                 Expr* iterator, 
+                                 Expr* iterator,
+                                 CallExpr* byref_vars,
                                  BlockStmt* body,
                                  bool zippered ) 
 {
   checkControlFlow(body, "coforall statement");
 
   if (fSerial)
+    // dropping byref_vars, if any
     return buildForLoopStmt(indices, iterator, body, false, zippered);
 
   //
@@ -1190,6 +1207,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
     block->insertAtTail(new CallExpr("_waitEndCount", coforallCount));
     block->insertAtTail(new CallExpr("_endCountFree", coforallCount));
     onBlock->blockInfo->primitive = primitives[PRIM_BLOCK_ON_NB];
+    addByrefVars(onBlock, byref_vars);
     BlockStmt* innerOnBlock = new BlockStmt();
     for_alist(tmp, onBlock->body) {
       innerOnBlock->insertAtTail(tmp->remove());
@@ -1201,6 +1219,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
     VarSymbol* coforallCount = newTemp("_coforallCount");
     BlockStmt* beginBlk = new BlockStmt();
     beginBlk->blockInfo = new CallExpr(PRIM_BLOCK_COFORALL);
+    addByrefVars(beginBlk, byref_vars);
     beginBlk->insertAtHead(body);
     beginBlk->insertAtTail(new CallExpr("_downEndCount", coforallCount));
     BlockStmt* block = buildForLoopStmt(indices, iterator, beginBlk, true, zippered);
@@ -1898,6 +1917,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
     body->insertAtHead(new DefExpr(tmp));
     beginBlock->blockInfo = new CallExpr(PRIM_BLOCK_ON, tmp);
     beginBlock->blockInfo->primitive = primitives[PRIM_BLOCK_ON_NB];
+    // If there are beginBlock->byrefVars, they will be preserved.
     return body;
   } else {
     // Otherwise, wait for the "on" statement to complete before proceeding.
@@ -1914,10 +1934,11 @@ buildOnStmt(Expr* expr, Expr* stmt) {
 
 
 BlockStmt*
-buildBeginStmt(Expr* stmt) {
+buildBeginStmt(CallExpr* byref_vars, Expr* stmt) {
   checkControlFlow(stmt, "begin statement");
 
   if (fSerial)
+    // dropping byref_vars, if any
     return buildChapelStmt(new BlockStmt(stmt));
 
   BlockStmt* body = toBlockStmt(stmt);
@@ -1946,12 +1967,14 @@ buildBeginStmt(Expr* stmt) {
     body->insertAtHead(new CallExpr("_upEndCount"));
     onBlock->insertAtTail(new CallExpr("_downEndCount"));
     onBlock->blockInfo->primitive = primitives[PRIM_BLOCK_ON_NB];
+    addByrefVars(onBlock, byref_vars);
     return body;
   } else {
     BlockStmt* block = buildChapelStmt();
     block->insertAtTail(new CallExpr("_upEndCount"));
     BlockStmt* beginBlock = new BlockStmt();
     beginBlock->blockInfo = new CallExpr(PRIM_BLOCK_BEGIN);
+    addByrefVars(beginBlock, byref_vars);
     beginBlock->insertAtHead(stmt);
     beginBlock->insertAtTail(new CallExpr("_downEndCount"));
     block->insertAtTail(beginBlock);
@@ -1979,7 +2002,7 @@ buildSyncStmt(Expr* stmt) {
 
 
 BlockStmt*
-buildCobeginStmt(BlockStmt* block) {
+buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block) {
   BlockStmt* outer = block;
 
   checkControlFlow(block, "cobegin statement");
@@ -1992,10 +2015,12 @@ buildCobeginStmt(BlockStmt* block) {
 
   if (block->length() < 2) {
     USR_WARN(outer, "cobegin has no effect if it contains fewer than 2 statements");
+    // dropping byref_vars, if any
     return buildChapelStmt(block);
   }
 
   if (fSerial)
+    // dropping byref_vars, if any
     return buildChapelStmt(block);
 
   VarSymbol* cobeginCount = newTemp("_cobeginCount");
@@ -2004,6 +2029,8 @@ buildCobeginStmt(BlockStmt* block) {
   for_alist(stmt, block->body) {
     BlockStmt* beginBlk = new BlockStmt();
     beginBlk->blockInfo = new CallExpr(PRIM_BLOCK_COBEGIN);
+    // the original byref_vars is dead - will be clean_gvec-ed
+    addByrefVars(beginBlk, byref_vars ? byref_vars->copy() : NULL);
     stmt->insertBefore(beginBlk);
     beginBlk->insertAtHead(stmt->remove());
     beginBlk->insertAtTail(new CallExpr("_downEndCount", cobeginCount));

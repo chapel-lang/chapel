@@ -29,7 +29,7 @@ proc function2( a:int) {
   var d:int;
 
   d = a;
-  cobegin {
+  cobegin ref(d) {
     d = 2*a;
     d = 4*a;
   }

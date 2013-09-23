@@ -45,6 +45,7 @@ BlockStmt* buildDoWhileLoopStmt(Expr* cond, BlockStmt* body);
 BlockStmt* buildSerialStmt(Expr* cond, BlockStmt* body);
 BlockStmt* buildCoforallLoopStmt(Expr* indices,
                                  Expr* iterator,
+                                 CallExpr* byref_vars,
                                  BlockStmt* body,
                                  bool zippered = false);
 BlockStmt* buildGotoStmt(GotoTag tag, const char* name);
@@ -93,9 +94,9 @@ BlockStmt* buildFunctionDecl(FnSymbol* fn, RetTag optRetTag, Expr* optRetType,
                              Expr* optWhere, BlockStmt* optFnBody, char *docs);
 BlockStmt* buildLocalStmt(Expr* stmt);
 BlockStmt* buildOnStmt(Expr* expr, Expr* stmt);
-BlockStmt* buildBeginStmt(Expr* stmt);
+BlockStmt* buildBeginStmt(CallExpr* byref_vars, Expr* stmt);
 BlockStmt* buildSyncStmt(Expr* stmt);
-BlockStmt* buildCobeginStmt(BlockStmt* block);
+BlockStmt* buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block);
 BlockStmt* buildAtomicStmt(Expr* stmt);
 void createInitFn(ModuleSymbol* mod);
 BlockStmt* buildExternBlockStmt(const char* c_code);

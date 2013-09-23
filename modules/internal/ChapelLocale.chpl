@@ -192,7 +192,7 @@ module ChapelLocale {
                                         true /* ignoreRunning*/,
                                         minRootLocaleInitPerTask,
                                         numLocales);
-      coforall chunk in 0..#numChunks {
+      coforall chunk in 0..#numChunks ref(rootLocale) {
         const (lo, hi) = _computeBlock(numLocales, numChunks,
                                        chunk, numLocales-1);
         for locIdx in lo..hi {

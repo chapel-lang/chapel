@@ -201,6 +201,14 @@ static inline FnSymbol* resolvedToTaskFun(CallExpr* call) {
   return NULL;
 }
 
+// Does this function require "capture for parallelism"?
+// Yes, if it comes from a begin/cobegin/coforall block in Chapel source.
+static inline bool needsCapture(FnSymbol* taskFn) {
+  return taskFn->hasFlag(FLAG_BEGIN) ||
+         taskFn->hasFlag(FLAG_COBEGIN_OR_COFORALL) ||
+         taskFn->hasFlag(FLAG_NON_BLOCKING);
+}
+
 
 bool get_int(Expr* e, int64_t* i); // false is failure
 bool get_uint(Expr *e, uint64_t *i); // false is failure

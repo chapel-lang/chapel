@@ -44,7 +44,7 @@ where tag == iterKind.leader
     var moreWork=true;
     var splitLock$:sync bool=true;   // sync variables to control the splitting 
 
-    coforall tid in 0..#nTasks do { 
+    coforall tid in 0..#nTasks ref(remain, moreWork) do { 
      while moreWork do {
       // There is local work in remain
       splitLock$; // Perform the splitting in a critical section
@@ -110,7 +110,7 @@ where tag == iterKind.leader
     const factor=nTasks;
     var splitLock$:sync bool=true;  // synnc variables to control the splitting
 
-    coforall tid in 0..#nTasks do { 
+    coforall tid in 0..#nTasks ref(remain,undone) do { 
      while undone do {
       // There is local work in remain(tid)
       splitLock$; // Perform the splitting in a critical section
@@ -196,7 +196,7 @@ where tag == iterKind.leader
 
 
     // Start the parallel work
-    coforall tid in 0..#nTasks do { 
+    coforall tid in 0..#nTasks ref(moreWork) do { 
 
       // Step 1: Initial range per Thread/Task
 

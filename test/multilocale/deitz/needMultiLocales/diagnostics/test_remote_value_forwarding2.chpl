@@ -7,7 +7,7 @@ proc main() {
   var r = foo(3), s = 0;
   on Locales(1) {
     var x, y: int;
-    cobegin {
+    cobegin ref(x,y) {
       x = 1;
       y = 2;
     }

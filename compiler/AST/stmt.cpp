@@ -48,7 +48,8 @@ BlockStmt::BlockStmt(Expr* init_body, BlockTag init_blockTag) :
   modUses(NULL),
   breakLabel(NULL),
   continueLabel(NULL),
-  userLabel(NULL)
+  userLabel(NULL),
+  byrefVars(NULL)
 {
   body.parent = this;
   if (init_body)
@@ -75,6 +76,14 @@ void BlockStmt::verify() {
     INT_FATAL(this, "Bad BlockStmt::blockInfo::parentExpr");
   if (modUses && modUses->parentExpr != this)
     INT_FATAL(this, "Bad BlockStmt::blockInfo::parentExpr");
+  if (byrefVars) {
+    if (byrefVars->parentExpr != this)
+      INT_FATAL(this, "Bad BlockStmt::byrefVars::parentExpr");
+    for_actuals(varExp, byrefVars) {
+      if (!isSymExpr(varExp) && !isUnresolvedSymExpr(varExp))
+        INT_FATAL(this, "Bad expresion kind in BlockStmt::byrefVars");
+    }
+  }
 }
 
 
@@ -88,6 +97,7 @@ BlockStmt::copyInner(SymbolMap* map) {
   _this->modUses = COPY_INT(modUses);
   _this->breakLabel = breakLabel;
   _this->continueLabel = continueLabel;
+  _this->byrefVars = COPY_INT(byrefVars);
   return _this;
 }
 
@@ -97,6 +107,8 @@ void BlockStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
     blockInfo = toCallExpr(new_ast);
   else if (old_ast == modUses)
     modUses = toCallExpr(new_ast);
+  else if (old_ast == byrefVars)
+    byrefVars = toCallExpr(new_ast);
   else
     INT_FATAL(this, "Unexpected case in BlockStmt::replaceChild");
 }
@@ -265,6 +277,7 @@ GenRet BlockStmt::codegen() {
  
 #endif
   }
+  INT_ASSERT(!byrefVars); // these should not persist past parallel()
   return ret;
 }
 

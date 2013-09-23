@@ -347,6 +347,7 @@ def_to_ast(Type)
     AST_CALL_LIST(_a, BlockStmt, body, call, __VA_ARGS__);              \
     AST_CALL_CHILD(_a, BlockStmt, blockInfo, call, __VA_ARGS__);        \
     AST_CALL_CHILD(_a, BlockStmt, modUses, call, __VA_ARGS__);          \
+    AST_CALL_CHILD(_a, BlockStmt, byrefVars, call, __VA_ARGS__);        \
     break;                                                              \
   case E_CondStmt:                                                      \
     AST_CALL_CHILD(_a, CondStmt, condExpr, call, __VA_ARGS__);          \

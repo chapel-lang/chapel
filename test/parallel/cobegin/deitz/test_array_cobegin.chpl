@@ -3,7 +3,7 @@ proc main() {
 
   var x, y, z: int;
 
-  cobegin {
+  cobegin ref(x,y,z) {
     x = + reduce A;
     y = min reduce A;
     z = max reduce A;

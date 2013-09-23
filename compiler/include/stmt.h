@@ -25,6 +25,7 @@ class BlockStmt : public Expr {
   LabelSymbol* breakLabel;
   LabelSymbol* continueLabel;
   const char* userLabel;
+  CallExpr* byrefVars;  // 'ref' clause in begin/cobegin/coforall
 
   BlockStmt(Expr* init_body = NULL, BlockTag init_blockTag = BLOCK_NORMAL);
   ~BlockStmt();

@@ -6,7 +6,7 @@ var x: myType;
 var y = 2*initval;
 
 sync {
-  begin {
+  begin ref(x) {
     x = sx;
     if sx.isFull then writeln("invalid state (full)");
     if x != initval then writeln("incorrect value: ", x);

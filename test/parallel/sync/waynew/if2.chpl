@@ -5,7 +5,7 @@ use Time;
 var done: sync bool;
 var data = 2;
 
-cobegin {
+cobegin ref(data) {
   { 
     sleep( 2);
     data = 5;

@@ -2168,6 +2168,43 @@ getVisibleFunctions(BlockStmt* block,
 }
 
 
+static void handleCaptureArgs(CallExpr* call, FnSymbol* taskFn) {
+  INT_ASSERT(taskFn);
+  if (!needsCapture(taskFn)) {
+    // A task function should have args only if it needsCapture.
+    if (taskFn->hasFlag(FLAG_ON)) {
+      // Documenting the current state: fn_on gets a chpl_localeID_t arg.
+      INT_ASSERT(call->numActuals() == 1);
+    } else {
+      INT_ASSERT(!isTaskFun(taskFn) || call->numActuals() == 0);
+    }
+    return;
+  }
+
+  for_formals_actuals(formal, actual, call) {
+    SymExpr* symexpActual = toSymExpr(actual);
+    INT_ASSERT(symexpActual); // because of how we invoke a task function
+    Symbol* varActual = symexpActual->var;
+    // If 'call' is in a generic function, it is supposed to have been
+    // instantiated by now. Otherwise our begin_fn has to remain generic.
+    INT_ASSERT(!varActual->type->symbol->hasFlag(FLAG_GENERIC));
+    // need to copy varActual->type even for type variables
+    formal->type = varActual->type;
+
+    if (varActual->hasFlag(FLAG_TYPE_VARIABLE))
+      formal->addFlag(FLAG_TYPE_VARIABLE);
+    else if (varActual->type->symbol->hasFlag(FLAG_SYNC) ||
+             varActual->type->symbol->hasFlag(FLAG_SINGLE))
+      // this will do nothing e.g. for temps or sync formals
+      varActual->removeFlag(FLAG_INSERT_AUTO_DESTROY);
+  }
+
+  // Even if some formals are (now) types, if 'taskFn' remained generic,
+  // gatherCandidates() would not instantiate it, for some reason.
+  taskFn->removeFlag(FLAG_GENERIC);
+}
+
+
 static Type*
 resolve_type_expr(Expr* expr) {
   bool stop = false;
@@ -2363,6 +2400,7 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
       }
     } else {
       visibleFns.add(call->isResolved());
+      handleCaptureArgs(call, call->isResolved());
     }
 
     if (explainCallLine && explainCallMatch(call)) {

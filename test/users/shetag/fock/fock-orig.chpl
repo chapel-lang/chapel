@@ -41,7 +41,7 @@ proc buildjk() {
           bI = task;
           while (bI.ilo != 0) {
             copyofbI = bI;
-            cobegin {
+            cobegin ref(bI) {
               buildjk_atom4(copyofbI);
               bI = task;
             }

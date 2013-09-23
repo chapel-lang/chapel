@@ -173,7 +173,7 @@
 %type <pdefexpr> query_expr opt_query_expr
 
 %type <pcallexpr> opt_inherit expr_ls assoc_expr_ls tuple_expr_ls
-%type <pcallexpr> opt_actual_ls actual_ls
+%type <pcallexpr> opt_actual_ls actual_ls opt_ref_var_ls ref_var_ls
 
 %type <pfnsymbol> fn_decl_stmt_inner formal_ls opt_formal_ls req_formal_ls
 %type <procIter> proc_or_iter
@@ -222,9 +222,9 @@ stmt:
 | return_stmt
 | stmt_level_expr TSEMI      { $$ = buildChapelStmt($1); }
 | TATOMIC stmt               { $$ = buildAtomicStmt($2); }
-| TBEGIN stmt                { $$ = buildBeginStmt($2); }
+| TBEGIN opt_ref_var_ls stmt { $$ = buildBeginStmt($2, $3); }
 | TBREAK opt_ident TSEMI     { $$ = buildGotoStmt(GOTO_BREAK, $2); }
-| TCOBEGIN block_stmt        { $$ = buildCobeginStmt($2);  }
+| TCOBEGIN opt_ref_var_ls block_stmt   { $$ = buildCobeginStmt($2, $3);  }
 | TCONTINUE opt_ident TSEMI  { $$ = buildGotoStmt(GOTO_CONTINUE, $2); }
 | TDELETE expr TSEMI         { $$ = buildPrimitiveStmt(PRIM_DELETE, $2); }
 | TLABEL ident stmt          { $$ = buildLabelStmt($2, $3); }
@@ -314,9 +314,9 @@ extern_block_stmt:
 loop_stmt:
   TDO stmt TWHILE expr TSEMI                    { $$ = buildDoWhileLoopStmt($4, $2); }
 | TWHILE expr do_stmt                           { $$ = buildWhileDoLoopStmt($2, $3); }
-| TCOFORALL expr TIN expr do_stmt               { $$ = buildCoforallLoopStmt($2, $4, $5); }
-| TCOFORALL expr TIN zippered_iterator do_stmt  { $$ = buildCoforallLoopStmt($2, $4, $5, true); }
-| TCOFORALL expr do_stmt                        { $$ = buildCoforallLoopStmt(NULL, $2, $3); }
+| TCOFORALL expr TIN expr opt_ref_var_ls do_stmt               { $$ = buildCoforallLoopStmt($2, $4, $5, $6); }
+| TCOFORALL expr TIN zippered_iterator opt_ref_var_ls do_stmt  { $$ = buildCoforallLoopStmt($2, $4, $5, $6, true); }
+| TCOFORALL expr opt_ref_var_ls do_stmt                        { $$ = buildCoforallLoopStmt(NULL, $2, $3, $4); }
 | TPRIMITIVELOOP TLP opt_actual_ls TRP do_stmt  { $$ = buildPrimitiveLoopStmt($3, $5); }
 | TFOR expr TIN expr do_stmt                    { $$ = buildForLoopStmt($2, $4, $5); }
 | TFOR expr TIN zippered_iterator do_stmt       { $$ = buildForLoopStmt($2, $4, $5, false, true); }
@@ -1036,6 +1036,16 @@ stmt_level_expr:
 | let_expr
 | io_expr TIO expr
     { $$ = new CallExpr("<~>", $1, $3); }
+;
+
+opt_ref_var_ls:
+                             { $$ = NULL; }
+| TREF TLP ref_var_ls TRP    { $$ = $3;   }
+;
+
+ref_var_ls:
+  ident_expr                    { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1); }
+| ref_var_ls TCOMMA ident_expr  { $1->insertAtTail($3); }
 ;
 
 io_expr:

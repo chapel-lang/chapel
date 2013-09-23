@@ -4,7 +4,7 @@ var x = 0;
 var y = 0;
 
 for i in 1..n {
-  cobegin {
+  cobegin ref(x,y) {
     x += 1;
     y += 1;
   }
