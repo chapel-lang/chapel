@@ -20,6 +20,15 @@
 general regressions (seem to happen in most configurations)
 ===========================================================
 
+--verify fails for many tests (worked around by 21936, needs a fix from 21924 (bradc))
+--------------------------------------------------------------------------------------
+[Error matching compiler output for release/examples/benchmarks/hpcc/fft]
+[Error matching compiler output for release/examples/benchmarks/hpcc/hpl]
+[Error matching compiler output for release/examples/benchmarks/hpcc/ra-atomics (compopts: 1)]
+[Error matching compiler output for release/examples/benchmarks/hpcc/ra (compopts: 1)]
+[Error matching compiler output for release/examples/benchmarks/hpcc/variants/ra-cleanloop (compopts: 1)]
+[Error matching compiler output for distributions/dm/t5a]
+...
 
 ==============================================
 linux64 regressions (in addition to the above)
@@ -188,6 +197,14 @@ amount of comm. went down with locale ID optimization change (08/30/13)
 deadlock due to impact of small # of threads on root locale replication (08/21/13)
 -----------------------------------------------------------------------
 [Error: Timed out executing program multilocale/gbt/hello-numThreads-1]
+
+warning: inlining failed in call to 'qio_channel_offset_unlocked':
+call is unlikely and code size would grow 
+------------------------------------------------------------------
+[Error matching program output for release/examples/benchmarks/miniMD/miniMD (compopts: 1, execopts: 1)]
+[Error matching program output for release/examples/benchmarks/miniMD/miniMD (compopts: 1, execopts: 2)]
+[Error matching program output for release/examples/benchmarks/miniMD/miniMD (compopts: 2, execopts: 1)]
+[Error matching program output for release/examples/benchmarks/miniMD/miniMD (compopts: 2, execopts: 2)]
 
 
 ==============================================
