@@ -2508,7 +2508,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a5);
   codegenCall(fnName, args);
 }
-/*static
+static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5, GenRet a6)
 {
@@ -2521,6 +2521,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a6);
   codegenCall(fnName, args);
 }
+/*
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5, GenRet a6, GenRet a7)
@@ -3845,6 +3846,42 @@ GenRet CallExpr::codegen() {
           // This primitive expects an argument of type chpl_localeID_t.
           INT_ASSERT(call->get(1)->typeInfo() == dtLocaleID);
           codegenAssign(get(1), call->get(1));
+          break;
+         }
+         case PRIM_STRING_FROM_C_STRING:
+         // string = string_from_c_string(ptr, haslen, len, lineno, filename);
+         {
+          GenRet dst = get(1)->codegen();
+          dst = codegenAddrOf(dst);
+          if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+            // The destination is a wide string.
+            codegenCall("wide_string_from_c_string", dst,
+                        call->get(1), call->get(2), call->get(3),
+                        call->get(4), call->get(5));
+          } else {
+            codegenCall("string_from_c_string", dst,
+                        call->get(1), call->get(2), call->get(3),
+                        call->get(4), call->get(5));
+          }
+          break;
+         }
+         case PRIM_C_STRING_FROM_STRING:
+         // c_string = c_string_from_string(src, lineno, filename)
+         {
+          const char* literal = NULL;
+          if( get_string(call->get(1), &literal) ) {
+            // it's a string literal... which is already a C string.
+            codegenAssign(get(1), call->get(1));
+          } else {
+            if (get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+              // The source is a wide string.
+              codegenCall("c_string_from_wide_string", get(1),
+                          call->get(1), call->get(2), call->get(3));
+            } else {
+              codegenCall("c_string_from_string", get(1),
+                          call->get(1), call->get(2), call->get(3));
+            }
+          }
           break;
          }
          default:

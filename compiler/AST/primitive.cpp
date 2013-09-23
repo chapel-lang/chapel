@@ -31,6 +31,12 @@ returnInfoString(CallExpr* call) {
 }
 
 static Type*
+returnInfoStringC(CallExpr* call) {
+  return dtStringC;
+}
+
+
+static Type*
 returnInfoLocaleID(CallExpr* call) {
   return dtLocaleID;
 }
@@ -558,6 +564,8 @@ initPrimitive() {
   prim_def("string_index", returnInfoString, true, true);
   prim_def(PRIM_STRING_COPY, "string_copy", returnInfoString, false, true);
   prim_def(PRIM_STRING_NORMALIZE, "string_normalize", returnInfoVoid, true, false);
+  prim_def(PRIM_STRING_FROM_C_STRING, "string_from_c_string", returnInfoString, true, true);
+  prim_def(PRIM_C_STRING_FROM_STRING, "c_string_from_string", returnInfoStringC, true, true);
   prim_def(PRIM_CAST_TO_VOID_STAR, "cast_to_void_star", returnInfoOpaque, true, false);
   prim_def("string_select", returnInfoString, true, true);
   prim_def("string_strided_select", returnInfoString, true, true);

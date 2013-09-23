@@ -355,6 +355,7 @@ extern Symbol *gTypeDefaultToken;
 extern Symbol *gLeaderTag, *gFollowerTag;
 extern Symbol *gModuleToken;
 extern Symbol *gVoid;
+extern Symbol *gStringC;
 extern Symbol *gFile;
 extern Symbol *gOpaque;
 extern Symbol *gTimer;

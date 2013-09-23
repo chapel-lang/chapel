@@ -98,6 +98,20 @@ inline proc !(x: c_ptr) return x == nil;
 extern proc c_ptrTo(ref x:?t):c_ptr(t);
 
 
+// C strings
+//extern type c_string; is a built-in primitive type
+
+inline proc toString(cstr:c_string):string {
+  return __primitive("string_from_c_string", cstr, 0, 0);
+}
+inline proc toString(cstr:c_string, len:int):string {
+  return __primitive("string_from_c_string", cstr, 1, len);
+}
+
+inline proc string.c_str():c_string {
+  return __primitive("c_string_from_string", this);
+}
+
 // error numbers
 
 extern proc qio_err_eq(a:syserr, b:syserr):c_int;

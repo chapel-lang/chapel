@@ -29,9 +29,9 @@ module C { extern {
 use C;
 
 //NOTE: either C.my_struct or my_struct will work with the use C; statement.
-var strct: C.my_struct = new my_struct(42, "bar");
+var strct: C.my_struct = new my_struct(42, "bar".c_str());
 writeln(strct.foo);
-writeln(strct.bar);
+writeln(toString(strct.bar));
 
 //NOTE: due to an issue with the way Chapel implements type aliases,
 //
@@ -46,7 +46,7 @@ var td_strct2: y;
 td_strct2.x = 8;
 
 var b: bar;
-b.c = "Hello";
+b.c = "Hello".c_str();
 b.foo = 42;
 
 var q:my_int;
@@ -56,6 +56,6 @@ write("q is ");
 write(q);
 writeln();
 
-printf("%.1f, %d\n", td_strct.d, td_strct2.x);
-printf("%s, %d\n", b.c, b.foo);
+printf("%.1f, %d\n".c_str(), td_strct.d, td_strct2.x);
+printf("%s, %d\n".c_str(), b.c, b.foo);
 

@@ -29,9 +29,10 @@ static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Ve
     Expr* pointee = convertToChplType(module, type->getPointeeType().getTypePtr(), results);
     if (UnresolvedSymExpr* se = toUnresolvedSymExpr(pointee)) {
       const char* name = se->unresolved;
-      //Pointers to c_[x]char must be converted to Chapel's string type.
-      if (!(strcmp(name, "c_char") && strcmp(name, "c_uchar") && strcmp(name, "c_schar"))) 
-        return new UnresolvedSymExpr("string"); 
+      //Pointers to c_char must be converted to Chapel's C string type.
+      //Question: Should this only apply to const char*?
+      if ( 0 == strcmp(name, "c_char") )
+        return new UnresolvedSymExpr("c_string"); 
     }
 
     // void *  generates as c_void_ptr.

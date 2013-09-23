@@ -202,6 +202,8 @@ TYPE_EXTERN ClassType* dtLocale;
 TYPE_EXTERN ClassType* dtLocaleID;
 TYPE_EXTERN ClassType* dtMainArgument;
 
+TYPE_EXTERN PrimitiveType* dtStringC; // the type of a C string.
+
 // base object type (for all classes)
 TYPE_EXTERN Type* dtObject;
 

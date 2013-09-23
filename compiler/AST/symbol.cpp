@@ -40,6 +40,7 @@ Symbol *gLeaderTag = NULL, *gFollowerTag = NULL;
 Symbol *gModuleToken = NULL;
 Symbol *gVoid = NULL;
 Symbol *gFile = NULL;
+Symbol *gStringC = NULL;
 Symbol *gOpaque = NULL;
 Symbol *gTimer = NULL;
 Symbol *gTaskID = NULL;

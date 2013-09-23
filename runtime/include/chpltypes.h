@@ -26,6 +26,7 @@ typedef void* c_void_ptr;
 #define c_nil NULL
 static inline c_int is_c_nil(void* x) { return x==NULL; }
 static inline void* c_ptrTo(void* x) { return x; }
+typedef const char* c_string;
 
 typedef enum {
   CHPL_TYPE_chpl_bool,
@@ -230,6 +231,12 @@ chpl_string string_select(chpl_string x, int low, int high, int32_t lineno, chpl
 chpl_string string_strided_select(chpl_string x, int low, int high, int stride, int32_t lineno, chpl_string filename);
 int32_t chpl_string_compare(chpl_string x, chpl_string y);
 int64_t string_length(chpl_string x);
+
+// implement string_from_c_string and c_string_from_string primitives.
+void string_from_c_string(chpl_string *ret, c_string str, int haslen, int64_t len, int32_t lineno, chpl_string filename);
+void wide_string_from_c_string(struct chpl_chpl____wide_chpl_string_s *ret, c_string str, int haslen, int64_t len, int32_t lineno, chpl_string filename);
+void c_string_from_string(c_string* ret, chpl_string* str, int32_t lineno, chpl_string filename);
+void c_string_from_wide_string(c_string* ret, struct chpl_chpl____wide_chpl_string_s* str, int32_t lineno, chpl_string filename);
 
 int64_t real2int( _real64 f);       // return the raw bytes of the float
 int64_t object2int( _chpl_object o);  // return the ptr

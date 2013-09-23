@@ -14,7 +14,7 @@ module C { extern {
   const char* greet_str = "Hello";
 } }
 
-writeln(C.greeting());
+writeln(toString(C.greeting()));
 writeln(C.my_doub);
 writeln(C.my_int);
 writeln(C.add_one(1000));
@@ -29,5 +29,5 @@ C.print_bool(false);
 //  at least one argument. I.e., printf must
 //  include at least one argument in addition
 //  to the format string.
-C.printf("%s, world!\n", C.greet_str);
+C.printf("%s, world!\n".c_str(), C.greet_str);
 

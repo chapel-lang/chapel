@@ -42,7 +42,7 @@ module C { extern {
 use C;
 
 var a: C.st;
-a.c = "a string";
+a.c = "a string".c_str();
 a.foo = 897234;
 
 var b: c_ptr(C.st) = get_struct_ref();
