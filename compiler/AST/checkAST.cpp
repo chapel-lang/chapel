@@ -31,42 +31,6 @@ void checkForDuplicateUses()
   }
 }
 
-// This check ensures that every (resolved) SymExpr
-// refers to a DefExpr within the tree.
-// TODO: Once this check is satisfied by all passes, it can be replaced by 
-//  this->sym->defPoint == this in DefExpr::verify().
-void checkForMissingDefs()
-{
-  std::map<Symbol*,DefExpr*> defs;
-
-  // Populate the map with all DefExprs
-  forv_Vec(DefExpr, def, gDefExprs)
-  {
-    Symbol* sym = def->sym;
-    if (defs.count(sym))
-      INT_FATAL("Multiple definitions for symbol");
-    defs.insert(std::pair<Symbol*,DefExpr*>(sym, def));
-  }
-
-  // Now make sure that every symbol reference has a live def associated with
-  // it.
-  forv_Vec(SymExpr, se, gSymExprs)
-  {
-    Symbol* sym = se->var;
-
-    // Ignore symbols that have no defPoint
-    // such as _root
-    if (sym->defPoint == 0)
-      continue;
-
-    if (defs.count(sym) == 0)
-      INT_FATAL("Symbol has no associated DefExpr.");
-    DefExpr* def = defs.find(sym)->second;
-    if (sym->defPoint != def)
-      INT_FATAL("defPoint of symbol does not match its declaration.");
-  }
-}
-
 
 // Check that no unresolved symbols remain in the tree.
 // This one is pretty cheap, so can be run after every pass (following

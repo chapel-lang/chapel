@@ -428,6 +428,8 @@ void DefExpr::verify() {
     INT_FATAL(this, "Bad DefExpr::init::parentExpr");
   if (exprType && exprType->parentExpr != this)
     INT_FATAL(this, "Bad DefExpr::exprType::parentExpr");
+  if (sym->defPoint != this)
+    INT_FATAL(this, "Bad DefExpr::sym->defPoint");
 }
 
 

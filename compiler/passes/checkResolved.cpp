@@ -10,6 +10,7 @@
 
 static int isDefinedAllPaths(Expr* expr, Symbol* ret);
 static void checkReturnPaths(FnSymbol* fn);
+static void checkNoRecordDeletes();
 
 
 static bool
@@ -236,7 +237,7 @@ checkReturnPaths(FnSymbol* fn) {
 // language in the spec should be considered for removal.
 // In addition, the ability for user code to explicitly call deletes on fields
 // of record type may be necessary for UMM, but this is yet to be demonstrated.
-void
+static void
 checkNoRecordDeletes()
 {
   forv_Vec(CallExpr, call, gCallExprs)

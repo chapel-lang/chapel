@@ -315,7 +315,6 @@ void check_afterEveryPass()
   {
     verify();
     checkForDuplicateUses();
-    checkForMissingDefs();
   }
 }
 

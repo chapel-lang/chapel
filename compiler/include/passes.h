@@ -62,10 +62,8 @@ void checkInvariants(char log_tag);
 void checkPrimitives();                 // constrains primitive use
 void checkPostResolution();
 void checkNoUnresolveds();
-void checkNoRecordDeletes();
 // These checks can be applied after any pass.
 void checkForDuplicateUses();
-void checkForMissingDefs();
 
 //
 // utility functions in pass-containing code files
