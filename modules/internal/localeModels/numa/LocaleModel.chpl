@@ -13,7 +13,7 @@ module LocaleModel {
   // This should eventually be unified with
   // CHPL_LOCALE_MODEL_NUM_SUBLOCALES which is currently defined in the
   // runtime for any locale model that doesn't use sub locales
-  param localeModelHasSubLocales = true;
+  param localeModelHasSublocales = true;
 
   use ChapelLocale;
   use DefaultRectangular;
@@ -217,8 +217,8 @@ module LocaleModel {
       extern proc chpl_numCoresOnThisLocale(): int;
       numCores = chpl_numCoresOnThisLocale();
 
-      extern proc chpl_task_getNumSubLocales(): int(32);
-      numSublocales = chpl_task_getNumSubLocales();
+      extern proc chpl_task_getNumSublocales(): int(32);
+      numSublocales = chpl_task_getNumSublocales();
 
       if numSublocales >= 1 {
         childSpace = {0..#numSublocales};
@@ -227,11 +227,11 @@ module LocaleModel {
         for i in childSpace {
           // allocate the structure on the domain?
           // MUST CHANGE SUBLOC HERE (prolly by primitive)
-          chpl_task_setSubLoc(i:chpl_sublocID_t);
+          chpl_task_setSubloc(i:chpl_sublocID_t);
           childLocales[i] = new NumaDomain(i:chpl_sublocID_t, this);
           childLocales[i].numCores = numCoresPerNumaDomain;
         }
-        chpl_task_setSubLoc(origSubloc);
+        chpl_task_setSubloc(origSubloc);
       }
     }
     //------------------------------------------------------------------------}
@@ -262,7 +262,7 @@ module LocaleModel {
     // In addition, the initial 'here' must be set.
     proc init() {
       forall locIdx in initOnLocales() {
-        chpl_task_setSubLoc(c_sublocid_any);
+        chpl_task_setSubloc(c_sublocid_any);
         const node = new LocaleModel(this);
         myLocales[locIdx] = node;
         numCores += node.numCores;
@@ -385,7 +385,7 @@ module LocaleModel {
   extern proc chpl_comm_fork_nb(loc_id: int, subloc_id: int,
                                 fn: int, args: c_void_ptr, args_size: int(32));
   extern proc chpl_ftable_call(fn: int, args: c_void_ptr): void;
-  extern proc chpl_task_setSubLoc(subLoc: int(32));
+  extern proc chpl_task_setSubloc(subloc: int(32));
   extern const c_sublocid_any: chpl_sublocID_t;
   extern const c_sublocid_curr: chpl_sublocID_t;
 
@@ -410,9 +410,9 @@ module LocaleModel {
         chpl_ftable_call(fn, args);
       } else {
         // move to a different sublocale
-        chpl_task_setSubLoc(dsubloc);
+        chpl_task_setSubloc(dsubloc);
         chpl_ftable_call(fn, args);
-        chpl_task_setSubLoc(origSubloc);
+        chpl_task_setSubloc(origSubloc);
       }
     }
   }
@@ -438,9 +438,9 @@ module LocaleModel {
         chpl_ftable_call(fn, args);
       } else {
         // move to a different sublocale
-        chpl_task_setSubLoc(dsubloc);
+        chpl_task_setSubloc(dsubloc);
         chpl_ftable_call(fn, args);
-        chpl_task_setSubLoc(origSubloc);
+        chpl_task_setSubloc(origSubloc);
       }
     }
   }
@@ -492,7 +492,7 @@ module LocaleModel {
         }
       } else {
         // move to a different sublocale
-        chpl_task_setSubLoc(dsubloc);
+        chpl_task_setSubloc(dsubloc);
         if false {
           chpl_executeOnNBAux(fn, args);
         } else {
@@ -502,7 +502,7 @@ module LocaleModel {
             // begin chpl_ftable_call(fn, args);
             chpl_comm_fork_nb(dnode, dsubloc, fn, args, args_size);
         }
-        chpl_task_setSubLoc(origSubloc);
+        chpl_task_setSubloc(origSubloc);
       }
     }
   }

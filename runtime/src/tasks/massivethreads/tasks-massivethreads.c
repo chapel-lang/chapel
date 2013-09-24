@@ -317,7 +317,7 @@ static void *ns_task_wrapper(void *args)
 
 void chpl_task_addToTaskList(chpl_fn_int_t fid,
                              void* arg,
-                             c_sublocid_t subLoc,
+                             c_sublocid_t subloc,
                              chpl_task_list_p *task_list,
                              int32_t task_list_locale,
                              chpl_bool is_begin_stmt,
@@ -326,11 +326,11 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid,
         //Create a new task directly
         chpl_bool serial_state = GET_SERIAL_STATE();
         myth_thread_t th;
-        task_private_data_t chpl_data={subLoc, serial_state};
+        task_private_data_t chpl_data={subloc, serial_state};
 
-        assert(subLoc == 0
-               || subLoc == c_sublocid_any
-               || subLoc == c_sublocid_curr);
+        assert(subloc == 0
+               || subloc == c_sublocid_any
+               || subloc == c_sublocid_curr);
 
         if (serial_state){
                 SAVE_STATE();
@@ -380,14 +380,14 @@ void chpl_task_freeTaskList(chpl_task_list_p task_list)
 
 void chpl_task_startMovedTask(chpl_fn_p fp,
                               void* a,
-                              c_sublocid_t subLoc,
+                              c_sublocid_t subloc,
                               chpl_taskID_t id,
                               chpl_bool serial_state)
 {
         myth_thread_t th;
-        task_private_data_t chpl_data={subLoc, serial_state};
+        task_private_data_t chpl_data={subloc, serial_state};
 
-        assert(subLoc == 0 || subLoc == c_sublocid_any);
+        assert(subloc == 0 || subloc == c_sublocid_any);
         assert(id == chpl_nullTaskID);
 
         //Create one task
@@ -415,17 +415,17 @@ void chpl_task_startMovedTask(chpl_fn_p fp,
         myth_detach(th);
 }
 
-c_sublocid_t chpl_task_getSubLoc(void)
+c_sublocid_t chpl_task_getSubloc(void)
 {
         return 0;
 }
 
-void chpl_task_setSubLoc(c_sublocid_t subLoc)
+void chpl_task_setSubloc(c_sublocid_t subloc)
 {
-        assert(subLoc == 0
-               || subLoc == c_sublocid_any
-               || subLoc == c_sublocid_curr);
-        getTaskPrivateData()->requestedSubloc=subLoc;
+        assert(subloc == 0
+               || subloc == c_sublocid_any
+               || subloc == c_sublocid_curr);
+        getTaskPrivateData()->requestedSubloc=subloc;
 }
 
 c_sublocid_t chpl_task_getRequestedSubloc(void)
@@ -462,7 +462,7 @@ void chpl_task_setSerial(chpl_bool new_state)
         getTaskPrivateData()->serial_state = new_state;
 }
 
-c_sublocid_t chpl_task_getNumSubLocales(void)
+c_sublocid_t chpl_task_getNumSublocales(void)
 {
 #ifdef CHPL_LOCALE_MODEL_NUM_SUBLOCALES
         return CHPL_LOCALE_MODEL_NUM_SUBLOCALES;

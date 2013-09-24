@@ -13,7 +13,7 @@ module LocaleModel {
   // This should eventually be unified with
   // CHPL_LOCALE_MODEL_NUM_SUBLOCALES which is currently defined in the
   // runtime for any locale model that doesn't use sub locales
-  param localeModelHasSubLocales = false;
+  param localeModelHasSublocales = false;
 
   use ChapelLocale;
   use DefaultRectangular;

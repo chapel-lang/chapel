@@ -132,8 +132,8 @@ void chpl_task_startMovedTask(chpl_fn_p,          // function to call
 // will actually move the task, if the specified sublocale differs
 // from the current one.
 //
-c_sublocid_t chpl_task_getSubLoc(void);
-void chpl_task_setSubLoc(c_sublocid_t);
+c_sublocid_t chpl_task_getSubloc(void);
+void chpl_task_setSubloc(c_sublocid_t);
 
 //
 // Get the sublocale the caller specified at the time the task was created.
@@ -165,7 +165,7 @@ void      chpl_task_setSerial(chpl_bool);
 // Returns the the number of sublocales the tasking layer knows about,
 // within the span of hardware it is managing tasks on.
 //
-c_sublocid_t chpl_task_getNumSubLocales(void);
+c_sublocid_t chpl_task_getNumSublocales(void);
 
 //
 // returns the value of the call stack size limit being used in

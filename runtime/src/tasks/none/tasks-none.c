@@ -159,15 +159,15 @@ void chpl_task_callMain(void (*chpl_main)(void)) {
 
 void chpl_task_addToTaskList(chpl_fn_int_t fid,
                              void* arg,
-                             c_sublocid_t subLoc,
+                             c_sublocid_t subloc,
                              chpl_task_list_p *task_list,
                              int32_t task_list_locale,
                              chpl_bool is_begin_stmt,
                              int lineno,
                              chpl_string filename) {
-  assert(subLoc == 0
-         || subLoc == c_sublocid_any
-         || subLoc == c_sublocid_curr);
+  assert(subloc == 0
+         || subloc == c_sublocid_any
+         || subloc == c_sublocid_curr);
 
   if (s_chpl_data.serial_state) {
     //
@@ -186,7 +186,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid,
     task->id = next_taskID++;
     task->fun = chpl_ftable[fid];
     task->arg = arg;
-    task->chpl_data.requestedSubloc = subLoc;
+    task->chpl_data.requestedSubloc = subloc;
     task->chpl_data.serial_state = s_chpl_data.serial_state;
     task->next = NULL;
 
@@ -209,14 +209,14 @@ void chpl_task_freeTaskList(chpl_task_list_p task_list) { }
 
 void chpl_task_startMovedTask(chpl_fn_p fp,
                               void* a,
-                              c_sublocid_t subLoc,
+                              c_sublocid_t subloc,
                               chpl_taskID_t id,
                               chpl_bool serial_state) {
   // create a task from the given function pointer and arguments
   // and append it to the end of the task pool for later execution
   chpl_task_pool_p task;
 
-  assert(subLoc == 0 || subLoc == c_sublocid_any);
+  assert(subloc == 0 || subloc == c_sublocid_any);
   assert(id == chpl_nullTaskID);
 
   task = (chpl_task_pool_p)chpl_mem_alloc(sizeof(task_pool_t),
@@ -225,7 +225,7 @@ void chpl_task_startMovedTask(chpl_fn_p fp,
   task->id = next_taskID++;
   task->fun = fp;
   task->arg = a;
-  task->chpl_data.requestedSubloc = subLoc;
+  task->chpl_data.requestedSubloc = subloc;
   task->chpl_data.serial_state = serial_state;
   task->next = NULL;
 
@@ -239,13 +239,13 @@ void chpl_task_startMovedTask(chpl_fn_p fp,
   queued_cnt++;
 }
 
-c_sublocid_t chpl_task_getSubLoc(void) { return 0; }
+c_sublocid_t chpl_task_getSubloc(void) { return 0; }
 
-void chpl_task_setSubLoc(c_sublocid_t subLoc) {
-  assert(subLoc == 0
-         || subLoc == c_sublocid_any
-         || subLoc == c_sublocid_curr);
-  s_chpl_data.requestedSubloc = subLoc;
+void chpl_task_setSubloc(c_sublocid_t subloc) {
+  assert(subloc == 0
+         || subloc == c_sublocid_any
+         || subloc == c_sublocid_curr);
+  s_chpl_data.requestedSubloc = subloc;
 }
 
 c_sublocid_t chpl_task_getRequestedSubloc(void) {
@@ -267,7 +267,7 @@ void chpl_task_setSerial(chpl_bool new_state) {
   s_chpl_data.serial_state = new_state;
 }
 
-c_sublocid_t chpl_task_getNumSubLocales(void) {
+c_sublocid_t chpl_task_getNumSublocales(void) {
 #ifdef CHPL_LOCALE_MODEL_NUM_SUBLOCALES
   return CHPL_LOCALE_MODEL_NUM_SUBLOCALES;
 #else

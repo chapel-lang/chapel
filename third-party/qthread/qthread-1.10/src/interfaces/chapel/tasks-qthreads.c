@@ -485,7 +485,7 @@ int chpl_task_createCommTask(chpl_fn_p fn,
 
 void chpl_task_addToTaskList(chpl_fn_int_t     fid,
                              void             *arg,
-                             c_sublocid_t      subLoc,
+                             c_sublocid_t      subloc,
                              chpl_task_list_p *task_list,
                              int32_t           task_list_locale,
                              chpl_bool         is_begin_stmt,
@@ -495,7 +495,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
     qthread_shepherd_id_t const here_shep_id = qthread_shep();
     chpl_bool serial_state = chpl_task_getSerial();
     chapel_wrapper_args_t wrapper_args = 
-        {chpl_ftable[fid], arg, filename, lineno, {subLoc, serial_state}};
+        {chpl_ftable[fid], arg, filename, lineno, {subloc, serial_state}};
 
     PROFILE_INCR(profile_task_addToTaskList,1);
 
@@ -505,15 +505,15 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
                                          sizeof(chapel_wrapper_args_t), &ret,
                                          here_shep_id);
         qthread_syncvar_readFF(NULL, &ret);
-    } else if (subLoc == c_sublocid_any) {
+    } else if (subloc == c_sublocid_any) {
         qthread_fork_syncvar_copyargs(chapel_wrapper, &wrapper_args,
                                       sizeof(chapel_wrapper_args_t), NULL);
     } else {
-        if (subLoc == c_sublocid_curr)
-            subLoc = (c_sublocid_t) here_shep_id;
+        if (subloc == c_sublocid_curr)
+            subloc = (c_sublocid_t) here_shep_id;
         qthread_fork_syncvar_copyargs_to(chapel_wrapper, &wrapper_args,
                                          sizeof(chapel_wrapper_args_t), NULL,
-                                         (qthread_shepherd_id_t) subLoc);
+                                         (qthread_shepherd_id_t) subloc);
     }
 }
 
@@ -534,41 +534,41 @@ void chpl_task_freeTaskList(chpl_task_list_p task_list)
 
 void chpl_task_startMovedTask(chpl_fn_p      fp,
                               void          *arg,
-                              c_sublocid_t   subLoc,
+                              c_sublocid_t   subloc,
                               chpl_taskID_t  id,
                               chpl_bool      serial_state)
 {
-    assert(subLoc != c_sublocid_curr);
+    assert(subloc != c_sublocid_curr);
     assert(id == chpl_nullTaskID);
 
     chapel_wrapper_args_t wrapper_args = 
-        {fp, arg, NULL, 0, {subLoc, serial_state}};
+        {fp, arg, NULL, 0, {subloc, serial_state}};
 
     PROFILE_INCR(profile_task_startMovedTask,1);
 
 #if 1
-    // We are timing out when the subLoc is passed as 0 (zero).  Can
+    // We are timing out when the subloc is passed as 0 (zero).  Can
     // we not time share tasks on a single shepherd?  Perhaps we can
     // only time share as many tasks on a shepherd as that shepherd
-    // has workers?  For now, force the subLoc to be "any".
-    subLoc = c_sublocid_any;
+    // has workers?  For now, force the subloc to be "any".
+    subloc = c_sublocid_any;
 #endif
-    if (subLoc == c_sublocid_any) {
+    if (subloc == c_sublocid_any) {
         qthread_fork_syncvar_copyargs(chapel_wrapper, &wrapper_args,
                                       sizeof(chapel_wrapper_args_t), NULL);
     } else {
         qthread_fork_syncvar_copyargs_to(chapel_wrapper, &wrapper_args,
                                          sizeof(chapel_wrapper_args_t), NULL,
-                                         (qthread_shepherd_id_t) subLoc);
+                                         (qthread_shepherd_id_t) subloc);
     }
 }
 
-c_sublocid_t chpl_task_getSubLoc(void)
+c_sublocid_t chpl_task_getSubloc(void)
 {
     return (c_sublocid_t) qthread_shep();
 }
 
-void chpl_task_setSubLoc(c_sublocid_t subLoc)
+void chpl_task_setSubloc(c_sublocid_t subloc)
 {
     qthread_shepherd_id_t curr_shep;
 
@@ -583,16 +583,16 @@ void chpl_task_setSubLoc(c_sublocid_t subLoc)
     //       before tasking init and in any case would be done from the
     //       main thread of execution, which doesn't have a shepherd.
     //       The code below wouldn't work in that situation.
-    if (subLoc != c_sublocid_curr &&
+    if (subloc != c_sublocid_curr &&
         (curr_shep = qthread_shep()) != NO_SHEPHERD) {
         chapel_tls_t * data = chapel_get_tasklocal_possibly_from_non_task();
         if (data) {
-            data->chpl_data.requestedSubloc = subLoc;
+            data->chpl_data.requestedSubloc = subloc;
         }
 
-        if (subLoc != c_sublocid_any &&
-            (qthread_shepherd_id_t) subLoc != curr_shep) {
-            qthread_migrate_to((qthread_shepherd_id_t) subLoc);
+        if (subloc != c_sublocid_any &&
+            (qthread_shepherd_id_t) subloc != curr_shep) {
+            qthread_migrate_to((qthread_shepherd_id_t) subloc);
         }
     }
 }
@@ -640,7 +640,7 @@ void chpl_task_setSerial(chpl_bool state)
     PROFILE_INCR(profile_task_setSerial,1);
 }
 
-c_sublocid_t chpl_task_getNumSubLocales(void)
+c_sublocid_t chpl_task_getNumSublocales(void)
 {
     c_sublocid_t num_sublocs = (c_sublocid_t) qthread_num_shepherds();
 
