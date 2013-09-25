@@ -663,7 +663,7 @@ static void build_constructor(ClassType* ct) {
   if (ct->symbol->hasFlag(FLAG_REF) ||
       isSyncType(ct)) {
     // For ref, sync and single classes, just allocate space.
-    allocCall = here_alloc(fn->_this);
+    allocCall = callChplHereAlloc(fn->_this);
     fn->insertAtTail(new CallExpr(PRIM_MOVE, fn->_this, allocCall));
   } else if (!ct->symbol->hasFlag(FLAG_TUPLE)) {
     // Create a meme (whatever that is).

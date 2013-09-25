@@ -585,12 +585,13 @@ protoIteratorClass(FnSymbol* fn) {
   ii->getIterator->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "ir", ii->irecord));
   VarSymbol* ret = newTemp("_ic_", ii->iclass);
   ii->getIterator->insertAtTail(new DefExpr(ret));
-  CallExpr* icAllocCall = here_alloc(ret);
+  CallExpr* icAllocCall = callChplHereAlloc(ret->typeInfo()->symbol);
   ii->getIterator->insertAtTail(new CallExpr(PRIM_MOVE, ret, icAllocCall));
   ii->getIterator->insertAtTail(new CallExpr(PRIM_SETCID, ret));
   ii->getIterator->insertAtTail(new CallExpr(PRIM_RETURN, ret));
   fn->defPoint->insertBefore(new DefExpr(ii->getIterator));
   ii->iclass->initializer = ii->getIterator;
+  normalize(ii->getIterator);
   resolveFns(ii->getIterator);  // No shortcuts.
 }
 
@@ -2782,16 +2783,55 @@ static void resolveMove(CallExpr* call) {
                 toString(lhsType));
     Type* lhsBaseType = lhsType->getValType();
     Type* rhsBaseType = rhsType->getValType();
-    if (rhsType != dtNil &&
+    bool isChplHereAlloc = false;
+    // Fix up calls inserted by callChplHereAlloc()
+    if (CallExpr* rhsCall = toCallExpr(rhs)) {
+      // Here we are going to fix up calls inserted by
+      // callChplHereAlloc() and callChplHereFree()
+      //
+      // Currently this code assumes that such primitives are only
+      // inserted by the compiler.  TODO: Add a check to make sure
+      // these are the ones added by the above functions.
+      //
+      if (rhsCall->isPrimitive(PRIM_SIZEOF)) {
+        // Fix up arg to sizeof(), as we may not have known the
+        // type earlier
+        SymExpr* sizeSym = toSymExpr(rhsCall->get(1));
+        INT_ASSERT(sizeSym);
+        rhs->replace(new CallExpr(PRIM_SIZEOF, sizeSym->var->typeInfo()->symbol));
+        return;
+      } else if (rhsCall->isPrimitive(PRIM_CAST_TO_VOID_STAR)) {
+        if (isReferenceType(rhsCall->get(1)->typeInfo())) {
+          // Add a dereference as needed, as we did not have complete
+          // type information earlier
+          SymExpr* castVar = toSymExpr(rhsCall->get(1));
+          INT_ASSERT(castVar);
+          VarSymbol* derefTmp = newTemp("castDeref", castVar->typeInfo()->getValType());
+          call->insertBefore(new DefExpr(derefTmp));
+          call->insertBefore(new CallExpr(PRIM_MOVE, derefTmp,
+                                          new CallExpr(PRIM_DEREF,
+                                                       new SymExpr(castVar->var))));
+          rhsCall->replace(new CallExpr(PRIM_CAST_TO_VOID_STAR,
+                                        new SymExpr(derefTmp)));
+        }
+      } else if (rhsCall->isResolved() == gChplHereAlloc) {
+        // Insert cast below for calls to chpl_here_*alloc()
+        isChplHereAlloc = true;
+      }
+    }
+    if (!isChplHereAlloc && rhsType != dtNil &&
         rhsBaseType != lhsBaseType &&
         !isDispatchParent(rhsBaseType, lhsBaseType))
       USR_FATAL(userCall(call), "type mismatch in assignment from %s to %s",
                 toString(rhsType), toString(lhsType));
-    if (rhsType != lhsType && isDispatchParent(rhsBaseType, lhsBaseType)) {
-      Symbol* tmp = newTemp("_cast_tmp_", rhsType);
+    if (isChplHereAlloc ||
+        (rhsType != lhsType && isDispatchParent(rhsBaseType, lhsBaseType))) {
+      Symbol* tmp = newTemp("cast_tmp", rhsType);
       call->insertBefore(new DefExpr(tmp));
       call->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs->remove()));
-      call->insertAtTail(new CallExpr(PRIM_CAST, lhsBaseType->symbol, tmp));
+      call->insertAtTail(new CallExpr(PRIM_CAST,
+                                      isChplHereAlloc ? lhs->type->symbol :
+                                      lhsBaseType->symbol, tmp));
     }
 }
 
@@ -4566,7 +4606,6 @@ postFold(Expr* expr) {
                call->isPrimitive(PRIM_SINGLE_IS_FULL) ||
                call->isPrimitive(PRIM_EXECUTE_TASKS_IN_LIST) ||
                call->isPrimitive(PRIM_FREE_TASK_LIST) ||
-               call->isPrimitive(PRIM_CHPL_FREE) ||
                (call->primitive && 
                 (!strncmp("_fscan", call->primitive->name, 6) ||
                  !strcmp("_readToEndOfLine", call->primitive->name) ||

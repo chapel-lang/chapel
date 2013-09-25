@@ -109,8 +109,6 @@ enum PrimitiveTag {
 
   PRIM_SIZEOF,
 
-  PRIM_CHPL_ALLOC,
-  PRIM_CHPL_FREE,               // only for variables on heap?
   PRIM_INIT_FIELDS,             // initialize fields of a temporary record
   PRIM_PTR_EQUAL,
   PRIM_PTR_NOTEQUAL,

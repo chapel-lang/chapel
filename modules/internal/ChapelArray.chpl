@@ -1965,7 +1965,7 @@ module ChapelArray {
   }
   
   inline proc _freeIterator(ic: _iteratorClass) {
-    __primitive("chpl_mem_free", ic);
+    chpl_here_free(__primitive("cast_to_void_star", ic));
   }
   
   inline proc _freeIterator(x: _tuple) {

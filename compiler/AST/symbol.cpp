@@ -55,6 +55,8 @@ VarSymbol *gBoundsChecking = NULL;
 VarSymbol* gPrivatization = NULL;
 VarSymbol* gLocal = NULL;
 VarSymbol* gNodeID = NULL;
+FnSymbol* gChplHereAlloc = NULL;
+FnSymbol* gChplHereFree = NULL;
 Symbol *gCLine = NULL;
 Symbol *gCFile = NULL;
 

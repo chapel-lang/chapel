@@ -4842,43 +4842,6 @@ GenRet CallExpr::codegen() {
       ret = size;
       break;
     }
-    case PRIM_CHPL_ALLOC:
-    { // (resultType*)chpl_mem_alloc(sizeof(x), md, lineno, filenam);
-      GenRet size;
-
-      // If Chapel class or record
-      if (ClassType* ct = toClassType(toTypeSymbol(typeInfo()->symbol)->type)) {
-        size = codegenSizeof(ct->classStructName(true));
-      } else {
-        size = codegenSizeof(typeInfo());
-      }
-
-      GenRet description = codegenAdd(get(2), codegenUseGlobal("CHPL_RT_MD_NUM"));
-      GenRet allocated;
-      allocated = codegenCallExpr("chpl_mem_alloc", size,
-                                  description, get(3), get(4));
-
-      ret = codegenCast(typeInfo()->symbol->cname, allocated);
-      break;
-    }
-    case PRIM_CHPL_FREE: // This version is used internally.
-    {
-      if (fNoMemoryFrees)
-        break;
-      INT_ASSERT(numActuals() == 3);
-
-      Expr * ptrExpr = get(1);
-      if( ptrExpr->typeInfo()->symbol->hasFlag(FLAG_DATA_CLASS))
-        INT_FATAL(this, "cannot delete data class");
-      GenRet ptr; 
-      ptr = codegenValue(ptrExpr);
-      if (ptrExpr->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        ptr = codegenRaddr(ptr);
-      }
-      codegenCall("chpl_mem_free", codegenCastToVoidStar(ptr),
-                  get(2), get(3));
-      break;
-    }
     case PRIM_CAST: 
     {
       if (typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
@@ -5570,21 +5533,76 @@ get_constant(Expr *e) {
 // This builds an allocation of enough space to hold a variable of the
 // given type.
 //
-// For now we produce a PRIM_CHPL_ALLOC here.  Eventually it would be
-// nice to directly produce a call to chpl_here_alloc().  Currently we
-// can't do that because chpl_here_alloc() is generic in the types of
-// its first argument and its return, and some of the calls to this
-// function occur after resolution.  In addition, in several places in
-// the compiler we look specifically for PRIM_CHPL_ALLOC in the AST,
-// and we would presumably need to be able to find the equivalent AST
-// nodes even if we switched to emitting direct calls.
-CallExpr* callChplHereAlloc(Type* t, VarSymbol* md) {
-  return new CallExpr(PRIM_CHPL_ALLOC, t->symbol, md);
+// This function should be used *before* resolution
+CallExpr* callChplHereAlloc(Symbol *s, VarSymbol* md) {
+  CallExpr* sizeExpr;
+  VarSymbol* mdExpr;
+  INT_ASSERT(!resolved);
+  // Since the type is not necessarily known, resolution will fix up
+  // this sizeof() call to take the resolved type of s as an argument
+  sizeExpr = new CallExpr(PRIM_SIZEOF, new SymExpr(s));
+  mdExpr = (md != NULL) ? md : newMemDesc(s->name);
+  CallExpr* allocExpr = new CallExpr("chpl_here_alloc", sizeExpr, mdExpr);
+  // Again, as we don't know the type yet, we leave it to resolution
+  // to put in the cast to the proper type
+  return allocExpr;
 }
 
-// Similar to callChplHereAlloc(), above.
+// This insert normalized call expressions for allocation of enough
+// space to hold a variable of the given type.
+//
+// This function should be used *after* resolution
+void insertChplHereAlloc(Expr *call, bool insertAfter, Symbol *sym,
+                         Type* t, VarSymbol* md) {
+  INT_ASSERT(resolved);
+  ClassType* ct = toClassType(toTypeSymbol(t->symbol)->type);
+  Symbol* sizeTmp = newTemp("chpl_here_alloc_size", SIZE_TYPE);
+  CallExpr *sizeExpr = new CallExpr(PRIM_MOVE, sizeTmp,
+                                    new CallExpr(PRIM_SIZEOF,
+                                                 (ct != NULL) ?
+                                                 ct->symbol : t->symbol));
+  VarSymbol* mdExpr = (md != NULL) ? md : newMemDesc(t->symbol->name);
+  Symbol *allocTmp = newTemp("chpl_here_alloc_tmp", dtOpaque);
+  CallExpr* allocExpr = new CallExpr(PRIM_MOVE, allocTmp,
+                                     new CallExpr(gChplHereAlloc,
+                                                  sizeTmp, mdExpr));
+  CallExpr* castExpr = new CallExpr(PRIM_MOVE, sym,
+                                    new CallExpr(PRIM_CAST,
+                                                 t->symbol, allocTmp));
+  if (insertAfter) {
+    call->insertAfter(castExpr);
+    call->insertAfter(allocExpr);
+    call->insertAfter(sizeExpr);
+    call->insertAfter(new DefExpr(allocTmp));
+    call->insertAfter(new DefExpr(sizeTmp));
+  } else {
+    call->insertBefore(new DefExpr(sizeTmp));
+    call->insertBefore(new DefExpr(allocTmp));
+    call->insertBefore(sizeExpr);
+    call->insertBefore(allocExpr);
+    call->insertBefore(castExpr);
+  }
+}
+
+
+// Similar to callChplHereAlloc(), above but this can be called any time
 CallExpr* callChplHereFree(BaseAST* p) {
-  return new CallExpr(PRIM_CHPL_FREE, p);
+  // Don't have a good way to do the following?
+  //if (fNoMemoryFrees)
+  //  return;
+
+  if( p->typeInfo()->symbol->hasFlag(FLAG_DATA_CLASS))
+    INT_FATAL(p->typeInfo()->symbol, "cannot delete data class");
+
+  // Note: Prior to resolution, we do not have complete type info, and
+  // so resolution will fix up this cast operation if a dereference is
+  // needed
+  CallExpr* castExpr = new CallExpr(PRIM_CAST_TO_VOID_STAR, p);
+  if (!resolved)
+    return new CallExpr("chpl_here_free", castExpr);
+  else {
+    return new CallExpr(gChplHereFree, castExpr);
+  }
 }
 
 

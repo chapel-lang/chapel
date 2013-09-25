@@ -56,6 +56,11 @@ returnInfoInt64(CallExpr* call) {
   return dtInt[INT_SIZE_64];
 }
 
+static Type*
+returnInfoSizeType(CallExpr* call) {
+  return SIZE_TYPE;
+}
+
 //
 // Since 'int' is equivalent to 'int(64)' currently, this doesn't do
 // anything different than returnInfoInt64 does, but it's intended to
@@ -186,16 +191,6 @@ returnInfoArrayIndexValue(CallExpr* call) {
 static Type*
 returnInfoArrayIndex(CallExpr* call) {
   return returnInfoArrayIndexValue(call)->refType;
-}
-
-static Type*
-returnInfoChplAlloc(CallExpr* call) {
-  SymExpr* sym = toSymExpr(call->get(1));
-  INT_ASSERT(sym);
-  Type* type = sym->var->type;
-  if (type->symbol->hasFlag(FLAG_WIDE_CLASS))
-    type = type->getField("addr")->type;
-  return type;
 }
 
 static Type*
@@ -469,11 +464,7 @@ initPrimitive() {
   prim_def(PRIM_SET_SERIAL, "task_set_serial", returnInfoVoid, true);
 
   // These are used for task-aware allocation.
-  prim_def(PRIM_SIZEOF, "sizeof", returnInfoDefaultInt);
-
-  // These are satisfied directly by the runtime.
-  prim_def(PRIM_CHPL_ALLOC, "chpl_mem_alloc", returnInfoChplAlloc, true, true);
-  prim_def(PRIM_CHPL_FREE, "chpl_mem_free", returnInfoVoid, true, true);
+  prim_def(PRIM_SIZEOF, "sizeof", returnInfoSizeType);
 
   prim_def(PRIM_INIT_FIELDS, "chpl_init_record", returnInfoVoid, true);
   prim_def(PRIM_PTR_EQUAL, "ptr_eq", returnInfoBool);

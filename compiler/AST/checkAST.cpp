@@ -162,8 +162,6 @@ void checkPrimitives()
      case PRIM_GET_SERIAL:              // get serial state
      case PRIM_SET_SERIAL:              // set serial state to true or false
      case PRIM_SIZEOF:
-     case PRIM_CHPL_ALLOC:
-     case PRIM_CHPL_FREE:               // only for variables on heap?
      case PRIM_INIT_FIELDS:             // initialize fields of a temporary record
      case PRIM_PTR_EQUAL:
      case PRIM_PTR_NOTEQUAL:

@@ -180,9 +180,8 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
   if (!alloc)
     return false;
   if (!
-      (alloc->isPrimitive(PRIM_CHPL_ALLOC) ||
-       (alloc->isResolved() &&
-        alloc->isResolved()->hasFlag(FLAG_ALLOCATOR))))
+      (alloc->isResolved() &&
+       alloc->isResolved()->hasFlag(FLAG_ALLOCATOR)))
     return false;
 
   //
@@ -197,15 +196,14 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
       // The use must appear as the first argument in the containing expression.
       if (se != call->get(1))
         return false;
-
       // The use must be the first argument of one of the following primitives.
       if (!(call->isPrimitive(PRIM_SET_MEMBER) ||
             call->isPrimitive(PRIM_GET_MEMBER) ||
             call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
             call->isPrimitive(PRIM_SETCID) ||
-            call->isPrimitive(PRIM_CHPL_FREE) ||
             (call->isResolved() &&
-             call->isResolved()->hasFlag(FLAG_ALLOCATOR))))
+             (call->isResolved()->hasFlag(FLAG_ALLOCATOR) ||
+             call->isResolved()->hasFlag(FLAG_LOCALE_MODEL_FREE)))))
         return false;
     }
   }
@@ -253,7 +251,8 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
         call->replace(use);
         addUse(useMap, use);
       } else if (call->isPrimitive(PRIM_SETCID) ||
-                 call->isPrimitive(PRIM_CHPL_FREE)) {
+                 (call->isResolved() &&
+                  call->isResolved()->hasFlag(FLAG_LOCALE_MODEL_FREE))) {
         //
         // we can remove the setting of the cid because it is never
         // used and we are otherwise able to remove the class

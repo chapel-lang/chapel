@@ -319,54 +319,38 @@ module LocaleModel {
   // support for memory management
   //
 
-  // Here be dragons: If the return type is specified, then normalize.cpp
-  // inserts an initializer for the return value which calls its constructor,
-  // which calls chpl_here_alloc ad infinitum.  But if the return type is
-  // left off, it works!
-
   // The allocator pragma is used by scalar replacement.
   pragma "allocator"
   pragma "no sync demotion"
-  proc chpl_here_alloc(x, md:int(16)) {
+  pragma "locale model alloc"
+  proc chpl_here_alloc(size:int, md:int(16)) {
     pragma "insert line file info"
       extern proc chpl_mem_alloc(size:int, md:int(16)) : opaque;
-    var nbytes = __primitive("sizeof", x);
-    var mem = chpl_mem_alloc(nbytes, md + chpl_memhook_md_num());
-    return __primitive("cast", x.type, mem);
+    return chpl_mem_alloc(size, md + chpl_memhook_md_num());
   }
 
   pragma "allocator"
   pragma "no sync demotion"
-  proc chpl_here_calloc(x, number:int, md:int(16)) {
+  proc chpl_here_calloc(size:int, number:int, md:int(16)) {
     pragma "insert line file info"
       extern proc chpl_mem_calloc(number:int, size:int, md:int(16)) : opaque;
-    var nbytes = __primitive("sizeof", x);
-    var mem = chpl_mem_calloc(number, nbytes, md + chpl_memhook_md_num());
-    return __primitive("cast", x.type, mem);
+    return chpl_mem_calloc(number, size, md + chpl_memhook_md_num());
   }
 
   pragma "allocator"
   pragma "no sync demotion"
-  proc chpl_here_realloc(x, md:int(16)) {
-    // TODO: The pointer should really be of type opaque, but we don't
-    // handle object ==> opaque casts correctly.  (In codegen, opaque behaves
-    // like an lvalue, but in the type system it isn't one.)
+  proc chpl_here_realloc(ptr:opaque, size:int, md:int(16)) {
     pragma "insert line file info"
       extern proc chpl_mem_realloc(ptr:opaque, size:int, md:int(16)) : opaque;
-    var nbytes = __primitive("sizeof", x);
-    var mem = chpl_mem_realloc(__primitive("cast_to_void_star", x), nbytes,
-                               md + chpl_memhook_md_num());
-    return __primitive("cast", x.type, mem);
+    return chpl_mem_realloc(ptr, size, md + chpl_memhook_md_num());
   }
 
   pragma "no sync demotion"
-  proc chpl_here_free(x) {
-    // TODO: The pointer should really be of type opaque, but we don't
-    // handle object ==> opaque casts correctly.  (In codegen, opaque behaves
-    // like an lvalue, but in the type system it isn't one.)
+  pragma "locale model free"
+  proc chpl_here_free(ptr:opaque) {
     pragma "insert line file info"
       extern proc chpl_mem_free(ptr:opaque): void;
-    chpl_mem_free(__primitive("cast_to_void_star", x));
+    chpl_mem_free(ptr);
   }
 
 

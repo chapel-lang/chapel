@@ -367,6 +367,8 @@ extern VarSymbol *gBoundsChecking;
 extern VarSymbol *gPrivatization;
 extern VarSymbol *gLocal;
 extern VarSymbol *gNodeID;
+extern FnSymbol *gChplHereAlloc;
+extern FnSymbol *gChplHereFree;
 extern Symbol *gCLine, *gCFile;
 
 extern Symbol *gSyncVarAuxFields;

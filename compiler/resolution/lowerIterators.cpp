@@ -511,8 +511,8 @@ createArgBundleCopyFn(ClassType* ct, FnSymbol* loopBodyFnWrapper) {
   BlockStmt* block = new BlockStmt();
   Symbol* argBundle = newTemp("argBundle", ct);
   block->insertAtTail(new DefExpr(argBundle));
-  CallExpr* bundle_alloc = callChplHereAlloc(ct, newMemDesc("bundled args"));
-  block->insertAtTail(new CallExpr(PRIM_MOVE, argBundle, bundle_alloc));
+  insertChplHereAlloc(block->body.tail, true /*insertAfter*/,
+                      argBundle, ct, newMemDesc("bundled args"));
   Symbol* loopBodyFnArgsTmp = newTemp("loopBodyFnArgsTmp", ct);
   block->insertAtTail(new DefExpr(loopBodyFnArgsTmp));
   block->insertAtTail(new CallExpr(PRIM_MOVE, loopBodyFnArgsTmp, new CallExpr(PRIM_CAST, ct->symbol, loopBodyFnArgsArg)));
@@ -591,8 +591,8 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
   // args = (ct*)malloc(sizeof(ct));
   VarSymbol* argBundle = newTemp("argBundle", ct);
   iteratorFnCall->insertBefore(new DefExpr(argBundle));
-  CallExpr* argBundleMem = callChplHereAlloc(ct, newMemDesc("bundled args"));
-  iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, argBundle, argBundleMem));
+  insertChplHereAlloc(iteratorFnCall, false /*insertAfter*/, argBundle,
+                      ct, newMemDesc("bundled args"));
   iteratorFnCall->insertAtTail(argBundle);
   iteratorFnCall->insertAfter(callChplHereFree(argBundle));
 

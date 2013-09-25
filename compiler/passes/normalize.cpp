@@ -56,7 +56,7 @@ void normalize(void) {
       call->insertBefore(new DefExpr(tmp));
       call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(1)->remove()));
       call->insertBefore(new CallExpr("~chpl_destroy", gMethodToken, tmp));
-      CallExpr* freeExpr = new CallExpr("chpl_here_free", tmp);
+      CallExpr* freeExpr = callChplHereFree(tmp);
       if (fLocal) {
         call->insertBefore(freeExpr);
       } else {
@@ -77,6 +77,14 @@ void normalize(void) {
     if (!fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) &&
         !fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
       fixup_array_formals(fn);
+    if (fn->hasFlag(FLAG_LOCALE_MODEL_ALLOC)) {
+      INT_ASSERT(gChplHereAlloc==NULL);
+      gChplHereAlloc = fn;
+    }
+    if (fn->hasFlag(FLAG_LOCALE_MODEL_FREE)) {
+      INT_ASSERT(gChplHereFree==NULL);
+      gChplHereFree = fn;
+    }
     clone_parameterized_primitive_methods(fn);
     fixup_query_formals(fn);
     change_method_into_constructor(fn);

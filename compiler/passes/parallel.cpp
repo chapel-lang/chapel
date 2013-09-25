@@ -112,8 +112,8 @@ bundleArgs(FnSymbol* fn, CallExpr* fcall, BundleArgsFnData &baData) {
   // create the class variable instance and allocate space for it
   VarSymbol *tempc = newTemp(astr("_args_for", fn->name), ctype);
   fcall->insertBefore( new DefExpr( tempc));
-  CallExpr* tempc_alloc = callChplHereAlloc(ctype, newMemDesc("bundled args"));
-  fcall->insertBefore(new CallExpr(PRIM_MOVE, tempc, tempc_alloc));
+  insertChplHereAlloc(fcall, false /*insertAfter*/, tempc,
+                      ctype, newMemDesc("bundled args"));
 
   // set the references in the class instance
   int i = 1;
@@ -755,10 +755,9 @@ makeHeapAllocations() {
         ((useMap.get(var) && useMap.get(var)->n > 0) ||
          (defMap.get(var) && defMap.get(var)->n > 0))) {
       SET_LINENO(var->defPoint);
-      CallExpr* alloc_call =
-        callChplHereAlloc(heapType, newMemDesc("local heap-converted data"));
-      var->defPoint->getStmtExpr()->insertAfter(new CallExpr(PRIM_MOVE, var,
-                                                             alloc_call));
+      insertChplHereAlloc(var->defPoint->getStmtExpr(),
+                          true /*insertAfter*/,var, heapType,
+                          newMemDesc("local heap-converted data"));
       heapAllocatedVars.add(var);
     }
 
@@ -1386,9 +1385,14 @@ insertWideReferences(void) {
   heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_MOVE, tmp, nodeID));
   heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_MOVE, tmpBool, new CallExpr(PRIM_EQUAL, tmp, new_IntSymbol(0))));
   BlockStmt* block = new BlockStmt();
+  DefExpr *dummy = new DefExpr(newTemp());
+  block->insertAtTail(dummy);
   forv_Vec(Symbol, sym, heapVars) {
-    block->insertAtTail(new CallExpr(PRIM_MOVE, sym, callChplHereAlloc(sym->type->getField("addr")->type, newMemDesc("global heap-converted data"))));
+    insertChplHereAlloc(dummy, false /*insertAfter*/, sym,
+                        sym->type->getField("addr")->type,
+                        newMemDesc("global heap-converted data"));
   }
+  dummy->remove();
   heapAllocateGlobals->insertAtTail(new CondStmt(new SymExpr(tmpBool), block));
   int i = 0;
   forv_Vec(Symbol, sym, heapVars) {

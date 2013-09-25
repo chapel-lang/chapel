@@ -193,8 +193,7 @@ narrowSym(Symbol* sym, WideInfo* wi) {
     if (CallExpr* call = toCallExpr(def->parentExpr)) {
       if (call->isPrimitive(PRIM_MOVE)) {
         if (CallExpr* rhs = toCallExpr(call->get(2))) {
-          if (rhs->isPrimitive(PRIM_CHPL_ALLOC) ||
-              rhs->isPrimitive(PRIM_GET_PRIV_CLASS) ||
+          if (rhs->isPrimitive(PRIM_GET_PRIV_CLASS) ||
               rhs->isPrimitive(PRIM_ADDR_OF))
             continue;
           if (rhs->isPrimitive(PRIM_GET_MEMBER)) {
@@ -231,6 +230,8 @@ narrowSym(Symbol* sym, WideInfo* wi) {
             continue;
           }
           if (FnSymbol* fn = rhs->isResolved()) {
+            if (fn->hasFlag(FLAG_LOCALE_MODEL_ALLOC))
+              continue;
             if ((isWideRef && fn->retType->symbol->hasFlag(FLAG_WIDE)) ||
                 (isWideObj && fn->retType->symbol->hasFlag(FLAG_WIDE_CLASS)))
               addNarrowDep(fn->getReturnSymbol(), sym);
@@ -266,7 +267,6 @@ narrowSym(Symbol* sym, WideInfo* wi) {
           (call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE) && call->get(1) == use) ||
           (call->isPrimitive(PRIM_CAST) && call->get(2) == use) ||
           (call->isPrimitive(PRIM_DEREF)) ||
-          //          (call->isPrimitive(PRIM_GET_LOCALEID)) ||
           (call->isPrimitive(PRIM_SYNC_INIT)) ||
           (call->isPrimitive(PRIM_SYNC_LOCK)) ||
           (call->isPrimitive(PRIM_SYNC_DESTROY)) ||
@@ -274,8 +274,10 @@ narrowSym(Symbol* sym, WideInfo* wi) {
           (call->isPrimitive(PRIM_PROCESS_TASK_LIST)) ||
           (call->isPrimitive(PRIM_STRING_COPY)) ||
           (call->isPrimitive(PRIM_SETCID)) ||
-          (call->isPrimitive(PRIM_CHPL_ALLOC) && call->get(1) == use) ||
-          (call->isPrimitive(PRIM_CHPL_FREE) && call->get(1) == use) ||
+          (call->isResolved() &&
+           (call->isResolved()->hasFlag(FLAG_LOCALE_MODEL_ALLOC) ||
+            call->isResolved()->hasFlag(FLAG_LOCALE_MODEL_FREE)) &&
+           call->get(1)==use) ||
           (isOpEqualPrim(call)) )
         continue;
       if (call->isResolved() ||

@@ -216,13 +216,9 @@ bool get_string(Expr *e, const char **s); // false is failure
 const char* get_string(Expr* e); // fatal on failure
 VarSymbol *get_constant(Expr *e);
 
-inline CallExpr* here_alloc(Symbol* dest)
-{
-  return new CallExpr("chpl_here_alloc", dest, 
-                      newMemDesc(dest->typeInfo()->symbol->name));
-}
-
-CallExpr* callChplHereAlloc(Type* t, VarSymbol* md);
+CallExpr* callChplHereAlloc(Symbol *s, VarSymbol* md = NULL);
+void insertChplHereAlloc(Expr *call, bool insertAfter, Symbol *sym,
+                         Type* t, VarSymbol* md = NULL);
 CallExpr* callChplHereFree(BaseAST* p);
 
 #define for_exprs_postorder(e, expr)                            \
