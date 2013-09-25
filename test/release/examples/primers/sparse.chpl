@@ -137,6 +137,27 @@ writeSpsArr();
 
 
 //
+// Values can only be assigned to array positions that are members in
+// the sparse domain index set.  The boolean method Domain.member(x) 
+// can be used to check whether a certain index (x) is a member of the
+// domain's index set. Note that, in multi-dimensional domains, the member
+// method can accept the index as a tuple like spsDom.member((i,j)) 
+// or as a parameter list like spsDom.member(i,j). Below, we print '*' for 
+// the positions that are members in the sparse domain, and '.' otherwise.
+//
+writeln("Positions that are members in the sparse domain are marked by a '*':");
+
+for (i,j) in dnsDom {
+  if spsDom.member(i,j) then 
+    write("* "); // (i,j) is a member in the sparse index set
+  else 
+    write(". "); // (i,j) is not a member in the sparse index set
+	
+  if (j == n) then writeln();
+}
+writeln();
+
+//
 // Like other domains and arrays, sparse Chapel domains and arrays can
 // be iterated over...
 //

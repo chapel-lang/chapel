@@ -815,13 +815,17 @@ module ChapelArray {
     proc alignedLow return _value.dsiAlignedLow;
     proc alignedHigh return _value.dsiAlignedHigh;
   
-    proc member(i) {
-      if isRectangularDom(this) then
+    proc member(i: rank*_value.idxType) {
+      if isRectangularDom(this) || isSparseDom(this) then
         return _value.dsiMember(_makeIndexTuple(rank, i));
       else
-        return _value.dsiMember(i);
+        return _value.dsiMember(i(1));
     }
-  
+	
+    proc member(i: _value.idxType ...rank) {
+      return member(i);
+    }
+	
     // 1/5/10: do we want to support order() and position()?
     proc indexOrder(i) return _value.dsiIndexOrder(_makeIndexTuple(rank, i));
   
