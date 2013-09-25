@@ -486,31 +486,6 @@ const char* toString(FnSymbol* fn) {
 }
 
 
-static void
-checkResolveRemovedPrims(void) {
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->primitive) {
-      switch(call->primitive->tag) {
-        case PRIM_INIT:
-        case PRIM_LOGICAL_FOLDER:
-        case PRIM_TYPEOF:
-        case PRIM_TYPE_TO_STRING:
-        case PRIM_IS_STAR_TUPLE_TYPE:
-        case PRIM_IS_SUBTYPE:
-        case PRIM_TUPLE_EXPAND:
-        case PRIM_QUERY:
-        case PRIM_ERROR:
-          if (call->parentSymbol)
-            INT_FATAL("Primitive should no longer be in AST");
-          break;
-        default:
-          break;
-      }
-    }
-  }
-}
-
-
 static FnSymbol*
 protoIteratorMethod(IteratorInfo* ii, const char* name, Type* retType) {
   FnSymbol* fn = new FnSymbol(name);
@@ -5403,8 +5378,6 @@ resolve() {
   }
   visibleFunctionMap.clear();
   visibilityBlockCache.clear();
-
-  checkResolveRemovedPrims();
 
   resolved = true;
 }

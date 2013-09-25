@@ -2,7 +2,9 @@
 
 #include "checks.h"
 
+#include "expr.h"
 #include "passes.h"
+#include "primitive.h"
 
 //
 // Static function declarations.
@@ -15,6 +17,9 @@ static void check_afterNormalization(); // Checks to be performed after
                                         // normalization.
 static void check_afterResolution(); // Checks to be performed after every pass
                                      // following resolution.
+static void checkResolveRemovedPrims(void); // Checks that certain primitives
+                                            // are removed after resolution
+
 
 
 //
@@ -85,6 +90,7 @@ void check_createTaskFunctions()
 
 void check_resolve()
 {
+  checkResolveRemovedPrims();
   check_afterEveryPass();
   check_afterNormalization();
 }
@@ -340,3 +346,30 @@ static void check_afterResolution()
   }
 }
 
+
+//
+// Checks that certain primitives are removed after function resolution
+//
+static void
+checkResolveRemovedPrims(void) {
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->primitive) {
+      switch(call->primitive->tag) {
+        case PRIM_INIT:
+        case PRIM_LOGICAL_FOLDER:
+        case PRIM_TYPEOF:
+        case PRIM_TYPE_TO_STRING:
+        case PRIM_IS_STAR_TUPLE_TYPE:
+        case PRIM_IS_SUBTYPE:
+        case PRIM_TUPLE_EXPAND:
+        case PRIM_QUERY:
+        case PRIM_ERROR:
+          if (call->parentSymbol)
+            INT_FATAL("Primitive should no longer be in AST");
+          break;
+        default:
+          break;
+      }
+    }
+  }
+}
