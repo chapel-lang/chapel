@@ -83,7 +83,6 @@ static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call);
 static void makeRefType(Type* type);
 static void resolveAutoCopy(Type* type);
 static void resolveAutoDestroy(Type* type);
-static void checkResolveRemovedPrims(void);
 static FnSymbol*
 protoIteratorMethod(IteratorInfo* ii, const char* name, Type* retType);
 static void protoIteratorClass(FnSymbol* fn);
