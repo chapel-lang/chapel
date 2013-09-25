@@ -7,6 +7,7 @@ module DefaultRectangular {
   config param debugDefaultDist = false;
   config param debugDefaultDistBulkTransfer = false;
   config param debugDataPar = false;
+  config param debugDataParNuma = false;
   
   config param defaultDoRADOpt = true;
   config param defaultDisableLazyRADOpt = false;
@@ -115,75 +116,121 @@ module DefaultRectangular {
     }
   
     iter these(param tag: iterKind) where tag == iterKind.leader {
-      if debugDefaultDist then
-        writeln("*** In domain/array leader code:"); // this = ", this);
-      const numTasks = if dataParTasksPerLocale==0 then here.numCores
-                       else dataParTasksPerLocale;
+      const numSublocs = here.getChildCount();
       const ignoreRunning = dataParIgnoreRunningTasks;
       const minIndicesPerTask = dataParMinGranularity;
-      if debugDataPar {
-        writeln("### numTasks = ", numTasks);
-        writeln("### ignoreRunning = ", ignoreRunning);
-        writeln("### minIndicesPerTask = ", minIndicesPerTask);
-      }
-  
-      if debugDefaultDist then
-        writeln("    numTasks=", numTasks, " (", ignoreRunning,
-                "), minIndicesPerTask=", minIndicesPerTask);
-  
-      var (numChunks, parDim) = _computeChunkStuff(numTasks, ignoreRunning,
-                                                   minIndicesPerTask, ranges);
-      if debugDefaultDist then
-        writeln("    numChunks=", numChunks, " parDim=", parDim,
-                " ranges(", parDim, ").length=", ranges(parDim).length);
-  
-      if debugDataPar then writeln("### numChunks=", numChunks, " (parDim=", parDim, ")");
-  
-      if (CHPL_TARGET_PLATFORM != "cray-xmt") {
-        if numChunks == 1 {
-          if rank == 1 {
-            yield (0..ranges(1).length-1,);
-          } else {
-            var block: rank*range(idxType);
+      if (numSublocs != 0) {
+        if debugDataParNuma then
+          writeln("numSublocs ", numSublocs, " numCores ", here.numCores, " ranges ", ranges);
+        const numTasks = numSublocs;
+        const (numChunks, parDim) = _computeChunkStuff(numTasks, ignoreRunning,
+                                                       minIndicesPerTask, ranges);
+        if debugDataParNuma then
+          writeln("(numChunks, parDim) ", (numChunks, parDim));
+
+        for chunk in 0..#numChunks { // make sure coforall on can trigger
+          on here.getChild(chunk % numSublocs) {
+            var nCores = here.numCores;
+            var locBlock: rank*range(idxType);
             for param i in 1..rank do
-              block(i) = 0..ranges(i).length-1;
-            yield block;
-          }
-        } else {
-          var locBlock: rank*range(idxType);
-          for param i in 1..rank do
-            locBlock(i) = 0:ranges(i).low.type..#(ranges(i).length);
-          if debugDefaultDist then
-            writeln("*** DI: locBlock = ", locBlock);
-          coforall chunk in 0..#numChunks {
+              locBlock(i) = 0:ranges(i).low.type..#(ranges(i).length);
             var followMe: rank*range(idxType) = locBlock;
             const (lo,hi) = _computeBlock(locBlock(parDim).length,
                                           numChunks, chunk,
                                           locBlock(parDim).high);
             followMe(parDim) = lo..hi;
-            if debugDefaultDist then
-              writeln("*** DI[", chunk, "]: followMe = ", followMe);
-            yield followMe;
+            const (numChunks2, parDim2) = _computeChunkStuff(nCores, ignoreRunning,
+                                                             minIndicesPerTask, followMe);
+            for chunk2 in 0..#numChunks2 {
+              var locBlock2: rank*range(idxType);
+              for param i in 1..rank do
+                locBlock2(i) = followMe(i).low..followMe(i).high;
+              var followMe2: rank*range(idxType) = locBlock2;
+              const low  = locBlock2(parDim2).low,
+                    high = locBlock2(parDim2).high;
+              const (lo,hi) = _computeBlock(locBlock2(parDim2).length,
+                                            numChunks2, chunk2, high, low, low);
+              followMe2(parDim2) = lo..hi;
+              if debugDataParNuma then
+                writeln("(chunk, chunk2, followMe, followMe2) ",
+                         (chunk, chunk2, followMe, followMe2)); 
+              yield followMe2;
+            }
           }
         }
       } else {
+        if debugDefaultDist then
+          writeln("*** In domain/array leader code:"); // this = ", this);
+        const numTasks = if dataParTasksPerLocale==0 then here.numCores
+                         else dataParTasksPerLocale;
+        const ignoreRunning = dataParIgnoreRunningTasks;
+        const minIndicesPerTask = dataParMinGranularity;
+        if debugDataPar {
+          writeln("### numTasks = ", numTasks);
+          writeln("### ignoreRunning = ", ignoreRunning);
+          writeln("### minIndicesPerTask = ", minIndicesPerTask);
+        }
   
-        var per_stream_i: uint(64) = 0;
-        var total_streams_n: uint(64) = 0;
+        if debugDefaultDist then
+          writeln("    numTasks=", numTasks, " (", ignoreRunning,
+                  "), minIndicesPerTask=", minIndicesPerTask);
+
+        var (numChunks, parDim) = _computeChunkStuff(numTasks, ignoreRunning,
+                                                     minIndicesPerTask, ranges);
+        if debugDefaultDist then
+          writeln("    numChunks=", numChunks, " parDim=", parDim,
+                  " ranges(", parDim, ").length=", ranges(parDim).length);
   
-        var locBlock: rank*range(idxType);
-        for param i in 1..rank do
-          locBlock(i) = 0:ranges(i).low.type..#(ranges(i).length);
+        if debugDataPar then writeln("### numChunks=", numChunks, " (parDim=", parDim, ")");
+        const numSublocs = (here:LocaleModel).getChildCount();
+        if debugDataParNuma {
+          writeln("numSublocs=", numSublocs);
+        }
+        if (CHPL_TARGET_PLATFORM != "cray-xmt") {
+          if numChunks == 1 {
+            if rank == 1 {
+              yield (0..ranges(1).length-1,);
+            } else {
+              var block: rank*range(idxType);
+              for param i in 1..rank do
+                block(i) = 0..ranges(i).length-1;
+              yield block;
+            }
+          } else {
+            var locBlock: rank*range(idxType);
+            for param i in 1..rank do
+              locBlock(i) = 0:ranges(i).low.type..#(ranges(i).length);
+            if debugDefaultDist then
+              writeln("*** DI: locBlock = ", locBlock);
+            coforall chunk in 0..#numChunks {
+              var followMe: rank*range(idxType) = locBlock;
+              const (lo,hi) = _computeBlock(locBlock(parDim).length,
+                                            numChunks, chunk,
+                                            locBlock(parDim).high);
+              followMe(parDim) = lo..hi;
+              if debugDefaultDist then
+                writeln("*** DI[", chunk, "]: followMe = ", followMe);
+              yield followMe;
+            }
+          }
+        } else {
+          var per_stream_i: uint(64) = 0;
+          var total_streams_n: uint(64) = 0;
   
-        __primitive_loop("xmt pragma forall i in n", per_stream_i,
-                         total_streams_n) {
+          var locBlock: rank*range(idxType);
+          for param i in 1..rank do
+            locBlock(i) = 0:ranges(i).low.type..#(ranges(i).length);
   
-          var followMe: rank*range(idxType) = locBlock;
-          const (lo,hi) = _computeBlock(ranges(parDim).length,
-                                        total_streams_n, per_stream_i,
-                                        (ranges(parDim).length-1));
-          followMe(parDim) = lo..hi;
-          yield followMe;
+          __primitive_loop("xmt pragma forall i in n", per_stream_i,
+                           total_streams_n) {
+  
+            var followMe: rank*range(idxType) = locBlock;
+            const (lo,hi) = _computeBlock(ranges(parDim).length,
+                                          total_streams_n, per_stream_i,
+                                          (ranges(parDim).length-1));
+            followMe(parDim) = lo..hi;
+            yield followMe;
+          }
         }
       }
     }

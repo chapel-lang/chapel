@@ -781,39 +781,61 @@ module ChapelRangeBase {
   
     if debugChapelRange then
       writeln("*** In range leader:"); // ", this);
-  
-    var v = this.length;
-    var numChunks = _computeNumChunks(v);
-  
-    if debugChapelRange
-    {
-      writeln("*** RI: length=", v, " numChunks=", numChunks);
-      writeln("*** RI: Using ", numChunks, " chunk(s)");
-    }
-  
-    if (CHPL_TARGET_PLATFORM == "cray-xmt")
-    {
-      var per_stream_i: uint(64) = 0;
-      var total_streams_n: uint(64) = 0;
-  
-      __primitive_loop("xmt pragma forall i in n", per_stream_i,
-                       total_streams_n) {
-        const (lo,hi) = _computeBlock(v, total_streams_n, per_stream_i, v-1);
-        yield (lo..hi,);
+
+    const numSublocs = here.getChildCount();
+    if numSublocs != 0 {
+      const numTasks = numSublocs;
+      const len = this.length;
+      coforall chunk in 0..#numTasks {
+        on here.getChild(chunk) {
+          const (lo,hi) = _computeBlock(len, numTasks, chunk, len-1);
+          const nCores = here.numCores;
+          const locRange = lo..hi;
+          const locLen = locRange.length;
+          coforall core in 0..#nCores {
+            const (low, high) = _computeBlock(locLen, nCores, core, hi, lo, lo);
+            if debugDataParNuma then
+              writeln("(chunk, core, locRange, coreRange)",
+                       (chunk, core, locRange, low..high));
+            yield (low..high,);
+          }
+        }
       }
-    }
-    else
-    {
-      if numChunks == 1 then
-        yield (0..v-1,);
+      
+    } else {
+      var v = this.length;
+      var numChunks = _computeNumChunks(v);
+  
+      if debugChapelRange
+      {
+        writeln("*** RI: length=", v, " numChunks=", numChunks);
+        writeln("*** RI: Using ", numChunks, " chunk(s)");
+      }
+  
+      if (CHPL_TARGET_PLATFORM == "cray-xmt")
+      {
+        var per_stream_i: uint(64) = 0;
+        var total_streams_n: uint(64) = 0;
+  
+        __primitive_loop("xmt pragma forall i in n", per_stream_i,
+                       total_streams_n) {
+          const (lo,hi) = _computeBlock(v, total_streams_n, per_stream_i, v-1);
+          yield (lo..hi,);
+        }
+      }
       else
       {
-        coforall chunk in 0..#numChunks
+        if numChunks == 1 then
+          yield (0..v-1,);
+        else
         {
-          const (lo,hi) = _computeBlock(v, numChunks, chunk, v-1);
-          if debugChapelRange then
-            writeln("*** RI: tuple = ", (lo..hi,));
-          yield (lo..hi,);
+          coforall chunk in 0..#numChunks
+          {
+            const (lo,hi) = _computeBlock(v, numChunks, chunk, v-1);
+            if debugChapelRange then
+              writeln("*** RI: tuple = ", (lo..hi,));
+            yield (lo..hi,);
+          }
         }
       }
     }
