@@ -821,11 +821,11 @@ module ChapelArray {
       else
         return _value.dsiMember(i(1));
     }
-	
+
     proc member(i: _value.idxType ...rank) {
       return member(i);
     }
-	
+
     // 1/5/10: do we want to support order() and position()?
     proc indexOrder(i) return _value.dsiIndexOrder(_makeIndexTuple(rank, i));
   
