@@ -245,29 +245,6 @@ const char* BaseAST::stringLoc(void) {
   return astr(tmpBuff);
 }
 
-// stringLoc for debugging only
-const char* stringLoc(BaseAST* ast);
-const char* stringLoc(int id);
-BaseAST* aid(int id);
-
-const char* stringLoc(BaseAST* ast) {
-  if (!ast)
-    return "<no node provided>";
-
-  const int tmpBuffSize = 256;
-  static char tmpBuff[tmpBuffSize];
-
-  snprintf(tmpBuff, tmpBuffSize, "%s:%d", ast->fname(), ast->linenum());
-  return tmpBuff;
-}
-
-const char* stringLoc(int id) {
-  BaseAST* ast = aid(id);
-  if (ast)
-    return stringLoc(aid(id));
-  else
-    return "<the given ID does not correspond to any AST node>";
-}
 
 ModuleSymbol* BaseAST::getModule() {
   if (!this)

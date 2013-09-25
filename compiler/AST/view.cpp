@@ -12,7 +12,7 @@
 #include "type.h"
 #include "stringutil.h"
 #include "log.h"
-#include "driver.h" // For log_dir
+#include "driver.h"
 
 static void
 list_sym(Symbol* sym, bool type = true) {
@@ -138,8 +138,40 @@ list_ast(BaseAST* ast, int indent = 0) {
 
 
 static const char*
+aidError(const char* callerMsg, int id) {
+  const int tmpBuffSize = 256;
+  static char tmpBuff[tmpBuffSize];
+  snprintf(tmpBuff, tmpBuffSize, "<%s%s"
+           "the ID %d does not correspond to an AST node>",
+           callerMsg ? callerMsg : "", callerMsg ? ": " : "", id);
+  return tmpBuff;
+}
+
+static void
+printAidError(const char* callerMsg, int id) {
+  printf("%s\n", aidError(callerMsg, id));
+}
+
+void viewFlags(int id) {
+  BaseAST* ast = aid(id);
+  if (ast) viewFlags(ast); else printAidError("viewFlags", id);
+}
+
+
+static const char*
 html_file_name( int pass, const char *module) {
   return astr( "pass", istr(pass), "_module_", astr(module, ".html"));
+}
+
+static const char*
+html_file_name( int pass, Symbol* sym) {
+  return html_file_name(pass, sym->defPoint->getModule()->name);
+}
+
+static bool
+hasHref(Symbol* sym) {
+  return sym->defPoint && sym->defPoint->parentSymbol &&
+    sym->defPoint->getModule();
 }
 
 
@@ -249,6 +281,11 @@ static void type_print_view(BaseAST* ast) {
     }
 }
 
+void list_view(int id) {
+  BaseAST* ast = aid(id);
+  if (ast) list_view(ast); else printAidError("list_view", id);
+}
+
 void list_view(BaseAST* ast) {
   if (ast==NULL) {
     printf("<NULL>");
@@ -291,6 +328,11 @@ void print_view_noline(BaseAST* ast) {
     view_ast(ast);
   }
   fflush(stdout);
+}
+
+void nprint_view(int id) {
+  BaseAST* ast = aid(id);
+  if (ast) nprint_view(ast); else printAidError("nprint_view", id);
 }
 
 void nprint_view(BaseAST* ast) {
@@ -346,15 +388,35 @@ structuralTypeSymbol(Symbol *s) {
 }
 
 static void
+html_adjacent_passes(FILE* html_file, int pass, Symbol* sym) {
+  if (hasHref(sym)) {
+    if (pass > 1)
+      fprintf(html_file, "<A HREF=\"%s#SYM%d\">&laquo</A>",
+              html_file_name(pass-1, sym), sym->id);
+    if (true)
+      fprintf(html_file, "<A HREF=\"%s#SYM%d\">&raquo</A>\n",
+              html_file_name(pass+1, sym), sym->id);
+  }
+}
+
+static void
+printBlockID(FILE* html_file, Expr* expr) {
+  if (fdump_html_print_block_IDs)
+    fprintf(html_file, " %d", expr->id);
+}
+
+static void
 html_print_symbol(FILE* html_file, int pass, Symbol* sym, bool def) {
   if (def) {
     fprintf(html_file, "<A NAME=\"SYM%d\">", sym->id);
   } else {
     if (sym->defPoint && sym->defPoint->parentSymbol && sym->defPoint->getModule()) {
+      INT_ASSERT(hasHref(sym));
       fprintf(html_file, "<A HREF=\"%s#SYM%d\">",
               html_file_name( pass, sym->defPoint->getModule()->name),
               sym->id);
     } else {
+      INT_ASSERT(!hasHref(sym));
       fprintf(html_file, "<A>");
     }
   }
@@ -418,6 +480,7 @@ html_view_ast(BaseAST* ast, FILE* html_file, int pass) {
         if (expr == fn->where)
           fprintf(html_file, "<B>where</B>\n");
       fprintf(html_file, "{");
+      printBlockID(html_file, expr);
     } else if (GotoStmt* s = toGotoStmt(expr)) {
       fprintf(html_file, "<DL>\n");
       switch (s->gotoTag) {
@@ -443,6 +506,7 @@ html_view_ast(BaseAST* ast, FILE* html_file, int pass) {
       if (DefExpr* e = toDefExpr(expr)) {
         if (FnSymbol* fn = toFnSymbol(e->sym)) {
           fprintf(html_file, "<UL CLASS =\"mktree\">\n<LI>");
+          html_adjacent_passes(html_file, pass, fn);
           fprintf(html_file, "<CHPLTAG=\"FN%d\">\n", fn->id);
           fprintf(html_file, "<B>function ");
           html_print_fnsymbol( html_file, pass, fn);
@@ -560,8 +624,10 @@ html_view_ast(BaseAST* ast, FILE* html_file, int pass) {
         toCondStmt(expr) ||
         toGotoStmt(expr) ||
         (expr->getStmtExpr() && expr->getStmtExpr() == expr)) {
-      if (toBlockStmt(expr))
+      if (toBlockStmt(expr)) {
         fprintf(html_file, "}");
+        printBlockID(html_file, expr);
+      }
       fprintf(html_file, "</DL>\n");
     }
 
@@ -574,6 +640,9 @@ void html_view(const char* passName) {
   INT_ASSERT(passName == currentPassName);
   FILE* html_file;
   const char* filename;
+  const char* chpl_home = fdump_html_chpl_home;
+  if (strlen(chpl_home) <= 0)
+    chpl_home = CHPL_HOME;
 
   fprintf(html_index_file, "<TR><TD>");
   fprintf(html_index_file, "%s%s[%d]", passName,
@@ -588,9 +657,14 @@ void html_view(const char* passName) {
     fprintf(html_file, "<HTML>\n");
     fprintf(html_file, "<HEAD>\n");
     fprintf(html_file, "<TITLE> AST for Module %s after Pass %s </TITLE>\n", mod->name, passName);
-    fprintf(html_file, "<SCRIPT SRC=\"%s/compiler/etc/www/mktree.js\" LANGUAGE=\"JavaScript\"></SCRIPT>", CHPL_HOME);
-    fprintf(html_file, "<LINK REL=\"stylesheet\" HREF=\"%s/compiler/etc/www/mktree.css\">", CHPL_HOME);
-    fprintf(html_file, "</HEAD>\n");
+    fprintf(html_file, "<SCRIPT SRC=\"%s/compiler/etc/www/mktree.js\" LANGUAGE=\"JavaScript\"></SCRIPT>\n", chpl_home);
+    fprintf(html_file, "<LINK REL=\"stylesheet\" HREF=\"%s/compiler/etc/www/mktree.css\">\n", chpl_home);
+    fprintf(html_file, "</HEAD><BODY%s>\n",
+            fdump_html_wrap_lines ? "" : " style=\"white-space: nowrap;\"");
+    if (currentPassNo > 1)
+      fprintf(html_file, "<A HREF=%s>previous pass</A> &nbsp;\n", html_file_name(currentPassNo-1, mod->name));
+    if (true)
+      fprintf(html_file, "<A HREF=%s>next pass</A>\n",            html_file_name(currentPassNo+1, mod->name));
     fprintf(html_file, "<div style=\"text-align: center;\"><big><big><span style=\"font-weight: bold;\">");
     fprintf(html_file, "AST for Module %s after Pass %s <br><br></span></big></big>\n", mod->name, passName);
     fprintf(html_file, "<div style=\"text-align: left;\">\n\n");
@@ -599,7 +673,7 @@ void html_view(const char* passName) {
     fprintf(html_file, "</B>\n");
     for_alist(stmt, mod->block->body)
       html_view_ast(stmt, html_file, uid);
-    fprintf(html_file, "</HTML>\n");
+    fprintf(html_file, "</BODY></HTML>\n");
     fclose(html_file);
    }
   }
@@ -676,6 +750,7 @@ log_ast_header(BaseAST* ast, FILE* file) {
         if (expr == fn->where)
           log_write(file, false, "where ", false);
       log_write(file, false, "{", true);
+      printBlockID(file, expr);
       ++log_indent;
     } else if (GotoStmt* s = toGotoStmt(expr)) {
       switch (s->gotoTag) {
@@ -800,6 +875,7 @@ log_ast_footer(BaseAST* ast, FILE* file) {
       --log_indent;
       log_newline(file);
       log_write(file, false, "}", true);
+      printBlockID(file, expr);
     }
   }
 }
@@ -891,34 +967,239 @@ log_ast_fnsymbol(FILE* file, FnSymbol* fn) {
   }
 }
 
-void map_view(SymbolMap* map, const char* msg) {
-  if (msg) printf("SymbolMap %s\n", msg);
+
+//
+// stringLoc, shortLoc, debugLoc: return "file:line", where 'file' is:
+//  - stringLoc: AST's fname()
+//  - shortLoc: just the file part of that (no path)
+//  - debugLoc: one of the above, depending on --debug-short-loc
+// NB may return the same static buffer - limit to one call per printf().
+// Cf. no restrictions on BaseAST::stringLoc().
+//
+
+#define locBuffSize 256
+static char locBuff[locBuffSize];
+int debugShortLoc = true;
+
+const char* stringLoc(int id) {
+  BaseAST* ast = aid(id);
+  return ast ? stringLoc(ast) : aidError("stringLoc", id);
+}
+const char* shortLoc(int id) {
+  BaseAST* ast = aid(id);
+  return ast ? shortLoc(ast) : aidError("shortLoc", id);
+}
+const char* debugLoc(int id) {
+  return debugShortLoc ? shortLoc(id) : stringLoc(id);
+}
+
+const char* stringLoc(BaseAST* ast) {
+  if (!ast)
+    return "<no node provided>";
+
+  snprintf(locBuff, locBuffSize, "%s:%d", ast->fname(), ast->linenum());
+  return locBuff;
+}
+const char* shortLoc(BaseAST* ast) {
+  if (!ast)
+    return "<no node provided>";
+
+  const char* longLoc = stringLoc(ast);
+  char* slash = rindex(longLoc, '/');
+  return slash ? slash+1 : longLoc;
+}
+const char* debugLoc(BaseAST* ast) {
+  return debugShortLoc ? shortLoc(ast) : stringLoc(ast);
+}
+
+
+//
+// map_view: print the contents of a SymbolMap
+//
+void map_view(SymbolMap* map) {
+  map_view(*map);
+}
+
+void map_view(SymbolMap& map) {
+  printf("SymbolMap at %p\n", &map);
   int cnt = 0;
   bool temp_log_need_space = log_need_space;
   log_need_space = true;
   
-  form_Map(SymbolMapElem, elm, *map) {
+  form_Map(SymbolMapElem, elm, map) {
     Symbol* key = elm->key;
     Symbol* val = elm->value;
     if (key || val) {
       cnt++;
       printf(" ");
       if (key) {
+        if (!fLogIds) printf(" [%d]", key->id);
         log_ast_symbol(stdout, key, true);
-        printf(" %c", key->hasFlag(FLAG_CONST) ? 'c' : 'v');
       } else {
         printf("NULL");
       }
       if (val != NULL && val != gNil) {
-        printf(" => ");
+        printf("  => ");
+        if (!fLogIds) printf(" [%d]", val->id);
         log_ast_symbol(stdout, val, true);
-        printf(" %c", val->hasFlag(FLAG_CONST) ? 'c' : 'v');
       } else {
         // nothing
       }
       printf("\n");
     }
   }
-  printf("  %d elms\n", cnt);
+  printf("  %d elm(s)\n", cnt);
   log_need_space = temp_log_need_space;
+}
+
+
+//
+// vec_view: print the contents of a Vec.
+// todo: add STL versions
+//
+void vec_view(Vec<Symbol*,VEC_INTEGRAL_SIZE>* v) {
+  vec_view(*v);
+}
+void vec_view(Vec<Symbol*,VEC_INTEGRAL_SIZE>& v)
+{
+  printf("Vec<Symbol> %d elm(s)\n", v.n);
+  for (int i = 0; i < v.n; i++) {
+    Symbol* elm = v.v[i];
+    if (elm)
+      printf("%3d %8d  %s\n", i, elm->id, elm->name);
+    else
+      printf("%3d <null>\n", i);
+  }
+}
+
+void vec_view(Vec<FnSymbol*,VEC_INTEGRAL_SIZE>* v) {
+  vec_view(*v);
+}
+void vec_view(Vec<FnSymbol*,VEC_INTEGRAL_SIZE>& v)
+{
+  printf("Vec<FnSymbol> %d elm(s)\n", v.n);
+  for (int i = 0; i < v.n; i++) {
+    Symbol* elm = v.v[i];
+    if (elm)
+      printf("%3d %8d  %s\n", i, elm->id, elm->name);
+    else
+      printf("%3d <null>\n", i);
+  }
+}
+
+
+//
+// fnsWithName: print all FnSymbols with the given name
+//
+void fnsWithName(const char* name) {
+  fnsWithName(name, gFnSymbols);
+}
+void fnsWithName(const char* name, Vec<FnSymbol*,VEC_INTEGRAL_SIZE>& fnVec) {
+  printf("fnsWithName(\"%s\")\n", name);
+  int count = 0, countNonNull = 0;
+  forv_Vec(FnSymbol, fn, fnVec) {
+    if (fn) {
+      countNonNull++;
+      if (!strcmp(fn->name, name)) {
+        count++;
+        printf("  %d  %s\n", fn->id, debugLoc(fn));
+      }
+    }
+  }
+  printf("  %d function(s) of %d\n", count, countNonNull);
+}
+
+
+//
+// whocalls: print all CallExprs whose baseExpr is the given SymExpr or Symbol
+//
+void whocalls(BaseAST* ast) {
+  if (!ast) {
+    printf("whocalls: aborting: got NULL\n");
+    return;
+  }
+  printf("whocalls(%s[%d])\n", astTagName[ast->astTag], ast->id);
+  if (SymExpr* se = toSymExpr(ast)) {
+    whocalls(se->var->id);
+  } else if (isSymbol(ast)) {
+    whocalls(ast->id);
+  } else {
+    printf("whocalls: aborting: need a SymExpr or Symbol\n");
+  }
+}
+
+static char* parentMsg(Expr* expr, int* cntInTreeP, int* cntNonTreeP) {
+  static char result[128];
+  if (expr->inTree()) {
+    (*cntInTreeP)++;
+    sprintf(result, "psym %d", expr->parentSymbol->id);
+  } else {
+    (*cntNonTreeP)++;
+    sprintf(result, "<not in tree>");
+  }
+  return result;
+}
+
+bool whocalls_nview = false;
+
+// 'id' better be a Symbol
+void whocalls(int id) {
+  int callAll = 0, callMatch = 0, callNonTreeMatch = 0;
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (SymExpr* se = toSymExpr(call->baseExpr)) {
+      callAll++;
+      if (se->var->id == id) {
+        printf("  call %d  %s  %s\n", call->id,
+               parentMsg(call, &callMatch, &callNonTreeMatch), debugLoc(call));
+        if (whocalls_nview) nprint_view(call);
+      }
+    }
+  }
+
+  int forAll = 0, forMatch = 0, forNonTreeMatch = 0;
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_BLOCK_FOR_LOOP) && call->numActuals() >= 2) {
+      forAll++;
+      // check each step, just in case
+      if (SymExpr* act2 = toSymExpr(call->get(2)))
+        if (Symbol* ic = act2->var)
+          if (Type* ty = ic->type)
+            if (FnSymbol* init = ty->initializer)
+              if (ArgSymbol* form1 = init->getFormal(1))
+                if (Type* fty = form1->type)
+                  if (FnSymbol* iterator = fty->initializer)
+                    if (iterator->id == id)
+                      printf("  for-loop blockInfo %d  %s  %s\n",
+                             call->id, parentMsg(call, &forMatch,
+                               &forNonTreeMatch), debugLoc(call));
+    }
+  }
+
+  int vmtMatch = 0, vmtAll = 0;
+  for (int i = 0; i < virtualMethodTable.n; i++) {
+    if (virtualMethodTable.v[i].key) {
+      for (int j = 0; j < virtualMethodTable.v[i].value->n; j++) {
+        vmtAll++;
+        if (virtualMethodTable.v[i].value->v[j]->id == id) {
+          vmtMatch++;
+          printf("  VMT[%d][%d]\n", i, j);
+        }
+      }
+    }
+  }
+
+  int ftMatch = 0, ftAll = ftableVec.n;
+  for (int i = 0; i < ftAll; i++) {
+    if (ftableVec.v[i]->id == id) {
+      ftMatch++;
+      printf("  ftableVec[%d]\n", i);
+    }
+  }
+
+  printf("  %d of %d calls", callMatch, callAll);
+  if (callNonTreeMatch) printf(", also %d not in tree", callNonTreeMatch);
+  printf(".  %d of %d for-loops", forMatch, forAll);
+  if (forNonTreeMatch) printf(", also %d not in tree", forNonTreeMatch);
+  printf(".  %d of %d in VMT.  %d of %d in FT.\n",
+         vmtMatch, vmtAll, ftMatch, ftAll);
 }

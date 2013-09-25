@@ -19,9 +19,6 @@ typedef struct YYLTYPE {
 #define YYLTYPE_IS_DECLARED 1
 #define YYLTYPE_IS_TRIVIAL 1
 
-
-
-
 extern const char *chplBinaryName;
 
 extern FILE* html_index_file;
@@ -37,9 +34,10 @@ extern bool fLogIds;
 extern int instantiation_limit;
 
 extern int fdump_html;
+extern char fdump_html_chpl_home[FILENAME_MAX+1];
 extern bool fdump_html_incude_system_modules;
-
-extern int trace_level;
+extern bool fdump_html_wrap_lines;
+extern bool fdump_html_print_block_IDs;
 
 extern int currentPassNo;
 extern const char* currentPassName;
@@ -130,6 +128,7 @@ enum { LS_DEFAULT=0, LS_STATIC, LS_DYNAMIC };
 extern int fLinkStyle;
 
 extern int debugParserLevel;
+extern int debugShortLoc;
 extern bool fLibraryCompile;
 extern bool no_codegen;
 extern bool genExternPrototypes;

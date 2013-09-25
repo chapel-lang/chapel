@@ -219,6 +219,20 @@ void printCallStack() {
   printCallStack(true, true, stdout);
 }
 
+// another one
+void printCallStackCalls();
+void printCallStackCalls() {
+  printf("\n" "callStack %d elms\n\n", callStack.n);
+  for (int i = 0; i < callStack.n; i++) {
+    CallExpr* call = callStack.v[i];
+    FnSymbol* cfn = call->isResolved();
+    printf("%d  %d %s  <-  %d %s\n", i,
+           cfn ? cfn->id : 0, cfn ? cfn->name: "<no callee>",
+           call ? call->id : 0, call ? call->stringLoc() : "<no call>");
+  }
+  printf("\n");
+}
+
 
 void handleError(const char *fmt, ...) {
   fflush(stdout);
