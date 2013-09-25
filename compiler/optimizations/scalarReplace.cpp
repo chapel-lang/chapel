@@ -173,10 +173,19 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
   Vec<SymExpr*>* defs = defMap.get(sym);
   if (!defs || defs->n != 1)
     return false;
+  // As of r21945, if this variable is allocated in this scope, the
+  // first definition is the cast to the appropriate type.  The
+  // statement previous to that is the allocation.
   CallExpr* move = toCallExpr(defs->v[0]->parentExpr);
   if (!move || !move->isPrimitive(PRIM_MOVE))
     return false;
-  CallExpr* alloc = toCallExpr(move->get(2));
+  CallExpr* cast = toCallExpr(move->get(2));
+  if (!cast || !cast->isPrimitive(PRIM_CAST))
+    return false;
+  CallExpr* prevMove = toCallExpr(move->prev);
+  if (!prevMove || !prevMove->isPrimitive(PRIM_MOVE))
+    return false;
+  CallExpr* alloc = toCallExpr(prevMove->get(2));
   if (!alloc)
     return false;
   if (!
@@ -193,17 +202,24 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
       if (!call)
         return false;
 
-      // The use must appear as the first argument in the containing expression.
+      // The use must appear as the first argument in the containing
+      // expression.
       if (se != call->get(1))
         return false;
-      // The use must be the first argument of one of the following primitives.
+      // The use must be the first argument of one of the following
+      // primitives or allocation functions.
       if (!(call->isPrimitive(PRIM_SET_MEMBER) ||
             call->isPrimitive(PRIM_GET_MEMBER) ||
             call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
             call->isPrimitive(PRIM_SETCID) ||
+            // As of r21945, compiler inserted calls to
+            // chpl_here_free() have as its first argument a void *
+            call->isPrimitive(PRIM_CAST_TO_VOID_STAR) ||
             (call->isResolved() &&
              (call->isResolved()->hasFlag(FLAG_ALLOCATOR) ||
-             call->isResolved()->hasFlag(FLAG_LOCALE_MODEL_FREE)))))
+              // TODO: don't know this is necessary as the arg to free
+              // is a void *
+              call->isResolved()->hasFlag(FLAG_LOCALE_MODEL_FREE)))))
         return false;
     }
   }
@@ -229,9 +245,10 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
   sym->defPoint->remove();
 
   //
-  // remove the only def
+  // remove the only def and the allocation
   //
   move->remove();
+  prevMove->remove();
 
   //
   // replace uses of sym with new vars
@@ -251,6 +268,8 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
         call->replace(use);
         addUse(useMap, use);
       } else if (call->isPrimitive(PRIM_SETCID) ||
+                 // TODO: don't know if this is still needed.  The
+                 // PRIM_CAST_TO_VOID_STAR case may take care of it.
                  (call->isResolved() &&
                   call->isResolved()->hasFlag(FLAG_LOCALE_MODEL_FREE))) {
         //
@@ -260,6 +279,15 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
         // class reference, we can remove the call to free it
         //
         call->remove();
+      } else if (call->isPrimitive(PRIM_CAST_TO_VOID_STAR)) {
+        CallExpr* parent = toCallExpr(call->parentExpr);
+        INT_ASSERT(parent);
+        CallExpr* parentNext = toCallExpr(parent->next);
+        if (parentNext &&
+            parentNext->isResolved() &&
+            parentNext->isResolved()->hasFlag(FLAG_LOCALE_MODEL_FREE))
+          parentNext->remove();
+        parent->remove();
       } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
         SymExpr* member = toSymExpr(call->get(2));
         call->primitive = primitives[PRIM_MOVE];

@@ -1,4 +1,0 @@
-bug: Constant propagation is improperly applied when aliases are present.
-
-See test_nested_var_iterator3.future
-
