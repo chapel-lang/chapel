@@ -32,8 +32,8 @@ proc main() {
   }
 
   for i in 0..nthreads do {
-		begin ring_link(i);
-	}
+    begin ring_link(i);
+  }
 }
 
 proc ring_link(id: int) {
