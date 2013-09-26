@@ -1,6 +1,6 @@
-perfkeys: real, real, real
-graphkeys: for-begin, coforall, coforall-begin
-files: thread-ring-for-begin.dat, thread-ring-coforall.dat, thread-ring-coforall-begin.dat
+perfkeys: real, real, real, real
+graphkeys: for-begin, coforall, coforall-begin, release
+files: lydia/thread-ring-for-begin.dat, lydia/thread-ring-coforall.dat, lydia/thread-ring-coforall-begin.dat, thread-ring.dat
 graphtitle: Thread Ring Shootout Benchmark (n=50,000,000)
 ylabel: Time (seconds)
 graphname: thread-ring
