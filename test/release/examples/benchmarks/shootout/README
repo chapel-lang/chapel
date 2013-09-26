@@ -1,0 +1,23 @@
+==============================================
+Chapel Computer Language Benchmarks Game Codes
+==============================================
+
+This directory contains Chapel versions of the Computer Language
+Benchmarks Game programs (http://benchmarksgame.alioth.debian.org/)
+written in Chapel.  In these versions, we strive for a combination of
+elegant use of Chapel and performance.  Most of these codes are
+written for serial or parallel single-locale (shared-memory)
+execution, following the lead of the competition.
+
+At present, this directory contains the following codes:
+
+    nbody.chpl   : Performs an n-body simulation of the Jovian planets
+
+Over time, we plan to create versions of all the benchmarks and to
+enter Chapel into the competition.  Draft versions of other benchmarks
+that have not yet been promoted to the release can be found in our SVN
+repository under the test/studies/shootout/ directory.
+
+The provided Makefile can be used to compile the programs, or they can
+be run in correctness or performance modes using the Chapel testing
+system (see $CHPL_HOME/util/sub_test).
