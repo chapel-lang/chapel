@@ -28,7 +28,7 @@ CHPL_GASNET_CFG_OPTIONS += --enable-aries --disable-pshm
 else
 # We need to do this because the auto-dectect stuff for gemini is not
 #  yet working as well as the portals auto-detect
-CHPL_GASNET_CFG_OPTIONS += --disable-gemini --disable-pshm --disable-pshm-xpmem --enable-pshm-posix
+CHPL_GASNET_CFG_OPTIONS += --disable-gemini --disable-aries --disable-pshm --disable-pshm-xpmem --enable-pshm-posix
 endif
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),cray-xc)
 CHPL_GASNET_CFG_SCRIPT=cross-configure-crayxc-linux
