@@ -53,7 +53,7 @@ static unsigned int num_usable_by_depth(unsigned int depth)
     unsigned int ret = 0;
     qthread_debug(AFFINITY_DETAILS, "max = %i\n", max);
     for (int i=0; i<max; ++i) {
-        hwloc_obj_t obj = hwloc_get_obj_inside_cpuset_by_type(topology, allowed_cpuset, depth, i);
+        hwloc_obj_t obj = hwloc_get_obj_inside_cpuset_by_depth(topology, allowed_cpuset, depth, i);
         if (obj == NULL) {
             qthread_debug(AFFINITY_DETAILS, "obj %i of this type is NULL!!!\n", i);
             continue;
