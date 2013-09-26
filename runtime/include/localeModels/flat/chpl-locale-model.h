@@ -15,7 +15,7 @@
 //
 typedef struct {
   int node:          32;
-  int ignore_subloc:  1;  // needed only for compiler-emitted initializations
+  int ignore_subloc: 32;  // needed only for compiler-emitted initializations
 } chpl_localeID_t;
 
 //
