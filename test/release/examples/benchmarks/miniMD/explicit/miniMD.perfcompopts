@@ -1,1 +1,1 @@
---no-cc-warnings -snoRefCount --fast helpers/initMD.chpl helpers/forces.chpl helpers/thermo.chpl helpers/neighbor.chpl --no-local # miniMD.explicit.perfkeys
+--no-cc-warnings -snoRefCount --fast -M helpers --no-local # miniMD.explicit.perfkeys
