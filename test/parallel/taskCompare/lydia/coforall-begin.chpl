@@ -32,10 +32,10 @@ proc main() {
   }
 
   // Use a coforall here (and have thread "0" start everyone)
-	// - thread that starts coforall grabs an iteration
-	coforall i in 0..nthreads do {
-		begin ring_link(i);
-	}
+  // - thread that starts coforall grabs an iteration
+  coforall i in 0..nthreads do {
+    begin ring_link(i);
+  }
 }
 
 proc ring_link(id: int) {
