@@ -3,7 +3,7 @@ MAKEFLAGS = --no-print-directory
 
 CHPL = chpl
 
-default: hpcc lulesh ssca2
+default: hpcc lulesh miniMD ssca2
 
 all: $(TARGETS)
 
@@ -17,6 +17,9 @@ hpcc: FORCE
 
 lulesh: FORCE
 	cd lulesh && $(MAKE)
+
+miniMD: FORCE
+	cd miniMD && $(MAKE)
 
 ssca2: FORCE
 	cd ssca2 && $(MAKE)
