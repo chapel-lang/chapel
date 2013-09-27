@@ -25,6 +25,11 @@ release are as follows:
 
 * Added support for tilera targets.
 
+* Added some missing '-I' flags to the configure/configure.in files
+  (contributed by Ryan Ward, confirmed correct by the GASNet team,
+  but apparently the next GASNet version gets rid of this logic, so
+  it'll be fixed in another way then).
+
 The structure of this directory is as follows:
 
 ./

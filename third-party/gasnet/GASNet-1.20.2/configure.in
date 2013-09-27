@@ -4102,12 +4102,12 @@ if test ${gni_network}:${enabled_[]lowername} = lowername[]:yes; then
   GASNET_ENV_DEFAULT(PE_DIR, /opt/cray)
   cray_pmi_guess=`pkg-config cray-pmi --cflags 2>/dev/null`
   if test -z "$cray_pmi_guess"; then
-    cray_pmi_guess="$PE_DIR/pmi/default/include"
+    cray_pmi_guess="-I$PE_DIR/pmi/default/include"
   fi
   GASNET_ENV_DEFAULT(PMI_CFLAGS, "$cray_pmi_guess")
   cray_gni_guess=`pkg-config cray-gni-headers --cflags 2>/dev/null`
   if test -z "$cray_gni_guess"; then
-    cray_gni_guess="$PE_DIR/gni-headers/default/include"
+    cray_gni_guess="-I$PE_DIR/gni-headers/default/include"
   fi
   GASNET_ENV_DEFAULT(GNI_CFLAGS, "$cray_gni_guess")
 
