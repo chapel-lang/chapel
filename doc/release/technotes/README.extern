@@ -103,7 +103,9 @@ The Chapel names for C types are:
   c_ushort
   ssize_t
   size_t
-  c_ptr
+  c_void_ptr
+  c_ptr(T/)
+  c_string
 
 For consistency, the following type aliases are also provided even
 though their sizes can't vary in C (thereby permitting the equivalent
@@ -112,12 +114,116 @@ Chapel types to always be usable):
   c_float  (a real(32) in Chapel)
   c_double (a real(64) in Chapel)
 
-Chapel strings are currently represented as 'const char*' types, so
-these can be used interchangeably with 'const char*' types in C (and
-in some cases, 'char*' types as long as the difference in const-ness
-does not cause compilation problems).
+c_void_ptr, c_string, and c_ptr(T) are described in the next section.
 
 
+Referring to Pointer and String Types
+-------------------------------------
+
+Chapel supports 3 C pointer types: c_void_ptr, c_string, and c_ptr(T).
+These types are the same as C types:
+
+  c_void_ptr is void*
+  c_ptr(T) is T*
+  c_string is const char*
+
+Note that in some cases, the Chapel string type or ref argument intent may be
+used to more easily achieve the same effect.
+
+All three of these pointer types may only point to local memory. The intent is
+that they will be used to interoperate with C libraries that run within a
+single locale. In addition, these pointer types must be treated carefully as it
+is possible to create the same kinds of problems as in C - in particular, it is
+necessary know that one of these types points to valid memory before it is
+used.  As in C, these pointers could point to a stack variable that is no
+longer valid, or to memory that has been freed. The Chapel language makes no
+effort to extend a variable's lifetime if it is converted in some manner to a C
+pointer.
+
+c_void_ptr:
+
+The c_void_ptr type is provided as an opaque C pointer. Since the type is
+unknown, there is no way to dereference this pointer. In addition, it is not
+possible to construct a c_void_ptr directly in Chapel. Normally, a C function
+will return the void pointer, which will be passed to other C functions.
+
+c_ptr(T):
+
+The c_ptr(T) type is a generic type representing a C pointer to an arbitrary
+type T. This pointer should normally only point to local memory - since no
+communication will be generated when it is dereferenced.  Of course, the
+pointed-to type T should be one that is supported in C interoperability if the
+c_ptr(T) is used for C interoperability. A c_ptr type can be constructed from a
+Chapel variable using the c_ptrTo() function; for example:
+
+ var i:c_int;
+ var i_ptr = c_ptrTo(i); // now i_ptr has type c_ptr(c_int) == int* in C
+
+Since a C pointer might refer to a single variable or an array, the c_ptr type
+supports 0-based array indexing and dereferencing. In addition, it is possible
+to allocate and free space for one or more elements and return the result as a
+c_ptr. See the following example:
+
+ var cArray = c_calloc(c_int, 10);
+ for i in 0..#10 {
+   cArray[i] = i:c_int; 
+ }
+ // c_ptr.deref() always refers to the first element.
+ cArray.deref() = 17;
+ for i in 0..#10 {
+   writeln(cArray[i]);
+ }
+ c_free(cArray);
+
+Variables of type c_ptr can be compared against or set to nil.
+
+ref intents:
+
+Note that for function arguments that are passed by pointer in C, it is
+recommended to use the ref argument intent instead of c_ptr(T). Using the ref
+intent allows the arguments to the extern proc to be passed directly instead of
+needing to be converted to a C pointer first. For example, both the functions
+byRef and byPtr below have the same C prototype, but they must be used
+differently in Chapel:
+
+ // both of these correspond to void fn(int* x)
+ extern proc byRef(ref x:c_int);
+ extern proc byPtr(x:c_ptr(c_int));
+
+ var x:c_int = 7;
+ byRef(x); // ref argument intent allows the variable to be passed directly
+ byPtr(c_ptrTo(x)); // c_ptr argument must be constructed explicitly
+
+
+c_string:
+
+The c_string type maps to a constant C string (that is, const char*). A
+c_string can be constructed from a Chapel string using the method
+chapelString.c_str(). A Chapel string can be constructed from a C string
+using the function toString(c_string). Note however that the .c_str() method
+currently requires the Chapel string to be stored locally. 
+
+Chapel strings:
+
+Chapel strings are currently represented as 'const char*' types in
+single-locale compilations, so these can normally be used interchangeably with
+'const char*' types in C (and in some cases, 'char*' types as long as the
+difference in const-ness does not cause compilation problems). However, the
+string representation in Chapel may change, and some cases (such as
+c_ptr(string)) cannot be properly supported in multilocale environments. 
+The c_string type must be used in such cases. Additionally, automatic
+conversions between Chapel strings and c_string are likely to be added
+in the future. 
+
+For example, byString and byCString both have the same C function prototype,
+but they must be used differently:
+ // both of these correspond to void fn(const char* x)
+ extern proc byString(x:string);
+ extern proc byCString(x:c_string);
+
+ byString("Hello");
+ byCString("Hello".c_str());
+ 
 Referring to External C Types
 -----------------------------
 
@@ -370,7 +476,7 @@ accessed within the Chapel program:
 
 A C header file containing the struct's definition in C must be
 specified on the chpl compiler command line.  Note that currently only
-typdef'd C structures are supported.  In the future we anticipate both
+typedef'd C structures are supported.  In the future we anticipate both
 typedef'd and non-typedef'd structures to be declared using extern
 declarations.
 
@@ -486,11 +592,84 @@ namespace, it's easy to put the C code into its own Chapel module:
 
   writeln(C.foo(3));
 
-This feature strives to support C global variables, functions,
-structures, typedefs, and enums.  It is a reasonably new feature as of
-version 1.7 of the Chapel release, so please send any feedback or
-cases that seem to be handled incorrectly to chapel_info@cray.com.
+This feature strives to support C global variables, functions, structures,
+typedefs, enums, and some #defines. Structures always generate a Chapel record,
+and pointers to a structure are represented with c_ptr(struct type). Also,
+pointer arguments to functions are always represented with c_ptr or c_string
+instead of the ref intent.
 
+#defines
+--------
+
+The extern block functionality allows simple #defines to be used from Chapel
+code. Simple defines take no arguments and define an integer value or use
+another #define. For example:
+
+  extern {
+   #define NEG_ONE (-1)
+   #define MY_NUMBER (NEG_ONE)
+  }
+  writeln(MY_NUMBER);
+
+However, it is easy to create #defines that are not supported because the
+Chapel compiler is unable to determine their expression type. In particular,
+any #define taking arguments is not currently supported. For example, the
+ADD definition below has a resulting expression type that cannot be determined
+by the Chapel compiler:
+
+ extern {
+   #define ADD(x,y) ((x)+(y)) // NOT SUPPORTED
+ }
+ var x = ADD(1,2); // ERROR - ADD not defined in Chapel.
+
+If the library you are using depends on these types, the current solution
+is to create inline functions to call the define with the appropriate argument
+types; for example:
+ extern {
+   #define ADD(x,y) ((x)+(y))
+   static inline int ADD_int_int(int x, int y) { return ADD(x,y); }
+ }
+ var sum = ADD_int_int(1,2);
+ writeln(sum);
+
+ 
+Pointer Types
+-------------
+
+See the section "Referring to Pointer and String Types" above for background on
+how the Chapel programs can work with C pointer types. Any pointer type used in
+an extern block will be made visible to the Chapel program as c_ptr(T) or
+c_string (for char* types).
+
+For example:
+ extern {
+   static void setItToOne(int* x) { *x = 1; }
+   // will translate automatically into
+   //  extern proc setItToOne(x:c_ptr(c_int));
+
+   // The Chapel compiler can't know if X is used as an array,
+   // if the argument will come from a Chapel variable, and in more general
+   // cases, how to handle multiple levels of pointers. For example:
+   static void setSpace(int** x) {
+     static int space[10];
+     *x = space;
+   }
+   // translates automatically into
+   //  extern proc returnSpace( x:c_ptr(c_ptr(c_int)) );
+
+   static void setString(const char** x) { *x = "My String"; }
+ }
+ var x:c_int;
+ setItToOne(c_ptrTo(x));
+
+ var space:c_ptr(c_int);
+ setSpace(c_ptrTo(space)); 
+ 
+ var str:c_string;
+ setString(c_ptrTo(str));
+ writeln(toString(str));
+
+Please send any feedback or cases that seem to be handled incorrectly to chapel_info@cray.com.
 
 
 Example
@@ -519,7 +698,7 @@ it calls.
 Future Directions
 =================
 
-We intend to continue improving these capabilitites to provide richer
+We intend to continue improving these capabilities to provide richer
 and richer support for external types and functions over time.  If you
 have specific requests for improvement, please let us know at:
 chapel_info@cray.com.

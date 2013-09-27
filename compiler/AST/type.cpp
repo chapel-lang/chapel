@@ -1242,8 +1242,7 @@ void initPrimitiveTypes(void) {
   dtString = createPrimitiveType( "string", "chpl_string");
   dtString->defaultValue = new_StringSymbol("");
   dtStringC = createPrimitiveType( "c_string", "c_string" );
-  CREATE_DEFAULT_SYMBOL(dtStringC, gStringC, "_nullCstring");
-  gStringC->cname = "NULL";
+  CREATE_DEFAULT_SYMBOL(dtStringC, gStringC, "chpl_emptyCstring");
 
   dtSymbol = createPrimitiveType( "symbol", "_symbol"); 
 

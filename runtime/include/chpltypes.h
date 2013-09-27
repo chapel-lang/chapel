@@ -135,6 +135,7 @@ typedef void* _chpl_value;
 typedef void* chpl_opaque;
 
 #define nilRef 0
+#define chpl_emptyCstring ""
 
 // macros for specifying the correct C constant type
 #define INT8( i)   (i)
