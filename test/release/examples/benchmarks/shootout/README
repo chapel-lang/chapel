@@ -11,7 +11,8 @@ execution, following the lead of the competition.
 
 At present, this directory contains the following codes:
 
-    nbody.chpl   : Performs an n-body simulation of the Jovian planets
+    nbody.chpl       : Performs an n-body simulation of the Jovian planets
+    thread-ring.chpl : Passes a token between a large number of threads
 
 Over time, we plan to create versions of all the benchmarks and to
 enter Chapel into the competition.  Draft versions of other benchmarks

@@ -1,0 +1,2 @@
+--N=2000 --nthreads=52 # threadring.N=2000.nthreads=52.good
+--N=1000 --nthreads=98 # threadring.N=1000.nthreads=98.good
