@@ -3,8 +3,9 @@ CHPL = chpl
 CHPL_FLAGS = --fast
 
 TARGETS = \
+  chameneosredux
 	nbody
-  thread-ring
+  threadring
 
 REALS = $(TARGETS:%=%_real)
 
@@ -15,10 +16,14 @@ all: $(TARGETS)
 clean: FORCE
 	rm -f $(TARGETS) $(REALS)
 
-nbody: nbody.chpl
-	$(CHPL) -o $@ $(CHPL_FLAGS) --no-warnings $<
 
-thread-ring: thread-ring.chpl
-  $(CHPL) -o $@ $(CHPL_FLAGS) --ccflags -march=native $<
+chameneosredux: chameneosredux.chpl
+  $(CHPL) -o $@ $(CHPL_FLAGS) $<
+
+nbody: nbody.chpl
+	$(CHPL) -o $@ $(CHPL_FLAGS) $<
+
+threadring: threadring.chpl
+  $(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 FORCE:
