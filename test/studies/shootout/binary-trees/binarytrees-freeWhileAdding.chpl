@@ -93,9 +93,10 @@ proc buildTree(item, depth): Tree {
 // Compute a simple checksum on a tree
 //
 proc checksumAndFree(T): int {
-  if (T.left == nil) then
-    return T.item; 
-  else 
-    return (T.item + checksumAndFree(T.left) - checksumAndFree(T.right));
+  const sum = if (T.left == nil) then
+                T.item
+              else 
+                (T.item + checksumAndFree(T.left) - checksumAndFree(T.right));
   delete T;
+  return sum;
 }
