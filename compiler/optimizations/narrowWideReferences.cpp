@@ -266,6 +266,7 @@ narrowSym(Symbol* sym, WideInfo* wi) {
           (call->isPrimitive(PRIM_GET_SVEC_MEMBER) && call->get(1) == use) ||
           (call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE) && call->get(1) == use) ||
           (call->isPrimitive(PRIM_CAST) && call->get(2) == use) ||
+          (call->isPrimitive(PRIM_CAST_TO_VOID_STAR) && call->get(1) == use) ||
           (call->isPrimitive(PRIM_DEREF)) ||
           (call->isPrimitive(PRIM_SYNC_INIT)) ||
           (call->isPrimitive(PRIM_SYNC_LOCK)) ||
@@ -274,6 +275,7 @@ narrowSym(Symbol* sym, WideInfo* wi) {
           (call->isPrimitive(PRIM_PROCESS_TASK_LIST)) ||
           (call->isPrimitive(PRIM_STRING_COPY)) ||
           (call->isPrimitive(PRIM_SETCID)) ||
+          (call->isPrimitive(PRIM_SIZEOF)) ||
           (call->isResolved() &&
            (call->isResolved()->hasFlag(FLAG_LOCALE_MODEL_ALLOC) ||
             call->isResolved()->hasFlag(FLAG_LOCALE_MODEL_FREE)) &&
