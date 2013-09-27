@@ -186,7 +186,7 @@ void wide_string_from_c_string(chpl____wide_chpl_string *ret, c_string str, int 
   s[len] = '\0';
 
   ret->addr = s;
-  ret->size = len;
+  ret->size = len + 1; // this size includes the terminating NUL
 }
 void c_string_from_string(c_string* ret, chpl_string* str, int32_t lineno, chpl_string filename)
 {
