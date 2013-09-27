@@ -11,6 +11,7 @@ execution, following the lead of the competition.
 
 At present, this directory contains the following codes:
 
+    binarytrees.chpl    : Allocates and deallocates many many binary trees
     chameneosredux.chpl : Simulates meetings between color-changing Chameneos
     nbody.chpl          : Performs an n-body simulation of the Jovian planets
     threadring.chpl     : Passes a token between a large number of threads

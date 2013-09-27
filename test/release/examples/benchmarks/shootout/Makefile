@@ -3,9 +3,10 @@ CHPL = chpl
 CHPL_FLAGS = --fast
 
 TARGETS = \
-  chameneosredux
-	nbody
-  threadring
+	binarytrees \
+	chameneosredux \
+	nbody \
+	threadring \
 
 REALS = $(TARGETS:%=%_real)
 
@@ -17,13 +18,16 @@ clean: FORCE
 	rm -f $(TARGETS) $(REALS)
 
 
-chameneosredux: chameneosredux.chpl
-  $(CHPL) -o $@ $(CHPL_FLAGS) $<
-
-nbody: nbody.chpl
+binarytrees: binarytrees.chpl
 	$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
+chameneosredux: chameneosredux.chpl
+	$(CHPL) -o $@ $(CHPL_FLAGS) $<
+
+nbody: nbody.chpl
+	$(CHPL) -o $@ $(CHPL_FLAGS) --no-warnings $<
+
 threadring: threadring.chpl
-  $(CHPL) -o $@ $(CHPL_FLAGS) $<
+	$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 FORCE:
