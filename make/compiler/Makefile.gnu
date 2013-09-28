@@ -86,7 +86,7 @@ endif
 WARN_CXXFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings -Wno-strict-aliasing
 # decl-after-stmt for non c99 compilers. See commit message 21665
 WARN_CFLAGS = $(WARN_CXXFLAGS) -Wmissing-prototypes -Wstrict-prototypes -Wnested-externs -Wdeclaration-after-statement -Wmissing-format-attribute
-WARN_GEN_CFLAGS = $(WARN_CFLAGS) -Wno-unused -Wno-uninitialized
+WARN_GEN_CFLAGS = $(WARN_CFLAGS) -Wno-unused -Wno-uninitialized -Wno-inline
 
 ifeq ($(GNU_GPP_SUPPORTS_MISSING_DECLS),1)
 WARN_CXXFLAGS += -Wmissing-declarations
