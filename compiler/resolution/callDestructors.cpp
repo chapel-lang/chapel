@@ -273,7 +273,12 @@ fixupDestructors() {
             fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
             fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
               new CallExpr(useRefType ? PRIM_GET_MEMBER : PRIM_GET_MEMBER_VALUE, fn->_this, field)));
-            fn->insertBeforeReturnAfterLabel(new CallExpr(field->type->destructor, tmp));
+            FnSymbol* autoDestroyFn = autoDestroyMap.get(field->type);
+            if (autoDestroyFn && autoDestroyFn->hasFlag(FLAG_REMOVABLE_AUTO_DESTROY))
+              fn->insertBeforeReturnAfterLabel(new CallExpr(autoDestroyFn, tmp));
+            else
+              fn->insertBeforeReturnAfterLabel(new CallExpr(field->type->destructor, tmp)); 
+
             // WORKAROUND:
             // This is a temporary bug fix that results in leaked memory
             //  for sync and single vars in user defined records.
