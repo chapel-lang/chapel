@@ -2,7 +2,7 @@ MAKEFLAGS = --no-print-directory
 
 CHPL = chpl
 
-CHPL_FLAGS = --fast -sprintOriginal=true -sprintPerf=false -sdebugBlockDistBulkTransfer=false -sdisableAliasedBulkTransfer=false
+CHPL_FLAGS = --fast -sprintOriginal=true -sprintPerf=false -sdisableAliasedBulkTransfer=false
 
 TARGETS = \
 	  miniMD \
@@ -17,6 +17,6 @@ clean: FORCE
 	rm -f $(TARGETS) $(REALS)
 
 miniMD: miniMD.chpl helpers/*.chpl
-	$(CHPL) -o $@ $(CHPL_FLAGS) $< helpers/*.chpl 
+	$(CHPL) -o $@ $(CHPL_FLAGS) -M helpers $<
 
 FORCE:

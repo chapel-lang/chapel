@@ -2,25 +2,29 @@ MAKEFLAGS = --no-print-directory
 
 CHPL = chpl
 
-CHPL_FLAGS = --fast --no-cc-warnings -sprintOriginal=true -sprintPerf=false -sdebugBlockDistBulkTransfer=false -sdisableAliasedBulkTransfer=false
+CHPL_FLAGS = --fast -sprintOriginal=true -sprintPerf=false -sdisableAliasedBulkTransfer=false
 
 TARGETS = \
-	  miniMD \
+	miniMD \
 
 REALS = $(TARGETS:%=%_real)
 
-default: all
+default: all explicitMiniMD
 
 all: $(TARGETS)
 
 clean: FORCE
 	rm -f $(TARGETS) $(REALS)
+	cd explicit && $(MAKE) clean
 
 stencil: FORCE
 stencil: CHPL_FLAGS += -suseStencilDist=true -sdefaultDoRADOpt=false
 stencil: $(TARGETS)
 
 miniMD: miniMD.chpl helpers/*.chpl
-	$(CHPL) -o $@ $(CHPL_FLAGS) $< helpers/*.chpl
+	$(CHPL) -o $@ $(CHPL_FLAGS) -M helpers $<
+
+explicitMiniMD: FORCE
+	cd explicit && $(MAKE)
 
 FORCE:

@@ -10,6 +10,8 @@ all: $(TARGETS)
 clean: FORCE
 	cd hpcc && $(MAKE) clean
 	cd lulesh && $(MAKE) clean
+	cd miniMD && $(MAKE) clean
+	cd shootout && $(MAKE) clean
 	cd ssca2 && $(MAKE) clean
 
 hpcc: FORCE
