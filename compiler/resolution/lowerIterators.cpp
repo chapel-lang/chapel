@@ -26,6 +26,8 @@ static void nonLeaderParCheck()
   }
   USR_STOP();
 }
+
+
 static void nonLeaderParCheckInt(FnSymbol* fn, bool allowYields)
 {
   Vec<CallExpr*> calls;
@@ -1053,7 +1055,7 @@ expandRecursiveIteratorInline(CallExpr* call)
 typedef Map<FnSymbol*,FnSymbol*> TaskFnCopyMap;
 
 static void
-expandBodyForIteratorInline(BlockStmt* body, Expr* bodyMarker, BlockStmt* ibody, Vec<BaseAST*>& asts, Symbol* index, bool removeReturn, TaskFnCopyMap& taskFnCopies);
+expandBodyForIteratorInline(BlockStmt* body, BlockStmt* ibody, Vec<BaseAST*>& asts, Symbol* index, bool removeReturn, TaskFnCopyMap& taskFnCopies);
 
 static void
 expandIteratorInline(CallExpr* call) {
@@ -1094,13 +1096,13 @@ expandIteratorInline(CallExpr* call) {
 
   Vec<BaseAST*> asts;
   TaskFnCopyMap taskFnCopies;
-  expandBodyForIteratorInline(body, ibody, ibody, asts, index, true, taskFnCopies);
+  expandBodyForIteratorInline(body, ibody, asts, index, true, taskFnCopies);
 
   replaceIteratorFormalsWithIteratorFields(iterator, ic, asts);
 }
 
 static void
-expandBodyForIteratorInline(BlockStmt* body, Expr* bodyMarker, BlockStmt* ibody, Vec<BaseAST*>& asts, Symbol* index, bool removeReturn, TaskFnCopyMap& taskFnCopies)
+expandBodyForIteratorInline(BlockStmt* body, BlockStmt* ibody, Vec<BaseAST*>& asts, Symbol* index, bool removeReturn, TaskFnCopyMap& taskFnCopies)
 {
   // Now replace yield statements in the inlined body with copies of the
   // expression that called the iterator, substituting the yielded index for the
@@ -1175,7 +1177,7 @@ expandBodyForIteratorInline(BlockStmt* body, Expr* bodyMarker, BlockStmt* ibody,
 
           // Repeat, recursively.
           Vec<BaseAST*> recAsts;
-          expandBodyForIteratorInline(body, bodyMarker, fcopy->body, recAsts, index, false, taskFnCopies);
+          expandBodyForIteratorInline(body, fcopy->body, recAsts, index, false, taskFnCopies);
 
         } else {
           // Indeed, 'cfn' is encountered only once per 'body',

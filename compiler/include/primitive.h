@@ -142,10 +142,11 @@ enum PrimitiveTag {
   PRIM_WHEN,
   PRIM_TYPE_TO_STRING,
 
-  PRIM_BLOCK_PARAM_LOOP,        // BlockStmt::blockInfo - param for loop
-  PRIM_BLOCK_WHILEDO_LOOP,      // BlockStmt::blockInfo - while do loop
-  PRIM_BLOCK_DOWHILE_LOOP,      // BlockStmt::blockInfo - do while loop
-  PRIM_BLOCK_FOR_LOOP,          // BlockStmt::blockInfo - for loop
+  PRIM_BLOCK_PARAM_LOOP,        // BlockStmt::blockInfo - param for loop (index,
+                                // low, high, stride)
+  PRIM_BLOCK_WHILEDO_LOOP,      // BlockStmt::blockInfo - while do loop (cond)
+  PRIM_BLOCK_DOWHILE_LOOP,      // BlockStmt::blockInfo - do while loop (cond)
+  PRIM_BLOCK_FOR_LOOP,          // BlockStmt::blockInfo - for loop (index, iterator)
   PRIM_BLOCK_BEGIN,             // BlockStmt::blockInfo - begin block
   PRIM_BLOCK_COBEGIN,           // BlockStmt::blockInfo - cobegin block
   PRIM_BLOCK_COFORALL,          // BlockStmt::blockInfo - coforall block
