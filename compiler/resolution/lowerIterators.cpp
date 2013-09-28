@@ -1553,14 +1553,14 @@ static void addCrossedFreeIteratorCalls(GotoStmt* stmt)
   // Examine the target label of the goto and find the block containing the
   // label's definition.
   SymExpr* lsym = toSymExpr(stmt->label);
-  INT_ASSERT(lsym);	// These should always have a target label.
+  INT_ASSERT(lsym); // These should always have a target label.
   DefExpr* label = lsym->var->defPoint;
   Expr* top_scope = toBlockStmt(label->parentExpr);
   // We expect the top scope to exist and be a block and not be the root scope.
   INT_ASSERT(top_scope);
 
   // Now traverse scopes outward from the block containing this goto statement.
-  Expr* last_scope = stmt;	// Track the scope we just exited.
+  Expr* last_scope = stmt;  // Track the scope we just exited.
   Expr* scope = stmt->parentExpr;
   while (scope && scope != top_scope)
   {

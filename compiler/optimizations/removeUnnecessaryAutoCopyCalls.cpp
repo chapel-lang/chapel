@@ -26,10 +26,10 @@ class AutoTrack {
   AutoTrack();
   ~AutoTrack();
  public: 
-  void move(CallExpr* call);		// Track a move primitive.
-  void autoCopy(CallExpr* call);	// Track an autoCopy call.
-  void autoDestroy(CallExpr* call);	// Track an autoDestroy call.
-  bool update();	// Update the current block using tracking info.
+  void move(CallExpr* call);        // Track a move primitive.
+  void autoCopy(CallExpr* call);    // Track an autoCopy call.
+  void autoDestroy(CallExpr* call); // Track an autoDestroy call.
+  bool update();    // Update the current block using tracking info.
  private:
   struct Link {
     CallExpr* call;
@@ -78,7 +78,7 @@ AutoTrack::~AutoTrack() {
       delete p;
       p = pnext;
     }
-    delete r;	// Delete the root.
+    delete r;   // Delete the root.
     r = rnext;
   }
 }
