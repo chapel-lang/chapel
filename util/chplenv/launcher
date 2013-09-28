@@ -20,11 +20,7 @@ if ($preset_launcher eq "") {
         if (system("which aprun > /dev/null 2>&1")) {
             $launcher = "none";
         } else {
-            if (system("which qsub > /dev/null 2>&1")) {
-                $launcher = "aprun";
-            } else {
-                $launcher = "pbs-aprun";
-            }
+            $launcher = "aprun";
         }
     } elsif ($platform eq "marenostrum") {
         $launcher = "marenostrum";

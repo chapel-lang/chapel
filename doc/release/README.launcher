@@ -40,14 +40,14 @@ the program itself.
 Currently-supported launchers include:
 
   amudprun            : GASNet launcher for programs running over UDP
-  aprun               : Cray XT application launcher using aprun
+  aprun               : Cray application launcher using aprun
   gasnetrun_ibv       : GASNet launcher for programs running over Infiniband
   gasnetrun_mpi       : GASNet launcher for programs using the MPI conduit
   loadleveler         : launch using IBM loadleveler (still needs refining)
   lsf-gasnetrun_ibv   : GASNet launcher using LSF (bsub) over Infiniband
   marenostrum         : launch using MareNostrum's mnsubmit script
   mtarun              : Cray XMT application launcher using mtarun
-  pbs-aprun           : Cray XT application launcher using PBS (qsub) + aprun
+  pbs-aprun           : Cray application launcher using PBS (qsub) + aprun
   pbs-gasnetrun_ibv   : GASNet launcher using PBS (qsub) over Infiniband
   slurm-gasnetrun_ibv : GASNet launcher using SLURM over Infiniband
   tile-monitor        : launch using Tilera's tile monitor
@@ -57,8 +57,7 @@ A specific launcher can be requested by setting the CHPL_LAUNCHER
 environment variable.  If left unset, a default is picked as follows:
 
   CHPL_PLATFORM=cray-xc, cray-xe, cray-xk, or cray-xt.
-  + qsub & aprun in user's path -> qsub-aprun
-  + only aprun in user's path   -> aprun
+  + aprun in user's path        -> aprun
   (otherwise)                   -> none
 
   CHPL_PLATFORM=cray-xmt        -> mtarun
