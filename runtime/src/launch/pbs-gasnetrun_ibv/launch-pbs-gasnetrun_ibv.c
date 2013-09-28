@@ -106,7 +106,7 @@ static void genNumLocalesOptions(FILE* pbsFile, qsubVersion qsub,
                  "specified -- use the CHPL_LAUNCHER_WALLTIME and/or CHPL_LAUNCHER_QUEUE\n"
                  "environment variables", 0, 0);
     if (numCoresPerLocale)
-      fprintf(pbsFile, "#PBS -l nodes=%d\n", numCoresPerLocale*numLocales);
+      fprintf(pbsFile, "#PBS -l nodes=%d\n", numLocales);
     break;
   }
 }
