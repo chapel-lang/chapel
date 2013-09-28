@@ -1548,6 +1548,109 @@ inlineIterators() {
 }
 
 
+static void addCrossedFreeIteratorCalls(GotoStmt* stmt)
+{
+  // Examine the target label of the goto and find the block containing the
+  // label's definition.
+  SymExpr* lsym = toSymExpr(stmt->label);
+  INT_ASSERT(lsym);	// These should always have a target label.
+  DefExpr* label = lsym->var->defPoint;
+  Expr* top_scope = toBlockStmt(label->parentExpr);
+  // We expect the top scope to exist and be a block and not be the root scope.
+  INT_ASSERT(top_scope);
+
+  // Now traverse scopes outward from the block containing this goto statement.
+  Expr* last_scope = stmt;	// Track the scope we just exited.
+  Expr* scope = stmt->parentExpr;
+  while (scope && scope != top_scope)
+  {
+    if (BlockStmt* block = toBlockStmt(scope))
+    {
+      for_alist_backward(expr, block->body)
+      {
+        // If we encounter the scope we just exited from, we're done.
+        // The _freeIterator call always lies in the suffix of the scope
+        // containing the loop construct.
+        if (expr == last_scope)
+          break;
+
+        if (CallExpr* call = toCallExpr(expr))
+        {
+          FnSymbol* fn = call->isResolved();
+          // Naturally, a flag is preferred.
+          if (fn && !strcmp(fn->name, "_freeIterator"))
+          {
+            // OK, we found a _freeIterator call that will be crossed,
+            // so duplicate it just before the break or return.
+            SET_LINENO(call);
+            stmt->insertBefore(call->copy());
+          }
+        }
+      }
+    }
+    last_scope = scope;
+    scope = last_scope->parentExpr;
+  }
+
+  // We expect the loop to terminate after we have found the top scope.  If it
+  // terminates for another reason (like popping out of the top of the function
+  // or encountering a non-block parent expression, then we fail with an error.
+  INT_ASSERT(scope == top_scope);
+}
+
+
+// This routine is called to fix up GotoStmts (breaks and returns) whose target
+// labels lie outside of "body".  This fixup consists of calling the
+// _freeIterator function for any iterator class (ic) that goes out of scope as
+// a result of the corresponding goto.  The goto "crosses" the _freeIterator
+// call at the end of the block.  That is, since the normal exit code is
+// skipped, the _freeIterator call is never reached.  This problem is solved by
+// copying _freeIterator calls that will be crossed just before each break or
+// return statement that causes it to be crossed.
+//
+// The algorithm is straightforward:
+// To determine a stopping point, we find the block containing the DefExpr where
+// the target label is defined.  After the body of the loop has been inlined in
+// the iterator which has been inlined in the caller, we expect this block to
+// contain (perhaps many levels down) the break or return statement causing
+// "body" to be exited.
+// Then, starting from each break or return statement, we search outward through
+// all containing blocks until we match the outermost block.  Along the way, if
+// we encounter a block which is a for loop, we insert a call to the
+// _freeIterator function directly ahead of the break or return.  Note that
+// these will appear in reverse nesting order (as they should).
+//
+static void addCrossedFreeIteratorCalls()
+{
+  // Walk all goto statments.
+  forv_Vec(GotoStmt, stmt, gGotoStmts)
+  {
+    // Ignore goto statments that are not in the tree.
+    if (!stmt->parentSymbol)
+      continue;
+
+    // We don't yet know how to deal with zippered iteration,
+    // so just leak memory and move on.
+    if (!strcmp(stmt->parentSymbol->name,"advance"))
+      continue;
+
+    switch(stmt->gotoTag)
+    {
+     default:
+      break; // We only care about breaks and returns.
+     case GOTO_NORMAL:
+      INT_FATAL(stmt, "User gotos are not supported.");
+      break;
+     case GOTO_BREAK:
+     case GOTO_RETURN:
+      // Add crossed free iterator calls for this statement.
+      addCrossedFreeIteratorCalls(stmt);
+      break;
+    }
+  }
+}
+
+
 static void fixNumericalGetMemberPrims()
 {
   // fix GET_MEMBER primitives that access fields of an iterator class
@@ -1779,6 +1882,8 @@ void lowerIterators() {
       lowerIterator(fn);
     }
   }
+
+  addCrossedFreeIteratorCalls();
 
   fixNumericalGetMemberPrims();
 
