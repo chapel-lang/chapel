@@ -16,7 +16,7 @@ if ($flag eq "" || $flag eq "--host") {
 }
 
 if ($preset_compiler eq "") {
-    my $platform = run("platform");
+    my $platform = run("platform", $flag);
     if ($platform =~ /^cray-xmt(-sim)?$/) {
 	$compiler = "cray-mta";
     } elsif ($platform eq "x1"     || $platform eq "x2" ||
