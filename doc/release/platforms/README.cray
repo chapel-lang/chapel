@@ -51,13 +51,13 @@ us know at chapel_info@cray.com.)
 
      export CHPL_LAUNCHER=pbs-aprun
 
-   If it only requires aprun to launch a job, set it to 'aprun'.  If
-   you want to manage all job queueing/launching responsibilities
-   yourself, set it to 'none'.  If left unset, the value of
-   CHPL_LAUNCHER will be set automatically to one of the three
-   settings above depending on the presence of aprun and/or qsub.  See
-   $CHPL_HOME/doc/README.launcher for more information on Chapel's
-   launcher capabilities.
+   If it only requires aprun to launch a job (or you want to manage
+   the qsub step yourself), set it to 'aprun'.  If you want to manage
+   all job queueing/launching responsibilities yourself, set it to
+   'none'.  If left unset, the value of CHPL_LAUNCHER will be set
+   automatically to one of the three settings above depending on the
+   presence of aprun and/or qsub.  See $CHPL_HOME/doc/README.launcher
+   for more information on Chapel's launcher capabilities.
 
 
 3) When using CHPL_LAUNCHER == pbs-aprun, you can optionally specify a
