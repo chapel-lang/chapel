@@ -250,6 +250,7 @@ void codegenTypeStructureInclude(FILE* outfile);
 
 Type* getNamedType(std::string name);
 
+bool needsCapture(Type* t);
 VarSymbol* resizeImmediate(VarSymbol* s, PrimitiveType* t);
 
 // defined in codegen.cpp

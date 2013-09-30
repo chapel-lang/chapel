@@ -1708,6 +1708,38 @@ Type* getNamedType(std::string name) {
   return NULL;
 }
 
+// Do variables of the type 't' need capture for tasks?
+bool needsCapture(Type* t) {
+  INT_ASSERT(!isReferenceType(t)); // responsibility of the caller
+
+  if (is_bool_type(t) ||
+      is_int_type(t) ||
+      is_uint_type(t) ||
+      is_real_type(t) ||
+      is_imag_type(t) ||
+      is_complex_type(t) ||
+      is_enum_type(t) ||
+      is_string_type(t) ||
+      t == dtStringC ||
+      isClass(t) ||
+      isRecord(t) ||
+      isUnion(t) ||
+      t == dtTaskID ||
+      t == dtFile ||
+      t == dtTaskList ||
+      t == dtNil ||
+      t == dtOpaque ||
+      t->symbol->hasFlag(FLAG_EXTERN)) {
+    return true;
+  } else {
+    // Ensure we have covered all types.
+    INT_ASSERT(isRecordWrappedType(t) ||  // domain, array, or distribution
+               isSyncType(t) ||
+               isAtomicType(t));
+    return false;
+  }
+}
+
 VarSymbol* resizeImmediate(VarSymbol* s, PrimitiveType* t)
 {
   for( int i = 0; i < INT_SIZE_NUM; i++ ) {

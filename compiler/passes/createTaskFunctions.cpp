@@ -6,6 +6,35 @@
 // (Used instead of deleting SymbolMap elements, which does not work well.)
 static Symbol* markPruned;
 
+// Is 'sym' an index var in the coforall loop
+// for which the 'fn' was created?
+static bool isCorrespCoforallIndex(FnSymbol* fn, Symbol* sym)
+{
+  if (!sym->hasFlag(FLAG_COFORALL_INDEX_VAR))
+    return false;
+
+  // If 'sym' is for the loop that 'call' belongs to,
+  // they both come from the same BlockStmt.
+  BlockStmt* block = toBlockStmt(fn->defPoint->parentExpr);
+  INT_ASSERT(block);
+
+  // I conjecture that if 'sym' comes from a different block,
+  // it ain't going to be from that loop.
+  if (sym->defPoint->parentExpr != block)
+    return false;
+
+  // FYI: presently, for a 'coforall', the enclosing block is a for loop.
+  INT_ASSERT(block->blockInfo &&
+             block->blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP));
+
+  // We could verify that 'sym' is defined via a 'move'
+  // from the _indexOfInterest variable referenced by the SymExpr
+  // block->blockInfo->get(1). (It's a move from a tuple component
+  // of _indexOfInterest, for zippered coforall loops.)
+  //
+  return true;
+}
+
 // We use modified versions of these in flattenFunctions.cpp:
 //  isOuterVar(), findOuterVars(), addVarsToFormals(),
 //  replaceVarUsesWithFormals(), addVarsToActuals()
@@ -57,7 +86,7 @@ findOuterVars(FnSymbol* fn, SymbolMap* uses) {
     if (SymExpr* symExpr = toSymExpr(ast)) {
       Symbol* sym = symExpr->var;
       if (toVarSymbol(sym) || toArgSymbol(sym))
-        if (isOuterVar(sym, fn))
+        if (!isCorrespCoforallIndex(fn, sym) && isOuterVar(sym, fn))
           uses->put(sym,gNil);
     }
   }

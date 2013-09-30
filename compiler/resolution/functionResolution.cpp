@@ -2142,8 +2142,22 @@ getVisibleFunctions(BlockStmt* block,
   return NULL;
 }
 
+static void replaceActualWithDeref(CallExpr* call, Type* derefType,
+                                   SymExpr* actualExpr, Symbol* actualSym,
+                                   CallInfo* info, int argNum)
+{
+  SET_LINENO(call);
+  Expr* stmt = call->getStmtExpr();
+  VarSymbol* derefTmp = newTemp("derefTmp", derefType);
+  stmt->insertBefore(new DefExpr(derefTmp));
+  stmt->insertBefore(new_Expr("'move'(%S, 'deref'(%S))", derefTmp, actualSym));
+  actualExpr->var = derefTmp;
+  INT_ASSERT(info->actuals.v[argNum] == actualSym);
+  info->actuals.v[argNum] = derefTmp;
+}
 
-static void handleCaptureArgs(CallExpr* call, FnSymbol* taskFn) {
+
+static void handleCaptureArgs(CallExpr* call, FnSymbol* taskFn, CallInfo* info) {
   INT_ASSERT(taskFn);
   if (!needsCapture(taskFn)) {
     // A task function should have args only if it needsCapture.
@@ -2156,15 +2170,31 @@ static void handleCaptureArgs(CallExpr* call, FnSymbol* taskFn) {
     return;
   }
 
+  int argNum = -1;
   for_formals_actuals(formal, actual, call) {
+    argNum++;
     SymExpr* symexpActual = toSymExpr(actual);
     INT_ASSERT(symexpActual); // because of how we invoke a task function
     Symbol* varActual = symexpActual->var;
+
     // If 'call' is in a generic function, it is supposed to have been
     // instantiated by now. Otherwise our begin_fn has to remain generic.
     INT_ASSERT(!varActual->type->symbol->hasFlag(FLAG_GENERIC));
+
     // need to copy varActual->type even for type variables
     formal->type = varActual->type;
+
+    // If the actual is a ref, still need to capture it => remove ref.
+    if (isReferenceType(varActual->type)) {
+      Type* deref = varActual->type->getValType();
+      if (needsCapture(deref)) {
+        formal->type = deref;
+        replaceActualWithDeref(call, deref, symexpActual, varActual,
+                               info, argNum);
+      } else {
+        // Probably OK to leave as-is.
+      }
+    }
 
     if (varActual->hasFlag(FLAG_TYPE_VARIABLE))
       formal->addFlag(FLAG_TYPE_VARIABLE);
@@ -2375,7 +2405,7 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
       }
     } else {
       visibleFns.add(call->isResolved());
-      handleCaptureArgs(call, call->isResolved());
+      handleCaptureArgs(call, call->isResolved(), &info);
     }
 
     if (explainCallLine && explainCallMatch(call)) {
