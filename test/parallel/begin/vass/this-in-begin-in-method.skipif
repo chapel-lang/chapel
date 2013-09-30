@@ -1,3 +1,0 @@
-# This fails only under --local.
-CHPL_COMM != none
-COMPOPTS <= --no-local
