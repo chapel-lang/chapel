@@ -22,7 +22,8 @@ void init_logs() {
 
 void 
 log_flags_arg(ArgumentState *arg_state, char *arg) {
-  initLogFlags(valid_log_flags);
+  if (valid_log_flags.count() == 0)
+    initLogFlags(valid_log_flags);
 
   // --log or --log= means "log every pass"
   // Actually, passes whose log letter is NUL are skipped.
