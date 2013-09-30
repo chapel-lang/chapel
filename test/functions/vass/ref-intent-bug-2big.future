@@ -1,10 +1,13 @@
-bug: compiler hits an internal failure in a certain case when 'ref' intent is used with comm=gasnet
+bug: segfault during execution under GASNET
 
-This is the same as ref-intent-bug-1small.future, but with a larger program.
-Right now I get:
+I get this:
 
-ref-intent-bug-2big.chpl:111: error: unexpected case [parallel.cpp:567]
+  *** Caught a fatal signal: SIGSEGV(11) on node 0/9
+  NOTICE: Before reporting bugs, run with GASNET_BACKTRACE=1 in the environment to generate a backtrace.
+
+under segment=everything; more nodes fail under segment=fast.
 
 Works fine with comm=none.
+NB need to unset LC_COLLATE or similar, to get consistent sort order.
 
 When this bug is fixed, .skipif should be removed.
