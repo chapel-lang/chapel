@@ -1,0 +1,30 @@
+#!/bin/bash
+
+USAGE="usage: $0 WORKERS PROG {ARGS}"
+
+if [ "$#" -lt 1 ]; then
+	echo ${USAGE}
+	exit 1
+fi
+
+WORKERS=$1; shift
+PROG=$1; shift
+
+export LD_LIBRARY_PATH=../../.libs
+export MYTH_WORKER_NUM=${WORKERS}
+export PATH=./:${PATH}
+
+if [ ! -f ${PROG} ]; then
+	echo "Executable does not exist, building..."
+	make ${PROG}
+	if [ "$?" -eq 0 ]; then
+		echo "Done."
+	else
+		echo "Build failed"
+		exit 1
+	fi
+	echo ""
+fi
+
+echo "Executing ${PROG} $@ with ${WORKERS} workers..."
+${PROG} $@
