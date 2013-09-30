@@ -40,8 +40,8 @@ The user can select between these options by setting the CHPL_TASKS
 environment variable to one of the following options:
 
 fifo           : the default and most portable/stable option; heavyweight
-qthreads       : a prototype option based on Sandia's Qthreads user-level tasks
-massivethreads : a prototype option based on U Tokyo's MassiveThreads library
+qthreads       : an option based on Sandia's Qthreads user-level tasks
+massivethreads : an option based on U Tokyo's MassiveThreads library
 mta            : an option specific to the Cray XMT (TM)
 none           : execute the program serially using a single task
 

@@ -8,17 +8,12 @@ team at:
 
    http://code.google.com/p/massivethreads/
 
-Note that while massivethreads was packaged with its README describing
-how to integrate it with Chapel version 1.5, since then, we have
-integrated it more directly into the Chapel source tree such that
-setting CHPL_TASKS to massivethreads and rebuilding should be all
-that's required to make use of it.  See doc/README.tasks for details.
+We have applied the following configuration settings for Chapel users
+for simplicity:
 
-We have made the following local modifications to the official
-sources:
+* disabled the internal malloc wrapper (alternative:CHPL_MEM=tcmalloc)
 
-* performed the recommended update to myth_config.h from the
-  massivethreads README for Chapel users to save individuals
-  the trouble.
+* disabled worker thread binding with CPU (can be enabled at runtime
+  by setting an environmental varibale MYTH_BIND_WORKERS=1)
 
-
+* disabled the experimental scheduler
