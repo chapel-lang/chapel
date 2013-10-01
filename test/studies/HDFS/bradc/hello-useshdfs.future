@@ -1,6 +1,0 @@
-bug: using HDFS breaks compiles
-
-Since r21915 was committed, it seems that the HDFS module cannot be
-use'd even if its contents are not accessed.  I'm not sure what it is
-about HDFS.chpl (or the modules it uses) that would cause this
-behavior, but have asked David and Vass to investigate.
