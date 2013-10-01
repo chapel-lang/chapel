@@ -659,10 +659,10 @@ Call stack size is different than for fifo (12/7/12)
 ----------------------------------------------------
 [Error matching program output for execflags/bradc/callStackSize]
 
-We call this program with --callStackSize=13000000, but fifo rounds up
-to next page size, so the .good file say 13000704.  Qthreads does not
-do this by default, so it's output reports the exact callStackSize.
-We could fix this with some math.
+We call this program with CHPL_RT_CALL_STACK_SIZE=13000000, but fifo
+rounds up to next page size, so the .good file say 13000704.  Qthreads
+does not do this by default, so its output reports the exact
+callStackSize.  We could fix this with some math.
 
 segv in qthread library (12/7/12)
 ---------------------------------

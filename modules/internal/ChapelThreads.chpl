@@ -11,8 +11,8 @@ pragma "no use ChapelStandard"
 module ChapelThreads
 {
   extern proc chpl_task_getenvNumThreadsPerLocale(): int(32);
-  config const numThreadsPerLocale: int = chpl_task_getenvNumThreadsPerLocale();
+  const numThreadsPerLocale: int = chpl_task_getenvNumThreadsPerLocale();
 
   extern proc chpl_task_getenvCallStackSize(): int(64);
-  config const callStackSize: int = chpl_task_getenvCallStackSize();
+  const callStackSize: int = chpl_task_getenvCallStackSize();
 }
