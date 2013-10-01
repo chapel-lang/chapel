@@ -116,10 +116,11 @@ module DefaultRectangular {
     }
   
     iter these(param tag: iterKind) where tag == iterKind.leader {
-      const numSublocs = here.getChildCount();
       const ignoreRunning = dataParIgnoreRunningTasks;
       const minIndicesPerTask = dataParMinGranularity;
-      if (numSublocs != 0) {
+      const numSublocs = here.getChildCount();
+
+      if localeModelHasSublocales && numSublocs != 0 {
         if debugDataParNuma then
           writeln("numSublocs ", numSublocs, " numCores ", here.numCores, " ranges ", ranges);
         const numTasks = numSublocs;

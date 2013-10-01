@@ -781,10 +781,9 @@ module ChapelRangeBase {
   
     if debugChapelRange then
       writeln("*** In range leader:"); // ", this);
+    const numTasks = here.getChildCount();
 
-    const numSublocs = here.getChildCount();
-    if numSublocs != 0 {
-      const numTasks = numSublocs;
+    if localeModelHasSublocales && numTasks != 0 {
       const len = this.length;
       coforall chunk in 0..#numTasks {
         on here.getChild(chunk) {
