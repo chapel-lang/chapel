@@ -63,6 +63,14 @@ buildEmptyWrapper(FnSymbol* fn, CallInfo* info) {
   wrapper->addFlag(FLAG_WRAPPER);
   wrapper->addFlag(FLAG_INVISIBLE_FN);
   wrapper->addFlag(FLAG_INLINE);
+  if (fn->hasFlag(FLAG_INIT_COPY_FN))
+    wrapper->addFlag(FLAG_INIT_COPY_FN);
+  if (fn->hasFlag(FLAG_AUTO_COPY_FN))
+    wrapper->addFlag(FLAG_AUTO_COPY_FN);
+  if (fn->hasFlag(FLAG_AUTO_DESTROY_FN))
+    wrapper->addFlag(FLAG_AUTO_DESTROY_FN);
+  if (fn->hasFlag(FLAG_DONOR_FN))
+    wrapper->addFlag(FLAG_DONOR_FN);
   if (fn->hasFlag(FLAG_NO_PARENS))
     wrapper->addFlag(FLAG_NO_PARENS);
   if (fn->hasFlag(FLAG_CONSTRUCTOR))
