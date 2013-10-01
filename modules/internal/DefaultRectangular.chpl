@@ -183,10 +183,6 @@ module DefaultRectangular {
                   " ranges(", parDim, ").length=", ranges(parDim).length);
   
         if debugDataPar then writeln("### numChunks=", numChunks, " (parDim=", parDim, ")");
-        const numSublocs = (here:LocaleModel).getChildCount();
-        if debugDataParNuma {
-          writeln("numSublocs=", numSublocs);
-        }
 
         if numChunks == 1 {
           if rank == 1 {
