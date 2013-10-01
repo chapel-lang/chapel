@@ -11,15 +11,21 @@ Contributors to the current release
 Rafael Asenjo, University of Malaga
 Brad Chamberlain, Cray Inc.
 Sung-Eun Choi, Cray Inc.
-Martha Dumler, Cray Inc.
+Saliya Ekanayake, Indiana University
 Michael Ferguson, LTS
+Alexey Gokhberg, Unicorn Enterprises SA
+Ben Harshbarger, Cray Inc./University of Washington
 Tom Hildebrandt, Cray Inc.
 David Iten, Cray Inc.
-Jessica Jueckstock, MITRE
-John Koenig, Cray Inc.
+Rafael Larrosa Jiminez, University of Malaga
+Jun Nakashima, University of Tokyo
 Vassily Litvinov, Cray Inc.
+Elliot Ronaghan, Cray Inc./Moravian College
+Sara Salem, Cairo University
 Alberto Sanz, University of Malaga
+Darren Smith, University of Maryland
 Greg Titus, Cray Inc.
+Tim Zakian, Cray Inc./Indiana University
 
 Contributors to previous releases
 ---------------------------------
@@ -33,6 +39,7 @@ Steve Deitz, Cray Inc.
 Joel Denny, ETI
 Roxana Diaconescu, CalTech
 James Dinan, Cray Inc./The Ohio State University
+Martha Dumler, Cray Inc.
 Samuel Figueroa, Cray Inc.
 Roald Frederickx, personal
 Paul Hargrove, Lawrence Berkeley National Laboratory
@@ -42,9 +49,10 @@ Shannon Hoffswell, Cray Inc.
 Mary Beth Hribar, Cray Inc.
 Mark James, JPL
 Mackale Joyner, Cray Inc./Rice University
+Jessica Jueckstock, MITRE
+John Koenig, Cray Inc.
 Matthew Lentz, University of Maryland
 Juan Lopez, University of Malaga
-Jun Nakashima, University of Tokyo
 Maria Angeles Navarro, University of Malaga
 Jacob Nelson, Cray Inc./University of Washington
 John Plevyak, Cray Inc.
@@ -60,6 +68,6 @@ Joe Yan, University of Maryland
 Hans Zima, CalTech/JPL
 
 
-We are grateful to our many enthusiastic and vocal users for helping
-us continually improve the quality of the Chapel language and
+We are also grateful to our many enthusiastic and vocal users for
+helping us continually improve the quality of the Chapel language and
 compiler.
