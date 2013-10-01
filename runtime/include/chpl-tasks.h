@@ -21,7 +21,7 @@ void      chpl_sync_waitEmptyAndLock(chpl_sync_aux_t *,
                                         int32_t, chpl_string);
 void      chpl_sync_markAndSignalFull(chpl_sync_aux_t *);     // and unlock
 void      chpl_sync_markAndSignalEmpty(chpl_sync_aux_t *);    // and unlock
-chpl_bool chpl_sync_isFull(void *, chpl_sync_aux_t *, chpl_bool);
+chpl_bool chpl_sync_isFull(void *, chpl_sync_aux_t *);
 void      chpl_sync_initAux(chpl_sync_aux_t *);
 void      chpl_sync_destroyAux(chpl_sync_aux_t *);
 
@@ -44,9 +44,8 @@ void chpl_single_markAndSignalFull(chpl_sync_aux_t * s) {
   chpl_sync_markAndSignalFull(s);
 }
 static ___always_inline
-chpl_bool chpl_single_isFull(void *val_ptr, chpl_sync_aux_t *s,
-                                           chpl_bool simple_sync_var) {
-  return chpl_sync_isFull(val_ptr, s, simple_sync_var);
+chpl_bool chpl_single_isFull(void *val_ptr, chpl_sync_aux_t *s) {
+  return chpl_sync_isFull(val_ptr, s);
 }
 static ___always_inline
 void chpl_single_initAux(chpl_sync_aux_t * s) { chpl_sync_initAux(s); }

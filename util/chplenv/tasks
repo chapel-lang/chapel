@@ -15,23 +15,21 @@ if ($preset_tasks eq "") {
     } elsif ($preset_threads eq "soft-threads") {
 	$tasks = "muxed";
     } elsif ($preset_threads eq "") {
-	my $platform = run("platform", "--target");
-	if ($platform =~ /^cray-xmt(-sim)?$/) {
-	    $tasks = "mta";
-	} elsif ($platform =~ /^x[12]-sim$/) {
-	    $tasks = "none";
-	} else {
-	    $tasks = "fifo";
-	}
+		my $platform = run("platform", "--target");
+		if ($platform =~ /^x[12]-sim$/) {
+		    $tasks = "none";
+		} else {
+		    $tasks = "fifo";
+		}
     } else {
-	die "Unexpected CHPL_THREADS value \"$preset_threads\".\n";
+		die "Unexpected CHPL_THREADS value \"$preset_threads\".\n";
     }
 } else {
     $tasks = $preset_tasks;
 }
 
 if ($preset_threads ne "") {
-  run("check-tasks-threads-compatibility", $tasks, $preset_threads);
+    run("check-tasks-threads-compatibility", $tasks, $preset_threads);
 }
 
 ret($tasks);

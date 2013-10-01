@@ -24,13 +24,6 @@
 #include <string.h>
 #include <limits.h>
 
-#ifdef __MTA__
-#include <machine/param.h>
-#ifndef IOV_MAX
-#define IOV_MAX UIO_MAXIOV
-#endif
-#endif
-
 // preadv/pwritev are available
 // only on linux/glibc 2.10 or later
 #ifdef __GLIBC__
@@ -66,12 +59,6 @@ size_t sys_page_size(void)
   // Some systems offer PAGE_SIZE...
 #ifdef PAGE_SIZE
   pagesize = PAGE_SIZE;
-#endif
-
-#ifdef __MTA__
-#ifdef NBPG
-  pagesize = NBPG;
-#endif
 #endif
 
   if( pagesize > 0 ) return pagesize;
@@ -1366,7 +1353,6 @@ err_t sys_recvfrom(fd_t sockfd, void* buf, size_t len, int flags, sys_sockaddr_t
 err_t sys_recvmsg(fd_t sockfd, struct msghdr *msg, int flags, ssize_t* num_recvd_out)
 
 {
-#ifndef __MTA__ 
   ssize_t got;
   err_t err_out;
 
@@ -1384,9 +1370,6 @@ err_t sys_recvmsg(fd_t sockfd, struct msghdr *msg, int flags, ssize_t* num_recvd
   DONE_SLOW_SYSCALL;
 
   return err_out;
-#else
-  return ENOSYS;
-#endif
 }
 
 err_t sys_send(fd_t sockfd, const void* buf, int64_t len, int flags, ssize_t* num_sent_out)

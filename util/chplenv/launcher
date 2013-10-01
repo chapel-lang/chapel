@@ -54,10 +54,6 @@ if ($preset_launcher eq "") {
         if ($substrate eq "mpi") {
             $launcher = "mpirun";
         }
-    } elsif ($platform eq "cray-xmt-sim") {
-        $launcher = "zebra";
-    } elsif ($platform eq "cray-xmt") {
-        $launcher = "mtarun";
     } elsif ($platform eq "x1-sim" || $platform eq "x2-sim") {
         $launcher = "apsim";
     } elsif ($comm eq "mpi") {

@@ -85,12 +85,12 @@ static inline qioerr qio_mkerror_errno(void) {
 #define EFORMAT (EXTEND_ERROR_OFFSET+2)
 #endif
 
-// Make sure we have an EILSEQ (missing on XMT)
+// Make sure we have an EILSEQ
 #ifndef EILSEQ
 #define EILSEQ (EXTEND_ERROR_OFFSET+3)
 #endif
 
-// Make sure we have EOVERFLOW (missing on XMT)
+// Make sure we have EOVERFLOW
 #ifndef EOVERFLOW
 #define EOVERFLOW (EXTEND_ERROR_OFFSET+4)
 #endif

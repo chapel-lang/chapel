@@ -46,7 +46,6 @@ Currently-supported launchers include:
   loadleveler         : launch using IBM loadleveler (still needs refining)
   lsf-gasnetrun_ibv   : GASNet launcher using LSF (bsub) over Infiniband
   marenostrum         : launch using MareNostrum's mnsubmit script
-  mtarun              : Cray XMT application launcher using mtarun
   pbs-aprun           : Cray application launcher using PBS (qsub) + aprun
   pbs-gasnetrun_ibv   : GASNet launcher using PBS (qsub) over Infiniband
   slurm-gasnetrun_ibv : GASNet launcher using SLURM over Infiniband
@@ -59,8 +58,6 @@ environment variable.  If left unset, a default is picked as follows:
   CHPL_PLATFORM=cray-xc, cray-xe, cray-xk, or cray-xt.
   + aprun in user's path        -> aprun
   (otherwise)                   -> none
-
-  CHPL_PLATFORM=cray-xmt        -> mtarun
 
   CHPL_PLATFORM=marenostrum     -> marenostrum
 

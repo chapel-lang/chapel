@@ -42,7 +42,6 @@ environment variable to one of the following options:
 fifo           : the default and most portable/stable option; heavyweight
 qthreads       : an option based on Sandia's Qthreads user-level tasks
 massivethreads : an option based on U Tokyo's MassiveThreads library
-mta            : an option specific to the Cray XMT (TM)
 none           : execute the program serially using a single task
 
 Each task layer has a default logical corresponding threading
@@ -57,9 +56,9 @@ CHPL_TASKS == fifo, CHPL_THREADS == pthreads
 --------------------------------------------
 
 FIFO tasking and POSIX threads (or pthreads) is the default tasking
-implementation for all platforms other than the Cray XMT.  It is
-attractive in its portability, though on most platforms it will tend
-to be heavier weight than Chapel strictly requires.
+implementation for all platforms.  It is attractive in its portability,
+though on most platforms it will tend to be heavier weight than Chapel
+strictly requires.
 
 In the FIFO tasking implementation, Chapel tasks are mapped to threads
 such that each task is executed by a single thread and is run to
@@ -185,21 +184,6 @@ For best results, make sure that you have installed the libhwloc library
 which qthreads will auto-detect during configuration and use for processor
 affinity.
 
-CHPL_TASKS == mta, CHPL_THREADS == none
----------------------------------------
-
-Setting CHPL_TASKS to 'mta' only makes sense when targeting the Cray
-XMT platform.  This platform has hardware support for executing
-multiple threads, and Chapel tasks are mapped to these hardware thread
-contexts by compiling them down to the "future" construct supported by
-the platform's dialect of C.
-
-This tasking model has been implemented, but has not yet been
-extensively used, so users with access to a Cray XMT are likely to be
-exploring uncharted areas.  We'd be curious to hear about any
-experiences you have at chapel_info@cray.com.
-
-
 CHPL_TASKS == none, CHPL_THREADS == none
 ----------------------------------------
 
@@ -276,7 +260,6 @@ CHPL_TASKS == qthreads, CHPL_THREADS == none
   number of threads equal to the number of processor cores on the
   locale.
 
-CHPL_TASKS == mta, CHPL_THREADS == none
 CHPL_TASKS == fifo, CHPL_THREADS == minimal
 CHPL_TASKS == none, CHPL_THREADS == none
   The CHPL_RT_NUM_THREADS_PER_LOCALE variable has no impact on any of
@@ -309,16 +292,6 @@ CHPL_TASKS == qthreads, CHPL_THREADS == none
   Qthreads tasks have a default call stack size of 32k*sizeof(size_t)
   bytes.  If a value is specified for CHPL_RT_CALL_STACK_SIZE, that
   value is used for the call stack size instead.
-
-CHPL_TASKS == mta, CHPL_THREADS == none
-  Any value set for CHPL_RT_CALL_STACK_SIZE is ignored.  As in FIFO
-  tasking, the execution model is that a task occupies a thread and uses
-  its stack for the duration of the task's existence.  But on Cray
-  MTA/XMT systems thread stacks are initially small, and are extended
-  and contracted dynamically as needed, with a maximum size limited only
-  by available memory.  There is no need for call stack sizing; tasks
-  neither waste memory because their stacks are too big, nor do they
-  overflow stacks that are too small.
 
 CHPL_TASKS == none, CHPL_THREADS == none
 
@@ -356,10 +329,6 @@ CHPL_TASKS == qthreads, CHPL_THREADS == none
   cost).  Developers needed to remove even that small performance cost
   can do so by removing the --enable-guard-pages qthreads configuration
   option and rebuilding qthreads.
-
-CHPL_TASKS == mta, CHPL_THREADS == none
-  Stack overflow detection is not needed, because stacks on XMT systems
-  grow and shrink dynamically.
 
 CHPL_TASKS == none, CHPL_THREADS == none
   No stack overflow detection is available.

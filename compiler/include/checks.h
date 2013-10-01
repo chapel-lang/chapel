@@ -41,7 +41,6 @@ void check_insertWideReferences();
 void check_optimizeOnClauses();
 void check_addInitCalls();
 void check_insertLineNumbers();
-void check_repositionDefExpressions();
 void check_codegen();
 void check_makeBinary();
 

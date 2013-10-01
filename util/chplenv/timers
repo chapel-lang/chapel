@@ -10,11 +10,7 @@ my $timers;
 
 if ($preset_timers eq "") {
   my $targplatform = run("platform", "--target");
-  if ($targplatform =~ /^cray-xmt(-sim)?$/) {
-    $timers = 'mta';
-  } else {
-    $timers = 'generic';
-  }
+  $timers = 'generic';
 } else {
   $timers = $preset_timers;
 }

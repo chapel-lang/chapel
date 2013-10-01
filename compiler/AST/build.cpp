@@ -483,44 +483,6 @@ CallExpr* buildPrimitiveExpr(CallExpr* exprs) {
 }
 
 
-BlockStmt* buildPrimitiveLoopStmt(CallExpr* exprs, BlockStmt* body) {
-  checkControlFlow(body, "xmt pragma forall i in n");
-
-  INT_ASSERT(exprs->isPrimitive(PRIM_ACTUALS_LIST));
-  if (exprs->argList.length == 0)
-    INT_FATAL("primitive has no name");
-
-  SymExpr* primname = toSymExpr(exprs->get(1));
-  primname->remove();
-  if (!primname) INT_FATAL(primname, "primitive has no name");
-  VarSymbol* var = toVarSymbol(primname->var);
-  if (!var ||
-      !var->immediate || 
-      var->immediate->const_kind != CONST_KIND_STRING)
-    INT_FATAL(primname, "primitive with non-literal string name");
-  PrimitiveOp* prim = primitives_map.get(var->immediate->v_string);
-  if (!prim) INT_FATAL("primitive not found '%s'", var->immediate->v_string);
-
-  BlockStmt* beginBlk = new BlockStmt();
-  if (!(strcmp(var->immediate->v_string, "xmt pragma forall i in n"))) {
-    // XMT pragma formed via #pragma mta for all streams i of n
-    // 1st argument is the unique ID per_streams_i (from 0 to n-1)
-    Expr* indices = toExpr(exprs->get(1));
-    indices->remove();
-    // 2nd argument is total_streams_n (akin to numChunks)
-    Expr* iterator = toExpr(exprs->get(1));
-    iterator->remove();
-
-    beginBlk->blockInfo = new CallExpr(prim->tag, indices, iterator);
-    beginBlk->insertAtHead(body);
-  } else {
-    INT_FATAL("primitive not yet implemented '%s'", var->immediate->v_string);
-  }
-
-  return beginBlk;
-}
-
-
 FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2) {
   static int uid = 1;
 

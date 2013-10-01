@@ -128,7 +128,6 @@ param            processToken(TPARAM);
 zip              processToken(TZIP);
 pragma           processToken(TPRAGMA);
 __primitive      processToken(TPRIMITIVE);
-__primitive_loop processToken(TPRIMITIVELOOP);
 proc             processToken(TPROC);
 record           processToken(TRECORD);
 reduce           processToken(TREDUCE);

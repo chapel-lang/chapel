@@ -73,7 +73,7 @@
 %token TFOR TFORALL TIF TIN TINDEX TINLINE TINOUT TITER
 %token TLABEL TLAMBDA TLET TLOCAL TMINUSMINUS TMODULE
 %token TNEW TNIL TON TOTHERWISE TOUT
-%token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIMITIVELOOP TPROC
+%token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPROC
 %token TRECORD TREDUCE TREF TRETURN
 %token TSCAN TSELECT TSERIAL TSINGLE TSPARSE TSUBDOMAIN
 %token TSYNC TTHEN TTYPE TUNDERSCORE TUNION TUSE TVAR
@@ -317,7 +317,6 @@ loop_stmt:
 | TCOFORALL expr TIN expr opt_ref_var_ls do_stmt               { $$ = buildCoforallLoopStmt($2, $4, $5, $6); }
 | TCOFORALL expr TIN zippered_iterator opt_ref_var_ls do_stmt  { $$ = buildCoforallLoopStmt($2, $4, $5, $6, true); }
 | TCOFORALL expr opt_ref_var_ls do_stmt                        { $$ = buildCoforallLoopStmt(NULL, $2, $3, $4); }
-| TPRIMITIVELOOP TLP opt_actual_ls TRP do_stmt  { $$ = buildPrimitiveLoopStmt($3, $5); }
 | TFOR expr TIN expr do_stmt                    { $$ = buildForLoopStmt($2, $4, $5); }
 | TFOR expr TIN zippered_iterator do_stmt       { $$ = buildForLoopStmt($2, $4, $5, false, true); }
 | TFOR expr do_stmt                             { $$ = buildForLoopStmt(NULL, $2, $3); }
@@ -1172,14 +1171,7 @@ binary_op_expr:
 | expr TBY expr            { $$ = new CallExpr("by", $1, $3); }
 | expr TALIGN expr         { $$ = new CallExpr("align", $1, $3); }
 | expr THASH expr          { $$ = new CallExpr("#", $1, $3); }
-| expr TDMAPPED expr  
-    {
-      if (strcmp(CHPL_TARGET_PLATFORM, "cray-xmt")) {
-        $$ = new CallExpr("chpl__distributed", $3, $1);
-      } else {
-        $$ = $1;
-      }
-    }
+| expr TDMAPPED expr       { $$ = new CallExpr("chpl__distributed", $3, $1); }
 ;
 
 unary_op_expr:

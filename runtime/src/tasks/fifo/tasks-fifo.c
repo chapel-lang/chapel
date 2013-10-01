@@ -212,8 +212,7 @@ void chpl_sync_markAndSignalEmpty(chpl_sync_aux_t *s) {
 }
 
 chpl_bool chpl_sync_isFull(void *val_ptr,
-                            chpl_sync_aux_t *s,
-                            chpl_bool simple_sync_var) {
+                            chpl_sync_aux_t *s) {
   return s->is_full;
 }
 

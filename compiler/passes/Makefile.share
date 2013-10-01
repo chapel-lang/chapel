@@ -18,7 +18,6 @@ PASSES_SRCS = \
         insertLineNumbers.cpp \
         normalize.cpp \
         parallel.cpp \
-        repositionDefExpressions.cpp \
         resolveIntents.cpp \
         returnStarTuplesByRefArgs.cpp \
         scopeResolve.cpp

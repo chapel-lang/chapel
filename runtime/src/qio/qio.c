@@ -2216,9 +2216,6 @@ err_t _buffered_read_atleast(qio_channel_t* ch, int64_t amt)
 static
 err_t _qio_flush_bits_if_needed_unlocked(qio_channel_t* restrict ch)
 {
-#ifdef __MTA__
-  return 0; // for some reason the code here doesn't compile!
-#else
   err_t err = 0;
   int keep_bytes = 0;
   qio_bitbuffer_t part_one_bits_be;
@@ -2267,7 +2264,6 @@ err_t _qio_flush_bits_if_needed_unlocked(qio_channel_t* restrict ch)
   }
 
   return err;
-#endif
 }
 
 

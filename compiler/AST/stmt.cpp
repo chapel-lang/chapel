@@ -131,36 +131,11 @@ GenRet BlockStmt::codegen() {
       } else if (blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)) {
         std::string hdr = "for (;" + codegenValue(blockInfo->get(1)).c + ";) ";
         info->cStatements.push_back(hdr);
-      } else if (blockInfo->isPrimitive(PRIM_BLOCK_XMT_PRAGMA_FORALL_I_IN_N)) {
-        std::string hdr = "_Pragma(\"mta for all streams ";
-        hdr += codegenValue(blockInfo->get(1)).c;
-        hdr += " of ";
-        hdr += codegenValue(blockInfo->get(2)).c;
-        hdr += "\")\n";
-        info->cStatements.push_back(hdr);
       }
     }
 
     if (this != getFunction()->body)
       info->cStatements.push_back("{\n");
-
-    if (!(fNoRepositionDefExpr)) {
-      Vec<BaseAST*> asts;
-      collect_top_asts(this, asts);
-      forv_Vec(BaseAST, ast, asts) {
-        if (DefExpr* def = toDefExpr(ast)) {
-          if (def->parentExpr == this) {
-            if (!toTypeSymbol(def->sym)) {
-              if (fGenIDS && isVarSymbol(def->sym))
-                info->cStatements.push_back("/* " +
-                                            numToString(def->sym->id) +
-                                            " */ ");
-              def->sym->codegenDef();
-            }
-          }
-        }
-      }
-    }
 
     body.codegen("");
 
@@ -176,10 +151,6 @@ GenRet BlockStmt::codegen() {
     }
   } else {
 #ifdef HAVE_LLVM
-    if (blockInfo &&
-        blockInfo->isPrimitive(PRIM_BLOCK_XMT_PRAGMA_FORALL_I_IN_N))
-      INT_FATAL("xmt forall not supported with LLVM");
-
     llvm::Function *func = info->builder->GetInsertBlock()->getParent();
 
     getFunction()->codegenUniqueNum++;
@@ -227,20 +198,6 @@ GenRet BlockStmt::codegen() {
     info->builder->SetInsertPoint(blockStmtBody);
     
     info->lvt->addLayer();
-
-    if (!(fNoRepositionDefExpr)) {
-      Vec<BaseAST*> asts;
-      collect_top_asts(this, asts);
-      forv_Vec(BaseAST, ast, asts) {
-        if (DefExpr* def = toDefExpr(ast)) {
-          if (def->parentExpr == this) {
-            if (!toTypeSymbol(def->sym)) {
-              def->sym->codegenDef();
-            }
-          }
-        }
-      }
-    }
 
     body.codegen("");
     info->lvt->removeLayer();

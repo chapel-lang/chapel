@@ -216,11 +216,6 @@
   ESHORT
   EFORMAT
 
-  // additional reserved words in the MTA/XMT compiler
-  ; if (!strcmp(CHPL_TASKS, "mta")) {
-  purge
-  task }
-
   // reserved words in c++
   this
   template

@@ -4,9 +4,7 @@ Using Chapel on Cray CS, XT, XE, XK, and XC Systems
 
 The following information is assembled to help Chapel users get up and
 running on Cray systems including Cray XT (TM), Cray XE (TM), Cray XK
-(TM), and Cray XC (TM) systems.  For information about using Chapel on
-Cray XMT (TM) systems, see README.cray-xmt.  The same procedure can be
-followed for Cray CS (TM) systems.
+(TM), and Cray XC (TM) systems.  
 
 If you are not familiar with Chapel, it is recommended that you try the
 instructions in the top-level README first to get started with the

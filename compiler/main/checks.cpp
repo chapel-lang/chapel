@@ -291,15 +291,6 @@ void check_insertLineNumbers()
 //  check_afterResolution();
 }
 
-void check_repositionDefExpressions()
-{
-  check_afterEveryPass();
-  check_afterNormalization();
-//  check_afterResolution();
-  // Suggestion: Ensure def expressions are all clustered at the beginning of a
-  // fn.
-}
-
 void check_codegen()
 {
   // This pass should not change the AST, so no checks are required.

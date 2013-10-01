@@ -144,13 +144,11 @@ void checkPrimitives()
      case PRIM_WRITEEF:
      case PRIM_WRITEFF:
      case PRIM_WRITEXF:
-     case PRIM_SYNC_RESET:
      case PRIM_READFE:
      case PRIM_READFF:
      case PRIM_READXX:
      case PRIM_SYNC_IS_FULL:
      case PRIM_SINGLE_WRITEEF:
-     case PRIM_SINGLE_RESET:
      case PRIM_SINGLE_READFF:
      case PRIM_SINGLE_READXX:
      case PRIM_SINGLE_IS_FULL:
@@ -197,8 +195,6 @@ void checkPrimitives()
      case PRIM_BLOCK_BEGIN:             // BlockStmt::blockInfo - begin block
      case PRIM_BLOCK_COBEGIN:           // BlockStmt::blockInfo - cobegin block
      case PRIM_BLOCK_COFORALL:          // BlockStmt::blockInfo - coforall block
-     case PRIM_BLOCK_XMT_PRAGMA_FORALL_I_IN_N: // BlockStmt::blockInfo - xmt prag loop
-     case PRIM_BLOCK_XMT_PRAGMA_NOALIAS:       // BlockStmt::blockInfo - xmt prag for
      case PRIM_BLOCK_ON:                // BlockStmt::blockInfo - on block
      case PRIM_BLOCK_ON_NB:             // BlockStmt::blockInfo - non-blocking on block
      case PRIM_BLOCK_LOCAL:             // BlockStmt::blockInfo - local block

@@ -17,18 +17,13 @@ if ($preset_regexp eq "") {
   my $targplatform = run("platform", "--target");
   my $targcompiler = run("compiler", "--target");
 
-  if ($targplatform =~ /^cray-xmt(-sim)?$/) {
-    $regexp = 'none';
+  my $subdir = $home . "/third-party/re2/install/" .
+               $targplatform . "-" . $targcompiler;
+  if ( -d $subdir && -f "$subdir/include/re2/re2.h" ) {
+    $regexp = 're2';
   } else {
-    my $subdir = $home . "/third-party/re2/install/" .
-                 $targplatform . "-" . $targcompiler;
-    if ( -d $subdir && -f "$subdir/include/re2/re2.h" ) {
-      $regexp = 're2';
-    } else {
 #      $regexp = 're2'; check Lion, PGI, PrgEnv-gnu before enabling
-      $regexp = 'none';
-    }
-
+    $regexp = 'none';
   }
 } else {
   $regexp = $preset_regexp;

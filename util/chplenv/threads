@@ -18,8 +18,6 @@ if ($preset_threads eq "") {
 	$threads = "pthreads";
     } elsif ($preset_tasks eq "massivethreads") {
         $threads = "none";
-    } elsif ($preset_tasks eq "mta") {
-	$threads = "none";
     } elsif ($preset_tasks eq "muxed") {
 	$threads = "soft-threads";
     } elsif ($preset_tasks eq "qthreads") {
@@ -28,9 +26,7 @@ if ($preset_threads eq "") {
 	$threads = "none";
     } elsif ($preset_tasks eq "") {
 	my $platform = run("platform", "--target");
-	if ($platform =~ /^cray-xmt(-sim)?$/) {
-	    $threads = "none";
-	} elsif ($platform =~ /^x[12]-sim$/) {
+	if ($platform =~ /^x[12]-sim$/) {
 	    $threads = "none";
 	} else {
 	    $threads = "pthreads";

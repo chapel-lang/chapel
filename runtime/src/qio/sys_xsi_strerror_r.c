@@ -17,11 +17,7 @@
 #include <string.h>
 #include <errno.h>
 
-#ifdef __MTA__
-// no strerror_r
-#else
 #define HAS_STRERROR_R
-#endif
 
 int sys_xsi_strerror_r(int errnum, char* buf, size_t buflen);
 

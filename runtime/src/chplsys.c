@@ -1,13 +1,10 @@
-#if defined __APPLE__ || defined __MTA__
+#if defined __APPLE__
 #include <sys/sysctl.h>
 #endif
 #if defined _AIX
 #include <sys/systemcfg.h>
 #endif
 #include <sys/utsname.h>
-#if defined __MTA__
-#include <machine/runtime.h>
-#endif
 #include "chplrt.h"
 
 #include "chpl-mem.h"
@@ -36,11 +33,6 @@ uint64_t chpl_bytesPerLocale(void) {
   size_t len = sizeof(membytes);
   if (sysctlbyname("hw.memsize", &membytes, &len, NULL, 0)) 
     chpl_internal_error("query of physical memory failed");
-  return membytes;
-#elif defined __MTA__
-  int mib[2] = {CTL_HW, HW_PHYSMEM}, membytes;
-  size_t len = sizeof(membytes);
-  sysctl(mib, 2, &membytes, &len, NULL, 0);
   return membytes;
 #elif defined _AIX
   return _system_configuration.physmem;
@@ -76,9 +68,6 @@ int64_t chpl_numCoresOnThisLocale(void) {
   // significant 32 bits.
   numcores = numcores >> 32;
 #endif
-  return numcores;
-#elif defined __MTA__
-  int32_t numcores = mta_get_num_teams();
   return numcores;
 #else
   static int32_t numcores = 0;

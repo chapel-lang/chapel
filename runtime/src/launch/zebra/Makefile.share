@@ -1,8 +1,0 @@
-LAUNCHER_SRCS = \
-        launch-zebra.c \
-
-SVN_SRCS = $(LAUNCHER_SRCS)
-SRCS = $(SVN_SRCS)
-
-LAUNCHER_OBJS = \
-	$(LAUNCHER_SRCS:%.c=$(LAUNCH_OBJDIR)/%.o)

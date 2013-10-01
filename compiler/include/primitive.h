@@ -86,13 +86,11 @@ enum PrimitiveTag {
   PRIM_WRITEEF,
   PRIM_WRITEFF,
   PRIM_WRITEXF,
-  PRIM_SYNC_RESET,
   PRIM_READFE,
   PRIM_READFF,
   PRIM_READXX,
   PRIM_SYNC_IS_FULL,
   PRIM_SINGLE_WRITEEF,
-  PRIM_SINGLE_RESET,
   PRIM_SINGLE_READFF,
   PRIM_SINGLE_READXX,
   PRIM_SINGLE_IS_FULL,
@@ -150,8 +148,6 @@ enum PrimitiveTag {
   PRIM_BLOCK_BEGIN,             // BlockStmt::blockInfo - begin block
   PRIM_BLOCK_COBEGIN,           // BlockStmt::blockInfo - cobegin block
   PRIM_BLOCK_COFORALL,          // BlockStmt::blockInfo - coforall block
-  PRIM_BLOCK_XMT_PRAGMA_FORALL_I_IN_N, // BlockStmt::blockInfo - xmt prag loop
-  PRIM_BLOCK_XMT_PRAGMA_NOALIAS,       // BlockStmt::blockInfo - xmt prag for
   PRIM_BLOCK_ON,                // BlockStmt::blockInfo - on block
   PRIM_BLOCK_ON_NB,             // BlockStmt::blockInfo - non-blocking on block
   PRIM_BLOCK_LOCAL,             // BlockStmt::blockInfo - local block

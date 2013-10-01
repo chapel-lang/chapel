@@ -15,12 +15,8 @@
 #include <float.h> // DBL_MANT_DIG
 #include <assert.h>
 
-#ifdef __MTA__
-// no wide character support
-#else
 #include <wchar.h>
 #define HAS_WCTYPE_H
-#endif
 
 #include "qio_style.h"
 

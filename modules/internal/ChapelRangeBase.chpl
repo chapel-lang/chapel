@@ -812,30 +812,16 @@ module ChapelRangeBase {
         writeln("*** RI: Using ", numChunks, " chunk(s)");
       }
   
-      if (CHPL_TARGET_PLATFORM == "cray-xmt")
-      {
-        var per_stream_i: uint(64) = 0;
-        var total_streams_n: uint(64) = 0;
-  
-        __primitive_loop("xmt pragma forall i in n", per_stream_i,
-                       total_streams_n) {
-          const (lo,hi) = _computeBlock(v, total_streams_n, per_stream_i, v-1);
-          yield (lo..hi,);
-        }
-      }
+      if numChunks == 1 then
+        yield (0..v-1,);
       else
       {
-        if numChunks == 1 then
-          yield (0..v-1,);
-        else
+        coforall chunk in 0..#numChunks
         {
-          coforall chunk in 0..#numChunks
-          {
-            const (lo,hi) = _computeBlock(v, numChunks, chunk, v-1);
-            if debugChapelRange then
-              writeln("*** RI: tuple = ", (lo..hi,));
-            yield (lo..hi,);
-          }
+          const (lo,hi) = _computeBlock(v, numChunks, chunk, v-1);
+          if debugChapelRange then
+            writeln("*** RI: tuple = ", (lo..hi,));
+          yield (lo..hi,);
         }
       }
     }
@@ -915,11 +901,8 @@ module ChapelRangeBase {
         writeln("Expanded range = ",r);
   
       // todo: factor out this loop (and the above writeln) into a function?
-      for i in r
-      {
-        __primitive("noalias pragma");
+      for i in r do
         yield i;
-      }
     }
     else // ! myFollowThis.hasLast()
     {
@@ -936,11 +919,8 @@ module ChapelRangeBase {
         if debugChapelRange then
           writeln("Expanded range = ",r);
       
-        for i in r
-          {
-            __primitive("noalias pragma");
-            yield i;
-          }
+        for i in r do
+          yield i;
       }
       else
       {
@@ -948,11 +928,8 @@ module ChapelRangeBase {
         if debugChapelRange then
           writeln("Expanded range = ",r);
       
-        for i in r
-          {
-            __primitive("noalias pragma");
-            yield i;
-          }
+        for i in r do
+          yield i;
       }
     } // if myFollowThis.hasLast()
   }

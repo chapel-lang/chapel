@@ -83,7 +83,6 @@ class ArgumentState;
 #define LOG_optimizeOnClauses   'o'
 #define LOG_addInitCalls        'M'
 #define LOG_insertLineNumbers   'n'
-#define LOG_repositionDefExpressions 'f'
 #define LOG_codegen             'E'
 #define LOG_makeBinary          NUL
 #define LOG_ANY -1

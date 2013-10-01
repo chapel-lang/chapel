@@ -109,7 +109,6 @@ Optional Settings
    build the runtime libraries and generated code for
    CHPL_TARGET_PLATFORM.  Currently supported values are as follows:
 
-        cray-mta          : the Cray compiler for multithreaded architectures
         cray-prgenv-cray  : the Cray PrgEnv compiler using the Cray CCE backend
         cray-prgenv-gnu   : the Cray PrgEnv compiler using the GNU backend
         cray-prgenv-intel : the Cray PrgEnv compiler using the Intel backend
@@ -125,7 +124,6 @@ Optional Settings
         platform        compiler
         --------        --------
         cray-*      ->  cray-prgenv-$PE_ENV (PE_ENV is set by PrgEnv-* modules)
-        cray-xmt    ->  cray-mta
         marenostrum ->  ibm
         pwr5, pwr6  ->  ibm
         x1, x2      ->  cray-vec
@@ -157,7 +155,6 @@ Optional Settings
    CHPL_TASKS:
         fifo           : run tasks to completion, in FIFO order
         massivethreads : run tasks using U Tokyo's MassiveThreads package
-        mta            : each task runs on a Cray XMT thread
         qthreads       : run tasks using Sandia's Qthreads package
         none           : do not support multiple tasks
 
@@ -171,7 +168,6 @@ Optional Settings
         CHPL_TASKS      CHPL_THREADS
         ----------      ------------
         fifo            pthreads, minimal (with limitations)
-        mta             none
         massivethreads  none
         qthreads        none
         none            none
@@ -182,7 +178,6 @@ Optional Settings
 
         platform     tasks    threads
         --------     -----    -------
-        cray-xmt ->  mta      none
         other    ->  fifo     pthreads
 
    See README.tasks for more information about executing using the
@@ -223,11 +218,8 @@ Optional Settings
    select an implementation for Chapel's timers.  Current options are:
 
         generic : use a gettimeofday()-based implementation
-        mta     : use an mta_get_clock()-based implementation (Cray XMT only)
 
-   If unset, CHPL_TIMERS defaults to "generic" unless
-   CHPL_TARGET_PLATFORM is set to "cray-xmt" in which case it defaults
-   to "mta".
+   If unset, CHPL_TIMERS defaults to "generic"
 
 9) Optionally, the CHPL_GMP environment variable can select between
    no GMP support, using the GMP distributed with Chapel in third-party,

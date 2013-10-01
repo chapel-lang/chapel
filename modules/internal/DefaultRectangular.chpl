@@ -186,49 +186,30 @@ module DefaultRectangular {
         if debugDataParNuma {
           writeln("numSublocs=", numSublocs);
         }
-        if (CHPL_TARGET_PLATFORM != "cray-xmt") {
-          if numChunks == 1 {
-            if rank == 1 {
-              yield (0..ranges(1).length-1,);
-            } else {
-              var block: rank*range(idxType);
-              for param i in 1..rank do
-                block(i) = 0..ranges(i).length-1;
-              yield block;
-            }
+
+        if numChunks == 1 {
+          if rank == 1 {
+            yield (0..ranges(1).length-1,);
           } else {
-            var locBlock: rank*range(idxType);
+            var block: rank*range(idxType);
             for param i in 1..rank do
-              locBlock(i) = 0:ranges(i).low.type..#(ranges(i).length);
-            if debugDefaultDist then
-              writeln("*** DI: locBlock = ", locBlock);
-            coforall chunk in 0..#numChunks {
-              var followMe: rank*range(idxType) = locBlock;
-              const (lo,hi) = _computeBlock(locBlock(parDim).length,
-                                            numChunks, chunk,
-                                            locBlock(parDim).high);
-              followMe(parDim) = lo..hi;
-              if debugDefaultDist then
-                writeln("*** DI[", chunk, "]: followMe = ", followMe);
-              yield followMe;
-            }
+              block(i) = 0..ranges(i).length-1;
+            yield block;
           }
         } else {
-          var per_stream_i: uint(64) = 0;
-          var total_streams_n: uint(64) = 0;
-  
           var locBlock: rank*range(idxType);
           for param i in 1..rank do
             locBlock(i) = 0:ranges(i).low.type..#(ranges(i).length);
-  
-          __primitive_loop("xmt pragma forall i in n", per_stream_i,
-                           total_streams_n) {
-  
+          if debugDefaultDist then
+            writeln("*** DI: locBlock = ", locBlock);
+          coforall chunk in 0..#numChunks {
             var followMe: rank*range(idxType) = locBlock;
-            const (lo,hi) = _computeBlock(ranges(parDim).length,
-                                          total_streams_n, per_stream_i,
-                                          (ranges(parDim).length-1));
+            const (lo,hi) = _computeBlock(locBlock(parDim).length,
+                                          numChunks, chunk,
+                                          locBlock(parDim).high);
             followMe(parDim) = lo..hi;
+            if debugDefaultDist then
+              writeln("*** DI[", chunk, "]: followMe = ", followMe);
             yield followMe;
           }
         }
@@ -269,12 +250,10 @@ module DefaultRectangular {
   
       if rank == 1 {
         for i in zip((...block)) {
-          __primitive("noalias pragma");
           yield i;
         }
       } else {
         for i in these_help(1, block) {
-          __primitive("noalias pragma");
           yield i;
         }
       }
@@ -557,7 +536,6 @@ module DefaultRectangular {
       if debugDefaultDist then
         writeln("*** In array follower code:"); // [\n", this, "]");
       for i in dom.these(tag=iterKind.follower, followThis) {
-        __primitive("noalias pragma");
         yield dsiAccess(i);
       }
     }

@@ -36,7 +36,6 @@ BlockStmt* buildLabelStmt(const char* name, Expr* stmt);
 BlockStmt* buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr = NULL);
 ModuleSymbol* buildModule(const char* name, BlockStmt* block, const char* filename, char *docs);
 CallExpr* buildPrimitiveExpr(CallExpr* exprs);
-BlockStmt* buildPrimitiveLoopStmt(CallExpr* exprs, BlockStmt* body);
 
 FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2 = NULL);
 CallExpr* buildLetExpr(BlockStmt* decls, Expr* expr);

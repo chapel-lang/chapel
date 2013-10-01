@@ -34,13 +34,11 @@ buildSyncAccessFunctionSet(Vec<FnSymbol*>& syncAccessFunctionSet) {
           call->isPrimitive(PRIM_WRITEEF) ||
           call->isPrimitive(PRIM_WRITEFF) ||
           call->isPrimitive(PRIM_WRITEXF) ||
-          call->isPrimitive(PRIM_SYNC_RESET) ||
           call->isPrimitive(PRIM_READFE) ||
           call->isPrimitive(PRIM_READFF) ||
           call->isPrimitive(PRIM_READXX) ||
           call->isPrimitive(PRIM_SYNC_IS_FULL) ||
           call->isPrimitive(PRIM_SINGLE_WRITEEF) ||
-          call->isPrimitive(PRIM_SINGLE_RESET) ||
           call->isPrimitive(PRIM_SINGLE_READFF) ||
           call->isPrimitive(PRIM_SINGLE_READXX) ||
           call->isPrimitive(PRIM_SINGLE_IS_FULL)) {

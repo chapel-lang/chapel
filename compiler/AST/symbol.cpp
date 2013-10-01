@@ -1503,7 +1503,7 @@ void FnSymbol::codegenDef() {
 #endif
   }
 
-  if (fNoRepositionDefExpr) {
+  {
     Vec<BaseAST*> asts;
     collect_top_asts(body, asts);
 

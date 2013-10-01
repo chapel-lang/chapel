@@ -39,12 +39,6 @@
 #define ___always_inline inline
 #endif
 
-//#ifdef __MTA__
-// MTA defines WCHAR_MAX in stdint and wchar,
-// but avoids it if wchar is included before stdint.
-//#include <wchar.h>
-//#endif
-
 // Ask a C++ compiler if it would please include e.g. INT64_MAX
 #define __STDC_CONSTANT_MACROS
 
@@ -61,14 +55,8 @@
 #define PTR_DIFFBYTES(end_ptr,start_ptr) (((unsigned char*)end_ptr) - ((unsigned char*)start_ptr))
 
 // Define LLONG_MAX, ULLONG_MAX if it doesn't exist (should be in limits.h)
-// This is needed for XMT.
-#ifdef __MTA__
-#ifndef LLONG_MAX
-#define LLONG_MAX LONG_LONG_MAX
-#endif
 #ifndef ULLONG_MAX
 #define ULLONG_MAX (2ULL*LLONG_MAX+1ULL)
-#endif
 #endif
 
 // Define UINT32_MAX if it doesn't exist (needed for some C++ environments)

@@ -60,7 +60,6 @@ extern bool fLLVMWideOpt;
 
 extern bool fNoRemoteValueForwarding;
 extern bool fNoRemoveCopyCalls;
-extern bool fNoRepositionDefExpr;
 extern bool fNoScalarReplacement;
 extern bool fNoTupleCopyOpt;
 extern bool fNoOptimizeLoopIterators;

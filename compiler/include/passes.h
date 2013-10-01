@@ -47,7 +47,6 @@ void refPropagation();
 void removeEmptyRecords();
 void removeUnnecessaryAutoCopyCalls();
 void removeWrapRecords();
-void repositionDefExpressions();
 void returnStarTuplesByRefArgs();
 void resolve();
 void resolveIntents();

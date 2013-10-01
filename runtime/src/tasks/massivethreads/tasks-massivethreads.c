@@ -216,8 +216,7 @@ void chpl_sync_markAndSignalEmpty(chpl_sync_aux_t *s) {
   myth_felock_set_unlock(s->lock, 0);
 }
 
-chpl_bool chpl_sync_isFull(void *val_ptr, chpl_sync_aux_t *s,
-    chpl_bool simple_sync_var) {
+chpl_bool chpl_sync_isFull(void *val_ptr, chpl_sync_aux_t *s) {
   //return whether F/E bit is full or not
   return myth_felock_status(s->lock);
 }

@@ -25,9 +25,6 @@ var D: domain(1) = {1..nthreads};
 var token: [D] sync int;
 
 proc main() {
-  // init (not strictly needed, i.e., MTA semantics)
-  [i in D] token(i).reset();
-
   if (verbose) {
     writeln(nthreads, " threads.  ", N, " trips.");
   }

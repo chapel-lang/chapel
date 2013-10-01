@@ -242,16 +242,11 @@ void chpl_sync_markAndSignalEmpty(chpl_sync_aux_t *s)         // and unlock
 }
 
 chpl_bool chpl_sync_isFull(void            *val_ptr,
-                           chpl_sync_aux_t *s,
-                           chpl_bool        simple_sync_var)
+                           chpl_sync_aux_t *s)
 {
     PROFILE_INCR(profile_sync_isFull, 1);
 
-    if(simple_sync_var) {
-        return qthread_syncvar_status(&(s->signal_full));
-    } else {
-        return s->is_full;
-    }
+    return s->is_full;
 }
 
 void chpl_sync_initAux(chpl_sync_aux_t *s)

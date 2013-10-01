@@ -731,9 +731,6 @@ void readArgsFromCommand(const char* cmd, std::vector<std::string> & args)
 static
 char* chplRealPath(const char* path)
 {
-#ifdef __MTA__
-  return NULL;
-#else
   // We would really rather use
   // char* got = realpath(path, NULL);
   // but that doesn't work on some Mac OS X versions.
@@ -743,7 +740,6 @@ char* chplRealPath(const char* path)
   if( got ) ret = strdup(got);
   free(buf);
   return ret;
-#endif
 }
 
 

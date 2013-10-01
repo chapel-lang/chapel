@@ -3258,8 +3258,6 @@ void CallExpr::verify() {
     case(PRIM_BLOCK_BEGIN):
     case(PRIM_BLOCK_COBEGIN):
     case(PRIM_BLOCK_COFORALL):
-    case(PRIM_BLOCK_XMT_PRAGMA_FORALL_I_IN_N):
-    case(PRIM_BLOCK_XMT_PRAGMA_NOALIAS):
     case(PRIM_BLOCK_ON):
     case(PRIM_BLOCK_ON_NB):
     case(PRIM_BLOCK_LOCAL):
@@ -4534,15 +4532,6 @@ GenRet CallExpr::codegen() {
         codegenCall( fn, s, get(2));
         break;
       }
-    case PRIM_SYNC_RESET: {
-      // get(1) is argument (class, wide or not)
-      GenRet s;
-      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
-        s = codegenRaddr(get(1));
-      else
-        s = get(1);
-      codegenCall( "chpl_sync_reset", s);
-      break; }
     case PRIM_READFE:
     case PRIM_READFF:
     case PRIM_READXX:
@@ -4565,7 +4554,7 @@ GenRet CallExpr::codegen() {
       GenRet val_ptr = codegenLocalAddrOf(codegenFieldPtr(s, "value"));
       GenRet aux = codegenLocalAddrOf(codegenFieldPtr(s, "sync_aux"));
       ret = codegenCallExpr("chpl_sync_isFull",
-                            val_ptr, aux, get(2));
+                            val_ptr, aux);
       break; }
     case PRIM_SINGLE_WRITEEF:
       {
@@ -4576,17 +4565,6 @@ GenRet CallExpr::codegen() {
         else
           s = get(1);
         codegenCall( "chpl_single_write_EF", s, get(2));
-        break;
-      }
-    case PRIM_SINGLE_RESET:
-      {
-        // get(1) is argument (class, wide or not)
-        GenRet s;
-        if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
-          s = codegenRaddr(get(1));
-        else
-          s = get(1);
-        codegenCall( "chpl_single_reset", s);
         break;
       }
     case PRIM_SINGLE_READFF:
@@ -4610,7 +4588,7 @@ GenRet CallExpr::codegen() {
       GenRet val_ptr = codegenLocalAddrOf(codegenFieldPtr(s, "value"));
       GenRet aux = codegenLocalAddrOf(codegenFieldPtr(s, "single_aux"));
       ret = codegenCallExpr("chpl_single_isFull",
-                            val_ptr, aux, get(2));
+                            val_ptr, aux);
       break; 
     }
     case PRIM_PROCESS_TASK_LIST: {
@@ -5141,39 +5119,6 @@ GenRet CallExpr::codegen() {
     }
     case NUM_KNOWN_PRIMS:
       INT_FATAL(this, "impossible");
-      break;
-    case PRIM_BLOCK_XMT_PRAGMA_NOALIAS:
-      // This case allows __primitive("noalias pragma") to generate 
-      // _Pragma("mta assert noalias <variable list>")
-      // EVERY variable within a block is added to the variable list,
-      // which means several variables will spawn warnings (ignored in
-      // Makefile.cray-mta). Eventually, we'll only generate invariant 
-      // pointer variables.
-      if (!(strcmp(CHPL_TARGET_PLATFORM, "cray-xmt"))) {
-        INT_ASSERT(c);
-        Vec<SymExpr*> se;
-        Vec<DefExpr*> de_parent;
-        Vec<VarSymbol*> vs_parent;
-        collectSymExprs(this->next, se);
-        collectDefExprs(this->parentExpr, de_parent);
-        forv_Vec(DefExpr*, def, de_parent) {
-          VarSymbol* vs = toVarSymbol(def->sym);
-          if (vs) vs_parent.add(vs);
-        }
-        forv_Vec(SymExpr*, sym, se) {
-          if (isVarSymbol(sym->var) && (!(isPrimitiveType(sym->var->type)))) {
-            VarSymbol* vs = toVarSymbol(sym->var);
-            if (vs_parent.in(vs)) {
-              std::string stmt;
-              stmt += "_Pragma(\"mta assert noalias *";
-              stmt += sym->var->cname;
-              stmt += "\")";
-              info->cStatements.push_back(stmt);
-            }
-          }
-        }
-        this->remove();
-      }
       break;
     default:
       INT_FATAL(this, "primitive codegen fail; should it still be in the AST?");

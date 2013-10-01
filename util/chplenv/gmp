@@ -18,9 +18,7 @@ if ($preset_gmp eq "") {
   my $targplatform = run("platform", "--target");
   my $targcompiler = run("compiler", "--target");
 
-  if ($targplatform =~ /^cray-xmt(-sim)?$/) {
-      $gmp = 'none';
-  } elsif ($targplatform eq "cray-xt" || $targplatform eq "cray-xe" ||
+  if ($targplatform eq "cray-xt" || $targplatform eq "cray-xe" ||
 	   $targplatform eq "cray-xk" || $targplatform eq "cray-xc") {
       $gmp = 'system';
   } else {

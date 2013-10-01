@@ -17,16 +17,12 @@ if ($preset_llvm eq "") {
   my $hostplatform = run("platform", "--host");
   my $hostcompiler = run("compiler", "--host");
   my $targplatform = run("platform", "--target");
-  if ($targplatform =~ /^cray-xmt(-sim)?$/) {
-    $llvm = 'none';
+  my $subdir = $home . "/third-party/llvm/install/" .
+               $hostplatform . "-" . $hostcompiler;
+  if ( -d $subdir && -f "$subdir/include/llvm/PassSupport.h" ) {
+    $llvm = 'llvm';
   } else {
-    my $subdir = $home . "/third-party/llvm/install/" .
-                 $hostplatform . "-" . $hostcompiler;
-    if ( -d $subdir && -f "$subdir/include/llvm/PassSupport.h" ) {
-      $llvm = 'llvm';
-    } else {
-      $llvm = 'none';
-    }
+    $llvm = 'none';
   }
 } else {
   $llvm = $preset_llvm;

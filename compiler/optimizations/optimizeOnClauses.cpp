@@ -202,13 +202,11 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_WRITEEF:
   case PRIM_WRITEFF:
   case PRIM_WRITEXF:
-  case PRIM_SYNC_RESET:
   case PRIM_READFE:
   case PRIM_READFF:
   case PRIM_READXX:
   case PRIM_SYNC_IS_FULL:
   case PRIM_SINGLE_WRITEEF:
-  case PRIM_SINGLE_RESET:
   case PRIM_SINGLE_READFF:
   case PRIM_SINGLE_READXX:
   case PRIM_SINGLE_IS_FULL:
@@ -246,8 +244,6 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_BLOCK_BEGIN:
   case PRIM_BLOCK_COBEGIN:
   case PRIM_BLOCK_COFORALL:
-  case PRIM_BLOCK_XMT_PRAGMA_FORALL_I_IN_N:
-  case PRIM_BLOCK_XMT_PRAGMA_NOALIAS:
   case PRIM_BLOCK_ON:
   case PRIM_BLOCK_ON_NB:
   case PRIM_BLOCK_UNLOCAL:

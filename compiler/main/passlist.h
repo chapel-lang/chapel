@@ -70,7 +70,6 @@ PassInfo passlist[] = {
   RUN(loopInvariantCodeMotion),// move loop invarient code above loop runs
   // AST to C or LLVM
   RUN(insertLineNumbers),   // insert line numbers for error messages
-  RUN(repositionDefExpressions), // put defPoints just before first usage
   RUN(codegen),             // generate C code
   RUN(makeBinary),          // invoke underlying C compiler
   LAST

@@ -441,13 +441,11 @@ initPrimitive() {
   prim_def(PRIM_WRITEEF, "write_EF", returnInfoVoid, true);
   prim_def(PRIM_WRITEFF, "write_FF", returnInfoVoid, true);
   prim_def(PRIM_WRITEXF, "write_XF", returnInfoVoid, true);
-  prim_def(PRIM_SYNC_RESET, "sync_reset", returnInfoVoid, true);
   prim_def(PRIM_READFE, "read_FE", returnInfoFirst, true);
   prim_def(PRIM_READFF, "read_FF", returnInfoFirst, true);
   prim_def(PRIM_READXX, "read_XX", returnInfoFirst, true);
   prim_def(PRIM_SYNC_IS_FULL, "sync_is_full", returnInfoBool, true);
   prim_def(PRIM_SINGLE_WRITEEF, "single_write_EF", returnInfoVoid, true);
-  prim_def(PRIM_SINGLE_RESET, "single_reset", returnInfoVoid, true);
   prim_def(PRIM_SINGLE_READFF, "single_read_FF", returnInfoFirst, true);
   prim_def(PRIM_SINGLE_READXX, "single_read_XX", returnInfoFirst, true);
   prim_def(PRIM_SINGLE_IS_FULL, "single_is_full", returnInfoBool, true);
@@ -507,8 +505,6 @@ initPrimitive() {
   prim_def(PRIM_BLOCK_BEGIN, "begin block", returnInfoVoid);
   prim_def(PRIM_BLOCK_COBEGIN, "cobegin block", returnInfoVoid);
   prim_def(PRIM_BLOCK_COFORALL, "coforall loop", returnInfoVoid);
-  prim_def(PRIM_BLOCK_XMT_PRAGMA_FORALL_I_IN_N, "xmt pragma forall i in n", returnInfoVoid);
-  prim_def(PRIM_BLOCK_XMT_PRAGMA_NOALIAS, "noalias pragma", returnInfoVoid, true);
   prim_def(PRIM_BLOCK_ON, "on block", returnInfoVoid);
   prim_def(PRIM_BLOCK_ON_NB, "non-blocking on block", returnInfoVoid);
   prim_def(PRIM_BLOCK_LOCAL, "local block", returnInfoVoid);

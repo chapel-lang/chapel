@@ -26,15 +26,7 @@ typedef int fd_t;
 #endif
 
 
-// MTA seems not to have a struct sockaddr_storage
-// or socklen_t defined, so we do our best to guess.
-#ifdef __MTA__
-#include <sys/un.h>
-typedef struct sockaddr_un sys_sockaddr_storage_t;
-typedef int socklen_t;
-#else
 typedef struct sockaddr_storage sys_sockaddr_storage_t;
-#endif
 
 
 typedef struct sys_sockaddr_s {
