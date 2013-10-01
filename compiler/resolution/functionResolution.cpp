@@ -5897,8 +5897,6 @@ static void
 pruneResolvedTree() {
   removeUnusedFunctions();
   removeUnusedTypes();
-  // Ideally positioned to lose the "best function name" contest. Suggestions?
-  removeRandomJunk();
 
   // insertRuntimeTypeTemps is also called earlier in resolve().  That call
   // can insert variables that need autoCopies and inserting autoCopies can
@@ -5908,6 +5906,12 @@ pruneResolvedTree() {
   // actual/formal type mismatch (with --verify) for the code:
   // record R { var A: [1..1][1..1] real; }
   insertRuntimeTypeTemps();
+
+  // Ideally positioned to lose the "best function name" contest. Suggestions?
+  // insertRuntimeTypeTemps() can insert method calls including the
+  // methodToken argument.  removeRandomJunk() needs to come after it to
+  // remove the methodToken.
+  removeRandomJunk();
 
   buildRuntimeTypeInitFns();
   removeUnusedFormals();
