@@ -14,6 +14,65 @@
 #include "files.h"
 #include "stlUtil.h"
 
+// Notes on
+//   makeHeapAllocations()    //invoked from parallel()
+//   insertWideReferences()
+//
+//------
+// Terminology/abbreviations:
+//
+// 'on'+'begin' is considered to be both an 'on' and a 'begin'
+// - see also FLAG_NON_BLOCKING
+//
+// A "global" is a module-level symbol, usu. a VarSymbol.
+// A 'var' is a global if, equivalently:
+//  isModuleSymbol(var->defPoint->parentSymbol)
+//  isGlobal(var)
+//
+// MHA = makeHeapAllocations() and functions it invokes
+// IWR = insertWideReferences() and functions it invokes
+//------
+//
+// MHA and IWR take care of the following, among others:
+// - heap allocation for remote access
+// - heap allocation for 'begin'
+// - change acces to variable -> access to its ._value
+// - set up wide references
+// - broadcasting of globals
+//
+// In more details:
+//
+// Heap allocation for remote access is done:
+// - for globals - in IWR, if:
+//    requireWideReferences()
+// - for a local - in MHA, if:
+//    needHeapVars() && the local can be passed to an 'on'
+//
+// Heap allocation for 'begin' is done:
+// - for globals - n/a
+//    see above instead
+// - for a local - in MHA, if:
+//    the local can be passed to a 'begin'
+//
+// Change acces to variable -> access to its ._value
+// - for globals - in MHA, if:
+//    requireWideReferences()
+// - for locals - in MHA, if:
+//    the local is subject to heap allocation
+//    in either of the above two categories
+//
+// Wide references are set up in IWR, if:
+//    requireWideReferences()
+//
+// Broadcasting:
+// - of certain global constants       - in MHA/findHeapVarsAndRefs, if:
+//    !fLocal
+// - of global arrays/domains/distribs - in MHA/findHeapVarsAndRefs, if:
+//    !fLocal
+// - of locations of the other globals - in IWR, if:
+//    requireWideReferences()
+
+
 typedef struct {
   bool firstCall;
   ClassType* ctype;
@@ -530,6 +589,12 @@ needHeapVars() {
   return true;
 }
 
+//
+// In the following, through makeHeapAllocations():
+//   refSet, refVec - symbols whose referencees need to be heap-allocated
+//   varSet, varVec - symbols that themselves need to be heap-allocated
+//
+
 // Traverses all 'begin' or 'on' task functions flagged as needing heap
 // allocation (for its formals) or flagged as nonblockikng.
 // Traverses all ref formals of these functions and adds them to the refSet and
@@ -725,6 +790,14 @@ makeHeapAllocations() {
       // don't widen external variables
       continue;
     }
+
+    if (isModuleSymbol(var->defPoint->parentSymbol)) {
+      if (!requireWideReferences()) {
+        // don't heap-allocate globals
+        continue;
+      }
+    }
+
     SET_LINENO(var);
 
     if (ArgSymbol* arg = toArgSymbol(var)) {
