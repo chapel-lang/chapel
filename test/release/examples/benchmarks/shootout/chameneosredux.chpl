@@ -1,22 +1,9 @@
 /* The Computer Language Benchmarks Game
    http://benchmarksgame.alioth.debian.org/
 
-   created by Hannah Hemmaplardh
-   modified for contribution by Lydia Duncan
-
-   - The Chameneos game is as follows:
-      A population of n chameneos gathers at a common meeting place, where
-      m meetings will take place (n and m may be distinct).  At any time, only
-      one meeting may take place between exactly two chameneos, and each
-      chameneos may be either blue, red, or yellow.  During a meeting, the
-      chameneos exchange information about the other chameneos' color, so that
-      after the meeting it can change its own color to the complement of its
-      original color and the other chameneos' color.  (The complement is
-      respective to two colors, its own and its partner's, such that if both
-      colors are the same, no change, otherwise each chameneos changes to the
-      color you and your partner both are not.)
-
-    - (description of benchmark: http://shootout.alioth.debian.org/u32q/benchmark.php?test=chameneosredux&lang=all */
+   contributed by Hannah Hemmaplardh
+   modified by Lydia Duncan
+*/
 
 config const numMeetings : int = 6000000;  // number of meetings to take place
 config const numChameneos1 : int(32) = 3;  // size of population 1
