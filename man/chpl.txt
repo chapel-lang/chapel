@@ -279,6 +279,8 @@ OPTIONS
   --[no-]llvm            Use LLVM as the code generation target rather than C. See
                     $CHPL_HOME/doc/technotes/README.llvm for details.
 
+  --[no-]llvm-wide-opt   Enable [disable] LLVM wide pointer optimizations.
+
   Documentation Options
 
   --[no-]docs       Create [Don't create] documents based on comments
