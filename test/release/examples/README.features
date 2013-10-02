@@ -26,6 +26,14 @@ benchmarks/
       stream-promoted : promoted/whole-array operations
       ra-cleanloop    : cleaner use of on-clauses -- correct but slower (today)
   lulesh/      : dense and sparse domains; domain-independent computation
+  miniMD/
+    miniMD     : high-level expression of complex stencil operations
+    explicit/  : low-level expression of complex stencil operations 
+  shootout/
+    binarytrees       : forall loops; iterators; tuples, recursion, classes
+    chameneosredux    : atomics; enums; coforall loops; reductions
+    nbody             : tuples; records; inlined functions
+    threadring        : syncs; coforall loops
   ssca2/       : graph algorithms, generic programming, distributed
                  data structures, replicated distribution
 
