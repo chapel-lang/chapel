@@ -50,7 +50,7 @@ since 9/6/13:
 XT PrgEnv-cray non-deterministic compiler internal errors
 ---------------------------------------------------------
 Determined to be a problem with CCE.  Filed bug 800520.
-
+  XC PrgEnv-cray may be experiencing these as well
 
 New gcc warning (bradc)
 -----------------------
@@ -70,6 +70,25 @@ chpbld01 testing (bradc)
 ==============================================
 These things regularly cause noise in testing:
 ==============================================
+
+release/examples/benchmarks/miniMD/ folder and subfolders (bradc/lydia)
+----------------------------------------------------------------------
+9/30/13: For organizational sake, the miniMD timeouts are all in here, although
+some of them are noisier than others
+
+  release/examples/benchmarks/miniMD/miniMD (compopts:2) compilation and
+  (execopts: 1, 2):
+    linux64.intel.none.fifo.pthreads
+    cray-xc.cray-prgenv-cray.none.fifo.pthreads
+    cray-xc.cray-prgenv-cray.none.fifo.pthreads--linux-gnu
+    linux64.pgi.none.fifo.pthreads
+
+  release/examples/benchmarks/miniMD/miniMD (compopts: 1) compilation:    
+    cray-xc.cray-prgenv-cray.none.fifo.pthreads
+    cray-xc.cray-prgenv-cray.none.fifo.pthreads--linux-gnu
+
+  release/examples/benchmarks/miniMD/explicit/miniMD compilation:
+    all pgi builds
 
 linux64.gnu.gasnet.qthreads.none (sungeun)
 ------------------------------------------

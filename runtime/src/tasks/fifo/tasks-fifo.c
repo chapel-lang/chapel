@@ -15,6 +15,7 @@
 #include "chpl-locale-model.h"
 #include "chpl-mem.h"
 #include "chpl-tasks.h"
+#include "chplsys.h"
 #include "error.h"
 #include <stdio.h>
 #include <string.h>
@@ -145,38 +146,52 @@ static task_pool_p             add_to_task_pool(chpl_fn_p,
 static void sync_wait_and_lock(chpl_sync_aux_t *s,
                                chpl_bool want_full,
                                int32_t lineno, chpl_string filename) {
+  chpl_bool cond_or_spin;
+  
   chpl_thread_mutexLock(&s->lock);
 
+  // If true, we want to use conditionals, otherwise we want to spin
+  cond_or_spin = (chpl_thread_getNumThreads() > chpl_numCoresOnThisLocale());
+
   while (s->is_full != want_full) {
-    chpl_thread_mutexUnlock(&s->lock);
-
-    while (s->is_full != want_full) {
-      if (set_block_loc(lineno, filename)) {
-        // all other tasks appear to be blocked
-        struct timeval deadline, now;
-        gettimeofday(&deadline, NULL);
-        deadline.tv_sec += 1;
-        do {
-          chpl_thread_yield();
-          if (s->is_full != want_full)
-            gettimeofday(&now, NULL);
-        } while (s->is_full != want_full
-                 && (now.tv_sec < deadline.tv_sec
-                     || (now.tv_sec == deadline.tv_sec
-                         && now.tv_usec < deadline.tv_usec)));
-        if (s->is_full != want_full)
-          check_for_deadlock();
-      }
-      else {
-        do {
-          chpl_thread_yield();
-        } while (s->is_full != want_full);
-      }
-
-      unset_block_loc();
+    if (!cond_or_spin) {
+      chpl_thread_mutexUnlock(&s->lock);
     }
-
-    chpl_thread_mutexLock(&s->lock);
+    if (set_block_loc(lineno, filename)) {
+      // all other tasks appear to be blocked
+      struct timeval deadline, now;
+      chpl_bool timed_out = false;
+      // default value so that always allows condition to be true if not
+      // using conditionals
+      gettimeofday(&deadline, NULL);
+      deadline.tv_sec += 1;
+      do {
+        if (cond_or_spin)
+          timed_out = threadlayer_sync_suspend(s, &deadline);
+        else
+          chpl_thread_yield();
+        
+        if (s->is_full != want_full && !timed_out)
+          gettimeofday(&now, NULL);
+      } while (s->is_full != want_full
+               && !timed_out
+               && (now.tv_sec < deadline.tv_sec
+                   || (now.tv_sec == deadline.tv_sec
+                       && now.tv_usec < deadline.tv_usec)));
+      if (s->is_full != want_full)
+        check_for_deadlock();
+    }
+    else {
+      do {
+        if (cond_or_spin)
+          (void) threadlayer_sync_suspend(s, NULL);
+        else
+          chpl_thread_yield();
+      } while (s->is_full != want_full);
+    }
+    unset_block_loc();
+    if (!cond_or_spin)
+      chpl_thread_mutexLock(&s->lock);
   }
 
   if (blockreport)
@@ -203,11 +218,13 @@ void chpl_sync_waitEmptyAndLock(chpl_sync_aux_t *s,
 
 void chpl_sync_markAndSignalFull(chpl_sync_aux_t *s) {
   s->is_full = true;
+  threadlayer_sync_awaken(s);
   chpl_sync_unlock(s);
 }
 
 void chpl_sync_markAndSignalEmpty(chpl_sync_aux_t *s) {
   s->is_full = false;
+  threadlayer_sync_awaken(s);
   chpl_sync_unlock(s);
 }
 
@@ -219,9 +236,12 @@ chpl_bool chpl_sync_isFull(void *val_ptr,
 void chpl_sync_initAux(chpl_sync_aux_t *s) {
   s->is_full = false;
   chpl_thread_mutexInit(&s->lock);
+  threadlayer_sync_init(s);
 }
 
-void chpl_sync_destroyAux(chpl_sync_aux_t *s) { }
+void chpl_sync_destroyAux(chpl_sync_aux_t *s) {
+  threadlayer_sync_destroy(s);
+}
 
 
 // Tasks
@@ -1019,6 +1039,7 @@ static void
 thread_begin(void* ptask_void) {
   task_pool_p ptask = (task_pool_p) ptask_void;
   thread_private_data_t *tp;
+  chpl_bool cond_or_spin;
 
   tp = (thread_private_data_t*) chpl_mem_alloc(sizeof(thread_private_data_t),
                                                CHPL_RT_MD_THREAD_PRIVATE_DATA,
@@ -1071,37 +1092,57 @@ thread_begin(void* ptask_void) {
     //
     // wait for a not-yet-begun task to be present in the task pool
     //
-    while (!task_pool_head) {
-      chpl_thread_mutexUnlock(&threading_lock);
 
-      while (!task_pool_head) {
+    // If true, we want to use conditionals, otherwise we want to spin  
+    cond_or_spin = (chpl_thread_getNumThreads() > chpl_numCoresOnThisLocale());
+    
+    do {
+      chpl_bool timed_out;
+      if (!cond_or_spin) {
+        chpl_thread_mutexUnlock(&threading_lock);
+      }
+      timed_out = false;
+      while (!task_pool_head || timed_out) {
+        timed_out = false;
         if (set_block_loc(0, idleTaskName)) {
           // all other tasks appear to be blocked
           struct timeval deadline, now;
           gettimeofday(&deadline, NULL);
           deadline.tv_sec += 1;
           do {
-            chpl_thread_yield();
-            if (!task_pool_head)
+            if (cond_or_spin)
+              timed_out = threadlayer_pool_suspend(&threading_lock, &deadline);
+            else
+              chpl_thread_yield();
+            if (!task_pool_head && !timed_out)
               gettimeofday(&now, NULL);
           } while (!task_pool_head
+                   && !timed_out
                    && (now.tv_sec < deadline.tv_sec
                        || (now.tv_sec == deadline.tv_sec
                            && now.tv_usec < deadline.tv_usec)));
-          if (!task_pool_head)
+          if (!task_pool_head) {
             check_for_deadlock();
+            if (cond_or_spin)
+              timed_out = true;
+          }
         }
         else {
           do {
-            chpl_thread_yield();
+            if (cond_or_spin)
+              (void) threadlayer_pool_suspend(&threading_lock, NULL);
+            else
+              chpl_thread_yield();              
           } while (!task_pool_head);
         }
-
+          
         unset_block_loc();
+              
       }
+      if (!cond_or_spin)
+          chpl_thread_mutexLock(&threading_lock);
+    } while (!task_pool_head);
 
-      chpl_thread_mutexLock(&threading_lock);
-    }
 
     if (blockreport)
       progress_cnt++;
@@ -1136,6 +1177,10 @@ thread_begin(void* ptask_void) {
       task_pool_tail = NULL;
     else {
       task_pool_head->prev = NULL;
+
+      // TODO: Do I want to do this all the time?
+      if (waking_thread_cnt > 0 && cond_or_spin)
+        threadlayer_pool_awaken();
     }
 
     // end critical section
@@ -1256,6 +1301,7 @@ launch_next_task_in_new_thread(void) {
 // Schedule one or more tasks either by signaling an existing thread or by
 // launching new threads if available
 static void schedule_next_task(int howMany) {
+  chpl_bool cond_or_spin;
   //
   // Reduce the number of new threads to be started, by the number that
   // are already looking for work and will find it very soon.  Try to
@@ -1270,6 +1316,11 @@ static void schedule_next_task(int howMany) {
     } else {
       howMany -= (idle_thread_cnt - waking_thread_cnt);
       waking_thread_cnt = idle_thread_cnt;
+    }
+    // If true, we want to use conditionals, otherwise we want to spin  
+    cond_or_spin = (chpl_thread_getNumThreads() > chpl_numCoresOnThisLocale());
+    if (cond_or_spin) {
+      threadlayer_pool_awaken();
     }
   }
 

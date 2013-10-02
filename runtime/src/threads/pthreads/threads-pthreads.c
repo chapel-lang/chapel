@@ -53,6 +53,7 @@ static thread_list_p   thread_list_tail = NULL; // tail of thread_list
 static pthread_attr_t  thread_attributes;
 
 static pthread_key_t   thread_id_key;
+static pthread_cond_t  wakeup_cond = PTHREAD_COND_INITIALIZER;
 static pthread_key_t   thread_private_key;
 
 static int32_t         maxThreads = 0;
@@ -64,8 +65,10 @@ static size_t          threadCallStackSize = 0;
 static void            (*saved_threadBeginFn)(void*);
 static void            (*saved_threadEndFn)(void);
 
+static void            threadlayer_condvar_init(threadlayer_condvar_t*);
 static void*           initial_pthread_func(void*);
 static void*           pthread_func(void*);
+static void            pool_suspend_cancel_cleanup(void*);
 
 
 // Mutexes
@@ -93,6 +96,80 @@ void chpl_thread_mutexUnlock(chpl_thread_mutex_p mutex) {
   if (pthread_mutex_unlock((pthread_mutex_t*) mutex))
     chpl_internal_error("pthread_mutex_unlock() failed");
 }
+
+static void threadlayer_condvar_init(threadlayer_condvar_t* cv) {
+  if (pthread_cond_init((pthread_cond_t*) cv, NULL))
+    chpl_internal_error("pthread_cond_init() failed");
+}
+
+chpl_bool threadlayer_sync_suspend(chpl_sync_aux_t *s,
+																	 struct timeval *deadline) {
+	threadlayer_condvar_t* cond;
+  cond = s->is_full ? &s->tl_aux.signal_empty : &s->tl_aux.signal_full;
+
+  if (deadline == NULL) {
+    (void) pthread_cond_wait(cond, (pthread_mutex_t*) &s->lock);
+    return false;
+  }
+  else {
+    struct timespec ts;
+    ts.tv_sec  = deadline->tv_sec;
+    ts.tv_nsec = deadline->tv_usec * 1000UL;
+    return (pthread_cond_timedwait(cond, (pthread_mutex_t*) &s->lock, &ts)
+            == ETIMEDOUT);
+  }
+}
+
+chpl_bool threadlayer_pool_suspend(chpl_thread_mutex_p lock,
+                                   struct timeval *deadline) {
+  int last_cancel_state;
+  chpl_bool res;
+
+  // enable cancellation with cleanup handler before waiting for wakeup signal
+  pthread_cleanup_push(pool_suspend_cancel_cleanup, lock);
+  (void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &last_cancel_state);
+  assert(last_cancel_state == PTHREAD_CANCEL_DISABLE); // sanity check
+
+  if (deadline == NULL) {
+    (void) pthread_cond_wait(&wakeup_cond, (pthread_mutex_t*) lock);
+    res = false;
+  }
+  else {
+    struct timespec ts;
+    ts.tv_sec  = deadline->tv_sec;
+    ts.tv_nsec = deadline->tv_usec * 1000UL;
+    res = (pthread_cond_timedwait(&wakeup_cond, (pthread_mutex_t*) lock, &ts)
+           == ETIMEDOUT);
+  }
+
+  // disable cancellation again
+  (void) pthread_setcancelstate(last_cancel_state, NULL);
+  pthread_cleanup_pop(0);
+
+  return res;
+}
+
+static void pool_suspend_cancel_cleanup(void* void_lock) {
+  chpl_thread_mutexUnlock((threadlayer_mutex_p) void_lock);
+}
+
+void threadlayer_pool_awaken(void) {
+  if (pthread_cond_signal(&wakeup_cond))
+    chpl_internal_error("pthread_cond_signal() failed");
+}
+
+void threadlayer_sync_awaken(chpl_sync_aux_t *s) {
+  if (pthread_cond_signal(s->is_full ?
+                          &s->tl_aux.signal_full : &s->tl_aux.signal_empty))
+    chpl_internal_error("pthread_cond_signal() failed");
+}
+
+void threadlayer_sync_init(chpl_sync_aux_t *s) {
+  threadlayer_condvar_init(&s->tl_aux.signal_full);
+  threadlayer_condvar_init(&s->tl_aux.signal_empty);
+}
+
+void threadlayer_sync_destroy(chpl_sync_aux_t *s) { }
 
 
 // Thread management

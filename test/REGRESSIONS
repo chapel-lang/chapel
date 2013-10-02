@@ -168,6 +168,11 @@ compilation timeouts 9/9/13
 [Error: Timed out compilation for users/franzf/v2/chpl/main (compopts: 1)]
 
 
+large number of failures, defying efforts to reproduce (started 9/23/13)
+------------------------------------------------------------------------
+As of 9/30/13, still have >2,000 failures due to what looks like the same error.
+(invalid writes and reads in rangeBase)
+
 ===============================
 no-local regressions
 ===============================
@@ -197,14 +202,6 @@ amount of comm. went down with locale ID optimization change (08/30/13)
 deadlock due to impact of small # of threads on root locale replication (08/21/13)
 -----------------------------------------------------------------------
 [Error: Timed out executing program multilocale/gbt/hello-numThreads-1]
-
-warning: inlining failed in call to 'qio_channel_offset_unlocked':
-call is unlikely and code size would grow 
-------------------------------------------------------------------
-[Error matching program output for release/examples/benchmarks/miniMD/miniMD (compopts: 1, execopts: 1)]
-[Error matching program output for release/examples/benchmarks/miniMD/miniMD (compopts: 1, execopts: 2)]
-[Error matching program output for release/examples/benchmarks/miniMD/miniMD (compopts: 2, execopts: 1)]
-[Error matching program output for release/examples/benchmarks/miniMD/miniMD (compopts: 2, execopts: 2)]
 
 
 ==============================================
@@ -319,6 +316,11 @@ gets "that wasn't very random looking" failure
 ------------------------------------------------------------------------------
 [Error matching program output for modules/standard/Random/diten/testRandomSeed]
 
+unreproducible io/ferguson/utf8cols/widecols.chpl failure (9/29/13 and 9/30/13)
+-------------------------------------------------------------------------------
+<internal>: error: Invalid argument in file.reader with path "/dev/null"
+  found on XT's gnu, intel, and pgi target builds as well as
+  linux64.gnu.none.fifo.pthreads
 
 ====================================================
 cray-xt-specific failures (in addition to the above)
