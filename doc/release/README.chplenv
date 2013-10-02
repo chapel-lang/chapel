@@ -222,6 +222,7 @@ Optional Settings
 
    If unset, CHPL_TIMERS defaults to "generic"
 
+
 9) Optionally, the CHPL_GMP environment variable can select between
    no GMP support, using the GMP distributed with Chapel in third-party,
    or using a system GMP. Current options are:
@@ -235,6 +236,7 @@ Optional Settings
    your installation, and "none" otherwise.  Note that the included gmp
    distribution may not build on all platforms supported by Chapel.
 
+
 10) Optionally, the CHPL_REGEXP environment variable can be used to
     enable regular expression operations as documented in
     doc/technotes/README.regexp and defined in modules/standard/Regexp.chpl.  
@@ -247,6 +249,7 @@ Optional Settings
     If unset, CHPL_REGEXP defaults to "re2" if you've already installed 
     regular expression support in third-party and "none" otherwise.
 
+
 11) Optionally, the CHPL_LLVM environment variable can be used to
     enable support for the LLVM back-end to the Chapel compiler
     (see doc/technotes/README.llvm) or to support extern blocks in
@@ -257,8 +260,34 @@ Optional Settings
                (downloading, building, and installing it if it is not already)
         none : do not support llvm-/clang-related features
 
-    If unset, CHPL_LLVM dfeaults to "llvm" if you've already installed
+    If unset, CHPL_LLVM defaults to "llvm" if you've already installed
     llvm in third-party and "none" otherwise.
+
+
+12) Optionally, the CHPL_WIDE_POINTERS environment variable can be used to
+    specify the wide pointer format for multilocale programs.  Current
+    options are:
+
+        struct : store wide pointers in structures which may span more
+                 than one word
+        nodeN :  ("N" a number, 2 <= N <= 60) store wide pointers in
+                 single words, with N bits used to store the node (top
+                 level locale) number and the rest containing the address
+                 on that node
+
+    CHPL_WIDE_POINTERS is used to select between two modes of operation.
+    One is universally applicable; the other has restricted applicability
+    but may reduce remote communication.
+
+    If unset, CHPL_WIDE_POINTERS defaults to "struct".  This setting
+    works in all situations and in particular, it is compatible with all
+    locale models including the hierarchical ones.  The "nodeN" option
+    does not work with hierarchical locale models and is only useful with
+    the LLVM backend, which is currently experimental.  However, when
+    used, it allows LLVM to understand and optimize remote transfers,
+    potentially reducing the amount of communication a program performs.
+    See doc/technotes/README.llvm for more information about
+    CHPL_WIDE_POINTERS=nodeN.
 
 -------------------------------------
 Compiler Command Line Option Defaults
