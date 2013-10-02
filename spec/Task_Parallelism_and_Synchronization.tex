@@ -37,8 +37,8 @@ for synchronization between tasks.
 Chapel provides two constructs, the cobegin and coforall statements,
 to introduce concurrency in a more structured way.  These constructs
 create multiple tasks but do not continue until the tasks have
-completed.  In addition, Chapel provides two constructs, the sync- and
-serial statements, to suppress parallelism and insert synchronization.
+completed.  In addition, Chapel provides two constructs, the \chpl{sync} and
+\chpl{serial} statements, to insert synchronization and suppress parallelism.
 All four of these constructs can be implemented through judicious uses
 of the unstructured task-parallel constructs described in the previous
 section.
