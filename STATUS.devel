@@ -1,3 +1,6 @@
+
+
+
 #
 # This file lists all the existing futures that are categorizes as "bug" or
 # "unimplemented feature."
@@ -53,7 +56,6 @@ run into.
 #
 # OMITTED: arrays/vass/newalias-perf.future
 # OMITTED: distributions/bradc/clonedForall.future
-# OMITTED: performance/sungeun/multilocale/locale.future
 #  b/c minorish performance futures which we may one day start documenting
 #
 # OMITTED: performance/bradc/refArgIsWide.future
@@ -100,7 +102,6 @@ General (see also portability section at the bottom of this file)
   # separate_compilation/jturner/use_simplefloat.future
   # separate_compilation/jturner/use_subclass.future
 - Back-end compilers may emit warning messages.
-  # memory/sungeun/no_unreachable_autoDestroy.future
   # studies/shootout/mandelbrot/bugs/mandelbrot-error.future
 - The --gdb flag is only supported for single-locale platforms that
   support gdb.  Please ask us for help if you want to debug a
@@ -420,6 +421,8 @@ Classes, Records, and Unions
   # users/ferguson/recordEquivalence.future
 - Array alias arguments to constructors fail to compile.
   # arrays/diten/constructorArrayAliasReindex.future
+- Atomics are not passed to constructors by ref by default
+  # functions/bradc/intents/test_construct_atomic_intent.future
 - Using a comparison operator with a record and 'nil' results in an
   internal compiler error.
   # types/records/sungeun/recordNotNil1.future
@@ -567,7 +570,7 @@ Task Parallelism and Synchronization
 Data Parallelism
 ----------------
 # OMITTED: trivial/sidelnik/reduction.future
-# OMITTED: studies/shootout/nbody/nbody_fullreduction.future
+# OMITTED: studies/shootout/nbody/sidelnik/nbody_fullreduction.future
 #  b/c not sure how to describe (these seem related)
 - Some data parallel statements that should be parallelized are
   serialized with a warning message "X has been serialized".  In some
@@ -662,13 +665,13 @@ Optimizations
 - Dead code elimination does not correctly remove all dead code,
   sometimes resulting in an internal error.
   # users/vass/crash6defPointNotInAST.future
-  # optimizations/sungeun/deadCodeElimination/elim.future
+- Optimize-on pass fails with internal error in some cases when using
+  a for loop in the body of the on clause
+  # users/ferguson/ontest.future
 - Disabling inlining may cause incorrect code to be generated.
   # SEE NIGHTLY BASELINE TESTING NOTES
 - Disabling inlining with -t results in a compiler seg fault.
   # compflags/diten/noInlineAndHtml.future
-- Fast-on optimization disabled for for on statements with op=
-  # performance/bradc/opequals.future
 
 
 Miscellaneous
