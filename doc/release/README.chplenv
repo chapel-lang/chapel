@@ -145,9 +145,22 @@ Optional Settings
         cygwin, darwin    ->  make
         linux32, linux64  ->  gmake if available, otherwise make
         other             ->  gmake
-        
 
-4) Optionally, set the CHPL_TASKS and/or CHPL_THREADS environment
+
+4) Optionally, set the CHPL_LOCALE_MODEL environment variable to
+   indicate the locale model you want to use.  Current options are:
+
+        flat : top-level locales are not further subdivided
+        numa : top-level locales are further subdivided into sublocales,
+               each one a NUMA domain
+        
+   If unset, CHPL_LOCALE_MODEL defaults to "flat".
+
+   See $CHPL_HOME/doc/technotes/README.localeModels for more information
+   about locale models.
+
+
+5) Optionally, set the CHPL_TASKS and/or CHPL_THREADS environment
    variables to indicate what tasking and threading layer you want to
    use to implement intra-locale parallelism (see README.tasks for
    more information on these options).  Current options are:
@@ -184,7 +197,7 @@ Optional Settings
    various CHPL_TASKS and CHPL_THREADS options.
 
 
-5) Optionally, set the CHPL_COMM environment variable to indicate what
+6) Optionally, set the CHPL_COMM environment variable to indicate what
    communication layer you want to use to implement inter-locale
    communication.  Current options are:
 
@@ -197,7 +210,7 @@ Optional Settings
    on executing Chapel programs using multiple locales.
 
 
-6) Optionally, the CHPL_MEM environment variable can be used to select
+7) Optionally, the CHPL_MEM environment variable can be used to select
    a memory management layer.  Current options are:
 
         default  : use the standard C malloc/free commands
@@ -209,35 +222,58 @@ Optional Settings
    README.multilocale for more information on GASNet segments.
 
 
-7) Optionally, the CHPL_LAUNCHER environment variable can be used to
+8) Optionally, the CHPL_LAUNCHER environment variable can be used to
    select a launcher to get your program up and running.  See
    README.launcher for more information on this variable's default and
    possible settings.
 
 
-8) Optionally, the CHPL_TIMERS environment variable can be used to
-   select an implementation for Chapel's timers.  Current options are:
+9) Optionally, the CHPL_ATOMICS environment variable can be used to
+   select an implementation for atomic operations in the runtime.
+   Current options are:
+
+        intrinsics : implement atomics using target compiler intrinsics
+                     (which typically map down to hardware capabilities)
+        locks :      implement atomics by using Chapel sync variables to
+                     protect normal operations
+
+   If unset, CHPL_ATOMICS defaults to "intrinsics" if the target
+   platform is anything except "linux32" and the target compiler is any
+   of the following:
+        cray-prgenv-gnu (gcc version 4.1 and later)
+        cray-prgenv-intel
+        gnu (gcc version 4.1 and later)
+        CLANG
+   Otherwise for "linux32" target platforms and/or any other target
+   compilers, it defaults to "locks".
+
+   See $CHPL_HOME/doc/technotes/README.atomics for more information
+   about atomic operations in Chapel and the runtime.
+
+
+10) Optionally, the CHPL_TIMERS environment variable can be used to
+    select an implementation for Chapel's timers.  Current options are:
 
         generic : use a gettimeofday()-based implementation
 
-   If unset, CHPL_TIMERS defaults to "generic"
+    If unset, CHPL_TIMERS defaults to "generic"
 
 
-9) Optionally, the CHPL_GMP environment variable can select between
-   no GMP support, using the GMP distributed with Chapel in third-party,
-   or using a system GMP. Current options are:
+11) Optionally, the CHPL_GMP environment variable can select between
+    no GMP support, using the GMP distributed with Chapel in third-party,
+    or using a system GMP. Current options are:
 
         system : assume GMP is already installed (#include gmp.h, -lgmp)
         none   : do not build GMP support into the Chapel runtime
         gmp    : use the gmp implementation bundled with Chapel in third-party
 
-   If unset, CHPL_GMP defaults to "system" if you are on a Cray system,
-   "gmp" if you've already built the third-party installation of GMP for
-   your installation, and "none" otherwise.  Note that the included gmp
-   distribution may not build on all platforms supported by Chapel.
+    If unset, CHPL_GMP defaults to "system" if you are on a Cray system,
+    "gmp" if you've already built the third-party installation of GMP for
+    your installation, and "none" otherwise.  Note that the included gmp
+    distribution may not build on all platforms supported by Chapel.
 
 
-10) Optionally, the CHPL_REGEXP environment variable can be used to
+12) Optionally, the CHPL_REGEXP environment variable can be used to
     enable regular expression operations as documented in
     doc/technotes/README.regexp and defined in modules/standard/Regexp.chpl.  
     Current options are:
@@ -250,7 +286,20 @@ Optional Settings
     regular expression support in third-party and "none" otherwise.
 
 
-11) Optionally, the CHPL_LLVM environment variable can be used to
+13) Optionally, the CHPL_AUX_FILESYS environment variable can be used to
+    request that runtime support for filesystems beyond the usual Linux
+    one be present.  Current options are:
+
+        none : only support traditional Linux filesystems
+        hdfs : also support HDFS filesystems
+
+    If unset, CHPL_AUX_FILESYS defaults to "none".
+
+    See $CHPL_HOME/doc/technotes/README.hdfs for more information about
+    HDFS support.
+
+
+14) Optionally, the CHPL_LLVM environment variable can be used to
     enable support for the LLVM back-end to the Chapel compiler
     (see doc/technotes/README.llvm) or to support extern blocks in
     Chapel code via the CLANG compiler (see doc/technotes/README.extern).
@@ -264,7 +313,7 @@ Optional Settings
     llvm in third-party and "none" otherwise.
 
 
-12) Optionally, the CHPL_WIDE_POINTERS environment variable can be used to
+15) Optionally, the CHPL_WIDE_POINTERS environment variable can be used to
     specify the wide pointer format for multilocale programs.  Current
     options are:
 
