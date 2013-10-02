@@ -1,3 +1,4 @@
+warning: --serial is currently not fully supported and may be deprecated in future releases
 UTS v2.1 - Unbalanced Tree Search (Sequential Chapel (DeQueue))
 Tree type: Geometric
 Tree shape parameters:

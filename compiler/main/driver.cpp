@@ -590,7 +590,13 @@ static void setWarnSpecial(ArgumentState* arg_state, char* unused) {
   setWarnTupleIteration(arg_state, unused);
 }
 
-
+static void warnDepricatedSerialFlag(ArgumentState* arg_state, char* unused) {
+  if (fSerial) {
+    USR_WARN("--serial is currently not fully supported and may be deprecated in future releases");
+  } else {
+    USR_WARN("the --no-serial flag may be deprecated in future releases");
+  }
+}
 /*
 Flag types:
 
@@ -621,7 +627,7 @@ static ArgumentDescription arg_desc[] = {
 
  {"", ' ', NULL, "Parallelism Control Options", NULL, NULL, NULL, NULL},
  {"local", ' ', NULL, "Target one [many] locale[s]", "N", &fLocal, "CHPL_LOCAL", NULL},
- {"serial", ' ', NULL, "[Don't] Serialize parallel constructs", "N", &fSerial, "CHPL_SERIAL", NULL},
+ {"serial", ' ', NULL, "[Don't] Serialize parallel constructs", "N", &fSerial, "CHPL_SERIAL", warnDepricatedSerialFlag},
  {"serial-forall", ' ', NULL, "[Don't] Serialize forall constructs", "N", &fSerialForall, "CHPL_SERIAL_FORALL", NULL},
 
  {"", ' ', NULL, "Optimization Control Options", NULL, NULL, NULL, NULL},
