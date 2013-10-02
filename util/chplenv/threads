@@ -11,26 +11,21 @@ my $threads;
 
 if ($preset_threads eq "") {
     if ($preset_tasks eq "") {
-	$preset_tasks = run("tasks");
+        $preset_tasks = run("tasks");
     }
 
     if ($preset_tasks eq "fifo") {
-	$threads = "pthreads";
+        $threads = "pthreads";
     } elsif ($preset_tasks eq "massivethreads") {
         $threads = "none";
     } elsif ($preset_tasks eq "muxed") {
-	$threads = "soft-threads";
+        $threads = "soft-threads";
     } elsif ($preset_tasks eq "qthreads") {
-	$threads = "none";
+        $threads = "none";
     } elsif ($preset_tasks eq "none") {
-	$threads = "none";
+        $threads = "none";
     } elsif ($preset_tasks eq "") {
-	my $platform = run("platform", "--target");
-	if ($platform =~ /^x[12]-sim$/) {
-	    $threads = "none";
-	} else {
 	    $threads = "pthreads";
-	}
     } else {
 	die "Unexpected preset tasks value \"$preset_tasks\".\n";
     }

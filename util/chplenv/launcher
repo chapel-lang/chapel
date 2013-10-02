@@ -54,8 +54,6 @@ if ($preset_launcher eq "") {
         if ($substrate eq "mpi") {
             $launcher = "mpirun";
         }
-    } elsif ($platform eq "x1-sim" || $platform eq "x2-sim") {
-        $launcher = "apsim";
     } elsif ($comm eq "mpi") {
         $launcher = "mpirun";
     } elsif ($comm eq "pvm") {
