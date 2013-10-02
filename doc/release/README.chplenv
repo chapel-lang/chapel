@@ -191,9 +191,10 @@ Optional Settings
         none   : only supports single-locale execution
         gasnet : use the GASNet-based communication layer
 
-   If unset, CHPL_COMM defaults to "none" unless you are running on a Cray
-   XC/XE/XT/XK (TM) or Cray CS (TM) system.  See README.multilocale for more
-   information on executing Chapel programs using multiple locales.
+   If unset, CHPL_COMM defaults to "none" unless you are running on a
+   Cray XC/XE/XT/XK (TM) or Cray CS (TM) system, in which case it
+   defaults to "gasnet".  See README.multilocale for more information
+   on executing Chapel programs using multiple locales.
 
 
 6) Optionally, the CHPL_MEM environment variable can be used to select
