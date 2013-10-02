@@ -2,6 +2,184 @@
 Release Changes List
 ====================
 
+* started at 21270
+* paused at 21797
+
+=============
+version 1.8.0
+=============
+
+Eleventh public release of Chapel, October 17, 2013
+
+Highlights (see entries in subsequent categories for details)
+-------------------------------------------------------------
+
+Environment Changes
+-------------------
+
+Syntactic/Naming Changes
+------------------------
+- added support for 'const in' and 'const ref' intents
+
+Semantic Changes / Changes to Chapel Language
+---------------------------------------------
+- added operator support for pairs of small int/uint types
+  (e.g., 'int(8)' + 'int(8)' now generates 'int(8)' rather than 'int(32)')
+- added support for ranges, domains/arrays with small-int 'idxType's
+- made 'bool' types prefer dispatching to 'int' args over smaller-int options
+- added operator support for homogenous tuple/scalar pairs
+- added initial support for specifying locale models ('hierarchical locales')
+
+Newly Implemented Features
+--------------------------
+- added initial support for accessing HDFS file systems via files/channels
+  (see $CHPL_HOME/doc/technotes/README.hdfs)
+- added config params for all CHPL_* environment variables
+
+Deprecated Features
+-------------------
+
+Standard Modules
+----------------
+- added a new 'UtilReplicatedVar.chpl' standard module for replicated variables
+- added 'HDFSiterator' and 'RecordParser' modules, useful for parsing HDFS files
+
+Documentation
+-------------
+- minor updates to README.formattedIO 
+
+Example Codes
+-------------
+- cleaned up the beer.chpl example
+- fixed a bug in the atomics.chpl primer example
+
+Platform-specific Notes
+-----------------------
+
+Portability of code base
+------------------------
+
+Launcher-specific Notes
+-----------------------
+- made the aprun-based launchers use the system's default number of CPUs
+- brought the pbs launchers up-to-date with the current NCCS wrapper of qsub
+
+Compiler Flags
+--------------
+- added --[no-]llvm-wide-opt to enable/disable LLVM wide pointer optimizations
+  (see 'man chpl' for details)
+
+Flags on Generated Executables
+------------------------------
+- replaced flags that govern initial runtime behavior with environment variables
+    callStackSize       -> CHPL_RT_CALL_STACK_SIZE
+    commConcurrency     -> CHPL_RT_COMM_CONCURRENCY
+    numHardwareThreads  -> CHPL_RT_NUM_HARDWARE_THREADS
+    numThreadsPerLocale -> CHPL_RT_NUM_THREADS_PER_LOCALE
+
+Error Message Improvements
+--------------------------
+- errors relating to assignments to non-lvalues no longer exit immediately
+
+Bug Fixes / New Semantic Checks (for old semantics)
+---------------------------------------------------
+- bug fixes to Regexp convenience functions and string.split() naming
+- bug fixes to BigInt functions in the GMP module
+- fixed dead code elimination for blocks that constitute their sole 'in' arc
+- bug fix for extern blocks containing #define's
+- bug fix related to reading string literals that began with whitespace
+- fixed a bug in which whitespace was written to binary files for array output
+- fixed a bug in the compareExchange implementation for atomic reals
+- bug fix for lost updates to fields of 'this' in certain scenarios
+- fixed a bug in which dynamic iterators would serialize if #chunks < #tasks
+- fixed bugs related to writef() for complex values
+- improved const checking for actuals passed to out/inout/const ref/ref intents
+- fixed a bug related to 'ref' intents and the fast segment for GASNet
+
+Packaging Changes
+-----------------
+
+Performance Improvements / Memory Leak Improvements
+---------------------------------------------------
+- improved support for destroying more automatic variables as they leave scope
+- reduced memory leaked by strings by sharing more aggressively
+- improved performance of local arrays by storing a shifted base pointer
+- passed more things by value ('this', array/domain/domain map wrappers)
+- added a loop-invariant code motion optimization
+- plugged memory leaks related to file types
+- freed temporary buffers used for formatting complex text output
+
+Runtime Library Changes
+-----------------------
+- interface changes to support locale models/hierarchical locales
+
+LLVM Back-end Changes
+---------------------
+- added wide pointer support for the LLVM back-end via CHPL_WIDE_POINTERS
+  (see $CHPL_HOME/doc/technotes/README.llvm and $CHPL_HOME/doc/README.chplenv)
+
+Compiler Performance and Cleanup
+--------------------------------
+- disabled compiler internal verification by default to improve compile time
+
+Generated Code Cleanups
+-----------------------
+- declared non-exported symbols 'static' in generated code
+- added support for targeting 'op=' operators in the back-end
+
+Third-Party Software Changes
+----------------------------
+- turned on support for stack overflow detection in Qthreads via QT_GUARD_PAGES
+  (see $CHPL_HOME/doc/README.tasks for more information)
+- updated the LLVM back-end to use version 3.3 and packaged it with the release
+- updated to GASNet version 1.20.2
+
+Testing System
+--------------
+- added support for filing .bad files against futures to track behavior changes
+- added support for setting environment variables on a per-test/-directory basis
+- fixed a bug in which spec tests weren't being generated correctly
+- added the capability for the test directory to clean itself up more thoroughly
+- added a timeout feature for performance testing (separate from correctness)
+- changed performance graphing to use dygraphs
+- added directory-level PERFCOMPOPTS/PERFEXECOPTS files
+- added the ability to use an external 'time -p' command for performance tests
+
+Makefile Changes
+----------------
+- accelerated the Makefile framework, particularly for no-op re-builds
+
+Internal/Developer-oriented
+---------------------------
+- added "donor" function concept, making the callee responsible for deletion
+- removed some instances of strcpy()s in the compiler
+- removed experimental GPU work
+- refactored the memory interface to better separate checking/tracking concerns
+- added "runtime type init fn" pragma to clarify overloaded "has runtime type"
+- continued transition toward STL collections within the compiler
+- added a new 'resolveIntents' pass which resolves 'blank' and 'const' intents
+- added a new 'createTaskFunctions' pass that creates functions defining tasks
+- added an --ignore-errors-for-pass compiler flag for developers
+- fixed a bug in isDefAndOrUse() for op= primitives
+- added new capabilities to the bit vector class
+- added a compiler analysis to compute dominators
+- added "atomic type" flag for identifying atomic types to the compiler
+- rearchitected the QIO framework to support multiple file systems
+- restructured #includes to avoid reliance on compiler-specific search policies
+- added a per-pass consistency/verification framework
+- restructured iterators so that not all yields would share the same variable
+- added a --verify compiler flag for running optional verification steps
+- added a functional interface for invoking remote functions by ID
+- switched to using 'ref' intents rather than 'inout' for I/O routines
+
+Changes In Support of Hierarchical Locales
+------------------------------------------
+- made on-clauses get invoked through locale model module code written in Chapel
+- made task invocation flow through locale model module code written in Chapel
+- mapped the tasking interface's support for hierarchical locales to Qthreads
+
+
+
 =============
 version 1.7.0
 =============
