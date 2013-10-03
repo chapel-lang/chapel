@@ -665,12 +665,14 @@ compile-time error will be issued.
 The binary operators \chpl{\+}, \chpl{\-}, \chpl{\*}, \chpl{\/}, \chpl{\%},
 \chpl{\*\*}, \chpl{\&}, \chpl{\|}, \chpl{\^}, \chpl{\<\<}, and \chpl{\>\>}
 are overloaded on tuples by applying them to pairs of the respective
-argument components and returning the results as a new tuple.
-The sizes of the two argument tuples must be the same.
+argument components and returning the results as a new tuple.  The
+sizes of the two argument tuples must be the same.  These operators
+are also defined for homogenous tuples and scalar values of matching
+type.
 
-The size of the result tuple is the same as the argument tuples.  The
-type of each result component is the result type of the operator when
-applied to the corresponding pair of the argument components.
+The size of the result tuple is the same as the argument tuple(s).
+The type of each result component is the result type of the operator
+when applied to the corresponding pair of the argument components.
 
 When a tuple binary operator is used, the same operator must be
 well-defined for successive pairs of operands in the two tuples.
