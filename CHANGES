@@ -113,12 +113,11 @@ Portability of code base
 ------------------------
 - worked around a PGI portability issue with C structs in the generated code
 
-Compiler Flags
---------------
+Compiler Flags (see 'man chpl' for details)
+-------------------------------------------
 - added --[no-]warn-const-loops to control warnings about loops over constants
-  (see 'man chpl' for details)
+- added --[no-]loop-invariant-code-motion to enable/disable that optimization
 - added --[no-]llvm-wide-opt to enable/disable LLVM wide pointer optimizations
-  (see 'man chpl' for details)
 - added warnings to '--[no-]serial' indicating its likely deprecation
 
 Flags on Generated Executables
