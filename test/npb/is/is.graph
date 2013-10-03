@@ -3,22 +3,22 @@ files: intsort.S.dat
 graphkeys: setup time - S, key sort time - S, verify time - S, total time - S
 graphtitle: NAS Parallel Benchmarks: IS timings - size S
 
-perfkeys:  Elapsed time for setup    =,  Elapsed time for key sort =,  Elapsed time for full verify =,  Time in seconds =
-files: intsort.W.dat
-graphkeys: setup time - W, key sort time - W, verify time - W, total time - W
-graphtitle: NAS Parallel Benchmarks: IS timings - size W
+#perfkeys:  Elapsed time for setup    =,  Elapsed time for key sort =,  Elapsed time for full verify =,  Time in seconds =
+#files: intsort.W.dat
+#graphkeys: setup time - W, key sort time - W, verify time - W, total time - W
+#graphtitle: NAS Parallel Benchmarks: IS timings - size W
 
 perfkeys:  Elapsed time for setup    =,  Elapsed time for key sort =,  Elapsed time for full verify =,  Time in seconds =
 files: intsort.A.dat
 graphkeys: setup time - A, key sort time - A, verify time - A, total time - A
 graphtitle: NAS Parallel Benchmarks: IS timings - size A
 
-perfkeys:  Elapsed time for setup    =,  Elapsed time for key sort =,  Elapsed time for full verify =,  Time in seconds =
-files: intsort.B.dat
-graphkeys: setup time - B, key sort time - B, verify time - B, total time - B
-graphtitle: NAS Parallel Benchmarks: IS timings - size B
+#perfkeys:  Elapsed time for setup    =,  Elapsed time for key sort =,  Elapsed time for full verify =,  Time in seconds =
+#files: intsort.B.dat
+#graphkeys: setup time - B, key sort time - B, verify time - B, total time - B
+#graphtitle: NAS Parallel Benchmarks: IS timings - size B
 
-perfkeys:  Elapsed time for setup    =,  Elapsed time for key sort =,  Elapsed time for full verify =,  Time in seconds =
-files: intsort.C.dat
-graphkeys: setup time - C, key sort time - C, verify time - C, total time - C
-graphtitle: NAS Parallel Benchmarks: IS timings - size C
+#perfkeys:  Elapsed time for setup    =,  Elapsed time for key sort =,  Elapsed time for full verify =,  Time in seconds =
+#files: intsort.C.dat
+#graphkeys: setup time - C, key sort time - C, verify time - C, total time - C
+#graphtitle: NAS Parallel Benchmarks: IS timings - size C
