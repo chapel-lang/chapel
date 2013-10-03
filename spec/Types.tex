@@ -42,7 +42,7 @@ These statements are defined in Sections \rsec{Enumerated_Types},
 %REVIEW: vass: we should explain what separates primitive types from the rest.
 The primitive types are: \chpl{void}, \chpl{bool},
 \chpl{int}, \chpl{uint}, \chpl{real}, \chpl{imag}, \chpl{complex},
-\chpl{string}, and \chpl{locale}.  They are defined
+and \chpl{string}.  They are defined
 in this section.
 
 The primitive types are summarized by the following syntax:
@@ -56,7 +56,6 @@ primitive-type:
   `imag' primitive-type-parameter-part[OPT]
   `complex' primitive-type-parameter-part[OPT]
   `string'
-  `locale'
 
 primitive-type-parameter-part:
   ( integer-parameter-expression )
@@ -218,15 +217,6 @@ There is an expectation of future support for fixed-length strings.
 There is an expectation of future support for different character
 sets, possibly including internationalization.
 \end{openissue}
-
-
-%REVIEW: vass: move the reference below to the top of
-% the Primitive Types section and remove this subsection.
-\subsection{The Locale Type}
-\label{Locale_Types}
-\index{types!locale}
-
-The \chpl{locale} type is defined in~\rsec{The_Locale_Type}.
 
 
 \section{Enumerated Types}

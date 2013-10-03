@@ -36,10 +36,10 @@ locale.
 \index{locale@\chpl{locale}}
 \index{types!locale@\chpl{locale}}
 
-The identifier \chpl{locale} is a primitive type that abstracts a
+The identifier \chpl{locale} is a class type that abstracts a
 locale as described above.  Both data and tasks can be associated with
-a value of locale type. The only operators defined over locales are
-the equality and inequality comparison operators.
+a value of locale type.  A Chapel implementation may define subclass(es)
+of \chpl{locale} for a richer description of the target architecture.
 
 \subsection{Locale Methods}
 \label{Locale_Methods}
