@@ -276,10 +276,16 @@ OPTIONS
 
   LLVM Code Generation Options
 
-  --[no-]llvm            Use LLVM as the code generation target rather than C. See
+  --[no-]llvm       Use LLVM as the code generation target rather than C. See
                     $CHPL_HOME/doc/technotes/README.llvm for details.
 
-  --[no-]llvm-wide-opt   Enable [disable] LLVM wide pointer optimizations.
+  --[no-]llvm-wide-opt   Enable [disable] LLVM wide pointer communication 
+                    optimizations.
+                    This option requires --llvm and packed wide pointers.
+                    Packed wide pointers are enabled by setting
+                    CHPL_WIDE_POINTERS = node16.  You must also supply --fast
+                    to enable wide pointer optimizations.  See
+                    $CHPL_HOME/doc/technotes/README.llvm for details.
 
   Documentation Options
 

@@ -21,4 +21,5 @@ that directory.
 
 Additionally, if you build your compiler with CHPL_WIDE_POINTERS=node16
 and then compile a program with --llvm --llvm-wide-opt --fast, you will
-activate communication optimization within LLVM.
+activate communication optimization within LLVM.  Consult the LLVM documentation
+for details on communication optimization.
