@@ -1,86 +1,85 @@
-===================================================
-Using Chapel on Cray CS, XT, XE, XK, and XC Systems
-===================================================
+===============================
+Using Chapel on Cray(R) Systems
+===============================
 
 The following information is assembled to help Chapel users get up and
-running on Cray systems including Cray XT (TM), Cray XE (TM), Cray XK
-(TM), and Cray XC (TM) systems.  
+running on Cray systems including the Cray XT(TM) XE(TM), XK(TM),
+XC(TM) and CS(TM) series systems.
 
-If you are not familiar with Chapel, it is recommended that you try the
-instructions in the top-level README first to get started with the
+If you are not familiar with Chapel, it is recommended that you start
+with the instructions in the top-level READMEs to get started with the
 language.
 
-Chapel is available as a module for Cray X-series machines.  When it
-is installed on your system, you do not need to build the compiler.
-Simply load the module with:
+Chapel is available as a module for Cray X-series systems.  When it is
+installed on your system, you do not need to build the compiler and
+runtime.  Simply load the module with:
 
      module load chapel
 
-then proceed directly to compiling your Chapel programs (Step 10 below).
-For information on obtaining and installing the Chapel module please
-contact your system administrator.
-
-(If you are a Cray XT user on an NCCS machine, please see the special
-notes at the bottom of this file.  If you have any troubles, please let
-us know at chapel_info@cray.com.)
+then proceed directly to compiling your Chapel programs (Step 10
+below).  For information on obtaining and installing the Chapel module
+please contact your system administrator.
 
 
 1) Set CHPL_HOST_PLATFORM to the appropriate string for your particular
    Cray system.  These are the supported systems and strings:
-       Cray System     CHPL_HOST_PLATFORM
-       ------------    ------------------
-       Cray CS         cray-cs
-       Cray XT         cray-xt
-       Cray XE         cray-xe
-       Cray XK         cray-xk
-       Cray XC         cray-xc
+       System       CHPL_HOST_PLATFORM
+       ---------    ------------------
+       XT series        cray-xt
+       XE series        cray-xe
+       XK series        cray-xk
+       XC series        cray-xc
+       CS series        cray-cs
 
    For example:
 
      export CHPL_HOST_PLATFORM=cray-xe
 
-   This will automatically set CHPL_COMM to GASNet.  See README.multilocale for
-   further information about running using multiple locales and GASNet.
+   This will automatically set CHPL_COMM to GASNet.  See
+   README.multilocale for further information about running using
+   multiple locales and GASNet.
 
 
-2) If your Cray system requires PBS/qsub to launch jobs onto the compute
+2) If your Cray system requires PBS to launch jobs onto the compute
    nodes (or you simply want to use it as your job launch mechanism),
    set CHPL_LAUNCHER to 'pbs-aprun'.  For example:
 
      export CHPL_LAUNCHER=pbs-aprun
 
-   If it only requires aprun to launch a job (or you want to manage
-   the qsub step yourself), set it to 'aprun'.  If you want to manage
-   all job queueing/launching responsibilities yourself, set it to
-   'none'.  If left unset, the value of CHPL_LAUNCHER will be set
-   automatically to one of the three settings above depending on the
-   presence of aprun and/or qsub.  See $CHPL_HOME/doc/README.launcher
-   for more information on Chapel's launcher capabilities.
+   If your system only requires aprun to launch a job (or you want to
+   manage the qsub step yourself), set it to 'aprun'.  If you want to
+   manage all job queueing/launching responsibilities yourself, set it
+   to 'none'.  If left unset, the value of CHPL_LAUNCHER will be set
+   to aprun.  See $CHPL_HOME/doc/README.launcher for more information
+   on Chapel's launcher capabilities.
 
 
-3) When using CHPL_LAUNCHER == pbs-aprun, you can optionally specify a
-   queue name using the environment variable CHPL_LAUNCHER_QUEUE.  For
-   example:
+3) When CHPL_LAUNCHER is set to pbs-aprun, you can optionally specify
+   a queue name using the environment variable CHPL_LAUNCHER_QUEUE.
+   For example:
 
      export CHPL_LAUNCHER_QUEUE=batch
 
    If this variable is left unset, no queue name will be specified.
+   Alternatively, you can set the queue name on your Chapel program
+   command line using the --queue flag.
+
    You can also optionally set a wall clock time limit for the job
    using CHPL_LAUNCHER_WALLTIME.  For example to specify a 10-minute
    time limit, use:
 
      export CHPL_LAUNCHER_WALLTIME=00:10:00
 
-   NCCS users must specify either a queue or a walltime using the
-   mechanisms above.
-   
+   Alternatively, you can set the wall clock time limit on your Chapel
+   program command line using the --walltime flag.
+
 
 4) Ensure that you have one of the following Programming Environment
    modules loaded which will specify the C compiler used to compile
    Chapel programs for the compute nodes:
 
-     - PrgEnv-cray
      - PrgEnv-gnu
+     - PrgEnv-cray
      - PrgEnv-intel
      - PrgEnv-pgi
 
@@ -114,12 +113,13 @@ us know at chapel_info@cray.com.)
       chpl -o hello6-taskpar-dist $CHPL_HOME/examples/hello6-taskpar-dist.chpl
 
 
-9) When you compile a Chapel program for your Cray system, you should see
-    two binaries (e.g., hello6-taskpar-dist and hello6-taskpar-dist_real). 
-    The first binary contains code to launch the Chapel program onto the
-    compute nodes, as specified by your CHPL_LAUNCHER setting.  The
-    second contains the program code itself; it is not intended to be
-    executed directly from the shell prompt.
+9) If CHPL_LAUNCHER is not set to 'none', when you compile a Chapel
+   program for your Cray system, you should see two binaries (e.g.,
+   hello6-taskpar-dist and hello6-taskpar-dist_real).  The first
+   binary contains code to launch the Chapel program onto the compute
+   nodes, as specified by your CHPL_LAUNCHER setting.  The second
+   contains the program code itself; it is not intended to be executed
+   directly from the shell prompt.
 
 
 10) Multi-locale executions require the number of locales to be
@@ -132,11 +132,11 @@ us know at chapel_info@cray.com.)
    program.  See README.launcher for further details.
 
 
-11) If your Cray system has compute nodes with varying numbers of cores,
-    you can request nodes with at least a certain number of cores using
-    the variable CHPL_LAUNCHER_CORES_PER_LOCALE.  For example, on a Cray
-    XE system with at least 24 cores per compute node, to request nodes
-    with at least 24 cores you would use:
+11) If your Cray system has compute nodes with varying numbers of
+    cores, you can request nodes with at least a certain number of
+    cores using the variable CHPL_LAUNCHER_CORES_PER_LOCALE.  For
+    example, on a Cray system with at least 24 cores per compute node,
+    to request nodes with at least 24 cores you would use:
 
       export CHPL_LAUNCHER_CORES_PER_LOCALE=24
 
@@ -145,38 +145,36 @@ us know at chapel_info@cray.com.)
 Cray File Systems and Chapel execution
 --------------------------------------
 
-* For best results, it is recommended that you execute your Chapel
-  program on a shared file system (typically Lustre) for the Cray
-  system, as this will provide the greatest amount of transparency
-  between the login nodes and compute nodes.  In some cases, running a
-  Chapel program from a non-shared file system will make it impossible
-  to launch onto the compute nodes.  In other cases, the launch will
-  succeed, but any files read or written by the Chapel program will
-  opened relative to the compute node's file system rather than the
-  login node's.  To avoid wrestling with such issues, we recommend
-  executing Chapel programs from a file system directory that is shared
-  between the login and compute nodes.
+For best results, it is recommended that you execute your Chapel
+program by placing the binaries on a file system shared between the
+login node and compute nodes (typically Lustre), as this will provide
+the greatest amount of transparency when executing your program.  In
+some cases, running a Chapel program from a non-shared file system
+will make it impossible to launch onto the compute nodes.  In other
+cases, the launch will succeed, but any files read or written by the
+Chapel program will opened relative to the compute node's file system
+rather than the login node's.
 
 
----------------------------------------------
-Special Notes for Cray XE, XK, and XC Systems
----------------------------------------------
+----------------------------------------------------
+Special Notes for Cray XE, XK, and XC Series Systems
+----------------------------------------------------
 
-Native Runtime Layers for Cray XE, XK, and XC Systems
------------------------------------------------------
+Native Runtime Layers
+---------------------
 
 The README.multilocale and README.tasking files describe a variety of
 communication layers and tasking layers that can be used by Chapel
-programs.  By default, Chapel programs Cray XE, XK, and XC systems use
-the GASNet communication layer and the FIFO tasking layer, and there are
-several other tasking layers available that can also be used with the
-GASNet communication layer.
+programs.  By default, Chapel programs on Cray XE, XK, and XC series
+systems use the GASNet communication layer and the FIFO tasking layer.
+There are several other tasking layers available that can also be used
+with the GASNet communication layer.
 
 In addition to the standard runtime layers available in any Chapel
-release, the pre-built Chapel module on Cray XE, XK, and XC systems
-supports a fixed combination of Cray-specific communication, tasking,
-and threading layers.  These make use of Cray's hardware and/or software
-to produce enhanced performance for Chapel programs.
+release, the pre-built Chapel modules for Cray XE, XK, and XC series
+systems support a combination of Cray-specific communication, tasking,
+and threading layers.  These make use of the Cray's hardware and/or
+software to produce enhanced performance for Chapel programs.
 
 The communication layer interacts with the system's network interface
 very closely through a lightweight interface called uGNI (user Generic
@@ -186,26 +184,11 @@ overhead and some of the resource limitations associated with OS thread
 switching.  These three layers cooperate to overlap communication to
 remote locales with task execution, particularly improving the
 performance of programs limited by the latency of small remote data
-references, such as graph analytic applications.  These Cray specific
-runtime layers are not released in source form, and of course Chapel
-programs compiled and linked with them cannot be run on non-Cray
-systems.
+references, such as graph analytic applications.
 
-To use this combination of runtime layers, do the following.
+To use this combination of runtime layers:
 
-
-1) Make sure the Cray system you are using is running Cray Linux
-   Environment (TM) (CLE) 4.x or later.  The runtime layers discussed here
-   will not work properly on CLE 3.x or earlier versions.  For example:
-
-     echo $XTOS_VERSION
-
-   or
-
-     cat /etc/opt/cray/release/clerelease 
-
-
-2) Make sure that you are using a GNU target compiler.  For example:
+1) Make sure that you are using the Cray GNU target compiler.
 
      module load PrgEnv-gnu
 
@@ -213,8 +196,8 @@ To use this combination of runtime layers, do the following.
    unload it first, or do a swap instead of a load.)
 
 
-3) Set your CHPL_COMM environment variable to "ugni" and your CHPL_TASKS
-   environment variable to "muxed".  For example:
+2) Set your CHPL_COMM environment variable to "ugni" and your CHPL_TASKS
+   environment variable to "muxed".
 
      export CHPL_COMM=ugni
      export CHPL_TASKS=muxed
@@ -230,7 +213,7 @@ To use this combination of runtime layers, do the following.
    these need to be set explicitly.
 
 
-4) Load an appropriate craype-hugepages module.  For example:
+3) Load an appropriate craype-hugepages module.  For example:
 
      module load craype-hugepages16M
 
@@ -247,17 +230,17 @@ To use this combination of runtime layers, do the following.
    general use, the Chapel group recommends the craype-hugepages16M
    module.  You can read on for more information about craype-hugepage
    modules if you would like, but the recommended craype-hugepages16M
-   module will probably give you satisfatory results.
+   module will probably give you satisfactory results.
 
-   The architecture of the Cray Gemini and Aries network interface chips
-   (NICs) limits them to addressing at most 16k (2**14) pages of memory.
-   This is sufficient to cover a 32 GiB XC locale with 2 MiB pages.  But
+   The architecture of the Cray network interface chips (NICs) limits
+   them to addressing at most 16k (2**14) pages of memory.  This is
+   sufficient to cover a 32 GiB Cray XC locale with 2 MiB pages.  But
    if you will be running on 64 GiB locales, you will need to use at
    least 4 MiB pages to cover all of the memory.  Generally, using
-   larger hugepage sizes results in modest performance benefits, mostly
-   in program startup time.  The craype-hugepages16M module will result
-   in slightly faster program startup, and its 16 MiB hugepages will
-   easily cover the memory of any conceivable XC locale.
+   larger hugepage sizes results in modest performance benefits,
+   mostly in program startup time.  The craype-hugepages16M module
+   will result in slightly faster program startup, and its 16 MiB
+   hugepages will cover the locale memory on any Cray X-series system.
 
    The only downside to larger page sizes is that they can waste more
    memory than smaller page sizes do, when the data segments that reside
@@ -267,21 +250,10 @@ To use this combination of runtime layers, do the following.
    of the total locale memory being wasted.
 
 
-5) Compile your Chapel program as usual.  For example:
+Special parameters for the Cray-specific runtime layers
+-------------------------------------------------------
 
-     chpl -o hello6-taskpar-dist $CHPL_HOME/examples/hello6-taskpar-dist.chpl
-
-
-6) Run your program.  For example:
-
-     ./hello6-taskpar-dist -nl 4 --printLocaleName=false
-
-
-7) If you want to use them, there are some other parameters you can set
-   at execution time to adjust the behavior of the Cray specific runtime
-   layers.
-
-7a) Parameters associated with the ugni communication layer.
+Parameters associated with the ugni communication layer:
 
     Heap Size
     ---------
@@ -320,17 +292,17 @@ To use this combination of runtime layers, do the following.
     The CHPL_RT_COMM_CONCURRENCY environment variable tells the ugni
     communication layer how much program concurrency it should try to
     support.  It basically controls how much of the communication
-    resources on the Gemini or Aries chip will be used by the program.
-    The default value is the number of hardware processor cores the
-    program will use for Chapel tasks (CHPL_RT_NUM_HARDWARE_THREADS in
-    the next section).  Usually this is enough, but for highly parallel
-    codes that do a lot of remote references, increasing it may help the
-    performance.  Useful values for CHPL_RT_COMM_CONCURRENCY are in the
-    range 1 to 30.  Values specified outside this range are silently
-    increased or reduced so as to fall within it.
+    resources on the NIC will be used by the program.  The default
+    value is the number of hardware processor cores the program will
+    use for Chapel tasks (CHPL_RT_NUM_HARDWARE_THREADS in the next
+    section).  Usually this is enough, but for highly parallel codes
+    that do a lot of remote references, increasing it may help the
+    performance.  Useful values for CHPL_RT_COMM_CONCURRENCY are in
+    the range 1 to 30.  Values specified outside this range are
+    silently increased or reduced so as to fall within it.
 
 
-7b) Parameters associated with the muxed tasking layer.
+Parameters associated with the muxed tasking layer:
 
     Task Stack Size
     ---------------
@@ -381,10 +353,10 @@ To use this combination of runtime layers, do the following.
 Network Atomics
 ---------------
 
-The Gemini and Aries networks on Cray XE, XK, and XC systems support
-remote atomic memory operations (AMOs).  When you use the built-in
-Chapel module and set the CHPL_COMM environment variable to "ugni", the
-following operations on remote atomics are done using the network:
+The Gemini(TM) and Aries(TM) networks support remote atomic memory
+operations (AMOs) on XE, XK and XC series systems.  When you set the
+CHPL_COMM environment variable to "ugni", the following operations on
+remote atomics are done using the network:
 
    read()
    write()
@@ -402,9 +374,9 @@ following operations on remote atomics are done using the network:
 
 Note that on XE and XK systems, which have Gemini networks, out of the
 above list only the 64-bit integer operations are done natively by the
-network hardware.  32-bit integer and all floating point operations are
-done with remote forks inside the ugni communication layer, accelerated
-by Gemini hardware capabilities.
+network hardware.  32-bit integer and all floating point operations
+are done with remote forks inside the ugni communication layer,
+accelerated by Gemini hardware capabilities.
 
 On XC systems, which have Aries networks, all of the operations shown
 above are done natively by the network hardware.
@@ -412,68 +384,58 @@ above are done natively by the network hardware.
 See README.atomics for the full description of the above operations.
 
 
----------------
-NCCS user notes
----------------
-
-* NCCS Cray systems use a different qsub mechanism in order to
-  enforce their queuing policies.  We have attempted to make our
-  pbs-aprun launch code work with this version of qsub, but require a
-  CHPL_LAUNCHER_ACCOUNT environment variable to be set to specify your
-  NCCS account name.  For example:
-
-    export CHPL_LAUNCHER_ACCOUNT=MYACCOUNTID
-
-* If our PBS launcher does not work for you, you can fall back on a
-  more manual launch of your program as always, either by:
-
-  - launching the a.out_real binary manually using aprun within a
-    manually-generated qsub script/command
-
-  - setting CHPL_LAUNCHER to aprun, rebuilding the runtime,
-    recompiling your program, and executing the resulting binary
-    within a manually-generated qsub script.
-
-* NCCS users either need to specify 'debug' as their queue using the
-  CHPL_LAUNCHER_QUEUE or a walltime using CHPL_LAUNCHER_WALLTIME.
-
-
 --------------------------
 Known Constraints and Bugs
 --------------------------
 
-* GASNet targets multiple "conduits" as the underlying communication
-  mechanism.  By default, the Chapel build will use the 'mpi' conduit.
-  On Cray XT systems you can use the native Portals conduit by setting
-  the environment variable CHPL_COMM_SUBSTRATE to 'portals.'  As a
-  result of using the mpi conduit, you may see the following GASNet
-  warning message at program start up:
+* Our PBS launcher explicitly supports PBS Pro, Moab/Torque, and the
+  NCCS site versions of PBS.  It may also work with other versions.
+  If our PBS launcher does not work for you, you can fall back on a
+  more manual launch of your program as always, either by:
 
-WARNING: Using GASNet's mpi-conduit, which exists for portability convenience.
-WARNING: This system appears to contain recognized network hardware: Cray XT
-WARNING: which is supported by a GASNet native conduit, although
-WARNING: it was not detected at configure time (missing drivers?)
-WARNING: You should *really* use the high-performance native GASNet conduit
-WARNING: if communication performance is at all important in this program run.
+  - launching the a.out_real binary manually using aprun using your
+    own own qsub script or command.
 
-  To squelch this message, you can set the environment variable
+  - setting CHPL_LAUNCHER to aprun, rebuilding the runtime,
+    recompiling your program, and executing the resulting binary using
+    your own qsub script or command.
+
+  You can have the PBS launcher generate a qsub script for you using
+  the --generate-qsub-script flag.  This will generate a batch qsub
+  script for your current settings and command line and exit without
+  running your Chapel program.
+
+* Redirecting stdin when executing a Chapel program under PBS/qsub
+  may not work due to limitations of qsub.
+
+* GASNet targets multiple network "conduits" as the underlying
+  communication mechanism.  On certain platforms, the Chapel build
+  will use the 'mpi' conduit as the default.  As a result of using the
+  mpi conduit, you may see a GASNet warning message at program start
+  up.  To squelch this message, you can set the environment variable
   GASNET_QUIET=yes.
 
-  The reason Chapel defaults to the non-native conduit is because
-  portals problems are difficult to diagnose and debug, and we have
-  not had the resources to devote to thorough testing.
+* For XC series systems, the current version of GASNet shipped with
+  Chapel supports a beta implementation of a native Aries conduit, but
+  it should be noted that this version has not been tuned.  To use
+  this conduit, set the environment variable CHPL_COMM_SUBSTRATE=aries.
+  The GASNet layer prints out a warning message regarding the beta
+  nature of the release.  To quiet this message, set the environment
+  variable CHPL_GASNET_QUIET=y.
+
+* There is a known GASNet build issue when using the gemini or aries
+  conduits with hugepage support that results in link errors due to
+  multiply defined symbols in the hugetlbfs library.  The workaround
+  is to make sure that you do not have any craype-hugepages* module
+  loaded when you compile and link a Chapel program while using the
+  GASNet communication layer.  You may load a hugepage module when
+  running the Chapel program.
 
 * The amount of memory that is available to a Chapel program running
-  over GASNet+portals on the Cray XT is constrained by two environment
-  variables: GASNET_MAX_SEGSIZE and GASNET_PHYSMEM_PINNABLE_RATIO.  If
-  the user has not set GASNET_MAX_SEGSIZE, we heuristically set it for
-  each compute node to be 90% of the MemTotal value reported in
-  /proc/meminfo.  During initialization, the GASNet library allocates
-  the lesser of GASNET_MAX_SEGSIZE and GASNET_PHYSMEM_PINNABLE_RATIO
-  times the amount of available physical memory.
-
-  If GASNET_MAX_SEGSIZE is set too high, your program may terminate
-  silently, or with the message:
+  over GASNet+portals on an XT series system is constrained by two
+  environment variables: GASNET_MAX_SEGSIZE and
+  GASNET_PHYSMEM_PINNABLE_RATIO.  If GASNET_MAX_SEGSIZE is set too
+  high, your program may terminate silently, or with the message:
 
         _pmii_daemon(SIGCHLD): PE 0 exit signal Killed
 
@@ -488,33 +450,21 @@ WARNING: if communication performance is at all important in this program run.
   GASNET_MAX_SEGSIZE, refer to:
 
     $CHPL_HOME/third-party/gasnet/GASNet-*/portals-conduit/README
-
-  and:
-
     $CHPL_HOME/third-party/gasnet/GASNet-*/README
 
-* For Cray XE and XK systems, the current version of GASNet shipped with
-  Chapel supports a beta implementation of a native Gemini conduit, but
-  it should be noted that this version has not been tuned.  To use this
-  native conduit, set the environment variable CHPL_COMM_SUBSTRATE to
-  'gemini'.  The GASNet layer prints out a warning message regarding the
-  beta nature of the release.  To quiet this message set the environment
-  variable CHPL_GASNET_QUIET=y.
 
-  It is not known whether the GASNET_MAX_SEGSIZE issue with the Portals
-  conduit on Cray XT systems also affects the Gemini conduit on Cray XE
-  ad XK systems.
+---------------
+NCCS user notes
+---------------
 
-  There is a known GASNet configuration issue when using the gemini
-  conduit with hugepage support that results in link errors due to
-  multiply defined symbols in the hugetlbfs library.  The workaround is
-  to make sure that you do not have any craype-hugepages* module loaded
-  when you compile and link a Chapel program while using the GASNet
-  communication layer.  If you have any questions or problems, please
-  contact us for help.
+* NCCS Cray systems use a different qsub mechanism in order to
+  enforce their queuing policies.  We have attempted to make our
+  pbs-aprun launch code work with this version of qsub, but require a
+  CHPL_LAUNCHER_ACCOUNT environment variable to be set to specify your
+  NCCS account name.  For example:
 
-* Limited experience with the GASNet gemini conduit indicates that it
-  does not work with the Aries network on XC systems.
+    export CHPL_LAUNCHER_ACCOUNT=MYACCOUNTID
 
-* Redirecting stdin when executing a Chapel program under PBS/qsub
-  may not work due to limitations of qsub.
+* NCCS users either need to specify 'debug' as their queue or set an
+  explicit wall clock time limit using the mechanisms described above.
+
