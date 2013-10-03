@@ -251,7 +251,7 @@ for i in D.dim(1) do
 writeln(A);
 \end{chapel}
 \begin{chapelprintoutput}
-8 9 10 11 12 13 14
+8 9 10 11 12 13 14\\
 29 30 31 32 33 34 35
 \end{chapelprintoutput}
 \end{chapelexample}
@@ -367,8 +367,10 @@ is not the same as their specification order.
 var D : domain(string) = {"bar", "foo"};
 writeln(D);
 \end{chapel}
+\begin{chapelcompopts}
+--no-warnings
+\end{chapelcompopts}
 \begin{chapelprintoutput}
-associativeDomain.chpl:1: warning: whole-domain assignment has been serialized (see note in (*\texttt{\$}*)CHPL\_HOME/STATUS)
 {foo, bar}
 \end{chapelprintoutput}
 \end{chapelexample}
@@ -911,7 +913,7 @@ D.clear();
 writeln("D has ", D.numIndices, " indices.");
 \end{chapel}
 \begin{chapelprintoutput}
-D has 3 indices.
+D has 3 indices.\\
 D has 0 indices.
 \end{chapelprintoutput}
 \end{chapelexample}
