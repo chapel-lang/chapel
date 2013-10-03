@@ -34,17 +34,6 @@ typedef uint64_t chpl_taskID_t;
 typedef struct {
   volatile chpl_bool  is_full;
   chpl_thread_mutex_t lock;
-	chpl_bool cond_or_spin;
-	threadlayer_sync_aux_t tl_aux;
 } chpl_sync_aux_t;
 
-chpl_bool threadlayer_sync_suspend(chpl_sync_aux_t *s,
-                                   struct timeval *deadline);
-void threadlayer_sync_awaken(chpl_sync_aux_t *s);
-void threadlayer_sync_init(chpl_sync_aux_t *s);
-void threadlayer_sync_destroy(chpl_sync_aux_t *s);
-
-chpl_bool threadlayer_pool_suspend(chpl_thread_mutex_t *lock,
-																	 struct timeval *deadline);
-void threadlayer_pool_awaken(void);
 #endif
