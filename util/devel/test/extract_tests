@@ -44,7 +44,7 @@
 #   also in the spec document itself and must contain LaTeX formatting.
 #   The formatting must be removed for the .good file.   Currently the
 #   only additional LaTex formatting that is removed from the output is
-#   new line ('//').
+#   new line ('\\').
 
 import os, sys
 
