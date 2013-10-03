@@ -78,8 +78,8 @@ please contact your system administrator.
    modules loaded which will specify the C compiler used to compile
    Chapel programs for the compute nodes:
 
-     - PrgEnv-gnu
      - PrgEnv-cray
+     - PrgEnv-gnu
      - PrgEnv-intel
      - PrgEnv-pgi
 
@@ -89,8 +89,8 @@ please contact your system administrator.
    you can override this default by setting CHPL_HOST_COMPILER to one
    of the following values:
 
-     gnu       : the GNU compiler suite -- gcc and g++
      cray      : the Cray compiler suite -- cc and CC
+     gnu       : the GNU compiler suite -- gcc and g++
      intel     : the Intel compiler suite -- icc and icpc
      pgi       : the PGI compiler suite -- pgcc and pgCC
 
@@ -173,8 +173,8 @@ with the GASNet communication layer.
 In addition to the standard runtime layers available in any Chapel
 release, the pre-built Chapel modules for Cray XE, XK, and XC series
 systems support a combination of Cray-specific communication, tasking,
-and threading layers.  These make use of the Cray's hardware and/or
-software to produce enhanced performance for Chapel programs.
+and threading layers.  These make use of the Cray systems' hardware
+and/or software to produce enhanced performance for Chapel programs.
 
 The communication layer interacts with the system's network interface
 very closely through a lightweight interface called uGNI (user Generic
@@ -188,7 +188,7 @@ references, such as graph analytic applications.
 
 To use this combination of runtime layers:
 
-1) Make sure that you are using the Cray GNU target compiler.
+1) Make sure that you are using the GNU target compiler.
 
      module load PrgEnv-gnu
 
@@ -354,8 +354,8 @@ Network Atomics
 ---------------
 
 The Gemini(TM) and Aries(TM) networks support remote atomic memory
-operations (AMOs) on XE, XK and XC series systems.  When you set the
-CHPL_COMM environment variable to "ugni", the following operations on
+operations (AMOs) on XE, XK and XC series systems.  When the CHPL_COMM
+environment variable is set to "ugni", the following operations on
 remote atomics are done using the network:
 
    read()
