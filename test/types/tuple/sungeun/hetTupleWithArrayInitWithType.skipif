@@ -1,0 +1,3 @@
+COMPOPTS <= --baseline
+COMPOPTS <= --no-local
+CHPL_COMM != none
