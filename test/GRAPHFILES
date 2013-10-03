@@ -62,29 +62,10 @@ performance/compiler/bradc/compSampler-timecomp.graph
 performance/compiler/bradc/cg-sparse-timecomp.graph
 performance/compiler/bradc/AllCompTime.graph
 # suite: NPB
-npb/cg/bradc/cg.S.graph
-npb/cg/bradc/cg.W.graph
-npb/cg/bradc/cg.A.graph
-npb/cg/bradc/cg.B.graph
-npb/cg/bradc/cg.C.graph
-npb/cg/bradc/cg.D.graph
-npb/ep/mcahir/ep.S.graph
-npb/ep/mcahir/ep.W.graph
-npb/ep/mcahir/ep.A.graph
-npb/ep/mcahir/ep.B.graph
-npb/ep/mcahir/ep.C.graph
-npb/ep/mcahir/ep.D.graph
-npb/ft/ft.S.graph
-npb/ft/ft.W.graph
-npb/ft/ft.A.graph
-npb/ft/ft.B.graph
-npb/ft/ft.C.graph
-npb/ft/ft.D.graph
-npb/is/mcahir/intsort.S.graph
-npb/is/mcahir/intsort.W.graph
-npb/is/mcahir/intsort.A.graph
-npb/is/mcahir/intsort.B.graph
-npb/is/mcahir/intsort.C.graph
+npb/cg/cg.graph
+npb/ep/ep.graph
+npb/ft/ft.graph
+npb/is/is.graph
 # suite: Misc
 users/franzf/v0/chpl/main.graph
 studies/jacobi/jacobi.graph
