@@ -13,6 +13,19 @@ Eleventh public release of Chapel, October 17, 2013
 
 Highlights (see entries in subsequent categories for details)
 -------------------------------------------------------------
+- added initial support for user-defined locale models and a NUMA locale model
+- added initial support for accessing HDFS file systems via files/channels
+- improved tasking semantics w.r.t. closed variables referenced within a task
+- added new example codes for MiniMD and the Computer Language Benchmark Game
+- performance optimizations related to array base pointers, loop-invariant code
+- plugged a number of compiler-generated memory leaks
+- added new types for interoperating with C: c_string, c_ptr(type), c_void_ptr
+- improved support for small-int computations, ranges, domains, and arrays
+- support for dygraph-based performance monitoring in the testing system
+- updates to the GASNet, Qthreads, MassiveThreads, LLVM, and CLANG packages
+- added a new 'cray-cs' platform to represent Cray Cluster Supercomputers
+- made 'gemini' the default GASNet conduit for cray-xe and cray-xk
+- added support for a SLURM + GASNet-over-Infiniband launcher
 
 New Features
 ------------
@@ -28,7 +41,7 @@ New Features
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
-- made closed variables get "passed" into tasking constructs by blank intent
+- made closed variables get "passed into" tasking constructs by blank intent
   (e.g., in 'var x=0; begin { ...x... }', 'x' is 'const in' within '...x...')
 - added 'ref' clauses to obtain the previous behavior
   (e.g., 'var x: int; begin ref(x) { ...x... }' causes '...x...' to refer to x)
