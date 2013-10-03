@@ -150,8 +150,16 @@ variable-argument-expression:
   ... ? identifier[OPT]
   ...
 
-formal-intent: one of
-  `in' `out' `inout' `ref' `param' `type'
+formal-intent:
+  `const'
+  `const in'
+  `const ref'
+  `in'
+  `out'
+  `inout'
+  `ref'
+  `param'
+  `type'
 
 return-intent: one of
   `var' `const' `param' `type'
@@ -180,11 +188,12 @@ Default expressions allow for the omission of actual arguments at the
 call site, resulting in the implicit passing of a default value.
 Default values are discussed in~\rsec{Default_Values}.
 
-The intents \chpl{in}, \chpl{out}, \chpl{inout} and \chpl{ref} are discussed
-in~\rsec{Intents}.  The intents \chpl{param} and \chpl{type} make
-a function generic and are discussed in~\rsec{Generic_Functions}.  If the
-formal argument's type is omitted, generic, or prefixed with a question
-mark, the function is also generic and is discussed
+The intents \chpl{const}, \chpl{const in}, \chpl{const
+ref}, \chpl{in}, \chpl{out}, \chpl{inout} and \chpl{ref} are discussed
+in~\rsec{Argument_Intents}.  The intents \chpl{param} and \chpl{type} make a
+function generic and are discussed in~\rsec{Generic_Functions}.  If
+the formal argument's type is omitted, generic, or prefixed with a
+question mark, the function is also generic and is discussed
 in~\rsec{Generic_Functions}.
 
 Functions can take a variable number of arguments.  Such functions are
@@ -259,15 +268,10 @@ when calling \chpl{bar}.
 \index{functions!formal arguments}
 \index{functions!arguments!formal}
 
-Chapel supports an intuitive formal argument passing mechanism.  An
-actual argument is passed by value unless it is an array or domain, in
-which case it is passed by reference.
-
-Intents~(\rsec{Intents}) may be used to override the default
-argument passing mechanism.  This may result in assignments to and from
-the formal argument during a function call.  For example, when passing an array by
-intent \chpl{in}, the actual argument array will be copied into the formal argument
-for use within the function.
+A formal argument's intent~(\rsec{Argument_Intents}) specifies how the
+actual argument is passed to the function.  If no intent is specified,
+the blank intent~(\rsec{The_Blank_Intent}) is applied, resulting in
+type-dependent behavior.
 
 \subsection{Named Arguments}
 \label{Named_Arguments}
@@ -288,10 +292,10 @@ foo(x=2, y=3);
 foo(y=3, x=2);
 \end{chapel}
 \begin{chapelprintoutput}
-2
-3
-2
-3
+2\\
+3\\
+2\\
+3\\
 \end{chapelprintoutput}
 named argument passing is used to map the actual arguments to the
 formal arguments.  The two function calls are equivalent.
@@ -326,12 +330,12 @@ foo(7);
 foo(y=5);
 \end{chapel}
 \begin{chapelprintoutput}
-5
-7
-7
-7
-5
-5
+5\\
+7\\
+7\\
+7\\
+5\\
+5\\
 \end{chapelprintoutput}
 default values are specified for the formal arguments \chpl{x}
 and \chpl{y}.  The three calls to \chpl{foo} are equivalent to the
@@ -344,85 +348,239 @@ argument list.
 \end{chapelexample}
 
 
-\section{Intents}
-\label{Intents}
+\section{Argument Intents}
+\label{Argument_Intents}
 \index{intents}
+\index{argument!intents}
 \index{functions!arguments!intents}
 
-Intents allow the actual arguments to be copied to a formal argument
-and also to be copied back.
+Argument intents specify how an actual argument is passed to a
+function where it is represented by the corresponding formal argument.
 
-\subsection{The Blank Intent}
-\label{The_Blank_Intent}
-\index{intents!blank}
+Argument intents are categorized as being either \emph{concrete}
+or \emph{abstract}.  Concrete intents are those in which the semantics
+of the intent keyword are independent of the argument's type.
+Abstract intents are those in which the keyword (or lack thereof)
+expresses a general intention that will ultimately be implemented via
+one of the conrete intents.  The specific choice of concrete intent
+depends on the argument's type and may be implementation-defined.
+Abstract intents are provided to support productivity and code reuse.
 
-If the intent is omitted, it is called a blank intent.  In such a
-case, the value is copied from the actual to the formal.  Thus
-class instances are passed by reference and records are passed by value.
-Furthermore, a formal that has blank intent
-cannot be assigned within the function.
+\subsection{Concrete Intents}
+\label{Concrete Intents}
+\index{intents!concrete}
 
-The exception to this rule is made for formals of array, domain, \chpl{sync},
-and \chpl{single} types. Arguments of these types are passed by reference
-and can be modified within the function.
+The concrete intents are \chpl{in}, \chpl{out}, \chpl{inout},
+\chpl{ref}, \chpl{const in}, and \chpl{const ref}.
 
-\subsection{The In Intent}
+\subsubsection{The In Intent}
 \label{The_In_Intent}
 \index{in (intent)@\chpl{in} (intent)}
 \index{intents!in@\chpl{in}}
 
-If \chpl{in} is specified as the intent, the actual argument is copied
-to the formal argument by value.
-The formal may also be assigned to within
-the function.  This assignment is not reflected back at the call site.
+When \chpl{in} is specified as the intent, the actual argument is
+copied into the formal argument when the function is called.  The
+formal can be modified within the function, but such changes are local
+to the function and not reflected back to the call site.
 
-If an array is passed to a formal argument that has \chpl{in} intent,
-a copy of the array is made.  Changes to the elements
-within the array formal are thus not reflected back at the call site.
 
-\subsection{The Out Intent}
+\subsubsection{The Out Intent}
 \label{The_Out_Intent}
 \index{out (intent)@\chpl{out} (intent)}
 \index{intents!out@\chpl{out}}
 
-If \chpl{out} is specified as the intent, the actual argument is
-ignored when the call is made, but after the call, the formal argument
-is assigned to the actual argument at the call site.  The actual
-argument must be a valid lvalue.  The formal argument can be assigned
-to and read from within the function.
+When \chpl{out} is specified as the intent, the actual argument is
+ignored when the call is made, but when the function returns, the
+formal argument is copied back to the actual argument.  For this
+reason, the actual argument must be a valid lvalue.  The formal
+argument is initialized to its default value if one is supplied, or to
+its type's default value otherwise.  The formal argument can be
+modified within the function.
 
-The formal argument can be generic and is treated as a variable
-declaration.  If the type is generic, it is taken from the type of
-the actual argument.  It is initialized to the default value for its
-type unless it has a default expression.
 
-\subsection{The Inout Intent}
+\subsubsection{The Inout Intent}
 \label{The_Inout_Intent}
 \index{inout (intent)@\chpl{inout} (intent)}
 \index{intents!inout@\chpl{inout}}
 
-If \chpl{inout} is specified as the intent, the actual argument is
-both passed to the formal argument as if the \chpl{in} intent applied
-and then copied back as if the \chpl{out} intent applied.  The formal
-argument can be generic and takes its type from the actual argument.
-The formal argument can be assigned to and read from within the
-function.
+When \chpl{inout} is specified as the intent, the actual argument is
+copied into the formal argument as with the \chpl{in} intent and then
+copied back out as with the \chpl{out} intent.  The actual argument
+must be a valid lvalue.  The formal argument can be modified within
+the function.
 
-\subsection{The Ref Intent}
+
+\subsubsection{The Ref Intent}
 \label{The_Ref_Intent}
 \index{ref (intent)@\chpl{ref} (intent)}
 \index{intents!ref@\chpl{ref}}
 
-If \chpl{ref} is specified as the intent, the actual argument is passed
-by reference.  The formal argument can be assigned to and read from within
-the function and changes are reflected in the actual at the call site.
-The actual argument must be an lvalue.
+When \chpl{ref} is specified as the intent, the actual argument is
+passed by reference.  Any reads of, or modifications to, the formal
+argument are performed directly on the corresponding actual argument
+at the call site.  The actual argument must be a valid lvalue.
 
-The \chpl{ref} intent is different from the \chpl{inout} intent in that
-the \chpl{inout} intent specifies to make a copy of the argument upon
-entry into the function and to copy it back after exiting the function,
-while \chpl{ref} allows direct access to the actual argument through the
-formal argument without copies.
+The \chpl{ref} intent differs from the \chpl{inout} intent in that
+the \chpl{inout} intent specifies to make a copies of the argument on
+the way in and out of the function, while \chpl{ref} allows direct
+access to the actual argument through the formal argument without
+copies.  Note that concurrent modifications to the actual argument by
+other tasks may be visible within the function, subject to the memory
+consistency model.
+
+
+\subsubsection{The Const In Intent}
+\label{The_Const_In_Intent}
+\index{const in (intent)@\chpl{const in} (intent)}
+\index{intents!const in@\chpl{const in}}
+
+The \chpl{const in} intent is identical to the \chpl{in} intent,
+except that modifications to the formal argument are prohibited within
+the function.
+
+
+\subsubsection{The Const Ref Intent}
+\label{The_Const_Ref_Intent}
+\index{const ref (intent)@\chpl{const ref} (intent)}
+\index{intents!const ref@\chpl{const ref}}
+
+The \chpl{const ref} intent is identical to the \chpl{ref} intent,
+except that modifications to the formal argument are prohibited within
+the dynamic scope of the function.  Note that concurrent tasks may
+modify the actual argument while the function is executing and that
+these modifications may be visible to reads of the formal argument
+within the function's dynamic scope (subject to the memory consistency
+model).
+
+\subsubsection{Summary of Concrete Intents}
+\label{Summary_of_Concrete_Intents}
+
+The following table summarizes the differences between the concrete
+intents:
+
+\begin{center}
+\begin{tabular}[c]{|l|c|c|c|c|c|c|}
+\hline
+                                       & \chpl{in} & \chpl{out} & \chpl{inout} & \chpl{ref} & \chpl{const in} & \chpl{const ref} \\
+\hline
+\hline
+copied in on function call?      & yes & no  & yes & no  & yes & no  \\
+copied out on function return?   & no  & yes & yes & no  & no  & no  \\
+refers to actual argument?       & no  & no  & no  & yes & no  & yes \\
+formal can be read?              & yes & yes & yes & yes & yes & yes \\
+formal can be modified?          & yes & yes & yes & yes & no  & no  \\
+local changes affect the actual? & no  & on return & on return & immediately & N/A & N/A \\
+\hline
+\end{tabular}
+\end{center}
+
+
+\subsection{Abstract Intents}
+\label{Abstract Intents}
+\index{intents!abstract}
+
+The abstract intents are \chpl{const} and ``the blank intent'', when
+no intent is specified.
+
+\subsubsection{The Const Intent}
+\label{The_Const_Intent}
+\index{intents!const@\chpl{const}}
+
+The \chpl{const} intent specifies the intention that the function will
+not and cannot modify the formal argument within its dynamic scope,
+yet leaves unspecified whether the actual argument will be passed
+by \chpl{const in} or \chpl{const ref} intent.  In general, small
+values, such as scalar types, will be passed by \chpl{const in}; while
+larger values, such as domains and arrays, will be passed
+by \chpl{const ref} intent.  At present, the decision between the two
+mechanisms is implementation-defined.  If a user's function is
+sensitive to which mechanism is used, they should use the desired
+concrete intent to guarantee portability.
+
+\begin{openissue}
+It remains an open issue whether the choice between \chpl{const in}
+and \chpl{const ref} should be defined by the language, either for
+certain types or for all of them.  One area of active debate is
+whether the implementation can choose between \chpl{const in}
+and \chpl{const ref} for records based on size.  Another open issue is
+how tuples should be handled with respect to \chpl{const} intents.
+\end{openissue}
+
+\begin{craychapel}
+The current implementation uses the following mapping:
+
+\begin{center}
+\begin{tabular}[c]{|l|c|}
+\hline
+     & meaning \\
+type & of \chpl{const} \\
+\hline
+\hline
+\chpl{bool}    & \chpl{const in}  \\
+\chpl{int}     & \chpl{const in}  \\
+\chpl{uint}    & \chpl{const in}  \\
+\chpl{real}    & \chpl{const in}  \\
+\chpl{complex} & \chpl{const in}  \\
+\chpl{string}  & \chpl{const ref} \\
+\chpl{atomic}  & \chpl{const in}  \\
+\chpl{sync}    & \chpl{const ref} \\
+\chpl{single}  & \chpl{const ref} \\
+\chpl{class}   & \chpl{const in}  \\
+\chpl{record}  & \chpl{const ref} \\
+\chpl{locale}  & \chpl{const ref} \\  %% Remove once defined within locale model
+\chpl{dmap}    & \chpl{const ref} \\
+\chpl{domain}  & \chpl{const ref} \\
+array          & \chpl{const ref} \\
+\hline
+\end{tabular}
+\end{center}
+
+\end{craychapel}
+
+
+
+\subsubsection{The Blank Intent}
+\label{The_Blank_Intent}
+\index{intents!blank}
+
+When no intent is specified for a formal argument, the \emph{blank
+intent} is applied.  It is designed to take the most natural/least
+surprising action for the argument, based on its type.  The following
+table shows how blank intents are interpreted based on the argument's
+type:
+
+\begin{center}
+\begin{tabular}[c]{|l|c|}
+\hline
+     & meaning of \\
+type & blank intent \\
+\hline
+\hline
+\chpl{bool}    & \chpl{const} \\
+\chpl{int}     & \chpl{const} \\
+\chpl{uint}    & \chpl{const} \\
+\chpl{real}    & \chpl{const} \\
+\chpl{complex} & \chpl{const} \\
+\chpl{string}  & \chpl{const} \\
+\chpl{atomic}  & \chpl{ref}   \\
+\chpl{sync}    & \chpl{ref}   \\
+\chpl{single}  & \chpl{ref}   \\
+\chpl{class}   & \chpl{const} \\
+\chpl{record}  & \chpl{const} \\
+\chpl{locale}  & \chpl{const} \\  %% Remove once defined within locale model
+\chpl{dmap}    & \chpl{const} \\
+\chpl{domain}  & \chpl{const} \\
+array          & \chpl{ref}   \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{openissue}
+How tuples should be handled under blank intents is an open issue;
+particularly for heterogeneous tuples whose components would fall into
+separate categories in the table above.  One proposed approach is to
+apply the blank intent to each component of the tuple independently.
+\end{openissue}
 
 
 \section{Variable Number of Arguments}

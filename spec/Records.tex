@@ -15,11 +15,6 @@ variable of record type contains all and only the fields defined by that type
 (\rsec{Record_Types}).  Value semantics imply that the type of a record variable
 is known at compile time (i.e. it is statically typed).  
 
-%REVIEW: vass: this is a repetition of the first paragraph
-Records are assigned by value;
-see \rsec{Record_Assignment} for more details.  Records are also passed
-by value unless argument intents (\rsec{Intents}) are used.
-
 Records can be created through an explicit call to a record
 constructor, which allocates storage, initializes
 it and returns it.  
@@ -351,10 +346,8 @@ supplied, the default initializer cannot be called directly.
 \index{records!arguments}
 \index{arguments!records}
 
-A function declared with an argument of record type expects that argument to be
-passed by value unless intents (\rsec{Intents}) are used.
-The actual record argument is copied into
-the corresponding formal argument, consistent with the semantics described for
+When records are copied into or out of a function's formal argument,
+the copy is performed consistently with the semantics described for
 record assignment (\rsec{Record_Assignment}).
 
 \begin{chapelexample}{paramPassing.chpl}
@@ -362,7 +355,7 @@ record assignment (\rsec{Record_Assignment}).
 record MyColor {
   var color: int;
 }
-proc printMyColor(mc: MyColor) {
+proc printMyColor(in mc: MyColor) {
   writeln("my color is ", mc.color);
   mc.color = 6;   // does not affect the caller's record
 }
