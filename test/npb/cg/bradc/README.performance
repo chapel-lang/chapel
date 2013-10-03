@@ -6,3 +6,7 @@ cg-sparse.chpl must be allowed to run for at least 3,000 seconds, if not more.
 However, we know that cg-sparse probably times out for size B and C for the
 current implementation (revision 21580).  Which means performance testing
 will take a very long time.
+
+Since size B, C and D timeout so ridiculously, there isn't much point having
+testing on them until someone is actually working on improving their
+performance, so we turned them off as of 10/03/13
