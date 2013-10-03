@@ -141,6 +141,19 @@ please contact your system administrator.
       export CHPL_LAUNCHER_CORES_PER_LOCALE=24
 
 
+12) If your Cray system has compute nodes with varying numbers of CPUs
+    per compute unit, you can request nodes with a certain number of
+    CPUs per compute unit using the variable CHPL_LAUNCHER_CPUS_PER_CU.
+    For example, on a Cray XC series system with some nodes having at
+    least 2 CPUs per compute unit, to request running on those nodes you
+    would use:
+
+      export CHPL_LAUNCHER_CPUS_PER_CU=2
+
+    Currently, the only legal values for CHPL_LAUNCHER_CPUS_PER_CU are 0
+    (the default), 1, and 2.
+
+
 --------------------------------------
 Cray File Systems and Chapel execution
 --------------------------------------
