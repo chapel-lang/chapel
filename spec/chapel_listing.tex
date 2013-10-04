@@ -58,6 +58,15 @@
 
 \lstnewenvironment{chapelcode}{\lstset{language=chapel,stepnumber=1}}{}
 
+% Uses the same listing style as the {chapel} environment, but keyword
+% formatting is turned off.  The argument is ignored in LaTeX
+% but used to name the .good file during test extraction.
+% The argument must be supplied but may be empty.
+% If empty it defaults to null, which signals the test extractor to 
+% autogenerate the .good file name as ``<test_name>.good''.
+\lstnewenvironment{chapelprintoutput}[1]
+  {\lstset{language=chapel,xleftmargin=2pc,stepnumber=0,keywordstyle=}}{}
+
 \lstnewenvironment{commandline}{\lstset{keywordstyle=,xleftmargin=2pc}}{}
 
 \lstnewenvironment{protohead}{\lstset{language=chapel,xleftmargin=0pc,belowskip=-10pt,stepnumber=0}}{}

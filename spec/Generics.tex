@@ -262,6 +262,8 @@ Type queries can also be used to constrain the types of other function arguments
 and/or the return type.  In this example, the type query on the first argument
 establishes type constraints on the other arguments and also determines the
 return type.
+
+The code
 \begin{chapel}
 writeln(sumOfThree(1,2,3));
 writeln(sumOfThree(4.0,5.0,3.0));
@@ -273,7 +275,8 @@ proc sumOfThree(x: ?t, y:t, z:t):t {
    return sum;
 }
 \end{chapel}
-\begin{chapelprintoutput}
+produces the output
+\begin{chapelprintoutput}{}
 6
 12.0
 \end{chapelprintoutput}

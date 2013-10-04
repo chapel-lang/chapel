@@ -99,7 +99,7 @@ assigned to an array, the iterator is iterated over in total and the
 expression evaluates to a one-dimensional arithmetic array that
 contains the values returned by the iterator on each iteration.
 \begin{chapelexample}{as-arrays.chpl}
-Given an iterator
+Given this iterator
 \begin{chapel}
 iter squares(n: int): int {
   for i in 1..n do
@@ -109,10 +109,10 @@ iter squares(n: int): int {
 \begin{chapelpost}
 writeln(squares(5));
 \end{chapelpost}
-\begin{chapelprintoutput}
+the expression \chpl{squares(5)} evaluates to
+\begin{chapelprintoutput}{}
 1 4 9 16 25
 \end{chapelprintoutput}
-the expression \chpl{squares(5)} evaluates to the array \chpl{1, 4, 9, 16, 25}.
 \end{chapelexample}
 
 \subsection{Iterators and Generics}

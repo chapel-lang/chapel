@@ -241,11 +241,11 @@ on Locales(1) {
 }
 \end{chapel}
 results in the output
-\begin{chapel}
+\begin{chapelprintoutput}{}
 1
 3
 1
-\end{chapel}
+\end{chapelprintoutput}
 The variable \chpl{x} is declared and exists on \chpl{Locales(1)}.
 The variable \chpl{c} is a class reference.  The reference exists
 on \chpl{Locales(1)} but the object itself exists
@@ -268,13 +268,13 @@ for loc in Locales do on loc do
     writeln(c.locale.id);
 \end{chapel}
 outputs
-\begin{chapel}
+\begin{chapelprintoutput}{}
 0
 1
 2
 3
 4
-\end{chapel}
+\end{chapelprintoutput}
 when running on 5 locales.
 \end{example}
 

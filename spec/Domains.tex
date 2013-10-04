@@ -242,6 +242,8 @@ The following creates a two-dimensional rectangular domain and then uses this to
 declare an array.  The array indices are iterated over using the domain's
 \chpl{dim()} method, and each element is filled with
 some value.  Then the array is printed out.
+
+Thus, the code
 \begin{chapel}
 var D : domain(2) = {1..2, 1..7};
 var A : [D] int;
@@ -250,8 +252,9 @@ for i in D.dim(1) do
     A[i,j] = 7 * i**2 + j;
 writeln(A);
 \end{chapel}
-\begin{chapelprintoutput}
-8 9 10 11 12 13 14\\
+produces
+\begin{chapelprintoutput}{}
+8 9 10 11 12 13 14
 29 30 31 32 33 34 35
 \end{chapelprintoutput}
 \end{chapelexample}
@@ -363,6 +366,8 @@ The following example illusrates construction of an associative domain
 containing string indices "bar" and "foo".  Note that due to internal hashing 
 of indices the order in which the values of the associative domain are iterated
 is not the same as their specification order.
+
+This code
 \begin{chapel}
 var D : domain(string) = {"bar", "foo"};
 writeln(D);
@@ -370,7 +375,8 @@ writeln(D);
 \begin{chapelcompopts}
 --no-warnings
 \end{chapelcompopts}
-\begin{chapelprintoutput}
+produces the output
+\begin{chapelprintoutput}{}
 {foo, bar}
 \end{chapelprintoutput}
 \end{chapelexample}
@@ -905,6 +911,8 @@ Resets this domain's index set to the empty set.
 \begin{chapelexample}{emptyEnumeratedDomain}
 In the case of an enumerated domain, this function provides a way to produce an
 empty index set.
+
+When run, the code
 \begin{chapel}
 enum Counter { one, two, three };
 var D : domain ( Counter );
@@ -912,8 +920,9 @@ writeln("D has ", D.numIndices, " indices.");
 D.clear();
 writeln("D has ", D.numIndices, " indices.");
 \end{chapel}
-\begin{chapelprintoutput}
-D has 3 indices.\\
+prints out
+\begin{chapelprintoutput}{}
+D has 3 indices.
 D has 0 indices.
 \end{chapelprintoutput}
 \end{chapelexample}

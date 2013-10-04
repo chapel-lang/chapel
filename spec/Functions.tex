@@ -284,18 +284,19 @@ A formal argument can be named at the call site to explicitly map an
 actual argument to a formal argument.
 
 \begin{chapelexample}{named-args.chpl}
-In the code
+Running the code
 \begin{chapel}
 proc foo(x: int, y: int) { writeln(x); writeln(y); }
 
 foo(x=2, y=3);
 foo(y=3, x=2);
 \end{chapel}
-\begin{chapelprintoutput}
-2\\
-3\\
-2\\
-3\\
+will produce the output
+\begin{chapelprintoutput}{}
+2
+3
+2
+3
 \end{chapelprintoutput}
 named argument passing is used to map the actual arguments to the
 formal arguments.  The two function calls are equivalent.
@@ -321,7 +322,7 @@ made and the evaluated result is passed to the formal argument as if
 it were passed from the call site.
 
 \begin{chapelexample}{default-values.chpl}
-In the code
+The code
 \begin{chapel}
 proc foo(x: int = 5, y: int = 7) { writeln(x); writeln(y); }
 
@@ -329,15 +330,16 @@ foo();
 foo(7);
 foo(y=5);
 \end{chapel}
-\begin{chapelprintoutput}
-5\\
-7\\
-7\\
-7\\
-5\\
-5\\
+writes out
+\begin{chapelprintoutput}{}
+5
+7
+7
+7
+5
+5
 \end{chapelprintoutput}
-default values are specified for the formal arguments \chpl{x}
+Default values are specified for the formal arguments \chpl{x}
 and \chpl{y}.  The three calls to \chpl{foo} are equivalent to the
 following three calls where the actual arguments are
 explicit: \chpl{foo(5, 7)}, \chpl{foo(7, 7)}, and \chpl{foo(5, 5)}.

@@ -35,6 +35,7 @@ access to a synchronization variable.
   signal that fact to a second task, and (c) pass along the number of
   values that are valid for reading.
 
+  The program
 \begin{chapel}
 var A: [1..100] real;
 var done(*\texttt{\$}*): sync int;           // initially empty
@@ -52,7 +53,8 @@ cobegin {
   }
 }
 \end{chapel}
-\begin{chapeloutput}
+  produces the output
+\begin{chapelprintoutput}{}
 A[1] = 0.1
 A[2] = 0.2
 A[3] = 0.3
@@ -76,7 +78,7 @@ A[20] = 2.0
 A[21] = 2.1
 A[22] = 2.2
 A[23] = 2.3
-\end{chapeloutput}
+\end{chapelprintoutput}
 %\end{chapelexample}
 \end{example}
 

@@ -353,7 +353,7 @@ unconditionally the first time.
 The following example illustrates the difference between
 the \sntx{do-while-statement} and the \sntx{while-do-statement}.  The body of
 the do-while loop is always executed at least once, even if the loop conditional
-is already false when it is entered.
+is already false when it is entered.  The code
 \begin{chapel}
 var t = 11;
 
@@ -370,7 +370,8 @@ while (t <= 10) {
   writeln(t);
 }
 \end{chapel}
-\begin{chapelprintoutput}
+produces the output
+\begin{chapelprintoutput}{}
 Scope of do while loop:
 12
 Scope of while loop:
@@ -438,7 +439,7 @@ for (i, j) in zip(1..3, 4..6) do
 writeln();
 \end{chapelpost}
 is
-\begin{chapelprintoutput}
+\begin{chapelprintoutput}{}
 1 4 2 5 3 6 
 \end{chapelprintoutput}
 \end{chapelexample}
@@ -582,6 +583,8 @@ rename symbols that are 'used.'
   function.  Without the \chpl{use} statement, the procedure call to
   \chpl{foo} could not be resolved since \chpl{M2} would not have
   access to symbols in \chpl{M1}.
+
+  When executed, the program
 \begin{chapel}
 module M1 {
   proc foo() {
@@ -598,8 +601,9 @@ module M2 {
   }
 }
 \end{chapel}
-\begin{chapelprintoutput}
-In M2's main.\\
+prints out
+\begin{chapelprintoutput}{}
+In M2's main.
 In M1's foo.
 \end{chapelprintoutput}
 \end{chapelexample}
@@ -658,6 +662,8 @@ chosen.
 \begin{chapelexample}{typeselect.chpl}
 The following example shows how the type select statement can be used to perform
 a different action based on the static type of the operand.
+
+The program
 \begin{chapel}
 var x = 32, y = 15.5; 
 var z: int(8);
@@ -687,7 +693,8 @@ proc writetype(x) {
   }
 }
 \end{chapel}
-\begin{chapelprintoutput}
+produces the output
+\begin{chapelprintoutput}{}
 Integer type
 Real type
 Integer type

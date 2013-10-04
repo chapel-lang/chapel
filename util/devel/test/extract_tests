@@ -38,13 +38,7 @@
 #
 #   If this becomes too unwieldy, we'll probably have to find a better
 #   way to do it.
-
 #
-# - The 'chapelprintoutput' enviroment is special since the output is
-#   also in the spec document itself and must contain LaTeX formatting.
-#   The formatting must be removed for the .good file.   Currently the
-#   only additional LaTex formatting that is removed from the output is
-#   new line ('\\').
 
 import os, sys
 
@@ -375,6 +369,14 @@ for infile in args:
             elif line.find('printoutput}', pos) == pos:
                 printToOutfile = True
                 current = chapelprintoutput;
+                pos += 12
+                # Extract an explicit good file name
+                if line.find('{', pos) == pos:
+                    goodName = line[pos+1:-2]
+                    # Drop the parameter into the output stream as a comment
+                    # only if non-null.
+                    if len(goodName) > 0:
+                        current += [' '.join(('%',goodName,'\n'))]
 
         pos = line.find('\\begin{example}')
         if (line[0].strip() != '%') and pos > -1:

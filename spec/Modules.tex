@@ -361,14 +361,12 @@ module M2 {
 --main-module M2 \# main\_module.M2.good
 \end{chapelcompopts}
 If M1 is specified as the main module, the program will output:
-\begin{chapelprintoutput}
-% main_module.M1.good
+\begin{chapelprintoutput}{main_module.M1.good}
 M1's main
 \end{chapelprintoutput}
 If M2 is specified as the main module the program will output:
-\begin{chapelprintoutput}
-% main_module.M2.good
-M1's main\\
+\begin{chapelprintoutput}{main_module.M2.good}
+M1's main
 M2's main
 \end{chapelprintoutput}
 Notice that main is treated like just another function if it is not in
@@ -443,11 +441,11 @@ module M4 {
 }
 \end{chapel}
 prints the following
-\begin{chapelprintoutput}
-In M4's initializer\\
-In M2's initializer\\
-In M3's initializer\\
-In M1's initializer\\
+\begin{chapelprintoutput}{}
+In M4's initializer
+In M2's initializer
+In M3's initializer
+In M1's initializer
 In main
 \end{chapelprintoutput}
 M1, the main module, uses M2.M3 and then M2, thus M2.M3 must be

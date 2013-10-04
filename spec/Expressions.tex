@@ -1423,7 +1423,7 @@ respectively.
 
 \begin{chapelexample}{condexp.chpl}
 This example shows how if-then-else can be used in a context in which an
-expression is expected.
+expression is expected.  The code
 \begin{chapel}
 writehalf(8);
 writehalf(21);
@@ -1434,10 +1434,11 @@ proc writehalf(i: int) {
   writeln("Half of ",i," is ",half); 
 }
 \end{chapel}
-\begin{chapelprintoutput}
-Half of 8 is 4\\
-Half of 21 is 11\\
-Half of 1000 is 500\\
+produces the output
+\begin{chapelprintoutput}{}
+Half of 8 is 4
+Half of 21 is 11
+Half of 1000 is 500
 \end{chapelprintoutput}
 \end{chapelexample}
 

@@ -675,7 +675,8 @@ of the {\em Hello-World} program:
 \begin{chapel}
 writeln("Hello, World!");
 \end{chapel}
-\begin{chapelprintoutput}
+The expected output is
+\begin{chapelprintoutput}{}
 Hello, World!
 \end{chapelprintoutput}
 \end{chapelexample}
@@ -815,7 +816,10 @@ Note that objects of type \chpl{Reader} or \chpl{Writer} may represent a locked 
 Because it is often more convenient to use an operator for I/O, instead of writing \chpl{f.readwrite(x); f.readwrite(y);}, one can write \chpl{f <~> x <~> y;}. Note that the types \chpl{ioLiteral} and \chpl{ioNewline} may be useful when using the \chpl{<~>}. \chpl{ioLiteral} represents some string that must be read or written as-is (e.g. \chpl{","} when working with a tuple), and \chpl{ioNewline} will emit a newline when writing but skip to and consume a newline when reading.
 
 \begin{chapelexample}{UserReadWrite.chpl}
-This example defines a readWriteThis method and demonstrates how \chpl{<~>} will call the read or write routine, depending on the situation.
+This example defines a readWriteThis method and demonstrates how \chpl{<~>} will
+call the read or write routine, depending on the situation.
+
+When run, the code
 \begin{chapel}
 class IntPair {
   var x: int;
@@ -827,7 +831,8 @@ class IntPair {
 var ip = new IntPair(17,2);
 write(ip);
 \end{chapel}
-\begin{chapelprintoutput}
+produces the output
+\begin{chapelprintoutput}{}
 17,2
 \end{chapelprintoutput}
 \end{chapelexample}
@@ -835,6 +840,7 @@ write(ip);
 \begin{chapelexample}{UserWrite.chpl}
 This example defines a only a writeThis method - so that there will be a function resolution error if the class NoRead is read.
 
+The code
 \begin{chapel}
 class NoRead {
   var x: int;
@@ -848,7 +854,8 @@ var nr = new NoRead();
 write(nr);
 // Note that read(nr) will generate a compiler error.
 \end{chapel}
-\begin{chapelprintoutput}
+prints out
+\begin{chapelprintoutput}{}
 hello
 \end{chapelprintoutput}
 \end{chapelexample}
@@ -888,7 +895,7 @@ The \chpl{C} class filters the arguments sent to it, printing out only
 the first letter.  The output to the above is thus:
 % TODO: when 'chapelprintoutput' is extended with some wording,
 % move things around so that the printed text is well-composed.
-\begin{chapelprintoutput}
+\begin{chapelprintoutput}{}
 4321
 \end{chapelprintoutput}
 \end{chapelexample}
