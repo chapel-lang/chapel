@@ -10,16 +10,17 @@ XT(TM), and CS(TM) series systems.
 ----------------------------------------------------
 Getting Started with Chapel on Cray X-Series Systems
 ----------------------------------------------------
+
 Chapel is available as a module for Cray X-series systems.  When it is
 installed on your system, you do not need to build Chapel from the
-open-source release (though you can); instead, simply load the module
+source release (though you can); instead, simply load the module
 using:
 
      module load chapel
 
 Then proceed directly to "Using Chapel on a Cray System" below.  If
-instead you wish to build Chapel from open-source, continue on to
-"Building Chapel on a Cray System From Open Source" just below.
+instead you wish to build Chapel from source, continue on to "Building
+Chapel on a Cray System from Source" just below.
 
 For information on obtaining and installing the Chapel module please
 contact your system administrator.
@@ -28,16 +29,17 @@ contact your system administrator.
 ----------------------------------------------
 Getting Started with Chapel on Cray CS Systems
 ----------------------------------------------
+
 On Cray CS systems, Chapel is not currently available as a module due
 to the wide diversity of software packages that Cray CS customers may
 choose to install on their system.  For this reason, Chapel must be
-built from open-source on Cray CS systems using the instructions just
+built from source on Cray CS systems using the instructions just
 below.
 
 
---------------------------------------------------
-Building Chapel for a Cray System From Open Source
---------------------------------------------------
+---------------------------------------------
+Building Chapel for a Cray System from Source
+---------------------------------------------
 
 1) Set CHPL_HOST_PLATFORM to the appropriate string for your particular
    Cray system.  These are the supported systems and strings:
@@ -140,7 +142,7 @@ Using Chapel on a Cray System
      b) Optionally select a launcher, as in step 2 above
      c) Select a target compiler, as in step 3 above
 
-   If you are working from an open-source installation...
+   If you are working from a source installation...
 
      a) Set your host platform as in step 1 above
      b) Optionally select a launcher, as in step 2 above
@@ -159,7 +161,7 @@ Using Chapel on a Cray System
 
 
 3) If CHPL_LAUNCHER is set to anything other than 'none', when you
-   compile a Chapel program for your Cray system, you should see two
+   compile a Chapel program for your Cray system, you will see two
    binaries (e.g., hello6-taskpar-dist and hello6-taskpar-dist_real).
    The first binary contains code to launch the Chapel program onto
    the compute nodes, as specified by your CHPL_LAUNCHER setting.  The
@@ -189,8 +191,8 @@ Using Chapel on a Cray System
         Alternatively, you can set the wall clock time limit on your
         Chapel program command line using the --walltime flag.
 
-   For further information about launchers, or about launchers other
-   than PBS, please refer to $CHPL_HOME/doc/README.launcher.
+   For further information about launchers, please refer to
+   $CHPL_HOME/doc/README.launcher.
 
 
 4) Execute your Chapel program.  Multi-locale executions require the
