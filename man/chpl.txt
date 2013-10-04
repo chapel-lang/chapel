@@ -1,32 +1,20 @@
 NAME
-  chpl - Cray Inc. compiler for the Chapel parallel language
+  chpl - Compiler for the Chapel Programming Language
 
 SYNOPSIS
   chpl [-O] [--no-checks] [--fast]
        [-g] [--savec directory]
        [-M directory...] [--main-module mod]
-       [-o outfile] [flags...] source-files...
+       [-o outfile] [options] source-files...
 
 DESCRIPTION
 
-  The Chapel compiler, chpl, converts one or more Chapel source files
-  into an executable. It does this by compiling Chapel to ISO C code
-  and then invoking the target platform's C compiler to create the
-  executable. However, most users will not need to be aware of the
-  use of C as an intermediate format during compilation.
-
-  The current implementation of chpl supports the creation of multiple
-  threads on multiple locales. It uses POSIX threads (pthreads) to
-  implement user-level tasks on each locale and GASNet to implement
-  communication and coordination between locales.
-
-  This version of chpl focuses primarily on demonstrating Chapel
-  language features in order to support experimentation with the
-  language and generate user feedback. The performance and memory
-  utilization of the generated code are known to be suboptimal and
-  should not be considered representative of Chapel's potential.
-  Future versions of the compiler will continue to result in improved
-  performance.
+  The chpl command invokes the Chapel compiler. chpl converts one or
+  more Chapel source files into an executable. It does this by
+  compiling Chapel code to C99 code and then invoking the target
+  platform's C compiler to create the executable. However, most users
+  will not need to be aware of the use of C as an intermediate format
+  during compilation.
 
 SOURCE FILES
   Chapel currently recognizes four source file types: .chpl, .c, .h and .o.
@@ -37,7 +25,7 @@ SOURCE FILES
 
   foo.c         C source files are passed directly to the target C compiler.
 
-  foo.h         C header files are placed in the generated chpl_header.h file
+  foo.h         C header files are included in the generated C code.
 
   foo.o         Object files are passed directly to the target linker. 
 
@@ -401,7 +389,6 @@ OPTIONS
 
   --version       Print the version number of the compiler.
 
-
 ENVIRONMENT VARIABLES FOR OPTIONS
 
   Most compiler command-line options have an environment variable that can
@@ -439,6 +426,78 @@ ENVIRONMENT
 
   CHPL_HOME           Specifies the location of the Chapel installation directory.
 
+  CHPL_HOST_PLATFORM  Specifies the platform on which the Chapel compiler is
+                      running (defaults to our best guess).
+
+  CHPL_TARGET_PLATFORM   Specifies the platform on which the target executable
+                         is to be run for the purposes of cross-compiling
+                         (defaults to $CHPL_HOST_PLATFORM).
+
+  CHPL_HOST_COMPILER  Specifies the compiler suite that should be used
+                      to build the Chapel compiler (defaults to a best
+                      guess based on $CHPL_HOST_PLATFORM).
+
+  CHPL_TARGET_COMPILER  Specifies the compiler suite that should be used
+                      to build the generated C code for a Chapel program
+                      and the Chapel runtime (defaults to a best guess 
+                      based on $CHPL_HOST_PLATFORM, $CHPL_TARGET_PLATFORM,
+                      and $CHPL_HOST_COMPILER).
+
+  CHPL_LOCALE_MODEL  Specifies the locale model to use for describing
+                     your locale architecture (defaults to 'flat')
+
+  CHPL_COMM           Specifies the communication layer to use for
+                      inter-locale data transfers (defaults to 'none').
+
+  CHPL_TASKS          Specifies the tasking layer to use for implementing
+                      tasks (defaults to a best guess based on
+                      $CHPL_TARGET_PLATFORM).
+
+  CHPL_THREADS        Specifies the threading layer to used by the tasking
+                      layer to implement threads(defaults to a best
+                      guess based on $CHPL_TASKS).
+
+  CHPL_LAUNCHER       Specifies the launcher, if any, used to start job
+                      execution (defaults to a best guess based on
+                      $CHPL_COMM and $CHPL_TARGET_PLATFORM).
+
+  CHPL_TIMERS         Specifies a timer implementation to be used by
+                      the Time module (defaults to 'generic').
+
+  CHPL_MEM            Specifies the memory allocator used for dynamic memory
+                      management (defaults to a best guess based on $CHPL_COMM).
+
+  CHPL_MAKE           Specifies the GNU compatible make utility
+                      (defaults to a best guess based on
+                      $CHPL_HOST_PLATFORM).
+
+  CHPL_ATOMICS        Specifies the implementation to use for Chapel's atomic
+                      variables (defaults to a best guess based on $CHPL_TARGET_COMPILER, $CHPL_TARGET_PLATFORM, and $CHPL_COMM).
+
+  CHPL_GMP            Specifies the GMP library implementation to be
+                      used by the GMP module (defaults to a best guess
+                      based on $CHPL_TARGET_PLATFORM and whether
+                      you've built the included GMP library in the
+                      third-party directory).
+
+  CHPL_REGEXP         Specifies the regular expression library to use
+                      (defaults to 'none' or 're2' if you've installed
+                      the re2 package in the third-party directory).
+
+  CHPL_WIDE_POINTERS  Specifies the wide porter format format
+                      (defaults to 'struct').
+
+  CHPL_LLVM           When set to 'llvm', use the LLVM/Clang back-end
+                      (defaults to 'none').
+
+  CHPL_AUX_FILESYS    Specify runtime support for additional file
+                      systems (defaults to 'none').
+
+  CHPL_DEVELOPER      When set, build and compile in developer mode,
+                      which generates line numbers in internal module
+                      code and throws extra warning flags when
+                      compiling the generated C code.
+
   CHPL_MODULE_PATH    Specifies a list of colon-separated directories to be 
                       added to the module search path. The module search path
                       is used to satisfy module 'use' statements. In the current
@@ -459,39 +518,6 @@ ENVIRONMENT
                       $CHPL_MODULE_PATH environment variable, (4) the
                       compiler's standard module search path. 
 
-  CHPL_HOST_PLATFORM  Specifies the platform on which the Chapel compiler is
-                      running (defaults to our best guess).
-
-  CHPL_TARGET_PLATFORM   Specifies the platform on which the target executable
-                         is to be run for the purposes of cross-compiling
-                         (defaults to $CHPL_HOST_PLATFORM).
-
-  CHPL_HOST_COMPILER  Specifies the compiler suite that should be used
-                      to build the Chapel compiler (defaults to a best
-                      guess based on $CHPL_HOST_PLATFORM).
-
-  CHPL_TARGET_COMPILER  Specifies the compiler suite that should be used
-                      to build the generated C code for a Chapel program
-                      and the Chapel runtime (defaults to a best guess 
-                      based on $CHPL_HOST_PLATFORM, $CHPL_TARGET_PLATFORM,
-                      and $CHPL_HOST_COMPILER).
-
-  CHPL_TASKS          Specified the tasking layer to use for implementing
-                      tasks (defaults to a best guess based on
-                      $CHPL_TARGET_PLATFORM).
-
-  CHPL_COMM           Specifies the communication layer to use for
-                      inter-locale data transfers (defaults to 'none').
-
-  CHPL_LAUNCHER       Specifies the launcher, if any, used to start job
-                      execution (defaults to a best guess based on
-                      $CHPL_COMM and $CHPL_TARGET_PLATFORM).
-
-  CHPL_MEM            Specifies the memory allocator used for dynamic memory
-                      management (defaults to a best guess based on $CHPL_COMM).
-
-  CHPL_ATOMICS        Specifies the implementation to use for Chapel's atomic
-                      variables (defaults to a best guess based on $CHPL_TARGET_COMPILER, $CHPL_TARGET_PLATFORM, and $CHPL_COMM).
 
 BUGS
   See $CHPL_HOME/STATUS for a list of known bugs and $CHPL_HOME/doc/README.bugs
