@@ -213,6 +213,23 @@ Using Chapel on a Cray System
 
       export CHPL_LAUNCHER_CORES_PER_LOCALE=24
 
+   This variable may be needed when you are using the aprun launcher and
+   running Chapel programs within batch jobs you are managing yourself.
+   The aprun launcher currently creates aprun commands that request the
+   maximum number of cores per locale found on any locale in the system,
+   irrespective of the fact that the batch job may have a lower limit
+   than that on the number of cores per locale.  If the batch job limit
+   is less than the maximum number of cores per locale, you will get the
+   following error message when you try to run a Chapel program:
+
+      apsched: claim exceeds reservation's CPUs
+
+   You can work around this by setting CHPL_LAUNCHER_CORES_PER_LOCALE to
+   the same or lesser value as the number of cores per locale specified
+   for the batch job (for example, the mppdepth resource for the PBS
+   qsub command).  In the future we hope to achieve better integration
+   between Chapel launchers and workload managers.
+
 
 6) If your Cray system has compute nodes with varying numbers of CPUs
    per compute unit, you can request nodes with a certain number of
