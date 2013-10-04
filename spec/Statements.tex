@@ -167,22 +167,18 @@ to the type of the left-hand side expression.  Thus, for
 example, \chpl{x += y} is equivalent to \chpl{x = x + y} where the
 expression \chpl{x} is evaluated once.
 
-%REVIEW: vass: this is inelegant, consider removing.
-% Plus should be defined on int(8) to produce an int(8) instead of this.
-In a compound assignment, an explicit cast to the type on the left-hand side is
-inserted before the simple assignment if the operator is a shift or
-both the right-hand side expression can be assigned to the left-hand
-side expression and the type of the left-hand side is a primitive
-type.
-
-\begin{rationale}
-This cast is necessary to handle \chpl{+=} where the type of the
-left-hand side is, for example, \chpl{int(8)} because the \chpl{+}
-operator is defined on \chpl{int(32)}, not \chpl{int(8)}.
-\end{rationale}
-
 The compound assignment operators can be overloaded for different
 types using operator overloading~(\rsec{Function_Overloading}).
+In such an overload, the left-hand side expression should have
+\chpl{ref} intent and be modified within the body of the function.
+For all compound assignments, Chapel provides a completely generic
+catch-all implementation defined in the obvious way.  For example:
+
+\begin{chapel}
+inline proc +=(ref lhs, rhs) {
+  lhs = lhs + rhs;
+}
+\end{chapel}
 
 \section{The Swap Statement}
 \label{The_Swap_Statement}
