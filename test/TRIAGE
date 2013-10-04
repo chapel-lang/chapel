@@ -132,8 +132,6 @@ at present.  See the archives for more detail.
 Perf (linux64.gnu.none.fifo.pthreads)
 -------------------------------------
 [Error: Timed out executing program studies/hpcc/RA/bradc/parallel/ra-dist (compopts: 1)] (06/20/13, 9/13/13: chap04)
-[Error: Timed out executing program npb/cg/bradc/cg-sparse (compopts: 1, execopts: 4..6)] (08/23/13, 9/13/13)
-[Error: Timed out executing program npb/ep/mcahir/ep (compopts: 1, execopts: 6)]
 [Error: Timed out executing program studies/shootout/thread-ring/thread-ring-coforall-begin] (9/23/13)
 
 ==============================================================================
@@ -173,9 +171,10 @@ nondet. seg fault for prgenv-cray on chpbld01
 nondet. timeout on gasnet-everything
 ------------------------------------
 [Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dBDtoDRTest] (07/08/13)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (7/22/13, 09/02/13)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (7/19/13,9/4/13)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (7/22/13, 09/02/13, 09/30/13)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (7/19/13, 9/4/13)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff] (8/9/13)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (9/30/13)
 
 libmpich_intel.so failure for
 cray-xt.cray-prgenv-intel.none.fifo.pthreads--linux64 (May 27, 2013)

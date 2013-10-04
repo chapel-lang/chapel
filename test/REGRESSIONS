@@ -46,11 +46,9 @@ performance-specific regressions
 
 thread-ring times out ever since it was made into a performance test
 --------------------------------------------------------------------
-[Error (createGraphs): 'gnuplot' command failed for thread-ring.graph]
-[Error generating old-style graphs for thread-ring.graph in /data/sea/cascade/chapel/NightlyPerformance/chap04]
-[Error: Timed out executing program studies/shootout/thread-ring/thread-ring]
-[Error: Timed out executing program studies/shootout/thread-ring/thread-ring-coforall]
-[Error: Timed out executing program studies/shootout/thread-ring/thread-ring-for-begin]
+[Error: Timed out executing program release/examples/benchmarks/shootout/threadring]
+[Error: Timed out executing program studies/shootout/thread-ring/lydia/thread-ring-coforall]
+[Error: Timed out executing program studies/shootout/thread-ring/lydia/thread-ring-for-begin]
 
 mandelbrot-fancy gen compiler failures due to overflow analysis
 ---------------------------------------------------------------
@@ -60,8 +58,9 @@ Gen compiler messages of the form:
   /tmp/chpl-gbt-25650.deleteme/mandelbrot-fancy.c:2104: error: assuming signed overflow does not occur when assuming that (X + c) < X is always false
 
 Has been happening since at least 6/27/13.  Curiously, it actually
-succeeded on 8/22/13.  Perhaps this was due to a temporary compiler
-behavior change as a result of the 21707 thashing?
+succeeded on 8/22/13 and 9/25/13.  The passing seems to be a result of compiler
+changes that avoid the particular optimization that is causing the warning.  It
+passes from revision 21739 to 21741 and from 21945 to 21952.
 
 See NightlyPerformance/chap*/day?-???-linux64.gnu.none.fifo.pthreads-prf
 and history thereof.
@@ -76,13 +75,6 @@ execution timeouts (08/29/09)
 [Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_rangesub_5 (compopts: 1)]
 [Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_reductions_6 (compopts: 1)]
 [Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_vector_4 (compopts: 1)]
-
-Time out on studies/shootout/binary-trees/binary-trees_iter.chpl (execopts: 2) on chap04 -> assigned to Greg (08/19/13)
-
-compilation timeouts (started 9/6/13) (eronagha)
-------------------------------------------------
-[Error: Timed out compilation for studies/lulesh/bradc/lulesh-dense (compopts: 1)]
-[Error: Timed out compilation for users/franzf/v0/chpl/main (compopts: 1)]
 
 
 ========================
@@ -179,15 +171,7 @@ no-local regressions
 
 compilation timeouts (started 9/6/13) (eronagha)
 ------------------------------------------------
-[Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/3dStrideTest]
-[Error: Timed out compilation for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 1)]
-[Error: Timed out compilation for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 2)]
-[Error: Timed out compilation for studies/lsms/shemmy/lsms-parallel-n1]
-[Error: Timed out compilation for studies/lsms/shemmy/lsms-parallel-n2]
-[Error: Timed out compilation for studies/lsms/shemmy/lsms-parallel-n4]
 [Error: Timed out compilation for studies/lulesh/bradc/lulesh-dense (compopts: 1)]
-[Error: Timed out compilation for users/franzf/v0/chpl/main (compopts: 1)]
-[Error: Timed out compilation for users/franzf/v1/chpl/main (compopts: 1)]
 
 
 ====================================================
