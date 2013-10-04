@@ -60,7 +60,7 @@ Building Chapel for a Cray System From Open Source
 
    On a Cray CS system, to...                   set CHPL_LAUNCHER to...
      ...run jobs interactively on your system     gasnetrun_ibv
-     ...queue jobs using PBS (qsub)               pbs-gasnetrun_ibv
+     ...queue jobs using PBSPro (qsub)            pbs-gasnetrun_ibv
      ...queue jobs using SLURM (sbatch)           slurm-gasnetrun_ibv
      ...queue jobs using LSF (bsub)               lsf-gasnetrun_ibv
 
