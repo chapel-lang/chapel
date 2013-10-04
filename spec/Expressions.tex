@@ -499,14 +499,22 @@ the 32-bit integers.  The result is a 32-bit integer.
 
 The unary plus operators are predefined as follows:
 \begin{chapel}
+proc +(a: int(8)): int(8)
+proc +(a: int(16)): int(16)
 proc +(a: int(32)): int(32)
 proc +(a: int(64)): int(64)
+
+proc +(a: uint(8)): uint(8)
+proc +(a: uint(16)): uint(16)
 proc +(a: uint(32)): uint(32)
 proc +(a: uint(64)): uint(64)
+
 proc +(a: real(32)): real(32)
 proc +(a: real(64)): real(64)
+
 proc +(a: imag(32)): imag(32)
 proc +(a: imag(64)): imag(64)
+
 proc +(a: complex(64)): complex(64)
 proc +(a: complex(128)): complex(128)
 \end{chapel}
@@ -520,13 +528,17 @@ For each of these definitions, the result is the value of the operand.
 
 The unary minus operators are predefined as follows:
 \begin{chapel}
+proc -(a: int(8)): int(8)
+proc -(a: int(16)): int(16)
 proc -(a: int(32)): int(32)
 proc -(a: int(64)): int(64)
-proc -(a: uint(64))
+
 proc -(a: real(32)): real(32)
 proc -(a: real(64)): real(64)
+
 proc -(a: imag(32)): imag(32)
 proc -(a: imag(64)): imag(64)
+
 proc -(a: complex(64)): complex(64)
 proc -(a: complex(128)): complex(128)
 \end{chapel}
@@ -549,8 +561,13 @@ to \chpl{int(64)} using an implicit conversion.
 
 The addition operators are predefined as follows:
 \begin{chapel}
+proc +(a: int(8), b: int(8)): int(8)
+proc +(a: int(16), b: int(16)): int(16)
 proc +(a: int(32), b: int(32)): int(32)
 proc +(a: int(64), b: int(64)): int(64)
+
+proc +(a: uint(8), b: uint(8)): uint(8)
+proc +(a: uint(16), b: uint(16)): uint(16)
 proc +(a: uint(32), b: uint(32)): uint(32)
 proc +(a: uint(64), b: uint(64)): uint(64)
 
@@ -597,12 +614,15 @@ type.
 
 The subtraction operators are predefined as follows:
 \begin{chapel}
+proc -(a: int(8), b: int(8)): int(8)
+proc -(a: int(16), b: int(16)): int(16)
 proc -(a: int(32), b: int(32)): int(32)
 proc -(a: int(64), b: int(64)): int(64)
+
+proc -(a: uint(8), b: uint(8)): uint(8)
+proc -(a: uint(16), b: uint(16)): uint(16)
 proc -(a: uint(32), b: uint(32)): uint(32)
 proc -(a: uint(64), b: uint(64)): uint(64)
-proc -(a: uint(64), b: int(64))
-proc -(a: int(64), b: uint(64))
 
 proc -(a: real(32), b: real(32)): real(32)
 proc -(a: real(64), b: real(64)): real(64)
@@ -648,12 +668,15 @@ versa, also produces a value of complex type.
 
 The multiplication operators are predefined as follows:
 \begin{chapel}
+proc *(a: int(8), b: int(8)): int(8)
+proc *(a: int(16), b: int(16)): int(16)
 proc *(a: int(32), b: int(32)): int(32)
 proc *(a: int(64), b: int(64)): int(64)
+
+proc *(a: uint(8), b: uint(8)): uint(8)
+proc *(a: uint(16), b: uint(16)): uint(16)
 proc *(a: uint(32), b: uint(32)): uint(32)
 proc *(a: uint(64), b: uint(64)): uint(64)
-proc *(a: uint(64), b: int(64))
-proc *(a: int(64), b: uint(64))
 
 proc *(a: real(32), b: real(32)): real(32)
 proc *(a: real(64), b: real(64)): real(64)
@@ -699,12 +722,15 @@ value of complex type.
 
 The division operators are predefined as follows:
 \begin{chapel}
+proc /(a: int(8), b: int(8)): int(8)
+proc /(a: int(16), b: int(16)): int(16)
 proc /(a: int(32), b: int(32)): int(32)
 proc /(a: int(64), b: int(64)): int(64)
+
+proc /(a: uint(8), b: uint(8)): uint(8)
+proc /(a: uint(16), b: uint(16)): uint(16)
 proc /(a: uint(32), b: uint(32)): uint(32)
 proc /(a: uint(64), b: uint(64)): uint(64)
-proc /(a: uint(64), b: int(64))
-proc /(a: int(64), b: uint(64))
 
 proc /(a: real(32), b: real(32)): real(32)
 proc /(a: real(64), b: real(64)): real(64)
@@ -755,12 +781,15 @@ The integer result $q$ is the candidate quotient which lies closest to zero.
 
 The modulus operators are predefined as follows:
 \begin{chapel}
+proc %(a: int(8), b: int(8)): int(8)
+proc %(a: int(16), b: int(16)): int(16)
 proc %(a: int(32), b: int(32)): int(32)
 proc %(a: int(64), b: int(64)): int(64)
+
+proc %(a: uint(8), b: uint(8)): uint(8)
+proc %(a: uint(16), b: uint(16)): uint(16)
 proc %(a: uint(32), b: uint(32)): uint(32)
 proc %(a: uint(64), b: uint(64)): uint(64)
-proc %(a: uint(64), b: int(64))
-proc %(a: int(64), b: uint(64))
 \end{chapel}
 For each of these definitions that return a value, the result is the
 remainder when the first operand is divided by the second operand.
@@ -790,12 +819,15 @@ extended to handle real, imaginary, and complex types in the future.
 
 The exponentiation operators are predefined as follows:
 \begin{chapel}
+proc **(a: int(8), b: int(8)): int(8)
+proc **(a: int(16), b: int(16)): int(16)
 proc **(a: int(32), b: int(32)): int(32)
 proc **(a: int(64), b: int(64)): int(64)
+
+proc **(a: uint(8), b: uint(8)): uint(8)
+proc **(a: uint(16), b: uint(16)): uint(16)
 proc **(a: uint(32), b: uint(32)): uint(32)
 proc **(a: uint(64), b: uint(64)): uint(64)
-proc **(a: uint(64), b: int(64))
-proc **(a: int(64), b: uint(64))
 
 proc **(a: real(32), b: real(32)): real(32)
 proc **(a: real(64), b: real(64)): real(64)
@@ -827,8 +859,14 @@ overloading~(\rsec{Function_Overloading}).
 The bitwise complement operators are predefined as follows:
 \begin{chapel}
 proc ~(a: bool): bool
+
+proc ~(a: int(8)): int(8)
+proc ~(a: int(16)): int(16)
 proc ~(a: int(32)): int(32)
 proc ~(a: int(64)): int(64)
+
+proc ~(a: uint(8)): uint(8)
+proc ~(a: uint(16)): uint(16)
 proc ~(a: uint(32)): uint(32)
 proc ~(a: uint(64)): uint(64)
 \end{chapel}
@@ -844,14 +882,12 @@ the operand.
 The bitwise and operators are predefined as follows:
 \begin{chapel}
 proc &(a: bool, b: bool): bool
-proc &(a: int(32), b: int(32)): int(32)
-proc &(a: int(64), b: int(64)): int(64)
-proc &(a: uint(32), b: uint(32)): uint(32)
-proc &(a: uint(64), b: uint(64)): uint(64)
-proc &(a: int(32), b: uint(32)): uint(32)
-proc &(a: int(64), b: uint(64)): uint(64)
-proc &(a: uint(32), b: int(32)): uint(32)
-proc &(a: uint(64), b: int(64)): uint(64)
+
+proc &(a: int(?w), b: int(w)): int(w)
+proc &(a: uint(?w), b: uint(w)): uint(w)
+
+proc &(a: int(?w), b: uint(w)): uint(w)
+proc &(a: uint(?w), b: int(w)): uint(w)
 \end{chapel}
 For each of these definitions, the result is
 computed by applying the logical and operation to the bits of the
@@ -883,14 +919,12 @@ reflects the semantics of standard C.
 The bitwise or operators are predefined as follows:
 \begin{chapel}
 proc |(a: bool, b: bool): bool
-proc |(a: int(32), b: int(32)): int(32)
-proc |(a: int(64), b: int(64)): int(64)
-proc |(a: uint(32), b: uint(32)): uint(32)
-proc |(a: uint(64), b: uint(64)): uint(64)
-proc |(a: int(32), b: uint(32)): uint(32)
-proc |(a: int(64), b: uint(64)): uint(64)
-proc |(a: uint(32), b: int(32)): uint(32)
-proc |(a: uint(64), b: int(64)): uint(64)
+
+proc |(a: int(?w), b: int(w)): int(w)
+proc |(a: uint(?w), b: uint(w)): uint(w)
+
+proc |(a: int(?w), b: uint(w)): uint(w)
+proc |(a: uint(?w), b: int(w)): uint(w)
 \end{chapel}
 
 For each of these definitions, the result is
@@ -914,14 +948,12 @@ The same as for bitwise and (\rsec{Bitwise_And_Operators}).
 The bitwise xor operators are predefined as follows:
 \begin{chapel}
 proc ^(a: bool, b: bool): bool
-proc ^(a: int(32), b: int(32)): int(32)
-proc ^(a: int(64), b: int(64)): int(64)
-proc ^(a: uint(32), b: uint(32)): uint(32)
-proc ^(a: uint(64), b: uint(64)): uint(64)
-proc ^(a: int(32), b: uint(32)): uint(32)
-proc ^(a: int(64), b: uint(64)): uint(64)
-proc ^(a: uint(32), b: int(32)): uint(32)
-proc ^(a: uint(64), b: int(64)): uint(64)
+
+proc ^(a: int(?w), b: int(w)): int(w)
+proc ^(a: uint(?w), b: uint(w)): uint(w)
+
+proc ^(a: int(?w), b: uint(w)): uint(w)
+proc ^(a: uint(?w), b: int(w)): uint(w)
 \end{chapel}
 
 For each of these definitions, the result is
@@ -949,13 +981,24 @@ overloading~(\rsec{Function_Overloading}).
 
 The shift operators are predefined as follows:
 \begin{chapel}
+proc <<(a: int(8), b): int(8)
+proc <<(a: int(16), b): int(16)
 proc <<(a: int(32), b): int(32)
-proc >>(a: int(32), b): int(32)
 proc <<(a: int(64), b): int(64)
-proc >>(a: int(64), b): int(64)
+
+proc <<(a: uint(8), b): uint(8)
+proc <<(a: uint(16), b): uint(16)
 proc <<(a: uint(32), b): uint(32)
-proc >>(a: uint(32), b): uint(32)
 proc <<(a: uint(64), b): uint(64)
+
+proc >>(a: int(8), b): int(8)
+proc >>(a: int(16), b): int(16)
+proc >>(a: int(32), b): int(32)
+proc >>(a: int(64), b): int(64)
+
+proc >>(a: uint(8), b): uint(8)
+proc >>(a: uint(16), b): uint(16)
+proc >>(a: uint(32), b): uint(32)
 proc >>(a: uint(64), b): uint(64)
 \end{chapel}
 The type of the second actual argument must be any integral type.
@@ -1067,12 +1110,19 @@ overloading~(\rsec{Function_Overloading}).
 The ``less than'' comparison operators are predefined over numeric
 types as follows:
 \begin{chapel}
+proc <(a: int(8), b: int(8)): bool
+proc <(a: int(16), b: int(16)): bool
 proc <(a: int(32), b: int(32)): bool
 proc <(a: int(64), b: int(64)): bool
+
+proc <(a: uint(8), b: uint(8)): bool
+proc <(a: uint(16), b: uint(16)): bool
 proc <(a: uint(32), b: uint(32)): bool
 proc <(a: uint(64), b: uint(64)): bool
+
 proc <(a: real(32), b: real(32)): bool
 proc <(a: real(64), b: real(64)): bool
+
 proc <(a: imag(32), b: imag(32)): bool
 proc <(a: imag(64), b: imag(64)): bool
 \end{chapel}
@@ -1085,12 +1135,19 @@ otherwise the result is false.
 The ``greater than'' comparison operators are predefined over numeric
 types as follows:
 \begin{chapel}
+proc >(a: int(8), b: int(8)): bool
+proc >(a: int(16), b: int(16)): bool
 proc >(a: int(32), b: int(32)): bool
 proc >(a: int(64), b: int(64)): bool
+
+proc >(a: uint(8), b: uint(8)): bool
+proc >(a: uint(16), b: uint(16)): bool
 proc >(a: uint(32), b: uint(32)): bool
 proc >(a: uint(64), b: uint(64)): bool
+
 proc >(a: real(32), b: real(32)): bool
 proc >(a: real(64), b: real(64)): bool
+
 proc >(a: imag(32), b: imag(32)): bool
 proc >(a: imag(64), b: imag(64)): bool
 \end{chapel}
@@ -1103,12 +1160,19 @@ than \chpl{b}; otherwise the result is false.
 The ``less than or equal to'' comparison operators are predefined over
 numeric types as follows:
 \begin{chapel}
+proc <=(a: int(8), b: int(8)): bool
+proc <=(a: int(16), b: int(16)): bool
 proc <=(a: int(32), b: int(32)): bool
 proc <=(a: int(64), b: int(64)): bool
+
+proc <=(a: uint(8), b: uint(8)): bool
+proc <=(a: uint(16), b: uint(16)): bool
 proc <=(a: uint(32), b: uint(32)): bool
 proc <=(a: uint(64), b: uint(64)): bool
+
 proc <=(a: real(32), b: real(32)): bool
 proc <=(a: real(64), b: real(64)): bool
+
 proc <=(a: imag(32), b: imag(32)): bool
 proc <=(a: imag(64), b: imag(64)): bool
 \end{chapel}
@@ -1121,12 +1185,19 @@ to \chpl{b}; otherwise the result is false.
 The ``greater than or equal to'' comparison operators are predefined
 over numeric types as follows:
 \begin{chapel}
+proc >=(a: int(8), b: int(8)): bool
+proc >=(a: int(16), b: int(16)): bool
 proc >=(a: int(32), b: int(32)): bool
 proc >=(a: int(64), b: int(64)): bool
+
+proc >=(a: uint(8), b: uint(8)): bool
+proc >=(a: uint(16), b: uint(16)): bool
 proc >=(a: uint(32), b: uint(32)): bool
 proc >=(a: uint(64), b: uint(64)): bool
+
 proc >=(a: real(32), b: real(32)): bool
 proc >=(a: real(64), b: real(64)): bool
+
 proc >=(a: imag(32), b: imag(32)): bool
 proc >=(a: imag(64), b: imag(64)): bool
 \end{chapel}
@@ -1156,24 +1227,41 @@ elementwise to the string's characters in order.
 The equality comparison operators \chpl{==} and \chpl{\!=} are predefined over bool and the
 numeric types as follows:
 \begin{chapel}
+proc ==(a: int(8), b: int(8)): bool
+proc ==(a: int(16), b: int(16)): bool
 proc ==(a: int(32), b: int(32)): bool
 proc ==(a: int(64), b: int(64)): bool
+
+proc ==(a: uint(8), b: uint(8)): bool
+proc ==(a: uint(16), b: uint(16)): bool
 proc ==(a: uint(32), b: uint(32)): bool
 proc ==(a: uint(64), b: uint(64)): bool
+
 proc ==(a: real(32), b: real(32)): bool
 proc ==(a: real(64), b: real(64)): bool
+
 proc ==(a: imag(32), b: imag(32)): bool
 proc ==(a: imag(64), b: imag(64)): bool
+
 proc ==(a: complex(64), b: complex(64)): bool
 proc ==(a: complex(128), b: complex(128)): bool
+
+proc !=(a: int(8), b: int(8)): bool
+proc !=(a: int(16), b: int(16)): bool
 proc !=(a: int(32), b: int(32)): bool
 proc !=(a: int(64), b: int(64)): bool
+
+proc !=(a: uint(8), b: uint(8)): bool
+proc !=(a: uint(16), b: uint(16)): bool
 proc !=(a: uint(32), b: uint(32)): bool
 proc !=(a: uint(64), b: uint(64)): bool
+
 proc !=(a: real(32), b: real(32)): bool
 proc !=(a: real(64), b: real(64)): bool
+
 proc !=(a: imag(32), b: imag(32)): bool
 proc !=(a: imag(64), b: imag(64)): bool
+
 proc !=(a: complex(64), b: complex(64)): bool
 proc !=(a: complex(128), b: complex(128)): bool
 \end{chapel}
@@ -1347,9 +1435,9 @@ proc writehalf(i: int) {
 }
 \end{chapel}
 \begin{chapelprintoutput}
-Half of 8 is 4
-Half of 21 is 11
-Half of 1000 is 500
+Half of 8 is 4\\
+Half of 21 is 11\\
+Half of 1000 is 500\\
 \end{chapelprintoutput}
 \end{chapelexample}
 
