@@ -9,6 +9,12 @@ overriding the default settings.  To check the values of the Chapel
 environment variables that are set or can be inferred, run the script:
 $CHPL_HOME/util/printchplenv
 
+The setchplenv.* scripts in the $CHPL_HOME/util/ directory contain
+commands that set the following variables for various shells and host
+platforms when they are sourced from the $CHPL_HOME directory.
+Frequent Chapel users may want to add the following settings to their
+shell's dotfile(s) but for getting started the setchplenv.* scripts 
+should suffice. 
 
 --------------------
 Recommended Settings
@@ -78,14 +84,6 @@ Recommended Settings
    For example:
 
         export MANPATH="$MANPATH":"$CHPL_HOME"/man
-
-
-The setchplenv.* scripts in the $CHPL_HOME/util/ directory contain
-commands that set the above variables for various shells and host
-platforms when they are sourced from the $CHPL_HOME directory.
-Frequent Chapel users may want to add the above settings to their
-shell's dotfile(s).
-
 
 -----------------
 Optional Settings

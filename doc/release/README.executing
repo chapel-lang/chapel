@@ -58,6 +58,9 @@ or
 The compiler-established default can still be overridden when
 executing the program, as shown above.
 
+Chapel programs can also accept C-like command line arguments to their
+main() procedure in addition to the aforementioned configuration
+variables. See $CHPL_HOME/doc/technotes/README.main for more information. 
 
 -----------------------------
 Setting the Number of Locales

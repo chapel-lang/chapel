@@ -2,8 +2,12 @@
 Chapel Prerequisites and Assumptions
 ====================================
 
-The following are prerequisites and assumptions about your environment
-for using Chapel:
+If you have a standard UNIX environment, a C/C++ compiler, some basic
+scripting languages, a GNU-compatible make, and awk installed you should
+have no problems getting started with Chapel.   
+
+In slightly more detail the following are prerequisites and assumptions
+about your environment for using Chapel:
 
 * You are using an environment that supports standard UNIX commands
   such as: cd, mkdir, rm, echo, bc
@@ -14,8 +18,9 @@ for using Chapel:
 
 * You have access to gmake or a GNU-compatible version of make and awk.
 
-* You have access to standard C and C++ compilers.  We typically
-  compile our code using gcc/g++, and have used the following versions
-  at various times on various platforms: egcs-2.91.66, 3.3.3, 3.3.4,
-  3.4.4, 4.0.1, 4.1.1, 4.1.2, 4.2.0, 4.3.4, 4.4.1, 4.5.3.  We have
-  also compiled our code using compilers by Cray, IBM, Intel, and PGI.
+* You have access to standard C and C++ compilers. We typically
+  compile our code using gcc/g++ (at least version 3.3.0.) We have also
+  had some experience using Clang. Additionally we have compiled our
+  code using compilers by Cray, IBM, Intel, and PGI. Any standard C and
+  C++ compiler should work, but the aforementioned are the ones we have
+  the most experience with.  
