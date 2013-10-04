@@ -106,6 +106,7 @@ The general outline for these instructions is:
   (3) Set up Hadoop on (a) the local host or (b) a cluster of hosts
   (4) Start up HDFS
   (5) Stop HDFS when you're done
+  (6) Setting up Chapel to run in distributed mode
 
 First reflect your directory structure and version numbers (etc) in
 the code at the bottom of this page and put it in your .bashrc (or
@@ -172,6 +173,16 @@ into.
    * Shut things down:
      - stop-all.sh   (This will stop hdfs and mapreduce)
 
+(6) 
+  * Setting up Chapel:
+    - After compiling with CHPL_COMM=gasnet (see README.multilocale),
+      you need to set the environment variables below (note order of
+      the SSH_SERVERS matters).
+
+    - After this you should be able to run Chapel code with HDFS over
+      a cluster of computers the same way as you normally would.
+    
+
 Here is a sample .bashrc for using Hadoop within Chapel:
 
 ---------------------------------------------------------------------------
@@ -203,4 +214,9 @@ export CLASSPATH=$CLASSPATH:$HADOOP_HOME/*:$HADOOP_HOME/lib/*:$HADOOP_HOME/conf/
 #
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HADOOP_HOME/c++/Linux-amd64-64/lib:$HADOOP_HOME/src/c++/libhdfs:$JAVA_INSTALL/jre/lib/amd64/server:$JAVA_INSTALL:$HADOOP_HOME/lib:$JAVA_INSTALL/jre/lib/amd64:$CLASSPATH
 
+export GASNET_SPAWNFN=S
+export SSH_SERVERS=<the names of the computers in your cluster>
+export SSH_CMD=ssh
+export SSH_OPTIONS=-x
+export GASNET_ROUTE_OUTPUT=0
 ---------------------------------------------------------------------------
