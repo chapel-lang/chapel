@@ -1,6 +1,3 @@
-
-
-
 #
 # This file lists all the existing futures that are categorizes as "bug" or
 # "unimplemented feature."
@@ -423,6 +420,10 @@ Classes, Records, and Unions
   # arrays/diten/constructorArrayAliasReindex.future
 - Atomics are not passed to constructors by ref by default
   # functions/bradc/intents/test_construct_atomic_intent.future
+- The default record comparison operators (= and !=) require the
+  records to be of the same type
+  # classes/jplevyak/record_equal-1.future
+  # classes/jplevyak/record_equal-2.future
 - Using a comparison operator with a record and 'nil' results in an
   internal compiler error.
   # types/records/sungeun/recordNotNil1.future
