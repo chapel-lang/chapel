@@ -3,89 +3,110 @@ Using Chapel on Cray(R) Systems
 ===============================
 
 The following information is assembled to help Chapel users get up and
-running on Cray systems including the Cray XT(TM) XE(TM), XK(TM),
-XC(TM) and CS(TM) series systems.
+running on Cray systems including the Cray XC(TM), XE(TM), XK(TM),
+XT(TM), and CS(TM) series systems.
 
-If you are not familiar with Chapel, it is recommended that you start
-with the instructions in the top-level READMEs to get started with the
-language.
 
+----------------------------------------------------
+Getting Started with Chapel on Cray X-Series Systems
+----------------------------------------------------
 Chapel is available as a module for Cray X-series systems.  When it is
-installed on your system, you do not need to build the compiler and
-runtime.  Simply load the module with:
+installed on your system, you do not need to build Chapel from the
+open-source release (though you can); instead, simply load the module
+using:
 
      module load chapel
 
-then proceed directly to compiling your Chapel programs (Step 10
-below).  For information on obtaining and installing the Chapel module
-please contact your system administrator.
+Then proceed directly to "Using Chapel on a Cray System" below.  If
+instead you wish to build Chapel from open-source, continue on to
+"Building Chapel on a Cray System From Open Source" just below.
 
+For information on obtaining and installing the Chapel module please
+contact your system administrator.
+
+
+----------------------------------------------
+Getting Started with Chapel on Cray CS Systems
+----------------------------------------------
+On Cray CS systems, Chapel is not currently available as a module due
+to the wide diversity of software packages that Cray CS customers may
+choose to install on their system.  For this reason, Chapel must be
+built from open-source on Cray CS systems using the instructions just
+below.
+
+
+--------------------------------------------------
+Building Chapel for a Cray System From Open Source
+--------------------------------------------------
 
 1) Set CHPL_HOST_PLATFORM to the appropriate string for your particular
    Cray system.  These are the supported systems and strings:
+
        System       CHPL_HOST_PLATFORM
        ---------    ------------------
-       XT series        cray-xt
+       CS series        cray-cs
+       XC series        cray-xc
        XE series        cray-xe
        XK series        cray-xk
-       XC series        cray-xc
-       CS series        cray-cs
+       XT series        cray-xt
 
    For example:
 
-     export CHPL_HOST_PLATFORM=cray-xe
-
-   This will automatically set CHPL_COMM to GASNet.  See
-   README.multilocale for further information about running using
-   multiple locales and GASNet.
+     export CHPL_HOST_PLATFORM=cray-xc
 
 
-2) If your Cray system requires PBS to launch jobs onto the compute
-   nodes (or you simply want to use it as your job launch mechanism),
-   set CHPL_LAUNCHER to 'pbs-aprun'.  For example:
+2) Optionally, set the CHPL_LAUNCHER environment variable to indicate
+   how Chapel should launch jobs on your system:
 
-     export CHPL_LAUNCHER=pbs-aprun
+   On a Cray CS system, to...                   set CHPL_LAUNCHER to...
+     ...run jobs interactively on your system     gasnetrun_ibv
+     ...queue jobs using PBS (qsub)               pbs-gasnetrun_ibv
+     ...queue jobs using SLURM (sbatch)           slurm-gasnetrun_ibv
+     ...queue jobs using LSF (bsub)               lsf-gasnetrun_ibv
 
-   If your system only requires aprun to launch a job (or you want to
-   manage the qsub step yourself), set it to 'aprun'.  If you want to
-   manage all job queueing/launching responsibilities yourself, set it
-   to 'none'.  If left unset, the value of CHPL_LAUNCHER will be set
-   to aprun.  See $CHPL_HOME/doc/README.launcher for more information
-   on Chapel's launcher capabilities.
+     (On Cray CS systems, CHPL_LAUNCHER defaults to 'gasnetrun_ibv')
 
 
-3) When CHPL_LAUNCHER is set to pbs-aprun, you can optionally specify
-   a queue name using the environment variable CHPL_LAUNCHER_QUEUE.
-   For example:
+   On a Cray X-series system, to...             set CHPL_LAUNCHER to...
+     ...run jobs interactively on your system     aprun
+     ...queue jobs using PBS (qsub)               pbs-aprun
 
-     export CHPL_LAUNCHER_QUEUE=batch
+     (On Cray X-Series systems, CHPL_LAUNCHER defaults to 'aprun' if
+     it is in your path; 'none' otherwise)
 
-   If this variable is left unset, no queue name will be specified.
-   Alternatively, you can set the queue name on your Chapel program
-   command line using the --queue flag.
+   You can also set CHPL_LAUNCHER to 'none' if you prefer to manually
+   manage all queueing and job launch commands yourself.
 
-   You can also optionally set a wall clock time limit for the job
-   using CHPL_LAUNCHER_WALLTIME.  For example to specify a 10-minute
-   time limit, use:
-
-     export CHPL_LAUNCHER_WALLTIME=00:10:00
-
-   Alternatively, you can set the wall clock time limit on your Chapel
-   program command line using the --walltime flag.
+   For more information on Chapel's launcher capabilities and options,
+   refer to $CHPL_HOME/doc/README.launcher.
 
 
-4) Ensure that you have one of the following Programming Environment
-   modules loaded which will specify the C compiler used to compile
-   Chapel programs for the compute nodes:
+3) Select the target compiler that Chapel should use when compiling
+   code for the compute node:
 
-     - PrgEnv-cray
-     - PrgEnv-gnu
-     - PrgEnv-intel
-     - PrgEnv-pgi
+   On a Cray CS series system, set the CHPL_TARGET_COMPILER
+     environment variable to indicate which compiler to use (and make
+     sure that the compiler is in your path).
+
+     To request...                    set CHPL_TARGET_COMPILER to...
+
+       ...the GNU compiler (gcc)        gnu    (the default)
+       ...the Intel compiler (icc)      intel
+       ...the PGI compiler (pgcc)       pgi
 
 
-5) By default, g++ will be used to compile code that runs on the login
-   nodes, such as the Chapel compiler and launcher code.  Optionally,
+   On a Cray X-series system, ensure that you have one of the
+     following Programming Environment modules loaded to specify your
+     target compiler:
+
+       - PrgEnv-cray
+       - PrgEnv-gnu
+       - PrgEnv-intel
+       - PrgEnv-pgi
+
+
+4) By default, g++ will be used to compile code that runs on the login
+   node, such as the Chapel compiler and launcher code.  Optionally,
    you can override this default by setting CHPL_HOST_COMPILER to one
    of the following values:
 
@@ -95,63 +116,122 @@ please contact your system administrator.
      pgi       : the PGI compiler suite -- pgcc and pgCC
 
 
-6) Make sure you're in the top-level chapel/ directory and make/re-make the
+5) Make sure you're in the top-level chapel/ directory and make/re-make the
    compiler and runtime:
 
      gmake
 
+   Note that a single Chapel installation can support multiple
+   configurations simultaneously and that you can switch between them
+   simply by changing any of the above settings.  However, each
+   configuration must be built separately.  Thus, you can change any
+   of the settings in steps 1-4, and then re-run step 5 in order to
+   create additional installations.  Thereafter, you can switch
+   between any of these configurations without rebuilding.
 
-7) Run the appropriate util/setchplenv script for your shell from the top-level
-   chapel/ directory.  For example:
 
-     source util/setchplenv.bash
+-----------------------------
+Using Chapel on a Cray System
+-----------------------------
+
+1) If you are working from a Chapel module...
+
+     a) Load the module using 'module load chapel'
+     b) Optionally select a launcher, as in step 2 above
+     c) Select a target compiler, as in step 3 above
+
+   If you are working from an open-source installation...
+
+     a) Set your host platform as in step 1 above
+     b) Optionally select a launcher, as in step 2 above
+     c) Select a target compiler, as in step 3 above
+     d) Set CHPL_HOME and your paths by invoking the appropriate
+        util/setchplenv script for your shell.  For example:
+
+          source util/setchplenv.bash
 
 
-8)  Compile your Chapel program as usual.  See README.compiling for
-    details.  For example:
+2) Compile your Chapel program.  For example:
 
       chpl -o hello6-taskpar-dist $CHPL_HOME/examples/hello6-taskpar-dist.chpl
 
-
-9) If CHPL_LAUNCHER is not set to 'none', when you compile a Chapel
-   program for your Cray system, you should see two binaries (e.g.,
-   hello6-taskpar-dist and hello6-taskpar-dist_real).  The first
-   binary contains code to launch the Chapel program onto the compute
-   nodes, as specified by your CHPL_LAUNCHER setting.  The second
-   contains the program code itself; it is not intended to be executed
-   directly from the shell prompt.
+   See README.compiling or 'man chpl' for further details.
 
 
-10) Multi-locale executions require the number of locales to be
-    specified on the command line.  Other than this, execute your
-    Chapel program as usual.  For example:
+3) If CHPL_LAUNCHER is set to anything other than 'none', when you
+   compile a Chapel program for your Cray system, you should see two
+   binaries (e.g., hello6-taskpar-dist and hello6-taskpar-dist_real).
+   The first binary contains code to launch the Chapel program onto
+   the compute nodes, as specified by your CHPL_LAUNCHER setting.  The
+   second contains the program code itself; it is not intended to be
+   executed directly from the shell prompt.
 
-      ./hello6-taskpar-dist -nl 2
+   You can use the -v flag to see the commands used by the launcher
+   binary to start your program.
 
-   You can use the -v flag to see the commands used to launch your
-   program.  See README.launcher for further details.
+   If CHPL_LAUNCHER is set to pbs-aprun or pbs-gasnetrun_ibv:
+
+     a) You can optionally specify a queue name using the environment
+        variable CHPL_LAUNCHER_QUEUE.  For example:
+
+          export CHPL_LAUNCHER_QUEUE=batch
+
+        If this variable is left unset, no queue name will be
+        specified.  Alternatively, you can set the queue name on your
+        Chapel program command line using the --queue flag.
+
+     b) You can also optionally set a wall clock time limit for the
+        job using CHPL_LAUNCHER_WALLTIME.  For example to specify a
+        10-minute time limit, use:
+
+          export CHPL_LAUNCHER_WALLTIME=00:10:00
+
+        Alternatively, you can set the wall clock time limit on your
+        Chapel program command line using the --walltime flag.
+
+   For further information about launchers, or about launchers other
+   than PBS, please refer to $CHPL_HOME/doc/README.launcher.
 
 
-11) If your Cray system has compute nodes with varying numbers of
-    cores, you can request nodes with at least a certain number of
-    cores using the variable CHPL_LAUNCHER_CORES_PER_LOCALE.  For
-    example, on a Cray system with at least 24 cores per compute node,
-    to request nodes with at least 24 cores you would use:
+4) Execute your Chapel program.  Multi-locale executions require the
+   number of locales (compute nodes) to be specified on the command
+   line.  For example:
+
+     ./hello6-taskpar-dist -nl 2
+
+   Requests the program to be executed using two locales.
+
+
+5) If your Cray system has compute nodes with varying numbers of
+   cores, you can request nodes with at least a certain number of
+   cores using the variable CHPL_LAUNCHER_CORES_PER_LOCALE.  For
+   example, on a Cray system in which some compute nodes have 24 or
+   more cores per compute node, you could request nodes with at least
+   24 cores using:
 
       export CHPL_LAUNCHER_CORES_PER_LOCALE=24
 
 
-12) If your Cray system has compute nodes with varying numbers of CPUs
-    per compute unit, you can request nodes with a certain number of
-    CPUs per compute unit using the variable CHPL_LAUNCHER_CPUS_PER_CU.
-    For example, on a Cray XC series system with some nodes having at
-    least 2 CPUs per compute unit, to request running on those nodes you
-    would use:
+6) If your Cray system has compute nodes with varying numbers of CPUs
+   per compute unit, you can request nodes with a certain number of
+   CPUs per compute unit using the variable CHPL_LAUNCHER_CPUS_PER_CU.
+   For example, on a Cray XC series system with some nodes having at
+   least 2 CPUs per compute unit, to request running on those nodes
+   you would use:
 
       export CHPL_LAUNCHER_CPUS_PER_CU=2
 
-    Currently, the only legal values for CHPL_LAUNCHER_CPUS_PER_CU are 0
-    (the default), 1, and 2.
+   Currently, the only legal values for CHPL_LAUNCHER_CPUS_PER_CU are
+   0 (the default), 1, and 2.
+
+
+7) For more information on...          see...
+
+   ...CHPL_* environment settings               README.chplenv
+   ...Compiling Chapel programs                 README.compiling
+   ...Launcher options                          README.launcher
+   ...Executing Chapel programs                 README.executing
+   ...Running multi-locale Chapel programs      README.multilocale
 
 
 --------------------------------------
@@ -161,30 +241,30 @@ Cray File Systems and Chapel execution
 For best results, it is recommended that you execute your Chapel
 program by placing the binaries on a file system shared between the
 login node and compute nodes (typically Lustre), as this will provide
-the greatest amount of transparency when executing your program.  In
+the greatest degree of transparency when executing your program.  In
 some cases, running a Chapel program from a non-shared file system
 will make it impossible to launch onto the compute nodes.  In other
 cases, the launch will succeed, but any files read or written by the
-Chapel program will opened relative to the compute node's file system
-rather than the login node's.
+Chapel program will be opened relative to the compute node's file
+system rather than the login node's.
 
 
 ----------------------------------------------------
-Special Notes for Cray XE, XK, and XC Series Systems
+Special Notes for Cray XC, XE, and XK Series Systems
 ----------------------------------------------------
 
 Native Runtime Layers
 ---------------------
 
 The README.multilocale and README.tasking files describe a variety of
-communication layers and tasking layers that can be used by Chapel
-programs.  By default, Chapel programs on Cray XE, XK, and XC series
-systems use the GASNet communication layer and the FIFO tasking layer.
-There are several other tasking layers available that can also be used
-with the GASNet communication layer.
+communication and tasking layers that can be used by Chapel programs.
+By default, Chapel programs on Cray systems use the GASNet
+communication layer and the FIFO tasking layer.  There are several
+other tasking layers available that can also be used with the GASNet
+communication layer.
 
 In addition to the standard runtime layers available in any Chapel
-release, the pre-built Chapel modules for Cray XE, XK, and XC series
+release, the pre-built Chapel modules for Cray XC, XE, and XK series
 systems support a combination of Cray-specific communication, tasking,
 and threading layers.  These make use of the Cray systems' hardware
 and/or software to produce enhanced performance for Chapel programs.
@@ -367,7 +447,7 @@ Network Atomics
 ---------------
 
 The Gemini(TM) and Aries(TM) networks support remote atomic memory
-operations (AMOs) on XE, XK and XC series systems.  When the CHPL_COMM
+operations (AMOs) on XC, XE, and XK series systems.  When the CHPL_COMM
 environment variable is set to "ugni", the following operations on
 remote atomics are done using the network:
 
