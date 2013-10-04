@@ -2,9 +2,9 @@
 Chapel implementation of miniMD
 ===============================
 
-This directory contains a Chapel port of the "mini Molecular Dynamics" (miniMD) 
-benchmark. (see http://mantevo.org/ for the C++ reference version 
-and more details).
+This directory contains a Chapel port of the "mini Molecular Dynamics"
+(miniMD) benchmark. (see http://mantevo.org/ for the C++ reference
+version and more details).
 
 ------
 Status
@@ -17,32 +17,37 @@ this file.
 
 Four versions of miniMD are included in this release. 
 
-The first three are in the 'distribution/' directory. Initially these 
-three versions were in separate directories, they shared much of the same code.
-They now exist in the same directory, occasionally using conditionals to 
-do things slightly differently.
+The first three are in this directory and share a single source base.
+The fourth is in the explicit/ subdirectory.
 
-* The first version is single-node. It is compiled by default when 
-  CHPL_COMM=none.
+* The first version is a single-locale code. It is compiled by default
+  when CHPL_COMM=none.
 
-* The second version uses the Block distribution, and is compiled by default 
-  when CHPL_COMM=gasnet. It is the slowest version by far, as much of the 
-  communication is fine-grain. 
+* The second version uses the Block distribution, and is compiled by
+  default when CHPL_COMM=gasnet. It is the slowest version by far, as
+  the communication is performed on a very fine-grain, demand-driven
+  manner.
 
-* The third version uses a modified Block distribution, and is compiled by 
-  when the 'useStencilDist' compiler flag is true. This version optimizes 
-  communication by caching necessary values on each node. Thanks to the 
-  elegance of Chapel's distributions, most of the changes are hidden from 
-  the user. A significant difference is the need to manually call 'updateFluff',
-  which will cache necessary values (best done after writing to the array).
+* The third version uses a modified Block distribution
+  (StencilDist.chpl), and is built by compiling with the
+  'useStencilDist' config param set to true. This version optimizes
+  communication by caching remote values on each locale. Thanks to the
+  elegance of Chapel's distributions, most of the changes are hidden
+  from the user. A significant difference is the need to manually call
+  'updateFluff()', which will cache necessary neighboring values (best
+  done after writing to the array).
 
-* The fourth and final version exists in the 'explicit/' directory. This 
-  version is essentially SPMD, and served as a starting point for the 
-  StencilDist version.
+* The fourth and final version exists in the 'explicit/'
+  directory. This version is essentially an SPMD version written in
+  Chapel, and served as a starting point for the StencilDist version.
 
-Chapel's distributed performance is a work in progress. These versions are much 
-slower when compared to the C++ MPI reference. Work in the compiler and in the 
-miniMD code itself will strive to improve performance in this area.
+Chapel's distributed performance is a work in progress. These versions
+are much slower when compared to the C++ MPI reference. Work in the
+compiler and in the miniMD code itself will strive to improve
+performance in this area.  We have also seen scalability bottlenecks
+on single-locale runs with large core counts due to overdecomposition
+of parallelism.
+
 
 -----
 Files
@@ -98,6 +103,7 @@ Chapel-specific optimizations:
   As in the Chapel docs, do the following: 
     export CHPL_MEM=tcmalloc
 
+
 -------
 Running
 -------
@@ -107,6 +113,7 @@ While miniMD can read from input files, it does not require them.
 For legal reasons, input files available from the C++ are not currently 
 bundled with this release of miniMD. However, you are free to visit 
 the mantevo website, download the reference version, and use those files.
+
 
 -----------------
 Execution Options
@@ -136,6 +143,7 @@ use the '--pHelp' flag to display a list of command line options:
 * force: string -- set interaction mode (lj or eam)
 
 * data_file: string -- read configuration from LAMMPS data file
+
 
 ---------
 Callgraph
@@ -178,6 +186,7 @@ entry point
     -> thermo.compute
     -> cleanup
 
+
 ----------
 Vocabulary
 ----------
@@ -191,6 +200,8 @@ Some important vocabulary for understanding the code:
            error. We can avoid this by extending the array's bounds 
            by the size of the stencil. The area outside of the portion 
            of the array we care about is called fluff.
+
+
 ---------
 Debugging
 ---------
@@ -231,6 +242,7 @@ C) Inspect the position/velocity/force of atoms (requires correct reference)
 
 * Segfaults / Bad array accesses - With incorrect code an atom can 'shoot' out 
 of the problem space before boundary conditions can be re-asserted. 
+
 
 -----
 TODOS
