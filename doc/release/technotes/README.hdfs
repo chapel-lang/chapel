@@ -175,9 +175,10 @@ into.
 
 (6) 
   * Setting up Chapel:
-    - After compiling with CHPL_COMM=gasnet (see README.multilocale),
-      you need to set the environment variables below (note order of
-      the SSH_SERVERS matters).
+    - You'll need to set up your Chapel environment to target multiple
+      locales in the standard way (see README.multilocale and the
+      "Settings to run Chapel on multiple nodes" section of the
+      .bashrc below).
 
     - After this you should be able to run Chapel code with HDFS over
       a cluster of computers the same way as you normally would.
@@ -214,6 +215,9 @@ export CLASSPATH=$CLASSPATH:$HADOOP_HOME/*:$HADOOP_HOME/lib/*:$HADOOP_HOME/conf/
 #
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HADOOP_HOME/c++/Linux-amd64-64/lib:$HADOOP_HOME/src/c++/libhdfs:$JAVA_INSTALL/jre/lib/amd64/server:$JAVA_INSTALL:$HADOOP_HOME/lib:$JAVA_INSTALL/jre/lib/amd64:$CLASSPATH
 
+#
+# Settings to run Chapel on multiple nodes
+#
 export GASNET_SPAWNFN=S
 export SSH_SERVERS=<the names of the computers in your cluster>
 export SSH_CMD=ssh
