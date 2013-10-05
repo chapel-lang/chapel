@@ -14,6 +14,9 @@ variables, an unstructured mechanism for synchronizing tasks.
 introduce concurrency into a program.
 \item \rsec{Coforall} describes the coforall loop, another structured way to
 introduce concurrency into a program.
+\item \rsec{Task_Intents} specifies how variables from outer scopes
+are handled within \chpl{begin}, \chpl{cobegin} and \chpl{coforall}
+statements.
 \item \rsec{Sync_Statement} describes the sync statement, a structured
 way to control parallelism.
 \item \rsec{Serial} describes the serial statement, a structured way to suppress
@@ -27,21 +30,36 @@ support atomic transactions.
 \index{task parallelism}
 \index{parallelism!task}
 
-A Chapel \emph{task} is a distinct context of execution that maybe
+A Chapel \emph{task} is a distinct context of execution that may be
 running concurrently with other tasks.  Chapel provides a simple
-construct, the begin statement, to create tasks, introducing
+construct, the \chpl{begin} statement, to create tasks, introducing
 concurrency into a program in an unstructured way.  In addition,
 Chapel introduces two type qualifiers, \chpl{sync} and \chpl{single},
 for synchronization between tasks.
 
-Chapel provides two constructs, the cobegin and coforall statements,
+Chapel provides two constructs, the \chpl{cobegin} and \chpl{coforall} statements,
 to introduce concurrency in a more structured way.  These constructs
-create multiple tasks but do not continue until the tasks have
+create multiple tasks but do not continue until these tasks have
 completed.  In addition, Chapel provides two constructs, the \chpl{sync} and
 \chpl{serial} statements, to insert synchronization and suppress parallelism.
 All four of these constructs can be implemented through judicious uses
 of the unstructured task-parallel constructs described in the previous
-section.
+paragraph.
+
+\index{task parallelism!task creation}
+\index{task creation}
+Tasks are considered to be created when execution reaches the start
+of a \chpl{begin}, \chpl{cobegin}, or \chpl{coforall} statement.
+When the tasks are actually executed depends on the Chapel
+implementation and run-time execution state.
+
+\index{task function}
+\index{task parallelism!task function}
+A task is represented as a call to a \emph{task function}, whose body
+contains the Chapel code for the task. Variables defined in outer
+scopes are considered to be passed into a task function by blank intent,
+unless a different \emph{task intent} is specified explicitly
+by a \sntx{task-intent-clause}.
 
 
 \section{The Begin Statement}
@@ -53,7 +71,7 @@ The begin statement creates a task to execute a statement.  The syntax
 for the begin statement is given by
 \begin{syntax}
 begin-statement:
-  `begin' statement
+  `begin' task-intent-clause[OPT] statement
 \end{syntax}
 Control continues concurrently with the statement following the
 begin statement.
@@ -82,6 +100,11 @@ begin statement is executed, a new task is created that will execute
 the \chpl{writeln} statement within it.  However, execution will
 continue immediately after task creation with the next statement.
 \end{chapelexample}
+
+A begin statement creates a single task function,
+whose body is the body of the begin statement.
+The handling of the outer variables within the task function and
+the role of \sntx{task-intent-clause} are defined in \rsec{Task_Intents}.
 
 Yield and return statements are not allowed in begin blocks.  Break
 and continue statements may not be used to exit a begin block.
@@ -407,10 +430,14 @@ The cobegin statement is used to introduce concurrency within a
 block.  The \chpl{cobegin} statement syntax is
 \begin{syntax}
 cobegin-statement:
-  `cobegin' block-statement
+  `cobegin' task-intent-clause[OPT] block-statement
 \end{syntax}
-A new task is created for each statement in the block.  Control
+
+A new task and a corresponding task function are created for each statement
+in the \sntx{block-statement}.  Control
 continues when all of the tasks have finished.
+The handling of the outer variables within each task function and
+the role of \sntx{task-intent-clause} are defined in \rsec{Task_Intents}.
 
 Return statements are not allowed in cobegin blocks.  Yield statement
 may only be lexically enclosed in cobegin blocks in parallel
@@ -458,16 +485,21 @@ The coforall loop is a variant of the cobegin statement in loop form.
 The syntax for the coforall loop is given by
 \begin{syntax}
 coforall-statement:
-  `coforall' index-var-declaration `in' iteratable-expression `do' statement
-  `coforall' index-var-declaration `in' iteratable-expression block-statement
-  `coforall' iteratable-expression `do' statement
-  `coforall' iteratable-expression block-statement
+  `coforall' index-var-declaration `in' iteratable-expression task-intent-clause[OPT] `do' statement
+  `coforall' index-var-declaration `in' iteratable-expression task-intent-clause[OPT] block-statement
+  `coforall' iteratable-expression task-intent-clause[OPT] `do' statement
+  `coforall' iteratable-expression task-intent-clause[OPT] block-statement
 \end{syntax}
 
 The \chpl{coforall} loop creates a separate task for each iteration of
 the loop.  Control continues with the statement following
 the \chpl{coforall} loop after all tasks corresponding to the
 iterations of the loop have completed.
+
+The single task function created for a \chpl{coforall} and invoked by
+each task contains the loop body.
+The handling of the outer variables within the task function and
+the role of \sntx{task-intent-clause} are defined in \rsec{Task_Intents}.
 
 Return statements are not allowed in coforall blocks.  Yield statement
 may only be lexically enclosed in coforall blocks in parallel
@@ -516,6 +548,138 @@ variable \chpl{finished$\mbox{\texttt{\$}}$} is used to signal that
 all of the tasks have completed.  Thus control does not continue past
 the last line until all of the tasks have completed.
 \end{chapelexample}
+
+
+\section{Task Intents}
+\label{Task_Intents}
+\index{task intents}
+\index{task parallelism!task functions}
+\index{task parallelism!task intents}
+
+% Would be nice to give this arrangement a name. Could say
+% "the task intent rule", although that sounds a bit like
+% a colloquialism.
+If a variable is referenced within the lexical scope of a
+\chpl{begin}, \chpl{cobegin}, or \chpl{coforall} statement
+but is declared outside that statement, it is considered
+to be passed as an actual argument to the corresponding task function 
+at task creation time. All references to the variable
+within the task function implicitly refer to the task function's
+corresponding formal argument.
+
+Each formal argument of a task function has the blank intent by default.
+For variables of primitive and class types, this has the effect
+of capturing the value of the variable at task creation time
+and referencing that value instead of the original variable
+within the lexical scope of the task construct.
+
+A formal can be given the \chpl{ref} intent explicitly by listing it
+in the optional \sntx{task-intent-clause}. For variables of most
+types, this enables the task construct to modify the original variable
+or to read the original variable's value after concurrent modifications.
+
+The syntax of the task intent clause is:
+
+\begin{syntax}
+task-intent-clause:
+  `ref' ( var-list )
+
+var-list:
+  identifier
+  identifier, var-list
+\end{syntax}
+
+The implicit treatment of outer scope variables as the task function's
+formal arguments applies to both global and local variables.
+It applies to variable references within the lexical scope
+of a task construct, but does not extend to its dynamic scope, i.e.,
+to the functions called from the task(s) but declared outside of
+the lexical scope.
+The loop index variables of a \chpl{coforall} statement are not
+subject to such treatment within that statement; however, they are
+subject to such treatment within nested task constructs, if any.
+
+
+\begin{rationale}
+% Ideally, replace "task intents" throughout the foregoing
+% with a more appropriate name for this feature.
+The primary motivation for task intents is to avoid some races on
+scalar/record variables, which are possible when one task modifies a
+variable and another task reads it. Without task intents,
+for example, it would be easy to introduce and overlook a bug
+illustrated by this simplified example:
+
+  \begin{chapel}
+  {
+    var i = 0;
+    while i < 10 {
+      begin {
+        f(i);
+      }
+      i += 1;
+    }
+  }
+  \end{chapel}
+
+If all the tasks created by the \chpl{begin} statement start executing
+only after the \chpl{while} loop completes, and \chpl{i} within the
+\chpl{begin} is treated as a reference to the original \chpl{i},
+there will be ten tasks executing \chpl{f(10)}. However, the user most
+likely intended to generate ten tasks executing
+\chpl{f(0)}, \chpl{f(1)}, ..., \chpl{f(9)}.
+Task intents ensure that, regardless of the timing of task execution.
+
+Another motivation for task intents is that referring to a captured
+copy in a task is often more efficient than referring to the original
+variable. That's because the copy is a local constant, e.g. it could
+be placed in a register when it fits.  Without task intents,
+references to the original variable would need to be implemented using
+a pointer dereference. This is less efficient and can hinder optimizations
+in the surrounding code, for example loop-invariant code motion.
+
+Furthermore, in the above example the scope where \chpl{i} is declared
+may exit before all the ten tasks complete.  Without task intents,
+the implementation needs to ensure that \chpl{i} can still be
+referenced by the tasks after its scope ends.
+
+We decided to treat \chpl{cobegin} and \chpl{coforall} statements the
+same way as \chpl{begin}. This is for consistency and to make the
+race-avoidance benefit available to more code.
+
+We decided to apply task intents to global variables, in addition to local
+variables. Again, this is for consistency. One could view global
+variables differently than local variables (e.g. a global variable is
+``always available''), but we favored consistency over such an approach.
+
+We decided not to apply task intents to ``closure'' variables, i.e.,
+the variables in the dynamic scope of a task construct. This is to
+keep this feature manageable, so that all variables subject to task
+intents can be obtained by examining just the lexical scope of the
+task construct. In general, the set of closure variables can be hard
+to determine, unweildy to implement and reason about, it is unclear
+what to do with extern functions, etc.
+\end{rationale}
+
+
+\begin{future}
+We would like to make other intents available for use in a
+\sntx{task-intent-clause}.
+For a given intent, we would also like to provide a blanket clause,
+which would apply the intent to all variables.
+An example of syntax would be \chpl{ref(*)}.
+\end{future}
+
+\begin{openissue}
+We consider extending task intents to \chpl{forall} loops
+(\rsec{Forall}, \rsec{Forall_Expressions}). This could be seen
+as a natural application of the idea in yet another context,
+to extend its benefits and for consistency. The details and
+semantics of task intents for a \chpl{forall} need to be
+worked out. We would like to gain some experience with task intents
+for \chpl{begin}, \chpl{cobegin}, \chpl{coforall} before venturing
+into \chpl{forall}.
+\end{openissue}
+
 
 \section{The Sync Statement}
 \label{Sync_Statement}
