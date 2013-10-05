@@ -584,6 +584,11 @@ How tuples should be handled under blank intents is an open issue;
 particularly for heterogeneous tuples whose components would fall into
 separate categories in the table above.  One proposed approach is to
 apply the blank intent to each component of the tuple independently.
+
+Another open issue arises if the meaning of the \chpl{const} intent is
+not defined by the language completely. If so, should the meaning of
+the blank intent have that same flexibility? In particular, should the
+blank intent for records mean \chpl{const} or \chpl{const in}?
 \end{openissue}
 
 
