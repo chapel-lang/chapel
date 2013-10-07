@@ -40,8 +40,10 @@ Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
 - improved tasking semantics w.r.t. references to variables from outer scopes
   (e.g., in 'var x=0; begin { ...x... }', 'x' is a const copy within the task)
+  (see 'Task Intents' section in the language specification)
 - added 'ref' clauses to obtain the previous reference tasking semantics
   (e.g., 'var x: int; begin ref(x) { ...x... }' causes '...x...' to refer to x)
+  (see 'Task Intents' section in the language specification)
 - made blank intents for atomic variables get interpreted as 'ref'
   (see the 'Argument Intents' section in the language specification)
 - added support for ranges, domains/arrays with small-int index types
@@ -204,6 +206,8 @@ LLVM Back-end Changes
 ---------------------
 - added wide pointer support for the LLVM back-end via CHPL_WIDE_POINTERS
   (see doc/technotes/README.llvm and doc/README.chplenv)
+- added support for LLVM-based communication optimizations via --llvm-wide-opt
+  (see doc/technotes/README.llvm)
 
 Testing System
 --------------
