@@ -274,7 +274,7 @@ examples of what times out:
  test_array_slicing3 (07/24/13, 07/12/13, 06/08/12, 6/16, 3/29/13, 5/3/13)
  release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4) (04/08/13)
  studies/cholesky/jglewis/version2/performance/test_cholesky_performance (06/20/13)
- multilocale/diten/needMultiLocales/coforallon_maxThreads (07/04/13)
+ multilocale/diten/needMultiLocales/coforallon_maxThreads (07/04/13, 10/02/13)
  etc.
 
 non-deterministic compilation timeouts with gasnet (UNASSIGNED)

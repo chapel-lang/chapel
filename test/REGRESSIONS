@@ -328,6 +328,17 @@ cray-xt-cray/cce-specific regressions
 (Checked for accuracy 2/26/2013)
 =====================================
 
+libsci (10/05/13)
+-----------------
+A large number of tests fail because the module xt-libsci/12.1.2 is now being
+loaded by the PrgEnvs on chpbld02.  They fail with the error:
+ld: cannot find -lsci
+error: compiling generated source
+
+Ryan has been informed of this, for now the get around is to
+module unload xt-libsci
+
+
 New CCE 8.2 warning: An unsigned integer is being compared to zero (7/16/13)
 ----------------------------------------------------------------------------
 [Error matching program output for release/examples/benchmarks/hpcc/ra-atomics (compopts: 1)]
