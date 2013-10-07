@@ -271,8 +271,8 @@ OPTIONS
                     optimizations.
                     This option requires --llvm and packed wide pointers.
                     Packed wide pointers are enabled by setting
-                    CHPL_WIDE_POINTERS = node16.  You must also supply --fast
-                    to enable wide pointer optimizations.  This flag allows
+                    CHPL_WIDE_POINTERS = node16. You must also supply --fast
+                    to enable wide pointer optimizations. This flag allows
                     existing LLVM optimizations to work with wide pointers -
                     for example, they might be able to hoist a 'get' out of a
                     loop. See $CHPL_HOME/doc/technotes/README.llvm for details.
