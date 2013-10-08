@@ -7,6 +7,7 @@ inline proc NAN return chpl_macro_NAN();
 inline proc abs(i : int(?w)) return if i < 0 then -i else i;
 inline proc abs(i : uint(?w)) return i;
 proc abs(param i : integral) param return if i < 0 then -i else i;
+inline proc abs(r : real) return fabs(r);
 inline proc abs(x : complex(?w)) return sqrt(x.re*x.re + x.im*x.im);
 
 inline proc sgn(i : int(?w))
