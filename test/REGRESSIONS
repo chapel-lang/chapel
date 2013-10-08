@@ -190,21 +190,20 @@ deadlock due to impact of small # of threads on root locale replication (08/21/1
 
 ==============================================
 gasnet-fast regressions (other than the above)
-(checked for accuracy 8/31/2013)
+(checked for accuracy 10/08/13)
 ==============================================
 
-memory doesn't match (05/28/09)
--------------------------------
-[Error matching program output for memory/shannon/memstatPrint]
-
 unable to start polling thread (???)
+(in this configuration: linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc)
 ------------------------------------
-[Error matching program output for memory/shannon/outofmemory/mallocOutOfMemory]
+[Error matching program output for memory/shannon/outofmemory/mallocOutOfMemory] (10/08/13)
 
 execution timeouts
 (in this configuration: linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc)
 ------------------
 [Error: Timed out executing program domains/johnk/capacityParSafe (compopts: 1)] (since 12/16/2012)
+[Error: Timed out executing program multilocale/gbt/hello-numThreads-1] (10/08/13)
+[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)] (10/08/13)
 
 
 =======================
@@ -248,7 +247,13 @@ ptr-to-ssize_t/ptr-to-int32_t warnings (Proposed fix is to preserve type
 alias identifiers through codegen rather than dropping them in the compiler
 as we currently do)
 ---------------------------------------------------------------------------
+[Error matching compiler output for release/examples/benchmarks/shootout/nbody]
 [Error matching compiler output for release/examples/primers/fileIO]
+[Error matching program output for release/examples/benchmarks/miniMD/explicit/miniMD (compopts: 1)]
+[Error matching program output for release/examples/benchmarks/miniMD/miniMD (compopts: 1, execopts: 1)]
+[Error matching program output for release/examples/benchmarks/miniMD/miniMD (compopts: 1, execopts: 2)]
+[Error matching program output for release/examples/benchmarks/miniMD/miniMD (compopts: 2, execopts: 1)]
+[Error matching program output for release/examples/benchmarks/miniMD/miniMD (compopts: 2, execopts: 2)]
 [Error matching program output for studies/amr/advection/amr/AMR_AdvectionCTU_driver]
 [Error matching program output for studies/amr/advection/grid/Grid_AdvectionCTU_driver]
 [Error matching program output for studies/amr/advection/level/Level_AdvectionCTU_driver]
@@ -460,6 +465,8 @@ signal 11
 [Error matching program output for parallel/taskCompare/lydia/coforall (execopts: 2)]
 [Error matching program output for parallel/taskCompare/lydia/for-begin (execopts: 1)]
 [Error matching program output for parallel/taskCompare/lydia/for-begin (execopts: 2)]
+[Error matching program output for release/examples/benchmarks/shootout/threadring (execopts: 1)]
+[Error matching program output for release/examples/benchmarks/shootout/threadring (execopts: 2)]
 [Error matching program output for sparse/bradc/parIter/spsZipper2]
 [Error matching program output for sparse/vass/sparse-mismatch-dom-err-arr1dom1dom2]
 [Error matching program output for sparse/vass/sparse-mismatch-dom-err-arr1dom2dom1]
@@ -748,6 +755,10 @@ never worked (02/24/11)
 -----------------------
 [Error matching compiler output for extern/bradc/copyExternRecord/extern_test (compopts: 1)]
 
+passing argument # of 'func' from incompatible pointer type
+-----------------------------------------------------------
+[Error matching compiler output for extern/ferguson/c_strings (compopts: 1)] (10/08/13)
+
 problems in generated code (02/16/12 -- first run in awhile)
 ------------------------------------------------------------
 [Error matching compiler output for types/typedefs/bradc/redefineTypeNames]
@@ -767,6 +778,7 @@ wrong output (02/16/12 -- first run in awhile)
 ??? (wrong output)
 ------------------
 [Error matching program output for classes/figueroa/RecordConstructor2]
+[Error matching program output for studies/amr/diffusion/level/Level_DiffusionBE_driver (compopts: 1)] (new 10/08/13)
 
 segv due to turning on inlining (12/7/12)
 -----------------------------------------

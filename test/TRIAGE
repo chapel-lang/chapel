@@ -76,19 +76,23 @@ release/examples/benchmarks/miniMD/ folder and subfolders (bradc/lydia)
 9/30/13: For organizational sake, the miniMD timeouts are all in here, although
 some of them are noisier than others
 
+  * marks those that seemed to be fixed on 10/08/13, presumably by Brad's
+    dataParTasksPerLocale change in r22097
+
   release/examples/benchmarks/miniMD/miniMD (compopts:2) compilation and
   (execopts: 1, 2):
-    linux64.intel.none.fifo.pthreads
-    cray-xc.cray-prgenv-cray.none.fifo.pthreads
-    cray-xc.cray-prgenv-cray.none.fifo.pthreads--linux-gnu
-    linux64.pgi.none.fifo.pthreads
+    * linux64.intel.none.fifo.pthreads
+    * cray-xc.cray-prgenv-cray.none.fifo.pthreads
+    * cray-xc.cray-prgenv-cray.none.fifo.pthreads--linux64-gnu
+    * cray-xc.cray-prgenv-pgi.none.fifo.pthreads--linux64-gnu
+    * linux64.pgi.none.fifo.pthreads
 
   release/examples/benchmarks/miniMD/miniMD (compopts: 1) compilation:    
-    cray-xc.cray-prgenv-cray.none.fifo.pthreads
+    * cray-xc.cray-prgenv-cray.none.fifo.pthreads
     cray-xc.cray-prgenv-cray.none.fifo.pthreads--linux-gnu
 
   release/examples/benchmarks/miniMD/explicit/miniMD compilation:
-    all pgi builds
+    * all pgi builds
 
 linux64.gnu.gasnet.qthreads.none (sungeun)
 ------------------------------------------
@@ -131,8 +135,17 @@ at present.  See the archives for more detail.
 
 Perf (linux64.gnu.none.fifo.pthreads)
 -------------------------------------
-[Error: Timed out executing program studies/hpcc/RA/bradc/parallel/ra-dist (compopts: 1)] (06/20/13, 9/13/13: chap04)
-[Error: Timed out executing program studies/shootout/thread-ring/thread-ring-coforall-begin] (9/23/13)
+[Error matching compiler output for studies/shootout/mandelbrot/mandelbrot-fancy] (10/08/13: chap03, chap04, bradc-lnx)
+[Error: Timed out executing program release/examples/benchmarks/hpcc/ptrans (compopts: 1)] (10/08/13: chap04)
+[Error: Timed out executing program studies/hpcc/RA/bradc/parallel/ra-dist (compopts: 1)] (10/08/13: chap04)
+[Error: Timed out executing program release/examples/benchmarks/shootout/threadring] (10/08/13: chap03, bradc-lnx)
+[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_iterator_7 (compopts: 1)] (10/08/13: chap03, chap04, bradc-lnx)
+[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_rangesub_5 (compopts: 1)] (10/08/13: chap03, chap04, bradc-lnx)
+[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_reductions_6 (compopts: 1)] (10/08/13: chap03, chap04, bradc-lnx)
+[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_vector_4 (compopts: 1)] (10/08/13: chap03, chap04, bradc-lnx)
+[Error: Timed out executing program studies/shootout/thread-ring/lydia/thread-ring-coforall-begin] (10/08/13: chap03)
+[Error: Timed out executing program studies/shootout/thread-ring/lydia/thread-ring-coforall] (10/08/13: chap03, bradc-lnx)
+[Error: Timed out executing program studies/shootout/thread-ring/lydia/thread-ring-for-begin] (10/08/13: chap03, bradc-lnx)
 
 ==============================================================================
 Were once flagged as causing noise regularly, but not as familiar as the above
@@ -268,7 +281,7 @@ examples of what times out:
  distributions/robust/arithmetic/kernels/jacobi (still timing out 5/5/13)
  distributions/nelson/MultiBlockDist2DLocales (maybe resolved?)
  distributions/robust/arithmetic/modules/test_module_Sort (maybe resolved?)
- distributions/robust/arithmetic/stress/test_many_domains (08/22/13)
+ distributions/robust/arithmetic/stress/test_many_domains (10/08/13)
  distributions/robust/arithmetic/stress/test_many_array (4/29/13)
  distributions/dm/t2 (2012/08/15)
  test_array_slicing3 (07/24/13, 07/12/13, 06/08/12, 6/16, 3/29/13, 5/3/13)
