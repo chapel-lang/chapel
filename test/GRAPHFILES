@@ -31,6 +31,7 @@ studies/shootout/thread-ring/thread-ring.graph
 studies/shootout/mandelbrot/mandelbrot.graph
 studies/shootout/pidigits/bradc/pidigits.graph
 # suite: Shootout extras
+studies/shootout/binary-trees/binary-trees-extras.graph
 studies/shootout/chameneos-redux/hannah/chameneos-redux-all.graph
 studies/shootout/fasta/fasta-extras.graph
 # suite: SSCA2
