@@ -45,6 +45,10 @@ ifeq ($(CHPL_MAKE_TARGET_PLATFORM),cray-xt)
 CHPL_GASNET_CFG_SCRIPT=cross-configure-crayxt-linux
 XTRA_CONFIG_COMMAND=cp --update $(GASNET_SUBDIR)/other/contrib/$(CHPL_GASNET_CFG_SCRIPT) $(GASNET_SUBDIR)
 XTRA_POST_INSTALL_COMMAND=rm -f $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT)
+ifeq ($(CHPL_MAKE_COMM_SUBSTRATE),portals)
+else
+CHPL_GASNET_CFG_OPTIONS += --disable-portals
+endif
 else
 CHPL_GASNET_CFG_SCRIPT=configure
 endif
