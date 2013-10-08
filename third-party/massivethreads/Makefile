@@ -18,6 +18,7 @@ default: all
 all: massivethreads
 
 clean: FORCE
+	rm -rf $(MASSIVETHREADS_BUILD_SUBDIR)
 
 cleanall: FORCE
 	rm -rf build
