@@ -32,6 +32,7 @@ studies/shootout/mandelbrot/mandelbrot.graph
 studies/shootout/pidigits/bradc/pidigits.graph
 # suite: Shootout extras
 studies/shootout/chameneos-redux/hannah/chameneos-redux-all.graph
+studies/shootout/fasta/fasta-extras.graph
 # suite: SSCA2
 studies/ssca2/memory/SSCA2_mem.graph
 # suite: Array performance

@@ -4,10 +4,3 @@ graphkeys: fasta
 graphtitle: Fasta Shootout Benchmark (n=25,000,000)
 ylabel: Time (seconds)
 graphname: fasta.25000000
-
-perfkeys: real
-graphkeys: fasta
-files: fasta.dat
-graphtitle: Fasta Shootout Benchmark
-ylabel: Time (seconds)
-graphname: fasta
