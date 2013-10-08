@@ -328,7 +328,7 @@ module Atomics {
       on this do ret = atomic_fetch_add_explicit_uint_least8_t(_v, value, order);
       return ret;
     }
-    inline proc add(value:uint(8), order = memory_order_seq_cst):uint(8) {
+    inline proc add(value:uint(8), order = memory_order_seq_cst):void {
       on this do atomic_fetch_add_explicit_uint_least8_t(_v, value, order);
     }
     inline proc fetchSub(value:uint(8), order = memory_order_seq_cst):uint(8) {
@@ -336,7 +336,7 @@ module Atomics {
       on this do ret = atomic_fetch_sub_explicit_uint_least8_t(_v, value, order);
       return ret;
     }
-    inline proc sub(value:uint(8), order = memory_order_seq_cst):uint(8) {
+    inline proc sub(value:uint(8), order = memory_order_seq_cst):void {
       on this do atomic_fetch_sub_explicit_uint_least8_t(_v, value, order);
     }
     inline proc fetchOr(value:uint(8), order = memory_order_seq_cst):uint(8) {
@@ -344,7 +344,7 @@ module Atomics {
       on this do ret = atomic_fetch_or_explicit_uint_least8_t(_v, value, order);
       return ret;
     }
-    inline proc or(value:uint(8), order = memory_order_seq_cst):uint(8) {
+    inline proc or(value:uint(8), order = memory_order_seq_cst):void {
       on this do atomic_fetch_or_explicit_uint_least8_t(_v, value, order);
     }
     inline proc fetchAnd(value:uint(8), order = memory_order_seq_cst):uint(8) {
@@ -352,7 +352,7 @@ module Atomics {
       on this do ret = atomic_fetch_and_explicit_uint_least8_t(_v, value, order);
       return ret;
     }
-    inline proc and(value:uint(8), order = memory_order_seq_cst):uint(8) {
+    inline proc and(value:uint(8), order = memory_order_seq_cst):void {
       on this do atomic_fetch_and_explicit_uint_least8_t(_v, value, order);
     }
     inline proc fetchXor(value:uint(8), order = memory_order_seq_cst):uint(8) {
@@ -360,7 +360,7 @@ module Atomics {
       on this do ret = atomic_fetch_xor_explicit_uint_least8_t(_v, value, order);
       return ret;
     }
-    inline proc xor(value:uint(8), order = memory_order_seq_cst):uint(8) {
+    inline proc xor(value:uint(8), order = memory_order_seq_cst):void {
       on this do atomic_fetch_xor_explicit_uint_least8_t(_v, value, order);
     }
 
@@ -423,7 +423,7 @@ module Atomics {
       on this do ret = atomic_fetch_add_explicit_uint_least16_t(_v, value, order);
       return ret;
     }
-    inline proc add(value:uint(16), order = memory_order_seq_cst):uint(16) {
+    inline proc add(value:uint(16), order = memory_order_seq_cst):void {
       on this do atomic_fetch_add_explicit_uint_least16_t(_v, value, order);
     }
     inline proc fetchSub(value:uint(16), order = memory_order_seq_cst):uint(16) {
@@ -431,7 +431,7 @@ module Atomics {
       on this do ret = atomic_fetch_sub_explicit_uint_least16_t(_v, value, order);
       return ret;
     }
-    inline proc sub(value:uint(16), order = memory_order_seq_cst):uint(16) {
+    inline proc sub(value:uint(16), order = memory_order_seq_cst):void {
       on this do atomic_fetch_sub_explicit_uint_least16_t(_v, value, order);
     }
     inline proc fetchOr(value:uint(16), order = memory_order_seq_cst):uint(16) {
@@ -439,7 +439,7 @@ module Atomics {
       on this do ret = atomic_fetch_or_explicit_uint_least16_t(_v, value, order);
       return ret;
     }
-    inline proc or(value:uint(16), order = memory_order_seq_cst):uint(16) {
+    inline proc or(value:uint(16), order = memory_order_seq_cst):void {
       on this do atomic_fetch_or_explicit_uint_least16_t(_v, value, order);
     }
     inline proc fetchAnd(value:uint(16), order = memory_order_seq_cst):uint(16) {
@@ -447,7 +447,7 @@ module Atomics {
       on this do ret = atomic_fetch_and_explicit_uint_least16_t(_v, value, order);
       return ret;
     }
-    inline proc and(value:uint(16), order = memory_order_seq_cst):uint(16) {
+    inline proc and(value:uint(16), order = memory_order_seq_cst):void {
       on this do atomic_fetch_and_explicit_uint_least16_t(_v, value, order);
     }
     inline proc fetchXor(value:uint(16), order = memory_order_seq_cst):uint(16) {
@@ -455,7 +455,7 @@ module Atomics {
       on this do ret = atomic_fetch_xor_explicit_uint_least16_t(_v, value, order);
       return ret;
     }
-    inline proc xor(value:uint(16), order = memory_order_seq_cst):uint(16) {
+    inline proc xor(value:uint(16), order = memory_order_seq_cst):void {
       on this do atomic_fetch_xor_explicit_uint_least16_t(_v, value, order);
     }
 
@@ -518,7 +518,7 @@ module Atomics {
       on this do ret = atomic_fetch_add_explicit_uint_least32_t(_v, value, order);
       return ret;
     }
-    inline proc add(value:uint(32), order = memory_order_seq_cst):uint(32) {
+    inline proc add(value:uint(32), order = memory_order_seq_cst):void {
       on this do atomic_fetch_add_explicit_uint_least32_t(_v, value, order);
     }
     inline proc fetchSub(value:uint(32), order = memory_order_seq_cst):uint(32) {
@@ -526,7 +526,7 @@ module Atomics {
       on this do ret = atomic_fetch_sub_explicit_uint_least32_t(_v, value, order);
       return ret;
     }
-    inline proc sub(value:uint(32), order = memory_order_seq_cst):uint(32) {
+    inline proc sub(value:uint(32), order = memory_order_seq_cst):void {
       on this do atomic_fetch_sub_explicit_uint_least32_t(_v, value, order);
     }
     inline proc fetchOr(value:uint(32), order = memory_order_seq_cst):uint(32) {
@@ -534,7 +534,7 @@ module Atomics {
       on this do ret = atomic_fetch_or_explicit_uint_least32_t(_v, value, order);
       return ret;
     }
-    inline proc or(value:uint(32), order = memory_order_seq_cst):uint(32) {
+    inline proc or(value:uint(32), order = memory_order_seq_cst):void {
       on this do atomic_fetch_or_explicit_uint_least32_t(_v, value, order);
     }
     inline proc fetchAnd(value:uint(32), order = memory_order_seq_cst):uint(32) {
@@ -542,7 +542,7 @@ module Atomics {
       on this do ret = atomic_fetch_and_explicit_uint_least32_t(_v, value, order);
       return ret;
     }
-    inline proc and(value:uint(32), order = memory_order_seq_cst):uint(32) {
+    inline proc and(value:uint(32), order = memory_order_seq_cst):void {
       on this do atomic_fetch_and_explicit_uint_least32_t(_v, value, order);
     }
     inline proc fetchXor(value:uint(32), order = memory_order_seq_cst):uint(32) {
@@ -550,7 +550,7 @@ module Atomics {
       on this do ret = atomic_fetch_xor_explicit_uint_least32_t(_v, value, order);
       return ret;
     }
-    inline proc xor(value:uint(32), order = memory_order_seq_cst):uint(32) {
+    inline proc xor(value:uint(32), order = memory_order_seq_cst):void {
       on this do atomic_fetch_xor_explicit_uint_least32_t(_v, value, order);
     }
 
@@ -613,7 +613,7 @@ module Atomics {
       on this do ret = atomic_fetch_add_explicit_uint_least64_t(_v, value, order);
       return ret;
     }
-    inline proc add(value:uint(64), order = memory_order_seq_cst):uint(64) {
+    inline proc add(value:uint(64), order = memory_order_seq_cst):void {
       on this do atomic_fetch_add_explicit_uint_least64_t(_v, value, order);
     }
     inline proc fetchSub(value:uint(64), order = memory_order_seq_cst):uint(64) {
@@ -621,7 +621,7 @@ module Atomics {
       on this do ret = atomic_fetch_sub_explicit_uint_least64_t(_v, value, order);
       return ret;
     }
-    inline proc sub(value:uint(64), order = memory_order_seq_cst):uint(64) {
+    inline proc sub(value:uint(64), order = memory_order_seq_cst):void {
       on this do atomic_fetch_sub_explicit_uint_least64_t(_v, value, order);
     }
     inline proc fetchOr(value:uint(64), order = memory_order_seq_cst):uint(64) {
@@ -629,7 +629,7 @@ module Atomics {
       on this do ret = atomic_fetch_or_explicit_uint_least64_t(_v, value, order);
       return ret;
     }
-    inline proc or(value:uint(64), order = memory_order_seq_cst):uint(64) {
+    inline proc or(value:uint(64), order = memory_order_seq_cst):void {
       on this do atomic_fetch_or_explicit_uint_least64_t(_v, value, order);
     }
     inline proc fetchAnd(value:uint(64), order = memory_order_seq_cst):uint(64) {
@@ -637,7 +637,7 @@ module Atomics {
       on this do ret = atomic_fetch_and_explicit_uint_least64_t(_v, value, order);
       return ret;
     }
-    inline proc and(value:uint(64), order = memory_order_seq_cst):uint(64) {
+    inline proc and(value:uint(64), order = memory_order_seq_cst):void {
       on this do atomic_fetch_and_explicit_uint_least64_t(_v, value, order);
     }
     inline proc fetchXor(value:uint(64), order = memory_order_seq_cst):uint(64) {
@@ -645,7 +645,7 @@ module Atomics {
       on this do ret = atomic_fetch_xor_explicit_uint_least64_t(_v, value, order);
       return ret;
     }
-    inline proc xor(value:uint(64), order = memory_order_seq_cst):uint(64) {
+    inline proc xor(value:uint(64), order = memory_order_seq_cst):void {
       on this do atomic_fetch_xor_explicit_uint_least64_t(_v, value, order);
     }
 
@@ -708,7 +708,7 @@ module Atomics {
       on this do ret = atomic_fetch_add_explicit_int_least8_t(_v, value, order);
       return ret;
     }
-    inline proc add(value:int(8), order = memory_order_seq_cst):int(8) {
+    inline proc add(value:int(8), order = memory_order_seq_cst):void {
       on this do atomic_fetch_add_explicit_int_least8_t(_v, value, order);
     }
     inline proc fetchSub(value:int(8), order = memory_order_seq_cst):int(8) {
@@ -716,7 +716,7 @@ module Atomics {
       on this do ret = atomic_fetch_sub_explicit_int_least8_t(_v, value, order);
       return ret;
     }
-    inline proc sub(value:int(8), order = memory_order_seq_cst):int(8) {
+    inline proc sub(value:int(8), order = memory_order_seq_cst):void {
       on this do atomic_fetch_sub_explicit_int_least8_t(_v, value, order);
     }
     inline proc fetchOr(value:int(8), order = memory_order_seq_cst):int(8) {
@@ -724,7 +724,7 @@ module Atomics {
       on this do ret = atomic_fetch_or_explicit_int_least8_t(_v, value, order);
       return ret;
     }
-    inline proc or(value:int(8), order = memory_order_seq_cst):int(8) {
+    inline proc or(value:int(8), order = memory_order_seq_cst):void {
       on this do atomic_fetch_or_explicit_int_least8_t(_v, value, order);
     }
     inline proc fetchAnd(value:int(8), order = memory_order_seq_cst):int(8) {
@@ -732,7 +732,7 @@ module Atomics {
       on this do ret = atomic_fetch_and_explicit_int_least8_t(_v, value, order);
       return ret;
     }
-    inline proc and(value:int(8), order = memory_order_seq_cst):int(8) {
+    inline proc and(value:int(8), order = memory_order_seq_cst):void {
       on this do atomic_fetch_and_explicit_int_least8_t(_v, value, order);
     }
     inline proc fetchXor(value:int(8), order = memory_order_seq_cst):int(8) {
@@ -740,7 +740,7 @@ module Atomics {
       on this do ret = atomic_fetch_xor_explicit_int_least8_t(_v, value, order);
       return ret;
     }
-    inline proc xor(value:int(8), order = memory_order_seq_cst):int(8) {
+    inline proc xor(value:int(8), order = memory_order_seq_cst):void {
       on this do atomic_fetch_xor_explicit_int_least8_t(_v, value, order);
     }
 
@@ -803,7 +803,7 @@ module Atomics {
       on this do ret = atomic_fetch_add_explicit_int_least16_t(_v, value, order);
       return ret;
     }
-    inline proc add(value:int(16), order = memory_order_seq_cst):int(16) {
+    inline proc add(value:int(16), order = memory_order_seq_cst):void {
       on this do atomic_fetch_add_explicit_int_least16_t(_v, value, order);
     }
     inline proc fetchSub(value:int(16), order = memory_order_seq_cst):int(16) {
@@ -811,7 +811,7 @@ module Atomics {
       on this do ret = atomic_fetch_sub_explicit_int_least16_t(_v, value, order);
       return ret;
     }
-    inline proc sub(value:int(16), order = memory_order_seq_cst):int(16) {
+    inline proc sub(value:int(16), order = memory_order_seq_cst):void {
       on this do atomic_fetch_sub_explicit_int_least16_t(_v, value, order);
     }
     inline proc fetchOr(value:int(16), order = memory_order_seq_cst):int(16) {
@@ -819,7 +819,7 @@ module Atomics {
       on this do ret = atomic_fetch_or_explicit_int_least16_t(_v, value, order);
       return ret;
     }
-    inline proc or(value:int(16), order = memory_order_seq_cst):int(16) {
+    inline proc or(value:int(16), order = memory_order_seq_cst):void {
       on this do atomic_fetch_or_explicit_int_least16_t(_v, value, order);
     }
     inline proc fetchAnd(value:int(16), order = memory_order_seq_cst):int(16) {
@@ -827,7 +827,7 @@ module Atomics {
       on this do ret = atomic_fetch_and_explicit_int_least16_t(_v, value, order);
       return ret;
     }
-    inline proc and(value:int(16), order = memory_order_seq_cst):int(16) {
+    inline proc and(value:int(16), order = memory_order_seq_cst):void {
       on this do atomic_fetch_and_explicit_int_least16_t(_v, value, order);
     }
     inline proc fetchXor(value:int(16), order = memory_order_seq_cst):int(16) {
@@ -835,7 +835,7 @@ module Atomics {
       on this do ret = atomic_fetch_xor_explicit_int_least16_t(_v, value, order);
       return ret;
     }
-    inline proc xor(value:int(16), order = memory_order_seq_cst):int(16) {
+    inline proc xor(value:int(16), order = memory_order_seq_cst):void {
       on this do atomic_fetch_xor_explicit_int_least16_t(_v, value, order);
     }
 
@@ -898,7 +898,7 @@ module Atomics {
       on this do ret = atomic_fetch_add_explicit_int_least32_t(_v, value, order);
       return ret;
     }
-    inline proc add(value:int(32), order = memory_order_seq_cst):int(32) {
+    inline proc add(value:int(32), order = memory_order_seq_cst):void {
       on this do atomic_fetch_add_explicit_int_least32_t(_v, value, order);
     }
     inline proc fetchSub(value:int(32), order = memory_order_seq_cst):int(32) {
@@ -906,7 +906,7 @@ module Atomics {
       on this do ret = atomic_fetch_sub_explicit_int_least32_t(_v, value, order);
       return ret;
     }
-    inline proc sub(value:int(32), order = memory_order_seq_cst):int(32) {
+    inline proc sub(value:int(32), order = memory_order_seq_cst):void {
       on this do atomic_fetch_sub_explicit_int_least32_t(_v, value, order);
     }
     inline proc fetchOr(value:int(32), order = memory_order_seq_cst):int(32) {
@@ -914,7 +914,7 @@ module Atomics {
       on this do ret = atomic_fetch_or_explicit_int_least32_t(_v, value, order);
       return ret;
     }
-    inline proc or(value:int(32), order = memory_order_seq_cst):int(32) {
+    inline proc or(value:int(32), order = memory_order_seq_cst):void {
       on this do atomic_fetch_or_explicit_int_least32_t(_v, value, order);
     }
     inline proc fetchAnd(value:int(32), order = memory_order_seq_cst):int(32) {
@@ -922,7 +922,7 @@ module Atomics {
       on this do ret = atomic_fetch_and_explicit_int_least32_t(_v, value, order);
       return ret;
     }
-    inline proc and(value:int(32), order = memory_order_seq_cst):int(32) {
+    inline proc and(value:int(32), order = memory_order_seq_cst):void {
       on this do atomic_fetch_and_explicit_int_least32_t(_v, value, order);
     }
     inline proc fetchXor(value:int(32), order = memory_order_seq_cst):int(32) {
@@ -930,7 +930,7 @@ module Atomics {
       on this do ret = atomic_fetch_xor_explicit_int_least32_t(_v, value, order);
       return ret;
     }
-    inline proc xor(value:int(32), order = memory_order_seq_cst):int(32) {
+    inline proc xor(value:int(32), order = memory_order_seq_cst):void {
       on this do atomic_fetch_xor_explicit_int_least32_t(_v, value, order);
     }
 
@@ -993,7 +993,7 @@ module Atomics {
       on this do ret = atomic_fetch_add_explicit_int_least64_t(_v, value, order);
       return ret;
     }
-    inline proc add(value:int(64), order = memory_order_seq_cst):int(64) {
+    inline proc add(value:int(64), order = memory_order_seq_cst):void {
       on this do atomic_fetch_add_explicit_int_least64_t(_v, value, order);
     }
     inline proc fetchSub(value:int(64), order = memory_order_seq_cst):int(64) {
@@ -1001,7 +1001,7 @@ module Atomics {
       on this do ret = atomic_fetch_sub_explicit_int_least64_t(_v, value, order);
       return ret;
     }
-    inline proc sub(value:int(64), order = memory_order_seq_cst):int(64) {
+    inline proc sub(value:int(64), order = memory_order_seq_cst):void {
       on this do atomic_fetch_sub_explicit_int_least64_t(_v, value, order);
     }
     inline proc fetchOr(value:int(64), order = memory_order_seq_cst):int(64) {
@@ -1009,7 +1009,7 @@ module Atomics {
       on this do ret = atomic_fetch_or_explicit_int_least64_t(_v, value, order);
       return ret;
     }
-    inline proc or(value:int(64), order = memory_order_seq_cst):int(64) {
+    inline proc or(value:int(64), order = memory_order_seq_cst):void {
       on this do atomic_fetch_or_explicit_int_least64_t(_v, value, order);
     }
     inline proc fetchAnd(value:int(64), order = memory_order_seq_cst):int(64) {
@@ -1017,7 +1017,7 @@ module Atomics {
       on this do ret = atomic_fetch_and_explicit_int_least64_t(_v, value, order);
       return ret;
     }
-    inline proc and(value:int(64), order = memory_order_seq_cst):int(64) {
+    inline proc and(value:int(64), order = memory_order_seq_cst):void {
       on this do atomic_fetch_and_explicit_int_least64_t(_v, value, order);
     }
     inline proc fetchXor(value:int(64), order = memory_order_seq_cst):int(64) {
@@ -1025,7 +1025,7 @@ module Atomics {
       on this do ret = atomic_fetch_xor_explicit_int_least64_t(_v, value, order);
       return ret;
     }
-    inline proc xor(value:int(64), order = memory_order_seq_cst):int(64) {
+    inline proc xor(value:int(64), order = memory_order_seq_cst):void {
       on this do atomic_fetch_xor_explicit_int_least64_t(_v, value, order);
     }
 
@@ -1090,7 +1090,7 @@ module Atomics {
       on this do ret = atomic_fetch_add_explicit__real64(_v, value, order);
       return ret;
     }
-    inline proc add(value:real(64), order = memory_order_seq_cst):real(64) {
+    inline proc add(value:real(64), order = memory_order_seq_cst):void {
       on this do atomic_fetch_add_explicit__real64(_v, value, order);
     }
     inline proc fetchSub(value:real(64), order = memory_order_seq_cst):real(64) {
@@ -1098,7 +1098,7 @@ module Atomics {
       on this do ret = atomic_fetch_sub_explicit__real64(_v, value, order);
       return ret;
     }
-    inline proc sub(value:real(64), order = memory_order_seq_cst):real(64) {
+    inline proc sub(value:real(64), order = memory_order_seq_cst):void {
       on this do atomic_fetch_sub_explicit__real64(_v, value, order);
     }
     inline proc waitFor(val:real(64)) {
@@ -1162,7 +1162,7 @@ module Atomics {
       on this do ret = atomic_fetch_add_explicit__real32(_v, value, order);
       return ret;
     }
-    inline proc add(value:real(32), order = memory_order_seq_cst):real(32) {
+    inline proc add(value:real(32), order = memory_order_seq_cst):void {
       on this do atomic_fetch_add_explicit__real32(_v, value, order);
     }
     inline proc fetchSub(value:real(32), order = memory_order_seq_cst):real(32) {
@@ -1170,7 +1170,7 @@ module Atomics {
       on this do ret = atomic_fetch_sub_explicit__real32(_v, value, order);
       return ret;
     }
-    inline proc sub(value:real(32), order = memory_order_seq_cst):real(32) {
+    inline proc sub(value:real(32), order = memory_order_seq_cst):void {
       on this do atomic_fetch_sub_explicit__real32(_v, value, order);
     }
     inline proc waitFor(val:real(32)) {
@@ -1495,4 +1495,3 @@ module Atomics {
 
 
 }
-
