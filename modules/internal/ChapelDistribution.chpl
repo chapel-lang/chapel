@@ -28,7 +28,7 @@ module ChapelDistribution {
     pragma "dont disable remote value forwarding"
     proc destroyDist(dom: BaseDom = nil) {
       if dom then remove_dom(dom);
-      var cnt = _distCnt.fetchSub(1)-1;
+      var cnt = decRefCount();
       if !noRefCount {
         if cnt < 0 then
           halt("distribution reference count is negative!");
@@ -88,6 +88,14 @@ module ChapelDistribution {
       compilerError("sparse domains not supported by this distribution");
     }
   
+    inline proc incRefCount() {
+      _distCnt.add(1);
+    }
+
+    inline proc decRefCount() {
+      return _distCnt.fetchSub(1)-1;
+    }
+
     proc dsiSupportsPrivatization() param return false;
     proc dsiRequiresPrivatization() param return false;
   
@@ -116,7 +124,7 @@ module ChapelDistribution {
     pragma "dont disable remote value forwarding"
     proc destroyDom(arr: BaseArr = nil) {
       if arr then remove_arr(arr);
-      var cnt = _domCnt.fetchSub(1)-1;
+      var cnt = decRefCount();
       if !noRefCount {
         if cnt < 0 then
           halt("domain reference count is negative!");
@@ -181,6 +189,14 @@ module ChapelDistribution {
         arr._preserveArrayElement(oldslot, newslot);
     }
   
+    inline proc incRefCount() {
+      _domCnt.add(1);
+    }
+
+    inline proc decRefCount() {
+      return _domCnt.fetchSub(1)-1;
+    }
+
     proc dsiSupportsPrivatization() param return false;
     proc dsiRequiresPrivatization() param return false;
   
@@ -263,7 +279,7 @@ module ChapelDistribution {
   
     pragma "dont disable remote value forwarding"
     proc destroyArr(): int {
-      var cnt = _arrCnt.fetchSub(1)-1;
+      var cnt = decRefCount();
       if !noRefCount {
         if cnt < 0 then
           halt("array reference count is negative!");
@@ -348,6 +364,14 @@ module ChapelDistribution {
       halt("_preserveArrayElement() not supported for non-associative arrays");
     }
   
+    inline proc incRefCount() {
+      _arrCnt.add(1);
+    }
+
+    inline proc decRefCount() {
+      return _arrCnt.fetchSub(1)-1;
+    }
+
     proc dsiSupportsAlignedFollower() param return false;
   
     proc dsiSupportsPrivatization() param return false;

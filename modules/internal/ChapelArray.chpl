@@ -277,7 +277,7 @@ module ChapelArray {
     pragma "no copy" var D = A.domain;
     pragma "dont disable remote value forwarding"
     proc help() {
-      D._value._domCnt.add(1);
+      D._value.incRefCount();
     }
     if !noRefCount then
       help();
@@ -308,7 +308,7 @@ module ChapelArray {
   proc chpl_incRefCountsForDomainsInArrayEltTypes(type eltType) {
     if (isArrayType(eltType)) {
       var ev: eltType;
-      ev.domain._value._domCnt.add(1);
+      ev.domain._value.incRefCount();
       //
       // In addition to incrementing the domain's reference, count, we also
       // have to increment the distribution's.  The primary motivation for
@@ -320,7 +320,7 @@ module ChapelArray {
       // this can be too.  See this comment's commit message for more
       // details.
       //
-      ev.domain.dist._value._distCnt.add(1);
+      ev.domain.dist._value.incRefCount();
       chpl_incRefCountsForDomainsInArrayEltTypes(ev.eltType);
     }
   }
@@ -565,7 +565,7 @@ module ChapelArray {
       if x.linksDistribution() {
         _value.add_dom(x);
         if !noRefCount then
-          _value._distCnt.add(1);
+          _value.incRefCount();
       }
       return x;
     }
@@ -575,7 +575,7 @@ module ChapelArray {
       if x.linksDistribution() {
         _value.add_dom(x);
         if !noRefCount then
-          _value._distCnt.add(1);
+          _value.incRefCount();
       }
       return x;
     }
@@ -586,7 +586,7 @@ module ChapelArray {
       if x.linksDistribution() {
         _value.add_dom(x);
         if !noRefCount then
-          _value._distCnt.add(1);
+          _value.incRefCount();
       }
       const enumTuple = _enum_enumerate(idxType);
       for param i in 1..enumTuple.size do
@@ -599,7 +599,7 @@ module ChapelArray {
       if x.linksDistribution() {
         _value.add_dom(x);
         if !noRefCount then
-          _value._distCnt.add(1);
+          _value.incRefCount();
       }
       return x;
     }
@@ -609,7 +609,7 @@ module ChapelArray {
       if x.linksDistribution() {
         _value.add_dom(x);
         if !noRefCount then
-          _value._distCnt.add(1);
+          _value.incRefCount();
       }
       return x;
     }
@@ -713,7 +713,7 @@ module ChapelArray {
       var d = _value.dsiBuildRectangularDom(rank, _value.idxType, stridable, r);
       if !noRefCount then
         if d.linksDistribution() then
-          d.dist._distCnt.add(1);
+          d.dist.incRefCount();
       return _newDomain(d);
     }
   
@@ -768,7 +768,7 @@ module ChapelArray {
       proc help() {
         _value.add_arr(x);
         if !noRefCount then
-          _value._domCnt.add(1);
+          _value.incRefCount();
       }
       help();
       return _newArray(x);
@@ -860,7 +860,7 @@ module ChapelArray {
                                            _value.stridable, ranges);
       if !noRefCount then
         if (d.linksDistribution()) then
-          d.dist._distCnt.add(1);
+          d.dist.incRefCount();
       return _newDomain(d);
     }
     proc expand(off: _value.idxType) where rank > 1 {
@@ -871,7 +871,7 @@ module ChapelArray {
                                            _value.stridable, ranges);
       if !noRefCount then
         if (d.linksDistribution()) then
-          d.dist._distCnt.add(1);
+          d.dist.incRefCount();
       return _newDomain(d);
     }
   
@@ -894,7 +894,7 @@ module ChapelArray {
                                            _value.stridable, ranges);
       if !noRefCount then
         if (d.linksDistribution()) then
-          d.dist._distCnt.add(1);
+          d.dist.incRefCount();
       return _newDomain(d);
      }
                     
@@ -922,7 +922,7 @@ module ChapelArray {
                                            _value.stridable, ranges);
       if !noRefCount then
         if (d.linksDistribution()) then
-          d.dist._distCnt.add(1);
+          d.dist.incRefCount();
       return _newDomain(d);
     }
   
@@ -954,7 +954,7 @@ module ChapelArray {
                                            _value.stridable, ranges);
       if !noRefCount then
         if (d.linksDistribution()) then
-          d.dist._distCnt.add(1);
+          d.dist.incRefCount();
       return _newDomain(d);
      }
   
@@ -970,7 +970,7 @@ module ChapelArray {
                                            _value.stridable, ranges);
       if !noRefCount then
         if (d.linksDistribution()) then
-          d.dist._distCnt.add(1);
+          d.dist.incRefCount();
       return _newDomain(d);
     }
   
@@ -1281,8 +1281,8 @@ module ChapelArray {
       a._arrAlias = _value;
       pragma "dont disable remote value forwarding"
       proc help() {
-        d._value._domCnt.add(1);
-        a._arrAlias._arrCnt.add(1);
+        d._value.incRefCount();
+        a._arrAlias.incRefCount();
       }
       if !noRefCount then
         help();
@@ -1296,11 +1296,11 @@ module ChapelArray {
       param rank = ranges.size, stridable = chpl__anyStridable(ranges);
       var d = _dom((...args));
       if !noRefCount then
-        d._value._domCnt.add(1);
+        d._value.incRefCount();
       var a = _value.dsiRankChange(d._value, rank, stridable, args);
       a._arrAlias = _value;
       if !noRefCount then
-        a._arrAlias._arrCnt.add(1);
+        a._arrAlias.incRefCount();
       return _newArray(a);
     }
   
@@ -1379,8 +1379,8 @@ module ChapelArray {
       x._arrAlias = _value;
       pragma "dont disable remote value forwarding"
       proc help() {
-        newDom._value._domCnt.add(1);
-        x._arrAlias._arrCnt.add(1);
+        newDom._value.incRefCount();
+        x._arrAlias.incRefCount();
       }
       if !noRefCount then
         help();
@@ -1844,7 +1844,7 @@ module ChapelArray {
     var d = a._value.dsiBuildRectangularDom(a.rank, a._value.idxType, true, r);
     if !noRefCount then
       if (d.linksDistribution()) then
-        d.dist._distCnt.add(1);
+        d.dist.incRefCount();
     return _newDomain(d);
   }
   
