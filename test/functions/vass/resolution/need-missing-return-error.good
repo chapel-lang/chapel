@@ -1,1 +1,0 @@
-need-missing-return-error.chpl:5: error: missing a return statement in a function declared to return a value: 'funfun'

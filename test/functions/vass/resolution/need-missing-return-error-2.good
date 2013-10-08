@@ -1,0 +1,1 @@
+need-missing-return-error-2.chpl:5: error: missing a return statement in a function with a declared return type: 'funfun'
