@@ -41,12 +41,14 @@ The fourth is in the explicit/ subdirectory.
   directory. This version is essentially an SPMD version written in
   Chapel, and served as a starting point for the StencilDist version.
 
-Chapel's distributed performance is a work in progress. These versions
-are much slower when compared to the C++ MPI reference. Work in the
-compiler and in the miniMD code itself will strive to improve
-performance in this area.  We have also seen scalability bottlenecks
-on single-locale runs with large core counts due to overdecomposition
-of parallelism.
+This version of miniMD is not yet intended for performance
+comparisons, as it was written primarily to exercise the
+mini-application correctly and to explore the expression of stencils
+in Chapel.  Over time, we will be improving its performance, both
+through improvements to the benchmark code itself, and through more
+generally applicable optimizations in Chapel.  At present, users
+should not be surprised to find that this version is significantly
+slower than the reference version.
 
 
 -----
@@ -103,6 +105,9 @@ Chapel-specific optimizations:
   As in the Chapel docs, do the following: 
     export CHPL_MEM=tcmalloc
 
+As with all Chapel benchmarks, for the best performance, compile
+miniMD with the --fast flag.
+
 
 -------
 Running
@@ -113,6 +118,11 @@ While miniMD can read from input files, it does not require them.
 For legal reasons, input files available from the C++ are not currently 
 bundled with this release of miniMD. However, you are free to visit 
 the mantevo website, download the reference version, and use those files.
+
+To optimize miniMD performance on multicore systems, run with the
+--dataParIgnoreRunningTasks=false flag.  This will cause nested data
+parallelism (which is used heavily by our implementation) to be
+squashed and avoid overloading a multicore system with tasks.
 
 
 -----------------
