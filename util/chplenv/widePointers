@@ -20,16 +20,17 @@ if ($wide eq "struct") {
 } elsif ($wide =~ /node(\d+)/) {
   my $nodebits = $1;
   if( $nodebits < 2 || $nodebits > 60 ) {
-    die "Bad node bit width: $nodebits";
+    warn "Bad wide pointer node bit width: $nodebits\n";
+  } else {
+    $define = "-DCHPL_WIDE_POINTER_PACKED -DCHPL_WIDE_POINTER_NODE_BITS=$nodebits";
   }
-  $define = "-DCHPL_WIDE_POINTER_PACKED -DCHPL_WIDE_POINTER_NODE_BITS=$nodebits";
 } else {
-  die "Unknown wide pointer format: $wide";
+  warn "Unknown wide pointer format: $wide\n";
 }
 
 if( @ARGV > 0 && ($ARGV[0] eq "--define" || $ARGV[0] eq "--defines") ) {
   ret($define);
-  print "$define\n" unless caller;;
+  print "$define\n" unless caller;
 } else {
   ret($wide);
   print "$wide\n" unless caller;
