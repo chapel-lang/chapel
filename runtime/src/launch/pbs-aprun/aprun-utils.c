@@ -194,7 +194,7 @@ int getCPUsPerCU() {
                    "using 0 instead.", 0, 0);
   }
 
-  if (numCPUsPerCU < 0)
+  if (numCPUsPerCU < 0 && strstr(CNA, "cpus_per_cu") != NULL)
     numCPUsPerCU = 0;
 
   return numCPUsPerCU;
