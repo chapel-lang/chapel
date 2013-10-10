@@ -28,15 +28,7 @@ module ChapelDistribution {
     pragma "dont disable remote value forwarding"
     proc destroyDist(dom: BaseDom = nil) {
       if dom then remove_dom(dom);
-      var cnt = decRefCount();
-      if !noRefCount {
-        if cnt < 0 then
-          halt("distribution reference count is negative!");
-      } else {
-        if cnt > 0 then
-          halt("distribution reference count has been modified!");
-      }
-      return cnt;
+      return decRefCount();
     }
   
     inline proc remove_dom(x) {
@@ -88,12 +80,20 @@ module ChapelDistribution {
       compilerError("sparse domains not supported by this distribution");
     }
   
-    inline proc incRefCount() {
-      _distCnt.add(1);
+    inline proc incRefCount(cnt=1) {
+      _distCnt.add(cnt);
     }
 
     inline proc decRefCount() {
-      return _distCnt.fetchSub(1)-1;
+      const cnt = _distCnt.fetchSub(1)-1;
+      if !noRefCount {
+        if cnt < 0 then
+          halt("distribution reference count is negative!");
+      } else {
+        if cnt > 0 then
+          halt("distribution reference count has been modified!");
+      }
+      return cnt;
     }
 
     proc dsiSupportsPrivatization() param return false;
@@ -125,13 +125,6 @@ module ChapelDistribution {
     proc destroyDom(arr: BaseArr = nil) {
       if arr then remove_arr(arr);
       var cnt = decRefCount();
-      if !noRefCount {
-        if cnt < 0 then
-          halt("domain reference count is negative!");
-      } else {
-        if cnt > 0 then
-          halt("domain reference count has been modified!");
-      }
       if !noRefCount {
         if cnt == 0 && dsiLinksDistribution() {
           var dist = dsiMyDist();
@@ -189,12 +182,20 @@ module ChapelDistribution {
         arr._preserveArrayElement(oldslot, newslot);
     }
   
-    inline proc incRefCount() {
-      _domCnt.add(1);
+    inline proc incRefCount(cnt=1) {
+      _domCnt.add(cnt);
     }
 
     inline proc decRefCount() {
-      return _domCnt.fetchSub(1)-1;
+      const cnt = _domCnt.fetchSub(1)-1;
+      if !noRefCount {
+        if cnt < 0 then
+          halt("domain reference count is negative!");
+      } else {
+        if cnt > 0 then
+          halt("domain reference count has been modified!");
+      }
+      return cnt;
     }
 
     proc dsiSupportsPrivatization() param return false;
@@ -280,13 +281,6 @@ module ChapelDistribution {
     pragma "dont disable remote value forwarding"
     proc destroyArr(): int {
       var cnt = decRefCount();
-      if !noRefCount {
-        if cnt < 0 then
-          halt("array reference count is negative!");
-      } else {
-        if cnt > 0 then
-          halt("array reference count has been modified!");
-      }
       if cnt == 0 {
         if _arrAlias {
           on _arrAlias {
@@ -364,12 +358,20 @@ module ChapelDistribution {
       halt("_preserveArrayElement() not supported for non-associative arrays");
     }
   
-    inline proc incRefCount() {
-      _arrCnt.add(1);
+    inline proc incRefCount(cnt=1) {
+      _arrCnt.add(cnt);
     }
 
     inline proc decRefCount() {
-      return _arrCnt.fetchSub(1)-1;
+      const cnt = _arrCnt.fetchSub(1)-1;
+      if !noRefCount {
+        if cnt < 0 then
+          halt("array reference count is negative!");
+      } else {
+        if cnt > 0 then
+          halt("array reference count has been modified!");
+      }
+      return cnt;
     }
 
     proc dsiSupportsAlignedFollower() param return false;
