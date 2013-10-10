@@ -17,7 +17,8 @@ if ($preset_tasks eq "") {
     } elsif ($preset_threads eq "") {
         $tasks = "fifo";
     } else {
-		die "Unexpected CHPL_THREADS value \"$preset_threads\".\n";
+        warn "Unexpected CHPL_THREADS value \"$preset_threads\".\n";
+        $tasks = "";
     }
 } else {
     $tasks = $preset_tasks;

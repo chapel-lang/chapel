@@ -20,14 +20,15 @@ if ($preset_threads eq "") {
         $threads = "none";
     } elsif ($preset_tasks eq "muxed") {
         $threads = "soft-threads";
-    } elsif ($preset_tasks eq "qthreads") {
-        $threads = "none";
     } elsif ($preset_tasks eq "none") {
         $threads = "none";
+    } elsif ($preset_tasks eq "qthreads") {
+        $threads = "none";
     } elsif ($preset_tasks eq "") {
-	    $threads = "pthreads";
+        $threads = "pthreads";
     } else {
-	die "Unexpected preset tasks value \"$preset_tasks\".\n";
+        warn "Unexpected preset tasks value \"$preset_tasks\".\n";
+        $threads = "";
     }
 } else {
     $threads = $preset_threads;
