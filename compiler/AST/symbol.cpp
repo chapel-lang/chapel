@@ -584,7 +584,12 @@ void VarSymbol::codegenDefC(bool global) {
                ct->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       if (isFnSymbol(defPoint->parentSymbol)) {
         if( widePointersStruct || isWideString(ct) ) {
-          str += " = {{0,0},NULL}";
+
+          //
+          // CHPL_LOCALEID_T_INIT is #defined in the chpl-locale-model.h
+          // file in the runtime, for the selected locale model.
+          //
+          str += " = {CHPL_LOCALEID_T_INIT, NULL}";
         } else {
           str += " = ((wide_ptr_t) NULL)";
         }
