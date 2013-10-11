@@ -7,6 +7,13 @@
 #include "optimizations.h"
 #include "view.h"
 
+//
+// This file implements lowerIterator() called by the lowerIterators pass
+//
+// lowerIterator() rewrites the original iterator function to fill in
+// the iterator record and build the various functions needed to build
+// the final loop: zip*, hasMore, advance, getValue, and getIterator.
+//
 
 //#define DEBUG_LIVE
 
@@ -159,10 +166,19 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
       return NULL;
     }
   }
-  if (singleFor && singleYield)
+  if (singleFor && singleYield) {
+    if (fReportOptimizedLoopIterators) {
+      ModuleSymbol *mod = toModuleSymbol(fn->defPoint->parentSymbol);
+      INT_ASSERT(mod);
+      if (developer ||
+          ((mod->modTag != MOD_INTERNAL) && (mod->modTag != MOD_STANDARD))) {
+        printf("Optimized single yield/loop iterator (%s) in module %s (%s:%d)\n",
+               fn->cname, mod->name, fn->fname(), fn->linenum());
+      }
+    }
     return singleYield;
-  else
-    return NULL;
+  } else
+      return NULL;
 }
 
 //  se -- A sym expression which accesses a live local variable.
@@ -339,8 +355,18 @@ replaceLocalsWithFields(FnSymbol* fn,           // the iterator function
   }
 }
 
+//
+// Build zip functions for the single loop iterator optimization
+//
+// The single iterator loop optimization is applied to loops
+// recognized as above in isSingleLoopIterator().  Such loops can be
+// generated in a specialized form with simplified control flow.  When
+// the optimization does not apply, zip1 and zip3 simply call advance,
+// and zip2 and zip4 are empty (see below in lowerIterator()).
+//
 
-// Build the zip1 function, copying expression out of the iterator body up to the singleLoop.
+// Build the zip1 function, copying expressions out of the iterator
+// body that occur *before* the singleLoop
 static void
 buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 
@@ -349,32 +375,35 @@ buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   Symbol* ic = ii->advance->getFormal(1);
   map.put(ic, ii->zip1->_this);
 
-  // Copy def expressions which are not arg defs.
+  // Copy non-arg def expressions from the original iterator
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast))
       if (!isArgSymbol(def->sym))
         ii->zip1->insertAtTail(def->copy(&map));
   }
 
-  // Copy all iterator body expressions which are not declarations.
+  // Copy all iterator body expressions before singleLoop that are not
+  // declarations
   for_alist(expr, ii->iterator->body->body) {
-    // Quit if we reach singleLoop (?)
+    // Quit when we reach singleLoop
     if (expr == singleLoop)
       break;
     if (!isDefExpr(expr))
       ii->zip1->insertAtTail(expr->copy(&map));
   }
 
-  // Complete the rest of the function.
+  // Check for more
   CallExpr* blockInfo = singleLoop->blockInfo->copy(&map);
   ii->zip1->insertAtTail(new CondStmt(blockInfo->get(1)->remove(),
                                       new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this, ii->iclass->getField("more"), new_IntSymbol(1)),
                                       new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this, ii->iclass->getField("more"), new_IntSymbol(0))));
+
   ii->zip1->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 }
 
 
-// Build the zip2 function, copying expressions out of the singleLoop body up to the first yield.
+// Build the zip2 function, copying expressions out of the singleLoop
+// body that are *before* the yield
 static void
 buildZip2(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 
@@ -383,13 +412,14 @@ buildZip2(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   Symbol* ic = ii->advance->getFormal(1);
   map.put(ic, ii->zip2->_this);
 
-  // Copy non-arg def expressions.
+  // Copy non-arg def expressions from the original iterator
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast))
       if (!isArgSymbol(def->sym))
         ii->zip2->insertAtTail(def->copy(&map));
   }
 
+  // Copy all non-defs in singleLoop before the yield
   for_alist(expr, singleLoop->body) {
     if (CallExpr* call = toCallExpr(expr))
       if (call->isPrimitive(PRIM_YIELD))
@@ -397,24 +427,32 @@ buildZip2(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
     if (!isDefExpr(expr))
       ii->zip2->insertAtTail(expr->copy(&map));
   }
+
   ii->zip2->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 }
 
 
-// Build the zip3 function, copying expressions out of the singleLoop body up to the yield
-// but also copy non-declarations following the yield.
+// Build the zip3 function, copying expressions out of the singleLoop
+// body that are *after* the yield
 static void
 buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
+
+  // In copied expressions, replace _ic with zip2->_this .
   Symbol* ic = ii->advance->getFormal(1);
   SymbolMap map;
   map.put(ic, ii->zip3->_this);
+
+  // Copy non-arg def expressions from the original iterator
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast))
       if (!isArgSymbol(def->sym))
         ii->zip3->insertAtTail(def->copy(&map));
   }
+
+  // Copy all non-defs in singleLoop after the yield
   bool flag = true;
   for_alist(expr, singleLoop->body) {
+    // Skip everything before the yield
     if (flag) {
       if (CallExpr* call = toCallExpr(expr))
         if (call->isPrimitive(PRIM_YIELD))
@@ -424,28 +462,39 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
     if (!isDefExpr(expr))
       ii->zip3->insertAtTail(expr->copy(&map));
   }
+ 
+  // Check for more
   CallExpr* blockInfo = singleLoop->blockInfo->copy(&map);
   ii->zip3->insertAtTail(new CondStmt(blockInfo->get(1)->remove(),
                                       new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this, ii->iclass->getField("more"), new_IntSymbol(1)),
                                       new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this, ii->iclass->getField("more"), new_IntSymbol(0))));
+
   ii->zip3->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 }
 
 
-// Build the zip4 function, copying expressions out of the iterator body, up to singleLoop,
-// but also copy exprs that have a next pointer.
+// Build the zip4 function, copy expressions out of the iterator body
+// that are *after* the singleLoop
 static void
 buildZip4(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
+
+  // In copied expressions, replace _ic with zip4->_this .
   Symbol* ic = ii->advance->getFormal(1);
   SymbolMap map;
   map.put(ic, ii->zip4->_this);
+
+  // Copy non-arg def expressions from the original iterator
   forv_Vec(BaseAST, ast, asts) {
       if (DefExpr* def = toDefExpr(ast))
         if (!isArgSymbol(def->sym))
           ii->zip4->insertAtTail(def->copy(&map));
     }
+
+  // Copy all iterator body expressions after singleLoop that are not
+  // declarations
   bool flag = true;
   for_alist(expr, ii->iterator->body->body) {
+    // Skip everything before the singleLoop
     if (flag) {
       if (expr == singleLoop)
         flag = false;
@@ -454,6 +503,7 @@ buildZip4(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
     if (!isDefExpr(expr) && expr->next)
       ii->zip4->insertAtTail(expr->copy(&map));
   }
+
   ii->zip4->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 }
 
