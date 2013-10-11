@@ -1,4 +1,3 @@
-config const infileName = "32x32x32.bin";
 config const outfileName = "output.bin";
 
 config const displayInput = false;
@@ -15,7 +14,6 @@ proc main(args: [] string) {
   const ny = args[2]:int;
   const nz = args[3]:int;
   const iterations = args[4]:int;
-  const size = nx*ny*nz;
   const c0 = 1.0:real(32) / 6.0:real(32);
   const c1 = 1.0:real(32) / 6.0:real(32) / 6.0:real(32);
 
@@ -26,13 +24,17 @@ proc main(args: [] string) {
   if iterations < 1 then
     halt("need at least one iteration");
 
+  const infileName = nx + "x" + ny + "x" + nz + ".bin";
+
   totalTimer.start();
 
-  var A: [0..#size] real(32);
-  var ANext: [0..#size] real(32);
+  var D = {0..#nx, 0..#ny, 0..#nz};
+
+  var A: [D] real(32);
+  var ANext: [D] real(32);
 
   IOTimer.start();
-  readData(infileName, A, nx,ny,nz);
+  readData(infileName, A, nx, ny, nz);
   IOTimer.stop();
   if displayInput {
     for a in A do
@@ -40,22 +42,23 @@ proc main(args: [] string) {
     writeln("Done with input");
   }
   computeTimer.start();
+
   ANext = A;
 
-  for i in 0..#iterations {
+  for i in 1..iterations {
     stencil(c0, c1, A, ANext, nx, ny, nz);
     A <=> ANext; // Reference version uses a pointer swap.
                  // var tmp = A._value.data;
-                 // A._value.data = Anext._value.data;
-                 // Anext._value.data = tmp;
+                 // A._value.data = ANext._value.data;
+                 // ANext._value.data = tmp;
   }
 
   A <=> ANext;
   computeTimer.stop();
 
   if displayOutput {
-    for i in 0..#nx*ny*nz do
-      writeln(ANext[i]);
+    for a in ANext do
+      writeln(a);
   }
   IOTimer.start();
   outputData(outfileName, ANext, nx, ny, nz);
@@ -87,18 +90,12 @@ proc outputData(outfileName: string, ANext: [] real(32),
 
 proc stencil(c0: real(32), c1: real(32), A: [] real(32), ANext: [] real(32),
              nx: int, ny: int, nz: int) {
-  inline proc index3D(i: int, j: int, k: int) return i + nx*(j + ny*k);
-
-  for i in 1..nx-2 {
-    for j in 1..ny-2 {
-      for k in 1..nz-2 {
-        ANext[index3D(i,j,k)] =
-          (A[index3D(i, j, k + 1)] + A[index3D(i, j, k - 1)] +
-           A[index3D(i, j + 1, k)] + A[index3D(i, j - 1, k)] +
-           A[index3D(i + 1, j, k)] + A[index3D(i - 1, j, k)])*c1
-           - A[index3D(i, j, k)]*c0;
-      }
-    }
+  // aak! the nz and nx indices are swapped here!
+  // This is also walking the leftmost dimension fastest!
+  forall (i,j,k) in A.domain[1..nx-2, 1..ny-2, 1..nz-2] {
+    ANext[k,j,i] = (A[k+1, j, i] + A[k-1, j, i] +
+                    A[k, j+1, i] + A[k, j-1, i] +
+                    A[k, j, i+1] + A[k, j, i-1])*c1 - A[k, j, i]*c0;
   }
 }
 

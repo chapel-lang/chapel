@@ -1,5 +1,5 @@
 config var numIterations = 1;
-config const printTimers = false;
+config const printTimers = 0;
 
 proc main(args: [] string) {
   use Time;
@@ -49,13 +49,13 @@ proc main(args: [] string) {
   dumpHisto(histo, histoHeight, histoWidth, outputFilename);
   outputTime.stop();
   totalTime.stop();
-  if printTimers {
+  if printTimers >= 3 {
     writeln("IO: ", inputTime.elapsed() + outputTime.elapsed());
     writeln(" -Input: ", inputTime.elapsed());
     writeln(" -Output: ", outputTime.elapsed());
-    writeln("Compute: ", computeTime.elapsed());
-    writeln("Timer Wall Time: ", totalTime.elapsed());
   }
+  if printTimers >= 2 then writeln("Compute: ", computeTime.elapsed());
+  if printTimers >= 1 then writeln("Timer Wall Time: ", totalTime.elapsed());
 }
 
 record RGB {

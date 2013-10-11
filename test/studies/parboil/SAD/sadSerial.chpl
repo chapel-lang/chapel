@@ -1,5 +1,5 @@
 config param useConfigFiles = true;
-config param printTimers = false;
+config param printTimers = 0;
 
 config var filename1 = "image1.img";
 config var filename2 = "image2.img";
@@ -54,11 +54,9 @@ proc main(args:[] string) {
   writeSads(outfilename, imageWidthMacroblocks, imageHeightMacroblocks, sadsComputed);
   IOTimer.stop();
 
-  if printTimers {
-    writeln("IO : ", IOTimer.elapsed());
-    writeln("Compute : ", ComputeTimer.elapsed());
-    writeln("Timer Wall Time: ", WallTimer.elapsed());
-  }
+  if printTimers >= 3 then writeln("IO : ", IOTimer.elapsed());
+  if printTimers >= 2 then writeln("Compute : ", ComputeTimer.elapsed());
+  if printTimers >= 1 then writeln("Timer Wall Time: ", WallTimer.elapsed());
 }
 
 
