@@ -30,6 +30,14 @@
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
+possible too-small timeout
+--------------------------
+[Error: Timed out compilation for types/sync/sungeun/writeRecordInOutProc] (10/11/13, linux64.gnu.none.fifo.pthreads)
+This test seems not to have timed out before.  Its timeout value is only
+5 seconds.  Thinking this was probably a sporadic failure, I bumped the
+timeout for this and its sibling writeRecordOutProc to 10 seconds.
+
+
 no-local testing takes more than 24 hours
 -----------------------------------------
 9/10/13, 9/11/13
@@ -135,17 +143,17 @@ at present.  See the archives for more detail.
 
 Perf (linux64.gnu.none.fifo.pthreads)
 -------------------------------------
-[Error matching compiler output for studies/shootout/mandelbrot/mandelbrot-fancy] (10/08/13: chap03, chap04, bradc-lnx)
-[Error: Timed out executing program release/examples/benchmarks/hpcc/ptrans (compopts: 1)] (10/08/13: chap04)
-[Error: Timed out executing program studies/hpcc/RA/bradc/parallel/ra-dist (compopts: 1)] (10/08/13: chap04)
-[Error: Timed out executing program release/examples/benchmarks/shootout/threadring] (10/08/13: chap03, bradc-lnx)
-[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_iterator_7 (compopts: 1)] (10/08/13: chap03, chap04, bradc-lnx)
-[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_rangesub_5 (compopts: 1)] (10/08/13: chap03, chap04, bradc-lnx)
-[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_reductions_6 (compopts: 1)] (10/08/13: chap03, chap04, bradc-lnx)
-[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_vector_4 (compopts: 1)] (10/08/13: chap03, chap04, bradc-lnx)
-[Error: Timed out executing program studies/shootout/thread-ring/lydia/thread-ring-coforall-begin] (10/08/13: chap03)
-[Error: Timed out executing program studies/shootout/thread-ring/lydia/thread-ring-coforall] (10/08/13: chap03, bradc-lnx)
-[Error: Timed out executing program studies/shootout/thread-ring/lydia/thread-ring-for-begin] (10/08/13: chap03, bradc-lnx)
+[Error matching compiler output for studies/shootout/mandelbrot/mandelbrot-fancy] (chap03: 10/11/13, chap04: 10/11/13, bradc-lnx: 10/11/13)
+[Error: Timed out executing program release/examples/benchmarks/hpcc/ptrans (compopts: 1)] (chap04: 10/11/13)
+[Error: Timed out executing program studies/hpcc/RA/bradc/parallel/ra-dist (compopts: 1)] (chap04: 10/11/13)
+[Error: Timed out executing program release/examples/benchmarks/shootout/threadring] (chap03: 10/11/13, bradc-lnx: 10/11/13)
+[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_iterator_7 (compopts: 1)] (chap03: 10/08/13, chap04: 10/08/13, bradc-lnx: 10/08/13)
+[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_rangesub_5 (compopts: 1)] (chap03: 10/08/13, chap04: 10/08/13, bradc-lnx: 10/08/13)
+[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_reductions_6 (compopts: 1)] (chap03: 10/08/13, chap04: 10/08/13, bradc-lnx: 10/08/13)
+[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_vector_4 (compopts: 1)] (chap03: 10/08/13, chap04: 10/08/13, bradc-lnx: 10/08/13)
+[Error: Timed out executing program studies/shootout/thread-ring/lydia/thread-ring-coforall-begin] (chap03: 10/11/13, bradc-lnx: 10/10/13)
+[Error: Timed out executing program studies/shootout/thread-ring/lydia/thread-ring-coforall] (chap03: 10/11/13, bradc-lnx: 10/11/13)
+[Error: Timed out executing program studies/shootout/thread-ring/lydia/thread-ring-for-begin] (chap03: 10/11/13, bradc-lnx: 10/11/13)
 
 ==============================================================================
 Were once flagged as causing noise regularly, but not as familiar as the above
@@ -180,12 +188,15 @@ nondet. seg fault for prgenv-cray on chpbld01
 ---------------------------------------------
 [Error matching compiler output for release/examples/spec/Classes/declaration] (07/09/13)
 [Error matching compiler output for release/examples/spec/Records/recordInheritance] (07/14/13)
+[Error matching compiler output for release/examples/benchmarks/hpcc/hpl] (10/11/13)
+[Error matching compiler output for release/examples/benchmarks/hpcc/stream] (10/9/13)
+[Error matching compiler output for release/examples/benchmarks/miniMD/miniMD (compopts: 1)] (10/9/13)
 
 nondet. timeout on gasnet-everything
 ------------------------------------
 [Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dBDtoDRTest] (07/08/13)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (7/22/13, 09/02/13, 09/30/13)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (7/19/13, 9/4/13)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (7/19/13, 10/9/13)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff] (8/9/13)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (9/30/13)
 
@@ -278,16 +289,16 @@ The following configurations are affected:
  linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc
  linux64.gnu.gasnet-everything.fifo.pthreads
 examples of what times out:
- distributions/robust/arithmetic/kernels/jacobi (still timing out 5/5/13)
+ distributions/robust/arithmetic/kernels/jacobi (still timing out 10/10/13)
  distributions/nelson/MultiBlockDist2DLocales (maybe resolved?)
  distributions/robust/arithmetic/modules/test_module_Sort (maybe resolved?)
- distributions/robust/arithmetic/stress/test_many_domains (10/08/13)
+ distributions/robust/arithmetic/stress/test_many_domains (10/11/13)
  distributions/robust/arithmetic/stress/test_many_array (4/29/13)
  distributions/dm/t2 (2012/08/15)
  test_array_slicing3 (07/24/13, 07/12/13, 06/08/12, 6/16, 3/29/13, 5/3/13)
  release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4) (04/08/13)
- studies/cholesky/jglewis/version2/performance/test_cholesky_performance (06/20/13)
- multilocale/diten/needMultiLocales/coforallon_maxThreads (07/04/13, 10/02/13)
+ studies/cholesky/jglewis/version2/performance/test_cholesky_performance (10/10/13)
+ multilocale/diten/needMultiLocales/coforallon_maxThreads (07/04/13, 10/10/13)
  etc.
 
 non-deterministic compilation timeouts with gasnet (UNASSIGNED)
