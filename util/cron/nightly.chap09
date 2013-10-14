@@ -1,9 +1,9 @@
-#!/usr/bin/tcsh
+#!/bin/bash
 echo Starting $0 on `hostname`.; module list; printenv; echo
 
-set LOGFILE = $HOME/tmp/nightly.valgrind.linux64.out
+export LOGFILE=$HOME/tmp/nightly.valgrind.linux64.out
 echo "Testing valgrind on `date`.  Log file: $LOGFILE"
-setenv CHPL_RT_NUM_THREADS_PER_LOCALE 100
-source ~/.chapelcshrc-cron && ~/chapel/util/cron/nightly -cron -valgrind -no-futures -suppress Suppressions/valgrind.suppress -parnodefile ~/chapel/test/Nodes/CHAP9 >&! $LOGFILE
+export CHPL_RT_NUM_THREADS_PER_LOCALE=100
+source ~/.chapelbashrc-cron && ~/chapel/util/cron/nightly -cron -valgrind -no-futures -suppress Suppressions/valgrind.suppress -parnodefile ~/chapel/test/Nodes/CHAP9 2>&1 > $LOGFILE
 
 echo Finished $0 on `date`.
