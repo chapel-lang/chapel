@@ -46,7 +46,7 @@ for compiler in $compilers ; do
       module load mpich2
   fi
   module list
-  export CHPL_TARGET_PLATFORM=cray-xt
+  export CHPL_TARGET_PLATFORM=cray-xe
   export CHPL_COMM=none
   $NIGHTLY -combinedir -cron $EXAMPLES
 )
@@ -59,8 +59,8 @@ done
 #  echo "Testing PrgEnv-${compiler}${PrgEnv_Version} as HOST and TARGET compiler on `date`."
 #  module load PrgEnv-${compiler}${PrgEnv_Version}
 #  module list
-#  export CHPL_HOST_PLATFORM=cray-xt
-#  export CHPL_TARGET_PLATFORM=cray-xt
+#  export CHPL_HOST_PLATFORM=cray-xe
+#  export CHPL_TARGET_PLATFORM=cray-xe
 #  export CHPL_HOST_COMPILER=cray-prgenv-$compiler
 #  export CHPL_COMM=none
 #  $NIGHTLY -combinedir -cron $EXAMPLES
