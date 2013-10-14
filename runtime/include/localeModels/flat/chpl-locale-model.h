@@ -13,15 +13,14 @@
 // This is the type of a global locale ID.
 //
 typedef struct {
-  int node:          32;
-  int ignore_subloc: 32;  // needed only for compiler-emitted initializations
+  int32_t node;
 } chpl_localeID_t;
 
 //
 // This is the initializer for a chpl_localeID_t.  This macro is
 // referenced explicitly in the compiler, in symbol.cpp.
 //
-#define CHPL_LOCALEID_T_INIT  {0, 0}
+#define CHPL_LOCALEID_T_INIT  {0}
 
 //
 // This is the external copy constructor for a chpl_localeID_t, specified
