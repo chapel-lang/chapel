@@ -463,9 +463,14 @@ void parseConfigFile(const char* configFilename,
   fclose(argFile);
 }
 
-chpl_bool chpl_config_has_value(chpl_string v, chpl_string m)
-{ return lookupSetValue(v, m) != NULL; }
-chpl_string chpl_config_get_value(chpl_string v, chpl_string m)
-{ return lookupSetValue(v, m); }
+
+chpl_bool chpl_config_has_value(chpl_string v, chpl_string m) { 
+  return lookupSetValue(v, m) != NULL;
+}
+
+
+chpl_string chpl_config_get_value(chpl_string v, chpl_string m) { 
+  return lookupSetValue(v, m);
+}
 
 
