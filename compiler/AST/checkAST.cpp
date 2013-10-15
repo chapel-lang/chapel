@@ -249,3 +249,19 @@ void checkPrimitives()
     }
   }
 }
+
+// Look for cases where the return type is a value type,
+// and it has no corresponding ref type.
+void checkReturnTypesHaveRefTypes()
+{
+  forv_Vec(FnSymbol, fn, gFnSymbols)
+  {
+    Type* retType = fn->retType;
+    
+    if (retType->symbol->hasFlag(FLAG_REF))
+      continue;
+
+    if (retType->refType == NULL)
+      INT_FATAL(fn, "every return type must also have a ref type.");
+  }
+}

@@ -63,6 +63,7 @@ void checkPostResolution();
 void checkNoUnresolveds();
 // These checks can be applied after any pass.
 void checkForDuplicateUses();
+void checkReturnTypesHaveRefTypes();
 
 //
 // utility functions in pass-containing code files

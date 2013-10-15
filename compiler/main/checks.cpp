@@ -93,6 +93,7 @@ void check_resolve()
   checkResolveRemovedPrims();
   check_afterEveryPass();
   check_afterNormalization();
+  checkReturnTypesHaveRefTypes();
 }
 
 void check_resolveIntents()
@@ -327,6 +328,7 @@ static void check_afterNormalization()
 // Checks that should remain true after the resolution pass is complete.
 static void check_afterResolution()
 {
+  checkReturnTypesHaveRefTypes();
   if (fVerify)
   {
 // Disabled for now because user warnings should not be logged multiple times:
