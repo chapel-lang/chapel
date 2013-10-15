@@ -997,7 +997,7 @@ if ("$dirlist" == "" && "$testlist" == "") then
             # Track the number of spec examples being tested
             echo \[Generating tests from the Chapel Spec in $chplhome/spec\] |& $tee -a $logfile
             set blah=`make spectests >& test/spectests.exec.out.tmp`
-            set exitval = $?            
+            set exitval = $status            
             if ( $exitval != 0 ) then
                 echo "[Error: Failed to generate Spec tests.  Run 'make spectests' in $chplhome for more info]" |& $tee -a $logfile
                 goto err_exit
@@ -1008,7 +1008,7 @@ if ("$dirlist" == "" && "$testlist" == "") then
             endif
             echo \[Computing stats for spec examples\] |& $tee -a $logfile
             set blah=`$utildir/computePerfStats spectests "$perfdir"`
-            set exitval = $?
+            set exitval = $status
             if ( $exitval != 0 ) then
                 echo "[Error: Failed to compute perf stats for Spec tests]" |& $tee -a $logfile
                 goto err_exit
@@ -1019,7 +1019,7 @@ if ("$dirlist" == "" && "$testlist" == "") then
             if ("$gengraphs" == 0) then
                 echo \[Generating tests from the Chapel Spec in $chplhome/spec\] |& $tee -a $logfile
                 set autogen=`make spectests` # capture output to keep it quiet
-                set exitval = $?
+                set exitval = $status
                 if ( $exitval != 0 ) then
                     echo "[Error: Failed to generate Spec tests.  Run 'make spectests' in $chplhome for more info]" |& $tee -a $logfile
                     goto err_exit
@@ -1166,7 +1166,7 @@ foreach test ($testlist)
             echo "[Starting $sub_test `date`]" |& $tee -a $logfile
 
             $sub_test "$compiler" |& $tee -a $logfile
-            set errcode = $?
+            set errcode = $status
             if ($errcode != 0) then
                 echo "[Error running sub_test for $test]" |& $tee -a $logfile
             endif
@@ -1182,7 +1182,7 @@ foreach test ($testlist)
                 if ($oldgraphs) then
                     echo "[Executing createGraphs for $basedir/$graphfile in $perfdir]" |& $tee -a $logfile
                     $createGraphs "$graphfile" "$perfdir" "$startdate" |& $tee -a $logfile
-                    if ($? == 0) then
+                    if ($status == 0) then
                         echo "[Success generating old-style graphs for $graphfile in $perfdir]" |& $tee -a $logfile
                     else
                         echo "[Error generating old-style graphs for $graphfile in $perfdir]" |& $tee -a $logfile
@@ -1191,7 +1191,7 @@ foreach test ($testlist)
                 # new performance graph stuff
                 echo "[Executing genGraphs for $basedir/$graphfile in $perfhtmldir]" |& $tee -a $logfile
                 $createCoolerGraphs -p "$perfdir" -o "$perfhtmldir" -n "$perftestname" "$startdate_t" "$graphfile" |& $tee -a $logfile
-                if ($? == 0) then
+                if ($status == 0) then
                     echo "[Success generating graphs for $basedir/$graphfile in $perfhtmldir]" |& $tee -a $logfile
                  else
                     echo "[Error generating graphs for $basedir/$graphfile in $perfhtmldir]" |& $tee -a $logfile
@@ -1324,7 +1324,7 @@ foreach testType ($testTypes)
                         echo "[Starting $sub_test `date`]" |& $tee -a $logfile
                     
                         $sub_test "$compiler" |& $tee -a $logfile
-                        set errcode = $?
+                        set errcode = $status
                         if ($errcode != 0) then
                             echo "[Error running sub_test in $dir ($errcode)]" |& $tee -a $logfile
                         endif
@@ -1341,7 +1341,7 @@ foreach testType ($testTypes)
                         set graphfile = `basename $gfile`
                         echo "[Executing createGraphs for $graphfile in $perfdir]" |& $tee -a $logfile
                         $createGraphs "$graphfile" "$perfdir" "$startdate" |& $tee -a $logfile
-                        if ($? == 0) then
+                        if ($status == 0) then
                             echo "[Success generating old-style graphs for $graphfile in $perfdir]" |& $tee -a $logfile
                         else
                             echo "[Error generating old-style graphs for $graphfile in $perfdir]" |& $tee -a $logfile
@@ -1352,7 +1352,7 @@ foreach testType ($testTypes)
                 if (! $?CHPL_TEST_PERF_DIR && "$graphfiles" != "") then
                     echo "[Executing genGraphs for graphfiles in $dir in $perfhtmldir]" |& $tee -a $logfile
                     $createCoolerGraphs -p "$perfdir" -o "$perfhtmldir" -n "$perftestname" "$startdate_t" $graphfiles |& $tee -a $logfile
-                    if ($? == 0) then
+                    if ($status == 0) then
                         echo "[Success generating graphs for $graphfile in $perfhtmldir]" |& $tee -a $logfile
                     else
                         echo "[Error generating graphs for $graphfile in $perfhtmldir]" |& $tee -a $logfile
@@ -1368,7 +1368,7 @@ if ($gengraphs && $?CHPL_TEST_PERF_DIR) then
     if ($oldgraphs) then
         echo "[Executing viewGraphs for $graphfile in $perfdir]" |& $tee -a $logfile
         $viewGraphs "$perfdir" |& $tee -a $logfile
-        if ($? == 0) then
+        if ($status == 0) then
             echo "[Success generating old-style graph views in $perfdir]" |& $tee -a $logfile
         else
             echo "[Error generating old-style graph views in $perfdir]" |& $tee -a $logfile
@@ -1377,7 +1377,7 @@ if ($gengraphs && $?CHPL_TEST_PERF_DIR) then
     # new performance graph stuff
     echo "[Executing genGraphs for $CHPL_HOME/test/GRAPHFILES in $perfhtmldir]" |& $tee -a $logfile
     $createCoolerGraphs  -p "$perfdir" -o "$perfhtmldir" -t "$CHPL_HOME/test" -n "$perftestname" "$startdate_t" -g "$CHPL_HOME/test/GRAPHFILES" |& $tee -a $logfile
-    if ($? == 0) then
+    if ($status == 0) then
         echo "[Success generating graphs from $CHPL_HOME/test/GRAPHFILES in $perfhtmldir]" |& $tee -a $logfile
     else
         echo "[Error generating graphs from $CHPL_HOME/test/GRAPHFILES in $perfhtmldir]" |& $tee -a $logfile
