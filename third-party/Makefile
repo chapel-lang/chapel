@@ -5,13 +5,14 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 default: all
 
-all: creoleparser dlmalloc gasnet gmp qthread tcmalloc llvm
+all: creoleparser dlmalloc gasnet gmp hwloc qthread tcmalloc llvm
 
 clean: FORCE
 	cd creoleparser && $(MAKE) clean
 	cd dlmalloc && $(MAKE) clean
 	cd gasnet && $(MAKE) clean
 	cd gmp && $(MAKE) clean
+	cd hwloc && $(MAKE) clean
 	cd llvm && $(MAKE) clean
 	cd massivethreads && $(MAKE) clean
 	cd qthread && $(MAKE) clean
@@ -23,6 +24,7 @@ cleanall: FORCE
 	cd dlmalloc && $(MAKE) cleanall
 	cd gasnet && $(MAKE) cleanall
 	cd gmp && $(MAKE) cleanall
+	cd hwloc && $(MAKE) cleanall
 	cd llvm && $(MAKE) cleanall
 	cd massivethreads && $(MAKE) cleanall
 	cd qthread && $(MAKE) cleanall
@@ -34,6 +36,7 @@ clobber: FORCE
 	cd dlmalloc && $(MAKE) clobber
 	cd gasnet && $(MAKE) clobber
 	cd gmp && $(MAKE) clobber
+	cd hwloc && $(MAKE) clobber
 	cd llvm && $(MAKE) clobber
 	cd massivethreads && $(MAKE) clobber
 	cd qthread && $(MAKE) clobber
@@ -58,6 +61,10 @@ $(GASNET_INSTALL_DIR):
 gmp: $(GMP_INSTALL_DIR)
 $(GMP_INSTALL_DIR):
 	cd gmp && $(MAKE)
+
+hwloc: $(HWLOC_INSTALL_DIR)
+$(HWLOC_INSTALL_DIR):
+	cd hwloc && $(MAKE)
 
 massivethreads: $(MASSIVETHREADS_INSTALL_DIR)
 $(MASSIVETHREADS_INSTALL_DIR):

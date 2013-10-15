@@ -1,0 +1,12 @@
+=======================
+hwloc README for Chapel
+=======================
+
+This copy of hwloc is being released with Chapel for convenience and
+uses a snapshot of obtained from Open MPI at:
+
+  http://www.open-mpi.org/projects/hwloc
+
+Any Chapel issues that seem to be related to hwloc should be directed
+to the Chapel team at chapel-bugs@lists.sourceforge.net.
+

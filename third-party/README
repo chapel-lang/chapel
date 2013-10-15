@@ -57,6 +57,19 @@ gmp/
   See also: gmp/README and gmp/gmp-*/README
 
 
+hwloc/
+
+  Summary: The Portable Hardware Locality (hwloc) software package
+           provides a portable abstraction of the hierarchical
+           topology of modern architectures.
+
+  License: BSD (see hwloc/hwloc-*/COPYING)
+
+  Website: http://www.open-mpi.org/projects/hwloc
+
+  See also: hwloc/README and hwloc/hwloc-*/README
+
+
 llvm/
   Summary: This is a directory where the LLVM Compiler infrastructure,
            including Clang, will be downloaded when running 'make

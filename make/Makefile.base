@@ -30,6 +30,7 @@ endif
 # CHPL_MAKE_ATOMICS="intrinsics"
 # CHPL_MAKE_NETWORK_ATOMICS="none"
 # CHPL_MAKE_GMP="none"
+# CHPL_MAKE_HWLOC="none"
 # CHPL_MAKE_REGEXP="re2"
 # CHPL_MAKE_WIDE_POINTERS="struct"
 # CHPL_MAKE_WIDE_POINTERS_DEFINES="-DCHPL_WIDE_POINTER_STRUCT"
@@ -125,6 +126,7 @@ include $(THIRD_PARTY_DIR)/tcmalloc/Makefile.include
 include $(THIRD_PARTY_DIR)/gmp/Makefile.include
 include $(THIRD_PARTY_DIR)/re2/Makefile.include
 include $(THIRD_PARTY_DIR)/llvm/Makefile.include-$(CHPL_MAKE_LLVM)
+include $(THIRD_PARTY_DIR)/hwloc/Makefile.include
 
 -include $(THIRD_PARTY_DIR)/Makefile.devel.include
 
