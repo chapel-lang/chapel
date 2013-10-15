@@ -11,28 +11,23 @@ f.close()
 newlines = list()
 sorted = list()
 count = 0
-numEntries = 5
 for l in lines:
     if l != '\n':
         count += 1
         sorted.append(l)
-        if count == numEntries:
+        if l.strip() == '==========':
             sorted.sort()
             newlines += sorted
-            count = 0
-            for i in range(0,numEntries):
+            for i in range(0,count):
                 sorted.pop()
+            count = 0
 
 newlines += sorted
 
 f = open(logfile, 'w')
 count = 0
 for l in newlines:
-    count += 1
     f.write('%s'%(l))
-    if count == numEntries:
-        count = 0
-        f.write('\n')
 
 f.close()
 

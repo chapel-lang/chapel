@@ -8,19 +8,19 @@ writestuff();
 coforall i in 0..#(here:LocaleModel).numSublocales do
   on (here:LocaleModel).getChild(i) do writestuff(false);
 
-writeln();
+writeln("==========");
 writestuff();
 
 coforall subloc in (here:LocaleModel).getChildren() do
   on subloc do writestuff(false);
 
-writeln();
+writeln("==========");
 writestuff();
 
 coforall subloc in (here:LocaleModel).getChildren() do
   on subloc do writestuff(false);
 
-writeln();
+writeln("==========");
 writestuff();
 
 config const dummy = true; // to break up the coforall+on optimization
@@ -29,6 +29,6 @@ coforall subloc in (here:LocaleModel).getChildren() {
   else writestuff(false);
 }
 
-writeln();
+writeln("==========");
 writestuff();
 
