@@ -570,8 +570,8 @@ if ($hello == 1) {
 	    $testflags = "$testflags release/examples/hello.chpl";
 	}
     } else {
-	print "Error: Can't yet run the parallel tests with --hello[s]\n";
-	exit(1);
+	mysystem("cd $testdir && echo $testdir > DIRFILE", "making directory file", 1, 1);
+	$testflags = "$testflags -dirfile DIRFILE";
     }
 }
 if ($performance == 1) { 
