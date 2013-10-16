@@ -71,16 +71,14 @@ hwloc/
 
 
 llvm/
-  Summary: This is a directory where the LLVM Compiler infrastructure,
-           including Clang, will be downloaded when running 'make
-           llvm' in the third-party directory.  We use LLVM as an
-           optional back-end for Chapel in place of C (see
-           doc/technotes/README.llvm for details); and we use CLANG to
+  Summary: This directory holds LLVM and Clang.  LLVM is provided as
+           an optional back-end target in place of C (see
+           doc/technotes/README.llvm for details).  CLANG is used to
            support "extern blocks" within Chapel -- a capability for
            embedding C code into a Chapel source file.
 
-  License: LLVM's BSD-style license (see llvm/llvm/LICENSE.TXT and
-           llvm/llvm/tools/clang/LICENSE.TXT)
+  License: University of Illinois / NCSA (see llvm/llvm/LICENSE.TXT
+           and llvm/llvm/tools/clang/LICENSE.TXT)
 
   Website: http://llvm.org/
              and

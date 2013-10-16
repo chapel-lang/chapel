@@ -1,41 +1,73 @@
-Copyright (c) 2004-2013, Cray Inc.
-All rights reserved.
+==========================
+Chapel License Information
+==========================
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are
-met:
+The Chapel implementation is composed of two categories of code:
 
-* Redistributions of source code must retain the above copyright
-  notice, this list of conditions and the following disclaimer.
+1) code that was specifically developed for, or contributed to, the
+   Chapel project.  This code comprises the core of the Chapel
+   implementation: the compiler, runtime, and standard/internal
+   modules.  Code in this category is made available under the
+   3-clause BSD license, which can be found in 'LICENSE.chapel' in
+   this directory.
 
-* Redistributions in binary form must reproduce the above copyright
-  notice, this list of conditions and the following disclaimer in the
-  documentation and/or other materials provided with the distribution.
+2) code from other open-source projects that we package and
+   redistribute for the convenience of end-users.  Packages in this
+   category are made available under the terms of their original
+   licenses, respectively.
 
-* Neither the name Cray Inc. nor the names of its contributors may be
-  used to endorse or promote products derived from this software
-  without specific prior written permission.
+   Packages in this second category are redistributed in the etc/ and
+   third-party/ directories.  The following table provides a summary
+   of the packages, their uses, and their licenses.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+   directory/package  use                                          license
+   -----------------  -------------------------------------------  -------
+   etc/
+     emacs            emacs-based syntax coloring                  GPL
+     vim              vim-based syntax coloring                    VIM
 
+   third-party/
+     creoleparser     used to generate Chapel documentation        MIT/new BSD
+     dlmalloc         alternative memory allocator option          public domain
+     gasnet           portable communication library               BSD-like
+     gmp              optional multi-precision math library        L-GPL
+     hwloc            portable NUMA compute node utilities         new BSD
+     llvm             CLANG C parsing/optional back-end compiler   U of I/NCSA
+     massivethreads   alternative lightweight tasking option       2-clause BSD
+     qthread          alternative lightweight tasking option       new BSD
+     re2              optional regular expression parsing library  new BSD
+     tcmalloc         alternative memory allocator                 new BSD
+     txt2man          creation of man pages (developer-only)       GPL
+     utf8-decoder     used for runtime UTF-8 string decoding       MIT
 
-[Please note that the software contained in the third-party/ directory
-has not been developed by the Chapel project but rather by other open
-source efforts.  These packages are being redistributed in accordance
-to their individual licensing terms.  See third-party/README for more
-information on each package and its respective license.]
+   For a more complete introduction to these packages and their
+   licensing terms, refer to etc/README, third-party/README, and the
+   README and license files in the subdirectories listed above.
 
-[Note furthermore that the emacs/vim modes defined in the etc/
-directory are derivative of existing editor modes for emacs and vim
-and bear the licenses of their respective projects.  See etc/LICENSE
-for more details.]
+   Note that most of these packages are not used by Chapel unless
+   specifically requested.  The following table summarizes the
+   conditions under which each package is used:
+
+   directory/package  when used
+   -----------------  ----------------------------------------------------
+   etc/
+     emacs            only used if a user modifies their emacs environment
+     vim              only used if a user modifies their vim environment
+
+   third-party/
+     creoleparser     only used when running 'chpldoc'/'chpl --docs'
+     dlmalloc         only used when CHPL_MEM is 'dlmalloc'
+     gasnet           only used when CHPL_COMM is 'gasnet'
+     gmp              only used when CHPL_GMP is 'gmp' 
+     hwloc            not yet used, unless explicitly enabled by developers
+     llvm             only used when CHPL_LLVM is 'llvm'
+     massivethreads   only used when CHPL_TASKS is 'massivethreads'
+     qthread          only used when CHPL_TASKS is 'qthreads'
+     re2              only used when CHPL_REGEXP is 're2'
+     tcmalloc         only used when CHPL_MEM is 'tcmalloc'
+     txt2man          only used by developers to create the Chapel man page
+     utf8-decoder     bundled into the Chapel runtime to decode UTF-8 strings
+
+   For packages that are only used based on a CHPL_* setting, note
+   that this setting may either be explicitly or implicitly set.  To
+   verify your settings, run $CHPL_HOME/util/printchplenv.
