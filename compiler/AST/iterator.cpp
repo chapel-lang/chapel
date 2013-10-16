@@ -375,11 +375,15 @@ buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   Symbol* ic = ii->advance->getFormal(1);
   map.put(ic, ii->zip1->_this);
 
+  // This block will replace the body of the zip1 function stubbed in
+  // during resolution.
+  BlockStmt* zip1body = new BlockStmt();
+
   // Copy non-arg def expressions from the original iterator
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast))
       if (!isArgSymbol(def->sym))
-        ii->zip1->insertAtTail(def->copy(&map));
+        zip1body->insertAtTail(def->copy(&map));
   }
 
   // Copy all iterator body expressions before singleLoop that are not
@@ -389,16 +393,17 @@ buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
     if (expr == singleLoop)
       break;
     if (!isDefExpr(expr))
-      ii->zip1->insertAtTail(expr->copy(&map));
+      zip1body->insertAtTail(expr->copy(&map));
   }
 
   // Check for more
   CallExpr* blockInfo = singleLoop->blockInfo->copy(&map);
-  ii->zip1->insertAtTail(new CondStmt(blockInfo->get(1)->remove(),
+  zip1body->insertAtTail(new CondStmt(blockInfo->get(1)->remove(),
                                       new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this, ii->iclass->getField("more"), new_IntSymbol(1)),
                                       new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this, ii->iclass->getField("more"), new_IntSymbol(0))));
+  zip1body->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
-  ii->zip1->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  ii->zip1->body->replace(zip1body);
 }
 
 
@@ -412,11 +417,15 @@ buildZip2(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   Symbol* ic = ii->advance->getFormal(1);
   map.put(ic, ii->zip2->_this);
 
+  // This block will replace the body of the zip2 function stubbed in
+  // during resolution.
+  BlockStmt* zip2body = new BlockStmt();
+
   // Copy non-arg def expressions from the original iterator
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast))
       if (!isArgSymbol(def->sym))
-        ii->zip2->insertAtTail(def->copy(&map));
+        zip2body->insertAtTail(def->copy(&map));
   }
 
   // Copy all non-defs in singleLoop before the yield
@@ -425,10 +434,11 @@ buildZip2(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
       if (call->isPrimitive(PRIM_YIELD))
         break;
     if (!isDefExpr(expr))
-      ii->zip2->insertAtTail(expr->copy(&map));
+      zip2body->insertAtTail(expr->copy(&map));
   }
+  zip2body->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
-  ii->zip2->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  ii->zip2->body->replace(zip2body);
 }
 
 
@@ -442,11 +452,15 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   SymbolMap map;
   map.put(ic, ii->zip3->_this);
 
+  // This block will replace the body of the zip3 function stubbed in
+  // during resolution.
+  BlockStmt* zip3body = new BlockStmt();
+
   // Copy non-arg def expressions from the original iterator
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast))
       if (!isArgSymbol(def->sym))
-        ii->zip3->insertAtTail(def->copy(&map));
+        zip3body->insertAtTail(def->copy(&map));
   }
 
   // Copy all non-defs in singleLoop after the yield
@@ -460,16 +474,17 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
       continue;
     }
     if (!isDefExpr(expr))
-      ii->zip3->insertAtTail(expr->copy(&map));
+      zip3body->insertAtTail(expr->copy(&map));
   }
  
   // Check for more
   CallExpr* blockInfo = singleLoop->blockInfo->copy(&map);
-  ii->zip3->insertAtTail(new CondStmt(blockInfo->get(1)->remove(),
+  zip3body->insertAtTail(new CondStmt(blockInfo->get(1)->remove(),
                                       new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this, ii->iclass->getField("more"), new_IntSymbol(1)),
                                       new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this, ii->iclass->getField("more"), new_IntSymbol(0))));
+  zip3body->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
-  ii->zip3->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  ii->zip3->body->replace(zip3body);
 }
 
 
@@ -483,11 +498,15 @@ buildZip4(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   SymbolMap map;
   map.put(ic, ii->zip4->_this);
 
+  // This block will replace the body of the zip4 function stubbed in
+  // during resolution.
+  BlockStmt* zip4body = new BlockStmt();
+
   // Copy non-arg def expressions from the original iterator
   forv_Vec(BaseAST, ast, asts) {
       if (DefExpr* def = toDefExpr(ast))
         if (!isArgSymbol(def->sym))
-          ii->zip4->insertAtTail(def->copy(&map));
+          zip4body->insertAtTail(def->copy(&map));
     }
 
   // Copy all iterator body expressions after singleLoop that are not
@@ -501,10 +520,11 @@ buildZip4(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
       continue;
     }
     if (!isDefExpr(expr) && expr->next)
-      ii->zip4->insertAtTail(expr->copy(&map));
+      zip4body->insertAtTail(expr->copy(&map));
   }
+  zip4body->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
-  ii->zip4->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  ii->zip4->body->replace(zip4body);
 }
 
 
@@ -519,12 +539,14 @@ buildAdvance(FnSymbol* fn,
   //
   // build standard iterator advance method (advance)
   //
+  // This block will replace the stubbed-in body.
+  BlockStmt* advanceBody = new BlockStmt();
 
   for_alist(expr, fn->body->body)
-    ii->advance->insertAtTail(expr->remove());
+    advanceBody->insertAtTail(expr->remove());
 
   Symbol* end = new LabelSymbol("_end");
-  ii->advance->insertAtTail(new DefExpr(end));
+  advanceBody->insertAtTail(new DefExpr(end));
 
   // change yields to labels and gotos
   int i = 2; // 1 = not started, 0 = finished
@@ -556,13 +578,15 @@ buildAdvance(FnSymbol* fn,
   forv_Vec(LabelSymbol, label, labels) {
     GotoStmt* igs = new GotoStmt(GOTO_ITER_RESUME, label);
     label->iterResumeGoto = igs;
-    ii->advance->insertAtHead(new CondStmt(new SymExpr(tmp), igs));
-    ii->advance->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_EQUAL, more, new_IntSymbol(i++))));
+    advanceBody->insertAtHead(new CondStmt(new SymExpr(tmp), igs));
+    advanceBody->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_EQUAL, more, new_IntSymbol(i++))));
   }
-  ii->advance->insertAtHead(new CallExpr(PRIM_MOVE, more, new CallExpr(PRIM_GET_MEMBER_VALUE, ic, ii->iclass->getField("more"))));
-  ii->advance->insertAtHead(new DefExpr(tmp));
-  ii->advance->insertAtHead(new DefExpr(more));
-  ii->advance->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  advanceBody->insertAtHead(new CallExpr(PRIM_MOVE, more, new CallExpr(PRIM_GET_MEMBER_VALUE, ic, ii->iclass->getField("more"))));
+  advanceBody->insertAtHead(new DefExpr(tmp));
+  advanceBody->insertAtHead(new DefExpr(more));
+  advanceBody->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+
+  ii->advance->body->replace(advanceBody);
 }
 
 
@@ -570,9 +594,12 @@ buildAdvance(FnSymbol* fn,
 static void
 buildHasMore(IteratorInfo* ii) {
   VarSymbol* tmp = newTemp(ii->hasMore->retType);
-  ii->hasMore->insertAtTail(new DefExpr(tmp));
-  ii->hasMore->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, ii->hasMore->getFormal(1), ii->iclass->getField("more"))));
-  ii->hasMore->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
+  // This block will replace the stubbed-in body of ii->hasMore.
+  BlockStmt* hasMoreBody = new BlockStmt();
+  hasMoreBody->insertAtTail(new DefExpr(tmp));
+  hasMoreBody->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, ii->hasMore->getFormal(1), ii->iclass->getField("more"))));
+  hasMoreBody->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
+  ii->hasMore->body->replace(hasMoreBody);
 }
 
 
@@ -580,9 +607,12 @@ buildHasMore(IteratorInfo* ii) {
 static void
 buildGetValue(IteratorInfo* ii) {
   VarSymbol* tmp = newTemp(ii->getValue->retType);
-  ii->getValue->insertAtTail(new DefExpr(tmp));
-  ii->getValue->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, ii->getValue->getFormal(1), ii->iclass->getField("value"))));
-  ii->getValue->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
+  // This block will replace the stubbed-in body of ii->getValue.
+  BlockStmt* getMoreBody = new BlockStmt();
+  getMoreBody->insertAtTail(new DefExpr(tmp));
+  getMoreBody->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, ii->getValue->getFormal(1), ii->iclass->getField("value"))));
+  getMoreBody->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
+  ii->getValue->body->replace(getMoreBody);
 }
 
 
