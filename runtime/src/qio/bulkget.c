@@ -4,6 +4,8 @@
 
 #include "bulkget.h"
 
+// The initial ref count in the return qbytes buffer is 1.
+// The caller is responsible for calling qbytes_release on it when done.
 qbytes_t* bulk_get_bytes(int64_t src_locale, qbytes_t* src_addr)
 {
   qbytes_t* ret;
@@ -14,6 +16,7 @@ qbytes_t* bulk_get_bytes(int64_t src_locale, qbytes_t* src_addr)
   chpl_gen_comm_get( &src_len, src_locale, & src_addr->len, sizeof(int64_t), CHPL_TYPE_int64_t, 1, -1, "<internal>");
 //  chpl_comm_get
 
+  // The initial ref count is 1.
   err = qbytes_create_calloc(&ret, src_len);
   if( err ) return NULL;
 

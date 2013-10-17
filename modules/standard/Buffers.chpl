@@ -103,12 +103,14 @@ module Buffers {
   }
   proc bytes.bytes(len:int(64), out error:syserr) {
     error = qbytes_create_calloc(this._bytes_internal, len);
+    // The buffer is "retained" internally on creation, but only on success.
     this.home = here;
   }
   proc bytes.bytes(len:int(64)) {
     var error:syserr = ENOERR;
     error = qbytes_create_calloc(this._bytes_internal, len);
     if error then ioerror(error, "in bytes constructor");
+    // The buffer is retained internally on construction, but only on success.
     this.home = here;
   }
 
@@ -116,6 +118,7 @@ module Buffers {
   proc create_iobuf(out error:syserr):bytes {
     var ret:bytes;
     error = qbytes_create_iobuf(ret._bytes_internal);
+    // The buffer is "retained" internally on creation, but only on success.
     ret.home = here;
     return ret;
   }
@@ -137,6 +140,7 @@ module Buffers {
       var ret:bytes;
       ret.home = here;
       writeln("Bulk moving bytes");
+      // The initial ref count is 1, so no need to call qbytes_retain here.
       ret._bytes_internal = bulk_get_bytes(x.home.id, x._bytes_internal); 
       return ret;
     }
@@ -162,6 +166,9 @@ module Buffers {
       ret.home = here;
       writeln("Bulk moving bytes");
       ret._bytes_internal = bulk_get_bytes(x.home.id, x._bytes_internal); 
+      // On return from bulk_get_bytes, the ref count in ret._bytes_internal 
+      // should be 1.
+      // Note that the error case is not handled (bulk_get_bytes must succeed).
     }
     return ret;
   }

@@ -667,6 +667,7 @@ proc open(out error:syserr, path:string, mode:iomode, hints:iohints=IOHINT_NONE,
   var ret:file;
   ret.home = here;
   error = qio_file_open_access(ret._file_internal, path, _modestring(mode), hints, local_style);
+  // On return ret._file_internal.ref_cnt == 1.
   return ret;
 }
 proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
@@ -680,6 +681,8 @@ proc openfd(fd: fd_t, out error:syserr, hints:iohints=IOHINT_NONE, style:iostyle
   var ret:file;
   ret.home = here;
   error = qio_file_init(ret._file_internal, chpl_cnullfile(), fd, hints, local_style, 0);
+  // On return, either ret._file_internal.ref_cnt == 1, or ret._file_internal is NULL.
+  // error should be nonzero in the latter case.
   return ret;
 }
 proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
@@ -699,6 +702,8 @@ proc openfp(fp: _file, out error:syserr, hints:iohints=IOHINT_NONE, style:iostyl
   var ret:file;
   ret.home = here;
   error = qio_file_init(ret._file_internal, fp, -1, hints, local_style, 1);
+  // On return either ret._file_internal.ref_cnt == 1, or ret._file_internal is NULL.
+  // error should be nonzero in the latter case.
   return ret;
 }
 proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
@@ -719,6 +724,7 @@ proc opentmp(out error:syserr, hints:iohints=IOHINT_NONE, style:iostyle = defaul
   var ret:file;
   ret.home = here;
   error = qio_file_open_tmp(ret._file_internal, hints, local_style);
+  // On return ret._file_internal.ref_cnt == 1.
   return ret;
 }
 proc opentmp(hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
@@ -733,6 +739,7 @@ proc openmem(out error:syserr, style:iostyle = defaultIOStyle()) {
   var ret:file;
   ret.home = here;
   error = qio_file_open_mem(ret._file_internal, QBUFFER_PTR_NULL, local_style);
+  // On return ret._file_internal.ref_cnt == 1.
   return ret;
 }
 proc openmem(style:iostyle = defaultIOStyle()):file {
@@ -787,6 +794,8 @@ proc channel.channel(param writing:bool, param kind:iokind, param locking:bool, 
       local_style.byteorder = kind:uint(8);
     }
     error = qio_channel_create(this._channel_internal, f._file_internal, hints, !writing, writing, start, end, local_style);
+    // On return this._channel_internal.ref_cnt == 1.
+    // Failure to check the error return code may result in a double-deletion error.
   }
 }
 
@@ -972,6 +981,9 @@ proc channel._set_style(style:iostyle) {
   }
 }
 
+// It is the responsibility of the caller to release the returned channel
+// if the error code is nonzero.
+// The return error code should be checked to avoid double-deletion errors.
 proc file.reader(out error:syserr, param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE, style:iostyle = this._style): channel(false, kind, locking) {
   check();
 
@@ -981,12 +993,14 @@ proc file.reader(out error:syserr, param kind=iokind.dynamic, param locking=true
   }
   return ret;
 }
+
 proc file.reader(param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE, style:iostyle = this._style): channel(false, kind, locking) {
   var err:syserr = ENOERR;
   var ret = this.reader(err, kind, locking, start, end, hints, style);
   if err then ioerror(err, "in file.reader", this.tryGetPath());
   return ret;
 }
+
 // for convenience..
 proc file.lines(out error:syserr, param locking:bool = true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE, style:iostyle = this._style) {
   check();
@@ -1002,6 +1016,7 @@ proc file.lines(out error:syserr, param locking:bool = true, start:int(64) = 0, 
   }
   return ret;
 }
+
 proc file.lines(param locking:bool = true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE, style:iostyle = this._style) {
   var err:syserr = ENOERR;
   var ret = this.lines(err, locking, start, end, hints, style);
@@ -1009,7 +1024,9 @@ proc file.lines(param locking:bool = true, start:int(64) = 0, end:int(64) = max(
   return ret;
 }
 
-
+// It is the responsibility of the caller to retain and release the returned channel.
+// If the return error code is nonzero, the ref count will be 0 not 1.
+// The error code should be checked to avoid double-deletion errors.
 proc file.writer(out error:syserr, param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE, style:iostyle = this._style): channel(true,kind,locking) {
   check();
 
@@ -1019,6 +1036,7 @@ proc file.writer(out error:syserr, param kind=iokind.dynamic, param locking=true
   }
   return ret;
 }
+
 proc file.writer(param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style): channel(true,kind,locking) 
 {
   var err:syserr = ENOERR;
@@ -1688,6 +1706,7 @@ record ItemReader {
       yield x;
     }
   }
+
   /* It would be nice to be able to handle errors
      when reading with these()
      but it's not clear how to get the error argument
@@ -2161,7 +2180,7 @@ class _channel_regexp_info {
   }
 }
 
-proc channel._match_regexp_if_needed(cur:size_t, len:size_t, ref error:syserr, ref style:iostyle, r:_channel_regexp_info)
+proc channel._match_regexp_if_needed(cur:size_t, len:size_t, ref error:syserr, ref style:iostyle, ref r:_channel_regexp_info)
 {
   if _format_debug then stdout.writeln("REGEXP MATCH ENTRY");
   if qio_regexp_ok(r.theRegexp) {

@@ -739,11 +739,14 @@ static inline
 void qio_channel_retain(qio_channel_t* ch) {
   //if( DEBUG_QIO ) fprintf(stdout, "Channel retain %p\n", ch);
   DO_RETAIN(ch);
+  if (ch && DEBUG_QIO)
+    fprintf(stdout, "Channel retain %p, ref_cnt = %ld\n", ch, DO_GET_REFCNT(ch));
 }
 
 static inline
 void qio_channel_release(qio_channel_t* ch) {
-  //if( DEBUG_QIO ) fprintf(stdout, "Channel release %p\n", ch);
+  if (ch && DEBUG_QIO)
+    fprintf(stdout, "Channel release %p, ref_cnt = %ld\n", ch, DO_GET_REFCNT(ch));
   DO_RELEASE(ch, _qio_channel_destroy);
 }
 

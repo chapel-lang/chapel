@@ -685,6 +685,8 @@ err_t qio_mmap_initial(qio_file_t* file)
  
     err = qbytes_create_generic(&file->mmap, data, len, qbytes_free_munmap);
     if( err ) {
+      // A nonzero err code indicates that allocation of the qbytes buffer
+      // failed.  Therefore, we do not have to release it here.
       sys_munmap(data, len);
       return err;
     }
@@ -824,6 +826,7 @@ err_t qio_file_init(qio_file_t** file_out, FILE* fp, fd_t fd, qio_hint_t iohints
 
 error:
   qio_free(file);
+  *file_out = NULL;
   return err;
 }
 
@@ -902,6 +905,7 @@ err_t qio_file_init_usr(qio_file_t** file_out, void* file_info, qio_hint_t iohin
 
 error:
   qio_free(file);
+  *file_out = NULL;
   return err;
 }
 
@@ -1016,6 +1020,10 @@ void _qio_file_destroy(qio_file_t* f)
 
   qio_lock_destroy(&f->lock);
 
+  qbytes_release(f->mmap); // Does nothing if null.
+
+  qbuffer_release(f->buf); // Does nothing if null.
+
   DO_DESTROY_REFCNT(f);
 
   qio_free(f);
@@ -1098,6 +1106,7 @@ err_t qio_file_open(qio_file_t** file_out, const char* pathname, int flags, mode
   }
 
   // We opened this file, so file_out owns it.
+  // On error , file_out is NULL, so deleting it is harmless.
   return qio_file_init(file_out, fp, fd, iohints | QIO_HINT_OWNED, style, fp != NULL);
 }
 
@@ -1120,6 +1129,7 @@ err_t qio_file_open_usr(qio_file_t** file_out, const char* pathname, int flags, 
   }
 
   // We opened this file, so file_out owns it.
+  // On error , file_out is NULL, so deleting it is harmless.
   return qio_file_init_usr(file_out, info, iohints | QIO_HINT_OWNED, flags, style, s);
 }
 
@@ -1140,12 +1150,12 @@ err_t qio_file_open_mem_ext(qio_file_t** file_out, qbuffer_t* buf, qio_fdflag_t 
     err = qbuffer_create(&file->buf);
     if( err ) goto error;
   } else {
-    // retain..
+    // retain a copy.
     file->buf = buf;
     qbuffer_retain(file->buf);
   }
 
-  DO_INIT_REFCNT(file);
+  DO_INIT_REFCNT(file); // initialized to 1.
   file->fp = NULL;
   file->fd = -1;
   file->fdflags = fdflags;
@@ -1176,6 +1186,8 @@ err_t qio_file_open_mem_ext(qio_file_t** file_out, qbuffer_t* buf, qio_fdflag_t 
 
 error:
   qbuffer_release(file->buf);
+  // With a nonzero return code, the file structure is uninitialized
+  // (so the ref count field is meaningless).
   qio_free(file);
 
   return err;
@@ -1254,6 +1266,8 @@ err_t qio_file_open_tmp(qio_file_t** file_out, qio_hint_t iohints, const qio_sty
     return errno;
   }
 
+  // The caller is responsible for freeing the returned file.
+  // On error , file_out is NULL, so deleting it is harmless.
   err = qio_file_init(file_out, fp, -1, iohints | QIO_HINT_OWNED, style, 0);
   return err;
 }
@@ -1786,10 +1800,10 @@ void _qio_channel_destroy(qio_channel_t* ch)
     abort();
   }
 
+  qio_lock_destroy(&ch->lock);
+
   qio_file_release(ch->file);
   ch->file = NULL;
-
-  qio_lock_destroy(&ch->lock);
 
   DO_DESTROY_REFCNT(ch);
 
@@ -1870,7 +1884,11 @@ err_t _buffered_allocate_bufferspace(qio_channel_t* ch, int64_t amt, int64_t max
     uselen = tmp->len;
     if( uselen > max_left ) uselen = max_left;
     err = qbuffer_append(&ch->buf, tmp, 0, uselen);
-    qbytes_release(tmp); // free it when buffer is done with it.
+    // qbuffer_append retains tmp, so we can release our local reference.
+    // If there was an error, then it is not retained anywhere, so it is
+    // reclaimed here.
+    qbytes_release(tmp);
+
     if( err ) goto error;
 
     left -= uselen;
@@ -1949,7 +1967,10 @@ err_t _buffered_get_memory_file_lock_held(qio_channel_t* ch, int64_t amt, int wr
       err = qbytes_create_iobuf(&iobuf);
       if( err ) goto error;
       err = qbuffer_append(ch->file->buf, iobuf, 0, qbytes_len(iobuf));
+      // qbuffer_append retains iobuf, so we can release our local reference.
+      // If there was an error, then this releases the buffer entirely.
       qbytes_release(iobuf);
+
       if( err ) goto error;
     }
   } else {
@@ -2127,6 +2148,8 @@ err_t _buffered_get_mmap(qio_channel_t* ch, int64_t amt_in, int writing)
     }
 
     err = qbuffer_append(&ch->buf, bytes, skip, len - skip);
+    // qbuffer_append retains ch->buf, so we can release our local reference.
+    // If there was an error, then we release bytes entirely.
     qbytes_release(bytes); // munmaps on error, decs ref count normally.
     ch->av_end = qbuffer_end_offset(&ch->buf);
 

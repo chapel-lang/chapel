@@ -20,6 +20,12 @@ extern "C" {
 typedef uint_least64_t qb_refcnt_base_t;
 typedef atomic_uint_least64_t qbytes_refcnt_t;
 
+// The ref count is initialized to 1, in anticipation that the returned pointer
+// will be stored in some data structure.  If not, then the client is
+// responsible for calling DO_RELEASE right away, to avoid memory leakage.
+// This is a slight optimization, since execution on the "happy path" would
+// create the ref count and then increment it right away.  Depending on the
+// implementation, incrementing an atomic can be expensive.
 #define DO_INIT_REFCNT(ptr) atomic_init_uint_least64_t (&ptr->ref_cnt, 1)
 #define DO_GET_REFCNT(ptr) atomic_load_uint_least64_t (&ptr->ref_cnt)
 
@@ -29,9 +35,8 @@ typedef atomic_uint_least64_t qbytes_refcnt_t;
   if( ptr ) { \
     qb_refcnt_base_t old_cnt = atomic_fetch_add_uint_least64_t (&ptr->ref_cnt, 1); \
     /* if it was 0, we couldn't have had a ref to it */ \
-    if( old_cnt == 0 ) *(volatile int *)(0) = 0; /* deliberately segfault. */ \
-    /* if it is now 0, we overflowed the number */ \
-    if( old_cnt + 1 == 0 ) *(volatile int *)(0) = 0; /* deliberately segfault. */ \
+    /* if it is now 0, we overflowed the ref count (very unlikely). */ \
+    if( old_cnt + 1 <= 1 ) *(volatile int *)(0) = 0; /* deliberately segfault. */ \
   } \
 }
 
@@ -119,6 +124,8 @@ err_t qbytes_create_generic(qbytes_t** out, void* give_data, int64_t len, qbytes
 err_t _qbytes_init_iobuf(qbytes_t* ret);
 err_t qbytes_create_iobuf(qbytes_t** out);
 err_t _qbytes_init_calloc(qbytes_t* ret, int64_t len);
+
+// The caller is responsible for calling qbytes_release on the return value.
 err_t qbytes_create_calloc(qbytes_t** out, int64_t len);
 
 static inline

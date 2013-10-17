@@ -29,15 +29,14 @@ struct re_cache;
 struct re_t {
   RE2 re;
   qbytes_refcnt_t ref_cnt;
-  // Need to free it once ref_cnt==0
-  // ref_cnt starts out at 2 since every RE will
-  // be in the cache when it is created and returned to user code.
+  // RE2 implementations are shared and ref-counted.
+  // We free the internal RE2 once ref_cnt==0.
   re_t(StringPiece& pattern, const RE2::Options& option, re_cache* home)
     : re(pattern, option), ref_cnt(0)
   {
-    // Set reference count to 1.
+    // Initialize the reference count to 1.
+    // This represents the reference held by the cache.
     DO_INIT_REFCNT(this);
-    // We will add 1 for the cache in a moment.
   }
 };
 
@@ -147,7 +146,9 @@ re_t* local_cache_get(const char* str, int64_t str_len, const qio_regexp_options
       c->elems[i].date = c->date;
       // Return this element.
       re_t* re = c->elems[i].re;
-      DO_RETAIN(re); // add to reference count since user will have ptr to it
+      // We increment the reference count before returning a copy to the
+      // caller.  It is up to the caller to release the re_t handle when done.
+      DO_RETAIN(re);
       return re;
     }
   }
@@ -162,8 +163,9 @@ re_t* local_cache_get(const char* str, int64_t str_len, const qio_regexp_options
   re_t* re = new re_t(strp, opts, c);
   c->elems[oldest].date = c->date;
   c->elems[oldest].re = re;
-  DO_RETAIN(re); // add to reference count since user will have ptr to it
-  //fprintf(stdout, "Returning %p with refcnt=%i\n", re, (int) re->ref_cnt);
+  // We increment the reference count before returning a copy to the
+  // caller.  It is up to the caller to release the re_t handle when done.
+  DO_RETAIN(re);
   return re;
 }
 
@@ -181,12 +183,18 @@ void qio_regexp_init_default_options(qio_regexp_options_t* opt)
   opt->nongreedy = false;
 }
 
+// The returned re_t (passed back through "compiled") must be released by the caller.
 void qio_regexp_create_compile(const char* str, int64_t str_len, const qio_regexp_options_t* options, qio_regexp_t* compiled)
 {
   re_t* regexp = local_cache_get(str, str_len, options);
   compiled->regexp = (void*) regexp;
+  // We bump the reference count, because caller "owns" its copy of the cached
+  // regexp.  This way, a regexp can be removed from the cache without causing a
+  // copy that is still in use to be deleted early.
+  DO_RETAIN(regexp);
 }
 
+// The re_t returned in compiled must be released by the caller.
 void qio_regexp_create_compile_flags(const char* str, int64_t str_len, const char* flags, int64_t flags_len, qio_bool isUtf8, qio_regexp_t* compiled)
 {
   qio_regexp_options_t opt;

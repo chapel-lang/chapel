@@ -89,6 +89,7 @@ proc compile(pattern: string, out error:syserr, utf8=true, posix=false, literal=
   } else {
     error = qio_format_error_bad_regexp();
   }
+
   return ret;
 }
 
@@ -494,7 +495,13 @@ record regexp {
   }
 }
 
-proc =(ref ret:regexp, x:regexp)
+// For reasons that are yet to be determined, calls to =(:regexp, :regexp)
+// were notbeing bound as expected when 'ret' was declared with ref intent.
+// This problem will be fixed in a separate patch: we intend to make 
+//  proc =(ref lhs:?t, rhs:t)
+// be the standard signature for assignment, and propagate this across 
+// all module and test code.
+proc =(ret:regexp, x:regexp)
 {
   // retain -- release
   if x.home == ret.home {

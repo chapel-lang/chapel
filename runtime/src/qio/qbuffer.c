@@ -78,6 +78,8 @@ void debug_print_bytes(qbytes_t* b)
           b->free_function, b->flags);
 }
 
+// On return the ref count is 1.
+// The callee owns the returned qbytes buffer until qbytes_release is called.
 void _qbytes_init_generic(qbytes_t* ret, void* give_data, int64_t len, qbytes_free_t free_function)
 {
   ret->data = give_data;
@@ -87,6 +89,7 @@ void _qbytes_init_generic(qbytes_t* ret, void* give_data, int64_t len, qbytes_fr
   ret->free_function = free_function;
 }
 
+// On return, the ref count is 1.
 err_t qbytes_create_generic(qbytes_t** out, void* give_data, int64_t len, qbytes_free_t free_function)
 {
   qbytes_t* ret = NULL;
@@ -94,6 +97,7 @@ err_t qbytes_create_generic(qbytes_t** out, void* give_data, int64_t len, qbytes
   ret = (qbytes_t*) qio_calloc(1, sizeof(qbytes_t));
   if( ! ret ) return ENOMEM;
 
+  // On return the ref count is 1.
   _qbytes_init_generic(ret, give_data, len, free_function);
 
   *out = ret;
@@ -101,6 +105,9 @@ err_t qbytes_create_generic(qbytes_t** out, void* give_data, int64_t len, qbytes
   return 0;
 }
 
+// On return, the ref count in ret is 1.
+// The caller owns the returned qbytes buffer until qbytes_release
+// is called on it.
 err_t _qbytes_init_iobuf(qbytes_t* ret)
 {
   void* data = NULL;
@@ -115,6 +122,7 @@ err_t _qbytes_init_iobuf(qbytes_t* ret)
   //if( err ) return err;
   memset(data, 0, qbytes_iobuf_size);
 
+  // The ref count in ret is initially 1.
   _qbytes_init_generic(ret, data, qbytes_iobuf_size, qbytes_free_iobuf);
 
   return 0;
@@ -155,6 +163,8 @@ err_t _qbytes_init_calloc(qbytes_t* ret, int64_t len)
   return 0;
 }*/
 
+// The ref count returned in 'out' is initially 1.
+// The caller is responsible for calling qbytes_release on it.
 err_t qbytes_create_calloc(qbytes_t** out, int64_t len)
 {
   qbytes_t* ret = NULL;
@@ -164,6 +174,7 @@ err_t qbytes_create_calloc(qbytes_t** out, int64_t len)
   if( ! ret ) return ENOMEM;
 
   data = ret + 1; // ie ret + sizeof(qbytes_t)
+  // On return, the ref count in ret is 1.
   _qbytes_init_generic(ret, data, len, qbytes_free_null);
 
   *out = ret;
@@ -852,6 +863,7 @@ err_t qbuffer_flatten(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, 
 
   MAYBE_STACK_ALLOC(struct iovec, num_parts, iov, iov_onstack);
   if( ! iov ) {
+    // The buffer was successfully allocated, so we have to release it here.
     qbytes_release(ret);
     return ENOMEM;
   }
@@ -859,6 +871,7 @@ err_t qbuffer_flatten(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, 
   err = qbuffer_to_iov(buf, start, end, num_parts, iov, NULL, &iovcnt);
   if( err ) {
     MAYBE_STACK_FREE(iov, iov_onstack);
+    // The buffer was successfully allocated, so we have to release it here.
     qbytes_release(ret);
     return err;
   }
