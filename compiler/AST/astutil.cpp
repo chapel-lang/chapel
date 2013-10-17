@@ -7,6 +7,11 @@
 #include "type.h"
 
 
+static void pruneUnusedClassTypes(Vec<TypeSymbol*>& types);
+static void pruneUnusedRefs(Vec<TypeSymbol*>& types);
+static void changeDeadTypesToVoid(Vec<TypeSymbol*>& types);
+
+
 void collectFnCalls(BaseAST* ast, Vec<CallExpr*>& calls) {
   AST_CHILDREN_CALL(ast, collectFnCalls, calls);
   if (CallExpr* call = toCallExpr(ast))
@@ -601,49 +606,91 @@ visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
 static void
 pruneUnusedTypes(Vec<TypeSymbol*>& types)
 {
+
+  pruneUnusedClassTypes(types);
+  pruneUnusedRefs(types);
+  changeDeadTypesToVoid(types);
+}
+
+
+static void pruneUnusedClassTypes(Vec<TypeSymbol*>& types)
+{
   //
   // delete unused ClassType types, only deleting references to such
   // types when the value types are deleted
   //
-  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+  forv_Vec(TypeSymbol, ts, gTypeSymbols)
+  {
+    // Do not delete reference types.
+    // We delete the reference type if the base type is dead (below).
+    if (ts->hasFlag(FLAG_REF))
+      continue;
+
     // Ignore types flagged as primitive.
     if (ts->hasFlag(FLAG_PRIMITIVE_TYPE))
+      continue;
+
+    // Ignore types that are not class types
+    if (!isClassType(ts->type))
       continue;
 
     // Visit only those types not marked as visible.
     if (types.set_in(ts))
       continue;
 
-    if (isClassType(ts->type)) {
-      //
-      // delete reference types for classes/records/unions only if
-      // deleting value types
-      //
-      if (ts->hasFlag(FLAG_REF) && isClassType(ts->getValType()))
+    ts->defPoint->remove();
+  }
+}
+
+
+static void pruneUnusedRefs(Vec<TypeSymbol*>& types)
+{
+  forv_Vec(TypeSymbol, ts, gTypeSymbols)
+  {
+    // This pass, we are interested only in ref types.
+    if (!ts->hasFlag(FLAG_REF))
+      continue;
+
+    // Ignore types flagged as primitive.
+    if (ts->hasFlag(FLAG_PRIMITIVE_TYPE))
+      continue;
+
+    // Ignore types that are not class types
+    if (!isClassType(ts->type))
+    {
+      // hilde sez: Ref types are always class types.
+      // So we can't get here.
+      INT_ASSERT(false);
+      continue;
+    }
+
+    // Visit only those types not marked as visible.
+    if (types.set_in(ts))
+      continue;
+
+    if (Type* vt = ts->getValType())
+    {
+      // Don't remove a ref type if it refers to a class type
+      if (isClassType(vt))
+        // and the class type is still alive.
+        if (types.set_in(vt->symbol))
+          continue;
+
+      // Don't delete nil ref as it is used in widening.
+      if (vt == dtNil)
         continue;
 
-      //
-      // delete reference type if type is not used
-      //
-      if (!ts->hasFlag(FLAG_REF))
-        if (Type* refType = ts->getRefType())
-          refType->symbol->defPoint->remove();
-
-      //
-      // unlink reference type from value type
-      //
-      if (ts->hasFlag(FLAG_REF)) {
-        if (Type* vt = ts->getValType()) {
-          if (vt == dtNil) // don't delete nil ref as it is used when widening
-            continue;
-          vt->refType = NULL;
-        }
-      }
-
-      ts->defPoint->remove();
+      // Unlink reference type from value type.
+      vt->refType = NULL;
     }
-  }
 
+    ts->defPoint->remove();
+  }
+}
+
+
+static void changeDeadTypesToVoid(Vec<TypeSymbol*>& types)
+{
   //
   // change symbols with dead types to void (important for baseline)
   //
@@ -652,6 +699,7 @@ pruneUnusedTypes(Vec<TypeSymbol*>& types)
       def->sym->type = dtVoid;
   }
 }
+
 
 // Done this way because the log letter and hence the pass name for
 // each pass must be unique.  See initLogFlags() in runpasses.cpp.
