@@ -29,11 +29,20 @@ typedef uint64_t chpl_taskID_t;
 #define chpl_nullTaskID 0
 
 //
+// Condition variables
+//
+typedef pthread_cond_t chpl_thread_condvar_t;
+
+
+//
 // Sync variables
 //
 typedef struct {
   volatile chpl_bool  is_full;
   chpl_thread_mutex_t lock;
+  chpl_thread_condvar_t signal_full;  // wait for full; signal this when full
+  chpl_thread_condvar_t signal_empty; // wait for empty; signal this when empty
+  //  threadlayer_sync_aux_t tl_aux;
 } chpl_sync_aux_t;
 
 #endif

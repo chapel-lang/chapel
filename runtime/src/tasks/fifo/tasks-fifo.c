@@ -15,6 +15,7 @@
 #include "chpl-locale-model.h"
 #include "chpl-mem.h"
 #include "chpl-tasks.h"
+#include "chplsys.h"
 #include "error.h"
 #include <stdio.h>
 #include <string.h>
@@ -139,44 +140,80 @@ static task_pool_p             add_to_task_pool(chpl_fn_p,
                                                 task_private_data_t,
                                                 chpl_task_list_p);
 
+static pthread_cond_t  wakeup_cond = PTHREAD_COND_INITIALIZER;
+//
+// Condition variable methods
+//
+static void chpl_thread_condvar_init(chpl_thread_condvar_t* cv);
+
+//
+// Sync variable methods
+//
+static chpl_bool chpl_thread_sync_suspend(chpl_sync_aux_t *s,
+                                   struct timeval *deadline);
+static void chpl_thread_sync_awaken(chpl_sync_aux_t *s);
+
+//
+// Thread pool (for syncs using condition variables)
+//
+static chpl_bool chpl_thread_pool_suspend(chpl_thread_mutex_t *lock,
+                                   struct timeval *deadline);
+static void chpl_thread_pool_awaken(void);
+static void chpl_pool_suspend_cancel_cleanup(void* void_lock);
 
 // Sync variables
 
 static void sync_wait_and_lock(chpl_sync_aux_t *s,
                                chpl_bool want_full,
                                int32_t lineno, chpl_string filename) {
+  chpl_bool suspend_using_cond;
+
   chpl_thread_mutexLock(&s->lock);
 
+  // If true, we want to use conditionals, otherwise we want to spin
+  suspend_using_cond = (chpl_thread_getNumThreads() >=
+                        chpl_numCoresOnThisLocale());
+
   while (s->is_full != want_full) {
-    chpl_thread_mutexUnlock(&s->lock);
-
-    while (s->is_full != want_full) {
-      if (set_block_loc(lineno, filename)) {
-        // all other tasks appear to be blocked
-        struct timeval deadline, now;
-        gettimeofday(&deadline, NULL);
-        deadline.tv_sec += 1;
-        do {
-          chpl_thread_yield();
-          if (s->is_full != want_full)
-            gettimeofday(&now, NULL);
-        } while (s->is_full != want_full
-                 && (now.tv_sec < deadline.tv_sec
-                     || (now.tv_sec == deadline.tv_sec
-                         && now.tv_usec < deadline.tv_usec)));
-        if (s->is_full != want_full)
-          check_for_deadlock();
-      }
-      else {
-        do {
-          chpl_thread_yield();
-        } while (s->is_full != want_full);
-      }
-
-      unset_block_loc();
+    if (!suspend_using_cond) {
+      chpl_thread_mutexUnlock(&s->lock);
     }
+    if (set_block_loc(lineno, filename)) {
+      // all other tasks appear to be blocked
+      struct timeval deadline, now;
+      chpl_bool timed_out = false;
+      // default value so that always allows condition to be true if not
+      // using conditionals
 
-    chpl_thread_mutexLock(&s->lock);
+      gettimeofday(&deadline, NULL);
+      deadline.tv_sec += 1;
+      do {
+        if (suspend_using_cond)
+          timed_out = chpl_thread_sync_suspend(s, &deadline);
+        else
+          chpl_thread_yield();
+        
+        if (s->is_full != want_full && !timed_out)
+          gettimeofday(&now, NULL);
+      } while (s->is_full != want_full
+               && !timed_out
+               && (now.tv_sec < deadline.tv_sec
+                   || (now.tv_sec == deadline.tv_sec
+                       && now.tv_usec < deadline.tv_usec)));
+      if (s->is_full != want_full)
+        check_for_deadlock();
+    }
+    else {
+      do {
+        if (suspend_using_cond)
+          (void) chpl_thread_sync_suspend(s, NULL);
+        else
+          chpl_thread_yield();
+      } while (s->is_full != want_full);
+    }
+    unset_block_loc();
+    if (!suspend_using_cond)
+      chpl_thread_mutexLock(&s->lock);
   }
 
   if (blockreport)
@@ -201,13 +238,39 @@ void chpl_sync_waitEmptyAndLock(chpl_sync_aux_t *s,
   sync_wait_and_lock(s, false, lineno, filename);
 }
 
+static chpl_bool chpl_thread_sync_suspend(chpl_sync_aux_t *s,
+                                   struct timeval *deadline) {
+  chpl_thread_condvar_t* cond;
+  cond = s->is_full ? &s->signal_empty : &s->signal_full;
+
+  if (deadline == NULL) {
+    (void) pthread_cond_wait(cond, (pthread_mutex_t*) &s->lock);
+    return false;
+  }
+  else {
+    struct timespec ts;
+    ts.tv_sec  = deadline->tv_sec;
+    ts.tv_nsec = deadline->tv_usec * 1000UL;
+    return (pthread_cond_timedwait(cond, (pthread_mutex_t*) &s->lock, &ts)
+            == ETIMEDOUT);
+  }
+}
+
+static void chpl_thread_sync_awaken(chpl_sync_aux_t *s) {
+  if (pthread_cond_signal(s->is_full ?
+                          &s->signal_full : &s->signal_empty))
+    chpl_internal_error("pthread_cond_signal() failed");
+}
+
 void chpl_sync_markAndSignalFull(chpl_sync_aux_t *s) {
   s->is_full = true;
+  chpl_thread_sync_awaken(s);
   chpl_sync_unlock(s);
 }
 
 void chpl_sync_markAndSignalEmpty(chpl_sync_aux_t *s) {
   s->is_full = false;
+  chpl_thread_sync_awaken(s);
   chpl_sync_unlock(s);
 }
 
@@ -216,12 +279,58 @@ chpl_bool chpl_sync_isFull(void *val_ptr,
   return s->is_full;
 }
 
+static void chpl_thread_condvar_init(chpl_thread_condvar_t* cv) {
+  if (pthread_cond_init((pthread_cond_t*) cv, NULL))
+    chpl_internal_error("pthread_cond_init() failed");
+}
+
 void chpl_sync_initAux(chpl_sync_aux_t *s) {
   s->is_full = false;
   chpl_thread_mutexInit(&s->lock);
+  chpl_thread_condvar_init(&s->signal_full);
+  chpl_thread_condvar_init(&s->signal_empty);
 }
 
 void chpl_sync_destroyAux(chpl_sync_aux_t *s) { }
+
+// Thread pool (for syncs using condition variables)
+static chpl_bool chpl_thread_pool_suspend(chpl_thread_mutex_p lock,
+                                   struct timeval *deadline) {
+  int last_cancel_state;
+  chpl_bool res;
+
+  // enable cancellation with cleanup handler before waiting for wakeup signal
+  pthread_cleanup_push(chpl_pool_suspend_cancel_cleanup, lock);
+  (void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &last_cancel_state);
+  assert(last_cancel_state == PTHREAD_CANCEL_DISABLE); // sanity check
+
+  if (deadline == NULL) {
+    (void) pthread_cond_wait(&wakeup_cond, (pthread_mutex_t*) lock);
+    res = false;
+  }
+  else {
+    struct timespec ts;
+    ts.tv_sec  = deadline->tv_sec;
+    ts.tv_nsec = deadline->tv_usec * 1000UL;
+    res = (pthread_cond_timedwait(&wakeup_cond, (pthread_mutex_t*) lock, &ts)
+           == ETIMEDOUT);
+  }
+
+  // disable cancellation again
+  (void) pthread_setcancelstate(last_cancel_state, NULL);
+  pthread_cleanup_pop(0);
+
+  return res;
+}
+
+static void chpl_pool_suspend_cancel_cleanup(void* void_lock) {
+  chpl_thread_mutexUnlock((chpl_thread_mutex_p) void_lock);
+}
+
+static void chpl_thread_pool_awaken(void) {
+  if (pthread_cond_signal(&wakeup_cond))
+    chpl_internal_error("pthread_cond_signal() failed");
+}
 
 
 // Tasks
@@ -1019,6 +1128,7 @@ static void
 thread_begin(void* ptask_void) {
   task_pool_p ptask = (task_pool_p) ptask_void;
   thread_private_data_t *tp;
+  chpl_bool suspend_using_cond;
 
   tp = (thread_private_data_t*) chpl_mem_alloc(sizeof(thread_private_data_t),
                                                CHPL_RT_MD_THREAD_PRIVATE_DATA,
@@ -1071,37 +1181,57 @@ thread_begin(void* ptask_void) {
     //
     // wait for a not-yet-begun task to be present in the task pool
     //
-    while (!task_pool_head) {
-      chpl_thread_mutexUnlock(&threading_lock);
 
-      while (!task_pool_head) {
+    // If true, we want to use conditionals, otherwise we want to spin  
+    suspend_using_cond = (chpl_thread_getNumThreads() >=
+                          chpl_numCoresOnThisLocale());
+
+    do {
+      chpl_bool timed_out;
+      if (!suspend_using_cond) {
+        chpl_thread_mutexUnlock(&threading_lock);
+      }
+      timed_out = false;
+      while (!task_pool_head || timed_out) {
+        timed_out = false;
         if (set_block_loc(0, idleTaskName)) {
           // all other tasks appear to be blocked
           struct timeval deadline, now;
           gettimeofday(&deadline, NULL);
           deadline.tv_sec += 1;
           do {
-            chpl_thread_yield();
-            if (!task_pool_head)
+            if (suspend_using_cond)
+              timed_out = chpl_thread_pool_suspend(&threading_lock, &deadline);
+            else
+              chpl_thread_yield();
+            if (!task_pool_head && !timed_out)
               gettimeofday(&now, NULL);
           } while (!task_pool_head
+                   && !timed_out
                    && (now.tv_sec < deadline.tv_sec
                        || (now.tv_sec == deadline.tv_sec
                            && now.tv_usec < deadline.tv_usec)));
-          if (!task_pool_head)
+          if (!task_pool_head) {
             check_for_deadlock();
+            if (suspend_using_cond)
+              timed_out = true;
+          }
         }
         else {
           do {
-            chpl_thread_yield();
+            if (suspend_using_cond)
+              (void) chpl_thread_pool_suspend(&threading_lock, NULL);
+            else
+              chpl_thread_yield();              
           } while (!task_pool_head);
         }
 
         unset_block_loc();
       }
+      if (!suspend_using_cond)
+          chpl_thread_mutexLock(&threading_lock);
+    } while (!task_pool_head);
 
-      chpl_thread_mutexLock(&threading_lock);
-    }
 
     if (blockreport)
       progress_cnt++;
@@ -1136,6 +1266,9 @@ thread_begin(void* ptask_void) {
       task_pool_tail = NULL;
     else {
       task_pool_head->prev = NULL;
+
+      if (waking_thread_cnt > 0 && suspend_using_cond)
+        chpl_thread_pool_awaken();
     }
 
     // end critical section
@@ -1256,6 +1389,7 @@ launch_next_task_in_new_thread(void) {
 // Schedule one or more tasks either by signaling an existing thread or by
 // launching new threads if available
 static void schedule_next_task(int howMany) {
+  chpl_bool suspend_using_cond;
   //
   // Reduce the number of new threads to be started, by the number that
   // are already looking for work and will find it very soon.  Try to
@@ -1270,6 +1404,12 @@ static void schedule_next_task(int howMany) {
     } else {
       howMany -= (idle_thread_cnt - waking_thread_cnt);
       waking_thread_cnt = idle_thread_cnt;
+    }
+    // If true, we want to use conditionals, otherwise we want to spin  
+    suspend_using_cond = (chpl_thread_getNumThreads() >= 
+                          chpl_numCoresOnThisLocale());
+    if (suspend_using_cond) {
+      chpl_thread_pool_awaken();
     }
   }
 
