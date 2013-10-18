@@ -631,6 +631,12 @@ if ($runtests == 0) {
     close(MAIL);
     
 } else {
+    my $svnPerfDir = "/data/sea/cascade/chapel/NightlyPerformance/$host";
+    my $svnPerfErrors = 0;
+    if ($performance == 1) {
+        showsystem("cd $svnPerfDir && svn update") and $svnPerfErrors++;
+    }
+
     $ENV{'CHPL_HOME'} = $chapeldir;
     if ($parnodefile eq "") {
         $testcommand = "cd $testdir && ../util/start_test $testflags";
@@ -688,6 +694,11 @@ if ($runtests == 0) {
     }
 
 
+    if ($performance == 1) {
+        showsystem("cd $svnPerfDir && svn update") and $svnPerfErrors++;
+        showsystem("cd $svnPerfDir && svn add *.dat 2>&1 | grep -v '^svn: warning: .* is already under version control\$'");  # can fail easily, ignore
+        showsystem("cd $svnPerfDir && svn commit -m \"Perf data update $host  `date '+%F %T'`  $revision\"") and $svnPerfErrors++;
+    }
 
 
 #
@@ -707,7 +718,7 @@ if ($runtests == 0) {
         $shortstatus = "build/test failed";
     }
 
-    if ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0) {
+    if ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0 && $svnPerfErrors == 0) {
         print "Mailing to minimal group\n";
         $recipient = $nochangerecipient;
     } else {
@@ -740,6 +751,12 @@ if ($runtests == 0) {
         print MAIL "--- New Passing Future tests ($morechars) ---------------------\n";
         print MAIL `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success"`;
         print MAIL "\n";    
+    }
+
+    if ($status == 0) {
+        if ($performance == 1) {
+            print MAIL "--- $svnPerfErrors Perf Data SVN Error(s) --------------------\n\n";
+        }
     }
     
     if ($status == 0) {
@@ -852,6 +869,13 @@ sub mysystem {
 	}
     }
     $status;
+}
+
+sub showsystem {
+   my ($command) = @_;
+   print "Executing $command\n";
+   my $status = system($command);
+   return $status;
 }
 
 sub commitstats {
