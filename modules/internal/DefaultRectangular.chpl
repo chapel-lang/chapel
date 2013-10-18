@@ -43,7 +43,7 @@ module DefaultRectangular {
   //
   pragma "private" var defaultDist = new dmap(new DefaultDist());
   inline proc chpl_defaultDistInitPrivate() {
-    defaultDist = new dmap(new DefaultDist());
+    if defaultDist._value==nil then defaultDist = new dmap(new DefaultDist());
   }
   
   class DefaultRectangularDom: BaseRectangularDom {

@@ -17,13 +17,13 @@ module ChapelStandard {
   use ChapelReduce;
   use ChapelSyncvar;
   use ChapelLocale;
+  use DefaultRectangular; // This might be able to go just after Atomics
   use LocaleModel;
   use LocalesArray;
   use ChapelArray;
   use ChapelDistribution;
   use ChapelIO;
   use LocaleTree;
-  use DefaultRectangular;
   use InitPrivateGlobals;
   use DefaultAssociative;
   use DefaultSparse;

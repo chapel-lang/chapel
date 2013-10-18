@@ -201,6 +201,7 @@ module ChapelLocale {
           var locID = chpl_buildLocaleID(locIdx:chpl_nodeID_t,
                                          c_sublocid_any:chpl_sublocID_t);
           on __primitive("chpl_on_locale_num", locID) {
+            chpl_defaultDistInitPrivate();
             yield locIdx;
             rootLocale = origRootLocale;
           }
@@ -231,7 +232,7 @@ module ChapelLocale {
   // This function sets up a private copy of rootLocale by replicating
   // origRootLocale and resets the Locales array to point to the local
   // copy.  It should be called on every locale except locale 0 after
-  // it is safe to do so (after defaultDist is initialized).
+  // it is safe to do so (after rootLocale is pre-initialized).
   proc chpl_rootLocaleInitPrivate() {
     if !replicateRootLocale then return;
     // set rootLocale to a local copy
