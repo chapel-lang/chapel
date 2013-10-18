@@ -13,12 +13,14 @@ $buildruntime = 1;
 $hello = 0;
 $allhellos = 0;
 $examples = 0;
+$performance = 0;
 $componly = 0;
 $nofutures = 0;
 $suppressions = "";
 $parnodefile = "";
 $nolocal = 0;
 $verify = 0;
+$retaintree = 0;
 $combinedir = 0;
 $dist = "";
 $memleaks = "";
@@ -80,6 +82,8 @@ while (@ARGV) {
         $nolocal = 1;
     } elsif ($flag eq "-verify") {
         $verify = 1;
+    } elsif ($flag eq "-retaintree") {
+        $retaintree = 1;
     } elsif ($flag eq "-combinedir") {
       $combinedir = 1;
     } elsif ($flag eq "-r") {
@@ -223,6 +227,7 @@ $utildir = "$testbindirname/../../util";
 #
 # platform variables
 #
+print "Setting platform variables\n";
 $hostplatform = `$utildir/chplenv/platform --host`; chomp($hostplatform);
 $targetplatform = `$utildir/chplenv/platform --target`; chomp($targetplatform);
 $hostcompiler = `$utildir/chplenv/compiler --host`; chomp($hostcompiler);
@@ -463,18 +468,23 @@ if ($svnroot eq "") {
 
 $readonlydirname = "chapel-cron-$user-readonly";
 $readonlydir = "$basetmpdir/$readonlydirname";
-print "\$readonlydir = $readonlydir\n";
-if (! (-r $readonlydir && -d $readonlydir)) {
+if ($retaintree) {
+  print "Retaining the working tree $chapeldir\n";
+} else {
+  print "\$readonlydir = $readonlydir\n";
+  if (! (-r $readonlydir && -d $readonlydir)) {
     print "The SVN directory has not been checked out yet\n";
     print "***** $svnrevopt $svnroot $readonlydirname *****\n";
     mysystem("cd $basetmpdir && svn checkout -q $svnrevopt $svnroot $readonlydirname", "svn checkout", 1, 1);
-} else {
-    print "The SVN directory has already been checked out\n";
+  } else {
+    print "The SVN directory has already been checked out, updating it $svnrevopt\n";
     mysystem("cd $basetmpdir && svn update -q $svnrevopt $readonlydirname", "svn update", 1, 1);
+  }
+  $revision = `svn info $readonlydir | grep Revision`; chomp($revision);
+  print "(Re-)creating the working tree $chapeldir\n";
+  mysystem("rm -rf $chapeldir", "removing previous writeable chapel dir", 0, 1);
+  mysystem("cp -r $readonlydir $chapeldir", "creating writeable chapel dir");
 }
-$revision = `svn info $readonlydir | grep Revision`; chomp($revision);
-mysystem("rm -rf $chapeldir", "removing previous writeable chapel dir", 0, 1);
-mysystem("cp -r $readonlydir $chapeldir", "creating writeable chapel dir");
 
 
 #
@@ -486,8 +496,10 @@ if ($hostplatform eq "cygwin") {
 
 
 
+print "Making DEBUG=0 OPTIMIZE=1 compiler\n";
 $makestat = mysystem("cd $chapeldir && $make DEBUG=0 OPTIMIZE=1 compiler", "making chapel compiler", 0, 1);
 if ($makestat != 0) {
+    print "Making DEBUG=0 compiler\n";
     mysystem("cd $chapeldir && $make DEBUG=0 compiler", "making chapel compiler", 1, 1);
 }
 
@@ -508,11 +520,14 @@ if ($buildruntime == 0) {
     exit 0;
 }
 
+print "Making DEBUG=0 OPTIMIZE=1 $qthreadopts runtime\n";
 $makestat = mysystem("cd $chapeldir && $make DEBUG=0 OPTIMIZE=1 $qthreadopts runtime", "making chapel runtime", 0, 1);
 if ($makestat != 0) {
+    print "Making DEBUG=0 $qthreadopts runtime\n";
     mysystem("cd $chapeldir && $make DEBUG=0 $qthreadopts runtime", "making chapel runtime", 1, 1);
 }
 
+print "Making modules\n";
 $makestat = mysystem("cd $chapeldir && $make modules", "making chapel modules", 0, 1);
 
 
@@ -537,6 +552,7 @@ if ($nofutures == 0) {
 # to make them if we're testing the examples directory.
 #
 if ($examples == 1) {
+    print "Making spectests\n";
     mysystem("cd $chapeldir && $make spectests", "making spec tests", 0, 1);
     $testdirs = "release/examples";
     if ($multilocale == 1) {
@@ -727,7 +743,8 @@ if ($runtests == 0) {
 
     $mailsubject = "$subjectid ($fullplatform) $shortstatus";
     $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
-    
+
+    print "Trying... $mailcommand\n";
     open(MAIL, $mailcommand);
     
     print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime, $crontab);
@@ -739,45 +756,31 @@ if ($runtests == 0) {
         print MAIL "--- New Errors ($morechars) -------------------------------\n";
         print MAIL `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
         print MAIL "\n";
-    }
-    
-    if ($status == 0) {
+
         print MAIL "--- Resolved Errors ($morechars) --------------------------\n";
         print MAIL `comm -23 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
         print MAIL "\n";
-    }
     
-    if ($status == 0) {
         print MAIL "--- New Passing Future tests ($morechars) ---------------------\n";
         print MAIL `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success"`;
         print MAIL "\n";    
-    }
 
-    if ($status == 0) {
         if ($performance == 1) {
             print MAIL "--- $svnPerfErrors Perf Data SVN Error(s) --------------------\n\n";
         }
-    }
-    
-    if ($status == 0) {
+
         print MAIL "--- Passing Future tests ($morechars) ---------------------\n";
         print MAIL `comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success"`;
         print MAIL "\n";    
-    }
-    
-    if ($status == 0) {
+
         print MAIL "--- Unresolved Errors ($morechars) ------------------------\n";
         print MAIL `comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
         print MAIL "\n";
-    }
-    
-    if ($status == 0) {
+
         print MAIL "--- New Failing Future tests ($morechars) -----------------\n";
         print MAIL `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Error"`;
         print MAIL "\n";    
-    }
-    
-    if ($status == 0) {
+
         print MAIL "--- Unresolved Future tests ($morechars) ------------------\n";
         print MAIL `comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Error"`;
         print MAIL "\n";    
