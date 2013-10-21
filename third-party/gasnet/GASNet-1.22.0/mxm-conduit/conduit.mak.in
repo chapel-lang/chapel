@@ -1,0 +1,20 @@
+#INSTRUCTIONS# Conduit-specific Makefile fragment settings
+#INSTRUCTIONS#
+#INSTRUCTIONS# The contents of this file are embedded into the 
+#INSTRUCTIONS# *-(seq,par,parsync).mak Makefile fragments at conduit build time
+#INSTRUCTIONS# The settings in those fragments are used to build GASNet clients
+#INSTRUCTIONS# (including the GASNet tests). 
+#INSTRUCTIONS# See the conduit-writer instructions in the generated fragments
+#INSTRUCTIONS# or $(top_srcdir)/other/fragment-head.mak.in for usage info.
+
+# When mxm-conduit uses an MPI-based bootstrapper, we must
+# link using the system MPI compiler
+@MXM_BOOTSTRAP_MPI_TRUE@GASNET_LD_OVERRIDE = @MPI_CC@
+@MXM_BOOTSTRAP_MPI_TRUE@GASNET_LDFLAGS_OVERRIDE = @MPI_CFLAGS@ @LDFLAGS@
+@MXM_BOOTSTRAP_MPI_TRUE@MPI_COMPAT_LIBS = @MPI_LIBS@
+# Some platforms need extra -libs for the socket calls in ssh-spawner:
+@MXM_BOOTSTRAP_SSH_TRUE@SSH_LIBS = @SSH_SPAWNER_LIBS@
+CONDUIT_INCLUDES = @FCA_INCLUDES@
+CONDUIT_INCLUDES = @FCA_INCLUDES@ -I@TOP_SRCDIR@/mxm-conduit ###NOINSTALL###
+CONDUIT_LIBDIRS = @MXM_LIBDIR@ @PMI_SPAWNER_LIBDIR@ @FCA_LIBDIR@
+CONDUIT_LIBS = @MXM_LIBS@ $(MPI_COMPAT_LIBS) $(SSH_LIBS) @PMI_SPAWNER_LIBS@ @FCA_LIBS@
