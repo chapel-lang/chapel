@@ -1168,6 +1168,7 @@ void initChplProgram(void) {
   rootModule->addFlag(FLAG_NO_USE_CHAPELSTANDARD);
 
   theProgram = new ModuleSymbol("chpl__Program", MOD_INTERNAL, new BlockStmt());
+  theProgram->addFlag(FLAG_NO_CODEGEN);
   theProgram->filename = astr("<internal>");
   theProgram->addFlag(FLAG_NO_USE_CHAPELSTANDARD);
 
@@ -1292,7 +1293,6 @@ void initPrimitiveTypes(void) {
 
 void initTheProgram(void) {
   createInitFn(theProgram);
-  theProgram->initFn->addFlag(FLAG_EXPORT);     // Called from main.c
 
   theProgram->initFn->insertAtTail(
     new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelBase")));
