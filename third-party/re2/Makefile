@@ -42,7 +42,7 @@ clobber: FORCE
 	rm -rf build install
 
 $(RE2_FILE):
-	if [ ! -d re2 ]; then ./update-re2.sh; fi
+	if [ ! -d re2 ]; then ./unpack-re2.sh; fi
 	cd re2 && $(MAKE) clean && $(MAKE) NODEBUG= CXXFLAGS="$(RE_DEBUG_CXX)" && $(MAKE) NODEBUG= CXXFLAGS="$(RE_DEBUG_CXX)" prefix=$(RE2_INSTALL_DIR) install && mkdir -p ../build/$(RE2_UNIQUE_SUBDIR) && rm -rf ../build/$(RE2_UNIQUE_SUBDIR) && mv obj ../build/$(RE2_UNIQUE_SUBDIR)
 
 re2: $(RE2_FILE)

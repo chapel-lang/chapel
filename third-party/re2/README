@@ -3,9 +3,7 @@ RE2 for Chapel release
 ======================
 
 Chapel can be built (by setting CHPL_REGEXP=re2) to include the RE2 library
-(see http://code.google.com/p/re2/). While building, the library
-will be downloaded from its Mercurial repository at re2.googlecode.com
-then patched (see below) - see update-re2.sh.
+(see http://code.google.com/p/re2/).
 
 For more information on the current support for RE2 within Chapel,
 please refer to $CHPL_HOME/doc/technotes/README.regexp.  For more
