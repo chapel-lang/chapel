@@ -56,18 +56,28 @@ class GraphStuff:
         self.enddate = _enddate
 
     def init(self):
-        if not os.path.exists(self.outdir):
+        if os.path.exists(self.outdir):
+            if verbose:
+                sys.stdout.write('Removing old directory %s...\n'%(self.outdir))
             try:
-                os.makedirs(self.outdir)
+                shutil.rmtree(self.outdir)
             except OSError:
-                sys.stderr.write('ERROR: Could not create directory: %s\n'%(self.outdir))
+                sys.stderr.write('Error: Could not clean up directory: %s\n'%(self.outdir))
                 raise
-        if not os.path.exists(self.datdir):
-            try:
-                os.makedirs(self.datdir)
-            except OSError:
-                sys.stderr.write('ERROR: Could not create directory: %s\n'%(self.datdir))
-                raise
+        if verbose:
+            sys.stdout.write('Creating directory %s...\n'%(self.outdir))
+        try:
+            os.makedirs(self.outdir)
+        except OSError:
+            sys.stderr.write('ERROR: Could not (re)create directory: %s\n'%(self.outdir))
+            raise
+        if verbose:
+            sys.stdout.write('Creating directory %s...\n'%(self.datdir))
+        try:
+            os.makedirs(self.datdir)
+        except OSError:
+            sys.stderr.write('ERROR: Could not create directory: %s\n'%(self.datdir))
+            raise
         try:
             self.gfile = open(self.gfname, 'w')
         except IOError:
