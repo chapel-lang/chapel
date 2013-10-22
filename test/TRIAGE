@@ -56,7 +56,8 @@ since 9/6/13:
 
 
 XT PrgEnv-cray non-deterministic compiler internal errors
----------------------------------------------------------
+This shows up on cray-x?-cray-prgenv-cray.none.fifo.pthreads runs
+-----------------------------------------------------------------
 Determined to be a problem with CCE.  Filed bug 800520.
   XC PrgEnv-cray may be experiencing these as well
 
@@ -184,6 +185,14 @@ Not so noisy as to be familiar annoyances, but worth noting to see if they
 come up again
 ==========================================================================
 
+nondet. baseline output (10/08/13)
+----------------------------------
+[Error matching program output for studies/amr/diffusion/level/Level_DiffusionBE_driver (compopts: 1)]
+
+nondet. baseline compilation timeout (10/15/13)
+-----------------------------------------------
+[Error: Timed out compilation for classes/bradc/writeclass3]
+
 nondet. seg fault for prgenv-cray on chpbld01
 ---------------------------------------------
 [Error matching compiler output for release/examples/spec/Classes/declaration] (07/09/13)
@@ -254,6 +263,12 @@ prgenv-* compilation timeouts (maybe due to system updates or ...?)
 [Error: Timed out compilation for release/examples/spec/Tuples/expansion] (prgenv-cray: 12/02/12)
 [Error: Timed out compilation for distributions/dm/t5a] (prgenv-intel: 12/03/12)
 [Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/perfTest_v2 (compopts: 1)] (07/01/13)
+[Error: Timed out compilation for sparse/bradc/sparseDomAssign2] (10/11/13)
+
+pgi compilation timeouts
+------------------------
+[Error: Timed out compilation for reductions/bradc/manual/threeclasstypes-construct] (10/15/13)
+
 
 occasional segfault on reports tests for prgenv-pgi
 ---------------------------------------------------
