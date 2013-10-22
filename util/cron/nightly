@@ -648,9 +648,9 @@ if ($runtests == 0) {
     
 } else {
     my $svnPerfDir = "/data/sea/cascade/chapel/NightlyPerformance/$host";
-    my $svnPerfErrors = 0;
+    my $svnPerfMsgXtra = ".\nData dir: $svnPerfDir\n(Testing continues despite failure.) Error code";
     if ($performance == 1) {
-        showsystem("cd $svnPerfDir && svn update") and $svnPerfErrors++;
+        mysystem("cd $svnPerfDir && svn update", "svn-updating perf data before running tests" . $svnPerfMsgXtra, 0, 1, 1);
     }
 
     $ENV{'CHPL_HOME'} = $chapeldir;
@@ -711,9 +711,9 @@ if ($runtests == 0) {
 
 
     if ($performance == 1) {
-        showsystem("cd $svnPerfDir && svn update") and $svnPerfErrors++;
-        showsystem("cd $svnPerfDir && svn add *.dat 2>&1 | grep -v '^svn: warning: .* is already under version control\$'");  # can fail easily, ignore
-        showsystem("cd $svnPerfDir && svn commit -m \"Subject: Perf data update $host  `date '+%F %T'`  $revision\n\nDescription: <empty>\n\"") and $svnPerfErrors++;
+        mysystem("cd $svnPerfDir && svn update", "svn-updating perf data after running tests" . $svnPerfMsgXtra, 0, 1, 1);
+        mysystem("cd $svnPerfDir && svn add *.dat 2>&1 | grep -v '^svn: warning: .* is already under version control\$'", "svn-adding perf data files", 0, 0, 1);  # can fail easily - ignore failures
+        mysystem("cd $svnPerfDir && svn commit -m \"Subject: Perf data update $host  `date '+%F %T'`  $revision\n\nDescription: <empty>\n\"", "svn-committing perf data" . $svnPerfMsgXtra, 0, 1, 1);
     }
 
 
@@ -734,7 +734,7 @@ if ($runtests == 0) {
         $shortstatus = "build/test failed";
     }
 
-    if ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0 && $svnPerfErrors == 0) {
+    if ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0) {
         print "Mailing to minimal group\n";
         $recipient = $nochangerecipient;
     } else {
@@ -764,10 +764,6 @@ if ($runtests == 0) {
         print MAIL "--- New Passing Future tests ($morechars) ---------------------\n";
         print MAIL `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success"`;
         print MAIL "\n";    
-
-        if ($performance == 1) {
-            print MAIL "--- $svnPerfErrors Perf Data SVN Error(s) --------------------\n\n";
-        }
 
         print MAIL "--- Passing Future tests ($morechars) ---------------------\n";
         print MAIL `comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success"`;
@@ -844,8 +840,10 @@ sub mysystem {
     $errorname = $_[1];
     $fatal = $_[2];
     $mailmsg = $_[3];
+    $showcommand = $_[4];
 
-    $status = system($command);
+    if ($showcommand) { print "Executing $command\n"; }
+    my $status = system($command);
     if ($status != 0) {
         $endtime = localtime;
 	$somethingfailed = 1;
@@ -872,13 +870,6 @@ sub mysystem {
 	}
     }
     $status;
-}
-
-sub showsystem {
-   my ($command) = @_;
-   print "Executing $command\n";
-   my $status = system($command);
-   return $status;
 }
 
 sub commitstats {
