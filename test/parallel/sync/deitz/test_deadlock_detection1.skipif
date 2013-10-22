@@ -1,2 +1,1 @@
-# Deadlock detection is only implemented in the pthread version of the runtime
-CHPL_THREADS != pthread
+CHPL_TASKS != fifo
