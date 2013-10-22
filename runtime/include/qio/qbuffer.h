@@ -11,7 +11,10 @@ extern "C" {
 #endif
 #include "chpl-atomics.h"
 
+// This macro set to obtain the portable format macro PRIu64 for debug output.
+#define __STDC_FORMAT_MACROS 1
 #include <inttypes.h>
+
 #include <sys/uio.h>
 #include "deque.h"
 
