@@ -1,2 +1,3 @@
 CHPL_COMM!=none
 COMPOPTS <= --no-local
+COMPOPTS <= --baseline
