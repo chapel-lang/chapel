@@ -112,7 +112,7 @@ sy$.writeEF(2*n); // equivalent to: sy$ = 2*n;
 
 // The readFE() method, defined for sync variables, blocks until the
 // state is full and then reads the value of the variable, sets the
-// state to full, and then returns the value.  Normal reads of sync
+// state to empty, and then returns the value.  Normal reads of sync
 // variables are performed using readFE().
 //
 var sy2 = sy$.readFE(); // equivalent to: var sy2 = sy$;
