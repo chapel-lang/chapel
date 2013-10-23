@@ -74,7 +74,7 @@ void qbytes_free_iobuf(qbytes_t* b) {
 void debug_print_bytes(qbytes_t* b)
 {
   fprintf(stderr, "bytes %p: data=%p len=%lli ref_cnt=%" PRIu64 " free_function=%p flags=%i\n",
-          b, b->data, (long long int) b->len, (long int) DO_GET_REFCNT(b),
+          b, b->data, (long long int) b->len, DO_GET_REFCNT(b),
           b->free_function, b->flags);
 }
 
