@@ -1,21 +1,6 @@
 #!/usr/bin/env perl
 
-# Usage: paratest.server [-compopts] [-dirfile d] [-filedist] [-futures] 
-#                         [-help|-h] [-nodefile n] [-logfile l] [-valgrind]
-#   -compopts s: s is a string that is passed with -compopts to start_test.
-#   -execopts s: s is a string that is passed with -execopts to start_test.
-#   -dirfile  d: d is a file listing directories to test. Default is ".". Lines
-#                beginning with # are ignored.
-#   -filedist  : distribute work at the granularity of test files (directory
-#                granurality is the default).
-#   -futures   : include .future tests (default is none).
-#   -nodefile n: n is a file listing nodes to run on. Default is current node.
-#                To run multiple processes on MP nodes, list the node multiple
-#                times, once for each desired process. Lines with # are ignored.
-#   -logfile  l: l is the output logfile. Default is "user"."platform".log in
-#                subdirectory Logs.
-#   -valgrind  : pass -valgrind flag to start_test
-#   -memleaks f: f is the name of a file where the leak info should be stored
+# See print_help for usage instructions 
 #
 # Creating a file name PARAHALT in the root test directory halts the
 # distribution of more work.
@@ -124,7 +109,7 @@ sub collect_logs {
     systemd ("echo \\[Test Summary - $date\\] > $fin_log.summary");
     systemd ("grep -a '^\\[Error' $fin_log >> $fin_log.summary");
     if (!($suppressions eq "")) {
-        systemd ("$pwd/filterSuppressions $suppressions $fin_log.summary");
+        systemd ("$pwd/../util/test/filterSuppressions $suppressions $fin_log.summary");
     }
     systemd ("grep -a '^Future' $fin_log >> $fin_log.summary");
 
@@ -403,17 +388,17 @@ sub find_files {
 
 
 sub print_help {
-    print "Usage: paratest.server [-comm] [-compopts] [-execopts] [-dirfile d] [-filedist] [-futures] [-logfile l] [-nodefile n] [-duplex] [-valgrind] [-help|-h]\n";
+    print "Usage: paratest.server [-compopts s] [-dirfile d] [-duplex] [-execopts s] [-filedist] [-futures] [-logfile l] [-memleaks f] [-nodefile n] [-suppress f] [-valgrind] [-help|-h]\n";
     print "    -compopts s: s is a string that is passed with -compopts to start_test.\n";
-    print "    -execopts s: s is a string that is passed with -execopts to start_test.\n";
-    print "    -comm s    : s is a setting for CHPL_COMM, e.g., none or gasnet.\n";
     print "    -dirfile  d: d is a file listing directories to test. Default is the current diretory.\n";
+    print "    -duplex    : Run two paratest.client tasks on each node.\n";
+    print "    -execopts s: s is a string that is passed with -execopts to start_test.\n";
     print "    -filedist  : distribute work at the granularity of files (directory granurality is the default).\n";
     print "    -futures   : include .future tests (default is none).\n";
     print "    -logfile  l: l is the output log file. Default is \"user\".\"platform\".log. in the Logs subdirectory.\n";
-    print "    -nodefile n: n is a file listing nodes to run on. Default is current node.\n";
-    print "    -duplex    : Run two paratest.client tasks on each node.\n";
     print "    -memleaks f: pass -memleaks to start_test; aggregate all output.\n";
+    print "    -nodefile n: n is a file listing nodes to run on. Default is current node.\n";
+    print "    -suppress f: f is a file with the tests to suppress using filterSuppressions.\n";  
     print "    -valgrind  : pass -valgrind to start_test.\n";
 }
 
