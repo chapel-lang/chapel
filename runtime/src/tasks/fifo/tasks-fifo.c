@@ -107,11 +107,12 @@ static int                 idle_thread_cnt;    // number of threads looking
 static uint64_t            progress_cnt;       // number of unblock operations,
                                                //   as a proxy for progress
 
-static chpl_thread_mutex_t block_report_lock;  // critical section lock
-static chpl_thread_mutex_t taskTable_lock;     // critical section lock
-
+static chpl_thread_mutex_t block_report_lock;   // critical section lock
 static lockReport_t* lockReportHead = NULL;
 static lockReport_t* lockReportTail = NULL;
+
+static chpl_bool do_taskReport = false;
+static chpl_thread_mutex_t taskTable_lock;     // critical section lock
 
 static chpl_string idleTaskName = "|idle|";
 
@@ -350,15 +351,6 @@ void chpl_task_init(void) {
 
   chpl_thread_init(thread_begin, thread_end);
 
-  if (taskreport) {
-    chpl_thread_mutexInit(&taskTable_lock);
-  }
-
-  if (blockreport) {
-    progress_cnt = 0;
-    chpl_thread_mutexInit(&block_report_lock);
-  }
-
   //
   // Set main thread private data, so that things that require access
   // to it, like chpl_task_getID() and chpl_task_setSerial(), can be
@@ -396,6 +388,12 @@ void chpl_task_init(void) {
     chpl_thread_setPrivateData(tp);
   }
 
+  if (blockreport) {
+    progress_cnt = 0;
+    chpl_thread_mutexInit(&block_report_lock);
+    initializeLockReportForThread();
+  }
+
   if (blockreport || taskreport) {
     signal(SIGINT, SIGINT_handler);
   }
@@ -419,9 +417,16 @@ void chpl_task_callMain(void (*chpl_main)(void)) {
 
 void chpl_task_stdModulesInitialized(void) {
   //
-  // Register this main task in the task table.  We couldn't do this
-  // at creation time because the standard modules had not yet been
-  // initialized and therefore the task table didn't exist yet.
+  // The task table is implemented in Chapel code in the modules, so
+  // we can't use it, and thus can't support task reporting on ^C or
+  // deadlock, until the other modules on which it depends have been
+  // initialized and the supporting code here is set up.  In this
+  // function we're guaranteed that is true, because it is called only
+  // after all the standard module initialization is complete.
+  //
+
+  //
+  // Register this main task in the task table.
   //
   if (taskreport) {
     thread_private_data_t* tp = chpl_thread_getPrivateData();
@@ -430,11 +435,14 @@ void chpl_task_stdModulesInitialized(void) {
                           tp->ptask->lineno, tp->ptask->filename,
                           (uint64_t) (intptr_t) tp->ptask);
     chpldev_taskTable_set_active(tp->ptask->id);
+
+    chpl_thread_mutexInit(&taskTable_lock);
   }
 
-  if (blockreport) {
-    initializeLockReportForThread();
-  }
+  //
+  // Now we can do task reporting if the user requested it.
+  //
+  do_taskReport = taskreport;
 }
 
 
@@ -594,7 +602,7 @@ void chpl_task_processTaskList(chpl_task_list_p task_list) {
 
     set_current_ptask(&nested_task);
 
-    if (taskreport) {
+    if (do_taskReport) {
       chpl_thread_mutexLock(&taskTable_lock);
       chpldev_taskTable_add(nested_task.id,
                             nested_task.lineno, nested_task.filename,
@@ -625,7 +633,7 @@ void chpl_task_processTaskList(chpl_task_list_p task_list) {
     // end critical section
     chpl_thread_mutexUnlock(&extra_task_lock);
 
-    if (taskreport) {
+    if (do_taskReport) {
       chpl_thread_mutexLock(&taskTable_lock);
       chpldev_taskTable_set_active(curr_ptask->id);
       chpldev_taskTable_remove(nested_task.id);
@@ -711,7 +719,7 @@ void chpl_task_executeTasksInList(chpl_task_list_p task_list) {
         // end critical section
         chpl_thread_mutexUnlock(&extra_task_lock);
 
-        if (taskreport) {
+        if (do_taskReport) {
           chpl_thread_mutexLock(&taskTable_lock);
           chpldev_taskTable_set_suspended(curr_ptask->id);
           chpldev_taskTable_set_active(nested_ptask->id);
@@ -723,7 +731,7 @@ void chpl_task_executeTasksInList(chpl_task_list_p task_list) {
 
         (*task_to_run_fun)(task_to_run_arg);
 
-        if (taskreport) {
+        if (do_taskReport) {
           chpl_thread_mutexLock(&taskTable_lock);
           chpldev_taskTable_set_active(curr_ptask->id);
           chpldev_taskTable_remove(nested_ptask->id);
@@ -992,7 +1000,7 @@ static void SIGINT_handler(int sig) {
   if (blockreport)
     report_locked_threads();
 
-  if (taskreport)
+  if (do_taskReport)
     report_all_tasks();
 
   chpl_exit_any(1);
@@ -1113,7 +1121,7 @@ static void check_for_deadlock(void) {
 
   report_locked_threads();
 
-  if (taskreport)
+  if (do_taskReport)
     report_all_tasks();
 
   chpl_exit_any(1);
@@ -1141,7 +1149,7 @@ thread_begin(void* ptask_void) {
     initializeLockReportForThread();
 
   while (true) {
-    if (taskreport) {
+    if (do_taskReport) {
       chpl_thread_mutexLock(&taskTable_lock);
       chpldev_taskTable_set_active(ptask->id);
       chpl_thread_mutexUnlock(&taskTable_lock);
@@ -1149,7 +1157,7 @@ thread_begin(void* ptask_void) {
 
     (*ptask->fun)(ptask->arg);
 
-    if (taskreport) {
+    if (do_taskReport) {
       chpl_thread_mutexLock(&taskTable_lock);
       chpldev_taskTable_remove(ptask->id);
       chpl_thread_mutexUnlock(&taskTable_lock);
@@ -1455,7 +1463,7 @@ static task_pool_p add_to_task_pool(chpl_fn_p fp,
 
   queued_task_cnt++;
 
-  if (taskreport) {
+  if (do_taskReport) {
     chpl_thread_mutexLock(&taskTable_lock);
     chpldev_taskTable_add(ptask->id,
                           ptask->lineno, ptask->filename,
