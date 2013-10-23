@@ -1,0 +1,23 @@
+bug: Memory Management
+
+Showing that we do not manage reference counts correctly when a record is
+returned by value.
+
+In the test, ownership of a record created within the subroutine escape() is
+shared between the local variable and the return value.  The compiler correctly
+inserts an autoDestroy for the record variable at the end of the routine, but
+does not call the chpl__autoCopy function on the return variable.
+
+The autoCopy call must precede the autoDestroy for the local which appears at
+the end of the routine.  Otherwise, the reference-counted memory will be
+reclaimed anyway, even though the reference count ends up at the correct value
+of 0 (i.e. "kissing zero" is not allowed).
+
+In this case, since the reference count does go to zero and the memory for the
+implementation is reclaimed, a subsequent call to new Impl(4.9) overwrites the
+(now invalid) implementation referenced by the returned handle with another
+implementation.  (These line up just because we're lucky; the test may not fail
+on all platforms, may not fail reliably, etc.)  However, running the test with
+valgrind definitely shows that there is something wrong (numerous invalid reads
+of the memory freed in escape()).
+
