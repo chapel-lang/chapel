@@ -45,3 +45,10 @@ Seems like a reference counting issue.
 
 "Unwrapping" the body of test(), i.e. placing its body
 in the top (module) scope gets rid of the bug.
+
+When this bug is fixed, update the test suite in
+  test/parallel/taskPar/taskIntents/
+as follows:
+  * remove src/*.patch
+  * run 'make clobber all' in src/
+  * re-test and commit whichever .chpl files become different as a result
