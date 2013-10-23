@@ -9,10 +9,7 @@ module ChapelLocale {
   //
   class locale {
     //- Constructor
-    proc locale() {
-// Now we find we have to create locales early, so _here can be non-nil.
-      // compilerError("cannot create instances of the 'locale' class");
-    }
+    proc locale() { }
   
     //------------------------------------------------------------------------{
     //- Fields and accessors defined for all locale types (not overridable)
@@ -183,6 +180,10 @@ module ChapelLocale {
       }
     }
 
+    // Since we are going on to all the locales here, we use the
+    // opportunity to initialize any global private variables we
+    // either need (e.g., defaultDist) or can do at this point in
+    // initialization (e.g., rootLocale).
     iter initOnLocales(param tag: iterKind)
       where tag==iterKind.leader {
       // Simple blocking of locales.  Consider tree-based start-up
@@ -203,7 +204,7 @@ module ChapelLocale {
           on __primitive("chpl_on_locale_num", locID) {
             chpl_defaultDistInitPrivate();
             yield locIdx;
-            rootLocale = origRootLocale;
+            chpl_rootLocaleInitPrivate(locIdx);
           }
         }
       }
@@ -216,14 +217,13 @@ module ChapelLocale {
   }
 
 
-  // This function is called in the LocalesArray module to initialize
+  // This function is called in the LocaleArray module to initialize
   // the rootLocale.  It sets up the origRootLocale and also includes
-  // set up of the each locale's LocaleModel via DefaulRootLocale:init().
+  // set up of the each locale's LocaleModel via RootLocale:init().
   //
-  // The init() function must use chpl_rootLocale_locales() to iterate
-  // (in parallel) over the locales to set up the LocaleModel object.
-  // In addition, the initial 'here' must be set.
-  // 
+  // The init() function must use the initOnLocales() iterator above
+  // to iterate in parallel over the locales to set up the LocaleModel
+  // object.
   proc chpl_init_rootLocale() {
     origRootLocale = new RootLocale();
     (origRootLocale:RootLocale).init();
@@ -231,19 +231,34 @@ module ChapelLocale {
 
   // This function sets up a private copy of rootLocale by replicating
   // origRootLocale and resets the Locales array to point to the local
-  // copy.  It should be called on every locale except locale 0 after
-  // it is safe to do so (after rootLocale is pre-initialized).
-  proc chpl_rootLocaleInitPrivate() {
-    if !replicateRootLocale then return;
-    // set rootLocale to a local copy
-    var newRootLocale = new RootLocale();
-    newRootLocale.getDefaultLocaleArray() =
-      (origRootLocale:RootLocale).getDefaultLocaleArray();
-    rootLocale = newRootLocale;
-    // We mimic a private Locales array alias by using the move
-    // primitive.  Note that this leaks the original local Locales
-    // array wrapper.
-    __primitive("move", Locales, (rootLocale:RootLocale).getDefaultLocaleArray());
+  // copy on all but locale 0 (which is done in LocalesArray.chpl as
+  // part of the declaration).
+  proc chpl_rootLocaleInitPrivate(locIdx) {
+    // Even when not replicating the rootLocale, we must temporarily
+    // set the rootLocale to the original version on locale 0, because
+    // the initialization below needs to get/set locale ids.
+    rootLocale = origRootLocale;
+    if replicateRootLocale && locIdx!=0 {
+      // Create a new local rootLocale
+      var newRootLocale = new RootLocale();
+      var newRL = newRootLocale.getDefaultLocaleArray()._value.theData;
+      var origRL = (origRootLocale:RootLocale).getDefaultLocaleArray()._value.theData;
+      // We must directly implement a bulk copy here, as the mechanisms
+      // for doing so via a whole array assignment are not initialized
+      // yet and copying element-by-element via a for loop is is costly.
+      __primitive("chpl_comm_get",
+                  __primitive("array_get", newRL, 0),
+                  0 /* locale 0 */,
+                  __primitive("array_get", origRL, 0), numLocales);
+      // Set the rootLocale to the local copy
+      rootLocale = newRootLocale;
+    }
+    if locIdx!=0 {
+      // We mimic a private Locales array alias by using the move
+      // primitive.
+      __primitive("move", Locales,
+                  (rootLocale:RootLocale).getDefaultLocaleArray());
+    }
   }
 
   // We need a temporary value for "here" before the architecture is defined.

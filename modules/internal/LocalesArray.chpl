@@ -22,14 +22,13 @@ module LocalesArray {
   // Initialize the rootLocale
   chpl_init_rootLocale();
 
-  // We want the Locales array to be private so that each locale can
+  // The Locales array should be private so that each locale can
   // point to its private copy of rootLocale, but we don't (yet) have
-  // a good way to declare and initialize private aliases.  We could
-  // do something by hand here, but the private broadcast of Locales
-  // and LocaleSpace in the generated code is going to be a lot more
-  // efficient than the on clauses that we'd probably need.  Instead,
-  // we fake it (see chpl_private_init_rootLocale() for more info).
-  //
+  // a good way to declare and initialize private aliases.  Instead,
+  // we set up the version on all other locales during LocaleModel
+  // initialization (see chpl_rootLocaleInitPrivate()).  The copy for
+  // locale 0 is set up here for the declaration.
+  pragma "private"
   var Locales => (rootLocale:RootLocale).getDefaultLocaleArray();
 
   // We don't use the same private "trick" as with Locales above with

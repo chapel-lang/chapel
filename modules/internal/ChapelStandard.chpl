@@ -24,7 +24,6 @@ module ChapelStandard {
   use ChapelDistribution;
   use ChapelIO;
   use LocaleTree;
-  use InitPrivateGlobals;
   use DefaultAssociative;
   use DefaultSparse;
   use DefaultOpaque;
