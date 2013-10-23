@@ -95,7 +95,7 @@ coforall t in 1..n {
 // the variable to the default value for the type and the state to
 // empty.
 //
-sy$.reset();  // value = 0, state = full
+sy$.reset();  // value = 0, state = empty
 
 // The isFull method returns true if the sync or single variable is
 // in the full state, false otherwise.
