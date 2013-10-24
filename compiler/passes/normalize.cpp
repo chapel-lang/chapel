@@ -41,6 +41,7 @@ static void replace_query_uses(ArgSymbol* formal, DefExpr* def, CallExpr* query,
 static void add_to_where_clause(ArgSymbol* formal, Expr* expr, CallExpr* query);
 static void fixup_query_formals(FnSymbol* fn);
 static void change_method_into_constructor(FnSymbol* fn);
+static void find_printModuleInit_stuff();
 
 void normalize(void) {
   // tag iterators and replace delete statements with calls to ~chpl_destroy
@@ -150,6 +151,8 @@ void normalize(void) {
       USR_FATAL(fn, "invalid method name");
     }
   }
+
+  find_printModuleInit_stuff();
 }
 
 // the following function is called from multiple places,
@@ -1126,6 +1129,22 @@ fixup_query_formals(FnSymbol* fn) {
     }
   }
 }
+
+static void
+find_printModuleInit_stuff() {
+  std::vector<Symbol*> symbols;
+  collectSymbolsSTL(printModuleInitModule, symbols);
+  for_vector(Symbol, symbol, symbols) {
+    if (symbol->hasFlag(FLAG_PRINT_MODULE_INIT_INDENT_LEVEL)) {
+      gModuleInitIndentLevel = toVarSymbol(symbol);
+      INT_ASSERT(gModuleInitIndentLevel);
+    } else if (symbol->hasFlag(FLAG_PRINT_MODULE_INIT_FN)) {
+      gPrintModuleInitFn = toFnSymbol(symbol);
+      INT_ASSERT(gPrintModuleInitFn);
+    }
+  }
+}
+
 
 static void change_method_into_constructor(FnSymbol* fn) {
   if (fn->numFormals() <= 1)

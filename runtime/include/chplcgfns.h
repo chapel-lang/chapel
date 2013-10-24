@@ -33,6 +33,7 @@ extern char* chpl_executionCommand;
 extern chpl_fn_p chpl_ftable[];
 
 void chpl__init_preInit(int64_t _ln, chpl_string _fn);
+void chpl__init_PrintModuleInitOrder(int64_t _ln, chpl_string _fn);
 void chpl__init_ChapelStandard(int64_t _ln, chpl_string _fn);
 
 /* used for entry point: */

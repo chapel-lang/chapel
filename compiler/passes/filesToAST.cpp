@@ -62,7 +62,8 @@ static void parseInternalModules(void) {
 
   setIteratorTags();
 
-  standardModule = parseInternalModule("ChapelStandard"); 
+  standardModule = parseInternalModule("ChapelStandard");
+  printModuleInitModule = parseInternalModule("PrintModuleInitOrder"); 
 }
 
 

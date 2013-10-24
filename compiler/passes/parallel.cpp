@@ -791,6 +791,11 @@ makeHeapAllocations() {
       continue;
     }
 
+    if (var->hasFlag(FLAG_PRINT_MODULE_INIT_INDENT_LEVEL)) {
+      // don't widen PrintModuleInitOrder variables
+      continue;
+    }
+
     if (isModuleSymbol(var->defPoint->parentSymbol)) {
       if (!requireWideReferences()) {
         // don't heap-allocate globals

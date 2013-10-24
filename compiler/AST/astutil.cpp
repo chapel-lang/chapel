@@ -582,6 +582,9 @@ visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
   // chpl_gen_main is always visible (if it exists).
   pruneVisit(chpl_gen_main, fns, types);
 
+  // The printModuleInitOrder function is always visible
+  pruneVisit(gPrintModuleInitFn, fns, types);
+
   // Functions appearing the function pointer table are visible.
   // These are blocks that can be started through a forall, coforall or on statement.
   forv_Vec(FnSymbol, fn, ftableVec)

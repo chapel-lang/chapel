@@ -73,6 +73,7 @@ static void chpl_main(void) {
   chpl_task_setSerial(false);
 
   // Initialize the internal modules.
+  chpl__init_PrintModuleInitOrder(0, myFilename);
   if( ! chpl_no_stdmodules ) {
     chpl__init_ChapelStandard(0, myFilename);
     // Note that in general, module code can contain "on" clauses

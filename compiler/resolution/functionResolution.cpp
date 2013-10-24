@@ -83,6 +83,7 @@ static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call);
 static void makeRefType(Type* type);
 static void resolveAutoCopy(Type* type);
 static void resolveAutoDestroy(Type* type);
+static void resolveOther();
 static FnSymbol*
 protoIteratorMethod(IteratorInfo* ii, const char* name, Type* retType);
 static void protoIteratorClass(FnSymbol* fn);
@@ -5369,6 +5370,7 @@ resolve() {
   unmarkDefaultedGenerics();
 
   resolveUses(mainModule);
+  resolveUses(printModuleInitModule);
 
   resolveFns(chpl_gen_main);
   USR_STOP();
@@ -5381,6 +5383,7 @@ resolve() {
 
   resolveAutoCopies();
   resolveRecordInitializers();
+  resolveOther();
   insertDynamicDispatchCalls();
 
   insertReturnTemps(); // must be done before pruneResolvedTree is called.
@@ -5674,6 +5677,15 @@ static void resolveRecordInitializers() {
   }
 }
 
+//
+// Resolve other things we might want later
+//
+static void resolveOther() {
+  // Resolve the function that will print module init order
+  resolveFns(gPrintModuleInitFn);
+}
+
+
 static void insertDynamicDispatchCalls() {
   // Select resolved calls whose function appears in the virtualChildrenMap.
   // These are the dynamically-dispatched calls.
@@ -5924,6 +5936,7 @@ pruneResolvedTree() {
 static void removeUnusedFunctions() {
   // Remove unused functions
   forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_PRINT_MODULE_INIT_FN)) continue;
     if (fn->defPoint && fn->defPoint->parentSymbol) {
       if (resolvedFns.count(fn) == 0 || fn->retTag == RET_PARAM)
         fn->defPoint->remove();
