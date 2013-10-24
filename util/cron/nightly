@@ -18,6 +18,8 @@ $componly = 0;
 $nofutures = 0;
 $suppressions = "";
 $parnodefile = "";
+$baseline = 0;
+$fast = 0;
 $nolocal = 0;
 $verify = 0;
 $retaintree = 0;
@@ -68,6 +70,8 @@ while (@ARGV) {
         $baseline = 1;
     } elsif ($flag eq "-dist") {
         $dist = shift @ARGV;
+    } elsif ($flag eq "-fast") {
+        $fast = 1;
     } elsif ($flag eq "-memleaks") {
         $memleaks = shift @ARGV;
     } elsif ($flag eq "-suppress") {
@@ -138,8 +142,9 @@ if ($printusage == 1) {
 #    print "\t-interpret   : run tests in interpreted mode\n";
     print "\t-performance : run performance tests\n";
     print "\t-startdate	  : run performance tests providing a common start date to all the graphs\n";
-    print "\t-baseline    : run baseline tests\n";
+    print "\t-baseline    : run testins using --baseline\n";
     print "\t-dist <dist> : run distribution robustness tests\n";
+    print "\t-fast        : run tests using --fast\n";
     print "\t-memleaks <log> : run memleaks tests\n";
     print "\t-no-local    : run tests using --no-local\n";
     print "\t-componly    : only run the compiler, not the generated binary\n";
@@ -287,6 +292,8 @@ if ($debug == 1) {
         $statfile = "$statdir/nightly-perf.$fullplatform-debug.dat";
     } elsif ($baseline == 1) {
         $statfile = "$statdir/nightly-baseline.$fullplatform-debug.dat";
+    } elsif ($fast == 1) {
+        $statfile = "$statdir/nightly-fast.$fullplatform-debug.dat";
     } elsif ($nolocal == 1) {
         $statfile = "$statdir/nightly-nolocal.$fullplatform-debug.dat";
     } elsif ($verify == 1) {
@@ -299,6 +306,8 @@ if ($debug == 1) {
         $statfile = "$statdir/nightly-perf.$fullplatform-cron.dat";
     } elsif ($baseline == 1) {
         $statfile = "$statdir/nightly-baseline.$fullplatform-cron.dat";
+    } elsif ($fast == 1) {
+        $statfile = "$statdir/nightly-fast.$fullplatform-cron.dat";
     } elsif ($nolocal == 1) {
         $statfile = "$statdir/nightly-nolocal.$fullplatform-cron.dat";
     } elsif ($verify == 1) {
@@ -316,6 +325,8 @@ if ($performance == 1) {
     $subjectid = " Baseline";
 } elsif (!($dist eq "")) {
     $subjectid = " Dist $dist";
+} elsif ($fast == 1) {
+    $subjectid = " Fast";
 } elsif (!($memleaks eq "")) {
     $subjectid = " Memory-Leaks";
 } elsif ($nolocal == 1) {
@@ -362,6 +373,9 @@ if ($valgrind == 1) {
     } elsif (!($dist eq "")) {
         $threechars = "vgrdist$dist";
         $morechars = "dist-$dist+vgrnd";
+    } elsif ($fast == 1) {
+        $threechars = "vgn";
+        $morechars = "fast+vgrnd";
     } elsif (!($memleaks eq "")) {
         $threechars = "vgrmem";
         $morechars = "mem+vgrnd";
@@ -384,6 +398,9 @@ if ($valgrind == 1) {
 } elsif (!($dist eq "")) {
     $threechars = "dist$dist";
     $morechars = "dist-$dist";
+} elsif ($fast == 1) {
+    $threechars = "fst";
+    $morechars = "fast";
 } elsif (!($memleaks eq "")) {
     $threechars = "mem";
     $morechars = "memoryleaks";
@@ -602,6 +619,9 @@ if ($baseline == 1) {
 }
 if (!($dist eq "")) {
     $testflags = "$testflags -compopts -sdistType=DistType.$dist";
+}
+if ($fast == 1) {
+    $testflags = "$testflags -compopts --fast";
 }
 if (!($memleaks eq "")) {
     $testflags = "$testflags -memleaks /tmp/$memleaks";
