@@ -736,7 +736,7 @@ if ($runtests == 0) {
         mysystem("cd $svnPerfDir && svn commit -m \"Subject: Perf data update $host  `date '+%F %T'`  $revision\n\nDescription: <empty>\n\"", "svn-committing perf data" . $svnPerfMsgXtra, 0, 1, 1);
 
         $rsyncMessage = "syncing performance graph to sourceforge -- log file at $logdir/syncToSourceForge.errors";
-        mysystem("$chapeldir/util/cron/syncPerfGraphs", $rsyncMessage , 0, 1, 1);
+        mysystem("$chapeldir/util/cron/syncPerfGraphs.py", $rsyncMessage , 0, 1, 1);
     }
 
 
@@ -870,7 +870,7 @@ sub mysystem {
     if ($status != 0) {
         $endtime = localtime;
 	$somethingfailed = 1;
-        $status = $status / 256;
+        if($status != -1) {$status = $status / 256; }
 	print "Error $errorname: $status\n";
 
 	if ($mailmsg != 0) {
