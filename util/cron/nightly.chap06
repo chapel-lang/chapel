@@ -6,7 +6,7 @@ LOGFILE=/tmp/nightly.baseline.out
 LOGFILE2=$HOME/tmp/nightly.baseline.out
 echo "Testing baseline on `date`.  Log files: $LOGFILE and $LOGFILE2"
 rm -f $LOGFILE
-source ~/.chplcron.baseline.bashrc && ~/chapel/util/cron/nightly -cron -baseline -suppress Suppressions/baseline.suppress -compopts --inline >& $LOGFILE
+source ~/.chplcron.baseline.bashrc && ~/chapel/util/cron/nightly -cron -baseline -suppress Suppressions/baseline.suppress -no-futures -compopts --inline >& $LOGFILE
 
 cp $LOGFILE $LOGFILE2
 
