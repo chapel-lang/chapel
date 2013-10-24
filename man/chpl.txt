@@ -482,6 +482,11 @@ ENVIRONMENT
                       you've built the included GMP library in the
                       third-party directory).
 
+  CHPL_HWLOC          Specifies whether or not to use the hwloc library
+                      (defaults to a best guess based on whether you've
+                      built the included library in the third-party
+                      hwloc directory).
+
   CHPL_REGEXP         Specifies the regular expression library to use
                       (defaults to 'none' or 're2' if you've installed
                       the re2 package in the third-party directory).

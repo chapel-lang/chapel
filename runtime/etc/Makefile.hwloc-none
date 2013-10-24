@@ -1,0 +1,1 @@
+GEN_CFLAGS += -I$(RUNTIME_INCLUDE_ROOT)/hwloc/none

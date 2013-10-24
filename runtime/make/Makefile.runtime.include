@@ -49,6 +49,10 @@ endif
 GMP_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.gmp-$(CHPL_MAKE_GMP)
 -include $(GMP_INCLUDE)
 
+# Add any further includes for HWLOC.
+HWLOC_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.hwloc-$(CHPL_MAKE_HWLOC)
+-include $(HWLOC_INCLUDE)
+
 RUNTIME_CFLAGS += $(RUNTIME_DEFS)
 RUNTIME_CXXFLAGS += $(RUNTIME_DEFS)
 

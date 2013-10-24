@@ -37,7 +37,7 @@ endif
 # CHPL_MAKE_LLVM="llvm"
 # CHPL_MAKE_AUX_FILESYS="none"
 # CHPL_MAKE_COMPILER_SUBDIR=linux64.gnu.loc-flat.wide-struct.llvm-none
-# CHPL_MAKE_RUNTIME_SUBDIR=linux64.gnu.loc-flat.udp.everything.tasks-fifo.pthreads.tmr-generic.mem-default.atomics-intrinsics.none.gmp-none.re-none.wide-struct.fs-none
+# CHPL_MAKE_RUNTIME_SUBDIR=linux64.gnu.loc-flat.udp.everything.tasks-fifo.pthreads.tmr-generic.mem-default.atomics-intrinsics.none.gmp-none.hwloc-none.re-none.wide-struct.fs-none
 # CHPL_MAKE_LAUNCHER_SUBDIR=linux64.gnu.loc-flat.udp.everything.tasks-fifo.pthreads.launch-amudprun.tmr-generic.mem-default.atomics-intrinsics.none.wide-struct
 # Don't recompute the settings every time!
 ifndef CHPL_MAKE_SETTINGS_NO_NEWLINES
@@ -124,9 +124,9 @@ include $(THIRD_PARTY_DIR)/massivethreads/Makefile.include
 include $(THIRD_PARTY_DIR)/qthread/Makefile.include
 include $(THIRD_PARTY_DIR)/tcmalloc/Makefile.include
 include $(THIRD_PARTY_DIR)/gmp/Makefile.include
+include $(THIRD_PARTY_DIR)/hwloc/Makefile.include
 include $(THIRD_PARTY_DIR)/re2/Makefile.include
 include $(THIRD_PARTY_DIR)/llvm/Makefile.include-$(CHPL_MAKE_LLVM)
-include $(THIRD_PARTY_DIR)/hwloc/Makefile.include
 
 -include $(THIRD_PARTY_DIR)/Makefile.devel.include
 

@@ -134,6 +134,8 @@ sub go {
   }
   $gmp = run("gmp");
   printit("CHPL_GMP", "gmp", $gmp, "runtime");
+  $hwloc = run("hwloc");
+  printit("CHPL_HWLOC", "hwloc", $hwloc, "runtime");
   $regexp = run("regexp");
   printit("CHPL_REGEXP", "re", $regexp, "runtime");
   $wide_ptrs = run("widePointers");

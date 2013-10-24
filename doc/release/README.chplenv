@@ -271,7 +271,21 @@ Optional Settings
     distribution may not build on all platforms supported by Chapel.
 
 
-12) Optionally, the CHPL_REGEXP environment variable can be used to
+12) Optionally, the CHPL_HWLOC environment variable can select between
+    no hwloc support or using the hwloc package distributed with Chapel
+    in third-party.  Current options are:
+
+        none   : do not build hwloc support into the Chapel runtime
+        hwloc  : use the hwloc implementation bundled with Chapel in
+                 third-party
+
+    If unset, CHPL_HWLOC defaults to "hwloc" if you've already built the
+    third-party installation of hwloc for your installation, and "none"
+    otherwise.  Note that the included hwloc distribution may not build
+    on all platforms supported by Chapel.
+
+
+13) Optionally, the CHPL_REGEXP environment variable can be used to
     enable regular expression operations as documented in
     doc/technotes/README.regexp and defined in modules/standard/Regexp.chpl.  
     Current options are:
@@ -284,7 +298,7 @@ Optional Settings
     regular expression support in third-party and "none" otherwise.
 
 
-13) Optionally, the CHPL_AUX_FILESYS environment variable can be used to
+14) Optionally, the CHPL_AUX_FILESYS environment variable can be used to
     request that runtime support for filesystems beyond the usual Linux
     one be present.  Current options are:
 
@@ -297,7 +311,7 @@ Optional Settings
     HDFS support.
 
 
-14) Optionally, the CHPL_LLVM environment variable can be used to
+15) Optionally, the CHPL_LLVM environment variable can be used to
     enable support for the LLVM back-end to the Chapel compiler
     (see doc/technotes/README.llvm) or to support extern blocks in
     Chapel code via the CLANG compiler (see doc/technotes/README.extern).
@@ -311,7 +325,7 @@ Optional Settings
     llvm in third-party and "none" otherwise.
 
 
-15) Optionally, the CHPL_WIDE_POINTERS environment variable can be used to
+16) Optionally, the CHPL_WIDE_POINTERS environment variable can be used to
     specify the wide pointer format for multilocale programs.  Current
     options are:
 
