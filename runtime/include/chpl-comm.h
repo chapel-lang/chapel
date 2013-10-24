@@ -120,20 +120,50 @@ void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p);
 void chpl_comm_alloc_registry(int numGlobals);
 
 //
-// chpl_globals_registry is an array of pointers to addresses; on
-// locale 0, these addresses point locally to a class; they are
-// uninitialized elsewhere.  This function makes it so that the
-// addresses on all other locales are the same as on locale 0.
+// This routine is used by the Chapel runtime to broadcast the
+// locations of module-level ("global") variables to all locales
+// so that all locales can put/get the value of a global variable
+// directly, knowing where it lives remotely.
 //
-// This function is called collectively.
-//
+// Logically, this routine implements a collective broadcast of
+// the chpl_globals_registry[] array which is an array of 'numGlobals'
+// wide_ptr_t values.  Note that in a one-sided implementation, the
+// implementation should not assume that chpl_globals_registry[] lives
+// at the same address on every compute node.
+// 
 void chpl_comm_broadcast_global_vars(int numGlobals);
 
 //
-// Broadcast the value of 'id'th entry in chpl_private_broadcast_table
-// on the calling locale onto every other locale.  This is done to set
-// up global constants of simple scalar types (primarily).
+// This routine is used by the generated Chapel code to broadcast
+// the values of module-level ("global") constants to all compute
+// nodes so that tasks can refer to the constants locally without
+// communication.
 //
+// Logically, this routine implements a 1-sided broadcast of a value
+// across all the compute nodes.  Only one task total will call into
+// this routine per logical broadcast.  For that reason, this routine
+// will tend to need to be implemented by utilizing an active message
+// (or equivalent) on the remote side.
+//
+// The job of this task is to broadcast 'size' bytes stored at the
+// address indicated by chpl_private_broadcast_table[id] to all of the
+// other compute nodes.  On those compute nodes, the result should be
+// stored in the address stored by that node's copy of
+// chpl_private_broadcast_table[id].  This table is used (instead of a
+// raw address) in order to support platforms in which the instances
+// of the generated C code may store globals at different addresses
+// (like Mac OS X).
+//
+// Note that this routine is currently used only during program
+// initialization, so it is arguably not as performance critical as
+// other more core communication routines (like puts, gets, forks).
+//
+// The third argument, 'tid' (type ID) is intended for use when
+// targeting heterogeneous architectures where byte swapping may be
+// required rather than just copying the 'size' bytes.  It is not
+// currently in use on any platforms, but is being retained in the
+// event that we wish to re-enable this capability in the future.
+// 
 void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid);
 
 //
