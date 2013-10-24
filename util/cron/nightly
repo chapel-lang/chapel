@@ -714,6 +714,9 @@ if ($runtests == 0) {
         mysystem("cd $svnPerfDir && svn update", "svn-updating perf data after running tests" . $svnPerfMsgXtra, 0, 1, 1);
         mysystem("cd $svnPerfDir && svn add *.dat 2>&1 | grep -v '^svn: warning: .* is already under version control\$'", "svn-adding perf data files", 0, 0, 1);  # can fail easily - ignore failures
         mysystem("cd $svnPerfDir && svn commit -m \"Subject: Perf data update $host  `date '+%F %T'`  $revision\n\nDescription: <empty>\n\"", "svn-committing perf data" . $svnPerfMsgXtra, 0, 1, 1);
+
+        $rsyncMessage = "syncing performance graph to sourceforge -- log file at $logdir/syncToSourceForge.errors";
+        mysystem("$chapeldir/util/cron/syncPerfGraphs", $rsyncMessage , 0, 1, 1);
     }
 
 
