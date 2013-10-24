@@ -1,9 +1,9 @@
 #
 # settings for the build
 #
+DEPEND=1
 ifdef CHPL_DEVELOPER
 DEBUG=1
-DEPEND=1
 else
 OPTIMIZE=1
 endif
