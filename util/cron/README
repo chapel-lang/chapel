@@ -17,7 +17,7 @@ chap01 : linux64 (comm none, default everything)
 chap02 : gasnet: segment fast (M,W,F,Su), segment everything (Tu,Thu,Sa)
 chap03 : linux64 performance (comm none, default everything) -- old HW
 chap04 : linux64 performance (comm none, default everything) -- new HW
-chap05 : qthreads (comm none examples, gasnet multilocale-examples)
+chap05 : qthreads (comm none examples, gasnet multilocale-examples), --fast
 chap06 : --baseline
 chpbld01 : XT/XE PrgEnvs examples, nightly
 chpbld02 : XT/XE PrgEnvs all, weekly

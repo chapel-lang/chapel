@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+#
+# --fast testing
+#
+# Run only for the examples for now
+#
+. /etc/profile
+
+LOGFILE=/tmp/nightly.fast.out
+LOGFILE2=$HOME/tmp/nightly.fast.out
+echo "Testing --fast for examples on `date`.  Log files: $LOGFILE and $LOGFILE2"
+rm -f $LOGFILE
+source ~/.chapelbashrc-cron && ~/chapel/util/cron/nightly -cron -fast -examples >& $LOGFILE
+
+cp $LOGFILE $LOGFILE2
+

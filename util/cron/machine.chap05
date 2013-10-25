@@ -1,0 +1,7 @@
+#!/bin/bash
+echo Starting $0 on `hostname`.; module list; printenv; echo
+
+~/chapel/util/cron/nightly.qthreads
+~/chapel/util/cron/nightly.fast
+
+echo Finished $0 on `date`.
