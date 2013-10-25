@@ -137,15 +137,15 @@ typedef void* chpl_opaque;
 #define nilRef 0
 #define chpl_emptyCstring ""
 
-// macros for specifying the correct C constant type
-#define INT8( i)   (i)
-#define INT16( i)  (i)
-#define INT32( i)  (i ## L)
-#define INT64( i)  (i ## LL)
-#define UINT8( i)  (i ## U)
-#define UINT16( i) (i ## U)
-#define UINT32( i) (i ## UL)
-#define UINT64( i) (i ## ULL)
+// macros for specifying the correct C literal type
+#define INT8( i)   ((int8_t)(INT8_C(i)))
+#define INT16( i)  ((int16_t)(INT16_C(i)))
+#define INT32( i)  ((int32_t)(INT32_C(i)))
+#define INT64( i)  ((int64_t)(INT64_C(i)))
+#define UINT8( i)  ((uint8_t)(UINT8_C(i)))
+#define UINT16( i) ((uint16_t)(UINT16_C(i)))
+#define UINT32( i) ((uint32_t)(UINT32_C(i)))
+#define UINT64( i) ((uint64_t)(UINT64_C(i)))
 
 
 // C++ does not support c99 bools

@@ -421,12 +421,49 @@ GenRet VarSymbol::codegen() {
         } else if (iconst <= -2147483648ll || iconst >= 2147483647ll) {
           ret.c = "INT64(" + int64_to_string(iconst) + ")";
         } else {
-          ret.c = int64_to_string(iconst);
+          const char* castString;
+          switch (immediate->num_index) {
+          case INT_SIZE_8:
+            castString = "INT8(";
+            break;
+          case INT_SIZE_16:
+            castString = "INT16(";
+            break;
+          case INT_SIZE_32:
+            castString = "INT32(";
+            break;
+          case INT_SIZE_64:
+            castString = "INT64(";
+            break;
+          case INT_SIZE_1:
+          default:
+            INT_FATAL("Unexpected immediate->num_index: %d\n", immediate->num_index);
+          }
+            
+          ret.c = castString + int64_to_string(iconst) + ")";
         }
       } else if (immediate->const_kind == NUM_KIND_UINT) {
         uint64_t uconst = immediate->uint_value();
         if( uconst <= (uint64_t) INT32_MAX ) {
-          ret.c = uint64_to_string(uconst);
+          const char* castString;
+          switch (immediate->num_index) {
+          case INT_SIZE_8:
+            castString = "UINT8(";
+            break;
+          case INT_SIZE_16:
+            castString = "UINT16(";
+            break;
+          case INT_SIZE_32:
+            castString = "UINT32(";
+            break;
+          case INT_SIZE_64:
+            castString = "UINT64(";
+            break;
+          case INT_SIZE_1:
+          default:
+            INT_FATAL("Unexpected immediate->num_index: %d\n", immediate->num_index);
+          }
+          ret.c = castString + uint64_to_string(uconst) + ")";
         } else {
           ret.c = "UINT64(" + uint64_to_string(uconst) + ")";
         }

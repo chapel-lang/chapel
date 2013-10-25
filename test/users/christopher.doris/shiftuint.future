@@ -1,9 +1,0 @@
-bug: small int/uint literals not codegenerated properly
-
-This test shows that we don't code generate small int/uint literals
-properly.  We generated undecorated literals, like "1" which default
-to the C int size, which may be smaller/different than the Chapel type
-for the literal.  In this case, the user requested that the literal be
-a uint(64), but for most C compilers, it ends up being a 32-bit int.
-
-I'm currently testing a fix for this.
