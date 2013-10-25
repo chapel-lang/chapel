@@ -1,0 +1,18 @@
+#!/bin/bash
+#
+# This is a template script for running nightly tests via a cron job.
+# For a particular machine, copy this script and name it
+# machine.<hostname>.  The script should be called directly from the
+# crontab file, redirecting output to machine.<hostname>.out.
+#
+echo Starting $0 on `hostname`.; module list; printenv; echo
+
+# Call one or more nightly scripts for various configurations
+# here. e.g.,
+#
+#       ~/chapel/util/cron/nightly.standard
+#
+# Do not redirect output of these scripts, as the scripts themselves
+# should do this.
+
+echo Finished $0 on `date`.

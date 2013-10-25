@@ -1,3 +1,16 @@
+Proposed scheme for testing scripts
+===================================
+
+For each machine, there should be a file named machine.<hostname>.
+See machine.template for more information.  For each configuration,
+there should be a file named nightly.<config>.  The script
+machine.<hostname> calls one or more nightly.<config> scripts.
+
+The crontab file should call machine.<hostname> and redirect output
+into machine.<hostname>.out.  The nightly.<config> scripts should
+redirect output to appropriately named files, e.g., nightly.gasnet.out
+or nightly.gasnet.fast.out.
+
 CF machines
 ===========
 chap01 : linux64 (comm none, default everything)
