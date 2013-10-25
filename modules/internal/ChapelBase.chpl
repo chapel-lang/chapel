@@ -97,6 +97,11 @@ module ChapelBase {
     compilerWarning("CHPL_GMP not set");
   }
 
+  config param CHPL_HWLOC: string = "unset";
+  if (CHPL_HWLOC == "unset") {
+    compilerWarning("CHPL_HWLOC not set");
+  }
+
   config param CHPL_REGEXP: string = "unset";
   if (CHPL_REGEXP == "unset") {
     compilerWarning("CHPL_REGEXP not set");

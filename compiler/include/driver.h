@@ -90,6 +90,7 @@ extern const char* CHPL_MAKE;
 extern const char* CHPL_ATOMICS;
 extern const char* CHPL_NETWORK_ATOMICS;
 extern const char* CHPL_GMP;
+extern const char* CHPL_HWLOC;
 extern const char* CHPL_REGEXP;
 extern const char* CHPL_WIDE_POINTERS;
 extern const char* CHPL_LLVM;

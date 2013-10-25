@@ -54,6 +54,7 @@ const char* CHPL_MAKE = NULL;
 const char* CHPL_ATOMICS = NULL;
 const char* CHPL_NETWORK_ATOMICS = NULL;
 const char* CHPL_GMP = NULL;
+const char* CHPL_HWLOC = NULL;
 const char* CHPL_REGEXP = NULL;
 const char* CHPL_WIDE_POINTERS = NULL;
 const char* CHPL_LLVM = NULL;
@@ -347,6 +348,7 @@ static void setupOrderedGlobals(const char* argv0) {
   SETUP_ENV_VAR(CHPL_ATOMICS, "chplenv/atomics");
   SETUP_ENV_VAR(CHPL_NETWORK_ATOMICS, "chplenv/atomics --network");
   SETUP_ENV_VAR(CHPL_GMP, "chplenv/gmp");
+  SETUP_ENV_VAR(CHPL_HWLOC, "chplenv/hwloc");
   SETUP_ENV_VAR(CHPL_REGEXP, "chplenv/regexp");
   SETUP_ENV_VAR(CHPL_WIDE_POINTERS, "chplenv/widePointers");
   SETUP_ENV_VAR(CHPL_LLVM, "chplenv/llvm");

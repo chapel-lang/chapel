@@ -606,6 +606,7 @@ static void codegen_header() {
   genGlobalString("CHPL_ATOMICS", CHPL_ATOMICS);
   genGlobalString("CHPL_NETWORK_ATOMICS", CHPL_NETWORK_ATOMICS);
   genGlobalString("CHPL_GMP", CHPL_GMP);
+  genGlobalString("CHPL_HWLOC", CHPL_HWLOC);
   genGlobalString("CHPL_REGEXP", CHPL_REGEXP);
   genGlobalString("CHPL_WIDE_POINTERS", CHPL_WIDE_POINTERS);
   genGlobalString("CHPL_LLVM", CHPL_LLVM);
