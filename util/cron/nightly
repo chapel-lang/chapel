@@ -402,8 +402,13 @@ if ($valgrind == 1) {
     $threechars = "fst";
     $morechars = "fast";
 } elsif (!($memleaks eq "")) {
-    $threechars = "mem";
-    $morechars = "memoryleaks";
+    if ($examples == 1) {
+        $threechars = "mem";
+        $morechars = "memoryleaks";
+    } else {
+        $threechars = "mlf";
+        $morechars = "memoryleaks-full";
+    }
 } elsif ($nolocal == 1) {
     $threechars = "nlc";
     $morechars = "nolocal";
@@ -847,7 +852,11 @@ if ($runtests == 0) {
         #
         # This is not ideal (we may be a day behind depending on when
         #  the tests finish), but it good enough for now.
-        mysystem("cd $testdir && cp $logdir/$memleaks ./memleaks.exec.out.tmp && $chapeldir/util/test/computePerfStats memleaks $logdir");
+        if ($examples == 0) {
+            mysystem("cd $testdir && cp $logdir/$memleaks ./memleaksfull.exec.out.tmp && $chapeldir/util/test/computePerfStats memleaksfull $logdir");
+        } else {
+            mysystem("cd $testdir && cp $logdir/$memleaks ./memleaks.exec.out.tmp && $chapeldir/util/test/computePerfStats memleaks $logdir");
+        }
     }
 }
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-. /etc/profile
+source /etc/profile
+source ~/.chapelbashrc-cron
 
 if [ $# == 0 ] ; then
   EXAMPLES=-examples
@@ -14,16 +15,22 @@ else
   fi
 fi
 
-echo Starting $0 on `hostname`. EXAMPLES=$EXAMPLES. dayType=$dayType.; module list; printenv; echo
+echo Starting $0 on `hostname`. dayType=$dayType.; module list; printenv; echo
 
-LOGFILE="$HOME/tmp/nightly.verify.out"
-echo "Running verifications on `date`.  Log file: $LOGFILE"
-source ~/.chapelbashrc-cron
-
+echo "Running  $EXAMPLES verifications on `date`.  Log file: $LOGFILE"
 # Override log file locations for weekend runs.
 export CHPL_NIGHTLY_LOGDIR=$CHPL_NIGHTLY_LOGDIR$dayType
 export CHPL_NIGHTLY_CRON_LOGDIR=$CHPL_NIGHTLY_LOGDIR
-
+LOGFILE="$HOME/tmp/nightly.verify.out"
 $CHPL_HOME/util/cron/nightly -cron $EXAMPLES -verify &> $LOGFILE
+
+echo "Running memleaks regressions on `date`.  Log file: $LOGFILE"
+# Override log file locations for memleaks runs.
+export date=`date +%Y-%m-%d`
+export CHPL_NIGHTLY_LOGDIR=/data/sea/cascade/chapel/NightlyMemLeaks
+export CHPL_NIGHTLY_STATDIR=$CHPL_NIGHTLY_LOGDIR/Stats
+export CHPL_NIGHTLY_CRON_LOGDIR=$CHPL_NIGHTLY_LOGDIR
+LOGFILE="$HOME/tmp/nightly.memleaksfull.out"
+$CHPL_HOME/util/cron/nightly -cron --memleaks memleaks.$date.nightlyfull.log &> $LOGFILE
 
 echo Finished $0 on `date`.
