@@ -1,0 +1,4 @@
+bug: imaginary literals don't preserve their sizes
+
+This bug shows that imaginary literals don't preserve their sizes as
+they should.  This seems potentially problematic.

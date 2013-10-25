@@ -1,0 +1,6 @@
+bug: int literals don't preserve sizes
+
+This test demonstrates that int literals don't preserve their sizes at
+codegen size as intended.  This is related to
+test/users/christopher.doris/shiftuint.chpl and I have a patch that
+addresses it which is out for review.

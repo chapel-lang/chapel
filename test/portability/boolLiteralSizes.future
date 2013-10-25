@@ -1,0 +1,4 @@
+bug: boolean literals don't preserve their sizes
+
+This bug is probably innocuous, but it seems that boolean literal
+values don't preserve their sizes as they should.
