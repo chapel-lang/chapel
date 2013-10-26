@@ -421,7 +421,7 @@ GenRet VarSymbol::codegen() {
         } else if (iconst <= -2147483648ll || iconst >= 2147483647ll) {
           ret.c = "INT64(" + int64_to_string(iconst) + ")";
         } else {
-          const char* castString;
+          const char* castString = "(";
           switch (immediate->num_index) {
           case INT_SIZE_8:
             castString = "INT8(";
@@ -445,7 +445,7 @@ GenRet VarSymbol::codegen() {
       } else if (immediate->const_kind == NUM_KIND_UINT) {
         uint64_t uconst = immediate->uint_value();
         if( uconst <= (uint64_t) INT32_MAX ) {
-          const char* castString;
+          const char* castString = "(";
           switch (immediate->num_index) {
           case INT_SIZE_8:
             castString = "UINT8(";
