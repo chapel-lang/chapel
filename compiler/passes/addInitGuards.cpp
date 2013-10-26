@@ -54,10 +54,11 @@ void addModuleInitBlocks() {
     // Now, traverse my use statements, and call the initializer for each
     // module I use.
     forv_Vec(ModuleSymbol, usedMod, mod->modUseList) {
+      if (usedMod == standardModule) continue;
       initBlock->insertAtTail(new CallExpr(usedMod->initFn));
     }
 
-    fn->insertAtHead(initBlock);
+    if (initBlock->body.length > 0) fn->insertAtHead(initBlock);
   }
 }
 
