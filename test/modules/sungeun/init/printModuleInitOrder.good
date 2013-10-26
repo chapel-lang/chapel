@@ -43,3 +43,4 @@ Initializing Modules:
     Types
     stopInitCommDiags
    printModuleInitOrder
+    moduleInitTest
