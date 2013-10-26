@@ -1,5 +1,7 @@
 Initializing Modules:
    ChapelStandard
+    startInitCommDiags
+     CommDiagnostics
     ChapelBase
     Atomics
     NetworkAtomics
@@ -39,4 +41,5 @@ Initializing Modules:
     MemTracking
     ChapelUtil
     Types
+    stopInitCommDiags
    printModuleInitOrder

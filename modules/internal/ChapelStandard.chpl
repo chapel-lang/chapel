@@ -3,6 +3,8 @@
 pragma "no use ChapelStandard"
 pragma "export init"
 module ChapelStandard {
+  use startInitCommDiags;
+
   // Internal modules.
   use ChapelBase;
   use Atomics;
@@ -34,4 +36,6 @@ module ChapelStandard {
   // Standard modules.
   use Types;
   use Math;
+
+  use stopInitCommDiags;
 }
