@@ -2170,7 +2170,25 @@ VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size) {
   }
   s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
   rootModule->block->insertAtTail(new DefExpr(s));
-  s->cname = astr(n);
+  //
+  // If the string for this imaginary literal doesn't look like a C
+  // floating point literal (e.g., 123i rather than 123.0i), make it
+  // look like one to avoid code-generating an integer literal...
+  //
+  // Note that there would be no harm in doing this same check for
+  // real floating point literals (if this routine were merged with
+  // new_RealSymbol, for example), but that it should not be necessary
+  // since there is no form in Chapel for which they can look like an
+  // integer.  It might be worthwhile to do it defensively anyway, in
+  // case we were to add some sort of shorthand suffix for
+  // real(32)/real(64) literals down the road that supported an
+  // integer form (e.g., 1r).
+  //
+  if (!strchr(n, '.') && !strchr(n, 'e') && !(strchr(n, 'E'))) {
+    s->cname = astr(n, ".0");
+  } else {
+    s->cname = astr(n);
+  }
   s->immediate = new Immediate;
   *s->immediate = imm;
   uniqueConstantsHash.put(s->immediate, s);
