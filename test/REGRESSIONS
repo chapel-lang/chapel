@@ -63,6 +63,15 @@ consistent execution timeouts on chap04 (since ??? -- at least 10/09/13)
 [Error: Timed out executing program studies/hpcc/RA/bradc/parallel/ra-dist (compopts: 1)]
 
 
+===========================
+--fast examples regressions
+===========================
+
+"assuming signed overflow does not occur" error (see as mandelbrot-fancy above)
+-------------------------------------------------------------------------------
+[Error matching compiler output for release/examples/primers/ranges]
+
+
 ========================
 memory leaks regressions
 ========================
@@ -295,53 +304,6 @@ infinite loop warning (since filed?)
 value is outside of the int range in C compilation (03/??/12)
 -------------------------------------------------------------
 [Error matching compiler output for types/enum/ferguson/enum_mintype_test]
-
-New CCE 8.2 warning: An unsigned integer is being compared to zero (7/16/13)
-----------------------------------------------------------------------------
-[Error matching program output for arrays/bradc/intuintarr2]
-[Error matching program output for arrays/deitz/part5/test_array_uint4]
-[Error matching program output for arrays/dinan/mvm]
-[Error matching program output for distributions/bradc/extremeBlock]
-[Error matching program output for distributions/dm/t2]
-[Error matching program output for distributions/dm/t8]
-[Error matching program output for distributions/sungeun/dataPar1 (compopts: 1, execopts: 1)]
-[Error matching program output for distributions/sungeun/dataPar1 (compopts: 1, execopts: 2)]
-[Error matching program output for distributions/sungeun/dataPar1 (compopts: 1, execopts: 3)]
-[Error matching program output for distributions/sungeun/dataPar1 (compopts: 1, execopts: 4)]
-[Error matching program output for distributions/sungeun/dataPar2 (compopts: 1, execopts: 1)]
-[Error matching program output for distributions/sungeun/dataPar2 (compopts: 1, execopts: 2)]
-[Error matching program output for distributions/sungeun/dataPar2 (compopts: 1, execopts: 3)]
-[Error matching program output for distributions/vass/densify-1-self]
-[Error matching program output for expressions/sungeun/test_dead_code (compopts: 3)]
-[Error matching program output for expressions/sungeun/test_dead_code (compopts: 4)]
-[Error matching program output for functions/bradc/resolution/smallIntBoolTests/paramNon (compopts: 1)]
-[Error matching program output for functions/bradc/resolution/smallIntBoolTests/paramNon-withenum]
-[Error matching program output for modules/standard/Random/diten/testRandomSeed]
-[Error matching program output for modules/sungeun/test_safeAdd]
-[Error matching program output for modules/sungeun/test_safeSub]
-[Error matching program output for nostdlib/intpow3]
-[Error matching program output for parallel/begin/dinan/mvm_coforall]
-[Error matching program output for release/examples/benchmarks/hpcc/ra-atomics (compopts: 1)]
-[Error matching program output for release/examples/benchmarks/hpcc/ra (compopts: 1)]
-[Error matching program output for release/examples/benchmarks/hpcc/variants/ra-cleanloop (compopts: 1)]
-[Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist (compopts: 1)]
-[Error matching program output for studies/hpcc/RA/bradc/ra-bradc]
-[Error matching program output for studies/hpcc/RA/bradc/ra-bradc-domainPromote]
-[Error matching program output for studies/hpcc/RA/diten/ra (compopts: 1)]
-[Error matching program output for studies/hpcc/RA/marybeth/ra2]
-[Error matching program output for studies/hpcc/RA/marybeth/ra3]
-[Error matching program output for studies/hpcc/RA/marybeth/ra-test-dist]
-[Error matching program output for studies/hpcc/RA/ra-seq (compopts: 1, execopts: 1)]
-[Error matching program output for studies/hpcc/RA/ra-seq (compopts: 2, execopts: 1)]
-[Error matching program output for studies/hpcc/RA/testRAStream (compopts: 1)]
-[Error matching program output for studies/hpcc/RA/testRAStream (compopts: 2)]
-[Error matching program output for types/range/diten/rangeSlice]
-[Error matching program output for types/range/diten/uintRangeLoops]
-[Error matching program output for types/range/hilde/countType]
-[Error matching program output for types/scalar/bradc/uintZeroComparisons]
-[Error matching program output for types/scalar/bradc/uintZeroComparisons2]
-[Error matching program output for types/scalar/diten/simpleComparesWithZero]
-[Error matching program output for users/ferguson/uint64_forall]
 
 signal 11 (since ??? -- at least 10/13/13)
 ------------------------------------------

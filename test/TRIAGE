@@ -30,18 +30,27 @@
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
+gasnet initialization race condition (starting with r22171, sungeun)
+--------------------------------------------------------------------
+[Error matching program output for distributions/deitz/test_privatizate_from_remote_locale]
+[Error matching program output for optimizations/sungeun/RADOpt/access3d (compopts: 1)]
+[Error matching program output for studies/ssca2/test-rmatalt/nondet (compopts:
++1)]
+[Error matching program output for multilocale/sungeun/checkLocales (compopts: 1)]
+
+
+extra thread required for multilocale startup
+---------------------------------------------
+(sungeun: Fix in test)
+[Error: Timed out executing program multilocale/gbt/needMultiLocales/hello-numThreads-2]
+
+
 possible too-small timeout
 --------------------------
 [Error: Timed out compilation for types/sync/sungeun/writeRecordInOutProc] (10/11/13, linux64.gnu.none.fifo.pthreads)
 This test seems not to have timed out before.  Its timeout value is only
 5 seconds.  Thinking this was probably a sporadic failure, I bumped the
 timeout for this and its sibling writeRecordOutProc to 10 seconds.
-
-
-no-local testing takes more than 24 hours
------------------------------------------
-9/10/13, 9/11/13
-
 
 regularly occuring compilation timeouts
 ---------------------------------------
@@ -185,9 +194,9 @@ Not so noisy as to be familiar annoyances, but worth noting to see if they
 come up again
 ==========================================================================
 
-nondet. baseline output (10/08/13)
-----------------------------------
-[Error matching program output for studies/amr/diffusion/level/Level_DiffusionBE_driver (compopts: 1)]
+nondet. baseline output
+-----------------------
+[Error matching program output for studies/amr/diffusion/level/Level_DiffusionBE_driver (compopts: 1)] (10/08/13, 10/22/13, 10/26/13)
 
 nondet. baseline compilation timeout (10/15/13)
 -----------------------------------------------
@@ -313,7 +322,7 @@ examples of what times out:
  test_array_slicing3 (07/24/13, 07/12/13, 06/08/12, 6/16, 3/29/13, 5/3/13)
  release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4) (04/08/13)
  studies/cholesky/jglewis/version2/performance/test_cholesky_performance (10/10/13)
- multilocale/diten/needMultiLocales/coforallon_maxThreads (07/04/13, 10/10/13)
+ multilocale/diten/needMultiLocales/coforallon_maxThreads (07/04/13, 10/10/13, 10/22/13)
  etc.
 
 non-deterministic compilation timeouts with gasnet (UNASSIGNED)
