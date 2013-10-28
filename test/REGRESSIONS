@@ -555,6 +555,11 @@ do about it.
 cygwin-specific failures
 ========================
 
+internal error: pthread_cond_init() failed
+------------------------------------------
+[Error matching program output for release/examples/primers/fileIO]
+(10/25/13, after a long hiatus)
+
 ???
 ---
 [Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/singleVar]
