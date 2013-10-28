@@ -8,7 +8,7 @@
 
 LOGFILE=/tmp/nightly.fast.out
 LOGFILE2=$HOME/tmp/nightly.fast.out
-echo "Testing --fast for examples on `date`.  Log files: $LOGFILE and $LOGFILE2"
+echo `date` "" "Testing --fast for examples.  Log files: $LOGFILE and $LOGFILE2"
 rm -f $LOGFILE
 source ~/.chapelbashrc-cron && ~/chapel/util/cron/nightly -cron -fast -examples >& $LOGFILE
 

@@ -15,14 +15,14 @@ else
   fi
 fi
 
-echo Starting $0 on `hostname`. dayType=$dayType.; module list; printenv; echo
+echo `date` "" Starting $0 on `hostname`. dayType=$dayType. EXAMPLES=$EXAMPLES.
 
 # Run standard tests, tossing --verify:
 #  Examples only on weekdays; entire test suite on weekends (Saturday). 
 export CHPL_NIGHTLY_LOGDIR=$CHPL_NIGHTLY_LOGDIR$dayType
 export CHPL_NIGHTLY_CRON_LOGDIR=$CHPL_NIGHTLY_LOGDIR
 LOGFILE="$HOME/tmp/nightly.verify.out"
-echo "Running  $EXAMPLES verifications on `date`.  Log file: $LOGFILE"
+echo `date` "" "Running  $EXAMPLES verifications.  Log file: $LOGFILE"
 $CHPL_HOME/util/cron/nightly -cron $EXAMPLES -verify &> $LOGFILE
 
 # Gather memleaks data over the entire test suite.
@@ -31,7 +31,7 @@ export CHPL_NIGHTLY_STATDIR=$CHPL_NIGHTLY_LOGDIR/Stats
 export CHPL_NIGHTLY_CRON_LOGDIR=$CHPL_NIGHTLY_LOGDIR
 date=`date +%Y-%m-%d`
 LOGFILE="$HOME/tmp/nightly.memleaksfull.out"
-echo "Running memleaks regressions on `date`.  Log file: $LOGFILE"
+echo `date` "" "Running memleaks regressions.  Log file: $LOGFILE"
 $CHPL_HOME/util/cron/nightly -cron -memleaks memleaks.$date.nightlyfull.log &> $LOGFILE
 
-echo Finished $0 on `date`.
+echo `date` "" Finished $0.

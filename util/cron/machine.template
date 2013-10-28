@@ -5,7 +5,7 @@
 # machine.<hostname>.  The script should be called directly from the
 # crontab file, redirecting output to machine.<hostname>.out.
 #
-echo Starting $0 on `hostname`.; module list; printenv; echo
+echo `date` "" Starting $0 on `hostname`.
 
 # Call one or more nightly scripts for various configurations
 # here. e.g.,
@@ -15,4 +15,4 @@ echo Starting $0 on `hostname`.; module list; printenv; echo
 # Do not redirect output of these scripts, as the scripts themselves
 # should do this.
 
-echo Finished $0 on `date`.
+echo `date` "" Finished $0.

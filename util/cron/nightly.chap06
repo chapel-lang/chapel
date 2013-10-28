@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 . /etc/profile
-echo Starting $0 on `hostname`.; module list; printenv; echo
+echo `date` "" Starting $0 on `hostname`.
 
 LOGFILE=/tmp/nightly.baseline.out
 LOGFILE2=$HOME/tmp/nightly.baseline.out
-echo "Testing baseline on `date`.  Log files: $LOGFILE and $LOGFILE2"
+echo `date` "" "Testing baseline.  Log files: $LOGFILE and $LOGFILE2"
 rm -f $LOGFILE
 source ~/.chplcron.baseline.bashrc && ~/chapel/util/cron/nightly -cron -baseline -suppress Suppressions/baseline.suppress -no-futures -compopts --inline >& $LOGFILE
 
 cp $LOGFILE $LOGFILE2
 
-echo Finished $0 on `date`.
+echo `date` "" Finished $0.

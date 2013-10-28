@@ -1,12 +1,12 @@
 #!/usr/bin/env tcsh
-echo Starting $0 on `hostname`.; module list; printenv; echo
+echo `date` "" Starting $0 on `hostname`.
 
 set LOGFILE = $HOME/tmp/nightly.linux32virt.out
-echo "Testing comm=none on `date`.  Log file: $LOGFILE"
+echo `date` "" "Testing comm=none.  Log file: $LOGFILE"
 source ~/.chapelcshrc-cron && ~/chapel/util/cron/nightly -cron -examples >&! $LOGFILE
 
 set LOGFILE = $HOME/tmp/nightly.linux32virt-gasnet.out
-echo "Testing comm=gasnet on `date`.  Log file: $LOGFILE"
+echo `date` "" "Testing comm=gasnet.  Log file: $LOGFILE"
 source ~/.chapelcshrc-cron-gasnet && $CHPL_HOME/util/cron/nightly -cron -examples >&! $LOGFILE
 
-echo Finished $0 on `date`.
+echo `date` "" Finished $0.

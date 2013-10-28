@@ -1,8 +1,8 @@
 #!/bin/tcsh
-echo Starting $0 on `hostname`.; module list; printenv; echo
+echo `date` "" Starting $0 on `hostname`.
 
 set LOGFILE = $HOME/tmp/nightly.linux64.out
-echo "Testing the default-everything configuration on `date`.  Log file: $LOGFILE"
+echo `date` "" "Testing the default-everything configuration.  Log file: $LOGFILE"
 source ~/.chapelcshrc-cron && ~/chapel/util/cron/nightly -cron >&! $LOGFILE
 
-echo Finished $0 on `date`.
+echo `date` "" Finished $0.

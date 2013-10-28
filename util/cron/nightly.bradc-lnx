@@ -1,20 +1,20 @@
 #!/usr/bin/env tcsh
-echo Starting $0 on `hostname`.; module list; printenv; echo
+echo `date` "" Starting $0 on `hostname`.
 
 set LOGFILE = $HOME/tmp/nightly.testRelease.out
-echo "Running testRelease on `date`.  Log file: $LOGFILE"
+echo `date` "" "Running testRelease.  Log file: $LOGFILE"
 source ~/.chapelcshrc-cron && ~/chapel/util/buildRelease/testRelease -cron >&! $LOGFILE
 
 set LOGFILE = $HOME/tmp/nightly-perf.linux64.bradc-lnx.out
-echo "Testing performance on `date`.  Log file: $LOGFILE"
+echo `date` "" "Testing performance.  Log file: $LOGFILE"
 source ~/.chapelcshrc-cron && setenv CHPL_NIGHTLY_LOGDIR /data/sea/cascade/chapel/NightlyPerformance/bradc-lnx && ~/chapel/util/cron/nightly -cron -performance -startdate 02/19/10 >&! $LOGFILE
 
 set LOGFILE = $HOME/tmp/tokctnightly.out
-echo "Counting tokens on `date`.  Log file: $LOGFILE"
+echo `date` "" "Counting tokens.  Log file: $LOGFILE"
 source ~/.chapelcshrc-cron && ~/chapel/util/tokencount/tokctnightly -cron >&! $LOGFILE
 
 set LOGFILE = $HOME/tmp/tabnightly.out
-echo "Running lookForTabs.cron on `date`.  Log file: $LOGFILE"
+echo `date` "" "Running lookForTabs.cron.  Log file: $LOGFILE"
 ~/chapel/util/cron/lookForTabs.cron >&! $LOGFILE
 
 #
@@ -23,4 +23,4 @@ echo "Running lookForTabs.cron on `date`.  Log file: $LOGFILE"
 #source ~bradc/.chapelcshrc-cron && ~bradc/chapel/util/cron/nightly -cron >&! ~bradc/tmp/nightly.linux.out
 #
 
-echo Finished $0 on `date`.
+echo `date` "" Finished $0.

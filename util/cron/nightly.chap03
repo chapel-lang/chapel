@@ -1,8 +1,8 @@
 #!/bin/tcsh
-echo Starting $0 on `hostname`.; module list; printenv; echo
+echo `date` "" Starting $0 on `hostname`.
 
 set LOGFILE = $HOME/tmp/nightly-perf.linux64.chap03.out
-echo "Testing performance on `date`.  Log file: $LOGFILE"
+echo `date` "" "Testing performance.  Log file: $LOGFILE"
 source ~/.chapelcshrc-cron && setenv CHPL_NIGHTLY_LOGDIR /data/sea/cascade/chapel/NightlyPerformance/chap03 && ~/chapel/util/cron/nightly -cron -performance -startdate 08/21/07 >&! $LOGFILE
 
-echo Finished $0 on `date`.
+echo `date` "" Finished $0.
