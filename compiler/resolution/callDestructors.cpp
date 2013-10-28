@@ -22,6 +22,41 @@ doesExitBlock(BlockStmt* block, GotoStmt* gotoStmt) {
 }
 
 
+//
+// This is a helper function that determines, when we're creating a
+// new function call to 'fn' with actual 'arg', whether the argument
+// needs to be replaced by a reference to the argument.  If it does,
+// it creates a new reference temp and returns it; otherwise it
+// returns the original arg.  
+//
+// It also returns, via the 'refTmpAssign' argument, an assignment
+// that defines the ref tmp in question.  If this is NULL, it's an
+// indication that no ref temp was used; if it's non-NULL, the caller
+// must insert the assignment returned through this argument, as well
+// as a DefExpr for the ref tmp itself, before the call occurs.
+//
+static VarSymbol*
+createRefArgIfNeeded(FnSymbol* fn, VarSymbol* arg, CallExpr** refTmpAssign) {
+  DefExpr* formalDef = toDefExpr(fn->formals.only());
+  INT_ASSERT(formalDef);
+  Type* formalType = formalDef->sym->type;
+  VarSymbol* refTmp = NULL;
+  //
+  // Does the formal expect a ref, yet the actual is not one?
+  //
+  if (formalType->symbol->hasFlag(FLAG_REF) && arg->type->refType != NULL) {
+    SET_LINENO(arg);
+    refTmp = newTemp("_ref_tmp_", formalType);
+    *refTmpAssign = new CallExpr(PRIM_MOVE, refTmp, 
+                                 new CallExpr(PRIM_ADDR_OF, arg));
+    return refTmp;
+  } else {
+    *refTmpAssign = NULL;
+    return arg;
+  }
+}
+
+
 static void
 insertAutoDestroyTemps() {
   forv_Vec(BlockStmt, block, gBlockStmts) {
@@ -75,7 +110,13 @@ insertAutoDestroyTemps() {
         forv_Vec(VarSymbol, var, vars) {
           if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
             SET_LINENO(var);
+            CallExpr* refTmpAssign = NULL;
+            var = createRefArgIfNeeded(autoDestroyFn, var, &refTmpAssign);
             stmt->insertAfter(new CallExpr(autoDestroyFn, var));
+            if (refTmpAssign) {
+              stmt->insertAfter(refTmpAssign);
+              stmt->insertAfter(new DefExpr(var));
+            }
           }
         }
         vars.clear();
@@ -149,7 +190,8 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
             newFn = fn->copy();
             ArgSymbol* arg = new ArgSymbol(blankIntentForType(useFn->retType->refType), "_retArg", useFn->retType->refType);
             newFn->insertFormalAtTail(arg);
-            Symbol* ret = newFn->getReturnSymbol();
+            VarSymbol* ret = toVarSymbol(newFn->getReturnSymbol());
+            INT_ASSERT(ret);
             newFn->body->body.tail->replace(new CallExpr(PRIM_RETURN, gVoid));
             newFn->retType = dtVoid;
             fn->defPoint->insertBefore(new DefExpr(newFn));
@@ -166,7 +208,13 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
                     move->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, arg)));
                     move->insertAfter(new CallExpr(PRIM_MOVE, arg, new CallExpr(useFn, tmp, ret)));
                   } else {
+                    CallExpr* refTmpAssign = NULL;
+                    ret = createRefArgIfNeeded(useFn, ret, &refTmpAssign);
                     move->insertAfter(new CallExpr(PRIM_MOVE, arg, new CallExpr(useFn, ret)));
+                    if (refTmpAssign) {
+                      move->insertAfter(refTmpAssign);
+                      move->insertAfter(new DefExpr(ret));
+                    }
                   }
                 } else {
                   Symbol* tmp = newTemp("ret_to_arg_tmp_", useFn->retType);
@@ -363,6 +411,12 @@ static void insertGlobalAutoDestroyCalls() {
             if (!var->hasFlag(FLAG_NO_AUTO_DESTROY))
               if (FnSymbol* autoDestroy = autoDestroyMap.get(var->type)) {
                 SET_LINENO(var);
+                CallExpr* refTmpAssign = NULL;
+                var = createRefArgIfNeeded(autoDestroy, var, &refTmpAssign);
+                if (refTmpAssign) {
+                  fn->insertAtTail(new DefExpr(var));
+                  fn->insertAtTail(refTmpAssign);
+                }
                 fn->insertAtTail(new CallExpr(autoDestroy, var));
               }
   }
