@@ -241,8 +241,13 @@ module ChapelLocale {
     if replicateRootLocale && locIdx!=0 {
       // Create a new local rootLocale
       var newRootLocale = new RootLocale();
+      // We don't want to be doing unnecessary ref count updates here
+      // as they require additional tasks.  We know we don't need them
+      // so tell the compiler to not insert them.
+      pragma "no copy" pragma "no auto destroy"
+      const origLocales => (origRootLocale:RootLocale).getDefaultLocaleArray();
+      var origRL = origLocales._value.theData;
       var newRL = newRootLocale.getDefaultLocaleArray()._value.theData;
-      var origRL = (origRootLocale:RootLocale).getDefaultLocaleArray()._value.theData;
       // We must directly implement a bulk copy here, as the mechanisms
       // for doing so via a whole array assignment are not initialized
       // yet and copying element-by-element via a for loop is is costly.
