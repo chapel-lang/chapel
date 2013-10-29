@@ -44,7 +44,8 @@ createRefArgIfNeeded(FnSymbol* fn, VarSymbol* arg, CallExpr** refTmpAssign) {
   //
   // Does the formal expect a ref, yet the actual is not one?
   //
-  if (formalType->symbol->hasFlag(FLAG_REF) && arg->type->refType != NULL) {
+  if (formalType->symbol->hasFlag(FLAG_REF) && 
+      formalType->getValType() == arg->type) {
     SET_LINENO(arg);
     refTmp = newTemp("_ref_tmp_", formalType);
     *refTmpAssign = new CallExpr(PRIM_MOVE, refTmp, 
