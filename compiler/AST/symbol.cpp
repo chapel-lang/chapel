@@ -2129,7 +2129,9 @@ VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size) {
   return s;
 }
 
-VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size) {
+static VarSymbol* new_FloatSymbol(const char* n, long double b, 
+                                  IF1_float_type size, IF1_num_kind kind, 
+                                  Type* type) {
   Immediate imm;
   switch (size) {
   case FLOAT_SIZE_32  : imm.v_float32  = b; break;
@@ -2137,53 +2139,14 @@ VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size) {
   default:
     INT_FATAL( "unknown FLOAT_SIZE");
   }
-  imm.const_kind = NUM_KIND_FLOAT;
+  imm.const_kind = kind;
   imm.num_index = size;
   VarSymbol *s = uniqueConstantsHash.get(&imm);
-  PrimitiveType* dtRetType = dtReal[size];
   if (s) {
     return s;
   }
-  s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
+  s = new VarSymbol(astr("_literal_", istr(literal_id++)), type);
   rootModule->block->insertAtTail(new DefExpr(s));
-  s->cname = astr(n);
-  s->immediate = new Immediate;
-  *s->immediate = imm;
-  uniqueConstantsHash.put(s->immediate, s);
-  return s;
-}
-
-VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size) {
-  Immediate imm;
-  switch (size) {
-  case FLOAT_SIZE_32  : imm.v_float32  = b; break;
-  case FLOAT_SIZE_64  : imm.v_float64  = b; break;
-  default:
-    INT_FATAL( "unknown FLOAT_SIZE");
-  }
-  imm.const_kind = NUM_KIND_IMAG;
-  imm.num_index = size;
-  VarSymbol *s = uniqueConstantsHash.get(&imm);
-  PrimitiveType* dtRetType = dtImag[size];
-  if (s) {
-    return s;
-  }
-  s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
-  rootModule->block->insertAtTail(new DefExpr(s));
-  //
-  // If the string for this imaginary literal doesn't look like a C
-  // floating point literal (e.g., 123i rather than 123.0i), make it
-  // look like one to avoid code-generating an integer literal...
-  //
-  // Note that there would be no harm in doing this same check for
-  // real floating point literals (if this routine were merged with
-  // new_RealSymbol, for example), but that it should not be necessary
-  // since there is no form in Chapel for which they can look like an
-  // integer.  It might be worthwhile to do it defensively anyway, in
-  // case we were to add some sort of shorthand suffix for
-  // real(32)/real(64) literals down the road that supported an
-  // integer form (e.g., 1r).
-  //
   if (!strchr(n, '.') && !strchr(n, 'e') && !(strchr(n, 'E'))) {
     s->cname = astr(n, ".0");
   } else {
@@ -2193,6 +2156,14 @@ VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size) {
   *s->immediate = imm;
   uniqueConstantsHash.put(s->immediate, s);
   return s;
+}
+
+VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size) {
+  return new_FloatSymbol(n, b, size, NUM_KIND_FLOAT, dtReal[size]);
+}
+
+VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size) {
+  return new_FloatSymbol(n, b, size, NUM_KIND_IMAG, dtImag[size]);
 }
 
 VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i,
