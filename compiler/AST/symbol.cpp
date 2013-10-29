@@ -282,7 +282,7 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
           break;
       }
       break;
-    case NUM_KIND_FLOAT:
+    case NUM_KIND_REAL:
     case NUM_KIND_IMAG:
       switch(i->num_index) {
         case FLOAT_SIZE_32:
@@ -2159,7 +2159,7 @@ static VarSymbol* new_FloatSymbol(const char* n, long double b,
 }
 
 VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size) {
-  return new_FloatSymbol(n, b, size, NUM_KIND_FLOAT, dtReal[size]);
+  return new_FloatSymbol(n, b, size, NUM_KIND_REAL, dtReal[size]);
 }
 
 VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size) {
@@ -2206,7 +2206,7 @@ immediate_type(Immediate *imm) {
       return dtUInt[imm->num_index];
     case NUM_KIND_INT:
       return dtInt[imm->num_index];
-    case NUM_KIND_FLOAT:
+    case NUM_KIND_REAL:
       return dtReal[imm->num_index];
     case NUM_KIND_IMAG:
       return dtImag[imm->num_index];

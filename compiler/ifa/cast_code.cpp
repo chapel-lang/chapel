@@ -35,7 +35,7 @@ switch (to->const_kind) {
        default:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        } break;
-     case NUM_KIND_FLOAT:
+     case NUM_KIND_REAL:
        switch (from->num_index) {
        case FLOAT_SIZE_16:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
@@ -90,7 +90,7 @@ switch (to->const_kind) {
        default:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        } break;
-     case NUM_KIND_FLOAT:
+     case NUM_KIND_REAL:
        switch (from->num_index) {
        case FLOAT_SIZE_16:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
@@ -145,7 +145,7 @@ switch (to->const_kind) {
        default:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        } break;
-     case NUM_KIND_FLOAT:
+     case NUM_KIND_REAL:
        switch (from->num_index) {
        case FLOAT_SIZE_16:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
@@ -200,7 +200,7 @@ switch (to->const_kind) {
        default:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        } break;
-     case NUM_KIND_FLOAT:
+     case NUM_KIND_REAL:
        switch (from->num_index) {
        case FLOAT_SIZE_16:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
@@ -255,7 +255,7 @@ switch (to->const_kind) {
        default:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        } break;
-     case NUM_KIND_FLOAT:
+     case NUM_KIND_REAL:
        switch (from->num_index) {
        case FLOAT_SIZE_16:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
@@ -315,7 +315,7 @@ switch (to->const_kind) {
        default:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        } break;
-     case NUM_KIND_FLOAT:
+     case NUM_KIND_REAL:
        switch (from->num_index) {
        case FLOAT_SIZE_16:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
@@ -370,7 +370,7 @@ switch (to->const_kind) {
        default:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        } break;
-     case NUM_KIND_FLOAT:
+     case NUM_KIND_REAL:
        switch (from->num_index) {
        case FLOAT_SIZE_16:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
@@ -425,7 +425,7 @@ switch (to->const_kind) {
        default:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        } break;
-     case NUM_KIND_FLOAT:
+     case NUM_KIND_REAL:
        switch (from->num_index) {
        case FLOAT_SIZE_16:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
@@ -480,7 +480,7 @@ switch (to->const_kind) {
        default:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        } break;
-     case NUM_KIND_FLOAT:
+     case NUM_KIND_REAL:
        switch (from->num_index) {
        case FLOAT_SIZE_16:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
@@ -535,7 +535,7 @@ switch (to->const_kind) {
        default:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        } break;
-     case NUM_KIND_FLOAT:
+     case NUM_KIND_REAL:
        switch (from->num_index) {
        case FLOAT_SIZE_16:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
@@ -560,7 +560,7 @@ switch (to->const_kind) {
    default:
      INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
    } break;
- case NUM_KIND_FLOAT:
+ case NUM_KIND_REAL:
    switch (to->num_index) {
    case FLOAT_SIZE_16:
      INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
@@ -597,7 +597,7 @@ switch (to->const_kind) {
        default:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        } break;
-     case NUM_KIND_FLOAT:
+     case NUM_KIND_REAL:
        switch (from->num_index) {
        case FLOAT_SIZE_16:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
@@ -654,7 +654,7 @@ switch (to->const_kind) {
        default:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        } break;
-     case NUM_KIND_FLOAT:
+     case NUM_KIND_REAL:
        switch (from->num_index) {
        case FLOAT_SIZE_16:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
@@ -715,7 +715,7 @@ switch (to->const_kind) {
        default:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        } break;
-     case NUM_KIND_FLOAT:
+     case NUM_KIND_REAL:
        switch (from->num_index) {
        case FLOAT_SIZE_16:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
@@ -771,7 +771,7 @@ switch (to->const_kind) {
      default:
        INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
      } break;
-   case NUM_KIND_FLOAT:
+   case NUM_KIND_REAL:
      switch (from->num_index) {
      case FLOAT_SIZE_16:
        INT_FATAL("Illegal case in coerce_immediate switch statement"); break;

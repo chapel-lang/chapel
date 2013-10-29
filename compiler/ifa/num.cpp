@@ -69,7 +69,7 @@ snprint_imm(char *str, size_t max, char *control_string, Immediate &imm) {
       }
       break;
     }
-    case NUM_KIND_FLOAT: case NUM_KIND_IMAG:
+    case NUM_KIND_REAL: case NUM_KIND_IMAG:
       switch (imm.num_index) {
         case FLOAT_SIZE_32:
           res = snprintf(str, max, control_string, imm.v_float32); break;
@@ -136,7 +136,7 @@ snprint_imm(char *str, size_t max, Immediate &imm) {
       }
       break;
     }
-    case NUM_KIND_FLOAT: case NUM_KIND_IMAG:
+    case NUM_KIND_REAL: case NUM_KIND_IMAG:
       switch (imm.num_index) {
         case FLOAT_SIZE_32:
           res = sprint_float_val(str, imm.v_float32); break;
@@ -201,7 +201,7 @@ fprint_imm(FILE *fp, Immediate &imm) {
       }
       break;
     }
-    case NUM_KIND_FLOAT: case NUM_KIND_IMAG:
+    case NUM_KIND_REAL: case NUM_KIND_IMAG:
       char str[80];
       switch (imm.num_index) {
         case FLOAT_SIZE_32:  
@@ -283,7 +283,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
           } \
           break; \
         } \
-        case NUM_KIND_FLOAT: case NUM_KIND_IMAG: \
+        case NUM_KIND_REAL: case NUM_KIND_IMAG: \
           switch (imm->num_index) { \
             case FLOAT_SIZE_32: \
               imm->v_float32 = im1.v_float32 _op im2.v_float32; break; \
@@ -402,7 +402,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
           } \
           break; \
         } \
-        case NUM_KIND_FLOAT: case NUM_KIND_IMAG: \
+        case NUM_KIND_REAL: case NUM_KIND_IMAG: \
           INT_FATAL("Cannot fold ** on floating point values"); \
           break; \
       }
@@ -443,7 +443,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
           } \
           break; \
         } \
-        case NUM_KIND_FLOAT: case NUM_KIND_IMAG: \
+        case NUM_KIND_REAL: case NUM_KIND_IMAG: \
           switch (im1.num_index) { \
             case FLOAT_SIZE_32: \
               imm->v_bool = im1.v_float32 _op im2.v_float32; break; \
@@ -490,7 +490,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
           } \
           break; \
         } \
-        case NUM_KIND_FLOAT: case NUM_KIND_IMAG: \
+        case NUM_KIND_REAL: case NUM_KIND_IMAG: \
           switch (imm->num_index) { \
             default: INT_FATAL("Unhandled case in switch statement"); \
           } \
@@ -533,7 +533,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
           } \
           break; \
         } \
-        case NUM_KIND_FLOAT: case NUM_KIND_IMAG: \
+        case NUM_KIND_REAL: case NUM_KIND_IMAG: \
           switch (imm->num_index) { \
             case FLOAT_SIZE_32: \
               imm->v_float32 = _op im1.v_float32; break; \
@@ -580,7 +580,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
           } \
           break; \
         } \
-        case NUM_KIND_FLOAT: case NUM_KIND_IMAG: \
+        case NUM_KIND_REAL: case NUM_KIND_IMAG: \
           switch (imm->num_index) { \
             default: INT_FATAL("Unhandled case in switch statement"); \
           } \
@@ -624,21 +624,21 @@ fold_result(Immediate *im1, Immediate *im2, Immediate *imm) {
     return;
   }
 
-  if (im2->const_kind == NUM_KIND_FLOAT) {
+  if (im2->const_kind == NUM_KIND_REAL) {
     Immediate *t = im2; im2 = im1; im1 = t;
   }
-  if (im1->const_kind == NUM_KIND_FLOAT) {
+  if (im1->const_kind == NUM_KIND_REAL) {
     if (int_type_precision[im2->const_kind] <= float_type_precision[im1->const_kind]) {
       imm->const_kind = im1->const_kind;
       imm->num_index = im1->num_index;
       return;
     }
     if (int_type_precision[im2->const_kind] <= 32) {
-      imm->const_kind = NUM_KIND_FLOAT;
+      imm->const_kind = NUM_KIND_REAL;
       imm->num_index = FLOAT_SIZE_32;
       return;
     }
-    imm->const_kind = NUM_KIND_FLOAT;
+    imm->const_kind = NUM_KIND_REAL;
     imm->num_index = FLOAT_SIZE_64;
     return;
   }
@@ -812,7 +812,7 @@ convert_string_to_immediate(const char *str, Immediate *imm) {
       }
       break;
     }
-    case NUM_KIND_FLOAT: case NUM_KIND_IMAG:
+    case NUM_KIND_REAL: case NUM_KIND_IMAG:
       switch (imm->num_index) {
         case FLOAT_SIZE_32:
           imm->v_float32 = atof( str); break;
