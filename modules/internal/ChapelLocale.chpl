@@ -84,32 +84,6 @@ module ChapelLocale {
 //    }
 
     //------------------------------------------------------------------------}
-
-
-    //------------------------------------------------------------------------{
-    //- Compiler Interface Methods (overridable)
-    //-
-
-    proc alloc(nbytes:int) {
-      extern proc chpl_malloc(nbytes:int) : opaque;
-      return chpl_malloc(nbytes);
-    }
-
-    proc calloc(count:int, nbytes:int) {
-      extern proc chpl_calloc(count:int, nbytes:int) : opaque;
-      return chpl_calloc(count, nbytes);
-    }
-
-    proc realloc(x:object, nbytes:int) {
-      extern proc chpl_realloc(x:object, nbytes:int) : opaque;
-      return chpl_realloc(x, nbytes);
-    }
-
-    proc free(x:object) {
-      extern proc chpl_free(x:object) : void;
-      chpl_free(x);
-    }
-    //------------------------------------------------------------------------}
   }
 
   class AbstractLocaleModel : locale {
