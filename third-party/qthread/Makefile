@@ -4,7 +4,6 @@ endif
 
 CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
-export CHPL_MAKE_MEM
 
 #
 # set up the directories
@@ -22,6 +21,10 @@ ifneq (, $(filter $(CHPL_MAKE_TARGET_PLATFORM),cray-xe cray-xk cray-xc))
 CHPL_QTHREAD_CFG_OPTIONS += --host=x86_64-pc-linux-gnu --build=x86_64-suse-linux-gnu
 endif
 
+ifeq ($(CHPL_MAKE_HWLOC),hwloc)
+CHPL_QTHREAD_CFG_OPTIONS += --with-topology=hwloc --with-hwloc=$(HWLOC_INSTALL_DIR)
+endif
+
 # enable oversubscription for testing
 ifneq (, $(CHPL_QTHREAD_TESTING))
 CHPL_QTHREAD_CFG_OPTIONS += --enable-oversubscription
@@ -35,6 +38,8 @@ CHPL_QTHREAD_CFG_OPTIONS += --enable-guard-pages
 ifneq (, $(CHPL_QTHREAD_LOUD_RULES))
 CHPL_QTHREAD_CFG_OPTIONS += --disable-silent-rules
 endif
+
+CHPL_QTHREAD_CFG_OPTIONS += --enable-static
 
 default: all
 

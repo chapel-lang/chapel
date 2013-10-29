@@ -70,7 +70,11 @@ massivethreads: $(MASSIVETHREADS_INSTALL_DIR)
 $(MASSIVETHREADS_INSTALL_DIR):
 	cd massivethreads && $(MAKE)
 
+ifeq ($(CHPL_MAKE_HWLOC), hwloc)
+qthread: $(HWLOC_INSTALL_DIR) $(QTHREAD_INSTALL_DIR)
+else
 qthread: $(QTHREAD_INSTALL_DIR)
+endif
 $(QTHREAD_INSTALL_DIR):
 	cd qthread && $(MAKE)
 $(QTHREAD_ALIASES): qthread

@@ -15,15 +15,20 @@ my $preset_hwloc = $ENV{'CHPL_HWLOC'};
 my $hwloc;
 
 if ($preset_hwloc eq "") {
-  my $targplatform = run("platform", "--target");
-  my $targcompiler = run("compiler", "--target");
-
-  my $subdir = $home . "/third-party/hwloc/install/" .
-               $targplatform . "-" . $targcompiler;
-  if ( -d $subdir && -f "$subdir/include/hwloc.h" ) {
-    $hwloc = 'hwloc'
+  my $tasks = run("tasks");
+  if ($tasks eq "qthreads") {
+    $hwloc = 'hwloc';
   } else {
-    $hwloc = 'none';
+    my $targplatform = run("platform", "--target");
+    my $targcompiler = run("compiler", "--target");
+
+    my $subdir = $home . "/third-party/hwloc/install/" .
+                 $targplatform . "-" . $targcompiler;
+    if ( -d $subdir && -f "$subdir/include/hwloc.h" ) {
+      $hwloc = 'hwloc';
+    } else {
+      $hwloc = 'none';
+    }
   }
 } else {
   $hwloc = $preset_hwloc;
