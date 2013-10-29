@@ -4,7 +4,6 @@ endif
 
 CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
-export CHPL_MAKE_MEM
 
 #
 # set up the directories
@@ -15,7 +14,7 @@ HWLOC_BUILD_DIR = $(HWLOC_ABS_DIR)/$(HWLOC_BUILD_SUBDIR)
 HWLOC_DIR = $(HWLOC_ABS_DIR)
 HWLOC_TARBALL = hwloc-$(HWLOC_VERSION).tar.bz2
 
-CHPL_HWLOC_CFG_OPTIONS += --disable-shared --enable-static
+CHPL_HWLOC_CFG_OPTIONS += --enable-static
 
 default: all
 
