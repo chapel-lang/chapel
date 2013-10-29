@@ -561,8 +561,6 @@ initPrimitive() {
   prim_def("object2int", returnInfoDefaultInt);
   prim_def("chpl_exit_any", returnInfoVoid, true);
 
-  prim_def("chpl_setMemFlags", returnInfoVoid, true);
-
   prim_def(PRIM_RT_ERROR, "chpl_error", returnInfoVoid, true, true);
   prim_def(PRIM_RT_WARNING, "chpl_warning", returnInfoVoid, true, true);
 

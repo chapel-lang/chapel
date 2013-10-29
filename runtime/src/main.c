@@ -94,6 +94,39 @@ static void chpl_main(void) {
 }
 
 
+//
+// Pre-user-code hook
+//
+// This is called on all locales, collectively.  The call on locale 0
+// is made from the compiler-emitted code in chpl_gen_main(), right
+// before we enter user code, either initializers for user modules or
+// the user's main program.  The call on non-0 locales is made from
+// the else side of the if() in main(), below, where the execution
+// paths for locale 0 and non-0 locales diverge.
+//
+void chpl_rt_preUserCodeHook(void) {
+  //
+  // Set up any memory tracking requested.
+  //
+  chpl_setMemFlags();
+
+  chpl_comm_barrier("pre-user-code hook");
+}
+
+
+//
+// Post-user-code hook
+//
+// This is called only on locale0, from the compiler-emitted code in
+// chpl_gen_main(), right after we finish running user code.
+//
+void chpl_rt_postUserCodeHook(void) {
+  //
+  // empty
+  //
+}
+
+
 int main(int argc, char* argv[]) {
   int32_t execNumLocales;
   int runInGDB;
@@ -166,9 +199,17 @@ int main(int argc, char* argv[]) {
   // The call to chpl_comm_barrier makes sure that all locales are listening
   // before an attempt is made to run tasks "on" them.
 
-  if (chpl_nodeID == 0) {      // have locale #0 run the user's main function
-
+  if (chpl_nodeID == 0) {
+    //
+    // On locale 0, run the user's main function.
+    //
     chpl_task_callMain(chpl_main);
+  }
+  else {
+    //
+    // On non-0 locales, just call the pre-user-code hook directly.
+    //
+    chpl_rt_preUserCodeHook();
   }
 
   // have everyone exit, returning the value returned by the user written main

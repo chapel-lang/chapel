@@ -6,8 +6,10 @@
 #include "chpl-tasks.h"
 #include "chpl-comm.h"
 #include "chplcgfns.h"
+#include "config.h"
 #include "error.h"
 
+#include <assert.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -176,37 +178,60 @@ static memTableEntry* removeMemTableEntry(void* address) {
 }
 
 
-void chpl_setMemFlags(chpl_bool memTrackConfig,
-                      chpl_bool memStatsConfig,
-                      chpl_bool memLeaksConfig,
-                      chpl_bool memLeaksTableConfig,
-                      uint64_t memMaxConfig,
-                      uint64_t memThresholdConfig,
-                      chpl_string memLogConfig,
-                      chpl_string memLeaksLogConfig) {
-  chpl_memTrack = memTrackConfig;
-  if (memStatsConfig || memLeaksConfig || memLeaksTableConfig || memMaxConfig)
+void chpl_setMemFlags(void) {
+  const char* cv;
+
+  if ((cv = chpl_config_get_value("memTrack", "Built-in")) != NULL
+      && strcmp(cv, "true") == 0) {
     chpl_memTrack = true;
-  memStats = memStatsConfig;
-  memLeaks = memLeaksConfig;
-  memLeaksTable = memLeaksTableConfig;
-  memMax = memMaxConfig;
-  memThreshold = memThresholdConfig;
-  memLog = memLogConfig;
-  if (strcmp(memLog, "")) {
-    if (chpl_numNodes > 1) {
+  }
+
+  if ((cv = chpl_config_get_value("memStats", "Built-in")) != NULL
+      && strcmp(cv, "true") == 0) {
+    memStats = true;
+    chpl_memTrack = true;
+  }
+
+  if ((cv = chpl_config_get_value("memLeaks", "Built-in")) != NULL
+      && strcmp(cv, "true") == 0) {
+    memLeaks = true;
+    chpl_memTrack = true;
+  }
+
+  if ((cv = chpl_config_get_value("memLeaksTable", "Built-in")) != NULL
+      && strcmp(cv, "true") == 0) {
+    memLeaksTable = true;
+    chpl_memTrack = true;
+  }
+
+  if ((cv = chpl_config_get_value("memMax", "Built-in")) != NULL) {
+    assert(sscanf(cv, "%" SCNu64, &memMax) == 1);
+    if (memMax > 0)
+      chpl_memTrack = true;
+  }
+
+  if ((cv = chpl_config_get_value("memThreshold", "Built-in")) != NULL) {
+    assert(sscanf(cv, "%" SCNu64, &memThreshold) == 1);
+  }
+
+  if ((memLog = chpl_config_get_value("memLog", "Built-in")) == NULL)
+    memLog = "";
+  if (strcmp(memLog, "") == 0) {
+    memLogFile = stdout;
+  } else {
+    if (chpl_numNodes == 1) {
+      memLogFile = fopen(memLog, "w");
+    } else {
       char* filename = (char*)malloc((strlen(memLog)+10)*sizeof(char));
       sprintf(filename, "%s.%" FORMAT_c_nodeid_t, memLog, chpl_nodeID);
       memLogFile = fopen(filename, "w");
       free(filename);
-    } else {
-      memLogFile = fopen(memLog, "w");
     }
-  } else {
-    memLogFile = stdout;
   }
-  memLeaksLog = memLeaksLogConfig;
-  if (strcmp(memLeaksLog, ""))
+
+  if ((memLeaksLog = chpl_config_get_value("memLeaksLog", "Built-in")) == NULL)
+    memLeaksLog = "";
+  if (strcmp(memLeaksLog, "") != 0)
     chpl_memTrack = true;
 
   if (chpl_memTrack) {

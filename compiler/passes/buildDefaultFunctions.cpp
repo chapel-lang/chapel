@@ -324,9 +324,8 @@ static void build_chpl_entry_points(void) {
   chpl_user_main->cname = "chpl_user_main";
 
   //
-  // chpl_gen_main is the entry point for the compiler-generated cdoe.
-  // It accounts for the initialization and memory tracking of the
-  // code
+  // chpl_gen_main is the entry point for the compiler-generated code.
+  // It invokes the user's code.
   //
   chpl_gen_main = new FnSymbol("chpl_gen_main");
 
@@ -345,7 +344,7 @@ static void build_chpl_entry_points(void) {
 
   chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE, endCount, new CallExpr("_endCountAlloc")));
   chpl_gen_main->insertAtTail(new CallExpr(PRIM_SET_END_COUNT, endCount));
-  chpl_gen_main->insertAtTail(new CallExpr("chpl_startTrackingMemory"));
+  chpl_gen_main->insertAtTail(new CallExpr("chpl_rt_preUserCodeHook"));
 
   if( ! fNoInternalModules ) {
     // We have to initialize the main module explicitly.
@@ -385,6 +384,7 @@ static void build_chpl_entry_points(void) {
           new_IntSymbol(0, INT_SIZE_64)));
   }
 
+  chpl_gen_main->insertAtTail(new CallExpr("chpl_rt_postUserCodeHook"));
   chpl_gen_main->insertAtTail(new CallExpr("_waitEndCount"));
   //chpl_gen_main->insertAtTail(new CallExpr("_endCountFree", endCount));
 
