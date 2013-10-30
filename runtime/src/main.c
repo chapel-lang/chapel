@@ -104,6 +104,7 @@ static void chpl_main(void) {
 // the else side of the if() in main(), below, where the execution
 // paths for locale 0 and non-0 locales diverge.
 //
+void chpl_rt_preUserCodeHook(void);
 void chpl_rt_preUserCodeHook(void) {
   //
   // Set up any memory tracking requested.
@@ -120,6 +121,7 @@ void chpl_rt_preUserCodeHook(void) {
 // This is called only on locale0, from the compiler-emitted code in
 // chpl_gen_main(), right after we finish running user code.
 //
+void chpl_rt_postUserCodeHook(void);
 void chpl_rt_postUserCodeHook(void) {
   //
   // empty
