@@ -246,8 +246,8 @@ static void removeUnnecessaryAutoCopyCalls(FnSymbol* fn) {
 } 
 
 static bool
-isPrimitiveInitCopy(Vec<Type*>& primitiveInitCopyTypeSet, Type* type) {
-  if (primitiveInitCopyTypeSet.set_in(type))
+isPrimitiveCopy(Vec<Type*>& primitiveCopyTypeSet, Type* type) {
+  if (primitiveCopyTypeSet.set_in(type))
     return true;
   if (isRecordWrappedType(type) ||
       isSyncType(type) ||
@@ -263,7 +263,7 @@ isPrimitiveInitCopy(Vec<Type*>& primitiveInitCopyTypeSet, Type* type) {
     ClassType* ct = toClassType(type);
     INT_ASSERT(ct);
     for_fields(field, ct) {
-      if (!isPrimitiveInitCopy(primitiveInitCopyTypeSet, field->type))
+      if (!isPrimitiveCopy(primitiveCopyTypeSet, field->type))
         return false;
     }
     return true;
@@ -281,13 +281,28 @@ void removeUnnecessaryAutoCopyCalls() {
   //
   compute_call_sites();
 
-  Vec<Type*> primitiveInitCopyTypeSet;
+  Vec<Type*> primitiveCopyTypeSet;
   
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_INIT_COPY_FN) &&
-        fn->numFormals() == 1 &&
-        fn->getFormal(1)->type == fn->retType) {
-      if (isPrimitiveInitCopy(primitiveInitCopyTypeSet, fn->retType)) {
+    if (fn->hasFlag(FLAG_INIT_COPY_FN) || fn->hasFlag(FLAG_AUTO_COPY_FN))
+    {
+      // We expect both initCopy and autoCopy functions to have one argument
+      // whose type is the same as the return type.
+      if (fn->numFormals() == 0 && fn->retType == dtNil)
+        // This is an oddity.  It should probably be pruned earlier, and this
+        // test turned into a per-pass verification or removed entirely.
+        continue; 
+
+      INT_ASSERT(fn->numFormals() == 1);
+
+      if (fn->getFormal(1)->type != fn->retType)
+        // In some cases, the autoCopy function has a different return type than
+        // its argument type.
+        // In that case, the replace() below won't work because it will cause a
+        // type mismatch at the call sites, so we just punt.
+        continue;
+
+      if (isPrimitiveCopy(primitiveCopyTypeSet, fn->retType)) {
         forv_Vec(CallExpr, call, *fn->calledBy) {
           call->replace(call->get(1)->remove());
         }
