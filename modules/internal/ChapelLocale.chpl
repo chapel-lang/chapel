@@ -117,7 +117,6 @@ module ChapelLocale {
   //
   var origRootLocale : locale = nil;
 
-  config const minRootLocaleInitPerTask = 1;
   class AbstractRootLocale : locale {
     // These functions are used to establish values for Locales[] and
     // LocaleSpace -- an array of locales and its correponding domain
@@ -160,26 +159,22 @@ module ChapelLocale {
     // initialization (e.g., rootLocale).
     iter initOnLocales(param tag: iterKind)
       where tag==iterKind.leader {
-      // Simple blocking of locales.  Consider tree-based start-up
-      // We assume locales are number 0..numLocales-1
-      extern proc chpl_numCoresOnThisLocale(): int;
-      var numChunks = _computeNumChunks(chpl_numCoresOnThisLocale(),
-                                        true /* ignoreRunning*/,
-                                        minRootLocaleInitPerTask,
-                                        numLocales);
-      coforall chunk in 0..#numChunks ref(rootLocale) {
-        const (lo, hi) = _computeBlock(numLocales, numChunks,
-                                       chunk, numLocales-1);
-        for locIdx in lo..hi {
-          extern var c_sublocid_any:chpl_sublocID_t;
-          // sublocale part of locID needs to be any
-          var locID = chpl_buildLocaleID(locIdx:chpl_nodeID_t,
-                                         c_sublocid_any:chpl_sublocID_t);
-          on __primitive("chpl_on_locale_num", locID) {
-            chpl_defaultDistInitPrivate();
-            yield locIdx;
-            chpl_rootLocaleInitPrivate(locIdx);
-          }
+      // Simple locales barrier, see implementation below for notes
+      var b: localesBarrier;
+      var flags: [1..#numLocales-1] localesSignal;
+      // We'd like to have this extern declaration here and use it
+      // below in the call to chpl_buildLocaleID(), but doing so seems
+      // to tickle a bug with nested procedures and extern consts.
+      // extern const c_sublocid_any: chpl_sublocID_t;
+      coforall locIdx in 0..#numLocales /*ref(b)*/ {
+        on __primitive("chpl_on_locale_num",
+                       chpl_buildLocaleID(locIdx:chpl_nodeID_t,
+                                          /*c_sublocid_any:chpl_sublocID_t*/
+                                          -1:chpl_sublocID_t)) {
+          chpl_defaultDistInitPrivate();
+          yield locIdx;
+          b.wait(locIdx, flags);
+          chpl_rootLocaleInitPrivate(locIdx);
         }
       }
     }
@@ -187,6 +182,50 @@ module ChapelLocale {
     iter initOnLocales(param tag: iterKind, followThis)
       where tag==iterKind.follower {
       yield followThis;
+    }
+  }
+
+  //
+  // Simple locales barrier
+  //
+  // This sits outside of the abstract root locale definition above
+  // because the compiler cannot resolve the constructor (known issues
+  // with nested classes/records).  In addition, we cannot have the
+  // flags array in the record, because the initCopy function needs
+  // the dataPar* configs declared in ChapelDistribution.
+  //
+  // Each non-0 locale increments the count, and then waits on a
+  // *local* atomic.  This is done by creating an array of type
+  // class localesSignal, one per locale, and allocating each locale's
+  // copy before updating the count.  Locale 0 waits for the others to
+  // arrive and then set the signals to true.  We can't do anything
+  // too complicated this early on, so we are using a for loop to
+  // broadcast that we are done.
+  class localesSignal {
+    var s: atomic bool;
+  }
+  record localesBarrier {
+    proc wait(locIdx, flags) {
+      if locIdx==0 {
+        // locale 0 has nothing else to do, so check flags
+        while (true) {
+          var count = 0;
+          for f in flags do
+            if f then count += 1;
+          if count==numLocales-1 then break;
+        }
+        // Let the others go
+        for f in flags do
+          f.s.testAndSet();
+      } else {
+        var f = new localesSignal();
+        // expose my flag to locale 0
+        flags[locIdx] = f;
+        // wait (locally) for locale 0 to set my flag
+        f.s.waitFor(true);
+        // clean up
+        delete f;
+      }
     }
   }
 

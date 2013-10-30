@@ -20,7 +20,6 @@ CONFIG VARS:
 Built-in config vars:
        printModuleInitOrder: bool
                  numLocales: int(64)
-   minRootLocaleInitPerTask: int(64) 
       dataParTasksPerLocale: int(64)
   dataParIgnoreRunningTasks: bool
       dataParMinGranularity: int(64)
