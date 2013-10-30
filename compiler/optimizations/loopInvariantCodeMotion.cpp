@@ -274,6 +274,24 @@ void collectNaturalLoopForEdge(Loop* loop, BasicBlock* header, BasicBlock* tail)
 //
 static Symbol*
 rhsAlias(CallExpr* call) {
+
+  bool hasRef = false;
+  for_alist(expr, call->argList) {
+    if(SymExpr* symExpr = toSymExpr(expr)) {
+      Type* symType = symExpr->var->type->symbol->type;
+      bool isWideClass = symExpr->var->type->symbol->hasFlag(FLAG_WIDE_CLASS);
+      bool isWideRef = symExpr->var->type->symbol->hasFlag(FLAG_WIDE);
+      bool isWideStr = isWideString(symExpr->var->type);
+      if(isReferenceType(symType) || isRecordWrappedType(symType) ||
+        isWideClass || isWideRef || isWideStr) {
+        hasRef = true;
+      }
+    }
+  }
+  if (!hasRef) {
+    return NULL;
+  }
+
   if (call->isPrimitive(PRIM_MOVE) ||
       call->isPrimitive(PRIM_SET_MEMBER) ||
       call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
@@ -689,7 +707,6 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
               aliases[arg1].insert(arg2);
               aliases[arg2].insert(arg1);
             }
-
           }
         }
       }
@@ -769,9 +786,23 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
         actualDefs[symExpr].insert(aliasSymExpr);
       }
     }
-    
+
+    bool mightHaveBeenDeffedElseWhere = false;
+    //assume that anything passed in by ref has been changed elsewhere 
+    if(ArgSymbol* argSymbol = toArgSymbol(symExpr->var)) {
+      if(argSymbol->intent == INTENT_REF) {
+        mightHaveBeenDeffedElseWhere = true;
+      }
+    }
+    for_set(Symbol, aliasSym, aliases[symExpr->var]) {
+      if(ArgSymbol* argSymbol = toArgSymbol(aliasSym)) {
+        if(argSymbol->intent == INTENT_REF) {
+          mightHaveBeenDeffedElseWhere = true;
+        }
+      }
+    }
     //if there were no defs of the symbol, it is invariant 
-    if(actualDefs.count(symExpr) == 0) {
+    if(actualDefs.count(symExpr) == 0 && !mightHaveBeenDeffedElseWhere) {
       loopInvariantOperands.insert(symExpr);
     }
   }
@@ -796,14 +827,16 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
           if(defsInLoop.count(symExpr2->var) == 1) {
             if(CallExpr* callExpr = toCallExpr(symExpr2->parentExpr)) {
               if(callExpr->isPrimitive(PRIM_MOVE)) {
-                startTimer(allOperandsAreLoopInvariantTimer);   
-                bool loopInvarOps = allOperandsAreLoopInvariant(callExpr, loopInvariantOperands, loopInvariantInstructions, loop, actualDefs);
-                stopTimer(allOperandsAreLoopInvariantTimer);
-                if(loopInvarOps){
-                  loopInvariantInstructions.insert(symExpr2);
-                  loopInvariants.push_back(symExpr2);
+                if(callExpr->get(1) == symExpr2) {
+                  startTimer(allOperandsAreLoopInvariantTimer);   
+                  bool loopInvarOps = allOperandsAreLoopInvariant(callExpr, loopInvariantOperands, loopInvariantInstructions, loop, actualDefs);
+                  stopTimer(allOperandsAreLoopInvariantTimer);
+                  if(loopInvarOps){
+                    loopInvariantInstructions.insert(symExpr2);
+                    loopInvariants.push_back(symExpr2);
+                  }
                 }
-              } 
+              }
             }
           }
         }
@@ -814,8 +847,8 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
  
 #ifdef debugHoisting
   printf("\n");
-  printf("HOISTABLE InvariantS\n");
-  for_vector(SymExpr, loopInvariant, loopInvariants) {
+  printf("HOISTABLE Invariants\n");
+  for_set(SymExpr, loopInvariant, loopInvariantInstructions) {
     printf("Symbol %s with id %d is a hoistable loop invariant\n", loopInvariant->var->name, loopInvariant->var->id);
   }
   
@@ -1007,7 +1040,7 @@ void loopInvariantCodeMotion(void) {
     
   //TODO use stl routine here
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-  
+     
     //build the basic blocks, where the first bb is the entry block 
     startTimer(buildBBTimer);
     buildBasicBlocks(fn);
@@ -1030,10 +1063,10 @@ void loopInvariantCodeMotion(void) {
     std::vector<Loop*> loops;
     collectNaturalLoops(loops, basicBlocks, entryBlock, dominators);
     stopTimer(collectNaturalLoopsTimer);
-
+    
     //For each loop found 
     for_vector(Loop, curLoop, loops) {
-      
+
       //check that this loop doesn't have anything that 
       //would prevent code motion from occurring
       startTimer(canPerformCodeMotionTimer);
@@ -1069,9 +1102,9 @@ void loopInvariantCodeMotion(void) {
       }
                 
       freeLocalDefUseMaps(localDefMap, localUseMap);
-      numLoops+= loops.size();
     }
-   
+    numLoops += loops.size();
+    
     for_vector(Loop, loop, loops) {
       delete loop;
       loop = 0;
