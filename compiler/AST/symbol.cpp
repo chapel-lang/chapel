@@ -200,6 +200,7 @@ void VarSymbol::verify() {
 VarSymbol*
 VarSymbol::copyInner(SymbolMap* map) {
   VarSymbol* newVarSymbol = new VarSymbol(name, type);
+  newVarSymbol->copyFlags(this);
   newVarSymbol->cname = cname;
   INT_ASSERT(!newVarSymbol->immediate);
   return newVarSymbol;
@@ -840,6 +841,7 @@ ArgSymbol*
 ArgSymbol::copyInner(SymbolMap* map) {
   ArgSymbol *ps = new ArgSymbol(intent, name, type, COPY_INT(typeExpr),
                                 COPY_INT(defaultExpr), COPY_INT(variableExpr));
+  ps->copyFlags(this);
   ps->cname = cname;
   ps->instantiatedFrom = instantiatedFrom;
   ps->instantiatedParam = instantiatedParam;
@@ -979,13 +981,8 @@ TypeSymbol::copyInner(SymbolMap* map) {
   Type* new_type = COPY_INT(type);
   TypeSymbol* new_type_symbol = new TypeSymbol(name, new_type);
   new_type->addSymbol(new_type_symbol);
+  new_type_symbol->copyFlags(this);
   new_type_symbol->cname = cname;
-  if (this->hasFlag(FLAG_SYNC))
-    new_type_symbol->addFlag(FLAG_SYNC);
-  if (this->hasFlag(FLAG_SINGLE))
-    new_type_symbol->addFlag(FLAG_SINGLE);
-  if (this->hasFlag(FLAG_ATOMIC_TYPE))
-    new_type_symbol->addFlag(FLAG_ATOMIC_TYPE);
   return new_type_symbol;
 }
 
@@ -1236,16 +1233,7 @@ FnSymbol* FnSymbol::getFnSymbol(void) {
 FnSymbol*
 FnSymbol::copyInner(SymbolMap* map) {
   FnSymbol* copy = new FnSymbol(name);
-  if (hasFlag(FLAG_CONSTRUCTOR))
-    copy->addFlag(FLAG_CONSTRUCTOR);
-  else if (hasFlag(FLAG_INIT_COPY_FN))
-    copy->addFlag(FLAG_INIT_COPY_FN);
-  else if (hasFlag(FLAG_AUTO_COPY_FN))
-    copy->addFlag(FLAG_AUTO_COPY_FN);
-  else if (hasFlag(FLAG_AUTO_DESTROY_FN))
-    copy->addFlag(FLAG_AUTO_DESTROY_FN);
-  if (hasFlag(FLAG_DONOR_FN))
-    copy->addFlag(FLAG_DONOR_FN);
+  copy->copyFlags(this);
   for_formals(formal, this) {
     copy->insertFormalAtTail(COPY_INT(formal->defPoint));
   }
@@ -1782,7 +1770,9 @@ void EnumSymbol::verify() {
 
 EnumSymbol*
 EnumSymbol::copyInner(SymbolMap* map) {
-  return new EnumSymbol(name);
+  EnumSymbol* copy = new EnumSymbol(this->name);
+  copy->copyFlags(this);
+  return copy;
 }
 
 void EnumSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
@@ -2003,6 +1993,7 @@ void LabelSymbol::verify() {
 LabelSymbol* 
 LabelSymbol::copyInner(SymbolMap* map) {
   LabelSymbol* copy = new LabelSymbol(name);
+  copy->copyFlags(this);
   copy->cname = cname;
   if (iterResumeGoto) {
     MapElem<GotoStmt*,GotoStmt*>* rec =
