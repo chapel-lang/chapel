@@ -1,4 +1,0 @@
-bug: iterators generating incorrect results
-
-This test worked in 1.7.0 but doesn't for 1.8.0.  r21676 was
-determined to be the cause.  Vass is investigating.
