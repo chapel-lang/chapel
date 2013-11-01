@@ -501,10 +501,6 @@ void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p) {
 #endif
 }
 
-void chpl_comm_alloc_registry(int numGlobals) {
-  chpl_globals_registry = chpl_globals_registry_static;
-}
-
 void chpl_comm_broadcast_global_vars(int numGlobals) {
   int i;
   if (chpl_nodeID != 0) {

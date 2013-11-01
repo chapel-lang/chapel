@@ -4883,10 +4883,6 @@ GenRet CallExpr::codegen() {
     case PRIM_GC_CLEANUP:
       INT_FATAL("GC primitives not supported");
       break;
-    case PRIM_ALLOC_GVR:
-      codegenCall("chpl_comm_alloc_registry",
-                  new_IntSymbol(numGlobalsOnHeap, INT_SIZE_32));
-      break;
     case PRIM_HEAP_REGISTER_GLOBAL_VAR: 
     {
       GenRet idx = codegenValue(get(1));

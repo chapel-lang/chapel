@@ -1426,7 +1426,6 @@ insertWideReferences(void) {
   heapAllocateGlobals->addFlag(FLAG_EXPORT);
   heapAllocateGlobals->retType = dtVoid;
   theProgram->block->insertAtTail(new DefExpr(heapAllocateGlobals));
-  heapAllocateGlobals->insertAtHead(new CallExpr(PRIM_ALLOC_GVR));
 
   if (!requireWideReferences()) {
     heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));

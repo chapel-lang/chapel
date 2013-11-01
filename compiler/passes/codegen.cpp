@@ -726,41 +726,28 @@ static void codegen_header() {
   genGlobalInt("chpl_numGlobalsOnHeap", numGlobalsOnHeap);
   int globals_registry_static_size = (numGlobalsOnHeap ? numGlobalsOnHeap : 1);
   if( hdrfile ) {
-    fprintf(hdrfile, "\nptr_wide_ptr_t* chpl_globals_registry;\n");
-    fprintf(hdrfile, "\nptr_wide_ptr_t chpl_globals_registry_static[%d];\n",
+    fprintf(hdrfile, "\nptr_wide_ptr_t chpl_globals_registry[%d];\n",
                      globals_registry_static_size);
   } else {
 #ifdef HAVE_LLVM
     llvm::Type* ptr_wide_ptr_t = info->lvt->getType("ptr_wide_ptr_t");
     INT_ASSERT(ptr_wide_ptr_t);
 
-    llvm::Type* ptr_ptr_wide_ptr_t = llvm::PointerType::get(ptr_wide_ptr_t, 0);
-
+    if(llvm::GlobalVariable *GVar = llvm::cast_or_null<llvm::GlobalVariable>(
+          info->module->getNamedGlobal("chpl_globals_registry"))) {
+      GVar->eraseFromParent();
+    }
     llvm::GlobalVariable *chpl_globals_registryGVar =
       llvm::cast<llvm::GlobalVariable>(
           info->module->getOrInsertGlobal("chpl_globals_registry",
-            ptr_ptr_wide_ptr_t));
+            llvm::ArrayType::get(
+              ptr_wide_ptr_t,
+              globals_registry_static_size)));
     chpl_globals_registryGVar->setInitializer(
         llvm::Constant::getNullValue(
           chpl_globals_registryGVar->getType()->getContainedType(0)));
     info->lvt->addGlobalValue("chpl_globals_registry",
-        chpl_globals_registryGVar, GEN_PTR, true);
-
-    if(llvm::GlobalVariable *GVar = llvm::cast_or_null<llvm::GlobalVariable>(
-          info->module->getNamedGlobal("chpl_globals_registry_static"))) {
-      GVar->eraseFromParent();
-    }
-    llvm::GlobalVariable *chpl_globals_registry_staticGVar =
-      llvm::cast<llvm::GlobalVariable>(
-          info->module->getOrInsertGlobal("chpl_globals_registry_static",
-            llvm::ArrayType::get(
-              ptr_wide_ptr_t,
-              globals_registry_static_size)));
-    chpl_globals_registry_staticGVar->setInitializer(
-        llvm::Constant::getNullValue(
-          chpl_globals_registry_staticGVar->getType()->getContainedType(0)));
-    info->lvt->addGlobalValue("chpl_globals_registry_static",
-                              chpl_globals_registry_staticGVar, GEN_PTR, true);
+                              chpl_globals_registryGVar, GEN_PTR, true);
 #endif
   }
   genGlobalInt("chpl_heterogeneous", fHeterogeneous?1:0);

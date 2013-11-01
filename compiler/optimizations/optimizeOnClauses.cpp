@@ -287,7 +287,6 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_TO_FOLLOWER:
   case PRIM_DELETE:
   case PRIM_CALL_DESTRUCTOR:
-  case PRIM_ALLOC_GVR:
   case PRIM_HEAP_REGISTER_GLOBAL_VAR:
   case PRIM_HEAP_BROADCAST_GLOBAL_VARS:
   case PRIM_PRIVATE_BROADCAST:

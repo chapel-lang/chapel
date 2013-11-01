@@ -175,7 +175,6 @@ enum PrimitiveTag {
 
   PRIM_ON_LOCALE_NUM,           // specify a particular localeID for an on clause.
 
-  PRIM_ALLOC_GVR,               // allocate space for global vars registry
   PRIM_HEAP_REGISTER_GLOBAL_VAR,
   PRIM_HEAP_BROADCAST_GLOBAL_VARS,
   PRIM_PRIVATE_BROADCAST,

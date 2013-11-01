@@ -42,14 +42,15 @@ extern void chpl__heapAllocateGlobals(void);
 
 extern const int chpl_numGlobalsOnHeap;
 
-// chpl_globals_registry may just be a pointer to chpl_globals_registry_static.
-// Both are arrays of size chpl_numGlobalsOnHeap storing ptr_wide_ptr_t,
-// that is, pointers to wide pointers. All registered globals are wide pointers.
-// Locales other than 0 need to set their registered globals to the wide
-// pointers received from Locale 0, which is why these have type
-// ptr_wide_ptr_t.
-extern ptr_wide_ptr_t* chpl_globals_registry;
-extern ptr_wide_ptr_t chpl_globals_registry_static[];
+//
+// chpl_globals_registry is an array of size chpl_numGlobalsOnHeap
+// storing ptr_wide_ptr_t, that is, pointers to wide pointers. All
+// registered globals are wide pointers.  Locales other than 0 need to
+// set their registered globals to the wide pointers received from
+// Locale 0, which is why these have type ptr_wide_ptr_t.  This is
+// done in chpl_comm_broadcast_global_vars() below.
+//
+extern ptr_wide_ptr_t chpl_globals_registry[];
 
 extern void* const chpl_private_broadcast_table[];
 
@@ -112,12 +113,6 @@ void chpl_comm_rollcall(void);
 // and length for the shared heap, if any.
 //
 void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p);
-
-//
-// allocate chpl_globals_registry or make it point to
-// chpl_globals_registry_static depending on the communication layer
-//
-void chpl_comm_alloc_registry(int numGlobals);
 
 //
 // This routine is used by the Chapel runtime to broadcast the
