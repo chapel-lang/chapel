@@ -6,11 +6,10 @@
 #
 . /etc/profile
 
-LOGFILE=/tmp/nightly.fast.out
+LOGFILE=/tmp/nightly.fast.$USER.$$.out
 LOGFILE2=$HOME/tmp/nightly.fast.out
 echo `date` "" "Testing --fast for examples.  Log files: $LOGFILE and $LOGFILE2"
-rm -f $LOGFILE
 source ~/.chapelbashrc-cron && ~/chapel/util/cron/nightly -cron -fast -examples >& $LOGFILE
 
-cp $LOGFILE $LOGFILE2
+cp $LOGFILE $LOGFILE2 && rm -f $LOGFILE
 

@@ -2,18 +2,18 @@
 #
 # Test Qthreads with CHPL_COMM=none
 #
-set LOGFILE = /tmp/nightly.qthreads.out
+set LOGFILE = /tmp/nightly.qthreads.$USER.$$.out
 set LOGFILE2 = $HOME/tmp/nightly.qthreads.out
 echo `date` "" "Testing Qthreads with CHPL_COMM=none.    Log files: $LOGFILE and $LOGFILE2"
 source ~/.chapelcshrc-cron
 setenv CHPL_TASKS qthreads
 $CHPL_HOME/util/cron/nightly -cron -examples -no-futures >&! $LOGFILE
-cp $LOGFILE $LOGFILE2
+cp $LOGFILE $LOGFILE2 && rm -f $LOGFILE
 
 #
 # Test Qthreads with CHPL_COMM=gasnet
 #
-set LOGFILE = /tmp/nightly.qthreads-gasnet.out
+set LOGFILE = /tmp/nightly.qthreads-gasnet.$USER.$$.out
 set LOGFILE2 = $HOME/tmp/nightly.qthreads-gasnet.out
 echo `date` "" "Testing Qthreads with CHPL_COMM=gasnet.  Log files: $LOGFILE and $LOGFILE2"
 source ~/.chapelcshrc-cron-gasnet
@@ -24,5 +24,5 @@ setenv QT_AFFINITY no
 setenv CHPL_QTHREAD_TESTING 1
 setenv CHPL_RT_NUM_THREADS_PER_LOCALE 2
 $CHPL_HOME/util/cron/nightly -cron -multilocale -no-futures >&! $LOGFILE
-cp $LOGFILE $LOGFILE2
+cp $LOGFILE $LOGFILE2 && rm -f $LOGFILE
 

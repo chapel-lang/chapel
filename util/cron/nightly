@@ -25,6 +25,7 @@ $verify = 0;
 $retaintree = 0;
 $combinedir = 0;
 $dist = "";
+$localeModelSuite = 0;
 $memleaks = "";
 $multilocale = 0;
 $svnrevopt = "";
@@ -58,6 +59,9 @@ while (@ARGV) {
     } elsif ($flag eq "-multilocale") {
         $examples = 1;
         $multilocale = 1;
+    } elsif ($flag eq "-localeModel") {
+        $examples = 1;
+        $localeModelSuite = 1;
     } elsif ($flag eq "-performance") {
         $performance = 1;
     } elsif ($flag eq "-compopts") {
@@ -135,6 +139,7 @@ if ($printusage == 1) {
     print "\t-notest      : don't run the tests (check the build only)\n";
     print "\t-noruntime   : don't build the runtime or run the tests\n";
     print "\t-examples    : run the release/examples tests only\n";
+    print "\t-localeModel : run localeModel suite only\n";
     print "\t-multilocale : run multilocale suite only\n";
     print "\t-hello       : run the release/examples/hello.chpl test only\n";
     print "\t-hellos      : run the release/examples/hello*.chpl tests only\n";
@@ -239,6 +244,7 @@ $hostcompiler = `$utildir/chplenv/compiler --host`; chomp($hostcompiler);
 $targetcompiler = `$utildir/chplenv/compiler --target`; chomp($targetcompiler);
 $tasks = `$utildir/chplenv/tasks`; chomp($tasks);
 $threads = `$utildir/chplenv/threads`; chomp($threads);
+$localeModel =  `$utildir/chplenv/localeModel`; chomp($localeModel);
 $mem =  `$utildir/chplenv/mem`; chomp($mem);
 $comm = `$utildir/chplenv/comm`; chomp($comm);
 if ($comm eq "gasnet" && $ENV{'CHPL_GASNET_SEGMENT'} ne "") {
@@ -246,6 +252,9 @@ if ($comm eq "gasnet" && $ENV{'CHPL_GASNET_SEGMENT'} ne "") {
 }
 
 $fullplatform = "$targetplatform.$targetcompiler.$comm.$tasks.$threads";
+if ($localemodel ne "flat") {
+    $fullplatform .= ".$localeModel";
+}
 if ($mem ne "default") {
     $fullplatform = "$fullplatform.$mem";
 }
@@ -419,6 +428,8 @@ if ($valgrind == 1) {
     $threechars = "exm";
     if ($multilocale == 1) {
         $morechars = "multilocale-examples";
+    } elsif ($localeModelSuite) {
+        $morechars = "localeModel-examples";
     } else {
         $morechars = "examples";
     }
@@ -579,6 +590,13 @@ if ($examples == 1) {
     $testdirs = "release/examples";
     if ($multilocale == 1) {
         $testdirs .= " multilocale distributions";
+    }
+    if ($localeModelSuite == 1) {
+        if ($multilocale == 1) {
+            $testdirs .= " localeModels memory";
+        } else {
+            $testdirs .= " localeModels memory distributions/robust/arithmetic";
+        }
     }
     if ($parnodefile eq "") {
         $testflags = "$testflags $testdirs";

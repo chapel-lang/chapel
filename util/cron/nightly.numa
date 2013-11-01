@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+#
+# numa testing
+#
+# Run only for the localeModel suite
+#
+. /etc/profile
+
+#
+# NUMA testing with CHPL_COMM=none
+#
+LOGFILE=/tmp/nightly.numa.$USER.$$.out
+LOGFILE2=$HOME/tmp/nightly.numa.out
+echo `date` "" "Testing NUMA for localeModel suite with CHPL_COMM=none.  Log files: $LOGFILE and $LOGFILE2"
+export CHPL_LOCALE_MODEL=numa
+export CHPL_TASKS=qthreads
+source ~/.chapelbashrc-cron && ~/chapel/util/cron/nightly -cron -localeModel >& $LOGFILE
+cp $LOGFILE $LOGFILE2 && rm -f $LOGFILE
+
+exit
+#
+# The below works, but we don't have cycles  to do it yet
+#
+
+#
+# NUMA testing with CHPL_COMM=gasnet
+#
+LOGFILE=/tmp/nightly.numa-gasnet.$USER.$$.out
+LOGFILE2=$HOME/tmp/nightly.numa-gasnet.out
+echo `date` "" "Testing NUMA for multilocale suite with CHPL_COMM=gasnet.  Log files: $LOGFILE and $LOGFILE2"
+rm -f $LOGFILE
+export CHPL_LOCALE_MODEL=numa
+# Set up qthreads vars
+export CHPL_TASKS=qthreads
+# Set these to use oversubscription to help with timeouts
+export QT_AFFINITY=no
+export CHPL_QTHREAD_TESTING=1
+export CHPL_RT_NUM_THREADS_PER_LOCALE=2
+# Set up gasnet vars
+export CHPL_COMM=gasnet
+export CHPL_GASNET_CFG_OPTIONS=--disable-ibv
+export GASNET_SPAWNFN=L
+export GASNET_ROUTE_OUTPUT=0
+export GASNET_QUIET=Y
+source ~/.chapelbashrc-cron && ~/chapel/util/cron/nightly -cron -multilocale -no-futures >& $LOGFILE
+cp $LOGFILE $LOGFILE2 && rm -f $LOGFILE
+

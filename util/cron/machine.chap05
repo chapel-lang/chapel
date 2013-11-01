@@ -3,5 +3,6 @@ echo `date` "" Starting $0 on `hostname`.
 
 ~/chapel/util/cron/nightly.qthreads
 ~/chapel/util/cron/nightly.fast
+~/chapel/util/cron/nightly.numa
 
 echo `date` "" Finished $0.
