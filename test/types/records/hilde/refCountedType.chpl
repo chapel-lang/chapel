@@ -12,6 +12,7 @@ class Impl
 {
   var count: int; // The reference count
   var value: real; // the payload.
+  var freed: bool = false;
 
   proc retain() { count += 1; }
   proc release() : int { count -= 1; return count; }
@@ -29,12 +30,25 @@ record Handle
 //  ctor Handle() { _impl = nil; } // Future
 //  ctor Handle(val: real) { _impl = new Impl(1, val); }
   proc Handle(val: real) { _impl = new Impl(1, val); }
+
 // Copy-constructors are not yet implemented.  See chpl__initCopy() below.
 //  ctor Handle(ref h: Handle) { _impl = h._impl; _impl.retain(); }
-  proc ~Handle() { if _impl != nil && _impl.release() == 0 { delete _impl; _impl = nil; } }
 
-// Accessor
+// Destructor
+  proc ~Handle() { this.release_helper(); }
+  inline proc release_helper()
+  {
+    if _impl != nil && _impl.release() == 0
+    {
+      _impl.freed = true;
+      delete _impl;
+      _impl = nil;
+    }
+  }
+
+// Accessors
   proc value return _impl.value;
+  proc freed return _impl.freed;
 }
 
 // Copy-constructor implementation
@@ -78,7 +92,7 @@ proc =(lhs: Handle, rhs:Handle)
   rhs._impl.retain();
 
   // The lhs loses a reference.
-  if lhs._impl != nil && lhs._impl.release() == 0 { delete lhs._impl; lhs._impl = nil; }
+  lhs.release_helper();
 
   // The handle now copies a reference to its implementation from the RHS.
   // The implementation is of class type, so this is a pointer copy.

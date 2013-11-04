@@ -12,7 +12,8 @@ proc escape() {
 
 proc testit(hndl: Handle)
 {
-  if hndl.value == 2.0 then
+  // The contents of the handle should not be freed at this point.
+  if hndl.freed == false then
     writeln("Passed.");
   else
     writeln("Failed.");
@@ -22,11 +23,4 @@ var hndl:Handle = new Handle(1.0);
 
 hndl = escape();
 
-// Try to corrupt the memory freed in escape.
-var i:Impl = new Impl();
-i.value = 4.9;
-
 testit(hndl);
-
-delete i;
-
