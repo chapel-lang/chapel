@@ -1817,10 +1817,14 @@ static CallExpr*
 userCall(CallExpr* call) {
   if (developer)
     return call;
-  if (call->getFunction()->hasFlag(FLAG_TEMP) ||
+  // If the called function is compiler-generated or is in one of the internal
+  // modules, back up the stack until a call is encountered whose target
+  // function is neither.
+  // TODO: This function should be rewritten so each test appears only once.
+  if (call->getFunction()->hasFlag(FLAG_COMPILER_GENERATED) ||
       call->getModule()->modTag == MOD_INTERNAL) {
     for (int i = callStack.n-1; i >= 0; i--) {
-      if (!callStack.v[i]->getFunction()->hasFlag(FLAG_TEMP) &&
+      if (!callStack.v[i]->getFunction()->hasFlag(FLAG_COMPILER_GENERATED) &&
           callStack.v[i]->getModule()->modTag != MOD_INTERNAL)
         return callStack.v[i];
     }
@@ -1970,9 +1974,11 @@ static void issueCompilerError(CallExpr* call) {
   CallExpr* from = NULL;
   for (int i = callStack.n-1 - depth; i >= 0; i--) {
     from = callStack.v[i];
+    // We report calls whose target function is not compiler-generated and is
+    // not defined in one of the internal modules.
     if (from->linenum() > 0 && 
         from->getModule()->modTag != MOD_INTERNAL &&
-        !from->getFunction()->hasFlag(FLAG_TEMP))
+        !from->getFunction()->hasFlag(FLAG_COMPILER_GENERATED))
       break;
   }
 
@@ -2009,9 +2015,11 @@ static void reissueCompilerWarning(const char* str, int offset) {
   CallExpr* from = NULL;
   for (int i = callStack.n-offset; i >= 0; i--) {
     from = callStack.v[i];
+    // We report calls whose target function is not compiler-generated and is
+    // not defined in one of the internal modules.
     if (from->linenum() > 0 && 
         from->getModule()->modTag != MOD_INTERNAL &&
-        !from->getFunction()->hasFlag(FLAG_TEMP))
+        !from->getFunction()->hasFlag(FLAG_COMPILER_GENERATED))
       break;
   }
   USR_WARN(from, "%s", str);
@@ -2326,9 +2334,9 @@ gatherCandidates(Vec<FnSymbol*>& candidateFns,
                  Vec<Vec<ArgSymbol*>*>& candidateActualFormals,
                  Vec<FnSymbol*>& visibleFns, CallInfo& info)
 {
-  // Search user-defined functions first.
+  // Search user-defined (i.e. non-compiler-generated) functions first.
   forv_Vec(FnSymbol, visibleFn, visibleFns) {
-    if (visibleFn->hasFlag(FLAG_TEMP))
+    if (visibleFn->hasFlag(FLAG_COMPILER_GENERATED))
       continue;
     if (info.call->methodTag &&
         ! (visibleFn->hasFlag(FLAG_NO_PARENS) ||
@@ -2348,7 +2356,7 @@ gatherCandidates(Vec<FnSymbol*>& candidateFns,
 
   // No.  So search compiler-defined functions.
   forv_Vec(FnSymbol, visibleFn, visibleFns) {
-    if (!visibleFn->hasFlag(FLAG_TEMP))
+    if (!visibleFn->hasFlag(FLAG_COMPILER_GENERATED))
       continue;
     if (info.call->methodTag &&
         ! (visibleFn->hasFlag(FLAG_NO_PARENS) ||

@@ -83,7 +83,7 @@ buildEmptyWrapper(FnSymbol* fn, CallInfo* info) {
   if (fn->hasFlag(FLAG_METHOD))
     wrapper->addFlag(FLAG_METHOD);
   wrapper->instantiationPoint = getVisibilityBlock(info->call);
-  wrapper->addFlag(FLAG_TEMP);
+  wrapper->addFlag(FLAG_COMPILER_GENERATED);
   return wrapper;
 }
 
@@ -152,7 +152,7 @@ buildDefaultWrapper(FnSymbol* fn,
     !isSyncType(fn->_this->type) &&
     !fn->_this->type->symbol->hasFlag(FLAG_REF);
   if (specializeDefaultConstructor) {
-    wrapper->removeFlag(FLAG_TEMP);
+    wrapper->removeFlag(FLAG_COMPILER_GENERATED);
     wrapper->_this = fn->_this->copy();
     copy_map.put(fn->_this, wrapper->_this);
     wrapper->insertAtTail(new DefExpr(wrapper->_this));

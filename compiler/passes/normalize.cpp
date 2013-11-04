@@ -279,6 +279,8 @@ flattenGlobalFunctions() {
   forv_Vec(ModuleSymbol, mod, allModules) {
     for_alist(expr, mod->initFn->body->body) {
       if (DefExpr* def = toDefExpr(expr)) {
+        // FLAG_TEMP selects non-compiler-generated variables in the module init
+        // function to be moved out to module scope.
         if ((toVarSymbol(def->sym) && !def->sym->hasFlag(FLAG_TEMP)) ||
             toTypeSymbol(def->sym) ||
             toFnSymbol(def->sym)) {

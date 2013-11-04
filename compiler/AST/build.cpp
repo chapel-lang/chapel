@@ -536,11 +536,11 @@ BlockStmt* buildWhileDoLoopStmt(Expr* cond, BlockStmt* body) {
   body = new BlockStmt(body);
   body->blockInfo = new CallExpr(PRIM_BLOCK_WHILEDO_LOOP, condVar);
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
-  continueLabel->addFlag(FLAG_TEMP);
+  continueLabel->addFlag(FLAG_COMPILER_GENERATED);
   continueLabel->addFlag(FLAG_LABEL_CONTINUE);
   body->continueLabel = continueLabel;
   LabelSymbol* breakLabel = new LabelSymbol("_breakLabel");
-  breakLabel->addFlag(FLAG_TEMP);
+  breakLabel->addFlag(FLAG_COMPILER_GENERATED);
   breakLabel->addFlag(FLAG_LABEL_BREAK);
   body->breakLabel = breakLabel;
   body->insertAtTail(new DefExpr(continueLabel));
@@ -566,10 +566,10 @@ BlockStmt* buildDoWhileLoopStmt(Expr* cond, BlockStmt* body) {
   }
 
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
-  continueLabel->addFlag(FLAG_TEMP);
+  continueLabel->addFlag(FLAG_COMPILER_GENERATED);
   continueLabel->addFlag(FLAG_LABEL_CONTINUE);
   LabelSymbol* breakLabel = new LabelSymbol("_breakLabel");
-  breakLabel->addFlag(FLAG_TEMP);
+  breakLabel->addFlag(FLAG_COMPILER_GENERATED);
   breakLabel->addFlag(FLAG_LABEL_BREAK);
   BlockStmt* block = new BlockStmt(body);
   block->continueLabel = continueLabel;
@@ -929,11 +929,11 @@ BlockStmt* buildForLoopStmt(Expr* indices,
   body = new BlockStmt(body);
   BlockStmt* stmts = buildChapelStmt();
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
-  continueLabel->addFlag(FLAG_TEMP);
+  continueLabel->addFlag(FLAG_COMPILER_GENERATED);
   continueLabel->addFlag(FLAG_LABEL_CONTINUE);
   body->continueLabel = continueLabel;
   LabelSymbol* breakLabel = new LabelSymbol("_breakLabel");
-  breakLabel->addFlag(FLAG_TEMP);
+  breakLabel->addFlag(FLAG_COMPILER_GENERATED);
   breakLabel->addFlag(FLAG_LABEL_BREAK);
   body->breakLabel = breakLabel;
 

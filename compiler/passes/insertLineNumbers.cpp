@@ -89,7 +89,7 @@ insertLineNumber(CallExpr* call) {
              !strcmp(fn->name, "chpl__initModuleGuards") ||
              !strcmp(fn->name, "chpl_gen_main") ||
              ((mod->modTag == MOD_USER || mod->modTag == MOD_MAIN) && 
-              !fn->hasFlag(FLAG_TEMP) && !fn->hasFlag(FLAG_INLINE)) ||
+              !fn->hasFlag(FLAG_COMPILER_GENERATED) && !fn->hasFlag(FLAG_INLINE)) ||
              (developer && strcmp(fn->name, "halt"))) {
     // hilde sez: This special casing is suspect.  Can't we key off a flag?
 

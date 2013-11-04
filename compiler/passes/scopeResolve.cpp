@@ -112,30 +112,35 @@ getScope(BaseAST* ast) {
 //
 static void
 addToSymbolTable(Vec<DefExpr*>& defs) {
-  forv_Vec(DefExpr, def, defs) {
-    if (!def->sym->hasFlag(FLAG_TEMP)) {
-      BaseAST* scope = getScope(def);
-      if (symbolTable.count(scope) == 0) {
-        symbolTable[scope] = new SymbolTableEntry();
-      }
-      SymbolTableEntry* entry = symbolTable[scope];
+  forv_Vec(DefExpr, def, defs)
+  {
+    // If the symbol is a compiler-generated variable, function or label, do not
+    // add it to the symbol table.
+    if (def->sym->hasFlag(FLAG_TEMP) ||
+        def->sym->hasFlag(FLAG_COMPILER_GENERATED))
+      continue;
 
-      if (entry->count(def->sym->name) != 0) {
-        Symbol* sym = (*entry)[def->sym->name];
-        FnSymbol* oldFn = toFnSymbol(sym);
-        FnSymbol* newFn = toFnSymbol(def->sym);
-        TypeSymbol* typeScope = toTypeSymbol(scope);
-        if (!typeScope || !isClassType(typeScope->type)) { // inheritance
-          if ((!oldFn || (oldFn && !oldFn->_this && oldFn->hasFlag(FLAG_NO_PARENS))) &&
-              (!newFn || (newFn && !newFn->_this && newFn->hasFlag(FLAG_NO_PARENS)))) {
-            USR_FATAL(sym, "'%s' has multiple definitions, redefined at:\n  %s", sym->name, def->sym->stringLoc());
-          }
+    BaseAST* scope = getScope(def);
+    if (symbolTable.count(scope) == 0) {
+      symbolTable[scope] = new SymbolTableEntry();
+    }
+    SymbolTableEntry* entry = symbolTable[scope];
+
+    if (entry->count(def->sym->name) != 0) {
+      Symbol* sym = (*entry)[def->sym->name];
+      FnSymbol* oldFn = toFnSymbol(sym);
+      FnSymbol* newFn = toFnSymbol(def->sym);
+      TypeSymbol* typeScope = toTypeSymbol(scope);
+      if (!typeScope || !isClassType(typeScope->type)) { // inheritance
+        if ((!oldFn || (oldFn && !oldFn->_this && oldFn->hasFlag(FLAG_NO_PARENS))) &&
+            (!newFn || (newFn && !newFn->_this && newFn->hasFlag(FLAG_NO_PARENS)))) {
+          USR_FATAL(sym, "'%s' has multiple definitions, redefined at:\n  %s", sym->name, def->sym->stringLoc());
         }
-        if (!newFn || (newFn && !newFn->_this && newFn->hasFlag(FLAG_NO_PARENS)))
-          (*entry)[def->sym->name] = def->sym;
-      } else {
-        (*entry)[def->sym->name] = def->sym;
       }
+      if (!newFn || (newFn && !newFn->_this && newFn->hasFlag(FLAG_NO_PARENS)))
+        (*entry)[def->sym->name] = def->sym;
+    } else {
+      (*entry)[def->sym->name] = def->sym;
     }
   }
 }
@@ -472,7 +477,7 @@ static void build_type_constructor(ClassType* ct) {
   fn->addFlag(FLAG_TYPE_CONSTRUCTOR);
   ct->defaultTypeConstructor = fn;
   fn->cname = astr("_type_construct_", ct->symbol->cname);
-  fn->addFlag(FLAG_TEMP);
+  fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->retTag = RET_TYPE;
 
   if (ct->symbol->hasFlag(FLAG_REF))
@@ -622,7 +627,7 @@ static void build_constructor(ClassType* ct) {
   fn->addFlag(FLAG_CONSTRUCTOR);
   ct->initializer = fn;
   fn->cname = astr("_construct_", ct->symbol->cname);
-  fn->addFlag(FLAG_TEMP); // compiler inserted
+  fn->addFlag(FLAG_COMPILER_GENERATED);
 
   if (ct->symbol->hasFlag(FLAG_REF))
     fn->addFlag(FLAG_REF);

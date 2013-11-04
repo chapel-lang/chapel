@@ -147,8 +147,10 @@ printDevelErrorHeader(BaseAST* ast) {
             break;
           err_fn = fn;
         }
+        // If the function is compiler-generated, or inlined, or doesn't match
+        // the error function and line number, nothing is printed.
         if (err_fn->getModule()->initFn != err_fn &&
-            !err_fn->hasFlag(FLAG_TEMP) &&
+            !err_fn->hasFlag(FLAG_COMPILER_GENERATED) &&
             !err_fn->hasFlag(FLAG_INLINE) &&
             err_fn->linenum()) {
           fprintf(stderr, "%s:%d: In ",
@@ -203,7 +205,7 @@ void printCallStack(bool force, bool shortModule, FILE* out) {
             (shortModule ? module->name : cleanFilename(fn->fname())),
             call->linenum(), toString(fn),
             (module->modTag == MOD_INTERNAL ? " [internal module]" : ""),
-            (fn->hasFlag(FLAG_TEMP) ? " [compiler-generated]" : ""));
+            (fn->hasFlag(FLAG_COMPILER_GENERATED) ? " [compiler-generated]" : ""));
   }
 }
 

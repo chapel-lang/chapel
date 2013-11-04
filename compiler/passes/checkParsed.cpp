@@ -21,6 +21,8 @@ checkParsed(void) {
 
   forv_Vec(DefExpr, def, gDefExprs) {
     if (toVarSymbol(def->sym))
+      // The test for FLAG_TEMP allows compiler-generated (temporary) variables
+      // to be declared without an explicit type or initializer expression.
       if (!def->init && !def->exprType && !def->sym->hasFlag(FLAG_TEMP))
         if (isBlockStmt(def->parentExpr) && !isArgSymbol(def->parentSymbol))
           if (def->parentExpr != rootModule->block)

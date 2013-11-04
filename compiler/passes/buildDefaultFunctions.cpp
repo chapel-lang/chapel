@@ -157,7 +157,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
   FnSymbol* fn = new FnSymbol(field->name);
   fn->addFlag(FLAG_NO_IMPLICIT_COPY);
   fn->addFlag(FLAG_INLINE);
-//  fn->addFlag(FLAG_TEMP); // Getter functions act as if user-defined.
+//  fn->addFlag(FLAG_COMPILER_GENERATED); // Getter functions act as if user-defined.
   if (ct->symbol->hasFlag(FLAG_SYNC)) 
     fn->addFlag(FLAG_SYNC);
   if (ct->symbol->hasFlag(FLAG_SINGLE)) 
@@ -310,7 +310,7 @@ static void build_chpl_entry_points(void) {
     SET_LINENO(mainModule);
     chpl_user_main = new FnSymbol("main");
     chpl_user_main->retType = dtVoid;
-//    chpl_user_main->addFlag(FLAG_TEMP);
+//    chpl_user_main->addFlag(FLAG_COMPILER_GENERATED);
     mainModule->block->insertAtTail(new DefExpr(chpl_user_main));
     normalize(chpl_user_main);
   } else {
@@ -328,6 +328,7 @@ static void build_chpl_entry_points(void) {
   // It invokes the user's code.
   //
   chpl_gen_main = new FnSymbol("chpl_gen_main");
+  chpl_gen_main->addFlag(FLAG_COMPILER_GENERATED);
 
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_arg", dtMainArgument);
   chpl_gen_main->insertFormalAtTail(arg);
@@ -335,7 +336,7 @@ static void build_chpl_entry_points(void) {
 
   chpl_gen_main->cname = "chpl_gen_main";
   chpl_gen_main->addFlag(FLAG_EXPORT);  // chpl_gen_main is always exported.
-  chpl_gen_main->addFlag(FLAG_TEMP);
+  chpl_gen_main->addFlag(FLAG_COMPILER_GENERATED);
   mainModule->block->insertAtTail(new DefExpr(chpl_gen_main));
   VarSymbol* main_ret = newTemp("_main_ret", dtInt[INT_SIZE_64]);
   VarSymbol* endCount = newTemp("_endCount");
@@ -398,6 +399,7 @@ static void build_record_equality_function(ClassType* ct) {
     return;
 
   FnSymbol* fn = new FnSymbol("==");
+  fn->addFlag(FLAG_COMPILER_GENERATED);
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
   arg1->markedGeneric = true;
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);
@@ -426,6 +428,7 @@ static void build_record_inequality_function(ClassType* ct) {
     return;
 
   FnSymbol* fn = new FnSymbol("!=");
+  fn->addFlag(FLAG_COMPILER_GENERATED);
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
   arg1->markedGeneric = true;
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);
@@ -452,6 +455,9 @@ static void build_enum_enumerate_function(EnumType* et) {
   // Build a function that returns a tuple of the enum's values
   // Each enum type has its own _enum_enumerate function.
   FnSymbol* fn = new FnSymbol("_enum_enumerate");
+// TODO: This flag should be enabled, so a user-defined version of the record
+//  assignment function can override the compiler-generated version.
+//  fn->addFlag(FLAG_COMPILER_GENERATED);
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "t", dtAny);
   arg->addFlag(FLAG_TYPE_VARIABLE);
   fn->insertFormalAtTail(arg);
@@ -474,7 +480,7 @@ static void build_enum_enumerate_function(EnumType* et) {
 static void build_enum_cast_function(EnumType* et) {
   // integral value to enumerated type cast function
   FnSymbol* fn = new FnSymbol("_cast");
-  fn->addFlag(FLAG_TEMP);
+  fn->addFlag(FLAG_COMPILER_GENERATED);
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "t", dtAny);
   arg1->addFlag(FLAG_TYPE_VARIABLE);
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtIntegral);
@@ -519,7 +525,7 @@ static void build_enum_cast_function(EnumType* et) {
 
   // string to enumerated type cast function
   fn = new FnSymbol("_cast");
-  fn->addFlag(FLAG_TEMP);
+  fn->addFlag(FLAG_COMPILER_GENERATED);
   arg1 = new ArgSymbol(INTENT_BLANK, "t", dtAny);
   arg1->addFlag(FLAG_TYPE_VARIABLE);
   arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtString);
@@ -555,6 +561,9 @@ static void build_enum_assignment_function(EnumType* et) {
     return;
 
   FnSymbol* fn = new FnSymbol("=");
+// TODO: This flag should be enabled, so a user-defined version of the record
+//  assignment function can override the compiler-generated version.
+//  fn->addFlag(FLAG_COMPILER_GENERATED);
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", et);
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", et);
   fn->insertFormalAtTail(arg1);
@@ -572,6 +581,10 @@ static void build_record_assignment_function(ClassType* ct) {
     return;
 
   FnSymbol* fn = new FnSymbol("=");
+// TODO: This flag should be enabled, so a user-defined version of the record
+//  assignment function can override the compiler-generated version.
+//  fn->addFlag(FLAG_COMPILER_GENERATED);
+
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
   arg1->markedGeneric = true;
 
@@ -604,6 +617,9 @@ static void build_record_assignment_function(ClassType* ct) {
 
 static void build_record_cast_function(ClassType* ct) {
   FnSymbol* fn = new FnSymbol("_cast");
+// TODO: This flag should be enabled, so a user-defined version of the record
+//  assignment function can override the compiler-generated version.
+//  fn->addFlag(FLAG_COMPILER_GENERATED);
   ArgSymbol* t = new ArgSymbol(INTENT_BLANK, "t", dtAny);
   t->addFlag(FLAG_TYPE_VARIABLE);
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "arg", dtAny);
@@ -629,6 +645,9 @@ static void build_union_assignment_function(ClassType* ct) {
     return;
 
   FnSymbol* fn = new FnSymbol("=");
+// TODO: This flag should be enabled, so a user-defined version of the record
+//  copy function can override the compiler-generated version.
+//  fn->addFlag(FLAG_COMPILER_GENERATED);
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);
   fn->insertFormalAtTail(arg1);
@@ -662,6 +681,9 @@ static void build_record_copy_function(ClassType* ct) {
 
   FnSymbol* fn = new FnSymbol("chpl__initCopy");
   fn->addFlag(FLAG_INIT_COPY_FN);
+// TODO: This flag should be enabled, so a user-defined version of the record
+//  copy function can override the compiler-generated version.
+//  fn->addFlag(FLAG_COMPILER_GENERATED);
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
   arg->markedGeneric = true;
   fn->insertFormalAtTail(arg);
@@ -684,6 +706,9 @@ static void build_record_hash_function(ClassType *ct) {
     return;
 
   FnSymbol *fn = new FnSymbol("chpl__defaultHash");
+// TODO: This flag should be enabled, so a user-defined version of the record
+//  assignment function can override the compiler-generated version.
+//  fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_INLINE);
   ArgSymbol *arg = new ArgSymbol(INTENT_BLANK, "r", ct);
   arg->markedGeneric = true;
@@ -743,6 +768,7 @@ static void buildDefaultReadWriteFunctions(ClassType* ct) {
   // Make writeThis if we have neither writeThis nor readThis.
   if ( makeReadThisAndWriteThis && ! hasWriteThis ) {
     FnSymbol* fn = new FnSymbol("writeThis");
+    fn->addFlag(FLAG_COMPILER_GENERATED);
     fn->cname = astr("_auto_", ct->symbol->name, "_write");
     fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
     fn->_this->addFlag(FLAG_ARG_THIS);
@@ -767,6 +793,7 @@ static void buildDefaultReadWriteFunctions(ClassType* ct) {
   }
   if ( makeReadThisAndWriteThis && ! hasReadThis ) {
     FnSymbol* fn = new FnSymbol("readThis");
+    fn->addFlag(FLAG_COMPILER_GENERATED);
     fn->cname = astr("_auto_", ct->symbol->name, "_read");
     fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
     fn->_this->addFlag(FLAG_ARG_THIS);
@@ -798,6 +825,9 @@ static void buildStringCastFunction(EnumType* et) {
     return;
 
   FnSymbol* fn = new FnSymbol("_cast");
+// TODO: This flag should be enabled, so a user-defined version of the record
+//  copy function can override the compiler-generated version.
+//  fn->addFlag(FLAG_COMPILER_GENERATED);
   ArgSymbol* t = new ArgSymbol(INTENT_BLANK, "t", dtAny);
   t->addFlag(FLAG_TYPE_VARIABLE);
   fn->insertFormalAtTail(t);
@@ -832,6 +862,9 @@ static void buildDefaultDestructor(ClassType* ct) {
   SET_LINENO(ct->symbol);
 
   FnSymbol* fn = new FnSymbol("~chpl_destroy");
+// TODO: This flag should be enabled, so a user-defined version of the record
+//  copy function can override the compiler-generated version.
+//  fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_DESTRUCTOR);
   fn->addFlag(FLAG_INLINE);
   fn->cname = astr("chpl__auto_destroy_", ct->symbol->name);
