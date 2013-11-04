@@ -3873,13 +3873,15 @@ GenRet CallExpr::codegen() {
             // it's a string literal... which is already a C string.
             codegenAssign(get(1), call->get(1));
           } else {
-            if (get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+            GenRet dst = codegenLocalAddrOf(get(1)->codegen());
+            GenRet src = codegenAddrOf(call->get(1));
+            if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
               // The source is a wide string.
-              codegenCall("c_string_from_wide_string", get(1),
-                          call->get(1), call->get(2), call->get(3));
+              codegenCall("c_string_from_wide_string",
+                          dst, src, call->get(2), call->get(3));
             } else {
-              codegenCall("c_string_from_string", get(1),
-                          call->get(1), call->get(2), call->get(3));
+              codegenCall("c_string_from_string",
+                          dst, src, call->get(2), call->get(3));
             }
           }
           break;
