@@ -251,10 +251,7 @@ if ($comm eq "gasnet" && $ENV{'CHPL_GASNET_SEGMENT'} ne "") {
     $comm = "$comm-$ENV{'CHPL_GASNET_SEGMENT'}";
 }
 
-$fullplatform = "$targetplatform.$targetcompiler.$comm.$tasks.$threads";
-if ($localemodel ne "flat") {
-    $fullplatform .= ".$localeModel";
-}
+$fullplatform = "$targetplatform.$targetcompiler.$comm.$tasks.$threads.$localeModel";
 if ($mem ne "default") {
     $fullplatform = "$fullplatform.$mem";
 }
