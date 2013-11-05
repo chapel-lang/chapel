@@ -106,12 +106,14 @@ static void chpl_main(void) {
 // paths for locale 0 and non-0 locales diverge.
 //
 void chpl_rt_preUserCodeHook(void) {
+  chpl_comm_barrier("pre-user-code hook begin");
+
   //
   // Set up any memory tracking requested.
   //
   chpl_setMemFlags();
 
-  chpl_comm_barrier("pre-user-code hook");
+  chpl_comm_barrier("pre-user-code hook end");
 }
 
 
