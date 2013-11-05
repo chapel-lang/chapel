@@ -8,8 +8,8 @@ module MemTracking
     memStats: bool = false, 
     memLeaks: bool = false,
     memLeaksTable: bool = false,
-    memMax: int(64) = 0,
-    memThreshold: int(64) = 0,
+    memMax: size_t = 0,
+    memThreshold: size_t = 0,
     memLog: string = "";
   
   pragma "no auto destroy"
@@ -27,8 +27,8 @@ module MemTracking
                                          ref ret_memStats: bool,
                                          ref ret_memLeaks: bool,
                                          ref ret_memLeaksTable: bool,
-                                         ref ret_memMax: int(64),
-                                         ref ret_memThreshold: int(64),
+                                         ref ret_memMax: size_t,
+                                         ref ret_memThreshold: size_t,
                                          ref ret_memLog: c_string,
                                          ref ret_memLeaksLog: c_string) {
     ret_memTrack = memTrack;
