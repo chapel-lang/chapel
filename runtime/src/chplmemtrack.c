@@ -77,6 +77,8 @@ static chpl_sync_aux_t memTrack_sync;
 
 void chpl_setMemFlags(void) {
   chpl_bool local_memTrack;
+  int64_t local_memMax;
+  int64_t local_memThreshold;
 
   //
   // Get the values of the memTracking config consts from the module.
@@ -97,10 +99,13 @@ void chpl_setMemFlags(void) {
                                     &memStats,
                                     &memLeaks,
                                     &memLeaksTable,
-                                    &memMax,
-                                    &memThreshold,
+                                    &local_memMax,
+                                    &local_memThreshold,
                                     &memLog,
                                     &memLeaksLog);
+
+  memMax = (size_t) local_memMax;
+  memThreshold = (size_t) local_memThreshold;
 
   if (local_memTrack
       || memStats
