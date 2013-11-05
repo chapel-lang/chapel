@@ -13,54 +13,54 @@ config const NUM = 500 : int(64);
 /* Return: 1.0 / (i + j) * (i + j +1) / 2 + i + 1; */
 proc eval_A(i,j) : real
 {
-	/*
-	 * 1.0 / (i + j) * (i + j +1) / 2 + i + 1;
-	 * n * (n+1) is even number. Therefore, just (>> 1) for (/2)
-	 */
-	var d = (((i + j) * (i + j + 1)) >> 1) + i + 1;
-	return 1.0 / d;
+  /*
+   * 1.0 / (i + j) * (i + j +1) / 2 + i + 1;
+   * n * (n+1) is even number. Therefore, just (>> 1) for (/2)
+   */
+  var d = (((i + j) * (i + j + 1)) >> 1) + i + 1;
+  return 1.0 / d;
 }
 
 proc eval_A_times_u(U : [] real, inRange, Au : [] real)
 {
-	forall (au,i) in zip(Au, {0..#inRange}) do 
-		au = + reduce [j in 0..#inRange] (U(j) * eval_A(i,j));
+  forall (au,i) in zip(Au, {0..#inRange}) do 
+    au = + reduce [j in 0..#inRange] (U(j) * eval_A(i,j));
 
 }
 
 proc eval_At_times_u(U : [] real, inRange, Au : [] real)
 {
-	forall (au,i) in zip(Au, {0..#inRange}) do
-		au = + reduce [j in 0..#inRange] (U(j) * eval_A(j,i));
+  forall (au,i) in zip(Au, {0..#inRange}) do
+    au = + reduce [j in 0..#inRange] (U(j) * eval_A(j,i));
 }
 
 proc eval_AtA_times_u(u,AtAu,v : [] real, inRange)
 {
-	   eval_A_times_u(u, inRange, v);
-	   eval_At_times_u(v, inRange, AtAu);
+     eval_A_times_u(u, inRange, v);
+     eval_At_times_u(v, inRange, AtAu);
 }
 
 proc spectral_game(N) : real
 {
-	var Dist = new dmap(new Block(rank=1, idxType=int(64), boundingBox={0..#N},
+  var Dist = new dmap(new Block(rank=1, idxType=int(64), boundingBox={0..#N},
                                       dataParTasksPerLocale=here.numCores));
-	var Dom : domain(1, int(64)) dmapped Dist = {0..#N};
+  var Dom : domain(1, int(64)) dmapped Dist = {0..#N};
 
-	var tmp, U, V : [Dom] real;
+  var tmp, U, V : [Dom] real;
 
-	U = 1.0;
+  U = 1.0;
 
-	for 1..10 do {
-		eval_AtA_times_u(U,V,tmp,N);
-		eval_AtA_times_u(V,U,tmp,N);
-	}
+  for 1..10 do {
+    eval_AtA_times_u(U,V,tmp,N);
+    eval_AtA_times_u(V,U,tmp,N);
+  }
 
-	var vv = + reduce [v in V] (v * v);
-	var vBv = + reduce [(u,v) in zip(U,V)] (u * v);
+  var vv = + reduce [v in V] (v * v);
+  var vBv = + reduce [(u,v) in zip(U,V)] (u * v);
 
-	return sqrt(vBv/vv);
+  return sqrt(vBv/vv);
 }
 
 proc main() {
-	writeln(spectral_game(NUM));
+  writeln(spectral_game(NUM));
 }

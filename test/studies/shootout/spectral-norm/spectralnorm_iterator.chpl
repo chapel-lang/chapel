@@ -9,5 +9,5 @@ var Au : [Dom] real;
 var vv : real;
 
 forall (au,i) in zip(Au,0..#N) do
-	vv += au;
+  vv += au;
 writeln(vv);
