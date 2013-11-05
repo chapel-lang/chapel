@@ -81,12 +81,13 @@ memory leaks regressions
 ========================
 
 
-============================
-localeModel/numa regressions
-============================
+=======================================
+localeModel/numa+qthreads regressions
+(other than qthreads regressions below)
+=======================================
 
-signal 11
----------
+signal 11 (call stack size too small)
+-------------------------------------
 As of 11/03/13 (the first two test nights):
 [Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 2)]
 [Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 3)]
@@ -96,17 +97,21 @@ As of 11/03/13 (the first two test nights):
 [Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4)]
 [Error matching program output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 1, execopts: 3)]
 [Error matching program output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 2, execopts: 3)]
-[Error matching program output for memory/shannon/outofmemory/mallocOutOfMemory]
 
-extra memory leaks/memory use
------------------------------
+extra memory leaks/usage due to increased size of locale
+--------------------------------------------------------
+[TODO: locale model specific .good files]
 As of 11/03/13 (the first two test nights):
 [Error matching program output for memory/sungeun/refCount/domainMaps]
-[Error matching program output for memory/figueroa/LeakedMemory5 (compopts: 1)]
 [Error matching program output for memory/shannon/printFinalMemStat]
+
+Unkowned extra memory leaks
+---------------------------
+[Error matching program output for memory/figueroa/LeakedMemory5 (compopts: 1)]
 
 line number ambiguity
 ---------------------
+[TODO: ditto about .good files]
 [Error matching program output for memory/shannon/memmaxExceedsLineno2]
 
 
