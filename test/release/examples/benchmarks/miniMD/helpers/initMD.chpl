@@ -484,11 +484,11 @@ proc create_velocity() {
   var vtot : v3;
 
   // find the total velocity
-  vtot += + reduce forall (bin, c) in zip(Bins, RealCount) do 
+  vtot = + reduce forall (bin, c) in zip(Bins, RealCount) do 
     + reduce forall a in bin[1..c] do a.v;
 
   // get the average
-  vtot /= (numAtoms,numAtoms,numAtoms);
+  vtot /= numAtoms;
 
   // adjust using average
   forall (bin, c) in zip(Bins, RealCount) do
