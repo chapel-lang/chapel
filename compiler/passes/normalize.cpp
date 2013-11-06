@@ -136,8 +136,9 @@ void normalize(void) {
       } else {
         DefExpr* thisDef = toDefExpr(fn->formals.get(2));
         INT_ASSERT(fn->name[0] == '~' && thisDef);
+        ClassType* ct = toClassType(thisDef->sym->type);
         // make sure the name of the destructor matches the name of the class
-        if (strcmp(fn->name + 1, thisDef->sym->type->symbol->name)) {
+        if (ct && strcmp(fn->name + 1, ct->symbol->name)) {
           USR_FATAL(fn, "destructor name must match class name");
         } else {
           fn->name = astr("~chpl_destroy");

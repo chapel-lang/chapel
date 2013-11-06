@@ -581,9 +581,7 @@ static void build_record_assignment_function(ClassType* ct) {
     return;
 
   FnSymbol* fn = new FnSymbol("=");
-// TODO: This flag should be enabled, so a user-defined version of the record
-//  assignment function can override the compiler-generated version.
-//  fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_COMPILER_GENERATED);
 
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
   arg1->markedGeneric = true;

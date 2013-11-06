@@ -244,6 +244,10 @@ module ChapelBase {
   // If strings are reimplemented as classes or records, a less trivial
   // implementation for assignment will become necessary.
   inline proc =(a: string, b: string) return b;
+  // Because resolution prefers user-defined versions to ones marked as "compiler
+  // generated", it is desirable to add that flag to this default version.
+  // In that way, a user-supplied version of assignment will override this one.
+  pragma "compiler generated"
   inline proc =(a, b) return b;
   
   //
