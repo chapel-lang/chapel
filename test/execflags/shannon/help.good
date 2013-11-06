@@ -26,7 +26,7 @@ CONFIG VARS:
                    memStats: bool
                    memLeaks: bool
               memLeaksTable: bool
-                     memMax: int(64)
-               memThreshold: int(64)
+                     memMax: uint(64)
+               memThreshold: uint(64)
                      memLog: string
                 memLeaksLog: string
