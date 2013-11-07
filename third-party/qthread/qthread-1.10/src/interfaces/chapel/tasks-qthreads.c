@@ -501,14 +501,14 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
                                          here_shep_id);
         qthread_syncvar_readFF(NULL, &ret);
     } else if (subloc == c_sublocid_any) {
-        qthread_fork_syncvar_copyargs(chapel_wrapper, &wrapper_args,
-                                      sizeof(chapel_wrapper_args_t), NULL);
+        qthread_fork_copyargs(chapel_wrapper, &wrapper_args,
+                              sizeof(chapel_wrapper_args_t), NULL);
     } else {
         if (subloc == c_sublocid_curr)
             subloc = (c_sublocid_t) here_shep_id;
-        qthread_fork_syncvar_copyargs_to(chapel_wrapper, &wrapper_args,
-                                         sizeof(chapel_wrapper_args_t), NULL,
-                                         (qthread_shepherd_id_t) subloc);
+        qthread_fork_copyargs_to(chapel_wrapper, &wrapper_args,
+                                 sizeof(chapel_wrapper_args_t), NULL,
+                                 (qthread_shepherd_id_t) subloc);
     }
 }
 
@@ -541,20 +541,13 @@ void chpl_task_startMovedTask(chpl_fn_p      fp,
 
     PROFILE_INCR(profile_task_startMovedTask,1);
 
-#if 1
-    // We are timing out when the subloc is passed as 0 (zero).  Can
-    // we not time share tasks on a single shepherd?  Perhaps we can
-    // only time share as many tasks on a shepherd as that shepherd
-    // has workers?  For now, force the subloc to be "any".
-    subloc = c_sublocid_any;
-#endif
     if (subloc == c_sublocid_any) {
-        qthread_fork_syncvar_copyargs(chapel_wrapper, &wrapper_args,
-                                      sizeof(chapel_wrapper_args_t), NULL);
+        qthread_fork_copyargs(chapel_wrapper, &wrapper_args,
+                              sizeof(chapel_wrapper_args_t), NULL);
     } else {
-        qthread_fork_syncvar_copyargs_to(chapel_wrapper, &wrapper_args,
-                                         sizeof(chapel_wrapper_args_t), NULL,
-                                         (qthread_shepherd_id_t) subloc);
+        qthread_fork_copyargs_to(chapel_wrapper, &wrapper_args,
+                                 sizeof(chapel_wrapper_args_t), NULL,
+                                 (qthread_shepherd_id_t) subloc);
     }
 }
 
