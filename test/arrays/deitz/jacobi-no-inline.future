@@ -1,0 +1,5 @@
+bug: r22257 causes coerce/promote wrapper problem.
+
+As a result of r22257, the --no-inline we throw here causes the problem
+described by test/functions/sungeun/promotionWithNoInline.future.  So
+for now, we're making this test also a future.
