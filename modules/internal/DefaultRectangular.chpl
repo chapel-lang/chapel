@@ -129,8 +129,14 @@ module DefaultRectangular {
         if debugDataParNuma then
           writeln("(numChunks, parDim) ", (numChunks, parDim));
 
-        for chunk in 0..#numChunks { // make sure coforall on can trigger
-          on here.getChild(chunk % numSublocs) {
+        coforall chunk in 0..#numChunks { // make sure coforall on can trigger
+          on here.getChild(chunk) {
+            if debugDataParNuma {
+              extern proc chpl_task_getSubloc(): chpl_sublocID_t;
+              if chunk!=chpl_task_getSubloc() then
+                writeln("*** ERROR: ON WRONG SUBLOC (should be "+chunk+
+                        ", on "+chpl_task_getSubloc()+") ***");
+            }
             var nCores = here.numCores;
             var locBlock: rank*range(idxType);
             for param i in 1..rank do
@@ -142,7 +148,7 @@ module DefaultRectangular {
             followMe(parDim) = lo..hi;
             const (numChunks2, parDim2) = _computeChunkStuff(nCores, ignoreRunning,
                                                              minIndicesPerTask, followMe);
-            for chunk2 in 0..#numChunks2 {
+            coforall chunk2 in 0..#numChunks2 {
               var locBlock2: rank*range(idxType);
               for param i in 1..rank do
                 locBlock2(i) = followMe(i).low..followMe(i).high;

@@ -781,18 +781,33 @@ module ChapelRangeBase {
   
     if debugChapelRange then
       writeln("*** In range leader:"); // ", this);
-    const numTasks = here.getChildCount();
+    const ignoreRunning = dataParIgnoreRunningTasks;
+    const minIndicesPerTask = dataParMinGranularity;
+    const numSublocs = here.getChildCount();
 
-    if localeModelHasSublocales && numTasks != 0 {
+    if localeModelHasSublocales && numSublocs != 0 {
       const len = this.length;
-      coforall chunk in 0..#numTasks {
+      const numChunks = _computeNumChunks(numSublocs,
+                                          ignoreRunning,
+                                          minIndicesPerTask,
+                                          len);
+      coforall chunk in 0..#numChunks {
         on here.getChild(chunk) {
-          const (lo,hi) = _computeBlock(len, numTasks, chunk, len-1);
-          const nCores = here.numCores;
+          if debugDataParNuma {
+            extern proc chpl_task_getSubloc(): chpl_sublocID_t;
+            if chunk!=chpl_task_getSubloc() then
+              writeln("*** ERROR: ON WRONG SUBLOC (should be "+chunk+
+                      ", on "+chpl_task_getSubloc()+") ***");
+          }
+          const (lo,hi) = _computeBlock(len, numChunks, chunk, len-1);
           const locRange = lo..hi;
           const locLen = locRange.length;
-          coforall core in 0..#nCores {
-            const (low, high) = _computeBlock(locLen, nCores, core, hi, lo, lo);
+          const numTasks = _computeNumChunks(here.numCores,
+                                             ignoreRunning,
+                                             minIndicesPerTask,
+                                             locLen);
+          coforall core in 0..#numTasks {
+            const (low, high) = _computeBlock(locLen, numTasks, core, hi, lo, lo);
             if debugDataParNuma then
               writeln("(chunk, core, locRange, coreRange)",
                        (chunk, core, locRange, low..high));
