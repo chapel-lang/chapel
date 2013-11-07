@@ -390,7 +390,7 @@ module LocaleModel {
     } else {
       // run directly on this node
       var origSubloc = chpl_task_getRequestedSubloc();
-      if (dsubloc == origSubloc) {
+      if (dsubloc==c_sublocid_any || dsubloc==origSubloc) {
         chpl_ftable_call(fn, args);
       } else {
         // move to a different sublocale
@@ -418,7 +418,7 @@ module LocaleModel {
       chpl_comm_fork_fast(dnode, dsubloc, fn, args, args_size);
     } else {
       var origSubloc = chpl_task_getRequestedSubloc();
-      if (dsubloc == origSubloc) {
+      if (dsubloc==c_sublocid_any || dsubloc==origSubloc) {
         chpl_ftable_call(fn, args);
       } else {
         // move to a different sublocale
@@ -441,6 +441,7 @@ module LocaleModel {
   //
   // nonblocking "on" (doesn't wait for completion)
   //
+  param useBegin = false;
   pragma "insert line file info"
   export
   proc chpl_executeOnNB(loc: chpl_localeID_t, // target locale
@@ -463,9 +464,9 @@ module LocaleModel {
       var origSubloc = chpl_task_getRequestedSubloc();
       // We'd like to call chpl_executeOnNBaux() here, but the begin
       //  statement seems to cause a problem
-      if (dsubloc == origSubloc) {
+      if (dsubloc==c_sublocid_any || dsubloc==origSubloc) {
         // run on this sublocale
-        if false {
+        if useBegin {
           chpl_executeOnNBAux(fn, args);
         } else {
           if __primitive("task_get_serial") then
@@ -477,7 +478,7 @@ module LocaleModel {
       } else {
         // move to a different sublocale
         chpl_task_setSubloc(dsubloc);
-        if false {
+        if useBegin {
           chpl_executeOnNBAux(fn, args);
         } else {
           if __primitive("task_get_serial") then
