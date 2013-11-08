@@ -1,0 +1,8 @@
+bug: Casting a nil class to a subclass causes a segfault.
+
+When the argument of a cast is nil, no error checking is performed to see if
+the arguement is nil, even without --fast.
+
+We are currently unsure if this should be a runtime error or if the cast should
+return nil. If the argument is not nil, but the cast does not succed, should
+that be an error, or should that return nil.
