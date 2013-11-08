@@ -62,5 +62,5 @@ proc spectral_game(N) : real
 }
 
 proc main() {
-  writeln(spectral_game(NUM));
+  writeln(spectral_game(NUM), new iostyle(precision=10));
 }
