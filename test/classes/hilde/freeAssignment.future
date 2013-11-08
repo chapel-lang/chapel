@@ -1,0 +1,22 @@
+feature request: Allow (and possibly force) ref intent on the LHS of an assignment operator.
+
+Currently, the compiler will bind a user-defined assignment opertor if it uses
+the signature:
+
+  proc =(lhs:C, rhs:C)
+
+but not
+
+  proc =(ref lhs:C, rhs:C)
+
+.  The latter form is more strictly correct, because (in accordance with the
+expected semantics) the lhs object is updated.  So arguably, it needs to be
+declared with either "ref" or "inout" intent.
+
+Binding of existing cases to the preferred signature probably depends on the
+implementation of ref promotion.  That is, an expression that is an rvalue of
+type C can bind to a argument of type "ref C", but only if it is first converted
+into an lvalue through the creation of an unnamed temporary.  (Lvalue updates to
+the unnamed temporary are lost.)  Alternatively, the language can specifically
+prohibit this kind of binding.  (That is, the left operand of '=' must always be
+an lvalue.)
