@@ -76,7 +76,6 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_PTR_EQUAL:
   case PRIM_PTR_NOTEQUAL:
   case PRIM_CAST:
-  case PRIM_GET_ITERATOR_RETURN:
 
   case PRIM_BLOCK_LOCAL:
 

@@ -119,13 +119,6 @@ returnInfoFirstDeref(CallExpr* call) {
 }
 
 static Type*
-returnIteratorType(CallExpr* call) {
-  Type* ict = call->get(1)->typeInfo();
-  INT_ASSERT(ict->symbol->hasFlag(FLAG_ITERATOR_CLASS));
-  return ict->initializer->getReturnSymbol()->type;
-}
-
-static Type*
 returnInfoCast(CallExpr* call) {
   Type* t1 = call->get(1)->typeInfo();
   Type* t2 = call->get(2)->typeInfo();
@@ -471,7 +464,6 @@ initPrimitive() {
   prim_def(PRIM_CAST, "cast", returnInfoCast, false, true);
   prim_def(PRIM_DYNAMIC_CAST, "dynamic_cast", returnInfoCast, false, true);
   prim_def(PRIM_TYPEOF, "typeof", returnInfoFirstDeref);
-  prim_def(PRIM_GET_ITERATOR_RETURN, "get iterator return", returnIteratorType);
   prim_def(PRIM_USE, "use", returnInfoVoid, true);
   prim_def(PRIM_USED_MODULES_LIST, "used modules list", returnInfoVoid);
   prim_def(PRIM_TUPLE_EXPAND, "expand_tuple", returnInfoVoid);
