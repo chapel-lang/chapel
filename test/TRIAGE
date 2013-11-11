@@ -237,7 +237,7 @@ nondet. timeout on gasnet-everything
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (7/22/13, 09/02/13, 09/30/13)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (7/19/13, 10/9/13)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff] (8/9/13)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (9/30/13)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (9/30/13) (11/8/13)
 
 libmpich_intel.so failure for
 cray-xt.cray-prgenv-intel.none.fifo.pthreads--linux64 (May 27, 2013)
@@ -372,7 +372,7 @@ examples of what times out:
  distributions/robust/arithmetic/stress/test_many_domains (10/11/13)
  distributions/robust/arithmetic/stress/test_many_array (4/29/13)
  distributions/dm/t2 (2012/08/15)
- test_array_slicing3 (07/24/13, 07/12/13, 06/08/12, 6/16, 3/29/13, 5/3/13)
+ test_array_slicing3 (07/24/13, 07/12/13, 06/08/12, 6/16, 3/29/13, 5/3/13, 11/8/13)
  release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4) (04/08/13)
  studies/cholesky/jglewis/version2/performance/test_cholesky_performance (10/10/13)
  multilocale/diten/needMultiLocales/coforallon_maxThreads (07/04/13, 10/10/13, 10/22/13)

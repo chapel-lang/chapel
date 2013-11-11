@@ -213,11 +213,28 @@ gasnet-everything regressions (other than the above)
 (Checked for accuracy 10/16/13)
 ====================================================
 
-deadlock due to impact of small # of threads on root locale replication (08/21/13)
-[gbt/sungeun working on fix]
------------------------------------------------------------------------
-[Error: Timed out executing program multilocale/gbt/hello-numThreads-1]
+One additional remote get in comm counts (-r22268)
+--------------------------------------------------
+[Error matching program output for performance/ferguson/remote-array-read]
+[Error matching program output for performance/ferguson/remote-array-write]
+[Error matching program output for performance/ferguson/remote-class-read]
+[Error matching program output for performance/ferguson/remote-class-write]
+[Error matching program output for performance/ferguson/remote-record-read-1]
+[Error matching program output for performance/ferguson/remote-record-read]
+[Error matching program output for performance/ferguson/remote-record-write-1]
+[Error matching program output for performance/ferguson/remote-record-write]
+[Error matching program output for performance/ferguson/remote-tuple-read-1]
+[Error matching program output for performance/ferguson/remote-tuple-read-small-1]
+[Error matching program output for performance/ferguson/remote-tuple-read-small]
+[Error matching program output for performance/ferguson/remote-tuple-read]
+[Error matching program output for performance/ferguson/remote-tuple-write-1]
+[Error matching program output for performance/ferguson/remote-tuple-write-small-1]
+[Error matching program output for performance/ferguson/remote-tuple-write-small]
+[Error matching program output for performance/ferguson/remote-tuple-write] 
 
+Extra fork comm counts vs. .bad file
+------------------------------------
+[Error matching .bad file for parallel/taskPar/sungeun/endCountTest]
 
 ==============================================
 gasnet-fast regressions (other than the above)
