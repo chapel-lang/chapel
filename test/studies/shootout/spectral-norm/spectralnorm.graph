@@ -1,6 +1,6 @@
-perfkeys: real, real
-graphkeys: spectralnorm, spectralnorm_2
-files: spectralnorm.dat, spectralnorm_2.dat
+perfkeys: real, real, real
+graphkeys: spectralnorm, spectralnorm_2, spectralnorm-cleaner
+files: spectralnorm.dat, spectralnorm_2.dat, spectral-norm.dat
 graphtitle: Spectral Norm Shootout Benchmark
 ylabel: Time (seconds)
 graphname: spectralnorm
