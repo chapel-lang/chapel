@@ -1,5 +1,6 @@
 # suite: Whole system performance
 memleaks.graph
+memleaksfull.graph
 spectests.graph
 # suite: Release examples
 release/examples/benchmarks/ssca2/SSCA2_main.graph
