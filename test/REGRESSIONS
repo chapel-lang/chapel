@@ -434,6 +434,12 @@ David's analysis suggests that Inter Procedural Analysis is the culprit
 [Error: Timed out compilation for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 1)]
 [Error: Timed out compilation for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 2)]
 
+compilation error due to Chapel compiler aborting with SIGSEGV (2013/11/10-12)
+ - Apparently due to a resource limitation.
+ - Unable to duplicate on chpbld01 <2013/11/12 hilde>
+------------------------------------------------------------------------------
+[Error matching compiler output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 1)]
+
 wrong result due to reliance on wraparound in signed integers in test itself
 ----------------------------------------------------------------------------
 [Error matching program output for expressions/bradc/uminusVsTimesPrec]

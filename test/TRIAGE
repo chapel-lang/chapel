@@ -30,12 +30,6 @@
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
-succeeding future types/records/hilde/sharedRefCount2 (Tom)
------------------------------------------------------------
-The code does not guarantee failure.
-A request is out to Tom to harden the test.
-
-
 gasnet initialization race condition (starting with r22171, sungeun)
 --------------------------------------------------------------------
 None of the following 12 tests failed on 10/31/13 through 11/03/13.
