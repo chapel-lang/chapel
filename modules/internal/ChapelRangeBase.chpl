@@ -508,6 +508,31 @@ module ChapelRangeBase {
   //#
   
   // Assignment
+  pragma "compiler generated"
+    // The "compiler generated" flag is added so this explicit definition of
+    // assignment does not disable the POD optimization.
+    // It effectively labels the function as trivial, even though this is not
+    // precisely true.  In the case of an assignment from a stridable to non-
+    // stridable range, there is a run-time check which will be missed when the
+    // optimization is applied.  The rest of the routine is trivial in the
+    // sense that it performs the equivalent of a bit-wise copy.
+    // The POD optimization currently removes initCopy, autoCopy and destructor
+    // calls whose arguments are of plain-old-data type.  Future applications
+    // of this optimization may also remove assignment calls.
+    // The determination of whether a type is POD or not is currently based on
+    // whether a destructor or any assignment operators are defined taking that
+    // that type as an operand.  In the future, the initCopy and default
+    // constructor (yet to be defined) functions and possibly the autoCopy
+    // function will be considered as well.
+    // The purpose of considering POD-ness as the criterion for removing 
+    // initCopy and autoCopy calls is that destructors are removed at the same
+    // time.  So at least both functions participating in the optimization must
+    // be trivial.  In the future, the optimization may also remove assignments
+    // and default constructor calls, in which case the optimization should only
+    // be applied when all four of these functions (or their generic equivalents) 
+    // are trivial.
+
+    // See also removePODinitDestroy() in removeUnnecessaryAutoCopyCalls.cpp.
   proc =(r1: rangeBase(stridable=?s1), r2: rangeBase(stridable=?s2))
   {
     if r1.boundedType != r2.boundedType then

@@ -346,6 +346,12 @@ module ChapelRange {
   //#
   
   // Assignment
+  pragma "compiler generated"
+    // The "compiler generated" flag is added so this explicit definition
+    // of assignment does not disable the POD optimization.
+    // Although provided explicitly, this function is effectively trivial,
+    // since it performs what is effectively a bit-wise copy.
+    // See the comment on proc=(:rangeBase, :rangeBase) for more information.
   inline proc =(r1: range(stridable=?s1), r2: range(stridable=?s2))
   {
     r1._base = r2._base;
