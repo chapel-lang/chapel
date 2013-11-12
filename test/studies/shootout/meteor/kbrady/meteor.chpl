@@ -233,7 +233,6 @@ module meteor {
 	/* Returns the lowest index of the cells of a piece.
 	* I use the lowest index that a piece occupies as the index for looking up
 	* the piece in the solve function.
-	* TODO: Check if return type should be D
 	*/
 	proc minimumOfCells(cell: [0..4] int(8)) : int(8) {
 		var minimum: int(8) = max(int(8));
@@ -493,7 +492,7 @@ module meteor {
 	var solMasks: [0..9] uint;
 	var solutions: [0..2099][0..49] uint(8);
 	var solutionCount = 0;
-	const maxSolutions = 2100;
+	var maxSolutions = 2100;
 
 	proc recordSolution() {
 		var solMask: uint;
@@ -551,7 +550,6 @@ module meteor {
 	}
 
 	/* pretty print a board in the specified hexagonal format */
-	// TODO: The way I've done this feels a bit incorrect
 	// TODO: replace printf w/ writef ?
 	proc pretty(s: [0..49] uint(8)) {
 		for i in 0..49 by 10 {
@@ -587,11 +585,13 @@ module meteor {
 		pretty(solutions[lIndx]);
 	}
 
-	proc main() {
+	proc main(args: [] string) {
+		if args.domain.size > 1 then
+		   	maxSolutions = args[1]:int;
 		calcPieces();
 		calcRows();
 		solve(0, 0);
-		writef("%i solutions found\n\n", solutionCount);
+		writeln(solutionCount, " solutions found\n");
 		printLargestSmallest();
 	}
 }
