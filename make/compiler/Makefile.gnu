@@ -37,6 +37,11 @@ RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
 RUNTIME_CXXFLAGS = $(CFLAGS)
 RUNTIME_GEN_CXXFLAGS = $(RUNTIME_CXXFLAGS)
 GEN_CFLAGS = -std=c99
+
+# -fno-strict-overflow is needed only because the way we code range iteration
+# (ChapelRangeBase.chpl:793) generates code which can overflow.  
+GEN_CFLAGS += -fno-strict-overflow
+
 GEN_STATIC_FLAG = -static
 GEN_DYNAMIC_FLAG =
 LIB_STATIC_FLAG = 
