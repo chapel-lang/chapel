@@ -1,3 +1,5 @@
+config const printTime = false;
+
 record Node {
   var x,y: int(32);
 }
@@ -29,7 +31,6 @@ proc bfs(nodes: [] Node, edges: [] Edge, colors: [] Color, costs: [] int(32), so
   }
 }
 
-config const numNodes, numEdges: int;
 config const infileName = "graph_input.dat";
 config const outfileName = "output.dat";
 
@@ -92,9 +93,10 @@ proc main {
   outf.close();
   outputTimer.stop();
   totalTimer.stop();
-
-  writeln("Input:   ", inputTimer.elapsed());
-  writeln("Compute: ", computeTimer.elapsed());
-  writeln("Output:  ", outputTimer.elapsed());
-  writeln("Total:   ", totalTimer.elapsed());
+  if printTime {
+    writeln("Input:   ", inputTimer.elapsed());
+    writeln("Compute: ", computeTimer.elapsed());
+    writeln("Output:  ", outputTimer.elapsed());
+    writeln("Total:   ", totalTimer.elapsed());
+  }
 }
