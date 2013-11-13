@@ -33,7 +33,6 @@
 typedef struct task_pool_struct* task_pool_p;
 
 typedef struct {
-  c_sublocid_t requestedSubloc;  // requested sublocal for task
   chpl_bool    serial_state;     // true: serialize execution
 } task_private_data_t;
 
@@ -333,7 +332,6 @@ void chpl_task_init(void) {
     tp->lockRprt            = NULL;
 
     // Set up task-private data for locale (architectural) support.
-    tp->ptask->chpl_data.requestedSubloc = c_sublocid_any;
     tp->ptask->chpl_data.serial_state = true;     // Set to false in chpl_task_callMain().
 
     chpl_thread_setPrivateData(tp);
@@ -424,7 +422,7 @@ static void comm_task_wrapper(void* arg) {
 
   //
   // The comm (polling) task shouldn't really need this information.
-  tp->ptask->chpl_data.requestedSubloc = c_sublocid_any;
+  //
   tp->ptask->chpl_data.serial_state = true;
 
   tp->lockRprt = NULL;
@@ -442,7 +440,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg,
                              chpl_bool is_begin_stmt,
                              int lineno,
                              chpl_string filename) {
-  task_private_data_t chpl_data = { subloc, chpl_task_getSerial() };
+  task_private_data_t chpl_data = { chpl_task_getSerial() };
 
   assert(subloc == 0
          || subloc == c_sublocid_any
@@ -731,7 +729,7 @@ void chpl_task_startMovedTask(chpl_fn_p fp,
                               c_sublocid_t subloc,
                               chpl_taskID_t id,
                               chpl_bool serial_state) {
-  task_private_data_t chpl_data = { subloc, serial_state };
+  task_private_data_t chpl_data = { serial_state };
 
   assert(subloc == 0 || subloc == c_sublocid_any);
   assert(id == chpl_nullTaskID);
@@ -747,24 +745,19 @@ void chpl_task_startMovedTask(chpl_fn_p fp,
 }
 
 
-c_sublocid_t chpl_task_getSubloc(void) {
-  return 0;
-}
+//
+// chpl_task_getSubloc() is in tasks-fifo.h.
+//
 
 
-void chpl_task_setSubloc(c_sublocid_t subloc) {
-  assert(subloc == 0
-         || subloc == c_sublocid_any
-         || subloc == c_sublocid_curr);
-  get_current_ptask()->chpl_data.requestedSubloc = subloc;
-}
+//
+// chpl_task_setSubloc() is in tasks-fifo.h.
+//
 
 
-c_sublocid_t chpl_task_getRequestedSubloc(void) {
-  if (!initialized)
-    return c_sublocid_any;
-  return get_current_ptask()->chpl_data.requestedSubloc;
-}
+//
+// chpl_task_getRequestedSubloc() is in tasks-fifo.h.
+//
 
 
 chpl_taskID_t chpl_task_getId(void) {

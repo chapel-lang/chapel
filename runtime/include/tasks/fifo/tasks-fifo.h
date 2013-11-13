@@ -45,4 +45,28 @@ typedef struct {
   //  threadlayer_sync_aux_t tl_aux;
 } chpl_sync_aux_t;
 
+
+//
+// The fifo tasking layer doesn't really support sublocales.
+//
+// Putting these interface function definitions here and marking them
+// for inlining makes them cost-free at execution time.
+//
+static inline
+c_sublocid_t chpl_task_getSubloc(void) {
+  return 0;
+}
+
+
+static inline
+void chpl_task_setSubloc(c_sublocid_t subloc) {
+  // nothing to do
+}
+
+
+static inline
+c_sublocid_t chpl_task_getRequestedSubloc(void) {
+  return c_sublocid_any;
+}
+
 #endif
