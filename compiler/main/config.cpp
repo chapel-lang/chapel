@@ -46,7 +46,7 @@ parseCmdLineConfig(const char *name, const char *value) {
     INT_ASSERT(false);
   }
   configMap.put(astr(name), newExpr);
-  INT_ASSERT(newExpr = configMap.get(astr(name)));
+  INT_ASSERT(newExpr == configMap.get(astr(name)));
   newExpr->parentSymbol = NULL;
   newExpr->parentExpr = NULL;
   // Remove the call expression from the block (empty blocks removed later)

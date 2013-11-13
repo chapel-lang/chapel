@@ -87,7 +87,7 @@ static void legalizeName(Symbol* sym) {
     case '#': ch = subChar(sym, ch, "_POUND_"); break;
     case '?': ch = subChar(sym, ch, "_QUESTION_"); break;
     case '$': ch = subChar(sym, ch, "_DOLLAR_"); break;
-    case '~': ch = subChar(sym, ch, "_TILDA_"); break;
+    case '~': ch = subChar(sym, ch, "_TILDE_"); break;
     case '.': ch = subChar(sym, ch, "_DOT_"); break;
     case ' ': ch = subChar(sym, ch, "_SPACE_"); break;
     default: break;
