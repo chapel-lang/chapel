@@ -66,8 +66,12 @@ symbolFlag( FLAG_FIRST_CLASS_FUNCTION_INVOCATION, npr, "first class function inv
 symbolFlag( FLAG_FUNCTION_PROTOTYPE , npr, "function prototype" , "signature for function prototypes" )
 symbolFlag( FLAG_GENERIC , npr, "generic" , "generic types and functions" )
 symbolFlag( FLAG_HAS_RUNTIME_TYPE , ypr, "has runtime type" , "type that has an associated runtime type" )
+
+// If any of the following three flags is attached to a class (resp. record or
+// union), then that type is not a Plain-Old Data (POD) type.
 symbolFlag( FLAG_HAS_USER_ASSIGNMENT , npr, "has user assignment" , "applied to classes and records for which assignment is explicitly defined")
 symbolFlag( FLAG_HAS_USER_DESTRUCTOR , npr, "has user destructor" , "applied to classes that define a destructor explicitly" )
+symbolFlag( FLAG_HAS_USER_INIT_COPY_FN , npr, "has user init copy fn" , "applied to classes that define an init copy function explicitly" )
 symbolFlag( FLAG_HEAP , npr, "heap" , ncm )
 symbolFlag( FLAG_HEAP_ALLOCATE , npr, "heap allocate" , ncm )
 symbolFlag( FLAG_STAR_TUPLE , npr, "star tuple" , "mark tuple types as star tuple types" )

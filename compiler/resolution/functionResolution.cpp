@@ -498,6 +498,7 @@ protoIteratorMethod(IteratorInfo* ii, const char* name, Type* retType) {
   fn->retType = retType;
   fn->insertFormalAtTail(fn->_this);
   ii->iterator->defPoint->insertBefore(new DefExpr(fn));
+  normalize(fn);
   return fn;
 }
 

@@ -1090,12 +1090,14 @@ void lowerIterator(FnSymbol* fn) {
       buildZip3(ii, asts, singleLoop);
       buildZip4(ii, asts, singleLoop);
     } else {
-      ii->zip1->insertAtTail(new CallExpr(ii->advance, ii->zip1->_this));
-      ii->zip1->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
-      ii->zip2->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
-      ii->zip3->insertAtTail(new CallExpr(ii->advance, ii->zip3->_this));
-      ii->zip3->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
-      ii->zip4->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+      // zip functions are already normal, because we normalized them in
+      // protoIteratorMethod (functionResolution.cpp).
+      ii->zip1->insertAtHead(new CallExpr(ii->advance, ii->zip1->_this));
+//      ii->zip1->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+//      ii->zip2->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+      ii->zip3->insertAtHead(new CallExpr(ii->advance, ii->zip3->_this));
+//      ii->zip3->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+//      ii->zip4->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
     }
     buildAdvance(fn, asts, local2field, locals);
     buildHasMore(ii);

@@ -679,9 +679,7 @@ static void build_record_copy_function(ClassType* ct) {
 
   FnSymbol* fn = new FnSymbol("chpl__initCopy");
   fn->addFlag(FLAG_INIT_COPY_FN);
-// TODO: This flag should be enabled, so a user-defined version of the record
-//  copy function can override the compiler-generated version.
-//  fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_COMPILER_GENERATED);
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
   arg->markedGeneric = true;
   fn->insertFormalAtTail(arg);

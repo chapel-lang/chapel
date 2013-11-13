@@ -6,6 +6,77 @@
 #include "stmt.h"
 #include "symbol.h"
 #include "view.h"
+#include "stlUtil.h"
+
+
+
+// Clear autoDestroy flags on variables that get assigned to the return value of
+// certain functions.
+//
+// FLAG_INSERT_AUTO_DESTROY is applied to some variables early in compilation,
+// before the type of the variable is known (e.g. in the build and normalize
+// passes), so it is easier to handle special cases after resolution has
+// occurred.
+static void cullAutoDestroyFlags()
+{
+  forv_Vec(FnSymbol, fn, gFnSymbols)
+  {
+    // The return value of an initCopy function should not be autodestroyed.
+    // But actually, the initCopy function should be a method returning void.
+    // After that change has been made, this workaround can be removed.
+    if (VarSymbol* ret = toVarSymbol(fn->getReturnSymbol()))
+    {
+      if (fn->hasFlag(FLAG_INIT_COPY_FN))
+        ret->removeFlag(FLAG_INSERT_AUTO_DESTROY);
+    }
+  }
+}
+
+
+// Clear autodestroy flags on variables that get assigned to the return symbols
+// of a function.
+//
+// Such a variable cannot be autodestroyed because its contents are owned by the
+// caller.  This weirdness is caused by changeRetToArgAndClone() when it pulls
+// the call utilizing a return value into the callee.
+static void cullExplicitAutoDestroyFlags()
+{
+  forv_Vec(FnSymbol, fn, gFnSymbols)
+  {
+    if (! fn->hasFlag(FLAG_INIT_COPY_FN))
+      continue;
+
+    Map<Symbol*,Vec<SymExpr*>*> defMap;
+    Map<Symbol*,Vec<SymExpr*>*> useMap;
+    buildDefUseMaps(fn, defMap, useMap);
+
+    std::vector<DefExpr*> defs;
+    collectDefExprsSTL(fn, defs);
+
+    Symbol* retVar = fn->getReturnSymbol();
+
+    for_vector(DefExpr, def, defs)
+    {
+      if (VarSymbol* var = toVarSymbol(def->sym))
+      {
+        // Examine only those bearing the explicit autodestroy flag.
+        if (! var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW))
+          continue;
+
+        // Look for the specific breaking case and amend that.
+        for_uses(se, useMap, var)
+        {
+          CallExpr* call = toCallExpr(se->parentExpr);
+          if (call->isPrimitive(PRIM_MOVE) &&
+              toSymExpr(call->get(1))->var == retVar)
+            var->removeFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
+        }
+      }
+    }
+
+    freeDefUseMaps(defMap, useMap);
+  }
+}
 
 
 static bool
@@ -59,7 +130,7 @@ createRefArgIfNeeded(FnSymbol* fn, VarSymbol* arg, CallExpr** refTmpAssign) {
 
 
 static void
-insertAutoDestroyTemps() {
+insertAutoDestroyCalls() {
   forv_Vec(BlockStmt, block, gBlockStmts) {
     Vec<VarSymbol*> vars;
     for_alist(stmt, block->body) {
@@ -72,6 +143,8 @@ insertAutoDestroyTemps() {
               (var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW) &&
                !var->type->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
                !isRefCountedType(var->type)))
+            // TODO: I think this can be changed into an assert:
+            // All type variables removed from the AST by this stage.
             if (!var->hasFlag(FLAG_TYPE_VARIABLE))
               vars.add(var);
 
@@ -425,10 +498,8 @@ static void insertGlobalAutoDestroyCalls() {
 }
 
 
-void
-callDestructors() {
-  fixupDestructors();
-
+static void insertDestructorCalls()
+{
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_CALL_DESTRUCTOR)) {
       Type* type = call->get(1)->typeInfo();
@@ -446,7 +517,11 @@ callDestructors() {
       }
     }
   }
+}
 
+
+static void insertAutoCopyTemps()
+{
   Map<Symbol*,Vec<SymExpr*>*> defMap;
   Map<Symbol*,Vec<SymExpr*>*> useMap;
   buildDefUseMaps(defMap, useMap);
@@ -473,12 +548,12 @@ callDestructors() {
     }
   }
 
-  insertAutoDestroyTemps();
-
   freeDefUseMaps(defMap, useMap);
+}
 
-  returnRecordsByReferenceArguments();
 
+static void insertYieldTemps()
+{
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->parentSymbol) {
       if (call->isPrimitive(PRIM_YIELD)) {
@@ -500,6 +575,18 @@ callDestructors() {
       }
     }
   }
+}
 
+
+void
+callDestructors() {
+  fixupDestructors();
+  insertDestructorCalls();
+  insertAutoCopyTemps();
+  cullAutoDestroyFlags();
+  cullExplicitAutoDestroyFlags();
+  insertAutoDestroyCalls();
+  returnRecordsByReferenceArguments();
+  insertYieldTemps();
   insertGlobalAutoDestroyCalls();
 }

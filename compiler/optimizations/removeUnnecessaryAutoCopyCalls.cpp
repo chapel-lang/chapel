@@ -294,6 +294,18 @@ markPODtypes()
         flag = FLAG_HAS_USER_DESTRUCTOR;
     }
 
+    if (fn->hasFlag(FLAG_INIT_COPY_FN))
+    {
+      // chpl__initCopy(obj);
+      if (fn->numFormals() > 0)
+      {
+        ArgSymbol* arg = fn->getFormal(1);
+        ct = toClassType(arg->type);
+        if (ct)
+          flag = FLAG_HAS_USER_INIT_COPY_FN;
+      }
+    }
+
     // We should probably use a flag to distinguish assignment operators.  Then
     // we can test easily that fn->hasFlag(FLAG_HAS_USER_DESTRUCTOR) and
     // fn->hasFlag(FLAG_HAS_USER_ASSIGNMENT) are mutually exclusive.
@@ -333,8 +345,10 @@ isPrimitiveCopy(Vec<Type*>& primitiveCopyTypeSet, Type* type) {
     ClassType* ct = toClassType(type);
     INT_ASSERT(ct);
 
-    // If this class defines an assignment or destructor, it is not POD.
+    // If this class defines an assignment or initCopy or destructor, it is not
+    // POD.
     if (ct->symbol->hasFlag(FLAG_HAS_USER_DESTRUCTOR) ||
+        ct->symbol->hasFlag(FLAG_HAS_USER_INIT_COPY_FN) ||
         ct->symbol->hasFlag(FLAG_HAS_USER_ASSIGNMENT))
       return false;
 

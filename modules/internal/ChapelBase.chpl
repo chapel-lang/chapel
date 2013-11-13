@@ -1015,6 +1015,7 @@ module ChapelBase {
     return x;
   }
   
+  pragma "compiler generated"
   pragma "init copy fn"
   inline proc chpl__initCopy(a) {
     // Currently, string representations are shared.
