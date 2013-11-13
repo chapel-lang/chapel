@@ -208,6 +208,12 @@ Not so noisy as to be familiar annoyances, but worth noting to see if they
 come up again
 ==========================================================================
 
+nondet. slave error
+-------------------
+linux64.gnu.gasnet.qthreads.none.flat (2013/11/13)
+[Error matching program output for multilocale/local/diten/test_local2]
+*** FATAL ERROR: slave got an unknown command on coord socket:  
+
 nondet. baseline output
 -----------------------
 [Error matching program output for studies/amr/diffusion/level/Level_DiffusionBE_driver (compopts: 1)]
