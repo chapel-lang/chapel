@@ -37,11 +37,6 @@ RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
 RUNTIME_CXXFLAGS = $(CFLAGS)
 RUNTIME_GEN_CXXFLAGS = $(RUNTIME_CXXFLAGS)
 GEN_CFLAGS = -std=c99
-
-# -fno-strict-overflow is needed only because the way we code range iteration
-# (ChapelRangeBase.chpl:793) generates code which can overflow.  
-GEN_CFLAGS += -fno-strict-overflow
-
 GEN_STATIC_FLAG = -static
 GEN_DYNAMIC_FLAG =
 LIB_STATIC_FLAG = 
@@ -84,6 +79,9 @@ endif
 ifndef GNU_GPP_SUPPORTS_MISSING_DECLS
 export GNU_GPP_SUPPORTS_MISSING_DECLS = $(shell test $(GNU_GPP_MAJOR_VERSION) -lt 4 || (test $(GNU_GPP_MAJOR_VERSION) -eq 4 && test $(GNU_GPP_MINOR_VERSION) -le 2); echo "$$?")
 endif
+ifndef GNU_GPP_SUPPORTS_STRICT_OVERFLOW
+export GNU_GPP_SUPPORTS_STRICT_OVERFLOW = $(shell test $(GNU_GPP_MAJOR_VERSION) -lt 4 || (test $(GNU_GPP_MAJOR_VERSION) -eq 4 && test $(GNU_GPP_MINOR_VERSION) -le 2); echo "$$?")
+endif
 
 #
 # Flags for turning on warnings for C++/C code
@@ -97,6 +95,14 @@ ifeq ($(GNU_GPP_SUPPORTS_MISSING_DECLS),1)
 WARN_CXXFLAGS += -Wmissing-declarations
 else
 WARN_CFLAGS += -Wmissing-declarations
+endif
+
+ifeq ($(GNU_GPP_SUPPORTS_STRICT_OVERFLOW),1)
+# -fno-strict-overflow is needed only because the way we code range iteration
+# (ChapelRangeBase.chpl:793) generates code which can overflow.  
+GEN_CFLAGS += -fno-strict-overflow
+# -fstrict-overflow was introduced in GCC 4.2 and is on by default.  When on,
+# it allows the compiler to assume that integer sums will not overflow.
 endif
 
 #
