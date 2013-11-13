@@ -11,7 +11,7 @@ config const NUM = 500 : int(64);
 
 
 /* Return: 1.0 / (i + j) * (i + j +1) / 2 + i + 1; */
-inline proc eval_A(i,j) : real
+inline proc eval_A(i, j) : real
 {
   /*
    * 1.0 / (i + j) * (i + j +1) / 2 + i + 1;
@@ -21,17 +21,29 @@ inline proc eval_A(i,j) : real
   return 1.0 / d;
 }
 
+/* This version behaves similarly to version 4 of the C implementation,
+ * in that it performs two additions at a time instead of one per
+ * process.  This drastically improves performance on machines with a
+ * smaller number of cores, but does not show an improvement on our largest
+ * testing machine
+ */
 inline proc eval_A_times_u(U : [] real, inRange, Au : [] real)
 {
   forall i in {0..#inRange} do { 
-    Au(i) = + reduce [j in 0..#inRange] (U(j) * eval_A(i,j));
+    Au(i) = + reduce [j in 0..#inRange by 2] ((U(j) * eval_A(i,j)) + (U(j+1) * eval_A(i, j+1)));
+    if (inRange % 2 == 1) {
+      Au(i) = Au(i) + (U(inRange - 1) * eval_A(i, inRange - 1));
+    }
   }
 }
 
 inline proc eval_At_times_u(U : [] real, inRange, Au : [] real)
 {
   forall i in {0..#inRange} do {
-    Au(i) = + reduce [j in 0..#inRange] (U(j) * eval_A(j,i));
+    Au(i) = + reduce [j in 0..#inRange by 2] ((U(j) * eval_A(j,i)) + (U(j+1) * eval_A(j+1, i)));
+    if (inRange % 2 == 1) {
+      Au(i) = Au(i) + (U(inRange - 1) * eval_A(inRange - 1, i));
+    }
   }
 }
 
