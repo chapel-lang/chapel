@@ -102,13 +102,9 @@ removeRetSymbolAndUses(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_SPECIFIED_RETURN_TYPE) &&
       !iteratorsWithRemovedRetInitSet.set_in(fn))
     removeRetInitialization(rdef, rsym);
-  // Yank rsym's definition.
-  rdef->remove();
 
-  // We could assert here that no uses of rsym remain.
-  // But that's expensive for large iterators. Instead,
-  // if we overlooked something, we will get a verification
-  // failure "SymExpr::var::defPoint is not in AST".
+  // We cannot remove rsym's definition, because rsym
+  // may also be referenced in an autoDestroy call.
 
   return rsym->type;
 }

@@ -355,7 +355,14 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
   if (fn->retTag == RET_VAR)
     ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_ADDR_OF, ret_expr)));
   else if (fn->retExprType)
+  {
     ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr("=", retval, ret_expr)));
+    // Using assignment creates a new copy, which transfers ownership of *a*
+    // copy to the return value variable.
+    // Contrast this with a move, which merely shares ownership between the
+    // bitwise copies of the object.
+    retval->addFlag(FLAG_INSERT_AUTO_DESTROY);
+  }
   else if (!fn->hasFlag(FLAG_WRAPPER) && strcmp(fn->name, "iteratorIndex") &&
            strcmp(fn->name, "iteratorIndexHelp"))
     ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_DEREF, ret_expr)));

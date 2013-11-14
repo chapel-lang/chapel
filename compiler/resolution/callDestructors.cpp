@@ -21,13 +21,22 @@ static void cullAutoDestroyFlags()
 {
   forv_Vec(FnSymbol, fn, gFnSymbols)
   {
-    // The return value of an initCopy function should not be autodestroyed.
-    // But actually, the initCopy function should be a method returning void.
-    // After that change has been made, this workaround can be removed.
     if (VarSymbol* ret = toVarSymbol(fn->getReturnSymbol()))
     {
+      // The return value of an initCopy function should not be autodestroyed.
+      // Normally, the return value of a function is autoCopied, but since
+      // autoCopy is typically defined in terms of initCopy, this would lead to
+      // infinite recursion.  That is, the return value of initCopy must be
+      // handled specially.
       if (fn->hasFlag(FLAG_INIT_COPY_FN))
         ret->removeFlag(FLAG_INSERT_AUTO_DESTROY);
+
+       // This is just a workaround for memory management being handled specially
+       // for internally reference-counted types. (sandboxing)
+       if (ret->type->symbol->hasFlag(FLAG_ARRAY) ||
+           ret->type->symbol->hasFlag(FLAG_DOMAIN))
+         ret->removeFlag(FLAG_INSERT_AUTO_DESTROY);
+       // Do we need to add other record-wrapped types here?  Testing will tell.
     }
   }
 }
