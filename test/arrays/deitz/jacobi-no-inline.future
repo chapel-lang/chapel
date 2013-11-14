@@ -2,4 +2,9 @@ bug: r22257 causes coerce/promote wrapper problem.
 
 As a result of r22257, the --no-inline we throw here causes the problem
 described by test/functions/sungeun/promotionWithNoInline.future.  So
-for now, we're making this test also a future.
+for now, we're making this test a future also.  For now we're also
+adding a skipif so that this is not run for CHPL_COMM==none, in which
+configuration it passes.
+
+When this .future file is removed, the .skipif should be removed also!
+
