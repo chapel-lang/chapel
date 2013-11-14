@@ -98,6 +98,14 @@ chpbld01 testing (bradc)
 These things regularly cause noise in testing:
 ==============================================
 
+Future (bug: r22257 causes coerce/promote wrapper problem.) (gbt)
+-----------------------------------------------------------
+Fails for gasnet, but passes on a single node:
+[Error matching program output for arrays/deitz/jacobi-no-inline (compopts: 1)]
+  linux64.gnu.gasnet-fast.fifo.pthreads.flat.dlmalloc
+[Success matching program output for arrays/deitz/jacobi-no-inline]
+  linux64.gnu.none.fifo.pthreads.flat
+
 release/examples/benchmarks/miniMD/ folder and subfolders (bradc/lydia)
 ----------------------------------------------------------------------
 9/30/13: For organizational sake, the miniMD timeouts are all in here, although
