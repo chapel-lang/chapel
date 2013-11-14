@@ -72,9 +72,10 @@ npb/ep/ep.graph
 npb/ft/ft.graph
 npb/is/is.graph
 # suite: Parboil
-studies/parboil/stencil/stencil.graph
+studies/parboil/BFS/bfs.graph
 studies/parboil/histo/histo.graph
 studies/parboil/SAD/sad.graph
+studies/parboil/stencil/stencil.graph
 # suite: Misc
 users/franzf/v0/chpl/main.graph
 studies/jacobi/jacobi.graph
