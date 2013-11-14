@@ -34,7 +34,7 @@ use Memory;
 proc main() {
   writeln("Calling create_literal():");
   var m1 = memoryUsed();
-  {
+  serial true {
     create_literal();
   }
   var m2 = memoryUsed();
@@ -43,7 +43,7 @@ proc main() {
 
   writeln("Calling return_literal():");
   m1 = memoryUsed();
-  {
+  serial true {
     return_literal();
   }
   m2 = memoryUsed();
@@ -52,7 +52,7 @@ proc main() {
 
   writeln("Calling return_literal() with assignment:");
   m1 = memoryUsed();
-  {
+  serial true {
     var A2 = return_literal();
   }
   m2 = memoryUsed();
@@ -63,7 +63,7 @@ proc main() {
 
   writeln("Calling create_alias():");
   m1 = memoryUsed();
-  {
+  serial true {
     create_alias(A);
   }
   m2 = memoryUsed();
@@ -72,7 +72,7 @@ proc main() {
 
   writeln("Calling return_alias():");
   m1 = memoryUsed();
-  {
+  serial true {
     return_alias(A);
   }
   m2 = memoryUsed();
@@ -81,7 +81,7 @@ proc main() {
 
   writeln("Calling return_alias() with assignment:");
   m1 = memoryUsed();
-  {
+  serial true {
     var A2 = return_alias(A);
   }
   m2 = memoryUsed();
@@ -90,7 +90,7 @@ proc main() {
 
   writeln("Calling create_slice():");
   m1 = memoryUsed();
-  {
+  serial true {
     create_slice(A);
   }
   m2 = memoryUsed();
@@ -99,7 +99,7 @@ proc main() {
 
   writeln("Calling return_slice():");
   m1 = memoryUsed();
-  {
+  serial true {
     return_slice(A);
   }
   m2 = memoryUsed();
@@ -108,7 +108,7 @@ proc main() {
 
   writeln("Calling return_slice() with assignment:");
   m1 = memoryUsed();
-  {
+  serial true {
     var A2 = return_slice(A);
   }
   m2 = memoryUsed();
@@ -117,7 +117,7 @@ proc main() {
 
   writeln("Calling create_reindex():");
   m1 = memoryUsed();
-  {
+  serial true {
     create_reindex(A);
   }
   m2 = memoryUsed();
@@ -126,7 +126,7 @@ proc main() {
 
   writeln("Calling return_reindex():");
   m1 = memoryUsed();
-  {
+  serial true {
     return_reindex(A);
   }
   m2 = memoryUsed();
@@ -135,7 +135,7 @@ proc main() {
 
   writeln("Calling return_reindex() with assignment:");
   m1 = memoryUsed();
-  {
+  serial true {
     var A2 = return_reindex(A);
   }
   m2 = memoryUsed();

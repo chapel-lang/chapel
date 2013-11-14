@@ -1,4 +1,3 @@
-warning: --serial is currently not fully supported and may be deprecated in future releases
 Calling do_local_domain():
 	0 bytes leaked
 Calling do_local_array():

@@ -69,7 +69,7 @@ proc main() {
   writeln("Default Dist");
   writeln("============");
   var m1 = memoryUsed();
-  doit(DMType.default);
+  serial true do doit(DMType.default);
   var m2 = memoryUsed();
   writeln("total:");
   writeln("\t", m2-m1, " bytes leaked");
@@ -78,7 +78,7 @@ proc main() {
   writeln("Block Dist");
   writeln("==========");
   m1 = memoryUsed();
-  doit(DMType.block);
+  serial true do doit(DMType.block);
   m2 = memoryUsed();
   writeln("total:");
   writeln("\t", m2-m1, " bytes leaked");
@@ -87,7 +87,7 @@ proc main() {
   writeln("Cyclic Dist");
   writeln("===========");
   m1 = memoryUsed();
-  doit(DMType.cyclic);
+  serial true do doit(DMType.cyclic);
   m2 = memoryUsed();
   writeln("total:");
   writeln("\t", m2-m1, " bytes leaked");
@@ -96,7 +96,7 @@ proc main() {
   writeln("Block-Cyclic Dist");
   writeln("=================");
   m1 = memoryUsed();
-  doit(DMType.blockcyclic);
+  serial true do doit(DMType.blockcyclic);
   m2 = memoryUsed();
   writeln("total:");
   writeln("\t", m2-m1, " bytes leaked");
@@ -105,7 +105,7 @@ proc main() {
   writeln("Replicated Dist");
   writeln("===============");
   m1 = memoryUsed();
-  doit(DMType.replicated);
+  serial true do doit(DMType.replicated);
   m2 = memoryUsed();
   writeln("total:");
   writeln("\t", m2-m1, " bytes leaked");
