@@ -7,6 +7,7 @@ include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.include
 all: $(TMPBINNAME)
 
 $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
+	$(TAGS_COMMAND)
 ifneq ($(SKIP_COMPILE_LINK),skip)
 	$(CC) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) -c -o $(TMPBINNAME).o $(CHPL_RT_INC_DIR) $(CHPLSRC)
 	$(LD) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) -o $(TMPBINNAME) -L$(CHPL_RT_LIB_DIR) $(TMPBINNAME).o $(CHPL_RT_LIB_DIR)/main.o $(CHPL_CL_OBJS) -lchpl -lm $(LIBS)
@@ -18,6 +19,5 @@ ifneq ($(TMPBINNAME),$(BINNAME))
 	cp -p $(TMPBINNAME) $(BINNAME)
 	rm $(TMPBINNAME)
 endif
-	$(TAGS_COMMAND)
 
 FORCE:
