@@ -126,13 +126,8 @@ module LocaleModel {
     }
 
     proc getChild(idx:int) : locale {
-      // This is a temporary implementation, where an index of zero is forced
-      // to mean "here".  A better solution is on the way.
-      // TODO: Run index lookup through rootLocale.findLocale(lid:chpl_localeID_t);
-      if idx == 0 then return this;
-      else
-        if boundsChecking then
-          halt("requesting a child from a LocaleModel locale");
+      if boundsChecking then
+        halt("requesting a child from a LocaleModel locale");
       return nil;
     }
 
@@ -182,7 +177,6 @@ module LocaleModel {
   //
   class RootLocale : AbstractRootLocale {
 
-    // Would like to make myLocaleSpace distributed with one index per node.
     const myLocaleSpace: domain(1) = {0..numLocales-1};
     const myLocales: [myLocaleSpace] locale;
 
@@ -308,7 +302,7 @@ module LocaleModel {
   export
   proc chpl_executeOn(loc: chpl_localeID_t, // target locale
                       fn: int,              // on-body function idx
-                      args: c_void_ptr,          // function args
+                      args: c_void_ptr,     // function args
                       args_size: int(32)    // args size
                      ) {
     const node = chpl_nodeFromLocaleID(loc);
@@ -329,7 +323,7 @@ module LocaleModel {
   export
   proc chpl_executeOnFast(loc: chpl_localeID_t, // target locale
                           fn: int,              // on-body function idx
-                          args: c_void_ptr,          // function args
+                          args: c_void_ptr,     // function args
                           args_size: int(32)    // args size
                          ) {
     const node = chpl_nodeFromLocaleID(loc);
@@ -349,21 +343,31 @@ module LocaleModel {
   export
   proc chpl_executeOnNB(loc: chpl_localeID_t, // target locale
                         fn: int,              // on-body function idx
-                        args: c_void_ptr,          // function args
+                        args: c_void_ptr,     // function args
                         args_size: int(32)    // args size
                        ) {
     //
     // If we're in serial mode, we should use blocking rather than
     // non-blocking "on" in order to serialize the forks.
     //
-    if __primitive("task_get_serial") then
-      chpl_comm_fork(chpl_nodeFromLocaleID(loc),
-                     chpl_sublocFromLocaleID(loc),
-                     fn, args, args_size);
-    else
-      chpl_comm_fork_nb(chpl_nodeFromLocaleID(loc),
-                        chpl_sublocFromLocaleID(loc),
-                        fn, args, args_size);
+    const node = chpl_nodeFromLocaleID(loc);
+    if (node == chpl_nodeID) {
+      if __primitive("task_get_serial") then
+        // don't call the runtime nb fork function if we can stay local
+        chpl_ftable_call(fn, args);
+      else
+        // We'd like to use a begin, but unfortunately doing so as
+        // follows does not compile for --no-local:
+        // begin chpl_ftable_call(fn, args);
+        chpl_comm_fork_nb(node, chpl_sublocFromLocaleID(loc),
+                          fn, args, args_size);
+    } else {
+      const subloc = chpl_sublocFromLocaleID(loc);
+      if __primitive("task_get_serial") then
+        chpl_comm_fork(node, subloc, fn, args, args_size);
+      else
+        chpl_comm_fork_nb(node, subloc, fn, args, args_size);
+    }
   }
 
   //////////////////////////////////////////

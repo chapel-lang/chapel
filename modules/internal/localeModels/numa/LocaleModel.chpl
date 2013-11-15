@@ -21,6 +21,7 @@ module LocaleModel {
   use Sys;
 
   extern proc chpl_task_getRequestedSubloc(): int(32);
+  extern proc chpl_task_getSubloc(): int(32);
 
   config param debugLocaleModel = false;
 
@@ -225,8 +226,7 @@ module LocaleModel {
         const numCoresPerNumaDomain = numCores/numSublocales;
         const origSubloc = chpl_task_getRequestedSubloc(); // this should be any
         for i in childSpace {
-          // allocate the structure on the domain?
-          // MUST CHANGE SUBLOC HERE (prolly by primitive)
+          // allocate the structure on the proper sublocale
           chpl_task_setSubloc(i:chpl_sublocID_t);
           childLocales[i] = new NumaDomain(i:chpl_sublocID_t, this);
           childLocales[i].numCores = numCoresPerNumaDomain;
@@ -248,7 +248,6 @@ module LocaleModel {
   //
   class RootLocale : AbstractRootLocale {
 
-    // Would like to make myLocaleSpace distributed with one index per node.
     const myLocaleSpace: domain(1) = {0..numLocales-1};
     const myLocales: [myLocaleSpace] locale;
 
@@ -305,12 +304,15 @@ module LocaleModel {
     proc getDefaultLocaleArray() return myLocales;
 
     proc localeIDtoLocale(id : chpl_localeID_t) {
-      const dnode = chpl_nodeFromLocaleID(id);
-      const dsubloc = chpl_sublocFromLocaleID(id);
-      if (dsubloc == c_sublocid_curr) || (dsubloc == c_sublocid_any) then
-        return (myLocales[dnode:int]):locale;
+      const node = chpl_nodeFromLocaleID(id);
+      const subloc = chpl_sublocFromLocaleID(id);
+      if (subloc == c_sublocid_any) then
+        return (myLocales[node:int]):locale;
+      else if (subloc != c_sublocid_curr) then
+        return (myLocales[node:int].getChild(subloc:int)):locale;
       else
-        return (myLocales[dnode:int].getChild(dsubloc:int)):locale;
+        // return the sublocale we're running on (not used currently)
+        return (myLocales[node:int].getChild(chpl_task_getSubloc():int)):locale;
     }
   }
 
@@ -429,7 +431,7 @@ module LocaleModel {
     }
   }
 
-  // Unused for now due to bug in non-developer mode when using 'begin'
+  // Unused for now due to bug when using 'begin'
   inline proc chpl_executeOnNBAux(fn: int,         // on-body function idx
                                   args: c_void_ptr // function args
                                   ) {
