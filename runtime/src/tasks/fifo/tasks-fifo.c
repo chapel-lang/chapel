@@ -442,9 +442,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg,
                              chpl_string filename) {
   task_private_data_t chpl_data = { chpl_task_getSerial() };
 
-  assert(subloc == 0
-         || subloc == c_sublocid_any
-         || subloc == c_sublocid_curr);
+  assert(subloc == 0 || subloc == c_sublocid_any);
 
   if (task_list_locale == chpl_nodeID) {
     chpl_task_list_p ltask;

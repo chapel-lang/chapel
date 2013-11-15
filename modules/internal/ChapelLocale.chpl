@@ -40,8 +40,8 @@ module ChapelLocale {
 
     proc chpl_localeid() : chpl_localeID_t {
       _throwPVFCError();
-      extern const c_sublocid_any: chpl_sublocID_t;
-      return chpl_buildLocaleID(-1:chpl_nodeID_t, c_sublocid_any); 
+      extern const c_sublocid_none: chpl_sublocID_t;
+      return chpl_buildLocaleID(-1:chpl_nodeID_t, c_sublocid_none);
     }
 
     proc chpl_name() : string {
@@ -162,15 +162,11 @@ module ChapelLocale {
       // Simple locales barrier, see implementation below for notes
       var b: localesBarrier;
       var flags: [1..#numLocales-1] localesSignal;
-      // We'd like to have this extern declaration here and use it
-      // below in the call to chpl_buildLocaleID(), but doing so seems
-      // to tickle a bug with nested procedures and extern consts.
-      // extern const c_sublocid_any: chpl_sublocID_t;
+      extern const c_sublocid_any: chpl_sublocID_t;
       coforall locIdx in 0..#numLocales /*ref(b)*/ {
         on __primitive("chpl_on_locale_num",
                        chpl_buildLocaleID(locIdx:chpl_nodeID_t,
-                                          /*c_sublocid_any:chpl_sublocID_t*/
-                                          -1:chpl_sublocID_t)) {
+                                          c_sublocid_any)) {
           chpl_defaultDistInitPrivate();
           yield locIdx;
           b.wait(locIdx, flags);

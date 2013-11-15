@@ -76,10 +76,12 @@ typedef int32_t c_sublocid_t;
 #define FORMAT_c_sublocid_t PRId32
 typedef int64_t c_localeid_t;
 
-// These are special values that mean "any sublocale" and "the current
-// sublocale".
-#define c_sublocid_any  (-1)
-#define c_sublocid_curr (-2)
+// These are special values that mean "no sublocale and "any sublocale".
+#define c_sublocid_none_val -1
+#define c_sublocid_any_val  -2
+
+static const c_sublocid_t c_sublocid_none = c_sublocid_none_val;
+static const c_sublocid_t c_sublocid_any  = c_sublocid_any_val;
 
 #ifndef LAUNCHER
 

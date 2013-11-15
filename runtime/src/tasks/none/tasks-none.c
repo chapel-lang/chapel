@@ -91,7 +91,7 @@ void chpl_sync_destroyAux(chpl_sync_aux_t *s) { }
 
 static chpl_taskID_t next_taskID = chpl_nullTaskID + 1;
 static chpl_taskID_t curr_taskID;
-static task_private_data_t s_chpl_data = { c_sublocid_any, true };
+static task_private_data_t s_chpl_data = { c_sublocid_any_val, true };
 static uint64_t taskCallStackSize = 0;
 
 void chpl_task_init(void) {
@@ -164,9 +164,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid,
                              chpl_bool is_begin_stmt,
                              int lineno,
                              chpl_string filename) {
-  assert(subloc == 0
-         || subloc == c_sublocid_any
-         || subloc == c_sublocid_curr);
+  assert(subloc == 0 || subloc == c_sublocid_any);
 
   if (s_chpl_data.serial_state) {
     //
@@ -241,9 +239,7 @@ void chpl_task_startMovedTask(chpl_fn_p fp,
 c_sublocid_t chpl_task_getSubloc(void) { return 0; }
 
 void chpl_task_setSubloc(c_sublocid_t subloc) {
-  assert(subloc == 0
-         || subloc == c_sublocid_any
-         || subloc == c_sublocid_curr);
+  assert(subloc == 0 || subloc == c_sublocid_any);
   s_chpl_data.requestedSubloc = subloc;
 }
 

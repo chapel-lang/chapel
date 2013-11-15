@@ -363,7 +363,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg, c_sublocid_t subLoc,
   myth_thread_t th;
   chpl_bool serial_state = getTaskPrivateData()->serial_state;
 
-  assert(subLoc == 0 || subLoc == c_sublocid_any || subLoc == c_sublocid_curr);
+  assert(subLoc == 0 || subLoc == c_sublocid_any);
 
   if (serial_state) {
     (*chpl_ftable[fid])(arg);
@@ -421,9 +421,7 @@ c_sublocid_t chpl_task_getSubloc(void) {
 }
 
 void chpl_task_setSubloc(c_sublocid_t subloc) {
-  assert(subloc == 0
-      || subloc == c_sublocid_any
-      || subloc == c_sublocid_curr);
+  assert(subloc == 0 || subloc == c_sublocid_any);
   getTaskPrivateData()->requestedSubloc=subloc;
 }
 

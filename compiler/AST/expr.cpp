@@ -5139,7 +5139,7 @@ GenRet CallExpr::codegen() {
   if (gotBCbCf) {
     // get(1) is a class containing bundled arguments
     std::vector<GenRet> args(7);
-    args[0] = new_IntSymbol(-1 /* c_sublocid_any */, INT_SIZE_32);
+    args[0] = new_IntSymbol(-2 /* c_sublocid_any */, INT_SIZE_32);
     args[1] = new_IntSymbol(ftableMap.get(fn), INT_SIZE_64);
     args[2] = codegenCastToVoidStar(codegenValue(get(1)));
 

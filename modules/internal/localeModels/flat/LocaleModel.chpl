@@ -202,8 +202,8 @@ module LocaleModel {
     // -1 is used in the abstract locale class to specify an invalid node ID.
     proc chpl_id() return numLocales;
     proc chpl_localeid() {
-      extern const c_sublocid_any: chpl_sublocID_t;
-      return chpl_buildLocaleID(numLocales:chpl_nodeID_t, c_sublocid_any); 
+      extern const c_sublocid_none: chpl_sublocID_t;
+      return chpl_buildLocaleID(numLocales:chpl_nodeID_t, c_sublocid_none);
     }
     proc chpl_name() return local_name();
     proc local_name() return "rootLocale";

@@ -21,7 +21,6 @@ module LocaleModel {
   use Sys;
 
   extern proc chpl_task_getRequestedSubloc(): int(32);
-  extern proc chpl_task_getSubloc(): int(32);
 
   config param debugLocaleModel = false;
 
@@ -274,8 +273,8 @@ module LocaleModel {
     // -1 is used in the abstract locale class to specify an invalid node ID.
     proc chpl_id() return numLocales;
     proc chpl_localeid() {
-      extern const c_sublocid_any: chpl_sublocID_t;
-      return chpl_buildLocaleID(numLocales:chpl_nodeID_t, c_sublocid_any); 
+      extern const c_sublocid_none: chpl_sublocID_t;
+      return chpl_buildLocaleID(numLocales:chpl_nodeID_t, c_sublocid_none);
     }
     proc chpl_name() return local_name();
     proc local_name() return "rootLocale";
@@ -306,13 +305,10 @@ module LocaleModel {
     proc localeIDtoLocale(id : chpl_localeID_t) {
       const node = chpl_nodeFromLocaleID(id);
       const subloc = chpl_sublocFromLocaleID(id);
-      if (subloc == c_sublocid_any) then
+      if (subloc == c_sublocid_none) || (subloc == c_sublocid_any) then
         return (myLocales[node:int]):locale;
-      else if (subloc != c_sublocid_curr) then
-        return (myLocales[node:int].getChild(subloc:int)):locale;
       else
-        // return the sublocale we're running on (not used currently)
-        return (myLocales[node:int].getChild(chpl_task_getSubloc():int)):locale;
+        return (myLocales[node:int].getChild(subloc:int)):locale;
     }
   }
 
@@ -372,8 +368,8 @@ module LocaleModel {
                                 fn: int, args: c_void_ptr, args_size: int(32));
   extern proc chpl_ftable_call(fn: int, args: c_void_ptr): void;
   extern proc chpl_task_setSubloc(subloc: int(32));
+  extern const c_sublocid_none: chpl_sublocID_t;
   extern const c_sublocid_any: chpl_sublocID_t;
-  extern const c_sublocid_curr: chpl_sublocID_t;
 
   //
   // regular "on"

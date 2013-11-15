@@ -449,7 +449,7 @@ static aligned_t chapel_wrapper(void *arg)
 void chpl_task_callMain(void (*chpl_main)(void))
 {
     const chapel_wrapper_args_t wrapper_args = 
-        {chpl_main, NULL, NULL, 0, {c_sublocid_any, false}};
+        {chpl_main, NULL, NULL, 0, {c_sublocid_any_val, false}};
 
     qthread_debug(CHAPEL_CALLS, "[%d] begin chpl_task_callMain()\n", chpl_localeID);
 
@@ -492,6 +492,8 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
     chapel_wrapper_args_t wrapper_args = 
         {chpl_ftable[fid], arg, filename, lineno, {subloc, serial_state}};
 
+    assert(subloc != c_sublocid_none);
+
     PROFILE_INCR(profile_task_addToTaskList,1);
 
     if (serial_state) {
@@ -504,8 +506,6 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
         qthread_fork_copyargs(chapel_wrapper, &wrapper_args,
                               sizeof(chapel_wrapper_args_t), NULL);
     } else {
-        if (subloc == c_sublocid_curr)
-            subloc = (c_sublocid_t) here_shep_id;
         qthread_fork_copyargs_to(chapel_wrapper, &wrapper_args,
                                  sizeof(chapel_wrapper_args_t), NULL,
                                  (qthread_shepherd_id_t) subloc);
@@ -533,7 +533,7 @@ void chpl_task_startMovedTask(chpl_fn_p      fp,
                               chpl_taskID_t  id,
                               chpl_bool      serial_state)
 {
-    assert(subloc != c_sublocid_curr);
+    assert(subloc != c_sublocid_none);
     assert(id == chpl_nullTaskID);
 
     chapel_wrapper_args_t wrapper_args = 
@@ -560,6 +560,8 @@ void chpl_task_setSubloc(c_sublocid_t subloc)
 {
     qthread_shepherd_id_t curr_shep;
 
+    assert(subloc != c_sublocid_none);
+
     // Only change sublocales if the caller asked for a particular one,
     // which is not the current one, and we're a (movable) task.
     //
@@ -571,8 +573,7 @@ void chpl_task_setSubloc(c_sublocid_t subloc)
     //       before tasking init and in any case would be done from the
     //       main thread of execution, which doesn't have a shepherd.
     //       The code below wouldn't work in that situation.
-    if (subloc != c_sublocid_curr &&
-        (curr_shep = qthread_shep()) != NO_SHEPHERD) {
+    if ((curr_shep = qthread_shep()) != NO_SHEPHERD) {
         chapel_tls_t * data = chapel_get_tasklocal_possibly_from_non_task();
         if (data) {
             data->chpl_data.requestedSubloc = subloc;
