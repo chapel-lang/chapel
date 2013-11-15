@@ -11,6 +11,20 @@
 #endif
 
 
+//
+// Some function declarations here may be protected like this:
+//   #ifdef CHPL_TASK_func_IMPL_DECL
+//   declaration of func() here
+//   #endif
+// In these cases the implementation-specific .h file can provide the
+// declaration of func() itself and then set CHPL_TASK_func_IMPL_DECL
+// to say that it has done so.  Typically this is done for functions
+// that benefit by being declared static inline, for performance.  At
+// present we only support this for a few functions.  We can add more
+// as needed.
+//
+
+
 // Sync variables
 
 void      chpl_sync_lock(chpl_sync_aux_t *);
@@ -131,13 +145,20 @@ void chpl_task_startMovedTask(chpl_fn_p,          // function to call
 // will actually move the task, if the specified sublocale differs
 // from the current one.
 //
+#ifndef CHPL_TASK_GETSUBLOC_IMPL_DECL
 c_sublocid_t chpl_task_getSubloc(void);
+#endif
+
+#ifndef CHPL_TASK_SETSUBLOC_IMPL_DECL
 void chpl_task_setSubloc(c_sublocid_t);
+#endif
 
 //
 // Get the sublocale the caller specified at the time the task was created.
 //
+#ifndef CHPL_TASK_GETREQUESTEDSUBLOC_IMPL_DECL
 c_sublocid_t chpl_task_getRequestedSubloc(void);
+#endif
 
 //
 // Get ID.

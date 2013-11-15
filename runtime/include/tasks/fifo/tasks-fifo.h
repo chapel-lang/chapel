@@ -52,18 +52,33 @@ typedef struct {
 // Putting these interface function definitions here and marking them
 // for inlining makes them cost-free at execution time.
 //
+#ifdef CHPL_TASK_GETSUBLOC_IMPL_DECL
+#error "CHPL_TASK_GETSUBLOC_IMPL_DECL is already defined!"
+#else
+#define CHPL_TASK_GETSUBLOC_IMPL_DECL 1
+#endif
 static inline
 c_sublocid_t chpl_task_getSubloc(void) {
   return 0;
 }
 
 
+#ifdef CHPL_TASK_SETSUBLOC_IMPL_DECL
+#error "CHPL_TASK_SETSUBLOC_IMPL_DECL is already defined!"
+#else
+#define CHPL_TASK_SETSUBLOC_IMPL_DECL 1
+#endif
 static inline
 void chpl_task_setSubloc(c_sublocid_t subloc) {
   // nothing to do
 }
 
 
+#ifdef CHPL_TASK_GETREQUESTEDSUBLOC_IMPL_DECL
+#error "CHPL_TASK_GETREQUESTEDSUBLOC_IMPL_DECL is already defined!"
+#else
+#define CHPL_TASK_GETREQUESTEDSUBLOC_IMPL_DECL 1
+#endif
 static inline
 c_sublocid_t chpl_task_getRequestedSubloc(void) {
   return c_sublocid_any;
