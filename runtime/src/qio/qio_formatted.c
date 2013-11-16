@@ -278,7 +278,7 @@ err_t _append_char(char* restrict * restrict buf, size_t* restrict buf_len, size
 // -10 -- variable byte length before (hi-bit 1 means more, little endian)
 // -0x01XX -- read until terminator XX is read
 //  + -- nonzero positive -- read exactly this length.
-err_t qio_channel_read_string(const int threadsafe, const int byteorder, const int64_t str_style, qio_channel_t* restrict ch, const char* restrict* restrict out, ssize_t* restrict len_out, ssize_t maxlen)
+err_t qio_channel_read_string(const int threadsafe, const int byteorder, const int64_t str_style, qio_channel_t* restrict ch, const char* restrict* restrict out, int64_t* restrict len_out, ssize_t maxlen)
 {
   err_t err;
   uint8_t term = 0;
@@ -398,7 +398,7 @@ unlock:
 }
 
 // allocates and returns a string. maxlen is in CHARACTERS.
-err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict * restrict out, ssize_t* restrict len_out, ssize_t maxlen)
+err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict * restrict out, int64_t* restrict len_out, ssize_t maxlen)
 {
   err_t err;
   char* restrict ret = NULL;
@@ -3355,7 +3355,7 @@ int _qio_regexp_flags_then_rcurly(const char* ptr, int * len)
 
 qioerr qio_conv_parse(const char* fmt,
                      size_t start,
-                     size_t* end,
+                     uint64_t* end,
                      int scanning,
                      qio_conv_t* spec_out,
                      qio_style_t* style_out)

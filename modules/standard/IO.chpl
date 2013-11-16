@@ -313,7 +313,7 @@ extern proc qio_channel_write_float(threadsafe:c_int, byteorder:c_int, ch:qio_ch
 extern proc qio_channel_read_complex(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, ref re_ptr, ref im_ptr, len:size_t):err_t;
 extern proc qio_channel_write_complex(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, const ref re_ptr, const ref im_ptr, len:size_t):err_t;
 
-extern proc qio_channel_read_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, ref s:string, ref len:ssize_t, maxlen:ssize_t):err_t;
+extern proc qio_channel_read_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, ref s:string, ref len:int(64), maxlen:ssize_t):err_t;
 extern proc qio_channel_write_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, const s:string, len:ssize_t):err_t;
 
 extern proc qio_channel_scan_int(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:size_t, issigned:c_int):err_t;
@@ -344,7 +344,7 @@ extern proc qio_channel_write_char(threadsafe:c_int, ch:qio_channel_ptr_t, char:
 extern proc qio_channel_skip_past_newline(threadsafe:c_int, ch:qio_channel_ptr_t, skipOnlyWs:c_int):err_t;
 extern proc qio_channel_write_newline(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
 
-extern proc qio_channel_scan_string(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr:string, ref len:ssize_t, maxlen:ssize_t):err_t;
+extern proc qio_channel_scan_string(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr:string, ref len:int(64), maxlen:ssize_t):err_t;
 extern proc qio_channel_print_string(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:string, len:ssize_t):err_t;
 
 extern proc qio_channel_scan_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:string, len:ssize_t, skipws:c_int):err_t;
@@ -400,7 +400,7 @@ extern const QIO_CONV_SET_STRINGEND:c_int;
 extern const QIO_CONV_SET_CAPTURE:c_int;
 extern const QIO_CONV_SET_DONE:c_int;
 
-extern proc qio_conv_parse(const fmt:string, start:size_t, ref end:size_t, scanning:c_int, ref spec:qio_conv_t, ref style:iostyle):syserr;
+extern proc qio_conv_parse(const fmt:string, start:size_t, ref end:uint(64), scanning:c_int, ref spec:qio_conv_t, ref style:iostyle):syserr;
 
 extern proc qio_format_error_too_many_args():syserr;
 extern proc qio_format_error_too_few_args():syserr;
@@ -1118,7 +1118,7 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
     return err;
   } else if t == string {
     // handle string
-    var len:ssize_t;
+    var len:int(64);
     var ret = qio_channel_scan_string(false, _channel_internal, x, len, -1);
     __primitive("string_normalize", x, 1+len);  // See Note 1.
     return ret;
@@ -1223,7 +1223,7 @@ inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param byt
     return err;
   } else if t == string {
     // handle string
-    var len:ssize_t;
+    var len:int(64);
     var ret = qio_channel_read_string(false, byteorder, qio_channel_str_style(_channel_internal), _channel_internal, x, len, -1);
     __primitive("string_normalize", x, len+1);  // See Note 1.
     return ret;
@@ -2262,12 +2262,12 @@ proc channel._format_reader(
       gotConv = false;
       if error then break;
       if _format_debug then stdout.writeln("TOP OF LOOP cur=", cur, " len=", len);
-      var end:size_t;
+      var end:uint(64);
       error = qio_conv_parse(fmt, cur, end, isReadf, conv, style);
       if error {
         if _format_debug then stdout.writeln("TODO ACC");
       }
-      cur = end;
+      cur = end:size_t;
       if error then break;
       if _format_debug then stdout.writeln("MIDDLE OF LOOP");
       if conv.argType == QIO_CONV_ARG_TYPE_NONE_LITERAL {
@@ -3235,7 +3235,7 @@ proc channel._extractMatch(m:reMatch, ref arg:string, ref error:syserr) {
 
   var s:string;
   if ! error {
-    var gotlen:ssize_t;
+    var gotlen:int(64);
     error = qio_channel_read_string(false, iokind.native, stringStyleExactLen(len), _channel_internal, s, gotlen, len:ssize_t);
     __primitive("string_normalize", s, gotlen+1);   // See Note 1.
   }

@@ -367,7 +367,7 @@ err_t qio_channel_write_complex(const int threadsafe, const int byteorder, qio_c
 // -10 -- variable byte length before (hi-bit 1 means more, little endian)
 // -0x01XX -- read until terminator XX is read
 //  + -- nonzero positive -- read exactly this length.
-err_t qio_channel_read_string(const int threadsafe, const int byteorder, const int64_t str_style, qio_channel_t* restrict ch, const char* restrict * restrict out, ssize_t* restrict len_out, ssize_t maxlen);
+err_t qio_channel_read_string(const int threadsafe, const int byteorder, const int64_t str_style, qio_channel_t* restrict ch, const char* restrict * restrict out, int64_t* restrict len_out, ssize_t maxlen);
 
 // string binary style:
 // -1 -- 1 byte of length before
@@ -705,7 +705,7 @@ err_t qio_channel_skip_past_newline(const int threadsafe, qio_channel_t* restric
 
 err_t qio_channel_write_newline(const int threadsafe, qio_channel_t* restrict ch);
 
-err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict * restrict out, ssize_t* restrict len_out, ssize_t maxlen);
+err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict * restrict out, int64_t* restrict len_out, ssize_t maxlen);
 
 // returns 0 if it matched, or EFORMAT if it did not.
 err_t qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch, const char* restrict match, ssize_t len, int skipws);
@@ -796,7 +796,7 @@ typedef struct qio_conv_s {
 
 void qio_conv_destroy(qio_conv_t* spec);
 void qio_conv_init(qio_conv_t* spec_out);
-qioerr qio_conv_parse(const char* fmt, size_t start, size_t* end_out, int scanning, qio_conv_t* spec_out, qio_style_t* style_out);
+qioerr qio_conv_parse(const char* fmt, size_t start, uint64_t* end_out, int scanning, qio_conv_t* spec_out, qio_style_t* style_out);
 
 // These error codes can be used by callers to qio_conv_parse
 qioerr qio_format_error_too_many_args(void);
