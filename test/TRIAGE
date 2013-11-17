@@ -27,6 +27,21 @@
 
 
 =========================================================
+New problems
+(Ones that prove persistent should be moved to REGRESSIONS.)
+=========================================================
+
+pthread mutex lock assertion failed (after 22303, unassigned)
+-----------------------------------
+linux64.gnu.gasnet-fast.fifo.pthreads.flat.dlmalloc
+[Error matching program output for parallel/sync/diten/returnSync]
+> returnSync_real: pthread_mutex_lock.c:62: __pthread_mutex_lock: Assertion `mutex->__data.__owner == 0' failed.
+A brief review of the source code suggests that this problem should not occur 
+unless there is a problem with atomic compare-and-swap, or data corruption in 
+the mutex.
+Can be duplicated with --no-local; valgrind not clean.
+
+=========================================================
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
