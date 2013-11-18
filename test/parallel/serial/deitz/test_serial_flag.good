@@ -1,7 +1,0 @@
-warning: --serial is currently not fully supported and may be deprecated in future releases
-foo called with delay 2
-foo called with delay 1
-foo called with delay 2
-foo called with delay 1
-foo called with delay 2
-foo called with delay 1

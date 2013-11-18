@@ -188,18 +188,11 @@ CHPL_TASKS == none, CHPL_THREADS == none
 ----------------------------------------
 
 Setting CHPL_TASKS to "none" indicates that you do not wish to have
-multiple Chapel tasks actually execute concurrently.  By default, this
-is equivalent to using the Chapel compiler's --serial flag, which has
+multiple Chapel tasks actually execute concurrently. This  has
 the effect of (i) ignoring begin keywords, (ii) converting cobegins
 into traditional block statements, and (iii) converting forall and
 coforall loops into for loops.  In other words, it removes all
 constructs that introduce new tasks and executes those tasks serially.
-This can be overridden using the --no-serial compiler flag, which will
-use a single thread to execute tasks added to a task pool, similar to
-the behavior described in the fifo/minimal tasking section above.  As
-with FIFO tasking, each task will be scheduled to run to completion,
-so if it blocks on a sync or single variable, the program will
-deadlock.
 
 
 ---------------------------------

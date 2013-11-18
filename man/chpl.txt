@@ -78,18 +78,6 @@ OPTIONS
                     is set to "none", --local is the default; otherwise
                     --no-local is the default.
 
-  --[no-]serial     Compile code for single/[multi-] threaded execution,
-                    changing forall- and coforall-loops into for loops;
-                    changing begin, cobegin, and atomic blocks into regular
-                    block statements; and removing the serial keyword,
-                    evaluating its expression only for side effects.
-                    When $CHPL_THREADS is set to "none" --serial is the
-                    default; otherwise --no-serial is the default.
-
-  --[no-]serial-forall   Compile forall-loops for single/[multi-] threaded
-                    execution. If set, forall-loops are treated like
-                    for-loops.
-
   Optimization Control Options
 
   --baseline        Turns off all optimizations in the Chapel compiler and

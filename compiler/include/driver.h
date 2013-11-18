@@ -110,8 +110,6 @@ extern bool fCLineNumbers;
 extern char fPrintStatistics[256];
 extern bool fPrintDispatch;
 extern bool fGenIDS;
-extern bool fSerialForall;
-extern bool fSerial;
 extern bool fLocal;
 extern bool fHeterogeneous;
 extern bool fieeefloat;

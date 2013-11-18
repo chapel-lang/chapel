@@ -10,8 +10,6 @@ Module Processing Options:
 
 Parallelism Control Options:
       --[no-]local                    Target one [many] locale[s]
-      --[no-]serial                   [Don't] Serialize parallel constructs
-      --[no-]serial-forall            [Don't] Serialize forall constructs
 
 Optimization Control Options:
       --baseline                      Disable all Chapel optimizations

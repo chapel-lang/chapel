@@ -616,84 +616,80 @@ buildPromotionWrapper(FnSymbol* fn,
 
   if ((!fn->hasFlag(FLAG_EXTERN) && fn->getReturnSymbol() == gVoid) ||
       (fn->hasFlag(FLAG_EXTERN) && fn->retType == dtVoid)) {
-    if (fSerial || fSerialForall)
-      wrapper->insertAtTail(new BlockStmt(buildForLoopStmt(indices, iterator, new BlockStmt(actualCall), false, zippered)));
-    else{
-        wrapper->insertAtTail(new BlockStmt(buildForallLoopStmt(indices, iterator, new BlockStmt(actualCall), zippered)));
-    }
+      wrapper->insertAtTail(new BlockStmt(buildForallLoopStmt(indices, iterator, new BlockStmt(actualCall), zippered)));
   } else {
     wrapper->addFlag(FLAG_ITERATOR_FN);
     wrapper->removeFlag(FLAG_INLINE);
-    if (!fSerial && !fSerialForall) {
-      SymbolMap leaderMap;
-      FnSymbol* lifn = wrapper->copy(&leaderMap);
-      iteratorLeaderMap.put(wrapper,lifn);
-      lifn->body = new BlockStmt(); // indices are not used in leader
-      form_Map(SymbolMapElem, e, leaderMap) {
-        if (Symbol* s = paramMap.get(e->key))
-          paramMap.put(e->value, s);
-      }
-      ArgSymbol* lifnTag = new ArgSymbol(INTENT_PARAM, "tag", gLeaderTag->type);
-      lifn->addFlag(FLAG_INLINE_ITERATOR); // Leader iterators are always inlined.
-      lifn->insertFormalAtTail(lifnTag);
-      lifn->where = new BlockStmt(new CallExpr("==", lifnTag, gLeaderTag));
-      VarSymbol* leaderIndex = newTemp("p_leaderIndex");
-      VarSymbol* leaderIterator = newTemp("p_leaderIterator");
-      leaderIterator->addFlag(FLAG_EXPR_TEMP);
-      lifn->insertAtTail(new DefExpr(leaderIterator));
 
-      if( !zippered ) {
-        lifn->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_toLeader", iterator->copy(&leaderMap))));
-      } else {
-        lifn->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_toLeaderZip", iterator->copy(&leaderMap))));
-      }
-
-      BlockStmt* body = new BlockStmt(new CallExpr(PRIM_YIELD, leaderIndex));
-      BlockStmt* loop = buildForLoopStmt(new SymExpr(leaderIndex), new SymExpr(leaderIterator), body, false, zippered);
-      lifn->insertAtTail(loop);
-      theProgram->block->insertAtTail(new DefExpr(lifn));
-      toBlockStmt(body->parentExpr)->insertAtHead(new DefExpr(leaderIndex));
-      normalize(lifn);
-      lifn->instantiationPoint = getVisibilityBlock(info->call);
-
-      SymbolMap followerMap;
-      FnSymbol* fifn = wrapper->copy(&followerMap);
-      iteratorFollowerMap.put(wrapper,fifn);
-      form_Map(SymbolMapElem, e, followerMap) {
-        if (Symbol* s = paramMap.get(e->key))
-          paramMap.put(e->value, s);
-      }
-      ArgSymbol* fifnTag = new ArgSymbol(INTENT_PARAM, "tag", gFollowerTag->type);
-      fifn->insertFormalAtTail(fifnTag);
-      ArgSymbol* fifnFollower = new ArgSymbol(INTENT_BLANK, iterFollowthisArgname, dtAny);
-      fifn->insertFormalAtTail(fifnFollower);
-      fifn->where = new BlockStmt(new CallExpr("==", fifnTag, gFollowerTag));
-      VarSymbol* followerIterator = newTemp("p_followerIterator");
-      followerIterator->addFlag(FLAG_EXPR_TEMP);
-      fifn->insertAtTail(new DefExpr(followerIterator));
-
-      if( !zippered ) {
-        fifn->insertAtTail(new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFollower", iterator->copy(&followerMap), fifnFollower)));
-      } else {
-        Expr* tMe = iterator->copy(&followerMap);
-        fifn->insertAtTail(new CallExpr(PRIM_MOVE, followerIterator, new
-                    CallExpr("_toFollowerZip", tMe, fifnFollower)));
-      }
-
-      BlockStmt* followerBlock = new BlockStmt();
-      Symbol* yieldTmp = newTemp("p_yield");
-      yieldTmp->addFlag(FLAG_EXPR_TEMP);
-      followerBlock->insertAtTail(new DefExpr(yieldTmp));
-      followerBlock->insertAtTail(new CallExpr(PRIM_MOVE, yieldTmp, actualCall->copy(&followerMap)));
-      followerBlock->insertAtTail(new CallExpr(PRIM_YIELD, yieldTmp));
-      fifn->insertAtTail(buildForLoopStmt(indices->copy(&followerMap), new SymExpr(followerIterator), followerBlock, false, zippered));
-      theProgram->block->insertAtTail(new DefExpr(fifn));
-      normalize(fifn);
-      fifn->addFlag(FLAG_GENERIC);
-      fifn->instantiationPoint = getVisibilityBlock(info->call);
+    SymbolMap leaderMap;
+    FnSymbol* lifn = wrapper->copy(&leaderMap);
+    iteratorLeaderMap.put(wrapper,lifn);
+    lifn->body = new BlockStmt(); // indices are not used in leader
+    form_Map(SymbolMapElem, e, leaderMap) {
+      if (Symbol* s = paramMap.get(e->key))
+        paramMap.put(e->value, s);
     }
-    BlockStmt* yieldBlock = new BlockStmt();
+    ArgSymbol* lifnTag = new ArgSymbol(INTENT_PARAM, "tag", gLeaderTag->type);
+    lifn->addFlag(FLAG_INLINE_ITERATOR); // Leader iterators are always inlined.
+    lifn->insertFormalAtTail(lifnTag);
+    lifn->where = new BlockStmt(new CallExpr("==", lifnTag, gLeaderTag));
+    VarSymbol* leaderIndex = newTemp("p_leaderIndex");
+    VarSymbol* leaderIterator = newTemp("p_leaderIterator");
+    leaderIterator->addFlag(FLAG_EXPR_TEMP);
+    lifn->insertAtTail(new DefExpr(leaderIterator));
+
+    if( !zippered ) {
+      lifn->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_toLeader", iterator->copy(&leaderMap))));
+    } else {
+      lifn->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_toLeaderZip", iterator->copy(&leaderMap))));
+    }
+
+    BlockStmt* body = new BlockStmt(new CallExpr(PRIM_YIELD, leaderIndex));
+    BlockStmt* loop = buildForLoopStmt(new SymExpr(leaderIndex), new SymExpr(leaderIterator), body, false, zippered);
+    lifn->insertAtTail(loop);
+    theProgram->block->insertAtTail(new DefExpr(lifn));
+    toBlockStmt(body->parentExpr)->insertAtHead(new DefExpr(leaderIndex));
+    normalize(lifn);
+    lifn->instantiationPoint = getVisibilityBlock(info->call);
+
+    SymbolMap followerMap;
+    FnSymbol* fifn = wrapper->copy(&followerMap);
+    iteratorFollowerMap.put(wrapper,fifn);
+    form_Map(SymbolMapElem, e, followerMap) {
+      if (Symbol* s = paramMap.get(e->key))
+        paramMap.put(e->value, s);
+    }
+    ArgSymbol* fifnTag = new ArgSymbol(INTENT_PARAM, "tag", gFollowerTag->type);
+    fifn->insertFormalAtTail(fifnTag);
+    ArgSymbol* fifnFollower = new ArgSymbol(INTENT_BLANK, iterFollowthisArgname, dtAny);
+    fifn->insertFormalAtTail(fifnFollower);
+    fifn->where = new BlockStmt(new CallExpr("==", fifnTag, gFollowerTag));
+    VarSymbol* followerIterator = newTemp("p_followerIterator");
+    followerIterator->addFlag(FLAG_EXPR_TEMP);
+    fifn->insertAtTail(new DefExpr(followerIterator));
+
+    if( !zippered ) {
+      fifn->insertAtTail(new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFollower", iterator->copy(&followerMap), fifnFollower)));
+    } else {
+      Expr* tMe = iterator->copy(&followerMap);
+      fifn->insertAtTail(new CallExpr(PRIM_MOVE, followerIterator, new
+                  CallExpr("_toFollowerZip", tMe, fifnFollower)));
+    }
+
+    BlockStmt* followerBlock = new BlockStmt();
     Symbol* yieldTmp = newTemp("p_yield");
+    yieldTmp->addFlag(FLAG_EXPR_TEMP);
+    followerBlock->insertAtTail(new DefExpr(yieldTmp));
+    followerBlock->insertAtTail(new CallExpr(PRIM_MOVE, yieldTmp, actualCall->copy(&followerMap)));
+    followerBlock->insertAtTail(new CallExpr(PRIM_YIELD, yieldTmp));
+    fifn->insertAtTail(buildForLoopStmt(indices->copy(&followerMap), new SymExpr(followerIterator), followerBlock, false, zippered));
+    theProgram->block->insertAtTail(new DefExpr(fifn));
+    normalize(fifn);
+    fifn->addFlag(FLAG_GENERIC);
+    fifn->instantiationPoint = getVisibilityBlock(info->call);
+
+    BlockStmt* yieldBlock = new BlockStmt();
+    yieldTmp = newTemp("p_yield");
     yieldTmp->addFlag(FLAG_EXPR_TEMP);
     yieldBlock->insertAtTail(new DefExpr(yieldTmp));
     yieldBlock->insertAtTail(new CallExpr(PRIM_MOVE, yieldTmp, actualCall));

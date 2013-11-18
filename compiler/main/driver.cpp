@@ -122,8 +122,6 @@ int optimize_on_clause_limit = 20;
 int scalar_replace_limit = 8;
 int tuple_copy_limit = scalar_replace_limit;
 bool fGenIDS = false;
-bool fSerialForall = false;
-bool fSerial;  // initialized in setupOrderedGlobals() below
 int fLinkStyle = LS_DEFAULT; // use backend compiler's default
 bool fLocal;   // initialized in setupOrderedGlobals() below
 bool fHeterogeneous = false; // re-initialized in setupOrderedGlobals() below
@@ -356,7 +354,6 @@ static void setupOrderedGlobals(const char* argv0) {
 
   // These depend on the environment variables being set
   fLocal = !strcmp(CHPL_COMM, "none");
-  fSerial = !strcmp(CHPL_TASKS, "none"); 
   bool gotPGI = !strcmp(CHPL_TARGET_COMPILER, "pgi")
              || !strcmp(CHPL_TARGET_COMPILER, "cray-prgenv-pgi");
   // conservatively how much is needed for the current PGI compiler
@@ -593,13 +590,6 @@ static void setWarnSpecial(ArgumentState* arg_state, char* unused) {
   setWarnTupleIteration(arg_state, unused);
 }
 
-static void warnDepricatedSerialFlag(ArgumentState* arg_state, char* unused) {
-  if (fSerial) {
-    USR_WARN("--serial is currently not fully supported and may be deprecated in future releases");
-  } else {
-    USR_WARN("the --no-serial flag may be deprecated in future releases");
-  }
-}
 /*
 Flag types:
 
@@ -630,8 +620,6 @@ static ArgumentDescription arg_desc[] = {
 
  {"", ' ', NULL, "Parallelism Control Options", NULL, NULL, NULL, NULL},
  {"local", ' ', NULL, "Target one [many] locale[s]", "N", &fLocal, "CHPL_LOCAL", NULL},
- {"serial", ' ', NULL, "[Don't] Serialize parallel constructs", "N", &fSerial, "CHPL_SERIAL", warnDepricatedSerialFlag},
- {"serial-forall", ' ', NULL, "[Don't] Serialize forall constructs", "N", &fSerialForall, "CHPL_SERIAL_FORALL", NULL},
 
  {"", ' ', NULL, "Optimization Control Options", NULL, NULL, NULL, NULL},
  {"baseline", ' ', NULL, "Disable all Chapel optimizations", "F", &fBaseline, "CHPL_BASELINE", setBaselineFlag},
