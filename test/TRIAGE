@@ -188,14 +188,6 @@ Perf (linux64.gnu.none.fifo.pthreads.flat)
 [Error matching compiler output for studies/shootout/mandelbrot/mandelbrot-fancy] (chap03: 10/11/13,11/02/13, chap04: 10/11/13,11/02/13, bradc-lnx: 10/11/13,11/02/13)
 [Error: Timed out executing program release/examples/benchmarks/hpcc/ptrans (compopts: 1)] (chap04: 10/11/13,11/02/13)
 [Error: Timed out executing program studies/hpcc/RA/bradc/parallel/ra-dist (compopts: 1)] (chap04: 10/11/13,11/02/13)
-[Error: Timed out executing program release/examples/benchmarks/shootout/threadring] (chap03: 10/11/13, bradc-lnx: 10/11/13)
-[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_iterator_7 (compopts: 1)] (chap03: 10/08/13, chap04: 10/08/13, bradc-lnx: 10/08/13)
-[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_rangesub_5 (compopts: 1)] (chap03: 10/08/13, chap04: 10/08/13, bradc-lnx: 10/08/13)
-[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_reductions_6 (compopts: 1)] (chap03: 10/08/13, chap04: 10/08/13, bradc-lnx: 10/08/13)
-[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_vector_4 (compopts: 1)] (chap03: 10/08/13, chap04: 10/08/13, bradc-lnx: 10/08/13)
-[Error: Timed out executing program studies/shootout/thread-ring/lydia/thread-ring-coforall-begin] (chap03: 10/11/13, bradc-lnx: 10/10/13)
-[Error: Timed out executing program studies/shootout/thread-ring/lydia/thread-ring-coforall] (chap03: 10/11/13, bradc-lnx: 10/11/13)
-[Error: Timed out executing program studies/shootout/thread-ring/lydia/thread-ring-for-begin] (chap03: 10/11/13, bradc-lnx: 10/11/13)
 
 valgrind compilation timeouts
 -----------------------------
