@@ -96,6 +96,7 @@ static void addPragmaFlags(Symbol* sym, Vec<const char*>* pragmas) {
         INT_ASSERT(mod);
         INT_ASSERT(mod->initFn);
         mod->initFn->addFlag(FLAG_EXPORT);
+        mod->initFn->addFlag(FLAG_LOCAL_ARGS);
       } else if (flag == FLAG_RUNTIME_TYPE_INIT_FN) {
         //
         // These functions must be marked as type functions early in
@@ -430,13 +431,6 @@ void createInitFn(ModuleSymbol* mod) {
   mod->initFn->retType = dtVoid;
   mod->initFn->addFlag(FLAG_MODULE_INIT);
   mod->initFn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
-  // All module initialization functions should be exported.
-  // But that means we have to adopt some new naming conventions.
-  //
-  // BLC: Actually, I think we should only be exporting module
-  // initialization functions for modules that have exported symbols.
-  //
-  // mod->initFn->addFlag(FLAG_EXPORT);
 
   //
   // move module-level statements into module's init function

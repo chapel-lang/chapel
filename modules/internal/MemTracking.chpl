@@ -21,7 +21,6 @@ module MemTracking
   // config consts to the runtime code that actually implements the
   // memory tracking.
   //
-  pragma "local args"
   export
   proc chpl_memTracking_returnConfigVals(ref ret_memTrack: bool,
                                          ref ret_memStats: bool,

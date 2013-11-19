@@ -89,6 +89,7 @@ static void addInitGuards(void) {
   FnSymbol* preInitFn = new FnSymbol(astr("chpl__init_preInit"));
   preInitFn->retType = dtVoid;
   preInitFn->addFlag(FLAG_EXPORT);
+  preInitFn->addFlag(FLAG_LOCAL_ARGS);
   preInitFn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
   theProgram->block->insertAtTail(new DefExpr(preInitFn));
   normalize(preInitFn);

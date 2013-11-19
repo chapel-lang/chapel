@@ -19,6 +19,8 @@ static void check_afterResolution(); // Checks to be performed after every pass
                                      // following resolution.
 static void checkResolveRemovedPrims(void); // Checks that certain primitives
                                             // are removed after resolution
+static void checkFlagRelationships(); // Checks expected relationships between
+                                      // flags.
 
 
 
@@ -313,6 +315,7 @@ void check_afterEveryPass()
   {
     verify();
     checkForDuplicateUses();
+    checkFlagRelationships();
   }
 }
 
@@ -363,6 +366,25 @@ checkResolveRemovedPrims(void) {
         default:
           break;
       }
+    }
+  }
+}
+
+// Some flags imply other flags.
+// Make sure that these relations always hold.
+static void
+checkFlagRelationships()
+{
+  forv_Vec(DefExpr, def, gDefExprs)
+  {
+    // These tests apply to function symbols.
+    if (FnSymbol* fn = toFnSymbol(def->sym))
+    {
+      // FLAG_EXTERN => FLAG_LOCAL_ARGS
+      INT_ASSERT(!fn->hasFlag(FLAG_EXTERN) || fn->hasFlag(FLAG_LOCAL_ARGS));
+
+      // FLAG_EXPORT => FLAG_LOCAL_ARGS
+      INT_ASSERT(!fn->hasFlag(FLAG_EXPORT) || fn->hasFlag(FLAG_LOCAL_ARGS));
     }
   }
 }

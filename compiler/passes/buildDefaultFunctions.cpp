@@ -336,6 +336,7 @@ static void build_chpl_entry_points(void) {
 
   chpl_gen_main->cname = "chpl_gen_main";
   chpl_gen_main->addFlag(FLAG_EXPORT);  // chpl_gen_main is always exported.
+  chpl_gen_main->addFlag(FLAG_LOCAL_ARGS);
   chpl_gen_main->addFlag(FLAG_COMPILER_GENERATED);
   mainModule->block->insertAtTail(new DefExpr(chpl_gen_main));
   VarSymbol* main_ret = newTemp("_main_ret", dtInt[INT_SIZE_64]);

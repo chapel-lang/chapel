@@ -1424,6 +1424,7 @@ insertWideReferences(void) {
   SET_LINENO(baseModule);
   FnSymbol* heapAllocateGlobals = new FnSymbol("chpl__heapAllocateGlobals");
   heapAllocateGlobals->addFlag(FLAG_EXPORT);
+  heapAllocateGlobals->addFlag(FLAG_LOCAL_ARGS);
   heapAllocateGlobals->retType = dtVoid;
   theProgram->block->insertAtTail(new DefExpr(heapAllocateGlobals));
 

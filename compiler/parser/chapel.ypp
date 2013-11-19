@@ -484,8 +484,10 @@ linkage_spec:
 | TINLINE       { $$ = new FnSymbol(""); $$->addFlag(FLAG_INLINE); 
                   @$.comment = yylloc.comment; yylloc.comment = NULL;}
 | TEXPORT       { $$ = new FnSymbol(""); $$->addFlag(FLAG_EXPORT);  
+                  $$->addFlag(FLAG_LOCAL_ARGS);
                   @$.comment = yylloc.comment; yylloc.comment = NULL;}
 | TEXPORT ident { $$ = new FnSymbol($2); $$->addFlag(FLAG_EXPORT);  
+                  $$->addFlag(FLAG_LOCAL_ARGS);
                   @$.comment = yylloc.comment; yylloc.comment = NULL;}
 | TEXTERN       { $$ = new FnSymbol(""); $$->addFlag(FLAG_EXTERN);
                   $$->addFlag(FLAG_LOCAL_ARGS);
