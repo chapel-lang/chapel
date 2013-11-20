@@ -39,13 +39,6 @@ linux32 regressions (in addition to the above)
 performance-specific regressions
 ================================
 
-thread-ring times out ever since it was made into a performance test
---------------------------------------------------------------------
-[Error: Timed out executing program release/examples/benchmarks/shootout/threadring]
-[Error: Timed out executing program studies/shootout/thread-ring/lydia/thread-ring-coforall]
-[Error: Timed out executing program studies/shootout/thread-ring/lydia/thread-ring-coforall-begin]
-[Error: Timed out executing program studies/shootout/thread-ring/lydia/thread-ring-for-begin]
-
 "assuming signed overflow does not occur"
 -----------------------------------------
 [Error matching compiler output for studies/shootout/mandelbrot/mandelbrot-fancy]
@@ -61,7 +54,7 @@ passes from revision 21739 to 21741 and from 21945 to 21952.
 See NightlyPerformance/chap*/day?-???-linux64.gnu.none.fifo.pthreads-prf
 and history thereof.
 
-consistent execution timeouts on chap04 (since ??? -- at least 10/09/13)
+consistent execution timeouts on chap04 (since ??? -- at least 11/20/13)
 ------------------------------------------------------------------------
 [Error: Timed out executing program release/examples/benchmarks/hpcc/ptrans (compopts: 1)]
 [Error: Timed out executing program studies/hpcc/RA/bradc/parallel/ra-dist (compopts: 1)]
@@ -119,6 +112,10 @@ line number ambiguity
 valgrind-specific regressions
 (Checked for accuracy 10/18/13)
 ===============================
+
+4 accesses of a deleted object (11/18/13) (mppf/hilde)
+------------------------------------------------------
+[Error matching program output for users/ferguson/refcnt]
 
 seem to complete execution prior to timing out (10/21/13)
 ---------------------------------------------------------
