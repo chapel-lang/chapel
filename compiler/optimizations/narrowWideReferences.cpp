@@ -189,6 +189,10 @@ narrowSym(Symbol* sym, WideInfo* wi) {
   bool isWideRef = sym->type->symbol->hasFlag(FLAG_WIDE);
   INT_ASSERT(isWideObj ^ isWideRef);
 
+  // This scans the definitions of the given symbol and weeds out calls that can
+  // be narrowed.  If any such call fails to get weeded out, the symbol is
+  // marked as "mustBeWide" and this routine returns.
+  // Otherwise, all defs can be narrowed, and control drops down to the next loop.
   for_defs(def, defMap, sym) {
     if (CallExpr* call = toCallExpr(def->parentExpr)) {
       if (call->isPrimitive(PRIM_MOVE)) {
@@ -355,13 +359,13 @@ narrowWideReferences() {
 
   compute_call_sites();
 
+  // Insert all wide variables and arguments into wideInfoMap.
   forv_Vec(VarSymbol, var, gVarSymbols) {
     if (var->type->symbol->hasFlag(FLAG_WIDE) ||
         var->type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       wideInfoMap.put(var, new WideInfo(var));
     }
   }
-
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
     if (arg->type->symbol->hasFlag(FLAG_WIDE) ||
         arg->type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
@@ -369,11 +373,19 @@ narrowWideReferences() {
     }
   }
 
+  // Now populate the map
   form_Map(WideInfoMapElem, e, wideInfoMap) {
     WideInfo* wi = e->value;
+
+    // Narrow arguments unconditionally.
     if (ArgSymbol* arg = toArgSymbol(wi->sym)) {
       narrowArg(arg, wi);
-    } else if (VarSymbol* var = toVarSymbol(wi->sym)) {
+    }
+
+    // Narrow variables if they appear in functions or user-defined types.
+    // Otherwise leave them wide.
+    // I believe this is intended to leave module-level variables wide.
+    if (VarSymbol* var = toVarSymbol(wi->sym)) {
       if (isFnSymbol(var->defPoint->parentSymbol))
         narrowSym(var, wi);
       else if (isTypeSymbol(var->defPoint->parentSymbol))
@@ -383,12 +395,16 @@ narrowWideReferences() {
     }
   }
 
+  // Forward propagate necessary wideness (those for which wi->mustBeWide was
+  // set to true above).
   form_Map(WideInfoMapElem, e, wideInfoMap) {
     WideInfo* wi = e->value;
     if (wi->mustBeWide)
       forwardPropagateFailToNarrow(wi);
   }
 
+  // Now, traverse the wideInfoMap, and perform the narrowings it calls for.
+  // Uses of the variable or argument requiring widening are added to widenMap.
   form_Map(WideInfoMapElem, e, wideInfoMap) {
     WideInfo* wi = e->value;
     if (!wi->mustBeWide) {
