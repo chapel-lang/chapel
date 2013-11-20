@@ -106,8 +106,10 @@ sub go {
 
   $tasks = run("tasks");
   printit("CHPL_TASKS", "tasks", $tasks, "runtime,launcher");
-  $threads = run("threads");
-  printit("CHPL_THREADS", "", $threads, "runtime,launcher");
+  if( $mode eq "make" ) {
+    $threads = run("threads");
+    printit("CHPL_THREADS", "threads", $threads);
+  }
   $launcher = run("launcher");
   printit("CHPL_LAUNCHER", "launch", $launcher, "launcher");
   $timer = run("timers");

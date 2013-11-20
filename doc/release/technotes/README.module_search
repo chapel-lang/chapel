@@ -18,13 +18,18 @@ the "CHPL_MODULE_PATH" environment variable.
 
 The module search paths are initialized as follows:
 
-Internal    $CHPL_HOME/modules/internal/$CHPL_THREADS
-            $CHPL_HOME/modules/internal/$CHPL_TASKS
+Internal    $CHPL_HOME/modules/internal/localeModels/$CHPL_LOCALE_MODEL
+            $CHPL_HOME/modules/internal/threads/$CHPL_THREADS
+            $CHPL_HOME/modules/internal/tasks/$CHPL_TASKS
+            $CHPL_HOME/modules/internal/comm/$CHPL_COMM
             $CHPL_HOME/modules/internal
-Standard    $CHPL_HOME/modules/standard
+Standard    $CHPL_HOME/modules/standard/gen/$CHPL_TARGET_PLATFORM-$CHPL_TARGET_COMPILER
+            $CHPL_HOME/modules/standard
             $CHPL_HOME/modules/layouts
             $CHPL_HOME/modules/dists
-User        (User paths)
+            $CHPL_HOME/modules/dists/dims
+User        $CHPL_MODULE_PATH
+            (User paths)
 
 When the root internal module "ChapelStandard" and its dependencies are
 loaded, the internal module path is searched first.  If a module is found there,

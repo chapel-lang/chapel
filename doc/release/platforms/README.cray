@@ -320,9 +320,8 @@ To use this combination of runtime layers:
    Other Chapel environment variables having to do with runtime layers
    should be left unset.  Setting the above two will automatically
    select the correct combination of other runtime layers that work with
-   those, in particular, CHPL_THREADS=soft-threads, CHPL_MEM=tcmalloc,
-   CHPL_ATOMICS=intrinsics, and CHPL_NETWORK_ATOMICS=ugni.  None of
-   these need to be set explicitly.
+   those, in particular, CHPL_MEM=tcmalloc, CHPL_ATOMICS=intrinsics, and
+   CHPL_NETWORK_ATOMICS=ugni.  None of these need to be set explicitly.
 
 
 3) Load an appropriate craype-hugepages module.  For example:

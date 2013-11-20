@@ -443,10 +443,6 @@ ENVIRONMENT
                       tasks (defaults to a best guess based on
                       $CHPL_TARGET_PLATFORM).
 
-  CHPL_THREADS        Specifies the threading layer to used by the tasking
-                      layer to implement threads(defaults to a best
-                      guess based on $CHPL_TASKS).
-
   CHPL_LAUNCHER       Specifies the launcher, if any, used to start job
                       execution (defaults to a best guess based on
                       $CHPL_COMM and $CHPL_TARGET_PLATFORM).

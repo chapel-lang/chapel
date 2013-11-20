@@ -68,7 +68,6 @@ export CHPL_TARGET_PLATFORM=`$CHPL_HOME/util/chplenv/platform --target`
 export CHPL_HOST_COMPILER=`$CHPL_HOME/util/chplenv/compiler --host`
 export CHPL_TARGET_COMPILER=`$CHPL_HOME/util/chplenv/compiler --target`
 export CHPL_TASKS=`$CHPL_HOME/util/chplenv/tasks`
-export CHPL_THREADS=`$CHPL_HOME/util/chplenv/threads`
 export CHPL_COMM=`$CHPL_HOME/util/chplenv/comm`
 export CHPL_GMP=`$CHPL_HOME/util/chplenv/gmp`
 export CHPL_HWLOC=`$CHPL_HOME/util/chplenv/hwloc`
