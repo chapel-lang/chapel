@@ -28,12 +28,13 @@ record R {
 
 }
 
-/*
+pragma "init copy fn"
 proc chpl__initCopy(x: R) {
   writeln("In R initCopy ", x.refcnt);
   x.retain();
   return x;
 }
+/*
 proc chpl__autoCopy(x: R) {
   writeln("In R autoCopy ", x.refcnt);
   x.retain();
