@@ -29,7 +29,7 @@ inline proc eval_A(i,j : int) : real
  * smaller number of cores, but does not show an improvement on our largest
  * testing machine
  */
-inline proc eval_A_times_u(u : [] real, inRange : int, Au : [] real, outRange1, outRange2 : int)
+proc eval_A_times_u(u : [] real, inRange : int, Au : [] real, outRange1, outRange2 : int)
 {
   for i in {outRange1..outRange2-1} do {
     Au(i) = + reduce [j in 0..inRange-1 by 2] ((u(j) * eval_A(i,j)) + (u(j+1) * eval_A(i, j+1)));
@@ -39,7 +39,7 @@ inline proc eval_A_times_u(u : [] real, inRange : int, Au : [] real, outRange1, 
   }
 }
 
-inline proc eval_At_times_u(u : [] real, inRange : int, Au : [] real, outRange1, outRange2 : int)
+proc eval_At_times_u(u : [] real, inRange : int, Au : [] real, outRange1, outRange2 : int)
 {
   for i in {outRange1..outRange2-1} do {
     Au(i) = + reduce [j in 0..inRange-1 by 2] ((u(j) * eval_A(j,i)) + (u(j+1) * eval_A(j+1, i)));
@@ -49,7 +49,7 @@ inline proc eval_At_times_u(u : [] real, inRange : int, Au : [] real, outRange1,
   }
 }
 
-inline proc eval_AtA_times_u(u,AtAu,v : [] real, inRange, range1, range2 : int)
+proc eval_AtA_times_u(u,AtAu,v : [] real, inRange, range1, range2 : int)
 {
            eval_A_times_u(u, inRange, v, range1, range2);
            b.barrier();

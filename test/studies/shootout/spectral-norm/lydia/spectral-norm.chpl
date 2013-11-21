@@ -21,21 +21,21 @@ inline proc eval_A(i,j) : real
   return 1.0 / d;
 }
 
-inline proc eval_A_times_u(U : [] real, inRange, Au : [] real)
+proc eval_A_times_u(U : [] real, inRange, Au : [] real)
 {
   forall i in {0..#inRange} do { 
     Au(i) = + reduce [j in 0..#inRange] (U(j) * eval_A(i,j));
   }
 }
 
-inline proc eval_At_times_u(U : [] real, inRange, Au : [] real)
+proc eval_At_times_u(U : [] real, inRange, Au : [] real)
 {
   forall i in {0..#inRange} do {
     Au(i) = + reduce [j in 0..#inRange] (U(j) * eval_A(j,i));
   }
 }
 
-inline proc eval_AtA_times_u(u,AtAu,v : [] real, inRange)
+proc eval_AtA_times_u(u,AtAu,v : [] real, inRange)
 {
      eval_A_times_u(u, inRange, v);
      eval_At_times_u(v, inRange, AtAu);
