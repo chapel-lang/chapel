@@ -250,6 +250,13 @@ narrowSym(Symbol* sym, WideInfo* wi) {
         }
       } else if(isOpEqualPrim(call)) {
         continue;
+      } else if (call->isResolved() &&
+                 !strcmp(call->isResolved()->name, "=")) // A flag should be
+                                                         // used to distinguish
+                                                         // assignment
+                                                         // operators.
+      {
+        continue;
       }
     }
 #ifdef PRINT_NARROW_EFFECT
