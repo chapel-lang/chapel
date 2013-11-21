@@ -11,7 +11,6 @@ if CHPL_COMM != 'none' && CHPL_COMM != 'ugni' then {
     writeln('  CHPL_GASNET_SEGMENT: ', CHPL_GASNET_SEGMENT);
 }
 writeln('CHPL_TASKS: ', CHPL_TASKS);
-writeln('CHPL_THREADS: ', CHPL_THREADS);
 writeln('CHPL_LAUNCHER: ', CHPL_LAUNCHER);
 writeln('CHPL_TIMERS: ', CHPL_TIMERS);
 writeln('CHPL_MEM: ', CHPL_MEM);
