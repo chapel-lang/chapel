@@ -1267,6 +1267,8 @@ static void localizeCall(CallExpr* call) {
             SymExpr* lhs = toSymExpr(call->get(1));
             Expr* stmt = call->getStmtExpr();
             INT_ASSERT(lhs && stmt);
+
+            SET_LINENO(stmt);
             insertLocalTemp(rhs->get(1));
             VarSymbol* localVar = NULL;
             if (rhs->isPrimitive(PRIM_ARRAY_GET))
@@ -1362,6 +1364,7 @@ static void handleLocalBlocks() {
     forv_Vec(CallExpr, call, calls) {
       localizeCall(call);
       if (FnSymbol* fn = call->isResolved()) {
+        SET_LINENO(fn);
         if (FnSymbol* alreadyLocal = cache.get(fn)) {
           call->baseExpr->replace(new SymExpr(alreadyLocal));
         } else {
@@ -1415,12 +1418,12 @@ static void getHeapVars(Vec<Symbol*>& heapVars)
 }
 
 
-//
-// change all classes into wide classes
-// change all references into wide references
-//
-void
-insertWideReferences(void) {
+// Create chpl__heapAllocateGlobals and stub it in.
+// If the program does not require wide reference, it will be empty.
+// In that case, add a "return void;" statement to make the function normal.
+// The stub is returned, so it can be completed by heapAllocateGlobalsTail().
+static FnSymbol* heapAllocateGlobalsHead()
+{
   SET_LINENO(baseModule);
   FnSymbol* heapAllocateGlobals = new FnSymbol("chpl__heapAllocateGlobals");
   heapAllocateGlobals->addFlag(FLAG_EXPORT);
@@ -1428,32 +1431,20 @@ insertWideReferences(void) {
   heapAllocateGlobals->retType = dtVoid;
   theProgram->block->insertAtTail(new DefExpr(heapAllocateGlobals));
 
-  if (!requireWideReferences()) {
+  // Abbreviated version if we are not using wide references.
+  // heapAllocateGlobalsTail() is only called if requireWideReferences() returns
+  // true.
+  if (!requireWideReferences())
     heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
-    return;
-  }
+  return heapAllocateGlobals;
+}
 
-  INT_ASSERT(requireWideReferences());
 
-  Vec<Symbol*> heapVars;
-  getHeapVars(heapVars);
-
-  convertNilToObject();
-  wideClassMap.clear();
-  buildWideClasses();
-  widenClasses();
-
-  wideRefMap.clear();
-  buildWideRefMap();
-  widenRefs();
-  insertElementAccessTemps();
-  narrowWideClassesThroughCalls();
-  insertWideClassTempsForNil();
-  insertWideCastTemps();
-  derefWideStringActuals();
-  derefWideRefsToWideClasses();
-  widenGetPrivClass();
-
+static void heapAllocateGlobalsTail(FnSymbol* heapAllocateGlobals,
+                                    Vec<Symbol*> heapVars)
+{
+  SET_LINENO(baseModule);
+  
   SymExpr* nodeID = new SymExpr(gNodeID);
   VarSymbol* tmp = newTemp(gNodeID->type);
   VarSymbol* tmpBool = newTemp(dtBool);
@@ -1479,32 +1470,80 @@ insertWideReferences(void) {
   heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_HEAP_BROADCAST_GLOBAL_VARS, new_IntSymbol(i)));
   heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
   numGlobalsOnHeap = i;
+}
 
+
+//
+// change all classes into wide classes
+// change all references into wide references
+//
+void
+insertWideReferences(void) {
+  FnSymbol* heapAllocateGlobals = heapAllocateGlobalsHead();
+
+  if (!requireWideReferences())
+    return;
+
+  // TODO: Can this declaration and initialization be moved closer to where it
+  // is used?
+  Vec<Symbol*> heapVars;
+  getHeapVars(heapVars);
+
+  convertNilToObject();
+
+  INT_ASSERT(wideClassMap.n == 0);
+  buildWideClasses();
+  widenClasses();
+
+  INT_ASSERT(wideRefMap.n == 0);
+  buildWideRefMap();
+  widenRefs();
+
+  insertElementAccessTemps();
+  narrowWideClassesThroughCalls();
+  insertWideClassTempsForNil();
+  insertWideCastTemps();
+  derefWideStringActuals();
+  derefWideRefsToWideClasses();
+  widenGetPrivClass();
+  heapAllocateGlobalsTail(heapAllocateGlobals, heapVars);
   handleLocalBlocks();
   narrowWideReferences();
+
+  // TODO: Test if this step is really necessary.  If it is, document why.
   moveAddressSourcesToTemp();
 }
 
 
+// Convert dtNil to dtObject.
+// dtNil is a special type (like void*) that can be converted to any class type.
 static void convertNilToObject()
 {
-  //
-  // change dtNil return type into dtObject
-  // replace symbols of type nil by nil
-  //
   forv_Vec(DefExpr, def, gDefExprs) {
+    // Note that FnSymbols, VarSymbols and ArgSymbols are disjoint sets, so in
+    // each iteration of this loop, at most one of the following two "if"
+    // clauses will execute.
+
+    // change dtNil return type into dtObject
     if (FnSymbol* fn = toFnSymbol(def->sym)) {
       if (fn->retType == dtNil)
         fn->retType = dtObject;
-    } else if (!isTypeSymbol(def->sym)) {
-      if (def->sym != gNil &&
-          def->sym->type == dtNil &&
+    }
+
+    // replace symbols of type nil by nil
+    if (isVarSymbol(def->sym) || isArgSymbol(def->sym)) {
+      if (def->sym->type == dtNil &&
           !isTypeSymbol(def->parentSymbol))
-        def->remove();
+        if (def->sym != gNil) // TODO: Do we need this test?  If so, document why.
+          def->remove();
     }
   }
+
+  // This replaces vars of type dtNil with gNil.
+  // Also, if that var is the LHS of a move, remove the move (since it is no
+  // longer used).
   forv_Vec(SymExpr, se, gSymExprs) {
-    if (se->var != gNil && se->var->type == dtNil) {
+    if (se->var->type == dtNil) {
       se->var = gNil;
       if (CallExpr* parent = toCallExpr(se->parentExpr))
         if (parent->isPrimitive(PRIM_MOVE) && parent->get(1) == se)
@@ -1517,7 +1556,7 @@ static void convertNilToObject()
 static void buildWideClasses()
 {
   //
-  // build wide class type for every class type
+  // build a wide class type for every class type
   //
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     ClassType* ct = toClassType(ts->type);
@@ -1529,21 +1568,22 @@ static void buildWideClasses()
 }
 
 
+// TODO: It might be better to call this "widenClassTypes()".
 static void widenClasses()
 {
   //
-  // change all classes into wide classes
+  // change all class references into wide class references.
   //
   forv_Vec(DefExpr, def, gDefExprs) {
     //
-    // do not widen literals or nil reference
+    // do not widen literals
     //
     if (VarSymbol* var = toVarSymbol(def->sym))
       if (var->immediate)
         continue;
 
     //
-    // do not change class field in wide class type
+    // do not change the class field in a wide class type
     //
     if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol))
       if (ts->hasFlag(FLAG_WIDE_CLASS))
@@ -1555,19 +1595,24 @@ static void widenClasses()
     if (def->sym->hasFlag(FLAG_SUPER_CLASS))
       continue;
 
+    // Note that the following two "if" statements are mutually exclusive.
+
+    // Widen the return type of every function
+    // except those marked "local args".
     if (FnSymbol* fn = toFnSymbol(def->sym)) {
-      if (Type* wide = wideClassMap.get(fn->retType))
-        if (!fn->hasEitherFlag(FLAG_EXTERN,FLAG_LOCAL_ARGS))
+      if (!fn->hasEitherFlag(FLAG_EXTERN,FLAG_LOCAL_ARGS))
+        if (Type* wide = wideClassMap.get(fn->retType))
           fn->retType = wide;
-    } else if (!isTypeSymbol(def->sym)) {
-      if (Type* wide = wideClassMap.get(def->sym->type)) {
-        if (def->parentSymbol->hasFlag(FLAG_EXTERN)) {
-          if (toArgSymbol(def->sym))
-            // don't change function arguments that are local
-            continue;
-        }
-        def->sym->type = wide;
-      }
+    }
+
+    // Widen all variables, 
+    // and all arguments of functions not marked "extern".
+    if (isVarSymbol(def->sym) || isArgSymbol(def->sym))
+    {
+      if (Type* wide = wideClassMap.get(def->sym->type))
+        if (isVarSymbol(def->sym) ||
+            !def->parentSymbol->hasFlag(FLAG_EXTERN))
+          def->sym->type = wide;
     }
   }
 
@@ -1584,6 +1629,8 @@ static void widenClasses()
 }
 
 
+// Build a wide reference type from every reference type
+// and build a map from the narrow ref type to its corresponding wide ref type.
 static void buildWideRefMap()
 {
   //
@@ -1591,18 +1638,22 @@ static void buildWideRefMap()
   //
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (ts->hasFlag(FLAG_REF)) {
+      SET_LINENO(ts);
+
       ClassType* wide = new ClassType(CLASS_RECORD);
       TypeSymbol* wts = new TypeSymbol(astr("__wide_", ts->cname), wide);
       wts->addFlag(FLAG_WIDE);
       theProgram->block->insertAtTail(new DefExpr(wts));
       wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtLocaleID)));
       wide->fields.insertAtTail(new DefExpr(new VarSymbol("addr", ts->type)));
+
       wideRefMap.put(ts->type, wide);
     }
   }
 }
 
 
+// Change all references into wide references.
 static void widenRefs()
 {
   //
@@ -1610,7 +1661,7 @@ static void widenRefs()
   //
   forv_Vec(DefExpr, def, gDefExprs) {
     //
-    // do not change reference field in wide reference type
+    // do not change the reference field in a wide reference type
     //
     if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol))
       if (ts->hasFlag(FLAG_WIDE))
@@ -1622,10 +1673,17 @@ static void widenRefs()
     if (def->sym->hasFlag(FLAG_SUPER_CLASS))
       continue;
 
+    // Note that the following two "if" statements are mutually exclusive.
+
+    // Change ref types on function return values to wide ref types.
     if (FnSymbol* fn = toFnSymbol(def->sym)) {
       if (Type* wide = wideRefMap.get(fn->retType))
         fn->retType = wide;
-    } else if (!isTypeSymbol(def->sym)) {
+    }
+
+    // Widen all variables and arguments of reference type.
+    if (isVarSymbol(def->sym) || isArgSymbol(def->sym))
+    {
       if (Type* wide = wideRefMap.get(def->sym->type))
         def->sym->type = wide;
     }
@@ -1644,42 +1702,55 @@ static void insertElementAccessTemps()
       if (VarSymbol* var = toVarSymbol(se->var)) {
         if (var->immediate) {
           if (CallExpr* call = toCallExpr(se->parentExpr)) {
-            if (call->isPrimitive(PRIM_VMT_CALL) ||
-                (call->isResolved() &&
-                 !call->isResolved()->hasEitherFlag(FLAG_EXTERN,FLAG_LOCAL_ARGS))) {
-              if (Type* type = actual_to_formal(se)->typeInfo()) {
-                VarSymbol* tmp = newTemp(type);
-                SET_LINENO(se);
-                call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-                se->replace(new SymExpr(tmp));
-                call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
+            SET_LINENO(se);
+            if (call->isResolved())
+            {
+              if (!call->isResolved()->hasEitherFlag(FLAG_EXTERN,FLAG_LOCAL_ARGS)) {
+                if (Type* type = actual_to_formal(se)->typeInfo()) {
+                  VarSymbol* tmp = newTemp(type);
+                  call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+                  se->replace(new SymExpr(tmp));
+                  call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
+                }
               }
-            } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
-              if (SymExpr* wide = toSymExpr(call->get(2))) {
-                Type* type = wide->var->type;
-                VarSymbol* tmp = newTemp(type);
-                SET_LINENO(se);
-                call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-                se->replace(new SymExpr(tmp));
-                call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
+            }
+            else // isResolved() is false for primitives.
+            {
+              if (call->isPrimitive(PRIM_VMT_CALL)) {
+                if (Type* type = actual_to_formal(se)->typeInfo()) {
+                  VarSymbol* tmp = newTemp(type);
+                  call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+                  se->replace(new SymExpr(tmp));
+                  call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
+                }
               }
-            } else if (call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
-              Type* valueType = call->get(1)->getValType();
-              Type* componentType = valueType->getField("x1")->type;
-              if (componentType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-                VarSymbol* tmp = newTemp(componentType);
-                SET_LINENO(se);
-                call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-                se->replace(new SymExpr(tmp));
-                call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
+              if (call->isPrimitive(PRIM_SET_MEMBER)) {
+                if (SymExpr* wide = toSymExpr(call->get(2))) {
+                  Type* type = wide->var->type;
+                  VarSymbol* tmp = newTemp(type);
+                  call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+                  se->replace(new SymExpr(tmp));
+                  call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
+                }
               }
-            } else if (call->isPrimitive(PRIM_ARRAY_SET_FIRST)) {
-              if (SymExpr* wide = toSymExpr(call->get(3))) {
-                Type* type = wide->var->type;
-                VarSymbol* tmp = newTemp(wideClassMap.get(type));
-                call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-                se->replace(new SymExpr(tmp));
-                call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
+              if (call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
+                Type* valueType = call->get(1)->getValType();
+                Type* componentType = valueType->getField("x1")->type;
+                if (componentType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+                  VarSymbol* tmp = newTemp(componentType);
+                  call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+                  se->replace(new SymExpr(tmp));
+                  call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
+                }
+              }
+              if (call->isPrimitive(PRIM_ARRAY_SET_FIRST)) {
+                if (SymExpr* wide = toSymExpr(call->get(3))) {
+                  Type* type = wide->var->type;
+                  VarSymbol* tmp = newTemp(wideClassMap.get(type));
+                  call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+                  se->replace(new SymExpr(tmp));
+                  call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
+                }
               }
             }
           }
@@ -1693,40 +1764,58 @@ static void insertElementAccessTemps()
 static void narrowWideClassesThroughCalls()
 {
   //
-  // Turn calls to functions with local arguments (i.e., extern or
-  // export functions with FLAG_LOCAL_ARGS) involving wide classes
+  // Turn calls to functions with local arguments (e.g. extern or export
+  // functions) involving wide classes
   // into moves of the wide class into a non-wide type and then use
   // that in the call.  After the call, copy the value back into the
   // wide class.
   //
   forv_Vec(CallExpr, call, gCallExprs) {
+
+    // Find calls to functions expecting local arguments.
     if (call->isResolved() && call->isResolved()->hasFlag(FLAG_LOCAL_ARGS)) {
+      SET_LINENO(call);
+
+      // Examine each argument to the call.
       for_alist(arg, call->argList) {
+
         SymExpr* sym = toSymExpr(arg);
         INT_ASSERT(sym);
         Type* symType = sym->typeInfo();
+
+        // Select symbols with wide types.
         if (symType->symbol->hasFlag(FLAG_WIDE_CLASS) ||
             symType->symbol->hasFlag(FLAG_WIDE)) {
           Type* narrowType = symType->getField("addr")->type;
-          
+
+          // Copy 
           VarSymbol* var = newTemp(narrowType);
           SET_LINENO(call);
           call->getStmtExpr()->insertBefore(new DefExpr(var));
+
+          
           if ((symType->symbol->hasFlag(FLAG_WIDE_CLASS) &&
-               var->type->symbol->hasFlag(FLAG_EXTERN)) ||
+               narrowType->symbol->hasFlag(FLAG_EXTERN)) ||
               isRefWideString(narrowType)) {
+
             // Insert a local check because we cannot reflect any changes
             // made to the class back to another locale
             if (!fNoLocalChecks)
               call->getStmtExpr()->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, sym->copy()));
-            // If we pass a extern class to an extern/export function,
-            // we must treat it like a reference (this is by
-            // definition)
+
+            // If we pass an extern class to an extern/export function,
+            // we must treat it like a reference (this is by definition)
             call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, sym->copy()));
-          } else if (var->type->symbol->hasEitherFlag(FLAG_REF,FLAG_DATA_CLASS))
+          } 
+          else if (narrowType->symbol->hasEitherFlag(FLAG_REF,FLAG_DATA_CLASS))
+            // Also if the narrow type is a ref or data class type,
+            // we must treat it like a (narrow) reference.
             call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, sym->copy()));
           else
+            // Otherwise, narrow the wide class reference, and use that in the call
             call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_DEREF, sym->copy())));
+
+          // Move the result back after the call.
           call->getStmtExpr()->insertAfter(new CallExpr(PRIM_MOVE, sym->copy(), var));
           sym->replace(new SymExpr(var));
         }
@@ -1744,11 +1833,11 @@ static void insertWideClassTempsForNil()
   forv_Vec(SymExpr, se, gSymExprs) {
     if (se->var == gNil) {
       if (CallExpr* call = toCallExpr(se->parentExpr)) {
+        SET_LINENO(se);
         if (call->isResolved()) {
           if (Type* type = actual_to_formal(se)->typeInfo()) {
             if (type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
               VarSymbol* tmp = newTemp(type);
-              SET_LINENO(se);
               call->getStmtExpr()->insertBefore(new DefExpr(tmp));
               se->replace(new SymExpr(tmp));
               call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
@@ -1760,7 +1849,6 @@ static void insertWideClassTempsForNil()
               if (Type* wctype = wtype->getField("addr")->type->getField("_val")->type) {
                 if (wctype->symbol->hasFlag(FLAG_WIDE_CLASS)) {
                   VarSymbol* tmp = newTemp(wctype);
-                  SET_LINENO(se);
                   call->getStmtExpr()->insertBefore(new DefExpr(tmp));
                   se->replace(new SymExpr(tmp));
                   call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
@@ -1773,7 +1861,6 @@ static void insertWideClassTempsForNil()
             if (wctype->symbol->hasFlag(FLAG_WIDE_CLASS) ||
                 wctype->symbol->hasFlag(FLAG_WIDE)) {
               VarSymbol* tmp = newTemp(wctype);
-              SET_LINENO(se);
               call->insertBefore(new DefExpr(tmp));
               se->replace(new SymExpr(tmp));
               call->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
@@ -1785,7 +1872,6 @@ static void insertWideClassTempsForNil()
           if (componentType->symbol->hasFlag(FLAG_WIDE_CLASS) ||
               componentType->symbol->hasFlag(FLAG_WIDE)) {
             VarSymbol* tmp = newTemp(componentType);
-            SET_LINENO(se);
             call->insertBefore(new DefExpr(tmp));
             se->replace(new SymExpr(tmp));
             call->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
@@ -1794,7 +1880,6 @@ static void insertWideClassTempsForNil()
           FnSymbol* fn = toFnSymbol(call->parentSymbol);
           INT_ASSERT(fn);
           VarSymbol* tmp = newTemp(fn->retType);
-          SET_LINENO(se);
           call->insertBefore(new DefExpr(tmp));
           call->insertBefore(new CallExpr(PRIM_MOVE, tmp, gNil));
           se->var = tmp;
@@ -1816,8 +1901,8 @@ static void insertWideCastTemps()
       if (CallExpr* move = toCallExpr(call->parentExpr)) {
         if (move->isPrimitive(PRIM_MOVE)) {
           if (move->get(1)->typeInfo() != call->typeInfo()) {
-            VarSymbol* tmp = newTemp(call->typeInfo());
             SET_LINENO(call);
+            VarSymbol* tmp = newTemp(call->typeInfo());
             move->insertBefore(new DefExpr(tmp));
             call->replace(new SymExpr(tmp));
             move->insertBefore(new CallExpr(PRIM_MOVE, tmp, call));
@@ -1841,8 +1926,8 @@ static void derefWideStringActuals()
         for_actuals(actual, call) {
           if (actual->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             if (actual->typeInfo()->getField("addr")->typeInfo() == dtString) {
-              VarSymbol* tmp = newTemp(actual->typeInfo()->getField("addr")->typeInfo());
               SET_LINENO(call);
+              VarSymbol* tmp = newTemp(actual->typeInfo()->getField("addr")->typeInfo());
               call->getStmtExpr()->insertBefore(new DefExpr(tmp));
               call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, actual->copy())));
               actual->replace(new SymExpr(tmp));
@@ -1870,8 +1955,8 @@ static void derefWideRefsToWideClasses()
         call->isPrimitive(PRIM_SET_MEMBER)) {
       if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
           call->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        VarSymbol* tmp = newTemp(call->get(1)->getValType());
         SET_LINENO(call);
+        VarSymbol* tmp = newTemp(call->get(1)->getValType());
         call->getStmtExpr()->insertBefore(new DefExpr(tmp));
         call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, call->get(1)->remove())));
         call->insertAtHead(tmp);
@@ -1897,6 +1982,13 @@ static void widenGetPrivClass()
   }
 }
 
+
+// In every move:
+//   if the LHS type has the WIDE or REF flag
+//   and its value type is a wide class
+//   and the RHS type is the same as the contents of the wide pointer:
+//     Create a temp copy of the RHS, and
+//     replace the RHS of the move with the temp.
 static void moveAddressSourcesToTemp()
 {
   forv_Vec(CallExpr, call, gCallExprs) {
@@ -1908,8 +2000,8 @@ static void moveAddressSourcesToTemp()
         //
         // widen rhs class
         //
-        VarSymbol* tmp = newTemp(call->get(1)->getValType());
         SET_LINENO(call);
+        VarSymbol* tmp = newTemp(call->get(1)->getValType());
         call->insertBefore(new DefExpr(tmp));
         call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(2)->remove()));
         call->insertAtTail(tmp);
