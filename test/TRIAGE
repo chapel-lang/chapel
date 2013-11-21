@@ -90,11 +90,10 @@ since 9/6/13:
 [Error: Timed out compilation for users/franzf/v1/chpl/main (compopts: 1)]
 
 
-XT PrgEnv-cray non-deterministic compiler internal errors
+XT/XC PrgEnv-cray non-deterministic compiler internal errors (misc.cpp)
 This shows up on cray-x?-cray-prgenv-cray.none.fifo.pthreads runs
 -----------------------------------------------------------------
 Determined to be a problem with CCE.  Filed bug 800520.
-  XC PrgEnv-cray may be experiencing these as well
 
 New gcc warning (bradc)
 -----------------------
