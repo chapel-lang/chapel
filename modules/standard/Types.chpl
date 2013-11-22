@@ -102,9 +102,18 @@ proc isArrayType(type t) param where t: _array {
 proc isArrayType(type t) param where !(t: _array) {
   return false;
 }
-  
 
 
+// Is 'sub' a subtype (or equal to) 'super'?
+proc isSubtype(type sub, type super) param where   sub: super  return true;
+proc isSubtype(type sub, type super) param where !(sub: super) return false;
+
+// Is 'sub' a proper subtype of 'super'?
+proc isProperSubtype(type sub, type super) param
+  where isSubtype(sub, super) && sub != super
+  return true;
+proc isProperSubtype(type sub, type super) param
+  return false;
 
 
 // Returns true if it is legal to coerce t1 to t2, false otherwise.

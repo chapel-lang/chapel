@@ -35,6 +35,8 @@ are as follows:
 There is an expectation that each of these modules will be extended
 and that more standard modules will be defined over time.
 
+
+
 \section{Automatic Modules}
 \index{automatic modules (see also modules, standard, automatic)}
 \index{standard modules!automatic (see also modules, standard, automatic)}
@@ -43,6 +45,7 @@ and that more standard modules will be defined over time.
 Automatic modules are used by a Chapel program automatically.  There
 is currently no way to avoid their use by a program, although we
 anticipate adding such a capability in the future.
+
 
 \subsection{Math}
 \label{Math}
@@ -566,10 +569,30 @@ Prints a warning to stderr giving the location of the call to \chpl{warning}
 in the Chapel source, followed by the argument(s) to the call.
 \end{protobody}
 
+
 \subsection{Types}
 \label{Types_standard_module}
 \index{modules!standard!Types@\chpl{Types}}
 \index{modules!standard!automatic!Types@\chpl{Types}}
+
+\begin{protohead}
+proc isProperSubtype(type sub, type super) param : bool
+\end{protohead}
+\begin{protobody}
+Indicates whether \chpl{sub} is a proper subtype of \chpl{super}.
+The proper subtype relationship holds if \chpl{sub} is a class or
+a record type that inherits, directly or indirectly, from \chpl{super}.
+\end{protobody}
+
+\begin{protohead}
+proc isSubtype(type sub, type super) param : bool
+\end{protohead}
+\begin{protobody}
+Indicates whether \chpl{sub} is a subtype of \chpl{super}.
+The subtype relationship holds if the proper subtype relationship holds
+(see \chpl{isProperSubtype}) or if \chpl{sub} is a subtype of \chpl{super}
+are the same type.
+\end{protobody}
 
 \begin{protohead}
 proc numBits(type t) param : int
@@ -579,7 +602,6 @@ Returns the number of bits used to store the values of type \chpl{t}.
 This is implemented for all numeric types and fixed-width \chpl{bool} types.
 It is not implemented for default-width \chpl{bool}.
 \end{protobody}
-
 
 \begin{protohead}
 proc numBytes(type t) param : int
@@ -614,6 +636,7 @@ is implemented for all numeric types.
 
 Optional modules can be used by a Chapel program via the \chpl{use}
 keyword (\rsec{Using_Modules}).
+
 
 \subsection{AdvancedIters}
 \label{AdvancedIters}
@@ -768,6 +791,7 @@ Compute the default norm on array \chpl{x}.  For a 1D array this is
 the 2-norm, for a 2D array, this is the Frobenius norm.
 \end{protobody}
 
+
 \subsection{Random}
 \label{Random}
 \index{modules!optional!Random@\chpl{Random}}
@@ -868,6 +892,7 @@ the \chpl{RandomStream} class.  If unspecified, the default for the
 class will be used.
 \end{protobody}
 
+
 \subsection{Search}
 \label{Search}
 \index{modules!optional!Search@\chpl{Search}}
@@ -886,7 +911,6 @@ indicating (1) whether or not the value was found and (2) the location
 of the value if it was found, or the location where the value should
 have been if it was not found.
 \end{protobody}
-
 
 \begin{protohead}
 proc BinarySearch(Data: [?Dom], val, in lo = Dom.low, in hi = Dom.high)
@@ -988,7 +1012,6 @@ enum Day { sunday=0, monday, tuesday, wednesday, thursday, friday, saturday };
 \begin{protobody}
 The enumeration Day defines the days of the week, with Sunday defined to be 0.
 \end{protobody}
-
 
 \begin{protohead}
 proc getCurrentDate(): (int, int, int)
