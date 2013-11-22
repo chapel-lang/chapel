@@ -3818,9 +3818,7 @@ GenRet CallExpr::codegen() {
             GenRet wideFrom = codegenValue(call->get(2));
             GenRet wideFromAddr = codegenRaddr(wideFrom);
             GenRet value = codegenValue(codegenFieldCidPtr(wideFrom));
-            GenRet ok = codegenLogicalAnd(
-                    codegenIsNotZero(wideFrom),
-                    codegenDynamicCastCheck(value, type));
+            GenRet ok = codegenDynamicCastCheck(value, type);
             // if ok, (typeInfo()->symbol->cname) (value)
             // otherwise, NULL
             GenRet cast = codegenCast(type, wideFromAddr);
@@ -4871,9 +4869,7 @@ GenRet CallExpr::codegen() {
         INT_FATAL(this, "wide class dynamic cast is not normal");
       GenRet tmp = codegenFieldCidPtr(get(2));
       GenRet value = codegenValue(tmp);
-      GenRet ok = codegenLogicalAnd(
-              codegenIsNotZero(get(2)),
-              codegenDynamicCastCheck(value, typeInfo()));
+      GenRet ok = codegenDynamicCastCheck(value, typeInfo());
       // if ok, (typeInfo()->symbol->cname) (value)
       // otherwise, NULL
       GenRet cast = codegenCast(typeInfo(), codegenValue(get(2)));
