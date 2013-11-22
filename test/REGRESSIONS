@@ -116,6 +116,11 @@ valgrind-specific regressions
 4 accesses of a deleted object (11/18/13) (mppf/hilde)
 ------------------------------------------------------
 [Error matching program output for users/ferguson/refcnt]
+An object should be copied in a begin statement as the argument for a function,
+but the begin is not executed until after the rest of main, so the object
+goes out of scope and is deleted when really its ref count should be higher.
+Tom is working on a fix.
+
 
 seem to complete execution prior to timing out (10/21/13)
 ---------------------------------------------------------
