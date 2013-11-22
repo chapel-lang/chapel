@@ -902,7 +902,7 @@ module ChapelBase {
     return __primitive("cast", t, x);
   
   inline proc _cast(type t, x) where x:object && t:x && (x.type != t)
-    return __primitive("dynamic_cast", t, x);
+    return if x != nil then __primitive("dynamic_cast", t, x) else __primitive("cast", t, nil);
   
   inline proc _cast(type t, x:_nilType) where t == _nilType
     return nil;
