@@ -58,4 +58,6 @@ else:
   err.close();
 
 os.remove(exe_name)
+if os.access(exe_name + "_real", os.F_OK):
+  os.remove(exe_name + "_real")
 

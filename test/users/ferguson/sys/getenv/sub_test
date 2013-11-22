@@ -63,4 +63,6 @@ else:
   sys.stdout.write("[Error (sub_test): found ENV variable which should be missing]\n")
 
 os.remove(exe_name)
+if os.access(exe_name + "_real", os.F_OK):
+  os.remove(exe_name + "_real")
 
