@@ -1363,9 +1363,13 @@ module ChapelArray {
       if rank != d.rank then
         compilerError("illegal implicit rank change");
   
-      // Optimization: Just return an alias of this array if the doms match exactly.
-      if _value.dom.type == d.type then
-        if _value.dom == d then 
+      // Optimization: Just return an alias of this array when
+      // reindexing to the same domain. We skip same-ness test
+      // if the domain descriptors' types are disjoint.
+      if isSubtype(_value.dom.type, d._value.type) ||
+         isSubtype(d._value.type, _value.dom.type)
+      then
+        if _value.dom:object == d._value:object then
           return newAlias();
   
       for param i in 1..rank do
