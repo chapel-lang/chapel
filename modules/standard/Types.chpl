@@ -93,15 +93,19 @@ proc chpl__maxIntTypeSameSign(type t) type {
 
 
 //
-// These procedures indicate whether or not a type t is an array type
+// These procedures indicate whether or not a type t is a specific type
 //
-proc isArrayType(type t) param where t: _array {
-  return true;
-}
+proc isRangeType(type t) param where   t: range  return true;
+proc isRangeType(type t) param where !(t: range) return false;
 
-proc isArrayType(type t) param where !(t: _array) {
-  return false;
-}
+proc isDmapType(type t) param where   t: _distribution  return true;
+proc isDmapType(type t) param where !(t: _distribution) return false;
+
+proc isDomainType(type t) param where   t: _domain  return true;
+proc isDomainType(type t) param where !(t: _domain) return false;
+  
+proc isArrayType(type t) param where   t: _array  return true;
+proc isArrayType(type t) param where !(t: _array) return false;
 
 
 // Is 'sub' a subtype (or equal to) 'super'?

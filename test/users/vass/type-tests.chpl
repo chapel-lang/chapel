@@ -24,7 +24,7 @@ var rng: range(int);     test("range", rng);
 var tu1 = (1,);          test("tuple-1", tu1);
 var tu2 = (1,2);         test("tuple-2", tu2);
 var tu3 = (1,2,3);       test("tuple-3", tu3);
-//var atm: atomic int;     test("atomic", atm);
+var atm: atomic int;     test("atomic", atm);
 //var snc: sync int;       test("sync", snc);
 //var sng: single int;     test("single", sng);
 // these are temporary workarounds - see the comment below
@@ -36,7 +36,12 @@ proc test(param msg, ref v) {
   compilerWarning(msg + " is a class:  " + isClassType(v.type):string);
   compilerWarning(msg + " is a record: " + isRecordType(v.type):string);
   compilerWarning(msg + " is a union:  " + isUnionType(v.type):string);
-  if chpl__isDmap(v) then compilerWarning(msg + " is dmap: true");
+  if isRangeType(v.type)  then compilerWarning(msg + " is a range");
+  if isTupleType(v.type)  then compilerWarning(msg + " is a tuple");
+  if isDmapType(v.type)   then compilerWarning(msg + " is a dmap");
+  if isDomainType(v.type) then compilerWarning(msg + " is a domain");
+  if isArrayType(v.type)  then compilerWarning(msg + " is an array");
+  if isAtomicType(v.type) then compilerWarning(msg + " is an atomic");
 }
 
 // This is a workaround for test/functions/vass/sync-by-ref.future,

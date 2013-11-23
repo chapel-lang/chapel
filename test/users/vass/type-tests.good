@@ -34,25 +34,35 @@ type-tests.chpl:19: warning: dist is a union:  false
 type-tests.chpl:20: warning: dmap is a class:  false
 type-tests.chpl:20: warning: dmap is a record: false
 type-tests.chpl:20: warning: dmap is a union:  false
-type-tests.chpl:20: warning: dmap is dmap: true
+type-tests.chpl:20: warning: dmap is a dmap
 type-tests.chpl:21: warning: domain is a class:  false
 type-tests.chpl:21: warning: domain is a record: false
 type-tests.chpl:21: warning: domain is a union:  false
+type-tests.chpl:21: warning: domain is a domain
 type-tests.chpl:22: warning: array is a class:  false
 type-tests.chpl:22: warning: array is a record: false
 type-tests.chpl:22: warning: array is a union:  false
+type-tests.chpl:22: warning: array is an array
 type-tests.chpl:23: warning: range is a class:  false
 type-tests.chpl:23: warning: range is a record: false
 type-tests.chpl:23: warning: range is a union:  false
+type-tests.chpl:23: warning: range is a range
 type-tests.chpl:24: warning: tuple-1 is a class:  false
 type-tests.chpl:24: warning: tuple-1 is a record: false
 type-tests.chpl:24: warning: tuple-1 is a union:  false
+type-tests.chpl:24: warning: tuple-1 is a tuple
 type-tests.chpl:25: warning: tuple-2 is a class:  false
 type-tests.chpl:25: warning: tuple-2 is a record: false
 type-tests.chpl:25: warning: tuple-2 is a union:  false
+type-tests.chpl:25: warning: tuple-2 is a tuple
 type-tests.chpl:26: warning: tuple-3 is a class:  false
 type-tests.chpl:26: warning: tuple-3 is a record: false
 type-tests.chpl:26: warning: tuple-3 is a union:  false
+type-tests.chpl:26: warning: tuple-3 is a tuple
+type-tests.chpl:27: warning: atomic is a class:  false
+type-tests.chpl:27: warning: atomic is a record: false
+type-tests.chpl:27: warning: atomic is a union:  false
+type-tests.chpl:27: warning: atomic is an atomic
 type-tests.chpl:31: warning: sync - class:  false
 type-tests.chpl:31: warning: sync - record: false
 type-tests.chpl:31: warning: sync - union:  false

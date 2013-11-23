@@ -2,7 +2,7 @@
 
 
 // Once these work correctly, move them from here to type-tests.chpl
-var atm: atomic int;     test("atomic", atm);
+// working now, moved: var atm: atomic int;     test("atomic", atm);
 var snc: sync int;       test("sync", snc);
 var sng: single int;     test("single", sng);
 compilerError("done"); // no need for a C compile

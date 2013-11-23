@@ -4172,6 +4172,13 @@ preFold(Expr* expr) {
         result = new SymExpr(gFalse);
       call->replace(result);
 
+    } else if (call->isPrimitive(PRIM_IS_ATOMIC_TYPE)) {
+      if (isAtomicType(call->get(1)->typeInfo()))
+        result = new SymExpr(gTrue);
+      else
+        result = new SymExpr(gFalse);
+      call->replace(result);
+
     } else if (call->isPrimitive(PRIM_IS_STAR_TUPLE_TYPE)) {
       Type* tupleType = call->get(1)->typeInfo();
       INT_ASSERT(tupleType->symbol->hasFlag(FLAG_TUPLE));

@@ -1495,13 +1495,13 @@ module ChapelBase {
   
   proc isRecordType(type t) param where t: value {
     // some non-record types are implemented via records - exclude those
-    var v: t;
     if
-      chpl__isDmap(v)   ||
-      chpl__isDomain(v) ||
-      chpl__isArray(v)  ||
-      chpl__isRange(v)  ||
-      isTuple(v)
+      isDmapType(t)   ||
+      isDomainType(t) ||
+      isArrayType(t)  ||
+      isRangeType(t)  ||
+      isTupleType(t)  ||
+      isAtomicType(t)
     then
       return false;
     else
@@ -1509,9 +1509,9 @@ module ChapelBase {
   }
   proc isRecordType(type t) param return false;
   
-  proc isUnionType(type t) param {
-    return __primitive("is union type", t);
-  }
+  proc isUnionType(type t) param return __primitive("is union type", t);
+
+  proc isAtomicType(type t) param return __primitive("is atomic type", t);
   
   _ensure_reference_type(int(8));
   _ensure_reference_type(int(16));

@@ -68,6 +68,19 @@ void checkPrimitives()
 
       // These do not survive past resolution.
      case PRIM_INIT:
+     case PRIM_TYPE_TO_STRING:
+     case PRIM_TO_LEADER:
+     case PRIM_TO_FOLLOWER:
+     case PRIM_NEXT_UINT32:
+     case PRIM_FIELD_NUM_TO_NAME:
+     case PRIM_FIELD_VALUE_BY_NUM:
+     case PRIM_FIELD_ID_BY_NUM:
+     case PRIM_FIELD_VALUE_BY_NAME:
+     case PRIM_ENUM_MIN_BITS:
+     case PRIM_ENUM_IS_SIGNED:
+     case PRIM_IS_UNION_TYPE:
+     case PRIM_IS_ATOMIC_TYPE:
+     case PRIM_IS_STAR_TUPLE_TYPE:
       if (resolved)
         INT_FATAL("Primitive should not appear after resolution is complete.");
       break;
@@ -186,7 +199,6 @@ void checkPrimitives()
      case PRIM_ERROR:
      case PRIM_WARNING:
      case PRIM_WHEN:
-     case PRIM_TYPE_TO_STRING:
      case PRIM_BLOCK_PARAM_LOOP:        // BlockStmt::blockInfo - param for loop
      case PRIM_BLOCK_WHILEDO_LOOP:      // BlockStmt::blockInfo - while do loop
      case PRIM_BLOCK_DOWHILE_LOOP:      // BlockStmt::blockInfo - do while loop
@@ -198,8 +210,6 @@ void checkPrimitives()
      case PRIM_BLOCK_ON_NB:             // BlockStmt::blockInfo - non-blocking on block
      case PRIM_BLOCK_LOCAL:             // BlockStmt::blockInfo - local block
      case PRIM_BLOCK_UNLOCAL:           // BlockStmt::blockInfo - unlocal local block
-     case PRIM_TO_LEADER:
-     case PRIM_TO_FOLLOWER:
      case PRIM_DELETE:
      case PRIM_GC_CC_INIT:              // Initialize heap for copy-collecting
      case PRIM_GC_ADD_ROOT:             // Add a root variable for garbage collection
@@ -226,23 +236,14 @@ void checkPrimitives()
      case PRIM_NEW_PRIV_CLASS:
      case PRIM_NUM_PRIV_CLASSES:
      case PRIM_GET_PRIV_CLASS:
-     case PRIM_NEXT_UINT32:
      case PRIM_GET_USER_LINE:
      case PRIM_GET_USER_FILE:
      case PRIM_FTABLE_CALL:
-     case PRIM_IS_STAR_TUPLE_TYPE:
      case PRIM_SET_SVEC_MEMBER:
      case PRIM_GET_SVEC_MEMBER:
      case PRIM_GET_SVEC_MEMBER_VALUE:
      case PRIM_VMT_CALL:
      case PRIM_NUM_FIELDS:
-     case PRIM_FIELD_NUM_TO_NAME:
-     case PRIM_FIELD_VALUE_BY_NUM:
-     case PRIM_FIELD_ID_BY_NUM:
-     case PRIM_FIELD_VALUE_BY_NAME:
-     case PRIM_IS_UNION_TYPE:
-     case PRIM_ENUM_MIN_BITS:
-     case PRIM_ENUM_IS_SIGNED:
       break;
     }
   }

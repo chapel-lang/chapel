@@ -578,6 +578,7 @@ initPrimitive() {
   prim_def(PRIM_FIELD_ID_BY_NUM, "field id by num", returnInfoInt32);
   prim_def(PRIM_FIELD_VALUE_BY_NAME, "field value by name", returnInfoUnknown);
   prim_def(PRIM_IS_UNION_TYPE, "is union type", returnInfoBool);
+  prim_def(PRIM_IS_ATOMIC_TYPE, "is atomic type", returnInfoBool);
 
   prim_def(PRIM_ENUM_MIN_BITS, "enum min bits", returnInfoInt32);
   prim_def(PRIM_ENUM_IS_SIGNED, "enum is signed", returnInfoBool);

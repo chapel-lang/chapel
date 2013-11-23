@@ -226,8 +226,9 @@ Functions and Iterators
 - Ref intent formals can result in an internal compiler error for
   multi-locale compilation.
   # functions/vass/ref-intent-bug-2big.future
-- Sync vars incorrectly passed to ref intent arguments.
+- Sync and single vars incorrectly passed to generic ref intent arguments.
   # functions/vass/sync-by-ref.future
+  # users/vass/type-tests.todo.future
 - Sync and single variables in records are not properly copied out
   when the record is passed as an out or inout argument.
   # types/single/sungeun/writeRecordInOutProc.future

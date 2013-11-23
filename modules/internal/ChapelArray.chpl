@@ -408,11 +408,6 @@ module ChapelArray {
     var dom: domainType;
     return isSparseDom(dom);
   }
-
-  proc isDomainType(type t) param {
-    var x: t;
-    return chpl__isDomain(x);
-  }
   
   proc chpl__distributed(d: _distribution, type domainType) type {
     if !isDomainType(domainType) then

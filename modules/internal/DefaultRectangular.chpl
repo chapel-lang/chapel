@@ -702,9 +702,6 @@ module DefaultRectangular {
     }
   
     proc dsiRankChange(d, param newRank: int, param newStridable: bool, args) {
-      proc isRange(r: range(?e,?b,?s,?a)) param return 1;
-      proc isRange(r) param return 0;
-  
       var alias = new DefaultRectangularArr(eltType=eltType, rank=newRank,
                                            idxType=idxType,
                                            stridable=newStridable,
@@ -714,7 +711,7 @@ module DefaultRectangular {
       var i = 1;
       alias.origin = origin;
       for param j in 1..args.size {
-        if isRange(args(j)) {
+        if chpl__isRange(args(j)) {
           alias.off(i) = d.dsiDim(i).low;
           alias.origin += blk(j) * (d.dsiDim(i).low - off(j)) / str(j);
           alias.blk(i) = blk(j);
