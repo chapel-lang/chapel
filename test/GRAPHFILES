@@ -36,6 +36,7 @@ studies/shootout/meteor/kbrady/meteor.graph
 studies/shootout/binary-trees/binary-trees-extras.graph
 studies/shootout/chameneos-redux/hannah/chameneos-redux-all.graph
 studies/shootout/fasta/fasta-extras.graph
+studies/shootout/spectral-norm/lydia/spectral-norm-specify-step.graph
 # suite: SSCA2
 studies/ssca2/memory/SSCA2_mem.graph
 # suite: Array performance

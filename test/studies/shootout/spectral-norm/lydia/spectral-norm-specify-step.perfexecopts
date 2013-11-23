@@ -1,0 +1,12 @@
+--step=60 # spectralnorm-60
+--step=100 # spectralnorm-100
+--step=200 # spectralnorm-200
+--step=250 # spectralnorm-250
+--step=500 # spectralnorm-500
+--step=700 # spectralnorm-700
+--step=1000 # spectralnorm-1000
+--step=1500 # spectralnorm-1500
+--step=2000 # spectralnorm-2000
+--step=2500 # spectralnorm-2500
+--step=3000 # spectralnorm-3000
+--step=5500 # spectralnorm-5500
