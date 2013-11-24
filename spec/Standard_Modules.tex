@@ -597,6 +597,22 @@ are the same type.
 \end{protobody}
 
 \begin{protohead}
+proc max(type t): t
+\end{protohead}
+\begin{protobody}
+Returns the maximum value that can be stored in type \chpl{t}.  This
+is implemented for all numeric types.
+\end{protobody}
+
+\begin{protohead}
+proc min(type t): t
+\end{protohead}
+\begin{protobody}
+Returns the minimum value that can be stored in type \chpl{t}.  This
+is implemented for all numeric types.
+\end{protobody}
+
+\begin{protohead}
 proc numBits(type t) param : int
 \end{protohead}
 \begin{protobody}
@@ -612,22 +628,6 @@ proc numBytes(type t) param : int
 Returns the number of bytes used to store the values of type \chpl{t}.
 This is implemented for all numeric types and fixed-width \chpl{bool} types.
 It is not implemented for default-width \chpl{bool}.
-\end{protobody}
-
-\begin{protohead}
-proc max(type t): t
-\end{protohead}
-\begin{protobody}
-Returns the maximum value that can be stored in type \chpl{t}.  This
-is implemented for all numeric types.
-\end{protobody}
-
-\begin{protohead}
-proc min(type t): t
-\end{protohead}
-\begin{protobody}
-Returns the minimum value that can be stored in type \chpl{t}.  This
-is implemented for all numeric types.
 \end{protobody}
 
 
