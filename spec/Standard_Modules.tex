@@ -14,8 +14,8 @@ The automatic modules
 are as follows:
 
 \begin{tabular}{lll}
-\hspace{1pc} & \chpl{Math} & Math routines \\
-             & \chpl{Base} & Basic routines \\
+\hspace{1pc} & \chpl{Base} & Basic routines \\
+             & \chpl{Math} & Math routines \\
              & \chpl{Types} & Routines related to primitive types \\
 \end{tabular}
 
@@ -35,6 +35,8 @@ are as follows:
 There is an expectation that each of these modules will be extended
 and that more standard modules will be defined over time.
 
+We list functions in alphabetical order for each module.
+
 
 
 \section{Automatic Modules}
@@ -45,6 +47,137 @@ and that more standard modules will be defined over time.
 Automatic modules are used by a Chapel program automatically.  There
 is currently no way to avoid their use by a program, although we
 anticipate adding such a capability in the future.
+
+
+\subsection{Base}
+\label{Standard}
+\index{modules!standard!Base@\chpl{Base}}
+\index{modules!standard!automatic!Base@\chpl{Base}}
+
+\begin{protohead}
+proc ascii(s: string): int
+\end{protohead}
+\begin{protobody}
+Returns the ASCII code number of the first letter in the
+argument \chpl{s}.
+\end{protobody}
+
+\begin{protohead}
+proc assert(test: bool)
+proc assert(test: bool, args...)
+\end{protohead}
+\begin{protobody}
+If \chpl{test} is true, no action is taken.
+If \chpl{test} is false,
+prints an error message to stderr giving the location of the call to \chpl{assert}
+in the Chapel source, followed by the remaining arguments to the call, if any,
+then exits the program.
+\end{protobody}
+
+\begin{protohead}
+proc complex.re: real
+\end{protohead}
+\begin{protobody}
+Returns the real component of the complex number.
+\end{protobody}
+
+\begin{protohead}
+proc complex.im: real
+\end{protohead}
+\begin{protobody}
+Returns the imaginary component of the complex number.
+\end{protobody}
+
+\begin{protohead}
+proc complex.=re(f: real)
+\end{protohead}
+\begin{protobody}
+Sets the real component of the complex number to \chpl{f}.
+\end{protobody}
+
+\begin{protohead}
+proc complex.=im(f: real)
+\end{protohead}
+\begin{protobody}
+Sets the imaginary component of the complex number to \chpl{f}.
+\end{protobody}
+
+\begin{protohead}
+proc exit(status: int)
+\end{protohead}
+\begin{protobody}
+Exits the program with code \chpl{status}.
+\end{protobody}
+
+\begin{protohead}
+proc halt()
+proc halt(args...)
+\end{protohead}
+\begin{protobody}
+Prints an error message to stderr giving the location of the call to \chpl{halt}
+in the Chapel source, followed by the arguments to the call, if any,
+then exits the program.
+\end{protobody}
+
+\begin{protohead}
+proc string.length: int
+\end{protohead}
+\begin{protobody}
+Returns the number of characters in the base expression of type string.
+\end{protobody}
+
+\begin{protohead}
+proc max(x, y...?k)
+\end{protohead}
+\begin{protobody}
+Returns the maximum of the arguments when compared using the
+``greater-than'' operator.  The return type is inferred from the types
+of the arguments as allowed by implicit conversions.
+\end{protobody}
+
+\begin{protohead}
+proc min(x, y...?k)
+\end{protohead}
+\begin{protobody}
+Returns the minimum of the arguments when compared using the
+``less-than'' operator.  The return type is inferred from the types of
+the arguments as allowed by implicit conversions.
+\end{protobody}
+
+\begin{protohead}
+proc string.size: int
+\end{protohead}
+\begin{protobody}
+Same as string.length.
+\end{protobody}
+
+\begin{protohead}
+proc string.substring(x): string
+\end{protohead}
+\begin{protobody}
+Returns a value of string type that is a substring of the base
+expression.  If \chpl{x} is $i$, a value of type \chpl{int}, then the
+result is the $i$th character.  If \chpl{x} is a range, the result is
+the substring where the characters in the substring are given by the
+values in the range.
+\end{protobody}
+
+\begin{protohead}
+proc typeToString(type t) param : string
+\end{protohead}
+\begin{protobody}
+Returns a string parameter that represents the name of the
+type \chpl{t}.
+\end{protobody}
+
+\begin{protohead}
+proc warning(s:string)
+proc warning(args...)
+\end{protohead}
+\begin{protobody}
+Prints a warning to stderr giving the location of the call to \chpl{warning}
+in the Chapel source, followed by the argument(s) to the call.
+\end{protobody}
 
 
 \subsection{Math}
@@ -436,137 +569,6 @@ proc trunc(x: real(32)): real(32)
 \begin{protobody}
 Returns the nearest integral value to the argument that is not larger
 than the argument in absolute value.
-\end{protobody}
-
-
-\subsection{Base}
-\label{Standard}
-\index{modules!standard!Base@\chpl{Base}}
-\index{modules!standard!automatic!Base@\chpl{Base}}
-
-\begin{protohead}
-proc ascii(s: string): int
-\end{protohead}
-\begin{protobody}
-Returns the ASCII code number of the first letter in the
-argument \chpl{s}.
-\end{protobody}
-
-\begin{protohead}
-proc assert(test: bool)
-proc assert(test: bool, args...)
-\end{protohead}
-\begin{protobody}
-If \chpl{test} is true, no action is taken.
-If \chpl{test} is false,
-prints an error message to stderr giving the location of the call to \chpl{assert}
-in the Chapel source, followed by the remaining arguments to the call, if any,
-then exits the program.
-\end{protobody}
-
-\begin{protohead}
-proc complex.re: real
-\end{protohead}
-\begin{protobody}
-Returns the real component of the complex number.
-\end{protobody}
-
-\begin{protohead}
-proc complex.im: real
-\end{protohead}
-\begin{protobody}
-Returns the imaginary component of the complex number.
-\end{protobody}
-
-\begin{protohead}
-proc complex.=re(f: real)
-\end{protohead}
-\begin{protobody}
-Sets the real component of the complex number to \chpl{f}.
-\end{protobody}
-
-\begin{protohead}
-proc complex.=im(f: real)
-\end{protohead}
-\begin{protobody}
-Sets the imaginary component of the complex number to \chpl{f}.
-\end{protobody}
-
-\begin{protohead}
-proc exit(status: int)
-\end{protohead}
-\begin{protobody}
-Exits the program with code \chpl{status}.
-\end{protobody}
-
-\begin{protohead}
-proc halt()
-proc halt(args...)
-\end{protohead}
-\begin{protobody}
-Prints an error message to stderr giving the location of the call to \chpl{halt}
-in the Chapel source, followed by the arguments to the call, if any,
-then exits the program.
-\end{protobody}
-
-\begin{protohead}
-proc string.length: int
-\end{protohead}
-\begin{protobody}
-Returns the number of characters in the base expression of type string.
-\end{protobody}
-
-\begin{protohead}
-proc max(x, y...?k)
-\end{protohead}
-\begin{protobody}
-Returns the maximum of the arguments when compared using the
-``greater-than'' operator.  The return type is inferred from the types
-of the arguments as allowed by implicit conversions.
-\end{protobody}
-
-\begin{protohead}
-proc min(x, y...?k)
-\end{protohead}
-\begin{protobody}
-Returns the minimum of the arguments when compared using the
-``less-than'' operator.  The return type is inferred from the types of
-the arguments as allowed by implicit conversions.
-\end{protobody}
-
-\begin{protohead}
-proc string.size: int
-\end{protohead}
-\begin{protobody}
-Same as string.length.
-\end{protobody}
-
-\begin{protohead}
-proc string.substring(x): string
-\end{protohead}
-\begin{protobody}
-Returns a value of string type that is a substring of the base
-expression.  If \chpl{x} is $i$, a value of type \chpl{int}, then the
-result is the $i$th character.  If \chpl{x} is a range, the result is
-the substring where the characters in the substring are given by the
-values in the range.
-\end{protobody}
-
-\begin{protohead}
-proc typeToString(type t) param : string
-\end{protohead}
-\begin{protobody}
-Returns a string parameter that represents the name of the
-type \chpl{t}.
-\end{protobody}
-
-\begin{protohead}
-proc warning(s:string)
-proc warning(args...)
-\end{protohead}
-\begin{protobody}
-Prints a warning to stderr giving the location of the call to \chpl{warning}
-in the Chapel source, followed by the argument(s) to the call.
 \end{protobody}
 
 
