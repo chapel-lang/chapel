@@ -46,34 +46,34 @@ type-tests.isSubtype.chpl:63: warning: real,     D1.type  false
 type-tests.isSubtype.chpl:64: warning: real,     AA1.type false
 type-tests.isSubtype.chpl:65: warning: real,     C1       false
 type-tests.isSubtype.chpl:66: warning: real,     R1       false
-type-tests.isSubtype.chpl:67: warning: real,     U        false
+type-tests.isSubtype.chpl:67: warning: real,     U1       false
 type-tests.isSubtype.chpl:68: warning: D1.type,  real     false
 type-tests.isSubtype.chpl:69: warning: D1.type,  D1.type  true
 type-tests.isSubtype.chpl:70: warning: D1.type,  AA1.type false
 type-tests.isSubtype.chpl:71: warning: D1.type,  C1       false
 type-tests.isSubtype.chpl:72: warning: D1.type,  R1       false
-type-tests.isSubtype.chpl:73: warning: D1.type,  U        false
+type-tests.isSubtype.chpl:73: warning: D1.type,  U1       false
 type-tests.isSubtype.chpl:74: warning: AA1.type, real     false
 type-tests.isSubtype.chpl:75: warning: AA1.type, D1.type  false
 type-tests.isSubtype.chpl:76: warning: AA1.type, AA1.type true
 type-tests.isSubtype.chpl:77: warning: AA1.type, C1       false
 type-tests.isSubtype.chpl:78: warning: AA1.type, R1       false
-type-tests.isSubtype.chpl:79: warning: AA1.type, U        false
+type-tests.isSubtype.chpl:79: warning: AA1.type, U1       false
 type-tests.isSubtype.chpl:80: warning: C1,       real     false
 type-tests.isSubtype.chpl:81: warning: C1,       D1.type  false
 type-tests.isSubtype.chpl:82: warning: C1,       AA1.type false
 type-tests.isSubtype.chpl:83: warning: C1,       R1       false
-type-tests.isSubtype.chpl:84: warning: C1,       U        false
+type-tests.isSubtype.chpl:84: warning: C1,       U1       false
 type-tests.isSubtype.chpl:85: warning: R1,       real     false
 type-tests.isSubtype.chpl:86: warning: R1,       D1.type  false
 type-tests.isSubtype.chpl:87: warning: R1,       AA1.type false
 type-tests.isSubtype.chpl:88: warning: R1,       C1       false
-type-tests.isSubtype.chpl:89: warning: R1,       U        false
-type-tests.isSubtype.chpl:90: warning: U,        real     false
-type-tests.isSubtype.chpl:91: warning: U,        D1.type  false
-type-tests.isSubtype.chpl:92: warning: U,        AA1.type false
-type-tests.isSubtype.chpl:93: warning: U,        C1       false
-type-tests.isSubtype.chpl:94: warning: U,        R1       false
+type-tests.isSubtype.chpl:89: warning: R1,       U1       false
+type-tests.isSubtype.chpl:90: warning: U1,       real     false
+type-tests.isSubtype.chpl:91: warning: U1,       D1.type  false
+type-tests.isSubtype.chpl:92: warning: U1,       AA1.type false
+type-tests.isSubtype.chpl:93: warning: U1,       C1       false
+type-tests.isSubtype.chpl:94: warning: U1,       R1       false
 type-tests.isSubtype.chpl:96: warning: isProperSubtype - scalars
 warning: int, real   false
 type-tests.isSubtype.chpl:97: warning: int, real   false
@@ -151,8 +151,8 @@ warning: real,     C1       false
 type-tests.isSubtype.chpl:146: warning: real,     C1       false
 warning: real,     R1       false
 type-tests.isSubtype.chpl:147: warning: real,     R1       false
-warning: real,     U        false
-type-tests.isSubtype.chpl:148: warning: real,     U        false
+warning: real,     U1       false
+type-tests.isSubtype.chpl:148: warning: real,     U1       false
 warning: D1.type,  real     false
 type-tests.isSubtype.chpl:149: warning: D1.type,  real     false
 type-tests.isSubtype.chpl:150: warning: D1.type,  D1.type  false
@@ -162,8 +162,8 @@ warning: D1.type,  C1       false
 type-tests.isSubtype.chpl:152: warning: D1.type,  C1       false
 warning: D1.type,  R1       false
 type-tests.isSubtype.chpl:153: warning: D1.type,  R1       false
-warning: D1.type,  U        false
-type-tests.isSubtype.chpl:154: warning: D1.type,  U        false
+warning: D1.type,  U1       false
+type-tests.isSubtype.chpl:154: warning: D1.type,  U1       false
 warning: AA1.type, real     false
 type-tests.isSubtype.chpl:155: warning: AA1.type, real     false
 warning: AA1.type, D1.type  false
@@ -171,8 +171,8 @@ type-tests.isSubtype.chpl:156: warning: AA1.type, D1.type  false
 type-tests.isSubtype.chpl:157: warning: AA1.type, AA1.type false
 type-tests.isSubtype.chpl:158: warning: AA1.type, C        false
 type-tests.isSubtype.chpl:159: warning: AA1.type, R        false
-warning: AA1.type, U        false
-type-tests.isSubtype.chpl:160: warning: AA1.type, U        false
+warning: AA1.type, U1       false
+type-tests.isSubtype.chpl:160: warning: AA1.type, U1       false
 warning: C1,       real     false
 type-tests.isSubtype.chpl:161: warning: C1,       real     false
 warning: C1,       D1.type  false
@@ -181,8 +181,8 @@ warning: C1,       AA1.type false
 type-tests.isSubtype.chpl:163: warning: C1,       AA1.type false
 warning: C1,       R1       false
 type-tests.isSubtype.chpl:164: warning: C1,       R1       false
-warning: C1,       U        false
-type-tests.isSubtype.chpl:165: warning: C1,       U        false
+warning: C1,       U1       false
+type-tests.isSubtype.chpl:165: warning: C1,       U1       false
 warning: R1,       real     false
 type-tests.isSubtype.chpl:166: warning: R1,       real     false
 warning: R1,       D1.type  false
@@ -191,16 +191,19 @@ warning: R1,       AA1.type false
 type-tests.isSubtype.chpl:168: warning: R1,       AA1.type false
 warning: R1,       C1       false
 type-tests.isSubtype.chpl:169: warning: R1,       C1       false
-warning: R1,       U        false
-type-tests.isSubtype.chpl:170: warning: R1,       U        false
-warning: U,        real     false
-type-tests.isSubtype.chpl:171: warning: U,        real     false
-warning: U,        D1.type  false
-type-tests.isSubtype.chpl:172: warning: U,        D1.type  false
-warning: U,        AA1.type false
-type-tests.isSubtype.chpl:173: warning: U,        AA1.type false
-warning: U,        C1       false
-type-tests.isSubtype.chpl:174: warning: U,        C1       false
-warning: U,        R1       false
-type-tests.isSubtype.chpl:175: warning: U,        R1       false
-type-tests.isSubtype.chpl:177: error: done
+warning: R1,       U1       false
+type-tests.isSubtype.chpl:170: warning: R1,       U1       false
+warning: U1,       real     false
+type-tests.isSubtype.chpl:171: warning: U1,       real     false
+warning: U1,       D1.type  false
+type-tests.isSubtype.chpl:172: warning: U1,       D1.type  false
+warning: U1,       AA1.type false
+type-tests.isSubtype.chpl:173: warning: U1,       AA1.type false
+warning: U1,       C1       false
+type-tests.isSubtype.chpl:174: warning: U1,       C1       false
+warning: U1,       R1       false
+type-tests.isSubtype.chpl:175: warning: U1,       R1       false
+type-tests.isSubtype.chpl:178: warning: U1, U2  false
+warning: U1, U2  false
+type-tests.isSubtype.chpl:179: warning: U1, U2  false
+type-tests.isSubtype.chpl:181: error: done

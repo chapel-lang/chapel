@@ -10,7 +10,7 @@ class C1{}  class C2:C1{}  class C3:C1{}  class C4:C2{}
 
 record R1{}  record R2:R1{}  record R3:R1{}  record R4:R2{}
 
-union U	{ var x,y: int;	} // no union inheritance at the moment                                                               
+union U1 { var x,y: int; }  union U2 { var x,y: int; }  // no union inheritance at the moment
 
 compilerWarning("isSubtype - scalars");
 compilerWarning("int, real   ", isSubtype(q1.type, q2.type):string);
@@ -64,34 +64,34 @@ compilerWarning("real,     D1.type  ", isSubtype(real,D1.type):string);
 compilerWarning("real,     AA1.type ", isSubtype(real,AA1.type):string);
 compilerWarning("real,     C1       ", isSubtype(real,C1):string);
 compilerWarning("real,     R1       ", isSubtype(real,R1):string);
-compilerWarning("real,     U        ", isSubtype(real,U):string);
+compilerWarning("real,     U1       ", isSubtype(real,U1):string);
 compilerWarning("D1.type,  real     ", isSubtype(D1.type,real):string);
 compilerWarning("D1.type,  D1.type  ", isSubtype(D1.type,D1.type):string);
 compilerWarning("D1.type,  AA1.type ", isSubtype(D1.type,AA1.type):string);
 compilerWarning("D1.type,  C1       ", isSubtype(D1.type,C1):string);
 compilerWarning("D1.type,  R1       ", isSubtype(D1.type,R1):string);
-compilerWarning("D1.type,  U        ", isSubtype(D1.type,U):string);
+compilerWarning("D1.type,  U1       ", isSubtype(D1.type,U1):string);
 compilerWarning("AA1.type, real     ", isSubtype(AA1.type,real):string);
 compilerWarning("AA1.type, D1.type  ", isSubtype(AA1.type,D1.type):string);
 compilerWarning("AA1.type, AA1.type ", isSubtype(AA1.type,AA1.type):string);
 compilerWarning("AA1.type, C1       ", isSubtype(AA1.type,C1):string);
 compilerWarning("AA1.type, R1       ", isSubtype(AA1.type,R1):string);
-compilerWarning("AA1.type, U        ", isSubtype(AA1.type,U):string);
+compilerWarning("AA1.type, U1       ", isSubtype(AA1.type,U1):string);
 compilerWarning("C1,       real     ", isSubtype(C1,real):string);
 compilerWarning("C1,       D1.type  ", isSubtype(C1,D1.type):string);
 compilerWarning("C1,       AA1.type ", isSubtype(C1,AA1.type):string);
 compilerWarning("C1,       R1       ", isSubtype(C1,R1):string);
-compilerWarning("C1,       U        ", isSubtype(C1,U):string);
+compilerWarning("C1,       U1       ", isSubtype(C1,U1):string);
 compilerWarning("R1,       real     ", isSubtype(R1,real):string);
 compilerWarning("R1,       D1.type  ", isSubtype(R1,D1.type):string);
 compilerWarning("R1,       AA1.type ", isSubtype(R1,AA1.type):string);
 compilerWarning("R1,       C1       ", isSubtype(R1,C1):string);
-compilerWarning("R1,       U        ", isSubtype(R1,U):string);
-compilerWarning("U,        real     ", isSubtype(U,real):string);
-compilerWarning("U,        D1.type  ", isSubtype(U,D1.type):string);
-compilerWarning("U,        AA1.type ", isSubtype(U,AA1.type):string);
-compilerWarning("U,        C1       ", isSubtype(U,C1):string);
-compilerWarning("U,        R1       ", isSubtype(U,R1):string);
+compilerWarning("R1,       U1       ", isSubtype(R1,U1):string);
+compilerWarning("U1,       real     ", isSubtype(U1,real):string);
+compilerWarning("U1,       D1.type  ", isSubtype(U1,D1.type):string);
+compilerWarning("U1,       AA1.type ", isSubtype(U1,AA1.type):string);
+compilerWarning("U1,       C1       ", isSubtype(U1,C1):string);
+compilerWarning("U1,       R1       ", isSubtype(U1,R1):string);
 
 compilerWarning("isProperSubtype - scalars");
 compilerWarning("int, real   ", isProperSubtype(q1.type, q2.type):string);
@@ -145,33 +145,37 @@ compilerWarning("real,     D1.type  ", isProperSubtype(real,D1.type):string);
 compilerWarning("real,     AA1.type ", isProperSubtype(real,AA1.type):string);
 compilerWarning("real,     C1       ", isProperSubtype(real,C1):string);
 compilerWarning("real,     R1       ", isProperSubtype(real,R1):string);
-compilerWarning("real,     U        ", isProperSubtype(real,U):string);
+compilerWarning("real,     U1       ", isProperSubtype(real,U1):string);
 compilerWarning("D1.type,  real     ", isProperSubtype(D1.type,real):string);
 compilerWarning("D1.type,  D1.type  ", isProperSubtype(D1.type,D1.type):string);
 compilerWarning("D1.type,  AA1.type ", isProperSubtype(D1.type,AA1.type):string);
 compilerWarning("D1.type,  C1       ", isProperSubtype(D1.type,C1):string);
 compilerWarning("D1.type,  R1       ", isProperSubtype(D1.type,R1):string);
-compilerWarning("D1.type,  U        ", isProperSubtype(D1.type,U):string);
+compilerWarning("D1.type,  U1       ", isProperSubtype(D1.type,U1):string);
 compilerWarning("AA1.type, real     ", isProperSubtype(AA1.type,real):string);
 compilerWarning("AA1.type, D1.type  ", isProperSubtype(AA1.type,D1.type):string);
 compilerWarning("AA1.type, AA1.type ", isProperSubtype(AA1.type,AA1.type):string);
 compilerWarning("AA1.type, C        ", isProperSubtype(AA1.type,C1):string);
 compilerWarning("AA1.type, R        ", isProperSubtype(AA1.type,R1):string);
-compilerWarning("AA1.type, U        ", isProperSubtype(AA1.type,U):string);
+compilerWarning("AA1.type, U1       ", isProperSubtype(AA1.type,U1):string);
 compilerWarning("C1,       real     ", isProperSubtype(C1,real):string);
 compilerWarning("C1,       D1.type  ", isProperSubtype(C1,D1.type):string);
 compilerWarning("C1,       AA1.type ", isProperSubtype(C1,AA1.type):string);
 compilerWarning("C1,       R1       ", isProperSubtype(C1,R1):string);
-compilerWarning("C1,       U        ", isProperSubtype(C1,U):string);
+compilerWarning("C1,       U1       ", isProperSubtype(C1,U1):string);
 compilerWarning("R1,       real     ", isProperSubtype(R1,real):string);
 compilerWarning("R1,       D1.type  ", isProperSubtype(R1,D1.type):string);
 compilerWarning("R1,       AA1.type ", isProperSubtype(R1,AA1.type):string);
 compilerWarning("R1,       C1       ", isProperSubtype(R1,C1):string);
-compilerWarning("R1,       U        ", isProperSubtype(R1,U):string);
-compilerWarning("U,        real     ", isProperSubtype(U,real):string);
-compilerWarning("U,        D1.type  ", isProperSubtype(U,D1.type):string);
-compilerWarning("U,        AA1.type ", isProperSubtype(U,AA1.type):string);
-compilerWarning("U,        C1       ", isProperSubtype(U,C1):string);
-compilerWarning("U,        R1       ", isProperSubtype(U,R1):string);
+compilerWarning("R1,       U1       ", isProperSubtype(R1,U1):string);
+compilerWarning("U1,       real     ", isProperSubtype(U1,real):string);
+compilerWarning("U1,       D1.type  ", isProperSubtype(U1,D1.type):string);
+compilerWarning("U1,       AA1.type ", isProperSubtype(U1,AA1.type):string);
+compilerWarning("U1,       C1       ", isProperSubtype(U1,C1):string);
+compilerWarning("U1,       R1       ", isProperSubtype(U1,R1):string);
+
+// unions
+compilerWarning("U1, U2  ", isSubtype(U1,U2):string);
+compilerWarning("U1, U2  ", isProperSubtype(U1,U2):string);
 
 compilerError("done"); // no need for a C compile
