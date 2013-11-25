@@ -95,6 +95,8 @@ This shows up on cray-x?-cray-prgenv-cray.none.fifo.pthreads runs
 -----------------------------------------------------------------
 Determined to be a problem with CCE.  Filed bug 800520.
 
+Also was witnessed once on linux64.gnu.fifo.pthreads with --no-local (11/24/13)
+
 New gcc warning (bradc)
 -----------------------
 Future (bug: this idiom generates a gcc warning for some reason (error w/ -Werror)) [Success matching program output for studies/shootout/mandelbrot/bugs/mandelbrot-error] (bradc 7/19/13):
@@ -360,6 +362,8 @@ parallel/cobegin/diten/cobeginRace (UNASSIGNED)
 ----------------------------------------------------
 "timedexec died with signal 11" - pgi compiler (06/18/12)
 unknown cause - baseline (06/17/12)
+non-det timeout - linux64.gnu.none.fifo.pthreads.flat-std (11/24/13) along with
+  studies/shootout/nbody/sidelnik/nbody_iterator_7, studies/shootout/nbody/sidelnik/nbody_vector_4, and studies/sort/radix
 
 timeout studies/shootout/fannkuch-redux/fannkuch-redux (UNASSIGNED)
 -------------------------------------------------------------------
