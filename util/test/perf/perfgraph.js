@@ -45,24 +45,29 @@ var initialize = false;
 var numGraphs = 0;
 
 function genDygraph(graphInfo, parent, legend) {
-    var gspacer = document.createElement('div');
-    gspacer.className = 'gspacer';
     var div = document.createElement('div');
-    parent.appendChild(gspacer);
     div.className = 'perfGraph';
     parent.appendChild(div);
+
+    var gspacer = document.createElement('div');
+    gspacer.className = 'gspacer';
+    parent.appendChild(gspacer);
+
     var lspacer = document.createElement('div');
     lspacer.className = 'lspacer';
-    var ldiv = document.createElement('div');
     legend.appendChild(lspacer);
+
+    var ldiv = document.createElement('div');
     ldiv.className = 'perfLegend';
     legend.appendChild(ldiv);
+
     // Date.parse with our date format (Subset of ISO 8601) will return UTC time
     // so we'll need to adjust the start/end time to our local time
     var date = new Date();
     var localOffset = date.getTimezoneOffset() * 60 * 1000;
     var startTime = Date.parse(graphInfo.startdate) + localOffset;
     var endTime = Date.parse(graphInfo.enddate) + localOffset;
+        
     var g = new Dygraph(div,
                         'CSVfiles/'+graphInfo.datfname,
                         {
@@ -143,8 +148,21 @@ function genDygraph(graphInfo, parent, legend) {
                                 }
                             }
                         }
-                        )
-    
+                        );
+
+    var logToggle = document.createElement('input');
+    logToggle.type='button';
+    logToggle.className='logToggle';
+    logToggle.value='log';
+    logToggle.visible=true;
+    logToggle.onclick=function() { 
+        var useLog = ! g.getOption('logscale');
+        if (useLog) logToggle.value = 'linear';
+        else        logToggle.value = 'log';
+        g.updateOptions({logscale: useLog});
+    }
+    gspacer.appendChild(logToggle);
+
     // If you click on a graph, focus on the currently highlighted series 
     // (highlighting isn't automatically switched, and don't change values 
     // back to newest on unhighlight.) This is nice for following a particular 
