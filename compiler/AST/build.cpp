@@ -768,6 +768,93 @@ buildForLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool
 }
 
 
+//
+// build serial iterator function
+//
+static void buildSerialIteratorFn(FnSymbol* fn, const char* iteratorName,
+                                  Expr* expr, Expr* cond, Expr* indices,
+                                  bool zippered, Expr*& stmt)
+{
+  FnSymbol* sifn = new FnSymbol(iteratorName);
+  sifn->addFlag(FLAG_ITERATOR_FN);
+  ArgSymbol* sifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
+  sifn->insertFormalAtTail(sifnIterator);
+  fn->insertAtHead(new DefExpr(sifn));
+  stmt = new CallExpr(PRIM_YIELD, expr);
+  if (cond)
+    stmt = new CondStmt(new CallExpr("_cond_test", cond), stmt);
+  sifn->insertAtTail(buildForLoopStmt(indices, new SymExpr(sifnIterator), new BlockStmt(stmt), false, zippered));
+}
+
+
+//
+// build leader iterator function
+//
+static void buildLeaderIteratorFn(FnSymbol* fn, const char* iteratorName,
+                                  bool zippered)
+{
+  FnSymbol* lifn = new FnSymbol(iteratorName);
+
+  Expr* tag = buildDotExpr(buildDotExpr(new UnresolvedSymExpr("ChapelBase"),
+                                        iterKindTypename),
+                           iterKindLeaderTagname);
+  ArgSymbol* lifnTag = new ArgSymbol(INTENT_PARAM, "tag", dtUnknown,
+                                     new CallExpr(PRIM_TYPEOF, tag));
+  lifn->insertFormalAtTail(lifnTag);
+  ArgSymbol* lifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
+  lifn->insertFormalAtTail(lifnIterator);
+
+  lifn->where = new BlockStmt(new CallExpr("==", lifnTag, tag->copy()));
+  fn->insertAtHead(new DefExpr(lifn));
+
+  VarSymbol* leaderIterator = newTemp("_leaderIterator");
+  leaderIterator->addFlag(FLAG_EXPR_TEMP);
+  lifn->insertAtTail(new DefExpr(leaderIterator));
+  
+  if( !zippered ) {
+    lifn->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_toLeader", lifnIterator)));
+  } else {
+    lifn->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_toLeaderZip", lifnIterator)));
+  }
+
+  lifn->insertAtTail(new CallExpr(PRIM_RETURN, leaderIterator));
+}
+
+
+//
+// build follower iterator function
+//
+static FnSymbol* buildFollowerIteratorFn(FnSymbol* fn, const char* iteratorName,
+                                         bool zippered, VarSymbol*& followerIterator)
+{
+  FnSymbol* fifn = new FnSymbol(iteratorName);
+  fifn->addFlag(FLAG_ITERATOR_FN);
+
+  Expr* tag = buildDotExpr(buildDotExpr(new UnresolvedSymExpr("ChapelBase"),
+                                  iterKindTypename), iterKindFollowerTagname);
+  ArgSymbol* fifnTag = new ArgSymbol(INTENT_PARAM, "tag", dtUnknown,
+                                     new CallExpr(PRIM_TYPEOF, tag));
+  fifn->insertFormalAtTail(fifnTag);
+  ArgSymbol* fifnFollower = new ArgSymbol(INTENT_BLANK, iterFollowthisArgname, dtAny);
+  fifn->insertFormalAtTail(fifnFollower);
+  ArgSymbol* fifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
+  fifn->insertFormalAtTail(fifnIterator);
+
+  fifn->where = new BlockStmt(new CallExpr("==", fifnTag, tag->copy()));
+  fn->insertAtHead(new DefExpr(fifn));
+  followerIterator = newTemp("_followerIterator");
+  followerIterator->addFlag(FLAG_EXPR_TEMP);
+  fifn->insertAtTail(new DefExpr(followerIterator));
+
+  if( !zippered ) {
+    fifn->insertAtTail(new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFollower", fifnIterator, fifnFollower)));
+  } else {
+    fifn->insertAtTail(new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFollowerZip", fifnIterator, fifnFollower)));
+  }
+  return fifn;
+}
+
+
 CallExpr*
 buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType, bool zippered) {
   FnSymbol* fn = new FnSymbol(astr("_parloopexpr", istr(loopexpr_uid++)));
@@ -785,77 +872,18 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
   const char* iteratorName = astr("_iterator_for_loopexpr", istr(loopexpr_uid-1));
   block->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(iteratorName, iterator)));
 
-  //
-  // build serial iterator function
-  //
-  FnSymbol* sifn = new FnSymbol(iteratorName);
-  sifn->addFlag(FLAG_ITERATOR_FN);
-  ArgSymbol* sifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
-  sifn->insertFormalAtTail(sifnIterator);
-  fn->insertAtHead(new DefExpr(sifn));
-  Expr* stmt = new CallExpr(PRIM_YIELD, expr);
-  if (cond)
-    stmt = new CondStmt(new CallExpr("_cond_test", cond), stmt);
-  sifn->insertAtTail(buildForLoopStmt(indices, new SymExpr(sifnIterator), new BlockStmt(stmt), false, zippered));
-
-  //
-  // build leader iterator function
-  //
-  FnSymbol* lifn = new FnSymbol(iteratorName);
-  ArgSymbol* lifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
-  lifn->insertFormalAtTail(lifnIterator);
-  Expr* tag = buildDotExpr(buildDotExpr(new UnresolvedSymExpr("ChapelBase"),
-                                        iterKindTypename),
-                           iterKindLeaderTagname);
-  ArgSymbol* lifnTag = new ArgSymbol(INTENT_PARAM, "tag", dtUnknown,
-                                     new CallExpr(PRIM_TYPEOF, tag));
-  lifn->insertFormalAtTail(lifnTag);
-  lifn->where = new BlockStmt(new CallExpr("==", lifnTag, tag->copy()));
-  fn->insertAtHead(new DefExpr(lifn));
-  VarSymbol* leaderIterator = newTemp("_leaderIterator");
-  leaderIterator->addFlag(FLAG_EXPR_TEMP);
-  lifn->insertAtTail(new DefExpr(leaderIterator));
-  
-  if( !zippered ) {
-    lifn->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_toLeader", lifnIterator)));
-  } else {
-    lifn->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_toLeaderZip", lifnIterator)));
-  }
-
-  lifn->insertAtTail(new CallExpr(PRIM_RETURN, leaderIterator));
-
-  //
-  // build follower iterator function
-  //
-  FnSymbol* fifn = new FnSymbol(iteratorName);
-  fifn->addFlag(FLAG_ITERATOR_FN);
-  ArgSymbol* fifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
-  fifn->insertFormalAtTail(fifnIterator);
-
-  tag = buildDotExpr(buildDotExpr(new UnresolvedSymExpr("ChapelBase"),
-                                  iterKindTypename), iterKindFollowerTagname);
-  ArgSymbol* fifnTag = new ArgSymbol(INTENT_PARAM, "tag", dtUnknown,
-                                     new CallExpr(PRIM_TYPEOF, tag));
-  fifn->insertFormalAtTail(fifnTag);
-  ArgSymbol* fifnFollower = new ArgSymbol(INTENT_BLANK, iterFollowthisArgname, dtAny);
-  fifn->insertFormalAtTail(fifnFollower);
-  fifn->where = new BlockStmt(new CallExpr("==", fifnTag, tag->copy()));
-  fn->insertAtHead(new DefExpr(fifn));
-  VarSymbol* followerIterator = newTemp("_followerIterator");
-  followerIterator->addFlag(FLAG_EXPR_TEMP);
-  fifn->insertAtTail(new DefExpr(followerIterator));
-
-  if( !zippered ) {
-    fifn->insertAtTail(new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFollower", fifnIterator, fifnFollower)));
-  } else {
-    fifn->insertAtTail(new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFollowerZip", fifnIterator, fifnFollower)));
-  }
+  Expr* stmt; // Initialized by buildSerialIteratorFn.
+  buildSerialIteratorFn(fn, iteratorName, expr, cond, indices, zippered, stmt);
+  buildLeaderIteratorFn(fn, iteratorName, zippered);
+  VarSymbol* followerIterator; // Initialized by buildFollowerIteratorFn.
+  FnSymbol* fifn = buildFollowerIteratorFn(fn, iteratorName, zippered, followerIterator);
 
   // do we need to use this map since symbols have not been resolved?
   SymbolMap map;
   Expr* indicesCopy = (indices) ? indices->copy(&map) : NULL;
   Expr* bodyCopy = stmt->copy(&map);
   fifn->insertAtTail(buildForLoopStmt(indicesCopy, new SymExpr(followerIterator), new BlockStmt(bodyCopy), false, zippered));
+
   return new CallExpr(new DefExpr(fn));
 }
 
