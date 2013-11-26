@@ -371,6 +371,7 @@ under cray-xt.cray-prgenv-gnu.none.fifo.pthreads--linux64.gnu (3/22/13)
 
 nondeterministic timedexec timeouts
 -----------------------------------
+release/examples/programs/tree.chpl on cray-xc.cray-prgenv-cray.none.fifo.pthreads (11/26/2013)
 test_array_assignment -- cray-xt.cray-prgenv-intel.none.fifo.pthreads--linux64.gnu (2013/06/24)
 test_infer_array_type -- cray-xt.cray-prgenv-intel.none.fifo.pthreads--linux64.gnu (2013/06/24)
 [Error: Timed out executing program studies/shootout/nbody/nbody_rangesub_5] (07/01/13)
