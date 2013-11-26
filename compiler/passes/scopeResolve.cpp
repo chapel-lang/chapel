@@ -800,6 +800,11 @@ static void build_constructor(ClassType* ct) {
                                     new_StringSymbol(arg->name),
                                     new CallExpr("chpl__initCopy", arg)));
     else
+      // Since we don't copy the argument before stuffing it in a field, we will
+      // have to remove the autodestroy flag for specific cases.  Namely, if the
+      // function is a default constructor and the target of a PRIM_SET_MEMBER is
+      // a record, then the INSERT_AUTO_DESTROY flag must be removed.
+      // (See NOTE 1 in callDestructors.cpp.)
       fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, fn->_this, 
                                     new_StringSymbol(arg->name),
                                     arg));

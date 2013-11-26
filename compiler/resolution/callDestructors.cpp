@@ -31,12 +31,54 @@ static void cullAutoDestroyFlags()
       if (fn->hasFlag(FLAG_INIT_COPY_FN))
         ret->removeFlag(FLAG_INSERT_AUTO_DESTROY);
 
-       // This is just a workaround for memory management being handled specially
-       // for internally reference-counted types. (sandboxing)
-       if (ret->type->symbol->hasFlag(FLAG_ARRAY) ||
-           ret->type->symbol->hasFlag(FLAG_DOMAIN))
-         ret->removeFlag(FLAG_INSERT_AUTO_DESTROY);
-       // Do we need to add other record-wrapped types here?  Testing will tell.
+      // This is just a workaround for memory management being handled specially
+      // for internally reference-counted types. (sandboxing)
+      TypeSymbol* ts = ret->type->symbol;
+      if (ts->hasFlag(FLAG_ARRAY) ||
+          ts->hasFlag(FLAG_DOMAIN) ||
+          ts->hasFlag(FLAG_SYNC))
+        ret->removeFlag(FLAG_INSERT_AUTO_DESTROY);
+      // Do we need to add other record-wrapped types here?  Testing will tell.
+
+      // NOTE 1: When the value of a record field is established in a default
+      // constructor, it is initialized using a MOVE.  That means that ownership
+      // of that value is shared between the formal_tmp and the record field.
+      // If the autodestroy flag is left on that formal temp, then it will be
+      // destroyed which -- for ref-counted types -- can result in a dangling
+      // reference.  So here, we look for that case and remove it.  
+      if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
+      {
+        Map<Symbol*,Vec<SymExpr*>*> defMap;
+        Map<Symbol*,Vec<SymExpr*>*> useMap;
+        buildDefUseMaps(fn, defMap, useMap);
+
+        std::vector<DefExpr*> defs;
+        collectDefExprsSTL(fn, defs);
+
+        for_vector(DefExpr, def, defs)
+        {
+          if (VarSymbol* var = toVarSymbol(def->sym))
+          {
+            // Examine only those bearing the explicit autodestroy flag.
+            if (! var->hasFlag(FLAG_INSERT_AUTO_DESTROY))
+              continue;
+
+            // Look for a use in a PRIM_SET_MEMBER where the field is a record
+            // type, and remove the flag.
+            // (We don't actually check that var is of record type, because
+            // chpl__autoDestroy() does nothing when applied to all other types.
+            for_uses(se, useMap, var)
+            {
+              CallExpr* call = toCallExpr(se->parentExpr);
+              if (call->isPrimitive(PRIM_SET_MEMBER) &&
+                  toSymExpr(call->get(3))->var == var)
+                var->removeFlag(FLAG_INSERT_AUTO_DESTROY);
+            }
+          }
+        }
+
+        freeDefUseMaps(defMap, useMap);
+      }
     }
   }
 }

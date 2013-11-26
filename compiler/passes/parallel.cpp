@@ -156,12 +156,10 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
 }
 
 static void
-bundleArgs(FnSymbol* fn, CallExpr* fcall, BundleArgsFnData &baData) {
+bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
   SET_LINENO(fcall);
   ModuleSymbol* mod = fcall->getModule();
-  // The code had referred to 'fcall->isResolved()' instead of 'fn',
-  // so we verify that the two are the same.
-  INT_ASSERT(fn == fcall->isResolved());
+  FnSymbol* fn = fcall->isResolved();
 
   const bool firstCall = baData.firstCall;
   if (firstCall)
@@ -189,7 +187,9 @@ bundleArgs(FnSymbol* fn, CallExpr* fcall, BundleArgsFnData &baData) {
 
   // insert autoCopy for array/domain/distribution before begin call
   // and insert autoDestroy at end of begin function (i.e., reference count)
+  // We have to do this for all record args that are passed by value.
   if (fn->hasFlag(FLAG_BEGIN)) {
+    // For each argument in the call:
     for_actuals(arg, fcall) {
       SymExpr* s = toSymExpr(arg);
       Symbol* var = s->var; // var or arg
@@ -200,6 +200,10 @@ bundleArgs(FnSymbol* fn, CallExpr* fcall, BundleArgsFnData &baData) {
       if (isRefCountedType(baseType)) {
         FnSymbol* autoCopyFn = getAutoCopy(baseType);
         FnSymbol* autoDestroyFn = getAutoDestroy(baseType);
+        // For internally reference-counted types, this punches through
+        // references to bump the reference count.
+        // But for normal records, I think we want to do this only if the record
+        // is passed by value.
         VarSymbol* valTmp = newTemp(baseType);
         fcall->insertBefore(new DefExpr(valTmp));
         if (baseType == arg->typeInfo()) {
@@ -210,6 +214,11 @@ bundleArgs(FnSymbol* fn, CallExpr* fcall, BundleArgsFnData &baData) {
         fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp, new CallExpr(autoCopyFn, valTmp)));
         // modify 'fn' only once
         if (baData.firstCall) {
+          // I can't imagine why we would want to bump the reference count of an
+          // internally reference-counted object multiple times on entry, and
+          // only decrement it once on exit.  
+          // TODO: Figure out why, or make them match up, like the case for
+          // records below.
           VarSymbol* derefTmp = newTemp(baseType);
           fn->insertBeforeReturnAfterLabel(new DefExpr(derefTmp));
           if (baseType == arg->typeInfo()) {
@@ -219,6 +228,25 @@ bundleArgs(FnSymbol* fn, CallExpr* fcall, BundleArgsFnData &baData) {
           }
           fn->insertBeforeReturnAfterLabel(new CallExpr(autoDestroyFn, derefTmp));
         } // if firstCall
+      }
+      else if (isRecord(baseType))
+      {
+        // Do this only if the record is passed by value.
+        if (arg->typeInfo() == baseType)
+        {
+          // Insert a call to the autoCopy function ahead of the call.
+          FnSymbol* autoCopyFn = getAutoCopy(baseType);
+          VarSymbol* valTmp = newTemp(baseType);
+          fcall->insertBefore(new DefExpr(valTmp));
+          fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp, new CallExpr(autoCopyFn, var)));
+
+          // Insert a call to the autoDestroy function ahead of the return.
+          FnSymbol* autoDestroyFn = getAutoDestroy(baseType);
+          VarSymbol* derefTmp = newTemp(baseType);
+          fn->insertBeforeReturnAfterLabel(new DefExpr(derefTmp));
+          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, derefTmp, new SymExpr(actual_to_formal(arg))));
+          fn->insertBeforeReturnAfterLabel(new CallExpr(autoDestroyFn, derefTmp));
+        }
       }
     }
   }
@@ -1063,7 +1091,7 @@ static void passArgsToNestedFns(Vec<FnSymbol*>& nestedFunctions)
 
     forv_Vec(CallExpr, call, *fn->calledBy) {
       SET_LINENO(call);
-      bundleArgs(fn, call, baData);
+      bundleArgs(call, baData);
     }
 
     if (fn->hasFlag(FLAG_ON))

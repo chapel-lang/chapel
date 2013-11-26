@@ -77,8 +77,8 @@ Done test_one {count = 3}
 In ~R() 3
 In ~R() 2
 In ~R() 1
-Destroying a RefCount
 After scope (begin)
 Finishing
+Destroying a RefCount
 In ~R() 1
 Destroying a RefCount

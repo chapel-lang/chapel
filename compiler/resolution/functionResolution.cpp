@@ -2909,13 +2909,6 @@ insertFormalTemps(FnSymbol* fn) {
     if (formalRequiresTemp(formal)) {
       SET_LINENO(formal);
       VarSymbol* tmp = newTemp(astr("_formal_tmp_", formal->name));
-      Type* formalType = formal->type->getValType();
-      if ((formal->intent == INTENT_BLANK ||
-           formal->intent == INTENT_CONST ||
-           formal->intent == INTENT_CONST_IN) &&
-          !isSyncType(formalType) &&
-          !isRefCountedType(formalType))
-        tmp->addFlag(FLAG_CONST);
       formals2vars.put(formal, tmp);
     }
   }
@@ -2950,6 +2943,20 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
       Symbol* tmp = e->value; // Get the temp.
 
       SET_LINENO(formal);
+
+      // TODO: Move this closer to the location (in code) where we determine
+      // whether tmp owns its value or not.  That is, push setting these flags
+      // (or not) into the cases below, as appropriate.
+      Type* formalType = formal->type->getValType();
+      if ((formal->intent == INTENT_BLANK ||
+           formal->intent == INTENT_CONST ||
+           formal->intent == INTENT_CONST_IN) &&
+          !isSyncType(formalType) &&
+          !isRefCountedType(formalType))
+      {
+        tmp->addFlag(FLAG_CONST);
+        tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+      }
 
       // This switch adds the extra code inside the current function necessary
       // to implement the ref-to-value semantics, where needed.
@@ -3040,7 +3047,13 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
               !typeHasRefField(formal->type))
             tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
         } else
+        {
           fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, formal));
+          // If this is a simple move, then we did not call chpl__autoCopy to 
+          // create tmp, so then it is a bad idea to insert a call to
+          // chpl__autodestroy later.
+          tmp->removeFlag(FLAG_INSERT_AUTO_DESTROY);
+        }
         break;
        }
       }
