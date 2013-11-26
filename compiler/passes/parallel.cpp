@@ -928,6 +928,9 @@ makeHeapAllocations() {
 //
 static void
 reprivatizeIterators() {
+  if (fLocal)
+    return; // no need for privatization
+
   Vec<Symbol*> privatizedFields;
 
   forv_Vec(ClassType, ct, gClassTypes) {
