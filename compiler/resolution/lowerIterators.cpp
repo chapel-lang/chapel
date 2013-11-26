@@ -1779,6 +1779,54 @@ static void handlePolymorphicIterators()
 }
 
 
+static void reconstructIRAutoCopy(FnSymbol* fn)
+{
+  Symbol* arg = fn->getFormal(1);
+  Symbol* ret = fn->getReturnSymbol();
+  BlockStmt* block = new BlockStmt();
+  block->insertAtTail(ret->defPoint->remove());
+  ClassType* irt = toClassType(arg->type);
+  for_fields(field, irt) {
+    SET_LINENO(field);
+    if (FnSymbol* autoCopy = autoCopyMap.get(field->type)) {
+      Symbol* tmp1 = newTemp(field->name, field->type);
+      Symbol* tmp2 = newTemp(autoCopy->retType);
+      block->insertAtTail(new DefExpr(tmp1));
+      block->insertAtTail(new DefExpr(tmp2));
+      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp1, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
+      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp2, new CallExpr(autoCopy, tmp1)));
+      block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ret, field, tmp2));
+    } else {
+      Symbol* tmp = newTemp(field->name, field->type);
+      block->insertAtTail(new DefExpr(tmp));
+      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
+      block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ret, field, tmp));
+    }
+  }
+  block->insertAtTail(new CallExpr(PRIM_RETURN, ret));
+  fn->body->replace(block);
+}
+
+
+static void reconstructIRAutoDestroy(FnSymbol* fn)
+{
+  Symbol* arg = fn->getFormal(1);
+  BlockStmt* block = new BlockStmt();
+  ClassType* irt = toClassType(arg->type);
+  for_fields(field, irt) {
+    SET_LINENO(field);
+    if (FnSymbol* autoDestroy = autoDestroyMap.get(field->type)) {
+      Symbol* tmp = newTemp(field->name, field->type);
+      block->insertAtTail(new DefExpr(tmp));
+      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
+      block->insertAtTail(new CallExpr(autoDestroy, tmp));
+    }
+  }
+  block->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  fn->body->replace(block);
+}
+
+
 static void reconstructIRautoCopyAutoDestroy()
 {
   //
@@ -1787,49 +1835,10 @@ static void reconstructIRautoCopyAutoDestroy()
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->numFormals() == 1 && fn->getFormal(1)->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
       SET_LINENO(fn);
-      if (fn->hasFlag(FLAG_AUTO_COPY_FN)) {
-        Symbol* arg = fn->getFormal(1);
-        Symbol* ret = fn->getReturnSymbol();
-        BlockStmt* block = new BlockStmt();
-        block->insertAtTail(ret->defPoint->remove());
-        ClassType* irt = toClassType(arg->type);
-        for_fields(field, irt) {
-          SET_LINENO(field);
-          if (FnSymbol* autoCopy = autoCopyMap.get(field->type)) {
-            Symbol* tmp1 = newTemp(field->name, field->type);
-            Symbol* tmp2 = newTemp(autoCopy->retType);
-            block->insertAtTail(new DefExpr(tmp1));
-            block->insertAtTail(new DefExpr(tmp2));
-            block->insertAtTail(new CallExpr(PRIM_MOVE, tmp1, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
-            block->insertAtTail(new CallExpr(PRIM_MOVE, tmp2, new CallExpr(autoCopy, tmp1)));
-            block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ret, field, tmp2));
-          } else {
-            Symbol* tmp = newTemp(field->name, field->type);
-            block->insertAtTail(new DefExpr(tmp));
-            block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
-            block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ret, field, tmp));
-          }
-        }
-        block->insertAtTail(new CallExpr(PRIM_RETURN, ret));
-        fn->body->replace(block);
-      }
-      if (fn->hasFlag(FLAG_AUTO_DESTROY_FN)) {
-        SET_LINENO(fn);
-        Symbol* arg = fn->getFormal(1);
-        BlockStmt* block = new BlockStmt();
-        ClassType* irt = toClassType(arg->type);
-        for_fields(field, irt) {
-          SET_LINENO(field);
-          if (FnSymbol* autoDestroy = autoDestroyMap.get(field->type)) {
-            Symbol* tmp = newTemp(field->name, field->type);
-            block->insertAtTail(new DefExpr(tmp));
-            block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
-            block->insertAtTail(new CallExpr(autoDestroy, tmp));
-          }
-        }
-        block->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
-        fn->body->replace(block);
-      }
+      if (fn->hasFlag(FLAG_AUTO_COPY_FN))
+        reconstructIRAutoCopy(fn);
+      if (fn->hasFlag(FLAG_AUTO_DESTROY_FN))
+        reconstructIRAutoDestroy(fn);
     }
   }
 }
