@@ -33,13 +33,6 @@ proc sum (i, inRange, flip : bool, U : [] real) {
   return sum;
 }
 
-
-/* This version behaves similarly to version 4 of the C implementation,
- * in that it performs two additions at a time instead of one per
- * process.  This drastically improves performance on machines with a
- * smaller number of cores, but does not show an improvement on our largest
- * testing machine
- */
 proc eval_A_times_u(U : [] real, inRange, Au : [] real)
 {
   forall i in {0..#inRange} do { 
