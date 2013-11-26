@@ -20,6 +20,10 @@ inline proc eval_A(i, j) : real
   return 1.0 / d;
 }
 
+/* Traverses the array serially, performing the computation (eval_A)*U(k) on
+ * each pair i, k where k is a number from 0 to inRange - 1.  This method
+ * is generalized so that it can perform both versions of the call.
+ */
 proc sum (i, inRange, flip : bool, U : [] real) {
   var sum : real;
   for k in {0..inRange-1} do {

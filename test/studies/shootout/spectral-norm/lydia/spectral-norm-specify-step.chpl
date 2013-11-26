@@ -9,6 +9,7 @@
 
 config const NUM = 500 : int(64);
 config const step = 2 : int(64);
+// step allows for control over the reduction, i.e. how parallel/serial it is
 
 /* Return: 1.0 / (i + j) * (i + j +1) / 2 + i + 1; */
 inline proc eval_A(i, j) : real
