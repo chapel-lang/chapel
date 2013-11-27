@@ -78,6 +78,7 @@ function genDygraph(graphInfo, parent, legend) {
                             includeZero: true,
                             showRoller: true,
                             legend: 'always',
+                            customBars: graphInfo.displayrange,
                             // the options for the highlighted series 
                             highlightSeriesOpts: {    
                               strokeWidth: 2,

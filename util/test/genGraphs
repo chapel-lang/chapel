@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, os, shutil, time
+import sys, os, shutil, time, math
 import fileReadHelp
 from optparse import OptionParser
 
@@ -133,7 +133,8 @@ class GraphStuff:
         self.gfile.write('   "datfname" : "%s",\n'%(ginfo.datfname))
         self.gfile.write('   "ylabel" : "%s",\n'%(ginfo.ylabel))
         self.gfile.write('   "startdate" : "%s",\n'%(ginfo.startdate))
-        self.gfile.write('   "enddate" : "%s"\n'%(ginfo.enddate))
+        self.gfile.write('   "enddate" : "%s",\n'%(ginfo.enddate))
+        self.gfile.write('   "displayrange" : %s\n'%(str(ginfo.displayrange).lower()))
         self.gfile.write('}')
 
 
@@ -181,6 +182,10 @@ class GraphStuff:
                 graphs[currgraph].startdate = time.strptime(rest.strip(), '%m/%d/%y')
             elif key == 'enddate':
                 graphs[currgraph].enddate = time.strptime(rest.strip(), '%m/%d/%y')
+            elif key == 'generate':
+                graphs[currgraph].generate = [s.strip() for s in rest.split(',')]
+            elif key == 'displayrange':
+                graphs[currgraph].displayrange = rest.lower() in ('true', 't', '1', 'on', 'y', 'yes')
 
         try:
             graphs[currgraph].generateGraphData(self, currgraph)
@@ -210,6 +215,8 @@ class GraphClass:
         self.perfkeys = list()
         self.graphkeys = list()
         self.datfilenames = list()
+        self.generate = list()
+        self.displayrange = False
 
     def __str__(self):
         l  = 'Graph: '+str(self.name)+' (id='+str(self.id)+')\n'
@@ -228,6 +235,7 @@ class GraphClass:
         l += '\tperfkeys: '+list.__str__(self.perfkeys)+'\n'
         l += '\tgraphkeys: '+list.__str__(self.graphkeys)+'\n'
         l += '\tdatfilenames: '+list.__str__(self.datfilenames)+'\n'
+        l += '\tdisplayrange:'+str(self.displayrange).lower()+'\n'
         return l
 
     # For each unique data file
@@ -245,7 +253,6 @@ class GraphClass:
                 pass
                 # Allows some performance tests to be graphed when you aren't
                 # running over every single performance test
-            
             except:
                 raise
 
@@ -281,41 +288,50 @@ class GraphClass:
                 f.write('\n')
 
         numKeys = len(self.perfkeys)
-        currLines = [None]*numKeys
+        # currLines stores the current merged line number of each dat file
+        currLines = [0]*numKeys
+        # mergedLines will end up looking like:
+        # mergedLines[fileNum][lineNum][trailNum][field]
+        # where lineNum is the number after they are "merged"
+        mergedLines = [[] for _ in xrange(numKeys)]
         startdate = self.startdate
         enddate = self.enddate
         minDate = None
 
         first = True
         done = False
+        for i in xrange(numKeys):
+            # The file may be missing (in the case where only a subdirectory
+            # has been tested for performance).  If so, we don't want to
+            # try to access a non-existent datfile
+            if self.datfilenames[i] in datfiles:
+                df = datfiles[self.datfilenames[i]]
+                for line in df.dfile:
+                    line = line.strip()
+                    if line == '' or line[0] == '#':
+                        continue
+                    fields = line.split()
+                    myDate=time.strptime(fields[0].strip(),'%m/%d/%y')
+                    fields[0] = myDate
+                    fields[1:] = [float(x) for x in fields[1:]]
+                    if mergedLines[i] and myDate == mergedLines[i][-1][0][0]:
+                        mergedLines[i][-1].append(fields)
+                    else:
+                        mergedLines[i].append([fields])
+
         while not done:
             done = True
-            for i in range(numKeys):
-                # The file may be missing (in the case where only a subdirectory
-                # has been tested for performance).  If so, we don't want to
-                # try to access a non-existent datfile
-                if self.datfilenames[i] in datfiles:
-                    datfiles[self.datfilenames[i]].visited = -1
-            for i in range(numKeys):
+            for i in xrange(numKeys):
                 # The file may be missing (in the case where only a subdirectory
                 # has been tested for performance).  If so, we don't want to
                 # try to access a non-existent datfile
                 if not self.datfilenames[i] in datfiles:
                     continue
-                
+
                 # find the min date
-                df = datfiles[self.datfilenames[i]]
-                if currLines[i] == None:
-                    if  df.visited == -1:
-                        df.visited = i
-                        currLines[i]=fileReadHelp.ReadNextNonCommentLine(df.dfile)
-                    else:
-                        currLines[i]=currLines[df.visited]
-                l = currLines[i]
-                if l != None:
+                if currLines[i] < len(mergedLines[i]):
                     done = False
-                    fields = l.split()
-                    myDate=time.strptime(fields[0].strip(),'%m/%d/%y')
+                    myDate = mergedLines[i][currLines[i]][0][0]
                     if minDate==None or myDate<minDate:
                         minDate = myDate
                         if startdate==None:
@@ -325,23 +341,39 @@ class GraphClass:
                 break
 
             if not first:
-                f.write('\n ')
+                f.write('\n')
             else:
                 first = False
 
             # write out the data for this date
             f.write(time.strftime('%Y-%m-%d', minDate))
             for i in range(numKeys):
-                if currLines[i] != None:
-                    df = datfiles[self.datfilenames[i]]
-                    fields = currLines[i].split()
-                    myDate=time.strptime(fields[0].strip(),'%m/%d/%y')
-                    if myDate==minDate:
+                df = datfiles[self.datfilenames[i]]
+                if currLines[i] < len(mergedLines[i]):
+                    fields = zip(*mergedLines[i][currLines[i]])
+                    myDate = fields[0][0]
+                    if myDate == minDate:
                         # consume this line
                         f.write(',')
                         if len(fields)>df.mykeys[i] and fields[df.mykeys[i]] != '-':
-                            f.write(fields[df.mykeys[i]])
-                        currLines[i] = None
+                            fieldId = df.mykeys[i]
+                            value = fields[fieldId][0]
+                            if self.generate:
+                                if self.generate[i] == "avg":
+                                    value = math.fsum(fields[fieldId])/len(fields[fieldId])
+                                elif self.generate[i] == "med":
+                                    slist = sorted(fields[fieldId])
+                                    if len(fields[fieldId]) % 2 == 0:
+                                        value = (slist[len(slist)/2]+slist[len(slist)/2-1])/2
+                                    else:
+                                        value = slist[len(slist)/2]
+                            if self.displayrange:
+                                minval = min(fields[fieldId])
+                                maxval = max(fields[fieldId])
+                                f.write("{0};{1};{2}".format(minval, value, maxval))
+                            else:
+                                f.write("{0}".format(value))
+                        currLines[i] += 1
                     else:
                         # no data for this date
                         f.write(',')

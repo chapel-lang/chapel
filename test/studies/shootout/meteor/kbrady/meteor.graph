@@ -4,3 +4,5 @@ files: meteor.dat, meteor-parallel.dat
 graphtitle: Meteor Shootout Benchmark (n=2098)
 ylabel: Time (seconds)
 graphname: meteor
+generate: avg, med
+displayrange: true
