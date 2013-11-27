@@ -36,6 +36,12 @@ if dygraphDir == None:
 debug = False
 verbose = False
 
+def try_parse_float(value):
+    try:
+        return float(value)
+    except ValueError:
+        return value
+
 ############
 
 # Global info about generating graphs
@@ -241,8 +247,10 @@ class GraphClass:
     # For each unique data file
     class DatFileClass:
         def __init__(self, _filename):
-            self.visited = -1
-            self.curr = None
+            # lines will end up looking like:
+            # lines[lineNum][trailNum][field]
+            # where lineNum is the number after they are "merged"
+            self.lines = []
             self.mykeys = {}
             try:
                 self.dfile = open(_filename, 'r')
@@ -263,7 +271,6 @@ class GraphClass:
         def __str__(self):
             l  = '\tperfkeys: '+list.__str__(self.perfkeys)+'\n'
             l += '\tmykeys: '+dict.__str__(self.mykeys)+'\n'
-            l += '\tcurr: '+str(self.curr)
             return l
 
         def __del__(self):
@@ -290,10 +297,6 @@ class GraphClass:
         numKeys = len(self.perfkeys)
         # currLines stores the current merged line number of each dat file
         currLines = [0]*numKeys
-        # mergedLines will end up looking like:
-        # mergedLines[fileNum][lineNum][trailNum][field]
-        # where lineNum is the number after they are "merged"
-        mergedLines = [[] for _ in xrange(numKeys)]
         startdate = self.startdate
         enddate = self.enddate
         minDate = None
@@ -313,11 +316,11 @@ class GraphClass:
                     fields = line.split()
                     myDate=time.strptime(fields[0].strip(),'%m/%d/%y')
                     fields[0] = myDate
-                    fields[1:] = [float(x) for x in fields[1:]]
-                    if mergedLines[i] and myDate == mergedLines[i][-1][0][0]:
-                        mergedLines[i][-1].append(fields)
+                    fields[1:] = [try_parse_float(x) for x in fields[1:]]
+                    if df.lines and myDate == df.lines[-1][0][0]:
+                        df.lines[-1].append(fields)
                     else:
-                        mergedLines[i].append([fields])
+                        df.lines.append([fields])
 
         while not done:
             done = True
@@ -328,10 +331,11 @@ class GraphClass:
                 if not self.datfilenames[i] in datfiles:
                     continue
 
+                df = datfiles[self.datfilenames[i]]
                 # find the min date
-                if currLines[i] < len(mergedLines[i]):
+                if currLines[i] < len(df.lines):
                     done = False
-                    myDate = mergedLines[i][currLines[i]][0][0]
+                    myDate = df.lines[currLines[i]][0][0]
                     if minDate==None or myDate<minDate:
                         minDate = myDate
                         if startdate==None:
@@ -348,9 +352,11 @@ class GraphClass:
             # write out the data for this date
             f.write(time.strftime('%Y-%m-%d', minDate))
             for i in range(numKeys):
+                if not self.datfilenames[i] in datfiles:
+                    continue
                 df = datfiles[self.datfilenames[i]]
-                if currLines[i] < len(mergedLines[i]):
-                    fields = zip(*mergedLines[i][currLines[i]])
+                if currLines[i] < len(df.lines):
+                    fields = zip(*df.lines[currLines[i]])
                     myDate = fields[0][0]
                     if myDate == minDate:
                         # consume this line
