@@ -361,7 +361,7 @@ class GraphClass:
                     if myDate == minDate:
                         # consume this line
                         f.write(',')
-                        if len(fields)>df.mykeys[i] and fields[df.mykeys[i]] != '-':
+                        if len(fields)>df.mykeys[i] and '-' not in fields[df.mykeys[i]]:
                             fieldId = df.mykeys[i]
                             value = fields[fieldId][0]
                             if self.generate:
