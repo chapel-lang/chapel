@@ -10,7 +10,7 @@ ylabel: bytes
 graphname: memleaksfull
 graphtitle: Memory Leaks for all Tests
 
-perkeys: Number of Tests with Leaks:
+perfkeys: Number of Tests with Leaks:
 files: memleaksfull.dat
 ylabel: # tests
 graphname: leakingtestsfull

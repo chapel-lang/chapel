@@ -10,7 +10,7 @@ ylabel: bytes
 graphname: memleaks
 graphtitle: Memory Leaks for examples Tests
 
-perkeys: Number of Tests with Leaks:
+perfkeys: Number of Tests with Leaks:
 files: memleaks.dat
 ylabel: # tests
 graphname: leakingtests
