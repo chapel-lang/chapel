@@ -8,9 +8,9 @@ extern proc putchar(i : int) : int;
 
 proc main()
 {
-  var bytesRequired : uint = (size + 7) / 8;
-  var byteRange = 0..#bytesRequired:int(64);
-  var sizeRange = 0..#size:int(64);
+  const bytesRequired : uint = (size + 7) / 8;
+  const byteRange = 0..#bytesRequired:int(64);
+  const sizeRange = 0..#size:int(64);
 
 
   //const myLocales : [ell in 0..#(bytesRequired:int)] locale = Locales(ell % numLocales);

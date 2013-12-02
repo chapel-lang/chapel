@@ -18,16 +18,12 @@ proc main() {
   writeln("P4");
   writeln(size, " ", size);
   
-  var fy, z, c : complex;
-  
-  var fsize : int = size : int;
-  
   for y in sizeRange {
-    fy = 2i * y / size - 1i;
+    const fy : complex = 2i * y / size - 1i;
   
     for x in sizeRange {
-      z = 0i;
-      c = 2.0 * x / size - 1.5 + fy;
+      var z : complex = 0i;
+      const c : complex = 2.0 * x / size - 1.5 + fy;
 
       var broken : bool = false;
       for i in iterRange {

@@ -22,10 +22,9 @@ forall(i,j) in Dom do {
 
 
 proc work(x, y) : bool {
-  var fy, z, c : complex;
-  fy = 2i * y / size - 1i;
-  z = 0i;
-  c = 2.0 * x / size - 1.5 + fy;
+  const fy: complex = 2i * y / size - 1i;
+  const c: complex = 2.0 * x / size - 1.5 + fy;
+  var z : complex = 0i;
   
   for i in iterRange do {
     z = z * z + c;
