@@ -393,6 +393,7 @@ class GraphClass:
                 enddate = self.enddate
             minDate = None
 
+        f.write('\n')
         f.close()
 
         if startdate == None:
