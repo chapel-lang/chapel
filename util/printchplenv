@@ -12,28 +12,27 @@ use warnings;
 sub go {
   @ARGS=@_;
 
-  # $mode can be compiler, runtime, launcher, sh, csh
+  # $mode can be list, make, compiler, runtime, launcher, or shell
   $first = 1;
-  $mode = "default";
+  $mode = "list";
   if( defined $ARGS[0] ) {
     $mode = $ARGS[0];
     $mode =~ s/^-+//;
   }
 
-  # Are we printing out a path component for lib/gen directories?
-  $short = 0;
-  if( $mode eq "default" or
-      $mode eq "sh" or
-      $mode eq "csh" or
-      $mode eq "make" ) {
-      # OK!
-  } elsif( $mode eq "compiler" or
-           $mode eq "runtime" or
-           $mode eq "launcher" ) {
-      # OK!
-      $short = 1;
+  if( $mode eq "list" or
+      $mode eq "make" or
+      $mode eq "compiler" or
+      $mode eq "runtime" or
+      $mode eq "launcher" ) {
+    # OK!
+  } elsif( $mode eq "sh" or
+           $mode eq "csh" ) {
+    # OK!
+    $shell = $mode;
+    $mode = "shell";
   } elsif( $mode =~ /help/ or $mode eq "h" ) {
-    print "Usage: $0 [--compiler|--runtime|--launcher|--sh|--csh\n";
+    print "Usage: $0 [--list|--make|--compiler|--runtime|--launcher|--sh|--csh\n";
     print "       --compiler - print out path component for compiler objects\n";
     print "       --runtime - print out path component for runtime objects\n";
     print "       --launcher - print out path component for launcher objects\n";
@@ -46,23 +45,21 @@ sub go {
 
   $uname = `uname -a`;
 
-  print "uname -a: $uname" if $mode eq "default";
+  print "uname -a: $uname" if $mode eq "list";
 
   $CHPL_HOME="";
   if( defined $ENV{'CHPL_HOME'} ) {
     $CHPL_HOME = $ENV{'CHPL_HOME'};
   }
 
-  if( $mode eq "default" ) {
+  if( $mode eq "list" ) {
     print "CHPL_HOME: $CHPL_HOME\n";
     print "script location: $FindBin::Bin\n";
-  # For sh and csh, we don't print out CHPL_HOME if
-  # it is the empty string, which isn't a useful setting
+  # For shells, we don't print out CHPL_HOME if it is
+  # the empty string, which isn't a useful setting
   # for that environment variable anyway...
-  } elsif ( $mode eq "sh" and $CHPL_HOME ne "" ) {
-    print "export CHPL_HOME=$CHPL_HOME\n";
-  } elsif ( $mode eq "csh" and $CHPL_HOME ne "") {
-    print "setenv CHPL_HOME $CHPL_HOME\n";
+  } elsif ( $mode eq "shell" and $CHPL_HOME ne "" ) {
+    print_setenv("CHPL_HOME", $CHPL_HOME);
   }
 
   $hostplatform = run("platform", "--host", "1");
@@ -124,7 +121,9 @@ sub go {
     printit("CHPL_MEM", "mem", $mem, "runtime,launcher");
   }
   $make = run("chplmake");
-  if( ! $short ) {
+  if( $mode eq "list" or
+      $mode eq "make" or
+      $mode eq "shell" ) {
     printit("CHPL_MAKE", "make", $make);
   }
   $atomics = run("atomics");
@@ -151,10 +150,6 @@ sub go {
   $aux_fs = run("auxFilesys");
   printit("CHPL_AUX_FILESYS", "fs", $aux_fs, "runtime");
 
-  if( $short ) {
-    print "\n";
-  }
-
   if( $mode eq "make" ) {
     print "CHPL_MAKE_COMPILER_SUBDIR=";
     go("--compiler");
@@ -162,7 +157,13 @@ sub go {
     go("--runtime");
     print "CHPL_MAKE_LAUNCHER_SUBDIR=";
     go("--launcher");
+  } elsif( $mode eq "compiler" or
+           $mode eq "runtime" or
+           $mode eq "launcher" ) {
+    print "\n";
   }
+
+
 }
 
 go(@ARGV);
@@ -190,7 +191,16 @@ sub printit {
 
   $modeonly = "" if not defined $modeonly;
 
-  if( $short ) {
+  if( $mode eq "list" ) {
+    print "$envname: $value\n";
+  } elsif( $mode eq "make" ) {
+    my $makename = $envname;
+    $makename =~ s/^\s+//;
+    $makename =~ s/^CHPL_/CHPL_MAKE_/;
+    print "$makename=$value\n";
+  } elsif( $mode eq "compiler" or
+           $mode eq "runtime" or
+           $mode eq "launcher" ) {
     my @modes = split(/,/, $modeonly);
     my $modematch = 0;
     if( $modeonly eq "" ) {
@@ -216,18 +226,24 @@ sub printit {
       }
       $first = 0;
     }
-  } elsif( $mode eq "default" ) {
-    print "$envname: $value\n";
-  } elsif( $mode eq "sh" ) {
-    print "export $envname='$value'\n";
-  } elsif( $mode eq "csh" ) {
-    print "setenv $envname '$value'\n";
-  } elsif( $mode eq "make" ) {
-    my $makename = $envname;
-    $makename =~ s/^\s+//;
-    $makename =~ s/^CHPL_/CHPL_MAKE_/;
-    print "$makename=$value\n";
+  } elsif( $mode eq "shell" ) {
+    print_setenv($envname, $value);
   } else {
     die "Unknown mode $mode";
+  }
+}
+
+
+sub print_setenv {
+  # first argument - the environment variable name
+  my $env_name = shift;
+  # second argument - the value for the variable
+  my $env_val = shift;
+  if( $shell eq "sh" ) {
+    print "export $env_name='$env_val'\n";
+  } elsif( $shell eq "csh" ) {
+    print "setenv $env_name '$env_val'\n";
+  } else {
+    die "Unknown shell $shell";
   }
 }
