@@ -210,16 +210,13 @@ module GMP {
   // Random Number Functions
   extern proc mpz_urandomb(inout ROP: mpz_t, STATE: gmp_randstate_t, N: c_ulong);
   extern proc mpz_urandomm(inout ROP: mpz_t, STATE: gmp_randstate_t, N: mpz_t);
-  extern proc mpz_urandomb(inout ROP: mpz_t, STATE: gmp_randstate_t, N: c_ulong);
   extern proc mpz_rrandomb(inout ROP: mpz_t, STATE: gmp_randstate_t, N: c_ulong);
 
-  extern proc gmp_randinit_default(STATE: gmp_randstate_t);
-  extern proc gmp_randinit_mt(STATE: gmp_randstate_t);
-  extern proc gmp_randseed(STATE: gmp_randstate_t, SEED: mpz_t);
-  extern proc gmp_randseed_ui(STATE: gmp_randstate_t, SEED: c_ulong);
+  extern proc gmp_randseed(inout STATE: gmp_randstate_t, SEED: mpz_t);
+  extern proc gmp_randseed_ui(inout STATE: gmp_randstate_t, SEED: c_ulong);
 
-  extern proc gmp_urandomb_ui(STATE: gmp_randstate_t, N: c_ulong):c_ulong;
-  extern proc gmp_urandomm_ui(STATE: gmp_randstate_t, N: c_ulong):c_ulong;
+  extern proc gmp_urandomb_ui(inout STATE: gmp_randstate_t, N: c_ulong):c_ulong;
+  extern proc gmp_urandomm_ui(inout STATE: gmp_randstate_t, N: c_ulong):c_ulong;
 
   // Integer import and export
 
@@ -1472,7 +1469,7 @@ module GMP {
       }
       return ret;
     }
-    proc urandomb(r: BigInt, nbits: c_long)
+    proc urandomb(r: BigInt, nbits: c_ulong)
     {
       on this {
         var (rcopy,r_) = r.maybeCopy();
