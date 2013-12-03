@@ -1,9 +1,11 @@
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
 #endif
+
 #include <sstream>
 #include <inttypes.h>
 #include <map>
+#include <vector>
 
 #include "astutil.h"
 #include "build.h"
@@ -20,14 +22,112 @@
 #include "../ifa/prim_data.h"
 
 #ifdef ENABLE_TRACING_OF_DISAMBIGUATION
-#define TRACE_DISAMBIGUATE_BY_MATCH(str)        \
-  if (developer && explain) printf(str)
-#define TRACE_DISAMBIGUATE_BY_MATCH1(str, arg)  \
-  if (developer && explain) printf(str, arg)
+#define TRACE_DISAMBIGUATE_BY_MATCH(...) if (developer && DC.explain) printf(__VA_ARGS__)
 #else
-#define TRACE_DISAMBIGUATE_BY_MATCH(str)
-#define TRACE_DISAMBIGUATE_BY_MATCH1(str, arg)
+#define TRACE_DISAMBIGUATE_BY_MATCH(...)
 #endif
+
+/**
+ * \brief Contextual info used by the disambiguation process.
+ * 
+ * This class wraps information that is used by multiple functions during the
+ * function disambiguation process.
+ */
+class DisambiguationContext {
+public:
+  /// The actual arguments from the call site.
+  Vec<Symbol*>* actuals;
+  /// The scope in which the call is made.
+  Expr* scope;
+  /// Whether or not to print out tracing information.
+  bool explain;
+  /// Indexes used when printing out tracing information.
+  int i, j;
+  
+  /**
+   * \brief A simple constructor that initializes all of the values except i and
+   *        j.
+   */
+  DisambiguationContext(Vec<Symbol*>* actuals, Expr* scope, bool explain) :
+    actuals(actuals), scope(scope), explain(explain), i(-1), j(-1) {}
+  
+  /**
+   * \brief A helper function used to set the i and j members.
+   * 
+   * The function returns a constant reference to this disambiguation context.
+   */
+  const DisambiguationContext& forPair(int newI, int newJ) {
+    this->i = newI;
+    this->j = newJ;
+    
+    return *this;
+  }
+};
+
+/**
+ * \brief A wrapper for results from the disambiguation process.
+ * 
+ * If a best candidate was found than the function member will point to it.  If
+ * not, this pointer will be set to NULL.  The same goes for mappedFormals.
+ */
+class DisambiguationResult {
+public:
+  /// A pointer to the best candidate function.
+  FnSymbol* function;
+  /// A pointer to the mapped formal arguments for the best candidate.
+  Vec<ArgSymbol*>* mappedFormals;
+  
+  /// The default constructor.  This is used when no best candidate is found.
+  DisambiguationResult() : function(NULL), mappedFormals(NULL) {}
+  
+  /// The constructor used to return a best candidate.
+  DisambiguationResult(FnSymbol* function, Vec<ArgSymbol*>* mappedFormals) :
+    function(function), mappedFormals(mappedFormals) {}
+};
+
+/// State information used during the disambiguation process.
+class DisambiguationState {
+public:
+  /// Is fn1 more specific than fn2?
+  bool fn1MoreSpecific;
+  /// Is fn2 more specific than fn1? 
+  bool fn2MoreSpecific;
+  
+  /// Does fn1 require promotion?
+  bool fn1Promotes;
+  /// Does fn2 require promotion?
+  bool fn2Promotes;
+
+  /// 1 == fn1, 2 == fn2, -1 == conflicting signals
+  int paramPrefers;
+
+  /// Initialize the state to the starting values.
+  DisambiguationState()
+    : fn1MoreSpecific(false), fn2MoreSpecific(false),
+      fn1Promotes(false), fn2Promotes(false), paramPrefers(0) {}
+
+  /**
+   * \brief Prints out information for tracing of the disambiguation process.
+   * 
+   * \param DBMLoc A string representing the location in the DBM process the
+   *               message is coming from.
+   * 
+   * \param DC     The disambiguation context.
+   */
+  void printSummary(const char* DBMLoc, const DisambiguationContext& DC) {
+    if (this->fn1MoreSpecific) {
+      TRACE_DISAMBIGUATE_BY_MATCH("\n%s: Fn %d is more specific than Fn %d\n", DBMLoc, DC.i, DC.j);
+    } else {
+      TRACE_DISAMBIGUATE_BY_MATCH("\n%s: Fn %d is NOT more specific than Fn %d\n", DBMLoc, DC.i, DC.j);
+    }
+    
+    if (this->fn2MoreSpecific) {
+      TRACE_DISAMBIGUATE_BY_MATCH("%s: Fn %d is more specific than Fn %d\n", DBMLoc, DC.j, DC.i);
+    } else {
+      TRACE_DISAMBIGUATE_BY_MATCH("%s: Fn %d is NOT more specific than Fn %d\n", DBMLoc, DC.j, DC.i);
+    }
+  }
+};
 
 //#
 //# Global Variables
@@ -1590,18 +1690,22 @@ static bool paramWorks(Symbol* actual, Type* formalType) {
 // This is a utility function that essentially tracks which function,
 // if any, the param arguments prefer.
 //
-#define registerParamPreference(paramPrefers, preference, argstr)       \
-  if (paramPrefers == 0 || paramPrefers == preference) {                \
-    /* if the param currently has no preference or it matches the new   \
-       preference, preserve the current preference */                   \
-    paramPrefers = preference;                                          \
-    TRACE_DISAMBIGUATE_BY_MATCH("param prefers " argstr "\n");          \
-  } else {                                                              \
-    /* otherwise its preference contradicts the previous arguments, so  \
-       mark it as not preferring either */                              \
-    paramPrefers = -1;                                                  \
-    TRACE_DISAMBIGUATE_BY_MATCH("param prefers differing things\n");    \
-  }  
+static inline void registerParamPreference(int& paramPrefers, int preference,
+                                    const char* argstr,
+                                    DisambiguationContext DC) {
+  
+  if (paramPrefers == 0 || paramPrefers == preference) {
+    /* if the param currently has no preference or it matches the new
+       preference, preserve the current preference */
+    paramPrefers = preference;
+    TRACE_DISAMBIGUATE_BY_MATCH("param prefers %s\n", argstr);
+  } else {
+    /* otherwise its preference contradicts the previous arguments, so
+       mark it as not preferring either */
+    paramPrefers = -1;
+    TRACE_DISAMBIGUATE_BY_MATCH("param prefers differing things\n");
+  }
+}
 
 
 static bool considerParamMatches(Type* actualtype,
@@ -1635,170 +1739,309 @@ static bool considerParamMatches(Type* actualtype,
   return false;
 }
 
-static FnSymbol*
-disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
-                      Vec<Vec<ArgSymbol*>*>* candidateActualFormals,
-                      Vec<Symbol*>* actuals,
-                      Vec<ArgSymbol*>** ret_afs,
-                      Expr* scope, bool explain) {
-  for (int i = 0; i < candidateFns->n; i++) {
-    TRACE_DISAMBIGUATE_BY_MATCH1("Considering fn %d ", i);
-    FnSymbol* fn1 = candidateFns->v[i];
-    Vec<ArgSymbol*>* actualFormals1 = candidateActualFormals->v[i];
-    bool best = true; // is fn1 the best candidate?
-    for (int j = 0; j < candidateFns->n; j++) {
-      if (i != j) {
-        TRACE_DISAMBIGUATE_BY_MATCH1("vs. fn %d:\n", j);
-        FnSymbol* fn2 = candidateFns->v[j];
-        bool worse = false; // is fn1 worse than fn2?
-        bool equal = true;  // is fn1 as good as fn2?
-        int paramPrefers = 0; // 1 == fn1, 2 == fn2, -1 == conflicting signals
-        bool fnPromotes1 = false; // does fn1 require promotion?
-        bool fnPromotes2 = false; // does fn2 require promotion?
-        Vec<ArgSymbol*>* actualFormals2 = candidateActualFormals->v[j];
-        for (int k = 0; k < actualFormals1->n; k++) {
-          TRACE_DISAMBIGUATE_BY_MATCH1("...arg %d: ", k);
-          Symbol* actual = actuals->v[k];
 
-          ArgSymbol* arg = actualFormals1->v[k];
-          bool argPromotes1 = false;
-          canDispatch(actual->type, actual, arg->type, fn1, &argPromotes1);
-          fnPromotes1 |= argPromotes1;
+/**
+ * \brief Compare two argument mappings, given a set of actual arguments, and
+ *        set the disambiguation state appropriately.
+ * 
+ * This function implements the argument mapping comparison component of the
+ * disambiguation procedure as detailed in section 13.14.3 of the Chapel
+ * language specification (page 107).
+ * 
+ * \param fn1     The first function to be compared.
+ * \param formal1 The formal argument that correspond to the actual argument
+ *                for the first function.
+ * \param fn2     The second function to be compared.
+ * \param formal2 The formal argument that correspond to the actual argument
+ *                for the second function.
+ * \param actual  The actual argument from the call site.
+ * \param DC      The disambiguation context.
+ * \param DS      The disambiguation state.
+ */
+static void testArgMapping(FnSymbol* fn1, ArgSymbol* formal1,
+                           FnSymbol* fn2, ArgSymbol* formal2,
+                           Symbol* actual,
+                           const DisambiguationContext& DC,
+                           DisambiguationState& DS) {
+  
+  TRACE_DISAMBIGUATE_BY_MATCH("Actual's type: %s\n", toString(actual->type));
+  
+  bool formal1Promotes = false;
+  canDispatch(actual->type, actual, formal1->type, fn1, &formal1Promotes);
+  DS.fn1Promotes |= formal1Promotes;
+  
+  TRACE_DISAMBIGUATE_BY_MATCH("Formal 1's type: %s\n", toString(formal1->type));
+  if (formal1Promotes) {
+    TRACE_DISAMBIGUATE_BY_MATCH("Actual requires promotion to match formal 1\n");
+  } else {
+    TRACE_DISAMBIGUATE_BY_MATCH("Actual DOES NOT require promotion to match formal 1\n");
+  }
+  
+  if (formal1->instantiatedParam) {
+    TRACE_DISAMBIGUATE_BY_MATCH("Formal 1 is an instantiated param.\n");
+  } else {
+    TRACE_DISAMBIGUATE_BY_MATCH("Formal 1 is NOT an instantiated param.\n");
+  }
+  
+  bool formal2Promotes = false;
+  canDispatch(actual->type, actual, formal2->type, fn1, &formal2Promotes);
+  DS.fn2Promotes |= formal2Promotes;
+  
+  TRACE_DISAMBIGUATE_BY_MATCH("Formal 2's type: %s\n", toString(formal2->type));
+  if (formal1Promotes) {
+    TRACE_DISAMBIGUATE_BY_MATCH("Actual requires promotion to match formal 2\n");
+  } else {
+    TRACE_DISAMBIGUATE_BY_MATCH("Actual DOES NOT require promotion to match formal 2\n");
+  }
+  
+  if (formal2->instantiatedParam) {
+    TRACE_DISAMBIGUATE_BY_MATCH("Formal 2 is an instantiated param.\n");
+  } else {
+    TRACE_DISAMBIGUATE_BY_MATCH("Formal 2 is NOT an instantiated param.\n");
+  }
 
-          ArgSymbol* arg2 = actualFormals2->v[k];
-          bool argPromotes2 = false;
-          canDispatch(actual->type, actual, arg2->type, fn1, &argPromotes2);
-          fnPromotes2 |= argPromotes2;
-
-          if (arg->type == arg2->type && arg->instantiatedParam && !arg2->instantiatedParam) {
-            equal = false;
-            TRACE_DISAMBIGUATE_BY_MATCH("A: not equal\n");
-          } else if (arg->type == arg2->type && !arg->instantiatedParam && arg2->instantiatedParam) {
-            worse = true;
-            TRACE_DISAMBIGUATE_BY_MATCH("B: worse\n");
-          } else if (!argPromotes1 && argPromotes2) {
-            equal = false;
-            TRACE_DISAMBIGUATE_BY_MATCH("C: equal\n");
-          } else if (argPromotes1 && !argPromotes2) {
-            worse = true;
-            TRACE_DISAMBIGUATE_BY_MATCH("D: worse\n");
-          } else if (arg->type == arg2->type && !arg->instantiatedFrom && arg2->instantiatedFrom) {
-            equal = false;
-            TRACE_DISAMBIGUATE_BY_MATCH("E: not equal\n");
-          } else if (arg->type == arg2->type && arg->instantiatedFrom && !arg2->instantiatedFrom) {
-            worse = true;
-            TRACE_DISAMBIGUATE_BY_MATCH("F: worse\n");
-          } else if (arg->instantiatedFrom!=dtAny && arg2->instantiatedFrom==dtAny) {
-            equal = false;
-            TRACE_DISAMBIGUATE_BY_MATCH("G: not equal\n");
-          } else if (arg->instantiatedFrom==dtAny && arg2->instantiatedFrom!=dtAny) {
-            worse = true;
-            TRACE_DISAMBIGUATE_BY_MATCH("H: worse\n");
-          } else if (considerParamMatches(actual->type, arg->type, arg2->type)) {
-            TRACE_DISAMBIGUATE_BY_MATCH("In param case\n");
-            // The actual matches arg's type, but not arg2's
-            if (paramWorks(actual, arg2->type)) {
-              // but the actual is a param and works for arg2
-              if (arg->instantiatedParam) {
-                // the param works equally well for both, but
-                // matches the first slightly better if we had to
-                // decide
-                registerParamPreference(paramPrefers, 1, "arg1");
-              } else {
-                if (arg2->instantiatedParam) {
-                  registerParamPreference(paramPrefers, 2, "arg2");
-                } else {
-                  // neither is a param, but arg1 is an exact type
-                  // match, so prefer that one
-                  registerParamPreference(paramPrefers, 1, "arg1");
-                }
-              }
-            } else {
-              equal = false;
-              TRACE_DISAMBIGUATE_BY_MATCH("I8: not equal\n");
-            }
-          } else if (considerParamMatches(actual->type, arg2->type, arg->type)) {
-            TRACE_DISAMBIGUATE_BY_MATCH("In param case #2\n");
-            // The actual matches arg2's type, but not arg's
-            if (paramWorks(actual, arg->type)) {
-              // but the actual is a param and works for arg
-              if (arg2->instantiatedParam) {
-                // the param works equally well for both, but
-                // matches the second slightly better if we had to
-                // decide
-                registerParamPreference(paramPrefers, 2, "arg2");
-              } else {
-                if (arg->instantiatedParam) {
-                  registerParamPreference(paramPrefers, 1, "arg1");
-                } else {
-                  // neither is a param, but arg1 is an exact type
-                  // match, so prefer that one
-                  registerParamPreference(paramPrefers, 2, "arg2");
-                } 
-              }
-            } else {
-              worse = true;
-              TRACE_DISAMBIGUATE_BY_MATCH("J8: worse\n");
-            }
-          } else if (moreSpecific(fn1, arg->type, arg2->type) &&
-                     arg2->type != arg->type) {
-            equal = false;
-            TRACE_DISAMBIGUATE_BY_MATCH("K: not equal\n");
-          } else if (moreSpecific(fn1, arg2->type, arg->type) && 
-                     arg2->type != arg->type) {
-            worse = true;
-            TRACE_DISAMBIGUATE_BY_MATCH("L: worse\n");
-          } else if (is_int_type(arg->type) &&
-                     is_uint_type(arg2->type)) {
-            equal = false;
-            TRACE_DISAMBIGUATE_BY_MATCH("M: not equal\n");
-          } else if (is_int_type(arg2->type) &&
-                     is_uint_type(arg->type)) {
-            worse = true;
-            TRACE_DISAMBIGUATE_BY_MATCH("N: worse\n");
-          } else {
-            TRACE_DISAMBIGUATE_BY_MATCH("N2: fell through\n");
-          }
-        }
-        if (!fnPromotes1 && fnPromotes2) {
-          TRACE_DISAMBIGUATE_BY_MATCH("O: one promotes and not the other\n");
-          continue;
-        }
-        if (!worse && equal) {
-          if (isMoreVisible(scope, fn1, fn2)) {
-            equal = false;
-            TRACE_DISAMBIGUATE_BY_MATCH("P: not equal\n");
-          } else if (isMoreVisible(scope, fn2, fn1)) {
-            worse = true;
-            TRACE_DISAMBIGUATE_BY_MATCH("Q: worse\n");
-          } else if (paramPrefers == 1) {
-            equal = false;
-            TRACE_DISAMBIGUATE_BY_MATCH("R1: param breaks tie for 1\n");
-          } else if (paramPrefers == 2) {
-            worse = true;
-            TRACE_DISAMBIGUATE_BY_MATCH("R2: param breaks tie for 2\n");
-          } else if (fn1->where && !fn2->where) {
-            equal = false;
-            TRACE_DISAMBIGUATE_BY_MATCH("S: not equal\n");
-          } else if (!fn1->where && fn2->where) {
-            worse = true;
-            TRACE_DISAMBIGUATE_BY_MATCH("T: worse\n");
-          }
-        }
-        if (worse || equal) {
-          best = false;
-          TRACE_DISAMBIGUATE_BY_MATCH("U: not best\n");
-          break;
-        }
+  if (formal1->type == formal2->type && formal1->instantiatedParam && !formal2->instantiatedParam) {
+    TRACE_DISAMBIGUATE_BY_MATCH("A: Fn %d is more specific\n", DC.i);
+    DS.fn1MoreSpecific = true;
+    
+  } else if (formal1->type == formal2->type && !formal1->instantiatedParam && formal2->instantiatedParam) {
+    TRACE_DISAMBIGUATE_BY_MATCH("B: Fn %d is more specific\n", DC.j);
+    DS.fn2MoreSpecific = true;
+    
+  } else if (!formal1Promotes && formal2Promotes) {
+    TRACE_DISAMBIGUATE_BY_MATCH("C: Fn %d is more specific\n", DC.i);
+    DS.fn1MoreSpecific = true;
+    
+  } else if (formal1Promotes && !formal2Promotes) {
+    TRACE_DISAMBIGUATE_BY_MATCH("D: Fn %d is more specific\n", DC.j);
+    DS.fn2MoreSpecific = true;
+    
+  } else if (formal1->type == formal2->type && !formal1->instantiatedFrom && formal2->instantiatedFrom) {
+    TRACE_DISAMBIGUATE_BY_MATCH("E: Fn %d is more specific\n", DC.i);
+    DS.fn1MoreSpecific = true;
+    
+  } else if (formal1->type == formal2->type && formal1->instantiatedFrom && !formal2->instantiatedFrom) {
+    TRACE_DISAMBIGUATE_BY_MATCH("F: Fn %d is more specific\n", DC.j);
+    DS.fn2MoreSpecific = true;
+    
+  } else if (formal1->instantiatedFrom != dtAny && formal2->instantiatedFrom == dtAny) {
+    TRACE_DISAMBIGUATE_BY_MATCH("G: Fn %d is more specific\n", DC.i);
+    DS.fn1MoreSpecific = true;
+    
+  } else if (formal1->instantiatedFrom == dtAny && formal2->instantiatedFrom != dtAny) {
+    TRACE_DISAMBIGUATE_BY_MATCH("H: Fn %d is more specific\n", DC.j);
+    DS.fn2MoreSpecific = true;
+    
+  } else if (considerParamMatches(actual->type, formal1->type, formal2->type)) {
+    TRACE_DISAMBIGUATE_BY_MATCH("In first param case\n");
+    // The actual matches formal1's type, but not formal2's
+    if (paramWorks(actual, formal2->type)) {
+      // but the actual is a param and works for formal2
+      if (formal1->instantiatedParam) {
+        // the param works equally well for both, but
+        // matches the first slightly better if we had to
+        // decide
+        registerParamPreference(DS.paramPrefers, 1, "formal1", DC);
+      } else if (formal2->instantiatedParam) {
+        registerParamPreference(DS.paramPrefers, 2, "formal2", DC);
+      } else {
+        // neither is a param, but formal1 is an exact type
+        // match, so prefer that one
+        registerParamPreference(DS.paramPrefers, 1, "formal1", DC);
       }
+    } else {
+      TRACE_DISAMBIGUATE_BY_MATCH("I: Fn %d is more specific\n", DC.i);
+      DS.fn1MoreSpecific = true;
     }
-    if (best) {
-      *ret_afs = actualFormals1;
-      return fn1;
+  } else if (considerParamMatches(actual->type, formal2->type, formal1->type)) {
+    TRACE_DISAMBIGUATE_BY_MATCH("In second param case\n");
+    // The actual matches formal2's type, but not formal1's
+    if (paramWorks(actual, formal1->type)) {
+      // but the actual is a param and works for formal1
+      if (formal2->instantiatedParam) {
+        // the param works equally well for both, but
+        // matches the second slightly better if we had to
+        // decide
+        registerParamPreference(DS.paramPrefers, 2, "formal2", DC);
+      } else if (formal1->instantiatedParam) {
+        registerParamPreference(DS.paramPrefers, 1, "formal1", DC);
+      } else {
+        // neither is a param, but formal1 is an exact type
+        // match, so prefer that one
+        registerParamPreference(DS.paramPrefers, 2, "formal2", DC);
+      }
+    } else {
+      TRACE_DISAMBIGUATE_BY_MATCH("J: Fn %d is more specific\n", DC.j);
+      DS.fn2MoreSpecific = true;
+    }
+  } else if (moreSpecific(fn1, formal1->type, formal2->type) && formal2->type != formal1->type) {
+    TRACE_DISAMBIGUATE_BY_MATCH("K: Fn %d is more specific\n", DC.i);
+    DS.fn1MoreSpecific = true;
+    
+  } else if (moreSpecific(fn1, formal2->type, formal1->type) && formal2->type != formal1->type) {
+    TRACE_DISAMBIGUATE_BY_MATCH("L: Fn %d is more specific\n", DC.j);
+    DS.fn2MoreSpecific = true;
+    
+  } else if (is_int_type(formal1->type) && is_uint_type(formal2->type)) {
+    TRACE_DISAMBIGUATE_BY_MATCH("M: Fn %d is more specific\n", DC.i);
+    DS.fn1MoreSpecific = true;
+    
+  } else if (is_int_type(formal2->type) && is_uint_type(formal1->type)) {
+    TRACE_DISAMBIGUATE_BY_MATCH("N: Fn %d is more specific\n", DC.j);
+    DS.fn2MoreSpecific = true;
+    
+  } else {
+    TRACE_DISAMBIGUATE_BY_MATCH("O: no information gained from argument\n");
+  }
+}
+
+
+/**
+ * \brief Determines if fn1 is a better match than fn2.
+ * 
+ * This function implements the function comparison component of the
+ * disambiguation procedure as detailed in section 13.14.3 of the Chapel
+ * language specification (page 106).
+ * 
+ * \param fn1      The first function to be compared.
+ * \param formals1 The formal arguments that correspond to the actual arguments
+ *                 for the first function.
+ * \param fn2      The second function to be compared.
+ * \param formals2 The formal arguments that correspond to the actual arguments
+ *                 for the second function.
+ * \param DS       The disambiguation state.
+ * 
+ * \return True if fn1 is a more specific function than f2, false otherwise.
+ */
+static bool isBetterMatch(FnSymbol* fn1, Vec<ArgSymbol*>* formals1,
+                          FnSymbol* fn2, Vec<ArgSymbol*>* formals2,
+                          const DisambiguationContext& DC) {
+  
+  DisambiguationState DS;
+  
+  for (int k = 0; k < formals1->n; ++k) {
+    Symbol* actual = DC.actuals->v[k];
+    ArgSymbol* formal1 = formals1->v[k];
+    ArgSymbol* formal2 = formals2->v[k];
+    
+    TRACE_DISAMBIGUATE_BY_MATCH("\nLooking at argument %d\n", k);
+                   
+    testArgMapping(fn1, formal1, fn2, formal2, actual, DC, DS);
+  }
+  
+  if (!DS.fn1Promotes && DS.fn2Promotes) {
+    TRACE_DISAMBIGUATE_BY_MATCH("\nP: Fn %d does not require argument promotion; Fn %d does\n", DC.i, DC.j);
+    DS.printSummary("P", DC);
+    return true;
+  }
+  
+  if (!(DS.fn1MoreSpecific || DS.fn2MoreSpecific)) {
+    // If the decision hasn't been made based on the argument mappings...
+    
+    if (isMoreVisible(DC.scope, fn1, fn2)) {
+      TRACE_DISAMBIGUATE_BY_MATCH("\nQ: Fn %d is more specific\n", DC.i);
+      DS.fn1MoreSpecific = true;
+      
+    } else if (isMoreVisible(DC.scope, fn2, fn1)) {
+      TRACE_DISAMBIGUATE_BY_MATCH("\nR: Fn %d is more specific\n", DC.j);
+      DS.fn2MoreSpecific = true;
+      
+    } else if (DS.paramPrefers == 1) {
+      TRACE_DISAMBIGUATE_BY_MATCH("\nS: Fn %d is more specific\n", DC.i);
+      DS.fn1MoreSpecific = true;
+      
+    } else if (DS.paramPrefers == 2) {
+      TRACE_DISAMBIGUATE_BY_MATCH("\nT: Fn %d is more specific\n", DC.j);
+      DS.fn2MoreSpecific = true;
+      
+    } else if (fn1->where && !fn2->where) {
+      TRACE_DISAMBIGUATE_BY_MATCH("\nU: Fn %d is more specific\n", DC.i);
+      DS.fn1MoreSpecific = true;
+      
+    } else if (!fn1->where && fn2->where) {
+      TRACE_DISAMBIGUATE_BY_MATCH("\nV: Fn %d is more specific\n", DC.j);
+      DS.fn2MoreSpecific = true;
     }
   }
-  *ret_afs = NULL;
-  return NULL;
+  
+  DS.printSummary("W", DC);
+  return DS.fn1MoreSpecific && !DS.fn2MoreSpecific;
+}
+
+
+/**
+ * \brief Find the best candidate from a list of candidates.
+ * 
+ * This function finds the best Chapel function from a set of candidates, given
+ * a call site.  This is an implementation of 13.14.3 of the Chapel language
+ * specification (page 106).
+ * 
+ * \param candidateFns           A list of the candidate functions, from which
+ *                               the best match is selected.
+ * \param candidateMappedFormals The aligned formal arguments for the actual
+ *                               arguments taken from the call site.
+ * 
+ * \return The result of the disambiguation process.
+ */
+static DisambiguationResult
+disambiguateByMatch(Vec<FnSymbol*>* candidateFns,
+                    Vec<Vec<ArgSymbol*>*>* candidateMappedFormals,
+                    DisambiguationContext DC) {
+  
+  // If index i is set then we can skip testing function F_i because we already
+  // know it can not be the best match.
+  std::vector<bool> notBest(candidateFns->n, false);
+  
+  for (int i = 0; i < candidateFns->n; ++i) {
+    
+    TRACE_DISAMBIGUATE_BY_MATCH("##########################\n");
+    TRACE_DISAMBIGUATE_BY_MATCH("# Considering function %d #\n", i);
+    TRACE_DISAMBIGUATE_BY_MATCH("##########################\n\n");
+    
+    FnSymbol* fn1 = candidateFns->v[i];
+    Vec<ArgSymbol*>* mappedFormals1 = candidateMappedFormals->v[i];
+    bool best = true; // is fn1 the best candidate?
+    
+    TRACE_DISAMBIGUATE_BY_MATCH("%s\n\n", toString(fn1));
+    
+    if (notBest[i]) {
+      TRACE_DISAMBIGUATE_BY_MATCH("Already known to not be best match.  Skipping.\n\n");
+      continue;
+    }
+    
+    for (int j = 0; j < candidateFns->n; ++j) {
+      if (i == j) continue;
+        
+      TRACE_DISAMBIGUATE_BY_MATCH("Comparing to function %d\n", j);
+      TRACE_DISAMBIGUATE_BY_MATCH("-----------------------\n");
+      
+      FnSymbol* fn2 = candidateFns->v[j];
+      Vec<ArgSymbol*>* mappedFormals2 = candidateMappedFormals->v[j];
+      
+      TRACE_DISAMBIGUATE_BY_MATCH("%s\n", toString(fn2)); 
+      
+      if (isBetterMatch(fn1, mappedFormals1, fn2, mappedFormals2, DC.forPair(i,j))) {
+        TRACE_DISAMBIGUATE_BY_MATCH("X: Fn %d is a better match than Fn %d\n\n\n", i, j);
+        notBest[j] = true;
+        
+      } else {
+        TRACE_DISAMBIGUATE_BY_MATCH("X: Fn %d is NOT a better match than Fn %d\n\n\n", i, j);
+        best = false;
+        break;
+      }
+    }
+    
+    if (best) {
+      TRACE_DISAMBIGUATE_BY_MATCH("Y: Fn %d is the best match.\n\n\n", i);
+      return DisambiguationResult(fn1, mappedFormals1);
+    } else {
+      TRACE_DISAMBIGUATE_BY_MATCH("Y: Fn %d is NOT the best match.\n\n\n", i);
+    }
+  }
+  
+  TRACE_DISAMBIGUATE_BY_MATCH("Z: No non-ambiguous best match.\n\n");
+  
+  return DisambiguationResult();
 }
 
 
@@ -2446,11 +2689,17 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
     }
 
     FnSymbol* best = NULL;
-    Vec<ArgSymbol*>* actualFormals = 0;
+    Vec<ArgSymbol*>* actualFormals = NULL;
     Expr* scope = (info.scope) ? info.scope : getVisibilityBlock(call);
-    best = disambiguate_by_match(&candidateFns, &candidateActualFormals,
-                                 &info.actuals, &actualFormals, scope,
-                                 explainCallLine && explainCallMatch(call));
+    DisambiguationContext DC(&info.actuals, scope,
+                             explainCallLine && explainCallMatch(call));
+    
+    DisambiguationResult DR;
+    
+    DR = disambiguateByMatch(&candidateFns, &candidateActualFormals, DC);
+
+    best = DR.function;
+    actualFormals = DR.mappedFormals;
 
     if (best && explainCallLine && explainCallMatch(call)) {
       USR_PRINT(best, "best candidate is: %s", toString(best));
