@@ -338,8 +338,9 @@ class GraphClass:
                     myDate = df.lines[currLines[i]][0][0]
                     if minDate==None or myDate<minDate:
                         minDate = myDate
-                        if startdate==None:
-                            startdate = minDate
+                        
+            if startdate==None:
+                startdate = minDate
 
             if done:
                 break
