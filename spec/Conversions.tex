@@ -210,6 +210,9 @@ types than implicit conversions, but explicit conversions are not
 supported between all types.
 
 The explicit conversions are a superset of the implicit conversions.
+In addition to the following definitions,
+an explicit conversion from a type to the same type is allowed for any type.
+Such conversion does not change the value of the expression.
 
 \subsection{Explicit Numeric Conversions}
 \label{Explicit_Numeric_Conversions}
@@ -354,10 +357,12 @@ string is selected.  If no such enumerator exists, a runtime error occurs.
 
 An expression of static class type \chpl{C} can be explicitly
 converted to a class type \chpl{D} provided that \chpl{C} is derived
-from \chpl{D} or \chpl{D} is derived from \chpl{C}.  In the event
-that \chpl{D} is derived from \chpl{C}, it is a runtime error if the
-the dynamic class type of \chpl{C} is not derived from or equal
-to \chpl{D}.
+from \chpl{D} or \chpl{D} is derived from \chpl{C}.
+
+When at run time the source expression refers to an instance of
+\chpl{D} or it subclass, its value is not changed.
+Otherwise, or when the source expression is \chpl{nil},
+the result of the conversion is \chpl{nil}.
 
 \subsection{Explicit Record Conversions}
 \label{Explicit_Record_Conversions}
