@@ -1,0 +1,70 @@
+New performance test system features: 'time' and dir-level comp/exec opts
+
+(and use them for the mandelbrot shootout]
+
+[reviewed by sungeun]
+
+This commit adds some new features to the performance testing system.
+
+1) The first is simply fleshing out something we've always intended
+   but never gotten around to implementing: Directory-level
+   PERFCOMPOPTS and PERFEXECOPTS files.  These work similarly to
+   COMPOPTS and EXECOPTS, but for performance testing (previously we
+   only had file-level .perfcompopts and .perfexecopts).
+
+[One thing I noticed here is that we seem to use COMPOPTS and EXECOPTS
+for performance testing when they exist, which seems contrary to how
+.compopts/.execopts work, so for consistency I think we should change
+that.  However, I didn't change it here because of the potential
+impact on existing tests, my inability to test well while on the road,
+and my need to get on to the next thing.  So cleaning that up remains
+a TODO]
+
+
+2) The second feature is the ability to include a
+   PERFTIMEEXEC/.perftimeexec file as an indicator that the
+   performance test should be run under the 'time -p' command.  This
+   permits the execution time of the entire executable to be timed
+   externally to the program rather than simply testing the
+   user-visible portion of the code from within the program as we have
+   traditionally done.  The output is appended to the end of the
+   compilation+execution output file and can be grabbed via a normal
+   .perfkeys entry.
+
+[Some TODOs in this area are:
+
+a) This feature is not implemented in a very composable way with
+   respect to other options that prefix the executable command line,
+   like valgrind, using a launcher command, etc.  The conditional that
+   builds up the command + arguments should be made less of a
+   conditional where only one of the options fires and more of a
+   series of conditionals that can gradually shift the command into
+   the arguments and prepend new commands and arguments.  E.g., if
+   running ./a.out --fast, first valgrind could shift ./a.out into the
+   arg list and then prepend its arguments, making itself the command;
+   then 'time' could shift valgrind into the arguments list along with
+   the -p argument and make itself the command...
+
+b) Ultimately, we may want to add a similar capability for the compile
+   step.
+
+]
+
+The net effect of this is that it should permit us to remove the
+explicit timing calls from the shootout benchmarks to (a) measure them
+more by the rules and (b) make the code cleaner/more concise.
+
+
+Here, I used these features to add performance testing to our first
+three mandelbrot variations, using common COMPOPTS and EXECOPTS for
+them and using the PERFTIMEEXEC file to time them using 'time -p'
+rather than rewriting them to include timer calls.  I use the
+.perfkeys file to read the 'real' time reported.
+
+
+[A final TODO: We may ultimately want to support directory-level
+PERFKEYS files when a number of tests use the same keys, like these
+variations do.  I started to work on this, and the changes to sub_test
+are fairly easy, but it turns out there are also changes required to
+start_test that are more complicated, so I backed off of it in this
+commit.]
