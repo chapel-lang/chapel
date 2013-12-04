@@ -433,8 +433,12 @@ ENVIRONMENT
                       based on $CHPL_HOST_PLATFORM, $CHPL_TARGET_PLATFORM,
                       and $CHPL_HOST_COMPILER).
 
-  CHPL_LOCALE_MODEL  Specifies the locale model to use for describing
-                     your locale architecture (defaults to 'flat')
+  CHPL_LOCALE_MODEL   Specifies the locale model to use for describing
+                      your locale architecture (defaults to 'flat')
+  
+  CHPL_ACC_CODEGEN    Specifies the code generation method to use for targeting
+                      accelerators (defaults to "openacc" if CHPL_LOCALE_MODEL
+                      is 'acc', otherwise it is ignored.)
 
   CHPL_COMM           Specifies the communication layer to use for
                       inter-locale data transfers (defaults to 'none').

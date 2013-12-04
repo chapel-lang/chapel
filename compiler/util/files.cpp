@@ -624,6 +624,8 @@ void addDashMsToUserPath(void) {
 
 void setupModulePaths(void) {
   intModPath.add(astr(CHPL_HOME, "/modules/internal/localeModels/",
+                      CHPL_LOCALE_MODEL, "/", CHPL_ACC_CODEGEN));
+  intModPath.add(astr(CHPL_HOME, "/modules/internal/localeModels/",
                       CHPL_LOCALE_MODEL));
   intModPath.add(astr(CHPL_HOME, "/modules/internal/threads/", CHPL_THREADS));
   intModPath.add(astr(CHPL_HOME, "/modules/internal/tasks/", CHPL_TASKS));

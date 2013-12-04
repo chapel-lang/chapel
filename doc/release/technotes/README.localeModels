@@ -19,13 +19,16 @@ multiple instances of memories and/or processors with differing
 characteristics.  They may also be hierarchical, with parent locales
 containing one or more child sublocales within them.
 
-There are currently two locale models available, flat and NUMA.  The
-flat model is the default and maps closely to the view of locales
+There are currently three locale models available, flat, NUMA, and acc.
+The flat model is the default and maps closely to the view of locales
 implemented in the 1.7 release.  The NUMA locale model maps sublocales
 to NUMA domains.  The NUMA model is currently implemented at a prototype
 level. Performance has not yet been a focus in the NUMA locale model and
-will require additional effort in future releases.  We expect to add
-more locale models in future releases.
+will require additional effort in future releases. The acc locale model
+describes locales that consist of conventional processors with attached
+accelerators. It is currently a work in progress and does not fully 
+target accelerators yet. We expect to add more locale models in future 
+releases.
 
 
 -----------------------------------
@@ -113,3 +116,30 @@ Caveats for using the NUMA locale model
 * Explicit memory allocation for NUMA domains is not yet implemented
 * Distributed arrays do not yet map iteration to NUMA domains
 * Performance for NUMA has not been optimized.
+
+
+----------------
+Acc Locale Model
+----------------
+
+The acc locale model is intended to be used for locales that contain
+conventional processors with attached accelerators. There are many
+potential methods for targeting accelerators such as OpenCL, CUDA,
+OpenACC, and in the future OpenMP. As such the there is a second
+environment variable related to the acc locale model called
+CHPL_ACC_CODEGEN. It changes the code generation depending on the method
+being used to target accelerators. The current default is openacc if the
+locale model is set to acc, otherwise it defaults to none and is
+ignored. Note that targeting accelerators is a work in progress and that
+the compiler does not yet produce an executable that will run on
+accelerators.
+
+
+--------------------------------------
+Caveats for using the acc locale model
+--------------------------------------
+
+* The mechanism for targeting accelerator is a work in progress.
+  Currently generated code would have to be manually modified to run on
+  accelerators. 
+
