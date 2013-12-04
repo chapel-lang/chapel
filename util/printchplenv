@@ -87,6 +87,10 @@ sub go {
   } else {
       $localeModel = run("localeModel");
       printit("CHPL_LOCALE_MODEL", "loc", $localeModel);
+      if ($mode eq "make" or $localeModel eq "acc") {
+          $acccodegen = run("localeModelCodegen");
+          printit("  CHPL_ACC_CODEGEN", "", $acccodegen, "runtime, launcher");    
+      }
   }
 
   $comm = run("comm");

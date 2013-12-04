@@ -1,0 +1,11 @@
+ifeq ($(CHPL_MAKE_ACC_CODEGEN), openacc)
+
+ifeq ($(CHPL_MAKE_TARGET_COMPILER), cray-prgenv-pgi)
+GEN_CFLAGS += -acc
+endif
+
+ifeq ($(CHPL_MAKE_TARGET_COMPILER), cray-prgenv-cray)
+GEN_CFLAGS += -hpragma=acc
+endif
+
+endif
