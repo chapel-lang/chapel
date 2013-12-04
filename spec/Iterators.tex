@@ -142,6 +142,10 @@ A post-order traversal of a tree data structure could be written like this:
 class Tree {
   var data: string;
   var left, right: Tree;
+  proc ~Tree() {
+    if left then delete left;
+    if right then delete right;
+  }
 }
 
 var tree = new Tree("a", new Tree("b"), new Tree("c", new Tree("d"), new Tree("e")));
@@ -169,6 +173,7 @@ proc Tree.writeThis(x: Writer)
 }
 writeln("Tree Data");
 writeln(tree);
+delete tree;
 \end{chapelnoprint}
 By contrast, using calls \chpl{postorder(tree.left)}
 and \chpl{postorder(tree.right)} as stand-alone statements would

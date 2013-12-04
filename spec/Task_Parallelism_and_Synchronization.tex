@@ -183,6 +183,12 @@ var tree: Tree = new Tree(false, new Tree(false, new Tree(true, nil, nil, 1),
                                  new Tree(false, new Tree(true, nil, nil, 1),
                                                  new Tree(true, nil, nil, 1), 1), 1);
 writeln(tree.sum());
+proc Tree.~Tree() {
+  if isLeaf then return;
+  delete left;
+  delete right;
+}
+delete tree;
 \end{chapelpost}
 \begin{chapeloutput}
 4
@@ -910,6 +916,16 @@ proc Node.insertAfter(newNode: Node) {
 \end{chapel}
 \begin{chapelpost}
 writeln(head.data, head.next.data, head.next.next.data, head.next.next.next.data);
+proc Node.remove() {
+  if this.prev then this.prev = this.next;
+  if this.next then this.next = this.prev;
+  return this;
+}
+while (head) {
+  next = head.next;
+  delete head;
+  head = next;
+} 
 \end{chapelpost}
 \begin{chapeloutput}
 atomic.chpl:13: warning: atomic keyword is ignored (not implemented)

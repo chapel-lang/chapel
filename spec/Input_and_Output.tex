@@ -831,6 +831,9 @@ class IntPair {
 var ip = new IntPair(17,2);
 write(ip);
 \end{chapel}
+\begin{chapelpost}
+delete ip;
+\end{chapelpost}
 produces the output
 \begin{chapelprintoutput}{}
 17,2
@@ -854,6 +857,9 @@ var nr = new NoRead();
 write(nr);
 // Note that read(nr) will generate a compiler error.
 \end{chapel}
+\begin{chapelpost}
+delete nr;
+\end{chapelpost}
 prints out
 \begin{chapelprintoutput}{}
 hello
@@ -891,6 +897,9 @@ var c = new C();
 c.write(41, 32, 23, 14);
 writeln(c);
 \end{chapel}
+\begin{chapelpost}
+delete c;
+\end{chapelpost}
 The \chpl{C} class filters the arguments sent to it, printing out only
 the first letter.  The output to the above is thus:
 % TODO: when 'chapelprintoutput' is extended with some wording,
