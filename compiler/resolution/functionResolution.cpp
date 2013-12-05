@@ -350,9 +350,9 @@ static bool typeHasRefField(Type *type) {
 //
 static FnSymbol*
 resolveUninsertedCall(Type* type, CallExpr* call) {
-  if (type->initializer) {
-    if (type->initializer->instantiationPoint)
-      type->initializer->instantiationPoint->insertAtHead(call);
+  if (type->defaultInitializer) {
+    if (type->defaultInitializer->instantiationPoint)
+      type->defaultInitializer->instantiationPoint->insertAtHead(call);
     else
       type->symbol->defPoint->insertBefore(call);
   } else
@@ -476,7 +476,7 @@ const char* toString(CallInfo* info) {
       str = astr(str, info->actualNames.v[i], "=");
     VarSymbol* var = toVarSymbol(info->actuals.v[i]);
     if (info->actuals.v[i]->type->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
-        info->actuals.v[i]->type->initializer->hasFlag(FLAG_PROMOTION_WRAPPER))
+        info->actuals.v[i]->type->defaultInitializer->hasFlag(FLAG_PROMOTION_WRAPPER))
       str = astr(str, "promoted expression");
     else if (info->actuals.v[i] && info->actuals.v[i]->hasFlag(FLAG_TYPE_VARIABLE))
       str = astr(str, "type ", toString(info->actuals.v[i]->type));
@@ -639,7 +639,7 @@ protoIteratorClass(FnSymbol* fn) {
   ii->hasMore = protoIteratorMethod(ii, "hasMore", dtInt[INT_SIZE_DEFAULT]);
   ii->getValue = protoIteratorMethod(ii, "getValue", fn->retType);
 
-  ii->irecord->initializer = fn;
+  ii->irecord->defaultInitializer = fn;
   ii->irecord->scalarPromotionType = fn->retType;
   fn->retType = ii->irecord;
   fn->retTag = RET_VALUE;
@@ -666,7 +666,7 @@ protoIteratorClass(FnSymbol* fn) {
   ii->getIterator->insertAtTail(new CallExpr(PRIM_SETCID, ret));
   ii->getIterator->insertAtTail(new CallExpr(PRIM_RETURN, ret));
   fn->defPoint->insertBefore(new DefExpr(ii->getIterator));
-  ii->iclass->initializer = ii->getIterator;
+  ii->iclass->defaultInitializer = ii->getIterator;
   normalize(ii->getIterator);
   resolveFns(ii->getIterator);  // No shortcuts.
 }
@@ -3752,7 +3752,7 @@ createFunctionAsValue(CallExpr *call) {
   FnSymbol *wrapper = new FnSymbol("wrapper");
   wrapper->addFlag(FLAG_INLINE);
 
-  wrapper->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(PRIM_CAST, parent->symbol, new CallExpr(ct->initializer))));
+  wrapper->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(PRIM_CAST, parent->symbol, new CallExpr(ct->defaultInitializer))));
 
   call->getStmtExpr()->insertBefore(new DefExpr(wrapper));
 
@@ -4261,7 +4261,7 @@ preFold(Expr* expr) {
         call->insertAtTail(tmp);
       }
     } else if (call->isPrimitive(PRIM_TO_LEADER)) {
-      FnSymbol* iterator = call->get(1)->typeInfo()->initializer->getFormal(1)->type->initializer;
+      FnSymbol* iterator = call->get(1)->typeInfo()->defaultInitializer->getFormal(1)->type->defaultInitializer;
       CallExpr* leaderCall;
       if (FnSymbol* leader = iteratorLeaderMap.get(iterator))
         leaderCall = new CallExpr(leader);
@@ -4274,7 +4274,7 @@ preFold(Expr* expr) {
       call->replace(leaderCall);
       result = leaderCall;
     } else if (call->isPrimitive(PRIM_TO_FOLLOWER)) {
-      FnSymbol* iterator = call->get(1)->typeInfo()->initializer->getFormal(1)->type->initializer;
+      FnSymbol* iterator = call->get(1)->typeInfo()->defaultInitializer->getFormal(1)->type->defaultInitializer;
       CallExpr* followerCall;
       if (FnSymbol* follower = iteratorFollowerMap.get(iterator))
         followerCall = new CallExpr(follower);
@@ -5123,11 +5123,11 @@ static void instantiate_default_constructor(FnSymbol* fn) {
   // instantiate initializer
   //
   if (fn->instantiatedFrom) {
-    INT_ASSERT(!fn->retType->initializer);
+    INT_ASSERT(!fn->retType->defaultInitializer);
     FnSymbol* instantiatedFrom = fn->instantiatedFrom;
     while (instantiatedFrom->instantiatedFrom)
       instantiatedFrom = instantiatedFrom->instantiatedFrom;
-    CallExpr* call = new CallExpr(instantiatedFrom->retType->initializer);
+    CallExpr* call = new CallExpr(instantiatedFrom->retType->defaultInitializer);
     for_formals(formal, fn) {
       if (formal->type == dtMethodToken || formal == fn->_this) {
         call->insertAtTail(formal);
@@ -5144,9 +5144,9 @@ static void instantiate_default_constructor(FnSymbol* fn) {
     }
     fn->insertBeforeReturn(call);
     resolveCall(call);
-    fn->retType->initializer = call->isResolved();
-    INT_ASSERT(fn->retType->initializer);
-    //      resolveFns(fn->retType->initializer);
+    fn->retType->defaultInitializer = call->isResolved();
+    INT_ASSERT(fn->retType->defaultInitializer);
+    //      resolveFns(fn->retType->defaultInitializer);
     call->remove();
   }
 }
@@ -5437,18 +5437,18 @@ addToVirtualMaps(FnSymbol* pfn, ClassType* ct) {
             resolveFns(fn);
             if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
                 pfn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-              if (!isSubType(fn->retType->initializer->iteratorInfo->getValue->retType,
-                  pfn->retType->initializer->iteratorInfo->getValue->retType)) {
+              if (!isSubType(fn->retType->defaultInitializer->iteratorInfo->getValue->retType,
+                  pfn->retType->defaultInitializer->iteratorInfo->getValue->retType)) {
                 USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", toString(pfn),
-                               pfn->retType->initializer->iteratorInfo->getValue->retType->symbol->name);
+                               pfn->retType->defaultInitializer->iteratorInfo->getValue->retType->symbol->name);
                 USR_FATAL_CONT(fn, "  overridden by '%s: %s'", toString(fn),
-                               fn->retType->initializer->iteratorInfo->getValue->retType->symbol->name);
+                               fn->retType->defaultInitializer->iteratorInfo->getValue->retType->symbol->name);
                 USR_STOP();
               } else {
                 pfn->retType->dispatchChildren.add_exclusive(fn->retType);
                 fn->retType->dispatchParents.add_exclusive(pfn->retType);
-                Type* pic = pfn->retType->initializer->iteratorInfo->iclass;
-                Type* ic = fn->retType->initializer->iteratorInfo->iclass;
+                Type* pic = pfn->retType->defaultInitializer->iteratorInfo->iclass;
+                Type* ic = fn->retType->defaultInitializer->iteratorInfo->iclass;
                 INT_ASSERT(ic->symbol->hasFlag(FLAG_ITERATOR_CLASS));
 
                 // Iterator classes are created as normal top-level classes (inheriting
@@ -5868,9 +5868,9 @@ static void insertRuntimeTypeTemps() {
         !ts->hasFlag(FLAG_GENERIC)) {
       SET_LINENO(ts);
       VarSymbol* tmp = newTemp("_runtime_type_tmp_", ts->type);
-      ts->type->initializer->insertBeforeReturn(new DefExpr(tmp));
+      ts->type->defaultInitializer->insertBeforeReturn(new DefExpr(tmp));
       CallExpr* call = new CallExpr("chpl__convertValueToRuntimeType", tmp);
-      ts->type->initializer->insertBeforeReturn(call);
+      ts->type->defaultInitializer->insertBeforeReturn(call);
       resolveCall(call);
       resolveFns(call->isResolved());
       valueToRuntimeTypeMap.put(ts->type, call->isResolved());
@@ -5926,7 +5926,7 @@ static void resolveRecordInitializers() {
     } else if (type->symbol->hasFlag(FLAG_DISTRIBUTION)) {
       Symbol* tmp = newTemp("_distribution_tmp_");
       init->getStmtExpr()->insertBefore(new DefExpr(tmp));
-      CallExpr* classCall = new CallExpr(type->getField("_valueType")->type->initializer);
+      CallExpr* classCall = new CallExpr(type->getField("_valueType")->type->defaultInitializer);
       CallExpr* move = new CallExpr(PRIM_MOVE, tmp, classCall);
       init->getStmtExpr()->insertBefore(move);
       resolveCall(classCall);
@@ -5945,8 +5945,8 @@ static void resolveRecordInitializers() {
 //          init->replace(init->get(1)->remove());
       init->parentExpr->remove();
     } else {
-      INT_ASSERT(type->initializer);
-      CallExpr* call = new CallExpr(type->initializer);
+      INT_ASSERT(type->defaultInitializer);
+      CallExpr* call = new CallExpr(type->defaultInitializer);
       init->replace(call);
       resolveCall(call);
       if (call->isResolved())
@@ -6229,7 +6229,7 @@ isUnusedClass(ClassType *ct) {
     return false;
 
   // FALSE if initializers are used
-  if (resolvedFns.count(ct->initializer) != 0 ||
+  if (resolvedFns.count(ct->defaultInitializer) != 0 ||
       resolvedFns.count(ct->defaultTypeConstructor) != 0) {
     return false;
   }

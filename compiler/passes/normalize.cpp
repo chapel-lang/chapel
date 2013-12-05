@@ -525,7 +525,7 @@ static void call_constructor_for_class(CallExpr* call) {
         SET_LINENO(call);
 
         // These tests can be moved up to a general ClassType object verifier.
-        if (!ct->initializer)
+        if (!ct->defaultInitializer)
           INT_FATAL(call, "class type has no initializer");
         if (!ct->defaultTypeConstructor)
           INT_FATAL(call, "class type has no default type constructor");
@@ -537,12 +537,12 @@ static void call_constructor_for_class(CallExpr* call) {
 
         if (parent && parent->isPrimitive(PRIM_NEW)) {
           // Transform "new C ( ... )" into _construct_C ( ... ).
-          se->replace(new UnresolvedSymExpr(ct->initializer->name));
+          se->replace(new UnresolvedSymExpr(ct->defaultInitializer->name));
           parent->replace(call->remove());
         } else if (parentParent && parentParent->isPrimitive(PRIM_NEW) &&
                    call->partialTag) {
           // Transform "new C ( (_partial C) ... )" into _construct_C ( ... ).
-          se->replace(new UnresolvedSymExpr(ct->initializer->name));
+          se->replace(new UnresolvedSymExpr(ct->defaultInitializer->name));
           parentParent->replace(parent->remove());
         } else {
           if (ct->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION))
@@ -1183,7 +1183,7 @@ static void change_method_into_constructor(FnSymbol* fn) {
   // Call the initializer, passing in just the generic arguments.
   // This call ensures that the object is default-initialized before the user's
   // constructor body is called.
-  CallExpr* call = new CallExpr(ct->initializer);
+  CallExpr* call = new CallExpr(ct->defaultInitializer);
   for_formals(defaultTypeConstructorArg, ct->defaultTypeConstructor) {
     ArgSymbol* arg = NULL;
     for_formals(methodArg, fn) {
@@ -1213,13 +1213,13 @@ static void change_method_into_constructor(FnSymbol* fn) {
 
   fn->name = astr("_construct_", fn->name);
   // Save a string?
-  INT_ASSERT(!strcmp(fn->name, ct->initializer->name));
+  INT_ASSERT(!strcmp(fn->name, ct->defaultInitializer->name));
   fn->addFlag(FLAG_CONSTRUCTOR);
   // Hide the compiler-generated initializer 
   // which also serves as the default constructor.
   // hilde sez: Try leaving this visible, but make it inferior in case of multiple matches
   // (in disambiguateByMatch()).
-//  ct->initializer->addFlag(FLAG_INVISIBLE_FN);
+//  ct->defaultInitializer->addFlag(FLAG_INVISIBLE_FN);
 }
 
 // Note 1: Since param variables can only be of primitive or enumerated type,

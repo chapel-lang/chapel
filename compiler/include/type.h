@@ -39,7 +39,9 @@ class Type : public BaseAST {
 
   TypeSymbol* symbol;
   Symbol* defaultValue;
-  FnSymbol* initializer; // This is the compiler-supplied initializer function.
+  FnSymbol* defaultInitializer; // This is the compiler-supplied
+                                // default-initializer.  It provides initial
+                                // values for the fields in an aggregate type.
   FnSymbol* defaultTypeConstructor;
   FnSymbol* destructor;
   Vec<FnSymbol*> methods;

@@ -143,8 +143,8 @@ void cleanAst() {
       if (method && !isAliveQuick(method))
         ts->type->methods.v[i] = NULL;
       if (ClassType* ct = toClassType(ts->type)) {
-        if (ct->initializer && !isAliveQuick(ct->initializer))
-          ct->initializer = NULL;
+        if (ct->defaultInitializer && !isAliveQuick(ct->defaultInitializer))
+          ct->defaultInitializer = NULL;
         if (ct->destructor && !isAliveQuick(ct->destructor))
           ct->destructor = NULL;
       }

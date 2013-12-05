@@ -613,7 +613,7 @@ static void build_type_constructor(ClassType* ct) {
 // which is also called by user-defined constructors to pre-initialize all 
 // fields to their declared or type-specific initial values.
 static void build_constructor(ClassType* ct) {
-  if (ct->initializer)
+  if (ct->defaultInitializer)
     return;
 
   SET_LINENO(ct);
@@ -625,7 +625,7 @@ static void build_constructor(ClassType* ct) {
   FnSymbol* fn = new FnSymbol(astr("_construct_", ct->symbol->name));
   fn->addFlag(FLAG_DEFAULT_CONSTRUCTOR);
   fn->addFlag(FLAG_CONSTRUCTOR);
-  ct->initializer = fn;
+  ct->defaultInitializer = fn;
   fn->cname = astr("_construct_", ct->symbol->cname);
   fn->addFlag(FLAG_COMPILER_GENERATED);
 
@@ -679,7 +679,7 @@ static void build_constructor(ClassType* ct) {
     if (isClass(ct)) {
       if (ct->dispatchParents.n > 0 && !ct->symbol->hasFlag(FLAG_EXTERN)) {
         // This class has a parent class.
-        if (!ct->dispatchParents.v[0]->initializer) {
+        if (!ct->dispatchParents.v[0]->defaultInitializer) {
           // If it doesn't yet have an initializer, make one.
           build_constructors(toClassType(ct->dispatchParents.v[0]));
         }
@@ -688,7 +688,7 @@ static void build_constructor(ClassType* ct) {
         // Note that since we only pay attention to the first entry in the
         // dispatchParents list, we are effectively implementing
         // single class inheritance, multiple interface inheritance.
-        FnSymbol* superCtor = ct->dispatchParents.v[0]->initializer;
+        FnSymbol* superCtor = ct->dispatchParents.v[0]->defaultInitializer;
 
         // Create a call to the superclass constructor.
         superCall = new CallExpr(superCtor->name);

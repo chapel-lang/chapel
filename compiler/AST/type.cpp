@@ -20,7 +20,7 @@ Type::Type(AstTag astTag, Symbol* init_defaultVal) :
   scalarPromotionType(NULL),
   symbol(NULL),
   defaultValue(init_defaultVal),
-  initializer(NULL),
+  defaultInitializer(NULL),
   defaultTypeConstructor(NULL),
   destructor(NULL),
   hasGenericDefaults(false),

@@ -1164,10 +1164,10 @@ void whocalls(int id) {
       if (SymExpr* act2 = toSymExpr(call->get(2)))
         if (Symbol* ic = act2->var)
           if (Type* ty = ic->type)
-            if (FnSymbol* init = ty->initializer)
+            if (FnSymbol* init = ty->defaultInitializer)
               if (ArgSymbol* form1 = init->getFormal(1))
                 if (Type* fty = form1->type)
-                  if (FnSymbol* iterator = fty->initializer)
+                  if (FnSymbol* iterator = fty->defaultInitializer)
                     if (iterator->id == id)
                       printf("  for-loop blockInfo %d  %s  %s\n",
                              call->id, parentMsg(call, &forMatch,
