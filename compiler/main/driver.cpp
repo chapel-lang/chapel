@@ -480,10 +480,6 @@ static void readConfig(ArgumentState* arg_state, char* arg_unused) {
     if (value[0]) {
       // arg_unused was name=value
       parseCmdLineConfig(name, value);
-      CHPL_COMM_SUBSTRATE = "none";
-      CHPL_GASNET_SEGMENT = "none";
-      CHPL_COMM="none";
-      fLocal = true;
     } else {
       // arg_unused was name=  <blank>
       USR_FATAL("Missing config param value");
