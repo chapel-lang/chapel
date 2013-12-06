@@ -765,10 +765,10 @@ failed since adding more multilocale directories (01/31/12)
   Worked when re-run; may be intermittent?
 
 
-=======================
+=================================
 baseline-specific tests
-(Checked for accuracy 2/26/2013)
-=======================
+(Checked for accuracy 12/06/2013)
+=================================
 
 Tests suppressions that now succeed due to turning on inlining (12/7/12)
 ------------------------------------------------------------------------
@@ -778,10 +778,6 @@ Tests suppressions that now succeed due to turning on inlining (12/7/12)
 never worked (02/24/11)
 -----------------------
 [Error matching compiler output for extern/bradc/copyExternRecord/extern_test (compopts: 1)]
-
-passing argument # of 'func' from incompatible pointer type
------------------------------------------------------------
-[Error matching compiler output for extern/ferguson/c_strings (compopts: 1)] (10/08/13)
 
 problems in generated code (02/16/12 -- first run in awhile)
 ------------------------------------------------------------
@@ -796,22 +792,46 @@ wrong output (02/16/12 -- first run in awhile)
 ----------------------------------------------
 [Error matching program output for arrays/deitz/part7/test_descriptor_frees]
 [Error matching program output for memory/figueroa/LeakedMemory2]
-[Error matching program output for memory/figueroa/LeakedMemory5 (compopts: 1)]
 [Error matching program output for memory/figueroa/LeakedMemoryArrayOfClasses]
+
+died due to signal 6 (09/28/13)
+-------------------------------
+[Error matching program output for distributions/robust/arithmetic/modules/test_module_Sort]
+
+Memory getting leaked (11/14/13)
+--------------------------------
+[Error matching program output for memory/sungeun/refCount/arrays]
+[Error matching program output for memory/sungeun/refCount/arraysAndDomains]
 
 ??? (wrong output)
 ------------------
 [Error matching program output for classes/figueroa/RecordConstructor2]
 
+died due to signal 11 (09/28/13)
+------------------------------------------------------
+[Error matching program output for modules/standard/Sort/sungeun/sorty (execopts: 1)]
+[Error matching program output for modules/standard/Sort/sungeun/sorty (execopts: 2)]
+[Error matching program output for modules/standard/Sort/sungeun/sorty (execopts: 3)]
+
+glibc invalid pointer error (09/28/13)
+------------------------------------------------------------
+[Error matching program output for optimizations/bulkcomm/asenjo/stencilDR/v1/stencil]
+
+glibc double free or corruption (09/28/13)
+----------------------------------------------------------------
+[Error matching program output for release/examples/benchmarks/hpcc/hpl]
+[Error matching program output for studies/hpcc/FFT/marybeth/fft-test-even]
+[Error matching program output for studies/hpcc/HPL/bradc/hpl-blc]
+[Error matching program output for studies/hpcc/HPL/bradc/hpl-blc-noreindex]
+[Error matching program output for studies/hpcc/HPL/vass/hpl]
+
 segv due to turning on inlining (12/7/12)
 -----------------------------------------
-
 sungeun: I have confirmed that almost all of these are due to running
 out of stack space (lulesh timed out).  Assuming they are *not*
 intermittent or at least less so than the others with inilining, I
 think we would prefer these errors.
 
-[Error matching program output for parallel/cobegin/deitz/test_big_recursive_cobegin]
 [Error matching program output for parallel/cobegin/gbt/cobegin-stacksize]
 [Error matching program output for studies/lulesh/bradc/xyztuple/lulesh-dense-3tuple]
 [Error matching program output for studies/madness/common/test_likepy]
