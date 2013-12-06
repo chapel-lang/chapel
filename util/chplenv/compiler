@@ -31,16 +31,24 @@ if ($preset_compiler eq "") {
             $compiler = "cray-prgenv$subcompiler";
         }
     } elsif ($platform eq "pwr5" || $platform eq "pwr6") {
-	$compiler = "ibm";
+        $compiler = "ibm";
     } elsif ($platform eq "marenostrum") {
-	$compiler = "ibm";
+      $compiler = "ibm";
+    } elsif ($platform eq "darwin") {
+        my $clang_path = `which clang`;
+        chomp($clang_path);
+        if ($clang_path) {
+            $compiler = "clang";
+        } else {
+            $compiler = "gnu";
+        }
     } else {
-	if (run("platform", "--host") eq run("platform", "--target")) {
-	    $compiler=$ENV{'CHPL_HOST_COMPILER'};
-	}
-	if ($compiler eq "") {
-	    $compiler = "gnu";
-	}
+        if (run("platform", "--host") eq run("platform", "--target")) {
+            $compiler=$ENV{'CHPL_HOST_COMPILER'};
+        }
+        if ($compiler eq "") {
+            $compiler = "gnu";
+        }
     }
 } else {
     $compiler = $preset_compiler;
