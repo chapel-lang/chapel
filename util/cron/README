@@ -19,8 +19,8 @@ chap03 : linux64 performance (comm none, default everything) -- old HW
 chap04 : linux64 performance (comm none, default everything) -- new HW
 chap05 : qthreads (comm none examples, gasnet multilocale-examples), --fast
 chap06 : --baseline
-chpbld01 : XT/XE PrgEnvs examples, nightly
-chpbld02 : XT/XE PrgEnvs all, weekly
+chpbld01 : XC PrgEnvs examples, nightly
+chpbld02 : XE PrgEnvs all, weekly
 chpbld03 : (no testing - non-standard: RHEL5.7 with Tilera PCI card)
 chpbld04 : (no testing - non-standard: RHEL5.7 with Tilera PCI card)
 cflbs32  : linux32 (comm none, default everything)
@@ -33,14 +33,17 @@ bradc-lnx : 11pm update of ~chapelu/chapel, release testing, linxu64 performance
 lnx-vass  : block, memory leaks; historify-logs
 lnx-hilde : (no testing)
 lnx-diten : cyclic
-macchapel-mac            : mac (still a bit fishy)
-4LR97C1 (windows laptop) : cygwin (typical windows network weirdness)
+macchapel-mac            : mac
+4LR97C1 (windows laptop) : cygwin
 
-Discontinued testing
-====================
+Discontinued testing (that we might like to revive)
+===================================================
 - opts   (start_opt_test, nightly-opts-all.cron, nightly-opts-examples.cron)
-- mpi    (was: nightly.chap04     up to r19116)
 - tcmalloc (comm none, gasnet multilocale-examples, preserved as nightly.tcmalloc)
+
+Discontinued testing (that we don't care about anymore)
+=======================================================
+- mpi    (was: nightly.chap04     up to r19116)
 - XMT (was nightly.chap07, preserved as nightly.xmt)
 
 
