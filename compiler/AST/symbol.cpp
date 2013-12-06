@@ -572,30 +572,6 @@ GenRet VarSymbol::codegen() {
 }
 
 
-static void zeroInitializeRecord(FILE* outfile, ClassType* ct) {
-  bool first = true;
-  fprintf(outfile, "{");
-  for_fields(field, ct) {
-    if (!first) {
-      fprintf(outfile, ", ");
-    }
-    if (ClassType* ct = toClassType(field->type)) {
-      if (ct->classTag == CLASS_RECORD) {
-        zeroInitializeRecord(outfile, ct);
-      } else if (ct->classTag == CLASS_UNION) {
-        fprintf(outfile, "{0, 0}");
-      } else {
-        fprintf(outfile, "NULL");
-      }
-    } else {
-      fprintf(outfile, "0");
-    }
-    first = false;
-  }
-  fprintf(outfile, "}");
-}
-
-
 void VarSymbol::codegenDefC(bool global) {
   GenInfo* info = gGenInfo;
   if (this->hasFlag(FLAG_EXTERN))
@@ -1453,24 +1429,6 @@ void FnSymbol::codegenPrototype() {
 #endif
   }
   return;
-}
-
-
-static void
-codegenNullAssignments(FILE* outfile, const char* cname, ClassType* ct) {
-  if (isClass(ct))
-    fprintf(outfile, "%s = NULL;\n", cname);
-  else {
-    for_fields(field, ct) {
-      if (ClassType* fct = toClassType(field->type)) {
-        char buffer[1024];
-        strcpy(buffer, cname);
-        strcat(buffer, ".");
-        strcat(buffer, field->cname);
-        codegenNullAssignments(outfile, buffer, fct);
-      }
-    }
-  }
 }
 
 

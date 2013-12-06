@@ -2123,29 +2123,6 @@ GenRet codegenDynamicCastCheck(GenRet cid, Type* type)
   return ret;
 }
 
-static void
-codegenNullAssignments(FILE* outfile,
-                       const char* cname,
-                       ClassType* ct,
-                       int skip=0) {
-  if (!skip && isClass(ct))
-    fprintf(outfile, "%s = NULL;\n", cname);
-  else {
-    for_fields(field, ct) {
-      if (ClassType* fct = toClassType(field->type)) {
-        char buffer[1024];
-        strcpy(buffer, cname);
-        if (skip)
-          strcat(buffer, "->");
-        else
-          strcat(buffer, ".");
-        strcat(buffer, field->cname);
-        codegenNullAssignments(outfile, buffer, fct, 0);
-      }
-    }
-  }
-}
-
 #ifdef HAVE_LLVM
 static 
 void convertArgumentForCall(llvm::FunctionType *fnType,
