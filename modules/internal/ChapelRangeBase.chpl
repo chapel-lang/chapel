@@ -1056,8 +1056,10 @@ module ChapelRangeBase {
     // modulus is positive, so this cast is OK unless it is very large
     // and the dividend is signed.
     var m = modulus : dType;
-    if m : modulus.type != modulus then
-      halt("Modulus too large.");
+    if dType != modulus.type {
+      if m : modulus.type != modulus then
+        halt("Modulus too large.");
+    }
   
     var tmp = dividend % m;
     if _isSignedType(dividend.type) then
@@ -1083,8 +1085,10 @@ module ChapelRangeBase {
   
     modulus = abs(modulus);
     var m = modulus : minType;
-    if m : modulus.type != modulus then
-      halt("Modulus too large.");
+    if minType != modulus.type {
+      if m : modulus.type != modulus then
+        halt("Modulus too large.");
+    }
   
     var minMod = chpl__mod(minuend, m);
     var subMod = chpl__mod(subtrahend, m);
