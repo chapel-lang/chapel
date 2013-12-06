@@ -37,12 +37,20 @@ static int err_print;
 static int err_ignore;
 static FnSymbol* err_fn = NULL;
 
+bool forceWidePtrs() {
+  return !strcmp(CHPL_LOCALE_MODEL, "numa");
+}
+
+bool forceWidePtrsForLocal() {
+  return fLocal && forceWidePtrs();
+}
+
 bool requireWideReferences() {
-  return !fLocal || !strcmp(CHPL_LOCALE_MODEL, "numa");
+  return !fLocal || forceWidePtrs();
 }
 
 bool requireOutlinedOn() {
-  return !fLocal || !strcmp(CHPL_LOCALE_MODEL, "numa");
+  return !fLocal || forceWidePtrs();
 }
 
 const char* cleanFilename(const char* name) {

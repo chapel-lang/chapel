@@ -3065,28 +3065,39 @@ void codegenAssign(GenRet to_ptr, GenRet from)
                     codegenOne(),
                     info->lineno, info->filename 
           );
-      else
-        codegenCall("chpl_gen_comm_get",
-                    codegenCastToVoidStar(to_ptr),
-                    codegenRnode(from),
-                    codegenRaddr(from),
+      else { 
+        if (forceWidePtrsForLocal()) {
+          // We're actually doing local compilation, so just do a copy
+          codegenCopy(to_ptr, codegenDeref(codegenRaddr(from)), type);
+        } else {
+          codegenCall("chpl_gen_comm_get",
+                      codegenCastToVoidStar(to_ptr),
+                      codegenRnode(from),
+                      codegenRaddr(from),
+                      codegenSizeof(type),
+                      genTypeStructureIndex(type->symbol),
+                      codegenOne(),
+                      info->lineno, info->filename 
+                      );
+        }
+      }
+    } else {
+      if (forceWidePtrsForLocal()) {
+        // We're actually doing local compilation, so just do a copy
+        codegenCopy(codegenDeref(codegenRaddr(to_ptr)), from, type);
+      } else {
+        // Generate a PUT
+        // to is already a pointer.
+        codegenCall("chpl_gen_comm_put",
+                    codegenCastToVoidStar(codegenValuePtr(from)),
+                    codegenRnode(to_ptr),
+                    codegenRaddr(to_ptr),
                     codegenSizeof(type),
                     genTypeStructureIndex(type->symbol),
                     codegenOne(),
-                    info->lineno, info->filename 
-          );
-    } else {
-      // Generate a PUT
-      // to is already a pointer.
-      codegenCall("chpl_gen_comm_put",
-                   codegenCastToVoidStar(codegenValuePtr(from)),
-                   codegenRnode(to_ptr),
-                   codegenRaddr(to_ptr),
-                   codegenSizeof(type),
-                   genTypeStructureIndex(type->symbol),
-                   codegenOne(),
-                   info->lineno, info->filename
-                  );
+                    info->lineno, info->filename
+                    );
+      }
     }
   }
 }
