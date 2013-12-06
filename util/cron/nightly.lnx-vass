@@ -10,7 +10,10 @@ set date = `date +%Y-%m-%d`
 
 # run memleaks regressions
 set LOGFILE = $HOME/tmp/nightly.memleaks.out
+set MEMLOGFILE = memleaks.$date.nightly.log
 echo `date` "" "Running memleaks regressions.  Log file: $LOGFILE"
-source ~/.chplcron.memleaks.cshrc && ~/chapel/util/cron/nightly -cron -examples -memleaks memleaks.$date.nightly.log >&! $LOGFILE
+source ~/.chplcron.memleaks.cshrc && ~/chapel/util/cron/nightly -cron -examples -memleaks $MEMLOGFILE >&! $LOGFILE
+# Save the raw log file
+cp /tmp/$MEMLOGFILE $CHPL_NIGHTLY_LOGDIR/FULL.memleaks
 
 echo `date` "" Finished $0.
