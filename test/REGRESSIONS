@@ -286,44 +286,28 @@ communication counts changed due to Vass' task functions commit (05/30/13)
 [Error matching program output for distributions/robust/arithmetic/performance/reduce]
 
 
-================================
+==============================================================
 darwin-/mac-specific regressions
-================================
+(checked for accuracy on 12/06/13 -- examples/ directory only)
+==============================================================
 
-ptr-to-ssize_t/ptr-to-int32_t warnings (Proposed fix is to preserve type
-alias identifiers through codegen rather than dropping them in the compiler
-as we currently do)
----------------------------------------------------------------------------
-[Error matching compiler output for release/examples/benchmarks/shootout/nbody]
-[Error matching compiler output for release/examples/primers/fileIO]
-[Error matching program output for release/examples/benchmarks/miniMD/explicit/miniMD (compopts: 1)]
-[Error matching program output for release/examples/benchmarks/miniMD/miniMD (compopts: 1, execopts: 1)]
-[Error matching program output for release/examples/benchmarks/miniMD/miniMD (compopts: 2, execopts: 1)]
+RLIMIT_NPROC portability issue (06/23/10)
+-----------------------------------------
+[Error matching compiler output for parallel/taskPool/figueroa/TooManyThreads]
+
+Python syntax error (maybe cloaking something else)
+---------------------------------------------------
 [Error matching program output for studies/amr/advection/amr/AMR_AdvectionCTU_driver]
 [Error matching program output for studies/amr/advection/grid/Grid_AdvectionCTU_driver]
 [Error matching program output for studies/amr/advection/level/Level_AdvectionCTU_driver]
 [Error matching program output for studies/amr/diffusion/grid/Grid_DiffusionBE_driver]
 [Error matching program output for studies/amr/diffusion/level/Level_DiffusionBE_driver]
 
-maybe we can remove these suppressions for Mac now?
----------------------------------------------------
-[Error: did not find expected suppression execflags/bradc/gdbddash/declint2]
-[Error: did not find expected suppression execflags/bradc/gdbddash/gdbSetConfig]
-
-??? (ever since checked in -- may now be fixed but regressions haven't run?)
-----------------------------------------------------------------------------
-[Error matching program output for studies/graph500/v1/main]
-
-??? (ever since checked in)
----------------------------
-[Error matching compiler output for studies/shootout/chameneos-redux/chameneos-redux-cas]
-
-??? (06/23/10)
---------------
-[Error matching compiler output for parallel/taskPool/figueroa/TooManyThreads]
-
 gdb output differences
 ----------------------
+[Error matching program output for execflags/bradc/gdbddash/declint]
+[Error matching program output for execflags/bradc/gdbddash/declint2]
+[Error matching program output for execflags/bradc/gdbddash/gdbSetConfig]
 [Error matching program output for execflags/bradc/gdbddash/declint]
 [Error matching program output for execflags/bradc/gdbddash/declint2]
 [Error matching program output for execflags/bradc/gdbddash/gdbSetConfig]
