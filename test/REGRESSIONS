@@ -195,7 +195,7 @@ execution timeouts (probably since committed or at least 08/2012)
 
 ===============================
 no-local regressions
-(Checked for accuracy 10/16/13)
+(Checked for accuracy 12/06/13)
 ===============================
 
 timeouts, related to CHPL_RT_NUM_THREADS_PER_LOCALE=1 (started 10/31/13)
@@ -204,55 +204,25 @@ timeouts, related to CHPL_RT_NUM_THREADS_PER_LOCALE=1 (started 10/31/13)
 [Error: Timed out executing program parallel/taskPool/figueroa/OneThread]
 [Error: Timed out executing program parallel/taskPool/figueroa/QueuedTasks]
 
-decreased memory usage (started 10/30/13) (gbt, due to/explained in r22223)
----------------------------------------------------------------------------
-[Error matching program output for memory/shannon/printFinalMemStat]
-Note: this regression does not seem to carry to gasnet testing.
-
 
 ====================================================
 gasnet-everything regressions (other than the above)
-(Checked for accuracy 10/16/13)
+(Checked for accuracy 12/06/13)
 ====================================================
 
-One additional remote get in comm counts (-r22268)
---------------------------------------------------
-[Error matching program output for performance/ferguson/remote-array-read]
-[Error matching program output for performance/ferguson/remote-array-write]
-[Error matching program output for performance/ferguson/remote-class-read]
-[Error matching program output for performance/ferguson/remote-class-write]
-[Error matching program output for performance/ferguson/remote-record-read-1]
-[Error matching program output for performance/ferguson/remote-record-read]
-[Error matching program output for performance/ferguson/remote-record-write-1]
-[Error matching program output for performance/ferguson/remote-record-write]
-[Error matching program output for performance/ferguson/remote-tuple-read-1]
-[Error matching program output for performance/ferguson/remote-tuple-read-small-1]
-[Error matching program output for performance/ferguson/remote-tuple-read-small]
-[Error matching program output for performance/ferguson/remote-tuple-read]
-[Error matching program output for performance/ferguson/remote-tuple-write-1]
-[Error matching program output for performance/ferguson/remote-tuple-write-small-1]
-[Error matching program output for performance/ferguson/remote-tuple-write-small]
-[Error matching program output for performance/ferguson/remote-tuple-write] 
-
-Extra fork comm counts vs. .bad file
-------------------------------------
-[Error matching .bad file for parallel/taskPar/sungeun/endCountTest]
 
 ==============================================
 gasnet-fast regressions (other than the above)
-(checked for accuracy 10/08/13)
+(checked for accuracy 12/06/13)
 ==============================================
 
 unable to start polling thread (???)
-(in this configuration: linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc)
 ------------------------------------
 [Error matching program output for memory/shannon/outofmemory/mallocOutOfMemory] (10/08/13)
 
 execution timeouts
-(in this configuration: linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc)
 ------------------
 [Error: Timed out executing program domains/johnk/capacityParSafe (compopts: 1)] (since 12/16/2012)
-[Error: Timed out executing program multilocale/gbt/hello-numThreads-1] (10/08/13)
 [Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)] (10/08/13)
 
 
