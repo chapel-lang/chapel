@@ -23,15 +23,13 @@ general regressions (seem to happen in most configurations)
 
 ==============================================
 linux64 regressions (in addition to the above)
+(checked for accuracy 12/06/13)
 ==============================================
-
-complains about needing --memTrack (gbt, started 10/30/13)
-----------------------------------------------------------
-[Error matching program output for distributions/robust/arithmetic/reindexing/simple-alias-mem-use (compopts: 1)]
 
 
 ==============================================
 linux32 regressions (in addition to the above)
+(checked for accuracy 12/06/13)
 ==============================================
 
 
@@ -54,14 +52,11 @@ Feel free to bug him.
 --fast examples regressions
 ===========================
 
-"assuming signed overflow does not occur" (same as mandelbrot-fancy above)
---------------------------------------------------------------------------
-[Error matching compiler output for release/examples/primers/ranges]
 
-
-========================
+===============================
 memory leaks regressions
-========================
+(checked for accuracy 12/06/13)
+===============================
 
 
 =======================================
@@ -214,18 +209,15 @@ Sometimes also "malloc.c:3091: sYSMALLOc: Assertion ..... failed."
 [Error matching program output for domains/johnk/capacityParSafe (compopts: 1)] (started 12/15/2012)
 
 
-==============================
+===============================
 block distribution regressions
-==============================
-
-communication counts changed due to Tom's HL branch merge (06/11/13)
---------------------------------------------------------------------
-see gasnet-everything above for distributions/robust/arithmetic/performance/*
+(checked for accuracy 12/06/13)
+===============================
 
 
 ===============================
 cyclic distribution regressions
-(checked for accuracy 10/16/13)
+(checked for accuracy 12/06/13)
 ===============================
 
 communication counts changed due to Vass' task functions commit (05/30/13)
