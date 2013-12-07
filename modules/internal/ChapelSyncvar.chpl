@@ -236,8 +236,8 @@ module ChapelSyncvar {
   inline proc chpl__autoCopy(x: single) return x;
 
   // Be explicit about whether syncs and singles are auto-destroyed.
-  inline proc chpl__maybeAutoDestroyed(x: _syncvar) param return false;
-  inline proc chpl__maybeAutoDestroyed(x: _singlevar) param return false;
+  inline proc chpl__maybeAutoDestroyed(x: _syncvar) param return true;
+  inline proc chpl__maybeAutoDestroyed(x: _singlevar) param return true;
 
   pragma "auto destroy fn"
   pragma "auto destroy fn sync"
