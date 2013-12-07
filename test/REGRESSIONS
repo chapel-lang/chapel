@@ -37,24 +37,14 @@ linux32 regressions (in addition to the above)
 
 ================================
 performance-specific regressions
+(checked for accuracy 12/06/13)
 ================================
 
-"assuming signed overflow does not occur"
------------------------------------------
-[Error matching compiler output for studies/shootout/mandelbrot/mandelbrot-fancy]
-Gen compiler messages of the form:
-  /tmp/chpl-gbt-25650.deleteme/mandelbrot-fancy.c: In function 'coforall_fn13':
-  /tmp/chpl-gbt-25650.deleteme/mandelbrot-fancy.c:2104: error: assuming signed overflow does not occur when assuming that (X + c) < X is always false
-
-Has been happening since at least 6/27/13.  Curiously, it actually
-succeeded on 8/22/13 and 9/25/13.  The passing seems to be a result of compiler
-changes that avoid the particular optimization that is causing the warning.  It
-passes from revision 21739 to 21741 and from 21945 to 21952.
-
-See NightlyPerformance/chap*/day?-???-linux64.gnu.none.fifo.pthreads-prf
-and history thereof.
-
 consistent execution timeouts on chap04 (since ??? -- at least 11/20/13)
+------------------------------------------------------------------------
+In the case of ra-dist, believed to be because the verification is done
+in such a brain-dead way -- bradc owns, but hasn't found time to fix yet.
+Feel free to bug him.
 ------------------------------------------------------------------------
 [Error: Timed out executing program release/examples/benchmarks/hpcc/ptrans (compopts: 1)]
 [Error: Timed out executing program studies/hpcc/RA/bradc/parallel/ra-dist (compopts: 1)]
