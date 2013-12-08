@@ -122,16 +122,16 @@ The default value of a class type is \chpl{nil}.
 \begin{chapelexample}{declaration.chpl}
 \begin{chapel}
 class C { }
-var c : C;	// c has the class type C, initialized with the value nil.
-c = new C();	// Now c refers to an object of type C.
-delete c;   // Delete that object
-var c2 = new C();	// The type of c2 is also C.
-class D : C {}	// Class D is derived from C.
-c = new D();	// Now c refers to an object of type D.
+var c : C;      // c has the class type C, initialized with the value nil.
+c = new C();    // Now c refers to an object of type C.
+var c2 = c;     // The type of c2 is also C.
+                // c2 refers to the same object as c.
+class D : C {}  // Class D is derived from C.
+c = new D();    // Now c refers to an object of type D.
 \end{chapel}
 \begin{chapelpost}
-delete c;
-delete c2;
+delete c;   // This deletes the new D.
+delete c2;  // This deletes the new C.
 \end{chapelpost}
 \begin{chapeloutput}
 \end{chapeloutput}
@@ -906,6 +906,9 @@ delete-statement:
 \end{syntax}
 
 where the expression is a reference to the instance that will be reclaimed.
+The expression may evaluate to \chpl{nil}, in which case the \chpl{delete}
+statement has no effect.  If an object is referenced after it has
+been deleted, the behavior is undefined.
 
 \begin{chapelexample}{delete.chpl}
 The following example allocates a new object \chpl{c} of class type \chpl{C}
@@ -916,8 +919,17 @@ class C {
 }
 \end{chapelpre}
 \begin{chapel}
-var c = new C();
-delete c;
+var c : C = nil;
+delete c;        // Does nothing: c is nil.
+
+c = new C();     // Creates a new object.
+delete c;        // Deletes that object.
+
+// The following statements reference an object after it has been deleted, so
+// the behavior of each is "undefined":
+// writeln(c.i); // May read from freed memory.
+// c.i = 3;      // May overwrite freed memory.
+// delete c;     // May confuse some allocators.
 \end{chapel}
 \begin{chapelpost}
 \end{chapelpost}
