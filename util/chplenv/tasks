@@ -9,7 +9,12 @@ my $preset_tasks = $ENV{'CHPL_TASKS'};
 my $tasks;
 
 if ($preset_tasks eq "") {
-    $tasks = "fifo";
+    my $localeModel = run("localeModel");
+    if ($localeModel eq "numa") {
+        $tasks = "qthreads";
+    } else {
+        $tasks = "fifo";
+    }
 } else {
     $tasks = $preset_tasks;
 }
