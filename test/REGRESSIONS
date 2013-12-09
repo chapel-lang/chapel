@@ -23,19 +23,19 @@ general regressions (seem to happen in most configurations)
 
 ==============================================
 linux64 regressions (in addition to the above)
-(checked for accuracy 12/06/13)
+(Reviewed for accuracy 12/06/13)
 ==============================================
 
 
 ==============================================
 linux32 regressions (in addition to the above)
-(checked for accuracy 12/06/13)
+(Reviewed for accuracy 12/06/13)
 ==============================================
 
 
 ================================
 performance-specific regressions
-(checked for accuracy 12/06/13)
+(Reviewed for accuracy 12/06/13)
 ================================
 
 consistent execution timeouts on chap04 (since ??? -- at least 11/20/13)
@@ -48,40 +48,23 @@ Feel free to bug him.
 [Error: Timed out executing program studies/hpcc/RA/bradc/parallel/ra-dist (compopts: 1)]
 
 
-===========================
+===============================
 --fast examples regressions
-===========================
+(Reviewed for accuracy 12/09/13)
+===============================
 
 
 ===============================
 memory leaks regressions
-(checked for accuracy 12/06/13)
+(Reviewed for accuracy 12/06/13)
 ===============================
 
 
 =======================================
 localeModel/numa+qthreads regressions
 (other than qthreads regressions below)
+(Reviewed for accuracy 12/06/13)
 =======================================
-
-signal 11 (call stack size too small)
--------------------------------------
-As of 11/03/13 (the first two test nights):
-[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 2)]
-[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 3)]
-[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4)]
-[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 2)]
-[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 3)]
-[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4)]
-[Error matching program output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 1, execopts: 3)]
-[Error matching program output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 2, execopts: 3)]
-
-extra memory leaks/usage due to increased size of locale
---------------------------------------------------------
-[TODO: locale model specific .good files]
-As of 11/03/13 (the first two test nights):
-[Error matching program output for memory/sungeun/refCount/domainMaps]
-[Error matching program output for memory/shannon/printFinalMemStat]
 
 Unkowned extra memory leaks
 ---------------------------
@@ -92,10 +75,22 @@ line number ambiguity
 [TODO: ditto about .good files]
 [Error matching program output for memory/shannon/memmaxExceedsLineno2]
 
+signal 11 (since 11/03/13 -- the first runs)
+--------------------------------------------
+[Error matching program output for memory/shannon/outofmemory/mallocOutOfMemory]
+[Error matching program output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 2, execopts: 3)]
+
+extra memory leaks/usage due to bigger locale type (since first run -- 11/03/13)
+--------------------------------------------------------------------------------
+[TODO: locale model specific .good files]
+--------------------------------------------------------------------------------
+[Error matching program output for memory/shannon/printFinalMemStat]
+[Error matching program output for memory/sungeun/refCount/domainMaps]
+
 
 ===============================
 valgrind-specific regressions
-(Checked for accuracy 12/06/13)
+(Reviewed for accuracy 12/09/13)
 ===============================
 
 random failures due to being out of memory (on purpose)
@@ -142,14 +137,6 @@ compilation timeouts
 --------------------
 [Error: Timed out compilation for functions/iterators/vass/yield-arrays-var-nonvar] (08/19/13)
 
-seem to complete execution prior to timing out (10/21/13)
----------------------------------------------------------
-
-execution timeouts due to relying on too many threads (?) (09/2012)
--------------------------------------------------------------------
-[Error: Timed out executing program parallel/begin/sungeun/captureAppearsToWork]
-[Error: Timed out executing program parallel/begin/sungeun/capture]
-
 execution timeouts (probably since committed or at least 08/2012)
 -----------------------------------------------------------------
 [Error: Timed out executing program domains/sungeun/assoc/stress.numthr (compopts: 1, execopts: 1)]
@@ -165,10 +152,15 @@ execution timeouts (probably since committed or at least 08/2012)
 [Error: Timed out executing program types/range/bradc/overflowInComputeBlock]
 [Error: Timed out executing program types/single/sungeun/stress]
 
+execution timeouts due to relying on too many threads (?) (09/2012)
+-------------------------------------------------------------------
+[Error: Timed out executing program parallel/begin/sungeun/captureAppearsToWork]
+[Error: Timed out executing program parallel/begin/sungeun/capture]
+
 
 ===============================
 no-local regressions
-(Checked for accuracy 12/06/13)
+(Reviewed for accuracy 12/06/13)
 ===============================
 
 timeouts, related to CHPL_RT_NUM_THREADS_PER_LOCALE=1 (started 10/31/13)
@@ -180,18 +172,22 @@ timeouts, related to CHPL_RT_NUM_THREADS_PER_LOCALE=1 (started 10/31/13)
 
 ====================================================
 gasnet-everything regressions (other than the above)
-(Checked for accuracy 12/06/13)
+(Reviewed for accuracy 12/06/13)
 ====================================================
 
 
 ==============================================
 gasnet-fast regressions (other than the above)
-(checked for accuracy 12/06/13)
+(Reviewed for accuracy 12/07/13)
 ==============================================
 
 unable to start polling thread (???)
 ------------------------------------
 [Error matching program output for memory/shannon/outofmemory/mallocOutOfMemory] (10/08/13)
+
+reference to object after it was freed (12/04/13)
+-------------------------------------------------
+[Error matching program output for release/examples/spec/Classes/defineMethod]
 
 execution timeouts
 ------------------
@@ -199,25 +195,15 @@ execution timeouts
 [Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)] (10/08/13)
 
 
-=======================
-tcmalloc-specific tests
-=======================
-
-Out of memory allocating "string copy data"
--------------------------------------------
-Sometimes also "malloc.c:3091: sYSMALLOc: Assertion ..... failed."
-[Error matching program output for domains/johnk/capacityParSafe (compopts: 1)] (started 12/15/2012)
-
-
 ===============================
 block distribution regressions
-(checked for accuracy 12/06/13)
+(Reviewed for accuracy 12/06/13)
 ===============================
 
 
 ===============================
 cyclic distribution regressions
-(checked for accuracy 12/06/13)
+(Reviewed for accuracy 12/06/13)
 ===============================
 
 communication counts changed due to Vass' task functions commit (05/30/13)
@@ -228,7 +214,7 @@ communication counts changed due to Vass' task functions commit (05/30/13)
 
 ==============================================================
 darwin-/mac-specific regressions
-(checked for accuracy on 12/06/13 -- examples/ directory only)
+(Reviewed for accuracy on 12/06/13 -- examples/ directory only)
 ==============================================================
 
 RLIMIT_NPROC portability issue (06/23/10)
@@ -265,16 +251,17 @@ chpbld01 (PrgEnv/XC test system) failures
 
 =========================================
 chpbld02 (PrgEnv/XE test system) failures
-(checked for accuracy 12/06/13)
+(Reviewed for accuracy 12/06/13)
 =========================================
 
 gets "that wasn't very random looking" failure
 ----------------------------------------------
 [Error matching program output for modules/standard/Random/diten/testRandomSeed]
 
+
 ==========================================================
 cray-prgenv-*-specific failures (in addition to the above)
-(checked for accuracy 12/06/13)
+(Reviewed for accuracy 12/06/13)
 ==========================================================
 
 problem with static/dynamic linking?
@@ -284,7 +271,7 @@ problem with static/dynamic linking?
 
 =========================================
 cray-prgenv-cray/cce-specific regressions
-(Checked for accuracy 10/16/13)
+(Reviewed for accuracy 10/16/13)
 =========================================
 
 extern_string_test output mismatch
@@ -391,7 +378,7 @@ precision issues (?) -- is there a floating point flag we need to throw?
 
 =========================================================================
 cray-prgenv-pgi-specific regressions (in addition to cray-prgenv-* above) 
-(Checked for accuracy 12/06/13)
+(Reviewed for accuracy 12/06/13)
 =========================================================================
 
 identifier names too long
@@ -439,7 +426,7 @@ alignment mismatch in output (04/08/12)
 
 ==========================================================================
 cray-prgenv-intel-specific regressions (in addition to cray-prgenv* above)
-(Checked for accuracy 10/16/13)
+(Reviewed for accuracy 10/16/13)
 ==========================================================================
 
 numeric discrepancies (since 8/2012 or earlier)
@@ -466,7 +453,7 @@ alignment mismatch in output (04/08/12)
 
 =================================
 cray-prgenv-gnu specific failures
-(reviewed for accuracy 12/06/13)
+(Reviewed for accuracy 12/06/13)
 =================================
 
 New gcc warning for 4.8 (6/7/13)
@@ -494,18 +481,19 @@ do about it.
 
 
 
-========================
+==============================================================
 cygwin-specific failures
-========================
+(Reviewed for accuracy on 12/06/13 -- examples/ directory only)
+==============================================================
+
+reference to object after it was freed (12/04/13)
+-------------------------------------------------
+[Error matching program output for release/examples/spec/Classes/defineMethod]
 
 internal error: pthread_cond_init() failed
 ------------------------------------------
 [Error matching program output for release/examples/primers/fileIO]
 (10/25/13, after a long hiatus)
-
-???
----
-[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/singleVar]
 
 undiagnosed problems that started showing up 10/14/10 after lack of testing
 ---------------------------------------------------------------------------
@@ -536,11 +524,13 @@ sig_send: wait for sig_complete event failed
 
 =======================
 qthreads-specific tests
+(Reviewed for accuracy 12/09/2013)
 =======================
 
-gbt: -r21643 qthreads builds fail with failure to find include file.
-
-NOTE: Began testing the entire test suite for CHPL_COMM=none on 12/7/12
+***NOTE: For the nightly regressions, we only run examples/ which is
+   currently clean other than the above (if anything's listed); the
+   following notes are from the last time anyone bothered to run and
+   analyze (and document) qthreads for a full test run
 
 -static flag results in undefined references to pthread calls (12/7/12)
 -----------------------------------------------------------------------
@@ -623,7 +613,18 @@ timeouts (12/7/12)
 
 ==========================================================
 qthreads+gasnet-specific tests (only run for -multilocale)
+(Reviewed for accuracy 12/09/2013)
 ==========================================================
+
+pretty amazingly consistent timeout and surprisingly expensive
+--------------------------------------------------------------
+[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains] 
+
+
+***NOTE: For the nightly regressions, we only run examples/ which is
+   currently clean other than the above (if anything's listed; the
+   following notes are from the last time anyone bothered to run and
+   analyze (and document) qthreads for a full test run
 
 doesn't complain about 257-thread limit being too high (probably isn't?)
 ------------------------------------------------------------------------
@@ -642,7 +643,7 @@ failed since adding more multilocale directories (01/31/12)
 
 =================================
 baseline-specific tests
-(Checked for accuracy 12/06/2013)
+(Reviewed for accuracy 12/06/2013)
 =================================
 
 Tests suppressions that now succeed due to turning on inlining (12/7/12)

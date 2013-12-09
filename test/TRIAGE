@@ -31,15 +31,20 @@ New problems
 (Ones that prove persistent should be moved to REGRESSIONS.)
 =========================================================
 
-pthread mutex lock assertion failed (after 22303, unassigned)
------------------------------------
-linux64.gnu.gasnet-fast.fifo.pthreads.flat.dlmalloc
-[Error matching program output for parallel/sync/diten/returnSync]
-> returnSync_real: pthread_mutex_lock.c:62: __pthread_mutex_lock: Assertion `mutex->__data.__owner == 0' failed.
-A brief review of the source code suggests that this problem should not occur 
-unless there is a problem with atomic compare-and-swap, or data corruption in 
-the mutex.
-Can be duplicated with --no-local; valgrind not clean.
+nondet. baseline output
+-----------------------
+[Error matching program output for studies/amr/diffusion/level/Level_DiffusionBE_driver (compopts: 1)]
+11/3/13: has been failing frequently (for --baseline) since 9/28/13
+
+primers/locales fails semi-regularly for cray-prgenv-cray (11/14)
+-----------------------------------------------------------------
+[Error matching compiler output for release/examples/primers/locales] (11/14/13, 11/19/13, 11/21/13, 11/22/13, 11/24/13, 12/4/13
+
+This may be related to the "XT/XC PrgEnv-cray non-deterministic
+compiler internal errors (misc.cpp)" issue below, but one of the
+few cases that triggers on the compute node rather than on the
+front-end
+
 
 =========================================================
 Problems analyzed and assigned that should be fixed soon:
@@ -51,31 +56,10 @@ The order of the output varies from run to run.
 Reported to Tom on 12/2.
 [Error matching program output for users/ferguson/refcnt] (12/2/13, linux64.gnu.none.fifo.pthreads.flat no-local)
 
-
 extra thread required for multilocale startup
 ---------------------------------------------
 (sungeun: Fix in test)
 [Error: Timed out executing program multilocale/gbt/needMultiLocales/hello-numThreads-2]
-
-
-possible too-small timeout
---------------------------
-[Error: Timed out compilation for types/sync/sungeun/writeRecordInOutProc] (10/11/13, linux64.gnu.none.fifo.pthreads)
-This test seems not to have timed out before.  Its timeout value is only
-5 seconds.  Thinking this was probably a sporadic failure, I bumped the
-timeout for this and its sibling writeRecordOutProc to 10 seconds.
-
-regularly occuring compilation timeouts
----------------------------------------
-[Moved here from REGRESSIONS (added by Vass)]
-These may be due to Elliot's LICM bug.
-The following tests have been seen to time out in various configurations
-since 9/6/13:
-[Error: Timed out compilation for optimizations/bulkcomm/alberto/Cyclic/perfTest (compopts: 1)]
-[Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/perfTest (compopts: 1)]
-[Error: Timed out compilation for users/franzf/v0/chpl/main (compopts: 1)]
-[Error: Timed out compilation for users/franzf/v1/chpl/main (compopts: 1)]
-
 
 XT/XC PrgEnv-cray non-deterministic compiler internal errors (misc.cpp)
 This shows up on cray-x?-cray-prgenv-cray.none.fifo.pthreads runs
@@ -84,22 +68,24 @@ Determined to be a problem with CCE.  Filed bug 800520.
 
 Also was witnessed once on linux64.gnu.fifo.pthreads with --no-local (11/24/13)
 
-New gcc warning (bradc)
------------------------
-Future (bug: this idiom generates a gcc warning for some reason (error w/ -Werror)) [Success matching program output for studies/shootout/mandelbrot/bugs/mandelbrot-error] (bradc 7/19/13):
-Brad's r21590 was supposed to take care of this, but it hasn't.
-
 [Error matching compiler output for studies/sudoku/dinan/sudoku-smart]
 (9/13/13, same warnings, don't know when it started)
-
-chpbld01 testing (bradc)
-------------------------
-"Somewhat horked up still" -- Brad
 
 
 ==============================================
 These things regularly cause noise in testing:
 ==============================================
+
+pthread mutex lock assertion failed (after 22303, unassigned)
+-----------------------------------
+linux64.gnu.gasnet-fast.fifo.pthreads.flat.dlmalloc
+[Error matching program output for parallel/sync/diten/returnSync]
+> returnSync_real: pthread_mutex_lock.c:62: __pthread_mutex_lock: Assertion `mutex->__data.__owner == 0' failed.
+A brief review of the source code suggests that this problem should not occur 
+unless there is a problem with atomic compare-and-swap, or data corruption in 
+the mutex.
+Can be duplicated with --no-local; valgrind not clean.
+
 
 Future (bug: r22257 causes coerce/promote wrapper problem.) (gbt)
 -----------------------------------------------------------
@@ -216,11 +202,6 @@ nondet. slave error
 linux64.gnu.gasnet.qthreads.none.flat (2013/11/13)
 [Error matching program output for multilocale/local/diten/test_local2]
 *** FATAL ERROR: slave got an unknown command on coord socket:  
-
-nondet. baseline output
------------------------
-[Error matching program output for studies/amr/diffusion/level/Level_DiffusionBE_driver (compopts: 1)]
-11/3/13: has been failing frequently (for --baseline) since 9/28/13
 
 nondet. baseline compilation timeout (10/15/13)
 -----------------------------------------------
