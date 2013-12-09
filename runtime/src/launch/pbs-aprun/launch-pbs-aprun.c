@@ -80,7 +80,7 @@ static qsubVersion determineQsubVersion(void) {
     chpl_error("Error trying to determine qsub version", 0, 0);
   }
 
-  if (strstr(version, "NCCS")) {
+  if (strstr(version, "NCCS")||strstr(version, "OLCF")) {
     return nccs;
   } else if (strstr(version, "PBSPro")) {
     return pbspro;
