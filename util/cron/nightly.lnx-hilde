@@ -26,9 +26,9 @@ echo `date` "" "Running  $EXAMPLES verifications.  Log file: $LOGFILE"
 $CHPL_HOME/util/cron/nightly -cron $EXAMPLES -verify &> $LOGFILE
 
 # Gather memleaks data over the entire test suite.
-# The weekend run for --verify testing takes too long, so we skip this
-# on the "weekend" day.
-if [ $1 != "weekend" ] ; then
+# The weekend run for --verify testing takes too long, 
+# so we run this only on weekdays.
+if [ $dayType == "" ] ; then
   export CHPL_NIGHTLY_LOGDIR=/data/sea/cascade/chapel/NightlyMemLeaks
   export CHPL_NIGHTLY_STATDIR=$CHPL_NIGHTLY_LOGDIR/Stats
   export CHPL_NIGHTLY_CRON_LOGDIR=$CHPL_NIGHTLY_LOGDIR
