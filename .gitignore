@@ -2096,3 +2096,970 @@
 /test/studies/hpcc/FFT/bradc/*.txt
 /test/studies/hpcc/FFT/bradc/fft
 /test/studies/hpcc/FFT/bradc/output
+
+# /test/studies/hpcc/FFT/bradc/parallel/
+/test/studies/hpcc/FFT/bradc/parallel/a.out
+/test/studies/hpcc/FFT/bradc/parallel/output
+/test/studies/hpcc/FFT/bradc/parallel/*.tmp
+
+# /test/studies/hpcc/FFT/diten/
+/test/studies/hpcc/FFT/diten/a.out
+/test/studies/hpcc/FFT/diten/output
+/test/studies/hpcc/FFT/diten/*.tmp
+
+# /test/studies/hpcc/FFT/marybeth/
+/test/studies/hpcc/FFT/marybeth/*.tmp
+
+# /test/studies/hpcc/HPL/bradc/
+/test/studies/hpcc/HPL/bradc/a.out
+/test/studies/hpcc/HPL/bradc/output
+/test/studies/hpcc/HPL/bradc/*.tmp
+
+# /test/studies/hpcc/HPL/marybeth/
+/test/studies/hpcc/HPL/marybeth/HPL.out
+/test/studies/hpcc/HPL/marybeth/hpl_test
+/test/studies/hpcc/HPL/marybeth/*.tmp
+/test/studies/hpcc/HPL/marybeth/output
+/test/studies/hpcc/HPL/marybeth/a.out
+
+# /test/studies/hpcc/PTRANS/jglewis/
+/test/studies/hpcc/PTRANS/jglewis/a.out
+/test/studies/hpcc/PTRANS/jglewis/output
+/test/studies/hpcc/PTRANS/jglewis/*.tmp
+
+# /test/studies/hpcc/RA/
+/test/studies/hpcc/RA/*.tmp
+/test/studies/hpcc/RA/a.out
+/test/studies/hpcc/RA/output
+
+# /test/studies/hpcc/RA/bradc/
+/test/studies/hpcc/RA/bradc/a.out
+/test/studies/hpcc/RA/bradc/output
+/test/studies/hpcc/RA/bradc/*.tmp
+
+# /test/studies/hpcc/RA/bradc/earlyVersions/
+/test/studies/hpcc/RA/bradc/earlyVersions/*.tmp
+
+# /test/studies/hpcc/RA/bradc/parallel/
+/test/studies/hpcc/RA/bradc/parallel/a.out
+/test/studies/hpcc/RA/bradc/parallel/output
+/test/studies/hpcc/RA/bradc/parallel/*.tmp
+/test/studies/hpcc/RA/bradc/parallel/perfdat
+
+# /test/studies/hpcc/RA/diten/
+/test/studies/hpcc/RA/diten/a.out
+/test/studies/hpcc/RA/diten/output
+/test/studies/hpcc/RA/diten/*.tmp
+
+# /test/studies/hpcc/RA/marybeth/
+/test/studies/hpcc/RA/marybeth/*.tmp
+
+# /test/studies/hpcc/RA/performance/
+/test/studies/hpcc/RA/performance/*.tmp
+/test/studies/hpcc/RA/performance/a.out
+/test/studies/hpcc/RA/performance/ra
+
+# /test/studies/hpcc/STREAMS/
+/test/studies/hpcc/STREAMS/a.out
+/test/studies/hpcc/STREAMS/output
+/test/studies/hpcc/STREAMS/*.tmp
+
+# /test/studies/hpcc/STREAMS/bradc/
+/test/studies/hpcc/STREAMS/bradc/a.out
+/test/studies/hpcc/STREAMS/bradc/*.tmp
+/test/studies/hpcc/STREAMS/bradc/output
+/test/studies/hpcc/STREAMS/bradc/perfdat
+
+# /test/studies/hpcc/STREAMS/diten/
+/test/studies/hpcc/STREAMS/diten/a.out
+/test/studies/hpcc/STREAMS/diten/output
+/test/studies/hpcc/STREAMS/diten/*.tmp
+/test/studies/hpcc/STREAMS/diten/perfdat
+
+# /test/studies/hpcc/STREAMS/marybeth/
+/test/studies/hpcc/STREAMS/marybeth/*.tmp
+
+# /test/studies/hpcc/STREAMS/performance/
+/test/studies/hpcc/STREAMS/performance/stream-index
+/test/studies/hpcc/STREAMS/performance/stream-index64
+/test/studies/hpcc/STREAMS/performance/stream-walker
+/test/studies/hpcc/STREAMS/performance/stream-walker64
+
+# /test/studies/hpcc/STREAMS/waynew/
+/test/studies/hpcc/STREAMS/waynew/a.out
+/test/studies/hpcc/STREAMS/waynew/output
+/test/studies/hpcc/STREAMS/waynew/*.tmp
+
+# /test/studies/hpcc/common/
+/test/studies/hpcc/common/testProbSize.good
+/test/studies/hpcc/common/a.out
+/test/studies/hpcc/common/output
+/test/studies/hpcc/common/*.tmp
+
+# /test/studies/hpcc/common/bradc/
+/test/studies/hpcc/common/bradc/a.out
+/test/studies/hpcc/common/bradc/output
+/test/studies/hpcc/common/bradc/*.tmp
+
+# /test/studies/hpcc/common/bradc/unit/
+/test/studies/hpcc/common/bradc/unit/a.out
+/test/studies/hpcc/common/bradc/unit/output
+/test/studies/hpcc/common/bradc/unit/*.tmp
+
+# /test/studies/jacobi/
+/test/studies/jacobi/a.out
+/test/studies/jacobi/*.tmp
+/test/studies/jacobi/output
+/test/studies/jacobi/perfdat
+
+# /test/studies/jacobi/bocchino/
+/test/studies/jacobi/bocchino/*.tmp
+/test/studies/jacobi/bocchino/a.out
+
+# /test/studies/jacobi/bradc/
+/test/studies/jacobi/bradc/*tmp
+/test/studies/jacobi/bradc/a.out
+/test/studies/jacobi/bradc/output
+/test/studies/jacobi/bradc/log
+
+# /test/studies/kmeans/
+/test/studies/kmeans/a.out
+/test/studies/kmeans/output
+/test/studies/kmeans/*.tmp
+
+# /test/studies/lu/bradc/old/
+/test/studies/lu/bradc/old/*.tmp
+/test/studies/lu/bradc/old/a.out
+/test/studies/lu/bradc/old/output
+
+# /test/studies/lu/marybeth/
+/test/studies/lu/marybeth/*.tmp
+/test/studies/lu/marybeth/a.out
+/test/studies/lu/marybeth/output
+
+# /test/studies/lulesh/bradc/
+/test/studies/lulesh/bradc/a.out
+/test/studies/lulesh/bradc/output
+/test/studies/lulesh/bradc/*.tmp
+/test/studies/lulesh/bradc/coords.out
+
+# /test/studies/lulesh/bradc/xyztuple/
+/test/studies/lulesh/bradc/xyztuple/a.out
+/test/studies/lulesh/bradc/xyztuple/output
+/test/studies/lulesh/bradc/xyztuple/*.tmp
+/test/studies/lulesh/bradc/xyztuple/coords.out
+
+# /test/studies/lulesh/sungeun/
+/test/studies/lulesh/sungeun/coords.out
+
+# /test/studies/madness/
+/test/studies/madness/a.out
+/test/studies/madness/*.tmp
+/test/studies/madness/output
+/test/studies/madness/test_diff
+/test/studies/madness/test_gaxpy
+/test/studies/madness/test_likepy
+/test/studies/madness/test_mul
+/test/studies/madness/test_showboxes
+
+# /test/studies/madness/aniruddha/madchap/
+/test/studies/madness/aniruddha/madchap/*.tmp
+/test/studies/madness/aniruddha/madchap/output
+/test/studies/madness/aniruddha/madchap/a.out
+/test/studies/madness/aniruddha/madchap/test_diff
+/test/studies/madness/aniruddha/madchap/test_gaxpy
+/test/studies/madness/aniruddha/madchap/test_likepy
+/test/studies/madness/aniruddha/madchap/test_mul
+/test/studies/madness/aniruddha/madchap/test_showboxes
+
+# /test/studies/madness/aniruddha/madchap/mytests/par-compress/
+/test/studies/madness/aniruddha/madchap/mytests/par-compress/a.out
+/test/studies/madness/aniruddha/madchap/mytests/par-compress/output
+/test/studies/madness/aniruddha/madchap/mytests/par-compress/*.tmp
+
+# /test/studies/madness/aniruddha/madchap/mytests/par-reconstruct/
+/test/studies/madness/aniruddha/madchap/mytests/par-reconstruct/a.out
+/test/studies/madness/aniruddha/madchap/mytests/par-reconstruct/output
+/test/studies/madness/aniruddha/madchap/mytests/par-reconstruct/*.tmp
+
+# /test/studies/madness/aniruddha/madchap/mytests/par-refine/
+/test/studies/madness/aniruddha/madchap/mytests/par-refine/a.out
+/test/studies/madness/aniruddha/madchap/mytests/par-refine/output
+/test/studies/madness/aniruddha/madchap/mytests/par-refine/*.tmp
+
+# /test/studies/madness/aniruddha/madchap/recordBug/
+/test/studies/madness/aniruddha/madchap/recordBug/output
+/test/studies/madness/aniruddha/madchap/recordBug/*.tmp
+/test/studies/madness/aniruddha/madchap/recordBug/a.out
+
+# /test/studies/madness/common/
+/test/studies/madness/common/test_diff
+/test/studies/madness/common/test_gaxpy
+/test/studies/madness/common/test_likepy
+/test/studies/madness/common/test_mul
+/test/studies/madness/common/test_showboxes
+/test/studies/madness/common/*.tmp
+/test/studies/madness/common/output
+/test/studies/madness/common/a.out
+
+# /test/studies/madness/dinan/mad_chapel/
+/test/studies/madness/dinan/mad_chapel/a.out
+/test/studies/madness/dinan/mad_chapel/*.tmp
+/test/studies/madness/dinan/mad_chapel/output
+/test/studies/madness/dinan/mad_chapel/test_diff
+/test/studies/madness/dinan/mad_chapel/test_gaxpy
+/test/studies/madness/dinan/mad_chapel/test_likepy
+/test/studies/madness/dinan/mad_chapel/test_mul
+/test/studies/madness/dinan/mad_chapel/test_showboxes
+
+# /test/studies/matrixMult/stonea/
+/test/studies/matrixMult/stonea/a.out
+/test/studies/matrixMult/stonea/output
+/test/studies/matrixMult/stonea/*.tmp
+
+# /test/studies/matrixMult/stonea/distributed/
+/test/studies/matrixMult/stonea/distributed/a.out
+/test/studies/matrixMult/stonea/distributed/output
+/test/studies/matrixMult/stonea/distributed/*.tmp
+
+# /test/studies/matrixlib/
+/test/studies/matrixlib/a.out
+/test/studies/matrixlib/output
+/test/studies/matrixlib/*.tmp
+
+# /test/studies/matrixlib/QR/
+/test/studies/matrixlib/QR/a.out
+/test/studies/matrixlib/QR/output
+/test/studies/matrixlib/QR/*.tmp
+
+# /test/studies/parboil/BFS/
+/test/studies/parboil/BFS/output.dat
+
+# /test/studies/parboil/SAD/
+/test/studies/parboil/SAD/output.bin
+
+# /test/studies/parboil/histo/
+/test/studies/parboil/histo/output.bin
+
+# /test/studies/parboil/stencil/
+/test/studies/parboil/stencil/output.bin
+
+# /test/studies/parsec/
+/test/studies/parsec/a.out
+/test/studies/parsec/output
+/test/studies/parsec/*.tmp
+
+# /test/studies/shootout/binary-trees/
+/test/studies/shootout/binary-trees/a.out
+/test/studies/shootout/binary-trees/output
+/test/studies/shootout/binary-trees/*.tmp
+/test/studies/shootout/binary-trees/perfdat
+
+# /test/studies/shootout/chameneos-redux/
+/test/studies/shootout/chameneos-redux/a.out
+/test/studies/shootout/chameneos-redux/output
+/test/studies/shootout/chameneos-redux/*.tmp
+/test/studies/shootout/chameneos-redux/perfdat
+
+# /test/studies/shootout/fannkuch-redux/
+/test/studies/shootout/fannkuch-redux/a.out
+/test/studies/shootout/fannkuch-redux/output
+/test/studies/shootout/fannkuch-redux/*.tmp
+/test/studies/shootout/fannkuch-redux/perfdat
+
+# /test/studies/shootout/fasta/
+/test/studies/shootout/fasta/a.out
+/test/studies/shootout/fasta/output
+/test/studies/shootout/fasta/*.tmp
+/test/studies/shootout/fasta/perfdat
+
+# /test/studies/shootout/mandelbrot/
+/test/studies/shootout/mandelbrot/a.out
+/test/studies/shootout/mandelbrot/output
+/test/studies/shootout/mandelbrot/*.tmp
+/test/studies/shootout/mandelbrot/perfdat
+
+# /test/studies/shootout/mandelbrot/bugs/
+/test/studies/shootout/mandelbrot/bugs/a.out
+/test/studies/shootout/mandelbrot/bugs/output
+/test/studies/shootout/mandelbrot/bugs/*.tmp
+/test/studies/shootout/mandelbrot/bugs/perfdat
+
+# /test/studies/shootout/mandelbrot/ferguson/
+/test/studies/shootout/mandelbrot/ferguson/mandelbrot.pbm
+
+# /test/studies/shootout/nbody/
+/test/studies/shootout/nbody/a.out
+/test/studies/shootout/nbody/output
+/test/studies/shootout/nbody/*.tmp
+/test/studies/shootout/nbody/perfdat
+
+# /test/studies/shootout/nbody/bradc/
+/test/studies/shootout/nbody/bradc/a.out
+/test/studies/shootout/nbody/bradc/output
+/test/studies/shootout/nbody/bradc/*.tmp
+/test/studies/shootout/nbody/bradc/perfdat
+
+# /test/studies/shootout/pidigits/bradc/
+/test/studies/shootout/pidigits/bradc/a.out
+/test/studies/shootout/pidigits/bradc/output
+/test/studies/shootout/pidigits/bradc/*.tmp
+/test/studies/shootout/pidigits/bradc/perfdat
+
+# /test/studies/shootout/spectral-norm/
+/test/studies/shootout/spectral-norm/a.out
+/test/studies/shootout/spectral-norm/output
+/test/studies/shootout/spectral-norm/*.tmp
+/test/studies/shootout/spectral-norm/perfdat
+
+# /test/studies/shootout/thread-ring/
+/test/studies/shootout/thread-ring/a.out
+/test/studies/shootout/thread-ring/output
+/test/studies/shootout/thread-ring/*.tmp
+/test/studies/shootout/thread-ring/perfdat
+
+# /test/studies/ssca2/bradc/ssca2/
+/test/studies/ssca2/bradc/ssca2/a.out
+/test/studies/ssca2/bradc/ssca2/*.tmp
+
+# /test/studies/ssca2/graphio/
+/test/studies/ssca2/graphio/graphio.1.vertex_edge_info.data
+/test/studies/ssca2/graphio/graphio.1.sv2_snapshot.data
+/test/studies/ssca2/graphio/graphio.1.ev2_snapshot.data
+/test/studies/ssca2/graphio/graphio.1.start_snapshot.data
+/test/studies/ssca2/graphio/graphio.1.weight_snapshot.data
+/test/studies/ssca2/graphio/graphio.2.vertex_edge_info.data
+/test/studies/ssca2/graphio/graphio.2.sv2_snapshot.data
+/test/studies/ssca2/graphio/graphio.2.ev2_snapshot.data
+/test/studies/ssca2/graphio/graphio.2.start_snapshot.data
+/test/studies/ssca2/graphio/graphio.2.weight_snapshot.data
+
+# /test/studies/ssca2/rachels/
+/test/studies/ssca2/rachels/SSCA2_main.RMAT.good
+/test/studies/ssca2/rachels/SSCA2_main.1Dtorus.good
+/test/studies/ssca2/rachels/SSCA2_main.2Dtorus.good
+/test/studies/ssca2/rachels/SSCA2_main.3Dtorus.good
+/test/studies/ssca2/rachels/SSCA2_main.4Dtorus.good
+
+# /test/studies/ssca2/sungeun/
+/test/studies/ssca2/sungeun/SSCA2_main.RMAT.good
+/test/studies/ssca2/sungeun/SSCA2_main.1Dtorus.good
+/test/studies/ssca2/sungeun/SSCA2_main.2Dtorus.good
+/test/studies/ssca2/sungeun/SSCA2_main.3Dtorus.good
+/test/studies/ssca2/sungeun/SSCA2_main.4Dtorus.good
+
+# /test/studies/ssca2/test-rmatalt/
+/test/studies/ssca2/test-rmatalt/rmatalt.weights
+/test/studies/ssca2/test-rmatalt/rmatalt.neis
+
+# /test/studies/stencil9/
+/test/studies/stencil9/a.out
+/test/studies/stencil9/output
+/test/studies/stencil9/*.tmp
+/test/studies/stencil9/perfdat
+
+# /test/studies/sudoku/deitz/
+/test/studies/sudoku/deitz/a.out
+/test/studies/sudoku/deitz/output
+/test/studies/sudoku/deitz/*.tmp
+
+# /test/studies/sudoku/dinan/
+/test/studies/sudoku/dinan/*.tmp
+/test/studies/sudoku/dinan/a.out
+/test/studies/sudoku/dinan/output
+/test/studies/sudoku/dinan/sudoku
+/test/studies/sudoku/dinan/sudoku-simple
+/test/studies/sudoku/dinan/sudoku-smart
+
+# /test/studies/sudoku/dinan/search/
+/test/studies/sudoku/dinan/search/a.out
+/test/studies/sudoku/dinan/search/output
+/test/studies/sudoku/dinan/search/*.tmp
+
+# /test/studies/tce/
+/test/studies/tce/a.out
+/test/studies/tce/output
+/test/studies/tce/*.tmp
+
+# /test/studies/uts/
+/test/studies/uts/*.tmp
+/test/studies/uts/a.out
+/test/studies/uts/output
+/test/studies/uts/uts-deq
+/test/studies/uts/uts-deq-seq
+/test/studies/uts/uts-rec
+/test/studies/uts/uts-rec-seq
+
+# /test/trivial/bradc/
+/test/trivial/bradc/*tmp
+/test/trivial/bradc/a.out
+/test/trivial/bradc/output
+/test/trivial/bradc/log
+
+# /test/trivial/bradc/arrinit/
+/test/trivial/bradc/arrinit/*.tmp
+/test/trivial/bradc/arrinit/output
+/test/trivial/bradc/arrinit/log
+/test/trivial/bradc/arrinit/a.out
+
+# /test/trivial/bradc/entrypoint/
+/test/trivial/bradc/entrypoint/*.tmp
+/test/trivial/bradc/entrypoint/a.out
+/test/trivial/bradc/entrypoint/output
+
+# /test/trivial/bradc/protoast/
+/test/trivial/bradc/protoast/*.tmp
+/test/trivial/bradc/protoast/output
+
+# /test/trivial/bradc/protoast/codegen/
+/test/trivial/bradc/protoast/codegen/output
+/test/trivial/bradc/protoast/codegen/a.out
+/test/trivial/bradc/protoast/codegen/*.tmp
+
+# /test/trivial/bradc/write/
+/test/trivial/bradc/write/*.tmp
+/test/trivial/bradc/write/output
+
+# /test/trivial/deitz/
+/test/trivial/deitz/*tmp
+/test/trivial/deitz/a.out
+/test/trivial/deitz/output
+/test/trivial/deitz/log
+
+# /test/trivial/deitz/demo/
+/test/trivial/deitz/demo/*tmp
+/test/trivial/deitz/demo/a.out
+/test/trivial/deitz/demo/output
+/test/trivial/deitz/demo/log
+
+# /test/trivial/dinan/
+/test/trivial/dinan/*.tmp
+/test/trivial/dinan/a.out
+/test/trivial/dinan/output
+
+# /test/trivial/diten/
+/test/trivial/diten/a.out
+/test/trivial/diten/output
+/test/trivial/diten/*.tmp
+
+# /test/trivial/diten/lcs/
+/test/trivial/diten/lcs/a.out
+/test/trivial/diten/lcs/output
+/test/trivial/diten/lcs/*.tmp
+
+# /test/trivial/figueroa/
+/test/trivial/figueroa/a.out
+/test/trivial/figueroa/*.tmp
+/test/trivial/figueroa/output
+
+# /test/trivial/jplevyak/
+/test/trivial/jplevyak/*tmp
+/test/trivial/jplevyak/a.out
+/test/trivial/jplevyak/output
+/test/trivial/jplevyak/log
+
+# /test/trivial/marybeth/
+/test/trivial/marybeth/*tmp
+/test/trivial/marybeth/a.out
+/test/trivial/marybeth/output
+/test/trivial/marybeth/log
+
+# /test/trivial/mjoyner/inlinefunc/
+/test/trivial/mjoyner/inlinefunc/*.tmp
+/test/trivial/mjoyner/inlinefunc/a.out
+
+# /test/trivial/mjoyner/iterators/
+/test/trivial/mjoyner/iterators/*.tmp
+/test/trivial/mjoyner/iterators/a.out
+
+# /test/trivial/mjoyner/nestedfndef/
+/test/trivial/mjoyner/nestedfndef/*.tmp
+/test/trivial/mjoyner/nestedfndef/a.out
+
+# /test/trivial/preston/
+/test/trivial/preston/*.tmp
+
+# /test/trivial/roxana/
+/test/trivial/roxana/*.tmp
+
+# /test/trivial/shannon/
+/test/trivial/shannon/*.tmp
+/test/trivial/shannon/a.out
+/test/trivial/shannon/output
+/test/trivial/shannon/log
+
+# /test/trivial/shannon/quit/
+/test/trivial/shannon/quit/*.tmp
+/test/trivial/shannon/quit/a.out
+/test/trivial/shannon/quit/output
+/test/trivial/shannon/quit/log
+
+# /test/trivial/sungeun/
+/test/trivial/sungeun/runningTasks2.good
+
+# /test/trivial/waynew/
+/test/trivial/waynew/*.tmp
+
+# /test/types/bool/bradc/
+/test/types/bool/bradc/a.out
+/test/types/bool/bradc/output
+/test/types/bool/bradc/*.tmp
+
+# /test/types/coerce/bradc/
+/test/types/coerce/bradc/output
+/test/types/coerce/bradc/*.tmp
+
+# /test/types/coerce/diten/
+/test/types/coerce/diten/a.out
+/test/types/coerce/diten/output
+/test/types/coerce/diten/*.tmp
+
+# /test/types/complex/bradc/
+/test/types/complex/bradc/*tmp
+/test/types/complex/bradc/a.out
+/test/types/complex/bradc/output
+/test/types/complex/bradc/log
+
+# /test/types/complex/deitz/
+/test/types/complex/deitz/*tmp
+/test/types/complex/deitz/a.out
+/test/types/complex/deitz/output
+/test/types/complex/deitz/log
+
+# /test/types/complex/diten/
+/test/types/complex/diten/a.out
+/test/types/complex/diten/output
+/test/types/complex/diten/*.tmp
+
+# /test/types/complex/jplevyak/
+/test/types/complex/jplevyak/*.tmp
+/test/types/complex/jplevyak/a.out
+
+# /test/types/complex/marybeth/
+/test/types/complex/marybeth/*.tmp
+/test/types/complex/marybeth/a.out
+/test/types/complex/marybeth/output
+
+# /test/types/complex/waynew/
+/test/types/complex/waynew/*.tmp
+/test/types/complex/waynew/a.out
+/test/types/complex/waynew/output
+
+# /test/types/enum/bradc/
+/test/types/enum/bradc/a.out
+/test/types/enum/bradc/output
+/test/types/enum/bradc/*.tmp
+
+# /test/types/enum/bradc/dispatch/
+/test/types/enum/bradc/dispatch/a.out
+/test/types/enum/bradc/dispatch/output
+/test/types/enum/bradc/dispatch/*.tmp
+
+# /test/types/enum/deitz/
+/test/types/enum/deitz/*.tmp
+/test/types/enum/deitz/a.out
+/test/types/enum/deitz/output
+/test/types/enum/deitz/log
+
+# /test/types/enum/diten/
+/test/types/enum/diten/a.out
+/test/types/enum/diten/output
+/test/types/enum/diten/*.tmp
+
+# /test/types/file/
+/test/types/file/_test_fwrite*.txt
+/test/types/file/_test_fread*.txt
+/test/types/file/output
+/test/types/file/OUTPUT
+/test/types/file/*.tmp
+/test/types/file/a.out
+/test/types/file/arr.out
+/test/types/file/arr2.out
+
+# /test/types/file/bradc/
+/test/types/file/bradc/*.tmp
+/test/types/file/bradc/f.out
+
+# /test/types/file/bradc/scalar/
+/test/types/file/bradc/scalar/a.out
+/test/types/file/bradc/scalar/output
+/test/types/file/bradc/scalar/*.tmp
+
+# /test/types/imag/
+/test/types/imag/a.out
+/test/types/imag/output
+/test/types/imag/*.tmp
+
+# /test/types/like/deitz/
+/test/types/like/deitz/*tmp
+/test/types/like/deitz/a.out
+/test/types/like/deitz/output
+/test/types/like/deitz/log
+
+# /test/types/locale/bradc/
+/test/types/locale/bradc/a.out
+/test/types/locale/bradc/output
+/test/types/locale/bradc/*.tmp
+
+# /test/types/range/bradc/
+/test/types/range/bradc/*.tmp
+/test/types/range/bradc/a.out
+
+# /test/types/range/bradc/needAlignment/
+/test/types/range/bradc/needAlignment/a.out
+/test/types/range/bradc/needAlignment/output
+/test/types/range/bradc/needAlignment/*.tmp
+
+# /test/types/range/claridge/
+/test/types/range/claridge/a.out
+/test/types/range/claridge/output
+/test/types/range/claridge/*.tmp
+
+# /test/types/range/deitz/
+/test/types/range/deitz/a.out
+/test/types/range/deitz/output
+/test/types/range/deitz/*.tmp
+
+# /test/types/range/diten/
+/test/types/range/diten/a.out
+/test/types/range/diten/*.tmp
+/test/types/range/diten/output
+
+# /test/types/range/hilde/
+/test/types/range/hilde/a.out
+/test/types/range/hilde/output
+/test/types/range/hilde/*.tmp
+
+# /test/types/range/stonea/
+/test/types/range/stonea/a.out
+/test/types/range/stonea/output
+/test/types/range/stonea/*.tmp
+
+# /test/types/range/sungeun/
+/test/types/range/sungeun/a.out
+/test/types/range/sungeun/output
+/test/types/range/sungeun/*.tmp
+
+# /test/types/scalar/bradc/
+/test/types/scalar/bradc/a.out
+/test/types/scalar/bradc/output
+/test/types/scalar/bradc/*.tmp
+
+# /test/types/scalar/diten/
+/test/types/scalar/diten/a.out *.tmp
+
+# /test/types/seq/bradc/
+/test/types/seq/bradc/a.out
+/test/types/seq/bradc/*.tmp
+
+# /test/types/seq/deitz/
+/test/types/seq/deitz/*tmp
+/test/types/seq/deitz/a.out
+/test/types/seq/deitz/output
+/test/types/seq/deitz/log
+
+# /test/types/seq/deitz/noanalysis/
+/test/types/seq/deitz/noanalysis/*tmp
+/test/types/seq/deitz/noanalysis/a.out
+/test/types/seq/deitz/noanalysis/output
+/test/types/seq/deitz/noanalysis/log
+
+# /test/types/string/bradc/
+/test/types/string/bradc/a.out
+/test/types/string/bradc/*.tmp
+/test/types/string/bradc/output
+
+# /test/types/string/bradc/string2complex/
+/test/types/string/bradc/string2complex/a.out
+/test/types/string/bradc/string2complex/output
+/test/types/string/bradc/string2complex/*.tmp
+
+# /test/types/string/bradc/string2ints/
+/test/types/string/bradc/string2ints/output
+/test/types/string/bradc/string2ints/a.out
+/test/types/string/bradc/string2ints/*.tmp
+
+# /test/types/string/bradc/substring/
+/test/types/string/bradc/substring/*.tmp
+/test/types/string/bradc/substring/output
+/test/types/string/bradc/substring/a.out
+
+# /test/types/string/deitz/
+/test/types/string/deitz/*.tmp
+
+# /test/types/string/shannon/
+/test/types/string/shannon/*.tmp
+/test/types/string/shannon/a.out
+/test/types/string/shannon/output
+/test/types/string/shannon/log
+
+# /test/types/tuple/bradc/
+/test/types/tuple/bradc/*.tmp
+/test/types/tuple/bradc/a.out
+/test/types/tuple/bradc/output
+
+# /test/types/tuple/deitz/
+/test/types/tuple/deitz/*tmp
+/test/types/tuple/deitz/a.out
+/test/types/tuple/deitz/output
+/test/types/tuple/deitz/log
+
+# /test/types/tuple/deitz/noanalysis/
+/test/types/tuple/deitz/noanalysis/*.tmp
+/test/types/tuple/deitz/noanalysis/a.out
+
+# /test/types/tuple/dinan/
+/test/types/tuple/dinan/*.tmp
+
+# /test/types/tuple/diten/
+/test/types/tuple/diten/*.tmp
+/test/types/tuple/diten/a.out
+/test/types/tuple/diten/output
+
+# /test/types/tuple/jplevyak/
+/test/types/tuple/jplevyak/*tmp
+/test/types/tuple/jplevyak/a.out
+/test/types/tuple/jplevyak/output
+/test/types/tuple/jplevyak/log
+
+# /test/types/tuple/marybeth/
+/test/types/tuple/marybeth/*.tmp
+/test/types/tuple/marybeth/a.out
+/test/types/tuple/marybeth/output
+
+# /test/types/tuple/shannon/
+/test/types/tuple/shannon/*tmp
+/test/types/tuple/shannon/a.out
+/test/types/tuple/shannon/output
+/test/types/tuple/shannon/log
+
+# /test/types/type_variables/bradc/
+/test/types/type_variables/bradc/a.out
+/test/types/type_variables/bradc/output
+/test/types/type_variables/bradc/*.tmp
+
+# /test/types/type_variables/deitz/
+/test/types/type_variables/deitz/*tmp
+/test/types/type_variables/deitz/a.out
+/test/types/type_variables/deitz/output
+/test/types/type_variables/deitz/log
+
+# /test/types/type_variables/deitz/functions/
+/test/types/type_variables/deitz/functions/*tmp
+/test/types/type_variables/deitz/functions/a.out
+/test/types/type_variables/deitz/functions/output
+/test/types/type_variables/deitz/functions/log
+
+# /test/types/type_variables/deitz/future/
+/test/types/type_variables/deitz/future/*tmp
+/test/types/type_variables/deitz/future/a.out
+/test/types/type_variables/deitz/future/output
+/test/types/type_variables/deitz/future/log
+
+# /test/types/type_variables/deitz/part5/
+/test/types/type_variables/deitz/part5/*tmp
+/test/types/type_variables/deitz/part5/a.out
+/test/types/type_variables/deitz/part5/output
+/test/types/type_variables/deitz/part5/log
+
+# /test/types/type_variables/deitz/part7/
+/test/types/type_variables/deitz/part7/*.tmp
+/test/types/type_variables/deitz/part7/a.out
+/test/types/type_variables/deitz/part7/output
+
+# /test/types/type_variables/jplevyak/
+/test/types/type_variables/jplevyak/*tmp
+/test/types/type_variables/jplevyak/a.out
+/test/types/type_variables/jplevyak/output
+/test/types/type_variables/jplevyak/log
+
+# /test/types/typedefs/bradc/
+/test/types/typedefs/bradc/a.out
+/test/types/typedefs/bradc/*.tmp
+/test/types/typedefs/bradc/output
+
+# /test/users/agnieszka/
+/test/users/agnieszka/a.out
+/test/users/agnieszka/output
+/test/users/agnieszka/*.tmp
+
+# /test/users/bartosz/
+/test/users/bartosz/a.out
+/test/users/bartosz/output
+/test/users/bartosz/*.tmp
+
+# /test/users/brodtkorb/
+/test/users/brodtkorb/a.out
+/test/users/brodtkorb/output
+/test/users/brodtkorb/*.tmp
+
+# /test/users/bugzilla/bug794133/
+/test/users/bugzilla/bug794133/a.out
+/test/users/bugzilla/bug794133/output
+/test/users/bugzilla/bug794133/*.tmp
+
+# /test/users/chris/
+/test/users/chris/a.out
+/test/users/chris/output
+/test/users/chris/*.tmp
+
+# /test/users/csep524/
+/test/users/csep524/a.out
+/test/users/csep524/output
+/test/users/csep524/*.tmp
+
+# /test/users/dealmeidav/
+/test/users/dealmeidav/a.out
+/test/users/dealmeidav/output
+/test/users/dealmeidav/*.tmp
+
+# /test/users/ferguson/
+/test/users/ferguson/a.out
+/test/users/ferguson/output
+/test/users/ferguson/*.tmp
+
+# /test/users/franzf/v0/c99/
+/test/users/franzf/v0/c99/fft
+
+# /test/users/franzf/v0/chpl/
+/test/users/franzf/v0/chpl/a.out
+/test/users/franzf/v0/chpl/output
+/test/users/franzf/v0/chpl/*.tmp
+/test/users/franzf/v0/chpl/perfdat
+/test/users/franzf/v0/chpl/fft
+
+# /test/users/franzf/v1/c99/
+/test/users/franzf/v1/c99/fft
+/test/users/franzf/v1/c99/*.sln
+/test/users/franzf/v1/c99/*.icproj
+/test/users/franzf/v1/c99/*.vcproj
+
+# /test/users/franzf/v1/chpl/
+/test/users/franzf/v1/chpl/fft
+/test/users/franzf/v1/chpl/*.tmp
+/test/users/franzf/v1/chpl/output
+
+# /test/users/franzf/v2/C99/
+/test/users/franzf/v2/C99/output
+/test/users/franzf/v2/C99/*.tmp
+/test/users/franzf/v2/C99/a.out
+/test/users/franzf/v2/C99/fft
+/test/users/franzf/v2/C99/*.out
+
+# /test/users/franzf/v2/chpl/
+/test/users/franzf/v2/chpl/a.out
+/test/users/franzf/v2/chpl/output
+/test/users/franzf/v2/chpl/*.tmp
+/test/users/franzf/v2/chpl/*.out
+/test/users/franzf/v2/chpl/fft
+/test/users/franzf/v2/chpl/chapel.hash
+
+# /test/users/jglewis/
+/test/users/jglewis/a.out
+/test/users/jglewis/output
+/test/users/jglewis/*.tmp
+
+# /test/users/jglewis/bfs_102207/
+/test/users/jglewis/bfs_102207/*.tmp
+/test/users/jglewis/bfs_102207/a.out
+/test/users/jglewis/bfs_102207/output
+
+# /test/users/lucashimizu/
+/test/users/lucashimizu/a.out
+/test/users/lucashimizu/output
+/test/users/lucashimizu/*.tmp
+
+# /test/users/rbarrett/
+/test/users/rbarrett/*.tmp
+/test/users/rbarrett/a.out
+
+# /test/users/ren/
+/test/users/ren/a.out
+/test/users/ren/output
+/test/users/ren/*.tmp
+
+# /test/users/shetag/
+/test/users/shetag/a.out
+/test/users/shetag/*.tmp
+/test/users/shetag/output
+
+# /test/users/shetag/classWithArray/
+/test/users/shetag/classWithArray/a.out
+/test/users/shetag/classWithArray/output
+/test/users/shetag/classWithArray/*.tmp
+
+# /test/users/shetag/fock/
+/test/users/shetag/fock/*.tmp
+/test/users/shetag/fock/output
+/test/users/shetag/fock/a.out
+
+# /test/users/sidelnik/
+/test/users/sidelnik/a.out
+/test/users/sidelnik/output
+/test/users/sidelnik/*.tmp
+
+# /test/users/thom/
+/test/users/thom/a.out
+/test/users/thom/output
+/test/users/thom/*.tmp
+
+# /test/users/thom/returnGenericLineno/
+/test/users/thom/returnGenericLineno/a.out
+/test/users/thom/returnGenericLineno/output
+/test/users/thom/returnGenericLineno/*.tmp
+/test/users/thom/returnGenericLineno/strassen
+
+# /test/users/weili/
+/test/users/weili/a.out
+/test/users/weili/output
+/test/users/weili/*.tmp
+
+# /test/users/wmikanik/
+/test/users/wmikanik/a.out
+/test/users/wmikanik/output
+/test/users/wmikanik/*.tmp
+
+# /third-party/creoleparser/
+/third-party/creoleparser/install
+
+# /third-party/dlmalloc/
+/third-party/dlmalloc/build
+/third-party/dlmalloc/install
+
+# /third-party/gasnet/
+/third-party/gasnet/build
+/third-party/gasnet/install
+
+# /third-party/gmp/
+/third-party/gmp/build
+/third-party/gmp/install
+
+# /third-party/hwloc/
+/third-party/hwloc/hwloc-1.7.2
+/third-party/hwloc/build
+/third-party/hwloc/install
+
+# /third-party/massivethreads/
+/third-party/massivethreads/build
+/third-party/massivethreads/install
+
+# /third-party/qthread/
+/third-party/qthread/build
+/third-party/qthread/install
+
+# /third-party/tcmalloc/
+/third-party/tcmalloc/build
+/third-party/tcmalloc/install
+
+# /util/pastPerformance/
+/util/pastPerformance/ra.dat
+/util/pastPerformance/stream.dat
+
+# /util/tokencount/
+/util/tokencount/lex.yy.c
+/util/tokencount/tokencount
+/util/tokencount/tokencount.cron
+/util/tokencount/tokencount.dbg
+/util/tokencount/tokencount.tab.c
+/util/tokencount/tokencount.tab.h
+/util/tokencount/tokencount.output
