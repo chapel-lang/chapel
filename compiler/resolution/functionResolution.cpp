@@ -27,8 +27,7 @@
 #define TRACE_DISAMBIGUATE_BY_MATCH(...)
 #endif
 
-/**
- * \brief Contextual info used by the disambiguation process.
+/** Contextual info used by the disambiguation process.
  * 
  * This class wraps information that is used by multiple functions during the
  * function disambiguation process.
@@ -44,17 +43,22 @@ public:
   /// Indexes used when printing out tracing information.
   int i, j;
   
-  /**
-   * \brief A simple constructor that initializes all of the values except i and
-   *        j.
+  /** A simple constructor that initializes all of the values except i and j.
+   * 
+   * \param actuals The actual arguments from the call site.
+   * \param scope   A block representing the scope the call was made in.
+   * \param explain Whether or not a trace of this disambiguation process should
+   *                be printed for the developer.
    */
   DisambiguationContext(Vec<Symbol*>* actuals, Expr* scope, bool explain) :
     actuals(actuals), scope(scope), explain(explain), i(-1), j(-1) {}
   
-  /**
-   * \brief A helper function used to set the i and j members.
+  /** A helper function used to set the i and j members.
    * 
-   * The function returns a constant reference to this disambiguation context.
+   * \param i The index of the left-hand side of the comparison.
+   * \param j The index of the right-hand side of the comparison.
+   * 
+   * \return A constant reference to this disambiguation context.
    */
   const DisambiguationContext& forPair(int newI, int newJ) {
     this->i = newI;
@@ -64,25 +68,45 @@ public:
   }
 };
 
-/**
- * \brief A wrapper for results from the disambiguation process.
+/** A wrapper for candidates for function call resolution.
  * 
- * If a best candidate was found than the function member will point to it.  If
- * not, this pointer will be set to NULL.  The same goes for mappedFormals.
+ * If a best candidate was found than the function member will point to it.
  */
-class DisambiguationResult {
+class ResolutionCandidate {
 public:
   /// A pointer to the best candidate function.
-  FnSymbol* function;
-  /// A pointer to the mapped formal arguments for the best candidate.
-  Vec<ArgSymbol*>* mappedFormals;
+  FnSymbol* fn;
   
-  /// The default constructor.  This is used when no best candidate is found.
-  DisambiguationResult() : function(NULL), mappedFormals(NULL) {}
+  /** The actual arguments for the candidate, aligned so that they have the same
+   *  index as their corresponding formal argument in alignedFormals.
+   */
+  Vec<Symbol*> alignedActuals;
   
-  /// The constructor used to return a best candidate.
-  DisambiguationResult(FnSymbol* function, Vec<ArgSymbol*>* mappedFormals) :
-    function(function), mappedFormals(mappedFormals) {}
+  /** The formal arguments for the candidate, aligned so that they have the same
+   *  index as their corresponding actual argument in alignedActuals.
+   */
+  Vec<ArgSymbol*> alignedFormals;
+  
+  /// A symbol map for substitutions that were made during the copying process.
+  SymbolMap substitutions;
+  
+  /** The main constructor.
+   * 
+   * \param fn A function that is a candidate for the resolution process.
+   */
+  ResolutionCandidate(FnSymbol* function) : fn(function) {}
+  
+  /** Compute the alignment of actual and formal arguments for the wrapped
+   *  function and the current call site.
+   * 
+   * \param info The CallInfo object corresponding to the call site.
+   * 
+   * \return If a valid alignment was found.
+   */
+  bool computeAlignment(CallInfo& info);
+  
+  /// Compute substitutions for wrapped function that is generic.
+  void computeSubstitutions();
 };
 
 /// State information used during the disambiguation process.
@@ -106,12 +130,10 @@ public:
     : fn1MoreSpecific(false), fn2MoreSpecific(false),
       fn1Promotes(false), fn2Promotes(false), paramPrefers(0) {}
 
-  /**
-   * \brief Prints out information for tracing of the disambiguation process.
+  /** Prints out information for tracing of the disambiguation process.
    * 
    * \param DBMLoc A string representing the location in the DBM process the
    *               message is coming from.
-   * 
    * \param DC     The disambiguation context.
    */
   void printSummary(const char* DBMLoc, const DisambiguationContext& DC) {
@@ -197,23 +219,29 @@ static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType
 static bool
 moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType);
 static bool
-computeActualFormalMap(FnSymbol* fn,
-                       Vec<Symbol*>& formalActuals,
-                       Vec<ArgSymbol*>& actualFormals,
-                       CallInfo& info);
+computeActualFormalAlignment(FnSymbol* fn,
+                             Vec<Symbol*>& alignedActuals,
+                             Vec<ArgSymbol*>& alignedFormals,
+                             CallInfo& info);
 static Type*
 getInstantiationType(Type* actualType, Type* formalType);
 static void
 computeGenericSubs(SymbolMap &subs,
                    FnSymbol* fn,
-                   Vec<Symbol*>* formalActuals);
+                   Vec<Symbol*>& alignedActuals);
 static FnSymbol*
 expandVarArgs(FnSymbol* fn, int numActuals);
+
 static void
-addCandidate(Vec<FnSymbol*>* candidateFns,
-             Vec<Vec<ArgSymbol*>*>* candidateActualFormals,
-             FnSymbol* fn,
-             CallInfo& info);
+filterCandidate(Vec<ResolutionCandidate*>& candidates,
+                ResolutionCandidate* currCandidate,
+                CallInfo& info);
+
+static void
+filterCandidate(Vec<ResolutionCandidate*>& candidates,
+                FnSymbol* fn,
+                CallInfo& info);
+                
 static BlockStmt* getParentBlock(Expr* expr);
 static bool
 isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
@@ -239,10 +267,12 @@ static Type* resolve_type_expr(Expr* expr);
 static void makeNoop(CallExpr* call);
 static bool isTypeExpr(Expr* expr);
 static void resolveDefaultGenericType(CallExpr* call);
+
 static void
-gatherCandidates(Vec<FnSymbol*>& candidateFns,
-                 Vec<Vec<ArgSymbol*>*>& candidateActualFormals,
-                 Vec<FnSymbol*>& visibleFns, CallInfo& info);
+gatherCandidates(Vec<ResolutionCandidate*>& candidates,
+                 Vec<FnSymbol*>& visibleFns,
+                 CallInfo& info);
+
 static void resolveNormalCall(CallExpr* call, bool errorCheck);
 static void resolveTupleAndExpand(CallExpr* call);
 static void resolveTupleExpand(CallExpr* call);
@@ -319,6 +349,17 @@ static void insertReferenceTemps();
 static void fixTypeNames(ClassType* ct);
 static void setScalarPromotionType(ClassType* ct);
 
+bool ResolutionCandidate::computeAlignment(CallInfo& info) {
+  if (alignedActuals.n != 0) alignedActuals.clear();
+  if (alignedFormals.n != 0) alignedFormals.clear();
+  
+  return computeActualFormalAlignment(fn, alignedActuals, alignedFormals, info);
+}
+
+void ResolutionCandidate::computeSubstitutions() {
+  if (substitutions.n != 0) substitutions.clear();
+  computeGenericSubs(substitutions, fn, alignedActuals);
+}
 
 static bool hasRefField(Type *type) {
   if (isPrimitiveType(type)) return false;
@@ -355,10 +396,13 @@ resolveUninsertedCall(Type* type, CallExpr* call) {
       type->defaultInitializer->instantiationPoint->insertAtHead(call);
     else
       type->symbol->defPoint->insertBefore(call);
-  } else
+  } else {
     chpl_gen_main->insertAtHead(call);
+  }
+  
   resolveCall(call);
   call->remove();
+  
   return call->isResolved();
 }
 
@@ -370,21 +414,24 @@ static void makeRefType(Type* type) {
     // Should this be an assert?
     return;
 
-  if (type->refType)
+  if (type->refType) {
     // Already done.
     return;
+  }
 
   if (type == dtMethodToken ||
       type == dtUnknown ||
       type->symbol->hasFlag(FLAG_REF) ||
-      type->symbol->hasFlag(FLAG_GENERIC))
+      type->symbol->hasFlag(FLAG_GENERIC)) {
+    
     return;
+  }
 
   CallExpr* call = new CallExpr("_type_construct__ref", type->symbol);
   FnSymbol* fn = resolveUninsertedCall(type, call);
   type->refType = toClassType(fn->retType);
   type->refType->getField(1)->type = type;
- 
+  
   if (type->symbol->hasFlag(FLAG_ATOMIC_TYPE))
     type->refType->symbol->addFlag(FLAG_ATOMIC_TYPE);
 }
@@ -1180,24 +1227,24 @@ moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType) {
 }
 
 static bool
-computeActualFormalMap(FnSymbol* fn,
-                       Vec<Symbol*>& formalActuals,
-                       Vec<ArgSymbol*>& actualFormals,
-                       CallInfo& info) {
-  formalActuals.fill(fn->numFormals());
-  actualFormals.fill(info.actuals.n);
+computeActualFormalAlignment(FnSymbol* fn,
+                             Vec<Symbol*>& alignedActuals,
+                             Vec<ArgSymbol*>& alignedFormals,
+                             CallInfo& info) {
+  alignedActuals.fill(fn->numFormals());
+  alignedFormals.fill(info.actuals.n);
 
   // Match named actuals against formal names in the function signature.
   // Record successful matches.
-  for (int i = 0; i < actualFormals.n; i++) {
+  for (int i = 0; i < alignedFormals.n; i++) {
     if (info.actualNames.v[i]) {
       bool match = false;
       int j = 0;
       for_formals(formal, fn) {
         if (!strcmp(info.actualNames.v[i], formal->name)) {
           match = true;
-          actualFormals.v[i] = formal;
-          formalActuals.v[j] = info.actuals.v[i];
+          alignedFormals.v[i] = formal;
+          alignedActuals.v[j] = info.actuals.v[i];
           break;
         }
         j++;
@@ -1212,16 +1259,16 @@ computeActualFormalMap(FnSymbol* fn,
   // Record successful substitutions.
   int j = 0;
   ArgSymbol* formal = (fn->numFormals()) ? fn->getFormal(1) : NULL;
-  for (int i = 0; i < actualFormals.n; i++) {
+  for (int i = 0; i < alignedFormals.n; i++) {
     if (!info.actualNames.v[i]) {
       bool match = false;
       while (formal) {
         if (formal->variableExpr)
           return (fn->hasFlag(FLAG_GENERIC)) ? true : false;
-        if (!formalActuals.v[j]) {
+        if (!alignedActuals.v[j]) {
           match = true;
-          actualFormals.v[i] = formal;
-          formalActuals.v[j] = info.actuals.v[i];
+          alignedFormals.v[i] = formal;
+          alignedActuals.v[j] = info.actuals.v[i];
           break;
         }
         formal = next_formal(formal);
@@ -1236,7 +1283,7 @@ computeActualFormalMap(FnSymbol* fn,
   // Make sure that any remaining formals are matched by name 
   // or have a default value.
   while (formal) {
-    if (!formalActuals.v[j] && !formal->defaultExpr)
+    if (!alignedActuals.v[j] && !formal->defaultExpr)
       // Fail if not.
       return false;
     formal = next_formal(formal);
@@ -1273,15 +1320,15 @@ getInstantiationType(Type* actualType, Type* formalType) {
 static void
 computeGenericSubs(SymbolMap &subs,
                    FnSymbol* fn,
-                   Vec<Symbol*>* formalActuals) {
+                   Vec<Symbol*>& alignedActuals) {
   int i = 0;
   for_formals(formal, fn) {
     if (formal->intent == INTENT_PARAM) {
-      if (formalActuals->v[i] && formalActuals->v[i]->isParameter()) {
+      if (alignedActuals.v[i] && alignedActuals.v[i]->isParameter()) {
         if (!formal->type->symbol->hasFlag(FLAG_GENERIC) ||
-            canInstantiate(formalActuals->v[i]->type, formal->type))
-          subs.put(formal, formalActuals->v[i]);
-      } else if (!formalActuals->v[i] && formal->defaultExpr) {
+            canInstantiate(alignedActuals.v[i]->type, formal->type))
+          subs.put(formal, alignedActuals.v[i]);
+      } else if (!alignedActuals.v[i] && formal->defaultExpr) {
 
         // break because default expression may reference generic
         // arguments earlier in formal list; make those substitutions
@@ -1307,8 +1354,8 @@ computeGenericSubs(SymbolMap &subs,
           (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) || fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)))
         USR_FATAL(formal, "invalid generic type specification on class field");
 
-      if (formalActuals->v[i]) {
-        if (Type* type = getInstantiationType(formalActuals->v[i]->type, formal->type))
+      if (alignedActuals.v[i]) {
+        if (Type* type = getInstantiationType(alignedActuals.v[i]->type, formal->type))
           subs.put(formal, type->symbol);
       } else if (formal->defaultExpr) {
 
@@ -1470,99 +1517,176 @@ resolve_type_constructor(FnSymbol* fn, CallInfo& info) {
 }
 
 
-// Return actual-formal map if FnSymbol is viable candidate to call
+/** Candidate filtering logic specific to concrete functions.
+ * 
+ * \param candidates    The list to add possible candidates to.
+ * \param currCandidate The current candidate to consider.
+ * \param info          The CallInfo object for the call site.
+ */
 static void
-addCandidate(Vec<FnSymbol*>* candidateFns,
-             Vec<Vec<ArgSymbol*>*>* candidateActualFormals,
-             FnSymbol* fn,
-             CallInfo& info) {
-  fn = expandVarArgs(fn, info.actuals.n);
+filterConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
+                        ResolutionCandidate* currCandidate,
+                        CallInfo& info) {
+  
+  currCandidate->fn = expandVarArgs(currCandidate->fn, info.actuals.n);
 
-  if (!fn)
+  if (!currCandidate->fn) return;
+  
+  if (!currCandidate->computeAlignment(info)) {
     return;
+  }
+  
+  /*
+   * Make sure that type constructor is resolved before other constructors.
+   */
+  if (currCandidate->fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
+    resolve_type_constructor(currCandidate->fn, info);
+  }
 
-  Vec<ArgSymbol*> actualFormals;
-  Vec<Symbol*> formalActuals;
+  /*
+   * A derived generic type will use the type of its parent, and expects this to
+   * be instantiated before it is.
+   */ 
+  resolveFormals(currCandidate->fn);
 
-  bool valid = computeActualFormalMap(fn, formalActuals, actualFormals, info);
+  if (!strcmp(currCandidate->fn->name, "=")) {
+    Symbol* actual = currCandidate->alignedActuals.head();
+    Symbol* formal = currCandidate->fn->getFormal(1);
+    
+    if (actual->type != formal->type && actual->type != formal->type->refType) {
+      return;
+    }
+  }
 
-  if (!valid)
+  int coindex = -1;
+  for_formals(formal, currCandidate->fn) {
+    if (Symbol* actual = currCandidate->alignedActuals.v[++coindex]) {
+      if (actual->hasFlag(FLAG_TYPE_VARIABLE) != formal->hasFlag(FLAG_TYPE_VARIABLE)) {
+        return;
+      }
+      
+      if (!canDispatch(actual->type, actual, formal->type, currCandidate->fn, NULL, formal->instantiatedParam)) {
+        return;
+      }
+    }
+  }
+  
+  candidates.add(currCandidate);
+}
+
+
+/** Candidate filtering logic specific to generic functions.
+ * 
+ * \param candidates    The list to add possible candidates to.
+ * \param currCandidate The current candidate to consider.
+ * \param info          The CallInfo object for the call site.
+ */
+static void
+filterGenericCandidate(Vec<ResolutionCandidate*>& candidates,
+                       ResolutionCandidate* currCandidate,
+                       CallInfo& info) {
+  
+  currCandidate->fn = expandVarArgs(currCandidate->fn, info.actuals.n);
+
+  if (!currCandidate->fn) return;
+
+  if (!currCandidate->computeAlignment(info)) {
     return;
-
-  if (fn->hasFlag(FLAG_GENERIC)) {
-
-    //
-    // try to avoid excessive over-instantiation
-    //
-    int i = 0;
-    for_formals(formal, fn) {
-      if (formal->type != dtUnknown) {
-        if (Symbol* actual = formalActuals.v[i]) {
-          if (actual->hasFlag(FLAG_TYPE_VARIABLE) != formal->hasFlag(FLAG_TYPE_VARIABLE))
+  }
+  
+  /*
+   * Early rejection of generic functions.
+   */
+  int coindex = 0;
+  for_formals(formal, currCandidate->fn) {
+    if (formal->type != dtUnknown) {
+      if (Symbol* actual = currCandidate->alignedActuals.v[coindex]) {
+        if (actual->hasFlag(FLAG_TYPE_VARIABLE) != formal->hasFlag(FLAG_TYPE_VARIABLE)) {
+          return;
+        }
+        
+        if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
+          Type* vt = actual->getValType();
+          Type* st = actual->type->scalarPromotionType;
+          Type* svt = (vt) ? vt->scalarPromotionType : NULL;
+          if (!canInstantiate(actual->type, formal->type) &&
+              (!vt  || !canInstantiate(vt, formal->type)) &&
+              (!st  || !canInstantiate(st, formal->type)) &&
+              (!svt || !canInstantiate(svt, formal->type))) {
+            
             return;
-          if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
-            Type* vt = actual->getValType();
-            Type* st = actual->type->scalarPromotionType;
-            Type* svt = (vt) ? vt->scalarPromotionType : NULL;
-            if (!canInstantiate(actual->type, formal->type) &&
-                (!vt || !canInstantiate(vt, formal->type)) &&
-                (!st || !canInstantiate(st, formal->type)) &&
-                (!svt || !canInstantiate(svt, formal->type)))
-              return;
-          } else {
-            if (!canDispatch(actual->type, actual, formal->type, fn, NULL, formal->instantiatedParam))
-              return;
+            
+          }
+        } else {
+          if (!canDispatch(actual->type, actual, formal->type, currCandidate->fn, NULL, formal->instantiatedParam)) {
+            return;
           }
         }
       }
-      i++;
     }
+    ++coindex;
+  }
 
-    // Compute the param/type substitutions for generic arguments.
-    SymbolMap subs;
-    computeGenericSubs(subs, fn, &formalActuals);
-    if (subs.n) {
-      // If any substitutions were made, instantiate the generic function.
-      if (FnSymbol* ifn = instantiate(fn, &subs, info.call))
-        addCandidate(candidateFns, candidateActualFormals, ifn, info);
+  // Compute the param/type substitutions for generic arguments.
+  currCandidate->computeSubstitutions();
+  
+  /*
+   * If no substitutions were made we can't instantiate this generic, and must
+   * reject it.
+   */
+  if (currCandidate->substitutions.n > 0) {
+    currCandidate->fn = instantiate(currCandidate->fn, &(currCandidate->substitutions), info.call);
+    
+    if (currCandidate->fn != NULL) {
+      filterCandidate(candidates, currCandidate, info);
     }
-    return;
   }
+}
 
-  //
-  // make sure that type constructor is resolved before other constructors
-  //
-  if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
-    resolve_type_constructor(fn, info);
+
+/** Tests to see if a function is a candidate for resolving a specific call.  If
+ *  it is a candidate, we add it to the candidate lists.
+ * 
+ * This version of filterCandidate is called by other versions of
+ * filterCandidate, and shouldn't be called outside this family of functions.
+ * 
+ * \param candidates    The list to add possible candidates to.
+ * \param currCandidate The current candidate to consider.
+ * \param info          The CallInfo object for the call site.
+ */
+static void
+filterCandidate(Vec<ResolutionCandidate*>& candidates,
+                ResolutionCandidate* currCandidate,
+                CallInfo& info) {
+
+  if (currCandidate->fn->hasFlag(FLAG_GENERIC)) {
+    filterGenericCandidate(candidates, currCandidate, info);
+    
+  } else {
+    filterConcreteCandidate(candidates, currCandidate, info);
   }
+}
 
-  //
-  // A derived generic type will use the type of its parent, and expects this to
-  // be instantiated before it is.
-  // 
-  resolveFormals(fn);
 
-  if (!strcmp(fn->name, "=")) {
-    Symbol* actual = formalActuals.head();
-    Symbol* formal = fn->getFormal(1);
-    if (actual->type != formal->type &&
-        actual->type != formal->type->refType)
-      return;
+/** Tests to see if a function is a candidate for resolving a specific call.  If
+ *  it is a candidate, we add it to the candidate lists.
+ * 
+ * This version of filterCandidate is called by code outside the filterCandidate
+ * family of functions.
+ * 
+ * \param candidates    The list to add possible candidates to.
+ * \param currCandidate The current candidate to consider.
+ * \param info          The CallInfo object for the call site.
+ */
+static void
+filterCandidate(Vec<ResolutionCandidate*>& candidates, FnSymbol* fn, CallInfo& info) {
+  ResolutionCandidate* currCandidate = new ResolutionCandidate(fn);
+  filterCandidate(candidates, currCandidate, info);
+  
+  if (candidates.tail() != currCandidate) {
+    // The candidate was not accepted.  Time to clean it up.
+    delete currCandidate;
   }
-
-  int j = 0;
-  for_formals(formal, fn) {
-    if (Symbol* actual = formalActuals.v[j]) {
-      if (actual->hasFlag(FLAG_TYPE_VARIABLE) != formal->hasFlag(FLAG_TYPE_VARIABLE))
-        return;
-      if (!canDispatch(actual->type, actual, formal->type, fn, NULL, formal->instantiatedParam))
-        return;
-    }
-    j++;
-  }
-  candidateFns->add(fn);
-  Vec<ArgSymbol*>* actualFormalsCopy = new Vec<ArgSymbol*>(actualFormals);
-  candidateActualFormals->add(actualFormalsCopy);
 }
 
 
@@ -1740,9 +1864,8 @@ static bool considerParamMatches(Type* actualtype,
 }
 
 
-/**
- * \brief Compare two argument mappings, given a set of actual arguments, and
- *        set the disambiguation state appropriately.
+/** Compare two argument mappings, given a set of actual arguments, and set the
+ *  disambiguation state appropriately.
  * 
  * This function implements the argument mapping comparison component of the
  * disambiguation procedure as detailed in section 13.14.3 of the Chapel
@@ -1896,37 +2019,32 @@ static void testArgMapping(FnSymbol* fn1, ArgSymbol* formal1,
 }
 
 
-/**
- * \brief Determines if fn1 is a better match than fn2.
+/** Determines if fn1 is a better match than fn2.
  * 
  * This function implements the function comparison component of the
  * disambiguation procedure as detailed in section 13.14.3 of the Chapel
  * language specification (page 106).
  * 
- * \param fn1      The first function to be compared.
- * \param formals1 The formal arguments that correspond to the actual arguments
- *                 for the first function.
- * \param fn2      The second function to be compared.
- * \param formals2 The formal arguments that correspond to the actual arguments
- *                 for the second function.
- * \param DS       The disambiguation state.
+ * \param candidate1 The function on the left-hand side of the comparison.
+ * \param candidate2 The function on the right-hand side of the comparison.
+ * \param DC         The disambiguation context.
  * 
  * \return True if fn1 is a more specific function than f2, false otherwise.
  */
-static bool isBetterMatch(FnSymbol* fn1, Vec<ArgSymbol*>* formals1,
-                          FnSymbol* fn2, Vec<ArgSymbol*>* formals2,
+static bool isBetterMatch(ResolutionCandidate* candidate1,
+                          ResolutionCandidate* candidate2,
                           const DisambiguationContext& DC) {
   
   DisambiguationState DS;
   
-  for (int k = 0; k < formals1->n; ++k) {
+  for (int k = 0; k < candidate1->alignedFormals.n; ++k) {
     Symbol* actual = DC.actuals->v[k];
-    ArgSymbol* formal1 = formals1->v[k];
-    ArgSymbol* formal2 = formals2->v[k];
+    ArgSymbol* formal1 = candidate1->alignedFormals.v[k];
+    ArgSymbol* formal2 = candidate2->alignedFormals.v[k];
     
     TRACE_DISAMBIGUATE_BY_MATCH("\nLooking at argument %d\n", k);
                    
-    testArgMapping(fn1, formal1, fn2, formal2, actual, DC, DS);
+    testArgMapping(candidate1->fn, formal1, candidate2->fn, formal2, actual, DC, DS);
   }
   
   if (!DS.fn1Promotes && DS.fn2Promotes) {
@@ -1938,11 +2056,11 @@ static bool isBetterMatch(FnSymbol* fn1, Vec<ArgSymbol*>* formals1,
   if (!(DS.fn1MoreSpecific || DS.fn2MoreSpecific)) {
     // If the decision hasn't been made based on the argument mappings...
     
-    if (isMoreVisible(DC.scope, fn1, fn2)) {
+    if (isMoreVisible(DC.scope, candidate1->fn, candidate2->fn)) {
       TRACE_DISAMBIGUATE_BY_MATCH("\nQ: Fn %d is more specific\n", DC.i);
       DS.fn1MoreSpecific = true;
       
-    } else if (isMoreVisible(DC.scope, fn2, fn1)) {
+    } else if (isMoreVisible(DC.scope, candidate2->fn, candidate1->fn)) {
       TRACE_DISAMBIGUATE_BY_MATCH("\nR: Fn %d is more specific\n", DC.j);
       DS.fn2MoreSpecific = true;
       
@@ -1954,11 +2072,11 @@ static bool isBetterMatch(FnSymbol* fn1, Vec<ArgSymbol*>* formals1,
       TRACE_DISAMBIGUATE_BY_MATCH("\nT: Fn %d is more specific\n", DC.j);
       DS.fn2MoreSpecific = true;
       
-    } else if (fn1->where && !fn2->where) {
+    } else if (candidate1->fn->where && !candidate2->fn->where) {
       TRACE_DISAMBIGUATE_BY_MATCH("\nU: Fn %d is more specific\n", DC.i);
       DS.fn1MoreSpecific = true;
       
-    } else if (!fn1->where && fn2->where) {
+    } else if (!candidate1->fn->where && candidate2->fn->where) {
       TRACE_DISAMBIGUATE_BY_MATCH("\nV: Fn %d is more specific\n", DC.j);
       DS.fn2MoreSpecific = true;
     }
@@ -1969,37 +2087,32 @@ static bool isBetterMatch(FnSymbol* fn1, Vec<ArgSymbol*>* formals1,
 }
 
 
-/**
- * \brief Find the best candidate from a list of candidates.
+/** Find the best candidate from a list of candidates.
  * 
  * This function finds the best Chapel function from a set of candidates, given
  * a call site.  This is an implementation of 13.14.3 of the Chapel language
  * specification (page 106).
  * 
- * \param candidateFns           A list of the candidate functions, from which
- *                               the best match is selected.
- * \param candidateMappedFormals The aligned formal arguments for the actual
- *                               arguments taken from the call site.
+ * \param candidates A list of the candidate functions, from which the best
+ *                   match is selected.
+ * \param DC         The disambiguation context.
  * 
  * \return The result of the disambiguation process.
  */
-static DisambiguationResult
-disambiguateByMatch(Vec<FnSymbol*>* candidateFns,
-                    Vec<Vec<ArgSymbol*>*>* candidateMappedFormals,
-                    DisambiguationContext DC) {
+static ResolutionCandidate*
+disambiguateByMatch(Vec<ResolutionCandidate*>& candidates, DisambiguationContext DC) {
   
   // If index i is set then we can skip testing function F_i because we already
   // know it can not be the best match.
-  std::vector<bool> notBest(candidateFns->n, false);
+  std::vector<bool> notBest(candidates.n, false);
   
-  for (int i = 0; i < candidateFns->n; ++i) {
+  for (int i = 0; i < candidates.n; ++i) {
     
     TRACE_DISAMBIGUATE_BY_MATCH("##########################\n");
     TRACE_DISAMBIGUATE_BY_MATCH("# Considering function %d #\n", i);
     TRACE_DISAMBIGUATE_BY_MATCH("##########################\n\n");
     
-    FnSymbol* fn1 = candidateFns->v[i];
-    Vec<ArgSymbol*>* mappedFormals1 = candidateMappedFormals->v[i];
+    ResolutionCandidate* candidate1 = candidates.v[i];
     bool best = true; // is fn1 the best candidate?
     
     TRACE_DISAMBIGUATE_BY_MATCH("%s\n\n", toString(fn1));
@@ -2009,18 +2122,17 @@ disambiguateByMatch(Vec<FnSymbol*>* candidateFns,
       continue;
     }
     
-    for (int j = 0; j < candidateFns->n; ++j) {
+    for (int j = 0; j < candidates.n; ++j) {
       if (i == j) continue;
         
       TRACE_DISAMBIGUATE_BY_MATCH("Comparing to function %d\n", j);
       TRACE_DISAMBIGUATE_BY_MATCH("-----------------------\n");
       
-      FnSymbol* fn2 = candidateFns->v[j];
-      Vec<ArgSymbol*>* mappedFormals2 = candidateMappedFormals->v[j];
+      ResolutionCandidate* candidate2 = candidates.v[j];
       
       TRACE_DISAMBIGUATE_BY_MATCH("%s\n", toString(fn2)); 
       
-      if (isBetterMatch(fn1, mappedFormals1, fn2, mappedFormals2, DC.forPair(i,j))) {
+      if (isBetterMatch(candidate1, candidate2, DC.forPair(i, j))) {
         TRACE_DISAMBIGUATE_BY_MATCH("X: Fn %d is a better match than Fn %d\n\n\n", i, j);
         notBest[j] = true;
         
@@ -2033,7 +2145,8 @@ disambiguateByMatch(Vec<FnSymbol*>* candidateFns,
     
     if (best) {
       TRACE_DISAMBIGUATE_BY_MATCH("Y: Fn %d is the best match.\n\n\n", i);
-      return DisambiguationResult(fn1, mappedFormals1);
+      return candidate1;
+      
     } else {
       TRACE_DISAMBIGUATE_BY_MATCH("Y: Fn %d is NOT the best match.\n\n\n", i);
     }
@@ -2041,7 +2154,7 @@ disambiguateByMatch(Vec<FnSymbol*>* candidateFns,
   
   TRACE_DISAMBIGUATE_BY_MATCH("Z: No non-ambiguous best match.\n\n");
   
-  return DisambiguationResult();
+  return NULL;
 }
 
 
@@ -2574,44 +2687,55 @@ resolveDefaultGenericType(CallExpr* call) {
 
 
 static void
-gatherCandidates(Vec<FnSymbol*>& candidateFns,
-                 Vec<Vec<ArgSymbol*>*>& candidateActualFormals,
-                 Vec<FnSymbol*>& visibleFns, CallInfo& info)
-{
+gatherCandidates(Vec<ResolutionCandidate*>& candidates,
+                 Vec<FnSymbol*>& visibleFns,
+                 CallInfo& info) {
+  
   // Search user-defined (i.e. non-compiler-generated) functions first.
   forv_Vec(FnSymbol, visibleFn, visibleFns) {
-    if (visibleFn->hasFlag(FLAG_COMPILER_GENERATED))
+    if (visibleFn->hasFlag(FLAG_COMPILER_GENERATED)) {
       continue;
+    }
+    
     if (info.call->methodTag &&
         ! (visibleFn->hasFlag(FLAG_NO_PARENS) ||
-           visibleFn->hasFlag(FLAG_TYPE_CONSTRUCTOR)))
+           visibleFn->hasFlag(FLAG_TYPE_CONSTRUCTOR))) {
       continue;
+    }
+    
 #ifdef ENABLE_TRACING_OF_DISAMBIGUATION
     if (explainCallLine && explainCallMatch(info.call)) {
       printf("Considering function %s\n", visibleFn->stringLoc());
     }
 #endif
-    addCandidate(&candidateFns, &candidateActualFormals, visibleFn, info);
+
+    filterCandidate(candidates, visibleFn, info);
   }
 
   // Return if we got a successful match with user-defined functions.
-  if (candidateFns.n)
+  if (candidates.n) {
     return;
+  }
 
   // No.  So search compiler-defined functions.
   forv_Vec(FnSymbol, visibleFn, visibleFns) {
-    if (!visibleFn->hasFlag(FLAG_COMPILER_GENERATED))
+    if (!visibleFn->hasFlag(FLAG_COMPILER_GENERATED)) {
       continue;
+    }
+    
     if (info.call->methodTag &&
         ! (visibleFn->hasFlag(FLAG_NO_PARENS) ||
-           visibleFn->hasFlag(FLAG_TYPE_CONSTRUCTOR)))
+           visibleFn->hasFlag(FLAG_TYPE_CONSTRUCTOR))) {
       continue;
+    }
+    
 #ifdef ENABLE_TRACING_OF_DISAMBIGUATION
     if (explainCallLine && explainCallMatch(info.call)) {
       printf("Considering function %s\n", visibleFn->stringLoc());
     }
 #endif
-    addCandidate(&candidateFns, &candidateActualFormals, visibleFn, info);
+
+    filterCandidate(candidates, visibleFn, info);
   }
 }
 
@@ -2633,28 +2757,30 @@ resolveCall(CallExpr* call, bool errorCheck) {
 }
 
 static void resolveNormalCall(CallExpr* call, bool errorCheck) {
+    
     resolveDefaultGenericType(call);
-
+    
     CallInfo info(call);
-
-    Vec<FnSymbol*> visibleFns;                    // visible functions
-    Vec<FnSymbol*> candidateFns;
-    Vec<Vec<ArgSymbol*>*> candidateActualFormals; // candidate functions
-
+    
+    Vec<FnSymbol*> visibleFns; // visible functions
+    
     //
     // update visible function map as necessary
     //
-    if (gFnSymbols.n != nVisibleFunctions)
+    if (gFnSymbols.n != nVisibleFunctions) {
       buildVisibleFunctionMap();
-
+    }
+    
     if (!call->isResolved()) {
       if (!info.scope) {
         Vec<BlockStmt*> visited;
         getVisibleFunctions(getVisibilityBlock(call), info.name, visibleFns, visited);
       } else {
-        if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(info.scope))
-          if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(info.name))
+        if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(info.scope)) {
+          if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(info.name)) {
             visibleFns.append(*fns);
+          }
+        }
       }
     } else {
       visibleFns.add(call->isResolved());
@@ -2674,62 +2800,69 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
       }
     }
 
-    gatherCandidates(candidateFns, candidateActualFormals, visibleFns, info);
+    Vec<ResolutionCandidate*> candidates;
+    gatherCandidates(candidates, visibleFns, info);
 
     if (explainCallLine && explainCallMatch(info.call)) {
-      if (candidateFns.n == 0)
+      if (candidates.n == 0) {
         USR_PRINT(info.call, "no candidates found");
-      bool first = true;
-      forv_Vec(FnSymbol, candidateFn, candidateFns) {
-        USR_PRINT(candidateFn, "%s %s",
-                  first ? "candidates are:" : "               ",
-                  toString(candidateFn));
-        first = false;
+        
+      } else {
+        bool first = true;
+        forv_Vec(ResolutionCandidate*, candidate, candidates) {
+          USR_PRINT(candidate->fn, "%s %s",
+                    first ? "candidates are:" : "               ",
+                    toString(candidate->fn));
+          first = false;
+        }
       }
     }
 
-    FnSymbol* best = NULL;
-    Vec<ArgSymbol*>* actualFormals = NULL;
     Expr* scope = (info.scope) ? info.scope : getVisibilityBlock(call);
     DisambiguationContext DC(&info.actuals, scope,
                              explainCallLine && explainCallMatch(call));
     
-    DisambiguationResult DR;
+    ResolutionCandidate* best = disambiguateByMatch(candidates, DC);
     
-    DR = disambiguateByMatch(&candidateFns, &candidateActualFormals, DC);
-
-    best = DR.function;
-    actualFormals = DR.mappedFormals;
-
-    if (best && explainCallLine && explainCallMatch(call)) {
-      USR_PRINT(best, "best candidate is: %s", toString(best));
+    if (best && best->fn && explainCallLine && explainCallMatch(call)) {
+      USR_PRINT(best->fn, "best candidate is: %s", toString(best->fn));
     }
 
-    if (call->partialTag && (!best || !best->hasFlag(FLAG_NO_PARENS))) {
-      best = NULL;
+    if (call->partialTag && (!best || !best->fn->hasFlag(FLAG_NO_PARENS))) {
+      if (best != NULL) {
+        delete best;
+        best = NULL;
+      }
     } else if (!best) {
       if (tryStack.n) {
         tryFailure = true;
         return;
-      } else if (candidateFns.n > 0) {
-        if (errorCheck)
+        
+      } else if (errorCheck) {
+        if (candidates.n > 0) {
+          Vec<FnSymbol*> candidateFns;
+          forv_Vec(ResolutionCandidate*, candidate, candidates) {
+            candidateFns.add(candidate->fn);
+          }
+          
           printResolutionError("ambiguous", candidateFns, &info);
-      } else {
-        if (errorCheck)
+        } else {
           printResolutionError("unresolved", visibleFns, &info);
+        }
       }
     } else {
-      best = defaultWrap(best, actualFormals, &info);
-      best = orderWrap(best, actualFormals, &info);
-      best = coercionWrap(best, &info);
-      best = promotionWrap(best, &info);
+      best->fn = defaultWrap(best->fn, &best->alignedFormals, &info);
+      best->fn = orderWrap(best->fn, &best->alignedFormals, &info);
+      best->fn = coercionWrap(best->fn, &info);
+      best->fn = promotionWrap(best->fn, &info);
     }
 
-    for (int i = 0; i < candidateActualFormals.n; i++)
-      delete candidateActualFormals.v[i];
-
-    FnSymbol* resolvedFn = best;
-
+    FnSymbol* resolvedFn = best != NULL ? best->fn : NULL;
+    
+    forv_Vec(ResolutionCandidate*, candidate, candidates) {
+      delete candidate;
+    }
+    
     if (!resolvedFn && !errorCheck) {
       return;
     }
@@ -2740,6 +2873,7 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
       }
       call->partialTag = false;
     }
+    
     if (resolvedFn && resolvedFn->hasFlag(FLAG_DATA_SET_ERROR)) {
       Type* elt_type = resolvedFn->getFormal(1)->type->substitutions.v[0].value->type;
       if (!elt_type)
@@ -2747,15 +2881,19 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
       USR_FATAL(userCall(call), "type mismatch in assignment from %s to %s",
                 toString(info.actuals.v[3]->type), toString(elt_type));
     }
+    
     if (resolvedFn &&
         !strcmp("=", resolvedFn->name) &&
         isRecord(resolvedFn->getFormal(1)->type) &&
-        resolvedFn->getFormal(2)->type == dtNil)
+        resolvedFn->getFormal(2)->type == dtNil) {
       USR_FATAL(userCall(call), "type mismatch in assignment from nil to %s",
                 toString(resolvedFn->getFormal(1)->type));
+    }
+    
     if (!resolvedFn) {
       INT_FATAL(call, "unable to resolve call");
     }
+    
     if (call->parentSymbol) {
       SET_LINENO(call);
       call->baseExpr->replace(new SymExpr(resolvedFn));
@@ -2815,8 +2953,10 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
       if (FnSymbol* fn = toFnSymbol(callStack.v[callStack.n-2]->isResolved()))
         outerCompilerWarningMap.put(fn, str);
     }
-    if (const char* str = outerCompilerWarningMap.get(resolvedFn))
+    
+    if (const char* str = outerCompilerWarningMap.get(resolvedFn)) {
       reissueCompilerWarning(str, 1);
+    }
 }
 
 static void resolveTupleAndExpand(CallExpr* call) {
@@ -4968,26 +5108,36 @@ static bool is_param_resolved(FnSymbol* fn, Expr* expr) {
 void
 resolveBlock(Expr* body) {
   FnSymbol* fn = toFnSymbol(body->parentSymbol);
+  
   for_exprs_postorder(expr, body) {
     SET_LINENO(expr);
-    if (SymExpr* se = toSymExpr(expr))
-      if (se->var)
+    if (SymExpr* se = toSymExpr(expr)) {
+      if (se->var) {
         makeRefType(se->var->type);
+      }
+    }
+    
     expr = preFold(expr);
 
-    if (fn && fn->retTag == RET_PARAM)
-      if (is_param_resolved(fn, expr))
+    if (fn && fn->retTag == RET_PARAM) {
+      if (is_param_resolved(fn, expr)) {
         return;
+      }
+    }
 
     if (CallExpr* call = toCallExpr(expr)) {
       if (call->isPrimitive(PRIM_ERROR) ||
           call->isPrimitive(PRIM_WARNING)) {
         issueCompilerError(call);
       }
+      
       callStack.add(call);
       resolveCall(call);
-      if (!tryFailure && call->isResolved())
+      
+      if (!tryFailure && call->isResolved()) {
         resolveFns(call->isResolved());
+      }
+      
       if (tryFailure) {
         if (tryStack.tail()->parentSymbol == fn) {
           while (callStack.tail()->isResolved() != tryStack.tail()->elseStmt->parentSymbol) {
@@ -5008,10 +5158,10 @@ resolveBlock(Expr* body) {
         }
       }
       callStack.pop();
+      
     } else if (SymExpr* sym = toSymExpr(expr)) {
-
-      // avoid record constructors via cast
-      //  should be fixed by out-of-order resolution
+      // Avoid record constructors via cast
+      // should be fixed by out-of-order resolution
       CallExpr* parent = toCallExpr(sym->parentExpr);
       if (!parent ||
           !parent->isPrimitive(PRIM_IS_SUBTYPE) ||
@@ -5028,6 +5178,7 @@ resolveBlock(Expr* body) {
         }
       }
     }
+    
     expr = postFold(expr);
   }
 }
@@ -5180,15 +5331,19 @@ static void buildValueFunction(FnSymbol* fn) {
 
 static void
 resolveFns(FnSymbol* fn) {
-  if (resolvedFns.count(fn) != 0)
+  if (resolvedFns.count(fn) != 0) {
     return;
+  }
+  
   resolvedFns[fn] = true;
 
-  if ((fn->hasFlag(FLAG_EXTERN))||(fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)))
+  if (fn->hasFlag(FLAG_EXTERN) || fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)) {
     return;
+  }
 
-  if (fn->retTag == RET_VAR)
+  if (fn->retTag == RET_VAR) {
     buildValueFunction(fn);
+  }
 
   insertFormalTemps(fn);
 
@@ -5238,8 +5393,6 @@ resolveFns(FnSymbol* fn) {
     }
   }
 
-
-
   ret->type = retType;
   if (!fn->iteratorInfo) {
     fn->retType = retType;
@@ -5257,8 +5410,9 @@ resolveFns(FnSymbol* fn) {
     insertCasts(fn->body, fn, casts);
     forv_Vec(CallExpr, cast, casts) {
       resolveCall(cast);
-      if (cast->isResolved())
+      if (cast->isResolved()) {
         resolveFns(cast->isResolved());
+      }
     }
   }
 
@@ -5285,17 +5439,20 @@ resolveFns(FnSymbol* fn) {
     forv_Vec(Type, parent, fn->retType->dispatchParents) {
       if (toClassType(parent) && parent != dtValue && parent != dtObject && parent->defaultTypeConstructor) {
         resolveFormals(parent->defaultTypeConstructor);
-        if (resolvedFormals.set_in(parent->defaultTypeConstructor))
+        if (resolvedFormals.set_in(parent->defaultTypeConstructor)) {
           resolveFns(parent->defaultTypeConstructor);
+        }
       }
     }
+    
     if (ClassType* ct = toClassType(fn->retType)) {
       for_fields(field, ct) {
         if (ClassType* fct = toClassType(field->type)) {
           if (fct->defaultTypeConstructor) {
             resolveFormals(fct->defaultTypeConstructor);
-            if (resolvedFormals.set_in(fct->defaultTypeConstructor))
+            if (resolvedFormals.set_in(fct->defaultTypeConstructor)) {
               resolveFns(fct->defaultTypeConstructor);
+            }
           }
         }
       }
@@ -5315,6 +5472,7 @@ resolveFns(FnSymbol* fn) {
         fn->insertAtHead(new CallExpr(call));
         fn->insertAtHead(new DefExpr(tmp));
         resolveCall(call);
+        
         resolveFns(call->isResolved());
         ct->destructor = call->isResolved();
         call->remove();
