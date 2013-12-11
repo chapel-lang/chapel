@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, os, shutil, time, math
+import sys, os, shutil, time, math, re
 import fileReadHelp
 from optparse import OptionParser
 
@@ -28,6 +28,11 @@ parser.add_option('-v', '--verbose', dest='verbose',
                   action='store_true', default=False)
 parser.add_option('-d', '--debug', dest='debug',
                   action='store_true', default=False)
+parser.add_option('-r', '--reduce', dest='g_reduce', type='choice',
+                  metavar='STRATEGY', default='avg',
+                  choices=['avg', 'med', 'min', 'max'])
+parser.add_option('-x', '--no-bounds', dest='g_display_bounds',
+                  action='store_false', default=True)
 
 dygraphDir = os.getenv('DYGRAPHS_DIR')
 if dygraphDir == None:
@@ -38,7 +43,8 @@ verbose = False
 
 def try_parse_float(value):
     try:
-        return float(value)
+        # removes any trailing characters (units)
+        return float(re.sub(r'[^\d,.]+$', '', value))
     except ValueError:
         return value
 
@@ -46,7 +52,8 @@ def try_parse_float(value):
 
 # Global info about generating graphs
 class GraphStuff:
-    def __init__(self, _name, _testdir, _perfdir, _outdir, _startdate, _enddate):
+    def __init__(self, _name, _testdir, _perfdir, _outdir, _startdate, _enddate,
+                 _reduce, _display_bounds):
         self.numGraphs = 0;
         self.testdir = _testdir
         self.perfdir = _perfdir
@@ -60,6 +67,8 @@ class GraphStuff:
         self.suites = list()
         self.startdate = _startdate
         self.enddate = _enddate
+        self._reduce = _reduce
+        self.display_bounds = _display_bounds
 
     def init(self):
         if os.path.exists(self.outdir):
@@ -171,7 +180,9 @@ class GraphStuff:
                         raise
                 # new graph
                 currgraph += 1
-                graphs.append(GraphClass(basename, firstGraphNum+currgraph, suite, self.startdate, self.enddate))
+                graphs.append(GraphClass(basename, firstGraphNum+currgraph,
+                    suite, self.startdate, self.enddate,
+                    self._reduce, self.display_bounds))
                 graphs[currgraph].perfkeys += [ s.strip() for s in rest.split(', ') ]
             elif key == 'graphkeys' :
                 graphs[currgraph].graphkeys += [ s.strip() for s in rest.split(',') ] 
@@ -189,7 +200,7 @@ class GraphStuff:
             elif key == 'enddate':
                 graphs[currgraph].enddate = time.strptime(rest.strip(), '%m/%d/%y')
             elif key == 'generate':
-                graphs[currgraph].generate = [s.strip() for s in rest.split(',')]
+                graphs[currgraph].generate = [s if s != '' else self._reduce for s in re.sub(r'\s+', '', rest)]
             elif key == 'displayrange':
                 graphs[currgraph].displayrange = rest.lower() in ('true', 't', '1', 'on', 'y', 'yes')
 
@@ -206,7 +217,8 @@ class GraphStuff:
 # graph class
 class GraphClass:
     gid = 1
-    def __init__(self, _name, _graphNum, _suite='', _startdate=None, _enddate=None):
+    def __init__(self, _name, _graphNum, _suite='', _startdate=None,
+                 _enddate=None, _reduce='avg', _displayrange=True):
         self.id = GraphClass.gid
         GraphClass.gid += 1
         self.name = _name.strip()
@@ -222,7 +234,8 @@ class GraphClass:
         self.graphkeys = list()
         self.datfilenames = list()
         self.generate = list()
-        self.displayrange = False
+        self.displayrange = _displayrange
+        self._reduce = _reduce
 
     def __str__(self):
         l  = 'Graph: '+str(self.name)+' (id='+str(self.id)+')\n'
@@ -338,7 +351,7 @@ class GraphClass:
                     myDate = df.lines[currLines[i]][0][0]
                     if minDate==None or myDate<minDate:
                         minDate = myDate
-                        
+
             if startdate==None:
                 startdate = minDate
 
@@ -366,14 +379,23 @@ class GraphClass:
                             fieldId = df.mykeys[i]
                             value = fields[fieldId][0]
                             if self.generate:
-                                if self.generate[i] == "avg":
-                                    value = math.fsum(fields[fieldId])/len(fields[fieldId])
-                                elif self.generate[i] == "med":
-                                    slist = sorted(fields[fieldId])
-                                    if len(fields[fieldId]) % 2 == 0:
-                                        value = (slist[len(slist)/2]+slist[len(slist)/2-1])/2
-                                    else:
-                                        value = slist[len(slist)/2]
+                                method = self.generate[i]
+                            else:
+                                method = self._reduce
+
+                            if method == 'avg':
+                                value = math.fsum(fields[fieldId])/len(fields[fieldId])
+                            elif method == 'med':
+                                slist = sorted(fields[fieldId])
+                                if len(fields[fieldId]) % 2 == 0:
+                                    value = (slist[len(slist)/2]+slist[len(slist)/2-1])/2
+                                else:
+                                    value = slist[len(slist)/2]
+                            elif method == 'min':
+                                value = min(fields[fieldId])
+                            elif method == 'max':
+                                value = max(fields[fieldId])
+
                             if self.displayrange:
                                 minval = min(fields[fieldId])
                                 maxval = max(fields[fieldId])
@@ -512,7 +534,8 @@ def main():
     else:
         enddate = time.localtime()
 
-    graphInfo = GraphStuff(options.name, options.testdir, perfdir, outdir, startdate, enddate)
+    graphInfo = GraphStuff(options.name, options.testdir, perfdir, outdir,
+        startdate, enddate, options.g_reduce, options.g_display_bounds)
     try:
         graphInfo.init()
     except (IOError, OSError):

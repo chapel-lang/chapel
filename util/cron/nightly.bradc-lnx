@@ -7,7 +7,7 @@ source ~/.chapelcshrc-cron && ~/chapel/util/buildRelease/testRelease -cron >&! $
 
 set LOGFILE = $HOME/tmp/nightly-perf.linux64.bradc-lnx.out
 echo `date` "" "Testing performance.  Log file: $LOGFILE"
-source ~/.chapelcshrc-cron && setenv CHPL_NIGHTLY_LOGDIR /data/sea/cascade/chapel/NightlyPerformance/bradc-lnx && ~/chapel/util/cron/nightly -cron -performance -startdate 02/19/10 >&! $LOGFILE
+source ~/.chapelcshrc-cron && setenv CHPL_NIGHTLY_LOGDIR /data/sea/cascade/chapel/NightlyPerformance/bradc-lnx && ~/chapel/util/cron/nightly -cron -performance -numtrials 3 -startdate 02/19/10 >&! $LOGFILE
 
 set LOGFILE = $HOME/tmp/tokctnightly.out
 echo `date` "" "Counting tokens.  Log file: $LOGFILE"

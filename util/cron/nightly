@@ -32,6 +32,7 @@ $svnrevopt = "";
 $compopts = "";
 $execopts = "";
 $startdate = "-1";
+$numtrials = "";
 
 while (@ARGV) {
     $flag = shift @ARGV;
@@ -64,6 +65,8 @@ while (@ARGV) {
         $localeModelSuite = 1;
     } elsif ($flag eq "-performance") {
         $performance = 1;
+    } elsif ($flag eq "-numtrials") {
+        $numtrials = shift @ARGV;
     } elsif ($flag eq "-compopts") {
 	$compopts = shift @ARGV;
     } elsif ($flag eq "-execopts") {
@@ -146,6 +149,7 @@ if ($printusage == 1) {
     print "\t-valgrind    : run tests in valgrind mode\n";
 #    print "\t-interpret   : run tests in interpreted mode\n";
     print "\t-performance : run performance tests\n";
+    print "\t-numtrials <number> : number of trials to run\n";
     print "\t-startdate	  : run performance tests providing a common start date to all the graphs\n";
     print "\t-baseline    : run testins using --baseline\n";
     print "\t-dist <dist> : run distribution robustness tests\n";
@@ -633,6 +637,9 @@ if ($performance == 1) {
     } else {
         $testflags = "$testflags -performance -startdate $startdate";
     }
+}
+if (!($numtrials eq "")) {
+    $testflags = "$testflags -numtrials $numtrials"
 }
 if ($baseline == 1) {
     $testflags = "$testflags -compopts --baseline";

@@ -68,8 +68,11 @@
 #   -norecurse
 #   -comp-only
 #   -performance
+#   -num-trials <number>             1
 #   -gen-old-graphs
 #   -gen-graphs
+#   -no-display-graph-range
+#   -graphs-gen-default <avg|min|max|med> avg
 #   -startdate <MM/DD/YY>
 #   -futures
 #   -futuresonly
@@ -288,8 +291,21 @@
 #
 # -- to specify the y-axis label of the graph,
 #    in .graph should be the line:
-#    
+#
 #    ylabel: Performance
+#
+# -- to specify the method that is used to reduce multiple trials of
+#    performance data:
+#
+#    generate: min,avg,med,,
+#
+#    the options are 'min', 'max', 'med', and 'avg' and blank. If the option is
+#    left out or blank, the global default will be used. This line should have
+#    an entry for each perfkey
+#
+# -- if you would like the trial range envelopes to be displayed (or not):
+#
+#    displayrange: true|false
 #
 # If want to specify more than one set of keys per .graph, such that
 # each set of keys corresponds to its own graph, please specify the perfkeys
@@ -641,8 +657,11 @@ set valgrind = 0
 set valgrindexe = 0
 set interpret = 0
 set performance = 0
+set numtrials = 1
 set oldgraphs = 0
 set gengraphs = 0
+set graphsdisprange = 1
+set graphsgendefault = "avg"
 set startdate = ""
 set testfutures = 0
 set testfuturesonly = 0
@@ -668,12 +687,12 @@ while ( $#argv > 0 )
         set compiler = $argv[1]
         shift
         breaksw
-        case -launchcmd:
-        case --launchcmd:
-                shift
-                set launchcmd = "$argv[1]"
-                shift
-                breaksw
+    case -launchcmd:
+    case --launchcmd:
+            shift
+            set launchcmd = "$argv[1]"
+            shift
+            breaksw
     case -cleanonly:
     case --cleanonly:
     case -clean-only:
@@ -696,11 +715,11 @@ while ( $#argv > 0 )
     case -memleaks:
     case --memleaks:
         shift
-                if ($argv[1] =~ "/*") then
-                    set execopts = "$execopts --memLeaksLog=$argv[1]"
-                else
-                    set execopts = "$execopts --memLeaksLog=$cwd/$argv[1]"
-                endif
+        if ($argv[1] =~ "/*") then
+            set execopts = "$execopts --memLeaksLog=$argv[1]"
+        else
+            set execopts = "$execopts --memLeaksLog=$cwd/$argv[1]"
+        endif
         setenv CHPL_MEM_LEAK_TESTING true
         shift
         breaksw
@@ -715,125 +734,151 @@ while ( $#argv > 0 )
                 setenv CHPL_SYSTEM_PREDIFF "$argv[1]"
         shift
         breaksw
-        case -futures:
-        case --futures:
-                shift
-                set testfutures = 1
-                breaksw
-        case -futures-only
-        case --futures-only
-        case -futuresonly
-        case --futuresonly
-                shift
-                set testfuturesonly = 1
-                breaksw
-        case -i:
-        case --interpret:
-        case -interpret:
-                shift
-                set interpret = 1
-                breaksw
-        case --performance:
-        case -performance:
-                shift
-                set performance = 1
-                set gengraphs = 1
-                breaksw
-        case --gen-graphs:
-        case -gen-graphs:
-        case --generate-graphs:
-        case -generate-graphs:
-                shift
-                set gengraphs = 1
-                breaksw
-        case --gen-old-graphs:
-        case -gen-old-graphs:
-                shift
-                set oldgraphs = 1
-                breaksw
+    case -futures:
+    case --futures:
+            shift
+            set testfutures = 1
+            breaksw
+    case -futures-only
+    case --futures-only
+    case -futuresonly
+    case --futuresonly
+            shift
+            set testfuturesonly = 1
+            breaksw
+    case -i:
+    case --interpret:
+    case -interpret:
+            shift
+            set interpret = 1
+            breaksw
+    case --performance:
+    case -performance:
+            shift
+            set performance = 1
+            set gengraphs = 1
+            breaksw
+    case --numtrials:
+    case -numtrials:
+    case --num-trials:
+    case -num-trials:
+            shift
+            set numtrials = $argv[1]
+            shift
+            breaksw
+    case --gen-graphs:
+    case -gen-graphs:
+    case --generate-graphs:
+    case -generate-graphs:
+            shift
+            set gengraphs = 1
+            breaksw
+    case --gen-old-graphs:
+    case -gen-old-graphs:
+            shift
+            set oldgraphs = 1
+            breaksw
+    case --nodisplaygraphrange:
+    case -nodisplaygraphrange:
+    case --no-display-graph-range:
+    case -no-display-graph-range:
+            shift
+            set graphsdisprange = 0
+            breaksw
+    case --graphsgendefault:
+    case -graphsgendefault:
+    case --graphs-gen-default:
+    case -graphs-gen-default:
+            shift
+            set graphsgendefault = $argv[1]
+            shift
+            breaksw
     case --startdate:
     case -startdate:
         shift
         set startdate = $argv[1]
         shift
         breaksw
-        case -norecurse:
-        case --norecurse:
-        case -no-recurse:
-        case --no-recurse:
-                shift
-                set recurse = 0
-                breaksw
+    case -norecurse:
+    case --norecurse:
+    case -no-recurse:
+    case --no-recurse:
+            shift
+            set recurse = 0
+            breaksw
     case -comp-only:
     case --comp-only:
         shift
         setenv CHPL_COMPONLY true
         breaksw
-        case -valgrindexe:
-        case --valgrindexe:
-                shift
-                set valgrindexe = 1
-                breaksw
-        case -suppress:
-        case --suppress:
-                shift
-                set suppressions = $argv[1]
-                shift
-                breaksw
-        case -nostdinredirect:
-        case --nostdinredirect:
-                shift
-                setenv CHPL_NO_STDIN_REDIRECT true
-                breaksw
-        case -launchertimeout:
-        case --launchertimeout:
-                shift
-                setenv CHPL_LAUNCHER_TIMEOUT $argv[1]
-                shift
-                breaksw
+    case -valgrindexe:
+    case --valgrindexe:
+            shift
+            set valgrindexe = 1
+            breaksw
+    case -suppress:
+    case --suppress:
+            shift
+            set suppressions = $argv[1]
+            shift
+            breaksw
+    case -nostdinredirect:
+    case --nostdinredirect:
+            shift
+            setenv CHPL_NO_STDIN_REDIRECT true
+            breaksw
+    case -launchertimeout:
+    case --launchertimeout:
+            shift
+            setenv CHPL_LAUNCHER_TIMEOUT $argv[1]
+            shift
+            breaksw
     case -h:
     case -help:
     case --help:
         echo Usage and defaults\:
         echo "     start_test <options> <files> <directories>"
-                echo "          -clean-only"
+        echo "          -clean-only"
         echo "          -compiler <path>      (currently: $CHPL_HOME/bin/$host_platform/chpl)"
         echo "          -compopts <options>   (currently: '--cc-warnings')"
         echo "          -execopts <options>   (currently: '')"
-                echo "          -launchcmd <command>  (currently: '')"
-                echo "          -norecurse"
+        echo "          -launchcmd <command>  (currently: '')"
+        echo "          -norecurse"
         echo "          -comp-only"
-                echo "          -performance"
-                echo "          -generate-graphs"
+        echo "          -performance"
+        echo "          -num-trials <number>"
+        echo "          -generate-graphs"
+        echo "          -no-display-graph-range"
+        echo "          -graphs-gen-default <avg|min|max|med>"
         echo "          -startdate <MM/DD/YY> (currently: '')"
-                echo "          -futures"
-                echo "          -futuresonly"
+        echo "          -futures"
+        echo "          -futuresonly"
         echo "          -valgrind"
-                echo "          -valgrindexe"
-                echo "          -sysprediff <path>"
-                echo "          -suppress <filename>"
-                echo "          -nostdinredirect"
-                echo "          -launchertimeout pbs"
-#                echo "          -interpret (or -i)"
+        echo "          -valgrindexe"
+        echo "          -sysprediff <path>"
+        echo "          -suppress <filename>"
+        echo "          -nostdinredirect"
+        echo "          -launchertimeout pbs"
+#       echo "          -interpret (or -i)"
         echo "          -logfile <file>      (currently: $logfile)"
         echo "          -memleaks <file>"
         echo "          -h, -help"
         exit 0
         breaksw
     default:
-                if ( -d "$argv[1]" && -x "$argv[1]") then
-#                    echo "$argv[1] is a directory"
-                    set dirlist = "$dirlist $argv[1]"
-                    shift
-                    breaksw
-                else if ( -r "$argv[1]") then
-#                    echo "$argv[1] is a file"
-                    set testlist = "$testlist $argv[1]"
-                    shift
-                    breaksw
-                else
-                    echo \[ERROR: Unknown command line parameter \"$argv[1]\", aborting.\]
-                    shift
+        if ( -d "$argv[1]" && -x "$argv[1]") then
+#            echo "$argv[1] is a directory"
+            set dirlist = "$dirlist $argv[1]"
+            shift
+            breaksw
+        else if ( -r "$argv[1]") then
+#            echo "$argv[1] is a file"
+            set testlist = "$testlist $argv[1]"
+            shift
+            breaksw
+        else
+            echo \[ERROR: Unknown command line parameter \"$argv[1]\", aborting.\]
+            shift
         set optionerr = 1
         breaksw
     endsw
@@ -912,12 +957,32 @@ else
     echo \[performance tests: OFF\] |& $tee -a $logfile
 endif
 
+echo \[number of trials: "$numtrials"\] |& $tee -a $logfile
+setenv CHPL_TEST_NUM_TRIALS "$numtrials"
+
 if ($gengraphs) then
     echo \[performance graph generation: ON\] |& $tee -a $logfile
+
+    if ($graphsdisprange) then
+        echo \[performance graph ranges: ON\] |& $tee -a $logfile
+        set graphsdisprange = ''
+    else
+        echo \[performance graph ranges: OFF\] |& $tee -a $logfile
+        set graphsdisprange = "--no-bounds"
+    endif
+
+    if ($graphsgendefault == "avg" || \
+        $graphsgendefault == "med" || \
+        $graphsgendefault == "min" || \
+        $graphsgendefault == "max") then
+        echo \[performance graph data reduction: "$graphsgendefault"\] |& $tee -a $logfile
+    else
+        echo \[performance graph data reduction: avg\] |& $tee -a $logfile
+        set graphsgendefault = "avg"
+    endif
 else
     echo \[performance graph generation: OFF\] |& $tee -a $logfile
 endif
-
 
 # if compiler exists then get absolute path name for
 if ( -f $compiler && -x $compiler ) then
@@ -1190,7 +1255,7 @@ foreach test ($testlist)
                 endif
                 # new performance graph stuff
                 echo "[Executing genGraphs for $basedir/$graphfile in $perfhtmldir]" |& $tee -a $logfile
-                $createCoolerGraphs -p "$perfdir" -o "$perfhtmldir" -n "$perftestname" "$startdate_t" "$graphfile" |& $tee -a $logfile
+                $createCoolerGraphs -p "$perfdir" -o "$perfhtmldir" -n "$perftestname" "$startdate_t" "$graphsdisprange" -r "$graphsgendefault" "$graphfile" |& $tee -a $logfile
                 if ($status == 0) then
                     echo "[Success generating graphs for $basedir/$graphfile in $perfhtmldir]" |& $tee -a $logfile
                  else
@@ -1351,7 +1416,7 @@ foreach testType ($testTypes)
                 # new performance graph stuff
                 if (! $?CHPL_TEST_PERF_DIR && "$graphfiles" != "") then
                     echo "[Executing genGraphs for graphfiles in $dir in $perfhtmldir]" |& $tee -a $logfile
-                    $createCoolerGraphs -p "$perfdir" -o "$perfhtmldir" -n "$perftestname" "$startdate_t" $graphfiles |& $tee -a $logfile
+                    $createCoolerGraphs -p "$perfdir" -o "$perfhtmldir" -n "$perftestname" "$startdate_t" "$graphsdisprange" -r "$graphsgendefault" $graphfiles |& $tee -a $logfile
                     if ($status == 0) then
                         echo "[Success generating graphs for $graphfile in $perfhtmldir]" |& $tee -a $logfile
                     else
@@ -1376,7 +1441,7 @@ if ($gengraphs && $?CHPL_TEST_PERF_DIR) then
     endif
     # new performance graph stuff
     echo "[Executing genGraphs for $CHPL_HOME/test/GRAPHFILES in $perfhtmldir]" |& $tee -a $logfile
-    $createCoolerGraphs  -p "$perfdir" -o "$perfhtmldir" -t "$CHPL_HOME/test" -n "$perftestname" "$startdate_t" -g "$CHPL_HOME/test/GRAPHFILES" |& $tee -a $logfile
+    $createCoolerGraphs  -p "$perfdir" -o "$perfhtmldir" -t "$CHPL_HOME/test" -n "$perftestname" "$startdate_t" "$graphsdisprange" -r "$graphsgendefault" -g "$CHPL_HOME/test/GRAPHFILES" |& $tee -a $logfile
     if ($status == 0) then
         echo "[Success generating graphs from $CHPL_HOME/test/GRAPHFILES in $perfhtmldir]" |& $tee -a $logfile
     else

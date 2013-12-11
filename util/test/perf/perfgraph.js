@@ -98,7 +98,7 @@ function genDygraph(graphInfo, parent, legend) {
                             drawCallback: function(me, initial) {
                                 if (blockRedraw) return;
                                 blockRedraw = true;
-                                
+
                                 // Find the range we're displaying and adjust 
                                 // the number of decimals accordingly, the set
                                 // annotations is just because it wasn't 
@@ -108,6 +108,13 @@ function genDygraph(graphInfo, parent, legend) {
                                 // but there might be a better solution 
                                 var yRange = me.yAxisRange();
                                 var yDiff = yRange[1] - yRange[0];
+                                // the graph switches into scientific notation
+                                // at 1e6, so enable some decimal points to
+                                // give a bit more information
+                                if (yDiff > 1000000.0) {
+                                    me.updateOptions({digitsAfterDecimal: 2} );
+                                    me.setAnnotations(me.annotations());
+                                }
                                 if (yDiff > 100.0) {
                                     me.updateOptions({digitsAfterDecimal: 0} );
                                     me.setAnnotations(me.annotations());
@@ -120,7 +127,7 @@ function genDygraph(graphInfo, parent, legend) {
                                     me.updateOptions({digitsAfterDecimal: 4} );
                                     me.setAnnotations(me.annotations());
                                 }
-                                
+
                                 if(!initial) {  
                                     var range = me.xAxisRange();
                                     <!-- var yrange = me.yAxisRange(); -->

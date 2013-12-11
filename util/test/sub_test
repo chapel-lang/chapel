@@ -41,6 +41,7 @@
 # CHPL_TEST_INTERP: DEPRECATED
 # CHPL_TEST_PERF: Run as a performance test (same as -performance flag)
 # CHPL_TEST_PERF_DIR: Scratch directory for performance data
+# CHPL_TEST_PERF_TRIALS: Default number of trials for perf tests
 # CHPL_ONETEST: Name of the one test in this directory to run
 # CHPL_TEST_SINGLES: If false, test the entire directory
 # CHPL_SYSTEM_PREDIFF: If set, run that script on each test output
@@ -72,7 +73,7 @@
 #    executable>, <log>, <compiler executable>)
 # PRECOMP: Script to execute before running the compiler (arguments: <test
 #    executable>, <log>, <compiler executable>).
-# PERFTRIALOPTS: Number of trials to run for performance testing
+# PERFNUMTRIALS: Number of trials to run for performance testing
 #
 #
 # TEST-SPECIFIC FILES:  These setting override or augment the directory-wide
@@ -88,7 +89,7 @@
 # .execopts: Additional test options
 # .perfexecenv: Additional environment variables for performance testing
 # .perfexecopts: Additional test options for performance testing
-# .perftrialopts: Number of trials to run for performance testing
+# .perfnumtrials: Number of trials to run for performance testing
 # .notest: Do not run this test
 # .numlocales: Number of locales to use (overrides NUMLOCALES)
 # .future: Future test
@@ -518,12 +519,12 @@ if envCompopts != None:
 # sys.stdout.write('globalCompopts=%s\n'%(globalCompopts))
 
 #
-# Global PERFTRIALOPTS
+# Global PERFNUMTRIALS
 #
-if (perftest and os.access('./PERFTRIALOPTS', os.R_OK)):
-    globalNumTrials = ReadIntegerValue('./PERFTRIALOPTS', localdir)
+if perftest and os.access('./PERFNUMTRIALS', os.R_OK):
+    globalNumTrials = ReadIntegerValue('./PERFNUMTRIALS', localdir)
 else:
-    globalNumTrials = 1
+    globalNumTrials=int(os.getenv('CHPL_TEST_NUM_TRIALS', '1'))
 
 #
 # Global EXECENV
@@ -690,7 +691,7 @@ for testname in testsrc:
         elif (perftest and suffix=='.perftimeexec' and os.access(f, os.R_OK)):
             timeExec = True
 
-        elif (perftest and suffix=='.perftrialopts' and os.access(f, os.R_OK)):
+        elif (perftest and suffix=='.perfnumtrials' and os.access(f, os.R_OK)):
             numTrials = ReadIntegerValue(f, localdir)
 
         elif (suffix=='.killtimeout' and os.access(f, os.R_OK)):
@@ -763,6 +764,11 @@ for testname in testsrc:
         numlocexecopts = None
     else:
         numlocexecopts = ' -nl '+str(numlocales)
+
+    # if any performance test has a timeout longer than the default we only
+    # want to run it once
+    if (timeout != globalTimeout):
+      numTrials = 1
 
     # Get list of test specific compiler options
     if os.access(execname+compoptssuffix, os.R_OK):
