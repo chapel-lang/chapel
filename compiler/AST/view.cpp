@@ -657,8 +657,8 @@ void html_view(const char* passName) {
     fprintf(html_file, "<HTML>\n");
     fprintf(html_file, "<HEAD>\n");
     fprintf(html_file, "<TITLE> AST for Module %s after Pass %s </TITLE>\n", mod->name, passName);
-    fprintf(html_file, "<SCRIPT SRC=\"%s/compiler/etc/www/mktree.js\" LANGUAGE=\"JavaScript\"></SCRIPT>\n", chpl_home);
-    fprintf(html_file, "<LINK REL=\"stylesheet\" HREF=\"%s/compiler/etc/www/mktree.css\">\n", chpl_home);
+    fprintf(html_file, "<SCRIPT SRC=\"http://chapel.cray.com/developer/mktree.js\" LANGUAGE=\"JavaScript\"></SCRIPT>\n");
+    fprintf(html_file, "<LINK REL=\"stylesheet\" HREF=\"http://chapel.cray.com/developer/mktree.css\">\n");
     fprintf(html_file, "</HEAD><BODY%s>\n",
             fdump_html_wrap_lines ? "" : " style=\"white-space: nowrap;\"");
     if (currentPassNo > 1)
