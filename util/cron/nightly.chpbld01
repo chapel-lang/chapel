@@ -41,13 +41,19 @@ for compiler in $compilers ; do
 (  # fire up a new shell
   echo `date` "" "Testing PrgEnv-${compiler}${PrgEnv_Version} as TARGET compiler."
   module load PrgEnv-${compiler}${PrgEnv_Version}
-  if [ $compiler == "cray" ] ; then   # avoid loading gemini libraries
-      module load craype-target-petest
+  if [ $compiler == "cray" ] ; then
+      # swap out modules to get host-only environment
+      module swap craype-network-aries craype-target-local_host
+      module unload cray-libsci
   fi
   module list
   export CHPL_TARGET_PLATFORM=cray-xc
   export CHPL_COMM=none
   $NIGHTLY -combinedir -cron $EXAMPLES
+  if [ $compiler == "cray" ] ; then
+      # swap the network module back in so as not to taunt modules
+      module swap craype-target-local_host craype-network-aries
+  fi
 )
 done
 
@@ -57,8 +63,10 @@ for compiler in $compilers ; do
 (  # fire up a new shell
   echo `date` "" "Testing PrgEnv-${compiler}${PrgEnv_Version} as HOST and TARGET compiler."
   module load PrgEnv-${compiler}${PrgEnv_Version}
-  if [ $compiler == "cray" ] ; then   # avoid loading gemini libraries
-      module load craype-target-petest
+  if [ $compiler == "cray" ] ; then
+      # swap out modules to get host-only environment
+      module swap craype-network-aries craype-target-local_host
+      module unload cray-libsci
   fi
   module list
   export CHPL_HOST_PLATFORM=cray-xc
@@ -66,6 +74,10 @@ for compiler in $compilers ; do
   export CHPL_HOST_COMPILER=cray-prgenv-$compiler
   export CHPL_COMM=none
   $NIGHTLY -combinedir -cron $EXAMPLES
+  if [ $compiler == "cray" ] ; then
+      # swap the network module back in so as not to taunt modules
+      module swap craype-target-local_host craype-network-aries
+  fi
 )
 done
 
