@@ -27,8 +27,6 @@ proc in_set8(ipart: int, rpart8: int):uint(8) {
 
   var z8: 8*complex;
 
-  z8 = c8;
-
   var mask:int = 0xff;
 
   for it in 1..iterations {
