@@ -34,6 +34,21 @@ if ($argc >= 6) {
 } else {
     $exec_time_out = "False";
 }
+
+my $perfdate;
+if ($argc >= 7) {
+    $perfdate = $ARGV[5];
+    print "Using set date $perfdate\n";
+} else {
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime time;
+
+    $mon += 1;
+    $year -= 100;
+
+    $perfdate = sprintf("%.2d/%.2d/%.2d ", $mon, $mday, $year);
+    print "Using default date $perfdate\n";
+}
+
 my $data_file = "$outputdir/$testname.dat";
 my $errors_file = "$outputdir/$testname.errors";
 my $fatal_errors = 0;
@@ -92,10 +107,6 @@ if (! -e "$data_file") {
 open STATS, ">>$data_file" or die "can't open $data_file for appending: $!";
 print ERRORS "appending $data_file\n";
 
-my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime time;
-
-$mon += 1;
-$year -= 100;
 
 # check all output lines for values following keys, values get written to the .dat
 my $foundEverything = 1;
@@ -103,7 +114,7 @@ if ($exec_time_out eq "True") {
     # Timed out executions will be comments
     printf STATS "# ";
 }
-printf STATS "%.2d/%.2d/%.2d ", $mon, $mday, $year;
+printf STATS "%s ", $perfdate;
 foreach my $key (@keys) {
     print "Looking for $key...";
     print STATS "\t";

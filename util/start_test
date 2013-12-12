@@ -604,9 +604,21 @@ else
     exit 1
 endif
 
-set utildir = "$CHPL_HOME/util/test"
+#
+# Permit someone running the test system to optionally specify a
+# utility directory other than $CHPL_HOME/util/test.  This can be
+# useful when running a more recent version of the testing system on
+# an older snapshot of Chapel that does not support the current set of
+# testing capabilities.
+#
+if ($?CHPL_TEST_UTIL_DIR) then
+    set utildir = "$CHPL_TEST_UTIL_DIR"
+else
+    set utildir = "$CHPL_HOME/util/test"
+    setenv CHPL_TEST_UTIL_DIR $utildir
+endif
 if (! -d $utildir || ! -x $utildir) then
-    echo "Error: Cannot find $CHPL_HOME/test/util"
+    echo "Error: Cannot find $utildir"
     exit 1
 endif
 

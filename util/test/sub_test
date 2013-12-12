@@ -113,6 +113,7 @@ import select, fcntl
 import fnmatch, time
 import re
 import shlex
+import datetime
 
 #
 # Time out class:  Read from a stream until time out
@@ -292,8 +293,9 @@ chpl_home=os.getenv('CHPL_HOME', chpl_base);
 chpl_home=os.path.normpath(chpl_home)
 # sys.stdout.write('CHPL_HOME='+chpl_home+'\n');
 
-# Find the test util directory
-utildir=chpl_home+'/util/test'
+# Find the test util directory -- set this in start_test to permit
+# a version of start_test other than the one in CHPL_HOME to be used
+utildir=os.getenv('CHPL_TEST_UTIL_DIR');
 if os.path.isdir(utildir)==0:
     Fatal('Cannot find test util directory '+utildir)
 # Needed for MacOS mount points
@@ -1288,12 +1290,16 @@ for testname in testsrc:
                         else:
                             keyfile = execname+'.perfkeys'
 
-                    sys.stdout.write('[Executing computePerfStats %s %s %s %s %s]\n'%(perfexecname, perfdir, keyfile, execlog, str(exectimeout)))
+                    perfdate = os.getenv('CHPL_TEST_PERF_DATE')
+                    if perfdate == None:
+                        perfdate = datetime.date.today().strftime("%m/%d/%y")
+
+                    sys.stdout.write('[Executing %s/computePerfStats %s %s %s %s %s %s]\n'%(utildir, perfexecname, perfdir, keyfile, execlog, str(exectimeout), perfdate))
                     sys.stdout.flush()
 
                     p = subprocess.Popen([utildir+'/computePerfStats',
-                                          perfexecname, perfdir, keyfile, execlog, str(exectimeout)],
-                                        stdout=subprocess.PIPE)
+                                          perfexecname, perfdir, keyfile, execlog, str(exectimeout), perfdate],
+                                         stdout=subprocess.PIPE)
                     sys.stdout.write('%s'%(p.communicate()[0]))
                     sys.stdout.flush()
 
