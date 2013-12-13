@@ -9,7 +9,8 @@ machine.<hostname> calls one or more nightly.<config> scripts.
 The crontab file should call machine.<hostname> and redirect output
 into machine.<hostname>.out.  The nightly.<config> scripts should
 redirect output to appropriately named files, e.g., nightly.gasnet.out
-or nightly.gasnet.fast.out.
+or nightly.gasnet.fast.out. nightly.standard provides an example of running
+the testing suite with just the default options.
 
 CF machines
 ===========
@@ -29,10 +30,11 @@ Seattle machines
 ================
 chap09    : valgrind (comm none)
 chap10    : --no-local
-bradc-lnx : 11pm update of ~chapelu/chapel, release testing, linxu64 performance, token count, tab check
+bradc-lnx : 11pm update of ~chapelu/chapel, release testing, linux64 performance, token count, tab check
 lnx-vass  : block, memory leaks; historify-logs
 lnx-hilde : (no testing)
 lnx-diten : cyclic
+mbp-kbrady: darwin/clang, darwin/gnu
 macchapel-mac            : mac
 4LR97C1 (windows laptop) : cygwin
 

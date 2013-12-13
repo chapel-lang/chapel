@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+#
+# Normal run of all tests
+#
+. /etc/profile
+
+TEST_PLATFORM=`$HOME/chapel/util/chplenv/platform`
+TEST_COMPILER=`$HOME/chapel/util/chplenv/compiler`
+LOGFILE="/tmp/nightly.$TEST_PLATFORM.$TEST_COMPILER.$USER.$$.out"
+LOGFILE2="$HOME/tmp/nightly.$TEST_PLATFORM.$TEST_COMPILER.out"
+
+echo `date` "" "Testing everything on $TEST_PLATFORM with $TEST_COMPILER. Log files: $LOGFILE and $LOGFILE2"
+source ~/.chapelbashrc-cron && ~/chapel/util/cron/nightly -cron >& $LOGFILE
+
+cp $LOGFILE $LOGFILE2 && rm -f $LOGFILE

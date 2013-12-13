@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+echo `date` "" Starting $0 on `hostname`.
+
+CHPL_HOST_COMPILER=gnu CHPL_TARGET_COMPILER=gnu ~/chapel/util/cron/nightly.standard
+
+echo `date` "" Finished $0.
