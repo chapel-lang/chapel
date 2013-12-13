@@ -10,6 +10,7 @@
 
 #include <stdint.h>
 
+#include <assert.h>
 #include <qthread.h>
 #include <stdio.h>
 
@@ -254,6 +255,118 @@ void threadlayer_exit(void);
 //
 /*void  threadlayer_set_thread_private_data(void*);
  * void* threadlayer_get_thread_private_data(void);*/
+
+
+typedef struct {
+#if !(defined(CHPL_LOCALE_MODEL_NUM_SUBLOCALES) &&  \
+  CHPL_LOCALE_MODEL_NUM_SUBLOCALES == 0)
+  c_sublocid_t requestedSubloc;  // requested sublocal for task
+#endif
+  chpl_bool    serial_state;     // true: serialize execution
+} chpl_qthread_private_data_t;
+
+typedef struct {
+    void                     *fn;
+    void                     *args;
+    chpl_string              task_filename;
+    int                      lineno;
+    chpl_qthread_private_data_t      chpl_data;
+} chpl_qthread_wrapper_args_t;
+
+// Structure of task-local storage
+typedef struct chpl_qthread_tls_s {
+    /* Task private data: serial state, etc. */
+    chpl_qthread_private_data_t chpl_data;
+    /* Reports */
+    chpl_string lock_filename;
+    size_t      lock_lineno;
+    const char *task_filename;
+    size_t      task_lineno;
+} chpl_qthread_tls_t;
+
+// Wrap qthread_get_tasklocal() and assert that it is always available.
+static inline chpl_qthread_tls_t * chapel_qthreads_get_tasklocal(void)
+{
+    chpl_qthread_tls_t * tls = 
+        (chpl_qthread_tls_t *)qthread_get_tasklocal(sizeof(chpl_qthread_tls_t));
+
+    assert(tls);
+
+    return tls;
+}
+
+// FIXME: this is the same as chapel_qthreads_get_tasklocal() except that it does
+//        not have the assertion.
+static inline chpl_qthread_tls_t * chapel_qthreads_get_tasklocal_possibly_from_non_task(void)
+{
+    chpl_qthread_tls_t * tls = 
+        (chpl_qthread_tls_t *)qthread_get_tasklocal(sizeof(chpl_qthread_tls_t));
+
+    return tls;
+}
+
+static inline
+c_sublocid_t chpl_task_getSubloc(void)
+{
+#if defined(CHPL_LOCALE_MODEL_NUM_SUBLOCALES) &&  \
+  CHPL_LOCALE_MODEL_NUM_SUBLOCALES == 0
+    return 0;
+#else
+    return (c_sublocid_t) qthread_shep();
+#endif
+}
+
+static inline
+void chpl_task_setSubloc(c_sublocid_t subloc)
+{
+#if !(defined(CHPL_LOCALE_MODEL_NUM_SUBLOCALES) &&  \
+  CHPL_LOCALE_MODEL_NUM_SUBLOCALES == 0)
+    qthread_shepherd_id_t curr_shep;
+
+    assert(subloc != c_sublocid_none);
+
+    // Only change sublocales if the caller asked for a particular one,
+    // which is not the current one, and we're a (movable) task.
+    //
+    // Note: It's likely that this won't work in all cases where we need
+    //       it.  In particular, we envision needing to move execution
+    //       from sublocale to sublocale while initializing the memory
+    //       layer, in order to get the NUMA domain affinity right for
+    //       the subparts of the heap.  But this will be happening well
+    //       before tasking init and in any case would be done from the
+    //       main thread of execution, which doesn't have a shepherd.
+    //       The code below wouldn't work in that situation.
+    if ((curr_shep = qthread_shep()) != NO_SHEPHERD) {
+        chpl_qthread_tls_t * data = chapel_qthreads_get_tasklocal_possibly_from_non_task();
+        if (data) {
+            data->chpl_data.requestedSubloc = subloc;
+        }
+
+        if (subloc != c_sublocid_any &&
+            (qthread_shepherd_id_t) subloc != curr_shep) {
+            qthread_migrate_to((qthread_shepherd_id_t) subloc);
+        }
+    }
+#endif
+}
+
+static inline
+c_sublocid_t chpl_task_getRequestedSubloc(void)
+{
+#if defined(CHPL_LOCALE_MODEL_NUM_SUBLOCALES) &&  \
+  CHPL_LOCALE_MODEL_NUM_SUBLOCALES == 0
+
+    return 0;
+#else
+    chpl_qthread_tls_t * data = chapel_qthreads_get_tasklocal_possibly_from_non_task();
+    if (data) {
+        return data->chpl_data.requestedSubloc;
+    }
+    else {
+        return c_sublocid_any;
+    }
+#endif
+}
 
 #endif // ifndef _tasks_qthreads_h_
 /* vim:set expandtab: */

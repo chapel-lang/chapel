@@ -112,50 +112,18 @@ struct chpl_task_list {
     chpl_task_list_p next;
 };
 
-typedef struct {
-  c_sublocid_t requestedSubloc;  // requested sublocal for task
-  chpl_bool    serial_state;     // true: serialize execution
-} task_private_data_t;
+//
+// structs chpl_qthread_private_data_t, chpl_qthread_wrapper_args_t and
+// chpl__qthread_tls_t have been moved to tasks-qthreads.h
+//
 
-typedef struct {
-    void                     *fn;
-    void                     *args;
-    chpl_string              task_filename;
-    int                      lineno;
-    task_private_data_t      chpl_data;
-} chapel_wrapper_args_t;
+//
+// chapel_qthreads_get_tasklocal() is in tasks-qthreads.h
+//
 
-// Structure of task-local storage
-typedef struct chapel_tls_s {
-    /* Task private data: serial state, etc. */
-    task_private_data_t chpl_data;
-    /* Reports */
-    chpl_string lock_filename;
-    size_t      lock_lineno;
-    const char *task_filename;
-    size_t      task_lineno;
-} chapel_tls_t;
-
-// Wrap qthread_get_tasklocal() and assert that it is always available.
-static inline chapel_tls_t * chapel_get_tasklocal(void)
-{
-    chapel_tls_t * tls = 
-        (chapel_tls_t *)qthread_get_tasklocal(sizeof(chapel_tls_t));
-
-    assert(tls);
-
-    return tls;
-}
-
-// FIXME: this is the same as chapel_get_tasklocal() except that it does
-//        not have the assertion.
-static inline chapel_tls_t * chapel_get_tasklocal_possibly_from_non_task(void)
-{
-    chapel_tls_t * tls = 
-        (chapel_tls_t *)qthread_get_tasklocal(sizeof(chapel_tls_t));
-
-    return tls;
-}
+//
+// chapel_qthreads_get_tasklocal_possibly_from_non_task() is in tasks-qthreads.h
+//
 
 static syncvar_t exit_ret = SYNCVAR_STATIC_EMPTY_INITIALIZER;
 
@@ -186,7 +154,7 @@ void chpl_sync_unlock(chpl_sync_aux_t *s)
 static inline void about_to_block(int32_t     lineno,
                                   chpl_string filename)
 {
-    chapel_tls_t * data = chapel_get_tasklocal();
+    chpl_qthread_tls_t * data = chapel_qthreads_get_tasklocal();
     assert(data);
 
     data->lock_lineno   = lineno;
@@ -274,7 +242,7 @@ static void chapel_display_thread(qt_key_t     addr,
                                   void        *tls,
                                   void        *callarg)
 {
-    chapel_tls_t *rep = (chapel_tls_t *)tls;
+    chpl_qthread_tls_t *rep = (chpl_qthread_tls_t *)tls;
 
     if (rep) {
         if ((rep->lock_lineno > 0) && rep->lock_filename) {
@@ -428,8 +396,8 @@ void chpl_task_exit(void)
 
 static aligned_t chapel_wrapper(void *arg)
 {
-    chapel_wrapper_args_t *rarg = arg;
-    chapel_tls_t * data = chapel_get_tasklocal();
+    chpl_qthread_wrapper_args_t *rarg = arg;
+    chpl_qthread_tls_t * data = chapel_qthreads_get_tasklocal();
 
     data->task_filename = rarg->task_filename;
     data->task_lineno = rarg->lineno;
@@ -448,7 +416,7 @@ static aligned_t chapel_wrapper(void *arg)
 // not use methods that require task context (e.g., task-local storage).
 void chpl_task_callMain(void (*chpl_main)(void))
 {
-    const chapel_wrapper_args_t wrapper_args = 
+    const chpl_qthread_wrapper_args_t wrapper_args = 
         {chpl_main, NULL, NULL, 0, {c_sublocid_any_val, false}};
 
     qthread_debug(CHAPEL_CALLS, "[%d] begin chpl_task_callMain()\n", chpl_localeID);
@@ -489,7 +457,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
 {
     qthread_shepherd_id_t const here_shep_id = qthread_shep();
     chpl_bool serial_state = chpl_task_getSerial();
-    chapel_wrapper_args_t wrapper_args = 
+    chpl_qthread_wrapper_args_t wrapper_args = 
         {chpl_ftable[fid], arg, filename, lineno, {subloc, serial_state}};
 
     assert(subloc != c_sublocid_none);
@@ -499,15 +467,15 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
     if (serial_state) {
         syncvar_t ret = SYNCVAR_STATIC_EMPTY_INITIALIZER;
         qthread_fork_syncvar_copyargs_to(chapel_wrapper, &wrapper_args,
-                                         sizeof(chapel_wrapper_args_t), &ret,
+                                         sizeof(chpl_qthread_wrapper_args_t), &ret,
                                          here_shep_id);
         qthread_syncvar_readFF(NULL, &ret);
     } else if (subloc == c_sublocid_any) {
         qthread_fork_copyargs(chapel_wrapper, &wrapper_args,
-                              sizeof(chapel_wrapper_args_t), NULL);
+                              sizeof(chpl_qthread_wrapper_args_t), NULL);
     } else {
         qthread_fork_copyargs_to(chapel_wrapper, &wrapper_args,
-                                 sizeof(chapel_wrapper_args_t), NULL,
+                                 sizeof(chpl_qthread_wrapper_args_t), NULL,
                                  (qthread_shepherd_id_t) subloc);
     }
 }
@@ -536,66 +504,33 @@ void chpl_task_startMovedTask(chpl_fn_p      fp,
     assert(subloc != c_sublocid_none);
     assert(id == chpl_nullTaskID);
 
-    chapel_wrapper_args_t wrapper_args = 
+    chpl_qthread_wrapper_args_t wrapper_args = 
         {fp, arg, NULL, 0, {subloc, serial_state}};
 
     PROFILE_INCR(profile_task_startMovedTask,1);
 
     if (subloc == c_sublocid_any) {
         qthread_fork_copyargs(chapel_wrapper, &wrapper_args,
-                              sizeof(chapel_wrapper_args_t), NULL);
+                              sizeof(chpl_qthread_wrapper_args_t), NULL);
     } else {
         qthread_fork_copyargs_to(chapel_wrapper, &wrapper_args,
-                                 sizeof(chapel_wrapper_args_t), NULL,
+                                 sizeof(chpl_qthread_wrapper_args_t), NULL,
                                  (qthread_shepherd_id_t) subloc);
     }
 }
 
-c_sublocid_t chpl_task_getSubloc(void)
-{
-    return (c_sublocid_t) qthread_shep();
-}
+//
+// chpl_task_getSubloc() is in tasks-qthreads.h
+//
 
-void chpl_task_setSubloc(c_sublocid_t subloc)
-{
-    qthread_shepherd_id_t curr_shep;
+//
+// chpl_task_setSubloc() is in tasks-qthreads.h
+//
 
-    assert(subloc != c_sublocid_none);
+//
+// chpl_task_getRequestedSubloc() is in tasks-qthreads.h
+//
 
-    // Only change sublocales if the caller asked for a particular one,
-    // which is not the current one, and we're a (movable) task.
-    //
-    // Note: It's likely that this won't work in all cases where we need
-    //       it.  In particular, we envision needing to move execution
-    //       from sublocale to sublocale while initializing the memory
-    //       layer, in order to get the NUMA domain affinity right for
-    //       the subparts of the heap.  But this will be happening well
-    //       before tasking init and in any case would be done from the
-    //       main thread of execution, which doesn't have a shepherd.
-    //       The code below wouldn't work in that situation.
-    if ((curr_shep = qthread_shep()) != NO_SHEPHERD) {
-        chapel_tls_t * data = chapel_get_tasklocal_possibly_from_non_task();
-        if (data) {
-            data->chpl_data.requestedSubloc = subloc;
-        }
-
-        if (subloc != c_sublocid_any &&
-            (qthread_shepherd_id_t) subloc != curr_shep) {
-            qthread_migrate_to((qthread_shepherd_id_t) subloc);
-        }
-    }
-}
-
-c_sublocid_t chpl_task_getRequestedSubloc(void)
-{
-    chapel_tls_t * data = chapel_get_tasklocal_possibly_from_non_task();
-    if (data) {
-        return data->chpl_data.requestedSubloc;
-    }
-    else {
-        return c_sublocid_any;
-    }
-}
 
 // Returns '(unsigned int)-1' if called outside of the tasking layer.
 chpl_taskID_t chpl_task_getId(void)
@@ -614,7 +549,7 @@ void chpl_task_sleep(int secs)
  * data segment holds a chpl_bool denoting the serial state. */
 chpl_bool chpl_task_getSerial(void)
 {
-    chapel_tls_t * data = chapel_get_tasklocal();
+    chpl_qthread_tls_t * data = chapel_qthreads_get_tasklocal();
 
     PROFILE_INCR(profile_task_getSerial,1);
 
@@ -623,7 +558,7 @@ chpl_bool chpl_task_getSerial(void)
 
 void chpl_task_setSerial(chpl_bool state)
 {
-    chapel_tls_t * data = chapel_get_tasklocal();
+    chpl_qthread_tls_t * data = chapel_qthreads_get_tasklocal();
     data->chpl_data.serial_state = state;
 
     PROFILE_INCR(profile_task_setSerial,1);
