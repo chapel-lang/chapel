@@ -3,6 +3,6 @@ echo `date` "" Starting $0 on `hostname`.
 
 set LOGFILE = $HOME/tmp/nightly-perf.linux64.chap03.out
 echo `date` "" "Testing performance.  Log file: $LOGFILE"
-source ~/.chapelcshrc-cron && setenv CHPL_NIGHTLY_LOGDIR /data/sea/cascade/chapel/NightlyPerformance/chap03 && ~/chapel/util/cron/nightly -cron -performance -numtrials 3 -startdate 08/21/07 >&! $LOGFILE
+source ~/.chapelcshrc-cron && setenv CHPL_NIGHTLY_LOGDIR /data/sea/cascade/chapel/NightlyPerformance/chap03 && ~/chapel/util/cron/nightly -cron -performance -numtrials 5 -startdate 08/21/07 >&! $LOGFILE
 
 echo `date` "" Finished $0.
