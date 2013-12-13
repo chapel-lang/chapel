@@ -1,0 +1,13 @@
+perfkeys: Execution time =
+graphkeys: ptrans
+files: ptrans.dat
+graphtitle: HPCC PTRANS Performance
+ylabel: Time (seconds)
+graphname: ptrans
+
+perfkeys: Performance (GB/sec) =
+graphkeys: ptrans
+files: ptrans.dat
+graphtitle: HPCC PTRANS Performance (GB/sec)
+ylabel: Performance (GB/sec)
+graphname: hpcc-ptrans-gb

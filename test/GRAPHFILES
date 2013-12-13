@@ -8,6 +8,7 @@ release/examples/benchmarks/lulesh/lulesh.graph
 release/examples/benchmarks/hpcc/stream.graph
 release/examples/benchmarks/hpcc/ra.graph
 release/examples/benchmarks/hpcc/stream-ep.graph
+release/examples/benchmarks/hpcc/ptrans.graph
 release/examples/benchmarks/miniMD/miniMD.graph
 # suite: HPCC
 studies/hpcc/RA.graph
