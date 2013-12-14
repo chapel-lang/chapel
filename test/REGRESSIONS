@@ -66,8 +66,8 @@ localeModel/numa+qthreads regressions
 (Reviewed for accuracy 12/06/13)
 =======================================
 
-Unkowned extra memory leaks
----------------------------
+Unknown extra memory leaks
+--------------------------
 [Error matching program output for memory/figueroa/LeakedMemory5 (compopts: 1)]
 
 line number ambiguity
@@ -163,8 +163,8 @@ no-local regressions
 (Reviewed for accuracy 12/06/13)
 ===============================
 
-timeouts, related to CHPL_RT_NUM_THREADS_PER_LOCALE=1 (started 10/31/13)
-------------------------------------------------------------------------
+timeouts, related to CHPL_RT_NUM_THREADS_PER_LOCALE=1 (started 10/31/13) (gbt)
+------------------------------------------------------------------------------
 [Error: Timed out executing program parallel/taskPool/figueroa/OneThreadSyncStmt]
 [Error: Timed out executing program parallel/taskPool/figueroa/OneThread]
 [Error: Timed out executing program parallel/taskPool/figueroa/QueuedTasks]
@@ -212,8 +212,99 @@ communication counts changed due to Vass' task functions commit (05/30/13)
 [Error matching program output for distributions/robust/arithmetic/performance/reduce]
 
 
+=====================================
+darwin-clang/mac-specific regressions
+(started 12/13/13)
+=====================================
+
+need machine specific .good file
+--------------------------------
+[Error cannot locate program output comparison file studies/hpcc/common/testProbSize.good]
+[Error matching program output for modules/standard/memory/countMemory/countMemory]
+
+Bad .bad file
+-------------
+[Error matching .bad file for performance/bradc/refArgIsWide (compopts: 1)]
+
+chpldoc sorting differences (same as gnu?)
+------------------------------------------
+[Error matching compiler output for chpldoc/compflags/alphabetical/alphabetized]
+[Error matching program output for chpldoc/compflags/alphabetical/alphabetized]
+
+gdb output differences? (same as gnu?)
+--------------------------------------
+[Error matching compiler output for compflags/bradc/gdbddash/declint]
+[Error matching program output for execflags/bradc/gdbddash/declint2]
+[Error matching program output for execflags/bradc/gdbddash/declint]
+[Error matching program output for execflags/bradc/gdbddash/gdbSetConfig]
+
+error: self-comparison always evaluates to true [-Werror,-Wtautological-compare])
+---------------------------------------------------------------------------------
+[Error matching compiler output for extern/ferguson/c_ptrs (compopts: 1)]
+
+linker error (library not found for -lcrt0.o)
+---------------------------------------------
+[Error matching compiler output for link/sungeun/static_dynamic (compopts: 1)]
+[Error matching compiler output for link/sungeun/static_dynamic (compopts: 2)]
+[Error matching compiler output for link/sungeun/static_dynamic (compopts: 3)]
+[Error matching compiler output for link/sungeun/static_dynamic (compopts: 4)]
+[Error matching compiler output for link/sungeun/static_dynamic (compopts: 5)]
+[Error matching compiler output for link/sungeun/static_dynamic (compopts: 6)]
+
+error: static declaration of 'wait3' follows non-static declaration
+-------------------------------------------------------------------
+[Error matching compiler output for parallel/sync/diten/userLevelEndCount]
+
+RLIMIT_NPROC portability issue (same as gnu)
+--------------------------------------------
+[Error matching compiler output for parallel/taskPool/figueroa/TooManyThreads (compopts: 1)]
+
+various errors in the generated code
+------------------------------------
+[Error matching compiler output for performance/compiler/bradc/compSampler-timecomp]
+[Error matching compiler output for trivial/shannon/compSampler]
+
+error: internal failure MIS0355 chpl Version 1.8.0.-999
+-------------------------------------------------------
+[Error matching compiler output for release/examples/benchmarks/miniMD/miniMD (compopts: 2)]
+[Error matching compiler output for types/file/fileIO2]
+
+seg fault
+---------
+[Error matching compiler output for trivial/waynew/int2uint]
+
+resolution error (unresolved call '_fill(int(64), 2*int(64))')
+--------------------------------------------------------------
+[Error matching compiler output for types/tuple/diten/tensor_destructure]
+
+error: internal failure EXP3124 chpl Version 1.8.0.-999
+-------------------------------------------------------
+[Error matching compiler output for users/ferguson/nestedcomments]
+
+python multithreading modules does not agree with numcores
+----------------------------------------------------------
+[Error matching program output for modules/standard/machine/numCores]
+
+timeout
+-------
+[Error matching program output for domains/sungeun/assoc/stress (compopts: 1, execopts: 2)]
+
+prediff doesn't work (bash differences?)
+----------------------------------------
+[Error matching program output for parallel/coforall/gbt/time-sync-incs]
+
+prediff doesn't work (csh differences?)
+---------------------------------------
+[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample5]
+
+'limit' command does not exist
+------------------------------
+[Error running sub_test in /tmp/chapel-cron-darwin.clang.none.fifo.pthreads.flat-chapelu/chapel/test/memory/shannon/outofmemory (1)]
+
+
+
 ==============================================================
-darwin-/mac-specific regressions
+darwin-gnu/mac-specific regressions
 (Reviewed for accuracy on 12/06/13 -- examples/ directory only)
 ==============================================================
 
@@ -273,6 +364,20 @@ problem with static/dynamic linking?
 cray-prgenv-cray/cce-specific regressions
 (Reviewed for accuracy 10/16/13)
 =========================================
+
+CCE INTERNAL error (seg fault)
+------------------------------
+[Error matching compiler output for release/examples/benchmarks/lulesh/lulesh (compopts: 1)]
+[Error matching compiler output for release/examples/benchmarks/lulesh/lulesh (compopts: 2)]
+[Error matching compiler output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 1)]
+[Error matching compiler output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 2)]
+[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1)]
+[Error matching compiler output for release/examples/primers/arrays]
+[Error matching compiler output for release/examples/primers/distributions]
+
+The above tests as well as the compiler build fails with a CCE
+internal error since update to a newer version of CCE.  Bug filed and
+fixed, but not sure when it will be available.
 
 extern_string_test output mismatch
 ----------------------------------

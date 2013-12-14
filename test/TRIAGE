@@ -31,6 +31,34 @@ New problems
 (Ones that prove persistent should be moved to REGRESSIONS.)
 =========================================================
 
+
+
+time out (possible gasnet race condition/deadlock)
+--------------------------------------------------
+
+everything (12/9/13, 12/13/13).  It should run in ~10s for segment
+everything, so it's clear something is stuck.  Tried running in a
+loop, but can't seem to recreate in several hours.  Might have compile
+with -g to catch it, which will make the backtrace less useful.
+
+
+numa testing non-determinism
+----------------------------
+sungeun: I believe this test pushes the stack size limit and gets
+lucky sometimes.  I've left the entry in the REGRESSIONS file for now.
+[Error matching program output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 1, execopts: 3)]
+
+
+nondeterministic seg fault (hilde)
+----------------------------------
+[Error matching program output for classes/figueroa/RecordDestructor1b]
+
+This failed during baseline testing on 12/12/13, but it will also fail
+intermittently for the standard configuration.  I tried it with the
+previous day's commits backed out, so I'm pretty sure it was not
+caused by anything on this particular day.  FWIW, this runs clean with
+valgrind.
+
 nondet. baseline output
 -----------------------
 [Error matching program output for studies/amr/diffusion/level/Level_DiffusionBE_driver (compopts: 1)]
@@ -218,10 +246,10 @@ nondet. seg fault for prgenv-cray on chpbld01
 nondet. timeout on gasnet-everything
 ------------------------------------
 [Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dBDtoDRTest] (07/08/13)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (7/22/13, 09/02/13, 09/30/13)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (7/22/13, 09/02/13, 09/30/13, 12/13/13)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (7/19/13, 10/9/13)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff] (8/9/13)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (9/30/13) (11/8/13)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (9/30/13, 11/8/13, 12/13/13)
 
 libmpich_intel.so failure for
 cray-xt.cray-prgenv-intel.none.fifo.pthreads--linux64 (May 27, 2013)
@@ -359,7 +387,7 @@ examples of what times out:
  distributions/robust/arithmetic/stress/test_many_domains (10/11/13)
  distributions/robust/arithmetic/stress/test_many_array (4/29/13)
  distributions/dm/t2 (2012/08/15)
- test_array_slicing3 (07/24/13, 07/12/13, 06/08/12, 6/16, 3/29/13, 5/3/13, 11/8/13)
+ test_array_slicing3 (07/24/13, 07/12/13, 06/08/12, 6/16, 3/29/13, 5/3/13, 11/8/13, 12/9/13)
  release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4) (04/08/13)
  studies/cholesky/jglewis/version2/performance/test_cholesky_performance (10/10/13)
  multilocale/diten/needMultiLocales/coforallon_maxThreads (07/04/13, 10/10/13, 10/22/13)
