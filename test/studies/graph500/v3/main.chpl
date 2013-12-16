@@ -5,6 +5,7 @@ module Graph500_main
   use BlockDist;
   use Time;
   use Random;
+  use Sort;
 
   use Graph500_defs;
   use Scalable_Graph_Generator;
@@ -17,12 +18,148 @@ module Graph500_main
   const C: real = 0.19;
   const D: real = 0.05;
 
+  const NSTAT = 9;  
+  const DEFAULT_INT_SIZE = 64;
 
-  extern proc output_results (scale: int, NV: int, edgefactor:int,
-                const A: real, const B: real, const C: real, const D: real,
-                generation_time: real, construction_time: real,
-                nbfs: int, 
-                inout BFS_time_array: real, inout BFS_nedges_traversed: int );
+  proc statistics (inout res, inout data, n: int(64)) {
+    var s, mean: real;
+    var t: real;
+    var k: int;
+
+    /* Quartiles */
+    
+    //QuickSort (data);
+    res[0] = data[0];
+    t = (n+1) / 4.0;
+    k = t:int;
+    if (t == k) then
+      res[1] = data[k];
+    else
+      res[1] = 3*(data[k]/4.0) + data[k+1]/4.0;
+    t = (n+1) / 2.0;
+    k = t:int;
+    if (t == k) then
+      res[2] = data[k];
+    else
+      res[2] = data[k]/2.0 + data[k+1]/2.0;
+    t = 3*((n+1) / 4.0);
+    k = t:int;
+    if (t == k) then
+      res[3] = data[k];
+    else
+      res[3] = data[k]/4.0 + 3*(data[k+1]/4.0);
+    res[4] = data[n-1];
+    
+    s = data[n-1];
+    for k in n-1..0 by -1 do {
+      s += data[k-1];
+    }
+    mean = s/n;
+    res[5] = mean;
+    s = data[n-1] - mean;
+    s *= s;
+    for k in n-1..0 by -1 do {
+      var tmp = data[k-1] - mean;
+      s += tmp * tmp;
+    }
+    res[6] = sqrt (s/(n-1));
+    
+    if data[0] != 0 then {
+      s = 1:int(32) / data[0];
+    } else {
+      s = 0;
+    }
+    for k in 1..n do {
+      if data[k] != 0 then {
+        s = 1:real(32) / data[k];
+      } else {
+        s = 0;
+      }
+    }
+    res[7] = n/s;
+    mean = s/n;
+    
+    /*
+      Nilan Norris, The Standard Errors of the Geometric and Harmonic
+      Means and Their Application to Index Numbers, 1940.
+      http://www.jstor.org/stable/2235723
+    */
+    if data[0] != 0 then {
+      s = 1:real(32) / data[0];
+    } else {
+      s = 0;
+    }
+    s -= mean;
+    s *= s;
+    for k in 1..n do {
+      var tmp: real;
+      if data[k] != 0 then {
+        tmp = 1:real(32) / data[k];
+      } else {
+        tmp = 0;
+      }
+      tmp -= mean;
+      s += tmp * tmp;
+    }
+    s = (sqrt (s)/(n-1)) * res[7] * res[7];
+    res[8] = s;
+  }
+
+  proc output_results (scale: int, NV: int, edgefactor:int,
+                       const A: real, const B: real, const C: real,
+                       const D: real, generation_time: real,
+                       construction_time: real, nbfs: int, 
+                       inout BFS_time_array: [] real,
+                       inout BFS_nedges_traversed: []int ) {
+    var k, sz: int;
+    var tm: [0..nbfs-1] real;
+    var stats: [0..NSTAT-1] real;
+
+    sz = (1:int(32) << scale) * edgefactor * 2 * DEFAULT_INT_SIZE;
+    write ("SCALE: ", scale, " \nnvtx: ", NV, " \nedgefactor: ", edgefactor, 
+           " \nterasize: ", format("%20.17e\n", sz/1.0e12));
+    writeln ("A: ", format("%20.17e", D));
+    writeln ("B: ", format("%20.17e", B));
+    writeln ("C: ", format("%20.17e", C));
+    writeln ("D: ", format("%20.17e", D));
+    writeln ("generation_time: ", format("%20.17e", generation_time));
+    writeln ("construction_time: ", format("%20.17e", construction_time));
+    writeln ("nbfs: ", nbfs);
+
+    proc PRINT_STATS(lbl, israte) {
+      do {
+        writeln ("min_", lbl, format(": %20.17e", stats[0]));
+        writeln ("firstquartile_", lbl, format(": %20.17e", stats[1]));
+        writeln ("median_", lbl, format(": %20.17e", stats[2]));
+        writeln ("thirdquartile_", lbl, format(": %20.17e", stats[3]));
+        writeln ("max_", lbl, format(": %20.17e", stats[4]));
+        if (!israte) {
+          writeln ("mean_", lbl, format(": %20.17e", stats[5]));
+          writeln ("stddev_", lbl, format(": %20.17e", stats[6]));
+        } else {
+          writeln ("harmonic_mean_", lbl, format(": %20.17e", stats[7]));
+          writeln ("harmonic_stddev_", lbl, format(": %20.17e", stats[8]));
+        }
+      } while (0);
+    }
+    QuickSort(tm);
+
+
+    forall k in 0..nbfs-1 do
+      tm[k] = BFS_time_array[k];
+    statistics (stats, tm, nbfs);
+    PRINT_STATS("time", false);
+    
+    forall k in 0..nbfs-1 do
+      tm[k] = BFS_nedges_traversed[k];
+    statistics (stats, tm, nbfs);
+    PRINT_STATS("nedge", false);
+    
+    forall k in 0..nbfs-1 do
+      tm[k] = BFS_nedges_traversed[k] / BFS_time_array[k];
+    statistics (stats, tm, nbfs);
+    PRINT_STATS("TEPS", true);
+  }
 
         
   writeln ( "Problem Dimensions");
@@ -141,9 +278,9 @@ module Graph500_main
       if (PRINT_TIMING_STATISTICS) {
         output_results (SCALE, N_VERTICES, EDGEFACTOR, A, B, C, D,
              generation_time.elapsed(), construction_time.elapsed(), NUMROOTS,
-             BFS_time_array(1), BFS_nedges_traversed(1) );
+             BFS_time_array, BFS_nedges_traversed );
       }
 
-}
+  }
 
 }
