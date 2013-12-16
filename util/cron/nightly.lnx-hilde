@@ -28,7 +28,7 @@ $CHPL_HOME/util/cron/nightly -cron $EXAMPLES -verify &> $LOGFILE
 # Gather memleaks data over the entire test suite.
 # The weekend run for --verify testing takes too long, 
 # so we run this only on weekdays.
-if [ $dayType == "" ] ; then
+if [ "$dayType" == "" ] ; then
   export CHPL_NIGHTLY_LOGDIR=/data/sea/cascade/chapel/NightlyMemLeaks
   export CHPL_NIGHTLY_STATDIR=$CHPL_NIGHTLY_LOGDIR/Stats
   export CHPL_NIGHTLY_CRON_LOGDIR=$CHPL_NIGHTLY_LOGDIR
