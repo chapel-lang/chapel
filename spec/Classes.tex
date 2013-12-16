@@ -155,6 +155,9 @@ Variable fields define the storage associated with a class instance.
 
 \begin{chapelexample}{defineActor.chpl}
 The code
+\begin{chapelpre}
+config param cleanUp = false;
+\end{chapelpre}
 \begin{chapel}
 class Actor {
   var name: string;
@@ -633,8 +636,11 @@ anActor.age = 27;
 \end{chapel}
 \begin{chapelpost}
 writeln((s, anActor));
-delete anActor;
+if (cleanUp) then delete anActor;
 \end{chapelpost}
+\begin{chapelcompopts}
+-scleanUp=true
+\end{chapelcompopts}
 \begin{chapeloutput}
 (Tommy, {name = Tommy, age = 27})
 \end{chapeloutput}
@@ -721,6 +727,7 @@ proc Actor.print() {
 \end{chapel}
 \begin{chapelpost}
 anActor.print();
+delete anActor;
 \end{chapelpost}
 \begin{chapeloutput}
 (Tommy, {name = Tommy, age = 27})
