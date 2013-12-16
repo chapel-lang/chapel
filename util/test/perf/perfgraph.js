@@ -115,7 +115,7 @@ function genDygraph(graphInfo, parent, legend) {
                                     me.updateOptions({digitsAfterDecimal: 2} );
                                     me.setAnnotations(me.annotations());
                                 }
-                                if (yDiff > 100.0) {
+                                else if (yDiff > 100.0) {
                                     me.updateOptions({digitsAfterDecimal: 0} );
                                     me.setAnnotations(me.annotations());
                                 }
