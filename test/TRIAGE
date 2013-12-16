@@ -32,6 +32,30 @@ New problems
 =========================================================
 
 
+darwin-gnu non-deterministic compiler failures
+-----------------------------------------------
+
+There are a few classes of these failures during compilation that seem
+to be non-deterministic based on only 2 nights of testing.  The most
+common is an internal error and the next most common was an 'invalid
+where clause' error.  The others only had 1-2 instances.  In order of
+number of occurrences:
+
+- error: internal failure MIS0355 chpl Version 1.8.0.-999
+- invalid where clause
+- compiler seg fault
+- error: Initializing parameter 'ret' to value not known at compile time
+- error: unresolved call '_if_fn7()'
+
+
+gnu+gnu (intermittent?) failure on chpbld02
+-------------------------------------------
+[Error matching program output for distributions/robust/arithmetic/reindexing/simple-alias-mem-use (compopts: 1)]
+
+This was resolved 12/15, which meant it failed the previous week.  Log
+files aren't set up to be able save the previous week's log file for
+weekend testing (unless by accident), so I have no idea what happened.
+
 
 time out (possible gasnet race condition/deadlock)
 --------------------------------------------------
@@ -330,6 +354,7 @@ other configurations are quite consistent - see REGRESSIONS
 
 prgenv-* compilation timeouts (maybe due to system updates or ...?)
 -------------------------------------------------------------------
+[Error: Timed out compilation for types/tuple/deitz/test_tuple_simple2] (prgenv-pgi, compiler prgenv-pgi, 12/15)
 [Error: Timed out compilation for users/ferguson/ddata/f] (prgenv-pgi: 12/01/12)
 [Error: Timed out compilation for users/jglewis/locClassSegFault-nongeneric] (prgenv-pgi: 12/01/12)
 [Error: Timed out compilation for release/examples/spec/Tuples/expansion] (prgenv-cray: 12/02/12)
