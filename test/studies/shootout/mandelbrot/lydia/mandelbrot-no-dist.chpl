@@ -12,7 +12,7 @@ proc main()
 
   var bytes : [sizeRange, byteRange] uint(8);
 
-  const limit : real = 2.0;
+  const limit : real = 4.0;
   const maxIter : int = 50;
 
 
@@ -31,7 +31,7 @@ proc main()
 
           {
             var iterNo : int = maxIter;
-            while (iterNo > 0 && (Tr+Ti <= limit**2))
+            while (iterNo > 0 && (Tr+Ti <= limit))
               {
                 Zi = 2.0*Zr*Zi + Ci;
                 Zr = Tr - Ti + Cr;
@@ -42,7 +42,7 @@ proc main()
           }
 
           byte_acc <<= 1;
-          if(Tr+Ti <= limit**2) then
+          if(Tr+Ti <= limit) then
             byte_acc |= 0x01;
         }
 
