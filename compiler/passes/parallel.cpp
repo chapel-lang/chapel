@@ -155,6 +155,119 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
   baData.ctype = ctype;
 }
 
+
+/// Optionally autoCopies an argument being inserted into an argument bundle.
+///
+/// This routine optionally inserts an autoCopy ahead of each invocation of a
+/// task function that begins asynchronous execution (currently just "begin" and
+/// "nonblocking on" functions).  
+/// If such an autoCopy call is inserted, a matching autoDestroy call is placed
+/// at the end of the tasking routine before the call to _downEndCount.  Since a
+/// tasking function may be called from several call sites, the task function is
+/// modified only when processing the first invocation.
+/// The insertion of autoCopy calls is required for internally reference-counted
+/// types, and also for all user-defined record types (passed by value).  For
+/// internally reference-counted types, the autoCopy call increases the
+/// reference count, so the internal (reference-counted) data is not reclaimed
+/// before the task function exits.  For user-defined record types, the autoCopy
+/// call provides a hook so the record author can ensure that the task function
+/// owns its own copy of the record (including, but not limited to,
+/// reference-counting it).
+/// \param firstCall Should be set to \p true for the first invocation of a
+/// given task function and \p false thereafter.
+/// \ret Returns the result of calling autoCopy on the given arg, if necessary;
+/// otherwise, just returns 
+static Symbol* insertAutoCopyDestroyForTaskArg
+  (Expr* arg, ///< The actual argument being passed.
+   CallExpr* fcall, ///< The call that invokes the task function.
+   FnSymbol* fn, ///< The task function.
+   bool firstCall)
+{
+  SymExpr* s = toSymExpr(arg);
+  Symbol* var = s->var;
+
+  // This applies only to arguments being passed to asynchronous task functions.
+  if (fn->hasFlag(FLAG_BEGIN) ||
+      (fn->hasFlag(FLAG_ON) && fn->hasFlag(FLAG_NON_BLOCKING)))
+  {
+    Type* baseType = arg->getValType();
+    FnSymbol* autoCopyFn = getAutoCopy(baseType);
+    FnSymbol* autoDestroyFn = getAutoDestroy(baseType);
+
+    if (isRefCountedType(baseType))
+    {
+      if (arg->typeInfo() != baseType)
+      {
+        // For internally reference-counted types, this punches through
+        // references to bump the reference count.
+        VarSymbol* derefTmp = newTemp(baseType);
+        fcall->insertBefore(new DefExpr(derefTmp));
+        fcall->insertBefore(new CallExpr(PRIM_MOVE, derefTmp,
+                                         new CallExpr(PRIM_DEREF, var)));
+        // The result of the autoCopy call is dropped on the floor.
+        // It is only called to increment the ref count.
+        fcall->insertBefore(new CallExpr(autoCopyFn, derefTmp));
+        // But the original var is passed through to the field assignment.
+      }
+      else
+      {
+        VarSymbol* valTmp = newTemp(baseType);
+        valTmp->addFlag(FLAG_NECESSARY_AUTO_COPY);
+        fcall->insertBefore(new DefExpr(valTmp));
+        fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp,
+                                         new CallExpr(autoCopyFn, var)));
+        // If the arg is not passed by reference, the result of the autoCopy is
+        // passed to the field assignment.
+        var = valTmp;
+      }
+
+      if (firstCall)
+      {
+        // The task function may be called from several call sites, so insert
+        // the autodestroy call only once (when processing the first fcall).
+        Symbol* formal = actual_to_formal(arg);
+        if (arg->typeInfo() != baseType)
+        {
+          VarSymbol* derefTmp = newTemp(baseType);
+          fn->insertBeforeReturnAfterLabel(new DefExpr(derefTmp));
+          fn->insertBeforeReturnAfterLabel(
+            new CallExpr(PRIM_MOVE, derefTmp, new CallExpr(PRIM_DEREF,  formal)));
+          formal = derefTmp;
+        }
+        fn->insertBeforeReturnAfterLabel(new CallExpr(autoDestroyFn, formal));
+      }
+    }
+    else if (isRecord(baseType))
+    {
+      // Do this only if the record is passed by value.
+      if (arg->typeInfo() == baseType)
+      {
+        // TODO: Find out why _RuntimeTypeInfo records do not have autoCopy
+        // functions, so we can get rid of this special test.
+        if (autoCopyFn == NULL) return var;
+
+        // Insert a call to the autoCopy function ahead of the call.
+        VarSymbol* valTmp = newTemp(baseType);
+        fcall->insertBefore(new DefExpr(valTmp));
+        CallExpr* autoCopyCall = new CallExpr(autoCopyFn, var);
+        fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp, autoCopyCall));
+        var = valTmp;
+
+        if (firstCall)
+        {
+          // Insert a call to the autoDestroy function ahead of the return.
+          // (But only once per function for each affected argument.)
+          Symbol* formal = actual_to_formal(arg);
+          CallExpr* autoDestroyCall = new CallExpr(autoDestroyFn,formal);
+          fn->insertBeforeReturnAfterLabel(autoDestroyCall);
+        }
+      }
+    }
+  }
+  return var;
+}
+
+
 static void
 bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
   SET_LINENO(fcall);
@@ -174,81 +287,19 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
 
   // set the references in the class instance
   int i = 1;
-  for_actuals(arg, fcall) {
-    SymExpr *s = toSymExpr(arg);
-    Symbol  *var = s->var; // var or arg
-    CallExpr *setc=new CallExpr(PRIM_SET_MEMBER,
-                                tempc,
-                                ctype->getField(i),
-                                var);
-    fcall->insertBefore( setc);
+  for_actuals(arg, fcall) 
+  {
+    // Insert autoCopy/autoDestroy as needed for "begin" or "nonblocking on"
+    // calls.
+    Symbol  *var = insertAutoCopyDestroyForTaskArg(arg, fcall, fn, firstCall);
+
+    // Copy the argument into the corresponding slot in the argument bundle.
+    CallExpr *setc = new CallExpr(PRIM_SET_MEMBER,
+                                  tempc,
+                                  ctype->getField(i),
+                                  var);
+    fcall->insertBefore(setc);
     i++;
-  }
-
-  // insert autoCopy for array/domain/distribution before begin call
-  // and insert autoDestroy at end of begin function (i.e., reference count)
-  // We have to do this for all record args that are passed by value.
-  if (fn->hasFlag(FLAG_BEGIN)) {
-    // For each argument in the call:
-    for_actuals(arg, fcall) {
-      SymExpr* s = toSymExpr(arg);
-      Symbol* var = s->var; // var or arg
-      Type* baseType = arg->typeInfo();
-      if (isReferenceType(baseType)) {
-        baseType = arg->typeInfo()->getField("_val", true)->type;
-      }
-      if (isRefCountedType(baseType)) {
-        FnSymbol* autoCopyFn = getAutoCopy(baseType);
-        FnSymbol* autoDestroyFn = getAutoDestroy(baseType);
-        // For internally reference-counted types, this punches through
-        // references to bump the reference count.
-        // But for normal records, I think we want to do this only if the record
-        // is passed by value.
-        VarSymbol* valTmp = newTemp(baseType);
-        fcall->insertBefore(new DefExpr(valTmp));
-        if (baseType == arg->typeInfo()) {
-          fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp, var));
-        } else {
-          fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp, new CallExpr(PRIM_DEREF, var)));
-        }
-        fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp, new CallExpr(autoCopyFn, valTmp)));
-        // modify 'fn' only once
-        if (baData.firstCall) {
-          // I can't imagine why we would want to bump the reference count of an
-          // internally reference-counted object multiple times on entry, and
-          // only decrement it once on exit.  
-          // TODO: Figure out why, or make them match up, like the case for
-          // records below.
-          VarSymbol* derefTmp = newTemp(baseType);
-          fn->insertBeforeReturnAfterLabel(new DefExpr(derefTmp));
-          if (baseType == arg->typeInfo()) {
-            fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, derefTmp, new SymExpr(actual_to_formal(arg))));
-          } else {
-            fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, derefTmp, new CallExpr(PRIM_DEREF, new SymExpr(actual_to_formal(arg)))));
-          }
-          fn->insertBeforeReturnAfterLabel(new CallExpr(autoDestroyFn, derefTmp));
-        } // if firstCall
-      }
-      else if (isRecord(baseType))
-      {
-        // Do this only if the record is passed by value.
-        if (arg->typeInfo() == baseType)
-        {
-          // Insert a call to the autoCopy function ahead of the call.
-          FnSymbol* autoCopyFn = getAutoCopy(baseType);
-          VarSymbol* valTmp = newTemp(baseType);
-          fcall->insertBefore(new DefExpr(valTmp));
-          fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp, new CallExpr(autoCopyFn, var)));
-
-          // Insert a call to the autoDestroy function ahead of the return.
-          FnSymbol* autoDestroyFn = getAutoDestroy(baseType);
-          VarSymbol* derefTmp = newTemp(baseType);
-          fn->insertBeforeReturnAfterLabel(new DefExpr(derefTmp));
-          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, derefTmp, new SymExpr(actual_to_formal(arg))));
-          fn->insertBeforeReturnAfterLabel(new CallExpr(autoDestroyFn, derefTmp));
-        }
-      }
-    }
   }
 
   // create wrapper-function that uses the class instance
@@ -1033,6 +1084,7 @@ parallel(void) {
 
   compute_call_sites();
 
+  // TODO: Move this into a separate pass.
   remoteValueForwarding(taskFunctions);
 
   reprivatizeIterators();
@@ -1106,10 +1158,7 @@ static void passArgsToNestedFns(Vec<FnSymbol*>& nestedFunctions)
       for_vector(SymExpr, sym, symExprs)
       {
         if (sym->var->defPoint == localeArg)
-        {
           sym->getStmtExpr()->remove();
-          break;
-        }
       }
       localeArg->remove();
     }

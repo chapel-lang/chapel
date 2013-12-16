@@ -18,7 +18,8 @@ buildSyncAccessFunctionSet(Vec<FnSymbol*>& syncAccessFunctionSet) {
   // Find all functions that directly call sync access primitives.
   //
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->parentSymbol) {
+    if (FnSymbol* parent = toFnSymbol(call->parentSymbol))
+    {
       if (call->isPrimitive(PRIM_SYNC_INIT) ||
           call->isPrimitive(PRIM_SYNC_LOCK) ||
           call->isPrimitive(PRIM_SYNC_UNLOCK) ||
@@ -42,8 +43,6 @@ buildSyncAccessFunctionSet(Vec<FnSymbol*>& syncAccessFunctionSet) {
           call->isPrimitive(PRIM_SINGLE_READFF) ||
           call->isPrimitive(PRIM_SINGLE_READXX) ||
           call->isPrimitive(PRIM_SINGLE_IS_FULL)) {
-        FnSymbol* parent = toFnSymbol(call->parentSymbol);
-        INT_ASSERT(parent);
         if (!parent->hasFlag(FLAG_DONT_DISABLE_REMOTE_VALUE_FORWARDING) &&
             !syncAccessFunctionSet.set_in(parent)) {
           syncAccessFunctionSet.set_add(parent);
@@ -234,6 +233,16 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
       if (syncAccessFunctionSet.set_in(fn) && !isSufficientlyConst(arg)) {
         continue;
       }
+
+      // If this argument is a reference atomic type, we need to preserve
+      // reference semantics, i.e. that the referenced atomic gets updated.
+      // Therefore, dereferencing a ref atomic and forwarding its value is not
+      // what we want.  That is, all atomics implicitly disable remote value
+      // forwarding.
+      // See resolveFormals() [functionResolution.cpp:839] for where we decide
+      // to convert atomic formals to ref formals.
+      if (isAtomicType(arg->type))
+        continue;
 
       if (arg->type->symbol->hasFlag(FLAG_REF) &&
           isSafeToDeref(arg, defMap, useMap, NULL, NULL)) {

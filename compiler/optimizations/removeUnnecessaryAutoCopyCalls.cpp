@@ -202,10 +202,13 @@ static void removeUnnecessaryAutoCopyCalls(FnSymbol* fn) {
           // If the RHS is a CallExpr, then check to see if it is an autoCopy call.
           if (CallExpr* rhs = toCallExpr(call->get(2))) {
             if (FnSymbol* ac = rhs->isResolved()) {
-              if (ac->hasFlag(FLAG_REMOVABLE_AUTO_COPY) && rhs->argList.head) {
+              if (ac->hasFlag(FLAG_REMOVABLE_AUTO_COPY)) {
                 // Yup.  So track the autoCopy
-                track.autoCopy(call);
-                continue;
+                INT_ASSERT(rhs->argList.head);
+                SymExpr* se = toSymExpr(call->get(1));
+                // Do not remove necessary autoCopies!
+                if (!se->var->hasFlag(FLAG_NECESSARY_AUTO_COPY))
+                  track.autoCopy(call);
               }
             }
           }

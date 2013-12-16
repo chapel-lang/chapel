@@ -5,6 +5,7 @@
 #include "expr.h"
 #include "passes.h"
 #include "primitive.h"
+#include "../resolution/resolution.h"
 
 //
 // Static function declarations.
@@ -21,7 +22,7 @@ static void checkResolveRemovedPrims(void); // Checks that certain primitives
                                             // are removed after resolution
 static void checkFlagRelationships(); // Checks expected relationships between
                                       // flags.
-
+static void checkAutoCopyMap();
 
 
 //
@@ -96,6 +97,7 @@ void check_resolve()
   check_afterEveryPass();
   check_afterNormalization();
   checkReturnTypesHaveRefTypes();
+  checkAutoCopyMap();
 }
 
 void check_resolveIntents()
@@ -339,6 +341,7 @@ static void check_afterResolution()
 // Disabled for now because it does not hold when named externs are present.
 // See test/extern/hilde/namedExtern.chpl.
 //    checkNoUnresolveds();
+    checkAutoCopyMap();
   }
 }
 
@@ -386,5 +389,18 @@ checkFlagRelationships()
       // FLAG_EXPORT => FLAG_LOCAL_ARGS
       INT_ASSERT(!fn->hasFlag(FLAG_EXPORT) || fn->hasFlag(FLAG_LOCAL_ARGS));
     }
+  }
+}
+
+static void
+checkAutoCopyMap()
+{
+  Vec<Type*> keys;
+  autoCopyMap.get_keys(keys);
+  forv_Vec(Type, key, keys)
+  {
+    FnSymbol* fn = autoCopyMap.get(key);
+    Type* baseType = fn->getFormal(1)->getValType();;
+    INT_ASSERT(baseType == key);
   }
 }
