@@ -2115,7 +2115,7 @@ disambiguateByMatch(Vec<ResolutionCandidate*>& candidates, DisambiguationContext
     ResolutionCandidate* candidate1 = candidates.v[i];
     bool best = true; // is fn1 the best candidate?
     
-    TRACE_DISAMBIGUATE_BY_MATCH("%s\n\n", toString(fn1));
+    TRACE_DISAMBIGUATE_BY_MATCH("%s\n\n", toString(candidate1->fn));
     
     if (notBest[i]) {
       TRACE_DISAMBIGUATE_BY_MATCH("Already known to not be best match.  Skipping.\n\n");
@@ -2130,7 +2130,7 @@ disambiguateByMatch(Vec<ResolutionCandidate*>& candidates, DisambiguationContext
       
       ResolutionCandidate* candidate2 = candidates.v[j];
       
-      TRACE_DISAMBIGUATE_BY_MATCH("%s\n", toString(fn2)); 
+      TRACE_DISAMBIGUATE_BY_MATCH("%s\n", toString(candidate2->fn)); 
       
       if (isBetterMatch(candidate1, candidate2, DC.forPair(i, j))) {
         TRACE_DISAMBIGUATE_BY_MATCH("X: Fn %d is a better match than Fn %d\n\n\n", i, j);
