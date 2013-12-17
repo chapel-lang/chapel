@@ -281,7 +281,6 @@ static void SIGINT_handler(int sig)
 // Tasks
 
 #ifndef QTHREAD_MULTINODE
-static int       done_initializing = 0;
 static syncvar_t canexit           = SYNCVAR_STATIC_EMPTY_INITIALIZER;
 static int       done_finalizing   = 0;
 
@@ -289,7 +288,7 @@ static void *initializer(void *junk)
 {
     qthread_initialize();
     MACHINE_FENCE;
-    done_initializing = 1;
+    chpl_qthread_done_initializing = 1;
 
     qthread_syncvar_readFF(NULL, &canexit);
 
@@ -364,7 +363,7 @@ void chpl_task_init(void)
     }
 
     pthread_create(&initer, NULL, initializer, NULL);
-    while (done_initializing == 0) SPINLOCK_BODY();
+    while (chpl_qthread_done_initializing == 0) SPINLOCK_BODY();
 
     if (blockreport || taskreport) {
         if (signal(SIGINT, SIGINT_handler) == SIG_ERR) {
@@ -384,7 +383,7 @@ void chpl_task_exit(void)
     if (qthread_shep() == NO_SHEPHERD) {
         /* sometimes, tasking is told to shutdown even though it hasn't been
          * told to start yet */
-        if (done_initializing == 1) {
+        if (chpl_qthread_done_initializing == 1) {
             qthread_syncvar_fill(&canexit);
             while (done_finalizing == 0) SPINLOCK_BODY();
         }

@@ -257,6 +257,11 @@ void threadlayer_exit(void);
  * void* threadlayer_get_thread_private_data(void);*/
 
 
+#ifndef QTHREAD_MULTINODE
+int chpl_qthread_done_initializing;
+#endif
+
+
 typedef struct {
 #if !(defined(CHPL_LOCALE_MODEL_NUM_SUBLOCALES) &&  \
   CHPL_LOCALE_MODEL_NUM_SUBLOCALES == 0)
@@ -287,20 +292,14 @@ typedef struct chpl_qthread_tls_s {
 // Wrap qthread_get_tasklocal() and assert that it is always available.
 static inline chpl_qthread_tls_t * chapel_qthreads_get_tasklocal(void)
 {
-    chpl_qthread_tls_t * tls = 
-        (chpl_qthread_tls_t *)qthread_get_tasklocal(sizeof(chpl_qthread_tls_t));
+    chpl_qthread_tls_t * tls;
 
-    assert(tls);
-
-    return tls;
-}
-
-// FIXME: this is the same as chapel_qthreads_get_tasklocal() except that it does
-//        not have the assertion.
-static inline chpl_qthread_tls_t * chapel_qthreads_get_tasklocal_possibly_from_non_task(void)
-{
-    chpl_qthread_tls_t * tls = 
-        (chpl_qthread_tls_t *)qthread_get_tasklocal(sizeof(chpl_qthread_tls_t));
+    if (chpl_qthread_done_initializing) {
+        tls = (chpl_qthread_tls_t *)qthread_get_tasklocal(sizeof(chpl_qthread_tls_t));
+        assert(tls);
+    }
+    else
+        tls = NULL;
 
     return tls;
 }
@@ -337,7 +336,7 @@ void chpl_task_setSubloc(c_sublocid_t subloc)
     //       main thread of execution, which doesn't have a shepherd.
     //       The code below wouldn't work in that situation.
     if ((curr_shep = qthread_shep()) != NO_SHEPHERD) {
-        chpl_qthread_tls_t * data = chapel_qthreads_get_tasklocal_possibly_from_non_task();
+        chpl_qthread_tls_t * data = chapel_qthreads_get_tasklocal();
         if (data) {
             data->chpl_data.requestedSubloc = subloc;
         }
@@ -358,7 +357,7 @@ c_sublocid_t chpl_task_getRequestedSubloc(void)
 
     return 0;
 #else
-    chpl_qthread_tls_t * data = chapel_qthreads_get_tasklocal_possibly_from_non_task();
+    chpl_qthread_tls_t * data = chapel_qthreads_get_tasklocal();
     if (data) {
         return data->chpl_data.requestedSubloc;
     }
