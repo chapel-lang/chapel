@@ -18,6 +18,8 @@ module meteor {
    *                                                    . . . . .
    */
 
+  var board: uint = 0xFFFC000000000000;
+
   /* The puzzle pieces must be specified by the path followed
    * from one end to the other along 12 hexagonal directions.
    *
@@ -296,10 +298,12 @@ module meteor {
    * trap 5 cells in the corner, but piece 3 can fit in those cells, or piece 0
    * can split the board in half where both halves are viable.
    */
+  var tempBoard: [0..49] int(8);
   proc hasIsland(cell: [] int(8), piece: int) : bool {
-    var tempBoard: [0..49] int(8);
     var c: int(8);
 
+    for i in 0..49 do
+      tempBoard[i] = 0;
     for i in 0..4 do
       tempBoard[cell[i]] = 1;
 
@@ -326,8 +330,9 @@ module meteor {
    * degree-rotated pieces of ONE of the pieces.  I chose piece 3 because it gave
    * me the best time ;)
    */
-  proc calcSixRotations(piece: int(8), indx: int(8), cell: [] int(8)) {
+  proc calcSixRotations(piece: int(8), indx: int(8)) {
     var minimum, firstEmpty: int(8);
+    var cell: [0..4] int(8);
     var pieceMask: uint;
 
     for rotation in 0..5 {
@@ -344,14 +349,13 @@ module meteor {
     }
   }
 
-  var cells: [0..9][0..4] int(8);
   /* Calculate every legal rotation for each piece at each board location. */
   proc calcPieces() {
-    forall piece in 0..9:int(8) {
+    for piece in 0..9:int(8) {
       for indx in 0..49:int(8) {
-        calcSixRotations(piece, indx, cells[piece]);
+        calcSixRotations(piece, indx);
         flipPiece(piece);
-        calcSixRotations(piece, indx, cells[piece]);
+        calcSixRotations(piece, indx);
       }
     }
   }
@@ -363,6 +367,8 @@ module meteor {
   */
   const ROWMASK: int(8) = 0x1F;
   const TRIPLEMASK = 0x7FFF;
+  var allRows: [0..31] int(8) = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+  17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31]:int(8);
   var badEvenRows: [0..31][0..31] bool;
   var badOddRows: [0..31][0..31] bool;
   var badEvenTriple: [0..32767] bool;
@@ -428,7 +434,7 @@ module meteor {
 
   proc calcRows() {
     var result1, result2: bool;
-    forall row1 in 0:int(8)..31 {
+    for row1 in 0:int(8)..31 {
       for row2 in 0:int(8)..31 {
         badEvenRows[row1][row2] = rowsBad(row1, row2, true);
         badOddRows[row1][row2] = rowsBad(row1, row2, false);
@@ -460,7 +466,7 @@ module meteor {
 
   /* Calculate islands while solving the board.
    */
-  proc boardHasIslands(cell: uint(8), board: uint) : bool {
+  proc boardHasIslands(cell: uint(8)) : bool {
     /* Too low on board, don't bother checking */
     if cell >= 40 then
       return false;
@@ -477,70 +483,35 @@ module meteor {
    * at each successful piece placement.  This data is used to create a 50 char
    * array if a solution is found.
    */
+  var avail: uint(16) = 0x03FF;
+  var solNums: [0..9] uint(8);
+  var solMasks: [0..9] uint;
   var solutions: [0..2099][0..49] uint(8);
-  var solutionCount: atomic int;
+  var solutionCount = 0;
   var maxSolutions = 2100;
 
-  proc recordSolution(solNums: [] uint(8), solMasks: [] uint) {
+  proc recordSolution() {
     var solMask: uint;
-    var mySolCount = solutionCount.fetchAdd(2);
     for solNo in 0..9 {
       solMask = solMasks[solNo];
       for indx in 0..49 {
         if (solMask & 1) {
-          solutions[mySolCount][indx] = solNums[solNo];
+          solutions[solutionCount][indx] = solNums[solNo];
           /* Board rotated 180 degrees is a solution too! */
-          solutions[mySolCount+1][49-indx] = solNums[solNo];
+          solutions[solutionCount+1][49-indx] = solNums[solNo];
         }
         solMask = solMask >> 1;
       }
     }
+    solutionCount += 2;
   }
 
-  proc solve_helper(piece: uint(8)) {
-    var board: uint = 0xFFFC000000000000;
-    var avail: uint(16) = 0x03FF;
-    var solNums: [0..9] uint(8);
-    var solMasks: [0..9] uint;
-    var pieceNoMask: uint(16);
-    var maxRots: int;
-    var pieceMask: uint;
-    var depth = 0;
-    var cell = 0;
-
-    pieceNoMask = 1:uint(16) << piece;
-
-    avail ^= pieceNoMask;
-    maxRots = pieceCounts[piece][cell];
-    for rotation in 0..(maxRots-1) {
-      if !((board & pieces[piece][cell][rotation]):bool) {
-        solNums[depth] = piece;
-        solMasks[depth] = pieces[piece][cell][rotation];
-        board |= pieces[piece][cell][rotation];
-        if !boardHasIslands(nextCell[piece][cell][rotation], board) {
-          solve_linear(1, nextCell[piece][cell][rotation],
-            board, avail, solNums, solMasks);
-        }
-        board ^= pieces[piece][cell][rotation];
-      }
-    }
-    avail ^= pieceNoMask;
-  }
-
-
-  proc solve() {
-    forall piece in 0..9:uint(8) {
-      solve_helper(piece);
-    }
-  }
-
-  proc solve_linear(in depth: int, in cell: int, in board: uint,
-      in avail: uint(16), solNums: [] uint(8), solMasks: [] uint) {
+  proc solve(in depth: int, in cell: int) {
     var pieceNoMask: uint(16);
     var maxRots: int;
     var pieceMask: uint;
 
-    if solutionCount.read() >= maxSolutions then
+    if solutionCount >= maxSolutions then
       return;
 
     while (board & (1 << cell)) do
@@ -559,14 +530,13 @@ module meteor {
           solMasks[depth] = pieces[piece][cell][rotation];
           if depth == 9 {
             /* Solution found!!!!!11!!ONE! */
-            recordSolution(solNums, solMasks);
+            recordSolution();
             avail ^= pieceNoMask;
             return;
           }
           board |= pieces[piece][cell][rotation];
-          if !boardHasIslands(nextCell[piece][cell][rotation], board) {
-            solve_linear(depth + 1, nextCell[piece][cell][rotation],
-              board, avail, solNums, solMasks);
+          if !boardHasIslands(nextCell[piece][cell][rotation]) {
+            solve(depth + 1, nextCell[piece][cell][rotation]);
           }
           board ^= pieces[piece][cell][rotation];
         }
@@ -574,7 +544,6 @@ module meteor {
       avail ^= pieceNoMask;
     }
   }
-
 
   /* pretty print a board in the specified hexagonal format */
   proc pretty(s: [] uint(8)) {
@@ -600,7 +569,7 @@ module meteor {
   proc printLargestSmallest() {
     var sIndx = 0;
     var lIndx = 0;
-    for i in 1..solutionCount.read()-1 {
+    for i in 1..solutionCount-1 {
       if solutionLessThan(lIndx, i) {
         lIndx = i;
       } else if solutionLessThan(i, sIndx) {
@@ -613,11 +582,11 @@ module meteor {
 
   proc main(args: [] string) {
     if args.domain.size > 1 then
-      maxSolutions = args[1]:int;
+        maxSolutions = args[1]:int;
     calcPieces();
     calcRows();
-    solve();
-    writeln(solutionCount.read(), " solutions found\n");
+    solve(0, 0);
+    writeln(solutionCount, " solutions found\n");
     printLargestSmallest();
   }
 }
