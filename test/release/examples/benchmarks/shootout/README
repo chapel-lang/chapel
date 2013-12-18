@@ -14,6 +14,7 @@ At present, this directory contains the following codes:
     binarytrees.chpl    : Allocates and deallocates many, many binary trees
     chameneosredux.chpl : Simulates meetings between color-changing Chameneos
     nbody.chpl          : Performs an n-body simulation of the Jovian planets
+    spectralnorm.chpl   : Calculates the spectral norm of an infinite matrix
     threadring.chpl     : Passes a token between a large number of threads
 
 Over time, we plan to create versions of all the benchmarks and to

@@ -6,6 +6,7 @@ TARGETS = \
 	binarytrees \
 	chameneosredux \
 	nbody \
+  spectralnorm \
 	threadring \
 
 REALS = $(TARGETS:%=%_real)
@@ -26,6 +27,9 @@ chameneosredux: chameneosredux.chpl
 
 nbody: nbody.chpl
 	$(CHPL) -o $@ $(CHPL_FLAGS) --no-warnings $<
+
+spectralnorm: spectralnorm.chpl
+	$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 threadring: threadring.chpl
 	$(CHPL) -o $@ $(CHPL_FLAGS) $<
