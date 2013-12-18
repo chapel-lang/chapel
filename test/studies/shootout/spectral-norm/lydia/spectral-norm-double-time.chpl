@@ -29,7 +29,7 @@ inline proc eval_A(i, j) : real
  */
 proc eval_A_times_u(U : [] real, inRange, Au : [] real)
 {
-  forall i in {0..#inRange} do { 
+  forall i in {0..#inRange} { 
     Au(i) = + reduce [j in 0..#inRange by 2] ((U(j) * eval_A(i,j)) + (U(j+1) * eval_A(i, j+1)));
     if (inRange % 2 == 1) {
       Au(i) = Au(i) + (U(inRange - 1) * eval_A(i, inRange - 1));
@@ -39,7 +39,7 @@ proc eval_A_times_u(U : [] real, inRange, Au : [] real)
 
 proc eval_At_times_u(U : [] real, inRange, Au : [] real)
 {
-  forall i in {0..#inRange} do {
+  forall i in {0..#inRange} {
     Au(i) = + reduce [j in 0..#inRange by 2] ((U(j) * eval_A(j,i)) + (U(j+1) * eval_A(j+1, i)));
     if (inRange % 2 == 1) {
       Au(i) = Au(i) + (U(inRange - 1) * eval_A(inRange - 1, i));
@@ -47,7 +47,7 @@ proc eval_At_times_u(U : [] real, inRange, Au : [] real)
   }
 }
 
-proc eval_AtA_times_u(u,AtAu,v : [] real, inRange)
+proc eval_AtA_times_u(u, AtAu, v : [] real, inRange)
 {
      eval_A_times_u(u, inRange, v);
      eval_At_times_u(v, inRange, AtAu);
@@ -59,7 +59,7 @@ proc spectral_game(N) : real
 
   U = 1.0;
 
-  for 1..10 do {
+  for 1..10 {
     eval_AtA_times_u(U,V,tmp,N);
     eval_AtA_times_u(V,U,tmp,N);
   }
