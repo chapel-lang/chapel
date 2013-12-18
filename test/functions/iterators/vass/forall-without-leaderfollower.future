@@ -1,0 +1,10 @@
+bug: compiler crashes when the program applies 'forall' to something that has a serial iterator but neither a leader nor a follower.
+
+This happens when that "something" is either a record or a class.
+
+Currently I get the internal failure:
+
+ChapelArray.chpl:1981: error: unable to resolve call [functionResolution.cpp:2894]
+
+TODO: also ensure that it works when TEST is a class, not a record,
+and also when there is only one of the (leader, follower) iterators.
