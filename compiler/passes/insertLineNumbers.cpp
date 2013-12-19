@@ -14,6 +14,8 @@
 // number and a filename.
 //
 
+static void moveLinenoInsideArgBundle();
+
 //
 // The queue keeps track of the functions to which line number and
 // filename arguments have been added so that calls to these functions
@@ -156,27 +158,34 @@ static bool isClassMethodCall(CallExpr* call) {
 }
 
 
+// insert nil checks primitives in front of all member accesses
+static void insertNilChecks()
+{
+  forv_Vec(CallExpr, call, gCallExprs) {
+    // A member access is one of these primitives or a method call.
+    // A method call is expected to access its "this" argument.
+    if (call->isPrimitive(PRIM_GET_MEMBER) ||
+        call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+        call->isPrimitive(PRIM_SET_MEMBER) ||
+        call->isPrimitive(PRIM_GETCID) ||
+        call->isPrimitive(PRIM_TESTCID) ||
+        isClassMethodCall(call)) {
+      Expr* stmt = call->getStmtExpr();
+      SET_LINENO(stmt);
+      ClassType* ct = toClassType(call->get(1)->typeInfo());
+      if (ct && (isClass(ct) || ct->symbol->hasFlag(FLAG_WIDE_CLASS))) {
+        stmt->insertBefore(new CallExpr(PRIM_CHECK_NIL, 
+                                        call->get(1)->copy()));
+      }
+    }
+  }
+}
+
 void insertLineNumbers() {
   compute_call_sites();
 
-  // insert nil checks primitives in front of all member accesses
   if (!fNoNilChecks) {
-    forv_Vec(CallExpr, call, gCallExprs) {
-      if (call->isPrimitive(PRIM_GET_MEMBER) ||
-          call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
-          call->isPrimitive(PRIM_SET_MEMBER) ||
-          call->isPrimitive(PRIM_GETCID) ||
-          call->isPrimitive(PRIM_TESTCID) ||
-          isClassMethodCall(call)) {
-        Expr* stmt = call->getStmtExpr();
-        SET_LINENO(stmt);
-        ClassType* ct = toClassType(call->get(1)->typeInfo());
-        if (ct && (isClass(ct) || ct->symbol->hasFlag(FLAG_WIDE_CLASS))) {
-          stmt->insertBefore(new CallExpr(PRIM_CHECK_NIL, 
-                                          call->get(1)->copy()));
-        }
-      }
-    }
+    insertNilChecks();
   }
 
   // loop over all primitives that require a line number and filename
@@ -208,6 +217,11 @@ void insertLineNumbers() {
     }
   }
 
+  moveLinenoInsideArgBundle();
+}
+
+static void moveLinenoInsideArgBundle()
+{
   // pass line number and filename arguments to functions that are
   // forked via the argument class
   forv_Vec(FnSymbol, fn, gFnSymbols) {
