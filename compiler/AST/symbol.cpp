@@ -1624,6 +1624,18 @@ FnSymbol::insertBeforeReturnAfterLabel(Expr* ast) {
 
 
 void
+FnSymbol::insertBeforeDownEndCount(Expr* ast) {
+  CallExpr* ret = toCallExpr(body->body.last());
+  if (!ret || !ret->isPrimitive(PRIM_RETURN))
+    INT_FATAL(this, "function is not normal");
+  CallExpr* last = toCallExpr(ret->prev);
+  if (!last || strcmp(last->isResolved()->name, "_downEndCount"))
+    INT_FATAL(last, "Expected call to _downEndCount");
+  last->insertBefore(ast);
+}
+
+
+void
 FnSymbol::insertFormalAtHead(BaseAST* ast) {
   if (ArgSymbol* arg = toArgSymbol(ast))
     formals.insertAtHead(new DefExpr(arg));

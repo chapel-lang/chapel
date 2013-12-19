@@ -240,8 +240,13 @@ void createTaskFunctions(void) {
         block->insertBefore(new DefExpr(fn));
         block->insertBefore(call);
         block->blockInfo->remove();
+
         // This block becomes the body of the new function.
-        fn->insertAtTail(block->remove());
+        // It is flattened so _downEndCount appears in the same scope as the
+        // function formals added below.
+        for_alist(stmt, block->body)
+          fn->insertAtTail(stmt->remove());
+
         fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
         fn->retType = dtVoid;
 

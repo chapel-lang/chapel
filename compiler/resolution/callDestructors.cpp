@@ -183,6 +183,10 @@ createRefArgIfNeeded(FnSymbol* fn, VarSymbol* arg, CallExpr** refTmpAssign) {
 static void
 insertAutoDestroyCalls() {
   forv_Vec(BlockStmt, block, gBlockStmts) {
+    // Module blocks are not of interest, so skip them.
+    if (isModuleSymbol(block->parentSymbol))
+      continue;
+
     Vec<VarSymbol*> vars;
     for_alist(stmt, block->body) {
       //
@@ -227,11 +231,16 @@ insertAutoDestroyCalls() {
       //
       // find 'must' exit points and insert autoDestroy calls
       // clear vector of variables
+      // A 'must' exit point is typically the last statement in a block
+      // (i.e. the stmt has no successor).  We also consider the block ended if
+      // the next statement is a goto, a return or a call to _downEndCount.
       //
       CallExpr* call = toCallExpr(stmt->next);
-      if ((call && call->isPrimitive(PRIM_RETURN)) ||
-          (!stmt->next) ||
-          (isGotoStmt(stmt->next))) {
+      if (!stmt->next ||
+          isGotoStmt(stmt->next) ||
+          (call && (call->isPrimitive(PRIM_RETURN) || // If the return statement
+                    (call->isResolved() &&
+                     !strcmp(call->isResolved()->name, "_downEndCount"))))) {
         forv_Vec(VarSymbol, var, vars) {
           if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
             SET_LINENO(var);
@@ -245,6 +254,7 @@ insertAutoDestroyCalls() {
           }
         }
         vars.clear();
+        break;
       }
     }
   }

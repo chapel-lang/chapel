@@ -229,12 +229,12 @@ static Symbol* insertAutoCopyDestroyForTaskArg
         if (arg->typeInfo() != baseType)
         {
           VarSymbol* derefTmp = newTemp(baseType);
-          fn->insertBeforeReturnAfterLabel(new DefExpr(derefTmp));
-          fn->insertBeforeReturnAfterLabel(
+          fn->insertBeforeDownEndCount(new DefExpr(derefTmp));
+          fn->insertBeforeDownEndCount(
             new CallExpr(PRIM_MOVE, derefTmp, new CallExpr(PRIM_DEREF,  formal)));
           formal = derefTmp;
         }
-        fn->insertBeforeReturnAfterLabel(new CallExpr(autoDestroyFn, formal));
+        fn->insertBeforeDownEndCount(new CallExpr(autoDestroyFn, formal));
       }
     }
     else if (isRecord(baseType))
@@ -259,7 +259,7 @@ static Symbol* insertAutoCopyDestroyForTaskArg
           // (But only once per function for each affected argument.)
           Symbol* formal = actual_to_formal(arg);
           CallExpr* autoDestroyCall = new CallExpr(autoDestroyFn,formal);
-          fn->insertBeforeReturnAfterLabel(autoDestroyCall);
+          fn->insertBeforeDownEndCount(autoDestroyCall);
         }
       }
     }

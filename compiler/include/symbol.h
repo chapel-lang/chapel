@@ -233,6 +233,7 @@ class FnSymbol : public Symbol {
 
   void insertBeforeReturn(Expr* ast);
   void insertBeforeReturnAfterLabel(Expr* ast);
+  void insertBeforeDownEndCount(Expr* ast);
 
   void insertFormalAtHead(BaseAST* ast);
   void insertFormalAtTail(BaseAST* ast);
