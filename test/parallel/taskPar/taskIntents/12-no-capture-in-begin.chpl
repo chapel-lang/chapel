@@ -311,10 +311,10 @@ writeln("rec2", " ", rec2);
 writeln("cls", " ", cls);
 writeln("unn", " ", unn);
 /* no tuples for now */
-//bug:writeln("dom1", " ", dom1);
-//bug:writeln("dom2", " ", dom2);
-//bug:writeln("arr1", " ", arr1);
-//bug:writeln("arr2", " ", arr2);
+writeln("dom1", " ", dom1);
+writeln("dom2", " ", dom2);
+writeln("arr1", " ", arr1);
+writeln("arr2", " ", arr2);
 // assign to all the variables
 b0 = true;
 b8 = true;
@@ -342,10 +342,10 @@ rec2 = rLarge;
 cls = cInstance;
 unn = uInstance;
 /* no tuples for now */
-//bug:dom1 = init1dom;
-//bug:dom2 = init2dom;
-//bug:arr1 = init1arr;
-//bug:arr2 = init2arr;
+dom1 = init1dom;
+dom2 = init2dom;
+arr1 = init1arr;
+arr2 = init2arr;
 //writeln("after assigns in begin");
 //#include "var-writes.cpp"
   s$ = 1;
@@ -486,10 +486,10 @@ writeln("rec2", " ", rec2);
 writeln("cls", " ", cls);
 writeln("unn", " ", unn);
 /* no tuples for now */
-//bug:writeln("dom1", " ", dom1);
-//bug:writeln("dom2", " ", dom2);
-//bug:writeln("arr1", " ", arr1);
-//bug:writeln("arr2", " ", arr2);
+writeln("dom1", " ", dom1);
+writeln("dom2", " ", dom2);
+writeln("arr1", " ", arr1);
+writeln("arr2", " ", arr2);
 // assign to all the variables
 b0 = true;
 b8 = true;
@@ -517,10 +517,10 @@ rec2 = rLarge;
 cls = cInstance;
 unn = uInstance;
 /* no tuples for now */
-//bug:dom1 = init1dom;
-//bug:dom2 = init2dom;
-//bug:arr1 = init1arr;
-//bug:arr2 = init2arr;
+dom1 = init1dom;
+dom2 = init2dom;
+arr1 = init1arr;
+arr2 = init2arr;
 //writeln("after assigns in begin");
 //#include "var-writes.cpp"
   s$ = 1;
@@ -663,10 +663,10 @@ writeln("rec2", " ", rec2);
 writeln("cls", " ", cls);
 writeln("unn", " ", unn);
 /* no tuples for now */
-//bug:writeln("dom1", " ", dom1);
-//bug:writeln("dom2", " ", dom2);
-//bug:writeln("arr1", " ", arr1);
-//bug:writeln("arr2", " ", arr2);
+writeln("dom1", " ", dom1);
+writeln("dom2", " ", dom2);
+writeln("arr1", " ", arr1);
+writeln("arr2", " ", arr2);
 // assign to all the variables
 b0 = true;
 b8 = true;
@@ -694,10 +694,10 @@ rec2 = rLarge;
 cls = cInstance;
 unn = uInstance;
 /* no tuples for now */
-//bug:dom1 = init1dom;
-//bug:dom2 = init2dom;
-//bug:arr1 = init1arr;
-//bug:arr2 = init2arr;
+dom1 = init1dom;
+dom2 = init2dom;
+arr1 = init1arr;
+arr2 = init2arr;
 //writeln("after assigns in begin");
 //#include "var-writes.cpp"
   s$ = 1;
@@ -838,10 +838,10 @@ writeln("rec2", " ", rec2);
 writeln("cls", " ", cls);
 writeln("unn", " ", unn);
 /* no tuples for now */
-//bug:writeln("dom1", " ", dom1);
-//bug:writeln("dom2", " ", dom2);
-//bug:writeln("arr1", " ", arr1);
-//bug:writeln("arr2", " ", arr2);
+writeln("dom1", " ", dom1);
+writeln("dom2", " ", dom2);
+writeln("arr1", " ", arr1);
+writeln("arr2", " ", arr2);
 // assign to all the variables
 b0 = true;
 b8 = true;
@@ -869,10 +869,10 @@ rec2 = rLarge;
 cls = cInstance;
 unn = uInstance;
 /* no tuples for now */
-//bug:dom1 = init1dom;
-//bug:dom2 = init2dom;
-//bug:arr1 = init1arr;
-//bug:arr2 = init2arr;
+dom1 = init1dom;
+dom2 = init2dom;
+arr1 = init1arr;
+arr2 = init2arr;
 //writeln("after assigns in begin");
 //#include "var-writes.cpp"
   s$ = 1;
