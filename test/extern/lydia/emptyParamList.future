@@ -1,8 +1,9 @@
-bug: failure to recognize functions with an empty parameter list
+feature request: recognize functions with an empty parameter list without an additional flag
 
 Currently, C functions declared like void bar(void) are accepted while
 void bar() are not.  Generates the error message
 
 error: function declaration isn't a prototype
 
-even on the actual function definition itself.
+even on the actual function definition itself when the flag --no-cc-warnings is
+not provided.
