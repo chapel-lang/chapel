@@ -1,3 +1,4 @@
-CHPL_COMM!=none
-COMPOPTS <= --no-local
-COMPOPTS <= --baseline
+CHPL_COMM != none
+COMPOPTS  <= --no-local
+COMPOPTS  <= --baseline
+CHPL_TARGET_PLATFORM != darwin
