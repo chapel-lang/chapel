@@ -1,0 +1,8 @@
+bug: failure to recognize functions with an empty parameter list
+
+Currently, C functions declared like void bar(void) are accepted while
+void bar() are not.  Generates the error message
+
+error: function declaration isn't a prototype
+
+even on the actual function definition itself.
