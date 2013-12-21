@@ -121,18 +121,15 @@ extern proc qio_err_iserr(a:syserr):c_int;
 
 inline proc ENOERR return 0:err_t;
 
+// When err_t is no longer just int(32), will need to add cases for err_t too.
 inline proc ==(a: syserr, b: syserr) return (qio_err_eq(a,b) != 0:c_int);
-inline proc ==(a: syserr, b: err_t) return (qio_err_to_int(a) == b:int(32));
 inline proc ==(a: syserr, b: int(32)) return (qio_err_to_int(a) == b:int(32));
 inline proc ==(a: syserr, b: int(64)) return (qio_err_to_int(a) == b:int(32));
-inline proc ==(a: err_t, b: syserr) return (a:int(32) == qio_err_to_int(b));
 inline proc ==(a: int(32), b: syserr) return (a:int(32) == qio_err_to_int(b));
 inline proc ==(a: int(64), b: syserr) return (a:int(32) == qio_err_to_int(b));
 inline proc !=(a: syserr, b: syserr) return !(a == b);
-inline proc !=(a: syserr, b: err_t) return !(a == b);
 inline proc !=(a: syserr, b: int(32)) return !(a == b);
 inline proc !=(a: syserr, b: int(64)) return !(a == b);
-inline proc !=(a: err_t, b: syserr) return !(a == b);
 inline proc !=(a: int(32), b: syserr) return !(a == b);
 inline proc !=(a: int(64), b: syserr) return !(a == b);
 inline proc !(a: syserr) return (qio_err_iserr(a) == 0:c_int);
