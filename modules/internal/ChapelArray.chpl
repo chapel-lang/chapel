@@ -306,6 +306,7 @@ module ChapelArray {
   // test/users/bugzilla/bug794133/ for more details and examples.
   //
   proc chpl_incRefCountsForDomainsInArrayEltTypes(type eltType) {
+    compilerAssert(!noRefCount);
     if (isArrayType(eltType)) {
       var ev: eltType;
       ev.domain._value.incRefCount();
@@ -326,6 +327,7 @@ module ChapelArray {
   }
 
   proc chpl_decRefCountsForDomainsInArrayEltTypes(type eltType) {
+    compilerAssert(!noRefCount);
     if (isArrayType(eltType)) {
       var ev: eltType;
       const refcount = ev.domain._value.destroyDom();
@@ -538,17 +540,17 @@ module ChapelArray {
     }
   
     proc ~_distribution() {
+     if !noRefCount {
       if !_isPrivatized(_valueType) {
         on _value {
           var cnt = _value.destroyDist();
           if cnt == 0 {
-            if !noRefCount {
-              _value.dsiDestroyDistClass();
-              delete _value;
-            }
+            _value.dsiDestroyDistClass();
+            delete _value;
           }
         }
       }
+     }
     }
   
     proc clone() {
@@ -638,14 +640,15 @@ module ChapelArray {
     }
   
     proc ~_domain () {
+     if !noRefCount {
       if !_isPrivatized(_valueType) {
         on _value {
           var cnt = _value.destroyDom();
-          if !noRefCount then
-            if cnt == 0 then
-              delete _value;
+          if cnt == 0 then
+            delete _value;
         }
       }
+     }
     }
   
     proc dist return _getDistribution(_value.dist);
@@ -1192,6 +1195,7 @@ module ChapelArray {
     var _promotionType: _value.eltType;
     
     proc initialize() {
+     if !noRefCount then
       chpl_incRefCountsForDomainsInArrayEltTypes(_value.eltType);
     }
 
@@ -1211,16 +1215,17 @@ module ChapelArray {
     // actually free the array.
     //
     proc ~_array() {
+     if !noRefCount {
       if !_isPrivatized(_valueType) {
         on _value {
           var cnt = _value.destroyArr();
-          if !noRefCount then
-            if cnt == 0 then {
-              chpl_decRefCountsForDomainsInArrayEltTypes(_value.eltType);
-              delete _value;
-            }
+          if cnt == 0 then {
+            chpl_decRefCountsForDomainsInArrayEltTypes(_value.eltType);
+            delete _value;
+          }
         }
       }
+     }
     }
   
     proc eltType type return _value.eltType;

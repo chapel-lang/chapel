@@ -26,8 +26,8 @@ module ChapelDistribution {
     var _domsLock: atomicflag;  //   and lock for concurrent access
   
     pragma "dont disable remote value forwarding"
-    proc destroyDist(dom: BaseDom = nil) {
-      if dom then remove_dom(dom);
+    proc destroyDist(): int {
+      compilerAssert(!noRefCount);
       return decRefCount();
     }
   
@@ -81,18 +81,15 @@ module ChapelDistribution {
     }
   
     inline proc incRefCount(cnt=1) {
+      compilerAssert(!noRefCount);
       _distCnt.add(cnt);
     }
 
     inline proc decRefCount() {
+      compilerAssert(!noRefCount);
       const cnt = _distCnt.fetchSub(1)-1;
-      if !noRefCount {
-        if cnt < 0 then
+      if cnt < 0 then
           halt("distribution reference count is negative!");
-      } else {
-        if cnt > 0 then
-          halt("distribution reference count has been modified!");
-      }
       return cnt;
     }
 
@@ -122,18 +119,17 @@ module ChapelDistribution {
     }
   
     pragma "dont disable remote value forwarding"
-    proc destroyDom(arr: BaseArr = nil) {
-      if arr then remove_arr(arr);
+    proc destroyDom(): int {
+      compilerAssert(!noRefCount);
       var cnt = decRefCount();
-      if !noRefCount {
-        if cnt == 0 && dsiLinksDistribution() {
+      if cnt == 0 && dsiLinksDistribution() {
           var dist = dsiMyDist();
           on dist {
-            var cnt = dist.destroyDist(this);
+            local dist.remove_dom(this);
+            var cnt = dist.destroyDist();
             if cnt == 0 then
               delete dist;
           }
-        }
       }
       return cnt;
     }
@@ -183,18 +179,15 @@ module ChapelDistribution {
     }
   
     inline proc incRefCount(cnt=1) {
+      compilerAssert(!noRefCount);
       _domCnt.add(cnt);
     }
 
     inline proc decRefCount() {
+      compilerAssert(!noRefCount);
       const cnt = _domCnt.fetchSub(1)-1;
-      if !noRefCount {
-        if cnt < 0 then
+      if cnt < 0 then
           halt("domain reference count is negative!");
-      } else {
-        if cnt > 0 then
-          halt("domain reference count has been modified!");
-      }
       return cnt;
     }
 
@@ -280,6 +273,7 @@ module ChapelDistribution {
   
     pragma "dont disable remote value forwarding"
     proc destroyArr(): int {
+      compilerAssert(!noRefCount);
       var cnt = decRefCount();
       if cnt == 0 {
         if _arrAlias {
@@ -292,15 +286,14 @@ module ChapelDistribution {
           dsiDestroyData();
         }
       }
-      if !noRefCount {
-        if cnt == 0 {
+      if cnt == 0 {
           var dom = dsiGetBaseDom();
           on dom {
-            var cnt = dom.destroyDom(this);
+            local dom.remove_arr(this);
+            var cnt = dom.destroyDom();
             if cnt == 0 then
               delete dom;
           }
-        }
       }
       return cnt;
     }
@@ -359,18 +352,15 @@ module ChapelDistribution {
     }
   
     inline proc incRefCount(cnt=1) {
+      compilerAssert(!noRefCount);
       _arrCnt.add(cnt);
     }
 
     inline proc decRefCount() {
+      compilerAssert(!noRefCount);
       const cnt = _arrCnt.fetchSub(1)-1;
-      if !noRefCount {
-        if cnt < 0 then
+      if cnt < 0 then
           halt("array reference count is negative!");
-      } else {
-        if cnt > 0 then
-          halt("array reference count has been modified!");
-      }
       return cnt;
     }
 
