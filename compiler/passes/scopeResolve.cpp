@@ -20,6 +20,9 @@
 //
 static void build_type_constructor(ClassType* ct);
 static void build_constructor(ClassType* ct);
+static ArgSymbol* create_generic_arg(VarSymbol* field);
+static void insert_implicit_this(FnSymbol* fn, Vec<const char*>& fieldNamesSet);
+static void move_constructor_to_outer(FnSymbol* fn, ClassType* outerType);
 static void resolveUnresolvedSymExprs();
 static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
                                      Vec<UnresolvedSymExpr*>& skipSet);
@@ -132,8 +135,8 @@ addToSymbolTable(Vec<DefExpr*>& defs) {
       FnSymbol* newFn = toFnSymbol(def->sym);
       TypeSymbol* typeScope = toTypeSymbol(scope);
       if (!typeScope || !isClassType(typeScope->type)) { // inheritance
-        if ((!oldFn || (oldFn && !oldFn->_this && oldFn->hasFlag(FLAG_NO_PARENS))) &&
-            (!newFn || (newFn && !newFn->_this && newFn->hasFlag(FLAG_NO_PARENS)))) {
+        if ((!oldFn || (!oldFn->_this && oldFn->hasFlag(FLAG_NO_PARENS))) &&
+            (!newFn || (!newFn->_this && newFn->hasFlag(FLAG_NO_PARENS)))) {
           USR_FATAL(sym, "'%s' has multiple definitions, redefined at:\n  %s", sym->name, def->sym->stringLoc());
         }
       }
@@ -462,20 +465,21 @@ static void resolveEnumeratedTypes() {
 /********* build constructors ***************/
 void build_constructors(ClassType* ct)
 {
+  if (ct->defaultInitializer)
+    return;
+
+  SET_LINENO(ct);
+
   build_type_constructor(ct);
   build_constructor(ct);
 }
 
 
+// Create the (default) type constructor for this class.
 static void build_type_constructor(ClassType* ct) {
-  if (ct->defaultTypeConstructor)
-    return;
-
-  SET_LINENO(ct);
-
+  // Create the type constructor function,
   FnSymbol* fn = new FnSymbol(astr("_type_construct_", ct->symbol->name));
   fn->addFlag(FLAG_TYPE_CONSTRUCTOR);
-  ct->defaultTypeConstructor = fn;
   fn->cname = astr("_type_construct_", ct->symbol->cname);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->retTag = RET_TYPE;
@@ -487,10 +491,15 @@ static void build_type_constructor(ClassType* ct) {
     fn->addFlag(FLAG_INLINE);
   }
 
+  // and insert it into the class type.
+  ct->defaultTypeConstructor = fn;
+
+  // Create "this".
   fn->_this = new VarSymbol("this", ct);
   fn->_this->addFlag(FLAG_ARG_THIS);
   fn->insertAtTail(new DefExpr(fn->_this));
 
+  // Walk all fields and select the generic ones.
   Vec<const char*> fieldNamesSet;
   for_fields(tmp, ct) {
     SET_LINENO(tmp);
@@ -501,6 +510,7 @@ static void build_type_constructor(ClassType* ct) {
 
       Expr* exprType = field->defPoint->exprType;
       Expr* init = field->defPoint->init;
+
       if (!strcmp(field->name, "_promotionType") ||
           field->hasFlag(FLAG_OMIT_FROM_CONSTRUCTOR)) {
         fn->insertAtTail(
@@ -516,22 +526,9 @@ static void build_type_constructor(ClassType* ct) {
         // if formal is generic
         //
         if (field->hasFlag(FLAG_TYPE_VARIABLE) || field->hasFlag(FLAG_PARAM) || (!exprType && !init)) {
-          ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, field->name, field->type);
+
+          ArgSymbol* arg = create_generic_arg(field);
           fn->insertFormalAtTail(arg);
-
-          if (field->hasFlag(FLAG_PARAM))
-            arg->intent = INTENT_PARAM;
-          else
-            arg->addFlag(FLAG_TYPE_VARIABLE);
-
-          if (init)
-            arg->defaultExpr = new BlockStmt(init->copy(), BLOCK_SCOPELESS);
-
-          if (exprType)
-            arg->typeExpr = new BlockStmt(exprType->copy(), BLOCK_TYPE);
-
-          if (!exprType && arg->type == dtUnknown)
-            arg->type = dtAny;
 
           if (field->hasFlag(FLAG_PARAM) || field->hasFlag(FLAG_TYPE_VARIABLE))
             fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, fn->_this,
@@ -561,38 +558,21 @@ static void build_type_constructor(ClassType* ct) {
     }
   }
 
+// Add return
   fn->insertAtTail(new CallExpr(PRIM_RETURN, fn->_this));
-  ct->symbol->defPoint->insertBefore(new DefExpr(fn));
   fn->retType = ct;
 
-  //
-  // insert implicit uses of 'this' in constructor
-  //
-  Vec<BaseAST*> asts;
-  collect_asts(fn->body, asts);
-  forv_Vec(BaseAST, ast, asts) {
-    if (UnresolvedSymExpr* se = toUnresolvedSymExpr(ast))
-      if (fieldNamesSet.set_in(se->unresolved))
-        se->replace(buildDotExpr(fn->_this, se->unresolved));
-  }
+  ct->symbol->defPoint->insertBefore(new DefExpr(fn));
+
+  // Make implicit references to 'this' explicit.
+  insert_implicit_this(fn, fieldNamesSet);
 
   ClassType *outerType = toClassType(ct->symbol->defPoint->parentSymbol->type);
   if (outerType) {
     // Create an "outer" pointer to the outer class in the inner class
     VarSymbol* outer = new VarSymbol("outer");
 
-
-    // Remove the DefPoint for this constructor, add it to the outer
-    // class's method list.
-    outerType->methods.add(fn);
-    fn->_outer = new ArgSymbol(INTENT_BLANK, "outer", outerType);
-    fn->insertFormalAtHead(new DefExpr(fn->_outer));
-    fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
-    fn->addFlag(FLAG_METHOD);
-    Expr* insertPoint = outerType->symbol->defPoint;
-    while (toTypeSymbol(insertPoint->parentSymbol))
-      insertPoint = insertPoint->parentSymbol->defPoint;
-    insertPoint->insertBefore(fn->defPoint->remove());
+    move_constructor_to_outer(fn, outerType);
 
     // Save the pointer to the outer class
     ct->fields.insertAtTail(new DefExpr(outer));
@@ -603,6 +583,7 @@ static void build_type_constructor(ClassType* ct) {
     ct->outer = outer;
   }
 
+  // Update the symbol table with added defs.
   Vec<DefExpr*> defs;
   collectDefExprs(fn, defs);
   addToSymbolTable(defs);
@@ -613,19 +594,13 @@ static void build_type_constructor(ClassType* ct) {
 // which is also called by user-defined constructors to pre-initialize all 
 // fields to their declared or type-specific initial values.
 static void build_constructor(ClassType* ct) {
-  if (ct->defaultInitializer)
-    return;
-
-  SET_LINENO(ct);
-
   if (isSyncType(ct))
     ct->defaultValue = NULL;
 
-  // Create the default constructor.
+  // Create the default constructor function symbol,
   FnSymbol* fn = new FnSymbol(astr("_construct_", ct->symbol->name));
   fn->addFlag(FLAG_DEFAULT_CONSTRUCTOR);
   fn->addFlag(FLAG_CONSTRUCTOR);
-  ct->defaultInitializer = fn;
   fn->cname = astr("_construct_", ct->symbol->cname);
   fn->addFlag(FLAG_COMPILER_GENERATED);
 
@@ -635,6 +610,9 @@ static void build_constructor(ClassType* ct) {
     fn->addFlag(FLAG_TUPLE);
     fn->addFlag(FLAG_INLINE);
   }
+
+  // And insert it into the class type.
+  ct->defaultInitializer = fn;
 
   // Create "this".
   fn->_this = new VarSymbol("this", ct);
@@ -770,6 +748,7 @@ static void build_constructor(ClassType* ct) {
     } else if (hadType && !field->hasFlag(FLAG_TYPE_VARIABLE) && !field->hasFlag(FLAG_PARAM)) {
       init = new CallExpr(PRIM_INIT, exprType->copy());
     }
+
     if (!field->hasFlag(FLAG_TYPE_VARIABLE) && !field->hasFlag(FLAG_PARAM)) {
       if (hadType)
         init = new CallExpr("_createFieldDefault", exprType->copy(), init);
@@ -777,12 +756,14 @@ static void build_constructor(ClassType* ct) {
         if (init)
           init = new CallExpr("chpl__initCopy", init);
     }
+
     if (init) {
       if (hadInit)
         arg->defaultExpr = new BlockStmt(init, BLOCK_SCOPELESS);
       else
         arg->defaultExpr = new BlockStmt(new SymExpr(gTypeDefaultToken));
     }
+
     if (exprType) {
       if (!isBlockStmt(exprType))
         arg->typeExpr = new BlockStmt(exprType, BLOCK_TYPE);
@@ -813,30 +794,11 @@ static void build_constructor(ClassType* ct) {
   if (meme)
     fn->insertFormalAtTail(meme);
 
-  //
-  // insert implicit uses of 'this' in constructor
-  //
-  Vec<BaseAST*> asts;
-  collect_asts(fn->body, asts);
-  forv_Vec(BaseAST, ast, asts) {
-    if (UnresolvedSymExpr* se = toUnresolvedSymExpr(ast))
-      if (fieldNamesSet.set_in(se->unresolved))
-        se->replace(buildDotExpr(fn->_this, se->unresolved));
-  }
+  insert_implicit_this(fn, fieldNamesSet);
 
   ClassType *outerType = toClassType(ct->symbol->defPoint->parentSymbol->type);
   if (outerType) {
-    // Remove the DefPoint for this constructor, add it to the outer
-    // class's method list.
-    outerType->methods.add(fn);
-    fn->_outer = new ArgSymbol(INTENT_BLANK, "outer", outerType);
-    fn->insertFormalAtHead(new DefExpr(fn->_outer));
-    fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
-    fn->addFlag(FLAG_METHOD);
-    Expr* insertPoint = outerType->symbol->defPoint;
-    while (toTypeSymbol(insertPoint->parentSymbol))
-      insertPoint = insertPoint->parentSymbol->defPoint;
-    insertPoint->insertBefore(fn->defPoint->remove());
+    move_constructor_to_outer(fn, outerType);
 
     // Save the pointer to the outer class
     fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
@@ -867,6 +829,68 @@ static void build_constructor(ClassType* ct) {
   collectDefExprs(fn, defs);
   addToSymbolTable(defs);
 }
+
+
+static ArgSymbol* create_generic_arg(VarSymbol* field)
+{
+  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, field->name, field->type);
+
+  // We take it as a param argument if it is marked as a param field.
+  if (field->hasFlag(FLAG_PARAM))
+    arg->intent = INTENT_PARAM;
+  else
+    arg->addFlag(FLAG_TYPE_VARIABLE);
+
+  // Copy the field type if it exists.
+  Expr* exprType = field->defPoint->exprType;
+  if (exprType)
+    arg->typeExpr = new BlockStmt(exprType->copy(), BLOCK_TYPE);
+
+  // Copy the initialization expression if it exists.
+  Expr* init = field->defPoint->init;
+  if (init)
+    arg->defaultExpr = new BlockStmt(init->copy(), BLOCK_SCOPELESS);
+
+  // Translate an unknown field type into an unspecified arg type.
+  if (!exprType && arg->type == dtUnknown)
+    arg->type = dtAny;
+
+  return arg;
+}
+
+
+/// Replace implicit references to 'this' in the body of this 
+/// type constructor with explicit member reference (dot) expressions.
+static void insert_implicit_this(FnSymbol* fn, Vec<const char*>& fieldNamesSet)
+{
+  Vec<BaseAST*> asts;
+  collect_asts(fn->body, asts);
+  forv_Vec(BaseAST, ast, asts) {
+    if (UnresolvedSymExpr* se = toUnresolvedSymExpr(ast))
+      if (fieldNamesSet.set_in(se->unresolved))
+        // The name of this UnresolvedSymExpr matches a field name.
+        // So replace it with a dot expression.
+        se->replace(buildDotExpr(fn->_this, se->unresolved));
+  }
+}
+
+
+static void move_constructor_to_outer(FnSymbol* fn, ClassType* outerType)
+{
+  // Remove the DefPoint for this constructor, add it to the outer
+  // class's method list.
+  outerType->methods.add(fn);
+  fn->_outer = new ArgSymbol(INTENT_BLANK, "outer", outerType);
+  fn->insertFormalAtHead(new DefExpr(fn->_outer));
+  fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
+  fn->addFlag(FLAG_METHOD);
+  Expr* insertPoint = outerType->symbol->defPoint;
+  while (toTypeSymbol(insertPoint->parentSymbol))
+    insertPoint = insertPoint->parentSymbol->defPoint;
+  insertPoint->insertBefore(fn->defPoint->remove());
+}
+
+
 /********* end build constructor ***************/
 
 
