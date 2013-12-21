@@ -32,8 +32,8 @@ New problems
 =========================================================
 
 
-darwin-gnu non-deterministic compiler failures
------------------------------------------------
+darwin-gnu and darwin-clang non-deterministic compiler failures
+---------------------------------------------------------------
 
 There are a few classes of these failures during compilation that seem
 to be non-deterministic based on only 2 nights of testing.  The most
@@ -44,17 +44,18 @@ number of occurrences:
 - error: internal failure MIS0355 chpl Version 1.8.0.-999
 - invalid where clause
 - compiler seg fault
+- timedexec: target program died with signal 10, without coredump
 - error: Initializing parameter 'ret' to value not known at compile time
 - error: unresolved call '_if_fn7()'
+- resolution error (unresolved call '_fill(int(64), 2*int(64))')
+- warning: whole array assignment has been serialized
+- error: internal failure EXP3124 chpl Version 1.8.0.-999
+- error: internal failure EXP0244 chpl Version 1.8.0.-999
 
 
-gnu+gnu (intermittent?) failure on chpbld02
--------------------------------------------
-[Error matching program output for distributions/robust/arithmetic/reindexing/simple-alias-mem-use (compopts: 1)]
-
-This was resolved 12/15, which meant it failed the previous week.  Log
-files aren't set up to be able save the previous week's log file for
-weekend testing (unless by accident), so I have no idea what happened.
+darwin-dnum non-deterministic timeout
+-------------------------------------
+[Error matching program output for domains/sungeun/assoc/stress (compopts: 1, execopts: 2)]
 
 
 time out (possible gasnet race condition/deadlock)
@@ -102,12 +103,6 @@ front-end
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
-no-local race condition (starting with r22330, hildeth)
--------------------------------------------------------
-The order of the output varies from run to run.
-Reported to Tom on 12/2.
-[Error matching program output for users/ferguson/refcnt] (12/2/13, linux64.gnu.none.fifo.pthreads.flat no-local)
-
 extra thread required for multilocale startup
 ---------------------------------------------
 (sungeun: Fix in test)
@@ -122,6 +117,12 @@ Also was witnessed once on linux64.gnu.fifo.pthreads with --no-local (11/24/13)
 
 [Error matching compiler output for studies/sudoku/dinan/sudoku-smart]
 (9/13/13, same warnings, don't know when it started)
+
+Update 12/20/13: the failures are gone on chapbld01 for
+  cray-xc.cray-prgenv-cray.none.fifo.pthreads.flat--linux64.gnu
+Before removing this entry, need to ensure it succeeds over the weekend
+on chpbld02. The following log file had 98 of those failures on 12/14:
+  Nightly/weekend/day6-Sat-cray-xe.cray-prgenv-cray.none.fifo.pthreads.flat--linux64.gnu-std.log
 
 
 ==============================================
@@ -255,9 +256,20 @@ linux64.gnu.gasnet.qthreads.none.flat (2013/11/13)
 [Error matching program output for multilocale/local/diten/test_local2]
 *** FATAL ERROR: slave got an unknown command on coord socket:  
 
+nondet. segfault for linux64.gnu.gasnet.qthreads.none.flat
+----------------------------------------------------------
+[Error matching program output for multilocale/deitz/linked/test_linked3b] (12/17/13)
+[Error matching program output for release/examples/benchmarks/hpcc/stream-ep] (12/18/13)
+
 nondet. baseline compilation timeout (10/15/13)
 -----------------------------------------------
 [Error: Timed out compilation for classes/bradc/writeclass3]
+The following timed out on 12/20/13:
+[Error: Timed out compilation for studies/cholesky/marybeth/blockChol]
+[Error: Timed out compilation for studies/cholesky/marybeth/blockCholChoice]
+[Error: Timed out compilation for studies/cholesky/marybeth/blockCholesky]
+[Error: Timed out compilation for studies/cholesky/marybeth/chol]
+[Error: Timed out compilation for studies/lulesh/bradc/xyztuple/lulesh-dense-3tuple]
 
 nondet. seg fault for prgenv-cray on chpbld01
 ---------------------------------------------
@@ -265,7 +277,7 @@ nondet. seg fault for prgenv-cray on chpbld01
 [Error matching compiler output for release/examples/spec/Records/recordInheritance] (07/14/13)
 [Error matching compiler output for release/examples/benchmarks/hpcc/hpl] (10/11/13)
 [Error matching compiler output for release/examples/benchmarks/hpcc/stream] (10/9/13)
-[Error matching compiler output for release/examples/benchmarks/miniMD/miniMD (compopts: 1)] (10/9/13)
+[Error matching compiler output for release/examples/benchmarks/miniMD/miniMD (compopts: 1)] (10/9/13,12/20/13)
 
 nondet. timeout on gasnet-everything
 ------------------------------------
@@ -354,7 +366,7 @@ other configurations are quite consistent - see REGRESSIONS
 
 prgenv-* compilation timeouts (maybe due to system updates or ...?)
 -------------------------------------------------------------------
-[Error: Timed out compilation for types/tuple/deitz/test_tuple_simple2] (prgenv-pgi, compiler prgenv-pgi, 12/15)
+[Error: Timed out compilation for types/tuple/deitz/test_tuple_simple2] (prgenv-pgi, compiler prgenv-pgi, 12/15/13)
 [Error: Timed out compilation for users/ferguson/ddata/f] (prgenv-pgi: 12/01/12)
 [Error: Timed out compilation for users/jglewis/locClassSegFault-nongeneric] (prgenv-pgi: 12/01/12)
 [Error: Timed out compilation for release/examples/spec/Tuples/expansion] (prgenv-cray: 12/02/12)

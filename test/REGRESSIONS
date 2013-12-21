@@ -175,19 +175,26 @@ gasnet-everything regressions (other than the above)
 (Reviewed for accuracy 12/06/13)
 ====================================================
 
+increased comm counts, believed due to r22438
+---------------------------------------------
+[Error matching program output for modules/sungeun/init/printInitCommCounts (compopts: 1)]
+[Error matching program output for studies/hpcc/CommDiags/stream-ep_commDiags (compopts: 1)]
+[Error matching program output for studies/ssca2/performance/SSCA2_commDiags (compopts: 1)]
 
 ==============================================
 gasnet-fast regressions (other than the above)
 (Reviewed for accuracy 12/07/13)
 ==============================================
 
+increased comm counts, believed due to r22438
+---------------------------------------------
+[Error matching program output for modules/sungeun/init/printInitCommCounts (compopts: 1)]
+[Error matching program output for studies/hpcc/CommDiags/stream-ep_commDiags (compopts: 1)]
+[Error matching program output for studies/ssca2/performance/SSCA2_commDiags (compopts: 1)]
+
 unable to start polling thread (???)
 ------------------------------------
 [Error matching program output for memory/shannon/outofmemory/mallocOutOfMemory] (10/08/13)
-
-reference to object after it was freed (12/04/13)
--------------------------------------------------
-[Error matching program output for release/examples/spec/Classes/defineMethod]
 
 execution timeouts
 ------------------
@@ -290,23 +297,6 @@ error: static declaration of 'wait3' follows non-static declaration
 -------------------------------------------------------------------
 [Error matching compiler output for parallel/sync/diten/userLevelEndCount]
 
-error: internal failure MIS0355 chpl Version 1.8.0.-999
--------------------------------------------------------
-[Error matching compiler output for release/examples/benchmarks/miniMD/miniMD (compopts: 2)]
-[Error matching compiler output for types/file/fileIO2]
-
-seg fault
----------
-[Error matching compiler output for trivial/waynew/int2uint]
-
-resolution error (unresolved call '_fill(int(64), 2*int(64))')
---------------------------------------------------------------
-[Error matching compiler output for types/tuple/diten/tensor_destructure]
-
-error: internal failure EXP3124 chpl Version 1.8.0.-999
--------------------------------------------------------
-[Error matching compiler output for users/ferguson/nestedcomments]
-
 timeout
 -------
 [Error matching program output for domains/sungeun/assoc/stress (compopts: 1, execopts: 2)]
@@ -388,20 +378,6 @@ problem with static/dynamic linking?
 cray-prgenv-cray/cce-specific regressions
 (Reviewed for accuracy 10/16/13)
 =========================================
-
-CCE INTERNAL error (seg fault)
-------------------------------
-[Error matching compiler output for release/examples/benchmarks/lulesh/lulesh (compopts: 1)]
-[Error matching compiler output for release/examples/benchmarks/lulesh/lulesh (compopts: 2)]
-[Error matching compiler output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 1)]
-[Error matching compiler output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 2)]
-[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1)]
-[Error matching compiler output for release/examples/primers/arrays]
-[Error matching compiler output for release/examples/primers/distributions]
-
-The above tests as well as the compiler build fails with a CCE
-internal error since update to a newer version of CCE.  Bug filed and
-fixed, but not sure when it will be available.
 
 extern_string_test output mismatch
 ----------------------------------
@@ -619,10 +595,6 @@ cygwin-specific failures
 (Reviewed for accuracy on 12/06/13 -- examples/ directory only)
 ==============================================================
 
-reference to object after it was freed (12/04/13)
--------------------------------------------------
-[Error matching program output for release/examples/spec/Classes/defineMethod]
-
 internal error: pthread_cond_init() failed
 ------------------------------------------
 [Error matching program output for release/examples/primers/fileIO]
@@ -748,13 +720,6 @@ timeouts (12/7/12)
 qthreads+gasnet-specific tests (only run for -multilocale)
 (Reviewed for accuracy 12/09/2013)
 ==========================================================
-
-qthreads+gasnet timeout (start on 12/14, lydia)
------------------------------------------------
-This started failing after Lydia's r22431, but there was one night of
-successful testing before it started failing.
-
-[Error: Timed out executing program release/examples/hello3-datapar]
 
 pretty amazingly consistent timeout and surprisingly expensive
 --------------------------------------------------------------
