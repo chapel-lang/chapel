@@ -214,66 +214,34 @@ module ChapelTuple {
   }
   
   //
-  // standard overloaded unary operators on tuples.  Each pair first
-  // handles the homogenous case...
+  // standard overloaded unary operators on tuples.
   //
-  inline proc +(a: _tuple) where isHomogeneousTuple(a) {
+  inline proc +(a: _tuple) {
     var result: a.type;
     for param d in 1..a.size do
       result(d) = +a(d);
     return result;
   }
 
-  //
-  // ...and then the heterogeneous case.
-  //
-  inline proc +(a: _tuple) {
-    if a.size == 1 then
-      return (+a(1), );
-    else
-      return (+a(1), (...+chpl__tupleRest(a)));
-  }
-  
-  inline proc -(a: _tuple) where isHomogeneousTuple(a) {
+  inline proc -(a: _tuple) {
     var result: a.type;
     for param d in 1..a.size do
       result(d) = -a(d);
     return result;
   }
   
-  inline proc -(a: _tuple) {
-    if a.size == 1 then
-      return (-a(1), );
-    else
-      return (-a(1), (...-chpl__tupleRest(a)));
-  }
-
-  inline proc ~(a: _tuple) where isHomogeneousTuple(a) {
+  inline proc ~(a: _tuple) {
     var result: a.type;
     for param d in 1..a.size do
       result(d) = ~a(d);
     return result;
   }
   
-  inline proc ~(a: _tuple) {
-    if a.size == 1 then
-      return (~a(1),);
-    else
-      return (~a(1), (...~chpl__tupleRest(a)));
-  }
-  
-  inline proc !(a: _tuple) where isHomogeneousTuple(a) {
+  inline proc !(a: _tuple) {
     var result: a.type;
     for param d in 1..a.size do
       result(d) = !a(d);
     return result;
-  }
-  
-  inline proc !(a: _tuple) {
-    if a.size == 1 then
-      return (!a(1),);
-    else
-      return (!a(1), (...!chpl__tupleRest(a)));
   }
   
   //
