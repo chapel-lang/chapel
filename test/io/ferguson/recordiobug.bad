@@ -1,0 +1,3 @@
+recordiobug.chpl:1: In function '_cast':
+recordiobug.chpl:1: error: unresolved call 'string.x'
+recordiobug.chpl:2: note: candidates are: Point.x
