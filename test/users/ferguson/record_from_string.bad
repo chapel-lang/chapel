@@ -1,0 +1,3 @@
+record_from_string.chpl:1: In function '_cast':
+record_from_string.chpl:1: error: unresolved call 'string.x'
+record_from_string.chpl:2: note: candidates are: Point.x
