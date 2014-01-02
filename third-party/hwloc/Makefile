@@ -33,7 +33,7 @@ clobber: FORCE
 hwloc-config: FORCE
 	cd $(HWLOC_DIR) && tar --bzip2 -xf $(HWLOC_TARBALL)
 	mkdir -p $(HWLOC_BUILD_DIR)
-	cd $(HWLOC_BUILD_DIR) && $(HWLOC_SUBDIR)/configure CC='$(CC)' CXX='$(CXX)' --prefix=$(HWLOC_INSTALL_DIR) $(CHPL_HWLOC_CFG_OPTIONS)
+	cd $(HWLOC_BUILD_DIR) && $(HWLOC_SUBDIR)/configure CC='$(CC)' CFLAGS='$(CFLAGS)' CXX='$(CXX)' CXXFLAGS='$(CFLAGS)' --prefix=$(HWLOC_INSTALL_DIR) $(CHPL_HWLOC_CFG_OPTIONS)
 
 hwloc-build: FORCE
 	cd $(HWLOC_BUILD_DIR) && $(MAKE)

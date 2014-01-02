@@ -72,7 +72,7 @@ qthread-config: FORCE
 # Then configure
 #
 	mkdir -p $(QTHREAD_BUILD_DIR)
-	cd $(QTHREAD_BUILD_DIR) && $(QTHREAD_SUBDIR)/configure CC='$(CC)' CXX='$(CXX)' --prefix=$(QTHREAD_INSTALL_DIR) --enable-interfaces=chapel CHPL_HOME=$(CHPL_MAKE_HOME) $(CHPL_QTHREAD_CFG_OPTIONS) --disable-spawn-cache
+	cd $(QTHREAD_BUILD_DIR) && $(QTHREAD_SUBDIR)/configure CC='$(CC)' CFLAGS='$(CFLAGS)' CXX='$(CXX)'  CXXFLAGS='$(CFLAGS)' --prefix=$(QTHREAD_INSTALL_DIR) --enable-interfaces=chapel CHPL_HOME=$(CHPL_MAKE_HOME) $(CHPL_QTHREAD_CFG_OPTIONS) --disable-spawn-cache
 
 qthread-build: FORCE
 	cd $(QTHREAD_BUILD_DIR) && $(MAKE)
