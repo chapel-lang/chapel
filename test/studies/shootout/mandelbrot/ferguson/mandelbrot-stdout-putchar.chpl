@@ -43,17 +43,17 @@ proc in_set8(ipart: int, rpart8: int):uint(8) {
 }
 
 proc main() {
+  extern proc putchar(i : int) : int;
+
   var set: [D] uint(8);
 
   forall (im,re8) in D {
     set(im,re8) = in_set8(im, re8);
   }
 
-  var f = openfd(1);
-  var w = f.writer(kind=iokind.native, locking=false);
-  w.writef("P4\n%i %i\n", size, size);
+  writef("P4\n%i %i\n", size, size);
  
   for (im,re8) in D {
-    w.write(set(im,re8));
+    putchar(set(im,re8));
   }
 }
