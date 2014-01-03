@@ -3051,7 +3051,11 @@ proc channel.readf(fmt:string, ref args ...?k, out error:syserr):bool {
                 } else {
                   // We have a string in captures[capturei] and
                   // we need to set args(i) to that.
-                  args(i) = r.capArr[r.capturei]:args(i).type;
+                  if _isIoPrimitiveType(args(i).type) {
+                    // but only if it's a primitive type
+                    // (so that we can avoid problems with string-to-record).
+                    args(i) = r.capArr[r.capturei]:args(i).type;
+                  }
                   r.capturei += 1;
                 }
               }

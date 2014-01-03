@@ -502,8 +502,8 @@ module ChapelIO {
   // Convert 'x' to a string just the way it would be written out.
   // Includes Writer.write, with modifications (for simplicity; to avoid 'on').
   proc _cast(type t, x) where t == string {
-    proc isNilObject(o: object) return o == nil;
-    proc isNilObject(o) param return false;
+    //proc isNilObject(o: object) return o == nil;
+    //proc isNilObject(o) param return false;
     const w = new StringWriter();
     //if isNilObject(x) then "nil".writeThis(w);
     //else                   x.writeThis(w);
