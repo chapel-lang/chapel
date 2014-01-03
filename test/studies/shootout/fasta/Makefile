@@ -6,6 +6,8 @@ FLAGS = --fast
 
 TARGETS = \
 	fasta \
+	fasta-lines \
+	fasta-printf \
 
 default: all
 
