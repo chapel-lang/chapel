@@ -99,6 +99,9 @@ Miscellaneous Options:
                                       Explain resolution of call
       --explain-instantiation <function|type>[:<module>][:<line>]
                                       Explain instantiation of type
+      --[no-]explain-verbose          When one of the 'explain' options is
+                                      active, also enable tracing of
+                                      disambiguation
       --instantiate-max <max>         Limit number of instantiations
       --[no-]print-callstack-on-error print the Chapel call stack leading to
                                       each error or warning

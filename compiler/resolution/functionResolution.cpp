@@ -21,8 +21,13 @@
 #include "symbol.h"
 #include "../ifa/prim_data.h"
 
+// Allow disambiguation tracing to be controlled by the command-line option
+// --explain-verbose.
+#define ENABLE_TRACING_OF_DISAMBIGUATION 1
+
 #ifdef ENABLE_TRACING_OF_DISAMBIGUATION
-#define TRACE_DISAMBIGUATE_BY_MATCH(...) if (developer && DC.explain) printf(__VA_ARGS__)
+#define TRACE_DISAMBIGUATE_BY_MATCH(...)                    \
+  if (developer && DC.explain) fprintf(stderr, __VA_ARGS__)
 #else
 #define TRACE_DISAMBIGUATE_BY_MATCH(...)
 #endif
@@ -2703,11 +2708,12 @@ gatherCandidates(Vec<ResolutionCandidate*>& candidates,
       continue;
     }
     
-#ifdef ENABLE_TRACING_OF_DISAMBIGUATION
-    if (explainCallLine && explainCallMatch(info.call)) {
-      printf("Considering function %s\n", visibleFn->stringLoc());
+    if (fExplainVerbose &&
+        ((explainCallLine && explainCallMatch(info.call)) ||
+         info.call->id == explainCallID))
+    {
+      USR_PRINT(visibleFn, "Considering function: %s", toString(visibleFn));
     }
-#endif
 
     filterCandidate(candidates, visibleFn, info);
   }
@@ -2729,11 +2735,12 @@ gatherCandidates(Vec<ResolutionCandidate*>& candidates,
       continue;
     }
     
-#ifdef ENABLE_TRACING_OF_DISAMBIGUATION
-    if (explainCallLine && explainCallMatch(info.call)) {
-      printf("Considering function %s\n", visibleFn->stringLoc());
+    if (fExplainVerbose &&
+        ((explainCallLine && explainCallMatch(info.call)) ||
+         info.call->id == explainCallID))
+    {
+      USR_PRINT(visibleFn, "Considering function: %s", toString(visibleFn));
     }
-#endif
 
     filterCandidate(candidates, visibleFn, info);
   }
@@ -2787,7 +2794,9 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
       handleCaptureArgs(call, call->isResolved(), &info);
     }
 
-    if (explainCallLine && explainCallMatch(call)) {
+    if ((explainCallLine && explainCallMatch(call)) ||
+        call->id == explainCallID)
+    {
       USR_PRINT(call, "call: %s", toString(&info));
       if (visibleFns.n == 0)
         USR_PRINT(call, "no visible functions found");
@@ -2803,7 +2812,9 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
     Vec<ResolutionCandidate*> candidates;
     gatherCandidates(candidates, visibleFns, info);
 
-    if (explainCallLine && explainCallMatch(info.call)) {
+    if ((explainCallLine && explainCallMatch(info.call)) ||
+        call->id == explainCallID) 
+    {
       if (candidates.n == 0) {
         USR_PRINT(info.call, "no candidates found");
         
@@ -2819,12 +2830,17 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
     }
 
     Expr* scope = (info.scope) ? info.scope : getVisibilityBlock(call);
-    DisambiguationContext DC(&info.actuals, scope,
-                             explainCallLine && explainCallMatch(call));
+    bool explain = fExplainVerbose &&
+      ((explainCallLine && explainCallMatch(call)) ||
+       info.call->id == explainCallID);
+    DisambiguationContext DC(&info.actuals, scope, explain);
     
     ResolutionCandidate* best = disambiguateByMatch(candidates, DC);
     
-    if (best && best->fn && explainCallLine && explainCallMatch(call)) {
+    if (best && best->fn &&
+        ((explainCallLine && explainCallMatch(call)) ||
+         call->id == explainCallID))
+    {
       USR_PRINT(best->fn, "best candidate is: %s", toString(best->fn));
     }
 

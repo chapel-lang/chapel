@@ -317,6 +317,10 @@ OPTIONS
                      those calls within a specific module or at a
                      particular line number.
 
+  --[no-]explain-verbose   In combination with explain-call or
+                     explain-instantiation, causes the compiler to output more
+                     debug information related to disambiguation.
+
   --instantiate-max <max>   In order to avoid infinite loops when
                      instantiating generic functions, the compiler
                      limits the number of times a single function
