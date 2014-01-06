@@ -247,7 +247,6 @@ $targetplatform = `$utildir/chplenv/platform --target`; chomp($targetplatform);
 $hostcompiler = `$utildir/chplenv/compiler --host`; chomp($hostcompiler);
 $targetcompiler = `$utildir/chplenv/compiler --target`; chomp($targetcompiler);
 $tasks = `$utildir/chplenv/tasks`; chomp($tasks);
-$threads = `$utildir/chplenv/threads`; chomp($threads);
 $localeModel =  `$utildir/chplenv/localeModel`; chomp($localeModel);
 $mem =  `$utildir/chplenv/mem`; chomp($mem);
 $comm = `$utildir/chplenv/comm`; chomp($comm);
@@ -255,7 +254,7 @@ if ($comm eq "gasnet" && $ENV{'CHPL_GASNET_SEGMENT'} ne "") {
     $comm = "$comm-$ENV{'CHPL_GASNET_SEGMENT'}";
 }
 
-$fullplatform = "$targetplatform.$targetcompiler.$comm.$tasks.$threads.$localeModel";
+$fullplatform = "$targetplatform.$targetcompiler.$comm.$tasks.$localeModel";
 if ($mem ne "default") {
     $fullplatform = "$fullplatform.$mem";
 }
