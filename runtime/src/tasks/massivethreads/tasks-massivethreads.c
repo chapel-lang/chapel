@@ -51,11 +51,11 @@ static int worker_in_cs_beforeinit = 0;
 static thread_local_data* s_tld;
 
 static const task_private_data_t s_def_chpl_data=
-             { c_sublocid_any, false };
+             { c_sublocid_any_val, false };
 
 // task-private data of main task
 static task_private_data_t s_main_chpl_data =
-             { c_sublocid_any, false };
+             { c_sublocid_any_val, false };
 
 static const uint64_t c_def_stack_size = 32 * 1024 * sizeof(size_t);
 
