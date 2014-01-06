@@ -125,14 +125,6 @@ so the warning does not apply and is not raised, and .good is not matched.
 [Error matching program output for types/atomic/ferguson/atomictest]
 [Error matching program output for types/atomic/sungeun/atomic_vars]
 
-4 accesses of a deleted object (11/18/13) (mppf/hilde)
-------------------------------------------------------
-[Error matching program output for users/ferguson/refcnt]
-An object should be copied in a begin statement as the argument for a function,
-but the begin is not executed until after the rest of main, so the object
-goes out of scope and is deleted when really its ref count should be higher.
-Tom is working on a fix.
-
 compilation timeouts
 --------------------
 [Error: Timed out compilation for functions/iterators/vass/yield-arrays-var-nonvar] (08/19/13)
@@ -176,29 +168,17 @@ increased memory use (vass, r22473)
 
 ====================================================
 gasnet-everything regressions (other than the above)
-(Reviewed for accuracy 12/06/13)
+(Reviewed for accuracy 01/06/14)
 ====================================================
-
-increased comm counts, believed due to r22438
----------------------------------------------
-[Error matching program output for modules/sungeun/init/printInitCommCounts (compopts: 1)]
-[Error matching program output for studies/hpcc/CommDiags/stream-ep_commDiags (compopts: 1)]
-[Error matching program output for studies/ssca2/performance/SSCA2_commDiags (compopts: 1)]
 
 ==============================================
 gasnet-fast regressions (other than the above)
-(Reviewed for accuracy 12/07/13)
+(Reviewed for accuracy 01/04/14)
 ==============================================
-
-increased comm counts, believed due to r22438
----------------------------------------------
-[Error matching program output for modules/sungeun/init/printInitCommCounts (compopts: 1)]
-[Error matching program output for studies/hpcc/CommDiags/stream-ep_commDiags (compopts: 1)]
-[Error matching program output for studies/ssca2/performance/SSCA2_commDiags (compopts: 1)]
 
 unable to start polling thread (???)
 ------------------------------------
-[Error matching program output for memory/shannon/outofmemory/mallocOutOfMemory] (10/08/13)
+[Error matching program output for memory/shannon/outofmemory/mallocOutOfMemory] (10/08/13-01/04/14)
 
 execution timeouts
 ------------------
@@ -462,6 +442,11 @@ compilation error due to Chapel compiler aborting with SIGSEGV (2013/11/10-12)
  - Unable to duplicate on chpbld01 <2013/11/12 hilde>
 ------------------------------------------------------------------------------
 [Error matching compiler output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 1)]
+
+
+compilation error due to Chapel compiler aborting with SIGSEGV (2013/12/29)
+---------------------------------------------------------------------------
+[Error matching compiler output for release/examples/benchmarks/hpcc/ra-atomics (compopts: 1)]
 
 wrong result due to reliance on wraparound in signed integers in test itself
 ----------------------------------------------------------------------------

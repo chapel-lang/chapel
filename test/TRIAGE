@@ -88,6 +88,7 @@ nondet. baseline output
 -----------------------
 [Error matching program output for studies/amr/diffusion/level/Level_DiffusionBE_driver (compopts: 1)]
 11/3/13: has been failing frequently (for --baseline) since 9/28/13
+12/29/2013:
 
 primers/locales fails semi-regularly for cray-prgenv-cray (11/14)
 -----------------------------------------------------------------
