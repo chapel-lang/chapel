@@ -36,7 +36,7 @@ if [ "$dayType" == "" ] ; then
   LOGFILE="$HOME/tmp/nightly.memleaksfull.out"
   MEMLOGFILE="memleaks.$date.nightlyfull.log"
   echo `date` "" "Running memleaks regressions.  Log file: $LOGFILE"
-  $CHPL_HOME/util/cron/nightly -cron -memleaks $MEMLOGFILE &> $LOGFILE
+  $CHPL_HOME/util/cron/nightly -cron -memleaks $MEMLOGFILE -no-futures &> $LOGFILE
   # Save the raw log file
   cp /tmp/$MEMLOGFILE $CHPL_NIGHTLY_LOGDIR/FULL.memleaks
 fi
