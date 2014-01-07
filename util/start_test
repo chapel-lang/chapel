@@ -701,10 +701,10 @@ while ( $#argv > 0 )
         breaksw
     case -launchcmd:
     case --launchcmd:
-            shift
-            set launchcmd = "$argv[1]"
-            shift
-            breaksw
+        shift
+        set launchcmd = "$argv[1]"
+        shift
+        breaksw
     case -cleanonly:
     case --cleanonly:
     case -clean-only:
@@ -743,68 +743,68 @@ while ( $#argv > 0 )
     case -sysprediff:
     case --sysprediff:
         shift
-                setenv CHPL_SYSTEM_PREDIFF "$argv[1]"
+        setenv CHPL_SYSTEM_PREDIFF "$argv[1]"
         shift
         breaksw
     case -futures:
     case --futures:
-            shift
-            set testfutures = 1
-            breaksw
+        shift
+        set testfutures = 1
+        breaksw
     case -futures-only
     case --futures-only
     case -futuresonly
     case --futuresonly
-            shift
-            set testfuturesonly = 1
-            breaksw
+        shift
+        set testfuturesonly = 1
+        breaksw
     case -i:
     case --interpret:
     case -interpret:
-            shift
-            set interpret = 1
-            breaksw
+        shift
+        set interpret = 1
+        breaksw
     case --performance:
     case -performance:
-            shift
-            set performance = 1
-            set gengraphs = 1
-            breaksw
+        shift
+        set performance = 1
+        set gengraphs = 1
+        breaksw
     case --numtrials:
     case -numtrials:
     case --num-trials:
     case -num-trials:
-            shift
-            set numtrials = $argv[1]
-            shift
-            breaksw
+        shift
+        set numtrials = $argv[1]
+        shift
+        breaksw
     case --gen-graphs:
     case -gen-graphs:
     case --generate-graphs:
     case -generate-graphs:
-            shift
-            set gengraphs = 1
-            breaksw
+        shift
+        set gengraphs = 1
+        breaksw
     case --gen-old-graphs:
     case -gen-old-graphs:
-            shift
-            set oldgraphs = 1
-            breaksw
+        shift
+        set oldgraphs = 1
+        breaksw
     case --nodisplaygraphrange:
     case -nodisplaygraphrange:
     case --no-display-graph-range:
     case -no-display-graph-range:
-            shift
-            set graphsdisprange = 0
-            breaksw
+        shift
+        set graphsdisprange = 0
+        breaksw
     case --graphsgendefault:
     case -graphsgendefault:
     case --graphs-gen-default:
     case -graphs-gen-default:
-            shift
-            set graphsgendefault = $argv[1]
-            shift
-            breaksw
+        shift
+        set graphsgendefault = $argv[1]
+        shift
+        breaksw
     case --startdate:
     case -startdate:
         shift
@@ -815,9 +815,9 @@ while ( $#argv > 0 )
     case --norecurse:
     case -no-recurse:
     case --no-recurse:
-            shift
-            set recurse = 0
-            breaksw
+        shift
+        set recurse = 0
+        breaksw
     case -comp-only:
     case --comp-only:
         shift
@@ -825,26 +825,26 @@ while ( $#argv > 0 )
         breaksw
     case -valgrindexe:
     case --valgrindexe:
-            shift
-            set valgrindexe = 1
-            breaksw
+        shift
+        set valgrindexe = 1
+        breaksw
     case -suppress:
     case --suppress:
-            shift
-            set suppressions = $argv[1]
-            shift
-            breaksw
+        shift
+        set suppressions = $argv[1]
+        shift
+        breaksw
     case -nostdinredirect:
     case --nostdinredirect:
-            shift
-            setenv CHPL_NO_STDIN_REDIRECT true
-            breaksw
+        shift
+        setenv CHPL_NO_STDIN_REDIRECT true
+        breaksw
     case -launchertimeout:
     case --launchertimeout:
-            shift
-            setenv CHPL_LAUNCHER_TIMEOUT $argv[1]
-            shift
-            breaksw
+        shift
+        setenv CHPL_LAUNCHER_TIMEOUT $argv[1]
+        shift
+        breaksw
     case -h:
     case -help:
     case --help:
