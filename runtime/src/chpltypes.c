@@ -248,21 +248,35 @@ string_concat(chpl_string x, chpl_string y, int32_t lineno, chpl_string filename
   return z;
 }
 
+// Returns the index of the first occurrence of a substring within a string, or
+// 0 if the substring is not in the string.
+int string_index_of(chpl_string haystack, chpl_string needle) {
+  chpl_string substring = strstr(haystack, needle);
+  return substring ? (int) (substring-haystack)+1 : 0;
+}
 
+// It is up to the caller to make sure low and high are within the string
+// bounds and that stride is not 0.
+// FIXME: This can't return a statically allocated empty string once strings
+// are garbage collected.
 chpl_string
-string_strided_select(chpl_string x, int low, int high, int stride, int32_t lineno, chpl_string filename) {
-  int64_t length = string_length(x);
+string_select(chpl_string x, int low, int high, int stride, int32_t lineno, chpl_string filename) {
   char* result = NULL;
   char* dst = NULL;
-  chpl_string src = stride > 0 ? x + low - 1 : x + high - 1;
-  int size = high - low >= 0 ? high - low : 0;
-  if (low < 1 || low > length || high > length) {
-    chpl_error("string index out of bounds", lineno, filename);
-  }
-  result = chpltypes_malloc(size + 2, CHPL_RT_MD_STRING_STRIDED_SELECT_DATA,
+  int size = high-low+1;
+  chpl_string src;
+
+  if (low  < 1) low = 1;
+  if (high < 1) return "";
+
+  src = stride > 0 ? x + low - 1 : x + high - 1;
+  result = chpltypes_malloc(size + 1, CHPL_RT_MD_STRING_STRIDED_SELECT_DATA,
                             lineno, filename);
   dst = result;
-  if (stride > 0) {
+  if (stride == 1) {
+    memcpy(result, src, size);
+    dst = result + size;
+  } else if (stride > 0) {
     while (src - x <= high - 1) {
       *dst++ = *src;
       src += stride;
@@ -273,22 +287,23 @@ string_strided_select(chpl_string x, int low, int high, int stride, int32_t line
       src += stride;
     }
   }
+
   *dst = '\0';
-  // result is already a copy, so we don't have to copy  it again.
   return result;
 }
 
-chpl_string
-string_select(chpl_string x, int low, int high, int32_t lineno, chpl_string filename) {
-  return string_strided_select(x, low, high, 1, lineno, filename);
-}
-
+// Returns a string containing the character at the given index of the input
+// string, or an empty string if the index is out of bounds.
+// FIXME: This can't return a statically allocated empty string once strings
+// are garbage collected.
 chpl_string
 string_index(chpl_string x, int i, int32_t lineno, chpl_string filename) {
-  char* buffer = chpltypes_malloc(2, CHPL_RT_MD_STRING_COPY_DATA,
-                                  lineno, filename);
+  char* buffer;
+
   if (i-1 < 0 || i-1 >= string_length(x))
-    chpl_error("string index out of bounds", lineno, filename);
+    return "";
+  buffer = chpltypes_malloc(2, CHPL_RT_MD_STRING_COPY_DATA,
+                                  lineno, filename);
   sprintf(buffer, "%c", x[i-1]);
   return buffer;
 }

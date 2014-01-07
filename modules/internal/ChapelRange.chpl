@@ -597,12 +597,11 @@ module ChapelRange {
   }
   
   // Return a substring of a string with a range of indices.
-  proc string.substring(r: range(?))
-  {
-    if r.isAmbiguous() then
-      __primitive("chpl_error", "substring -- Cannot select from a string using a range with ambiguous alignment.");
-  
-    return this.substring(r._base);
+  inline proc string.substring(r: range(?)) {
+    var r2 = r[1..this.length];  // This may warn about ambiguously aligned ranges.
+    if r2.isEmpty() then return "";
+    var lo:int = r2.alignedLow, hi:int = r2.alignedHigh;
+    return __primitive("string_select", this, lo, hi, r2.stride);
   }
   
   

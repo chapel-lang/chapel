@@ -667,6 +667,12 @@ module ChapelBase {
   inline proc ascii(param a: string) param return __primitive("ascii", a);
   inline proc param string.length param return __primitive("string_length", this);
   inline proc _string_contains(param a: string, param b: string) param return __primitive("string_contains", a, b);
+
+  /** Returns the index of the first occurrence of a substring within a string,
+      or 0 if the substring is not in the string.
+   */
+  inline proc string.indexOf(substring:string):int return string_index_of(this, substring);
+  extern proc string_index_of(haystack:string, needle:string):int;
   
   //
   // min and max

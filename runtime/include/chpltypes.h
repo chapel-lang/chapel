@@ -229,9 +229,9 @@ chpl_string chpl_wide_string_copy(struct chpl_chpl____wide_chpl_string_s* x, int
 void chpl_string_widen(struct chpl_chpl____wide_chpl_string_s* x, chpl_string from, int32_t lineno, chpl_string filename);
 void chpl_comm_wide_get_string(chpl_string* local, struct chpl_chpl____wide_chpl_string_s* x, int32_t tid, int32_t lineno, chpl_string filename);
 chpl_string string_concat(chpl_string x, chpl_string y, int32_t lineno, chpl_string filename);
+int string_index_of(chpl_string x, chpl_string y);
 chpl_string string_index(chpl_string x, int i, int32_t lineno, chpl_string filename);
-chpl_string string_select(chpl_string x, int low, int high, int32_t lineno, chpl_string filename);
-chpl_string string_strided_select(chpl_string x, int low, int high, int stride, int32_t lineno, chpl_string filename);
+chpl_string string_select(chpl_string x, int low, int high, int stride, int32_t lineno, chpl_string filename);
 int32_t chpl_string_compare(chpl_string x, chpl_string y);
 int64_t string_length(chpl_string x);
 

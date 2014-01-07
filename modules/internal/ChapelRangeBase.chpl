@@ -1011,18 +1011,6 @@ module ChapelRangeBase {
     }
   }
   
-  // Return a substring of a string with a range of indices.
-  inline proc string.substring(r: rangeBase(?))
-  {
-    if r.boundedType != BoundedRangeType.bounded then
-      compilerError("substring indexing undefined on unbounded ranges");
-  
-    if r.stride != 1 then
-      return __primitive("string_strided_select", this, r.alignedLow, r.alignedHigh, r.stride);
-    else
-      return __primitive("string_select", this, r.low, r.high);
-  }
-  
   
   //################################################################################
   //# Internal helper functions.
