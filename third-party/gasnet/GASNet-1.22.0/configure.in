@@ -1426,7 +1426,7 @@ if test "$enabled_pshm" != no; then
   AC_SEARCH_LIBS(xpmem_get, xpmem, [
     AC_CHECK_HEADERS([xpmem.h sn/xpmem.h], [
       if test $have_hugetlbfs = yes; then
-        LIBS="$LIBS -lhugetlbfs"
+        LIBS="$LIBS -Wl,--whole-archive,-lhugetlbfs,--no-whole-archive"
         AC_DEFINE(GASNETI_USE_HUGETLBFS)
       fi
       GASNET_PSHM_LIBS=$LIBS
@@ -3398,7 +3398,7 @@ if test ${gni_network}:${enabled_[]lowername} = lowername[]:yes; then
     AC_MSG_CHECKING(for hugetlbfs support required by $1)
     if test $have_hugetlbfs = yes; then
       AC_MSG_RESULT(yes)
-      GNI_LIBS="$GNI_LIBS -lhugetlbfs"
+      GNI_LIBS="$GNI_LIBS -Wl,--whole-archive,-lhugetlbfs,--no-whole-archive"
       GNI_INCLUDES="$GNI_INCLUDES -DGASNETI_USE_HUGETLBFS"
     else
       $have_[]lowername=no
