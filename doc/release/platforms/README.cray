@@ -364,53 +364,21 @@ To use this combination of runtime layers:
 Special parameters for the Cray-specific runtime layers
 -------------------------------------------------------
 
-Parameters associated with the ugni communication layer:
+This section describes several environment variable parameters that
+affect the behavior of the native ugni communication and muxed tasking
+runtime layers for Cray X* systems.  Here are those parameters and their
+default values:
 
-    Heap Size
-    ---------
+    CHPL_RT_CALL_STACK_SIZE        : 128 KiB
+    CHPL_RT_NUM_HARDWARE_THREADS   : number of cores per locale
+    CHPL_RT_NUM_THREADS_PER_LOCALE : 16 * CHPL_RT_NUM_HARDWARE_THREADS
+    CHPL_UGNI_MAX_HEAP_SIZE        : free node memory, less 1 GiB
+    CHPL_RT_COMM_CONCURRENCY       : CHPL_RT_NUM_HARDWARE_THREADS
 
-    By default the heap will occupy as much of the free memory on the
-    locale as the runtime can acquire, less a modest percentage to allow
-    for unforeseen demands from other (system) programs running on the
-    locale.  Advanced users may want to make the heap smaller than this.
-    The benefits of doing so include slighter quicker program startup
-    and smaller core files. However, note that if you reduce the heap
-    size to less than the amount some program actually needs and then
-    run that program, it will terminate prematurely due to not having
-    enough memory.
-
-    To change the heap size, set the CHPL_UGNI_MAX_HEAP_SIZE environment
-    variable.  Set it to just a number to specify the size of the heap in
-    bytes, or to a number with a "k" or "K", "m" or "M", or "g" or "G"
-    suffix with no intervening spaces to specify the heap size in KiB
-    (2^10 bytes), MiB (2^20 bytes), or GiB (2^30 bytes), respectively.
-    Any of the following would set the heap size to 1 GiB, for example:
-
-      export CHPL_UGNI_MAX_HEAP_SIZE=1073741824
-      export CHPL_UGNI_MAX_HEAP_SIZE=1048576k
-      export CHPL_UGNI_MAX_HEAP_SIZE=1024m
-      export CHPL_UGNI_MAX_HEAP_SIZE=1g
-
-    Note that the value you set in CHPL_UGNI_MAX_HEAP_SIZE will be
-    rounded up to the next higher hugepage boundary.  How much, if any,
-    this will add will depend on the hugepage size in the hugepage
-    module you have loaded.
-
-
-    Communication Layer Concurrency
-    -------------------------------
-
-    The CHPL_RT_COMM_CONCURRENCY environment variable tells the ugni
-    communication layer how much program concurrency it should try to
-    support.  It basically controls how much of the communication
-    resources on the NIC will be used by the program.  The default
-    value is the number of hardware processor cores the program will
-    use for Chapel tasks (CHPL_RT_NUM_HARDWARE_THREADS in the next
-    section).  Usually this is enough, but for highly parallel codes
-    that do a lot of remote references, increasing it may help the
-    performance.  Useful values for CHPL_RT_COMM_CONCURRENCY are in
-    the range 1 to 30.  Values specified outside this range are
-    silently increased or reduced so as to fall within it.
+The default values were consciously chosen to achieve high performance
+across a broad range of circumstances, by maximizing system resource
+use.  But in some situations, as described in the following, you may
+want to explicitly set one or more of them to other values.
 
 
 Parameters associated with the muxed tasking layer:
@@ -459,6 +427,55 @@ Parameters associated with the muxed tasking layer:
     on each locale, and CHPL_RT_NUM_THREADS_PER_LOCALE is the number of
     lightweight threads to use on each locale (not on each hardware
     thread).
+
+
+Parameters associated with the ugni communication layer:
+
+    Heap Size
+    ---------
+
+    By default the heap will occupy as much of the free memory on the
+    locale as the runtime can acquire, less a modest percentage to allow
+    for unforeseen demands from other (system) programs running on the
+    locale.  Advanced users may want to make the heap smaller than this.
+    The benefits of doing so include slighter quicker program startup
+    and smaller core files. However, note that if you reduce the heap
+    size to less than the amount some program actually needs and then
+    run that program, it will terminate prematurely due to not having
+    enough memory.
+
+    To change the heap size, set the CHPL_UGNI_MAX_HEAP_SIZE environment
+    variable.  Set it to just a number to specify the size of the heap in
+    bytes, or to a number with a "k" or "K", "m" or "M", or "g" or "G"
+    suffix with no intervening spaces to specify the heap size in KiB
+    (2^10 bytes), MiB (2^20 bytes), or GiB (2^30 bytes), respectively.
+    Any of the following would set the heap size to 1 GiB, for example:
+
+      export CHPL_UGNI_MAX_HEAP_SIZE=1073741824
+      export CHPL_UGNI_MAX_HEAP_SIZE=1048576k
+      export CHPL_UGNI_MAX_HEAP_SIZE=1024m
+      export CHPL_UGNI_MAX_HEAP_SIZE=1g
+
+    Note that the value you set in CHPL_UGNI_MAX_HEAP_SIZE will be
+    rounded up to the next higher hugepage boundary.  How much, if any,
+    this will add will depend on the hugepage size in the hugepage
+    module you have loaded.
+
+
+    Communication Layer Concurrency
+    -------------------------------
+
+    The CHPL_RT_COMM_CONCURRENCY environment variable tells the ugni
+    communication layer how much program concurrency it should try to
+    support.  It basically controls how much of the communication
+    resources on the NIC will be used by the program.  The default
+    value is the number of hardware processor cores the program will
+    use for Chapel tasks (CHPL_RT_NUM_HARDWARE_THREADS in the last
+    section).  Usually this is enough, but for highly parallel codes
+    that do a lot of remote references, increasing it may help the
+    performance.  Useful values for CHPL_RT_COMM_CONCURRENCY are in
+    the range 1 to 30.  Values specified outside this range are
+    silently increased or reduced so as to fall within it.
 
 
 Network Atomics
