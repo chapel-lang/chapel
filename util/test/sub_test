@@ -420,7 +420,7 @@ if os.access('./NUMLOCALES',os.R_OK):
     # globalNumlocales.strip(globalNumlocales)
 else:
     # start_test sets this, so we'll assume it's right :)
-    globalNumlocales=int(os.getenv('NUMLOCALES'))
+    globalNumlocales=int(os.getenv('NUMLOCALES', '0'))
 # sys.stdout.write('globalNumlocales=%s\n'%(globalNumlocales))
 
 if os.access('./CATFILES',os.R_OK):
