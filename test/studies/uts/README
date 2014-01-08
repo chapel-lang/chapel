@@ -11,8 +11,9 @@
 The Unbalanced Tree Search (UTS) benchmark measures the time required to visit
 all nodes in highly irregular and dynamically evolving state tree.  Nodes in
 the tree are generated using a securely random, splittable technique derived
-from SHA-1 hashes.  Several tree shapes are provided; see the references for
-more information on tree shapes and parameters.
+from SHA-1 hashes (Secure Hash Algorithm 1 introduced by D. Eastlake 3rd and R.
+Jones).  Several tree shapes are provided; see the references for more
+information on tree shapes and parameters.
 
 The current Chapel implementation is a reference implementation that was used
 to explore language features and has not been tuned for performance.  This
@@ -64,6 +65,12 @@ Workshop on Languages and Compilers for Parallel Computing (LCPC). 2006.
 Huan, Bill Pugh, Chau-Wen Tseng, P. Sadayappan.  UNC Dept. of Computer Science
 Technical Report 03-034, Oct 2003.
 
+“US secure hash algorithm 1 (SHA-1).” D. Eastlake 3rd and P. Jones. Internet
+Engineering Task Force, RFC 3174, Sept 2001. [Online]. http://www.ietf.org/rfc/rfc3174.txt
+
+"SHA1, SHA2, HMAC and Key Derivation in C."  Brian R. Gladman.  Worchester, UK,
+Jan 2007. http://gladman.plushost.co.uk/oldsite/cryptography_technology/sha/index.php
+
 
 Files:
 ~~~~~
@@ -73,7 +80,7 @@ Makefile         - Makefile for building UTS (parallel and sequential)
 sample_trees.txt - Sample input trees (command line flags) for UTS
 
 brg_endian.h     - Brian R. Gladman's open source SHA-1 implementation
-brg_sha1.c
+brg_sha1.c         (see "References" for source link)
 brg_sha1.h
 brg_types.h
 

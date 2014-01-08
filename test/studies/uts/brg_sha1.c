@@ -31,6 +31,8 @@
 
  This is a byte oriented version of SHA1 that operates on arrays of bytes
  stored in memory.
+
+ Source code origin listed in README file.
 */
 
 #include <string.h>     /* for memcpy() etc.        */
