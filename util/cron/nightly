@@ -4,6 +4,11 @@ use File::Basename;
 use Cwd;
 use Sys::Hostname;
 
+# Mailing lists.
+# TODO: Migrate to SF.net.
+$failuremail = "chapel_cronmail\@cray.com";
+$allmail = "chapel_cronmail_all\@cray.com";
+
 $valgrind = 0;
 $interpret = 0;
 $printusage = 1;
@@ -360,11 +365,11 @@ if ($debug == 1) {
     $nochangerecipient = $debugmail;
 } else {
     $subjectid = "Cron$subjectid";
-    $recipient = "chapel_cronmail\@cray.com chapel_cronmail_all\@cray.com";
+    $recipient = "$failuremail $allmail";
     if ($tasks eq "qthreads") {
       $recipient = "$recipient qthreads-chapel\@googlegroups.com";
     }
-    $nochangerecipient = "$user\@cray.com chapel_cronmail_all\@cray.com";
+    $nochangerecipient = "$user\@cray.com $allmail";
 }
 
 

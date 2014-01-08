@@ -1,5 +1,8 @@
 #!/usr/bin/env perl
 
+# Mailing lists.
+$failuremail = "chapel_cronmail\@cray.com";
+
 if (!defined $ENV{'CHPL_HOME_REPOSITORY'}) {
     print "ERROR: CHPL_HOME_REPOSITORY must be set to use tokctnightly\n";
     exit(1);
@@ -60,7 +63,7 @@ if ($debug == 1) {
     $recipient = $debugmail;
 } else {
     $subjectid = "Cron token count";
-    $recipient = "chapel_cronmail\@cray.com";
+    $recipient = "$failuremail";
 }
 
 

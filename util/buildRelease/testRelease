@@ -1,5 +1,9 @@
 #!/usr/bin/env perl
 
+# Mailing lists.
+$failuremail = "chapel_cronmail\@cray.com";
+$allmail = "chapel_cronmail_all\@cray.com";
+
 $printusage = 1;
 $debug = 1;
 
@@ -113,14 +117,14 @@ if ($teststatus == 0) {
     $failures = `grep Error $tmpdir/chapel-test/examples/Logs/testReleaseHelp.log | wc -l`; chomp($failures);
     if ($failures == "0") {
         $shortstatus = "Passed";
-        $successmail = "chapel_cronmail_all\@cray.com";
+        $successmail = "$allmail";
     } else {
         $shortstatus = "Failed: Tests";
-        $successmail = "chapel_cronmail\@cray.com";
+        $successmail = "$failuremail";
     }
 } else {
     $shortstatus = "Failed: Something";
-    $successmail = "chapel_cronmail\@cray.com";
+    $successmail = "$failuremail";
 }
 if ($debug == 1) {
     $mailsubject = "Dbug Release $shortstatus ($platform)";
@@ -181,7 +185,7 @@ sub mysystem {
                 $mailcommand = "| $mailer -s \"$mailsubject \" $debugmail";
             } else {
                 $mailsubject = "Cron Release Failed ($platform)";
-                $mailcommand = "| $mailer -s \"$mailsubject \" chapel_cronmail\@cray.com";
+                $mailcommand = "| $mailer -s \"$mailsubject \" $failuremail";
             }
 
             print "Trying to mail message... using $mailcommand\n";
