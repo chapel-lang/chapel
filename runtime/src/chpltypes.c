@@ -270,7 +270,7 @@ string_select(chpl_string x, int low, int high, int stride, int32_t lineno, chpl
   if (high < 1) return "";
 
   src = stride > 0 ? x + low - 1 : x + high - 1;
-  result = chpltypes_malloc(size + 1, CHPL_RT_MD_STRING_STRIDED_SELECT_DATA,
+  result = chpltypes_malloc(size + 1, CHPL_RT_MD_STRING_SELECT_DATA,
                             lineno, filename);
   dst = result;
   if (stride == 1) {

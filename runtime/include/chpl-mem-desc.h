@@ -79,8 +79,8 @@
           "string copy data"),                                          \
         m(STRING_CONCAT_DATA,                                           \
           "string concat data"),                                        \
-        m(STRING_STRIDED_SELECT_DATA,                                   \
-          "string strided select data"),                                \
+        m(STRING_SELECT_DATA,                                           \
+          "string select data"),                                        \
         m(CONFIG_ARG_COPY_DATA,                                         \
           "config arg copy data"),                                      \
         m(CONFIG_TABLE_DATA,                                            \
