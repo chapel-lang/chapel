@@ -1,0 +1,2 @@
+# Get counts differ with segment=fast, so lets skip this case.
+CHPL_GASNET_SEGMENT==fast
