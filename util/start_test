@@ -1073,10 +1073,10 @@ if ("$dirlist" == "" && "$testlist" == "") then
         if ($performance) then
             # Track the number of spec examples being tested
             echo \[Generating tests from the Chapel Spec in $chplhome/spec\] |& $tee -a $logfile
-            make spectests >& test/spectests.make.out.tmp
+            make spectests >& test/spectests.exec.out.tmp
             set exitval = $status            
             if ( $exitval != 0 ) then
-                echo "[Error: Failed to generate Spec tests.  Log file: $chplhome/test/spectests.make.out.tmp]" |& $tee -a $logfile
+                echo "[Error: Failed to generate Spec tests.  Log file: $chplhome/test/spectests.exec.out.tmp]" |& $tee -a $logfile
                 goto err_exit
             endif
             pushd $CHPL_HOME/test >& /dev/null
@@ -1084,13 +1084,13 @@ if ("$dirlist" == "" && "$testlist" == "") then
                 mkdir -p $perfdir
             endif
             echo \[Computing stats for spec examples\] |& $tee -a $logfile
-            $utildir/computePerfStats spectests "$perfdir" >& test/spectests.perfStats.out.tmp
+            $utildir/computePerfStats spectests "$perfdir" "$CHPL_HOME/test/spectests.perfkeys" >& test/spectests.perfStats.out.tmp
             set exitval = $status
             if ( $exitval != 0 ) then
                 echo "[Error: Failed to compute perf stats for Spec tests.  Log file: $chplhome/test/spectests.perfStats.out.tmp]" |& $tee -a $logfile
                 goto err_exit
             endif
-            rm test/spectests.make.out.tmp test/spectests.perfStats.out.tmp
+            rm test/spectests.exec.out.tmp test/spectests.perfStats.out.tmp
             popd >& /dev/null
         else
             if ("$gengraphs" == 0) then
