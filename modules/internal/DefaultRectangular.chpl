@@ -2,7 +2,14 @@
 //
 pragma "no use ChapelStandard"
 module DefaultRectangular {
-  
+
+  config const dataParTasksPerLocale = 0;
+  config const dataParIgnoreRunningTasks = true;
+  config const dataParMinGranularity: int = 1;
+
+  if dataParTasksPerLocale<0 then halt("dataParTasksPerLocale must be >= 0");
+  if dataParMinGranularity<=0 then halt("dataParMinGranularity must be > 0");
+
   use DSIUtil, ChapelArray;
   config param debugDefaultDist = false;
   config param debugDefaultDistBulkTransfer = false;
@@ -39,7 +46,8 @@ module DefaultRectangular {
   }
   
   //
-  // Replicated copies are set up in InitPrivateGlobals.
+  // Replicated copies are set up in initOnLocales() during locale
+  // model initialization
   //
   pragma "private" var defaultDist = new dmap(new DefaultDist());
   inline proc chpl_defaultDistInitPrivate() {
@@ -105,7 +113,9 @@ module DefaultRectangular {
       }
     }
   
-    iter these() {
+    iter these(tasksPerLocale = dataParTasksPerLocale,
+               ignoreRunning = dataParIgnoreRunningTasks,
+               minIndicesPerTask = dataParMinGranularity) {
       if rank == 1 {
         for i in ranges(1) do
           yield i;
@@ -114,10 +124,13 @@ module DefaultRectangular {
           yield i;
       }
     }
-  
-    iter these(param tag: iterKind) where tag == iterKind.leader {
-      const ignoreRunning = dataParIgnoreRunningTasks;
-      const minIndicesPerTask = dataParMinGranularity;
+
+    iter these(param tag: iterKind,
+               tasksPerLocale = dataParTasksPerLocale,
+               ignoreRunning = dataParIgnoreRunningTasks,
+               minIndicesPerTask = dataParMinGranularity)
+      where tag == iterKind.leader {
+
       const numSublocs = here.getChildCount();
 
       if localeModelHasSublocales && numSublocs != 0 {
@@ -144,7 +157,9 @@ module DefaultRectangular {
             var followMe: rank*range(idxType) = locBlock;
             const (lo,hi) = _computeBlock(locBlock(parDim).length,
                                           numChunks, chunk,
-                                          locBlock(parDim).high);
+                                          locBlock(parDim).high,
+                                          locBlock(parDim).low,
+                                          locBlock(parDim).low);
             followMe(parDim) = lo..hi;
             const (numChunks2, parDim2) = _computeChunkStuff(nCores, ignoreRunning,
                                                              minIndicesPerTask, followMe);
@@ -166,12 +181,11 @@ module DefaultRectangular {
           }
         }
       } else {
+
         if debugDefaultDist then
           writeln("*** In domain/array leader code:"); // this = ", this);
-        const numTasks = if dataParTasksPerLocale==0 then here.numCores
-                         else dataParTasksPerLocale;
-        const ignoreRunning = dataParIgnoreRunningTasks;
-        const minIndicesPerTask = dataParMinGranularity;
+        const numTasks = if tasksPerLocale==0 then here.numCores
+                         else tasksPerLocale;
         if debugDataPar {
           writeln("### numTasks = ", numTasks);
           writeln("### ignoreRunning = ", ignoreRunning);
@@ -209,7 +223,9 @@ module DefaultRectangular {
             var followMe: rank*range(idxType) = locBlock;
             const (lo,hi) = _computeBlock(locBlock(parDim).length,
                                           numChunks, chunk,
-                                          locBlock(parDim).high);
+                                          locBlock(parDim).high,
+                                          locBlock(parDim).low,
+                                          locBlock(parDim).low);
             followMe(parDim) = lo..hi;
             if debugDefaultDist then
               writeln("*** DI[", chunk, "]: followMe = ", followMe);
@@ -219,7 +235,12 @@ module DefaultRectangular {
       }
     }
   
-    iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
+    iter these(param tag: iterKind, followThis,
+               tasksPerLocale = dataParTasksPerLocale,
+               ignoreRunning = dataParIgnoreRunningTasks,
+               minIndicesPerTask = dataParMinGranularity)
+      where tag == iterKind.follower {
+
       proc anyStridable(rangeTuple, param i: int = 1) param
         return if i == rangeTuple.size then rangeTuple(i).stridable
                else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
@@ -497,7 +518,9 @@ module DefaultRectangular {
         return data;
     }
 
-    iter these() var {
+    iter these(tasksPerLocale:int = dataParTasksPerLocale,
+               ignoreRunning:bool = dataParIgnoreRunningTasks,
+               minIndicesPerTask:int = dataParMinGranularity) var {
       type strType = chpl__signedType(idxType);
       if rank == 1 {
         // This is specialized to avoid overheads of calling dsiAccess()
@@ -530,17 +553,30 @@ module DefaultRectangular {
       }
     }
   
-    iter these(param tag: iterKind) where tag == iterKind.leader {
-      for followThis in dom.these(tag) do
+    iter these(param tag: iterKind,
+               tasksPerLocale = dataParTasksPerLocale,
+               ignoreRunning = dataParIgnoreRunningTasks,
+               minIndicesPerTask = dataParMinGranularity)
+      where tag == iterKind.leader {
+      for followThis in dom.these(tag,
+                                  tasksPerLocale,
+                                  ignoreRunning,
+                                  minIndicesPerTask) do
         yield followThis;
     }
   
-    iter these(param tag: iterKind, followThis) var where tag == iterKind.follower {
+    iter these(param tag: iterKind, followThis,
+               tasksPerLocale = dataParTasksPerLocale,
+               ignoreRunning = dataParIgnoreRunningTasks,
+               minIndicesPerTask = dataParMinGranularity)
+      var where tag == iterKind.follower {
       if debugDefaultDist then
         writeln("*** In array follower code:"); // [\n", this, "]");
-      for i in dom.these(tag=iterKind.follower, followThis) {
+      for i in dom.these(tag=iterKind.follower, followThis,
+                         tasksPerLocale,
+                         ignoreRunning,
+                         minIndicesPerTask) do
         yield dsiAccess(i);
-      }
     }
   
     proc computeFactoredOffs() {
