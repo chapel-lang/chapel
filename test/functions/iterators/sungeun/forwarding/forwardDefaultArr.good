@@ -1,0 +1,38 @@
+=== In forwardDefaultArr ===
+### numTasks = 2
+### ignoreRunning = true
+### minIndicesPerTask = 1
+### numChunks=2 (parDim=1)
+### numTasks = 2
+### ignoreRunning = true
+### minIndicesPerTask = 1
+### numChunks=2 (parDim=1)
+### numTasks = 1
+### ignoreRunning = true
+### minIndicesPerTask = 1
+### numChunks=1 (parDim=1)
+### numTasks = 2
+### ignoreRunning = false
+### minIndicesPerTask = 1
+### numChunks=2 (parDim=1)
+### numTasks = 2
+### ignoreRunning = true
+### minIndicesPerTask = 2
+### numChunks=2 (parDim=1)
+### numTasks = 2
+### ignoreRunning = true
+### minIndicesPerTask = 1
+### numChunks=2 (parDim=1)
+### numTasks = 1
+### ignoreRunning = true
+### minIndicesPerTask = 1
+### numChunks=1 (parDim=1)
+### numTasks = 2
+### ignoreRunning = false
+### minIndicesPerTask = 1
+### numChunks=2 (parDim=1)
+### numTasks = 2
+### ignoreRunning = true
+### minIndicesPerTask = 2
+### numChunks=2 (parDim=1)
+=== leaving forwardDefaultArr ===
