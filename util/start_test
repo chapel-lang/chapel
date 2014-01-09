@@ -1084,7 +1084,7 @@ if ("$dirlist" == "" && "$testlist" == "") then
                 mkdir -p $perfdir
             endif
             echo \[Computing stats for spec examples\] |& $tee -a $logfile
-            $utildir/computePerfStats spectests "$perfdir" "$CHPL_HOME/test/spectests.perfkeys" >& test/spectests.perfStats.out.tmp
+            $utildir/computePerfStats spectests "$perfdir" "$CHPL_HOME/test/spectests.perfkeys" test/spectests.exec.out.tmp >& test/spectests.perfStats.out.tmp
             set exitval = $status
             if ( $exitval != 0 ) then
                 echo "[Error: Failed to compute perf stats for Spec tests.  Log file: $chplhome/test/spectests.perfStats.out.tmp]" |& $tee -a $logfile
