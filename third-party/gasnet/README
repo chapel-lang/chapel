@@ -11,7 +11,7 @@ to the Chapel team at chapel-bugs@lists.sourceforge.net, as the cause
 is most likely due to Chapel's use of GASNet and not the GASNet
 library itself.
 
-The modifications that we have made to the official GASNet 1.20.2
+The modifications that we have made to the official GASNet 1.22.0
 release are as follows:
 
 * Added support for launching an xterm window running gdb in the udp
@@ -20,15 +20,14 @@ release are as follows:
   be innocuous for non-Chapel developers, and has been exceedingly
   useful for the Chapel development team.
 
-* Added use of CHPL_GASNET_QUIET environment variable to quiet Aries
-  BETA warning messages (useful for testing).
-
 * Added support for tilera targets.
 
-* Added some missing '-I' flags to the configure/configure.in files
-  (contributed by Ryan Ward, confirmed correct by the GASNet team,
-  but apparently the next GASNet version gets rid of this logic, so
-  it'll be fixed in another way then).
+* Install a patch sent by the GASNet team, to make programs using the
+  Cray-specific Aries substrate link libhugetlbfs in whole-archive mode.
+  This fixed some initialization-time problems that were seen in that
+  configuration.  The patch changed the configure.in file and then we
+  needed to re-run the Bootstrap step.  The commit contained the result
+  of all of that.
 
 The structure of this directory is as follows:
 
