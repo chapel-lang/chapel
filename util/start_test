@@ -69,8 +69,7 @@
 #   -comp-only
 #   -performance
 #   -num-trials <number>             1
-#   -gen-old-graphs
-#   -gen-graphs
+#   -generate-graphs
 #   -no-display-graph-range
 #   -graphs-gen-default <avg|min|max|med> avg
 #   -startdate <MM/DD/YY>
@@ -78,8 +77,10 @@
 #   -futuresonly
 #   -valgrind
 #   -valgrindexe
+#   -sysprediff <path>
 #   -suppress <suppression file>
-#   -interpret (DEPRECATED)
+#   -nostdinredirect
+#   -launchertimeout pbs
 #   -logfile   <log filename>         $testdir/Logs/<username>.<tgt-platform>.log
 #                                     (where $testdir is $CHPL_HOME/test if
 #                                     it exists, $CHPL_HOME/examples, if it
