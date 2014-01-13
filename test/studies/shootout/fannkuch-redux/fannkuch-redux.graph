@@ -1,4 +1,5 @@
 perfkeys: real
+files: fannkuch-redux.dat
 graphkeys: time
 ylabel: Time (seconds)
-graphtitle: Fannkuch (redux)
+graphtitle: Fannkuch-Redux (n=12)
