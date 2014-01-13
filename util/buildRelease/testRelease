@@ -1,8 +1,8 @@
 #!/usr/bin/env perl
 
 # Mailing lists.
-$failuremail = "chapel_cronmail\@cray.com";
-$allmail = "chapel_cronmail_all\@cray.com";
+$failuremail = "chapel-test-results-regressions\@lists.sourceforge.net";
+$allmail = "chapel-test-results-all\@lists.sourceforge.net";
 
 $printusage = 1;
 $debug = 1;

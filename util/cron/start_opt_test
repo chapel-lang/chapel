@@ -17,8 +17,8 @@
 #
 
 # Mailing lists.
-$failuremail = "chapel_cronmail\@cray.com";
-$allmail = "chapel_cronmail_all\@cray.com";
+$failuremail = "chapel-test-results-regressions\@lists.sourceforge.net";
+$allmail = "chapel-test-results-all\@lists.sourceforge.net";
 
 if (!defined $ENV{'CHPL_HOME_REPOSITORY'}) {
     print "ERROR: CHPL_HOME_REPOSITORY must be set to use getoldperf\n";

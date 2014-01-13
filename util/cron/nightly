@@ -5,9 +5,8 @@ use Cwd;
 use Sys::Hostname;
 
 # Mailing lists.
-# TODO: Migrate to SF.net.
-$failuremail = "chapel_cronmail\@cray.com";
-$allmail = "chapel_cronmail_all\@cray.com";
+$failuremail = "chapel-test-results-regressions\@lists.sourceforge.net";
+$allmail = "chapel-test-results-all\@lists.sourceforge.net";
 
 $valgrind = 0;
 $interpret = 0;

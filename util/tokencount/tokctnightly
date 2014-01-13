@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 # Mailing lists.
-$failuremail = "chapel_cronmail\@cray.com";
+$failuremail = "chapel-test-results-regressions\@lists.sourceforge.net";
 
 if (!defined $ENV{'CHPL_HOME_REPOSITORY'}) {
     print "ERROR: CHPL_HOME_REPOSITORY must be set to use tokctnightly\n";
