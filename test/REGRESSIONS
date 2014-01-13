@@ -155,12 +155,6 @@ no-local regressions
 (Reviewed for accuracy 12/06/13)
 ===============================
 
-timeouts, related to CHPL_RT_NUM_THREADS_PER_LOCALE=1 (started 10/31/13) (gbt)
-------------------------------------------------------------------------------
-[Error: Timed out executing program parallel/taskPool/figueroa/OneThreadSyncStmt]
-[Error: Timed out executing program parallel/taskPool/figueroa/OneThread]
-[Error: Timed out executing program parallel/taskPool/figueroa/QueuedTasks]
-
 increased memory use (vass, r22473)
 -----------------------------------
 [Error matching program output for memory/shannon/printFinalMemStat]
