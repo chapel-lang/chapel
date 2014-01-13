@@ -6,6 +6,9 @@ config const LOOKUP_SIZE = 4*1024;
 config const LOOKUP_SCALE : real = LOOKUP_SIZE - 1;
 config const n = 1000;
 
+var outfd = openfd(1);
+var stdout = outfd.writer(kind=iokind.native, locking=false);
+
 class Freq {
   var c: string;
   var p: real;
@@ -95,14 +98,14 @@ proc addLine(bytes: int) {
     // printing out one character at a time.
     line += lookup[ai].c;
   }
-  writeln(line);
+  stdout.writeln(line);
 }
 
 // Output a random sequence of length n using distribution a
 proc randomMake(desc : string, a :[?D], n : int) {
   var len : int = n;
   makeLookup(a);
-  write(desc);
+  stdout.write(desc);
   while (len > 0) {
     var bytes : int = min(LINE_LENGTH, len);
     addLine(bytes);
@@ -112,18 +115,18 @@ proc randomMake(desc : string, a :[?D], n : int) {
 
 // Repeat sequence "alu" for n characters
 proc repeatMake(desc : string, alu : string, n : int) {
-  write(desc);
+  stdout.write(desc);
   var r : int = alu.length;
   var s : string = alu + alu + alu.substring(1..n%r);
   var j : int;
 
   for i in 0..(n / LINE_LENGTH)-1 {
     j = i*LINE_LENGTH % r;
-    writeln(s.substring(j + 1..j + LINE_LENGTH));
+    stdout.writeln(s.substring(j + 1..j + LINE_LENGTH));
   }
   if (n % LINE_LENGTH) {
     j = (n / LINE_LENGTH)*LINE_LENGTH % r;
-    writeln(s.substring(j + 1..j + (n % LINE_LENGTH)));
+    stdout.writeln(s.substring(j + 1..j + (n % LINE_LENGTH)));
   }
 }
 
