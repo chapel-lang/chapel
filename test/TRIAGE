@@ -284,7 +284,7 @@ nondet. timeout on gasnet-everything
 ------------------------------------
 [Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dBDtoDRTest] (07/08/13)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (7/22/13, 09/02/13, 09/30/13, 12/13/13)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (7/19/13, 10/9/13)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (7/19/13, 10/9/13, 01/08/14)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff] (8/9/13)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (9/30/13, 11/8/13, 12/13/13)
 
@@ -295,6 +295,12 @@ cray-xt.cray-prgenv-intel.none.fifo.pthreads--linux64 (May 27, 2013)
 [Error matching compiler output for link/sungeun/static_dynamic (compopts: 4)] 
 [Error matching compiler output for link/sungeun/static_dynamic (compopts: 5)] 
 
+Similar unreproducible failure for
+cray-xe.cray-prgenv-intel.none.fifo.pthreads.flat--linux64 (January 5, 2014)
+> ld: warning: libmpl.so.0, needed by /opt/cray/lib64/libmpich_intel.so.2, not found (try using -rpath or -rpath-link)
+--------------------------------------------------------------------
+[Error matching compiler output for link/sungeun/static_dynamic (compopts: 4)] 
+[Error matching compiler output for link/sungeun/static_dynamic (compopts: 5)] 
 
 undiagnosed cygwin failures
 ---------------------------

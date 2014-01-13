@@ -357,6 +357,14 @@ cray-prgenv-cray/cce-specific regressions
 (Reviewed for accuracy 10/16/13)
 =========================================
 
+compilation segfault (01/13/14) (CCE bug, Sung is watching)
+--------------------------------------
+"/opt/cray/cce/8.2.3/CC/x86-64/lib/optcg" was terminated due to receipt of signal 013:  Segmentation fault."
+for [Error matching compiler output for optimizations/bulkcomm/alberto/Block/4dStrideTest]
+[Error matching compiler output for optimizations/bulkcomm/alberto/Block/5dStrideTest]
+[Error matching compiler output for optimizations/bulkcomm/alberto/Cyclic/4dStrideTest]
+[Error matching compiler output for optimizations/bulkcomm/alberto/Cyclic/5dStrideTest]
+
 extern_string_test output mismatch
 ----------------------------------
 [Error matching .bad file for users/ferguson/extern_string_test (compopts: 1)] (cray-xt.cray-prgenv-cray.none.fifo.pthreads--linux64.gnu on chpbld02, 6/16/13)
