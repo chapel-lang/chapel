@@ -157,12 +157,14 @@ function genDygraph(graphInfo, parent, legend) {
                             }
                         }
                         );
-
     var logToggle = document.createElement('input');
     logToggle.type='button';
     logToggle.className='logToggle';
     logToggle.value='log';
     logToggle.visible=true;
+    if (graphInfo.unloggable == "true") {
+        logToggle.style.color='red';
+    }
     logToggle.onclick=function() { 
         var useLog = ! g.getOption('logscale');
         if (useLog) logToggle.value = 'linear';
