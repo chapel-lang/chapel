@@ -107,6 +107,7 @@ Optional Settings
    build the runtime libraries and generated code for
    CHPL_TARGET_PLATFORM.  Currently supported values are as follows:
 
+        clang             : the Clang compiler suite -- clang and clang++
         cray-prgenv-cray  : the Cray PrgEnv compiler using the Cray CCE backend
         cray-prgenv-gnu   : the Cray PrgEnv compiler using the GNU backend
         cray-prgenv-intel : the Cray PrgEnv compiler using the Intel backend
@@ -125,6 +126,7 @@ Optional Settings
         marenostrum ->  ibm
         pwr5, pwr6  ->  ibm
         x1, x2      ->  cray-vec
+        darwin      ->  clang if available, otherwise gnu
         other       ->  gnu
 
    The default for CHPL_TARGET_COMPILER is CHPL_HOST_COMPILER if it is
