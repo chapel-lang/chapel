@@ -1,0 +1,3 @@
+#!/usr/bin/env tcsh
+source ~/.chapelcshrc-cron
+$CHPL_HOME/util/cron/nightly -cron -examples
