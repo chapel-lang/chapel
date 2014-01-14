@@ -13,7 +13,7 @@
 
 config var n = 9,            // the problem size for example 1
            filename = "Arr.dat";  // the filename for writing/reading the array
-config const num = 1*1024*1024;
+config const num = 128*1024;
 config const example = 0;
 config const testfile = "test.bin";
 
