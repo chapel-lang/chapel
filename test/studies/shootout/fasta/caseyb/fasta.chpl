@@ -7,7 +7,7 @@ config const LOOKUP_SCALE : real = LOOKUP_SIZE - 1;
 config const n = 1000;
 
 var outfd = openfd(1);
-var stdout = outfd.writer(kind=iokind.native, locking=false);
+var stdout = outfd.writer(locking=false);
 
 class Freq {
   var c: string;
@@ -86,19 +86,15 @@ proc makeLookup(a :[?D]) {
 
 // Add a line of random sequence
 proc addLine(bytes: int) {
-  // TODO: fixed length string would be ideal
-  var line: string;
   for i in 0..bytes-1 {
     var r  = random.next();
-    var ai = r : int;
+    var ai = r : int; 
     while (lookup[ai].p < r) {
       ai = ai + 1;
     }
-    // This leaks a incredible amount of memory, but it is still faster than
-    // printing out one character at a time.
-    line += lookup[ai].c;
+    stdout.write(lookup[ai].c); //A faster way of writing would make this code viable
   }
-  stdout.writeln(line);
+  stdout.writeln();
 }
 
 // Output a random sequence of length n using distribution a

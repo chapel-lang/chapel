@@ -1,6 +1,10 @@
-//Fasta Shootout
-//http://shootout.alioth.debian.org
-//Casey Battaglino
+/* The Computer Language Benchmarks Game
+ * http://benchmarksgame.alioth.debian.org/
+ *
+ * contributed by Kyle Brady
+ * modified from the Chapel version by Casey Battaglino
+ */
+
 config const LINE_LENGTH = 60;
 config const LOOKUP_SIZE = 4*1024;
 config const LOOKUP_SCALE : real = LOOKUP_SIZE - 1;
