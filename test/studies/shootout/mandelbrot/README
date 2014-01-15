@@ -36,10 +36,10 @@ jacobnelson/mandelbrot-fancy:
 
 lydia/mandelbrot-no-dist:
   The same as mandelbrot-fancy, minus the distribution so that the program does
-  not run out of memory.  Currently the fastest version that outputs to stdout,
-  although(/because) it uses putchar instead of pure Chapel I/O.
+  not run out of memory.
 
 lydia/mandelbrot-unzipped:
   Uses the same style of Chapel I/O as ferguson/mandelbrot-stdout and removes
   the zippering, replacing the bundled array access with an on-demand access and
-  iterating over the 2D indices separately rather than as one.
+  iterating over the 2D indices separately rather than as one.  Currently the
+  fastest version.
