@@ -30,8 +30,10 @@ ifneq (, $(CHPL_QTHREAD_TESTING))
 CHPL_QTHREAD_CFG_OPTIONS += --enable-oversubscription
 endif
 
-# enable guard pages for stack overflow detection
+# enable guard pages for stack overflow detection, unless directed not to
+ifeq (, $(call isTrue, $(CHPL_QTHREAD_NO_GUARD_PAGES)))
 CHPL_QTHREAD_CFG_OPTIONS += --enable-guard-pages
+endif
 
 # optionally enable printing compilation commands, etc. (to help diagnose
 # build problems)

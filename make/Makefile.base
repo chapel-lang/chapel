@@ -3,6 +3,11 @@
 # before using
 #
 
+#
+# utilities
+#
+isTrue = $(filter yes Yes YES y Y true True TRUE t T, $(1))
+
 MAKEFLAGS = --no-print-directory
 
 ifndef CHPL_MAKE_HOST_TARGET
