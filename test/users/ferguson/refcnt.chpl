@@ -111,10 +111,16 @@ writeln("After scope (setting global)");
 
 writeln("Before scope (begin)");
 sync {
-  var r:R;
-  begin {
-    test_one(r, false);
+  var flag:sync bool;
+  proc call_test_one() {
+    var r:R;
+    begin {
+      var ready = flag;
+      test_one(r, false);
+    }
   }
+  call_test_one();
+  flag = true;
 }
 writeln("After scope (begin)");
 
