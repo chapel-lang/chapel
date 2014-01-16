@@ -58,13 +58,15 @@ darwin-dnum non-deterministic timeout
 [Error matching program output for domains/sungeun/assoc/stress (compopts: 1, execopts: 2)]
 
 
-time out (possible gasnet race condition/deadlock)
---------------------------------------------------
+gasnet time out (possible gasnet race condition/deadlock)
+---------------------------------------------------------
 
-everything (12/9/13, 12/13/13).  It should run in ~10s for segment
-everything, so it's clear something is stuck.  Tried running in a
-loop, but can't seem to recreate in several hours.  Might have compile
-with -g to catch it, which will make the backtrace less useful.
+Many tests that clearly do not bump up against the timeout are timing
+out.  For example, test/distributions/bradc/blkCyc/weirdcase.chpl.
+Timed out for segment everything (12/9/13, 12/13/13), but should run
+in ~10s for segment everything.  Similarly,
+studies/hpcc/PTRANS/jglewis/ptrans_2011-blkcyc.chpl should run in
+about 40 seconds for segment everything but timed out on 1/13/14.
 
 
 numa testing non-determinism
@@ -73,16 +75,6 @@ sungeun: I believe this test pushes the stack size limit and gets
 lucky sometimes.  I've left the entry in the REGRESSIONS file for now.
 [Error matching program output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 1, execopts: 3)]
 
-
-nondeterministic seg fault (hilde)
-----------------------------------
-[Error matching program output for classes/figueroa/RecordDestructor1b]
-
-This failed during baseline testing on 12/12/13, but it will also fail
-intermittently for the standard configuration.  I tried it with the
-previous day's commits backed out, so I'm pretty sure it was not
-caused by anything on this particular day.  FWIW, this runs clean with
-valgrind.
 
 nondet. baseline output
 -----------------------
@@ -109,21 +101,24 @@ extra thread required for multilocale startup
 (sungeun: Fix in test)
 [Error: Timed out executing program multilocale/gbt/needMultiLocales/hello-numThreads-2]
 
-XT/XC PrgEnv-cray non-deterministic compiler internal errors (misc.cpp)
-This shows up on cray-x?-cray-prgenv-cray.none.fifo.pthreads runs
------------------------------------------------------------------
-Determined to be a problem with CCE.  Filed bug 800520.
+XT/XC PrgEnv-cray non-deterministic compiler internal errors
+(seg fault) this shows up on
+cray-x?-cray-prgenv-cray.none.fifo.pthreads runs
+------------------------------------------------------------
 
-Also was witnessed once on linux64.gnu.fifo.pthreads with --no-local (11/24/13)
+Determined to be a problem with CCE.  Filed bug 800520.  This bug
+probably will not be fixed as it is an issue with static linking on
+the login node.  Not worth recording the various failures, but you can
+recognize the error in the following manner.  It will be a "Error
+matching compiler output" and when you look at the log file, it will
+fail with a seg fault which shows up as an internal error in misc.cpp,
+so it will say something like "error: internal failure MIS0355 chpl
+Version 1.8.0.-999".
 
-[Error matching compiler output for studies/sudoku/dinan/sudoku-smart]
-(9/13/13, same warnings, don't know when it started)
 
-Update 12/20/13: the failures are gone on chapbld01 for
-  cray-xc.cray-prgenv-cray.none.fifo.pthreads.flat--linux64.gnu
-Before removing this entry, need to ensure it succeeds over the weekend
-on chpbld02. The following log file had 98 of those failures on 12/14:
-  Nightly/weekend/day6-Sat-cray-xe.cray-prgenv-cray.none.fifo.pthreads.flat--linux64.gnu-std.log
+cygwin timeout
+==============
+[Error: Timed out compilation for release/examples/benchmarks/lulesh/lulesh (compopts: 1)] (1/13/14, 1/16/14)
 
 
 ==============================================
@@ -469,6 +464,7 @@ no-local nondeterminisms (UNASSIGNED)
 -------------------------------------
 cg-sparse-timecomp (06/05/12)
 studies/ssca2/atomic/SSCA2_main_atomic (07/04/12)
+Compiler internal error: memory/shannon/outofmemory/mallocOutOfMemory (11/24/13)
 
 non-deterministic compilation timeouts (UNASSIGNED)
 -------------------------------------------------

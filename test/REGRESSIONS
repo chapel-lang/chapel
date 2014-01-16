@@ -357,10 +357,15 @@ cray-prgenv-cray/cce-specific regressions
 (Reviewed for accuracy 10/16/13)
 =========================================
 
-compilation segfault (01/13/14) (CCE bug, Sung is watching)
---------------------------------------
-"/opt/cray/cce/8.2.3/CC/x86-64/lib/optcg" was terminated due to receipt of signal 013:  Segmentation fault."
-for [Error matching compiler output for optimizations/bulkcomm/alberto/Block/4dStrideTest]
+CCE IPA bug
+-----------
+
+This is the same as the recent optcg bug that prevented the compiler
+from being compiled, but unfortunately, the fix does not fix these
+tests.  Filed new bug (806884), which has already been resolved, but
+only for 8.3 so not sure when we will start seeing this.
+
+[Error matching compiler output for optimizations/bulkcomm/alberto/Block/4dStrideTest]
 [Error matching compiler output for optimizations/bulkcomm/alberto/Block/5dStrideTest]
 [Error matching compiler output for optimizations/bulkcomm/alberto/Cyclic/4dStrideTest]
 [Error matching compiler output for optimizations/bulkcomm/alberto/Cyclic/5dStrideTest]
