@@ -31,7 +31,7 @@ inline proc eval_A(i,j : int) : real
  */
 proc eval_A_times_u(u : [] real, inRange : int, Au : [] real, outRange1, outRange2 : int)
 {
-  for i in {outRange1..outRange2-1} {
+  for i in outRange1..outRange2-1 {
     Au(i) = + reduce [j in 0..inRange-1 by 2] ((u(j) * eval_A(i,j)) + (u(j+1) * eval_A(i, j+1)));
     if (inRange % 2 == 1) {
       Au(i) = Au(i) + (u(inRange - 1) * eval_A(i, inRange - 1));
@@ -41,7 +41,7 @@ proc eval_A_times_u(u : [] real, inRange : int, Au : [] real, outRange1, outRang
 
 proc eval_At_times_u(u : [] real, inRange : int, Au : [] real, outRange1, outRange2 : int)
 {
-  for i in {outRange1..outRange2-1} {
+  for i in outRange1..outRange2-1 {
     Au(i) = + reduce [j in 0..inRange-1 by 2] ((u(j) * eval_A(j,i)) + (u(j+1) * eval_A(j+1, i)));
     if (inRange % 2 == 1) {
       Au(i) = Au(i) + (u(inRange - 1) * eval_A(inRange - 1, i));

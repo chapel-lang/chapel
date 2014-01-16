@@ -89,7 +89,7 @@ proc do_fannkuch(pos: int):int {
 
 	if (debug > 0) {
 	  write(k);
-	  for i in {2..N} do
+	  for i in 2..N do
 	    write(p(i));
 	  writeln(": ", flips);
 	}
@@ -128,7 +128,7 @@ iter gen_perms(limit: int, swap:int=-1): [P] int {
       if r >= limit then break outer;
 
       var p0: int = p(1);
-      for i in {1..r} do
+      for i in 1..r do
 	p(i) = p(i + 1);
       p(r+1) = p0;
 

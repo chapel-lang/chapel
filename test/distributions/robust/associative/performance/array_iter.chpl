@@ -37,7 +37,7 @@ t2.stop();
 if debug then writeln(A);
 success = true;
 QuickSort(A);
-for i in {D} {
+for i in D {
   if A(i) != Aref(i) {
     success = false;
     break;
@@ -57,7 +57,7 @@ t3.stop();
 if debug then writeln(A);
 success = true;
 QuickSort(A);
-for i in {D} {
+for i in D {
   if A(i) != Aref(i) {
     success = false;
     break;

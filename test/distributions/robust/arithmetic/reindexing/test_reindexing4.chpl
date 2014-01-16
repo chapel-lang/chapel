@@ -6,7 +6,7 @@ proc foo(TD: domain, A: [TD] int, TA, iterNo: int) {
   var errs = 0;
   var offset = if (TD.rank==1) then o5:TD.idxType else fill(TD.rank, o5:TD.idxType);
   [i in TD] A[i] += iterNo;
-  for i in {TD} do
+  for i in TD do
     if A[i] != TA[i+offset] {
       writeln("A[",i,"] Incorrect reindex");
       errs += 1;

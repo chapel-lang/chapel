@@ -109,7 +109,7 @@ proc BlkSchlsEqEuroNoDiv( sptprice : fptype, strike : fptype, rate : fptype,
 
 proc bs() {
 	for 0..#NUM_RUNS do {
-		forall i in {Dom} do {
+		forall i in Dom do {
 			/* Calling main function to calculate option value based on 
 			 * Black & Sholes's equation.
 			 */

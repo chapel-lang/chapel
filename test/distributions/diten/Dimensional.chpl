@@ -126,7 +126,7 @@ class DimensionalArray {
   var locArrs: [dom.dist.localeDomain] LocDimensionalArray(nDims, idxType, eltType);
 
   proc initialize() {
-    for loc in {dom.dist.localeDomain} {
+    for loc in dom.dist.localeDomain {
       on loc {
         locArrs(loc) = new LocDimensionalArray(nDims, idxType, eltType, this, dom.locDoms(loc));
       }

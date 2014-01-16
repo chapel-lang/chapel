@@ -18,32 +18,32 @@ const BlockminD: domain(1) dmapped new dmap(new Block(rank=1,boundingBox=bbox)) 
 var A: [BlockD] int;
 A = -1;
 [i in BlockD] A[i] = -2;
-for i in {BlockD} do
+for i in BlockD do
   A[i] = -3;
-forall i in {BlockD} do
+forall i in BlockD do
   A[i] = -4;
-coforall i in {BlockD} do
+coforall i in BlockD do
   A[i] = -5;
 writeln("SUCCESS");
 
 var BAmin: [BlockminD] int;
 BAmin = -1;
 [i in BlockminD] BAmin[i] = -2;
-for i in {BlockminD} do
+for i in BlockminD do
   BAmin[i] = -3;
-forall i in {BlockminD} do
+forall i in BlockminD do
   BAmin[i] = -4;
-coforall i in {BlockminD} do
+coforall i in BlockminD do
   BAmin[i] = -5;
 writeln("SUCCESS");
 
 var BAmax: [BlockmaxD] int;
 BAmax = -1;
 [i in BlockmaxD] BAmax[i] = -2;
-for i in {BlockmaxD} do
+for i in BlockmaxD do
   BAmax[i] = -3;
-forall i in {BlockmaxD} do
+forall i in BlockmaxD do
   BAmax[i] = -4;
-coforall i in {BlockmaxD} do
+coforall i in BlockmaxD do
   BAmax[i] = -5;
 writeln("SUCCESS");

@@ -91,7 +91,7 @@ proc main(){
 /*          Cyclic Distribution             */
 /********************************************/
 
- for j in {(RedistStage+1)..stages-1} by 2 do {
+ for j in (RedistStage+1)..stages-1 by 2 do {
    //  Stage (j) 
    ComputeStage(PP,QQ,RR,SS,P,Q,R,S,j,DomC);   
    //  Stage (j+1)
@@ -212,7 +212,7 @@ proc SetExampleMatrix()
   }
   
   A(1)=0;C(n)=0;
-  forall i in {1..(n+1)/2} do {
+  forall i in 1..(n+1)/2 do {
     D(i)=i;
     D(n-i+1)=i;
   }

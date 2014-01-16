@@ -54,7 +54,7 @@ proc luLikeMultiply(A : [1..n, 1..n] int)
     var BCopies : [A.domain[blkSize+1..n, blkSize+1..n]] int;
 
     // stamp A across into ACopies,
-    forall blkCol in {2..numBlocks} {
+    forall blkCol in 2..numBlocks {
         var aBlkD : subdomain(ACopies.domain) =
             {blkSize+1..n, 1..blkSize};
         var cBlkD : subdomain(A.domain) =
@@ -64,7 +64,7 @@ proc luLikeMultiply(A : [1..n, 1..n] int)
     }
 
     // stamp B down into BCopies, 
-    forall blkRow in {2..numBlocks} {
+    forall blkRow in 2..numBlocks {
         var bBlkD : subdomain(BCopies.domain) = 
             {1..blkSize, blkSize+1..n};
         var cBlkD : subdomain(A.domain) =

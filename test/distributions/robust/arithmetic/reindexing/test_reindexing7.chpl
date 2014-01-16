@@ -5,7 +5,7 @@ use driver_domains;
 proc foo(TD: domain, A: [TD] int, TA) {
   var errs = 0;
   var offset = if (TD.rank==1) then o5:TD.idxType else fill(TD.rank, o5:TD.idxType);
-  for i in {TD} do
+  for i in TD do
     if A[i] != TA[i-offset] {
       writeln("A[",i,"] Incorrect reindex = ", A[i], ", TA[", i+offset, "] = ", TA[i+offset]);
       errs += 1;

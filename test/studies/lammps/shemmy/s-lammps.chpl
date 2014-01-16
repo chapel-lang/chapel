@@ -33,7 +33,7 @@ var timer:Timer;
 writeln("-- LAMMPS - (Serial,Chapel) --");
 timer.start();
 
-for i in {1..numSteps}
+for i in 1..numSteps
 {
 //    var it:Timer;
 //    it.start();
@@ -74,7 +74,7 @@ proc computeForces()
     for i in atomsExt
     {
 	var nhbrs:maxSize*int=neighbors[i];
-	for m in {1..membcounts[i]}
+	for m in 1..membcounts[i]
 	{
 	    var j:int = nhbrs[m];
 	    var d:3*real = positions[i]-positions[j];

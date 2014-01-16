@@ -19,7 +19,7 @@ for k in 1..n-1 {
   if (A(k,k) != 0.0) { 
     A(i,k) = A(i,k)/A(k,k);
   }
-  for j in {k+1..n} {
+  for j in k+1..n {
     A(i,j) -= A(i,k)*A(k,j);
   }
 }
@@ -56,9 +56,9 @@ P(10,6) = 1.0;
 
 temp = 0.0;
 const i = 1..10;
-for i in {1..10} {
-  for j in {1..10} {
-    for k in {1..10} {
+for i in 1..10 {
+  for j in 1..10 {
+    for k in 1..10 {
       temp(i,j) = temp(i,j) + P(i,k)*A(k,j);
     }
   }

@@ -10,7 +10,7 @@ const MyDom4D: domain(4) dmapped Dist4D = MySpace4;
 
 proc foo(TD: domain, A: [TD] int, TA, offset) {
   var errs = 0;
-  for i in {TD} do {
+  for i in TD do {
     if A[i] != TA[i+offset] {
       writeln("A[",i,"] Incorrect reindex");
       errs += 1;

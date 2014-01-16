@@ -82,7 +82,7 @@ var random = new Random();
 // Make lookup table for random sequence generation
 proc makeLookup(a :[?D]) {
   var j: int = 0;
-  for i in {0..LOOKUP_SIZE-1} {
+  for i in 0..LOOKUP_SIZE-1 {
     while (a[j].p < i) do j = j + 1;
     lookup[i] = a[j];
   }

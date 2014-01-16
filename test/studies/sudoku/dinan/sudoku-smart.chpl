@@ -215,10 +215,10 @@ var seenIt:  [1..9] bool = false;
 proc costFcn(board: [] int): int {
   var cost: int;
   
-  for i in {1..9} {
+  for i in 1..9 {
     seenItX = false;
     seenItY = false;
-    for j in {1..9} {
+    for j in 1..9 {
       // Check rows
       if seenItX[board[i, j]] == true then
         cost += 1;
@@ -272,9 +272,9 @@ proc main() {
   //   It is invariant that the board contains 9 of each digit.
   //   Just perhaps not all in the right spots.
   var nSpots = 0;
-  for i in {1..9} {
+  for i in 1..9 {
     var seenIt: [0..9] bool = false;
-    for j in {1..9} do
+    for j in 1..9 do
       seenIt[initBoard[i, j]] = true;
 
     var j = 1, k = 1;

@@ -220,11 +220,11 @@ proc dfs_count(n: TreeNode, wasParallel: bool = false):int {
       var threads_granted = requestThreads(n.nChildren);
       var count: sync int = 0;
 
-      coforall i in {1..threads_granted} {
+      coforall i in 1..threads_granted {
         count += dfs_count(n.children[i], true);
       }
 
-      for i in {threads_granted+1..n.nChildren} {
+      for i in threads_granted+1..n.nChildren {
         count += dfs_count(n.children[i], false);
       }
 
@@ -259,12 +259,12 @@ proc create_tree(parent: TreeNode, wasParallel: bool = false): int {
     var threads_granted = requestThreads(parent.nChildren);
 
     // Spawn threads
-    coforall i in {1..threads_granted} {
+    coforall i in 1..threads_granted {
       count += create_tree(parent.children[i], true);
     }
     
     // Run the rest sequentially
-    for i in {threads_granted+1..parent.nChildren} {
+    for i in threads_granted+1..parent.nChildren {
       count += create_tree(parent.children[i], false);
     }
 

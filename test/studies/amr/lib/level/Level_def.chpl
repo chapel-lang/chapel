@@ -475,7 +475,7 @@ proc readLevel(file_name: string){
   var n_grids: int;
   input_file.readln(n_grids);
 
-  for i_grid in {1..n_grids} {
+  for i_grid in 1..n_grids {
     input_file.readln();
     input_file.readln( (...x_low) );
     input_file.readln( (...x_high) );

@@ -22,7 +22,7 @@ const TD2D32: domain(2,int(32)) = Space2D32.chpl__unTranslate(o5:int(32),o5:int(
 proc foo(TD: domain, A: [TD] int, TA) {
   var errs = 0;
   var offset = if (TD.rank==1) then (o5-shift):TD.idxType else fill(TD.rank, (o5-shift):TD.idxType);
-  for i in {TD} do
+  for i in TD do
     if A[i].locale != TA[i+offset].locale {
       writeln("A[",i,"] Incorrect reindex");
       errs += 1;

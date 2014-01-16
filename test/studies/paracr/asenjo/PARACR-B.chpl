@@ -171,7 +171,7 @@ proc SetExampleMatrix()
   }
   
   A(1)=0;C(n)=0;
-  forall i in {1..(n+1)/2} do {
+  forall i in 1..(n+1)/2 do {
     D(i)=i;
     D(n-i+1)=i;
   }

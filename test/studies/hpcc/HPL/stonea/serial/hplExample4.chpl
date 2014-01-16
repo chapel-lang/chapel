@@ -274,10 +274,10 @@ proc backwardSub(
 {
     var x : [b.domain] real;
 
-    for i in {b.domain by -1} do {
+    for i in b.domain by -1 do {
         x[i] = b[i];
 
-        for j in {i+1..b.domain.high} do {
+        for j in i+1..b.domain.high do {
             x[i] -= A[i,j] * x[j];
         }
 

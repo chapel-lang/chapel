@@ -23,14 +23,14 @@ inline proc eval_A(i,j) : real
 
 proc eval_A_times_u(U : [] real, inRange, Au : [] real)
 {
-  forall i in {0..#inRange} do { 
+  forall i in 0..#inRange do { 
     Au(i) = + reduce [j in 0..#inRange] (U(j) * eval_A(i,j));
   }
 }
 
 proc eval_At_times_u(U : [] real, inRange, Au : [] real)
 {
-  forall i in {0..#inRange} do {
+  forall i in 0..#inRange do {
     Au(i) = + reduce [j in 0..#inRange] (U(j) * eval_A(j,i));
   }
 }
