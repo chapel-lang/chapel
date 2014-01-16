@@ -3,6 +3,14 @@ export CHPL_MAKE_HOME=$(shell pwd)/..
 endif
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
+ifdef CHPL_DEVELOPER
+DEBUG=1
+export DEBUG
+else
+OPTIMIZE=1
+export OPTIMIZE
+endif
+
 default: all
 
 all: creoleparser dlmalloc gasnet gmp hwloc qthread tcmalloc llvm
