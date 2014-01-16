@@ -368,7 +368,7 @@ if ($debug == 1) {
     if ($tasks eq "qthreads") {
       $recipient = "$recipient qthreads-chapel\@googlegroups.com";
     }
-    $nochangerecipient = "$user\@cray.com $allmail";
+    $nochangerecipient = $allmail;
 }
 
 
