@@ -8,7 +8,7 @@ echo RE2 already unpacked
 else
 
 echo Unpacking RE2
-tar xzf re2-20130802.tgz
+tar xzf re2-20140111.tgz
 echo Applying Patches
 cd re2
 patch -p1 < ../hg_diff_g.patch

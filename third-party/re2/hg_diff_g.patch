@@ -2,10 +2,10 @@ diff --git a/Makefile b/Makefile
 --- a/Makefile
 +++ b/Makefile
 @@ -17,6 +17,7 @@
- ARFLAGS=rsc
- NM=nm
- NMFLAGS=-p
-+NODEBUG=-DNDEBUG
+ ARFLAGS?=rsc
+ NM?=nm
+ NMFLAGS?=-p
++NODEBUG?=-DNDEBUG
  
  # Variables mandated by GNU, the arbiter of all good taste on the internet.
  # http://www.gnu.org/prep/standards/standards.html
@@ -716,8 +716,8 @@ diff --git a/re2/prog.cc b/re2/prog.cc
 +uint32 Prog::EmptyFlags<FilePiece>(const FilePiece& text, FilePiece::ptr_rd_type p);
 +
  void Prog::MarkByteRange(int lo, int hi) {
-   CHECK_GE(lo, 0);
-   CHECK_GE(hi, 0);
+   DCHECK_GE(lo, 0);
+   DCHECK_GE(hi, 0);
 diff --git a/re2/prog.h b/re2/prog.h
 --- a/re2/prog.h
 +++ b/re2/prog.h
@@ -762,17 +762,7 @@ diff --git a/re2/prog.h b/re2/prog.h
 diff --git a/re2/re2.cc b/re2/re2.cc
 --- a/re2/re2.cc
 +++ b/re2/re2.cc
-@@ -151,6 +151,9 @@
-   if (never_nl())
-     flags |= Regexp::NeverNL;
- 
-+  if (dot_nl())
-+    flags |= Regexp::DotNL;
-+
-   if (never_capture())
-     flags |= Regexp::NeverCapture;
- 
-@@ -183,6 +186,8 @@
+@@ -188,6 +188,8 @@
    named_groups_ = NULL;
    group_names_ = NULL;
    num_captures_ = -1;
@@ -781,7 +771,7 @@ diff --git a/re2/re2.cc b/re2/re2.cc
  
    RegexpStatus status;
    entire_regexp_ = Regexp::Parse(
-@@ -209,6 +214,8 @@
+@@ -214,6 +216,8 @@
    else
      suffix_regexp_ = entire_regexp_->Incref();
  
@@ -790,7 +780,7 @@ diff --git a/re2/re2.cc b/re2/re2.cc
    // Two thirds of the memory goes to the forward Prog,
    // one third to the reverse prog, because the forward
    // Prog has two DFAs but the reverse prog has one.
-@@ -505,8 +512,9 @@
+@@ -510,8 +514,9 @@
  
  // Avoid possible locale nonsense in standard strcasecmp.
  // The string a is known to be all lowercase.
@@ -802,7 +792,7 @@ diff --git a/re2/re2.cc b/re2/re2.cc
  
    for (; a < ae; a++, b++) {
      uint8 x = *a;
-@@ -779,6 +787,142 @@
+@@ -784,6 +789,142 @@
    return true;
  }
  
@@ -948,7 +938,7 @@ diff --git a/re2/re2.cc b/re2/re2.cc
 diff --git a/re2/re2.h b/re2/re2.h
 --- a/re2/re2.h
 +++ b/re2/re2.h
-@@ -295,6 +295,13 @@
+@@ -298,6 +298,13 @@
    // to know about prefix_ and prefix_foldcase_.
    re2::Regexp* Regexp() const { return entire_regexp_; }
  
@@ -962,7 +952,7 @@ diff --git a/re2/re2.h b/re2/re2.h
    /***** The useful part: the matching interface *****/
  
    // Matches "text" against "pattern".  If pointer arguments are
-@@ -476,6 +483,22 @@
+@@ -479,6 +486,22 @@
               StringPiece *match,
               int nmatch) const;
  
@@ -985,51 +975,7 @@ diff --git a/re2/re2.h b/re2/re2.h
    // Check that the given rewrite string is suitable for use with this
    // regular expression.  It checks that:
    //   * The regular expression has enough parenthesized subexpressions
-@@ -512,6 +535,7 @@
-     //   max_mem          (see below)  approx. max memory footprint of RE2
-     //   literal          (false) interpret string as literal, not regexp
-     //   never_nl         (false) never match \n, even if it is in regexp
-+    //   dot_nl           (false) . also matches \n (same as ?s)
-     //   never_capture    (false) parse all parens as non-capturing
-     //   case_sensitive   (true)  match is case-sensitive (regexp can override
-     //                              with (?i) unless in posix_syntax mode)
-@@ -571,7 +595,8 @@
-       case_sensitive_(true),
-       perl_classes_(false),
-       word_boundary_(false),
--      one_line_(false) {
-+      one_line_(false),
-+      dot_nl_(false) {
-     }
-     
-     /*implicit*/ Options(CannedOptions);
-@@ -608,6 +633,9 @@
-     bool never_nl() const { return never_nl_; }
-     void set_never_nl(bool b) { never_nl_ = b; }
- 
-+    bool dot_nl() const { return dot_nl_; }
-+    void set_dot_nl(bool b) { dot_nl_ = b; }
-+
-     bool never_capture() const { return never_capture_; }
-     void set_never_capture(bool b) { never_capture_ = b; }
- 
-@@ -636,6 +664,7 @@
-       perl_classes_ = src.perl_classes_;
-       word_boundary_ = src.word_boundary_;
-       one_line_ = src.one_line_;
-+      dot_nl_ = src.dot_nl_;
-     }
- 
-     int ParseFlags() const;
-@@ -653,6 +682,7 @@
-     bool perl_classes_;
-     bool word_boundary_;
-     bool one_line_;
-+    bool dot_nl_;
- 
-     //DISALLOW_EVIL_CONSTRUCTORS(Options);
-     Options(const Options&);
-@@ -723,6 +753,9 @@
+@@ -739,6 +762,9 @@
    // Map from capture indices to names
    mutable const map<int, string>* group_names_;
  
