@@ -115,3 +115,5 @@ any SVN subdirectory.]
   - svn merge
   - Similar to: git merge
 
+* Overwriting the commit message on an existing revision:
+  - svn propset -r <rev#> --revprop svn:log -F <my_new_message_file>
