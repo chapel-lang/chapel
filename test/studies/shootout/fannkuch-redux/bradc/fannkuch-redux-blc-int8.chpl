@@ -11,7 +11,7 @@ config const N: eltType = 7;
 
 assert((N >=3 && N < max(eltType)), "N must be in 3..", max(eltType));
 
-var D = {0..N};
+const D = {0..N};
 var s, t: [D] eltType;
 
 proc main() {
@@ -52,7 +52,7 @@ proc tk() {
 
 
 inline proc rotate(n) {
-  var c = s[0];
+  const c = s[0];
   for i in 1..n {
     s[i-1] = s[i];
   }

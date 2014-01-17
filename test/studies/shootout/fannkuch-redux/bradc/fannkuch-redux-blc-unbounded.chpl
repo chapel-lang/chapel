@@ -10,7 +10,7 @@ config const N = 7;
 
 assert(N >=3, "N must be in 3..");
 
-var D = {0..N};
+const D = {0..N};
 var s, t: [D] int;
 
 proc main() {
@@ -51,7 +51,7 @@ proc tk() {
 
 
 inline proc rotate(n) {
-  var c = s[0];
+  const c = s[0];
   for i in 1..n {
     s[i-1] = s[i];
   }
