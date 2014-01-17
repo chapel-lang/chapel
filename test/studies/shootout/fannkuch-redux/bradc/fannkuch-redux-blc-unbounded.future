@@ -1,0 +1,7 @@
+feature request: ability to iterate over unbounded ranges
+
+I believe we should be able to iterate over unbounded ranges like this
+(with the behavior undefined by the language in the event that it falls
+off the top).  The fact that we can't suggests that the parser may
+special-case for loops more than it ought to -- i.e., if we allow 1..
+in general expression contexts, why not here?
