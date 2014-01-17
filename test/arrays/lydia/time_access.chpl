@@ -47,10 +47,9 @@ proc main {
   var B: [0..#arrsize][0..#arrsize] int(32);
   var t, t2: Timer;
   var worked1, worked2 = true;
-  for i in 1..ntrials {
-    assign(A, arrsize);
-    assign2(B, arrsize);
-  }
+  assign(A, arrsize);
+  assign2(B, arrsize);
+
   t.start();
   for i in 1..ntrials {
     if (touch(A, arrsize) != 999000000) {

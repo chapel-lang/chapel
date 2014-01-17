@@ -56,9 +56,7 @@ void c_trial() {
   if (A == NULL) {
     printf("malloc failed\n");
   }
-  for (i=0; i<ntrials; i++) {
-    assign(A, size);
-  }
+  assign(A, size);
   starttime = now_time();
   for (i=0; i<ntrials; i++) {
     if (touch(A, size) != 999000000) {
