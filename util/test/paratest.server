@@ -499,6 +499,8 @@ sub main {
         shift @ARGV;
     }
 
+    die "Error: CHPL_HOME must be set\n" unless defined $ENV{CHPL_HOME};
+
     if (defined $nodefile) {
         open nodefile or die "Cannot open node file '$nodefile'\n";
         while (<nodefile>) {
