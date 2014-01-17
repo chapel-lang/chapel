@@ -1,5 +1,5 @@
 proc assign(A, n: int(32)) {
-  for i in 0..#n {
+  forall i in 0..#n {
     for j in 0..#n {
       A(i, j) = (i+j):int(32);
     }
@@ -7,7 +7,7 @@ proc assign(A, n: int(32)) {
 }
 
 proc assign2(A, n: int(32)) {
-  for i in 0..#n {
+  forall i in 0..#n {
     for j in 0..#n {
       A[i][j] = (i+j):int(32);
     }
@@ -35,7 +35,7 @@ proc touch2(A, n: int(32)): int {
 }
 
 config const arrsize: int(32) = 1000;
-config const ntrials = 1000;
+config const ntrials = 100;
 
 extern proc c_trial();
 
