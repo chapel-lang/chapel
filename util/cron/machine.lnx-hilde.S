@@ -1,4 +1,4 @@
 #!/bin/bash
 
 source $(cd $(dirname $0) ; pwd)/common.bash
-~/chapel/util/cron/nightly-no-local.cron
+~/chapel/util/cron/nightly.lnx-hilde weekend

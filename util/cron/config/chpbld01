@@ -1,3 +1,5 @@
-SHELL=/bin/bash 
-PATH=/usr/local/bin:/usr/bin:/bin 
-0 2 * * 0-6 /users/chapelu/chapel/util/cron/nightly.chpbld01 weekday >& ~/tmp/nightly.chpbld01.weekday.out 
+SHELL=/bin/bash
+PATH=/usr/local/bin:/usr/bin:/bin
+MAILTO=tvandoren@cray.com
+
+0 2 * * * ~/chapel/util/cron/machine.chpbld01 > ~/tmp/nightly.chpbld01.weekday.out 2>&1

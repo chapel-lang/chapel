@@ -1,1 +1,4 @@
-0 2 * * 0-6 ~/chapel/util/cron/nightly.cflbs32 >& ~/tmp/nightly.cflbs32.out
+SHELL=/bin/bash
+MAILTO=tvandoren@gmail.com
+
+0 2 * * * ~/chapel/util/cron/machine.cflbs32 > ~/tmp/nightly.cflbs32.out 2>&1

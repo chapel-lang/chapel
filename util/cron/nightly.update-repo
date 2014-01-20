@@ -1,0 +1,19 @@
+#!/bin/bash
+#
+# Update the ~/chapel repo. This need only be run once on systems using the
+# kerberos chapelu account (the home dir is shared accross all machines).
+
+source $(cd $(dirname $0) ; pwd)/common.bash
+
+if [ -n "$(type module 2> /dev/null)" ] ; then
+    log_info "Loading subversion module."
+    module load subversion
+fi
+
+(
+    log_info "Moving to ~/chapel"
+    cd ~/chapel
+
+    log_info "Running svn update..."
+    svn update
+)

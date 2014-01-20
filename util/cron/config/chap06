@@ -1,2 +1,4 @@
 SHELL=/bin/bash
-2 2 * * * /users/chapelu/chapel/util/cron/nightly.chap06 >& ~/tmp/nightly.chap06.out
+MAILTO=tvandoren@cray.com
+
+2 2 * * * ~/chapel/util/cron/machine.chap06 > ~/tmp/nightly.chap06.out 2>&1

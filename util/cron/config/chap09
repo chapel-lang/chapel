@@ -1,3 +1,4 @@
 SHELL=/bin/bash
-0 0 * * 6 ~/chapel/util/cron/nightly.chap09 2>&1 > ~/tmp/nightly.chap09.out
+MAILTO=tvandoren@cray.com
 
+0 0 * * 6 ~/chapel/util/cron/machine.chap09 > ~/tmp/nightly.chap09.out 2>&1

@@ -1,2 +1,5 @@
-0 23 * * 0-6 cd ~/chapel && svn update util/cron 2>&1 > ~/tmp/svn-update-util-cron.out
-0 0 * * 0-6 ~/chapel/util/cron/nightly.macchapel-mac 2>&1 > ~/tmp/nightly.macchapel-mac.out
+SHELL=/bin/bash
+MAILTO=tvandoren@cray.com
+
+0 23 * * * ~/chapel/util/cron/nightly.update-repo
+0 0 * * * ~/chapel/util/cron/machine.macchapel-mac > ~/tmp/nightly.macchapel-mac.out 2>&1
