@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # This is a template script for running nightly tests via a cron job.
 # For a particular machine, copy this script and name it

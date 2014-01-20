@@ -1,10 +1,12 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Update the ~/chapel repo. This need only be run once on systems using the
 # kerberos chapelu account (the home dir is shared accross all machines).
 
 source $(cd $(dirname $0) ; pwd)/common.bash
 
+# This assumes that module has been properly initialized. See the shared
+# ~chapelu/.bashrc for details.
 if [ -n "$(type module 2> /dev/null)" ] ; then
     log_info "Loading subversion module."
     module load subversion

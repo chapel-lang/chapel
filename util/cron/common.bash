@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # This should be sourced by other scripts that wish to make use of the
 # variables set here.
@@ -26,7 +26,6 @@ function exit_hook()
     log_info "Finished running ${SCRIPT_NAME} on $(hostname -s)"
 }
 trap exit_hook EXIT
-
 # If the test machine is on the cray network, set this to true.`
 export CHPL_CRAY_NETWORK=false
 domain_ends_with_cray=$(python -c 'import socket ; print(socket.getfqdn().endswith("cray.com"))')
