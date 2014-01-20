@@ -1,4 +1,8 @@
 SHELL=/bin/bash
 MAILTO=tvandoren@gmail.com
 
+# DO NOT EDIT
+# This crontabs is managed in the chapel subversion repo. Make modifications
+# there and us the install_crontab.bash script to update.
+
 0 2 * * * ~/chapel/util/cron/machine.cflbs32 > ~/tmp/nightly.cflbs32.out 2>&1
