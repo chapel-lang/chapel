@@ -37,5 +37,7 @@ fi
 # Use the internal subversion repo mirror when running on the cray network.
 if [ "${CHPL_CRAY_NETWORK}" = "true" ] ; then
     export CHPL_HOME_REPOSITORY=http://svn/svn/chapel-mirror/trunk
-    log_info "Using mirror repo: ${CHPL_HOME_REPOSITORY}"
+else
+    export CHPL_HOME_REPOSITORY=svn://svn.code.sf.net/p/chapel/code/trunk
 fi
+log_info "Using SVN repo: ${CHPL_HOME_REPOSITORY}"

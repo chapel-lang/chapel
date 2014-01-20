@@ -3,6 +3,8 @@ echo `date` "" Starting $0 on `hostname`.
 
 LOGFILE=$HOME/tmp/nightly.opts.long.out
 echo `date` "" "Testing -cron -all.  Log file: $LOGFILE"
-export CHPL_HOME_REPOSITORY=svn://svn.code.sf.net/p/chapel/code/trunk && ~/chapel/util/cron/start_opt_test -cron -all >& $LOGFILE
+
+export CHPL_HOME_REPOSITORY=${CHPL_HOME_REPOSITORY:-"svn://svn.code.sf.net/p/chapel/code/trunk"}
+~/chapel/util/cron/start_opt_test -cron -all >& $LOGFILE
 
 echo `date` "" Finished $0.

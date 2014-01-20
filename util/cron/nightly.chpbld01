@@ -2,7 +2,7 @@
 
 . /etc/profile
 
-export CHPL_HOME_REPOSITORY="svn://svn.code.sf.net/p/chapel/code/trunk"
+export CHPL_HOME_REPOSITORY=${CHPL_HOME_REPOSITORY:-"svn://svn.code.sf.net/p/chapel/code/trunk"}
 export CHPL_LAUNCHER=none
 
 if [ $# == 0 ] ; then
