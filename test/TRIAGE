@@ -118,8 +118,14 @@ Version 1.8.0.-999".
 
 cygwin timeout
 ==============
-[Error: Timed out compilation for release/examples/benchmarks/lulesh/lulesh (compopts: 1)] (1/13/14, 1/16/14)
+[Error: Timed out compilation for release/examples/benchmarks/lulesh/lulesh (compopts: 1)] (1/13/14, 1/16/14, 1/20/14)
+[Error: Timed out compilation for release/examples/primers/distributions] (1/19/14)
 
+
+PrgEnv-gnu compilation timeout
+==============================
+This take 10s of seconds at most:
+[Error: Timed out compilation for domains/bradc/writeIndex2] (1/17/14)
 
 ==============================================
 These things regularly cause noise in testing:

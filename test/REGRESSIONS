@@ -482,6 +482,10 @@ cray-prgenv-pgi-specific regressions (in addition to cray-prgenv-* above)
 (Reviewed for accuracy 12/06/13)
 =========================================================================
 
+__builtin_ctz undefined at link time (1/17/14)
+----------------------------------------------
+[Error matching compiler output for studies/shootout/meteor/kbrady/meteor-parallel-alt]
+
 identifier names too long
 -------------------------
 [Error matching program output for distributions/dm/t5a]
