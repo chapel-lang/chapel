@@ -1,0 +1,4 @@
+# the pgi compiler does not support the use of __builtin_ctz. When the bit
+# operations library is implemented the call can be replaced and this file can
+# be removed
+CHPL_TARGET_COMPILER <= pgi
