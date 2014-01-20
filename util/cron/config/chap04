@@ -1,0 +1,2 @@
+SHELL=/usr/bin/tcsh 
+0 2 * * 0-6 ~/chapel/util/cron/nightly.chap04 >&! ~/tmp/nightly.chap04.out

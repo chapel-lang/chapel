@@ -1,0 +1,5 @@
+SHELL=/usr/bin/tcsh
+#0 22 * * 0-6 cd /data/sea/cascade/chapel/sourceforge-backup && rsync -av 'chapel.svn.sourceforge.net::svn/chapel/*' . >&! ~/cron-rsync-sourceforge.out
+0 22 * * 0-6 cd /data/sea/cascade/chapel/sourceforge-backup && rsync -av svn.code.sf.net::p/chapel/code . >&! ~/cron-rsync-sourceforge.out
+0 23 * * 0-6 module load subversion && cd ~/chapel && svn update
+0 0 * * 0-6 ~/chapel/util/cron/nightly.bradc-lnx >&! ~/tmp/nightly.bradc-lnx.out

@@ -1,0 +1,1 @@
+0 0 * * 0-6 /users/chapelu/chapel/util/cron/nightly-no-local.cron >& /users/chapelu/tmp/nightly.no-local.out

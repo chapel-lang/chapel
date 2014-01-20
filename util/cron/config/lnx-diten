@@ -1,0 +1,1 @@
+0 2 * * 0-6 ~/chapel/util/cron/nightly.lnx-diten > ~/tmp/nightly.lnx-diten.out 2>&1

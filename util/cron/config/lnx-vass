@@ -1,0 +1,2 @@
+0 0 * * 0-6 ~/chapel/util/cron/nightly.lnx-vass >& ~/tmp/nightly.lnx-vass.out
+45 23 * * * ~/chapel/util/cron/historify-logs

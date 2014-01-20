@@ -1,0 +1,2 @@
+0 0 * * 0-5 ~/chapel/util/cron/nightly.lnx-hilde > ~/tmp/nightly.lnx-hilde.out 2>&1
+0 0 * * 6 ~/chapel/util/cron/nightly.lnx-hilde weekend > ~/tmp/nightly.lnx-hilde.weekend.out 2>&1

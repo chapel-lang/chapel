@@ -1,0 +1,2 @@
+SHELL=/usr/bin/tcsh
+0 2 * * 0-6 ~/chapel/util/cron/machine.chap05 >&! ~/tmp/machine.chap05.out

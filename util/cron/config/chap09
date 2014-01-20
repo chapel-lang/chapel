@@ -1,0 +1,3 @@
+SHELL=/bin/bash
+0 0 * * 6 ~/chapel/util/cron/nightly.chap09 2>&1 > ~/tmp/nightly.chap09.out
+
