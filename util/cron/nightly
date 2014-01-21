@@ -111,11 +111,9 @@ while (@ARGV) {
 
 
 print localtime() . "  host: " . hostname . "\n";
-$ctmp = `crontab -l`;
-@blah = split(/\n/, $ctmp);
-# Ignore the first 3 (commented) lines added by crontab
-# I'm not sure how standard this is, but let's see how it goes.
-$crontab = join("\n", splice(@blah , 3))."\n";
+
+# Do not include comments and blank lines from crontab listing.
+$crontab = `crontab -l | grep --invert-match --extended-regexp '^#|^$'`;
 
 if ($debug == 0) {
     print "Currently installed crontab on ".hostname.":\n";
