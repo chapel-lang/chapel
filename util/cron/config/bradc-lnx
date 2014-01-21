@@ -5,13 +5,6 @@ MAILTO=tvandoren@cray.com
 # This crontab is managed in the chapel subversion repo. Make modifications
 # there and use the install_crontab.bash script to update.
 
-# (tvandoren, 2014-01-16) - I have no idea why this is commented out and not
-# deleted. It probably can be deleted...
-#0 22 * * 0-6 cd /data/sea/cascade/chapel/sourceforge-backup && rsync -av 'chapel.svn.sourceforge.net::svn/chapel/*' . >&! ~/cron-rsync-sourceforge.out
-
-# TODO: Is this backup needed anymore? We now have a mirror of the repo on our
-# internal subversion server.
 0 22 * * * cd /data/sea/cascade/chapel/sourceforge-backup && rsync -av svn.code.sf.net::p/chapel/code . >&! ~/cron-rsync-sourceforge.out
-
 0 23 * * * ~/chapel/util/cron/nightly.update-repo
 0 0 * * * ~/chapel/util/cron/machine.bradc-lnx > ~/tmp/nightly.bradc-lnx.out 2>&1
