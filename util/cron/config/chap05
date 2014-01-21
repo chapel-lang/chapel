@@ -3,6 +3,6 @@ MAILTO=tvandoren@cray.com
 
 # DO NOT EDIT
 # This crontab is managed in the chapel subversion repo. Make modifications
-# there and us the install_crontab.bash script to update.
+# there and use the install_crontab.bash script to update.
 
 0 2 * * * ~/chapel/util/cron/machine.chap05 > ~/tmp/machine.chap05.out 2>&1

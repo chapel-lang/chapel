@@ -3,7 +3,7 @@ MAILTO=tvandoren@cray.com
 
 # DO NOT EDIT
 # This crontab is managed in the chapel subversion repo. Make modifications
-# there and us the install_crontab.bash script to update.
+# there and use the install_crontab.bash script to update.
 
 0 2 * * 1,3,5 ~/chapel/util/cron/machine.chap02.MWF > ~/tmp/nightly.linux64.gasnet.out 2>&1
 0 2 * * 2,4,6 ~/chapel/util/cron/machine.chap02.TRS > ~/tmp/nightly.linux64.gasnet.fast.out 2>&1
