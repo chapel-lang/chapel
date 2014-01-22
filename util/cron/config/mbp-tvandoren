@@ -6,7 +6,7 @@ MAILTO=tvandoren@cray.com
 # there and use the install_crontab.bash script to update.
 
 # Update subversion repo at ~/chapel
-0 23 * * * bash -e ~/chapel/util/cron/nightly.update-repo
+20 23 * * * bash -e ~/chapel/util/cron/nightly.update-repo
 
 # Run nightly builds on mbp-tvandoren.
 0 0 * * * bash -e ~/chapel/util/cron/machine.mbp-tvandoren

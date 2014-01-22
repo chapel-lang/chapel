@@ -6,5 +6,5 @@ MAILTO=tvandoren@cray.com
 # there and use the install_crontab.bash script to update.
 
 0 22 * * * cd /data/sea/cascade/chapel/sourceforge-backup && rsync -av svn.code.sf.net::p/chapel/code . >&! ~/cron-rsync-sourceforge.out
-0 23 * * * ~/chapel/util/cron/nightly.update-repo
+20 23 * * * ~/chapel/util/cron/nightly.update-repo
 0 0 * * * ~/chapel/util/cron/machine.bradc-lnx > ~/tmp/nightly.bradc-lnx.out 2>&1

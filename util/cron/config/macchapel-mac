@@ -5,5 +5,5 @@ MAILTO=tvandoren@cray.com
 # This crontab is managed in the chapel subversion repo. Make modifications
 # there and use the install_crontab.bash script to update.
 
-0 23 * * * ~/chapel/util/cron/nightly.update-repo
+20 23 * * * ~/chapel/util/cron/nightly.update-repo
 0 0 * * * ~/chapel/util/cron/machine.macchapel-mac > ~/tmp/nightly.macchapel-mac.out 2>&1
