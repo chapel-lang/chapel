@@ -60,6 +60,10 @@ class c_ptr {
 inline proc _cast(type t, x) where t:c_ptr && x:_nilType {
   return __primitive("cast", t, x);
 }
+inline proc _cast(type t, x) where t:c_ptr && x.type:c_ptr {
+  return __primitive("cast", t, x);
+}
+
 
 inline proc c_calloc(type eltType, size: integral) {
   var ret:c_ptr(eltType);
@@ -95,8 +99,20 @@ inline proc !=(a: _nilType, b: c_ptr) {
 inline proc _cond_test(x: c_ptr) return x != nil;
 
 inline proc !(x: c_ptr) return x == nil;
-extern proc c_ptrTo(ref x:?t):c_ptr(t);
+extern proc c_pointer_return(ref x:?t):c_ptr(t);
 
+inline proc c_ptrTo(arr: []) where isRectangularArr(arr) && arr.rank == 1 {
+  return c_pointer_return(arr[arr.domain.low]);
+}
+inline proc c_ptrTo(ref x:?t):c_ptr(t)
+{
+  if isArrayType(t) then
+    compilerError("c_ptrTo unsupported array type");
+  if isDomainType(t) then
+    compilerError("c_ptrTo domain type not supported");
+  // Other cases should be avoided, e.g. sync vars
+  return c_pointer_return(x);
+}
 
 // C strings
 //extern type c_string; is a built-in primitive type

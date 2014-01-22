@@ -25,7 +25,7 @@ typedef double c_double;
 typedef void* c_void_ptr;
 #define c_nil NULL
 static inline c_int is_c_nil(void* x) { return x==NULL; }
-static inline void* c_ptrTo(void* x) { return x; }
+static inline void* c_pointer_return(void* x) { return x; }
 typedef const char* c_string;
 
 typedef enum {
