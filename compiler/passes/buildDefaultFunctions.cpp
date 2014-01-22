@@ -344,8 +344,16 @@ static void build_chpl_entry_points(void) {
   chpl_gen_main->insertAtTail(new DefExpr(main_ret));
   chpl_gen_main->insertAtTail(new DefExpr(endCount));
 
-  chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE, endCount, new CallExpr("_endCountAlloc")));
-  chpl_gen_main->insertAtTail(new CallExpr(PRIM_SET_END_COUNT, endCount));
+  //
+  // In --minimal-modules compilation mode, we won't have any
+  // parallelism, so no need for end counts (or atomic/sync types to
+  // support them).
+  //
+  if (!fMinimalModules) {
+    chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE, endCount, new CallExpr("_endCountAlloc")));
+    chpl_gen_main->insertAtTail(new CallExpr(PRIM_SET_END_COUNT, endCount));
+  }
+
   chpl_gen_main->insertAtTail(new CallExpr("chpl_rt_preUserCodeHook"));
 
   if( ! fNoInternalModules ) {
@@ -387,9 +395,17 @@ static void build_chpl_entry_points(void) {
   }
 
   chpl_gen_main->insertAtTail(new CallExpr("chpl_rt_postUserCodeHook"));
-  chpl_gen_main->insertAtTail(new CallExpr("_waitEndCount"));
-  //chpl_gen_main->insertAtTail(new CallExpr("_endCountFree", endCount));
 
+  //
+  // In --minimal-modules compilation mode, we won't be waiting on an
+  // encount (see comment above)
+  //
+  if (!fMinimalModules) {
+
+    chpl_gen_main->insertAtTail(new CallExpr("_waitEndCount"));
+    //chpl_gen_main->insertAtTail(new CallExpr("_endCountFree", endCount));
+
+  }
   chpl_gen_main->insertAtTail(new CallExpr(PRIM_RETURN, main_ret));
 
   normalize(chpl_gen_main);
@@ -745,6 +761,14 @@ static void buildDefaultReadWriteFunctions(ClassType* ct) {
   bool hasReadThis = false;
   bool hasWriteThis = false;
   bool makeReadThisAndWriteThis = true;
+
+  //
+  // We have no QIO when compiling with --minimal-modules, so no need
+  // to build default R/W functions.
+  //
+  if (fMinimalModules) {
+    return;
+  }
 
   // If we have a readWriteThis, we'll call it from readThis/writeThis.
   if (function_exists("readWriteThis", 3, dtMethodToken, ct, NULL)) {

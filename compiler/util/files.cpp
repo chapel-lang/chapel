@@ -623,20 +623,26 @@ void addDashMsToUserPath(void) {
 
 
 void setupModulePaths(void) {
-  intModPath.add(astr(CHPL_HOME, "/modules/internal/localeModels/",
+  const char* modulesRoot = (fMinimalModules ? "modules-minimal" : "modules");
+
+  intModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/internal/localeModels/",
                       CHPL_LOCALE_MODEL, "/", CHPL_ACC_CODEGEN));
-  intModPath.add(astr(CHPL_HOME, "/modules/internal/localeModels/",
+  intModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/internal/localeModels/",
                       CHPL_LOCALE_MODEL));
-  intModPath.add(astr(CHPL_HOME, "/modules/internal/threads/", CHPL_THREADS));
-  intModPath.add(astr(CHPL_HOME, "/modules/internal/tasks/", CHPL_TASKS));
-  intModPath.add(astr(CHPL_HOME, "/modules/internal/comm/", CHPL_COMM));
-  intModPath.add(astr(CHPL_HOME, "/modules/internal"));
-  stdModPath.add(astr(CHPL_HOME, "/modules/standard/gen/", CHPL_TARGET_PLATFORM,
+  intModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/internal/threads/", 
+                      CHPL_THREADS));
+  intModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/internal/tasks/", 
+                      CHPL_TASKS));
+  intModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/internal/comm/", 
+                      CHPL_COMM));
+  intModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/internal"));
+  stdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/standard/gen/", 
+                      CHPL_TARGET_PLATFORM,
                       "-", CHPL_TARGET_COMPILER));
-  stdModPath.add(astr(CHPL_HOME, "/modules/standard"));
-  stdModPath.add(astr(CHPL_HOME, "/modules/layouts"));
-  stdModPath.add(astr(CHPL_HOME, "/modules/dists"));
-  stdModPath.add(astr(CHPL_HOME, "/modules/dists/dims"));
+  stdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/standard"));
+  stdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/layouts"));
+  stdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/dists"));
+  stdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/dists/dims"));
   const char* envvarpath = getenv("CHPL_MODULE_PATH");
   if (envvarpath) {
     char path[FILENAME_MAX+1];

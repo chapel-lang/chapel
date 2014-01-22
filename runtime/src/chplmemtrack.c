@@ -62,9 +62,9 @@ static _Bool memLeaksTable = false;
 static _Bool memStats = false;
 static size_t memMax = 0;
 static size_t memThreshold = 0;
-static c_string memLog = NULL;
+static c_string memLog = "";
 static FILE* memLogFile = NULL;
-static c_string memLeaksLog = NULL;
+static c_string memLeaksLog = "";
 
 static size_t totalMem = 0;       /* total memory currently allocated */
 static size_t maxMem = 0;         /* maximum total memory during run  */
@@ -76,7 +76,7 @@ static chpl_sync_aux_t memTrack_sync;
 
 
 void chpl_setMemFlags(void) {
-  chpl_bool local_memTrack;
+  chpl_bool local_memTrack = false;
 
   //
   // Get the values of the memTracking config consts from the module.

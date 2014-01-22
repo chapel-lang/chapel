@@ -582,8 +582,11 @@ visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
   // chpl_gen_main is always visible (if it exists).
   pruneVisit(chpl_gen_main, fns, types);
 
-  // The printModuleInitOrder function is always visible
-  pruneVisit(gPrintModuleInitFn, fns, types);
+  // When present, the printModuleInitOrder function is always visible;
+  // it will be NULL for --minimal-modules compilations
+  if (gPrintModuleInitFn) {
+    pruneVisit(gPrintModuleInitFn, fns, types);
+  }
 
   // Functions appearing the function pointer table are visible.
   // These are blocks that can be started through a forall, coforall or on statement.
@@ -635,6 +638,10 @@ static void pruneUnusedClassTypes(Vec<TypeSymbol*>& types)
 
     // Ignore types that are not class types
     if (!isClassType(ts->type))
+      continue;
+
+    // Do not delete the object class.  It's pretty crucial.
+    if (ts->hasFlag(FLAG_OBJECT_CLASS))
       continue;
 
     // Visit only those types not marked as visible.

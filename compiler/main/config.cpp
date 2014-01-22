@@ -11,6 +11,14 @@ bool mainHasArgs;
 
 void
 checkConfigs(void) {
+  //
+  // Minimal module compilation doesn't support the standard CHPL_*
+  // variables, and therefore shouldn't check for them.
+  //
+  if (fMinimalModules) {
+    return;
+  }
+
   bool anyBadConfigParams = false;
   Vec<const char*> configParamSetNames;
   // configParamMap.get_keys(configParamSetNames);

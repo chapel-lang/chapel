@@ -163,6 +163,13 @@ static void addInitGuard(FnSymbol* fn, FnSymbol* preInitFn)
 //
 static void addPrintModInitOrder(FnSymbol* fn)
 {
+  //
+  // Only do this if gPrintModuleInitFn exists.  It won't exist when
+  // compiling --minimal-modules
+  //
+  if (gPrintModuleInitFn == NULL)
+    return;
+
   // The function printModuleIInit() takes 3 arguments:
   //   s1:  the format string "%*s"
   //   s2:  string to be printed

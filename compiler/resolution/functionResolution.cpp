@@ -6133,8 +6133,14 @@ static void resolveRecordInitializers() {
 // Resolve other things we might want later
 //
 static void resolveOther() {
-  // Resolve the function that will print module init order
-  resolveFns(gPrintModuleInitFn);
+  //
+  // When compiling with --minimal-modules, gPrintModuleInitFn is not
+  // defined.
+  //
+  if (gPrintModuleInitFn) {
+    // Resolve the function that will print module init order
+    resolveFns(gPrintModuleInitFn);
+  }
 }
 
 

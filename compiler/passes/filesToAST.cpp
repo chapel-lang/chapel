@@ -132,6 +132,14 @@ static void gatherWellKnownTypes()
     }
   }
 
+  //
+  // When compiling for minimal modules, we don't require any specific
+  // well-known types to be defined.
+  //
+  if (fMinimalModules) {
+    return;
+  }
+
   // Make sure all well-known types are defined.
   for (int i = 0; i < nEntries; ++i)
   {
