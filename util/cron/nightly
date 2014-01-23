@@ -113,7 +113,7 @@ while (@ARGV) {
 print localtime() . "  host: " . hostname . "\n";
 
 # Do not include comments and blank lines from crontab listing.
-$crontab = `crontab -l | grep --invert-match --extended-regexp '^#|^$'`;
+$crontab = join("\n", grep(!/^#|^$/, split(/\n/, `crontab -l`)));
 
 if ($debug == 0) {
     print "Currently installed crontab on ".hostname.":\n";
