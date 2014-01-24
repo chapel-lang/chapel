@@ -993,7 +993,7 @@ sub startMailHeader {
         "Ended:    " . shift(@_) . "\n\n";
 
     if ($debug == 0) {
-        $mystr .= "Crontab:\n". shift(@_) . "\n";
+        $mystr .= "Crontab:\n". shift(@_) . "\n\n";
     }
 
     $mystr;
