@@ -1,3 +1,3 @@
-var xyz = 1;
+var xyz = 1: int(8);
 extern proc printf(x...);
-printf("%ld\n", xyz);
+printf("%d\n", xyz);

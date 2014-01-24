@@ -1,0 +1,2 @@
+COMPOPTS <= --baseline
+CHPL_COMM == gasnet

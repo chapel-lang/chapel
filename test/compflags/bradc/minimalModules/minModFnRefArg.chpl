@@ -1,11 +1,11 @@
 extern proc printf(x...);
 proc foo(ref x) {
-  printf("%ld\n", x);
-  x = 2;
+  printf("%d\n", x);
+  x = 2: int(8);
 }
 
-var x = 1;
+var x = 1: int(8);
 
 foo(x);
 
-printf("%ld\n", x);
+printf("%d\n", x);
