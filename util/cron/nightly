@@ -506,6 +506,13 @@ $readonlydir = "$basetmpdir/$readonlydirname";
 if ($retaintree) {
   print "Retaining the working tree $chapeldir\n";
 } else {
+#
+# This is a temporary measure, designed to reset where our SVN
+# repositories are pointing without the need to log into each
+# machine.  The effect should be that the svn repository is
+# checked out rather than updated.
+#
+  mysystem("rm -rf $readonlydir", "removing read-only dir (to reset root)", 0, 1, 1);
   print "\$readonlydir = $readonlydir\n";
   if (! (-r $readonlydir && -d $readonlydir)) {
     print "The SVN directory has not been checked out yet\n";
