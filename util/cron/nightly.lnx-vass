@@ -1,19 +1,22 @@
-#!/bin/tcsh
-echo `date` "" Starting $0 on `hostname`.
+#!/usr/bin/env bash
+
+source $(cd $(dirname $0) ; pwd)/common-gasnet.bash
 
 # run block dist regressions
-set LOGFILE = $HOME/tmp/nightly.block.out
-echo `date` "" "Testing block distribution.  Log file: $LOGFILE"
-source ~/.chplcron.dists.cshrc && ~/chapel/util/cron/nightly -cron -dist block >&! $LOGFILE
-
-set date = `date +%Y-%m-%d`
+export LOGFILE=$HOME/tmp/nightly.block.out
+log_info "Testing block distribution.  Log file: $LOGFILE"
+~/chapel/util/cron/nightly -cron -dist block > $LOGFILE 2>&1
 
 # run memleaks regressions
-set LOGFILE = $HOME/tmp/nightly.memleaks.out
-set MEMLOGFILE = memleaks.$date.nightly.log
-echo `date` "" "Running memleaks regressions.  Log file: $LOGFILE"
-source ~/.chplcron.memleaks.cshrc && ~/chapel/util/cron/nightly -cron -examples -memleaks $MEMLOGFILE >&! $LOGFILE
+source $(cd $(dirname $0) ; pwd)/common-memleaks.bash
+
+export LOGFILE=$HOME/tmp/nightly.memleaks.out
+export MEMLOGFILE=memleaks.$(date '+%Y-%m-%d').nightly.log
+log_info "Running memleaks regressions.  Log file: $LOGFILE"
+~/chapel/util/cron/nightly -cron -examples -memleaks $MEMLOGFILE > $LOGFILE 2>&1
+
 # Save the raw log file
+log_info "Saving raw memory leaks log file."
 cp /tmp/$MEMLOGFILE $CHPL_NIGHTLY_LOGDIR/FULL.memleaks
 
-echo `date` "" Finished $0.
+log_info "Finished ${0}."

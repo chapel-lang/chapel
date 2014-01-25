@@ -1,8 +1,12 @@
-#!/bin/tcsh
-echo `date` "" Starting $0 on `hostname`.
+#!/usr/bin/env bash
 
-set LOGFILE = $HOME/tmp/nightly-perf.linux64.chap03.out
-echo `date` "" "Testing performance.  Log file: $LOGFILE"
-source ~/.chapelcshrc-cron && setenv CHPL_NIGHTLY_LOGDIR /data/sea/cascade/chapel/NightlyPerformance/chap03 && ~/chapel/util/cron/nightly -cron -performance -numtrials 5 -startdate 08/21/07 >&! $LOGFILE
+source $(cd $(dirname $0) ; pwd)/common.bash
 
-echo `date` "" Finished $0.
+export LOGFILE=$HOME/tmp/nightly-perf.linux64.chap03.out
+log_info "Testing performance.  Log file: $LOGFILE"
+
+# FIXME: export CHPL_NIGHTLY_LOGDIR=/data/sea/cascade/chapel/NightlyPerformance/chap03
+
+~/chapel/util/cron/nightly -cron -performance -numtrials 5 -startdate 08/21/07 > $LOGFILE 2>&1
+
+log_info "Finished ${0}."

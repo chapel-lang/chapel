@@ -1,9 +1,10 @@
-#!/bin/tcsh
-echo `date` "" Starting $0 on `hostname`.
+#!/usr/bin/env bash
+
+source $(cd $(dirname $0) ; pwd)/common-gasnet.bash
 
 # run cyclic dist regressions
-set LOGFILE = $HOME/tmp/nightly.cyclic.out
-echo `date` "" "Testing cyclic distribution.  Log file: $LOGFILE"
-source ~/.chplcron.dists.cshrc && ~/chapel/util/cron/nightly -cron -dist cyclic >&! $LOGFILE
+export LOGFILE=$HOME/tmp/nightly.cyclic.out
+log_info "Testing cyclic distribution.  Log file: $LOGFILE"
+~/chapel/util/cron/nightly -cron -dist cyclic > $LOGFILE 2>&1
 
-echo `date` "" Finished $0.
+log_info "Finished ${0}."

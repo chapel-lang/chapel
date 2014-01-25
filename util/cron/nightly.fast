@@ -3,13 +3,13 @@
 # --fast testing
 #
 # Run only for the examples for now
-#
-. /etc/profile
+
+source $(cd $(dirname $0) ; pwd)/common.bash
 
 LOGFILE=/tmp/nightly.fast.$USER.$$.out
 LOGFILE2=$HOME/tmp/nightly.fast.out
-echo `date` "" "Testing --fast for examples.  Log files: $LOGFILE and $LOGFILE2"
-source ~/.chapelbashrc-cron && ~/chapel/util/cron/nightly -cron -fast -examples >& $LOGFILE
+
+log_info "Testing --fast for examples.  Log files: $LOGFILE and $LOGFILE2"
+~/chapel/util/cron/nightly -cron -fast -examples > $LOGFILE 2>&1
 
 cp $LOGFILE $LOGFILE2 && rm -f $LOGFILE
-

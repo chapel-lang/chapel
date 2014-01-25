@@ -5,22 +5,9 @@
 
 source $(cd $(dirname $0) ; pwd)/common.bash
 
-# Make sure module is available so subversion can be loaded.
-if [ -f /etc/modules/bash ] ; then
-    log_info "Initializing module command."
-    source /etc/modules/bash
-
-    if [ -n "$(type module 2> /dev/null)" ] ; then
-        log_info "Loading subversion module."
-        module load cpkg all/append subversion
-    else
-        log_error "Failed to find module command after sourcing /etc/modules/bash."
-    fi
-fi
-
 (
-    log_info "Moving to ~/chapel"
-    cd ~/chapel
+    log_info "Moving to ${CHPL_HOME}"
+    cd $CHPL_HOME
 
     log_info "Running svn update..."
     svn update

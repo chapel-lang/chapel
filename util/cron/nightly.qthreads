@@ -1,28 +1,35 @@
-#!/usr/bin/env tcsh
+#!/usr/bin/env bash
+
+source $(cd $(dirname $0) ; pwd)/common.bash
+
 #
 # Test Qthreads with CHPL_COMM=none
 #
-set LOGFILE = /tmp/nightly.qthreads.$USER.$$.out
-set LOGFILE2 = $HOME/tmp/nightly.qthreads.out
-echo `date` "" "Testing Qthreads with CHPL_COMM=none.    Log files: $LOGFILE and $LOGFILE2"
-source ~/.chapelcshrc-cron
-setenv CHPL_TASKS qthreads
-$CHPL_HOME/util/cron/nightly -cron -examples -no-futures >&! $LOGFILE
+export LOGFILE=/tmp/nightly.qthreads.$USER.$$.out
+export LOGFILE2=$HOME/tmp/nightly.qthreads.out
+
+log_info "Testing Qthreads with CHPL_COMM=none.    Log files: $LOGFILE and $LOGFILE2"
+export CHPL_TASKS=qthreads
+
+$CHPL_HOME/util/cron/nightly -cron -examples -no-futures > $LOGFILE 2>&1
 cp $LOGFILE $LOGFILE2 && rm -f $LOGFILE
 
 #
 # Test Qthreads with CHPL_COMM=gasnet
 #
-set LOGFILE = /tmp/nightly.qthreads-gasnet.$USER.$$.out
-set LOGFILE2 = $HOME/tmp/nightly.qthreads-gasnet.out
-echo `date` "" "Testing Qthreads with CHPL_COMM=gasnet.  Log files: $LOGFILE and $LOGFILE2"
-source ~/.chapelcshrc-cron-gasnet
-setenv CHPL_GASNET_CFG_OPTIONS --disable-ibv
-setenv GASNET_QUIET Y
+export LOGFILE=/tmp/nightly.qthreads-gasnet.$USER.$$.out
+export LOGFILE2=$HOME/tmp/nightly.qthreads-gasnet.out
+log_info "Testing Qthreads with CHPL_COMM=gasnet.  Log files: $LOGFILE and $LOGFILE2"
+
+source $(cd $(dirname $0) ; pwd)/common-gasnet.bash
+
+export CHPL_GASNET_CFG_OPTIONS=--disable-ibv
+export GASNET_QUIET=Y
 # Set these to use oversubscription to help with timeouts
-setenv QT_AFFINITY no
-setenv CHPL_QTHREAD_TESTING 1
-setenv CHPL_RT_NUM_THREADS_PER_LOCALE 2
-$CHPL_HOME/util/cron/nightly -cron -multilocale -no-futures >&! $LOGFILE
+export QT_AFFINITY=no
+export CHPL_QTHREAD_TESTING=1
+export CHPL_RT_NUM_THREADS_PER_LOCALE=2
+
+$CHPL_HOME/util/cron/nightly -cron -multilocale -no-futures > $LOGFILE 2>&1
 cp $LOGFILE $LOGFILE2 && rm -f $LOGFILE
 

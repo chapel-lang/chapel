@@ -1,14 +1,14 @@
-#!/usr/bin/env tcsh
-echo `date` "" Starting $0 on `hostname`.
+#!/usr/bin/env bash
+
+source $(cd $(dirname $0) ; pwd)/common-gasnet.bash
 
 #
 # Test a GASNet compile using the default segment (everything for linux64)
 #
-source ~/.chapelcshrc-cron-gasnet
-setenv CHPL_GASNET_SEGMENT everything
-setenv CHPL_GASNET_CFG_OPTIONS --disable-ibv
-set LOGFILE = $HOME/tmp/nightly-gasnet-cron-$CHPL_GASNET_SEGMENT.out
-echo `date` "" "Testing GASNet using segment $CHPL_GASNET_SEGMENT.  Log file: $LOGFILE"
+export CHPL_GASNET_SEGMENT=everything
+export LOGFILE=$HOME/tmp/nightly-gasnet-$CHPL_GASNET_SEGMENT.out
+log_info "Testing GASNet using segment $CHPL_GASNET_SEGMENT.  Log file: $LOGFILE"
+
 $CHPL_HOME/util/cron/nightly -cron >&! $LOGFILE
 
-echo `date` "" Finished $0.
+log_info "Finished ${0}."

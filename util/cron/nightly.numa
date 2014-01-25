@@ -4,20 +4,27 @@
 #
 # Run only for the localeModel suite
 #
-. /etc/profile
+
+source $(cd $(dirname $0) ; pwd)/common.bash
 
 #
 # NUMA testing with CHPL_COMM=none
 #
 LOGFILE=/tmp/nightly.numa.$USER.$$.out
 LOGFILE2=$HOME/tmp/nightly.numa.out
-echo `date` "" "Testing NUMA for localeModel suite with CHPL_COMM=none.  Log files: $LOGFILE and $LOGFILE2"
+log_info "Testing NUMA for localeModel suite with CHPL_COMM=none.  Log files: $LOGFILE and $LOGFILE2"
+
+# TODO: Make a common-numa.bash file. (thomasvandoren, 2014-01-24)
 export CHPL_LOCALE_MODEL=numa
 export CHPL_TASKS=qthreads
-source ~/.chapelbashrc-cron && ~/chapel/util/cron/nightly -cron -localeModel >& $LOGFILE
+
+~/chapel/util/cron/nightly -cron -localeModel >& $LOGFILE
 cp $LOGFILE $LOGFILE2 && rm -f $LOGFILE
 
+log_info "Skipping multilocale numa testing. Enable when resources are available."
+
 exit
+
 #
 # The below works, but we don't have cycles  to do it yet
 #
@@ -27,8 +34,10 @@ exit
 #
 LOGFILE=/tmp/nightly.numa-gasnet.$USER.$$.out
 LOGFILE2=$HOME/tmp/nightly.numa-gasnet.out
-echo `date` "" "Testing NUMA for multilocale suite with CHPL_COMM=gasnet.  Log files: $LOGFILE and $LOGFILE2"
+log_info "Testing NUMA for multilocale suite with CHPL_COMM=gasnet.  Log files: $LOGFILE and $LOGFILE2"
 rm -f $LOGFILE
+
+# TODO: Make a common-numa-multilocale.bash file. (thomasvandoren, 2014-01-24)
 export CHPL_LOCALE_MODEL=numa
 # Set up qthreads vars
 export CHPL_TASKS=qthreads
@@ -42,6 +51,7 @@ export CHPL_GASNET_CFG_OPTIONS=--disable-ibv
 export GASNET_SPAWNFN=L
 export GASNET_ROUTE_OUTPUT=0
 export GASNET_QUIET=Y
-source ~/.chapelbashrc-cron && ~/chapel/util/cron/nightly -cron -multilocale -no-futures >& $LOGFILE
+
+~/chapel/util/cron/nightly -cron -multilocale -no-futures > $LOGFILE 2>&1
 cp $LOGFILE $LOGFILE2 && rm -f $LOGFILE
 

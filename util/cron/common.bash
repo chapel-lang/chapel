@@ -26,6 +26,7 @@ function exit_hook()
     log_info "Finished running ${SCRIPT_NAME} on $(hostname -s)"
 }
 trap exit_hook EXIT
+
 # If the test machine is on the cray network, set this to true.`
 export CHPL_CRAY_NETWORK=false
 domain_ends_with_cray=$(python -c 'import socket ; print(socket.getfqdn().endswith("cray.com"))')
@@ -40,3 +41,49 @@ else
     export CHPL_HOME_REPOSITORY=svn://svn.code.sf.net/p/chapel/code/trunk
 fi
 log_info "Using SVN repo: ${CHPL_HOME_REPOSITORY}"
+
+# Assume chapel repo is checked out to ~/chapel.
+
+# TODO: Do not make this assumption! It would be better to infer the repo root
+#       based on the location of this file. (thomasvandoren, 2014-01-24)
+
+if [ -d ~/chapel ] ; then
+    export CHPL_HOME=$(cd ~/chapel ; pwd)
+else
+    log_error "Expected chapel repo to be at ~/chapel. No directory exists at ~/chapel."
+    exit 1
+fi
+log_info "CHPL_HOME is: ${CHPL_HOME}"
+
+# Set the platform for nightly.
+export CHPL_HOST_PLATFORM=$($CHPL_HOME/util/chplenv/platform --host)
+log_info "CHPL_HOST_PLATFORM is: ${CHPL_HOST_PLATFORM}"
+
+# Enable warnings and errors.
+export CHPL_DEVELOPER=true
+
+# Setup some logdirs.
+
+# TODO: These are very rigid file locations. They should be a) part of the
+#       working tree (under $CHPL_HOME), and b) less specific to our file
+#       system hierarchy. (thomasvandoren, 2014-01-24)
+
+export CHPL_NIGHTLY_LOGDIR=/data/sea/cascade/chapel/Nightly
+export CHPL_NIGHTLY_STATDIR=$CHPL_NIGHTLY_LOGDIR/Stats
+
+# It is tempting to use hostname --short, but macs only support the short form
+# of the argument.
+export CHPL_TEST_PERF_DIR=/data/sea/cascade/chapel/NightlyPerformance/$(hostname -s)
+
+# When module function is available, ie on a cray, load the subversion module.
+if [ -f /etc/modules/bash ] ; then
+    log_info "Initializing module command."
+    source /etc/modules/bash
+
+    if [ -n "$(type module 2> /dev/null)" ] ; then
+        log_info "Loading subversion module."
+        module load cpkg all/append subversion
+    else
+        log_error "Failed to find module command after sourcing /etc/modules/bash."
+    fi
+fi

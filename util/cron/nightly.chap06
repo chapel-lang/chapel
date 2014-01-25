@@ -1,13 +1,19 @@
 #!/usr/bin/env bash
-. /etc/profile
-echo `date` "" Starting $0 on `hostname`.
+
+source $(cd $(dirname $0) ; pwd)/common-baseline.bash
 
 LOGFILE=/tmp/nightly.baseline.out
 LOGFILE2=$HOME/tmp/nightly.baseline.out
-echo `date` "" "Testing baseline.  Log files: $LOGFILE and $LOGFILE2"
-rm -f $LOGFILE
-source ~/.chplcron.baseline.bashrc && ~/chapel/util/cron/nightly -cron -baseline -suppress Suppressions/baseline.suppress -no-futures -compopts --inline >& $LOGFILE
+log_info "Testing baseline.  Log files: $LOGFILE and $LOGFILE2"
 
+if [ -f $LOGFILE ] ; then
+    log_info "Removing an existing log file: ${LOGFILE}"
+    rm -f $LOGFILE
+fi
+
+~/chapel/util/cron/nightly -cron -baseline -suppress Suppressions/baseline.suppress -no-futures -compopts --inline > $LOGFILE 2>&1
+
+log_info "Copying ${LOGFILE} to ${LOGFILE2}"
 cp $LOGFILE $LOGFILE2
 
-echo `date` "" Finished $0.
+log_info "Finished ${0}."

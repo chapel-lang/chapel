@@ -1,26 +1,24 @@
-#!/usr/bin/env tcsh
-echo `date` "" Starting $0 on `hostname`.
+#!/usr/bin/env bash
 
-set LOGFILE = $HOME/tmp/nightly.testRelease.out
-echo `date` "" "Running testRelease.  Log file: $LOGFILE"
-source ~/.chapelcshrc-cron && ~/chapel/util/buildRelease/testRelease -cron >&! $LOGFILE
+source $(cd $(dirname $0) ; pwd)/common.bash
 
-set LOGFILE = $HOME/tmp/nightly-perf.linux64.bradc-lnx.out
-echo `date` "" "Testing performance.  Log file: $LOGFILE"
-source ~/.chapelcshrc-cron && setenv CHPL_NIGHTLY_LOGDIR /data/sea/cascade/chapel/NightlyPerformance/bradc-lnx && ~/chapel/util/cron/nightly -cron -performance -numtrials 5 -startdate 02/19/10 >&! $LOGFILE
+export LOGFILE=$HOME/tmp/nightly.testRelease.out
+log_info "Running testRelease.  Log file: $LOGFILE"
+~/chapel/util/buildRelease/testRelease -cron > $LOGFILE 2>&1
 
-set LOGFILE = $HOME/tmp/tokctnightly.out
-echo `date` "" "Counting tokens.  Log file: $LOGFILE"
-source ~/.chapelcshrc-cron && ~/chapel/util/tokencount/tokctnightly -cron >&! $LOGFILE
+export LOGFILE=$HOME/tmp/nightly-perf.linux64.bradc-lnx.out
+log_info "Testing performance.  Log file: $LOGFILE"
 
-set LOGFILE = $HOME/tmp/tabnightly.out
-echo `date` "" "Running lookForTabs.cron.  Log file: $LOGFILE"
-~/chapel/util/cron/lookForTabs.cron >&! $LOGFILE
+# FIXME: export CHPL_NIGHTLY_LOGDIR=/data/sea/cascade/chapel/NightlyPerformance/bradc-lnx
 
-#
-# my desktop is no longer 32-bit, so I think this is redundant:
-#
-#source ~bradc/.chapelcshrc-cron && ~bradc/chapel/util/cron/nightly -cron >&! ~bradc/tmp/nightly.linux.out
-#
+~/chapel/util/cron/nightly -cron -performance -numtrials 5 -startdate 02/19/10 > $LOGFILE 2>&1
 
-echo `date` "" Finished $0.
+export LOGFILE=$HOME/tmp/tokctnightly.out
+log_info "Counting tokens.  Log file: $LOGFILE"
+~/chapel/util/tokencount/tokctnightly -cron > $LOGFILE 2>&1
+
+export LOGFILE=$HOME/tmp/tabnightly.out
+log_info "Running lookForTabs.cron.  Log file: $LOGFILE"
+~/chapel/util/cron/lookForTabs.cron > $LOGFILE 2>&1
+
+log_info "Finished ${0}."
