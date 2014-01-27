@@ -768,6 +768,7 @@ while ( $#argv > 0 )
     case --performance:
     case -performance:
         shift
+        set compopts = "$compopts --fast"
         set performance = 1
         set gengraphs = 1
         breaksw

@@ -1,2 +1,2 @@
---fast              # parOpEquals.local
---fast --no-local   # parOpEquals.no-local
+# parOpEquals.local
+--no-local   # parOpEquals.no-local
