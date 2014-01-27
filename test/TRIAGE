@@ -126,6 +126,9 @@ PrgEnv-gnu compilation timeout
 ==============================
 This take 10s of seconds at most:
 [Error: Timed out compilation for domains/bradc/writeIndex2] (1/17/14)
+[Error: Timed out compilation for domains/bradc/orderPos] (1/24/14)
+[Error: Timed out compilation for domains/bradc/splitdomain] (1/24/14)
+
 
 ==============================================
 These things regularly cause noise in testing:
@@ -175,42 +178,12 @@ some of them are noisier than others
 
 linux64.gnu.gasnet.qthreads.none (sungeun)
 ------------------------------------------
-7/16/13: I moved qthreads testing to chap05, and most of these
-timeouts were resolved, minus test_many_domains.
+Recently, the main test that's been flitting back and forth is:
 
-Our main noisy failures currently are as follows:
-
-  distributions/robust/arithmetic/kernels/jacobi.chpl
-  distributions/robust/arithmetic/stress/test_many_array
-  distributions/robust/arithmetic/stress/test_many_domains
-
-
-After moving these tests to a slower machine (chap02->chap10) several more
-timed out including the three above plus:
-
-  distributions/jglewis/cyclicOnEvenNumLocales.chpl
-  distributions/bradc/extremeBlock.chpl
-  distributions/robust/arithmetic/basics/test_array_of_distributed_array2.chpl
-  distributions/robust/arithmetic/slicing/test_array_slicing3.chpl
-  distributions/robust/arithmetic/modules/test_module_Sort.chpl
-  distributions/robust/arithmetic/modules/test_module_Norm.chpl
-  distributions/robust/arithmetic/kernels/hpl (compopts: 1).chpl
-  distributions/dm/t8.chpl
-
-
-I don't know that it's worth tracking when these pass fail currently.
-Greg looked into the execution times and found that the problem is
-that their execution time is very close to the timeout and
-significantly longer than fifo.  Dylan and Brad looked into the cause
-and narrowed it down to privatization (e.g., if all lines other than
-the domain declarations are removed from test_many_domains, the
-execution time is still very high and close to the timeout), but have
-not yet gotten further than that to determine what the problem is --
-e.g., a busy-wait loop, excess communication, slow handling of active
-messages due to not having a thread per task as in fifo, or ...?
+[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains]
 
 I've deleted historical notes on this entry that seem less useful
-at present.  See the archives for more detail.
+at present.  See the archives for more detail. (bradc, 1/27/14)
 
 Perf (linux64.gnu.none.fifo.pthreads.flat)
 ------------------------------------------
@@ -435,7 +408,7 @@ examples of what times out:
  test_array_slicing3 (07/24/13, 07/12/13, 06/08/12, 6/16, 3/29/13, 5/3/13, 11/8/13, 12/9/13)
  release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4) (04/08/13)
  studies/cholesky/jglewis/version2/performance/test_cholesky_performance (10/10/13)
- multilocale/diten/needMultiLocales/coforallon_maxThreads (07/04/13, 10/10/13, 10/22/13)
+ multilocale/diten/needMultiLocales/coforallon_maxThreads (07/04/13, 10/10/13, 10/22/13, 1/21/14)
  etc.
 
 non-deterministic compilation timeouts with gasnet (UNASSIGNED)

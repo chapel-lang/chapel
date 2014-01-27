@@ -23,19 +23,19 @@ general regressions (seem to happen in most configurations)
 
 ==============================================
 linux64 regressions (in addition to the above)
-(Reviewed for accuracy 12/06/13)
+(Reviewed for accuracy 01/26/14)
 ==============================================
 
 
 ==============================================
 linux32 regressions (in addition to the above)
-(Reviewed for accuracy 12/06/13)
+(Reviewed for accuracy 01/27/14)
 ==============================================
 
 
 ================================
 performance-specific regressions
-(Reviewed for accuracy 12/06/13)
+(Reviewed for accuracy 01/26/14)
 ================================
 
 consistent execution timeouts on chap04 (since ??? -- at least 11/20/13)
@@ -48,22 +48,28 @@ Feel free to bug him.
 [Error: Timed out executing program studies/hpcc/RA/bradc/parallel/ra-dist (compopts: 1)]
 
 
-===============================
+================================
 --fast examples regressions
-(Reviewed for accuracy 12/09/13)
-===============================
+(Reviewed for accuracy 01/27/14)
+================================
 
 
-===============================
+================================
 memory leaks regressions
-(Reviewed for accuracy 12/06/13)
-===============================
+(Reviewed for accuracy 01/27/14)
+================================
+
+Setting a config that isn't supported for --minimal-modules (1/23/14 - bradc)
+-----------------------------------------------------------------------------
+[Error matching program output for compflags/bradc/minimalModules/minModDeclPrint]
+[Error matching program output for compflags/bradc/minimalModules/minModFnRefArg]
+
 
 
 =======================================
 localeModel/numa+qthreads regressions
 (other than qthreads regressions below)
-(Reviewed for accuracy 12/06/13)
+(Reviewed for accuracy 01/27/14)
 =======================================
 
 Unknown extra memory leaks
@@ -88,10 +94,10 @@ extra memory leaks/usage due to bigger locale type (since first run -- 11/03/13)
 [Error matching program output for memory/sungeun/refCount/domainMaps]
 
 
-===============================
+================================
 valgrind-specific regressions
-(Reviewed for accuracy 12/09/13)
-===============================
+(Reviewed for accuracy 01/06/14)
+================================
 
 random failures due to being out of memory (on purpose)
 -------------------------------------------------------
@@ -125,6 +131,10 @@ so the warning does not apply and is not raised, and .good is not matched.
 [Error matching program output for types/atomic/ferguson/atomictest]
 [Error matching program output for types/atomic/sungeun/atomic_vars]
 
+output comes out in wrong order
+-------------------------------
+[Error matching program output for users/ferguson/refcnt]
+
 compilation timeouts
 --------------------
 [Error: Timed out compilation for functions/iterators/vass/yield-arrays-var-nonvar] (08/19/13)
@@ -136,10 +146,9 @@ execution timeouts (probably since committed or at least 08/2012)
 [Error: Timed out executing program release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4)]
 [Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)]
 [Error: Timed out executing program studies/hpcc/PTRANS/PTRANS]
-[Error: Timed out executing program studies/lammps/shemmy/p-lammps-n4]
-[Error: Timed out executing program studies/lammps/shemmy/p-lammps-n2]
 [Error: Timed out executing program studies/lammps/shemmy/p-lammps-n1]
-[Error: Timed out executing program studies/lulesh/bradc/xyztuple/lulesh-dense-3tuple]
+[Error: Timed out executing program studies/lammps/shemmy/p-lammps-n2]
+[Error: Timed out executing program studies/lammps/shemmy/p-lammps-n4]
 [Error: Timed out executing program studies/shootout/fannkuch-redux/fannkuch-redux (execopts: 2)]
 [Error: Timed out executing program types/range/bradc/overflowInComputeBlock]
 [Error: Timed out executing program types/single/sungeun/stress]
@@ -150,10 +159,15 @@ execution timeouts due to relying on too many threads (?) (09/2012)
 [Error: Timed out executing program parallel/begin/sungeun/capture]
 
 
-===============================
+================================
 no-local regressions
-(Reviewed for accuracy 12/06/13)
-===============================
+(Reviewed for accuracy 01/27/14)
+================================
+
+--minimal modules doesn't work for --no-local (01/23/14 -- bradc)
+-----------------------------------------------------------------
+[Error matching compiler output for compflags/bradc/minimalModules/minModDeclPrint]
+[Error matching compiler output for compflags/bradc/minimalModules/minModFnRefArg]
 
 increased memory use (vass, r22473)
 -----------------------------------
@@ -162,12 +176,12 @@ increased memory use (vass, r22473)
 
 ====================================================
 gasnet-everything regressions (other than the above)
-(Reviewed for accuracy 01/06/14)
+(Reviewed for accuracy 01/24/14)
 ====================================================
 
 ==============================================
 gasnet-fast regressions (other than the above)
-(Reviewed for accuracy 01/04/14)
+(Reviewed for accuracy 01/23/14)
 ==============================================
 
 unable to start polling thread (???)
@@ -180,21 +194,17 @@ execution timeouts
 [Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)] (10/08/13)
 
 
-===============================
+================================
 block distribution regressions
-(Reviewed for accuracy 12/06/13)
-===============================
+(Reviewed for accuracy 01/27/14)
+================================
 
 
-===============================
+================================
 cyclic distribution regressions
-(Reviewed for accuracy 12/06/13)
-===============================
+(Reviewed for accuracy 01/27/14)
+================================
 
-communication counts changed due to Vass' task functions commit (05/30/13)
---------------------------------------------------------------------------
-[Error matching program output for distributions/robust/arithmetic/performance/assign]
-[Error matching program output for distributions/robust/arithmetic/performance/reduce]
 
 ========================================
 darwin (see below for compiler specific)
@@ -334,7 +344,7 @@ chpbld01 (PrgEnv/XC test system) failures
 
 =========================================
 chpbld02 (PrgEnv/XE test system) failures
-(Reviewed for accuracy 12/06/13)
+(Reviewed for accuracy 01/27/14)
 =========================================
 
 gets "that wasn't very random looking" failure
@@ -344,7 +354,7 @@ gets "that wasn't very random looking" failure
 
 ==========================================================
 cray-prgenv-*-specific failures (in addition to the above)
-(Reviewed for accuracy 12/06/13)
+(Reviewed for accuracy 01/27/14)
 ==========================================================
 
 problem with static/dynamic linking?
@@ -354,8 +364,17 @@ problem with static/dynamic linking?
 
 =========================================
 cray-prgenv-cray/cce-specific regressions
-(Reviewed for accuracy 10/16/13)
+(Reviewed for accuracy 01/26/14)
 =========================================
+
+empty array size problem (1/25/14 -- bradc)
+-------------------------------------------
+[Error matching compiler output for compflags/bradc/minimalModules/minModDeclPrint]
+[Error matching compiler output for compflags/bradc/minimalModules/minModFnRefArg]
+
+extern_string_test output mismatch
+----------------------------------
+[Error matching .bad file for users/ferguson/extern_string_test (compopts: 1)] (cray-xt.cray-prgenv-cray.none.fifo.pthreads--linux64.gnu on chpbld02, 6/16/13)
 
 CCE IPA bug
 -----------
@@ -365,14 +384,28 @@ from being compiled, but unfortunately, the fix does not fix these
 tests.  Filed new bug (806884), which has already been resolved, but
 only for 8.3 so not sure when we will start seeing this.
 
+[Error matching compiler output for optimizations/bulkcomm/alberto/Block/1dStrideBlock]
+[Error matching compiler output for optimizations/bulkcomm/alberto/Block/3dStrideTest]
 [Error matching compiler output for optimizations/bulkcomm/alberto/Block/4dStrideTest]
 [Error matching compiler output for optimizations/bulkcomm/alberto/Block/5dStrideTest]
+[Error matching compiler output for optimizations/bulkcomm/alberto/Block/ArrayAssignment]
+[Error matching compiler output for optimizations/bulkcomm/alberto/Block/perfTest (compopts: 1)]
+[Error matching compiler output for optimizations/bulkcomm/alberto/Block/perfTest_v2 (compopts: 1)]
+[Error matching compiler output for optimizations/bulkcomm/alberto/Cyclic/1dStrideCyclic]
 [Error matching compiler output for optimizations/bulkcomm/alberto/Cyclic/4dStrideTest]
 [Error matching compiler output for optimizations/bulkcomm/alberto/Cyclic/5dStrideTest]
-
-extern_string_test output mismatch
-----------------------------------
-[Error matching .bad file for users/ferguson/extern_string_test (compopts: 1)] (cray-xt.cray-prgenv-cray.none.fifo.pthreads--linux64.gnu on chpbld02, 6/16/13)
+[Error matching compiler output for optimizations/bulkcomm/alberto/Cyclic/AllCasesPerformance_Cyclic]
+[Error matching compiler output for optimizations/bulkcomm/alberto/Cyclic/ArrayAssignment]
+[Error matching compiler output for optimizations/bulkcomm/alberto/Cyclic/BlockToCyclic]
+[Error matching compiler output for optimizations/bulkcomm/alberto/Cyclic/CyclicToBlock]
+[Error matching compiler output for optimizations/bulkcomm/alberto/Cyclic/perfTest (compopts: 1)]
+[Error matching compiler output for optimizations/bulkcomm/alberto/Cyclic/perfTest_v2 (compopts: 1)]
+[Error matching compiler output for performance/compiler/bradc/compSampler-timecomp]
+[Error matching compiler output for sparse/parallel/sparse-csr-iter-dom-arr-zipper]
+[Error matching compiler output for studies/graph500/v2/main (compopts: 1)]
+[Error matching compiler output for studies/madness/dinan/mad_chapel/test_likepy]
+[Error matching compiler output for studies/ssca2/graphio/graphio (compopts: 1)]
+[Error matching compiler output for trivial/shannon/compSampler]
 
 infinite loop warning (since filed?)
 ------------------------------------
@@ -382,8 +415,15 @@ value is outside of the int range in C compilation (03/??/12)
 -------------------------------------------------------------
 [Error matching compiler output for types/enum/ferguson/enum_mintype_test]
 
-signal 11 (since ??? -- at least 10/13/13)
+signal 11 (since ??? -- at least 3/11/13)
 ------------------------------------------
+
+These are due to r21086.  Unfortunately, these work just fine in
+developer mode, and for some reason I run into a CCE front-end bug
+when I try to compile in non-developer mode.  I think that I can avoid
+that by also building with OPTIMIZE=1, but then I get minimal symbol
+information, making debugging pretty difficult.  (3/12/13: sungeun)
+
 [Error matching program output for distributions/robust/arithmetic/basics/test_array_accesses1]
 [Error matching program output for distributions/robust/arithmetic/basics/test_array_assignment]
 [Error matching program output for distributions/robust/arithmetic/basics/test_array_iteration1]
@@ -405,56 +445,6 @@ signal 11 (since ??? -- at least 10/13/13)
 [Error matching program output for distributions/robust/arithmetic/reindexing/test_reindexing7]
 [Error matching program output for distributions/robust/arithmetic/trivial/test_writeln]
 
-seg fault (6/9/13)
-------------------
-[Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic]
-[Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_record]
-
-seg fault in distribution robustness suite (3/11/13)
-----------------------------------------------------
-
-These are due to r21086.  Unfortunately, these work just fine in
-developer mode, and for some reason I run into a CCE front-end bug
-when I try to compile in non-developer mode.  I think that I can avoid
-that by also building with OPTIMIZE=1, but then I get minimal symbol
-information, making debugging pretty difficult.  (3/12/13: sungeun)
-
-     distributions/robust/arithmetic/basics/test_array_accesses1
-     distributions/robust/arithmetic/basics/test_array_assignment
-     distributions/robust/arithmetic/basics/test_array_iteration1
-     distributions/robust/arithmetic/basics/test_array_swap
-     distributions/robust/arithmetic/basics/test_domain_iteration1
-     distributions/robust/arithmetic/basics/test_infer_array_type
-     distributions/robust/arithmetic/basics/test_zipper_default
-     distributions/robust/arithmetic/modules/test_module_Norm
-     distributions/robust/arithmetic/modules/test_module_Random
-     distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_tuple
-     distributions/robust/arithmetic/reindexing/test_array_alias4
-     distributions/robust/arithmetic/reindexing/test_reindexing1
-     distributions/robust/arithmetic/reindexing/test_reindexing2
-     distributions/robust/arithmetic/reindexing/test_reindexing3
-     distributions/robust/arithmetic/reindexing/test_reindexing4
-     distributions/robust/arithmetic/reindexing/test_reindexing5
-     distributions/robust/arithmetic/reindexing/test_reindexing7
-     distributions/robust/arithmetic/trivial/test_writeln
-
-compilation timeouts due to removing --fast and non-default timeouts (02/28/13)
-David's analysis suggests that Inter Procedural Analysis is the culprit
--------------------------------------------------------------------------------
-[Error: Timed out compilation for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 1)]
-[Error: Timed out compilation for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 2)]
-
-compilation error due to Chapel compiler aborting with SIGSEGV (2013/11/10-12)
- - Apparently due to a resource limitation.
- - Unable to duplicate on chpbld01 <2013/11/12 hilde>
-------------------------------------------------------------------------------
-[Error matching compiler output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 1)]
-
-
-compilation error due to Chapel compiler aborting with SIGSEGV (2013/12/29)
----------------------------------------------------------------------------
-[Error matching compiler output for release/examples/benchmarks/hpcc/ra-atomics (compopts: 1)]
-
 wrong result due to reliance on wraparound in signed integers in test itself
 ----------------------------------------------------------------------------
 [Error matching program output for expressions/bradc/uminusVsTimesPrec]
@@ -469,22 +459,30 @@ error differs but within acceptable margin; should squash error printing
 
 precision issues (?) -- is there a floating point flag we need to throw?
 ------------------------------------------------------------------------
+[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct (compopts: 1)]
 [Error matching program output for studies/madness/aniruddha/madchap/test_diff]
+[Error matching program output for studies/madness/aniruddha/madchap/test_gaxpy]
 [Error matching program output for studies/madness/aniruddha/madchap/test_likepy]
 [Error matching program output for studies/madness/common/test_diff]
+[Error matching program output for studies/madness/common/test_gaxpy]
 [Error matching program output for studies/madness/common/test_likepy]
 [Error matching program output for studies/madness/dinan/mad_chapel/test_diff]
-[Error matching program output for studies/madness/dinan/mad_chapel/test_likepy]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_gaxpy]
+
+Compilation timeout (since ??? at least 01/26/14)
+-------------------------------------------------
+[Error: Timed out compilation for studies/ssca2/test-rmatalt/nondet (compopts: 1)]
 
 
 =========================================================================
 cray-prgenv-pgi-specific regressions (in addition to cray-prgenv-* above) 
-(Reviewed for accuracy 12/06/13)
+(Reviewed for accuracy 01/25/14)
 =========================================================================
 
-__builtin_ctz undefined at link time (1/17/14)
-----------------------------------------------
-[Error matching compiler output for studies/shootout/meteor/kbrady/meteor-parallel-alt]
+problem with empty initializer (1/25/14 -- bradc)
+-------------------------------------------------
+[Error matching compiler output for compflags/bradc/minimalModules/minModDeclPrint]
+[Error matching compiler output for compflags/bradc/minimalModules/minModFnRefArg]
 
 identifier names too long
 -------------------------
@@ -535,7 +533,7 @@ alignment mismatch in output (04/08/12)
 
 ==========================================================================
 cray-prgenv-intel-specific regressions (in addition to cray-prgenv* above)
-(Reviewed for accuracy 10/16/13)
+(Reviewed for accuracy 01/27/14)
 ==========================================================================
 
 numeric discrepancies (since 8/2012 or earlier)
@@ -562,7 +560,7 @@ alignment mismatch in output (04/08/12)
 
 =================================
 cray-prgenv-gnu specific failures
-(Reviewed for accuracy 12/06/13)
+(Reviewed for accuracy 01/24/14)
 =================================
 
 New gcc warning for 4.8 (6/7/13)
@@ -590,15 +588,16 @@ do about it.
 
 
 
-==============================================================
+====================================================
 cygwin-specific failures
-(Reviewed for accuracy on 12/06/13 -- examples/ directory only)
-==============================================================
+(Reviewed for accuracy on 01/14/14 -- examples only)
+====================================================
 
-internal error: pthread_cond_init() failed
-------------------------------------------
+internal error: pthread_cond_init() failed (10/25/13 after a long hiatus)
+-------------------------------------------------------------------------
 [Error matching program output for release/examples/primers/fileIO]
-(10/25/13, after a long hiatus)
+
+*** everything below here is not in examples/ and not tested nightly ***
 
 undiagnosed problems that started showing up 10/14/10 after lack of testing
 ---------------------------------------------------------------------------
@@ -627,10 +626,10 @@ sig_send: wait for sig_complete event failed
 [Error matching program output for users/jglewis/badGetModule]
 
 
-=======================
+=================================================
 qthreads-specific tests
-(Reviewed for accuracy 12/09/2013)
-=======================
+(Reviewed for accuracy 01/27/14 -- examples only)
+=================================================
 
 ***NOTE: For the nightly regressions, we only run examples/ which is
    currently clean other than the above (if anything's listed); the
@@ -718,13 +717,8 @@ timeouts (12/7/12)
 
 ==========================================================
 qthreads+gasnet-specific tests (only run for -multilocale)
-(Reviewed for accuracy 12/09/2013)
+(Reviewed for accuracy 01/24/14 -- examples only)
 ==========================================================
-
-pretty amazingly consistent timeout and surprisingly expensive
---------------------------------------------------------------
-[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains] 
-
 
 ***NOTE: For the nightly regressions, we only run examples/ which is
    currently clean other than the above (if anything's listed; the
@@ -746,15 +740,10 @@ failed since adding more multilocale directories (01/31/12)
   Worked when re-run; may be intermittent?
 
 
-=================================
+================================
 baseline-specific tests
-(Reviewed for accuracy 12/06/2013)
-=================================
-
-Tests suppressions that now succeed due to turning on inlining (12/7/12)
-------------------------------------------------------------------------
-[Error: did not find expected suppression trivial/mjoyner/inlinefunc/inlfunc1_report]
-[Error: did not find expected suppression trivial/mjoyner/inlinefunc/inlfunc2_report]
+(Reviewed for accuracy 01/25/14)
+================================
 
 never worked (02/24/11)
 -----------------------
@@ -775,18 +764,18 @@ wrong output (02/16/12 -- first run in awhile)
 [Error matching program output for memory/figueroa/LeakedMemory2]
 [Error matching program output for memory/figueroa/LeakedMemoryArrayOfClasses]
 
+??? (wrong output)
+------------------
+[Error matching program output for classes/figueroa/RecordConstructor2]
+
 died due to signal 6 (09/28/13)
 -------------------------------
 [Error matching program output for distributions/robust/arithmetic/modules/test_module_Sort]
 
 Memory getting leaked (11/14/13)
 --------------------------------
-[Error matching program output for memory/sungeun/refCount/arrays]
 [Error matching program output for memory/sungeun/refCount/arraysAndDomains]
-
-??? (wrong output)
-------------------
-[Error matching program output for classes/figueroa/RecordConstructor2]
+[Error matching program output for memory/sungeun/refCount/arrays]
 
 died due to signal 11 (09/28/13)
 ------------------------------------------------------
@@ -798,14 +787,6 @@ glibc invalid pointer error (09/28/13)
 ------------------------------------------------------------
 [Error matching program output for optimizations/bulkcomm/asenjo/stencilDR/v1/stencil]
 
-glibc double free or corruption (09/28/13)
-----------------------------------------------------------------
-[Error matching program output for release/examples/benchmarks/hpcc/hpl]
-[Error matching program output for studies/hpcc/FFT/marybeth/fft-test-even]
-[Error matching program output for studies/hpcc/HPL/bradc/hpl-blc]
-[Error matching program output for studies/hpcc/HPL/bradc/hpl-blc-noreindex]
-[Error matching program output for studies/hpcc/HPL/vass/hpl]
-
 segv due to turning on inlining (12/7/12)
 -----------------------------------------
 sungeun: I have confirmed that almost all of these are due to running
@@ -814,20 +795,34 @@ intermittent or at least less so than the others with inilining, I
 think we would prefer these errors.
 
 [Error matching program output for parallel/cobegin/gbt/cobegin-stacksize]
-[Error matching program output for studies/lulesh/bradc/xyztuple/lulesh-dense-3tuple]
-[Error matching program output for studies/madness/common/test_likepy]
-[Error matching program output for studies/madness/common/test_mul]
 [Error matching program output for studies/madness/aniruddha/madchap/test_likepy]
 [Error matching program output for studies/madness/aniruddha/madchap/test_mul]
+[Error matching program output for studies/madness/common/test_gaxpy]
+[Error matching program output for studies/madness/common/test_likepy]
+[Error matching program output for studies/madness/common/test_mul]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_diff]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_gaxpy]
 [Error matching program output for studies/madness/dinan/mad_chapel/test_likepy]
 [Error matching program output for studies/madness/dinan/mad_chapel/test_mul]
+
+glibc double free or corruption (09/28/13)
+----------------------------------------------------------------
+[Error matching program output for release/examples/benchmarks/hpcc/hpl]
+[Error matching program output for studies/hpcc/FFT/marybeth/fft-test-even]
+[Error matching program output for studies/hpcc/HPL/bradc/hpl-blc-noreindex]
+[Error matching program output for studies/hpcc/HPL/bradc/hpl-blc]
+[Error matching program output for studies/hpcc/HPL/vass/hpl]
 
 timeouts
 --------
 [Error: Timed out executing program studies/lammps/shemmy/p-lammps-n1]
 [Error: Timed out executing program studies/lammps/shemmy/p-lammps-n2]
 [Error: Timed out executing program studies/lammps/shemmy/p-lammps-n4]
-[Error: Timed out executing program studies/shootout/fannkuch-redux/fannkuch-redux (execopts: 2)] (started 10/30/13)
+
+Tests suppressions that now succeed due to turning on inlining (12/7/12)
+------------------------------------------------------------------------
+[Error: did not find expected suppression trivial/mjoyner/inlinefunc/inlfunc1_report]
+[Error: did not find expected suppression trivial/mjoyner/inlinefunc/inlfunc2_report]
 
 
 ============================================
