@@ -98,8 +98,8 @@ proc luLikeMultiply(
                        (ABlkDmn.dim(2))((blkCol-1)*blkSize+1..#blkSize)};
         const bBlkD = {(ABlkDmn.dim(1))((blkRow-1)*blkSize+1..#blkSize),
                        (ADmn.dim(2))((blkCol-1)*blkSize+1..#blkSize)};
-        const cBlkD = {ADmn[(blkRow-1)*blkSize+1..#aBlkD.dim(1).length,
-                            (blkCol-1)*blkSize+1..#bBlkD.dim(2).length]};
+        const cBlkD = ADmn[(blkRow-1)*blkSize+1..#aBlkD.dim(1).length,
+                           (blkCol-1)*blkSize+1..#bBlkD.dim(2).length];
 
         local {
             dgemm(
@@ -235,11 +235,11 @@ proc LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
         const trailingCols   = blk+crntBlkSize..ACols.high;
         const unfactoredCols = blk..ACols.high;
 
-        var tl = {A.domain[blockRange, blockRange]};
-        var tr = {A.domain[blockRange, trailingCols]};
-        var bl = {A.domain[trailingRows, blockRange]};
-        var br = {A.domain[trailingRows, trailingCols]};
-        var l  = {A.domain[unfactoredRows, blockRange]};
+        var tl = A.domain[blockRange, blockRange];
+        var tr = A.domain[blockRange, trailingCols];
+        var bl = A.domain[trailingRows, blockRange];
+        var br = A.domain[trailingRows, trailingCols];
+        var l  = A.domain[unfactoredRows, blockRange];
         
         // Now that we've sliced and diced A properly do the blocked-LU
         // computation:

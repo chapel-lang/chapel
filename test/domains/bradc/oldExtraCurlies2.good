@@ -1,0 +1,1 @@
+oldExtraCurlies2.chpl:3: error: In future releases, '{<domain-expr>}' will be interpreted as an associative domain of domain values.  If you intended it simply to mean <domain-expr> (the historical interpretation), simply omit the curly brackets.

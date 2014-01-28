@@ -3370,7 +3370,7 @@ void CallExpr::prettyPrint(std::ofstream *o) {
         argList.last()->prettyPrint(o);
         unusual = true;
       } else if (strcmp(expr->unresolved,
-                        "chpl__buildDomainExpr") == 0) {
+                        "chpl__ensureDomainExpr") == 0) {
         unusual = true;
         for_alist(expr, argList) {
           if (expr != argList.first()) {

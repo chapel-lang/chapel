@@ -340,7 +340,7 @@ loop_stmt:
 | TLSBR expr_ls TRSBR stmt
     {
       if ($2->argList.length > 1)
-        $$ = buildForallLoopStmt(NULL, new CallExpr("chpl__buildDomainExpr", $2), new BlockStmt($4));
+        $$ = buildForallLoopStmt(NULL, new CallExpr("chpl__ensureDomainExpr", $2), new BlockStmt($4));
       else
         $$ = buildForallLoopStmt(NULL, $2->get(1)->remove(), new BlockStmt($4));
     }
@@ -806,7 +806,7 @@ opt_init_expr:
 opt_reindex_expr:
     { $$ = NULL; }
 | TCOLON TLSBR expr_ls TRSBR
-    { $$ = new CallExpr("chpl__buildDomainExpr", $3); }
+    { $$ = new CallExpr("chpl__ensureDomainExpr", $3); }
 ;
 
 opt_type:
@@ -835,19 +835,19 @@ opt_type:
 array_type:
   TLSBR expr_ls TRSBR type_level_expr
     { $$ = new CallExpr("chpl__buildArrayRuntimeType",
-             new CallExpr("chpl__buildDomainExpr", $2), $4); 
+             new CallExpr("chpl__ensureDomainExpr", $2), $4); 
     }
 | TLSBR expr_ls TRSBR array_type
     { $$ = new CallExpr("chpl__buildArrayRuntimeType",
-             new CallExpr("chpl__buildDomainExpr", $2), $4); 
+             new CallExpr("chpl__ensureDomainExpr", $2), $4); 
     }
 | TLSBR expr_ls TIN expr TRSBR type_level_expr
     { 
       if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
       $$ = new CallExpr("chpl__buildArrayRuntimeType",
-             new CallExpr("chpl__buildDomainExpr", $4), $6, $2->get(1)->remove(),
-             new CallExpr("chpl__buildDomainExpr", $4->copy()));
+             new CallExpr("chpl__ensureDomainExpr", $4), $6, $2->get(1)->remove(),
+             new CallExpr("chpl__ensureDomainExpr", $4->copy()));
     }
 | error  {printf("bad array type specification"); clean_exit(1); }
 ;
@@ -984,7 +984,7 @@ for_expr:
 | TLSBR expr_ls TRSBR expr %prec TFOR
     {
       if ($2->argList.length > 1)
-        $$ = buildForallLoopExpr(NULL, new CallExpr("chpl__buildDomainExpr", $2), $4, NULL, true);
+        $$ = buildForallLoopExpr(NULL, new CallExpr("chpl__ensureDomainExpr", $2), $4, NULL, true);
       else
         $$ = buildForallLoopExpr(NULL, $2->get(1)->remove(), $4, NULL, true);
     }

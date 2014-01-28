@@ -168,7 +168,7 @@ proc main {
   var localeDom: domain(nDims) = {0..#nLocRows, 0..#nLocCols};
   var locales: [localeDom] locale;
 
-  for (i,j) in {localeDom} do
+  for (i,j) in localeDom do
     locales(i,j) = Locales((i*nLocCols + j)%numLocales);
 
   var dims: nDims*DimensionDistributor = (new Cyclic(1), new Cyclic(2));

@@ -867,12 +867,6 @@ static void fixup_array_formals(FnSymbol* fn) {
       CallExpr* call = toCallExpr(arg->typeExpr->body.tail);
       // Not sure why we select the tail here....
 
-      //if (call && call->isNamed("chpl__buildDomainExpr")) {
-        //CallExpr* arrayTypeCall = new CallExpr("chpl__buildArrayRuntimeType");
-        //call->insertBefore(arrayTypeCall);
-        //arrayTypeCall->insertAtTail(call->remove());
-        //call = arrayTypeCall;
-      //}
       if (call && call->isNamed("chpl__buildArrayRuntimeType")) {
         // We are building an array type.
         bool noDomain = (isSymExpr(call->get(1))) ? toSymExpr(call->get(1))->var == gNil : false;

@@ -171,16 +171,16 @@ Expr* buildFormalArrayType(Expr* iterator, Expr* eltType, Expr* index) {
     if (indexCall->numActuals() != 1)
       USR_FATAL(iterator, "invalid index expression");
     return new CallExpr("chpl__buildArrayRuntimeType",
-             new CallExpr("chpl__buildDomainExpr", iterator),
+             new CallExpr("chpl__ensureDomainExpr", iterator),
              eltType, indexCall->get(1)->remove(),
-             new CallExpr("chpl__buildDomainExpr", iterator->copy()));
+             new CallExpr("chpl__ensureDomainExpr", iterator->copy()));
   } else {
     CallExpr* call = toCallExpr(iterator);
     if (call->numActuals() == 1 && isDefExpr(call->get(1))) {
       return new CallExpr("chpl__buildArrayRuntimeType", call->get(1)->remove(), eltType);
     } else
       return new CallExpr("chpl__buildArrayRuntimeType",
-               new CallExpr("chpl__buildDomainExpr", iterator), eltType);
+               new CallExpr("chpl__ensureDomainExpr", iterator), eltType);
   }
 }
 
@@ -710,7 +710,7 @@ handleArrayTypeCase(FnSymbol* fn, Expr* indices, Expr* iteratorExpr, Expr* expr)
   // counting domains within runtime array types
   thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, domain,
                            new CallExpr("chpl__autoCopy",
-                             new CallExpr("chpl__buildDomainExpr",
+                             new CallExpr("chpl__ensureDomainExpr",
                                           iteratorExpr->copy()))));
   if (hasSpecifiedIndices) {
     // we want to swap something like the below commented-out

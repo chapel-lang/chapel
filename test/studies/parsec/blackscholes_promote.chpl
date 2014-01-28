@@ -128,7 +128,7 @@ proc bs() {
 				data.r, data.v, data.t, otype);
 	}
 	if ERR_CHK then
-		numError = + reduce [i in {Dom}] errChk(i, data(i).DGrefval, prices(i));
+		numError = + reduce [i in Dom] errChk(i, data(i).DGrefval, prices(i));
 }
 
 proc main() {
