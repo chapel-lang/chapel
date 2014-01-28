@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-source $(cd $(dirname $0) ; pwd)/common-gasnet.bash
+source $(cd $(dirname $0) ; pwd)/common-dists.bash
 
 # run cyclic dist regressions
 export LOGFILE=$HOME/tmp/nightly.cyclic.out

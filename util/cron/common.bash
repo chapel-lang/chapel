@@ -70,6 +70,7 @@ export CHPL_DEVELOPER=true
 
 export CHPL_NIGHTLY_LOGDIR=/data/sea/cascade/chapel/Nightly
 export CHPL_NIGHTLY_STATDIR=$CHPL_NIGHTLY_LOGDIR/Stats
+export CHPL_NIGHTLY_CRON_LOGDIR=$CHPL_NIGHTLY_LOGDIR
 
 # It is tempting to use hostname --short, but macs only support the short form
 # of the argument.
