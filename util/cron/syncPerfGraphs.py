@@ -6,11 +6,8 @@
 # not always want to sync data from all performance runs, and this serves as a
 # place to capture notes about how we authenticate and some SF stuff. 
 
-# This uses an individual users SF account to authenticate (because SF doesn't
-# allow shared or group accounts. The user authenticating, and the server, and
-# destination are stored in the CHPL_TEST_SF_PERF_DEST env var. The id_dsa ssh
-# key in chapelu's directory is used to authenticate the SF user. If that key
-# is ever reset, the public key stored on SF will need to be updated. 
+# rsync over ssh is used to transfer the files to SourceForge. The user running
+# this script needs to have configured access to web.sourceforge.net.
 
 # TODO This should also have an auxiliary function in it for syncing a new 
 # .htaccess and .passwd file that are used as part of the HTML authentication
@@ -52,12 +49,9 @@ def syncToSourceForge():
         return 124
     localPerfSrc = testPerfDir + '/html/'
     
-    # get the rsync DEST
-    sfPerfDest = os.getenv('CHPL_TEST_SF_PERF_DEST')
-    if sfPerfDest == None:
-        logFile.write('CHPL_TEST_SF_PERF_DEST was not set\n')
-        logFile.close()
-        return 124
+    # Assumes correct username and authentication for web.sourceforge.net is
+    # configured for the current system.
+    sfPerfDest = 'web.sourceforge.net:/home/project-web/chapel/htdocs/perf/$host/'
 
     # The rsync command that we will execute -- authenticates over ssh 
     # --del to remove any old data (graphs merged, changed names, removed etc)
