@@ -112,6 +112,7 @@ extern bool fExplainVerbose;
 extern bool fPrintCallStackOnError;
 extern bool fPrintIDonError;
 extern bool fCLineNumbers;
+extern bool fPrintEmittedCodeSize;
 extern char fPrintStatistics[256];
 extern bool fPrintDispatch;
 extern bool fGenIDS;

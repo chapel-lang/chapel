@@ -37,6 +37,7 @@ void codegenStmt(Expr* stmt) {
     if (fGenIDS)
       info->cStatements.push_back("/* " + numToString(stmt->id) + "*/ ");
   }
+  ++stmtCount;
 }
 
 

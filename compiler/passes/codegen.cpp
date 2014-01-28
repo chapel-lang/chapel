@@ -25,6 +25,8 @@
 GenInfo* gGenInfo;
 int gMaxVMT = -1;
 fileinfo gAllExternCode;
+int stmtCount = 0;
+
 
 static const char*
 subChar(Symbol* sym, const char* ch, const char* x) {
@@ -1149,6 +1151,11 @@ void codegen(void) {
 
   closeCFile(&hdrfile);
   closeCFile(&mainfile);
+
+  if (fPrintEmittedCodeSize)
+  {
+    fprintf(stderr, "Statements emitted: %d\n", stmtCount);
+  }
 }
 
 void makeBinary(void) {

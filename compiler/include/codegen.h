@@ -127,6 +127,7 @@ struct GenInfo {
 
 extern GenInfo* gGenInfo;
 extern int gMaxVMT;
+extern int stmtCount;
 
 #ifdef HAVE_LLVM
 void setupClang(GenInfo* info, std::string rtmain);
