@@ -13,7 +13,7 @@ TARGCOMP=`$CHPL_HOME/util/chplenv/compiler --target`
 #RE2INCLS="-I$RE2DIR/install/$TARGPLAT-$TARGCOMP/include -I$RE2DIR/re2"
 RE2INCLS="-I$RE2DIR/install/$TARGPLAT-$TARGCOMP/include"
 RE2_LIB_DIR="$RE2DIR/install/$TARGPLAT-$TARGCOMP/lib"
-RE2LIB="-L$RE2_LIB_DIR -Wl,-rpath=$RE2_LIB_DIR -lre2"
+RE2LIB="-L$RE2_LIB_DIR -Wl,-rpath -Wl,$RE2_LIB_DIR -lre2"
 
 echo $DEFS | grep atomics/intrinsics
 if [ $? == 0 ]
@@ -36,17 +36,29 @@ fi
 # If we had an easy way to get the names of the C/C++ compilers
 # we could support non-gnu
 COMP=`$CHPL_HOME/util/chplenv/compiler`
+PLAT=`$CHPL_HOME/util/chplenv/platform`
 if [ "$COMP" = "gnu" ]
 then
   echo C tests will run using gnu compiler
+elif [ "$COMP" == "clang" ]
+then
+  echo C tests will run using clang compiler
+  CC=clang
+  CXX=clang++
 else
   echo Skipping C Regexp tests without gnu compilers
   exit
 fi
 
+if [ "$PLAT" = "darwin" ]
+then
+  # Don't use --static with because it doesn't work on Mac OS X
+  OPTS=
+else
+  OPTS="-static"
+fi
 
-
-DEPS="--static -Wall -DSIMPLE_TEST $DEFS $RSRC/qio.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/deque.c $RSRC/regexp/re2/re2-interface.cc $RE2INCLS $RE2LIB -lpthread"
+DEPS="$OPTS -Wall -DSIMPLE_TEST $DEFS $RSRC/qio.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/deque.c $RSRC/regexp/re2/re2-interface.cc $RE2INCLS $RE2LIB -lpthread"
 
 T1="$CXX $DEPS -g regexp_test.cc -o regexp_test"
 T2="$CXX $DEPS -g regexp_channel_test.cc -o regexp_channel_test"

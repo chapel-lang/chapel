@@ -51,6 +51,40 @@ diff --git a/Makefile b/Makefile
  
  obj/libre2.a: $(OFILES)
  	@mkdir -p obj
+@@ -250,6 +254,7 @@
+ 	$(INSTALL_DATA) $(INSTALL_HFILES) $(DESTDIR)$(includedir)/re2
+ 	$(INSTALL) obj/libre2.a $(DESTDIR)$(libdir)/libre2.a
+ 	$(INSTALL) obj/so/libre2.so $(DESTDIR)$(libdir)/libre2.so.$(SONAME).0.0
++	if [ -n `command -v install_name_tool` ]; then install_name_tool -id $(DESTDIR)$(libdir)/libre2.so.$(SONAME).0.0 $(DESTDIR)$(libdir)/libre2.so.$(SONAME).0.0; fi
+ 	ln -sf libre2.so.$(SONAME).0.0 $(DESTDIR)$(libdir)/libre2.so.$(SONAME)
+ 	ln -sf libre2.so.$(SONAME).0.0 $(DESTDIR)$(libdir)/libre2.so
+ 
+diff --git a/libre2.symbols b/libre2.symbols
+--- a/libre2.symbols
++++ b/libre2.symbols
+@@ -6,6 +6,9 @@
+ 		# re2::StringPiece*
+ 		_ZN3re211StringPiece*;
+ 		_ZNK3re211StringPiece*;
++		# re2::FilePiece*
++		_ZN3re211FilePiece*;
++		_ZNK3re211FilePiece*;
+ 		# operator<<(std::ostream&, re2::StringPiece const&)
+ 		_ZlsRSoRKN3re211StringPieceE;
+ 		# re2::FilteredRE2*
+diff --git a/libre2.symbols.darwin b/libre2.symbols.darwin
+--- a/libre2.symbols.darwin
++++ b/libre2.symbols.darwin
+@@ -5,6 +5,9 @@
+ # re2::StringPiece*
+ __ZN3re211StringPiece*
+ __ZNK3re211StringPiece*
++# re2::FilePiece*
++__ZN3re29FilePiece*
++__ZNK3re29FilePiece*
+ # operator<<(std::ostream&, re2::StringPiece const&)
+ __ZlsRNSt3__113basic_ostreamIcNS_11char_traitsIcEEEERKN3re211StringPieceE
+ # re2::FilteredRE2*
 diff --git a/re2/nfa.cc b/re2/nfa.cc
 --- a/re2/nfa.cc
 +++ b/re2/nfa.cc
