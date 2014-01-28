@@ -765,14 +765,18 @@ The \chpl{serial} statement can be used to dynamically disable
 parallelism.  The syntax is:
 \begin{syntax}
 serial-statement:
-  `serial' expression `do' statement
-  `serial' expression block-statement
+  `serial' expression[OPT] `do' statement
+  `serial' expression[OPT] block-statement
 \end{syntax}
-where the expression evaluates to a bool type.  Independent of that
-value, the \sntx{statement} is evaluated. If the expression is true,
-any dynamically encountered code that would result in new tasks is
-executed without creating any new tasks.  In effect, execution is
-serialized.
+where the optional \sntx{expression} evaluates to a boolean value.  If
+the expression is omitted, it is as though 'true' were specified.
+Whatever the expression's value, the statement following it is
+evaluated. If the expression is true, any dynamically encountered code
+that would normally create new tasks within the statement is instead
+executed by the original task without creating any new ones.  In
+effect, execution is serialized.  If the expression is false, code
+within the statement will generates task according to normal Chapel
+rules.
 
 \begin{chapelexample}{serialStmt1.chpl}
 In the code
@@ -824,7 +828,7 @@ proc stmt4() { write(4); }
 var n = 3;
 \end{chapelpre}
 \begin{chapel}
-serial true {
+serial {
   begin stmt1();
   cobegin {
     stmt2();

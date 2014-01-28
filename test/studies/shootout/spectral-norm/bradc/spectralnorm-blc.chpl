@@ -34,7 +34,7 @@ proc multiplyAtAv(v, tmp, AtAv) {
 //
 proc multiplyAv(v: [?Dv], Av: [?DAv]) {
   forall i in DAv do
-    serial (true) do  // TODO: deprecrate need for true
+    serial do
       Av[i] = + reduce [j in Dv] (A[i,j] * v[j]);
 }
 
@@ -44,7 +44,7 @@ proc multiplyAv(v: [?Dv], Av: [?DAv]) {
 //
 proc multiplyAtv(v: [?Dv], Atv: [?DAtv]) {
   forall i in DAtv do
-    serial (true) do  // TODO: deprecrate need for true
+    serial do
       Atv[i] = + reduce [j in Dv] (A[j,i] * v[j]);
 }
 

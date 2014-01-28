@@ -231,6 +231,7 @@ stmt:
 | TLOCAL stmt                { $$ = buildLocalStmt($2); }
 | TON expr do_stmt           { $$ = buildOnStmt($2, $3); }
 | TSERIAL expr do_stmt       { $$ = buildSerialStmt($2, $3); }
+| TSERIAL do_stmt            { $$ = buildSerialStmt(new SymExpr(gTrue), $2); }
 | TSYNC stmt                 { $$ = buildSyncStmt($2); }
 | TUSE expr_ls TSEMI         { $$ = buildUseStmt($2); }
 | TYIELD expr TSEMI          { $$ = buildPrimitiveStmt(PRIM_YIELD, $2); }
