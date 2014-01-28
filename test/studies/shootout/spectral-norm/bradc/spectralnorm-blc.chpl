@@ -10,14 +10,14 @@ config const n = 500;
 proc main() {
   var tmp, u, v: [0..#n] real;  // Declare three vectors
 
-  u = 1.0;                     // Initialize u to 1.0
+  u = 1.0;                      // Initialize u to 1.0
 
-  for 1..10 {                  // For 10 iterations...
-    multiplyAtAv(u, tmp, v);   // ...compute v = A*u*At
-    multiplyAtAv(v, tmp, u);   // ...and     u = A*v*At
+  for 1..10 {                   // For 10 iterations...
+    multiplyAtAv(u, tmp, v);    // ...compute v = A*u*At
+    multiplyAtAv(v, tmp, u);    // ...and     u = A*v*At
   }
 
-  writef("%.10r\n", sqrt(+ reduce (u*v) / + reduce (v*v)));
+  writef("%.9dr\n", sqrt(+ reduce (u*v) / + reduce (v*v)));
 }
 
 //
