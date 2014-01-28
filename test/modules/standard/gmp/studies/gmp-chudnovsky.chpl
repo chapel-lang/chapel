@@ -454,7 +454,7 @@ proc fac_set_bp(inout f: fac_t, in base: c_long, pow: c_long) {
 proc fac_mul2(inout r: fac_t, f: fac_t, g: fac_t) {
 
   var i, j, k: c_long;
-  while (i<f.num_facs & j<g.num_facs) {
+  while (i<f.num_facs && j<g.num_facs) {
     if (f.fac[i] == g.fac[j]) {
       r.fac[k] = f.fac[i];
       r.pow[k] = f.pow[i] + g.pow[j];
