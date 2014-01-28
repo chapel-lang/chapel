@@ -301,23 +301,32 @@ Going through each section for text conversions:
    Note, if both 0 and - are given, the effect is as if only - were given.
 
  [optional field width]
-   The field width is typically the minimum number of *columns* that the
-   conversion should use to display a value. It can be *, which means to read
-   the field width from an integral argument before the converted value. In
-   writef for a textual string conversion (%s %" %'), the field width is in
-   columns.  Within readf, the field width is the maximum number of bytes to
-   read for any string conversion (%s %" %' %//).
+   When printing numeric or string values, the field width specifies the number
+   of *columns* that the conversion should use to display the value. It can be
+   *, which means to read the field width from an integral argument before the
+   converted value.
+
+   For string conversions in readf (%s %" %' %//), the field width specifies
+   the maximum number of bytes to read. 
+
+   For numeric conversions in readf, the field width is ignored.
    
  [optional . then precision]
-   The precision is normally the number of decimal digits to use when printing
-   the fractional part of number. It can be *, which means to read the
-   precision from an integral argument before the converted value. For textual
-   string conversions in writef (%s %" %'), the precision indicates the
-   maxmimum number of columns to print - and the result will be truncated if
-   it does not fit. In readf for these textual string conversions (%s %" %'),
+   When printing floating point values, the precision is used to control
+   the number of decimal digits to print.  For %r conversions, it
+   specifies the number of significant digits to print; for %dr conversions, 
+   it specifies the number of digits following the decimal point.  It can also
+   be *, which means to read the precision from an integral argument before 
+   the converted value.
+
+   For textual string conversions in writef, (%s %" %'), the precision
+   indicates the maximum number of columns to print - and the result will be
+   truncated if it does not fit. In readf for these textual string conversions,
    the precision indicates the maximum number of characters (e.g. Unicode code
-   points). The precision will be silently ignored for integral conversions
-   (%i, %u, etc) and for %// conversions.
+   points) to input. 
+
+   The precision is silently ignored for integral conversions (%i, %u, etc) 
+   and for %// conversions.
 
  [optional base flag]
    d means decimal (and not exponential for floating-point)
