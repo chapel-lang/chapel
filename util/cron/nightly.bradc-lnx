@@ -9,7 +9,7 @@ log_info "Running testRelease.  Log file: $LOGFILE"
 export LOGFILE=$HOME/tmp/nightly-perf.linux64.bradc-lnx.out
 log_info "Testing performance.  Log file: $LOGFILE"
 
-# FIXME: export CHPL_NIGHTLY_LOGDIR=/data/sea/cascade/chapel/NightlyPerformance/bradc-lnx
+export CHPL_NIGHTLY_LOGDIR=/data/sea/cascade/chapel/NightlyPerformance/bradc-lnx
 
 ~/chapel/util/cron/nightly -cron -performance -numtrials 5 -startdate 02/19/10 > $LOGFILE 2>&1
 

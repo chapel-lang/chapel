@@ -5,7 +5,7 @@ source $(cd $(dirname $0) ; pwd)/common.bash
 export LOGFILE=$HOME/tmp/nightly-perf.linux64.chap04.out
 log_info "Testing performance.  Log file: $LOGFILE"
 
-# FIXME: export CHPL_NIGHTLY_LOGDIR=/data/sea/cascade/chapel/NightlyPerformance/chap04
+export CHPL_NIGHTLY_LOGDIR=/data/sea/cascade/chapel/NightlyPerformance/chap04
 
 ~/chapel/util/cron/nightly -cron -performance -numtrials 5 -startdate 07/28/12 > $LOGFILE 2>&1
 
