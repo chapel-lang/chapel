@@ -85,12 +85,14 @@ chpl_thread_mutex_p chpl_thread_mutexNew(void) {
 }
 
 void chpl_thread_mutexLock(chpl_thread_mutex_p mutex) {
-  if (pthread_mutex_lock((pthread_mutex_t*) mutex))
+  int result = pthread_mutex_lock((pthread_mutex_t*) mutex);
+  if (result)
     chpl_internal_error("pthread_mutex_lock() failed");
 }
 
 void chpl_thread_mutexUnlock(chpl_thread_mutex_p mutex) {
-  if (pthread_mutex_unlock((pthread_mutex_t*) mutex))
+  int result = pthread_mutex_unlock((pthread_mutex_t*) mutex);
+  if (result)
     chpl_internal_error("pthread_mutex_unlock() failed");
 }
 
