@@ -137,46 +137,63 @@ module DefaultRectangular {
         if debugDataParNuma then
           writeln("numSublocs ", numSublocs, " numCores ", here.numCores, " ranges ", ranges);
         const numTasks = numSublocs;
-        const (numChunks, parDim) = _computeChunkStuff(numTasks, ignoreRunning,
-                                                       minIndicesPerTask, ranges);
+        const (numChunks, parDim) = if __primitive("task_get_serial") then
+                                    (1, -1) else
+                                    _computeChunkStuff(numTasks,
+                                                       ignoreRunning,
+                                                       minIndicesPerTask,
+                                                       ranges);
+
         if debugDataParNuma then
           writeln("(numChunks, parDim) ", (numChunks, parDim));
 
-        coforall chunk in 0..#numChunks { // make sure coforall on can trigger
-          on here.getChild(chunk) {
-            if debugDataParNuma {
-              extern proc chpl_task_getSubloc(): chpl_sublocID_t;
-              if chunk!=chpl_task_getSubloc() then
-                writeln("*** ERROR: ON WRONG SUBLOC (should be "+chunk+
-                        ", on "+chpl_task_getSubloc()+") ***");
-            }
-            var nCores = here.numCores;
-            var locBlock: rank*range(idxType);
+        if numChunks == 1 {
+          if rank == 1 {
+            yield (0..ranges(1).length-1,);
+          } else {
+            var block: rank*range(idxType);
             for param i in 1..rank do
-              locBlock(i) = 0:ranges(i).low.type..#(ranges(i).length);
-            var followMe: rank*range(idxType) = locBlock;
-            const (lo,hi) = _computeBlock(locBlock(parDim).length,
-                                          numChunks, chunk,
-                                          locBlock(parDim).high,
-                                          locBlock(parDim).low,
-                                          locBlock(parDim).low);
-            followMe(parDim) = lo..hi;
-            const (numChunks2, parDim2) = _computeChunkStuff(nCores, ignoreRunning,
-                                                             minIndicesPerTask, followMe);
-            coforall chunk2 in 0..#numChunks2 {
-              var locBlock2: rank*range(idxType);
+              block(i) = 0..ranges(i).length-1;
+            yield block;
+          }
+        } else {
+          coforall chunk in 0..#numChunks { // make sure coforall on can trigger
+            on here.getChild(chunk) {
+              if debugDataParNuma {
+                extern proc chpl_task_getSubloc(): chpl_sublocID_t;
+                if chunk!=chpl_task_getSubloc() then
+                  writeln("*** ERROR: ON WRONG SUBLOC (should be "+chunk+
+                          ", on "+chpl_task_getSubloc()+") ***");
+              }
+              const nCores = here.numCores;
+              var locBlock: rank*range(idxType);
               for param i in 1..rank do
-                locBlock2(i) = followMe(i).low..followMe(i).high;
-              var followMe2: rank*range(idxType) = locBlock2;
-              const low  = locBlock2(parDim2).low,
-                    high = locBlock2(parDim2).high;
-              const (lo,hi) = _computeBlock(locBlock2(parDim2).length,
-                                            numChunks2, chunk2, high, low, low);
-              followMe2(parDim2) = lo..hi;
-              if debugDataParNuma then
-                writeln("(chunk, chunk2, followMe, followMe2) ",
-                         (chunk, chunk2, followMe, followMe2)); 
-              yield followMe2;
+                locBlock(i) = 0:ranges(i).low.type..#(ranges(i).length);
+              var followMe: rank*range(idxType) = locBlock;
+              const (lo,hi) = _computeBlock(locBlock(parDim).length,
+                                            numChunks, chunk,
+                                            locBlock(parDim).high);
+              followMe(parDim) = lo..hi;
+              const (numChunks2, parDim2) = _computeChunkStuff(nCores,
+                                                               ignoreRunning,
+                                                               minIndicesPerTask,
+                                                               followMe);
+              coforall chunk2 in 0..#numChunks2 {
+                var locBlock2: rank*range(idxType);
+                for param i in 1..rank do
+                  locBlock2(i) = followMe(i).low..followMe(i).high;
+                var followMe2: rank*range(idxType) = locBlock2;
+                const low  = locBlock2(parDim2).low,
+                  high = locBlock2(parDim2).high;
+                const (lo,hi) = _computeBlock(locBlock2(parDim2).length,
+                                              numChunks2, chunk2,
+                                              high, low, low);
+                followMe2(parDim2) = lo..hi;
+                if debugDataParNuma then
+                  writeln("(chunk, chunk2, followMe, followMe2) ",
+                          (chunk, chunk2, followMe, followMe2)); 
+                yield followMe2;
+              }
             }
           }
         }
@@ -196,8 +213,12 @@ module DefaultRectangular {
           writeln("    numTasks=", numTasks, " (", ignoreRunning,
                   "), minIndicesPerTask=", minIndicesPerTask);
 
-        var (numChunks, parDim) = _computeChunkStuff(numTasks, ignoreRunning,
-                                                     minIndicesPerTask, ranges);
+        const (numChunks, parDim) = if __primitive("task_get_serial") then
+                                    (1, -1) else
+                                    _computeChunkStuff(numTasks,
+                                                       ignoreRunning,
+                                                       minIndicesPerTask,
+                                                       ranges);
         if debugDefaultDist then
           writeln("    numChunks=", numChunks, " parDim=", parDim,
                   " ranges(", parDim, ").length=", ranges(parDim).length);
@@ -223,9 +244,7 @@ module DefaultRectangular {
             var followMe: rank*range(idxType) = locBlock;
             const (lo,hi) = _computeBlock(locBlock(parDim).length,
                                           numChunks, chunk,
-                                          locBlock(parDim).high,
-                                          locBlock(parDim).low,
-                                          locBlock(parDim).low);
+                                          locBlock(parDim).high);
             followMe(parDim) = lo..hi;
             if debugDefaultDist then
               writeln("*** DI[", chunk, "]: followMe = ", followMe);

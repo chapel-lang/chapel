@@ -812,38 +812,44 @@ module ChapelRangeBase {
 
     if localeModelHasSublocales && numSublocs != 0 {
       const len = this.length;
-      const numChunks = _computeNumChunks(numSublocs,
-                                          ignoreRunning,
-                                          minIndicesPerTask,
-                                          len);
-      coforall chunk in 0..#numChunks {
-        on here.getChild(chunk) {
-          if debugDataParNuma {
-            extern proc chpl_task_getSubloc(): chpl_sublocID_t;
-            if chunk!=chpl_task_getSubloc() then
-              writeln("*** ERROR: ON WRONG SUBLOC (should be "+chunk+
-                      ", on "+chpl_task_getSubloc()+") ***");
-          }
-          const (lo,hi) = _computeBlock(len, numChunks, chunk, len-1);
-          const locRange = lo..hi;
-          const locLen = locRange.length;
-          const numTasks = _computeNumChunks(here.numCores,
-                                             ignoreRunning,
-                                             minIndicesPerTask,
-                                             locLen);
-          coforall core in 0..#numTasks {
-            const (low, high) = _computeBlock(locLen, numTasks, core, hi, lo, lo);
-            if debugDataParNuma then
-              writeln("(chunk, core, locRange, coreRange)",
-                       (chunk, core, locRange, low..high));
-            yield (low..high,);
+      const numChunks =  if __primitive("task_get_serial") then
+                         1 else _computeNumChunks(numSublocs,
+                                                  ignoreRunning,
+                                                  minIndicesPerTask,
+                                                  len);
+      if numChunks == 1 {
+        yield (0..this.length-1,);
+      } else {
+        coforall chunk in 0..#numChunks {
+          on here.getChild(chunk) {
+            if debugDataParNuma {
+              extern proc chpl_task_getSubloc(): chpl_sublocID_t;
+              if chunk!=chpl_task_getSubloc() then
+                writeln("*** ERROR: ON WRONG SUBLOC (should be "+chunk+
+                        ", on "+chpl_task_getSubloc()+") ***");
+            }
+            const (lo,hi) = _computeBlock(len, numChunks, chunk, len-1);
+            const locRange = lo..hi;
+            const locLen = locRange.length;
+            const numTasks = _computeNumChunks(here.numCores,
+                                               ignoreRunning,
+                                               minIndicesPerTask,
+                                               locLen);
+            coforall core in 0..#numTasks {
+              const (low, high) = _computeBlock(locLen, numTasks, core, hi, lo, lo);
+              if debugDataParNuma then
+                writeln("(chunk, core, locRange, coreRange)",
+                        (chunk, core, locRange, low..high));
+              yield (low..high,);
+            }
           }
         }
       }
       
     } else {
       var v = this.length;
-      var numChunks = _computeNumChunks(v);
+      const numChunks = if __primitive("task_get_serial") then
+                        1 else _computeNumChunks(v);
   
       if debugChapelRange
       {
