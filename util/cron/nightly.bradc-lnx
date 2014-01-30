@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-source $(cd $(dirname $0) ; pwd)/common.bash
+source $(cd $(dirname $0) ; pwd)/common-perf.bash
 
 export LOGFILE=$HOME/tmp/nightly.testRelease.out
 log_info "Running testRelease.  Log file: $LOGFILE"
@@ -8,8 +8,6 @@ log_info "Running testRelease.  Log file: $LOGFILE"
 
 export LOGFILE=$HOME/tmp/nightly-perf.linux64.bradc-lnx.out
 log_info "Testing performance.  Log file: $LOGFILE"
-
-export CHPL_NIGHTLY_LOGDIR=/data/sea/cascade/chapel/NightlyPerformance/bradc-lnx
 
 ~/chapel/util/cron/nightly -cron -performance -numtrials 5 -startdate 02/19/10 > $LOGFILE 2>&1
 
