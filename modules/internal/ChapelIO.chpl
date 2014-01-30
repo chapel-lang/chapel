@@ -513,8 +513,8 @@ module ChapelIO {
     return result;
   }
   
-  pragma "ref this" pragma "dont disable remote value forwarding"
-  proc string.write(args ...?n) {
+  pragma "dont disable remote value forwarding"
+  proc ref string.write(args ...?n) {
     var sc = new StringWriter(this);
     sc.write((...args));
     this = sc.s;

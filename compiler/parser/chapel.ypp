@@ -642,6 +642,7 @@ opt_intent_tag:
 opt_this_intent_tag:
          { $$ = INTENT_BLANK; }
 | TPARAM { $$ = INTENT_PARAM; }
+| TREF   { $$ = INTENT_REF;   }
 ;
 
 proc_or_iter:

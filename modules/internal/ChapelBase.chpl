@@ -644,10 +644,8 @@ module ChapelBase {
   //
   //  bug?  in setters, parameterize real argument over complex bit width
   //
-  pragma "ref this"
-  inline proc chpl_anycomplex.re var return __primitive("complex_get_real", this);
-  pragma "ref this"
-  inline proc chpl_anycomplex.im var return __primitive("complex_get_imag", this);
+  inline proc ref chpl_anycomplex.re var return __primitive("complex_get_real", this);
+  inline proc ref chpl_anycomplex.im var return __primitive("complex_get_imag", this);
   
   //
   // helper functions

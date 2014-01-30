@@ -182,27 +182,27 @@ A class method is a procedure or iterator that is bound to a class.
 Methods are declared with the following syntax:
 \begin{syntax}
 method-declaration-statement:
-  linkage-specifier[OPT] proc-or-iter param-clause[OPT] type-binding function-name argument-list[OPT] 
+  linkage-specifier[OPT] proc-or-iter this-intent[OPT] type-binding function-name argument-list[OPT] 
     return-intent[OPT] return-type[OPT] where-clause[OPT] function-body
 
 proc-or-iter:
   `proc'
   `iter'
 
-param-clause:
+this-intent:
   `param'
+  `ref'
 
 type-binding:
   identifier .
 \end{syntax}
 If a method is declared within the lexical scope of a class, record,
 or union, the type binding can be omitted and is taken to be the
-innermost class, record, or union that the method is defined in.  If a
-method declaration contains the optional \sntx{param-clause}, it
-implies that it can only be applied to param objects of the given type
-binding.
+innermost class, record, or union that the method is defined in.
 
 Method calls are described in \rsec{Class_Method_Calls}.
+
+The use of \sntx{this-intent} is described in \rsec{The_em_this_Reference}.
 
 \subsection{Nested Classes}
 \label{Nested_Classes}
@@ -781,6 +781,32 @@ delete c1;
 Then given an instance of \chpl{C} called \chpl{c1}, the method
 call \chpl{c1.foo()} results in a call to \chpl{bar} where the argument
 is \chpl{c1}.
+\end{chapelexample}
+
+The optional \sntx{this-intent} declares the intent by which the receiver
+argument will be passed.  When the value of \sntx{this-intent} is \chpl{param},
+it implies that the function can only be applied to param objects of the given
+type binding.  If the value is \chpl{ref}, the argument will be passed by
+reference---allowing modification of \chpl{this}.  Otherwise, the argument will
+be passed with the blank intent as specified in \rsec{The_Blank_Intent}.
+
+\begin{chapelexample}{refThisIntent.chpl}
+In the following code, the \chpl{doubleMe} function is defined with a
+\sntx{this-intent} of \chpl{ref}, allowing variables of type \chpl{int} to
+double themselves.
+\begin{chapel}
+proc ref int.doubleMe() { this *= 2; }
+\end{chapel}
+\begin{chapelpost}
+var x: int = 2;
+x.doubleMe();
+writeln(x);
+\end{chapelpost}
+\begin{chapeloutput}
+4
+\end{chapeloutput}
+Given a variable \chpl{x = 2}, a call to \chpl{x.doubleMe()} will set \chpl{x}
+to \chpl{4}.
 \end{chapelexample}
 
 \section{The {\em this} Method}

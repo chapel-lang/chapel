@@ -892,8 +892,7 @@ resolveFormals(FnSymbol* fn) {
           formal->hasFlag(FLAG_WRAP_WRITTEN_FORMAL) ||
           (formal == fn->_this &&
            (isUnion(formal->type) ||
-            isRecord(formal->type) ||
-            fn->hasFlag(FLAG_REF_THIS)))) {
+            isRecord(formal->type)))) {
         if (okToConvertFormalToRefType(formal->type)) {
           makeRefType(formal->type);
           formal->type = formal->type->refType;
@@ -1016,7 +1015,9 @@ static void ensureEnumTypeResolved(EnumType* etype) {
 static bool
 isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual) {
   if (SymExpr* se = toSymExpr(actual))
-    if (se->var->hasFlag(FLAG_EXPR_TEMP) || se->var->isConstant() || se->var->isParameter())
+    if (se->var->hasFlag(FLAG_EXPR_TEMP) ||
+        (se->var->isConstant() && !formal->hasFlag(FLAG_ARG_THIS)) ||
+        se->var->isParameter())
       if (okToConvertFormalToRefType(formal->type))
         return false;
   // Perhaps more checks are needed.

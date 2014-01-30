@@ -516,8 +516,7 @@ buildCoercionWrapper(FnSymbol* fn,
       }
     } else {
       if (Symbol* actualTypeSymbol = coercion_map->get(formal))
-        if (!(formal == fn->_this && fn->hasFlag(FLAG_REF_THIS)))
-          wrapperFormal->type = actualTypeSymbol->type;
+        wrapperFormal->type = actualTypeSymbol->type;
       call->insertAtTail(wrapperFormal);
     }
   }
