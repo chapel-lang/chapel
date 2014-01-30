@@ -18,6 +18,7 @@ import subprocess
 import glob 
 import shlex
 import time
+import socket
 
 def main():
     sync = syncToSourceForge()
@@ -51,7 +52,8 @@ def syncToSourceForge():
     
     # Assumes correct username and authentication for web.sourceforge.net is
     # configured for the current system.
-    sfPerfDest = 'web.sourceforge.net:/home/project-web/chapel/htdocs/perf/$host/'
+    sfPerfDest = 'web.sourceforge.net:/home/project-web/chapel/htdocs/perf/{host}/'.format(
+        host=socket.gethostname())
 
     # The rsync command that we will execute -- authenticates over ssh 
     # --del to remove any old data (graphs merged, changed names, removed etc)
