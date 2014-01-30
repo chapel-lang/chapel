@@ -779,7 +779,38 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
         }
       }
     }    
-    
+   
+    // We have to note that for records if a field is deffed then the record
+    // itself is also deffed. This is handled in buildDefUseMaps for normal
+    // variables but we have to handle when a variable aliases a record's field
+    // and the alias is deffed.
+    if(isVarSymbol(symExpr->var) || isArgSymbol(symExpr->var)) {
+      // if the current variable is a record
+      if(ClassType* ct = toClassType(symExpr->var->type->symbol->type)) {
+        if(isRecord(symExpr->var->type->symbol->type)) {
+          // go through each field and check for aliases
+          for_fields(field, ct) {
+            if(aliases.count(field) == 1) {
+              // for each alias
+              for_set(Symbol, alias, aliases[field]) {
+                if(localDefMap.count(alias) == 1) {
+                  // mark each def of the alias as a def of the record (so long
+                  // as that def isn't the alias creation.)
+                  for_vector(SymExpr, aliasDef, *localDefMap[alias]) {
+                    if(CallExpr* call = toCallExpr(aliasDef->parentExpr)) {
+                      if(field != rhsAlias(call)) {
+                        actualDefs[symExpr].insert(aliasDef);
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
     //add the defs of the symbol itself
     if(localDefMap.count(symExpr->var) == 1) {
       for_vector(SymExpr, aliasSymExpr, *localDefMap[symExpr->var]) {
