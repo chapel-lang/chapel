@@ -202,8 +202,13 @@ block distribution regressions
 
 ================================
 cyclic distribution regressions
-(Reviewed for accuracy 01/27/14)
+(Reviewed for accuracy 01/28/14)
 ================================
+
+communication counts changed due to Vass' task functions commit (05/30/13)
+---------------------------------------------------------------------------
+[Error matching program output for distributions/robust/arithmetic/performance/assign]
+[Error matching program output for distributions/robust/arithmetic/performance/reduce]
 
 
 ========================================

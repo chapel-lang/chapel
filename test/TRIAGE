@@ -31,7 +31,6 @@ New problems
 (Ones that prove persistent should be moved to REGRESSIONS.)
 =========================================================
 
-
 darwin-gnu and darwin-clang non-deterministic compiler failures
 ---------------------------------------------------------------
 
@@ -81,6 +80,17 @@ nondet. baseline output
 [Error matching program output for studies/amr/diffusion/level/Level_DiffusionBE_driver (compopts: 1)]
 11/3/13: has been failing frequently (for --baseline) since 9/28/13
 12/29/2013:
+gbt: This seems to be due to memory corruption.  Because of the way the
+     test post-processes its output it's not obvious, but compiling and
+     running it manually I saw this in the output:
+       *** glibc detected *** ./Level_DiffusionBE_driver: double free or
+       corruption (out): 0x00007f6345179b80 ***
+     This results in a SIGABRT (probably caused by calling abort()),
+     which kills the program, and this in turn means that the file the
+     output postprocessing wants to work on doesn't exist.  A gripe
+     about this missing file is the most obvious thing in the output if
+     start_test is used.
+
 
 primers/locales fails semi-regularly for cray-prgenv-cray (11/14)
 -----------------------------------------------------------------
@@ -95,6 +105,41 @@ front-end
 =========================================================
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
+
+lnx-diten cron job failed on 1/31/14
+------------------------------------
+Appears to be a Cray networking problem that made ~chapelu inaccessible
+from lnx-diten.  Watch to make sure we get lnx-diten results on 2/1/14.
+
+
+linux64.gnu.none.qthreads.numa failures due to r22610 on 1/31/14
+----------------------------------------------------------------
+Sung is working on these.  Note: they work with 16m stacks!
+[Error matching program output for distributions/robust/arithmetic/basics/test_zipper_default]
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 2)]
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 3)]
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4)]
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 2)]
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 3)]
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4)]
+
+But this same commit also caused some tests to start passing:
+arrays/deitz/part7/test_descriptor_frees
+memory/figueroa/LeakedMemory2
+memory/figueroa/LeakedMemoryArrayOfClasses
+memory/sungeun/refCount/arraysAndDomains
+memory/sungeun/refCount/arrays
+
+
+churn due to testing script changes
+-----------------------------------
+Inadvertent placement of the Dist block, Dist cyclic, and Baseline
+results in the /data/sea/cascade/chapel/Nightly/ directory instead of
+NightlyDist or NightlyBaseline, respectively, caused false reporting of
+new and resolved errors.  There were various problems with rsync'ing the
+performance results to SourceForge.  All these problems should be fixed
+by Fri 1/31.
+
 
 extra thread required for multilocale startup
 ---------------------------------------------
