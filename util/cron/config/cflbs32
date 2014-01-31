@@ -1,5 +1,5 @@
 SHELL=/bin/bash
-MAILTO=tvandoren@gmail.com
+MAILTO=chapel_build@cray.com
 
 # DO NOT EDIT
 # This crontabs is managed in the chapel subversion repo. Make modifications
