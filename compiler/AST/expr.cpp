@@ -126,7 +126,7 @@ callReplaceChild(Expr* expr, Expr* new_ast) {
   }
 }
 
-void Expr::prettyPrint(std::ofstream *o) {
+void Expr::prettyPrint(std::ostream *o) {
   if (BlockStmt *stmt = toBlockStmt(this))
     printf("blockstmt %s", stmt->userLabel);
   else if (CondStmt *stmt = toCondStmt(this))
@@ -305,7 +305,7 @@ GenRet SymExpr::codegen() {
 }
 
 
-void SymExpr::prettyPrint(std::ofstream *o) {
+void SymExpr::prettyPrint(std::ostream *o) {
   if (strcmp(var->name, "nil") != 0) {
     if (var->isImmediate()) {
       if (VarSymbol *sym = toVarSymbol(var)) {
@@ -371,7 +371,7 @@ GenRet UnresolvedSymExpr::codegen() {
   return ret;
 }
 
-void UnresolvedSymExpr::prettyPrint(std::ofstream *o) {
+void UnresolvedSymExpr::prettyPrint(std::ostream *o) {
   *o << unresolved;
 }
 
@@ -1241,7 +1241,7 @@ GenRet codegenFieldPtr(
   return ret;
 }
 
-void DefExpr::prettyPrint(std::ofstream *o) {
+void DefExpr::prettyPrint(std::ostream *o) {
   *o << "<DefExprType>";
 }
 
@@ -3218,8 +3218,13 @@ void CallExpr::verify() {
     if (FnSymbol* fn = isResolved()) {
       if (!fn->hasFlag(FLAG_EXTERN)) {
         for_formals_actuals(formal, actual, this) {
-          if (formal->type != actual->typeInfo() && actual->typeInfo() != dtNil)
-            INT_FATAL(this, "actual formal type mismatch");
+          if (formal->type != actual->typeInfo() && actual->typeInfo() != dtNil) {
+              INT_FATAL(this,
+                  "actual formal type mismatch for %s: %s != %s",
+                  fn->name,
+                  actual->typeInfo()->symbol->name,
+                  formal->type->symbol->name);
+          }
         }
       }
     }
@@ -3346,7 +3351,7 @@ Type* CallExpr::typeInfo(void) {
     return dtUnknown;
 }
 
-void CallExpr::prettyPrint(std::ofstream *o) {
+void CallExpr::prettyPrint(std::ostream *o) {
   if (isResolved()) {
     if (isResolved()->hasFlag(FLAG_BEGIN_BLOCK))
       *o << "begin";
@@ -5374,7 +5379,7 @@ GenRet NamedExpr::codegen() {
 }
 
 
-void NamedExpr::prettyPrint(std::ofstream *o) {
+void NamedExpr::prettyPrint(std::ostream *o) {
   *o << "<NamedExprType>";
 }
 
