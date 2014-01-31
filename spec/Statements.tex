@@ -253,14 +253,46 @@ evaluates to false, the second statement, if it exists, replaces the
 conditional statement; if the second statement does not exist, the
 conditional statement is removed.
 
+Each statement embedded in the {\em conditional-statement} has its own
+scope whether or not an explicit block surrounds it.
+
 \index{conditional statement!dangling else}
 If the statement that immediately follows the optional \chpl{then}
 keyword is a conditional statement and it is not in a block, the
 else-clause is bound to the nearest preceding conditional statement
 without an else-clause.
+The statement in the else-clause can be a conditional statement, too.
 
-Each statement embedded in the {\em conditional-statement} has its own
-scope whether or not an explicit block surrounds it.
+\begin{chapelexample}{conditionals.chpl}
+The following function prints \chpl{two} when \chpl{x} is \chpl{2}
+and \chpl{B,four} when \chpl{x} is \chpl{4}.
+\begin{chapel}
+proc condtest(x:int) {
+  if x > 3 then
+    if x > 5 then
+      write("A,");
+    else
+      write("B,");
+
+  if x == 2 then
+    writeln("two");
+  else if x == 4 then
+    writeln("four");
+  else
+    writeln("other");
+}
+\end{chapel}
+\begin{chapelpost}
+for i in 2..6 do condtest(i);
+\end{chapelpost}
+\begin{chapeloutput}
+two
+other
+B,four
+B,other
+A,other
+\end{chapeloutput}
+\end{chapelexample}
 
 \section{The Select Statement}
 \label{The_Select_Statement}
