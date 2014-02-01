@@ -9,6 +9,6 @@ proc bar(n: int) {
   writeln("Array = ", A);
 }
 
-serial true {
+serial {
   bar(1..100);
 }

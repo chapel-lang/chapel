@@ -7,7 +7,7 @@ for i in r {
 }
 
 writeln("forall loop over r");
-serial true {
+serial {
   forall i in r {
     writeln(i);
   }

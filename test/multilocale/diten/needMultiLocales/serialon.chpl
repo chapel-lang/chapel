@@ -1,5 +1,5 @@
 var n: single int;
-serial true {
+serial {
   on Locales(1) {
     n = here.id;
   }

@@ -10,28 +10,28 @@ var A: [D] int;
 proc main() {
   writeln("Calling do_local_domain():");
   var m1 = memoryUsed();
-  serial true do do_local_domain();
+  serial do do_local_domain();
   var m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
   if printMemStats then printMemTable();
 
   writeln("Calling do_local_array():");
   m1 = memoryUsed();
-  serial true do do_local_array();
+  serial do do_local_array();
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
   if printMemStats then printMemTable();
 
   writeln("Calling do_array() with global:");
   m1 = memoryUsed();
-  serial true do do_array(A);
+  serial do do_array(A);
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
   if printMemStats then printMemTable();
 
   writeln("Calling do_array() with local:");
   m1 = memoryUsed();
-  serial true {
+  serial {
     const D = {1..n};
     var A: [D] int;
     do_array(A);
@@ -42,14 +42,14 @@ proc main() {
 
   writeln("Calling sync begin do_array() with global:");
   m1 = memoryUsed();
-  serial true do sync begin do_array(A);
+  serial do sync begin do_array(A);
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
   if printMemStats then printMemTable();
 
   writeln("Calling sync begin do_array() with local:");
   m1 = memoryUsed();
-  serial true do sync {
+  serial do sync {
     const D = {1..n};
     var A: [D] int;
     begin do_array(A);
@@ -60,14 +60,14 @@ proc main() {
 
   writeln("Calling do_tuple() with global:");
   m1 = memoryUsed();
-  serial true do do_tuple((A, D));
+  serial do do_tuple((A, D));
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
   if printMemStats then printMemTable();
 
   writeln("Calling do_tuple() with local:");
   m1 = memoryUsed();
-  serial true {
+  serial {
     const D = {1..n};
     var A: [D] int;
     do_tuple((A, D));

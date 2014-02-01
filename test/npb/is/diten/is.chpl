@@ -252,7 +252,7 @@ proc fullVerify() {
   var failures = 0;
   buffer = keyArray;
 
-  serial true {
+  serial {
     [i in D] {
       atomic {
 	keyBuff1(buffer(i)) -= 1;

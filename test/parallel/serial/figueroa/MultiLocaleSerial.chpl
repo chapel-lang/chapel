@@ -7,7 +7,7 @@ var syncvar: sync int = 3,
 begin {sleep(singlevar1:uint); singlevar2 = syncvar + 10;}
 
 on Locales(1) do
-serial true do
+serial do
 on Locales(0) do
 cobegin {
   {singlevar1 = 5; syncvar = singlevar2;}

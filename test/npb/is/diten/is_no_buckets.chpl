@@ -230,7 +230,7 @@ proc fullVerify() {
   var failures = 0;
   buffer = keyArray;
 
-  serial true {
+  serial {
     [i in D] {
       atomic {
 	ranks(buffer(i)) -= 1;

@@ -1140,7 +1140,7 @@ proc gaxpyMinus(A: [],
 
   forall i in 1..n do
 // TODO: 'serial' makes the following faster?
-    serial(true) { res[i] = (+ reduce [j in xD] (A[i,j] * x[j])) - y[i,n+1]; }
+    serial { res[i] = (+ reduce [j in xD] (A[i,j] * x[j])) - y[i,n+1]; }
 
   return res;
 }

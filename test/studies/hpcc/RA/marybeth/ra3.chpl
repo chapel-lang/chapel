@@ -90,7 +90,7 @@ proc randomStart(step0:int):uint(64) {
   while (i > 0) do {
     var temp:uint(64) = 0;
     // do serially to avoid errors in validation
-    serial true {
+    serial {
       [j in RandStepsDomain] if (( ran >> j) & 1) then temp ^= RandomSteps(j);
     }
     ran = temp;

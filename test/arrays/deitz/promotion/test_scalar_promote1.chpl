@@ -4,6 +4,6 @@ proc foo(i : int) {
 
 var s : [1..4] int =( 1, 2, 3, 4 );
 
-serial true {
+serial {
   foo(s);
 }

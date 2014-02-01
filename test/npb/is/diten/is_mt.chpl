@@ -239,7 +239,7 @@ proc fullVerify() {
     keyBuff1(i, 0) = + reduce keyBuff1(i, 0..nThreads-1);
   buffer = keyArray;
 
-  serial true {
+  serial {
     [i in D] {
       atomic {
 	keyBuff1(buffer(i), 0) -= 1;

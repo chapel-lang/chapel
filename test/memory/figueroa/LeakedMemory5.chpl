@@ -20,7 +20,7 @@ var sum = -3;
 
 writeln(B);
 var m1 = memoryUsed();
-serial true do sum += foo();
+serial do sum += foo();
 var m2 = memoryUsed();
 
 writeln("Amount of leaked memory after calling foo(): ", m2:int - m1:int);

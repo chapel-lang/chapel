@@ -8,7 +8,7 @@ class C {
 
 var c = new C(1..3);
 
-serial true {
+serial {
   foo(1..3, c.f, 1..3);
 }
 
