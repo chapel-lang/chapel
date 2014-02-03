@@ -31,6 +31,13 @@ New problems
 (Ones that prove persistent should be moved to REGRESSIONS.)
 =========================================================
 
+valgrind testing: svn problem
+-----------------------------
+Valgrind testing on chap09 on Saturdays is failing because the svn there
+gripes that it's too old for the repository it's working against.  Thomas
+will work this problem.
+
+
 darwin-gnu and darwin-clang non-deterministic compiler failures
 ---------------------------------------------------------------
 
@@ -106,10 +113,24 @@ front-end
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
-lnx-diten cron job failed on 1/31/14
-------------------------------------
-Appears to be a Cray networking problem that made ~chapelu inaccessible
-from lnx-diten.  Watch to make sure we get lnx-diten results on 2/1/14.
+failures due to r22618 on 1/31/14
+---------------------------------
+These occurred in the following testing starting on 2/1/14:
+  Cron (cray-xe.cray-prgenv-cray.none.fifo.flat--linux64.gnu)
+  Cron (cray-xe.cray-prgenv-intel.none.fifo.flat--linux64.gnu)
+  Cron (linux64.gnu.gasnet-fast.fifo.flat.dlmalloc)
+  Cron (linux64.gnu.none.fifo.flat)
+  Cron Baseline (linux64.gnu.none.fifo.flat)
+  Cron Memory-Leaks (linux64.gnu.none.fifo.flat)
+  Cron No-local (linux64.gnu.none.fifo.flat)
+  Cron Verify (linux64.gnu.none.fifo.flat)
+[Error matching .bad file for users/vass/type-tests.todo]
+[Error matching compiler output for functions/bradc/intents/intents-error]
+[Error matching compiler output for functions/deitz/test_inout_const]
+[Error matching compiler output for functions/diten/refIntentWithNonLvalue]
+[Error matching compiler output for functions/jplevyak/intent-8-error]
+[Error matching compiler output for functions/vass/const-ref-lvalue-error]
+[Error matching compiler output for users/ferguson/aa/class-ref-two]
 
 
 linux64.gnu.none.qthreads.numa failures due to r22610 on 1/31/14
@@ -129,16 +150,6 @@ memory/figueroa/LeakedMemory2
 memory/figueroa/LeakedMemoryArrayOfClasses
 memory/sungeun/refCount/arraysAndDomains
 memory/sungeun/refCount/arrays
-
-
-churn due to testing script changes
------------------------------------
-Inadvertent placement of the Dist block, Dist cyclic, and Baseline
-results in the /data/sea/cascade/chapel/Nightly/ directory instead of
-NightlyDist or NightlyBaseline, respectively, caused false reporting of
-new and resolved errors.  There were various problems with rsync'ing the
-performance results to SourceForge.  All these problems should be fixed
-by Fri 1/31.
 
 
 extra thread required for multilocale startup
