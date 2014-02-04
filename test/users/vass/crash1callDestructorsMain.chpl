@@ -465,6 +465,8 @@ proc DimensionalDom.dsiReprivatize(other, reprivatizeData) {
 
 proc DimensionalDom.dsiMyDist() return dist;
 
+proc DimensionalDom.dsiDims()     return whole.dims();
+
 proc DimensionalDom.dsiNumIndices return whole.numIndices;
 
 proc DimensionalDom.subordinate1dDist(param dim: int) {
