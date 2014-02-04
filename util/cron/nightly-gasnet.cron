@@ -9,6 +9,6 @@ export CHPL_GASNET_SEGMENT=everything
 export LOGFILE=$HOME/tmp/nightly-gasnet-$CHPL_GASNET_SEGMENT.out
 log_info "Testing GASNet using segment $CHPL_GASNET_SEGMENT.  Log file: $LOGFILE"
 
-$CHPL_HOME/util/cron/nightly -cron >&! $LOGFILE
+$CHPL_HOME/util/cron/nightly -cron > $LOGFILE 2>&1
 
 log_info "Finished ${0}."
