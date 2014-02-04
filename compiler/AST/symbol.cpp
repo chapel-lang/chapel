@@ -871,8 +871,10 @@ const char* ArgSymbol::intentDescrString(void) {
     case INTENT_REF: return "'ref'";
     case INTENT_PARAM: return "'param'";
     case INTENT_TYPE: return "'type'";
-    default: return "unknown intent";
   }
+
+  INT_FATAL(this, "unknown intent");
+  return "unknown intent";
 }
 
 
