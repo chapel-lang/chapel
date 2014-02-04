@@ -1,1 +1,2 @@
 CHPL_TASKS != fifo
+CHPL_COMM != none
