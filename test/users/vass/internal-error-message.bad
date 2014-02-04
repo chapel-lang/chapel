@@ -1,0 +1,2 @@
+internal-error-message.chpl:72: In function 'scalar_outer_product_cholesky':
+internal-error-message.chpl:90: error: the type of the actual argument '_formal_tmp_A' is generic [callInfo.cpp:37]
