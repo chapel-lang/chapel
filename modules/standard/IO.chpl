@@ -236,7 +236,7 @@ extern proc qio_file_release(f:qio_file_ptr_t);
 
 pragma "no prototype" // FIXME
 extern proc qio_file_init(ref file_out:qio_file_ptr_t, fp:_file, fd:fd_t, iohints:c_int, const ref style:iostyle, usefilestar:c_int):err_t;
-extern proc qio_file_open_access(ref file_out:qio_file_ptr_t, path:string, access:string, iohints:c_int, const ref style:iostyle):err_t;
+extern proc qio_file_open_access(ref file_out:qio_file_ptr_t, path:c_string, access:c_string, iohints:c_int, const ref style:iostyle):err_t;
 extern proc qio_file_open_tmp(ref file_out:qio_file_ptr_t, iohints:c_int, const ref style:iostyle):err_t;
 extern proc qio_file_open_mem(ref file_out:qio_file_ptr_t, buf:qbuffer_ptr_t, const ref style:iostyle):err_t;
 
@@ -256,7 +256,7 @@ pragma "no prototype" // FIXME
 extern proc qio_channel_create(ref ch:qio_channel_ptr_t, file:qio_file_ptr_t, hints:c_int, readable:c_int, writeable:c_int, start:int(64), end:int(64), const ref style:iostyle):err_t;
 
 pragma "no prototype" // FIXME
-extern proc qio_channel_path_offset(threadsafe:c_int, ch:qio_channel_ptr_t, ref path:string, ref offset:int(64)):err_t;
+extern proc qio_channel_path_offset(threadsafe:c_int, ch:qio_channel_ptr_t, ref path:c_string, ref offset:int(64)):err_t;
 
 extern proc qio_channel_retain(ch:qio_channel_ptr_t);
 extern proc qio_channel_release(ch:qio_channel_ptr_t);
@@ -294,13 +294,13 @@ extern proc qio_channel_flush_bits(threadsafe:c_int, ch:qio_channel_ptr_t):err_t
 extern proc qio_channel_read_bits(threadsafe:c_int, ch:qio_channel_ptr_t, ref v:uint(64), nbits:int(8)):err_t;
 
 pragma "no prototype" // FIXME
-extern proc qio_file_path_for_fd(fd:fd_t, ref path:string):err_t;
+extern proc qio_file_path_for_fd(fd:fd_t, ref path:c_string):err_t;
 pragma "no prototype" // FIXME
-extern proc qio_file_path_for_fp(fp:_file, ref path:string):err_t;
+extern proc qio_file_path_for_fp(fp:_file, ref path:c_string):err_t;
 pragma "no prototype" // FIXME
-extern proc qio_file_path(f:qio_file_ptr_t, ref path:string):err_t;
+extern proc qio_file_path(f:qio_file_ptr_t, ref path:c_string):err_t;
 pragma "no prototype" // FIXME
-extern proc qio_shortest_path(fl: qio_file_ptr_t, ref path_out:string, path_in:string):err_t;
+extern proc qio_shortest_path(fl: qio_file_ptr_t, ref path_out:c_string, path_in:c_string):err_t;
 
 extern proc qio_channel_read_int(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, ref ptr, len:size_t, issigned:c_int):err_t;
 pragma "no prototype" // FIXME
@@ -314,7 +314,7 @@ extern proc qio_channel_read_complex(threadsafe:c_int, byteorder:c_int, ch:qio_c
 extern proc qio_channel_write_complex(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, const ref re_ptr, const ref im_ptr, len:size_t):err_t;
 
 extern proc qio_channel_read_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, ref s:string, ref len:int(64), maxlen:ssize_t):err_t;
-extern proc qio_channel_write_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, const s:string, len:ssize_t):err_t;
+extern proc qio_channel_write_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, const s:c_string, len:ssize_t):err_t;
 
 extern proc qio_channel_scan_int(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:size_t, issigned:c_int):err_t;
 pragma "no prototype" // FIXME
@@ -337,19 +337,19 @@ extern proc qio_channel_print_complex(threadsafe:c_int, ch:qio_channel_ptr_t, co
 extern proc qio_channel_read_char(threadsafe:c_int, ch:qio_channel_ptr_t, ref char:int(32)):err_t;
 
 extern proc qio_nbytes_char(chr:int(32)):c_int;
-extern proc qio_encode_to_string(chr:int(32)):string;
-extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int, buf:string, buflen:ssize_t):err_t;
+extern proc qio_encode_to_string(chr:int(32)):c_string;
+extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int, buf:c_string, buflen:ssize_t):err_t;
 
 extern proc qio_channel_write_char(threadsafe:c_int, ch:qio_channel_ptr_t, char:int(32)):err_t;
 extern proc qio_channel_skip_past_newline(threadsafe:c_int, ch:qio_channel_ptr_t, skipOnlyWs:c_int):err_t;
 extern proc qio_channel_write_newline(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
 
 extern proc qio_channel_scan_string(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr:string, ref len:int(64), maxlen:ssize_t):err_t;
-extern proc qio_channel_print_string(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:string, len:ssize_t):err_t;
+extern proc qio_channel_print_string(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:c_string, len:ssize_t):err_t;
 
-extern proc qio_channel_scan_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:string, len:ssize_t, skipws:c_int):err_t;
+extern proc qio_channel_scan_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:c_string, len:ssize_t, skipws:c_int):err_t;
 extern proc qio_channel_scan_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_void_ptr, len:ssize_t, skipws:c_int):err_t;
-extern proc qio_channel_print_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:string, len:ssize_t):err_t;
+extern proc qio_channel_print_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:c_string, len:ssize_t):err_t;
 extern proc qio_channel_print_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_void_ptr, len:ssize_t):err_t;
 
 extern record qio_conv_t {
@@ -400,7 +400,7 @@ extern const QIO_CONV_SET_STRINGEND:c_int;
 extern const QIO_CONV_SET_CAPTURE:c_int;
 extern const QIO_CONV_SET_DONE:c_int;
 
-extern proc qio_conv_parse(const fmt:string, start:size_t, ref end:uint(64), scanning:c_int, ref spec:qio_conv_t, ref style:iostyle):syserr;
+extern proc qio_conv_parse(const fmt:c_string, start:size_t, ref end:uint(64), scanning:c_int, ref spec:qio_conv_t, ref style:iostyle):syserr;
 
 extern proc qio_format_error_too_many_args():syserr;
 extern proc qio_format_error_too_few_args():syserr;
@@ -611,8 +611,8 @@ proc file.getPath(out error:syserr) : string {
   check();
   var ret:string;
   on this.home {
-    var tmp:string;
-    var tmp2:string;
+    var tmp:c_string;
+    var tmp2:c_string;
     error = qio_file_path(_file_internal, tmp);
     // Wide strings must be fixed up after extern calls (see Note 1).
     __primitive("string_normalize", tmp);
@@ -621,7 +621,7 @@ proc file.getPath(out error:syserr) : string {
       __primitive("string_normalize", tmp2);    // See Note 1.
     }
     if !error {
-      ret = tmp2;
+      ret = toString(tmp2);
     } else {
       ret = "unknown";
     }
@@ -666,7 +666,7 @@ proc open(out error:syserr, path:string, mode:iomode, hints:iohints=IOHINT_NONE,
   var local_style = style;
   var ret:file;
   ret.home = here;
-  error = qio_file_open_access(ret._file_internal, path, _modestring(mode), hints, local_style);
+  error = qio_file_open_access(ret._file_internal, path.c_str(), _modestring(mode).c_str(), hints, local_style);
   // On return ret._file_internal.ref_cnt == 1.
   return ret;
 }
@@ -689,11 +689,11 @@ proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle(
   var err:syserr = ENOERR;
   var ret = openfd(fd, err, hints, style);
   if err {
-    var path:string;
+    var path:c_string;
     var e2:syserr = ENOERR;
     e2 = qio_file_path_for_fd(fd, path);
-    if e2 then path = "unknown";
-    ioerror(err, "in openfd", path);
+    if e2 then path = "unknown".c_str();
+    ioerror(err, "in openfd", toString(path));
   }
   return ret;
 }
@@ -710,11 +710,11 @@ proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle
   var err:syserr = ENOERR;
   var ret = openfp(fp, err, hints, style);
   if err {
-    var path:string;
+    var path:c_string;
     var e2:syserr = ENOERR;
     e2 = qio_file_path_for_fp(fp, path);
-    if e2 then path = "unknown";
-    ioerror(err, "in openfp", path);
+    if e2 then path = "unknown".c_str();
+    ioerror(err, "in openfp", toString(path));
   }
   return ret;
 }
@@ -814,7 +814,7 @@ record ioChar {
   }
 }
 inline proc _cast(type t, x: ioChar) where t == string {
-  return qio_encode_to_string(x.ch);
+  return toString(qio_encode_to_string(x.ch));
 }
 
 
@@ -866,13 +866,13 @@ proc channel._ch_ioerror(error:syserr, msg:string) {
   var path:string = "unknown";
   var offset:int(64) = -1;
   on this.home {
-    var tmp_path:string;
+    var tmp_path:c_string;
     var tmp_offset:int(64);
     var err:syserr = ENOERR;
     err = qio_channel_path_offset(locking, _channel_internal, tmp_path, tmp_offset);
     __primitive("string_normalize", tmp_path);  // See Note 1.
     if !err {
-      path = tmp_path;
+      path = toString(tmp_path);
       offset = tmp_offset;
     }
   }
@@ -882,13 +882,13 @@ proc channel._ch_ioerror(errstr:string, msg:string) {
   var path:string = "unknown";
   var offset:int(64) = -1;
   on this.home {
-    var tmp_path:string;
+    var tmp_path:c_string;
     var tmp_offset:int(64);
     var err:syserr = ENOERR;
     err = qio_channel_path_offset(locking, _channel_internal, tmp_path, tmp_offset);
     __primitive("string_normalize", tmp_path);  // See Note 1.
     if !err {
-      path = tmp_path;
+      path = toString(tmp_path);
       offset = tmp_offset;
     }
   }
@@ -1067,14 +1067,14 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
     err = EFORMAT;
 
     for i in 1..num {
-      err = qio_channel_scan_literal(false, _channel_internal, _trues(i), (_trues(i).length):ssize_t, 1);
+      err = qio_channel_scan_literal(false, _channel_internal, _trues(i).c_str(), (_trues(i).length):ssize_t, 1);
       if !err {
         got = true;
         break;
       } else if err == EEOF {
         break;
       }
-      err = qio_channel_scan_literal(false, _channel_internal, _falses(i), (_falses(i).length):ssize_t, 1);
+      err = qio_channel_scan_literal(false, _channel_internal, _falses(i).c_str(), (_falses(i).length):ssize_t, 1);
       if !err {
         got = false;
         break;
@@ -1127,7 +1127,7 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
     for i in chpl_enumerate(t) {
       var str:string = i:string;
       var slen:ssize_t = str.length:ssize_t;
-      err = qio_channel_scan_literal(false, _channel_internal, str, slen, 1);
+      err = qio_channel_scan_literal(false, _channel_internal, str.c_str(), slen, 1);
       if !err {
         x = i;
         break;
@@ -1143,9 +1143,9 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
 proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):syserr where _isIoPrimitiveType(t) {
   if _isBooleanType(t) {
     if x {
-      return qio_channel_print_literal(false, _channel_internal, _trues(1), _trues(1).length:ssize_t);
+      return qio_channel_print_literal(false, _channel_internal, _trues(1).c_str(), _trues(1).length:ssize_t);
     } else {
-      return qio_channel_print_literal(false, _channel_internal, _falses(1), _falses(1).length:ssize_t);
+      return qio_channel_print_literal(false, _channel_internal, _falses(1).c_str(), _falses(1).length:ssize_t);
     }
   } else if _isIntegralType(t) {
     // handles int types
@@ -1176,10 +1176,10 @@ proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):syserr wher
     return qio_channel_print_complex(false, _channel_internal, re, im, numBytes(x.re.type));
   } else if t == string {
     // handle string
-    return qio_channel_print_string(false, _channel_internal, x, x.length:ssize_t);
+    return qio_channel_print_string(false, _channel_internal, x.c_str(), x.length:ssize_t);
   } else if _isEnumeratedType(t) {
     var s = x:string;
-    return qio_channel_print_literal(false, _channel_internal, s, s.length:ssize_t);
+    return qio_channel_print_literal(false, _channel_internal, s.c_str(), s.length:ssize_t);
   } else {
     compilerError("Unknown primitive type in _write_text_internal ", typeToString(t));
   }
@@ -1259,7 +1259,7 @@ inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, param by
     var im = x.im;
     return qio_channel_write_complex(false, byteorder, _channel_internal, re, im, numBytes(x.re.type));
   } else if t == string {
-    return qio_channel_write_string(false, byteorder, qio_channel_str_style(_channel_internal), _channel_internal, x, x.length: ssize_t);
+    return qio_channel_write_string(false, byteorder, qio_channel_str_style(_channel_internal), _channel_internal, x.c_str(), x.length: ssize_t);
   } else if _isEnumeratedType(t) {
     var i:enum_mintype(t) = x:enum_mintype(t);
     return qio_channel_write_int(false, byteorder, _channel_internal, i, numBytes(i.type), _isSignedType(i.type));
@@ -1279,7 +1279,7 @@ inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:i
     return qio_channel_read_char(false, _channel_internal, x.ch);
   } else if t == ioLiteral {
     //writeln("in scan literal ", x.val);
-    return qio_channel_scan_literal(false, _channel_internal, x.val, x.val.length: ssize_t, x.ignoreWhiteSpace);
+    return qio_channel_scan_literal(false, _channel_internal, x.val.c_str(), x.val.length: ssize_t, x.ignoreWhiteSpace);
     //e = qio_channel_scan_literal(false, _channel_internal, x.val, x.val.length, x.ignoreWhiteSpace);
     //writeln("Scanning literal ", x.val,  " yeilded error ", e);
     //return e;
@@ -1311,7 +1311,7 @@ inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:
   } else if t == ioChar {
     return qio_channel_write_char(false, _channel_internal, x.ch);
   } else if t == ioLiteral {
-    return qio_channel_print_literal(false, _channel_internal, x.val, x.val.length:ssize_t);
+    return qio_channel_print_literal(false, _channel_internal, x.val.c_str(), x.val.length:ssize_t);
   } else if t == ioBits {
     return qio_channel_write_bits(false, _channel_internal, x.v, x.nbits);
   } else if kind == iokind.dynamic {
@@ -1860,8 +1860,8 @@ class ChannelReader : Reader {
 
 // Delete a file.
 proc unlink(path:string, out error:syserr) {
-  extern proc sys_unlink(path:string):err_t;
-  error = sys_unlink(path);
+  extern proc sys_unlink(path:c_string):err_t;
+  error = sys_unlink(path.c_str());
 }
 proc unlink(path:string) {
   var err:syserr = ENOERR;
@@ -2079,7 +2079,7 @@ proc _toChar(x:?t) where t == string
 {
   var chr:int(32);
   var nbytes:c_int;
-  qio_decode_char_buf(chr, nbytes, x, x.length:ssize_t);
+  qio_decode_char_buf(chr, nbytes, x.c_str(), x.length:ssize_t);
   return (chr, true);
 }
 inline
@@ -2263,7 +2263,7 @@ proc channel._format_reader(
       if error then break;
       if _format_debug then stdout.writeln("TOP OF LOOP cur=", cur, " len=", len);
       var end:uint(64);
-      error = qio_conv_parse(fmt, cur, end, isReadf, conv, style);
+      error = qio_conv_parse(fmt.c_str(), cur, end, isReadf, conv, style);
       if error {
         if _format_debug then stdout.writeln("TODO ACC");
       }
@@ -3597,7 +3597,7 @@ iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
 //  generated C code, the string argument in Chapel code becomes a reference 
 //  to the character data contained therein.  For example:
 //
-//    extern proc qio_file_path(f:qio_file_ptr_t, ref path:string):err_t;
+//    extern proc qio_file_path(f:qio_file_ptr_t, ref path:c_string):err_t;
 //
 //  matches
 //

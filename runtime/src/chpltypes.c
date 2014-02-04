@@ -222,8 +222,8 @@ chpltypes_malloc(size_t size, chpl_mem_descInt_t description,
 }
 
 
-chpl_string
-string_copy(chpl_string x, int32_t lineno, chpl_string filename)
+c_string
+string_copy(c_string x, int32_t lineno, c_string filename)
 {
   char *z;
 
@@ -237,8 +237,8 @@ string_copy(chpl_string x, int32_t lineno, chpl_string filename)
 }
 
 
-chpl_string
-string_concat(chpl_string x, chpl_string y, int32_t lineno, chpl_string filename) {
+c_string
+string_concat(c_string x, c_string y, int32_t lineno, c_string filename) {
   char *z = (char*)chpltypes_malloc(strlen(x)+strlen(y)+1,
                                     CHPL_RT_MD_STRING_CONCAT_DATA,
                                     lineno, filename);
@@ -250,7 +250,7 @@ string_concat(chpl_string x, chpl_string y, int32_t lineno, chpl_string filename
 
 // Returns the index of the first occurrence of a substring within a string, or
 // 0 if the substring is not in the string.
-int string_index_of(chpl_string haystack, chpl_string needle) {
+int string_index_of(c_string haystack, c_string needle) {
   chpl_string substring = strstr(haystack, needle);
   return substring ? (int) (substring-haystack)+1 : 0;
 }
@@ -259,8 +259,8 @@ int string_index_of(chpl_string haystack, chpl_string needle) {
 // bounds and that stride is not 0.
 // FIXME: This can't return a statically allocated empty string once strings
 // are garbage collected.
-chpl_string
-string_select(chpl_string x, int low, int high, int stride, int32_t lineno, chpl_string filename) {
+c_string
+string_select(c_string x, int low, int high, int stride, int32_t lineno, c_string filename) {
   char* result = NULL;
   char* dst = NULL;
   int size = high-low+1;
@@ -296,8 +296,8 @@ string_select(chpl_string x, int low, int high, int stride, int32_t lineno, chpl
 // string, or an empty string if the index is out of bounds.
 // FIXME: This can't return a statically allocated empty string once strings
 // are garbage collected.
-chpl_string
-string_index(chpl_string x, int i, int32_t lineno, chpl_string filename) {
+c_string
+string_index(c_string x, int i, int32_t lineno, c_string filename) {
   char* buffer;
 
   if (i-1 < 0 || i-1 >= string_length(x))
@@ -310,7 +310,7 @@ string_index(chpl_string x, int i, int32_t lineno, chpl_string filename) {
 
 
 chpl_bool
-string_contains(chpl_string x, chpl_string y) {
+string_contains(c_string x, c_string y) {
   if (strstr(x, y))
     return true;
   else
@@ -318,13 +318,13 @@ string_contains(chpl_string x, chpl_string y) {
 }
 
 
-int32_t chpl_string_compare(chpl_string x, chpl_string y) {
+int32_t chpl_string_compare(c_string x, c_string y) {
   return (int32_t)strcmp(x, y);
 }
 
 
 int64_t
-string_length(chpl_string x) {
+string_length(c_string x) {
   return strlen(x);
 }
 
