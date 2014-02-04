@@ -818,7 +818,7 @@ module ChapelRangeBase {
                                                   minIndicesPerTask,
                                                   len);
       if numChunks == 1 {
-        yield (0..this.length-1,);
+        yield (0..len-1,);
       } else {
         coforall chunk in 0..#numChunks {
           on here.getChild(chunk) {
