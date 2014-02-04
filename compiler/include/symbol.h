@@ -40,6 +40,8 @@ const int INTENT_FLAG_PARAM = 0x10;
 const int INTENT_FLAG_TYPE  = 0x20;
 const int INTENT_FLAG_BLANK = 0x40;
 
+// If this enum is modified, ArgSymbol::intentDescrString should also be
+// updated to match
 enum IntentTag {
   INTENT_IN = INTENT_FLAG_IN,
   INTENT_OUT = INTENT_FLAG_OUT,
@@ -404,6 +406,5 @@ extern Map<Type*,Vec<FnSymbol*>*> virtualMethodTable;
 extern Map<FnSymbol*,int> virtualMethodMap;
 extern Map<FnSymbol*,Vec<FnSymbol*>*> virtualChildrenMap;
 extern Map<FnSymbol*,Vec<FnSymbol*>*> virtualRootsMap;
-extern const char* intentDescrName[];
 
 #endif
