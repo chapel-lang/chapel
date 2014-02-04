@@ -1,6 +1,6 @@
 ### START ###
 ### numTasks = 6
-### ignoreRunning = true
+### ignoreRunning = false
 ### minIndicesPerTask = 100
 ### numChunks=4 (parDim=2)
 ### END ###

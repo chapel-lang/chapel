@@ -4,7 +4,7 @@ pragma "no use ChapelStandard"
 module DefaultRectangular {
 
   config const dataParTasksPerLocale = 0;
-  config const dataParIgnoreRunningTasks = true;
+  config const dataParIgnoreRunningTasks = false;
   config const dataParMinGranularity: int = 1;
 
   if dataParTasksPerLocale<0 then halt("dataParTasksPerLocale must be >= 0");
