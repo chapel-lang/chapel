@@ -577,9 +577,7 @@ def main():
         l = line.strip()
         if l != '':
             if l[0] != '#':
-                if graphList.count(l) > 0:
-                    sys.stdout.write('WARNING: Duplicate graph (%s)\n'%(l))
-                else:
+                if graphList.count(l) == 0:
                     graphList.append(l)
                 try:
                     graphInfo.genGraphStuff(l, currSuite)
