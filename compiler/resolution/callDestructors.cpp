@@ -639,6 +639,27 @@ static void insertYieldTemps()
 }
 
 
+static void insertReferenceTemps() {
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if ((call->parentSymbol && call->isResolved()) ||
+        call->isPrimitive(PRIM_VMT_CALL)) {
+      //
+      // Insert reference temps for function arguments that expect them.
+      //
+      for_formals_actuals(formal, actual, call) {
+        if (formal->type == actual->typeInfo()->refType) {
+          SET_LINENO(call);
+          VarSymbol* tmp = newTemp("_ref_tmp_", formal->type);
+          call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+          actual->replace(new SymExpr(tmp));
+          call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, actual)));
+        }
+      }
+    }
+  }
+}
+
+
 void
 callDestructors() {
   fixupDestructors();
@@ -650,4 +671,5 @@ callDestructors() {
   returnRecordsByReferenceArguments();
   insertYieldTemps();
   insertGlobalAutoDestroyCalls();
+  insertReferenceTemps();
 }

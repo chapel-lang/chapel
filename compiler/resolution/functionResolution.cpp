@@ -350,7 +350,7 @@ static void removeUnusedFormals();
 static void insertRuntimeInitTemps();
 static void removeMootFields();
 static void removeNilTypeArgs();
-static void insertReferenceTemps();
+static void expandInitFieldPrims();
 static void fixTypeNames(ClassType* ct);
 static void setScalarPromotionType(ClassType* ct);
 
@@ -6359,7 +6359,6 @@ initializeClass(Expr* stmt, Symbol* sym) {
 }
 
 
-
 //
 // pruneResolvedTree -- prunes and cleans the AST after all of the
 // function calls and types have been resolved
@@ -6389,7 +6388,7 @@ pruneResolvedTree() {
   insertRuntimeInitTemps();
   removeMootFields();
   removeNilTypeArgs();
-  insertReferenceTemps();
+  expandInitFieldPrims();
 }
 
 static void removeUnusedFunctions() {
@@ -6844,28 +6843,18 @@ static void removeNilTypeArgs() {
   }
 }
 
-static void insertReferenceTemps() {
+
+static void expandInitFieldPrims()
+{
   forv_Vec(CallExpr, call, gCallExprs) {
-    if ((call->parentSymbol && call->isResolved()) ||
-        call->isPrimitive(PRIM_VMT_CALL)) {
-      //
-      // Insert reference temps for function arguments that expect them.
-      //
-      for_formals_actuals(formal, actual, call) {
-        if (formal->type == actual->typeInfo()->refType) {
-          SET_LINENO(call);
-          VarSymbol* tmp = newTemp("_ref_tmp_", formal->type);
-          call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-          actual->replace(new SymExpr(tmp));
-          call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, actual)));
-        }
-      }
-    } else if (call->isPrimitive(PRIM_INIT_FIELDS)) {
+    if (call->isPrimitive(PRIM_INIT_FIELDS))
+    {
       initializeClass(call, toSymExpr(call->get(1))->var);
       call->remove();
     } 
   }
 }
+
 
 static void
 fixTypeNames(ClassType* ct)
