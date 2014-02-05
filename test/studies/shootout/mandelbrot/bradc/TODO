@@ -1,0 +1,17 @@
+* drop main()?
+
+* why doesn't the complex math look like complex math?  What can I
+  learn from Jacob's?
+
+* we should have the modules automatically strength reduce divisions
+  by powers of two
+
+* what would it take to do a good row-at-a-time implementation?
+  - task private 'in' array variables
+  - search to right place in the file
+
+* why can't we open the writer using stdin.writer()?
+
+* why don't writeln()s to the writer work as hoped?
+
+* can we just write(image)?
