@@ -1,12 +1,9 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Install crontab on a host from file in config/ dir.
 #
 # This will blow away any existing crontabs that have not been added to the
 # config dir.
-
-# Fail fast.
-set -e
 
 source $(cd $(dirname $0) ; pwd)/functions.bash
 
@@ -23,19 +20,24 @@ if [ -z "${hosts}" ] ; then
     exit 1
 fi
 
-for host in $hosts ; do
-    log_info "Looking for crontab config for host: ${host}"
-    host_config=$cron_config_dir/$host
+function install_cron()
+{
+    local host=$1
 
+    host_config=$cron_config_dir/$host
     if [ ! -f $host_config ] ; then
         log_error "Expected to find host config at: ${host_config}"
-        exit 1
+        return
     fi
 
-    log_info "Found host config at: ${host_config}"
-    log_info "Installing crontab on ${host}"
-
     cat $host_config | ssh chapelu@$host 'crontab -' 2> /dev/null
+    local exit_code=$?
+    if [ "${exit_code}" != "0" ] ; then
+        log_error "Non-zero exit code when installing crontab on ${host}: ${exit_code}"
+    fi
+}
 
-    log_info "Successfully installed crontab for ${host}"
+for h in $hosts ; do
+    install_cron $h &
 done
+wait
