@@ -352,7 +352,7 @@ void chpl_task_init(void)
         snprintf(newenv_stack, 99, "%lu", (unsigned long)callStackSize);
         setenv("QT_STACK_SIZE", newenv_stack, 1);
     } else if (qt_internal_get_env_str("STACK_SIZE", NULL) == NULL) {
-        uint64_t callStackSize = 32 * 1024 * sizeof(size_t);
+        uint64_t callStackSize = 1024 * 1024 * sizeof(size_t);
         snprintf(newenv_stack, 99, "%lu", (unsigned long)callStackSize);
         setenv("QT_STACK_SIZE", newenv_stack, 1);
     }
