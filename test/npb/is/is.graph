@@ -8,10 +8,10 @@ graphtitle: NAS Parallel Benchmarks: IS timings - size S
 #graphkeys: setup time - W, key sort time - W, verify time - W, total time - W
 #graphtitle: NAS Parallel Benchmarks: IS timings - size W
 
-perfkeys:  Elapsed time for setup    =,  Elapsed time for key sort =,  Elapsed time for full verify =,  Time in seconds =
-files: intsort.A.dat, intsort.A.dat, intsort.A.dat, intsort.A.dat
-graphkeys: setup time - A, key sort time - A, verify time - A, total time - A
-graphtitle: NAS Parallel Benchmarks: IS timings - size A
+#perfkeys:  Elapsed time for setup    =,  Elapsed time for key sort =,  Elapsed time for full verify =,  Time in seconds =
+#files: intsort.A.dat, intsort.A.dat, intsort.A.dat, intsort.A.dat
+#graphkeys: setup time - A, key sort time - A, verify time - A, total time - A
+#graphtitle: NAS Parallel Benchmarks: IS timings - size A
 
 #perfkeys:  Elapsed time for setup    =,  Elapsed time for key sort =,  Elapsed time for full verify =,  Time in seconds =
 #files: intsort.B.dat, intsort.B.dat, intsort.B.dat, intsort.B.dat

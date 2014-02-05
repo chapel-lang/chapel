@@ -48,6 +48,13 @@ Feel free to bug him.
 [Error: Timed out executing program studies/hpcc/RA/bradc/parallel/ra-dist (compopts: 1)]
 
 
+verification failure due to using --fast and dataParIgnoreRunningTasks=false
+----------------------------------------------------------------------------
+npb/is/mcahir/intsort.mtml since 02/05/14
+
+This is a known issue, but intsort needs a lot more attention so we are choosing
+to ignore it for now.
+
 ================================
 --fast examples regressions
 (Reviewed for accuracy 01/27/14)
