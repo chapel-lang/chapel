@@ -3214,11 +3214,17 @@ void CallExpr::verify() {
     if (actual->parentExpr != this)
       INT_FATAL(this, "Bad CallExpr::argList::parentExpr");
   }
+  // TODO: This test should be moved to checks.cpp.
+  // For passes from functionResolution up to callDestructors (inclusive), the
+  // weaker test (below) should be used.  Pass callDestructors call
+  // insertReferenceTemps(), after which the stronger test
+  //  (formal->type != actual->typeInfo()) can be used.
   if (resolved) {
     if (FnSymbol* fn = isResolved()) {
       if (!fn->hasFlag(FLAG_EXTERN)) {
         for_formals_actuals(formal, actual, this) {
-          if (formal->type != actual->typeInfo() && actual->typeInfo() != dtNil) {
+          if(actual->typeInfo() != dtNil) {
+            if (formal->type->getValType() != actual->typeInfo()->getValType())
               INT_FATAL(this,
                   "actual formal type mismatch for %s: %s != %s",
                   fn->name,
