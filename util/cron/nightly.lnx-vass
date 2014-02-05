@@ -19,4 +19,14 @@ log_info "Running memleaks regressions.  Log file: $LOGFILE"
 log_info "Saving raw memory leaks log file."
 cp /tmp/$MEMLOGFILE $CHPL_NIGHTLY_LOGDIR/FULL.memleaks
 
+# temporarily also run full verification suite
+# copied from nightly.lnx-hilde
+EXAMPLES=
+dayType="/weekend"
+export CHPL_NIGHTLY_LOGDIR=$CHPL_NIGHTLY_LOGDIR$dayType
+export CHPL_NIGHTLY_CRON_LOGDIR=$CHPL_NIGHTLY_LOGDIR
+LOGFILE="$HOME/tmp/nightly.verify.lnx-vass.out"
+log_info "Running  $EXAMPLES verifications.  Log file: $LOGFILE"
+$CHPL_HOME/util/cron/nightly -cron $EXAMPLES -verify > $LOGFILE 2>&1
+
 log_info "Finished ${0}."
