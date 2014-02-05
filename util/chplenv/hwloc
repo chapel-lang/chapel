@@ -19,16 +19,7 @@ if ($preset_hwloc eq "") {
   if ($tasks eq "qthreads") {
     $hwloc = 'hwloc';
   } else {
-    my $targplatform = run("platform", "--target");
-    my $targcompiler = run("compiler", "--target");
-
-    my $subdir = $home . "/third-party/hwloc/install/" .
-                 $targplatform . "-" . $targcompiler;
-    if ( -d $subdir && -f "$subdir/include/hwloc.h" ) {
-      $hwloc = 'hwloc';
-    } else {
-      $hwloc = 'none';
-    }
+    $hwloc = 'none';
   }
 } else {
   $hwloc = $preset_hwloc;
