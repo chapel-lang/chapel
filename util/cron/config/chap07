@@ -5,6 +5,4 @@ MAILTO=chapel_build@cray.com
 # This crontab is managed in the chapel subversion repo. Make modifications
 # there and use the install_crontab.bash script to update.
 
-# (thomasvandoren, 2014-02-05) Removing valgrind on chap09 (host is
-# down). Keeping file so crontab will automatically update (when host becomes
-# available).
+0 0 * * * ~/chapel/util/cron/machine.chap07 > ~/tmp/nightly.chap07.out 2>&1
