@@ -18,7 +18,7 @@
 #ifdef debugHoisting
   #define printDebug(string) printf string
 #else 
- #define printDebug(string) //do nothing
+  #define printDebug(string) //do nothing
 #endif
 
 
@@ -451,7 +451,7 @@ static void addDefOrUse(symToVecSymExprMap& localDefOrUseMap, Symbol* var, SymEx
 
 
 /*
- * Build the local def use maps for a loop and while we're at it built the local map which is the map from each 
+ * Build the local def use maps for a loop and while we're at it build the local map which is the map from each
  * symExpr to the block it it is defined in.
  */
 static void buildLocalDefUseMaps(Loop* loop, symToVecSymExprMap& localDefMap, symToVecSymExprMap& localUseMap, std::map<SymExpr*, int>& localMap) {
@@ -677,6 +677,24 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
   //compute the map of aliases for each symbol 
   startTimer(computeAliasTimer);
   std::map<Symbol*, std::set<Symbol*> > aliases;
+
+  //Compute the aliases for the function's parameters. Any args passed by ref
+  //can potentially alias each other. 
+  for_alist(formal1, fn->formals) {
+    for_alist(formal2, fn->formals) {
+      if(formal1 == formal2) 
+        continue;
+      if(ArgSymbol* arg1 = toArgSymbol(toDefExpr(formal1)->sym)) {
+        if(ArgSymbol* arg2 = toArgSymbol(toDefExpr(formal2)->sym)) {
+          if(arg1->intent == INTENT_REF && arg2->intent == INTENT_REF) {
+            aliases[arg1].insert(arg2);
+            aliases[arg2].insert(arg1);
+          }
+        }
+      }
+    }
+  }
+
   for_vector(BasicBlock, block2, *fn->basicBlocks) {
     //if there are too many aliases, just return. Since nothing has been added
     //to the list of invariants, nothing will be hoisted from the current fn
@@ -695,23 +713,6 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
       return;
     }
  
-    //Compute the aliases for the function's parameters. Any args passed by ref
-    //can potentially alias each other. 
-    for_alist(formal1, fn->formals) {
-      for_alist(formal2, fn->formals) {
-        if(formal1 == formal2) 
-          continue;
-        if(ArgSymbol* arg1 = toArgSymbol(toDefExpr(formal1)->sym)) {
-          if(ArgSymbol* arg2 = toArgSymbol(toDefExpr(formal2)->sym)) {
-            if(arg1->intent == INTENT_REF && arg2->intent == INTENT_REF) {
-              aliases[arg1].insert(arg2);
-              aliases[arg2].insert(arg1);
-            }
-          }
-        }
-      }
-    }
-
     for_vector(Expr, expr, block2->exprs) {
       if(CallExpr* call = toCallExpr(expr)) {
         Symbol* rhs = rhsAlias(call);
