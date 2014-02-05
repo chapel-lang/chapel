@@ -1,0 +1,2 @@
+# Valgrind fails on this test, so let us skip it.
+CHPL_TEST_VGRND_COMP == on
