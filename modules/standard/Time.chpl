@@ -41,6 +41,9 @@ record Timer {
 
   proc clear() {
     accumulated = 0.0;
+    if running {
+      time = chpl_now_timevalue();
+    }
   }
 
   proc start() {

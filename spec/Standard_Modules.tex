@@ -1044,7 +1044,7 @@ proc Timer.clear()
 \begin{protobody}
 Clears the elapsed time stored in the Timer.  This routine can be called
 whether or not the timer is running and doesn't change its status in that
-regard.
+regard.  If the timer is running it is restarted.
 \end{protobody}
 
 \begin{protohead}
