@@ -1231,6 +1231,13 @@ BlockStmt* buildParamForLoopStmt(const char* index, Expr* range, BlockStmt* stmt
     high = call->get(1)->remove();
   } else
     USR_FATAL(range, "iterators for param-for-loops must be literal ranges");
+
+  LabelSymbol* breakLabel = new LabelSymbol("_breakLabel");
+  breakLabel->addFlag(FLAG_COMPILER_GENERATED);
+  breakLabel->addFlag(FLAG_LABEL_BREAK);
+  block->breakLabel = breakLabel;
+  outer->insertAtTail(new DefExpr(breakLabel));
+
   Symbol* lowVar = insertBeforeCompilerTemp(block, low);
   Symbol* highVar = insertBeforeCompilerTemp(block, high);
   Symbol* strideVar = insertBeforeCompilerTemp(block, stride);
