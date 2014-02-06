@@ -55,6 +55,12 @@ $localhost = `uname -n`;
 chomp $localnode;
 
 
+#
+# clean up temporary files from previous parallel runs
+#
+system("rm -f $logdir/.-*.log $logdir/.-*log.summary");
+
+
 my (@testdir_list, @node_list, $nodeCount, $starttime, $endtime);
 
 sub systemd {
