@@ -75,6 +75,14 @@ static void normalize_nested_function_expressions(DefExpr* def) {
 static void
 insertDestructureStatements(Expr* S1, Expr* S2, CallExpr* lhs, Expr* rhs) {
   int i = 0;
+
+  S1->getStmtExpr()->insertAfter(
+    buildIfStmt(new CallExpr("!=",
+                             new SymExpr(new_IntSymbol(lhs->numActuals())),
+                             new CallExpr(".", rhs->copy(),
+                                          new_StringSymbol("size"))),
+                new CallExpr("compilerError", new_StringSymbol("tuple size must match the number of grouped variables"), new_IntSymbol(0))));
+
   for_actuals(expr, lhs) {
     i++;
     expr->remove();
