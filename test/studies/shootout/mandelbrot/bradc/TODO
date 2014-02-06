@@ -1,3 +1,5 @@
+Source changes
+--------------
 * drop main()?
 
 * why doesn't the complex math look like complex math?  What can I
@@ -14,4 +16,8 @@
 
 * why don't writeln()s to the writer work as hoped?
 
-* can we just write(image)?
+
+Performance improvements
+------------------------
+* make writes on contiguous RMO arrays blast it out with one write
+  rather than element-by-element

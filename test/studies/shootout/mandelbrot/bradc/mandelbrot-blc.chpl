@@ -54,8 +54,6 @@ proc main() {
 
   w.writef("P4\n");                            // write the file header
   w.writef("%i %i\n", n, n);
-  
-  for b in image do                            // write out the image
-    w.write(b);
-}
 
+  w.write(image);                              // write out the image
+}
