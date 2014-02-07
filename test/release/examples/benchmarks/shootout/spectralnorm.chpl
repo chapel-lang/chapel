@@ -6,11 +6,10 @@
    Updated by Lydia Duncan
 */
 
-config const NUM = 500;
+config const n = 500;
 
 // Return: 1.0 / (i + j) * (i + j +1) / 2 + i + 1;
-inline proc eval_A(i, j) : real
-{
+inline proc eval_A(i, j) : real {
   //
   // 1.0 / (i + j) * (i + j +1) / 2 + i + 1;
   // n * (n+1) is an even number. Therefore, just (>> 1) for (/2)
@@ -36,8 +35,7 @@ proc sum (i, param flip : bool, U : [] real) {
 // to inRange - 1, inRange, a boolean indicating not to flip the order for the
 // inner call and the array U
 //
-proc eval_A_times_u(U : [] real, Au : [] real)
-{
+proc eval_A_times_u(U : [] real, Au : [] real) {
   forall i in Au.domain do
     Au(i) = sum(i, false, U);
 }
@@ -47,25 +45,22 @@ proc eval_A_times_u(U : [] real, Au : [] real)
 // to inRange - 1, inRange, a boolean indicating to flip the order for the
 // inner call and the array U
 //
-proc eval_At_times_u(U : [] real, Au : [] real)
-{
+proc eval_At_times_u(U : [] real, Au : [] real) {
   forall i in Au.domain do
     Au(i) = sum(i, true, U);
 }
 
-proc eval_AtA_times_u(u, AtAu, v : [] real)
-{
+proc eval_AtA_times_u(u, AtAu, v : [] real) {
      eval_A_times_u(u, v);
      eval_At_times_u(v, AtAu);
 }
 
-proc spectral_game(N) : real
-{
+proc spectral_game(N) : real {
   var tmp, U, V : [0..#N] real;
 
   U = 1.0;
 
-  for 1..10 do {
+  for 1..10 {
     eval_AtA_times_u(U,V,tmp);
     eval_AtA_times_u(V,U,tmp);
   }
@@ -77,5 +72,5 @@ proc spectral_game(N) : real
 }
 
 proc main() {
-  writeln(spectral_game(NUM), new iostyle(precision=10));
+  writeln(spectral_game(n), new iostyle(precision=10));
 }
