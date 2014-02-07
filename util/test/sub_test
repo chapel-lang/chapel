@@ -985,14 +985,13 @@ for testname in testsrc:
                     badresult = DiffFiles(badfile, complog)
                     if badresult==0:
                         os.unlink(complog);
-                        sys.stdout.write('[Clean match against .bad file for %s/%s'%
-                                         (localdir, execname))
+                        sys.stdout.write('[Clean match against .bad file ')
                     else:
                         # bad file doesn't match, which is bad
-                        sys.stdout.write('[Error matching .bad file for %s/%s'%
-                                         (localdir, execname))
-                        printTestVariation(compoptsnum);
-                        sys.stdout.write(']\n');
+                        sys.stdout.write('[Error matching .bad file ')
+                    sys.stdout.write('for %s/%s'%(localdir, execname))
+                    printTestVariation(compoptsnum);
+                    sys.stdout.write(']\n');
 
             cleanup(execname)
             continue # on to next compopts
@@ -1263,14 +1262,13 @@ for testname in testsrc:
                                 badresult = DiffFiles(badfile, execlog)
                                 if badresult==0:
                                     os.unlink(execlog);
-                                    sys.stdout.write('[Clean match against .bad file for %s/%s'%
-                                                    (localdir, execname))
+                                    sys.stdout.write('[Clean match against .bad file ')
                                 else:
                                     # bad file doesn't match, which is bad
-                                    sys.stdout.write('[Error matching .bad file for %s/%s'%
-                                                    (localdir, execname))
-                                    printTestVariation(compoptsnum);
-                                    sys.stdout.write(']\n');
+                                    sys.stdout.write('[Error matching .bad file ')
+                                sys.stdout.write('for %s/%s'%(localdir, execname))
+                                printTestVariation(compoptsnum);
+                                sys.stdout.write(']\n');
 
 
                 if perftest:
