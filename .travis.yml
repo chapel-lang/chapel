@@ -3,10 +3,11 @@ compiler:
   - clang
   - gcc
 before_script:
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq tcsh
   - make
   - source ./util/setchplenv.bash
 script:
-  - '[ "$(./util/devel/lookForTabs | wc -l)" = "0" ] || (echo "Found tabs :-(" ; false)'
   - ./util/start_test -futures test/release/examples
 env:
   - CHPL_DEVELOPER=true
