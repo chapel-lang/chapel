@@ -152,7 +152,6 @@ sub free_workers {
         next if ($ready =~ /^\./);
         my ($node, $id, $failed) = split (/\./, $ready);
        if ($failed) {
-	$nodeCount--;
 	print "\n failure on $node, no more testing there\n";
         unlink "$synchdir/$ready";
        } else {
@@ -177,6 +176,13 @@ sub free_workers {
 # distribution of work stops.  This is one hack to stop the testing.
 # Of course, you'll have to wait on the client processes or kill them
 # manually.
+# The callboard is used to ignore spawned processes that have timed out.
+# Each entry contains the timestamp at which that node id was last fed.
+my @callboard;
+# Once a node has timed out, we don't send it any more work, so this timeout 
+# should be set higher than the time needed to process the largest directory.
+my $timeout = 1200; # Kill after 20 minutes.
+
 sub feed_nodes {
     my $chplenv = $_[0];
     local (@readyidv, $logfile, @logs, $testdir, $node, $rem_cmd);
@@ -203,6 +209,7 @@ sub feed_nodes {
             $testdir = $testdir_list[0];
             $node = $node_list[$readyid]; # machine name to rem exec to
             $synchfile = "$synchdir/$node.$readyid";
+            $callboard[$readyid] = time();
 
             # remove synch file before forking work to worker
             unless (-e $synchfile) {
@@ -259,12 +266,26 @@ sub feed_nodes {
     }
 
     # wait for everyone to finish;
-    @readyidv = free_workers ();
-    while (($#readyidv + 1 < $nodeCount) &&
-           !(-e "PARAHALT")) {
-        sleep $sleep_time;
+    my $done_or_dead = 0;
+    while (! (-e "PARAHALT")) {
+        # For workers that are ready, set their last-fed time to zero, so it appears
+        # they timed out.
         @readyidv = free_workers ();
+        foreach $readyid (@readyidv) {
+            $callboard[$readyid] = 0;
+        }
+
+        # Now check that all nodes have timed out.
+        $done_or_dead = 0;
+        for ($id = 0; $id < $nodeCount; $id++) {
+            $done_or_dead++ if time() - $callboard[$id] > $timeout;
+        }
+        last unless $done_or_dead < $nodeCount;
+
+        sleep $sleep_time;
     }
+    # Note that hung processes on remote nodes must be killed manually
+    # if we exit this loop due to one or more workers being declared dead.
 
     if (-e "PARAHALT" && ($#testdir_list > 0)) {
         print "\nExiting early due to PARAHALT file\n";
