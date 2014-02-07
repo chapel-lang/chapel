@@ -1,6 +1,5 @@
 language: c
 compiler:
-  - clang
   - gcc
 before_script:
   - sudo apt-get update -qq
