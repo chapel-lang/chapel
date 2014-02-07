@@ -7,6 +7,6 @@ log_info "Testing valgrind.  Log file: $LOGFILE"
 
 export CHPL_RT_NUM_THREADS_PER_LOCALE=100
 
-~/chapel/util/cron/nightly -cron -valgrind -no-futures -suppress Suppressions/valgrind.suppress -parnodefile ~/chapel/test/Nodes/CHAP7 > $LOGFILE 2>&1
+~/chapel/util/cron/nightly -cron -valgrind -no-futures -suppress Suppressions/valgrind.suppress -parnodefile ~/chapel/test/Nodes/CHAP07 > $LOGFILE 2>&1
 
 log_info "Finished ${0}."
