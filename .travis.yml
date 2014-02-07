@@ -4,7 +4,7 @@ compiler:
   - gcc
 before_script:
   - make
-  - source ./util/setupchplenv.bash
+  - source ./util/setchplenv.bash
 script:
   - '[ "$(./util/devel/lookForTabs | wc -l)" = "0" ] || (echo "Found tabs :-(" ; false)'
   - ./util/start_test -futures test/release/examples
