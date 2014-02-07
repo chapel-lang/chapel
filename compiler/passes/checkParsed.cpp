@@ -84,6 +84,11 @@ check_parsed_vars(VarSymbol* var) {
 
 static void
 check_functions(FnSymbol* fn) {
+  // Ensure that the lhs of "=" and "<op>=" is passed by ref.
+  if (fn->hasFlag(FLAG_ASSIGNOP))
+    if (fn->getFormal(1)->intent != INTENT_REF)
+      USR_WARN(fn, "The left operand of '=' and '<op>=' should have 'ref' intent.");
+
   if (!strcmp(fn->name, "this") && fn->hasFlag(FLAG_NO_PARENS))
     USR_FATAL_CONT(fn, "method 'this' must have parentheses");
 

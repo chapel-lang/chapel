@@ -380,6 +380,7 @@ initPrimitive() {
   prim_def(PRIM_XOR, "^", returnInfoFirst);
   prim_def(PRIM_POW, "**", returnInfoNumericUp);
 
+  prim_def(PRIM_ASSIGN, "=", returnInfoVoid, true);
   prim_def(PRIM_ADD_ASSIGN, "+=", returnInfoVoid, true);
   prim_def(PRIM_SUBTRACT_ASSIGN, "-=", returnInfoVoid, true);
   prim_def(PRIM_MULT_ASSIGN, "*=", returnInfoVoid, true);

@@ -1199,93 +1199,71 @@ module Atomics {
   // We need to explicitly define these for all types because the atomic
   //  types are records and unless explicitly defined, it will resolve
   //  to the normal record version of the function.  Sigh.
-  inline proc =(a:atomicflag, b:atomicflag) {
+  inline proc =(ref a:atomicflag, b:atomicflag) {
     a.write(b.read());
-    return a;
   }
-  inline proc =(a:atomicflag, b) {
+  inline proc =(ref a:atomicflag, b) {
     compilerError("Cannot directly assign atomic variables");
-    return a;
   }
-  inline proc =(a:atomic_uint8, b:atomic_uint8) {
+  inline proc =(ref a:atomic_uint8, b:atomic_uint8) {
     a.write(b.read());
-    return a;
   }
-  inline proc =(a:atomic_uint8, b) {
+  inline proc =(ref a:atomic_uint8, b) {
     compilerError("Cannot directly assign atomic variables");
-    return a;
   }
-  inline proc =(a:atomic_uint16, b:atomic_uint16) {
+  inline proc =(ref a:atomic_uint16, b:atomic_uint16) {
     a.write(b.read());
-    return a;
   }
-  inline proc =(a:atomic_uint16, b) {
+  inline proc =(ref a:atomic_uint16, b) {
     compilerError("Cannot directly assign atomic variables");
-    return a;
   }
-  inline proc =(a:atomic_uint32, b:atomic_uint32) {
+  inline proc =(ref a:atomic_uint32, b:atomic_uint32) {
     a.write(b.read());
-    return a;
   }
-  inline proc =(a:atomic_uint32, b) {
+  inline proc =(ref a:atomic_uint32, b) {
     compilerError("Cannot directly assign atomic variables");
-    return a;
   }
-  inline proc =(a:atomic_uint64, b:atomic_uint64) {
+  inline proc =(ref a:atomic_uint64, b:atomic_uint64) {
     a.write(b.read());
-    return a;
   }
-  inline proc =(a:atomic_uint64, b) {
+  inline proc =(ref a:atomic_uint64, b) {
     compilerError("Cannot directly assign atomic variables");
-    return a;
   }
-  inline proc =(a:atomic_int8, b:atomic_int8) {
+  inline proc =(ref a:atomic_int8, b:atomic_int8) {
     a.write(b.read());
-    return a;
   }
-  inline proc =(a:atomic_int8, b) {
+  inline proc =(ref a:atomic_int8, b) {
     compilerError("Cannot directly assign atomic variables");
-    return a;
   }
-  inline proc =(a:atomic_int16, b:atomic_int16) {
+  inline proc =(ref a:atomic_int16, b:atomic_int16) {
     a.write(b.read());
-    return a;
   }
-  inline proc =(a:atomic_int16, b) {
+  inline proc =(ref a:atomic_int16, b) {
     compilerError("Cannot directly assign atomic variables");
-    return a;
   }
-  inline proc =(a:atomic_int32, b:atomic_int32) {
+  inline proc =(ref a:atomic_int32, b:atomic_int32) {
     a.write(b.read());
-    return a;
   }
-  inline proc =(a:atomic_int32, b) {
+  inline proc =(ref a:atomic_int32, b) {
     compilerError("Cannot directly assign atomic variables");
-    return a;
   }
-  inline proc =(a:atomic_int64, b:atomic_int64) {
+  inline proc =(ref a:atomic_int64, b:atomic_int64) {
     a.write(b.read());
-    return a;
   }
-  inline proc =(a:atomic_int64, b) {
+  inline proc =(ref a:atomic_int64, b) {
     compilerError("Cannot directly assign atomic variables");
-    return a;
   }
-  inline proc =(a:atomic_real32, b:atomic_real32) {
+  inline proc =(ref a:atomic_real32, b:atomic_real32) {
     a.write(b.read());
-    return a;
   }
-  inline proc =(a:atomic_real32, b) {
+  inline proc =(ref a:atomic_real32, b) {
     compilerError("Cannot directly assign atomic variables");
-    return a;
   }
-  inline proc =(a:atomic_real64, b:atomic_real64) {
+  inline proc =(ref a:atomic_real64, b:atomic_real64) {
     a.write(b.read());
-    return a;
   }
-  inline proc =(a:atomic_real64, b) {
+  inline proc =(ref a:atomic_real64, b) {
     compilerError("Cannot directly assign atomic variables");
-    return a;
   }
 
   inline proc +(a:atomic_uint8, b) {

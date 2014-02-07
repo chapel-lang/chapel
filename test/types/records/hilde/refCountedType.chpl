@@ -85,7 +85,7 @@ proc chpl__initCopy(h: Handle)
 // catch-all implementation on line 242 of ChapelBase.chpl.
 // We have to bind to this version, or we don't get the desired
 // reference-counting behavior
-proc =(lhs: Handle, rhs:Handle)
+proc =(ref lhs: Handle, rhs:Handle)
 {
   // The rhs gains a new reference.
   if rhs._impl == nil then halt("Illegal read of uninitialized Handle.");

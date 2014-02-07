@@ -495,13 +495,7 @@ record regexp {
   }
 }
 
-// For reasons that are yet to be determined, calls to =(:regexp, :regexp)
-// were notbeing bound as expected when 'ret' was declared with ref intent.
-// This problem will be fixed in a separate patch: we intend to make 
-//  proc =(ref lhs:?t, rhs:t)
-// be the standard signature for assignment, and propagate this across 
-// all module and test code.
-proc =(ret:regexp, x:regexp)
+proc =(ref ret:regexp, x:regexp)
 {
   // retain -- release
   if x.home == ret.home {
@@ -524,7 +518,6 @@ proc =(ret:regexp, x:regexp)
 
     qio_regexp_create_compile(pattern, pattern.size, options, ret._regexp);
   }
-  return ret;
 }
 
 // TODO -- shouldn't have to write this this way!

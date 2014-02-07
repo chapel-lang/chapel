@@ -510,7 +510,7 @@ proc chpl__initCopy(x: file) {
   return x;
 }
 
-proc =(ret:file, x:file) {
+proc =(ref ret:file, x:file) {
   // retain -- release
   on x.home {
     qio_file_retain(x._file_internal);
@@ -523,7 +523,6 @@ proc =(ret:file, x:file) {
   // compiler will do this copy.
   ret.home = x.home;
   ret._file_internal = x._file_internal;
-  return ret;
 }
 
 proc file.check() {
@@ -770,7 +769,7 @@ proc chpl__initCopy(x: channel) {
   return x;
 }
 
-proc =(ret:channel, x:channel) {
+proc =(ref ret:channel, x:channel) {
   // retain -- release
   on x.home {
     qio_channel_retain(x._channel_internal);
@@ -782,7 +781,6 @@ proc =(ret:channel, x:channel) {
 
   ret.home = x.home;
   ret._channel_internal = x._channel_internal;
-  return ret;
 }
 
 proc channel.channel(param writing:bool, param kind:iokind, param locking:bool, f:file, out error:syserr, hints:c_int, start:int(64), end:int(64), style:iostyle) {

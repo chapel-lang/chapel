@@ -131,7 +131,7 @@
 
 %type <retTag> opt_ret_tag
 
-%type <pch> ident fn_ident opt_ident
+%type <pch> ident fn_ident assignop_ident opt_ident
 
 %type <vpch> pragma_ls
 
@@ -537,32 +537,27 @@ fn_decl_stmt:
 fn_decl_stmt_inner:
   opt_this_intent_tag fn_ident opt_formal_ls
     {
-      $$ = $3;
-      $$->thisTag = $1;
-      $$->name = astr($2);
-      $$->cname = $$->name;
-      if ($2[0] == '~' && $2[1] != '\0')
-        $$->addFlag(FLAG_DESTRUCTOR);
+      $$ = buildFunctionSymbol($3, $2, $1, NULL);
+    }
+| opt_this_intent_tag assignop_ident opt_formal_ls
+    {
+      $$ = buildFunctionSymbol($3, $2, $1, NULL);
+      $$->addFlag(FLAG_ASSIGNOP);
     }
 | opt_this_intent_tag ident TDOT fn_ident opt_formal_ls
     {
-      $$ = $5;
-      $$->thisTag = $1;
-      $$->name = astr($4);
-      $$->cname = $$->name;
-      if ($4[0] == '~' && $4[1] != '\0')
-        $$->addFlag(FLAG_DESTRUCTOR);
-      $$->_this = new ArgSymbol($1, "this", dtUnknown, new UnresolvedSymExpr($2));
-      $$->_this->addFlag(FLAG_ARG_THIS);
-      $$->insertFormalAtHead(new DefExpr($$->_this));
-      $$->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
+      $$ = buildFunctionSymbol($5, $4, $1, $2);
+    }
+| opt_this_intent_tag ident TDOT assignop_ident opt_formal_ls
+    {
+      $$ = buildFunctionSymbol($5, $4, $1, $2);
+      $$->addFlag(FLAG_ASSIGNOP);
     }
 ;
 
 fn_ident:
   ident
 | TBNOT ident    { $$ = astr("~", $2); }
-| TASSIGN        { $$ = "="; } 
 | TBAND          { $$ = "&"; } 
 | TBOR           { $$ = "|"; } 
 | TBXOR          { $$ = "^"; } 
@@ -585,6 +580,12 @@ fn_ident:
 | TBY            { $$ = "by"; } 
 | THASH          { $$ = "#"; }
 | TALIGN         { $$ = "align"; }
+| TSWAP          { $$ = "<=>"; }
+| TIO            { $$ = "<~>"; }
+;
+
+assignop_ident:
+  TASSIGN        { $$ = "="; } 
 | TASSIGNPLUS    { $$ = "+="; }
 | TASSIGNMINUS   { $$ = "-="; }
 | TASSIGNMULTIPLY { $$ = "*="; }
@@ -596,8 +597,6 @@ fn_ident:
 | TASSIGNBXOR    { $$ = "^="; }
 | TASSIGNSR      { $$ = ">>="; }
 | TASSIGNSL      { $$ = "<<="; }
-| TSWAP          { $$ = "<=>"; }
-| TIO            { $$ = "<~>"; }
 ;
 
 opt_formal_ls:

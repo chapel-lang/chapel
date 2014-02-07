@@ -1731,7 +1731,6 @@ GenRet codegenLogicalAnd(GenRet a, GenRet b)
   return ret;
 }
 
-
 static
 GenRet codegenAdd(GenRet a, GenRet b)
 {
@@ -4225,7 +4224,12 @@ GenRet CallExpr::codegen() {
     case PRIM_XOR:
       ret = codegenXor(get(1), get(2));
       break;
-
+    case PRIM_ASSIGN:
+      // The original, simplistic implementation.
+      // Works but is slow.
+      // The left operand is expected to be of 'ref' type,
+      codegenAssign(codegenDeref(get(1)), get(2));
+      break;
     case PRIM_ADD_ASSIGN:
       codegenOpAssign(get(1), get(2), " += ", codegenAdd);
       break;

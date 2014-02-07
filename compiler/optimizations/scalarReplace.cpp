@@ -318,6 +318,7 @@ scalarReplaceRecord(ClassType* ct, Symbol* sym) {
       CallExpr* call = toCallExpr(se->parentExpr);
       if (!call ||
           !call->isPrimitive(PRIM_MOVE) ||
+          // Do we need to add PRIM_ASSIGN here?
           !(isSymExpr(call->get(2)) ||
             toCallExpr(call->get(2))->isPrimitive(PRIM_GET_MEMBER_VALUE))) {
         return false;
@@ -336,6 +337,7 @@ scalarReplaceRecord(ClassType* ct, Symbol* sym) {
             call->isPrimitive(PRIM_GET_MEMBER) ||
             call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
             call->isPrimitive(PRIM_MOVE)))
+        // Do we need to add PRIM_ASSIGN here?
         return false;
     }
   }
@@ -414,6 +416,7 @@ scalarReplaceRecord(ClassType* ct, Symbol* sym) {
   for_uses(se, useMap, sym) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
       SET_LINENO(sym);
+      // Do we need to add a case for PRIM_ASSIGN?
       if (call && call->isPrimitive(PRIM_MOVE)) {
         SymExpr* lhs = toSymExpr(call->get(1));
         for_fields(field, ct) {

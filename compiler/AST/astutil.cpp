@@ -353,7 +353,8 @@ bool isOpEqualPrim(CallExpr* call) {
 //
 int isDefAndOrUse(SymExpr* se) {
   if (CallExpr* call = toCallExpr(se->parentExpr)) {
-    if (call->isPrimitive(PRIM_MOVE) && call->get(1) == se) {
+    if ((call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) &&
+        call->get(1) == se) {
       return 1;
     } else if (isOpEqualPrim(call) && call->get(1) == se) {
       return 3;

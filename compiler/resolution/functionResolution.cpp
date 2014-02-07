@@ -1203,6 +1203,7 @@ canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn,
       return true;
     }
   }
+
   if (fn &&
       strcmp(fn->name, "=") && 
       actualType->scalarPromotionType && 
@@ -1211,6 +1212,7 @@ canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn,
       *promotes = true;
     return true;
   }
+
   return false;
 }
 
@@ -1397,7 +1399,16 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
     // set genericArg to true if a generic argument appears before the
     // argument with the variable expression
     //
-    if (arg->type->symbol->hasFlag(FLAG_GENERIC))
+
+    // INT_ASSERT(arg->type);
+    // Adding 'ref' intent to the "ret" arg of 
+    //  inline proc =(ref ret:syserr, x:syserr) { __primitive("=", ret, x); }
+    // in SysBasic.chpl:150 causes a segfault.
+    // The addition of the arg->type test in the folloiwng conditional is a
+    // workaround.  
+    // A better approach would be to add a check that each formal of a function
+    // has a type (if that can be expected) and then fix the fault where it occurs.
+    if (arg->type && arg->type->symbol->hasFlag(FLAG_GENERIC))
       genericArg = true;
 
     if (!arg->variableExpr)
@@ -1554,15 +1565,6 @@ filterConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
    * be instantiated before it is.
    */ 
   resolveFormals(currCandidate->fn);
-
-  if (!strcmp(currCandidate->fn->name, "=")) {
-    Symbol* actual = currCandidate->alignedActuals.head();
-    Symbol* formal = currCandidate->fn->getFormal(1);
-    
-    if (actual->type != formal->type && actual->type != formal->type->refType) {
-      return;
-    }
-  }
 
   int coindex = -1;
   for_formals(formal, currCandidate->fn) {
@@ -2919,7 +2921,7 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
     // Check to ensure the actual supplied to an OUT, INOUT or REF argument
     // is an lvalue.
     for_formals_actuals(formal, actual, call) {
-      const char* errorMsg = NULL;
+      bool errorMsg = false;
       switch (formal->intent) {
       case INTENT_BLANK:
       case INTENT_IN:
@@ -2934,12 +2936,12 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
       case INTENT_OUT:
       case INTENT_REF:
         if (!isLegalLvalueActualArg(formal, actual))
-          errorMsg = "non-lvalue";
+          errorMsg = true;
         break;
 
       case INTENT_CONST_REF:
         if (!isLegalConstRefActualArg(formal, actual))
-          errorMsg = "non-lvalue";
+          errorMsg = true;
         break;
 
       default:
@@ -2949,18 +2951,23 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
       }
       if (errorMsg) {
         FnSymbol* calleeFn = toFnSymbol(formal->defPoint->parentSymbol);
-        ModuleSymbol* mod = calleeFn->getModule();
-        char cn1 = calleeFn->name[0];
-        const char* calleeParens = (isalpha(cn1) || cn1 == '_') ? "()" : "";
-        // Should this be the same condition as in insertLineNumber() ?
-        if (developer || mod->modTag == MOD_USER || mod->modTag == MOD_MAIN) {
-          USR_FATAL_CONT(actual, "%s actual is passed to %s formal '%s'"
-                         " of %s%s", errorMsg, formal->intentDescrString(),
-                         formal->name, calleeFn->name, calleeParens);
-        } else {
-          USR_FATAL_CONT(actual, "%s actual is passed to a %s formal of"
-                         " %s%s", errorMsg, formal->intentDescrString(),
-                         calleeFn->name, calleeParens);
+        if (!strcmp("=", calleeFn->name))
+          USR_FATAL_CONT(actual, "illegal lvalue in assignment");
+        else
+        {
+          ModuleSymbol* mod = calleeFn->getModule();
+          char cn1 = calleeFn->name[0];
+          const char* calleeParens = (isalpha(cn1) || cn1 == '_') ? "()" : "";
+          // Should this be the same condition as in insertLineNumber() ?
+          if (developer || mod->modTag == MOD_USER || mod->modTag == MOD_MAIN) {
+            USR_FATAL_CONT(actual, "non-lvalue actual is passed to %s formal '%s'"
+                           " of %s%s", formal->intentDescrString(), formal->name,
+                           calleeFn->name, calleeParens);
+          } else {
+            USR_FATAL_CONT(actual, "non-lvalue actual is passed to a %s formal of"
+                           " %s%s", formal->intentDescrString(),
+                           calleeFn->name, calleeParens);
+          }
         }
       }
     }
@@ -4356,6 +4363,7 @@ preFold(Expr* expr) {
         result = call->get(1)->remove();
         call->replace(result);
       } else {
+        // This test is turned off if we are in a wrapper function.
         FnSymbol* fn = call->getFunction();
         if (!fn->hasFlag(FLAG_WRAPPER)) {
           // check legal var function return
@@ -4375,10 +4383,15 @@ preFold(Expr* expr) {
               }
             }
           }
-          // check legal lvalue
+          // check that the operand of 'addr of' is a legal lvalue.
           if (SymExpr* rhs = toSymExpr(call->get(1))) {
             if (rhs->var->hasFlag(FLAG_EXPR_TEMP) || rhs->var->isConstant() || rhs->var->isParameter())
-              USR_FATAL_CONT(call, "illegal lvalue in assignment");
+              // This probably indicates that an invalid 'addr of' primitive
+              // was inserted, which would be the compiler's fault, not the
+              // user's.
+              // At least, we might perform the check at or before the 'addr
+              // of' primitive is inserted.
+              INT_FATAL(call, "A non-lvalue appears where an lvalue is expected.");
           }
         }
       }
@@ -4808,14 +4821,9 @@ postFold(Expr* expr) {
           expr->replace(result);
         }
       }
-      if (!strcmp("=", fn->name) && !call->getFunction()->hasFlag(FLAG_WRAPPER)) {
-        SymExpr* lhs = toSymExpr(call->get(1));
-        if (!lhs)
-          INT_FATAL(call, "unexpected case");
-        if (lhs->var->hasFlag(FLAG_EXPR_TEMP) || lhs->var->isConstant() || lhs->var->isParameter())
-          USR_FATAL_CONT(call, "illegal lvalue in assignment");
-      }
-    } else if (call->isPrimitive(PRIM_MOVE)) {
+    }
+    // param initialization should not involve PRIM_ASSIGN or "=".
+    else if (call->isPrimitive(PRIM_MOVE)) {
       bool set = false;
       if (SymExpr* lhs = toSymExpr(call->get(1))) {
         if (lhs->var->hasFlag(FLAG_MAYBE_PARAM) || lhs->var->isParameter()) {

@@ -1249,10 +1249,14 @@ void initPrimitiveTypes(void) {
 
   dtFile = createPrimitiveType ("_file", "_cfile");
   CREATE_DEFAULT_SYMBOL(dtFile, gFile, "NULL");
+  // In codegen, this prevents the "&NULL" absurdity.
+  gFile->addFlag(FLAG_EXTERN);
 
   dtOpaque = createPrimitiveType("opaque", "chpl_opaque");
   CREATE_DEFAULT_SYMBOL(dtOpaque, gOpaque, "_nullOpaque");
   gOpaque->cname = "NULL";
+  // In codegen, this prevents the "&NULL" absurdity.
+  gOpaque->addFlag(FLAG_EXTERN);
 
   dtTaskID = createPrimitiveType("chpl_taskID_t", "chpl_taskID_t");
   CREATE_DEFAULT_SYMBOL(dtTaskID, gTaskID, "chpl_nullTaskID");

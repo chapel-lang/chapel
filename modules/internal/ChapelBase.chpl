@@ -238,22 +238,24 @@ module ChapelBase {
   //
   // assignment on primitive types
   //
-  inline proc =(a: bool, b: bool) return b;
-  inline proc =(a: bool(?w), b: bool) return b:a.type;
-  inline proc =(a: int(?w), b: int(w)) return b;
-  inline proc =(a: uint(?w), b: uint(w)) return b;
-  inline proc =(a: real(?w), b: real(w)) return b;
-  inline proc =(a: imag(?w), b: imag(w)) return b;
-  inline proc =(a: complex(?w), b: complex(w)) return b;
+  inline proc =(ref a: bool, b: bool) { __primitive("=", a, b); }
+  inline proc =(ref a: bool(?w), b: bool) { __primitive("=", a, b); }
+  inline proc =(ref a: int(?w), b: int(w)) { __primitive("=", a, b); }
+  inline proc =(ref a: uint(?w), b: uint(w)) { __primitive("=", a, b); }
+  inline proc =(ref a: real(?w), b: real(w)) { __primitive("=", a, b); }
+  inline proc =(ref a: imag(?w), b: imag(w)) { __primitive("=", a, b); }
+  inline proc =(ref a: complex(?w), b: complex(w)) { __primitive("=", a, b); }
   // This implies that the *representation* of strings is shared.
   // If strings are reimplemented as classes or records, a less trivial
   // implementation for assignment will become necessary.
-  inline proc =(a: string, b: string) return b;
+  inline proc =(ref a: string, b: string) { return b; }
   // Because resolution prefers user-defined versions to ones marked as "compiler
   // generated", it is desirable to add that flag to this default version.
   // In that way, a user-supplied version of assignment will override this one.
   pragma "compiler generated"
-  inline proc =(a, b) return b;
+  inline proc =(ref a, b) return b;
+  // Not yet ready for prime time:
+  //  inline proc =(ref a, b) { __primitive("=", a, b); }
   
   //
   // equality comparison on primitive types
@@ -882,7 +884,7 @@ module ChapelBase {
   
   pragma "command line setting"
   proc _command_line_cast(param s: string, type t, x) return _cast(t, x);
-  
+
   inline proc _cast(type t, x: bool) where _isPrimitiveType(t)
     return __primitive("cast", t, x);
   
@@ -1288,10 +1290,10 @@ module ChapelBase {
   }
   
   /* domain += and -= add and remove indices */
-  inline proc +=(D: domain, idx) { D.add(idx); }
-  inline proc -=(D: domain, idx) { D.remove(idx); }
-  inline proc +=(D: domain, param idx) { D.add(idx); }
-  inline proc -=(D: domain, param idx) { D.remove(idx); }
+  inline proc +=(ref D: domain, idx) { D.add(idx); }
+  inline proc -=(ref D: domain, idx) { D.remove(idx); }
+  inline proc +=(ref D: domain, param idx) { D.add(idx); }
+  inline proc -=(ref D: domain, param idx) { D.remove(idx); }
   
   /* swap operator */
   inline proc <=>(ref lhs, ref rhs) {

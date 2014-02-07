@@ -19,7 +19,6 @@ static void build_record_copy_function(ClassType* ct);
 static void build_record_hash_function(ClassType* ct);
 static void build_record_equality_function(ClassType* ct);
 static void build_record_inequality_function(ClassType* ct);
-static void build_union_assignment_function(ClassType* ct);
 static void build_enum_cast_function(EnumType* et);
 static void build_enum_enumerate_function(EnumType* et);
 
@@ -578,14 +577,12 @@ static void build_enum_assignment_function(EnumType* et) {
     return;
 
   FnSymbol* fn = new FnSymbol("=");
-// TODO: This flag should be enabled, so a user-defined version of the record
-//  assignment function can override the compiler-generated version.
-//  fn->addFlag(FLAG_COMPILER_GENERATED);
-  ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", et);
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+  ArgSymbol* arg1 = new ArgSymbol(INTENT_REF, "_arg1", et);
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", et);
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, arg2));
+  fn->insertAtTail(new CallExpr(PRIM_ASSIGN, arg1, arg2));
   DefExpr* def = new DefExpr(fn);
   et->symbol->defPoint->insertBefore(def);
   reset_ast_loc(def, et->symbol);
@@ -600,8 +597,8 @@ static void build_record_assignment_function(ClassType* ct) {
   FnSymbol* fn = new FnSymbol("=");
   fn->addFlag(FLAG_COMPILER_GENERATED);
 
-  ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
-  arg1->markedGeneric = true;
+  ArgSymbol* arg1 = new ArgSymbol(INTENT_REF, "_arg1", ct);
+  arg1->markedGeneric = true; // TODO: Check if we really want this.
 
   bool externRecord = ct->symbol->hasFlag(FLAG_EXTERN);
   // If the LHS is extern, the RHS must be of matching type; otherwise
@@ -610,7 +607,7 @@ static void build_record_assignment_function(ClassType* ct) {
                                   (externRecord ? ct : dtAny));
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
-  fn->retType = dtUnknown;
+  fn->retType = dtUnknown; // TODO: Maybe we can set this to dtVoid up front.
 
   if (externRecord) {
     fn->insertAtTail(new CallExpr(PRIM_MOVE, arg1, arg2));
@@ -622,7 +619,6 @@ static void build_record_assignment_function(ClassType* ct) {
       }
     }
   }
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, arg1));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
   reset_ast_loc(def, ct->symbol);
@@ -660,10 +656,8 @@ static void build_union_assignment_function(ClassType* ct) {
     return;
 
   FnSymbol* fn = new FnSymbol("=");
-// TODO: This flag should be enabled, so a user-defined version of the record
-//  copy function can override the compiler-generated version.
-//  fn->addFlag(FLAG_COMPILER_GENERATED);
-  ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+  ArgSymbol* arg1 = new ArgSymbol(INTENT_REF, "_arg1", ct);
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
@@ -680,7 +674,6 @@ static void build_union_assignment_function(ClassType* ct) {
             new CallExpr("=",
               new CallExpr(".", arg1, new_StringSymbol(tmp->name)),
               new CallExpr(".", arg2, new_StringSymbol(tmp->name)))));
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, arg1));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
   reset_ast_loc(def, ct->symbol);

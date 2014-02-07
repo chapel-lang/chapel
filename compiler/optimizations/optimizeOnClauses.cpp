@@ -94,14 +94,7 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
     return true;
 
   case PRIM_MOVE:
-    if (call->get(1)->typeInfo() == dtVoid) {
-      DEBUG_PRINTF(" *** OK (PRIM_MOVE 0): %s\n", call->primitive->name);
-      // Not necessarily true, but we return true because if it
-      // is a callExpr, it will be checked in the calling function
-      //
-      INT_ASSERT(0);
-      return true;
-    }
+  case PRIM_ASSIGN:
   case PRIM_ADD_ASSIGN:
   case PRIM_SUBTRACT_ASSIGN:
   case PRIM_MULT_ASSIGN:

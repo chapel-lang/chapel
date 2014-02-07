@@ -112,6 +112,7 @@ void checkPrimitives()
      case PRIM_OR:
      case PRIM_XOR:
      case PRIM_POW:
+     case PRIM_ASSIGN:
      case PRIM_ADD_ASSIGN:
      case PRIM_SUBTRACT_ASSIGN:
      case PRIM_MULT_ASSIGN:

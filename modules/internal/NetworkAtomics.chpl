@@ -159,13 +159,11 @@ module NetworkAtomics {
     }
   }
 
-  inline proc =(a:ratomic_int64, b:ratomic_int64) {
+  inline proc =(ref a:ratomic_int64, b:ratomic_int64) {
     a.write(b.read());
-    return a;
   }
-  inline proc =(a:ratomic_int64, b) {
+  inline proc =(ref a:ratomic_int64, b) {
     compilerError("Cannot directly assign network atomic variables");
-    return a;
   }
   inline proc +(a:ratomic_int64, b) {
     compilerError("Cannot directly add network atomic variables");
@@ -346,13 +344,11 @@ module NetworkAtomics {
     }
   }
 
-  inline proc =(a:ratomic_int32, b:ratomic_int32) {
+  inline proc =(ref a:ratomic_int32, b:ratomic_int32) {
     a.write(b.read());
-    return a;
   }
-  inline proc =(a:ratomic_int32, b) {
+  inline proc =(ref a:ratomic_int32, b) {
     compilerError("Cannot directly assign network atomic variables");
-    return a;
   }
   inline proc +(a:ratomic_int32, b) {
     compilerError("Cannot directly add network atomic variables");
@@ -533,13 +529,11 @@ module NetworkAtomics {
     }
   }
 
-  inline proc =(a:ratomic_uint64, b:ratomic_uint64) {
+  inline proc =(ref a:ratomic_uint64, b:ratomic_uint64) {
     a.write(b.read());
-    return a;
   }
-  inline proc =(a:ratomic_uint64, b) {
+  inline proc =(ref a:ratomic_uint64, b) {
     compilerError("Cannot directly assign network atomic variables");
-    return a;
   }
   inline proc +(a:ratomic_uint64, b) {
     compilerError("Cannot directly add network atomic variables");
@@ -720,13 +714,11 @@ module NetworkAtomics {
     }
   }
 
-  inline proc =(a:ratomic_uint32, b:ratomic_uint32) {
+  inline proc =(ref a:ratomic_uint32, b:ratomic_uint32) {
     a.write(b.read());
-    return a;
   }
-  inline proc =(a:ratomic_uint32, b) {
+  inline proc =(ref a:ratomic_uint32, b) {
     compilerError("Cannot directly assign network atomic variables");
-    return a;
   }
   inline proc +(a:ratomic_uint32, b) {
     compilerError("Cannot directly add network atomic variables");
@@ -807,13 +799,11 @@ module NetworkAtomics {
     }
   }
 
-  inline proc =(a:ratomicflag, b:ratomicflag) {
+  inline proc =(ref a:ratomicflag, b:ratomicflag) {
     a.write(b.read());
-    return a;
   }
-  inline proc =(a:ratomicflag, b) {
+  inline proc =(ref a:ratomicflag, b) {
     compilerError("Cannot directly assign network atomic variables");
-    return a;
   }
   inline proc +(a:ratomicflag, b) {
     compilerError("Cannot directly add network atomic variables");
@@ -953,13 +943,11 @@ module NetworkAtomics {
     }
   }
 
-  inline proc =(a:ratomic_real64, b:ratomic_real64) {
+  inline proc =(ref a:ratomic_real64, b:ratomic_real64) {
     a.write(b.read());
-    return a;
   }
-  inline proc =(a:ratomic_real64, b) {
+  inline proc =(ref a:ratomic_real64, b) {
     compilerError("Cannot directly assign network atomic variables");
-    return a;
   }
   inline proc +(a:ratomic_real64, b) {
     compilerError("Cannot directly add network atomic variables");

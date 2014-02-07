@@ -146,7 +146,7 @@ module Buffers {
     }
   }
 
-  proc =(ret:bytes, x:bytes) {
+  proc =(ref ret:bytes, x:bytes) {
     // retain -- release
     if( x.home == here ) {
       on x.home {
@@ -170,7 +170,6 @@ module Buffers {
       // should be 1.
       // Note that the error case is not handled (bulk_get_bytes must succeed).
     }
-    return ret;
   }
 
   proc bytes.~bytes() {
@@ -274,7 +273,7 @@ module Buffers {
     }
   }
 
-  proc =(ret:buffer, x:buffer) {
+  proc =(ref ret:buffer, x:buffer) {
     ret.home = here;
     // retain -- release
     if( x.home == ret.home ) {

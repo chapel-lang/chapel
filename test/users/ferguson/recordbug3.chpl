@@ -16,7 +16,7 @@ record myrecord {
   var c:MyClass = new MyClass(5);
   proc ~myrecord() { delete c; c = nil; }
 }
-proc =(ret:myrecord, x:myrecord)
+proc =(ref ret:myrecord, x:myrecord)
 {
   delete ret.c;
   ret.c = new MyClass(x.c.x);

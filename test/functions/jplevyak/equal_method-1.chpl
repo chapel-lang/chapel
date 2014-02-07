@@ -1,7 +1,6 @@
 record foo { var a : int;  }
-proc =(x : foo, b) {
+proc =(ref x : foo, b) {
   x.a = b.a + 10;
-  return x;
 }
 var x : foo = new foo();
 var y : foo = new foo();

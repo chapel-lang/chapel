@@ -352,11 +352,10 @@ module ChapelRange {
     // Although provided explicitly, this function is effectively trivial,
     // since it performs what is effectively a bit-wise copy.
     // See the comment on proc=(:rangeBase, :rangeBase) for more information.
-  inline proc =(r1: range(stridable=?s1), r2: range(stridable=?s2))
+  inline proc =(ref r1: range(stridable=?s1), r2: range(stridable=?s2))
   {
     r1._base = r2._base;
     r1._aligned = r2._aligned;
-    return r1;
   }
   
   //////////////////////////////////////////////////////////////////////////////////

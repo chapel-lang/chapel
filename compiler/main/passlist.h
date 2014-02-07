@@ -54,8 +54,11 @@ PassInfo passlist[] = {
   RUN(removeUnnecessaryAutoCopyCalls),
   RUN(inlineFunctions),     // function inlining
   RUN(scalarReplace),       // scalar replace all tuples
-  RUN(refPropagation),      // reference propagation
   RUN(copyPropagation),     // copy propagation
+  // Ref propagation must be run after copy propagation (or the two combined),
+  // because the current implementation of copy propagation is order-dependent
+  // in its treatment of aliases.  See note #1 in copyPropagation.cpp for details.
+  RUN(refPropagation),      // reference propagation
   RUN(deadCodeElimination), // eliminate dead code
   RUN(removeWrapRecords),   // remove _array, _domain, and _distribution records
   RUN(removeEmptyRecords),  // remove empty records

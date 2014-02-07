@@ -158,10 +158,13 @@ inline proc _cast(type t, x: int(32)) where t == syserr
   return qio_int_to_err(x);
 inline proc _cast(type t, x: int(64)) where t == syserr
   return qio_int_to_err(x:int(32));
-inline proc =(ret:syserr, x:syserr) return x;
-inline proc =(ret:syserr, x:int(32)) return qio_int_to_err(x);
-inline proc =(ret:syserr, x:int(64)) return qio_int_to_err(x:int(32));
-inline proc =(ret:err_t, x:syserr) return qio_err_to_int(x):err_t;
+inline proc =(ref ret:syserr, x:syserr) { __primitive("=", ret, x); }
+inline proc =(ref ret:syserr, x:int(32)) 
+{ __primitive("=", ret, qio_int_to_err(x)); }
+inline proc =(ref ret:syserr, x:int(64)) 
+{ __primitive("=", ret, qio_int_to_err(x:int(32))); }
+inline proc =(ref ret:err_t, x:syserr) 
+{ __primitive("=", ret, qio_err_to_int(x):err_t); }
 
 // end of file
 extern proc chpl_macro_int_EEOF():err_t;

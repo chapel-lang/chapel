@@ -168,6 +168,7 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
               INT_ASSERT(call);
               FnSymbol* fnc = call->isResolved();
               if ((call->isPrimitive(PRIM_MOVE) && call->get(1) == se) ||
+                  (call->isPrimitive(PRIM_ASSIGN) && call->get(1) == se) ||
                   (call->isPrimitive(PRIM_SET_MEMBER) && call->get(1) == se) ||
                   (call->isPrimitive(PRIM_GET_MEMBER)) ||
                   (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) ||

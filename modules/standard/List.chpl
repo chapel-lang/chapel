@@ -4,6 +4,15 @@ class listNode {
   var next: listNode(eltType);
 }
 
+// TODO: Probably there needs to be a general and early test in resolution, so
+// we don't attempt to resolve record assignment with nil on the RHS.  Remove
+// this definition for proc =() and run test/types/seq/bradc/emptySeq3.chpl to
+// see the problem.  The solution is to see how nil is getting promoted to
+// record type (this should not be allowed) so it can match the
+// compiler-defined version of proc =(ref a:list, b:list).
+proc =(ref a:list, b:_nilType)
+{ compilerError("type mismatch in assignment from nil to ", typeToString(a.type)); }
+
 record list {
   type eltType;
   var first: listNode(eltType);

@@ -215,8 +215,9 @@ checkUseBeforeDefs() {
       forv_Vec(BaseAST, ast, asts) {
 
         if (CallExpr* call = toCallExpr(ast)) {
-          // A symbol gets defined when it appears on the LHS of a move.
-          if (call->isPrimitive(PRIM_MOVE))
+          // A symbol gets defined when it appears on the LHS of a move or
+          // assignment.
+          if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
             if (SymExpr* se = toSymExpr(call->get(1)))
               defined.set_add(se->var);
         }
@@ -229,7 +230,9 @@ checkUseBeforeDefs() {
 
         if (SymExpr* sym = toSymExpr(ast)) {
           CallExpr* call = toCallExpr(sym->parentExpr);
-          if (call && call->isPrimitive(PRIM_MOVE) && call->get(1) == sym)
+          if (call && 
+              (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) &&
+              call->get(1) == sym)
             continue;  // We already handled this case above.
 
           if (toModuleSymbol(sym->var)) {
@@ -258,7 +261,9 @@ checkUseBeforeDefs() {
 
         if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(ast)) {
           CallExpr* call = toCallExpr(sym->parentExpr);
-          if (call && call->isPrimitive(PRIM_MOVE) && call->get(1) == sym)
+          if (call &&
+              (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) &&
+              call->get(1) == sym)
             continue;
           if ((!call || (call->baseExpr != sym && !call->isPrimitive(PRIM_CAPTURE_FN))) && sym->unresolved) {
             if (!undeclared.set_in(sym->unresolved)) {
@@ -613,6 +618,7 @@ static void insert_call_temps(CallExpr* call)
       call->isPrimitive(PRIM_GET_MEMBER_VALUE))
     return;
 
+  // TODO: Check if we need a call temp for PRIM_ASSIGN.
   CallExpr* parentCall = toCallExpr(call->parentExpr);
   if (parentCall && (parentCall->isPrimitive(PRIM_MOVE) ||
                      parentCall->isPrimitive(PRIM_NEW)))
@@ -703,8 +709,7 @@ fix_def_expr(VarSymbol* var) {
     CallExpr* partial;
     if (!type) {
       partial = new CallExpr("newAlias", gMethodToken, init->remove());
-      //      partial->partialTag = true;
-      //      partial->methodTag = true;
+      // newAlias is not a method, so we don't set the methodTag
       stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr("chpl__autoCopy", partial)));
     } else {
       partial = new CallExpr("reindex", gMethodToken, init->remove());

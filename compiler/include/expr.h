@@ -103,7 +103,10 @@ class CallExpr : public Expr {
   AList argList;          // function actuals
   PrimitiveOp* primitive; // primitive expression (baseExpr == NULL)
   bool partialTag;
-  bool methodTag;
+  bool methodTag; ///< Set to true if the call is a method call.
+  // It is used in gatherCandidates to filter out method field extraction
+  // (partials).
+  // TODO: Maybe use a new primitive to represent partials, and get rid of this tag.
   bool square; // true if call made with square brackets
 
   CallExpr(BaseAST* base, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,

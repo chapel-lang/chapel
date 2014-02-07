@@ -195,7 +195,7 @@ narrowSym(Symbol* sym, WideInfo* wi) {
   // Otherwise, all defs can be narrowed, and control drops down to the next loop.
   for_defs(def, defMap, sym) {
     if (CallExpr* call = toCallExpr(def->parentExpr)) {
-      if (call->isPrimitive(PRIM_MOVE)) {
+      if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
         if (CallExpr* rhs = toCallExpr(call->get(2))) {
           if (rhs->isPrimitive(PRIM_GET_PRIV_CLASS) ||
               rhs->isPrimitive(PRIM_ADDR_OF))
@@ -270,6 +270,7 @@ narrowSym(Symbol* sym, WideInfo* wi) {
   for_uses(use, useMap, sym) {
     if (CallExpr* call = toCallExpr(use->parentExpr)) {
       if ((call->isPrimitive(PRIM_MOVE) && call->get(2) == use) ||
+          (call->isPrimitive(PRIM_ASSIGN) && call->get(2) == use) ||
           (call->isPrimitive(PRIM_SET_MEMBER) && call->get(1) == use) ||
           (call->isPrimitive(PRIM_GET_MEMBER) && call->get(1) == use) ||
           (call->isPrimitive(PRIM_GET_MEMBER_VALUE) && call->get(1) == use) ||

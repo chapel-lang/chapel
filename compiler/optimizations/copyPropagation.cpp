@@ -130,7 +130,7 @@ localCopyPropagationCore(BasicBlock* bb,
     // insert pairs into available copies map
     //
     if (CallExpr* call = toCallExpr(expr))
-      if (call->isPrimitive(PRIM_MOVE))
+      if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
         if (SymExpr* rhs = toSymExpr(call->get(2)))
           if (SymExpr* lhs = toSymExpr(call->get(1)))
             if (lhs->var != rhs->var)
@@ -249,7 +249,7 @@ void globalCopyPropagation(FnSymbol* fn) {
       // insert pairs into available copies map
       //
       if (CallExpr* call = toCallExpr(expr))
-        if (call->isPrimitive(PRIM_MOVE))
+        if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
           if (SymExpr* lhs = toSymExpr(call->get(1)))
             if (SymExpr* rhs = toSymExpr(call->get(2)))
               if (lhs->var != rhs->var &&
@@ -417,14 +417,13 @@ findRefDef(Map<Symbol*,Vec<SymExpr*>*>& defMap, Symbol* var) {
   CallExpr* ret = NULL;
   for_defs(def, defMap, var) {
     if (CallExpr* call = toCallExpr(def->parentExpr)) {
-      if (call->isPrimitive(PRIM_MOVE)) {
+      if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
         if (isReferenceType(call->get(2)->typeInfo())) {
           if (ret)
             return NULL;
           else
             ret = call;
         }
-      }
     }
   }
   return ret;
@@ -456,7 +455,9 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
             INT_ASSERT(se);
             parent->get(1)->replace(se);
             addUse(useMap, se);
-          } else if (parent && parent->isPrimitive(PRIM_MOVE)) {
+          }
+          // Do we need to handle PRIM_ASSIGN as well?
+          else if (parent && parent->isPrimitive(PRIM_MOVE)) {
             CallExpr* rhsCopy = rhs->copy();
             parent->get(2)->replace(rhsCopy);
             SymExpr* se = toSymExpr(rhsCopy->get(1));
@@ -470,6 +471,7 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
           SET_LINENO(se);
           if (parent == move)
             continue;
+          // Do we need to handle PRIM_ASSIGN as well?
           if (parent && parent->isPrimitive(PRIM_MOVE)) {
             SymExpr* se = toSymExpr(rhs->get(1)->copy());
             INT_ASSERT(se);
@@ -501,7 +503,9 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                                            se,
                                            rhs->get(2)->copy()));
             addUse(useMap, se);
-          } else if (parent && parent->isPrimitive(PRIM_MOVE)) {
+          }
+          // Do we need to handle PRIM_ASSIGN as well?
+          else if (parent && parent->isPrimitive(PRIM_MOVE)) {
             CallExpr* rhsCopy = rhs->copy();
             parent->get(2)->replace(rhsCopy);
             SymExpr* se = toSymExpr(rhsCopy->get(1));
@@ -515,6 +519,7 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
           SET_LINENO(se);
           if (parent == move)
             continue;
+          // Do we need a case for PRIM_ASSIGN?
           if (parent && parent->isPrimitive(PRIM_MOVE)) {
             if (SymExpr* rtmp = toSymExpr(parent->get(2))) {
               SymExpr* se = toSymExpr(rhs->get(1)->copy());
@@ -650,3 +655,19 @@ void refPropagation() {
     }
   }
 }
+
+
+//########################################################################
+//# NOTES
+//#
+//# Note #1.  The current implementation of copy propagation is not strictly
+//# correct, because it invalidates a value (that is being propagated) due to
+//# the creation of an alias only if the alias creation occurs after the value
+//# is created.  Once an alias is created, however, it is an error to assume
+//# that a value is constant across a call unless it is also the case that all
+//# aliases of that value -- created anywhere prior to that call -- are not
+//# actually or potentially written by that call.
+//# The practical implication of this is that refPropagation
+//# cannot be applied before copy propagation, because ref propagation can move
+//# the creation of a value down past the point where the creation of an alias
+//# should have rendered it invalid.

@@ -1,0 +1,1 @@
+bug: The return value of a non-var domain accessor should be treated as const (read-only).

@@ -1528,22 +1528,32 @@ module ChapelArray {
   //
   // Assignment of domains and arrays
   //
-  proc =(a: _distribution, b: _distribution) {
+  proc =(ref a: _distribution, b: _distribution) {
     if a._value == nil {
       return chpl__autoCopy(b.clone());
     } else if a._value._doms.length == 0 {
       if a._value.type != b._value.type then
         compilerError("type mismatch in distribution assignment");
-      a._value.dsiAssign(b._value);
+      // TODO: This is needed as part of the assign_to_ref implementation to
+      // keep _distCnt from going below zero.  It's probably not the "correct"
+      // solution, but it resolves the immediate problem in
+      // test_distribution_syntax2.chpl (compiled with CHPL_COMM=none).
+      if a._value == b._value {
+        if !noRefCount then
+          a._value.incRefCount();
+      } else
+        a._value.dsiAssign(b._value);
       if _isPrivatized(a._value) then
         _reprivatize(a._value);
     } else {
       halt("assignment to distributions with declared domains is not yet supported");
     }
+    // TODO: Remove this return. Right now, that causes _distCnt to reach 0
+    // prematurely.
     return a;
   }
   
-  proc =(a: domain, b: domain) {
+  proc =(ref a: domain, b: domain) {
     if !isIrregularDom(a) && !isIrregularDom(b) {
       for e in a._value._arrs do {
         on e do e.dsiReallocate(b);
@@ -1581,20 +1591,17 @@ module ChapelArray {
         }
       }
     }
-    return a;
   }
   
-  proc =(a: domain, b: _tuple) {
+  proc =(ref a: domain, b: _tuple) {
     a._value.clearForIteratableAssign();
     for ind in 1..b.size {
       a.add(b(ind));
     }
-    return a;
   }
   
-  proc =(d: domain, r: range(?)) {
+  proc =(ref d: domain, r: range(?)) {
     d = {r};
-    return d;
   }
   
   //
@@ -1625,17 +1632,15 @@ module ChapelArray {
     return isRangeTuple(t) && d.rank == t.size && strideSafe(d, t);
   }
   
-  proc =(d: domain, rt: _tuple) where chpl__isLegalRectTupDomAssign(d, rt) {
+  proc =(ref d: domain, rt: _tuple) where chpl__isLegalRectTupDomAssign(d, rt) {
     d = {(...rt)};
-    return d;
   }
   
-  proc =(a: domain, b) {  // b is iteratable
+  proc =(ref a: domain, b) {  // b is iteratable
     a._value.clearForIteratableAssign();
     for ind in b {
       a.add(ind);
     }
-    return a;
   }
   
   proc chpl__serializeAssignment(a: [], b) param {
@@ -1748,7 +1753,7 @@ module ChapelArray {
     }
   }
   
-  inline proc =(a: [], b) {
+  inline proc =(ref a: [], b) {
     if (chpl__isArray(b) || chpl__isDomain(b)) && a.rank != b.rank then
       compilerError("rank mismatch in array assignment");
     
@@ -1797,19 +1802,23 @@ module ChapelArray {
       for (aa,bb) in zip(a,b) do
         aa = bb;
     }
+
+    // TODO: Remove this return statement to match the standard signature for
+    // assignment.  The return here is apparently needed to keep reference
+    // counts right, so reworking reference counting in array assignment is a
+    // prerequisite.
     return a;
   }
   
-  proc =(a: [], b: _tuple) where isEnumArr(a) {
+  proc =(ref a: [], b: _tuple) where isEnumArr(a) {
       if b.size != a.numElements then
         halt("tuple array initializer size mismatch");
       for (i,j) in zip(chpl_enumerate(index(a.domain)), 1..) {
         a(i) = b(j);
       }
-      return a;
   }
   
-  proc =(a: [], b: _tuple) where isRectangularArr(a) {
+  proc =(ref a: [], b: _tuple) where isRectangularArr(a) {
       proc chpl__tupleInit(j, param rank: int, b: _tuple) {
         type idxType = a.domain.idxType,
              strType = chpl__signedType(idxType);
@@ -1831,7 +1840,6 @@ module ChapelArray {
       }
       var j: a.rank*a.domain.idxType;
       chpl__tupleInit(j, a.rank, b);
-      return a;
   }
   
   proc _desync(type t) where t: _syncvar || t: _singlevar {
@@ -1844,7 +1852,7 @@ module ChapelArray {
     return x;
   }
   
-  proc =(a: [], b: _desync(a.eltType)) {
+  proc =(ref a: [], b: _desync(a.eltType)) {
     if isRectangularArr(a) {
       forall e in a do
         e = b;
@@ -1853,7 +1861,6 @@ module ChapelArray {
       for e in a do
         e = b;
     }
-    return a;
   }
   
   proc by(a: domain, b) {
@@ -1942,16 +1949,14 @@ module ChapelArray {
     }
   }
   
-  proc =(ic: _iteratorRecord, xs) {
+  proc =(ref ic: _iteratorRecord, xs) {
     for (e, x) in zip(ic, xs) do
       e = x;
-    return ic;
   }
   
-  proc =(ic: _iteratorRecord, x: iteratorIndexType(ic)) {
+  proc =(ref ic: _iteratorRecord, x: iteratorIndexType(ic)) {
     for e in ic do
       e = x;
-    return ic;
   }
   
   inline proc _getIterator(x) {

@@ -51,7 +51,9 @@ void deadVariableElimination(FnSymbol* fn) {
     if (isDeadVariable(sym, defMap, useMap)) {
       for_defs(se, defMap, sym) {
         CallExpr* call = toCallExpr(se->parentExpr);
-        INT_ASSERT(call && call->isPrimitive(PRIM_MOVE));
+        INT_ASSERT(call && 
+                   (call->isPrimitive(PRIM_MOVE) ||
+                    call->isPrimitive(PRIM_ASSIGN)));
         Expr* rhs = call->get(2)->remove();
         if (!isSymExpr(rhs))
           call->replace(rhs);
@@ -86,7 +88,7 @@ void deadExpressionElimination(FnSymbol* fn) {
           expr->isPrimitive(PRIM_ADDR_OF))
         if (expr == expr->getStmtExpr())
           expr->remove();
-      if (expr->isPrimitive(PRIM_MOVE))
+      if (expr->isPrimitive(PRIM_MOVE) || expr->isPrimitive(PRIM_ASSIGN))
         if (SymExpr* lhs = toSymExpr(expr->get(1)))
           if (SymExpr* rhs = toSymExpr(expr->get(2)))
             if (lhs->var == rhs->var)
@@ -121,7 +123,7 @@ void deadCodeElimination(FnSymbol* fn)
               (call->primitive && call->primitive->isEssential))
             essential = true;
           // mark assignments to global variables as essential
-          if (call->isPrimitive(PRIM_MOVE))
+          if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
             if (SymExpr* se = toSymExpr(call->get(1)))
               if (DU.count(se) == 0 || // DU chain only contains locals
                   !se->var->type->refType) // reference issue

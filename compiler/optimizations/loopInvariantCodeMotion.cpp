@@ -293,11 +293,13 @@ rhsAlias(CallExpr* call) {
   }
 
   if (call->isPrimitive(PRIM_MOVE) ||
+      call->isPrimitive(PRIM_ASSIGN) ||
       call->isPrimitive(PRIM_SET_MEMBER) ||
       call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
     SymExpr* lhs;
     Expr *rhsT;
-    if (call->isPrimitive(PRIM_MOVE)) {
+    if (call->isPrimitive(PRIM_MOVE) ||
+        call->isPrimitive(PRIM_ASSIGN)) {
       lhs = toSymExpr(call->get(1));
       rhsT = call->get(2);
     } else {
@@ -368,7 +370,8 @@ static bool isLoopInvariantPrimitive(PrimitiveOp* primitiveOp)
       case PRIM_OR:
       case PRIM_XOR:
       case PRIM_POW:
-    
+
+      case PRIM_ASSIGN:
       case PRIM_ADD_ASSIGN:
       case PRIM_SUBTRACT_ASSIGN:
       case PRIM_MULT_ASSIGN:
@@ -546,7 +549,7 @@ static bool allOperandsAreLoopInvariant(Expr* expr, std::set<SymExpr*>& loopInva
   //are invariant
   if(CallExpr* callExpr = toCallExpr(expr)) {
     if(callExpr->primitive && isLoopInvariantPrimitive(callExpr->primitive)) {
-      if(callExpr->isPrimitive(PRIM_MOVE)) {  
+      if(callExpr->isPrimitive(PRIM_MOVE) || callExpr->isPrimitive(PRIM_ASSIGN)) {
         return allOperandsAreLoopInvariant(callExpr->get(2), loopInvariants, loopInvariantInstructions, loop, actualDefs);
       }  
       else {
@@ -718,7 +721,7 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
         Symbol* rhs = rhsAlias(call);
         if(rhs != NULL) {
           Symbol* lhs = NULL;
-          if(call->isPrimitive(PRIM_MOVE)) 
+          if(call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) 
             lhs = toSymExpr(call->get(1))->var;
           else
             lhs = toSymExpr(call->get(2))->var;
@@ -858,7 +861,8 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
         if(actualDefs[symExpr2].size() == 1) {
           if(defsInLoop.count(symExpr2->var) == 1) {
             if(CallExpr* callExpr = toCallExpr(symExpr2->parentExpr)) {
-              if(callExpr->isPrimitive(PRIM_MOVE)) {
+              if(callExpr->isPrimitive(PRIM_MOVE) || 
+                 callExpr->isPrimitive(PRIM_ASSIGN)) {
                 if(callExpr->get(1) == symExpr2) {
                   startTimer(allOperandsAreLoopInvariantTimer);   
                   bool loopInvarOps = allOperandsAreLoopInvariant(callExpr, loopInvariantOperands, loopInvariantInstructions, loop, actualDefs);

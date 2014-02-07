@@ -578,7 +578,7 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
                   call->isPrimitive(PRIM_WIDE_GET_NODE))
                 // Treat the use of these primitives as a use of their arguments.
                 call = toCallExpr(call->parentExpr);
-              if (call->isPrimitive(PRIM_MOVE))
+              if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
                 varsToTrack.add(toSymExpr(call->get(1))->var);
               else if (fnsContainingTaskll.in(call->isResolved())) {
                 freeVar = false;
@@ -924,6 +924,7 @@ makeHeapAllocations() {
     for_defs(def, defMap, var) {
       if (CallExpr* call = toCallExpr(def->parentExpr)) {
         SET_LINENO(call);
+        // Do we need a case for PRIM_ASSIGN?
         if (call->isPrimitive(PRIM_MOVE)) {
           VarSymbol* tmp = newTemp(var->type);
           call->insertBefore(new DefExpr(tmp));
@@ -1318,6 +1319,7 @@ static void localizeCall(CallExpr* call) {
       }
       break;
     case PRIM_MOVE:
+    case PRIM_ASSIGN: // Not sure about this one.
       if (CallExpr* rhs = toCallExpr(call->get(2))) {
         if (rhs->isPrimitive(PRIM_DEREF)) {
           if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
@@ -1629,6 +1631,7 @@ static void convertNilToObject()
     if (se->var->type == dtNil) {
       se->var = gNil;
       if (CallExpr* parent = toCallExpr(se->parentExpr))
+        // Assignment to void should already have been flagged as an error.
         if (parent->isPrimitive(PRIM_MOVE) && parent->get(1) == se)
           parent->remove();
     }
@@ -1982,7 +1985,7 @@ static void insertWideCastTemps()
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_CAST)) {
       if (CallExpr* move = toCallExpr(call->parentExpr)) {
-        if (move->isPrimitive(PRIM_MOVE)) {
+        if (move->isPrimitive(PRIM_MOVE) || move->isPrimitive(PRIM_ASSIGN)) {
           if (move->get(1)->typeInfo() != call->typeInfo()) {
             SET_LINENO(call);
             VarSymbol* tmp = newTemp(call->typeInfo());

@@ -533,7 +533,7 @@ module ChapelRangeBase {
     // are trivial.
 
     // See also removePODinitDestroy() in removeUnnecessaryAutoCopyCalls.cpp.
-  proc =(r1: rangeBase(stridable=?s1), r2: rangeBase(stridable=?s2))
+  proc =(ref r1: rangeBase(stridable=?s1), r2: rangeBase(stridable=?s2))
   {
     if r1.boundedType != r2.boundedType then
       compilerError("type mismatch in assignment of ranges with different boundedType parameters");
@@ -546,8 +546,6 @@ module ChapelRangeBase {
     r1._high = r2._high;
     r1._stride = r2._stride;
     r1._alignment = r2._alignment;
-  
-    return r1;
   }
   
   //////////////////////////////////////////////////////////////////////////////////

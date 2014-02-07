@@ -8,7 +8,7 @@ module ChapelBase {
   // generated", it is desirable to add that flag to this default version.
   // In that way, a user-supplied version of assignment will override this one.
   pragma "compiler generated"
-  inline proc =(a, b) return b;
+  inline proc =(ref a, b) return b;
   
   //
   // internal reference type

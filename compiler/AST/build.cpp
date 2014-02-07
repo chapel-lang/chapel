@@ -1716,6 +1716,28 @@ FnSymbol* buildLambda(FnSymbol *fn) {
   return fn;
 }
 
+
+// Replaces the dummy function name "_" with the real name, sets the 'this'
+// intent tag. For methods, it also adds a method tag and "this" declaration.
+FnSymbol* buildFunctionSymbol(FnSymbol* fn, const char* name,
+                              IntentTag thisTag, const char* class_name)
+{
+  fn->cname = fn->name = astr(name);
+  fn->thisTag = thisTag;
+  if (fn->name[0] == '~' && fn->name[1] != '\0')
+    fn->addFlag(FLAG_DESTRUCTOR);
+  if (class_name)
+  {
+    fn->_this = new ArgSymbol(thisTag, "this", dtUnknown,
+                              new UnresolvedSymExpr(class_name));
+    fn->_this->addFlag(FLAG_ARG_THIS);
+    fn->insertFormalAtHead(new DefExpr(fn->_this));
+    ArgSymbol* mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
+    fn->insertFormalAtHead(new DefExpr(mt));
+  }
+  return fn;
+}
+
 // Called like:
 // buildFunctionDecl($4, $6, $7, $8, $9, @$.comment);
 BlockStmt*

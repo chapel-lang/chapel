@@ -726,6 +726,7 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms, FnSymbol* fn,
         INT_FATAL(sym, "invalid assumption about reference");
       }
 
+      // Do we need to consider PRIM_ASSIGN as well?
       CallExpr* move = toCallExpr(defs->v[0]->parentExpr);
       INT_ASSERT(move->isPrimitive(PRIM_MOVE));
 

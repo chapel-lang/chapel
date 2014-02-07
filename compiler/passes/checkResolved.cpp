@@ -8,7 +8,16 @@
 #include "stlUtil.h"
 #include "astutil.h"
 
-static int isDefinedAllPaths(Expr* expr, Symbol* ret);
+#include <set>
+
+// We use RefVector to store a list of symbols that are aliases for the return
+// symbol being sought in isDefinedAllPaths.
+// We assume that if the ref is being used then it is valid (resolution should
+// ensure this).
+typedef std::set<Symbol*> RefSet;
+
+static void checkConstLoops();
+static int isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs);
 static void checkReturnPaths(FnSymbol* fn);
 static void checkNoRecordDeletes();
 
@@ -157,33 +166,91 @@ checkResolved(void) {
 }
 
 
+// Returns the smallest number of definitions of ret on any path through the
+// given expression.
 static int
-isDefinedAllPaths(Expr* expr, Symbol* ret) {
+isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs) {
+  int debug = 0;
   if (!expr)
     return 0;
+  if (isDefExpr(expr))
+    return 0;
+  if (isSymExpr(expr))
+    return 0;
   if (CallExpr* call = toCallExpr(expr)) {
-    if (call->isPrimitive(PRIM_MOVE) || call->isNamed("="))
-      if (SymExpr* lhs = toSymExpr(call->get(1)))
-        if (lhs->var == ret)
-          return 1 + isDefinedAllPaths(expr->next, ret);
-    //
-    // should mark functions that exit rather than relying on string
-    //
+    // Maybe add a "no return" pragma and use that instead.
     if (call->isNamed("halt"))
-      return 1 + isDefinedAllPaths(expr->next, ret);
-  } else if (BlockStmt* block = toBlockStmt(expr)) {
+      return 1;
+    if (call->isPrimitive(PRIM_MOVE) ||
+        call->isPrimitive(PRIM_ASSIGN))
+    {
+      SymExpr* lhs = toSymExpr(call->get(1));
+      if (lhs->var == ret)
+        return 1;
+      if (refs.find(lhs->var) != refs.end())
+        return 1;
+      if (CallExpr* rhs = toCallExpr(call->get(2)))
+        if (rhs->isPrimitive(PRIM_ADDR_OF))
+        {
+          // We expect only a SymExpr as the operand of 'addr of'.
+          SymExpr* se = toSymExpr(rhs->get(1));
+          if (se->var == ret)
+            // lhs <- ('addr of' ret)
+            refs.insert(lhs->var);
+        }
+    }
+    if (call->isResolved())
+    {
+      for_alist(e, call->argList)
+      {
+        if (SymExpr* se = toSymExpr(e))
+        {
+          ArgSymbol* arg = actual_to_formal(se);
+          // If ret is passed as an out or inout argument, that's a definition.
+          if (se->var == ret &&
+              (arg->intent == INTENT_OUT ||
+               arg->intent == INTENT_INOUT ||
+               arg->intent == INTENT_REF))
+            return 1;
+          // Treat all (non-const) refs as definitions, until we know better.
+          // TODO: This may not be needed after moving insertReferenceTemps()
+          // after this pass.
+          if (debug)
+            for (RefSet::iterator i = refs.begin();
+                 i != refs.end(); ++i)
+              printf("%d\n", (*i)->id);
+          if (refs.find(se->var) != refs.end() &&
+              arg->intent == INTENT_REF)
+            return 1;
+        }
+      }
+    }
+    return 0;
+  }
+  if (CondStmt* cond = toCondStmt(expr))
+  {
+    return std::min(isDefinedAllPaths(cond->thenStmt, ret, refs),
+                    isDefinedAllPaths(cond->elseStmt, ret, refs));
+  }
+  if (isGotoStmt(expr))
+    return 0;
+  if (BlockStmt* block = toBlockStmt(expr))
+  {
     if (!block->blockInfo ||
         block->blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP))
-      if (int result = isDefinedAllPaths(block->body.head, ret))
-        return result;
-  } else if (isGotoStmt(expr)) {
+    {
+      int result = 0;
+      for_alist(e, block->body)
+        result += isDefinedAllPaths(e, ret, refs);
+      return result;
+    }
     return 0;
-  } else if (CondStmt* cond = toCondStmt(expr)) {
-    if (isDefinedAllPaths(cond->thenStmt, ret) &&
-        isDefinedAllPaths(cond->elseStmt, ret))
-      return 1;
   }
-  return isDefinedAllPaths(expr->next, ret);
+  if (isExternBlockStmt(expr))
+    return 0;
+
+  INT_FATAL("isDefinedAllPaths: Unhandled case.");
+  return 0;
 }
 
 
@@ -191,7 +258,7 @@ static void
 checkReturnPaths(FnSymbol* fn) {
   // Check to see if the function returns a value.
   if (fn->hasFlag(FLAG_ITERATOR_FN) ||
-      !strcmp(fn->name, "=") ||
+      !strcmp(fn->name, "=") || // TODO: Remove this to enforce new signature.
       !strcmp(fn->name, "chpl__buildArrayRuntimeType") ||
       fn->retType == dtVoid ||
       fn->retTag == RET_TYPE ||
@@ -215,7 +282,8 @@ checkReturnPaths(FnSymbol* fn) {
   if (isEnumSymbol(ret))
     return;
 
-  int result = isDefinedAllPaths(fn->body, ret);
+  RefSet refs;
+  int result = isDefinedAllPaths(fn->body, ret, refs);
 
   //
   // Issue a warning if there is a path that has zero definitions or
@@ -256,3 +324,5 @@ checkNoRecordDeletes()
     }
   }
 }
+
+

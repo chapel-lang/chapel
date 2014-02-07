@@ -4,9 +4,8 @@ record Wrap {
   var _value;
 }
 
-proc =(lhs:Wrap, rhs) {
+proc =(ref lhs:Wrap, rhs) {
   lhs._value.clearHelp();
-  return lhs;
 }
 
 class Abstract {
