@@ -1,0 +1,5 @@
+# This test fails differently under --no-local/gasnet/etc.
+# Once this test starts succeeding for --local, remove this .skipif
+# and re-test.
+CHPL_COMM!=none
+COMPOPTS <= --no-local
