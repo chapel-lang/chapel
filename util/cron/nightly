@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 use File::Basename;
-use File::Path qw(make_path);
+use File::Path qw(mkpath);
 use Cwd;
 use Sys::Hostname;
 
@@ -218,7 +218,7 @@ if ($cronlogdir eq "") {
 
 # Create cronlogdir if it does not exist.
 unless(-d $cronlogdir) {
-    make_path $cronlogdir;
+    mkpath $cronlogdir;
 }
 
 $logdir = $ENV{'CHPL_NIGHTLY_LOGDIR'};
