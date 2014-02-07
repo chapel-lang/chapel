@@ -5,6 +5,6 @@
 
 source $(cd $(dirname $0) ; pwd)/common.bash
 
-export CHPL_NIGHTLY_LOGDIR=/data/sea/cascade/chapel/NightlyBaseline
+export CHPL_NIGHTLY_LOGDIR=$logdir_prefix/NightlyBaseline
 export CHPL_NIGHTLY_STATDIR=$CHPL_NIGHTLY_LOGDIR/Stats
 export CHPL_NIGHTLY_CRON_LOGDIR=$CHPL_NIGHTLY_LOGDIR
