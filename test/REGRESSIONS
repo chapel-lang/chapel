@@ -72,6 +72,15 @@ Setting a config that isn't supported for --minimal-modules (1/23/14 - bradc)
 [Error matching program output for compflags/bradc/minimalModules/minModFnRefArg]
 
 
+========================
+verification regressions
+========================
+
+This test fails with --verify. Before fixing it
+we need to decide how we want this test to behave. (2/7/14)
+-----------------------------------------------------------
+classes/deitz/test_infer_nil.chpl
+
 
 =======================================
 localeModel/numa+qthreads regressions
@@ -106,11 +115,6 @@ valgrind-specific regressions
 (Reviewed for accuracy 01/06/14)
 ================================
 
-random failures due to being out of memory (on purpose)
--------------------------------------------------------
-Consider disabling this test for valgrind:
-[Error matching compiler output for memory/shannon/outofmemory/mallocOutOfMemory]
-
 overlapping memcpy (root cause should be eliminated)
 ----------------------------------------------------
 [Error matching program output for io/bradc/readWholeArr]
@@ -144,7 +148,7 @@ output comes out in wrong order
 
 compilation timeouts
 --------------------
-[Error: Timed out compilation for functions/iterators/vass/yield-arrays-var-nonvar] (08/19/13)
+[Error: Timed out compilation for functions/iterators/vass/yield-arrays-var-nonvar] (08/19/13, 2/4/14)
 
 execution timeouts (probably since committed or at least 08/2012)
 -----------------------------------------------------------------
@@ -171,11 +175,6 @@ no-local regressions
 (Reviewed for accuracy 01/27/14)
 ================================
 
---minimal modules doesn't work for --no-local (01/23/14 -- bradc)
------------------------------------------------------------------
-[Error matching compiler output for compflags/bradc/minimalModules/minModDeclPrint]
-[Error matching compiler output for compflags/bradc/minimalModules/minModFnRefArg]
-
 increased memory use (vass, r22473)
 -----------------------------------
 [Error matching program output for memory/shannon/printFinalMemStat]
@@ -185,6 +184,11 @@ increased memory use (vass, r22473)
 gasnet-everything regressions (other than the above)
 (Reviewed for accuracy 01/24/14)
 ====================================================
+
+suspected to be due to string changes - gasnet (sungeun)
+--------------------------------------------------------
+[Error matching program output for io/bradc/multilocale/testdistwrite]
+
 
 ==============================================
 gasnet-fast regressions (other than the above)
@@ -214,8 +218,8 @@ cyclic distribution regressions
 
 communication counts changed due to Vass' task functions commit (05/30/13)
 ---------------------------------------------------------------------------
-[Error matching program output for distributions/robust/arithmetic/performance/assign]
-[Error matching program output for distributions/robust/arithmetic/performance/reduce]
+[Error matching program output for distributions/robust/arithmetic/performance/multilocale/assign]
+[Error matching program output for distributions/robust/arithmetic/performance/multilocale/reduce]
 
 
 ========================================
