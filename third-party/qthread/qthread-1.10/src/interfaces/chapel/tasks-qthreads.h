@@ -304,6 +304,11 @@ static inline chpl_qthread_tls_t * chapel_qthreads_get_tasklocal(void)
     return tls;
 }
 
+#ifdef CHPL_TASK_GETSUBLOC_IMPL_DECL
+#error "CHPL_TASK_GETSUBLOC_IMPL_DECL is already defined!"
+#else
+#define CHPL_TASK_GETSUBLOC_IMPL_DECL 1
+#endif
 static inline
 c_sublocid_t chpl_task_getSubloc(void)
 {
@@ -315,6 +320,11 @@ c_sublocid_t chpl_task_getSubloc(void)
 #endif
 }
 
+#ifdef CHPL_TASK_SETSUBLOC_IMPL_DECL
+#error "CHPL_TASK_SETSUBLOC_IMPL_DECL is already defined!"
+#else
+#define CHPL_TASK_SETSUBLOC_IMPL_DECL 1
+#endif
 static inline
 void chpl_task_setSubloc(c_sublocid_t subloc)
 {
@@ -349,12 +359,16 @@ void chpl_task_setSubloc(c_sublocid_t subloc)
 #endif
 }
 
+#ifdef CHPL_TASK_GETREQUESTEDSUBLOC_IMPL_DECL
+#error "CHPL_TASK_GETREQUESTEDSUBLOC_IMPL_DECL is already defined!"
+#else
+#define CHPL_TASK_GETREQUESTEDSUBLOC_IMPL_DECL 1
+#endif
 static inline
 c_sublocid_t chpl_task_getRequestedSubloc(void)
 {
 #if defined(CHPL_LOCALE_MODEL_NUM_SUBLOCALES) &&  \
   CHPL_LOCALE_MODEL_NUM_SUBLOCALES == 0
-
     return 0;
 #else
     chpl_qthread_tls_t * data = chapel_qthreads_get_tasklocal();
