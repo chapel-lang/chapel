@@ -155,7 +155,7 @@ if ($printusage == 1) {
     print "\t-valgrind    : run tests in valgrind mode\n";
 #    print "\t-interpret   : run tests in interpreted mode\n";
     print "\t-performance : run performance tests\n";
-    print "\t-compperformance: run compiler performance tests\n"
+    print "\t-compperformance: run compiler performance tests\n";
     print "\t-numtrials <number> : number of trials to run\n";
     print "\t-startdate	  : run performance tests providing a common start date to all the graphs\n";
     print "\t-baseline    : run testins using --baseline\n";
