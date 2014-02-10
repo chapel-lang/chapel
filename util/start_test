@@ -670,6 +670,7 @@ set valgrind = 0
 set valgrindexe = 0
 set interpret = 0
 set performance = 0
+set compperformance = 0
 set numtrials = 1
 set oldgraphs = 0
 set gengraphs = 0
@@ -772,6 +773,11 @@ while ( $#argv > 0 )
         set performance = 1
         set gengraphs = 1
         breaksw
+    case --compperformance:
+    case -compperformance:
+        shift 
+        set compperformance = 1;
+        breaksw
     case --numtrials:
     case -numtrials:
     case --num-trials:
@@ -860,6 +866,7 @@ while ( $#argv > 0 )
         echo "          -norecurse"
         echo "          -comp-only"
         echo "          -performance"
+        echo "          -compperformance"
         echo "          -num-trials <number>"
         echo "          -generate-graphs"
         echo "          -no-display-graph-range"
@@ -920,6 +927,10 @@ if ( -w $logfile ) then
     rm -f $logfile
 endif
 
+if ($compperformance) then   
+    @ startTime = `date +"%s"`
+endif 
+
 echo \[Starting Chapel regression tests - $datestr\] |& $tee $logfile
 echo \[starting directory: \"$invocationDir\"] |& $tee -a $logfile
 echo \[Logs directory: \"$logsdir\"\] |& $tee -a $logfile
@@ -969,6 +980,13 @@ if ($performance) then
     setenv CHPL_TEST_PERF on
 else
     echo \[performance tests: OFF\] |& $tee -a $logfile
+endif
+
+if($compperformance) then 
+    echo \[compiler performance tests: ON\] |& tee -a $logfile
+    setenv CHPL_TEST_COMP_PERF on
+else
+    echo \[compiler performance tests: OFF\] |& tee -a $logfile
 endif
 
 echo \[number of trials: "$numtrials"\] |& $tee -a $logfile
@@ -1066,6 +1084,46 @@ if ($performance || $gengraphs) then
     set createGraphs = $utildir/createGraphs
     set viewGraphs = $utildir/viewGraphs
 endif
+
+
+# Set up vars for compiler performance testing / graphing 
+if ($compperformance) then
+
+    # get the machine name 
+    set compperftestname = `uname -n | sed 's@\..*@@'`
+    
+    # check for a specified main directory 
+    if ($?CHPL_TEST_COMP_PERF_DIR) then
+        set compperfdir = $CHPL_TEST_COMP_PERF_DIR/
+    else
+        set compperfdir = $CHPL_HOME/test/compperfdat/
+        echo \[Warning: CHPL_COMP_TEST_PERF_DIR must be set for generating compiler performance graphs, using default $CHPL_HOME/test/compperfdat/\] |& $tee -a $logfile
+    endif
+    
+        
+    # set the location to store temporary dat files at 
+    set tempDatFilesDir = "$compperfdir"tempCompPerfDatFiles/
+    setenv CHPL_TEST_COMP_PERF_TEMP_DAT_DIR $tempDatFilesDir
+    
+    # in case the temp dat files were not cleaned up from last
+    # time, delete them. 
+    rm -rf $tempDatFilesDir
+
+    # set the html directory
+    set compperfhtmldir = $compperfdir/html   
+       
+    # Set the startdate if one was specified 
+    if ($startdate != "") then
+        set startdate_t = "-s"$startdate
+    else
+        set startdate_t = ""
+    endif
+     
+    set createCoolerGraphs = $utildir/genGraphs
+    set combineCompPerf = $utildir/combineCompPerfData
+endif
+
+
 
 # Auto-generate tests from the spec
 if ("$dirlist" == "" && "$testlist" == "") then
@@ -1442,6 +1500,36 @@ foreach testType ($testTypes)
         end
     end
 end
+
+if ($compperformance) then   
+    # get the total elapsed time (running time for all of testing)              
+    @ endTime = `date +"%s"`
+    @ elapsed = $endTime - $startTime
+    set graphFile = "$CHPL_HOME/test/COMPGRAPHFILES"
+ 
+    #combine all of the smaller .dat files into an averaged one and make copies if needed into a different directory 
+    echo "[Combining dat files now]" 
+    $combineCompPerf --tempDatDir "$tempDatFilesDir"  --elapsedTestTime  "$elapsed" --outDir "$compperfdir"  --graphFile "$graphFile" |& $tee -a $logfile
+    if ($status == 0) then
+        echo "[Success combining compiler performance dat files]" |& $tee -a $logfile
+    else
+        echo "[Error combining compiler performance dat files]" |& $tee -a $logfile
+    endif
+
+    set atitle = "Chapel Compiler Performance Graphs"
+    #now actually create the graphs
+    echo "[Creating compiler performance graphs now]"
+    $createCoolerGraphs -p "$compperfdir" -o "$compperfhtmldir" -a "Chapel Compiler Performance Graphs" -n"$compperftestname" "$startdate_t" -g "$graphFile" -t "$CHPL_HOME/test"  |& $tee -a $logfile
+
+    if ($status == 0) then
+        echo "[Success generating compiler performance graphs for $graphFile in $compperfhtmldir]" |& $tee -a $logfile
+    else
+        echo "[Error generating compiler performance graphs for $graphFile in $compperfhtmldir]" |& $tee -a $logfile
+    endif
+
+    # delete temp files 
+    rm -rf $tempDatFilesDir
+endif
 
 if ($gengraphs && $?CHPL_TEST_PERF_DIR) then
     if ($oldgraphs) then

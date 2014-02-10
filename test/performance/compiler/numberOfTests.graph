@@ -1,0 +1,4 @@
+perfkeys: numTests
+graphkeys: Num Tests
+files: compilerAndTestingStats.dat
+graphtitle: Number of Tests 

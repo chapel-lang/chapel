@@ -13,6 +13,7 @@ import fileReadHelp
 testdir=os.getenv('CHPL_HOME', '.')+'/test'
 
 lines=fileReadHelp.ReadFileWithComments(testdir+'/GRAPHFILES')
+lines+=fileReadHelp.ReadFileWithComments(testdir+'/COMPGRAPHFILES')
 
 p=subprocess.Popen(['find', testdir, '-name', '.svn', '-prune', '-o', '-name', '*.graph', '-print'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 graphfiles = p.communicate()[0].split()

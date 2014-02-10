@@ -88,6 +88,7 @@ export CHPL_NIGHTLY_CRON_LOGDIR=$CHPL_NIGHTLY_LOGDIR
 # It is tempting to use hostname --short, but macs only support the short form
 # of the argument.
 export CHPL_TEST_PERF_DIR=$logdir_prefix/NightlyPerformance/$(hostname -s)
+export CHPL_TEST_COMP_PERF_DIR=$logdir_prefix/NightlyPerformance/$(hostname -s)
 
 # When module function is available, ie on a cray, load the subversion module.
 if [ -f /etc/modules/bash ] ; then

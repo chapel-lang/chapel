@@ -1,0 +1,165 @@
+#!/usr/bin/env python
+
+# This script is used for compiler performance testing. 
+# Each tests outputs its .dat files with the timing per pass and this script
+# takes all of those dat files and combines them into an averaged dat files. 
+# It also creates a seperate dat file that contains some additional testing and
+# compilation stats. 
+
+import sys, os, os.path, shutil, time
+from optparse import OptionParser
+from pprint import pprint
+
+usage =  '%prog [options] <graphfiles>'
+parser = OptionParser(usage=usage)
+parser.add_option('-t', '--tempDatDir', dest='tempDatDir', 
+                  help='the directory of temp files to combine', metavar='DIR')
+parser.add_option('-O', '--outDir', dest='outDir', 
+                  help='output directory for the average', metavar='DIR' ,
+                  default=None)     
+parser.add_option('-e', '--elapsedTestTime', dest='elapsedTestTime', 
+                  help='The number of seconds that all of testing took')
+parser.add_option('-g', '--graphFile', dest='graphFile', 
+                  help='The file containing all of the graphs dirs and suites', metavar='FILE')
+parser.add_option('-v', '--verbose', dest='verbose',
+                  action='store_true', default=False)
+parser.add_option('-d', '--debug', dest='debug',
+                  action='store_true', default=False)
+
+debug = False
+verbose = False
+
+def main():
+    
+    (options, args) = parser.parse_args()
+    
+    global debug
+    debug = options.debug
+    global verbose
+    verbose = options.verbose
+
+    if options.tempDatDir != None:
+        tempDatDir = options.tempDatDir
+    else:
+        tempDatDir = './compperfdat/'+os.uname()[1]
+        
+    if options.outDir != None:
+        outDir = options.outDir
+    else:
+        outDir = 'output/'
+        
+    if options.elapsedTestTime != None:
+        elapsedTestTime = float(options.elapsedTestTime)
+    else:
+        elapsedTestTime = 1.0
+    
+    if options.graphFile != None:
+        graphFile = options.graphFile
+    else :
+        graphFile = 'COMPGRAPHFILES'  
+
+    # get all the .dat files in the temp data directory 
+    tempFiles = os.listdir(tempDatDir)
+    datFiles = list()
+    for tempFile in tempFiles: 
+        if tempFile.endswith('.dat'):
+            datFiles.append(tempFile)
+
+    numTests = len(datFiles)
+    combinedOutput = list()
+    
+    # open the first file and start saving the combined values for each key
+    try:
+        firstFile = open(tempDatDir + datFiles[0], 'r')
+        firstLine = firstFile.readline()
+        perfkeys = [ l.strip() for l in firstLine[1:].split('\t') ]
+        # There are as many passes are there are keys (minus 1 for the date)
+        numPasses = len(perfkeys) - 1 
+        firstVals = [ l.strip() for l in firstFile.readline().split('\t') ]
+        date = firstVals[0]
+        combinedOutput.extend(firstVals[1:])
+        combinedOutput = [float(i) for i in combinedOutput]
+        firstFile.close()
+       
+    except IOError:
+        sys.stderr.write('ERROR: Could not open first dat file: %s\n'%(tempDatDir + datFiles[0]))
+        return -1    
+    
+    # for each dat file add each key to the running total for the key
+    # also make sure the number of keys matches the first file 
+    for datFile in datFiles[1:]:
+        try:
+            f = open(tempDatDir + datFile, 'r')
+            f.readline()
+            perfValues = [ l.strip() for l in f.readline().split('\t') ]
+            #There are as many passes are there are keys (minus 1 for the date)
+            if len(perfValues)-1 != numPasses:
+                sys.stderr.write('ERROR: num passes is not the same for all files\n')
+            for valueIndex in range(1, len(perfValues)):
+               value = float(perfValues[valueIndex])
+               combinedOutput[valueIndex-1] += value;
+                
+            f.close()
+
+        except IOError:
+            sys.stderr.write('ERROR: Could not open dat file: %s\n'%(datFile))
+            return -1 
+
+    # get the total time compiling 
+    totalTimeCompiling = combinedOutput[len(combinedOutput)-1]
+   
+    # compute the average for each value and round to two decimal places 
+    combinedOutput = [i/numTests for i in combinedOutput]
+    combinedOutput = ['%1.2f'%(i) for i in combinedOutput]
+    
+    # calculate percent of time compiling 
+    percentTimeCompiling = (totalTimeCompiling/elapsedTestTime) * 100    
+
+    # remove the colons in the compiler pass keys 
+    outputPerfKeys = firstLine.replace(' :', '')
+    # combine  the date, and each averaged value 
+    outputPerfValues = date + '\t' + '\t '.join(combinedOutput)
+    
+    # create or append the averaged timings file that contains the
+    # average time for each compiler pass 
+    outFile = 'compilerPerformance.dat'
+    if os.path.exists(outDir + outFile) : 
+        outfile = open(outDir + outFile, 'a+')
+        outfile.write(outputPerfValues + '\n')
+        outfile.close()
+    else :
+        outfile = open(outDir + outFile, 'w+')
+        outfile.write(outputPerfKeys + '\n')
+        outfile.write(outputPerfValues + '\n')
+        outfile.close()
+    
+    # create the keys and values for the compiling and testing stats 
+    miscPerfKeys = '# Date\tnumTests\tnumPasses\ttotalTimeCompiling\telapsedTestTime\tpercentTimeCompiling'
+    miscPerfValues = format('%s\t%d\t%d\t%.1f\t%.1f\t%.1f'%(date, numTests, numPasses, totalTimeCompiling, elapsedTestTime, percentTimeCompiling))
+    
+    # create or append to the compiling testing stats file that contains the
+    # above stats
+    outFile = 'compilerAndTestingStats.dat'
+    if os.path.exists(outDir + outFile) : 
+        outfile = open(outDir + outFile, 'a+')
+        outfile.write(miscPerfValues + '\n')
+        outfile.close()
+    else :
+        outfile = open(outDir + outFile, 'w+')
+        outfile.write(miscPerfKeys + '\n')
+        outfile.write(miscPerfValues + '\n')
+        outfile.close()
+
+    if debug: 
+        sys.stdout.write('There are %d passes\n'%(numPasses))
+        sys.stdout.write('The date is %s\n' %(date))
+        sys.stdout.write('There are %s tests\n'%(numTests))
+        sys.stdout.write('The total time spent compiling was %1.1f seconds \n'%(totalTimeCompiling))
+        sys.stdout.write('The total time spent testing was %1.1f seconds \n'%(elapsedTestTime))
+        sys.stdout.write('Spent %.1f percent of the total time testing in compiling\n'%(percentTimeCompiling))
+        pprint(combinedOutput)
+        sys.stdout.write(' outdir + outFile is %s\n' %(outDir + outFile))
+       
+ 
+if __name__ == '__main__':
+    sys.exit(main())

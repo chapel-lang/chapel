@@ -19,6 +19,7 @@ $hello = 0;
 $allhellos = 0;
 $examples = 0;
 $performance = 0;
+$compperformance = 0;
 $componly = 0;
 $nofutures = 0;
 $suppressions = "";
@@ -70,6 +71,8 @@ while (@ARGV) {
         $localeModelSuite = 1;
     } elsif ($flag eq "-performance") {
         $performance = 1;
+    } elsif ($flag eq "-compperformance") {
+        $compperformance = 1;
     } elsif ($flag eq "-numtrials") {
         $numtrials = shift @ARGV;
     } elsif ($flag eq "-compopts") {
@@ -152,6 +155,7 @@ if ($printusage == 1) {
     print "\t-valgrind    : run tests in valgrind mode\n";
 #    print "\t-interpret   : run tests in interpreted mode\n";
     print "\t-performance : run performance tests\n";
+    print "\t-compperformance: run compiler performance tests\n"
     print "\t-numtrials <number> : number of trials to run\n";
     print "\t-startdate	  : run performance tests providing a common start date to all the graphs\n";
     print "\t-baseline    : run testins using --baseline\n";
@@ -646,6 +650,13 @@ if ($performance == 1) {
         $testflags = "$testflags -performance -startdate $startdate";
     }
 }
+if ($compperformance == 1) { 
+    if ($startdate eq "-1") {
+        $testflags = "$testflags -compperformance";
+    } else {
+        $testflags = "$testflags -compperformance -startdate $startdate";
+    }
+}
 if (!($numtrials eq "")) {
     $testflags = "$testflags -numtrials $numtrials"
 }
@@ -704,7 +715,7 @@ if ($runtests == 0) {
 } else {
     my $svnPerfDir = "/data/sea/cascade/chapel/NightlyPerformance/$host";
     my $svnPerfMsgXtra = ".\nData dir: $svnPerfDir\n(Testing continues despite failure.) Error code";
-    if ($performance == 1) {
+    if ($performance == 1 || $compperformance == 1) {
         mysystem("cd $svnPerfDir && svn update", "svn-updating perf data before running tests" . $svnPerfMsgXtra, 0, 1, 1);
     }
 
@@ -765,7 +776,7 @@ if ($runtests == 0) {
     }
 
 
-    if ($performance == 1) {
+    if ($performance == 1 or $compperformance == 1) {
         mysystem("cd $svnPerfDir && svn update", "svn-updating perf data after running tests" . $svnPerfMsgXtra, 0, 1, 1);
         mysystem("cd $svnPerfDir && svn add *.dat 2>&1 | grep -v '^svn: warning: .* is already under version control\$'", "svn-adding perf data files", 0, 0, 1);  # can fail easily - ignore failures
         mysystem("cd $svnPerfDir && svn commit -m \"Subject: Perf data update $host  `date '+%F %T'`  $revision\n\nDescription: <empty>\n\"", "svn-committing perf data" . $svnPerfMsgXtra, 0, 1, 1);

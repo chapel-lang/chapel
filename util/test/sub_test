@@ -221,10 +221,11 @@ def KillProc(p, timeout):
 
 # clean up after the test has been built
 def cleanup(execname):
-    if os.path.isfile(execname):
-        os.unlink(execname)
-    if os.path.isfile(execname+'_real'):
-        os.unlink(execname+'_real')
+    if execname is not None:
+        if os.path.isfile(execname):
+            os.unlink(execname)
+        if os.path.isfile(execname+'_real'):
+            os.unlink(execname+'_real')
     return
 
 # print (compopts: XX, execopts: XX) for later decoding of failed tests
@@ -478,7 +479,6 @@ if os.getenv('CHPL_TEST_INTERP')=='on':
 else:
     futureSuffix='.future'
 # sys.stdout.write('futureSuffix=%s\n'%(futureSuffix))
-
 if os.getenv('CHPL_TEST_PERF')!=None:
     compoptssuffix='.perfcompopts'
     execenvsuffix='.perfexecenv'
@@ -496,6 +496,41 @@ else:
     timeoutsuffix='.timeout'
     perftest=False
 # sys.stdout.write('perftest=%d\n'%(perftest))
+
+printpassesfile = None
+if os.getenv('CHPL_TEST_COMP_PERF')!=None:
+    compperftest=True
+    
+    # check for the main compiler performance directory
+    if os.getenv('CHPL_TEST_COMP_PERF_DIR')!=None:
+        compperfdir=os.getenv('CHPL_TEST_COMP_PERF_DIR')
+    else:
+        compperfdir=chpl_home+'/test/compperfdat/' 
+    
+    # The env var CHPL_PRINT_PASSES_FILE will cause the 
+    # compiler to save the pass timings to specified file.
+    if os.getenv('CHPL_PRINT_PASSES_FILE')!=None:
+        printpassesfile=os.getenv('CHPL_PRINT_PASSES_FILE')
+    else:
+        printpassesfile='timing.txt'
+        os.putenv('CHPL_PRINT_PASSES_FILE', 'timing.txt')
+      
+    # check for the perfkeys file
+    if os.getenv('CHPL_TEST_COMP_PERF_KEYS')!=None:
+        keyfile=os.getenv('CHPL_TEST_COMP_PERF_KEYS')
+    else: 
+        keyfile=chpl_home+'/test/performance/compiler/compilerPerformance.perfkeys'
+        
+    # Check for the directory to store the tempory .dat files that will get 
+    # combined into one.    
+    if os.getenv('CHPL_TEST_COMP_PERF_TEMP_DAT_DIR')!=None:
+        tempDatFilesDir = os.getenv('CHPL_TEST_COMP_PERF_TEMP_DAT_DIR')
+    else: 
+        tempDatFilesDir = compperfdir + 'tempCompPerfDatFiles/'
+        
+else: 
+    compperftest=False
+
 
 
 #
@@ -811,7 +846,6 @@ for testname in testsrc:
     compoptsnum = 0
     for compopts in compoptslist:
         sys.stdout.flush()
-
         del clist
         # use the remaining portion as a .good file for executing tests
         #  clist will be *added* to execopts if it is empty, or just used
@@ -884,6 +918,7 @@ for testname in testsrc:
                 printTestVariation(compoptsnum);
                 sys.stdout.write(']\n')
                 cleanup(execname)
+                cleanup(printpassesfile)
                 continue # on to next compopts
             
         else:
@@ -899,6 +934,7 @@ for testname in testsrc:
                 sys.stdout.write(']\n')
                 KillProc(p, killtimeout)
                 cleanup(execname)
+                cleanup(printpassesfile)
                 continue # on to next compopts
 
             status = p.returncode
@@ -966,6 +1002,7 @@ for testname in testsrc:
                 sys.stdout.write('[Compiler output was as follows:]\n')
                 sys.stdout.write(origoutput)
                 cleanup(execname)
+                cleanup(printpassesfile)
                 continue # on to next compopts
 
             result = DiffFiles(checkfile, complog)
@@ -994,6 +1031,7 @@ for testname in testsrc:
                     sys.stdout.write(']\n');
 
             cleanup(execname)
+            cleanup(printpassesfile)
             continue # on to next compopts
         else:
             compoutput = output # save for diff
@@ -1003,6 +1041,54 @@ for testname in testsrc:
         # Compile successful
         #
         sys.stdout.write('[Success compiling %s/%s]\n'%(localdir, execname))
+    
+        # Note that compiler performance only times successful compilations. 
+        # Tests that are designed to fail before compilation is complete will 
+        # not get timed, so the total time compiling might be off slightly.   
+        if compperftest:
+            # make the compiler performance directories if they don't exist 
+            timePasses = True
+            if not os.path.isdir(compperfdir) and not os.path.isfile(compperfdir):
+                os.makedirs(compperfdir)
+            if not os.access(compperfdir, os.R_OK|os.X_OK):
+                sys.stdout.write('[Error creating compiler performance test directory %s]\n'%(compperfdir))
+                timePasses = False
+            
+            if not os.path.isdir(tempDatFilesDir) and not os.path.isfile(tempDatFilesDir):
+                os.makedirs(tempDatFilesDir)
+            if not os.access(compperfdir, os.R_OK|os.X_OK):
+                sys.stdout.write('[Error creating compiler performance temp dat file test directory %s]\n'%(tempDatFilesDir))
+                timePasses = False
+            
+            # so long as we have to the directories 
+            if timePasses: 
+                # make the datFileName the full path with / replaced with -- so
+                # we can keep the full path but not create a bunch of new
+                # directories
+                datFileName = localdir.replace('/', '--') + '--' + execname + str(compoptsnum) 
+                
+                # computePerfStats for the current test 
+                sys.stdout.write('[Executing computePerfStats %s %s %s %s %s]\n'%(datFileName, tempDatFilesDir, keyfile, printpassesfile, str(exectimeout)))
+                sys.stdout.flush()
+                p = subprocess.Popen([utildir+'/computePerfStats', datFileName, tempDatFilesDir, keyfile, printpassesfile, str(exectimeout)], stdout=subprocess.PIPE)
+                sys.stdout.write('%s'%(p.communicate()[0]))
+                sys.stdout.flush()
+
+                status = p.returncode
+
+                if status == 0:
+                    sys.stdout.write('[Success')
+                else:
+                    sys.stdout.write('[Error')
+                sys.stdout.write(' matching compiler performance keys for %s/%s'%
+                                 (localdir, execname))
+                if status!=0:
+                    printTestVariation(compoptsnum, execoptsnum);
+                sys.stdout.write(']\n')    
+                  
+            #delete the timing file     
+            cleanup(printpassesfile)
+
 
         if os.getenv('CHPL_COMPONLY'):
             sys.stdout.write('[Note: Not executing or comparing the output due to -noexec flags]\n')
