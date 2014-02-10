@@ -12,6 +12,7 @@
 #include <sys/time.h>
 
 bool printPasses = false;
+FILE* printPassesFile = NULL;
 
 struct PassInfo {
   void (*pass_fn)(void); // The function which implements the pass.
@@ -22,6 +23,21 @@ struct PassInfo {
 
 #include "passlist.h"
 
+// wrapper for printing timing info to stderr and/or a file
+static void printPassTiming(char const *fmt, ...) {
+  va_list ap;
+  
+  if(printPasses) {
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
+    va_end(ap);
+  }
+  if (printPassesFile != NULL) {
+    va_start(ap, fmt);
+    vfprintf(printPassesFile, fmt, ap);
+    va_end(ap);
+  }
+}
 
 static void runPass(const char *passName, void (*pass)(void), void (*check)(), char log_tag) {
   static struct timeval startTimeBetweenPasses;
@@ -31,8 +47,9 @@ static void runPass(const char *passName, void (*pass)(void), void (*check)(), c
   struct timeval startTime;
   struct timeval stopTime;
   struct timezone timezone;
+  static bool performTiming = printPasses || (printPassesFile != NULL);
 
-  if (printPasses) {
+  if (performTiming) {
     gettimeofday(&stopTimeBetweenPasses, &timezone);
     if (timeBetweenPasses < 0.0)
       timeBetweenPasses = 0.0;
@@ -45,25 +62,24 @@ static void runPass(const char *passName, void (*pass)(void), void (*check)(), c
   }
   if (strlen(fPrintStatistics) && strcmp(passName, "parse"))
     printStatistics("clean");
-  if (printPasses) {
-    fprintf(stderr, "%32s :", passName);
-    fflush(stderr);
+  if (performTiming) {
+    printPassTiming("%32s :", passName);
     gettimeofday(&startTime, &timezone);
   }
   (*pass)();
-  if (printPasses) {
+  if (performTiming) {
     gettimeofday(&stopTime, &timezone);
-    fprintf(stderr, "%8.3f seconds",
+    printPassTiming("%8.3f seconds",
             ((double)((stopTime.tv_sec*1e6+stopTime.tv_usec) - 
                       (startTime.tv_sec*1e6+startTime.tv_usec))) / 1e6);
-    if (developer) fprintf(stderr, "  [%d]", lastNodeIDUsed());
-    fprintf(stderr, "\n");
+    if (developer && printPasses) fprintf(stderr, "  [%d]", lastNodeIDUsed());
+    printPassTiming("\n");
     totalTime += ((double)((stopTime.tv_sec*1e6+stopTime.tv_usec) - 
                            (startTime.tv_sec*1e6+startTime.tv_usec))) / 1e6;
     if (!strcmp(passName, "makeBinary")) {
-      fprintf(stderr, "%32s :%8.3f seconds\n", "time between passes",
+      printPassTiming("%32s :%8.3f seconds\n", "time between passes",
               timeBetweenPasses);
-      fprintf(stderr, "%32s :%8.3f seconds\n", "total time",
+      printPassTiming("%32s :%8.3f seconds\n", "total time",
               totalTime+timeBetweenPasses);
     }
   }
@@ -74,7 +90,7 @@ static void runPass(const char *passName, void (*pass)(void), void (*check)(), c
   }
   if (logging(log_tag))
     dump_ast(passName, currentPassNo);
-  if (printPasses) {
+  if (performTiming) {
     gettimeofday(&startTimeBetweenPasses, &timezone);
   }
   considerExitingEndOfPass();

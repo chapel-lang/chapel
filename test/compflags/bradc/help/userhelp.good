@@ -92,6 +92,7 @@ Documentation Options:
 Compilation Trace Options:
       --[no-]print-commands           [Don't] print system commands
       --[no-]print-passes             [Don't] print compiler passes
+      --print-passes-file <filename>  Print compiler passes to <filename>
 
 Miscellaneous Options:
       --[no-]devel                    Compile as a developer [user]

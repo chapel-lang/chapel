@@ -4,6 +4,7 @@
 #include "vec.h"
 
 extern bool printPasses;
+extern FILE* printPassesFile; 
 
 void runPasses(void);
 void initLogFlags(Vec<char>&);

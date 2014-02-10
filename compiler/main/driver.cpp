@@ -596,6 +596,14 @@ static void setWarnSpecial(ArgumentState* arg_state, char* unused) {
   setWarnTupleIteration(arg_state, unused);
 }
 
+static void setPrintPassesFile(ArgumentState* arg, char* fileName) {
+  printPassesFile = fopen(fileName, "w");
+  if(printPassesFile == NULL) {
+    USR_WARN("Error opening printPassesFile: %s.", fileName);
+  }
+}
+
+
 /*
 Flag types:
 
@@ -689,6 +697,7 @@ static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "Compilation Trace Options", NULL, NULL, NULL, NULL},
  {"print-commands", ' ', NULL, "[Don't] print system commands", "N", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
  {"print-passes", ' ', NULL, "[Don't] print compiler passes", "N", &printPasses, "CHPL_PRINT_PASSES", NULL},
+ {"print-passes-file", ' ', "<filename>", "Print compiler passes to <filename>", "S", printPassesFile, "CHPL_PRINT_PASSES_FILE", setPrintPassesFile},
 
  {"", ' ', NULL, "Miscellaneous Options", NULL, NULL, NULL, NULL},
 // Support for extern { c-code-here } blocks could be toggled with this
@@ -868,6 +877,9 @@ int main(int argc, char *argv[]) {
     printf("timer 5: %8.3lf\n", timer5.elapsed());
   }
   free_args(&arg_state);
+  if(printPassesFile != NULL) {
+    fclose(printPassesFile);
+  }
   clean_exit(0);
   return 0;
 }

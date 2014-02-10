@@ -294,6 +294,11 @@ OPTIONS
   --[no-]print-passes    Prints the compiler passes during compilation and the
                     amount of wall clock time required for the pass.
 
+  --print-passes-file <filename>   Saves the compiler passes and the amount of
+                    wall clock time required for the pass to <filename>. An 
+                    error is displayed if the file cannot be opened but no
+                    recovery attempt is made. 
+
   Miscellaneous Options
 
   --[no-]devel       Puts the compiler into [out of] developer mode, which
