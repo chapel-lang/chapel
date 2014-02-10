@@ -24,6 +24,9 @@ parser.add_option('-s', '--startdate', dest='startdate',
                   help='graph start date', metavar='DATE')
 parser.add_option('-e', '--enddate', dest='enddate',
                   help='graph end date', metavar='DATE')
+parser.add_option('-a', '--alttitle', dest='alttitle', 
+                  help='alternate/custom site title', 
+                  metavar='NAME', default=None)
 parser.add_option('-v', '--verbose', dest='verbose',
                   action='store_true', default=False)
 parser.add_option('-d', '--debug', dest='debug',
@@ -53,13 +56,15 @@ def try_parse_float(value):
 # Global info about generating graphs
 class GraphStuff:
     def __init__(self, _name, _testdir, _perfdir, _outdir, _startdate, _enddate,
-                 _reduce, _display_bounds):
+                 _reduce, _display_bounds, _alttitle):
         self.numGraphs = 0;
         self.testdir = _testdir
         self.perfdir = _perfdir
         self.outdir = _outdir
         self.datdir = self.outdir+'/'+'CSVfiles'
         self.title = 'Chapel Performance Graphs'
+        if _alttitle: 
+            self.title = _alttitle
         if _name != None:
             self.title += ' for '+_name
         self.gfname = self.outdir+'/'+'graphdata.js'
@@ -149,8 +154,10 @@ class GraphStuff:
         self.gfile.write('   "ylabel" : "%s",\n'%(ginfo.ylabel))
         self.gfile.write('   "startdate" : "%s",\n'%(ginfo.startdate))
         self.gfile.write('   "enddate" : "%s",\n'%(ginfo.enddate))
-        self.gfile.write('   "displayrange" : "%s",\n'%(str(ginfo.displayrange).lower()))
-        self.gfile.write('   "unloggable" : "%s"\n'%(str(ginfo.unloggable).lower()))
+        self.gfile.write('   "displayrange" : %s,\n'%(str(ginfo.displayrange).lower()))
+        self.gfile.write('   "unloggable" : %s,\n'%(str(ginfo.unloggable).lower()))
+        self.gfile.write('   "expand" : %d,\n'%(ginfo.expand))
+        self.gfile.write('   "sort" : %s\n'%(str(ginfo.sort).lower()))
         self.gfile.write('}')
 
 
@@ -204,6 +211,14 @@ class GraphStuff:
                 graphs[currgraph].generate = [s if s != '' else self._reduce for s in re.sub(r'\s+', '', rest)]
             elif key == 'displayrange':
                 graphs[currgraph].displayrange = rest.lower() in ('true', 't', '1', 'on', 'y', 'yes')
+            # expansion is used to turn a single graph with multiple series into
+            # multiple graphs where the first one is all the series combined and
+            # the subsequent ones contain each series individually. -1 means 
+            # expand all. Other numbers indicate the number of series to expand 
+            elif key == 'expand': 
+                graphs[currgraph].expand = int(rest.strip())
+            elif key == 'sort': 
+                graphs[currgraph].sort = rest.lower() in ('true', 't', '1', 'on', 'y', 'yes')
 
         try:
             graphs[currgraph].generateGraphData(self, currgraph)
@@ -219,7 +234,8 @@ class GraphStuff:
 class GraphClass:
     gid = 1
     def __init__(self, _name, _graphNum, _suite='', _startdate=None,
-                 _enddate=None, _reduce='avg', _displayrange=True):
+                 _enddate=None, _reduce='avg', _displayrange=True, 
+                 _expand=0, _sort=True):
         self.id = GraphClass.gid
         GraphClass.gid += 1
         self.name = _name.strip()
@@ -238,6 +254,8 @@ class GraphClass:
         self.displayrange = _displayrange
         self._reduce = _reduce
         self.unloggable = False
+        self.expand = _expand
+        self.sort = _sort 
 
     def __str__(self):
         l  = 'Graph: '+str(self.name)+' (id='+str(self.id)+')\n'
@@ -543,8 +561,16 @@ def main():
     else:
         enddate = time.localtime()
 
+    # This allows the graph webpage to have an alternate title. The default is
+    # Chapel Performance Graphs, which is not always appropriate 
+    if options.alttitle != None:
+        alttitle = options.alttitle
+    else:
+        alttitle = None
+
     graphInfo = GraphStuff(options.name, options.testdir, perfdir, outdir,
-        startdate, enddate, options.g_reduce, options.g_display_bounds)
+        startdate, enddate, options.g_reduce, options.g_display_bounds,
+        alttitle)
     try:
         graphInfo.init()
     except (IOError, OSError):
