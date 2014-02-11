@@ -349,7 +349,7 @@ extern proc qio_channel_print_string(threadsafe:c_int, ch:qio_channel_ptr_t, con
 
 extern proc qio_channel_scan_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:c_string, len:ssize_t, skipws:c_int):err_t;
 extern proc qio_channel_scan_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_void_ptr, len:ssize_t, skipws:c_int):err_t;
-extern proc qio_channel_print_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:c_string, len:ssize_t):err_t;
+extern proc qio_channel_print_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:string, len:ssize_t):err_t;
 extern proc qio_channel_print_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_void_ptr, len:ssize_t):err_t;
 
 extern record qio_conv_t {
@@ -1141,9 +1141,9 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
 proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):syserr where _isIoPrimitiveType(t) {
   if _isBooleanType(t) {
     if x {
-      return qio_channel_print_literal(false, _channel_internal, _trues(1).c_str(), _trues(1).length:ssize_t);
+      return qio_channel_print_literal(false, _channel_internal, _trues(1), _trues(1).length:ssize_t);
     } else {
-      return qio_channel_print_literal(false, _channel_internal, _falses(1).c_str(), _falses(1).length:ssize_t);
+      return qio_channel_print_literal(false, _channel_internal, _falses(1), _falses(1).length:ssize_t);
     }
   } else if _isIntegralType(t) {
     // handles int types
@@ -1177,7 +1177,7 @@ proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):syserr wher
     return qio_channel_print_string(false, _channel_internal, x.c_str(), x.length:ssize_t);
   } else if _isEnumeratedType(t) {
     var s = x:string;
-    return qio_channel_print_literal(false, _channel_internal, s.c_str(), s.length:ssize_t);
+    return qio_channel_print_literal(false, _channel_internal, s, s.length:ssize_t);
   } else {
     compilerError("Unknown primitive type in _write_text_internal ", typeToString(t));
   }
@@ -1309,7 +1309,7 @@ inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:
   } else if t == ioChar {
     return qio_channel_write_char(false, _channel_internal, x.ch);
   } else if t == ioLiteral {
-    return qio_channel_print_literal(false, _channel_internal, x.val.c_str(), x.val.length:ssize_t);
+    return qio_channel_print_literal(false, _channel_internal, x.val, x.val.length:ssize_t);
   } else if t == ioBits {
     return qio_channel_write_bits(false, _channel_internal, x.v, x.nbits);
   } else if kind == iokind.dynamic {
