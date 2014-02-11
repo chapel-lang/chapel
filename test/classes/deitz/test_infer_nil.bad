@@ -1,0 +1,3 @@
+test_infer_nil.chpl:8: warning: C
+{x = 0}
+0
