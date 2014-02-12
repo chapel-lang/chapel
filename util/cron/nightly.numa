@@ -25,6 +25,9 @@ log_info "Skipping multilocale numa testing. Enable when resources are available
 
 exit
 
+################################################################################
+################################################################################
+
 #
 # The below works, but we don't have cycles  to do it yet
 #

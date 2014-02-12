@@ -67,6 +67,8 @@ while (@ARGV) {
         $examples = 1;
         $multilocale = 1;
     } elsif ($flag eq "-localeModel") {
+        # TODO: Allow -localeModel to run full suite (e.g. w/o setting
+        #       $examples = 1) (thomasvandoren, 2014-02-10)
         $examples = 1;
         $localeModelSuite = 1;
     } elsif ($flag eq "-performance") {
