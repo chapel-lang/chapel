@@ -34,7 +34,7 @@ covered in the following, please send them to chapel_info@cray.com.
 Task Implementation Layers
 --------------------------
 
-This release contains five distinct implementations of Chapel tasks.
+This release contains four distinct implementations of Chapel tasks.
 The user can select between these options by setting the CHPL_TASKS
 environment variable to one of the following options:
 
@@ -43,7 +43,6 @@ qthreads       : an option based on Sandia's Qthreads user-level tasks
 massivethreads : an option based on U Tokyo's MassiveThreads library
 muxed          : available only on Cray Inc. systems; not documented
                  here, see $CHPL_HOME/doc/platforms/README.cray instead
-none           : execute the program serially using a single task
 
 Each tasking layer is described in more detail below:
 
@@ -161,17 +160,6 @@ which qthreads will auto-detect during configuration and use for processor
 affinity.
 
 
-CHPL_TASKS == none
-------------------
-
-Setting CHPL_TASKS to "none" indicates that you do not wish to have
-multiple Chapel tasks actually execute concurrently. This  has
-the effect of (i) ignoring begin keywords, (ii) converting cobegins
-into traditional block statements, and (iii) converting forall and
-coforall loops into for loops.  In other words, it removes all
-constructs that introduce new tasks and executes those tasks serially.
-
-
 ---------------------------------
 Controlling the Number of Threads
 ---------------------------------
@@ -230,10 +218,6 @@ CHPL_TASKS == qthreads:
   number of threads equal to the number of processor cores on the
   locale.
 
-CHPL_TASKS == none:
-  The CHPL_RT_NUM_THREADS_PER_LOCALE variable has no impact on this
-  tasking layer.
-
 
 -------------------------------
 Controlling the Call Stack Size
@@ -260,13 +244,6 @@ CHPL_TASKS == qthreads:
   Qthreads tasks have a default call stack size of 32k*sizeof(size_t)
   bytes.  If a value is specified for CHPL_RT_CALL_STACK_SIZE, that
   value is used for the call stack size instead.
-
-CHPL_TASKS == none:
-  The default task call stack size is the system stack limit (typically
-  8 MiB for Linux systems).  If CHPL_RT_CALL_STACK_SIZE is present, its
-  value is used to set the stack size for the process.  Tasks inherit
-  this call stack size, because the execution model, as described above,
-  is either serial or like FIFO tasking with a single thread.
 
 
 -----------------------------
@@ -296,9 +273,6 @@ CHPL_TASKS == qthreads:
   cost.  Developers needing to remove even that small performance cost
   can do so by removing the --enable-guard-pages qthreads configuration
   option and rebuilding qthreads.
-
-CHPL_TASKS == none:
-  No stack overflow detection is available.
 
 
 -------------------------

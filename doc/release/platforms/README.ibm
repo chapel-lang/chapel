@@ -109,11 +109,9 @@ Blue Gene/L
 -----------
 Our current implementation of Chapel relies heavily on POSIX threads
 (pthreads) to implement both intra- and inter-locale parallelism.
-Since BG/L does not support pthreads, Chapel is not well-supported on
-this platform today.  You may be able to write serial Chapel code for
-BG/L by setting CHPL_TASKS=none, but you won't be able to execute
-anything particularly interesting.  If you are interested in running
-Chapel on BG/L, please contact us and let us know.
+Since BG/L does not support pthreads, Chapel is not supported on
+this platform.  If you are interested in running Chapel on BG/L,
+please contact us and let us know.
 
 
 Blue Gene/P

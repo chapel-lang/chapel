@@ -19,8 +19,6 @@ if ($tasks eq "fifo") {
     $threads = "none";
 } elsif ($tasks eq "muxed") {
     $threads = "soft-threads";
-} elsif ($tasks eq "none") {
-    $threads = "none";
 } elsif ($tasks eq "qthreads") {
     $threads = "none";
 } else {
