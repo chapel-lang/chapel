@@ -1,35 +1,34 @@
 #!/usr/bin/env bash
+#
+# If -examples option is passed as $1, will run nightly with -examples and
+# -no-futures. No flags if -full option is passed. The log files have distinct
+# names for -examples and -full options.
 
 source $(cd $(dirname $0) ; pwd)/common.bash
+
+if [ "${1}" == "-examples" ] ; then
+    examples_opt="-examples -no-futures"
+    tests_to_run="examples"
+elif [ "${1}" == "-full" ] ; then
+    examples_opt=""
+    tests_to_run="full"
+else
+    echo "Usage: $0 [ -examples | -full ]"
+    echo ""
+    echo "  Must be called with one of -examples or -full."
+    echo ""
+    exit 1
+fi
 
 #
 # Test Qthreads with CHPL_COMM=none
 #
-export LOGFILE=/tmp/nightly.qthreads.$USER.$$.out
-export LOGFILE2=$HOME/tmp/nightly.qthreads.out
+export LOGFILE=/tmp/nightly.qthreads.$tests_to_run.$USER.$$.out
+export LOGFILE2=$HOME/tmp/nightly.qthreads.$tests_to_run.out
 
-log_info "Testing Qthreads with CHPL_COMM=none.    Log files: $LOGFILE and $LOGFILE2"
+log_info "Testing Qthreads with CHPL_COMM=none. Test suite: ${tests_to_run}. Log files: $LOGFILE and $LOGFILE2"
 export CHPL_TASKS=qthreads
 
-$CHPL_HOME/util/cron/nightly -cron -examples -no-futures > $LOGFILE 2>&1
-cp $LOGFILE $LOGFILE2 && rm -f $LOGFILE
-
-#
-# Test Qthreads with CHPL_COMM=gasnet
-#
-export LOGFILE=/tmp/nightly.qthreads-gasnet.$USER.$$.out
-export LOGFILE2=$HOME/tmp/nightly.qthreads-gasnet.out
-log_info "Testing Qthreads with CHPL_COMM=gasnet.  Log files: $LOGFILE and $LOGFILE2"
-
-source $(cd $(dirname $0) ; pwd)/common-gasnet.bash
-
-export CHPL_GASNET_CFG_OPTIONS=--disable-ibv
-export GASNET_QUIET=Y
-# Set these to use oversubscription to help with timeouts
-export QT_AFFINITY=no
-export CHPL_QTHREAD_TESTING=1
-export CHPL_RT_NUM_THREADS_PER_LOCALE=2
-
-$CHPL_HOME/util/cron/nightly -cron -multilocale -no-futures > $LOGFILE 2>&1
+$CHPL_HOME/util/cron/nightly -cron $examples_opt > $LOGFILE 2>&1
 cp $LOGFILE $LOGFILE2 && rm -f $LOGFILE
 

@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+#
+# Run nightly -multilocale testing with CHPL_TASKS=qthreads and
+# CHPL_COMM=gasnet.
+
+source $(cd $(dirname $0) ; pwd)/common-gasnet.bash
+
+#
+# Test Qthreads with CHPL_COMM=gasnet
+#
+export LOGFILE=/tmp/nightly.qthreads-gasnet.$USER.$$.out
+export LOGFILE2=$HOME/tmp/nightly.qthreads-gasnet.out
+log_info "Testing Qthreads with CHPL_COMM=gasnet.  Log files: $LOGFILE and $LOGFILE2"
+
+export CHPL_TASKS=qthreads
+export GASNET_QUIET=Y
+# Set these to use oversubscription to help with timeouts
+export QT_AFFINITY=no
+export CHPL_QTHREAD_TESTING=1
+export CHPL_RT_NUM_THREADS_PER_LOCALE=2
+
+$CHPL_HOME/util/cron/nightly -cron -multilocale -no-futures > $LOGFILE 2>&1
+cp $LOGFILE $LOGFILE2 && rm -f $LOGFILE
