@@ -2,9 +2,9 @@
 
 source $(cd $(dirname $0) ; pwd)/common-perf.bash
 
-export LOGFILE=$HOME/tmp/nightly-perf.linux64.chap03.out
+export LOGFILE=~/tmp/nightly-perf.linux64.chap03.out
 log_info "Testing performance.  Log file: $LOGFILE"
 
-~/chapel/util/cron/nightly -cron -performance -numtrials 5 -startdate 08/21/07 > $LOGFILE 2>&1
+with_logging $LOGFILE ~/chapel/util/cron/nightly -cron -performance -numtrials 5 -startdate 08/21/07
 
 log_info "Finished ${0}."

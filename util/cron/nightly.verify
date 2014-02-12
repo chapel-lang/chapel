@@ -23,10 +23,7 @@ fi
 #
 # Verify full suite.
 #
-export LOGFILE=/tmp/nightly.verify.$tests_to_run.$USER.$$.out
-export LOGFILE2=$HOME/tmp/nightly.verify.$tests_to_run.out
+export LOGFILE=~/tmp/nightly.verify.$tests_to_run.out
+log_info "Running verifications on test suite: ${tests_to_run}. Log file: $LOGFILE"
 
-log_info "Running verifications on test suite: ${tests_to_run}. Log files: $LOGFILE and $LOGFILE2"
-
-$CHPL_HOME/util/cron/nightly -cron $examples_opt -verify > $LOGFILE 2>&1
-cp $LOGFILE $LOGFILE2 && rm -f $LOGFILE
+with_logging $LOGFILE $CHPL_HOME/util/cron/nightly -cron $examples_opt -verify

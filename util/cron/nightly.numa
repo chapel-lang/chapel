@@ -25,13 +25,11 @@ fi
 #
 # NUMA testing with CHPL_COMM=none
 #
-LOGFILE=/tmp/nightly.numa.$tests_to_run.$USER.$$.out
-LOGFILE2=$HOME/tmp/nightly.numa.$tests_to_run.out
-log_info "Testing NUMA for localeModel suite with CHPL_COMM=none.  Log files: $LOGFILE and $LOGFILE2"
+LOGFILE=~/tmp/nightly.numa.$tests_to_run.out
+log_info "Testing NUMA for localeModel suite with CHPL_COMM=none.  Log file: $LOGFILE"
 
 # TODO: Make a common-numa.bash file. (thomasvandoren, 2014-01-24)
 export CHPL_LOCALE_MODEL=numa
 export CHPL_TASKS=qthreads
 
-~/chapel/util/cron/nightly -cron $examples_opt > $LOGFILE 2>&1
-cp $LOGFILE $LOGFILE2 && rm -f $LOGFILE
+with_logging $LOGFILE ~/chapel/util/cron/nightly -cron $examples_opt

@@ -6,9 +6,9 @@ source $(cd $(dirname $0) ; pwd)/common-gasnet.bash
 # Test a GASNet compile using the fast segment
 #
 export CHPL_GASNET_SEGMENT=fast
-export LOGFILE=$HOME/tmp/nightly-gasnet-cron-$CHPL_GASNET_SEGMENT.out
-log_info "Testing GASNet using segment $CHPL_GASNET_SEGMENT.  Log file: $LOGFILE"
+export LOGFILE=~/tmp/nightly-gasnet-cron-$CHPL_GASNET_SEGMENT.out
 
-$CHPL_HOME/util/cron/nightly -cron > $LOGFILE 2>&1
+log_info "Testing GASNet using segment $CHPL_GASNET_SEGMENT.  Log file: $LOGFILE"
+with_logging $LOGFILE $CHPL_HOME/util/cron/nightly -cron
 
 log_info "Finished ${0}."

@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+#
+# Distribution type should be passed as $1.
+
+source $(cd $(dirname $0) ; pwd)/common-dists.bash
+
+dist_type=$1
+case $dist_type in
+    block|cyclic|blockcyclic|replicated)
+        ;;
+    *)
+        log_error "Invalid dist type: ${dist_type}"
+        exit 1
+        ;;
+esac
+
+# run dist regressions
+export LOGFILE=~/tmp/nightly.$dist_type.out
+log_info "Testing ${dist_type} distribution.  Log file: $LOGFILE"
+with_logging $LOGFILE ~/chapel/util/cron/nightly -cron -dist $dist_type
+
+log_info "Finished ${0}."

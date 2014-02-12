@@ -4,14 +4,10 @@
 source $(cd $(dirname $0) ; pwd)/common.bash
 
 # tcmalloc with comm none
-export LOGFILE=/tmp/nightly.tcmalloc.$USER.$$.out
-export LOGFILE2=$HOME/tmp/nightly.tcmalloc.out
-
-log_info "Testing CHPL_MEM=tcmalloc. Log files: $LOGFILE and $LOGFILE2"
-
 export CHPL_MEM=tcmalloc
+export LOGFILE=~/tmp/nightly.tcmalloc.out
+log_info "Testing CHPL_MEM=tcmalloc. Log file: $LOGFILE"
 
-$CHPL_HOME/util/cron/nightly -cron -no-futures > $LOGFILE 2>&1
-cp $LOGFILE $LOGFILE2 && rm -f $LOGFILE
+with_logging $LOGFILE $CHPL_HOME/util/cron/nightly -cron -no-futures
 
 log_info "Finished."

@@ -1,24 +1,15 @@
 #!/usr/bin/env bash
 
-source $(cd $(dirname $0) ; pwd)/common-dists.bash
-
-# run block dist regressions
-export LOGFILE=$HOME/tmp/nightly.block.out
-log_info "Testing block distribution.  Log file: $LOGFILE"
-~/chapel/util/cron/nightly -cron -dist block > $LOGFILE 2>&1
-
-# run replicated dist regressions
-export LOGFILE=$HOME/tmp/nightly.replicated.out
-log_info "Testing replicated distribution.  Log file: $LOGFILE"
-~/chapel/util/cron/nightly -cron -dist replicated > $LOGFILE 2>&1
+# TODO: This should probably become nightly.memleaks and replace both
+#       nightly.lnx-vass and nightly.lnx-hilde. (thomasvandoren, 2014-02-12)
 
 # run memleaks regressions
 source $(cd $(dirname $0) ; pwd)/common-memleaks.bash
 
-export LOGFILE=$HOME/tmp/nightly.memleaks.out
+export LOGFILE=~/tmp/nightly.memleaks.out
 export MEMLOGFILE=memleaks.$(date '+%Y-%m-%d').nightly.log
 log_info "Running memleaks regressions.  Log file: $LOGFILE"
-~/chapel/util/cron/nightly -cron -examples -memleaks $MEMLOGFILE > $LOGFILE 2>&1
+with_logging $LOGFILE ~/chapel/util/cron/nightly -cron -examples -memleaks $MEMLOGFILE
 
 # Save the raw log file
 log_info "Saving raw memory leaks log file."

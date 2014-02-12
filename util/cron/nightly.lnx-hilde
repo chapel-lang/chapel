@@ -22,9 +22,9 @@ log_info "Starting $0 on `hostname`. dayType=$dayType. EXAMPLES=$EXAMPLES."
 export CHPL_NIGHTLY_LOGDIR=$CHPL_NIGHTLY_LOGDIR$dayType
 export CHPL_NIGHTLY_CRON_LOGDIR=$CHPL_NIGHTLY_LOGDIR
 
-LOGFILE="$HOME/tmp/nightly.verify.out"
+export LOGFILE=~/tmp/nightly.verify.out
 log_info "Running  $EXAMPLES verifications.  Log file: $LOGFILE"
-$CHPL_HOME/util/cron/nightly -cron $EXAMPLES -verify > $LOGFILE 2>&1
+with_logging $LOGFILE $CHPL_HOME/util/cron/nightly -cron $EXAMPLES -verify
 
 # Gather memleaks data over the entire test suite.
 # The weekend run for --verify testing takes too long, 
@@ -36,11 +36,11 @@ if [ "$dayType" == "" ] ; then
   export CHPL_NIGHTLY_CRON_LOGDIR=$CHPL_NIGHTLY_LOGDIR
 
   date=`date +%Y-%m-%d`
-  LOGFILE="$HOME/tmp/nightly.memleaksfull.out"
-  MEMLOGFILE="memleaks.$date.nightlyfull.log"
+  export LOGFILE=~/tmp/nightly.memleaksfull.out
+  export MEMLOGFILE="memleaks.$date.nightlyfull.log"
 
   log_info "Running memleaks regressions.  Log file: $LOGFILE"
-  $CHPL_HOME/util/cron/nightly -cron -memleaks $MEMLOGFILE -no-futures > $LOGFILE 2>&1
+  with_logging $LOGFILE $CHPL_HOME/util/cron/nightly -cron -memleaks $MEMLOGFILE -no-futures
 
   # Save the raw log file
   log_info "Saving raw memory log file."

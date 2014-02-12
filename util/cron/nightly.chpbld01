@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# TODO: Refactor this so it 1) matches the current pattern for nightly scripts,
+#       and 2) is less confusing. (thomasvandoren, 2014-02-12)
+
 . /etc/profile
 
 export CHPL_HOME_REPOSITORY=${CHPL_HOME_REPOSITORY:-"svn://svn.code.sf.net/p/chapel/code/trunk"}

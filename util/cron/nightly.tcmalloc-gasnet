@@ -4,15 +4,12 @@
 source $(cd $(dirname $0) ; pwd)/common-gasnet.bash
 
 # tcmalloc with comm gasnet for examples
-export LOGFILE=/tmp/nightly.tcmalloc-gasnet.$USER.$$.out
-export LOGFILE2=$HOME/tmp/nightly.tcmalloc-gasnet.out
-
-log_info "Testing CHPL_MEM=tcmalloc CHPL_COMM=gasnet. Log files: $LOGFILE and $LOGFILE2"
+export LOGFILE=~/tmp/nightly.tcmalloc-gasnet.out
+log_info "Testing CHPL_MEM=tcmalloc CHPL_COMM=gasnet. Log file: $LOGFILE"
 
 export CHPL_MEM=tcmalloc
 export GASNET_QUIET=Y
 
-$CHPL_HOME/util/cron/nightly -cron -multilocale -no-futures > $LOGFILE 2>&1
-cp $LOGFILE $LOGFILE2 && rm -f $LOGFILE
+with_logging $LOGFILE $CHPL_HOME/util/cron/nightly -cron -multilocale -no-futures
 
 log_info "Finished."

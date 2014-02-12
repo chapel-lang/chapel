@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+source $(cd $(dirname $0) ; pwd)/common.bash
+
+export CHPL_RT_NUM_THREADS_PER_LOCALE=100
+export LOGFILE=~/tmp/nightly.valgrind.linux64.out
+log_info "Testing valgrind.  Log file: $LOGFILE"
+
+with_logging $LOGFILE ~/chapel/util/cron/nightly -cron -valgrind -no-futures -suppress Suppressions/valgrind.suppress -parnodefile ~/chapel/test/Nodes/CHAP07
+
+log_info "Finished ${0}."

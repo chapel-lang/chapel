@@ -23,12 +23,8 @@ fi
 #
 # Test Qthreads with CHPL_COMM=none
 #
-export LOGFILE=/tmp/nightly.qthreads.$tests_to_run.$USER.$$.out
-export LOGFILE2=$HOME/tmp/nightly.qthreads.$tests_to_run.out
-
-log_info "Testing Qthreads with CHPL_COMM=none. Test suite: ${tests_to_run}. Log files: $LOGFILE and $LOGFILE2"
 export CHPL_TASKS=qthreads
+export LOGFILE=~/tmp/nightly.qthreads.$tests_to_run.out
+log_info "Testing Qthreads with CHPL_COMM=none. Test suite: ${tests_to_run}. Log files: $LOGFILE"
 
-$CHPL_HOME/util/cron/nightly -cron $examples_opt > $LOGFILE 2>&1
-cp $LOGFILE $LOGFILE2 && rm -f $LOGFILE
-
+with_logging $LOGFILE $CHPL_HOME/util/cron/nightly -cron $examples_opt

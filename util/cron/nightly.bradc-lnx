@@ -2,21 +2,20 @@
 
 source $(cd $(dirname $0) ; pwd)/common-perf.bash
 
-export LOGFILE=$HOME/tmp/nightly.testRelease.out
+export LOGFILE=~/tmp/nightly.testRelease.out
 log_info "Running testRelease.  Log file: $LOGFILE"
-~/chapel/util/buildRelease/testRelease -cron > $LOGFILE 2>&1
+with_logging $LOGFILE ~/chapel/util/buildRelease/testRelease -cron
 
-export LOGFILE=$HOME/tmp/nightly-perf.linux64.bradc-lnx.out
+export LOGFILE=~/tmp/nightly-perf.linux64.bradc-lnx.out
 log_info "Testing performance.  Log file: $LOGFILE"
+with_logging $LOGFILE ~/chapel/util/cron/nightly -cron -performance -numtrials 5 -startdate 02/19/10
 
-~/chapel/util/cron/nightly -cron -performance -numtrials 5 -startdate 02/19/10 > $LOGFILE 2>&1
-
-export LOGFILE=$HOME/tmp/tokctnightly.out
+export LOGFILE=~/tmp/tokctnightly.out
 log_info "Counting tokens.  Log file: $LOGFILE"
-~/chapel/util/tokencount/tokctnightly -cron > $LOGFILE 2>&1
+with_logging $LOGFILE ~/chapel/util/tokencount/tokctnightly -cron
 
-export LOGFILE=$HOME/tmp/tabnightly.out
+export LOGFILE=~/tmp/tabnightly.out
 log_info "Running lookForTabs.cron.  Log file: $LOGFILE"
-~/chapel/util/cron/lookForTabs.cron > $LOGFILE 2>&1
+with_logging $LOGFILE ~/chapel/util/cron/lookForTabs.cron
 
 log_info "Finished ${0}."

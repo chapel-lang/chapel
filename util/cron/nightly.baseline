@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+source $(cd $(dirname $0) ; pwd)/common-baseline.bash
+
+export LOGFILE=~/tmp/nightly.baseline.out
+log_info "Testing baseline.  Log file: $LOGFILE"
+
+with_logging $LOGFILE ~/chapel/util/cron/nightly -cron -baseline -suppress Suppressions/baseline.suppress -no-futures -compopts --inline
+
+log_info "Finished ${0}."

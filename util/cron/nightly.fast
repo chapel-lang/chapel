@@ -22,10 +22,7 @@ else
     exit 1
 fi
 
-LOGFILE=/tmp/nightly.fast.$tests_to_run.$USER.$$.out
-LOGFILE2=$HOME/tmp/nightly.fast.$tests_to_run.out
+export LOGFILE=~/tmp/nightly.fast.$tests_to_run.out
+log_info "Testing --fast for suite: ${tests_to_run}.  Log files: $LOGFILE"
 
-log_info "Testing --fast for suite: ${tests_to_run}.  Log files: $LOGFILE and $LOGFILE2"
-~/chapel/util/cron/nightly -cron -fast $examples_opt > $LOGFILE 2>&1
-
-cp $LOGFILE $LOGFILE2 && rm -f $LOGFILE
+with_logging $LOGFILE ~/chapel/util/cron/nightly -cron -fast $examples_opt

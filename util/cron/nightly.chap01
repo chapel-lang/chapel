@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-
-source $(cd $(dirname $0) ; pwd)/common.bash
-
-export LOGFILE=$HOME/tmp/nightly.linux64.out
-log_info "Testing the default-everything configuration.  Log file: $LOGFILE"
-~/chapel/util/cron/nightly -cron -compperformance > $LOGFILE 2>&1
-
-log_info "Finished ${0}."
