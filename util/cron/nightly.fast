@@ -2,14 +2,30 @@
 #
 # --fast testing
 #
-# Run only for the examples for now
+# If -examples option is passed as $1, will run nightly with -examples. No
+# flags if -full option is passed. The log files have distinct names for
+# -examples and -full options.
 
 source $(cd $(dirname $0) ; pwd)/common.bash
 
-LOGFILE=/tmp/nightly.fast.$USER.$$.out
-LOGFILE2=$HOME/tmp/nightly.fast.out
+if [ "${1}" == "-examples" ] ; then
+    examples_opt="-examples"
+    tests_to_run="examples"
+elif [ "${1}" == "-full" ] ; then
+    examples_opt=""
+    tests_to_run="full"
+else
+    echo "Usage: $0 [ -examples | -full ]"
+    echo ""
+    echo "  Must be called with one of -examples or -full."
+    echo ""
+    exit 1
+fi
 
-log_info "Testing --fast for examples.  Log files: $LOGFILE and $LOGFILE2"
-~/chapel/util/cron/nightly -cron -fast -examples > $LOGFILE 2>&1
+LOGFILE=/tmp/nightly.fast.$tests_to_run.$USER.$$.out
+LOGFILE2=$HOME/tmp/nightly.fast.$tests_to_run.out
+
+log_info "Testing --fast for suite: ${tests_to_run}.  Log files: $LOGFILE and $LOGFILE2"
+~/chapel/util/cron/nightly -cron -fast $examples_opt > $LOGFILE 2>&1
 
 cp $LOGFILE $LOGFILE2 && rm -f $LOGFILE
