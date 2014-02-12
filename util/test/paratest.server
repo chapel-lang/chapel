@@ -63,6 +63,10 @@ system("rm -f $logdir/.-*.log $logdir/.-*log.summary");
 
 my (@testdir_list, @node_list, $nodeCount, $starttime, $endtime);
 
+# The callboard is used to ignore spawned processes that have timed out.
+# Each entry contains the timestamp at which that node id was last fed.
+my @callboard;
+
 sub systemd {
     local ($cmd) = @_;
     print "$cmd\n" if $debug;
@@ -72,7 +76,7 @@ sub systemd {
 
 # Collect individual logs into one final one.
 sub collect_logs {
-    local ($fin_log, @logs) = @_;
+    local ($fin_log, @logs, $dead) = @_;
     local ($len, $successes, $failures, $futures);
     local ($grep_summ, $head_opts);
 
@@ -113,6 +117,15 @@ sub collect_logs {
     $summ_log = "$fin_log.summary";
     unlink $summ_log if (-e $summ_log);
     systemd ("echo \\[Test Summary - $date\\] > $fin_log.summary");
+
+    if ($dead > 0) {
+        systemd("echo \\[Error: paratest failed to exit cleanly\\] >> $summ_log");
+        for ($id = 0; $id < $nodeCount; $id++) {
+            systemd("echo \\[Error: Worker $id on node $node_list[$id] timed out.\\] >> $summ_log")
+                if $callboard[$id] > 0;
+        }
+    }
+
     systemd ("grep -a '^\\[Error' $fin_log >> $fin_log.summary");
     if (!($suppressions eq "")) {
         systemd ("$pwd/../util/test/filterSuppressions $suppressions $fin_log.summary");
@@ -156,13 +169,6 @@ sub free_workers {
         unlink "$synchdir/$ready";
        } else {
         push @readyids, $id;
-        # Wait on the processes represented by each of the files being iterated
-        # over. The existence of each file implies a previously forked process
-        # has finished and is currently a zombie. The only exception to this
-        # is the first time this subroutine is called. The first time, all of
-        # these files were created by this driver script, not children. This
-        # is not a problem though since wait is non-blocking.
-        wait;
        }
     }
 
@@ -176,9 +182,6 @@ sub free_workers {
 # distribution of work stops.  This is one hack to stop the testing.
 # Of course, you'll have to wait on the client processes or kill them
 # manually.
-# The callboard is used to ignore spawned processes that have timed out.
-# Each entry contains the timestamp at which that node id was last fed.
-my @callboard;
 # Once a node has timed out, we don't send it any more work, so this timeout 
 # should be set higher than the time needed to process the largest directory.
 my $timeout = 1200; # Kill after 20 minutes.
@@ -266,33 +269,37 @@ sub feed_nodes {
     }
 
     # wait for everyone to finish;
-    my $done_or_dead = 0;
+    my ($done, $dead) = (0, 0);
     while (! (-e "PARAHALT")) {
-        # For workers that are ready, set their last-fed time to zero, so it appears
-        # they timed out.
+        # For workers that are ready, set their last-fed time to zero.
         @readyidv = free_workers ();
         foreach $readyid (@readyidv) {
             $callboard[$readyid] = 0;
         }
 
         # Now check that all nodes have timed out.
-        $done_or_dead = 0;
+        ($done, $dead) = (0, 0);
         for ($id = 0; $id < $nodeCount; $id++) {
-            $done_or_dead++ if time() - $callboard[$id] > $timeout;
+            if ($callboard[$id] == 0) { $done++; next; }
+            $dead++ if (time() - $callboard[$id]) > $timeout;
         }
-        last unless $done_or_dead < $nodeCount;
+        last if ($done + $dead) >= $nodeCount;
 
         sleep $sleep_time;
     }
+
     # Note that hung processes on remote nodes must be killed manually
     # if we exit this loop due to one or more workers being declared dead.
+    if ($dead > 0) {
+        print "\n[Error: paratest failed to exit cleanly]\n";
+        for ($id = 0; $id < $nodeCount; $id++) {
+            print "[Error: Worker $id on node $node_list[$id] timed out.]\n"
+                if $callboard[$id] > 0;
+        }
+    }
 
     if (-e "PARAHALT" && ($#testdir_list > 0)) {
         print "\nExiting early due to PARAHALT file\n";
-    }
-
-    if ($nodeCount <= 0 && $#testdir_list >= 0) {
-       print "\nExiting early due to failures on all nodes\n";
     }
 
     if ($#testdir_list >= 0) {
@@ -305,7 +312,7 @@ sub feed_nodes {
         systemd("cat $logdir/tmp.*.memleaks > $memleaks");
         systemd("rm -f $logdir/tmp.*.memleaks");
     }
-    collect_logs ($fin_logfile, @logs);
+    collect_logs ($fin_logfile, @logs, $dead);
 }
 
 
