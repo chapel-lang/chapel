@@ -1,0 +1,8 @@
+SHELL=/bin/bash
+MAILTO=chapel_build@cray.com
+
+# DO NOT EDIT
+# This crontab is managed in the chapel subversion repo. Make modifications
+# there and use the install_crontab.bash script to update.
+
+0 2 * * * ~/chapel/util/cron/machine.chap12 > ~/tmp/machine.chap12.out 2>&1
