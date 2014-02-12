@@ -7,6 +7,11 @@ export LOGFILE=$HOME/tmp/nightly.block.out
 log_info "Testing block distribution.  Log file: $LOGFILE"
 ~/chapel/util/cron/nightly -cron -dist block > $LOGFILE 2>&1
 
+# run replicated dist regressions
+export LOGFILE=$HOME/tmp/nightly.replicated.out
+log_info "Testing replicated distribution.  Log file: $LOGFILE"
+~/chapel/util/cron/nightly -cron -dist replicated > $LOGFILE 2>&1
+
 # run memleaks regressions
 source $(cd $(dirname $0) ; pwd)/common-memleaks.bash
 
