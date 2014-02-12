@@ -21,10 +21,11 @@ else
 fi
 
 #
-# Test muxed with CHPL_COMM=none
+# Test fifo with CHPL_COMM=none
 #
-export CHPL_TASKS=muxed
-export LOGFILE=~/tmp/nightly.muxed.$tests_to_run.out
-log_info "Testing muxed with CHPL_COMM=none. Test suite: ${tests_to_run}. Log file: $LOGFILE"
+comm=${CHPL_COMM:-none}
+export CHPL_TASKS=fifo
+export LOGFILE=~/tmp/nightly.fifo.$comm.$tests_to_run.out
+log_info "Testing fifo with CHPL_COMM=${comm}. Test suite: ${tests_to_run}. Log files: $LOGFILE"
 
 with_logging $LOGFILE $CHPL_HOME/util/cron/nightly -cron $examples_opt

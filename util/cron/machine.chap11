@@ -3,3 +3,14 @@
 source $(cd $(dirname $0) ; pwd)/common.bash
 
 ~/chapel/util/cron/nightly.qthreads -full
+
+# TODO: Uncomment the below and remove the above once qthreads is the
+#       default. (thomasvandoren, 2014-02-12)
+
+# # fifo + flat + none + full suite
+# ~/chapel/util/cron/nightly.fifo -full
+
+# source $(cd $(dirname $0) ; pwd)/common-gasnet.bash
+
+# # fifo + flat + gasnet + examples
+# ~/chapel/util/cron/nightly.fifo -examples
