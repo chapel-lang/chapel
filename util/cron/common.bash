@@ -27,6 +27,30 @@ function exit_hook()
 }
 trap exit_hook EXIT
 
+# Execute a command, logging its stdout and stderr to a file (efficiently).
+function with_logging()
+{
+    # First argument is the log file.
+    local log_file=$1
+
+    # The rest of the arguments make up the command to execute.
+    local cmd=${*:2}
+
+    # While command is executing, write to /tmp. At end, copy file to intended
+    # location. This ensures fast IO on most systems.
+    local tmp_log_file=${TMPDIR:-/tmp}/$(basename $log_file).$$
+
+    # Run the command!
+    $cmd > $tmp_log_file 2>&1
+    local exit_code=$?
+
+    # Copy the /tmp/ log file to the intended location.
+    cp $tmp_log_file $log_file && rm $tmp_log_file
+
+    # Preserve command exit code.
+    return $exit_code
+}
+
 # If the test machine is on the cray network, set this to true.`
 export CHPL_CRAY_NETWORK=false
 domain_ends_with_cray=$(python -c 'import socket ; print(socket.getfqdn().endswith("cray.com"))')

@@ -3,8 +3,5 @@
 # Standard stuff.
 source $(cd $(dirname $0) ; pwd)/common.bash
 
-log_info "This is my script. I'm running tests..."
-sleep 2
-report_elapsed_time
-sleep 2
-log_info "Now I'm done running tests."
+export LOGFILE=~/tmp/machine.mbp-tvandoren.out
+with_logging $LOGFILE $CHPL_HOME/util/cron/nightly -debug -hello
