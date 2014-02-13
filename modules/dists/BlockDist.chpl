@@ -588,32 +588,15 @@ iter BlockDom.these(param tag: iterKind) where tag == iterKind.leader {
   coforall locDom in locDoms do on locDom {
     // Use the internal function for untranslate to avoid having to do
     // extra work to negate the offset
-    var tmpBlock = locDom.myBlock.chpl__unTranslate(wholeLow);
-    const (numTasks, parDim) =
-      _computeChunkStuff(maxTasks, ignoreRunning, minSize,
-                         locDom.myBlock.dims());
-    var locBlock: rank*range(idxType);
-    for param i in 1..tmpBlock.rank {
-      locBlock(i) = (tmpBlock.dim(i).first/tmpBlock.dim(i).stride:strType)..#(tmpBlock.dim(i).length);
-    }
-    if (numTasks == 1) {
-      yield locBlock;
-    } else {
-      coforall taskid in 0..#numTasks {
-        var followMe: rank*range(idxType) = locBlock;
-        const (lo,hi) = _computeBlock(locBlock(parDim).length, numTasks, taskid,
-                                      locBlock(parDim).high,
-                                      locBlock(parDim).low,
-                                      locBlock(parDim).low);
-        // If the following fails, we should make _computeChunkStuff()
-        // return smaller numTasks in that case - for more even partitioning
-        // of indices over tasks. Also, do not yield a tuple of ranges
-        // if the cart. product of those ranges is the empty set (of indices).
-        assert(lo <= hi);
-        followMe(parDim) = lo..hi;
-        yield followMe;
-      }
-    }
+    const tmpBlock = locDom.myBlock.chpl__unTranslate(wholeLow);
+    var locOffset: rank*idxType;
+    for param i in 1..tmpBlock.rank do
+      locOffset(i) = tmpBlock.dim(i).first/tmpBlock.dim(i).stride:strType;
+    // Forward to defaultRectangular
+    for followThis in tmpBlock._value.these(iterKind.leader, maxTasks,
+                                            ignoreRunning, minSize,
+                                            locOffset) do
+      yield followThis;
   }
 }
 

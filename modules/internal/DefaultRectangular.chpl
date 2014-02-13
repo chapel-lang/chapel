@@ -115,7 +115,8 @@ module DefaultRectangular {
   
     iter these(tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
-               minIndicesPerTask = dataParMinGranularity) {
+               minIndicesPerTask = dataParMinGranularity,
+               offset=createTuple(rank, idxType, 0:idxType)) {
       if rank == 1 {
         for i in ranges(1) do
           yield i;
@@ -128,7 +129,8 @@ module DefaultRectangular {
     iter these(param tag: iterKind,
                tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
-               minIndicesPerTask = dataParMinGranularity)
+               minIndicesPerTask = dataParMinGranularity,
+               offset=createTuple(rank, idxType, 0:idxType))
       where tag == iterKind.leader {
 
       const numSublocs = here.getChildCount();
@@ -149,11 +151,11 @@ module DefaultRectangular {
 
         if numChunks == 1 {
           if rank == 1 {
-            yield (0..ranges(1).length-1,);
+            yield (offset(1)..#ranges(1).length,);
           } else {
             var block: rank*range(idxType);
             for param i in 1..rank do
-              block(i) = 0..ranges(i).length-1;
+              block(i) = offset(i)..#ranges(i).length;
             yield block;
           }
         } else {
@@ -168,11 +170,13 @@ module DefaultRectangular {
               const nCores = here.numCores;
               var locBlock: rank*range(idxType);
               for param i in 1..rank do
-                locBlock(i) = 0:ranges(i).low.type..#(ranges(i).length);
+                locBlock(i) = offset(i)..#(ranges(i).length);
               var followMe: rank*range(idxType) = locBlock;
               const (lo,hi) = _computeBlock(locBlock(parDim).length,
                                             numChunks, chunk,
-                                            locBlock(parDim).high);
+                                            locBlock(parDim).high,
+                                            locBlock(parDim).low,
+                                            locBlock(parDim).low);
               followMe(parDim) = lo..hi;
               const (numChunks2, parDim2) = _computeChunkStuff(nCores,
                                                                ignoreRunning,
@@ -227,24 +231,26 @@ module DefaultRectangular {
 
         if numChunks == 1 {
           if rank == 1 {
-            yield (0..ranges(1).length-1,);
+            yield (offset(1)..#ranges(1).length,);
           } else {
             var block: rank*range(idxType);
             for param i in 1..rank do
-              block(i) = 0..ranges(i).length-1;
+              block(i) = offset(i)..#ranges(i).length;
             yield block;
           }
         } else {
           var locBlock: rank*range(idxType);
           for param i in 1..rank do
-            locBlock(i) = 0:ranges(i).low.type..#(ranges(i).length);
+            locBlock(i) = offset(i)..#(ranges(i).length);
           if debugDefaultDist then
             writeln("*** DI: locBlock = ", locBlock);
           coforall chunk in 0..#numChunks {
             var followMe: rank*range(idxType) = locBlock;
             const (lo,hi) = _computeBlock(locBlock(parDim).length,
                                           numChunks, chunk,
-                                          locBlock(parDim).high);
+                                          locBlock(parDim).high,
+                                          locBlock(parDim).low,
+                                          locBlock(parDim).low);
             followMe(parDim) = lo..hi;
             if debugDefaultDist then
               writeln("*** DI[", chunk, "]: followMe = ", followMe);
@@ -257,7 +263,8 @@ module DefaultRectangular {
     iter these(param tag: iterKind, followThis,
                tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
-               minIndicesPerTask = dataParMinGranularity)
+               minIndicesPerTask = dataParMinGranularity,
+               offset=createTuple(rank, idxType, 0:idxType))
       where tag == iterKind.follower {
 
       proc anyStridable(rangeTuple, param i: int = 1) param
