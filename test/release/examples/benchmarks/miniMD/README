@@ -119,11 +119,6 @@ For legal reasons, input files available from the C++ are not currently
 bundled with this release of miniMD. However, you are free to visit 
 the mantevo website, download the reference version, and use those files.
 
-To optimize miniMD performance on multicore systems, run with the
---dataParIgnoreRunningTasks=false flag.  This will cause nested data
-parallelism (which is used heavily by our implementation) to be
-squashed and avoid overloading a multicore system with tasks.
-
 
 -----------------
 Execution Options
