@@ -1,1 +1,1 @@
-rankMismatch.chpl:7: error: rank mismatch in assignment
+rankMismatch.chpl:7: error: rank mismatch in array assignment
