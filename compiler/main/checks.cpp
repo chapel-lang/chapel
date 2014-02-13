@@ -18,11 +18,15 @@ static void check_afterNormalization(); // Checks to be performed after
                                         // normalization.
 static void check_afterResolution(); // Checks to be performed after every pass
                                      // following resolution.
+static void check_afterCallDestructors(); // Checks to be performed after every
+                                          // pass following callDestructors.
 static void checkResolveRemovedPrims(void); // Checks that certain primitives
                                             // are removed after resolution
 static void checkFlagRelationships(); // Checks expected relationships between
                                       // flags.
 static void checkAutoCopyMap();
+static void checkFormalActualBaseTypesMatch();
+static void checkFormalActualTypesMatch();
 
 
 //
@@ -138,7 +142,7 @@ void check_callDestructors()
 {
   check_afterEveryPass();
   check_afterNormalization();
-//  check_afterResolution();
+  check_afterCallDestructors();
   // Suggestion: Ensure every constructor call has a matching destructor call.
 }
 
@@ -146,6 +150,7 @@ void check_lowerIterators()
 {
   check_afterEveryPass();
   check_afterNormalization();
+  check_afterCallDestructors();
 //  check_afterResolution(); // Oho! Iterator functions do not obey the invariant
   // checked in checkReturnPaths() [semanticChecks.cpp:250].
   // So check_afterResolution has been disabled in this and all subsequent post-pass
@@ -158,7 +163,7 @@ void check_parallel()
 {
   check_afterEveryPass();
   check_afterNormalization();
-//  check_afterResolution();
+  check_afterCallDestructors();
   // Suggestion: Ensure parallelization applied (if not --local).
 }
 
@@ -166,7 +171,7 @@ void check_prune()
 {
   check_afterEveryPass();
   check_afterNormalization();
-//  check_afterResolution();
+  check_afterCallDestructors();
   // Suggestion: Ensure no dead classes or functions.
 }
 
@@ -174,7 +179,7 @@ void check_complex2record()
 {
   check_afterEveryPass();
   check_afterNormalization();
-//  check_afterResolution();
+  check_afterCallDestructors();
   // Suggestion: Ensure no more constants or variables of complex type.
 }
 
@@ -182,7 +187,7 @@ void check_removeUnnecessaryAutoCopyCalls()
 {
   check_afterEveryPass();
   check_afterNormalization();
-//  check_afterResolution();
+  check_afterCallDestructors();
   // Suggestion: Ensure no unnecessary autoCopy calls.
 }
 
@@ -190,14 +195,14 @@ void check_inlineFunctions()
 {
   check_afterEveryPass();
   check_afterNormalization();
-//  check_afterResolution();
+  check_afterCallDestructors();
 }
 
 void check_scalarReplace()
 {
   check_afterEveryPass();
   check_afterNormalization();
-//  check_afterResolution();
+  check_afterCallDestructors();
   // Suggestion: Ensure no constant expresions.
 }
 
@@ -205,21 +210,21 @@ void check_copyPropagation()
 {
   check_afterEveryPass();
   check_afterNormalization();
-//  check_afterResolution();
+  check_afterCallDestructors();
 }
 
 void check_refPropagation()
 {
   check_afterEveryPass();
   check_afterNormalization();
-//  check_afterResolution();
+  check_afterCallDestructors();
 }
 
 void check_deadCodeElimination()
 {
   check_afterEveryPass();
   check_afterNormalization();
-//  check_afterResolution();
+  check_afterCallDestructors();
   // Suggestion: Ensure no dead code.
 }
 
@@ -227,7 +232,7 @@ void check_removeWrapRecords()
 {
   check_afterEveryPass();
   check_afterNormalization();
-//  check_afterResolution();
+  check_afterCallDestructors();
   // Suggestion: Ensure no more wrap records.
 }
 
@@ -235,7 +240,7 @@ void check_removeEmptyRecords()
 {
   check_afterEveryPass();
   check_afterNormalization();
-//  check_afterResolution();
+  check_afterCallDestructors();
   // Suggestion: Ensure no empty records.
 }
 
@@ -243,21 +248,21 @@ void check_localizeGlobals()
 {
   check_afterEveryPass();
   check_afterNormalization();
-//  check_afterResolution();
+  check_afterCallDestructors();
 }
 
 void check_loopInvariantCodeMotion()
 {
   check_afterEveryPass();
   check_afterNormalization();
-//  check_afterResolution();
+  check_afterCallDestructors();
 }
 
 void check_prune2()
 {
   check_afterEveryPass();
   check_afterNormalization();
-//  check_afterResolution();
+  check_afterCallDestructors();
   // Suggestion: Ensure no dead classes or functions.
 }
 
@@ -265,35 +270,35 @@ void check_returnStarTuplesByRefArgs()
 {
   check_afterEveryPass();
   check_afterNormalization();
-//  check_afterResolution();
+  check_afterCallDestructors();
 }
 
 void check_insertWideReferences()
 {
   check_afterEveryPass();
   check_afterNormalization();
-//  check_afterResolution();
+  check_afterCallDestructors();
 }
 
 void check_optimizeOnClauses()
 {
   check_afterEveryPass();
   check_afterNormalization();
-//  check_afterResolution();
+  check_afterCallDestructors();
 }
 
 void check_addInitCalls()
 {
   check_afterEveryPass();
   check_afterNormalization();
-//  check_afterResolution();
+  check_afterCallDestructors();
 }
 
 void check_insertLineNumbers()
 {
   check_afterEveryPass();
   check_afterNormalization();
-//  check_afterResolution();
+  check_afterCallDestructors();
 }
 
 void check_codegen()
@@ -330,7 +335,7 @@ static void check_afterNormalization()
   }
 }
 
-// Checks that should remain true after the resolution pass is complete.
+// Checks that should remain true after the functionResolution pass is complete.
 static void check_afterResolution()
 {
   checkReturnTypesHaveRefTypes();
@@ -341,7 +346,25 @@ static void check_afterResolution()
 // Disabled for now because it does not hold when named externs are present.
 // See test/extern/hilde/namedExtern.chpl.
 //    checkNoUnresolveds();
+    checkFormalActualBaseTypesMatch();
     checkAutoCopyMap();
+  }
+}
+
+
+// Checks that should remain true after the callDestructors pass is complete.
+static void check_afterCallDestructors()
+{
+  // Disabled because it is not true after the first prune pass.
+  //  checkReturnTypesHaveRefTypes();
+  if (fVerify)
+  {
+// Disabled for now because user warnings should not be logged multiple times:
+//    checkResolved();
+// Disabled for now because it does not hold when named externs are present.
+// See test/extern/hilde/namedExtern.chpl.
+//    checkNoUnresolveds();
+    checkFormalActualTypesMatch();
   }
 }
 
@@ -400,7 +423,59 @@ checkAutoCopyMap()
   forv_Vec(Type, key, keys)
   {
     FnSymbol* fn = autoCopyMap.get(key);
-    Type* baseType = fn->getFormal(1)->getValType();;
+    Type* baseType = fn->getFormal(1)->getValType();
     INT_ASSERT(baseType == key);
   }
 }
+
+static void
+checkFormalActualBaseTypesMatch()
+{
+  forv_Vec(CallExpr, call, gCallExprs)
+  {
+    if (FnSymbol* fn = call->isResolved())
+    {
+      if (fn->hasFlag(FLAG_EXTERN))
+        continue;
+      for_formals_actuals(formal, actual, call)
+      {
+        if (actual->typeInfo() == dtNil)
+          continue;
+
+        if (formal->type->getValType() != actual->typeInfo()->getValType())
+          INT_FATAL(call,
+                    "actual formal type mismatch for %s: %s != %s",
+                    fn->name,
+                    actual->typeInfo()->symbol->name,
+                    formal->type->symbol->name);
+      }
+    }
+  }
+}
+
+static void
+checkFormalActualTypesMatch()
+{
+  forv_Vec(CallExpr, call, gCallExprs)
+  {
+    if (FnSymbol* fn = call->isResolved())
+    {
+      if (fn->hasFlag(FLAG_EXTERN))
+        continue;
+      for_formals_actuals(formal, actual, call)
+      {
+        if (actual->typeInfo() == dtNil)
+          continue;
+
+        if (formal->type != actual->typeInfo())
+          INT_FATAL(call,
+                    "actual formal type mismatch for %s: %s != %s",
+                    fn->name,
+                    actual->typeInfo()->symbol->name,
+                    formal->type->symbol->name);
+      }
+    }
+  }
+}
+
+
