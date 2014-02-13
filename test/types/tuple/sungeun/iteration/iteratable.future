@@ -1,4 +1,4 @@
-bug: Cannot iterate over a tuple of iteratable expressions
+bug: Cannot iterate over a (homogenous) tuple of iteratable expressions that yield the same type
 
 In this example:
 
