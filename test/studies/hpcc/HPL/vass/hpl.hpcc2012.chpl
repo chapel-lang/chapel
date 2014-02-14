@@ -52,6 +52,9 @@ config const printParams = false,
              printArrays = false,
              printStats = true;
 
+// Perform verification?
+config const verify = true;
+
 config param maxBlkSize = 200;
 if blkSize > maxBlkSize then
   halt("maxBlkSize ", maxBlkSize,
@@ -953,6 +956,7 @@ proc initAB() {
 // calculate norms and residuals to verify the results
 //
 proc verifyResults(x) {
+  if !verify then return true;
   if printStats then writeln("verifying results locally");
   initAB();
 
@@ -1109,6 +1113,7 @@ proc targetLocaleCorner(blk) {
 // print success/failure, the execution time and the Gflop/s value
 //
 proc printResults(successful, execTime) {
+  if !verify then writeln("Validation: skipped"); else
   if successful then writeln("Validation: success");
   else               writeln("Validation: FAILURE");
   if (printStats) {
