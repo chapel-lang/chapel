@@ -22,6 +22,9 @@ static void check_afterCallDestructors(); // Checks to be performed after every
                                           // pass following callDestructors.
 static void checkResolveRemovedPrims(void); // Checks that certain primitives
                                             // are removed after resolution
+static void checkTaskRemovedPrims(); // Checks that certain primitives are
+                                     // removed after task functions are
+                                     // created.
 static void checkFlagRelationships(); // Checks expected relationships between
                                       // flags.
 static void checkAutoCopyMap();
@@ -91,6 +94,7 @@ void check_buildDefaultFunctions()
 
 void check_createTaskFunctions()
 {
+  checkTaskRemovedPrims();
   check_afterEveryPass();
   check_afterNormalization();
 }
@@ -341,6 +345,8 @@ static void check_afterResolution()
   checkReturnTypesHaveRefTypes();
   if (fVerify)
   {
+    checkTaskRemovedPrims();
+    checkResolveRemovedPrims();
 // Disabled for now because user warnings should not be logged multiple times:
 //    checkResolved();
 // Disabled for now because it does not hold when named externs are present.
@@ -377,6 +383,7 @@ checkResolveRemovedPrims(void) {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->primitive) {
       switch(call->primitive->tag) {
+        case PRIM_BLOCK_PARAM_LOOP:
         case PRIM_INIT:
         case PRIM_LOGICAL_FOLDER:
         case PRIM_TYPEOF:
@@ -394,6 +401,26 @@ checkResolveRemovedPrims(void) {
       }
     }
   }
+}
+
+static void 
+checkTaskRemovedPrims()
+{
+  forv_Vec(CallExpr, call, gCallExprs)
+    if (call->primitive)
+      switch(call->primitive->tag)
+      {
+       case PRIM_BLOCK_BEGIN:
+       case PRIM_BLOCK_COBEGIN:
+       case PRIM_BLOCK_COFORALL:
+       case PRIM_BLOCK_ON:
+       case PRIM_BLOCK_ON_NB:
+        if (call->parentSymbol)
+          INT_FATAL("Primitive should no longer be in AST");
+        break;
+       default:
+        break;
+      }
 }
 
 // Some flags imply other flags.

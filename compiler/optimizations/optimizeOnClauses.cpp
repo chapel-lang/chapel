@@ -231,9 +231,6 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_WARNING:
 
   case PRIM_BLOCK_PARAM_LOOP:
-  case PRIM_BLOCK_WHILEDO_LOOP:
-  case PRIM_BLOCK_DOWHILE_LOOP:
-  case PRIM_BLOCK_FOR_LOOP:
   case PRIM_BLOCK_BEGIN:
   case PRIM_BLOCK_COBEGIN:
   case PRIM_BLOCK_COFORALL:
@@ -260,7 +257,13 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
     INT_FATAL("This primitive should have been removed from the tree by now.");
     break;
 
-    // These don't block in the Chapel sense, but they may require a system
+    // By themselves, loops are considered "fast".
+  case PRIM_BLOCK_WHILEDO_LOOP:
+  case PRIM_BLOCK_DOWHILE_LOOP:
+  case PRIM_BLOCK_FOR_LOOP:
+    return true;
+ 
+   // These don't block in the Chapel sense, but they may require a system
     // call so we don't consider them eligible.
     //
   case PRIM_FREE_TASK_LIST:

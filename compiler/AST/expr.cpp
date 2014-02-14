@@ -3217,16 +3217,16 @@ void CallExpr::verify() {
     if (!(PRIM_UNKNOWN <= primitive->tag && primitive->tag < NUM_KNOWN_PRIMS))
       INT_FATAL(this, "invalid primitive->tag");
     switch (primitive->tag) {
-    case(PRIM_BLOCK_PARAM_LOOP):
-    case(PRIM_BLOCK_WHILEDO_LOOP):
-    case(PRIM_BLOCK_DOWHILE_LOOP):
-    case(PRIM_BLOCK_FOR_LOOP):
-    case(PRIM_BLOCK_BEGIN):
-    case(PRIM_BLOCK_COBEGIN):
-    case(PRIM_BLOCK_COFORALL):
-    case(PRIM_BLOCK_ON):
-    case(PRIM_BLOCK_ON_NB):
-    case(PRIM_BLOCK_LOCAL):
+    case PRIM_BLOCK_PARAM_LOOP:
+    case PRIM_BLOCK_WHILEDO_LOOP:
+    case PRIM_BLOCK_DOWHILE_LOOP:
+    case PRIM_BLOCK_FOR_LOOP:
+    case PRIM_BLOCK_BEGIN:
+    case PRIM_BLOCK_COBEGIN:
+    case PRIM_BLOCK_COFORALL:
+    case PRIM_BLOCK_ON:
+    case PRIM_BLOCK_ON_NB:
+    case PRIM_BLOCK_LOCAL:
       if (toBlockStmt(parentExpr)) {
         // does not pass:
         //if (toBlockStmt(parentExpr)->blockInfo != this)
@@ -3235,7 +3235,7 @@ void CallExpr::verify() {
         INT_FATAL(this, "blockInfo-type CallExpr not in a BlockStmt");
       }
       break;
-    case(PRIM_BLOCK_UNLOCAL):
+    case PRIM_BLOCK_UNLOCAL:
       INT_FATAL("PRIM_BLOCK_UNLOCAL between passes");
       break;
     default:
