@@ -1,4 +1,0 @@
-bug: issue with optimizing on-clauses
-
-seems to be a compiler bug:
-error: This primitive should have been removed from the tree by now. [optimizeOnClauses.cpp:273]
