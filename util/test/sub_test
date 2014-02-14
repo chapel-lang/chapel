@@ -40,6 +40,7 @@
 # LAUNCHCMD: Uses this command to launch the test program
 # CHPL_TEST_INTERP: DEPRECATED
 # CHPL_TEST_PERF: Run as a performance test (same as -performance flag)
+# CHPL_TEST_PERF_LABEL: The performance label, e.g. "perf"
 # CHPL_TEST_PERF_DIR: Scratch directory for performance data
 # CHPL_TEST_PERF_TRIALS: Default number of trials for perf tests
 # CHPL_ONETEST: Name of the one test in this directory to run
@@ -106,6 +107,10 @@
 # .preexec: Additional script to execute before executing test program
 # .perfkeys: Existence indicates a performance test.  Contents specifies
 #    performance "keys"
+#
+# In general, the performance label from CHPL_TEST_PERF_LABEL is used
+# instead of "perf" in the above suffixes, and its all-caps version is used
+# in the all-caps file names instead "PERF".
 
 
 import sys, os, subprocess, string, signal
@@ -175,6 +180,20 @@ def IsChplSource(f):
         return True
     else:
         return False
+
+perflabel = '' # declare it for the following functions
+
+# file suffix: 'keys' -> '.perfkeys' etc.
+def PerfSfx(s):
+    return '.' + perflabel + s
+
+# directory-wide file: 'COMPOPTS' or 'compopts' -> './PERFCOMPOPTS' etc.
+def PerfDirFile(s):
+    return './' + perflabel.upper() + s.upper()
+
+# test-specific file: (foo,keys) -> foo.perfkeys etc.
+def PerfTFile(execname, sfx):
+    return execname + '.' + perflabel + sfx
 
 # read file with comments
 def ReadFileWithComments(f, ignoreLeadingSpace=True):
@@ -360,6 +379,24 @@ chplcommstr='.comm-'+chplcomm
 # Test options for all tests in this directory
 #
 
+if os.getenv('CHPL_TEST_PERF')!=None:
+    perftest=True
+    perflabel=os.getenv('CHPL_TEST_PERF_LABEL')
+    perfdir=os.getenv('CHPL_TEST_PERF_DIR')
+    if perflabel==None or perfdir==None:
+        Fatal('$CHPL_TEST_PERF_DIR and $CHPL_TEST_PERF_LABEL must be set for performance testing')
+else:
+    perftest=False
+    perflabel=''
+
+compoptssuffix = PerfSfx('compopts')  # .compopts or .perfcompopts or ...
+execenvsuffix  = PerfSfx('execenv')   # .execenv  or .perfexecenv  or ...
+execoptssuffix = PerfSfx('execopts')  # .execopts or .perfexecopts or ...
+timeoutsuffix  = PerfSfx('timeout')   # .timeout  or .perftimeout  or ...
+# sys.stdout.write('perftest=%d perflabel=%s\n'%(perftest,perflabel))
+sys.stdout.write('perftest=%d\n'%(perftest)) #VASS
+sys.stdout.write('perflabel=%s\n'%(perflabel)) #VASS
+
 # Get global timeout
 if os.access('./TIMEOUT',os.R_OK):
     globalTimeout = ReadIntegerValue('./TIMEOUT', localdir)
@@ -376,7 +413,7 @@ else:
 # file itself to permit various other options to be used; on the other
 # hand, that could be considered a potential security risk...
 #
-if os.access('./PERFTIMEEXEC',os.R_OK):
+if os.access(PerfDirFile('TIMEEXEC'),os.R_OK):  # e.g. ./PERFTIMEEXEC
     globalTimeExec=True
 else:
     globalTimeExec=False
@@ -416,8 +453,8 @@ if os.access('./LASTEXECOPTS',os.R_OK):
     globalLastexecopts+=subprocess.Popen(['cat', './LASTEXECOPTS'], stdout=subprocess.PIPE).communicate()[0].strip().split()
 # sys.stdout.write('globalLastexecopts=%s\n'%(globalLastexecopts))
 
-if os.access('./NUMLOCALES',os.R_OK):
-    globalNumlocales=ReadIntegerValue('./NUMLOCALES', localdir)
+if os.access(PerfDirFile('NUMLOCALES'),os.R_OK):
+    globalNumlocales=ReadIntegerValue(PerfDirFile('NUMLOCALES'), localdir)
     # globalNumlocales.strip(globalNumlocales)
 else:
     # start_test sets this, so we'll assume it's right :)
@@ -479,23 +516,6 @@ if os.getenv('CHPL_TEST_INTERP')=='on':
 else:
     futureSuffix='.future'
 # sys.stdout.write('futureSuffix=%s\n'%(futureSuffix))
-if os.getenv('CHPL_TEST_PERF')!=None:
-    compoptssuffix='.perfcompopts'
-    execenvsuffix='.perfexecenv'
-    execoptssuffix='.perfexecopts'
-    timeoutsuffix='.perftimeout'
-    perftest=True
-    if os.getenv('CHPL_TEST_PERF_DIR')!=None:
-        perfdir=os.getenv('CHPL_TEST_PERF_DIR')
-    else:
-        Fatal('$CHPL_TEST_PERF_DIR must be set')
-else:
-    compoptssuffix='.compopts'
-    execenvsuffix='.execenv'
-    execoptssuffix='.execopts'
-    timeoutsuffix='.timeout'
-    perftest=False
-# sys.stdout.write('perftest=%d\n'%(perftest))
 
 printpassesfile = None
 if os.getenv('CHPL_TEST_COMP_PERF')!=None:
@@ -531,8 +551,6 @@ if os.getenv('CHPL_TEST_COMP_PERF')!=None:
 else: 
     compperftest=False
 
-
-
 #
 # Global COMPOPTS/PERFCOMPOPTS:
 #
@@ -542,8 +560,8 @@ else:
 #   or not this is a good idea, but preserving it for now for backwards
 #   compatibility.
 #
-if (perftest and os.access('./PERFCOMPOPTS',os.R_OK)):
-    tgco=ReadFileWithComments('./PERFCOMPOPTS')
+if (perftest and os.access(PerfDirFile('COMPOPTS'),os.R_OK)): # ./PERFCOMPOPTS
+    tgco=ReadFileWithComments(PerfDirFile('COMPOPTS'))
     globalCompopts = shlex.split(tgco[0])
 elif os.access('./COMPOPTS',os.R_OK):
     tgco=ReadFileWithComments('./COMPOPTS')
@@ -558,8 +576,8 @@ if envCompopts != None:
 #
 # Global PERFNUMTRIALS
 #
-if perftest and os.access('./PERFNUMTRIALS', os.R_OK):
-    globalNumTrials = ReadIntegerValue('./PERFNUMTRIALS', localdir)
+if perftest and os.access(PerfDirFile('NUMTRIALS'), os.R_OK): # ./PERFNUMTRIALS
+    globalNumTrials = ReadIntegerValue(PerfDirFile('NUMTRIALS'), localdir)
 else:
     globalNumTrials=int(os.getenv('CHPL_TEST_NUM_TRIALS', '1'))
 
@@ -582,8 +600,8 @@ else:
 #   or not this is a good idea, but preserving it for now for backwards
 #   compatibility.
 #
-if (perftest and os.access('./PERFEXECOPTS',os.R_OK)):
-    tgeo=ReadFileWithComments('./PERFEXECOPTS')
+if (perftest and os.access(PerfDirFile('EXECOPTS'),os.R_OK)): # ./PERFEXECOPTS
+    tgeo=ReadFileWithComments(PerfDirFile('EXECOPTS'))
     globalExecopts= shlex.split(tgeo[0])
 elif os.access('./EXECOPTS',os.R_OK):
     tgeo=ReadFileWithComments('./EXECOPTS')
@@ -658,8 +676,8 @@ for testname in testsrc:
     execname_files = fnmatch.filter(dirlist, execname+'.*')
     # print execname_files, dirlist
 
-    if (perftest and (execname_files.count(execname+'.perfkeys')==0) and
-        (execname_files.count(execname+'.perfexecopts')==0)):
+    if (perftest and (execname_files.count(PerfTFile(execname,'keys'))==0) and
+        (execname_files.count(PerfTFile(execname,'execopts'))==0)):
         sys.stdout.write('[Skipping noperf test: %s/%s]\n'%(localdir,execname))
         continue # on to next test
 
@@ -725,10 +743,10 @@ for testname in testsrc:
         elif (suffix==timeoutsuffix and os.access(f, os.R_OK)):
             timeout=ReadIntegerValue(f, localdir)
             sys.stdout.write('[Overriding default timeout with %d]\n'%(timeout))
-        elif (perftest and suffix=='.perftimeexec' and os.access(f, os.R_OK)):
+        elif (perftest and suffix==PerfSfx('timeexec') and os.access(f, os.R_OK)): #e.g. .perftimeexec
             timeExec = True
 
-        elif (perftest and suffix=='.perfnumtrials' and os.access(f, os.R_OK)):
+        elif (perftest and suffix==PerfSfx('numtrials') and os.access(f, os.R_OK)): #e.g. .perfnumtrials
             numTrials = ReadIntegerValue(f, localdir)
 
         elif (suffix=='.killtimeout' and os.access(f, os.R_OK)):
@@ -749,7 +767,7 @@ for testname in testsrc:
             lastexecopts+=subprocess.Popen(['cat', f], stdout=subprocess.PIPE).communicate()[0].strip().split()
             # sys.stdout.write("lastexecopts=%s\n"%(lastexecopts))
 
-        elif (suffix=='.numlocales' and os.access(f, os.R_OK)):
+        elif (suffix==PerfSfx('numlocales') and os.access(f, os.R_OK)):
             numlocales=ReadIntegerValue(f, localdir)
 
         elif suffix==futureSuffix and os.access(f, os.R_OK):
@@ -1366,13 +1384,13 @@ for testname in testsrc:
 
                     if execcheckfile==None:
                         perfexecname = execname
-                        keyfile = execname+'.perfkeys'
+                        keyfile = PerfTFile(execname,'keys') #e.g. .perfkeys
                     else:
-                        perfexecname = re.sub('\\.perfkeys$', '', execcheckfile)
+                        perfexecname = re.sub(r'\.{0}$'.format(PerfSfx('keys')), '', execcheckfile)
                         if os.path.isfile(execcheckfile):
                             keyfile = execcheckfile
                         else:
-                            keyfile = execname+'.perfkeys'
+                            keyfile = PerfTFile(execname,'keys')
 
                     perfdate = os.getenv('CHPL_TEST_PERF_DATE')
                     if perfdate == None:
