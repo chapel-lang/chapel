@@ -60,10 +60,6 @@ function doall() {
 msg starting
 cd $loghome
 
-# bring data from non-mounted file systems
-rsync -rt mbp-kbrady:logs/{Nightly,NightlyPerformance} ./ || \
-  msg historifying nonetheless
-
 # day* eliminates debug-* and memory leaks summaries
 find $logsources -maxdepth 1 -name day\*.log | doall
 
