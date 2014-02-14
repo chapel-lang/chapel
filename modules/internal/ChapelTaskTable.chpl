@@ -16,7 +16,7 @@ module ChapelTaskTable {
      The task information is used to generate a task report (optionally
      displayed when the user Ctrl+C's out of the program).
   
-     The type chpl_taskID_t is a primitve type defined in the include
+     The type chpl_taskID_t is a primitive type defined in the include
      files for each tasking layer.
   
   */
