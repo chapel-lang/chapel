@@ -4,7 +4,7 @@ var B: [1..4] int = [1,2,3,4];
 //
 // Iterate over tuple of arrays: ab should take on A then B
 //
-forall ab in (A,B) do
+for ab in (A,B) do
   writeln(ab);
 
 
@@ -14,5 +14,5 @@ forall ab in (A,B) do
 // Is it because we permit tuples to be assigned to arrays
 // still?  I'll investigate.
 //
-forall (a,b) in (A,B) do
+for (a,b) in (A,B) do
   writeln((a,b));
