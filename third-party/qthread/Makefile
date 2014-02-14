@@ -26,7 +26,7 @@ CHPL_QTHREAD_CFG_OPTIONS += --with-topology=hwloc --with-hwloc=$(HWLOC_INSTALL_D
 endif
 
 # enable oversubscription for testing
-ifneq (, $(CHPL_QTHREAD_TESTING))
+ifneq (, $(CHPL_QTHREAD_ENABLE_OVERSUBSCRIPTION))
 CHPL_QTHREAD_CFG_OPTIONS += --enable-oversubscription
 endif
 
@@ -42,6 +42,8 @@ CHPL_QTHREAD_CFG_OPTIONS += --disable-silent-rules
 endif
 
 CHPL_QTHREAD_CFG_OPTIONS += --enable-static
+
+CHPL_QTHREAD_CFG_OPTIONS += $(CHPL_QTHREAD_MORE_CFG_OPTIONS)
 
 default: all
 
