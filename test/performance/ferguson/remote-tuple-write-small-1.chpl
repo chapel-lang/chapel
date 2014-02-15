@@ -3,6 +3,10 @@ use CommDiagnostics;
 config const n = 100000;
 config param tupleLen = 3;
 
+// This replaces the compiler-supplied element-by-element write with a bulk
+// copy.
+proc =(ref lhs:tupleLen*int, rhs:tupleLen*int) { __primitive("=", lhs, rhs); }
+
 var A:[1..n] tupleLen*int;
 resetCommDiagnostics();
 startCommDiagnostics();
