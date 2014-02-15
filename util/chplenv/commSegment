@@ -14,9 +14,11 @@ if ($comm eq "gasnet") {
     my $substrate = run("commSubstrate");
 
     if (($substrate eq "portals") || ($substrate eq "gemini") || ($substrate eq "aries")) {
-      $segment = "fast";
+	    $segment = "fast";
+    } elsif ($substrate eq "ibv") {
+	    $segment= "large";
     } else {
-      $segment = "everything";
+	    $segment = "everything";
     }
   } else {
     $segment = $preset_segment;
