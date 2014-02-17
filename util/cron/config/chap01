@@ -5,4 +5,7 @@ MAILTO=chapel_build@cray.com
 # This crontab is managed in the chapel subversion repo. Make modifications
 # there and use the install_crontab.bash script to update.
 
+0 0 * * * cd /data/sea/cascade/chapel/sourceforge-backup && rsync -av svn.code.sf.net::p/chapel/code . > ~/cron-rsync-sourceforge.out 2>&1
+20 1 * * * ~/chapel/util/cron/nightly.update-repo
+30 1 * * * ~/chapel/util/cron/synchronize_crontabs.bash
 0 2 * * * ~/chapel/util/cron/machine.chap01 > ~/tmp/nightly.chap01.out 2>&1
