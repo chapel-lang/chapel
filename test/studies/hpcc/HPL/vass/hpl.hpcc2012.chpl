@@ -55,6 +55,10 @@ config const printParams = false,
 // Perform verification?
 config const verify = true;
 
+// These are solely to make the testing system happy given the COMPOPTS file.
+// To be removed once COMPOPTS becomes a non-issue.
+config var reproducible = false, verbose = false;
+
 config param maxBlkSize = 200;
 if blkSize > maxBlkSize then
   halt("maxBlkSize ", maxBlkSize,
