@@ -1,8 +1,5 @@
 GEN_CFLAGS += -I$(QTHREAD_INCLUDE_DIR)
 GEN_LFLAGS += -L$(QTHREAD_LIB_DIR) -Wl,-rpath -Wl,$(QTHREAD_LIB_DIR)
 
-LIBS += -lqthread_chpl -lqthread
+LIBS += -lqthread_chpl -lqthread -lpthread -lrt
 
-ifneq (, $(filter $(CHPL_MAKE_TARGET_PLATFORM),cray-xe cray-xc cray-xk))
-LIBS += -lrt
-endif

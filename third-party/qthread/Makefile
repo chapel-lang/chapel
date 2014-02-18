@@ -41,7 +41,7 @@ ifneq (, $(CHPL_QTHREAD_LOUD_RULES))
 CHPL_QTHREAD_CFG_OPTIONS += --disable-silent-rules
 endif
 
-CHPL_QTHREAD_CFG_OPTIONS += --enable-static
+CHPL_QTHREAD_CFG_OPTIONS += --enable-static --disable-shared
 
 CHPL_QTHREAD_CFG_OPTIONS += $(CHPL_QTHREAD_MORE_CFG_OPTIONS)
 
