@@ -695,9 +695,6 @@ undefined references to Chapel runtime functions (static/dynamic link problem)
 
 segv (no backtrace) (2/18/14)
 -----------------------------
-sungeun: I suggested to Dylan to try increasing default stack size for
-some of these.
-
 [Error matching program output for memory/shannon/outofmemory/mallocOutOfMemory]
 [Error matching program output for exercises/RandomNumber6]
 
