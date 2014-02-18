@@ -12,7 +12,7 @@ if [ "${1}" == "-examples" ] ; then
     examples_opt="-examples"
     tests_to_run="examples"
 elif [ "${1}" == "-full" ] ; then
-    examples_opt=""
+    examples_opt="-suppress Suppressions/fast.suppress"
     tests_to_run="full"
 else
     echo "Usage: $0 [ -examples | -full ]"
