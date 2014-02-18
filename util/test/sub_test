@@ -1384,7 +1384,7 @@ for testname in testsrc:
                         perfexecname = execname
                         keyfile = PerfTFile(execname,'keys') #e.g. .perfkeys
                     else:
-                        perfexecname = re.sub(r'\.{0}$'.format(PerfSfx('keys')), '', execcheckfile)
+                        perfexecname = re.sub(r'\{0}$'.format(PerfSfx('keys')), '', execcheckfile)
                         if os.path.isfile(execcheckfile):
                             keyfile = execcheckfile
                         else:
