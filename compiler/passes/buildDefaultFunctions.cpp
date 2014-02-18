@@ -40,7 +40,8 @@ void buildDefaultFunctions(void) {
   collect_asts(rootModule, asts);
   forv_Vec(BaseAST, ast, asts) {
     if (TypeSymbol* type = toTypeSymbol(ast)) {
-      if (ClassType* ct = toClassType(type->type)) {
+      ClassType* ct = toClassType(type->type);
+      if (ct) {
         for_fields(field, ct) {
           if (!field->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
             if (isVarSymbol(field)) {
@@ -52,19 +53,22 @@ void buildDefaultFunctions(void) {
             }
           }
         }
-      }
-      if (ClassType* ct = toClassType(type->type))
+
         if (!ct->symbol->hasFlag(FLAG_REF))
           buildDefaultDestructor(ct);
+      }
       if (type->hasFlag(FLAG_NO_DEFAULT_FUNCTIONS))
         continue;
       if (EnumType* et = toEnumType(type->type)) {
         //buildDefaultReadFunction(et);
         buildStringCastFunction(et);
-      } else if (ClassType* ct = toClassType(type->type)) {
+
+        build_enum_cast_function(et);
+        build_enum_assignment_function(et);
+        build_enum_enumerate_function(et);
+      } else if (ct) {
         buildDefaultReadWriteFunctions(ct);
-      }
-      if (ClassType* ct = toClassType(type->type)) {
+      
         if (isRecord(ct)) {
           if (!isRecordWrappedType(ct)) {
             build_record_equality_function(ct);
@@ -77,11 +81,6 @@ void buildDefaultFunctions(void) {
         }
         if (isUnion(ct))
           build_union_assignment_function(ct);
-      }
-      if (EnumType* et = toEnumType(type->type)) {
-        build_enum_cast_function(et);
-        build_enum_assignment_function(et);
-        build_enum_enumerate_function(et);
       }
     }
   }
