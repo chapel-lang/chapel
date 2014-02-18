@@ -281,8 +281,8 @@ static void SIGINT_handler(int sig)
 // Tasks
 
 #ifndef QTHREAD_MULTINODE
-static syncvar_t canexit           = SYNCVAR_STATIC_EMPTY_INITIALIZER;
-static int       done_finalizing   = 0;
+static syncvar_t canexit            = SYNCVAR_STATIC_EMPTY_INITIALIZER;
+static volatile int done_finalizing = 0;
 
 static void *initializer(void *junk)
 {

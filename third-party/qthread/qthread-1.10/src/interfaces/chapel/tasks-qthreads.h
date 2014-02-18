@@ -258,7 +258,7 @@ void threadlayer_exit(void);
 
 
 #ifndef QTHREAD_MULTINODE
-int chpl_qthread_done_initializing;
+volatile int chpl_qthread_done_initializing;
 #endif
 
 
