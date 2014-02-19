@@ -3,3 +3,6 @@
 --bbLow=5
 --bbLow=255
 --bbLow=1000000
+--bbLow=-5
+--bbLow=-255
+--bbLow=-1000000
