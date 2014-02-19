@@ -39,6 +39,7 @@ $compopts = "";
 $execopts = "";
 $startdate = "-1";
 $numtrials = "";
+$cronrecipient = "";
 
 while (@ARGV) {
     $flag = shift @ARGV;
@@ -109,6 +110,8 @@ while (@ARGV) {
       $combinedir = 1;
     } elsif ($flag eq "-r") {
         $svnrevopt = "-r " . shift @ARGV;
+    } elsif ($flag eq "-cron-recipient") {
+        $cronrecipient = shift @ARGV;
     } else {
         $printusage = 1;
         last;
@@ -168,6 +171,7 @@ if ($printusage == 1) {
     print "\t-componly    : only run the compiler, not the generated binary\n";
     print "\t-no-futures  : do not run future tests\n";
     print "\t-parnodefile : specify a node file to use for parallel testing\n";
+    print "\t-cron-recipient : send -cron emails to this address instead of SourceForge mailing list(s)\n";
     exit 1;
 }
 
@@ -193,6 +197,18 @@ if ($debugmail eq "") {
 $today = `date +%w-%a`; chomp($today);
 $starttime = localtime;
 
+# Override $failuremail and $allmail if -cron-recipient argument or
+# CHPL_NIGHTLY_CRON_RECIPIENT is set.
+
+if ($cronrecipient eq "" and exists($ENV{"CHPL_NIGHTLY_CRON_RECIPIENT"})) {
+    $cronrecipient = $ENV{"CHPL_NIGHTLY_CRON_RECIPIENT"};
+}
+
+if ($cronrecipient ne "") {
+    print "Overriding \$failuremail and \$allmail with: $cronrecipient.\n";
+    $failuremail = $cronrecipient;
+    $allmail = $cronrecipient;
+}
 
 #
 # directory locations
