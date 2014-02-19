@@ -151,13 +151,13 @@ module LocaleModel {
       // current node.  For this reason (as well), the constructor (or
       // at least this init method) must be run on the node it is
       // intended to describe.
-      var comm, spawnfn : string;
-      extern proc chpl_nodeName() : string;
+      var comm, spawnfn : c_string;
+      extern proc chpl_nodeName() : c_string;
       // sys_getenv returns zero on success.
-      if sys_getenv("CHPL_COMM", comm) == 0 && comm == "gasnet" &&
-        sys_getenv("GASNET_SPAWNFN", spawnfn) == 0 && spawnfn == "L"
-      then local_name = chpl_nodeName() + "-" + _node_id : string;
-      else local_name = chpl_nodeName();
+      if sys_getenv("CHPL_COMM".c_str(), comm) == 0 && comm == "gasnet" &&
+        sys_getenv("GASNET_SPAWNFN".c_str(), spawnfn) == 0 && spawnfn == "L"
+      then local_name = toString(chpl_nodeName()) + "-" + _node_id : string;
+      else local_name = toString(chpl_nodeName());
 
       extern proc chpl_task_getCallStackSize(): int;
       callStackSize = chpl_task_getCallStackSize();

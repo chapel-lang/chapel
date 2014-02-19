@@ -128,6 +128,22 @@ inline proc string.c_str():c_string {
   return __primitive("c_string_from_string", this);
 }
 
+inline proc ==(s0: string, s1: c_string) {
+  return __primitive("chpl_string_compare", s0.c_str(), s1) == 0;
+}
+
+inline proc ==(s0: c_string, s1: string) {
+  return __primitive("chpl_string_compare", s0, s1.c_str()) == 0;
+}
+
+inline proc !=(s0: string, s1: c_string) {
+  return !__primitive("chpl_string_compare", s0.c_str(), s1) != 0;
+}
+
+inline proc !=(s0: c_string, s1: string) {
+  return !__primitive("chpl_string_compare", s0, s1.c_str()) != 0;
+}
+
 // error numbers
 
 extern proc qio_err_eq(a:syserr, b:syserr):c_int;
