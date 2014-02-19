@@ -4,10 +4,3 @@ files: hpcc-ra.dat, hpcc-ra-atomics.dat
 graphtitle: HPCC RA Performance
 ylabel: Time (seconds)
 graphname: hpcc-ra
-
-perfkeys: Performance (GUPS) =, Performance (GUPS) =
-graphkeys: RA, RA w/atomics
-files: hpcc-ra.dat, hpcc-ra-atomics.dat
-graphtitle: HPCC RA Performance (GUPS)
-ylabel: Performance (GUPS)
-graphname: hpcc-ra-gups

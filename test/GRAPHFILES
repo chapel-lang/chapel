@@ -3,10 +3,11 @@ memleaks.graph
 memleaksfull.graph
 spectests.graph
 # suite: Performance Highlights
-release/examples/benchmarks/ssca2/SSCA2_main.graph
+release/examples/benchmarks/ssca2/total_time.graph
 release/examples/benchmarks/lulesh/lulesh.graph
 release/examples/benchmarks/miniMD/miniMD.graph
 studies/hpcc/STREAM.graph
+studies/hpcc/STREAM_promote.graph
 studies/shootout/fannkuch-redux/fannkuch-redux.graph
 studies/shootout/binary-trees/binary-trees.graph
 studies/shootout/spectral-norm/spectralnorm.graph
@@ -24,14 +25,25 @@ studies/parboil/SAD/sad.graph
 studies/parboil/stencil/stencil.graph
 # suite: Release examples
 release/examples/benchmarks/ssca2/SSCA2_main.graph
+release/examples/benchmarks/ssca2/performance.graph
+release/examples/benchmarks/ssca2/edge_generation.graph
+release/examples/benchmarks/ssca2/total_time.graph
 release/examples/benchmarks/lulesh/lulesh.graph
+release/examples/benchmarks/hpcc/stream_performance.graph
 release/examples/benchmarks/hpcc/stream.graph
 release/examples/benchmarks/hpcc/ra.graph
+release/examples/benchmarks/hpcc/ra_performance.graph
 release/examples/benchmarks/hpcc/stream-ep.graph
+release/examples/benchmarks/hpcc/stream-ep_performance.graph
 release/examples/benchmarks/hpcc/ptrans.graph
+release/examples/benchmarks/hpcc/ptrans_performance.graph
 # suite: HPCC
+studies/hpcc/RA_performance.graph
 studies/hpcc/RA.graph
+studies/hpcc/STREAM_performance.graph
+studies/hpcc/STREAM_fragmented.graph
 studies/hpcc/STREAM.graph
+studies/hpcc/STREAM_promote.graph
 # suite: DOE benchmarks
 studies/lulesh/sungeun/lulesh.sungeun.graph
 studies/lulesh/bradc/lulesh-dense.graph

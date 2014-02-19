@@ -1,0 +1,7 @@
+perfkeys: min =, avg =
+graphkeys: min, avg
+files: ./STREAMS/bradc/stream-block1d-promote.dat, ./STREAMS/bradc/stream-block1d-promote.dat
+ylabel: Time (seconds)
+graphname: STREAM-global-promote-time
+graphtitle: Global STREAM using Promotion
+
