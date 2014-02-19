@@ -826,6 +826,10 @@ for testname in testsrc:
     # Get list of test specific compiler options
     if os.access(execname+compoptssuffix, os.R_OK):
         compoptslist = ReadFileWithComments(execname+compoptssuffix, False)
+        if not compoptslist:
+            # cf. for execoptslist no warning is issued
+            sys.stdout.write('[Warning: ignoring an empty compopts file %s]\n'%(execname+compoptssuffix))
+            compoptslist = list(' ')
     else:
         compoptslist = list(' ')
 
@@ -1116,6 +1120,7 @@ for testname in testsrc:
         execoptsnum = 0
         # Handle empty execopts list
         if len(execoptslist)==0:
+            # cf. for compoptslist, a warning is issued in this case
             execoptslist.append(' ')
         if len(clist)!=0:
             if len(clist[0].split('#')) > 1:
