@@ -10,12 +10,13 @@
 # on for a normal compilation.  For now suppressions and not a .fastcompopts
 # are the solution but a more elegant solution that enables turning on bounds
 # checking for these test under --fast would be great!
-arrays/bradc/localSlices/localsliceOOB2
 arrays/bradc/localSlices/localsliceOOB
+arrays/bradc/localSlices/localsliceOOB2
 arrays/bradc/localSlices/nonlocalslice
 arrays/bradc/slices/outOfBoundsSlice
 arrays/bradc/slices/sliceArray
 arrays/bradc/slices/sliceStridedArray
+arrays/claridge/arraySizeMismatch
 arrays/deitz/part4/test_array_rankchange_error
 arrays/deitz/part6/test_bounds1
 arrays/deitz/part6/test_bounds2
@@ -27,6 +28,7 @@ distributions/bradc/idxToLocale
 execflags/bradc/gdbddash/declint2
 functions/deitz/iterators/test_zip_check1
 functions/deitz/iterators/test_zip_check2
+functions/iterators/bradc/badzip/arrayZipMismatch2
 multilocale/bradc/referToLocaleOne
 nostdlib/classcast1
 sparse/bradc/outOfBounds
