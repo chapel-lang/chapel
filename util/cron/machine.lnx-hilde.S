@@ -1,4 +1,0 @@
-#!/usr/bin/env bash
-
-source $(cd $(dirname $0) ; pwd)/common.bash
-~/chapel/util/cron/nightly.lnx-hilde weekend

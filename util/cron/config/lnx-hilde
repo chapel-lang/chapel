@@ -5,5 +5,4 @@ MAILTO=chapel_build@cray.com
 # This crontab is managed in the chapel subversion repo. Make modifications
 # there and use the install_crontab.bash script to update.
 
-0 0 * * 0-5 ~/chapel/util/cron/machine.lnx-hilde > ~/tmp/nightly.lnx-hilde.out 2>&1
-0 0 * * 6 ~/chapel/util/cron/machine.lnx-hilde.S > ~/tmp/nightly.lnx-hilde.weekend.out 2>&1
+0 0 * * * ~/chapel/util/cron/machine.lnx-hilde > ~/tmp/nightly.lnx-hilde.out 2>&1
