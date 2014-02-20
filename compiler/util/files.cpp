@@ -626,8 +626,6 @@ void setupModulePaths(void) {
   const char* modulesRoot = (fMinimalModules ? "modules-minimal" : "modules");
 
   intModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/internal/localeModels/",
-                      CHPL_LOCALE_MODEL, "/", CHPL_ACC_CODEGEN));
-  intModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/internal/localeModels/",
                       CHPL_LOCALE_MODEL));
   intModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/internal/threads/", 
                       CHPL_THREADS));

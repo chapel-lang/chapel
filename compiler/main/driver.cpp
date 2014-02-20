@@ -42,7 +42,6 @@ const char* CHPL_HOST_COMPILER = NULL;
 const char* CHPL_TARGET_PLATFORM = NULL;
 const char* CHPL_TARGET_COMPILER = NULL;
 const char* CHPL_LOCALE_MODEL = NULL;
-const char* CHPL_ACC_CODEGEN = NULL;
 const char* CHPL_COMM = NULL;
 const char* CHPL_COMM_SUBSTRATE = NULL;
 const char* CHPL_GASNET_SEGMENT = NULL;
@@ -339,7 +338,6 @@ static void setupOrderedGlobals(const char* argv0) {
   SETUP_ENV_VAR(CHPL_TARGET_PLATFORM, "chplenv/platform --target");
   SETUP_ENV_VAR(CHPL_TARGET_COMPILER, "chplenv/compiler --target");
   SETUP_ENV_VAR(CHPL_LOCALE_MODEL, "chplenv/localeModel");
-  SETUP_ENV_VAR(CHPL_ACC_CODEGEN, "chplenv/localeModelCodegen");
   SETUP_ENV_VAR(CHPL_COMM, "chplenv/comm");
   SETUP_ENV_VAR(CHPL_COMM_SUBSTRATE, "chplenv/commSubstrate");
   SETUP_ENV_VAR(CHPL_GASNET_SEGMENT, "chplenv/commSegment");

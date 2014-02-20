@@ -153,7 +153,6 @@ Optional Settings
         flat : top-level locales are not further subdivided
         numa : top-level locales are further subdivided into sublocales,
                each one a NUMA domain
-        acc  : locales may contain an accelerator
 
    If unset, CHPL_LOCALE_MODEL defaults to "flat".
 
@@ -161,22 +160,7 @@ Optional Settings
    about locale models.
 
 
-5) If CHPL_LOCALE_MODEL=acc, optionally set the CHPL_ACC_CODEGEN
-   environment variable to indicate the code generation method for the
-   accelerator locale model. Current options are:
-
-        openacc : target accelerators using OpenACC 1.0 annotations
-        none    : do not target accelerators
-
-   If unset, CHPL_ACC_CODEGEN defaults to "openacc" if CHPL_LOCALE_MODEL
-   is "acc". If CHPL_LOCALE_MODEL is not set to "acc" CHPL_ACC_CODEGEN
-   is ignored.
-
-   See $CHPL_HOME/doc/technotes/README.localeModels for more information
-   about accelerator code generation.
-
-
-6) Optionally, set the CHPL_TASK environment variable to indicate what
+5) Optionally, set the CHPL_TASK environment variable to indicate what
    tasking layer you want to use to implement intra-locale parallelism
    (see README.tasks for more information on this option).  Current
    options are:
@@ -191,7 +175,7 @@ Optional Settings
    various CHPL_TASKS options.
 
 
-7) Optionally, set the CHPL_COMM environment variable to indicate what
+6) Optionally, set the CHPL_COMM environment variable to indicate what
    communication layer you want to use to implement inter-locale
    communication.  Current options are:
 
@@ -204,7 +188,7 @@ Optional Settings
    on executing Chapel programs using multiple locales.
 
 
-8) Optionally, the CHPL_MEM environment variable can be used to select
+7) Optionally, the CHPL_MEM environment variable can be used to select
    a memory management layer.  Current options are:
 
         default  : use the standard C malloc/free commands
@@ -216,13 +200,13 @@ Optional Settings
    README.multilocale for more information on GASNet segments.
 
 
-9) Optionally, the CHPL_LAUNCHER environment variable can be used to
+8) Optionally, the CHPL_LAUNCHER environment variable can be used to
    select a launcher to get your program up and running.  See
    README.launcher for more information on this variable's default and
    possible settings.
 
 
-10) Optionally, the CHPL_ATOMICS environment variable can be used to
+9) Optionally, the CHPL_ATOMICS environment variable can be used to
    select an implementation for atomic operations in the runtime.
    Current options are:
 
@@ -245,7 +229,7 @@ Optional Settings
    about atomic operations in Chapel and the runtime.
 
 
-11) Optionally, the CHPL_TIMERS environment variable can be used to
+10) Optionally, the CHPL_TIMERS environment variable can be used to
     select an implementation for Chapel's timers.  Current options are:
 
         generic : use a gettimeofday()-based implementation
@@ -253,7 +237,7 @@ Optional Settings
     If unset, CHPL_TIMERS defaults to "generic"
 
 
-12) Optionally, the CHPL_GMP environment variable can select between
+11) Optionally, the CHPL_GMP environment variable can select between
     no GMP support, using the GMP distributed with Chapel in third-party,
     or using a system GMP. Current options are:
 
@@ -267,7 +251,7 @@ Optional Settings
     distribution may not build on all platforms supported by Chapel.
 
 
-13) Optionally, the CHPL_HWLOC environment variable can select between
+12) Optionally, the CHPL_HWLOC environment variable can select between
     no hwloc support or using the hwloc package distributed with Chapel
     in third-party.  Current options are:
 
@@ -281,7 +265,7 @@ Optional Settings
     on all platforms supported by Chapel.
 
 
-14) Optionally, the CHPL_REGEXP environment variable can be used to
+13) Optionally, the CHPL_REGEXP environment variable can be used to
     enable regular expression operations as documented in
     doc/technotes/README.regexp and defined in modules/standard/Regexp.chpl.  
     Current options are:
@@ -294,7 +278,7 @@ Optional Settings
     regular expression support in third-party and "none" otherwise.
 
 
-15) Optionally, the CHPL_AUX_FILESYS environment variable can be used to
+14) Optionally, the CHPL_AUX_FILESYS environment variable can be used to
     request that runtime support for filesystems beyond the usual Linux
     one be present.  Current options are:
 
@@ -307,7 +291,7 @@ Optional Settings
     HDFS support.
 
 
-16) Optionally, the CHPL_LLVM environment variable can be used to
+15) Optionally, the CHPL_LLVM environment variable can be used to
     enable support for the LLVM back-end to the Chapel compiler
     (see doc/technotes/README.llvm) or to support extern blocks in
     Chapel code via the CLANG compiler (see doc/technotes/README.extern).
@@ -321,7 +305,7 @@ Optional Settings
     llvm in third-party and "none" otherwise.
 
 
-17) Optionally, the CHPL_WIDE_POINTERS environment variable can be used to
+16) Optionally, the CHPL_WIDE_POINTERS environment variable can be used to
     specify the wide pointer format for multilocale programs.  Current
     options are:
 

@@ -37,11 +37,6 @@ module ChapelBase {
     compilerWarning("CHPL_LOCALE_MODEL not set");
   }
 
-  config param CHPL_ACC_CODEGEN: string = "unset";
-  if (CHPL_ACC_CODEGEN == "unset") {
-    compilerWarning("CHPL_ACC_CODEGEN not set");
-  }
-
   config param CHPL_COMM: string = "unset";
   if (CHPL_COMM == "unset") {
     compilerWarning("CHPL_COMM not set");
