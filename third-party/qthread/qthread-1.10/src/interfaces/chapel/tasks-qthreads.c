@@ -302,7 +302,7 @@ static void *initializer(void *junk)
 void chpl_task_init(void)
 {
     int32_t   numThreadsPerLocale;
-    uint64_t  callStackSize;
+    size_t    callStackSize;
     pthread_t initer;
     char      newenv_sheps[100] = { 0 };
     char      newenv_stack[100] = { 0 };
@@ -344,18 +344,15 @@ void chpl_task_init(void)
     }
 
     // Precendence (high-to-low):
-    // 1) CHPL_RT_CALL_STACK_SIZE
+    // 1) Chapel minimum
     // 2) QTHREAD_STACK_SIZE
-    // 3) Chapel default
-    callStackSize = chpl_task_getenvCallStackSize();
-    if (callStackSize != 0) {
-        snprintf(newenv_stack, 99, "%lu", (unsigned long)callStackSize);
-        setenv("QT_STACK_SIZE", newenv_stack, 1);
-    } else if (qt_internal_get_env_str("STACK_SIZE", NULL) == NULL) {
-        uint64_t callStackSize = 1024 * 1024 * sizeof(size_t);
-        snprintf(newenv_stack, 99, "%lu", (unsigned long)callStackSize);
-        setenv("QT_STACK_SIZE", newenv_stack, 1);
-    }
+    // In practice we never get to #2, because the Chapel minimum is
+    // always > 0, but we cover that case as a backstop.
+    callStackSize = chpl_task_getMinCallStackSize();
+    if (callStackSize <= 0)
+        callStackSize = 1024 * 1024 * sizeof(size_t);
+    snprintf(newenv_stack, 99, "%zu", callStackSize);
+    setenv("QT_STACK_SIZE", newenv_stack, 1);
 
     // Turn on informative Qthreads setting messages with Chapel's verbose flag
     if (verbosity == 2) {
@@ -579,7 +576,7 @@ c_sublocid_t chpl_task_getNumSublocales(void)
 #endif
 }
 
-uint64_t chpl_task_getCallStackSize(void)
+size_t chpl_task_getCallStackSize(void)
 {
     PROFILE_INCR(profile_task_getCallStackSize,1);
 

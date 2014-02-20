@@ -161,34 +161,33 @@ void chpl_thread_init(void(*threadBeginFn)(void*),
   // either the main process or a pthread.
   //
   {
-    size_t css;
+    size_t        css = chpl_task_getMinCallStackSize();
+    size_t        pagesize = (size_t) sysconf(_SC_PAGESIZE);
+    struct rlimit rlim;
 
-    if ((css = chpl_task_getenvCallStackSize()) != 0) {
-      uint64_t      pagesize = (uint64_t) sysconf(_SC_PAGESIZE);
-      struct rlimit rlim;
+    assert(css > 0);
 
-      css = (css + pagesize - 1) & ~(pagesize - 1);
+    css = (css + pagesize - 1) & ~(pagesize - 1);
 
-      if (getrlimit(RLIMIT_STACK, &rlim) != 0)
-        chpl_internal_error("getrlimit() failed");
+    if (getrlimit(RLIMIT_STACK, &rlim) != 0)
+      chpl_internal_error("getrlimit() failed");
 
-      if (rlim.rlim_max != RLIM_INFINITY && css > rlim.rlim_max) {
-        char warning[128];
-        sprintf(warning, "call stack size capped at %lu\n", 
-                (unsigned long)rlim.rlim_max);
-        chpl_warning(warning, 0, NULL);
+    if (rlim.rlim_max != RLIM_INFINITY && css > rlim.rlim_max) {
+      char warning[128];
+      sprintf(warning, "call stack size capped at %lu\n", 
+              (unsigned long)rlim.rlim_max);
+      chpl_warning(warning, 0, NULL);
 
-        css = rlim.rlim_max;
-      }
-
-      rlim.rlim_cur = css;
-
-      if (setrlimit(RLIMIT_STACK, &rlim) != 0)
-        chpl_internal_error("setrlimit() failed");
-
-      if (pthread_attr_setstacksize(&thread_attributes, css) != 0)
-        chpl_internal_error("pthread_attr_setstacksize() failed");
+      css = rlim.rlim_max;
     }
+
+    rlim.rlim_cur = css;
+
+    if (setrlimit(RLIMIT_STACK, &rlim) != 0)
+      chpl_internal_error("setrlimit() failed");
+
+    if (pthread_attr_setstacksize(&thread_attributes, css) != 0)
+      chpl_internal_error("pthread_attr_setstacksize() failed");
   }
 
   if (pthread_attr_getstacksize(&thread_attributes, &threadCallStackSize) != 0)
@@ -406,6 +405,6 @@ uint32_t chpl_thread_getNumThreads(void) {
   return numThreads;
 }
 
-uint64_t chpl_thread_getCallStackSize(void) {
-    return (uint64_t) threadCallStackSize;
+size_t chpl_thread_getCallStackSize(void) {
+    return threadCallStackSize;
 }

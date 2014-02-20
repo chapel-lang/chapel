@@ -788,7 +788,7 @@ c_sublocid_t chpl_task_getNumSublocales(void) {
 #endif
 }
 
-uint64_t chpl_task_getCallStackSize(void) {
+size_t chpl_task_getCallStackSize(void) {
   return chpl_thread_getCallStackSize();
 }
 

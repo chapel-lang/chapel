@@ -57,8 +57,6 @@ static const task_private_data_t s_def_chpl_data=
 static task_private_data_t s_main_chpl_data =
              { c_sublocid_any_val, false };
 
-static const uint64_t c_def_stack_size = 32 * 1024 * sizeof(size_t);
-
 static inline task_private_data_t* getTaskPrivateData(void) {
   if (tasking_layer_active){
     if (myth_wsapi_get_hint_size(myth_self())==sizeof(task_private_data_t)){
@@ -257,7 +255,7 @@ static int get_cpu_num(void) {
 }
 
 static int32_t s_num_workers;
-static uint64_t s_stack_size;
+static size_t s_stack_size;
 
 // Tasks
 void chpl_task_init(void) {
@@ -265,7 +263,6 @@ void chpl_task_init(void) {
   //initializing change the number of workers
   int32_t numThreadsPerLocale;
   int numCommTasks = chpl_comm_numPollingTasks();
-  uint64_t callStackSize;
   char *env;
   int i;
   void *chpl_data_ptr=&s_main_chpl_data;
@@ -298,21 +295,8 @@ void chpl_task_init(void) {
   }
 
   s_num_workers = numThreadsPerLocale;
-  // If callstack size is not specified by argument,
-  //  try to read from environmental variable
-  if ((callStackSize = chpl_task_getenvCallStackSize()) == 0) {
-    env = getenv("MYTH_DEF_STKSIZE");
-    if (env) {
-      int i_stk = atoi(env);
-      if (i_stk > 0)
-        callStackSize = i_stk;
-    }
-  }
-  //Otherwise use the default size
-  if (callStackSize == 0) {
-    callStackSize = c_def_stack_size;
-  }
-  s_stack_size = callStackSize;
+  s_stack_size = chpl_task_getMinCallStackSize();
+  assert(s_stack_size > 0);
   assert(!is_worker_in_cs());
   s_tld = chpl_mem_allocMany(numThreadsPerLocale + numCommTasks,
       sizeof(thread_local_data), 0, 0, "");
@@ -320,7 +304,7 @@ void chpl_task_init(void) {
     s_tld[i].in_mutex_flag = 0;
   }
   tasking_layer_active = 1;
-  myth_init_withparam((int) (numThreadsPerLocale + numCommTasks), (size_t) callStackSize);
+  myth_init_withparam((int) (numThreadsPerLocale + numCommTasks), s_stack_size);
   // Assign task-private data to this main task
   s_main_chpl_data = s_def_chpl_data;
   myth_wsapi_set_hint(myth_self(),&chpl_data_ptr,&chpl_data_size);
@@ -464,7 +448,7 @@ c_sublocid_t chpl_task_getNumSublocales(void)
 #endif
 }
 
-uint64_t chpl_task_getCallStackSize(void) {
+size_t chpl_task_getCallStackSize(void) {
   //return call stack size
   return s_stack_size;
 }

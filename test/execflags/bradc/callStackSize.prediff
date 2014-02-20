@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+#
+# In practice, CHPL_RT_CALL_STACK_SIZE is really a minimum task call
+# stack size.  Some tasking layers actually use a higher value.  We
+# adjust for that here.
+#
+icss=$( sed 's/^CHPL_RT_CALL_STACK_SIZE=\([0-9]*\).*$/\1/' $1.execenv )
+
+case $( $CHPL_HOME/util/chplenv/tasks ) in
+fifo|qthreads)
+  # these tasking layers round up the call stack size to the next
+  # system page size boundary
+  pagesize=$( getconf PAGESIZE )
+  ocss=$(( ($icss + $pagesize - 1) & ~($pagesize - 1) ));;
+*)
+  ocss=$icss;;
+esac
+
+if [[ $( $CHPL_HOME/util/chplenv/comm ) == none ]] ; then
+  good_in=$1.comm-none.good.in
+else
+  good_in=$1.good.in
+fi
+
+sed "s/$icss/$ocss/" < $good_in > $1.good

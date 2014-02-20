@@ -15,6 +15,17 @@
 #include <unistd.h>
 
 
+//
+// This is the default task call stack size, in bytes.  It was
+// chosen because it matches a common default process stack size in
+// linux, which was inherited by the fifo tasking layer, and Chapel
+// programmers have become used to that.  In the future, and as our
+// ability to detect and report task stack overflow improves, we may
+// reduce it.
+//
+#define DEFAULT_CALL_STACK_SIZE ((size_t) 8 << 20)
+
+
 int32_t chpl_task_getenvNumThreadsPerLocale(void)
 {
   char*          p;
@@ -52,24 +63,26 @@ int32_t chpl_task_getenvNumThreadsPerLocale(void)
 }
 
 
-int64_t chpl_task_getenvCallStackSize(void)
+size_t chpl_task_getMinCallStackSize(void)
 {
-  char*          p;
-  int            scan_cnt;
-  static int     env_checked = 0;
-  static int64_t size = 0;
-  char           units;
+  char*         p;
+  int           scan_cnt;
+  static int    env_checked = 0;
+  static size_t size = 0;
+  char          units;
 
   if (env_checked)
     return size;
 
-  if ((p = getenv("CHPL_RT_CALL_STACK_SIZE")) != NULL) {
-    if ((scan_cnt = sscanf(p, "%" SCNi64 "%c", &size, &units)) != 1) {
+  if ((p = getenv("CHPL_RT_CALL_STACK_SIZE")) == NULL)
+    size = DEFAULT_CALL_STACK_SIZE;
+  else {
+    if ((scan_cnt = sscanf(p, "%zu%c", &size, &units)) != 1) {
       if (scan_cnt == 2 && strchr("kKmMgG", units) != NULL) {
         switch (units) {
-        case 'k' : case 'K': size *= 1 << 10; break;
-        case 'm' : case 'M': size *= 1 << 20; break;
-        case 'g' : case 'G': size *= 1 << 30; break;
+        case 'k' : case 'K': size <<= 10; break;
+        case 'm' : case 'M': size <<= 20; break;
+        case 'g' : case 'G': size <<= 30; break;
         }
       }
       else
@@ -77,9 +90,9 @@ int64_t chpl_task_getenvCallStackSize(void)
                      "variable", 0, NULL);
     }
 
-    if (size < 0) {
-      chpl_error("CHPL_RT_CALL_STACK_SIZE must be >= 0", 0, NULL);
-      size = 0;
+    if (size <= 0) {
+      chpl_error("CHPL_RT_CALL_STACK_SIZE must be > 0", 0, NULL);
+      size = DEFAULT_CALL_STACK_SIZE;
     }
   }
 

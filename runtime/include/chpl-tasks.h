@@ -192,7 +192,7 @@ c_sublocid_t chpl_task_getNumSublocales(void);
 // practice; the value returned may potentially differ from one locale
 // to the next
 //
-uint64_t chpl_task_getCallStackSize(void);
+size_t chpl_task_getCallStackSize(void);
 
 //
 // returns the number of tasks that are ready to run on the current locale,
@@ -243,11 +243,11 @@ uint32_t chpl_task_getNumIdleThreads(void);
 int32_t chpl_task_getenvNumThreadsPerLocale(void);
 
 //
-// This gets any call stack size specified in the environment.  It
-// is common to all tasking implementations and so is implemented
-// in runtime/src/chpl-tasks.c.
+// This returns the minimum task call stack size, whether specified in
+// the environment or the default.  It is common to all of the tasking
+// implementations and so is implemented in runtime/src/chpl-tasks.c.
 //
-int64_t chpl_task_getenvCallStackSize(void);
+size_t chpl_task_getMinCallStackSize(void);
 
 #else // LAUNCHER
 

@@ -125,7 +125,7 @@ module LocaleModel {
   // The node model
   //
   class LocaleModel : AbstractLocaleModel {
-    const callStackSize: int;
+    const callStackSize: size_t;
     const _node_id : int;
     const local_name : string;
 
@@ -211,7 +211,7 @@ module LocaleModel {
       then local_name = toString(chpl_nodeName()) + "-" + _node_id : string;
       else local_name = toString(chpl_nodeName());
 
-      extern proc chpl_task_getCallStackSize(): int;
+      extern proc chpl_task_getCallStackSize(): size_t;
       callStackSize = chpl_task_getCallStackSize();
 
       extern proc chpl_numCoresOnThisLocale(): int;
