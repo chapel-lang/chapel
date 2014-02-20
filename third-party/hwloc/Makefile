@@ -14,7 +14,11 @@ HWLOC_BUILD_DIR = $(HWLOC_ABS_DIR)/$(HWLOC_BUILD_SUBDIR)
 HWLOC_DIR = $(HWLOC_ABS_DIR)
 HWLOC_TARBALL = hwloc-$(HWLOC_VERSION).tar.bz2
 
-CHPL_HWLOC_CFG_OPTIONS += --enable-static --disable-shared --disable-libxml2 --disable-pci LDFLAGS=-static
+CHPL_HWLOC_CFG_OPTIONS += --enable-static --disable-shared --disable-libxml2 --disable-pci
+
+ifneq ($(CHPL_MAKE_PLATFORM), darwin)
+  CHPL_HWLOC_CFG_OPTIONS += LDFLAGS=-static
+endif
 
 default: all
 
