@@ -3,4 +3,4 @@
 source $(cd $(dirname $0) ; pwd)/common.bash
 ~/chapel/util/cron/nightly.dist block
 ~/chapel/util/cron/nightly.dist replicated
-~/chapel/util/cron/nightly.lnx-vass
+~/chapel/util/cron/nightly.memleaks -examples

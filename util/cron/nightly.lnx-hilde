@@ -30,21 +30,7 @@ with_logging $LOGFILE $CHPL_HOME/util/cron/nightly -cron $EXAMPLES -verify
 # The weekend run for --verify testing takes too long, 
 # so we run this only on weekdays.
 if [ "$dayType" == "" ] ; then
-  # TODO: Move these to common-memleaks.bash (thomasvandoren, 2014-01-24)
-  export CHPL_NIGHTLY_LOGDIR=/data/sea/cascade/chapel/NightlyMemLeaks
-  export CHPL_NIGHTLY_STATDIR=$CHPL_NIGHTLY_LOGDIR/Stats
-  export CHPL_NIGHTLY_CRON_LOGDIR=$CHPL_NIGHTLY_LOGDIR
-
-  date=`date +%Y-%m-%d`
-  export LOGFILE=~/tmp/nightly.memleaksfull.out
-  export MEMLOGFILE="memleaks.$date.nightlyfull.log"
-
-  log_info "Running memleaks regressions.  Log file: $LOGFILE"
-  with_logging $LOGFILE $CHPL_HOME/util/cron/nightly -cron -memleaks $MEMLOGFILE -no-futures
-
-  # Save the raw log file
-  log_info "Saving raw memory log file."
-  cp /tmp/$MEMLOGFILE $CHPL_NIGHTLY_LOGDIR/FULL.memleaks
+    $CHPL_HOME/util/cron/nightly.memleaks -full
 fi
 
 log_info "Finished ${0}."

@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+#
+# If -examples option is passed as $1, will run nightly with -examples. No
+# flags if -full option is passed. The log files have distinct names for
+# -examples and -full options.
+
+# run memleaks regressions
+source $(cd $(dirname $0) ; pwd)/common-memleaks.bash
+
+if [ "${1}" == "-examples" ] ; then
+    examples_opt="-examples"
+    tests_to_run="examples"
+    memleaks_suffix="nightly"
+elif [ "${1}" == "-full" ] ; then
+    examples_opt="-no-futures"
+    tests_to_run="full"
+    memleaks_suffix="nightlyfull"
+else
+    echo "Usage: $0 [ -examples | -full ]"
+    echo ""
+    echo "  Must be called with one of -examples or -full."
+    echo ""
+    exit 1
+fi
+
+export LOGFILE=~/tmp/nightly.memleaks.$tests_to_run.out
+export MEMLOGFILE=memleaks.$(date '+%Y-%m-%d').$memleaks_suffix.log
+
+log_info "Running memleaks regressions over suite: ${tests_to_run}. Log file: ${LOGFILE}. Memleaks log file: ${MEMLOGFILE}"
+with_logging $LOGFILE ~/chapel/util/cron/nightly -cron -memleaks $MEMLOGFILE $examples_opt
+
+# Save the raw log file
+log_info "Saving raw memory leaks log file."
+
+# TODO: It might be better to move this copy step into nightly, since nightly
+#       already has $basetmpdir. (thomasvandoren, 2014-02-19)
+cp ${CHPL_NIGHTLY_TMPDIR:-${TMPDIR:-/tmp}}/$MEMLOGFILE $CHPL_NIGHTLY_LOGDIR/FULL.memleaks/
+
+log_info "Finished ${0}."
