@@ -2,8 +2,5 @@
 
 source $(cd $(dirname $0) ; pwd)/common-gasnet.bash
 
-# (thomasvandoren, 2014-02-19) This box under maintenance.
-export CHPL_NIGHTLY_CRON_RECIPIENT=chapel_build@cray.com
-
 # qthreads + flat + gasnet + full suite
 ~/chapel/util/cron/nightly.qthreads -full
