@@ -1487,11 +1487,6 @@ void makeBinaryLLVM(void) {
 
   options += " -pthread";
 
-  for (int i=0; i<numLibFlags; i++) {
-    options += " ";
-    options += libFlag[i];
-  }
-
   // Now, if we're doing a multilocale build, we have to make a launcher.
   // For this reason, we create a makefile. codegen_makefile
   // also gives us the name of the temporary place to save
@@ -1520,6 +1515,14 @@ void makeBinaryLLVM(void) {
   for(size_t i = 2; i < args.size(); ++i) {
     command += " ";
     command += args[i];
+  }
+
+  // Put user-requested libraries at the end of the compile line,
+  // they should at least be after the .o files and should be in
+  // order where libraries depend on libraries to their right.
+  for (int i=0; i<numLibFlags; i++) {
+    command += " ";
+    command += libFlag[i];
   }
 
   mysystem(command.c_str(), "Make Binary - Linking");
