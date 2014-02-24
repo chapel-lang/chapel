@@ -4,7 +4,7 @@ testname=$1
 outfile=$2
 
 grep -i error $outfile > $outfile.2
-if [ $? == 0 ]
+if [ $? -eq 0 ]
 then
   echo CompileError > $outfile.2
   mv $outfile.2 $outfile

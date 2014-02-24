@@ -1,2 +1,2 @@
-#!/bin/csh -f
+#!/bin/sh
 cat ../help/userhelp.good

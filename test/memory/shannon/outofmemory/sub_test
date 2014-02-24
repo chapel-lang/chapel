@@ -1,6 +1,6 @@
-#!/bin/csh -f
+#!/bin/bash
 
-limit vmemoryuse 256M
+# Set virtual memory limit
+ulimit -v 262144
 
 ../../../../util/test/sub_test $1
-
