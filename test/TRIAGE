@@ -68,13 +68,20 @@ in ~10s for segment everything.  Similarly,
 studies/hpcc/PTRANS/jglewis/ptrans_2011-blkcyc.chpl should run in
 about 40 seconds for segment everything but timed out on 1/13/14.
 
-
 numa testing non-determinism
 ----------------------------
 sungeun: I believe this test pushes the stack size limit and gets
 lucky sometimes.  I've left the entry in the REGRESSIONS file for now.
 [Error matching program output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 1, execopts: 3)]
 
+Race condition in numa iterators (sungeun):
+[Error matching program output for exercises/EstimatePi5opt]
+[Error matching program output for studies/lsms/shemmy/lsms-parallel-n1]
+[Error matching program output for studies/lsms/shemmy/lsms-parallel-n4]
+
+[Error matching program output for studies/madness/aniruddha/madchap/test_diff]
+[Error matching program output for studies/madness/aniruddha/madchap/test_likepy]
+[Error matching program output for studies/madness/common/test_likepy]
 
 nondet. baseline output
 -----------------------
@@ -91,6 +98,9 @@ gbt: This seems to be due to memory corruption.  Because of the way the
      output postprocessing wants to work on doesn't exist.  A gripe
      about this missing file is the most obvious thing in the output if
      start_test is used.
+
+[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-compress/test_compress (compopts: 1)]
+Failed on 02/18/14
 
 
 primers/locales fails semi-regularly for cray-prgenv-cray (11/14)
@@ -115,11 +125,6 @@ Memory improvement due to 22638 with --no-local, gasnet (sungeun)
 ------------------------------------------------------
 [Error matching .bad file for parallel/begin/sungeun/autoCopyWithBegin]
 [Error matching .bad file for parallel/begin/sungeun/initCopyWithBegin]
-
-param for break is implemented (diten)
---------------------------------------
-Future (Break in for param loop.) [Success matching program output for users/ferguson/paramforbreak]
-
 
 linux64.gnu.none.qthreads.numa new passes due to r22610 on 1/31/14
 ----------------------------------------------------------------

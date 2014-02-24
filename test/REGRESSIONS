@@ -56,10 +56,18 @@ This is a known issue, but intsort needs a lot more attention so we are choosing
 to ignore it for now.
 
 ================================
---fast examples regressions
-(Reviewed for accuracy 01/27/14)
+--fast regressions
+(Reviewed for accuracy 02/18/14)
 ================================
 
+Segfaults instead of a nil dereference error message
+----------------------------------------------------
+[Error matching .bad file for parallel/taskPar/vass/yield-arrays-in-task-funs]
+
+Both of these pass with gcc 4.8 but fail with 4.3
+-------------------------------------------------
+[Error matching program output for modules/standard/math/infinity]
+[Error matching proram output for studies/dijkstra/driverEdgeBtw (compopts: 1)]
 
 ================================
 memory leaks regressions
@@ -221,6 +229,21 @@ gasnet-everything regressions (other than the above)
 suspected to be due to string changes - gasnet (sungeun)
 --------------------------------------------------------
 [Error matching program output for io/bradc/multilocale/testdistwrite]
+
+comm counts incorrect (hilde, r22632)
+-------------------------------------
+[Error matching .bad filefor performance/hilde/coforallOnByRef]
+[Error matching .bad file for performance/hilde/userSync]
+
+comm counts incorrect (hilde, r22674)
+-------------------------------------
+[Error matchig program output for studies/hpcc/CommDiags/stream-ep_commDiags (compopts: 1)]
+[Error matching program output for modules/sungeun/init/prinInitCommCounts (compopts: 1)]
+
+execution timeouts
+------------------
+[Error: Timed out executing program parallel/taskPool/figueroa/OneThreadSyncStmt]
+[Error: Timed out executing program parallel/taskPool/figueroa/OneThread]
 
 
 ==============================================
