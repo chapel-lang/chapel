@@ -16,14 +16,14 @@
 int NUMTABS = 0;
 
 static int compareNames(const void* v1, const void* v2) {
-  Symbol* s1 = *(Symbol**)v1;
-  Symbol* s2 = *(Symbol**)v2;
+  Symbol* s1 = *(Symbol* const *)v1;
+  Symbol* s2 = *(Symbol* const *)v2;
   return strcmp(s1->name, s2->name);
 }
 
 static int compareClasses(const void *v1, const void* v2) {
-  Type *t1 = *(Type**)v1;
-  Type *t2 = *(Type**)v2;
+  Type *t1 = *(Type* const *)v1;
+  Type *t2 = *(Type* const *)v2;
   return strcmp(t1->symbol->name, t2->symbol->name);
 }
 

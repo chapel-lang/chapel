@@ -1615,8 +1615,8 @@ GenRet genTypeStructureIndex(TypeSymbol* typesym) {
 // Compare the cnames of different types alphabetically
 static int compareCnames(const void* v1, const void* v2) {
   int retval;
-  TypeSymbol* t1 = *(TypeSymbol**)v1;
-  TypeSymbol* t2 = *(TypeSymbol**)v2;
+  TypeSymbol* t1 = *(TypeSymbol* const *)v1;
+  TypeSymbol* t2 = *(TypeSymbol* const *)v2;
   retval = strcmp(t1->cname, t2->cname);
   if (retval > 0)
     return 1;

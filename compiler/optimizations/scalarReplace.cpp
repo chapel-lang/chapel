@@ -68,8 +68,8 @@ computeOrder(ClassType* ct) {
 //
 static int
 compareTypesByOrder(const void* v1, const void* v2) {
-  ClassType* ct1 = *(ClassType**)v1;
-  ClassType* ct2 = *(ClassType**)v2;
+  ClassType* ct1 = *(ClassType* const *)v1;
+  ClassType* ct2 = *(ClassType* const *)v2;
   int order1 = typeOrder.get(ct1);
   int order2 = typeOrder.get(ct2);
   if (order1 < order2)

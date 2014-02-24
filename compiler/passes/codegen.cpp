@@ -316,8 +316,8 @@ genVirtualMethodTable(Vec<TypeSymbol*>& types) {
 
 static int
 compareSymbol(const void* v1, const void* v2) {
-  Symbol* s1 = *(Symbol**)v1;
-  Symbol* s2 = *(Symbol**)v2;
+  Symbol* s1 = *(Symbol* const *)v1;
+  Symbol* s2 = *(Symbol* const *)v2;
   ModuleSymbol* m1 = s1->getModule();
   ModuleSymbol* m2 = s2->getModule();
   if (m1 != m2) {
