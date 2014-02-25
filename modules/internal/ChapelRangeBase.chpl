@@ -804,14 +804,27 @@ module ChapelRangeBase {
   
     if debugChapelRange then
       writeln("*** In range leader:"); // ", this);
-    const ignoreRunning = dataParIgnoreRunningTasks;
-    const minIndicesPerTask = dataParMinGranularity;
     const numSublocs = here.getChildCount();
 
     if localeModelHasSublocales && numSublocs != 0 {
       const len = this.length;
+      const tasksPerLocale = dataParTasksPerLocale;
+      const ignoreRunning = dataParIgnoreRunningTasks;
+      const minIndicesPerTask = dataParMinGranularity;
+      const dptpl = if tasksPerLocale==0 then here.numCores
+                    else tasksPerLocale;
+
+      if debugDataParNuma then
+        writeln("numSublocs ", numSublocs, ", numCores ", here.numCores,
+                "\nignoreRunning ", ignoreRunning,
+                ", minIndicesPerTask ", minIndicesPerTask);
+
+      // Make sure we don't use more sublocales than the numbers of
+      // tasksPerLocale requested
+      const numSublocTasks = min(numSublocs, dptpl);
+      // For serial tasks, we will only have a singel chunk
       const numChunks =  if __primitive("task_get_serial") then
-                         1 else _computeNumChunks(numSublocs,
+                         1 else _computeNumChunks(numSublocTasks,
                                                   ignoreRunning,
                                                   minIndicesPerTask,
                                                   len);
@@ -829,7 +842,11 @@ module ChapelRangeBase {
             const (lo,hi) = _computeBlock(len, numChunks, chunk, len-1);
             const locRange = lo..hi;
             const locLen = locRange.length;
-            const numTasks = _computeNumChunks(here.numCores,
+            // Divide the locale's tasks approximately evenly
+            // among the sublocales
+            const numCoreTasks = dptpl/numChunks +
+              if chunk==numChunks-1 then dptpl%numChunks else 0;
+            const numTasks = _computeNumChunks(numCoreTasks,
                                                ignoreRunning,
                                                minIndicesPerTask,
                                                locLen);
