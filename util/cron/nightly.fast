@@ -9,10 +9,10 @@
 source $(cd $(dirname $0) ; pwd)/common.bash
 
 if [ "${1}" == "-examples" ] ; then
-    examples_opt="-examples"
+    examples_opt="-examples -no-futures"
     tests_to_run="examples"
 elif [ "${1}" == "-full" ] ; then
-    examples_opt="-suppress Suppressions/fast.suppress"
+    examples_opt="-no-futures -suppress Suppressions/fast.suppress"
     tests_to_run="full"
 else
     echo "Usage: $0 [ -examples | -full ]"

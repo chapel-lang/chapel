@@ -10,7 +10,7 @@ if [ "${1}" == "-examples" ] ; then
     examples_opt="-examples -no-futures"
     tests_to_run="examples"
 elif [ "${1}" == "-full" ] ; then
-    examples_opt=""
+    examples_opt="-no-futures"
     tests_to_run="full"
 else
     echo "Usage: $0 [ -examples | -full ]"
