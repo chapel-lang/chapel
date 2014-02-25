@@ -70,40 +70,47 @@ static void recordExecutionCommand(int argc, char *argv[]) {
 
 
 static void chpl_main(void) {
-  // OK, we can create tasks now.
-  chpl_task_setSerial(false);
+  if (chpl_nodeID == 0) {
+    // OK, we can create tasks now.
+    chpl_task_setSerial(false);
 
-  // Initialize the internal modules.
-  chpl__init_PrintModuleInitOrder(0, myFilename);
-  if( ! chpl_no_stdmodules ) {
-    chpl__init_ChapelStandard(0, myFilename);
-    // Note that in general, module code can contain "on" clauses
-    // and should therefore not be called before the call to
-    // chpl_comm_startPollingTask().
+    // Initialize the internal modules.
+    chpl__init_PrintModuleInitOrder(0, myFilename);
+    if( ! chpl_no_stdmodules ) {
+      chpl__init_ChapelStandard(0, myFilename);
+      // Note that in general, module code can contain "on" clauses
+      // and should therefore not be called before the call to
+      // chpl_comm_startPollingTask().
+
+      //
+      // Permit the tasking layer to do anything it would like to now that
+      // the standard modules are initialized.
+      //
+      CHPL_TASK_STD_MODULES_INITIALIZED();
+    }
 
     //
-    // Permit the tasking layer to do anything it would like to now that
-    // the standard modules are initialized.
+    // Call the compiler-generated main() routine
     //
-    CHPL_TASK_STD_MODULES_INITIALIZED();
+    chpl_gen_main_arg.return_value = chpl_gen_main(&chpl_gen_main_arg);
   }
-
-  //
-  // Call the compiler-generated main() routine
-  //
-  chpl_gen_main_arg.return_value = chpl_gen_main(&chpl_gen_main_arg);
+  else {
+    //
+    // On non-0 locales, just call the pre- and post-user-code hooks
+    // directly.
+    //
+    chpl_rt_preUserCodeHook();
+    chpl_rt_postUserCodeHook();
+  }
 }
 
 
 //
 // Pre-user-code hook
 //
-// This is called on all locales, collectively.  The call on locale 0
-// is made from the compiler-emitted code in chpl_gen_main(), right
-// before we enter user code, either initializers for user modules or
-// the user's main program.  The call on non-0 locales is made from
-// the else side of the if() in main(), below, where the execution
-// paths for locale 0 and non-0 locales diverge.
+// This is called on all locales.  The call on locale 0 is made from the
+// compiler-emitted code in chpl_gen_main(), right before we enter user
+// code.  The call on non-0 locales is made from chpl_main(), above.
 //
 void chpl_rt_preUserCodeHook(void) {
   chpl_comm_barrier("pre-user-code hook begin");
@@ -120,8 +127,9 @@ void chpl_rt_preUserCodeHook(void) {
 //
 // Post-user-code hook
 //
-// This is called only on locale0, from the compiler-emitted code in
-// chpl_gen_main(), right after we finish running user code.
+// This is called on all locales.  The call on locale 0 is made from the
+// compiler-emitted code in chpl_gen_main(), right after we finish user
+// code.  The call on non-0 locales is made from chpl_main(), above.
 //
 void chpl_rt_postUserCodeHook(void) {
   //
@@ -202,18 +210,10 @@ int main(int argc, char* argv[]) {
   // The call to chpl_comm_barrier makes sure that all locales are listening
   // before an attempt is made to run tasks "on" them.
 
-  if (chpl_nodeID == 0) {
-    //
-    // On locale 0, run the user's main function.
-    //
-    chpl_task_callMain(chpl_main);
-  }
-  else {
-    //
-    // On non-0 locales, just call the pre-user-code hook directly.
-    //
-    chpl_rt_preUserCodeHook();
-  }
+  //
+  // Run the main function for this node.
+  //
+  chpl_task_callMain(chpl_main);
 
   // have everyone exit, returning the value returned by the user written main
   // or 0 if it didn't return anything
