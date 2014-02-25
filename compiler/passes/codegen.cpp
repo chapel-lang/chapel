@@ -807,6 +807,9 @@ static void codegen_header() {
         INT_ASSERT(se);
         SET_LINENO(call);
         fprintf(hdrfile, ",\n&%s", se->var->cname);
+        // To preserve operand order, this should be insertAtTail.
+        // The change must also be made below (for LLVM) and in the signature
+        // of chpl_comm_broadcast_private().
         call->insertAtHead(new_IntSymbol(i));
         i++;
       }
@@ -841,7 +844,7 @@ static void codegen_header() {
               info->builder->CreatePointerCast(
                 info->lvt->getValue(se->var->cname).val,
                 private_broadcastTableEntryType)));
-
+        // To preserve operand order, this should be insertAtTail.
         call->insertAtHead(new_IntSymbol(broadcastID++));
       }
     }
