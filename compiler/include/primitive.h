@@ -177,10 +177,10 @@ enum PrimitiveTag {
 
   PRIM_HEAP_REGISTER_GLOBAL_VAR,
   PRIM_HEAP_BROADCAST_GLOBAL_VARS,
-  PRIM_PRIVATE_BROADCAST,		// ('_private_broadcast' sym)
-  								// Later, a structure index is inserted ahead
-  								// of the symbol, so it ends up as
-								// ('_private_broadcast' index sym).
+  PRIM_PRIVATE_BROADCAST,       // ('_private_broadcast' sym)
+                                // Later, a structure index is inserted ahead
+                                // of the symbol, so it ends up as
+                                // ('_private_broadcast' index sym).
 
   PRIM_INT_ERROR,
 
