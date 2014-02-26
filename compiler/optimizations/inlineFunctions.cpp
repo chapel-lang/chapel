@@ -37,8 +37,12 @@ inlineCall(FnSymbol* fn, CallExpr* call) {
     INT_FATAL(call, "function is not normalized");
   Expr* return_value = return_stmt->get(1);
   SymExpr* se = toSymExpr(return_value);
-  if (!se || isArgSymbol(se->var))
-    INT_FATAL(fn, "inlined function cannot return an argument symbol");
+  // Ensure that the inlined function body does not attempt to return one of
+  // the original function's formals.  This is equivalent to saying that if the
+  // returned value is originally one of the formal argument symbols, that
+  // symbol was replaced by it actual argument in the call to copy(&map) above.
+  for_formals(formal, fn)
+    INT_ASSERT(formal != toArgSymbol(se->var));
   return_stmt->remove();
   return_value->remove();
   stmt->insertBefore(block);
