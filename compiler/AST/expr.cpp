@@ -3714,6 +3714,7 @@ GenRet CallExpr::codegen() {
          case PRIM_ARRAY_GET:
          {
           /* Get a pointer to the i'th array element */
+          // ('_array_get' array idx)
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             codegenAssign(get(1),
                 codegenAddrOf(codegenElementPtr(call->get(1), call->get(2))));
@@ -3908,17 +3909,6 @@ GenRet CallExpr::codegen() {
           get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         // get(1) = Raddr(get(2));
         codegenAssign(get(1), codegenRaddr(get(2))); 
-        break;
-      }
-      if ((get(2)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) ||
-          (get(2)->typeInfo()->symbol->hasFlag(FLAG_FIXED_STRING))) {
-        if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
-          // codegenAssign handles tuple copy opt
-          codegenAssign(codegenDeref(get(1)), get(2));
-        } else {
-          // codegenAssign handles tuple copy opt
-          codegenAssign(get(1), get(2)); 
-        }
         break;
       }
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF) &&
