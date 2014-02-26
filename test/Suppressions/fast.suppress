@@ -28,7 +28,6 @@ distributions/bradc/idxToLocale
 execflags/bradc/gdbddash/declint2
 functions/deitz/iterators/test_zip_check1
 functions/deitz/iterators/test_zip_check2
-functions/iterators/bradc/badzip/arrayZipMismatch2
 multilocale/bradc/referToLocaleOne
 nostdlib/classcast1
 sparse/bradc/outOfBounds
