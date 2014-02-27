@@ -114,8 +114,8 @@ typedef std::pair<Symbol*, Symbol*> AvailablePair;
 typedef std::map<Symbol*, Symbol*> RefMap;
 typedef RefMap::value_type RefMapElem;
 
-size_t s_repl_count; ///< The number of pairs replaced by GCP this pass.
-size_t s_ref_repl_count; ///< The number of references replaced this pass.
+static size_t s_repl_count; ///< The number of pairs replaced by GCP this pass.
+static size_t s_ref_repl_count; ///< The number of references replaced this pass.
 
 #if DEBUG_CP
 // Set nonzero to enable verbose output.
@@ -473,11 +473,11 @@ static bool isRefUse(SymExpr* se)
 static CallExpr* derefUse(SymExpr* se)
 {
   if (toGotoStmt(se->parentExpr))
-    return false;
+    return NULL;
   if (toCondStmt(se->parentExpr))
-    return false;
+    return NULL;
   if (toBlockStmt(se->parentExpr))
-    return false;
+    return NULL;
 
   CallExpr* call = toCallExpr(se->parentExpr);
   if (call->isPrimitive(PRIM_DEREF))
