@@ -210,14 +210,14 @@ void check_scalarReplace()
   // Suggestion: Ensure no constant expresions.
 }
 
-void check_copyPropagation()
+void check_refPropagation()
 {
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
 }
 
-void check_refPropagation()
+void check_copyPropagation()
 {
   check_afterEveryPass();
   check_afterNormalization();

@@ -1184,7 +1184,9 @@ void FnSymbol::verify() {
   if (astTag != E_FnSymbol) {
     INT_FATAL(this, "Bad FnSymbol::astTag");
   }
-  if (normalized && !hasFlag(FLAG_AUTO_II)) {
+  if (_this && _this->defPoint->parentSymbol != this)
+    INT_FATAL(this, "Each method must contain a 'this' declaration.");
+  if (normalized) {
     CallExpr* last = toCallExpr(body->body.last());
     if (!last || !last->isPrimitive(PRIM_RETURN))
       INT_FATAL(this, "Last statement in normalized function is not a return");

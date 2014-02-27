@@ -234,6 +234,7 @@ static void removeUnnecessaryAutoCopyCalls(FnSymbol* fn) {
       changed = true;
   }
 
+#if DEBUG_CP < 2    // That is, disabled if DEBUG_CP >= 2
   // Re-run some other optimizations if progress was made.  
   if (changed) {
     if (!fNoCopyPropagation) {
@@ -246,6 +247,7 @@ static void removeUnnecessaryAutoCopyCalls(FnSymbol* fn) {
     if (!fNoDeadCodeElimination)
       deadCodeElimination(fn);
   }
+#endif
 } 
 
 // A Plain-Old Data type is one whose default-constructor, copy-constructor,

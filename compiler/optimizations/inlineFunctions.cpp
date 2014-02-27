@@ -76,10 +76,12 @@ inlineFunction(FnSymbol* fn, Vec<FnSymbol*>& inlinedSet) {
   }
   collapseBlocks(fn->body);
   removeUnnecessaryGotos(fn);
+#if DEBUG_CP < 2    // That is, disabled if DEBUG_CP >= 2
   if (!fNoCopyPropagation) {
     singleAssignmentRefPropagation(fn);
     localCopyPropagation(fn);
   }
+#endif
   if (!fNoDeadCodeElimination) {
     deadVariableElimination(fn);
     deadExpressionElimination(fn);

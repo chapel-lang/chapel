@@ -143,7 +143,11 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
   for_actuals(arg, fcall) {
     SymExpr *s = toSymExpr(arg);
     Symbol  *var = s->var; // arg or var
-    var->addFlag(FLAG_CONCURRENTLY_ACCESSED);
+    if (var->type->symbol->hasFlag(FLAG_REF) || isClass(var->type))
+      // Only a variable that is passed by reference out of its current scope
+      // is concurrently accessed -- which means that it has to be passed by
+      // reference.
+      var->addFlag(FLAG_CONCURRENTLY_ACCESSED);
     VarSymbol* field = new VarSymbol(astr("_", istr(i), "_", var->name), var->type);
     ctype->fields.insertAtTail(new DefExpr(field));
     i++;
@@ -1688,7 +1692,9 @@ static void widenClasses()
     if (FnSymbol* fn = toFnSymbol(def->sym)) {
       if (!fn->hasEitherFlag(FLAG_EXTERN,FLAG_LOCAL_ARGS))
         if (Type* wide = wideClassMap.get(fn->retType))
-          fn->retType = wide;
+          // Those returning a string literal can also not be widened.
+          if (!fn->getReturnSymbol()->isImmediate())
+            fn->retType = wide;
     }
 
     // Widen all variables, 

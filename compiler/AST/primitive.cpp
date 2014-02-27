@@ -235,12 +235,21 @@ returnInfoGetMemberRef(CallExpr* call) {
   INT_ASSERT(se);
   VarSymbol* var = toVarSymbol(se->var);
   INT_ASSERT(var);
-  if (var->immediate) {
-    const char* name = var->immediate->v_string;
-    for_fields(field, ct) {
-      if (!strcmp(field->name, name))
-        return field->type->refType ? field->type->refType : field->type;
+  if (Immediate* imm = var->immediate)
+  {
+    Symbol* field = NULL;
+    if (imm->const_kind == CONST_KIND_STRING)
+    {
+      const char* name = var->immediate->v_string;
+      field = ct->getField(name);
     }
+    if (imm->const_kind == NUM_KIND_INT)
+    {
+      int64_t i = imm->int_value();
+      field = ct->getField(i);
+    }
+    INT_ASSERT(field);
+    return field->type->refType ? field->type->refType : field->type;
   } else
     return var->type->refType ? var->type->refType : var->type;
   INT_FATAL(call, "bad member primitive");

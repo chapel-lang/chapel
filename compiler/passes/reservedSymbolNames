@@ -1,5 +1,6 @@
   // reserved words in C
   auto
+  bool
   break
   case
   char

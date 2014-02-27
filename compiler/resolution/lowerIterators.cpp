@@ -1879,11 +1879,12 @@ void lowerIterators() {
     if (fn->hasFlag(FLAG_ITERATOR_FN)) {
       collapseBlocks(fn->body);
       removeUnnecessaryGotos(fn);
+#if DEBUG_CP < 2    // That is, disabled if DEBUG_CP >= 2
       if (!fNoCopyPropagation)
         localCopyPropagation(fn);
-      if (!fNoDeadCodeElimination) {
+      if (!fNoDeadCodeElimination)
         deadCodeElimination(fn);
-      }
+#endif
     }
   }
   forv_Vec(FnSymbol, fn, gFnSymbols) {

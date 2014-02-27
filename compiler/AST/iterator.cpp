@@ -76,7 +76,8 @@ removeRetInitialization(DefExpr* rdef, Symbol* rsym) {
   // (top-level?) statement list (from rdef->next), in the name of
   // reducing the compilation time.
   //
-  INT_ASSERT(false);
+// The rework of insertYieldTemps() means we can no longer count on this.
+//  INT_ASSERT(false);
 }
 
 

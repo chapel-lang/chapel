@@ -47,7 +47,16 @@ void deadVariableElimination(FnSymbol* fn) {
   Map<Symbol*,Vec<SymExpr*>*> useMap;
   buildDefUseMaps(symSet, symExprs, defMap, useMap);
 
-  forv_Vec(Symbol, sym, symSet) if (isVarSymbol(sym)) {
+  forv_Vec(Symbol, sym, symSet)
+  {
+    // We're interested only in VarSymbols.
+    if (!isVarSymbol(sym))
+      continue;
+
+    // A method must have a _this symbol, even if it is not used.
+    if (sym == fn->_this)
+      continue;
+
     if (isDeadVariable(sym, defMap, useMap)) {
       for_defs(se, defMap, sym) {
         CallExpr* call = toCallExpr(se->parentExpr);
