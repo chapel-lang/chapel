@@ -938,10 +938,11 @@ endif
 
 set invocationDir = "$cwd"
 
-#if logfile directory exists, then get absolute path for
-if ( -d `dirname $logfile` && -x `dirname $logfile` && -w `dirname $logfile` ) then
-    pushd `dirname $logfile` >& /dev/null
-    set logfile = `pwd`/`basename $logfile`
+#if logfile directory exists, then get absolute path for it
+set logfiledir = `dirname $logfile`
+if ( -d $logfiledir && -x $logfiledir && -w $logfiledir ) then
+    pushd $logfiledir >& /dev/null
+    set logfile = $PWD/`basename $logfile`
     popd >& /dev/null
 else
     echo \[Permission denied for logfile directory: \"`dirname $logfile`\"\] \
@@ -960,9 +961,10 @@ endif
 
 echo \[Starting Chapel regression tests - $datestr\] |& $tee $logfile
 # Check to see if we are running in a subdirectory of $CHPL_HOME
-if (`pwd` !~ $CHPL_HOME*) then
+if ($PWD !~ $CHPL_HOME*) then
     echo \[Warning: start_test not invoked from a subdirectory of \$CHPL_HOME\] |& $tee -a $logfile
 endif
+
 echo \[starting directory: \"$invocationDir\"] |& $tee -a $logfile
 echo \[Logs directory: \"$logsdir\"\] |& $tee -a $logfile
 echo \[logfile: \"$logfile\"\] |& $tee -a $logfile
