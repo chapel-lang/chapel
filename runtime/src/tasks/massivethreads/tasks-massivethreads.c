@@ -311,12 +311,11 @@ void chpl_task_init(void) {
 }
 
 int chpl_task_createCommTask(chpl_fn_p fn, void* arg) {
-  const size_t stacksize_for_comm_task = 8 * 1024 * 1024;
   myth_thread_option opt;
   myth_thread_t th;
   //chpl_fn_p is defined as "typedef void (*chpl_fn_p)(void*);" in chpltypes.h at line 85.
   //Since return value is always ignored, this cast is legal unless the definition is changed.
-  opt.stack_size = stacksize_for_comm_task;
+  opt.stack_size = 0;
   opt.switch_immediately = 0;
   opt.custom_data_size = sizeof(task_private_data_t);
   opt.custom_data = (void*)&s_def_chpl_data;
