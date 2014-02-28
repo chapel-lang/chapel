@@ -23,8 +23,16 @@ fi
 #
 # Test Qthreads with CHPL_COMM=none
 #
-comm=${CHPL_COMM:-none}
+comm=$($CHPL_HOME/util/chplenv/comm)
 export CHPL_TASKS=qthreads
+
+if [ "${comm}" != "none" ] ; then
+    # Set these to use oversubscription to help with timeouts
+    export QT_AFFINITY=no
+    export CHPL_QTHREAD_ENABLE_OVERSUBSCRIPTION=1
+    export CHPL_RT_NUM_THREADS_PER_LOCALE=2
+fi
+
 export LOGFILE=~/tmp/nightly.qthreads.$comm.$tests_to_run.out
 log_info "Testing Qthreads with CHPL_COMM=${comm}. Test suite: ${tests_to_run}. Log files: $LOGFILE"
 

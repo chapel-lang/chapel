@@ -20,4 +20,4 @@ export QT_AFFINITY=no
 export CHPL_QTHREAD_ENABLE_OVERSUBSCRIPTION=1
 export CHPL_RT_NUM_THREADS_PER_LOCALE=2
 
-with_logging $LOGFILE $CHPL_HOME/util/cron/nightly -cron -multilocale -no-futures
+with_logging $LOGFILE $CHPL_HOME/util/cron/nightly -cron -examples -no-futures
