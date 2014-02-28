@@ -255,7 +255,6 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
   //
   for_uses(se, useMap, sym) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
-     if (call) {
       SET_LINENO(call);
       if (call->isPrimitive(PRIM_GET_MEMBER)) {
         SymExpr* member = toSymExpr(call->get(2));
@@ -298,8 +297,18 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
         addDef(defMap, def);
         if (call->get(1)->typeInfo() == call->get(2)->typeInfo()->refType)
           call->insertAtTail(new CallExpr(PRIM_ADDR_OF, call->get(2)->remove()));
+      } else {
+        /*
+         * If we fall into this case, it suggests that we did not
+         * rewrite the call as expected.  In particular, the
+         * for_uses() loop above this one (line 199 in this commit)
+         * flagged this call as being legal to scalar replace, but
+         * then we didn't.  Presumably this would happen if someone
+         * added a new case to the conditional within that loop (line
+         * 211) but then forgot to add a case to this conditional.
+         */
+        INT_FATAL("It seems someone forgot to rewrite an Expression");
       }
-     }
     }
   }
 
@@ -417,7 +426,7 @@ scalarReplaceRecord(ClassType* ct, Symbol* sym) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
       SET_LINENO(sym);
       // Do we need to add a case for PRIM_ASSIGN?
-      if (call && call->isPrimitive(PRIM_MOVE)) {
+      if (call->isPrimitive(PRIM_MOVE)) {
         SymExpr* lhs = toSymExpr(call->get(1));
         for_fields(field, ct) {
           SymExpr* lhsCopy = lhs->copy();
@@ -428,17 +437,17 @@ scalarReplaceRecord(ClassType* ct, Symbol* sym) {
           addUse(useMap, lhsCopy);
         }
         call->remove();
-      } else if (call && call->isPrimitive(PRIM_GET_MEMBER)) {
+      } else if (call->isPrimitive(PRIM_GET_MEMBER)) {
         SymExpr* member = toSymExpr(call->get(2));
         SymExpr* use = new SymExpr(fieldMap.get(member->var));
         call->replace(new CallExpr(PRIM_ADDR_OF, use));
         addUse(useMap, use);
-      } else if (call && call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+      } else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
         SymExpr* member = toSymExpr(call->get(2));
         SymExpr* use = new SymExpr(fieldMap.get(member->var));
         call->replace(use);
         addUse(useMap, use);
-      } else if (call && call->isPrimitive(PRIM_SET_MEMBER)) {
+      } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
         SymExpr* member = toSymExpr(call->get(2));
         call->primitive = primitives[PRIM_MOVE];
         call->get(2)->remove();
@@ -448,6 +457,17 @@ scalarReplaceRecord(ClassType* ct, Symbol* sym) {
         addDef(defMap, def);
         if (call->get(1)->typeInfo() == call->get(2)->typeInfo()->refType)
           call->insertAtTail(new CallExpr(PRIM_ADDR_OF, call->get(2)->remove()));
+      } else {
+        /*
+         * If we fall into this case, it suggests that we did not
+         * rewrite the call as expected.  In particular, the
+         * for_uses() loop above this one (line 341 in this commit)
+         * flagged this call as being legal to scalar replace, but
+         * then we didn't.  Presumably this would happen if someone
+         * added a new case to the conditional within that loop (line
+         * 344) but then forgot to add a case to this conditional.
+         */
+        INT_FATAL("Someone forgot to scalar replace an expression");
       }
     }
   }
