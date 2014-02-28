@@ -959,6 +959,10 @@ if ($compperformance) then
 endif 
 
 echo \[Starting Chapel regression tests - $datestr\] |& $tee $logfile
+# Check to see if we are running in a subdirectory of $CHPL_HOME
+if (`pwd` !~ $CHPL_HOME*) then
+    echo \[Warning: start_test not invoked from a subdirectory of \$CHPL_HOME\] |& $tee -a $logfile
+endif
 echo \[starting directory: \"$invocationDir\"] |& $tee -a $logfile
 echo \[Logs directory: \"$logsdir\"\] |& $tee -a $logfile
 echo \[logfile: \"$logfile\"\] |& $tee -a $logfile
