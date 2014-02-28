@@ -5,11 +5,6 @@
 
 source $(cd $(dirname $0) ; pwd)/functions.bash
 
-# Avoid running this script multiple time
-if [ "${CHPL_COMMON_BASH_INIT_CALLED}" = "true" ] ; then
-    : # Called a second or third (or ...) time. Do nothing.
-else
-
 SCRIPT_NAME=$0
 start_time=$(date '+%s')
 log_info "Starting ${SCRIPT_NAME} on $(hostname -s)"
@@ -131,8 +126,3 @@ if [ -f /etc/modules/bash ] ; then
         log_error "Failed to find module command after sourcing /etc/modules/bash."
     fi
 fi
-
-fi
-
-# Do nothing when this file is sourced multiple times.
-export CHPL_COMMON_BASH_INIT_CALLED=true
