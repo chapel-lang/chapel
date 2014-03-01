@@ -419,7 +419,7 @@ static bool isRefUse(SymExpr* se)
     if (se->typeInfo()->symbol->hasFlag(FLAG_REF))
     {
       // For a *(ref) to be defined through a primitive, the primitive must
-      // accept a ref argument in that position, such that may update the
+      // accept a ref argument in that position, such that it may update the
       // referenced value.
       switch(call->primitive->tag)
       {
@@ -503,6 +503,19 @@ static void propagateCopies(std::vector<SymExpr*>& symExprs,
       // If so, replace the alias with its definition.
       if (alias_def_pair != available.end())
       {
+        // This special case is needed to prevent propagating a string literal
+        // into the return statement of a function.  Right now,
+        // insertWideReferences does not automatically widen the result of a
+        // function returning a narrow string.  Instead, it relies on there
+        // being a return value variable that is widened before it is
+        // returned.  If we return a literal, that variable doesn't exist, so
+        // the return type ends up being narrow (which is not correct).
+        // After chapel strings become records, this special-case code can be
+        // removed.
+        if (CallExpr* call = toCallExpr(se->parentExpr))
+          if (call->isPrimitive(PRIM_RETURN) &&
+              se->var->typeInfo() == dtString)
+            continue;
 #if DEBUG_CP
         if (debug > 0)
           printf("Replacing %s[%d] with %s[%d]\n",
