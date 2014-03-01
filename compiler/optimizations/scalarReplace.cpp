@@ -417,7 +417,14 @@ scalarReplaceRecord(ClassType* ct, Symbol* sym) {
       }
     }
   }
-  sym->defPoint->remove();
+
+  // It is an AST invariant that every method contains a declaration for its
+  // _this symbol.  So we can't remove the declaration if it is the containing
+  // method's _this.  If the containing function is not a method, then its
+  // _this field will be NULL (so will not match any valid sym).
+  if (FnSymbol* parent = toFnSymbol(sym->defPoint->parentSymbol))
+    if (parent->_this != sym)
+      sym->defPoint->remove();
 
   //
   // replace uses of sym with new vars
