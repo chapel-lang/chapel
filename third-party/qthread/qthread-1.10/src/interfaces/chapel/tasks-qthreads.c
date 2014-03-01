@@ -572,7 +572,7 @@ c_sublocid_t chpl_task_getNumSublocales(void)
             ? num_sublocs
             : CHPL_LOCALE_MODEL_NUM_SUBLOCALES);
 #else
-    return (c_sublocid_t) ((num_sublocs < 2) ? 0 : num_sublocs);
+    return (c_sublocid_t) num_sublocs;
 #endif
 }
 
