@@ -147,6 +147,7 @@ void chpl_rt_postUserCodeHook(void) {
 
 
 int main(int argc, char* argv[]) {
+  int32_t execNumLocales;
   int runInGDB;
 
   // Check that we can get the page size.
@@ -173,6 +174,15 @@ int main(int argc, char* argv[]) {
   chpl_gen_main_arg.return_value = 0;
   parseArgs(&argc, argv);
   recordExecutionCommand(argc, argv);
+
+  //
+  // If the user specified a number of locales, have the comm layer
+  // verify that it is reasonable.
+  //
+  execNumLocales = getArgNumLocales();
+  if (execNumLocales != 0) {
+    chpl_comm_verify_num_locales(execNumLocales);
+  }
 
   runInGDB = _runInGDB();
   if (runInGDB) {
