@@ -1100,7 +1100,7 @@ for testname in testsrc:
                     sys.stdout.write('[Success')
                 else:
                     sys.stdout.write('[Error')
-                sys.stdout.write(' matching compiler performance keys for %s/%s'%
+                sys.stdout.write(' finding  compiler performance keys for %s/%s'%
                                  (localdir, execname))
                 if status!=0:
                     printTestVariation(compoptsnum, execoptsnum);
