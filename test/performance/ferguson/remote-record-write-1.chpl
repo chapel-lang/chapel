@@ -7,10 +7,6 @@ record C {
   var z:int;
 }
 
-// This replaces the compiler-supplied element-by-element write with a bulk
-// copy.
-proc =(ref lhs:C, rhs:C) { __primitive("=", lhs, rhs); }
-
 var A:[1..n] C;
 for i in 1..n {
   A[i] = new C(i, i+1, i+2);
