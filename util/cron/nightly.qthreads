@@ -9,6 +9,9 @@ source $(cd $(dirname $0) ; pwd)/common.bash
 if [ "${1}" == "-examples" ] ; then
     examples_opt="-examples -no-futures"
     tests_to_run="examples"
+elif [ "${1}" == "-multilocale" ] ; then
+    examples_opt="-multilocale"
+    tests_to_run="multilocale"
 elif [ "${1}" == "-full" ] ; then
     examples_opt=""
     tests_to_run="full"
