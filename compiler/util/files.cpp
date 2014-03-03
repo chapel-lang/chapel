@@ -225,7 +225,7 @@ void appendCFile(fileinfo* fi, const char* name, const char* ext) {
 }
 void closeCFile(fileinfo* fi, bool beautifyIt) {
   fclose(fi->fptr);
-  if (beautifyIt)
+  if (beautifyIt && saveCDir[0])
     beautify(fi);
 }
 
