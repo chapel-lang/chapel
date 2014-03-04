@@ -80,6 +80,7 @@ void checkPrimitives()
      case PRIM_ENUM_IS_SIGNED:
      case PRIM_IS_UNION_TYPE:
      case PRIM_IS_ATOMIC_TYPE:
+     case PRIM_IS_TUPLE_TYPE:
      case PRIM_IS_STAR_TUPLE_TYPE:
       if (resolved)
         INT_FATAL("Primitive should not appear after resolution is complete.");

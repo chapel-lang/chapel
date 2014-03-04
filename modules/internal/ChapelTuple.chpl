@@ -65,14 +65,12 @@ module ChapelTuple {
   
   proc isTuple(x) param
     return false;
-  
+
   proc isHomogeneousTuple(x: _tuple) param
     return __primitive("is star tuple type", x);
   
-  proc isTupleType(type t) param {
-    const a: t;
-    return isTuple(a);
-  }
+  proc isTupleType(type t) param
+    return __primitive("is tuple type", t);
   
   //
   // tuple assignment

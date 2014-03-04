@@ -574,6 +574,7 @@ initPrimitive() {
 
   prim_def(PRIM_FTABLE_CALL, "call ftable function", returnInfoVoid, true);
 
+  prim_def(PRIM_IS_TUPLE_TYPE, "is tuple type", returnInfoBool);
   prim_def(PRIM_IS_STAR_TUPLE_TYPE, "is star tuple type", returnInfoBool);
   prim_def(PRIM_SET_SVEC_MEMBER, "set svec member", returnInfoVoid, true, true);
   prim_def(PRIM_GET_SVEC_MEMBER, "get svec member", returnInfoGetTupleMemberRef);
