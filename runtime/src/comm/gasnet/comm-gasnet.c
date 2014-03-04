@@ -14,10 +14,12 @@
 #include "error.h"
 
 #include <signal.h>
+#include <sched.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <time.h>
 
 #ifdef GASNET_NEEDS_MAX_SEGSIZE
 #define CHPL_COMM_GASNET_SETENV chpl_comm_gasnet_set_max_segsize();
@@ -54,6 +56,15 @@ static gasnet_seginfo_t* seginfo_table = NULL;
       gasnet_exit(_retval);                                             \
     }                                                                   \
   } while(0)
+
+//
+// Barrier-related definitions.
+//
+#define BARRIER_ID_STOP_POLLING 1
+
+static void barrier_with_id(const char*, int);
+
+#define BARRIER_WITH_ID(id)  barrier_with_id(#id, BARRIER_ID_ ## id)
 
 //
 // This is the type of object we use to manage GASNet acknowledgements.
@@ -332,6 +343,16 @@ int32_t chpl_comm_getMaxThreads(void) {
   return GASNETI_MAX_THREADS-1;
 }
 
+//
+// On all locales, we'll do the primary polling in a thread of control
+// managed by the tasking layer, so that it can coordinate the use of
+// hardware resources for polling and user tasks.  This symmetry will
+// also allow the tasking layer to minimize its locale-based behavioral
+// differences and simplify our analysis of performance effects due to
+// polling.  We'll refer to this thread of control as the "polling task"
+// even though the tasking layer can implement it however it likes, as a
+// task or thread or whatever.
+//
 static done_t alldone;
 static volatile int pollingRunning = 0;
 
@@ -458,7 +479,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 void chpl_comm_post_mem_init(void) { }
 
 int chpl_comm_numPollingTasks(void) {
-  return (chpl_nodeID == 0);
+  return 1;
 }
 
 //
@@ -470,13 +491,13 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 
 void chpl_comm_post_task_init(void) {
   //
-  // Start polling task on locale 0.  (On other locales, main enters
-  // into a barrier wait, so the polling task is unnecessary.)
+  // Start a polling task on each locale.
   //
-  if (chpl_nodeID == 0) {
-    INIT_DONE_OBJ(alldone, 1);
-    if (chpl_task_createCommTask(polling, NULL))
-      chpl_internal_error("unable to start polling task for gasnet");
+  INIT_DONE_OBJ(alldone, 1);
+  if (chpl_task_createCommTask(polling, NULL))
+    chpl_internal_error("unable to start polling task for gasnet");
+  while (!pollingRunning) {
+    sched_yield();
   }
 
   // clear diags
@@ -569,26 +590,55 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
   chpl_mem_free(done, 0, 0);
 }
 
-void chpl_comm_barrier(const char *msg) {
+static void barrier_with_id(const char *msg, int id) {
   if (chpl_verbose_comm && !chpl_comm_no_debug_private)
     printf("%d: barrier for '%s'\n", chpl_nodeID, msg);
-  gasnet_barrier_notify(0, GASNET_BARRIERFLAG_ANONYMOUS);
-  GASNET_Safe(gasnet_barrier_wait(0, GASNET_BARRIERFLAG_ANONYMOUS));
+  if (id == 0) {
+    gasnet_barrier_notify(0, GASNET_BARRIERFLAG_ANONYMOUS);
+    GASNET_Safe(gasnet_barrier_wait(0, GASNET_BARRIERFLAG_ANONYMOUS));
+  }
+  else {
+    gasnet_barrier_notify(id, 0);
+    GASNET_Safe(gasnet_barrier_wait(id, 0));
+  }
+}
+
+void chpl_comm_barrier(const char *msg) {
+  barrier_with_id(msg, 0);
 }
 
 void chpl_comm_pre_task_exit(int all) {
   if (all) {
-    chpl_comm_barrier("chpl_comm_pre_task_exit");
-
+    //
+    // This is the barrier across locales at the end of user code.  On
+    // locale 0 we just do the barrier.  On the others we can't do it so
+    // simply, because we get here much earlier (right after runtime
+    // startup) and we don't want to spend the life of the program in
+    // the barrier routine, competing with our own polling task for work
+    // to do.  So on the non-0 locales we do a slow spin wait, for the
+    // most part not occupying the processor.  We won't do enough real
+    // work to affect things.
+    //
     if (chpl_nodeID == 0) {
-      //
-      // Only locale 0 actually runs a polling task.  Tell that task to
-      // halt, and then wait for it to do so.
-      //
-      GASNET_Safe(gasnet_AMRequestShort2(chpl_nodeID, SIGNAL,
-                                         AckArg0(&alldone),
-                                         AckArg1(&alldone)));
-      while (pollingRunning) {}
+      BARRIER_WITH_ID(STOP_POLLING);
+    }
+    else {
+      struct timespec interval = { 0, 100 * 1000 * 1000 }; // 100m ns == 0.1s
+
+      gasnet_barrier_notify(BARRIER_ID_STOP_POLLING, 0);
+      while (gasnet_barrier_try(BARRIER_ID_STOP_POLLING, 0) != GASNET_OK) {
+        (void) nanosleep(&interval, NULL);
+      }
+    }
+
+    //
+    // Tell the polling task to halt, then wait for it to do so.
+    //
+    GASNET_Safe(gasnet_AMRequestShort2(chpl_nodeID, SIGNAL,
+                                       AckArg0(&alldone),
+                                       AckArg1(&alldone)));
+    while (pollingRunning) {
+      sched_yield();
     }
   }
 }
