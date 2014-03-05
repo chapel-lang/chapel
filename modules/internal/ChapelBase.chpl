@@ -700,21 +700,6 @@ module ChapelBase {
     }
   }
   
-  // Make sure that the compiler constructs the type _ref(t).
-  pragma "no codegen"
-  proc _ensure_reference_type(type t)
-  {
-    // type t where we have _ddata(t) needs to also have
-    // a reference type created. So here we just add
-    // some otherwise useless code to do that.
-    // This code could be removed if we had some other way
-    // making sure the reference type is created.
-    pragma "no codegen"
-    proc setbyref(inout zz:t) { }
-    var unused:t;
-    setbyref(unused);
-  }
-  
   // dynamic data block class
   // (note that c_ptr(type) is similar, but local only,
   //  and defined in SysBasic.chpl)
@@ -1519,25 +1504,6 @@ module ChapelBase {
 
   proc isAtomicType(type t) param return __primitive("is atomic type", t);
   
-  _ensure_reference_type(int(8));
-  _ensure_reference_type(int(16));
-  _ensure_reference_type(int(32));
-  _ensure_reference_type(int(64));
-  _ensure_reference_type(uint(8));
-  _ensure_reference_type(uint(16));
-  _ensure_reference_type(uint(32));
-  _ensure_reference_type(uint(64));
-  _ensure_reference_type(real(32));
-  _ensure_reference_type(real(64));
-  _ensure_reference_type(imag(32));
-  _ensure_reference_type(imag(64));
-  _ensure_reference_type(complex(64));
-  _ensure_reference_type(complex(128));
-  _ensure_reference_type(bool);
-  _ensure_reference_type(_task_list);
-  _ensure_reference_type(string);
-  _ensure_reference_type(chpl_taskID_t);
-
   // These style element #s are used in the default Writer and Reader.
   // and in e.g. implementations of those in Tuple.
   extern const QIO_STYLE_ELEMENT_STRING:int;

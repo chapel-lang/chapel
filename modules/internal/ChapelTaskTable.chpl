@@ -29,7 +29,6 @@ module ChapelTaskTable {
   
   
   enum taskState { pending, active, suspended };
-  _ensure_reference_type(taskState);
   
   //
   // This represents a currently running task.  The state, lineno, and
