@@ -5,4 +5,4 @@ min =
 avg =
 tot =
 trials =
-Validation:
+verify: Validation: SUCCESS

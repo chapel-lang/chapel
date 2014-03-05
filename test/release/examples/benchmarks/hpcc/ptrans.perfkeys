@@ -6,4 +6,4 @@ max acceptable discrepancy:
 error =
 Execution time =
 Performance (GB/sec) =
-Validation:
+verify: Validation: SUCCESS

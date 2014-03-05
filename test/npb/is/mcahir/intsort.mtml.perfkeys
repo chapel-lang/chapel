@@ -4,3 +4,4 @@
  Time in seconds =
  Mop/s total     =
  Verification    =
+verify:-1: ^ Verification .*SUCCESSFUL$
