@@ -129,6 +129,12 @@ if ($debug == 0) {
     print $crontab;
 }
 
+# If this is running in jenkins, link to the job instead of using the crontab.
+if (exists($ENV{"BUILD_URL"})) {
+    $buildurl = $ENV{"BUILD_URL"};
+    $crontab = "View this job at:\n\t$buildurl";
+}
+
 $svntoday = `date +%F`; chomp($svntoday);
 if ($debug == 0 && $svnrevopt eq "") {
     $svnrevopt = "-r'{$svntoday 00:00 -0700}'";
