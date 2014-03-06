@@ -86,9 +86,9 @@ in a second binary named <original_binary_name>_real.  See
 README.launcher for more information about the launcher executable.
 
 
-------------------------------
-Limiting the number of threads
-------------------------------
+---------------------------------
+Controlling the Number of Threads
+---------------------------------
 
 The following environment variable can be used to change the number of
 system threads used by a program.
@@ -102,7 +102,7 @@ creating threads and executing tasks for the various tasking layers.
 
 
 --------------------------------------
-Controlling degree of data parallelism
+Controlling Degree of Data Parallelism
 --------------------------------------
 
 Data parallel operations over ranges, default domains, and default
@@ -132,23 +132,26 @@ values for these arguments are set to the corresponding global
 configuration constants.
 
 
-------------------------
-Limiting Per-Task Memory
-------------------------
+-------------------------------
+Controlling the Call Stack Size
+-------------------------------
 
-An active task requires space for its call stack.  This space is created
-at a fixed size when the task starts executing, and remains in existence
-until the task completes.  The default size of a call stack is set by
-the particular tasking layer in use.  For the default (FIFO) tasking
-layer, the default call stack size is the system stack limit (typically
-8 MiB on Linux-based systems) or 8 MiB if that limit is not set.  The
-README.tasks file discusses tasking and threading layers, including
-their default call stack sizes.
+The main Chapel program requires space for its call stack, as does any
+task created by it.  This stack space has a fixed size.  It is created
+automatically when the program or task starts executing, and remains in
+existence until it completes.  The default call stack size is 8 MiB,
+which is also a common value for the process stack limit on Linux-based
+systems.
 
-The automatically selected call stack size may not be appropriate in all
-cases.  For programs in which some tasks have deep call trees it may be
-too small, leading to stack overflow.  For programs which use tasks only
-for data parallelism it may be unnecessarily large.
+The default call stack size may not be appropriate in all cases.  For
+programs in which some tasks have large stack frames or deep call trees
+it may be too small, leading to stack overflow.  For programs which use
+tasks only for data parallelism it may be unnecessarily large.  Stacks
+that are unnecessarily large are typically only a problem for programs
+in which many tasks (thus their stacks) exist at once, when using a comm
+layer that has to pre-register memory.  For the particular case of using
+the native runtime communication and tasking layers on Cray X* systems,
+further discussion about this can be found in platforms/README.cray.
 
 The following environment variable can be used to change the task call
 stack size.

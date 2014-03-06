@@ -365,11 +365,11 @@ Special parameters for the Cray-specific runtime layers
 -------------------------------------------------------
 
 This section describes several environment variable parameters that
-affect the behavior of the native ugni communication and muxed tasking
+affect the behavior of the native muxed tasking and ugni communication
 runtime layers for Cray X* systems.  Here are those parameters and their
 default values:
 
-    CHPL_RT_CALL_STACK_SIZE        : 128 KiB
+    CHPL_RT_CALL_STACK_SIZE        : 8 MiB (see README.executing)
     CHPL_RT_NUM_HARDWARE_THREADS   : number of cores per locale
     CHPL_RT_NUM_THREADS_PER_LOCALE : 16 * CHPL_RT_NUM_HARDWARE_THREADS
     CHPL_UGNI_MAX_HEAP_SIZE        : free node memory, less 1 GiB
@@ -383,12 +383,31 @@ want to explicitly set one or more of them to other values.
 
 Parameters associated with the muxed tasking layer:
 
-    Task Stack Size
-    ---------------
+    Controlling the Call Stack Size
+    -------------------------------
 
-    The default task stack size in the muxed tasking layer is 128 KiB.
-    You can change this using the CHPL_RT_CALL_STACK_SIZE environment
-    variable, just as in the other tasking layer implementations.
+    A side effect of using the muxed tasking and ugni communication
+    layers is that task call stacks have to be created at full size.
+    With other comm layers (or no comm layer), creating a stack just
+    reserves the memory for it without actually bringing the memory into
+    existence.  The memory does not exist until each page of the stack
+    is actually used.  If the stack limit is 8 MiB (the default) and
+    2,000 tasks exist at the same time but each one only uses 32 KiB of
+    its stack space, then the program only requires about 64 MiB of
+    memory for stacks, rather than the full 16 GiB.  But with the ugni
+    communication layer, interactions with the network require that all
+    the space for any memory object be brought into existence up front.
+    So there, our hypothetical program would need 16 GiB of heap space
+    just for stacks.  Thus with muxed tasking and ugni communications,
+    in programs that may have many tasks active at once but where each
+    one does not need a very large call stack (such as SSCA2), it can be
+    useful to make the stack size smaller than its default of 8 MiB.
+
+    You can set the task stack size using CHPL_RT_CALL_STACK_SIZE, as
+    described in README.executing.  The following would make the task
+    stack size 64 KiB, for example:
+
+      export CHPL_RT_CALL_STACK_SIZE=64k
 
 
     Number of Threads per Locale

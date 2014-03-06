@@ -225,25 +225,8 @@ Controlling the Call Stack Size
 
 As documented in README.executing, the CHPL_RT_CALL_STACK_SIZE
 environment variable can be used to adjust the call stack size for
-active tasks.  This works in each tasking model as follows:
-
-CHPL_TASKS == fifo:
-  The default task call stack size is the system stack limit (typically
-  8 MiB for Linux systems) or 8 MiB if that is not set.  If a value is
-  specified for CHPL_RT_CALL_STACK_SIZE, that value is used to set the
-  stack size for the process and each pthread.  Tasks inherit this call
-  stack size, because the execution model is that a task occupies a
-  pthread and uses its stack for the duration of the task's existence.
-
-CHPL_TASKS == massivethreads:
-  MassiveThreads tasks have a default call stack size of 32k*sizeof(size_t)
-  bytes.  If a value is specified for CHPL_RT_CALL_STACK_SIZE, that value
-  is used for the call stack size instead.
-
-CHPL_TASKS == qthreads:
-  Qthreads tasks have a default call stack size of 32k*sizeof(size_t)
-  bytes.  If a value is specified for CHPL_RT_CALL_STACK_SIZE, that
-  value is used for the call stack size instead.
+active tasks.  See there for a full description of this environment
+variable and the values it can take.
 
 
 -----------------------------
