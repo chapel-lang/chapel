@@ -75,11 +75,10 @@ module ChapelTuple {
   //
   // tuple assignment
   //
+  pragma "compiler generated"
   inline proc =(ref x: _tuple, y: _tuple) where x.size == y.size {
     for param i in 1..x.size do
       x(i) = y(i);
-    // Fails in nbody-blc.chpl (and two others) if this return is removed.
-    return x;
   }
   
   //
