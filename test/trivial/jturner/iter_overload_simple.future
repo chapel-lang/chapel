@@ -1,4 +1,8 @@
-bug: Immediately returning values from overriden iterators disallows vtable access
+bug: Statically-typed variable declaration disables dynamic dispatch
 
-If you override an iterator method in a parent class, and the parent class's iterator yields immediately (instead of yielding in a loop), then a vtable
-execution of that method which should invoke the child's method instead invokes the parent's.
+When statically-typing the declaration of a variable that will
+dynamically be a subclass, we seem to dispatch to the static type's
+iterator rather than the dynamic type's.  You can see this in this
+program by removing the type declaration on 'c'.
+
+Happily, this behavior seems to be specific to iterators.
