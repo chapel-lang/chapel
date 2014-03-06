@@ -1,4 +1,0 @@
-bug: explicit cast error is not reported when casting an object to a class that is not its superclass
-
-The spec promices that an error will be reported, but as of this writing
-I get d==nil.
