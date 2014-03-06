@@ -1530,7 +1530,7 @@ module ChapelArray {
   //
   proc =(ref a: _distribution, b: _distribution) {
     if a._value == nil {
-      return chpl__autoCopy(b.clone());
+      __primitive("move", a, chpl__autoCopy(b.clone()));
     } else if a._value._doms.length == 0 {
       if a._value.type != b._value.type then
         compilerError("type mismatch in distribution assignment");
@@ -1548,9 +1548,6 @@ module ChapelArray {
     } else {
       halt("assignment to distributions with declared domains is not yet supported");
     }
-    // TODO: Remove this return. Right now, that causes _distCnt to reach 0
-    // prematurely.
-    return a;
   }
   
   proc =(ref a: domain, b: domain) {
