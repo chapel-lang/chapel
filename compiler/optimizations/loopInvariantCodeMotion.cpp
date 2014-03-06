@@ -268,6 +268,26 @@ void collectNaturalLoopForEdge(Loop* loop, BasicBlock* header, BasicBlock* tail)
   } 
 }
 
+/*
+ * Takes a call that is a PRIM_SVEC_GET_MEMBER* and returns the symbol of the
+ * field. Normally the call is something of the form PRIM_SVEC_GET_MEMBER(p, 1) 
+ * and what this function gets out is the symbol that is the first field
+ * instead of just the number 1. 
+ */
+static Symbol* getSvecSymbol(CallExpr* call) {
+  INT_ASSERT(call->isPrimitive(PRIM_GET_SVEC_MEMBER)       ||
+             call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE) ||
+             call->isPrimitive(PRIM_SET_SVEC_MEMBER));
+  
+  Type* type = call->get(1)->getValType();
+  ClassType* tuple = toClassType(type);
+  SymExpr* fieldVal = toSymExpr(call->get(2));
+  VarSymbol* fieldSym = toVarSymbol(fieldVal->var);
+  int immediateVal = fieldSym->immediate->int_value();
+
+  INT_ASSERT(immediateVal >= 1 && immediateVal <= tuple->fields.length);
+  return tuple->getField(immediateVal);
+}
 
 // Returns rhs var if lhs aliases rhs
 //
@@ -313,12 +333,16 @@ rhsAlias(CallExpr* call) {
     } else if (CallExpr* rhsCall = toCallExpr(rhsT)) {
       if (rhsCall->primitive) {
         if (rhsCall->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
-            rhsCall->isPrimitive(PRIM_GET_MEMBER) ||
-            rhsCall->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE) ||
-            rhsCall->isPrimitive(PRIM_GET_SVEC_MEMBER)) {
+            rhsCall->isPrimitive(PRIM_GET_MEMBER)) {
           SymExpr* rhs = toSymExpr(rhsCall->get(2));
           INT_ASSERT(rhs);
           return rhs->var;
+        } else if (rhsCall->isPrimitive(PRIM_GET_SVEC_MEMBER) || 
+                   rhsCall->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
+          // get_svec's second argument is the integer offset to the field,
+          // instead of the field itself. We need to return the field so that
+          // we note that the lhs aliases the field and not just an integer 
+          return getSvecSymbol(rhsCall);
         } else if(rhsCall->isPrimitive(PRIM_ADDR_OF)) {
           SymExpr* rhs = toSymExpr(rhsCall->get(1));
           INT_ASSERT(rhs);
@@ -466,7 +490,11 @@ static void buildLocalDefUseMaps(Loop* loop, symToVecSymExprMap& localDefMap, sy
         if(callExpr->isPrimitive(PRIM_SET_MEMBER) ||
            callExpr->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
           if(SymExpr* symExpr = toSymExpr(callExpr->get(2))) {
-            addDefOrUse(localDefMap, symExpr->var, symExpr);
+            if(callExpr->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
+              addDefOrUse(localDefMap, getSvecSymbol(callExpr), symExpr);
+            } else {
+              addDefOrUse(localDefMap, symExpr->var, symExpr);
+            }
           }
           //and the "class" itself may also be defed. For instance if you change
           //the field of a record or union you have to note that the
