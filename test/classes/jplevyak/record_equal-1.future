@@ -1,4 +1,4 @@
-unimplemented feature: Implement field-by-field comparison in the default record equality function
+feature request: Implement field-by-field comparison in the default record equality function
 
 This used to work, but the implementation used a generic default
 implementation that was unsatisfactory.  Specifically, it resulted in
