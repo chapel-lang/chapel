@@ -187,6 +187,13 @@ void check_complex2record()
   // Suggestion: Ensure no more constants or variables of complex type.
 }
 
+void check_bulkCopyRecords()
+{
+  check_afterEveryPass();
+  check_afterNormalization();
+  check_afterCallDestructors();
+}
+
 void check_removeUnnecessaryAutoCopyCalls()
 {
   check_afterEveryPass();

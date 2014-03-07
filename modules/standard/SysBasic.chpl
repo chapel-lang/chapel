@@ -137,11 +137,11 @@ inline proc ==(s0: c_string, s1: string) {
 }
 
 inline proc !=(s0: string, s1: c_string) {
-  return !__primitive("chpl_string_compare", s0.c_str(), s1) != 0;
+  return __primitive("chpl_string_compare", s0.c_str(), s1) != 0;
 }
 
 inline proc !=(s0: c_string, s1: string) {
-  return !__primitive("chpl_string_compare", s0, s1.c_str()) != 0;
+  return __primitive("chpl_string_compare", s0, s1.c_str()) != 0;
 }
 
 // error numbers
@@ -174,6 +174,7 @@ inline proc _cast(type t, x: int(32)) where t == syserr
   return qio_int_to_err(x);
 inline proc _cast(type t, x: int(64)) where t == syserr
   return qio_int_to_err(x:int(32));
+pragma "trivial assignment"
 inline proc =(ref ret:syserr, x:syserr) { __primitive("=", ret, x); }
 inline proc =(ref ret:syserr, x:int(32)) 
 { __primitive("=", ret, qio_int_to_err(x)); }

@@ -35,6 +35,14 @@ symbolFlag( FLAG_BEGIN , npr, "begin" , ncm )
 symbolFlag( FLAG_BEGIN_BLOCK , npr, "begin block" , ncm )
 symbolFlag( FLAG_BUILD_TUPLE , ypr, "build tuple" , "used to mark the build_tuple functions")
 symbolFlag( FLAG_CALLS_CONSTRUCTOR , npr, "calls constructor" , "for functions that return constructor return values" )
+// The compiler-generated flag is already overloaded in three ways.  We may
+// want to split it if this becomes cumbersome:
+// 1. In resolution, functions marked as compiler-generated are considered only if
+// no functions without that flag (i.e. user-supplied) functions are found.
+// 2. In printing filename/lineno information in error messages (when developer
+// == false), the callstack is searched ignoring compiler-generated functions.
+// 3. Assignment operations flagged as 'compiler generated' shall contain only
+// field assignments and assignment primitives.
 symbolFlag( FLAG_COMPILER_GENERATED , ypr, "compiler generated" , "marks functions and labels that are compiler-generated or supplied by an internal module" )
 symbolFlag( FLAG_LOCALE_MODEL_ALLOC , ypr, "locale model alloc" , "locale model specific alloc" )
 symbolFlag( FLAG_LOCALE_MODEL_FREE , ypr, "locale model free" , "locale model specific free" )
@@ -155,6 +163,7 @@ symbolFlag( FLAG_SUPER_CLASS , npr, "super class" , ncm )
 symbolFlag( FLAG_SYNC , ypr, "sync" , ncm )
 symbolFlag( FLAG_SYNTACTIC_DISTRIBUTION , ypr, "syntactic distribution" , ncm )
 symbolFlag( FLAG_TEMP , npr, "temp" , "compiler-inserted temporary" )
+symbolFlag( FLAG_TRIVIAL_ASSIGNMENT, ypr, "trivial assignment", "an assignment which may be replaced by a bulk copy without changing its semantics")
 symbolFlag( FLAG_TUPLE , ypr, "tuple" , ncm )
 symbolFlag( FLAG_TYPE_CONSTRUCTOR , npr, "type constructor" , ncm )
 symbolFlag( FLAG_TYPE_VARIABLE , npr, "type variable" , "contains a type instead of a value" )

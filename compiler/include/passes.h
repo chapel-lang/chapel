@@ -14,6 +14,7 @@ extern bool intentsResolved;
 //
 void addInitCalls();
 void buildDefaultFunctions();
+void bulkCopyRecords();
 void callDestructors();
 void checkNormalized();
 void checkParsed();

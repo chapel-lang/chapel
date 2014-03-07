@@ -233,12 +233,19 @@ module ChapelBase {
   //
   // assignment on primitive types
   //
+  pragma "trivial assignment"
   inline proc =(ref a: bool, b: bool) { __primitive("=", a, b); }
+  pragma "trivial assignment"
   inline proc =(ref a: bool(?w), b: bool) { __primitive("=", a, b); }
+  pragma "trivial assignment"
   inline proc =(ref a: int(?w), b: int(w)) { __primitive("=", a, b); }
+  pragma "trivial assignment"
   inline proc =(ref a: uint(?w), b: uint(w)) { __primitive("=", a, b); }
+  pragma "trivial assignment"
   inline proc =(ref a: real(?w), b: real(w)) { __primitive("=", a, b); }
+  pragma "trivial assignment"
   inline proc =(ref a: imag(?w), b: imag(w)) { __primitive("=", a, b); }
+  pragma "trivial assignment"
   inline proc =(ref a: complex(?w), b: complex(w)) { __primitive("=", a, b); }
   // This implies that the *representation* of strings is shared.
   // If strings are reimplemented as classes or records, a less trivial
@@ -250,6 +257,7 @@ module ChapelBase {
   pragma "compiler generated"
   inline proc =(ref a, b) return b;
   // Not yet ready for prime time:
+  //  pragma "trivial assignment"
   //  inline proc =(ref a, b) { __primitive("=", a, b); }
   
   //

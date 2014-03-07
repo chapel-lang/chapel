@@ -82,6 +82,8 @@ buildEmptyWrapper(FnSymbol* fn, CallInfo* info) {
   }
   if (fn->hasFlag(FLAG_METHOD))
     wrapper->addFlag(FLAG_METHOD);
+  if (fn->hasFlag(FLAG_ASSIGNOP))
+    wrapper->addFlag(FLAG_ASSIGNOP);
   wrapper->instantiationPoint = getVisibilityBlock(info->call);
   wrapper->addFlag(FLAG_COMPILER_GENERATED);
   return wrapper;

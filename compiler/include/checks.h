@@ -25,6 +25,7 @@ void check_lowerIterators();
 void check_parallel();
 void check_prune();
 void check_complex2record();
+void check_bulkCopyRecords();
 void check_removeUnnecessaryAutoCopyCalls();
 void check_inlineFunctions();
 void check_scalarReplace();

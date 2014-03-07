@@ -576,6 +576,7 @@ static void build_enum_assignment_function(EnumType* et) {
     return;
 
   FnSymbol* fn = new FnSymbol("=");
+  fn->addFlag(FLAG_ASSIGNOP);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   ArgSymbol* arg1 = new ArgSymbol(INTENT_REF, "_arg1", et);
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", et);
@@ -594,6 +595,7 @@ static void build_record_assignment_function(ClassType* ct) {
     return;
 
   FnSymbol* fn = new FnSymbol("=");
+  fn->addFlag(FLAG_ASSIGNOP);
   fn->addFlag(FLAG_COMPILER_GENERATED);
 
   ArgSymbol* arg1 = new ArgSymbol(INTENT_REF, "_arg1", ct);
@@ -655,6 +657,7 @@ static void build_union_assignment_function(ClassType* ct) {
     return;
 
   FnSymbol* fn = new FnSymbol("=");
+  fn->addFlag(FLAG_ASSIGNOP);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   ArgSymbol* arg1 = new ArgSymbol(INTENT_REF, "_arg1", ct);
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);

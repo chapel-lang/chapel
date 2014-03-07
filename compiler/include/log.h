@@ -67,6 +67,7 @@ struct ArgumentState;
 #define LOG_parallel            'P'
 #define LOG_prune               'X'
 #define LOG_complex2record      'C'
+#define LOG_bulkCopyRecords     'B'
 #define LOG_removeUnnecessaryAutoCopyCalls 'U'
 #define LOG_inlineFunctions     'I'
 #define LOG_scalarReplace       'r'
