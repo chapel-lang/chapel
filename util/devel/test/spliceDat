@@ -27,7 +27,7 @@ def main():
   if a_line[0].startswith('#'):
     print_line(a_line)
   else:
-    system.stdout.write("Error: {} missing column header".format(args.file_a.name))
+    system.stdout.write("Error: {0} missing column header".format(args.file_a.name))
     sys.exit(1)
 
   while True:
@@ -82,14 +82,14 @@ def leq_than(lhs, rhs):
 
 def print_line(line):
   if line:
-    sys.stdout.write("{}".format('\t'.join(line)))
+    sys.stdout.write("{0}".format('\t'.join(line)))
 
 def parse_date(date_string):
   try:
     d = datetime.strptime(date_string.strip(), '%m/%d/%y')
     return d.date()
   except ValueError:
-    print("Error: invalid date '{}'".format(date_string))
+    print("Error: invalid date '{0}'".format(date_string))
     print("Please provide dates in the form of 'mm/dd/yy'")
     sys.exit(1)
 
