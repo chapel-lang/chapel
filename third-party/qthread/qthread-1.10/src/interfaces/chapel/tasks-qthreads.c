@@ -127,6 +127,8 @@ struct chpl_task_list {
 
 static syncvar_t exit_ret = SYNCVAR_STATIC_EMPTY_INITIALIZER;
 
+static volatile int havePollingTask = 0;
+
 void chpl_task_yield(void)
 {
     PROFILE_INCR(profile_task_yield,1);
@@ -301,15 +303,27 @@ static void *initializer(void *junk)
 
 void chpl_task_init(void)
 {
+    int32_t   numCoresPerLocale;
     int32_t   numThreadsPerLocale;
+    int32_t   numPollingTasks;
     size_t    callStackSize;
     pthread_t initer;
     char      newenv_sheps[100] = { 0 };
     char      newenv_stack[100] = { 0 };
 
     // Set up available hardware parallelism
-    if ((numThreadsPerLocale = chpl_task_getenvNumThreadsPerLocale()) == 0)
+    numThreadsPerLocale = chpl_task_getenvNumThreadsPerLocale();
+    numPollingTasks = chpl_comm_numPollingTasks();
+    numCoresPerLocale = chpl_numCoresOnThisLocale();
+    if (numThreadsPerLocale == 0)
         numThreadsPerLocale = chpl_comm_getMaxThreads();
+    else if (numPollingTasks > 0) {
+	if (numCoresPerLocale > numThreadsPerLocale + numPollingTasks) {
+	    numThreadsPerLocale += numPollingTasks;
+	} else {
+	    numThreadsPerLocale = numCoresPerLocale;
+	}
+    }
     if (0 < numThreadsPerLocale) {
         // We are assuming the user wants to constrain the hardware
         // resources used during this run of the application.
@@ -319,13 +333,13 @@ void chpl_task_init(void)
         qt_internal_unset_envstr("NUM_SHEPHERDS");
         qt_internal_unset_envstr("NUM_WORKERS_PER_SHEPHERD");
 
-        if (chpl_numCoresOnThisLocale() < numThreadsPerLocale) {
+        if (numCoresPerLocale < numThreadsPerLocale) {
             if (2 == verbosity) {
                 printf("QTHREADS: Ignored --numThreadsPerLocale=%d to prevent oversubsription of the system.\n", numThreadsPerLocale);
             }
 
             // Do not oversubscribe the system, use all available resources.
-            numThreadsPerLocale = chpl_numCoresOnThisLocale();
+            numThreadsPerLocale = numCoresPerLocale;
         }
 
         // Set environment variable for Qthreads
@@ -338,7 +352,7 @@ void chpl_task_init(void)
         // environment variables.
     } else {
         // Default to using all hardware resources.
-        numThreadsPerLocale = chpl_numCoresOnThisLocale();
+        numThreadsPerLocale = numCoresPerLocale;
         snprintf(newenv_sheps, 99, "%i", (int)numThreadsPerLocale);
         setenv("QT_HWPAR", newenv_sheps, 1);
     }
@@ -434,12 +448,19 @@ int chpl_task_createCommTask(chpl_fn_p fn,
                              void     *arg)
 {
 #ifndef QTHREAD_MULTINODE
-    pthread_t polling_thread;
+    const chpl_qthread_wrapper_args_t wrapper_args = 
+        {fn, arg, NULL, 0, {c_sublocid_any_val, false}};
 
-    return pthread_create(&polling_thread, NULL, (void *(*)(void *))fn, arg);
-#else
-    return 0;
+    qthread_debug(CHAPEL_CALLS, "[%d] begin chpl_task_createCommTask()\n", chpl_localeID);
+
+    qthread_fork_copyargs(chapel_wrapper, &wrapper_args, sizeof(wrapper_args),
+                          NULL);
+    havePollingTask = 1;
+
+    qthread_debug(CHAPEL_CALLS, "[%d] end chpl_task_createCommTask()\n", chpl_localeID);
 #endif
+
+    return 0;
 }
 
 void chpl_task_addToTaskList(chpl_fn_int_t     fid,
@@ -591,7 +612,22 @@ uint32_t chpl_task_getNumQueuedTasks(void)
 
 uint32_t chpl_task_getNumRunningTasks(void)
 {
-    return qthread_readstate(WORKER_OCCUPATION);
+    uint32_t runningTasks = qthread_readstate(WORKER_OCCUPATION);
+
+    //
+    // If we created a polling task, assume that it runs cooperatively
+    // and yields when it doesn't have anything to do, and so can be
+    // discounted.  Note, however, that we actually count busy workers
+    // rather than running tasks here, so we don't produce an accurate
+    // count when we have more tasks than workers.  For now, let that
+    // go.  We'll correct it when we move maintening the runningTasks
+    // count into the module code.  (Though note that at that time
+    // we'll also need to get the blockedTasks count right, and we
+    // don't do that below.)
+    //
+    if (runningTasks > 0 && havePollingTask)
+        runningTasks--;
+    return runningTasks;
 }                                                         /* 1, i.e. this one */
 
 // XXX: not sure what the correct value should be here!

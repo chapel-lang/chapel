@@ -353,12 +353,15 @@ int32_t chpl_comm_getMaxThreads(void) {
 // even though the tasking layer can implement it however it likes, as a
 // task or thread or whatever.
 //
-static done_t alldone;
-static volatile int pollingRunning = 0;
+static volatile int pollingRunning;
+static volatile int pollingQuit;
 
 static void polling(void* x) {
   pollingRunning = 1;
-  GASNET_BLOCKUNTIL(alldone.flag);
+  while (!pollingQuit) {
+    (void) gasnet_AMPoll();
+    chpl_task_yield();
+  }
   pollingRunning = 0;
 }
 
@@ -493,7 +496,8 @@ void chpl_comm_post_task_init(void) {
   //
   // Start a polling task on each locale.
   //
-  INIT_DONE_OBJ(alldone, 1);
+  pollingRunning = 0;
+  pollingQuit = 0;
   if (chpl_task_createCommTask(polling, NULL))
     chpl_internal_error("unable to start polling task for gasnet");
   while (!pollingRunning) {
@@ -610,33 +614,28 @@ void chpl_comm_barrier(const char *msg) {
 void chpl_comm_pre_task_exit(int all) {
   if (all) {
     //
-    // This is the barrier across locales at the end of user code.  On
-    // locale 0 we just do the barrier.  On the others we can't do it so
-    // simply, because we get here much earlier (right after runtime
-    // startup) and we don't want to spend the life of the program in
-    // the barrier routine, competing with our own polling task for work
-    // to do.  So on the non-0 locales we do a slow spin wait, for the
-    // most part not occupying the processor.  We won't do enough real
-    // work to affect things.
+    // This is the barrier across locales at the end of user code.  It
+    // is called on the process for each locale.  We don't want to do a
+    // plain gasnet barrier call, because gasnet puts threads waiting at
+    // barriers to work polling, and that would result in our locale
+    // processes competing with our polling tasks.  This is especially a
+    // concern for the non-0 locales, on which the locale processes
+    // arrive here just as locale 0 goes to work on the user code.  So,
+    // we do a slow spin wait for the barrier to satisfy, for the most
+    // part not occupying the processor.  We won't do enough real work
+    // to affect things.
     //
-    if (chpl_nodeID == 0) {
-      BARRIER_WITH_ID(STOP_POLLING);
-    }
-    else {
-      struct timespec interval = { 0, 100 * 1000 * 1000 }; // 100m ns == 0.1s
+    struct timespec interval = { 0, 100 * 1000 * 1000 }; // 100m ns == 0.1s
 
-      gasnet_barrier_notify(BARRIER_ID_STOP_POLLING, 0);
-      while (gasnet_barrier_try(BARRIER_ID_STOP_POLLING, 0) != GASNET_OK) {
-        (void) nanosleep(&interval, NULL);
-      }
+    gasnet_barrier_notify(BARRIER_ID_STOP_POLLING, 0);
+    while (gasnet_barrier_try(BARRIER_ID_STOP_POLLING, 0) != GASNET_OK) {
+      (void) nanosleep(&interval, NULL);
     }
 
     //
     // Tell the polling task to halt, then wait for it to do so.
     //
-    GASNET_Safe(gasnet_AMRequestShort2(chpl_nodeID, SIGNAL,
-                                       AckArg0(&alldone),
-                                       AckArg1(&alldone)));
+    pollingQuit = 1;
     while (pollingRunning) {
       sched_yield();
     }
@@ -646,10 +645,9 @@ void chpl_comm_pre_task_exit(int all) {
 static void exit_common(int status) {
   static int loopback = 0;
 
+  pollingQuit = 1;
+
   if (chpl_nodeID == 0) {
-    GASNET_Safe(gasnet_AMRequestShort2(chpl_nodeID, SIGNAL,
-                                       AckArg0(&alldone),
-                                       AckArg1(&alldone)));
     if (loopback) {
       gasnet_exit(2);
     }
@@ -661,15 +659,14 @@ static void exit_common(int status) {
 }
 
 static void exit_any_dirty(int status) {
-  // kill the polling task on locale 0, but other than that...
+  // kill the polling task, but other than that...
   // clean up nothing; just ask GASNet to exit
   // GASNet will then kill all other locales.
   static int loopback = 0;
 
+  pollingQuit = 1;
+
   if (chpl_nodeID == 0) {
-    GASNET_Safe(gasnet_AMRequestShort2(chpl_nodeID, SIGNAL,
-                                       AckArg0(&alldone),
-                                       AckArg1(&alldone)));
     if (loopback) {
       gasnet_exit(2);
     }
