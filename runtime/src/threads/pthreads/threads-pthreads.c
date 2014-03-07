@@ -52,8 +52,8 @@ static thread_list_p   thread_list_tail = NULL; // tail of thread_list
 
 static pthread_attr_t  thread_attributes;
 
-static pthread_key_t   thread_id_key;
-static pthread_key_t   thread_private_key;
+CHPL_TLS_DECL(chpl_thread_id_t,chpl_thread_id);
+CHPL_TLS_DECL(void*, chpl_thread_data);
 
 static int32_t         maxThreads = 0;
 static uint32_t        numThreads = 0;
@@ -100,7 +100,7 @@ void chpl_thread_mutexUnlock(chpl_thread_mutex_p mutex) {
 // Thread management
 
 chpl_thread_id_t chpl_thread_getId(void) {
-  void* val = pthread_getspecific(thread_id_key);
+  void* val = (void*) CHPL_TLS_GET(chpl_thread_id);
 
   if (val == NULL)
     return chpl_thread_nullThreadId;
@@ -196,14 +196,9 @@ void chpl_thread_init(void(*threadBeginFn)(void*),
   saved_threadBeginFn = threadBeginFn;
   saved_threadEndFn   = threadEndFn;
 
-  if (pthread_key_create(&thread_id_key, NULL))
-    chpl_internal_error("pthread_key_create(thread_id_key) failed");
-
-  if (pthread_setspecific(thread_id_key, (void*) (intptr_t) --curr_thread_id))
-    chpl_internal_error("thread id data key doesn't work");
-
-  if (pthread_key_create(&thread_private_key, NULL))
-    chpl_internal_error("pthread_key_create(thread_private_key) failed");
+  CHPL_TLS_INIT(chpl_thread_id);
+  CHPL_TLS_SET(chpl_thread_id, (intptr_t) --curr_thread_id);
+  CHPL_TLS_INIT(chpl_thread_data);
 
   pthread_mutex_init(&thread_info_lock, NULL);
   pthread_mutex_init(&numThreadsLock, NULL);
@@ -267,8 +262,8 @@ void chpl_thread_exit(void) {
     chpl_mem_free(tlp, 0, 0);
   }
 
-  if (pthread_key_delete(thread_id_key) != 0)
-    chpl_internal_error("pthread_key_delete(thread_id_key) failed");
+  CHPL_TLS_DELETE(chpl_thread_id);
+  CHPL_TLS_DELETE(chpl_thread_data);
 
   if (pthread_attr_destroy(&thread_attributes) != 0)
     chpl_internal_error("pthread_attr_destroy() failed");
@@ -355,15 +350,15 @@ static void* pthread_func(void* arg) {
 
   pthread_mutex_unlock(&thread_info_lock);
 
-  if (pthread_setspecific(thread_id_key, (void*) (intptr_t) my_thread_id))
-    chpl_internal_error("thread id data key doesn't work");
+  CHPL_TLS_SET(chpl_thread_id, (intptr_t) my_thread_id);
 
   if (saved_threadEndFn == NULL)
     (*saved_threadBeginFn)(arg);
   else {
     pthread_cleanup_push((void (*)(void*)) saved_threadEndFn, NULL);
     (*saved_threadBeginFn)(arg);
-    pthread_cleanup_pop(0);
+    pthread_cleanup_pop(1); // Shouldn't we run the thread
+                            // end function even if not cancelled?
   }
 
   return NULL;
@@ -386,15 +381,6 @@ void chpl_thread_destroy(void) {
   (void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &last_cancel_state);
   pthread_testcancel();
   (void) pthread_setcancelstate(last_cancel_state, NULL);
-}
-
-void* chpl_thread_getPrivateData(void) {
-  return pthread_getspecific(thread_private_key);
-}
-
-void chpl_thread_setPrivateData(void* p) {
-  if (pthread_setspecific(thread_private_key, p))
-    chpl_internal_error("thread private data key doesn't work");
 }
 
 uint32_t chpl_thread_getMaxThreads(void) {
