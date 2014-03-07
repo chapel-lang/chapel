@@ -26,6 +26,12 @@ module ChapelSyncvar {
       }
     }
 
+  proc _isSyncType(type t) param
+    return __primitive("is sync type", t);
+
+  proc _isSync(x: sync) param return true;
+  proc _isSync(x) param return false;
+
   // The operations are:
   //  readFE - wait for full, leave empty
   //  readFF - wait for full, leave full

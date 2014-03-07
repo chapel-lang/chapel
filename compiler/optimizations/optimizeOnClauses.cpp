@@ -222,6 +222,7 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_ENUM_IS_SIGNED:
   case PRIM_IS_UNION_TYPE:
   case PRIM_IS_ATOMIC_TYPE:
+  case PRIM_IS_SYNC_TYPE:
   case PRIM_IS_TUPLE_TYPE:
   case PRIM_IS_STAR_TUPLE_TYPE:
   case PRIM_IS_SUBTYPE:
