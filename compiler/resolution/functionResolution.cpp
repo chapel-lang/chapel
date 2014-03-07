@@ -4618,6 +4618,13 @@ preFold(Expr* expr) {
       else
         result = new SymExpr(gFalse);
       call->replace(result);
+    } else if (call->isPrimitive(PRIM_IS_SINGLE_TYPE)) {
+      Type* singleType = call->get(1)->typeInfo();
+      if (singleType->symbol->hasFlag(FLAG_SINGLE))
+        result = new SymExpr(gTrue);
+      else
+        result = new SymExpr(gFalse);
+      call->replace(result);
     } else if (call->isPrimitive(PRIM_IS_TUPLE_TYPE)) {
       Type* tupleType = call->get(1)->typeInfo();
       if (tupleType->symbol->hasFlag(FLAG_TUPLE))

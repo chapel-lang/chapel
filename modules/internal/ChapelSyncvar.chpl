@@ -152,6 +152,12 @@ module ChapelSyncvar {
       }
     }
 
+  proc _isSingleType(type t) param
+    return __primitive("is single type", t);
+
+  proc _isSingle(x: single) param return true;
+  proc _isSingle(x) param return false;
+
   // Wait for full. Set and signal full.
   proc _singlevar.readFF() {
     var ret: base_type;
