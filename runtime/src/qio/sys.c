@@ -49,8 +49,12 @@ void sys_init_sys_sockaddr(sys_sockaddr_t* addr)
 
 size_t sys_page_size(void)
 {
-  long pagesize = -1;
+  static long pagesize = -1;
   err_t err;
+
+  // Handle already computed page size.
+  if( pagesize > 0 ) return pagesize;
+
 #ifdef _SC_PAGESIZE
   err = sys_sysconf(_SC_PAGESIZE, &pagesize);
   if( err == 0 && pagesize > 0 ) return pagesize;
