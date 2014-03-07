@@ -362,6 +362,7 @@ class GraphClass:
                     else:
                         df.lines.append([fields])
 
+        found_data = False
         while not done:
             done = True
             for i in xrange(numKeys):
@@ -385,13 +386,16 @@ class GraphClass:
             if done:
                 break
 
-            if not first:
+            # We didn't print anything last iteration if there was no data
+            # found, so skip the new line in that case
+            if not first and found_data:
                 f.write('\n')
             else:
                 first = False
 
             # write out the data for this date
-            f.write(time.strftime('%Y-%m-%d', minDate))
+            found_data = False
+            line_to_write = time.strftime('%Y-%m-%d', minDate)
             for i in range(numKeys):
                 if not self.datfilenames[i] in datfiles:
                     continue
@@ -401,7 +405,7 @@ class GraphClass:
                     myDate = fields[0][0]
                     if myDate == minDate:
                         # consume this line
-                        f.write(',')
+                        line_to_write += ','
                         if len(fields)>df.mykeys[i] and '-' not in fields[df.mykeys[i]]:
                             fieldId = df.mykeys[i]
                             value = fields[fieldId][0]
@@ -426,16 +430,20 @@ class GraphClass:
                             if self.displayrange:
                                 minval = min(fields[fieldId])
                                 maxval = max(fields[fieldId])
-                                f.write("{0};{1};{2}".format(minval, value, maxval))
+                                line_to_write += "{0};{1};{2}".format(minval, value, maxval)
                             else:
-                                f.write("{0}".format(value))
+                                line_to_write += "{0}".format(value)
+                            found_data = True
                         currLines[i] += 1
                     else:
                         # no data for this date
-                        f.write(',')
+                        line_to_write += ','
                 else:
                     # no data for this date
-                    f.write(',')
+                    line_to_write += ','
+
+            if found_data:
+              f.write(line_to_write)
 
             if self.enddate==None:
                 enddate = minDate
