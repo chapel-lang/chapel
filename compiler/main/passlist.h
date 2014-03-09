@@ -51,7 +51,7 @@ PassInfo passlist[] = {
 
   // Optimizations
   RUN(complex2record),      // change complex numbers into records
-  RUN(bulkCopyRecords),		// replace simple assignments with PRIM_ASSIGN.
+  RUN(bulkCopyRecords),     // replace simple assignments with PRIM_ASSIGN.
   RUN(removeUnnecessaryAutoCopyCalls),
   RUN(inlineFunctions),     // function inlining
   RUN(scalarReplace),       // scalar replace all tuples
