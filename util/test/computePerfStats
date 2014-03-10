@@ -96,49 +96,51 @@ my @file_lines;
 # }
 
 # make sure the output is valid.
-my $valid_output = 1;
-foreach my $key (@verify_keys) {
-    # Looks for a key of the form:
-    # (verify|reject): <regex>
-    # (verify|reject):linenum: <regex>
-    # (verify|reject):-linenum: <regex>
-    $key =~ /(verify|reject):(?:(-?[1-9][0-9]*):)? ?(.+)/ ||
-            die "Error: invalid verify/reject line '$key'";
-    my ($type, $num, $regex) = ($1, $2, $3);
-    my $num_real = $num;
-    if ($num >= 1) {
-        --$num_real;
-    }
-    my $regex_real = $regex;
-    my $is_reject = ($type eq "reject") ? 1 : 0;
-    if (defined $num) {
-        print "Checking for /$regex/ on line $num... ";
-        if ($file_lines[$num_real] =~ m/$regex_real/) {
-            $valid_output = $valid_output && !$is_reject;
-            print "found it.\n";
-        } else {
-            $valid_output = $valid_output && $is_reject;
-            print "didn't find it.\n";
-        }
-    } else {
-        print "Checking for /$regex/ on any line... ";
-        my $found = 0;
-        foreach my $line (@file_lines) {
-            if ($line =~ m/$regex_real/) {
-                $found = 1;
-                print "found it.\n";
-                $valid_output = $valid_output && !$is_reject;
-                last;
-            }
-        }
-        if (!$found) {
-            $valid_output = $valid_output && $is_reject;
-            print "didn't find it.\n"
-        }
-    }
-}
-if (!$valid_output) {
-    die "Error: Invalid output found in $test_output_file\n";
+if ($exec_time_out eq "False") {
+  my $valid_output = 1;
+  foreach my $key (@verify_keys) {
+      # Looks for a key of the form:
+      # (verify|reject): <regex>
+      # (verify|reject):linenum: <regex>
+      # (verify|reject):-linenum: <regex>
+      $key =~ /(verify|reject):(?:(-?[1-9][0-9]*):)? ?(.+)/ ||
+              die "Error: invalid verify/reject line '$key'";
+      my ($type, $num, $regex) = ($1, $2, $3);
+      my $num_real = $num;
+      if ($num >= 1) {
+          --$num_real;
+      }
+      my $regex_real = $regex;
+      my $is_reject = ($type eq "reject") ? 1 : 0;
+      if (defined $num) {
+          print "Checking for /$regex/ on line $num... ";
+          if ($file_lines[$num_real] =~ m/$regex_real/) {
+              $valid_output = $valid_output && !$is_reject;
+              print "found it.\n";
+          } else {
+              $valid_output = $valid_output && $is_reject;
+              print "didn't find it.\n";
+          }
+      } else {
+          print "Checking for /$regex/ on any line... ";
+          my $found = 0;
+          foreach my $line (@file_lines) {
+              if ($line =~ m/$regex_real/) {
+                  $found = 1;
+                  print "found it.\n";
+                  $valid_output = $valid_output && !$is_reject;
+                  last;
+              }
+          }
+          if (!$found) {
+              $valid_output = $valid_output && $is_reject;
+              print "didn't find it.\n"
+          }
+      }
+  }
+  if (!$valid_output) {
+      die "Error: Invalid output found in $test_output_file\n";
+  }
 }
 
 # if this is first performance run, create the .dat
