@@ -215,8 +215,7 @@ CHPL_TASKS == qthreads:
   In the Qthreads tasking layer, CHPL_RT_NUM_THREADS_PER_LOCALE
   specifies the number of system threads, or shepherds, used to execute
   tasks.  If the value is 0, the qthreads tasking layer will create a
-  number of threads equal to the number of processor cores on the
-  locale.
+  number of threads equal to the number of processor cores on the locale.
 
 
 -------------------------------

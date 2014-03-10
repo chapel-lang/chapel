@@ -516,7 +516,7 @@ proc GlobalDomain.dsiBuildRectangularDom(param rank: int,
 
   This method returns a new instance of GlobalDomain(rank, idxType, stridable)
   that will be the runtime representation of a Chapel domain whose index set
-  is initialized as defined by 'ranges'. Other that that, this instance must
+  is initialized as defined by 'ranges'. Other than that, this instance must
   satisfy the same constraints as the result of dsiNewRectangularDom().
 
   This method can be implemented as follows,
