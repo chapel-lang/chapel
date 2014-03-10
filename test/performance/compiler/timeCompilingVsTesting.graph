@@ -1,5 +1,0 @@
-perfkeys: totalTimeCompiling, elapsedTestTime
-graphkeys: Time Compiling, Time Testing 
-files: compilerAndTestingStats.dat, compilerAndTestingStats.dat
-graphtitle: Time Spent Compiling vs Testing 
-ylabel: Time (seconds)

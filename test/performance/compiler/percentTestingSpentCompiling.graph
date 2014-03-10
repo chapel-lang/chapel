@@ -1,4 +1,0 @@
-perfkeys: percentTimeCompiling
-graphkeys: Percent of Time Compiling
-files: compilerAndTestingStats.dat
-graphtitle: Percent of Testing Spent Compiling 

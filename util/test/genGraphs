@@ -194,8 +194,13 @@ class GraphStuff:
                 graphs[currgraph].perfkeys += [ s.strip() for s in rest.split(', ') ]
             elif key == 'graphkeys' :
                 graphs[currgraph].graphkeys += [ s.strip() for s in rest.split(',') ] 
+            # files takes a list of the files to use per perfkey, while file
+            # uses the same file for every perfkey. 
             elif key == 'files' :
                 graphs[currgraph].datfilenames += [ s.strip() for s in rest.split(',') ]
+            elif key == 'file' :
+                numKeysRange = range(0, len(graphs[currgraph].perfkeys))
+                graphs[currgraph].datfilenames += [ rest.strip() for i in numKeysRange]
             elif key == 'graphtitle':
                 graphs[currgraph].title = rest.strip()
             elif key == 'graphname':

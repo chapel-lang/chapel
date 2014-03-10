@@ -132,10 +132,13 @@ def main():
         outfile.write(outputPerfKeys + '\n')
         outfile.write(outputPerfValues + '\n')
         outfile.close()
-    
+   
+    # convert elapsedTestTime and totalTimeCompiling to hours from seconds 
+    totalTimeCompiling /= 3600.0
+    elapsedTestTime /= 3600.0
     # create the keys and values for the compiling and testing stats 
-    miscPerfKeys = '# Date\tnumTests\tnumPasses\ttotalTimeCompiling\telapsedTestTime\tpercentTimeCompiling'
-    miscPerfValues = format('%s\t%d\t%d\t%.1f\t%.1f\t%.1f'%(date, numTests, numPasses, totalTimeCompiling, elapsedTestTime, percentTimeCompiling))
+    miscPerfKeys = '# Date\tnumSuccessfulCompiles\tnumPasses\ttotalTimeCompiling\telapsedTestTime\tpercentTimeCompiling'
+    miscPerfValues = format('%s\t%d\t%d\t%.2f\t%.2f\t%.1f'%(date, numTests, numPasses, totalTimeCompiling, elapsedTestTime, percentTimeCompiling))
     
     # create or append to the compiling testing stats file that contains the
     # above stats
