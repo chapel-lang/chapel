@@ -230,8 +230,8 @@ at present.  See the archives for more detail. (bradc, 1/27/14)
 Perf (linux64.gnu.none.fifo.pthreads.flat)
 ------------------------------------------
 [Error matching compiler output for studies/shootout/mandelbrot/mandelbrot-fancy] (chap03: 10/11/13,11/02/13, chap04: 10/11/13,11/02/13, bradc-lnx: 10/11/13,11/02/13)
-[Error: Timed out executing program release/examples/benchmarks/hpcc/ptrans (compopts: 1)] (chap04: 10/11/13,11/02/13)
-[Error: Timed out executing program studies/hpcc/RA/bradc/parallel/ra-dist (compopts: 1)] (chap04: 10/11/13,11/02/13)
+[Error: Timed out executing program release/examples/benchmarks/hpcc/ptrans (compopts: 1)] (chap04: 10/11/13,11/02/13,03/06/14)
+[Error: Timed out executing program studies/hpcc/RA/bradc/parallel/ra-dist (compopts: 1)] (chap04: 10/11/13,11/02/13,03/06/14)
 
 valgrind compilation timeouts
 -----------------------------
@@ -361,6 +361,7 @@ valgrind timeouts
 [Error: Timed out compilation for release/examples/benchmarks/miniMD/explicit/miniMD (compopts: 1)]
 [Error: Timed out compilation for release/examples/benchmarks/miniMD/miniMD (compopts: 1)]
 [Error: Timed out compilation for release/examples/benchmarks/miniMD/miniMD (compopts: 2)]
+* Also 2014/03/04
 [Error: Timed out compilation for studies/lulesh/bradc/xyztuple/lulesh-dense-3tuple]
 [Error: Timed out compilation for studies/madness/aniruddha/madchap/test_likepy]
 [Error: Timed out compilation for studies/ssca2/test-rmatalt/nondet (compopts: 1)]
@@ -401,10 +402,17 @@ prgenv-* compilation timeouts (maybe due to system updates or ...?)
 [Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/perfTest_v2 (compopts: 1)] (07/01/13)
 [Error: Timed out compilation for sparse/bradc/sparseDomAssign2] (10/11/13)
 [Error: Timed out compilation for types/tuple/deitz/test_tuple_simple2] (prgenv-pgi, compiler prgenv-pgi, 12/15/13)
+[Error: Timed out compilation for statements/bradc/swaps/overloadSwap](prgenv-cray 3/8/14)
+[Error: Timed out compilation for unicode/print_euro](prgenv-cray 3/8/14)
+[Error: Timed out compilation for unicode/write_read_euro](prgenv-cray 3/8/14)
+[Error: Timed out compilation for statements/vass/while-const](prgenv-cray 3/8/14)
 
 pgi compilation timeouts
 ------------------------
 [Error: Timed out compilation for reductions/bradc/manual/threeclasstypes-construct] (10/15/13)
+[Error: Timed out compilation for studies/lammps/shemmy/s-lammps] (03/04/14)
+[Error: Timed out compilation for studies/kmeans/kmeansonepassreduction-norecord2] (03/04/14)
+[Error: Timed out compilation for studies/kmeans/kmeansonepassreduction-minchange] (03/04/14)
 
 intel compilation timeouts
 --------------------------
@@ -459,6 +467,13 @@ examples of what times out:
  studies/cholesky/jglewis/version2/performance/test_cholesky_performance (10/10/13)
  multilocale/diten/needMultiLocales/coforallon_maxThreads (07/04/13, 10/10/13, 10/22/13, 1/21/14)
  etc.
+[Error: Timed out executing program release/examples/hello3-datapar]
+[Error: Timed out executing program release/examples/hello]
+[Error: Timed out executing program release/examples/hello2-module]
+[Error: Timed out executing program release/examples/primers/locales]
+[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5, execopts: 1)]
+[Error: Timed out executing program release/examples/benchmarks/hpcc/hpl]
+[Error: Timed out executing program release/examples/benchmarks/hpcc/stream]
 
 non-deterministic compilation timeouts with gasnet (UNASSIGNED)
 ---------------------------------------------------------------

@@ -113,8 +113,8 @@ nondeterministic failure due to decrementing task counts after task has
 run but before pthread has been descheduled.  Could happen in any
 configuration, but exacerbated by valgrind (bradc, sungeun, gbt understand)
 ----------------------------------------------------------------------------
-[Error matching program output for functions/iterators/sungeun/forwarding/forwardDefaultDom (compopts: 1)]
-[Error matching program output for functions/iterators/sungeun/forwarding/forwardDefaultArr (compopts: 1)]
+[Error matching program output for functions/iterators/sungeun/forwarding/forwardDefaultDom (compopts: 1)] (3/8/14)(3/10/14)
+[Error matching program output for functions/iterators/sungeun/forwarding/forwardDefaultArr (compopts: 1)] (3/10/14)
 [Error matching program output for arrays/deitz/parallelism/test_forall_of_arrays_is_parallel]
 
 overlapping memcpy (root cause should be eliminated)
@@ -734,10 +734,11 @@ examples testing only
 
 error: internal failure SYM1634 (03/01/14 -- first correct run in awhile)
 -------------------------------------------------------------------------
-[Error matching compiler output for release/examples/benchmarks/hpcc/stream-ep]
+[Error matching compiler output for release/examples/benchmarks/hpcc/stream-ep](3/9/14)
 
 a bunch of timeouts
 -------------------
+[Error: Timed out executing program execflags/bradc/gdbddash/gdbSetConfig](3/10/14)
 [Error: Timed out executing program release/examples/benchmarks/hpcc/fft]
 [Error: Timed out executing program release/examples/benchmarks/hpcc/hpl]
 [Error: Timed out executing program release/examples/benchmarks/hpcc/ptrans]
@@ -787,6 +788,21 @@ The pre-user code hook is called from the main thread instead of a qthreads
 task on locales other than 0 causing task-local storage to not be set up
 correctly. Every test that runs with multiple locales in this
 configuration. (gbt)
+
+
+================================
+gasnet.qthreads.flat regressions
+================================
+
+Lots of timeouts
+----------------
+Fifty (50) on (3/10/14)
+
+The number of times the follower is called has changed.  Perhaps related to 
+"nondeterministic failure due to decrementing task counts after task has run".
+------------------------------------------------------------------------------
+[Error matching program output for distributions/deitz/test_aligned_unaligned_block_forall (compopts: 1)](3/10/14)
+[Error matching program output for distributions/deitz/test_aligned_unaligned_block_forall_no_fast_follower (compopts: 1)](3/10/14)
 
 
 
@@ -842,7 +858,11 @@ glibc double free or corruption (09/28/13)
 
 Nondeterministic stacksize issue
 --------------------------------
-[Error matching program output for studies/amr/diffusion/level/Level_DiffusionBE_driver (compopts: 1)]
+The program fails to run to completion due to memory corruption, but the error
+just looks like an output mismatch because the output comparison script fails
+to find a valid output file.
+--------------------------------
+[Error matching program output for studies/amr/diffusion/level/Level_DiffusionBE_driver (compopts: 1)](3/9/14)
 
 timeouts
 --------
