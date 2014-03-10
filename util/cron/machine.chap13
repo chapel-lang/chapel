@@ -3,4 +3,4 @@
 source $(cd $(dirname $0) ; pwd)/common-gasnet.bash
 
 # qthreads + flat + gasnet + multilocale suite
-~/chapel/util/cron/nightly.qthreads -multilocale
+~/chapel/util/cron/nightly.qthreads -examples
