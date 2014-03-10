@@ -1,3 +1,4 @@
+PATH=/usr/local/bin:/usr/bin:/bin
 SHELL=/bin/bash
 MAILTO=chapel_build@cray.com
 
