@@ -100,7 +100,7 @@ void chpl_thread_mutexUnlock(chpl_thread_mutex_p mutex) {
 // Thread management
 
 chpl_thread_id_t chpl_thread_getId(void) {
-  void* val = (void*) CHPL_TLS_GET(chpl_thread_id);
+  void* val = (void*) (intptr_t) CHPL_TLS_GET(chpl_thread_id);
 
   if (val == NULL)
     return chpl_thread_nullThreadId;

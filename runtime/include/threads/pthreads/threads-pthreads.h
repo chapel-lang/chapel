@@ -19,7 +19,9 @@ typedef pthread_mutex_t chpl_thread_mutex_t;
 #ifdef __GNUC__
 // For GCC and CLANG, where we know there is __thread, use it instead
 // of pthread_get/setspecific since __thread appears to be 2x faster.
+#ifndef __APPLE__ // But at least in Darwin, __thread is not supported.
 #define CHPL_TLS __thread
+#endif
 #elif __STDC_VERSION >= 201112L && !defined __STDC_NO_THREADS__
 // For the C11 standard, _Thread_local is the name of it
 #define CHPL_TLS _Thread_local
