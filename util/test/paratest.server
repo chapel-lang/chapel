@@ -546,8 +546,21 @@ sub main {
             }
         }
     } else { # else, just current node
-        while ($node_para--) {
-            push @node_list, $localnode;
+        if( defined $ENV{'SLURM_JOB_NODELIST'} ) {
+            my $SLURM_NODELIST = $ENV{'SLURM_JOB_NODELIST'};
+            my $SLURM_NODES = `scontrol show hostnames $SLURM_NODELIST`;
+            my @SLURM_NODES = split(' ', $SLURM_NODES);
+            for my $node (@SLURM_NODES) {
+                print "using node $node from SLURM\n";
+                $count = $node_para;
+                while ($count--) {
+                    push @node_list, $node;
+                }
+            }
+        } else {
+            while ($node_para--) {
+                push @node_list, $localnode;
+            }
         }
     }
 
