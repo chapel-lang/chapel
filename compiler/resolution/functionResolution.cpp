@@ -182,7 +182,7 @@ static Map<Type*,Type*> runtimeTypeMap; // map static types to runtime types
 static Map<Type*,FnSymbol*> valueToRuntimeTypeMap; // convertValueToRuntimeType
 static Map<Type*,FnSymbol*> runtimeTypeToValueMap; // convertRuntimeTypeToValue
 
-static std::map<std::string, std::pair<ClassType*, FnSymbol*> > functionTypeMap; // lookup table/cache for function types and their representative parents
+static std::map<std::string, std::pair<AggregateType*, FnSymbol*> > functionTypeMap; // lookup table/cache for function types and their representative parents
 static std::map<FnSymbol*, FnSymbol*> functionCaptureMap; //loopup table/cache for function captures
 
 // map of compiler warnings that may need to be reissued for repeated
@@ -289,10 +289,10 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars);
 static Type* param_for_index_type(CallExpr* loop);
 static void fold_param_for(CallExpr* loop);
 static Expr* dropUnnecessaryCast(CallExpr* call);
-static ClassType* createAndInsertFunParentClass(CallExpr *call, const char *name);
-static FnSymbol* createAndInsertFunParentMethod(CallExpr *call, ClassType *parent, AList &arg_list, bool isFormal, Type *retType);
+static AggregateType* createAndInsertFunParentClass(CallExpr *call, const char *name);
+static FnSymbol* createAndInsertFunParentMethod(CallExpr *call, AggregateType *parent, AList &arg_list, bool isFormal, Type *retType);
 static std::string buildParentName(AList &arg_list, bool isFormal, Type *retType);
-static ClassType* createOrFindFunTypeFromAnnotation(AList &arg_list, CallExpr *call);
+static AggregateType* createOrFindFunTypeFromAnnotation(AList &arg_list, CallExpr *call);
 static Expr* createFunctionAsValue(CallExpr *call);
 static bool
 isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL);
@@ -321,10 +321,10 @@ static bool
 possible_signature_match(FnSymbol* fn, FnSymbol* gn);
 static bool signature_match(FnSymbol* fn, FnSymbol* gn);
 static void
-collectInstantiatedClassTypes(Vec<Type*>& icts, Type* ct);
+collectInstantiatedAggregateTypes(Vec<Type*>& icts, Type* ct);
 static bool isVirtualChild(FnSymbol* child, FnSymbol* parent);
-static void addToVirtualMaps(FnSymbol* pfn, ClassType* ct);
-static void addAllToVirtualMaps(FnSymbol* fn, ClassType* ct);
+static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct);
+static void addAllToVirtualMaps(FnSymbol* fn, AggregateType* ct);
 static void buildVirtualMaps();
 static void
 addVirtualMethodTableEntry(Type* type, FnSymbol* fn, bool exclusive = false);
@@ -351,8 +351,8 @@ static void insertRuntimeInitTemps();
 static void removeMootFields();
 static void removeNilTypeArgs();
 static void expandInitFieldPrims();
-static void fixTypeNames(ClassType* ct);
-static void setScalarPromotionType(ClassType* ct);
+static void fixTypeNames(AggregateType* ct);
+static void setScalarPromotionType(AggregateType* ct);
 
 bool ResolutionCandidate::computeAlignment(CallInfo& info) {
   if (alignedActuals.n != 0) alignedActuals.clear();
@@ -371,7 +371,7 @@ static bool hasRefField(Type *type) {
   if (type->symbol->hasFlag(FLAG_OBJECT_CLASS)) return false;
 
   if (!isClass(type)) { // record or union
-    if (ClassType *ct = toClassType(type)) {
+    if (AggregateType *ct = toAggregateType(type)) {
       for_fields(field, ct) {
         if (hasRefField(field->type)) return true;
       }
@@ -383,7 +383,7 @@ static bool hasRefField(Type *type) {
 }
 
 static bool typeHasRefField(Type *type) {
-  if (ClassType *ct = toClassType(type)) {
+  if (AggregateType *ct = toAggregateType(type)) {
     for_fields(field, ct) {
       if (hasRefField(field->typeInfo())) return true;
     }
@@ -434,7 +434,7 @@ static void makeRefType(Type* type) {
 
   CallExpr* call = new CallExpr("_type_construct__ref", type->symbol);
   FnSymbol* fn = resolveUninsertedCall(type, call);
-  type->refType = toClassType(fn->retType);
+  type->refType = toAggregateType(fn->retType);
   type->refType->getField(1)->type = type;
   
   if (type->symbol->hasFlag(FLAG_ATOMIC_TYPE))
@@ -669,13 +669,13 @@ protoIteratorClass(FnSymbol* fn) {
   if (fn->_this)
     className = astr(className, "_", fn->_this->type->symbol->cname);
 
-  ii->iclass = new ClassType(CLASS_CLASS);
+  ii->iclass = new AggregateType(AGGREGATE_CLASS);
   TypeSymbol* cts = new TypeSymbol(astr("_ic_", className), ii->iclass);
   cts->addFlag(FLAG_ITERATOR_CLASS);
   add_root_type(ii->iclass);    // Add super : dtObject.
   fn->defPoint->insertBefore(new DefExpr(cts));
 
-  ii->irecord = new ClassType(CLASS_RECORD);
+  ii->irecord = new AggregateType(AGGREGATE_RECORD);
   TypeSymbol* rts = new TypeSymbol(astr("_ir_", className), ii->irecord);
   rts->addFlag(FLAG_ITERATOR_RECORD);
   if (fn->retTag == RET_VAR)
@@ -731,7 +731,7 @@ static bool
 isInstantiatedField(Symbol* field) {
   TypeSymbol* ts = toTypeSymbol(field->defPoint->parentSymbol);
   INT_ASSERT(ts);
-  ClassType* ct = toClassType(ts->type);
+  AggregateType* ct = toAggregateType(ts->type);
   INT_ASSERT(ct);
   for_formals(formal, ct->defaultTypeConstructor) {
     if (!strcmp(field->name, formal->name))
@@ -747,7 +747,7 @@ isInstantiatedField(Symbol* field) {
 //
 static Symbol*
 determineQueriedField(CallExpr* call) {
-  ClassType* ct = toClassType(call->get(1)->getValType());
+  AggregateType* ct = toAggregateType(call->get(1)->getValType());
   INT_ASSERT(ct);
   SymExpr* last = toSymExpr(call->get(call->numActuals()));
   INT_ASSERT(last);
@@ -2638,10 +2638,10 @@ isTypeExpr(Expr* expr) {
       return true;
     if (call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
         call->isPrimitive(PRIM_GET_MEMBER)) {
-      ClassType* ct = toClassType(call->get(1)->typeInfo());
+      AggregateType* ct = toAggregateType(call->get(1)->typeInfo());
       INT_ASSERT(ct);
       if (ct->symbol->hasFlag(FLAG_REF))
-        ct = toClassType(ct->getValType());
+        ct = toAggregateType(ct->getValType());
       SymExpr* left = toSymExpr(call->get(1));
       SymExpr* right = toSymExpr(call->get(2));
       INT_ASSERT(left && right);
@@ -2680,7 +2680,7 @@ resolveDefaultGenericType(CallExpr* call) {
       actual = ne->actual;
     if (SymExpr* te = toSymExpr(actual)) {
       if (TypeSymbol* ts = toTypeSymbol(te->var)) {
-        if (ClassType* ct = toClassType(ts->type)) {
+        if (AggregateType* ct = toAggregateType(ts->type)) {
           if (ct->symbol->hasFlag(FLAG_GENERIC)) {
             CallExpr* cc = new CallExpr(ct->defaultTypeConstructor->name);
             te->replace(cc);
@@ -3100,7 +3100,7 @@ static void resolveSetMember(CallExpr* call) {
       }
     }
 
-    ClassType* ct = toClassType(call->get(1)->typeInfo());
+    AggregateType* ct = toAggregateType(call->get(1)->typeInfo());
     if (!ct)
       INT_FATAL(call, "bad set member primitive");
 
@@ -3453,7 +3453,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
           //  require the user to implement a default constructor if
           //  explicit memory allocation is required.
           //
-          if (!isClassType(formal->type) ||
+          if (!isAggregateType(formal->type) ||
               (isRecord(formal->type) &&
                ((formal->type->getModule()->modTag==MOD_INTERNAL) ||
                 (formal->type->getModule()->modTag==MOD_STANDARD))) ||
@@ -3617,8 +3617,8 @@ static Expr* dropUnnecessaryCast(CallExpr* call) {
   happen to share the same function type.  By using the parent class we can assign new values onto variable that match the function type
   but may currently be pointing at a different function.
 */
-static ClassType* createAndInsertFunParentClass(CallExpr *call, const char *name) {
-  ClassType *parent = new ClassType(CLASS_CLASS);
+static AggregateType* createAndInsertFunParentClass(CallExpr *call, const char *name) {
+  AggregateType *parent = new AggregateType(AGGREGATE_CLASS);
   TypeSymbol *parent_ts = new TypeSymbol(name, parent);
 
   parent_ts->addFlag(FLAG_FUNCTION_CLASS);
@@ -3647,7 +3647,7 @@ static ClassType* createAndInsertFunParentClass(CallExpr *call, const char *name
 
   The function is put at the highest scope so that all functions of a given type will share the same parent class.
 */
-static FnSymbol* createAndInsertFunParentMethod(CallExpr *call, ClassType *parent, AList &arg_list, bool isFormal, Type *retType) {
+static FnSymbol* createAndInsertFunParentMethod(CallExpr *call, AggregateType *parent, AList &arg_list, bool isFormal, Type *retType) {
   FnSymbol* parent_method = new FnSymbol("this");
   parent_method->addFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION);
   parent_method->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
@@ -3767,8 +3767,8 @@ static std::string buildParentName(AList &arg_list, bool isFormal, Type *retType
   by the type signature.  The last type given in the signature is the return type, the remainder
   represent arguments to the function.
 */
-static ClassType* createOrFindFunTypeFromAnnotation(AList &arg_list, CallExpr *call) {
-  ClassType *parent;
+static AggregateType* createOrFindFunTypeFromAnnotation(AList &arg_list, CallExpr *call) {
+  AggregateType *parent;
   FnSymbol *parent_method;
 
   SymExpr *retTail = toSymExpr(arg_list.tail);
@@ -3777,7 +3777,7 @@ static ClassType* createOrFindFunTypeFromAnnotation(AList &arg_list, CallExpr *c
   std::string parent_name = buildParentName(arg_list, false, retType);
   
   if (functionTypeMap.find(parent_name) != functionTypeMap.end()) {
-    std::pair<ClassType*, FnSymbol*> ctfs = functionTypeMap[parent_name];
+    std::pair<AggregateType*, FnSymbol*> ctfs = functionTypeMap[parent_name];
     parent = ctfs.first;
     parent_method = ctfs.second;
   }
@@ -3785,7 +3785,7 @@ static ClassType* createOrFindFunTypeFromAnnotation(AList &arg_list, CallExpr *c
     parent = createAndInsertFunParentClass(call, parent_name.c_str());
     parent_method = createAndInsertFunParentMethod(call, parent, arg_list, false, retType);
 
-    functionTypeMap[parent_name] = std::pair<ClassType*, FnSymbol*>(parent, parent_method);
+    functionTypeMap[parent_name] = std::pair<AggregateType*, FnSymbol*>(parent, parent_method);
   }
 
   return parent;
@@ -3825,23 +3825,23 @@ createFunctionAsValue(CallExpr *call) {
   resolveFormals(captured_fn);
   resolveFns(captured_fn);
 
-  ClassType *parent;
+  AggregateType *parent;
   FnSymbol *thisParentMethod;
 
   std::string parent_name = buildParentName(captured_fn->formals, true, captured_fn->retType); 
   
   if (functionTypeMap.find(parent_name) != functionTypeMap.end()) {
-    std::pair<ClassType*, FnSymbol*> ctfs = functionTypeMap[parent_name];
+    std::pair<AggregateType*, FnSymbol*> ctfs = functionTypeMap[parent_name];
     parent = ctfs.first;
     thisParentMethod = ctfs.second;
   }
   else {
     parent = createAndInsertFunParentClass(call, parent_name.c_str());
     thisParentMethod = createAndInsertFunParentMethod(call, parent, captured_fn->formals, true, captured_fn->retType);
-    functionTypeMap[parent_name] = std::pair<ClassType*, FnSymbol*>(parent, thisParentMethod);
+    functionTypeMap[parent_name] = std::pair<AggregateType*, FnSymbol*>(parent, thisParentMethod);
   }
 
-  ClassType *ct = new ClassType(CLASS_CLASS);
+  AggregateType *ct = new AggregateType(AGGREGATE_CLASS);
   std::ostringstream fcf_name;
   fcf_name << "_chpl_fcf_" << unique_fcf_id++ << "_" << flname;
   
@@ -4148,9 +4148,9 @@ preFold(Expr* expr) {
           if (get_int(call->get(3), &index)) {
             char field[8];
             sprintf(field, "x%" PRId64, index);
-            if (index <= 0 || index >= toClassType(t)->fields.length)
+            if (index <= 0 || index >= toAggregateType(t)->fields.length)
               USR_FATAL(call, "tuple index out-of-bounds error (%ld)", index);
-            if (toClassType(t)->getField(field)->type->symbol->hasFlag(FLAG_REF))
+            if (toAggregateType(t)->getField(field)->type->symbol->hasFlag(FLAG_REF))
               result = new CallExpr(PRIM_GET_MEMBER_VALUE, base->var, new_StringSymbol(field));
             else
               result = new CallExpr(PRIM_GET_MEMBER, base->var, new_StringSymbol(field));
@@ -4158,9 +4158,9 @@ preFold(Expr* expr) {
           } else if (get_uint(call->get(3), &uindex)) {
             char field[8];
             sprintf(field, "x%" PRIu64, uindex);
-            if (uindex <= 0 || uindex >= (unsigned long)toClassType(t)->fields.length)
+            if (uindex <= 0 || uindex >= (unsigned long)toAggregateType(t)->fields.length)
               USR_FATAL(call, "tuple index out-of-bounds error (%lu)", uindex);
-            if (toClassType(t)->getField(field)->type->symbol->hasFlag(FLAG_REF))
+            if (toAggregateType(t)->getField(field)->type->symbol->hasFlag(FLAG_REF))
               result = new CallExpr(PRIM_GET_MEMBER_VALUE, base->var, new_StringSymbol(field));
             else
               result = new CallExpr(PRIM_GET_MEMBER, base->var, new_StringSymbol(field));
@@ -4212,7 +4212,7 @@ preFold(Expr* expr) {
       result = createFunctionAsValue(call);
       call->replace(result);
     } else if (call->isPrimitive(PRIM_CREATE_FN_TYPE)) {
-      ClassType *parent = createOrFindFunTypeFromAnnotation(call->argList, call);
+      AggregateType *parent = createOrFindFunTypeFromAnnotation(call->argList, call);
 
       result = new SymExpr(parent->symbol);
       call->replace(result);
@@ -4466,9 +4466,9 @@ preFold(Expr* expr) {
       ++next_region_id;
       call->replace(result);
     } else if (call->isPrimitive(PRIM_NUM_FIELDS)) {
-      ClassType* classtype = toClassType(toSymExpr(call->get(1))->var->type);
+      AggregateType* classtype = toAggregateType(toSymExpr(call->get(1))->var->type);
       INT_ASSERT( classtype != NULL );
-      classtype = toClassType(classtype->getValType());
+      classtype = toAggregateType(classtype->getValType());
       INT_ASSERT( classtype != NULL );
 
       int fieldcount = 0;
@@ -4483,9 +4483,9 @@ preFold(Expr* expr) {
 
       call->replace(result);
     } else if (call->isPrimitive(PRIM_FIELD_NUM_TO_NAME)) {
-      ClassType* classtype = toClassType(toSymExpr(call->get(1))->var->type);
+      AggregateType* classtype = toAggregateType(toSymExpr(call->get(1))->var->type);
       INT_ASSERT( classtype != NULL );
-      classtype = toClassType(classtype->getValType());
+      classtype = toAggregateType(classtype->getValType());
       INT_ASSERT( classtype != NULL );
 
       VarSymbol* var = toVarSymbol(toSymExpr(call->get(2))->var);
@@ -4506,9 +4506,9 @@ preFold(Expr* expr) {
       result = new SymExpr(new_StringSymbol(name));
       call->replace(result);
     } else if (call->isPrimitive(PRIM_FIELD_VALUE_BY_NUM)) {
-      ClassType* classtype = toClassType(call->get(1)->typeInfo());
+      AggregateType* classtype = toAggregateType(call->get(1)->typeInfo());
       INT_ASSERT( classtype != NULL );
-      classtype = toClassType(classtype->getValType());
+      classtype = toAggregateType(classtype->getValType());
       INT_ASSERT( classtype != NULL );
 
       VarSymbol* var = toVarSymbol(toSymExpr(call->get(2))->var);
@@ -4530,9 +4530,9 @@ preFold(Expr* expr) {
       }
       call->replace(result);
     } else if (call->isPrimitive(PRIM_FIELD_ID_BY_NUM)) {
-      ClassType* classtype = toClassType(call->get(1)->typeInfo());
+      AggregateType* classtype = toAggregateType(call->get(1)->typeInfo());
       INT_ASSERT( classtype != NULL );
-      classtype = toClassType(classtype->getValType());
+      classtype = toAggregateType(classtype->getValType());
       INT_ASSERT( classtype != NULL );
 
       VarSymbol* var = toVarSymbol(toSymExpr(call->get(2))->var);
@@ -4552,9 +4552,9 @@ preFold(Expr* expr) {
       }
       call->replace(result);
     } else if (call->isPrimitive(PRIM_FIELD_VALUE_BY_NAME)) {
-      ClassType* classtype = toClassType(call->get(1)->typeInfo());
+      AggregateType* classtype = toAggregateType(call->get(1)->typeInfo());
       INT_ASSERT( classtype != NULL );
-      classtype = toClassType(classtype->getValType());
+      classtype = toAggregateType(classtype->getValType());
       INT_ASSERT( classtype != NULL );
 
       VarSymbol* var = toVarSymbol(toSymExpr(call->get(2))->var);
@@ -4596,7 +4596,7 @@ preFold(Expr* expr) {
       }
       call->replace(result);
     } else if (call->isPrimitive(PRIM_IS_UNION_TYPE)) {
-      ClassType* classtype = toClassType(call->get(1)->typeInfo());
+      AggregateType* classtype = toAggregateType(call->get(1)->typeInfo());
 
       if( isUnion(classtype) ) 
         result = new SymExpr(gTrue);
@@ -5213,7 +5213,7 @@ resolveBlock(Expr* body) {
           !parent->isPrimitive(PRIM_IS_SUBTYPE) ||
           !sym->var->hasFlag(FLAG_TYPE_VARIABLE)) {
 
-        if (ClassType* ct = toClassType(sym->typeInfo())) {
+        if (AggregateType* ct = toAggregateType(sym->typeInfo())) {
           if (!ct->symbol->hasFlag(FLAG_GENERIC) &&
               !ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
               !ct->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
@@ -5401,7 +5401,7 @@ resolveFns(FnSymbol* fn) {
   }
 
   if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
-    ClassType* ct = toClassType(fn->retType);
+    AggregateType* ct = toAggregateType(fn->retType);
     if (!ct)
       INT_FATAL(fn, "Constructor has no class type");
     setScalarPromotionType(ct);
@@ -5483,7 +5483,7 @@ resolveFns(FnSymbol* fn) {
   // Resolve base class type constructors as well.
   if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
     forv_Vec(Type, parent, fn->retType->dispatchParents) {
-      if (toClassType(parent) && parent != dtValue && parent != dtObject && parent->defaultTypeConstructor) {
+      if (toAggregateType(parent) && parent != dtValue && parent != dtObject && parent->defaultTypeConstructor) {
         resolveFormals(parent->defaultTypeConstructor);
         if (resolvedFormals.set_in(parent->defaultTypeConstructor)) {
           resolveFns(parent->defaultTypeConstructor);
@@ -5491,9 +5491,9 @@ resolveFns(FnSymbol* fn) {
       }
     }
     
-    if (ClassType* ct = toClassType(fn->retType)) {
+    if (AggregateType* ct = toAggregateType(fn->retType)) {
       for_fields(field, ct) {
-        if (ClassType* fct = toClassType(field->type)) {
+        if (AggregateType* fct = toAggregateType(field->type)) {
           if (fct->defaultTypeConstructor) {
             resolveFormals(fct->defaultTypeConstructor);
             if (resolvedFormals.set_in(fct->defaultTypeConstructor)) {
@@ -5510,7 +5510,7 @@ resolveFns(FnSymbol* fn) {
     //
     // resolve destructor
     //
-    if (ClassType* ct = toClassType(fn->retType)) {
+    if (AggregateType* ct = toAggregateType(fn->retType)) {
       if (!ct->destructor &&
           !ct->symbol->hasFlag(FLAG_REF)) {
         VarSymbol* tmp = newTemp(ct);
@@ -5576,7 +5576,7 @@ signature_match(FnSymbol* fn, FnSymbol* gn) {
 // add to vector icts all types instantiated from ct
 //
 static void
-collectInstantiatedClassTypes(Vec<Type*>& icts, Type* ct) {
+collectInstantiatedAggregateTypes(Vec<Type*>& icts, Type* ct) {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (ts->type->defaultTypeConstructor)
       if (!ts->hasFlag(FLAG_GENERIC) &&
@@ -5603,12 +5603,12 @@ isVirtualChild(FnSymbol* child, FnSymbol* parent) {
 
 
 static void
-addToVirtualMaps(FnSymbol* pfn, ClassType* ct) {
+addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
   forv_Vec(FnSymbol, cfn, ct->methods) {
     if (cfn && !cfn->instantiatedFrom && possible_signature_match(pfn, cfn)) {
       Vec<Type*> types;
       if (ct->symbol->hasFlag(FLAG_GENERIC))
-        collectInstantiatedClassTypes(types, ct);
+        collectInstantiatedAggregateTypes(types, ct);
       else
         types.add(ct);
 
@@ -5724,9 +5724,9 @@ addToVirtualMaps(FnSymbol* pfn, ClassType* ct) {
 
 
 static void
-addAllToVirtualMaps(FnSymbol* fn, ClassType* ct) {
+addAllToVirtualMaps(FnSymbol* fn, AggregateType* ct) {
   forv_Vec(Type, t, ct->dispatchChildren) {
-    ClassType* ct = toClassType(t);
+    AggregateType* ct = toAggregateType(t);
     if (ct->defaultTypeConstructor &&
         (ct->defaultTypeConstructor->hasFlag(FLAG_GENERIC) ||
          resolvedFns.count(ct->defaultTypeConstructor) != 0)) {
@@ -5744,7 +5744,7 @@ buildVirtualMaps() {
     if (!fn->hasFlag(FLAG_WRAPPER) && resolvedFns.count(fn) != 0 && !fn->hasFlag(FLAG_NO_PARENS) && fn->retTag != RET_PARAM && fn->retTag != RET_TYPE) {
       if (fn->numFormals() > 1) {
         if (fn->getFormal(1)->type == dtMethodToken) {
-          if (ClassType* pt = toClassType(fn->getFormal(2)->type)) {
+          if (AggregateType* pt = toAggregateType(fn->getFormal(2)->type)) {
             if (isClass(pt) && !pt->symbol->hasFlag(FLAG_GENERIC)) {
               addAllToVirtualMaps(fn, pt);
             }
@@ -6309,7 +6309,7 @@ static void insertDynamicDispatchCalls() {
 static Type*
 buildRuntimeTypeInfo(FnSymbol* fn) {
   SET_LINENO(fn);
-  ClassType* ct = new ClassType(CLASS_RECORD);
+  AggregateType* ct = new AggregateType(AGGREGATE_RECORD);
   TypeSymbol* ts = new TypeSymbol(astr("_RuntimeTypeInfo"), ct);
   for_formals(formal, fn) {
     if (!formal->instantiatedParam) {
@@ -6370,7 +6370,7 @@ static void insertReturnTemps() {
 //
 static void
 initializeClass(Expr* stmt, Symbol* sym) {
-  ClassType* ct = toClassType(sym->type);
+  AggregateType* ct = toAggregateType(sym->type);
   INT_ASSERT(ct);
   for_fields(field, ct) {
     if (!field->hasFlag(FLAG_SUPER_CLASS)) {
@@ -6432,7 +6432,7 @@ static void removeUnusedFunctions() {
 }
 
 static bool
-isUnusedClass(ClassType *ct) {
+isUnusedClass(AggregateType *ct) {
   // Special case for global types.
   if (ct->symbol->hasFlag(FLAG_GLOBAL_TYPE_SYMBOL))
     return false;
@@ -6445,7 +6445,7 @@ isUnusedClass(ClassType *ct) {
 
   bool allChildrenUnused = true;
   forv_Vec(Type, child, ct->dispatchChildren) {
-    ClassType* childClass = toClassType(child);
+    AggregateType* childClass = toAggregateType(child);
     INT_ASSERT(childClass);
     if (!isUnusedClass(childClass)) {
       allChildrenUnused = false;
@@ -6461,7 +6461,7 @@ static void removeUnusedTypes() {
   forv_Vec(TypeSymbol, type, gTypeSymbols) {
     if (type->defPoint && type->defPoint->parentSymbol)
       if (!type->hasFlag(FLAG_REF))
-        if (ClassType* ct = toClassType(type->type))
+        if (AggregateType* ct = toAggregateType(type->type))
           if (isUnusedClass(ct)) {
             ct->symbol->defPoint->remove();
           }
@@ -6470,7 +6470,7 @@ static void removeUnusedTypes() {
   forv_Vec(TypeSymbol, type, gTypeSymbols) {
     if (type->defPoint && type->defPoint->parentSymbol) {
       if (type->hasFlag(FLAG_REF)) {
-        if (ClassType* ct = toClassType(type->getValType())) {
+        if (AggregateType* ct = toAggregateType(type->getValType())) {
           if (isUnusedClass(ct)) {
             type->defPoint->remove();
           }
@@ -6832,7 +6832,7 @@ static void removeMootFields() {
   // Remove type fields, parameter fields, and _promotionType field
   forv_Vec(TypeSymbol, type, gTypeSymbols) {
     if (type->defPoint && type->defPoint->parentSymbol) {
-      if (ClassType* ct = toClassType(type->type)) {
+      if (AggregateType* ct = toAggregateType(type->type)) {
         for_fields(field, ct) {
           if (field->hasFlag(FLAG_TYPE_VARIABLE) ||
               field->isParameter() ||
@@ -6886,7 +6886,7 @@ static void expandInitFieldPrims()
 
 
 static void
-fixTypeNames(ClassType* ct)
+fixTypeNames(AggregateType* ct)
 {
   const char default_domain_name[] = "DefaultRectangularDom";
 
@@ -6907,7 +6907,7 @@ fixTypeNames(ClassType* ct)
 
 
 static void
-setScalarPromotionType(ClassType* ct) {
+setScalarPromotionType(AggregateType* ct) {
   for_fields(field, ct) {
     if (!strcmp(field->name, "_promotionType"))
       ct->scalarPromotionType = field->type;

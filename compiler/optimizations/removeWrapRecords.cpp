@@ -54,7 +54,7 @@ removeWrapRecords() {
   //
   // remove _valueType fields
   //
-  forv_Vec(ClassType, ct, gClassTypes) {
+  forv_Vec(AggregateType, ct, gAggregateTypes) {
     for_fields(field, ct) {
       if (!strcmp(field->name, "_valueType"))
         field->defPoint->remove();
@@ -132,7 +132,7 @@ removeWrapRecords() {
   //
   // fix array element type for arrays of arrays and arrays of domains
   //
-  forv_Vec(ClassType, ct, gClassTypes) {
+  forv_Vec(AggregateType, ct, gAggregateTypes) {
     if (ct->symbol->hasFlag(FLAG_DATA_CLASS)) {
       if (TypeSymbol* ts = getDataClassType(ct->symbol)) {
         if (isRecordWrappedType(ts->typeInfo())) {

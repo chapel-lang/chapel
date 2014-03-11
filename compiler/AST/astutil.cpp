@@ -7,7 +7,7 @@
 #include "type.h"
 
 
-static void pruneUnusedClassTypes(Vec<TypeSymbol*>& types);
+static void pruneUnusedAggregateTypes(Vec<TypeSymbol*>& types);
 static void pruneUnusedRefs(Vec<TypeSymbol*>& types);
 static void changeDeadTypesToVoid(Vec<TypeSymbol*>& types);
 
@@ -614,16 +614,16 @@ static void
 pruneUnusedTypes(Vec<TypeSymbol*>& types)
 {
 
-  pruneUnusedClassTypes(types);
+  pruneUnusedAggregateTypes(types);
   pruneUnusedRefs(types);
   changeDeadTypesToVoid(types);
 }
 
 
-static void pruneUnusedClassTypes(Vec<TypeSymbol*>& types)
+static void pruneUnusedAggregateTypes(Vec<TypeSymbol*>& types)
 {
   //
-  // delete unused ClassType types, only deleting references to such
+  // delete unused AggregateType types, only deleting references to such
   // types when the value types are deleted
   //
   forv_Vec(TypeSymbol, ts, gTypeSymbols)
@@ -638,7 +638,7 @@ static void pruneUnusedClassTypes(Vec<TypeSymbol*>& types)
       continue;
 
     // Ignore types that are not class types
-    if (!isClassType(ts->type))
+    if (!isAggregateType(ts->type))
       continue;
 
     // Do not delete the object class.  It's pretty crucial.
@@ -667,7 +667,7 @@ static void pruneUnusedRefs(Vec<TypeSymbol*>& types)
       continue;
 
     // Ignore types that are not class types
-    if (!isClassType(ts->type))
+    if (!isAggregateType(ts->type))
     {
       // hilde sez: Ref types are always class types.
       // So we can't get here.
@@ -682,7 +682,7 @@ static void pruneUnusedRefs(Vec<TypeSymbol*>& types)
     if (Type* vt = ts->getValType())
     {
       // Don't remove a ref type if it refers to a class type
-      if (isClassType(vt))
+      if (isAggregateType(vt))
         // and the class type is still alive.
         if (types.set_in(vt->symbol))
           continue;
@@ -706,7 +706,7 @@ static void changeDeadTypesToVoid(Vec<TypeSymbol*>& types)
   // change symbols with dead types to void (important for baseline)
   //
   forv_Vec(DefExpr, def, gDefExprs) {
-    if (def->parentSymbol && def->sym->type && isClassType(def->sym->type) && !isTypeSymbol(def->sym) && !types.set_in(def->sym->type->symbol))
+    if (def->parentSymbol && def->sym->type && isAggregateType(def->sym->type) && !isTypeSymbol(def->sym) && !types.set_in(def->sym->type->symbol))
       def->sym->type = dtVoid;
   }
 }

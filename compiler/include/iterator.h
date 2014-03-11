@@ -8,8 +8,8 @@ public:
   IteratorTag tag;
   FnSymbol* iterator;
   FnSymbol* getIterator;
-  ClassType* iclass;
-  ClassType* irecord;
+  AggregateType* iclass;
+  AggregateType* irecord;
   FnSymbol* advance;
   FnSymbol* zip1;
   FnSymbol* zip2;

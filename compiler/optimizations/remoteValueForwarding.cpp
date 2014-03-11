@@ -171,7 +171,7 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
   // (created when transforming recursive leader iterators into
   // recursive functions) to value type fields if safe
   //
-  forv_Vec(ClassType, ct, gClassTypes) {
+  forv_Vec(AggregateType, ct, gAggregateTypes) {
     if (ct->symbol->hasFlag(FLAG_LOOP_BODY_ARGUMENT_CLASS)) {
       for_fields(field, ct) {
         if (field->type->symbol->hasFlag(FLAG_REF)) {

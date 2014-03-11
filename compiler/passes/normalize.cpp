@@ -136,7 +136,7 @@ void normalize(void) {
       } else {
         DefExpr* thisDef = toDefExpr(fn->formals.get(2));
         INT_ASSERT(fn->name[0] == '~' && thisDef);
-        ClassType* ct = toClassType(thisDef->sym->type);
+        AggregateType* ct = toAggregateType(thisDef->sym->type);
         // make sure the name of the destructor matches the name of the class
         if (ct && strcmp(fn->name + 1, ct->symbol->name)) {
           USR_FATAL(fn, "destructor name must match class name");
@@ -525,11 +525,11 @@ static void normalize_returns(FnSymbol* fn) {
 static void call_constructor_for_class(CallExpr* call) {
   if (SymExpr* se = toSymExpr(call->baseExpr)) {
     if (TypeSymbol* ts = toTypeSymbol(se->var)) {
-      if (ClassType* ct = toClassType(ts->type)) {
+      if (AggregateType* ct = toAggregateType(ts->type)) {
         // Select symExprs of class (or record) type.
         SET_LINENO(call);
 
-        // These tests can be moved up to a general ClassType object verifier.
+        // These tests can be moved up to a general AggregateType object verifier.
         if (!ct->defaultInitializer)
           INT_FATAL(call, "class type has no initializer");
         if (!ct->defaultTypeConstructor)
@@ -1175,7 +1175,7 @@ static void change_method_into_constructor(FnSymbol* fn) {
 
   // The type must be a class type.
   // No constructors for records? <hilde>
-  ClassType* ct = toClassType(fn->getFormal(2)->type);
+  AggregateType* ct = toAggregateType(fn->getFormal(2)->type);
   if (!ct)
     INT_FATAL(fn, "constructor on non-class type");
 

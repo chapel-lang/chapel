@@ -30,15 +30,15 @@ static int srRecordReplaced = 0;
 // defMap - defMap for varSet
 // useMap - useMap for varSet
 //
-static Vec<ClassType*> typeVec;
+static Vec<AggregateType*> typeVec;
 static Vec<Symbol*> varSet;
-static Map<ClassType*,int> typeOrder;
-static Map<ClassType*,Vec<Symbol*>*> typeVarMap;
+static Map<AggregateType*,int> typeOrder;
+static Map<AggregateType*,Vec<Symbol*>*> typeVarMap;
 static Map<Symbol*,Vec<SymExpr*>*> defMap;
 static Map<Symbol*,Vec<SymExpr*>*> useMap;
 
-typedef Map<ClassType*,Vec<Symbol*>*> ClassTypeToVecSymbolMap;
-typedef MapElem<ClassType*,Vec<Symbol*>*> ClassTypeToVecSymbolMapElem;
+typedef Map<AggregateType*,Vec<Symbol*>*> AggregateTypeToVecSymbolMap;
+typedef MapElem<AggregateType*,Vec<Symbol*>*> AggregateTypeToVecSymbolMapElem;
 
 //
 // compute topological order for types; this functions assumes that
@@ -46,14 +46,14 @@ typedef MapElem<ClassType*,Vec<Symbol*>*> ClassTypeToVecSymbolMapElem;
 // for all class types
 //
 static int
-computeOrder(ClassType* ct) {
+computeOrder(AggregateType* ct) {
   if (typeOrder.get(ct) != -1)
     return typeOrder.get(ct);
 
   typeOrder.put(ct, -2);
   int order = 0;
   for_fields(field, ct) {
-    if (ClassType* fct = toClassType(field->type)) {
+    if (AggregateType* fct = toAggregateType(field->type)) {
       int fieldOrder = computeOrder(fct);
       if (fieldOrder >= order)
         order = fieldOrder+1;
@@ -68,8 +68,8 @@ computeOrder(ClassType* ct) {
 //
 static int
 compareTypesByOrder(const void* v1, const void* v2) {
-  ClassType* ct1 = *(ClassType* const *)v1;
-  ClassType* ct2 = *(ClassType* const *)v2;
+  AggregateType* ct1 = *(AggregateType* const *)v1;
+  AggregateType* ct2 = *(AggregateType* const *)v2;
   int order1 = typeOrder.get(ct1);
   int order2 = typeOrder.get(ct2);
   if (order1 < order2)
@@ -163,7 +163,7 @@ unifyClassInstances(Symbol* sym) {
 }
 
 static bool
-scalarReplaceClass(ClassType* ct, Symbol* sym) {
+scalarReplaceClass(AggregateType* ct, Symbol* sym) {
 
   if (fReportScalarReplace) srClass++;
   //
@@ -238,7 +238,7 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
     sym->defPoint->insertBefore(new DefExpr(var));
     if (sym->hasFlag(FLAG_TEMP))
       var->addFlag(FLAG_TEMP);
-    if (ClassType* fct = toClassType(field->type))
+    if (AggregateType* fct = toAggregateType(field->type))
       if (Vec<Symbol*>* varVec = typeVarMap.get(fct))
         varVec->add(var);
   }
@@ -316,7 +316,7 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
 }
 
 static bool
-scalarReplaceRecord(ClassType* ct, Symbol* sym) {
+scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
 
   if (fReportScalarReplace) srRecord++;
   //
@@ -365,7 +365,7 @@ scalarReplaceRecord(ClassType* ct, Symbol* sym) {
     sym->defPoint->insertBefore(new DefExpr(var));
     if (sym->hasFlag(FLAG_TEMP))
       var->addFlag(FLAG_TEMP);
-    if (ClassType* fct = toClassType(field->type))
+    if (AggregateType* fct = toAggregateType(field->type))
       if (Vec<Symbol*>* varVec = typeVarMap.get(fct))
         varVec->add(var);
   }
@@ -508,7 +508,7 @@ scalarReplace() {
     // for scalar replacement
     //
     forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-      ClassType* ct = toClassType(ts->type);
+      AggregateType* ct = toAggregateType(ts->type);
       if (ct) {
         typeOrder.put(ct, -1);
         if (ts->hasFlag(FLAG_ITERATOR_CLASS) ||
@@ -517,7 +517,7 @@ scalarReplace() {
              (ct->fields.length<=scalar_replace_limit))) {
           typeVec.add(ct);
           typeVarMap.put(ct, new Vec<Symbol*>());
-          if (ClassType* rct = toClassType(ct->refType))
+          if (AggregateType* rct = toAggregateType(ct->refType))
             typeVarMap.put(rct, new Vec<Symbol*>());
         }
       }
@@ -526,7 +526,7 @@ scalarReplace() {
     //
     // compute topological order of types
     //
-    forv_Vec(ClassType, ct, typeVec) {
+    forv_Vec(AggregateType, ct, typeVec) {
       computeOrder(ct);
     }
 
@@ -539,7 +539,7 @@ scalarReplace() {
     // compute typeVarMap and varSet
     //
     forv_Vec(VarSymbol, var, gVarSymbols) {
-      if (ClassType* ct = toClassType(var->type)) {
+      if (AggregateType* ct = toAggregateType(var->type)) {
         if (Vec<Symbol*>* varVec = typeVarMap.get(ct)) {
           if (isFnSymbol(var->defPoint->parentSymbol)) {
             varSet.set_add(var);
@@ -563,10 +563,10 @@ scalarReplace() {
       printf("SCALAR REPLACEMENT (limit=%d): %d types\n",
              scalar_replace_limit, typeVec.n);
     }
-    forv_Vec(ClassType, ct, typeVec) {
+    forv_Vec(AggregateType, ct, typeVec) {
       if (debugScalarReplacement)
         printf("%d: %s:\n", typeOrder.get(ct), ct->symbol->cname);
-      if (ClassType* rct = toClassType(ct->refType)) {
+      if (AggregateType* rct = toAggregateType(ct->refType)) {
         Vec<Symbol*>* refVec = typeVarMap.get(rct);
         forv_Vec(Symbol, var, *refVec) {
           eliminateSingleAssignmentReference(defMap, useMap, var);
@@ -607,7 +607,7 @@ scalarReplace() {
     typeVec.clear();
     varSet.clear();
     typeOrder.clear();
-    form_Map(ClassTypeToVecSymbolMapElem, e, typeVarMap) {
+    form_Map(AggregateTypeToVecSymbolMapElem, e, typeVarMap) {
       delete e->value;
     }
     typeVarMap.clear();

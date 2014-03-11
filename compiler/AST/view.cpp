@@ -379,10 +379,10 @@ void mark_view(BaseAST* ast, int id) {
   fflush(stdout);
 }
 
-static ClassType *
+static AggregateType *
 structuralTypeSymbol(Symbol *s) {
   if (TypeSymbol *ts = toTypeSymbol(s))
-    if (ClassType *st = toClassType(ts->type))
+    if (AggregateType *st = toAggregateType(ts->type))
       return st;
   return NULL;
 }
@@ -607,7 +607,7 @@ html_view_ast(BaseAST* ast, FILE* html_file, int pass) {
     if (DefExpr* e = toDefExpr(expr)) {
       if (toFnSymbol(e->sym) || 
           (toTypeSymbol(e->sym) &&
-           toClassType(e->sym->type))) {
+           toAggregateType(e->sym->type))) {
         fprintf(html_file, "</UL>\n");
         if (FnSymbol* fn = toFnSymbol(e->sym)) {
           fprintf(html_file, "<CHPLTAG=\"FN%d\">\n", fn->id);

@@ -28,7 +28,7 @@ class DefExpr;
 class CallExpr;
 class CondStmt;
 class BlockStmt;
-class ClassType;
+class AggregateType;
 
 
 class Type : public BaseAST {
@@ -48,7 +48,7 @@ class Type : public BaseAST {
   bool hasGenericDefaults; // all generic fields have defaults
   Type *instantiatedFrom;
   SymbolMap substitutions;
-  ClassType* refType;  // pointer to references for non-reference types
+  AggregateType* refType;  // pointer to references for non-reference types
   bool isInternalType; // Used only in PrimitiveType; replace with flag?
 
   // Only used for LLVM.
@@ -103,24 +103,24 @@ class EnumType : public Type {
 };
 
 
-enum ClassTag {
-  CLASS_CLASS,
-  CLASS_RECORD,
-  CLASS_UNION
+enum AggregateTag {
+  AGGREGATE_CLASS,
+  AGGREGATE_RECORD,
+  AGGREGATE_UNION
 };
 
-class ClassType : public Type {
+class AggregateType : public Type {
  public:
-  ClassTag classTag;
+  AggregateTag aggregateTag;
   AList fields;
   AList inherits; // used from parsing, sets dispatchParents
   Symbol* outer;  // pointer to an outer class if this is an inner class
   const char *doc;
 
-  ClassType(ClassTag initClassTag);
-  ~ClassType();
+  AggregateType(AggregateTag aggregateTag);
+  ~AggregateType();
   void verify(); 
-  DECLARE_COPY(ClassType);
+  DECLARE_COPY(AggregateType);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void addDeclarations(Expr* expr, bool tail = true);
 
@@ -136,6 +136,9 @@ class ClassType : public Type {
   int getFieldPosition(const char* name, bool fatal = true);
   Symbol* getField(const char* name, bool fatal = true);
   Symbol* getField(int i);
+  bool isClass() { return aggregateTag == AGGREGATE_CLASS; }
+  bool isRecord() { return aggregateTag == AGGREGATE_RECORD; }
+  bool isUnion() { return aggregateTag == AGGREGATE_UNION; }
 };
 
 
@@ -190,19 +193,19 @@ TYPE_EXTERN PrimitiveType* dtSingleVarAuxFields;
 TYPE_EXTERN PrimitiveType* dtTaskList;
 
 // a fairly special wide type
-extern ClassType* wideStringType;
+extern AggregateType* wideStringType;
 
 // Well-known types
-TYPE_EXTERN ClassType* dtArray;
-TYPE_EXTERN ClassType* dtReader;
-TYPE_EXTERN ClassType* dtWriter;
-TYPE_EXTERN ClassType* dtBaseArr;
-TYPE_EXTERN ClassType* dtBaseDom;
-TYPE_EXTERN ClassType* dtDist;
-TYPE_EXTERN ClassType* dtTuple;
-TYPE_EXTERN ClassType* dtLocale;
-TYPE_EXTERN ClassType* dtLocaleID;
-TYPE_EXTERN ClassType* dtMainArgument;
+TYPE_EXTERN AggregateType* dtArray;
+TYPE_EXTERN AggregateType* dtReader;
+TYPE_EXTERN AggregateType* dtWriter;
+TYPE_EXTERN AggregateType* dtBaseArr;
+TYPE_EXTERN AggregateType* dtBaseDom;
+TYPE_EXTERN AggregateType* dtDist;
+TYPE_EXTERN AggregateType* dtTuple;
+TYPE_EXTERN AggregateType* dtLocale;
+TYPE_EXTERN AggregateType* dtLocaleID;
+TYPE_EXTERN AggregateType* dtMainArgument;
 
 TYPE_EXTERN PrimitiveType* dtStringC; // the type of a C string.
 

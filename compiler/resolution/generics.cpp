@@ -95,7 +95,7 @@ copyGenericSub(SymbolMap& subs, FnSymbol* root, FnSymbol* fn, Symbol* key, Symbo
 
 static void
 instantiate_tuple(FnSymbol* fn) {
-  ClassType* tuple = toClassType(fn->retType);
+  AggregateType* tuple = toAggregateType(fn->retType);
   //
   // tuple is the return type for the type constructor
   // tuple is NULL for the default constructor
@@ -124,7 +124,7 @@ instantiate_tuple_hash( FnSymbol* fn) {
   if (fn->numFormals() != 1)
     INT_FATAL(fn, "tuple hash function has more than one argument");
   ArgSymbol* arg = fn->getFormal(1);
-  ClassType* ct = toClassType(arg->type);
+  AggregateType* ct = toAggregateType(arg->type);
   CallExpr* call = NULL;
   bool first = true;
   for (int i=1; i<ct->fields.length; i++) {
@@ -154,7 +154,7 @@ instantiate_tuple_initCopy(FnSymbol* fn) {
   if (fn->numFormals() != 1)
     INT_FATAL(fn, "tuple initCopy function has more than one argument");
   ArgSymbol  *arg = fn->getFormal(1);
-  ClassType  *ct = toClassType(arg->type);
+  AggregateType  *ct = toAggregateType(arg->type);
   CallExpr *call = new CallExpr("_build_tuple_always");
   BlockStmt* block = new BlockStmt();
   for (int i=1; i<ct->fields.length; i++) {
@@ -171,7 +171,7 @@ instantiate_tuple_autoCopy(FnSymbol* fn) {
   if (fn->numFormals() != 1)
     INT_FATAL(fn, "tuple autoCopy function has more than one argument");
   ArgSymbol  *arg = fn->getFormal(1);
-  ClassType  *ct = toClassType(arg->type);
+  AggregateType  *ct = toAggregateType(arg->type);
   CallExpr *call = new CallExpr("_build_tuple_always_allow_ref");
   BlockStmt* block = new BlockStmt();
   for (int i=1; i<ct->fields.length; i++) {
@@ -484,7 +484,7 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
   //
   Type* newType = NULL;
   if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
-    INT_ASSERT(isClassType(fn->retType));
+    INT_ASSERT(isAggregateType(fn->retType));
     newType = fn->retType->symbol->copy()->type;
 
     //

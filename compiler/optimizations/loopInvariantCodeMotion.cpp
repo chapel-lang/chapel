@@ -280,7 +280,7 @@ static Symbol* getSvecSymbol(CallExpr* call) {
              call->isPrimitive(PRIM_SET_SVEC_MEMBER));
   
   Type* type = call->get(1)->getValType();
-  ClassType* tuple = toClassType(type);
+  AggregateType* tuple = toAggregateType(type);
   SymExpr* fieldVal = toSymExpr(call->get(2));
   VarSymbol* fieldSym = toVarSymbol(fieldVal->var);
   int immediateVal = fieldSym->immediate->int_value();
@@ -503,8 +503,8 @@ static void buildLocalDefUseMaps(Loop* loop, symToVecSymExprMap& localDefMap, sy
           //pointer to a class is changed that will be detected by isDefAndOrUse
           if(SymExpr* symExpr = toSymExpr(callExpr->get(1))) {
             Type* type = symExpr->var->type->symbol->type;
-            if(ClassType* curClass = toClassType(type)) {
-              if(curClass->classTag != CLASS_CLASS) {
+            if(AggregateType* curClass = toAggregateType(type)) {
+              if(curClass->isClass()) {
                 addDefOrUse(localDefMap, symExpr->var, symExpr);
               }
             }
@@ -533,7 +533,7 @@ static void buildLocalDefUseMaps(Loop* loop, symToVecSymExprMap& localDefMap, sy
               if(callExpr->isResolved()) {
                 addDefOrUse(localDefMap, symExpr->var, symExpr);
                 Type* type = symExpr->var->type->symbol->type;
-                if(ClassType* curClass = toClassType(type)) {
+                if(AggregateType* curClass = toAggregateType(type)) {
                   for_alist(classField, curClass->fields) {
                     if(DefExpr* classFieldDef = toDefExpr(classField)) {
                       addDefOrUse(localDefMap, classFieldDef->sym, symExpr);
@@ -818,7 +818,7 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
     // and the alias is deffed.
     if(isVarSymbol(symExpr->var) || isArgSymbol(symExpr->var)) {
       // if the current variable is a record
-      if(ClassType* ct = toClassType(symExpr->var->type->symbol->type)) {
+      if(AggregateType* ct = toAggregateType(symExpr->var->type->symbol->type)) {
         if(isRecord(symExpr->var->type->symbol->type)) {
           // go through each field and check for aliases
           for_fields(field, ct) {

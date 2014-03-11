@@ -354,7 +354,7 @@ replaceIteratorFormalsWithIteratorFields(FnSymbol* iterator, Symbol* ic,
 static Map<FnSymbol*,FnSymbol*> iteratorFnMap;
 static FnSymbol* argBundleCopyFn = NULL;
 static FnSymbol* argBundleFreeFn = NULL;
-static ClassType*  argBundleType = NULL;
+static AggregateType*  argBundleType = NULL;
 
 
 //
@@ -362,9 +362,9 @@ static ClassType*  argBundleType = NULL;
 // class, if one does not exist yet.
 //
 static void
-ensureArgBundleType(ClassType* ct) {
+ensureArgBundleType(AggregateType* ct) {
   if (argBundleType == NULL) {
-    argBundleType = new ClassType(CLASS_CLASS);
+    argBundleType = new AggregateType(AGGREGATE_CLASS);
     TypeSymbol* aabSym = new TypeSymbol("chpl_argBundle", argBundleType);
     aabSym->addFlag(FLAG_NO_OBJECT);
     ct->symbol->defPoint->insertBefore(new DefExpr(aabSym));
@@ -388,7 +388,7 @@ ensureArgBundleType(ClassType* ct) {
 // }
 //
 static void
-createArgBundleFreeFn(ClassType* ct, FnSymbol* loopBodyFnWrapper) {
+createArgBundleFreeFn(AggregateType* ct, FnSymbol* loopBodyFnWrapper) {
   if (argBundleFreeFn == NULL) {
     // Create the shared function that frees recursive argument bundles.
     argBundleFreeFn = new FnSymbol("chpl__freeRecursiveIteratorArgumentBundle");
@@ -474,7 +474,7 @@ createArgBundleFreeFn(ClassType* ct, FnSymbol* loopBodyFnWrapper) {
 //  chpl_argBundle chpl__copyRecursiveIteratorArgumentBundle(int loopBodyFnID, chpl_argBundle loopBodyFnArgs)
 //
 static void
-createArgBundleCopyFn(ClassType* ct, FnSymbol* loopBodyFnWrapper) {
+createArgBundleCopyFn(AggregateType* ct, FnSymbol* loopBodyFnWrapper) {
   if (argBundleCopyFn == NULL) {
     // Create the shared function that copies recursive argument bundles.
     // The initial implementation is just a shell.  After creation, it looks like:
@@ -566,7 +566,7 @@ createArgBundleCopyFn(ClassType* ct, FnSymbol* loopBodyFnWrapper) {
 // This creates the class type carrying the arguments to a (possibly recursive)
 // iterator function call and fills a temp with the passed-in values.
 //
-static ClassType* 
+static AggregateType* 
 bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
                                       CallExpr* loopBodyFnCall,
                                       FnSymbol* loopBodyFnWrapper) {
@@ -574,14 +574,14 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
   FnSymbol* loopBodyFn = loopBodyFnCall->isResolved();
 
   // Create the argument bundle type
-  ClassType* ct = new ClassType(CLASS_CLASS);
+  AggregateType* ct = new AggregateType(AGGREGATE_CLASS);
   TypeSymbol* ts = new TypeSymbol("_fn_arg_bundle", ct);
   ts->addFlag(FLAG_NO_OBJECT);
   ts->addFlag(FLAG_LOOP_BODY_ARGUMENT_CLASS);
   iteratorFnCall->parentSymbol->defPoint->insertBefore(new DefExpr(ts));
 
   // And its corresponding reference type.
-  ClassType* rct = new ClassType(CLASS_CLASS);
+  AggregateType* rct = new AggregateType(AGGREGATE_CLASS);
   TypeSymbol* rts = new TypeSymbol("_ref_fn_arg_bundle", rct);
   rts->addFlag(FLAG_NO_OBJECT);
   rts->addFlag(FLAG_REF);
@@ -952,7 +952,7 @@ createIteratorFn(FnSymbol* iterator, CallExpr* iteratorFnCall, Symbol* index,
 
   // Now calls the newly-created iterator function.
   iteratorFnCall->baseExpr->replace(new SymExpr(iteratorFn));
-  ClassType* argsBundleType =
+  AggregateType* argsBundleType =
     bundleLoopBodyFnArgsForIteratorFnCall(iteratorFnCall, loopBodyFnCall, loopBodyFnWrapper);
 
   iteratorFn->body = iterator->body->copy();
@@ -1231,7 +1231,7 @@ canInlineIterator(FnSymbol* iterator) {
 static void
 getRecursiveIterators(Vec<Symbol*>& iterators, Symbol* gIterator) {
   if (gIterator->type->symbol->hasFlag(FLAG_TUPLE)) {
-    ClassType* iteratorType = toClassType(gIterator->type);
+    AggregateType* iteratorType = toAggregateType(gIterator->type);
     for (int i=1; i <= iteratorType->fields.length; i++) {
       Symbol *iterator = toSymbol(iteratorType->getField(i));
       if (iterator)
@@ -1284,8 +1284,8 @@ setupSimultaneousIterators(Vec<Symbol*>& iterators,
                            Symbol* gIndex,
                            BlockStmt* loop) {
   if (gIterator->type->symbol->hasFlag(FLAG_TUPLE)) {
-    ClassType* iteratorType = toClassType(gIterator->type);
-    ClassType* indexType = toClassType(gIndex->type);
+    AggregateType* iteratorType = toAggregateType(gIterator->type);
+    AggregateType* indexType = toAggregateType(gIndex->type);
     for (int i=1; i <= iteratorType->fields.length; i++) {
       Symbol* iterator = newTemp("_iterator", iteratorType->getField(i)->type);
       loop->insertBefore(new DefExpr(iterator));
@@ -1657,7 +1657,7 @@ static void fixNumericalGetMemberPrims()
   // via a number
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->parentSymbol && call->isPrimitive(PRIM_GET_MEMBER)) {
-      ClassType* ct = toClassType(call->get(1)->getValType());
+      AggregateType* ct = toAggregateType(call->get(1)->getValType());
       int64_t num;
       if (get_int(call->get(2), &num)) {
         Symbol* field = ct->getField(num+1); // add 1 for super
@@ -1698,7 +1698,7 @@ static void cleanupLeaderFollowerIteratorCalls()
             for_actuals(actual, call) {
               SymExpr* se = toSymExpr(actual);
               if (isArgSymbol(se->var) && call->parentSymbol != se->var->defPoint->parentSymbol) {
-                Symbol* field = toClassType(iteratorType)->getField(i);
+                Symbol* field = toAggregateType(iteratorType)->getField(i);
                 VarSymbol* tmp = NULL;
                 SET_LINENO(call);
                 if (field->type == se->var->type) {
@@ -1732,7 +1732,7 @@ static void handlePolymorphicIterators()
       INT_ASSERT(getIterator->defPoint->parentSymbol);
 
       // See if the iterator record is polymorphic.
-      ClassType* irecord = fn->iteratorInfo->irecord;
+      AggregateType* irecord = fn->iteratorInfo->irecord;
       if (irecord->dispatchChildren.n > 0) {
         // If so, then simulate dynamic dispatch by adding one conditional block
         // for each possible subtype.
@@ -1749,7 +1749,7 @@ static void handlePolymorphicIterators()
           thenStmt->insertAtTail(new DefExpr(recordTmp));
           thenStmt->insertAtTail(new DefExpr(classTmp));
 
-          ClassType* ct = toClassType(type);
+          AggregateType* ct = toAggregateType(type);
           for_fields(field, ct) {
             VarSymbol* ftmp = newTemp("ftmp", getIterator->getFormal(1)->type->getField(field->name)->type);
             thenStmt->insertAtTail(new DefExpr(ftmp));
@@ -1785,7 +1785,7 @@ static void reconstructIRAutoCopy(FnSymbol* fn)
   Symbol* ret = fn->getReturnSymbol();
   BlockStmt* block = new BlockStmt();
   block->insertAtTail(ret->defPoint->remove());
-  ClassType* irt = toClassType(arg->type);
+  AggregateType* irt = toAggregateType(arg->type);
   for_fields(field, irt) {
     SET_LINENO(field);
     if (FnSymbol* autoCopy = autoCopyMap.get(field->type)) {
@@ -1812,7 +1812,7 @@ static void reconstructIRAutoDestroy(FnSymbol* fn)
 {
   Symbol* arg = fn->getFormal(1);
   BlockStmt* block = new BlockStmt();
-  ClassType* irt = toClassType(arg->type);
+  AggregateType* irt = toAggregateType(arg->type);
   for_fields(field, irt) {
     SET_LINENO(field);
     if (FnSymbol* autoDestroy = autoDestroyMap.get(field->type)) {

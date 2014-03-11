@@ -133,7 +133,7 @@ returnInfoCast(CallExpr* call) {
 
 static Type*
 returnInfoVal(CallExpr* call) {
-  ClassType* ct = toClassType(call->get(1)->typeInfo());
+  AggregateType* ct = toAggregateType(call->get(1)->typeInfo());
   if (!ct || !ct->symbol->hasFlag(FLAG_REF))
     INT_FATAL(call, "attempt to get value type of non-reference type");
   return ct->getField(1)->type;
@@ -191,9 +191,9 @@ returnInfoGetMember(CallExpr* call) {
   SymExpr* sym1 = toSymExpr(call->get(1));
   if (!sym1)
     INT_FATAL(call, "bad member primitive");
-  ClassType* ct = toClassType(sym1->var->type);
+  AggregateType* ct = toAggregateType(sym1->var->type);
   if (ct->symbol->hasFlag(FLAG_REF))
-    ct = toClassType(ct->getValType());
+    ct = toAggregateType(ct->getValType());
   if (!ct)
     INT_FATAL(call, "bad member primitive");
   SymExpr* sym = toSymExpr(call->get(2));
@@ -216,7 +216,7 @@ returnInfoGetMember(CallExpr* call) {
 
 static Type*
 returnInfoGetTupleMember(CallExpr* call) {
-  ClassType* ct = toClassType(call->get(1)->getValType());
+  AggregateType* ct = toAggregateType(call->get(1)->getValType());
   INT_ASSERT(ct && ct->symbol->hasFlag(FLAG_STAR_TUPLE));
   return ct->getField("x1")->type;
 }
@@ -229,7 +229,7 @@ returnInfoGetTupleMemberRef(CallExpr* call) {
 
 static Type*
 returnInfoGetMemberRef(CallExpr* call) {
-  ClassType* ct = toClassType(call->get(1)->getValType());
+  AggregateType* ct = toAggregateType(call->get(1)->getValType());
   INT_ASSERT(ct);
   SymExpr* se = toSymExpr(call->get(2));
   INT_ASSERT(se);

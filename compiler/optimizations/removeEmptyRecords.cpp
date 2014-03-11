@@ -22,7 +22,7 @@ removeEmptyRecords() {
   bool change = true;
   while (change) {
     change = false;
-    forv_Vec(ClassType, ct, gClassTypes) {
+    forv_Vec(AggregateType, ct, gAggregateTypes) {
       if (isRecord(ct) && ct->symbol->defPoint->parentSymbol && 
           !ct->symbol->hasFlag(FLAG_EXTERN)) {
         bool empty = true;

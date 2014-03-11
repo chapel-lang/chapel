@@ -1608,7 +1608,7 @@ buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst, char* docs) {
 
 DefExpr*
 buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls, Flag isExtern, char *docs) {
-  ClassType* ct = toClassType(type);
+  AggregateType* ct = toAggregateType(type);
   INT_ASSERT(ct);
   TypeSymbol* ts = new TypeSymbol(name, ct);
   DefExpr* def = new DefExpr(ts);

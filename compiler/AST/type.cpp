@@ -75,7 +75,7 @@ int Type::codegenStructure(FILE* outfile, const char* baseoffset) {
 
 
 Symbol* Type::getField(const char* name, bool fatal) {
-  INT_FATAL(this, "getField not called on ClassType");
+  INT_FATAL(this, "getField not called on AggregateType");
   return NULL;
 }
 
@@ -420,53 +420,53 @@ PrimitiveType* EnumType::getIntegerType() {
 }
 
 
-ClassType::ClassType(ClassTag initClassTag) :
-  Type(E_ClassType, NULL),
-  classTag(initClassTag),
+AggregateType::AggregateType(AggregateTag initAggregateTag) :
+  Type(E_AggregateType, NULL),
+  aggregateTag(initAggregateTag),
   fields(),
   inherits(),
   outer(NULL),
   doc(NULL)
 {
-  if (classTag == CLASS_CLASS) { // set defaultValue to nil to keep it
+  if (aggregateTag == AGGREGATE_CLASS) { // set defaultValue to nil to keep it
                                  // from being constructed
     defaultValue = gNil;
   }
   methods.clear();
   fields.parent = this;
   inherits.parent = this;
-  gClassTypes.add(this);
+  gAggregateTypes.add(this);
 }
 
 
-ClassType::~ClassType() { }
+AggregateType::~AggregateType() { }
 
 
-void ClassType::verify() {
+void AggregateType::verify() {
   Type::verify();
-  if (astTag != E_ClassType) {
-    INT_FATAL(this, "Bad ClassType::astTag");
+  if (astTag != E_AggregateType) {
+    INT_FATAL(this, "Bad AggregateType::astTag");
   }
-  if (classTag != CLASS_CLASS &&
-      classTag != CLASS_RECORD &&
-      classTag != CLASS_UNION)
-    INT_FATAL(this, "Bad ClassType::classTag");
+  if (aggregateTag != AGGREGATE_CLASS &&
+      aggregateTag != AGGREGATE_RECORD &&
+      aggregateTag != AGGREGATE_UNION)
+    INT_FATAL(this, "Bad AggregateType::aggregateTag");
   if (fields.parent != this || inherits.parent != this)
-    INT_FATAL(this, "Bad AList::parent in ClassType");
+    INT_FATAL(this, "Bad AList::parent in AggregateType");
   for_alist(expr, fields) {
     if (expr->parentSymbol != symbol)
-      INT_FATAL(this, "Bad ClassType::fields::parentSymbol");
+      INT_FATAL(this, "Bad AggregateType::fields::parentSymbol");
   }
   for_alist(expr, inherits) {
     if (expr->parentSymbol != symbol)
-      INT_FATAL(this, "Bad ClassType::inherits::parentSymbol");
+      INT_FATAL(this, "Bad AggregateType::inherits::parentSymbol");
   }
 }
 
 
-ClassType*
-ClassType::copyInner(SymbolMap* map) {
-  ClassType* copy_type = new ClassType(classTag);
+AggregateType*
+AggregateType::copyInner(SymbolMap* map) {
+  AggregateType* copy_type = new AggregateType(aggregateTag);
   copy_type->outer = outer;
   for_alist(expr, fields)
     copy_type->fields.insertAtTail(COPY_INT(expr));
@@ -481,7 +481,7 @@ ClassType::copyInner(SymbolMap* map) {
 
 
 static void
-addDeclaration(ClassType* ct, DefExpr* def, bool tail) {
+addDeclaration(AggregateType* ct, DefExpr* def, bool tail) {
   if (FnSymbol* fn = toFnSymbol(def->sym)) {
     ct->methods.add(fn);
     if (fn->_this) {
@@ -515,7 +515,7 @@ addDeclaration(ClassType* ct, DefExpr* def, bool tail) {
 }
 
 
-void ClassType::addDeclarations(Expr* expr, bool tail) {
+void AggregateType::addDeclarations(Expr* expr, bool tail) {
   if (DefExpr* def = toDefExpr(expr)) {
     addDeclaration(this, def, tail);
   } else if (BlockStmt* block = toBlockStmt(expr)) {
@@ -528,15 +528,15 @@ void ClassType::addDeclarations(Expr* expr, bool tail) {
 }
 
 
-void ClassType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  INT_FATAL(this, "Unexpected case in ClassType::replaceChild");
+void AggregateType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  INT_FATAL(this, "Unexpected case in AggregateType::replaceChild");
 }
 
 #define CLASS_STRUCT_PREFIX "chpl_"
 
 //
 // Construct the name of the struct used in the generated code to
-// represent the object definition for a ClassType.
+// represent the object definition for a AggregateType.
 //
 // When 'standalone'== false, we generates an identifier designed to
 // be used in combination with "struct "; true generates a name that's
@@ -557,14 +557,14 @@ void ClassType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 //   } chpl_C_object;
 //  typedef struct chpl_C_s* C;
 //
-// For records and unions (classTag != CLASS_CLASS), the pointer
+// For records and unions (aggregateTag != AGGREGATE_CLASS), the pointer
 // version above isn't used, so the original identifier is used to
 // name the typedef for the struct itself.
 //
-const char* ClassType::classStructName(bool standalone) {
+const char* AggregateType::classStructName(bool standalone) {
   if (standalone) {
     const char* basename = symbol->cname;
-    if (classTag == CLASS_CLASS) {
+    if (aggregateTag == AGGREGATE_CLASS) {
       //
       // For extern classes, we've traditionally required them to be
       // named _C; we could use a different naming convention, but
@@ -582,11 +582,11 @@ const char* ClassType::classStructName(bool standalone) {
   }
 }
 
-GenRet ClassType::codegenClassStructType()
+GenRet AggregateType::codegenClassStructType()
 {
   GenInfo* info = gGenInfo;
   GenRet ret;
-  if(classTag == CLASS_CLASS) {
+  if(aggregateTag == AGGREGATE_CLASS) {
     if( info->cfile ) {
       ret.c = std::string(classStructName(true));
     } else {
@@ -601,7 +601,7 @@ GenRet ClassType::codegenClassStructType()
   return ret;
 }
 
-void ClassType::codegenDef() {
+void AggregateType::codegenDef() {
   GenInfo* info = gGenInfo;
   FILE* outfile = info->cfile;
 
@@ -687,7 +687,7 @@ void ClassType::codegenDef() {
             this->classStructName(true));
       } else {
         fprintf(outfile, "typedef struct %s", this->classStructName(false));
-        if (classTag == CLASS_CLASS && dispatchParents.n > 0) {
+        if (aggregateTag == AGGREGATE_CLASS && dispatchParents.n > 0) {
           /* Add a comment to class definitions listing super classes */
           bool first = true;
           fprintf(outfile, " /* : ");
@@ -703,9 +703,9 @@ void ClassType::codegenDef() {
           fprintf(outfile, " */");
         }
         fprintf(outfile, " {\n");
-        if (symbol->hasFlag(FLAG_OBJECT_CLASS) && classTag == CLASS_CLASS) {
+        if (symbol->hasFlag(FLAG_OBJECT_CLASS) && aggregateTag == AGGREGATE_CLASS) {
           fprintf(outfile, "chpl__class_id chpl__cid;\n");
-        } else if (classTag == CLASS_UNION) {
+        } else if (aggregateTag == AGGREGATE_UNION) {
           fprintf(outfile, "int64_t _uid;\n");
           if (this->fields.length != 0)
             fprintf(outfile, "union {\n");
@@ -720,7 +720,7 @@ void ClassType::codegenDef() {
         }
         flushStatements();
 
-        if (classTag == CLASS_UNION) {
+        if (aggregateTag == AGGREGATE_UNION) {
           if (this->fields.length != 0)
             fprintf(outfile, "} _u;\n");
         }
@@ -731,17 +731,17 @@ void ClassType::codegenDef() {
       int paramID = 0;
       std::vector<llvm::Type*> params;
 
-      if ((symbol->hasFlag(FLAG_OBJECT_CLASS) && classTag == CLASS_CLASS)) {
+      if ((symbol->hasFlag(FLAG_OBJECT_CLASS) && aggregateTag == AGGREGATE_CLASS)) {
         llvm::Type* cidType = info->lvt->getType("chpl__class_id");
         INT_ASSERT(cidType);
         params.push_back(cidType);
         GEPMap.insert(std::pair<std::string, int>("chpl__cid", paramID++));
-      } else if(classTag == CLASS_UNION) {
+      } else if(aggregateTag == AGGREGATE_UNION) {
         params.push_back(llvm::Type::getInt64Ty(info->module->getContext()));
         GEPMap.insert(std::pair<std::string, int>("_uid", paramID++));
       }
 
-      if(classTag == CLASS_UNION) {
+      if(aggregateTag == AGGREGATE_UNION) {
 
         llvm::Type *largestType = NULL;
         uint64_t largestSize = 0;
@@ -777,7 +777,7 @@ void ClassType::codegenDef() {
         }
         for_fields(field, this) {
           llvm::Type* fieldType = field->type->symbol->codegen().type;
-          ClassType* ct = toClassType(field->type);
+          AggregateType* ct = toAggregateType(field->type);
           if(ct && field->hasFlag(FLAG_SUPER_CLASS))
             fieldType = info->lvt->getType(ct->classStructName(true));
           INT_ASSERT(fieldType);
@@ -828,8 +828,8 @@ void ClassType::codegenDef() {
       } else {
         // Normal (wide or struct) code path.
         //
-        // need to define _cname (for CLASS_CLASS) or cname
-        if(classTag == CLASS_CLASS) {
+        // need to define _cname (for AGGREGATE_CLASS) or cname
+        if(aggregateTag == AGGREGATE_CLASS) {
           const char* struct_name = this->classStructName(true);
           type = info->lvt->getType(struct_name);
           INT_ASSERT(type);
@@ -842,7 +842,7 @@ void ClassType::codegenDef() {
         llvm::StructType* stype = llvm::cast<llvm::StructType>(type);
         stype->setBody(params);
   
-        if (classTag == CLASS_CLASS) {
+        if (aggregateTag == AGGREGATE_CLASS) {
           type = stype->getPointerTo();
         }
       }
@@ -862,17 +862,17 @@ void ClassType::codegenDef() {
 }
 
 
-void ClassType::codegenPrototype() {
+void AggregateType::codegenPrototype() {
   GenInfo* info = gGenInfo;
-  // Only generates prototypes for CLASS_CLASS (ie a Chapel class,
+  // Only generates prototypes for AGGREGATE_CLASS (ie a Chapel class,
   // not a record or wide pointer)
-  if (classTag == CLASS_CLASS) {
+  if (aggregateTag == AGGREGATE_CLASS) {
     if( info->cfile ) {
       fprintf(info->cfile, "typedef struct %s* %s;\n", 
               this->classStructName(false), symbol->cname);
     } else {
 #ifdef HAVE_LLVM
-      // ie _ClassType
+      // ie _AggregateType
       const char* struct_name = this->classStructName(true);
  
       llvm::StructType* st;
@@ -890,18 +890,18 @@ void ClassType::codegenPrototype() {
 
 
 
-int ClassType::codegenStructure(FILE* outfile, const char* baseoffset) {
-  switch (classTag) {
-  case CLASS_CLASS:
+int AggregateType::codegenStructure(FILE* outfile, const char* baseoffset) {
+  switch (aggregateTag) {
+  case AGGREGATE_CLASS:
     fprintf(outfile, "{CHPL_TYPE_CLASS_REFERENCE, %s},\n", baseoffset);
     return 1;
-  case CLASS_RECORD:
+  case AGGREGATE_RECORD:
     return codegenFieldStructure(outfile, true, baseoffset);
-  case CLASS_UNION:
+  case AGGREGATE_UNION:
     INT_FATAL(this, "Don't know how to codegenStructure for unions yet");
     return 0;
   default:
-    INT_FATAL(this, "Unexpected case in ClassType::codegenStructure");
+    INT_FATAL(this, "Unexpected case in AggregateType::codegenStructure");
     return 0;
   }
 }
@@ -910,8 +910,8 @@ int ClassType::codegenStructure(FILE* outfile, const char* baseoffset) {
 // BLC: I'm not understanding why special cases would need to be called
 // out here
 static const char* genUnderscore(Symbol* sym) {
-  ClassType* classtype = toClassType(sym->type);
-  if (classtype && classtype->classTag == CLASS_CLASS && 
+  AggregateType* classtype = toAggregateType(sym->type);
+  if (classtype && classtype->isClass() &&
       !sym->hasFlag(FLAG_REF)) {
     return "_";
   } else {
@@ -932,7 +932,7 @@ static const char* genSizeofStr(TypeSymbol* typesym) {
 
 static const char* genNewBaseOffsetString(TypeSymbol* typesym, int fieldnum,
                                           const char* baseoffset, Symbol* field,
-                                          ClassType* classtype) {
+                                          AggregateType* classtype) {
   if (classtype->symbol->hasFlag(FLAG_STAR_TUPLE)) {
     char fieldnumstr[64];
     sprintf(fieldnumstr, "%d", fieldnum);
@@ -942,12 +942,12 @@ static const char* genNewBaseOffsetString(TypeSymbol* typesym, int fieldnum,
     return astr(baseoffset, " + offsetof(", 
                 genUnderscore(classtype->symbol),
                 classtype->symbol->cname, ", ", 
-                classtype->classTag == CLASS_UNION ? "_u." : "",
+                classtype->isUnion() ? "_u." : "",
                 field->cname, ")");
   }
 }
 
-int ClassType::codegenFieldStructure(FILE* outfile, bool nested, 
+int AggregateType::codegenFieldStructure(FILE* outfile, bool nested, 
                                      const char* baseoffset) {
   // Handle ref types as pointers
   if (symbol->hasFlag(FLAG_REF)) {
@@ -978,7 +978,7 @@ int ClassType::codegenFieldStructure(FILE* outfile, bool nested,
 extern int getCRecordMemberGEP(const char* typeName, const char* fieldName);
 #endif
 
-int ClassType::getMemberGEP(const char *name) {
+int AggregateType::getMemberGEP(const char *name) {
 #ifdef HAVE_LLVM
   if( symbol->hasFlag(FLAG_EXTERN) ) {
     // We will cache the info in the local GEP map.
@@ -1024,7 +1024,7 @@ int ClassType::getMemberGEP(const char *name) {
 }
 
 
-int ClassType::getFieldPosition(const char* name, bool fatal) {
+int AggregateType::getFieldPosition(const char* name, bool fatal) {
   Vec<Type*> next, current;
   Vec<Type*>* next_p = &next, *current_p = &current;
   current_p->set_add(this);
@@ -1032,7 +1032,7 @@ int ClassType::getFieldPosition(const char* name, bool fatal) {
   int fieldPos = 0;
   while (current_p->n != 0) {
     forv_Vec(Type, t, *current_p) {
-      if (ClassType* ct = toClassType(t)) {
+      if (AggregateType* ct = toAggregateType(t)) {
         for_fields(sym, ct) {
           if (!strcmp(sym->name, name)) {
             return fieldPos;
@@ -1066,13 +1066,13 @@ int ClassType::getFieldPosition(const char* name, bool fatal) {
 }
 
 
-Symbol* ClassType::getField(const char* name, bool fatal) {
+Symbol* AggregateType::getField(const char* name, bool fatal) {
   Vec<Type*> next, current;
   Vec<Type*>* next_p = &next, *current_p = &current;
   current_p->set_add(this);
   while (current_p->n != 0) {
     forv_Vec(Type, t, *current_p) {
-      if (ClassType* ct = toClassType(t)) {
+      if (AggregateType* ct = toAggregateType(t)) {
         for_fields(sym, ct) {
           if (!strcmp(sym->name, name))
             return sym;
@@ -1101,7 +1101,7 @@ Symbol* ClassType::getField(const char* name, bool fatal) {
 }
 
 
-Symbol* ClassType::getField(int i) {
+Symbol* AggregateType::getField(int i) {
   return toDefExpr(fields.get(i))->sym;
 }
 
@@ -1189,7 +1189,7 @@ void initPrimitiveTypes(void) {
 
   dtBool = createPrimitiveType ("bool", "chpl_bool");
 
-  dtObject = new ClassType(CLASS_CLASS);
+  dtObject = new AggregateType(AGGREGATE_CLASS);
   dtValue = createInternalType("value", "_chpl_value");
 
   CREATE_DEFAULT_SYMBOL (dtBool, gFalse, "false");
@@ -1479,23 +1479,23 @@ int get_width(Type *t) {
 
 
 bool isClass(Type* t) {
-  if (ClassType* ct = toClassType(t))
-    if (ct->classTag == CLASS_CLASS)
+  if (AggregateType* ct = toAggregateType(t))
+    if (ct->isClass())
       return true;
   return false;
 }
 
 
 bool isRecord(Type* t) {
-  if (ClassType* ct = toClassType(t))
-    if (ct->classTag == CLASS_RECORD)
+  if (AggregateType* ct = toAggregateType(t))
+    if (ct->isRecord())
       return true;
   return false;
 }
 
 bool isUnion(Type* t) {
-  if (ClassType* ct = toClassType(t))
-    if (ct->classTag == CLASS_UNION)
+  if (AggregateType* ct = toAggregateType(t))
+    if (ct->isUnion())
       return true;
   return false;
 }
@@ -1655,7 +1655,7 @@ void codegenTypeStructures(FILE* hdrfile) {
     }
     fprintf(outfile, "/* %s (%s) */\n", typesym->name, typesym->cname);
     fprintf(outfile, "{\n");
-    if (ClassType* classtype = toClassType(typesym->type)) {
+    if (AggregateType* classtype = toAggregateType(typesym->type)) {
       int numfields = classtype->codegenFieldStructure(outfile, false, "0");
       if (numfields > maxFieldsPerType) {
         maxFieldsPerType = numfields;

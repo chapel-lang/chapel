@@ -10,17 +10,17 @@ void flattenClasses(void) {
   //
   // collect nested classes
   //
-  Vec<ClassType*> nestedClasses;
+  Vec<AggregateType*> nestedClasses;
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (ClassType* ct = toClassType(ts->type))
-      if (toClassType(ct->symbol->defPoint->parentSymbol->type))
+    if (AggregateType* ct = toAggregateType(ts->type))
+      if (toAggregateType(ct->symbol->defPoint->parentSymbol->type))
         nestedClasses.add(ct);
   }
 
   //
   // move nested classes to module level
   //
-  forv_Vec(ClassType, ct, nestedClasses) {
+  forv_Vec(AggregateType, ct, nestedClasses) {
     ModuleSymbol* mod = ct->getModule();
     DefExpr *def = ct->symbol->defPoint;
     def->remove();

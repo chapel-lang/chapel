@@ -10,26 +10,26 @@
 static bool mainReturnsInt;
 
 static void build_chpl_entry_points(void);
-static void build_getter(ClassType* ct, Symbol* field);
-static void build_union_assignment_function(ClassType* ct);
+static void build_getter(AggregateType* ct, Symbol* field);
+static void build_union_assignment_function(AggregateType* ct);
 static void build_enum_assignment_function(EnumType* et);
-static void build_record_assignment_function(ClassType* ct);
-static void build_record_cast_function(ClassType* ct);
-static void build_record_copy_function(ClassType* ct);
-static void build_record_hash_function(ClassType* ct);
-static void build_record_equality_function(ClassType* ct);
-static void build_record_inequality_function(ClassType* ct);
+static void build_record_assignment_function(AggregateType* ct);
+static void build_record_cast_function(AggregateType* ct);
+static void build_record_copy_function(AggregateType* ct);
+static void build_record_hash_function(AggregateType* ct);
+static void build_record_equality_function(AggregateType* ct);
+static void build_record_inequality_function(AggregateType* ct);
 static void build_enum_cast_function(EnumType* et);
 static void build_enum_enumerate_function(EnumType* et);
 
-//static void buildDefaultReadFunction(ClassType* type);
+//static void buildDefaultReadFunction(AggregateType* type);
 //static void buildDefaultReadFunction(EnumType* type);
 
-static void buildDefaultReadWriteFunctions(ClassType* type);
+static void buildDefaultReadWriteFunctions(AggregateType* type);
 
 static void buildStringCastFunction(EnumType* type);
 
-static void buildDefaultDestructor(ClassType* ct);
+static void buildDefaultDestructor(AggregateType* ct);
 
 
 void buildDefaultFunctions(void) {
@@ -40,7 +40,7 @@ void buildDefaultFunctions(void) {
   collect_asts(rootModule, asts);
   forv_Vec(BaseAST, ast, asts) {
     if (TypeSymbol* type = toTypeSymbol(ast)) {
-      ClassType* ct = toClassType(type->type);
+      AggregateType* ct = toAggregateType(type->type);
       if (ct) {
         for_fields(field, ct) {
           if (!field->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
@@ -134,7 +134,7 @@ static FnSymbol* function_exists(const char* name,
 }
 
 
-static void build_getter(ClassType* ct, Symbol *field) {
+static void build_getter(AggregateType* ct, Symbol *field) {
   if (FnSymbol* fn = function_exists(field->name, 2, dtMethodToken, ct)) {
     Vec<BaseAST*> asts;
     collect_asts(fn, asts);
@@ -409,7 +409,7 @@ static void build_chpl_entry_points(void) {
   normalize(chpl_gen_main);
 }
 
-static void build_record_equality_function(ClassType* ct) {
+static void build_record_equality_function(AggregateType* ct) {
   if (function_exists("==", 2, ct))
     return;
 
@@ -438,7 +438,7 @@ static void build_record_equality_function(ClassType* ct) {
 }
 
 
-static void build_record_inequality_function(ClassType* ct) {
+static void build_record_inequality_function(AggregateType* ct) {
   if (function_exists("!=", 2, ct))
     return;
 
@@ -590,7 +590,7 @@ static void build_enum_assignment_function(EnumType* et) {
 }
 
 
-static void build_record_assignment_function(ClassType* ct) {
+static void build_record_assignment_function(AggregateType* ct) {
   if (function_exists("=", 2, ct))
     return;
 
@@ -627,7 +627,7 @@ static void build_record_assignment_function(ClassType* ct) {
 }
 
 
-static void build_record_cast_function(ClassType* ct) {
+static void build_record_cast_function(AggregateType* ct) {
   FnSymbol* fn = new FnSymbol("_cast");
 // TODO: This flag should be enabled, so a user-defined version of the record
 //  assignment function can override the compiler-generated version.
@@ -652,7 +652,7 @@ static void build_record_cast_function(ClassType* ct) {
   normalize(fn);
 }
 
-static void build_union_assignment_function(ClassType* ct) {
+static void build_union_assignment_function(AggregateType* ct) {
   if (function_exists("=", 2, ct))
     return;
 
@@ -683,7 +683,7 @@ static void build_union_assignment_function(ClassType* ct) {
 }
 
 
-static void build_record_copy_function(ClassType* ct) {
+static void build_record_copy_function(AggregateType* ct) {
   if (function_exists("chpl__initCopy", 1, ct))
     return;
 
@@ -709,7 +709,7 @@ static void build_record_copy_function(ClassType* ct) {
 }
 
 
-static void build_record_hash_function(ClassType *ct) {
+static void build_record_hash_function(AggregateType *ct) {
   if (function_exists("chpl__defaultHash", 1, ct))
     return;
 
@@ -751,7 +751,7 @@ static void build_record_hash_function(ClassType *ct) {
   normalize(fn);
 }
 
-static void buildDefaultReadWriteFunctions(ClassType* ct) {
+static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   bool hasReadWriteThis = false;
   bool hasReadThis = false;
   bool hasWriteThis = false;
@@ -871,7 +871,7 @@ static void buildStringCastFunction(EnumType* et) {
 }
 
 
-static void buildDefaultDestructor(ClassType* ct) {
+static void buildDefaultDestructor(AggregateType* ct) {
   if (function_exists("~chpl_destroy", 2, dtMethodToken, ct))
     return;
 

@@ -145,7 +145,7 @@ insertLineNumber(CallExpr* call) {
 static bool isClassMethodCall(CallExpr* call) {
   FnSymbol* fn = call->isResolved();
   if (fn && fn->hasFlag(FLAG_METHOD) && fn->_this) {
-    if (ClassType* ct = toClassType(fn->_this->typeInfo())) {
+    if (AggregateType* ct = toAggregateType(fn->_this->typeInfo())) {
       if (fn->numFormals() > 0 &&
           fn->getFormal(1)->typeInfo() == fn->_this->typeInfo()) {
         if (isClass(ct) || ct->symbol->hasFlag(FLAG_WIDE_CLASS)) {
@@ -172,7 +172,7 @@ static void insertNilChecks()
         isClassMethodCall(call)) {
       Expr* stmt = call->getStmtExpr();
       SET_LINENO(stmt);
-      ClassType* ct = toClassType(call->get(1)->typeInfo());
+      AggregateType* ct = toAggregateType(call->get(1)->typeInfo());
       if (ct && (isClass(ct) || ct->symbol->hasFlag(FLAG_WIDE_CLASS))) {
         stmt->insertBefore(new CallExpr(PRIM_CHECK_NIL, 
                                         call->get(1)->copy()));
@@ -245,7 +245,7 @@ static void moveLinenoInsideArgBundle()
       // In the body of the wrapper, create local lineno and fname variables 
       // initialized from the corresponding fields in the argument bundle.
       DefExpr* bundleArg = toDefExpr(fn->formals.tail);
-      ClassType* bundleType = toClassType(bundleArg->sym->typeInfo());
+      AggregateType* bundleType = toAggregateType(bundleArg->sym->typeInfo());
       VarSymbol* lineField = newTemp("_ln", lineArg->sym->typeInfo());
       bundleType->fields.insertAtTail(new DefExpr(lineField));
       VarSymbol* fileField = newTemp("_fn", fileArg->sym->typeInfo());

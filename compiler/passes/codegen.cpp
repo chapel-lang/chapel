@@ -165,7 +165,7 @@ genClassIDs(Vec<TypeSymbol*> & typeSymbols) {
 
   int count=0;
   forv_Vec(TypeSymbol, ts, typeSymbols) {
-    if (ClassType* ct = toClassType(ts->type)) {
+    if (AggregateType* ct = toAggregateType(ts->type)) {
       if (!isReferenceType(ct) && isClass(ct)) {
         genGlobalDefClassId(ts->cname, count);
         count++;
@@ -242,7 +242,7 @@ genVirtualMethodTable(Vec<TypeSymbol*>& types) {
     fprintf(hdrfile, "chpl_fn_p %s[] = {\n", vmt);
     bool comma = false;
     forv_Vec(TypeSymbol, ts, types) {
-      if (ClassType* ct = toClassType(ts->type)) {
+      if (AggregateType* ct = toAggregateType(ts->type)) {
         if (!isReferenceType(ct) && isClass(ct)) {
           if (comma)
             fprintf(hdrfile, ",\n");
@@ -275,7 +275,7 @@ genVirtualMethodTable(Vec<TypeSymbol*>& types) {
     llvm::Type *vmTableEntryType = funcPtrType;
     
     forv_Vec(TypeSymbol, ts, types) {
-      if (ClassType* ct = toClassType(ts->type)) {
+      if (AggregateType* ct = toAggregateType(ts->type)) {
         if (!isReferenceType(ct) && isClass(ct)) {
           int n = 0;
           if (Vec<FnSymbol*>* vfns = virtualMethodTable.get(ct)) {
@@ -376,7 +376,7 @@ static const char* uniquifyName(const char* name,
   return newName;
 }
 
-static inline bool shouldCodegenAggregate(ClassType* ct)
+static inline bool shouldCodegenAggregate(AggregateType* ct)
 {
   // never codegen definitions of primitive or arithmetic types.
   if( toPrimitiveType(ct) ) return false;
@@ -403,7 +403,7 @@ static inline bool shouldCodegenAggregate(ClassType* ct)
 }
 
 
-static void codegen_aggregate_def(ClassType* ct) {
+static void codegen_aggregate_def(AggregateType* ct) {
   if (!shouldCodegenAggregate(ct)) return;
   if (ct->symbol->codegenned) return;
   ct->symbol->codegenned = true;
@@ -416,13 +416,13 @@ static void codegen_aggregate_def(ClassType* ct) {
   else if(ct->symbol->hasFlag(FLAG_DATA_CLASS))
     vt = getDataClassType(ct->symbol)->typeInfo();
   if (vt) {
-    if (ClassType* fct = toClassType(vt)) {
+    if (AggregateType* fct = toAggregateType(vt)) {
       codegen_aggregate_def(fct);
     }
   }
   // For other types, generate the field types
   for_fields(field, ct) {
-    if (ClassType* fct = toClassType(field->type)) {
+    if (AggregateType* fct = toAggregateType(field->type)) {
       codegen_aggregate_def(fct);
     }
   }
@@ -507,7 +507,7 @@ static void codegen_header() {
   //
   forv_Vec(TypeSymbol, ts, types) {
     if (ts->defPoint->parentExpr != rootModule->block) {
-      if (ClassType* ct = toClassType(ts->type)) {
+      if (AggregateType* ct = toAggregateType(ts->type)) {
         Vec<const char*> fieldNameSet;
         for_fields(field, ct) {
           legalizeName(field);
@@ -654,7 +654,7 @@ static void codegen_header() {
     // codegen records/unions/references/data class in topological order
     genComment("Records, Unions, Data Class, References (Hierarchically)");
     forv_Vec(TypeSymbol, ts, types) {
-      if (ClassType* ct = toClassType(ts->type))
+      if (AggregateType* ct = toAggregateType(ts->type))
         codegen_aggregate_def(ct);
     }
   }
@@ -882,7 +882,7 @@ static void codegen_header() {
 static void codegen_header_addons() {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (ts->defPoint->parentExpr != rootModule->block) {
-      if (ClassType* ct = toClassType(ts->type))
+      if (AggregateType* ct = toAggregateType(ts->type))
         codegen_aggregate_def(ct);
     }
   }

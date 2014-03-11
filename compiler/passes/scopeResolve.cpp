@@ -18,11 +18,11 @@
 //
 // static functions (forward declaration)
 //
-static void build_type_constructor(ClassType* ct);
-static void build_constructor(ClassType* ct);
+static void build_type_constructor(AggregateType* ct);
+static void build_constructor(AggregateType* ct);
 static ArgSymbol* create_generic_arg(VarSymbol* field);
 static void insert_implicit_this(FnSymbol* fn, Vec<const char*>& fieldNamesSet);
-static void move_constructor_to_outer(FnSymbol* fn, ClassType* outerType);
+static void move_constructor_to_outer(FnSymbol* fn, AggregateType* outerType);
 static void resolveUnresolvedSymExprs();
 static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
                                      Vec<UnresolvedSymExpr*>& skipSet);
@@ -38,7 +38,7 @@ static void resolveModuleCall(CallExpr* call,
 //   identifiers that are defined via query-expressions, e.g., 't' in
 //   'def f(x: ?t)'
 //
-//   TypeSymbol: defines a scope for EnumType and ClassType types for
+//   TypeSymbol: defines a scope for EnumType and AggregateType types for
 //   the enumerated type constants or the class/record fields
 //
 //   BlockStmt: defines a scope if the block is a normal block
@@ -90,7 +90,7 @@ getScope(BaseAST* ast) {
     } else if (FnSymbol* fn = toFnSymbol(expr->parentSymbol)) {
       return fn;
     } else if (TypeSymbol* ts = toTypeSymbol(expr->parentSymbol)) {
-      if (isEnumType(ts->type) || isClassType(ts->type)) {
+      if (isEnumType(ts->type) || isAggregateType(ts->type)) {
         return ts;
       }
     }
@@ -134,7 +134,7 @@ addToSymbolTable(Vec<DefExpr*>& defs) {
       FnSymbol* oldFn = toFnSymbol(sym);
       FnSymbol* newFn = toFnSymbol(def->sym);
       TypeSymbol* typeScope = toTypeSymbol(scope);
-      if (!typeScope || !isClassType(typeScope->type)) { // inheritance
+      if (!typeScope || !isAggregateType(typeScope->type)) { // inheritance
         if ((!oldFn || (!oldFn->_this && oldFn->hasFlag(FLAG_NO_PARENS))) &&
             (!newFn || (!newFn->_this && newFn->hasFlag(FLAG_NO_PARENS)))) {
           USR_FATAL(sym, "'%s' has multiple definitions, redefined at:\n  %s", sym->name, def->sym->stringLoc());
@@ -238,7 +238,7 @@ lookup(BaseAST* scope,
   }
 
   if (TypeSymbol* ts = toTypeSymbol(scope))
-    if (ClassType* ct = toClassType(ts->type))
+    if (AggregateType* ct = toAggregateType(ts->type))
       if (Symbol* sym = ct->getField(name, false))
         symbols.set_add(sym);
 
@@ -302,8 +302,8 @@ lookup(BaseAST* scope,
       }
     } else {
       FnSymbol* fn = toFnSymbol(scope);
-      if (fn && fn->_this && toClassType(fn->_this->type)) {
-        ClassType* ct = toClassType(fn->_this->type);
+      if (fn && fn->_this && toAggregateType(fn->_this->type)) {
+        AggregateType* ct = toAggregateType(fn->_this->type);
         Symbol* sym = lookup(ct->symbol, name, alreadyVisited, scanModuleUses);
         if (sym)
           symbols.set_add(sym);
@@ -350,9 +350,9 @@ isMethodName(const char* name, Type* type) {
     if (isMethodName(name, pt))
       return true;
   }
-  if (ClassType* ct = toClassType(type)) {
+  if (AggregateType* ct = toAggregateType(type)) {
     Type *outerType = ct->symbol->defPoint->parentSymbol->type;
-    if (ClassType* outer = toClassType(outerType))
+    if (AggregateType* outer = toAggregateType(outerType))
       if (isMethodName(name, outer))
         return true;
   }
@@ -463,7 +463,7 @@ static void resolveEnumeratedTypes() {
 
 
 /********* build constructors ***************/
-void build_constructors(ClassType* ct)
+void build_constructors(AggregateType* ct)
 {
   if (ct->defaultInitializer)
     return;
@@ -476,7 +476,7 @@ void build_constructors(ClassType* ct)
 
 
 // Create the (default) type constructor for this class.
-static void build_type_constructor(ClassType* ct) {
+static void build_type_constructor(AggregateType* ct) {
   // Create the type constructor function,
   FnSymbol* fn = new FnSymbol(astr("_type_construct_", ct->symbol->name));
   fn->addFlag(FLAG_TYPE_CONSTRUCTOR);
@@ -567,7 +567,7 @@ static void build_type_constructor(ClassType* ct) {
   // Make implicit references to 'this' explicit.
   insert_implicit_this(fn, fieldNamesSet);
 
-  ClassType *outerType = toClassType(ct->symbol->defPoint->parentSymbol->type);
+  AggregateType *outerType = toAggregateType(ct->symbol->defPoint->parentSymbol->type);
   if (outerType) {
     // Create an "outer" pointer to the outer class in the inner class
     VarSymbol* outer = new VarSymbol("outer");
@@ -593,7 +593,7 @@ static void build_type_constructor(ClassType* ct) {
 // For the given class type, this builds the compiler-generated constructor
 // which is also called by user-defined constructors to pre-initialize all 
 // fields to their declared or type-specific initial values.
-static void build_constructor(ClassType* ct) {
+static void build_constructor(AggregateType* ct) {
   if (isSyncType(ct))
     ct->defaultValue = NULL;
 
@@ -659,7 +659,7 @@ static void build_constructor(ClassType* ct) {
         // This class has a parent class.
         if (!ct->dispatchParents.v[0]->defaultInitializer) {
           // If it doesn't yet have an initializer, make one.
-          build_constructors(toClassType(ct->dispatchParents.v[0]));
+          build_constructors(toAggregateType(ct->dispatchParents.v[0]));
         }
 
         // Get the parent constructor.
@@ -796,7 +796,7 @@ static void build_constructor(ClassType* ct) {
 
   insert_implicit_this(fn, fieldNamesSet);
 
-  ClassType *outerType = toClassType(ct->symbol->defPoint->parentSymbol->type);
+  AggregateType *outerType = toAggregateType(ct->symbol->defPoint->parentSymbol->type);
   if (outerType) {
     move_constructor_to_outer(fn, outerType);
 
@@ -875,7 +875,7 @@ static void insert_implicit_this(FnSymbol* fn, Vec<const char*>& fieldNamesSet)
 }
 
 
-static void move_constructor_to_outer(FnSymbol* fn, ClassType* outerType)
+static void move_constructor_to_outer(FnSymbol* fn, AggregateType* outerType)
 {
   // Remove the DefPoint for this constructor, add it to the outer
   // class's method list.
@@ -974,7 +974,7 @@ process_import_expr(CallExpr* call) {
   call->getStmtExpr()->remove();
 }
 
-void add_root_type(ClassType* ct)
+void add_root_type(AggregateType* ct)
 {
   // make root records inherit from value
   // make root classes inherit from object
@@ -1003,9 +1003,9 @@ void add_root_type(ClassType* ct)
 // record hierarchies
 //
 static void
-add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
-  static Vec<ClassType*> globalSeen; // classes already in hierarchy
-  Vec<ClassType*> localSeen;         // classes in potential cycle
+add_class_to_hierarchy(AggregateType* ct, Vec<AggregateType*>* localSeenPtr = NULL) {
+  static Vec<AggregateType*> globalSeen; // classes already in hierarchy
+  Vec<AggregateType*> localSeen;         // classes in potential cycle
 
   if (!localSeenPtr)
     localSeenPtr = &localSeen;
@@ -1029,7 +1029,7 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
     if (!ts)
       USR_FATAL(expr, "Illegal super class");
     //    printf("found it in %s\n", sym->getModule()->name);
-    ClassType* pt = toClassType(ts->type);
+    AggregateType* pt = toAggregateType(ts->type);
     if (!pt)
       USR_FATAL(expr, "Illegal super class %s", ts->name);
     if (isUnion(ct) && isUnion(pt))
@@ -1124,7 +1124,7 @@ static bool tryCResolve_set(ModuleSymbol* module, const char* name,
         addToSymbolTable(v);
         if (DefExpr* de = toDefExpr(c_expr)) {
           if (TypeSymbol* ts = toTypeSymbol(de->sym)) {
-            if (ClassType* ct = toClassType(ts->type)) {
+            if (AggregateType* ct = toAggregateType(ts->type)) {
               SET_LINENO(ct->symbol);
               //If this is a class DefExpr, make sure its initializer gets created.
               build_constructors(ct);
@@ -1173,7 +1173,7 @@ void scopeResolve(void) {
   //
   // compute class hierarchy
   //
-  forv_Vec(ClassType, ct, gClassTypes) {
+  forv_Vec(AggregateType, ct, gAggregateTypes) {
     add_class_to_hierarchy(ct);
   }
 
@@ -1193,7 +1193,7 @@ void scopeResolve(void) {
   //
   // add implicit fields for implementing alias-named-argument passing
   //
-  forv_Vec(ClassType, ct, gClassTypes) {
+  forv_Vec(AggregateType, ct, gAggregateTypes) {
     for_fields(field, ct) {
       if (aliasFieldSet.set_in(field->name)) {
         SET_LINENO(field);
@@ -1211,7 +1211,7 @@ void scopeResolve(void) {
   //
   // build constructors (type and value versions)
   //
-  forv_Vec(ClassType, ct, gClassTypes) {
+  forv_Vec(AggregateType, ct, gAggregateTypes) {
     SET_LINENO(ct->symbol);
     build_constructors(ct);
   }
@@ -1378,7 +1378,7 @@ void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
             Type* type = method->_this->type;
             TypeSymbol* cts =
               (sym) ? toTypeSymbol(sym->defPoint->parentSymbol) : NULL;
-            if ((cts && isClassType(cts->type)) ||
+            if ((cts && isAggregateType(cts->type)) ||
                 isMethodName(name, type)) {
               CallExpr* call = toCallExpr(expr->parentExpr);
               if (call && call->baseExpr == expr &&
@@ -1389,14 +1389,14 @@ void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
                 expr->replace(use);
                 skipSet.set_add(use);
               } else {
-                ClassType* ct = toClassType(type);
+                AggregateType* ct = toAggregateType(type);
                 int nestDepth = 0;
                 if (isMethodName(name, type)) {
                   while (ct && !isMethodNameLocal(name, ct)) {
                     // count how many classes out from current depth that
                     // this method is first defined in
                     nestDepth += 1;
-                    ct = toClassType
+                    ct = toAggregateType
                       (ct->symbol->defPoint->parentSymbol->type);
                   }
                 } else {
@@ -1404,7 +1404,7 @@ void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
                     // count how many classes out from current depth that
                     // this symbol is first defined in
                     nestDepth += 1;
-                    ct = toClassType(ct->symbol->defPoint->parentSymbol->type);
+                    ct = toAggregateType(ct->symbol->defPoint->parentSymbol->type);
                   }
                 }
 

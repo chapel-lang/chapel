@@ -75,7 +75,7 @@
 
 typedef struct {
   bool firstCall;
-  ClassType* ctype;
+  AggregateType* ctype;
   FnSymbol*  wrap_fn;
 } BundleArgsFnData;
 
@@ -133,7 +133,7 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
 // to rely on fn's formal types instead of fcall's actual types.
 
   // create a new class to capture refs to locals
-  ClassType* ctype = new ClassType( CLASS_CLASS);
+  AggregateType* ctype = new AggregateType( AGGREGATE_CLASS);
   TypeSymbol* new_c = new TypeSymbol(astr("_class_locals", fn->name), ctype);
   new_c->addFlag(FLAG_NO_OBJECT);
   new_c->addFlag(FLAG_NO_WIDE_CLASS);
@@ -281,7 +281,7 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
   const bool firstCall = baData.firstCall;
   if (firstCall)
     create_arg_bundle_class(fn, fcall, mod, baData);
-  ClassType* ctype = baData.ctype;
+  AggregateType* ctype = baData.ctype;
 
   // create the class variable instance and allocate space for it
   VarSymbol *tempc = newTemp(astr("_args_for", fn->name), ctype);
@@ -321,7 +321,7 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
   INT_ASSERT(baData.firstCall == !baData.wrap_fn);
   if (!baData.firstCall) return;
 
-  ClassType* ctype = baData.ctype;
+  AggregateType* ctype = baData.ctype;
   FnSymbol *wrap_fn = new FnSymbol( astr("wrap", fn->name));
 
   // Add a special flag to the wrapper-function as appropriate.
@@ -505,14 +505,14 @@ replicateGlobalRecordWrappedVars(DefExpr *def) {
 }
 
 
-static ClassType*
+static AggregateType*
 buildHeapType(Type* type) {
-  static Map<Type*,ClassType*> heapTypeMap;
+  static Map<Type*,AggregateType*> heapTypeMap;
   if (heapTypeMap.get(type))
     return heapTypeMap.get(type);
 
   SET_LINENO(type->symbol);
-  ClassType* heap = new ClassType(CLASS_CLASS);
+  AggregateType* heap = new AggregateType(AGGREGATE_CLASS);
   TypeSymbol* ts = new TypeSymbol(astr("heap_", type->symbol->cname), heap);
   ts->addFlag(FLAG_NO_OBJECT);
   ts->addFlag(FLAG_HEAP);
@@ -909,7 +909,7 @@ makeHeapAllocations() {
       }
       continue;
     }
-    ClassType* heapType = buildHeapType(var->type);
+    AggregateType* heapType = buildHeapType(var->type);
 
     //
     // allocate local variables on the heap; global variables are put
@@ -1020,7 +1020,7 @@ reprivatizeIterators() {
 
   Vec<Symbol*> privatizedFields;
 
-  forv_Vec(ClassType, ct, gClassTypes) {
+  forv_Vec(AggregateType, ct, gAggregateTypes) {
     for_fields(field, ct) {
       if (ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
           field->type->symbol->hasFlag(FLAG_PRIVATIZED_CLASS)) {
@@ -1037,7 +1037,7 @@ reprivatizeIterators() {
           CallExpr* move = toCallExpr(call->parentExpr);
           INT_ASSERT(move->isPrimitive(PRIM_MOVE));
           SymExpr* lhs = toSymExpr(move->get(1));
-          ClassType* ct = toClassType(se->var->type);
+          AggregateType* ct = toAggregateType(se->var->type);
           VarSymbol* tmp = newTemp(ct->getField("pid")->type);
           move->insertBefore(new DefExpr(tmp));
           lhs->replace(new SymExpr(tmp));
@@ -1046,7 +1046,7 @@ reprivatizeIterators() {
           CallExpr* move = toCallExpr(call->parentExpr);
           INT_ASSERT(move->isPrimitive(PRIM_MOVE));
           SymExpr* lhs = toSymExpr(move->get(1));
-          ClassType* ct = toClassType(se->var->type);
+          AggregateType* ct = toAggregateType(se->var->type);
           VarSymbol* tmp = newTemp(ct->getField("pid")->type);
           move->insertBefore(new DefExpr(tmp));
           lhs->replace(new SymExpr(tmp));
@@ -1056,7 +1056,7 @@ reprivatizeIterators() {
           move->insertAfter(new CallExpr(PRIM_MOVE, lhs, new CallExpr(PRIM_ADDR_OF, valTmp)));
           move->insertAfter(new CallExpr(PRIM_MOVE, valTmp, new CallExpr(PRIM_GET_PRIV_CLASS, lhs->getValType()->symbol, tmp)));
         } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
-          ClassType* ct = toClassType(se->var->type);
+          AggregateType* ct = toAggregateType(se->var->type);
           VarSymbol* tmp = newTemp(ct->getField("pid")->type);
           call->insertBefore(new DefExpr(tmp));
           call->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, call->get(3)->remove(), ct->getField("pid"))));
@@ -1171,12 +1171,12 @@ static void passArgsToNestedFns(Vec<FnSymbol*>& nestedFunctions)
 }
 
 
-ClassType* wideStringType = NULL;
+AggregateType* wideStringType = NULL;
 
 static void
 buildWideClass(Type* type) {
   SET_LINENO(type->symbol);
-  ClassType* wide = new ClassType(CLASS_RECORD);
+  AggregateType* wide = new AggregateType(AGGREGATE_RECORD);
   TypeSymbol* wts = new TypeSymbol(astr("__wide_", type->symbol->cname), wide);
   wts->addFlag(FLAG_WIDE_CLASS);
   theProgram->block->insertAtTail(new DefExpr(wts));
@@ -1209,7 +1209,7 @@ Type* getOrMakeRefTypeDuringCodegen(Type* type) {
   refType = type->refType;
   if( ! refType ) {
     SET_LINENO(type->symbol);
-    ClassType* ref = new ClassType(CLASS_RECORD);
+    AggregateType* ref = new AggregateType(AGGREGATE_RECORD);
     TypeSymbol* refTs = new TypeSymbol(astr("_ref_", type->symbol->cname), ref);
     refTs->addFlag(FLAG_REF);
     refTs->addFlag(FLAG_NO_DEFAULT_FUNCTIONS);
@@ -1240,7 +1240,7 @@ Type* getOrMakeWideTypeDuringCodegen(Type* refType) {
   if( wideType ) return wideType;
 
   // Now, create a wide pointer type.
-  ClassType* wide = new ClassType(CLASS_RECORD);
+  AggregateType* wide = new AggregateType(AGGREGATE_RECORD);
   TypeSymbol* wts = new TypeSymbol(astr("chpl____wide_", refType->symbol->cname), wide);
   if( refType->symbol->hasFlag(FLAG_REF) || refType == dtNil )
     wts->addFlag(FLAG_WIDE);
@@ -1267,7 +1267,7 @@ Type* getOrMakeWideTypeDuringCodegen(Type* refType) {
 //
 bool isRefWideString(Type* t) {
   if (isReferenceType(t)) {
-    ClassType* ct = toClassType(t);
+    AggregateType* ct = toAggregateType(t);
     INT_ASSERT(ct);
     Symbol* valField = ct->getField("_val", false);
     INT_ASSERT(valField);
@@ -1649,7 +1649,7 @@ static void buildWideClasses()
   // build a wide class type for every class type
   //
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    ClassType* ct = toClassType(ts->type);
+    AggregateType* ct = toAggregateType(ts->type);
     if (ct && isClass(ct) && !ts->hasFlag(FLAG_REF) && !ts->hasFlag(FLAG_NO_WIDE_CLASS)) {
       buildWideClass(ct);
     }
@@ -1658,7 +1658,7 @@ static void buildWideClasses()
 }
 
 
-// TODO: It might be better to call this "widenClassTypes()".
+// TODO: It might be better to call this "widenAggregateTypes()".
 static void widenClasses()
 {
   //
@@ -1732,7 +1732,7 @@ static void buildWideRefMap()
     if (ts->hasFlag(FLAG_REF)) {
       SET_LINENO(ts);
 
-      ClassType* wide = new ClassType(CLASS_RECORD);
+      AggregateType* wide = new AggregateType(AGGREGATE_RECORD);
       TypeSymbol* wts = new TypeSymbol(astr("__wide_", ts->cname), wide);
       wts->addFlag(FLAG_WIDE);
       theProgram->block->insertAtTail(new DefExpr(wts));

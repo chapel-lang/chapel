@@ -84,7 +84,7 @@ static void countTokensInCmdLineFiles(void) {
 struct WellKnownType
 {
   const char* name;
-  ClassType** type_;
+  AggregateType** type_;
   bool isClass;
 };
 
@@ -127,7 +127,7 @@ static void gatherWellKnownTypes()
         INT_ASSERT(ts->type); // We expect the symbol to be defined.
         if (wkt.isClass && !isClass(ts->type))
           USR_FATAL_CONT(ts->type, class_reqd_message, wkt.name);
-        *wkt.type_ = toClassType(ts->type);
+        *wkt.type_ = toAggregateType(ts->type);
       }
     }
   }

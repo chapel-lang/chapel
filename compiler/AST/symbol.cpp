@@ -580,7 +580,7 @@ void VarSymbol::codegenDefC(bool global) {
   if (type == dtVoid)
     return;
 
-  ClassType* ct = toClassType(type);
+  AggregateType* ct = toAggregateType(type);
   std::string typestr =  (this->hasFlag(FLAG_SUPER_CLASS) ?
                           std::string(ct->classStructName(true)) :
                           type->codegen().c);
@@ -593,7 +593,7 @@ void VarSymbol::codegenDefC(bool global) {
 
   std::string str = (isStatic ? "static " : "") + typestr + " " + cname;
   if (ct) {
-    if (ct->classTag == CLASS_CLASS) {
+    if (ct->isClass()) {
       if (isFnSymbol(defPoint->parentSymbol)) {
         str += " = NULL";  
       }
@@ -710,8 +710,8 @@ void VarSymbol::codegenDef() {
     llvm::Value *varAlloca = createTempVarLLVM(varType, cname);
     info->lvt->addValue(cname, varAlloca, GEN_PTR, ! is_signed(type));
     
-    if(ClassType *ctype = toClassType(type)) {
-      if(ctype->classTag == CLASS_CLASS ||
+    if(AggregateType *ctype = toAggregateType(type)) {
+      if(ctype->isClass() ||
          ctype->symbol->hasFlag(FLAG_WIDE) ||
          ctype->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         if(isFnSymbol(defPoint->parentSymbol)) {
@@ -1022,13 +1022,13 @@ void TypeSymbol::codegenMetadata() {
   // avoid recursing.
   llvmTbaaNode = info->tbaaRootNode;
 
-  ClassType* ct = toClassType(type);
+  AggregateType* ct = toAggregateType(type);
 
   Type* superType = NULL;
   // Recursively generate the TBAA nodes for this type.
   if( ct ) {
     for_fields(field, ct) {
-      ClassType* fct = toClassType(field->type);
+      AggregateType* fct = toAggregateType(field->type);
       if(fct && field->hasFlag(FLAG_SUPER_CLASS)) {
         superType = field->type;
       }
@@ -1094,7 +1094,7 @@ void TypeSymbol::codegenMetadata() {
 
     for_fields(field, ct) {
       llvm::Type* fieldType = field->type->symbol->codegen().type;
-      ClassType* fct = toClassType(field->type);
+      AggregateType* fct = toAggregateType(field->type);
       if(fct && field->hasFlag(FLAG_SUPER_CLASS)) {
         fieldType = info->lvt->getType(fct->classStructName(true));
       }
@@ -1840,8 +1840,8 @@ void ModuleSymbol::codegenDef() {
   return;
 }
  
-Vec<ClassType*> ModuleSymbol::getClasses() {
-  Vec<ClassType*> classes;
+Vec<AggregateType*> ModuleSymbol::getClasses() {
+  Vec<AggregateType*> classes;
   for_alist(expr, block->body) {
     if (DefExpr* def = toDefExpr(expr))
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
@@ -1850,7 +1850,7 @@ Vec<ClassType*> ModuleSymbol::getClasses() {
           for_alist(expr2, fn->body->body) {
             if (DefExpr* def2 = toDefExpr(expr2))
               if (TypeSymbol* type = toTypeSymbol(def2->sym)) 
-                if (ClassType* cl = toClassType(type->type)) {
+                if (AggregateType* cl = toAggregateType(type->type)) {
                   classes.add(cl);
                 }
           }

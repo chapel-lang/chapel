@@ -1099,7 +1099,7 @@ GenRet codegenFieldPtr(
   GenInfo* info = gGenInfo;
   GenRet ret;
   Type* baseType = base.chplType;
-  ClassType* ct = NULL;
+  AggregateType* ct = NULL;
   Type* castType = NULL;
   
   if( special == field_normal ) {
@@ -1134,8 +1134,8 @@ GenRet codegenFieldPtr(
 
   if( baseType ) {
     // At this point, baseType should be a record, union, class, or wide class
-    // All of these types are in the ClassType AST node.
-    ct = toClassType(baseType);
+    // All of these types are in the AggregateType AST node.
+    ct = toAggregateType(baseType);
     INT_ASSERT(ct);
 
     if ( isClass(ct) ) {
@@ -1146,7 +1146,7 @@ GenRet codegenFieldPtr(
       // Get the local version of the class (because it has the fields)
       base = codegenValue(base);
       baseType = baseType->getField("addr")->typeInfo();
-      ct = toClassType(baseType);
+      ct = toAggregateType(baseType);
     } else {
       // Must be a record or union type, and we must have an
       // lvalue-ptr to one of them.
@@ -1218,7 +1218,7 @@ GenRet codegenFieldPtr(
       INT_ASSERT(baseValue);
     }
 
-    ClassType *cBaseType = toClassType(baseType);
+    AggregateType *cBaseType = toAggregateType(baseType);
 
     if( isUnion(ct) && !special ) {
       // Get a pointer to the union data then cast it to the right type
@@ -2795,7 +2795,7 @@ void codegenCopy(GenRet dest, GenRet src, Type* chplType=NULL)
 static bool
 isTupleOfTuple(BaseAST *e) {
   return (e->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE) &&
-          toDefExpr(toClassType(e->typeInfo())->fields.head)->sym->
+          toDefExpr(toAggregateType(e->typeInfo())->fields.head)->sym->
                type->symbol->hasFlag(FLAG_TUPLE));
 }
 
@@ -2950,12 +2950,12 @@ void codegenAssign(GenRet to_ptr, GenRet from)
 
   bool isStarTuple = type->symbol->hasFlag(FLAG_STAR_TUPLE);
   int starTupleLength = 0;
-  if( isStarTuple ) starTupleLength = toClassType(type)->fields.length;
+  if( isStarTuple ) starTupleLength = toAggregateType(type)->fields.length;
 
   // if from is a wide ptr a ref to dtNil, set from to
   // a nil pointer of the correct type.
   if (from.chplType && to_ptr.chplType){
-    ClassType* ct = toClassType(from.chplType);
+    AggregateType* ct = toAggregateType(from.chplType);
     if (ct && ct->symbol->hasEitherFlag(FLAG_WIDE, FLAG_WIDE_CLASS)) {
       Symbol* valField = ct->getField("addr");
       if (valField && valField->getValType() == dtNil) {
@@ -2975,7 +2975,7 @@ void codegenAssign(GenRet to_ptr, GenRet from)
            !isTupleOfTuple(type) ) {
           // tuple copy optimization
           int i = 0;
-          for_fields(field, toClassType(type)) {
+          for_fields(field, toAggregateType(type)) {
             GenRet to_i =
               codegenElementPtr(to_ptr, new_IntSymbol(i, INT_SIZE_64));
             GenRet from_i =
@@ -3467,7 +3467,7 @@ void codegenOpAssign(GenRet a, GenRet b, const char* op,
  *   Note that the variable in question for a class instance *is*
  *    a wide (or not) reference (to the allocated object), but these
  *    references are considered "values" rather than "lvalue pointers"
- *    by the code generator. Thus a "reference to CLASS_CLASS" is
+ *    by the code generator. Thus a "reference to AGGREGATE_CLASS" is
  *    actually a reference to a reference.. Note also that an "ARRAY"
  *    in the code generator is actually an instance of the e.g. _ddata
  *    class (and so the pointer to the data is again treated as a value).
@@ -4770,10 +4770,10 @@ GenRet CallExpr::codegen() {
       if (type->symbol->hasFlag(FLAG_WIDE_CLASS) ||
           type->symbol->hasFlag(FLAG_WIDE))
         // If wide, get the value type.
-        type = toClassType(type)->getField("addr", true)->typeInfo();
+        type = toAggregateType(type)->getField("addr", true)->typeInfo();
 
       GenRet size;
-      if (ClassType* ct = toClassType(type)) {
+      if (AggregateType* ct = toAggregateType(type)) {
         // If Chapel class or record
         size = codegenSizeof(ct->classStructName(true));
       } else {
@@ -5115,7 +5115,7 @@ GenRet CallExpr::codegen() {
     args[1] = new_IntSymbol(ftableMap.get(fn), INT_SIZE_64);
     args[2] = codegenCastToVoidStar(codegenValue(get(1)));
 
-    ClassType *bundledArgsType = toClassType(toSymExpr(get(1))->typeInfo());
+    AggregateType *bundledArgsType = toAggregateType(toSymExpr(get(1))->typeInfo());
     int endCountField = 0;
     for (int i = 1; i <= bundledArgsType->fields.length; i++) {
       if (!strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
@@ -5201,7 +5201,7 @@ GenRet CallExpr::codegen() {
       INT_FATAL("could not get a type symbol");
     }
     
-    ClassType* ct = toClassType(argType->typeInfo());
+    AggregateType* ct = toAggregateType(argType->typeInfo());
     if (!ct) {
       INT_FATAL("Expected a class type in %s argument", fname);
     }
@@ -5459,7 +5459,7 @@ CallExpr* callChplHereAlloc(Symbol *s, VarSymbol* md) {
 void insertChplHereAlloc(Expr *call, bool insertAfter, Symbol *sym,
                          Type* t, VarSymbol* md) {
   INT_ASSERT(resolved);
-  ClassType* ct = toClassType(toTypeSymbol(t->symbol)->type);
+  AggregateType* ct = toAggregateType(toTypeSymbol(t->symbol)->type);
   Symbol* sizeTmp = newTemp("chpl_here_alloc_size", SIZE_TYPE);
   CallExpr *sizeExpr = new CallExpr(PRIM_MOVE, sizeTmp,
                                     new CallExpr(PRIM_SIZEOF,

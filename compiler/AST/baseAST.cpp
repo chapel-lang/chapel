@@ -49,8 +49,8 @@ void printStatistics(const char* pass) {
   int kExpr = kUnresolvedSymExpr + kSymExpr + kDefExpr + kCallExpr + kNamedExpr;
   int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nTypeSymbol+nFnSymbol+nEnumSymbol+nLabelSymbol;
   int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kTypeSymbol+kFnSymbol+kEnumSymbol+kLabelSymbol;
-  int nType = nPrimitiveType+nEnumType+nClassType;
-  int kType = kPrimitiveType+kEnumType+kClassType;
+  int nType = nPrimitiveType+nEnumType+nAggregateType;
+  int kType = kPrimitiveType+kEnumType+kAggregateType;
 
   fprintf(stderr, "%7d asts (%6dK) %s\n", nStmt+nExpr+nSymbol+nType, kStmt+kExpr+kSymbol+kType, pass);
 
@@ -92,13 +92,13 @@ void printStatistics(const char* pass) {
 
   if (strstr(fPrintStatistics, "n"))
     fprintf(stderr, "    Type %9d  Prim  %9d  Enum %9d  Class %9d \n",
-            nType, nPrimitiveType, nEnumType, nClassType);
+            nType, nPrimitiveType, nEnumType, nAggregateType);
   if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
     fprintf(stderr, "    Type %9dK Prim  %9dK Enum %9dK Class %9dK\n",
-            kType, kPrimitiveType, kEnumType, kClassType);
+            kType, kPrimitiveType, kEnumType, kAggregateType);
   if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
     fprintf(stderr, "    Type %6dK Prim  %6dK Enum %6dK Class %6dK\n",
-            kType, kPrimitiveType, kEnumType, kClassType);
+            kType, kPrimitiveType, kEnumType, kAggregateType);
   last_nasts = nasts;
 }
 
@@ -142,7 +142,7 @@ void cleanAst() {
       FnSymbol* method = ts->type->methods.v[i];
       if (method && !isAliveQuick(method))
         ts->type->methods.v[i] = NULL;
-      if (ClassType* ct = toClassType(ts->type)) {
+      if (AggregateType* ct = toAggregateType(ts->type)) {
         if (ct->defaultInitializer && !isAliveQuick(ct->defaultInitializer))
           ct->defaultInitializer = NULL;
         if (ct->destructor && !isAliveQuick(ct->destructor))
@@ -339,7 +339,7 @@ const char* astTagName[E_BaseAST+1] = {
 
   "PrimitiveType",
   "EnumType",
-  "ClassType",
+  "AggregateType",
   "Type",
 
   "BaseAST"

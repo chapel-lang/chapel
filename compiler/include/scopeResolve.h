@@ -2,8 +2,8 @@
 #define SCOPE_RESOLVE_H
 
 
-void build_constructors(ClassType* ct);
-void add_root_type(ClassType* ct);
+void build_constructors(AggregateType* ct);
+void add_root_type(AggregateType* ct);
 
 #ifdef HAVE_LLVM
 // this one is defined in externCResolve.cpp

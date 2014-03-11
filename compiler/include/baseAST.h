@@ -28,7 +28,7 @@
 #define foreach_ast_sep(macro, sep)                \
   macro(PrimitiveType) sep                         \
   macro(EnumType) sep                              \
-  macro(ClassType) sep                             \
+  macro(AggregateType) sep                         \
   macro(ModuleSymbol) sep                          \
   macro(VarSymbol) sep                             \
   macro(ArgSymbol) sep                             \
@@ -46,7 +46,7 @@
   macro(GotoStmt) sep                              \
   macro(ExternBlockStmt)
 
-#define foreach_ast(macro)                      \
+#define foreach_ast(macro)                         \
   foreach_ast_sep(macro, ;)
 
 //
@@ -119,7 +119,7 @@ enum AstTag {
 
   E_PrimitiveType,
   E_EnumType,
-  E_ClassType,
+  E_AggregateType,
   E_Type,
 
   E_BaseAST
@@ -278,7 +278,7 @@ def_is_ast(EnumSymbol)
 def_is_ast(LabelSymbol)
 def_is_ast(PrimitiveType)
 def_is_ast(EnumType)
-def_is_ast(ClassType)
+def_is_ast(AggregateType)
 #undef def_is_ast
 
 //
@@ -307,7 +307,7 @@ def_to_ast(LabelSymbol)
 def_to_ast(Symbol)
 def_to_ast(PrimitiveType)
 def_to_ast(EnumType)
-def_to_ast(ClassType)
+def_to_ast(AggregateType)
 def_to_ast(Type)
 #undef def_to_ast
 //
@@ -378,9 +378,9 @@ def_to_ast(Type)
   case E_EnumType:                                                      \
     AST_CALL_LIST(_a, EnumType, constants, call, __VA_ARGS__);          \
     break;                                                              \
-  case E_ClassType:                                                     \
-    AST_CALL_LIST(_a, ClassType, fields, call, __VA_ARGS__);            \
-    AST_CALL_LIST(_a, ClassType, inherits, call, __VA_ARGS__);          \
+  case E_AggregateType:                                                 \
+    AST_CALL_LIST(_a, AggregateType, fields, call, __VA_ARGS__);        \
+    AST_CALL_LIST(_a, AggregateType, inherits, call, __VA_ARGS__);      \
     break;                                                              \
   default:                                                              \
     break;                                                              \

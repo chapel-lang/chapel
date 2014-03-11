@@ -287,14 +287,14 @@ markPODtypes()
 
     // Decide whether to mark a class based on this function.
     enum Flag flag = FLAG_UNKNOWN;
-    ClassType* ct = NULL;
+    AggregateType* ct = NULL;
 
     if (fn->hasFlag(FLAG_DESTRUCTOR))
     {
       // ~chpl_destroy(_mt, obj);
       ArgSymbol* this_arg = fn->getFormal(1);
       INT_ASSERT(!strcmp(this_arg->name, "this"));
-      ct = toClassType(this_arg->type);
+      ct = toAggregateType(this_arg->type);
       if (ct)
         flag = FLAG_HAS_USER_DESTRUCTOR;
     }
@@ -305,7 +305,7 @@ markPODtypes()
       if (fn->numFormals() > 0)
       {
         ArgSymbol* arg = fn->getFormal(1);
-        ct = toClassType(arg->type);
+        ct = toAggregateType(arg->type);
         if (ct)
           flag = FLAG_HAS_USER_INIT_COPY_FN;
       }
@@ -317,7 +317,7 @@ markPODtypes()
     if (!strcmp(fn->name,"="))
     {
       ArgSymbol* lhs = fn->getFormal(1);
-      ct = toClassType(lhs->type);
+      ct = toAggregateType(lhs->type);
       if (ct)
         flag = FLAG_HAS_USER_ASSIGNMENT;
     }
@@ -347,7 +347,7 @@ isPrimitiveCopy(Vec<Type*>& primitiveCopyTypeSet, Type* type) {
   if (isSyncType(type))
     return false;
   if (isRecord(type)) {
-    ClassType* ct = toClassType(type);
+    AggregateType* ct = toAggregateType(type);
     INT_ASSERT(ct);
 
     // If this class defines an assignment or initCopy or destructor, it is not

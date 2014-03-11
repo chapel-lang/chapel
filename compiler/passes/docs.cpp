@@ -122,14 +122,14 @@ void printArg(std::ofstream *file, ArgSymbol *arg) {
   }
 }
 
-void printFields(std::ofstream *file, ClassType *cl) {
+void printFields(std::ofstream *file, AggregateType *cl) {
   for (int i = 1; i <= cl->fields.length; i++) {
     if (VarSymbol *var = toVarSymbol(((DefExpr *)cl->fields.get(i))->sym)) {
       if (!var->hasFlag(FLAG_SUPER_CLASS)) {
         printTabs(file);
         printVarStart(file, var);
         Expr *expr;
-        if (cl->classTag == CLASS_CLASS) {
+        if (cl->isClass()) {
           expr = cl->defaultTypeConstructor->body->body.get(i);
         } else {
           expr = cl->defaultTypeConstructor->body->body.get(i+1);
@@ -157,23 +157,23 @@ void printFields(std::ofstream *file, ClassType *cl) {
   }
 }
 
-void inheritance(Vec<ClassType*> *list, ClassType *cl) {
+void inheritance(Vec<AggregateType*> *list, AggregateType *cl) {
   forv_Vec(Type, t, cl->dispatchParents) {
-    if (ClassType* c = toClassType(t)) {
+    if (AggregateType* c = toAggregateType(t)) {
       list->add_exclusive(c);
       inheritance(list, c);
     }
   }
 }
 
-void printClass(std::ofstream *file, ClassType *cl) {
-  if (cl->classTag != CLASS_UNION) {
+void printClass(std::ofstream *file, AggregateType *cl) {
+  if (! cl->isUnion()) {
     printTabs(file);
     if (!fDocsTextOnly)
       *file << "===";
-    if (cl->classTag == CLASS_CLASS) {
+    if (cl->isClass()) {
       *file << "Class: " ;
-    } else if (cl->classTag == CLASS_RECORD) {
+    } else if (cl->isRecord()) {
       *file << "Record: ";
     }
   
@@ -193,13 +193,13 @@ void printClass(std::ofstream *file, ClassType *cl) {
       printFunction(file, fn);
     }
     
-    Vec<ClassType*> list;
+    Vec<AggregateType*> list;
     inheritance(&list, cl);
 
     if (fDocsAlphabetize)
       qsort(list.v, list.n, sizeof(list.v[0]), compareClasses);
     
-    forv_Vec(ClassType, c, list) {
+    forv_Vec(AggregateType, c, list) {
       printTabs(file);
       if (!fDocsTextOnly)
         *file << "//";
@@ -324,11 +324,11 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
     }
   }
 
-  Vec<ClassType*> classes = mod->getClasses();
+  Vec<AggregateType*> classes = mod->getClasses();
   if (fDocsAlphabetize)
     qsort(classes.v, classes.n, sizeof(classes.v[0]), compareClasses);
 
-  forv_Vec(ClassType, cl, classes) {
+  forv_Vec(AggregateType, cl, classes) {
     printClass(file, cl);
   }
 

@@ -72,7 +72,7 @@ void returnStarTuplesByRefArgs() {
       Type* type = call->get(1)->getValType();
       if (type->symbol->hasFlag(FLAG_STAR_TUPLE)) {
         SET_LINENO(call);
-        ClassType* ct = toClassType(type);
+        AggregateType* ct = toAggregateType(type);
         SymExpr* se = toSymExpr(call->get(2));
         int i = atoi(se->var->name+1);
         INT_ASSERT(i >= 1 && i <= ct->fields.length);

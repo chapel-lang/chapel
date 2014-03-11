@@ -394,11 +394,11 @@ opt_extern:
 ;
 
 class_tag:
-  TCLASS   { $$ = new ClassType(CLASS_CLASS); @$.comment = yylloc.comment; 
+  TCLASS   { $$ = new AggregateType(AGGREGATE_CLASS); @$.comment = yylloc.comment; 
              yylloc.comment = NULL;}
-| TRECORD  { $$ = new ClassType(CLASS_RECORD); @$.comment = yylloc.comment; 
+| TRECORD  { $$ = new AggregateType(AGGREGATE_RECORD); @$.comment = yylloc.comment; 
              yylloc.comment = NULL;}
-| TUNION   { $$ = new ClassType(CLASS_UNION); }
+| TUNION   { $$ = new AggregateType(AGGREGATE_UNION); }
 ;
 
 opt_inherit:

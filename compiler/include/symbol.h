@@ -291,7 +291,7 @@ class ModuleSymbol : public Symbol {
   Vec<VarSymbol*> getConfigVars();
   Vec<FnSymbol*> getFunctions();
   Vec<ModuleSymbol*> getModules();
-  Vec<ClassType*> getClasses();
+  Vec<AggregateType*> getClasses();
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void codegenDef();
 };

@@ -527,7 +527,7 @@ static void
 fixupDestructors() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_DESTRUCTOR)) {
-      ClassType* ct = toClassType(fn->_this->getValType());
+      AggregateType* ct = toAggregateType(fn->_this->getValType());
       INT_ASSERT(ct);
 
       //
@@ -536,7 +536,7 @@ fixupDestructors() {
       for_fields_backward(field, ct) {
         SET_LINENO(field);
         if (field->type->destructor) {
-          ClassType* fct = toClassType(field->type);
+          AggregateType* fct = toAggregateType(field->type);
           INT_ASSERT(fct);
           if (!isClass(fct) || isSyncType(fct)) {
             bool useRefType = !isRefCountedType(fct) && !isSyncType(fct);
