@@ -87,6 +87,7 @@
 #                                     it exists, $CHPL_HOME/examples, if it
 #                                     exists, . otherwise)
 #   -memleaks
+#   -no-chpl-home-warn                Do not show warning when start_test invoked outside CHPL_HOME
 #
 # All options can be used with a double-dash format as well 
 # (e.g. --compopts).
@@ -699,6 +700,7 @@ set numlocales = 0
 set comm = `$CHPL_HOME/util/chplenv/comm`
 set suppressions = ""
 set optionerr = 0
+set chplHomeWarn = 1
 
 while ( $#argv > 0 )
     switch ( $argv[1] )
@@ -878,6 +880,11 @@ while ( $#argv > 0 )
         setenv CHPL_LAUNCHER_TIMEOUT $argv[1]
         shift
         breaksw
+    case -no-chpl-home-warn:
+    case --no-chpl-home-warn:
+        shift
+        set chplHomeWarn = 0
+        breaksw
     case -h:
     case -help:
     case --help:
@@ -910,6 +917,7 @@ while ( $#argv > 0 )
 #       echo "          -interpret (or -i)"
         echo "          -logfile <file>      (currently: $logfile)"
         echo "          -memleaks <file>"
+        echo "          -no-chpl-home-warn"
         echo "          -h, -help"
         exit 0
         breaksw
@@ -961,7 +969,7 @@ endif
 
 echo \[Starting Chapel regression tests - $datestr\] |& $tee $logfile
 # Check to see if we are running in a subdirectory of $CHPL_HOME
-if ($PWD !~ $CHPL_HOME*) then
+if ($chplHomeWarn == 1 && $PWD !~ $CHPL_HOME*) then
     echo \[Warning: start_test not invoked from a subdirectory of \$CHPL_HOME\] |& $tee -a $logfile
 endif
 
