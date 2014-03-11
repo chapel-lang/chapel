@@ -1543,7 +1543,7 @@ module ChapelArray {
           a._value.incRefCount();
       } else
         a._value.dsiAssign(b._value);
-      if _isPrivatized(a._value) then
+      if _isPrivatized(a._valueType) then
         _reprivatize(a._value);
     } else {
       halt("assignment to distributions with declared domains is not yet supported");

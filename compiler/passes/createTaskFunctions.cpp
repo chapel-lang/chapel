@@ -278,11 +278,10 @@ void createTaskFunctions(void) {
       } // if fn
     } // if blockInfo
 
-    if (!neededCapture) {
-      // A 'ref' clause is allowed syntactically only on certain blocks,
-      // so byrefVars should be empty for anything else.
-      INT_ASSERT(!block->byrefVars);
-    }
+    // 'byrefVars' should have been eliminated for those blocks where it is
+    // syntactically allowed, and should be always empty for anything else.
+    INT_ASSERT(!block->byrefVars);
+
   } // for block
 
 }  // createTaskFunctions()

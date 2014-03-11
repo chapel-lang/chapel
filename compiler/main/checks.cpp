@@ -476,8 +476,12 @@ checkFormalActualBaseTypesMatch()
         continue;
       for_formals_actuals(formal, actual, call)
       {
-        if (actual->typeInfo() == dtNil)
+        if (actual->typeInfo() == dtNil) {
+          if (!isClass(formal->type))
+            INT_FATAL(call, "nil is passed to the formal %s of a non-class type",
+                      formal->name);
           continue;
+        }
 
         if (formal->type->getValType() != actual->typeInfo()->getValType())
           INT_FATAL(call,
@@ -501,8 +505,12 @@ checkFormalActualTypesMatch()
         continue;
       for_formals_actuals(formal, actual, call)
       {
-        if (actual->typeInfo() == dtNil)
+        if (actual->typeInfo() == dtNil) {
+          if (!isClass(formal->type))
+            INT_FATAL(call, "nil is passed to the formal %s of a non-class type",
+                      formal->name);
           continue;
+        }
 
         if (formal->type != actual->typeInfo())
           INT_FATAL(call,
