@@ -1,0 +1,17 @@
+Making global
+Initializing a RefCount
+Done making global
+Before scope (begin)
+In R initCopy {count = 2}
+In R initCopy {count = 3}
+Starting test_one {count = 3}
+In R.routine {count = 3}
+In R initCopy {count = 4}
+In test_two {count = 4}
+In ~R() 4
+Done test_one {count = 4}
+In ~R() 3
+In ~R() 2
+After scope (begin)
+In ~R() 1
+Destroying a RefCount

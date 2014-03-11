@@ -1,3 +1,11 @@
+// refcnt.chpl
+//
+// Test extracted from users/ferguson/refcnt.chpl
+//
+// To show specifically, that bad things happen if a record var declared in the
+// caller goes away before the task function completes.
+//
+
 class RefCount {
   var count:int;
   proc RefCount() {
@@ -73,48 +81,16 @@ proc test_one(x:R, setglobal:bool) {
   writeln("Done test_one ", x.refcnt);
 }
 
-writeln("Before scope");
-{
-  var r:R;
-
-  test_one(r, false);
-}
-writeln("After scope");
-
-writeln("Before scope (copy initialization)");
-{
-  var r:R;
-  var x:R = r;
-
-  test_one(x, false);
-}
-writeln("After scope (copy initialization)");
-
-writeln("Before scope (copy initialization 2)");
-{
-  var r:R;
-  var x = r;
-
-  test_one(x, false);
-}
-writeln("After scope (copy initialization 2)");
-
-
-writeln("Before scope (setting global)");
-{
-  var r:R;
-
-  test_one(r, true);
-}
-writeln("After scope (setting global)");
-
 writeln("Before scope (begin)");
 sync {
   var flag:sync bool;
   proc call_test_one() {
+    // This R exists only within the scope of this function.  It has to be
+    // captured by a begin so its lifetime is extended to the end of the task
+    // function.
     var r:R;
     begin {
-      // Force this to run after r in calling scope goes away.
+      // Force this to run only after r in calling scope goes away.
       var ready = flag;
       test_one(r, false);
     }
@@ -124,4 +100,3 @@ sync {
 }
 writeln("After scope (begin)");
 
-writeln("Finishing");
