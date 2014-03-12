@@ -60,11 +60,21 @@ static inline void chpl_tlschk(int got, int expect)
 extern CHPL_TLS_DECL(chpl_thread_id_t,chpl_thread_id);
 extern CHPL_TLS_DECL(void*, chpl_thread_data);
 
+#ifdef CHPL_THREAD_GETPRIVATEDATA_IMPL_DECL
+#error "CHPL_THREAD_GETPRIVATEDATA_IMPL_DECL is already defined!"
+#else
+#define CHPL_THREAD_GETPRIVATEDATA_IMPL_DECL 1
+#endif
 static inline
 void* chpl_thread_getPrivateData(void) {
   return CHPL_TLS_GET(chpl_thread_data);
 }
 
+#ifdef CHPL_THREAD_SETPRIVATEDATA_IMPL_DECL
+#error "CHPL_THREAD_SETPRIVATEDATA_IMPL_DECL is already defined!"
+#else
+#define CHPL_THREAD_SETPRIVATEDATA_IMPL_DECL 1
+#endif
 static inline
 void chpl_thread_setPrivateData(void* p) {
   CHPL_TLS_SET(chpl_thread_data, p);

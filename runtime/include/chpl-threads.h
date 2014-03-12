@@ -69,8 +69,14 @@ void chpl_thread_yield(void);
 // the threading layer also needs to store some data private to each
 // thread, it must make other arrangements to do so.
 //
+
+#ifndef CHPL_THREAD_SETPRIVATEDATA_IMPL_DECL
 void  chpl_thread_setPrivateData(void*);
+#endif
+
+#ifndef CHPL_THREAD_GETPRIVATEDATA_IMPL_DECL
 void* chpl_thread_getPrivateData(void);
+#endif
 
 //
 // Get the maximum number of threads that can exist.
