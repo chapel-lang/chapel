@@ -49,7 +49,9 @@ static void nonLeaderParCheckInt(FnSymbol* fn, bool allowYields)
       USR_FATAL_CONT(call, "invalid use of parallel construct in serial iterator");
     }
     if ((call->isPrimitive(PRIM_BLOCK_ON)) ||
-        (call->isPrimitive(PRIM_BLOCK_ON_NB))) {
+        (call->isPrimitive(PRIM_BLOCK_BEGIN_ON)) ||
+        (call->isPrimitive(PRIM_BLOCK_COBEGIN_ON)) ||
+        (call->isPrimitive(PRIM_BLOCK_COFORALL_ON))) {
       // begin/cobegin/coforall *blocks* are eliminated earlier.
       // If they are not, check for PRIM_YIELD like below.
       INT_ASSERT(false);
@@ -928,7 +930,9 @@ static bool fnContainsOn(FnSymbol* fn)
   collectCallExprs(fn, calls);
   forv_Vec(CallExpr, call, calls) {
     if (call->isPrimitive(PRIM_BLOCK_ON) ||
-        call->isPrimitive(PRIM_BLOCK_ON_NB))
+        call->isPrimitive(PRIM_BLOCK_BEGIN_ON) ||
+        call->isPrimitive(PRIM_BLOCK_COBEGIN_ON) ||
+        call->isPrimitive(PRIM_BLOCK_COFORALL_ON))
       return true;
     if (FnSymbol* taskFn = resolvedToTaskFun(call))
       if (fnContainsOn(taskFn))

@@ -508,7 +508,9 @@ initPrimitive() {
   prim_def(PRIM_BLOCK_COBEGIN, "cobegin block", returnInfoVoid);
   prim_def(PRIM_BLOCK_COFORALL, "coforall loop", returnInfoVoid);
   prim_def(PRIM_BLOCK_ON, "on block", returnInfoVoid);
-  prim_def(PRIM_BLOCK_ON_NB, "non-blocking on block", returnInfoVoid);
+  prim_def(PRIM_BLOCK_BEGIN_ON, "begin on block", returnInfoVoid);
+  prim_def(PRIM_BLOCK_COBEGIN_ON, "cobegin on block", returnInfoVoid);
+  prim_def(PRIM_BLOCK_COFORALL_ON, "coforall on block", returnInfoVoid);
   prim_def(PRIM_BLOCK_LOCAL, "local block", returnInfoVoid);
   prim_def(PRIM_BLOCK_UNLOCAL, "unlocal block", returnInfoVoid);
 

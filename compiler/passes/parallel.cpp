@@ -191,8 +191,8 @@ static Symbol* insertAutoCopyDestroyForTaskArg
   Symbol* var = s->var;
 
   // This applies only to arguments being passed to asynchronous task functions.
-  if (fn->hasFlag(FLAG_BEGIN) ||
-      (fn->hasFlag(FLAG_ON) && fn->hasFlag(FLAG_NON_BLOCKING)))
+  // No need to increment+decrement the reference counters for cobegins/coforalls.
+  if (fn->hasFlag(FLAG_BEGIN))
   {
     Type* baseType = arg->getValType();
     FnSymbol* autoCopyFn = getAutoCopy(baseType);

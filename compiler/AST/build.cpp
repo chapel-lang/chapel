@@ -1175,7 +1175,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
     body->insertAtHead(new CallExpr("_upEndCount", coforallCount));
     block->insertAtTail(new CallExpr("_waitEndCount", coforallCount));
     block->insertAtTail(new CallExpr("_endCountFree", coforallCount));
-    onBlock->blockInfo->primitive = primitives[PRIM_BLOCK_ON_NB];
+    onBlock->blockInfo->primitive = primitives[PRIM_BLOCK_COFORALL_ON];
     addByrefVars(onBlock, byref_vars);
     BlockStmt* innerOnBlock = new BlockStmt();
     for_alist(tmp, onBlock->body) {
@@ -1908,8 +1908,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
     Symbol* tmp = newTemp();
     body->insertAtHead(new CallExpr(PRIM_MOVE, tmp, onExpr));
     body->insertAtHead(new DefExpr(tmp));
-    beginBlock->blockInfo = new CallExpr(PRIM_BLOCK_ON, tmp);
-    beginBlock->blockInfo->primitive = primitives[PRIM_BLOCK_ON_NB];
+    beginBlock->blockInfo = new CallExpr(PRIM_BLOCK_BEGIN_ON, tmp);
     // If there are beginBlock->byrefVars, they will be preserved.
     return body;
   } else {
@@ -1955,7 +1954,7 @@ buildBeginStmt(CallExpr* byref_vars, Expr* stmt) {
   if (onBlock) {
     body->insertAtHead(new CallExpr("_upEndCount"));
     onBlock->insertAtTail(new CallExpr("_downEndCount"));
-    onBlock->blockInfo->primitive = primitives[PRIM_BLOCK_ON_NB];
+    onBlock->blockInfo->primitive = primitives[PRIM_BLOCK_BEGIN_ON];
     addByrefVars(onBlock, byref_vars);
     return body;
   } else {

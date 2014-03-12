@@ -231,8 +231,9 @@ static void moveLinenoInsideArgBundle()
     //  argument bundle, and the on-block expects an additional argument
     //  that is the locale on which it should be executed.
     if ((fn->numFormals() > 2 && fn->hasFlag(FLAG_ON_BLOCK)) ||
-        (fn->numFormals() > 1 && fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)) ||
-        (fn->numFormals() > 1 && fn->hasFlag(FLAG_BEGIN_BLOCK))) {
+        (fn->numFormals() > 1 && !fn->hasFlag(FLAG_ON_BLOCK) &&
+         (fn->hasFlag(FLAG_BEGIN_BLOCK) ||
+          fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)))) {
 
       // This task (wrapper) function is not actually called with lineno, fname
       // arguments, so remove them.

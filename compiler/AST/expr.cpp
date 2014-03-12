@@ -3225,7 +3225,9 @@ void CallExpr::verify() {
     case PRIM_BLOCK_COBEGIN:
     case PRIM_BLOCK_COFORALL:
     case PRIM_BLOCK_ON:
-    case PRIM_BLOCK_ON_NB:
+    case PRIM_BLOCK_BEGIN_ON:
+    case PRIM_BLOCK_COBEGIN_ON:
+    case PRIM_BLOCK_COFORALL_ON:
     case PRIM_BLOCK_LOCAL:
       if (toBlockStmt(parentExpr)) {
         // does not pass:
@@ -5101,10 +5103,12 @@ GenRet CallExpr::codegen() {
   bool gotBCbCf = false;
   const char* genFnName = NULL;
 
-  if (fn->hasFlag(FLAG_BEGIN_BLOCK)) {
+  if (fn->hasFlag(FLAG_BEGIN_BLOCK) && !fn->hasFlag(FLAG_ON_BLOCK)) {
+    // got a wrapper for a local 'begin' task fn (no 'on')
     gotBCbCf = true;
     genFnName = "chpl_taskListAddBegin";
-  } else if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)) {
+  } else if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) && !fn->hasFlag(FLAG_ON_BLOCK)) {
+    // got a wrapper for a local 'cobegin' or 'coforall' task fn (no 'on')
     gotBCbCf = true;
     genFnName = "chpl_taskListAddCoStmt";
   }

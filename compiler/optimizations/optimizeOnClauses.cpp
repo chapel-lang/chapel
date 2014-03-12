@@ -238,7 +238,9 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_BLOCK_COBEGIN:
   case PRIM_BLOCK_COFORALL:
   case PRIM_BLOCK_ON:
-  case PRIM_BLOCK_ON_NB:
+  case PRIM_BLOCK_BEGIN_ON:
+  case PRIM_BLOCK_COBEGIN_ON:
+  case PRIM_BLOCK_COFORALL_ON:
   case PRIM_BLOCK_UNLOCAL:
 
   case PRIM_ACTUALS_LIST:

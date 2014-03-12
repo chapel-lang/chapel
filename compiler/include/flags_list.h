@@ -136,6 +136,25 @@ symbolFlag( FLAG_NO_WIDE_CLASS , ypr, "no wide class" , ncm )
 symbolFlag( FLAG_NON_BLOCKING , npr, "non blocking" , "with FLAG_ON/FLAG_ON_BLOCK, non-blocking on functions" )
 symbolFlag( FLAG_OBJECT_CLASS , npr, "object class" , ncm )
 symbolFlag( FLAG_OMIT_FROM_CONSTRUCTOR , ypr, "omit from constructor" , ncm )
+
+// FLAG_ON and FLAG_ON_BLOCK mark task functions and their wrappers,
+// respectively, that perform remote operations, i.e. corresponding to
+// 'on' statements. Some task functions with FLAG_ON also create new
+// Chapel tasks - as a result of the "begin+on" optimization. They
+// have the following flags:
+//  begin+on       FLAG_ON  FLAG_NON_BLOCKING  FLAG_BEGIN
+//  on+begin       FLAG_ON  FLAG_NON_BLOCKING  FLAG_BEGIN
+//  cobegin+on     FLAG_ON  FLAG_NON_BLOCKING  FLAG_COBEGIN_OR_COFORALL
+//  coforall+on    FLAG_ON  FLAG_NON_BLOCKING  FLAG_COBEGIN_OR_COFORALL
+//  just 'on'      FLAG_ON  // no new Chapel tasks
+// For each of the above flags, the task function's wrapper has
+// the corresponding flag:
+//   FLAG_ON                  --> FLAG_ON_BLOCK
+//   FLAG_NON_BLOCKING        --> FLAG_NON_BLOCKING (the same flag;
+//     btw it does not apply to local (non-'on') task functions/wrappers)
+//   FLAG_BEGIN               --> FLAG_BEGIN_BLOCK
+//   FLAG_COBEGIN_OR_COFORALL --> FLAG_COBEGIN_OR_COFORALL_BLOCK
+//
 symbolFlag( FLAG_ON , npr, "on" , ncm )
 symbolFlag( FLAG_ON_BLOCK , npr, "on block" , ncm )
 symbolFlag( FLAG_PARAM , npr, "param" , "parameter (compile-time constant)" )

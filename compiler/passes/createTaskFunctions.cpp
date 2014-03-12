@@ -176,6 +176,7 @@ addVarsToActuals(CallExpr* call, SymbolMap* vars) {
   }
 }
 
+//
 // Converts blocks implementing various task constructs into
 // functions, so they can be invoked by a separate task.
 //
@@ -189,6 +190,7 @@ addVarsToActuals(CallExpr* call, SymbolMap* vars) {
 //
 // As a special case, the target locale is prepended to the arguments passed 
 // to the "on" function.
+//
 void createTaskFunctions(void) {
   // one-time initialization
   markPruned = gVoid;
@@ -209,11 +211,20 @@ void createTaskFunctions(void) {
         fn = new FnSymbol("coforall_fn");
         fn->addFlag(FLAG_COBEGIN_OR_COFORALL);
       } else if (info->isPrimitive(PRIM_BLOCK_ON) ||
-                 info->isPrimitive(PRIM_BLOCK_ON_NB)) {
+                 info->isPrimitive(PRIM_BLOCK_BEGIN_ON) ||
+                 info->isPrimitive(PRIM_BLOCK_COBEGIN_ON) ||
+                 info->isPrimitive(PRIM_BLOCK_COFORALL_ON)) {
         fn = new FnSymbol("on_fn");
         fn->addFlag(FLAG_ON);
-        if (block->blockInfo->isPrimitive(PRIM_BLOCK_ON_NB))
+        if (info->isPrimitive(PRIM_BLOCK_BEGIN_ON)) {
           fn->addFlag(FLAG_NON_BLOCKING);
+          fn->addFlag(FLAG_BEGIN);
+        }
+        if (info->isPrimitive(PRIM_BLOCK_COBEGIN_ON) ||
+            info->isPrimitive(PRIM_BLOCK_COFORALL_ON)) {
+          fn->addFlag(FLAG_NON_BLOCKING);
+          fn->addFlag(FLAG_COBEGIN_OR_COFORALL);
+        }
 
         ArgSymbol* arg = new ArgSymbol(INTENT_CONST_IN, "dummy_locale_arg", dtLocaleID);
         fn->insertFormalAtTail(arg);
@@ -231,8 +242,7 @@ void createTaskFunctions(void) {
       if (fn) {
         INT_ASSERT(isTaskFun(fn));
         CallExpr* call = new CallExpr(fn);
-        if (block->blockInfo->isPrimitive(PRIM_BLOCK_ON) ||
-            block->blockInfo->isPrimitive(PRIM_BLOCK_ON_NB))
+        if (fn->hasFlag(FLAG_ON))
           // This puts the target locale expression "onExpr" at the start of the call.
           call->insertAtTail(block->blockInfo->get(1)->remove());
 

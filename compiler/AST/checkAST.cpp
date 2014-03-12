@@ -209,7 +209,9 @@ void checkPrimitives()
      case PRIM_BLOCK_COBEGIN:           // BlockStmt::blockInfo - cobegin block
      case PRIM_BLOCK_COFORALL:          // BlockStmt::blockInfo - coforall block
      case PRIM_BLOCK_ON:                // BlockStmt::blockInfo - on block
-     case PRIM_BLOCK_ON_NB:             // BlockStmt::blockInfo - non-blocking on block
+     case PRIM_BLOCK_BEGIN_ON:
+     case PRIM_BLOCK_COBEGIN_ON:
+     case PRIM_BLOCK_COFORALL_ON:
      case PRIM_BLOCK_LOCAL:             // BlockStmt::blockInfo - local block
      case PRIM_BLOCK_UNLOCAL:           // BlockStmt::blockInfo - unlocal local block
      case PRIM_DELETE:
