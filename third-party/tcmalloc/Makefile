@@ -17,6 +17,12 @@ CONFIG_FLAGS = --config-cache \
                --disable-libc-malloc-override \
                --prefix=$(TCMALLOC_INSTALL_DIR)
 
+ifneq (, $(filter cray-%,$(CHPL_MAKE_TARGET_PLATFORM)))
+# On some Cray systems we need to bring in libpthread explicitly when
+# building internal tests, to satisfy references from other packages that
+# don't do it themselves.  This is expected to be temporary.
+CONFIG_FLAGS += LDFLAGS='$(LDFLAGS) -lpthread'
+endif
 
 default: all
 
