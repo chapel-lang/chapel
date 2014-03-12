@@ -66,14 +66,12 @@ Before scope (begin)
 Initializing a RefCount
 In R initCopy {count = 1}
 In R initCopy {count = 2}
+Starting test_one {count = 3}
+In R.routine {count = 3}
 In R initCopy {count = 3}
-Starting test_one {count = 4}
-In R.routine {count = 4}
-In R initCopy {count = 4}
-In test_two {count = 5}
-In ~R() 5
-Done test_one {count = 4}
+In test_two {count = 4}
 In ~R() 4
+Done test_one {count = 3}
 In ~R() 3
 In ~R() 2
 In ~R() 1

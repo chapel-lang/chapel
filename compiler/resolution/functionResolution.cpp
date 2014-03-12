@@ -3424,6 +3424,12 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
             !ts->hasFlag(FLAG_ITERATOR_CLASS) &&
             !ts->hasFlag(FLAG_ITERATOR_RECORD) &&
             !getSyncFlags(ts).any()) {
+         if (fn->hasFlag(FLAG_BEGIN)) {
+           // autoCopy/autoDestroy will be added later, in parallel pass
+           // by insertAutoCopyDestroyForTaskArg()
+           fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, formal));
+           tmp->removeFlag(FLAG_INSERT_AUTO_DESTROY);
+         } else {
           // Note that because we reject the case of record-wrapped types above,
           // the only way we can get a formal whose call to chpl__autoCopy does
           // anything different from calling chpl__initCopy is if the formal is a
@@ -3459,6 +3465,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
                 (formal->type->getModule()->modTag==MOD_STANDARD))) ||
               !typeHasRefField(formal->type))
             tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+         }
         } else
         {
           fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, formal));
