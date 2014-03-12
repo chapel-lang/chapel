@@ -196,7 +196,6 @@ void createTaskFunctions(void) {
   // Process task-creating constructs. We include 'on' blocks, too.
   // This code used to be in parallel().
   forv_Vec(BlockStmt, block, gBlockStmts) {
-    bool neededCapture = false;
     if (CallExpr* info = block->blockInfo) {
       SET_LINENO(block);
       FnSymbol* fn = NULL;
@@ -251,7 +250,6 @@ void createTaskFunctions(void) {
         fn->retType = dtVoid;
 
         if (needsCapture(fn)) {
-          neededCapture = true;
           // Convert referenced variables to explicit arguments.
           // Note: this collects only the variables, including globals,
           // that are referenced directly within in the task-parallel block.
