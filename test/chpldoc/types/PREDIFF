@@ -2,7 +2,7 @@
 
 chplCompiler=`basename $3`
 
-if [ "$chplCompiler" == "chpldoc" ]; 
+if [ "$chplCompiler" = "chpldoc" ]
 then
    cat $1.doc.out > $1.good
 else
