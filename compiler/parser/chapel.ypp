@@ -398,7 +398,8 @@ class_tag:
              yylloc.comment = NULL;}
 | TRECORD  { $$ = new AggregateType(AGGREGATE_RECORD); @$.comment = yylloc.comment; 
              yylloc.comment = NULL;}
-| TUNION   { $$ = new AggregateType(AGGREGATE_UNION); }
+| TUNION   { $$ = new AggregateType(AGGREGATE_UNION); @$.comment = yylloc.comment;
+             yylloc.comment = NULL;}
 ;
 
 opt_inherit:

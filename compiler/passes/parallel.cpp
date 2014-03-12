@@ -133,7 +133,7 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
 // to rely on fn's formal types instead of fcall's actual types.
 
   // create a new class to capture refs to locals
-  AggregateType* ctype = new AggregateType( AGGREGATE_CLASS);
+  AggregateType* ctype = new AggregateType(AGGREGATE_CLASS);
   TypeSymbol* new_c = new TypeSymbol(astr("_class_locals", fn->name), ctype);
   new_c->addFlag(FLAG_NO_OBJECT);
   new_c->addFlag(FLAG_NO_WIDE_CLASS);

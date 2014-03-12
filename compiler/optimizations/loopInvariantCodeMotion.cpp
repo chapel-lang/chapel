@@ -504,7 +504,7 @@ static void buildLocalDefUseMaps(Loop* loop, symToVecSymExprMap& localDefMap, sy
           if(SymExpr* symExpr = toSymExpr(callExpr->get(1))) {
             Type* type = symExpr->var->type->symbol->type;
             if(AggregateType* curClass = toAggregateType(type)) {
-              if(curClass->isClass()) {
+              if(! curClass->isClass()) {
                 addDefOrUse(localDefMap, symExpr->var, symExpr);
               }
             }

@@ -420,9 +420,9 @@ PrimitiveType* EnumType::getIntegerType() {
 }
 
 
-AggregateType::AggregateType(AggregateTag initAggregateTag) :
+AggregateType::AggregateType(AggregateTag initTag) :
   Type(E_AggregateType, NULL),
-  aggregateTag(initAggregateTag),
+  aggregateTag(initTag),
   fields(),
   inherits(),
   outer(NULL),

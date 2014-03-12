@@ -117,7 +117,7 @@ class AggregateType : public Type {
   Symbol* outer;  // pointer to an outer class if this is an inner class
   const char *doc;
 
-  AggregateType(AggregateTag aggregateTag);
+  AggregateType(AggregateTag initTag);
   ~AggregateType();
   void verify(); 
   DECLARE_COPY(AggregateType);
