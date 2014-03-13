@@ -32,7 +32,6 @@
 # CHPL_TEST_VGRND_COMP: Use valgrind on the compiler
 # CHPL_TEST_VBRND_EXE: Use valgrind on the test program
 # CHPL_VALGRIND_OPTS: Options to valgrind
-# CHPL_TET_INVOKE_DIR: Use this dir to invoke the tests (rather than ".")
 # CHPL_TEST_FUTURES: 2 == test futures only
 #                    1 == test futures and non-futures
 #                    0 == test non-futures only
@@ -119,6 +118,7 @@ import fnmatch, time
 import re
 import shlex
 import datetime
+
 
 #
 # Time out class:  Read from a stream until time out
@@ -316,8 +316,9 @@ chpl_home=os.path.normpath(chpl_home)
 # Find the test util directory -- set this in start_test to permit
 # a version of start_test other than the one in CHPL_HOME to be used
 utildir=os.getenv('CHPL_TEST_UTIL_DIR');
-if os.path.isdir(utildir)==0:
-    Fatal('Cannot find test util directory '+utildir)
+if utildir is None or not os.path.isdir(utildir):
+    Fatal('Cannot find test util directory {0}'.format(utildir))
+
 # Needed for MacOS mount points
 utildir = os.path.realpath(utildir)
 # sys.stdout.write('utildir='+utildir+'\n');
@@ -940,7 +941,7 @@ for testname in testsrc:
                 cleanup(execname)
                 cleanup(printpassesfile)
                 continue # on to next compopts
-            
+
         else:
             p = subprocess.Popen([cmd]+args, stdin=open(cmpstdin, 'r'),
                                  stdout=subprocess.PIPE,
@@ -1016,7 +1017,7 @@ for testname in testsrc:
             if not os.path.isfile(checkfile):
                 checkfile=execname+'.good'
             # sys.stdout.write('default checkfile=%s\n'%(checkfile))
-                
+
             if not os.access(checkfile, os.R_OK):
                 sys.stdout.write('[Error cannot locate compiler output comparison file %s/%s]\n'%(localdir, checkfile))
                 sys.stdout.write('[Compiler output was as follows:]\n')
@@ -1061,7 +1062,7 @@ for testname in testsrc:
         # Compile successful
         #
         sys.stdout.write('[Success compiling %s/%s]\n'%(localdir, execname))
-    
+
         # Note that compiler performance only times successful compilations. 
         # Tests that are designed to fail before compilation is complete will 
         # not get timed, so the total time compiling might be off slightly.   
@@ -1073,20 +1074,20 @@ for testname in testsrc:
             if not os.access(compperfdir, os.R_OK|os.X_OK):
                 sys.stdout.write('[Error creating compiler performance test directory %s]\n'%(compperfdir))
                 timePasses = False
-            
+
             if not os.path.isdir(tempDatFilesDir) and not os.path.isfile(tempDatFilesDir):
                 os.makedirs(tempDatFilesDir)
             if not os.access(compperfdir, os.R_OK|os.X_OK):
                 sys.stdout.write('[Error creating compiler performance temp dat file test directory %s]\n'%(tempDatFilesDir))
                 timePasses = False
-            
+
             # so long as we have to the directories 
             if timePasses: 
                 # make the datFileName the full path with / replaced with -- so
                 # we can keep the full path but not create a bunch of new
                 # directories
                 datFileName = localdir.replace('/', '--') + '--' + execname + str(compoptsnum) 
-                
+
                 # computePerfStats for the current test 
                 sys.stdout.write('[Executing computePerfStats %s %s %s %s %s]\n'%(datFileName, tempDatFilesDir, keyfile, printpassesfile, str(exectimeout)))
                 sys.stdout.flush()
@@ -1105,7 +1106,7 @@ for testname in testsrc:
                 if status!=0:
                     printTestVariation(compoptsnum, execoptsnum);
                 sys.stdout.write(']\n')    
-                  
+
             #delete the timing file     
             cleanup(printpassesfile)
 
