@@ -88,6 +88,7 @@
 #                                     exists, . otherwise)
 #   -memleaks
 #   -no-chpl-home-warn                Do not show warning when start_test invoked outside CHPL_HOME
+#   -progress                         Print pass/fail to stderr for each test. Does not work for directories.
 #
 # All options can be used with a double-dash format as well 
 # (e.g. --compopts).
@@ -701,6 +702,7 @@ set comm = `$CHPL_HOME/util/chplenv/comm`
 set suppressions = ""
 set optionerr = 0
 set chplHomeWarn = 1
+set progress = 0
 
 while ( $#argv > 0 )
     switch ( $argv[1] )
@@ -885,6 +887,11 @@ while ( $#argv > 0 )
         shift
         set chplHomeWarn = 0
         breaksw
+    case -progress:
+    case --progress:
+        shift
+        set progress = 1
+        breaksw
     case -h:
     case -help:
     case --help:
@@ -918,6 +925,7 @@ while ( $#argv > 0 )
         echo "          -logfile <file>      (currently: $logfile)"
         echo "          -memleaks <file>"
         echo "          -no-chpl-home-warn"
+        echo "          -progress"
         echo "          -h, -help"
         exit 0
         breaksw
@@ -1351,10 +1359,17 @@ foreach test ($testlist)
             setenv CHPL_ONETEST "$testname"
             echo "[Starting $sub_test `date`]" |& $tee -a $logfile
 
+            if ($progress == 1) then
+                echo -n "  Testing $test ... " > /dev/stderr
+            endif
+
             $sub_test "$compiler" |& $tee -a $logfile
             set errcode = $status
             if ($errcode != 0) then
                 echo "[Error running sub_test for $test]" |& $tee -a $logfile
+            endif
+            if ($progress == 1) then
+                echo "[done]" > /dev/stderr
             endif
 
             unsetenv CHPL_ONETEST
