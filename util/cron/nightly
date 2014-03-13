@@ -20,6 +20,7 @@ $allhellos = 0;
 $examples = 0;
 $performance = 0;
 $compperformance = 0;
+$compperformancedescription = ""
 $componly = 0;
 $nofutures = 0;
 $suppressions = "";
@@ -76,6 +77,7 @@ while (@ARGV) {
         $performance = 1;
     } elsif ($flag eq "-compperformance") {
         $compperformance = 1;
+        $compperformancedescription = shift @ARGV;
     } elsif ($flag eq "-numtrials") {
         $numtrials = shift @ARGV;
     } elsif ($flag eq "-compopts") {
@@ -166,7 +168,7 @@ if ($printusage == 1) {
     print "\t-valgrind    : run tests in valgrind mode\n";
 #    print "\t-interpret   : run tests in interpreted mode\n";
     print "\t-performance : run performance tests\n";
-    print "\t-compperformance: run compiler performance tests\n";
+    print "\t-compperformance <description>: run tests with compiler performance tracking\n";
     print "\t-numtrials <number> : number of trials to run\n";
     print "\t-startdate	  : run performance tests providing a common start date to all the graphs\n";
     print "\t-baseline    : run testins using --baseline\n";
@@ -676,9 +678,9 @@ if ($performance == 1) {
 }
 if ($compperformance == 1) { 
     if ($startdate eq "-1") {
-        $testflags = "$testflags -compperformance";
+        $testflags = "$testflags -compperformance-description $compperformancedescription";
     } else {
-        $testflags = "$testflags -compperformance -startdate $startdate";
+        $testflags = "$testflags -compperformance-description $compperformancedescription -startdate $startdate";
     }
 }
 if (!($numtrials eq "")) {

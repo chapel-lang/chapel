@@ -6,7 +6,8 @@
 # flags if -full option is passed. The log files have distinct names for
 # -examples and -full options.
 # 
-# If -compperformance is passed as $2, will run nightly with -compperformance. 
+# If -compperformance is passed as $2, will run nightly with 
+# -compperformance (--fast). 
  
 source $(cd $(dirname $0) ; pwd)/common.bash
 
@@ -25,7 +26,7 @@ else
 fi
 
 if [ "${2}" == "-compperformance" ] ; then
-    compperf_opt="-compperformance"
+    compperf_opt="-compperformance (--fast)"
 else 
     compperf_opt=""
 fi

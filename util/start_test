@@ -686,6 +686,7 @@ set performance = 0
 set perflabel = ""
 set perfkeys  = ""
 set compperformance = 0
+set compperformancedescription = ""
 set numtrials = 1
 set oldgraphs = 0
 set gengraphs = 0
@@ -794,6 +795,13 @@ while ( $#argv > 0 )
     case -compperformance:
         shift 
         set compperformance = 1;
+        breaksw
+    case --compperformance-description:
+    case -compperformance-description:
+        shift 
+        set compperformance = 1;
+        set compperformancedescription = $argv[1]
+        shift
         breaksw
     case --numtrials:
     case -numtrials:
@@ -906,6 +914,7 @@ while ( $#argv > 0 )
         echo "          -comp-only"
         echo "          -performance"
         echo "          -compperformance"
+        echo "          -compperformance-description <description>"
         echo "          -num-trials <number>"
         echo "          -perflabel <label>"
         echo "          -generate-graphs"
@@ -1148,6 +1157,7 @@ if ($compperformance) then
 
     # get the machine name 
     set compperftestname = `uname -n | sed 's@\..*@@'`
+    set compperftestname = "$compperftestname $compperformancedescription"
     
     # check for a specified main directory 
     if ($?CHPL_TEST_COMP_PERF_DIR) then
@@ -1583,7 +1593,7 @@ if ($compperformance) then
     set atitle = "Chapel Compiler Performance Graphs"
     #now actually create the graphs
     echo "[Creating compiler performance graphs now]"
-    $createCoolerGraphs -p "$compperfdir" -o "$compperfhtmldir" -a "Chapel Compiler Performance Graphs" -n"$compperftestname" "$startdate_t" -g "$compGraphList" -t "$CHPL_HOME/test"  |& $tee -a $logfile
+    $createCoolerGraphs -p "$compperfdir" -o "$compperfhtmldir" -a "$atitle" -n"$compperftestname" "$startdate_t" -g "$compGraphList" -t "$CHPL_HOME/test"  |& $tee -a $logfile
 
     if ($status == 0) then
         echo "[Success generating compiler performance graphs for $compGraphList in $compperfhtmldir]" |& $tee -a $logfile

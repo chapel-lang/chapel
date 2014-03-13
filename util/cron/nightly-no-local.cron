@@ -2,12 +2,13 @@
 #
 # --no-local testing 
 #
-# If -compperformance is passed as $1, will run nightly with -compperformance.
+# If -compperformance is passed as $1, will run nightly with 
+# -compperformance (--no-local).
 
 source $(cd $(dirname $0) ; pwd)/common.bash
 
 if [ "${1}" == "-compperformance" ] ; then
-    compperf_opt="-compperformance"
+    compperf_opt="-compperformance (--no-local)"
 else
     compperf_opt=""
 fi
