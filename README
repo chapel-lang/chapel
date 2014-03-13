@@ -52,12 +52,22 @@ Quick Start
    release).
 
 
-4) Compile an example program using:
+4) To ensure you have installed Chapel properly, you may compile and run a few
+   example programs:
+
+        gmake check
+
+   or:
+
+        make check
+
+
+5) Compile an example program using:
 
         chpl -o hello examples/hello.chpl
 
 
-5) Execute the resulting executable:
+6) Execute the resulting executable:
 
         ./hello
 
