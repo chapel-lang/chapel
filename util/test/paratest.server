@@ -49,6 +49,11 @@ $memleaks = "/dev/null";
 $memleaksflag = 0;
 $show_all_errors = 0;
 $suppressions = "";
+# Once a node has timed out, we don't send it any more work, so this timeout 
+# should be set higher than the time needed to process the largest directory.
+# -1 means "never time out".
+$timeout = -1;
+if (exists $ENV{CHPL_PARATEST_TIMEOUT}) { $timeout = $ENV{CHPL_PARATEST_TIMEOUT}; } 
 
 $localhost = `uname -n`;
 ($localnode, $junk) = split (/\./, $localhost, 2);
@@ -182,10 +187,6 @@ sub free_workers {
 # distribution of work stops.  This is one hack to stop the testing.
 # Of course, you'll have to wait on the client processes or kill them
 # manually.
-# Once a node has timed out, we don't send it any more work, so this timeout 
-# should be set higher than the time needed to process the largest directory.
-my $timeout = 1200; # Kill after 20 minutes.
-
 sub feed_nodes {
     my $chplenv = $_[0];
     local (@readyidv, $logfile, @logs, $testdir, $node, $rem_cmd);
@@ -197,6 +198,7 @@ sub feed_nodes {
 
     @testdir_list = sort @testdir_list;
     print $nodeCount; print " worker(s) (@node_list)\n";
+    print "timeout = $timeout\n" if $debug > 0;
     print $#testdir_list+1; print " test(s) (@testdir_list)\n";
 
     while (($#testdir_list >= 0) &&       # while still have work to do
@@ -281,7 +283,7 @@ sub feed_nodes {
         ($done, $dead) = (0, 0);
         for ($id = 0; $id < $nodeCount; $id++) {
             if ($callboard[$id] == 0) { $done++; next; }
-            $dead++ if (time() - $callboard[$id]) > $timeout;
+            $dead++ if ($timeout > 0) && ((time() - $callboard[$id]) > $timeout);
         }
         last if ($done + $dead) >= $nodeCount;
 
@@ -422,7 +424,7 @@ sub find_files {
 
 
 sub print_help {
-    print "Usage: paratest.server [-compopts s] [-dirfile d] [-execopts s] [-filedist] [-futures] [-logfile l] [-memleaks f] [-nodefile n] [-nodepara m] [-suppress f] [-valgrind] [-help|-h]\n";
+    print "Usage: paratest.server [-compopts s] [-dirfile d] [-execopts s] [-filedist] [-futures] [-logfile l] [-memleaks f] [-nodefile n] [-nodepara m] [-suppress f] [-valgrind] [-help|-h] [-timeout t]\n";
     print "    -compopts s: s is a string that is passed with -compopts to start_test.\n";
     print "    -dirfile  d: d is a file listing directories to test. Default is the current diretory.\n";
     print "    -execopts s: s is a string that is passed with -execopts to start_test.\n";
@@ -434,6 +436,7 @@ sub print_help {
     print "    -nodepara m: Run m paratest.client tasks on each node.\n";
     print "    -suppress f: f is a file with the tests to suppress using filterSuppressions.\n";  
     print "    -valgrind  : pass -valgrind to start_test.\n";
+    print "    -timeout  t: t is the max time to wait after last directory is served.\n";
 }
 
 
@@ -508,6 +511,14 @@ sub main {
                 $node_para = $ARGV[0];
             } else {
                 print "missing -nodepara arg\n";
+                exit(8);
+            }
+        } elsif (/^-timeout/) {
+            shift @ARGV;
+            if ($#ARGV >= 0) {
+                $timeout = $ARGV[0];
+            } else {
+                print "missing -timeout arg\n";
                 exit(8);
             }
         } elsif (/^-memleaks/) {
