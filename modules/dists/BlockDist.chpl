@@ -580,21 +580,38 @@ iter BlockDom.these() {
 }
 
 iter BlockDom.these(param tag: iterKind) where tag == iterKind.leader {
-  type strType = chpl__signedType(idxType);
   const maxTasks = dist.dataParTasksPerLocale;
   const ignoreRunning = dist.dataParIgnoreRunningTasks;
   const minSize = dist.dataParMinGranularity;
   const wholeLow = whole.low;
+
+  // If this is the only task running on this locale, we don't want to
+  // count it when we try to determine how many tasks to use.  Here we
+  // check if we are the only one running, and if so, use
+  // ignoreRunning=true for this locale only.  Obviously there's a bit
+  // of a race condition if some other task starts after we check, but
+  // in that case there is no correct answer anyways.
+  //
+  // Note that this code assumes that any locale will only be in the
+  // targetLocales array once.  If this is not the case, then the
+  // tasks on this locale will *all* ignoreRunning, which may have
+  // performance implications.
+  const hereId = here.id;
+  const hereIgnoreRunning = if here.runningTasks() == 1 then true
+                            else ignoreRunning;
   coforall locDom in locDoms do on locDom {
+    const myIgnoreRunning = if here.id == hereId then hereIgnoreRunning
+      else ignoreRunning;
     // Use the internal function for untranslate to avoid having to do
     // extra work to negate the offset
+    type strType = chpl__signedType(idxType);
     const tmpBlock = locDom.myBlock.chpl__unTranslate(wholeLow);
     var locOffset: rank*idxType;
     for param i in 1..tmpBlock.rank do
       locOffset(i) = tmpBlock.dim(i).first/tmpBlock.dim(i).stride:strType;
     // Forward to defaultRectangular
     for followThis in tmpBlock._value.these(iterKind.leader, maxTasks,
-                                            ignoreRunning, minSize,
+                                            myIgnoreRunning, minSize,
                                             locOffset) do
       yield followThis;
   }
