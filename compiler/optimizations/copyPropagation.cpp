@@ -114,6 +114,13 @@ typedef std::pair<Symbol*, Symbol*> AvailablePair;
 typedef std::map<Symbol*, Symbol*> RefMap;
 typedef RefMap::value_type RefMapElem;
 
+// ReverseAvailableMap: rhs --> lhs*
+// The reverse of the available map, used to accelerate the removal of pairs
+// invalidated because the value of the RHS has changed.
+typedef std::map<Symbol*, std::vector<Symbol*> > ReverseAvailableMap;
+typedef ReverseAvailableMap::mapped_type ReverseMapList;
+
+
 static size_t s_repl_count; ///< The number of pairs replaced by GCP this pass.
 static size_t s_ref_repl_count; ///< The number of references replaced this pass.
 
@@ -552,25 +559,44 @@ static void propagateCopies(std::vector<SymExpr*>& symExprs,
 
 
 static void
-removeAvailable(AvailableMap& available, Symbol* sym)
+removeAvailable(AvailableMap& available, ReverseAvailableMap& ravailable,
+                Symbol* sym)
 {
   std::vector<Symbol*> to_kill;
 
-  // Traverse all available pairs
-  for (AvailableMap::iterator i = available.begin(); i != available.end(); ++i)
-    // If either member of the pair matches the symbol to kill, remove the pair.
-    if (i->first == sym || i->second == sym)
-    {
+  // Remove the pair (sym, ?).
+  AvailableMap::iterator ami = available.find(sym);
+  if (ami != available.end())
+  {
 #if DEBUG_CP
-      if (debug > 0)
-        printf("Removing (%s[%d], %s[%d])\n",
-               i->first->name, i->first->id, i->second->name, i->second->id);
+    if (debug > 0)
+      printf("Removing (%s[%d], %s[%d])\n",
+             ami->first->name, ami->first->id, ami->second->name, ami->second->id);
 #endif
-      to_kill.push_back(i->first);
-    }
+    available.erase(ami);
+  }
 
-  for (size_t i = 0; i < to_kill.size(); ++i)
-    available.erase(to_kill[i]);
+  // Look up the pairs whose RHSs match sym.
+  ReverseAvailableMap::iterator rami = ravailable.find(sym);
+  if (rami != ravailable.end())
+  {
+    // Traverse the list of LHSs stored in the reverse map, and remove them.
+    ReverseMapList& rml = rami->second;
+    for (ReverseMapList::iterator i = rml.begin(); i != rml.end(); ++i)
+    {
+      AvailableMap::iterator ami = available.find(*i);
+      if (ami != available.end())
+      {
+#if DEBUG_CP
+        if (debug > 0)
+          printf("Removing (%s[%d], %s[%d])\n",
+                 ami->first->name, ami->first->id, ami->second->name, ami->second->id);
+#endif
+        available.erase(ami);
+      }
+    }
+    ravailable.erase(rami);
+  }
 }
 
 
@@ -579,6 +605,7 @@ removeAvailable(AvailableMap& available, Symbol* sym)
 // can be assigned.
 static void removeKilledSymbols(std::vector<SymExpr*>& symExprs,
                                 AvailableMap& available,
+                                ReverseAvailableMap& ravailable,
                                 RefMap& refs)
 {
   for_vector(SymExpr, se, symExprs)
@@ -591,7 +618,7 @@ static void removeKilledSymbols(std::vector<SymExpr*>& symExprs,
       continue;
 
     if (isDef(se))
-      removeAvailable(available, se->var);
+      removeAvailable(available, ravailable, se->var);
 
     if (isRefUse(se))
     {
@@ -605,7 +632,7 @@ static void removeKilledSymbols(std::vector<SymExpr*>& symExprs,
         if (refDef == refs.end())
           break;
         cont = refDef->second;
-        removeAvailable(available, cont);
+        removeAvailable(available, ravailable, cont);
       }
     }
   }
@@ -643,7 +670,8 @@ static bool maybeVolatile(SymExpr* se)
 
 // Insert pairs into available copies map
 static void extractCopies(Expr* expr,
-                          AvailableMap& available)
+                          AvailableMap& available,
+                          ReverseAvailableMap& ravailable)
 {
   // We're only interested in call expressions.
   if (CallExpr* call = toCallExpr(expr))
@@ -687,6 +715,7 @@ static void extractCopies(Expr* expr,
                  lhs->name, lhs->id, rhs->name, rhs->id);
 #endif
         available.insert(AvailableMapElem(lhs, rhs));
+        ravailable[rhs].push_back(lhs);
       }
     }
   }
@@ -706,6 +735,7 @@ static void extractCopies(Expr* expr,
 static void
 localCopyPropagationCore(BasicBlock* bb,
                          AvailableMap& available,
+                         ReverseAvailableMap& ravailable,
                          RefMap& refs)
 {
   for_vector(Expr, expr, bb->exprs)
@@ -720,9 +750,9 @@ localCopyPropagationCore(BasicBlock* bb,
 
     propagateCopies(symExprs, available, refs);
 
-    removeKilledSymbols(symExprs, available, refs);
+    removeKilledSymbols(symExprs, available, ravailable, refs);
 
-    extractCopies(expr, available);
+    extractCopies(expr, available, ravailable);
   }
 }
 
@@ -741,7 +771,8 @@ size_t localCopyPropagation(FnSymbol* fn)
   for_vector(BasicBlock, bb1, *fn->basicBlocks)
   {
     AvailableMap available;
-    localCopyPropagationCore(bb1, available, refs);
+    ReverseAvailableMap ravailable;
+    localCopyPropagationCore(bb1, available, ravailable, refs);
   }
   
   return s_repl_count + s_ref_repl_count;
@@ -782,7 +813,8 @@ static void extractAvailablePairs(FnSymbol* fn,
   {
     // Run local copy propagation to extract live pairs at the end of each block.
     AvailableMap available;
-    localCopyPropagationCore(bb1, available, refs);
+    ReverseAvailableMap ravailable;
+    localCopyPropagationCore(bb1, available, ravailable, refs);
 
     // Record those live pairs in successive elements in availablePairs.
     for (AvailableMap::iterator i = available.begin();
@@ -969,16 +1001,21 @@ size_t globalCopyPropagation(FnSymbol* fn) {
   for (size_t i = 0; i < nbbs; i++) {
     BasicBlock* bb = (*fn->basicBlocks)[i];
     AvailableMap available;
+    ReverseAvailableMap ravailable;
 
     for (size_t j = 0; j < availablePairs.size(); ++j)
     {
       if (IN[i]->get(j))
-        available.insert(availablePairs[j]);
+      {
+        AvailablePair& ap = availablePairs[j];
+        available.insert(ap);
+        ravailable[ap.second].push_back(ap.first);
+      }
     }
 
     if (available.size() > 0)
     {
-      localCopyPropagationCore(bb, available, refs);
+      localCopyPropagationCore(bb, available, ravailable, refs);
       // Here, as a check, we could subtract from available the pairs
       // corresponding to the true bits in OUT[i].  The expectation is that all
       // and only those pairs remain.
