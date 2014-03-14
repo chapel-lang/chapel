@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+#
+# A script that quickly validates some things that can easily be broken by
+# commits. This should run fast enough that it can be run after every commit or
+# push.
+
+# This should fail as soon as something goes awry.
+set -e
+
+CWD=$(cd $(dirname $0) ; pwd)
+
+# Ensure environment is correctly configured to run chpl.
+export CHPL_HOME=$(cd $CWD/../.. ; pwd)
+source $CHPL_HOME/util/setchplenv.bash
+
+# Add some space between env setup output and test output.
+echo ""
+
+# Check for tabs.
+all_tabs=$($CHPL_HOME/util/devel/lookForTabs)
+num_tabs=$(echo -n "${all_tabs}" | wc -l)
+if (( $num_tabs > 0 )) ; then
+    echo "Found tabs :-("
+    echo $all_tabs
+    exit 1
+fi
+
+# Ensure nightly does not have syntax errors.
+perl -c $CHPL_HOME/util/cron/nightly
+
+# Compile chapel and make sure the hello world examples run.
+make && make check
