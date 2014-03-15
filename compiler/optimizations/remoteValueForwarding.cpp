@@ -141,6 +141,31 @@ static bool isSufficientlyConst(ArgSymbol* arg) {
     return true;
   }
 
+  //
+  // See if this argument is 'const in'; if it is, it's a good
+  // candidate for remote value forwarding.  My current thinking is
+  // that we should not forward 'const ref' arguments because the
+  // const-ness only means that the callee will not modify them, not
+  // that the caller won't.  If someone can successfully argue that
+  // I'm being too conservative, I'm open to that.  My thinking is
+  // that I'd rather find a case that we think we could be r.v.f.'ing
+  // later on than to have to chase down a race condition due to
+  // optimizing too aggressively.
+  //
+  // Why the additional check against 'ref' types?  Because some
+  // compiler-created arguments currently indicate ref-ness only via
+  // the type and not the intent.  See the big comment I added in
+  // addVarsToFormals() (flattenFunctions.cpp) in this same commit for
+  // an example.  A case that currently fails without this test is:
+  //
+  //     test/multilocale/bradc/needMultiLocales/remoteReal.chpl
+  //
+  if (arg->intent == INTENT_CONST_IN  &&
+      !arg->type->symbol->hasFlag(FLAG_REF)) {
+    return true;
+  }
+
+
   // We may want to add additional cases here as we discover them
 
   // otherwise, conservatively assume it varies

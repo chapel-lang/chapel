@@ -113,6 +113,9 @@ bool Symbol::isConstant(void) {
   return false;
 }
 
+bool Symbol::isConstValWillNotChange(void) {
+  return false;
+}
 
 bool Symbol::isParameter(){
   return false;
@@ -213,6 +216,11 @@ void VarSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 bool VarSymbol::isConstant(void) {
+  return hasFlag(FLAG_CONST);
+}
+
+
+bool VarSymbol::isConstValWillNotChange(void) {
   return hasFlag(FLAG_CONST);
 }
 
@@ -851,6 +859,15 @@ bool ArgSymbol::isConstant(void) {
     !isReferenceType(type) &&
     !isRecordWrappedType(type) /* array, domain, distribution */;
 }
+
+bool ArgSymbol::isConstValWillNotChange(void) {
+  //
+  // This is written to only be called post resolveIntents
+  //
+  assert (intent != INTENT_BLANK && intent != INTENT_CONST);
+  return (intent == INTENT_CONST_IN);
+}
+
 
 
 bool ArgSymbol::isParameter(void) {

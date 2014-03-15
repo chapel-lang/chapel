@@ -69,6 +69,13 @@ passableByVal(Type* type) {
 // Otherwise passing by value is more efficient.
 static bool
 passByRef(Symbol* sym) {
+  //
+  // If it's constant (in the sense that the value will not change),
+  // there's no need to pass it by reference
+  //
+  if (sym->isConstValWillNotChange()) {
+    return false;
+  }
 
   if (sym->hasFlag(FLAG_DISTRIBUTION) ||
       sym->hasFlag(FLAG_DOMAIN) ||
@@ -141,6 +148,22 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
            an LHS expr. */
         type = type->refType;
       SET_LINENO(sym);
+      //
+      // BLC: TODO: This routine is part of the reason that we aren't
+      // consistent in representing 'ref' argument intents in the AST.
+      // In particular, the code above uses a certain test to decide
+      // to pass something by reference and changes the formal's type
+      // to the corresponding reference type if it believes it should.
+      // But the blankIntentForType() call below (and the INTENT_BLANK
+      // that was used before it) may pass the argument by 'const in'
+      // which seems inconsistent (because most 'ref' formals reflect
+      // INTENT_REF in the current compiler).  My current thought is
+      // to only indicate ref-ness through intents for most of the
+      // compilation (at a Chapel level) and only worry about ref
+      // types very close to code generation, primarily to avoid
+      // inconsistencies like this and keep things more
+      // uniform/simple; but we haven't made this switch yet.
+      //
       ArgSymbol* arg = new ArgSymbol(blankIntentForType(type), sym->name, type);
       if (sym->hasFlag(FLAG_ARG_THIS))
         arg->addFlag(FLAG_ARG_THIS);

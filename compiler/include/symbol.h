@@ -84,6 +84,7 @@ class Symbol : public BaseAST {
   virtual Type* typeInfo(void);
 
   virtual bool isConstant(void);
+  virtual bool isConstValWillNotChange(void);
   virtual bool isParameter(void);
 
   virtual GenRet codegen();
@@ -117,6 +118,7 @@ class VarSymbol : public Symbol {
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
   bool isConstant(void);
+  bool isConstValWillNotChange(void);
   bool isParameter(void);
   const char* doc;
 
@@ -150,6 +152,7 @@ class ArgSymbol : public Symbol {
 
   bool requiresCPtr(void);
   bool isConstant(void);
+  bool isConstValWillNotChange(void);
   bool isParameter(void);
   const char* intentDescrString(void);
 
