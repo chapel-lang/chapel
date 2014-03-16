@@ -678,9 +678,9 @@ if ($performance == 1) {
 }
 if ($compperformance == 1) { 
     if ($startdate eq "-1") {
-        $testflags = "$testflags -compperformance-description $compperformancedescription";
+        $testflags = "$testflags -compperformance-description \"$compperformancedescription\"";
     } else {
-        $testflags = "$testflags -compperformance-description $compperformancedescription -startdate $startdate";
+        $testflags = "$testflags -compperformance-description \"$compperformancedescription\" -startdate $startdate";
     }
 }
 if (!($numtrials eq "")) {
