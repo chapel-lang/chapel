@@ -20,12 +20,6 @@
 general regressions (seem to happen in most configurations)
 ===========================================================
 
-comm-none no longer complaining when 2 or more locales are specified (03/01/14)
--------------------------------------------------------------------------------
-[Error matching program output for multilocale/numLocales/bradc/numLocales2Space]
-[Error matching program output for multilocale/numLocales/bradc/numLocales2]
-[Error matching program output for multilocale/numLocales/bradc/printNumLocalesTwo]
-
 
 ==============================================
 linux64 regressions (in addition to the above)
@@ -54,14 +48,18 @@ Feel free to bug him.
 [Error: Timed out executing program studies/hpcc/RA/bradc/parallel/ra-dist (compopts: 1)]
 
 
-**** Silent errors: ****
-
 verification failure due to using --fast and dataParIgnoreRunningTasks=false
 ----------------------------------------------------------------------------
-npb/is/mcahir/intsort.mtml since 02/05/14
+npb/is/mcahir/intsort.mtml since 02/05/14 on chap04 only
 
 This is a known issue, but intsort needs a lot more attention so we are choosing
 to ignore it for now.
+
+
+non-deterministic verification failure (chap04)
+-----------------------------------------------
+release/examples/benchmarks/hpcc/hpl failed validation in one run on 3/13/14
+We've turned off randomSeed for this test, hopefully it won't reoccur.
 
 
 ================================
@@ -82,8 +80,8 @@ compilation timeout (02/27/14)
 nondeterministic failures:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-incorrect output (03/01/14)
----------------------------
+incorrect output (03/01/14, 03/09/14)
+-------------------------------------
 [Error matching program output for studies/jacobi/waynew/example2]
 
 
@@ -179,6 +177,9 @@ no-local regressions
 (Reviewed for accuracy 03/01/14)
 ================================
 
+incorrect value for numChunks, non-deterministic (03/10/14)
+-----------------------------------------------------------
+[Error matching program output for functions/iterators/sungeun/forwarding/forwardDefaultDom (compopts: 1)]
 
 ====================================================
 gasnet-everything regressions (other than the above)
