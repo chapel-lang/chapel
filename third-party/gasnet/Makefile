@@ -6,7 +6,7 @@ export CHPL_COMM=gasnet
 CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
-CHPL_GASNET_CFG_OPTIONS += --enable-segment-$(CHPL_MAKE_COMM_SEGMENT) --enable-allow-gcc4
+CHPL_GASNET_CFG_OPTIONS += --enable-segment-$(CHPL_MAKE_COMM_SEGMENT) --enable-allow-gcc4 --disable-pshm
 
 ifneq ($(CHPL_MAKE_COMM_SEGMENT),everything)
 CHPL_GASNET_CFG_OPTIONS += --disable-aligned-segments
@@ -25,11 +25,11 @@ CHPL_GASNET_CFG_OPTIONS += --enable-pthreads
 ifeq ($(CHPL_MAKE_COMM_SUBSTRATE),gemini)
 else
 ifeq ($(CHPL_MAKE_COMM_SUBSTRATE),aries)
-CHPL_GASNET_CFG_OPTIONS += --enable-aries --disable-pshm
+CHPL_GASNET_CFG_OPTIONS += --enable-aries
 else
 # We need to do this because the auto-detect stuff for gemini is not
 # yet working as well as the portals auto-detect
-CHPL_GASNET_CFG_OPTIONS += --disable-gemini --disable-aries --disable-pshm --disable-pshm-xpmem --enable-pshm-posix
+CHPL_GASNET_CFG_OPTIONS += --disable-gemini --disable-aries
 endif
 endif
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),cray-xc)
