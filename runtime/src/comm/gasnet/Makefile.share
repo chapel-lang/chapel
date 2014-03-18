@@ -1,9 +1,9 @@
 COMM_LAUNCHER_SRCS = \
-        comm-gasnet-locales.c \
+        comm-gasnet-locales.c
 
 COMM_SRCS = \
 	$(COMM_LAUNCHER_SRCS) \
-	comm-gasnet.c \
+	comm-gasnet.c
 
 SVN_SRCS = $(COMM_SRCS)
 SRCS = $(SVN_SRCS)
