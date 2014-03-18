@@ -12,15 +12,17 @@ record R {
   var k:int;
 }
 
-proc rfun(in x:R) {
+proc rfun(x:R):R {
   x.j = 17;
+  return x;
 }
 
 proc main() {
   var r:R;
-  r.e = 2;
-  rfun(r);
-  var str = r:string;
+  var r2:R;
+  r2 = rfun(r);
+  var num = r.j + r2.j;
+  var str = num:string;
   __primitive("chpl_error", str);
 }
 

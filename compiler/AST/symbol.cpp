@@ -857,6 +857,7 @@ bool ArgSymbol::isConstant(void) {
   }
   return (intent == INTENT_BLANK || intent == INTENT_CONST) &&
     !isReferenceType(type) &&
+    !isSyncType(type) &&
     !isRecordWrappedType(type) /* array, domain, distribution */;
 }
 

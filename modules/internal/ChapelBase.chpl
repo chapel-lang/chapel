@@ -1129,7 +1129,7 @@ module ChapelBase {
   // to be special-cased in functionResolution.cpp such that the inout
   // does not actually result in temps.
   //
-  proc chpldev_refToString(inout arg) {
+  proc chpldev_refToString(ref arg) {
   
     //
     // print out the address of class references as well

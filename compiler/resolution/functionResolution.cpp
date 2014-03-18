@@ -3262,61 +3262,54 @@ static void resolveMove(CallExpr* call) {
     }
 }
 
+
+
+//
+// This tells us whether we can rely on C to provide the copy for us
+// for 'in' or 'const in' intents when passing an argument of type
+// 't'.
+//
+static bool CProvidesCopyForIn(Type* t) {
+  return (isRecord(t) || 
+          t->symbol->hasFlag(FLAG_ARRAY) || 
+          t->symbol->hasFlag(FLAG_DOMAIN));
+}
+
+
 // Returns true if the formal needs an internal temporary, false otherwise.
 static bool
 formalRequiresTemp(ArgSymbol* formal) {
-// We mostly just weed out the negative cases.
+  //
+  // get the formal's function
+  //
+  FnSymbol* fn = toFnSymbol(formal->defPoint->parentSymbol);
+  INT_ASSERT(fn);
 
-  // Look at intents.  No temporaries for param, type or ref intents.
-  if (formal->intent == INTENT_PARAM ||
-      formal->intent == INTENT_TYPE ||
-      formal->intent == INTENT_REF ||
-      formal->intent == INTENT_CONST_REF ||
-      (formal->intent == INTENT_BLANK &&
-       (formal->type->symbol->hasFlag(FLAG_REF) ||
-        isAtomicType(formal->type))))
-    return false;
-
-  // Some more obscure call-by-ref cases.
-  if (formal->hasFlag(FLAG_IS_MEME) ||
-      formal->hasFlag(FLAG_TYPE_VARIABLE) ||
-      formal->hasFlag(FLAG_NO_FORMAL_TMP))
-    return false;
-
-  // The fLibraryCompile flag was added to support separate compilation.
-  // Several code generation functions crash if it is not there.
-  // This makes exported object arguments read-only which is not what we want.
-  if (formal->hasFlag(FLAG_ARG_THIS)) {
-    if (!fLibraryCompile)
-      // So call-by-ref is cancelled if we are compiling an exported function.
-      return false;
-  }
-
-  if (formal == toFnSymbol(formal->defPoint->parentSymbol)->_outer ||
-      formal->instantiatedParam ||
-      formal->type == dtMethodToken)
-    return false;
-
-  return true;
+  return 
+    //
+    // 'out' and 'inout' intents are passed by ref at the C level, so we
+    // need to make an explicit copy in the codegen'd function */
+    //
+    (formal->intent == INTENT_OUT || 
+     formal->intent == INTENT_INOUT ||
+     //
+     // 'in' and 'const in' also require a copy, but for simple types
+     // (like ints or class references), we can rely on C's copy when
+     // passing the argument, as long as the routine is not
+     // inlined.
+     //
+     ((formal->intent == INTENT_IN || formal->intent == INTENT_CONST_IN) &&
+      (CProvidesCopyForIn(formal->type) || !fn->hasFlag(FLAG_INLINE)))
+     //
+     // The following case reduces memory leaks, but I can't explain
+     // why it'd be needed
+     //
+     // || strcmp(formal->name, "followThis") == 0
+     );
 }
 
 static void
 insertFormalTemps(FnSymbol* fn) {
-  if (!strcmp(fn->name, "_init") ||
-      !strcmp(fn->name, "_cast") ||
-      fn->hasFlag(FLAG_AUTO_COPY_FN) ||
-      fn->hasFlag(FLAG_AUTO_DESTROY_FN) ||
-      fn->hasFlag(FLAG_INIT_COPY_FN) ||
-      !strcmp(fn->name, "_getIterator") ||
-      !strcmp(fn->name, "_getIteratorHelp") ||
-      !strcmp(fn->name, "iteratorIndex") ||
-      !strcmp(fn->name, "iteratorIndexHelp") ||
-      !strcmp(fn->name, "=") ||
-      !strcmp(fn->name, "_createFieldDefault") ||
-      !strcmp(fn->name, "chpldev_refToString") ||
-      fn->hasFlag(FLAG_ALLOW_REF) ||
-      fn->hasFlag(FLAG_REF))
-    return;
   SymbolMap formals2vars;
   for_formals(formal, fn) {
     if (formalRequiresTemp(formal)) {
