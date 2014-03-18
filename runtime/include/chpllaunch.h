@@ -16,6 +16,8 @@ int chpl_launch_using_exec(const char* command, char * const argv1[],
                            const char* argv0);
 int chpl_launch_using_system(char* command, char* argv0);
 
+char* chpl_get_enviro_keys(char sep);
+
 void chpl_compute_real_binary_name(const char* argv0);
 const char* chpl_get_real_binary_name(void);
 

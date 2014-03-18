@@ -14,6 +14,8 @@
 #include "chpltypes.h"
 #include "error.h"
 
+// used in get_enviro_keys
+extern char** environ;
 
 // This global variable stores the arguments to main
 // that should be handled by the program.
@@ -258,6 +260,48 @@ int chpl_launch_using_system(char* command, char* argv0) {
   return system(command);
 }
 
+// This function returns a string containing a character-
+// separated list of environment variables that should be
+// forwarded.
+
+char* chpl_get_enviro_keys(char sep)
+{
+  int pass;
+  int i;
+  int j;
+  int k = 0;
+  char* ret = NULL;
+
+  for( pass = 0; pass < 2; pass++ ) {
+    k = 0;
+    for( i = 0; environ && environ[i]; i++ ) {
+      // We could do this for only some environment
+      // variables if we wanted to; that would amount
+      // to an if statement checking environ[i];
+      // but we find it to be more similar to MPI/SLURM
+      // to forward all environment variables.
+      // Count/store the separator
+      if( k > 0 ) {
+        if( pass == 0 ) k++;
+        else ret[k++] = sep;
+      }
+
+      for( j = 0; environ[i][j] && environ[i][j] != '='; j++ ) {
+        if( pass == 0 ) {
+          // on first pass, just count.
+          k++;
+        } else {
+          // on second pass, add to buffer.
+          ret[k++] = environ[i][j];
+        }
+      }
+    }
+    if( pass == 0 ) ret = chpl_mem_allocMany(k+1, sizeof(char),
+                                             CHPL_RT_MD_COMMAND_BUFFER,-1,"");
+  }
+
+  return ret;
+}
 
 int handleNonstandardArg(int* argc, char* argv[], int argNum, 
                          int32_t lineno, chpl_string filename) {
