@@ -4872,16 +4872,15 @@ postFold(Expr* expr) {
         }
         if (!set) {
           if (lhs->var->hasFlag(FLAG_MAYBE_TYPE)) {
+            // Add FLAG_TYPE_VARIABLE when relevant
             if (SymExpr* rhs = toSymExpr(call->get(2))) {
               if (rhs->var->hasFlag(FLAG_TYPE_VARIABLE))
                 lhs->var->addFlag(FLAG_TYPE_VARIABLE);
-            }
-            if (CallExpr* rhs = toCallExpr(call->get(2))) {
+            } else if (CallExpr* rhs = toCallExpr(call->get(2))) {
               if (FnSymbol* fn = rhs->isResolved()) {
                 if (fn->retTag == RET_TYPE)
                   lhs->var->addFlag(FLAG_TYPE_VARIABLE);
-              }
-              if (rhs->isPrimitive(PRIM_DEREF)) {
+              } else if (rhs->isPrimitive(PRIM_DEREF)) {
                 if (isTypeExpr(rhs->get(1)))
                   lhs->var->addFlag(FLAG_TYPE_VARIABLE);
               }

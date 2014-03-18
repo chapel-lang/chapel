@@ -213,64 +213,62 @@ checkUseBeforeDefs() {
       // Walk the asts in this function.
       collect_asts_postorder(fn, asts);
       forv_Vec(BaseAST, ast, asts) {
-
+        // Adds definitions (this portion could probably be made into a
+        // separate function - see loopInvariantCodeMotion and copyPropagation)
         if (CallExpr* call = toCallExpr(ast)) {
           // A symbol gets defined when it appears on the LHS of a move or
           // assignment.
           if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
             if (SymExpr* se = toSymExpr(call->get(1)))
               defined.set_add(se->var);
-        }
-
-        if (DefExpr* def = toDefExpr(ast)) {
+        } else if (DefExpr* def = toDefExpr(ast)) {
           // All arg sumbols are defined.
           if (isArgSymbol(def->sym))
             defined.set_add(def->sym);
-        }
-
-        if (SymExpr* sym = toSymExpr(ast)) {
-          CallExpr* call = toCallExpr(sym->parentExpr);
-          if (call && 
-              (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) &&
-              call->get(1) == sym)
-            continue;  // We already handled this case above.
-
-          if (toModuleSymbol(sym->var)) {
-            if (!toFnSymbol(fn->defPoint->parentSymbol)) {
-              if (!call || !call->isPrimitive(PRIM_USED_MODULES_LIST)) {
-                SymExpr* prev = toSymExpr(sym->prev);
-                if (!prev || prev->var != gModuleToken)
-                  USR_FATAL_CONT(sym, "illegal use of module '%s'", sym->var->name);
+        } else {
+          // The AST in question is not one of our methods of declaration so now
+          // we check if it is a (resolved/unresolved) symbol and make sure
+          // that symbol is not defined/declared before use
+          if (SymExpr* sym = toSymExpr(ast)) {
+            CallExpr* call = toCallExpr(sym->parentExpr);
+            if (call && 
+                (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) &&
+                call->get(1) == sym)
+              continue; // We already handled this case above.
+          
+            if (toModuleSymbol(sym->var)) {
+              if (!toFnSymbol(fn->defPoint->parentSymbol)) {
+                if (!call || !call->isPrimitive(PRIM_USED_MODULES_LIST)) {
+                  SymExpr* prev = toSymExpr(sym->prev);
+                  if (!prev || prev->var != gModuleToken)
+                    USR_FATAL_CONT(sym, "illegal use of module '%s'", sym->var->name);
+                }
               }
-            }
-          }
-
-          if (isVarSymbol(sym->var) || isArgSymbol(sym->var)) {
-            if (sym->var->defPoint->parentExpr != rootModule->block &&
-                (sym->var->defPoint->parentSymbol == fn ||
-                 (sym->var->defPoint->parentSymbol == mod && mod->initFn == fn))) {
-              if (!defined.set_in(sym->var) && !undefined.set_in(sym->var)) {
-                if (!sym->var->hasEitherFlag(FLAG_ARG_THIS,FLAG_EXTERN)) {
-                  USR_FATAL_CONT(sym, "'%s' used before defined (first used here)", sym->var->name);
-                  undefined.set_add(sym->var);
+            } else if (isVarSymbol(sym->var) || isArgSymbol(sym->var)) {
+              if (sym->var->defPoint->parentExpr != rootModule->block &&
+                  (sym->var->defPoint->parentSymbol == fn ||
+                   (sym->var->defPoint->parentSymbol == mod && mod->initFn == fn))) {
+                if (!defined.set_in(sym->var) && !undefined.set_in(sym->var)) {
+                  if (!sym->var->hasEitherFlag(FLAG_ARG_THIS,FLAG_EXTERN)) {
+                    USR_FATAL_CONT(sym, "'%s' used before defined (first used here)", sym->var->name);
+                    undefined.set_add(sym->var);
+                  }
                 }
               }
             }
-          }
-        }
-
-        if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(ast)) {
-          CallExpr* call = toCallExpr(sym->parentExpr);
-          if (call &&
-              (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) &&
-              call->get(1) == sym)
-            continue;
-          if ((!call || (call->baseExpr != sym && !call->isPrimitive(PRIM_CAPTURE_FN))) && sym->unresolved) {
-            if (!undeclared.set_in(sym->unresolved)) {
-              if (!toFnSymbol(fn->defPoint->parentSymbol)) {
-                USR_FATAL_CONT(sym, "'%s' undeclared (first use this function)",
-                               sym->unresolved);
-                undeclared.set_add(sym->unresolved);
+          } else if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(ast)) {
+            CallExpr* call = toCallExpr(sym->parentExpr);
+            if (call &&
+                (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) &&
+                call->get(1) == sym)
+              continue; // We already handled this case above.
+            if ((!call || (call->baseExpr != sym && !call->isPrimitive(PRIM_CAPTURE_FN))) && sym->unresolved) {
+              if (!undeclared.set_in(sym->unresolved)) {
+                if (!toFnSymbol(fn->defPoint->parentSymbol)) {
+                  USR_FATAL_CONT(sym, "'%s' undeclared (first use this function)",
+                                 sym->unresolved);
+                  undeclared.set_add(sym->unresolved);
+                }
               }
             }
           }
