@@ -855,7 +855,7 @@ module DefaultRectangular {
   
   proc DefaultRectangularDom.dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
   proc DefaultRectangularDom.dsiSerialRead(f: Reader) { this.dsiSerialReadWrite(f); }
-  
+
   proc DefaultRectangularArr.dsiSerialReadWrite(f /*: Reader or Writer*/) {
     proc recursiveArrayWriter(in idx: rank*idxType, dim=1, in last=false) {
       var binary = f.binary();
@@ -884,10 +884,42 @@ module DefaultRectangular {
     const zeroTup: rank*idxType;
     recursiveArrayWriter(zeroTup);
   }
-  
-  proc DefaultRectangularArr.dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
-  proc DefaultRectangularArr.dsiSerialRead(f: Reader) { this.dsiSerialReadWrite(f); }
-  
+
+  proc DefaultRectangularArr.dsiSerialWrite(f: Writer) {
+    var isNative = f.styleElement(QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER): bool;
+
+    if _isSimpleIoType(this.eltType) && f.binary() &&
+       isNative && this.isDataContiguous() {
+      // If we can, we would like to write the array out as a single write op
+      // since _ddata is just a pointer to the memory location we just pass
+      // that along with the size of the array. This is only possible when the
+      // byte order is set to native or it's equivalent.
+      pragma "no prototype"
+      extern proc sizeof(type x): int;
+      const elemSize = sizeof(eltType);
+      const len = dom.dsiNumIndices;
+      f.writeBytes(data, len*elemSize);
+    } else {
+      this.dsiSerialReadWrite(f);
+    }
+  }
+
+  proc DefaultRectangularArr.dsiSerialRead(f: Reader) {
+    var isNative = f.styleElement(QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER): bool;
+
+    if _isSimpleIoType(this.eltType) && f.binary() &&
+       isNative && this.isDataContiguous() {
+      // read the data in one op if possible, same comments as above apply
+      pragma "no prototype"
+      extern proc sizeof(type x): int;
+      const elemSize = sizeof(eltType);
+      const len = dom.dsiNumIndices;
+      f.readBytes(data, len*elemSize);
+    } else {
+      this.dsiSerialReadWrite(f);
+    }
+  }
+
   // This is very conservative.  For example, it will return false for
   // 1-d array aliases that are shifted from the aliased array.
   proc DefaultRectangularArr.isDataContiguous() {

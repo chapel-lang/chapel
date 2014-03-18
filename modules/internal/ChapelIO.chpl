@@ -26,6 +26,9 @@ module ChapelIO {
       //compilerError("Generic Writer.writePrimitive called");
       halt("Generic Writer.writePrimitive called");
     }
+    proc writeBytes(x, len) {
+      halt("Generic Writer.writeBytes called");
+    }
     proc writeIt(x:?t) {
       if _isIoPrimitiveTypeOrNewline(t) {
         writePrimitive(x);
@@ -192,6 +195,9 @@ module ChapelIO {
     proc readPrimitive(ref x:?t) where _isIoPrimitiveTypeOrNewline(t) {
       //compilerError("Generic Reader.readPrimitive called");
       halt("Generic Reader.readPrimitive called");
+    }
+    proc readBytes(x, len) {
+      halt("Generic Writer.writeBytes called");
     }
     proc readIt(x:?t) where isClassType(t) {
       // FUTURE -- write the class name/ID? or nil?
@@ -483,7 +489,7 @@ module ChapelIO {
     compilerWarning("printing _ddata class");
     write("<_ddata class cannot be printed>");
   }
-  
+
   proc chpl_taskID_t.writeThis(f: Writer) {
     var tmp : uint(64) = this : uint(64);
     f.write(tmp);

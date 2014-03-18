@@ -277,10 +277,14 @@ extern proc qio_channel_close(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
 
 extern proc qio_channel_read(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:ssize_t, ref amt_read:ssize_t):err_t;
 extern proc qio_channel_read_amt(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:ssize_t):err_t;
+// A specialization is needed for _ddata as the value is the pointer its memory
+extern proc qio_channel_read_amt(threadsafe:c_int, ch:qio_channel_ptr_t, ptr:_ddata, len:ssize_t):err_t;
 extern proc qio_channel_read_byte(threadsafe:c_int, ch:qio_channel_ptr_t):int(32);
 
 extern proc qio_channel_write(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:ssize_t, ref amt_written:ssize_t):err_t;
 extern proc qio_channel_write_amt(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:ssize_t):err_t;
+// A specialization is needed for _ddata as the value is the pointer its memory
+extern proc qio_channel_write_amt(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:_ddata, len:ssize_t):err_t;
 extern proc qio_channel_write_byte(threadsafe:c_int, ch:qio_channel_ptr_t, byte:uint(8)):err_t;
 
 extern proc qio_channel_offset_unlocked(ch:qio_channel_ptr_t):int(64);
@@ -1044,9 +1048,11 @@ proc file.writer(param kind=iokind.dynamic, param locking=true, start:int(64) = 
   return ret;
 }
 
+proc _isSimpleIoType(type t) param return
+  _isSimpleScalarType(t) || _isComplexType(t) || _isEnumeratedType(t);
+
 proc _isIoPrimitiveType(type t) param return
-  _isPrimitiveType(t) || _isComplexType(t) ||
-  _isImagType(t) || _isEnumeratedType(t);
+  _isSimpleIoType(t) || (t == string);
 
  proc _isIoPrimitiveTypeOrNewline(type t) param return
   _isIoPrimitiveType(t) || t == ioNewline || t == ioLiteral || t == ioChar || t == ioBits;
@@ -1809,6 +1815,15 @@ class ChannelWriter : Writer {
       }
     }
   }
+
+  proc writeBytes(x, len) {
+    if ! err {
+      on this {
+        err = qio_channel_write_amt(false, _channel_internal, x, len);
+      }
+    }
+  }
+
   proc writeThis(w:Writer) {
     // MPF - I don't understand why I had to add this,
     // but without it test/modules/diten/returnClassDiffModule5.chpl fails.
@@ -1843,6 +1858,7 @@ class ChannelReader : Reader {
   proc clearError() {
     err = ENOERR;
   }
+
   proc readPrimitive(ref x:?t) where _isIoPrimitiveTypeOrNewline(t) {
     if !err {
       on this {
@@ -1850,6 +1866,15 @@ class ChannelReader : Reader {
       }
     }
   }
+
+  proc readBytes(x, len) {
+    if ! err {
+      on this {
+        err = qio_channel_read_amt(false, _channel_internal, x, len);
+      }
+    }
+  }
+
   proc writeThis(w:Writer) {
     compilerError("writeThis on ChannelReader called");
   }
