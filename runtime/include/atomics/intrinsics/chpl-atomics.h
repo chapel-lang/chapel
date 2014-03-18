@@ -68,8 +68,10 @@ static inline chpl_bool atomic_flag_test_and_set(atomic_flag *obj) {
   return atomic_flag_test_and_set_explicit(obj, memory_order_seq_cst);
 }
 
-static inline void atomic_flag_clear_explicit(atomic_flag *obj, memory_order order) {
-  __sync_fetch_and_and(obj, false);
+// We don't really need the return here, but with chpl_developer set gcc
+// complains about a value computed is not used 
+static inline atomic_flag atomic_flag_clear_explicit(atomic_flag *obj, memory_order order) {
+  return __sync_fetch_and_and(obj, false);
 }
 static inline void atomic_flag_clear(atomic_flag *obj) {
   atomic_flag_clear_explicit(obj, memory_order_seq_cst);
