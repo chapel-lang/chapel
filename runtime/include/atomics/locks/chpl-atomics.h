@@ -294,40 +294,6 @@ DECLARE_REAL_ATOMICS(_real64);
 #undef DECLARE_ATOMICS_BASE
 #undef DECLARE_ATOMICS_FETCH_OPS
 #undef DECLARE_ATOMICS
-
-static inline int leadz8(uint8_t x) {
-  int i;
-  for( i = 0; i < 8; i++ ) {
-    if( x >> 7 ) break;
-    x <<= 1;
-  }
-  return i;
-}
-static inline int leadz16(uint16_t x) {
-  int i;
-  for( i = 0; i < 16; i++ ) {
-    if( x >> 15 ) break;
-    x <<= 1;
-  }
-  return i;
-}
-static inline int leadz32(uint32_t x) {
-  int i;
-  for( i = 0; i < 32; i++ ) {
-    if( x >> 31 ) break;
-    x <<= 1;
-  }
-  return i;
-}
-static inline int leadz64(uint64_t x) {
-  int i;
-  for( i = 0; i < 64; i++ ) {
-    if( x >> 63 ) break;
-    x <<= 1;
-  }
-  return i;
-}
-
 #undef MAYBE_INLINE
 
 #endif // _chpl_atomics_h_

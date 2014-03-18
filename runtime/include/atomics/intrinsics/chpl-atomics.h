@@ -343,21 +343,4 @@ DECLARE_REAL_ATOMICS(_real64, uint64_t);
 #undef DECLARE_ATOMICS
 #undef DECLARE_REAL_ATOMICS
 
-
-
-// TODO Do these belong here? They are not really atomics so much as other
-// builtins to check the leading number of 0 bits
-static inline int leadz8(uint8_t x) {
-  return __builtin_clz((unsigned int) x) - 8*(sizeof(unsigned int)-sizeof(uint8_t));
-}
-static inline int leadz16(uint16_t x) {
-  return __builtin_clz((unsigned int) x) - 8*(sizeof(unsigned int)-sizeof(uint16_t));
-}
-static inline int leadz32(uint32_t x) {
-  return __builtin_clz((unsigned int) x);
-}
-static inline int leadz64(uint64_t x) {
-  return __builtin_clzll((unsigned long long) x);
-}
-
 #endif // _chpl_atomics_h_
