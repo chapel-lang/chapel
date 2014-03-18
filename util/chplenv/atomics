@@ -36,30 +36,31 @@ if ($network_atomics == 1) {
     my $compiler = run("compiler", "--target");
     my $platform = run("platform", "--target");
 
-#
-# our atomics assume a 64-bit platform, so for 32-bit platforms, we
-# need to conservatively use locks for now; we could fine-tune and
-# only use locks for 64-bit atomics, but we'll cross that bridge when
-# we come to it.
-
+    #
+    # we currently support intrinsics for 64 bit platforms using gcc, intel,
+    # or cray compilers but not pgi. pgi does not have support for atomic
+    # intrinsics so we revert to locks for that case. We could add support for
+    # 32-bit platforms and only use locks for 64-bit atomics but we can cross
+    # that bridge when we get there. 
     if ($platform eq "linux32") {
-	$atomics = "locks";
-    } elsif ($compiler eq "gnu" || $compiler eq "cray-prgenv-gnu") {
-      # Check the compiler version
-      my $version = `gcc -dumpversion`;
-      my @vers = split(/\./, $version);
-      if( ($vers[0] == 4 && $vers[1] >= 1) ||
-          $vers[0] > 4 ) {
-        $atomics = "intrinsics";
-      } else {
         $atomics = "locks";
-      }
-    } elsif ($compiler eq "cray-prgenv-intel") {
-      $atomics = "intrinsics";
+    } elsif ($compiler eq "gnu" || $compiler eq "cray-prgenv-gnu") {
+        # Check the compiler version
+        my $version = `gcc -dumpversion`;
+        my @vers = split(/\./, $version);
+        if( ($vers[0] == 4 && $vers[1] >= 1) || $vers[0] > 4 ) {
+            $atomics = "intrinsics";
+        } else {
+            $atomics = "locks";
+        }
+    } elsif ($compiler eq "intel" || $compiler eq "cray-prgenv-intel") {
+        $atomics = "intrinsics";
+    } elsif ($compiler eq "cray" || $compiler eq "cray-prgenv-cray") {
+        $atomics = "intrinsics";
     } elsif ($compiler eq "clang") {
-      $atomics = "intrinsics";
+        $atomics = "intrinsics";
     } else {
-      $atomics = "locks";
+        $atomics = "locks";
     }
 } else {
     $atomics = $preset_atomics;
