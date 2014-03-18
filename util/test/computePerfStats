@@ -96,8 +96,8 @@ my @file_lines;
 # }
 
 # make sure the output is valid.
+my $valid_output = 1;
 if ($exec_time_out eq "False") {
-  my $valid_output = 1;
   foreach my $key (@verify_keys) {
       # Looks for a key of the form:
       # (verify|reject): <regex>
@@ -139,64 +139,66 @@ if ($exec_time_out eq "False") {
       }
   }
   if (!$valid_output) {
-      die "Error: Invalid output found in $test_output_file\n";
+      print "Error: Invalid output found in $test_output_file\n";
   }
 }
 
-# if this is first performance run, create the .dat
-if (! -e "$data_file") {
-# } else {
-    open STATS, ">$data_file" or die "can't open $data_file for creating: $!";
-    print ERRORS "created $data_file\n";
-    print STATS "# Date";
-    foreach my $key (@keys) {
-        print STATS "\t$key";
-    }
-    print STATS "\n";
-    close (STATS);
-}
-
-#
-# write new data to the .dat
-open STATS, ">>$data_file" or die "can't open $data_file for appending: $!";
-print ERRORS "appending $data_file\n";
-
-
-# check all output lines for values following keys, values get written to the .dat
 my $foundEverything = 1;
-if ($exec_time_out eq "True") {
-    # Timed out executions will be comments
-    printf STATS "# ";
-}
-printf STATS "%s ", $perfdate;
-foreach my $key (@keys) {
-    print "Looking for $key...";
-    print STATS "\t";
-    my $found = 0;
-    foreach my $line (@file_lines) {
-        if ($line =~ m/\Q$key\E(\s*)(\S*)/ && $found == 0) {
-            print "found it: $2\n";
-            print STATS "$2";
-            $found = 1;
-        }
-    }
-    if ($found == 0) {
-        print STATS "-";
-        print "didn't find it\n";
-        $foundEverything = 0;
+if ($valid_output) {
+  # if this is first performance run, create the .dat
+  if (! -e "$data_file") {
+  # } else {
+      open STATS, ">$data_file" or die "can't open $data_file for creating: $!";
+      print ERRORS "created $data_file\n";
+      print STATS "# Date";
+      foreach my $key (@keys) {
+          print STATS "\t$key";
+      }
+      print STATS "\n";
+      close (STATS);
+  }
 
-    }
-}
-if ($exec_time_out eq "True") {
-    print STATS " ### EXECUTION TIMED OUT ###";
-}
-print STATS "\n";
+  #
+  # write new data to the .dat
+  open STATS, ">>$data_file" or die "can't open $data_file for appending: $!";
+  print ERRORS "appending $data_file\n";
 
-if ($foundEverything != 1 and $exec_time_out eq "False") {
+  # check all output lines for values following keys, values get written to the .dat
+  if ($exec_time_out eq "True") {
+      # Timed out executions will be comments
+      printf STATS "# ";
+  }
+
+  printf STATS "%s ", $perfdate;
+  foreach my $key (@keys) {
+      print "Looking for $key...";
+      print STATS "\t";
+      my $found = 0;
+      foreach my $line (@file_lines) {
+          if ($line =~ m/\Q$key\E(\s*)(\S*)/ && $found == 0) {
+              print "found it: $2\n";
+              print STATS "$2";
+              $found = 1;
+          }
+      }
+      if ($found == 0) {
+          print STATS "-";
+          print "didn't find it\n";
+          $foundEverything = 0;
+
+      }
+  }
+  if ($exec_time_out eq "True") {
+      print STATS " ### EXECUTION TIMED OUT ###";
+  }
+  print STATS "\n";
+}
+
+if (($valid_output != 1 or $foundEverything != 1) and $exec_time_out eq "False") {
     print "output was:\n";
     system("cat $test_output_file");
     exit 1;
-} 
+}
 
 # remove white space surrounding a string
 sub trim($) {
