@@ -118,7 +118,7 @@ def main():
     # remove the colons in the compiler pass keys 
     outputPerfKeys = firstLine.replace(' :', '')
     # combine  the date, and each averaged value 
-    outputPerfValues = date + '\t' + '\t '.join(combinedOutput)
+    outputPerfValues = date + '\t' + '\t'.join(combinedOutput)
     
     # create or append the averaged timings file that contains the
     # average time for each compiler pass 
