@@ -111,7 +111,7 @@ nondeterministic failure due to decrementing task counts after task has
 run but before pthread has been descheduled.  Could happen in any
 configuration, but exacerbated by valgrind (bradc, sungeun, gbt understand)
 ----------------------------------------------------------------------------
-[Error matching program output for functions/iterators/sungeun/forwarding/forwardDefaultDom (compopts: 1)] (3/8/14)(3/10/14)
+[Error matching program output for functions/iterators/sungeun/forwarding/forwardDefaultDom (compopts: 1)] (3/8/14)(3/10/14)(3/17/14)
 [Error matching program output for functions/iterators/sungeun/forwarding/forwardDefaultArr (compopts: 1)] (3/10/14)
 [Error matching program output for arrays/deitz/parallelism/test_forall_of_arrays_is_parallel]
 
