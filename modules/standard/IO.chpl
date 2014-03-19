@@ -1816,7 +1816,7 @@ class ChannelWriter : Writer {
     }
   }
 
-  proc writeBytes(x, len) {
+  proc writeBytes(x, len:ssize_t) {
     if ! err {
       on this {
         err = qio_channel_write_amt(false, _channel_internal, x, len);
@@ -1867,7 +1867,7 @@ class ChannelReader : Reader {
     }
   }
 
-  proc readBytes(x, len) {
+  proc readBytes(x, len:ssize_t) {
     if ! err {
       on this {
         err = qio_channel_read_amt(false, _channel_internal, x, len);

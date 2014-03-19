@@ -895,10 +895,13 @@ module DefaultRectangular {
       // that along with the size of the array. This is only possible when the
       // byte order is set to native or it's equivalent.
       pragma "no prototype"
-      extern proc sizeof(type x): int;
+      extern proc sizeof(type x): size_t;
       const elemSize = sizeof(eltType);
       const len = dom.dsiNumIndices;
-      f.writeBytes(data, len*elemSize);
+      if boundsChecking then
+        assert((len:uint*elemSize:uint) <= max(ssize_t):uint,
+               "length of array to write is greater than ssize_t can hold");
+      f.writeBytes(data, len:ssize_t*elemSize:ssize_t);
     } else {
       this.dsiSerialReadWrite(f);
     }
@@ -911,10 +914,13 @@ module DefaultRectangular {
        isNative && this.isDataContiguous() {
       // read the data in one op if possible, same comments as above apply
       pragma "no prototype"
-      extern proc sizeof(type x): int;
+      extern proc sizeof(type x): size_t;
       const elemSize = sizeof(eltType);
       const len = dom.dsiNumIndices;
-      f.readBytes(data, len*elemSize);
+      if boundsChecking then
+        assert((len:uint*elemSize:uint) <= max(ssize_t):uint,
+               "length of array to read is greater than ssize_t can hold");
+      f.readBytes(data, len:ssize_t*elemSize:ssize_t);
     } else {
       this.dsiSerialReadWrite(f);
     }

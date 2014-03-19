@@ -26,7 +26,7 @@ module ChapelIO {
       //compilerError("Generic Writer.writePrimitive called");
       halt("Generic Writer.writePrimitive called");
     }
-    proc writeBytes(x, len) {
+    proc writeBytes(x, len:ssize_t) {
       halt("Generic Writer.writeBytes called");
     }
     proc writeIt(x:?t) {
@@ -196,8 +196,8 @@ module ChapelIO {
       //compilerError("Generic Reader.readPrimitive called");
       halt("Generic Reader.readPrimitive called");
     }
-    proc readBytes(x, len) {
-      halt("Generic Writer.writeBytes called");
+    proc readBytes(x, len:ssize_t) {
+      halt("Generic Reader.readBytes called");
     }
     proc readIt(x:?t) where isClassType(t) {
       // FUTURE -- write the class name/ID? or nil?
