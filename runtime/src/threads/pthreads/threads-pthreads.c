@@ -183,8 +183,10 @@ void chpl_thread_init(void(*threadBeginFn)(void*),
 
     rlim.rlim_cur = css;
 
+#ifndef __CYGWIN__
     if (setrlimit(RLIMIT_STACK, &rlim) != 0)
       chpl_internal_error("setrlimit() failed");
+#endif
 
     if (pthread_attr_setstacksize(&thread_attributes, css) != 0)
       chpl_internal_error("pthread_attr_setstacksize() failed");
