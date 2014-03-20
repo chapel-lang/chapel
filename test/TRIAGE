@@ -32,21 +32,23 @@ New problems
 =========================================================
 
 
-failures due to r22894, 3/18/14
--------------------------------
-[Error matching program output for distributions/robust/arithmetic/performance/multilocale/alloc]
-[Error matching program output for distributions/robust/arithmetic/performance/multilocale/alloc_all]
-[Error matching program output for distributions/robust/arithmetic/performance/multilocale/assignAlias]
-[Error matching program output for distributions/robust/arithmetic/performance/multilocale/assignSlice]
-[Error matching program output for distributions/robust/arithmetic/performance/multilocale/reduceAlias]
-[Error matching program output for distributions/robust/arithmetic/performance/multilocale/reduceSlice]
-  linux64.gnu.gasnet.fifo.flat-distcyclic
+new failures due to r22900, 3/19/14
+-----------------------------------
+[Error matching compiler output for users/ferguson/ddata/cToChapelArray (compopts: 1)]
+  linux64.gnu.gasnet-everything.fifo.flat-std
+[Error matching program output for classes/sungeun/remoteDynamicDispatch (compopts: 1)]
+[Error matching program output for multilocale/diten/needMultiLocales/remoteStringTuple]
+  linux64.gnu.gasnet-everything.fifo.flat-std
+
+
+new failures due to r22894, 3/18/14
+-----------------------------------
 [Error matching program output for studies/ssca2/performance/SSCA2_commDiags (compopts: 1)]
   linux64.gnu.gasnet-fast.fifo.flat.dlmalloc-std
 
 
-failures due to r22900, 3/18/14
--------------------------------
+new failures due to r22900, 3/18/14
+-----------------------------------
 [Error matching performance keys for release/examples/benchmarks/hpcc/ra (compopts: 1)]
 [Error matching performance keys for release/examples/benchmarks/hpcc/variants/ra-cleanloop (compopts: 1)]
   linux64.gnu.none.fifo.flat-prf (chap03)
@@ -54,11 +56,7 @@ failures due to r22900, 3/18/14
   linux64.gnu.none.fifo.flat-prf (bradc-lnx)
   linux64.gnu.none.fifo.flat-fst (chap12)
 [Error matching .bad file for users/vass/internal-error-message (compopts: 1)]
-  linux64.gnu.none.fifo.flat-std
-  linux64.gnu.none.qthreads.flat-std (chap11)
   linux64.gnu.none.qthreads.flat-std
-  linux64.gnu.none.fifo.flat-nlc
-  linux64.gnu.none.qthreads.numa-std
   linux64.gnu.gasnet-fast.fifo.flat.dlmalloc-std
 [Error matching compiler output for studies/ssca2/graphio/graphio (compopts: 1)]
   linux64.gnu.none.fifo.flat-npt
@@ -69,14 +67,6 @@ failures due to r22900, 3/18/14
 [Error matching program output for classes/sungeun/remoteDynamicDispatch (compopts: 1)]
 [Error matching program output for multilocale/diten/needMultiLocales/remoteStringTuple]
   linux64.gnu.gasnet-fast.fifo.flat.dlmalloc-std
-
-
-failures perhaps due to r22900, 3/18/14
----------------------------------------
-[Error matching compiler output for memory/shannon/outofmemory/mallocOutOfMemory]
-  linux64.gnu.none.fifo.flat-nlc
-  This failed due to a compiler MIS0355 internal error.  I couldn't
-  reproduce it.
 
 
 darwin-gnu and darwin-clang non-deterministic compiler failures
@@ -555,6 +545,7 @@ no-local nondeterminisms (UNASSIGNED)
 cg-sparse-timecomp (06/05/12)
 studies/ssca2/atomic/SSCA2_main_atomic (07/04/12)
 Compiler internal error: memory/shannon/outofmemory/mallocOutOfMemory (11/24/13)
+  linux64.gnu.none.fifo.flat-nlc (MIS0355, 3/18/14)
 
 non-deterministic compilation timeouts (UNASSIGNED)
 -------------------------------------------------
