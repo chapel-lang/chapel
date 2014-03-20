@@ -54,7 +54,7 @@ clobber: FORCE
 depend:
 	@echo "make depend has been deprecated for the time being"
 
-check:
+check: all
 	@bash $(CHPL_MAKE_HOME)/util/test/checkChplInstall
 
 -include Makefile.devel
