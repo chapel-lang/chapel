@@ -62,16 +62,14 @@ static inline void atomic_signal_thread_fence(memory_order order)
 ////               Test & Set and Clear for flag(boolean)                 ////
 //////////////////////////////////////////////////////////////////////////////
 static inline chpl_bool atomic_flag_test_and_set_explicit(atomic_flag *obj, memory_order order) {
- return __sync_fetch_and_or(obj, true); 
+  return (chpl_bool)__sync_fetch_and_or((int_fast8_t*)obj, true); 
 }
 static inline chpl_bool atomic_flag_test_and_set(atomic_flag *obj) {
   return atomic_flag_test_and_set_explicit(obj, memory_order_seq_cst);
 }
 
-// We don't really need the return here, but with chpl_developer set gcc
-// complains about a value computed is not used 
-static inline atomic_flag atomic_flag_clear_explicit(atomic_flag *obj, memory_order order) {
-  return __sync_fetch_and_and(obj, false);
+static inline void atomic_flag_clear_explicit(atomic_flag *obj, memory_order order) {
+  __sync_fetch_and_and((int_fast8_t*)obj, false);
 }
 static inline void atomic_flag_clear(atomic_flag *obj) {
   atomic_flag_clear_explicit(obj, memory_order_seq_cst);
@@ -304,7 +302,7 @@ static inline type atomic_fetch_sub_ ## type(atomic_ ## type * obj, type operand
 } \
 
 
-// Actual declare the atomics for integer and real types using the above macros 
+// Actually declare the atomics for integer and real types using the above macros 
 DECLARE_ATOMICS_BASE(flag, chpl_bool);
 DECLARE_ATOMICS_EXCHANGE_OPS(flag, chpl_bool);
 
@@ -344,3 +342,19 @@ DECLARE_REAL_ATOMICS(_real64, uint64_t);
 #undef DECLARE_REAL_ATOMICS
 
 #endif // _chpl_atomics_h_
+
+/*
+ * Some misc notes:
+ *
+ *  - According to the spec, the atomic intrinsics are technically only
+ *  supported for ints, longs, long longs, and their unsigned counterparts but
+ *  all the current compilers that we support have intrinsics for  1, 2, 4, and
+ *  8 byte variables. 
+ * 
+ *  - Our interface for the atomic_compare_exchange_* functions is slightly
+ *  different than the C11 interface. The C11 interface is supposed to be
+ *  atomic_compare_exchange_*(volatile A* obj, C* expected, C desired), but we
+ *  do not pass expected in by reference. If the compare was unsuccessful
+ *  expected is supposed to be set to value of obj, but since we don't pass it
+ *  by reference, we can't make that change. 
+ */
