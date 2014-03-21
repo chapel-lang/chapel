@@ -84,15 +84,23 @@ function getNextDivs(afterDiv, afterLDiv) {
     // create a log button and put it in the gspacer
     var logToggle = document.createElement('input');
     logToggle.type = 'button';
-    logToggle.className = 'logToggle';
+    logToggle.className = 'toggle';
     logToggle.value = 'log';
     logToggle.style.visibility = 'hidden';
     gspacer.appendChild(logToggle);
 
+    var annToggle = document.createElement('input');
+    annToggle.type = 'button';
+    annToggle.className = 'toggle';
+    annToggle.value = 'annotations';
+    annToggle.style.visibility = 'hidden';
+    gspacer.appendChild(annToggle);
+
     return {
         div: div,
         ldiv: ldiv,
-        logToggle: logToggle
+        logToggle: logToggle,
+        annToggle: annToggle
     }
 }
 
@@ -111,6 +119,7 @@ function genDygraph(graphInfo, expandInfo) {
     var div = divs.div;
     var ldiv = divs.ldiv;
     var logToggle = divs.logToggle;
+    var annToggle = divs.annToggle;
 
     // setup our options
     var graphOptions = {
@@ -163,7 +172,10 @@ function genDygraph(graphInfo, expandInfo) {
     // sorting, but we would need to pass the divs and graphinfo to the
     // callback
     g.ready(function() {
+        g.my_annotations = graphInfo.annotations;
+        g.setAnnotations(graphInfo.annotations);
         setupLogToggle(g, graphInfo, logToggle);
+        setupAnnToggle(g, graphInfo, annToggle);
         numGraphsReady += 1;
         expandGraphs(graphInfo, g, div, ldiv);
     });
@@ -217,7 +229,7 @@ function expandGraphs(graphInfo, graph, div, ldiv) {
     }
 }
 
-// Setup the logging button
+// Setup the log button
 function setupLogToggle(g, graphInfo, logToggle) {
     if (graphInfo.unloggable) {
         logToggle.style.color='red';
@@ -231,6 +243,20 @@ function setupLogToggle(g, graphInfo, logToggle) {
         g.updateOptions({ logscale: useLog });
     }
 }
+
+// Setup the annotation button
+function setupAnnToggle(g, graphInfo, annToggle) {
+    annToggle.style.visibility = 'visible';
+
+    annToggle.onclick = function() {
+        if (g.annotations().length === 0) {
+            g.setAnnotations(g.my_annotations);
+        } else {
+            g.setAnnotations([]);
+        }
+    }
+}
+
 
 // Function to sort the data after it has been converted to an array
 // Note that this sorts based on the most recent day available of all

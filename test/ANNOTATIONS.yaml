@@ -1,0 +1,29 @@
+# The format for this file is as follows:
+#
+# group:
+#   mm/dd/yy:
+#     - example annotation 1
+#     - example annotation 2
+#   mm/dd/yy:
+#     - text: example annotation 3
+#       host: [hostname1, hostname2]
+#
+# all:
+#   mm/dd/yy:
+#     - example annotation 5
+#
+# where group is the name of the .graph file that attached set of annotations
+# should apply to. When the long form of an annotation is used (when text and
+# host are specified) the annotation is only added to the graphs if the current
+# hostname is in the host list. 'all' is a special group where any annotations
+# are added to to every single graph. One limitation of dygraphs is that if you
+# try and place an annotation on a date that has no data (tests didn't run or
+# all failed) it will not be displayed.
+
+all:
+  02/27/14:
+    - copy propagation rework r22796
+
+fasta:
+  01/14/14:
+    - enabled unlocked I/O on fasta and fasta-printf

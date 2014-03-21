@@ -35,8 +35,13 @@ div.lspacer {
     padding-right: 20px;
     border-right: 1px solid black;
 }
-.logToggle {
-    width: 50px;
+.toggle {
     height: 20px;
     border: 1px solid grey;
+    padding: 0px 5px;
+    margin-right: 10px;
+}
+.blackAnnotation {
+  color: black !important;
+  border-color: black !important;
 }

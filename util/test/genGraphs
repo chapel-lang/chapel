@@ -1,8 +1,13 @@
 #!/usr/bin/env python
 
 import sys, os, shutil, time, math, re
-import fileReadHelp
 from optparse import OptionParser
+
+import fileReadHelp
+try:
+  import annotate
+except ImportError:
+  annotate = None
 
 usage =  '%prog [options] <graphfiles>'
 parser = OptionParser(usage=usage)
@@ -36,6 +41,9 @@ parser.add_option('-r', '--reduce', dest='g_reduce', type='choice',
                   choices=['avg', 'med', 'min', 'max'])
 parser.add_option('-x', '--no-bounds', dest='g_display_bounds',
                   action='store_false', default=True)
+if annotate:
+    parser.add_option('-j', '--annotate', dest='annotation_file',
+                      default=None)
 
 dygraphDir = os.getenv('DYGRAPHS_DIR')
 if dygraphDir == None:
@@ -56,7 +64,7 @@ def try_parse_float(value):
 # Global info about generating graphs
 class GraphStuff:
     def __init__(self, _name, _testdir, _perfdir, _outdir, _startdate, _enddate,
-                 _reduce, _display_bounds, _alttitle):
+                 _reduce, _display_bounds, _alttitle, _annotation_file):
         self.numGraphs = 0;
         self.testdir = _testdir
         self.perfdir = _perfdir
@@ -74,6 +82,7 @@ class GraphStuff:
         self.enddate = _enddate
         self._reduce = _reduce
         self.display_bounds = _display_bounds
+        self.annotation_file = _annotation_file
 
     def init(self):
         if os.path.exists(self.outdir):
@@ -102,7 +111,14 @@ class GraphStuff:
             self.gfile = open(self.gfname, 'w')
         except IOError:
             sys.stderr.write('ERROR: Could not open file: %s\n'%(self.gfname))
-            raise
+
+        if annotate:
+            try:
+                self.all_annotations = annotate.load(self.annotation_file)
+            except IOError:
+                sys.stderr.write('ERROR: Could not open file: %s\n'%(self.annotation_file))
+                raise
+
         self.gfile.write('// AUTOMATICALLY GENERATED GRAPH DESCRIPTION\n')
         self.gfile.write('document.title = "%s";\n'%(self.title))
         self.gfile.write('var pageTitle = "%s";\n'%(self.title))
@@ -157,7 +173,13 @@ class GraphStuff:
         self.gfile.write('   "displayrange" : %s,\n'%(str(ginfo.displayrange).lower()))
         self.gfile.write('   "unloggable" : %s,\n'%(str(ginfo.unloggable).lower()))
         self.gfile.write('   "expand" : %d,\n'%(ginfo.expand))
-        self.gfile.write('   "sort" : %s\n'%(str(ginfo.sort).lower()))
+        self.gfile.write('   "sort" : %s,\n'%(str(ginfo.sort).lower()))
+        self.gfile.write('   "annotations" : [')
+        if ginfo.annotations:
+          self.gfile.write('\n      ')
+          self.gfile.write(',\n      '.join(ginfo.annotations))
+          self.gfile.write('\n   ')
+        self.gfile.write(']\n')
         self.gfile.write('}')
 
 
@@ -225,6 +247,16 @@ class GraphStuff:
             elif key == 'sort': 
                 graphs[currgraph].sort = rest.lower() in ('true', 't', '1', 'on', 'y', 'yes')
 
+        if graphs[currgraph].graphkeys:
+          series = graphs[currgraph].graphkeys[0]
+        else:
+          series = graphs[currgraph].perfkeys[0]
+
+        if annotate:
+            graphs[currgraph].annotations = annotate.get(
+                self.all_annotations, basename, series,
+                graphs[currgraph].startdate, graphs[currgraph].enddate)
+
         try:
             graphs[currgraph].generateGraphData(self, currgraph)
         except (ValueError, IOError, OSError):
@@ -261,6 +293,7 @@ class GraphClass:
         self.unloggable = False
         self.expand = _expand
         self.sort = _sort 
+        self.annotations = []
 
     def __str__(self):
         l  = 'Graph: '+str(self.name)+' (id='+str(self.id)+')\n'
@@ -324,11 +357,11 @@ class GraphClass:
         # regenerating.
         fname = graphInfo.datdir+'/'+self.datfname
         f = open(fname, 'w')
-        f.write('Date, ')
+        f.write('Date,')
         for i in range(len(self.graphkeys)):
             f.write(self.graphkeys[i])
             if i < len(self.graphkeys)-1:
-                f.write(', ')
+                f.write(',')
             else:
                 f.write('\n')
 
@@ -574,6 +607,16 @@ def main():
     else:
         enddate = time.localtime()
 
+    if annotate:
+        if options.annotation_file != None:
+            annotation_file = options.annotation_file
+        elif 'CHPL_HOME' in os.environ:
+            annotation_file = os.environ['CHPL_HOME'] + '/test/ANNOTATIONS.yaml'
+        else:
+            annotation_file = 'ANNOTATIONS.yaml'
+    else:
+        annotation_file = None
+
     # This allows the graph webpage to have an alternate title. The default is
     # Chapel Performance Graphs, which is not always appropriate 
     if options.alttitle != None:
@@ -583,7 +626,7 @@ def main():
 
     graphInfo = GraphStuff(options.name, options.testdir, perfdir, outdir,
         startdate, enddate, options.g_reduce, options.g_display_bounds,
-        alttitle)
+        alttitle, annotation_file)
     try:
         graphInfo.init()
     except (IOError, OSError):
