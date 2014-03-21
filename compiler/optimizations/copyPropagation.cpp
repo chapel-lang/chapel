@@ -84,6 +84,10 @@
 //#############################################################################
 
 
+static size_t s_repl_count; ///< The number of pairs replaced by GCP this pass.
+static size_t s_ref_repl_count; ///< The number of references replaced this pass.
+
+
 #define USE_NEW_IMPLEMENTATION 1
 
 #if USE_NEW_IMPLEMENTATION
@@ -120,9 +124,6 @@ typedef RefMap::value_type RefMapElem;
 typedef std::map<Symbol*, std::vector<Symbol*> > ReverseAvailableMap;
 typedef ReverseAvailableMap::mapped_type ReverseMapList;
 
-
-static size_t s_repl_count; ///< The number of pairs replaced by GCP this pass.
-static size_t s_ref_repl_count; ///< The number of references replaced this pass.
 
 #if DEBUG_CP
 // Set nonzero to enable verbose output.
@@ -529,6 +530,7 @@ static void propagateCopies(std::vector<SymExpr*>& symExprs,
                  alias_def_pair->first->name, alias_def_pair->first->id,
                  alias_def_pair->second->name, alias_def_pair->second->id);
 #endif
+        INT_ASSERT(alias_def_pair->first != alias_def_pair->second);
         se->var = alias_def_pair->second;
         ++s_repl_count;
       }
@@ -1167,7 +1169,10 @@ localCopyPropagationCore(BasicBlock* bb,
       if (useSet.set_in(se)) {
         if (Symbol* sym = available.get(se->var)) {
           if (!invalidateCopies(se, defSet, useSet))
+          {
             se->var = sym;
+            ++s_repl_count;
+          }
         }
       }
     }
@@ -1201,7 +1206,7 @@ localCopyPropagationCore(BasicBlock* bb,
 //
 // Apply local copy propagation to basic blocks of function
 //
-void localCopyPropagation(FnSymbol* fn) {
+size_t localCopyPropagation(FnSymbol* fn) {
   buildBasicBlocks(fn);
 
   //
@@ -1209,6 +1214,7 @@ void localCopyPropagation(FnSymbol* fn) {
   // candidates for copy propagation
   //
   Vec<Symbol*> locals;
+  s_repl_count = s_ref_repl_count = 0;
   for_vector(BasicBlock, bb, *fn->basicBlocks) {
     for_vector(Expr, expr, bb->exprs) {
       if (DefExpr* def = toDefExpr(expr))
@@ -1232,19 +1238,21 @@ void localCopyPropagation(FnSymbol* fn) {
     localCopyPropagationCore(bb1, available, reverseAvailable, useSet, defSet);
     freeReverseAvailable(reverseAvailable);
   }
+
+  return s_repl_count + s_ref_repl_count;
 }
 
 
 //
 // Apply global copy propagation to basic blocks of function
 //
-void globalCopyPropagation(FnSymbol* fn) 
+size_t globalCopyPropagation(FnSymbol* fn) 
 {
   buildBasicBlocks(fn);
 
   // global copy propagation will have no effect
   if (fn->basicBlocks->size() <= 1)
-    return;
+    return 0;
 
   //
   // locals: a vector of local variables in function fn that are
@@ -1337,9 +1345,10 @@ void globalCopyPropagation(FnSymbol* fn)
 
   size_t nbbs = fn->basicBlocks->size();
   int j = 0;
+  s_repl_count = s_ref_repl_count = 0; // Zero out counters.
   for(size_t i = 0; i < nbbs; ++i) {
 #ifdef DEBUG_CP
-    printf("%d:\n", i);
+    printf("%d:\n", (int) i);
 #endif
     while (j < spsN.v[i]) {
       if (spsLHS.v[j]) {
@@ -1464,6 +1473,8 @@ void globalCopyPropagation(FnSymbol* fn)
 
   for_vector(BitVec, out, OUT)
     delete out, out = 0;
+
+  return s_repl_count + s_ref_repl_count;
 }
 #endif
 
