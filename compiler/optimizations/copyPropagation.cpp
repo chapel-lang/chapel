@@ -907,15 +907,39 @@ static void initCopySets(std::vector<BitVec*>& COPY, std::vector<size_t>& ends,
 }
 
 
-static void initInSets(std::vector<BitVec*>& IN, size_t nbbs, size_t size)
+// In the textbook algorithm, the IN set for the entry block is set to all
+// zeroes, and the IN set for all others is set to all ones.
+// In other words, we should not have to look at the function's basic blocks to
+// perform this initialization.
+// However, This is based on the assumption that only the entry block has no
+// predecessors.  Due to how we currently perform extract basic blocks and
+// perform inlining, it is not always true in our AST.
+// When these are corrected and the test becomes true, then we can drop back
+// to the simpler form given here:
+#ifdef INLINING_DOES_NOT_LEAVE_INTERNAL_BASIC_BLOCKS_WITHOUT_PREDECESSORS
+static void initInSets(std::vector<BitVec*>& IN, size_t nbbs)
 {
-  // initialize IN set
-  for (size_t i = 1; i < nbbs; i++) {
-    for (size_t j = 0; j < size; j++) {
-      IN[i]->set(j);
-    }
+  // Note that we start with i = 1, so that IN[0] is left as all zeroes.
+  for (size_t i = 1; i < nbbs; i++)
+    IN[i]->set();
+}
+#else
+static void initInSets(std::vector<BitVec*>& IN, FnSymbol* fn)
+{
+  size_t i = 0;
+  for_vector(BasicBlock, bb, *fn->basicBlocks)
+  {
+    if (bb->ins.size() == 0)
+      // This block has no predecessors, so set its initial IN set to zeroes.
+      IN[i]->reset();
+    else
+      // This block has a predecessor, so set its initial IN set to all ones.
+      IN[i]->set();
+
+    ++i;
   }
 }
+#endif
 
 
 //
@@ -970,24 +994,26 @@ size_t globalCopyPropagation(FnSymbol* fn) {
   createPairSet(OUT,  nbbs, size);
 
   initCopySets(COPY, ends, nbbs);
-#if DEBUG_CP
-  if (debug > 0)
-  { printf("COPY:\n"); printBitVectorSets(COPY); }
-#endif
-
   computeKillSets(fn, refs, availablePairs, KILL);
-#if DEBUG_CP
-  if (debug > 0)
-  { printf("KILL:\n"); printBitVectorSets(KILL); }
-#endif
+  initInSets(IN, fn);
 
-  initInSets(IN, nbbs, size);
 #if DEBUG_CP
   if (debug > 0)
-  { printf("IN:\n"); printBitVectorSets(IN); }
+  {
+    printf("COPY:\n"); printBitVectorSets(COPY);
+    printf("KILL:\n"); printBitVectorSets(KILL);
+  }
 #endif
 
   forwardFlowAnalysis(fn, COPY, KILL, IN, OUT, true);
+
+#if DEBUG_CP
+  if (debug > 0)
+  {
+    printf("IN:\n"); printBitVectorSets(IN);
+    printf("OUT:\n"); printBitVectorSets(OUT);
+  }
+#endif
 
   // This is the main loop.
   // Use the set IN[i] to initialize the available pairs at the top of a
@@ -1008,6 +1034,10 @@ size_t globalCopyPropagation(FnSymbol* fn) {
       if (IN[i]->get(j))
       {
         AvailablePair& ap = availablePairs[j];
+        // Two available pairs at the start of a basic block should not have
+        // the same LHS, because one should kill the other.
+        // Also, this makes arbitrary the choice of which one survives.
+        INT_ASSERT(available.find(ap.first) == available.end());
         available.insert(ap);
         ravailable[ap.second].push_back(ap.first);
       }
