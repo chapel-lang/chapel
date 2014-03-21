@@ -6,7 +6,18 @@ export CHPL_COMM=gasnet
 CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
-CHPL_GASNET_CFG_OPTIONS += --enable-segment-$(CHPL_MAKE_COMM_SEGMENT) --enable-allow-gcc4 --disable-pshm
+CHPL_GASNET_CFG_OPTIONS += --enable-segment-$(CHPL_MAKE_COMM_SEGMENT) --enable-allow-gcc4
+
+# pshm can only be used with CHPL_GASNET_SEGMENT={fast,large} and the
+# udp conduit, but there it lowers nightly testing time by 20% and the
+# reduced overhead helps expose races.  Enable it for that case and
+# disable it in all others.
+SUB_SEG = $(CHPL_MAKE_COMM_SUBSTRATE)-$(CHPL_MAKE_COMM_SEGMENT)
+ifneq (,$(findstring $(SUB_SEG), udp-fast udp-large))
+CHPL_GASNET_CFG_OPTIONS += --enable-pshm
+else
+CHPL_GASNET_CFG_OPTIONS += --disable-pshm
+endif
 
 ifneq ($(CHPL_MAKE_COMM_SEGMENT),everything)
 CHPL_GASNET_CFG_OPTIONS += --disable-aligned-segments
