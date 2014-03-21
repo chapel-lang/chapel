@@ -320,6 +320,28 @@ narrowSym(Symbol* sym, WideInfo* wi) {
     printf("%d %s use fail to narrow ", sym->id, sym->cname);
     print_view(use->getStmtExpr());
 #endif
+    //
+    // It's not clear to me (bradcray) why falling through to this
+    // point has traditionally meant "this case must be wide"; this
+    // has the effect of causing things to be widened unnecessarily.
+    // See, for example, test/users/ferguson/ddata/cToChapelArray.chpl
+    // under r22899: the 'array' argument to chapelProc() is passed
+    // in narrow, but then gets widened unnecessarily.
+    //
+    // Once formal temps were eliminated in r22900, this 'mustBeWide'
+    // case became incorrect because it caused a formal that must be
+    // narrow (due to being an exported function) to be incorrectly
+    // widened.  This suggests that there are other cases that could
+    // also be narrowed by adding additional checks here.  More to
+    // the point, it raises questions for me about why the default
+    // behavior for 'narrowSym()' is "it must be wide."
+    //
+    if (ArgSymbol* arg = toArgSymbol(sym)) {
+      if (arg->defPoint->parentSymbol->hasFlag(FLAG_LOCAL_ARGS)) {
+        // this arg can't be wide, so don't set mustBeWide
+        return;
+      }
+    }
     wi->mustBeWide = true;
     return;
   }
