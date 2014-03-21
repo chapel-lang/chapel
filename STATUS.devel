@@ -1,3 +1,6 @@
+
+
+
 #
 # This file lists all the existing futures that are categorizes as "bug" or
 # "unimplemented feature."
@@ -35,21 +38,10 @@ run into.
 #  b/c it seems a little obscure (it'd be nice to see an example with a non-standard module function)
 #
 # OMITTED: users/vass/crash1callDestructorsMain.future
-# OMITTED: users/vass/crash4replLclsWFlds.future
-# OMITTED: users/vass/iterator-cpp-assertion-crash.future
-#  b/c no explanation
-#
-# OMITTED: users/ferguson/exit.future
-#  b/c only fails for qthreads, and not sure it still does fail (not tested every night)
-#
-# OMITTED: users/ferguson/forall_expr.future
-#  b/c only fails for qthreads intermittently, and not sure it still does fail
+
 #
 # OMITTED: users/csep524/userDefReduceSlim.future
 #  b/c mutiple errors in the user code and hard to quantify what is wrong
-#
-# OMITTED: users/vass/type-tests.todo.future
-#  b/c this test itself doesn't do something a normal user would do
 #
 # OMITTED: arrays/vass/newalias-perf.future
 # OMITTED: distributions/bradc/clonedForall.future
@@ -101,7 +93,6 @@ General (see also portability section at the bottom of this file)
   # separate_compilation/jturner/use_simplefloat.future
   # separate_compilation/jturner/use_subclass.future
 - Back-end compilers may emit warning messages.
-  # studies/shootout/mandelbrot/bugs/mandelbrot-error.future
 - The --gdb flag is only supported for single-locale platforms that
   support gdb.  Please ask us for help if you want to debug a
   multilocale program.
@@ -171,7 +162,6 @@ Statements and Expressions
   # statements/sungeun/continue_forall_label.future
 - Unlabeled break and continue statements fail to compile in param for
   loops.
-  # statements/sungeun/break_nolabel_param.future
   # statements/sungeun/continue_nolabel_param.future
 - On statement variable declarations are not yet supported.
   E.g., on Locales(1) var x: real;
@@ -223,9 +213,6 @@ Functions and Iterators
   compiler assertion.
   # functions/diten/fnGenericTupleArg.future
   # functions/vass/arg-is-tuple-with-generic-class.future
-- Ref intent formals can result in an internal compiler error for
-  multi-locale compilation.
-  # functions/vass/ref-intent-bug-2big.future
 - Sync and single vars incorrectly passed to generic ref intent arguments.
   # functions/vass/sync-by-ref.future
   # users/vass/type-tests.todo.future
@@ -295,9 +282,6 @@ Tuples
   # types/tuple/sungeun/homTupleOfDomains.future
   # types/tuple/claridge/tuple_of_domains.future
   # arrays/vass/tuple-with-array-1.future
-- A size mismatch in assignment to a de-tupled expression may not
-  produce an error message.
-  # types/tuple/bradc/underDeTuple.future
 - Invalid use of tuple expansion as an expression results in the
   expression evaluating to the first element of the tuple.
   # functions/vass/return-of-tuple-expansion-1.future
@@ -383,7 +367,7 @@ Classes, Records, and Unions
 - Function resolution may be overly conservative for methods of subclasses.
   # classes/bradc/compilerErrorInMethod/testClear.future
 - Dynamic dispatch may lead to incorrect (statically bound) 'this'
-  # classes/constructors/brad-dispatch.future
+  # DO WE NEED THIS?
 - User-defined constructors are not robust.
   # classes/claridge/baseConstructorCall.future
   # users/murai/test_nested_class_constructor.future
@@ -393,9 +377,6 @@ Classes, Records, and Unions
   # classes/constructors/base-class-generic-args.future
 - User-defined copy constructors are not supported.
   # classes/diten/test_destructor3.future
-- Incorrect casting of a class variable to a type that is not its
-  superclass does not report an error.
-  # classes/vass/subclass-cast-error.future
 - Declaring class members using type aliases may result in unresolved
   type errors.
   # arrays/deitz/part5/test_array_type_field_type.future 
@@ -423,10 +404,6 @@ Classes, Records, and Unions
   # arrays/diten/constructorArrayAliasReindex.future
 - Atomics are not passed to constructors by ref by default
   # functions/bradc/intents/test_construct_atomic_intent.future
-- The default record comparison operators (= and !=) require the
-  records to be of the same type
-  # classes/jplevyak/record_equal-1.future
-  # classes/jplevyak/record_equal-2.future
 - Using a comparison operator with a record and 'nil' results in an
   internal compiler error.
   # types/records/sungeun/recordNotNil1.future
@@ -479,7 +456,7 @@ Domain Maps, Domains and Arrays
   # domains/vass/domain-arg-query-expr.future
   # functions/vass/arg-is-queried-domain.future
 - Array bounds checking is not complete.
-  # e.g., arrays/claridge/arraySizeMismatch.future
+  # DO WE NEED THIS?
 - Iterating over the inner array of arrays where the outer array is
   dmapped BlockDist, results in a remote data access error.
   # distributions/bharshbarg/arrOfArrDmap.future
@@ -598,8 +575,7 @@ Data Parallelism
   # reductions/bradc/minmaxlocscan-shape.future
   # sparse/bradc/inferSparseArrayType.future
 - Parallel zippered iteration does not perform runtime size/shape checks
-  # arrays/bradc/badParZip.future
-  # arrays/claridge/arraySizeMismatch.future
+  # DO WE NEED THIS?
 - Domain promotion results in a race condition.
   # have not futurized yet (see REGRESSIONS domains/sungeun/assoc/minus_equals.chpl)
 - Parallel (forall) domain iteration ignores alignment of the ranges
@@ -642,8 +618,6 @@ Standard Modules, Standard Distributions, and Standard Layouts
 - Array assignment fails for Block distributions with bounding boxes
   that do not overlap with the bounds of the domain.
   # arrays/sungeun/multilocale/weird_bbox_block.future
-- The Memory module is does not work for multilocale executions.
-  # memory/vass/crash-memory-module-1.future
 - Distribution equality is not implemented properly.
   # distributions/sungeun/equality1.future
   # distributions/sungeun/equality2.future
@@ -656,22 +630,12 @@ Optimizations
 -------------
 # OMITTED: optimizations/rafa/rankChange.future
 #  b/c workaround put in place
-# OMITTED: functions/deitz/nested/test_nested_var_iterator3.future
-#  b/c it takes turning off scalar replacement to see this bug, and
-#  also the explanation wouldn't help a user too much as it refers to
-#  aliases via compiler inserted refs
 - Compiling with --baseline (or disabling specific optimizations) may
   result in incorrect code
-  # functions/deitz/iterators/test_var_iter_in_iter.future
-  # functions/iterators/diten/arrEltIter.future
-  # classes/diten/record_initialize.future
   # functions/sungeun/promotionWithNoInline.future
 - Dead code elimination does not correctly remove all dead code,
   sometimes resulting in an internal error.
-  # users/vass/crash6defPointNotInAST.future
-- Optimize-on pass fails with internal error in some cases when using
-  a for loop in the body of the on clause
-  # users/ferguson/ontest.future
+  # DO WE NEED THIS?
 - Disabling inlining may cause incorrect code to be generated.
   # SEE NIGHTLY BASELINE TESTING NOTES
 - Disabling inlining with -t results in a compiler seg fault.
