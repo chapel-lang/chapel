@@ -32,6 +32,14 @@ New problems
 =========================================================
 
 
+slower gasnet-fast testing as a result of r22915, 3/20/14
+---------------------------------------------------------
+gasnet-fast testing took 12:10 (hh:mm) on Tuesday and 15:03 today, due
+to r22915 removing pshm support in gasnet.  gbt is working on putting
+pshm back in for nightlies while still leaving it disabled where we
+don't need it.
+
+
 new failures due to r22900, 3/19/14
 -----------------------------------
 [Error matching compiler output for users/ferguson/ddata/cToChapelArray (compopts: 1)]
@@ -546,6 +554,7 @@ cg-sparse-timecomp (06/05/12)
 studies/ssca2/atomic/SSCA2_main_atomic (07/04/12)
 Compiler internal error: memory/shannon/outofmemory/mallocOutOfMemory (11/24/13)
   linux64.gnu.none.fifo.flat-nlc (MIS0355, 3/18/14)
+  linux64.gnu.none.fifo.flat-npt (MIS0355, 3/20/14)
 
 non-deterministic compilation timeouts (UNASSIGNED)
 -------------------------------------------------
