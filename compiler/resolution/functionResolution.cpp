@@ -6726,30 +6726,9 @@ static void removeUnusedFormals() {
   }
 }
 
-static void insertRuntimeInitTemps() {
-  Vec<BaseAST*> asts;
-  collect_asts_postorder(rootModule, asts);
 
-  // Collect asts which are definitions of VarSymbols that are type variables
-  // and are flagged as runtime types.
-  forv_Vec(BaseAST, ast, asts) {
-    if (DefExpr* def = toDefExpr(ast)) {
-      if (isVarSymbol(def->sym) &&
-          def->sym->hasFlag(FLAG_TYPE_VARIABLE) &&
-          def->sym->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-
-        // Collapse these through the runtimeTypeMap ...
-        Type* rt = runtimeTypeMap.get(def->sym->type);
-        INT_ASSERT(rt);
-        def->sym->type = rt;
-
-        // ... and remove the type variable flag
-        // (Make these declarations look like normal vars.)
-        def->sym->removeFlag(FLAG_TYPE_VARIABLE);
-      }
-    }
-  }
-
+static void replaceInitPrims(Vec<BaseAST*>& asts)
+{
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->parentSymbol && call->isPrimitive(PRIM_INIT)) {
@@ -6816,7 +6795,39 @@ static void insertRuntimeInitTemps() {
           INT_FATAL(call, "PRIM_INIT should have already been handled");
         }
       }
-    } else if (SymExpr* se = toSymExpr(ast)) {
+    } 
+  }
+}
+
+
+static void insertRuntimeInitTemps() {
+  Vec<BaseAST*> asts;
+  collect_asts_postorder(rootModule, asts);
+
+  // Collect asts which are definitions of VarSymbols that are type variables
+  // and are flagged as runtime types.
+  forv_Vec(BaseAST, ast, asts) {
+    if (DefExpr* def = toDefExpr(ast)) {
+      if (isVarSymbol(def->sym) &&
+          def->sym->hasFlag(FLAG_TYPE_VARIABLE) &&
+          def->sym->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+
+        // Collapse these through the runtimeTypeMap ...
+        Type* rt = runtimeTypeMap.get(def->sym->type);
+        INT_ASSERT(rt);
+        def->sym->type = rt;
+
+        // ... and remove the type variable flag
+        // (Make these declarations look like normal vars.)
+        def->sym->removeFlag(FLAG_TYPE_VARIABLE);
+      }
+    }
+  }
+
+  replaceInitPrims(asts);
+
+  forv_Vec(BaseAST, ast, asts) {
+    if (SymExpr* se = toSymExpr(ast)) {
 
       // remove dead type expressions
       if (se->getStmtExpr() == se)
