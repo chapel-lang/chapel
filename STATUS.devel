@@ -1,6 +1,3 @@
-
-
-
 #
 # This file lists all the existing futures that are categorizes as "bug" or
 # "unimplemented feature."
@@ -39,16 +36,11 @@ run into.
 #
 # OMITTED: users/vass/crash1callDestructorsMain.future
 
+
 #
 # OMITTED: users/csep524/userDefReduceSlim.future
 #  b/c mutiple errors in the user code and hard to quantify what is wrong
 #
-# OMITTED: arrays/vass/newalias-perf.future
-# OMITTED: distributions/bradc/clonedForall.future
-#  b/c minorish performance futures which we may one day start documenting
-#
-# OMITTED: performance/bradc/refArgIsWide.future
-#  b/c general performance future
 
 General (see also portability section at the bottom of this file)
 -----------------------------------------------------------------
@@ -57,6 +49,9 @@ General (see also portability section at the bottom of this file)
   ask us for help with interpreting the message.
   # compflags/bradc/badConfigParamOverride.future
   # sparse/bradc/accumInds-forexpr.future
+  # functions/vass/resolution/need-missing-return-error-1.future
+  # functions/vass/resolution/need-missing-return-error-2.future
+  # users/ferguson/recordassignstring.future
 - Compiler and runtime and errors may report incorrect line numbers,
   may not be formatted correctly, or may be garbled.  If needed,
   please ask us for help finding the line in question.
@@ -74,6 +69,7 @@ General (see also portability section at the bottom of this file)
   # users/vass/global-j1.future
 - There are several internal memory leaks:
   # memory/figueroa/LeakedMemory6.future
+  # arrays/deitz/part7/test_descriptor_frees.future
   - All strings are leaked
   - Privatized domains and arrays (i.e., those that use the standard
     distributions) are leaked
@@ -111,6 +107,8 @@ Types, Params, Variables, and Consts
 - Types declared within a param conditional block may result in an
   internal compiler error.
   # trivial/sungeun/config_param.future
+- Type inferred for a variable initialized to 'nil' is not 'object'
+  # classes/deitz/test_infer_nil.future
 - String assignment across locales is by reference rather than value.
   # distributions/bradc/block1Dlocale.future
   # multilocale/diten/needMultiLocales/remoteString3.future
@@ -128,7 +126,12 @@ Types, Params, Variables, and Consts
   # functions/deitz/test_outoforder.future
 - Constant checking is incomplete.
   # domains/bradc/assignConstDom2.future
+  # domains/bradc/modDomMethod.future
+  # domains/bradc/modDomQuery.future
   # domains/bradc/assignConstDom.future
+  # classes/bradc/arrayInClass/arrayDomInClassRecord-illegal.future
+  # nostdlib/recordpass6-illegal.future
+  # statements/bradc/loops/modifyIndices.future
 
 
 Conversions
@@ -196,6 +199,7 @@ Functions and Iterators
 -----------------------
 - Invalid where clauses may result in an internal compiler error.
   # functions/vass/where-clause-bug-1.future
+  # functions/bradc/resolution/uintParamInWhere.future
 - Querying the type of a function is not supported and currently
   returns an internal type.
   # functions/sungeun/type_illegal.future
@@ -266,6 +270,9 @@ Functions and Iterators
 - Iterators yielding arrays within begin/cobegin/coforall/on may
   result in nil dereference.
   # parallel/taskPar/vass/yield-arrays-in-task-funs.future
+- A forall loop with an iteratable expression that does not provide
+  leader/follower iterators cause an internal error.
+  # functions/iterators/vass/forall-without-leaderfollower.future
 
 
 Tuples
@@ -289,6 +296,10 @@ Tuples
 - Tuple expanded list enclosed in parenthesis does not result in a
   tuple.
   # functions/vass/return-of-tuple-expansion-2.future
+- Cannot iterate over heterogeneous tuples
+  # types/tuple/sungeun/iteration/heteroTupleOfArrays.future
+  # types/tuple/sungeun/iteration/heteroTupleOfDomains.future
+  # types/tuple/sungeun/iteration/heteroTupleOfRanges.future
 - Cannot iterate over a tuple of iteratable expressions (e.g.,
   iterators).
   # types/tuple/sungeun/iteration/iteratable.future
@@ -366,15 +377,18 @@ Classes, Records, and Unions
   # classes/vass/generic-method-with-param-arg-4.future
 - Function resolution may be overly conservative for methods of subclasses.
   # classes/bradc/compilerErrorInMethod/testClear.future
-- Dynamic dispatch may lead to incorrect (statically bound) 'this'
-  # DO WE NEED THIS?
-- User-defined constructors are not robust.
+- User-defined constructors and destructors are not robust.
+  # TODO
   # classes/claridge/baseConstructorCall.future
   # users/murai/test_nested_class_constructor.future
   # classes/bradc/initialize-secondary.future
   # classes/vass/nested-class-with-user-defined-constructor-1.future
   # classes/hilde/alwaysOverrideCopyInit.future
   # classes/constructors/base-class-generic-args.future
+  # types/records/hilde/newUserDefCtorInFn.future
+  # types/records/hilde/newUserDefaultCtor.future
+- User-defined constructors do not overried the default constructor.
+  # types/records/hilde/callUserDefaultConstructor.future
 - User-defined copy constructors are not supported.
   # classes/diten/test_destructor3.future
 - Declaring class members using type aliases may result in unresolved
@@ -455,14 +469,14 @@ Domain Maps, Domains and Arrays
 - Query expressions on domains and subdomains not supported.
   # domains/vass/domain-arg-query-expr.future
   # functions/vass/arg-is-queried-domain.future
-- Array bounds checking is not complete.
-  # DO WE NEED THIS?
 - Iterating over the inner array of arrays where the outer array is
   dmapped BlockDist, results in a remote data access error.
   # distributions/bharshbarg/arrOfArrDmap.future
 - Arrays of arrays where the inner arrays vary in size are not supported.
   # arrays/deitz/test_skyline_array.future
   # studies/590o/wk3/02arrOfArr-irregular.future
+- Array values are permitted to be detupled in an interator
+  # functions/iterators/bradc/badzip/misZipArrays.future
 - Arrays of subdomains may not work.
   # users/jglewis/bfs_102207/driver_breadth_first_search.future
 - Arrays declared over domains with negative strides may result in errors.
@@ -575,7 +589,9 @@ Data Parallelism
   # reductions/bradc/minmaxlocscan-shape.future
   # sparse/bradc/inferSparseArrayType.future
 - Parallel zippered iteration does not perform runtime size/shape checks
-  # DO WE NEED THIS?
+  # functions/iterators/bradc/badzip/arrayZipMismatch.future
+  # functions/iterators/bradc/badzip/arrayZipMismatch2.future
+  # functions/iterators/bradc/badzip/rangeSizeMismatch.future
 - Domain promotion results in a race condition.
   # have not futurized yet (see REGRESSIONS domains/sungeun/assoc/minus_equals.chpl)
 - Parallel (forall) domain iteration ignores alignment of the ranges
@@ -596,6 +612,8 @@ Data Parallelism
 - Records in reduction classes may results in out-of-bound indexing
   problems.
   # studies/kmeans/kmeansonepassreduction-mystery.future
+- Cannot not use an instance of a reduction class for a reduction.
+  # reductions/sungeun/count.future
 - Whole-domain assignment operations on sparse domains are not all
   serialized as they should be.
   # domains/sungeun/sparse/minus_equals.future
@@ -633,9 +651,6 @@ Optimizations
 - Compiling with --baseline (or disabling specific optimizations) may
   result in incorrect code
   # functions/sungeun/promotionWithNoInline.future
-- Dead code elimination does not correctly remove all dead code,
-  sometimes resulting in an internal error.
-  # DO WE NEED THIS?
 - Disabling inlining may cause incorrect code to be generated.
   # SEE NIGHTLY BASELINE TESTING NOTES
 - Disabling inlining with -t results in a compiler seg fault.
@@ -653,6 +668,8 @@ Miscellaneous
   # extern/sungeun/externProcInClassShouldBeError.future
 - Nil extern class references not properly handled.
   # users/ferguson/extern_class_test.future
+- Boolean literals do not preserve their sizes.
+  # portability/boolLiteralSizes.future
 - Functions from extern includes that have naming conflicts with
   internal functions result in a back-end C compiler error.
   # extern/tzakian/shadow.future
@@ -678,7 +695,7 @@ Miscellaneous
   compilation time to become unreasonable.
   # arrays/deitz/many/test_many_arrays_of_star_tuples.future
   # arrays/deitz/many/test_many_ranks_of_arithmetic_domains.future
-- Types composed of runtime types are not runtime types
+- Types composed of runtime types are not runtime types.
   # arrays/deitz/part3/test_record_of_array_type.future
   # arrays/deitz/part3/test_record_of_domain_type.future
   # arrays/deitz/part6/test_tuple_of_array.future
@@ -688,6 +705,35 @@ Miscellaneous
   # types/tuple/diten/tupleOfArray2.future
   # types/tuple/diten/tupleOfArrayReturnType.future
   # types/tuple/stonea/returnArrayTuple.future
+
+Performance TODO
+-----------
+# OMITTED: arrays/vass/newalias-perf.future
+# OMITTED: distributions/bradc/clonedForall.future
+#  b/c minorish performance futures which we may one day start documenting
+#
+# OMITTED: performance/bradc/refArgIsWide.future
+#  b/c general performance future
+
+ # multilocale/lydia/checkNumTasks.future
+ # parallel/taskPar/sungeun/endCountTest.future
+ # performance/hilde/coforallOnByRef.future
+
+
+Developer?
+----------
+- chpl__autoCopy() and chpl__initCopy() functions and callees cannot
+  contain begin statements.
+  # parallel/begin/sungeun/autoCopyWithBegin.future
+  # parallel/begin/sungeun/initCopyWithBegin.future
+- The "no auto destroy" pragma is not properly propgated to temporaries.
+  # performance/hilde/userSync.future
+- The "no copy" and "no auto destroy" pragmas used with variable
+  declarations with specified types result in an internal error.
+  # trivial/sungeun/pragmas/noCopyNoDestroyPragma.future
+  # trivial/sungeun/pragmas/noCopyNoDestroyPragmaArray.future
+  # trivial/sungeun/pragmas/noCopyNoDestroyPragmaArrayWithInit.future
+  # trivial/sungeun/pragmas/noCopyNoDestroyPragmaWithInit.future
 
 
 Multi-locale/GASNet executions
