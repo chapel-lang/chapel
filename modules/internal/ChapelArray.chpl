@@ -1750,39 +1750,49 @@ module ChapelArray {
     }
   }
   
-  inline proc =(ref a: [], b) {
-    if (chpl__isArray(b) || chpl__isDomain(b)) && a.rank != b.rank then
+  inline proc =(ref a: [], b:[]) {
+    if a.rank != b.rank then
       compilerError("rank mismatch in array assignment");
     
-    if chpl__isArray(b) && b._value == nil then
+    if b._value == nil then
       // This happens e.g. for 'new' on a record with an array field whose
       // default initalizer is a forall expr. E.g. arrayInClassRecord.chpl.
-      return a;
+      return;
 
-    if boundsChecking && chpl__isArray(b) then
+    if boundsChecking then
       checkArrayShapesUponAssignment(a, b);
   
     // try bulk transfer
-    if chpl__isArray(b) && !chpl__serializeAssignment(a, b) {
-      if (useBulkTransfer &&
-          chpl__compatibleForBulkTransfer(a, b) &&
-          chpl__useBulkTransfer(a, b))
-      {
-        a._value.doiBulkTransfer(b);
-        return a;
-      }
-      if (useBulkTransferStride &&
-          chpl__compatibleForBulkTransferStride(a, b) &&
-          chpl__useBulkTransferStride(a, b))
-      {
-        chpl__bulkTransferHelper(a, b);
-        return a;
-      }
+    if !chpl__serializeAssignment(a, b) then
+      // Do bulk transfer.
+      chpl__bulkTransferArray(a, b);
+    else
+      // Do non-bulk transfer.
+      chpl__transferArray(a, b);
+  }
+  
+  inline proc chpl__bulkTransferArray(a: [], b) {
+    if (useBulkTransfer &&
+        chpl__compatibleForBulkTransfer(a, b) &&
+        chpl__useBulkTransfer(a, b))
+    {
+      a._value.doiBulkTransfer(b);
+    }
+    else if (useBulkTransferStride &&
+        chpl__compatibleForBulkTransferStride(a, b) &&
+        chpl__useBulkTransferStride(a, b))
+    {
+      chpl__bulkTransferHelper(a, b);
+    }
+    else {
       if debugBulkTransfer then
         // just writeln() clashes with writeln.chpl
         stdout.writeln("proc =(a:[],b): bulk transfer did not happen");
+      chpl__transferArray(a, b);
     }
-  
+  }
+
+  inline proc chpl__transferArray(a: [], b) {
     if (a.eltType == b.type ||
         _isPrimitiveType(a.eltType) && _isPrimitiveType(b.type)) {
       forall aa in a do
@@ -1799,44 +1809,48 @@ module ChapelArray {
       for (aa,bb) in zip(a,b) do
         aa = bb;
     }
-
-    // TODO: Remove this return statement to match the standard signature for
-    // assignment.  The return here is apparently needed to keep reference
-    // counts right, so reworking reference counting in array assignment is a
-    // prerequisite.
-    return a;
   }
   
-  proc =(ref a: [], b: _tuple) where isEnumArr(a) {
-      if b.size != a.numElements then
-        halt("tuple array initializer size mismatch");
-      for (i,j) in zip(chpl_enumerate(index(a.domain)), 1..) {
-        a(i) = b(j);
-      }
+  inline proc =(ref a: [], b:domain) {
+    if a.rank != b.rank then
+      compilerError("rank mismatch in array assignment");
+    chpl__transferArray(a, b);
+  }
+  
+  inline proc =(ref a: [], b) /* b is not an array nor a domain nor a tuple */ {
+    chpl__transferArray(a, b);
+  }
+  
+  inline proc =(ref a: [], b: _tuple) where isEnumArr(a) {
+    if b.size != a.numElements then
+      halt("tuple array initializer size mismatch");
+    for (i,j) in zip(chpl_enumerate(index(a.domain)), 1..) {
+      a(i) = b(j);
+    }
   }
   
   proc =(ref a: [], b: _tuple) where isRectangularArr(a) {
-      proc chpl__tupleInit(j, param rank: int, b: _tuple) {
-        type idxType = a.domain.idxType,
-             strType = chpl__signedType(idxType);
-             
-        const stride = a.domain.dim(a.rank-rank+1).stride,
-              start = a.domain.dim(a.rank-rank+1).first;
-  
-        if rank == 1 {
-          for param i in 1..b.size {
-            j(a.rank-rank+1) = (start:strType + ((i-1)*stride)): idxType;
-            a(j) = b(i);
-          }
-        } else {
-          for param i in 1..b.size {
-            j(a.rank-rank+1) = (start:strType + ((i-1)*stride)): idxType;
-            chpl__tupleInit(j, rank-1, b(i));
-          }
+    proc chpl__tupleInit(j, param rank: int, b: _tuple) {
+      type idxType = a.domain.idxType,
+           strType = chpl__signedType(idxType);
+           
+      const stride = a.domain.dim(a.rank-rank+1).stride,
+            start = a.domain.dim(a.rank-rank+1).first;
+
+      if rank == 1 {
+        for param i in 1..b.size {
+          j(a.rank-rank+1) = (start:strType + ((i-1)*stride)): idxType;
+          a(j) = b(i);
+        }
+      } else {
+        for param i in 1..b.size {
+          j(a.rank-rank+1) = (start:strType + ((i-1)*stride)): idxType;
+          chpl__tupleInit(j, rank-1, b(i));
         }
       }
-      var j: a.rank*a.domain.idxType;
-      chpl__tupleInit(j, a.rank, b);
+    }
+    var j: a.rank*a.domain.idxType;
+    chpl__tupleInit(j, a.rank, b);
   }
   
   proc _desync(type t) where t: _syncvar || t: _singlevar {
@@ -2196,7 +2210,14 @@ module ChapelArray {
   pragma "init copy fn"
   proc chpl__initCopy(a: []) {
     var b : [a._dom] a.eltType;
-    b = a;
+
+    // Try bulk transfer.
+    if !chpl__serializeAssignment(b, a) {
+      chpl__bulkTransferArray(b, a);
+      return b;
+    }
+
+    chpl__transferArray(b, a);
     return b;
   }
   

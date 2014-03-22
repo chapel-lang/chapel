@@ -45,10 +45,6 @@ static inline CallExpr* parentYieldExpr(SymExpr* se) {
 }
 
 
-// The set of FnSymbols where we have removed the initialization
-// (via PRIM_INIT) of 'ret' symbols.
-Vec<FnSymbol*> iteratorsWithRemovedRetInitSet;
-
 // Helper for removeRetSymbolAndUses().
 static inline void
 removeRetInitialization(DefExpr* rdef, Symbol* rsym) {
@@ -94,19 +90,12 @@ removeRetSymbolAndUses(FnSymbol* fn) {
   SymExpr* rse = toSymExpr(ret->get(1));
   INT_ASSERT(rse);
   Symbol*  rsym = rse->var;
-  DefExpr* rdef = rsym->defPoint;
 
   // Yank the return statement.
   ret->remove();
-  // Yank rsym's initialization. We expect it only when
-  // the iterator's return type was specified explicitly.
-  if (fn->hasFlag(FLAG_SPECIFIED_RETURN_TYPE) &&
-      !iteratorsWithRemovedRetInitSet.set_in(fn))
-    removeRetInitialization(rdef, rsym);
 
   // We cannot remove rsym's definition, because rsym
   // may also be referenced in an autoDestroy call.
-
   return rsym->type;
 }
 

@@ -373,6 +373,26 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
     ret->insertBefore(new CallExpr(PRIM_MOVE, retval, ret_expr));
 }
 
+
+// Look in the block statement determining a return value type, and see if it
+// looks like an array type expression.
+static bool
+returnTypeIsArray(BlockStmt* retExprType)
+{
+  CallExpr* call = toCallExpr(retExprType->body.tail);
+  if (! call)
+    return false;
+  UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr);
+  if (! urse)
+    return false;
+  if (strcmp(urse->unresolved, "chpl__buildArrayRuntimeType"))
+    // Does not match.
+    return false;
+  // Very likely an array type.
+  return true;
+}
+
+
 // Following normalization, each function contains only one return statement
 // preceded by a label.  The first half of the function counts the 
 // total number of returns and the number of void returns.
@@ -461,7 +481,17 @@ static void normalize_returns(FnSymbol* fn) {
 // Because we strip type information off of variable declarations and use 
 // the type of the initializer instead, initialization is obligatory.
 // I think we should definitely heed the declared type.  
-// Then at least these two lines can go away, and other simplifications may follow.
+// Then at least these two lines can go away, and other simplifications may
+// follow.
+      // We do not need to do this for iterators returning arrays
+      // because it adds initialization code that is later removed.  
+      // Also, we want arrays returned from iterators to behave like
+      // references, so we add the 'var' return intent here.
+      if (fn->hasFlag(FLAG_ITERATOR_FN) &&
+          returnTypeIsArray(retExprType))
+        // Treat iterators returning arrays as if they are always returned by ref.
+        fn->retTag = RET_VAR;
+      else
       {
       fn->insertAtHead(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_INIT, retExprType->body.tail->remove())));
       fn->insertAtHead(retExprType);

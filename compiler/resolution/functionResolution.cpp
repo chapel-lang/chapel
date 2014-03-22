@@ -6735,29 +6735,7 @@ static void replaceInitPrims(Vec<BaseAST*>& asts)
         SymExpr* se = toSymExpr(call->get(1));
         Type* rt =se->var->type;
 
-        FnSymbol* parentFn = toFnSymbol(call->parentSymbol);
-        CallExpr* parentExpr = toCallExpr(call->parentExpr);
-        CallExpr* removeExpr = NULL;
-        INT_ASSERT(parentExpr && parentExpr->isPrimitive(PRIM_MOVE)); // FYI
-        if (parentFn && parentFn->hasFlag(FLAG_ITERATOR_FN)) {
-          SymExpr* moveTarget = toSymExpr(parentExpr->get(1));
-          INT_ASSERT(moveTarget);
-          if (moveTarget->var == parentFn->getReturnSymbol()) {
-            // This is initialization of an iterator's return symbol. That
-            // symbol is going away in lowerIterator/removeRetSymbolAndUses,
-            // so we want to remove its initialization. If we don't remove
-            // the initialization right away, it may get obscured (e.g. see
-            // call->replace() below) and will be harder to remove.
-            removeExpr = parentExpr;
-          }
-        }
-
-        if (removeExpr) {
-          // Ensure that we are removing an entire statement.
-          INT_ASSERT(removeExpr == removeExpr->getStmtExpr());
-          removeExpr->remove();
-          iteratorsWithRemovedRetInitSet.set_add(parentFn);
-        } else if (rt->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
+        if (rt->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
           SET_LINENO(call);
           FnSymbol* runtimeTypeToValueFn = runtimeTypeToValueMap.get(rt);
           INT_ASSERT(runtimeTypeToValueFn);

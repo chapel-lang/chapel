@@ -22,6 +22,4 @@ public:
 
 void lowerIterator(FnSymbol* fn);
 
-extern Vec<FnSymbol*> iteratorsWithRemovedRetInitSet;
-
 #endif
