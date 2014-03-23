@@ -1,6 +1,0 @@
-# This test fails differently under --baseline.
-# In order to avoid failed match against .bad, skip it then.
-# Once it is fixed for the default configuration, we can
-# re-enable it for --baseline, but for now that is not useful.
-COMPOPTS <= --baseline
-COMPOPTS <= -baseline
