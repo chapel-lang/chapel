@@ -32,48 +32,39 @@ New problems
 =========================================================
 
 
-slower gasnet-fast testing as a result of r22915, 3/20/14
----------------------------------------------------------
-gasnet-fast testing took 12:10 (hh:mm) on Tuesday and 15:03 today, due
-to r22915 removing pshm support in gasnet.  gbt is working on putting
-pshm back in for nightlies while still leaving it disabled where we
-don't need it.
+test_descriptor_frees began passing on 3/23/14
+----------------------------------------------
+Future (bug: compiler leaking iterator classes due to 'followThis' arguments) [Success matching program output for arrays/deitz/part7/test_descriptor_frees]
+  linux64.gnu.none.fifo.flat-nlc
+  linux64.gnu.none.qthreads.numa-std
+  cray-xe.cray-prgenv-intel.none.fifo.flat--linux64.gnu-std
+  linux64.gnu.none.qthreads.flat-std
+  linux64.gnu.none.fifo.flat-std
+This is due to r22935.  Whether or not to keep this commit is being
+discussed; if we do, we'll un-futurize this test.
 
 
-new failures due to r22900, 3/19/14
------------------------------------
-[Error matching compiler output for users/ferguson/ddata/cToChapelArray (compopts: 1)]
-  linux64.gnu.gasnet-everything.fifo.flat-std
-[Error matching program output for classes/sungeun/remoteDynamicDispatch (compopts: 1)]
-[Error matching program output for multilocale/diten/needMultiLocales/remoteStringTuple]
-  linux64.gnu.gasnet-everything.fifo.flat-std
+mallocOutOfMemory intermittent compiler internal error
+------------------------------------------------------
+This seems to have become more frequent recently.
+  linux64.gnu.none.fifo.flat-nlc (failed 3/18, passed 3/19, failed 3/22)
+  linux64.gnu.none.fifo.flat-npt (failed 3/20, passed 3/22)
+  linux64.gnu.none.fifo.flat-mlf (failed 3/22, fixed 3/23)
 
 
-new failures due to r22894, 3/18/14
------------------------------------
-[Error matching program output for studies/ssca2/performance/SSCA2_commDiags (compopts: 1)]
-  linux64.gnu.gasnet-fast.fifo.flat.dlmalloc-std
-
-
-new failures due to r22900, 3/18/14
------------------------------------
+failures due to r22900
+----------------------
 [Error matching performance keys for release/examples/benchmarks/hpcc/ra (compopts: 1)]
 [Error matching performance keys for release/examples/benchmarks/hpcc/variants/ra-cleanloop (compopts: 1)]
   linux64.gnu.none.fifo.flat-prf (chap03)
   linux64.gnu.none.fifo.flat-prf (chap04)
   linux64.gnu.none.fifo.flat-prf (bradc-lnx)
   linux64.gnu.none.fifo.flat-fst (chap12)
-[Error matching .bad file for users/vass/internal-error-message (compopts: 1)]
-  linux64.gnu.none.qthreads.flat-std
-  linux64.gnu.gasnet-fast.fifo.flat.dlmalloc-std
 [Error matching compiler output for studies/ssca2/graphio/graphio (compopts: 1)]
   linux64.gnu.none.fifo.flat-npt
-[Error matching compiler output for users/ferguson/ddata/cToChapelArray (compopts: 1)]
-  linux64.gnu.none.fifo.flat-nlc
-  linux64.gnu.none.qthreads.numa-std
-  linux64.gnu.gasnet-fast.fifo.flat.dlmalloc-std
 [Error matching program output for classes/sungeun/remoteDynamicDispatch (compopts: 1)]
 [Error matching program output for multilocale/diten/needMultiLocales/remoteStringTuple]
+  linux64.gnu.gasnet-everything.fifo.flat-std
   linux64.gnu.gasnet-fast.fifo.flat.dlmalloc-std
 
 
