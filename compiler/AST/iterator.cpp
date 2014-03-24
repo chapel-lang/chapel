@@ -45,38 +45,6 @@ static inline CallExpr* parentYieldExpr(SymExpr* se) {
 }
 
 
-// Helper for removeRetSymbolAndUses().
-static inline void
-removeRetInitialization(DefExpr* rdef, Symbol* rsym) {
-  for (Expr* stmt = rdef->next; stmt; stmt = stmt->next) {
-    // If the iterator has a declared return type, 'sym' is
-    // initialized to its type's default value.
-    // Find that and yank it.
-    if (CallExpr* call = toCallExpr(stmt)) {
-      if (call->isPrimitive(PRIM_MOVE)) {
-        if (SymExpr* callTarget = toSymExpr(call->get(1))) {
-          if (callTarget->var == rsym) {
-            call->remove();
-            return;
-          }
-        }
-      }
-    }
-  }
-
-  // We did not find the initialization even though we expected it.
-  //
-  // BTW the above is executed only when we expect the initialization.
-  // I.e. when the return type was specified explicitly and we have
-  // not removed the initialization. Otherwise we avoid traversing the
-  // (top-level?) statement list (from rdef->next), in the name of
-  // reducing the compilation time.
-  //
-// The rework of insertYieldTemps() means we can no longer count on this.
-//  INT_ASSERT(false);
-}
-
-
 //
 // Now that we have localized yield symbols, the return symbol
 // and the PRIM_RETURN CallExpr are not needed and would cause trouble.
