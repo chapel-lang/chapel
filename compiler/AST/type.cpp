@@ -1480,23 +1480,20 @@ int get_width(Type *t) {
 
 bool isClass(Type* t) {
   if (AggregateType* ct = toAggregateType(t))
-    if (ct->isClass())
-      return true;
+    return ct->isClass();
   return false;
 }
 
 
 bool isRecord(Type* t) {
   if (AggregateType* ct = toAggregateType(t))
-    if (ct->isRecord())
-      return true;
+    return ct->isRecord();
   return false;
 }
 
 bool isUnion(Type* t) {
   if (AggregateType* ct = toAggregateType(t))
-    if (ct->isUnion())
-      return true;
+    return ct->isUnion();
   return false;
 }
 
