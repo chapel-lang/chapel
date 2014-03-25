@@ -385,9 +385,16 @@ DefExpr::DefExpr(Symbol* initSym, BaseAST* initInit, BaseAST* initExprType) :
   if (sym)
     sym->defPoint = this;
 
-  if (Expr* a = toExpr(initInit))
-    init = a;
-  else if (Symbol* a = toSymbol(initInit))
+  if (Expr* a = toExpr(initInit)) {
+    if (UnresolvedSymExpr* b = toUnresolvedSymExpr(a)) {
+      if (!strcmp(b->unresolved, "noinit"))
+        sym->addFlag(FLAG_NO_INIT);
+      else
+        init = a;
+    } else {
+      init = a;
+    }
+  } else if (Symbol* a = toSymbol(initInit))
     init = new SymExpr(a);
   else if (initInit)
     INT_FATAL(this, "DefExpr initialized with bad init ast");

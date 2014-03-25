@@ -804,9 +804,17 @@ fix_def_expr(VarSymbol* var) {
     //
     VarSymbol* typeTemp = newTemp("type_tmp");
     stmt->insertBefore(new DefExpr(typeTemp));
-    stmt->insertBefore(
-      new CallExpr(PRIM_MOVE, typeTemp,
-        new CallExpr(PRIM_INIT, type->remove())));
+
+    CallExpr* initCall;
+    if (var->hasFlag(FLAG_NO_INIT)) {
+      initCall = new CallExpr(PRIM_MOVE, typeTemp,
+                   new CallExpr(PRIM_NO_INIT, type->remove()));
+    } else {
+      initCall = new CallExpr(PRIM_MOVE, typeTemp,
+                   new CallExpr(PRIM_INIT, type->remove()));
+    }
+    stmt->insertBefore(initCall);
+
     if (init) {
       stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
       stmt->insertAfter(

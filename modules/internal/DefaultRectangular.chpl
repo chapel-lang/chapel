@@ -513,7 +513,7 @@ module DefaultRectangular {
     var factoredOffs: idxType;
     var data : _ddata(eltType);
     var shiftedData : _ddata(eltType);
-    var noinit: bool = false;
+    var noinit_data: bool = false;
     //var numelm: int = -1; // for correctness checking
   
     // end class definition here, then defined secondary methods below
@@ -524,7 +524,7 @@ module DefaultRectangular {
       writeln("str=", str);
       writeln("origin=", origin);
       writeln("factoredOffs=", factoredOffs);
-      writeln("noinit=", noinit);
+      writeln("noinit_data=", noinit_data);
     }
   
     // can the compiler create this automatically?
@@ -641,7 +641,7 @@ module DefaultRectangular {
     // change name to setup and call after constructor call sites
     // we want to get rid of all initialize functions everywhere
     proc initialize() {
-      if noinit == true then return;
+      if noinit_data == true then return;
       for param dim in 1..rank {
         off(dim) = dom.dsiDim(dim).alignedLow;
         str(dim) = dom.dsiDim(dim).stride;
@@ -718,7 +718,7 @@ module DefaultRectangular {
       var alias = new DefaultRectangularArr(eltType=eltType, rank=d.rank,
                                            idxType=d.idxType,
                                            stridable=d.stridable,
-                                           dom=d, noinit=true,
+                                           dom=d, noinit_data=true,
                                            str=str,
                                            blk=blk);
       alias.data = data;
@@ -754,7 +754,7 @@ module DefaultRectangular {
       var alias = new DefaultRectangularArr(eltType=eltType, rank=rank,
                                            idxType=idxType,
                                            stridable=d.stridable,
-                                           dom=d, noinit=true);
+                                           dom=d, noinit_data=true);
       alias.data = data;
       //alias.numelm = numelm;
       alias.blk = blk;
@@ -779,7 +779,7 @@ module DefaultRectangular {
       var alias = new DefaultRectangularArr(eltType=eltType, rank=newRank,
                                            idxType=idxType,
                                            stridable=newStridable,
-                                           dom=d, noinit=true);
+                                           dom=d, noinit_data=true);
       alias.data = data;
       //alias.numelm = numelm;
       var i = 1;

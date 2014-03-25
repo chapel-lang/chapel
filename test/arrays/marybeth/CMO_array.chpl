@@ -194,7 +194,7 @@ class CMOArr:BaseArr {
   var size: idxType;
   var D1: domain(1, idxType);
   var data: [D1] eltType;
-  var noinit: bool = false;
+  var noinit_data: bool = false;
 
   proc dsiGetBaseDom() return dom;
   
@@ -206,7 +206,7 @@ class CMOArr:BaseArr {
   }
 
   proc initialize() {
-    if noinit == true then return;
+    if noinit_data == true then return;
     for param dim in 1..rank {
       off(dim) = dom.dsiDim(dim).low;
       str(dim) = dom.dsiDim(dim).stride;
@@ -253,8 +253,8 @@ class CMOArr:BaseArr {
     for param i in 1..rank do
       if d.dim(i).length != dom.dim(i).length then
         halt("extent in dimension ", i, " does not match actual");
-    var alias = new CMOArr(eltType=eltType, rank=d.rank, idxType=d.idxType, stridable=d.stridable, reindexed=true, dom=d, noinit=true);
-    //    was:  (eltType, rank, idxType, d.stridable, true, d, noinit=true);
+    var alias = new CMOArr(eltType=eltType, rank=d.rank, idxType=d.idxType, stridable=d.stridable, reindexed=true, dom=d, noinit_data=true);
+    //    was:  (eltType, rank, idxType, d.stridable, true, d, noinit_data=true);
     alias.D1 = {0:idxType..#size:idxType};
     alias.data = data;
     alias.size = size: d.idxType;
@@ -277,7 +277,7 @@ class CMOArr:BaseArr {
   }
 
   proc dsiSlice(d: CMODom) {
-    var alias = new CMOArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, reindexed=reindexed, dom=d, noinit=true);
+    var alias = new CMOArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, reindexed=reindexed, dom=d, noinit_data=true);
     alias.D1 = {0:idxType..#size:idxType};
     alias.data = data;
     alias.size = size;
@@ -306,7 +306,7 @@ class CMOArr:BaseArr {
   proc dsiRankChange(d, param newRank: int, param newStridable: bool, irs) {
     proc isRange(r: range(?e,?b,?s)) param return 1;
     proc isRange(r) param return 0;
-    var alias = new CMOArr(eltType=eltType, rank=newRank, idxType=idxType, stridable=newStridable, reindexed=true, dom=d, noinit=true);
+    var alias = new CMOArr(eltType=eltType, rank=newRank, idxType=idxType, stridable=newStridable, reindexed=true, dom=d, noinit_data=true);
     alias.D1 = {0:idxType..#size:idxType};
     alias.data = data;
     alias.size = size;

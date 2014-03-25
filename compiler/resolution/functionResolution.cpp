@@ -4172,23 +4172,37 @@ preFold(Expr* expr) {
           }
         }
       }
-    } else if (call->isPrimitive(PRIM_INIT)) {
+    } else if (call->isPrimitive(PRIM_INIT) || call->isPrimitive(PRIM_NO_INIT)) {
       SymExpr* se = toSymExpr(call->get(1));
       INT_ASSERT(se);
       if (!se->var->hasFlag(FLAG_TYPE_VARIABLE))
         USR_FATAL(call, "invalid type specification");
       Type* type = call->get(1)->getValType();
-      if (type->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
-        result = new CallExpr(PRIM_CAST, type->symbol, gNil);
-        call->replace(result);
-      } else if (type->defaultValue == gNil) {
-        result = new CallExpr("_cast", type->symbol, type->defaultValue);
-        call->replace(result);
-      } else if (type->defaultValue) {
-        result = new SymExpr(type->defaultValue);
-        call->replace(result);
-      } else {
-        inits.add(call);
+      // Currently noinit is not fully functional for arrays and types which
+      // allocate space, so in those cases we will pretend to not initialize
+      // them when really we still are.
+      if (call->isPrimitive(PRIM_INIT) || (isAggregateType(type) &&
+                                           !type->symbol->hasFlag(FLAG_TUPLE))) {
+        if (call->isPrimitive(PRIM_NO_INIT))
+          USR_WARN("type %s does not currently support noinit, using default initialization", type->symbol->name);
+        if (type->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
+          result = new CallExpr(PRIM_CAST, type->symbol, gNil);
+          call->replace(result);
+        } else if (type->defaultValue == gNil) {
+          result = new CallExpr("_cast", type->symbol, type->defaultValue);
+          call->replace(result);
+        } else if (type->defaultValue) {
+          result = new SymExpr(type->defaultValue);
+          call->replace(result);
+        } else {
+          if (call->isPrimitive(PRIM_NO_INIT)) {
+            result = new CallExpr(PRIM_INIT, call->get(1)->remove());
+            call->replace(result);
+            inits.add((CallExpr *)result);
+          } else {
+            inits.add(call);
+          }
+        }
       }
     } else if (call->isPrimitive(PRIM_TYPEOF)) {
       Type* type = call->get(1)->getValType();
@@ -4919,6 +4933,18 @@ postFold(Expr* expr) {
               lhs->var->type->symbol->hasFlag(FLAG_ARRAY))
             // Should this conditional include domains, distributions, sync and/or single?
             lhs->var->removeFlag(FLAG_EXPR_TEMP);
+        }
+        if (!set) {
+          if (CallExpr* rhs = toCallExpr(call->get(2))) {
+            if (rhs->isPrimitive(PRIM_NO_INIT)) {
+              // If the lhs is a primitive, then we can safely just remove this
+              // value.  Currently, noinit does not work on arrays, domains,
+              // and types that allocate space for themselves.  However, when
+              // they do work, special effort will need to be made here to clean
+              // up.
+              makeNoop(call);
+            }
+          }
         }
       }
     } else if (call->isPrimitive(PRIM_GET_MEMBER)) {

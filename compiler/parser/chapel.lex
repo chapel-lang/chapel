@@ -121,6 +121,7 @@ local            processToken(TLOCAL);
 module           processToken(TMODULE);
 new              processToken(TNEW);
 nil              processToken(TNIL);
+noinit           processToken(TNOINIT);
 on               processToken(TON);
 otherwise        processToken(TOTHERWISE);
 out              processToken(TOUT);

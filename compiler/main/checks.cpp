@@ -392,6 +392,7 @@ checkResolveRemovedPrims(void) {
       switch(call->primitive->tag) {
         case PRIM_BLOCK_PARAM_LOOP:
         case PRIM_INIT:
+        case PRIM_NO_INIT:
         case PRIM_LOGICAL_FOLDER:
         case PRIM_TYPEOF:
         case PRIM_TYPE_TO_STRING:

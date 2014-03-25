@@ -67,6 +67,10 @@ check_parsed_vars(VarSymbol* var) {
         (toFnSymbol(var->defPoint->parentSymbol) ||
          toModuleSymbol(var->defPoint->parentSymbol)))
       USR_FATAL_CONT(var, "Top-level params must be initialized.");
+  if (var->hasFlag(FLAG_NO_INIT)) {
+    if (var->hasFlag(FLAG_CONST))
+      USR_FATAL_CONT(var, "const variables specified with noinit must be explicitly initialized.");
+  }
   if (var->hasFlag(FLAG_CONFIG) &&
       var->defPoint->parentSymbol != var->getModule()->initFn) {
     const char *varType = NULL;
