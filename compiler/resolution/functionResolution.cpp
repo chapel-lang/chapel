@@ -3265,11 +3265,11 @@ static void resolveMove(CallExpr* call) {
 
 
 //
-// This tells us whether we can rely on C to provide the copy for us
-// for 'in' or 'const in' intents when passing an argument of type
-// 't'.
+// This tells us whether we can rely on the compiler's back end (e.g.,
+// C) to provide the copy for us for 'in' or 'const in' intents when
+// passing an argument of type 't'.
 //
-static bool CProvidesCopyForIn(Type* t) {
+static bool backendRequiresCopyForIn(Type* t) {
   return (isRecord(t) || 
           t->symbol->hasFlag(FLAG_ARRAY) || 
           t->symbol->hasFlag(FLAG_DOMAIN));
@@ -3299,7 +3299,7 @@ formalRequiresTemp(ArgSymbol* formal) {
      // inlined.
      //
      ((formal->intent == INTENT_IN || formal->intent == INTENT_CONST_IN) &&
-      (CProvidesCopyForIn(formal->type) || !fn->hasFlag(FLAG_INLINE)))
+      (backendRequiresCopyForIn(formal->type) || !fn->hasFlag(FLAG_INLINE)))
      //
      // The following case reduces memory leaks for zippered forall
      // leader/follower pairs where the communicated intermediate
