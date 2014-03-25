@@ -818,9 +818,6 @@ if ($runtests == 0) {
         my $svnReleasePerfDir = "$svnPerfDir/releaseOverRelease/";
         mysystem("cd $svnReleasePerfDir && svn update", "svn-updating release over release perf data after running tests" , 0, 1, 1);
 
-        my $svnReleasePerfDir = "$svnPerfDir/releaseOverRelease/";
-        mysystem("cd $svnReleasePerfDir && svn update", "svn-updating release over release perf data after running tests" , 0, 1, 1);
-
         # check to make sure there is a release over release directory
         if (not -e "$svnReleasePerfDir") {
             print "Error there is no release over release perf data at $svnReleasePerfDir";
