@@ -4182,7 +4182,8 @@ preFold(Expr* expr) {
       // allocate space, so in those cases we will pretend to not initialize
       // them when really we still are.
       if (call->isPrimitive(PRIM_INIT) || (isAggregateType(type) &&
-                                           !type->symbol->hasFlag(FLAG_TUPLE))) {
+                                           !type->symbol->hasFlag(FLAG_TUPLE) &&
+                                           !type->symbol->hasFlag(FLAG_RANGE))) {
         if (call->isPrimitive(PRIM_NO_INIT))
           USR_WARN("type %s does not currently support noinit, using default initialization", type->symbol->name);
         if (type->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
