@@ -1,0 +1,4 @@
+CHPL_HOST_PLATFORM != linux64
+CHPL_HOST_COMPILER != gnu
+CHPL_TASKS != fifo
+CHPL_COMM != none
