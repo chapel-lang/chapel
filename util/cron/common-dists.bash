@@ -3,7 +3,7 @@
 # Configure environment for block and dist testing. This should be sourced by
 # other scripts that wish to make use of the variables set here.
 
-source $(cd $(dirname $0) ; pwd)/common-gasnet.bash
+source $(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)/common-gasnet.bash
 
 # Setup some logdirs.
 

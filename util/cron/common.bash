@@ -3,7 +3,7 @@
 # This should be sourced by other scripts that wish to make use of the
 # variables set here.
 
-source $(cd $(dirname $0) ; pwd)/functions.bash
+source $(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)/functions.bash
 
 SCRIPT_NAME=$0
 start_time=$(date '+%s')
