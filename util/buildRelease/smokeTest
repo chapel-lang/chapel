@@ -10,7 +10,7 @@ set -e
 CWD=$(cd $(dirname $0) ; pwd)
 
 # Ensure environment is correctly configured to run chpl.
-export CHPL_HOME=$(cd $CWD/../.. ; pwd)
+export CHPL_HOME=$(cd "$CWD/../.." ; pwd)
 source $CHPL_HOME/util/setchplenv.bash
 
 # Add some space between env setup output and test output.
