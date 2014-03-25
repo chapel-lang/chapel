@@ -53,6 +53,9 @@ usage: $0
   correctly. Exits with zero status code when successful. Expects chpl to be on
   the PATH and CHPL_HOME to be set correctly.
 
+  By default, programs are compiled and run from \$HOME/.chpl/. Set
+  CHPL_CHECK_INSTALL_DIR environment variable to use an alternate location.
+
 EOF
         exit 0
         ;;
@@ -100,7 +103,7 @@ TESTS=$(find $TEST_DIR -maxdepth 1 -mindepth 1 -type f)
 
 # Copy these tests to a temp file.
 
-chpl_dir=$HOME/.chpl
+chpl_dir=${CHPL_CHECK_INSTALL_DIR:-$HOME/.chpl}
 if [ ! -d $chpl_dir ] ; then
     log_debug "${chpl_dir} does not exist. Creating it."
     # Do not use -p/--parents. $HOME should exist and if it doesn't many other
