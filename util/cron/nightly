@@ -813,57 +813,63 @@ if ($runtests == 0) {
         $rsyncMessage = "syncing performance graph to sourceforge -- log file at $logdir/syncToSourceForge.errors";
         mysystem("$chapeldir/util/cron/syncPerfGraphs.py", $rsyncMessage , 0, 1, 1);
     }
-    
+  
     if ($releasePerformance == 1) {
         my $svnReleasePerfDir = "$svnPerfDir/releaseOverRelease/";
         mysystem("cd $svnReleasePerfDir && svn update", "svn-updating release over release perf data after running tests" , 0, 1, 1);
 
-        # check to make sure there a release over release directory         
-        if (not -e "$svnPerfDir") { 
+        my $svnReleasePerfDir = "$svnPerfDir/releaseOverRelease/";
+        mysystem("cd $svnReleasePerfDir && svn update", "svn-updating release over release perf data after running tests" , 0, 1, 1);
+
+        # check to make sure there is a release over release directory
+        if (not -e "$svnReleasePerfDir") {
             print "Error there is no release over release perf data at $svnReleasePerfDir";
         } else {
 
-            # get all of the historical .dat files 
-            chdir $svnReleasePerfDir;
-            @historicalDats = glob "*.dat";
-
-            # check that the nightly performance run contains all the same .dat
-            # files as the historical one. Ideally this should send out a mail if 
-            # one or more of the files does not exist. 
-            foreach $datName (@historicalDats) {
-               if (not -f "$svnPerfDir/$datName") {
-                 print "Error missing a dat file in nightly performance runs: $svnPerfDir/$datName\n"
-               }
+            # get all of the nightly .dat files that have been recently
+            # modified (to weed out .dat files from old tests.)
+            chdir $svnPerfDir;
+            @nightlyDats;
+            foreach $datFile (glob "*.dat") {
+                if ( -M $datFile < 2 ) {
+                    push(@nightlyDats, $datFile);
+                }
             }
 
             #delete the previous spliced data (from yesterday) and make a fresh directory
             $tmpDatDir = "/tmp/releaseOverReleaseDats/";
             `rm -rf $tmpDatDir && mkdir $tmpDatDir`;
 
-            # for each .dat file, splice the historical data with the nightly data. Do not send a message on failiure 
-            # because you could end up with 100's of emails if some failiure does occur.  
+            # for each .dat file, splice the historical data with the nightly
+            # data. Do not send a message on failiure because you could end up
+            # with 100's of emails on failure. If there is a nightly file but
+            # not a historical file (tests didn't compile under any previous
+            # release.) then we just take the nightly data by passing /dev/null
+            # to the splice script for the historical data. Because of this we
+            # have to pass in the historical data as the second file
             $today = `date +%D`; chomp ($today);
-            foreach $datName (@historicalDats) {
-                if (not -f "$svnPerfDir/datName") {
-                    $splice = "$utildir/devel/test/spliceDat";
-                    $spliceCommand = "$splice -from_b $today -to_b $today $svnReleasePerfDir/$datName $svnPerfDir/$datName > $tmpDatDir/$datName";  
-                    $spliceDatMessage = "Attempting to splice historical data $svnReleasePerfDir/$datName with nightly data $svnPerfDir/$datName";
-                    mysystem($spliceCommand, $spliceMessage, 0, 0, 1);
+            foreach $datName (@nightlyDats) {
+                $historicalFile = "$svnReleasePerfDir/$datName";
+                if (not -f $historicalFile) {
+                    $historicalFile = "/dev/null";
                 }
+                $splice = "$utildir/devel/test/spliceDat";
+                $spliceCommand = "$splice -from_a $today -to_a $today $svnPerfDir/$datName $historicalFile> $tmpDatDir/$datName";
+                $spliceDatMessage = "Attempting to splice historical data $historicalFile with nightly data $svnPerfDir/$datName";
+                mysystem($spliceCommand, $spliceMessage, 0, 0, 1);
             }
-     
-            # create the performance graphs from the newly spliced .dat files 
+
+            # create the performance graphs from the newly spliced .dat files
             $altTitle = "Chapel Release Over Release Performance Graphs";
-            # this is the earliest release date that we generate historical data for  
-            $startdate = "10/08/12";
+            $startdate = "04/10/12"; # earliest date that we generate historical data for
             $genGraphs = "$utildir/test/genGraphs";
             $genGraphsCommand = "$genGraphs -p $tmpDatDir -o $tmpDatDir/html/ -t $chapeldir/test/ -a \"$altTitle\" -n $host  -g $chapeldir/test/GRAPHFILES -s $startdate";
-            $genGraphsMessage = "Generating release over relase performance graphs"; 
+            $genGraphsMessage = "Generating release over relase performance graphs";
             mysystem($genGraphsCommand, $genGraphsMessage, 0, 1, 1);
-         
-            # sync the graphs over to sourceforge. This does not use the syncPerfGraphs
-            # script. That's really just a big wrapper for rsync and we can probably 
-            # replace it's usage with just calls to rsync. 
+
+            # sync the graphs over to sourceforge. This does not use the
+            # syncPerfGraphs script. That's really just a big wrapper for rsync
+            # and we can probably replace it's usage with just calls to rsync.
             $rsyncSfDir = "web.sourceforge.net:/home/project-web/chapel/htdocs/perf/$host/releaseOverRelease/";
             $rsyncCommand = "rsync -avz --del -e ssh $tmpDatDir/html/ $rsyncSfDir" ;
             $rsyncMessage = "rsync-ing release over release performance graphs to sourceforge.";
