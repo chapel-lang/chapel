@@ -731,9 +731,7 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
     //to the list of invariants, nothing will be hoisted from the current fn
     if(numAliases > MAX_NUM_ALIASES) {
 #ifdef detailedTiming 
-       FILE* tooManyAliasesFile = fopen("/data/cf/gtmp/chapel/eronagha"  
-           "/tooManyAliases.txt", "a");
-       
+       FILE* tooManyAliasesFile = fopen(astr(CHPL_HOME,"/LICMaliases.txt"), "a");
        fprintf(tooManyAliasesFile, "Skipping fn %s %d of module %s %d "
            "because there were too many aliases\n", fn->name, fn->id, 
            fn->getModule()->name, fn->getModule()->id);
@@ -1185,10 +1183,8 @@ void loopInvariantCodeMotion(void) {
 #ifdef detailedTiming  
   FILE *timingFile;
   FILE *maxTimeFile;
-  timingFile = stdout;
-  maxTimeFile = stdout;
-  //timingFile = fopen("/data/cf/gtmp/chapel/eronagha/timing.txt", "a");    //TODO Where's an appropriate location?
-  //maxTimeFile = fopen("/data/cf/gtmp/chapel/eronagha/maxTime.txt", "a");
+  timingFile = fopen(astr(CHPL_HOME,"/LICMtiming.txt"), "a");
+  maxTimeFile = fopen(astr(CHPL_HOME,"/LICMmaxTime.txt"), "a");
 
   fprintf(timingFile, "For compilation of %s:                         \n", compileCommand );
   fprintf(timingFile, "Spent %2.3f seconds building basic blocks      \n", buildBBTimer.elapsed()); 
