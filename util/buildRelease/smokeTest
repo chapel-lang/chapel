@@ -29,4 +29,4 @@ fi
 perl -c $CHPL_HOME/util/cron/nightly
 
 # Compile chapel and make sure the hello world examples run.
-make && make check
+make -C $CHPL_HOME && make -C $CHPL_HOME check
