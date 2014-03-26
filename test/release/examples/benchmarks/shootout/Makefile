@@ -5,6 +5,7 @@ CHPL_FLAGS = --fast
 TARGETS = \
 	binarytrees \
 	chameneosredux \
+	mandelbrot \
 	nbody \
   spectralnorm \
 	threadring \
@@ -23,6 +24,9 @@ binarytrees: binarytrees.chpl
 	$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 chameneosredux: chameneosredux.chpl
+	$(CHPL) -o $@ $(CHPL_FLAGS) $<
+
+mandelbrot: mandelbrot.chpl
 	$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 nbody: nbody.chpl
