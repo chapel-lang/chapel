@@ -135,6 +135,7 @@ static FnSymbol* function_exists(const char* name,
 
 
 static void build_getter(AggregateType* ct, Symbol *field) {
+  const bool fieldIsConst = field->hasFlag(FLAG_CONST);
   if (FnSymbol* fn = function_exists(field->name, 2, dtMethodToken, ct)) {
     Vec<BaseAST*> asts;
     collect_asts(fn, asts);
@@ -149,6 +150,9 @@ static void build_getter(AggregateType* ct, Symbol *field) {
         }
       }
     }
+    fn->addFlag(FLAG_FIELD_ACCESSOR);
+    if (fieldIsConst)
+      fn->addFlag(FLAG_REF_TO_CONST);
     return;
   }
 
@@ -162,6 +166,9 @@ static void build_getter(AggregateType* ct, Symbol *field) {
     fn->addFlag(FLAG_SINGLE);
   if (ct->symbol->hasFlag(FLAG_ATOMIC_TYPE))
     fn->addFlag(FLAG_ATOMIC_TYPE);
+  fn->addFlag(FLAG_FIELD_ACCESSOR);
+  if (fieldIsConst)
+    fn->addFlag(FLAG_REF_TO_CONST);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
   _this->addFlag(FLAG_ARG_THIS);

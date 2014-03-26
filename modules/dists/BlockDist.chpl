@@ -142,7 +142,7 @@ class BlockDom: BaseRectangularDom {
   param stridable: bool;
   const dist: Block(rank, idxType);
   var locDoms: [dist.targetLocDom] LocBlockDom(rank, idxType, stridable);
-  const whole: domain(rank=rank, idxType=idxType, stridable=stridable);
+  var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
   var pid: int = -1; // privatized object id (this should be factored out)
 }
 

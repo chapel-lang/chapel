@@ -1,6 +1,6 @@
 record Node {
-    const lvl, idx : int;
-    const loc = (lvl+idx)%numLocales;
+    var lvl, idx : int;
+    var loc = (lvl+idx)%numLocales;
 
     proc this() {
         return (lvl, idx);
@@ -8,8 +8,8 @@ record Node {
 }
 
 record Coeff {
-    const dom  : domain(1);
-    const data : [dom] real;
+    var dom  : domain(1);
+    var data : [dom] real;
 }
 
 var nodes  : domain(Node);

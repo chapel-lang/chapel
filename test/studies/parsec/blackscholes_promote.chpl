@@ -16,7 +16,7 @@ record OptionData {
 	var v : fptype;		// volatility
 	var t : fptype;		// time to maturity or option expiration in years
 				// (1yr = 1.0, 6mos = 0.5, 3mos = 0.25, ..., etc)
-	const OptionType : string;	// Option Type. "P"=PUT, "C"=CALL
+	var OptionType : string;	// Option Type. "P"=PUT, "C"=CALL
 	var divs : fptype;	// dividend vals (not used in this test)
 	var DGrefval : fptype;	// DerivaGem Reference Value
 }

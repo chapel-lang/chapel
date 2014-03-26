@@ -317,7 +317,7 @@ class BlockCyclicDom: BaseRectangularDom {
   //
   // a domain describing the complete domain
   //
-  const whole: domain(rank=rank, idxType=idxType, stridable=stridable);
+  var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
   //  const startLoc: index(dist.targetLocDom);
 
   var pid: int = -1; // privatized object id

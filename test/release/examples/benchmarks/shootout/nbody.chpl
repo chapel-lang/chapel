@@ -24,7 +24,7 @@ const pi = 3.141592653589793,
 record body {
   var pos: 3*real;
   var v: 3*real;
-  const mass: real;
+  var mass: real;  // does not change after it is set up
 }
 
 //

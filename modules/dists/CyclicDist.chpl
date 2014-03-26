@@ -338,7 +338,7 @@ class CyclicDom : BaseRectangularDom {
 
   var locDoms: [dist.targetLocDom] LocCyclicDom(rank, idxType, stridable);
 
-  const whole: domain(rank, idxType, stridable);
+  var whole: domain(rank, idxType, stridable);
 
   var pid: int = -1;
 }

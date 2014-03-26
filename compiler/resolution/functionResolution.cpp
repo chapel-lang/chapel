@@ -1016,6 +1016,7 @@ static bool
 isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual) {
   if (SymExpr* se = toSymExpr(actual))
     if (se->var->hasFlag(FLAG_EXPR_TEMP) ||
+        se->var->hasFlag(FLAG_REF_TO_CONST) ||
         (se->var->isConstant() && !formal->hasFlag(FLAG_ARG_THIS)) ||
         se->var->isParameter())
       if (okToConvertFormalToRefType(formal->type))
@@ -2627,6 +2628,57 @@ makeNoop(CallExpr* call) {
   call->primitive = primitives[PRIM_NOOP];
 }
 
+static bool isInConstructorLikeFunction(CallExpr* call) {
+  return call->parentSymbol->hasFlag(FLAG_CONSTRUCTOR) ||
+         !strcmp(call->parentSymbol->name, "initialize");
+}
+
+// The function call->parentSymbol is invoked from a constructor
+// or initialize(), with the constructor's or intialize's 'this'
+// as the receiver actual.
+static bool isInvokedFromConstructorLikeFunction(CallExpr* call1) {
+  // We assume that 'call' is at the top of the call stack.
+  INT_ASSERT(callStack.n >= 1 && call1 == callStack.v[callStack.n-1]);
+  if (callStack.n >= 2) {
+    CallExpr* call2 = callStack.v[callStack.n-2];
+    INT_ASSERT(call2->isResolved() == call1->parentSymbol); // sanity
+    if (isInConstructorLikeFunction(call2))
+      if (call2->numActuals() >= 2)
+        if (SymExpr* thisArg2 = toSymExpr(call2->get(2)))
+          if (thisArg2->var->hasFlag(FLAG_ARG_THIS))
+            return true;
+  }
+  return false;
+}
+
+// Check whether the actual comes from accessing a const field of 'this'
+// and the call is in a function invoked directly from this's constructor.
+// In such case, fields of 'this' are not considered 'const',
+// so we remove the const-ness flag.
+static bool checkAndUpdateIfLegalFieldOfThis(CallExpr* call, Expr* actual) {
+  if (SymExpr* se = toSymExpr(actual))
+    if (se->var->hasFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS))
+      if (isInvokedFromConstructorLikeFunction(call)) {
+          // Yes, this is the case we are looking for.
+          se->var->removeFlag(FLAG_REF_TO_CONST);
+          return true;
+      }
+  return false;
+}
+
+// If 'fn' is the default assignment for a record type, return
+// the name of that record type; otherwise return NULL.
+static const char* defaultRecordAssignmentTo(FnSymbol* fn) {
+  if (!strcmp("=", fn->name)) {
+    if (fn->hasFlag(FLAG_COMPILER_GENERATED)) {
+      Type* desttype = fn->getFormal(1)->type->getValType();
+      INT_ASSERT(desttype != dtUnknown); // otherwise this test is unreliable
+      if (isRecord(desttype) || isUnion(desttype))
+        return desttype->symbol->name;
+    }
+  }
+  return NULL;
+}
 
 static bool
 isTypeExpr(Expr* expr) {
@@ -2918,6 +2970,54 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
       call->baseExpr->replace(new SymExpr(resolvedFn));
     }
 
+    if (resolvedFn->hasFlag(FLAG_FIELD_ACCESSOR)) {
+      SymExpr* baseExpr = toSymExpr(call->get(2));
+      INT_ASSERT(baseExpr); // otherwise, cannot do the checking
+      Symbol* baseSym = baseExpr->var;
+      // Is the outcome of 'call' a reference to a const?
+      bool refConst = false;
+
+      if (resolvedFn->hasFlag(FLAG_REF_TO_CONST)) {
+        // 'call' accesses a const field.
+        refConst = true;
+        // Do not consider it const if it is an access to 'this'
+        // in a constructor. Todo: will need to reconcile with UMM.
+        if (baseSym->hasFlag(FLAG_ARG_THIS) &&
+            isInConstructorLikeFunction(call))
+          refConst = false;
+      } else {
+        // See if the variable being accessed is const.
+        if (baseSym->hasFlag(FLAG_CONST) ||
+            baseSym->hasFlag(FLAG_REF_TO_CONST)
+        ) {
+          // Todo: fine-tuning may be desired, e.g.
+          // if FLAG_CONST then baseType = baseSym->type.
+          Type* baseType = baseSym->type->getValType();
+          // Exclude classes: even if a class variable is const,
+          // its non-const fields are OK to modify.
+          if (isRecord(baseType) || isUnion(baseType))
+            refConst = true;
+        }
+      }
+
+      if (refConst) {
+        if (CallExpr* parent = toCallExpr(call->parentExpr)) {
+          if (parent->isPrimitive(PRIM_MOVE)) {
+            SymExpr* dest = toSymExpr(parent->get(1));
+            INT_ASSERT(dest); // what else can it be?
+            dest->var->addFlag(FLAG_REF_TO_CONST);
+            if (baseSym->hasFlag(FLAG_ARG_THIS))
+              dest->var->addFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS);
+          }
+        }
+      }
+    }
+
+    if (resolvedFn->hasFlag(FLAG_MODIFIES_CONST_FIELDS))
+      // Not allowed if it is not called directly from a constructor.
+      if (!isInvokedFromConstructorLikeFunction(call))
+        USR_FATAL_CONT(call, "illegal call to %s() - it modifies 'const' fields of 'this', therefore it can be invoked only directly from a constructor");
+
     // Check to ensure the actual supplied to an OUT, INOUT or REF argument
     // is an lvalue.
     for_formals_actuals(formal, actual, call) {
@@ -2949,10 +3049,28 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
         INT_ASSERT(false);
         break;
       }
+      if (errorMsg && checkAndUpdateIfLegalFieldOfThis(call, actual)) {
+        errorMsg = false;
+        call->parentSymbol->addFlag(FLAG_MODIFIES_CONST_FIELDS);
+      }
       if (errorMsg) {
-        FnSymbol* calleeFn = toFnSymbol(formal->defPoint->parentSymbol);
-        if (!strcmp("=", calleeFn->name))
-          USR_FATAL_CONT(actual, "illegal lvalue in assignment");
+        FnSymbol* calleeFn = resolvedFn;
+        INT_ASSERT(calleeFn == formal->defPoint->parentSymbol); // sanity
+        // todo: move away from strcmp
+        if (!strcmp("=", calleeFn->name)) {
+          // This assert is FYI. Perhaps can remove it if it fails.
+          INT_ASSERT(callStack.n > 0 && callStack.v[callStack.n-1] == call);
+          const char* recordName =
+            defaultRecordAssignmentTo(toFnSymbol(call->parentSymbol));
+          if (recordName && callStack.n >= 2)
+              // blame on the caller of the caller, if available
+              USR_FATAL_CONT(callStack.v[callStack.n-2],
+                             "cannot assign to a record of the type %s"
+                             " using the default assignment operator"
+                             " because it has 'const' field(s)", recordName);
+          else
+            USR_FATAL_CONT(actual, "illegal lvalue in assignment");
+        }
         else
         {
           ModuleSymbol* mod = calleeFn->getModule();

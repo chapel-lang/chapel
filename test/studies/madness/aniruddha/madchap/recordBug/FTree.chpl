@@ -28,7 +28,7 @@ proc isNone(x) {
 }
 
 record LocTree {
-    const coeffDom : domain(1);
+    var coeffDom : domain(1);
     var locIndices : domain(2*int);      // Indexed by 2-tuples of integers
     var locNodes   : [locIndices] Coeff; // Associative Mapping: (:int, :int)
                                          // => Coeff
