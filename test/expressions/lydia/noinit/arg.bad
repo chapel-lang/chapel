@@ -1,0 +1,2 @@
+arg.chpl:3: In function 'foo':
+arg.chpl:3: error: 'noinit' undeclared (first use this function)
