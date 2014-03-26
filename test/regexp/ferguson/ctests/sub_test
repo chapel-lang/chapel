@@ -16,7 +16,7 @@ RE2_LIB_DIR="$RE2DIR/install/$TARGPLAT-$TARGCOMP/lib"
 RE2LIB="-L$RE2_LIB_DIR -Wl,-rpath -Wl,$RE2_LIB_DIR -lre2"
 
 echo $DEFS | grep atomics/intrinsics
-if [ $? == 0 ]
+if [ $? -eq 0 ]
 then
   echo C tests will run using atomics/intrinsics
 else
@@ -40,7 +40,7 @@ PLAT=`$CHPL_HOME/util/chplenv/platform`
 if [ "$COMP" = "gnu" ]
 then
   echo C tests will run using gnu compiler
-elif [ "$COMP" == "clang" ]
+elif [ "$COMP" = "clang" ]
 then
   echo C tests will run using clang compiler
   CC=clang
