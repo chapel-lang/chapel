@@ -65,6 +65,25 @@ void ensureDirExists(const char* dirname, const char* explanation) {
 }
 
 
+static const char* removeSpacesFromString(char* str) {
+  if (strchr(str, ' ')) {
+    char* str2 = (char*)malloc(strlen(str)+1);
+    char* dst = str2;
+    char* src = str;
+    while (*src != '\0') {
+      *dst = *src;
+      src++;
+      if (*dst != ' ')
+        dst++;
+    }
+    *dst = '\0';
+    return str2;
+  } else {
+    return str;
+  }
+}
+
+
 static void ensureTmpDirExists(void) {
   if (saveCDir[0] == '\0') {
     if (tmpdirname == NULL) {
@@ -84,7 +103,7 @@ static void ensureTmpDirExists(void) {
       if (passwdinfo == NULL) {
         userid = "anon";
       } else {
-        userid = passwdinfo->pw_name;
+        userid = removeSpacesFromString(passwdinfo->pw_name);
       }
       
       tmpdirname = astr(tmpdirprefix, userid, mypidstr, tmpdirsuffix);
