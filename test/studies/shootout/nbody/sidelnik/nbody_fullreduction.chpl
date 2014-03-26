@@ -21,7 +21,7 @@ class Planet {
 }
 
 proc advance(B: [] Planet, dt: real) {
-	for (b1, i) in (B, NBODIES) do {
+	for (b1, i) in zip(B, NBODIES) do {
 		for b2 in B[i+1..] do {
 			var d : [vecLen] real = b1.coord_vector - b2.coord_vector;
 			var distance = sqrt(+ reduce d**2);
@@ -38,7 +38,7 @@ proc advance(B: [] Planet, dt: real) {
 
 proc energy(B : [] Planet) : real {
 	var e : real;
-	for (b1,i) in (B,NBODIES) do {
+	for (b1,i) in zip(B,NBODIES) do {
 		e += 0.5 * b1.mass * (+ reduce b1.vel_vector**2);
 		for b2 in B[i+1..] do {
 			var d : [vecLen] real = b1.coord_vector - b2.coord_vector;

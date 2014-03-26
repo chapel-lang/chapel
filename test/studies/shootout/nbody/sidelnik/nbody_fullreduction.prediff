@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+tmpfile=$2.$$.tmp
+awk '{ m = index($0, "error"); if (m > 0) print substr($0, m); else print $0 }' < $2 > $tmpfile
+
+if [ $? = 0 ]; then mv $tmpfile $2; fi
+
