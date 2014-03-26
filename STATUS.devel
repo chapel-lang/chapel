@@ -35,8 +35,7 @@ run into.
 #  b/c it seems a little obscure (it'd be nice to see an example with a non-standard module function)
 #
 # OMITTED: users/vass/crash1callDestructorsMain.future
-
-
+#  b/c not investigated
 #
 # OMITTED: users/csep524/userDefReduceSlim.future
 #  b/c mutiple errors in the user code and hard to quantify what is wrong
@@ -69,7 +68,6 @@ General (see also portability section at the bottom of this file)
   # users/vass/global-j1.future
 - There are several internal memory leaks:
   # memory/figueroa/LeakedMemory6.future
-  # arrays/deitz/part7/test_descriptor_frees.future
   - All strings are leaked
   - Privatized domains and arrays (i.e., those that use the standard
     distributions) are leaked
@@ -96,11 +94,11 @@ General (see also portability section at the bottom of this file)
 
 Types, Params, Variables, and Consts
 ------------------------------------
-# OMITTED: types/enum/vass/enum-receiver-1.future
-#  b/c it's a bit esoteric, and it also seems like something that could be disallowed.
 - Enum types always represented using the smallest integer type
   available, even if the enum values require a larger integer.
   # functions/bradc/resolution/badEnumDispatch.future
+- Invoking a method directly on an enum constant results in a compiler error
+  # types/enum/vass/enum-receiver-1.future
 - The default value for the locale type is incorrect.
   # types/locale/bradc/defaultLocaleVal.future
   # multilocale/sungeun/locale_default.future
@@ -267,9 +265,6 @@ Functions and Iterators
   # functions/deitz/iterators/test_promote_var_function_and_iterate.future
 - Iterators yielding locale types result in an internal error.
   # functions/iterators/sungeun/iterInClass.future
-- Iterators yielding arrays within begin/cobegin/coforall/on may
-  result in nil dereference.
-  # parallel/taskPar/vass/yield-arrays-in-task-funs.future
 - A forall loop with an iteratable expression that does not provide
   leader/follower iterators cause an internal error.
   # functions/iterators/vass/forall-without-leaderfollower.future
@@ -387,6 +382,7 @@ Classes, Records, and Unions
   # classes/constructors/base-class-generic-args.future
   # types/records/hilde/newUserDefCtorInFn.future
   # types/records/hilde/newUserDefaultCtor.future
+  # users/hilde/refcnt.future
 - User-defined constructors do not overried the default constructor.
   # types/records/hilde/callUserDefaultConstructor.future
 - User-defined copy constructors are not supported.
@@ -564,9 +560,6 @@ Task Parallelism and Synchronization
 
 Data Parallelism
 ----------------
-# OMITTED: trivial/sidelnik/reduction.future
-# OMITTED: studies/shootout/nbody/sidelnik/nbody_fullreduction.future
-#  b/c not sure how to describe (these seem related)
 - Some data parallel statements that should be parallelized are
   serialized with a warning message "X has been serialized".  In some
   case, this can be fixed in the program.
@@ -580,6 +573,8 @@ Data Parallelism
   3. Assignment, reductions, and parallel iteration over opaque domains and
      arrays are always serialized.
    # domains/johnk/associative/literalsWarn.future
+- Task intents to not work for coforalls and cobegins used in iterators
+  # TODO: are there any futures?  better wording?
 - Array promotion/forall/for/scan expressions always evaluate to 1D arrays.
   E.g., f(A) where A promotes f() should result in an array of type:
     [A.domain] f(A(i)).type but instead results in a 1D array
@@ -606,6 +601,8 @@ Data Parallelism
   # arrays/sungeun/array_of_arrays/bxor_reduce.future
   # arrays/sungeun/array_of_arrays/max_reduce.future
   # arrays/sungeun/array_of_arrays/sum_reduce.future
+  # trivial/sidelnik/reduction.future
+  # studies/shootout/nbody/sidelnik/nbody_fullreduction.future
 - Reductions zippered arrays of mismatched rank result in a compile time error.
   # arrays/diten/reduce2Dwith3D.future
   # arrays/diten/reduce3Dwith2D.future
@@ -668,6 +665,9 @@ Miscellaneous
   # extern/sungeun/externProcInClassShouldBeError.future
 - Nil extern class references not properly handled.
   # users/ferguson/extern_class_test.future
+- Extern functions that use strings may not function properly for
+  multilocale execution.
+  # users/ferguson/extern_string_test2.future
 - Boolean literals do not preserve their sizes.
   # portability/boolLiteralSizes.future
 - Functions from extern includes that have naming conflicts with
@@ -706,22 +706,26 @@ Miscellaneous
   # types/tuple/diten/tupleOfArrayReturnType.future
   # types/tuple/stonea/returnArrayTuple.future
 
-Performance TODO
+
+Performance
 -----------
-# OMITTED: arrays/vass/newalias-perf.future
-# OMITTED: distributions/bradc/clonedForall.future
-#  b/c minorish performance futures which we may one day start documenting
-#
-# OMITTED: performance/bradc/refArgIsWide.future
-#  b/c general performance future
+- The body of forall loops over domains with non-default distribution
+  are unnecessarily cloned.
+  # distributions/bradc/clonedForall.future
+- Many provably local variables are unnecessarily widen for
+  multilocale execution
+  # performance/bradc/refArgIsWide.future
+- Reference counting of arrays, domains, and distributions is overly
+  conservative.
+  # performance/hilde/coforallOnByRef.future
+- Task creation for coforall/cobegin statements can be better optimized.
+  # multilocale/lydia/checkNumTasks.future
+- Mechanisms for program tear-down can be better optimized.
+  # parallel/taskPar/sungeun/endCountTest.future
 
- # multilocale/lydia/checkNumTasks.future
- # parallel/taskPar/sungeun/endCountTest.future
- # performance/hilde/coforallOnByRef.future
 
-
-Developer?
-----------
+Developer
+---------
 - chpl__autoCopy() and chpl__initCopy() functions and callees cannot
   contain begin statements.
   # parallel/begin/sungeun/autoCopyWithBegin.future
