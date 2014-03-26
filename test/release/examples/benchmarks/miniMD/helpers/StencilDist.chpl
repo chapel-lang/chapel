@@ -149,7 +149,7 @@ class StencilDom: BaseRectangularDom {
   param stridable: bool;
   const dist: Stencil(rank, idxType);
   var locDoms: [dist.targetLocDom] LocStencilDom(rank, idxType, stridable);
-  const whole: domain(rank=rank, idxType=idxType, stridable=stridable);
+  var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
   var pid: int = -1; // privatized object id (this should be factored out)
   var fluff: rank*idxType;
   var periodic: bool = false;
