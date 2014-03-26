@@ -92,7 +92,7 @@ print_user_internal_error() {
     }
   }
 
-  fprintf(stderr, "internal failure %s ", error);
+  fprintf(stderr, "%s ", error);
   char version[128];
   get_version(version);
   fprintf(stderr, "chpl Version %s\n", version);
@@ -179,7 +179,17 @@ printDevelErrorHeader(BaseAST* ast) {
   if (ast && ast->linenum())
     fprintf(stderr, "%s:%d: ", cleanFilename(ast), ast->linenum());
 
-  fprintf(stderr, err_print ? "note: " : err_fatal ? "error: " : "warning: ");
+  if (err_print) {
+    fprintf(stderr, "note: ");
+  } else if (err_fatal) {
+    if (err_user) {
+      fprintf(stderr, "error: ");
+    } else {
+      fprintf(stderr, "internal error: ");
+    }
+  } else {
+    fprintf(stderr, "warning: ");
+  }
 
   if (!err_user && !developer) {
     print_user_internal_error();
