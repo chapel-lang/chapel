@@ -767,9 +767,14 @@ err_t qio_file_init(qio_file_t** file_out, FILE* fp, fd_t fd, qio_hint_t iohints
     return err;
   } else {
     rc &= O_ACCMODE;
-    if( rc == O_RDONLY ) {
+    // When setting the file mode, we pretend no matter what
+    // that stdin is read-only and stdout/stderr are write-only.
+    // We do this to avoid program launch bugs with some uses of nohup.
+    // Trying to read from an invalid stdin or write to an invalid stdout
+    // will lead to an error later.
+    if( rc == O_RDONLY || fd == STDIN_FILENO ) {
       fdflags = (qio_fdflag_t) (fdflags | QIO_FDFLAG_READABLE);
-    } else if( rc == O_WRONLY ) {
+    } else if( rc == O_WRONLY || fd == STDOUT_FILENO || fd == STDERR_FILENO){
       fdflags = (qio_fdflag_t) (fdflags | QIO_FDFLAG_WRITEABLE);
     } else if( rc == O_RDWR ) {
       fdflags = (qio_fdflag_t) (fdflags | QIO_FDFLAG_READABLE);
