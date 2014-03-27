@@ -803,33 +803,34 @@ fix_def_expr(VarSymbol* var) {
     // the initialization expression if it exists
     //
     VarSymbol* typeTemp = newTemp("type_tmp");
-    stmt->insertBefore(new DefExpr(typeTemp));
+    if (!var->hasFlag(FLAG_NO_INIT))
+      stmt->insertBefore(new DefExpr(typeTemp));
 
     CallExpr* initCall;
     if (var->hasFlag(FLAG_NO_INIT)) {
-      initCall = new CallExpr(PRIM_MOVE, typeTemp,
+      initCall = new CallExpr(PRIM_MOVE, var,
                    new CallExpr(PRIM_NO_INIT, type->remove()));
     } else {
       initCall = new CallExpr(PRIM_MOVE, typeTemp,
                    new CallExpr(PRIM_INIT, type->remove()));
     }
     stmt->insertBefore(initCall);
-
-    if (init) {
-      stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
-      stmt->insertAfter(
-        new CallExpr(PRIM_MOVE, typeTemp,
-          new CallExpr("=", typeTemp, init->remove())));
-    } else {
-      if (constTemp->hasFlag(FLAG_TYPE_VARIABLE))
-        stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, new CallExpr(PRIM_TYPEOF, typeTemp)));
-      else {
-        CallExpr* moveToConst = new CallExpr(PRIM_MOVE, constTemp, typeTemp);
-        Expr* newExpr = moveToConst;
-        if (var->hasFlag(FLAG_EXTERN)) {
-          newExpr = new BlockStmt(moveToConst, BLOCK_TYPE);
+    if (!var->hasFlag(FLAG_NO_INIT)) {
+      if (init) {
+        stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
+        stmt->insertAfter(new CallExpr(PRIM_MOVE, typeTemp,
+                            new CallExpr("=", typeTemp, init->remove())));
+      } else {
+        if (constTemp->hasFlag(FLAG_TYPE_VARIABLE))
+          stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, new CallExpr(PRIM_TYPEOF, typeTemp)));
+        else {
+          CallExpr* moveToConst = new CallExpr(PRIM_MOVE, constTemp, typeTemp);
+          Expr* newExpr = moveToConst;
+          if (var->hasFlag(FLAG_EXTERN)) {
+            newExpr = new BlockStmt(moveToConst, BLOCK_TYPE);
+          }
+          stmt->insertAfter(newExpr);
         }
-        stmt->insertAfter(newExpr);
       }
     }
 
