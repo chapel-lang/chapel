@@ -26,7 +26,9 @@ MAKE_SYS_BASIC_TYPES=$(CHPL_MAKE_HOME)/util/config/makeSysBasicTypes
 
 $(SYS_CTYPES_MODULE): $(MAKE_SYS_BASIC_TYPES)
 	mkdir -p $(@D)
-	cd $(@D) && ($(MAKE_SYS_BASIC_TYPES) > $(@F) || rm -f $(@F))
+# When makeSysBasicTypes call fails, delete the SysCTypes.chpl file that is
+# created, but still make sure the command fails.
+	cd $(@D) && ( $(MAKE_SYS_BASIC_TYPES) > $(@F) || { rm -f $(@F) && false ; } )
 
 FORCE:
 

@@ -18,6 +18,12 @@ close(CCMD);
 
 $CALC = "bc -q";
 
+$test_bc_result = `echo "1+2" | $CALC 2>&1`;
+chomp($test_bc_result);
+if ( $test_bc_result != "3" ) {
+    die("Failed to get a result from bc. Is bc installed and available on the PATH?\nError message: $test_bc_result");
+}
+
 $HTMP = "find_int_sizes_tmp.h";
 $CALCTMP = "find_int_sizes_tmp.txt";
 
