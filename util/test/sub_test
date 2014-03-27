@@ -1421,6 +1421,9 @@ for testname in testsrc:
                         printTestVariation(compoptsnum, execoptsnum);
                     sys.stdout.write(']\n')
 
+                    if exectimeout or status != 0:
+                        break
+
         cleanup(execname)
 
     del execoptslist

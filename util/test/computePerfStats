@@ -196,7 +196,18 @@ if ($valid_output) {
 
 if (($valid_output != 1 or $foundEverything != 1) and $exec_time_out eq "False") {
     print "output was:\n";
-    system("cat $test_output_file");
+    # if a test output file is too long we clamp it down the first and last
+    # 1000 characters. Any non-printable characters are translated to '~' (for
+    # tests with binary output)
+    system(
+        "if [ \$(wc -c $test_output_file | awk \'{print \$1}\') -ge 2000 ]; then ".
+            "head -c 1000 $test_output_file | tr -C '[:alnum:][:space:][:punct:]' '~'; ".
+            "tail -c 1000 $test_output_file | tr -C '[:alnum:][:space:][:punct:]' '~'; ".
+        "else ".
+            "cat $test_output_file | tr -C '[:alnum:][:space:][:punct:]' '~'; ".
+        "fi");
+    # we can't be sure if we end on a new line when limiting by characters
+    print "\n";
     exit 1;
 }
 
