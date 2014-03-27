@@ -5,6 +5,8 @@ endif
 CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
+export CHPL_MAKE_LOCALE_MODEL
+
 #
 # set up the directories
 #
