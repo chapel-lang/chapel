@@ -831,10 +831,6 @@ void ArgSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 bool argMustUseCPtr(Type* type) {
-  // Don't pass global ptrs by ref
-  if( fLLVMWideOpt && type->symbol->hasEitherFlag(FLAG_WIDE,FLAG_WIDE_CLASS) )
-    return false;
-
   if (isRecord(type) || isUnion(type))
     return true;
   return false;

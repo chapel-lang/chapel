@@ -32,6 +32,10 @@ void chpl_gen_comm_put_ctl(wide_ptr_t dst, void *src_addr, int64_t n, int64_t ct
   chpl_gen_comm_put(src_addr, dst_node, dst_addr, sizeof(uint8_t), CHPL_TYPE_uint8_t, n, -1, "");
 }
 
+// This function implements memcpy/memmove when both the source and destination
+// are possibly remote. The Chapel compiler does not normally generate
+// such code, but it could appear during optimization. Note that the
+// dst and src regions could overlap.
 static ___always_inline
 void chpl_gen_comm_getput(wide_ptr_t dst, wide_ptr_t src, int64_t n)
 {
@@ -41,7 +45,7 @@ void chpl_gen_comm_getput(wide_ptr_t dst, wide_ptr_t src, int64_t n)
   void* dst_addr = chpl_wide_ptr_get_address(dst);
 
   if (chpl_nodeID == dst_node && chpl_nodeID == src_node) {
-    memcpy(dst_addr, src_addr, n);
+    memmove(dst_addr, src_addr, n);
   } else if( chpl_nodeID == dst_node ) {
     chpl_gen_comm_get_ctl(dst_addr, src, n, 0);
   } else if( chpl_nodeID == src_node ) {

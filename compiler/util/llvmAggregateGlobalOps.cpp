@@ -47,6 +47,10 @@ namespace {
 
 
 static const bool DEBUG = false;
+static const bool extraChecks = false;
+// Set a function name here to get lots of debugging output.
+static const char* debugThisFn = "";
+
 
 // If there is a gap between memory that we are loading,
 // for example due to padding, or just because we didn't
@@ -90,10 +94,9 @@ Value* getLoadStorePointer(Instruction* I)
 static
 Value* rebasePointer(Value* ptr, Value* oldBase, Value* newBase, const Twine &name,
                      IRBuilder<>* builder, const DataLayout &TD,
-                     Value** oldBaseI, Value** newBaseI)
+                     Value* oldBaseI, Value* newBaseI)
 {
   Type* iPtrTy = TD.getIntPtrType(ptr->getType());
-  Type* iNewBaseTy = TD.getIntPtrType(newBase->getType());
   Type* localPtrTy = ptr->getType()->getPointerElementType()->getPointerTo(0);
 
   Value* ret;
@@ -101,22 +104,14 @@ Value* rebasePointer(Value* ptr, Value* oldBase, Value* newBase, const Twine &na
   if( ptr != oldBase ) {
     // compute newBase + (ptr - oldBase)
     Value* pI = builder->CreatePtrToInt(ptr, iPtrTy, name + ".ptr.i");
-    Value* obI = *oldBaseI;
-    if( ! obI ) {
-      obI = builder->CreatePtrToInt(oldBase, iPtrTy, name + ".oldb.i");
-      *oldBaseI = obI;
-    }
-    Value* newI = *newBaseI;
-    if( ! newI ) {
-      newI = builder->CreatePtrToInt(newBase, iNewBaseTy, name + ".newb.i");
-      *newBaseI = newI;
-    }
+    assert( oldBaseI );
+    assert( newBaseI );
     // then subtract
-    Value* diff = builder->CreateSub(pI, obI, name + ".diff");
+    Value* diff = builder->CreateSub(pI, oldBaseI, name + ".diff");
     // then make sure same type
-    Value* ext = builder->CreateSExtOrTrunc(diff, newI->getType(), ".ext.i");
+    Value* ext = builder->CreateSExtOrTrunc(diff, newBaseI->getType(), ".ext.i");
     // Now add
-    Value* sum = builder->CreateAdd(newI, ext, name + ".sum");
+    Value* sum = builder->CreateAdd(newBaseI, ext, name + ".sum");
     ret = builder->CreateIntToPtr(sum, localPtrTy, name + ".cast");
   } else {
     ret = builder->CreatePointerCast(newBase, localPtrTy, name + ".cast");
@@ -376,7 +371,7 @@ void MemOpRanges::addRange(int64_t Start, int64_t Size, int64_t Slack, Value *Pt
       AU.addPreserved<MemoryDependenceAnalysis>();
     }
 
-    Instruction *tryAggregating(Instruction *I, Value *StartPtr);
+    Instruction *tryAggregating(Instruction *I, Value *StartPtr, bool DebugThis);
   };
 
   char AggregateGlobalOpsOpt::ID = 0;
@@ -394,7 +389,8 @@ FunctionPass *createAggregateGlobalOpsOptPass(unsigned globalSpace)
 /// other loads or stores that could be aggregated with this one.
 /// Returns the last instruction added (if one was added) since we might have
 /// removed some loads or stores and that might invalidate an iterator.
-Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value *StartPtr) {
+Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value *StartPtr,
+    bool DebugThis) {
   if (TD == 0) return 0;
 
   Module* M = StartInst->getParent()->getParent()->getParent();
@@ -475,11 +471,11 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
     builder.SetInsertPoint(insertBefore);
 
-    // Otherwise, we do want to transform this!  Create a new mecpy.
+    // Otherwise, we do want to transform this!  Create a new memcpy.
     // Get the starting pointer of the block.
     StartPtr = Range.StartPtr;
 
-    if( DEBUG ) {
+    if( DebugThis ) {
       errs() << "base is:";
       StartPtr->dump();
     }
@@ -514,6 +510,18 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
       StartPtr = gep;
     }
 
+    // Generate the old and new base pointers before we output
+    // anything else. These might be unused, but since the loads/stores in
+    // the range can be in a different order and we're trying
+    // to keep them in their original order, it's easier to always
+    // add oldBaseI and newBaseI here.
+    {
+      Type* iPtrTy = TD->getIntPtrType(alloc->getType());
+      Type* iNewBaseTy = TD->getIntPtrType(alloc->getType());
+      oldBaseI = builder.CreatePtrToInt(StartPtr, iPtrTy, "agg.tmp.oldb.i");
+      newBaseI = builder.CreatePtrToInt(alloc, iNewBaseTy, "agg.tmp.newb.i");
+    }
+
     // If storing, do the stores we had into our alloca'd region.
     if( isStore ) {
       for (SmallVector<Instruction*, 16>::const_iterator
@@ -521,7 +529,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
            SE = Range.TheStores.end(); SI != SE; ++SI) {
         StoreInst* oldStore = cast<StoreInst>(*SI);
 
-        if( DEBUG ) {
+        if( DebugThis ) {
           errs() << "have store in range:";
           oldStore->dump();
         }
@@ -530,7 +538,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
         Value* ptrToAlloc = rebasePointer(oldStore->getPointerOperand(),
                                           StartPtr, alloc, "agg.tmp",
-                                          &builder, *TD, &oldBaseI, &newBaseI);
+                                          &builder, *TD, oldBaseI, newBaseI);
         // Old load must not be volatile or atomic... or we shouldn't have put
         // it in ranges
         assert(!(oldStore->isVolatile() || oldStore->isAtomic()));
@@ -600,7 +608,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
            SI = Range.TheStores.begin(),
            SE = Range.TheStores.end(); SI != SE; ++SI) {
         LoadInst* oldLoad = cast<LoadInst>(*SI);
-        if( DEBUG ) {
+        if( DebugThis ) {
           errs() << "have load in range:";
           oldLoad->dump();
         }
@@ -609,7 +617,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
         Value* ptrToAlloc = rebasePointer(oldLoad->getPointerOperand(),
                                           StartPtr, alloc, "agg.tmp",
-                                          &builder, *TD, &oldBaseI, &newBaseI);
+                                          &builder, *TD, oldBaseI, newBaseI);
         // Old load must not be volatile or atomic... or we shouldn't have put
         // it in ranges
         assert(!(oldLoad->isVolatile() || oldLoad->isAtomic()));
@@ -638,13 +646,19 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 //
 bool AggregateGlobalOpsOpt::runOnFunction(Function &F) {
   bool MadeChange = false;
+  bool DebugThis = DEBUG;
+  
+  if( debugThisFn[0] && F.getName() == debugThisFn ) {
+    DebugThis = true;
+  }
+
   //MD = &getAnalysis<MemoryDependenceAnalysis>();
   TD = getAnalysisIfAvailable<DataLayout>();
   //TLI = &getAnalysis<TargetLibraryInfo>();
 
   // Walk all instruction in the function.
   for (Function::iterator BB = F.begin(), BBE = F.end(); BB != BBE; ++BB) {
-    if( DEBUG ) {
+    if( DebugThis ) {
       errs() << "Working on BB ";
       BB->dump();
     }
@@ -654,7 +668,7 @@ bool AggregateGlobalOpsOpt::runOnFunction(Function &F) {
       Instruction *I = BI++;
 
       if( isGlobalLoadOrStore(I, globalSpace, true, true) ) {
-        Instruction* lastAdded = tryAggregating(I, getLoadStorePointer(I));
+        Instruction* lastAdded = tryAggregating(I, getLoadStorePointer(I), DebugThis);
         if( lastAdded ) {
           MadeChange = true;
           BI = lastAdded;
@@ -662,14 +676,14 @@ bool AggregateGlobalOpsOpt::runOnFunction(Function &F) {
       }
     }
 
-    if( DEBUG && MadeChange ) {
+    if( DebugThis && MadeChange ) {
       errs() << "After transform BB is ";
       BB->dump();
     }
 
   }
 
-  if( DEBUG ) {
+  if( extraChecks ) {
     verifyFunction(F);
   }
 

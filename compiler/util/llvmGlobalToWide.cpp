@@ -690,7 +690,7 @@ namespace {
               assert(0 && "Unknown special function");
             }
           } else if( calledFn && isa<MemIntrinsic>(call) ) {
-            if( isa<MemCpyInst>(call) ) {
+            if( isa<MemCpyInst>(call) || isa<MemMoveInst>(call) ) {
               // handle memcpy
               // is the source a global pointer?
               // memcpy(dst, src, n)
