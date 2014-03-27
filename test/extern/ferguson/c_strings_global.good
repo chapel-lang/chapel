@@ -1,0 +1,14 @@
+Should be Hello:
+in print_c_string: Hello
+Should be returned_c_string x3
+in print_c_string: returned_c_string
+returned_c_string
+returned_c_string
+Should be returned_c_string_in_argument x3
+in print_c_string: returned_c_string_in_argument
+returned_c_string_in_argument
+returned_c_string_in_argument
+Should be returned_c_string_in_argument_with_length x3
+in print_c_string_len: returned_c_string_in_argument_with_len
+returned_c_string_in_argument_with_len
+returned_c_string_in_argument_with_len
