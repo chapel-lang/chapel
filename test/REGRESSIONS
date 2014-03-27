@@ -26,6 +26,14 @@ linux64 regressions (in addition to the above)
 (Reviewed for accuracy 03/01/14)
 ==============================================
 
+Failure for new .bad (sungeun, r22962)
+--------------------------------------
+[Error matching .bad file for trivial/sidelnik/reduction]
+
+new illegal l-value error (prob. due to vass's r22963)
+------------------------------------------------------
+[Error matching .bad file for users/vass/crash1callDestructorsMain]
+
 
 ==============================================
 linux32 regressions (in addition to the above)
@@ -37,6 +45,17 @@ linux32 regressions (in addition to the above)
 performance-specific regressions
 (Reviewed for accuracy 03/01/14)
 ================================
+
+seg fault (bradc, r22900)
+-------------------------
+[Error matching performance keys for release/examples/benchmarks/hpcc/ra (compopts: 1)]
+[Error matching performance keys for release/examples/benchmarks/hpcc/variants/ra-cleanloop (compopts: 1)]
+
+
+new illegal l-value error (prob. due to vass's r22963)
+------------------------------------------------------
+[Error matching compiler output for release/examples/benchmarks/miniMD/miniMD
+(compopts: 4)]
 
 consistent execution timeouts on chap04 (since ??? -- at least 11/20/13)
 ------------------------------------------------------------------------
@@ -66,6 +85,10 @@ We've turned off randomSeed for this test, hopefully it won't reoccur.
 --fast regressions
 (Reviewed for accuracy 03/01/14)
 ================================
+
+Failure for new test (lydia 03/26/14)
+-------------------------------------
+[Error matching program output for expressions/lydia/noinit/stackVerify]
 
 Both of these pass with gcc 4.8 but fail with 4.3
 -------------------------------------------------
@@ -106,6 +129,10 @@ verify regressions
 valgrind-specific regressions
 (Reviewed for accuracy 03/03/14)
 ================================
+
+Failure for new test (lydia 03/26/14)
+-------------------------------------
+[Error matching program output for expressions/lydia/noinit/stackVerify]
 
 nondeterministic failure due to decrementing task counts after task has
 run but before pthread has been descheduled.  Could happen in any
@@ -181,10 +208,20 @@ incorrect value for numChunks, non-deterministic (03/10/14)
 -----------------------------------------------------------
 [Error matching program output for functions/iterators/sungeun/forwarding/forwardDefaultDom (compopts: 1)]
 
+new illegal l-value error (prob. due to vass's r22963)
+------------------------------------------------------
+[Error matching compiler output for release/examples/benchmarks/miniMD/miniMD
+(compopts: 2)]
+
 ====================================================
 gasnet-everything regressions (other than the above)
 (Reviewed for accuracy 02/26/14)
 ====================================================
+
+failure due to r22900 (bradc; may let regress until strings are records)
+------------------------------------------------------------------------
+[Error matching program output for classes/sungeun/remoteDynamicDispatch (compopts: 1)]
+[Error matching program output for multilocale/diten/needMultiLocales/remoteStringTuple]
 
 comm counts incorrect (hilde, r22632)
 -------------------------------------
@@ -388,10 +425,10 @@ problem with static/dynamic linking?
 [Error matching compiler output for link/sungeun/static_dynamic (compopts: 6)] (started 10/26/2012)
 
 
-=========================================
+==================================================
 cray-prgenv-cray/cce-specific regressions
-(Reviewed for accuracy 03/02/14)
-=========================================
+(Reviewed for accuracy, except timeouts, 03/23/14)
+==================================================
 
 extern_string_test output mismatch (06/16/13)
 ---------------------------------------------
@@ -412,23 +449,13 @@ only for 8.3 so not sure when we will start seeing this.
 
 [Error matching compiler output for optimizations/bulkcomm/alberto/Block/1dStrideBlock]
 [Error matching compiler output for optimizations/bulkcomm/alberto/Block/3dStrideTest]
-[Error matching compiler output for optimizations/bulkcomm/alberto/Block/4dStrideTest]
-[Error matching compiler output for optimizations/bulkcomm/alberto/Block/5dStrideTest]
 [Error matching compiler output for optimizations/bulkcomm/alberto/Block/ArrayAssignment]
 [Error matching compiler output for optimizations/bulkcomm/alberto/Block/perfTest (compopts: 1)]
 [Error matching compiler output for optimizations/bulkcomm/alberto/Block/perfTest_v2 (compopts: 1)]
-[Error matching compiler output for optimizations/bulkcomm/alberto/Cyclic/1dStrideCyclic]
-[Error matching compiler output for optimizations/bulkcomm/alberto/Cyclic/4dStrideTest]
-[Error matching compiler output for optimizations/bulkcomm/alberto/Cyclic/5dStrideTest]
-[Error matching compiler output for optimizations/bulkcomm/alberto/Cyclic/AllCasesPerformance_Cyclic]
 [Error matching compiler output for optimizations/bulkcomm/alberto/Cyclic/ArrayAssignment]
-[Error matching compiler output for optimizations/bulkcomm/alberto/Cyclic/BlockToCyclic]
-[Error matching compiler output for optimizations/bulkcomm/alberto/Cyclic/CyclicToBlock]
 [Error matching compiler output for optimizations/bulkcomm/alberto/Cyclic/perfTest (compopts: 1)]
 [Error matching compiler output for optimizations/bulkcomm/alberto/Cyclic/perfTest_v2 (compopts: 1)]
 [Error matching compiler output for performance/compiler/bradc/compSampler-timecomp]
-[Error matching compiler output for sparse/parallel/sparse-csr-iter-dom-arr-zipper]
-[Error matching compiler output for studies/graph500/v2/main (compopts: 1)]
 [Error matching compiler output for studies/ssca2/graphio/graphio (compopts: 1)]
 [Error matching compiler output for trivial/shannon/compSampler]
 
@@ -502,7 +529,7 @@ Compilation timeout (since ??? at least 01/26/14)
 
 ===============================================================
 pgi-specific regressions (in addition to chpbld02 errors above)
-(Reviewed for accuracy 02/25/14)
+(Reviewed for accuracy 03/25/14)
 ===============================================================
 
 problem with empty initializer (1/25/14 -- bradc)
@@ -527,12 +554,6 @@ negative floating point 0.0 not supported
 alignment error in output
 -------------------------
 [Error matching program output for types/range/hilde/align]
-
-compilation timeouts (02/25/14)
--------------------------------
-[Error: Timed out compilation for arrays/deitz/many/test_many_arrays_of_records]
-[Error: Timed out compilation for arrays/deitz/part1/test_array_arg1]
-[Error: Timed out compilation for arrays/deitz/part1/test_array_arg3]
 
 
 ======================================================================
@@ -812,6 +833,14 @@ The number of times the follower is called has changed.  Perhaps related to
 baseline-specific tests
 (Reviewed for accuracy 02/28/14)
 ================================
+
+Failure due to r22900 (bradc)
+-----------------------------
+[Error matching compiler output for studies/ssca2/graphio/graphio (compopts: 1)]
+
+Failure for new test (lydia 03/26/14)
+-------------------------------------
+[Error matching program output for expressions/lydia/noinit/stackVerify]
 
 never worked (02/24/11)
 -----------------------

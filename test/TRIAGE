@@ -52,22 +52,6 @@ This seems to have become more frequent recently.
   linux64.gnu.none.fifo.flat-mlf (failed 3/22, fixed 3/23)
 
 
-failures due to r22900
-----------------------
-[Error matching performance keys for release/examples/benchmarks/hpcc/ra (compopts: 1)]
-[Error matching performance keys for release/examples/benchmarks/hpcc/variants/ra-cleanloop (compopts: 1)]
-  linux64.gnu.none.fifo.flat-prf (chap03)
-  linux64.gnu.none.fifo.flat-prf (chap04)
-  linux64.gnu.none.fifo.flat-prf (bradc-lnx)
-  linux64.gnu.none.fifo.flat-fst (chap12)
-[Error matching compiler output for studies/ssca2/graphio/graphio (compopts: 1)]
-  linux64.gnu.none.fifo.flat-npt
-[Error matching program output for classes/sungeun/remoteDynamicDispatch (compopts: 1)]
-[Error matching program output for multilocale/diten/needMultiLocales/remoteStringTuple]
-  linux64.gnu.gasnet-everything.fifo.flat-std
-  linux64.gnu.gasnet-fast.fifo.flat.dlmalloc-std
-
-
 darwin-gnu and darwin-clang non-deterministic compiler failures
 ---------------------------------------------------------------
 
