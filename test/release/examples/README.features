@@ -32,6 +32,7 @@ benchmarks/
   shootout/
     binarytrees       : forall loops; iterators; tuples; recursion; classes
     chameneosredux    : atomics; enums; coforall loops; reductions
+    fannkuch-redux    : arrays
     mandelbrot        : uints; multidimensional arrays; bit ops; binary output
     nbody             : tuples; records; inlined functions
     spectralnorm      : reductions; domains; arrays
