@@ -978,7 +978,9 @@ GenRet codegenRaddr(GenRet wide)
 static GenRet codegenRlocale(GenRet wide)
 {
   GenRet ret;
+#ifdef HAVE_LLVM
   Type* wideRefType = NULL;
+#endif
   Type* type = LOCALE_ID_TYPE;
 
   if( wide.isLVPtr != GEN_WIDE_PTR && isWideString(wide.chplType)) {
@@ -1032,7 +1034,9 @@ static GenRet codegenRsize(GenRet wideString)
 
 static GenRet codegenRnode(GenRet wide){
   GenRet ret;
+#ifdef HAVE_LLVM
   Type* wideRefType = NULL;
+#endif
   Type* type = NODE_ID_TYPE;
 
   if( wide.isLVPtr != GEN_WIDE_PTR && isWideString(wide.chplType)) {
