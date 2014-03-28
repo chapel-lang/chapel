@@ -1240,7 +1240,7 @@ class sdom {
 class slocdom {
   // for now, store everything on locale with id=0
   // TODO replace 0
-  const myLocID: locIdT;
+  var myLocID: locIdT;
   var myRange;
 }
 
