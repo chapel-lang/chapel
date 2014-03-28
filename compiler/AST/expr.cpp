@@ -823,8 +823,12 @@ static bool isWide(GenRet x)
   return false;
 }
 
+// This function takes in something already code-generated that should be some
+// sort of wide thing (isLVPtr == GEN_WIDE_PTR, or wide ref or wide class).
+// It returns the local reference type and sets *wideRefTypeOut
+// to the wide reference type.
 static
-Type* wideRefTypeToLocalRefType(GenRet wide, Type** wideRefTypeOut)
+Type* getRefTypesForWideThing(GenRet wide, Type** wideRefTypeOut)
 {
   Type* ret = NULL;
   Type* wideRefType = NULL;
@@ -945,7 +949,7 @@ GenRet codegenRaddr(GenRet wide)
    return ret;
   }
 
-  type = wideRefTypeToLocalRefType(wide, &wideRefType);
+  type = getRefTypesForWideThing(wide, &wideRefType);
 
   if( widePointersStruct ) {
     ret = codegenValue(codegenWideThingField(wide, WIDE_GEP_ADDR));
@@ -978,9 +982,6 @@ GenRet codegenRaddr(GenRet wide)
 static GenRet codegenRlocale(GenRet wide)
 {
   GenRet ret;
-#ifdef HAVE_LLVM
-  Type* wideRefType = NULL;
-#endif
   Type* type = LOCALE_ID_TYPE;
 
   if( wide.isLVPtr != GEN_WIDE_PTR && isWideString(wide.chplType)) {
@@ -994,8 +995,9 @@ static GenRet codegenRlocale(GenRet wide)
   } else {
     if( fLLVMWideOpt ) {
 #ifdef HAVE_LLVM
+      Type* wideRefType = NULL;
       GenInfo* info = gGenInfo;
-      wideRefTypeToLocalRefType(wide, &wideRefType);
+      getRefTypesForWideThing(wide, &wideRefType);
       if (wide.isLVPtr == GEN_PTR) wide = codegenValue(wide);
       GenRet wideTy = wideRefType; // get the LLVM type for the wide ref.
       llvm::PointerType *addrType = llvm::cast<llvm::PointerType>(wideTy.type);
@@ -1034,9 +1036,6 @@ static GenRet codegenRsize(GenRet wideString)
 
 static GenRet codegenRnode(GenRet wide){
   GenRet ret;
-#ifdef HAVE_LLVM
-  Type* wideRefType = NULL;
-#endif
   Type* type = NODE_ID_TYPE;
 
   if( wide.isLVPtr != GEN_WIDE_PTR && isWideString(wide.chplType)) {
@@ -1058,8 +1057,9 @@ static GenRet codegenRnode(GenRet wide){
   } else {
     if( fLLVMWideOpt ) {
 #ifdef HAVE_LLVM
+      Type* wideRefType = NULL;
       GenInfo* info = gGenInfo;
-      wideRefTypeToLocalRefType(wide, &wideRefType);
+      getRefTypesForWideThing(wide, &wideRefType);
       if (wide.isLVPtr == GEN_PTR) wide = codegenValue(wide);
       GenRet wideTy = wideRefType; // get the LLVM type for the wide ref.
       llvm::PointerType *addrType = llvm::cast<llvm::PointerType>(wideTy.type);
