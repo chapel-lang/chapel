@@ -1,6 +1,7 @@
-extern proc printem(ref x:uint(8), n:int(32));
-
 param size = 5;
+
+extern proc printem(x:size*uint(8), n:int(32));
+
 var t:size*uint(8);
 for param i in 1..size {
   t[i] = i;
@@ -21,11 +22,10 @@ proc test(t:size*uint(8)) {
   writeln(t);
   //printem(t[1], size);
   var d = t;
-  printem(d[1], size);
+  printem(d, size);
   /*var e:size*uint(8);
   for param i in 1..size {
     e[i] = t[i];
   }
   printem(e[1], size);*/
 }
-

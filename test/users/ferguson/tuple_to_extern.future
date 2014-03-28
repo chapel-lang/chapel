@@ -1,7 +1,0 @@
-bug: passing tuple to extern function passes stack trash
-
-If a is a tuple, and I pass a[1] to an extern function by reference,
-I expect the rest of the tuple to be stored in contiguously allocated
-memory. That's not happening in this test case - instead, a[1] is
-stored in its own stack variable, e.g. a_1, and &a_1 is passed.
-
