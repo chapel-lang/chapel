@@ -26,10 +26,6 @@ linux64 regressions (in addition to the above)
 (Reviewed for accuracy 03/01/14)
 ==============================================
 
-Failure for new .bad (sungeun, r22962)
---------------------------------------
-[Error matching .bad file for trivial/sidelnik/reduction]
-
 new illegal l-value error (prob. due to vass's r22963)
 ------------------------------------------------------
 [Error matching .bad file for users/vass/crash1callDestructorsMain]
@@ -51,11 +47,6 @@ seg fault (bradc, r22900)
 [Error matching performance keys for release/examples/benchmarks/hpcc/ra (compopts: 1)]
 [Error matching performance keys for release/examples/benchmarks/hpcc/variants/ra-cleanloop (compopts: 1)]
 
-
-new illegal l-value error (prob. due to vass's r22963)
-------------------------------------------------------
-[Error matching compiler output for release/examples/benchmarks/miniMD/miniMD
-(compopts: 4)]
 
 consistent execution timeouts on chap04 (since ??? -- at least 11/20/13)
 ------------------------------------------------------------------------
@@ -85,10 +76,6 @@ We've turned off randomSeed for this test, hopefully it won't reoccur.
 --fast regressions
 (Reviewed for accuracy 03/01/14)
 ================================
-
-Failure for new test (lydia 03/26/14)
--------------------------------------
-[Error matching program output for expressions/lydia/noinit/stackVerify]
 
 Both of these pass with gcc 4.8 but fail with 4.3
 -------------------------------------------------
@@ -129,10 +116,6 @@ verify regressions
 valgrind-specific regressions
 (Reviewed for accuracy 03/03/14)
 ================================
-
-Failure for new test (lydia 03/26/14)
--------------------------------------
-[Error matching program output for expressions/lydia/noinit/stackVerify]
 
 nondeterministic failure due to decrementing task counts after task has
 run but before pthread has been descheduled.  Could happen in any
@@ -208,10 +191,6 @@ incorrect value for numChunks, non-deterministic (03/10/14)
 -----------------------------------------------------------
 [Error matching program output for functions/iterators/sungeun/forwarding/forwardDefaultDom (compopts: 1)]
 
-new illegal l-value error (prob. due to vass's r22963)
-------------------------------------------------------
-[Error matching compiler output for release/examples/benchmarks/miniMD/miniMD
-(compopts: 2)]
 
 ====================================================
 gasnet-everything regressions (other than the above)
@@ -228,11 +207,6 @@ comm counts incorrect (hilde, r22632)
 [Error matching .bad filefor performance/hilde/coforallOnByRef]
 [Error matching .bad file for performance/hilde/userSync]
 
-comm counts incorrect (hilde, r22674)
--------------------------------------
-[Error matching program output for modules/sungeun/init/printInitCommCounts (compopts: 1)]
-[Error matchig program output for studies/hpcc/CommDiags/stream-ep_commDiags (compopts: 1)]
-
 execution timeout (02/26/14)
 ----------------------------
 [Error: Timed out executing program optimizations/bulkcomm/alberto/Block/perfTest_v2 (compopts: 1)]
@@ -242,6 +216,14 @@ execution timeout (02/26/14)
 gasnet-fast regressions (other than the above)
 (Reviewed for accuracy 02/27/14)
 ==============================================
+
+problem with new .bad file
+--------------------------
+[Error matching .bad file for studies/shootout/nbody/sidelnik/nbody_fullreduction]
+
+l-value issue?
+--------------
+[Error matching compiler output for users/vass/crash2VarSymbolTypeNULL]
 
 unable to start polling thread (???)
 ------------------------------------
@@ -666,6 +648,10 @@ qthreads-specific tests
 Reviewed for accuracy 02/26/14
 ===============================
 
+problem with new .bad file
+--------------------------
+[Error matching .bad file for studies/shootout/nbody/sidelnik/nbody_fullreduction]
+
 undefined references to Chapel runtime functions (static/dynamic link problem)
 ------------------------------------------------------------------------------
 [Error matching compiler output for compflags/bradc/minimalModules/minModDeclPrint]
@@ -837,10 +823,6 @@ baseline-specific tests
 Failure due to r22900 (bradc)
 -----------------------------
 [Error matching compiler output for studies/ssca2/graphio/graphio (compopts: 1)]
-
-Failure for new test (lydia 03/26/14)
--------------------------------------
-[Error matching program output for expressions/lydia/noinit/stackVerify]
 
 never worked (02/24/11)
 -----------------------
