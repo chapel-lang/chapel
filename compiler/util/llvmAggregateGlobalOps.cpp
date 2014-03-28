@@ -119,6 +119,78 @@ Value* rebasePointer(Value* ptr, Value* oldBase, Value* newBase, const Twine &na
   return ret;
 }
 
+// Given a start and end load/store instruction (in the same basic block),
+// reorder the instructions so that the addressing instructions are
+// first, the load/store instructions are next, and then the
+// uses of loaded values are last. This reordering is valid when
+// the other instructions do not read or write memory.
+// Returns the last instruction in the reordering.
+static
+Instruction* reorderAddressingMemopsUses(Instruction *FirstLoadOrStore,
+                                         Instruction *LastLoadOrStore,
+                                         bool DebugThis)
+{
+  SmallPtrSet<Instruction*, 8> memopsUses;
+  Instruction *LastMemopUse = NULL;
+
+  for (BasicBlock::iterator BI = FirstLoadOrStore; !isa<TerminatorInst>(BI); ++BI) {
+    Instruction* insn = BI;
+    bool isUseOfMemop = false;
+
+    if( isa<StoreInst>(insn) || isa<LoadInst>(insn) ) {
+      memopsUses.insert(insn);
+      continue;
+    }
+    // Check -- are any operands to this instruction memopsUses?
+    for (User::op_iterator i = insn->op_begin(), e = insn->op_end(); i != e; ++i) {
+      Value *v = *i;
+      if(Instruction *uses_insn = dyn_cast<Instruction>(v)) {
+        if( memopsUses.count(uses_insn) ){
+          isUseOfMemop = true;
+          break;
+        }
+      }
+    }
+
+    if( isUseOfMemop ) memopsUses.insert(insn);
+
+    if( insn == LastLoadOrStore ) break;
+  }
+
+  LastMemopUse = LastLoadOrStore;
+
+  // Reorder the instructions here.
+  // Move all addressing instructions before StartInst.
+  // Move all uses of loaded values before LastLoadOrStore (which will be removed).
+  for (BasicBlock::iterator BI = FirstLoadOrStore; !isa<TerminatorInst>(BI);) {
+    Instruction* insn = BI++; // don't invalidate iterator.
+    // Leave loads/stores where they are (they will be removed)
+    if( isa<StoreInst>(insn) || isa<LoadInst>(insn) ) {
+      if( DebugThis ) {
+        errs() << "found load/store: "; insn->dump();
+      }
+    } else if( memopsUses.count(insn) ) {
+      if( DebugThis ) {
+        errs() << "found memop use: "; insn->dump();
+      }
+      // Move uses of memops to after the final memop.
+      insn->removeFromParent();
+      insn->insertAfter(LastMemopUse);
+      LastMemopUse = insn;
+    } else {
+      if( DebugThis ) {
+        errs() << "found other: "; insn->dump();
+      }
+      // Move addressing instructions to before the first memop.
+      insn->removeFromParent();
+      insn->insertBefore(FirstLoadOrStore);
+    }
+    if( insn == LastLoadOrStore ) break;
+  }
+
+  return LastMemopUse;
+}
+
 // The next several fns are stolen almost totally unmodified from MemCpyOptimizer.
 // modified code areas say CUSTOM.
 
@@ -402,7 +474,10 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
   bool isLoad = isa<LoadInst>(StartInst);
   bool isStore = isa<StoreInst>(StartInst);
   Instruction *lastAddedInsn = NULL;
+  Instruction *LastLoadOrStore = NULL;
  
+  SmallVector<Instruction*, 8> toRemove;
+
   // Okay, so we now have a single global load/store. Scan to find
   // all subsequent stores of the same value to offset from the same pointer.
   // Join these together into ranges, so we can decide whether contiguous blocks
@@ -439,6 +514,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
         break;
 
       Ranges.addStore(Offset, NextStore);
+      LastLoadOrStore = NextStore;
     } else {
       LoadInst *NextLoad = cast<LoadInst>(BI);
       if (!NextLoad->isSimple()) break;
@@ -449,14 +525,21 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
         break;
 
       Ranges.addLoad(Offset, NextLoad);
+      LastLoadOrStore = NextLoad;
     }
   }
+
   // If we have no ranges, then we just had a single store with nothing that
   // could be merged in.  This is a very common case of course.
   if (!Ranges.moreThanOneOp())
     return 0;
 
-  IRBuilder<> builder(StartInst);
+  // Divide the instructions between StartInst and LastLoadOrStore into
+  // addressing, memops, and uses of memops (uses of loads)
+  reorderAddressingMemopsUses(StartInst, LastLoadOrStore, DebugThis);
+
+  Instruction* insertBefore = StartInst;
+  IRBuilder<> builder(insertBefore);
 
   // Now that we have full information about ranges, loop over the ranges and
   // emit memcpy's for anything big enough to be worthwhile.
@@ -465,7 +548,6 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
     const MemOpRange &Range = *I;
     Value* oldBaseI = NULL;
     Value* newBaseI = NULL;
-    Instruction* insertBefore = Range.TheStores[0];
 
     if (Range.TheStores.size() == 1) continue; // Don't bother if there's only one thing...
 
@@ -495,26 +577,8 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
     alloc = makeAlloca(int8Ty, "agg.tmp", insertBefore,
                        Range.End-Range.Start, Alignment);
 
-    // If StartPtr is not Range.TheStores[0], we will need to compute
-    // the old base address from Range.TheStores[0] plus its offset;
-    // otherwise we can run into situations where we havn't computed
-    // the old base address yet before the first load/store.
-    Value* firstPtr = getLoadStorePointer(Range.TheStores[0]);
-    if( firstPtr != StartPtr ) {
-      int64_t Offset = 0;
-      bool ok = IsPointerOffset(firstPtr, StartPtr, Offset, *TD);
-      assert(ok); // must be same base if we got here!
-      // Now just subtract offset from pointer.
-      Value* cast = builder.CreatePointerCast(firstPtr, globalInt8PtrTy, "agg.bcast");
-      Value* gep = builder.CreateConstInBoundsGEP1_64(cast, Offset, "agg.bgep");
-      StartPtr = gep;
-    }
-
     // Generate the old and new base pointers before we output
-    // anything else. These might be unused, but since the loads/stores in
-    // the range can be in a different order and we're trying
-    // to keep them in their original order, it's easier to always
-    // add oldBaseI and newBaseI here.
+    // anything else.
     {
       Type* iPtrTy = TD->getIntPtrType(alloc->getType());
       Type* iNewBaseTy = TD->getIntPtrType(alloc->getType());
@@ -533,8 +597,6 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
           errs() << "have store in range:";
           oldStore->dump();
         }
-
-        builder.SetInsertPoint(oldStore);
 
         Value* ptrToAlloc = rebasePointer(oldStore->getPointerOperand(),
                                           StartPtr, alloc, "agg.tmp",
@@ -613,8 +675,6 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
           oldLoad->dump();
         }
 
-        builder.SetInsertPoint(oldLoad);
-
         Value* ptrToAlloc = rebasePointer(oldLoad->getPointerOperand(),
                                           StartPtr, alloc, "agg.tmp",
                                           &builder, *TD, oldBaseI, newBaseI);
@@ -629,15 +689,22 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
       }
     }
 
-    // Zap all the old loads/stores
+    // Save old loads/stores for removal
     for (SmallVector<Instruction*, 16>::const_iterator
          SI = Range.TheStores.begin(),
          SE = Range.TheStores.end(); SI != SE; ++SI) {
-      //MD->removeInstruction(*SI);
-      (*SI)->eraseFromParent();
+      Instruction* insn = *SI;
+      toRemove.push_back(insn);
     }
   }
- 
+
+  // Zap all the old loads/stores
+  for (SmallVector<Instruction*, 16>::const_iterator
+       SI = toRemove.begin(),
+       SE = toRemove.end(); SI != SE; ++SI) {
+    (*SI)->eraseFromParent();
+  }
+
   return lastAddedInsn;
 }
 
