@@ -161,6 +161,9 @@ def LauncherTimeoutArgs(timeout):
         option = '--walltime=' + str(hours) + ':' + str(minutes) \
                  + ':' + str(seconds)
         return [option]
+    if useLauncherTimeout == 'slurm':
+        # slurm timeout is currently set with CHPL_LAUNCHER_WALLTIME
+        return []
     else:
         Fatal('LauncherTimeoutArgs encountered an unknown format spec: ' + \
               useLauncherTimeout)
@@ -1221,6 +1224,14 @@ for testname in testsrc:
                         sys.stdout.write(']\n')
                         sys.stdout.write('[Execution output was as follows:]\n')
                         sys.stdout.write(output)
+                    
+                    # so far as I can tell, an interactive slurm run doesn't tell 
+                    # you when walltime has been hit. If batch walltime is hit an 
+                    # error message is put in the output file but we don't have 
+                    # here. For slurm sub_test just queses up the job and then 
+                    # there is a slurm prediff that waits for the job to complete
+                    # or timeout so the timeout will be caught by the .good diff 
+                    # failures. The error message isn't very pretty though
 
                 elif useTimedExec:
                     wholecmd = cmd+' '+' '.join(map(ShellEscape, args))
