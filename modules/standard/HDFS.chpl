@@ -13,7 +13,7 @@ extern record hdfs_block_byte_map_t {
 }
 
 // Connect to HDFS
-extern proc hdfs_connect(inout fs: c_void_ptr, path: string, port: int): syserr; 
+extern proc hdfs_connect(out fs: c_void_ptr, path: string, port: int): syserr; 
 
 // Disconnect from HDFS
 extern proc hdfs_disconnect(fs: c_void_ptr): syserr;
@@ -23,7 +23,7 @@ extern proc hdfs_alloc_array(n: int): char_ptr_ptr;
 
 // Create a mapping locale_name -> locale_id (need this due to hdfs and since we cant
 // pass strings inside extern records when multilocale)
-extern proc hdfs_create_locale_mapping(inout arr: char_ptr_ptr, num: int, loc_name: string);
+extern proc hdfs_create_locale_mapping(ref arr: char_ptr_ptr, num: int, loc_name: string);
 
 // Return arr[i]
 extern proc hdfs_index_array(locs: qio_locale_map_ptr_t, i: int): hdfs_block_byte_map_t;
@@ -33,13 +33,13 @@ extern proc hdfs_create_file_functions(fs: c_void_ptr): qio_file_functions_ptr_t
 
 // Same as qio_file_open_access in IO.chpl, except this time we pass though our
 // struct that will initilize the file with the appropriate functions for that FS
-extern proc qio_file_open_access_usr(inout file_out:qio_file_ptr_t, path:string, 
-                                     access:string, iohints:c_int, inout style:iostyle,
+extern proc qio_file_open_access_usr(out file_out:qio_file_ptr_t, path:string, 
+                                     access:string, iohints:c_int, /*const*/ ref style:iostyle,
                                      s: qio_file_functions_ptr_t):err_t;
 
 // Get block owners. 
 // Returns an array of hdfs_block_byte_map_t's
-extern proc hdfs_get_owners(f: qio_file_ptr_t, inout locales: qio_locale_map_ptr_t, inout num_blocks: c_int, arr: char_ptr_ptr, loc_nums:int): syserr;
+extern proc hdfs_get_owners(f: qio_file_ptr_t, out locales: qio_locale_map_ptr_t, out num_blocks: c_int, arr: char_ptr_ptr, loc_nums:int): syserr;
 
 // ********* For multilocale ************
 // Holds a file per locale

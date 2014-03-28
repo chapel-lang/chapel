@@ -1,7 +1,7 @@
 use SysBasic;
 
 // here's what we need from Sys
-extern proc sys_strerror_syserr_str(error:syserr, inout err_in_strerror:err_t):string;
+extern proc sys_strerror_syserr_str(error:syserr, out err_in_strerror:err_t):string;
 // here's what we need from QIO
 extern proc qio_quote_string_chpl(ptr:string, len:ssize_t):string;
 

@@ -388,6 +388,9 @@ qioerr hdfs_get_owners_for_bytes(qio_file_t* file, hdfs_block_byte_map_t** locs,
       j++;
     } else {
       QIO_GET_CONSTANT_ERROR(err, EINVAL, "Unable to find address for blocks in hdfs_get_owners_for_bytes");
+      qio_free(loc);
+      *locs = NULL;
+      *out_num_blocks = 0;
       goto end;
     }
   }

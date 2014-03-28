@@ -135,7 +135,10 @@ err_t qbytes_create_iobuf(qbytes_t** out)
   err_t err;
 
   ret = (qbytes_t*) qio_calloc(1, sizeof(qbytes_t));
-  if( ! ret ) return ENOMEM;
+  if( ! ret ) {
+    *out = NULL;
+    return ENOMEM;
+  }
 
   err = _qbytes_init_iobuf(ret);
   if( err ) {
@@ -171,7 +174,10 @@ err_t qbytes_create_calloc(qbytes_t** out, int64_t len)
   void* data;
 
   ret = (qbytes_t*) qio_calloc(1, sizeof(qbytes_t) + len);
-  if( ! ret ) return ENOMEM;
+  if( ! ret ) {
+    *out = NULL;
+    return ENOMEM;
+  }
 
   data = ret + 1; // ie ret + sizeof(qbytes_t)
   // On return, the ref count in ret is 1.
@@ -294,11 +300,15 @@ err_t qbuffer_create(qbuffer_t** out)
   err_t err;
 
   ret = (qbuffer_t*) qio_malloc(sizeof(qbuffer_t));
-  if( ! ret ) return ENOMEM;
+  if( ! ret ) {
+    *out = NULL;
+    return ENOMEM;
+  }
 
   err = qbuffer_init(ret);
   if( err ) {
     qio_free(ret);
+    *out = NULL;
     return err;
   }
 
@@ -856,15 +866,22 @@ err_t qbuffer_flatten(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, 
   MAYBE_STACK_SPACE(struct iovec, iov_onstack);
   err_t err;
  
-  if( num_bytes < 0 || num_parts < 0 || start.offset < buf->offset_start || end.offset > buf->offset_end ) return EINVAL;
+  if( num_bytes < 0 || num_parts < 0 || start.offset < buf->offset_start || end.offset > buf->offset_end ) {
+    *bytes_out = 0;
+    return EINVAL;
+  }
 
   err = qbytes_create_calloc(&ret, num_bytes);
-  if( err ) return err;
+  if( err ) {
+    *bytes_out = 0;
+    return err;
+  }
 
   MAYBE_STACK_ALLOC(struct iovec, num_parts, iov, iov_onstack);
   if( ! iov ) {
     // The buffer was successfully allocated, so we have to release it here.
     qbytes_release(ret);
+    *bytes_out = 0;
     return ENOMEM;
   }
 
@@ -873,6 +890,7 @@ err_t qbuffer_flatten(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, 
     MAYBE_STACK_FREE(iov, iov_onstack);
     // The buffer was successfully allocated, so we have to release it here.
     qbytes_release(ret);
+    *bytes_out = 0;
     return err;
   }
 

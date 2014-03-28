@@ -1119,16 +1119,6 @@ module ChapelBase {
   inline proc func(type rettype) type { return __primitive("create fn type", rettype); }
   inline proc func(type t...?n, type rettype) type { return __primitive("create fn type", (...t), rettype); }
   
-  //
-  // BLC: The inout is used here not because it is necessary, but in
-  // order to ensure that the reference to the variable is passed in
-  // rather than the value.  A pragma "ref" almost results in similar
-  // behavior, but causes the expression being passed into this to be
-  // stored as an rvalue in the generated code rather than an lvalue.
-  // The correct implementation of this routine requires this function
-  // to be special-cased in functionResolution.cpp such that the inout
-  // does not actually result in temps.
-  //
   proc chpldev_refToString(ref arg) {
   
     //

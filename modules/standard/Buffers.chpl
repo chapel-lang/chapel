@@ -14,42 +14,42 @@ module BufferInternals {
   extern proc qbytes_len(qb:qbytes_ptr_t):int(64);
   extern proc qbytes_data(qb:qbytes_ptr_t):c_void_ptr;
 
-  extern proc qbytes_create_iobuf(inout ret:qbytes_ptr_t):err_t;
-  extern proc qbytes_create_calloc(inout ret:qbytes_ptr_t, len:int(64)):err_t;
+  extern proc qbytes_create_iobuf(out ret:qbytes_ptr_t):err_t;
+  extern proc qbytes_create_calloc(out ret:qbytes_ptr_t, len:int(64)):err_t;
 
   extern proc qbuffer_iter_null():qbuffer_iter_t;
 
   /*
-  extern proc qbuffer_init(inout buf:qbuffer_t):err_t;
-  extern proc qbuffer_destroy(inout buf:qbuffer_t);
+  extern proc qbuffer_init(ref buf:qbuffer_t):err_t;
+  extern proc qbuffer_destroy(ref buf:qbuffer_t);
   */
-  extern proc qbuffer_create(inout buf:qbuffer_ptr_t):err_t;
+  extern proc qbuffer_create(out buf:qbuffer_ptr_t):err_t;
   extern proc qbuffer_retain(buf:qbuffer_ptr_t);
   extern proc qbuffer_release(buf:qbuffer_ptr_t);
 
   extern proc qbuffer_append(buf:qbuffer_ptr_t, bytes:qbytes_ptr_t, skip_bytes:int(64), len_bytes:int(64)):err_t;
   extern proc qbuffer_append_buffer(buf:qbuffer_ptr_t, src:qbuffer_ptr_t, src_start:qbuffer_iter_t, src_end:qbuffer_iter_t):err_t;
   extern proc qbuffer_prepend(buf:qbuffer_ptr_t, bytes:qbytes_ptr_t, skip_bytes:int(64), len_bytes:int(64)):err_t;
-  extern proc qbuffer_flatten(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, inout bytes_out):err_t;
-  //extern proc qbuffer_clone(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, inout buf_out:qbuffer_t):err_t;
-  extern proc qbuffer_copyout(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, inout x, size):err_t;
-  extern proc qbuffer_copyin(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, inout x, size):err_t;
+  extern proc qbuffer_flatten(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, out bytes_out):err_t;
+  //extern proc qbuffer_clone(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, out buf_out:qbuffer_t):err_t;
+  extern proc qbuffer_copyout(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, ref x, size):err_t;
+  extern proc qbuffer_copyin(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, ref x, size):err_t;
 
   extern proc qbuffer_begin(buf:qbuffer_ptr_t):qbuffer_iter_t;
   extern proc qbuffer_end(buf:qbuffer_ptr_t):qbuffer_iter_t;
-  extern proc qbuffer_iter_next_part(buf:qbuffer_ptr_t, inout it:qbuffer_iter_t);
-  extern proc qbuffer_iter_prev_part(buf:qbuffer_ptr_t, inout it:qbuffer_iter_t);
-  extern proc qbuffer_iter_advance(buf:qbuffer_ptr_t, inout it:qbuffer_iter_t, amt:int(64));
+  extern proc qbuffer_iter_next_part(buf:qbuffer_ptr_t, ref it:qbuffer_iter_t);
+  extern proc qbuffer_iter_prev_part(buf:qbuffer_ptr_t, ref it:qbuffer_iter_t);
+  extern proc qbuffer_iter_advance(buf:qbuffer_ptr_t, ref it:qbuffer_iter_t, amt:int(64));
 
   extern proc qbuffer_iter_get(it: qbuffer_iter_t, end:qbuffer_iter_t, 
-                                inout bytes_out:qbytes_ptr_t,
-                                inout skip_out:int(64),
-                                inout len_out:int(64));
+                                out bytes_out:qbytes_ptr_t,
+                                out skip_out:int(64),
+                                out len_out:int(64));
   extern proc qbuffer_iter_num_bytes(start:qbuffer_iter_t, end:qbuffer_iter_t):int(64);
 
   extern proc qbuffer_len(buf:qbuffer_ptr_t):int(64);
 
-  extern proc debug_print_qbuffer_iter(inout it:qbuffer_iter_t);
+  extern proc debug_print_qbuffer_iter(/*const*/ ref it:qbuffer_iter_t);
 
 
   extern proc qbuffer_start_offset(buf:qbuffer_ptr_t):int(64);
