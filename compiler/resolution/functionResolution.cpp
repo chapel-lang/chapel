@@ -3015,8 +3015,8 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
 
     if (resolvedFn->hasFlag(FLAG_MODIFIES_CONST_FIELDS))
       // Not allowed if it is not called directly from a constructor.
-      if (!isInvokedFromConstructorLikeFunction(call))
-        USR_FATAL_CONT(call, "illegal call to %s() - it modifies 'const' fields of 'this', therefore it can be invoked only directly from a constructor");
+      if (!isInConstructorLikeFunction(call))
+        USR_FATAL_CONT(call, "illegal call to %s() - it modifies 'const' fields of 'this', therefore it can be invoked only directly from a constructor", resolvedFn->name);
 
     // Check to ensure the actual supplied to an OUT, INOUT or REF argument
     // is an lvalue.
