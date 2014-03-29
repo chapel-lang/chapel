@@ -403,6 +403,7 @@ static void recordCodeGenStrings(int argc, char* argv[]) {
 static void setStaticLink(ArgumentState* arg_state, char* arg_unused) {
   if (strcmp(CHPL_TARGET_PLATFORM, "darwin") == 0) {
     USR_WARN("Static compilation is not supported on OS X, ignoring flag.");
+    fLinkStyle = LS_DEFAULT;
   } else {
     fLinkStyle = LS_STATIC;
   }
