@@ -272,9 +272,9 @@ static void* moved_task_wrapper(void* a) {
   if (pmtwd->count_running)
     chpl_taskRunningCntInc(0, NULL);
   (pmtwd->fp)(pmtwd->arg);
-  chpl_mem_free(pmtwd, 0, 0);
   if (pmtwd->count_running)
     chpl_taskRunningCntDec(0, NULL);
+  chpl_mem_free(pmtwd, 0, 0);
   return NULL;
 }
 
