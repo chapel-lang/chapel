@@ -5,7 +5,7 @@ CHPL_FLAGS = --fast
 TARGETS = \
 	binarytrees \
 	chameneosredux \
-	fannkuch-redux \
+	fannkuchredux \
 	mandelbrot \
 	nbody \
 	spectralnorm \

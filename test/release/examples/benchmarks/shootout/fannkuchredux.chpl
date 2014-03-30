@@ -8,7 +8,7 @@
 
 config const n = 7;
 
-assert(n >= 3, "N must be in 3..");
+assert(n >= 3, "n must be in 3..");
 
 const D = {0..n};
 var s, t: [D] int;

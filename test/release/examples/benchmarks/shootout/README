@@ -13,7 +13,7 @@ At present, this directory contains the following codes:
 
     binarytrees.chpl    : Allocates and deallocates many, many binary trees
     chameneosredux.chpl : Simulates meetings between color-changing Chameneos
-    fannkuch-redux.chpl : Performs many operations on small arrays
+    fannkuchredux.chpl  : Performs many operations on small arrays
     mandelbrot.chpl     : Plots the mandelbrot set [-1.5-i,0.5+i] on a bitmap
     nbody.chpl          : Performs an n-body simulation of the Jovian planets
     spectralnorm.chpl   : Calculates the spectral norm of an infinite matrix
