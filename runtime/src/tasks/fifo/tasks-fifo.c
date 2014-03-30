@@ -777,9 +777,9 @@ static void movedTaskWrapper(void* a) {
   if (pmtwd->countRunning)
     chpl_taskRunningCntInc(0, NULL);
   (pmtwd->fp)(pmtwd->arg);
-  chpl_mem_free(pmtwd, 0, 0);
   if (pmtwd->countRunning)
     chpl_taskRunningCntDec(0, NULL);
+  chpl_mem_free(pmtwd, 0, 0);
 }
 
 
