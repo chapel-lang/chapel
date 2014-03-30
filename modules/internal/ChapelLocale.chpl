@@ -25,6 +25,39 @@ module ChapelLocale {
     proc id : int return chpl_id();  // just the node part
     proc localeid : chpl_localeID_t return chpl_localeid(); // full locale id
     proc name return chpl_name();
+
+    // This many tasks are running on this locale.
+    //
+    // Note handling runningTaskCounter <= 0 in runningTaskCnt().  The
+    // references to it are done via here.runningTasks(), and currently
+    // "here" means the requested locale, not the actual or concrete
+    // one.  But this may be "any", and the running task count in it may
+    // be zero, which in turn leads to overindexing the locales array
+    // after the subtraction of 1 in locale.runningTasks(), below.  In
+    // the long run we probably need to go through all the "here" refs
+    // in the module code and differentiate more carefully which need
+    // the requested locale and which need the concrete one.  But for
+    // now, we make the assumption that all requests for the number of
+    // running tasks want the count from the locale the calling task is
+    // running on, so the minimum possible value must be 1.
+    var runningTaskCounter : atomic int;
+
+    inline proc runningTaskCntSet(val : int) {
+      runningTaskCounter.write(val);
+    }
+
+    inline proc runningTaskCntAdd(val : int) {
+      runningTaskCounter.add(val);
+    }
+
+    inline proc runningTaskCntSub(val : int) {
+      runningTaskCounter.sub(val);
+    }
+
+    inline proc runningTaskCnt() {
+      var rtc = runningTaskCounter.read();
+      return if (rtc <= 0) then 1 else rtc;
+    }
     //------------------------------------------------------------------------}
 
     //------------------------------------------------------------------------{
@@ -347,10 +380,7 @@ module ChapelLocale {
   }
   
   proc locale.runningTasks() {
-    var numTasks: int;
-    extern proc chpl_task_getNumRunningTasks() : int;
-    on this do numTasks = chpl_task_getNumRunningTasks();
-    return numTasks;
+    return this.runningTaskCnt();
   }
   
   proc locale.blockedTasks() {
@@ -362,4 +392,22 @@ module ChapelLocale {
 
 //########################################################################}
 
+  //
+  // Increment and decrement the task count.
+  //
+  // Elsewhere in the module code we adjust the running task count
+  // directly, but at least for now the runtime also needs to be
+  // able to do so.  These functions support that.
+  //
+  pragma "insert line file info"
+  export
+  proc chpl_taskRunningCntInc() {
+    here.runningTaskCntAdd(1);
+  }
+
+  pragma "insert line file info"
+  export
+  proc chpl_taskRunningCntDec() {
+    here.runningTaskCntSub(1);
+  }
 }

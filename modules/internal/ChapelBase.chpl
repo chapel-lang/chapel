@@ -801,6 +801,7 @@ module ChapelBase {
   pragma "no default functions"
   class _EndCount {
     var i: atomic int,
+        taskCnt: int,
         taskList: _task_list = _nullTaskList;
   }
   
@@ -824,6 +825,8 @@ module ChapelBase {
   pragma "dont disable remote value forwarding"
   proc _upEndCount(e: _EndCount) {
     e.i.add(1);
+    e.taskCnt = e.taskCnt + 1;
+    here.runningTaskCntAdd(1);  // decrement is in _waitEndCount()
   }
   
   // This function is called once by each newly initiated task.  No on
@@ -843,6 +846,8 @@ module ChapelBase {
   
     // Wait for all tasks to finish
     e.i.waitFor(0);
+
+    here.runningTaskCntSub(e.taskCnt);  // increment is in _upEndCount()
   
     // It is now safe to free the task list, because we know that all the
     // tasks have been completed.  We could free this list when all the

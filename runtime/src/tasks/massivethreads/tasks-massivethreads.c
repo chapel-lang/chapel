@@ -257,6 +257,27 @@ static int get_cpu_num(void) {
 static int32_t s_num_workers;
 static size_t s_stack_size;
 
+static volatile chpl_bool canCountRunningTasks = false;
+
+typedef struct {
+  // descriptor for moved_task_wrapper()
+  chpl_fn_p fp;
+  void* arg;
+  chpl_bool count_running;
+  task_private_data_t chpl_data;
+} moved_task_wrapper_desc_t;
+
+static void* moved_task_wrapper(void* a) {
+  moved_task_wrapper_desc_t* pmtwd = (moved_task_wrapper_desc_t*) a;
+  if (pmtwd->count_running)
+    chpl_taskRunningCntInc(0, NULL);
+  (pmtwd->fp)(pmtwd->arg);
+  chpl_mem_free(pmtwd, 0, 0);
+  if (pmtwd->count_running)
+    chpl_taskRunningCntDec(0, NULL);
+  return NULL;
+}
+
 // Tasks
 void chpl_task_init(void) {
   //Initialize tasking layer
@@ -338,6 +359,14 @@ void chpl_task_callMain(void(*chpl_main)(void)) {
   chpl_main();
 }
 
+void chpl_task_stdModulesInitialized(void) {
+  // It's not safe to call the module code to count the main task as
+  // running until after the modules have been initialized.  That's
+  // when this function is called, so now count the main task.
+  canCountRunningTasks = true;
+  chpl_taskRunningCntInc(0, NULL);
+}
+
 void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg, c_sublocid_t subLoc,
     chpl_task_list_p *task_list, int32_t task_list_locale,
     chpl_bool is_begin_stmt, int lineno, chpl_string filename) {
@@ -384,17 +413,22 @@ void chpl_task_startMovedTask(chpl_fn_p fp,
 {
   myth_thread_t th;
   myth_thread_option opt;
-  task_private_data_t chpl_data={subloc, serial_state};
+  moved_task_wrapper_desc_t* pmtwd;
 
   assert(subloc == 0 || subloc == c_sublocid_any);
   assert(id == chpl_nullTaskID);
 
-  // Do the same as chpl_task_addToTaskList
+  pmtwd = (moved_task_wrapper_desc_t*) chpl_mem_alloc(sizeof(*pmtwd), 0, 0, 0);
+  *pmtwd = (moved_task_wrapper_desc_t)
+           { fp, a, canCountRunningTasks,
+             (task_private_data_t) { subloc, serial_state } };
+
+  // Do the same as chpl_task_addToTaskList, except wrap the function
   opt.stack_size = 0;
   opt.switch_immediately = (is_worker_in_cs())?0:1;
   opt.custom_data_size = sizeof(task_private_data_t);
-  opt.custom_data = (void*)&chpl_data;
-  th = myth_create_ex((void*(*)(void*)) fp, a, &opt);
+  opt.custom_data = (void*)&pmtwd->chpl_data;
+  th = myth_create_ex(moved_task_wrapper, pmtwd, &opt);
   assert(th);
   myth_detach(th);
 }
@@ -459,7 +493,8 @@ uint32_t chpl_task_getNumQueuedTasks(void) {
 
 uint32_t chpl_task_getNumRunningTasks(void) {
   //return the number of running tasks
-  return 0;
+  chpl_internal_error("chpl_task_getNumRunningTasks() called");
+  return 1;
 }
 
 int32_t chpl_task_getNumBlockedTasks(void) {

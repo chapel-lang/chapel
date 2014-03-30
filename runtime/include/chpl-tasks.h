@@ -249,6 +249,13 @@ int32_t chpl_task_getenvNumThreadsPerLocale(void);
 //
 size_t chpl_task_getMinCallStackSize(void);
 
+//
+// These are service functions provided to the runtime by the module
+// code.
+//
+extern void chpl_taskRunningCntInc(int64_t _ln, chpl_string _fn);
+extern void chpl_taskRunningCntDec(int64_t _ln, chpl_string _fn);
+
 #else // LAUNCHER
 
 typedef void chpl_sync_aux_t;

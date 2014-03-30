@@ -275,6 +275,7 @@ typedef struct {
     void                     *args;
     chpl_string              task_filename;
     int                      lineno;
+    chpl_bool                countRunning;
     chpl_qthread_private_data_t      chpl_data;
 } chpl_qthread_wrapper_args_t;
 
@@ -288,6 +289,9 @@ typedef struct chpl_qthread_tls_s {
     const char *task_filename;
     size_t      task_lineno;
 } chpl_qthread_tls_t;
+
+#define CHPL_TASK_STD_MODULES_INITIALIZED chpl_task_stdModulesInitialized
+void chpl_task_stdModulesInitialized(void);
 
 // Wrap qthread_get_tasklocal() and assert that it is always available.
 static inline chpl_qthread_tls_t * chapel_qthreads_get_tasklocal(void)

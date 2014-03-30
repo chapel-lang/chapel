@@ -194,6 +194,8 @@ module LocaleModel {
         myLocales[locIdx] = node;
         numCores += node.numCores;
       }
+
+      here.runningTaskCntSet(0);  // locale init parallelism mis-sets this
     }
 
     // Has to be globally unique and not equal to a node ID.

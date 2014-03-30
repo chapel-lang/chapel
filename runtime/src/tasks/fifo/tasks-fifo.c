@@ -66,6 +66,17 @@ struct chpl_task_list {
 };
 
 
+//
+// This is a descriptor for movedTaskWrapper().
+//
+typedef struct {
+  chpl_fn_p fp;
+  void* arg;
+  chpl_bool countRunning;
+  task_private_data_t chpl_data;
+} movedTaskWrapperDesc_t;
+
+
 typedef struct lockReport {
   const char*        filename;
   int                lineno;
@@ -83,6 +94,8 @@ typedef struct {
 
 
 static chpl_bool        initialized = false;
+
+static volatile chpl_bool canCountRunningTasks = false;
 
 static chpl_thread_mutex_t threading_lock;     // critical section lock
 static chpl_thread_mutex_t extra_task_lock;    // critical section lock
@@ -118,6 +131,7 @@ static chpl_string idleTaskName = "|idle|";
 static chpl_fn_p comm_task_fn;
 
 static void                    comm_task_wrapper(void*);
+static void                    movedTaskWrapper(void* a);
 static chpl_taskID_t           get_next_task_id(void);
 static thread_private_data_t*  get_thread_private_data(void);
 static task_pool_p             get_current_ptask(void);
@@ -365,6 +379,13 @@ void chpl_task_callMain(void (*chpl_main)(void)) {
 
 
 void chpl_task_stdModulesInitialized(void) {
+  //
+  // It's not safe to call the module code to count the main task as
+  // running until after the modules have been initialized.
+  //
+  canCountRunningTasks = true;
+  chpl_taskRunningCntInc(0, NULL);
+
   //
   // The task table is implemented in Chapel code in the modules, so
   // we can't use it, and thus can't support task reporting on ^C or
@@ -727,19 +748,38 @@ void chpl_task_startMovedTask(chpl_fn_p fp,
                               c_sublocid_t subloc,
                               chpl_taskID_t id,
                               chpl_bool serial_state) {
-  task_private_data_t chpl_data = { serial_state };
+  movedTaskWrapperDesc_t* pmtwd;
 
   assert(subloc == 0 || subloc == c_sublocid_any);
   assert(id == chpl_nullTaskID);
 
+  pmtwd = (movedTaskWrapperDesc_t*)
+          chpl_mem_alloc(sizeof(*pmtwd),
+                         CHPL_RT_MD_THREAD_PRIVATE_DATA,
+                         0, 0);
+  *pmtwd = (movedTaskWrapperDesc_t)
+           { fp, a, canCountRunningTasks,
+             (task_private_data_t) { serial_state } };
+
   // begin critical section
   chpl_thread_mutexLock(&threading_lock);
 
-  (void) add_to_task_pool(fp, a, chpl_data, NULL);
+  (void) add_to_task_pool(movedTaskWrapper, pmtwd, pmtwd->chpl_data, NULL);
   schedule_next_task(1);
 
   // end critical section
   chpl_thread_mutexUnlock(&threading_lock);
+}
+
+
+static void movedTaskWrapper(void* a) {
+  movedTaskWrapperDesc_t* pmtwd = (movedTaskWrapperDesc_t*) a;
+  if (pmtwd->countRunning)
+    chpl_taskRunningCntInc(0, NULL);
+  (pmtwd->fp)(pmtwd->arg);
+  chpl_mem_free(pmtwd, 0, 0);
+  if (pmtwd->countRunning)
+    chpl_taskRunningCntDec(0, NULL);
 }
 
 
@@ -795,19 +835,8 @@ size_t chpl_task_getCallStackSize(void) {
 uint32_t chpl_task_getNumQueuedTasks(void) { return queued_task_cnt; }
 
 uint32_t chpl_task_getNumRunningTasks(void) {
-  int numRunningTasks;
-
-  // begin critical section
-  chpl_thread_mutexLock(&threading_lock);
-  chpl_thread_mutexLock(&extra_task_lock);
-
-  numRunningTasks = running_task_cnt + extra_task_cnt;
-
-  // end critical section
-  chpl_thread_mutexUnlock(&extra_task_lock);
-  chpl_thread_mutexUnlock(&threading_lock);
-
-  return numRunningTasks;
+  chpl_internal_error("chpl_task_getNumRunningTasks() called");
+  return 1;
 }
 
 int32_t  chpl_task_getNumBlockedTasks(void) {
@@ -828,7 +857,7 @@ int32_t  chpl_task_getNumBlockedTasks(void) {
     return numBlockedTasks;
   }
   else
-    return -1;
+    return 0;
 }
 
 

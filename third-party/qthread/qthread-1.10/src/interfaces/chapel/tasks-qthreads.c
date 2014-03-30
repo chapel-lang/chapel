@@ -129,6 +129,8 @@ static syncvar_t exit_ret = SYNCVAR_STATIC_EMPTY_INITIALIZER;
 
 static volatile int havePollingTask = 0;
 
+static volatile chpl_bool canCountRunningTasks = false;
+
 void chpl_task_yield(void)
 {
     PROFILE_INCR(profile_task_yield,1);
@@ -409,6 +411,10 @@ static aligned_t chapel_wrapper(void *arg)
     chpl_qthread_wrapper_args_t *rarg = arg;
     chpl_qthread_tls_t * data = chapel_qthreads_get_tasklocal();
 
+    if (rarg->countRunning) {
+        chpl_taskRunningCntInc(0, NULL);
+    }
+
     data->task_filename = rarg->task_filename;
     data->task_lineno = rarg->lineno;
     data->chpl_data = rarg->chpl_data;
@@ -416,6 +422,10 @@ static aligned_t chapel_wrapper(void *arg)
     data->lock_lineno = 0;
 
     (*(chpl_fn_p)(rarg->fn))(rarg->args);
+
+    if (rarg->countRunning) {
+        chpl_taskRunningCntDec(0, NULL);
+    }
 
     return 0;
 }
@@ -427,7 +437,7 @@ static aligned_t chapel_wrapper(void *arg)
 void chpl_task_callMain(void (*chpl_main)(void))
 {
     const chpl_qthread_wrapper_args_t wrapper_args = 
-        {chpl_main, NULL, NULL, 0, {c_sublocid_any_val, false}};
+        {chpl_main, NULL, NULL, 0, false, {c_sublocid_any_val, false}};
 
     qthread_debug(CHAPEL_CALLS, "[%d] begin chpl_task_callMain()\n", chpl_localeID);
 
@@ -444,12 +454,23 @@ void chpl_task_callMain(void (*chpl_main)(void))
     qthread_debug(CHAPEL_CALLS, "[%d] end chpl_task_callMain()\n", chpl_localeID);
 }
 
+void chpl_task_stdModulesInitialized(void)
+{
+    //
+    // It's not safe to call the module code to count the main task as
+    // running until after the modules have been initialized.  That's
+    // when this function is called, so now count the main task.
+    //
+    canCountRunningTasks = true;
+    chpl_taskRunningCntInc(0, NULL);
+}
+
 int chpl_task_createCommTask(chpl_fn_p fn,
                              void     *arg)
 {
 #ifndef QTHREAD_MULTINODE
     const chpl_qthread_wrapper_args_t wrapper_args = 
-        {fn, arg, NULL, 0, {c_sublocid_any_val, false}};
+        {fn, arg, NULL, 0, false, {c_sublocid_any_val, false}};
 
     qthread_debug(CHAPEL_CALLS, "[%d] begin chpl_task_createCommTask()\n", chpl_localeID);
 
@@ -475,7 +496,8 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
     qthread_shepherd_id_t const here_shep_id = qthread_shep();
     chpl_bool serial_state = chpl_task_getSerial();
     chpl_qthread_wrapper_args_t wrapper_args = 
-        {chpl_ftable[fid], arg, filename, lineno, {subloc, serial_state}};
+        {chpl_ftable[fid], arg, filename, lineno, false,
+         {subloc, serial_state}};
 
     assert(subloc != c_sublocid_none);
 
@@ -522,7 +544,7 @@ void chpl_task_startMovedTask(chpl_fn_p      fp,
     assert(id == chpl_nullTaskID);
 
     chpl_qthread_wrapper_args_t wrapper_args = 
-        {fp, arg, NULL, 0, {subloc, serial_state}};
+        {fp, arg, NULL, 0, canCountRunningTasks, {subloc, serial_state}};
 
     PROFILE_INCR(profile_task_startMovedTask,1);
 
@@ -619,28 +641,15 @@ uint32_t chpl_task_getNumQueuedTasks(void)
 
 uint32_t chpl_task_getNumRunningTasks(void)
 {
-    uint32_t runningTasks = qthread_readstate(WORKER_OCCUPATION);
+    chpl_internal_error("chpl_task_getNumRunningTasks() called");
+    return 1;
+}
 
-    //
-    // If we created a polling task, assume that it runs cooperatively
-    // and yields when it doesn't have anything to do, and so can be
-    // discounted.  Note, however, that we actually count busy workers
-    // rather than running tasks here, so we don't produce an accurate
-    // count when we have more tasks than workers.  For now, let that
-    // go.  We'll correct it when we move maintening the runningTasks
-    // count into the module code.  (Though note that at that time
-    // we'll also need to get the blockedTasks count right, and we
-    // don't do that below.)
-    //
-    if (runningTasks > 0 && havePollingTask)
-        runningTasks--;
-    return runningTasks;
-}                                                         /* 1, i.e. this one */
-
-// XXX: not sure what the correct value should be here!
 int32_t chpl_task_getNumBlockedTasks(void)
 {
-    return -1;
+    // This isn't accurate, but in the absence of better information
+    // it's the best we can do.
+    return 0;
 }
 
 // Threads
