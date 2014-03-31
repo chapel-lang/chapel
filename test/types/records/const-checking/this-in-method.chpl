@@ -9,4 +9,4 @@ r1.mod();
 const r2: R;
 r2.nomod();
 r2.mod();    // compiler must report error here; the previous calls are fine
-r2 = r1;     // correctly disallowed today
+writeln("should not see this");
