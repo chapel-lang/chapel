@@ -1,0 +1,17 @@
+scenario-3-assoc-dom-of-record-with-const-fld.chpl:17: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+scenario-3-assoc-dom-of-record-with-const-fld.chpl:18: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+{(lvl = 1)}
+{(lvl = 1000)}
+{(lvl = 1000)}
+(dom = 0)
+(dom = 0)
+(dom = 22)
+(dom = 22)
+(dom = 33)
+(dom = 33)
+(dom = 0)
+(dom = 0)
+(dom = 44)
+(dom = 44)
+(dom = 55)
+(dom = 55)

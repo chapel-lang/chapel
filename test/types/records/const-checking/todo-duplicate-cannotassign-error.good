@@ -1,0 +1,1 @@
+todo-duplicate-cannotassign-error.chpl:8: error: cannot assign to a record of the type REC using the default assignment operator because it has 'const' field(s)
