@@ -709,7 +709,7 @@ static ArgumentDescription arg_desc[] = {
  {"devel", ' ', NULL, "Compile as a developer [user]", "N", &developer, "CHPL_DEVELOPER", setDevelSettings},
  {"explain-call", ' ', "<call>[:<module>][:<line>]", "Explain resolution of call", "S256", fExplainCall, NULL, NULL},
  {"explain-instantiation", ' ', "<function|type>[:<module>][:<line>]", "Explain instantiation of type", "S256", fExplainInstantiation, NULL, NULL},
- {"explain-verbose", ' ', NULL, "When one of the 'explain' options is active, also enable tracing of disambiguation", "N", &fExplainVerbose, "CHPL_EXPLAIN_VERBOSE", NULL},
+ {"explain-verbose", ' ', NULL, "Enable [disable] tracing of disambiguation with 'explain' options", "N", &fExplainVerbose, "CHPL_EXPLAIN_VERBOSE", NULL},
  {"instantiate-max", ' ', "<max>", "Limit number of instantiations", "I", &instantiation_limit, "CHPL_INSTANTIATION_LIMIT", NULL},
  {"print-callstack-on-error", ' ', NULL, "print the Chapel call stack leading to each error or warning", "N", &fPrintCallStackOnError, "CHPL_PRINT_CALLSTACK_ON_ERROR", NULL},
  {"set", 's', "<name>[=<value>]", "Set config param value", "S", NULL, NULL, readConfig},
@@ -775,7 +775,7 @@ static ArgumentDescription arg_desc[] = {
  {"remove-empty-records", ' ', NULL, "Enable [disable] empty record removal", "n", &fNoRemoveEmptyRecords, "CHPL_DISABLE_REMOVE_EMPTY_RECORDS", NULL},
  {"ignore-internal-modules", ' ', NULL, "Enable [disable] skipping internal module initialization in generated code (for testing)", "N", &fNoInternalModules, "CHPL_DISABLE_INTERNAL_MODULES", NULL},
  {"minimal-modules", ' ', NULL, "Enable [disable] using minimal modules", "N", &fMinimalModules, "CHPL_MINIMAL_MODULES", NULL},
- {"timers", ' ', NULL, "[Don't] Enable general timers one to five", "N", &fEnableTimers, "CHPL_ENABLE_TIMERS", NULL},
+ {"timers", ' ', NULL, "Enable [disable] general timers one to five", "N", &fEnableTimers, "CHPL_ENABLE_TIMERS", NULL},
  {"print-chpl-home", ' ', NULL, "Print CHPL_HOME and path to this executable and exit", "F", &printChplHome, NULL, NULL},
  {0}
 };
