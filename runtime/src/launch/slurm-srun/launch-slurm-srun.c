@@ -58,8 +58,8 @@ static sbatchVersion determineSlurmVersion(void) {
   }
 
   fclose(sysFile);
- // sprintf(command, "rm %s", sysFilename);
- // system(command);
+  sprintf(command, "rm %s", sysFilename);
+  system(command);
 
   if (strstr(version, "SBATCHPro")) {
     return slurmpro;
