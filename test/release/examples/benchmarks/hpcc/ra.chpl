@@ -210,7 +210,8 @@ proc verifyResults(T) {
     forall (_, r) in zip(Updates, RAStream()) do
       on TableDist.idxToLocale[r & indexMask] do {
         const myR = r;
-        on locks do while locks[myR & lockIndexMask].testAndSet() != false do ;
+        on locks[myR & lockIndexMask] do
+          while locks[myR & lockIndexMask].testAndSet() != false do ;
         local {
           T[myR & indexMask] ^= myR;
         }
@@ -218,7 +219,8 @@ proc verifyResults(T) {
       }
   else
     forall (_, r) in zip(Updates, RAStream()) do {
-      on locks do while locks[r & lockIndexMask].testAndSet() != false do ;
+      on locks[r & lockIndexMask] do
+        while locks[r & lockIndexMask].testAndSet() != false do ;
       T[r & indexMask] ^= r;
       locks[r & lockIndexMask].write(false);
     }

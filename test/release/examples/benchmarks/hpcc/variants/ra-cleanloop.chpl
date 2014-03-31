@@ -211,13 +211,15 @@ proc verifyResults(T) {
   if (useOn) then
     forall (_, r) in zip(Updates, RAStream()) do
       on T[r & indexMask] do {
-        on locks do while locks[r & lockIndexMask].testAndSet() != false do ;
+        on locks[r & lockIndexMask] do
+          while locks[r & lockIndexMask].testAndSet() != false do ;
         T[r & indexMask] ^= r;
         locks[r & lockIndexMask].write(false);
       }
   else
     forall (_, r) in zip(Updates, RAStream()) do {
-      on locks do while locks[r & lockIndexMask].testAndSet() != false do ;
+      on locks[r & lockIndexMask] do
+        while locks[r & lockIndexMask].testAndSet() != false do ;
       T[r & indexMask] ^= r;
       locks[r & lockIndexMask].write(false);
     }
