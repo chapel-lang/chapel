@@ -2827,7 +2827,10 @@ GenRet codegenCast(Type* t, GenRet value, bool Cparens)
   GenRet ret;
   ret.chplType = t;
   ret.isLVPtr = value.isLVPtr;
-  
+
+  // If we are casting to bool, set it to != 0.
+  if( is_bool_type(t) ) return codegenNotEquals(value, codegenZero());
+
   // if we are casting a C99 wide pointer, parens around the value
   // will result in an error, hence the Cparens parameter
   // e.g. ((chpl____wide_DefaultRectangularArr_locale_1_int64_t_F)(
@@ -4857,7 +4860,7 @@ GenRet CallExpr::codegen() {
           fprintf(outfile, "))))");*/
         } else {
           GenRet v = codegenValue(get(2));
-          ret = codegenCast(typeInfo()->symbol->cname, v);
+          ret = codegenCast(typeInfo(), v);
         }
       }
       break;
