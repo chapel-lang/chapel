@@ -47,11 +47,23 @@ checkConstWhileLoop(BlockStmt* block) {
 }
 
 
+static bool
+SymDeclaredInBlock(Symbol* condSym, BlockStmt* block) {
+  Expr* parent = condSym->defPoint->parentExpr;
+  while (parent) {
+    if (parent == block)
+      return true;
+    parent = parent->parentExpr;
+  }
+  return false;
+}
+
+
 static void
 checkWhileLoopCondition(BlockStmt* block, Expr* condExp) {
   if (SymExpr* condSE = toSymExpr(condExp)) {
     Symbol* condSym = condSE->var;
-    if (condSym->isConstant()) {
+    if (condSym->isConstant() && !SymDeclaredInBlock(condSym, block)) {
       checkConstWhileLoop(block);
     }
   }
