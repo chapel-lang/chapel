@@ -831,6 +831,8 @@ void ArgSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 bool argMustUseCPtr(Type* type) {
+  if (isWideString(type))
+    return false;
   if (isRecord(type) || isUnion(type))
     return true;
   return false;
