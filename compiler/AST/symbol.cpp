@@ -656,11 +656,26 @@ void VarSymbol::codegenGlobalDef() {
         }
       }
     } else {
-      // Anything that we don't have already
-      //
-      llvm::GlobalVariable *gVar = llvm::cast<llvm::GlobalVariable>(
-          info->module->getOrInsertGlobal(cname, type->codegen().type));
-      gVar->setInitializer(llvm::Constant::getNullValue(type->codegen().type));
+      bool existing;
+
+      existing = (info->module->getNamedValue(cname) != NULL);
+
+      if( existing )
+        INT_FATAL(this, "Redefinition of a global variable %s", cname);
+
+      // Now, create a global variable with appropriate linkage.
+      llvm::Type* llTy = type->codegen().type;
+      INT_ASSERT(llTy);
+
+      llvm::GlobalVariable *gVar =
+        new llvm::GlobalVariable(
+            *info->module,
+            llTy,
+            false, /* is constant */
+            hasFlag(FLAG_EXPORT) ? llvm::GlobalVariable::ExternalLinkage
+                                 : llvm::GlobalVariable::InternalLinkage,
+            llvm::Constant::getNullValue(llTy), /* initializer, */
+            cname);
 
       info->lvt->addGlobalValue(cname, gVar, GEN_PTR, ! is_signed(type) );
     }
