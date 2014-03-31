@@ -24,8 +24,8 @@ static void assign(int *A, int n) {
   }
 }
 
-const int size = 100000000;
-const int ntrials = 100;
+static const int size = 100000000;
+static const int ntrials = 100;
 
 void c_trial() {
   int* A;
