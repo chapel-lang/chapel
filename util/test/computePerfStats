@@ -112,29 +112,38 @@ if ($exec_time_out eq "False") {
       }
       my $regex_real = $regex;
       my $is_reject = ($type eq "reject") ? 1 : 0;
+      my $search_message = "Checking for";
+      my $found_message = "SUCCESS";
+      my $not_found_message = "FAILURE";
+      if ($is_reject) {
+        $search_message = "Checking for absence of";
+        $found_message = "FAILURE";
+        $not_found_message = "SUCCESS";
+      }
+
       if (defined $num) {
-          print "Checking for /$regex/ on line $num... ";
+          print "$search_message /$regex/ on line $num... ";
           if ($file_lines[$num_real] =~ m/$regex_real/) {
               $valid_output = $valid_output && !$is_reject;
-              print "found it.\n";
+              print "$found_message.\n";
           } else {
               $valid_output = $valid_output && $is_reject;
-              print "didn't find it.\n";
+              print "$not_found_message.\n";
           }
       } else {
-          print "Checking for /$regex/ on any line... ";
+          print "$search_message /$regex/ on any line... ";
           my $found = 0;
           foreach my $line (@file_lines) {
               if ($line =~ m/$regex_real/) {
                   $found = 1;
-                  print "found it.\n";
+                  print "$found_message.\n";
                   $valid_output = $valid_output && !$is_reject;
                   last;
               }
           }
           if (!$found) {
               $valid_output = $valid_output && $is_reject;
-              print "didn't find it.\n"
+              print "$not_found_message.\n";
           }
       }
   }
