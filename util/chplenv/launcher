@@ -17,10 +17,14 @@ if ($preset_launcher eq "") {
 
     $launcher = "none";
     if ($platform =~ /^cray-(xc|xe|xk|xt)$/) {
-        if (system("which aprun > /dev/null 2>&1")) {
-            $launcher = "none";
-        } else {
+        my $hasAprun =  not system("which aprun > /dev/null 2>&1");
+        my $hasSlurm =  not system("which srun > /dev/null 2>&1");
+        if ($hasAprun and not $hasSlurm) {
             $launcher = "aprun";
+        } elsif ($hasSlurm and not $hasAprun) {
+            $launcher = "slurm-srun";
+        } else {
+            $launcher = "none";
         }
     } elsif ($platform eq "marenostrum") {
         $launcher = "marenostrum";

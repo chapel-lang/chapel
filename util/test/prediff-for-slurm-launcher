@@ -1,9 +1,7 @@
 #!/usr/bin/env perl
 
-use English;
-use strict;               #- give ourselves grief about valid Perl code
-use warnings;             #- add more misery
-use open OUT => ":raw";   #- get rid of '\r'
+use strict;               
+use warnings;
 
 if ($#ARGV >= 0 && ($ARGV[0] eq '-h' || $ARGV[0] eq '--help')) {
    print <<END;
