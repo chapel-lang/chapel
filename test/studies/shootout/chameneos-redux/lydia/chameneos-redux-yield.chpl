@@ -108,7 +108,6 @@ class Chameneos {
     var newColor : Color;
     if (id == peer_idx) {
       is_same = 1;
-      halt("halt: chameneos met with self");
     }
     peer = population[peer_idx:int(32)];
     newColor = getComplement(color, peer.color);
