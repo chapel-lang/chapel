@@ -40,20 +40,23 @@ enum Color {blue=0, red, yellow};
 
 
 proc main() {
+  //
+  // print out the equations that govern chameneos color changes
+  //
   printColorEquations();
 
-  const population1 = populate(numChameneos1),
-        population2 = populate(numChameneos2);
-
-  run(population1);
-  run(population2);
+  //
+  // run two simulations for the two different population sizes
+  //
+  run(numChameneos1);
+  run(numChameneos2);
 }
 
 
 //
-// populate() creates an array of chameneos of the given size.  If the
-// size is 10, it uses the predefined array of colors; otherwise, it
-// deals out colors round-robin.
+// createChameneos() creates an array of chameneos of the given size.
+// If the size is 10, it uses the predefined array of colors;
+// otherwise, it deals out colors round-robin.
 //
 //
 // TODO: Currently, the compiler prints out an error if we remove the
@@ -62,7 +65,7 @@ proc main() {
 // iterators, which we may?  But even then, maybe in the meantime, we
 // should realize it?)
 //
-proc populate(size): [1..size] Chameneos {
+proc createChameneos(size): [1..size] Chameneos {
   //
   // TODO: Really want support for 'use Color' for cases like this
   //
@@ -76,30 +79,34 @@ proc populate(size): [1..size] Chameneos {
 
 
 //
-// run() takes a population of chameneos and a MeetingPlace, has the
-// chameneos print their initial colors, then allows the them to meet
-// in parallel.
+// run() takes a number of chameneos as input and creates as
+// population of that size, then allows them to meet in parallel.
 //
-proc run(population) {
+proc run(numChameneos) {
   //
   // create a meeting place
   //
   const meetingPlace = new MeetingPlace(n);
 
   //
-  // print the colors of the initial population
+  // create the population of chameneos
   //
-  for i in population do
-    write(" ", i.color);
+  const chameneos = createChameneos(numChameneos);
+
+  //
+  // print the chameneos's initial colors
+  //
+  for c in chameneos do
+    write(" ", c.color);
   writeln();
 
   //
   // fire off a task per chameneos, and have them try to meet
   //
-  coforall i in population do
-    i.tryToMeet(meetingPlace, population);
+  coforall c in chameneos do
+    c.tryToMeet(meetingPlace, chameneos);
 
-  printInfo(population);
+  printInfo(chameneos);
 }
 
 
@@ -143,7 +150,7 @@ class Chameneos {
   // may be trying to do the same thing simultaneously and beat it to
   // the action.
   //
-  proc tryToMeet(meetingPlace, population) {
+  proc tryToMeet(meetingPlace, chameneos) {
     //
     // keep trying to meet, as long as there are meetings remaining
     //
@@ -197,7 +204,7 @@ class Chameneos {
             //
             // If we were the second chameneos in, we run the meeting
             //
-            runMeeting(population, peer_idx);
+            meetWith(chameneos[peer_idx]);
           } else {
             //
             // If we were the first chameneos in, we wait for the
@@ -219,20 +226,19 @@ class Chameneos {
 
 
   //
-  // runMeeting() computes the meeting itself between two chameneos,
-  // by the second to enter the one that is 'this'
+  // meetWith() computes the meeting between a chameneos ('this')
+  // and its peer
   //
-  proc runMeeting(population, peer_idx) {
+  proc meetWith(peer) {
     //
     // If we meet with ourself, something's wrong, so check for that
     //
-    const metSelf = (id == peer_idx);
+    const metSelf = (peer == this);
 
     //
-    // get the peer that we're meeting with and compute the new color
-    // that we'll share as a function of our current colors
+    // compute the new color that we'll share as a function of our
+    // current colors
     //
-    const peer = population[peer_idx];
     const newColor = getNewColor(color, peer.color);
 
     //
@@ -308,12 +314,12 @@ proc printColorEquations() {
 // printInfo() prints out information about the population using
 // a combination of numbers and English text
 //
-proc printInfo(population) {
+proc printInfo(chameneos) {
   //
   // for each chameneos, print the number of meetings and spell out
   // the number of self-meetings for each chameneos
   //
-  for c in population {
+  for c in chameneos {
     write(c.meetings);
     spellInt(c.meetingsWithSelf);
   }
@@ -321,7 +327,7 @@ proc printInfo(population) {
   //
   // compute the total number of meetings and spell it out
   //
-  const totalMeetings = + reduce population.meetings;
+  const totalMeetings = + reduce chameneos.meetings;
   spellInt(totalMeetings);
   writeln();
 }
