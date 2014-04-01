@@ -132,7 +132,6 @@ class Chameneos {
   var color: Color;                    // its color
   var meetings,                        // the number of meetings it's had
       meetingsWithSelf: int;           // the number of meetings with itself
-                                       // TODO: Is this really needed?
   var meetingCompleted: atomic bool;   // indicates that a meeting is over
 
   //
@@ -225,13 +224,9 @@ class Chameneos {
   //
   proc runMeeting(population, peer_idx) {
     //
-    // If we meet with ourself, something's wrong, so let's check for
-    // that.
+    // If we meet with ourself, something's wrong, so check for that
     //
-    // TODO: Note we can remove this if (a) the halt is removed and (b)
-    // we are over-counting meetings with ourself
-    //
-    const is_same = (id == peer_idx);
+    const metSelf = (id == peer_idx);
 
     //
     // get the peer that we're meeting with and compute the new color
@@ -250,7 +245,7 @@ class Chameneos {
     //
     peer.color = newColor;
     peer.meetings += 1;
-    peer.meetingsWithSelf += is_same;   // TODO: we bump the count twice?
+    peer.meetingsWithSelf += metSelf;
     peer.meetingCompleted.write(true, memory_order_release);
 
     //
@@ -258,7 +253,7 @@ class Chameneos {
     //
     color = newColor;
     meetings += 1;
-    meetingsWithSelf += is_same;
+    meetingsWithSelf += metSelf;
   }
 }
 
@@ -269,10 +264,29 @@ class Chameneos {
 // third color.
 //
 inline proc getNewColor(myColor, otherColor) {
-  if (myColor == otherColor) then
-    return myColor;
-
-  return (numColors - myColor - otherColor) : Color;
+  select myColor {
+    when Color.blue {
+      select otherColor {
+        when Color.blue do return Color.blue;
+        when Color.red  do return Color.yellow;
+        otherwise          return Color.red;
+      }
+    }
+    when Color.red {
+      select otherColor {
+        when Color.blue do return Color.yellow;
+        when Color.red  do return Color.red;
+        otherwise          return Color.blue;
+      }
+    }
+    otherwise {
+      select otherColor {
+        when Color.blue do return Color.red;
+        when Color.red  do return Color.blue;
+        otherwise          return Color.yellow;
+      }
+    }
+  }
 }
 
 
