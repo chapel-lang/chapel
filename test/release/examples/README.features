@@ -31,7 +31,7 @@ benchmarks/
     explicit/  : low-level expression of complex stencil operations 
   shootout/
     binarytrees       : forall loops; iterators; tuples; recursion; classes
-    chameneosredux    : atomics; enums; coforall loops; reductions
+    chameneosredux    : atomics; enums; coforall loops; reductions; select stmts
     fannkuchredux     : arrays
     mandelbrot        : uints; multidimensional arrays; bit ops; binary output
     nbody             : tuples; records; inlined functions

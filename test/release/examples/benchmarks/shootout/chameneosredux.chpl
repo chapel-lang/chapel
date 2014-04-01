@@ -38,10 +38,29 @@ class MeetingPlace {
    if this and the other color are of the same value, return own value
    otherwise return the color that is neither this or the other color */
 inline proc getComplement(myColor : Color, otherColor : Color) {
-  if (myColor == otherColor) {
-    return myColor;
+  select myColor {
+    when Color.blue {
+      select otherColor {
+        when Color.blue do return Color.blue;
+        when Color.red do return Color.yellow;
+        otherwise return Color.red;
+      }
+    }
+    when Color.red {
+      select otherColor {
+        when Color.blue do return Color.yellow;
+        when Color.red do return Color.red;
+        otherwise return Color.blue;
+      }
+    }
+    otherwise {
+      select otherColor {
+        when Color.blue do return Color.red;
+        when Color.red do return Color.blue;
+        otherwise return Color.yellow;
+      }
+    }
   }
-  return (3 - myColor - otherColor) : Color;
 }
 
 class Chameneos {
