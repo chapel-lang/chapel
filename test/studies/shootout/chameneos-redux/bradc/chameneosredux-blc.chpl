@@ -5,9 +5,6 @@
    modified by Lydia Duncan and Brad Chamberlain
 */
 
-//
-// TODO: In comments, should Chameneos be capitalized or not?
-//
 
 //
 // the following params indicate the number of bits to use when storing
@@ -18,14 +15,14 @@ config param NUM_CHAMENEOS_ID_BITS = 8;  // # of state bits to use for IDs
 param CHAMENEOS_ID_MASK = (0x1 << NUM_CHAMENEOS_ID_BITS) - 1;
 
 
-config const numMeetings = 6000000,  // number of meetings to take place
+config const n = 100,                // number of meetings to take place
              numChameneos1 = 3,      // size of population 1
              numChameneos2 = 10;     // size of population 2
 
 if (numChameneos1 < 2 || numChameneos2 < 2) then
   halt("There must be at least 2 chameneos");
 
-if (numMeetings < 0) then
+if (n < 0) then
   halt("the number of meetings must be non-negative");
 
 
@@ -49,7 +46,7 @@ enum Color {blue=0, red, yellow};
 
 
 proc main() {
-  printColorChanges();
+  printColorEquations();
 
   const population1 = populate(numChameneos1),
         population2 = populate(numChameneos2);
@@ -103,7 +100,7 @@ proc run(population) {
   //
   // create a meeting place
   //
-  const meetingPlace = new MeetingPlace(numMeetings);
+  const meetingPlace = new MeetingPlace(n);
 
   //
   // print the colors of the initial population
@@ -130,7 +127,7 @@ proc runQuiet(population) {
   //
   // create a meeting place
   //
-  const meetingPlace = new MeetingPlace(numMeetings);
+  const meetingPlace = new MeetingPlace(n);
 
   //
   // fire off a task per chameneos, and have them try to meet
@@ -149,11 +146,11 @@ proc runQuiet(population) {
   // check the answers against the expected results and print the
   // outcome
   //
-  if (totalMeetings == numMeetings*2) {
+  if (totalMeetings == n*2) {
     writeln("total meetings PASS");
   } else {
     writeln("total meetings actual = ", totalMeetings, 
-            ", total meetings expected = ", numMeetings*2);
+            ", total meetings expected = ", n*2);
   }
 
   if (totalMeetingsWithSelf == 0) {
@@ -332,7 +329,7 @@ class Chameneos {
 
 
 //
-// getComplement() returns the complement of two colors; if the two colors
+// getNewColor() returns the complement of two colors; if the two colors
 // are the same value, the color stays the same; otherwise, it becomes the
 // third color.
 //
@@ -345,10 +342,10 @@ inline proc getNewColor(myColor, otherColor) {
 
 
 //
-// printColorChanges() prints the result of getNewColor() for all
+// printColorEquations() prints the result of getNewColor() for all
 // pairs of colors
 //
-proc printColorChanges() {
+proc printColorEquations() {
   const colors = [Color.blue, Color.red, Color.yellow];
   for color1 in colors {
     for color2 in colors {
