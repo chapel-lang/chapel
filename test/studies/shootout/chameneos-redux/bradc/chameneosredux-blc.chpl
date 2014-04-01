@@ -27,12 +27,6 @@ if (n < 0) then
 
 
 //
-// TODO: Should we have this for the official version?
-//
-config const verbose = false;  // print out verbose, non-deterministic output?
-
-
-//
 // the colors the chameneos can take on
 //
 param numColors = 3;
@@ -51,18 +45,8 @@ proc main() {
   const population1 = populate(numChameneos1),
         population2 = populate(numChameneos2);
 
-  //
-  // TODO: I think we should combine the run()s into one routine
-  // and have them switch on verbose internally to avoid duplication
-  // of, say the parallel section.
-  //
-  if (verbose) {
-    run(population1);
-    run(population2);
-  } else {
-    runQuiet(population1);
-    runQuiet(population2);
-  }
+  run(population1);
+  run(population2);
 }
 
 
@@ -116,51 +100,6 @@ proc run(population) {
     i.tryToMeet(meetingPlace, population);
 
   printInfo(population);
-}
-
-
-//
-// runQuiet() is similar to run(), but after running, it does some
-// diagnostics to check that reasonable things seem to have happened.
-//
-proc runQuiet(population) {
-  //
-  // create a meeting place
-  //
-  const meetingPlace = new MeetingPlace(n);
-
-  //
-  // fire off a task per chameneos, and have them try to meet
-  //
-  coforall i in population do
-    i.tryToMeet(meetingPlace, population);
-
-  //
-  // compute the total number of meetings and meetings with oneself,
-  // across the whole population
-  //
-  const totalMeetings         = + reduce population.meetings,
-        totalMeetingsWithSelf = + reduce population.meetingsWithSelf;
-
-  //
-  // check the answers against the expected results and print the
-  // outcome
-  //
-  if (totalMeetings == n*2) {
-    writeln("total meetings PASS");
-  } else {
-    writeln("total meetings actual = ", totalMeetings, 
-            ", total meetings expected = ", n*2);
-  }
-
-  if (totalMeetingsWithSelf == 0) {
-    writeln("total meetings with self PASS");
-  } else {
-    writeln("total meetings with self actual = ", totalMeetingsWithSelf, 
-            ", total meetings with self expected = 0");
-  }
-
-  writeln();
 }
 
 
@@ -293,10 +232,6 @@ class Chameneos {
     // we are over-counting meetings with ourself
     //
     const is_same = (id == peer_idx);
-    //
-    // TODO: Remove the following or else kill dead code that follows?
-    //
-    if (is_same) then halt("chameneos met with self");
 
     //
     // get the peer that we're meeting with and compute the new color
