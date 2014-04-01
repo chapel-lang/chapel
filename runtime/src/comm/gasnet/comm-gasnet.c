@@ -135,13 +135,6 @@ typedef struct {
 static void AM_fork_fast(gasnet_token_t token, void* buf, size_t nbytes) {
   fork_t *f = buf;
 
-  if (chpl_verbose_comm) {
-    char mybuf[128];
-    sprintf(mybuf, "%d: running (fast) remote task created by %d\n",
-            chpl_nodeID, f->caller);
-    write(2, mybuf, strlen(mybuf));
-  }
-
   if (f->arg_size)
     chpl_ftable_call(f->fid, &f->arg);
   else
