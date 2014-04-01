@@ -7,6 +7,8 @@ TARGETS = \
 	chameneosredux \
 	fannkuchredux \
 	mandelbrot \
+	meteor \
+	meteor-fast \
 	nbody \
 	spectralnorm \
 	threadring
@@ -31,6 +33,12 @@ fannkuch-redux: fannkuch-redux.chpl
 	$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 mandelbrot: mandelbrot.chpl
+	$(CHPL) -o $@ $(CHPL_FLAGS) $<
+
+meteor: meteor.chpl
+	$(CHPL) -o $@ $(CHPL_FLAGS) $<
+
+meteor-fast: meteor-fast.chpl
 	$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 nbody: nbody.chpl

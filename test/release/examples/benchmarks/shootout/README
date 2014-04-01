@@ -15,6 +15,10 @@ At present, this directory contains the following codes:
     chameneosredux.chpl : Simulates meetings between color-changing Chameneos
     fannkuchredux.chpl  : Performs many operations on small arrays
     mandelbrot.chpl     : Plots the mandelbrot set [-1.5-i,0.5+i] on a bitmap
+    meteor.chpl         : Performs a parallel search for all solutions to a
+                          puzzle
+    meteor-fast.chpl    : An alternate implementation of meteor that is much
+                          faster, but at the expense of readability
     nbody.chpl          : Performs an n-body simulation of the Jovian planets
     spectralnorm.chpl   : Calculates the spectral norm of an infinite matrix
     threadring.chpl     : Passes a token between a large number of threads

@@ -37,6 +37,8 @@ benchmarks/
     nbody             : tuples; records; inlined functions
     spectralnorm      : reductions; domains; arrays
     threadring        : syncs; coforall loops
+    meteor            : coforall loops; forall loops; recursion
+    meteor-fast       : syncs; begins; recursion
   ssca2/       : graph algorithms, generic programming, distributed
                  data structures, replicated distribution
 
