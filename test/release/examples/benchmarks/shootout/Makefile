@@ -10,6 +10,7 @@ TARGETS = \
 	meteor \
 	meteor-fast \
 	nbody \
+	pidigits \
 	spectralnorm \
 	threadring
 
@@ -43,6 +44,9 @@ meteor-fast: meteor-fast.chpl
 
 nbody: nbody.chpl
 	$(CHPL) -o $@ $(CHPL_FLAGS) --no-warnings $<
+
+pidigits: pidigits.chpl
+	$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 spectralnorm: spectralnorm.chpl
 	$(CHPL) -o $@ $(CHPL_FLAGS) $<
