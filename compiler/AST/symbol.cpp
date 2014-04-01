@@ -1087,20 +1087,31 @@ void TypeSymbol::codegenMetadata() {
     return;
   }
 
-  // Now create tbaa metadata, one for const and one for not.
-  {
-    llvm::Value* Ops[2];
-    Ops[0] = llvm::MDString::get(ctx, cname);
-    Ops[1] = parent;
-    llvmTbaaNode = llvm::MDNode::get(ctx, Ops);
+  // Only things that aren't 'struct'-like should have simple TBAA
+  // metadata. If they can alias with their fields, we don't do simple TBAA.
+  // Integers, reals, bools, enums, references, wide pointers
+  // count as one thing. Records, strings, complexes should not
+  // get simple TBAA (they can get struct tbaa).
+  if( is_bool_type(type) || is_int_type(type) || is_uint_type(type) ||
+      is_real_type(type) || is_imag_type(type) || is_enum_type(type) ||
+      isClass(type) || hasEitherFlag(FLAG_REF,FLAG_WIDE) ||
+      hasEitherFlag(FLAG_DATA_CLASS,FLAG_WIDE_CLASS) ) {
+    // Now create tbaa metadata, one for const and one for not.
+    {
+      llvm::Value* Ops[2];
+      Ops[0] = llvm::MDString::get(ctx, cname);
+      Ops[1] = parent;
+      llvmTbaaNode = llvm::MDNode::get(ctx, Ops);
+    }
+    {
+      llvm::Value* Ops[3];
+      Ops[0] = llvm::MDString::get(ctx, cname);
+      Ops[1] = constParent;
+      Ops[2] = llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), 1);
+      llvmConstTbaaNode = llvm::MDNode::get(ctx, Ops);
+    }
   }
-  {
-    llvm::Value* Ops[3];
-    Ops[0] = llvm::MDString::get(ctx, cname);
-    Ops[1] = constParent;
-    Ops[2] = llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), 1);
-    llvmConstTbaaNode = llvm::MDNode::get(ctx, Ops);
-  }
+
   // Don't try to create tbaa.struct metadata for non-struct.
   if( isUnion(type) ||
       hasFlag(FLAG_STAR_TUPLE) ||

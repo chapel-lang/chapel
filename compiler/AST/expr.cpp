@@ -677,7 +677,10 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
                                   Type* valType = NULL)
 {
   if( val.chplType && !valType ) valType = val.chplType;
-  if( ptr.chplType && !valType ) valType = ptr.chplType->getValType();
+  if( ptr.chplType && !valType ) {
+    if( ptr.isLVPtr ) valType = ptr.chplType;
+    else valType = ptr.chplType->getValType();
+  }
 
   llvm::Type* ptrValType = llvm::cast<llvm::PointerType>(
                                       ptr.val->getType())->getElementType();
@@ -693,7 +696,7 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
 
   return codegenStoreLLVM(val.val, ptr.val, valType);
 }
-// Create an LLVM store instruction possibly adding
+// Create an LLVM load instruction possibly adding
 // appropriate metadata based upon the Chapel type of ptr.
 static
 llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
@@ -716,7 +719,11 @@ llvm::LoadInst* codegenLoadLLVM(GenRet ptr,
                                 Type* valType = NULL,
                                 bool isConst = false)
 {
-  if( ptr.chplType && !valType ) valType = ptr.chplType->getValType();
+  if( ptr.chplType && !valType ) {
+    if( ptr.isLVPtr ) valType = ptr.chplType;
+    else valType = ptr.chplType->getValType();
+  }
+
   return codegenLoadLLVM(ptr.val, valType, isConst);
 }
 
@@ -2660,9 +2667,14 @@ GenRet codegenNullPointer()
   return ret;
 }
 
+// Create a memcpy call copying size bytes from src to dest.
+// If we are copying a single type known to the compiler (e.g. a whole
+// record), pointedToType can contain the single element type. If we
+// are copying (or possibly copying) multiple elements, pointedToType
+// should be NULL. pointedToType is used to emit alias analysis information.
 static 
 void codegenCallMemcpy(GenRet dest, GenRet src, GenRet size,
-                       Type* eltType) {
+                       Type* pointedToType) {
   GenInfo *info = gGenInfo;
 
   // Must call with two real pointer arguments
@@ -2711,14 +2723,16 @@ void codegenCallMemcpy(GenRet dest, GenRet src, GenRet size,
 
     llvm::MDNode* tbaaTag = NULL;
     llvm::MDNode* tbaaStructTag = NULL;
-    if( eltType ) {
-      tbaaTag = eltType->symbol->llvmTbaaNode;
-      tbaaStructTag = eltType->symbol->llvmTbaaStructNode;
+    if( pointedToType ) {
+      tbaaTag = pointedToType->symbol->llvmTbaaNode;
+      tbaaStructTag = pointedToType->symbol->llvmTbaaStructNode;
     }
-    if( tbaaTag )
-      CI->setMetadata(llvm::LLVMContext::MD_tbaa, tbaaTag);
+    // For structures, ONLY set the tbaa.struct metadata, since
+    // generally speaking simple tbaa tags don't make sense for structs.
     if( tbaaStructTag )
       CI->setMetadata(llvm::LLVMContext::MD_tbaa_struct, tbaaStructTag);
+    else if( tbaaTag )
+      CI->setMetadata(llvm::LLVMContext::MD_tbaa, tbaaTag);
 #endif
   }
 }
@@ -2779,7 +2793,13 @@ void codegenCopy(GenRet dest, GenRet src, Type* chplType=NULL)
   GenInfo *info = gGenInfo;
   if( ! info->cfile ) {
     bool useMemcpy = false;
-    if( src.isLVPtr ) {
+
+    if( chplType && chplType->symbol->llvmTbaaStructNode ) {
+      // Always use memcpy for things for which we've developed LLVM
+      // struct nodes for alias analysis, since as far as we know, we
+      // can't use tbaa.struct for load/store.
+      useMemcpy = true;
+    } else if( src.isLVPtr ) {
       // Consider using memcpy instead of stack allocating a possibly
       // large structure.
 
@@ -4678,11 +4698,11 @@ GenRet CallExpr::codegen() {
         if (primitive->tag == PRIM_CHPL_COMM_GET) {
           codegenCallMemcpy(localAddr, 
                             codegenAddrOf(codegenWideAddr(lc, remoteAddr)),
-                            codegenMul(eltSize, len), dt->typeInfo());
+                            codegenMul(eltSize, len), NULL);
         } else {
           codegenCallMemcpy(codegenAddrOf(codegenWideAddr(lc, remoteAddr)),
                             localAddr, 
-                            codegenMul(eltSize, len), dt->typeInfo());
+                            codegenMul(eltSize, len), NULL);
         }
       }
       break;

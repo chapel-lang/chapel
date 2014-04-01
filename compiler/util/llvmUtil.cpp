@@ -402,7 +402,7 @@ bool isTypeSizeSmallerThan(LLVM_TARGET_DATA * layout, llvm::Type* ty, uint64_t m
   if( ! ty->isSized() ) return false; // who knows how big it is!
 
   uint64_t sz = layout->getTypeSizeInBits(ty);
-  sz *= 8; // now in bytes.
+  sz = (sz + 7)/8; // now in bytes.
 
   if( sz < max_size_bytes ) return true;
   return false;
