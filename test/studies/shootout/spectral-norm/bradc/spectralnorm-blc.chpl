@@ -7,6 +7,12 @@
 
 config const n = 500;
 
+// Note:
+// Matrix A is never actually stored, its contents are computed on the fly
+// through calls to the method A.  This is part of the benchmark's
+// required implementation.  For ease of reference, it will be referred to as
+// simply "A" when used.  Similarly, At is A transposed.
+
 proc main() {
   var tmp, u, v: [0..#n] real;  // Declare three vectors
 
@@ -34,6 +40,10 @@ proc multiplyAtAv(v, tmp, AtAv) {
 //
 proc multiplyAv(v: [?Dv], Av: [?DAv]) {
   forall i in DAv do
+    // The use of a serial statement here and in multiplyAtv is to avoid
+    // creating additional tasks for the reduction.  Traversing the outer
+    // loop in parallel is more efficient than dividing the smaller
+    // computations up between parallel tasks.
     serial do
       Av[i] = + reduce [j in Dv] (A[i,j] * v[j]);
 }
