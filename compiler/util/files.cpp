@@ -370,7 +370,9 @@ static const char* mysystem_getresult(const char* command,
   char* result = (char*)malloc(256*sizeof(char));
   mysystem(astr(command, " > ", fullSystemFilename), description, ignorestatus);
   fileinfo* systemFile = openTmpFile(systemFilename, "r");
-  fscanf(systemFile->fptr, "%s", result);
+  if (fscanf(systemFile->fptr, "%s", result) != 1){
+    strcpy(result,"");
+  }
   closefile(systemFile);
   return astr(result);  // canonicalize
 }
