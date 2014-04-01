@@ -1,5 +1,0 @@
-perfkeys: real, real
-files: pidigits-blc.dat, pidigits-iter.dat
-graphkeys: pidigits-blc, pidigits-iter
-ylabel: Time (seconds)
-graphtitle: Pi digits variations

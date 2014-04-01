@@ -67,7 +67,7 @@ studies/shootout/nbody/nbody.graph
 studies/shootout/fasta/fasta.graph
 studies/shootout/thread-ring/thread-ring.graph
 studies/shootout/mandelbrot/mandelbrot.graph
-studies/shootout/pidigits/bradc/pidigits.graph
+studies/shootout/pidigits/pidigits.graph
 studies/shootout/meteor/kbrady/meteor.graph
 # suite: Shootout extras
 studies/shootout/binary-trees/binary-trees-extras.graph
