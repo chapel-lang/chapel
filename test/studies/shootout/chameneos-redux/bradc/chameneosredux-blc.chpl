@@ -11,7 +11,7 @@
 // IDs in a meeting place's 'state' and the corresponding bitmask
 // to use when extracting chameneos IDs, respectively.
 //
-config param NUM_CHAMENEOS_ID_BITS = 8;  // # of state bits to use for IDs
+config param NUM_CHAMENEOS_ID_BITS = 8;
 param CHAMENEOS_ID_MASK = (0x1 << NUM_CHAMENEOS_ID_BITS) - 1;
 
 
@@ -24,6 +24,12 @@ if (numChameneos1 < 2 || numChameneos2 < 2) then
 
 if (n < 0) then
   halt("the number of meetings must be non-negative");
+
+//
+// TODO: We should arguably also check that the number of bits
+// devoted to chameneos IDs and meeting IDs are enough to store
+// numChameneos1/2 and n, respectively.
+//
 
 
 //
@@ -50,31 +56,6 @@ proc main() {
   //
   run(numChameneos1);
   run(numChameneos2);
-}
-
-
-//
-// createChameneos() creates an array of chameneos of the given size.
-// If the size is 10, it uses the predefined array of colors;
-// otherwise, it deals out colors round-robin.
-//
-//
-// TODO: Currently, the compiler prints out an error if we remove the
-// return type from here; seems it would be nicer if it just put in
-// the array temp?  (unless we think we want to return unevaluated
-// iterators, which we may?  But even then, maybe in the meantime, we
-// should realize it?)
-//
-proc createChameneos(size): [1..size] Chameneos {
-  //
-  // TODO: Really want support for 'use Color' for cases like this
-  //
-  const colorsFor10 = [Color.blue, Color.red, Color.yellow, Color.red, 
-                       Color.yellow, Color.blue, Color.red, Color.yellow, 
-                       Color.red, Color.blue];
-
-  return [i in 1..size] new Chameneos(i, if (size == 10) then colorsFor10[i]
-                                                         else ((i-1)%3):Color);
 }
 
 
@@ -106,6 +87,9 @@ proc run(numChameneos) {
   coforall c in chameneos do
     c.tryToMeet(meetingPlace, chameneos);
 
+  //
+  // print information about the run
+  //
   printInfo(chameneos);
 }
 
@@ -128,6 +112,31 @@ class MeetingPlace {
   proc MeetingPlace(numMeetings) {
     state.write(numMeetings << NUM_CHAMENEOS_ID_BITS);
   }
+}
+
+
+//
+// createChameneos() creates an array of chameneos of the given size.
+// If the size is 10, it uses the predefined array of colors;
+// otherwise, it deals out colors round-robin.
+//
+//
+// TODO: Currently, the compiler prints out an error if we remove the
+// return type from here; seems it would be nicer if it just put in
+// the array temp?  (unless we think we want to return unevaluated
+// iterators, which we may?  But even then, maybe in the meantime, we
+// should realize it?)
+//
+proc createChameneos(size): [1..size] Chameneos {
+  //
+  // TODO: Really want support for 'use Color' for cases like this
+  //
+  const colorsFor10 = [Color.blue, Color.red, Color.yellow, Color.red, 
+                       Color.yellow, Color.blue, Color.red, Color.yellow, 
+                       Color.red, Color.blue];
+
+  return [i in 1..size] new Chameneos(i, if (size == 10) then colorsFor10[i]
+                                                         else ((i-1)%3):Color);
 }
 
 
@@ -336,7 +345,7 @@ proc printInfo(chameneos) {
 //
 // the base-10 digits
 //
-// TODO: Would be nice to be able to make this local?
+// TODO: Would be nice to be able to make this local to spellInt()
 //
 enum Digit {zero=0, one, two, three, four, five, six, seven, eight, nine};
 
