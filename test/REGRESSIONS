@@ -23,30 +23,20 @@ general regressions (seem to happen in most configurations)
 
 ==============================================
 linux64 regressions (in addition to the above)
-(Reviewed for accuracy 03/01/14)
+(Reviewed for accuracy 04/02/14)
 ==============================================
-
-new illegal l-value error (prob. due to vass's r22963)
-------------------------------------------------------
-[Error matching .bad file for users/vass/crash1callDestructorsMain]
 
 
 ==============================================
 linux32 regressions (in addition to the above)
-(Reviewed for accuracy 03/01/14)
+(Reviewed for accuracy 04/02/14)
 ==============================================
 
 
 ================================
 performance-specific regressions
-(Reviewed for accuracy 03/01/14)
+(Reviewed for accuracy 04/02/14)
 ================================
-
-seg fault (bradc, r22900)
--------------------------
-[Error matching performance keys for release/examples/benchmarks/hpcc/ra (compopts: 1)]
-[Error matching performance keys for release/examples/benchmarks/hpcc/variants/ra-cleanloop (compopts: 1)]
-
 
 consistent execution timeouts on chap04 (since ??? -- at least 11/20/13)
 ------------------------------------------------------------------------
@@ -57,24 +47,15 @@ Feel free to bug him.
 [Error: Timed out executing program release/examples/benchmarks/hpcc/ptrans (compopts: 1)]
 [Error: Timed out executing program studies/hpcc/RA/bradc/parallel/ra-dist (compopts: 1)]
 
-
-verification failure due to using --fast and dataParIgnoreRunningTasks=false
-----------------------------------------------------------------------------
-npb/is/mcahir/intsort.mtml since 02/05/14 on chap04 only
-
-This is a known issue, but intsort needs a lot more attention so we are choosing
-to ignore it for now.
-
-
-non-deterministic verification failure (chap04)
------------------------------------------------
-release/examples/benchmarks/hpcc/hpl failed validation in one run on 3/13/14
-We've turned off randomSeed for this test, hopefully it won't reoccur.
+consistent failures on bradc-lnx and chap03 due to insane memory usage
+this should get better with better string memory management
+-------------------------------------------------------------------------------
+[Error matching performance keys for studies/shootout/fasta/kbrady/fasta-lines]
 
 
 ================================
 --fast regressions
-(Reviewed for accuracy 03/01/14)
+(Reviewed for accuracy 04/02/14)
 ================================
 
 Both of these pass with gcc 4.8 but fail with 4.3
@@ -82,22 +63,10 @@ Both of these pass with gcc 4.8 but fail with 4.3
 [Error matching program output for modules/standard/math/infinity]
 [Error matching proram output for studies/dijkstra/driverEdgeBtw (compopts: 1)]
 
-compilation timeout (02/27/14)
-------------------------------
-[Error: Timed out compilation for studies/lulesh/bradc/xyztuple/lulesh-dense-3tuple]
-
-
-nondeterministic failures:
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-incorrect output (03/01/14, 03/09/14)
--------------------------------------
-[Error matching program output for studies/jacobi/waynew/example2]
-
 
 ================================
 memory leaks regressions
-(Reviewed for accuracy 02/27/14)
+(Reviewed for accuracy 04/02/14)
 ================================
 
 Setting a config that isn't supported for --minimal-modules (1/23/14 - bradc)
@@ -108,22 +77,14 @@ Setting a config that isn't supported for --minimal-modules (1/23/14 - bradc)
 
 ================================
 verify regressions
-(reviewed for accuracy 03/01/14)
+(reviewed for accuracy 04/02/14)
 ================================
 
 
 ================================
 valgrind-specific regressions
-(Reviewed for accuracy 03/03/14)
+(Reviewed for accuracy 04/02/14)
 ================================
-
-nondeterministic failure due to decrementing task counts after task has
-run but before pthread has been descheduled.  Could happen in any
-configuration, but exacerbated by valgrind (bradc, sungeun, gbt understand)
-----------------------------------------------------------------------------
-[Error matching program output for functions/iterators/sungeun/forwarding/forwardDefaultDom (compopts: 1)] (3/8/14)(3/10/14)(3/17/14)
-[Error matching program output for functions/iterators/sungeun/forwarding/forwardDefaultArr (compopts: 1)] (3/10/14)
-[Error matching program output for arrays/deitz/parallelism/test_forall_of_arrays_is_parallel]
 
 overlapping memcpy (root cause should be eliminated)
 ----------------------------------------------------
@@ -138,6 +99,10 @@ overlapping memcpy (root cause should be eliminated)
 stack overflow
 --------------
 [Error matching program output for parallel/cobegin/gbt/cobegin-stacksize]
+
+invalid write in length() (03/30/14, r23004, gbt)
+-------------------------------------------------
+[Error matching program output for studies/sudoku/dinan/search/sudoku-reduce2]
 
 "Unrecognised instruction" (05/18/2013)
 ---------------------------------------
@@ -184,42 +149,40 @@ execution timeouts due to relying on too many threads (?) (09/2012)
 
 ================================
 no-local regressions
-(Reviewed for accuracy 03/01/14)
+(Reviewed for accuracy 04/01/14)
 ================================
 
-incorrect value for numChunks, non-deterministic (03/10/14)
------------------------------------------------------------
-[Error matching program output for functions/iterators/sungeun/forwarding/forwardDefaultDom (compopts: 1)]
+nondeterministic compilation segfault
+(believed to be due to memory limit; brad tried increasing 04/02/14)
+--------------------------------------------------------------------
+[Error matching compiler output for memory/shannon/outofmemory/mallocOutOfMemory]
 
 
 ====================================================
 gasnet-everything regressions (other than the above)
-(Reviewed for accuracy 02/26/14)
+(Reviewed for accuracy 03/31/14)
 ====================================================
+
+comm counts changed (gbt, r23004)
+---------------------------------
+[Error matching .bad file for parallel/taskPar/sungeun/endCountTest]
+[Error matching program output for performance/sungeun/multilocale/syncsingle]
 
 failure due to r22900 (bradc; may let regress until strings are records)
 ------------------------------------------------------------------------
 [Error matching program output for classes/sungeun/remoteDynamicDispatch (compopts: 1)]
 [Error matching program output for multilocale/diten/needMultiLocales/remoteStringTuple]
 
-comm counts incorrect (hilde, r22632)
--------------------------------------
-[Error matching .bad filefor performance/hilde/coforallOnByRef]
-[Error matching .bad file for performance/hilde/userSync]
-
-execution timeout (02/26/14)
-----------------------------
-[Error: Timed out executing program optimizations/bulkcomm/alberto/Block/perfTest_v2 (compopts: 1)]
+execution timeout
+-----------------
+[Error: Timed out executing program optimizations/bulkcomm/alberto/Block/perfTest_v2 (compopts: 1)] (02/26/14)
+[Error: Timed out executing program optimizations/bulkcomm/alberto/Cyclic/perfTest (compopts: 1)] (03/31/14)
 
 
 ==============================================
 gasnet-fast regressions (other than the above)
-(Reviewed for accuracy 02/27/14)
+(Reviewed for accuracy 04/01/14)
 ==============================================
-
-problem with new .bad file
---------------------------
-[Error matching .bad file for studies/shootout/nbody/sidelnik/nbody_fullreduction]
 
 l-value issue?
 --------------
@@ -236,14 +199,18 @@ execution timeouts
 
 ================================
 block distribution regressions
-(Reviewed for accuracy 02/26/14)
+(Reviewed for accuracy 04/02/14)
 ================================
 
 
 ================================
 cyclic distribution regressions
-(Reviewed for accuracy 02/26/14)
+(Reviewed for accuracy 04/02/14)
 ================================
+
+communication counts changed due to r23004, gbt (03/30/14)
+----------------------------------------------------------
+[Error matching program output for distributions/robust/arithmetic/performance/multilocale/alloc]
 
 communication counts changed due to Vass' task functions commit (05/30/13)
 ---------------------------------------------------------------------------
@@ -546,8 +513,14 @@ cray-prgenv-pgi regressions (in addition to pgi & cray-prgenv-* above)
 
 =================================================================
 intel-specific regressions (in addition to chpbld02 errors above)
-(reviewed for accuracy 02/26/14)
+(reviewed for accuracy 03/25/14)
 =================================================================
+
+compilation timeouts (03/25/14)
+-------------------------------
+[Error: Timed out compilation for users/ferguson/aa/aa1]
+[Error: Timed out compilation for users/ferguson/aa/aa2]
+[Error: Timed out compilation for users/ferguson/aa/aa3]
 
 undefined reference to dl_stack_flags
 -------------------------------------
@@ -607,12 +580,8 @@ compilation timeouts (02/28/14)
 
 ====================================================
 cygwin-specific failures
-(Reviewed for accuracy on 01/14/14 -- examples only)
+(Reviewed for accuracy on 04/01/14 -- examples only)
 ====================================================
-
-internal error: pthread_cond_init() failed (10/25/13 after a long hiatus)
--------------------------------------------------------------------------
-[Error matching program output for release/examples/primers/fileIO]
 
 *** everything below here is not in examples/ and not tested nightly ***
 
@@ -644,13 +613,9 @@ sig_send: wait for sig_complete event failed
 
 
 ===============================
-qthreads-specific tests
-Reviewed for accuracy 02/26/14
+qthreads.flat regressions
+Reviewed for accuracy 04/02/14
 ===============================
-
-problem with new .bad file
---------------------------
-[Error matching .bad file for studies/shootout/nbody/sidelnik/nbody_fullreduction]
 
 undefined references to Chapel runtime functions (static/dynamic link problem)
 ------------------------------------------------------------------------------
@@ -664,16 +629,36 @@ segv (no backtrace) (2/18/14)
 
 timeouts (12/7/12)
 ------------------
-[Error: Timed out executing program distributions/robust/associative/stress/many_array]
-[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)]
 [Error: Timed out executing program studies/sudoku/dinan/sudoku]
 
 
 =======================================
 qthreads.numa regressions
 (other than qthreads regressions above)
-(Reviewed for accuracy 03/01/14)
+(Reviewed for accuracy 04/02/14)
 =======================================
+
+Nondeterministic issues
+~~~~~~~~~~~~~~~~~~~~~~~
+
+nondeterministic cases of "sublocale child index out of bounds" w/ garbage IDs
+(first occurred on 03/30/14, r23004, but nondeterministic, so can't be certain)
+-------------------------------------------------------------------------------
+[Error matching program output for domains/sungeun/assoc/stress.numthr (compopts: 1, execopts: 1)] (03/30/14)
+[Error matching program output for npb/ep/mcahir/ep] (03/30/14)
+[Error matching program output for optimizations/bulkcomm/alberto/Block/perfTest_v2 (compopts: 1)] (03/31/14)
+[Error matching program output for studies/sort/radix] (03/31/14)
+[Error matching program output for npb/cg/bradc/cg-sparse (compopts: 1)] (04/01/14)
+[Error matching program output for associative/waynew/indef4] (04/02/14)
+
+nondeterministic cases of "chpl_comm_fork: Assertion 'node==0'
+(first occurred 04/02/14, but probably the same root cause as the above)
+------------------------------------------------------------------------
+[Error matching program output for performance/compiler/bradc/cg-sparse-timecomp (compopts: 1)] (04/02/14)
+
+
+Deterministic issues
+~~~~~~~~~~~~~~~~~~~~
 
 different internal failure (before 02/25/14)
 --------------------------------------------
@@ -727,51 +712,42 @@ pointers have an extra locale field when printed
 [Error matching program output for trivial/bradc/ref2string (compopts: 1)]
 [Error matching program output for trivial/diten/classRef2string-local (compopts: 1)]
 
-incorrect output (before 02/25/14)
-----------------------------------
-[Error matching program output for types/tuple/deitz/test_strings_and_tuples]
+
+====================================
+gasnet.qthreads.flat regressions
+(in addition to qthreads.flat above)
+(reviewed for accuracy 04/02/14)
+====================================
+
+failures within examples
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+*** random stuff times out with no discernable pattern -- too hard to track ***
+
+The pre-user code hook is called from the main thread instead of a qthreads
+task on locales other than 0 causing task-local storage to not be set up
+correctly. Every test that runs with multiple locales in this
+configuration. (gbt)
 
 
-===============================================================
-gasnet.qthreads.numa-specific tests (only run for -multilocale)
-(Reviewed for accuracy 01/24/14 -- examples only)
-===============================================================
+failures outside examples
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
-examples testing only
-~~~~~~~~~~~~~~~~~~~~~
-
-error: internal failure SYM1634 (03/01/14 -- first correct run in awhile)
--------------------------------------------------------------------------
-[Error matching compiler output for release/examples/benchmarks/hpcc/stream-ep](3/9/14)
-
-a bunch of timeouts
--------------------
-[Error: Timed out executing program execflags/bradc/gdbddash/gdbSetConfig](3/10/14)
-[Error: Timed out executing program release/examples/benchmarks/hpcc/fft]
-[Error: Timed out executing program release/examples/benchmarks/hpcc/hpl]
-[Error: Timed out executing program release/examples/benchmarks/hpcc/ptrans]
-[Error: Timed out executing program release/examples/benchmarks/hpcc/ra (compopts: 1)]
-[Error: Timed out executing program release/examples/benchmarks/hpcc/ra-atomics (compopts: 1)]
-[Error: Timed out executing program release/examples/benchmarks/hpcc/stream]
-[Error: Timed out executing program release/examples/benchmarks/hpcc/variants/ra-cleanloop (compopts: 1)]
-[Error: Timed out executing program release/examples/benchmarks/hpcc/variants/stream-promoted]
-[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1, execopts: 1)]
-[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 2, execopts: 1)]
-[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 3, execopts: 1)]
-[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 4, execopts: 1)]
-[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5, execopts: 1)]
-[Error: Timed out executing program release/examples/hello2-module]
-[Error: Timed out executing program release/examples/hello3-datapar]
-[Error: Timed out executing program release/examples/hello4-datapar-dist]
-[Error: Timed out executing program release/examples/hello5-taskpar]
-[Error: Timed out executing program release/examples/hello6-taskpar-dist]
-[Error: Timed out executing program release/examples/hello]
-[Error: Timed out executing program release/examples/primers/distributions]
-[Error: Timed out executing program release/examples/primers/locales]
+The number of times the follower is called has changed.  Perhaps related to 
+"nondeterministic failure due to decrementing task counts after task has run".
+------------------------------------------------------------------------------
+[Error matching program output for distributions/deitz/test_aligned_unaligned_block_forall (compopts: 1)](3/10/14)
+[Error matching program output for distributions/deitz/test_aligned_unaligned_block_forall_no_fast_follower (compopts: 1)](3/10/14)
 
 
-things outside examples
-~~~~~~~~~~~~~~~~~~~~~~~
+
+===========================================================
+gasnet.qthreads.numa-specific tests (only run for examples)
+(Reviewed for accuracy 04/02/14)
+===========================================================
+
+failures outside examples
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 doesn't complain about 257-thread limit being too high (probably isn't?)
 ------------------------------------------------------------------------
@@ -788,45 +764,15 @@ failed since adding more multilocale directories (01/31/12)
   Worked when re-run; may be intermittent?
 
 
-================================
-gasnet.qthreads.numa regressions
-================================
-
-The pre-user code hook is called from the main thread instead of a qthreads
-task on locales other than 0 causing task-local storage to not be set up
-correctly. Every test that runs with multiple locales in this
-configuration. (gbt)
-
-
-================================
-gasnet.qthreads.flat regressions
-================================
-
-Lots of timeouts
-----------------
-Fifty (50) on (3/10/14)
-
-The number of times the follower is called has changed.  Perhaps related to 
-"nondeterministic failure due to decrementing task counts after task has run".
-------------------------------------------------------------------------------
-[Error matching program output for distributions/deitz/test_aligned_unaligned_block_forall (compopts: 1)](3/10/14)
-[Error matching program output for distributions/deitz/test_aligned_unaligned_block_forall_no_fast_follower (compopts: 1)](3/10/14)
-
-
-
 
 ================================
 baseline-specific tests
-(Reviewed for accuracy 02/28/14)
+(Reviewed for accuracy 04/01/14)
 ================================
 
 Failure due to r22900 (bradc)
 -----------------------------
 [Error matching compiler output for studies/ssca2/graphio/graphio (compopts: 1)]
-
-never worked (02/24/11)
------------------------
-[Error matching compiler output for extern/bradc/copyExternRecord/extern_test (compopts: 1)]
 
 incorrect output -- expected? (04/03/10)
 ----------------------------------------
@@ -843,7 +789,6 @@ died due to signal 6 (09/28/13)
 
 died due to signal 11 (09/28/13)
 ------------------------------------------------------
-[Error matching program output for modules/standard/Sort/sungeun/sorty (execopts: 1)]
 [Error matching program output for modules/standard/Sort/sungeun/sorty (execopts: 2)]
 [Error matching program output for modules/standard/Sort/sungeun/sorty (execopts: 3)]
 
@@ -875,12 +820,6 @@ just looks like an output mismatch because the output comparison script fails
 to find a valid output file.
 --------------------------------
 [Error matching program output for studies/amr/diffusion/level/Level_DiffusionBE_driver (compopts: 1)](3/9/14)
-
-timeouts
---------
-[Error: Timed out executing program studies/lammps/shemmy/p-lammps-n1]
-[Error: Timed out executing program studies/lammps/shemmy/p-lammps-n2]
-[Error: Timed out executing program studies/lammps/shemmy/p-lammps-n4]
 
 Tests suppressions that now succeed due to turning on inlining (12/7/12)
 ------------------------------------------------------------------------
