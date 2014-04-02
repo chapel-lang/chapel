@@ -117,7 +117,7 @@ constants:
                                 tasks to execute forall loops.  If false,
                                 reduce the number of tasks used by the
                                 number of tasks already running 
-                                (default: true).
+                                (default: false).
 
   dataParMinGranularity       : The number of tasks used to execute forall
                                 loops should be reduced such that the number
