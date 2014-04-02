@@ -25,24 +25,12 @@ if (numChameneos1 < 2 || numChameneos2 < 2) then
 if (n < 0) then
   halt("the number of meetings must be non-negative");
 
-//
-// TODO: We should arguably also check that the number of bits
-// devoted to chameneos IDs and meeting IDs are enough to store
-// numChameneos1/2 and n, respectively.
-//
-
 
 //
 // the colors the chameneos can take on
 //
 param numColors = 3;
 enum Color {blue=0, red, yellow};
-//
-// TODO: Would be cool to support a param .size query for enums to
-// avoid the whole C "declare one extra enum for the number" hack and
-// then we could do param numColors = Color.size; (or, if not size,
-// some other query function).
-//
 
 
 proc main() {
@@ -247,9 +235,6 @@ class Chameneos {
     // meetings, and then tell it that the meeting's over
     //
     //
-    // TODO: abstract the following two assignments into a method to
-    // avoid repetition?  Or is that more trouble than it's worth?
-    //
     peer.color = newColor;
     peer.meetings += 1;
     peer.meetingsWithSelf += metSelf;
@@ -271,16 +256,7 @@ class Chameneos {
 // otherwise, it deals out colors round-robin.
 //
 //
-// TODO: Currently, the compiler prints out an error if we remove the
-// return type from here; seems it would be nicer if it just put in
-// the array temp?  (unless we think we want to return unevaluated
-// iterators, which we may?  But even then, maybe in the meantime, we
-// should realize it?)
-//
 proc createChameneos(size): [1..size] Chameneos {
-  //
-  // TODO: Really want support for 'use Color' for cases like this
-  //
   const colorsFor10 = [Color.blue, Color.red, Color.yellow, Color.red, 
                        Color.yellow, Color.blue, Color.red, Color.yellow, 
                        Color.red, Color.blue];
@@ -362,8 +338,6 @@ proc printInfo(chameneos) {
 //
 // the base-10 digits
 //
-// TODO: Would be nice to be able to make this local to spellInt()
-//
 enum Digit {zero=0, one, two, three, four, five, six, seven, eight, nine};
 
 
@@ -373,12 +347,10 @@ enum Digit {zero=0, one, two, three, four, five, six, seven, eight, nine};
 //
 proc spellInt(n) {
   //
-  // Cast n to a string so that it's easier (?!) to pick out its characters
+  // Cast n to a string in order to process its characters one by one
   //
   var s = n:string;
-  //
-  // TODO: would be nice to replace this with a character iterator?
-  //
+
   for i in 1..s.length do
     write(" ", (s.substring(i):int):Digit);
   writeln();
