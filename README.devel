@@ -87,6 +87,4 @@ The following files/directories are for developers only:
   papers/          : LaTeX sources for various papers and publications
   spec/            : the LaTeX sources for the language specification
   test/            : the Chapel testing system in all its glory
-  third-party/     : repository for code by others'; currently only GASNet is
-                     used in here;  cd into third-party and do a make to
-                     build it
+  third-party/     : repository for code by others
