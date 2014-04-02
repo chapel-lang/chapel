@@ -8,9 +8,22 @@ yellow + blue -> red
 yellow + red -> blue
 yellow + yellow -> yellow
 
-total meetings PASS
-total meetings with self PASS
+ blue red yellow
+nnn zero
+nnn zero
+nnn zero
+ two zero zero
 
-total meetings PASS
-total meetings with self PASS
+ blue red yellow red yellow blue red yellow red blue
+nnn zero
+nnn zero
+nnn zero
+nnn zero
+nnn zero
+nnn zero
+nnn zero
+nnn zero
+nnn zero
+nnn zero
+ two zero zero
 
