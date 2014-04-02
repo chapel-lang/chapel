@@ -6,4 +6,6 @@ MAILTO=chapel_build@cray.com
 # This crontab is managed in the chapel subversion repo. Make modifications
 # there and use the install_crontab.bash script to update.
 
-0 2 * * 5 ~/chapel/util/cron/machine.chpbld02 > ~/tmp/nightly.chpbld02.weekend.out 2>&1
+# (thomasvandoren, 2014-04-02) Moving to Wednesday at 2pm since we missed last
+#  week. This ought to be reverted after Friday, April 4, 2014.
+0 14 * * 3 ~/chapel/util/cron/machine.chpbld02 > ~/tmp/nightly.chpbld02.weekend.out 2>&1
