@@ -52,8 +52,8 @@ Quick Start
    release).
 
 
-4) To ensure you have installed Chapel properly, you may compile and run a few
-   example programs:
+4) To ensure you have installed Chapel properly, you can optionally
+   run an automatic sanity check using few example programs:
 
         gmake check
 
