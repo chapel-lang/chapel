@@ -2,8 +2,7 @@
    http://benchmarksgame.alioth.debian.org/
 
    contributed by Casey Battaglino
-   modified by Ben Harshbarger
-   modified by Brad Chamberlain
+   modified by Ben Harshbarger and Brad Chamberlain
 */
 
 //
