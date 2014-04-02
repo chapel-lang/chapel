@@ -63,6 +63,7 @@ extern int fileno(FILE *stream);
 typedef enum {
   pbspro,
   nccs,
+  moab, 
   unknown
 } qsubVersion;
 
@@ -70,6 +71,9 @@ typedef enum {
 static qsubVersion determineQsubVersion(void) {
   const int buflen = 256;
   char version[buflen];
+  char whichMoab[buflen];
+  FILE *whichOutput;
+  int fileError = 1;
   char *argv[3];
   argv[0] = (char *) "qsub";
   argv[1] = (char *) "--version";
@@ -85,6 +89,16 @@ static qsubVersion determineQsubVersion(void) {
   } else if (strstr(version, "PBSPro")) {
     return pbspro;
   } else {
+    memset(whichMoab, 0, buflen);
+    whichOutput = popen("which moab 2>&1 >/dev/null", "r");  
+    if (whichOutput != NULL ) {
+      fgets(whichMoab, buflen, whichOutput);
+      fileError = ferror(whichOutput); 
+      pclose(whichOutput);
+      if (strlen(whichMoab) == 0 && !fileError) {
+        return moab;
+      }
+    }
     return unknown;
   }
 }
@@ -158,6 +172,14 @@ static char* genQsubOptions(char* genFilename, char* projectString, qsubVersion 
       length += snprintf(optionString + length, maxOptLength - length,
                          " -l mppwidth=%d -l mppnppn=%d -l mppdepth=%d",
                          numLocales, procsPerNode, numCoresPerLocale);
+    }
+    break;
+  case moab:
+    if (generate_qsub_script) {
+      fprintf(qsubScript, "#PBS -l nodes=%d\n", numLocales);
+    } else {
+      length += snprintf(optionString + length, maxOptLength - length,
+                         " -l nodes=%d", numLocales);
     }
     break;
   case nccs:
