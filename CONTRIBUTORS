@@ -8,42 +8,42 @@ language:
 
 Contributors to the current release
 -----------------------------------
-Rafael Asenjo, University of Malaga
+Kyle Brady, Cray Inc.
 Brad Chamberlain, Cray Inc.
 Sung-Eun Choi, Cray Inc.
-Saliya Ekanayake, Indiana University
+Lydia Duncan, Cray Inc.
 Michael Ferguson, LTS
-Alexey Gokhberg, Unicorn Enterprises SA
-Ben Harshbarger, Cray Inc./University of Washington
 Tom Hildebrandt, Cray Inc.
 David Iten, Cray Inc.
 Rafael Larrosa Jiminez, University of Malaga
 Jun Nakashima, University of Tokyo
 Vassily Litvinov, Cray Inc.
 Elliot Ronaghan, Cray Inc./Moravian College
-Sara Salem, Cairo University
-Alberto Sanz, University of Malaga
-Darren Smith, University of Maryland
+Brandon Ross, University at Buffalo
 Greg Titus, Cray Inc.
-Joe Yan, University of Maryland
-Tim Zakian, Cray Inc./Indiana University
+Thomas Van Doren, Cray Inc.
+Chris Wailes, Indiana University
 
 Contributors to previous releases
 ---------------------------------
+Rafael Asenjo, University of Malaga
 Matthew Baker, ORNL
 Steve Balensiefer, University of Washington
+Casey Battaglino, Cray Inc./Georgia Tech
 Robert Bocchino, Cray Inc./University of Illinois, Urbana-Champaign
 Dan Bonachea, UC Berkeley
 David Callahan, Cray Inc.
-Lydia Davis, Cray Inc./University of Washington
 Steve Deitz, Cray Inc.
 Joel Denny, ETI
 Roxana Diaconescu, CalTech
 James Dinan, Cray Inc./The Ohio State University
 Martha Dumler, Cray Inc.
+Saliya Ekanayake, Indiana University
 Samuel Figueroa, Cray Inc.
 Roald Frederickx, personal
+Alexey Gokhberg, Unicorn Enterprises SA
 Paul Hargrove, Lawrence Berkeley National Laboratory
+Ben Harshbarger, Cray Inc./University of Washington
 Hannah Hemmaplardh, Cray Inc./University of Washington
 Steven Hemmy, Cray Inc.
 Shannon Hoffswell, Cray Inc.
@@ -58,13 +58,18 @@ Maria Angeles Navarro, University of Malaga
 Jacob Nelson, Cray Inc./University of Washington
 John Plevyak, Cray Inc.
 Lee Prokowich, Cray Inc.
+Sara Salem, Cairo University
+Alberto Sanz, University of Malaga
 Albert Sidelnik, Cray Inc./University of Illinois, Urbana-Champaign
+Darren Smith, University of Maryland
 Rachel Sobel, Cray Inc./University of Washington
 Srinivas Sridharan, University of Notre Dame/ORNL
 Andy Stone, Cray Inc./University of Colorado
 Chris Swenson
 Jonathan Turner, Cray Inc./CU Boulder
 Wayne Wong, Cray Inc.
+Joe Yan, University of Maryland
+Tim Zakian, Cray Inc./Indiana University
 Hans Zima, CalTech/JPL
 
 
