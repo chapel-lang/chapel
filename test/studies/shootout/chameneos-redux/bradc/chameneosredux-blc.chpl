@@ -54,21 +54,16 @@ proc main() {
   //
   // run two simulations for the two different population sizes
   //
-  run(numChameneos1);
-  run(numChameneos2);
+  simulate(numChameneos1);
+  simulate(numChameneos2);
 }
 
 
 //
-// run() takes a number of chameneos as input and creates as
+// simulate() takes a number of chameneos as input and creates as
 // population of that size, then allows them to meet in parallel.
 //
-proc run(numChameneos) {
-  //
-  // create a meeting place
-  //
-  const meetingPlace = new MeetingPlace(n);
-
+proc simulate(numChameneos) {
   //
   // create the population of chameneos
   //
@@ -82,13 +77,13 @@ proc run(numChameneos) {
   writeln();
 
   //
-  // fire off a task per chameneos, and have them try to meet
+  // create a meeting place and simulate the interactions
   //
-  coforall c in chameneos do
-    c.tryToMeet(meetingPlace, chameneos);
+  const meetingPlace = new MeetingPlace(n);
+  meetingPlace.hostMeetings(chameneos);
 
   //
-  // print information about the run
+  // print information about the population once we're done
   //
   printInfo(chameneos);
 }
@@ -112,31 +107,96 @@ class MeetingPlace {
   proc MeetingPlace(numMeetings) {
     state.write(numMeetings << NUM_CHAMENEOS_ID_BITS);
   }
-}
 
-
-//
-// createChameneos() creates an array of chameneos of the given size.
-// If the size is 10, it uses the predefined array of colors;
-// otherwise, it deals out colors round-robin.
-//
-//
-// TODO: Currently, the compiler prints out an error if we remove the
-// return type from here; seems it would be nicer if it just put in
-// the array temp?  (unless we think we want to return unevaluated
-// iterators, which we may?  But even then, maybe in the meantime, we
-// should realize it?)
-//
-proc createChameneos(size): [1..size] Chameneos {
   //
-  // TODO: Really want support for 'use Color' for cases like this
+  // This method kicks off the execution of all the chameneos in
+  // parallel and has them meet with each other in the meeting place.
   //
-  const colorsFor10 = [Color.blue, Color.red, Color.yellow, Color.red, 
-                       Color.yellow, Color.blue, Color.red, Color.yellow, 
-                       Color.red, Color.blue];
+  proc hostMeetings(chameneos) {
+    //
+    // fire off a task per chameneos, and have them try to meet
+    //
+    coforall c in chameneos {
+      //
+      // each chameneos will try to have meetings with others as
+      // long as meetings remain
+      //
+      do {
+        //
+        // read the current state, atomically
+        //
+        const currentState = state.read(memory_order_acquire);
+        
+        //
+        // extract the number of meetings remaining and the index of a
+        // waiting peer (if any) from the state
+        //
+        const (meetingsLeft, peerID) = stateToVals(currentState);
 
-  return [i in 1..size] new Chameneos(i, if (size == 10) then colorsFor10[i]
-                                                         else ((i-1)%3):Color);
+        //
+        // if meetings remain, let's try to get one
+        //        
+        if (meetingsLeft) {
+          //
+          // We're the first to arrive if there is no peer index in the
+          // state
+          //
+          const firstToArrive = (peerID == 0);
+
+          //
+          // We'll try to meet by optimistically building the state
+          // that would indicate we were successful in meeting.
+          // We decrement the meetingsLeft if we are the second to arrive.
+          // If we're the first to arrive, we store our ID; otherwise,
+          // we reset the ID to zero.
+          //
+          const newState = valsToState(meetingsLeft - !firstToArrive,
+                                       if firstToArrive then c.id else 0);
+          
+          //
+          // use a compare-exchange to see if the state remains the
+          // same, and to swap in the new state we've computed if it is.
+          //
+          if (state.compareExchangeStrong(currentState, newState,
+                                          memory_order_acq_rel)) {
+            //
+            // We get to meet!
+            //
+            if (firstToArrive) {
+              //
+              // We were the first chameneos in, so we wait for the
+              // other to complete the meeting
+              //
+              c.waitForMeetingToEnd();
+            } else {
+              //
+              // We were the second chameneos in, so we run the meeting
+              //
+              c.meetWith(chameneos[peerID]);
+            }
+          }
+        }
+        //
+        // continue looping as long as meetings remain
+        //
+      } while (meetingsLeft);
+    }
+  }
+
+  //
+  // This method computes a state value from a number of meetings and ID
+  //
+  inline proc valsToState(numMeetings, chameneosID) {
+    return (numMeetings << NUM_CHAMENEOS_ID_BITS) | chameneosID;
+  }
+
+  //
+  // This method extracts the number of meeting IDs and chameneos ID from
+  // a state value
+  //
+  inline proc stateToVals(state) {
+    return (state >> NUM_CHAMENEOS_ID_BITS, state & CHAMENEOS_ID_MASK);
+  }
 }
 
 
@@ -150,93 +210,25 @@ class Chameneos {
       meetingsWithSelf: int;           // the number of meetings with itself
   var meetingCompleted: atomic bool;   // indicates that a meeting is over
 
+
   //
-  // tryToMeet() tells a chameneos to go to a given MeetingPlace,
-  // and try to get involved in meetings with the rest of the
-  // population.  If it is first, it can try to wait for another
-  // chameneos to arrive; if it is second, it can try to meet with the
-  // first chameneos.  The word 'try' is used because other chameneos
-  // may be trying to do the same thing simultaneously and beat it to
-  // the action.
+  // This method says how to wait for a meeting to end and is used
+  // by the first chameneos to a meeting
   //
-  proc tryToMeet(meetingPlace, chameneos) {
+  proc waitForMeetingToEnd() {
     //
-    // keep trying to meet, as long as there are meetings remaining
+    // wait for meeting to end
     //
-    do {
-      //
-      // grab a copy of the current state
-      //
-      const currentState = meetingPlace.state.read(memory_order_acquire);
-
-      //
-      // if the current state is non-empty, meetings remain
-      //
-      if (currentState) {
-        //
-        // extract the number of remaining meetings and the other
-        // chameneos's index (if one is present) from the state
-        //
-        const meetingsLeft = currentState >> NUM_CHAMENEOS_ID_BITS,
-              peer_idx = currentState & CHAMENEOS_ID_MASK;
-            
-
-        var newState: int;  // we'll store the new state here
-
-        if (peer_idx) {
-          //
-          // if another chameneos was waiting in the meeting place, we
-          // will hope to meet with it; if we can, the resulting state
-          // would have one fewer meetings and no waiting chameneos.
-          //
-          newState = (meetingsLeft - 1) << NUM_CHAMENEOS_ID_BITS;
-        } else {
-          //
-          // if no other chameneos was waiting, we will hope to enter
-          // the meeting place; if we can, the resulting state would
-          // have the same number of meetings and our ID stored in the
-          // low bits.
-          //
-          newState = currentState | id;
-        }
-
-        //
-        // use a CAS to see if the state remains the same, and to swap
-        // in the new state we've computed if it is.
-        //
-        if (meetingPlace.state.compareExchangeStrong(currentState, newState, 
-                                                     memory_order_acq_rel)) {
-          //
-          // We get to meet!
-          //
-          if (peer_idx) {
-            //
-            // If we were the second chameneos in, we run the meeting
-            //
-            meetWith(chameneos[peer_idx]);
-          } else {
-            //
-            // If we were the first chameneos in, we wait for the
-            // other to complete the meeting
-            //
-            meetingCompleted.waitFor(true);
-            //
-            // and then reset our meetingCompleted flag for next time
-            //
-            meetingCompleted.write(false, memory_order_release);
-          }
-        }
-      }
-      //
-      // continue looping as long as meetings remain
-      //
-    } while (currentState);
+    meetingCompleted.waitFor(true);
+    //
+    // and then reset our meetingCompleted flag for next time
+    //
+    meetingCompleted.write(false, memory_order_release);
   }
 
-
   //
-  // meetWith() computes the meeting between a chameneos ('this')
-  // and its peer
+  // This method computes the meeting between 'this' chameneos and
+  // its peer and is used by the second chameneos to a meeting
   //
   proc meetWith(peer) {
     //
@@ -270,6 +262,31 @@ class Chameneos {
     meetings += 1;
     meetingsWithSelf += metSelf;
   }
+}
+
+
+//
+// createChameneos() creates an array of chameneos of the given size.
+// If the size is 10, it uses the predefined array of colors;
+// otherwise, it deals out colors round-robin.
+//
+//
+// TODO: Currently, the compiler prints out an error if we remove the
+// return type from here; seems it would be nicer if it just put in
+// the array temp?  (unless we think we want to return unevaluated
+// iterators, which we may?  But even then, maybe in the meantime, we
+// should realize it?)
+//
+proc createChameneos(size): [1..size] Chameneos {
+  //
+  // TODO: Really want support for 'use Color' for cases like this
+  //
+  const colorsFor10 = [Color.blue, Color.red, Color.yellow, Color.red, 
+                       Color.yellow, Color.blue, Color.red, Color.yellow, 
+                       Color.red, Color.blue];
+
+  return [i in 1..size] new Chameneos(i, if (size == 10) then colorsFor10[i]
+                                                         else ((i-1)%3):Color);
 }
 
 
