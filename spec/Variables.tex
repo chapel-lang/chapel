@@ -30,7 +30,7 @@ variable-declaration-list:
 
 variable-declaration:
   identifier-list type-part[OPT] initialization-part
-  identifier-list type-part
+  identifier-list type-part no-initialization-part[OPT]
   array-alias-declaration
 
 type-part:
@@ -38,6 +38,9 @@ type-part:
 
 initialization-part:
   = expression
+
+no-initialization-part:
+  = `noinit'
 
 identifier-list:
   identifier
@@ -77,6 +80,11 @@ The \sntx{initialization-part} of a variable declaration specifies an
 initial expression to assign to the variable.  If
 the \sntx{initialization-part} is omitted, the variable is initialized
 to a default value described in~\rsec{Default_Values_For_Types}.
+
+If the \sntx{no-initialization-part} is present, the variable
+declaration does not initialize the variable to any value, as described
+in~\rsec{Noinit_Capability}. The result of any access to this variable is
+undefined until an assignment to it is executed.
 
 Multiple variables can be defined in the
 same \sntx{variable-declaration-list}.  The semantics of declaring
@@ -135,11 +143,14 @@ value is the enumerator whose underlying value is zero.  But that approach also
 has issues, since the default value does not conform to any named enumerator.
 \end{openissue}
 
-\begin{openissue}
-Array initialization is potentially time-consuming.  There is an
-expectation that there will be a way to declare an array that is
-explicitly left uninitialized in order to address this concern.
-\end{openissue}
+\subsection{Deferred Initialization}
+\label{Noinit_Capability}
+\index{noinit}
+\index{noinit!variables}
+
+For performance purposes, the declaration of a variable can specify that the variable should remain uninitialized until a later assignment.  Since this variable should be assignable at a later point to be used properly, it must be a regular variable (\chpl{var}).  It is incompatible with declarations which require the variable to remain unchanged throughout the program's lifetime, such as \chpl{const} or \chpl{param}.  Additionally, its type must be specified at declaration time; this maintains type safety.
+
+The result of any access to this variable before its first assignment is undefined; it exists and therefore can be accessed, but no guarantees are made as to its contents.
 
 \subsection{Local Type Inference}
 \label{Local_Type_Inference}
