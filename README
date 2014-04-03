@@ -2,7 +2,7 @@
 Chapel Compiler Release: README
 ===============================
 
-This is the 1.8.0 release of the Chapel compiler, intended to give
+This is the 1.9.0 release of the Chapel compiler, intended to give
 potential users a look at what we're doing and the opportunity to
 provide us with feedback.  See the AGREEMENT file for the release's
 user agreement and the LICENSE file for its licensing terms.  Source
@@ -18,7 +18,7 @@ Quick Start
 1) Make sure that your shell is in the directory containing this
    README file.  For example:
 
-        cd ~/chapel-1.8.0
+        cd ~/chapel-1.9.0
 
 
 2) Build the compiler and runtime libraries using:

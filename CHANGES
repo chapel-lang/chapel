@@ -223,6 +223,7 @@ Compiler Improvements
 ---------------------
 * re-implemented copy propagation to handle aliases better
 * made de-nested functions use 'const' arguments in more cases
+* significantly improved the stability/generality of the LLVM back-end
 
 LLVM Back-end Changes
 ---------------------
