@@ -60,7 +60,7 @@ executing the program, as shown above.
 
 Chapel programs can also accept C-like command line arguments to their
 main() procedure in addition to the aforementioned configuration
-variables. See $CHPL_HOME/doc/technotes/README.main for more information. 
+variables. See $CHPL_HOME/doc/technotes/README.main for more information.
 
 -----------------------------
 Setting the Number of Locales
@@ -116,7 +116,7 @@ constants:
   dataParIgnoreRunningTasks   : If true, always use dataParTasksPerLocale
                                 tasks to execute forall loops.  If false,
                                 reduce the number of tasks used by the
-                                number of tasks already running 
+                                number of tasks already running
                                 (default: false).
 
   dataParMinGranularity       : The number of tasks used to execute forall
@@ -159,9 +159,9 @@ stack size.
   CHPL_RT_CALL_STACK_SIZE : Size of the call stack for a task.  A plain
                             numeric value indicates bytes.  A suffix can
                             be appended to indicate larger units:
-			     'k' or 'K' meaning KiB (2**10 bytes),
-			     'm' or 'M' meaning MiB (2**20 bytes), or
-			     'g' or 'G' meaning GiB (2**30 bytes).
+                             'k' or 'K' meaning KiB (2**10 bytes),
+                             'm' or 'M' meaning MiB (2**20 bytes), or
+                             'g' or 'G' meaning GiB (2**30 bytes).
 
 
 -----------------------------------------
@@ -197,8 +197,8 @@ The utility of this feature depends greatly on your familiarity with
 the Chapel generated code.  However, if your program is crashing or
 running into a runtime error, you can often determine where that is
 taking place by looking at a stack trace within gdb.  In addition,
-scalar Chapel variables can often be inspected using "p <name>" 
-(or "p _<name><TAB>" in cases where the compiler has renamed the 
+scalar Chapel variables can often be inspected using "p <name>"
+(or "p _<name><TAB>" in cases where the compiler has renamed the
 variable).
 
 Over time, we plan to improve our ability to debug the generated C
@@ -230,7 +230,7 @@ overhead to task parallel programs. The flags are as follows:
                      tasks will be printed to the screen, giving an
                      indication of which tasks are at which source
                      locations.
-                      
+
 
 -------------------------------------------
 Configuration Constants for Tracking Memory

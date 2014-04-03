@@ -104,7 +104,7 @@ The Chapel names for C types are:
   ssize_t
   size_t
   c_void_ptr
-  c_ptr(T/)
+  c_ptr(T)
   c_string
 
 For consistency, the following type aliases are also provided even
@@ -166,7 +166,7 @@ c_ptr. See the following example:
 
  var cArray = c_calloc(c_int, 10);
  for i in 0..#10 {
-   cArray[i] = i:c_int; 
+   cArray[i] = i:c_int;
  }
  // c_ptr.deref() always refers to the first element.
  cArray.deref() = 17;
@@ -201,7 +201,7 @@ The c_string type maps to a constant C string (that is, const char*). A
 c_string can be constructed from a Chapel string using the method
 chapelString.c_str(). A Chapel string can be constructed from a C string
 using the function toString(c_string). Note however that the .c_str() method
-currently requires the Chapel string to be stored locally. 
+currently requires the Chapel string to be stored locally.
 
 Chapel strings:
 
@@ -210,10 +210,10 @@ single-locale compilations, so these can normally be used interchangeably with
 'const char*' types in C (and in some cases, 'char*' types as long as the
 difference in const-ness does not cause compilation problems). However, the
 string representation in Chapel may change, and some cases (such as
-c_ptr(string)) cannot be properly supported in multilocale environments. 
+c_ptr(string)) cannot be properly supported in multilocale environments.
 The c_string type must be used in such cases. Additionally, automatic
 conversions between Chapel strings and c_string are likely to be added
-in the future. 
+in the future.
 
 For example, byString and byCString both have the same C function prototype,
 but they must be used differently:
@@ -223,7 +223,7 @@ but they must be used differently:
 
  byString("Hello");
  byCString("Hello".c_str());
- 
+
 Referring to External C Types
 -----------------------------
 
@@ -256,7 +256,7 @@ Chapel using:
     extern type foo = int(64);
 
 Static, fixed-size C array types can be described within Chapel using
-its homogenous tuple type.  For example, the following C typedef:
+its homogeneous tuple type.  For example, the following C typedef:
 
     typedef double vec[3];
 
@@ -335,7 +335,7 @@ to support calls to external C macros or varargs functions that accept
 multiple argument signatures.
 
 Default arguments can be declared for external function arguments, in
-which case the Chapel commpiler will supply the default argument value
+which case the Chapel compiler will supply the default argument value
 if it is omitted at the callsite.  For example:
 
        extern proc foo(x: int, y = 1.2): real;
@@ -632,7 +632,7 @@ types; for example:
  var sum = ADD_int_int(1,2);
  writeln(sum);
 
- 
+
 Pointer Types
 -------------
 
@@ -663,8 +663,8 @@ For example:
  setItToOne(c_ptrTo(x));
 
  var space:c_ptr(c_int);
- setSpace(c_ptrTo(space)); 
- 
+ setSpace(c_ptrTo(space));
+
  var str:c_string;
  setString(c_ptrTo(str));
  writeln(toString(str));
@@ -682,7 +682,7 @@ Here's a more complete example:
       static int foo(int b) { return b + 1; }
     }
   }
-  
+
   writeln("Hello");
   writeln(MyCModule.foo(7));
 

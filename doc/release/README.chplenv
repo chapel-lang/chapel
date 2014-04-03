@@ -221,7 +221,7 @@ Optional Settings
         cray-prgenv-gnu (gcc version 4.1 and later)
         cray-prgenv-intel
         gnu (gcc version 4.1 and later)
-        CLANG
+        clang
    Otherwise for "linux32" target platforms and/or any other target
    compilers, it defaults to "locks".
 
@@ -294,7 +294,7 @@ Optional Settings
 15) Optionally, the CHPL_LLVM environment variable can be used to
     enable support for the LLVM back-end to the Chapel compiler
     (see doc/technotes/README.llvm) or to support extern blocks in
-    Chapel code via the CLANG compiler (see doc/technotes/README.extern).
+    Chapel code via the Clang compiler (see doc/technotes/README.extern).
     Current options are:
 
         llvm : use the llvm/clang implementation in third-party

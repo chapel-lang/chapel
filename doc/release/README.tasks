@@ -22,7 +22,7 @@ This document describes the currently-supported tasking options in more
 detail.  The rest of this document includes:
 
 * an overview of the different tasking options
-  * a detailed description of each tasking option
+* a detailed description of each tasking option
 * a discussion of the number of threads used by each tasking option
 * a discussion of call stack sizes for each tasking option
 * a brief description of future directions for the tasking layer
@@ -61,7 +61,7 @@ completion before giving up that thread.  As a result, a program can
 have no more tasks active (that is, created and started) at any given
 time than it has threads on which to run those tasks.  It can create
 more tasks than threads, but no more tasks will be run at any time
-than there are theads.  Excess tasks are placed in a pool where they
+than there are threads.  Excess tasks are placed in a pool where they
 will be picked up and started by threads as they complete their tasks.
 
 The threading implementation uses POSIX threads (pthreads) to run Chapel
