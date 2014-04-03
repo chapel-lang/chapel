@@ -3,8 +3,8 @@ Using Chapel on Cray(R) Systems
 ===============================
 
 The following information is assembled to help Chapel users get up and
-running on Cray systems including the Cray XC(TM), XE(TM), XK(TM),
-XT(TM), and CS(TM) series systems.
+running on Cray systems including the Cray XC(TM), XE(TM), XK(TM), and
+CS(TM) series systems.
 
 
 ----------------------------------------------------
@@ -50,7 +50,6 @@ Building Chapel for a Cray System from Source
        XC series        cray-xc
        XE series        cray-xe
        XK series        cray-xk
-       XT series        cray-xt
 
    For example:
 
@@ -72,12 +71,13 @@ Building Chapel for a Cray System from Source
    On a Cray X-series system, to...             set CHPL_LAUNCHER to...
      ...run jobs interactively on your system     aprun
      ...queue jobs using PBS (qsub)               pbs-aprun
+     ...queue jobs using SLURM (sbatch)           slurm-srun
 
      (On Cray X-Series systems, CHPL_LAUNCHER defaults to 'aprun' if
      it is in your path; 'none' otherwise)
 
    You can also set CHPL_LAUNCHER to 'none' if you prefer to manually
-   manage all queueing and job launch commands yourself.
+   manage all queuing and job launch commands yourself.
 
    For more information on Chapel's launcher capabilities and options,
    refer to $CHPL_HOME/doc/README.launcher.
@@ -400,7 +400,7 @@ Parameters associated with the muxed tasking layer:
     So there, our hypothetical program would need 16 GiB of heap space
     just for stacks.  Thus with muxed tasking and ugni communications,
     in programs that may have many tasks active at once but where each
-    one does not need a very large call stack (such as SSCA2), it can be
+    one does not need a very large call stack (such as SSCA#2), it can be
     useful to make the stack size smaller than its default of 8 MiB.
 
     You can set the task stack size using CHPL_RT_CALL_STACK_SIZE, as
@@ -528,8 +528,6 @@ accelerated by Gemini hardware capabilities.
 On XC systems, which have Aries networks, all of the operations shown
 above are done natively by the network hardware.
 
-See README.atomics for the full description of the above operations.
-
 
 --------------------------
 Known Constraints and Bugs
@@ -538,19 +536,14 @@ Known Constraints and Bugs
 * Our PBS launcher explicitly supports PBS Pro, Moab/Torque, and the
   NCCS site versions of PBS.  It may also work with other versions.
   If our PBS launcher does not work for you, you can fall back on a
-  more manual launch of your program as always, either by:
+  more manual launch of your program.  For example:
 
-  - launching the a.out_real binary manually using aprun using your
-    own own qsub script or command.
+  - Launch the a.out_real binary manually using aprun and your own
+    qsub script or command.
 
-  - setting CHPL_LAUNCHER to aprun, rebuilding the runtime,
-    recompiling your program, and executing the resulting binary using
-    your own qsub script or command.
-
-  You can have the PBS launcher generate a qsub script for you using
-  the --generate-qsub-script flag.  This will generate a batch qsub
-  script for your current settings and command line and exit without
-  running your Chapel program.
+  - Use './a.out --generate-qsub-script' to generate a qsub script.
+    Then edit the generated script and launch the a.out_real binary
+    manually as above.
 
 * Redirecting stdin when executing a Chapel program under PBS/qsub
   may not work due to limitations of qsub.
@@ -562,14 +555,6 @@ Known Constraints and Bugs
   up.  To squelch this message, you can set the environment variable
   GASNET_QUIET=yes.
 
-* For XC series systems, the current version of GASNet shipped with
-  Chapel supports a beta implementation of a native Aries conduit, but
-  it should be noted that this version has not been tuned.  To use
-  this conduit, set the environment variable CHPL_COMM_SUBSTRATE=aries.
-  The GASNet layer prints out a warning message regarding the beta
-  nature of the release.  To quiet this message, set the environment
-  variable CHPL_GASNET_QUIET=y.
-
 * There is a known GASNet build issue when using the gemini or aries
   conduits with hugepage support that results in link errors due to
   multiply defined symbols in the hugetlbfs library.  The workaround
@@ -578,26 +563,12 @@ Known Constraints and Bugs
   GASNet communication layer.  You may load a hugepage module when
   running the Chapel program.
 
-* The amount of memory that is available to a Chapel program running
-  over GASNet+portals on an XT series system is constrained by two
-  environment variables: GASNET_MAX_SEGSIZE and
-  GASNET_PHYSMEM_PINNABLE_RATIO.  If GASNET_MAX_SEGSIZE is set too
-  high, your program may terminate silently, or with the message:
-
-        _pmii_daemon(SIGCHLD): PE 0 exit signal Killed
-
-  If running again with -v shows that the cause of the termination
-  was the OOM killer:
-
-    [NID ###] Apid ######: OOM killer terminated this process.
-    Application ###### exit signals: Killed
-
-  then GASNET_MAX_SEGSIZE is set too high.  Set it to a lower value
-  and try re-running your program.  For more information on
-  GASNET_MAX_SEGSIZE, refer to:
-
-    $CHPL_HOME/third-party/gasnet/GASNet-*/portals-conduit/README
-    $CHPL_HOME/third-party/gasnet/GASNet-*/README
+* For X-series systems, there is a known issue with the Cray MPI
+  release that causes some programs to assert and then hang during
+  exit.  A workaround is to set the environment variable,
+  MPICH_GNI_DYNAMIC_CONN to 'disabled.'  Setting this environment
+  variable affects all MPI programs, so remember to unset it after
+  running your Chapel program.
 
 
 ---------------
