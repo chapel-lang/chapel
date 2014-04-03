@@ -78,33 +78,32 @@ What's next?
 
 For more detailed information about...      refer to...
 
-  ...implementation status                   ...STATUS
-  ...changes since the last release          ...CHANGES
-  ...Chapel's file and directory structure   ...README.files
-  ...prerequisites for using this release    ...doc/README.prereqs
-  ...setting Chapel environment variables    ...doc/README.chplenv
-  ...building the compiler                   ...doc/README.building
-  ...using the compiler                      ...doc/README.compiling
-  ...executing Chapel programs               ...doc/README.executing
-  ...reporting bugs                          ...doc/README.bugs
+  ...implementation status                   ... STATUS
+  ...changes since the last release          ... CHANGES
+  ...Chapel's file and directory structure   ... README.files
+  ...prerequisites for using this release    ... doc/README.prereqs
+  ...setting Chapel environment variables    ... doc/README.chplenv
+  ...building the compiler                   ... doc/README.building
+  ...using the compiler                      ... doc/README.compiling
+  ...executing Chapel programs               ... doc/README.executing
+  ...reporting bugs                          ... doc/README.bugs
 
-  ...Chapel modes for emacs and vim          ...etc/README
+  ...Chapel modes for emacs and vim          ... etc/README
 
-  ...example Chapel programs                 ...examples/README
-  ...a quick reference for Chapel syntax     ...doc/quickReference.pdf
-  ...the Chapel language specification       ...doc/chapelLanguageSpec.pdf
+  ...example Chapel programs                 ... examples/README
+  ...a quick reference for Chapel syntax     ... doc/quickReference.pdf
+  ...the Chapel language specification       ... doc/chapelLanguageSpec.pdf
 
-  ...executing programs on multiple locales  ...doc/README.multilocale
-  ...how Chapel tasks are mapped to threads  ...doc/README.tasks
+  ...executing programs on multiple locales  ... doc/README.multilocale
+  ...how Chapel tasks are mapped to threads  ... doc/README.tasks
 
   ...using Chapel on a specific platform...
-     ...a Cray system                        ...doc/platforms/README.cray
-     ...Cygwin over Windows                  ...doc/platforms/README.cygwin
-     ...an IBM system                        ...doc/platforms/README.ibm
-     ...an SGI Altix system                  ...doc/platforms/README.sgi
-     ...BSC's MareNostrum system             ...doc/platforms/README.marenostrum
+     ...a Cray system                        ... doc/platforms/README.cray
+     ...Cygwin over Windows                  ... doc/platforms/README.cygwin
+     ...an IBM system                        ... doc/platforms/README.ibm
+     ...an SGI Altix system                  ... doc/platforms/README.sgi
 
-  ...calling C code from Chapel              ...doc/technotes/README.extern
-  ...other user and technical notes          ...doc/README
+  ...calling C code from Chapel              ... doc/technotes/README.extern
+  ...other user and technical notes          ... doc/README
 
-  ...third-party software that we use        ...third-party/README
+  ...third-party software that we use        ... third-party/README
