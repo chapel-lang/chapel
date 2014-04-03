@@ -13,10 +13,12 @@ if ($preset_substrate eq "") {
     my $platform = run("platform", "--target");
 
     if ($comm eq "gasnet") {
-        if ($platform =~ /^cray-(xc|xt)$/) {
+        if ($platform eq "cray-xt") {
             $substrate = "mpi";
         } elsif ($platform =~ /^cray-(xe|xk)$/) {
             $substrate = "gemini";
+        } elsif ($platform eq "cray-xc") {
+            $substrate = "aries";
         } elsif ($platform eq "cx-linux") {
             $substrate = "ibv";
         } elsif ($platform eq "cray-cs") {
