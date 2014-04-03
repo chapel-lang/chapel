@@ -135,43 +135,45 @@ assignment-operator: one of
    = += -= *= /= %= **= &= |= ^= &&= ||= <<= >>=
 \end{syntax}
 
+\index{operators!compound assignment}
+\index{operators!assignment!compound}
+\index{operators!simple assignment}
+\index{operators!assignment!simple}
+The assignment operators that contain a binary operator symbol as a prefix
+are \emph{compound assignment} operators.  The remaining assignment
+operator \chpl{=} is called \emph{simple assignment}.
+
 The expression on the left-hand side of the assignment operator must
 be a valid lvalue~(\rsec{LValue_Expressions}).  It is evaluated before the
 expression on the right-hand side of the assignment operator, which
 can be any expression.
 
-When the assignment operator is \chpl{=}, there is
+When the left-hand side is of a numerical type, there is
 an implicit conversion~(\rsec{Implicit_Conversions})
 of the right-hand side expression
-to the type of the left-hand side expression.
-The left-hand side expression is updated with the result
-of this conversion.
+to the type of the left-hand side expression.  Additionally, for simple
+assignment, if the left-hand side is of Boolean type, the right-hand side is
+implicitly converted to the type of the left-hand side (i.e. a \chpl{bool(?w)}
+with the same width \chpl{w}).
 
-Additionally, the validity and semantics of assigning between
+For simple assignment, the validity and semantics of assigning between
 classes~(\rsec{Class_Assignment}), records~(\rsec{Record_Assignment}),
 unions~(\rsec{Union_Assignment}), tuples~(\rsec{Tuple_Assignment}),
 ranges~(\rsec{Range_Assignment}),
 domains~(\rsec{Domain_Assignment}), and arrays~(\rsec{Array_Assignment})
-is discussed in these later sections.
+are discussed in these later sections.
 
-\index{operators!compound assignment}
-The assignment operators that contain a binary operator symbol as a prefix
-are \emph{compound assignment} operators.
 A compound assignment is
-a short-hand for applying the binary operator to the left and
+shorthand for applying the binary operator to the left- and
 right-hand side expressions and then assigning the result
 to the left-hand side expression.
-As with \chpl{=}, the left-hand side expression is evaluated only once,
+For numerical types, the left-hand side expression is evaluated only once,
 and there is an implicit conversion of the result of the binary operator
 to the type of the left-hand side expression.  Thus, for
 example, \chpl{x += y} is equivalent to \chpl{x = x + y} where the
 expression \chpl{x} is evaluated once.
 
-The compound assignment operators can be overloaded for different
-types using operator overloading~(\rsec{Function_Overloading}).
-In such an overload, the left-hand side expression should have
-\chpl{ref} intent and be modified within the body of the function.
-For all compound assignments, Chapel provides a completely generic
+For all other compound assignments, Chapel provides a completely generic
 catch-all implementation defined in the obvious way.  For example:
 
 \begin{chapel}
@@ -179,6 +181,21 @@ inline proc +=(ref lhs, rhs) {
   lhs = lhs + rhs;
 }
 \end{chapel}
+
+Thus, compound assignment can be used with operands of arbitrary types,
+provided that the following provisions are met: If the type of the left-hand
+argument of a compound assignment operator \chpl{op=} is $L$ and that of the
+right-hand argument is $R$, then a definition for the corresponding binary
+operator \chpl{op} exists, such that $L$ is coercible to the type of its
+left-hand formal and $R$ is coercible to the type of its right-hand formal.
+Further, the result of \chpl{op} must be coercible to $L$, and there must exist
+a definition for simple assignment between objects of type $L$.
+
+Both simple and compound assignment operators can be overloaded for different
+types using operator overloading~(\rsec{Function_Overloading}).
+In such an overload, the left-hand side expression should have
+\chpl{ref} intent and be modified within the body of the function.  The return
+type of the function should be \chpl{void}.
 
 \section{The Swap Statement}
 \label{The_Swap_Statement}
