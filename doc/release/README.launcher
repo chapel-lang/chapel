@@ -66,6 +66,7 @@ environment variable.  If left unset, a default is picked as follows:
     + CHPL_TARGET_PLATFORM=pwr6 -> none
     (otherwise)                 -> gasnetrun_ibv
   + CHPL_COMM_SUBSTRATE=mpi     -> gasnetrun_mpi
+  + CHPL_COMM_SUBSTRATE=mxm     -> gasnetrun_ibv
   + CHPL_COMM_SUBSTRATE=udp     -> amudprun
   (otherwise)                   -> none
 
