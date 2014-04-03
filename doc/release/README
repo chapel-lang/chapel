@@ -22,7 +22,7 @@ This directory contains the following documentation:
                        for quick reference
 
   platforms/           : platform-specific notes:
-    README.cray        :  Cray XT (TM), Cray XE (TM), Cray XK (TM), Cray XC (TM)
+    README.cray        :  Cray XC(TM), Cray XE(TM), Cray XK(TM), and Cray CS(TM) series
     README.cygwin      :  Cygwin
     README.ibm         :  IBM
     README.macosx      :  Mac

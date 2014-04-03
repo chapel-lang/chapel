@@ -58,7 +58,6 @@ Recommended Settings
         cray-xc      : Cray XC (TM)
         cray-xe      : Cray XE (TM)
         cray-xk      : Cray XK (TM)
-        cray-xt      : Cray XT (TM)
 
    Platform-specific READMEs are available for most of these platforms
    in $CHPL_HOME/doc/platforms.  See $CHPL_HOME/doc/README for a
@@ -183,7 +182,7 @@ Optional Settings
         gasnet : use the GASNet-based communication layer
 
    If unset, CHPL_COMM defaults to "none" unless you are running on a
-   Cray XC/XE/XT/XK (TM) or Cray CS (TM) system, in which case it
+   Cray XC/XE/XK (TM) or Cray CS (TM) system, in which case it
    defaults to "gasnet".  See README.multilocale for more information
    on executing Chapel programs using multiple locales.
 
