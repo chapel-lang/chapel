@@ -1,4 +1,4 @@
-bug: + reduce on strings concatenates them in a random order.
+feature request: + reduce on strings should concatenate strings
 
 The only way + reduce on strings is possibly useful is if it
 does NOT randomly reorder the data...
