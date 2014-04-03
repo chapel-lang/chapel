@@ -411,15 +411,15 @@ static aligned_t chapel_wrapper(void *arg)
     chpl_qthread_wrapper_args_t *rarg = arg;
     chpl_qthread_tls_t * data = chapel_qthreads_get_tasklocal();
 
-    if (rarg->countRunning) {
-        chpl_taskRunningCntInc(0, NULL);
-    }
-
     data->task_filename = rarg->task_filename;
     data->task_lineno = rarg->lineno;
     data->chpl_data = rarg->chpl_data;
     data->lock_filename = NULL;
     data->lock_lineno = 0;
+
+    if (rarg->countRunning) {
+        chpl_taskRunningCntInc(0, NULL);
+    }
 
     (*(chpl_fn_p)(rarg->fn))(rarg->args);
 
