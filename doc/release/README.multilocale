@@ -43,8 +43,10 @@ To run Chapel on multiple locales, the following steps are required:
    memory segment to use with GASNet.  Current defaults are:
 
      When CHPL_COMM_SUBSTRATE is...    Chapel will choose...
-       portals                           fast
+       aries                             fast
        gemini                            fast
+       ibv                               large
+       portals                           fast
        (other)                           everything
 
 
