@@ -107,6 +107,7 @@ Types, Params, Variables, and Consts
   # trivial/sungeun/config_param.future
 - Type inferred for a variable initialized to 'nil' is not 'object'
   # classes/deitz/test_infer_nil.future
+- Using the noinit keyword with a type
 - String assignment across locales is by reference rather than value.
   # distributions/bradc/block1Dlocale.future
   # multilocale/diten/needMultiLocales/remoteString3.future
@@ -130,6 +131,7 @@ Types, Params, Variables, and Consts
   # classes/bradc/arrayInClass/arrayDomInClassRecord-illegal.future
   # nostdlib/recordpass6-illegal.future
   # statements/bradc/loops/modifyIndices.future
+  # types/records/const-checking/todo-multiple-asgn-errors.future
 
 
 Conversions
@@ -439,6 +441,20 @@ Classes, Records, and Unions
 - Printing of a string field in a record in a class does not work.
   # types/records/sungeun/stringInRecordInClass.future
   # types/string/sungeun/string2InRecordInClass.future
+- Specifying the type when declaring a record variable with const
+  fields results in a compile time errors regarding assigning to const
+  fields.
+  # types/records/const-checking/todo-initializing-typed-var.future
+- Default arrays of records with const fields result in compile time
+  errors regarding assigning to const fields.
+  # types/records/const-checking/scenario-1-array-of-record-with-const-fld.future
+  # types/records/const-checking/scenario-2-init-array-of-rec-with-const-fld.future
+  # types/records/const-checking/todo-constructors-for-const-rec-fields.future
+- Associateive domains and arrays of records with const fields result
+  in compile time errors regarding assigning to const fields.
+  # types/records/const-checking/scenario-3-assoc-dom-of-record-with-const-fld.future
+
+
 - Comparison (== or !=) of records with array or domain fields result
   in a back-end C compiler error.
   # types/records/bharshbarger/recordArrCmp.future
