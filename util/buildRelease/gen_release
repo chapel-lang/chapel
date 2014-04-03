@@ -37,12 +37,12 @@ system("cd $tmpdir && svn export -q $svnroot $reldir");
 # explicit files to include
 @files = (
        "ACKNOWLEDGEMENTS",
-       "AGREEMENT",
        "CHANGES",
        "CONTRIBUTORS",
        "COPYRIGHT", 
        "GOALS",
        "LICENSE",
+       "LICENSE.chapel",
        "Makefile",
        "README",
        "README.files",
