@@ -19,4 +19,5 @@ to end-users.  The current contents of the directory are as follows:
 
    chplenv/        : helper scripts for inferring CHPL_* variables if unset
    config/         : helper scripts for configuring the Chapel build
+   docs/           : helper scripts for chpldocs mode
    test/           : helper scripts for the testing system
