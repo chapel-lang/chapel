@@ -304,11 +304,19 @@ precedence than those listed later.
 unary \verb@+@ & \multirow{2}{*}{right} & positive identity \\
 unary \verb@-@ & & negation \\
 \hline
+\verb@<<@ & \multirow{2}{*}{left} & left shift \\
+\verb@>>@ & & right shift \\
+\hline
+\verb@&@ & left & bitwise/logical and \\
+\hline
+\verb@^@ & left & bitwise/logical xor \\
+\hline
+\verb@|@ & left & bitwise/logical or \\
+\hline
 \verb@+@ & \multirow{2}{*}{left} & addition \\
 \verb@-@ & & subtraction \\
 \hline
-\verb@<<@ & \multirow{2}{*}{left} & left shift \\
-\verb@>>@ & & right shift \\
+\verb@..@ & left & range construction \\
 \hline
 \verb@<=@ & \multirow{4}{*}{left} & less-than-or-equal-to comparison \\
 \verb@>=@ & & greater-than-or-equal-to comparison \\
@@ -318,28 +326,21 @@ unary \verb@-@ & & negation \\
 \verb@==@ & \multirow{2}{*}{left} & equal-to comparison \\
 \verb@!=@ & & not-equal-to comparison \\
 \hline
-\verb@&@ & left & bitwise/logical and \\
-\hline
-\verb@^@ & left & bitwise/logical xor \\
-\hline
-\verb@|@ & left & bitwise/logical or \\
-\hline
 \verb@&&@ & left & short-circuiting logical and \\
 \hline
 \verb@||@ & left & short-circuiting logical or \\
 \hline
-\verb@..@ & left & range construction \\
-\hline
 \verb@in@ & left & forall expression \\
 \hline
-\verb@by@ & \multirow{2}{*}{left} & range/domain stride application \\
+\verb@by@ & \multirow{3}{*}{left} & range/domain stride application \\
 \verb@#@ & & range count application \\
+\verb@align@ & & range alignment \\
 \hline
 \verb@if then else@ & \multirow{5}{*}{left} & conditional expression \\
 \verb@forall do@ & & forall expression \\
 \verb@[ ]@ & & forall expression \\
 \verb@for do@ & & for expression \\
-\verb@sync single@ & & sync and single type \\
+\verb@sync single atomic@ & & sync, single and atomic type \\
 \hline
 \verb@,@ & left & comma separated expressions \\
 \hline
@@ -409,6 +410,18 @@ However, given that no other popular modern language has made this
 change, we felt it unwise to stray from the pack.  The typical
 rationale for the C ordering is to allow these operators to be used as
 non-short-circuiting logical operations.
+
+In contrast to C, we give bitwise operations a higher precedence than binary
+addition/subtraction and comparison operators.  This enables using the shift
+operators as shorthand for multiplication/division by powers of 2, and also
+makes it easier to extract and test a bitmapped field:
+
+\begin{center}
+\begin{tabular}{lcl}
+\chpl{(x \& MASK) == MASK} & as & \chpl{x \& MASK == MASK} \\
+\chpl{a + b * pow(2,y)} & as & \chpl{a * b << y} \\
+\end{tabular}
+\end{center}
 
 One final area of note is the precedence of reductions.  Two common
 cases tend to argue for making reductions very low or very high in the
