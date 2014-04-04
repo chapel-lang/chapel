@@ -479,7 +479,7 @@ Compilation timeout (since ??? at least 01/26/14)
 
 ===============================================================
 pgi-specific regressions (in addition to chpbld02 errors above)
-(Reviewed for accuracy 03/25/14)
+(Reviewed for accuracy 04/03/14)
 ===============================================================
 
 problem with empty initializer (1/25/14 -- bradc)
@@ -546,7 +546,7 @@ compilation timeouts (03/03/14)
 
 =================================
 cray-prgenv-gnu specific failures
-(Reviewed for accuracy 02/28/14)
+(Reviewed for accuracy 04/03/14)
 =================================
 
 New gcc warning for 4.8 (6/7/13)
@@ -569,14 +569,6 @@ not sure if there's a general workaround for this particular case
 other than silencing the warning.  One worry is that gcc is spending
 extra time optimizing due to the above code, but not sure what we can
 do about it.
-
-compilation timeouts (02/28/14)
--------------------------------
-[Error: Timed out compilation for users/ferguson/nested/classclass]
-[Error: Timed out compilation for users/jglewis/badGetModule]
-[Error: Timed out compilation for users/jglewis/domain-equality-operator-1]
-[Error: Timed out compilation for users/jglewis/extended_domain_test_040510]
-
 
 
 ====================================================
