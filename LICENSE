@@ -29,6 +29,7 @@ The Chapel implementation is composed of two categories of code:
    third-party/
      creoleparser     used to generate Chapel documentation        MIT/new BSD
      dlmalloc         alternative memory allocator option          public domain
+     dygraphs         Javascript graph generator and display       MIT
      gasnet           portable communication library               BSD-like
      gmp              optional multi-precision math library        L-GPL
      hwloc            portable NUMA compute node utilities         new BSD
@@ -57,9 +58,10 @@ The Chapel implementation is composed of two categories of code:
    third-party/
      creoleparser     only used when running 'chpldoc'/'chpl --docs'
      dlmalloc         only used when CHPL_MEM is 'dlmalloc'
+     dygraphs         only used to make and display performance graphs
      gasnet           only used when CHPL_COMM is 'gasnet'
      gmp              only used when CHPL_GMP is 'gmp' 
-     hwloc            not yet used, unless explicitly enabled by developers
+     hwloc            only used when CHPL_HWLOC is 'hwloc'
      llvm             only used when CHPL_LLVM is 'llvm'
      massivethreads   only used when CHPL_TASKS is 'massivethreads'
      qthread          only used when CHPL_TASKS is 'qthreads'
