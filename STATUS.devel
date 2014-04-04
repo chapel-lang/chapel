@@ -107,12 +107,6 @@ Types, Params, Variables, and Consts
   # trivial/sungeun/config_param.future
 - Type inferred for a variable initialized to 'nil' is not 'object'
   # classes/deitz/test_infer_nil.future
-- Using the noinit keyword with a type
-- String assignment across locales is by reference rather than value.
-  # distributions/bradc/block1Dlocale.future
-  # multilocale/diten/needMultiLocales/remoteString3.future
-- Fixed length strings are not implemented.
-  # trivial/jturner/fixedStringEquals.future
 - Multiple configuration parameters with different types declared in a
   single statement result in an internal error.
   # functions/bradc/paramFnNonParamArgs/multConfigTypes.future
@@ -272,6 +266,18 @@ Functions and Iterators
   # functions/iterators/vass/forall-without-leaderfollower.future
 
 
+Strings
+-------
+- Fixed length strings are not implemented.
+  # trivial/jturner/fixedStringEquals.future
+- String assignment across locales is by reference rather than value.
+  # distributions/bradc/block1Dlocale.future
+  # multilocale/diten/needMultiLocales/remoteString3.future
+- Extern functions that use strings may not function properly for
+  multilocale execution.
+  # users/ferguson/extern_string_test2.future
+
+
 Tuples
 ------
 - Specifying the type of a tuple of domains or arrays results in a
@@ -382,7 +388,7 @@ Classes, Records, and Unions
   # types/records/hilde/newUserDefCtorInFn.future
   # types/records/hilde/newUserDefaultCtor.future
   # users/hilde/refcnt.future
-- User-defined constructors do not overried the default constructor.
+- User-defined constructors do not override the default constructor.
   # classes/claridge/baseConstructorCall.future
   # types/records/hilde/callUserDefaultConstructor.future
 - User-defined copy constructors are not supported.
@@ -448,11 +454,9 @@ Classes, Records, and Unions
   # types/records/const-checking/scenario-1-array-of-record-with-const-fld.future
   # types/records/const-checking/scenario-2-init-array-of-rec-with-const-fld.future
   # types/records/const-checking/todo-constructors-for-const-rec-fields.future
-- Associateive domains and arrays of records with const fields result
+- Associative domains and arrays of records with const fields result
   in compile time errors regarding assigning to const fields.
   # types/records/const-checking/scenario-3-assoc-dom-of-record-with-const-fld.future
-
-
 - Comparison (== or !=) of records with array or domain fields result
   in a back-end C compiler error.
   # types/records/bharshbarger/recordArrCmp.future
@@ -485,7 +489,7 @@ Domain Maps, Domains and Arrays
 - Arrays of arrays where the inner arrays vary in size are not supported.
   # arrays/deitz/test_skyline_array.future
   # studies/590o/wk3/02arrOfArr-irregular.future
-- Array values are permitted to be detupled in an interator
+- Array values are permitted to be detupled in an iterator
   # functions/iterators/bradc/badzip/misZipArrays.future
 - Arrays of subdomains may not work.
   # users/jglewis/bfs_102207/driver_breadth_first_search.future
@@ -520,32 +524,6 @@ Domain Maps, Domains and Arrays
 - Associative arrays with associative array element types result in a
   runtime error.
   # arrays/johnk/associative/recursive.future
-
-
-Input and Output
-----------------
-- Input of whole arrays is not implemented.
-  Workaround: use a loop, e.g., for e in A do read(e);
-  # types/file/fileIO.future
-- Reading of tuple types not supported.
-  # io/bradc/readTuple.future
-- Printing of multi-dimensional arrays with negative strides may
-  result in omitted line break.
-  # arrays/vass/print-negstride-bug-1.future
-- Printing of replicated arrays may not work properly.
-  # io/vass/writeThis-on.future
-- Using 'on' in a writeThis() method can lead to a deadlock.
-  # multilocale/bradc/needMultiLocales/writeThisUsingOn.future
-  # distributions/vass/dmap-writeln-default-value.future
-- Calling writeln() of function names should be illegal, but currently
-  results in unexpected output, obscure error messages, or compiler
-  internal errors.
-  # io/sungeun/funcPtr1.future
-  # io/sungeun/funcPtr2.future
-  # io/sungeun/funcPtr3.future
-  # io/sungeun/funcPtr4.future
-  # io/sungeun/funcPtr5.future
-  # io/sungeun/funcPtr6.future
 
 
 Task Parallelism and Synchronization
@@ -657,6 +635,32 @@ Standard Modules, Standard Distributions, and Standard Layouts
   # types/records/sungeun/distInRecordInClass.future
 
 
+Input and Output
+----------------
+- Input of whole arrays is not implemented.
+  Workaround: use a loop, e.g., for e in A do read(e);
+  # types/file/fileIO.future
+- Reading of tuple types not supported.
+  # io/bradc/readTuple.future
+- Printing of multi-dimensional arrays with negative strides may
+  result in omitted line break.
+  # arrays/vass/print-negstride-bug-1.future
+- Printing of replicated arrays may not work properly.
+  # io/vass/writeThis-on.future
+- Using 'on' in a writeThis() method can lead to a deadlock.
+  # multilocale/bradc/needMultiLocales/writeThisUsingOn.future
+  # distributions/vass/dmap-writeln-default-value.future
+- Calling writeln() of function names should be illegal, but currently
+  results in unexpected output, obscure error messages, or compiler
+  internal errors.
+  # io/sungeun/funcPtr1.future
+  # io/sungeun/funcPtr2.future
+  # io/sungeun/funcPtr3.future
+  # io/sungeun/funcPtr4.future
+  # io/sungeun/funcPtr5.future
+  # io/sungeun/funcPtr6.future
+
+
 Optimizations
 -------------
 # OMITTED: optimizations/rafa/rankChange.future
@@ -681,9 +685,6 @@ Miscellaneous
   # extern/sungeun/externProcInClassShouldBeError.future
 - Nil extern class references not properly handled.
   # users/ferguson/extern_class_test.future
-- Extern functions that use strings may not function properly for
-  multilocale execution.
-  # users/ferguson/extern_string_test2.future
 - Boolean literals do not preserve their sizes.
   # portability/boolLiteralSizes.future
 - Functions from extern includes that have naming conflicts with
@@ -703,7 +704,7 @@ Miscellaneous
   multiple warnings.
   # trivial/vass/repeated-warning-1.future
 - If the -o argument matches an existing directory name <dir>, the
-  resuling binary is placed in <dir>/<dir>.tmp.
+  resulting binary is placed in <dir>/<dir>.tmp.
   # compflags/bradc/dirNameMatchesBin/foo.future
 - Programs requiring non-linear resolution may fail to compile.
   E.g., mutual module uses that access variables across both modules
@@ -738,6 +739,7 @@ Performance
   # multilocale/lydia/checkNumTasks.future
 - Mechanisms for program tear-down can be better optimized.
   # parallel/taskPar/sungeun/endCountTest.future
+  # parallel/taskPar/sungeun/taskCount.future
 
 
 Developer
@@ -749,7 +751,8 @@ Developer
 - User defined chpl__initCopy() function are ignored in the
   removeUnnecessaryAutoCopyCalls pass.
   # classes/hilde/alwaysOverrideCopyInit.future
-- The "no auto destroy" pragma is not properly propgated to temporaries.
+- The "no auto destroy" pragma is not properly propagated to
+  temporaries.
   # performance/hilde/userSync.future
 - The "no copy" and "no auto destroy" pragmas used with variable
   declarations with specified types result in an internal error.
@@ -757,6 +760,7 @@ Developer
   # trivial/sungeun/pragmas/noCopyNoDestroyPragmaArray.future
   # trivial/sungeun/pragmas/noCopyNoDestroyPragmaArrayWithInit.future
   # trivial/sungeun/pragmas/noCopyNoDestroyPragmaWithInit.future
+
 
 Multi-locale/GASNet executions
 ------------------------------
