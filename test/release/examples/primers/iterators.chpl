@@ -89,7 +89,8 @@ class Tree {
   var left, right: Tree;
 }
 
-var tree = new Tree("a", new Tree("b"), new Tree("c", new Tree("d"), new Tree("e")));
+var tree = new Tree("a", new Tree("b"), new Tree("c", new Tree("d"),
+                                                 new Tree("e")));
 
 //
 // postorder - iterate over the Tree in postorder using recursion
@@ -99,12 +100,16 @@ var tree = new Tree("a", new Tree("b"), new Tree("c", new Tree("d"), new Tree("e
 //
 iter postorder(tree: Tree): Tree {
   if tree != nil {
-    // Call the iterator recursively on the left subtree and then expand the result.
+    // Call the iterator recursively on the left subtree and then expand
+    // the result.
     for child in postorder(tree.left) do
       yield child;
-    // Call the iterator recursively on the right subtree and then expand the result.
+
+    // Call the iterator recursively on the right subtree and then expand
+    // the result.
     for child in postorder(tree.right) do
       yield child;
+
     // Finally, yield the node itself.
     yield tree;
   }
