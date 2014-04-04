@@ -159,16 +159,18 @@ Optional Settings
    about locale models.
 
 
-5) Optionally, set the CHPL_TASK environment variable to indicate what
+5) Optionally, set the CHPL_TASKS environment variable to indicate what
    tasking layer you want to use to implement intra-locale parallelism
    (see README.tasks for more information on this option).  Current
    options are:
 
    CHPL_TASKS:
         fifo           : run tasks to completion, in FIFO order
-        massivethreads : run tasks using U Tokyo's MassiveThreads package
         qthreads       : run tasks using Sandia's Qthreads package
-        none           : do not support multiple tasks
+        massivethreads : run tasks using U Tokyo's MassiveThreads package
+
+   if unset, CHPL_TASKS defaults to "fifo" unless CHPL_LOCALE_MODEL is
+   set to "numa", in which case CHPL_TASKS defaults to "qthreads".
 
    See README.tasks for more information about executing using the
    various CHPL_TASKS options.
