@@ -90,9 +90,8 @@ proc readArray(filename) {
   var X: [1..m, 1..n] real;
 
   //
-  // Read in the array elements one by one (eventually, you should be
-  // able to read in the array wholesale, but this isn't currently
-  // supported.
+  // Read in the array elements one by one.
+  // (Whole-array reads are also supported.)
   //
   for i in 1..m do
     for j in 1..n do
