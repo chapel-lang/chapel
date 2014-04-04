@@ -75,29 +75,6 @@ The number of pthreads used to execute tasks can be controlled by the
 environment variable CHPL_RT_NUM_THREADS_PER_LOCALE, described below.
 
 
-CHPL_TASKS == massivethreads
-----------------------------
-
-The MassiveThreads team at the University of Tokyo has provided an
-implementation of Chapel tasking via their MassiveThreads library
-('massivethreads') in order to create a lighter-weight implementation
-of Chapel tasks.  To try MassiveThreads tasking, please take the
-following steps:
-
-1) Ensure that the environment variable CHPL_HOME points to the
-   top-level Chapel directory, as always.
-
-2) Set up your environment to use MassiveThreads:
-
-     export CHPL_TASKS=massivethreads
-
-3) Follow the "Quick Start" instructions in $CHPL_HOME/README
-   to set up, compile and run your Chapel programs.
-
-For more information on MassiveThreads, please see its entry in:
-$CHPL_HOME/third-party/README.
-
-
 CHPL_TASKS == qthreads
 ----------------------
 
@@ -123,6 +100,29 @@ For more information on Qthreads, please see $CHPL_HOME/third-party/README
 For best results, make sure that you have installed the libhwloc library
 which qthreads will auto-detect during configuration and use for processor
 affinity.
+
+
+CHPL_TASKS == massivethreads
+----------------------------
+
+The MassiveThreads team at the University of Tokyo has provided an
+implementation of Chapel tasking via their MassiveThreads library
+('massivethreads') in order to create a lighter-weight implementation
+of Chapel tasks.  To try MassiveThreads tasking, please take the
+following steps:
+
+1) Ensure that the environment variable CHPL_HOME points to the
+   top-level Chapel directory, as always.
+
+2) Set up your environment to use MassiveThreads:
+
+     export CHPL_TASKS=massivethreads
+
+3) Follow the "Quick Start" instructions in $CHPL_HOME/README
+   to set up, compile and run your Chapel programs.
+
+For more information on MassiveThreads, please see its entry in:
+$CHPL_HOME/third-party/README.
 
 
 ---------------------------------
