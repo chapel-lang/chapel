@@ -78,8 +78,9 @@ in~\rsec{Local_Type_Inference}.
 
 The \sntx{initialization-part} of a variable declaration specifies an
 initial expression to assign to the variable.  If
-the \sntx{initialization-part} is omitted, the variable is initialized
-to a default value described in~\rsec{Default_Values_For_Types}.
+the \sntx{initialization-part} is omitted, the \sntx{type-part} must
+be present, and the variable is initialized to the default value of
+its type as described in~\rsec{Default_Values_For_Types}.
 
 If the \sntx{no-initialization-part} is present, the variable
 declaration does not initialize the variable to any value, as described
@@ -189,6 +190,9 @@ In the declaration
 proc g() { writeln("side effect"); return "a string"; }
 var a, b = 1.0, c, d:int, e, f = g();
 \end{chapel}
+\begin{chapelpost}
+writeln((a,b,c,d,e,f));
+\end{chapelpost}
 variables \chpl{a} and \chpl{b} are of type \chpl{real} with
 value \chpl{1.0}.  Variables \chpl{c} and \chpl{d} are of
 type \chpl{int} and are initialized to the default value of \chpl{0}.
@@ -197,6 +201,7 @@ value \chpl{"a string"}.  The string \chpl{"side effect"} has been
 written to the display once.  It is not evaluated twice.
 \begin{chapeloutput}
 side effect
+(1.0, 1.0, 0, 0, a string, a string)
 \end{chapeloutput}
 \end{chapelexample}
 
