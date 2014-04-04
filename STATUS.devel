@@ -375,17 +375,15 @@ Classes, Records, and Unions
 - Function resolution may be overly conservative for methods of subclasses.
   # classes/bradc/compilerErrorInMethod/testClear.future
 - User-defined constructors and destructors are not robust.
-  # TODO
-  # classes/claridge/baseConstructorCall.future
   # users/murai/test_nested_class_constructor.future
   # classes/bradc/initialize-secondary.future
   # classes/vass/nested-class-with-user-defined-constructor-1.future
-  # classes/hilde/alwaysOverrideCopyInit.future
   # classes/constructors/base-class-generic-args.future
   # types/records/hilde/newUserDefCtorInFn.future
   # types/records/hilde/newUserDefaultCtor.future
   # users/hilde/refcnt.future
 - User-defined constructors do not overried the default constructor.
+  # classes/claridge/baseConstructorCall.future
   # types/records/hilde/callUserDefaultConstructor.future
 - User-defined copy constructors are not supported.
   # classes/diten/test_destructor3.future
@@ -589,8 +587,6 @@ Data Parallelism
   3. Assignment, reductions, and parallel iteration over opaque domains and
      arrays are always serialized.
    # domains/johnk/associative/literalsWarn.future
-- Task intents to not work for coforalls and cobegins used in iterators
-  # TODO: are there any futures?  better wording?
 - Array promotion/forall/for/scan expressions always evaluate to 1D arrays.
   E.g., f(A) where A promotes f() should result in an array of type:
     [A.domain] f(A(i)).type but instead results in a 1D array
@@ -631,6 +627,10 @@ Data Parallelism
   serialized as they should be.
   # domains/sungeun/sparse/minus_equals.future
   # domains/sungeun/sparse/plus_equals.future
+- Task intents to not work for coforalls and cobegins used in iterators.
+  # TODO: are there any futures?  better wording?
+- Iterating over a range where bound+stride overflows the index type
+  overflows can result in incorrect execution.
 - Overloaded xor used in a reduction may result in an internal
   compiler error.
   # reductions/bradc/badoverload.future
@@ -746,6 +746,9 @@ Developer
   contain begin statements.
   # parallel/begin/sungeun/autoCopyWithBegin.future
   # parallel/begin/sungeun/initCopyWithBegin.future
+- User defined chpl__initCopy() function are ignored in the
+  removeUnnecessaryAutoCopyCalls pass.
+  # classes/hilde/alwaysOverrideCopyInit.future
 - The "no auto destroy" pragma is not properly propgated to temporaries.
   # performance/hilde/userSync.future
 - The "no copy" and "no auto destroy" pragmas used with variable
@@ -755,7 +758,6 @@ Developer
   # trivial/sungeun/pragmas/noCopyNoDestroyPragmaArrayWithInit.future
   # trivial/sungeun/pragmas/noCopyNoDestroyPragmaWithInit.future
 
-
 Multi-locale/GASNet executions
 ------------------------------
 - stdin does not work for multi-locale/GASNet executions
@@ -763,12 +765,9 @@ Multi-locale/GASNet executions
 
 Portability
 -----------
-Cray XE/XK/XC:
 
-Cray XT:
-- The memory limit for Chapel programs may need to be set manually.
-  See doc/platforms/README.cray for details.
-- PrgEnv-gnu with CHPL_GMP=system do not link properly.
+OS/X:
+- Static linking not supported.
 
 PGI compilers:
 - Floating point literals of -0.0 may not work as intended.
