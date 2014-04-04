@@ -25,7 +25,7 @@ writeln("A is: "); writeln(A);
 writeln();
 
 //
-// Find the average value of the array, but summing over its elements
+// Find the average value of the array, by summing over its elements
 // and dividing by the number of elements it contains.
 //
 var eltAvg = (+ reduce A) / size**2;
@@ -33,10 +33,11 @@ writeln("The average element of A has the value ", eltAvg);
 writeln();
 
 //
-// We can find the 1-norm of A by summing over the absolute value of the elements.
+// We can find the 1-norm of A by summing over the absolute value of the
+// elements.
 //
-// The expression "abs(A)" creates a new matrix which contains in each of its elements
-// the absolute value of the corresponding element in A.
+// The expression "abs(A)" creates a new matrix which contains in each of its
+// elements the absolute value of the corresponding element in A.
 // The "+ reduce" clause just sums these up.
 // 
 var oneNorm = + reduce abs(A);
@@ -49,7 +50,7 @@ writeln();
 //
 // The expression below can be broken down thus:
 //  1) The Frobenius norm is the square root of sum quantity.
-//  2) The quantity the sum over all elements of a matrix.
+//  2) The quantity is the sum over all elements of a matrix.
 //  3) The matrix is the promotion of A by "**2".
 //     That is, a matrix each of whose elements the square of the corresponding
 //       element in A.
@@ -95,11 +96,11 @@ writeln();
 // Use the && reduction to compute if all values in A are greater than 0.25.
 //
 // The parenthesized value is the promotion of A by "> 0.25".  This yields
-// an array of the same size as A, contining boolean values that are true
+// an array of the same size as A, containing boolean values that are true
 // if the corresponding element in A exceeds 0.25 and false otherwise.
 //
-// The clause "&& reduce" applies the Boolean AND operator to each element in the
-// array, and accumulates the result.
+// The clause "&& reduce" applies the Boolean AND operator to each element in
+// the array, and accumulates the result.
 //
 var onlyBigValues = && reduce (A > 0.25);
 if onlyBigValues then
