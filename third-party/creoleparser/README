@@ -18,4 +18,4 @@ http://genshi.edgewall.org/
 
 Any Chapel issues that seem to be related to these libraries should be directed
 to the Chapel team at chapel-bugs@lists.sourceforge.net, as the cause is most
-likely due to Chapel's use of the UTF-8 decoder and not the library code itself.
+likely due to Chapel's use of the Creoleparser and not the library code itself.
