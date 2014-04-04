@@ -654,7 +654,10 @@ For text I/O, any whitespace is skipped over and is used only to separate one
 argument from the next.  The predefined function \chpl{readln} is
 identical except that upon reading all of its arguments it scans ahead
 in the input stream until just after the next {\em end-of-line}
-character.
+character. The \chpl{read} and \chpl{readln} functions taking in variable
+arguments return a \chpl{bool} value of true if all values were read or
+false if not. In this way, these functions can be used to iterate over a file
+of unknown length.
 
 The \chpl{read} and \chpl{readln} functions are also defined to take
 an arbitrary number of types as arguments.  In this case, the
@@ -688,8 +691,9 @@ variables \chpl{x} and \chpl{y}:
 var x: int;
 var y: real;
 
-/* reading into variable expressions */
-read(x, y);
+/* reading into variable expressions, returning
+   true if the values were read, false on EOF */
+var ok:bool = read(x, y);
 
 /* reading via a single type argument */
 x = read(int);
