@@ -228,6 +228,8 @@ or \chpl{uint} of equal or larger size, its value is zero-extended to fit the
 new representation.  When a \chpl{bool} is converted to a
 smaller \chpl{bool}, \chpl{int} or \chpl{uint}, its most significant
 bits are truncated (as appropriate) to fit the new representation.
+
+When a \chpl{int}, \chpl{uint}, or \chpl{real} is converted to a \chpl{bool}, the result is \chpl{false} if the number was equal to 0 and \chpl{true} otherwise.
 % This has the odd effect that a bool stored in a signed one-bit bitfield would
 % change sign without generating a conversion error.  But its subsequent
 % conversion back to a bool would yield the original value.
