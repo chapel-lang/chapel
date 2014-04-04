@@ -42,7 +42,7 @@ if x.read() != n then
 //
 // In the following example, n parallel tasks are created via a
 // coforall statement.  Each task tries to set the current value of x
-// id-1, but only will succeed.
+// id-1, but only one will succeed.
 //
 var numFound: atomic int;
 coforall id in R {
