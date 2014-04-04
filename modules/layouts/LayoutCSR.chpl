@@ -1,5 +1,6 @@
 config param debugCSR = false;
 
+// Compressed Sparse Row
 class CSR: BaseDist {
   proc dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
     return new CSRDom(rank=rank, idxType=idxType, dist=this, parentDom=dom);
