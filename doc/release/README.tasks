@@ -170,17 +170,17 @@ CHPL_TASKS == fifo:
   all of the required tasks.  The -b/--blockreport flag can help debug
   programs like this that appear to be deadlocked.
 
-CHPL_TASKS == massivethreads:
-  In the MassiveThreads tasking layer, CHPL_RT_NUM_THREADS_PER_LOCALE
-  specifies the number of system threads used to execute tasks.  If the
-  value is 0, the massivethreads tasking layer will create a number of
-  threads equal to the number of processor cores on the locale.
-
 CHPL_TASKS == qthreads:
   In the Qthreads tasking layer, CHPL_RT_NUM_THREADS_PER_LOCALE
   specifies the number of system threads, or shepherds, used to execute
   tasks.  If the value is 0, the qthreads tasking layer will create a
   number of threads equal to the number of processor cores on the locale.
+
+CHPL_TASKS == massivethreads:
+  In the MassiveThreads tasking layer, CHPL_RT_NUM_THREADS_PER_LOCALE
+  specifies the number of system threads used to execute tasks.  If the
+  value is 0, the massivethreads tasking layer will create a number of
+  threads equal to the number of processor cores on the locale.
 
 
 ----------------
