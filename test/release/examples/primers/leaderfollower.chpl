@@ -109,9 +109,9 @@ config param verbose = false;
 
 //
 // Declare a problem size for this test.  By default we use a small
-// problem size to make the output readable.  To use the parallelism
-// effectively, you'd want to use a much larger problem size of
-// course (override on the execution command-line using the
+// problem size to make the output readable.  Of course, to use the
+// parallelism effectively you'd want to use a much larger problem
+// size (override on the execution command-line using the
 // --probSize=<n> option).
 //
 config const probSize = 15;
