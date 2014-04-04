@@ -219,7 +219,7 @@ class Node {
 //
 // So, in the following loop, 'current' will always point at the last
 // node we created while our on-clause will move the task ahead to
-// the nexet locale.  That way, our execution of 'new' will create
+// the next locale.  That way, our execution of 'new' will create
 // the new object on that "next" locale.
 //
 var head = new Node(0);
