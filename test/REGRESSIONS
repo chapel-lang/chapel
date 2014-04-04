@@ -86,6 +86,15 @@ valgrind-specific regressions
 (Reviewed for accuracy 04/02/14)
 ================================
 
+possible stack overflow? (3/30/14)
+----------------------------------
+[Error matching program output for studies/sudoku/dinan/search/sudoku-reduce2]
+This started failing after r23004, but no one's been able to reproduce
+it.  I added -g --savec to the nightly run and got a little more
+information, and it looks a lot like stack overflow, but we can't seem
+to reproduce that in other environments either.  On suggestion is to
+reduce the number of tests running in parallel.
+
 overlapping memcpy (root cause should be eliminated)
 ----------------------------------------------------
 [Error matching program output for io/bradc/readWholeArr]
@@ -173,20 +182,11 @@ failure due to r22900 (bradc; may let regress until strings are records)
 [Error matching program output for classes/sungeun/remoteDynamicDispatch (compopts: 1)]
 [Error matching program output for multilocale/diten/needMultiLocales/remoteStringTuple]
 
-execution timeout
------------------
-[Error: Timed out executing program optimizations/bulkcomm/alberto/Block/perfTest_v2 (compopts: 1)] (02/26/14)
-[Error: Timed out executing program optimizations/bulkcomm/alberto/Cyclic/perfTest (compopts: 1)] (03/31/14)
-
 
 ==============================================
 gasnet-fast regressions (other than the above)
 (Reviewed for accuracy 04/01/14)
 ==============================================
-
-l-value issue?
---------------
-[Error matching compiler output for users/vass/crash2VarSymbolTypeNULL]
 
 unable to start polling thread (???)
 ------------------------------------
@@ -207,6 +207,7 @@ block distribution regressions
 cyclic distribution regressions
 (Reviewed for accuracy 04/02/14)
 ================================
+
 
 communication counts changed due to r23004, gbt (03/30/14)
 ----------------------------------------------------------
@@ -772,6 +773,8 @@ baseline-specific tests
 
 Failure due to r22900 (bradc)
 -----------------------------
+Note: this succeeds with just --baseline and also with '--baseline
+--inline --copy-propagation --remote-value-forwarding'
 [Error matching compiler output for studies/ssca2/graphio/graphio (compopts: 1)]
 
 incorrect output -- expected? (04/03/10)
@@ -843,3 +846,6 @@ Comm diags mismatch
 Output mismatch
   multilocale/numLocales/bradc/testVFlag
   multilocale/numLocales/bradc/testVerboseFlag
+
+Network atomics don't support memory_order
+  chameneosredux.chpl

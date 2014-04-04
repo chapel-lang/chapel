@@ -88,8 +88,23 @@ in ~10s for segment everything.  Similarly,
 studies/hpcc/PTRANS/jglewis/ptrans_2011-blkcyc.chpl should run in
 about 40 seconds for segment everything but timed out on 1/13/14.
 
+Possible couple recent examples:
+[Error: Timed out executing program optimizations/bulkcomm/alberto/Block/perfTest_v2 (compopts: 1)] (02/26/14)
+[Error: Timed out executing program optimizations/bulkcomm/alberto/Cyclic/perfTest (compopts: 1)] (03/31/14)
+
 numa testing non-determinism
 ----------------------------
+
+Invalid subloc id due to r23004
+-------------------------------
+[Error matching program output for studies/sort/radix.chpl] (steady)
+[Error matching program output for associative/waynew/indef4] (4/2/13)
+[Error matching program output for performance/compiler/bradc/cg-sparse-timecomp (compopts: 1)] (4/2/13)
+[Error matching program output for npb/cg/bradc/cg-sparse (compopts: 1)] (4/1/14, 4/3/14)
+[Error matching program output for npb/ep/mcahir/ep] (4/3/14)
+[Error matching program output for studies/lulesh/sungeun/lulesh (compopts: 1)] (4/3/14)
+
+
 sungeun: I believe this test pushes the stack size limit and gets
 lucky sometimes.  I've left the entry in the REGRESSIONS file for now.
 [Error matching program output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 1, execopts: 3)]
@@ -433,6 +448,9 @@ pgi compilation timeouts
 [Error: Timed out compilation for studies/lammps/shemmy/s-lammps] (03/04/14)
 [Error: Timed out compilation for studies/kmeans/kmeansonepassreduction-norecord2] (03/04/14)
 [Error: Timed out compilation for studies/kmeans/kmeansonepassreduction-minchange] (03/04/14)
+[Error: Timed out compilation for arrays/deitz/part2/test_array_basic1a] (4/3/14)
+[Error: Timed out compilation for arrays/deitz/part2/test_array_init_with_seq] (4/3/14)
+
 
 intel compilation timeouts
 --------------------------
