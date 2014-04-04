@@ -58,9 +58,12 @@ NUMA Locale Model
 In the NUMA locale model, the processor is split into NUMA domains
 and cores within a domain have faster access to local memory.
 
-The NUMA locale model is currently supported using the qthreads tasking layer.
+The NUMA locale model is supported using the qthreads tasking layer.
 While other tasking layers are also functionally correct using the NUMA locale 
-model, they are not NUMA aware.
+model, they are not NUMA aware.  In addition, the Portable Hardware Locality
+library (hwloc) is used to map sublocales to NUMA domains. For more
+information about qthreads and about tuning parameters such as the number of
+qthread shepherds per locale, please see $CHPL_HOME/doc/README.tasks.
 
 To use the NUMA locale model:
 
@@ -68,42 +71,20 @@ To use the NUMA locale model:
 
     export CHPL_LOCALE_MODEL=numa
 
-2) Set the CHAPEL_TASKS environment variable to "qthreads".
-
-    export CHPL_TASKS=qthreads
-
-3) Re-make the compiler and runtime from CHPL_HOME
+2) Re-make the compiler and runtime from CHPL_HOME
 
     cd $CHPL_HOME
     make
 
-4) Compile your Chapel program as usual.
+3) Compile your Chapel program as usual.
 
     chpl -o jacobi $CHPL_HOME/examples/programs/jacobi.chpl
 
-For full functionality, including proper mapping from sublocales to NUMA
-domains, the NUMA locale model requires the Portable Hardware Locality (hwloc)
-library, not included in the 1.8 Chapel release.  We expect to add the hwloc
-library to a future release.
 
-1) Download the hwloc library from http://www.open-mpi.org/projects/hwloc
+When CHPL_LOCALE_MODEL is numa the following defaults are inferred:
 
-2) Extract the hwloc tarball and follow the directions in the extracted README file
-   to build and install the hwloc library.  This will follow the typical GNU
-   install pattern:
-     * ./configure --prefix=...
-     * make
-     * make install
-
-3) Build or rebuild the qthreads library to incorporate the additional
-   functionality.
-     * cd $CHPL_HOME/third-party/qthreads
-     * make clean
-     * make CHPL_QTHREAD_CFG_OPTIONS="--with-hwloc=/path/to/hwloc/install --with-topology-hwloc"
-
-4) Build Chapel as normal.
-    * cd $CHPL_HOME
-    * make
+    CHPL_TASKS=qthreads
+    CHPL_HWLOC=hwloc
 
 
 ---------------------------------------
@@ -111,5 +92,5 @@ Caveats for using the NUMA locale model
 ---------------------------------------
 
 * Explicit memory allocation for NUMA domains is not yet implemented
-* Distributed arrays do not yet map iteration to NUMA domains
+* Distributed arrays other than Block do not yet map iteration to NUMA domains
 * Performance for NUMA has not been optimized.
