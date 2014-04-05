@@ -1,150 +1,127 @@
-====================================
-Initial support for atomic variables
-====================================
+===========================================
+Current implementation for atomic variables
+===========================================
 
-This README describes initial support for atomic variables in Chapel.
+This README describes current implementation of atomic variables in Chapel.
 
-
+--------
 Overview
 --------
 
 Atomic variables are variables that support atomic operations.
 Currently, Chapel supports processor-provided atomic operations on
-bools, all supported sized of signed and unsigned integer types, and
-real(32) and real(64).  Initial support for network-provided atomic
-operations is also available.  See the appropriate README for a
-particular platform to see if network-based atomics are available.
+bools, all supported sizes of signed and unsigned integer types, and
+real(32) and real(64) for several backend compilers (see README.chplenv
+for the current list of supported compilers.) Initial support for
+network-provided atomic operations is also available. See the
+appropriate README for a particular platform to see if network-based
+atomics are available.
 
 The choice of supported atomic variable types as well as the atomic
-operations was strongly influenced by the upcoming C standard, C1x.
-In subsequent releases, we plan to include other types and operations,
-especially those specified in C/C++ standards or supported directly
-in hardware.
+operations were strongly influenced by the C11 standard. A notable
+exception is that Chapel supports atomics for reals as well. In the
+future we plan to add atomic support for other primitive types. 
 
 The specific implementation of atomics can be selected via the
 environment variable CHPL_ATOMICS.  Similar to the other Chapel
 environment variables, an appropriate default is chosen when not
 specified, and not all implementations are available for all settings.
-Chapel currently supports two atomics implementations: intrinsics (gcc
-intrinsics) and locks.  This environment variable also specifies the
-atomic implementation used by the Chapel runtime.
+Chapel currently supports two atomics implementations: intrinsics and
+locks. This environment variable also specifies the atomic
+implementation used by the Chapel runtime.
+
+If intrinsics are available on your system, atomics map down to compiler
+atomic intrinsics which often map directly to processor atomics.  If
+intrinsics are not available the atomic implementation defaults to using
+locks in the form of Chapel's sync vars. As a result the locks
+implementation will be slower than the intrinsic implementation. Since
+Chapels' atomics were modeled after the C11 standard, once more C
+compilers start supporting the C11 standard we will add another runtime
+implementation that maps to the C11 atomics. 
+
+Currently, unless using network atomics, all remote atomic operations
+will result in the calling task effectively migrating to the locale on
+which the atomic variable was allocated and performing the atomic
+operations locally.
 
 If supported, the network atomics implementation can be selected via
-the environment variable CHPL_NETWORK_ATOMICS.  If set, all variables
+the environment variable CHPL_NETWORK_ATOMICS. If set, all variables
 declared to be atomic will use the specified network's atomic
-operations.  It is possible to override this default by using the
+operations. It is possible to override this default by using the
 explicit type name for the processor-based atomics (available in the
 type function chpl__atomicType() defined in the file
 $CHPL_HOME/modules/internal/Atomics.chpl).
 
+For more information about the runtime implementation see
+$CHPL_HOME/runtime/include/atomics/README. 
 
-Syntax and Interface
---------------------
-
-Atomic variables are declared using the 'atomic' type qualifier,
-similar to 'sync' and 'single'.
-
-   var x: atomic int;
-
-Atomic variables can only be accessed and manipulated using methods
-defined on the atomic type.  In the future, we may overload certain
-standard operations (e.g., read, +=) on atomic variables to call these
-methods automatically.
-
-All atomic types support read(), write(), exchange(),
-compareExchangeWeak(), and compareExchangeStrong(), and
-compareExchange().  Integer atomics types support all atomic
-operations (fetching and non-fetching).  Real atomics types support
-add(), fetchAdd(), sub() and fetchsub().  Bool atomics support
-testAndSet() and clear().
-
-The following summarizes the methods and supported types.
-
-   read():
-     Reads and returns the stored value.
-
-   write(x):
-     Stores x as the value.
-
-   exchange(x):
-     Stores x as the new value.  Returns the original value.
-
-   compareExchangeWeak(e, x):
-   compareExchangeStrong(e, x):
-   compareExchange(e, x):
-     Stores x as the new value, if and only if the original value is
-     equal to e.  Returns true if x was stored, false otherwise.  The
-     'weak' variation may return false even if the original value was
-     equal to e if, for example, the value could not be updated
-     atomically.  compareExchange() is equivalent to
-     compareExchangeStrong().
-
-  waitFor(x):
-     Returns when the stored value is equal to x.  The implementation
-     may yield the running task while waiting.
-
-   add(x), fetchAdd(x):
-   sub(x), fetchSub(x):
-   or(x),  fetchOr(x):
-   and(x), fetchAnd(x):
-   xor(x), fetchXor(x):
-     Applies the appropriate operator (+, -, |, &, or ^) to the
-     original value and x and stores the result.  Only defined for
-     integral atomic types (all) and real atomic types (+ and -
-     varieties only).  The fetch varieties return the original value.
-
-   testAndSet():
-     Stores true as the new value.  Returns the original value.  Only
-     defined for atomic bool.  Equivalent to exchange(true).
-
-   clear():
-     Stores false as the new value.  Only defined for atomic bool.
-     Equivalent to write(false).
-
-The above methods also take an optional argument named 'order' of type
-memory_order.  The order argument is used to specify the ordering
-constraints of atomic operations.  The supported memory_order types
-are:
-
-   - memory_order_relaxed
-   - memory_order_consume
-   - memory_order_acquire
-   - memory_order_release
-   - memory_order_acq_rel
-   - memory_order_seq_cst
-
-See the proposed C1x standard documentation for more information on
-the semantics of these memory_order types.
-
-The default value is memory_order_seq_cst.  Not all implementation may
-support all memory_order types and may default to a more conservative
-ordering than specified.
+To see a full list of available functions, see
+$CHPL_HOME/modules/internal/Atomics.chpl.
 
 
+------------------
+Memory Order Notes
+------------------
+
+As mentioned in the spec, all atomic operations optionally take a memory
+order. However for the current implementations this argument is ignored
+in the runtime. The effects is that all atomic operations are
+effectively memory_order_seq_cst (sequentially consistent) regardless of
+the actual order specified. The reason for this is because the atomic
+intrinsics have no way to specify memory order and locks memory order is
+bound my the locking and unlocking of sync vars. The C11 standard goes
+into great detail about what all the memory orders do and how they allow
+for performance optimizations by allowing users to select non
+sequentially constant orderings. 
+
+
+------------------------------
+Variances from the C11 standard
+-------------------------------
+
+While Chapel atomics are modeled after the C11 standard there are some
+notable differences. The primary one is that Chapel supports atomics for
+real types. It should be noted that since there is virtually no hardware
+support for floating point atomics our implementation is not very
+efficient.
+
+As noted in the spec there a few additional methods in Chapel that are
+not in C11. They are peek, poke, and waitFor. Peek and poke are supposed
+to be relaxed versions of read and write that allow users to perform
+reads and writes with more relaxed memory constraints. Currently they
+are implemented as reads and writes with memory_order_relaxed but since
+our implementations ignore memory_order, they are semantically the same
+as read and write. waitFor is method that waits until an atomic value
+has a specific value.  It can yield to other tasks while waiting. 
+
+Chapel currently does not support the memory fences and isLockFree
+methods from the C11 spec. They are defined in the runtime but not in
+the modules. The primary reason that isLockFree is not available is that
+it may not be accurate for the intrinsics. Without examining each
+intrinsic operation for each compiler it is hard to know if they
+actually map down to lock free operations. threadFence and signalFence
+are also in the runtime but not in the modules. The primary reason for
+this is that there is no need for them with the current implementation.
+All our operations use memory_order_seq_cst. The fences are used with
+other memory_orders to allow you to create safe programs when atomic
+operations are using non sequential memory orders.
+
+
+-----------
 Open issues
 -----------
 
 Below are a few of the known open issues with Chapel atomics.
 
+- Atomic bools are only supported for the default size and not
+  implemented for all sizes of bools. 
+
+- The memory_order is currently ignored by all implementations. 
+
 - Chapel's memory consistency model is still a work-in-progress.
 
-- There are a number of undocumented functions provided by the atomics
-  interface that are omitted from this README due to incomplete
-  implementation and/or as of yet undefined semantics.  These
-  functions include a 'fence' operation, a 'lock free' test, and
-  weaker accesses (peek/poke).  To see a full list of available
-  functions, see $CHPL_HOME/modules/internal/Atomics.chpl.
 
-- Default argument passing semantics are not yet defined for atomics.
-  Currently, atomics are implemented using records, and as a result
-  they adopt the semantics of records (default intent passed by
-  value).  We not expect this to be the case in future releases.
-
-- Currently, unless using network atomics, all remote atomic
-  operations will result in the calling task effectively migrating to
-  the locale on which the atomic variable was allocated and performing
-  the atomic operations locally.
-
+--------
 Feedback
 --------
 

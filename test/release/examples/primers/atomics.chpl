@@ -2,7 +2,7 @@
 // Atomics primer
 //
 // This primer illustrates Chapel's atomic variables.  For more information
-// on Chapel's atomics, see $CHPL_HOME/docs/technotes/README.atomics
+// on Chapel's atomics, see the Chapel Language Specification.
 //
 config const n = 31;
 const R = 1..n;
@@ -37,8 +37,8 @@ if x.read() != n then
 // argument and returns the old value.  The compareExchange(),
 // compareExchangeStrong() and compareExchangeWeak() methods only
 // perform the swap if the current value is equal to the first argument,
-// returning true if the exchange was performed  See README.atomics for
-// the difference between the weak and strong variety.
+// returning true if the exchange was performed  See the Chapel Language
+// Specification for the difference between the weak and strong varieties.
 //
 // In the following example, n parallel tasks are created via a
 // coforall statement.  Each task tries to set the current value of x
@@ -90,9 +90,10 @@ flag.clear();
 // - fetchSub() and sub()
 // - fetchOr() and or() (bit-wise) (integral types only)
 // - fetchAnd() and and() (bit-wise) (integral types only)
+// - fetchXor() and xor() (bit-wise) (integral types only)
 //
 // Each of the above atomically reads the variable, stores the result
-// of the operation (+, -, |, or &) using the value and the method
+// of the operation (+, -, |, &, ^) using the value and the method
 // argument, then, for the fetchOps functions, returns the original
 // value.
 //
@@ -120,7 +121,6 @@ coforall id in R {
   const mySq = id*id;
   const last = a.fetchAdd(mySq);
   if sumOfSq-mySq == last {
-    //
     const t = a.read();
     if t != n*(n+1)*(2*n+1)/6 then
       halt("Error: a=", t, " (should be ", sumOfSq, ") id=", id);

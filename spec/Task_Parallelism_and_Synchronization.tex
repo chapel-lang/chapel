@@ -10,6 +10,8 @@ chapter details task parallelism as follows:
 to introduce concurrency into a program.
 \item \rsec{Synchronization_Variables} describes synchronization
 variables, an unstructured mechanism for synchronizing tasks.
+\item \rsec{Atomic_Variables} describes atomic variables, a mechanism
+for supporting atomic operations. 
 \item \rsec{Cobegin} describes the cobegin statement, a structured way to
 introduce concurrency into a program.
 \item \rsec{Coforall} describes the coforall loop, another structured way to
@@ -127,7 +129,7 @@ variable's state is full.  Normal writes of a synchronization variable
 cannot proceed until the variable's state is empty.
 
 Chapel supports two types of synchronization variables: sync and
-single.  Both types behave similarly, expect that a single variable
+single.  Both types behave similarly, except that a single variable
 may only be written once.  Consequently, when a sync variable is read,
 its state transitions to empty, where as when a single variable is
 read, its state does not change.  When either type of synchronization
@@ -426,6 +428,234 @@ writeln((x(*\texttt{\$}*).readXX(), y(*\texttt{\$}*), z));
 (5, 6, 11)
 \end{chapeloutput}
 \end{chapelexample}
+
+
+
+\section{Atomic Variables}
+\label{Atomic_Variables}
+\index{atomic variables!atomic@\chpl{atomic}}
+\index{atomic@\chpl{atomic}}
+
+Atomic variables are variables that support atomic operations. Chapel
+currently supports atomic operations for bools, all supported sizes of
+signed and unsigned integers, as well as all supported sizes of reals. 
+
+The choice of supported atomic variable types as well as the atomic
+operations was strongly influenced by the C11 standard. The main
+difference is that Chapel also supports atomic operations for real
+variables. There are a few additional methods (waitFor, peek, and
+poke) and a few methods not currently implemented (isLockFree,
+threadFence, and signalFence.)
+
+Atomic is a type qualifier that precedes the variable's type in
+the declaration. Atomic operations are supported for bools, and all
+sizes of ints, uints, and reals.  
+
+An atomic variable is specified with an atomic type given by the 
+following syntax:
+
+\begin{syntax}
+atomic-type:
+  `atomic' type-specifier
+\end{syntax}
+
+Please refer to \chpl{CHPL_HOME/examples/primers/atomics.chpl} for a
+brief introduction to atomic variables. For more information about the
+current atomic implementation refer to \newline
+\chpl{CHPL_HOME/doc/release/technotes/README.atomics}
+
+
+\subsection{Predefined Atomic Methods}
+\label{Functions_on_Atomic_Variables}
+\index{atomic variables!predefined methods on}
+
+The following methods are defined for variables of atomic type. Note
+that not all operations are supported for all atomic types. The
+supported types are listed for each method.  
+
+
+\index{read (atomic var)@\chpl{read} (atomic var)}
+\index{predefined functions!read (atomic var)@\chpl{read} (atomic var)}
+\begin{protohead}
+proc (atomic t).read(): t
+\end{protohead}
+\begin{protobody}
+Reads and returns the stored value. Defined for all atomic types.  
+\end{protobody}
+
+
+\index{write (atomic var)@\chpl{write} (atomic var)}
+\index{predefined functions!write (atomic var)@\chpl{write} (atomic var)}
+\begin{protohead}
+proc (atomic t).write(v: t)
+\end{protohead}
+\begin{protobody}
+Stores v as the new value. Defined for all atomic types.  
+\end{protobody}
+
+\index{exchange (atomic var)@\chpl{exchange} (atomic var)}
+\index{predefined functions!exchange (atomic var)@\chpl{exchange} (atomic var)}
+\begin{protohead}
+proc (atomic t).exchange(v: t): t
+\end{protohead}
+\begin{protobody}
+Stores v as the new value and returns the original value. Defined for all
+atomic types. 
+\end{protobody}
+
+\index{compareExchangWeak (atomic var)@\chpl{compareExchangeWeak} (atomic var)}
+\index{predefined functions!compareExchangeWeak (atomic var)@\chpl{compareExchangeWeak} (atomic var)}
+\index{compareExchangStrong (atomic var)@\chpl{compareExchangeStrong} (atomic var)}
+\index{predefined functions!compareExchangeStrong (atomic var)@\chpl{compareExchangeStrong} (atomic var)}
+\index{compareExchange (atomic var)@\chpl{compareExchange} (atomic var)}
+\index{predefined functions!compareExchange (atomic var)@\chpl{compareExchange} (atomic var)}
+\begin{protohead}
+proc (atomic t).compareExchangeWeak(e: t, v: t): bool
+proc (atomic t).compareExchangeStrong(e: t, v: t): bool
+proc (atomic t).compareExchange(e: t, v: t): bool
+\end{protohead}
+\begin{protobody}
+Stores v as the new value, if and only if the original value is equal to
+e. Returns true if v was stored, false otherwise. The 'weak' variation
+may return false even if the original value was equal to e if, for
+example, the value could not be updated atomically. compareExchange() is
+equivalent to compareExchangeStrong(). Note that the current
+implementation of these methods differs slightly from the C11 standard.
+In the C11 standard if the exchange fails the value of the atomic
+variable is stored in e but the current Chapel implementation does
+not change the value of e on failure.  Defined for all atomic types. 
+\end{protobody}
+
+\index{add (atomic var)@\chpl{add} (atomic var)}
+\index{predefined functions!add (atomic var)@\chpl{add} (atomic var)}
+\index{sub (atomic var)@\chpl{sub} (atomic var)}
+\index{predefined functions!sub (atomic var)@\chpl{sub} (atomic var)}
+\index{or (atomic var)@\chpl{or} (atomic var)}
+\index{predefined functions!or (atomic var)@\chpl{or} (atomic var)}
+\index{and (atomic var)@\chpl{and} (atomic var)}
+\index{predefined functions!and (atomic var)@\chpl{and} (atomic var)}
+\index{xor (atomic var)@\chpl{xor} (atomic var)}
+\index{predefined functions!xor (atomic var)@\chpl{xor} (atomic var)}
+\begin{protohead}
+proc (atomic t).add(v: t)
+proc (atomic t).sub(v: t)
+proc (atomic t).or(v: t)
+proc (atomic t).and(v: t)
+proc (atomic t).xor(v: t)
+\end{protohead}
+\begin{protobody}
+Applies the appropriate operator (\verb@+@, \verb@-@, \verb@|@,
+\verb@&@, \verb@^@) to the original value and v and stores the result.
+All of the methods are defined for integral atomic types. Only add and
+sub (\verb@+@, \verb@-@) are defined for real atomic types.  None of the methods are
+defined for the bool atomic type. 
+\end{protobody}
+
+\begin{future}
+In the future we may overload certain operations such as \verb@+=@ to
+call the above methods automatically. Currently the only way to change
+an atomic variable is through one of the defined methods and operator
+overloads are explicitly prohibited. 
+\end{future}
+
+\index{fetchAdd (atomic var)@\chpl{fetchAdd} (atomic var)}
+\index{predefined functions!fetchAdd (atomic var)@\chpl{fetchAdd} (atomic var)}
+\index{fetchSub (atomic var)@\chpl{fetchSub} (atomic var)}
+\index{predefined functions!fetchSub (atomic var)@\chpl{fetchSub} (atomic var)}
+\index{fetchOr (atomic var)@\chpl{fetchOr} (atomic var)}
+\index{predefined functions!fetchOr (atomic var)@\chpl{fetchOr} (atomic var)}
+\index{fetchAnd (atomic var)@\chpl{fetchAnd} (atomic var)}
+\index{predefined functions!fetchAnd (atomic var)@\chpl{fetchAnd} (atomic var)}
+\index{fetchXor (atomic var)@\chpl{fetchXor} (atomic var)}
+\index{predefined functions!fetchXor (atomic var)@\chpl{fetchXor} (atomic var)}
+\begin{protohead}
+proc (atomic t).fetchAdd(v: t): t
+proc (atomic t).fetchSub(v: t): t
+proc (atomic t).fetchOr(v: t): t
+proc (atomic t).fetchAnd(v: t): t
+proc (atomic t).fetchXor(v: t): t
+\end{protohead}
+\begin{protobody}
+Applies the appropriate operator (\verb@+@, \verb@-@, \verb@|@,
+\verb@&@, \verb@^@) to the original value and v, stores the result, and
+returns the original value. All of the methods are defined for integral
+atomic types. Only add and sub (\verb@+@, \verb@-@) are defined for real
+atomic types.  None of the methods are defined for the bool atomic type. 
+\end{protobody}
+
+
+\index{testAndSet (atomic var)@\chpl{testAndSet} (atomic var)}
+\index{predefined functions!testAndSet (atomic var)@\chpl{testAndSet} (atomic var)}
+\begin{protohead}
+proc (atomic bool).testAndSet(): bool
+\end{protohead}
+\begin{protobody}
+Stores true as the new value and returns the old value. Equivalent to
+exchange(true). Only defined for the bool atomic type. 
+\end{protobody}
+
+\index{clear (atomic var)@\chpl{clear} (atomic var)}
+\index{predefined functions!clear (atomic var)@\chpl{clear} (atomic var)}
+\begin{protohead}
+proc (atomic bool).clear()
+\end{protohead}
+\begin{protobody}
+Stores false as the new value. Equivalent to write(false). Only defined
+for the bool atomic type. 
+\end{protobody}
+
+\index{waitFor (atomic var)@\chpl{waitFor} (atomic var)}
+\index{predefined functions!waitFor (atomic var)@\chpl{waitFor} (atomic var)}
+\begin{protohead}
+proc (atomic t).waitFor(v: t)
+\end{protohead}
+\begin{protobody}
+Waits until the stored value is equal to v. The implementation may yield
+the running task while waiting. Note that this method is not part of the
+C11 standard. Defined for all atomic types. 
+\end{protobody}
+
+\begin{future}
+There are two additional methods defined for all atomics types: peek and
+poke. These methods are similar to read and write respectively. The
+difference is intended to be that peek and poke have relaxed memory
+constraints for performance reasons. These methods are currently
+implemented, but they have identical semantics to read and write. 
+
+Additionally there are three methods in the C11 standard that are not
+currently implemented: isLockFree, threadFence, and signalFence.
+It is intended that these methods will be available in the future.  
+\end{future}
+
+\index{atomic types!memory order}
+The above methods (with the exception of peek, poke, and waitFor) also
+take an optional argument named 'order' of type memory\_order. The order
+argument is used to specify the ordering constraints of atomic
+operations. The supported memory\_order types are:
+\begin{itemize}
+\item memory\_order\_relaxed
+\item memory\_order\_consume
+\item memory\_order\_acquire
+\item memory\_order\_release
+\item memory\_order\_acq\_rel
+\item memory\_order\_seq\_cst
+
+\end{itemize}
+
+
+The default value is memory\_order\_seq\_cst.  Not all implementations
+support all memory\_order types and may default to a more conservative
+ordering than specified. See the C11 standard for more information on 
+memory orderings. 
+
+\begin{future}
+The current implementations do not change with different memory\_orders.
+Currently memory\_order\_seq\_cst is used regardless of the actual order
+specified. In the future we intend to support the various memory
+orderings and will provide more details for their use and meanings. 
+\end{future}
+
+
 
 \section{The Cobegin Statement}
 \label{Cobegin}
