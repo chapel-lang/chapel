@@ -1,6 +1,0 @@
-perfkeys: Performance (GUPS) =
-graphkeys: RA-dist
-files: ./RA/bradc/parallel/ra-dist.dat
-ylabel: Performance (GUPS)
-graphname: RA-promote-performance
-graphtitle: RA using Promotion (GUPS)

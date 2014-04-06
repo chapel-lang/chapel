@@ -1,1 +1,0 @@
-../../../common/probSize.chpl -M ../../../../../release/examples/benchmarks/hpcc/  --no-warnings --no-local

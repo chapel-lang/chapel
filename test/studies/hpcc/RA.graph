@@ -1,6 +1,0 @@
-perfkeys: Execution time =
-graphkeys: RA-dist
-files: ./RA/bradc/parallel/ra-dist.dat
-ylabel: Time (seconds)
-graphname: RA-promote-time
-graphtitle: RA using Promotion

@@ -35,7 +35,6 @@ release/examples/benchmarks/hpcc/ptrans.graph
 release/examples/benchmarks/hpcc/fft.graph
 release/examples/benchmarks/hpcc/hpl.graph
 # suite: HPCC
-studies/hpcc/RA.graph
 studies/hpcc/STREAM_fragmented.graph
 studies/hpcc/STREAM.graph
 studies/hpcc/STREAM_promote.graph
@@ -47,7 +46,6 @@ release/examples/benchmarks/hpcc/stream-ep_performance.graph
 release/examples/benchmarks/hpcc/ptrans_performance.graph
 release/examples/benchmarks/hpcc/fft_performance.graph
 release/examples/benchmarks/hpcc/hpl_performance.graph
-studies/hpcc/RA_performance.graph
 studies/hpcc/STREAM_performance.graph
 # suite: DOE benchmarks
 studies/lulesh/sungeun/lulesh.sungeun.graph
