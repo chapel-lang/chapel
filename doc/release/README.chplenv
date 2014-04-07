@@ -217,12 +217,15 @@ Optional Settings
                      protect normal operations
 
    If unset, CHPL_ATOMICS defaults to "intrinsics" if the target
-   platform is anything except "linux32" and the target compiler is any
-   of the following:
-        cray-prgenv-gnu   or gnu (gcc version 4.1 and later)
-        cray-prgenv-intel or intel
-        cray-prgenv-cray  or cray
+   platform is anything except "linux32" and CHPL_TARGET_COMPILER is
+   any of the following:
+
         clang
+        cray-prgenv-cray
+        cray-prgenv-gnu (gcc version 4.1 and later)
+        cray-prgenv-intel
+        gnu (gcc version 4.1 and later)
+        intel
 
    Otherwise for "linux32" target platforms and/or any other target
    compilers, it defaults to "locks".
