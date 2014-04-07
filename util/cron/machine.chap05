@@ -5,5 +5,6 @@ source $(cd $(dirname $0) ; pwd)/common.bash
 # qthreads + numa + none
 ~/chapel/util/cron/nightly.numa -full
 
-# qthreads + flat + gasnet
-~/chapel/util/cron/nightly.qthreads-gasnet
+# qthreads + numa + gasnet
+# (2014-04-07, tvandoren) Disabled because it was causing test overlap.
+#~/chapel/util/cron/nightly.qthreads-gasnet
