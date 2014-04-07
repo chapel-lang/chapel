@@ -11,6 +11,7 @@ die "usage: timedexec timeout \"commandline\"\n" unless $#ARGV >= 1;
 
 eval {
     local $SIG{ALRM} = sub { die "alarm\n" };
+    local $SIG{INT} = sub { die "abort\n" };
     alarm @ARGV[0];
     if (!defined($child_pid = fork())) {
         print "timedexec cannot fork child\n";
@@ -32,12 +33,27 @@ eval {
             $cmdStatus = $? >> 8;
         }
 
-    }        
+    }
     alarm 0;
 };
+
+# At this point:
+#  $@ == 0 -- the test process ran to completion; its exit code is $cmdStatus.
+#  $@ == 1 -- the test process could not start, or died with a signal, or
+#             waitpid failed.
+#  $@ == "alarm\n" -- the alarm clock timed out.
+#  $@ == "abort\n" -- there was a keyboard interrupt (ctrl-C).
+#  $@ == "timedexec failed ..." -- fork returned 0.
 if ($@) {
-    die unless $@ eq "alarm\n";
-    print "timedexec Alarm Clock\n";
+    die if $@ == 1; # assume no child process is running.
+
+    # Otherwise, try to halt the running process
+    if ($@ eq "alarm\n") {
+        print "timedexec Alarm Clock\n";
+    }
+    if ($@ eq "abort\n") {
+        print "timedexec interrupted\n";
+    }
     eval {
         local $SIG{ALRM} = sub { die "alarm\n" };
         alarm @ARGV[0];
@@ -53,6 +69,8 @@ if ($@) {
         print "timedexec sending SIGKILL\n";
         kill SIGKILL, -$child_pid;
     }
+    # Because they share the same return code, Ctrl-C will look like a timeout.
+    # This is OK, because the test timed out due to operator impatience.
     exit(222);
 } else {
     exit($cmdStatus);
