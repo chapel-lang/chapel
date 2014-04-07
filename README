@@ -75,8 +75,9 @@ What's next?
 
 For more detailed information about...      refer to...
 
-  ...implementation status                   ... STATUS
   ...changes since the last release          ... CHANGES
+  ...implementation status                   ... STATUS
+  ...performance status                      ... PERFORMANCE
   ...Chapel's file and directory structure   ... README.files
   ...prerequisites for using this release    ... doc/README.prereqs
   ...setting Chapel environment variables    ... doc/README.chplenv

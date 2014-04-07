@@ -44,6 +44,7 @@ system("cd $tmpdir && svn export -q $svnroot $reldir");
        "LICENSE",
        "LICENSE.chapel",
        "Makefile",
+       "PERFORMANCE",
        "README",
        "README.files",
        "STATUS",
