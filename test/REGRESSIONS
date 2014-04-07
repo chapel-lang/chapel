@@ -88,12 +88,12 @@ valgrind-specific regressions
 
 possible stack overflow? (3/30/14)
 ----------------------------------
-[Error matching program output for studies/sudoku/dinan/search/sudoku-reduce2]
-This started failing after r23004, but no one's been able to reproduce
-it.  I added -g --savec to the nightly run and got a little more
-information, and it looks a lot like stack overflow, but we can't seem
-to reproduce that in other environments either.  On suggestion is to
-reduce the number of tests running in parallel.
+[Error matching program output for
+studies/sudoku/dinan/search/sudoku-reduce2] This started failing after
+r23004, but no one's been able to reproduce it.  It looks a lot like
+stack overflow, but we can't seem to reproduce that in other
+environments either.  One suggestion is to reduce the number of tests
+running in parallel.
 
 overlapping memcpy (root cause should be eliminated)
 ----------------------------------------------------
@@ -171,11 +171,6 @@ nondeterministic compilation segfault
 gasnet-everything regressions (other than the above)
 (Reviewed for accuracy 03/31/14)
 ====================================================
-
-comm counts changed (gbt, r23004)
----------------------------------
-[Error matching .bad file for parallel/taskPar/sungeun/endCountTest]
-[Error matching program output for performance/sungeun/multilocale/syncsingle]
 
 failure due to r22900 (bradc; may let regress until strings are records)
 ------------------------------------------------------------------------
@@ -408,6 +403,8 @@ only for 8.3 so not sure when we will start seeing this.
 [Error matching compiler output for performance/compiler/bradc/compSampler-timecomp]
 [Error matching compiler output for studies/ssca2/graphio/graphio (compopts: 1)]
 [Error matching compiler output for trivial/shannon/compSampler]
+[Error matching compiler output for optimizations/bulkcomm/alberto/Cyclic/CyclicToBlock] (4/3/14)
+
 
 infinite loop warning (since filed?)
 ------------------------------------
@@ -511,37 +508,28 @@ cray-prgenv-pgi regressions (in addition to pgi & cray-prgenv-* above)
 (Reviewed for accuracy 03/01/14)
 ======================================================================
 
+alignment mismatch in output (???: test changed names)
+------------------------------------------------------
+[Error matching program output for types/range/hilde/align]
+
 
 =================================================================
 intel-specific regressions (in addition to chpbld02 errors above)
 (reviewed for accuracy 03/25/14)
 =================================================================
 
-compilation timeouts (03/25/14)
--------------------------------
-[Error: Timed out compilation for users/ferguson/aa/aa1]
-[Error: Timed out compilation for users/ferguson/aa/aa2]
-[Error: Timed out compilation for users/ferguson/aa/aa3]
-
-undefined reference to dl_stack_flags
+default seems to be --static (4/4/14)
 -------------------------------------
-[Error matching compiler output for link/sungeun/static_dynamic (compopts: 1)]
-[Error matching compiler output for link/sungeun/static_dynamic (compopts: 2)]
-[Error matching compiler output for link/sungeun/static_dynamic (compopts: 3)]
+[Error matching compiler output for link/sungeun/static_dynamic (compopts: 6)]
 
-alignment mismatch in output (04/08/12)
----------------------------------------
+alignment mismatch in output (???: test changed names)
+------------------------------------------------------
 [Error matching program output for types/range/hilde/align]
-
 
 ==========================================================================
 cray-prgenv-intel-specific regressions (in addition to cray-prgenv* above)
 (Reviewed for accuracy 02/24/14)
 ==========================================================================
-
-compilation timeouts (03/03/14)
--------------------------------
-[Error: Timed out compilation for studies/graph500/v2/main (compopts: 1)]
 
 
 =================================
@@ -610,6 +598,10 @@ qthreads.flat regressions
 Reviewed for accuracy 04/02/14
 ===============================
 
+Passing future (just lucky)
+---------------------------
+Future (semantic: what should happen when a domain is reassigned in parallelconstructs?) [Success matching program output for domains/diten/domainReassignNoAlias] (4/3/14)
+
 undefined references to Chapel runtime functions (static/dynamic link problem)
 ------------------------------------------------------------------------------
 [Error matching compiler output for compflags/bradc/minimalModules/minModDeclPrint]
@@ -630,28 +622,6 @@ qthreads.numa regressions
 (other than qthreads regressions above)
 (Reviewed for accuracy 04/02/14)
 =======================================
-
-Nondeterministic issues
-~~~~~~~~~~~~~~~~~~~~~~~
-
-nondeterministic cases of "sublocale child index out of bounds" w/ garbage IDs
-(first occurred on 03/30/14, r23004, but nondeterministic, so can't be certain)
--------------------------------------------------------------------------------
-[Error matching program output for domains/sungeun/assoc/stress.numthr (compopts: 1, execopts: 1)] (03/30/14)
-[Error matching program output for npb/ep/mcahir/ep] (03/30/14)
-[Error matching program output for optimizations/bulkcomm/alberto/Block/perfTest_v2 (compopts: 1)] (03/31/14)
-[Error matching program output for studies/sort/radix] (03/31/14)
-[Error matching program output for npb/cg/bradc/cg-sparse (compopts: 1)] (04/01/14)
-[Error matching program output for associative/waynew/indef4] (04/02/14)
-
-nondeterministic cases of "chpl_comm_fork: Assertion 'node==0'
-(first occurred 04/02/14, but probably the same root cause as the above)
-------------------------------------------------------------------------
-[Error matching program output for performance/compiler/bradc/cg-sparse-timecomp (compopts: 1)] (04/02/14)
-
-
-Deterministic issues
-~~~~~~~~~~~~~~~~~~~~
 
 different internal failure (before 02/25/14)
 --------------------------------------------
