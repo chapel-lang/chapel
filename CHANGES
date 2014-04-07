@@ -2,8 +2,6 @@
 Release Changes List
 ====================
 
-*** up-to-date thru 23084 ***
-
 =============
 version 1.9.0
 =============
@@ -25,7 +23,7 @@ Highlights (see entries in subsequent categories for details)
 * improved the symmetry of program startup and polling across the locales
 * significant improvements to the testing system, esp. performance testing
 * updates to the GASNet and GMP packages and new snapshots of hwloc and re2
-* improved code base's portability w.r.t. clang, gcc, Mac OS X, Debian 7.4
+* improved the code base's portability w.r.t. clang, gcc, Mac OS X, Debian 7.4
 * numerous bug fixes (see 'Bug Fixes' below)
 
 Packaging Changes
@@ -89,18 +87,22 @@ Standard Modules
 
 Documentation
 -------------
+* added descriptions of 'atomic' variables and 'noinit' expressions to the spec
+  (see the 'Task Parallelism and Synchronization' and 'Variables' sections)
+* clarified specification of casting from numeric types to 'bool'
 * reworked LICENSE files to clarify third-party licenses and isolate BSD text
   (see LICENSE and LICENSE.chapel)
-* general updates and improvements to the language specification
+* refreshed and reorganized README.tasks
 * documented that 'clang' is available as a CHPL_*_COMPILER option
   (see doc/README.chplenv)
 * improved description of Cray-specific runtime environment variables
   (see doc/platforms/README.cray)
-* improved the alphabetization of the 'Standard Modules' section of the spec
 * clarified formatted I/O documentation regarding width/precision
   (see doc/technotes/README.io)
-* generally refreshed README-based documentation
+* added a performance notes file (PERFORMANCE)
 * removed the user agreement (AGREEMENT)
+* generally refreshed README-based documentation
+* general updates and improvements to the language specification
 
 Example Codes
 -------------
@@ -111,7 +113,7 @@ Example Codes
   (see benchmarks/shootout/chameneosredux.chpl)
 * improved the release versions of RA to use atomic rather than sync vars
 * made the examples/programs/tree.chpl example reclaim its memory
-* minor improvements to the MiniMD example
+* made minor improvements to the MiniMD example and primer examples
 * fixed a few incorrect statements in comments within primers/syncsingle.chpl
 
 Cray-specific Notes
@@ -175,6 +177,7 @@ Third-Party Software Changes
 * updated GASNet to version 1.22.0 with a patch to fix 'aries' conduit bugs
 * added a snapshot of hwloc version 1.7.2 for compute node introspection
 * added a snapshot of re2 (20140111) to the third-party directory
+* added a snapshot of dygraphs to the third-party directory for perf graphs
 * updated our snapshot of GMP to version 6.0.0
 * various minor improvements to the Qthreads tasking layer
 * disabled pshm for all non-udp GASNet conduits
