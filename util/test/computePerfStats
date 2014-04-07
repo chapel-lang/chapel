@@ -175,7 +175,12 @@ if ($valid_output) {
   # check all output lines for values following keys, values get written to the .dat
   if ($exec_time_out eq "True") {
       # Timed out executions will be comments
-      printf STATS "# ";
+      printf STATS "#%s ", $perfdate;
+      foreach my $key (@keys) {
+          print STATS "\t-";
+      }
+      print STATS " ### EXECUTION TIMED OUT ###\n";
+      exit 1;
   }
 
   printf STATS "%s ", $perfdate;
@@ -196,9 +201,6 @@ if ($valid_output) {
           $foundEverything = 0;
 
       }
-  }
-  if ($exec_time_out eq "True") {
-      print STATS " ### EXECUTION TIMED OUT ###";
   }
   print STATS "\n";
 }

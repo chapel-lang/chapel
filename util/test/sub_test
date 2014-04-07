@@ -1421,16 +1421,16 @@ for testname in testsrc:
                     sys.stdout.flush()
 
                     status = p.returncode
-
-                    if status == 0:
-                        sys.stdout.write('[Success')
-                    else:
-                        sys.stdout.write('[Error')
-                    sys.stdout.write(' matching performance keys for %s/%s'%
-                                    (localdir, execname))
-                    if status!=0:
-                        printTestVariation(compoptsnum, execoptsnum);
-                    sys.stdout.write(']\n')
+                    if not exectimeout: 
+                        if status == 0:
+                            sys.stdout.write('[Success')
+                        else:
+                            sys.stdout.write('[Error')
+                        sys.stdout.write(' matching performance keys for %s/%s'%
+                                        (localdir, execname))
+                        if status!=0:
+                            printTestVariation(compoptsnum, execoptsnum);
+                        sys.stdout.write(']\n')
 
                     if exectimeout or status != 0:
                         break
