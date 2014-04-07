@@ -19,8 +19,7 @@ atomics are available.
 
 The choice of supported atomic variable types as well as the atomic
 operations were strongly influenced by the C11 standard. A notable
-exception is that Chapel supports atomics for reals as well. In the
-future we plan to add atomic support for other primitive types. 
+exception is that Chapel supports atomics for reals as well.
 
 The specific implementation of atomics can be selected via the
 environment variable CHPL_ATOMICS.  Similar to the other Chapel
@@ -30,14 +29,14 @@ Chapel currently supports two atomics implementations: intrinsics and
 locks. This environment variable also specifies the atomic
 implementation used by the Chapel runtime.
 
-If intrinsics are available on your system, atomics map down to compiler
-atomic intrinsics which often map directly to processor atomics.  If
-intrinsics are not available the atomic implementation defaults to using
-locks in the form of Chapel's sync vars. As a result the locks
-implementation will be slower than the intrinsic implementation. Since
-Chapels' atomics were modeled after the C11 standard, once more C
-compilers start supporting the C11 standard we will add another runtime
-implementation that maps to the C11 atomics. 
+If compiler support for atomics is available, the atomic operations
+will be mapped down the appropriate compiler intrinsics which often
+map directly to processor atomics.  If intrinsics are not available,
+the atomic implementation defaults to using locks in the form of
+Chapel's sync vars. As a result the locks implementation will be
+slower than the intrinsic implementation. Since Chapel's atomics were
+modeled after the C11 standard, as C11 support becomes more prevalent,
+we will support an implementation that maps to the C11 atomics.
 
 Currently, unless using network atomics, all remote atomic operations
 will result in the calling task effectively migrating to the locale on
@@ -53,7 +52,7 @@ type function chpl__atomicType() defined in the file
 $CHPL_HOME/modules/internal/Atomics.chpl).
 
 For more information about the runtime implementation see
-$CHPL_HOME/runtime/include/atomics/README. 
+$CHPL_HOME/runtime/include/atomics/README.
 
 To see a full list of available functions, see
 $CHPL_HOME/modules/internal/Atomics.chpl.
@@ -63,17 +62,17 @@ $CHPL_HOME/modules/internal/Atomics.chpl.
 Memory Order Notes
 ------------------
 
-As mentioned in the spec, all atomic operations optionally take a memory
-order. However for the current implementations this argument is ignored
-in the runtime. The effects is that all atomic operations are
-effectively memory_order_seq_cst (sequentially consistent) regardless of
-the actual order specified. The reason for this is because the atomic
-intrinsics have no way to specify memory order and locks memory order is
-bound my the locking and unlocking of sync vars. The C11 standard goes
-into great detail about what all the memory orders do and how they allow
-for performance optimizations by allowing users to select non
-sequentially constant orderings. 
+As mentioned in the spec, most atomic operations optionally take a
+memory order. However for the current implementations this argument is
+ignored in the runtime. The resulting effect is that all atomic
+operations are performed with memory_order_seq_cst (sequentially
+consistent) regardless of the actual order specified. The reason for
+this is because the compiler intrinsics used in the runtime have no
+way to specify memory order and locks memory order is bound by the
+locking and unlocking of sync vars.
 
+We expect to begin using the specified memory order with a C11
+implementation of the atomics.
 
 ------------------------------
 Variances from the C11 standard
