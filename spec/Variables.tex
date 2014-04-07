@@ -83,9 +83,9 @@ be present, and the variable is initialized to the default value of
 its type as described in~\rsec{Default_Values_For_Types}.
 
 If the \sntx{no-initialization-part} is present, the variable
-declaration does not initialize the variable to any value, as described
-in~\rsec{Noinit_Capability}. The result of any access to this variable is
-undefined until an assignment to it is executed.
+declaration does not initialize the variable to any value, as
+described in~\rsec{Noinit_Capability}. The result of any read of an
+uninitialized variable is undefined until that variable is written.
 
 Multiple variables can be defined in the
 same \sntx{variable-declaration-list}.  The semantics of declaring
@@ -150,9 +150,19 @@ has issues, since the default value does not conform to any named enumerator.
 \index{noinit}
 \index{noinit!variables}
 
-For performance purposes, the declaration of a variable can specify that the variable should remain uninitialized until a later assignment.  Since this variable should be assignable at a later point to be used properly, it must be a regular variable (\chpl{var}).  It is incompatible with declarations which require the variable to remain unchanged throughout the program's lifetime, such as \chpl{const} or \chpl{param}.  Additionally, its type must be specified at declaration time; this maintains type safety.
+For performance purposes, a variable's declaration can specify that
+the variable should not be default initialized by using
+the \chpl{noinit} keyword in place of an initialization expression.
+Since this variable should be written at a later point in order to be
+read properly, it must be a regular variable (\chpl{var}).  It is
+incompatible with declarations that require the variable to remain
+unchanged throughout the program's lifetime, such as \chpl{const}
+or \chpl{param}.  Additionally, its type must be specified at
+declaration time.
 
-The result of any access to this variable before its first assignment is undefined; it exists and therefore can be accessed, but no guarantees are made as to its contents.
+The result of any read of this variable before it is written is
+undefined; it exists and therefore can be accessed, but no guarantees
+are made as to its contents.
 
 \subsection{Local Type Inference}
 \label{Local_Type_Inference}
