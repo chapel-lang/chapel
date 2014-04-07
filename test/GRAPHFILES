@@ -114,6 +114,8 @@ studies/parboil/BFS/bfs.graph
 studies/parboil/histo/histo.graph
 studies/parboil/SAD/sad.graph
 studies/parboil/stencil/stencil.graph
+# suite: Statement Compare
+statements/lydia/forVersusWhilePerf.graph
 # suite: Misc
 users/franzf/v0/chpl/main.graph
 studies/jacobi/jacobi.graph
