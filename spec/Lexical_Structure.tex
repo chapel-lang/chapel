@@ -91,8 +91,8 @@ letter-or-underscore:
   `_'
 
 letter: one of
-  `A' `B' `C' `D' `E' `F' `G' `H' `I' `J' `K' `L' `M' `N' `O' `P' `Q' `R' `S' `T' `U' `V' `W' `X' `Y' `Z' `a' `b' `c' `d' `e' `f' `g' `h' `i' `j' `k' `l' `m'
-                           `n' `o' `p' `q' `r' `s' `t' `u' `v' `w' `x' `y' `z'
+  `A' `B' `C' `D' `E' `F' `G' `H' `I' `J' `K' `L' `M' `N' `O' `P' `Q' `R' `S' `T' `U' `V' `W' `X' `Y' `Z'
+  `a' `b' `c' `d' `e' `f' `g' `h' `i' `j' `k' `l' `m' `n' `o' `p' `q' `r' `s' `t' `u' `v' `w' `x' `y' `z'
 
 digit: one of
   `0' `1' `2' `3' `4' `5' `6' `7' `8' `9'
@@ -223,7 +223,7 @@ otherwise
 Bool literals are designated by the following syntax:
 \begin{syntax}
 bool-literal: one of
-  `true' `false'
+  `true' $ $ $ $ `false'
 \end{syntax}
 
 Signed and unsigned integer literals are designated by the following
@@ -275,7 +275,7 @@ exponent-part:
   `E' sign[OPT] digits
 
 sign: one of
-  + -
+  + $ $ $ $ -
 \end{syntax}
 \begin{rationale}
 Why can't a real literal end with '.'?  There is a lexical ambiguity
