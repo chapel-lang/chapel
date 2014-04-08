@@ -161,6 +161,11 @@ symbolFlag( FLAG_OMIT_FROM_CONSTRUCTOR , ypr, "omit from constructor" , ncm )
 symbolFlag( FLAG_ON , npr, "on" , ncm )
 symbolFlag( FLAG_ON_BLOCK , npr, "on block" , ncm )
 symbolFlag( FLAG_PARAM , npr, "param" , "parameter (compile-time constant)" )
+
+symbolFlag( FLAG_PARTIAL_COPY, npr, "partial copy", ncm )
+symbolFlag( FLAG_PARTIAL_TUPLE, npr, "partial tuple", ncm)
+symbolFlag( FLAG_EXPANDED_VARARGS, npr, "expanded varargs", ncm)
+
 symbolFlag( FLAG_PRIMITIVE_TYPE , ypr, "primitive type" , "attached to primitive types to keep them from being deleted" )
 symbolFlag( FLAG_PRINT_MODULE_INIT_FN , ypr, "print module init fn" , ncm )
 symbolFlag( FLAG_PRINT_MODULE_INIT_INDENT_LEVEL , ypr, "print module init indent level" , ncm )

@@ -23,7 +23,10 @@ const char* toString(FnSymbol* fn);
 
 void parseExplainFlag(char* flag, int* line, ModuleSymbol** module);
 
-FnSymbol* instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call);
+FnSymbol* instantiate(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
+FnSymbol* instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call); 
+void      instantiateBody(FnSymbol* fn);
+
 void resolveFormals(FnSymbol* fn);
 void resolveCall(CallExpr* call, bool errorCheck = true);
 void resolveBlock(Expr* body);

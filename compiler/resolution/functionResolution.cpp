@@ -235,7 +235,7 @@ computeGenericSubs(SymbolMap &subs,
                    FnSymbol* fn,
                    Vec<Symbol*>& alignedActuals);
 static FnSymbol*
-expandVarArgs(FnSymbol* fn, int numActuals);
+expandVarArgs(FnSymbol* origFn, int numActuals);
 
 static void
 filterCandidate(Vec<ResolutionCandidate*>& candidates,
@@ -433,8 +433,9 @@ static void makeRefType(Type* type) {
   }
 
   CallExpr* call = new CallExpr("_type_construct__ref", type->symbol);
-  FnSymbol* fn = resolveUninsertedCall(type, call);
-  type->refType = toAggregateType(fn->retType);
+  FnSymbol* fn   = resolveUninsertedCall(type, call);
+  type->refType  = toAggregateType(fn->retType);
+  
   type->refType->getField(1)->type = type;
   
   if (type->symbol->hasFlag(FLAG_ATOMIC_TYPE))
@@ -1387,20 +1388,123 @@ computeGenericSubs(SymbolMap &subs,
 }
 
 
+/** Common code for multiple paths through expandVarArgs.
+ * 
+ * This code handles the case where the number of varargs are known at compile
+ * time.  It inserts the necessary code to copy the values into and out of the
+ * varargs tuple.
+ */
+static void
+handleSymExprInExpandVarArgs(FnSymbol* workingFn, ArgSymbol* formal, SymExpr* sym) {
+  workingFn->addFlag(FLAG_EXPANDED_VARARGS);
+  
+  // Handle specified number of variable arguments.
+  if (VarSymbol* n_var = toVarSymbol(sym->var)) {
+    if (n_var->type == dtInt[INT_SIZE_DEFAULT] && n_var->immediate) {
+      int n = n_var->immediate->int_value();
+      CallExpr* tupleCall = new CallExpr((formal->hasFlag(FLAG_TYPE_VARIABLE)) ?
+                                         "_type_construct__tuple" : "_construct__tuple");
+      for (int i = 0; i < n; i++) {
+        DefExpr* new_arg_def = formal->defPoint->copy();
+        ArgSymbol* new_formal = toArgSymbol(new_arg_def->sym);
+        new_formal->variableExpr = NULL;
+        tupleCall->insertAtTail(new SymExpr(new_formal));
+        new_formal->name = astr("_e", istr(i), "_", formal->name);
+        new_formal->cname = astr("_e", istr(i), "_", formal->cname);
+        formal->defPoint->insertBefore(new_arg_def);
+      }
+      
+      VarSymbol* var = new VarSymbol(formal->name);
+      
+      // Replace mappings to the old formal with mappings to the new variable.
+      if (workingFn->hasFlag(FLAG_PARTIAL_COPY)) {
+        for (int index = workingFn->partialCopyMap.n; --index >= 0;) {
+          SymbolMapElem& mapElem = workingFn->partialCopyMap.v[index];
+          
+          if (mapElem.value == formal) {
+            mapElem.value = var;
+            break;
+          }
+        }
+      }
+      
+      if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
+        var->addFlag(FLAG_TYPE_VARIABLE);
+      }
+
+      if (formal->intent == INTENT_OUT || formal->intent == INTENT_INOUT) {
+        int i = 1;
+        for_actuals(actual, tupleCall) {
+          VarSymbol* tmp = newTemp("_varargs_tmp_");
+          workingFn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
+          workingFn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp, new CallExpr(var, new_IntSymbol(i))));
+          workingFn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, actual->copy(),
+                                                               new CallExpr("=", actual->copy(), tmp)));
+          i++;
+        }
+      }
+
+      tupleCall->insertAtHead(new_IntSymbol(n));
+      workingFn->insertAtHead(new CallExpr(PRIM_MOVE, var, tupleCall));
+      workingFn->insertAtHead(new DefExpr(var));
+      formal->defPoint->remove();
+      
+      if (workingFn->hasFlag(FLAG_PARTIAL_COPY)) {
+        // If this is a partial copy, store the mapping for substitution later.
+        workingFn->partialCopyMap.put(formal, var);
+      } else {
+        // Otherwise, do the substitution now.
+        subSymbol(workingFn->body, formal, var);
+      }
+      
+      if (workingFn->where) {
+        VarSymbol* var = new VarSymbol(formal->name);
+        
+        if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
+          var->addFlag(FLAG_TYPE_VARIABLE);
+        }
+        
+        workingFn->where->insertAtHead(new CallExpr(PRIM_MOVE, var, tupleCall->copy()));
+        workingFn->where->insertAtHead(new DefExpr(var));
+        subSymbol(workingFn->where, formal, var);
+      }
+    }
+  }
+}
+
+
 static FnSymbol*
-expandVarArgs(FnSymbol* fn, int numActuals) {
+expandVarArgs(FnSymbol* origFn, int numActuals) {
+
+  bool      genericArgSeen = false;
+  FnSymbol* workingFn      = origFn;
+  
+  SymbolMap substitutions;
+  
   static Map<FnSymbol*,Vec<FnSymbol*>*> cache;
+  
+  // check for cached stamped out function
+  if (Vec<FnSymbol*>* cfns = cache.get(origFn)) {
+    forv_Vec(FnSymbol, cfn, *cfns) {
+      if (cfn->numFormals() == numActuals) return cfn;
+    }
+  }
+  
+  for_formals(formal, origFn) {
+    
+    if (workingFn != origFn) {
+      formal = toArgSymbol(substitutions.get(formal));
+    }
+    
+    if (!genericArgSeen && formal->variableExpr && !isDefExpr(formal->variableExpr->body.tail)) {
+      resolveBlock(formal->variableExpr);
+    }
 
-  bool genericArg = false;
-  for_formals(arg, fn) {
-    if (!genericArg && arg->variableExpr && !isDefExpr(arg->variableExpr->body.tail))
-      resolveBlock(arg->variableExpr);
-
-    //
-    // set genericArg to true if a generic argument appears before the
-    // argument with the variable expression
-    //
-
+    /*
+     * Set genericArgSeen to true if a generic argument appears before the
+     * argument with the variable expression.
+     */
+    
     // INT_ASSERT(arg->type);
     // Adding 'ref' intent to the "ret" arg of 
     //  inline proc =(ref ret:syserr, x:syserr) { __primitive("=", ret, x); }
@@ -1409,97 +1513,57 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
     // workaround.  
     // A better approach would be to add a check that each formal of a function
     // has a type (if that can be expected) and then fix the fault where it occurs.
-    if (arg->type && arg->type->symbol->hasFlag(FLAG_GENERIC))
-      genericArg = true;
+    if (formal->type && formal->type->symbol->hasFlag(FLAG_GENERIC)) {
+      genericArgSeen = true;
+    }
 
-    if (!arg->variableExpr)
+    if (!formal->variableExpr) {
       continue;
+    }
 
-    // handle unspecified variable number of arguments
-    if (DefExpr* def = toDefExpr(arg->variableExpr->body.tail)) {
-
-      // check for cached stamped out function
-      if (Vec<FnSymbol*>* cfns = cache.get(fn)) {
-        forv_Vec(FnSymbol, cfn, *cfns) {
-          if (cfn->numFormals() == numActuals)
-            return cfn;
-        }
+    // Handle unspecified variable number of arguments.
+    if (DefExpr* def = toDefExpr(formal->variableExpr->body.tail)) {
+      int numCopies = numActuals - workingFn->numFormals() + 1;
+      if (numCopies <= 0) {
+        if (workingFn != origFn) delete workingFn;
+        return NULL;
       }
 
-      int numCopies = numActuals - fn->numFormals() + 1;
-      if (numCopies <= 0)
-        return NULL;
-
-      SymbolMap map;
-      FnSymbol* newFn = fn->copy(&map);
-      newFn->addFlag(FLAG_INVISIBLE_FN);
-      fn->defPoint->insertBefore(new DefExpr(newFn));
-      Symbol* sym = map.get(def->sym);
-      sym->defPoint->replace(new SymExpr(new_IntSymbol(numCopies)));
-
-      subSymbol(newFn, sym, new_IntSymbol(numCopies));
-
-      // add new function to cache
-      Vec<FnSymbol*>* cfns = cache.get(fn);
-      if (!cfns)
-        cfns = new Vec<FnSymbol*>();
-      cfns->add(newFn);
-      cache.put(fn, cfns);
-
-      return expandVarArgs(newFn, numActuals);
-    } else if (SymExpr* sym = toSymExpr(arg->variableExpr->body.tail)) {
-
-      // handle specified number of variable arguments
-      if (VarSymbol* n_var = toVarSymbol(sym->var)) {
-        if (n_var->type == dtInt[INT_SIZE_DEFAULT] && n_var->immediate) {
-          int n = n_var->immediate->int_value();
-          CallExpr* tupleCall = new CallExpr((arg->hasFlag(FLAG_TYPE_VARIABLE)) ?
-                                             "_type_construct__tuple" : "_construct__tuple");
-          for (int i = 0; i < n; i++) {
-            DefExpr* new_arg_def = arg->defPoint->copy();
-            ArgSymbol* new_arg = toArgSymbol(new_arg_def->sym);
-            new_arg->variableExpr = NULL;
-            tupleCall->insertAtTail(new SymExpr(new_arg));
-            new_arg->name = astr("_e", istr(i), "_", arg->name);
-            new_arg->cname = astr("_e", istr(i), "_", arg->cname);
-            arg->defPoint->insertBefore(new_arg_def);
-          }
-          VarSymbol* var = new VarSymbol(arg->name);
-          if (arg->hasFlag(FLAG_TYPE_VARIABLE))
-            var->addFlag(FLAG_TYPE_VARIABLE);
-
-          if (arg->intent == INTENT_OUT || arg->intent == INTENT_INOUT) {
-            int i = 1;
-            for_actuals(actual, tupleCall) {
-              VarSymbol* tmp = newTemp("_varargs_tmp_");
-              fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
-              fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp, new CallExpr(var, new_IntSymbol(i))));
-              fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, actual->copy(),
-                                                            new CallExpr("=", actual->copy(), tmp)));
-              i++;
-            }
-          }
-
-          tupleCall->insertAtHead(new_IntSymbol(n));
-          fn->insertAtHead(new CallExpr(PRIM_MOVE, var, tupleCall));
-          fn->insertAtHead(new DefExpr(var));
-          arg->defPoint->remove();
-          subSymbol(fn->body, arg, var);
-          if (fn->where) {
-            VarSymbol* var = new VarSymbol(arg->name);
-            if (arg->hasFlag(FLAG_TYPE_VARIABLE))
-              var->addFlag(FLAG_TYPE_VARIABLE);
-            fn->where->insertAtHead(new CallExpr(PRIM_MOVE, var, tupleCall->copy()));
-            fn->where->insertAtHead(new DefExpr(var));
-            subSymbol(fn->where, arg, var);
-          }
-        }
+      if (workingFn == origFn) {
+        workingFn = origFn->copy(&substitutions);
+        workingFn->addFlag(FLAG_INVISIBLE_FN);
+        
+        origFn->defPoint->insertBefore(new DefExpr(workingFn));
+        
+        formal = static_cast<ArgSymbol*>(substitutions.get(formal));
       }
       
-    } else if (!fn->hasFlag(FLAG_GENERIC))
+      Symbol*  newSym     = substitutions.get(def->sym);
+      SymExpr* newSymExpr = new SymExpr(new_IntSymbol(numCopies));
+      newSym->defPoint->replace(newSymExpr);
+      
+      subSymbol(workingFn, newSym, new_IntSymbol(numCopies));
+      
+      handleSymExprInExpandVarArgs(workingFn, formal, newSymExpr);
+      genericArgSeen = false;
+      
+    } else if (SymExpr* sym = toSymExpr(formal->variableExpr->body.tail)) {
+      
+      handleSymExprInExpandVarArgs(workingFn, formal, sym);
+      
+    } else if (!workingFn->hasFlag(FLAG_GENERIC)) {
       INT_FATAL("bad variableExpr");
+    }
   }
-  return fn;
+  
+  Vec<FnSymbol*>* cfns = cache.get(origFn);
+  if (cfns == NULL) {
+    cfns = new Vec<FnSymbol*>();
+  }
+  cfns->add(workingFn);
+  cache.put(origFn, cfns);
+  
+  return workingFn;
 }
 
 
@@ -1566,7 +1630,7 @@ filterConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
    * be instantiated before it is.
    */ 
   resolveFormals(currCandidate->fn);
-
+  
   int coindex = -1;
   for_formals(formal, currCandidate->fn) {
     if (Symbol* actual = currCandidate->alignedActuals.v[++coindex]) {
@@ -1644,7 +1708,11 @@ filterGenericCandidate(Vec<ResolutionCandidate*>& candidates,
    * reject it.
    */
   if (currCandidate->substitutions.n > 0) {
-    currCandidate->fn = instantiate(currCandidate->fn, &(currCandidate->substitutions), info.call);
+    /*
+     * Instantiate just enough of the generic to get through the rest of the
+     * filtering and disambiguation processes.
+     */
+    currCandidate->fn = instantiateSignature(currCandidate->fn, currCandidate->substitutions, info.call);
     
     if (currCandidate->fn != NULL) {
       filterCandidate(candidates, currCandidate, info);
@@ -2892,11 +2960,16 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
     
     ResolutionCandidate* best = disambiguateByMatch(candidates, DC);
     
-    if (best && best->fn &&
-        ((explainCallLine && explainCallMatch(call)) ||
-         call->id == explainCallID))
-    {
-      USR_PRINT(best->fn, "best candidate is: %s", toString(best->fn));
+    if (best && best->fn) {
+      /*
+       * Finish instantiating the body.  This is a noop if the function wasn't
+       * partially instantiated.
+       */
+      instantiateBody(best->fn);
+      
+      if (explainCallLine && explainCallMatch(call)) {
+        USR_PRINT(best->fn, "best candidate is: %s", toString(best->fn));
+      }
     }
 
     if (call->partialTag && (!best || !best->fn->hasFlag(FLAG_NO_PARENS))) {
@@ -3288,10 +3361,13 @@ static void resolveMove(CallExpr* call) {
 
     // do not resolve function return type yet
     // except for constructors
-    if (fn && fn->getReturnSymbol() == lhs && fn->_this != lhs)
+    if (fn && call->parentExpr != fn->where && call->parentExpr != fn->retExprType &&
+        fn->getReturnSymbol() == lhs && fn->_this != lhs) {
+      
       if (fn->retType == dtUnknown) {
         return;
       }
+    }
 
     Type* rhsType = rhs->typeInfo();
 
@@ -5622,8 +5698,6 @@ resolveFns(FnSymbol* fn) {
     }
   }
 
-
-
   if (fn->hasFlag(FLAG_ITERATOR_FN) && !fn->iteratorInfo) {
     protoIteratorClass(fn);
   }
@@ -5774,7 +5848,7 @@ addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
         }
         FnSymbol* fn = cfn;
         if (subs.n) {
-          fn = instantiate(fn, &subs, NULL);
+          fn = instantiate(fn, subs, NULL);
           if (fn) {
             if (type->defaultTypeConstructor->instantiationPoint)
               fn->instantiationPoint = type->defaultTypeConstructor->instantiationPoint;

@@ -1203,7 +1203,9 @@ FnSymbol::FnSymbol(const char* initName) :
   userString(NULL),
   valueFunction(NULL),
   codegenUniqueNum(1),
-  doc(NULL)
+  doc(NULL),
+  partialCopySource(NULL),
+  retSymbol(NULL)
 {
   substitutions.clear();
   gFnSymbols.add(this);
@@ -1251,24 +1253,277 @@ FnSymbol* FnSymbol::getFnSymbol(void) {
 
 FnSymbol*
 FnSymbol::copyInner(SymbolMap* map) {
-  FnSymbol* copy = new FnSymbol(name);
-  copy->copyFlags(this);
-  for_formals(formal, this) {
-    copy->insertFormalAtTail(COPY_INT(formal->defPoint));
-  }
-  copy->setter = COPY_INT(setter);
-  copy->retType = retType;
-  copy->where = COPY_INT(where);
-  copy->body = COPY_INT(body);
-  copy->thisTag = thisTag;
-  copy->retTag = retTag;
-  copy->retExprType = COPY_INT(retExprType);
-  copy->cname = cname;
-  copy->_this = _this;
-  copy->_outer = _outer;
-  copy->instantiatedFrom = instantiatedFrom;
-  copy->instantiationPoint = instantiationPoint;
+  // Copy members that are common to innerCopy and partialCopy.
+  FnSymbol* copy = this->copyInnerCore(map);
+  
+  // Copy members that weren't set by copyInnerCore.
+  copy->setter      = COPY_INT(this->setter);
+  copy->where       = COPY_INT(this->where);
+  copy->body        = COPY_INT(this->body);
+  copy->retExprType = COPY_INT(this->retExprType);
+  copy->_this       = this->_this;
+  
   return copy;
+}
+
+
+/** Copy over members common to both copyInner and partialCopy.
+ * 
+ * \param map Map from symbols in the old function to symbols in the new one
+ */
+FnSymbol*
+FnSymbol::copyInnerCore(SymbolMap* map) {
+  FnSymbol* newFn = new FnSymbol(this->name);
+  
+  /* Copy the flags.
+   * 
+   * TODO: See if it is necessary to copy flags both here and in the copy
+   * method.
+   */
+  newFn->copyFlags(this);
+  
+  for_formals(formal, this) {
+    newFn->insertFormalAtTail(COPY_INT(formal->defPoint));
+  }
+  
+  // Copy members that are needed by both copyInner and partialCopy.
+  newFn->partialCopySource  = this;
+  newFn->astloc             = this->astloc;
+  newFn->retType            = this->retType;
+  newFn->thisTag            = this->thisTag;
+  newFn->cname              = this->cname;
+  newFn->_outer             = this->_outer;
+  newFn->retTag             = this->retTag;
+  newFn->instantiatedFrom   = this->instantiatedFrom;
+  newFn->instantiationPoint = this->instantiationPoint;
+  newFn->numPreTupleFormals = this->numPreTupleFormals;
+  
+  return newFn;
+}
+
+/** Copy just enough of the AST to get through filter candidate and
+ *  disambiguate-by-match.  
+ * 
+ * This function selectively copies portions of the function's AST
+ * representation.  The goal here is to copy exactly as many nodes as are
+ * necessary to determine if a function is the best candidate for resolving a
+ * call site and no more.  Special handling is necessary for the _this, where,
+ * and retExprType members.  In addition, the return symbol needs to be made
+ * available despite the fact that we have skipped copying the body.
+ * 
+ * \param map Map from symbols in the old function to symbols in the new one
+ */
+FnSymbol* FnSymbol::partialCopy(SymbolMap* map) {
+  FnSymbol* newFn = this->copyInnerCore(map);
+  
+  if (this->_this == NULL) {
+    // Case 1: No _this pointer.
+    newFn->_this = NULL;
+    
+  } else if (Symbol* replacementThis = map->get(this->_this)) {
+    // Case 2: _this symbol is defined as one of the formal arguments.
+    newFn->_this = replacementThis;
+    
+  } else {
+    /*
+     * Case 3: _this symbol is defined in the function's body.  A new symbol is
+     * created.  This symbol will have to be used to replace some of the symbols
+     * generated from copying the function's body during finalizeCopy.
+     */
+    newFn->_this           = this->_this->copy(map);
+    newFn->_this->defPoint = new DefExpr(newFn->_this, 
+                                         COPY_INT(this->_this->defPoint->init),
+                                         COPY_INT(this->_this->defPoint->exprType));
+  }
+  
+  // Copy and insert the where clause if it is present.
+  if (this->where != NULL) {
+    newFn->where = COPY_INT(this->where);
+    insert_help(newFn->where, NULL, newFn);
+  }
+  
+  // Copy and insert the retExprType if it is present.
+  if (this->retExprType != NULL) {
+    newFn->retExprType = COPY_INT(this->retExprType);
+    insert_help(newFn->retExprType, NULL, newFn);
+  }
+  
+  /*
+   * Because we are not copying the function's body we need to make the return
+   * symbol available through other means.  To do this we first have to find
+   * where the symbol is defined.  It may either be void, the _this symbol, a
+   * formal symbol, or a symbol defined in the function's body.  In the last
+   * case a new symbol and definition point have to be generated; the
+   * finalizeCopy method will replace their corresponding nodes from the body
+   * appropriately.
+   */
+  if (this->getReturnSymbol() == gVoid) {
+    // Case 1: Function returns void.
+    newFn->retSymbol = gVoid;
+    
+  } else if (this->getReturnSymbol() == this->_this) {
+    // Case 2: Function returns _this.
+    newFn->retSymbol = newFn->_this;
+    
+  } else if (Symbol* replacementRet = map->get(this->getReturnSymbol())) {
+    // Case 3: Function returns a formal argument.
+    newFn->retSymbol = replacementRet;
+    
+  } else {
+    // Case 4: Function returns a symbol defined in the body.
+    newFn->retSymbol = COPY_INT(this->getReturnSymbol());
+    
+    newFn->retSymbol->defPoint = new DefExpr(newFn->retSymbol,
+                                             COPY_INT(this->getReturnSymbol()->defPoint->init),
+                                             COPY_INT(this->getReturnSymbol()->defPoint->exprType));
+    
+    update_symbols(newFn->retSymbol, map);
+  }
+  
+  // Add a map entry from this FnSymbol to the newly generated one.
+  map->put(this, newFn);
+  // Update symbols in the sub-AST as is appropriate.
+  update_symbols(newFn, map);
+  
+  // Copy over the partialCopyMap, to be used later in finalizeCopy.
+  newFn->partialCopyMap.copy(*map);
+  
+  /*
+   * Add the PARTIAL_COPY flag so we will know if we need to instantiate its
+   * body later.
+   */
+  newFn->addFlag(FLAG_PARTIAL_COPY);
+  
+  return newFn;
+}
+
+/** Finish copying the function's AST after a partial copy.
+ * 
+ * This function finishes the work started by partialCopy.  This involves
+ * copying the setter and body, and repairing some inconsistencies in the
+ * copied body.
+ * 
+ * \param map Map from symbols in the old function to symbols in the new one
+ */
+void FnSymbol::finalizeCopy(void) {
+  if (this->hasFlag(FLAG_PARTIAL_COPY)) {
+    
+    // Make sure that the source has been finalized.
+    this->partialCopySource->finalizeCopy();
+    
+    SET_LINENO(this);
+    
+    // Retrieve our old/new symbol map from the partial copy process.
+    SymbolMap* map = &(this->partialCopyMap);
+    
+    this->setter = COPY_INT(this->partialCopySource->setter);
+    
+    /*
+     * When we reach this point we will be in one of three scenarios:
+     *  1) The function's body is empty and needs to be copied over from the
+     *     copy source.
+     *  2) The function's body has been replaced and we don't need to do
+     *     anything else.
+     *  3) The function has had varargs expanded and we need to copy over the
+     *     added statements from the old block to a new copy of the body from
+     *     the source.
+     */
+    if (this->hasFlag(FLAG_EXPANDED_VARARGS)) {
+      // Alias the old body and make a new copy of the body from the source.
+      BlockStmt* varArgNodes = this->body;
+      this->body             = COPY_INT(this->partialCopySource->body);
+      
+      /*
+       * Iterate over the statements that have been added to the function body
+       * and add them to the new body.
+       */
+      for_alist_backward(node, varArgNodes->body) {
+        remove_help(node, false);
+        node->list = NULL;
+        this->body->insertAtHead(node);
+      }
+      
+      // Clean up blocks that aren't going to be used any more.
+      gBlockStmts.remove(gBlockStmts.index(varArgNodes));
+      delete varArgNodes;
+      
+      this->removeFlag(FLAG_EXPANDED_VARARGS);
+      
+    } else if (this->body->body.length == 0) {
+      gBlockStmts.remove(gBlockStmts.index(this->body));
+      delete this->body;
+      
+      this->body = COPY_INT(this->partialCopySource->body);
+    }
+    
+    Symbol* replacementThis = map->get(this->partialCopySource->_this);
+    
+    /*
+     * Two cases may arise here.  The first is when the _this symbol is defined
+     * in the formal arguments.  In this case no additional work needs to be
+     * done.  In the second case the function's _this symbol is defined in the
+     * function's body.  In this case we need to repair the new/old symbol map
+     * and replace the definition point in the body with our existing def point.
+     */
+    if (replacementThis != this->_this) {
+      /*
+       * In Case 2:
+       * this->partialCopySource->_this := A
+       * this->_this                    := B
+       * 
+       * map[A] := C
+       */
+      
+      // Set map[A] := B
+      map->put(this->partialCopySource->_this, this->_this);
+      // Set map[C] := B
+      map->put(replacementThis, this->_this);
+      
+      // Replace the definition of _this in the body: def(C) -> def(B)
+      replacementThis->defPoint->replace(this->_this->defPoint);
+    }
+    
+    /*
+     * Cases where the return symbol is gVoid or this->_this don't require any
+     * additional actions.
+     */
+    if (this->retSymbol != gVoid && this->retSymbol != this->_this) {
+      Symbol* replacementRet = map->get(this->partialCopySource->getReturnSymbol());
+      
+      if (replacementRet != this->retSymbol) {
+        /*
+         * We now know that retSymbol is defined in function's body.  We must
+         * now replace the duplicate symbol and its definition point with the
+         * ones generated in partialCopy.  This is the exact same process as
+         * was done above for the _this symbol.
+         */
+        replacementRet->defPoint->replace(this->retSymbol->defPoint);
+        
+        map->put(this->partialCopySource->getReturnSymbol(), this->retSymbol);
+        map->put(replacementRet, this->retSymbol);
+      }
+    }
+    
+    /*
+     * Null out the return symbol so that future changes to the return symbol
+     * will be reflected in calls to getReturnSymbol().
+     */
+    this->retSymbol = NULL;
+    
+    // Repair broken up-pointers.
+    insert_help(this, this->defPoint, this->defPoint->parentSymbol);
+    
+    /*
+     * Update all old symbols left in the function's AST with their appropriate
+     * replacements.
+     */
+    update_symbols(this, map);
+    
+    // Clean up book keeping information.
+    this->partialCopyMap.clear();
+    this->partialCopySource = NULL;
+    this->removeFlag(FLAG_PARTIAL_COPY);
+  }
 }
 
 
@@ -1634,13 +1889,18 @@ FnSymbol::insertAtTail(const char* format, ...) {
 
 Symbol*
 FnSymbol::getReturnSymbol() {
-  CallExpr* ret = toCallExpr(body->body.last());
-  if (!ret || !ret->isPrimitive(PRIM_RETURN))
-    INT_FATAL(this, "function is not normal");
-  SymExpr* sym = toSymExpr(ret->get(1));
-  if (!sym)
-    INT_FATAL(this, "function is not normal");
-  return sym->var;
+  if (this->retSymbol != NULL) {
+    return this->retSymbol;
+    
+  } else {
+    CallExpr* ret = toCallExpr(body->body.last());
+    if (!ret || !ret->isPrimitive(PRIM_RETURN))
+      INT_FATAL(this, "function is not normal");
+    SymExpr* sym = toSymExpr(ret->get(1));
+    if (!sym)
+      INT_FATAL(this, "function is not normal");
+    return sym->var;
+  }
 }
 
 

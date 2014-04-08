@@ -11,7 +11,6 @@
 #include "stmt.h"
 #include "symbol.h"
 
-
 static int explainInstantiationLine = -2;
 static ModuleSymbol* explainInstantiationModule = NULL;
 
@@ -94,38 +93,60 @@ copyGenericSub(SymbolMap& subs, FnSymbol* root, FnSymbol* fn, Symbol* key, Symbo
 
 
 static void
-instantiate_tuple(FnSymbol* fn) {
+instantiate_tuple_signature(FnSymbol* fn) {
   AggregateType* tuple = toAggregateType(fn->retType);
   //
   // tuple is the return type for the type constructor
   // tuple is NULL for the default constructor
   //
 
+  fn->numPreTupleFormals = fn->formals.length;
+  
   int64_t size = toVarSymbol(fn->substitutions.v[0].value)->immediate->int_value();
-  Expr* last = fn->body->body.last();
-  for (int i = 1; i <= size; i++) {
+  
+  for (int i = 1; i <= size; ++i) {
     const char* name = astr("x", istr(i));
-    ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, name, dtAny, NULL, new SymExpr(gTypeDefaultToken));
-    if (tuple)
-      arg->addFlag(FLAG_TYPE_VARIABLE);
-    fn->insertFormalAtTail(arg);
-    last->insertBefore(new CallExpr(PRIM_SET_MEMBER, fn->_this,
-                                    new_IntSymbol(i), arg));
-    if (tuple)
+    ArgSymbol* formal = new ArgSymbol(INTENT_BLANK, name, dtAny, NULL, new SymExpr(gTypeDefaultToken));
+    
+    if (tuple) {
+      formal->addFlag(FLAG_TYPE_VARIABLE);
       tuple->fields.insertAtTail(new DefExpr(new VarSymbol(name)));
+    }
+    
+    fn->insertFormalAtTail(formal);
   }
+  
   fn->removeFlag(FLAG_TUPLE);
+  
+  fn->addFlag(FLAG_PARTIAL_TUPLE);
   fn->addFlag(FLAG_ALLOW_REF);
 }
 
 
 static void
+instantiate_tuple_body(FnSymbol* fn) {
+  Expr* last = fn->body->body.last();
+  int numPreTupleFormals = fn->numPreTupleFormals;
+  
+  for (int i = numPreTupleFormals + 1; i <= fn->formals.length; ++i) {
+    ArgSymbol* formal = fn->getFormal(i);
+    
+    last->insertBefore(new CallExpr(PRIM_SET_MEMBER, fn->_this, new_IntSymbol(i - numPreTupleFormals), formal));
+  }
+  
+  fn->removeFlag(FLAG_PARTIAL_TUPLE);
+}
+
+
+static void
 instantiate_tuple_hash( FnSymbol* fn) {
-  if (fn->numFormals() != 1)
+  if (fn->numFormals() != 1) {
     INT_FATAL(fn, "tuple hash function has more than one argument");
+  }
   ArgSymbol* arg = fn->getFormal(1);
   AggregateType* ct = toAggregateType(arg->type);
   CallExpr* call = NULL;
+  
   bool first = true;
   for (int i=1; i<ct->fields.length; i++) {
     CallExpr *field_access = new CallExpr( arg, new_IntSymbol(i)); 
@@ -141,9 +162,11 @@ instantiate_tuple_hash( FnSymbol* fn) {
                                          new_IntSymbol(17)));
     }
   }
+  
   // YAH, make sure that we do not return a negative hash value for now
   call = new CallExpr( "&", new_IntSymbol( 0x7fffffffffffffffLL, INT_SIZE_64), call);
   CallExpr* ret = new CallExpr(PRIM_RETURN, new CallExpr("_cast", dtInt[INT_SIZE_64]->symbol, call));
+  
   fn->body->replace( new BlockStmt( ret));
   normalize(fn);
 }
@@ -168,22 +191,22 @@ instantiate_tuple_initCopy(FnSymbol* fn) {
 
 static void
 instantiate_tuple_autoCopy(FnSymbol* fn) {
-  if (fn->numFormals() != 1)
+  if (fn->numFormals() != 1) {
     INT_FATAL(fn, "tuple autoCopy function has more than one argument");
+  }
+  
   ArgSymbol  *arg = fn->getFormal(1);
   AggregateType  *ct = toAggregateType(arg->type);
   CallExpr *call = new CallExpr("_build_tuple_always_allow_ref");
   BlockStmt* block = new BlockStmt();
+  
   for (int i=1; i<ct->fields.length; i++) {
     Symbol* tmp = newTemp();
     block->insertAtTail(new DefExpr(tmp));
-//     if (ct->symbol->hasFlag(FLAG_STAR_TUPLE)) {
-//       block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_SVEC_MEMBER_VALUE, arg, new_IntSymbol(i))));
-//     } else {
     block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, new_StringSymbol(astr("x", istr(i))))));
-      //    }
     call->insertAtTail(new CallExpr("chpl__autoCopy", tmp));
   }
+  
   block->insertAtTail(new CallExpr(PRIM_RETURN, call));
   fn->body->replace(block);
   normalize(fn);
@@ -362,7 +385,7 @@ static void renameInstantiatedTypeString(TypeSymbol* sym, VarSymbol* var)
 }
 
 static void
-renameInstantiatedType(TypeSymbol* sym, SymbolMap* subs, FnSymbol* fn) {
+renameInstantiatedType(TypeSymbol* sym, SymbolMap& subs, FnSymbol* fn) {
   if (sym->name[strlen(sym->name)-1] == ')') {
     // avoid "strange" instantiated type names based on partial instantiation
     //  instead of C(int,real)(imag) this results in C(int,real,imag)
@@ -377,7 +400,7 @@ renameInstantiatedType(TypeSymbol* sym, SymbolMap* subs, FnSymbol* fn) {
   sym->cname = astr(sym->cname, "_");
   bool first = false;
   for_formals(formal, fn) {
-    if (Symbol* value = subs->get(formal)) {
+    if (Symbol* value = subs.get(formal)) {
       if (TypeSymbol* ts = toTypeSymbol(value)) {
         if (!first && sym->hasFlag(FLAG_TUPLE)) {
           if (sym->hasFlag(FLAG_STAR_TUPLE)) {
@@ -433,9 +456,16 @@ renameInstantiatedType(TypeSymbol* sym, SymbolMap* subs, FnSymbol* fn) {
 }
 
 
+/** Instantiate enough of the function for it to make it through the candidate
+ *  filtering and disambiguation process.
+ * 
+ * \param fn   Generic function to instantiate
+ * \param subs Type substitutions to be made during instantiation
+ * \param call Call that is being resolved
+ */
 FnSymbol*
-instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
-  form_Map(SymbolMapElem, e, *subs) {
+instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
+  form_Map(SymbolMapElem, e, subs) {
     if (TypeSymbol* ts = toTypeSymbol(e->value)) {
       if (ts->type->symbol->hasFlag(FLAG_GENERIC))
         INT_FATAL(fn, "illegal instantiation with a generic type");
@@ -460,11 +490,15 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
   // substitutions to refer to the root function's formal arguments
   //
   SymbolMap all_subs;
-  if (fn->instantiatedFrom)
-    form_Map(SymbolMapElem, e, fn->substitutions)
+  if (fn->instantiatedFrom) {
+    form_Map(SymbolMapElem, e, fn->substitutions) {
       all_subs.put(e->key, e->value);
-  form_Map(SymbolMapElem, e, *subs)
+    }
+  }
+  
+  form_Map(SymbolMapElem, e, subs) {
     copyGenericSub(all_subs, root, fn, e->key, e->value);
+  }	
 
   //
   // use cached instantiation if possible
@@ -493,7 +527,7 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
     if (!fn->hasFlag(FLAG_TUPLE) && newType->symbol->hasFlag(FLAG_TUPLE)) {
       bool markStar = true;
       Type* starType = NULL;
-      form_Map(SymbolMapElem, e, *subs) {
+      form_Map(SymbolMapElem, e, subs) {
         TypeSymbol* ts = toTypeSymbol(e->value);
         INT_ASSERT(ts && ts->type);
         if (starType == NULL) {
@@ -521,46 +555,48 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
     if (newType->dispatchChildren.n)
       INT_FATAL(fn, "generic type has subtypes");
     newType->instantiatedFrom = fn->retType;
-    newType->substitutions.map_union(*subs);
+    newType->substitutions.map_union(subs);
     newType->symbol->removeFlag(FLAG_GENERIC);
   }
 
   //
   // instantiate function
   //
+  
   SymbolMap map;
-
-  if (newType)
+  
+  if (newType) {
     map.put(fn->retType->symbol, newType->symbol);
-
-  FnSymbol* newFn = fn->copy(&map);
-
+  }
+  
+  FnSymbol* newFn = fn->partialCopy(&map);
+  
   addCache(genericsCache, root, newFn, &all_subs);
-
-  //printf("newFn: %d %s\n", newFn->id, newFn->cname);
 
   newFn->removeFlag(FLAG_GENERIC);
   newFn->addFlag(FLAG_INVISIBLE_FN);
   newFn->instantiatedFrom = fn;
+  newFn->substitutions.map_union(all_subs);
 
-  if (call)
+  if (call) {
     newFn->instantiationPoint = getVisibilityBlock(call);
-
+  }
 
   Expr* putBefore = fn->defPoint;
   if( !putBefore->list ) {
     putBefore = call->parentSymbol->defPoint;
   }
+  
   putBefore->insertBefore(new DefExpr(newFn));
 
   //
   // add parameter instantiations to parameter map
   //
-  for (int i = 0; i < subs->n; i++) {
-    if (ArgSymbol* arg = toArgSymbol(subs->v[i].key)) {
+  for (int i = 0; i < subs.n; i++) {
+    if (ArgSymbol* arg = toArgSymbol(subs.v[i].key)) {
       if (arg->intent == INTENT_PARAM) {
         Symbol* key = map.get(arg);
-        Symbol* val = subs->v[i].value;
+        Symbol* val = subs.v[i].value;
         if (!key || !val || isTypeSymbol(val))
           INT_FATAL("error building parameter map in instantiation");
         paramMap.put(key, val);
@@ -589,7 +625,7 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
   //
   for_formals(formal, fn) {
     ArgSymbol* newFormal = toArgSymbol(map.get(formal));
-    if (Symbol* value = subs->get(formal)) {
+    if (Symbol* value = subs.get(formal)) {
       INT_ASSERT(formal->intent == INTENT_PARAM || isTypeSymbol(value));
       if (formal->intent == INTENT_PARAM) {
         newFormal->intent = INTENT_BLANK;
@@ -616,26 +652,26 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
     newType->defaultTypeConstructor = newFn;
     newFn->retType = newType;
   }
+  
+  if (fn->hasFlag(FLAG_TUPLE)) {
+    instantiate_tuple_signature(newFn);
+  }
 
-  if (!strcmp(fn->name, "chpl__defaultHash") &&
-      fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE))
+  if (!strcmp(fn->name, "chpl__defaultHash") && fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE)) {
     instantiate_tuple_hash(newFn);
+  }
 
-  if (fn->hasFlag(FLAG_INIT_COPY_FN) &&
-      fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE))
+  if (fn->hasFlag(FLAG_INIT_COPY_FN) && fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE)) {
     instantiate_tuple_initCopy(newFn);
+  }
 
-  if (fn->hasFlag(FLAG_AUTO_COPY_FN) &&
-      fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE))
+  if (fn->hasFlag(FLAG_AUTO_COPY_FN) && fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE)) {
     instantiate_tuple_autoCopy(newFn);
-
-  newFn->substitutions.append(all_subs);
-
-  if (fn->hasFlag(FLAG_TUPLE))
-    instantiate_tuple(newFn);
-
-  if (newFn->numFormals() > 1 && newFn->getFormal(1)->type == dtMethodToken)
+  }
+  
+  if (newFn->numFormals() > 1 && newFn->getFormal(1)->type == dtMethodToken) {
     newFn->getFormal(2)->type->methods.add(newFn);
+  }
 
   newFn->tag_generic();
 
@@ -653,8 +689,46 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
   if (!newFn->hasFlag(FLAG_GENERIC) && explainInstantiationLine) {
     explainInstantiation(newFn);
   }
-
+  
   checkInstantiationLimit(fn);
+  
+  return newFn;
+}
 
+/** Finish copying and instantiating the partially instantiated function.
+ * 
+ * TODO: See if more code from instantiateSignature can be moved into this
+ *       function.
+ * 
+ * \param fn   Generic function to finish instantiating
+ */
+void
+instantiateBody(FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_PARTIAL_COPY)) {
+    fn->finalizeCopy();
+
+    if (fn->hasFlag(FLAG_PARTIAL_TUPLE)) {
+      instantiate_tuple_body(fn);
+    }
+  }
+}
+
+/** Fully instantiate a generic function given a map of substitutions and a
+ *  call site.
+ * 
+ * \param fn   Generic function to instantiate
+ * \param subs Type substitutions to be made during instantiation
+ * \param call Call that is being resolved
+ */
+FnSymbol*
+instantiate(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
+  FnSymbol* newFn;
+  
+  newFn = instantiateSignature(fn, subs, call);
+  
+  if (newFn != NULL) {
+    instantiateBody(newFn);
+  }
+  
   return newFn;
 }

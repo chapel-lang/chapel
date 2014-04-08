@@ -219,15 +219,28 @@ class FnSymbol : public Symbol {
                            // resolve and used in cullOverReferences)
   int codegenUniqueNum;
   const char *doc;
+  
+  /// Used to keep track of symbol substitutions during partial copying.
+  SymbolMap partialCopyMap;
+  /// Source of a partially copied function.
+  FnSymbol* partialCopySource;
+  /// Used to store the return symbol during partial copying.
+  Symbol* retSymbol;
+  /// Number of formals before tuple type constructor formals are added.
+  int numPreTupleFormals;
 
   FnSymbol(const char* initName);
   ~FnSymbol();
            
   void verify(); 
   DECLARE_SYMBOL_COPY(FnSymbol);
+  FnSymbol* copyInnerCore(SymbolMap* map);
   FnSymbol* getFnSymbol(void);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-
+  
+  FnSymbol* partialCopy(SymbolMap* map);
+  void finalizeCopy(void);
+  
   // Returns an LLVM type or a C-cast expression
   GenRet codegenFunctionType(bool forHeader);
   GenRet codegenCast(GenRet fnPtr);
