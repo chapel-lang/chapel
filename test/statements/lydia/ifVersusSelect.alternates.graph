@@ -1,0 +1,27 @@
+perfkeys: If/else branching took, Select branching took
+files: ifVersusSelect.reversed.dat, ifVersusSelect.reversed.dat
+graphkeys: if/else, select
+graphtitle: Conditional Statement Compare (Reversed)
+ylabel: Time (seconds)
+graphname: condCompareReversed
+
+perfkeys: If/else branching took, Select branching took
+files: ifVersusSelect.skewedLow.dat, ifVersusSelect.skewedLow.dat
+graphkeys: if/else, select
+graphtitle: Conditional Statement Compare (SkewedLow)
+ylabel: Time (seconds)
+graphname: condCompareSkewedLow
+
+perfkeys: If/else branching took, Select branching took
+files: ifVersusSelect.skewedMid.dat, ifVersusSelect.skewedMid.dat
+graphkeys: if/else, select
+graphtitle: Conditional Statement Compare (SkewedMid)
+ylabel: Time (seconds)
+graphname: condCompareSkewedMid
+
+perfkeys: If/else branching took, Select branching took
+files: ifVersusSelect.skewedHigh.dat, ifVersusSelect.skewedHigh.dat
+graphkeys: if/else, select
+graphtitle: Conditional Statement Compare (SkewedHigh)
+ylabel: Time (seconds)
+graphname: condCompareSkewedHigh

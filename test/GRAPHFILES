@@ -116,6 +116,9 @@ studies/parboil/SAD/sad.graph
 studies/parboil/stencil/stencil.graph
 # suite: Statement Compare
 statements/lydia/forVersusWhilePerf.graph
+statements/lydia/ifVersusSelect.graph
+statements/lydia/ifVersusSelect.random.graph
+statements/lydia/ifVersusSelect.alternates.graph
 # suite: Misc
 users/franzf/v0/chpl/main.graph
 studies/jacobi/jacobi.graph
