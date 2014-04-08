@@ -28,5 +28,9 @@ fi
 # Ensure nightly does not have syntax errors.
 perl -c $CHPL_HOME/util/cron/nightly
 
+# Source common.bash, which sets up a bunch of environment variables like
+# CHPL_DEVELOPER, CHPL_GMP, etc. that are required for nightly testing.
+source $CHPL_HOME/util/cron/common.bash
+
 # Compile chapel and make sure the hello world examples run.
-make -C $CHPL_HOME && make -C $CHPL_HOME check
+make -C $CHPL_HOME check

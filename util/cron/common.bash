@@ -68,10 +68,11 @@ log_info "Using SVN repo: ${CHPL_HOME_REPOSITORY}"
 
 # Assume chapel repo is checked out to ~/chapel.
 
-# TODO: Do not make this assumption! It would be better to infer the repo root
-#       based on the location of this file. (thomasvandoren, 2014-01-24)
-
-if [ -d ~/chapel ] ; then
+# If $CHPL_HOME is already set, use it.
+if [ "${CHPL_HOME+x}" = "x" ] ; then
+    log_info "CHPL_HOME is already set to: ${CHPL_HOME}"
+# Else, use a well known and established location for $CHPL_HOME.
+elif [ -d ~/chapel ] ; then
     export CHPL_HOME=$(cd ~/chapel ; pwd)
 else
     log_error "Expected chapel repo to be at ~/chapel. No directory exists at ~/chapel."
