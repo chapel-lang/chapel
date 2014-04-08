@@ -297,26 +297,27 @@ proc createChameneos(size): [1..size] Chameneos {
 //
 inline proc getNewColor(myColor, otherColor) {
   select myColor {
+    when otherColor do return myColor;
     when Color.blue {
-      select otherColor {
-        when Color.blue do return Color.blue;
-        when Color.red  do return Color.yellow;
-        otherwise          return Color.red;
-      }
+      if (otherColor == Color.red) then return Color.yellow;
+      else
+        // otherColor == Color.yellow, because first when statement
+        // eliminates Color.blue
+        return Color.red;
     }
     when Color.red {
-      select otherColor {
-        when Color.blue do return Color.yellow;
-        when Color.red  do return Color.red;
-        otherwise          return Color.blue;
-      }
+      if (otherColor == Color.blue) then return Color.yellow;
+      else
+        // otherColor == Color.yellow, because first when statement
+        // eliminates Color.red
+        return Color.blue;
     }
     otherwise {
-      select otherColor {
-        when Color.blue do return Color.red;
-        when Color.red  do return Color.blue;
-        otherwise          return Color.yellow;
-      }
+      if (otherColor == Color.blue) then return Color.red;
+      else
+        // otherColor == Color.red, because first when statement
+        // eliminates Color.yellow
+        return Color.blue;
     }
   }
 }
