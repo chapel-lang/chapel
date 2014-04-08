@@ -89,7 +89,10 @@ export CHPL_DEVELOPER=true
 
 # Enable RE2 and GMP testing
 export CHPL_GMP=gmp
-export CHPL_REGEXP=re2
+case "${CHPL_HOST_PLATFORM}" in
+ (darwin|linux32) log_info "Not setting CHPL_REGEXP for ${CHPL_HOST_PLATFORM}, to avoid build issues.";;
+ (*)              export CHPL_REGEXP=re2;;
+esac
 
 # Setup some logdirs.
 
