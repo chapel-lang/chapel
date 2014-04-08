@@ -86,6 +86,10 @@ log_info "CHPL_HOST_PLATFORM is: ${CHPL_HOST_PLATFORM}"
 # Enable warnings and errors.
 export CHPL_DEVELOPER=true
 
+# Enable RE2 and GMP testing
+export CHPL_GMP=gmp
+export CHPL_REGEXP=re2
+
 # Setup some logdirs.
 
 # TODO: These are very rigid file locations. They should be a) part of the
