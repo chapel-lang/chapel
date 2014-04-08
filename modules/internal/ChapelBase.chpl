@@ -251,6 +251,12 @@ module ChapelBase {
   // If strings are reimplemented as classes or records, a less trivial
   // implementation for assignment will become necessary.
   inline proc =(ref a: string, b: string) { __primitive("move", a, b); }
+
+  inline proc =(ref a, b: a.type) where isClassType(a.type)
+  // "move" is used instead of "=", to pick up wide pointer codegen not yet
+  // ported to PRIM_ASSIGN. (TODO)
+  { __primitive("move", a, b); }
+
   // Because resolution prefers user-defined versions to ones marked as "compiler
   // generated", it is desirable to add that flag to this default version.
   // In that way, a user-supplied version of assignment will override this one.
