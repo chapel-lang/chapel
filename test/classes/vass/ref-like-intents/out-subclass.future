@@ -1,0 +1,3 @@
+bug: an error message is not reported when passing a different-class-type argument to an out formal
+
+Instead, the compiler fails verification.

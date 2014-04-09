@@ -1,0 +1,2 @@
+inout-superclass.chpl:13: error: unresolved call 'procInoutD(C)'
+inout-superclass.chpl:6: note: candidates are: procInoutD(inout arg: D)

@@ -1,0 +1,2 @@
+ref-superclass.chpl:13: error: unresolved call 'procRefD(C)'
+ref-superclass.chpl:6: note: candidates are: procRefD(ref arg: D)
