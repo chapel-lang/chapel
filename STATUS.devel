@@ -99,6 +99,7 @@ Types, Params, Variables, and Consts
   # functions/bradc/resolution/badEnumDispatch.future
 - Invoking a method directly on an enum constant results in a compiler error
   # types/enum/vass/enum-receiver-1.future
+- Methods on atomic type ignore the memory_order argument.
 - The default value for the locale type is incorrect.
   # types/locale/bradc/defaultLocaleVal.future
   # multilocale/sungeun/locale_default.future
