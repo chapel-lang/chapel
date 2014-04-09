@@ -192,7 +192,7 @@ proc verifyResults(T) {
                      else 2 ** log2(verifyBlockSize),
         lockIndexMask = indexMask & ~(lockStride - 1);
   const lockSpace = TableSpace by lockStride;
-  var locks: [lockSpace] atomic bool;
+  var locks: [lockSpace] vlock;
 
   //
   // Print the table, if requested
@@ -210,19 +210,17 @@ proc verifyResults(T) {
     forall (_, r) in zip(Updates, RAStream()) do
       on TableDist.idxToLocale[r & indexMask] do {
         const myR = r;
-        on locks[myR & lockIndexMask] do
-          while locks[myR & lockIndexMask].testAndSet() != false do ;
+        locks[myR & lockIndexMask].lock();
         local {
           T[myR & indexMask] ^= myR;
         }
-        locks[myR & lockIndexMask].write(false);
+        locks[myR & lockIndexMask].unlock();
       }
   else
     forall (_, r) in zip(Updates, RAStream()) do {
-      on locks[r & lockIndexMask] do
-        while locks[r & lockIndexMask].testAndSet() != false do ;
+      locks[r & lockIndexMask].lock();
       T[r & indexMask] ^= r;
-      locks[r & lockIndexMask].write(false);
+      locks[r & lockIndexMask].unlock();
     }
 
   //
@@ -243,6 +241,19 @@ proc verifyResults(T) {
   // tolerance.
   //
   return numErrors <= (errorTolerance * N_U);
+}
+
+//
+// lock for verification
+//
+record vlock {
+  var l: atomic bool;
+  proc lock() {
+    on this do while l.testAndSet() != false do chpl_task_yield();
+  }
+  proc unlock() {
+    l.write(false);
+  }
 }
 
 //
