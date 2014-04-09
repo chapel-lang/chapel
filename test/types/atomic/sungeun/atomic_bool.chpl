@@ -1,3 +1,5 @@
+var mo = memory_order_seq_cst; // can't have configs of extern types
+
 var ax: atomic bool;
 if ax.testAndSet() then
   writeln("set");
@@ -21,8 +23,8 @@ on Locales[numLocales-1] {
     writeln("not set");
 }
 
-var x = ax.read();
+var x = ax.read(mo);
 writeln(x);
 
-ax.write(false);
+ax.write(false, mo);
 writeln(ax);
