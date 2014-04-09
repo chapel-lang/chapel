@@ -49,6 +49,7 @@ if ($@) {
 
     # Otherwise, try to halt the running process
     if ($@ eq "alarm\n") {
+        system("ps aux | sort -r -k 3 | head");  # any interference?
         print "timedexec Alarm Clock\n";
     }
     if ($@ eq "abort\n") {
