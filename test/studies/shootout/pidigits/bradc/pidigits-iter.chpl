@@ -30,7 +30,10 @@ iter gen_digits(numDigits) {
   mpz_init(tmp1);                          // init tmp1
   mpz_init(tmp2);                          // init tmp2
 
-  var k: uint;
+  var k: c_ulong;
+  // This needs to be a c_ulong for portability to 32 bit systems.
+  // TODO: make our GMP methods accept uints, ints, etc. of various sizes so
+  // that the user doesn't need to know C types?
   for i in 1..numDigits {
     do {
       do {

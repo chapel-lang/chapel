@@ -22,7 +22,11 @@ mpz_init(tmp2);                            // init tmp2
 
 
 proc main() {
-  var k: uint;
+  var k: c_ulong;
+  // This needs to be a c_ulong for portability to 32 bit systems.
+  // TODO: make our GMP methods accept uints, ints, etc. of various sizes so
+  // that the user doesn't need to know C types?
+
   //
   // extract and print n digits
   //

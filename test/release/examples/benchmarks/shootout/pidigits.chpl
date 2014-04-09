@@ -27,7 +27,7 @@ iter gen_digits(numDigits) {
   mpz_init(tmp1);                          // init tmp1
   mpz_init(tmp2);                          // init tmp2
 
-  var k: uint;
+  var k: c_ulong;
   for i in 1..numDigits {
     do {
       do {
