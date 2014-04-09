@@ -498,7 +498,7 @@ instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
   
   form_Map(SymbolMapElem, e, subs) {
     copyGenericSub(all_subs, root, fn, e->key, e->value);
-  }	
+  }
 
   //
   // use cached instantiation if possible
