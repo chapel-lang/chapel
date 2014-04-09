@@ -17,11 +17,10 @@ source $CHPL_HOME/util/setchplenv.bash
 echo ""
 
 # Check for tabs.
-all_tabs=$($CHPL_HOME/util/devel/lookForTabs)
-num_tabs=$(echo -n "${all_tabs}" | wc -l)
+num_tabs=$($CHPL_HOME/util/devel/lookForTabs | wc -l)
 if (( $num_tabs > 0 )) ; then
     echo "Found tabs :-("
-    echo $all_tabs
+    echo $($CHPL_HOME/util/devel/lookForTabs)
     exit 1
 fi
 
