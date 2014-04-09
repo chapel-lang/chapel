@@ -35,7 +35,7 @@ cleanall: FORCE
 	rm -rf build
 
 clobber: FORCE
-	rm -rf build install
+	rm -rf build install llvm
 
 # -enable-debug-runtime --enable-debug-symbols creates huge binaries
 #  so we by default do not include LLVM debugging information.
@@ -46,7 +46,7 @@ $(LLVM_FILE):
 	cd $(LLVM_BUILD_DIR) && $(MAKE)
 	cd $(LLVM_BUILD_DIR) && $(MAKE) install
 	cd $(LLVM_BUILD_DIR) && cd test && make lit.site.cfg
-	
+
 llvm: $(LLVM_FILE)
 
 llvm-reconfig:

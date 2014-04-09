@@ -33,7 +33,7 @@ cleanall: FORCE
 	rm -rf build
 
 clobber: FORCE
-	rm -rf build install
+	rm -rf build install re2
 
 $(RE2_FILE):
 	if [ ! -d re2 ]; then ./unpack-re2.sh; fi
