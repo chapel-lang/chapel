@@ -87,8 +87,13 @@ log_info "CHPL_HOST_PLATFORM is: ${CHPL_HOST_PLATFORM}"
 # Enable warnings and errors.
 export CHPL_DEVELOPER=true
 
-# Enable RE2 and GMP testing
-export CHPL_GMP=gmp
+# Enable GMP testing
+case "${CHPL_HOST_PLATFORM}" in
+ (darwin)         log_info "Not setting CHPL_GMP for ${CHPL_HOST_PLATFORM}, to avoid build issues.";;
+ (*)              export export CHPL_GMP=gmp;;
+esac
+
+# Enable RE2 testing
 case "${CHPL_HOST_PLATFORM}" in
  (darwin|linux32) log_info "Not setting CHPL_REGEXP for ${CHPL_HOST_PLATFORM}, to avoid build issues.";;
  (*)              export CHPL_REGEXP=re2;;
