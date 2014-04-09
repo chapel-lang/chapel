@@ -2367,7 +2367,7 @@ GenRet codegenCallExpr(GenRet function,
     }
 
     if( sret ) {
-      ret.val = codegenLoadLLVM(sret, fSym->retType);
+      ret.val = codegenLoadLLVM(sret, fSym?(fSym->retType):(NULL));
     }
 #endif
   }
