@@ -90,7 +90,7 @@ export CHPL_DEVELOPER=true
 # Enable GMP testing
 case "${CHPL_HOST_PLATFORM}" in
  (darwin)         log_info "Not setting CHPL_GMP for ${CHPL_HOST_PLATFORM}, to avoid build issues.";;
- (*)              export export CHPL_GMP=gmp;;
+ (*)              export CHPL_GMP=gmp;;
 esac
 
 # Enable RE2 testing
