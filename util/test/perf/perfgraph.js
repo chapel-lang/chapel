@@ -36,7 +36,10 @@ var branchInfo = [
                     "revision" : "r21260"},
                   { "release" : "1.8",
                     "branchDate" : "2013-10-04",
-                    "revision" : "r22086"}
+                    "revision" : "r22086"},
+                  { "release" : "1.9",
+                    "branchDate" : "2014-04-07",
+                    "revision" : "r23144"}
                   ];
 
 // stuff for dygraph
