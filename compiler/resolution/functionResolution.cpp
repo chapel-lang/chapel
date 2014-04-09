@@ -278,7 +278,8 @@ gatherCandidates(Vec<ResolutionCandidate*>& candidates,
                  Vec<FnSymbol*>& visibleFns,
                  CallInfo& info);
 
-static void resolveNormalCall(CallExpr* call, bool errorCheck);
+static void resolveCall(CallExpr* call);
+static void resolveNormalCall(CallExpr* call);
 static void resolveTupleAndExpand(CallExpr* call);
 static void resolveTupleExpand(CallExpr* call);
 static void resolveSetMember(CallExpr* call);
@@ -2869,10 +2870,10 @@ gatherCandidates(Vec<ResolutionCandidate*>& candidates,
   }
 }
 
-void
-resolveCall(CallExpr* call, bool errorCheck) {
+static void
+resolveCall(CallExpr* call) {
   if (!call->primitive) {
-    resolveNormalCall(call, errorCheck);
+    resolveNormalCall(call);
   } else if (call->isPrimitive(PRIM_TUPLE_AND_EXPAND)) {
     resolveTupleAndExpand(call);
   } else if (call->isPrimitive(PRIM_TUPLE_EXPAND)) {
@@ -2886,7 +2887,7 @@ resolveCall(CallExpr* call, bool errorCheck) {
   }
 }
 
-static void resolveNormalCall(CallExpr* call, bool errorCheck) {
+static void resolveNormalCall(CallExpr* call) {
     
     resolveDefaultGenericType(call);
     
@@ -2982,7 +2983,7 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
         tryFailure = true;
         return;
         
-      } else if (errorCheck) {
+      } else {
         if (candidates.n > 0) {
           Vec<FnSymbol*> candidateFns;
           forv_Vec(ResolutionCandidate*, candidate, candidates) {
@@ -3007,10 +3008,6 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
       delete candidate;
     }
     
-    if (!resolvedFn && !errorCheck) {
-      return;
-    }
-
     if (call->partialTag) {
       if (!resolvedFn) {
         return;

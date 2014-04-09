@@ -28,7 +28,6 @@ FnSymbol* instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
 void      instantiateBody(FnSymbol* fn);
 
 void resolveFormals(FnSymbol* fn);
-void resolveCall(CallExpr* call, bool errorCheck = true);
 void resolveBlock(Expr* body);
 
 FnSymbol* defaultWrap(FnSymbol* fn, Vec<ArgSymbol*>* actualFormals,  CallInfo* info);
