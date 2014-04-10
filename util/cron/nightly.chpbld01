@@ -52,7 +52,8 @@ for compiler in $compilers ; do
   module list
   export CHPL_TARGET_PLATFORM=cray-xc
   export CHPL_COMM=none
-  case ${compiler} in (pgi|cray) echo unsetting CHPL_REGEXP; unset CHPL_REGEXP;; esac
+  case ${compiler} in (pgi|cray)
+    echo unsetting CHPL_REGEXP and CHPL_GMP; unset CHPL_REGEXP CHPL_GMP;; esac
   $NIGHTLY -combinedir -cron $EXAMPLES
   if [ $compiler == "cray" ] ; then
       # swap the network module back in so as not to taunt modules
@@ -77,7 +78,8 @@ for compiler in $compilers ; do
   export CHPL_TARGET_PLATFORM=cray-xc
   export CHPL_HOST_COMPILER=cray-prgenv-$compiler
   export CHPL_COMM=none
-  case ${compiler} in (pgi|cray) echo unsetting CHPL_REGEXP; unset CHPL_REGEXP;; esac
+  case ${compiler} in (pgi|cray)
+    echo unsetting CHPL_REGEXP and CHPL_GMP; unset CHPL_REGEXP CHPL_GMP;; esac
   $NIGHTLY -combinedir -cron $EXAMPLES
   if [ $compiler == "cray" ] ; then
       # swap the network module back in so as not to taunt modules
@@ -100,7 +102,8 @@ for compiler in $compilers ; do
   unset CHPL_TARGET_PLATFORM
   export CHPL_HOST_COMPILER=$compiler
   export CHPL_COMM=none
-  case ${compiler} in (pgi) echo unsetting CHPL_REGEXP; unset CHPL_REGEXP;; esac
+  case ${compiler} in (pgi|cray)
+    echo unsetting CHPL_REGEXP and CHPL_GMP; unset CHPL_REGEXP CHPL_GMP;; esac
   $NIGHTLY -combinedir -cron $EXAMPLES
 )
 done
