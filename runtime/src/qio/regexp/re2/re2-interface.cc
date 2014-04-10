@@ -32,7 +32,7 @@ struct re_t {
   // RE2 implementations are shared and ref-counted.
   // We free the internal RE2 once ref_cnt==0.
   re_t(StringPiece& pattern, const RE2::Options& option, re_cache* home)
-    : re(pattern, option), ref_cnt(0)
+    : re(pattern, option)
   {
     // Initialize the reference count to 1.
     // This represents the reference held by the cache.
