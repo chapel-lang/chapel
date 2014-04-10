@@ -738,14 +738,22 @@ void _qio_channel_destroy(qio_channel_t* ch);
 static inline
 void qio_channel_retain(qio_channel_t* ch) {
   DO_RETAIN(ch);
-  if (ch && DEBUG_QIO)
-    fprintf(stdout, "Channel retain %p, ref_cnt = %" PRIu64 "\n", ch, DO_GET_REFCNT(ch));
+  //
+  // Commenting this out because (a) PRIu64 breaks the build for the
+  // Cray C++ compiler and (b) it's debugging code, off by default.
+  //
+  //  if (ch && DEBUG_QIO)
+  //    fprintf(stdout, "Channel retain %p, ref_cnt = %" PRIu64 "\n", ch, DO_GET_REFCNT(ch));
 }
 
 static inline
 void qio_channel_release(qio_channel_t* ch) {
-  if (ch && DEBUG_QIO)
-    fprintf(stdout, "Channel release %p, ref_cnt = %" PRIu64 "\n", ch, DO_GET_REFCNT(ch));
+  //
+  // Commenting this out because (a) PRIu64 breaks the build for the
+  // Cray C++ compiler and (b) it's debugging code, off by default.
+  //
+  //  if (ch && DEBUG_QIO)
+  //    fprintf(stdout, "Channel release %p, ref_cnt = %" PRIu64 "\n", ch, DO_GET_REFCNT(ch));
   DO_RELEASE(ch, _qio_channel_destroy);
 }
 
