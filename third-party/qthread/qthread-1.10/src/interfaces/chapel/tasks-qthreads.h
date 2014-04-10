@@ -13,6 +13,7 @@
 #include <assert.h>
 #include <qthread.h>
 #include <stdio.h>
+#include <pthread.h>
 
 #include "chpltypes.h" // for chpl_bool
 
@@ -290,16 +291,24 @@ typedef struct chpl_qthread_tls_s {
     size_t      task_lineno;
 } chpl_qthread_tls_t;
 
+pthread_t chpl_qthread_comm_pthread;
+
+chpl_qthread_tls_t chpl_qthread_comm_task_tls;
+
 #define CHPL_TASK_STD_MODULES_INITIALIZED chpl_task_stdModulesInitialized
 void chpl_task_stdModulesInitialized(void);
 
 // Wrap qthread_get_tasklocal() and assert that it is always available.
-static inline chpl_qthread_tls_t * chapel_qthreads_get_tasklocal(void)
+static inline chpl_qthread_tls_t * chpl_qthread_get_tasklocal(void)
 {
     chpl_qthread_tls_t * tls;
 
     if (chpl_qthread_done_initializing) {
-        tls = (chpl_qthread_tls_t *)qthread_get_tasklocal(sizeof(chpl_qthread_tls_t));
+        tls = (chpl_qthread_tls_t *)
+              qthread_get_tasklocal(sizeof(chpl_qthread_tls_t));
+        if (tls == NULL &&
+            pthread_equal(pthread_self(), chpl_qthread_comm_pthread))
+          tls = &chpl_qthread_comm_task_tls;
         assert(tls);
     }
     else
@@ -350,7 +359,7 @@ void chpl_task_setSubloc(c_sublocid_t subloc)
     //       main thread of execution, which doesn't have a shepherd.
     //       The code below wouldn't work in that situation.
     if ((curr_shep = qthread_shep()) != NO_SHEPHERD) {
-        chpl_qthread_tls_t * data = chapel_qthreads_get_tasklocal();
+        chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
         if (data) {
             data->chpl_data.requestedSubloc = subloc;
         }
@@ -375,7 +384,7 @@ c_sublocid_t chpl_task_getRequestedSubloc(void)
   CHPL_LOCALE_MODEL_NUM_SUBLOCALES == 0
     return 0;
 #else
-    chpl_qthread_tls_t * data = chapel_qthreads_get_tasklocal();
+    chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
     if (data) {
         return data->chpl_data.requestedSubloc;
     }
