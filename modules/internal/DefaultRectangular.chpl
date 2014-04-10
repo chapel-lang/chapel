@@ -566,11 +566,23 @@ module DefaultRectangular {
           // This is specialized because the strided version disables the
           // "single loop iterator" optimization
           var first = getDataIndex(dom.dsiLow);
-          var second = getDataIndex(dom.dsiLow+dom.ranges(1).stride:strType);
-          var step = (second-first):strType;
-          var last = first + (dom.dsiNumIndices-1) * step:idxType;
-          for i in first..last by step do
+          var second = getDataIndex(dom.dsiLow+1);
+          var step = (second-first);
+          var last = first + (dom.dsiNumIndices) * step;
+          //
+          // We could equivalently use: 'for i in first..last by step'
+          // here, but that results in a bunch of general cases for
+          // strided ranges that we don't need since we know the stride will
+          // be positive.  This begs the question of whether a range
+          // should be able to declare itself as known to be positively
+          // or negatively strided to get additional performance
+          // benefits.
+          //
+          var i = first;
+          while (i != last) {
             yield theData(i);
+            i += step;
+          }
         } else {
           const stride = dom.ranges(1).stride: idxType,
                 start  = dom.ranges(1).first,
