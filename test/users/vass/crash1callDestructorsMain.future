@@ -1,7 +1,16 @@
-bug: compiler crashes with assertion error [callDestructors.cpp:256]
+bug: compiler crashes with an internal error: function is not normal [symbol.cpp:1911]
+
+The full error currently is:
+  ./crash1callDestructorsAddon.chpl:79: internal error: function is not normal [symbol.cpp:1911]
 
 NOTE: It is currently skipif'ed for --no-local/etc.
 Once this test works for --local, enable it for --no-local and re-test.
+
+Also test it with valgrind.
+
+Prior to r23156, it was failing with an assertion error
+[callDestructors.cpp:531] (initially with callDestructors.cpp:256)
+- that was due to memory corruption/reusing a freed AST node.
 
 The current failure mode under --no-local --devel is:
 $CHPL_HOME/modules/internal/ChapelDistribution.chpl:114: In function 'destroyDom':
