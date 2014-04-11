@@ -162,9 +162,13 @@ void chpl_comm_broadcast_global_vars(int numGlobals);
 void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid);
 
 //
-// barrier for synchronization between all processes; currently only
-// used for startup and teardown.  msg is a string that can be used
-// for debugging to determine where the barrier is being called.
+// Barrier for synchronization between all top-level locales; currently
+// only used for startup and teardown.  msg is a string that can be used
+// for debugging to determine where the barrier is being called.  This
+// function may be called from a Chapel task.  As such, if the barrier
+// cannot be immediately satisfied, while it waits chpl_comm_barrier()
+// must call chpl_task_yield() in order not to monopolize the execution
+// resources and prevent making progress.
 //
 void chpl_comm_barrier(const char *msg);
 
