@@ -4,20 +4,21 @@
 #define CHPL_RE2
 #endif
 
+#include <limits>
+#include <algorithm>
+#include <pthread.h>
+
 extern "C" {
+  #include <stdlib.h>
+  #include <stdio.h>
 #ifndef SIMPLE_TEST
   #include "stdchplrt.h"
 #endif
-  #include <stdlib.h>
-  #include <stdio.h>
   #include "qio_regexp.h"
   #include "qbuffer.h" // qio_strdup, refcount functions, VOID_PTR_DIFF
   #include "qio.h" // for channel operations
   #undef printf
 }
-
-#include <limits>
-#include <algorithm>
 
 #include "re2/re2.h"
 //#include "re2/regexp.h"
@@ -40,7 +41,6 @@ struct re_t {
   }
 };
 
-#include <pthread.h>
 // A very simple 8-element local regexp cache.
 #define REGEXP_CACHE_SIZE 8
 struct cache_elem {
