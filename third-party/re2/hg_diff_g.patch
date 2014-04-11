@@ -55,7 +55,7 @@ diff --git a/Makefile b/Makefile
  	$(INSTALL_DATA) $(INSTALL_HFILES) $(DESTDIR)$(includedir)/re2
  	$(INSTALL) obj/libre2.a $(DESTDIR)$(libdir)/libre2.a
  	$(INSTALL) obj/so/libre2.so $(DESTDIR)$(libdir)/libre2.so.$(SONAME).0.0
-+	if [ -n `command -v install_name_tool` ]; then install_name_tool -id $(DESTDIR)$(libdir)/libre2.so.$(SONAME).0.0 $(DESTDIR)$(libdir)/libre2.so.$(SONAME).0.0; fi
++	if [ -n "`command -v install_name_tool`" ]; then install_name_tool -id $(DESTDIR)$(libdir)/libre2.so.$(SONAME).0.0 $(DESTDIR)$(libdir)/libre2.so.$(SONAME).0.0; fi
  	ln -sf libre2.so.$(SONAME).0.0 $(DESTDIR)$(libdir)/libre2.so.$(SONAME)
  	ln -sf libre2.so.$(SONAME).0.0 $(DESTDIR)$(libdir)/libre2.so
  
