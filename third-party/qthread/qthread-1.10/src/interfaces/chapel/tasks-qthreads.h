@@ -293,7 +293,7 @@ typedef struct chpl_qthread_tls_s {
 
 pthread_t chpl_qthread_comm_pthread;
 
-chpl_qthread_tls_t chpl_qthread_comm_task_tls;
+extern chpl_qthread_tls_t chpl_qthread_comm_task_tls;
 
 #define CHPL_TASK_STD_MODULES_INITIALIZED chpl_task_stdModulesInitialized
 void chpl_task_stdModulesInitialized(void);
