@@ -570,6 +570,21 @@ Known Constraints and Bugs
   variable affects all MPI programs, so remember to unset it after
   running your Chapel program.
 
+* The amount of memory available to a Chapel program running over
+  GASNet with the gemini and aries conduits is allocated at program
+  start up.  The default memory segment size may be too high on some
+  platforms, resulting in an internal Chapel error or a GASNet
+  initialization error such as:
+
+     node 1 log gasnetc_init_segment() at /path/to/chapel/third-party/gasnet/GASNet-1.22.0/gemini-conduit/gasnet_gemini.c:562: MemRegister segment fault 8 at  0x2aab6ae00000 60000000, code GNI_RC_ERROR_RESOURCE
+
+  If your Chapel program exits with such an error, try setting the
+  environment variable GASNET_MAX_SEGSIZE it to a lower value than the
+  default (say 1G) and re-running your program.  For more information
+  on GASNET_MAX_SEGSIZE, refer to:
+
+     $CHPL_HOME/third-party/gasnet/GASNet-*/README
+
 
 ---------------
 NCCS user notes
