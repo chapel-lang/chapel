@@ -33,6 +33,7 @@
 #include <errno.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <sched.h>
 
 #include "qthread/qthread.h"
 #include "qthread/qtimer.h"
@@ -112,29 +113,33 @@ struct chpl_task_list {
     chpl_task_list_p next;
 };
 
+pthread_t chpl_qthread_comm_pthread;
+
+chpl_qthread_tls_t chpl_qthread_comm_task_tls = { { c_sublocid_any_val,
+                                                    false },
+                                                  NULL, 0, NULL, 0 };
+
 //
 // structs chpl_qthread_private_data_t, chpl_qthread_wrapper_args_t and
-// chpl__qthread_tls_t have been moved to tasks-qthreads.h
+// chpl_qthread_tls_t have been moved to tasks-qthreads.h
 //
 
 //
-// chapel_qthreads_get_tasklocal() is in tasks-qthreads.h
-//
-
-//
-// chapel_qthreads_get_tasklocal_possibly_from_non_task() is in tasks-qthreads.h
+// chpl_qthread_get_tasklocal() is in tasks-qthreads.h
 //
 
 static syncvar_t exit_ret = SYNCVAR_STATIC_EMPTY_INITIALIZER;
-
-static volatile int havePollingTask = 0;
 
 static volatile chpl_bool canCountRunningTasks = false;
 
 void chpl_task_yield(void)
 {
     PROFILE_INCR(profile_task_yield,1);
-    qthread_yield();
+    if (qthread_shep() == NO_SHEPHERD) {
+        sched_yield();
+    } else {
+        qthread_yield();
+    }
 }
 
 // Sync variables
@@ -158,7 +163,7 @@ void chpl_sync_unlock(chpl_sync_aux_t *s)
 static inline void about_to_block(int32_t     lineno,
                                   chpl_string filename)
 {
-    chpl_qthread_tls_t * data = chapel_qthreads_get_tasklocal();
+    chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
     assert(data);
 
     data->lock_lineno   = lineno;
@@ -307,7 +312,6 @@ void chpl_task_init(void)
 {
     int32_t   numCoresPerLocale;
     int32_t   numThreadsPerLocale;
-    int32_t   numPollingTasks;
     size_t    callStackSize;
     pthread_t initer;
     char      newenv_sheps[100] = { 0 };
@@ -315,17 +319,9 @@ void chpl_task_init(void)
 
     // Set up available hardware parallelism
     numThreadsPerLocale = chpl_task_getenvNumThreadsPerLocale();
-    numPollingTasks = chpl_comm_numPollingTasks();
     numCoresPerLocale = chpl_numCoresOnThisLocale();
     if (numThreadsPerLocale == 0)
         numThreadsPerLocale = chpl_comm_getMaxThreads();
-    else if (numPollingTasks > 0) {
-        if (numCoresPerLocale > numThreadsPerLocale + numPollingTasks) {
-            numThreadsPerLocale += numPollingTasks;
-        } else {
-            numThreadsPerLocale = numCoresPerLocale;
-        }
-    }
     if (0 < numThreadsPerLocale) {
         // We are assuming the user wants to constrain the hardware
         // resources used during this run of the application.
@@ -409,7 +405,7 @@ void chpl_task_exit(void)
 static aligned_t chapel_wrapper(void *arg)
 {
     chpl_qthread_wrapper_args_t *rarg = arg;
-    chpl_qthread_tls_t * data = chapel_qthreads_get_tasklocal();
+    chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
 
     data->task_filename = rarg->task_filename;
     data->task_lineno = rarg->lineno;
@@ -469,19 +465,11 @@ int chpl_task_createCommTask(chpl_fn_p fn,
                              void     *arg)
 {
 #ifndef QTHREAD_MULTINODE
-    const chpl_qthread_wrapper_args_t wrapper_args = 
-        {fn, arg, NULL, 0, false, {c_sublocid_any_val, false}};
-
-    qthread_debug(CHAPEL_CALLS, "[%d] begin chpl_task_createCommTask()\n", chpl_localeID);
-
-    qthread_fork_copyargs(chapel_wrapper, &wrapper_args, sizeof(wrapper_args),
-                          NULL);
-    havePollingTask = 1;
-
-    qthread_debug(CHAPEL_CALLS, "[%d] end chpl_task_createCommTask()\n", chpl_localeID);
-#endif
-
+    return pthread_create(&chpl_qthread_comm_pthread,
+                          NULL, (void *(*)(void *))fn, arg);
+#else
     return 0;
+#endif
 }
 
 void chpl_task_addToTaskList(chpl_fn_int_t     fid,
@@ -588,7 +576,7 @@ void chpl_task_sleep(int secs)
  * data segment holds a chpl_bool denoting the serial state. */
 chpl_bool chpl_task_getSerial(void)
 {
-    chpl_qthread_tls_t * data = chapel_qthreads_get_tasklocal();
+    chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
 
     PROFILE_INCR(profile_task_getSerial,1);
 
@@ -597,7 +585,7 @@ chpl_bool chpl_task_getSerial(void)
 
 void chpl_task_setSerial(chpl_bool state)
 {
-    chpl_qthread_tls_t * data = chapel_qthreads_get_tasklocal();
+    chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
     data->chpl_data.serial_state = state;
 
     PROFILE_INCR(profile_task_setSerial,1);
