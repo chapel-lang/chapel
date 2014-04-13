@@ -58,13 +58,22 @@ static gasnet_seginfo_t* seginfo_table = NULL;
   } while(0)
 
 //
-// Barrier-related definitions.
+// Adapted from the above, this one is for the case where the caller
+// needs to do the fncall separately (see chpl_comm_barrier()).  Here
+// the fn is not actually called; fncall is only used to produce the
+// message.
 //
-#define BARRIER_ID_STOP_POLLING 1
-
-static void barrier_with_id(const char*, int);
-
-#define BARRIER_WITH_ID(id)  barrier_with_id(#id, BARRIER_ID_ ## id)
+#define GASNET_Safe_Retval(fncall, _retval) do {                        \
+    if (_retval != GASNET_OK) {                                         \
+      fprintf(stderr, "ERROR calling: %s\n"                             \
+              " at: %s:%i\n"                                            \
+              " error: %s (%s)\n",                                      \
+              #fncall, __FILE__, __LINE__,                              \
+              gasnet_ErrorName(_retval), gasnet_ErrorDesc(_retval));    \
+      fflush(stderr);                                                   \
+      gasnet_exit(_retval);                                             \
+    }                                                                   \
+  } while(0)
 
 //
 // This is the type of object we use to manage GASNet acknowledgements.
@@ -587,43 +596,32 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
   chpl_mem_free(done, 0, 0);
 }
 
-static void barrier_with_id(const char *msg, int id) {
+void chpl_comm_barrier(const char *msg) {
+  int id = (int) msg[0];
+  int retval;
+
   if (chpl_verbose_comm && !chpl_comm_no_debug_private)
     printf("%d: barrier for '%s'\n", chpl_nodeID, msg);
-  if (id == 0) {
-    gasnet_barrier_notify(0, GASNET_BARRIERFLAG_ANONYMOUS);
-    GASNET_Safe(gasnet_barrier_wait(0, GASNET_BARRIERFLAG_ANONYMOUS));
-  }
-  else {
-    gasnet_barrier_notify(id, 0);
-    GASNET_Safe(gasnet_barrier_wait(id, 0));
-  }
-}
 
-void chpl_comm_barrier(const char *msg) {
-  barrier_with_id(msg, 0);
+  //
+  // We don't want to just do a gasnet_barrier_wait() here, because
+  // GASNet will put us to work polling, and we already have a polling
+  // task that the tasking layer has presumably placed to best effect.
+  // We don't want to compete with that.  Also, the implementation is
+  // required to do chpl_task_yield() while waiting for the barrier to
+  // satisfy; see chpl_comm.h.  This prevents us from monopolizing the
+  // processor while waiting.
+  //
+  gasnet_barrier_notify(id, 0);
+  while ((retval = gasnet_barrier_try(id, 0)) == GASNET_ERR_NOT_READY) {
+    chpl_task_yield();
+  }
+  GASNET_Safe_Retval(gasnet_barrier_try(id, 0), retval);
 }
 
 void chpl_comm_pre_task_exit(int all) {
   if (all) {
-    //
-    // This is the barrier across locales at the end of user code.  It
-    // is called on the process for each locale.  We don't want to do a
-    // plain gasnet barrier call, because gasnet puts threads waiting at
-    // barriers to work polling, and that would result in our locale
-    // processes competing with our polling tasks.  This is especially a
-    // concern for the non-0 locales, on which the locale processes
-    // arrive here just as locale 0 goes to work on the user code.  So,
-    // we do a slow spin wait for the barrier to satisfy, for the most
-    // part not occupying the processor.  We won't do enough real work
-    // to affect things.
-    //
-    struct timespec interval = { 0, 100 * 1000 * 1000 }; // 100m ns == 0.1s
-
-    gasnet_barrier_notify(BARRIER_ID_STOP_POLLING, 0);
-    while (gasnet_barrier_try(BARRIER_ID_STOP_POLLING, 0) != GASNET_OK) {
-      (void) nanosleep(&interval, NULL);
-    }
+    chpl_comm_barrier("stop polling");
 
     //
     // Tell the polling task to halt, then wait for it to do so.
