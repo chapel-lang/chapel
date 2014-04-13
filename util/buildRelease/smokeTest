@@ -27,6 +27,7 @@ fi
 
 # Ensure nightly does not have syntax errors.
 perl -c $CHPL_HOME/util/cron/nightly
+perl -c $CHPL_HOME/util/buildRelease/gen_release
 
 # Compile chapel and make sure the hello world examples run.
 make -C $CHPL_HOME && make -C $CHPL_HOME check
