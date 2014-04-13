@@ -26,6 +26,7 @@ fi
 
 # Ensure nightly does not have syntax errors.
 perl -c $CHPL_HOME/util/cron/nightly
+perl -c $CHPL_HOME/util/buildRelease/gen_release
 
 # Source common.bash, which sets up a bunch of environment variables like
 # CHPL_DEVELOPER, CHPL_GMP, etc. that are required for nightly testing.

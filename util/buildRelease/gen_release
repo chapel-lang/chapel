@@ -1,5 +1,8 @@
 #!/usr/bin/env perl
 
+use File::Spec;
+use File::Temp qw/ tempdir /;
+
 $version = "";
 
 while (@ARGV) {
@@ -13,23 +16,18 @@ if ($version eq "") {
 }
 
 # check out a clean copy of the sources into a temporary directory
-$pid = getpgrp();
 $user = `whoami`;
 chomp($user);
-if ($basetmpdir eq "") {
-    $basetmpdir = $ENV{'TMPDIR'};
-}
-if ($basetmpdir eq "") {
-    $basetmpdir = "/tmp";
-}
-$tmpdir = "$basetmpdir/chapel-release.$user.$pid.deleteme";
+
+$basetmpdir = File::Spec->tmpdir;
+$tmpdir = tempdir("chapel-release.$user.deleteme.XXXXX", DIR => $basetmpdir, CLEANUP => 1);
+
 $reldir = "chapel$version";
 $rootdir = "$tmpdir/$reldir";
 $svnroot = $ENV{'CHPL_HOME_REPOSITORY'};
 if ($svnroot eq "") {
     $svnroot = "svn://svn.code.sf.net/p/chapel/code/trunk";
 }
-system("mkdir $tmpdir > /dev/null");
 print "Checking out the sources...\n";
 system("cd $tmpdir && svn export -q $svnroot $reldir");
 
@@ -170,6 +168,3 @@ print "$cmd\n";
 system ($cmd);
 
 print "Left result in $resultdir/$reldir.tar.gz\n";
-
-system("rm -r $tmpdir");
-
