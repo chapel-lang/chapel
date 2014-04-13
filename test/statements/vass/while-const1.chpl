@@ -66,3 +66,9 @@ iter iterdriver(intarg: int, boolarg: bool) {
       return;
   }
 }
+
+var x: bool = true;
+cobegin {
+  while x do; // need warning
+  writeln(x);
+}

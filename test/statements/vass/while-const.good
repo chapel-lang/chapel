@@ -1,7 +1,0 @@
-while-const.chpl:11: warning: A while loop with a constant condition
-while-const.chpl:14: warning: A while loop with a constant condition
-while-const.chpl:23: warning: A while loop with a constant condition
-while-const.chpl:32: In function 'procdriver':
-while-const.chpl:33: warning: A while loop with a constant condition
-while-const.chpl:35: warning: A while loop with a constant condition
-while-const.chpl:44: warning: A while loop with a constant condition
