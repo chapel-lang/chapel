@@ -75,7 +75,7 @@ diff --git a/libre2.symbols b/libre2.symbols
 diff --git a/libre2.symbols.darwin b/libre2.symbols.darwin
 --- a/libre2.symbols.darwin
 +++ b/libre2.symbols.darwin
-@@ -5,6 +5,9 @@
+@@ -5,8 +5,11 @@
  # re2::StringPiece*
  __ZN3re211StringPiece*
  __ZNK3re211StringPiece*
@@ -83,8 +83,11 @@ diff --git a/libre2.symbols.darwin b/libre2.symbols.darwin
 +__ZN3re29FilePiece*
 +__ZNK3re29FilePiece*
  # operator<<(std::ostream&, re2::StringPiece const&)
- __ZlsRNSt3__113basic_ostreamIcNS_11char_traitsIcEEEERKN3re211StringPieceE
+-__ZlsRNSt3__113basic_ostreamIcNS_11char_traitsIcEEEERKN3re211StringPieceE
++# __ZlsRNSt3__113basic_ostreamIcNS_11char_traitsIcEEEERKN3re211StringPieceE
  # re2::FilteredRE2*
+ __ZN3re211FilteredRE2*
+ __ZNK3re211FilteredRE210AllMatches*
 diff --git a/re2/nfa.cc b/re2/nfa.cc
 --- a/re2/nfa.cc
 +++ b/re2/nfa.cc
