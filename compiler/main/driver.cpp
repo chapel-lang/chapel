@@ -793,6 +793,10 @@ static void setupDependentVars(void) {
   if (developer && !userSetCppLineno) {
     printCppLineno = false;
   }
+#ifndef HAVE_LLVM
+  if (llvmCodegen)
+    USR_FATAL("This compiler was built without LLVM support");
+#endif
 }
 
 
