@@ -88,8 +88,8 @@ valgrind-specific regressions
 
 possible stack overflow? (3/30/14)
 ----------------------------------
-[Error matching program output for
-studies/sudoku/dinan/search/sudoku-reduce2] This started failing after
+[Error matching program output for studies/sudoku/dinan/search/sudoku-reduce2]
+This started failing after
 r23004, but no one's been able to reproduce it.  It looks a lot like
 stack overflow, but we can't seem to reproduce that in other
 environments either.  One suggestion is to reduce the number of tests
@@ -119,9 +119,21 @@ invalid write in length() (03/30/14, r23004, gbt)
 [Error matching program output for types/atomic/sungeun/atomic_vars]
 
 invalid read/write in dynamic linking lookup functions 
-(02/17/14 since unfuturized)
+(02/17/14 since unfuturized - stopped on 4/8/14)
 ------------------------------------------------------
 [Error matching program output for users/ferguson/ontest (compopts: 1)]
+
+RE2 re2::SparseArray<...>::has_index(int) - condjump/useof uninitialised value
+(since start of RE2 testing on 4/8/14)
+----------------------------------------------------------------
+[Error matching program output for io/tzakian/recordReader/test]
+[Error matching program output for regexp/ferguson/rechan]
+
+GMP "invalid read" in __gmpn_copyi/"0 bytes after" in __gmpz_realloc,
+both under fac_ui/__gmpz_fac_ui
+(since start of GMP testing on 4/8/14)
+---------------------------------------------------------------------
+[Error matching program output for modules/standard/gmp/ferguson/gmp_dist_array]
 
 missing "unable to create more than 0000 threads" warning
 ---------------------------------------------------------
@@ -176,6 +188,25 @@ failure due to r22900 (bradc; may let regress until strings are records)
 ------------------------------------------------------------------------
 [Error matching program output for classes/sungeun/remoteDynamicDispatch (compopts: 1)]
 [Error matching program output for multilocale/diten/needMultiLocales/remoteStringTuple]
+
+improvement in communications counts - Brad is updating the .goods (4/11/14)
+-------------------------------------------------------------------------------
+[Error matching program output for performance/ferguson/remote-array-read]
+[Error matching program output for performance/ferguson/remote-array-write]
+[Error matching program output for performance/ferguson/remote-class-read]
+[Error matching program output for performance/ferguson/remote-class-write]
+[Error matching program output for performance/ferguson/remote-record-read-1]
+[Error matching program output for performance/ferguson/remote-record-read]
+[Error matching program output for performance/ferguson/remote-record-write-1]
+[Error matching program output for performance/ferguson/remote-record-write]
+[Error matching program output for performance/ferguson/remote-tuple-read-1]
+[Error matching program output for performance/ferguson/remote-tuple-read-small-1]
+[Error matching program output for performance/ferguson/remote-tuple-read-small]
+[Error matching program output for performance/ferguson/remote-tuple-read]
+[Error matching program output for performance/ferguson/remote-tuple-write-1]
+[Error matching program output for performance/ferguson/remote-tuple-write-small-1]
+[Error matching program output for performance/ferguson/remote-tuple-write-small]
+[Error matching program output for performance/ferguson/remote-tuple-write]
 
 
 ==============================================
@@ -392,7 +423,7 @@ from being compiled, but unfortunately, the fix does not fix these
 tests.  Filed new bug (806884), which has already been resolved, but
 only for 8.3 so not sure when we will start seeing this.
 
-[Error matching compiler output for optimizations/bulkcomm/alberto/Block/1dStrideBlock]
+[Error matching compiler output for optimizations/bulkcomm/alberto/Block/1dStrideBlock] (did not regress on 4/13/14)
 [Error matching compiler output for optimizations/bulkcomm/alberto/Block/3dStrideTest]
 [Error matching compiler output for optimizations/bulkcomm/alberto/Block/ArrayAssignment]
 [Error matching compiler output for optimizations/bulkcomm/alberto/Block/perfTest (compopts: 1)]
@@ -465,7 +496,7 @@ compilation timeouts (02/23/14)
 -------------------------------
 [Error: Timed out compilation for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 1)]
 [Error: Timed out compilation for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 2)]
-[Error: Timed out compilation for sparse/parallel/sparse-iter-dom-arr-zipper]
+[Error: Timed out compilation for sparse/parallel/sparse-iter-dom-arr-zipper] (did not regress on 4/13/14)
 [Error: Timed out compilation for users/franzf/v0/chpl/main (compopts: 1)]
 [Error: Timed out compilation for users/franzf/v1/chpl/main (compopts: 1)]
 
@@ -612,7 +643,7 @@ segv (no backtrace) (2/18/14)
 [Error matching program output for exercises/RandomNumber6]
 [Error matching program output for memory/shannon/outofmemory/mallocOutOfMemory]
 
-timeouts (12/7/12)
+timeouts (12/7/12, numa 4/12/14)
 ------------------
 [Error: Timed out executing program studies/sudoku/dinan/sudoku]
 

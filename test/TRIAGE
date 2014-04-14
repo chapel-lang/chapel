@@ -112,6 +112,14 @@ front-end
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
+Valgrind timeout
+----------------
+[Error: Timed out executing program release/examples/spec/Memory_Consistency/syncSpinWait]
+4/13/14 - executed in parallel with at least 9 compiles, one of which for SSCA2
+I checked that it executes normally by itself, so I expect this to go away
+in the next valgrind run. -Vass
+
+
 XT/XC PrgEnv-cray non-deterministic compiler internal errors
 (seg fault) this shows up on
 cray-x?-cray-prgenv-cray.none.fifo.pthreads runs
@@ -249,6 +257,12 @@ nondet. segfault for linux64.gnu.gasnet.qthreads.none.flat
 [Error matching program output for multilocale/deitz/linked/test_linked3b] (12/17/13)
 [Error matching program output for release/examples/benchmarks/hpcc/stream-ep] (12/18/13)
 
+qthreads execution timeouts
+---------------------------
+[Error: Timed out executing program distributions/robust/associative/stress/many_array] (4/12/14)
+[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)] (4/12/14)
+[Error: Timed out executing program studies/sudoku/dinan/sudoku] (4/12/14)
+
 nondet. baseline compilation timeout (10/15/13)
 -----------------------------------------------
 [Error: Timed out compilation for classes/bradc/writeclass3]
@@ -287,12 +301,17 @@ undiagnosed cygwin failures
 [Error matching compiler output for release/examples/spec/Data_Parallelism/promotion] (4/11/13)
 [Error matching compiler output for release/examples/spec/Modules/init] (4/11/13)
 [Error matching program output for release/examples/programs/jacobi] (4/14/13)
+[Error running sub_test in /tmp/chapel-cron-cygwin.gnu.none.fifo.flat-bradc/chapel/test/release/examples/spec/Arrays (1)] (4/12/14)
 
 
 incorrect answer suggestive of a --no-local race : iteration terminated
 too early or too late (?)
 -----------------------------------------------------------------------
-studies/jacobi/waynew/example2 (02/26/13) (06/22/13)
+studies/jacobi/waynew/example2 (02/25/13)
+
+numerical discrepancies - same cause as for --no-local above?
+-------------------------------------------------------------
+[Error matching program output for studies/jacobi/waynew/example2] (6/22/13;3/01,3/09,4/10/14)
 
 
 intermittent valgrind error
@@ -346,7 +365,6 @@ valgrind timeouts
 [Error: Timed out compilation for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 2)]
 [Error: Timed out compilation for sparse/parallel/sparse-iter-dom-arr-zipper]
 [Error: Timed out compilation for users/franzf/v2/chpl/main (compopts: 1)]
-
 
 "that wasn't very random looking"
 ---------------------------------
