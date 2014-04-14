@@ -3126,8 +3126,7 @@ static void resolveNormalCall(CallExpr* call) {
       if (errorMsg) {
         FnSymbol* calleeFn = resolvedFn;
         INT_ASSERT(calleeFn == formal->defPoint->parentSymbol); // sanity
-        // todo: move away from strcmp
-        if (!strcmp("=", calleeFn->name)) {
+        if (calleeFn->hasFlag(FLAG_ASSIGNOP)) {
           // This assert is FYI. Perhaps can remove it if it fails.
           INT_ASSERT(callStack.n > 0 && callStack.v[callStack.n-1] == call);
           const char* recordName =
