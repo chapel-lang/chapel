@@ -384,7 +384,6 @@ function customDrawCallback(g, initial) {
     blockRedraw = false;
 }
 
-
 // Mark all the release dates on the canvas with vertical lines
 function markReleaseDates (canvas, area, g) {
     function markReleaseDate(date) {
@@ -450,6 +449,40 @@ function perfGraphInit() {
         elem.innerHTML = '<input id="graph' + i + '" type="checkbox">' + allGraphs[i].title;
         graphlist.appendChild(elem);
     }
+   
+    setCheckBoxesFromURL();
+    displaySelectedGraphs();
+}
+
+// This function parses the query string of the url and sets check boxes
+// accordingly. All check boxes are set to not checked by default but if the
+// query string contains <boxnumber>=1 then the box is set to be initially
+// checked. 
+function setCheckBoxesFromURL() {
+    var queryString = document.location.search.slice(1);
+    var hashes = queryString.split('&');
+    for(var i = 0; i < hashes.length; i++)  {
+        var hash = hashes[i].split('=');
+        if (hash[1] === '1') {
+            var checkBox = document.getElementById('graph' + hash[0]);
+            checkBox.checked = true;
+        }
+    }
+}
+
+// Update the query string of the url based on the current set of checkboxes
+// that are checked. 
+function setURLFromCheckBoxes() {
+    var baseURL = document.location.href.split('?')[0];
+    var queryString = '?';
+    for (var i = 0; i < allGraphs.length; i++) {
+        var checkBox  = document.getElementById('graph' + i);
+        if (checkBox.checked) {
+            queryString += i + '=1&'
+        }
+    }
+    queryString = queryString.slice(0, -1);
+    history.pushState(null, null, baseURL + queryString);
 }
 
 function selectAllGraphs() {
@@ -480,7 +513,6 @@ function selectSuite(suite) {
 }
 
 function displaySelectedGraphs() {
-
     // Clean up divs
     while (parent.childNodes.length > 0) {
         parent.removeChild(parent.childNodes[0]);
@@ -502,5 +534,7 @@ function displaySelectedGraphs() {
             genDygraph(allGraphs[i]);
         }
     }
+    
+    setURLFromCheckBoxes();
 }
 
