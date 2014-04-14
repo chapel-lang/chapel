@@ -118,6 +118,8 @@ class GraphStuff:
         self.gfile.write('// AUTOMATICALLY GENERATED GRAPH DESCRIPTION\n')
         self.gfile.write('document.title = "%s";\n'%(self.title))
         self.gfile.write('var pageTitle = "%s";\n'%(self.title))
+        runDate = time.strftime('%Y-%m-%d', time.localtime())
+        self.gfile.write('var runDate= "%s";\n'%(runDate))
         self.gfile.write('var allGraphs = [\n')
         self.firstGraph = True
         return 0
@@ -674,18 +676,22 @@ def main():
 
     # Copy the index.html and support css and js files
     auxdir = os.path.dirname(os.path.realpath(__file__))+'/perf'
+    copiedAllFiles = True 
     try:
         shutil.copy(auxdir+'/index.html', outdir)
     except IOError:
         sys.stderr.write('WARNING: Could not copy index.html')
+        copiedAllFiles = False
     try:
         shutil.copy(auxdir+'/perfgraph.css', outdir)
     except IOError:
         sys.stderr.write('WARNING: Could not copy perfgraph.css')
+        copiedAllFiles = False
     try:
         shutil.copy(auxdir+'/perfgraph.js', outdir)
     except IOError:
         sys.stderr.write('WARNING: Could not copy perfgraph.js')
+        copiedAllFiles = False
 
     # TODO point these to the right location
     dygraphDir = os.path.join(
@@ -696,10 +702,20 @@ def main():
         shutil.copy(os.path.join(dygraphDir, 'dygraph-combined.js'), outdir)
     except IOError:
         sys.stderr.write('WARNING: Could not copy dygraph-combined.js')
+        copiedAllFiles = False
 
     graphInfo.finish()
-
+    
     sys.stdout.write('Read %d graph files in %d suites\n'%(numGraphfiles, numSuites))
+   
+    if copiedAllFiles: 
+        with open(outdir + "/SUCCESS", 'w') as f: 
+            # do nothing, we just want to create the file so we know that no
+            # errors that we currently detect occurred and all the requires
+            # files were copied over. This is used to see if we should sync the
+            # files over to sourceforge.
+            sys.stdout.write('Created SUCCESS file\n')
+
     return 0
 
 if __name__ == '__main__':

@@ -742,7 +742,8 @@ if ($runtests == 0) {
     close(MAIL);
     
 } else {
-    my $svnPerfDir = "/data/sea/cascade/chapel/NightlyPerformance/$host";
+    my $svnPerfBaseDir =  "/data/sea/cascade/chapel/NightlyPerformance/";
+    my $svnPerfDir = "$svnPerfBase/$host";
     my $svnPerfMsgXtra = ".\nData dir: $svnPerfDir\n(Testing continues despite failure.) Error code";
     if ($performance == 1 || $compperformance == 1) {
         mysystem("cd $svnPerfDir && svn update", "svn-updating perf data before running tests" . $svnPerfMsgXtra, 0, 1, 1);
@@ -810,9 +811,12 @@ if ($runtests == 0) {
         mysystem("cd $svnPerfDir && svn add *.dat 2>&1 | grep -v '^svn: warning: .* is already under version control\$'", "svn-adding perf data files", 0, 0, 1);  # can fail easily - ignore failures
         mysystem("cd $svnPerfDir && svn commit -m \"Subject: Perf data update $host  `date '+%F %T'`  $revision\n\nDescription: <empty>\n\"", "svn-committing perf data" . $svnPerfMsgXtra, 0, 1, 1);
 
+        # sync the performance graphs over to sourceforge 
+        $rsyncCommand = "$chapeldir/util/cron/syncPerfGraphs.py $svnPerfBaseDir/ $host --logFile $logdir/syncToSourceForge.errors";
         $rsyncMessage = "syncing performance graph to sourceforge -- log file at $logdir/syncToSourceForge.errors";
-        mysystem("$chapeldir/util/cron/syncPerfGraphs.py", $rsyncMessage , 0, 1, 1);
-    }
+        mysystem($rsyncCommand, $rsyncMessage , 0, 1, 1);
+        
+   }
   
     if ($releasePerformance == 1) {
         my $svnReleasePerfDir = "$svnPerfDir/releaseOverRelease/";
@@ -860,17 +864,14 @@ if ($runtests == 0) {
             $altTitle = "Chapel Release Over Release Performance Graphs";
             $startdate = "04/10/12"; # earliest date that we generate historical data for
             $genGraphs = "$utildir/test/genGraphs";
-            $genGraphsCommand = "$genGraphs -p $tmpDatDir -o $tmpDatDir/html/ -t $chapeldir/test/ -a \"$altTitle\" -n $host  -g $chapeldir/test/GRAPHFILES -s $startdate";
+            $genGraphsCommand = "$genGraphs -p $tmpDatDir -o $svnReleasePerfDir/html/ -t $chapeldir/test/ -a \"$altTitle\" -n $host  -g $chapeldir/test/GRAPHFILES -s $startdate";
             $genGraphsMessage = "Generating release over relase performance graphs";
             mysystem($genGraphsCommand, $genGraphsMessage, 0, 1, 1);
-
-            # sync the graphs over to sourceforge. This does not use the
-            # syncPerfGraphs script. That's really just a big wrapper for rsync
-            # and we can probably replace it's usage with just calls to rsync.
-            $rsyncSfDir = "web.sourceforge.net:/home/project-web/chapel/htdocs/perf/$host/releaseOverRelease/";
-            $rsyncCommand = "rsync -avz --del -e ssh $tmpDatDir/html/ $rsyncSfDir" ;
-            $rsyncMessage = "rsync-ing release over release performance graphs to sourceforge.";
-            mysystem($rsyncCommand, $rsyncMessage, 0, 1, 1);
+            
+            # sync the perf graphs over to sourceforge 
+            $rsyncCommand = "$chapeldir/util/cron/syncPerfGraphs.py $svnPerfBaseDir $host/releaseOverRelease/ --logFile $logdir/syncReleaseToSourceForge.errors";
+            $rsyncMessage = "syncing release performance graph to sourceforge -- log file at $logdir/syncReleaseToSourceForge.errors";
+            mysystem($rsyncCommand, $rsyncMessage , 0, 1, 1);
         }
     }
 

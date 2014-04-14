@@ -1,59 +1,61 @@
 #!/usr/bin/env python
 
-# This script is intended to sync the performance graphs for the current host
-# onto sourceforge. It is separated from the nightly script for a couple of
-# reasons: The nightly script is getting pretty monolithic already, we might
-# not always want to sync data from all performance runs, and this serves as a
-# place to capture notes about how we authenticate and some SF stuff. 
+# This script is intended to sync the performance graphs for the specified host
+# to sourceforge. It is essentially a large wrapper for rsync. The reason it is
+# separated, rather than just have an rsync command in place is so that we make
+# sure the SF dest is the same, and that we can check for errors consistently
+# before syncing. 
 
 # rsync over ssh is used to transfer the files to SourceForge. The user running
 # this script needs to have configured access to web.sourceforge.net.
 
-# TODO This should also have an auxiliary function in it for syncing a new 
-# .htaccess and .passwd file that are used as part of the HTML authentication
-
-
 import os 
+import sys
 import subprocess 
-import glob 
 import shlex
 import time
-import socket
+import argparse
 
 def main():
-    sync = syncToSourceForge()
+    parser = argparse.ArgumentParser(description='Syncs chapel performance'
+        'graphs to sourceforge. Assumes user has configured access to'
+        'web.sourceforge.net. Checks for a SUCCESS file in the directory that'
+        'will be synced to ensure the graphs were successfully created.')
+    parser.add_argument('baseDir', metavar='BASEDIR', help='the base directory' 
+    ' that contains the folder HOST/html/ to be synced')
+    parser.add_argument('host', metavar='HOST', help='the host name')
+    parser.add_argument('--logFile','-l', metavar='FILE', default=sys.stdout,
+        type=argparse.FileType('w'), help='log file (default is stdout)')
+    args = parser.parse_args()
+   
+    baseDir = args.baseDir
+    host = args.host
+    logFile = args.logFile
+
+    sync = syncToSourceForge(baseDir, host, logFile)
     if sync != 0: 
         exit(sync)
 
-# Send the performance graphs for the current host to sourceforge 
-# Log report to <nightly log dir>/syncToSourceForge.errors 
+# Send the performance graphs for the host to sourceforge 
 # Returns the status of the rsync command (0 on success) 
-# or 124 if there was some non-rsync error with more details in the log file 
-# or 125 if the log file couldn't be opened for any reason
-# Use those values since they don't conflict with rsync or built in exit codes 
-def syncToSourceForge():
+# or 124 (value that doesn't conflict with rsync exit codes) if the SUCCESS
+# file wasn't found in the directory that is being synced 
+def syncToSourceForge(baseDir, host, logFile):
 
-    # try to open the log file 
-    try:
-        logDir = os.getenv('CHPL_NIGHTLY_LOGDIR') 
-        logFileName = logDir + '/syncToSourceForge.errors'
-        logFile = open(logFileName, 'w')
-        logFile.write('Log for: ' + time.strftime("%m/%d/%Y") + '\n\n')
-    except IOError:
-        return 125
+    logFile.write('SF sync log for: ' + time.strftime("%m/%d/%Y") + '\n\n')
+  
+    localPerfSrc = baseDir + '/' +host + '/html/'
     
-    # get the test perf dir and setup the rsync SRC
-    testPerfDir = os.getenv('CHPL_TEST_PERF_DIR')
-    if testPerfDir == None:
-        logFile.write('CHPL_TEST_PERF_DIR was not set\n')
-        logFile.close()
+    if not  os.path.isfile(localPerfSrc + '/SUCCESS'):
+        logFile.write('SUCCESS file did not exist in %s. Assuming genGraph was'
+          'unsuccessful. Graphs will NOT be synced.'%(localPerfSrc))
         return 124
-    localPerfSrc = testPerfDir + '/html/'
-    
+        
     # Assumes correct username and authentication for web.sourceforge.net is
     # configured for the current system.
-    sfPerfDest = 'web.sourceforge.net:/home/project-web/chapel/htdocs/perf/{host}/'.format(
-        host=socket.gethostname())
+    sfPerfDest = 'web.sourceforge.net:/home/project-web/chapel/htdocs/perf/'+host
+
+    logFile.write('Attempting to rsync %s to %s\n'%(localPerfSrc, sfPerfDest))
 
     # The rsync command that we will execute -- authenticates over ssh 
     # --del to remove any old data (graphs merged, changed names, removed etc)

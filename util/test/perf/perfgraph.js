@@ -420,7 +420,17 @@ function perfGraphInit() {
     // set the title
     var titleElem = document.getElementById('titleElem');
     titleElem.innerHTML = document.title;
+    
+    var d = new Date();
+    var todayDate = d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
 
+    // if the graphs weren't synced today let the user know
+    var dateElem= document.getElementById('dateElem');
+    if(Dygraph.dateParser(runDate) < Dygraph.dateParser(todayDate)) {
+        dateElem.innerHTML = 'Graphs Last Updated on ' + runDate; 
+        dateElem.style.color = "RED";
+    }
+    
     // generate the suite menu
     var suiteMenu = document.getElementById('suiteMenu');
     var f = document.createElement('form');
