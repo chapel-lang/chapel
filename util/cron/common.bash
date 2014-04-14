@@ -95,7 +95,7 @@ esac
 
 # Enable RE2 testing
 case "${CHPL_HOST_PLATFORM}" in
- (darwin)         log_info "Not setting CHPL_REGEXP for ${CHPL_HOST_PLATFORM}, to avoid build issues.";;
+ # enable here on all platforms
  (*)              export CHPL_REGEXP=re2;;
 esac
 
