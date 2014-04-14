@@ -65,7 +65,7 @@ void c_trial() {
   }
   endtime = now_time();
   if (!worked) {
-    printf("Error, C miscalculation!");
+    printf("Error, C miscalculation!\n");
   }
   printf("C    accessed [%d][%d] elements %d times in %f seconds\n", size, size,
          ntrials, (endtime-starttime)/(1000*1000));
