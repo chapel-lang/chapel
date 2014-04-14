@@ -4417,7 +4417,7 @@ preFold(Expr* expr) {
         call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, result));
         call->replace(new CallExpr(PRIM_TYPEOF, tmp));
       } else
-        USR_FATAL(call, "invalid query -- queried field must be a type of parameter");
+        USR_FATAL(call, "invalid query -- queried field must be a type or parameter");
     } else if (call->isPrimitive(PRIM_CAPTURE_FN)) {
       result = createFunctionAsValue(call);
       call->replace(result);
