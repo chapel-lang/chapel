@@ -743,7 +743,7 @@ if ($runtests == 0) {
     
 } else {
     my $svnPerfBaseDir =  "/data/sea/cascade/chapel/NightlyPerformance/";
-    my $svnPerfDir = "$svnPerfBase/$host";
+    my $svnPerfDir = "$svnPerfBaseDir/$host";
     my $svnPerfMsgXtra = ".\nData dir: $svnPerfDir\n(Testing continues despite failure.) Error code";
     if ($performance == 1 || $compperformance == 1) {
         mysystem("cd $svnPerfDir && svn update", "svn-updating perf data before running tests" . $svnPerfMsgXtra, 0, 1, 1);
