@@ -22,12 +22,17 @@ release are as follows:
 
 * Added support for tilera targets.
 
-* Install a patch sent by the GASNet team, to make programs using the
+* Applied a patch sent by the GASNet team, to make programs using the
   Cray-specific Aries substrate link libhugetlbfs in whole-archive mode.
   This fixed some initialization-time problems that were seen in that
   configuration.  The patch changed the configure.in file and then we
   needed to re-run the Bootstrap step.  The commit contained the result
   of all of that.
+
+* Applied a patch sent by the GASNet team, which addresses a problem
+  with memory registration for the gemini conduit when pshm is
+  disabled (which is what we do by default on Crays and most other
+  configurations).
 
 The structure of this directory is as follows:
 
