@@ -33,8 +33,9 @@ An implicit conversion occurs at each of the following program locations:
 
 \item The actual argument of a function call or an operator is converted
       to the type of the corresponding formal argument, if the formal's
-      intent is \chpl{in} or the blank intent with the semantics of
-      \chpl{in}.
+      intent is \chpl{in} or \chpl{const in} or an abstract intent
+      (\rsec{Abstract Intents}) with the semantics of
+      \chpl{in} or \chpl{const in}.
 
 \item The formal argument of a function call is converted
       to the type of the corresponding actual argument, if the formal's
