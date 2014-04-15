@@ -1527,11 +1527,13 @@ backPropagateInitsTypes(BlockStmt* stmts) {
         if (type)
           prev->exprType =
             new CallExpr(PRIM_TYPEOF, new UnresolvedSymExpr(def->sym->name));
-        if (init && type)
-          prev->init =
-            new CallExpr("chpl__readXX", new UnresolvedSymExpr(def->sym->name));
-        else if (init && !type)
-          prev->init = new UnresolvedSymExpr(def->sym->name);
+        if (init) {
+          if (type) {
+            prev->init = new CallExpr("chpl__readXX",
+                                      new UnresolvedSymExpr(def->sym->name));
+          } else
+            prev->init = new UnresolvedSymExpr(def->sym->name);
+        }
         def->init = init;
         def->exprType = type;
       }
