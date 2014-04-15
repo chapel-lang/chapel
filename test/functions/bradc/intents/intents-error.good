@@ -1,2 +1,2 @@
 intents-error.chpl:23: In function 'callblank':
-intents-error.chpl:25: error: non-lvalue actual is passed to a 'ref' formal of +=
+intents-error.chpl:25: error: illegal lvalue in assignment
