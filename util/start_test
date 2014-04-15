@@ -1157,16 +1157,17 @@ if ($compperformance) then
 
     # get the machine name 
     set compperftestname = `uname -n | sed 's@\..*@@'`
-    set compperftestname = "$compperftestname $compperformancedescription"
     
     # check for a specified main directory 
     if ($?CHPL_TEST_COMP_PERF_DIR) then
         set compperfdir = $CHPL_TEST_COMP_PERF_DIR
     else
-        set compperfdir = $CHPL_HOME/test/compperfdat
+        set compperfdir = "$CHPL_HOME/test/compperfdat/$compperftestname"
         echo \[Warning: CHPL_COMP_TEST_PERF_DIR must be set for generating compiler performance graphs, using default $compperfdir\] |& $tee -a $logfile
     endif
-    
+   
+    # add the additional compperf description to the name if there was one
+    set compperftestname = "$compperftestname $compperformancedescription"
         
     # set the location to store temporary dat files at 
     set tempDatFilesDir = $compperfdir/tempCompPerfDatFiles/
