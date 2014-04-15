@@ -90,12 +90,10 @@ proc readArray(filename) {
   var X: [1..m, 1..n] real;
 
   //
-  // Read in the array elements one by one.
-  // (Whole-array reads are also supported.)
+  // Read in the array (row-major order is used for whole-array reads
+  // like this)
   //
-  for i in 1..m do
-    for j in 1..n do
-      reader.read(X(i,j));
+  reader.read(X);
 
   // Close the file
   reader.close();
