@@ -703,6 +703,7 @@ reference cannot be captured.
 
 A variable function is specified by following the argument list with
 the \chpl{var} keyword.  A variable function must return or yield an lvalue.
+% Todo: disallow void return types for variable functions?
 
 When a variable procedure is called on the left-hand side of an
 assignment statement or in the context of a call to a formal argument
@@ -866,12 +867,25 @@ procedure defined in the Types module~(\rsec{Types_standard_module}).
 \index{return@\chpl{return}}
 \index{statements!return}
 
-The return statement can only appear in a function.  It exits that
-function, returning control to the point at which that function was
-called.  A return statement in a procedure of a non-void return type
-must include an expression, which indicates the value to be returned,
-i.e., the value that becomes the value of the invoking call expression.
-Other returns statements may not include an expression.
+The return statement can only appear in a function.  It causes control
+to exit that function, returning it to the point at which that function
+was called.
+
+A procedure can return a value by executing a return statement
+that includes an expression. If it does, that expression's value
+becomes the value of the invoking call expression.
+
+A return statement in a procedure of a non-\chpl{void} return type
+(\rsec{Return_Types}) must include an expression.
+A return statement in a procedure of a \chpl{void} return type
+or in an iterator must not include an expression.
+A return statement of a variable procedure must contain an lvalue expression.
+
+% TODO: currently our implementation does not require that a user return
+% statement be executed for a procedure of a non-void return type.
+% If execution falls through to the end, the default value of the
+% return type is returned.
+% Do we want to formalize that or to disallow that?
 
 The syntax of the return statement is given by
 \begin{syntax}
@@ -900,18 +914,20 @@ writeln(sum(1, 2, 3));
 \index{return@\chpl{return}!types}
 \index{functions!return types}
 
-A procedure can optionally return a value.  If the procedure does not
-return a value, its return type is \chpl{void}.  Specifying the return
-type in a procedure declaration is optional.
+Every procedure has a return type. The return type is either
+specified explicitly via \sntx{return-type} in the procedure
+declaration, or is inferred implicitly.
 
 \subsection{Explicit Return Types}
 \label{Explicit_Return_Types}
 \index{explicit return type}
 \index{functions!return types!explicit}
 
-If a return type is specified and is not \chpl{void}, the values that the procedure returns
-via return statements must be assignable to a variable of the return
-type.  For variable procedures~(\rsec{Variable_Functions}), the return
+If a return type is specified and is not \chpl{void},
+each return statement of the procedure must include an expression.
+For a non-variable procedure, an implicit conversion must be allowed
+between the type of each return expression and the specified return type.
+For variable procedures~(\rsec{Variable_Functions}), the return
 type must match the type returned in all of the return statements
 exactly, when checked after generic instantiation and parameter folding
 (if applicable).
@@ -922,15 +938,20 @@ exactly, when checked after generic instantiation and parameter folding
 \index{implicit return type}
 \index{functions!return types!implicit}
 
-If a return type is not specified, it will be inferred from the return
-statements.  Given the types that are returned by the different
-statements, if exactly one of those types can be a target, via
-implicit conversions, of every other type, then that is the inferred
-return type.  Otherwise, it is an error.  For variable
-procedures~(\rsec{Variable_Functions}), every return statement must
-return the same exact type and it becomes the inferred type.
-For procedures without any return statements, the return type is \chpl{void}.
+If a return type is not specified, it is inferred from the return statements.
+It is illegal for a procedure to have a return statement with an expression
+and a return statement without an expression.
+For procedures without any return statements, or when none of the
+return statements include an expression, the return type is \chpl{void}.
 
+Otherwise, the types of the expressions in all of the procedure's
+return statements are considered.
+For a variable procedure (\rsec{Variable_Functions}), they all must be
+the same exact type, which becomes the inferred return type.
+For a non-variable procedure, there must exist exactly one type
+such that an implicit conversion is allowed between every other type
+and that type, and that type becomes the inferred return type.
+If the above requirements are not satisfied, it is an error.
 
 \section{Nested Functions}
 \label{Nested_Functions}
