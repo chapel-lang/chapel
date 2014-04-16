@@ -1,0 +1,18 @@
+n
+tries
+C printf
+C puts
+C/chpl string literal
+C/chpl c_string local
+C/chpl string global
+C/chpl c_string global
+chpl non-blocking
+chpl stdout
+verify:1:n      8388608
+verify:2:tries  5
+verify:3:starting try 1
+verify:4:starting try 2
+verify:5:starting try 3
+verify:6:starting try 4
+verify:7:starting try 5
+verify:8:done tries

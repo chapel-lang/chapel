@@ -125,3 +125,4 @@ studies/jacobi/jacobi.graph
 domains/bradc/domEqualityPerf.graph
 parallel/taskCompare/lydia/loopCompare.graph
 reductions/diten/testSerialReductions.graph
+io/vass/time-write.graph
