@@ -513,7 +513,7 @@ function checkAll(val) {
 function selectSuite(suite) {
     for (var i = 0; i < allGraphs.length; i++) {
         var elem = document.getElementById('graph' + i);
-        if (allGraphs[i].suite === suite) {
+        if (allGraphs[i].suites.indexOf(suite) >= 0) {
             elem.checked = true;
         } else {
             elem.checked = false;

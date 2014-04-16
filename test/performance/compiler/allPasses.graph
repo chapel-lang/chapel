@@ -2,7 +2,7 @@ perfkeys: parse, checkParsed, readExternC, cleanup, scopeResolve, flattenClasses
 
 file: compilerPerformance.dat
 
-graphtitle: Average Compilation Time Per Pass
+graphtitle: All Average Compilation Time Per Pass
 ylabel: Time (seconds)
 # expand all 
 expand: -1 

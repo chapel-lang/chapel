@@ -163,7 +163,8 @@ class GraphStuff:
         else:
             sys.stdout.write('WARNING: No graph title found.\n')
             self.gfile.write('   "title" : "%s",\n'%(ginfo.name))
-        self.gfile.write('   "suite" : "%s",\n'%(ginfo.suite))
+        suites =  (', '.join('"' + s + '"' for s in ginfo.suites if s))
+        self.gfile.write('   "suites" : [%s],\n'%(suites))
         self.gfile.write('   "datfname" : "%s",\n'%(ginfo.datfname))
         self.gfile.write('   "ylabel" : "%s",\n'%(ginfo.ylabel))
         self.gfile.write('   "startdate" : "%s",\n'%(ginfo.startdate))
@@ -181,7 +182,7 @@ class GraphStuff:
         self.gfile.write('}')
 
 
-    def genGraphStuff(self, fname, suite):
+    def genGraphStuff(self, fname, suites):
         fullFname = self.testdir+'/'+fname
         if not os.path.exists(fullFname):
             fullFname = './'+fname
@@ -209,7 +210,7 @@ class GraphStuff:
                 # new graph
                 currgraph += 1
                 graphs.append(GraphClass(basename, firstGraphNum+currgraph,
-                    suite, self.startdate, self.enddate,
+                    suites, self.startdate, self.enddate,
                     self._reduce, self.display_bounds))
                 graphs[currgraph].perfkeys += [ s.strip() for s in rest.split(', ') ]
             elif key == 'graphkeys' :
@@ -268,7 +269,7 @@ class GraphStuff:
 # graph class
 class GraphClass:
     gid = 1
-    def __init__(self, _name, _graphNum, _suite='', _startdate=None,
+    def __init__(self, _name, _graphNum, _suites=[], _startdate=None,
                  _enddate=None, _reduce='avg', _displayrange=True, 
                  _expand=0, _sort=True):
         self.id = GraphClass.gid
@@ -276,7 +277,7 @@ class GraphClass:
         self.name = _name.strip()
         self.srcdatfname = self.name+'.dat'
         self.title = ''
-        self.suite = _suite
+        self.suites = _suites
         self.graphname = ''
         self.ylabel = ''
         self.startdate = _startdate
@@ -296,7 +297,7 @@ class GraphClass:
     def __str__(self):
         l  = 'Graph: '+str(self.name)+' (id='+str(self.id)+')\n'
         l += '\ttitle: '+self.title+'\n'
-        l += '\tsuite: '+self.suite+'\n'
+        l += '\tsuites: ['+','.join(suites)+']\n'
         l += '\tgraphname: '+self.graphname+'\n'
         l += '\tylabel: '+self.ylabel+'\n'
         if self.startdate != None:
@@ -652,18 +653,24 @@ def main():
     numSuites = 0
     numGraphfiles = 0
     graphList = list()
-    # Generate graphs
+    # determine the suite(s) for each graph 
     for line in lines:
         l = line.strip()
         if l != '':
             if l[0] != '#':
-                if graphList.count(l) == 0:
-                    graphList.append(l)
-                try:
-                    graphInfo.genGraphStuff(l, currSuite)
-                except (ValueError, IOError, OSError):
-                    return -1
-                numGraphfiles += 1
+                # if a graph has already been seen, just append to the list of
+                # suites it belongs to, else add it add it to the graphList
+                graphnames = [x[0] for x in graphList]
+                if graphnames.count(l):
+                    graphList[graphnames.index(l)][1].append(currSuite)
+                    # the suites at the top of our list our more often 'meta'
+                    # suites that contains graphs from various suites. To keep
+                    # the graphs that are logically related next to each other
+                    # we push this graph to the end of the list 
+                    tempGraph = graphList.pop(graphnames.index(l))
+                    graphList.append(tempGraph)
+                else: 
+                    graphList.append((l, [currSuite]))
             else:
                 # parse for suite name
                 ls = l[1:].split(':')
@@ -673,6 +680,15 @@ def main():
                     numSuites += 1
                     if verbose:
                         sys.stdout.write('suite: %s\n'%(currSuite))
+  
+    # generate the graphs 
+    for graph in graphList: 
+        try:
+            graphInfo.genGraphStuff(graph[0], graph[1])
+            numGraphfiles += 1
+        except (ValueError, IOError, OSError):
+            return -1
+
 
     # Copy the index.html and support css and js files
     auxdir = os.path.dirname(os.path.realpath(__file__))+'/perf'
