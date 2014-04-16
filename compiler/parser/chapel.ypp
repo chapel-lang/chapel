@@ -802,7 +802,7 @@ tuple_var_decl_stmt_inner_ls:
 
 opt_init_expr:
                 { $$ = NULL; }
-| TASSIGN TNOINIT { $$ = new UnresolvedSymExpr("noinit"); }
+| TASSIGN TNOINIT { $$ = new SymExpr(gNoInit); }
 | TASSIGN expr  { $$ = $2; }
 ;
 

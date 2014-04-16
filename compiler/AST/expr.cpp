@@ -116,6 +116,9 @@ Type* Expr::typeInfo(void) {
   return NULL;
 }
 
+bool Expr::isNoInitExpr(void) {
+  return false;
+}
 
 static void
 callReplaceChild(Expr* expr, Expr* new_ast) {
@@ -245,6 +248,10 @@ SymExpr::SymExpr(Symbol* init_var) :
   gSymExprs.add(this);
 }
 
+bool
+SymExpr::isNoInitExpr(void) {
+  return var == gNoInit;
+}
 
 void 
 SymExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
@@ -386,14 +393,7 @@ DefExpr::DefExpr(Symbol* initSym, BaseAST* initInit, BaseAST* initExprType) :
     sym->defPoint = this;
 
   if (Expr* a = toExpr(initInit)) {
-    if (UnresolvedSymExpr* b = toUnresolvedSymExpr(a)) {
-      if (!strcmp(b->unresolved, "noinit"))
-        sym->addFlag(FLAG_NO_INIT);
-      else
-        init = a;
-    } else {
-      init = a;
-    }
+    init = a;
   } else if (Symbol* a = toSymbol(initInit))
     init = new SymExpr(a);
   else if (initInit)

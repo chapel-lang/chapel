@@ -39,6 +39,8 @@ class Expr : public BaseAST {
   virtual bool inTree();
   virtual Type* typeInfo(void);
 
+  virtual bool isNoInitExpr(void);
+
   virtual void prettyPrint(std::ostream *o);
 
   Expr* getStmtExpr();
@@ -78,6 +80,7 @@ class SymExpr : public Expr {
   void replaceChild(Expr* old_ast, Expr* new_ast);
   void verify(); 
   Type* typeInfo(void);
+  bool isNoInitExpr(void);
   GenRet codegen();
   void prettyPrint(std::ostream *o);
 };

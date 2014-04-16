@@ -382,6 +382,7 @@ extern Symbol *gMethodToken;
 extern Symbol *gTypeDefaultToken;
 extern Symbol *gLeaderTag, *gFollowerTag;
 extern Symbol *gModuleToken;
+extern Symbol *gNoInit;
 extern Symbol *gVoid;
 extern Symbol *gStringC;
 extern Symbol *gFile;

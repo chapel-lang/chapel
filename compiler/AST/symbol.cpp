@@ -39,6 +39,7 @@ Symbol *gMethodToken = NULL;
 Symbol *gTypeDefaultToken = NULL;
 Symbol *gLeaderTag = NULL, *gFollowerTag = NULL;
 Symbol *gModuleToken = NULL;
+Symbol *gNoInit = NULL;
 Symbol *gVoid = NULL;
 Symbol *gFile = NULL;
 Symbol *gStringC = NULL;

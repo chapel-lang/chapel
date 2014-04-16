@@ -803,11 +803,13 @@ fix_def_expr(VarSymbol* var) {
     // the initialization expression if it exists
     //
     VarSymbol* typeTemp = newTemp("type_tmp");
-    if (!var->hasFlag(FLAG_NO_INIT))
+    bool isNoinit = init && init->isNoInitExpr();
+    if (!isNoinit)
       stmt->insertBefore(new DefExpr(typeTemp));
 
     CallExpr* initCall;
-    if (var->hasFlag(FLAG_NO_INIT)) {
+    if (isNoinit) {
+      var->defPoint->init->remove();
       initCall = new CallExpr(PRIM_MOVE, var,
                    new CallExpr(PRIM_NO_INIT, type->remove()));
     } else {
@@ -815,22 +817,22 @@ fix_def_expr(VarSymbol* var) {
                    new CallExpr(PRIM_INIT, type->remove()));
     }
     stmt->insertBefore(initCall);
-    if (!var->hasFlag(FLAG_NO_INIT)) {
-      if (init) {
+    if (init) {
+      if (!isNoinit) {
         stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
         stmt->insertAfter(new CallExpr(PRIM_MOVE, typeTemp,
                             new CallExpr("=", typeTemp, init->remove())));
-      } else {
-        if (constTemp->hasFlag(FLAG_TYPE_VARIABLE))
-          stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, new CallExpr(PRIM_TYPEOF, typeTemp)));
-        else {
-          CallExpr* moveToConst = new CallExpr(PRIM_MOVE, constTemp, typeTemp);
-          Expr* newExpr = moveToConst;
-          if (var->hasFlag(FLAG_EXTERN)) {
-            newExpr = new BlockStmt(moveToConst, BLOCK_TYPE);
-          }
-          stmt->insertAfter(newExpr);
+      }
+    } else {
+      if (constTemp->hasFlag(FLAG_TYPE_VARIABLE))
+        stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, new CallExpr(PRIM_TYPEOF, typeTemp)));
+      else {
+        CallExpr* moveToConst = new CallExpr(PRIM_MOVE, constTemp, typeTemp);
+        Expr* newExpr = moveToConst;
+        if (var->hasFlag(FLAG_EXTERN)) {
+          newExpr = new BlockStmt(moveToConst, BLOCK_TYPE);
         }
+        stmt->insertAfter(newExpr);
       }
     }
 

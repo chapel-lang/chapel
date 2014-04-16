@@ -1181,10 +1181,14 @@ void initPrimitiveTypes(void) {
   dtNil = createInternalType ("_nilType", "_nilType");
   CREATE_DEFAULT_SYMBOL (dtNil, gNil, "nil");
 
+  dtVoid = createInternalType ("void", "void");
+
+  // This type should not be visible past normalize.
+  CREATE_DEFAULT_SYMBOL (dtVoid, gNoInit, "_gnoinit");
+
   dtUnknown = createInternalType ("_unknown", "_unknown");
   CREATE_DEFAULT_SYMBOL (dtUnknown, gUnknown, "_gunknown");
 
-  dtVoid = createInternalType ("void", "void");
   CREATE_DEFAULT_SYMBOL (dtVoid, gVoid, "_void");
 
   dtBool = createPrimitiveType ("bool", "chpl_bool");

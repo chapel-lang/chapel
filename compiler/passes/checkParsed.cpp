@@ -23,7 +23,8 @@ checkParsed(void) {
     if (toVarSymbol(def->sym))
       // The test for FLAG_TEMP allows compiler-generated (temporary) variables
       // to be declared without an explicit type or initializer expression.
-      if (!def->init && !def->exprType && !def->sym->hasFlag(FLAG_TEMP))
+      if ((!def->init || def->init->isNoInitExpr())
+          && !def->exprType && !def->sym->hasFlag(FLAG_TEMP))
         if (isBlockStmt(def->parentExpr) && !isArgSymbol(def->parentSymbol))
           if (def->parentExpr != rootModule->block)
             if (!def->sym->hasFlag(FLAG_INDEX_VAR))
@@ -67,7 +68,7 @@ check_parsed_vars(VarSymbol* var) {
         (toFnSymbol(var->defPoint->parentSymbol) ||
          toModuleSymbol(var->defPoint->parentSymbol)))
       USR_FATAL_CONT(var, "Top-level params must be initialized.");
-  if (var->hasFlag(FLAG_NO_INIT)) {
+  if (var->defPoint->init && var->defPoint->init->isNoInitExpr()) {
     if (var->hasFlag(FLAG_CONST))
       USR_FATAL_CONT(var, "const variables specified with noinit must be explicitly initialized.");
   }

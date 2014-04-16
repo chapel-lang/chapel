@@ -1528,7 +1528,9 @@ backPropagateInitsTypes(BlockStmt* stmts) {
           prev->exprType =
             new CallExpr(PRIM_TYPEOF, new UnresolvedSymExpr(def->sym->name));
         if (init) {
-          if (type) {
+          if (init->isNoInitExpr()) {
+            prev->init = init->copy();
+          } else if (type) {
             prev->init = new CallExpr("chpl__readXX",
                                       new UnresolvedSymExpr(def->sym->name));
           } else
