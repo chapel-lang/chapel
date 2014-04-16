@@ -350,15 +350,6 @@ module ChapelArray {
   // Support for domain expressions, e.g., {1..3, 1..3}
   //
 
-  //
-  // This particular overload should be removed right after the next
-  // release.
-  //
-  proc chpl__buildDomainExpr(x: domain) {
-    compilerError("In future releases, '{<domain-expr>}' will be interpreted as an associative domain of domain values.  If you intended it simply to mean <domain-expr> (the historical interpretation), simply omit the curly brackets.");
-    return x;
-  }
-
   proc chpl__buildDomainExpr(ranges: range(?) ...?rank) {
     for param i in 2..rank do
       if ranges(1).idxType != ranges(i).idxType then
