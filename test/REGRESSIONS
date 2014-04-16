@@ -61,7 +61,7 @@ this should get better with better string memory management
 Both of these pass with gcc 4.8 but fail with 4.3
 -------------------------------------------------
 [Error matching program output for modules/standard/math/infinity]
-[Error matching proram output for studies/dijkstra/driverEdgeBtw (compopts: 1)]
+[Error matching program output for studies/dijkstra/driverEdgeBtw (compopts: 1)]
 
 
 ================================
@@ -100,6 +100,7 @@ overlapping memcpy (root cause should be eliminated)
 [Error matching program output for io/bradc/readWholeArr]
 [Error matching program output for io/ferguson/readThis/readarr]
 [Error matching program output for io/ferguson/writebinaryarray]
+[Error matching program output for release/examples/primers/fileIO]
 [Error matching program output for studies/parboil/SAD/sadSerial]
 [Error matching program output for studies/parboil/histo/histoSerial]
 [Error matching program output for studies/parboil/stencil/stencil3D]
@@ -145,8 +146,7 @@ so the warning does not apply and is not raised, and .good is not matched.
 
 compilation timeouts
 --------------------
-[Error: Timed out compilation for distributions/dm/t5a]
-[Error: Timed out compilation for functions/iterators/vass/yield-arrays-var-nonvar] (08/19/13, 2/4/14)
+[Error: Timed out compilation for functions/iterators/vass/yield-arrays-var-nonvar] (08/19/13, 2/4/14, 4/16/14)
 
 execution timeouts (probably since committed or at least 08/2012)
 -----------------------------------------------------------------
@@ -189,30 +189,12 @@ failure due to r22900 (bradc; may let regress until strings are records)
 [Error matching program output for classes/sungeun/remoteDynamicDispatch (compopts: 1)]
 [Error matching program output for multilocale/diten/needMultiLocales/remoteStringTuple]
 
-improvement in communications counts - Brad is updating the .goods (4/11/14)
--------------------------------------------------------------------------------
-[Error matching program output for performance/ferguson/remote-array-read]
-[Error matching program output for performance/ferguson/remote-array-write]
-[Error matching program output for performance/ferguson/remote-class-read]
-[Error matching program output for performance/ferguson/remote-class-write]
-[Error matching program output for performance/ferguson/remote-record-read-1]
-[Error matching program output for performance/ferguson/remote-record-read]
-[Error matching program output for performance/ferguson/remote-record-write-1]
-[Error matching program output for performance/ferguson/remote-record-write]
-[Error matching program output for performance/ferguson/remote-tuple-read-1]
-[Error matching program output for performance/ferguson/remote-tuple-read-small-1]
-[Error matching program output for performance/ferguson/remote-tuple-read-small]
-[Error matching program output for performance/ferguson/remote-tuple-read]
-[Error matching program output for performance/ferguson/remote-tuple-write-1]
-[Error matching program output for performance/ferguson/remote-tuple-write-small-1]
-[Error matching program output for performance/ferguson/remote-tuple-write-small]
-[Error matching program output for performance/ferguson/remote-tuple-write]
-
 
 ==============================================
 gasnet-fast regressions (other than the above)
 (Reviewed for accuracy 04/01/14)
 ==============================================
+[Error matching .bad file for users/ferguson/extern_string_test (compopts: 1)]
 
 unable to start polling thread (???)
 ------------------------------------

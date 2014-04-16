@@ -112,14 +112,6 @@ front-end
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
-Valgrind timeout
-----------------
-[Error: Timed out executing program release/examples/spec/Memory_Consistency/syncSpinWait]
-4/13/14 - executed in parallel with at least 9 compiles, one of which for SSCA2
-I checked that it executes normally by itself, so I expect this to go away
-in the next valgrind run. -Vass
-
-
 XT/XC PrgEnv-cray non-deterministic compiler internal errors
 (seg fault) this shows up on
 cray-x?-cray-prgenv-cray.none.fifo.pthreads runs
@@ -336,7 +328,7 @@ The type of Bar.super is at least partially corrupt at that point.
 
 valgrind timeouts
 -----------------
-* Timed out on 2/3/14, probably due to over-subscribing the test machine:
+* Timed out on (2/3/14, 2/14/14) probably due to over-subscribing the test machine:
 [Error: Timed out executing program studies/amr/diffusion/level/Level_DiffusionBE_driver (compopts: 1)]
 * The following timed out on chap09 on 10/26-10/30/13, following an OS upgrade:
 [Error: Timed out compilation for functions/iterators/vass/direct-void-iterator-error]
@@ -412,6 +404,7 @@ intel compilation timeouts
 [Error: Timed out compilation for studies/lsms/shemmy/lsms-parallel-n2] (4/5/14)
 [Error: Timed out compilation for studies/lsms/shemmy/lsms-parallel-n4] (4/5/14)
 [Error: Timed out compilation for studies/lsms/shemmy/lsms] (4/5/14)
+[Error: Timed out compilation for distributions/robust/arithmetic/trivial/test_writeln] (4/14/14)
 
 
 occasional segfault on reports tests for prgenv-pgi
