@@ -5,9 +5,9 @@
 
 pragma "no use ChapelStandard"
 module ChapelSyncvar {
-  proc chpl__readXX(x: sync) return x.readXX();
-  proc chpl__readXX(x: single) return x.readXX();
-  proc chpl__readXX(x) return x;
+  inline proc chpl__readXX(x: sync) return x.readXX();
+  inline proc chpl__readXX(x: single) return x.readXX();
+  inline proc chpl__readXX(x) return x;
 
   pragma "sync"
     pragma "no object" // Optimize out the object base pointer.
