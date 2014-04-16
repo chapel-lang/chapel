@@ -454,36 +454,18 @@ user-defined manner.
 \label{Record_Assignment}
 \index{records!assignment}
 
-In record assignment, each field of the record on the left-hand side
-of the assignment is overwritten with the value in the like-named field of the record
-on the right-hand side as if by assignment.
+A variable of record type may be updated by assignment.  The compiler provides
+a default assignment operator for each record type \chpl{R} having the signature
+\begin{example}
+\begin{chapel}
+proc =(ref lhs:R, rhs:R) : void ;
+\end{chapel}
+\end{example}
+\noindent
+In it, the value of each field of the record on the right-hand side is assigned
+to the corresponding field of the record on the left-hand side.
 
-%REVIEW: vass: I suggest removing the following comment as not pertaining to the spec.
-%REVIEW: hilde
-%Deviation from the C requirement of layout-compatibility means that the memcpy
-%optimization is surrendered in most cases.  However, in the specific case that
-%the RHS is of a type derived from the LHS type, the records *will* be layout
-%compatible and the optimization can be applied.  It is also fairly simple for
-%the compiler to determine whether two records are layout-compatible, even if
-%there is no inheritance relationship between them.
-
-Assignment from record to a variable of class type is not permitted.
-
-\begin{rationale}
-If such an assignment were permitted, it would be reasonable to restrict the RHS
-of the assignment to types derived from the type of the LHS.  Since inheriting a
-record type from a class type is disallowed, this kind of assignment should be
-disallowed as well.
-
-That's the abbreviated version.  The extended rationale is that implementing
-this kind of assignment would require carrying the type of the record as a
-run-time type within the class variable.  That further implies that invocation
-of a method associated with that class would be dispatched dynamically.  Either
-the class variable needs to have an auxiliary field that points to a virtual
-function table associated with the record type, or the record itself must now
-accommodate a virtual function table.  In any case, this runs somewhat counter
-to the notion that record types are purely static.
-\end{rationale}
+The compiler-provided assignment operator may be overridden.
 
 The following example demonstrates record assignment.
 \begin{chapelexample}{assignment.chpl}
@@ -519,58 +501,6 @@ The next clause demonstrates that \chpl{A} and \chpl{C} are distinct entities,
 rather than two references to the same object.  Assigning \chpl{3.14}
 to \chpl{C.x} does not affect the \chpl{x} field in \chpl{A}.
 \end{chapelexample}
-
-\subsection{Assigning Objects to Records}
-\label{Assigning_Objects_to_Records}
-\index{records!assignment!objects}
-
-\begin{future}
-We intend to support assignment of objects to records, with the following specification.
-
-An object (class instance) can be assigned to a record.  The same rules apply as
-those that govern the assignment of one record to another.
-%REVIEW: vass: recommend removing the following, because it
-% introduces different rules rather than summarizing the same rules.
-Namely, the type on
-the right-hand side must initially contain all of the fields --- in the same
-order and of compatible types --- as the record on the left-hand side.
-
-The assignment is performed element-by-element between the right-hand expression
-and the left-hand expression until all elements in the left-hand expression have
-been overwritten.  The types are compatible if a element-wise assignment is
-legal for each pair of elements.
-
-A corresponding implicit conversion will be defined as well.
-
-% \begin{chapelexample}{objectAssignment.chpl}
-% \begin{chapel}
-% record R {
-%   var i: int;
-%   var x: real;
-% }
-% class C : R {
-%   var u: uint;
-% }
-% 
-% var c = new C(-3, 4.0, 5);
-% var r: R;
-% r = c;
-% writeln("r.i = ", r.i, ", r.x = ", r.x);
-% \end{chapel}
-% \begin{chapeloutput}
-% r.i = -3, r.x = 4.0
-% \end{chapeloutput}
-% \begin{chapelfuture}
-% feature request: Allow classes to inherit from records.
-% \end{chapelfuture}
-% \end{chapelexample}
-
-% Since C is derived from R, its initial fields are in the same order and of the
-% same type as in R.  Therefore, assignment from an instance of class \chpl{C} to
-% a record of type \chpl{R} is legal.
-% The first two fields are copied out of \chpl{c} and into \chpl{r}.  The
-% remaining field in the object referenced by \chpl{c} is ignored.
-\end{future}
 
 %REVIEW: vass: need to define "reference assignment"
 % and ideally remove the reference to C++.

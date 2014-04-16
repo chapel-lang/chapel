@@ -1,4 +1,0 @@
-opequals2.chpl:3: error: type mismatch in assignment from complex(128) to imag(64)
-opequals2.chpl:8: error: type mismatch in assignment from complex(128) to imag(64)
-opequals2.chpl:12: error: type mismatch in assignment from real(64) to imag(64)
-opequals2.chpl:16: error: type mismatch in assignment from real(64) to imag(64)

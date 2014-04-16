@@ -158,6 +158,8 @@ checkResolved(void) {
         !fn->hasFlag(FLAG_ITERATOR_FN) &&
         fn->retType->defaultInitializer->defPoint->parentSymbol == fn)
       USR_FATAL_CONT(fn, "functions cannot return nested iterators or loop expressions");
+    if (fn->hasFlag(FLAG_ASSIGNOP) && fn->retType != dtVoid)
+      USR_FATAL(fn, "The return value of an assignment operator must be 'void'.");
   }
 
   forv_Vec(TypeSymbol, type, gTypeSymbols) {

@@ -1247,22 +1247,27 @@ void initPrimitiveTypes(void) {
   dtString = createPrimitiveType( "string", "chpl_string");
   dtString->defaultValue = new_StringSymbol("");
   dtStringC = createPrimitiveType( "c_string", "c_string" );
+  dtStringC->symbol->addFlag(FLAG_EXTERN);
   CREATE_DEFAULT_SYMBOL(dtStringC, gStringC, "chpl_emptyCstring");
 
   dtSymbol = createPrimitiveType( "symbol", "_symbol"); 
 
   dtFile = createPrimitiveType ("_file", "_cfile");
+  dtFile->symbol->addFlag(FLAG_EXTERN);
   CREATE_DEFAULT_SYMBOL(dtFile, gFile, "NULL");
   // In codegen, this prevents the "&NULL" absurdity.
   gFile->addFlag(FLAG_EXTERN);
 
   dtOpaque = createPrimitiveType("opaque", "chpl_opaque");
+  // Treat this as an extern to get the auto-genned assignment function.
+  dtOpaque->symbol->addFlag(FLAG_EXTERN);
   CREATE_DEFAULT_SYMBOL(dtOpaque, gOpaque, "_nullOpaque");
   gOpaque->cname = "NULL";
   // In codegen, this prevents the "&NULL" absurdity.
   gOpaque->addFlag(FLAG_EXTERN);
 
   dtTaskID = createPrimitiveType("chpl_taskID_t", "chpl_taskID_t");
+  dtTaskID->symbol->addFlag(FLAG_EXTERN);
   CREATE_DEFAULT_SYMBOL(dtTaskID, gTaskID, "chpl_nullTaskID");
 
   dtSyncVarAuxFields = createPrimitiveType( "_sync_aux_t", "chpl_sync_aux_t");
@@ -1273,6 +1278,7 @@ void initPrimitiveTypes(void) {
   gSingleVarAuxFields->cname = "NULL";
 
   dtTaskList = createPrimitiveType( "_task_list", "chpl_task_list_p");
+  dtTaskList->symbol->addFlag(FLAG_EXTERN);
   CREATE_DEFAULT_SYMBOL (dtTaskList, gTaskList, "_nullTaskList");
   gTaskList->cname = "NULL";
 

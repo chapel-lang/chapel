@@ -1581,7 +1581,11 @@ GenRet codegenValuePtr(GenRet r)
 {
   GenRet ret = r;
 
-  if( ret.isLVPtr == GEN_PTR ) return ret;
+  // In codegen, 'nil' has to be treated like literal value.  Specifically,
+  // in remote puts, it has to be copied into a temporary first, and the address
+  // of the temporary used as the local buffer address in chpl_gen_comm_put().
+  if( ret.isLVPtr == GEN_PTR && r.chplType != dtNil)
+    return ret;
 
   if( r.chplType ) {
     bool isStarTuple = r.chplType->symbol->hasFlag(FLAG_STAR_TUPLE);

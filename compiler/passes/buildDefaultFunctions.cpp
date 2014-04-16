@@ -14,6 +14,7 @@ static void build_getter(AggregateType* ct, Symbol* field);
 static void build_union_assignment_function(AggregateType* ct);
 static void build_enum_assignment_function(EnumType* et);
 static void build_record_assignment_function(AggregateType* ct);
+static void build_extern_assignment_function(Type* type);
 static void build_record_cast_function(AggregateType* ct);
 static void build_record_copy_function(AggregateType* ct);
 static void build_record_hash_function(AggregateType* ct);
@@ -31,6 +32,8 @@ static void buildStringCastFunction(EnumType* type);
 
 static void buildDefaultDestructor(AggregateType* ct);
 
+static void buildFieldAccessorFunctions(AggregateType* at);
+
 
 void buildDefaultFunctions(void) {
   build_chpl_entry_points();
@@ -40,33 +43,22 @@ void buildDefaultFunctions(void) {
   collect_asts(rootModule, asts);
   forv_Vec(BaseAST, ast, asts) {
     if (TypeSymbol* type = toTypeSymbol(ast)) {
-      AggregateType* ct = toAggregateType(type->type);
-      if (ct) {
-        for_fields(field, ct) {
-          if (!field->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
-            if (isVarSymbol(field)) {
-              if (strcmp(field->name, "_promotionType")) {
-                build_getter(ct, field);
-              }
-            } else if (isEnumType(field->type)) {
-              build_getter(ct, field);
-            }
-          }
-        }
+      // Here we build default functions that are always generated (even when
+      // the type symbol has FLAG_NO_DEFAULT_FUNCTIONS attached).
+      if (AggregateType* ct = toAggregateType(type->type)) {
+        buildFieldAccessorFunctions(ct);
 
         if (!ct->symbol->hasFlag(FLAG_REF))
           buildDefaultDestructor(ct);
       }
+
       if (type->hasFlag(FLAG_NO_DEFAULT_FUNCTIONS))
         continue;
-      if (EnumType* et = toEnumType(type->type)) {
-        //buildDefaultReadFunction(et);
-        buildStringCastFunction(et);
 
-        build_enum_cast_function(et);
-        build_enum_assignment_function(et);
-        build_enum_enumerate_function(et);
-      } else if (ct) {
+      // Here we build default functions that respect the "no default
+      // functions" pragma.
+      if (AggregateType* ct = toAggregateType(type->type))
+      {
         buildDefaultReadWriteFunctions(ct);
       
         if (isRecord(ct)) {
@@ -81,6 +73,41 @@ void buildDefaultFunctions(void) {
         }
         if (isUnion(ct))
           build_union_assignment_function(ct);
+      }
+      else if (EnumType* et = toEnumType(type->type)) {
+        //buildDefaultReadFunction(et);
+        buildStringCastFunction(et);
+
+        build_enum_cast_function(et);
+        build_enum_assignment_function(et);
+        build_enum_enumerate_function(et);
+      }
+      else
+      {
+        // The type is a simple type.
+
+        // Other simple types are handled explicitly in the module code.
+        // But to avoid putting a catch-all case there to implement assignment
+        // for extern types that are simple (as far as we can tell), we build
+        // definitions for those assignments here.
+        if (type->hasFlag(FLAG_EXTERN))
+          build_extern_assignment_function(type->type);
+      }
+    }
+  }
+}
+
+
+static void buildFieldAccessorFunctions(AggregateType* at)
+{
+  for_fields(field, at) {
+    if (!field->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
+      if (isVarSymbol(field)) {
+        if (strcmp(field->name, "_promotionType")) {
+          build_getter(at, field);
+        }
+      } else if (isEnumType(field->type)) {
+        build_getter(at, field);
       }
     }
   }
@@ -510,6 +537,7 @@ static void build_enum_cast_function(EnumType* et) {
   fn->insertFormalAtTail(arg2);
   fn->where = new BlockStmt(new CallExpr("==", arg1, et->symbol));
   if (fNoBoundsChecks) {
+    fn->addFlag(FLAG_INLINE);
     fn->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(PRIM_CAST, et->symbol, arg2)));
   } else {
     // Generate a select statement with when clauses for each of the
@@ -585,6 +613,7 @@ static void build_enum_assignment_function(EnumType* et) {
   FnSymbol* fn = new FnSymbol("=");
   fn->addFlag(FLAG_ASSIGNOP);
   fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_INLINE);
   ArgSymbol* arg1 = new ArgSymbol(INTENT_REF, "_arg1", et);
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", et);
   fn->insertFormalAtTail(arg1);
@@ -604,6 +633,7 @@ static void build_record_assignment_function(AggregateType* ct) {
   FnSymbol* fn = new FnSymbol("=");
   fn->addFlag(FLAG_ASSIGNOP);
   fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_INLINE);
 
   ArgSymbol* arg1 = new ArgSymbol(INTENT_REF, "_arg1", ct);
   arg1->markedGeneric = true; // TODO: Check if we really want this.
@@ -611,11 +641,19 @@ static void build_record_assignment_function(AggregateType* ct) {
   bool externRecord = ct->symbol->hasFlag(FLAG_EXTERN);
   // If the LHS is extern, the RHS must be of matching type; otherwise
   // Chapel permits matches that have the same names
-  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", 
+  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2",
                                   (externRecord ? ct : dtAny));
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
-  fn->retType = dtUnknown; // TODO: Maybe we can set this to dtVoid up front.
+
+  // This is required because coercion from a subtype to a base record type
+  // inserts a cast.  Such a cast is implemented using assignment.  The
+  // resolution errors out because the return type of the cast is recursively
+  // defined.  (See classes/marybeth/test_dispatch_record.chpl)
+  if (! externRecord)
+    fn->where = new BlockStmt(new CallExpr(PRIM_IS_SUBTYPE, ct->symbol, arg2));
+
+  fn->retType = dtVoid;
 
   if (externRecord) {
     fn->insertAtTail(new CallExpr(PRIM_MOVE, arg1, arg2));
@@ -627,6 +665,7 @@ static void build_record_assignment_function(AggregateType* ct) {
       }
     }
   }
+
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
   reset_ast_loc(def, ct->symbol);
@@ -634,11 +673,42 @@ static void build_record_assignment_function(AggregateType* ct) {
 }
 
 
+static void build_extern_assignment_function(Type* type)
+{
+  if (function_exists("=", 2, type))
+    return;
+
+  FnSymbol* fn = new FnSymbol("=");
+  fn->addFlag(FLAG_ASSIGNOP);
+  fn->addFlag(FLAG_TRIVIAL_ASSIGNMENT);
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_INLINE);
+
+  ArgSymbol* arg1 = new ArgSymbol(INTENT_REF, "_arg1", type);
+  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", type);
+  fn->insertFormalAtTail(arg1);
+  fn->insertFormalAtTail(arg2);
+  fn->insertAtTail(new CallExpr(PRIM_ASSIGN, arg1, arg2));
+  DefExpr* def = new DefExpr(fn);
+  if (type->symbol->defPoint->parentSymbol == rootModule)
+    baseModule->block->body.insertAtTail(def);
+  else
+    type->symbol->defPoint->insertBefore(def);
+  reset_ast_loc(def, type->symbol);
+
+  normalize(fn);
+}
+
+
+// _cast is automatically called to perform coercions.
+// If the coercion is permissible, then the operand can be statically cast to
+// the target type.
 static void build_record_cast_function(AggregateType* ct) {
   FnSymbol* fn = new FnSymbol("_cast");
 // TODO: This flag should be enabled, so a user-defined version of the record
 //  assignment function can override the compiler-generated version.
 //  fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_INLINE);
   ArgSymbol* t = new ArgSymbol(INTENT_BLANK, "t", dtAny);
   t->addFlag(FLAG_TYPE_VARIABLE);
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "arg", dtAny);
@@ -666,6 +736,7 @@ static void build_union_assignment_function(AggregateType* ct) {
   FnSymbol* fn = new FnSymbol("=");
   fn->addFlag(FLAG_ASSIGNOP);
   fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_INLINE);
   ArgSymbol* arg1 = new ArgSymbol(INTENT_REF, "_arg1", ct);
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);
   fn->insertFormalAtTail(arg1);
@@ -792,6 +863,7 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   if ( makeReadThisAndWriteThis && ! hasWriteThis ) {
     FnSymbol* fn = new FnSymbol("writeThis");
     fn->addFlag(FLAG_COMPILER_GENERATED);
+    fn->addFlag(FLAG_INLINE);
     fn->cname = astr("_auto_", ct->symbol->name, "_write");
     fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
     fn->_this->addFlag(FLAG_ARG_THIS);
@@ -817,6 +889,7 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   if ( makeReadThisAndWriteThis && ! hasReadThis ) {
     FnSymbol* fn = new FnSymbol("readThis");
     fn->addFlag(FLAG_COMPILER_GENERATED);
+    fn->addFlag(FLAG_INLINE);
     fn->cname = astr("_auto_", ct->symbol->name, "_read");
     fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
     fn->_this->addFlag(FLAG_ARG_THIS);

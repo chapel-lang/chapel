@@ -1,0 +1,2 @@
+assignopLHSargIsRef.chpl:12: warning: The left operand of '=' and '<op>=' should have 'ref' intent.
+assignopLHSargIsRef.chpl:16: warning: The left operand of '=' and '<op>=' should have 'ref' intent.

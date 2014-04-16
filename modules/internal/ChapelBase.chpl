@@ -247,6 +247,7 @@ module ChapelBase {
   inline proc =(ref a: imag(?w), b: imag(w)) { __primitive("=", a, b); }
   pragma "trivial assignment"
   inline proc =(ref a: complex(?w), b: complex(w)) { __primitive("=", a, b); }
+
   // This implies that the *representation* of strings is shared.
   // If strings are reimplemented as classes or records, a less trivial
   // implementation for assignment will become necessary.
@@ -261,10 +262,14 @@ module ChapelBase {
   // generated", it is desirable to add that flag to this default version.
   // In that way, a user-supplied version of assignment will override this one.
   pragma "compiler generated"
-  inline proc =(ref a, b) return b;
-  // Not yet ready for prime time:
-  //  pragma "trivial assignment"
-  //  inline proc =(ref a, b) { __primitive("=", a, b); }
+    // The CG pragma is needed because this function interferes with
+    // assignments defined for sync and single class types.
+  inline proc =(ref a, b:_nilType) where isClassType(a.type) {
+    // "move" is used here because the codegen for PRIM_ASSIGN does not yet
+    // handle the assignment of nil.
+    __primitive("move", a, nil); 
+  }
+
   
   //
   // equality comparison on primitive types
@@ -743,7 +748,15 @@ module ChapelBase {
     }
   }
   
-  
+  // TODO: See if the special codegen code for handling ddata pointers can be
+  // split out as a separate move primitive.  Then, this assignment would call
+  // that ddata-specific primitive.
+  inline proc =(ref a: _ddata(?t), b: _ddata(t)) {
+    // "move" is used instead of "=", to pick up wide pointer codegen not yet
+    // ported to PRIM_ASSIGN.
+    __primitive("move", a, b);
+  }
+
   inline proc _cast(type t, x) where t:_ddata && x:_nilType {
     return __primitive("cast", t, x);
   }

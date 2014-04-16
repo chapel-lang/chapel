@@ -57,6 +57,10 @@ class c_ptr {
   }
 }
 
+inline proc =(ref a:c_ptr, b:c_ptr) { __primitive("=", a, b); }
+
+inline proc =(ref a:c_ptr, b:_nilType) { __primitive("=", a, nil); }
+
 inline proc _cast(type t, x) where t:c_ptr && x:_nilType {
   return __primitive("cast", t, x);
 }

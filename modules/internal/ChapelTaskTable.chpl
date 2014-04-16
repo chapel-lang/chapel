@@ -22,6 +22,9 @@ module ChapelTaskTable {
   */
   
   // Define a few operations over chpl_taskID_t
+  inline proc =(ref a:chpl_taskID_t, b:chpl_taskID_t) {
+    __primitive("=", a, b);
+  }
   inline proc ==(a: chpl_taskID_t, b: chpl_taskID_t)
     return __primitive("==", a, b);
   inline proc _cast(type t, x: chpl_taskID_t) where _isPrimitiveType(t)
