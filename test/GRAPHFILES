@@ -118,6 +118,10 @@ statements/lydia/forVersusWhilePerf.graph
 statements/lydia/ifVersusSelect.graph
 statements/lydia/ifVersusSelect.random.graph
 statements/lydia/ifVersusSelect.alternates.graph
+parallel/taskCompare/lydia/forBeginCompare.graph
+parallel/taskCompare/lydia/coforallCompare.graph
+parallel/taskCompare/lydia/coforallBeginCompare.graph
+parallel/taskCompare/lydia/loopCompare.graph
 # suite: Compiler performance
 performance/compiler/bradc/fft-timecomp.graph
 performance/compiler/bradc/compSampler-timecomp.graph
@@ -130,7 +134,6 @@ memleaksfull.graph
 studies/jacobi/jacobi.graph
 # suite: Misc
 users/franzf/v0/chpl/main.graph
-parallel/taskCompare/lydia/loopCompare.graph
 reductions/diten/testSerialReductions.graph
 io/vass/time-write.graph
 spectests.graph
