@@ -126,7 +126,7 @@ performance/compiler/bradc/AllCompTime.graph
 # suite: Memory tracking
 memleaks.graph
 memleaksfull.graph
-# suiteL Code size tracking
+# suite: Code size tracking
 studies/jacobi/jacobi.graph
 # suite: Misc
 users/franzf/v0/chpl/main.graph
