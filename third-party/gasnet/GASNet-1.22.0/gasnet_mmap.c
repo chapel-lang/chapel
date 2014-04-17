@@ -125,9 +125,13 @@ static void *gasneti_mmap_internal(void *segbase, uintptr_t segsize) {
   #endif
 
   t1 = gasneti_ticks_now();
+#if defined(GASNETI_USE_HUGETLBFS)
+  ptr = gasneti_huge_mmap(segbase, segsize);
+#else
   ptr = mmap(segbase, segsize, (PROT_READ|PROT_WRITE), 
       (GASNETI_MMAP_FLAGS | (segbase==NULL?GASNETI_MMAP_NOTFIXED_FLAG:GASNETI_MMAP_FIXED_FLAG)), 
       gasneti_mmapfd, 0);
+#endif
   mmap_errno = errno;
   t2 = gasneti_ticks_now();
 
