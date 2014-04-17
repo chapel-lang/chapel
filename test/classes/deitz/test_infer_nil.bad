@@ -1,3 +1,1 @@
-test_infer_nil.chpl:8: warning: C
-{x = 0}
-0
+test_infer_nil.chpl:6: error: type mismatch in assignment from C to nil

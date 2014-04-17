@@ -8,16 +8,9 @@ that in the following code:
    ...
 
 the type of 'x' should be inferred to be 'object'. At the moment, however,
-the compiler infers it from the first subsequent assignment to 'x'.
-For example:
-
-  class C{}  // C and D are unrelated via subtyping
-  class D{}
-  var x = nil;
-  compilerWarning(typeToString(x.type));  // prints "nil"
-  x = new C();
-  compilerWarning(typeToString(x.type));  // prints "C"
-  x = new D();                            // error assigning D to C
+(following r23255) the compiler infers it to be of type dtNil.  Type inference
+for the type of a variable should be modified, so an initializer of type nil
+implies that the variable is of type object.
 
 Tom narrowed the above behavior to this piece of functionResolution.cpp:
 
