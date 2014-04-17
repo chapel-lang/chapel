@@ -1,12 +1,13 @@
 use Time;
 
-config const numIterations = 1000;
-config const numTrials = 10;
+config const numIterations = 1000000;
+config const numTrials = 10000;
 config const verbose = false;
 
 var t1, t2: Timer;
 var res1, res2 = 0;
 
+extern proc c_trial(): int;
 
 t1.start();
 for i in 1..#numTrials {
@@ -35,7 +36,7 @@ t2.stop();
 if (res1 != res2) {
   writeln("These results should have matched, got ", res1, " and ", res2);
 } else {
-  writeln("Verification successful");
+  writeln("Chapel verification successful");
 }
 
 if verbose {
@@ -43,4 +44,8 @@ if verbose {
           " times in ", t1.elapsed(TimeUnits.milliseconds)/1000, " seconds");
   writeln("While loop underwent ", numIterations, " iterations ", numTrials,
           " times in ", t2.elapsed(TimeUnits.milliseconds)/1000, " seconds");
+  var res3 = c_trial();
+  if (res1 != res3) {
+    writeln("Chapel results did not match C results");
+  }
 }
