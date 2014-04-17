@@ -247,7 +247,9 @@ function setupLogToggle(g, graphInfo, logToggle) {
 
 // Setup the annotation button
 function setupAnnToggle(g, graphInfo, annToggle) {
-    annToggle.style.visibility = 'visible';
+    // Keep hidden for now until we actually have annotations. When we have
+    // annotations also change the button margin in perfgraph.css
+    // annToggle.style.visibility = 'visible';
 
     annToggle.onclick = function() {
         if (g.annotations().length === 0) {
@@ -502,7 +504,7 @@ function setURLFromCheckBoxes() {
         }
     }
     queryString = queryString.slice(0, -1);
-    history.pushState(null, null, baseURL + queryString);
+    history.replaceState(null, null, baseURL + queryString);
 }
 
 function selectAllGraphs() {
