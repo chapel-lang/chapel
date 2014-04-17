@@ -1,6 +1,9 @@
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
 #endif
+#ifndef __STDC_LIMIT_MACROS
+#define __STDC_LIMIT_MACROS
+#endif
 
 #include <sstream>
 #include <inttypes.h>
@@ -911,17 +914,17 @@ resolveFormals(FnSymbol* fn) {
 
 static bool fits_in_int_helper(int width, int64_t val) {
   switch (width) {
-  default: INT_FATAL("bad width in fits_in_int_helper");
-  case 1:
-    return (val == 0 || val == 1);
-  case 8:
-    return (val >= -128 && val <= 127);
-  case 16:
-    return (val >= -32768 && val <= 32767);
-  case 32:
-    return (val >= -2147483648ll && val <= 2147483647ll);
-  case 64:
-    return (val >= -9223372036854775807ll-1 && val <= 9223372036854775807ll);
+    default: INT_FATAL("bad width in fits_in_int_helper");
+    case 1:
+      return (val == 0 || val == 1);
+    case 8:
+      return (val >= INT8_MIN && val <= INT8_MAX);
+    case 16:
+      return (val >= INT16_MIN && val <= INT16_MAX);
+    case 32:
+      return (val >= INT32_MIN && val <= INT32_MAX);
+    case 64:
+      return (val >= INT64_MIN && val <= INT64_MAX);
   }
 }
 
@@ -961,13 +964,13 @@ static bool fits_in_uint_helper(int width, uint64_t val) {
   case 1:
     return (val <= 1);
   case 8:
-    return (val <= 255);
+    return (val <= UINT8_MAX);
   case 16:
-    return (val <= 65535);
+    return (val <= UINT16_MAX);
   case 32:
-    return (val <= 2147483647ull);
+    return (val <= UINT32_MAX);
   case 64:
-    return true;
+    return (val <= UINT64_MAX);
   }
 }
 
