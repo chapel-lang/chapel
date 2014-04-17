@@ -1,0 +1,2 @@
+out-intent-desired.chpl:12: error: unresolved call 'testClasses(C)'
+out-intent-desired.chpl:9: note: candidates are: testClasses(out i: D)

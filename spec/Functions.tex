@@ -381,7 +381,9 @@ The concrete intents are \chpl{in}, \chpl{out}, \chpl{inout},
 \index{intents!in@\chpl{in}}
 
 When \chpl{in} is specified as the intent, the actual argument is
-copied into the formal argument when the function is called.  The
+copied into the formal argument when the function is called.
+An implicit conversion occurs from the actual argument
+to the type of the formal.  The
 formal can be modified within the function, but such changes are local
 to the function and not reflected back to the call site.
 
@@ -393,8 +395,10 @@ to the function and not reflected back to the call site.
 
 When \chpl{out} is specified as the intent, the actual argument is
 ignored when the call is made, but when the function returns, the
-formal argument is copied back to the actual argument.  For this
-reason, the actual argument must be a valid lvalue.  The formal
+formal argument is copied back to the actual argument.
+An implicit conversion occurs from the type of the formal
+to the type of the actual.  The actual argument
+must be a valid lvalue.  The formal
 argument is initialized to its default value if one is supplied, or to
 its type's default value otherwise.  The formal argument can be
 modified within the function.
@@ -410,6 +414,8 @@ copied into the formal argument as with the \chpl{in} intent and then
 copied back out as with the \chpl{out} intent.  The actual argument
 must be a valid lvalue.  The formal argument can be modified within
 the function.
+The type of the actual argument must be the same
+as the type of the formal.
 
 
 \subsubsection{The Ref Intent}
@@ -421,6 +427,8 @@ When \chpl{ref} is specified as the intent, the actual argument is
 passed by reference.  Any reads of, or modifications to, the formal
 argument are performed directly on the corresponding actual argument
 at the call site.  The actual argument must be a valid lvalue.
+The type of the actual argument must be the same
+as the type of the formal.
 
 The \chpl{ref} intent differs from the \chpl{inout} intent in that
 the \chpl{inout} intent specifies to make a copies of the argument on
