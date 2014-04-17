@@ -30,6 +30,7 @@ static void checkFlagRelationships(); // Checks expected relationships between
 static void checkAutoCopyMap();
 static void checkFormalActualBaseTypesMatch();
 static void checkFormalActualTypesMatch();
+static void checkNoWrapperMoves();
 
 
 //
@@ -361,6 +362,8 @@ static void check_afterResolution()
 //    checkNoUnresolveds();
     checkFormalActualBaseTypesMatch();
     checkAutoCopyMap();
+    // This one can be removed after all wrapper moves are purged.
+    checkNoWrapperMoves();
   }
 }
 
@@ -526,4 +529,24 @@ checkFormalActualTypesMatch()
   }
 }
 
+// Checks to make sure there are no wrapper moves around assignment operator calls.
+static void
+checkNoWrapperMoves()
+{
+  forv_Vec(CallExpr, call, gCallExprs)
+  {
+    if (FnSymbol* fn = call->isResolved())
+    {
+      // We are only interested in assign ops.
+      if (! fn->hasFlag(FLAG_ASSIGNOP))
+        continue;
 
+      CallExpr* parent = toCallExpr(call->parentExpr);
+      if (! parent)
+        continue;
+
+      if (parent->isPrimitive(PRIM_MOVE))
+        INT_FATAL(parent, "Tree should not contain any wrapper moves.");
+    }
+  }
+}

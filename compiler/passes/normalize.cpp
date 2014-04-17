@@ -28,7 +28,6 @@ static void normalize_returns(FnSymbol* fn);
 static void call_constructor_for_class(CallExpr* call);
 static void applyGetterTransform(CallExpr* call);
 static void insert_call_temps(CallExpr* call);
-static void fix_user_assign(CallExpr* call);
 static void fix_def_expr(VarSymbol* var);
 static void hack_resolve_types(ArgSymbol* arg);
 static void fixup_array_formals(FnSymbol* fn);
@@ -183,7 +182,6 @@ void normalize(BaseAST* base) {
   forv_Vec(CallExpr, call, calls) {
     applyGetterTransform(call);
     insert_call_temps(call);
-    fix_user_assign(call);
   }
   forv_Vec(CallExpr, call, calls) {
     call_constructor_for_class(call);
@@ -663,17 +661,6 @@ static void insert_call_temps(CallExpr* call)
   call->replace(new SymExpr(tmp));
   stmt->insertBefore(new DefExpr(tmp));
   stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, call));
-}
-
-static void fix_user_assign(CallExpr* call) {
-  if (!call->parentExpr ||
-      call->getStmtExpr() == call->parentExpr ||
-      !call->isNamed("="))
-    return;
-  SET_LINENO(call);
-  CallExpr* move = new CallExpr(PRIM_MOVE, call->get(1)->copy());
-  call->replace(move);
-  move->insertAtTail(call);
 }
 
 //
