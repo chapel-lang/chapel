@@ -88,7 +88,7 @@ npb/cg/cg.graph
 npb/ep/ep.graph
 npb/ft/ft.graph
 npb/is/is.graph
-# suite: Array performance
+# suite: Array/Domain performance
 arrays/diten/arrayPerformance-2d.graph
 arrays/diten/arrayPerformance-1d.graph
 arrays/diten/time_iterate.graph
