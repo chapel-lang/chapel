@@ -162,6 +162,7 @@ function genDygraph(graphInfo, expandInfo) {
     // actually create the dygraph
     var g = new Dygraph(div, 'CSVfiles/'+graphInfo.datfname, graphOptions);
     g.sort = graphInfo.sort;
+    g.divs = divs; 
     setupSeriesLocking(g);
 
     // The dygraph is now setting up and rendering. Once the graph is fully
@@ -234,9 +235,6 @@ function expandGraphs(graphInfo, graph, div, ldiv) {
 
 // Setup the log button
 function setupLogToggle(g, graphInfo, logToggle) {
-    if (graphInfo.unloggable) {
-        logToggle.style.color='red';
-    }
     logToggle.style.visibility = 'visible';
 
     logToggle.onclick = function() {
@@ -370,7 +368,19 @@ function customDrawCallback(g, initial) {
         g.updateOptions({digitsAfterDecimal: newNumDigits}, true);
         g.setAnnotations(g.annotations());
     }
-
+    
+    // if a user has explicitly zoomed in on zero or negative value and they
+    // attempt to take the log the graph will not render. This is a known
+    // limitation of dygraphs. If the user has not zoomed, the graph will
+    // automatically adjust the y display range, but if they have explicitly
+    // requested a range, it will keep the same range for the log scale and
+    // will attempt to take the log of zero.  
+    if (yRange[0] <= 0 && g.isZoomed('y')) {
+        g.divs.logToggle.style.color = 'red';
+    } else {
+        g.divs.logToggle.style.color = 'black';
+    }
+    
     // if this isn't the initial draw, and all our graphs have been fully
     // created then synchronize our graphs along the x-axis
     if (!initial && numGraphsReady === gs.length) {

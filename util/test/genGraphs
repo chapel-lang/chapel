@@ -170,7 +170,6 @@ class GraphStuff:
         self.gfile.write('   "startdate" : "%s",\n'%(ginfo.startdate))
         self.gfile.write('   "enddate" : "%s",\n'%(ginfo.enddate))
         self.gfile.write('   "displayrange" : %s,\n'%(str(ginfo.displayrange).lower()))
-        self.gfile.write('   "unloggable" : %s,\n'%(str(ginfo.unloggable).lower()))
         self.gfile.write('   "expand" : %d,\n'%(ginfo.expand))
         self.gfile.write('   "sort" : %s,\n'%(str(ginfo.sort).lower()))
         self.gfile.write('   "annotations" : [')
@@ -289,7 +288,6 @@ class GraphClass:
         self.generate = list()
         self.displayrange = _displayrange
         self._reduce = _reduce
-        self.unloggable = False
         self.expand = _expand
         self.sort = _sort 
         self.annotations = []
@@ -386,14 +384,7 @@ class GraphClass:
                     fields = line.split()
                     myDate=time.strptime(fields[0].strip(),'%m/%d/%y')
                     fields[0] = myDate
-                    def parseAndCheck(graphInfo, num):
-                        val = try_parse_float(x)
-                        if val != None and not self.unloggable:
-                            if val <= 0.0:
-                                self.unloggable = True
-                        return val
-
-                    fields[1:] = [parseAndCheck(graphInfo, x) for x in fields[1:]]
+                    fields[1:] = [try_parse_float(x) for x in fields[1:]]
                     if df.lines and myDate == df.lines[-1][0][0]:
                         df.lines[-1].append(fields)
                     else:

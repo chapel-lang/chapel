@@ -39,7 +39,7 @@ div.lspacer {
     height: 20px;
     border: 1px solid grey;
     padding: 0px 5px;
-    margin-right: 10px;
+    margin: 5px 10px 0px 0px;
 }
 .blackAnnotation {
   color: black !important;
