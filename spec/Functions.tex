@@ -24,13 +24,14 @@ Direct and indirect recursion is supported.
 \index{functions!procedure}
 \index{procedure}
 \index{functions!operator}
+\index{functions!method}
 \index{operators!procedure}
 A function can be a \emph{procedure}, which completes and returns to
 the call site exactly once, returning no result, a single result, or
 multiple results aggregated in a tuple. A function can also be an
 iterator, which can generate, or \emph{yield}, multiple results (in
 sequence and/or in parallel). A function (either a procedure or an
-iterator) can be a method if it is bound to a type (often a
+iterator) can be a \emph{method} if it is bound to a type (often a
 class). An \emph{operator} in this chapter is a procedure
 with a special name, which can be invoked using infix notation,
 i.e., via a unary or binary expression.
@@ -431,10 +432,10 @@ The type of the actual argument must be the same
 as the type of the formal.
 
 The \chpl{ref} intent differs from the \chpl{inout} intent in that
-the \chpl{inout} intent specifies to make a copies of the argument on
-the way in and out of the function, while \chpl{ref} allows direct
+the \chpl{inout} intent requires copying from/to the actual argument on
+the way in/out of the function, while \chpl{ref} allows direct
 access to the actual argument through the formal argument without
-copies.  Note that concurrent modifications to the actual argument by
+copies.  Note that concurrent modifications to the \chpl{ref} actual argument by
 other tasks may be visible within the function, subject to the memory
 consistency model.
 
@@ -926,6 +927,11 @@ Every procedure has a return type. The return type is either
 specified explicitly via \sntx{return-type} in the procedure
 declaration, or is inferred implicitly.
 
+% TODO: both subsections below state that the return type
+% must match the type of each returned expression for variable procedures
+% and that an implicit conversion occurs for non-variable procedures.
+% Factor that out up here.
+
 \subsection{Explicit Return Types}
 \label{Explicit_Return_Types}
 \index{explicit return type}
@@ -933,8 +939,8 @@ declaration, or is inferred implicitly.
 
 If a return type is specified and is not \chpl{void},
 each return statement of the procedure must include an expression.
-For a non-variable procedure, an implicit conversion must be allowed
-between the type of each return expression and the specified return type.
+For a non-variable procedure, an implicit conversion occurs
+from each return expression to the specified return type.
 For variable procedures~(\rsec{Variable_Functions}), the return
 type must match the type returned in all of the return statements
 exactly, when checked after generic instantiation and parameter folding

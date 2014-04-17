@@ -41,7 +41,7 @@ An implicit conversion occurs at each of the following program locations:
       to the type of the corresponding actual argument, if the formal's
       intent is \chpl{out}.
 
-\item The return or yield expression within a function is converted
+\item The return or yield expression within a non-variable function is converted
       to the return type of that function.
 
 \item The condition of a conditional expression,
@@ -69,6 +69,8 @@ as defined in the referenced subsections:
 In addition,
 an implicit conversion from a type to the same type is allowed for any type.
 Such conversion does not change the value of the expression.
+
+% TODO: If an implicit conversion is not allowed, it is an error.
 
 Implicit conversion is not transitive. That is, if an implicit conversion
 is allowed from type \chpl{T1} to \chpl{T2} and from \chpl{T2} to \chpl{T3},
