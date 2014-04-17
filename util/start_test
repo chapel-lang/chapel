@@ -700,6 +700,7 @@ set recurse = 1
 set tee = "tee"
 set numlocales = 0
 set comm = `$CHPL_HOME/util/chplenv/comm`
+set locMod = `$CHPL_HOME/util/chplenv/localeModel`
 set suppressions = ""
 set optionerr = 0
 set chplHomeWarn = 1
@@ -1106,6 +1107,9 @@ setenv LAUNCHCMD "$launchcmd"
 echo \[comm: \"$comm\"\] |& $tee -a $logfile
 setenv CHPL_COMM $comm
 setenv CHPL_GASNET_SEGMENT `$CHPL_HOME/util/chplenv/commSegment`
+
+echo \[localeModel: \"$locMod\"\] |& $tee -a $logfile
+setenv CHPL_LOCALE_MODEL $locMod
 
 if ($comm != "none" && $numlocales == 0) then
     set numlocales = "1"

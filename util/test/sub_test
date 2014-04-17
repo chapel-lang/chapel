@@ -379,6 +379,11 @@ chplcomm=os.getenv('CHPL_COMM','none').strip()
 chplcommstr='.comm-'+chplcomm
 # sys.stdout.write('chplcomm=%s\n'%(chplcomm))
 
+# CHPL_LOCALE_MODEL
+chpllm=os.getenv('CHPL_LOCALE_MODEL','flat').strip()
+chpllmstr='.lm-'+chpllm
+#sys.stdout.write('lm=%s\n'%(chpllm))
+
 #
 # Test options for all tests in this directory
 #
@@ -1010,9 +1015,15 @@ for testname in testsrc:
                 nlString = '--no-local'
                 if globalCompopts.count(nlString) > 0:
                     checkfile=execname+'.no-local.good'
+            # Else use comm and locale model specific file.
+            if not os.path.isfile(checkfile):
+                checkfile=execname+chplcommstr+chpllmstr+'.good'
             # Else use comm-specific file.
             if not os.path.isfile(checkfile):
                 checkfile=execname+chplcommstr+'.good'
+            # Else use locale model specific file.
+            if not os.path.isfile(checkfile):
+                checkfile=execname+chpllmstr+'.good'
             # Else use platform-specific file.
             if not os.path.isfile(checkfile):
                 checkfile=execname+'.'+platform+'.good'
@@ -1341,9 +1352,15 @@ for testname in testsrc:
                                 nlString = '--no-local'
                                 if globalCompopts.count(nlString) > 0:
                                     execcheckfile=execname+'.no-local'+ceident+'.good'
+                            # Else use comm and locale model specific .good file.
+                            if not os.path.isfile(execcheckfile):
+                                execcheckfile=execname+chplcommstr+chpllmstr+ceident+'.good'
                             # Else use the comm-specific .good file.
                             if not os.path.isfile(execcheckfile):
                                 execcheckfile=execname+chplcommstr+ceident+'.good'
+                            # Else use locale model specific .good file.
+                            if not os.path.isfile(execcheckfile):
+                                execcheckfile=execname+chpllmstr+ceident+'.good'
                             # Else use the platform-specific .good file.
                             if not os.path.isfile(execcheckfile):
                                 execcheckfile=execname+'.'+platform+ceident+'.good'
