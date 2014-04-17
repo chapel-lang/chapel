@@ -26,6 +26,10 @@ linux64 regressions (in addition to the above)
 (Reviewed for accuracy 04/02/14)
 ==============================================
 
+[Error matching .bad file for classes/deitz/test_infer_nil] (23255, hilde)
+[Error matching .bad file for expressions/lydia/noinit/arg] (23246, lydia)
+[Error matching .bad file for users/ferguson/record_from_string] (23255, hilde)
+[Error matching .bad file for users/ferguson/recordassignstring] (23255, hilde)
 
 ==============================================
 linux32 regressions (in addition to the above)
@@ -767,6 +771,7 @@ died due to signal 6 (09/28/13)
 
 died due to signal 11 (09/28/13)
 ------------------------------------------------------
+[Error matching program output for modules/standard/Sort/sungeun/sorty (execopts: 1)] (23255, hilde)
 [Error matching program output for modules/standard/Sort/sungeun/sorty (execopts: 2)]
 [Error matching program output for modules/standard/Sort/sungeun/sorty (execopts: 3)]
 
