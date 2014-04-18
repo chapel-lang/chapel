@@ -640,9 +640,6 @@ void html_view(const char* passName) {
   INT_ASSERT(passName == currentPassName);
   FILE* html_file;
   const char* filename;
-  const char* chpl_home = fdump_html_chpl_home;
-  if (strlen(chpl_home) <= 0)
-    chpl_home = CHPL_HOME;
 
   fprintf(html_index_file, "<TR><TD>");
   fprintf(html_index_file, "%s%s[%d]", passName,

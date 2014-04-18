@@ -1701,21 +1701,27 @@ destructureTupleGroupedArgs(FnSymbol* fn, BlockStmt* tuple, Expr* base) {
 }
 
 FnSymbol* buildLambda(FnSymbol *fn) {
-  static int nextId = 0;
+  static unsigned int nextId = 0;
   char buffer[100];
 
-  sprintf(buffer, "_chpl_lambda_%i", nextId++);
-  char *name = (char *)malloc(strlen(buffer) + 1);
-
-  strcpy(name, buffer);
+  /*
+   * The snprintf function is used to prevent a buffer overflow from occurring.
+   * Technically, an overflow can only occur if Chapel is compiled on a machine
+   * where an unsigned integer can represent numbers larger than 10^86, but it
+   * is better to guard against this behavior then leaving someone wondering
+   * why we didn't.
+   */ 
+  if (snprintf(buffer, 100, "_chpl_lambda_%i", nextId++) >= 100) {
+    INT_FATAL("Too many lambdas.");
+  }
   
   if (!fn) {
-    fn = new FnSymbol(astr(name));
-  }
-  else {
-    fn->name = astr(name);
+    fn = new FnSymbol(astr(buffer));
+  } else {
+    fn->name = astr(buffer);
     fn->cname = fn->name;
   }
+  
   fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
   return fn;
 }

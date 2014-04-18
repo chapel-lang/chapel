@@ -65,7 +65,7 @@ explainInstantiation(FnSymbol* fn) {
       }
     }
   }
-  len += sprintf(msg+len, ")");
+  sprintf(msg+len, ")");
   if (callStack.n) {
     USR_PRINT(callStack.v[callStack.n-1], msg);
   } else {

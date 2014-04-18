@@ -4012,7 +4012,6 @@ static std::string buildParentName(AList &arg_list, bool isFormal, Type *retType
 */
 static AggregateType* createOrFindFunTypeFromAnnotation(AList &arg_list, CallExpr *call) {
   AggregateType *parent;
-  FnSymbol *parent_method;
 
   SymExpr *retTail = toSymExpr(arg_list.tail);
   Type *retType = retTail->var->type;
@@ -4020,13 +4019,11 @@ static AggregateType* createOrFindFunTypeFromAnnotation(AList &arg_list, CallExp
   std::string parent_name = buildParentName(arg_list, false, retType);
   
   if (functionTypeMap.find(parent_name) != functionTypeMap.end()) {
-    std::pair<AggregateType*, FnSymbol*> ctfs = functionTypeMap[parent_name];
-    parent = ctfs.first;
-    parent_method = ctfs.second;
-  }
-  else {
-    parent = createAndInsertFunParentClass(call, parent_name.c_str());
-    parent_method = createAndInsertFunParentMethod(call, parent, arg_list, false, retType);
+    parent = functionTypeMap[parent_name].first;
+    
+  } else {
+    parent                  = createAndInsertFunParentClass(call, parent_name.c_str());
+    FnSymbol* parent_method = createAndInsertFunParentMethod(call, parent, arg_list, false, retType);
 
     functionTypeMap[parent_name] = std::pair<AggregateType*, FnSymbol*>(parent, parent_method);
   }

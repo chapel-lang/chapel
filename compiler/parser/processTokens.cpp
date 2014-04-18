@@ -135,7 +135,6 @@ void processMultiLineComment() {
 
   c = 0;
   lastc = 0;
-  lastlastc = 0;
   depth = 1;
 
   newString();

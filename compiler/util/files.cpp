@@ -374,6 +374,7 @@ static const char* mysystem_getresult(const char* command,
     strcpy(result,"");
   }
   closefile(systemFile);
+  free(systemFile);
   return astr(result);  // canonicalize
 }
 
@@ -807,30 +808,43 @@ static int sys_getcwd(char** path_out)
 {
   int sz = 128;
   char* buf;
-  char* got;
-  int err = 0;
 
   buf = (char*) malloc(sz);
   if( !buf ) return ENOMEM;
+  
   while( 1 ) {
-    got = getcwd(buf, sz);
-    if( got != NULL ) break;
-    else if( errno == ERANGE ) {
+    if ( getcwd(buf, sz) != NULL ) {
+      break;
+      
+    } else if ( errno == ERANGE ) {
       // keep looping but with bigger buffer.
-      sz = 2*sz;
-      got = (char*) realloc(buf, sz);
-      if( ! got ) {
+      sz *= 2;
+      
+      /*
+       * Realloc may return NULL, in which case we will need to free the memory
+       * initially pointed to by buf.  This is why we store the result of the
+       * call in newP instead of directly into buf.  If a non-NULL value is
+       * returned we update the buf pointer.
+       */
+      void* newP = realloc(buf, sz);
+      
+      if (newP != NULL) {
+        buf = static_cast<char*>(newP);
+      
+      } else {
         free(buf);
         return ENOMEM;
       }
+      
     } else {
       // Other error, stop.
-      err = errno;
+      free(buf);
+      return errno;
     }
   }
 
   *path_out = buf;
-  return err;
+  return 0;
 }
 
 // Find the path to the running program

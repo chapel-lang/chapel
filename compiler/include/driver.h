@@ -71,7 +71,7 @@ extern int scalar_replace_limit;
 extern int tuple_copy_limit;
 
 extern bool report_inlining;
-extern char CHPL_HOME[FILENAME_MAX];
+extern char CHPL_HOME[FILENAME_MAX+1];
 
 extern const char* CHPL_HOST_PLATFORM;
 extern const char* CHPL_HOST_COMPILER;

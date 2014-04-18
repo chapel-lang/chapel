@@ -27,7 +27,6 @@ removeEmptyRecords() {
           !ct->symbol->hasFlag(FLAG_EXTERN)) {
         bool empty = true;
         if (ct->symbol->hasFlag(FLAG_FIXED_STRING)) {
-          empty = false;
           break;
         }
         for_fields(field, ct) {

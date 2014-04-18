@@ -260,7 +260,7 @@ process_args(ArgumentState *arg_state, int argc, char **aargv) {
     } else {
       arg_state->file_argument = (char **)realloc(
         arg_state->file_argument, 
-        sizeof(char**) * (arg_state->nfile_arguments + 2));
+        sizeof(char*) * (arg_state->nfile_arguments + 2));
       arg_state->file_argument[arg_state->nfile_arguments++] = *argv;
       arg_state->file_argument[arg_state->nfile_arguments] = NULL;
     }

@@ -35,7 +35,7 @@ bool fLogIds = false;
 int currentPassNo = 0;
 const char* currentPassName = "starting up";
 
-char CHPL_HOME[FILENAME_MAX] = "";
+char CHPL_HOME[FILENAME_MAX+1] = "";
 
 const char* CHPL_HOST_PLATFORM = NULL;
 const char* CHPL_HOST_COMPILER = NULL;
