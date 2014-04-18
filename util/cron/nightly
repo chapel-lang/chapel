@@ -865,7 +865,7 @@ if ($runtests == 0) {
             $startdate = "04/10/12"; # earliest date that we generate historical data for
             $genGraphs = "$utildir/test/genGraphs";
             $genGraphsCommand = "$genGraphs -p $tmpDatDir -o $svnReleasePerfDir/html/ -t $chapeldir/test/ -a \"$altTitle\" -n $host  -g $chapeldir/test/GRAPHFILES -s $startdate";
-            $genGraphsMessage = "Generating release over relase performance graphs";
+            $genGraphsMessage = "Generating release over release performance graphs";
             mysystem($genGraphsCommand, $genGraphsMessage, 0, 1, 1);
             
             # sync the perf graphs over to sourceforge 
