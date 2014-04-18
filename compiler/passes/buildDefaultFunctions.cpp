@@ -633,7 +633,6 @@ static void build_record_assignment_function(AggregateType* ct) {
   FnSymbol* fn = new FnSymbol("=");
   fn->addFlag(FLAG_ASSIGNOP);
   fn->addFlag(FLAG_COMPILER_GENERATED);
-  fn->addFlag(FLAG_INLINE);
 
   ArgSymbol* arg1 = new ArgSymbol(INTENT_REF, "_arg1", ct);
   arg1->markedGeneric = true; // TODO: Check if we really want this.
@@ -657,6 +656,7 @@ static void build_record_assignment_function(AggregateType* ct) {
 
   if (externRecord) {
     fn->insertAtTail(new CallExpr(PRIM_MOVE, arg1, arg2));
+    fn->addFlag(FLAG_INLINE);
   } else {
     for_fields(tmp, ct) {
       if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
@@ -736,7 +736,6 @@ static void build_union_assignment_function(AggregateType* ct) {
   FnSymbol* fn = new FnSymbol("=");
   fn->addFlag(FLAG_ASSIGNOP);
   fn->addFlag(FLAG_COMPILER_GENERATED);
-  fn->addFlag(FLAG_INLINE);
   ArgSymbol* arg1 = new ArgSymbol(INTENT_REF, "_arg1", ct);
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);
   fn->insertFormalAtTail(arg1);
@@ -795,13 +794,13 @@ static void build_record_hash_function(AggregateType *ct) {
 // TODO: This flag should be enabled, so a user-defined version of the record
 //  assignment function can override the compiler-generated version.
 //  fn->addFlag(FLAG_COMPILER_GENERATED);
-  fn->addFlag(FLAG_INLINE);
   ArgSymbol *arg = new ArgSymbol(INTENT_BLANK, "r", ct);
   arg->markedGeneric = true;
   fn->insertFormalAtTail(arg);
 
   if (ct->fields.length == 0) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, new_IntSymbol(0)));
+    fn->addFlag(FLAG_INLINE);
   } else {
     CallExpr *call = NULL;
     bool first = true;
