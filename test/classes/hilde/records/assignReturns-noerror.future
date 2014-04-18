@@ -1,4 +1,0 @@
-error message: Should report "The return value of an assignment operator must be 'void'."
-
-The error message that is being printed instead is most likely coming from the wrapper
-move.  When those are removed, this future is expected to correct itself.
