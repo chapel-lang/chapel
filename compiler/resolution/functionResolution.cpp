@@ -259,8 +259,12 @@ isMoreVisible(Expr* expr, FnSymbol* fn1, FnSymbol* fn2);
 static bool explainCallMatch(CallExpr* call);
 static CallExpr* userCall(CallExpr* call);
 static void
-printResolutionError(const char* error,
-                     Vec<FnSymbol*>& candidates,
+printResolutionErrorAmbiguous(
+                     Vec<FnSymbol*>& candidateFns,
+                     CallInfo* info);
+static void
+printResolutionErrorUnresolved(
+                     Vec<FnSymbol*>& visibleFns,
                      CallInfo* info);
 static void issueCompilerError(CallExpr* call);
 static void reissueCompilerWarning(const char* str, int offset);
@@ -2272,8 +2276,49 @@ userCall(CallExpr* call) {
 
 
 static void
-printResolutionError(const char* error,
+printResolutionErrorAmbiguous(
                      Vec<FnSymbol*>& candidates,
+                     CallInfo* info) {
+  CallExpr* call = userCall(info->call);
+  if (!strcmp("this", info->name)) {
+    USR_FATAL(call, "ambiguous access of '%s' by '%s'",
+              toString(info->actuals.v[1]->type),
+              toString(info));
+  } else {
+    const char* entity = "call";
+    if (!strncmp("_type_construct_", info->name, 16))
+      entity = "type specifier";
+    const char* str = toString(info);
+    if (info->scope) {
+      ModuleSymbol* mod = toModuleSymbol(info->scope->parentSymbol);
+      INT_ASSERT(mod);
+      str = astr(mod->name, ".", str);
+    }
+    USR_FATAL_CONT(call, "ambiguous %s '%s'", entity, str);
+    if (developer) {
+      for (int i = callStack.n-1; i>=0; i--) {
+        CallExpr* cs = callStack.v[i];
+        FnSymbol* f = cs->getFunction();
+        if (f->instantiatedFrom)
+          USR_PRINT(callStack.v[i], "  instantiated from %s", f->name);
+        else
+          break;
+      }
+    }
+    bool printed_one = false;
+    forv_Vec(FnSymbol, fn, candidates) {
+      USR_PRINT(fn, "%s %s",
+                printed_one ? "               " : "candidates are:",
+                toString(fn));
+      printed_one = true;
+    }
+    USR_STOP();
+  }
+}
+
+static void
+printResolutionErrorUnresolved(
+                     Vec<FnSymbol*>& visibleFns,
                      CallInfo* info) {
   CallExpr* call = userCall(info->call);
   if (!strcmp("_cast", info->name)) {
@@ -2326,7 +2371,7 @@ printResolutionError(const char* error,
     } else if (type->symbol->hasFlag(FLAG_FUNCTION_CLASS)) {
       USR_FATAL(call, "illegal access of first class function");
     } else {
-      USR_FATAL(call, "%s access of '%s' by '%s'", error,
+      USR_FATAL(call, "unresolved access of '%s' by '%s'",
                 toString(info->actuals.v[1]->type),
                 toString(info));
     }
@@ -2340,8 +2385,8 @@ printResolutionError(const char* error,
       INT_ASSERT(mod);
       str = astr(mod->name, ".", str);
     }
-    USR_FATAL_CONT(call, "%s %s '%s'", error, entity, str);
-    if (candidates.n > 0) {
+    USR_FATAL_CONT(call, "unresolved %s '%s'", entity, str);
+    if (visibleFns.n > 0) {
       if (developer) {
         for (int i = callStack.n-1; i>=0; i--) {
           CallExpr* cs = callStack.v[i];
@@ -2353,15 +2398,16 @@ printResolutionError(const char* error,
         }
       }
       bool printed_one = false;
-      forv_Vec(FnSymbol, fn, candidates) {
+      forv_Vec(FnSymbol, fn, visibleFns) {
+        // Consider "visible functions are"
         USR_PRINT(fn, "%s %s",
                   printed_one ? "               " : "candidates are:",
                   toString(fn));
         printed_one = true;
       }
     }
-    if (candidates.n == 1 &&
-        candidates.v[0]->numFormals() == 0
+    if (visibleFns.n == 1 &&
+        visibleFns.v[0]->numFormals() == 0
         && !strncmp("_type_construct_", info->name, 16))
       USR_PRINT(call, "did you forget the 'new' keyword?");
     USR_STOP();
@@ -2993,9 +3039,9 @@ static void resolveNormalCall(CallExpr* call) {
             candidateFns.add(candidate->fn);
           }
           
-          printResolutionError("ambiguous", candidateFns, &info);
+          printResolutionErrorAmbiguous(candidateFns, &info);
         } else {
-          printResolutionError("unresolved", visibleFns, &info);
+          printResolutionErrorUnresolved(visibleFns, &info);
         }
       }
     } else {
