@@ -119,6 +119,7 @@ statements/lydia/whileCompare.graph
 io/vass/time-write.graph
 arrays/diten/time_iterate.graph
 arrays/lydia/time_access.graph
+statements/lydia/externMethodCallPerf.graph
 # suite: Statement comparisons
 statements/lydia/forVersusWhilePerf.graph
 statements/lydia/ifVersusSelect.graph
