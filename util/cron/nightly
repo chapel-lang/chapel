@@ -703,7 +703,6 @@ if (!($memleaks eq "")) {
 }
 if ($nolocal == 1) {
     $testflags = "$testflags -compopts --no-local";
-    $ENV{'CHPL_TEST_NO_LOCAL'} = true;
 }
 if ($verify == 1) {
     $testflags = "$testflags -compopts --verify";
