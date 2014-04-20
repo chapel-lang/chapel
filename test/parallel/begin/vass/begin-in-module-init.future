@@ -1,5 +1,8 @@
 bug: compiler crashes with an internal error when the main module uses another module and the other module has a 'begin' at the top level
 
+NOTE: the test fails differently under gasnet, so it is disabled there.
+Once it works under comm=none, test it under gasnet.
+
 Explanation why this happens: when compiling this code:
 
   module mainModule { use auxModule; }
