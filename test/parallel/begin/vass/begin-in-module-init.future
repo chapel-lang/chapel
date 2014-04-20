@@ -1,7 +1,7 @@
 bug: compiler crashes with an internal error when the main module uses another module and the other module has a 'begin' at the top level
 
-NOTE: the test fails differently under gasnet, so it is disabled there.
-Once it works under comm=none, test it under gasnet.
+The compiler crashes differently with --verify and without.
+--verify catches the issue earlier, so I set up this test with --verify.
 
 Explanation why this happens: when compiling this code:
 

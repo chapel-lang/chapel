@@ -1,3 +1,0 @@
-# A different error is currently reported under gasnet.
-# TODO: re-test under gasnet once comm=none works.
-CHPL_COMM != none
