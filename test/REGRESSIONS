@@ -20,15 +20,13 @@
 general regressions (seem to happen in most configurations)
 ===========================================================
 
+[Error matching .bad file for modules/hilde/test_module_Sort-baseline (compopts: 1)]
 
 ==============================================
 linux64 regressions (in addition to the above)
 (Reviewed for accuracy 04/02/14)
 ==============================================
 
-[Error matching .bad file for classes/deitz/test_infer_nil] (23255, hilde)
-[Error matching .bad file for expressions/lydia/noinit/arg] (23246, lydia)
-[Error matching .bad file for users/ferguson/record_from_string] (23255, hilde)
 [Error matching .bad file for users/ferguson/recordassignstring] (23255, hilde)
 
 ==============================================
@@ -81,7 +79,7 @@ Setting a config that isn't supported for --minimal-modules (1/23/14 - bradc)
 
 ================================
 verify regressions
-(reviewed for accuracy 04/02/14)
+(reviewed for accuracy 04/20/14)
 ================================
 
 
@@ -392,6 +390,11 @@ cray-prgenv-cray/cce-specific regressions
 (Reviewed for accuracy, except timeouts, 03/23/14)
 ==================================================
 
+writeln didn't print string arguments
+-------------------------------------
+[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1d-local (compopts: 1)]
+[Error matching program output for studies/uts/dequeue]
+
 extern_string_test output mismatch (06/16/13)
 ---------------------------------------------
 [Error matching .bad file for users/ferguson/extern_string_test (compopts: 1)]
@@ -425,7 +428,7 @@ only for 8.3 so not sure when we will start seeing this.
 
 infinite loop warning (since filed?)
 ------------------------------------
-[Error matching compiler output for statements/vass/while-const]
+[Error matching compiler output for statements/vass/while-const1]
 
 value is outside of the int range in C compilation (03/??/12)
 -------------------------------------------------------------
@@ -474,17 +477,22 @@ error differs but within acceptable margin; should squash error printing
 ------------------------------------------------------------------------
 [Error matching program output for studies/hpcc/FFT/marybeth/fft]
 
-compilation timeouts (03/02/14)
+execution seg fault
 -------------------------------
 [Error matching program output for studies/shootout/meteor/kbrady/meteor-parallel-alt]
 
-compilation timeouts (02/23/14)
+compilation timeouts (02/23/14, 4/20/14)
 -------------------------------
 [Error: Timed out compilation for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 1)]
 [Error: Timed out compilation for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 2)]
 [Error: Timed out compilation for sparse/parallel/sparse-iter-dom-arr-zipper] (did not regress on 4/13/14)
 [Error: Timed out compilation for users/franzf/v0/chpl/main (compopts: 1)]
 [Error: Timed out compilation for users/franzf/v1/chpl/main (compopts: 1)]
+[Error: Timed out compilation for nostdlib/ascii]
+[Error: Timed out compilation for nostdlib/err]
+[Error: Timed out compilation for portability/boolSizes]
+[Error: Timed out compilation for reductions/bradc/maxreduce]
+[Error: Timed out compilation for reductions/bradc/minmaxlocscan]
 
 Compilation timeout (since ??? at least 01/26/14)
 -------------------------------------------------
@@ -770,8 +778,16 @@ died due to signal 6 (09/28/13)
 [Error matching program output for distributions/robust/arithmetic/modules/test_module_Sort]
 
 died due to signal 11 (09/28/13)
-------------------------------------------------------
-[Error matching program output for modules/standard/Sort/sungeun/sorty (execopts: 1)] (23255, hilde)
+From hilde:
+The problem is that there is a
+   _tuple_2__ic_these_DefaultRectangularArr__real64_1_int64_t_F__ic__MergeIterator _iterator;
+that is uninitialized on line 616 of Sort.c.  This is passed to
+   _freeIterator46(&_iterator);
+on line 656 of Sort.c without ever having been initialized.  The fields of
+the iterator record should be zero-initialized (or initialized in some way)
+so that it is valid when passed to _freeIterator46.
+---------------------------------------------------------------------------
+[Error matching program output for modules/standard/Sort/sungeun/sorty (execopts: 1)]
 [Error matching program output for modules/standard/Sort/sungeun/sorty (execopts: 2)]
 [Error matching program output for modules/standard/Sort/sungeun/sorty (execopts: 3)]
 
