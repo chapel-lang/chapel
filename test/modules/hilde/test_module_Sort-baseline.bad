@@ -1,2 +1,2 @@
 Sort array
-timedexec: target program died with signal 6, without coredump
+timedexec: target program died with signal 11, without coredump
