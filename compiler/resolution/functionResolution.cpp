@@ -3719,8 +3719,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
       // For inout or out intent, this assigns the modified value back to the
       // formal at the end of the function body.
       if (formal->intent == INTENT_INOUT || formal->intent == INTENT_OUT) {
-        fn->insertBeforeReturnAfterLabel
-          (new CallExpr(PRIM_MOVE, formal, new CallExpr("=", formal, tmp)));
+        fn->insertBeforeReturnAfterLabel(new CallExpr("=", formal, tmp));
       }
     }
 }

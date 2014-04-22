@@ -237,7 +237,7 @@ buildDefaultWrapper(FnSymbol* fn,
           // Not an array alias field.  Just initialize this formal with
           // its default type expression.
           wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_INIT, wrapper->body->body.tail->remove())));
-          wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr("=", temp, wrapper_formal)));
+          wrapper->insertAtTail(new CallExpr("=", temp, wrapper_formal));
         }
       }
 

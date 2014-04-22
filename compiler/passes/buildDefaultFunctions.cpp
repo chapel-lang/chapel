@@ -716,12 +716,9 @@ static void build_record_cast_function(AggregateType* ct) {
   fn->insertFormalAtTail(arg);
   fn->where = new BlockStmt(new CallExpr(PRIM_IS_SUBTYPE, ct->symbol, t));
   VarSymbol* ret = newTemp();
-  VarSymbol* tmp = newTemp();
   fn->insertAtTail(new DefExpr(ret));
-  fn->insertAtTail(new DefExpr(tmp));
-  fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_INIT, t)));
-  fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr("=", tmp, arg)));
-  fn->insertAtTail(new CallExpr(PRIM_MOVE, ret, tmp));
+  fn->insertAtTail(new CallExpr(PRIM_MOVE, ret, new CallExpr(PRIM_INIT, t)));
+  fn->insertAtTail(new CallExpr("=", ret, arg));
   fn->insertAtTail(new CallExpr(PRIM_RETURN, ret));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
