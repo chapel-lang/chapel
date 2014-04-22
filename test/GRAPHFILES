@@ -120,6 +120,9 @@ io/vass/time-write.graph
 arrays/diten/time_iterate.graph
 arrays/lydia/time_access.graph
 statements/lydia/externMethodCallPerf.graph
+statements/lydia/ifVersusSelect.C.graph
+statements/lydia/ifVersusSelect.Crandom.graph
+statements/lydia/ifVersusSelect.Calternates.graph
 # suite: Statement comparisons
 statements/lydia/forVersusWhilePerf.graph
 statements/lydia/ifVersusSelect.graph
@@ -129,6 +132,9 @@ parallel/taskCompare/lydia/forBeginCompare.graph
 parallel/taskCompare/lydia/coforallCompare.graph
 parallel/taskCompare/lydia/coforallBeginCompare.graph
 parallel/taskCompare/lydia/loopCompare.graph
+statements/lydia/moduleVersusFunctionBaseline.graph
+statements/lydia/moduleVersusFunctionDifAccess.graph
+statements/lydia/moduleVersusFunction.graph
 # suite: Compiler performance
 performance/compiler/bradc/fft-timecomp.graph
 performance/compiler/bradc/compSampler-timecomp.graph
