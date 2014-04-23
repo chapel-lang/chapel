@@ -1,5 +1,3 @@
-CHPL_RT_NUM_THREADS_PER_LOCALE=100
-
 #
 # We turn off guard pages for this test as it creates many little
 # tasks and hence ends up spending the majority of its time in an

@@ -1,0 +1,8 @@
+#
+# We turn off guard pages for this test as it creates a fair amount of little 
+# tasks and spends a significant amount of its time in an mprotect() call. This
+# is already a pretty long running test and the mprotect() calls push if over
+# the time limit
+#
+QT_GUARD_PAGES=false
+
