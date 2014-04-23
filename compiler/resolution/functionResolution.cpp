@@ -6597,6 +6597,8 @@ static void insertReturnTemps() {
   // function to get the semantics of reading a sync/single var. If the value
   // is an iterator pass it through another overload of
   // _statementLevelSymbol to iterate through it for side effects.
+  // Note that we do not do this for --minimal-modules compilation
+  // because we do not support sync/singles for minimal modules.
   //
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->parentSymbol) {
@@ -6608,10 +6610,11 @@ static void insertReturnTemps() {
             VarSymbol* tmp = newTemp("_return_tmp_", fn->retType);
             DefExpr* def = new DefExpr(tmp);
             call->insertBefore(def);
-            if ((fn->retType->getValType() &&
-                 isSyncType(fn->retType->getValType())) ||
-                isSyncType(fn->retType) ||
-                fn->hasFlag(FLAG_ITERATOR_FN)) {
+            if (!fMinimalModules &&
+                ((fn->retType->getValType() &&
+                  isSyncType(fn->retType->getValType())) ||
+                 isSyncType(fn->retType) ||
+                 fn->hasFlag(FLAG_ITERATOR_FN))) {
               CallExpr* sls = new CallExpr("_statementLevelSymbol", tmp);
               call->insertBefore(sls);
               reset_ast_loc(sls, call);

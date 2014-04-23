@@ -599,8 +599,11 @@ module ChapelBase {
   inline proc >>(param a: uint(?w), param b: integral) param return __primitive(">>", a, b);
   
   //
-  // These functions are to handle symbols at statement level such as
-  // the second statement here: var a: sync int = 1; a;
+  // These functions are used to implement the semantics of
+  // reading a sync/single var when the variable is not actually
+  // assigned to anything.  For example, a statement that simply uses
+  // a sync to read it or a sync returned from a function but not
+  // explicitly captured.
   //
   inline proc _statementLevelSymbol(a) { return a; }
   inline proc _statementLevelSymbol(param a) param { return a; }

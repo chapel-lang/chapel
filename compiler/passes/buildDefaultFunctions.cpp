@@ -430,7 +430,7 @@ static void build_chpl_entry_points(void) {
 
   //
   // In --minimal-modules compilation mode, we won't be waiting on an
-  // encount (see comment above)
+  // endcount (see comment above)
   //
   if (!fMinimalModules) {
 

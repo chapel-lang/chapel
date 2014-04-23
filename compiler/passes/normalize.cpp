@@ -109,13 +109,17 @@ void normalize(void) {
   }
   USR_STOP();
 
-  // handle side effects on sync/single variables
-  forv_Vec(SymExpr, se, gSymExprs) {
-    if (isFnSymbol(se->parentSymbol) && se == se->getStmtExpr()) {
-      SET_LINENO(se);
-      CallExpr* call = new CallExpr("_statementLevelSymbol");
-      se->insertBefore(call);
-      call->insertAtTail(se->remove());
+  if (!fMinimalModules) {
+    // Calls to _statementLevelSymbol() are inserted here and in
+    // function resolution to ensure that sync vars are in the correct
+    // state (empty) if they are used but not assigned to anything.
+    forv_Vec(SymExpr, se, gSymExprs) {
+      if (isFnSymbol(se->parentSymbol) && se == se->getStmtExpr()) {
+        SET_LINENO(se);
+        CallExpr* call = new CallExpr("_statementLevelSymbol");
+        se->insertBefore(call);
+        call->insertAtTail(se->remove());
+      }
     }
   }
 
