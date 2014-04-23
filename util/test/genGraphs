@@ -213,7 +213,7 @@ class GraphStuff:
                     self._reduce, self.display_bounds))
                 graphs[currgraph].perfkeys += [ s.strip() for s in rest.split(', ') ]
             elif key == 'graphkeys' :
-                graphs[currgraph].graphkeys += [ s.strip() for s in rest.split(',') ] 
+                graphs[currgraph].graphkeys += [ s.strip() for s in rest.split(',') ]
             # files takes a list of the files to use per perfkey, while file
             # uses the same file for every perfkey. 
             elif key == 'files' :
@@ -233,16 +233,19 @@ class GraphStuff:
             elif key == 'enddate':
                 graphs[currgraph].enddate = time.strptime(rest.strip(), '%m/%d/%y')
             elif key == 'generate':
-                graphs[currgraph].generate = [s if s != '' else self._reduce for s in re.sub(r'\s+', '', rest)]
+                graphs[currgraph].generate = [s if s != '' else self._reduce for s in re.sub(r'\s+', '', rest).split(',')]
+                for strat in graphs[currgraph].generate:
+                    if strat not in parser.get_option('-r').choices:
+                        sys.stdout.write('WARNING: Invalid generate option {0} in {1}\n'.format(strat, fullFname))
             elif key == 'displayrange':
                 graphs[currgraph].displayrange = rest.lower() in ('true', 't', '1', 'on', 'y', 'yes')
             # expansion is used to turn a single graph with multiple series into
             # multiple graphs where the first one is all the series combined and
             # the subsequent ones contain each series individually. -1 means 
             # expand all. Other numbers indicate the number of series to expand 
-            elif key == 'expand': 
+            elif key == 'expand':
                 graphs[currgraph].expand = int(rest.strip())
-            elif key == 'sort': 
+            elif key == 'sort':
                 graphs[currgraph].sort = rest.lower() in ('true', 't', '1', 'on', 'y', 'yes')
 
         if graphs[currgraph].graphkeys:
