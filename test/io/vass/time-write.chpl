@@ -27,6 +27,33 @@ Test variations - in C:
 Test variations - in Chapel:
 * since stdout is blocking, we also try a variant using a workaround of
   creating a non-blocking version of it - see stdoutNB.
+
+Michael's remarks on performance:
+
++ Chapel's write() or stdout.write()
+actually call printf so that Chapel programs and C
+programs can intermix their standard output. They
+are also both line buffered which reduces performance.
+  Chapel's stdout is using the C stdout FILE*,
+and calling fwrite. That means that any data
+sent to Chapel's stdout is buffered twice in
+the application:
+ - once in the QIO channel
+ - once in the FILE* buffer
+I would expect this to reduce performance.
+
++ We could revisit that design decision and make
+write use file descriptor 1 if we no longer wanted
+it to work this way. It would go faster but possibly
+result in unexpected intermixings of stdout.
+
++ The performance lag of Chapel with openfd(1)
+is worth investigating regardless of the above.
+
++ I also think that it's important to compare
+locking=false with printf_unlocked.
+[See "man unlocked_stdio" - basically it is the C version of printf
+that does not lock the FILE* so it's only safe to use in a serial context.]
 */
 
 use Time;
