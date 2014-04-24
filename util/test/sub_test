@@ -178,8 +178,8 @@ def ShellEscape(str):
     return re.sub(r'([\\!@#$%^&*()?\'"|<>[\]{} ])', r'\\\1', str)
 
 # return True if f has .chpl extension
-def IsChplSource(f):
-    if ((f.count('.') !=0) and (len(f) >= 6) and (len(f)-f.find('.chpl')==5)):
+def IsChplTest(f):
+    if re.match(r'^.+\.(chpl|test\.c)$', f):
         return True
     else:
         return False
@@ -206,7 +206,7 @@ def ReadFileWithComments(f, ignoreLeadingSpace=True):
     myfile.close()
     mylist=list()
     for line in mylines:
-        line=line.rstrip()
+        line = line.rstrip()
         # ignore blank lines
         if not line.strip(): continue
         # ignore comments
@@ -214,6 +214,8 @@ def ReadFileWithComments(f, ignoreLeadingSpace=True):
             if line.lstrip()[0] == '#': continue
         else:
             if line[0] == '#': continue
+        # expand shell variables
+        line = os.path.expandvars(line)
         mylist.append(line)
     return mylist
 
@@ -243,11 +245,14 @@ def KillProc(p, timeout):
 
 # clean up after the test has been built
 def cleanup(execname):
-    if execname is not None:
-        if os.path.isfile(execname):
-            os.unlink(execname)
-        if os.path.isfile(execname+'_real'):
-            os.unlink(execname+'_real')
+    try:
+        if execname is not None:
+            if os.path.isfile(execname):
+                os.unlink(execname)
+            if os.path.isfile(execname+'_real'):
+                os.unlink(execname+'_real')
+    except IOError:
+        sys.stdout.write('[Warning: could not remove {0} ]\n'.format(execname))
     return
 
 # print (compopts: XX, execopts: XX) for later decoding of failed tests
@@ -325,6 +330,13 @@ if utildir is None or not os.path.isdir(utildir):
 # Needed for MacOS mount points
 utildir = os.path.realpath(utildir)
 # sys.stdout.write('utildir='+utildir+'\n');
+
+# Find the c compiler
+p = subprocess.Popen([chpl_home+'/util/config/compileline', '--compile'],
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+c_compiler = p.communicate()[0].rstrip()
+if p.returncode != 0:
+  Fatal('Cannot find c compiler')
 
 # Find the test directory
 testdir=chpl_home+'/test'
@@ -577,7 +589,9 @@ else:
     globalCompopts=list()
 envCompopts = os.getenv('COMPOPTS')
 if envCompopts != None:
-    globalCompopts += shlex.split(envCompopts)
+    envCompopts = shlex.split(envCompopts)
+else:
+  envCompopts = ['']
 # sys.stdout.write('globalCompopts=%s\n'%(globalCompopts))
 
 #
@@ -652,7 +666,7 @@ else:
 
 onetestsrc = os.getenv('CHPL_ONETEST')
 if onetestsrc==None:
-    testsrc=filter(IsChplSource, dirlist)
+    testsrc=filter(IsChplTest, dirlist)
 else:
     testsrc=list()
     testsrc.append(onetestsrc)
@@ -664,7 +678,7 @@ for testname in testsrc:
     # print testname
     sys.stdout.write('[test: %s/%s]\n'%(localdir,testname))
 
-    execname=testname[:len(testname)-5]
+    execname = re.match(r'^(.*)\.(?:chpl|test\.c)$', testname).group(1)
     # print execname
 
     # Test specific settings
@@ -913,16 +927,22 @@ for testname in testsrc:
         #
         # Build the test program
         #
-        args=['-o']+[execname]+globalCompopts+shlex.split(compopts)+[testname]
+        args=['-o']+[execname]+globalCompopts+envCompopts+shlex.split(compopts)+[testname]
         if lastcompopts:
             args += lastcompopts
         # sys.stdout.write("args=%s\n"%(args))
 
-        if valgrindcomp:
-            cmd = valgrindcomp
-            args = valgrindcompopts+[compiler]+args
+        if re.match(r'^.+\.test\.c$', testname):
+            # we need to drop globalCompopts for C tests as those are options
+            # for `chpl`
+            args = ['-o', execname]+globalCompopts+shlex.split(compopts)+[testname]
+            cmd = c_compiler
         else:
-            cmd = compiler
+            if valgrindcomp:
+                cmd = valgrindcomp
+                args = valgrindcompopts+[compiler]+args
+            else:
+                cmd = compiler
 
         #
         # Compile (with timeout)

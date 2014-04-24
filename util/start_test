@@ -1393,7 +1393,7 @@ foreach test ($testlist)
         # generate performance graphs
         if ($gengraphs) then
             # For single tests, we only look for a $testname.graph file
-            set graphfile = `basename $testname .chpl`.graph
+            set graphfile = `basename $testname | sed -e 's/\.chpl$//' -e 's/\.test\.c$//'`.graph
             if (-e $graphfile) then
                 if ($oldgraphs) then
                     echo "[Executing createGraphs for $basedir/$graphfile in $perfdir]" |& $tee -a $logfile
@@ -1522,7 +1522,7 @@ foreach testType ($testTypes)
                 if ($performance) then
                     set areTests = `find . -maxdepth 1 -name \*.$perfkeys`
                 else
-                    set areTests = `find . -maxdepth 1 -name \*.chpl`
+                    set areTests = `find . -maxdepth 1 -name \*.chpl -or -name \*.test.c`
                 endif
                 if ((! -e ./NOTEST && ("$areTests" != "" || -x ./sub_test) && \
                     (($CHPL_TEST_INTERP == "off") || \
