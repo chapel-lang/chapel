@@ -312,7 +312,8 @@ def FindGoodFile(basename, commExecNums=['']):
         # Else if --no-local try the no-local .good file.
         if not os.path.isfile(goodfile):
             nlString = '--no-local'
-            if globalCompopts.count(nlString) > 0:
+            potentialNoLocalCompopts = globalCompopts + envCompopts
+            if potentialNoLocalCompopts.count(nlString) > 0:
                 goodfile=basename+'.no-local'+commExecNum+'.good'
         # Else try comm and locale model specific .good file.
         if not os.path.isfile(goodfile):
