@@ -311,9 +311,7 @@ def FindGoodFile(basename, commExecNums=['']):
             goodfile = basename+'.'+machine+commExecNum+'.good'
         # Else if --no-local try the no-local .good file.
         if not os.path.isfile(goodfile):
-            nlString = '--no-local'
-            potentialNoLocalCompopts = globalCompopts + envCompopts
-            if potentialNoLocalCompopts.count(nlString) > 0:
+            if '--no-local' in globalCompopts:
                 goodfile=basename+'.no-local'+commExecNum+'.good'
         # Else try comm and locale model specific .good file.
         if not os.path.isfile(goodfile):
@@ -617,17 +615,18 @@ else:
 #
 if (perftest and os.access(PerfDirFile('COMPOPTS'),os.R_OK)): # ./PERFCOMPOPTS
     tgco=ReadFileWithComments(PerfDirFile('COMPOPTS'))
-    globalCompopts = shlex.split(tgco[0])
+    directoryCompopts = shlex.split(tgco[0])
 elif os.access('./COMPOPTS',os.R_OK):
     tgco=ReadFileWithComments('./COMPOPTS')
-    globalCompopts = shlex.split(tgco[0])
+    directoryCompopts = shlex.split(tgco[0])
 else:
-    globalCompopts=list()
+    directoryCompopts = []
 envCompopts = os.getenv('COMPOPTS')
 if envCompopts != None:
     envCompopts = shlex.split(envCompopts)
 else:
-  envCompopts = ['']
+  envCompopts = []
+globalCompopts = directoryCompopts + envCompopts
 # sys.stdout.write('globalCompopts=%s\n'%(globalCompopts))
 
 #
@@ -963,15 +962,15 @@ for testname in testsrc:
         #
         # Build the test program
         #
-        args=['-o']+[execname]+globalCompopts+envCompopts+shlex.split(compopts)+[testname]
+        args=['-o']+[execname]+globalCompopts+shlex.split(compopts)+[testname]
         if lastcompopts:
             args += lastcompopts
         # sys.stdout.write("args=%s\n"%(args))
 
         if re.match(r'^.+\.test\.c$', testname):
-            # we need to drop globalCompopts for C tests as those are options
-            # for `chpl`
-            args = ['-o', execname]+globalCompopts+shlex.split(compopts)+[testname]
+            # we need to drop envCompopts for C tests as those are options
+            # for `chpl` so add directoryCompopts rather than globalCompopts
+            args = ['-o', execname]+directoryCompopts+shlex.split(compopts)+[testname]
             cmd = c_compiler
         else:
             if valgrindcomp:
