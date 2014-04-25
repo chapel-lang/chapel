@@ -856,6 +856,20 @@ module DefaultRectangular {
         if dom.dsiNumIndices > 0 then rad.shiftedData = shiftedData;
       return rad;
     }
+    
+    proc dsiTargetLocDom() {
+      compilerError("targetLocDom is unsupported by default domains");
+    }
+
+    proc dsiTargetLocales() {
+      compilerError("targetLocales is unsupported by default domains");
+    }
+
+    proc dsiOneLocalSubdomain() param return true;
+
+    proc dsiGetLocalSubdomain() {
+      return _newDomain(dom);
+    }
   }
   
   proc DefaultRectangularDom.dsiSerialReadWrite(f /*: Reader or Writer*/) {

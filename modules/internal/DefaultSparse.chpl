@@ -293,6 +293,20 @@ module DefaultSparse {
         data(i) = data(i+1);
       }
     }
+    
+    proc dsiTargetLocDom() {
+      compilerError("targetLocDom is unsuppported by sparse domains");
+    }
+
+    proc dsiTargetLocales() {
+      compilerError("targetLocales is unsuppported by sparse domains");
+    }
+
+    proc dsiOneLocalSubdomain() param return true;
+
+    proc dsiGetLocalSubdomain() {
+      return _newDomain(dom);
+    }
   }
   
   

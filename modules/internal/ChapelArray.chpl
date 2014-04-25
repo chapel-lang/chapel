@@ -1431,6 +1431,42 @@ module ChapelArray {
     }
   
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
+
+    // the locale grid domain
+    proc targetLocDom() {
+      return _value.dsiTargetLocDom();
+    }
+
+    // the locale grid
+    proc targetLocales() {
+      return _value.dsiTargetLocales();
+    }
+
+    // can the subdomain be represented as a single domain?
+    proc oneLocalSubdomain() param {
+      return _value.dsiOneLocalSubdomain();
+    }
+
+    // fetches the subdomain for the current locale
+    //
+    // Also note that localSlice(dom) produces a slice of a domain/array 
+    // that's assumed to be local
+    proc getLocalSubdomain() {
+      if !_value.dsiOneLocalSubdomain() then
+        compilerError("Array's local domain is not a single domain");
+      return _value.dsiGetLocalSubdomain();
+    }
+    
+    // if the subdomain cannot be represented as a single domain, 
+    // the multiple domains are yielded by an iterator.
+    // yield a domain so the user can use procs like expand/exterior/etc.
+    iter getLocalSubdomains() {
+      if _value.dsiOneLocalSubdomain() then 
+        yield _value.dsiGetLocalSubdomain();
+      else 
+        for d in _value.dsiGetLocalSubdomains() do yield d;
+    }
+
   }  // record _array
   
   //

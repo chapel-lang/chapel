@@ -1362,6 +1362,24 @@ proc BlockArr.doiBulkTransfer(B) {
   }
   if debugBlockDistBulkTransfer then writeln("Comms:",getCommDiagnostics());
 }
+    
+proc BlockArr.dsiTargetLocDom() {
+  return dom.dist.targetLocDom;
+}
+
+proc BlockArr.dsiTargetLocales() {
+  return dom.dist.targetLocales;
+}
+
+// Block subdomains are continuous
+
+proc BlockArr.dsiOneLocalSubdomain() param return true;
+
+// returns the current locale's subdomain
+
+proc BlockArr.dsiGetLocalSubdomain() {
+  return myLocArr.locDom.myBlock;
+}
 
 iter ConsecutiveChunks(d1,d2,lid,lo) {
   var elemsToGet = d1.locDoms[lid].myBlock.numIndices;

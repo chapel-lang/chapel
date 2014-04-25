@@ -633,6 +633,20 @@ proc ReplicatedArr.dsiRankChange(sliceDef: ReplicatedDom,
 
   return result;
 }
+    
+proc ReplicatedArr.dsiTargetLocDom() {
+  return dom.dist.targetLocales.domain;
+}
+
+proc ReplicatedArr.dsiTargetLocales() {
+  return dom.dist.targetLocales;
+}
+
+proc ReplicatedArr.dsiOneLocalSubdomain() param  return true;
+
+proc ReplicatedArr.dsiGetLocalSubdomain() {
+  return localArrs[here.id].myDom.domLocalRep;
+}
 
 // todo? these two seem to work (written by analogy with DefaultRectangular)
 proc ReplicatedDist.dsiCreateReindexDist(newSpace, oldSpace) return this;
