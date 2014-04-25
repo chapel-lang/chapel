@@ -296,7 +296,42 @@ def Fatal(message):
     sys.stdout.write('[Error (sub_test): '+message+']\n')
     sys.exit(-1)
 
-#
+# attempts to find an appropriate .good file. Good files are expected to be of
+# the form basename.<configuration>.<commExecNums>.good. Where configuration
+# options are one of the below configuration specific parameters that are
+# checked for. E.G the current comm layer. commExecNums are the optional
+# compopt and execopt number to enable different .good files for different
+# compopts/execopts with explicitly specifying name. 
+def FindGoodFile(basename, commExecNums=['']):
+    
+    goodfile = ''
+    for commExecNum in commExecNums:
+        # Try the machine specific .good
+        if not os.path.isfile(goodfile):
+            goodfile = basename+'.'+machine+commExecNum+'.good'
+        # Else if --no-local try the no-local .good file.
+        if not os.path.isfile(goodfile):
+            nlString = '--no-local'
+            if globalCompopts.count(nlString) > 0:
+                goodfile=basename+'.no-local'+commExecNum+'.good'
+        # Else try comm and locale model specific .good file.
+        if not os.path.isfile(goodfile):
+            goodfile=basename+chplcommstr+chpllmstr+commExecNum+'.good'
+        # Else try the comm-specific .good file.
+        if not os.path.isfile(goodfile):
+            goodfile=basename+chplcommstr+commExecNum+'.good'
+        # Else try locale model specific .good file.
+        if not os.path.isfile(goodfile):
+            goodfile=basename+chpllmstr+commExecNum+'.good'
+        # Else try the platform-specific .good file.
+        if not os.path.isfile(goodfile):
+            goodfile=basename+'.'+platform+commExecNum+'.good'
+        # Else use the execopts-specific .good file.
+        if not os.path.isfile(goodfile):
+            goodfile=basename+commExecNum+'.good'
+
+    return goodfile
+
 # Start of sub_test proper
 #
 
@@ -1022,45 +1057,29 @@ for testname in testsrc:
                                   ' '.join(globalCompopts)+' '+compopts,
                                   ' '.join(args)]).wait()
 
-            # Find the default 'golden' output file
-            checkfile = ''
-            # Use specified golden file if there is one.
+            
+            # find the compiler .good file to compare against. The compiler
+            # .good file can be of the form testname.<configuration>.good or
+            # explicitname.<configuration>.good. It's not currently setup to
+            # handle testname.<configuration>.<compoptsnum>.good, but that
+            # would be easy to add. 
+            basename = execname 
             if len(clist) != 0:
-                checkfile = clist[0].split('#')[1].strip()
-            # Else use machine-specific file
-            if not os.path.isfile(checkfile):
-                checkfile = execname+'.'+machine+'.good'
-            # Else if no-local use no-local file.
-            if not os.path.isfile(checkfile):
-                nlString = '--no-local'
-                if globalCompopts.count(nlString) > 0:
-                    checkfile=execname+'.no-local.good'
-            # Else use comm and locale model specific file.
-            if not os.path.isfile(checkfile):
-                checkfile=execname+chplcommstr+chpllmstr+'.good'
-            # Else use comm-specific file.
-            if not os.path.isfile(checkfile):
-                checkfile=execname+chplcommstr+'.good'
-            # Else use locale model specific file.
-            if not os.path.isfile(checkfile):
-                checkfile=execname+chpllmstr+'.good'
-            # Else use platform-specific file.
-            if not os.path.isfile(checkfile):
-                checkfile=execname+'.'+platform+'.good'
-            # Else use general file.
-            if not os.path.isfile(checkfile):
-                checkfile=execname+'.good'
-            # sys.stdout.write('default checkfile=%s\n'%(checkfile))
+                explicitcompgoodfile = clist[0].split('#')[1].strip()
+                basename = explicitcompgoodfile.replace('.good', '')
 
-            if not os.access(checkfile, os.R_OK):
-                sys.stdout.write('[Error cannot locate compiler output comparison file %s/%s]\n'%(localdir, checkfile))
+            goodfile = FindGoodFile(basename)
+            # sys.stdout.write('default goodfile=%s\n'%(goodfile))
+
+            if not os.path.isfile(goodfile) or not os.access(goodfile, os.R_OK):
+                sys.stdout.write('[Error cannot locate compiler output comparison file %s/%s]\n'%(localdir, goodfile))
                 sys.stdout.write('[Compiler output was as follows:]\n')
                 sys.stdout.write(origoutput)
                 cleanup(execname)
                 cleanup(printpassesfile)
                 continue # on to next compopts
 
-            result = DiffFiles(checkfile, complog)
+            result = DiffFiles(goodfile, complog)
             if result==0:
                 os.unlink(complog)
                 sys.stdout.write('%s[Success '%(futuretest))
@@ -1149,8 +1168,7 @@ for testname in testsrc:
             sys.stdout.write('[Note: Not executing or comparing the output due to -noexec flags]\n')
             cleanup(execname)
             continue # on to next compopts
-
-        dfltexeccheckfile = None
+        explicitcompgoodfile = None
         # Execute the test for all requested execopts
         execoptsnum = 0
         # Handle empty execopts list
@@ -1159,7 +1177,7 @@ for testname in testsrc:
             execoptslist.append(' ')
         if len(clist)!=0:
             if len(clist[0].split('#')) > 1:
-                dfltexeccheckfile = clist[0].split('#')[1].strip()
+                explicitcompgoodfile = clist[0].split('#')[1].strip()
         for texecopts in execoptslist:
             sys.stdout.flush()
 
@@ -1179,9 +1197,9 @@ for testname in testsrc:
                 execopts += numlocexecopts;
             if len(tlist) > 1:
                 # Ignore everything after the first token
-                execcheckfile = tlist[1].strip().split()[0]
+                explicitexecgoodfile = tlist[1].strip().split()[0]
             else:
-                execcheckfile = dfltexeccheckfile
+                explicitexecgoodfile = explicitcompgoodfile
             del tlist
 
             if globalPreexec:
@@ -1359,40 +1377,27 @@ for testname in testsrc:
                                         communicate()[0])
 
                     if not perftest:
-                        if (execcheckfile == None):
-                            # Look for the "golden" output
-                            if onlyone:
-                                ceident=''
-                            else:
-                                ceident = '.'+str(compoptsnum)+'-'+str(execoptsnum)
+                        # find the good file 
 
-                            execcheckfile = execname+'.'+machine+ceident+'.good'
-                            # Else if no-local use the no-local .good file.
-                            if not os.path.isfile(execcheckfile):
-                                nlString = '--no-local'
-                                if globalCompopts.count(nlString) > 0:
-                                    execcheckfile=execname+'.no-local'+ceident+'.good'
-                            # Else use comm and locale model specific .good file.
-                            if not os.path.isfile(execcheckfile):
-                                execcheckfile=execname+chplcommstr+chpllmstr+ceident+'.good'
-                            # Else use the comm-specific .good file.
-                            if not os.path.isfile(execcheckfile):
-                                execcheckfile=execname+chplcommstr+ceident+'.good'
-                            # Else use locale model specific .good file.
-                            if not os.path.isfile(execcheckfile):
-                                execcheckfile=execname+chpllmstr+ceident+'.good'
-                            # Else use the platform-specific .good file.
-                            if not os.path.isfile(execcheckfile):
-                                execcheckfile=execname+'.'+platform+ceident+'.good'
-                            # Else use the execopts-specific .good file.
-                            if not os.path.isfile(execcheckfile):
-                                execcheckfile=execname+ceident+'.good'
-                            # Else use the general .good file.
-                            if not os.path.isfile(execcheckfile):
-                                execcheckfile=execname+'.good'
+                        basename = execname
+                        commExecNum = ['']
 
-                        if not os.access(execcheckfile, os.R_OK):
-                            sys.stdout.write('[Error cannot locate program output comparison file %s/%s]\n'%(localdir, execcheckfile))
+                        # if there were multiple compopts/execopts find the
+                        # .good file that corresponds to that run 
+                        if not onlyone:
+                            commExecNum.insert(0,'.'+str(compoptsnum)+'-'+str(execoptsnum))
+                        
+                        # if the .good file was explicitly specified, look for
+                        # that version instead of the multiple
+                        # compopts/execopts or just the base .good file 
+                        if explicitexecgoodfile != None:
+                            basename  = explicitexecgoodfile.replace('.good', '')
+                            commExecNum = ['']
+
+                        execgoodfile = FindGoodFile(basename, commExecNum)
+
+                        if not os.path.isfile(execgoodfile) or not os.access(execgoodfile, os.R_OK):
+                            sys.stdout.write('[Error cannot locate program output comparison file %s/%s]\n'%(localdir, execgoodfile))
                             sys.stdout.write('[Execution output was as follows:]\n')
                             sys.stdout.write(subprocess.Popen(['cat', execlog],
                                                               stdout=subprocess.PIPE).
@@ -1400,7 +1405,7 @@ for testname in testsrc:
 
                             continue # on to next execopts
 
-                        result = DiffFiles(execcheckfile, execlog)
+                        result = DiffFiles(execgoodfile, execlog)
                         if result==0:
                             os.unlink(execlog)
                             sys.stdout.write('%s[Success '%(futuretest))
@@ -1434,13 +1439,13 @@ for testname in testsrc:
                         sys.stdout.write('[Error creating performance test directory %s]\n'%(perfdir))
                         break # on to next compopts
 
-                    if execcheckfile==None:
+                    if explicitexecgoodfile==None:
                         perfexecname = execname
                         keyfile = PerfTFile(execname,'keys') #e.g. .perfkeys
                     else:
-                        perfexecname = re.sub(r'\{0}$'.format(PerfSfx('keys')), '', execcheckfile)
-                        if os.path.isfile(execcheckfile):
-                            keyfile = execcheckfile
+                        perfexecname = re.sub(r'\{0}$'.format(PerfSfx('keys')), '', explicitexecgoodfile)
+                        if os.path.isfile(explicitexecgoodfile):
+                            keyfile = explicitexecgoodfile
                         else:
                             keyfile = PerfTFile(execname,'keys')
 
