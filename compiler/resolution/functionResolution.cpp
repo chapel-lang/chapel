@@ -2919,22 +2919,28 @@ gatherCandidates(Vec<ResolutionCandidate*>& candidates,
   }
 }
 
+
 static void
-resolveCall(CallExpr* call) {
-  if (!call->primitive) {
+resolveCall(CallExpr* call)
+{
+  if (call->primitive)
+  {
+    switch (call->primitive->tag)
+    {
+     default:                       /* do nothing */                    break;
+     case PRIM_TUPLE_AND_EXPAND:    resolveTupleAndExpand(call);        break;
+     case PRIM_TUPLE_EXPAND:        resolveTupleExpand(call);           break;
+     case PRIM_SET_MEMBER:          resolveSetMember(call);             break;
+     case PRIM_MOVE:                resolveMove(call);                  break;
+     case PRIM_INIT:                resolveDefaultGenericType(call);    break;
+    }
+  }
+  else
+  {
     resolveNormalCall(call);
-  } else if (call->isPrimitive(PRIM_TUPLE_AND_EXPAND)) {
-    resolveTupleAndExpand(call);
-  } else if (call->isPrimitive(PRIM_TUPLE_EXPAND)) {
-    resolveTupleExpand(call);
-  } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
-    resolveSetMember(call);
-  } else if (call->isPrimitive(PRIM_MOVE)) {
-    resolveMove(call);
-  } else if (call->isPrimitive(PRIM_INIT)) {
-    resolveDefaultGenericType(call);
   }
 }
+
 
 static void resolveNormalCall(CallExpr* call) {
     
