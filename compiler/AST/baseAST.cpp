@@ -133,7 +133,7 @@ void trace_remove(BaseAST* ast, char flag) {
   g##type##s.n = i##type
 
 
-void clean_modvec(Vec<ModuleSymbol*>& modvec) {
+static void clean_modvec(Vec<ModuleSymbol*>& modvec) {
   int aliveMods = 0;
   forv_Vec(ModuleSymbol, mod, modvec) {        
     if (isAlive(mod) || isRootModuleWithType(mod, ModuleSymbol)) { 
