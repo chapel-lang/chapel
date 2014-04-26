@@ -1,20 +1,13 @@
 Initializing Modules:
    ChapelStandard
-    startInitCommDiags
-     CommDiagnostics
     ChapelBase
     Atomics
     NetworkAtomics
-    NetworkAtomicTypes
     ChapelNumLocales
     ChapelThreads
-    ChapelThreadsInternal
-    ChapelTasksInternal
     ChapelTuple
     ChapelRange
      ChapelRangeBase
-      Math
-    ChapelReduce
     ChapelSyncvar
     ChapelLocale
     DefaultRectangular
@@ -33,15 +26,11 @@ Initializing Modules:
       Regexp
     LocaleTree
     DefaultAssociative
-     Sort
-    DefaultSparse
-     Search
-    DefaultOpaque
     ChapelTaskTable
     MemTracking
     ChapelUtil
     ChapelDynDispHack
     Types
-    stopInitCommDiags
+    CommDiagnostics
    printModuleInitOrder
     moduleInitTest

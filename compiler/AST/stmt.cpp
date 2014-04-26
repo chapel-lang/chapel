@@ -311,6 +311,24 @@ BlockStmt::addUse(ModuleSymbol* mod) {
 }
 
 
+// Remove a module from the list of modules used by the module this block
+// statement belongs to. The list of used modules is stored in modUses
+void
+BlockStmt::removeUse(ModuleSymbol* mod) {
+  if (modUses) {
+    for_alist(expr, modUses->argList) {
+      if (SymExpr* symExpr = toSymExpr(expr)) {
+        if (ModuleSymbol* curMod = toModuleSymbol(symExpr->var)) {
+          if (curMod == mod) {
+            symExpr->remove();  
+          }
+        }
+      }
+    }
+  }
+}
+
+
 CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
   Expr(E_CondStmt),
   condExpr(iCondExpr),

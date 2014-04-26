@@ -19,7 +19,7 @@ static void deadBlockElimination(FnSymbol* fn);
 
 // Static variables.
 static unsigned deadBlockCount;
-
+static unsigned deadModuleCount;
 
 //
 // Removes local variables that are only targets for moves, but are
@@ -185,9 +185,87 @@ void deadCodeElimination(FnSymbol* fn)
   freeDefUseChains(DU, UD);
 }
 
+
+// Determines if a module is dead. A module is dead if the module's init
+// function can only be called from module code, and the init function
+// is empty, and the init function is the only thing in the module, and the
+// module is not a nested module. 
+static bool isDeadModule(ModuleSymbol* mod) {
+  // The main module and any module whose init function is exported
+  // should never be considered dead, as the init function can be
+  // explicitly called from the runtime, or other c code
+  if (mod == mainModule || mod->hasFlag(FLAG_EXPORT_INIT)) return false;
+
+  // because of the way modules are initialized, we don't want to consider a
+  // nested function as dead as its outer module and all of its uses should
+  // have their initializer called by the inner module. 
+  if (mod->defPoint->getModule() != theProgram && 
+      mod->defPoint->getModule() != rootModule) 
+    return false;
+
+  // if there is only one thing in the module
+  if (mod->block->body.length == 1) {
+    // and that thing is the init function 
+    if (mod->block->body.only() == mod->initFn->defPoint) {
+      // and the init function is empty (only has a return)
+      if (mod->initFn->body->body.length == 1) {
+        // then the module is dead 
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+
+// Removes a dead module. Because modules (such as the standard module) can
+// serve as groupings of other modules to include, you have to add all the
+// modules a dead module used to any module that used the dead one. 
+static void removeDeadModule(ModuleSymbol* deadMod) {
+  // remove the dead module and its initFn
+  deadMod->defPoint->remove();
+  deadMod->initFn->defPoint->remove();
+
+  // find all the modules that used the dead one, and remove the dead
+  // one from their modUseList, modUseSet and block. 
+  forv_Vec(ModuleSymbol, modThatUsedDeadMod, allModules) {
+    int vecIndex = modThatUsedDeadMod->modUseList.index(deadMod);
+    int setIndex = modThatUsedDeadMod->modUseSet.index(deadMod);
+    if (vecIndex >= 0 && setIndex >= 0) {
+      modThatUsedDeadMod->block->removeUse(deadMod);
+      modThatUsedDeadMod->modUseSet.remove(setIndex);
+      modThatUsedDeadMod->modUseList.remove(vecIndex);
+       
+      // for each module that the dead module used, add that module to
+      // the current module's modUseList, modUseSet, and block
+      forv_Vec(ModuleSymbol, modUsedByDeadMod, deadMod->modUseList) {
+        if (modThatUsedDeadMod->modUseList.index(modUsedByDeadMod) < 0) {
+          SET_LINENO(modThatUsedDeadMod);
+          modThatUsedDeadMod->block->addUse(modUsedByDeadMod);
+          modThatUsedDeadMod->modUseSet.set_add(modUsedByDeadMod);
+          modThatUsedDeadMod->modUseList.add(modUsedByDeadMod);
+        }
+      }
+    }
+  }
+}
+
+
+// Eliminates all dead modules
+static void deadModuleElimination() {
+  forv_Vec(ModuleSymbol, mod, allModules) {
+    if (isDeadModule(mod)) {
+      deadModuleCount++;
+      removeDeadModule(mod);
+    }
+  }
+}
+
+
 void deadCodeElimination() {
   if (!fNoDeadCodeElimination) {
     deadBlockCount = 0;
+    deadModuleCount = 0;
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       deadBlockElimination(fn);
 //      deadGotoElimination(fn);
@@ -195,9 +273,13 @@ void deadCodeElimination() {
       deadVariableElimination(fn);
       deadExpressionElimination(fn);
     }
-
+    deadModuleElimination();
+    
     if (fReportDeadBlocks)
       printf("\tRemoved %d dead blocks.\n", deadBlockCount);
+    if (fReportDeadModules)
+      printf("Removed %d dead modules.\n", deadModuleCount);
+
   }
 }
 

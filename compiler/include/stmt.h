@@ -44,6 +44,7 @@ class BlockStmt : public Expr {
   int length(void);
 
   void addUse(ModuleSymbol* mod);
+  void removeUse(ModuleSymbol* mod);
 };
 
 
