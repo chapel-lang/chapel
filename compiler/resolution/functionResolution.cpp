@@ -5489,8 +5489,10 @@ resolveBlock(Expr* body) {
               !ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
               !ct->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
             resolveFormals(ct->defaultTypeConstructor);
-            if (resolvedFormals.set_in(ct->defaultTypeConstructor))
+            if (resolvedFormals.set_in(ct->defaultTypeConstructor)) {
+              if (ct->defaultTypeConstructor->hasFlag(FLAG_PARTIAL_COPY)) instantiateBody(ct->defaultTypeConstructor);
               resolveFns(ct->defaultTypeConstructor);
+            }
           }
         }
       }
