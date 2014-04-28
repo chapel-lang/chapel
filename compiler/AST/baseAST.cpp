@@ -135,7 +135,7 @@ void trace_remove(BaseAST* ast, char flag) {
 
 static void clean_modvec(Vec<ModuleSymbol*>& modvec) {
   int aliveMods = 0;
-  forv_Vec(ModuleSymbol, mod, modvec) {        
+  forv_Vec(ModuleSymbol, mod, modvec) {
     if (isAlive(mod) || isRootModuleWithType(mod, ModuleSymbol)) { 
       modvec.v[aliveMods++] = mod;            
     }                                           
@@ -171,16 +171,16 @@ void cleanAst() {
   verifyNcleanRemovedIterResumeGotos();
   verifyNcleanCopiedIterResumeGotos();
 
+  // clean the other module vectors, without deleting the ast instances (they
+  // will be deleted with the clean_gvec call for ModuleSymbols.) 
+  clean_modvec(allModules);
+  clean_modvec(userModules);
+  clean_modvec(mainModules);
+ 
   //
   // clean global vectors and delete dead ast instances
   //
   foreach_ast(clean_gvec);
-
-  // clean the other module vectors, without deleting the ast instances (they
-  // were already deleted with the clean_gvec call for ModuleSymbols.) 
-  clean_modvec(allModules);
-  clean_modvec(userModules);
-  clean_modvec(mainModules);
 }
 
 
