@@ -3,3 +3,5 @@
 # and re-test.
 CHPL_COMM!=none
 COMPOPTS <= --no-local
+# It also fails differently under numa
+CHPL_LOCALE_MODEL!=flat
