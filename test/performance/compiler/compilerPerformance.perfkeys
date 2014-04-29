@@ -1,6 +1,7 @@
 parse :
 checkParsed :
 readExternC :
+expandExternArrayCalls :
 cleanup :
 scopeResolve :
 flattenClasses :
