@@ -53,6 +53,11 @@ void check_readExternC()
   // Suggestion: Ensure extern C types defined.
 }
 
+void check_expandExternArrayCalls()
+{
+  check_afterEveryPass();
+}
+
 void check_cleanup()
 {
   check_afterEveryPass();

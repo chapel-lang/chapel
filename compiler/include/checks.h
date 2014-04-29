@@ -6,6 +6,7 @@
 void check_parse();
 void check_checkParsed();
 void check_readExternC();
+void check_expandExternArrayCalls();
 void check_cleanup();
 void check_scopeResolve();
 void check_flattenClasses();

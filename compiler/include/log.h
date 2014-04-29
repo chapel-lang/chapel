@@ -56,6 +56,7 @@ struct ArgumentState;
 #define LOG_checkNormalized     NUL
 #define LOG_buildDefaultFunctions 'D'
 #define LOG_createTaskFunctions 't'
+#define LOG_expandExternArrayCalls NUL
 #define LOG_resolve             'R'
 #define LOG_resolveIntents      'i'
 #define LOG_checkResolved       NUL

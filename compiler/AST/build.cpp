@@ -1787,28 +1787,6 @@ buildFunctionDecl(FnSymbol* fn, RetTag optRetTag, Expr* optRetType,
     // Looks like this flag is redundant with FLAG_EXTERN. <hilde>
     fn->addFlag(FLAG_FUNCTION_PROTOTYPE);
 
-  //
-  // Flag an error for extern functions with formal arguments of array type
-  //
-  if (fn->hasFlag(FLAG_EXTERN)) {
-    for_formals(formal, fn) {
-      if (BlockStmt* bs = formal->typeExpr) {
-        INT_ASSERT(bs->length() == 1);
-        Expr* firstexpr = bs->body.first();  INT_ASSERT(firstexpr);
-        if (CallExpr* typeAsCall = toCallExpr(firstexpr)) {
-          UnresolvedSymExpr* ursym = toUnresolvedSymExpr(typeAsCall->baseExpr);
-          if (strcmp(ursym->unresolved, "chpl__buildArrayRuntimeType") == 0) {
-            USR_FATAL_CONT(formal, "argument '%s': extern functions "
-                           "do not support formals of array type yet "
-                           "(see doc/technotes/README.extern for tips)", 
-                           formal->name);
-          }
-        }
-      }
-    }
-  }
-
-
   fn->doc = docs;
   return buildChapelStmt(new DefExpr(fn));
 }

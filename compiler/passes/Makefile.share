@@ -11,6 +11,7 @@ PASSES_SRCS = \
         codegen.cpp \
         createTaskFunctions.cpp \
         docs.cpp \
+        expandExternArrayCalls.cpp \
         externCResolve.cpp \
         filesToAST.cpp \
         flattenClasses.cpp \

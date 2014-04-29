@@ -21,6 +21,9 @@ PassInfo passlist[] = {
   // Read in runtime and included C header file types/prototypes
   RUN(readExternC),
 
+  // create wrapper functions to allow arrays to be passed to extern routines
+  RUN(expandExternArrayCalls),
+
   // Scope resolution and normalization
   RUN(cleanup),             // post parsing transformations
   RUN(scopeResolve),        // resolve symbols by scope

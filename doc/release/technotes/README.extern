@@ -370,6 +370,24 @@ identifier (e.g., 'int') to be passed to the routine.  In practice,
 this will typically only be useful if the external function is a macro
 or built-in (like sizeof()) that can handle type identifiers.
 
+Extern functions with array arguments are handled as a special case within the
+compiler. As an example:
+
+       extern proc foo(x: [] int, n: int);
+
+This procedure definition will match up to a C function with the prototype of
+
+       void foo(int64_t* x, int64_t n);
+
+The Chapel compiler will then rewrite any calls to `foo` like this:
+
+      foo(x, 10); -> foo(c_ptrTo(x), 10);
+
+Note that this same technique won't work for distributed rectangular arrays,
+nor for associative, sparse, or opaque arrays because their data isn't
+necessarily stored using a representation that translates trivially to a C
+array.
+
 
 Frequently Asked Questions About External Routines
 --------------------------------------------------
@@ -390,34 +408,6 @@ A: Today, the preferred way to do this is to declare the argument as
      var myVal: real = 1.2;
 
      foo(myVal);
-
-
-Q: How do I pass a Chapel array to an external routine that expects a
-   C array?
-
-A: Like the case above, ultimately we anticipate having better native
-   support for this.  In general, passing Chapel arrays externally can
-   be a bit dicey because a Chapel array is permitted to store its
-   elements using any underlying data structure, as specified by its
-   domain map.  In practice today, default rectangular arrays can have
-   their data passed to an external C routine by using a similar
-   prototype as the one in the previous question and passing the
-   initial element of the array into the routine.  Thus, if foo()
-   above expected its argument to be a buffer of floating point
-   values, we could pass a Chapel array into foo() as follows:
-
-     var A: [lo..hi] real;
-
-     foo(A[lo]);
-
-   Note that this same technique won't work for distributed
-   rectangular arrays, nor for associative, sparse, or opaque arrays
-   because their data isn't necessarily stored using a representation
-   that translates trivially to a C array.  Over time, we anticipate
-   adding support for interpreting formal array arguments within
-   extern functions as implying a C array, and having the Chapel
-   compiler generate the code to "unwrap" a Chapel array passed to
-   such a routine in cases where it's possible.
 
 
 Referring to External C Structs
