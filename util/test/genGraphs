@@ -380,7 +380,7 @@ class GraphClass:
             # try to access a non-existent datfile
             if self.datfilenames[i] in datfiles:
                 df = datfiles[self.datfilenames[i]]
-                for line in df.dfile:
+                for line in sorted(df.dfile):
                     line = line.strip()
                     if line == '' or line[0] == '#':
                         continue
@@ -389,9 +389,12 @@ class GraphClass:
                     fields[0] = myDate
                     fields[1:] = [try_parse_float(x) for x in fields[1:]]
                     if df.lines and myDate == df.lines[-1][0][0]:
+                        # append to the batch for that date
                         df.lines[-1].append(fields)
                     else:
+                        # start a new batch
                         df.lines.append([fields])
+                df.lines.sort()
 
         found_data = False
         while not done:
