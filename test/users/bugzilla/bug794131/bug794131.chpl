@@ -18,6 +18,7 @@ proc get_stuff()
     var location: data_set;
 
     num = read_stuff(location, stuff, 0, 16, 6);
+    writeln(stuff);
 }
 
 proc main() {
