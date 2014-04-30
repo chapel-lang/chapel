@@ -310,52 +310,76 @@ static void *initializer(void *junk)
 
 void chpl_task_init(void)
 {
-    int32_t   numCoresPerLocale;
     int32_t   numThreadsPerLocale;
+    int32_t   commMaxThreads;
+    int32_t   hwpar;
     size_t    callStackSize;
     pthread_t initer;
-    char      newenv_sheps[100] = { 0 };
     char      newenv_stack[100] = { 0 };
 
-    // Set up available hardware parallelism
-    numThreadsPerLocale = chpl_task_getenvNumThreadsPerLocale();
-    numCoresPerLocale = chpl_numCoresOnThisLocale();
-    if (numThreadsPerLocale == 0)
-        numThreadsPerLocale = chpl_comm_getMaxThreads();
-    if (0 < numThreadsPerLocale) {
-        // We are assuming the user wants to constrain the hardware
-        // resources used during this run of the application.
+    // Set up available hardware parallelism.
 
-        // Unset relevant Qthreads environment variables
+    // Experience has shown that we hardly ever win by using more than
+    // one PU per core, so default to that.  If this was explicitly
+    // set by the user we won't override it, however.
+    (void) setenv("QT_WORKER_UNIT", "core", 0);
+
+    // Determine the thread count.  CHPL_RT_NUM_THREADS_PER_LOCALE has
+    // the highest precedence but we limit it to the number of PUs.
+    // QTHREAD_HWPAR has the next precedence.  We don't impose the
+    // same limit on it, so it can be used to overload the hardware.
+    // In either case the number of threads can be no greater than any
+    // maximum imposed by the comm layer.  This limit is imposed
+    // silently.
+    numThreadsPerLocale = chpl_task_getenvNumThreadsPerLocale();
+    commMaxThreads = chpl_comm_getMaxThreads();
+    hwpar = 0;
+    if (numThreadsPerLocale != 0) {
+        int32_t numPUsPerLocale;
+
+	hwpar = numThreadsPerLocale;
+
+        numPUsPerLocale = chpl_numCoresOnThisLocale();
+        if (0 < numPUsPerLocale && numPUsPerLocale < hwpar) {
+            if (2 == verbosity) {
+                printf("QTHREADS: Reduced numThreadsPerLocale=%d to %d "
+                       "to prevent oversubscription of the system.\n",
+                       hwpar, numPUsPerLocale);
+            }
+
+            // Do not oversubscribe the system, use all available resources.
+            hwpar = numPUsPerLocale;
+        }
+
+        if (0 < commMaxThreads && commMaxThreads < hwpar) {
+	    hwpar = commMaxThreads;
+	}
+    } else {
+	if (0 < commMaxThreads) {
+	    hwpar = qt_internal_get_env_num("HWPAR", 0, 0);
+	    if (commMaxThreads < hwpar) {
+		hwpar = commMaxThreads;
+	    }
+	}
+    }
+
+    if (hwpar > 0) {
+	char newenv[100];
+
+        // Unset relevant Qthreads environment variables.  Currently
+        // QTHREAD_HWPAR has precedence over the QTHREAD_NUM_* ones,
+        // but that isn't documented and may not be true forever, so
+        // we unset them all.
         qt_internal_unset_envstr("HWPAR");
         qt_internal_unset_envstr("NUM_SHEPHERDS");
         qt_internal_unset_envstr("NUM_WORKERS_PER_SHEPHERD");
 
-        if (numCoresPerLocale < numThreadsPerLocale) {
-            if (2 == verbosity) {
-                printf("QTHREADS: Ignored --numThreadsPerLocale=%d to prevent oversubsription of the system.\n", numThreadsPerLocale);
-            }
-
-            // Do not oversubscribe the system, use all available resources.
-            numThreadsPerLocale = numCoresPerLocale;
-        }
-
         // Set environment variable for Qthreads
-        snprintf(newenv_sheps, 99, "%i", (int)numThreadsPerLocale);
-        setenv("QT_HWPAR", newenv_sheps, 1);
-    } else if (qt_internal_get_env_str("HWPAR", NULL) ||
-               qt_internal_get_env_str("NUM_SHEPHERDS", NULL) ||
-               qt_internal_get_env_str("NUM_WORKERS_PER_SHEPHERD", NULL)) {
-        // Assume the user wants has manually set the desired Qthreads
-        // environment variables.
-    } else {
-        // Default to using all hardware resources.
-        numThreadsPerLocale = numCoresPerLocale;
-        snprintf(newenv_sheps, 99, "%i", (int)numThreadsPerLocale);
-        setenv("QT_HWPAR", newenv_sheps, 1);
+        snprintf(newenv, sizeof(newenv), "%i", (int)hwpar);
+        setenv("QT_HWPAR", newenv, 1);
     }
 
-    // Precendence (high-to-low):
+    // Precedence (high-to-low):
     // 1) Chapel minimum
     // 2) QTHREAD_STACK_SIZE
     // In practice we never get to #2, because the Chapel minimum is
@@ -373,6 +397,15 @@ void chpl_task_init(void)
 
     pthread_create(&initer, NULL, initializer, NULL);
     while (chpl_qthread_done_initializing == 0) SPINLOCK_BODY();
+
+    // Now that Qthreads is up and running, make sure that the number
+    // of workers is less than any comm layer limit.  This is mainly
+    // checking that the default thread count without QTHREAD_HWPAR
+    // being set is within any comm layer limit, because we can't
+    // determine that default ahead of time.  Secondarily, it's a
+    // sanity check on the thread count versus comm limit logic
+    // above.
+    assert(0 == commMaxThreads || qthread_num_workers() < commMaxThreads);
 
     if (blockreport || taskreport) {
         if (signal(SIGINT, SIGINT_handler) == SIG_ERR) {
