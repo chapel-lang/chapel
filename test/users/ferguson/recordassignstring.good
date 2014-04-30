@@ -1,0 +1,1 @@
+recordassignstring.chpl:10: error: type mismatch in assignment from string to Point

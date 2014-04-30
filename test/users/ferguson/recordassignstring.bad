@@ -1,2 +1,0 @@
-recordassignstring.chpl:10: error: unresolved call 'string.x'
-recordassignstring.chpl:2: note: candidates are: Point.x
