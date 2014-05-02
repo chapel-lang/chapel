@@ -52,8 +52,6 @@ proc main()
   w.writef("P4\n%i %i\n", size, size);
 
   
-  for (x,y) in bytes.domain do {
-    w.write(bytes(x,y));
-  }
+  w.write(bytes);
 }
 
