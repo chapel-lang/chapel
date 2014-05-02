@@ -1,5 +1,0 @@
-CHPL_HOST_PLATFORM != linux64
-CHPL_TARGET_COMPILER != gnu
-CHPL_TEST_VGRND_EXE == on
-COMPOPTS <= --baseline
-COMPOPTS <= --fast
