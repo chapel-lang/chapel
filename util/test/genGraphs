@@ -41,12 +41,17 @@ parser.add_option('-r', '--reduce', dest='g_reduce', type='choice',
                   choices=['avg', 'med', 'min', 'max'])
 parser.add_option('-x', '--no-bounds', dest='g_display_bounds',
                   action='store_false', default=True)
+parser.add_option('-u', '--numericX', dest='numericX',
+                  help='expect numbers (e.g. revisions), not dates,' +
+                       ' for the X axis',
+                  action='store_true', default=False)
 if annotate:
     parser.add_option('-j', '--annotate', dest='annotation_file',
                       default=None)
 
 debug = False
 verbose = False
+numericX = False
 
 def try_parse_float(value):
     try:
@@ -54,6 +59,18 @@ def try_parse_float(value):
         return float(re.sub(r'[^\d,.]+$', '', value))
     except ValueError:
         return value
+
+def parse_date(value):
+    if numericX:
+        return value
+    else:
+        return time.strptime(value.strip(),'%m/%d/%y')
+
+def show_date(value):
+    if numericX:
+        return value
+    else:
+        return time.strftime('%Y-%m-%d', value)
 
 ############
 
@@ -120,6 +137,7 @@ class GraphStuff:
         self.gfile.write('var pageTitle = "%s";\n'%(self.title))
         runDate = time.strftime('%Y-%m-%d', time.localtime())
         self.gfile.write('var runDate= "%s";\n'%(runDate))
+        self.gfile.write('var numericX = %s;\n'%(str(numericX).lower()))
         self.gfile.write('var allGraphs = [\n')
         self.firstGraph = True
         return 0
@@ -235,9 +253,9 @@ class GraphStuff:
             elif key == 'ylabel':
                 graphs[currgraph].ylabel = rest.strip()
             elif key == 'startdate':
-                graphs[currgraph].startdate = time.strptime(rest.strip(), '%m/%d/%y')
+                graphs[currgraph].startdate = parse_date(rest)
             elif key == 'enddate':
-                graphs[currgraph].enddate = time.strptime(rest.strip(), '%m/%d/%y')
+                graphs[currgraph].enddate = parse_date(rest)
             elif key == 'generate':
                 graphs[currgraph].generate = [s if s != '' else self._reduce for s in re.sub(r'\s+', '', rest).split(',')]
                 for strat in graphs[currgraph].generate:
@@ -308,11 +326,11 @@ class GraphClass:
         l += '\tgraphname: '+self.graphname+'\n'
         l += '\tylabel: '+self.ylabel+'\n'
         if self.startdate != None:
-            l += '\tstartdate: '+time.strftime('%Y-%m-%d',self.startdate)+'\n'
+            l += '\tstartdate: '+show_date(self.startdate)+'\n'
         else:
             l += '\tstartdate: Not specified\n'
         if self.enddate != None:
-            l += '\tenddate: '+time.strftime('%Y-%m-%d',self.enddate)+'\n'
+            l += '\tenddate: '+show_date(self.enddate)+'\n'
         else:
             l += '\tenddate: Not specified\n'
         l += '\tperfkeys: '+list.__str__(self.perfkeys)+'\n'
@@ -391,7 +409,7 @@ class GraphClass:
                     if line == '' or line[0] == '#':
                         continue
                     fields = line.split()
-                    myDate=time.strptime(fields[0].strip(),'%m/%d/%y')
+                    myDate=parse_date(fields[0])
                     fields[0] = myDate
                     fields[1:] = [try_parse_float(x) for x in fields[1:]]
                     if df.lines and myDate == df.lines[-1][0][0]:
@@ -435,7 +453,7 @@ class GraphClass:
 
             # write out the data for this date
             found_data = False
-            line_to_write = time.strftime('%Y-%m-%d', minDate)
+            line_to_write = show_date(minDate)
             for i in range(numKeys):
                 if not self.datfilenames[i] in datfiles:
                     continue
@@ -499,13 +517,13 @@ class GraphClass:
         if enddate == None:
             self.enddate = startdate
         if graphInfo.startdate != None:
-            self.startdate = time.strftime('%Y-%m-%d', graphInfo.startdate)
+            self.startdate = show_date(graphInfo.startdate)
         else:
-            self.startdate = time.strftime('%Y-%m-%d', startdate)
+            self.startdate = show_date(startdate)
         if graphInfo.enddate != None:
-            self.enddate = time.strftime('%Y-%m-%d', graphInfo.enddate)
+            self.enddate = show_date(graphInfo.enddate)
         elif enddate != None:
-            self.enddate = time.strftime('%Y-%m-%d', enddate)
+            self.enddate = show_date(enddate)
 
 
 
@@ -588,6 +606,8 @@ def main():
     debug = options.debug
     global verbose
     verbose = options.verbose
+    global numericX
+    numericX = options.numericX
 
     if options.perfdir != None:
         perfdir = options.perfdir
@@ -600,14 +620,17 @@ def main():
         outdir = perfdir+'/html'
 
     if options.startdate != None:
-        startdate = time.strptime(options.startdate,'%m/%d/%y')
+        startdate = parse_date(options.startdate)
     else:
         startdate = None
 
     if options.enddate != None:
-        enddate = time.strptime(options.enddate,'%m/%d/%y')
+        enddate = parse_date(options.enddate)
     else:
-        enddate = time.localtime()
+       if numericX:
+           enddate = None
+       else:
+           enddate = time.localtime()
 
     if annotate:
         if options.annotation_file != None:

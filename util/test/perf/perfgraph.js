@@ -125,6 +125,14 @@ function genDygraph(graphInfo, expandInfo) {
     var logToggle = divs.logToggle;
     var annToggle = divs.annToggle;
 
+    var startdate = graphInfo.startdate;
+    var enddate = graphInfo.enddate;
+    // if our x axis values are actually dates, parse them as such
+    if (!numericX) {
+      startdate= Dygraph.dateParser(startdate);
+      enddate= Dygraph.dateParser(enddate);
+    }
+
     // setup our options
     var graphOptions = {
         title: graphInfo.title,
@@ -148,8 +156,7 @@ function genDygraph(graphInfo, expandInfo) {
         yAxisLabelWidth: 80,
         labelsDiv: ldiv,
         labelsSeparateLines: true,
-        dateWindow: [Dygraph.dateParser(graphInfo.startdate),
-                     Dygraph.dateParser(graphInfo.enddate)],
+        dateWindow: [startdate, enddate],
         // sync graphs anytime we pan, zoom, or at initial draw
         drawCallback: customDrawCallback,
         // mark the release dates on the graph before the chart gets drawn
