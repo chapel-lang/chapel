@@ -1,14 +1,41 @@
 #!/bin/sh
-cp testVerboseFlag.comm-$CHPL_COMM.goodstart $1.good
-#Need blank only if $EXECOPTS is non-empty
-if [ "$EXECOPTS" != "" ]
-then
-  echo -n " " >> $1.good
-fi
-echo $EXECOPTS >> $1.good
-echo -n "executing on node 0 of 1 node(s): " >> $1.good
-uname -n >> $1.good
-cat testVerboseFlag.goodstop >> $1.good
-sed -e "s/^.*amudprun/amudprun/" $2 > $1.sed
-sed -e "/QTHREADS/d" $1.sed > $2
-rm $1.sed
+
+uname=$(uname -n)
+tasks=$($CHPL_HOME/util/chplenv/tasks)
+launcher=$($CHPL_HOME/util/chplenv/launcher)
+target=$($CHPL_HOME/util/chplenv/platform --target)
+
+# Build a .good file; the lines are:
+# - .launcher-$CHPL_LAUNCHER, with ' EXECOPTS' replaced with $EXECOPTS
+#   (the leading space allows separating this from the command line in
+#   the .goodstart, for readability, while still matching correctly in
+#   all cases)
+# - .comm-$CHPL_COMM, with 'UNAME' replaced by the result of 'uname -n'
+# - .goodstop, which is the expected program output
+sed "s# EXECOPTS#$EXECOPTS#" < $1.launcher-$launcher.goodstart > $1.good
+sed "s/UNAME/$uname/" < $1.comm-$CHPL_COMM.goodcont >> $1.good
+cat $1.goodstop >> $1.good
+
+# Address program output variations peculiar to the various configuation
+# settings.
+
+# On Cray X* systems, compute node system names aren't meaningful.
+case $target in
+  cray-x*) sed "s/\(executing on node 0 of 1 node(s): \).*/\1$uname/" \
+               < $2 > $2.tmp &&
+           mv $2.tmp $2;;
+esac
+
+# With Qthreads, -v results in some lines of QTHREADS info we don't need.
+case $tasks in
+  qthreads) grep -v '^QTHREADS' $2 > $2.tmp &&
+            mv $2.tmp $2;;
+esac
+
+# If we use the amudprun launcher, there's a path on the front of it.
+case $launcher in
+  amudprun) sed -e "s/^.*amudprun/amudprun/" \
+                -e "/QTHREADS/d" $2 > $2.tmp &&
+            mv $2.tmp $2;;
+esac
+
