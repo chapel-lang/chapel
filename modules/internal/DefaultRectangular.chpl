@@ -137,11 +137,7 @@ module DefaultRectangular {
       const numSublocs = here.getChildCount();
 
       if localeModelHasSublocales && numSublocs != 0 {
-        if debugDataParNuma then
-          writeln("numSublocs ", numSublocs, ", numCores ", here.numCores,
-                  "\nignoreRunning ", ignoreRunning,
-                  ", minIndciesPerTask ", minIndicesPerTask,
-                  "\nranges ", ranges);
+        
         const dptpl = if tasksPerLocale==0 then here.numCores
                       else tasksPerLocale;
         // Make sure we don't use more sublocales than the numbers of
@@ -154,9 +150,14 @@ module DefaultRectangular {
                                                        ignoreRunning,
                                                        minIndicesPerTask,
                                                        ranges);
-
-        if debugDataParNuma then
-          writeln("(numChunks, parDim) ", (numChunks, parDim));
+        if debugDataParNuma {
+          writeln("### numSublocs = ", numSublocs, "\n" +
+                  "### numTasksPerSubloc = ", numSublocTasks, "\n" +
+                  "### ignoreRunning = ", ignoreRunning, "\n" +
+                  "### minIndicesPerTask = ", minIndicesPerTask, "\n" +
+                  "### numChunks = ", numChunks, " (parDim = ", parDim, ")\n" +
+                  "### nranges = ", ranges);
+        }
 
         if numChunks == 1 {
           if rank == 1 {
@@ -205,9 +206,10 @@ module DefaultRectangular {
                                               numChunks2, chunk2,
                                               high, low, low);
                 followMe2(parDim2) = lo..hi;
-                if debugDataParNuma then
-                  writeln("(chunk, chunk2, followMe, followMe2) ",
-                          (chunk, chunk2, followMe, followMe2)); 
+                if debugDataParNuma { 
+                  writeln("### chunk = ", chunk, "  chunk2 = ", chunk2, "  " +
+                          "followMe = ", followMe, "  followMe2 = ", followMe2);
+                }
                 yield followMe2;
               }
             }
@@ -219,11 +221,6 @@ module DefaultRectangular {
           writeln("*** In domain/array leader code:"); // this = ", this);
         const numTasks = if tasksPerLocale==0 then here.numCores
                          else tasksPerLocale;
-        if debugDataPar {
-          writeln("### numTasks = ", numTasks);
-          writeln("### ignoreRunning = ", ignoreRunning);
-          writeln("### minIndicesPerTask = ", minIndicesPerTask);
-        }
   
         if debugDefaultDist then
           writeln("    numTasks=", numTasks, " (", ignoreRunning,
@@ -239,7 +236,13 @@ module DefaultRectangular {
           writeln("    numChunks=", numChunks, " parDim=", parDim,
                   " ranges(", parDim, ").length=", ranges(parDim).length);
   
-        if debugDataPar then writeln("### numChunks=", numChunks, " (parDim=", parDim, ")");
+        if debugDataPar { 
+          writeln("### numTasksPerLoc = ", numTasks, "\n" +
+                  "### ignoreRunning = ", ignoreRunning, "\n" + 
+                  "### minIndicesPerTask = ", minIndicesPerTask, "\n" +
+                  "### numChunks = ", numChunks, " (parDim = ", parDim, ")\n" +
+                  "### nranges = ", ranges);
+        }
 
         if numChunks == 1 {
           if rank == 1 {

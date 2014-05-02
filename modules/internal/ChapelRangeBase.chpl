@@ -814,11 +814,6 @@ module ChapelRangeBase {
       const dptpl = if tasksPerLocale==0 then here.numCores
                     else tasksPerLocale;
 
-      if debugDataParNuma then
-        writeln("numSublocs ", numSublocs, ", numCores ", here.numCores,
-                "\nignoreRunning ", ignoreRunning,
-                ", minIndicesPerTask ", minIndicesPerTask);
-
       // Make sure we don't use more sublocales than the numbers of
       // tasksPerLocale requested
       const numSublocTasks = min(numSublocs, dptpl);
@@ -828,6 +823,14 @@ module ChapelRangeBase {
                                                   ignoreRunning,
                                                   minIndicesPerTask,
                                                   len);
+      if debugDataParNuma {
+        writeln("### numSublocs = ", numSublocs, "\n" +
+                "### numTasksPerSubloc = ", numSublocTasks, "\n" +
+                "### ignoreRunning = ", ignoreRunning, "\n" +
+                "### minIndicesPerTask = ", minIndicesPerTask, "\n" +
+                "### numChunks = ", numChunks);
+      }
+        
       if numChunks == 1 {
         yield (0..len-1,);
       } else {
@@ -852,9 +855,10 @@ module ChapelRangeBase {
                                                locLen);
             coforall core in 0..#numTasks {
               const (low, high) = _computeBlock(locLen, numTasks, core, hi, lo, lo);
-              if debugDataParNuma then
-                writeln("(chunk, core, locRange, coreRange)",
-                        (chunk, core, locRange, low..high));
+              if debugDataParNuma {
+                writeln("### chunk = ", chunk, "  core = ", core, "  " +
+                        "locRange = ", locRange, "  coreRange = ", low..high);
+              }
               yield (low..high,);
             }
           }
