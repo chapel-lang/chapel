@@ -1,45 +1,45 @@
 // Release branch info
-// For now, I'm not using the release or revision fields
+// For now, I'm not using the release fields
 var branchInfo = [
                   { "release" : "0.9",
                     "branchDate" : "2009-04-08", // no actual branch
-                    "revision" : "r15461" },
+                    "revision" : 15461 },
                   { "release" : "1.0",
                     "branchDate" : "2009-10-16",
-                    "revision" : "r16229" },
+                    "revision" : 16229 },
                   { "release" : "1.01",
                     "branchDate" : "2009-10-30",
-                    "revision" : "r16330" },
+                    "revision" : 16330 },
                   { "release" : "1.02",
                     "branchDate" : "2009-11-13",
-                    "revision" : "r16423" },
+                    "revision" : 16423 },
                   { "release" : "1.1",
                     "branchDate" : "2010-04-09",
-                    "revision" : "r17087"},
+                    "revision" : 17087},
                   { "release" : "1.2",
                     "branchDate" : "2010-10-14",
-                    "revision" : "r17926"},
+                    "revision" : 17926},
                   { "release" : "1.3",
                     "branchDate" : "2011-04-12",
-                    "revision" : "r18701"},
+                    "revision" : 18701},
                   { "release" : "1.4",
                     "branchDate" : "2011-10-11",
-                    "revision" : "r19320"},
+                    "revision" : 19320},
                   { "release" : "1.5",
                     "branchDate" : "2012-04-10",
-                    "revision" : "r19961"},
+                    "revision" : 19961},
                   { "release" : "1.6",
                     "branchDate" : "2012-10-08",
-                    "revision" : "r20667"},
+                    "revision" : 20667},
                   { "release" : "1.7",
                     "branchDate" : "2013-04-05",
-                    "revision" : "r21260"},
+                    "revision" : 21260},
                   { "release" : "1.8",
                     "branchDate" : "2013-10-04",
-                    "revision" : "r22086"},
+                    "revision" : 22086},
                   { "release" : "1.9",
                     "branchDate" : "2014-04-07",
-                    "revision" : "r23144"}
+                    "revision" : 23144}
                   ];
 
 // stuff for dygraph
@@ -520,7 +520,7 @@ function customDrawCallback(g, initial) {
 // Mark all the release dates on the canvas with vertical lines
 function markReleaseDates (canvas, area, g) {
     function markReleaseDate(date) {
-        var xval = g.toDomXCoord(Dygraph.dateParser(date));
+        var xval = g.toDomXCoord(date);
         canvas.beginPath();
         canvas.moveTo(xval, area.y);
         canvas.lineTo(xval, area.y + area.h);
@@ -528,7 +528,11 @@ function markReleaseDates (canvas, area, g) {
         canvas.stroke();
     }
     for (var i = 0; i < branchInfo.length; i++) {
-        markReleaseDate(branchInfo[i].branchDate);
+        if (numericX) {
+            markReleaseDate(branchInfo[i].revision);
+        } else {
+            markReleaseDate(Dygraph.dateParser(branchInfo[i].branchDate));
+        }
     }
 }
 
