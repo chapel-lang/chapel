@@ -4,8 +4,6 @@ config const size = 200;
 config const iterations = 50;
 config const limit = 4.0;
 
-config const outfile = "mandelbrot.pbm";
-
 const lower = -1.5 - 1.0i;
 const upper = 0.5 + 1.0i;
 
