@@ -335,6 +335,11 @@
 # for a particular graph, that graph will use the date in the .graph
 # and not the date by the -startdate option.  
 #
+# Additional options to genGraphs can be passed via -genGraphOpts.
+# For example, when using revision numbers instead of dates and
+# setting CHPL_TEST_PERF_DATE to revision numbers, you might want
+# -genGraphOpts "-u -s23131 -e23332"
+#
 # The -nostdinredirect option makes the tests (but not the compiler)
 # run without redirecting stdin from /dev/null.  This is intended to
 # be used e.g. with qsub-based launchers, which at present do not
@@ -693,6 +698,7 @@ set gengraphs = 0
 set graphsdisprange = 1
 set graphsgendefault = "avg"
 set startdate = ""
+set genGraphOpts = ""
 set testfutures = 0
 set testfuturesonly = 0
 set testnotests = 0
@@ -707,7 +713,7 @@ set chplHomeWarn = 1
 set progress = 0
 
 while ( $#argv > 0 )
-    switch ( $argv[1] )
+    switch ( "$argv[1]" )
     case -execopts:
     case --execopts:
         shift
@@ -851,6 +857,14 @@ while ( $#argv > 0 )
         set startdate = $argv[1]
         shift
         breaksw
+    case --genGraphOpts:
+    case -genGraphOpts:
+    case --gengraphopts:
+    case -gengraphopts:
+        shift
+        set genGraphOpts = "$argv[1]"
+        shift
+        breaksw
     case -norecurse:
     case --norecurse:
     case -no-recurse:
@@ -922,6 +936,7 @@ while ( $#argv > 0 )
         echo "          -no-display-graph-range"
         echo "          -graphs-gen-default <avg|min|max|med>"
         echo "          -startdate <MM/DD/YY> (currently: '')"
+        echo "          -genGraphOpts OPT or -genGraphOpts 'OPT1 OPT2 ...'"
         echo "          -futures"
         echo "          -futuresonly"
         echo "          -valgrind"
@@ -1150,7 +1165,7 @@ if ($performance || $gengraphs) then
     else
         set startdate_t = ""
     endif
-    set createCoolerGraphs = $utildir/genGraphs
+    set createCoolerGraphs = ($utildir/genGraphs $genGraphOpts)
     set createGraphs = $utildir/createGraphs
     set viewGraphs = $utildir/viewGraphs
 endif
@@ -1191,7 +1206,7 @@ if ($compperformance) then
         set startdate_t = ""
     endif
      
-    set createCoolerGraphs = $utildir/genGraphs
+    set createCoolerGraphs = ($utildir/genGraphs $genGraphOpts)
     set combineCompPerf = $utildir/combineCompPerfData
 endif
 
