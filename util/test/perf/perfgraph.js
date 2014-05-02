@@ -92,6 +92,7 @@ function getNextDivs(afterDiv, afterLDiv) {
     logToggle.style.visibility = 'hidden';
     gspacer.appendChild(logToggle);
 
+    // create an annotation button and put it next to the log button in gspacer
     var annToggle = document.createElement('input');
     annToggle.type = 'button';
     annToggle.className = 'toggle';
@@ -157,39 +158,53 @@ function genDygraph(graphInfo, expandInfo) {
 
     if (expandInfo) {
         graphOptions.visibility = expandInfo.visibility;
+        graphOptions.colors = expandInfo.colors;
     }
 
     // actually create the dygraph
     var g = new Dygraph(div, 'CSVfiles/'+graphInfo.datfname, graphOptions);
-    g.sort = graphInfo.sort;
-    g.divs = divs; 
     setupSeriesLocking(g);
+
+    // we use options in graphinfo in dygraph callbacks that we can't pass
+    // arguments to so we add it to the graph to be able to pass it around
+    g.divs = divs;
+    g.graphInfo = graphInfo;
 
     // The dygraph is now setting up and rendering. Once the graph is fully
     // drawn the ready state gets fired. We don't want to start synchronizing
     // graph zooms until all the graphs have been fully rendered and drawn,
     // or we will be modifying properties that don't actually exist yet.
-    // We use numGraphsReady to handle that. Also make the log button visible
-    // after the graph is drawn. Expansion occurs here. For expansion we need
-    // the graph to be mostly initialized since we grab its labels and change
-    // is visibility. We might be able to move expandgraphs to right after
-    // sorting, but we would need to pass the divs and graphinfo to the
-    // callback
+    // We use numGraphsReady to handle that. We also make our buttons visible
+    // here that way they don't show up before the graph does.
     g.ready(function() {
-        g.my_annotations = graphInfo.annotations;
         g.setAnnotations(graphInfo.annotations);
         setupLogToggle(g, graphInfo, logToggle);
         setupAnnToggle(g, graphInfo, annToggle);
         numGraphsReady += 1;
-        expandGraphs(graphInfo, g, div, ldiv);
     });
 
     gs.push(g);
 }
 
-// Function to expand an existing graph. graphInfo and graph are the existing
-// graph and div/ldiv are the divs for that graph
-function expandGraphs(graphInfo, graph, div, ldiv) {
+// This is a small helper function to see if a string ends with a certain
+// string. Do not redefine if a browser has a built in version
+if (typeof String.prototype.endsWith !== 'function') {
+    String.prototype.endsWith = function(suffix) {
+        return this.indexOf(suffix, this.length - suffix.length) !== -1;
+    };
+}
+
+// Function to expand an existing graph. This will potentially change the
+// visibility of the current graph and will create multiple graphs from the
+// same data just with certain ones hidden. For instance this is used with the
+// compiler performance graphs to display only the top 10 series in a graph and
+// to create an individual graph for each series. Note that if a there are two
+// series that have the same name but one ends with ' (examples)' and the other
+// ' (all') They will both be shown on the expanded graph but the examples one
+// will not be shown on the graph containing all of them.
+function expandGraphs(graph) {
+
+    var graphInfo = graph.graphInfo;
     var expandAllSentinel = -1;
     var expandNum = graphInfo.expand;
     var labels = graph.getLabels();
@@ -204,32 +219,72 @@ function expandGraphs(graphInfo, graph, div, ldiv) {
         expandNum = labels.length - 1;
     }
 
-    // modify the current graphs visibility if only some of the items are being
-    // expanded
+    // modify the current graph's visibility if only some of the series are to
+    // be expanded
     var visibility = graph.visibility();
-    for (var i = expandNum; i < labels.length; i++) {
-      visibility[i] = false;
+    for (var i = 0; i < visibility.length; i++) { visibility[i] = false; }
+    var i = 0;
+    var j = 0;
+    while (i < expandNum && j < labels.length -1 ) {
+        j++;
+        if (labels[j].endsWith('(examples)')) {
+            continue;
+        }
+        visibility[j-1] = true;
+        i++;
+     }
+     graph.updateOptions({visibility: visibility});
+
+    // figure out the starting series for expansion. we expand graphs in
+    // reverse order so we need to figure out which is the last one we will
+    // expand and start expanding at that one.
+    var i = 0;
+    var j = 1;
+    while ( i < expandNum && j < labels.length) {
+        if (!labels[j].endsWith('(examples)')) {
+            i++;
+        }
+        j++;
     }
-    graph.updateOptions({visibility: visibility});
 
     // for each expanded graph
-    for (var index = expandNum - 1;  index >= 0 ; index--) {
+    var i = 0;
+    while (i < expandNum && j > 1 ) {
+        j--;
+        if (labels[j].endsWith('(examples)')) {
+            continue;
+        }
+
         // copy the graphInfo and add the key to the title
         var newInfo = {};
         for (info in graphInfo) {
             newInfo[info] = graphInfo[info];
         }
-        newInfo.title = newInfo.title + ": " + labels[index + 1];
+        newInfo.title = newInfo.title + ": " + labels[j].replace(' (all)', '');
         newInfo.expand = 0;
-        // gen the expanded graph with visibility set for the current graph
-        for (var i = 0; i < expandNum; i++) { visibility[i] = false; }
-        visibility[index] = true;
+
+        // gen the expanded graph with visibility set for the current series
+        for (var k = 0; k < visibility.length; k++) { visibility[k] = false; }
+        var exampleLabel = labels[j].replace('(all)', '(examples)');
+        var exampleIndex = graph.getPropertiesForSeries(exampleLabel).column;
+        visibility[j-1] = true;
+        visibility[exampleIndex-1] = true;
+
+        // make sure the colors for the series in the expanded graph match the
+        // colors for the series in the original graph
+        var colors = graph.getColors().slice();
+        for ( var k = 0; k < colors.length; k++) {
+          colors[k] = graph.getPropertiesForSeries(labels[j]).color;
+        }
+
         expandInfo = {
-            afterDiv: div,
-            afterLDiv: ldiv,
-            visibility: visibility.slice()
+            afterDiv: graph.divs.div,
+            afterLDiv: graph.divs.ldiv,
+            visibility: visibility.slice(),
+            colors: colors
         }
         genDygraph(newInfo, expandInfo);
+        i++;
     }
 }
 
@@ -253,13 +308,64 @@ function setupAnnToggle(g, graphInfo, annToggle) {
 
     annToggle.onclick = function() {
         if (g.annotations().length === 0) {
-            g.setAnnotations(g.my_annotations);
+            g.setAnnotations(graphInfo.annotations);
         } else {
             g.setAnnotations([]);
         }
     }
 }
 
+// Because we let dygraphs parse the data and setup and then sort the series
+// order, funky things happen with the colors because they don't get sorted
+// with the series. This just resets the order of the colors back to the
+// original. This way we don't have multiple series with the same colors next
+// to each other, which would make the graph hard to read.
+function setColors(g, origColors) {
+    var labels = g.getLabels();
+    var visibility = g.visibility();
+    var colors = origColors.slice();
+
+    // We need to create a map between the index of a label and it's index in
+    // the colors array. The colors array just has the colors for the visible
+    // series while the label array has the names for all the series. This map
+    // is just so we can set the color of a particular series.
+    var curColor = 0;
+    var labelToColorMap = {};
+    for (var i = 1; i < labels.length; i++) {
+      if( visibility[i-1] ) {
+        labelToColorMap[i] = curColor;
+        curColor += 1;
+      }
+    }
+
+    // Reset the colors to the original ones
+    var curColor = 0;
+    for (var i = 1; i < labels.length; i++) {
+        if(!labels[i].endsWith('(examples)') && visibility[i-1]) {
+            colors[labelToColorMap[i]] = origColors[curColor];
+            curColor += 1;
+        }
+    }
+
+    // This is for compiler performance graphs only. If a series ends with
+    // '(examples)' we want to make sure it has the same colors as the '(all)
+    // series and that it has a dashed line to make it easier to distinguish.
+    for (var i = 1; i < labels.length; i++) {
+        if(labels[i].endsWith('(examples)')) {
+            allLabel = labels[i].replace('(examples)', '(all)');
+            allIndex = g.indexFromSetName(allLabel);
+            if (!visibility[allIndex-1]) continue;
+            var color = colors[labelToColorMap[allIndex]];
+            colors[labelToColorMap[i]] = color;
+            var series = {};
+            series[labels[i]] = { 'strokePattern' : Dygraph.DASHED_LINE };
+            g.updateOptions({ 'series' : series }, true);
+       }
+    }
+
+    // update the colors array with the new colors
+    g.updateOptions({ 'colors' : colors }) ;
+}
 
 // Function to sort the data after it has been converted to an array
 // Note that this sorts based on the most recent day available of all
@@ -341,16 +447,24 @@ function customDrawCallback(g, initial) {
     // We let dygraphs handle reading the data and parsing it into an array. We
     // then sort that data on the first draw. This is a little weird because
     // we're creating a graph, and while it's rendering we sort it but having
-    // to parse the data ourselves would be a real pain.
-    if (initial && g.sort) {
-        g.rawData_ = sortData(g);
-        g.setAnnotations(g.annotations());
+    // to parse the data ourselves would be a real pain. Since the series
+    // colors don't get sorted with the data we save the original and then
+    // reset so that multiple series that are next to each other don't have the
+    // same color. After sorting is done, we may expand the graph.
+    if (initial) {
+        if (g.graphInfo.sort) {
+            var origColors = g.getColors().slice();
+            g.rawData_ = sortData(g);
+            g.setAnnotations(g.annotations());
+            setColors(g, origColors);
+        }
+        expandGraphs(g);
     }
 
     // Find the range we're displaying and adjust the number of decimals
     // accordingly. setAnnotations() is used to redraw the graph. Normally
     // updateOptions should redraw the graph, but it doesn't always work as
-    // expected in a callback. 
+    // expected in a callback.
     var oldNumDigits = g.getOption('digitsAfterDecimal');
     var newNumDigits = 0;
     var yRange = g.yAxisRange();
@@ -370,19 +484,19 @@ function customDrawCallback(g, initial) {
         g.updateOptions({digitsAfterDecimal: newNumDigits}, true);
         g.setAnnotations(g.annotations());
     }
-    
+
     // if a user has explicitly zoomed in on zero or negative value and they
     // attempt to take the log the graph will not render. This is a known
     // limitation of dygraphs. If the user has not zoomed, the graph will
     // automatically adjust the y display range, but if they have explicitly
     // requested a range, it will keep the same range for the log scale and
-    // will attempt to take the log of zero.  
+    // will attempt to take the log of zero.
     if (yRange[0] <= 0 && g.isZoomed('y')) {
         g.divs.logToggle.style.color = 'red';
     } else {
         g.divs.logToggle.style.color = 'black';
     }
-    
+
     // if this isn't the initial draw, and all our graphs have been fully
     // created then synchronize our graphs along the x-axis
     if (!initial && numGraphsReady === gs.length) {
@@ -432,17 +546,17 @@ function perfGraphInit() {
     // set the title
     var titleElem = document.getElementById('titleElem');
     titleElem.innerHTML = document.title;
-    
+
     var d = new Date();
     var todayDate = d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
 
     // if the graphs weren't synced today let the user know
     var dateElem= document.getElementById('dateElem');
     if(Dygraph.dateParser(runDate) < Dygraph.dateParser(todayDate)) {
-        dateElem.innerHTML = 'Graphs Last Updated on ' + runDate; 
+        dateElem.innerHTML = 'Graphs Last Updated on ' + runDate;
         dateElem.style.color = "RED";
     }
-    
+
     // generate the suite menu
     var suiteMenu = document.getElementById('suiteMenu');
     var f = document.createElement('form');
@@ -471,7 +585,7 @@ function perfGraphInit() {
         elem.innerHTML = '<input id="graph' + i + '" type="checkbox">' + allGraphs[i].title;
         graphlist.appendChild(elem);
     }
-   
+
     setCheckBoxesFromURL();
     displaySelectedGraphs();
 }
@@ -479,7 +593,7 @@ function perfGraphInit() {
 // This function parses the query string of the url and sets check boxes
 // accordingly. All check boxes are set to not checked by default but if the
 // query string contains <boxnumber>=1 then the box is set to be initially
-// checked. 
+// checked.
 function setCheckBoxesFromURL() {
     var queryString = document.location.search.slice(1);
     var hashes = queryString.split('&');
@@ -493,7 +607,7 @@ function setCheckBoxesFromURL() {
 }
 
 // Update the query string of the url based on the current set of checkboxes
-// that are checked. 
+// that are checked.
 function setURLFromCheckBoxes() {
     var baseURL = document.location.href.split('?')[0];
     var queryString = '?';
@@ -556,7 +670,7 @@ function displaySelectedGraphs() {
             genDygraph(allGraphs[i]);
         }
     }
-    
+
     setURLFromCheckBoxes();
 }
 

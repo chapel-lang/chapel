@@ -214,13 +214,19 @@ class GraphStuff:
                 graphs[currgraph].perfkeys += [ s.strip() for s in rest.split(', ') ]
             elif key == 'graphkeys' :
                 graphs[currgraph].graphkeys += [ s.strip() for s in rest.split(',') ]
-            # files takes a list of the files to use per perfkey, while file
-            # uses the same file for every perfkey. 
+            # files takes a list of the files to use per perfkey, while
+            # repeat-files uses each of n files perkey/n times. So if you have
+            # 10 perfkeys and 2 files listed, each file will be used 5 times
             elif key == 'files' :
                 graphs[currgraph].datfilenames += [ s.strip() for s in rest.split(',') ]
-            elif key == 'file' :
-                numKeysRange = range(0, len(graphs[currgraph].perfkeys))
-                graphs[currgraph].datfilenames += [ rest.strip() for i in numKeysRange]
+            elif key == 'repeat-files' :
+                dFiles = [ s.strip() for s in rest.split(',') ]
+                if len(graphs[currgraph].perfkeys) % len(dFiles) != 0:
+                    sys.stdout.write('[Warning: num .dat files did not evenly divide into num perfkeys for %s. Ignoring.]\n'%(fullFname))
+                    return
+                keysRange = range(0, (len(graphs[currgraph].perfkeys) / len(dFiles)))
+                for dFile in dFiles:
+                    graphs[currgraph].datfilenames += [ dFile for i in keysRange ]
             elif key == 'graphtitle':
                 graphs[currgraph].title = rest.strip()
             elif key == 'graphname':

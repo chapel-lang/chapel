@@ -1586,9 +1586,9 @@ if ($compperformance) then
     @ elapsed = $endTime - $startTime
     set compGraphList = "$CHPL_HOME/test/COMPGRAPHFILES"
  
-    #combine all of the smaller .dat files into an averaged one and make copies if needed into a different directory 
+    #combine all of the smaller .dat files into an averaged one 
     echo "[Combining dat files now]" 
-    $combineCompPerf --tempDatDir "$tempDatFilesDir"  --elapsedTestTime  "$elapsed" --outDir "$compperfdir/"  --graphFile "$compGraphList" |& $tee -a $logfile
+    $combineCompPerf --tempDatDir "$tempDatFilesDir" --elapsedTestTime "$elapsed" --outDir "$compperfdir/" |& $tee -a $logfile
     if ($status == 0) then
         echo "[Success combining compiler performance dat files]" |& $tee -a $logfile
     else

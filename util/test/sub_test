@@ -1136,29 +1136,37 @@ for testname in testsrc:
 
             # so long as we have to the directories 
             if timePasses: 
-                # make the datFileName the full path with / replaced with -- so
-                # we can keep the full path but not create a bunch of new
-                # directories
-                datFileName = localdir.replace('/', '--') + '--' + execname + str(compoptsnum) 
+                # We need to name the files differently for each compiler
+                # option. 0 is the default compoptsnum if there are no options
+                # listed so we don't need to clutter the names with that
+                compoptsstring = str(compoptsnum)
+                if compoptsstring == '0':
+                    compoptsstring = ''
 
-                # computePerfStats for the current test 
+                # make the datFileName the full path with / replaced with ~~ so
+                # we can keep the full path for later but not create a bunch of
+                # new directories.
+                datFileName = localdir.replace('/', '~~') + '~~' + execname + compoptsstring
+
+                # computePerfStats for the current test
                 sys.stdout.write('[Executing computePerfStats %s %s %s %s %s]\n'%(datFileName, tempDatFilesDir, keyfile, printpassesfile, str(exectimeout)))
                 sys.stdout.flush()
                 p = subprocess.Popen([utildir+'/computePerfStats', datFileName, tempDatFilesDir, keyfile, printpassesfile, str(exectimeout)], stdout=subprocess.PIPE)
-                sys.stdout.write('%s'%(p.communicate()[0]))
-                sys.stdout.flush()
-
+                compkeysOutput = p.communicate()[0]
+                datFiles = [tempDatFilesDir+'/'+datFileName+'.dat',  tempDatFilesDir+'/'+datFileName+'.error']
                 status = p.returncode
 
                 if status == 0:
-                    sys.stdout.write('[Success')
+                    sys.stdout.write('[Success finding compiler performance keys for %s/%s]\n'% (localdir, execname))
                 else:
-                    sys.stdout.write('[Error')
-                sys.stdout.write(' finding  compiler performance keys for %s/%s'%
-                                 (localdir, execname))
-                if status!=0:
-                    printTestVariation(compoptsnum, execoptsnum);
-                sys.stdout.write(']\n')    
+                    sys.stdout.write('[Error finding compiler performance keys for %s/%s.]\n'% (localdir, execname))
+                    printTestVariation(compoptsnum);
+                    sys.stdout.write('computePerfStats output was:\n%s\n'%(compkeysOutput))
+                    sys.stdout.flush()
+                    sys.stdout.write('Deleting .dat files for %s/%s because of failure to find all keys\n'%(localdir, execname))
+                    for datFile in datFiles:
+                        if os.path.isfile(datFile):
+                            os.unlink(datFile)
 
             #delete the timing file     
             cleanup(printpassesfile)
