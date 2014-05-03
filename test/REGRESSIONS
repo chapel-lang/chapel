@@ -27,7 +27,6 @@ linux64 regressions (in addition to the above)
 (Reviewed for accuracy 04/02/14)
 ==============================================
 
-[Error matching .bad file for users/ferguson/recordassignstring] (23255, hilde)
 
 ==============================================
 linux32 regressions (in addition to the above)
@@ -196,7 +195,6 @@ failure due to r22900 (bradc; may let regress until strings are records)
 gasnet-fast regressions (other than the above)
 (Reviewed for accuracy 04/01/14)
 ==============================================
-[Error matching .bad file for users/ferguson/extern_string_test (compopts: 1)]
 
 unable to start polling thread (???)
 ------------------------------------
@@ -394,10 +392,6 @@ writeln didn't print string arguments
 -------------------------------------
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1d-local (compopts: 1)]
 [Error matching program output for studies/uts/dequeue]
-
-extern_string_test output mismatch (06/16/13)
----------------------------------------------
-[Error matching .bad file for users/ferguson/extern_string_test (compopts: 1)]
 
 empty array size problem (1/25/14 -- bradc)
 -------------------------------------------
@@ -627,11 +621,6 @@ Passing future (just lucky)
 ---------------------------
 Future (semantic: what should happen when a domain is reassigned in parallelconstructs?) [Success matching program output for domains/diten/domainReassignNoAlias] (4/3/14)
 
-undefined references to Chapel runtime functions (static/dynamic link problem)
-------------------------------------------------------------------------------
-[Error matching compiler output for compflags/bradc/minimalModules/minModDeclPrint]
-[Error matching compiler output for compflags/bradc/minimalModules/minModFnRefArg]
-
 segv (no backtrace) (2/18/14)
 -----------------------------
 [Error matching program output for exercises/RandomNumber6]
@@ -647,10 +636,6 @@ qthreads.numa regressions
 (other than qthreads regressions above)
 (Reviewed for accuracy 04/02/14)
 =======================================
-
-different internal failure (before 02/25/14)
---------------------------------------------
-[Error matching .bad file for users/vass/crash1callDestructorsMain]
 
 yield within on error (before 02/25/14)
 ---------------------------------------
@@ -668,8 +653,6 @@ missing debug lines in output detailing dataPar*, etc. (02/25/14)
 [Error matching program output for distributions/sungeun/dataPar2 (compopts: 3, execopts: 1)]
 [Error matching program output for distributions/sungeun/dataPar2 (compopts: 3, execopts: 2)]
 [Error matching program output for distributions/sungeun/dataPar2 (compopts: 3, execopts: 3)]
-[Error matching program output for functions/iterators/sungeun/forwarding/forwardDefaultArr (compopts: 1)]
-[Error matching program output for functions/iterators/sungeun/forwarding/forwardDefaultDom (compopts: 1)]
 
 Unknown extra memory leaks
 --------------------------

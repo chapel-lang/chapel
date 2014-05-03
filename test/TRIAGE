@@ -141,11 +141,18 @@ This take 10s of seconds at most:
 [Error: Timed out compilation for domains/bradc/splitdomain] (1/24/14)
 [Error: Timed out compilation for arrays/stonea/initialize2DArrayFromTuple] (2/3/14)
 [Error: Timed out compilation for arrays/stonea/outOfBoundsSlice] (2/3/14)
-
+[Error: Timed out compilation for domains/sungeun/assoc/plus_equals (compopts: 1)] (5/2/14)
 
 ==============================================
 These things regularly cause noise in testing:
 ==============================================
+
+barrier for 'stop polling' - linux64.gnu.gasnet.qthreads.numa
+-------------------------------------------------------------
+[Error matching program output for multilocale/deitz/needMultiLocales/diagnostics/test_private_broadcast_small] (4/29/14,5/01/14)
+This started failing on 4/29/14 and has done so intermittently.
+The error is due to extra verbose-comm output.
+Vass initiated an email discussion between Greg and Sung.
 
 pthread mutex lock assertion failed (after 22303, unassigned)
 -----------------------------------
@@ -303,7 +310,7 @@ studies/jacobi/waynew/example2 (02/25/13)
 
 numerical discrepancies - same cause as for --no-local above?
 -------------------------------------------------------------
-[Error matching program output for studies/jacobi/waynew/example2] (6/22/13;3/01,3/09,4/10/14)
+[Error matching program output for studies/jacobi/waynew/example2] (6/22/13;3/01,3/09,4/10,4/29/14)
 
 
 intermittent valgrind error
@@ -527,4 +534,11 @@ numeric discrepancy under linux64.intel.none.fifo.pthreads (chpbld02)
 Seems intermittent (7/3/2013)
 [Error matching program output for studies/jacobi/waynew/example2]
 
+extern_string_test .bad mismatch
+--------------------------------
+[Error matching .bad file for users/ferguson/extern_string_test (compopts: 1)]
+r23337 (5/2/14) adds a prediff to standardize the common output generated
+by this future, so the failure to match .bad should be rare.
+Note: if the test log just says "files are different", this is perhaps
+because the (erroneous) output contains non-printing characters.
 
