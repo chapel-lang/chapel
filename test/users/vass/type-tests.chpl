@@ -42,13 +42,26 @@ proc test(param msg, ref v) {
   if isDomainType(v.type) then compilerWarning(msg + " is a domain");
   if isArrayType(v.type)  then compilerWarning(msg + " is an array");
   if isAtomicType(v.type) then compilerWarning(msg + " is an atomic");
+  if _isSyncType(v.type)  then compilerWarning(msg + " is a sync");
+  if _isSingleType(v.type)then compilerWarning(msg + " is a single");
+// Todo: would be nice to add versions of the above tests on variables
+// instead of types, e.g. isTuple(v) in addition to isTupleType(v.type).
 }
 
 // This is a workaround for test/functions/vass/sync-by-ref.future,
 // temporarily here to confirm that isRecordType et al. actually work.
 // Once that future is fixed, we should probably remove this workaround.
-proc test(param msg, type t) {
-  compilerWarning(msg + " - class:  " + isClassType(t):string);
-  compilerWarning(msg + " - record: " + isRecordType(t):string);
-  compilerWarning(msg + " - union:  " + isUnionType(t):string);
+proc test(param msg, type tp) {
+  compilerWarning(msg + " - class:  " + isClassType(tp):string);
+  compilerWarning(msg + " - record: " + isRecordType(tp):string);
+  compilerWarning(msg + " - union:  " + isUnionType(tp):string);
+  if isRangeType(tp)   then compilerWarning(msg + " is range");
+  if isTupleType(tp)   then compilerWarning(msg + " is tuple");
+  if isDmapType(tp)    then compilerWarning(msg + " is dmap");
+  if isDomainType(tp)  then compilerWarning(msg + " is domain");
+  if isArrayType(tp)   then compilerWarning(msg + " is array");
+  if isAtomicType(tp)  then compilerWarning(msg + " is atomic");
+// Temporarily disabled - _isSyncType misfires on single types:
+//  if _isSyncType(tp)   then compilerWarning(msg + " is sync");
+  if _isSingleType(tp) then compilerWarning(msg + " is single");
 }

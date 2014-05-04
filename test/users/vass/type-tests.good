@@ -69,4 +69,5 @@ type-tests.chpl:31: warning: sync - union:  false
 type-tests.chpl:32: warning: single - class:  false
 type-tests.chpl:32: warning: single - record: false
 type-tests.chpl:32: warning: single - union:  false
+type-tests.chpl:32: warning: single is single
 type-tests.chpl:33: error: done
