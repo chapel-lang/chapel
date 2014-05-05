@@ -303,6 +303,13 @@ undiagnosed cygwin failures
 [Error running sub_test in /tmp/chapel-cron-cygwin.gnu.none.fifo.flat-bradc/chapel/test/release/examples/spec/Arrays (1)] (4/12/14)
 
 
+domainReassignNoAlias future passes intermittently with qthreads.none
+---------------------------------------------------------------------
+Has been passing on and off under qthreads.none.flat or .numa since
+4'2014 or earlier:
+[Success matching program output for domains/diten/domainReassignNoAlias]
+
+
 incorrect answer suggestive of a --no-local race : iteration terminated
 too early or too late (?)
 -----------------------------------------------------------------------
@@ -456,7 +463,7 @@ examples of what times out:
  test_array_slicing3 (07/24/13, 07/12/13, 06/08/12, 6/16, 3/29/13, 5/3/13, 11/8/13, 12/9/13)
  release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4) (04/08/13)
  studies/cholesky/jglewis/version2/performance/test_cholesky_performance (10/10/13)
- multilocale/diten/needMultiLocales/coforallon_maxThreads (07/04/13, 10/10/13, 10/22/13, 1/21/14, 4/7/14)
+ multilocale/diten/needMultiLocales/coforallon_maxThreads (07/04/13, 10/10/13, 10/22/13, 1/21/14, ..., 4/7/14, ...)
  etc.
 [Error: Timed out executing program release/examples/hello3-datapar]
 [Error: Timed out executing program release/examples/hello]

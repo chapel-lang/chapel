@@ -20,7 +20,6 @@
 general regressions (seem to happen in most configurations)
 ===========================================================
 
-[Error matching .bad file for modules/hilde/test_module_Sort-baseline (compopts: 1)]
 
 ==============================================
 linux64 regressions (in addition to the above)
@@ -641,18 +640,6 @@ yield within on error (before 02/25/14)
 ---------------------------------------
 [Error matching compiler output for functions/iterators/bradc/onInIterator2]
 [Error matching compiler output for users/shetag/iteratorWithOn]
-
-missing debug lines in output detailing dataPar*, etc. (02/25/14)
------------------------------------------------------------------
-[Error matching program output for distributions/sungeun/dataPar2 (compopts: 1, execopts: 1)]
-[Error matching program output for distributions/sungeun/dataPar2 (compopts: 1, execopts: 2)]
-[Error matching program output for distributions/sungeun/dataPar2 (compopts: 1, execopts: 3)]
-[Error matching program output for distributions/sungeun/dataPar2 (compopts: 2, execopts: 1)]
-[Error matching program output for distributions/sungeun/dataPar2 (compopts: 2, execopts: 2)]
-[Error matching program output for distributions/sungeun/dataPar2 (compopts: 2, execopts: 3)]
-[Error matching program output for distributions/sungeun/dataPar2 (compopts: 3, execopts: 1)]
-[Error matching program output for distributions/sungeun/dataPar2 (compopts: 3, execopts: 2)]
-[Error matching program output for distributions/sungeun/dataPar2 (compopts: 3, execopts: 3)]
 
 Unknown extra memory leaks
 --------------------------
