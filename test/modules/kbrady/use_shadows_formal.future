@@ -3,10 +3,8 @@ feature request: A more robust module system
 Currently the only way we have to reference another module outside of the
 current file is a 'use' statement. There are a few problems with this. One of
 the primary issues is shown in this test. We 'use' a module that defines one
-symbol (bar) inside of the procedure test. Now because we 'use' all of the
-standard modules inside of every other module, when we go to compile we will
-get an error since there is a function inside of Sys named addr that will
-shadow our formal.
+symbol (bar) inside of the procedure test. After this point, the formal, bar,
+will be shadowed by Foo.bar.
 
 A method of allowing other modules to be used with out dumping a very large
 number of symbols into the local context should be provided. In addition a

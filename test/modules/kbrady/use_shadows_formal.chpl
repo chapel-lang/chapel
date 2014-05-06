@@ -2,9 +2,9 @@ module Foo {
   var bar = "bad";
 }
 
-proc test(addr: int) {
+proc test(bar: int) {
   use Foo;
-  writeln(addr);
+  writeln(bar);
 }
 
 test(1);

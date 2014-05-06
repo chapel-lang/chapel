@@ -1,2 +1,1 @@
-use_shadows_formal.chpl:5: In function 'test':
-use_shadows_formal.chpl:7: error: addr: can not capture overloaded functions as values
+bad
