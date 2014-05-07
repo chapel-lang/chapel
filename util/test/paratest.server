@@ -169,19 +169,19 @@ sub free_workers {
     foreach $ready (@readyv) {
         next if ($ready =~ /^\./);
         my ($node, $id, $failed) = split (/\./, $ready);
-       if ($failed) {
-	print "\n failure on $node, no more testing there\n";
-        unlink "$synchdir/$ready";
-       } else {
-        push @readyids, $id;
-        # Wait on the processes represented by each of the files being iterated
-        # over. The existence of each file implies a previously forked process
-        # has finished and is currently a zombie. The only exception to this
-        # is the first time this subroutine is called. The first time, all of
-        # these files were created by this driver script, not children. This
-        # is not a problem though since wait is non-blocking.
-        wait;
-       }
+        if ($failed) {
+            print "\n failure on $node, no more testing there\n";
+            unlink "$synchdir/$ready";
+        } else {
+            push @readyids, $id;
+            # Wait on the processes represented by each of the files being iterated
+            # over. The existence of each file implies a previously forked process
+            # has finished and is currently a zombie. The only exception to this
+            # is the first time this subroutine is called. The first time, all of
+            # these files were created by this driver script, not children. This
+            # is not a problem though since wait is non-blocking.
+            wait;
+        }
     }
 
     print (@readyids ? "," : ".");
@@ -257,12 +257,12 @@ sub feed_nodes {
                 $partial_errors = `grep -a "^\\[Error" $logfile`;
                 if ($partial_errors =~ /^\[Error/) {
                     @errors = split /^/m, $partial_errors;
-		    if ($show_all_errors) {
-		        print "\n:( \n @errors";
-		    } else {
-		        chomp $errors[0];
-			print "\n:( " . $errors[0] . "\n";
-		    }
+                    if ($show_all_errors) {
+                        print "\n:( \n @errors";
+                    } else {
+                        chomp $errors[0];
+                        print "\n:( " . $errors[0] . "\n";
+                    }
                 } else {
                     print ":)";
                 }
@@ -284,6 +284,15 @@ sub feed_nodes {
         @readyidv = free_workers ();
         foreach $readyid (@readyidv) {
             $callboard[$readyid] = 0;
+
+            # This worker's termination has been noted.
+            $node = $node_list[$readyid]; # machine name to rem exec to
+            $synchfile = "$synchdir/$node.$readyid";
+            unless (-e $synchfile) {
+                printf ("Error: synch file '$synchfile' missing\n");
+                exit (7);
+            }
+            unlink $synchfile;
         }
 
         # Now check that all nodes have timed out.
