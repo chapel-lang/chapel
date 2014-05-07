@@ -5,5 +5,4 @@ MAILTO=chapel_build@cray.com
 # This crontab is managed in the chapel subversion repo. Make modifications
 # there and use the install_crontab.bash script to update.
 
-# NOTE: Disable testing on this host tonight. (thomasvandoren, 2014-05-06)
-# 0 2 * * * ~/chapel/util/cron/machine.chap05 > ~/tmp/machine.chap05.out 2>&1
+0 2 * * * ~/chapel/util/cron/machine.chap05 > ~/tmp/machine.chap05.out 2>&1
