@@ -7,6 +7,7 @@ COMMON_LAUNCHER_SRCS = \
 
 COMMON_NOGEN_SRCS = \
 	$(COMMON_LAUNCHER_SRCS) \
+	chpl-bitops.c \
 	chpl-comm.c \
 	chplcopygc.c \
 	chplexit.c \

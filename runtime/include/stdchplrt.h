@@ -12,9 +12,11 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "chpl-bitops.h"
 #include "chplcast.h"
 #include "chplio.h"
 #include "chpl-mem.h"
+#include "chpl-prefetch.h"
 #include "chpl-tasks.h"
 #include "chpltimers.h"
 #include "chpltypes.h"
