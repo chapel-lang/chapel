@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 
-source $(cd $(dirname $0) ; pwd)/common-gasnet.bash
+source $(cd $(dirname $0) ; pwd)/common.bash
+
+# This should be common-gasnet.bash, but since it also sources
+# common.bash, we copy it here
+export CHPL_COMM=gasnet
+export GASNET_SPAWNFN=L
+export GASNET_ROUTE_OUTPUT=0
+export CHPL_GASNET_CFG_OPTIONS=--disable-ibv
 
 # qthreads + flat + gasnet + multilocale suite
-~/chapel/util/cron/nightly.qthreads -examples
+~/chapel/util/cron/nightly.qthreads -multilocale

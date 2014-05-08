@@ -1,39 +1,35 @@
 #!/usr/bin/env bash
 #
-# If -examples option is passed as $1, will run nightly with -examples and
-# -no-futures. No flags if -full option is passed. The log files have distinct
-# names for -examples and -full options.
+# qthreads testing
+#
+# If -examples option is passed as $1, will run nightly with
+# -examples. If -multilocale is passed, it will run witn -multilocale
+# -no-futures.  No flags if -full option is passed. The log files
+# have distinct names for -examples and -full options.
 
 source $(cd $(dirname $0) ; pwd)/common.bash
+source $(cd $(dirname $0) ; pwd)/common-qthreads.bash
+
+comm=$($CHPL_HOME/util/chplenv/comm)
 
 if [ "${1}" == "-examples" ] ; then
-    examples_opt="-examples -no-futures"
+    examples_opt="-examples"
     tests_to_run="examples"
 elif [ "${1}" == "-multilocale" ] ; then
-    examples_opt="-multilocale"
+    examples_opt="-multilocale -no-futures"
     tests_to_run="multilocale"
+    if [ "${comm}" == "none" ] ; then
+        log_info "Using multilocale suite, but CHPL_COMM=none"
+    fi
 elif [ "${1}" == "-full" ] ; then
     examples_opt=""
     tests_to_run="full"
 else
-    echo "Usage: $0 [ -examples | -full ]"
+    echo "Usage: $0 [ -examples | -multilocale | -full ]"
     echo ""
-    echo "  Must be called with one of -examples or -full."
+    echo "  Must be called with one of -examples, -multilocale  or -full."
     echo ""
     exit 1
-fi
-
-#
-# Test Qthreads with CHPL_COMM=none
-#
-comm=$($CHPL_HOME/util/chplenv/comm)
-export CHPL_TASKS=qthreads
-
-if [ "${comm}" != "none" ] ; then
-    # Set these to use oversubscription to help with timeouts
-    export QT_AFFINITY=no
-    export CHPL_QTHREAD_ENABLE_OVERSUBSCRIPTION=1
-    export CHPL_RT_NUM_THREADS_PER_LOCALE=2
 fi
 
 export LOGFILE=~/tmp/nightly.qthreads.$comm.$tests_to_run.out

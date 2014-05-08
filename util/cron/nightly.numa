@@ -2,34 +2,38 @@
 #
 # numa testing
 #
-# If -localeModel option is passed as $1, will run nightly with -localeModel
-# (tests release/examples and localesModel dirs). No flags if -full option is
-# passed. The log files have distinct names for -localeModel and -full options.
+# If -localeModel option is passed as $1, will run nightly with
+# -localeModel (tests release/examples and localesModel dirs).  If
+# -multilocale is passed, it will run witn -multilocale -no-futures.
+# No flags if -full option is passed. The log files have distinct
+# names for -localeModel and -full options.
 
 source $(cd $(dirname $0) ; pwd)/common.bash
+source $(cd $(dirname $0) ; pwd)/common-numa.bash
+
+comm=$($CHPL_HOME/util/chplenv/comm)
 
 if [ "${1}" == "-localeModel" ] ; then
     examples_opt="-localeModel"
     tests_to_run="localeModel"
+elif [ "${1}" == "-multilocale" ] ; then
+    examples_opt="-multilocale -no-futures"
+    tests_to_run="multilocale"
+    if [ "${comm}" == "none" ] ; then
+        log_info "Using multilocale suite, but CHPL_COMM=none"
+    fi
 elif [ "${1}" == "-full" ] ; then
     examples_opt=""
     tests_to_run="full"
 else
-    echo "Usage: $0 [ -localeModel | -full ]"
+    echo "Usage: $0 [ -localeModel | -multilocale | -full ]"
     echo ""
-    echo "  Must be called with one of -localeModel or -full."
+    echo "  Must be called with one of -localeModel, -multilocale or -full."
     echo ""
     exit 1
 fi
 
-#
-# NUMA testing with CHPL_COMM=none
-#
-LOGFILE=~/tmp/nightly.numa.$tests_to_run.out
-log_info "Testing NUMA for localeModel suite with CHPL_COMM=none.  Log file: $LOGFILE"
-
-# TODO: Make a common-numa.bash file. (thomasvandoren, 2014-01-24)
-export CHPL_LOCALE_MODEL=numa
-export CHPL_TASKS=qthreads
+LOGFILE=~/tmp/nightly.numa.$comm.$tests_to_run.out
+log_info "Testing NUMA with CHPL_COMM=${comm}. Test suite: ${tests_to_run}. Log files: $LOGFILE"
 
 with_logging $LOGFILE ~/chapel/util/cron/nightly -cron $examples_opt
