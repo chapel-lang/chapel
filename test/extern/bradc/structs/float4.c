@@ -12,5 +12,5 @@ float4 getfloat4(void) {
 }
 
 void printme(float4 val) {
-  printf("(%f, %f, %f, %f)", val.x, val.y, val.z, val.w);
+  printf("(%f, %f, %f, %f)\n", val.x, val.y, val.z, val.w);
 }
