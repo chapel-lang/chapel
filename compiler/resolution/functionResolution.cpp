@@ -287,6 +287,7 @@ gatherCandidates(Vec<ResolutionCandidate*>& candidates,
 
 static void resolveCall(CallExpr* call);
 static void resolveNormalCall(CallExpr* call);
+static void lvalueCheck(CallExpr* call);
 static void resolveTupleAndExpand(CallExpr* call);
 static void resolveTupleExpand(CallExpr* call);
 static void resolveSetMember(CallExpr* call);
@@ -356,6 +357,7 @@ static void buildRuntimeTypeInitFns();
 static void removeRandomJunk();
 static void removeUnusedFormals();
 static void insertRuntimeInitTemps();
+static void removeInitFields();
 static void removeMootFields();
 static void removeNilTypeArgs();
 static void expandInitFieldPrims();
@@ -3143,6 +3145,22 @@ static void resolveNormalCall(CallExpr* call) {
     if (!isInConstructorLikeFunction(call))
       USR_FATAL_CONT(call, "illegal call to %s() - it modifies 'const' fields of 'this', therefore it can be invoked only directly from a constructor", resolvedFn->name);
 
+  lvalueCheck(call);
+
+  if (const char* str = innerCompilerWarningMap.get(resolvedFn)) {
+    reissueCompilerWarning(str, 2);
+    if (FnSymbol* fn = toFnSymbol(callStack.v[callStack.n-2]->isResolved()))
+      outerCompilerWarningMap.put(fn, str);
+  }
+    
+  if (const char* str = outerCompilerWarningMap.get(resolvedFn)) {
+    reissueCompilerWarning(str, 1);
+  }
+}
+
+
+static void lvalueCheck(CallExpr* call)
+{
   // Check to ensure the actual supplied to an OUT, INOUT or REF argument
   // is an lvalue.
   for_formals_actuals(formal, actual, call) {
@@ -3179,7 +3197,7 @@ static void resolveNormalCall(CallExpr* call) {
       call->parentSymbol->addFlag(FLAG_MODIFIES_CONST_FIELDS);
     }
     if (errorMsg) {
-      FnSymbol* calleeFn = resolvedFn;
+      FnSymbol* calleeFn = call->isResolved();
       INT_ASSERT(calleeFn == formal->defPoint->parentSymbol); // sanity
       if (calleeFn->hasFlag(FLAG_ASSIGNOP)) {
         // This assert is FYI. Perhaps can remove it if it fails.
@@ -3213,17 +3231,8 @@ static void resolveNormalCall(CallExpr* call) {
       }
     }
   }
-
-  if (const char* str = innerCompilerWarningMap.get(resolvedFn)) {
-    reissueCompilerWarning(str, 2);
-    if (FnSymbol* fn = toFnSymbol(callStack.v[callStack.n-2]->isResolved()))
-      outerCompilerWarningMap.put(fn, str);
-  }
-    
-  if (const char* str = outerCompilerWarningMap.get(resolvedFn)) {
-    reissueCompilerWarning(str, 1);
-  }
 }
+
 
 static void resolveTupleAndExpand(CallExpr* call) {
   SymExpr* se = toSymExpr(call->get(1));
@@ -4250,6 +4259,10 @@ static Expr*
 preFold(Expr* expr) {
   Expr* result = expr;
   if (CallExpr* call = toCallExpr(expr)) {
+    // Match calls that look like:  (<type-symbol> <immediate-integer>)
+    // and replace them with:       <new-type-symbol>
+    // <type-symbol> is in {dtBools, dtInt, dtUint, dtReal, dtImag, dtComplex}.
+    // This replaces, e.g. ( dtInt[INT_SIZE_DEFAULT] 32) with dtInt[INT_SIZE_32].
     if (SymExpr* sym = toSymExpr(call->baseExpr)) {
       if (TypeSymbol* type = toTypeSymbol(sym->var)) {
         if (call->numActuals() == 1) {
@@ -5110,22 +5123,38 @@ postFold(Expr* expr) {
         if (lhs->var->hasFlag(FLAG_MAYBE_PARAM) || lhs->var->isParameter()) {
           if (paramMap.get(lhs->var))
             INT_FATAL(call, "parameter set multiple times");
-          if (VarSymbol* lhsVar = toVarSymbol(lhs->var))
-            INT_ASSERT(!lhsVar->immediate);
-          if (SymExpr* rhs = toSymExpr(call->get(2))) {
-            if (VarSymbol* rhsVar = toVarSymbol(rhs->var)) {
-              if (rhsVar->immediate) {
-                paramMap.put(lhs->var, rhsVar);
+          VarSymbol* lhsVar = toVarSymbol(lhs->var);
+          // We are expecting the LHS to be a var (what else could it be?
+          if (lhsVar->immediate) {
+            // The value of the LHS of this move has already been
+            // established, most likely through a construct like 
+            // if (cond) return x;
+            // return y;
+            // In this case, the first 'true' conditional that hits a return
+            // can fast-forward to the end of the routine, and some
+            // resolution time can be saved.
+            // Re-enable the fatal error to catch this case; the correct
+            // solution is to ensure that the containing expression is never
+            // resolved, using the abbreviated resolution suggested above.
+            // INT_ASSERT(!lhsVar->immediate);
+            set = true; // That is, set previously.
+          } else {
+            if (SymExpr* rhs = toSymExpr(call->get(2))) {
+              if (VarSymbol* rhsVar = toVarSymbol(rhs->var)) {
+                if (rhsVar->immediate) {
+                  paramMap.put(lhs->var, rhsVar);
+                  lhs->var->defPoint->remove();
+                  makeNoop(call);
+                  set = true;
+                }
+              }
+              if (EnumSymbol* rhsv = toEnumSymbol(rhs->var)) {
+                paramMap.put(lhs->var, rhsv);
                 lhs->var->defPoint->remove();
                 makeNoop(call);
                 set = true;
-              }
-            } else if (EnumSymbol* rhsv = toEnumSymbol(rhs->var)) {
-              paramMap.put(lhs->var, rhsv);
-              lhs->var->defPoint->remove();
-              makeNoop(call);
-              set = true;
-            } 
+              } 
+            }
           }
           if (!set && lhs->var->isParameter())
             USR_FATAL(call, "Initializing parameter '%s' to value not known at compile time", lhs->var->name);
@@ -5358,6 +5387,24 @@ postFold(Expr* expr) {
     }
   } else if (SymExpr* sym = toSymExpr(expr)) {
     if (Symbol* val = paramMap.get(sym->var)) {
+      CallExpr* call = toCallExpr(sym->parentExpr);
+      if (call && call->get(1) == sym) {
+        // This is a place where param substitution has already determined the
+        // value of a move or assignment, so we can just ignore the update.
+        if (call->isPrimitive(PRIM_MOVE)) {
+          makeNoop(call);
+          return result;
+        }
+
+        // The substitution usually happens before resolution, so for
+        // assignment, we key off of the name :-(
+        if (call->isNamed("="))
+        {
+          makeNoop(call);
+          return result;
+        }
+      }
+
       if (sym->var->type != dtUnknown && sym->var->type != val->type) {
         CallExpr* cast = new CallExpr("_cast", sym->var, val);
         sym->replace(cast);
@@ -5422,11 +5469,19 @@ static bool is_param_resolved(FnSymbol* fn, Expr* expr) {
 }
 
 
-void
-resolveBlock(Expr* body) {
-  FnSymbol* fn = toFnSymbol(body->parentSymbol);
-  
-  for_exprs_postorder(expr, body) {
+// Resolves an expression and manages the callStack and tryStack.
+// On success, returns the call that was passed in.
+// On a try failure, returns either the expression preceding the elseStmt,
+// substituted for the body of the param condition (if that substitution could
+// be made), or NULL.
+// If null, then resolution of the current block should be aborted.  tryFailure
+// is true in this case, so the search for a matching elseStmt continue in the
+// surrounding block or call.
+static Expr*
+resolveExpr(Expr* expr)
+{
+    FnSymbol* fn = toFnSymbol(expr->parentSymbol);
+
     SET_LINENO(expr);
     if (SymExpr* se = toSymExpr(expr)) {
       if (se->var) {
@@ -5438,23 +5493,54 @@ resolveBlock(Expr* body) {
 
     if (fn && fn->retTag == RET_PARAM) {
       if (is_param_resolved(fn, expr)) {
-        return;
+        return expr;
       }
     }
-
+    
+    if (DefExpr* def = toDefExpr(expr))
+    {
+      if (def->init)
+      {
+        Expr* init = preFold(def->init);
+        init = resolveExpr(init);
+        // expr is unchanged, so is treated as "resolved".
+      }
+    }
+    
     if (CallExpr* call = toCallExpr(expr)) {
       if (call->isPrimitive(PRIM_ERROR) ||
           call->isPrimitive(PRIM_WARNING)) {
         issueCompilerError(call);
       }
-      
+        
+      // Resolve expressions of the form:  <type> ( args )
+      // These will be constructor calls (or type constructor calls) that slipped
+      // past normalization due to the use of typedefs.
+      if (SymExpr* se = toSymExpr(call->baseExpr))
+      {
+        if (TypeSymbol* ts = toTypeSymbol(se->var))
+        {
+          if (call->numActuals() == 0 ||
+              (call->numActuals() == 2 && isSymExpr(call->get(1)) && 
+               toSymExpr(call->get(1))->var == gMethodToken))
+          {
+            // This looks like a typedef, so ignore it.
+          }
+          else
+          {
+            // More needed here ... .
+            INT_FATAL(ts, "not yet implemented.");
+          }
+        }
+      }
+    
       callStack.add(call);
       resolveCall(call);
-      
+        
       if (!tryFailure && call->isResolved()) {
         resolveFns(call->isResolved());
       }
-      
+        
       if (tryFailure) {
         if (tryStack.tail()->parentSymbol == fn) {
           while (callStack.tail()->isResolved() != tryStack.tail()->elseStmt->parentSymbol) {
@@ -5468,37 +5554,56 @@ resolveBlock(Expr* body) {
           if (!block->prev)
             block->insertBefore(new CallExpr(PRIM_NOOP));
           expr = block->prev;
-          tryFailure = false;
-          continue;
+          return expr;
         } else {
-          return;
+          return NULL;
         }
       }
       callStack.pop();
-      
-    } else if (SymExpr* sym = toSymExpr(expr)) {
+    }
+    
+    if (SymExpr* sym = toSymExpr(expr)) {
       // Avoid record constructors via cast
       // should be fixed by out-of-order resolution
       CallExpr* parent = toCallExpr(sym->parentExpr);
       if (!parent ||
           !parent->isPrimitive(PRIM_IS_SUBTYPE) ||
           !sym->var->hasFlag(FLAG_TYPE_VARIABLE)) {
-
+    
         if (AggregateType* ct = toAggregateType(sym->typeInfo())) {
           if (!ct->symbol->hasFlag(FLAG_GENERIC) &&
               !ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
               !ct->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
             resolveFormals(ct->defaultTypeConstructor);
             if (resolvedFormals.set_in(ct->defaultTypeConstructor)) {
-              if (ct->defaultTypeConstructor->hasFlag(FLAG_PARTIAL_COPY)) instantiateBody(ct->defaultTypeConstructor);
+              if (ct->defaultTypeConstructor->hasFlag(FLAG_PARTIAL_COPY)) 
+                instantiateBody(ct->defaultTypeConstructor);
               resolveFns(ct->defaultTypeConstructor);
             }
           }
         }
       }
     }
-    
+      
     expr = postFold(expr);
+    return expr;
+}
+
+
+void
+resolveBlock(Expr* body)
+{
+  for_exprs_postorder(expr, body)
+  {
+    expr = resolveExpr(expr);
+
+    if (tryFailure)
+    {
+      if (expr == NULL)
+        return;
+
+      tryFailure = false;
+    }
   }
 }
 
@@ -6689,6 +6794,7 @@ pruneResolvedTree() {
   buildRuntimeTypeInitFns();
   removeUnusedFormals();
   insertRuntimeInitTemps();
+  removeInitFields();
   removeMootFields();
   removeNilTypeArgs();
   expandInitFieldPrims();
@@ -7088,6 +7194,19 @@ static void insertRuntimeInitTemps() {
           se->remove();
 
     }
+  }
+}
+
+// Remove typedef definitions
+static void removeInitFields()
+{
+  forv_Vec(DefExpr, def, gDefExprs)
+  {
+    if (! def->inTree()) continue;
+    if (! def->init) continue;
+    if (! def->sym->hasFlag(FLAG_TYPE_VARIABLE)) continue;
+    def->init->remove();
+    def->init = NULL;
   }
 }
 

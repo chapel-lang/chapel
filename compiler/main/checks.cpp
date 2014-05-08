@@ -14,12 +14,17 @@
 //
 
 static void check_afterEveryPass(); // Checks to be performed after every pass.
+static void check_afterScopeResolve(); // Checks to be performeed after the
+                                       // scopeResolve pass.
 static void check_afterNormalization(); // Checks to be performed after
                                         // normalization.
 static void check_afterResolution(); // Checks to be performed after every pass
                                      // following resolution.
 static void check_afterCallDestructors(); // Checks to be performed after every
                                           // pass following callDestructors.
+static void checkAggregateTypes(); // Checks that class and record types have
+                                   // default initializers and default type
+                                   // constructors.
 static void checkResolveRemovedPrims(void); // Checks that certain primitives
                                             // are removed after resolution
 static void checkTaskRemovedPrims(); // Checks that certain primitives are
@@ -67,6 +72,7 @@ void check_cleanup()
 void check_scopeResolve()
 {
   check_afterEveryPass();
+  check_afterScopeResolve();
   // Suggestion: Ensure identifiers resolved to scope.
 }
 
@@ -343,6 +349,14 @@ void check_afterEveryPass()
   }
 }
 
+static void check_afterScopeResolve()
+{
+  if (fVerify)
+  {
+    checkAggregateTypes();
+  }
+}
+
 // Checks that should remain true after the normalization pass is complete.
 static void check_afterNormalization()
 {
@@ -386,6 +400,22 @@ static void check_afterCallDestructors()
 // See test/extern/hilde/namedExtern.chpl.
 //    checkNoUnresolveds();
     checkFormalActualTypesMatch();
+  }
+}
+
+
+//
+// Checks that class and record types have a default initializer and a default
+// type constructor.
+//
+static void checkAggregateTypes()
+{
+  forv_Vec(AggregateType, at, gAggregateTypes)
+  {
+    if (! at->defaultInitializer)
+      INT_FATAL(at, "aggregate type has no initializer");
+    if (! at->defaultTypeConstructor)
+      INT_FATAL(at, "aggregate type has no default type constructor");
   }
 }
 
@@ -555,3 +585,4 @@ checkNoWrapperMoves()
     }
   }
 }
+

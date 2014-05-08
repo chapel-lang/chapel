@@ -224,9 +224,16 @@ checkUseBeforeDefs() {
             if (SymExpr* se = toSymExpr(call->get(1)))
               defined.set_add(se->var);
         } else if (DefExpr* def = toDefExpr(ast)) {
+
           // All arg sumbols are defined.
           if (isArgSymbol(def->sym))
             defined.set_add(def->sym);
+
+          // All type aliases are taken as defined.
+          if (VarSymbol* vs = toVarSymbol(def->sym))
+            if (vs->hasFlag(FLAG_TYPE_VARIABLE))
+              defined.set_add(def->sym);
+
         } else {
           // The AST in question is not one of our methods of declaration so now
           // we check if it is a (resolved/unresolved) symbol and make sure
@@ -495,8 +502,10 @@ static void normalize_returns(FnSymbol* fn) {
         fn->retTag = RET_VAR;
       else
       {
-      fn->insertAtHead(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_INIT, retExprType->body.tail->remove())));
-      fn->insertAtHead(retExprType);
+        CallExpr* initExpr =
+          new CallExpr(PRIM_INIT, retExprType->body.tail->remove());
+        fn->insertAtHead(new CallExpr(PRIM_MOVE, retval, initExpr));
+        fn->insertAtHead(retExprType);
       }
     }
     fn->insertAtHead(new DefExpr(retval));
@@ -552,19 +561,51 @@ static void normalize_returns(FnSymbol* fn) {
     label->defPoint->remove();
 }
 
+
+// If se is a type alias, resolves it recursively, or fails and returns NULL.
+static TypeSymbol* resolveTypeAlias(SymExpr* se)
+{
+  while (se)
+  {
+    Symbol* sym = se->var;
+
+    if (TypeSymbol* ts = toTypeSymbol(sym))
+      return ts;
+
+    // By default, we break out of the loop
+    se = NULL;
+
+    // Unless we can find a new se to check.
+    if (VarSymbol* vs = toVarSymbol(sym))
+    {
+      if (vs->hasFlag(FLAG_TYPE_VARIABLE))
+      {
+        // We expect to find its definition in the init field of its declaration.
+        DefExpr* def = vs->defPoint;
+
+        // Only bother with simple sym expressions.
+        se = toSymExpr(def->init);
+      }
+    }
+  }
+  return NULL;
+}
+
+
+// By default, a call whose base expression is a symbol referring to an
+// aggregate type is converted to a call to the default type constructor for
+// that class.  There are a few exceptions:
+// 1. If the type is "dmap" (syntactic distribution), it is replaced by a call
+//    to chpl_buildDistType().
+// 2. In the context of a 'new' (complete or partial), it is converted to a
+//    constructor call.
 static void call_constructor_for_class(CallExpr* call) {
   if (SymExpr* se = toSymExpr(call->baseExpr)) {
-    if (TypeSymbol* ts = toTypeSymbol(se->var)) {
+    if (TypeSymbol* ts = resolveTypeAlias(se)) {
       if (AggregateType* ct = toAggregateType(ts->type)) {
         // Select symExprs of class (or record) type.
+
         SET_LINENO(call);
-
-        // These tests can be moved up to a general AggregateType object verifier.
-        if (!ct->defaultInitializer)
-          INT_FATAL(call, "class type has no initializer");
-        if (!ct->defaultTypeConstructor)
-          INT_FATAL(call, "class type has no default type constructor");
-
         CallExpr* parent = toCallExpr(call->parentExpr);
         CallExpr* parentParent = NULL;
         if (parent)
@@ -717,7 +758,7 @@ fix_def_expr(VarSymbol* var) {
   if (var->hasFlag(FLAG_TYPE_VARIABLE)) {
     INT_ASSERT(init);
     INT_ASSERT(!type);
-    stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr("chpl__typeAliasInit", init->remove())));
+    stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr("chpl__typeAliasInit", init->copy())));
     return;
   }
 

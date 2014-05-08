@@ -215,6 +215,8 @@ static bool isDef(SymExpr* se)
     return false;
   if (toBlockStmt(se->parentExpr))
     return false;
+  if (isDefExpr(se->parentExpr))
+    return false;
 
   CallExpr* call = toCallExpr(se->parentExpr);
   if (FnSymbol* fn = call->isResolved())
@@ -306,6 +308,8 @@ static bool isUse(SymExpr* se)
     return true;
   if (toBlockStmt(se->parentExpr))
     return true;
+  if (isDefExpr(se->parentExpr))
+    return false;
 
   CallExpr* call = toCallExpr(se->parentExpr);
   if (FnSymbol* fn = call->isResolved())
@@ -391,6 +395,8 @@ static bool isRefUse(SymExpr* se)
   if (toCondStmt(se->parentExpr))
     return false;
   if (toBlockStmt(se->parentExpr))
+    return false;
+  if (isDefExpr(se->parentExpr))
     return false;
 
   CallExpr* call = toCallExpr(se->parentExpr);
@@ -482,6 +488,8 @@ static CallExpr* derefUse(SymExpr* se)
     return NULL;
   if (toBlockStmt(se->parentExpr))
     return NULL;
+  if (isDefExpr(se->parentExpr))
+    return NULL;
 
   CallExpr* call = toCallExpr(se->parentExpr);
   if (call->isPrimitive(PRIM_DEREF))
@@ -498,6 +506,7 @@ static void propagateCopies(std::vector<SymExpr*>& symExprs,
   // Scan the SymExprs in the current block, looking for ones that can be replaced.
   for_vector(SymExpr, se, symExprs)
   {
+    INT_ASSERT(! isUnresolvedSymExpr(se));
     // Replace an alias with its definition, using the current set of
     // available pairs.
     if (isUse(se))
