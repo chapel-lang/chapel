@@ -10,7 +10,7 @@ fi
 
 objdump -d "./$testname" > $disasm
 
-grep -A 20 "<_main>" $disasm | grep "prefetch" > /dev/null
+grep -A 20 -e "<_main>" -e "<main>" $disasm | grep "prefetch" > /dev/null
 if [ $? -eq 1 ]; then
   echo "Prefetch instruction not found" >> $outfile
 fi

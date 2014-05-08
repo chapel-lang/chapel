@@ -712,9 +712,13 @@ for testname in testsrc:
 
     # print testname
     sys.stdout.write('[test: %s/%s]\n'%(localdir,testname))
-
     execname = re.match(r'^(.*)\.(?:chpl|test\.c)$', testname).group(1)
     # print execname
+
+    if re.match(r'^.+\.test\.c$', testname):
+      is_c_test = True
+    else:
+      is_c_test = False
 
     # Test specific settings
     catfiles = globalCatfiles
@@ -967,7 +971,7 @@ for testname in testsrc:
             args += lastcompopts
         # sys.stdout.write("args=%s\n"%(args))
 
-        if re.match(r'^.+\.test\.c$', testname):
+        if is_c_test:
             # we need to drop envCompopts for C tests as those are options
             # for `chpl` so add directoryCompopts rather than globalCompopts
             args = ['-o', execname]+directoryCompopts+shlex.split(compopts)+[testname]
@@ -1119,7 +1123,7 @@ for testname in testsrc:
         # Note that compiler performance only times successful compilations. 
         # Tests that are designed to fail before compilation is complete will 
         # not get timed, so the total time compiling might be off slightly.   
-        if compperftest:
+        if compperftest and not is_c_test:
             # make the compiler performance directories if they don't exist 
             timePasses = True
             if not os.path.isdir(compperfdir) and not os.path.isfile(compperfdir):

@@ -147,4 +147,4 @@ users/franzf/v0/chpl/main.graph
 reductions/diten/testSerialReductions.graph
 spectests.graph
 studies/paracr/asenjo/PARACR-BC.graph
-modules/standard/BitOps/c_tests/performance/bitops.graph
+modules/standard/BitOps/c-tests/performance/bitops.graph

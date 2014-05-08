@@ -12,7 +12,7 @@ static inline void chpl_prefetch(void* addr) {
   // necessary. This does not do the exact the same thing as the other
   // compilers, but I'm not certain how to get perfectly equivalent
   // functionality outside of emitting the asm myself.
-  #pragma mem prefetch *addr
+  #pragma mem prefetch *((char *)addr)
 #else
   // Unknown compiler, we don't know how to generate a prefetch, just NOOP
   // It's not that much of a difference anyways
