@@ -5,6 +5,13 @@
 
 source $(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)/functions.bash
 
+# For our internal testing, this is necessary to get the latest version of gcc
+# on the system.
+if [ -z "${CHPL_SOURCED_BASHRC}" ] ; then
+    source ~/.bashrc
+    export CHPL_SOURCED_BASHRC=true
+fi
+
 SCRIPT_NAME=$0
 start_time=$(date '+%s')
 log_info "Starting ${SCRIPT_NAME} on $(hostname -s)"
