@@ -13,7 +13,7 @@ log_info "Updating ~/chapel with nightly.update-repo script."
 $CWD/nightly.update-repo
 
 log_info "Starting nightly."
-$CWD/util/cron/nightly -cron -examples
+$CWD/nightly -cron -examples
 
 # Note: Supressions are only required when we're not restricting
 # ourselves to the examples.  In which case, add: -suppress
