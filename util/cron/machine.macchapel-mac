@@ -5,7 +5,10 @@ source $(cd $(dirname $0) ; pwd)/common.bash
 # Remove the readonly checkout before running the script. This is running svn
 # 1.4 and frequently has issues with invalid working copies.
 rm -rf /tmp/chapel-cron-$USER-readonly
-~/chapel/util/cron/nightly.macchapel-mac
+
+# Update ~/chapel.
+log_info "Updating ~/chapel with nightly.update-repo script."
+$(cd $(dirname $0) ; pwd)/nightly.update-repo
 
 export LOGFILE=~/tmp/nightly.macchapel-mac.out
 log_info "Testing Mac.  Log file: $LOGFILE"
