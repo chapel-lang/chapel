@@ -7,7 +7,7 @@
 
 use GMP;
 
-config const n = 50;                       // Compute n digits of Pi, 50 by default
+config const n = 50;                // Compute n digits of Pi, 50 by default
 
 var numer, accum, denom, tmp1, tmp2: mpz_t;
 //

@@ -5,7 +5,7 @@
    derived from the GNU C version by Bonzini, Bartlett, and Mellor
 */
 
-use GMP;
+use GMP, GMPops;
 
 config const n = 50;                // Compute n digits of Pi, 50 by default
 
@@ -43,26 +43,46 @@ iter gen_digits(numDigits) {
         //
         // Compute the next term
         //
-        mpz_mul_2exp(tmp1, numer, 1);      // tmp1  = numer * 2
-        mpz_add(accum, accum, tmp1);	   // accum += numer * 2
-        mpz_mul_ui(accum, accum, y2);	   // accum *= (2k+1)
-        mpz_mul_ui(numer, numer, k);       // numer *= k
-        mpz_mul_ui(denom, denom, y2);      // denom *= (2k+1)
+
+        //
+        // TODO: This one is difficult to do with operator overloads
+        // without using an additional mpz_tmp
+        //
+        tmp1 = numer * 2;
+        accum += tmp1;
+        accum *= y2;
+        numer *= k;
+        denom *= y2;
 
         //
         // Continue looping until the digit is ready
         //
+
+        //
+        // TODO: Can't overload > because it's ambiguous with tuple's > (?)
+        //
+        // } while (numer > accum);
       } while (mpz_cmp(numer, accum) > 0); // while numer > accum
 
       //
       // Compute (numer * 3 + accum)
       //
-      mpz_mul_2exp(tmp1, numer, 1);        // tmp1 = numer * 2
-      mpz_add(tmp1, tmp1, numer);          // tmp1 += numer
-      mpz_add(tmp1, tmp1, accum);          // tmp1 += accum
+
+      //
+      // TODO: This one is difficult to do with operator overloads
+      // without using an additional mpz_tmp
+      //
+      tmp1 = numer * 2;
+      tmp1 += numer;
+      tmp1 += accum;
 
       //      
       // tmp1 = tmp1 / denom; tmp2 = tmp1 % denom
+      //
+      //
+      // TODO: How to clean up cases like this?  We could implement a
+      // quotient/remainder function that returns a tuple and
+      // implement it for standard types as well?
       //
       mpz_fdiv_qr(tmp1, tmp2, tmp1, denom);
 
@@ -70,11 +90,20 @@ iter gen_digits(numDigits) {
       // Now, if (numer * 3 + accum) % denom + numer
       // == (numer * 4 + accum) % denom
       //
-      mpz_add(tmp2, tmp2, numer);
+      tmp2 += numer;
+
+      //
+      // TODO: See previous loop
+      //
+      //    } while (tmp2 >= denom);
     } while (mpz_cmp(tmp2, denom) >= 0);   // while tmp2 >= denom
 
     //
     // compute and yield the digit, d
+    //
+
+    //
+    // TODO: replace with cast
     //
     const d = mpz_get_ui(tmp1);            // get least significant digit
     yield d;
@@ -82,8 +111,12 @@ iter gen_digits(numDigits) {
     //
     // eliminate digit d
     //
-    mpz_submul_ui(accum, denom, d);        // accum = (accum - denom) * d
-    mpz_mul_ui(accum, accum, 10);          // accum *= 10
-    mpz_mul_ui(numer, numer, 10);          // numer *= 10
+    // TODO: Why doesn't this work?  Compiler complains about -...
+    //
+    //    accum = (accum - denom) * d;
+    //
+    mpz_submul_ui(accum, denom, d);
+    accum *= 10;
+    numer *= 10;
   }
 }
