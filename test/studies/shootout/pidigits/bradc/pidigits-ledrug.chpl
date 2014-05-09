@@ -2,7 +2,7 @@
    http://shootout.alioth.debian.org/
 
    contributed by Tom Hildebrandt, Brad Chamberlain, Lydia Duncan
-   derived from the GNU C version by Bonzini, Bartlett, and Mellor
+   derived from the GNU C version by Ledrug
 */
 
 use GMP;
@@ -19,65 +19,58 @@ proc main() {
 
 
 iter gen_digits(numDigits) {
-  var numer, accum, denom, tmp1, tmp2: mpz_t;
+  var tmp1, tmp2, acc, den, num: mpz_t;
 
-  mpz_init_set_ui(numer, 1);               // numer = 1
-  mpz_init_set_ui(accum, 0);               // accum = 0
-  mpz_init_set_ui(denom, 1);               // denom = 1
   mpz_init(tmp1);                          // init tmp1
   mpz_init(tmp2);                          // init tmp2
+  mpz_init_set_ui(acc, 0);                 // acc = 0
+  mpz_init_set_ui(den, 1);                 // den = 1
+  mpz_init_set_ui(num, 1);                 // num = 1
 
-  var k: c_ulong;
+  var d, k: c_ulong;
+
   for i in 1..numDigits {
     do {
       do {
         k += 1;
-        const y2 = 2 * k + 1;
+        const k2 = 2 * k + 1;
 
         //
         // Compute the next term
         //
-        mpz_mul_2exp(tmp1, numer, 1);      // tmp1  = numer * 2
-        mpz_add(accum, accum, tmp1);	   // accum += numer * 2
-        mpz_mul_ui(accum, accum, y2);	   // accum *= (2k+1)
-        mpz_mul_ui(numer, numer, k);       // numer *= k
-        mpz_mul_ui(denom, denom, y2);      // denom *= (2k+1)
+        mpz_addmul_ui(acc, num, 2);        // acc += num * 2
+        mpz_mul_ui(acc, acc, k2);	   // acc *= (2k+1)
+        mpz_mul_ui(den, den, k2);          // den *= (2k+1)
+        mpz_mul_ui(num, num, k);           // num *= k
 
         //
         // Continue looping until the digit is ready
         //
-      } while (mpz_cmp(numer, accum) > 0); // while numer > accum
+      } while (mpz_cmp(num, acc) > 0);     // while num > acc
 
-      //
-      // Compute (numer * 3 + accum)
-      //
-      mpz_mul_2exp(tmp1, numer, 1);        // tmp1 = numer * 2
-      mpz_add(tmp1, tmp1, numer);          // tmp1 += numer
-      mpz_add(tmp1, tmp1, accum);          // tmp1 += accum
+      d = extract_digit(3);
+    } while (d != extract_digit(4));       // while the 3rd digit, d != the 4th
 
-      //      
-      // tmp1 = tmp1 / denom; tmp2 = tmp1 % denom
-      //
-      mpz_fdiv_qr(tmp1, tmp2, tmp1, denom);
-
-      //
-      // Now, if (numer * 3 + accum) % denom + numer
-      // == (numer * 4 + accum) % denom
-      //
-      mpz_add(tmp2, tmp2, numer);
-    } while (mpz_cmp(tmp2, denom) >= 0);   // while tmp2 >= denom
-
-    //
-    // compute and yield the digit, d
-    //
-    const d = mpz_get_ui(tmp1);            // get least significant digit
-    yield d;
+    yield d;                               // once it differs, yield it
 
     //
     // eliminate digit d
     //
-    mpz_submul_ui(accum, denom, d);        // accum = (accum - denom) * d
-    mpz_mul_ui(accum, accum, 10);          // accum *= 10
-    mpz_mul_ui(numer, numer, 10);          // numer *= 10
+    mpz_submul_ui(acc, den, d);            // acc = (acc - den) * d
+    mpz_mul_ui(acc, acc, 10);              // acc *= 10
+    mpz_mul_ui(num, num, 10);              // num *= 10
+  }
+
+  //
+  // Helper function to extract the nth digit
+  //
+  proc extract_digit(nth: c_ulong) {
+    mpz_mul_ui(tmp1, num, nth);              // tmp1 = num * nth
+    mpz_add(tmp2, tmp1, acc);                // tmp2 = tmp1 + acc
+    mpz_tdiv_q(tmp1, tmp2, den);             // tmp1 = tmp2 / den
+    
+    return mpz_get_ui(tmp1);                 // convert tmp1 to a c_uint
   }
 }
+
+
