@@ -1,5 +1,6 @@
-#include "baseAST.h"
 #include "flags.h"
+
+#include "baseAST.h"
 #include "stringutil.h"
 #include "symbol.h"
 
@@ -78,7 +79,7 @@ static Symbol* symflagOK(const char* msg, BaseAST* ast, int flag) {
   Symbol* sym = toSymbol(ast);
   if (!sym) {
     printf("%s: [%d] is a %s (does not support Flags)\n", msg, ast->id,
-           astTagName[ast->astTag]);
+           ast->astTagAsString());
     return NULL;
   } else if (flag <= 0) {
     printf("%s: flag is non-positive: %d\n", msg, flag);

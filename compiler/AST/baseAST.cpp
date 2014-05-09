@@ -1,5 +1,6 @@
-#include "astutil.h"
 #include "baseAST.h"
+
+#include "astutil.h"
 #include "expr.h"
 #include "passes.h"
 #include "stmt.h"
@@ -253,8 +254,18 @@ BaseAST::BaseAST(AstTag type) :
   }
 }
 
+BaseAST::~BaseAST() { 
+}
 
-const char* BaseAST::stringLoc(void) {
+int BaseAST::linenum() const {
+  return astloc.lineno; 
+}
+
+const char* BaseAST::fname() const {
+  return astloc.filename; 
+}
+
+const char* BaseAST::stringLoc(void) const {
   const int tmpBuffSize = 256;
   char tmpBuff[tmpBuffSize];
 
@@ -332,35 +343,90 @@ Type* BaseAST::getWideRefType() {
     return wideRefMap.get(type->getRefType());
 }
 
+const char* BaseAST::astTagAsString() const {
+  const char* retval = "BaseAST??";
 
-const char* astTagName[E_BaseAST+1] = {
-  "SymExpr",
-  "UnresolvedSymExpr",
-  "DefExpr",
-  "CallExpr",
-  "NamedExpr",
-  "BlockStmt",
-  "CondStmt",
-  "GotoStmt",
-  "ExternBlockStmt",
-  "Expr",
+  switch (astTag) {
+    case E_SymExpr:
+      retval = "SymExpr";
+      break;
 
-  "ModuleSymbol",
-  "VarSymbol",
-  "ArgSymbol",
-  "TypeSymbol",
-  "FnSymbol",
-  "EnumSymbol",
-  "LabelSymbol",
-  "Symbol",
+    case E_UnresolvedSymExpr:
+      retval = "UnresolvedSymExpr";
+      break;
 
-  "PrimitiveType",
-  "EnumType",
-  "AggregateType",
-  "Type",
+    case E_DefExpr:
+      retval = "DefExpr";
+      break;
 
-  "BaseAST"
-};
+    case E_CallExpr:
+      retval = "CallExpr";
+      break;
+
+    case E_NamedExpr:
+      retval = "NamedExpr";
+      break;
+
+    case E_BlockStmt:
+      retval = "BlockStmt";
+      break;
+
+    case E_CondStmt:
+      retval = "CondStmt";
+      break;
+
+    case E_GotoStmt:
+      retval = "GotoStmt";
+      break;
+
+    case E_ExternBlockStmt:
+      retval = "ExternBlockStmt";
+      break;
+
+    case E_ModuleSymbol:
+      retval = "ModuleSymbol";
+      break;
+
+    case E_VarSymbol:
+      retval = "VarSymbol";
+      break;
+
+    case E_ArgSymbol:
+      retval = "ArgSymbol";
+      break;
+
+    case E_TypeSymbol:
+      retval = "TypeSymbol";
+      break;
+
+    case E_FnSymbol:
+      retval = "FnSymbol";
+      break;
+
+    case E_EnumSymbol:
+      retval = "EnumSymbol";
+      break;
+
+    case E_LabelSymbol:
+      retval = "LabelSymbol";
+      break;
+
+    case E_PrimitiveType:
+      retval = "PrimitiveType";
+      break;
+
+    case E_EnumType:
+      retval = "EnumType";
+      break;
+
+    case E_AggregateType:
+      retval = "AggregateType";
+      break;
+  }
+
+  return retval;
+}
+
 
 astlocT currentAstLoc(0,NULL);
 
@@ -442,4 +508,29 @@ GenRet baseASTCodegenString(const char* str)
   return baseASTCodegen(new_StringSymbol(str));
 }
 
+/************************************* | **************************************
+*                                                                             *
+* Definitions for astlocMarker                                                *
+*                                                                             *
+************************************** | *************************************/
 
+// constructor, invoked upon SET_LINENO
+astlocMarker::astlocMarker(astlocT newAstLoc)
+  : previousAstLoc(currentAstLoc)
+{
+  //previousAstLoc = currentAstLoc;
+  currentAstLoc = newAstLoc;
+}
+
+// constructor, for special occasions
+astlocMarker::astlocMarker(int lineno, const char* filename)
+  : previousAstLoc(currentAstLoc)
+{
+  currentAstLoc.lineno   = lineno;
+  currentAstLoc.filename = astr(filename);
+}
+
+// destructor, invoked upon leaving SET_LINENO's scope
+astlocMarker::~astlocMarker() {
+  currentAstLoc = previousAstLoc;
+}

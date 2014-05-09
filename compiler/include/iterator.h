@@ -1,23 +1,32 @@
 #ifndef _ITERATOR_H_
 #define _ITERATOR_H_
 
-enum IteratorTag { it_iterator, it_leader, it_follower };
+class AggregateType;
+class FnSymbol;
+
+enum IteratorTag { 
+  it_iterator, 
+  it_leader,
+  it_follower 
+};
 
 class IteratorInfo {
 public:
-  IteratorTag tag;
-  FnSymbol* iterator;
-  FnSymbol* getIterator;
+  IteratorInfo();
+
+  IteratorTag    tag;
+
+  FnSymbol*      iterator;
+  FnSymbol*      getIterator;
   AggregateType* iclass;
   AggregateType* irecord;
-  FnSymbol* advance;
-  FnSymbol* zip1;
-  FnSymbol* zip2;
-  FnSymbol* zip3;
-  FnSymbol* zip4;
-  FnSymbol* hasMore;
-  FnSymbol* getValue;
-  IteratorInfo();
+  FnSymbol*      advance;
+  FnSymbol*      zip1;
+  FnSymbol*      zip2;
+  FnSymbol*      zip3;
+  FnSymbol*      zip4;
+  FnSymbol*      hasMore;
+  FnSymbol*      getValue;
 };
 
 void lowerIterator(FnSymbol* fn);

@@ -3,6 +3,7 @@
 #include "astutil.h"
 #include "baseAST.h"
 #include "stmt.h"
+#include "stringutil.h"
 #include "symbol.h"
 
 #include <iostream>

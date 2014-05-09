@@ -1,13 +1,18 @@
-#include <cstring>
-#include <cctype>
+#include "processTokens.h"
+
 #include "countTokens.h"
 #include "misc.h"
-#include "processTokens.h"
+#include "stringutil.h"
 #include "yy.h"
+
+#include <cstring>
+#include <cctype>
+
 #ifndef MODULE_FINDER
 #include "chapel.tab.h"
 #else
 #include "modulefinder.tab.h"
+
 #define countNewline()
 #define countSingleLineComment(x)
 #define countMultiLineComment(x)

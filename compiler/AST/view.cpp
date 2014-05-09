@@ -2,17 +2,19 @@
 #define __STDC_FORMAT_MACROS
 #endif
 
-#include <cstdlib>
-#include <inttypes.h>
 #include "view.h"
+
 #include "astutil.h"
-#include "stmt.h"
+#include "driver.h"
 #include "expr.h"
+#include "log.h"
+#include "stmt.h"
 #include "symbol.h"
 #include "type.h"
 #include "stringutil.h"
-#include "log.h"
-#include "driver.h"
+
+#include <cstdlib>
+#include <inttypes.h>
 
 static void
 list_sym(Symbol* sym, bool type = true) {
@@ -217,7 +219,7 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
       printf("***");
     if (number)
       printf("%d ", ast->id);
-    printf("%s", astTagName[expr->astTag]);
+    printf("%s", expr->astTagAsString());
 
     if (isBlockStmt(expr))
       if (FnSymbol* fn = toFnSymbol(expr->parentSymbol))
@@ -596,7 +598,7 @@ html_view_ast(BaseAST* ast, FILE* html_file, int pass) {
         if (e->partialTag)
           fprintf(html_file, "(partial) ");
       } else {
-        fprintf(html_file, "(%s", astTagName[expr->astTag]);
+        fprintf(html_file, "(%s", expr->astTagAsString());
       }
     }
   }
@@ -854,7 +856,7 @@ log_ast_header(BaseAST* ast, FILE* file) {
           log_write(file, true, "(partial)", true);
       } else {
         if (log_need_space) putc(' ', file);
-        fprintf(file, "(%s", astTagName[expr->astTag]);
+        fprintf(file, "(%s", expr->astTagAsString());
         log_need_space = true;
       }
     }
@@ -1115,7 +1117,7 @@ void whocalls(BaseAST* ast) {
     printf("whocalls: aborting: got NULL\n");
     return;
   }
-  printf("whocalls(%s[%d])\n", astTagName[ast->astTag], ast->id);
+  printf("whocalls(%s[%d])\n", ast->astTagAsString(), ast->id);
   if (SymExpr* se = toSymExpr(ast)) {
     whocalls(se->var->id);
   } else if (isSymbol(ast)) {

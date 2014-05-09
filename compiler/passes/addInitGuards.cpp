@@ -13,9 +13,11 @@
 //
 
 #include "passes.h"
-#include "stmt.h"
-#include "build.h"
+
 #include "astutil.h"
+#include "build.h"
+#include "stmt.h"
+#include "stringutil.h"
 
 static void addModuleInitBlocks();
 static void addInitGuards();

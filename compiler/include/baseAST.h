@@ -14,10 +14,8 @@
 #ifndef _BASEAST_H_
 #define _BASEAST_H_
 
-#include "chpl.h"
-#include "stringutil.h"
-
-#include "genret.h"
+#include "map.h"
+#include "vec.h"
 
 //
 // foreach_ast_sep: invoke a 'macro' for every AST node type,
@@ -49,12 +47,11 @@
 #define foreach_ast(macro)                         \
   foreach_ast_sep(macro, ;)
 
-//
-// prototype Symbol, Type, Expr, and all AST node types
-//
+class GenRet;
 class Symbol;
 class Type;
 class Expr;
+
 #define proto_classes(type) class type
 foreach_ast(proto_classes);
 #undef proto_classes
@@ -74,27 +71,23 @@ foreach_ast(decl_gvecs);
 //
 // type definitions for common maps
 //
-typedef Map<Symbol*,Symbol*> SymbolMap;
+typedef Map<Symbol*,Symbol*>     SymbolMap;
 typedef MapElem<Symbol*,Symbol*> SymbolMapElem;
-
-// get the current AST node id
-extern int lastNodeIDUsed();
-
-// trace various AST node removals
-extern void trace_remove(BaseAST* ast, char flag);
 
 // how an AST node knows its location in the source code
 // (assumed to get copied upon assignment and parameter passing)
-struct astlocT {
-  const char* filename;  // filename of location
-  int lineno;    // line number of location
-  astlocT(int linenoArg, const char* filenameArg):
+class astlocT {
+public:
+  astlocT(int linenoArg, const char* filenameArg) :
     filename(filenameArg), lineno(linenoArg)
     {}
+
+  const char* filename;  // filename of location
+  int         lineno;    // line number of location
 };
 
 //
-// enumerated type of all AST node types (and superclass types)
+// enumerated type of all AST node types
 //
 enum AstTag {
   E_SymExpr,
@@ -106,7 +99,6 @@ enum AstTag {
   E_CondStmt,
   E_GotoStmt,
   E_ExternBlockStmt,
-  E_Expr,
 
   E_ModuleSymbol,
   E_VarSymbol,
@@ -115,20 +107,21 @@ enum AstTag {
   E_FnSymbol,
   E_EnumSymbol,
   E_LabelSymbol,
-  E_Symbol,
 
   E_PrimitiveType,
   E_EnumType,
-  E_AggregateType,
-  E_Type,
-
-  E_BaseAST
+  E_AggregateType
 };
 
-//
-// string names of all AST node types (used for debugging)
-//
-extern const char* astTagName[];
+static inline bool isExpr(AstTag tag)
+{ return tag >= E_SymExpr        && tag <= E_ExternBlockStmt; }
+
+static inline bool isSymbol(AstTag tag)
+{ return tag >= E_ModuleSymbol   && tag <= E_LabelSymbol; }
+
+static inline bool isType(AstTag tag)
+{ return tag >= E_PrimitiveType  && tag <= E_AggregateType; }
+
 
 //
 // macros used to define the copy method on all AST node types, and to
@@ -175,34 +168,52 @@ extern const char* astTagName[];
 // abstract parent of all AST node types
 //
 class BaseAST {
- public:
-  AstTag astTag; // BaseAST subclass
-  int id;        // Unique ID
-  astlocT astloc; // Location of this node in the source code
+public:
+  AstTag            astTag;     // BaseAST subclass
+  int               id;         // Unique ID
+  astlocT           astloc;     // Location of this node in the source code
 
-  BaseAST(AstTag type);
-  virtual ~BaseAST() { }
-  virtual void verify() = 0;
-  virtual BaseAST* copy(SymbolMap* map = NULL, bool internal = false) = 0;
-  virtual BaseAST* copyInner(SymbolMap* map) = 0;
-  virtual bool inTree(void) = 0;
-  virtual GenRet codegen() = 0;
+  // These are used via pointers to BaseAST
+  virtual GenRet    codegen()                                          = 0;
+  virtual bool      inTree()                                           = 0;
+  virtual Type*     typeInfo()                                         = 0;
 
-  const char* stringLoc(void);
-  ModuleSymbol* getModule();
-  FnSymbol* getFunction();
-  int linenum() { return astloc.lineno; }
-  const char* fname() { return astloc.filename; }
+  // These are an interface but are not invoked via BaseAST
+  virtual void      verify()                                           = 0;
+  virtual BaseAST*  copy(SymbolMap* map = 0, bool internal = false)    = 0;
+  virtual BaseAST*  copyInner(SymbolMap* map)                          = 0;
 
-  virtual Type* typeInfo(void) = 0;
-  Type* getValType();
-  Type* getRefType();
-  Type* getWideRefType();
+  const char*       fname()                                      const;
+  int               linenum()                                    const;
+  const char*       stringLoc()                                  const;
+
+  FnSymbol*         getFunction();
+  ModuleSymbol*     getModule();
+  Type*             getValType();
+
+  const char*       astTagAsString()                             const;
+
+protected:
+                    BaseAST(AstTag type);
+  virtual          ~BaseAST();
+
+private:
+                    BaseAST();
+
+  Type*             getRefType();
+  Type*             getWideRefType();
 };
 
 GenRet baseASTCodegen(BaseAST* ast);
 GenRet baseASTCodegenInt(int x);
 GenRet baseASTCodegenString(const char* str);
+
+// get the current AST node id
+int    lastNodeIDUsed();
+
+// trace various AST node removals
+void   trace_remove(BaseAST* ast, char flag);
+
 
 //
 // macro to update the global line number used to set the line number
@@ -216,29 +227,16 @@ GenRet baseASTCodegenString(const char* str);
 // todo - should we add it to DECLARE_COPY/DECLARE_SYMBOL_COPY ?
 //
 #define SET_LINENO(ast) astlocMarker markAstLoc(ast->astloc)
+
 extern astlocT currentAstLoc;
 
-struct astlocMarker {
-  astlocT previousAstLoc;
+class astlocMarker {
+public:
+  astlocMarker(astlocT newAstLoc);
+  astlocMarker(int lineno, const char* filename);
+  ~astlocMarker();
 
-  // constructor, invoked upon SET_LINENO
-  astlocMarker(astlocT newAstLoc)
-    : previousAstLoc(currentAstLoc)
-  {
-    //previousAstLoc = currentAstLoc;
-    currentAstLoc = newAstLoc;
-  }
-  // constructor, for special occasions
-  astlocMarker(int lineno, const char* filename)
-    : previousAstLoc(currentAstLoc)
-  {
-    currentAstLoc.lineno = lineno;
-    currentAstLoc.filename = astr(filename);
-  }
-  // destructor, invoked upon leaving SET_LINENO's scope
-  ~astlocMarker() {
-    currentAstLoc = previousAstLoc;
-  }
+  astlocT previousAstLoc;
 };
 
 //
@@ -251,15 +249,18 @@ extern Vec<ModuleSymbol*> mainModules; // contains main modules
 //
 // class test inlines: determine the dynamic type of a BaseAST*
 //
-static inline bool isExpr(BaseAST* a)
-{ return a && a->astTag < E_Expr; }
-static inline bool isSymbol(BaseAST* a)
-{ return a && a->astTag > E_Expr && a->astTag < E_Symbol; }
-static inline bool isType(BaseAST* a)
-{ return (a && a->astTag > E_Symbol && a->astTag < E_Type); }
+static inline bool isExpr(const BaseAST* a)
+{ return a && isExpr(a->astTag); }
+
+static inline bool isSymbol(const BaseAST* a)
+{ return a && isSymbol(a->astTag); }
+
+static inline bool isType(const BaseAST* a)
+{ return a && isType(a->astTag); }
 
 #define def_is_ast(Type) \
   static inline bool is##Type(BaseAST* a) { return a && a->astTag == E_##Type; }
+
 def_is_ast(SymExpr)
 def_is_ast(UnresolvedSymExpr)
 def_is_ast(DefExpr)

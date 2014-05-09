@@ -1,8 +1,8 @@
-// primitive.cpp
+#include "primitive.h"
 
 #include "expr.h"
 #include "iterator.h"
-#include "primitive.h"
+#include "stringutil.h"
 #include "type.h"
 
 static Type*

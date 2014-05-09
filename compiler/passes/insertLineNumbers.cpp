@@ -1,7 +1,9 @@
+#include "passes.h"
+
 #include "astutil.h"
 #include "expr.h"
-#include "passes.h"
 #include "stmt.h"
+#include "stringutil.h"
 #include "symbol.h"
 
 //

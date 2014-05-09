@@ -1,6 +1,8 @@
 #ifndef _RESOLUTION_H_
 #define _RESOLUTION_H_
 
+#include "baseAST.h"
+
 class CallInfo;
 
 extern SymbolMap paramMap;

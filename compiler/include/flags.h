@@ -24,6 +24,7 @@
 
 
 class BaseAST;
+class TypeSymbol;
 
 
 enum Flag {

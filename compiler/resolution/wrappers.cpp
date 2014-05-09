@@ -16,14 +16,16 @@
 //      (C has no notion of scalar operator promotion.)
 ////////////////////////////////////////////////////////////////////////////////}
 
+#include "resolution.h"
+
 #include "astutil.h"
 #include "build.h"
 #include "caches.h"
 #include "callInfo.h"
 #include "chpl.h"
 #include "expr.h"
-#include "resolution.h"
 #include "stmt.h"
+#include "stringutil.h"
 #include "symbol.h"
 
 

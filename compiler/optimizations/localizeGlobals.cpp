@@ -1,8 +1,11 @@
-#include <cstdio>
+#include "passes.h"
+
 #include "astutil.h"
 #include "expr.h"
-#include "passes.h"
 #include "stmt.h"
+#include "stringutil.h"
+
+#include <cstdio>
 
 // This pass pulls out any global constants to the top of the given
 // function (with the motivation to avoid loads during loops).

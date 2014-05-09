@@ -1,15 +1,19 @@
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
 #endif
-#include <cstdlib>
-#include <inttypes.h>
+
+#include "resolution.h"
+
 #include "astutil.h"
 #include "caches.h"
 #include "chpl.h"
 #include "expr.h"
-#include "resolution.h"
 #include "stmt.h"
+#include "stringutil.h"
 #include "symbol.h"
+
+#include <cstdlib>
+#include <inttypes.h>
 
 static int explainInstantiationLine = -2;
 static ModuleSymbol* explainInstantiationModule = NULL;

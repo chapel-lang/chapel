@@ -3,6 +3,10 @@
 
 #include "chpl.h"
 
+class CallExpr;
+class Type;
+class VarSymbol;
+
 enum PrimitiveTag {
   PRIM_UNKNOWN = 0,    // use for any primitives not in this list
 
