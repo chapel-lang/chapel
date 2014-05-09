@@ -169,19 +169,10 @@ static inline bool isType(AstTag tag)
 //
 class BaseAST {
 public:
-  AstTag            astTag;     // BaseAST subclass
-  int               id;         // Unique ID
-  astlocT           astloc;     // Location of this node in the source code
-
-  // These are used via pointers to BaseAST
   virtual GenRet    codegen()                                          = 0;
   virtual bool      inTree()                                           = 0;
   virtual Type*     typeInfo()                                         = 0;
-
-  // These are an interface but are not invoked via BaseAST
   virtual void      verify()                                           = 0;
-  virtual BaseAST*  copy(SymbolMap* map = 0, bool internal = false)    = 0;
-  virtual BaseAST*  copyInner(SymbolMap* map)                          = 0;
 
   const char*       fname()                                      const;
   int               linenum()                                    const;
@@ -192,6 +183,10 @@ public:
   Type*             getValType();
 
   const char*       astTagAsString()                             const;
+
+  AstTag            astTag;     // BaseAST subclass
+  int               id;         // Unique ID
+  astlocT           astloc;     // Location of this node in the source code
 
 protected:
                     BaseAST(AstTag type);

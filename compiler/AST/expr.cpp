@@ -1,19 +1,26 @@
-
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
 #endif
 
-#include <cstdlib>
-#include <cstring>
-#include <inttypes.h>
-#include "astutil.h"
 #include "expr.h"
+
+#include "alist.h"
+#include "astutil.h"
+#include "codegen.h"
+#include "genret.h"
 #include "misc.h"
 #include "passes.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "type.h"
-#include "codegen.h"
+
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <inttypes.h>
+#include <ostream>
+
+class FnSymbol;
 
 // some prototypes
 static GenRet codegenCallExpr(const char* fnName);
@@ -82,6 +89,9 @@ Expr::Expr(AstTag astTag) :
   parentSymbol(NULL)
 {}
 
+Expr::~Expr() { 
+
+}
 
 Expr* Expr::getStmtExpr() {
   for (Expr* expr = this; expr; expr = expr->parentExpr) {
@@ -116,7 +126,7 @@ Type* Expr::typeInfo(void) {
   return NULL;
 }
 
-bool Expr::isNoInitExpr(void) {
+bool Expr::isNoInitExpr() const {
   return false;
 }
 
@@ -248,19 +258,16 @@ SymExpr::SymExpr(Symbol* init_var) :
   gSymExprs.add(this);
 }
 
-bool
-SymExpr::isNoInitExpr(void) {
+bool SymExpr::isNoInitExpr() const {
   return var == gNoInit;
 }
 
-void 
-SymExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
+void SymExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
   INT_FATAL(this, "Unexpected case in SymExpr::replaceChild");
 }
 
 
-void
-SymExpr::verify() {
+void SymExpr::verify() {
   Expr::verify();
   if (astTag != E_SymExpr)
     INT_FATAL(this, "Bad SymExpr::astTag");
@@ -271,8 +278,7 @@ SymExpr::verify() {
 }
 
 
-SymExpr*
-SymExpr::copyInner(SymbolMap* map) {
+SymExpr* SymExpr::copyInner(SymbolMap* map) {
   return new SymExpr(var);
 }
 

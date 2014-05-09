@@ -1,54 +1,58 @@
 #ifndef _EXPR_H_
 #define _EXPR_H_
 
-#include <cstdlib>
-#include <cstdio>
-#include <ostream>
-#include "alist.h"
 #include "baseAST.h"
-#include "symbol.h"
+
 #include "primitive.h"
+#include "symbol.h"
 
-#include "genret.h"
+#include <ostream>
 
-class FnSymbol;
+class PrimitiveOp;
 
-#define IS_EXPR(e)                                          \
-  ((e)->astTag == E_CallExpr || (e)->astTag == E_SymExpr || \
-   (e)->astTag == E_DefExpr || (e)->astTag == E_NamedExpr)
+#define IS_EXPR(e)                                              \
+  ((e)->astTag == E_CallExpr  ||                                \
+   (e)->astTag == E_SymExpr   ||                                \
+   (e)->astTag == E_DefExpr   ||                                \
+   (e)->astTag == E_NamedExpr)
 
 #define IS_STMT(e)                                              \
   ((e)->astTag == E_BlockStmt ||                                \
-   (e)->astTag == E_CondStmt || (e)->astTag == E_GotoStmt)
+   (e)->astTag == E_CondStmt  ||                                \
+   (e)->astTag == E_GotoStmt)
 
 class Expr : public BaseAST {
- public:
-  Expr* prev;           // alist previous pointer
-  Expr* next;           // alist next pointer
-  AList* list;          // alist pointer
-  Expr* parentExpr;
-  Symbol* parentSymbol;
+public:
+                  Expr(AstTag astTag);
+  virtual        ~Expr();
 
-  Expr(AstTag astTag);
-  virtual ~Expr() { }
-  virtual Expr* copy(SymbolMap* map = NULL, bool internal = false) = 0;
-  virtual Expr* copyInner(SymbolMap* map) = 0;
-  virtual void replaceChild(Expr* old_ast, Expr* new_ast) = 0;
+  virtual Expr*   copy(SymbolMap* map = NULL, bool internal = false)   = 0;
+  virtual void    replaceChild(Expr* old_ast, Expr* new_ast)           = 0;
 
-  virtual void verify();
-  virtual bool inTree();
-  virtual Type* typeInfo(void);
+  // Interface for BaseAST
+  virtual bool    inTree();
+  virtual Type*   typeInfo();
+  virtual void    verify();
 
-  virtual bool isNoInitExpr(void);
+  virtual bool    isNoInitExpr()                                     const;
+  virtual void    prettyPrint(std::ostream* o);
 
-  virtual void prettyPrint(std::ostream *o);
+  void            insertBefore(Expr* new_ast);
+  void            insertAfter(Expr* new_ast);
+  void            replace(Expr* new_ast);
 
-  Expr* getStmtExpr();
+  Expr*           remove();
+  Expr*           getStmtExpr();
 
-  Expr* remove(void);
-  void replace(Expr* new_ast);
-  void insertBefore(Expr* new_ast);
-  void insertAfter(Expr* new_ast);
+  Symbol*         parentSymbol;
+  Expr*           parentExpr;
+
+  AList*          list;           // alist pointer
+  Expr*           prev;           // alist previous pointer
+  Expr*           next;           // alist next     pointer
+
+private:
+  virtual Expr*   copyInner(SymbolMap* map) = 0;
 };
 
 
@@ -80,7 +84,7 @@ class SymExpr : public Expr {
   void replaceChild(Expr* old_ast, Expr* new_ast);
   void verify(); 
   Type* typeInfo(void);
-  bool isNoInitExpr(void);
+  bool isNoInitExpr() const;
   GenRet codegen();
   void prettyPrint(std::ostream *o);
 };

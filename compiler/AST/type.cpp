@@ -1,18 +1,18 @@
 #define TYPE_EXTERN
+
+#include "type.h"
+
 #include "astutil.h"
 #include "build.h"
+#include "codegen.h"
 #include "expr.h"
 #include "files.h"
+#include "intlimits.h"
 #include "misc.h"
+#include "passes.h" // for isWideString
 #include "stringutil.h"
 #include "symbol.h"
-#include "type.h"
 #include "vec.h"
-#include "passes.h" // for isWideString
-
-#include "intlimits.h"
-
-#include "codegen.h"
 
 
 Type::Type(AstTag astTag, Symbol* init_defaultVal) :

@@ -1,15 +1,12 @@
 #ifndef _SYMBOL_H_
 #define _SYMBOL_H_
 
-#include <bitset>
-#include <stdint.h>
-#include "alist.h"
 #include "baseAST.h"
-#include "bitVec.h"
+
 #include "flags.h"
 #include "type.h"
 
-#include "genret.h"
+#include <bitset>
 #include <vector>
 
 //
@@ -17,13 +14,13 @@
 //
 extern FnSymbol* chpl_gen_main;
 
-class SymExpr;
-class DefExpr;
-class Stmt;
-class BlockStmt;
-class Immediate;
 class BasicBlock;
+class BlockStmt;
+class DefExpr;
+class Immediate;
 class IteratorInfo;
+class Stmt;
+class SymExpr;
 
 enum RetTag {
   RET_VALUE,
@@ -32,10 +29,10 @@ enum RetTag {
   RET_TYPE
 };
 
-const int INTENT_FLAG_IN    = 0x1;
-const int INTENT_FLAG_OUT   = 0x2;
-const int INTENT_FLAG_CONST = 0x4;
-const int INTENT_FLAG_REF   = 0x8;
+const int INTENT_FLAG_IN    = 0x01;
+const int INTENT_FLAG_OUT   = 0x02;
+const int INTENT_FLAG_CONST = 0x04;
+const int INTENT_FLAG_REF   = 0x08;
 const int INTENT_FLAG_PARAM = 0x10;
 const int INTENT_FLAG_TYPE  = 0x20;
 const int INTENT_FLAG_BLANK = 0x40;
@@ -43,16 +40,16 @@ const int INTENT_FLAG_BLANK = 0x40;
 // If this enum is modified, ArgSymbol::intentDescrString should also be
 // updated to match
 enum IntentTag {
-  INTENT_IN = INTENT_FLAG_IN,
-  INTENT_OUT = INTENT_FLAG_OUT,
-  INTENT_INOUT = INTENT_FLAG_IN | INTENT_FLAG_OUT,
-  INTENT_CONST = INTENT_FLAG_CONST,
-  INTENT_CONST_IN = INTENT_FLAG_CONST | INTENT_FLAG_IN,
-  INTENT_REF = INTENT_FLAG_REF,
+  INTENT_IN        = INTENT_FLAG_IN,
+  INTENT_OUT       = INTENT_FLAG_OUT,
+  INTENT_INOUT     = INTENT_FLAG_IN | INTENT_FLAG_OUT,
+  INTENT_CONST     = INTENT_FLAG_CONST,
+  INTENT_CONST_IN  = INTENT_FLAG_CONST | INTENT_FLAG_IN,
+  INTENT_REF       = INTENT_FLAG_REF,
   INTENT_CONST_REF = INTENT_FLAG_CONST | INTENT_FLAG_REF,
-  INTENT_PARAM = INTENT_FLAG_PARAM,
-  INTENT_TYPE = INTENT_FLAG_TYPE,
-  INTENT_BLANK = INTENT_FLAG_BLANK
+  INTENT_PARAM     = INTENT_FLAG_PARAM,
+  INTENT_TYPE      = INTENT_FLAG_TYPE,
+  INTENT_BLANK     = INTENT_FLAG_BLANK
 };
 
 enum ModTag {
@@ -66,41 +63,52 @@ typedef std::bitset<NUM_FLAGS> FlagSet;
 
 
 class Symbol : public BaseAST {
- public:
-  const char* name;
-  const char* cname; // Name of symbol for generating C code
-  Type* type;
-  DefExpr* defPoint; // Point of definition
-  FlagSet flags;
+public:
+  virtual Symbol*    copy(SymbolMap* map = NULL, bool internal = false) = 0;
+  virtual void       replaceChild(BaseAST* old_ast, BaseAST* new_ast)   = 0;
 
-  Symbol(AstTag astTag, const char* init_name, Type* init_type = dtUnknown);
-  virtual ~Symbol();
-  virtual Symbol* copy(SymbolMap* map = NULL, bool internal = false) = 0;
-  virtual Symbol* copyInner(SymbolMap* map) = 0;
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast) = 0;
+  // Interface for BaseAST
+  virtual GenRet     codegen();
+  virtual bool       inTree();
+  virtual Type*      typeInfo();
+  virtual void       verify(); 
 
-  virtual void verify(); 
-  virtual bool inTree();
-  virtual Type* typeInfo(void);
+  virtual bool       isConstant()                                      const;
+  virtual bool       isConstValWillNotChange()                         const;
+  virtual bool       isImmediate()                                     const;
+  virtual bool       isParameter()                                     const;
 
-  virtual bool isConstant(void);
-  virtual bool isConstValWillNotChange(void);
-  virtual bool isParameter(void);
+  virtual void       codegenDef();
 
-  virtual GenRet codegen();
-  virtual void codegenDef();
-  virtual void codegenPrototype(); // ie type decl
+  bool               hasFlag(Flag flag)                                const;
+  bool               hasEitherFlag(Flag aflag, Flag bflag)             const;
 
-  virtual FnSymbol* getFnSymbol(void);
-  virtual bool isImmediate();
+  void               addFlag(Flag flag);
+  void               removeFlag(Flag flag);
+  void               copyFlags(const Symbol* other);
 
-  bool hasFlag(Flag flag);
-  void addFlag(Flag flag);
-  void copyFlags(Symbol* other);
-  void removeFlag(Flag flag);
+  Type*              type;
+  FlagSet            flags;
 
-  bool hasEitherFlag(Flag aflag, Flag bflag);
+  const char*        name;
+  const char*        cname;    // Name of symbol for generating C code
+
+  DefExpr*           defPoint; // Point of definition
+
+protected:
+                     Symbol(AstTag      astTag, 
+                            const char* init_name,
+                            Type*       init_type = dtUnknown);
+
+  virtual           ~Symbol();
+
+private:
+                     Symbol();
+
+  virtual void       codegenPrototype(); // ie type decl
+  virtual FnSymbol*  getFnSymbol();
 };
+
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
 
 
@@ -117,9 +125,11 @@ class VarSymbol : public Symbol {
   DECLARE_SYMBOL_COPY(VarSymbol);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
-  bool isConstant(void);
-  bool isConstValWillNotChange(void);
-  bool isParameter(void);
+  virtual bool       isConstant()                                      const;
+  virtual bool       isConstValWillNotChange()                         const;
+  virtual bool       isImmediate()                                     const;
+  virtual bool       isParameter()                                     const;
+
   const char* doc;
 
   GenRet codegen();
@@ -128,7 +138,6 @@ class VarSymbol : public Symbol {
   // global vars are different ...
   void codegenGlobalDef();
   
-  bool isImmediate();
 };
 
 
@@ -150,10 +159,11 @@ class ArgSymbol : public Symbol {
   DECLARE_SYMBOL_COPY(ArgSymbol);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
+  virtual bool       isConstant()                                      const;
+  virtual bool       isConstValWillNotChange()                         const;
+  virtual bool       isParameter()                                     const;
+
   bool requiresCPtr(void);
-  bool isConstant(void);
-  bool isConstValWillNotChange(void);
-  bool isParameter(void);
   const char* intentDescrString(void);
 
   GenRet codegen();
@@ -281,7 +291,8 @@ class EnumSymbol : public Symbol {
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void codegenDef();
   
-  bool isParameter(void);
+  virtual bool       isParameter()                                     const;
+
   Immediate* getImmediate(void);
 };
 

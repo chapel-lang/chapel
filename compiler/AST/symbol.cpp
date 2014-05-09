@@ -2,25 +2,25 @@
 #define __STDC_FORMAT_MACROS
 #endif
 
-#include <cstdlib>
-#include <inttypes.h>
-#include <stdint.h>
+#include "symbol.h"
+
 #include "astutil.h"
 #include "bb.h"
 #include "build.h"
+#include "codegen.h"
+#include "expr.h"
 #include "files.h"
+#include "intlimits.h"
 #include "iterator.h"
 #include "misc.h"
+#include "passes.h"
 #include "stmt.h"
 #include "stringutil.h"
-#include "symbol.h"
-#include "passes.h"
 #include "type.h"
-#include "expr.h"
 
-#include "intlimits.h"
-
-#include "codegen.h"
+#include <cstdlib>
+#include <inttypes.h>
+#include <stdint.h>
 
 //
 // The function that represents the compiler-generated entry point
@@ -95,7 +95,7 @@ void Symbol::verify() {
 }
 
 
-bool Symbol::inTree(void) {
+bool Symbol::inTree() {
   if (this == rootModule)
     return true;
   if (defPoint)
@@ -105,20 +105,20 @@ bool Symbol::inTree(void) {
 }
 
 
-Type* Symbol::typeInfo(void) {
+Type* Symbol::typeInfo() {
   return type;
 }
 
 
-bool Symbol::isConstant(void) {
+bool Symbol::isConstant() const {
   return false;
 }
 
-bool Symbol::isConstValWillNotChange(void) {
+bool Symbol::isConstValWillNotChange() const {
   return false;
 }
 
-bool Symbol::isParameter(){
+bool Symbol::isParameter() const {
   return false;
 }
 
@@ -139,12 +139,12 @@ void Symbol::codegenDef() {
 void Symbol::codegenPrototype() { }
 
 
-FnSymbol* Symbol::getFnSymbol(void) {
+FnSymbol* Symbol::getFnSymbol() {
   return NULL;
 }
 
 
-bool Symbol::hasFlag(Flag flag) {
+bool Symbol::hasFlag(Flag flag) const {
   CHECK_FLAG(flag);
   return flags[flag];
 }
@@ -156,7 +156,7 @@ void Symbol::addFlag(Flag flag) {
 }
 
 
-void Symbol::copyFlags(Symbol* other) {
+void Symbol::copyFlags(const Symbol* other) {
   flags |= other->flags;
 }
 
@@ -166,12 +166,12 @@ void Symbol::removeFlag(Flag flag) {
   flags.reset(flag);
 }
 
-bool Symbol::hasEitherFlag(Flag aflag, Flag bflag) {
+bool Symbol::hasEitherFlag(Flag aflag, Flag bflag) const {
   return hasFlag(aflag) || hasFlag(bflag);
 }
 
 
-bool Symbol::isImmediate() {
+bool Symbol::isImmediate() const {
   return false;
 }
 
@@ -216,17 +216,17 @@ void VarSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 
-bool VarSymbol::isConstant(void) {
+bool VarSymbol::isConstant() const {
   return hasFlag(FLAG_CONST);
 }
 
 
-bool VarSymbol::isConstValWillNotChange(void) {
+bool VarSymbol::isConstValWillNotChange() const {
   return hasFlag(FLAG_CONST);
 }
 
 
-bool VarSymbol::isParameter(void){
+bool VarSymbol::isParameter() const {
   return hasFlag(FLAG_PARAM) || immediate;
 }
 
@@ -749,7 +749,7 @@ void VarSymbol::codegenDef() {
 }
 
 
-bool VarSymbol::isImmediate() {
+bool VarSymbol::isImmediate() const {
   return immediate != NULL;
 }
 
@@ -865,7 +865,7 @@ bool ArgSymbol::requiresCPtr(void) {
 }
 
 
-bool ArgSymbol::isConstant(void) {
+bool ArgSymbol::isConstant() const {
   if (intent == INTENT_CONST_IN || intent == INTENT_CONST_REF) {
     return true;
   }
@@ -875,7 +875,7 @@ bool ArgSymbol::isConstant(void) {
     !isRecordWrappedType(type) /* array, domain, distribution */;
 }
 
-bool ArgSymbol::isConstValWillNotChange(void) {
+bool ArgSymbol::isConstValWillNotChange() const {
   //
   // This is written to only be called post resolveIntents
   //
@@ -885,7 +885,7 @@ bool ArgSymbol::isConstValWillNotChange(void) {
 
 
 
-bool ArgSymbol::isParameter(void) {
+bool ArgSymbol::isParameter() const {
   return (intent == INTENT_PARAM);
 }
 
@@ -2053,7 +2053,7 @@ void EnumSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   INT_FATAL(this, "Unexpected case in EnumSymbol::replaceChild");
 }
 
-bool EnumSymbol::isParameter(void) { return true; }
+bool EnumSymbol::isParameter() const { return true; }
 
 void EnumSymbol::codegenDef() { }
 

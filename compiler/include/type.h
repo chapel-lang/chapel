@@ -1,11 +1,14 @@
 #ifndef _TYPE_H_
 #define _TYPE_H_
 
-#include <cstdio>
 #include "baseAST.h"
+
+#include "alist.h"
+#include "genret.h"
+
 #include "../ifa/num.h"
 
-#include "genret.h"
+#include <cstdio>
 #include <map>
 
 /*
@@ -17,64 +20,73 @@
 
 */
 
-class Symbol;
-class EnumSymbol;
-class VarSymbol;
-class TypeSymbol;
+class AggregateType;
 class ArgSymbol;
-class FnSymbol;
-class Expr;
-class DefExpr;
+class BlockStmt;
 class CallExpr;
 class CondStmt;
-class BlockStmt;
-class AggregateType;
-
+class DefExpr;
+class EnumSymbol;
+class Expr;
+class FnSymbol;
+class Symbol;
+class TypeSymbol;
+class VarSymbol;
 
 class Type : public BaseAST {
- public:
-  Vec<Type*> dispatchParents; // dispatch hierarchy
-  Vec<Type*> dispatchChildren; // dispatch hierarchy
-  Type* scalarPromotionType;
+public:
+  virtual Type*    copy(SymbolMap* map = NULL, bool internal = false) = 0;
 
-  TypeSymbol* symbol;
-  Symbol* defaultValue;
-  FnSymbol* defaultInitializer; // This is the compiler-supplied
-                                // default-initializer.  It provides initial
-                                // values for the fields in an aggregate type.
-  FnSymbol* defaultTypeConstructor;
-  FnSymbol* destructor;
-  Vec<FnSymbol*> methods;
-  bool hasGenericDefaults; // all generic fields have defaults
-  Type *instantiatedFrom;
-  SymbolMap substitutions;
-  AggregateType* refType;  // pointer to references for non-reference types
-  bool isInternalType; // Used only in PrimitiveType; replace with flag?
+  // Interface for BaseAST
+  virtual GenRet   codegen();
+  virtual bool     inTree();
+  virtual Type*    typeInfo();
+  virtual void     verify(); 
+
+  virtual void     codegenDef();
+  virtual void     codegenPrototype();
+
+  // only used for heterogeneous compilations in which we need to define
+  // what our data structures are for the point of conversions
+  virtual int      codegenStructure(FILE* outfile, const char* baseoffset);
+
+  virtual Symbol*  getField(const char* name, bool fatal = true);
+
+  void             addSymbol(TypeSymbol* newSymbol);
+
+  TypeSymbol*      symbol;
+  AggregateType*   refType;  // pointer to references for non-reference types
+  Vec<FnSymbol*>   methods;
+
+  bool             hasGenericDefaults; // all generic fields have defaults
+
+  Symbol*          defaultValue;
+  FnSymbol*        defaultInitializer; // This is the compiler-supplied
+                                       // default-initializer.
+                                       // It provides initial values for the
+                                       // fields in an aggregate type.
+  FnSymbol*        defaultTypeConstructor;
+  FnSymbol*        destructor;
+
+  // Used only in PrimitiveType; replace with flag?
+  bool             isInternalType;
+
+  Type*            instantiatedFrom;
+  Type*            scalarPromotionType;
+
+  SymbolMap        substitutions;
+  Vec<Type*>       dispatchChildren;   // dispatch hierarchy
+  Vec<Type*>       dispatchParents;    // dispatch hierarchy
 
   // Only used for LLVM.
   std::map<std::string, int> GEPMap;
 
-  Type(AstTag astTag, Symbol* init_defaultVal);
-  virtual ~Type();
-  virtual Type* copy(SymbolMap* map = NULL, bool internal = false) = 0;
-  virtual Type* copyInner(SymbolMap* map) = 0;
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast) = 0;
+protected:
+                   Type(AstTag astTag, Symbol* init_defaultVal);
+  virtual         ~Type();
 
-  virtual void verify(); 
-  virtual bool inTree();
-  virtual Type* typeInfo(void);
-
-  void addSymbol(TypeSymbol* newSymbol);
-
-  virtual GenRet codegen();
-  virtual void codegenDef();
-  virtual void codegenPrototype();
-
-  // only used for heterogeneous compilations in which we need to define
-  // what our data structures are for the point of conversions
-  virtual int codegenStructure(FILE* outfile, const char* baseoffset);
-  
-  virtual Symbol* getField(const char* name, bool fatal=true);
+private:
+  virtual void     replaceChild(BaseAST* old_ast, BaseAST* new_ast) = 0;
 };
 
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
