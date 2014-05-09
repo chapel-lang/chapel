@@ -15,25 +15,58 @@
 #include "vec.h"
 
 
+
+  TypeSymbol*      symbol;
+  AggregateType*   refType;  // pointer to references for non-reference types
+  Vec<FnSymbol*>   methods;
+
+  bool             hasGenericDefaults; // all generic fields have defaults
+
+  Symbol*          defaultValue;
+  FnSymbol*        defaultInitializer; // This is the compiler-supplied
+                                       // default-initializer.
+                                       // It provides initial values for the
+                                       // fields in an aggregate type.
+  FnSymbol*        defaultTypeConstructor;
+  FnSymbol*        destructor;
+
+  // Used only in PrimitiveType; replace with flag?
+  bool             isInternalType;
+
+  Type*            instantiatedFrom;
+  Type*            scalarPromotionType;
+
+  SymbolMap        substitutions;
+  Vec<Type*>       dispatchChildren;   // dispatch hierarchy
+  Vec<Type*>       dispatchParents;    // dispatch hierarchy
+
+
+
+
+
 Type::Type(AstTag astTag, Symbol* init_defaultVal) :
   BaseAST(astTag),
-  scalarPromotionType(NULL),
+
   symbol(NULL),
+  refType(NULL),
+  hasGenericDefaults(false),
   defaultValue(init_defaultVal),
   defaultInitializer(NULL),
   defaultTypeConstructor(NULL),
   destructor(NULL),
-  hasGenericDefaults(false),
+  isInternalType(false),
   instantiatedFrom(NULL),
-  refType(NULL)
-{}
+  scalarPromotionType(NULL) {
+
+}
 
 
-Type::~Type() { }
+Type::~Type() {
 
+}
 
-void Type::verify() { }
-
+void Type::verify() {
+}
 
 void Type::addSymbol(TypeSymbol* newsymbol) {
   symbol = newsymbol;

@@ -73,13 +73,26 @@ Map<FnSymbol*,Vec<FnSymbol*>*> virtualChildrenMap;
 Map<FnSymbol*,Vec<FnSymbol*>*> virtualRootsMap;
 
 
+
+
+  Type*              type;
+  FlagSet            flags;
+
+  const char*        name;
+  const char*        cname;    // Name of symbol for generating C code
+
+  DefExpr*           defPoint; // Point of definition
+
+
+
+
 Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   BaseAST(astTag),
+  type(init_type),
+  flags(),
   name(astr(init_name)),
   cname(name),
-  type(init_type),
-  defPoint(NULL),
-  flags()
+  defPoint(NULL)
 {}
 
 

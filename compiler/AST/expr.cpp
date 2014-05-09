@@ -82,12 +82,12 @@ static int codegen_tmp = 1;
 
 Expr::Expr(AstTag astTag) :
   BaseAST(astTag),
-  prev(NULL),
-  next(NULL),
-  list(NULL),
+  parentSymbol(NULL),
   parentExpr(NULL),
-  parentSymbol(NULL)
-{}
+  list(NULL),
+  prev(NULL),
+  next(NULL)
+{ }
 
 Expr::~Expr() { 
 

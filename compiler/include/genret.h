@@ -6,13 +6,13 @@
 // need llvm::Value, Type
 #include "llvmUtil.h"
 
-#define GEN_VAL 0
-#define GEN_PTR 1
+#define GEN_VAL      0
+#define GEN_PTR      1
 #define GEN_WIDE_PTR 2
 
 class BaseAST;
 class Type;
-struct GenRet;
+class GenRet;
 
 extern GenRet baseASTCodegen(BaseAST* ast);
 extern GenRet baseASTCodegenInt(int x);
@@ -63,7 +63,8 @@ extern GenRet baseASTCodegenString(const char* str);
    int (generate an int)
 
  */
-struct GenRet {
+class GenRet {
+public:
   // When generating c, this should be set.
   // expression or type goes here
   std::string c;
