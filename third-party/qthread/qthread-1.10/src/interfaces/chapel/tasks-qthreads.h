@@ -291,7 +291,7 @@ typedef struct chpl_qthread_tls_s {
     size_t      task_lineno;
 } chpl_qthread_tls_t;
 
-pthread_t chpl_qthread_comm_pthread;
+extern pthread_t chpl_qthread_comm_pthread;
 
 extern chpl_qthread_tls_t chpl_qthread_comm_task_tls;
 
