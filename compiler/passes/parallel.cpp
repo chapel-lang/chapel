@@ -2084,7 +2084,7 @@ static void widenGetPrivClass()
 static void moveAddressSourcesToTemp()
 {
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIM_MOVE)) {
+    if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
       if ((call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
            call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) &&
           call->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS) &&

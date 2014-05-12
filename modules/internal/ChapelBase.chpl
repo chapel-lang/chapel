@@ -256,7 +256,7 @@ module ChapelBase {
   inline proc =(ref a, b: a.type) where isClassType(a.type)
   // "move" is used instead of "=", to pick up wide pointer codegen not yet
   // ported to PRIM_ASSIGN. (TODO)
-  { __primitive("move", a, b); }
+  { __primitive("=", a, b); }
 
   // Because resolution prefers user-defined versions to ones marked as "compiler
   // generated", it is desirable to add that flag to this default version.
@@ -267,7 +267,7 @@ module ChapelBase {
   inline proc =(ref a, b:_nilType) where isClassType(a.type) {
     // "move" is used here because the codegen for PRIM_ASSIGN does not yet
     // handle the assignment of nil.
-    __primitive("move", a, nil); 
+    __primitive("=", a, nil); 
   }
 
   

@@ -3015,6 +3015,15 @@ void codegenAssign(GenRet to_ptr, GenRet from)
              codegenWideHere(codegenNullPointer(), to_ptr.chplType));
       }
     }
+    if (from.chplType == dtNil)
+    {
+      if (to_ptr.chplType->symbol->hasEitherFlag(FLAG_WIDE, FLAG_WIDE_CLASS))
+      {
+        from = codegenWideHere(codegenNullPointer(), to_ptr.chplType);
+        type = to_ptr.chplType->getValType();
+        from.isLVPtr = GEN_VAL;
+      }
+    }
   }
 
   if( (to_ptr.isLVPtr != GEN_WIDE_PTR && from.isLVPtr != GEN_WIDE_PTR )) {
@@ -4254,9 +4263,15 @@ GenRet CallExpr::codegen() {
       ret = codegenXor(get(1), get(2));
       break;
     case PRIM_ASSIGN:
-      // The original, simplistic implementation.
-      // Works but is slow.
-      // The left operand is expected to be of 'ref' type,
+      // The original, simplistic implementation.  Works but may be slow.
+      // (See the implementation of PRIM_MOVE above for several peephole
+      // optimizations depending on specifics of the RHS expression.)
+
+      // PRIM_ASSIGN expects either a narrow or wide pointer as its LHS arg.
+      INT_ASSERT(get(1)->typeInfo()->symbol->hasFlag(FLAG_REF) ||
+                 get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE));
+
+      // Handle general cases of PRIM_ASSIGN.
       codegenAssign(codegenDeref(get(1)), get(2));
       break;
     case PRIM_ADD_ASSIGN:
