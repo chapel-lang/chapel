@@ -25,6 +25,9 @@ general regressions (seem to happen in most configurations)
 linux64 regressions (in addition to the above)
 (Reviewed for accuracy 04/02/14)
 ==============================================
+gcc error message changed from "error:" to "note:"
+--------------------------------------------------
+[Error matching .bad file for functions/gbt/retRecordMultiDef]
 
 
 ==============================================
@@ -327,10 +330,6 @@ gcc warning/error: iteration 2305843009213693951u invokes undefined behavior [-W
 [Error matching compiler output for studies/hpcc/PTRANS/jglewis/ptrans_2011]
 [Error matching compiler output for studies/ssca2/rachels/SSCA2_test (compopts: 3)]
 
-no max threads warning
-----------------------
-[Error matching program output for domains/sungeun/assoc/stress (compopts: 1, execopts: 2)]
-
 error in generated code: conflicting types for 'wait3'
 ------------------------------------------------------
 [Error matching compiler output for parallel/sync/diten/userLevelEndCount]
@@ -367,10 +366,6 @@ chpbld02 (PrgEnv/XE test system) failures
 (Reviewed for accuracy 02/27/14)
 =========================================
 
-gets "that wasn't very random looking" failure
-----------------------------------------------
-[Error matching program output for modules/standard/Random/diten/testRandomSeed]
-
 
 ==========================================================
 cray-prgenv-*-specific failures (in addition to the above)
@@ -396,6 +391,21 @@ empty array size problem (1/25/14 -- bradc)
 -------------------------------------------
 [Error matching compiler output for compflags/bradc/minimalModules/minModDeclPrint]
 [Error matching compiler output for compflags/bradc/minimalModules/minModFnRefArg]
+
+filenames get printed by C compiler when multiple .c files are specified in one command
+---------------------------------------------------------------------------------------
+[Error matching program output for modules/standard/BitOps/c-tests/bitops (compopts: 1)]
+[Error matching program output for modules/standard/BitOps/c-tests/bitops (compopts: 2)]
+[Error matching program output for modules/standard/BitOps/c-tests/clz (compopts: 1)]
+[Error matching program output for modules/standard/BitOps/c-tests/clz (compopts: 2)]
+[Error matching program output for modules/standard/BitOps/c-tests/ctz (compopts: 1)]
+[Error matching program output for modules/standard/BitOps/c-tests/ctz (compopts: 2)]
+[Error matching program output for modules/standard/BitOps/c-tests/performance/32/bitops-32 (compopts: 1)]
+[Error matching program output for modules/standard/BitOps/c-tests/performance/32/bitops-32 (compopts: 2)]
+[Error matching program output for modules/standard/BitOps/c-tests/performance/64/bitops-64 (compopts: 1)]
+[Error matching program output for modules/standard/BitOps/c-tests/performance/64/bitops-64 (compopts: 2)]
+[Error matching program output for modules/standard/BitOps/c-tests/popcount (compopts: 1)]
+[Error matching program output for modules/standard/BitOps/c-tests/popcount (compopts: 2)]
 
 CCE IPA bug
 -----------
@@ -486,6 +496,7 @@ compilation timeouts (02/23/14, 4/20/14)
 [Error: Timed out compilation for portability/boolSizes]
 [Error: Timed out compilation for reductions/bradc/maxreduce]
 [Error: Timed out compilation for reductions/bradc/minmaxlocscan]
+
 
 Compilation timeout (since ??? at least 01/26/14)
 -------------------------------------------------
@@ -588,7 +599,6 @@ undiagnosed problems that started showing up 10/14/10 after lack of testing
 ---------------------------------------------------------------------------
 [Error matching compiler output for parallel/taskPool/figueroa/TooManyThreads]
 [Error matching program output for distributions/robust/associative/stress/many_domain]
-[Error matching program output for modules/standard/Random/diten/testRandomSeed]
 [Error matching program output for parallel/cobegin/gbt/cobegin-stacksize]
 [Error matching program output for studies/hpcc/PTRANS/PTRANS]
 [Error matching program output for studies/shootout/fannkuch-redux/fannkuch-redux  --N=10 (--cc-warnings  ) (0-2)]

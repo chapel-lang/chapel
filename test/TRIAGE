@@ -52,11 +52,6 @@ number of occurrences:
 - error: internal failure EXP0244 chpl Version 1.8.0.-999
 
 
-darwin-dnum non-deterministic timeout
--------------------------------------
-[Error matching program output for domains/sungeun/assoc/stress (compopts: 1, execopts: 2)]
-
-
 gasnet time out (possible gasnet race condition/deadlock)
 ---------------------------------------------------------
 
@@ -372,11 +367,6 @@ valgrind timeouts
 [Error: Timed out compilation for sparse/parallel/sparse-iter-dom-arr-zipper]
 [Error: Timed out compilation for users/franzf/v2/chpl/main (compopts: 1)]
 
-"that wasn't very random looking"
----------------------------------
-[Error matching program output for modules/standard/Random/diten/testRandomSeed]
-linux64.gnu.none.fifo.pthreads (7/22/2013)
-other configurations are quite consistent - see REGRESSIONS
 
 prgenv-* compilation timeouts (maybe due to system updates or ...?)
 -------------------------------------------------------------------
