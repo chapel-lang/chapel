@@ -74,6 +74,7 @@ namespace {
     return tempVar;
   }
 
+#if 0
   void typeChangeReplaceInstWithInst(Instruction* Old, Instruction* New)
   {
     assert(Old->getParent());
@@ -93,6 +94,7 @@ namespace {
  
     Old->eraseFromParent();
   }
+#endif
 
   // Like the version in BasicBlockUtils but assumes New is already
   // in the block.

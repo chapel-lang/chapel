@@ -7,6 +7,7 @@
 #include "type.h"
 #include "astutil.h"
 #include "scopeResolve.h"
+#include "stringutil.h"
 
 
 #ifdef HAVE_LLVM
