@@ -41,7 +41,7 @@ Quick Start
    these scripts long-term, they are merely designed to get new users
    up and running quickly.
 
-   If you use a different shell, refer to doc/release/README.chplenv for
+   If you use a different shell, refer to doc/README.chplenv for
    information about what environment settings you'll need to make in
    order to use Chapel satisfactorily (and if you're able to create an
    equivalent util/setchplenv.* script for your shell, please mail a
