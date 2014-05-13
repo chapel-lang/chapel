@@ -73,6 +73,8 @@ public:
   virtual Type*      typeInfo();
   virtual void       verify(); 
 
+  virtual FnSymbol*  getFnSymbol();
+
   virtual bool       isConstant()                                      const;
   virtual bool       isConstValWillNotChange()                         const;
   virtual bool       isImmediate()                                     const;
@@ -86,6 +88,7 @@ public:
   void               addFlag(Flag flag);
   void               removeFlag(Flag flag);
   void               copyFlags(const Symbol* other);
+
 
   Type*              type;
   FlagSet            flags;
@@ -106,7 +109,6 @@ private:
                      Symbol();
 
   virtual void       codegenPrototype(); // ie type decl
-  virtual FnSymbol*  getFnSymbol();
 };
 
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
