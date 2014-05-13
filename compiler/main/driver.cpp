@@ -66,7 +66,7 @@ static char makeArgument[256] = "";
 
 int fdump_html = 0;
 char fdump_html_chpl_home[FILENAME_MAX+1] = "";
-bool fdump_html_incude_system_modules = true;
+bool fdump_html_include_system_modules = true;
 bool fdump_html_wrap_lines = true;
 bool fdump_html_print_block_IDs = false;
 static char libraryFilename[FILENAME_MAX] = "";
@@ -577,7 +577,7 @@ static void setHelpTrue(ArgumentState* arg, char* unused) {
 
 static void setHtmlUser(ArgumentState* arg, char* unused) {
   fdump_html = true;
-  fdump_html_incude_system_modules = false;
+  fdump_html_include_system_modules = false;
 }
 
 static void setWarnTupleIteration(ArgumentState* arg_state, char* unused) {

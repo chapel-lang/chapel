@@ -31,11 +31,11 @@ extern char log_module[FILENAME_MAX+1];
 extern char log_symbol[FILENAME_MAX+1];
 extern bool fLogIds;
 
-extern int instantiation_limit;
+extern int  instantiation_limit;
 
-extern int fdump_html;
+extern int  fdump_html;
 extern char fdump_html_chpl_home[FILENAME_MAX+1];
-extern bool fdump_html_incude_system_modules;
+extern bool fdump_html_include_system_modules;
 extern bool fdump_html_wrap_lines;
 extern bool fdump_html_print_block_IDs;
 
