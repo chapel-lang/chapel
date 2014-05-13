@@ -20,6 +20,9 @@ $user = `whoami`;
 chomp($user);
 
 $basetmpdir = File::Spec->tmpdir;
+if (exists($ENV{"CHPL_GEN_RELEASE_TMPDIR"})) {
+    $basetmpdir = $ENV{"CHPL_GEN_RELEASE_TMPDIR"};
+}
 $tmpdir = tempdir("chapel-release.$user.deleteme.XXXXX", DIR => $basetmpdir, CLEANUP => 1);
 
 $reldir = "chapel$version";
