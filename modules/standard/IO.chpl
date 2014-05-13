@@ -2169,7 +2169,12 @@ proc _toRegexp(x:?t) where t != regexp
   return (r, false);
 }
 
-param _format_debug = false;
+//
+// This is an internal use only debug flag, so use with caution.
+// Specifically, writef() is not re-entrant, so enabling it may cause
+// unexpected failures.
+//
+config param _format_debug = false;
 
 class _channel_regexp_info {
   var hasRegexp = false;
@@ -2731,7 +2736,7 @@ proc channel.writef(fmt:string, args ...?k, out error:syserr):bool {
 
       var domore = _conv_sethandler(error, argType(i), style, i,args(i),false);
 
-      if _format_debug then writeln("domore ", domore, " arg ", argType(i), " arg ", args(i));
+      if _format_debug then stdout.writeln("domore ", domore, " arg ", argType(i), " arg ", args(i));
 
       if domore {
         this._set_style(style);
