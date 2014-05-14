@@ -3,6 +3,7 @@ Initializing Modules:
     ChapelBase
     Atomics
     NetworkAtomics
+    AtomicsCommon
     ChapelNumLocales
     ChapelThreads
     ChapelTuple

@@ -13,7 +13,7 @@ module ChapelDistribution {
     // The common case seems to be local access to this class, so we
     // will use explicit processor atomics, even when network
     // atomics are available
-    var _distCnt: atomic_int64; // distribution reference count
+    var _distCnt: atomic_refcnt; // distribution reference count
     var _doms: list(BaseDom);   // domains declared over this domain
     var _domsLock: atomicflag;  //   and lock for concurrent access
   
@@ -74,12 +74,12 @@ module ChapelDistribution {
   
     inline proc incRefCount(cnt=1) {
       compilerAssert(!noRefCount);
-      _distCnt.add(cnt);
+      _distCnt.inc(cnt);
     }
 
     inline proc decRefCount() {
       compilerAssert(!noRefCount);
-      const cnt = _distCnt.fetchSub(1)-1;
+      const cnt = _distCnt.dec();
       if cnt < 0 then
           halt("distribution reference count is negative!");
       return cnt;
@@ -101,7 +101,7 @@ module ChapelDistribution {
     // The common case seems to be local access to this class, so we
     // will use explicit processor atomics, even when network
     // atomics are available
-    var _domCnt: atomic_int64; // domain reference count
+    var _domCnt: atomic_refcnt; // domain reference count
     var _arrs: list(BaseArr);  // arrays declared over this domain
     var _arrsLock: atomicflag; //   and lock for concurrent access
   
@@ -172,12 +172,12 @@ module ChapelDistribution {
   
     inline proc incRefCount(cnt=1) {
       compilerAssert(!noRefCount);
-      _domCnt.add(cnt);
+      _domCnt.inc(cnt);
     }
 
     inline proc decRefCount() {
       compilerAssert(!noRefCount);
-      const cnt = _domCnt.fetchSub(1)-1;
+      const cnt = _domCnt.dec(); //_domCnt.fetchSub(1)-1;
       if cnt < 0 then
           halt("domain reference count is negative!");
       return cnt;
@@ -253,7 +253,7 @@ module ChapelDistribution {
     // The common case seems to be local access to this class, so we
     // will use explicit processor atomics, even when network
     // atomics are available
-    var _arrCnt: atomic_int64; // array reference count
+    var _arrCnt: atomic_refcnt; // array reference count
     var _arrAlias: BaseArr;    // reference to base array if an alias
   
     proc dsiStaticFastFollowCheck(type leadType) param return false;
@@ -345,12 +345,12 @@ module ChapelDistribution {
   
     inline proc incRefCount(cnt=1) {
       compilerAssert(!noRefCount);
-      _arrCnt.add(cnt);
+      _arrCnt.inc(cnt);
     }
 
     inline proc decRefCount() {
       compilerAssert(!noRefCount);
-      const cnt = _arrCnt.fetchSub(1)-1;
+      const cnt = _arrCnt.dec(); //_arrCnt.fetchSub(1)-1;
       if cnt < 0 then
           halt("array reference count is negative!");
       return cnt;

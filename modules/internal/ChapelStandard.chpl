@@ -10,6 +10,7 @@ module ChapelStandard {
   use Atomics;
   use NetworkAtomics;
   use NetworkAtomicTypes;
+  use AtomicsCommon;
   use ChapelNumLocales;
   use ChapelThreads;
   use ChapelThreadsInternal;

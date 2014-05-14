@@ -125,7 +125,7 @@ proc GlobalData.GlobalData(nameArg: string) {
 	msg1("  ", ind, "  slice at [", slicex, ",", slicey, "]");
 	var slice => nbr.ldata[slicex, slicey];
 	cache = slice._value;
-	if !noRefCount then cache._arrCnt.add(1);  // this is a bit low-level
+	if !noRefCount then cache._arrCnt.inc(1);  // this is a bit low-level
       }
     }  // storecache()
   }  // forall

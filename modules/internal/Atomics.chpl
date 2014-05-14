@@ -201,7 +201,13 @@ module Atomics {
   // these can be called just the way they are:
   //extern proc atomic_thread_fence(order:memory_order);
   //extern proc atomic_signal_thread_fence(order:memory_order);
-
+  // but they only handle the local portion of a fence.
+  // To include PUTs or GETs in the fence, use atomic_fence instead:
+  proc atomic_fence(order:memory_order) {
+    atomic_thread_fence(order);
+  }
+ 
+  
   proc chpl__atomicType(type base_type) type {
     if CHPL_NETWORK_ATOMICS == "none" {
       if base_type==bool then return atomicflag;
