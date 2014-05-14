@@ -95,7 +95,7 @@ Expr::~Expr() {
 
 Expr* Expr::getStmtExpr() {
   for (Expr* expr = this; expr; expr = expr->parentExpr) {
-    if (IS_STMT(expr) || isBlockStmt(expr->parentExpr))
+    if (expr->isStmt() || isBlockStmt(expr->parentExpr))
       return expr;
   }
   return NULL;

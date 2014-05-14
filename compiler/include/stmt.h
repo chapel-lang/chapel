@@ -16,7 +16,18 @@ enum BlockTag {
 };
 
 
-class BlockStmt : public Expr {
+class Stmt : public Expr {
+ public:
+  Stmt(AstTag astTag) : Expr(astTag) {}
+  virtual ~Stmt();
+  virtual bool isStmt() { return true; }
+//  DECLARE_COPY(Stmt); // Needed?
+  virtual void replaceChild(Expr* old_ast, Expr* new_ast) = 0;
+  virtual void verify() = 0;
+};
+
+
+class BlockStmt : public Stmt {
  public:
   BlockTag blockTag;
   AList body;
@@ -28,10 +39,10 @@ class BlockStmt : public Expr {
   CallExpr* byrefVars;  // 'ref' clause in begin/cobegin/coforall
 
   BlockStmt(Expr* init_body = NULL, BlockTag init_blockTag = BLOCK_NORMAL);
-  ~BlockStmt();
-  void verify();
+  virtual ~BlockStmt();
   DECLARE_COPY(BlockStmt);
-  void replaceChild(Expr* old_ast, Expr* new_ast);
+  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
+  virtual void verify();
   GenRet codegen();
 
   void insertAtHead(Expr* ast);
@@ -48,7 +59,7 @@ class BlockStmt : public Expr {
 };
 
 
-class CondStmt : public Expr {
+class CondStmt : public Stmt {
  public:
   Expr* condExpr;
   BlockStmt* thenStmt;
@@ -56,9 +67,9 @@ class CondStmt : public Expr {
 
   CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt = NULL);
   Expr* fold_cond_stmt();
-  void verify();
   DECLARE_COPY(CondStmt);
-  void replaceChild(Expr* old_ast, Expr* new_ast);
+  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
+  virtual void verify();
 
   GenRet codegen();
 };
@@ -75,7 +86,7 @@ enum GotoTag {
 };
 
 
-class GotoStmt : public Expr {
+class GotoStmt : public Stmt {
  public:
   GotoTag gotoTag;
   Expr* label;
@@ -83,26 +94,30 @@ class GotoStmt : public Expr {
   GotoStmt(GotoTag init_gotoTag, const char* init_label);
   GotoStmt(GotoTag init_gotoTag, Symbol* init_label);
   GotoStmt(GotoTag init_gotoTag, Expr* init_label);
-  void verify();
   DECLARE_COPY(GotoStmt);
-  void replaceChild(Expr* old_ast, Expr* new_ast);
+  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
+  virtual void verify();
+
   GenRet codegen();
 
   const char* getName();
 };
 
-class ExternBlockStmt : public Expr {
+class ExternBlockStmt : public Stmt {
  public:
   const char* c_code;
 
   ExternBlockStmt(const char* c_code);
-  void verify();
   DECLARE_COPY(ExternBlockStmt);
-  void replaceChild(Expr* old_ast, Expr* new_ast);
+  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
+  virtual void verify();
+
   GenRet codegen();
 };
 
 
+// Probably belongs in Expr; doesn't really mean Stmt, but rather
+// statement-level expression.
 void codegenStmt(Expr* stmt);
 
 // Extract (e.toGotoStmt)->(label.toSymExpr)->var and var->->iterResumeGoto,

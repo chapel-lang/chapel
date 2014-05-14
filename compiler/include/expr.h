@@ -10,16 +10,6 @@
 
 class PrimitiveOp;
 
-#define IS_EXPR(e)                                              \
-  ((e)->astTag == E_CallExpr  ||                                \
-   (e)->astTag == E_SymExpr   ||                                \
-   (e)->astTag == E_DefExpr   ||                                \
-   (e)->astTag == E_NamedExpr)
-
-#define IS_STMT(e)                                              \
-  ((e)->astTag == E_BlockStmt ||                                \
-   (e)->astTag == E_CondStmt  ||                                \
-   (e)->astTag == E_GotoStmt)
 
 class Expr : public BaseAST {
 public:
@@ -31,6 +21,7 @@ public:
 
   // Interface for BaseAST
   virtual bool    inTree();
+  virtual bool    isStmt() { return false; }
   virtual Type*   typeInfo();
   virtual void    verify();
 
@@ -65,9 +56,9 @@ class DefExpr : public Expr {
   DefExpr(Symbol* initSym = NULL,
           BaseAST* initInit = NULL,
           BaseAST* initExprType = NULL);
-  void verify(); 
+  virtual void verify(); 
   DECLARE_COPY(DefExpr);
-  void replaceChild(Expr* old_ast, Expr* new_ast);
+  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
 
   Type* typeInfo(void);
   void prettyPrint(std::ostream *o);
@@ -81,8 +72,8 @@ class SymExpr : public Expr {
   Symbol* var;
   SymExpr(Symbol* init_var);
   DECLARE_COPY(SymExpr);
-  void replaceChild(Expr* old_ast, Expr* new_ast);
-  void verify(); 
+  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
+  virtual void verify(); 
   Type* typeInfo(void);
   bool isNoInitExpr() const;
   GenRet codegen();
@@ -93,10 +84,11 @@ class SymExpr : public Expr {
 class UnresolvedSymExpr : public Expr {
  public:
   const char* unresolved;
+
   UnresolvedSymExpr(const char* init_var);
   DECLARE_COPY(UnresolvedSymExpr);
-  void replaceChild(Expr* old_ast, Expr* new_ast);
-  void verify(); 
+  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
+  virtual void verify(); 
   Type* typeInfo(void);
   GenRet codegen();
   void prettyPrint(std::ostream *o);

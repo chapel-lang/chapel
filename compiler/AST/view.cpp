@@ -54,13 +54,13 @@ list_sym(Symbol* sym, bool type = true) {
 
 static bool
 list_line(Expr* expr) {
-  if (IS_STMT(expr))
+  if (expr->isStmt())
     return true;
   if (CondStmt* cond = toCondStmt(expr->parentExpr)) {
     if (cond->condExpr == expr)
       return false;
   }
-  if (!expr->parentExpr || IS_STMT(expr->parentExpr))
+  if (!expr->parentExpr || expr->parentExpr->isStmt())
     return true;
   return false;
 }

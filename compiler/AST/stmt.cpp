@@ -41,8 +41,11 @@ void codegenStmt(Expr* stmt) {
 }
 
 
+Stmt::~Stmt() {}
+
+
 BlockStmt::BlockStmt(Expr* init_body, BlockTag init_blockTag) :
-  Expr(E_BlockStmt),
+  Stmt(E_BlockStmt),
   blockTag(init_blockTag),
   body(),
   blockInfo(NULL),
@@ -330,7 +333,7 @@ BlockStmt::removeUse(ModuleSymbol* mod) {
 
 
 CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
-  Expr(E_CondStmt),
+  Stmt(E_CondStmt),
   condExpr(iCondExpr),
   thenStmt(NULL),
   elseStmt(NULL)
@@ -556,7 +559,7 @@ GenRet CondStmt::codegen() {
 
 
 GotoStmt::GotoStmt(GotoTag init_gotoTag, const char* init_label) :
-  Expr(E_GotoStmt),
+  Stmt(E_GotoStmt),
   gotoTag(init_gotoTag),
   label(init_label ? (Expr*)new UnresolvedSymExpr(init_label)
                    : (Expr*)new SymExpr(gNil))
@@ -566,7 +569,7 @@ GotoStmt::GotoStmt(GotoTag init_gotoTag, const char* init_label) :
 
 
 GotoStmt::GotoStmt(GotoTag init_gotoTag, Symbol* init_label) :
-  Expr(E_GotoStmt),
+  Stmt(E_GotoStmt),
   gotoTag(init_gotoTag),
   label(new SymExpr(init_label))
 {
@@ -575,7 +578,7 @@ GotoStmt::GotoStmt(GotoTag init_gotoTag, Symbol* init_label) :
 
 
 GotoStmt::GotoStmt(GotoTag init_gotoTag, Expr* init_label) :
-  Expr(E_GotoStmt),
+  Stmt(E_GotoStmt),
   gotoTag(init_gotoTag),
   label(init_label)
 {
@@ -732,7 +735,7 @@ const char* GotoStmt::getName() {
 
 
 ExternBlockStmt::ExternBlockStmt(const char* init_c_code) :
-  Expr(E_ExternBlockStmt),
+  Stmt(E_ExternBlockStmt),
   c_code(init_c_code)
 {
   gExternBlockStmts.add(this);
