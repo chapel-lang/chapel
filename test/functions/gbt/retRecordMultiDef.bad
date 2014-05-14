@@ -1,6 +1,2 @@
-In file included from FILE_LINE:
-FILE_LINE: error: conflicting types for 'i2rec'
-FILE_LINE: error: previous declaration of 'i2rec' was here
-In file included from FILE_LINE:
-FILE_LINE: error: conflicting types for 'i2rec'
-FILE_LINE: error: previous declaration of 'i2rec' was here
+FILE_LINE_SEV: conflicting types for 'i2rec'
+FILE_LINE_SEV: conflicting types for 'i2rec'
