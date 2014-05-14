@@ -13,6 +13,8 @@ Parallelism Control Options:
 
 Optimization Control Options:
       --baseline                      Disable all Chapel optimizations
+      --cache-remote                  Enable cache for remote data (must be
+                                      enabled specifically)
       --conditional-dynamic-dispatch-limit <limit>
                                       Set limit on # of inline conditionals
                                       used for dynamic dispatch

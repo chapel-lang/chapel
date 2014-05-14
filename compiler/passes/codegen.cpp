@@ -613,6 +613,7 @@ static void codegen_header() {
   genGlobalString("CHPL_WIDE_POINTERS", CHPL_WIDE_POINTERS);
   genGlobalString("CHPL_LLVM", CHPL_LLVM);
   genGlobalString("CHPL_AUX_FILESYS", CHPL_AUX_FILESYS);
+  genGlobalInt("CHPL_CACHE_REMOTE", fCacheEnabled);
 
   if( hdrfile ) {
     // This is done in runClang for LLVM version.

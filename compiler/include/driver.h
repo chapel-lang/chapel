@@ -122,6 +122,9 @@ extern int  fMaxCIdentLen;
 
 extern bool llvmCodegen;
 
+// Is the cache for remote data enabled?
+extern bool fCacheEnabled;
+
 // externC allows blocks like extern { } to be parsed
 // with clang and then added to the enclosing module's scope
 extern bool externC;

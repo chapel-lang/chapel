@@ -122,6 +122,9 @@ module ChapelBase {
     compilerWarning("CHPL_AUX_FILESYS not set");
   }
 
+  // Is the cache for remote data enabled at compile time?
+  config param CHPL_CACHE_REMOTE: bool = false;
+
   config param noRefCount = false;
   
   config param warnMaximalRange = false;    // Warns if integer rollover will cause
