@@ -13,6 +13,9 @@
 #include "chpl-atomics.h"
 #include "error.h"
 
+// Don't get warning macros for chpl_comm_get etc
+#include "chpl-comm-no-warning-macros.h"
+
 #include <signal.h>
 #include <sched.h>
 #include <stdint.h>

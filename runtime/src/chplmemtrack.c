@@ -10,6 +10,8 @@
 #include "config.h"
 #include "error.h"
 
+#include "chpl-comm-compiler-macros.h"
+
 #include <assert.h>
 #include <string.h>
 #include <stdint.h>
@@ -284,10 +286,10 @@ void chpl_printMemStat(int32_t lineno, chpl_string filename) {
     fprintf(memLogFile, "==============================================================\n");
     for (i = 0; i < chpl_numNodes; i++) {
       static size_t m1, m2, m3, m4;
-      chpl_comm_get(&m1, i, &totalMem, sizeof(size_t), -1 /* broke for hetero */, 1, lineno, filename);
-      chpl_comm_get(&m2, i, &maxMem, sizeof(size_t), -1 /* broke for hetero */, 1, lineno, filename);
-      chpl_comm_get(&m3, i, &totalAllocated,  sizeof(size_t), -1 /* broke for hetero */, 1, lineno, filename);
-      chpl_comm_get(&m4, i, &totalFreed, sizeof(size_t), -1 /*broke for hetero */, 1, lineno, filename);
+      chpl_gen_comm_get(&m1, i, &totalMem, sizeof(size_t), -1 /* broke for hetero */, 1, lineno, filename);
+      chpl_gen_comm_get(&m2, i, &maxMem, sizeof(size_t), -1 /* broke for hetero */, 1, lineno, filename);
+      chpl_gen_comm_get(&m3, i, &totalAllocated,  sizeof(size_t), -1 /* broke for hetero */, 1, lineno, filename);
+      chpl_gen_comm_get(&m4, i, &totalFreed, sizeof(size_t), -1 /*broke for hetero */, 1, lineno, filename);
       fprintf(memLogFile, "%-9d  %-9zu  %-9zu  %-9zu  %-9zu\n", i, m1, m2, m3, m4);
     }
     fprintf(memLogFile, "==============================================================\n");

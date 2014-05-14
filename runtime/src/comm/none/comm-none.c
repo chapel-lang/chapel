@@ -9,6 +9,9 @@
 #include "chplcgfns.h"
 #include "chpl-gen-includes.h"
 
+// Don't get warning macros for chpl_comm_get etc
+#include "chpl-comm-no-warning-macros.h"
+
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>

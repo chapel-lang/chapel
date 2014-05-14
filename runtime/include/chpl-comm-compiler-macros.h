@@ -8,6 +8,9 @@
 #include "error.h"
 #include "chpl-wide-ptr-fns.h"
 
+// Don't warn about chpl_comm_get e.g. in this file.
+#include "chpl-comm-no-warning-macros.h"
+
 //
 // Multi-locale macros used for compiler code generation
 //
@@ -151,5 +154,8 @@ void chpl_wide_array_free(int32_t dstNode, void* x, int32_t lineno, const char* 
 #include "chpl-comm-compiler-llvm-support.h"
 
 #endif // LAUNCHER
+
+// Turn warnings for chpl_comm_get back on
+#include "chpl-comm-warning-macros.h"
 
 #endif

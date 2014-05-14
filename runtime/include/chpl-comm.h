@@ -336,4 +336,8 @@ uint64_t chpl_numCommNBForks(void);
 
 #endif // LAUNCHER
 
+// Warn if runtime uses e.g. chpl_comm_get
+// (it should use chpl_gen_comm_get)
+#include "chpl-comm-warning-macros.h"
+
 #endif
