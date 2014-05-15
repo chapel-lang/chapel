@@ -4,7 +4,7 @@ AST_SRCS = \
 	baseAST.cpp \
 	bb.cpp \
 	build.cpp \
-    checkAST.cpp \
+	checkAST.cpp \
 	dominator.cpp\
 	expr.cpp \
 	iterator.cpp \
@@ -13,7 +13,8 @@ AST_SRCS = \
 	stmt.cpp \
 	symbol.cpp \
 	type.cpp \
-	view.cpp
+	view.cpp \
+        AstVisitor.cpp
 
 SVN_SRCS = $(AST_SRCS)
 SRCS = $(SVN_SRCS)
