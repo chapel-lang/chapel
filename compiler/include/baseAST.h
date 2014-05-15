@@ -47,10 +47,11 @@
 #define foreach_ast(macro)                         \
   foreach_ast_sep(macro, ;)
 
+class AstVisitor;
+class Expr;
 class GenRet;
 class Symbol;
 class Type;
-class Expr;
 
 #define proto_classes(type) class type
 foreach_ast(proto_classes);
@@ -173,6 +174,7 @@ public:
   virtual bool      inTree()                                           = 0;
   virtual Type*     typeInfo()                                         = 0;
   virtual void      verify()                                           = 0;
+  virtual void      accept(AstVisitor* visitor)                        = 0;
 
   const char*       fname()                                      const;
   int               linenum()                                    const;

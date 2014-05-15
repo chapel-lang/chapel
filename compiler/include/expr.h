@@ -21,7 +21,7 @@ public:
 
   // Interface for BaseAST
   virtual bool    inTree();
-  virtual bool    isStmt() { return false; }
+  virtual bool    isStmt() const { return false; }
   virtual Type*   typeInfo();
   virtual void    verify();
 
@@ -58,7 +58,9 @@ class DefExpr : public Expr {
           BaseAST* initExprType = NULL);
   virtual void verify(); 
   DECLARE_COPY(DefExpr);
+
   virtual void replaceChild(Expr* old_ast, Expr* new_ast);
+  virtual void    accept(AstVisitor* visitor);
 
   Type* typeInfo(void);
   void prettyPrint(std::ostream *o);
@@ -74,6 +76,7 @@ class SymExpr : public Expr {
   DECLARE_COPY(SymExpr);
   virtual void replaceChild(Expr* old_ast, Expr* new_ast);
   virtual void verify(); 
+  virtual void    accept(AstVisitor* visitor);
   Type* typeInfo(void);
   bool isNoInitExpr() const;
   GenRet codegen();
@@ -89,6 +92,7 @@ class UnresolvedSymExpr : public Expr {
   DECLARE_COPY(UnresolvedSymExpr);
   virtual void replaceChild(Expr* old_ast, Expr* new_ast);
   virtual void verify(); 
+  virtual void    accept(AstVisitor* visitor);
   Type* typeInfo(void);
   GenRet codegen();
   void prettyPrint(std::ostream *o);
@@ -120,6 +124,8 @@ class CallExpr : public Expr {
   void verify(); 
   DECLARE_COPY(CallExpr);
 
+  virtual void    accept(AstVisitor* visitor);
+
   void replaceChild(Expr* old_ast, Expr* new_ast);
 
   GenRet codegen();
@@ -148,6 +154,7 @@ class NamedExpr : public Expr {
   void verify(); 
   DECLARE_COPY(NamedExpr);
   void replaceChild(Expr* old_ast, Expr* new_ast);
+  virtual void    accept(AstVisitor* visitor);
   Type* typeInfo(void);
   GenRet codegen();
   void prettyPrint(std::ostream *o);

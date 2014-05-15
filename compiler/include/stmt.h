@@ -20,7 +20,7 @@ class Stmt : public Expr {
  public:
   Stmt(AstTag astTag) : Expr(astTag) {}
   virtual ~Stmt();
-  virtual bool isStmt() { return true; }
+  virtual bool isStmt() const { return true; }
 //  DECLARE_COPY(Stmt); // Needed?
   virtual void replaceChild(Expr* old_ast, Expr* new_ast) = 0;
   virtual void verify() = 0;
@@ -43,6 +43,7 @@ class BlockStmt : public Stmt {
   DECLARE_COPY(BlockStmt);
   virtual void replaceChild(Expr* old_ast, Expr* new_ast);
   virtual void verify();
+  virtual void    accept(AstVisitor* visitor);
   GenRet codegen();
 
   void insertAtHead(Expr* ast);
@@ -70,6 +71,7 @@ class CondStmt : public Stmt {
   DECLARE_COPY(CondStmt);
   virtual void replaceChild(Expr* old_ast, Expr* new_ast);
   virtual void verify();
+  virtual void    accept(AstVisitor* visitor);
 
   GenRet codegen();
 };
@@ -97,6 +99,7 @@ class GotoStmt : public Stmt {
   DECLARE_COPY(GotoStmt);
   virtual void replaceChild(Expr* old_ast, Expr* new_ast);
   virtual void verify();
+  virtual void    accept(AstVisitor* visitor);
 
   GenRet codegen();
 
@@ -111,6 +114,7 @@ class ExternBlockStmt : public Stmt {
   DECLARE_COPY(ExternBlockStmt);
   virtual void replaceChild(Expr* old_ast, Expr* new_ast);
   virtual void verify();
+  virtual void    accept(AstVisitor* visitor);
 
   GenRet codegen();
 };

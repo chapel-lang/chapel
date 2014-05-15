@@ -14,6 +14,7 @@
 #include "symbol.h"
 #include "vec.h"
 
+#include "AstVisitor.h"
 
 
   TypeSymbol*      symbol;
@@ -152,6 +153,10 @@ int PrimitiveType::codegenStructure(FILE* outfile, const char* baseoffset) {
   } else
     INT_FATAL(this, "Cannot codegen an internal type");
   return 1;
+}
+
+void PrimitiveType::accept(AstVisitor* visitor) {
+  visitor->visit(this);
 }
 
 EnumType::EnumType() :
@@ -452,6 +457,16 @@ PrimitiveType* EnumType::getIntegerType() {
   return integerType;
 }
 
+void EnumType::accept(AstVisitor* visitor) {
+  if (visitor->visitEnter(this) == true) {
+
+    for_alist(next_ast, constants) {
+      next_ast->accept(visitor);
+    }
+
+    visitor->visitExit(this);
+  }
+}
 
 AggregateType::AggregateType(AggregateTag initTag) :
   Type(E_AggregateType, NULL),
@@ -921,8 +936,6 @@ void AggregateType::codegenPrototype() {
   return;
 }
 
-
-
 int AggregateType::codegenStructure(FILE* outfile, const char* baseoffset) {
   switch (aggregateTag) {
   case AGGREGATE_CLASS:
@@ -939,6 +952,20 @@ int AggregateType::codegenStructure(FILE* outfile, const char* baseoffset) {
   }
 }
 
+void AggregateType::accept(AstVisitor* visitor) {
+  if (visitor->visitEnter(this) == true) {
+
+    for_alist(next_ast, fields) {
+      next_ast->accept(visitor);
+    }
+
+    for_alist(next_ast, inherits) {
+      next_ast->accept(visitor);
+    }
+
+    visitor->visitExit(this);
+  }
+}
 
 // BLC: I'm not understanding why special cases would need to be called
 // out here

@@ -18,6 +18,8 @@
 #include "stringutil.h"
 #include "type.h"
 
+#include "AstVisitor.h"
+
 #include <cstdlib>
 #include <inttypes.h>
 #include <stdint.h>
@@ -766,6 +768,9 @@ bool VarSymbol::isImmediate() const {
   return immediate != NULL;
 }
 
+void VarSymbol::accept(AstVisitor* visitor) {
+  visitor->visit(this);
+}
 
 ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName, 
                      Type* iType, Expr* iTypeExpr,
@@ -969,7 +974,21 @@ GenRet ArgSymbol::codegen() {
   return ret;
 }
 
+void ArgSymbol::accept(AstVisitor* visitor) {
+  if (visitor->visitEnter(this) == true) {
 
+    if (typeExpr)
+      typeExpr->accept(visitor);
+
+    if (defaultExpr)
+      defaultExpr->accept(visitor);
+
+    if (variableExpr)
+      variableExpr->accept(visitor);
+
+    visitor->visitExit(this);
+  }
+}
 
 TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
   Symbol(E_TypeSymbol, init_name, init_type),
@@ -1195,7 +1214,15 @@ GenRet TypeSymbol::codegen() {
   return ret;
 }
 
+void TypeSymbol::accept(AstVisitor* visitor) {
+  if (visitor->visitEnter(this) == true) {
 
+    if (type)
+      type->accept(visitor);
+
+    visitor->visitExit(this);
+  }
+}
 
 FnSymbol::FnSymbol(const char* initName) :
   Symbol(E_FnSymbol, initName),
@@ -2038,7 +2065,29 @@ bool FnSymbol::tag_generic() {
   return false;
 }
 
+void FnSymbol::accept(AstVisitor* visitor) {
+  if (visitor->visitEnter(this) == true) {
 
+    for_alist(next_ast, formals) {
+      next_ast->accept(visitor);
+    }
+
+    if (setter)
+      setter->accept(visitor);
+
+    if (body)
+      body->accept(visitor);
+
+    if (where)
+      where->accept(visitor);
+
+    if (retExprType) {
+      retExprType->accept(visitor);
+    }
+
+    visitor->visitExit(this);
+  }
+}
 
 EnumSymbol::EnumSymbol(const char* init_name) :
   Symbol(E_EnumSymbol, init_name)
@@ -2079,6 +2128,9 @@ Immediate* EnumSymbol::getImmediate(void) {
   return NULL;
 }
 
+void EnumSymbol::accept(AstVisitor* visitor) {
+  visitor->visit(this);
+}
 
 ModuleSymbol::ModuleSymbol(const char* iName, ModTag iModTag, BlockStmt* iBlock)
   : Symbol(E_ModuleSymbol, iName),
@@ -2242,8 +2294,6 @@ Vec<FnSymbol*> ModuleSymbol::getFunctions() {
   }
   return fns;
 }
-
- 
   
 void ModuleSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == block) {
@@ -2253,6 +2303,15 @@ void ModuleSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   }
 }
 
+void ModuleSymbol::accept(AstVisitor* visitor) {
+  if (visitor->visitEnter(this) == true) {
+
+    if (block)
+      block->accept(visitor);
+
+    visitor->visitExit(this);
+  }
+}
 
 LabelSymbol::LabelSymbol(const char* init_name) :
   Symbol(E_LabelSymbol, init_name, NULL),
@@ -2309,6 +2368,10 @@ void LabelSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 void LabelSymbol::codegenDef() { }
   
+void LabelSymbol::accept(AstVisitor* visitor) {
+  visitor->visit(this);
+}
+
 static int literal_id = 1;
 HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
 

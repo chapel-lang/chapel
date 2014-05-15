@@ -124,6 +124,7 @@ class VarSymbol : public Symbol {
   VarSymbol(const char* init_name, Type* init_type = dtUnknown);
   ~VarSymbol();
   void verify(); 
+  virtual void    accept(AstVisitor* visitor);
   DECLARE_SYMBOL_COPY(VarSymbol);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
@@ -158,6 +159,7 @@ class ArgSymbol : public Symbol {
             Expr* iVariableExpr = NULL);
 
   void verify(); 
+  virtual void    accept(AstVisitor* visitor);
   DECLARE_SYMBOL_COPY(ArgSymbol);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
@@ -197,6 +199,7 @@ class TypeSymbol : public Symbol {
 
   TypeSymbol(const char* init_name, Type* init_type);
   void verify(); 
+  virtual void    accept(AstVisitor* visitor);
   DECLARE_SYMBOL_COPY(TypeSymbol);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   GenRet codegen();
@@ -245,6 +248,7 @@ class FnSymbol : public Symbol {
   ~FnSymbol();
            
   void verify(); 
+  virtual void    accept(AstVisitor* visitor);
   DECLARE_SYMBOL_COPY(FnSymbol);
   FnSymbol* copyInnerCore(SymbolMap* map);
   FnSymbol* getFnSymbol(void);
@@ -289,6 +293,7 @@ class EnumSymbol : public Symbol {
  public:
   EnumSymbol(const char* init_name);
   void verify(); 
+  virtual void    accept(AstVisitor* visitor);
   DECLARE_SYMBOL_COPY(EnumSymbol);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void codegenDef();
@@ -316,6 +321,7 @@ class ModuleSymbol : public Symbol {
   ModuleSymbol(const char* iName, ModTag iModTag, BlockStmt* iBlock);
   ~ModuleSymbol();
   void verify(); 
+  virtual void    accept(AstVisitor* visitor);
   DECLARE_SYMBOL_COPY(ModuleSymbol);
   Vec<VarSymbol*> getConfigVars();
   Vec<FnSymbol*> getFunctions();
@@ -331,6 +337,7 @@ class LabelSymbol : public Symbol {
   GotoStmt* iterResumeGoto;
   LabelSymbol(const char* init_name);
   void verify(); 
+  virtual void    accept(AstVisitor* visitor);
   DECLARE_SYMBOL_COPY(LabelSymbol);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void codegenDef();

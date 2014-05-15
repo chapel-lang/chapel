@@ -8,6 +8,7 @@
 #include "stringutil.h"
 #include "codegen.h"
 
+#include "AstVisitor.h"
 
 // remember these so we can update their labels' iterResumeGoto
 Map<GotoStmt*,GotoStmt*> copiedIterResumeGotos;
@@ -331,6 +332,23 @@ BlockStmt::removeUse(ModuleSymbol* mod) {
   }
 }
 
+void BlockStmt::accept(AstVisitor* visitor) {
+  if (visitor->visitEnter(this) == true) {
+    for_alist(next_ast, body)
+      next_ast->accept(visitor);
+
+    if (blockInfo)
+      blockInfo->accept(visitor);
+
+    if (modUses)
+      modUses->accept(visitor);
+
+    if (byrefVars)
+      byrefVars->accept(visitor);
+
+    visitor->visitExit(this);
+  }
+}
 
 CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
   Stmt(E_CondStmt),
@@ -558,6 +576,22 @@ GenRet CondStmt::codegen() {
 }
 
 
+void CondStmt::accept(AstVisitor* visitor) {
+  if (visitor->visitEnter(this) == true) {
+
+    if (condExpr)
+      condExpr->accept(visitor);
+
+    if (thenStmt)
+      thenStmt->accept(visitor);
+
+    if (elseStmt)
+      elseStmt->accept(visitor);
+
+    visitor->visitExit(this);
+  }
+}
+
 GotoStmt::GotoStmt(GotoTag init_gotoTag, const char* init_label) :
   Stmt(E_GotoStmt),
   gotoTag(init_gotoTag),
@@ -732,7 +766,15 @@ const char* GotoStmt::getName() {
     return NULL;
 }
 
+void GotoStmt::accept(AstVisitor* visitor) {
+  if (visitor->visitEnter(this) == true) {
 
+    if (label)
+      label->accept(visitor);
+
+    visitor->visitExit(this);
+  }
+}
 
 ExternBlockStmt::ExternBlockStmt(const char* init_c_code) :
   Stmt(E_ExternBlockStmt),
@@ -764,10 +806,13 @@ GenRet ExternBlockStmt::codegen() {
 }
 
 
-ExternBlockStmt*
-ExternBlockStmt::copyInner(SymbolMap* map) {
+ExternBlockStmt* ExternBlockStmt::copyInner(SymbolMap* map) {
   ExternBlockStmt* copy = new ExternBlockStmt(c_code);
 
   return copy;
+}
+
+void ExternBlockStmt::accept(AstVisitor* visitor) {
+  visitor->visit(this);
 }
 

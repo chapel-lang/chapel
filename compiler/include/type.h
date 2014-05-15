@@ -102,6 +102,7 @@ class EnumType : public Type {
   EnumType();
   ~EnumType();
   void verify(); 
+  virtual void    accept(AstVisitor* visitor);
   DECLARE_COPY(EnumType);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
@@ -132,6 +133,7 @@ class AggregateType : public Type {
   AggregateType(AggregateTag initTag);
   ~AggregateType();
   void verify(); 
+  virtual void    accept(AstVisitor* visitor);
   DECLARE_COPY(AggregateType);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void addDeclarations(Expr* expr, bool tail = true);
@@ -158,6 +160,7 @@ class PrimitiveType : public Type {
  public:
   PrimitiveType(Symbol *init_defaultVal = NULL, bool internalType=false);
   void verify(); 
+  virtual void    accept(AstVisitor* visitor);
   DECLARE_COPY(PrimitiveType);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void codegenDef();

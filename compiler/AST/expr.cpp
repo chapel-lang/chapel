@@ -14,6 +14,8 @@
 #include "stringutil.h"
 #include "type.h"
 
+#include "AstVisitor.h"
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -282,7 +284,6 @@ SymExpr* SymExpr::copyInner(SymbolMap* map) {
   return new SymExpr(var);
 }
 
-
 Type* SymExpr::typeInfo(void) {
   return var->type;
 }
@@ -337,6 +338,9 @@ void SymExpr::prettyPrint(std::ostream *o) {
   }
 }
 
+void SymExpr::accept(AstVisitor* visitor) {
+  visitor->visit(this);
+}
 
 UnresolvedSymExpr::UnresolvedSymExpr(const char* i_unresolved) :
   Expr(E_UnresolvedSymExpr),
@@ -388,6 +392,9 @@ void UnresolvedSymExpr::prettyPrint(std::ostream *o) {
   *o << unresolved;
 }
 
+void UnresolvedSymExpr::accept(AstVisitor* visitor) {
+  visitor->visit(this);
+}
 
 DefExpr::DefExpr(Symbol* initSym, BaseAST* initInit, BaseAST* initExprType) :
   Expr(E_DefExpr),
@@ -499,6 +506,21 @@ GenRet DefExpr::codegen() {
 #endif
   }
   return ret;
+}
+
+void DefExpr::accept(AstVisitor* visitor) {
+  if (visitor->visitEnter(this) == true) {
+    if (init)
+      init->accept(visitor);
+
+    if (exprType)
+      exprType->accept(visitor);
+
+    if (sym)
+      sym->accept(visitor);
+
+    visitor->visitExit(this);
+  }
 }
 
 #ifdef HAVE_LLVM
@@ -3480,6 +3502,18 @@ void CallExpr::prettyPrint(std::ostream *o) {
   }
 }
 
+void CallExpr::accept(AstVisitor* visitor) {
+  if (visitor->visitEnter(this) == true) {
+
+    if (baseExpr)
+      baseExpr->accept(visitor);
+
+    for_alist(next_ast, argList)
+      next_ast->accept(visitor);
+
+    visitor->visitExit(this);
+  }
+}
 
 //
 // Codegen assignments like a += b, a -= b, a *= b, etc.
@@ -5439,6 +5473,16 @@ void NamedExpr::prettyPrint(std::ostream *o) {
   *o << "<NamedExprType>";
 }
 
+
+void NamedExpr::accept(AstVisitor* visitor) {
+  if (visitor->visitEnter(this) == true) {
+
+    if (actual)
+      actual->accept(visitor);
+
+    visitor->visitExit(this);
+  }
+}
 
 bool 
 get_int(Expr *e, int64_t *i) {
