@@ -12,7 +12,8 @@
 
 #include <inttypes.h>
 
-int debugShortLoc = true;
+int  debugShortLoc  = true;
+bool whocalls_nview = false;
 
 static void
 list_sym(Symbol* sym, bool type = true) {
@@ -137,7 +138,6 @@ list_ast(BaseAST* ast, int indent = 0) {
 }
 
 
-#if 0
 static const char*
 aidError(const char* callerMsg, int id) {
   const int tmpBuffSize = 256;
@@ -147,21 +147,16 @@ aidError(const char* callerMsg, int id) {
            callerMsg ? callerMsg : "", callerMsg ? ": " : "", id);
   return tmpBuff;
 }
-#endif
 
-#if 0
 static void
 printAidError(const char* callerMsg, int id) {
   printf("%s\n", aidError(callerMsg, id));
 }
-#endif
 
-#if 0
 void viewFlags(int id) {
   BaseAST* ast = aid(id);
   if (ast) viewFlags(ast); else printAidError("viewFlags", id);
 }
-#endif
 
 
 static const char*
@@ -278,7 +273,6 @@ static void type_nprint_view(BaseAST* ast) {
       printf(":%s[%d]\n", ts->name, type->id);
 }
 
-#if 0
 static void type_print_view(BaseAST* ast) {
   if (Type* type = toType(ast))
     if (Symbol* ts = type->symbol) {
@@ -288,16 +282,12 @@ static void type_print_view(BaseAST* ast) {
       putchar('\n');
     }
 }
-#endif
 
-#if 0
 void list_view(int id) {
   BaseAST* ast = aid(id);
   if (ast) list_view(ast); else printAidError("list_view", id);
 }
-#endif
 
-#if 0
 void list_view(BaseAST* ast) {
   if (ast==NULL) {
     printf("<NULL>");
@@ -309,7 +299,6 @@ void list_view(BaseAST* ast) {
   printf("\n");
   fflush(stdout);
 }
-#endif
 
 void list_view_noline(BaseAST* ast) {
   if (ast==NULL) {
@@ -322,7 +311,6 @@ void list_view_noline(BaseAST* ast) {
   fflush(stdout);
 }
 
-#if 0
 void print_view(BaseAST* ast) {
   if (ast==NULL) {
     printf("<NULL>");
@@ -333,9 +321,7 @@ void print_view(BaseAST* ast) {
   printf("\n\n");
   fflush(stdout);
 }
-#endif
 
-#if 0
 void print_view_noline(BaseAST* ast) {
   if (ast==NULL) {
     printf("<NULL>");
@@ -345,14 +331,11 @@ void print_view_noline(BaseAST* ast) {
   }
   fflush(stdout);
 }
-#endif
 
-#if 0
 void nprint_view(int id) {
   BaseAST* ast = aid(id);
   if (ast) nprint_view(ast); else printAidError("nprint_view", id);
 }
-#endif
 
 void nprint_view(BaseAST* ast) {
   if (ast==NULL) {
@@ -365,7 +348,6 @@ void nprint_view(BaseAST* ast) {
   fflush(stdout);
 }
 
-#if 0
 void nprint_view_noline(BaseAST* ast) {
   if (ast==NULL) {
     printf("<NULL>");
@@ -375,7 +357,6 @@ void nprint_view_noline(BaseAST* ast) {
   }
   fflush(stdout);
 }
-#endif
 
 
 BaseAST* aid(int id) {
@@ -389,20 +370,16 @@ BaseAST* aid(int id) {
 }
 
 
-#if 0
 void iprint_view(int id) {
   nprint_view(aid(id));
 }
-#endif
 
 
-#if 0
 void mark_view(BaseAST* ast, int id) {
   view_ast(ast, false, id);
   printf("\n\n");
   fflush(stdout);
 }
-#endif
 
 static AggregateType *
 structuralTypeSymbol(Symbol *s) {
@@ -999,32 +976,23 @@ log_ast_fnsymbol(FILE* file, FnSymbol* fn) {
 // Cf. no restrictions on BaseAST::stringLoc().
 //
 
-#if 0
 #define locBuffSize 256
 static char locBuff[locBuffSize];
-#endif
 
-#if 0
 const char* stringLoc(int id) {
   BaseAST* ast = aid(id);
   return ast ? stringLoc(ast) : aidError("stringLoc", id);
 }
-#endif
 
-#if 0
 const char* shortLoc(int id) {
   BaseAST* ast = aid(id);
   return ast ? shortLoc(ast) : aidError("shortLoc", id);
 }
-#endif
 
-#if 0
 const char* debugLoc(int id) {
   return debugShortLoc ? shortLoc(id) : stringLoc(id);
 }
-#endif
 
-#if 0
 const char* stringLoc(BaseAST* ast) {
   if (!ast)
     return "<no node provided>";
@@ -1032,9 +1000,7 @@ const char* stringLoc(BaseAST* ast) {
   snprintf(locBuff, locBuffSize, "%s:%d", ast->fname(), ast->linenum());
   return locBuff;
 }
-#endif
 
-#if 0
 const char* shortLoc(BaseAST* ast) {
   if (!ast)
     return "<no node provided>";
@@ -1043,25 +1009,18 @@ const char* shortLoc(BaseAST* ast) {
   const char* slash = (const char*) rindex(longLoc, '/');
   return slash ? slash+1 : longLoc;
 }
-#endif
 
-#if 0
 const char* debugLoc(BaseAST* ast) {
   return debugShortLoc ? shortLoc(ast) : stringLoc(ast);
 }
-#endif
 
-
-#if 0
 //
 // map_view: print the contents of a SymbolMap
 //
 void map_view(SymbolMap* map) {
   map_view(*map);
 }
-#endif
 
-#if 0
 void map_view(SymbolMap& map) {
   printf("SymbolMap at %p\n", &map);
   int cnt = 0;
@@ -1093,9 +1052,8 @@ void map_view(SymbolMap& map) {
   printf("  %d elm(s)\n", cnt);
   log_need_space = temp_log_need_space;
 }
-#endif
 
-#if 0
+
 //
 // vec_view: print the contents of a Vec.
 // todo: add STL versions
@@ -1103,9 +1061,7 @@ void map_view(SymbolMap& map) {
 void vec_view(Vec<Symbol*,VEC_INTEGRAL_SIZE>* v) {
   vec_view(*v);
 }
-#endif
 
-#if 0
 void vec_view(Vec<Symbol*,VEC_INTEGRAL_SIZE>& v)
 {
   printf("Vec<Symbol> %d elm(s)\n", v.n);
@@ -1117,15 +1073,11 @@ void vec_view(Vec<Symbol*,VEC_INTEGRAL_SIZE>& v)
       printf("%3d <null>\n", i);
   }
 }
-#endif
 
-#if 0
 void vec_view(Vec<FnSymbol*,VEC_INTEGRAL_SIZE>* v) {
   vec_view(*v);
 }
-#endif
 
-#if 0
 void vec_view(Vec<FnSymbol*,VEC_INTEGRAL_SIZE>& v)
 {
   printf("Vec<FnSymbol> %d elm(s)\n", v.n);
@@ -1137,19 +1089,14 @@ void vec_view(Vec<FnSymbol*,VEC_INTEGRAL_SIZE>& v)
       printf("%3d <null>\n", i);
   }
 }
-#endif
 
-
-#if 0
 //
 // fnsWithName: print all FnSymbols with the given name
 //
 void fnsWithName(const char* name) {
   fnsWithName(name, gFnSymbols);
 }
-#endif
 
-#if 0
 void fnsWithName(const char* name, Vec<FnSymbol*,VEC_INTEGRAL_SIZE>& fnVec) {
   printf("fnsWithName(\"%s\")\n", name);
   int count = 0, countNonNull = 0;
@@ -1164,10 +1111,7 @@ void fnsWithName(const char* name, Vec<FnSymbol*,VEC_INTEGRAL_SIZE>& fnVec) {
   }
   printf("  %d function(s) of %d\n", count, countNonNull);
 }
-#endif
 
-
-#if 0
 //
 // whocalls: print all CallExprs whose baseExpr is the given SymExpr or Symbol
 //
@@ -1185,9 +1129,7 @@ void whocalls(BaseAST* ast) {
     printf("whocalls: aborting: need a SymExpr or Symbol\n");
   }
 }
-#endif
 
-#if 0
 static char* parentMsg(Expr* expr, int* cntInTreeP, int* cntNonTreeP) {
   static char result[128];
   if (expr->inTree()) {
@@ -1199,11 +1141,7 @@ static char* parentMsg(Expr* expr, int* cntInTreeP, int* cntNonTreeP) {
   }
   return result;
 }
-#endif
 
-bool whocalls_nview = false;
-
-#if 0
 // 'id' better be a Symbol
 void whocalls(int id) {
   int callAll = 0, callMatch = 0, callNonTreeMatch = 0;
@@ -1265,4 +1203,3 @@ void whocalls(int id) {
   printf(".  %d of %d in VMT.  %d of %d in FT.\n",
          vmtMatch, vmtAll, ftMatch, ftAll);
 }
-#endif
