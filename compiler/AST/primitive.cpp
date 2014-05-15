@@ -73,12 +73,12 @@ returnInfoDefaultInt(CallExpr* call) {
   return returnInfoInt64(call);
 }
 
+/*
 static Type*
 returnInfoUInt32(CallExpr* call) { // unexecuted none/gasnet on 4/25/08
   return dtUInt[INT_SIZE_32];
 }
 
-/*
 static Type*
 returnInfoUInt64(CallExpr* call) {
   return dtUInt[INT_SIZE_64];
@@ -571,7 +571,6 @@ initPrimitive() {
   prim_def(PRIM_NUM_PRIV_CLASSES, "chpl_numPrivatizedClasses", returnInfoDefaultInt);
   prim_def(PRIM_GET_PRIV_CLASS, "chpl_getPrivatizedClass",  returnInfoFirst);
   
-  prim_def(PRIM_NEXT_UINT32, "_next_uint32", returnInfoUInt32);
   prim_def(PRIM_GET_USER_LINE, "_get_user_line", returnInfoDefaultInt, true, true);
   prim_def(PRIM_GET_USER_FILE, "_get_user_file", returnInfoString, true, true);
 

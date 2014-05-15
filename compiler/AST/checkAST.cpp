@@ -71,7 +71,6 @@ void checkPrimitives()
      case PRIM_TYPE_TO_STRING:
      case PRIM_TO_LEADER:
      case PRIM_TO_FOLLOWER:
-     case PRIM_NEXT_UINT32:
      case PRIM_FIELD_NUM_TO_NAME:
      case PRIM_FIELD_VALUE_BY_NUM:
      case PRIM_FIELD_ID_BY_NUM:

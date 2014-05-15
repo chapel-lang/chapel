@@ -87,7 +87,6 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_CAST_TO_VOID_STAR:
   case PRIM_SIZEOF:
 
-  case PRIM_NEXT_UINT32:
   case PRIM_GET_USER_LINE:
   case PRIM_GET_USER_FILE:
     DEBUG_PRINTF(" *** OK (default): %s\n", call->primitive->name);
