@@ -46,10 +46,10 @@ static sbatchVersion determineSlurmVersion(void) {
   char* versionPtr = version;
   FILE* sysFile;
   int i;
+  char * command; 
+  sprintf(sysFilename, "%s", baseSysFilename);
   
-  sprintf(sysFilename, "%s%d", baseSysFilename);
-  
-  char* command = chpl_glom_strings(3, "sbatch --version > ", sysFilename, " 2>&1");
+  command = chpl_glom_strings(3, "sbatch --version > ", sysFilename, " 2>&1");
   system(command);
   sysFile = fopen(sysFilename, "r");
   for (i=0; i<versionBuffLen; i++) {
@@ -81,11 +81,11 @@ static sbatchVersion determineSlurmVersion(void) {
 
 // Get the number of locales from the environment variable or if that is not 
 // set just use sinfo to get the number of cpus. 
-static int getCoresPerLocale() {
+static int getCoresPerLocale(void) {
   int numCores = -1;
   const int buflen = 1024;
   char buf[buflen];
-  char* argv[6];
+  char* argv[7];
   char* numCoresString = getenv("CHPL_LAUNCHER_CORES_PER_LOCALE");
 
   if (numCoresString) {
@@ -95,12 +95,13 @@ static int getCoresPerLocale() {
     chpl_warning("CHPL_LAUNCHER_CORES_PER_LOCALE must be > 0.", 0, 0);
   }
 
-  argv[0] = (char *)  "sinfo";       // use sinfo to get num cpus
-  argv[1] = (char *)  "--exact";     // get exact otherwise you get 16+, etc
-  argv[2] = (char *)  "--format=%c"; // format to get num cpu per node (%c)
-  argv[3] = (char *)  "--sort=+=#c"; // sort by num cpu (lower to higher)
-  argv[4] = (char *)  "--noheader";  // don't show header (hide "CPU" header)
-  argv[5] = NULL;
+  argv[0] = (char *)  "sinfo";        // use sinfo to get num cpus
+  argv[1] = (char *)  "--exact";      // get exact otherwise you get 16+, etc
+  argv[2] = (char *)  "--format=%c";  // format to get num cpu per node (%c)
+  argv[3] = (char *)  "--sort=+=#c";  // sort by num cpu (lower to higher)
+  argv[4] = (char *)  "--noheader";   // don't show header (hide "CPU" header)
+  argv[5] = (char *)  "--responding"; // only care about online nodes
+  argv[6] = NULL;
 
 
   memset(buf, 0, buflen);
