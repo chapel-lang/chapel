@@ -37,13 +37,18 @@ cleanall: FORCE
 clobber: FORCE
 	rm -rf build install
 
+# Determine the number of available cpus on the system. Used as the -j argument
+# when calling make below. This can be overridden at the command line with
+# NPROCS=<int>.
+NPROCS := $(shell python -c 'import multiprocessing ; print multiprocessing.cpu_count()')
+
 # -enable-debug-runtime --enable-debug-symbols creates huge binaries
 #  so we by default do not include LLVM debugging information.
 $(LLVM_FILE):
 	if [ ! -d llvm ]; then ./unpack-llvm.sh; fi
 	mkdir -p $(LLVM_BUILD_DIR)
 	cd $(LLVM_BUILD_DIR) && $(LLVM_SRC_DIR)/configure CC='$(CC)' CXX='$(CXX)' --prefix=$(LLVM_INSTALL_DIR) --enable-optimized $(CHPL_LLVM_DEBUG)
-	cd $(LLVM_BUILD_DIR) && $(MAKE)
+	cd $(LLVM_BUILD_DIR) && $(MAKE) -j$(NPROCS)
 	cd $(LLVM_BUILD_DIR) && $(MAKE) install
 	cd $(LLVM_BUILD_DIR) && cd test && make lit.site.cfg
 	
