@@ -38,7 +38,6 @@ my $outfile = $ARGV[1];
 my $modfile = "$outfile.tmp";
 open OUTFILE, $outfile or die "could not open the test output file $outfile: $!";
 
-
 # check that the pattern is found and if not exit early  
 sub check1line {
    my ($pattern) = @_;
@@ -72,7 +71,7 @@ if ($batch) {
     # slurm unless the job failed then print the slurm errors 
     while (<BATCHOUTFILE>) {
        my $line = $_;
-       if ($line !~ /^slurm.*/ or jobFailed($batchNum)) {
+       if ($line !~ /^slurm.*/ or $line !~ /slurmstepd: task\/cgroup: unable to remove step memcg / or jobFailed($batchNum)) {
            print MODFILE $line;
        }
     }
@@ -85,10 +84,8 @@ if ($batch) {
     open MODFILE, ">$modfile" or die "could not open the modified test output file $modfile: $!";
     while (<OUTFILE>) {
        my $line = $_;
-       if ($line !~ /^salloc.*/) {
-           $line =~ s/\r//g;
-           print MODFILE $line;
-       }
+       $line =~ s/\r//g;
+       print MODFILE $line;
     }
 }
 
