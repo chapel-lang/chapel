@@ -61,6 +61,44 @@ extern const int chpl_heterogeneous;
 // Comm layer-specific interface
 //
 
+// chpl_comm_nb_handle_t must be defined in the comm layer header
+// chpl-comm-task-decls.h
+
+// Do a GET in a nonblocking fashion, returning a handle which can be used to
+// wait for the GET to complete. The destination buffer must not be modified
+// before the request completes (after waiting on the returned handle)
+chpl_comm_nb_handle_t  chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
+                                     int32_t elemSize, int32_t typeIndex,
+                                     int32_t len,
+                                     int ln, chpl_string fn);
+
+// Do a PUT in a nonblocking fashion, returning a handle which can be used to
+// wait for the PUT to complete. The source buffer must not be modified before
+// the request completes (after waiting on the returned handle)
+chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
+                                    int32_t elemSize, int32_t typeIndex,
+                                    int32_t len,
+                                    int ln, chpl_string fn);
+
+// Returns 1 if the handle has already been waited for and has
+// been cleared out in a call to chpl_comm_wait_some.
+int chpl_comm_nb_handle_is_complete(chpl_comm_nb_handle_t h);
+
+// Wait on handles created by chpl_comm_start_....  ignores completed handles.
+// Returns the number of handles completed, which must be >=1 if all handles
+// are not already completed. Clears out completed handles so that
+// calling chpl_comm_nb_handle_is_complete on them returns 1.
+void chpl_comm_nb_wait_some(chpl_comm_nb_handle_t* h, size_t nhandles);
+
+// Returns whether or not the passed wide address is known to be in
+// a communicable memory region - that is, a region for which it is
+// guaranteed that puts/gets will succeed without access violation or
+// other memory protection error.
+// Returns 1 if the entire passed region is known to be in the
+// registered memory region, or 0 if some or all of it is not (or
+// the communicable memory region is totally unknown).
+int chpl_comm_is_in_segment(c_nodeid_t node, void* start, size_t len);
+
 //
 // returns the maximum number of threads that can be handled
 // by this communication layer (used to ensure numThreadsPerLocale is
@@ -287,7 +325,12 @@ void chpl_comm_fork_fast(c_nodeid_t node, c_sublocid_t subloc,
 //
 int chpl_comm_numPollingTasks(void);
 
-
+// Some communication layers need to be periodically invoked
+// in order to make progress. This call gives the comm layer
+// an opportunity to move puts,gets, etc along while the
+// current thread is idle (e.g. when we are waiting on
+// an atomic variable for other tasks to finish).
+void chpl_comm_make_progress(void);
 
 //
 // Comm diagnostics stuff
@@ -298,6 +341,7 @@ typedef struct _chpl_commDiagnostics {
   uint64_t get_nb_test;
   uint64_t get_nb_wait;
   uint64_t put;
+  uint64_t put_nb;
   uint64_t fork;
   uint64_t fork_fast;
   uint64_t fork_nb;
@@ -324,6 +368,7 @@ uint64_t chpl_numCommNBGets(void);
 uint64_t chpl_numCommTestNBGets(void);
 uint64_t chpl_numCommWaitNBGets(void);
 uint64_t chpl_numCommPuts(void);
+uint64_t chpl_numCommNBPuts(void);
 uint64_t chpl_numCommForks(void);
 uint64_t chpl_numCommFastForks(void);
 uint64_t chpl_numCommNBForks(void);

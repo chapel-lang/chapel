@@ -35,6 +35,42 @@ static int mysystem(const char* command, const char* description,
 }
 
 // Chapel interface
+chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
+                                       int32_t elemSize, int32_t typeIndex,
+                                       int32_t len,
+                                       int ln, chpl_string fn)
+{
+  assert(node == 0);
+  memcpy(raddr, addr, len*elemSize);
+  return NULL;
+}
+
+chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
+                                       int32_t elemSize, int32_t typeIndex,
+                                       int32_t len,
+                                       int ln, chpl_string fn)
+{
+  assert(node == 0);
+  memcpy(addr, raddr, len*elemSize);
+  return NULL;
+}
+
+int chpl_comm_nb_handle_is_complete(chpl_comm_nb_handle_t h)
+{
+  return ((void*)h) == NULL;
+}
+
+void chpl_comm_nb_wait_some(chpl_comm_nb_handle_t* h, size_t nhandles)
+{
+  size_t i;
+  for( i = 0; i < nhandles; i++ ) {
+    assert(h[i] == NULL);
+  }
+}
+int chpl_comm_is_in_segment(c_nodeid_t node, void* start, size_t len)
+{
+  return 0;
+}
 
 int32_t chpl_comm_getMaxThreads(void) {
   return 0;
@@ -454,6 +490,10 @@ void chpl_comm_fork_fast(c_nodeid_t node, c_sublocid_t subloc,
 
 int chpl_comm_numPollingTasks(void) { return 0; }
 
+void chpl_comm_make_progress(void)
+{
+}
+
 void chpl_startVerboseComm() { }
 void chpl_stopVerboseComm() { }
 void chpl_startVerboseCommHere() { }
@@ -472,6 +512,7 @@ uint64_t chpl_numCommNBGets(void) { return 0; }
 uint64_t chpl_numCommTestNBGets(void) { return 0; }
 uint64_t chpl_numCommWaitNBGets(void) { return 0; }
 uint64_t chpl_numCommPuts(void) { return 0; }
+uint64_t chpl_numCommNBPuts(void) { return 0; }
 uint64_t chpl_numCommForks(void) { return 0; }
 uint64_t chpl_numCommFastForks(void) { return 0; }
 uint64_t chpl_numCommNBForks(void) { return 0; }

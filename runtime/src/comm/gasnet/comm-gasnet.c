@@ -343,6 +343,78 @@ static gasnet_handlerentry_t ftable[] = {
 //
 // Chapel interface starts here
 //
+chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
+                                       int32_t elemSize, int32_t typeIndex,
+                                       int32_t len,
+                                       int ln, chpl_string fn)
+{
+  size_t nbytes = elemSize*len;
+  gasnet_handle_t ret;
+
+  ret = gasnet_put_nb_bulk(node, raddr, addr, nbytes);
+
+  if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
+    chpl_sync_lock(&chpl_comm_diagnostics_sync);
+    chpl_comm_commDiagnostics.put_nb++;
+    chpl_sync_unlock(&chpl_comm_diagnostics_sync);
+  }
+
+  return (chpl_comm_nb_handle_t) ret;
+}
+
+chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
+                                       int32_t elemSize, int32_t typeIndex,
+                                       int32_t len,
+                                       int ln, chpl_string fn)
+{
+  size_t nbytes = elemSize*len;
+  gasnet_handle_t ret;
+
+  ret = gasnet_get_nb_bulk(addr, node, raddr, nbytes);
+
+  if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
+    chpl_sync_lock(&chpl_comm_diagnostics_sync);
+    chpl_comm_commDiagnostics.get_nb++;
+    chpl_sync_unlock(&chpl_comm_diagnostics_sync);
+  }
+
+  return (chpl_comm_nb_handle_t) ret;
+}
+
+int chpl_comm_nb_handle_is_complete(chpl_comm_nb_handle_t h)
+{
+  return ((void*)h) == NULL;
+}
+
+void chpl_comm_nb_wait_some(chpl_comm_nb_handle_t* h, size_t nhandles)
+{
+  gasnet_wait_syncnb_some((gasnet_handle_t*) h, nhandles);
+}
+
+int chpl_comm_is_in_segment(c_nodeid_t node, void* start, size_t len)
+{
+#ifdef GASNET_SEGMENT_EVERYTHING
+  return 0;
+#else
+  uintptr_t segstart, segend;
+  uintptr_t reqstart, reqend;
+
+  segstart = (uintptr_t) seginfo_table[node].addr;
+  segend = segstart + seginfo_table[node].size;
+  reqstart = (uintptr_t) start;
+  reqend = reqstart + len;
+
+  if( segstart <= reqstart &&
+      reqstart <= segend &&
+      segstart <= reqend &&
+      reqend <= segend) {
+    return 1;
+  }
+
+  return 0;
+#endif
+}
+
 
 int32_t chpl_comm_getMaxThreads(void) {
   return GASNETI_MAX_THREADS-1;
@@ -1009,6 +1081,12 @@ void  chpl_comm_fork_fast(c_nodeid_t node, c_sublocid_t subloc,
   }
 }
 
+void chpl_comm_make_progress(void)
+{
+  gasnet_AMPoll();
+}
+
+
 void chpl_startVerboseComm() {
   chpl_verbose_comm = 1;
   chpl_comm_no_debug_private = 1;
@@ -1087,6 +1165,10 @@ uint64_t chpl_numCommWaitNBGets(void) {
 
 uint64_t chpl_numCommPuts(void) {
   return chpl_comm_commDiagnostics.put;
+}
+
+uint64_t chpl_numCommNBPuts(void) {
+  return chpl_comm_commDiagnostics.put_nb;
 }
 
 uint64_t chpl_numCommFastForks(void) {
