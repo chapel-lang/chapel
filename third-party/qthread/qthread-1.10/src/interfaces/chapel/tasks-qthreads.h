@@ -16,6 +16,7 @@
 #include <pthread.h>
 
 #include "chpltypes.h" // for chpl_bool
+#include "chpl-tasks-prvdata.h" // for chpl_task_prvData_t
 
 #define CHPL_COMM_YIELD_TASK_WHILE_POLLING
 void chpl_task_yield(void);
@@ -262,14 +263,24 @@ void threadlayer_exit(void);
 volatile int chpl_qthread_done_initializing;
 #endif
 
-
 typedef struct {
 #if !(defined(CHPL_LOCALE_MODEL_NUM_SUBLOCALES) &&  \
   CHPL_LOCALE_MODEL_NUM_SUBLOCALES == 0)
   c_sublocid_t requestedSubloc;  // requested sublocal for task
 #endif
-  chpl_bool    serial_state;     // true: serialize execution
-} chpl_qthread_private_data_t;
+  chpl_task_prvData_t prvdata;
+} chpl_task_prvDataImpl_t;
+
+// Define PRV_DATA_IMPL_VAL to set up a chpl_task_prvData_t.
+#if !(defined(CHPL_LOCALE_MODEL_NUM_SUBLOCALES) &&  \
+  CHPL_LOCALE_MODEL_NUM_SUBLOCALES == 0)
+#define PRV_DATA_IMPL_VAL(subloc, serial) \
+        { .requestedSubloc = subloc, \
+          .prvdata = { .serial_state = serial } }
+#else
+#define PRV_DATA_IMPL_VAL(subloc, serial) \
+        { .prvdata = { .serial_state = serial } }
+#endif
 
 typedef struct {
     void                     *fn;
@@ -277,13 +288,13 @@ typedef struct {
     chpl_string              task_filename;
     int                      lineno;
     chpl_bool                countRunning;
-    chpl_qthread_private_data_t      chpl_data;
+    chpl_task_prvDataImpl_t  chpl_data;
 } chpl_qthread_wrapper_args_t;
 
 // Structure of task-local storage
 typedef struct chpl_qthread_tls_s {
     /* Task private data: serial state, etc. */
-    chpl_qthread_private_data_t chpl_data;
+    chpl_task_prvDataImpl_t chpl_data;
     /* Reports */
     chpl_string lock_filename;
     size_t      lock_lineno;
@@ -315,6 +326,21 @@ static inline chpl_qthread_tls_t * chpl_qthread_get_tasklocal(void)
         tls = NULL;
 
     return tls;
+}
+
+#ifdef CHPL_TASK_GET_PRVDATA_IMPL_DECL
+#error "CHPL_TASK_GET_PRVDATA_IMPL_DECL is already defined!"
+#else
+#define CHPL_TASK_GET_PRVDATA_IMPL_DECL 1
+#endif
+static inline chpl_task_prvData_t* chpl_task_getPrvData(void)
+{
+  chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
+  if (data) {
+      return &data->chpl_data.prvdata;
+  }
+  assert(data);
+  return NULL;
 }
 
 #ifdef CHPL_TASK_GETSUBLOC_IMPL_DECL

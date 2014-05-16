@@ -115,12 +115,14 @@ struct chpl_task_list {
 
 pthread_t chpl_qthread_comm_pthread;
 
-chpl_qthread_tls_t chpl_qthread_comm_task_tls = { { c_sublocid_any_val,
-                                                    false },
-                                                  NULL, 0, NULL, 0 };
-
+chpl_qthread_tls_t chpl_qthread_comm_task_tls = {
+  PRV_DATA_IMPL_VAL(c_sublocid_any_val, false),
+  NULL, 0, NULL, 0 };
+ 
+ //
+ 
 //
-// structs chpl_qthread_private_data_t, chpl_qthread_wrapper_args_t and
+// structs chpl_task_prvDataImpl_t, chpl_qthread_wrapper_args_t and
 // chpl_qthread_tls_t have been moved to tasks-qthreads.h
 //
 
@@ -466,7 +468,8 @@ static aligned_t chapel_wrapper(void *arg)
 void chpl_task_callMain(void (*chpl_main)(void))
 {
     const chpl_qthread_wrapper_args_t wrapper_args = 
-        {chpl_main, NULL, NULL, 0, false, {c_sublocid_any_val, false}};
+        {chpl_main, NULL, NULL, 0, false,
+         PRV_DATA_IMPL_VAL(c_sublocid_any_val, false) };
 
     qthread_debug(CHAPEL_CALLS, "[%d] begin chpl_task_callMain()\n", chpl_localeID);
 
@@ -518,7 +521,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
     chpl_bool serial_state = chpl_task_getSerial();
     chpl_qthread_wrapper_args_t wrapper_args = 
         {chpl_ftable[fid], arg, filename, lineno, false,
-         {subloc, serial_state}};
+         PRV_DATA_IMPL_VAL(subloc, serial_state) };
 
     assert(subloc != c_sublocid_none);
 
@@ -565,7 +568,9 @@ void chpl_task_startMovedTask(chpl_fn_p      fp,
     assert(id == chpl_nullTaskID);
 
     chpl_qthread_wrapper_args_t wrapper_args = 
-        {fp, arg, NULL, 0, canCountRunningTasks, {subloc, serial_state}};
+        {fp, arg, NULL, 0, canCountRunningTasks,
+         PRV_DATA_IMPL_VAL(subloc, serial_state) };
+
 
     PROFILE_INCR(profile_task_startMovedTask,1);
 
@@ -613,13 +618,13 @@ chpl_bool chpl_task_getSerial(void)
 
     PROFILE_INCR(profile_task_getSerial,1);
 
-    return data->chpl_data.serial_state;
+    return data->chpl_data.prvdata.serial_state;
 }
 
 void chpl_task_setSerial(chpl_bool state)
 {
     chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
-    data->chpl_data.serial_state = state;
+    data->chpl_data.prvdata.serial_state = state;
 
     PROFILE_INCR(profile_task_setSerial,1);
 }

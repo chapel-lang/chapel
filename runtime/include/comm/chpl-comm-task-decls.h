@@ -4,6 +4,12 @@
 #ifndef _chpl_comm_task_decls_h
 #define _chpl_comm_task_decls_h
 
-// Nothing to do
+// Define the type of a n.b. communications handle.
+typedef void* chpl_comm_nb_handle_t;
+
+typedef struct {
+} chpl_comm_taskPrvData_t;
+
+#undef HAS_CHPL_CACHE_FNS
 
 #endif

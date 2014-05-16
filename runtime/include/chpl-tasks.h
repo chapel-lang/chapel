@@ -5,6 +5,7 @@
 
 #include <stdint.h>
 #include "chpltypes.h"
+#include "chpl-tasks-prvdata.h"
 
 #ifdef CHPL_TASKS_MODEL_H
 #include CHPL_TASKS_MODEL_H
@@ -180,6 +181,15 @@ void chpl_task_sleep(int);
 //
 chpl_bool chpl_task_getSerial(void);
 void      chpl_task_setSerial(chpl_bool);
+
+// The type for task private data, chpl_task_prvData_t,
+// is defined in chpl-tasks-prvdata.h in order to support
+// proper initialization order with a task model .h
+
+// Get pointer to task private data.
+#ifndef CHPL_TASK_GET_PRVDATA_IMPL_DECL
+chpl_task_prvData_t* chpl_task_getPrvData(void);
+#endif
 
 //
 // Returns the the number of sublocales the tasking layer knows about,
