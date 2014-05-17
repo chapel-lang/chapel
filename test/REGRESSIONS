@@ -58,13 +58,33 @@ this should get better with better string memory management
 
 ================================
 --fast regressions
-(Reviewed for accuracy 04/02/14)
+(Reviewed for accuracy 05/14/14)
 ================================
 
 Both of these pass with gcc 4.8 but fail with 4.3
 -------------------------------------------------
 [Error matching program output for modules/standard/math/infinity]
 [Error matching program output for studies/dijkstra/driverEdgeBtw (compopts: 1)]
+
+These pass with gcc 4.3.4 but get a segfault with 4.7.2
+-------------------------------------------------------
+[Error matching program output for distributions/robust/arithmetic/basics/test_array_accesses1]
+[Error matching program output for distributions/robust/arithmetic/basics/test_array_assignment]
+[Error matching program output for distributions/robust/arithmetic/basics/test_array_iteration1]
+[Error matching program output for distributions/robust/arithmetic/basics/test_array_swap]
+[Error matching program output for distributions/robust/arithmetic/basics/test_domain_iteration1]
+[Error matching program output for distributions/robust/arithmetic/basics/test_infer_array_type]
+[Error matching program output for distributions/robust/arithmetic/basics/test_zipper_default]
+[Error matching program output for distributions/robust/arithmetic/modules/test_module_Norm]
+[Error matching program output for distributions/robust/arithmetic/modules/test_module_Random]
+[Error matching program output for distributions/robust/arithmetic/reindexing/test_array_alias4]
+[Error matching program output for distributions/robust/arithmetic/reindexing/test_reindexing1]
+[Error matching program output for distributions/robust/arithmetic/reindexing/test_reindexing2]
+[Error matching program output for distributions/robust/arithmetic/reindexing/test_reindexing3]
+[Error matching program output for distributions/robust/arithmetic/reindexing/test_reindexing4]
+[Error matching program output for distributions/robust/arithmetic/reindexing/test_reindexing5]
+[Error matching program output for distributions/robust/arithmetic/reindexing/test_reindexing7]
+[Error matching program output for distributions/robust/arithmetic/trivial/test_writeln]
 
 
 ================================
@@ -86,7 +106,7 @@ verify regressions
 
 ================================
 valgrind-specific regressions
-(Reviewed for accuracy 04/02/14)
+(Reviewed for accuracy 05/14/14)
 ================================
 
 possible stack overflow? (3/30/14)
@@ -218,7 +238,6 @@ cyclic distribution regressions
 (Reviewed for accuracy 04/02/14)
 ================================
 
-
 communication counts changed due to r23004, gbt (03/30/14)
 ----------------------------------------------------------
 [Error matching program output for distributions/robust/arithmetic/performance/multilocale/alloc]
@@ -227,6 +246,81 @@ communication counts changed due to Vass' task functions commit (05/30/13)
 ---------------------------------------------------------------------------
 [Error matching program output for distributions/robust/arithmetic/performance/multilocale/assign]
 [Error matching program output for distributions/robust/arithmetic/performance/multilocale/reduce]
+
+other comm count mismatches
+---------------------------
+[Error matching program output for distributions/robust/arithmetic/performance/multilocale/reduce]
+[Error matching program output for distributions/robust/arithmetic/performance/multilocale/reduceAlias]
+
+
+===================================
+replicated distribution regressions
+(Reviewed for accuracy 05/14/14)
+===================================
+
+See chapel_dev email thread starting 2/12/14 12:42:46 CST (David Iten) with
+subject "Re: FW: Cron Dist replicated (linux64.gnu.gasnet.fifo.flat) 60/0/60".
+------------------------------------------------------------------------------
+[Error matching program output for distributions/robust/arithmetic/basics/test_array_assignment]
+[Error matching program output for distributions/robust/arithmetic/basics/test_array_iteration1]
+[Error matching program output for distributions/robust/arithmetic/basics/test_array_of_distributed_array1]
+[Error matching program output for distributions/robust/arithmetic/basics/test_array_swap]
+[Error matching program output for distributions/robust/arithmetic/basics/test_class_of_distributed_array]
+[Error matching program output for distributions/robust/arithmetic/basics/test_distributed_array_of_array1]
+[Error matching program output for distributions/robust/arithmetic/basics/test_distributed_array_of_array2]
+[Error matching program output for distributions/robust/arithmetic/basics/test_distributed_array_of_distributed_array1]
+[Error matching program output for distributions/robust/arithmetic/basics/test_distributed_array_of_record1]
+[Error matching program output for distributions/robust/arithmetic/basics/test_distributed_array_of_record2]
+[Error matching program output for distributions/robust/arithmetic/basics/test_domain_assignment]
+[Error matching program output for distributions/robust/arithmetic/basics/test_domain_iteration1]
+[Error matching program output for distributions/robust/arithmetic/basics/test_infer_array_type]
+[Error matching program output for distributions/robust/arithmetic/basics/test_promotion1]
+[Error matching program output for distributions/robust/arithmetic/basics/test_promotion2]
+[Error matching program output for distributions/robust/arithmetic/basics/test_promotion3]
+[Error matching program output for distributions/robust/arithmetic/basics/test_record_of_distributed_array]
+[Error matching program output for distributions/robust/arithmetic/basics/test_reduce1]
+[Error matching program output for distributions/robust/arithmetic/basics/test_reshape]
+[Error matching program output for distributions/robust/arithmetic/basics/test_scan1]
+[Error matching program output for distributions/robust/arithmetic/basics/test_strided_serial_iteration]
+[Error matching program output for distributions/robust/arithmetic/basics/test_zipper_default]
+[Error matching program output for distributions/robust/arithmetic/basics/test_zipper_range]
+[Error matching program output for distributions/robust/arithmetic/collapsing/test_array_rank_change1]
+[Error matching program output for distributions/robust/arithmetic/collapsing/test_domain_rank_change1]
+[Error matching program output for distributions/robust/arithmetic/collapsing/test_domain_rank_change_OOB]
+[Error matching program output for distributions/robust/arithmetic/modules/test_module_Norm]
+[Error matching program output for distributions/robust/arithmetic/modules/test_module_Random]
+[Error matching program output for distributions/robust/arithmetic/modules/test_module_Sort]
+[Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic]
+[Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_record]
+[Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_tuple]
+[Error matching program output for distributions/robust/arithmetic/performance/multilocale/alloc]
+[Error matching program output for distributions/robust/arithmetic/performance/multilocale/alloc_all]
+[Error matching program output for distributions/robust/arithmetic/performance/multilocale/assignAlias]
+[Error matching program output for distributions/robust/arithmetic/performance/multilocale/assignSlice]
+[Error matching program output for distributions/robust/arithmetic/performance/multilocale/reduceAlias]
+[Error matching program output for distributions/robust/arithmetic/performance/multilocale/reduceSlice]
+[Error matching program output for distributions/robust/arithmetic/reindexing/test_array_alias1]
+[Error matching program output for distributions/robust/arithmetic/reindexing/test_array_alias2]
+[Error matching program output for distributions/robust/arithmetic/reindexing/test_array_alias3]
+[Error matching program output for distributions/robust/arithmetic/reindexing/test_strided_reindex1 (compopts: 1)]
+[Error matching program output for distributions/robust/arithmetic/reindexing/test_strided_reindex2 (compopts: 1)]
+[Error matching program output for distributions/robust/arithmetic/resizing/test_domain_resize1]
+[Error matching program output for distributions/robust/arithmetic/slicing/test_array_slicing1]
+[Error matching program output for distributions/robust/arithmetic/slicing/test_array_slicing2]
+[Error matching program output for distributions/robust/arithmetic/slicing/test_array_slicing3]
+[Error matching program output for distributions/robust/arithmetic/slicing/test_domain_slicing1]
+[Error matching program output for distributions/robust/arithmetic/slicing/test_strided_slice1]
+[Error matching program output for distributions/robust/arithmetic/slicing/test_strided_slice2]
+[Error matching program output for distributions/robust/arithmetic/stress/test_many_domains]
+[Error matching program output for distributions/robust/arithmetic/trivial/test_domain_plus_minus_index]
+[Error matching program output for distributions/robust/arithmetic/trivial/test_dot_domain]
+[Error matching program output for distributions/robust/arithmetic/trivial/test_dot_expand]
+[Error matching program output for distributions/robust/arithmetic/trivial/test_dot_exterior]
+[Error matching program output for distributions/robust/arithmetic/trivial/test_dot_interior]
+[Error matching program output for distributions/robust/arithmetic/trivial/test_dot_numIndices]
+[Error matching program output for distributions/robust/arithmetic/trivial/test_dot_translate]
+[Error matching program output for distributions/robust/arithmetic/trivial/test_tuple_to_array]
+[Error matching program output for distributions/robust/arithmetic/trivial/test_writeln]
 
 
 ========================================
@@ -655,11 +749,6 @@ Unknown extra memory leaks
 --------------------------
 [Error matching program output for memory/figueroa/LeakedMemory5 (compopts: 1)]
 
-line number ambiguity
----------------------
-[TODO: ditto about .good files]
-[Error matching program output for memory/shannon/memmaxExceedsLineno2]
-
 signal 11 (since 11/03/13 -- the first runs)
 --------------------------------------------
 [Error matching program output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 2, execopts: 3)]
@@ -731,11 +820,16 @@ failed since adding more multilocale directories (01/31/12)
 [Error matching program output for multilocale/local/diten/test_local2] (8/24/13, linux64.gnu.gasnet.qthreads.none-exm)
   Worked when re-run; may be intermittent?
 
+comm count mismatches
+---------------------
+[Error matching program output for distributions/robust/arithmetic/performance/multilocale/reduce]
+[Error matching program output for distributions/robust/arithmetic/performance/multilocale/reduceAlias]
+[Error matching program output for distributions/robust/arithmetic/performance/multilocale/reduceSlice]
 
 
 ================================
 baseline-specific tests
-(Reviewed for accuracy 04/01/14)
+(Reviewed for accuracy 05/14/14)
 ================================
 
 Failure due to r22900 (bradc)
@@ -770,6 +864,7 @@ so that it is valid when passed to _freeIterator46.
 [Error matching program output for modules/standard/Sort/sungeun/sorty (execopts: 1)]
 [Error matching program output for modules/standard/Sort/sungeun/sorty (execopts: 2)]
 [Error matching program output for modules/standard/Sort/sungeun/sorty (execopts: 3)]
+Note: execopts: 2 started passing on 5/15/14; luck?
 
 glibc invalid pointer error (09/28/13)
 ------------------------------------------------------------
@@ -804,6 +899,15 @@ Tests suppressions that now succeed due to turning on inlining (12/7/12)
 ------------------------------------------------------------------------
 [Error: did not find expected suppression trivial/mjoyner/inlinefunc/inlfunc1_report]
 [Error: did not find expected suppression trivial/mjoyner/inlinefunc/inlfunc2_report]
+
+??? (wrong output)
+------------------
+This started failing on 5/9/14, after it was un-futurized by r23360.  It
+passes without "--baseline --inline".  Brad thinks (in a chapel_dev
+email on 5/9/14) that it could be modified to fail even without giving
+--baseline.
+------------------------------------------------------------------------
+[Error matching program output for extern/bradc/structs/externFloat4calls.someFields (compopts: 1)]
 
 
 ============================================
