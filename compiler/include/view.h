@@ -10,8 +10,10 @@ BaseAST*    aid(int id);
 void        list_view_noline(BaseAST* ast);
 void        nprint_view(BaseAST* ast);
 void        dump_ast(const char* passName, int pass_num);
-void        html_view(const char* passName);
 
+void        html_log_init();
+void        html_view(const char* passName);
+void        html_log_done();
 
 // These are not used by the compiler but are available for use in GDB
 //

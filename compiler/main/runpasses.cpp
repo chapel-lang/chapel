@@ -100,23 +100,6 @@ static void runPass(const char *passName, void (*pass)(void), void (*check)(), c
 }
 
 
-static void dump_index_header(FILE* f) {
-  fprintf(f, "<HTML>\n");
-  fprintf(f, "<HEAD>\n");
-  fprintf(f, "<TITLE> Compilation Dump </TITLE>\n");
-  fprintf(f, "<SCRIPT SRC=\"http://chapel.cray.com/developer/mktree.js\" LANGUAGE=\"JavaScript\"></SCRIPT>");
-  fprintf(f, "<LINK REL=\"stylesheet\" HREF=\"http://chapel.cray.com/developer/mktree.css\">");
-  fprintf(f, "</HEAD>\n");
-  fprintf(f, "<div style=\"text-align: center;\"><big><big><span style=\"font-weight: bold;\">");
-  fprintf(f, "Compilation Dump<br><br></span></big></big>\n");
-  fprintf(f, "<div style=\"text-align: left;\">\n\n");
-}
-
-
-static void dump_index_footer(FILE* f) {
-  fprintf(f, "</HTML>\n");
-}
-
 static void setupLogfiles() {
   if (logging() || fdump_html || *deletedIdFilename)
     ensureDirExists(log_dir, "ensuring directory for log files exists");
@@ -125,12 +108,9 @@ static void setupLogfiles() {
     strcat(log_dir, "/");
 
   if (fdump_html) {
-    if (!(html_index_file = fopen(astr(log_dir, "index.html"), "w"))) {
-      USR_FATAL("cannot open html index file \"%s\" for writing", astr(log_dir, "index.html"));
-    }
-    dump_index_header(html_index_file);
-    fprintf(html_index_file, "<TABLE CELLPADDING=\"0\" CELLSPACING=\"0\">");
+    html_log_init();
   }
+
   if (deletedIdFilename[0] != '\0') {
     deletedIdHandle = fopen(deletedIdFilename, "w");
     if (!deletedIdHandle) {
@@ -141,10 +121,9 @@ static void setupLogfiles() {
 
 static void teardownLogfiles() {
   if (fdump_html) {
-    fprintf(html_index_file, "</TABLE>");
-    dump_index_footer(html_index_file);
-    fclose(html_index_file);
+    html_log_done();
   }
+
   if (deletedIdON) {
     fclose(deletedIdHandle);
     deletedIdHandle = NULL;

@@ -14,7 +14,9 @@ AST_SRCS = \
 	symbol.cpp \
 	type.cpp \
 	view.cpp \
-        AstVisitor.cpp
+        AstVisitor.cpp       \
+        AstDump.cpp          \
+        AstDumpToHtml.cpp
 
 SVN_SRCS = $(AST_SRCS)
 SRCS = $(SVN_SRCS)
