@@ -67,7 +67,10 @@ Both of these pass with gcc 4.8 but fail with 4.3
 [Error matching program output for studies/dijkstra/driverEdgeBtw (compopts: 1)]
 
 These pass with gcc 4.3.4 but get a segfault with 4.7.2
--------------------------------------------------------
+-------------------------------------------------------------------
+Note from Sung: the problem appears to be that the "shiftedData"
+pointer in DefaultRectangularArr is not being properly initialized.
+-------------------------------------------------------------------
 [Error matching program output for distributions/robust/arithmetic/basics/test_array_accesses1]
 [Error matching program output for distributions/robust/arithmetic/basics/test_array_assignment]
 [Error matching program output for distributions/robust/arithmetic/basics/test_array_iteration1]
