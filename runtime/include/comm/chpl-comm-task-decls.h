@@ -8,6 +8,7 @@
 typedef void* chpl_comm_nb_handle_t;
 
 typedef struct {
+  int dummy;    // structs must be nonempty
 } chpl_comm_taskPrvData_t;
 
 #undef HAS_CHPL_CACHE_FNS
