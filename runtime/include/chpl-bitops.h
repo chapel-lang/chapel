@@ -21,7 +21,7 @@
 // the same asmembly as the builtin under clang
 // Returns: number of bits set in the provided integer
 
-static inline uint64_t chpl_bitops_popcount_32(uint32_t x) {
+static inline uint32_t chpl_bitops_popcount_32(uint32_t x) {
 #if !defined(CHPL_BITOPS_C) && (RT_COMP_CC & (~RT_COMP_PGI))
   // - Assumes 'int's are 32bit
   // - gcc4.3's doesn't have support for popcnt and the like
@@ -36,7 +36,7 @@ static inline uint64_t chpl_bitops_popcount_32(uint32_t x) {
 #endif
 }
 
-static inline uint64_t chpl_bitops_popcount_64(uint64_t x) {
+static inline uint32_t chpl_bitops_popcount_64(uint64_t x) {
 #if !defined(CHPL_BITOPS_C) && (RT_COMP_CC & (~RT_COMP_PGI))
   // Assumes 'long long's are 64bit
   return __builtin_popcountll(x);
@@ -58,7 +58,7 @@ static inline uint64_t chpl_bitops_popcount_64(uint64_t x) {
 
 // TODO: find a better bit hack to do this? the popcount at the end makes it
 //       roughly twice as slow as the others
-static inline uint64_t chpl_bitops_clz_32(uint32_t x) {
+static inline uint32_t chpl_bitops_clz_32(uint32_t x) {
 #if !defined(CHPL_BITOPS_C) && (RT_COMP_CC & (~RT_COMP_PGI))
   // - Assumes 'int's are 32bit
   // - __builtin_clz(0) is undefined, return 32 when 0, these conditionals
@@ -81,7 +81,7 @@ static inline uint64_t chpl_bitops_clz_32(uint32_t x) {
 #endif
 }
 
-static inline uint64_t chpl_bitops_clz_64(uint64_t x) {
+static inline uint32_t chpl_bitops_clz_64(uint64_t x) {
 #if !defined(CHPL_BITOPS_C) && (RT_COMP_CC & (~RT_COMP_PGI))
   // - Assumes 'long long's are 64bit
   // - Same as above, __builtin_clzll(0) is undefined, return 64 when 0
@@ -109,7 +109,7 @@ static inline uint64_t chpl_bitops_clz_64(uint64_t x) {
 // Lookup table for the C implementation
 extern const int chpl_bitops_debruijn32[32];
 
-static inline uint64_t chpl_bitops_ctz_32(uint32_t x) {
+static inline uint32_t chpl_bitops_ctz_32(uint32_t x) {
 #if !defined(CHPL_BITOPS_C) && (RT_COMP_CC & (~RT_COMP_PGI))
   // - Assumes 'int's are 32bit
   // - __builtin_ctz(0) is undefined, return 0 when 0
@@ -128,7 +128,7 @@ static inline uint64_t chpl_bitops_ctz_32(uint32_t x) {
 // Lookup table for the C implementation
 extern const int chpl_bitops_debruijn64[64];
 
-static inline uint64_t chpl_bitops_ctz_64(uint64_t x) {
+static inline uint32_t chpl_bitops_ctz_64(uint64_t x) {
 #if !defined(CHPL_BITOPS_C) && (RT_COMP_CC & (~RT_COMP_PGI))
   // Assumes 'long long's are 64bit
   // __builtin_ctzll(0) is undefined, return 0 when 0

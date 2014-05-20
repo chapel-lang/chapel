@@ -3,7 +3,7 @@
  */
 module BitOps {
 
-  inline proc clz(x: uint(?bits)) : uint {
+  inline proc clz(x: uint(?bits)) : uint(32) {
     // the select will be folded out at compile time.
     select bits {
       when 64 do
@@ -24,7 +24,7 @@ module BitOps {
     }
   }
 
-  inline proc ctz(x: uint(?bits)) : uint {
+  inline proc ctz(x: uint(?bits)) : uint(32) {
     // the select will be folded out at compile time.
     select bits {
       when 64 do
@@ -43,7 +43,7 @@ module BitOps {
     }
   }
 
-  inline proc popcount(x: uint(?bits)) : uint {
+  inline proc popcount(x: uint(?bits)) : uint(32) {
     // the select will be folded out at compile time.
     select bits {
       when 64 do
@@ -142,12 +142,12 @@ module BitOps {
  * module to hide the extern procedures
  */
 module BitOps_internal {
-  extern proc chpl_bitops_popcount_32(x: uint(32)) : uint(64);
-  extern proc chpl_bitops_popcount_64(x: uint(64)) : uint(64);
+  extern proc chpl_bitops_popcount_32(x: uint(32)) : uint(32);
+  extern proc chpl_bitops_popcount_64(x: uint(64)) : uint(32);
 
-  extern proc chpl_bitops_clz_32(x: uint(32)) : uint(64);
-  extern proc chpl_bitops_clz_64(x: uint(64)) : uint(64);
+  extern proc chpl_bitops_clz_32(x: uint(32)) : uint(32);
+  extern proc chpl_bitops_clz_64(x: uint(64)) : uint(32);
 
-  extern proc chpl_bitops_ctz_32(x: uint(32)) : uint(64);
-  extern proc chpl_bitops_ctz_64(x: uint(64)) : uint(64);
+  extern proc chpl_bitops_ctz_32(x: uint(32)) : uint(32);
+  extern proc chpl_bitops_ctz_64(x: uint(64)) : uint(32);
 }

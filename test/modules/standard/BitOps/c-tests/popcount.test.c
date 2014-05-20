@@ -15,12 +15,12 @@ int main(int argc, char** argv) {
 
   printf("%s", "uint32_t:\n");
   for(i=start; i<start+10; i++) {
-    printf("%llu\n", chpl_bitops_popcount_32((uint32_t)i));
+    printf("%u\n", chpl_bitops_popcount_32((uint32_t)i));
   }
 
   printf("%s", "uint64_t:\n");
   for(i=start; i<start+10; i++) {
-    printf("%llu\n", chpl_bitops_popcount_64((uint64_t)i));
+    printf("%u\n", chpl_bitops_popcount_64((uint64_t)i));
   }
 
   return 0;
