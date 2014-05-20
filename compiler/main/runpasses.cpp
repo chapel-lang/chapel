@@ -1,17 +1,21 @@
 #include "baseAST.h"
 #include "files.h"
-#include "misc.h"
 #include "log.h"
+#include "misc.h"
+#include "primitive.h"
 #include "runpasses.h"
 #include "stringutil.h"
 #include "view.h"
-#include "primitive.h"
+
+#include "AstDump.h"
+#include "AstDumpToHtml.h"
+
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
 #include <sys/time.h>
 
-bool printPasses = false;
+bool  printPasses     = false;
 FILE* printPassesFile = NULL;
 
 struct PassInfo {
@@ -83,16 +87,21 @@ static void runPass(const char *passName, void (*pass)(void), void (*check)(), c
               totalTime+timeBetweenPasses);
     }
   }
+
   if (strlen(fPrintStatistics))
     printStatistics(passName);
+
   if (fdump_html) {
-    html_view(passName);
+    AstDumpToHtml::view(passName);
   }
+
   if (logging(log_tag))
-    dump_ast(passName, currentPassNo);
+    AstDump::view(passName, currentPassNo);
+
   if (performTiming) {
     gettimeofday(&startTimeBetweenPasses, &timezone);
   }
+
   considerExitingEndOfPass();
   cleanAst();
   (*check)(); // Run per-pass check function.
@@ -108,7 +117,7 @@ static void setupLogfiles() {
     strcat(log_dir, "/");
 
   if (fdump_html) {
-    html_log_init();
+    AstDumpToHtml::init();
   }
 
   if (deletedIdFilename[0] != '\0') {
@@ -121,7 +130,7 @@ static void setupLogfiles() {
 
 static void teardownLogfiles() {
   if (fdump_html) {
-    html_log_done();
+    AstDumpToHtml::done();
   }
 
   if (deletedIdON) {
