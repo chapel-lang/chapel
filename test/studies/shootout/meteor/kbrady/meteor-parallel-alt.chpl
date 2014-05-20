@@ -6,8 +6,7 @@
  * loosely based on Ben St. John's and Kevin Barnes' implementation
  */
 
-extern proc __builtin_popcountll(x: uint) : int(32);
-extern proc __builtin_ctz(x: uint(32)) : uint(32);
+use BitOps;
 
 const pieceCount: int(32) = 10;
 const pieces: [0..9][0..4][0..1] int(32) = [
@@ -61,7 +60,7 @@ proc goodPiece(mask: uint(32), pos: uint(32)): bool {
          a = (a|s1|s2|s3|s4|s5|s6|s7|s8) & b;
       } while aOld != a;
 
-      if __builtin_popcountll(a)%5 != 0 {
+      if popcount(a)%5 != 0 {
          isGood = false;
          break;
       }
@@ -236,17 +235,17 @@ proc recordSolution(currentSolution: [] uint(32)) {
   var piece, count : uint(32);
   for i in 0..9 {
     mask = currentSolution[i];
-    piece = __builtin_ctz(mask>>22:uint(32));
+    piece = ctz(mask>>22:uint(32)):uint(32);
     mask &= 0x003FFFFF;
     b1 |= mask;
     while mask {
       currentBit = mask&(-(mask:int(32))):uint(32);
-      count = __builtin_ctz(currentBit);
+      count = ctz(currentBit):uint(32);
       board[count+pos] = piece:uint(8);
       flipBoard[49-count-pos] = piece:uint(8);
       mask ^= currentBit;
     }
-    count = __builtin_ctz(~b1);
+    count = ctz(~b1);
     pos += count;
     b1 >>= count;
   }
@@ -263,7 +262,19 @@ proc recordSolution(currentSolution: [] uint(32)) {
   solutions += 2;
 }
 
-var recordLock: sync bool = true;
+record Spinlock {
+  var l: atomic bool;
+
+  proc lock() {
+    while l.testAndSet() != false do chpl_task_yield();
+  }
+
+  proc unlock() {
+    l.write(false);
+  }
+}
+
+var recordLock: Spinlock;
 
 proc searchLinear(in board: uint(32), in pos: uint(32), in used: uint(32),
                   in placed: uint(32), currentSolution: [] uint(32)) {
@@ -271,10 +282,9 @@ proc searchLinear(in board: uint(32), in pos: uint(32), in used: uint(32),
   var evenRows, oddRows, leftBorder, rightBorder: uint(32);
   var s1, s2, s3, s4, s5, s6, s7, s8: uint(32);
   if placed == 10 {
-    if recordLock {
-      recordSolution(currentSolution);
-      recordLock = true;
-    }
+    recordLock.lock();
+    recordSolution(currentSolution);
+    recordLock.unlock();
   } else {
     evenRows = evenRowsLookup[pos];
 
@@ -296,7 +306,7 @@ proc searchLinear(in board: uint(32), in pos: uint(32), in used: uint(32),
       return;
     }
 
-    count = __builtin_ctz(~board);
+    count = ctz(~board);
     pos += count;
     board >>= count;
 
@@ -336,7 +346,7 @@ proc searchParallel(in board: uint(32), in pos: uint(32), in used: uint(32),
                     in placed: uint(32), in firstPiece: uint(32)) {
   var count: uint(32);
 
-  count = __builtin_ctz(~board);
+  count = ctz(~board):uint(32);
   pos += count;
   board >>= count;
 
