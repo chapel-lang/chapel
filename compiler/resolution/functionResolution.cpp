@@ -1448,8 +1448,7 @@ handleSymExprInExpandVarArgs(FnSymbol* workingFn, ArgSymbol* formal, SymExpr* sy
           VarSymbol* tmp = newTemp("_varargs_tmp_");
           workingFn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
           workingFn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp, new CallExpr(var, new_IntSymbol(i))));
-          workingFn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, actual->copy(),
-                                                               new CallExpr("=", actual->copy(), tmp)));
+          workingFn->insertBeforeReturnAfterLabel(new CallExpr("=", actual->copy(), tmp));
           i++;
         }
       }
@@ -3391,15 +3390,6 @@ static void resolveMove(CallExpr* call) {
     lhs = se->var;
   INT_ASSERT(lhs);
 
-  if (CallExpr* assignment = toCallExpr(rhs)) {
-    if (FnSymbol* fn = assignment->isResolved()) {
-      if (!strcmp(fn->name, "=") && fn->retType == dtVoid) {
-        //          call->replace(assignment->remove());
-        return;
-      }
-    }
-  }
-
   FnSymbol* fn = toFnSymbol(call->parentSymbol);
 
   if (lhs->hasFlag(FLAG_TYPE_VARIABLE) && !isTypeExpr(rhs)) {
@@ -3432,15 +3422,24 @@ static void resolveMove(CallExpr* call) {
   Type* rhsType = rhs->typeInfo();
 
   if (rhsType == dtVoid) {
-    if (CallExpr* rhsFn = toCallExpr(rhs)) {
-      if (FnSymbol* rhsFnSym = rhsFn->isResolved()) {
-        USR_FATAL(userCall(call), 
-                  "illegal use of function that does not return a value: '%s'", 
-                  rhsFnSym->name);
-      }
+    if (lhs == fn->getReturnSymbol() &&
+        (lhs->type == dtVoid || lhs->type == dtUnknown))
+    {
+      // It is OK to assign void to the return value variable as long as its
+      // type is void or is not yet established.
     }
-    USR_FATAL(userCall(call), 
-              "illegal use of function that does not return a value");
+    else
+    {
+      if (CallExpr* rhsFn = toCallExpr(rhs)) {
+        if (FnSymbol* rhsFnSym = rhsFn->isResolved()) {
+          USR_FATAL(userCall(call), 
+                    "illegal use of function that does not return a value: '%s'", 
+                    rhsFnSym->name);
+        }
+      }
+      USR_FATAL(userCall(call), 
+                "illegal use of function that does not return a value");
+    }
   }
 
   if (lhs->type == dtUnknown || lhs->type == dtNil)
@@ -5746,7 +5745,55 @@ static void buildValueFunction(FnSymbol* fn) {
     replaceSetterArgWithTrue(fn, fn);
   }
 }
- 
+
+
+static void resolveReturnType(FnSymbol* fn)
+{
+  // Resolve return type.
+  Symbol* ret = fn->getReturnSymbol();
+  Type* retType = ret->type;
+
+  if (retType == dtUnknown) {
+
+    Vec<Type*> retTypes;
+    Vec<Symbol*> retParams;
+    computeReturnTypeParamVectors(fn, ret, retTypes, retParams);
+
+    if (retTypes.n == 1)
+      retType = retTypes.head();
+    else if (retTypes.n > 1) {
+      for (int i = 0; i < retTypes.n; i++) {
+        bool best = true;
+        for (int j = 0; j < retTypes.n; j++) {
+          if (retTypes.v[i] != retTypes.v[j]) {
+            bool requireScalarPromotion = false;
+            if (!canDispatch(retTypes.v[j], retParams.v[j], retTypes.v[i], fn, &requireScalarPromotion))
+              best = false;
+            if (requireScalarPromotion)
+              best = false;
+          }
+        }
+        if (best) {
+          retType = retTypes.v[i];
+          break;
+        }
+      }
+    }
+    if (!fn->iteratorInfo) {
+      if (retTypes.n == 0)
+        retType = dtVoid;
+    }
+  }
+
+  ret->type = retType;
+  if (!fn->iteratorInfo) {
+    if (retType == dtUnknown)
+      USR_FATAL(fn, "unable to resolve return type");
+    fn->retType = retType;
+  }
+
+}
+
 
 static void
 resolveFns(FnSymbol* fn) {
@@ -5756,9 +5803,14 @@ resolveFns(FnSymbol* fn) {
   
   resolvedFns[fn] = true;
 
-  if (fn->hasFlag(FLAG_EXTERN) || fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)) {
+  if (fn->hasFlag(FLAG_EXTERN)) {
+    resolveBlock(fn->body);
+    resolveReturnType(fn);
     return;
   }
+
+  if (fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))
+    return;
 
   if (fn->retTag == RET_VAR) {
     buildValueFunction(fn);
@@ -5781,45 +5833,7 @@ resolveFns(FnSymbol* fn) {
     fixTypeNames(ct);
   }
 
-  // Resolve return type.
-  Symbol* ret = fn->getReturnSymbol();
-  Type* retType = ret->type;
-
-  Vec<Type*> retTypes;
-  Vec<Symbol*> retParams;
-  computeReturnTypeParamVectors(fn, ret, retTypes, retParams);
-
-  if (retType == dtUnknown) {
-    if (retTypes.n == 1)
-      retType = retTypes.head();
-    else if (retTypes.n > 1) {
-      for (int i = 0; i < retTypes.n; i++) {
-        bool best = true;
-        for (int j = 0; j < retTypes.n; j++) {
-          if (retTypes.v[i] != retTypes.v[j]) {
-            bool requireScalarPromotion = false;
-            if (!canDispatch(retTypes.v[j], retParams.v[j], retTypes.v[i], fn, &requireScalarPromotion))
-              best = false;
-            if (requireScalarPromotion)
-              best = false;
-          }
-        }
-        if (best) {
-          retType = retTypes.v[i];
-          break;
-        }
-      }
-    }
-  }
-
-  ret->type = retType;
-  if (!fn->iteratorInfo) {
-    fn->retType = retType;
-    if (retTypes.n == 0 && fn->retType == dtUnknown)
-      fn->retType = ret->type = dtVoid;
-    else if (retType == dtUnknown)
-      USR_FATAL(fn, "unable to resolve return type");
-  }
+  resolveReturnType(fn);
 
   //
   // insert casts as necessary

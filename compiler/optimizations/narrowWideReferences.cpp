@@ -305,9 +305,13 @@ narrowSym(Symbol* sym, WideInfo* wi) {
         continue;
       }
       if (call->isPrimitive(PRIM_RETURN)) {
-        wi->fnToNarrow = toFnSymbol(call->parentSymbol);
-        INT_ASSERT(wi->fnToNarrow);
-        forv_Vec(CallExpr*, call, *wi->fnToNarrow->calledBy) {
+        FnSymbol* fn = toFnSymbol(call->parentSymbol);
+        if (!fn->retType->symbol->hasEitherFlag(FLAG_WIDE, FLAG_WIDE_CLASS))
+          // already narrow, so skip it.
+          continue;
+        wi->fnToNarrow = fn;
+        INT_ASSERT(fn);
+        forv_Vec(CallExpr*, call, *fn->calledBy) {
           if (call->isPrimitive(PRIM_VMT_CALL)) {
             wi->mustBeWide = true;
             return;

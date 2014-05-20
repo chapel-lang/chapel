@@ -12,3 +12,12 @@ var x = 1: int(8);
 foo(x);
 
 printf("%d\n", x);
+
+  pragma "tuple" record _tuple {
+    param size : int;
+  }
+  
+  pragma "build tuple"
+  inline proc _build_tuple_always(x ...?size)
+    return x;
+  

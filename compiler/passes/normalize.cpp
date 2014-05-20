@@ -229,10 +229,15 @@ checkUseBeforeDefs() {
           if (isArgSymbol(def->sym))
             defined.set_add(def->sym);
 
-          // All type aliases are taken as defined.
           if (VarSymbol* vs = toVarSymbol(def->sym))
+          {
+            // All type aliases are taken as defined.
             if (vs->hasFlag(FLAG_TYPE_VARIABLE))
               defined.set_add(def->sym);
+            // All variables of type 'void' are treated as defined.
+            if (vs->typeInfo() == dtVoid)
+              defined.set_add(vs);
+          }
 
         } else {
           // The AST in question is not one of our methods of declaration so now
@@ -434,14 +439,6 @@ static void normalize_returns(FnSymbol* fn) {
   // If an iterator, then there is at least one nonvoid return-or-yield.
   INT_ASSERT(!isIterator || rets.n > numVoidReturns); // done in semanticChecks
 
-  // Add a void return if needed.
-  // Note this is a bit heavy-handed in view of the code below,
-  // marked "Handle declared return type".
-  if (rets.n == 0) {
-    fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
-    return;
-  }
-
   // Check if this function's returns are already normal.
   if (rets.n - numYields == 1) {
     if (theRet == fn->body->body.last()) {
@@ -455,6 +452,16 @@ static void normalize_returns(FnSymbol* fn) {
           return;   // Yup.
         }
       }
+    }
+  }
+
+  // Add a void return if needed.
+  if (rets.n == 0)
+  {
+    if (fn->retExprType == NULL)
+    {
+      fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+      return;
     }
   }
 

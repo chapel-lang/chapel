@@ -112,8 +112,7 @@ static ArgSymbol* copyFormalForWrapper(ArgSymbol* formal) {
 
 static void
 insertWrappedCall(FnSymbol* fn, FnSymbol* wrapper, CallExpr* call) {
-  if ((!fn->hasFlag(FLAG_EXTERN) && fn->getReturnSymbol() == gVoid) ||
-      (fn->hasFlag(FLAG_EXTERN) && fn->retType == dtVoid)) {
+  if (fn->getReturnSymbol() == gVoid || fn->retType == dtVoid) {
     wrapper->insertAtTail(call);
   } else {
     Symbol* tmp = newTemp("wrap_call_tmp");

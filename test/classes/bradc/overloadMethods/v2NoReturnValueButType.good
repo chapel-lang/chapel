@@ -1,1 +1,4 @@
-v2NoReturnValueButType.chpl:22: error: illegal use of function that does not return a value: 'bbox'
+1..1
+1..2
+1..3
+1..4

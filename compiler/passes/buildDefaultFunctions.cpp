@@ -761,8 +761,6 @@ static void build_record_copy_function(AggregateType* ct) {
   if (function_exists("chpl__initCopy", 1, ct))
     return;
 
-  INT_ASSERT(!ct->symbol->hasFlag(FLAG_TUPLE));
-
   FnSymbol* fn = new FnSymbol("chpl__initCopy");
   fn->addFlag(FLAG_INIT_COPY_FN);
   fn->addFlag(FLAG_COMPILER_GENERATED);

@@ -1,2 +1,4 @@
+bulkerr.chpl:15: In function 'myread':
+bulkerr.chpl:15: warning: control reaches end of function that returns a value
 0.0 0.0 0.0
 A is: 0.0 0.0 0.0

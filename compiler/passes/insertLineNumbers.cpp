@@ -89,7 +89,8 @@ insertLineNumber(CallExpr* call) {
     } else if (call->isPrimitive(PRIM_GET_USER_LINE)) {
       call->replace(new SymExpr(line));
     }
-  } else if (!strcmp(fn->name, "chpl__heapAllocateGlobals") ||
+  } else if (fn->hasFlag(FLAG_EXTERN) ||
+             !strcmp(fn->name, "chpl__heapAllocateGlobals") ||
              !strcmp(fn->name, "chpl__initModuleGuards") ||
              !strcmp(fn->name, "chpl_gen_main") ||
              ((mod->modTag == MOD_USER || mod->modTag == MOD_MAIN) && 

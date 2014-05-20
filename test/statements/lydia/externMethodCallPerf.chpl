@@ -3,7 +3,7 @@ use Time, externMethod;
 config const numIters = 10000;
 config const printStuff = false;
 
-extern proc blah2(int): int;
+extern proc blah2(x:int): int;
 
 proc blah1(num) {
   var res = num % 17;

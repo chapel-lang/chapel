@@ -1248,6 +1248,7 @@ void initPrimitiveTypes(void) {
 
   dtUnknown = createInternalType ("_unknown", "_unknown");
   CREATE_DEFAULT_SYMBOL (dtUnknown, gUnknown, "_gunknown");
+  gUnknown->addFlag(FLAG_TYPE_VARIABLE);
 
   CREATE_DEFAULT_SYMBOL (dtVoid, gVoid, "_void");
 
