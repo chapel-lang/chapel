@@ -33,9 +33,12 @@ case $tasks in
 esac
 
 # If we use the amudprun launcher, there's a path on the front of it.
+# If we use the aprun launcher, the depth (-d) value may vary.
 case $launcher in
   amudprun) sed -e "s/^.*amudprun/amudprun/" \
                 -e "/QTHREADS/d" $2 > $2.tmp &&
             mv $2.tmp $2;;
+  aprun) sed -e "s/ -d[1-9][0-9]* / -dN /" $2 > $2.tmp &&
+         mv $2.tmp $2;;
 esac
 
