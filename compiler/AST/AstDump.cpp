@@ -55,23 +55,11 @@ bool AstDump::open(const ModuleSymbol* module, const char* passName, int passNum
 }
 
 void AstDump::write(BaseAST* ast) {
-  if (Expr* expr = toExpr(ast))
-    if (DefExpr* e = toDefExpr(expr))
-      if (isModuleSymbol(e->sym))
-        // Since we iterate modules at the top layer, don't visit nested modules here.
-        return;
+  if (header(ast) == true) {
+    AST_CHILDREN_CALL(ast, tempHack, this);
 
-  if (Symbol* s = toSymbol(ast))
-    if (isArgSymbol(s))
-      // Don't show args; they are handled in log_ast_fnsymbol().
-      return;
-
-  header(ast);
-
-  // This is a hook in to AST_CHILDREN_CALL macro until the Visitorc can be dropped in
-  AST_CHILDREN_CALL(ast, tempHack, this);
-
-  footer(ast);
+    footer(ast);
+  }
 }
 
 bool AstDump::close() {
@@ -85,168 +73,223 @@ bool AstDump::close() {
   return retval;
 }
 
-void AstDump::header(BaseAST* ast) {
-  if (Expr* expr = toExpr(ast)) {
-    if (isBlockStmt(expr)) {
-      newline();
+bool AstDump::header(BaseAST* ast) {
+  bool retval = true;
 
-      if (FnSymbol* fn = toFnSymbol(expr->parentSymbol))
-        if (expr == fn->where)
-          write(false, "where ", false);
+  if (BlockStmt* stmt = toBlockStmt(ast)) {
+    newline();
 
-      write(false, "{", true);
-      printBlockID(expr);
-      ++mIndent;
+    if (FnSymbol* fn = toFnSymbol(stmt->parentSymbol))
+      if (stmt == fn->where)
+        write(false, "where ", false);
+
+    write(false, "{", true);
+    printBlockID(stmt);
+    ++mIndent;
 
     // This was the final dangling else
-    } else if (isExternBlockStmt(expr)) {
-      if (mNeedSpace)
-        fputc(' ', mFP);
+  } else if (ExternBlockStmt* stmt = toExternBlockStmt(ast)) {
+    if (mNeedSpace)
+      fputc(' ', mFP);
 
-      fprintf(mFP, "(%s", expr->astTagAsString());
-      mNeedSpace = true;
+    fprintf(mFP, "(%s", stmt->astTagAsString());
+    mNeedSpace = true;
 
-    } else if (GotoStmt* s = toGotoStmt(expr)) {
-      switch (s->gotoTag) {
-        case GOTO_NORMAL:      write(true, "goto",           true); break;
-        case GOTO_BREAK:       write(true, "break",          true); break;
-        case GOTO_CONTINUE:    write(true, "continue",       true); break;
-        case GOTO_RETURN:      write(true, "gotoReturn",     true); break;
-        case GOTO_GETITER_END: write(true, "gotoGetiterEnd", true); break;
-        case GOTO_ITER_RESUME: write(true, "gotoIterResume", true); break;
-        case GOTO_ITER_END:    write(true, "gotoIterEnd",    true); break;
+  } else if (GotoStmt* s = toGotoStmt(ast)) {
+    switch (s->gotoTag) {
+      case GOTO_NORMAL:      write(true, "goto",           true); break;
+      case GOTO_BREAK:       write(true, "break",          true); break;
+      case GOTO_CONTINUE:    write(true, "continue",       true); break;
+      case GOTO_RETURN:      write(true, "gotoReturn",     true); break;
+      case GOTO_GETITER_END: write(true, "gotoGetiterEnd", true); break;
+      case GOTO_ITER_RESUME: write(true, "gotoIterResume", true); break;
+      case GOTO_ITER_END:    write(true, "gotoIterEnd",    true); break;
+    }
+
+    if (SymExpr* label = toSymExpr(s->label)) {
+      if (label->var != gNil) {
+        writeSymbol(label->var, true);
       }
+    }
 
-      if (SymExpr* label = toSymExpr(s->label)) {
-        if (label->var != gNil) {
-          writeSymbol(label->var, true);
-        }
-      }
+  } else if (isCondStmt(ast)) {
+    newline();
+    write(true, "if", true);
 
-    } else if (isCondStmt(expr)) {
-      newline();
-      write(true, "if", true);
-
-    } else {
-      if (isBlockStmt(expr->parentExpr)) {
+  } else if (DefExpr* e = toDefExpr(ast)) {
+    if (FnSymbol* fn = toFnSymbol(e->sym)) {
+      if (isBlockStmt(e->parentExpr)) {
         newline();
       }
 
-      if (DefExpr* e = toDefExpr(expr)) {
-        if (FnSymbol* fn = toFnSymbol(e->sym)) {
-          write(true, "function", true);
-          writeFnSymbol(fn);
+      write(true, "function", true);
+      writeFnSymbol(fn);
 
-        } else if (isTypeSymbol(e->sym)) {
-          if (structuralTypeSymbol(e->sym)) {
-            if (e->sym->hasFlag(FLAG_SYNC))
-              write(true, "sync",   true);
+    } else if (isTypeSymbol(e->sym)) {
+      if (isBlockStmt(e->parentExpr)) {
+        newline();
+      }
 
-            if (e->sym->hasFlag(FLAG_SINGLE))
-              write(true, "single", true);
-          }
+      if (structuralTypeSymbol(e->sym)) {
+        if (e->sym->hasFlag(FLAG_SYNC))
+          write(true, "sync",   true);
 
-          write(true, "type", true);
-          writeSymbol(e->sym, true);
+        if (e->sym->hasFlag(FLAG_SINGLE))
+          write(true, "single", true);
+      }
 
-        } else if (VarSymbol* vs = toVarSymbol(e->sym)) {
-          if (vs->type->symbol->hasFlag(FLAG_SYNC))
-            write(true, "sync",   true);
+      write(true, "type", true);
+      writeSymbol(e->sym, true);
 
-          if (vs->type->symbol->hasFlag(FLAG_SINGLE))
-            write(true, "single", true);
+    } else if (VarSymbol* vs = toVarSymbol(e->sym)) {
+      if (isBlockStmt(e->parentExpr)) {
+        newline();
+      }
 
-          write(true, "var", true);
-          writeSymbol(e->sym, true);
+      if (vs->type->symbol->hasFlag(FLAG_SYNC))
+        write(true, "sync",   true);
 
-        } else if (isArgSymbol(e->sym)) {
-          // Argsymbols are handled in the function header.
+      if (vs->type->symbol->hasFlag(FLAG_SINGLE))
+        write(true, "single", true);
 
-        } else if (isLabelSymbol(e->sym)) {
-          write(true, "label", true);
-          writeSymbol(e->sym, true);
+      write(true, "var", true);
+      writeSymbol(e->sym, true);
 
-        } else if (isModuleSymbol(e->sym)) {
-          write(true, "module", true);
-          writeSymbol(e->sym, true);
+    } else if (isArgSymbol(e->sym)) {
+      // Argsymbols are handled in the function header.
+      if (isBlockStmt(e->parentExpr)) {
+        newline();
+      }
 
-        } else {
-          write(true, "def", true);
-          writeSymbol(e->sym, true);
-        }
 
-      } else if (SymExpr* e = toSymExpr(expr)) {
+    } else if (isLabelSymbol(e->sym)) {
+      if (isBlockStmt(e->parentExpr)) {
+        newline();
+      }
 
-        if (VarSymbol* c = get_constant(expr)) {
-          if (c->immediate) {
-            const size_t bufSize = 128;
-            char         imm[bufSize];
+      write(true, "label", true);
+      writeSymbol(e->sym, true);
 
-            snprint_imm(imm, bufSize, *c->immediate);
+    } else if (isModuleSymbol(e->sym)) {
+      retval = false;
 
-            if (mNeedSpace) 
-              fputc(' ', mFP);
+    } else {
+      if (isBlockStmt(e->parentExpr)) {
+        newline();
+      }
 
-            fprintf(mFP, "%s%s", imm, is_imag_type(c->type) ? "i" : "");
+      write(true, "def", true);
+      writeSymbol(e->sym, true);
+    }
 
-            mNeedSpace = true;
-          } else {
-            write(true, c->name, true);
-          }
+  } else if (SymExpr* e = toSymExpr(ast)) {
+    if (isBlockStmt(e->parentExpr)) {
+      newline();
+    }
 
-        } else {
-          writeSymbol(e->var, false);
-        }
+    if (VarSymbol* c = get_constant(e)) {
+      if (c->immediate) {
+        const size_t bufSize = 128;
+        char         imm[bufSize];
 
-      } else if (UnresolvedSymExpr* e = toUnresolvedSymExpr(expr)) {
-        write(true, e->unresolved, true);
+        snprint_imm(imm, bufSize, *c->immediate);
 
-      } else if (NamedExpr* e = toNamedExpr(expr)) {
-        fprintf(mFP, "(%s =", e->name);
+        if (mNeedSpace) 
+          fputc(' ', mFP);
+
+        fprintf(mFP, "%s%s", imm, is_imag_type(c->type) ? "i" : "");
+
         mNeedSpace = true;
-
-      } else if (CallExpr* e = toCallExpr(expr)) {
-        if (FnSymbol* fn = e->isResolved()) {
-          if (fn->hasFlag(FLAG_BEGIN_BLOCK))
-            write(true, "begin", true);
-          else if (fn->hasFlag(FLAG_ON_BLOCK))
-            write(true, "on", true);
-        }
-
-        if (fLogIds) {
-          fprintf(mFP, "(%d ", e->id);
-          mNeedSpace = false;
-        } else {
-          write(true, "(", false);
-        }
-
-        if (!e->primitive) {
-          write(true, "call", true);
-        } else {
-          if (e->isPrimitive(PRIM_RETURN))
-            write(true, "return", true);
-
-          else if (e->isPrimitive(PRIM_YIELD))
-            write(true, "yield", true);
-
-          else {
-            if (mNeedSpace)
-              fputc(' ', mFP);
-
-            fprintf(mFP, "'%s'", e->primitive->name);
-
-            mNeedSpace = true;
-          }
-        }
-
-        if (e->partialTag)
-          write( true, "(partial)", true);
-
       } else {
-        USR_FATAL("This cannot happen");
+        write(true, c->name, true);
+      }
+
+    } else {
+      writeSymbol(e->var, false);
+    }
+
+  } else if (UnresolvedSymExpr* e = toUnresolvedSymExpr(ast)) {
+    if (isBlockStmt(e->parentExpr)) {
+      newline();
+    }
+
+    write(true, e->unresolved, true);
+
+  } else if (NamedExpr* e = toNamedExpr(ast)) {
+    if (isBlockStmt(e->parentExpr)) {
+      newline();
+    }
+
+    fprintf(mFP, "(%s =", e->name);
+    mNeedSpace = true;
+
+  } else if (CallExpr* e = toCallExpr(ast)) {
+    if (isBlockStmt(e->parentExpr)) {
+      newline();
+    }
+
+    if (FnSymbol* fn = e->isResolved()) {
+      if (fn->hasFlag(FLAG_BEGIN_BLOCK))
+        write(true, "begin", true);
+      else if (fn->hasFlag(FLAG_ON_BLOCK))
+        write(true, "on", true);
+    }
+
+    if (fLogIds) {
+      fprintf(mFP, "(%d ", e->id);
+      mNeedSpace = false;
+    } else {
+      write(true, "(", false);
+    }
+
+    if (!e->primitive) {
+      write(true, "call", true);
+    } else {
+      if (e->isPrimitive(PRIM_RETURN))
+        write(true, "return", true);
+
+      else if (e->isPrimitive(PRIM_YIELD))
+        write(true, "yield", true);
+
+      else {
+        if (mNeedSpace)
+          fputc(' ', mFP);
+
+        fprintf(mFP, "'%s'", e->primitive->name);
+
+        mNeedSpace = true;
       }
     }
+
+    if (e->partialTag)
+      write( true, "(partial)", true);
+
+  } else if (isPrimitiveType(ast)) {
+
+  } else if (isAggregateType(ast)) {
+
+  } else if (isEnumType(ast)) {
+
+  } else if (isVarSymbol(ast)) {
+
+  } else if (isTypeSymbol(ast)) {
+
+  } else if (isFnSymbol(ast)) {
+
+  } else if (isEnumSymbol(ast)) {
+
+  } else if (isModuleSymbol(ast)) {
+
+  } else if (isLabelSymbol(ast)) {
+
+  } else if (isArgSymbol(ast)) {
+    retval = false;
+
+  } else {
+    USR_FATAL("This cannot happen");
   }
+
+  return retval;
 }
 
 void AstDump::footer(BaseAST* ast) {

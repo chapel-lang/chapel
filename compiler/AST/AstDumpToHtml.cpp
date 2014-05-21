@@ -134,241 +134,289 @@ bool AstDumpToHtml::close() {
 
 
 void AstDumpToHtml::write(BaseAST* ast) {
-  if (Expr* expr = toExpr(ast)) {
-    if (isBlockStmt(expr)) {
+  if (header(ast) == true) {
+    AST_CHILDREN_CALL(ast, tempHack, this);
+
+    footer(ast);
+  }
+}
+
+bool AstDumpToHtml::header(BaseAST* ast) {
+  bool retval = true;
+
+  if (BlockStmt* stmt = toBlockStmt(ast)) {
+    fprintf(mFP, "<DL>\n");
+
+    if (FnSymbol* fn = toFnSymbol(stmt->parentSymbol))
+      if (stmt == fn->where)
+        fprintf(mFP, "<B>where</B>\n");
+
+    fprintf(mFP, "{");
+
+    printBlockID(stmt);
+
+  } else if (ExternBlockStmt* stmt = toExternBlockStmt(ast)) {
+    fprintf(mFP, "(%s", stmt->astTagAsString());
+
+  } else if (GotoStmt* s = toGotoStmt(ast)) {
+    fprintf(mFP, "<DL>\n");
+
+    switch (s->gotoTag) {
+      case GOTO_NORMAL:      fprintf(mFP, "<B>goto</B> ");           break;
+      case GOTO_BREAK:       fprintf(mFP, "<B>break</B> ");          break;
+      case GOTO_CONTINUE:    fprintf(mFP, "<B>continue</B> ");       break;
+      case GOTO_RETURN:      fprintf(mFP, "<B>gotoReturn</B> ");     break;
+      case GOTO_GETITER_END: fprintf(mFP, "<B>gotoGetiterEnd</B> "); break;
+      case GOTO_ITER_RESUME: fprintf(mFP, "<B>gotoIterResume</B> "); break;
+      case GOTO_ITER_END:    fprintf(mFP, "<B>gotoIterEnd</B> ");    break;
+    }
+
+    if (SymExpr* label = toSymExpr(s->label))
+      if (label->var != gNil)
+        writeSymbol(label->var, true);
+
+  } else if (isCondStmt(ast)) {
+    fprintf(mFP, "<DL>\n");
+    fprintf(mFP, "<B>if</B> ");
+
+  } else if (DefExpr* e = toDefExpr(ast)) {
+    if (isBlockStmt(e->parentExpr)) {
       fprintf(mFP, "<DL>\n");
+    }
 
-      if (FnSymbol* fn = toFnSymbol(expr->parentSymbol))
-        if (expr == fn->where)
-          fprintf(mFP, "<B>where</B>\n");
+    fprintf(mFP, " ");
 
-      fprintf(mFP, "{");
+    if (FnSymbol* fn = toFnSymbol(e->sym)) {
+      fprintf(mFP, "<UL CLASS =\"mktree\">\n<LI>");
 
-      printBlockID(expr);
+      adjacent_passes(fn);
 
-    } else if (isExternBlockStmt(expr)) {
-      fprintf(mFP, "(%s", expr->astTagAsString());
+      fprintf(mFP, "<CHPLTAG=\"FN%d\">\n", fn->id);
+      fprintf(mFP, "<B>function ");
 
-    } else if (GotoStmt* s = toGotoStmt(expr)) {
-      fprintf(mFP, "<DL>\n");
+      writeFnSymbol(fn);
 
-      switch (s->gotoTag) {
-        case GOTO_NORMAL:      fprintf(mFP, "<B>goto</B> ");           break;
-        case GOTO_BREAK:       fprintf(mFP, "<B>break</B> ");          break;
-        case GOTO_CONTINUE:    fprintf(mFP, "<B>continue</B> ");       break;
-        case GOTO_RETURN:      fprintf(mFP, "<B>gotoReturn</B> ");     break;
-        case GOTO_GETITER_END: fprintf(mFP, "<B>gotoGetiterEnd</B> "); break;
-        case GOTO_ITER_RESUME: fprintf(mFP, "<B>gotoIterResume</B> "); break;
-        case GOTO_ITER_END:    fprintf(mFP, "<B>gotoIterEnd</B> ");    break;
+      fprintf(mFP, "</B><UL>\n");
+
+    } else if (isTypeSymbol(e->sym)) {
+      if (structuralTypeSymbol(e->sym)) {
+        fprintf(mFP, "<UL CLASS =\"mktree\">\n");
+        fprintf(mFP, "<LI>");
+
+        if (e->sym->hasFlag(FLAG_SYNC))
+          fprintf(mFP, "<B>sync</B> ");
+
+        if (e->sym->hasFlag(FLAG_SINGLE))
+          fprintf(mFP, "<B>single</B> ");
+
+        fprintf(mFP, "<B>type ");
+        writeSymbol(e->sym, true);
+        fprintf(mFP, "</B><UL>\n");
+
+      } else {
+        fprintf(mFP, "<B>type </B> ");
+        writeSymbol(e->sym, true);
       }
 
-      if (SymExpr* label = toSymExpr(s->label))
-        if (label->var != gNil)
-          writeSymbol(label->var, true);
+    } else if (VarSymbol* vs = toVarSymbol(e->sym)) {
+      if (vs->type->symbol->hasFlag(FLAG_SYNC))
+        fprintf(mFP, "<B>sync </B>");
 
-    } else if (isCondStmt(expr)) {
-      fprintf(mFP, "<DL>\n");
-      fprintf(mFP, "<B>if</B> ");
+      if (vs->type->symbol->hasFlag(FLAG_SINGLE))
+        fprintf(mFP, "<B>single </B>");
+
+      fprintf(mFP, "<B>var </B> ");
+      writeSymbol(e->sym, true);
+
+    } else if (ArgSymbol* s = toArgSymbol(e->sym)) {
+      switch (s->intent) {
+        case INTENT_IN:        fprintf(mFP, "<B>in</B> ");        break;
+        case INTENT_INOUT:     fprintf(mFP, "<B>inout</B> ");     break;
+        case INTENT_OUT:       fprintf(mFP, "<B>out</B> ");       break;
+        case INTENT_CONST:     fprintf(mFP, "<B>const</B> ");     break;
+        case INTENT_CONST_IN:  fprintf(mFP, "<B>const in</B> ");  break;
+        case INTENT_CONST_REF: fprintf(mFP, "<B>const ref</B> "); break;
+        case INTENT_REF:       fprintf(mFP, "<B>ref</B> ");       break;
+        case INTENT_PARAM:     fprintf(mFP, "<B>param</B> ");     break;
+        case INTENT_TYPE:      fprintf(mFP, "<B>type</B> ");      break;
+        case INTENT_BLANK:                                        break;
+      }
+
+      fprintf(mFP, "<B>arg</B> ");
+
+      writeSymbol(e->sym, true);
+
+    } else if (isLabelSymbol(e->sym)) {
+      fprintf(mFP, "<B>label</B> ");
+      writeSymbol(e->sym, true);
+
+    } else if (isModuleSymbol(e->sym)) {
+      fprintf(mFP, "</DL>\n");
+      // Don't process nested modules -- they'll be handled at the top-level
+      retval = false;
 
     } else {
-      if (isBlockStmt(expr->parentExpr)) {
-        fprintf(mFP, "<DL>\n");
-      }
-
-      fprintf(mFP, " ");
-
-      if (DefExpr* e = toDefExpr(expr)) {
-        if (FnSymbol* fn = toFnSymbol(e->sym)) {
-          fprintf(mFP, "<UL CLASS =\"mktree\">\n<LI>");
-
-          adjacent_passes(fn);
-
-          fprintf(mFP, "<CHPLTAG=\"FN%d\">\n", fn->id);
-          fprintf(mFP, "<B>function ");
-
-          writeFnSymbol(fn);
-
-          fprintf(mFP, "</B><UL>\n");
-
-        } else if (isTypeSymbol(e->sym)) {
-          if (structuralTypeSymbol(e->sym)) {
-            fprintf(mFP, "<UL CLASS =\"mktree\">\n");
-            fprintf(mFP, "<LI>");
-
-            if (e->sym->hasFlag(FLAG_SYNC))
-              fprintf(mFP, "<B>sync</B> ");
-
-            if (e->sym->hasFlag(FLAG_SINGLE))
-              fprintf(mFP, "<B>single</B> ");
-
-            fprintf(mFP, "<B>type ");
-            writeSymbol(e->sym, true);
-            fprintf(mFP, "</B><UL>\n");
-
-          } else {
-            fprintf(mFP, "<B>type </B> ");
-            writeSymbol(e->sym, true);
-          }
-
-        } else if (VarSymbol* vs = toVarSymbol(e->sym)) {
-          if (vs->type->symbol->hasFlag(FLAG_SYNC))
-            fprintf(mFP, "<B>sync </B>");
-
-          if (vs->type->symbol->hasFlag(FLAG_SINGLE))
-            fprintf(mFP, "<B>single </B>");
-
-          fprintf(mFP, "<B>var </B> ");
-          writeSymbol(e->sym, true);
-
-        } else if (ArgSymbol* s = toArgSymbol(e->sym)) {
-          switch (s->intent) {
-           case INTENT_IN:        fprintf(mFP, "<B>in</B> ");        break;
-           case INTENT_INOUT:     fprintf(mFP, "<B>inout</B> ");     break;
-           case INTENT_OUT:       fprintf(mFP, "<B>out</B> ");       break;
-           case INTENT_CONST:     fprintf(mFP, "<B>const</B> ");     break;
-           case INTENT_CONST_IN:  fprintf(mFP, "<B>const in</B> ");  break;
-           case INTENT_CONST_REF: fprintf(mFP, "<B>const ref</B> "); break;
-           case INTENT_REF:       fprintf(mFP, "<B>ref</B> ");       break;
-           case INTENT_PARAM:     fprintf(mFP, "<B>param</B> ");     break;
-           case INTENT_TYPE:      fprintf(mFP, "<B>type</B> ");      break;
-           case INTENT_BLANK:                                        break;
-          }
-
-          fprintf(mFP, "<B>arg</B> ");
-
-          writeSymbol(e->sym, true);
-
-        } else if (isLabelSymbol(e->sym)) {
-          fprintf(mFP, "<B>label</B> ");
-          writeSymbol(e->sym, true);
-
-        } else if (isModuleSymbol(e->sym)) {
-          fprintf(mFP, "</DL>\n");
-          // Don't process nested modules -- they'll be handled at the
-          // top-level
-          return;
-
-        } else {
-          fprintf(mFP, "<B>def</B> ");
-          writeSymbol(e->sym, true);
-        }
-
-      } else if (SymExpr* e = toSymExpr(expr)) {
-        if (VarSymbol* c = get_constant(expr)) {
-          if (c->immediate) {
-            const size_t bufSize = 128;
-            char         imm[bufSize];
-
-            snprint_imm(imm, bufSize, *c->immediate);
-
-            fprintf(mFP, "<i><FONT COLOR=\"blue\">%s%s</FONT></i>", imm, is_imag_type(c->type) ? "i" : "");
-
-          } else {
-            fprintf(mFP, "<i><FONT COLOR=\"blue\">%s</FONT></i>", c->name);
-          }
-        } else {
-          writeSymbol(e->var, false);
-        }
-
-      } else if (UnresolvedSymExpr* e = toUnresolvedSymExpr(expr)) {
-        fprintf(mFP, "<FONT COLOR=\"red\">%s</FONT>", e->unresolved);
-
-      } else if (NamedExpr* e = toNamedExpr(expr)) {
-        fprintf(mFP, "(%s = ", e->name);
-
-      } else if (CallExpr* e = toCallExpr(expr)) {
-        if (e->isResolved()) {
-          if (e->isResolved()->hasFlag(FLAG_BEGIN_BLOCK))
-            fprintf(mFP, "begin ");
-          else if (e->isResolved()->hasFlag(FLAG_ON_BLOCK))
-            fprintf(mFP, "on ");
-        }
-
-        fprintf(mFP, "(%d ", e->id);
-
-        if (!e->primitive) {
-          fprintf(mFP, "<B>call</B> ");
-        } else if (e->isPrimitive(PRIM_RETURN))
-          fprintf(mFP, "<B>return</B> ");
-
-        else if (e->isPrimitive(PRIM_YIELD))
-          fprintf(mFP, "<B>yield</B> ");
-
-        else
-          fprintf(mFP, "'%s' ", e->primitive->name);
-
-        if (e->partialTag)
-          fprintf(mFP, "(partial) ");
-      } else {
-        USR_FATAL("This cannot happen");
-      }
+      fprintf(mFP, "<B>def</B> ");
+      writeSymbol(e->sym, true);
     }
+
+  } else if (SymExpr* e = toSymExpr(ast)) {
+    if (isBlockStmt(e->parentExpr)) {
+      fprintf(mFP, "<DL>\n");
+    }
+
+    fprintf(mFP, " ");
+
+    if (VarSymbol* c = get_constant(e)) {
+      if (c->immediate) {
+        const size_t bufSize = 128;
+        char         imm[bufSize];
+
+        snprint_imm(imm, bufSize, *c->immediate);
+
+        fprintf(mFP, "<i><FONT COLOR=\"blue\">%s%s</FONT></i>", imm, is_imag_type(c->type) ? "i" : "");
+
+      } else {
+        fprintf(mFP, "<i><FONT COLOR=\"blue\">%s</FONT></i>", c->name);
+      }
+    } else {
+      writeSymbol(e->var, false);
+    }
+
+  } else if (UnresolvedSymExpr* e = toUnresolvedSymExpr(ast)) {
+    if (isBlockStmt(e->parentExpr)) {
+      fprintf(mFP, "<DL>\n");
+    }
+
+    fprintf(mFP, " ");
+
+    fprintf(mFP, "<FONT COLOR=\"red\">%s</FONT>", e->unresolved);
+
+  } else if (NamedExpr* e = toNamedExpr(ast)) {
+    if (isBlockStmt(e->parentExpr)) {
+      fprintf(mFP, "<DL>\n");
+    }
+
+    fprintf(mFP, " ");
+
+    fprintf(mFP, "(%s = ", e->name);
+
+  } else if (CallExpr* e = toCallExpr(ast)) {
+    if (isBlockStmt(e->parentExpr)) {
+      fprintf(mFP, "<DL>\n");
+    }
+
+    fprintf(mFP, " ");
+
+    if (FnSymbol* fn = e->isResolved()) {
+      if (fn->hasFlag(FLAG_BEGIN_BLOCK))
+        fprintf(mFP, "begin ");
+      else if (fn->hasFlag(FLAG_ON_BLOCK))
+        fprintf(mFP, "on ");
+    }
+
+    fprintf(mFP, "(%d ", e->id);
+
+    if (!e->primitive) {
+      fprintf(mFP, "<B>call</B> ");
+    } else if (e->isPrimitive(PRIM_RETURN))
+      fprintf(mFP, "<B>return</B> ");
+
+    else if (e->isPrimitive(PRIM_YIELD))
+      fprintf(mFP, "<B>yield</B> ");
+
+    else
+      fprintf(mFP, "'%s' ", e->primitive->name);
+
+    if (e->partialTag)
+      fprintf(mFP, "(partial) ");
+
+  } else if (isPrimitiveType(ast)) {
+
+  } else if (isAggregateType(ast)) {
+
+  } else if (isEnumType(ast)) {
+
+  } else if (isVarSymbol(ast)) {
+
+  } else if (isArgSymbol(ast)) {
+
+  } else if (isTypeSymbol(ast)) {
+
+  } else if (isFnSymbol(ast)) {
+
+  } else if (isEnumSymbol(ast)) {
+
+  } else if (isModuleSymbol(ast)) {
+
+  } else if (isLabelSymbol(ast)) {
+
+  } else {
+    USR_FATAL("This cannot happen");
   }
 
-  AST_CHILDREN_CALL(ast, tempHack, this);
+  return retval;
+}
 
-  if (Expr* expr = toExpr(ast)) {
-    if (DefExpr* e = toDefExpr(expr)) {
-      if (isFnSymbol(e->sym) || 
-          (isTypeSymbol(e->sym) &&
-           isAggregateType(e->sym->type))) {
+void AstDumpToHtml::footer(BaseAST* ast) {
+  if (DefExpr* e = toDefExpr(ast)) {
+    if (isFnSymbol(e->sym) || 
+        (isTypeSymbol(e->sym) &&
+         isAggregateType(e->sym->type))) {
 
-        fprintf(mFP, "</UL>\n");
+      fprintf(mFP, "</UL>\n");
 
-        if (FnSymbol* fn = toFnSymbol(e->sym)) {
-          fprintf(mFP, "<CHPLTAG=\"FN%d\">\n", fn->id);
-        }
-
-        fprintf(mFP, "</UL>\n");
+      if (FnSymbol* fn = toFnSymbol(e->sym)) {
+        fprintf(mFP, "<CHPLTAG=\"FN%d\">\n", fn->id);
       }
 
-      if (isBlockStmt(expr->parentExpr)) {
-        fprintf(mFP, "</DL>\n");
-      }
-
-    } else if (isSymExpr(expr)) {
-      if (isBlockStmt(expr->parentExpr)) {
-        fprintf(mFP, "</DL>\n");
-      }
-
-    } else if (isUnresolvedSymExpr(expr)) {
-      if (isBlockStmt(expr->parentExpr)) {
-        fprintf(mFP, "</DL>\n");
-      }
-
-    } else if (isCallExpr(expr)) {
-      fprintf(mFP, ")");
-
-      if (isBlockStmt(expr->parentExpr)) {
-        fprintf(mFP, "</DL>\n");
-      }
-
-    } else if (isNamedExpr(expr)) {
-      fprintf(mFP, ")");
-
-      if (isBlockStmt(expr->parentExpr)) {
-        fprintf(mFP, "</DL>\n");
-      }
-
-    } else if (isBlockStmt(expr)) {
-      fprintf(mFP, "}");
-      printBlockID(expr);
-      fprintf(mFP, "</DL>\n");
-
-    } else if (isExternBlockStmt(expr)) {
-      if (isBlockStmt(expr->parentExpr)) {
-        fprintf(mFP, "</DL>\n");
-      }
-
-    } else if (isCondStmt(expr)) {
-      fprintf(mFP, "</DL>\n");
-
-    } else if (isGotoStmt(expr)) {
-      fprintf(mFP, "</DL>\n");
-
-    } else {
-      USR_FATAL("This cannot happen\n");
+      fprintf(mFP, "</UL>\n");
     }
+
+    if (isBlockStmt(e->parentExpr)) {
+      fprintf(mFP, "</DL>\n");
+    }
+
+  } else if (SymExpr* expr = toSymExpr(ast)) {
+    if (isBlockStmt(expr->parentExpr)) {
+      fprintf(mFP, "</DL>\n");
+    }
+
+  } else if (UnresolvedSymExpr* expr = toUnresolvedSymExpr(ast)) {
+    if (isBlockStmt(expr->parentExpr)) {
+      fprintf(mFP, "</DL>\n");
+    }
+
+  } else if (CallExpr* expr = toCallExpr(ast)) {
+    fprintf(mFP, ")");
+
+    if (isBlockStmt(expr->parentExpr)) {
+      fprintf(mFP, "</DL>\n");
+    }
+
+  } else if (NamedExpr* expr = toNamedExpr(ast)) {
+    fprintf(mFP, ")");
+
+    if (isBlockStmt(expr->parentExpr)) {
+      fprintf(mFP, "</DL>\n");
+    }
+
+  } else if (BlockStmt* stmt = toBlockStmt(ast)) {
+    fprintf(mFP, "}");
+    printBlockID(stmt);
+    fprintf(mFP, "</DL>\n");
+
+  } else if (ExternBlockStmt* stmt = toExternBlockStmt(ast)) {
+    if (isBlockStmt(stmt->parentExpr)) {
+      fprintf(mFP, "</DL>\n");
+    }
+
+  } else if (isCondStmt(ast)) {
+    fprintf(mFP, "</DL>\n");
+
+  } else if (isGotoStmt(ast)) {
+    fprintf(mFP, "</DL>\n");
+
   }
 }
 

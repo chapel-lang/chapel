@@ -24,6 +24,9 @@ private:
   void             write(BaseAST* ast);
   bool             close();
   
+  bool             header(BaseAST* ast);
+  void             footer(BaseAST* ast);
+
   void             writeFnSymbol(FnSymbol* fn);
   void             writeSymbol(Symbol* sym, bool def);
 
