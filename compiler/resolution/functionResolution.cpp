@@ -277,7 +277,6 @@ getVisibleFunctions(BlockStmt* block,
                     Vec<BlockStmt*>& visited);
 static Type* resolve_type_expr(Expr* expr);
 static void makeNoop(CallExpr* call);
-static bool isTypeExpr(Expr* expr);
 static void resolveDefaultGenericType(CallExpr* call);
 
 static void
@@ -292,6 +291,7 @@ static void resolveTupleAndExpand(CallExpr* call);
 static void resolveTupleExpand(CallExpr* call);
 static void resolveSetMember(CallExpr* call);
 static void resolveMove(CallExpr* call);
+static void resolveNew(CallExpr* call);
 static bool formalRequiresTemp(ArgSymbol* formal);
 static void insertFormalTemps(FnSymbol* fn);
 static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars);
@@ -2799,45 +2799,6 @@ static const char* defaultRecordAssignmentTo(FnSymbol* fn) {
   return NULL;
 }
 
-static bool
-isTypeExpr(Expr* expr) {
-  if (SymExpr* sym = toSymExpr(expr)) {
-    if (sym->var->hasFlag(FLAG_TYPE_VARIABLE) || isTypeSymbol(sym->var))
-      return true;
-  } else if (CallExpr* call = toCallExpr(expr)) {
-    if (call->isPrimitive(PRIM_TYPEOF))
-      return true;
-    if (call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
-        call->isPrimitive(PRIM_GET_MEMBER)) {
-      AggregateType* ct = toAggregateType(call->get(1)->typeInfo());
-      INT_ASSERT(ct);
-      if (ct->symbol->hasFlag(FLAG_REF))
-        ct = toAggregateType(ct->getValType());
-      SymExpr* left = toSymExpr(call->get(1));
-      SymExpr* right = toSymExpr(call->get(2));
-      INT_ASSERT(left && right);
-      VarSymbol* var = toVarSymbol(right->var);
-      INT_ASSERT(var);
-      if (var->immediate) {
-        const char* name = var->immediate->v_string;
-        for_fields(field, ct) {
-          if (!strcmp(field->name, name))
-            if (field->hasFlag(FLAG_TYPE_VARIABLE))
-              return true;
-        }
-      } else if (var->hasFlag(FLAG_TYPE_VARIABLE))
-        return true;
-      if (left->var->type->symbol->hasFlag(FLAG_TUPLE) &&
-          left->var->hasFlag(FLAG_TYPE_VARIABLE))
-        return true;
-    }
-    if (FnSymbol* fn = call->isResolved())
-      if (fn->retTag == RET_TYPE)
-        return true;
-  }
-  return false;
-}
-
 
 //
 // special case cast of class w/ type variables that is not generic
@@ -2934,6 +2895,7 @@ resolveCall(CallExpr* call)
      case PRIM_SET_MEMBER:          resolveSetMember(call);             break;
      case PRIM_MOVE:                resolveMove(call);                  break;
      case PRIM_INIT:                resolveDefaultGenericType(call);    break;
+     case PRIM_NEW:                 resolveNew(call);                   break;
     }
   }
   else
@@ -3515,6 +3477,42 @@ static void resolveMove(CallExpr* call) {
   }
 }
 
+
+// Some new expressions are converted in normalize().  For example, a call to a
+// type function is resolved at this point.
+// The syntax supports calling the result of a type function as a constructor,
+// but this is not fully implemented.
+static void
+resolveNew(CallExpr* call)
+{
+  // This is a 'new' primitive, so we expect the argument to be a constructor
+  // call.
+  CallExpr* ctor = toCallExpr(call->get(1));
+
+  // May need to resolve ctor here.
+  if (FnSymbol* fn = ctor->isResolved())
+  {
+    // If the function is a constructor, just bridge out the 'new' primitive
+    // and call the constructor.  Done.
+    if (fn->hasFlag(FLAG_CONSTRUCTOR))
+    {
+      call->replace(ctor);
+      return;
+    }
+
+    // Not a constructor, so issue an error.
+    USR_FATAL(call, "invalid use of 'new' on %s", fn->name);
+    return;
+  }
+
+  if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(ctor->baseExpr))
+  {
+    USR_FATAL(call, "invalid use of 'new' on %s", urse->unresolved);
+    return;
+  }
+
+  USR_FATAL(call, "invalid use of 'new'");
+}
 
 
 //

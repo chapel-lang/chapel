@@ -539,6 +539,67 @@ Expr* formal_to_actual(CallExpr* call, Symbol* arg) {
 }
 
 
+bool isTypeExpr(Expr* expr)
+{
+  if (SymExpr* sym = toSymExpr(expr))
+  {
+    if (isTypeSymbol(sym->var))
+      return true;
+
+    if (sym->var->hasFlag(FLAG_TYPE_VARIABLE))
+      return true;
+
+    if (FnSymbol* fn = toFnSymbol(sym->var))
+      if (fn->retTag == RET_TYPE)
+        return true;
+  }
+
+  if (CallExpr* call = toCallExpr(expr))
+  {
+    if (call->isPrimitive(PRIM_TYPEOF))
+      return true;
+
+    if (call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+        call->isPrimitive(PRIM_GET_MEMBER))
+    {
+      AggregateType* ct = toAggregateType(call->get(1)->typeInfo());
+      INT_ASSERT(ct);
+
+      if (ct->symbol->hasFlag(FLAG_REF))
+        ct = toAggregateType(ct->getValType());
+
+      SymExpr* left = toSymExpr(call->get(1));
+
+      if (left->var->type->symbol->hasFlag(FLAG_TUPLE) &&
+          left->var->hasFlag(FLAG_TYPE_VARIABLE))
+        return true;
+
+      SymExpr* right = toSymExpr(call->get(2));
+      VarSymbol* var = toVarSymbol(right->var);
+
+      if (var->hasFlag(FLAG_TYPE_VARIABLE))
+        return true;
+
+      if (var->immediate)
+      {
+        const char* name = var->immediate->v_string;
+        for_fields(field, ct) {
+          if (!strcmp(field->name, name))
+            if (field->hasFlag(FLAG_TYPE_VARIABLE))
+              return true;
+        }
+      }
+    }
+
+    if (FnSymbol* fn = call->isResolved())
+      if (fn->retTag == RET_TYPE)
+        return true;
+  }
+
+  return false;
+}
+
+
 static void
 pruneVisit(TypeSymbol* ts, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
   types.set_add(ts);

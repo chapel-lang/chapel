@@ -96,19 +96,6 @@ void normalize(void) {
   flattenGlobalFunctions();
   insertUseForExplicitModuleCalls();
 
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->parentSymbol && call->isPrimitive(PRIM_NEW)) {
-      if (CallExpr* classCall = toCallExpr(call->get(1)))
-        if (UnresolvedSymExpr* use = toUnresolvedSymExpr(classCall->baseExpr))
-          if (isalpha(use->unresolved[0])) {
-            USR_FATAL_CONT(call, "invalid use of 'new' on %s", use->unresolved);
-            continue;
-          }
-      USR_FATAL_CONT(call, "invalid use of 'new'");
-    }
-  }
-  USR_STOP();
-
   if (!fMinimalModules) {
     // Calls to _statementLevelSymbol() are inserted here and in
     // function resolution to ensure that sync vars are in the correct
@@ -335,6 +322,15 @@ insertUseForExplicitModuleCalls(void) {
   }
 }
 
+// Two cases are handled here:
+// 1. ('new' (dmap arg)) ==> (chpl__buildDistValue arg)
+// 2. (chpl__distributed (Dist args)) ==> 
+//     (chpl__distributed (chpl__buildDistValue ('new' (Dist args)))),
+//     where isDistClass(Dist). 
+// In 1., the only type that has FLAG_SYNTACTIC_DISTRIBUTION on it is "dmap".
+// This is a dummy record type that must be replaced.  The call to
+// chpl__buildDistValue() performs this task, returning _newDistribution(x),
+// where x is a distribution.
 static void
 processSyntacticDistributions(CallExpr* call) {
   SET_LINENO(call);
@@ -708,6 +704,8 @@ static void insert_call_temps(CallExpr* call)
     tmp->addFlag(FLAG_EXPR_TEMP);
   if (call->isPrimitive(PRIM_NEW))
     tmp->addFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
+  if (call->isPrimitive(PRIM_TYPEOF))
+    tmp->addFlag(FLAG_TYPE_VARIABLE);
   tmp->addFlag(FLAG_MAYBE_PARAM);
   tmp->addFlag(FLAG_MAYBE_TYPE);
   call->replace(new SymExpr(tmp));
