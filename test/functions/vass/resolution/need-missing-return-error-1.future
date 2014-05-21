@@ -1,3 +1,0 @@
-bug: a function with a declared return type but no return statements is not flagged with an error
-
-Instead, if a caller of such a function tries to use its value, it gets flagged with an error.
