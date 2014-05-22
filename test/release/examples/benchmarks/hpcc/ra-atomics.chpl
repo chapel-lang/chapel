@@ -78,13 +78,13 @@ const TableSpace: domain(1, indexType) dmapped TableDist = {0..m-1},
 // The program entry point
 //
 proc main() {
+  printConfiguration();   // print the problem size, number of trials, etc.
+
   //
   // T is the distributed table itself, storing a variable of type
   // elemType for each index in TableSpace.
   //
   var T: [TableSpace] atomic elemType;
-
-  printConfiguration();   // print the problem size, number of trials, etc.
 
   //
   // In parallel, initialize the table such that each position
