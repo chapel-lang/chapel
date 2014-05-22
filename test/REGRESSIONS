@@ -867,7 +867,8 @@ so that it is valid when passed to _freeIterator46.
 [Error matching program output for modules/standard/Sort/sungeun/sorty (execopts: 1)]
 [Error matching program output for modules/standard/Sort/sungeun/sorty (execopts: 2)]
 [Error matching program output for modules/standard/Sort/sungeun/sorty (execopts: 3)]
-Note: execopts: 2 started passing on 5/15/14; luck?
+Note: execopts: 2 started non-deterministically failing on 5/15/14 instead of
+consistently failing due to r23385
 
 glibc invalid pointer error (09/28/13)
 ------------------------------------------------------------
@@ -916,6 +917,9 @@ email on 5/9/14) that it could be modified to fail even without giving
 ============================================
 CHPL_COMM=ugni, CHPL_TASKS=muxed regressions
 ============================================
+
+Michael's r23405 currently breaks the build with "unknown type name"
+(Greg is looking into) (05/16/14)
 
 Incorrect output (should be fixed by r21213)
   parallel/taskPar/sungeun/barrier/basic

@@ -142,8 +142,8 @@ This take 10s of seconds at most:
 These things regularly cause noise in testing:
 ==============================================
 
-barrier for 'stop polling' - linux64.gnu.gasnet.qthreads.numa
--------------------------------------------------------------
+barrier for 'stop polling' - linux64.gnu.gasnet.qthreads.numa and flat
+----------------------------------------------------------------------
 [Error matching program output for multilocale/deitz/needMultiLocales/diagnostics/test_private_broadcast_small] (4/29/14,5/01/14)
 This started failing on 4/29/14 and has done so intermittently.
 The error is due to extra verbose-comm output.
@@ -296,6 +296,8 @@ undiagnosed cygwin failures
 [Error matching compiler output for release/examples/spec/Modules/init] (4/11/13)
 [Error matching program output for release/examples/programs/jacobi] (4/14/13)
 [Error running sub_test in /tmp/chapel-cron-cygwin.gnu.none.fifo.flat-bradc/chapel/test/release/examples/spec/Arrays (1)] (4/12/14)
+[Error running sub_test in /tmp/chapel-cron-cygwin.gnu.none.fifo.flat-bradc/chapel/test/release/examples/spec/Expressions (1)] (05/21/14)
+[Error running sub_test in /tmp/chapel-cron-cygwin.gnu.none.fifo.flat-bradc/chapel/test/release/examples/spec/Domains (1)] (05/22/14)
 
 
 domainReassignNoAlias future passes intermittently with qthreads.none
