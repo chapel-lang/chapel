@@ -97,7 +97,7 @@ module NetworkAtomics {
       chpl_comm_atomic_fetch_add_int64(v, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
       return ret;
     }
-    inline proc add(value:int(64), order = memory_order_seq_cst):int(64) {
+    inline proc add(value:int(64), order = memory_order_seq_cst) {
       var v = value;
       chpl_comm_atomic_add_int64(v, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
     }
@@ -108,7 +108,7 @@ module NetworkAtomics {
       chpl_comm_atomic_fetch_sub_int64(v, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
       return ret;
     }
-    inline proc sub(value:int(64), order = memory_order_seq_cst):int(64) {
+    inline proc sub(value:int(64), order = memory_order_seq_cst) {
       var v = value;
       chpl_comm_atomic_sub_int64(v, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
     }
