@@ -1,5 +1,5 @@
 This directory and its subfolders contain the various implementations of the
-Computer Language Benchmarks Game benchmark spectralnorm.  Details of each
+Computer Language Benchmarks Game benchmark spectral-norm.  Details of each
 version follow, files are listed in order of chronological addition:
 
 ./sidelnik
@@ -65,3 +65,19 @@ version follow, files are listed in order of chronological addition:
   demonstrates the same performance as spectral-norm-specify-step.chpl with the
   optimal step size, which as of 11/25/2013 places it at 2x as slow as the
   fastest reference version.
+
+
+
+./bradc
+  The results of Brad Chamberlain's pass through the release version of
+  spectral norm
+
+./bradc/spectralnorm-blc.chpl
+  Replaces lydia/spectral-norm-no-reduct's serial reduction helper function with
+  a serial statement surrounding the original reduction, utilizes writef()-style
+  output, makes the shift operation divison by 2 again, and utilizes promoted
+  multiplication.  Contains other clean-up and stylistic changes as well.
+
+./bradc/spectralnorm-partred.chpl
+  A future that makes use of currently unimplemented partial reductions.  It is
+  otherwise based on spectralnorm-blc.
