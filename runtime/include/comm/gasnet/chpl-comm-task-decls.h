@@ -8,6 +8,10 @@ typedef void* chpl_comm_nb_handle_t;
 //#include "chpl-cache-task-decls.h"
 
 typedef struct {
+  int dummy;
+  // Dummy element so that compiler doesn't complain about an empty struct
+  // Please remove when another element will be present.
+
 //    chpl_cache_taskPrvData_t cache_data;
 } chpl_comm_taskPrvData_t;
 
