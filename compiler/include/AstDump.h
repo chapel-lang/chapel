@@ -26,12 +26,15 @@ private:
   void             footer(BaseAST* ast);
 
   void             writeFnSymbol(FnSymbol* fn);
+
+  void             writeSymbol(const char* tag, Symbol* sym, bool def);
   void             writeSymbol(Symbol* sym, bool def);
+
+  void             write(const char* text);
   void             write(bool spaceBefore, const char* text, bool spaceAfter);
+
   void             printBlockID(Expr* expr);
   void             newline();
-
-  AggregateType*   structuralTypeSymbol(Symbol* s);
 
   const char*      mName;           // The name of the file for the log
   const char*      mPath;           // The full path to the file for the log

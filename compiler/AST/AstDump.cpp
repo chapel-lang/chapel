@@ -83,27 +83,22 @@ bool AstDump::header(BaseAST* ast) {
       if (stmt == fn->where)
         write(false, "where ", false);
 
-    write(false, "{", true);
+    write("{");
     printBlockID(stmt);
     ++mIndent;
 
-    // This was the final dangling else
-  } else if (ExternBlockStmt* stmt = toExternBlockStmt(ast)) {
-    if (mNeedSpace)
-      fputc(' ', mFP);
-
-    fprintf(mFP, "(%s", stmt->astTagAsString());
-    mNeedSpace = true;
+  } else if (isExternBlockStmt(ast)) {
+    write("(ExternBlockStmt");
 
   } else if (GotoStmt* s = toGotoStmt(ast)) {
     switch (s->gotoTag) {
-      case GOTO_NORMAL:      write(true, "goto",           true); break;
-      case GOTO_BREAK:       write(true, "break",          true); break;
-      case GOTO_CONTINUE:    write(true, "continue",       true); break;
-      case GOTO_RETURN:      write(true, "gotoReturn",     true); break;
-      case GOTO_GETITER_END: write(true, "gotoGetiterEnd", true); break;
-      case GOTO_ITER_RESUME: write(true, "gotoIterResume", true); break;
-      case GOTO_ITER_END:    write(true, "gotoIterEnd",    true); break;
+      case GOTO_NORMAL:      write("goto");           break;
+      case GOTO_BREAK:       write("break");          break;
+      case GOTO_CONTINUE:    write("continue");       break;
+      case GOTO_RETURN:      write("gotoReturn");     break;
+      case GOTO_GETITER_END: write("gotoGetiterEnd"); break;
+      case GOTO_ITER_RESUME: write("gotoIterResume"); break;
+      case GOTO_ITER_END:    write("gotoIterEnd");    break;
     }
 
     if (SymExpr* label = toSymExpr(s->label)) {
@@ -114,63 +109,12 @@ bool AstDump::header(BaseAST* ast) {
 
   } else if (isCondStmt(ast)) {
     newline();
-    write(true, "if", true);
+    write("if");
 
   } else if (DefExpr* e = toDefExpr(ast)) {
-    if (FnSymbol* fn = toFnSymbol(e->sym)) {
-      if (isBlockStmt(e->parentExpr)) {
-        newline();
-      }
+    Symbol* sym = e->sym;
 
-      write(true, "function", true);
-      writeFnSymbol(fn);
-
-    } else if (isTypeSymbol(e->sym)) {
-      if (isBlockStmt(e->parentExpr)) {
-        newline();
-      }
-
-      if (structuralTypeSymbol(e->sym)) {
-        if (e->sym->hasFlag(FLAG_SYNC))
-          write(true, "sync",   true);
-
-        if (e->sym->hasFlag(FLAG_SINGLE))
-          write(true, "single", true);
-      }
-
-      write(true, "type", true);
-      writeSymbol(e->sym, true);
-
-    } else if (VarSymbol* vs = toVarSymbol(e->sym)) {
-      if (isBlockStmt(e->parentExpr)) {
-        newline();
-      }
-
-      if (vs->type->symbol->hasFlag(FLAG_SYNC))
-        write(true, "sync",   true);
-
-      if (vs->type->symbol->hasFlag(FLAG_SINGLE))
-        write(true, "single", true);
-
-      write(true, "var", true);
-      writeSymbol(e->sym, true);
-
-    } else if (isArgSymbol(e->sym)) {
-      // Argsymbols are handled in the function header.
-      if (isBlockStmt(e->parentExpr)) {
-        newline();
-      }
-
-
-    } else if (isLabelSymbol(e->sym)) {
-      if (isBlockStmt(e->parentExpr)) {
-        newline();
-      }
-
-      write(true, "label", true);
-      writeSymbol(e->sym, true);
-
-    } else if (isModuleSymbol(e->sym)) {
+    if (isModuleSymbol(sym)) {
       retval = false;
 
     } else {
@@ -178,8 +122,36 @@ bool AstDump::header(BaseAST* ast) {
         newline();
       }
 
-      write(true, "def", true);
-      writeSymbol(e->sym, true);
+      if (FnSymbol* fn = toFnSymbol(sym)) {
+        writeFnSymbol(fn);
+
+      } else if (isTypeSymbol(sym)) {
+        if (toAggregateType(sym->type)) {
+          if (sym->hasFlag(FLAG_SYNC))
+            write("sync");
+
+          if (sym->hasFlag(FLAG_SINGLE))
+            write("single");
+        }
+
+        writeSymbol("type", sym, true);
+
+      } else if (VarSymbol* vs = toVarSymbol(sym)) {
+        if (vs->type->symbol->hasFlag(FLAG_SYNC))
+          write("sync");
+
+        if (vs->type->symbol->hasFlag(FLAG_SINGLE))
+          write("single");
+
+        writeSymbol("var", sym, true);
+
+      } else if (isLabelSymbol(sym)) {
+        writeSymbol("label", sym, true);
+
+      } else if (isEnumSymbol(sym)) {
+        writeSymbol("def", sym, true);
+
+      }
     }
 
   } else if (SymExpr* e = toSymExpr(ast)) {
@@ -191,17 +163,14 @@ bool AstDump::header(BaseAST* ast) {
       if (c->immediate) {
         const size_t bufSize = 128;
         char         imm[bufSize];
+        char         buff[bufSize];
 
         snprint_imm(imm, bufSize, *c->immediate);
+        sprintf(buff, "%s%s", imm, is_imag_type(c->type) ? "i" : "");
 
-        if (mNeedSpace) 
-          fputc(' ', mFP);
-
-        fprintf(mFP, "%s%s", imm, is_imag_type(c->type) ? "i" : "");
-
-        mNeedSpace = true;
+        write(buff);
       } else {
-        write(true, c->name, true);
+        write(c->name);
       }
 
     } else {
@@ -213,7 +182,7 @@ bool AstDump::header(BaseAST* ast) {
       newline();
     }
 
-    write(true, e->unresolved, true);
+    write(e->unresolved);
 
   } else if (NamedExpr* e = toNamedExpr(ast)) {
     if (isBlockStmt(e->parentExpr)) {
@@ -230,9 +199,9 @@ bool AstDump::header(BaseAST* ast) {
 
     if (FnSymbol* fn = e->isResolved()) {
       if (fn->hasFlag(FLAG_BEGIN_BLOCK))
-        write(true, "begin", true);
+        write("begin");
       else if (fn->hasFlag(FLAG_ON_BLOCK))
-        write(true, "on", true);
+        write("on");
     }
 
     if (fLogIds) {
@@ -243,13 +212,13 @@ bool AstDump::header(BaseAST* ast) {
     }
 
     if (!e->primitive) {
-      write(true, "call", true);
+      write("call");
     } else {
       if (e->isPrimitive(PRIM_RETURN))
-        write(true, "return", true);
+        write("return");
 
       else if (e->isPrimitive(PRIM_YIELD))
-        write(true, "yield", true);
+        write("yield");
 
       else {
         if (mNeedSpace)
@@ -293,24 +262,26 @@ bool AstDump::header(BaseAST* ast) {
 }
 
 void AstDump::footer(BaseAST* ast) {
-    if (isCallExpr(ast)) {
-      write( false, ")", true);
-    }
+  if (isCallExpr(ast)) {
+    write(false, ")", true);
+  }
 
-    else if (isNamedExpr(ast)) {
-      write( false, ")", true);
-    }
+  else if (isNamedExpr(ast)) {
+    write(false, ")", true);
+  }
 
-    else if (Expr* expr = toBlockStmt(ast)) {
-      --mIndent;
-      newline();
-      write(false, "}", true);
-      printBlockID(expr);
-    }
+  else if (Expr* expr = toBlockStmt(ast)) {
+    --mIndent;
+    newline();
+    write(false, "}", true);
+    printBlockID(expr);
+  }
 }
 
 void AstDump::writeFnSymbol(FnSymbol* fn) {
   bool first = true;
+
+  write("function");
 
   if (fn->_this && fn->_this->defPoint) {
     writeSymbol(fn->_this->type->symbol, false);
@@ -331,7 +302,7 @@ void AstDump::writeFnSymbol(FnSymbol* fn) {
     writeSymbol(formal, true);
 
     if (formal->typeExpr) {
-      write(true, ":", true);
+      write(":");
 
       if (BlockStmt* block = toBlockStmt(formal->typeExpr))
         write(block->body.first());
@@ -340,7 +311,7 @@ void AstDump::writeFnSymbol(FnSymbol* fn) {
     }
 
     if (formal->defaultExpr) {
-      write(true, "=", true);
+      write("=");
 
       if (BlockStmt* block = toBlockStmt(formal->defaultExpr))
         write(block->body.first());
@@ -352,46 +323,41 @@ void AstDump::writeFnSymbol(FnSymbol* fn) {
   write( false, ")", true);
 
   switch (fn->retTag) {
-    case RET_VALUE:                             break;
-    case RET_VAR:   write(true, "var",   true); break;
-    case RET_PARAM: write(true, "param", true); break;
-    case RET_TYPE:  write(true, "type",  true); break;
+    case RET_VALUE:                 break;
+    case RET_VAR:   write("var");   break;
+    case RET_PARAM: write("param"); break;
+    case RET_TYPE:  write("type");  break;
   }
 
   if (fn->retType && fn->retType->symbol) {
-    write(true, ":", true);
-    writeSymbol(fn->retType->symbol, false);
+    writeSymbol(":", fn->retType->symbol, false);
   }
 }
 
+void AstDump::writeSymbol(const char* tag, Symbol* sym, bool def) {
+  write(tag);
+  writeSymbol(sym, def);
+}
+
 void AstDump::writeSymbol(Symbol* sym, bool def) {
-  if (mNeedSpace)
-    fputc(' ', mFP);
-
-  mNeedSpace = false;
-
   if (def) {
     if (ArgSymbol* arg = toArgSymbol(sym)) {
-      mNeedSpace = true;
-
       switch (arg->intent) {
-        case INTENT_IN:        fprintf(mFP, "in");        break;
-        case INTENT_INOUT:     fprintf(mFP, "inout");     break;
-        case INTENT_OUT:       fprintf(mFP, "out");       break;
-        case INTENT_CONST:     fprintf(mFP, "const");     break;
-        case INTENT_CONST_IN:  fprintf(mFP, "const in");  break;
-        case INTENT_CONST_REF: fprintf(mFP, "const ref"); break;
-        case INTENT_REF:       fprintf(mFP, "ref");       break;
-        case INTENT_PARAM:     fprintf(mFP, "param");     break;
-        case INTENT_TYPE:      fprintf(mFP, "type");      break;
-        case INTENT_BLANK:     mNeedSpace = false;        break;
+        case INTENT_IN:        write("in arg");        break;
+        case INTENT_INOUT:     write("inout arg");     break;
+        case INTENT_OUT:       write("out arg");       break;
+        case INTENT_CONST:     write("const arg");     break;
+        case INTENT_CONST_IN:  write("const in arg");  break;
+        case INTENT_CONST_REF: write("const ref arg"); break;
+        case INTENT_REF:       write("ref arg");       break;
+        case INTENT_PARAM:     write("param arg");     break;
+        case INTENT_TYPE:      write("type arg");      break;
+        case INTENT_BLANK:     write("arg");           break;
       }
-
-      write(true, "arg", true);
     }
   }
 
-  write(true, sym->name, true);
+  write(sym->name);
 
   if (fLogIds)
     fprintf(mFP, "[%d]", sym->id);
@@ -409,6 +375,10 @@ void AstDump::writeSymbol(Symbol* sym, bool def) {
     write(false, "?", false);
 
   mNeedSpace = true;
+}
+
+void AstDump::write(const char* text) {
+  write(true, text, true);
 }
 
 void AstDump::write(bool spaceBefore, const char* text, bool spaceAfter) {
@@ -432,14 +402,6 @@ void AstDump::newline() {
     fputc(' ', mFP);
 
   mNeedSpace = false;
-}
-
-AggregateType* AstDump::structuralTypeSymbol(Symbol *s) {
-  if (TypeSymbol* ts = toTypeSymbol(s))
-    if (AggregateType* st = toAggregateType(ts->type))
-      return st;
-
-  return NULL;
 }
 
 void AstDump::tempHack(BaseAST* ast, AstDump* handle) {

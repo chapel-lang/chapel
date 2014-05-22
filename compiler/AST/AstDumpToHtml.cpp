@@ -199,7 +199,7 @@ bool AstDumpToHtml::header(BaseAST* ast) {
       fprintf(mFP, "</B><UL>\n");
 
     } else if (isTypeSymbol(e->sym)) {
-      if (structuralTypeSymbol(e->sym)) {
+      if (toAggregateType(e->sym->type)) {
         fprintf(mFP, "<UL CLASS =\"mktree\">\n");
         fprintf(mFP, "<LI>");
 
@@ -297,9 +297,7 @@ bool AstDumpToHtml::header(BaseAST* ast) {
       fprintf(mFP, "<DL>\n");
     }
 
-    fprintf(mFP, " ");
-
-    fprintf(mFP, "(%s = ", e->name);
+    fprintf(mFP, " (%s = ", e->name);
 
   } else if (CallExpr* e = toCallExpr(ast)) {
     if (isBlockStmt(e->parentExpr)) {
@@ -519,14 +517,6 @@ const char* AstDumpToHtml::html_file_name(int passNum, Symbol* sym) {
 
 const char* AstDumpToHtml::html_file_name(int passNum, const char* module) {
   return astr("pass", istr(passNum), "_module_", astr(module, ".html"));
-}
-
-AggregateType* AstDumpToHtml::structuralTypeSymbol(Symbol* s) {
-  if (TypeSymbol* ts = toTypeSymbol(s))
-    if (AggregateType* st = toAggregateType(ts->type))
-      return st;
-
-  return NULL;
 }
 
 bool AstDumpToHtml::hasHref(Symbol* sym) {

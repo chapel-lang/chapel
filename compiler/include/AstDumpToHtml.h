@@ -35,7 +35,6 @@ private:
   void             adjacent_passes(Symbol* sym);
   void             printBlockID(Expr* expr);
 
-  AggregateType*   structuralTypeSymbol(Symbol* s);
   bool             hasHref(Symbol* sym);
 
   static int       sPassIndex;
