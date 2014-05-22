@@ -69,7 +69,7 @@ void AstDumpToHtml::view(const char* passName) {
 
       if (logger.open(module, passName, sPassIndex) == true) {
         for_alist(stmt, module->block->body)
-          logger.write(stmt);
+          stmt->accept(&logger);
 
         logger.close();
       }
@@ -132,291 +132,313 @@ bool AstDumpToHtml::close() {
   return retval;
 }
 
+//
+// CallExpr
+//
+bool AstDumpToHtml::visitEnter(CallExpr* node) {
+  if (isBlockStmt(node->parentExpr)) {
+    fprintf(mFP, "<DL>\n");
+  }
 
-void AstDumpToHtml::write(BaseAST* ast) {
-  if (header(ast) == true) {
-    AST_CHILDREN_CALL(ast, tempHack, this);
+  fprintf(mFP, " ");
 
-    footer(ast);
+  if (FnSymbol* fn = node->isResolved()) {
+    if (fn->hasFlag(FLAG_BEGIN_BLOCK))
+      fprintf(mFP, "begin ");
+    else if (fn->hasFlag(FLAG_ON_BLOCK))
+      fprintf(mFP, "on ");
+  }
+
+  fprintf(mFP, "(%d ", node->id);
+
+  if (!node->primitive) {
+    fprintf(mFP, "<B>call</B> ");
+
+  } else if (node->isPrimitive(PRIM_RETURN)) {
+    fprintf(mFP, "<B>return</B> ");
+
+  } else if (node->isPrimitive(PRIM_YIELD)) {
+    fprintf(mFP, "<B>yield</B> ");
+
+  } else {
+    fprintf(mFP, "'%s' ", node->primitive->name);
+
+  }
+
+  if (node->partialTag)
+    fprintf(mFP, "(partial) ");
+
+  return true;
+}
+
+void AstDumpToHtml::visitExit(CallExpr* node) {
+  fprintf(mFP, ")");
+
+  if (isBlockStmt(node->parentExpr)) {
+    fprintf(mFP, "</DL>\n");
   }
 }
 
-bool AstDumpToHtml::header(BaseAST* ast) {
+
+//
+// DefExpr
+//
+bool AstDumpToHtml::visitEnter(DefExpr* node) {
   bool retval = true;
 
-  if (BlockStmt* stmt = toBlockStmt(ast)) {
+  if (isBlockStmt(node->parentExpr)) {
     fprintf(mFP, "<DL>\n");
+  }
 
-    if (FnSymbol* fn = toFnSymbol(stmt->parentSymbol))
-      if (stmt == fn->where)
-        fprintf(mFP, "<B>where</B>\n");
+  fprintf(mFP, " ");
 
-    fprintf(mFP, "{");
+  if (FnSymbol* fn = toFnSymbol(node->sym)) {
+    fprintf(mFP, "<UL CLASS =\"mktree\">\n<LI>");
 
-    printBlockID(stmt);
+    adjacent_passes(fn);
 
-  } else if (ExternBlockStmt* stmt = toExternBlockStmt(ast)) {
-    fprintf(mFP, "(%s", stmt->astTagAsString());
+    fprintf(mFP, "<CHPLTAG=\"FN%d\">\n", fn->id);
+    fprintf(mFP, "<B>function ");
 
-  } else if (GotoStmt* s = toGotoStmt(ast)) {
-    fprintf(mFP, "<DL>\n");
+    writeFnSymbol(fn);
 
-    switch (s->gotoTag) {
-      case GOTO_NORMAL:      fprintf(mFP, "<B>goto</B> ");           break;
-      case GOTO_BREAK:       fprintf(mFP, "<B>break</B> ");          break;
-      case GOTO_CONTINUE:    fprintf(mFP, "<B>continue</B> ");       break;
-      case GOTO_RETURN:      fprintf(mFP, "<B>gotoReturn</B> ");     break;
-      case GOTO_GETITER_END: fprintf(mFP, "<B>gotoGetiterEnd</B> "); break;
-      case GOTO_ITER_RESUME: fprintf(mFP, "<B>gotoIterResume</B> "); break;
-      case GOTO_ITER_END:    fprintf(mFP, "<B>gotoIterEnd</B> ");    break;
-    }
+    fprintf(mFP, "</B><UL>\n");
 
-    if (SymExpr* label = toSymExpr(s->label))
-      if (label->var != gNil)
-        writeSymbol(label->var, true);
+  } else if (isTypeSymbol(node->sym)) {
+    if (toAggregateType(node->sym->type)) {
+      fprintf(mFP, "<UL CLASS =\"mktree\">\n");
+      fprintf(mFP, "<LI>");
 
-  } else if (isCondStmt(ast)) {
-    fprintf(mFP, "<DL>\n");
-    fprintf(mFP, "<B>if</B> ");
+      if (node->sym->hasFlag(FLAG_SYNC))
+        fprintf(mFP, "<B>sync</B> ");
 
-  } else if (DefExpr* e = toDefExpr(ast)) {
-    if (isBlockStmt(e->parentExpr)) {
-      fprintf(mFP, "<DL>\n");
-    }
+      if (node->sym->hasFlag(FLAG_SINGLE))
+        fprintf(mFP, "<B>single</B> ");
 
-    fprintf(mFP, " ");
-
-    if (FnSymbol* fn = toFnSymbol(e->sym)) {
-      fprintf(mFP, "<UL CLASS =\"mktree\">\n<LI>");
-
-      adjacent_passes(fn);
-
-      fprintf(mFP, "<CHPLTAG=\"FN%d\">\n", fn->id);
-      fprintf(mFP, "<B>function ");
-
-      writeFnSymbol(fn);
-
+      fprintf(mFP, "<B>type ");
+      writeSymbol(node->sym, true);
       fprintf(mFP, "</B><UL>\n");
 
-    } else if (isTypeSymbol(e->sym)) {
-      if (toAggregateType(e->sym->type)) {
-        fprintf(mFP, "<UL CLASS =\"mktree\">\n");
-        fprintf(mFP, "<LI>");
-
-        if (e->sym->hasFlag(FLAG_SYNC))
-          fprintf(mFP, "<B>sync</B> ");
-
-        if (e->sym->hasFlag(FLAG_SINGLE))
-          fprintf(mFP, "<B>single</B> ");
-
-        fprintf(mFP, "<B>type ");
-        writeSymbol(e->sym, true);
-        fprintf(mFP, "</B><UL>\n");
-
-      } else {
-        fprintf(mFP, "<B>type </B> ");
-        writeSymbol(e->sym, true);
-      }
-
-    } else if (VarSymbol* vs = toVarSymbol(e->sym)) {
-      if (vs->type->symbol->hasFlag(FLAG_SYNC))
-        fprintf(mFP, "<B>sync </B>");
-
-      if (vs->type->symbol->hasFlag(FLAG_SINGLE))
-        fprintf(mFP, "<B>single </B>");
-
-      fprintf(mFP, "<B>var </B> ");
-      writeSymbol(e->sym, true);
-
-    } else if (ArgSymbol* s = toArgSymbol(e->sym)) {
-      switch (s->intent) {
-        case INTENT_IN:        fprintf(mFP, "<B>in</B> ");        break;
-        case INTENT_INOUT:     fprintf(mFP, "<B>inout</B> ");     break;
-        case INTENT_OUT:       fprintf(mFP, "<B>out</B> ");       break;
-        case INTENT_CONST:     fprintf(mFP, "<B>const</B> ");     break;
-        case INTENT_CONST_IN:  fprintf(mFP, "<B>const in</B> ");  break;
-        case INTENT_CONST_REF: fprintf(mFP, "<B>const ref</B> "); break;
-        case INTENT_REF:       fprintf(mFP, "<B>ref</B> ");       break;
-        case INTENT_PARAM:     fprintf(mFP, "<B>param</B> ");     break;
-        case INTENT_TYPE:      fprintf(mFP, "<B>type</B> ");      break;
-        case INTENT_BLANK:                                        break;
-      }
-
-      fprintf(mFP, "<B>arg</B> ");
-
-      writeSymbol(e->sym, true);
-
-    } else if (isLabelSymbol(e->sym)) {
-      fprintf(mFP, "<B>label</B> ");
-      writeSymbol(e->sym, true);
-
-    } else if (isModuleSymbol(e->sym)) {
-      fprintf(mFP, "</DL>\n");
-      // Don't process nested modules -- they'll be handled at the top-level
-      retval = false;
-
     } else {
-      fprintf(mFP, "<B>def</B> ");
-      writeSymbol(e->sym, true);
+      fprintf(mFP, "<B>type </B> ");
+      writeSymbol(node->sym, true);
     }
 
-  } else if (SymExpr* e = toSymExpr(ast)) {
-    if (isBlockStmt(e->parentExpr)) {
-      fprintf(mFP, "<DL>\n");
+  } else if (VarSymbol* vs = toVarSymbol(node->sym)) {
+    if (vs->type->symbol->hasFlag(FLAG_SYNC))
+      fprintf(mFP, "<B>sync </B>");
+
+    if (vs->type->symbol->hasFlag(FLAG_SINGLE))
+      fprintf(mFP, "<B>single </B>");
+
+    fprintf(mFP, "<B>var </B> ");
+    writeSymbol(node->sym, true);
+
+  } else if (ArgSymbol* s = toArgSymbol(node->sym)) {
+    switch (s->intent) {
+      case INTENT_IN:        fprintf(mFP, "<B>in</B> ");        break;
+      case INTENT_INOUT:     fprintf(mFP, "<B>inout</B> ");     break;
+      case INTENT_OUT:       fprintf(mFP, "<B>out</B> ");       break;
+      case INTENT_CONST:     fprintf(mFP, "<B>const</B> ");     break;
+      case INTENT_CONST_IN:  fprintf(mFP, "<B>const in</B> ");  break;
+      case INTENT_CONST_REF: fprintf(mFP, "<B>const ref</B> "); break;
+      case INTENT_REF:       fprintf(mFP, "<B>ref</B> ");       break;
+      case INTENT_PARAM:     fprintf(mFP, "<B>param</B> ");     break;
+      case INTENT_TYPE:      fprintf(mFP, "<B>type</B> ");      break;
+      case INTENT_BLANK:                                        break;
     }
 
-    fprintf(mFP, " ");
+    fprintf(mFP, "<B>arg</B> ");
 
-    if (VarSymbol* c = get_constant(e)) {
-      if (c->immediate) {
-        const size_t bufSize = 128;
-        char         imm[bufSize];
+    writeSymbol(node->sym, true);
 
-        snprint_imm(imm, bufSize, *c->immediate);
+  } else if (isLabelSymbol(node->sym)) {
+    fprintf(mFP, "<B>label</B> ");
+    writeSymbol(node->sym, true);
 
-        fprintf(mFP, "<i><FONT COLOR=\"blue\">%s%s</FONT></i>", imm, is_imag_type(c->type) ? "i" : "");
-
-      } else {
-        fprintf(mFP, "<i><FONT COLOR=\"blue\">%s</FONT></i>", c->name);
-      }
-    } else {
-      writeSymbol(e->var, false);
-    }
-
-  } else if (UnresolvedSymExpr* e = toUnresolvedSymExpr(ast)) {
-    if (isBlockStmt(e->parentExpr)) {
-      fprintf(mFP, "<DL>\n");
-    }
-
-    fprintf(mFP, " ");
-
-    fprintf(mFP, "<FONT COLOR=\"red\">%s</FONT>", e->unresolved);
-
-  } else if (NamedExpr* e = toNamedExpr(ast)) {
-    if (isBlockStmt(e->parentExpr)) {
-      fprintf(mFP, "<DL>\n");
-    }
-
-    fprintf(mFP, " (%s = ", e->name);
-
-  } else if (CallExpr* e = toCallExpr(ast)) {
-    if (isBlockStmt(e->parentExpr)) {
-      fprintf(mFP, "<DL>\n");
-    }
-
-    fprintf(mFP, " ");
-
-    if (FnSymbol* fn = e->isResolved()) {
-      if (fn->hasFlag(FLAG_BEGIN_BLOCK))
-        fprintf(mFP, "begin ");
-      else if (fn->hasFlag(FLAG_ON_BLOCK))
-        fprintf(mFP, "on ");
-    }
-
-    fprintf(mFP, "(%d ", e->id);
-
-    if (!e->primitive) {
-      fprintf(mFP, "<B>call</B> ");
-    } else if (e->isPrimitive(PRIM_RETURN))
-      fprintf(mFP, "<B>return</B> ");
-
-    else if (e->isPrimitive(PRIM_YIELD))
-      fprintf(mFP, "<B>yield</B> ");
-
-    else
-      fprintf(mFP, "'%s' ", e->primitive->name);
-
-    if (e->partialTag)
-      fprintf(mFP, "(partial) ");
-
-  } else if (isPrimitiveType(ast)) {
-
-  } else if (isAggregateType(ast)) {
-
-  } else if (isEnumType(ast)) {
-
-  } else if (isVarSymbol(ast)) {
-
-  } else if (isArgSymbol(ast)) {
-
-  } else if (isTypeSymbol(ast)) {
-
-  } else if (isFnSymbol(ast)) {
-
-  } else if (isEnumSymbol(ast)) {
-
-  } else if (isModuleSymbol(ast)) {
-
-  } else if (isLabelSymbol(ast)) {
+  } else if (isModuleSymbol(node->sym)) {
+    fprintf(mFP, "</DL>\n");
+    // Don't process nested modules -- they'll be handled at the top-level
+    retval = false;
 
   } else {
-    USR_FATAL("This cannot happen");
+    fprintf(mFP, "<B>def</B> ");
+    writeSymbol(node->sym, true);
   }
 
   return retval;
 }
 
-void AstDumpToHtml::footer(BaseAST* ast) {
-  if (DefExpr* e = toDefExpr(ast)) {
-    if (isFnSymbol(e->sym) || 
-        (isTypeSymbol(e->sym) &&
-         isAggregateType(e->sym->type))) {
+void AstDumpToHtml::visitExit(DefExpr* node) {
+  if (isFnSymbol(node->sym) || 
+      (isTypeSymbol(node->sym) &&
+       isAggregateType(node->sym->type))) {
 
-      fprintf(mFP, "</UL>\n");
+    fprintf(mFP, "</UL>\n");
 
-      if (FnSymbol* fn = toFnSymbol(e->sym)) {
-        fprintf(mFP, "<CHPLTAG=\"FN%d\">\n", fn->id);
-      }
-
-      fprintf(mFP, "</UL>\n");
+    if (FnSymbol* fn = toFnSymbol(node->sym)) {
+      fprintf(mFP, "<CHPLTAG=\"FN%d\">\n", fn->id);
     }
 
-    if (isBlockStmt(e->parentExpr)) {
-      fprintf(mFP, "</DL>\n");
-    }
+    fprintf(mFP, "</UL>\n");
+  }
 
-  } else if (SymExpr* expr = toSymExpr(ast)) {
-    if (isBlockStmt(expr->parentExpr)) {
-      fprintf(mFP, "</DL>\n");
-    }
-
-  } else if (UnresolvedSymExpr* expr = toUnresolvedSymExpr(ast)) {
-    if (isBlockStmt(expr->parentExpr)) {
-      fprintf(mFP, "</DL>\n");
-    }
-
-  } else if (CallExpr* expr = toCallExpr(ast)) {
-    fprintf(mFP, ")");
-
-    if (isBlockStmt(expr->parentExpr)) {
-      fprintf(mFP, "</DL>\n");
-    }
-
-  } else if (NamedExpr* expr = toNamedExpr(ast)) {
-    fprintf(mFP, ")");
-
-    if (isBlockStmt(expr->parentExpr)) {
-      fprintf(mFP, "</DL>\n");
-    }
-
-  } else if (BlockStmt* stmt = toBlockStmt(ast)) {
-    fprintf(mFP, "}");
-    printBlockID(stmt);
+  if (isBlockStmt(node->parentExpr)) {
     fprintf(mFP, "</DL>\n");
-
-  } else if (ExternBlockStmt* stmt = toExternBlockStmt(ast)) {
-    if (isBlockStmt(stmt->parentExpr)) {
-      fprintf(mFP, "</DL>\n");
-    }
-
-  } else if (isCondStmt(ast)) {
-    fprintf(mFP, "</DL>\n");
-
-  } else if (isGotoStmt(ast)) {
-    fprintf(mFP, "</DL>\n");
-
   }
 }
+
+
+//
+// NamedExpr
+//
+bool AstDumpToHtml::visitEnter(NamedExpr* node) {
+  if (isBlockStmt(node->parentExpr)) {
+    fprintf(mFP, "<DL>\n");
+  }
+
+  fprintf(mFP, " (%s = ", node->name);
+
+  return true;
+}
+
+void AstDumpToHtml::visitExit(NamedExpr* node) {
+  fprintf(mFP, ")");
+
+  if (isBlockStmt(node->parentExpr)) {
+    fprintf(mFP, "</DL>\n");
+  }
+}
+
+
+//
+// SymExpr
+//
+void AstDumpToHtml::visit(SymExpr* node) {
+  if (isBlockStmt(node->parentExpr)) {
+    fprintf(mFP, "<DL>\n");
+  }
+
+  fprintf(mFP, " ");
+
+  if (VarSymbol* c = get_constant(node)) {
+    if (c->immediate) {
+      const size_t bufSize = 128;
+      char         imm[bufSize];
+
+      snprint_imm(imm, bufSize, *c->immediate);
+
+      fprintf(mFP, "<i><FONT COLOR=\"blue\">%s%s</FONT></i>", imm, is_imag_type(c->type) ? "i" : "");
+
+    } else {
+      fprintf(mFP, "<i><FONT COLOR=\"blue\">%s</FONT></i>", c->name);
+    }
+  } else {
+    writeSymbol(node->var, false);
+  }
+
+  if (isBlockStmt(node->parentExpr)) {
+    fprintf(mFP, "</DL>\n");
+  }
+}
+
+
+//
+// UnresolvedSymExpr
+//
+void AstDumpToHtml::visit(UnresolvedSymExpr* node) {
+  if (isBlockStmt(node->parentExpr)) {
+    fprintf(mFP, "<DL>\n");
+  }
+
+  fprintf(mFP, " <FONT COLOR=\"red\">%s</FONT>", node->unresolved);
+
+  if (isBlockStmt(node->parentExpr)) {
+    fprintf(mFP, "</DL>\n");
+  }
+}
+
+
+//
+// BlockStmt
+//
+bool AstDumpToHtml::visitEnter(BlockStmt* node) {
+  fprintf(mFP, "<DL>\n");
+
+  if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
+    if (node == fn->where)
+      fprintf(mFP, "<B>where</B>\n");
+
+  fprintf(mFP, "{");
+
+  printBlockID(node);
+
+  return true;
+}
+
+void AstDumpToHtml::visitExit(BlockStmt* node) {
+  fprintf(mFP, "}");
+  printBlockID(node);
+  fprintf(mFP, "</DL>\n");
+}
+
+
+//
+// CondStmt
+//
+bool AstDumpToHtml::visitEnter(CondStmt* node) {
+  fprintf(mFP, "<DL>\n");
+  fprintf(mFP, "<B>if</B> ");
+
+  return true;
+}
+
+void AstDumpToHtml::visitExit(CondStmt* node) {
+  fprintf(mFP, "</DL>\n");
+}
+
+//
+// ExternBlockStmt
+//
+void AstDumpToHtml::visit(ExternBlockStmt* node) {
+  fprintf(mFP, "(%s", node->astTagAsString());
+
+  if (isBlockStmt(node->parentExpr)) {
+    fprintf(mFP, "</DL>\n");
+  }
+}
+
+
+//
+// GotoStmt
+//
+bool AstDumpToHtml::visitEnter(GotoStmt* node) {
+  fprintf(mFP, "<DL>\n");
+
+  switch (node->gotoTag) {
+    case GOTO_NORMAL:      fprintf(mFP, "<B>goto</B> ");           break;
+    case GOTO_BREAK:       fprintf(mFP, "<B>break</B> ");          break;
+    case GOTO_CONTINUE:    fprintf(mFP, "<B>continue</B> ");       break;
+    case GOTO_RETURN:      fprintf(mFP, "<B>gotoReturn</B> ");     break;
+    case GOTO_GETITER_END: fprintf(mFP, "<B>gotoGetiterEnd</B> "); break;
+    case GOTO_ITER_RESUME: fprintf(mFP, "<B>gotoIterResume</B> "); break;
+    case GOTO_ITER_END:    fprintf(mFP, "<B>gotoIterEnd</B> ");    break;
+  }
+
+  if (SymExpr* label = toSymExpr(node->label))
+    if (label->var != gNil)
+      writeSymbol(label->var, true);
+
+  return true;
+}
+
+void AstDumpToHtml::visitExit(GotoStmt* node) {
+  fprintf(mFP, "</DL>\n");
+}
+
+//
+// Helper functions
+//
 
 void AstDumpToHtml::writeFnSymbol(FnSymbol* fn) {
   bool first = true;
@@ -523,9 +545,4 @@ bool AstDumpToHtml::hasHref(Symbol* sym) {
   return sym->defPoint               && 
          sym->defPoint->parentSymbol &&
          sym->defPoint->getModule();
-}
-
-
-void AstDumpToHtml::tempHack(BaseAST* ast, AstDumpToHtml* handle) {
-  handle->write(ast);
 }
