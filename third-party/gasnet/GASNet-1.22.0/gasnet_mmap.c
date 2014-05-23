@@ -907,9 +907,13 @@ extern void gasneti_munmap(void *segbase, uintptr_t segsize) {
       /* we delayed the close() until now */
       close(gasneti_addr2fd_del(segbase));
     #endif
-    if (munmap(segbase, segsize) != 0) 
-      gasneti_fatalerror("munmap("GASNETI_LADDRFMT",%lu) failed: %s\n",
-	      GASNETI_LADDRSTR(segbase), (unsigned long)segsize, strerror(errno));
+#if defined(GASNETI_USE_HUGETLBFS)
+  gasneti_huge_munmap(segbase, segsize);
+#else
+  if (munmap(segbase, segsize) != 0) 
+    gasneti_fatalerror("munmap("GASNETI_LADDRFMT",%lu) failed: %s\n",
+            GASNETI_LADDRSTR(segbase), (unsigned long)segsize, strerror(errno));
+#endif
   t2 = gasneti_ticks_now();
 
   GASNETI_TRACE_PRINTF(D,("munmap("GASNETI_LADDRFMT", %lu): %.3fus\n", 
