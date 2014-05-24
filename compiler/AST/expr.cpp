@@ -279,7 +279,6 @@ void SymExpr::verify() {
     INT_FATAL(this, "SymExpr::var::defPoint is not in AST");
 }
 
-
 SymExpr* SymExpr::copyInner(SymbolMap* map) {
   return new SymExpr(var);
 }
@@ -5540,20 +5539,6 @@ get_string(Expr* e) {
     INT_FATAL(e, "string literal expression expected");
   return s;
 }
-
-VarSymbol * 
-get_constant(Expr *e) {
-  if (e) {
-    if (SymExpr *l = toSymExpr(e)) {
-      if (VarSymbol *v = toVarSymbol(l->var)) {
-        if (v->immediate != 0)
-          return v;
-      }
-    }
-  }
-  return 0;
-}
-
 
 // This builds an allocation of enough space to hold a variable of the
 // given type.

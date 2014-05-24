@@ -315,26 +315,25 @@ void AstDumpToHtml::visitExit(NamedExpr* node) {
 // SymExpr
 //
 void AstDumpToHtml::visit(SymExpr* node) {
-  if (isBlockStmt(node->parentExpr)) {
+  Symbol*    sym = node->var;
+  VarSymbol* var = toVarSymbol(sym);
+
+  if (isBlockStmt(node->parentExpr) == true) {
     fprintf(mFP, "<DL>\n");
   }
 
   fprintf(mFP, " ");
 
-  if (VarSymbol* c = get_constant(node)) {
-    if (c->immediate) {
-      const size_t bufSize = 128;
-      char         imm[bufSize];
+  if (var != 0 && var->immediate != 0) {
+    const size_t bufSize = 128;
+    char         imm[bufSize];
 
-      snprint_imm(imm, bufSize, *c->immediate);
+    snprint_imm(imm, bufSize, *var->immediate);
 
-      fprintf(mFP, "<i><FONT COLOR=\"blue\">%s%s</FONT></i>", imm, is_imag_type(c->type) ? "i" : "");
-
-    } else {
-      fprintf(mFP, "<i><FONT COLOR=\"blue\">%s</FONT></i>", c->name);
-    }
+    fprintf(mFP, "<i><FONT COLOR=\"blue\">%s%s</FONT></i>", imm, is_imag_type(var->type) ? "i" : "");
+      
   } else {
-    writeSymbol(node->var, false);
+    writeSymbol(sym, false);
   }
 
   if (isBlockStmt(node->parentExpr)) {

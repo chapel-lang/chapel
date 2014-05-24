@@ -77,6 +77,7 @@ class SymExpr : public Expr {
   virtual void replaceChild(Expr* old_ast, Expr* new_ast);
   virtual void verify(); 
   virtual void    accept(AstVisitor* visitor);
+
   Type* typeInfo(void);
   bool isNoInitExpr() const;
   GenRet codegen();
@@ -223,7 +224,6 @@ bool get_int(Expr* e, int64_t* i); // false is failure
 bool get_uint(Expr *e, uint64_t *i); // false is failure
 bool get_string(Expr *e, const char **s); // false is failure
 const char* get_string(Expr* e); // fatal on failure
-VarSymbol *get_constant(Expr *e);
 
 CallExpr* callChplHereAlloc(Symbol *s, VarSymbol* md = NULL);
 void insertChplHereAlloc(Expr *call, bool insertAfter, Symbol *sym,

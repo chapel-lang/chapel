@@ -197,26 +197,25 @@ void AstDump::visitExit(NamedExpr* node) {
 // SymExpr
 //
 void AstDump::visit(SymExpr* node) {
-  if (isBlockStmt(node->parentExpr)) {
+  Symbol*    sym = node->var;
+  VarSymbol* var = toVarSymbol(sym);
+
+  if (isBlockStmt(node->parentExpr) == true) {
     newline();
   }
 
-  if (VarSymbol* c = get_constant(node)) {
-    if (c->immediate) {
-      const size_t bufSize = 128;
-      char         imm[bufSize];
-      char         buff[bufSize];
+  if (var != 0 && var->immediate != 0) {
+    const size_t bufSize = 128;
+    char         imm[bufSize];
+    char         buff[bufSize];
 
-      snprint_imm(imm, bufSize, *c->immediate);
-      sprintf(buff, "%s%s", imm, is_imag_type(c->type) ? "i" : "");
+    snprint_imm(imm, bufSize, *var->immediate);
+    sprintf(buff, "%s%s", imm, is_imag_type(var->type) ? "i" : "");
 
-      write(buff);
-    } else {
-      write(c->name);
-    }
+    write(buff);
 
   } else {
-    writeSymbol(node->var, false);
+    writeSymbol(sym, false);
   }
 }
 
