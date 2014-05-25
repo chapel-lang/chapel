@@ -5,7 +5,7 @@
    derived from the GNU C version by Bonzini, Bartlett, and Mellor
 */
 
-use GMP, GMPops;
+use GMP, GMPops, Memory;
 
 config const n = 50;                // Compute n digits of Pi, 50 by default
 
@@ -15,6 +15,7 @@ proc main() {
     if i % 10 == 0 then
       writeln("\t:",i);
   }
+  printMemLeaksTable();
 }
 
 
@@ -119,4 +120,9 @@ iter gen_digits(numDigits) {
     accum *= 10;
     numer *= 10;
   }
+  mpz_clear(numer);
+  mpz_clear(accum);
+  mpz_clear(denom);
+  mpz_clear(tmp1);
+  mpz_clear(tmp2);
 }

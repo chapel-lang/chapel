@@ -1005,5 +1005,6 @@ Number of leaked allocations
            Total leaked memory (bytes)
                       Description of allocation
 ==============================================================
+55663      1601830344  gmp data
 3          584        io buffer or bytes
 ==============================================================
