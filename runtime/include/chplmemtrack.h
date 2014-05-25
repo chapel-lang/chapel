@@ -16,6 +16,7 @@ extern chpl_bool chpl_memTrack;
 void chpl_setMemFlags(void);
 uint64_t chpl_memoryUsed(int32_t lineno, chpl_string filename);
 void chpl_printMemStat(int32_t lineno, chpl_string filename);
+void chpl_printLeakedMemTable(void);
 void chpl_printMemTable(int64_t threshold, int32_t lineno, chpl_string filename);
 void chpl_reportMemInfo(void);
 void chpl_track_malloc(void* memAlloc, size_t number, size_t size,

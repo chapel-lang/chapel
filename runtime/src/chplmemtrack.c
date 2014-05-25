@@ -302,7 +302,7 @@ static int leakedMemTableEntryCmp(const void* p1, const void* p2) {
   return *(size_t*)p2 - *(size_t*)p1;
 }
 
-static void chpl_printLeakedMemTable(void) {
+void chpl_printLeakedMemTable(void) {
   size_t* table;
   memTableEntry* me;
   int i;
