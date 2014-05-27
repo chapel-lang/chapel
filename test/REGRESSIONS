@@ -19,7 +19,9 @@
 ===========================================================
 general regressions (seem to happen in most configurations)
 ===========================================================
-
+[Error matching .bad file for studies/shootout/pidigits/bradc/pidigits-pretty2]
+in no-local, qthreads+numa, gasnet-everything result of Brad making the test a
+future because of its memory leaks.  Should be resolved shortly.
 
 ==============================================
 linux64 regressions (in addition to the above)
@@ -917,9 +919,6 @@ email on 5/9/14) that it could be modified to fail even without giving
 ============================================
 CHPL_COMM=ugni, CHPL_TASKS=muxed regressions
 ============================================
-
-Michael's r23405 currently breaks the build with "unknown type name"
-(Greg is looking into) (05/16/14)
 
 Incorrect output (should be fixed by r21213)
   parallel/taskPar/sungeun/barrier/basic

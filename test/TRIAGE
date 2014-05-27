@@ -168,29 +168,6 @@ Fails for gasnet, but passes on a single node:
 [Success matching program output for arrays/deitz/jacobi-no-inline]
   linux64.gnu.none.fifo.pthreads.flat
 
-release/examples/benchmarks/miniMD/ folder and subfolders (bradc/lydia)
-----------------------------------------------------------------------
-9/30/13: For organizational sake, the miniMD timeouts are all in here, although
-some of them are noisier than others
-
-  * marks those that seemed to be fixed on 10/08/13, presumably by Brad's
-    dataParTasksPerLocale change in r22097
-
-  release/examples/benchmarks/miniMD/miniMD (compopts:2) compilation and
-  (execopts: 1, 2):
-    * linux64.intel.none.fifo.pthreads
-    * cray-xc.cray-prgenv-cray.none.fifo.pthreads
-    * cray-xc.cray-prgenv-cray.none.fifo.pthreads--linux64-gnu
-    * cray-xc.cray-prgenv-pgi.none.fifo.pthreads--linux64-gnu
-    * linux64.pgi.none.fifo.pthreads
-
-  release/examples/benchmarks/miniMD/miniMD (compopts: 1) compilation:    
-    * cray-xc.cray-prgenv-cray.none.fifo.pthreads
-    cray-xc.cray-prgenv-cray.none.fifo.pthreads--linux-gnu
-
-  release/examples/benchmarks/miniMD/explicit/miniMD compilation:
-    * all pgi builds
-
 linux64.gnu.gasnet.qthreads.flat (sungeun)
 ------------------------------------------
 Recently, the main test that's been flitting back and forth is:
@@ -298,6 +275,8 @@ undiagnosed cygwin failures
 [Error running sub_test in /tmp/chapel-cron-cygwin.gnu.none.fifo.flat-bradc/chapel/test/release/examples/spec/Arrays (1)] (4/12/14)
 [Error running sub_test in /tmp/chapel-cron-cygwin.gnu.none.fifo.flat-bradc/chapel/test/release/examples/spec/Expressions (1)] (05/21/14)
 [Error running sub_test in /tmp/chapel-cron-cygwin.gnu.none.fifo.flat-bradc/chapel/test/release/examples/spec/Domains (1)] (05/22/14)
+[Error running sub_test in /tmp/chapel-cron-cygwin.gnu.none.fifo.flat-bradc/chapel/test/release/examples/programs (1)] (05/26/14)
+
 
 
 domainReassignNoAlias future passes intermittently with qthreads.none
@@ -452,7 +431,7 @@ examples of what times out:
  distributions/robust/arithmetic/stress/test_many_domains (10/11/13)
  distributions/robust/arithmetic/stress/test_many_array (4/29/13)
  distributions/dm/t2 (2012/08/15)
- test_array_slicing3 (07/24/13, 07/12/13, 06/08/12, 6/16, 3/29/13, 5/3/13, 11/8/13, 12/9/13)
+ test_array_slicing3 (07/24/13, 07/12/13, 06/08/12, 6/16, 3/29/13, 5/3/13, 11/8/13, 12/9/13, 05/26/14)
  release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4) (04/08/13)
  studies/cholesky/jglewis/version2/performance/test_cholesky_performance (10/10/13)
  multilocale/diten/needMultiLocales/coforallon_maxThreads (07/04/13, 10/10/13, 10/22/13, 1/21/14, ..., 4/7/14, ...)
