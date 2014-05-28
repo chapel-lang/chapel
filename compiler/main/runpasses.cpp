@@ -1,9 +1,9 @@
+#include "runpasses.h"
+
 #include "baseAST.h"
-#include "files.h"
 #include "log.h"
 #include "misc.h"
 #include "primitive.h"
-#include "runpasses.h"
 #include "stringutil.h"
 #include "view.h"
 
@@ -91,12 +91,7 @@ static void runPass(const char *passName, void (*pass)(void), void (*check)(), c
   if (strlen(fPrintStatistics))
     printStatistics(passName);
 
-  if (fdump_html) {
-    AstDumpToHtml::view(passName);
-  }
-
-  if (logging(log_tag))
-    AstDump::view(passName, currentPassNo);
+  log_writeLog(passName, currentPassNo, log_tag);
 
   if (performTiming) {
     gettimeofday(&startTimeBetweenPasses, &timezone);
@@ -108,36 +103,6 @@ static void runPass(const char *passName, void (*pass)(void), void (*check)(), c
   //printPrimitiveCounts(passName);
 }
 
-
-static void setupLogfiles() {
-  if (logging() || fdump_html || *deletedIdFilename)
-    ensureDirExists(log_dir, "ensuring directory for log files exists");
-
-  if (log_dir[strlen(log_dir)-1] != '/') 
-    strcat(log_dir, "/");
-
-  if (fdump_html) {
-    AstDumpToHtml::init();
-  }
-
-  if (deletedIdFilename[0] != '\0') {
-    deletedIdHandle = fopen(deletedIdFilename, "w");
-    if (!deletedIdHandle) {
-      USR_FATAL("cannot open file to log deleted AST ids\"%s\" for writing", deletedIdFilename);
-    }
-  }
-}
-
-static void teardownLogfiles() {
-  if (fdump_html) {
-    AstDumpToHtml::done();
-  }
-
-  if (deletedIdON) {
-    fclose(deletedIdHandle);
-    deletedIdHandle = NULL;
-  }
-}
 
 static void advanceCurrentPass(const char* passName) {
   currentPassNo++;

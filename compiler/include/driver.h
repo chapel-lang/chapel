@@ -21,23 +21,7 @@ typedef struct YYLTYPE {
 
 extern const char *chplBinaryName;
 
-extern FILE* html_index_file;
-extern FILE* deletedIdHandle;
-extern char deletedIdFilename[FILENAME_MAX+1];
-#define deletedIdON (deletedIdFilename[0] != '\0')
-
-extern char log_dir[FILENAME_MAX+1];
-extern char log_module[FILENAME_MAX+1];
-extern char log_symbol[FILENAME_MAX+1];
-extern bool fLogIds;
-
 extern int  instantiation_limit;
-
-extern int  fdump_html;
-extern char fdump_html_chpl_home[FILENAME_MAX+1];
-extern bool fdump_html_include_system_modules;
-extern bool fdump_html_wrap_lines;
-extern bool fdump_html_print_block_IDs;
 
 extern int currentPassNo;
 extern const char* currentPassName;

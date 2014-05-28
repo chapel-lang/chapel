@@ -4,8 +4,8 @@
 
 #include "AstDumpToHtml.h"
 
-#include "driver.h"
 #include "expr.h"
+#include "log.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -13,7 +13,8 @@
 #include <cstdio>
 #include <inttypes.h>
 
-int AstDumpToHtml::sPassIndex   = 1;
+int   AstDumpToHtml::sPassIndex = 1;
+FILE* AstDumpToHtml::sIndexFP   = 0;
 
 AstDumpToHtml::AstDumpToHtml() {
   mPassNum = 0;
@@ -27,39 +28,39 @@ AstDumpToHtml::~AstDumpToHtml() {
 }
 
 void AstDumpToHtml::init() {
-  if (!(html_index_file = fopen(astr(log_dir, "index.html"), "w"))) {
+  if (!(sIndexFP = fopen(astr(log_dir, "index.html"), "w"))) {
     USR_FATAL("cannot open html index file \"%s\" for writing", astr(log_dir, "index.html"));
   }
   
-  fprintf(html_index_file, "<HTML>\n");
-  fprintf(html_index_file, "<HEAD>\n");
-  fprintf(html_index_file, "<TITLE> Compilation Dump </TITLE>\n");
-  fprintf(html_index_file, "<SCRIPT SRC=\"http://chapel.cray.com/developer/mktree.js\" LANGUAGE=\"JavaScript\"></SCRIPT>");
-  fprintf(html_index_file, "<LINK REL=\"stylesheet\" HREF=\"http://chapel.cray.com/developer/mktree.css\">");
-  fprintf(html_index_file, "</HEAD>\n");
-  fprintf(html_index_file, "<div style=\"text-align: center;\"><big><big><span style=\"font-weight: bold;\">");
-  fprintf(html_index_file, "Compilation Dump<br><br></span></big></big>\n");
-  fprintf(html_index_file, "<div style=\"text-align: left;\">\n\n");
+  fprintf(sIndexFP, "<HTML>\n");
+  fprintf(sIndexFP, "<HEAD>\n");
+  fprintf(sIndexFP, "<TITLE> Compilation Dump </TITLE>\n");
+  fprintf(sIndexFP, "<SCRIPT SRC=\"http://chapel.cray.com/developer/mktree.js\" LANGUAGE=\"JavaScript\"></SCRIPT>");
+  fprintf(sIndexFP, "<LINK REL=\"stylesheet\" HREF=\"http://chapel.cray.com/developer/mktree.css\">");
+  fprintf(sIndexFP, "</HEAD>\n");
+  fprintf(sIndexFP, "<div style=\"text-align: center;\"><big><big><span style=\"font-weight: bold;\">");
+  fprintf(sIndexFP, "Compilation Dump<br><br></span></big></big>\n");
+  fprintf(sIndexFP, "<div style=\"text-align: left;\">\n\n");
   
-  fprintf(html_index_file, "<TABLE CELLPADDING=\"0\" CELLSPACING=\"0\">");
+  fprintf(sIndexFP, "<TABLE CELLPADDING=\"0\" CELLSPACING=\"0\">");
 }
 
 void AstDumpToHtml::done() {
-  fprintf(html_index_file, "</TABLE>");
-  fprintf(html_index_file, "</HTML>\n");
+  fprintf(sIndexFP, "</TABLE>");
+  fprintf(sIndexFP, "</HTML>\n");
 
-  fclose(html_index_file);
+  fclose(sIndexFP);
 }
 
 void AstDumpToHtml::view(const char* passName) {
   INT_ASSERT(sPassIndex  == currentPassNo);
   INT_ASSERT(passName    == currentPassName);
 
-  fprintf(html_index_file, "<TR><TD>");
-  fprintf(html_index_file,
+  fprintf(sIndexFP, "<TR><TD>");
+  fprintf(sIndexFP,
           "%s%s[%d]", passName,
           fdump_html_include_system_modules ? "<br>" : " ", lastNodeIDUsed());
-  fprintf(html_index_file, "</TD><TD>");
+  fprintf(sIndexFP, "</TD><TD>");
 
   forv_Vec(ModuleSymbol, module, allModules) {
     if (fdump_html_include_system_modules == true      ||
@@ -76,8 +77,8 @@ void AstDumpToHtml::view(const char* passName) {
     }
   }
 
-  fprintf(html_index_file, "</TD></TR>");
-  fflush(html_index_file);
+  fprintf(sIndexFP, "</TD></TR>");
+  fflush(sIndexFP);
 
   sPassIndex++;
 }
@@ -89,7 +90,7 @@ bool AstDumpToHtml::open(ModuleSymbol* module, const char* passName, int passNum
   mPassNum = passNum;
 
   if (mFP != 0) {
-    fprintf(html_index_file, "&nbsp;&nbsp;<a href=\"%s\">%s</a>\n", mName, module->name);
+    fprintf(sIndexFP, "&nbsp;&nbsp;<a href=\"%s\">%s</a>\n", mName, module->name);
 
     fprintf(mFP, "<CHPLTAG=\"%s\">\n", passName);
     fprintf(mFP, "<HTML>\n");

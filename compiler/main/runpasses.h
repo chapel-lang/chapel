@@ -3,10 +3,13 @@
 
 #include "vec.h"
 
-extern bool printPasses;
-extern FILE* printPassesFile; 
+#include <cstdio>
 
-void runPasses(void);
+void runPasses();
 void initLogFlags(Vec<char>&);
+
+
+extern bool  printPasses;
+extern FILE* printPassesFile; 
 
 #endif

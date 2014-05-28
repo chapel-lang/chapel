@@ -2,35 +2,27 @@
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
 #endif
-#include <inttypes.h>
 
-#include "chpl.h"
-#include "arg.h"
-#include "countTokens.h"
 #include "driver.h"
+
+#include "arg.h"
+#include "chpl.h"
+#include "countTokens.h"
 #include "files.h"
+#include "log.h"
 #include "misc.h"
 #include "mysystem.h"
+#include "primitive.h"
 #include "runpasses.h"
 #include "stmt.h"
 #include "stringutil.h"
-#include "version.h"
-#include "log.h"
-#include "primitive.h"
 #include "symbol.h"
+#include "version.h"
 #include "config.h"
 
+#include <inttypes.h>
+
 const char *chplBinaryName = NULL;
-FILE* html_index_file = NULL;
-
-char deletedIdFilename[FILENAME_MAX+1] = "";
-FILE* deletedIdHandle = NULL;
-
-// for logging
-char log_dir[FILENAME_MAX+1] = "./log";
-char log_module[FILENAME_MAX+1] = "";
-char log_symbol[FILENAME_MAX+1] = "";
-bool fLogIds = false;
 
 int currentPassNo = 0;
 const char* currentPassName = "starting up";
@@ -64,11 +56,6 @@ bool widePointersStruct;
 
 static char makeArgument[256] = "";
 
-int fdump_html = 0;
-char fdump_html_chpl_home[FILENAME_MAX+1] = "";
-bool fdump_html_include_system_modules = true;
-bool fdump_html_wrap_lines = true;
-bool fdump_html_print_block_IDs = false;
 static char libraryFilename[FILENAME_MAX] = "";
 static char incFilename[FILENAME_MAX] = "";
 static char moduleSearchPath[FILENAME_MAX] = "";

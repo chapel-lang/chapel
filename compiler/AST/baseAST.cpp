@@ -2,6 +2,7 @@
 
 #include "astutil.h"
 #include "expr.h"
+#include "log.h"
 #include "passes.h"
 #include "stmt.h"
 #include "stringutil.h"

@@ -1,15 +1,89 @@
-#include <cstdarg>
-#include <cstring>
-#include <sys/stat.h>
 #include "log.h"
+
+#include "AstDump.h"
+#include "AstDumpToHtml.h"
+
+#include "files.h"
 #include "misc.h"
 #include "runpasses.h"
 
-static char save_dir[FILENAME_MAX];
-static FILE *log_FILE[128];
+#include <cstdarg>
+#include <cstring>
+#include <sys/stat.h>
+
+char             log_dir   [FILENAME_MAX + 1]           = "./log";
+char             log_module[FILENAME_MAX + 1]           =      "";
+char             log_symbol[FILENAME_MAX + 1]           =      "";
+
+bool             fLogIds                                =   false;
+
+int              fdump_html                             =       0;
+char             fdump_html_chpl_home[FILENAME_MAX + 1] =      "";
+bool             fdump_html_include_system_modules      =    true;
+bool             fdump_html_wrap_lines                  =    true;
+bool             fdump_html_print_block_IDs             =   false;
+
+char             deletedIdFilename[FILENAME_MAX + 1]    =      "";
+FILE*            deletedIdHandle                        =    NULL;
+
+static char      save_dir[FILENAME_MAX];
+static FILE*     log_FILE[128];
 
 static Vec<char> valid_log_flags;
 static Vec<char> log_flags;
+
+
+
+void setupLogfiles() {
+  if (logging() || fdump_html || *deletedIdFilename)
+    ensureDirExists(log_dir, "ensuring directory for log files exists");
+
+  if (log_dir[strlen(log_dir)-1] != '/') 
+    strcat(log_dir, "/");
+
+  if (fdump_html) {
+    AstDumpToHtml::init();
+  }
+
+  if (deletedIdFilename[0] != '\0') {
+    deletedIdHandle = fopen(deletedIdFilename, "w");
+    if (!deletedIdHandle) {
+      USR_FATAL("cannot open file to log deleted AST ids\"%s\" for writing", deletedIdFilename);
+    }
+  }
+}
+
+void teardownLogfiles() {
+  if (fdump_html) {
+    AstDumpToHtml::done();
+  }
+
+  if (deletedIdON) {
+    fclose(deletedIdHandle);
+    deletedIdHandle = NULL;
+  }
+}
+
+void log_writeLog(const char* passName, int passNum, char logTag)
+{
+  if (fdump_html) {
+    AstDumpToHtml::view(passName);
+  }
+
+  if (logging(logTag))
+    AstDump::view(passName, passNum);
+}
+
+
+
+
+
+
+
+
+
+
+
 
 void init_logs() {
   if (log_dir[strlen(log_dir)-1] != '/') 

@@ -4,8 +4,8 @@
 
 #include "AstDump.h"
 
-#include "driver.h"
 #include "expr.h"
+#include "log.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"

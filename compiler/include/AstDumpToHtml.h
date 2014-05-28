@@ -78,6 +78,7 @@ private:
   bool             hasHref(Symbol* sym);
 
   static int       sPassIndex;
+  static  FILE*    sIndexFP;
 
   int              mPassNum;        // The pass that generated this AST
 
