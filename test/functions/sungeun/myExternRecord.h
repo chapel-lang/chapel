@@ -1,5 +1,5 @@
 struct _myExternRecord {
-  int x;
+  int64_t x;
 };
 
 typedef struct _myExternRecord myExternRecord;
