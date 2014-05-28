@@ -6,6 +6,7 @@
 
 #include "expr.h"
 #include "log.h"
+#include "runpasses.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"

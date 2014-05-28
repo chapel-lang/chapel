@@ -1,90 +1,194 @@
 #include "runpasses.h"
 
-#include "baseAST.h"
-#include "log.h"
-#include "misc.h"
-#include "primitive.h"
-#include "stringutil.h"
-#include "view.h"
-
-#include "AstDump.h"
-#include "AstDumpToHtml.h"
+#include "checks.h"      // For check function prototypes.
+#include "log.h"         // For LOG_<passname> #defines.
+#include "passes.h"      // For pass function prototypes.
 
 #include <cstdio>
-#include <cstring>
-#include <cstdlib>
 #include <sys/time.h>
 
-bool  printPasses     = false;
-FILE* printPassesFile = NULL;
+
+bool        printPasses     = false;
+FILE*       printPassesFile = NULL;
+
+int         currentPassNo   = 0;
+const char* currentPassName = 0;
 
 struct PassInfo {
-  void (*pass_fn)(void); // The function which implements the pass.
-  void (*check_fn)(void); // per-pass check function
-  const char *name;
-  char log_tag;
+  void (*pass_fn) ();      // The function which implements the pass.
+  void (*check_fn)();      // per-pass check function
+  const char* name;
+  char        log_tag;
 };
 
-#include "passlist.h"
 
-// wrapper for printing timing info to stderr and/or a file
-static void printPassTiming(char const *fmt, ...) {
-  va_list ap;
-  
-  if(printPasses) {
-    va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
-    va_end(ap);
+#define RUN(x) {    x, check_ ## x,   #x, LOG_ ## x }
+
+//
+// passlist: contains passes in the order that they are called
+//
+static PassInfo sPassList[] = {
+  // Chapel to AST
+  RUN(parse),                            // parse files and create AST
+  RUN(checkParsed),                      // checks semantics of parsed AST
+
+  // Read in runtime and included C header file types/prototypes
+  RUN(readExternC),
+
+  // create wrapper functions to allow arrays to be passed to extern routines
+  RUN(expandExternArrayCalls),
+
+  // Scope resolution and normalization
+  RUN(cleanup),                          // post parsing transformations
+  RUN(scopeResolve),                     // resolve symbols by scope
+  RUN(flattenClasses),                   // denest nested classes
+  RUN(docs),                             // generates documentation instead of executable
+                                         // if chpldoc is used instead of chpl, otherwise
+                                         // generates both documentation and an executable
+
+  RUN(normalize),                        // normalization transformations
+  RUN(checkNormalized),                  // check semantics of normalized AST
+
+  RUN(buildDefaultFunctions),            // build default functions
+  RUN(createTaskFunctions),              // convert 'begin' et al. to functions
+
+  // Function resolution and shallow type inference
+  RUN(resolve),                          // resolves function calls and types
+  RUN(resolveIntents),                   // resolve argument intents
+  RUN(checkResolved),                    // checks semantics of resolved AST
+
+  // Post-resolution cleanup
+  RUN(processIteratorYields),            // adjustments to iterators
+  RUN(flattenFunctions),                 // denest nested functions
+  RUN(cullOverReferences),               // remove excess references
+  RUN(callDestructors),
+  RUN(lowerIterators),                   // lowers iterators into functions/classes
+  RUN(parallel),                         // parallel transforms
+  RUN(prune),                            // prune AST of dead functions and types
+
+  // Optimizations
+  RUN(complex2record),                   // change complex numbers into records
+  RUN(bulkCopyRecords),                  // replace simple assignments with PRIM_ASSIGN.
+  RUN(removeUnnecessaryAutoCopyCalls),
+  RUN(inlineFunctions),                  // function inlining
+  RUN(scalarReplace),                    // scalar replace all tuples
+  RUN(refPropagation),                   // reference propagation
+  RUN(copyPropagation),                  // copy propagation
+  RUN(deadCodeElimination),              // eliminate dead code
+  RUN(removeWrapRecords),                // remove _array, _domain, and _distribution records
+  RUN(removeEmptyRecords),               // remove empty records
+  RUN(localizeGlobals),                  // pull out global constants from loop runs
+  RUN(prune2),                           // prune AST of dead functions and types again
+
+  RUN(returnStarTuplesByRefArgs),
+
+  RUN(insertWideReferences),             // inserts wide references for on clauses
+  RUN(optimizeOnClauses),                // Optimize on clauses
+  RUN(addInitCalls),                     // Add module initialization calls and guards.  
+  RUN(loopInvariantCodeMotion),          // move loop invarient code above loop runs
+
+  // AST to C or LLVM
+  RUN(insertLineNumbers),                // insert line numbers for error messages
+  RUN(codegen),                          // generate C code
+  RUN(makeBinary)                        // invoke underlying C compiler
+};
+
+static void advanceCurrentPass(const char* passName);
+static void runPass(const char* passName, void (*pass)(), void (*check)(), char log_tag);
+static void printPassTiming(char const* fmt, ...);
+
+void runPasses() {
+  bool   chpldoc      = (strcmp(chplBinaryName, "chpldoc") == 0) ? true : false;
+  size_t passListSize = sizeof(sPassList) / sizeof(sPassList[0]);
+
+  setupLogfiles();
+
+  if (chpldoc) 
+    fDocs = true;
+
+  for (size_t i = 0; i < passListSize; i++) {
+    PassInfo* pass = &sPassList[i];
+
+    advanceCurrentPass(pass->name);
+
+    runPass(pass->name, pass->pass_fn, pass->check_fn, pass->log_tag);
+
+    USR_STOP(); // quit if fatal errors were encountered in pass
+
+    // Break early if this is a chpl doc run
+    if (chpldoc == true && strcmp(pass->name, "docs") == 0) {
+      break;
+    }
   }
-  if (printPassesFile != NULL) {
-    va_start(ap, fmt);
-    vfprintf(printPassesFile, fmt, ap);
-    va_end(ap);
-  }
+
+  advanceCurrentPass("finishing up");
+
+  destroyAst();
+  teardownLogfiles();
 }
 
-static void runPass(const char *passName, void (*pass)(void), void (*check)(), char log_tag) {
+static void advanceCurrentPass(const char* passName) {
+  currentPassNo++;
+  currentPassName = passName;
+}
+
+static void runPass(const char* passName, void (*pass)(), void (*check)(), char log_tag) {
   static struct timeval startTimeBetweenPasses;
   static struct timeval stopTimeBetweenPasses;
-  static double timeBetweenPasses = -1.0;
-  static double totalTime = 0.0;
-  struct timeval startTime;
-  struct timeval stopTime;
-  struct timezone timezone;
-  static bool performTiming = printPasses || (printPassesFile != NULL);
+  static double         timeBetweenPasses = -1.0;
+  static double         totalTime         =  0.0;
+  static bool           performTiming     = printPasses || (printPassesFile != NULL);
+
+  struct timeval        startTime;
+  struct timeval        stopTime;
+  struct timezone       timezone;
 
   if (performTiming) {
     gettimeofday(&stopTimeBetweenPasses, &timezone);
+
     if (timeBetweenPasses < 0.0)
       timeBetweenPasses = 0.0;
     else
       timeBetweenPasses += 
-        ((double)((stopTimeBetweenPasses.tv_sec*1e6+
+        ((double)((stopTimeBetweenPasses.tv_sec * 1e6 +
                    stopTimeBetweenPasses.tv_usec) - 
-                  (startTimeBetweenPasses.tv_sec*1e6+
+                  (startTimeBetweenPasses.tv_sec * 1e6 +
                    startTimeBetweenPasses.tv_usec))) / 1e6;
   }
+
   if (strlen(fPrintStatistics) && strcmp(passName, "parse"))
     printStatistics("clean");
+
   if (performTiming) {
     printPassTiming("%32s :", passName);
     gettimeofday(&startTime, &timezone);
   }
+
   (*pass)();
+
   if (performTiming) {
     gettimeofday(&stopTime, &timezone);
+
     printPassTiming("%8.3f seconds",
             ((double)((stopTime.tv_sec*1e6+stopTime.tv_usec) - 
                       (startTime.tv_sec*1e6+startTime.tv_usec))) / 1e6);
-    if (developer && printPasses) fprintf(stderr, "  [%d]", lastNodeIDUsed());
+
+    if (developer && printPasses)
+      fprintf(stderr, "  [%d]", lastNodeIDUsed());
+
     printPassTiming("\n");
+
     totalTime += ((double)((stopTime.tv_sec*1e6+stopTime.tv_usec) - 
                            (startTime.tv_sec*1e6+startTime.tv_usec))) / 1e6;
-    if (!strcmp(passName, "makeBinary")) {
-      printPassTiming("%32s :%8.3f seconds\n", "time between passes",
-              timeBetweenPasses);
-      printPassTiming("%32s :%8.3f seconds\n", "total time",
-              totalTime+timeBetweenPasses);
+
+    if (strcmp(passName, "makeBinary") == 0) {
+      printPassTiming("%32s :%8.3f seconds\n", 
+                      "time between passes",
+                      timeBetweenPasses);
+
+      printPassTiming("%32s :%8.3f seconds\n",
+                      "total time",
+                      totalTime + timeBetweenPasses);
     }
   }
 
@@ -100,48 +204,43 @@ static void runPass(const char *passName, void (*pass)(void), void (*check)(), c
   considerExitingEndOfPass();
   cleanAst();
   (*check)(); // Run per-pass check function.
-  //printPrimitiveCounts(passName);
 }
 
-
-static void advanceCurrentPass(const char* passName) {
-  currentPassNo++;
-  currentPassName = passName;
-}
-
-void runPasses(void) {
-  setupLogfiles();
-  PassInfo* pass = passlist+1;  // skip over FIRST
-  bool chpldoc = strcmp(chplBinaryName, "chpldoc") == 0;
-  if (chpldoc) 
-    fDocs = true;
-  while (pass->name != NULL) {
-    advanceCurrentPass(pass->name);
-    runPass(pass->name, pass->pass_fn, pass->check_fn, pass->log_tag);
-    USR_STOP(); // quit if fatal errors were encountered in pass
-    if (chpldoc && (strcmp(pass->name, "docs") == 0)) {
-      break;
-    }
-    pass++;
+// wrapper for printing timing info to stderr and/or a file
+static void printPassTiming(char const* fmt, ...) {
+  va_list ap;
+  
+  if (printPasses) {
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
+    va_end(ap);
   }
-  advanceCurrentPass("finishing up");
-  destroyAst();
-  teardownLogfiles();
+
+  if (printPassesFile != NULL) {
+    va_start(ap, fmt);
+    vfprintf(printPassesFile, fmt, ap);
+    va_end(ap);
+  }
 }
 
-// Suck the pass flags out of the pass list, so that args to the logging command
-// can be checked for validity.
-// The pass letters are used by the driver to arrange for dumping AST logs
-// of selected passes.
+
+
+//
+// The logging machinery wants to know a "name" for every pass that it can match
+// to command line arguments but does not, currently, want to know about the pass
+// list itself.  This function provides a vector of the pass list names
+//
 // This routine also verifies that each non-NUL flag is unique.
 void initLogFlags(Vec<char>& valid_log_flags) {
-  PassInfo* pass = passlist+1;  // skip over FIRST
-  while (pass->name != NULL) {
-    char tag = pass->log_tag;
+  size_t passListSize = sizeof(sPassList) / sizeof(sPassList[0]);
+
+  for (size_t i = 0; i < passListSize; i++) {
+    PassInfo* pass = &sPassList[i];
+    char      tag  = pass->log_tag;
+
     if (tag != NUL) {
       INT_ASSERT(!valid_log_flags.set_in(tag));
       valid_log_flags.set_add(tag);
     }
-    pass++;
   }
 }

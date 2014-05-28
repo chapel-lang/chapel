@@ -23,12 +23,9 @@ extern const char *chplBinaryName;
 
 extern int  instantiation_limit;
 
-extern int currentPassNo;
-extern const char* currentPassName;
-
 // optimization control flags
 extern bool fFastFlag;
-extern int fConditionalDynamicDispatchLimit;
+extern int  fConditionalDynamicDispatchLimit;
 extern bool fNoBoundsChecks;
 extern bool fNoCopyPropagation;
 extern bool fNoDeadCodeElimination;
@@ -50,9 +47,9 @@ extern bool fNoOptimizeLoopIterators;
 extern bool fNoPrivatization;
 extern bool fNoOptimizeOnClauses;
 extern bool fNoRemoveEmptyRecords;
-extern int optimize_on_clause_limit;
-extern int scalar_replace_limit;
-extern int tuple_copy_limit;
+extern int  optimize_on_clause_limit;
+extern int  scalar_replace_limit;
+extern int  tuple_copy_limit;
 
 extern bool report_inlining;
 extern char CHPL_HOME[FILENAME_MAX+1];

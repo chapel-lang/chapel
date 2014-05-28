@@ -9,7 +9,11 @@ void runPasses();
 void initLogFlags(Vec<char>&);
 
 
-extern bool  printPasses;
-extern FILE* printPassesFile; 
+extern bool        printPasses;
+extern FILE*       printPassesFile; 
+
+extern int         currentPassNo;
+extern const char* currentPassName;
+
 
 #endif

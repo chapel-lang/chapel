@@ -22,10 +22,7 @@
 
 #include <inttypes.h>
 
-const char *chplBinaryName = NULL;
-
-int currentPassNo = 0;
-const char* currentPassName = "starting up";
+const char* chplBinaryName = NULL;
 
 char CHPL_HOME[FILENAME_MAX+1] = "";
 

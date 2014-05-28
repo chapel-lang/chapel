@@ -4,11 +4,13 @@
 #include "expr.h"
 #include "log.h"
 #include "passes.h"
+#include "runpasses.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
 #include "yy.h"
+
 
 static void cleanModuleList();
 
