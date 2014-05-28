@@ -10,4 +10,4 @@ export GASNET_ROUTE_OUTPUT=0
 export CHPL_GASNET_CFG_OPTIONS=--disable-ibv
 
 # qthreads + flat + gasnet + multilocale suite
-~/chapel/util/cron/nightly.qthreads -multilocale
+~/chapel/util/cron/nightly.qthreads -full
