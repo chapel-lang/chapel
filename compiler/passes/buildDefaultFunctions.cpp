@@ -143,9 +143,9 @@ static FnSymbol* function_exists(const char* name,
    default:
     INT_FATAL("function_exists checks at most 3 argument types.  Add more if needed.");
     break;
-   case 3:	if (!formalType3)	INT_FATAL("Missing argument formalType3");	break;
-   case 2:	if (!formalType2)	INT_FATAL("Missing argument formalType2");	break;
-   case 1:	if (!formalType1)	INT_FATAL("Missing argument formalType1");	break;
+   case 3:  if (!formalType3)   INT_FATAL("Missing argument formalType3");  break;
+   case 2:  if (!formalType2)   INT_FATAL("Missing argument formalType2");  break;
+   case 1:  if (!formalType1)   INT_FATAL("Missing argument formalType1");  break;
    case 0:  break;
   }
 
