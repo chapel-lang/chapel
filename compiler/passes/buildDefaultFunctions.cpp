@@ -116,12 +116,14 @@ static void buildFieldAccessorFunctions(AggregateType* at)
 
 // function_exists returns true iff
 //  function's name matches name
-//  function's number of formals matches numFormals if not -1
+//  function's number of formals matches numFormals
 //  function's first formal's type matches formalType1 if not NULL
 //  function's second formal's type matches formalType2 if not NULL
 //  function's third formal's type matches formalType3 if not NULL
 
 static bool type_match(Type* type, Symbol* sym) {
+  if (type == dtAny)
+    return true;
   if (sym->type == type)
     return true;
   SymExpr* se = toSymExpr(sym->defPoint->exprType);
@@ -131,16 +133,29 @@ static bool type_match(Type* type, Symbol* sym) {
 }
 
 static FnSymbol* function_exists(const char* name,
-                                 int numFormals = -1,
+                                 int numFormals,
                                  Type* formalType1 = NULL,
                                  Type* formalType2 = NULL,
-                                 Type* formalType3 = NULL) {
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
+                                 Type* formalType3 = NULL)
+{
+  switch(numFormals)
+  {
+   default:
+    INT_FATAL("function_exists checks at most 3 argument types.  Add more if needed.");
+    break;
+   case 3:	if (!formalType3)	INT_FATAL("Missing argument formalType3");	break;
+   case 2:	if (!formalType2)	INT_FATAL("Missing argument formalType2");	break;
+   case 1:	if (!formalType1)	INT_FATAL("Missing argument formalType1");	break;
+   case 0:  break;
+  }
+
+  forv_Vec(FnSymbol, fn, gFnSymbols) 
+  {
     if (strcmp(name, fn->name))
       continue;
 
-    if (numFormals != -1)
-      if (numFormals != fn->numFormals())
+    // numFormals must match exactly.
+    if (numFormals != fn->numFormals())
         continue;
 
     if (formalType1)
@@ -157,6 +172,8 @@ static FnSymbol* function_exists(const char* name,
 
     return fn;
   }
+
+  // No matching function found.
   return NULL;
 }
 
@@ -444,7 +461,7 @@ static void build_chpl_entry_points(void) {
 }
 
 static void build_record_equality_function(AggregateType* ct) {
-  if (function_exists("==", 2, ct))
+  if (function_exists("==", 2, ct, ct))
     return;
 
   FnSymbol* fn = new FnSymbol("==");
@@ -473,7 +490,7 @@ static void build_record_equality_function(AggregateType* ct) {
 
 
 static void build_record_inequality_function(AggregateType* ct) {
-  if (function_exists("!=", 2, ct))
+  if (function_exists("!=", 2, ct, ct))
     return;
 
   FnSymbol* fn = new FnSymbol("!=");
@@ -607,7 +624,7 @@ static void build_enum_cast_function(EnumType* et) {
 
 
 static void build_enum_assignment_function(EnumType* et) {
-  if (function_exists("=", 2, et))
+  if (function_exists("=", 2, et, et))
     return;
 
   FnSymbol* fn = new FnSymbol("=");
@@ -627,7 +644,7 @@ static void build_enum_assignment_function(EnumType* et) {
 
 
 static void build_record_assignment_function(AggregateType* ct) {
-  if (function_exists("=", 2, ct))
+  if (function_exists("=", 2, ct, ct))
     return;
 
   FnSymbol* fn = new FnSymbol("=");
@@ -675,7 +692,7 @@ static void build_record_assignment_function(AggregateType* ct) {
 
 static void build_extern_assignment_function(Type* type)
 {
-  if (function_exists("=", 2, type))
+  if (function_exists("=", 2, type, type))
     return;
 
   FnSymbol* fn = new FnSymbol("=");
@@ -727,7 +744,7 @@ static void build_record_cast_function(AggregateType* ct) {
 }
 
 static void build_union_assignment_function(AggregateType* ct) {
-  if (function_exists("=", 2, ct))
+  if (function_exists("=", 2, ct, ct))
     return;
 
   FnSymbol* fn = new FnSymbol("=");
@@ -838,7 +855,7 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   }
 
   // If we have a readWriteThis, we'll call it from readThis/writeThis.
-  if (function_exists("readWriteThis", 3, dtMethodToken, ct, NULL)) {
+  if (function_exists("readWriteThis", 3, dtMethodToken, ct, dtAny)) {
     hasReadWriteThis = true;
   }
   // We'll make a writeThis and a readThis if neither exist.
