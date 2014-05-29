@@ -31,5 +31,4 @@ The provided Makefile can be used to compile the programs, or they can
 be run in correctness or performance modes using the Chapel testing
 system (see $CHPL_HOME/util/sub_test).
 
-Note that chameneosredux.chpl has non-deterministic output when run with
---verbose=true
+Note that chameneosredux.chpl has non-deterministic output
