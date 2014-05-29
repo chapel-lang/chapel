@@ -18,6 +18,10 @@ ifeq ($(DEBUG),1)
 RUNTIME_DEFS += -DCHPL_DEBUG
 endif
 
+ifneq ($(CHPL_COMM_DEBUG),)
+RUNTIME_DEFS += -DCHPL_COMM_DEBUG
+endif
+
 ifeq ($(OPTIMIZE),1)
 RUNTIME_DEFS += -DCHPL_OPTIMIZE
 endif

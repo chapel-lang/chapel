@@ -675,8 +675,9 @@ void chpl_comm_barrier(const char *msg) {
   int id = (int) msg[0];
   int retval;
 
-  if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-    printf("%d: barrier for '%s'\n", chpl_nodeID, msg);
+#ifdef CHPL_COMM_DEBUG
+  chpl_msg(2, "%d: enter barrier for '%s'\n", chpl_nodeID, msg);
+#endif
 
   //
   // We don't want to just do a gasnet_barrier_wait() here, because
