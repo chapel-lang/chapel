@@ -88,7 +88,7 @@ Recommended Settings
 Optional Settings
 -----------------
 
-1) If you are cross-compiling for a platform other than your
+*  If you are cross-compiling for a platform other than your
    $CHPL_HOST_PLATFORM, set the CHPL_TARGET_PLATFORM environment
    variable to describe that platform.  See CHPL_HOST_PLATFORM above
    for legal values (though whether or not a given setting will
@@ -98,7 +98,7 @@ Optional Settings
    the same value as $CHPL_HOST_PLATFORM.
 
 
-2) Optionally, you can set CHPL_HOST_COMPILER and/or
+*  Optionally, you can set CHPL_HOST_COMPILER and/or
    CHPL_TARGET_COMPILER to indicate the compiler suite to use in
    building the sources.  CHPL_HOST_COMPILER is the compiler used to
    build the Chapel compiler itself so that it will run on
@@ -134,7 +134,7 @@ Optional Settings
    CHPL_TARGET_COMPILER will default to the same value as CHPL_HOST_COMPILER.
 
 
-3) Optionally, set the CHPL_MAKE environment variable to indicate the
+*  Optionally, set the CHPL_MAKE environment variable to indicate the
    GNU-compatible make utility that you want the compiler back-end to
    invoke when compiling the generated C code.  If not set, this will
    default to a value based on $CHPL_HOST_PLATFORM:
@@ -146,7 +146,7 @@ Optional Settings
         other             ->  gmake
 
 
-4) Optionally, set the CHPL_LOCALE_MODEL environment variable to
+*  Optionally, set the CHPL_LOCALE_MODEL environment variable to
    indicate the locale model you want to use.  Current options are:
 
         flat : top-level locales are not further subdivided
@@ -159,7 +159,7 @@ Optional Settings
    about locale models.
 
 
-5) Optionally, set the CHPL_TASKS environment variable to indicate what
+*  Optionally, set the CHPL_TASKS environment variable to indicate what
    tasking layer you want to use to implement intra-locale parallelism
    (see README.tasks for more information on this option).  Current
    options are:
@@ -176,7 +176,7 @@ Optional Settings
    various CHPL_TASKS options.
 
 
-6) Optionally, set the CHPL_COMM environment variable to indicate what
+*  Optionally, set the CHPL_COMM environment variable to indicate what
    communication layer you want to use to implement inter-locale
    communication.  Current options are:
 
@@ -189,7 +189,7 @@ Optional Settings
    on executing Chapel programs using multiple locales.
 
 
-7) Optionally, the CHPL_MEM environment variable can be used to select
+*  Optionally, the CHPL_MEM environment variable can be used to select
    a memory management layer.  Current options are:
 
         default  : use the standard C malloc/free commands
@@ -201,13 +201,13 @@ Optional Settings
    README.multilocale for more information on GASNet segments.
 
 
-8) Optionally, the CHPL_LAUNCHER environment variable can be used to
+*  Optionally, the CHPL_LAUNCHER environment variable can be used to
    select a launcher to get your program up and running.  See
    README.launcher for more information on this variable's default and
    possible settings.
 
 
-9) Optionally, the CHPL_ATOMICS environment variable can be used to
+*  Optionally, the CHPL_ATOMICS environment variable can be used to
    select an implementation for atomic operations in the runtime.
    Current options are:
 
@@ -235,106 +235,106 @@ Optional Settings
    information about the runtime implementation.
 
 
-10) Optionally, the CHPL_TIMERS environment variable can be used to
-    select an implementation for Chapel's timers.  Current options are:
+*  Optionally, the CHPL_TIMERS environment variable can be used to
+   select an implementation for Chapel's timers.  Current options are:
 
-        generic : use a gettimeofday()-based implementation
+       generic : use a gettimeofday()-based implementation
 
-    If unset, CHPL_TIMERS defaults to "generic"
-
-
-11) Optionally, the CHPL_GMP environment variable can select between
-    no GMP support, using the GMP distributed with Chapel in third-party,
-    or using a system GMP. Current options are:
-
-        system : assume GMP is already installed (#include gmp.h, -lgmp)
-        none   : do not build GMP support into the Chapel runtime
-        gmp    : use the GMP distribution bundled with Chapel in third-party
-
-    If unset, CHPL_GMP defaults to "system" if you are on a Cray system,
-    "gmp" if you've already built the third-party installation of GMP for
-    your installation, and "none" otherwise.  Note that the bundled GMP
-    distribution may not build on all platforms supported by Chapel.
+   If unset, CHPL_TIMERS defaults to "generic"
 
 
-12) Optionally, the CHPL_HWLOC environment variable can select between
-    no hwloc support or using the hwloc package distributed with Chapel
-    in third-party.  Current options are:
+*  Optionally, the CHPL_GMP environment variable can select between
+   no GMP support, using the GMP distributed with Chapel in third-party,
+   or using a system GMP. Current options are:
 
-        none   : do not build hwloc support into the Chapel runtime
-        hwloc  : use the hwloc distribution bundled with Chapel in
-                 third-party
+       system : assume GMP is already installed (#include gmp.h, -lgmp)
+       none   : do not build GMP support into the Chapel runtime
+       gmp    : use the GMP distribution bundled with Chapel in third-party
 
-    If unset, CHPL_HWLOC defaults to "hwloc" if you've already built the
-    third-party installation of hwloc for your installation, and "none"
-    otherwise.  Note that the bundled hwloc distribution may not build
-    on all platforms supported by Chapel.
-
-
-13) Optionally, the CHPL_REGEXP environment variable can be used to
-    enable regular expression operations as documented in
-    doc/technotes/README.regexp and defined in modules/standard/Regexp.chpl.  
-    Current options are:
-
-        re2  : use the re2 distribution in third-party
-        none : do not support regular expression operations
-
-    If unset, CHPL_REGEXP defaults to "re2" if you've already installed 
-    regular expression support in third-party and "none" otherwise.
-    Note that the bundled re2 distribution may not build on all
-    platforms supported by Chapel.
+   If unset, CHPL_GMP defaults to "system" if you are on a Cray system,
+   "gmp" if you've already built the third-party installation of GMP for
+   your installation, and "none" otherwise.  Note that the bundled GMP
+   distribution may not build on all platforms supported by Chapel.
 
 
-14) Optionally, the CHPL_AUX_FILESYS environment variable can be used to
-    request that runtime support for filesystems beyond the usual Linux
-    one be present.  Current options are:
+*  Optionally, the CHPL_HWLOC environment variable can select between
+   no hwloc support or using the hwloc package distributed with Chapel
+   in third-party.  Current options are:
 
-        none : only support traditional Linux filesystems
-        hdfs : also support HDFS filesystems
+       none   : do not build hwloc support into the Chapel runtime
+       hwloc  : use the hwloc distribution bundled with Chapel in
+                third-party
 
-    If unset, CHPL_AUX_FILESYS defaults to "none".
-
-    See $CHPL_HOME/doc/technotes/README.hdfs for more information about
-    HDFS support.
-
-
-15) Optionally, the CHPL_LLVM environment variable can be used to
-    enable support for the LLVM back-end to the Chapel compiler
-    (see doc/technotes/README.llvm) or to support extern blocks in
-    Chapel code via the Clang compiler (see doc/technotes/README.extern).
-    Current options are:
-
-        llvm : use the llvm/clang distribution in third-party
-        none : do not support llvm-/clang-related features
-
-    If unset, CHPL_LLVM defaults to "llvm" if you've already installed
-    llvm in third-party and "none" otherwise.
+   If unset, CHPL_HWLOC defaults to "hwloc" if you've already built the
+   third-party installation of hwloc for your installation, and "none"
+   otherwise.  Note that the bundled hwloc distribution may not build
+   on all platforms supported by Chapel.
 
 
-16) Optionally, the CHPL_WIDE_POINTERS environment variable can be used to
-    specify the wide pointer format for multilocale programs.  Current
-    options are:
+*  Optionally, the CHPL_REGEXP environment variable can be used to
+   enable regular expression operations as documented in
+   doc/technotes/README.regexp and defined in modules/standard/Regexp.chpl.  
+   Current options are:
 
-        struct : store wide pointers in structures which may span more
-                 than one word
-        nodeN :  ("N" a number, 2 <= N <= 60) store wide pointers in
-                 single words, with N bits used to store the node (top
-                 level locale) number and the rest containing the address
-                 on that node
+       re2  : use the re2 distribution in third-party
+       none : do not support regular expression operations
 
-    CHPL_WIDE_POINTERS is used to select between two modes of operation.
-    One is universally applicable; the other has restricted applicability
-    but may reduce remote communication.
+   If unset, CHPL_REGEXP defaults to "re2" if you've already installed 
+   regular expression support in third-party and "none" otherwise.
+   Note that the bundled re2 distribution may not build on all
+   platforms supported by Chapel.
 
-    If unset, CHPL_WIDE_POINTERS defaults to "struct".  This setting
-    works in all situations and in particular, it is compatible with all
-    locale models including the hierarchical ones.  The "nodeN" option
-    does not work with hierarchical locale models and is only useful with
-    the LLVM backend, which is currently experimental.  However, when
-    used, it allows LLVM to understand and optimize remote transfers,
-    potentially reducing the amount of communication a program performs.
-    See doc/technotes/README.llvm for more information about
-    CHPL_WIDE_POINTERS=nodeN.
+
+*  Optionally, the CHPL_AUX_FILESYS environment variable can be used to
+   request that runtime support for filesystems beyond the usual Linux
+   one be present.  Current options are:
+
+       none : only support traditional Linux filesystems
+       hdfs : also support HDFS filesystems
+
+   If unset, CHPL_AUX_FILESYS defaults to "none".
+
+   See $CHPL_HOME/doc/technotes/README.hdfs for more information about
+   HDFS support.
+
+
+*  Optionally, the CHPL_LLVM environment variable can be used to
+   enable support for the LLVM back-end to the Chapel compiler
+   (see doc/technotes/README.llvm) or to support extern blocks in
+   Chapel code via the Clang compiler (see doc/technotes/README.extern).
+   Current options are:
+
+       llvm : use the llvm/clang distribution in third-party
+       none : do not support llvm-/clang-related features
+
+   If unset, CHPL_LLVM defaults to "llvm" if you've already installed
+   llvm in third-party and "none" otherwise.
+
+
+*  Optionally, the CHPL_WIDE_POINTERS environment variable can be used to
+   specify the wide pointer format for multilocale programs.  Current
+   options are:
+
+       struct : store wide pointers in structures which may span more
+                than one word
+       nodeN :  ("N" a number, 2 <= N <= 60) store wide pointers in
+                single words, with N bits used to store the node (top
+                level locale) number and the rest containing the address
+                on that node
+
+   CHPL_WIDE_POINTERS is used to select between two modes of operation.
+   One is universally applicable; the other has restricted applicability
+   but may reduce remote communication.
+
+   If unset, CHPL_WIDE_POINTERS defaults to "struct".  This setting
+   works in all situations and in particular, it is compatible with all
+   locale models including the hierarchical ones.  The "nodeN" option
+   does not work with hierarchical locale models and is only useful with
+   the LLVM backend, which is currently experimental.  However, when
+   used, it allows LLVM to understand and optimize remote transfers,
+   potentially reducing the amount of communication a program performs.
+   See doc/technotes/README.llvm for more information about
+   CHPL_WIDE_POINTERS=nodeN.
 
 -------------------------------------
 Compiler Command Line Option Defaults
