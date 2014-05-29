@@ -76,15 +76,6 @@ $(eval $(CHPL_MAKE_SETTINGS))
 CHPL_MAKE_COMM_SEGMENT = $(CHPL_MAKE_GASNET_SEGMENT)
 CHPL_MAKE_AUXFS = $(CHPL_MAKE_AUX_FILESYS)
 
-# Handle GASNET debug.
-ifeq ($(CHPL_COMM), gasnet)
-ifeq ($(CHPL_COMM_DEBUG),)
-export CHPL_MAKE_COMM_EXTRAS=-nodbg
-else
-export CHPL_MAKE_COMM_EXTRAS=-debug
-endif
-endif
-
 # Set compiler and platform variables that depend
 # on CHPL_MAKE_HOST_TARGET to the HOST or TARGET versions.
 ifeq ($(strip $(CHPL_MAKE_HOST_TARGET)),--target)
