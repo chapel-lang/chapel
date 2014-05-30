@@ -49,7 +49,7 @@ module ChapelBase {
 
   config param CHPL_GASNET_SEGMENT: string = "unset";
   if (CHPL_GASNET_SEGMENT == "unset") {
-    compilerWarning("CHPL_SEGMENT not set");
+    compilerWarning("CHPL_GASNET_SEGMENT not set");
   }
 
   config param CHPL_TASKS: string = "unset";
