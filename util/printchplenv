@@ -64,22 +64,33 @@ sub go {
 
   $hostplatform = run("platform", "--host", "1");
   $hostcompiler = run("compiler", "--host");
+  # $hostarchitecture = run("arch.py", "--host");
 
   if( $mode eq "runtime" ) {
     # Don't print host platform/compiler for runtime
   } else {
     printit("CHPL_HOST_PLATFORM", "", $hostplatform);
     printit("CHPL_HOST_COMPILER", "", $hostcompiler);
+    # printit("CHPL_HOST_ARCH", "arch", $hostarchitecture);
   }
 
   $targplatform = run("platform", "--target");
   $targcompiler = run("compiler", "--target");
+  if( $mode eq "make" ) {
+    $targetarchitecture = run("arch.py", "--target", "--compflag");
+  } else {
+    $targetarchitecture = run("arch.py", "--target");
+  }
 
   if( $mode eq "compiler" or $mode eq "launcher" ) {
     # Don't print target platform/compiler for compiler/launcher
   } else {
     printit("CHPL_TARGET_PLATFORM", "", $targplatform);
     printit("CHPL_TARGET_COMPILER", "", $targcompiler);
+  }
+
+  if ( $mode ne "runtime" and $mode ne "compiler" and $mode ne "launcher" ) {
+    printit("CHPL_TARGET_ARCH", "arch", $targetarchitecture);
   }
 
   if ( $mode eq "compiler" ) {

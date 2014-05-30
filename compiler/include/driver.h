@@ -58,6 +58,7 @@ extern const char* CHPL_HOST_PLATFORM;
 extern const char* CHPL_HOST_COMPILER;
 extern const char* CHPL_TARGET_PLATFORM;
 extern const char* CHPL_TARGET_COMPILER;
+extern const char* CHPL_TARGET_ARCH;
 extern const char* CHPL_LOCALE_MODEL;
 extern const char* CHPL_COMM;
 extern const char* CHPL_COMM_SUBSTRATE;
@@ -146,7 +147,7 @@ extern bool fReportScalarReplace;
 extern bool fReportDeadBlocks;
 extern bool fReportDeadModules;
 
-extern bool debugCCode, optimizeCCode;
+extern bool debugCCode, optimizeCCode, specializeCCode;
 
 extern bool fEnableTimers;
 extern Timer timer1;

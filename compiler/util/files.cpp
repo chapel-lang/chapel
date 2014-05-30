@@ -499,6 +499,9 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
   if (optimizeCCode) {
     fprintf(makefile.fptr, " $(OPT_CFLAGS)");
   }
+  if (specializeCCode) {
+    fprintf(makefile.fptr, " $(SPECIALIZE_CFLAGS)");
+  }
   if (fieeefloat) {
     fprintf(makefile.fptr, " $(IEEE_FLOAT_GEN_CFLAGS)");
   } else {

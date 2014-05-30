@@ -103,8 +103,8 @@ OPTIONS
   --[no-]dead-code-elimination   Enable [disable] dead code elimination.
 
   --fast            Turns off all runtime checks using --no-checks, turns
-                    on --no-ieee-float and -O, and enables all compiler
-                    optimizations in the rest of this section.
+                    on --no-ieee-float, -O and --specialize, and enables all
+                    compiler optimizations in the rest of this section.
  
   --[no-]fast-followers   Enable [disable] the fast follower
                     optimization in which fast implementations of
@@ -248,6 +248,12 @@ OPTIONS
                     --print-commands option to view the C compiler command
                     used. If you would like additional flags to be used with
                     the C compiler command, use the --ccflags option.
+
+  --[no-]specialize  Causes the generated C code to be compiled with flags that
+                     specialize the executable to the architecture that is
+                     defined by CHPL_TARGET_ARCH. The effects of this flag will
+                     vary based on choice of back-end compiler and the
+                     value of CHPL_TARGET_ARCH.
 
   -o, --output <filename>   Specify the name of the compiler-generated
                      executable (defaults to a.out if unspecified).
@@ -448,6 +454,11 @@ ENVIRONMENT
                       based on $CHPL_HOST_PLATFORM, $CHPL_TARGET_PLATFORM,
                       and $CHPL_HOST_COMPILER).
 
+  CHPL_TARGET_ARCH    Specifies the architecture that the compiled executable
+                      will be specialized to when --specialize is enabled
+                      (defaults to a best guess based on $CHPL_COMM,
+                      $CHPL_TARGET_COMPILER, and $CHPL_TARGET_PLATFORM).
+
   CHPL_LOCALE_MODEL   Specifies the locale model to use for describing
                       your locale architecture (defaults to 'flat')
 
@@ -473,7 +484,9 @@ ENVIRONMENT
                       $CHPL_HOST_PLATFORM).
 
   CHPL_ATOMICS        Specifies the implementation to use for Chapel's atomic
-                      variables (defaults to a best guess based on $CHPL_TARGET_COMPILER, $CHPL_TARGET_PLATFORM, and $CHPL_COMM).
+                      variables (defaults to a best guess based on
+                      $CHPL_TARGET_COMPILER, $CHPL_TARGET_PLATFORM, and
+                      $CHPL_COMM).
 
   CHPL_GMP            Specifies the GMP library implementation to be
                       used by the GMP module (defaults to a best guess

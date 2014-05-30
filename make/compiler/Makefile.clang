@@ -43,6 +43,11 @@ LIB_STATIC_FLAG =
 LIB_DYNAMIC_FLAG = -shared
 SHARED_LIB_CFLAGS = -fPIC
 
+# Set the target architecture for optimization
+ifneq ($(CHPL_MAKE_TARGET_ARCH), unknown)
+SPECIALIZE_CFLAGS = -march=$(CHPL_MAKE_TARGET_ARCH)
+endif
+
 ifeq ($(CHPL_MAKE_PLATFORM), darwin)
 # build 64-bit binaries when on a 64-bit capable PowerPC
 ARCH := $(shell test -x /usr/bin/machine -a `/usr/bin/machine` == ppc970 && echo -arch ppc64)

@@ -30,6 +30,7 @@ const char* CHPL_HOST_PLATFORM = NULL;
 const char* CHPL_HOST_COMPILER = NULL;
 const char* CHPL_TARGET_PLATFORM = NULL;
 const char* CHPL_TARGET_COMPILER = NULL;
+const char* CHPL_TARGET_ARCH = NULL;
 const char* CHPL_LOCALE_MODEL = NULL;
 const char* CHPL_COMM = NULL;
 const char* CHPL_COMM_SUBSTRATE = NULL;
@@ -152,6 +153,7 @@ char breakOnCodegenCname[256] = "";
 
 bool debugCCode = false;
 bool optimizeCCode = false;
+bool specializeCCode = false;
 
 bool fEnableTimers = false;
 Timer timer1;
@@ -323,6 +325,7 @@ static void setupOrderedGlobals(const char* argv0) {
   SETUP_ENV_VAR(CHPL_HOST_COMPILER, "chplenv/compiler --host");
   SETUP_ENV_VAR(CHPL_TARGET_PLATFORM, "chplenv/platform --target");
   SETUP_ENV_VAR(CHPL_TARGET_COMPILER, "chplenv/compiler --target");
+  SETUP_ENV_VAR(CHPL_TARGET_ARCH, "chplenv/arch.py --target");
   SETUP_ENV_VAR(CHPL_LOCALE_MODEL, "chplenv/localeModel");
   SETUP_ENV_VAR(CHPL_COMM, "chplenv/comm");
   SETUP_ENV_VAR(CHPL_COMM_SUBSTRATE, "chplenv/commSubstrate");
@@ -532,6 +535,7 @@ static void setFastFlag(ArgumentState* arg, char* unused) {
   fNoNilChecks = true;
   fNoOptimizeOnClauses = false;
   optimizeCCode = true;
+  specializeCCode = true;
 }
 
 static void setBaselineFlag(ArgumentState* arg, char* unused) {
@@ -676,6 +680,7 @@ static ArgumentDescription arg_desc[] = {
  {"lib-search-path", 'L', "<directory>", "C library search path", "P", libraryFilename, "CHPL_LIB_PATH", handleLibPath},
  {"make", ' ', "<make utility>", "Make utility for generated code", "S256", makeArgument, "CHPL_MAKE", handleMake},
  {"optimize", 'O', NULL, "[Don't] Optimize generated C code", "N", &optimizeCCode, "CHPL_OPTIMIZE", NULL},
+ {"specialize", ' ', NULL, "[Don't] Specialize generated C code for CHPL_TARGET_ARCH", "N", &specializeCCode, "CHPL_SPECIALIZE", NULL},
  {"output", 'o', "<filename>", "Name output executable", "P", executableFilename, "CHPL_EXE_NAME", NULL},
  {"static", ' ', NULL, "Generate a statically linked binary", "F", &fLinkStyle, NULL, setStaticLink},
 
@@ -791,6 +796,12 @@ static void setupDependentVars(void) {
   if (llvmCodegen)
     USR_FATAL("This compiler was built without LLVM support");
 #endif
+
+  if (specializeCCode && (strcmp(CHPL_TARGET_ARCH, "unknown") == 0)) {
+    USR_WARN("--specialize was set, but CHPL_TARGET_ARCH is 'unknown'. If "
+              "you want any specialization to occur please set CHPL_TARGET_ARCH "
+              "to a proper value.");
+  }
 }
 
 

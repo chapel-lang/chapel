@@ -595,6 +595,7 @@ static void codegen_header() {
   genGlobalString("CHPL_HOST_COMPILER", CHPL_HOST_COMPILER);
   genGlobalString("CHPL_TARGET_PLATFORM", CHPL_TARGET_PLATFORM);
   genGlobalString("CHPL_TARGET_COMPILER", CHPL_TARGET_COMPILER);
+  genGlobalString("CHPL_TARGET_ARCH", CHPL_TARGET_ARCH);
   genGlobalString("CHPL_LOCALE_MODEL", CHPL_LOCALE_MODEL);
   genGlobalString("CHPL_COMM", CHPL_COMM);
   genGlobalString("CHPL_COMM_SUBSTRATE", CHPL_COMM_SUBSTRATE);

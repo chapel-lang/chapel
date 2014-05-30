@@ -134,6 +134,54 @@ Optional Settings
    CHPL_TARGET_COMPILER will default to the same value as CHPL_HOST_COMPILER.
 
 
+*  Optionally, set the CHPL_TARGET_ARCH environment variable to indicate that
+   the target executable should be specialized to the given architecture when
+   using --specialize (and --fast). Valid options are:
+
+        all
+        ---
+        native  : The C compiler will attempt to detect the architecture on the
+                  machine that is compiling the target executable. This is a
+                  good choice if you will be running on the same machine that
+                  you are compiling on. If you are not, see the options below.
+        unknown : No specialization will be performed
+
+        intel           amd
+        -----           ---
+        core2           k8
+        nehalem         k8sse3
+        westmere        barcelona
+        sandybridge     bdver1
+        ivybridge       bdver2
+        haswell         bdver3
+        broadwell       bdver4
+
+   These values are defined to be the same as in GCC 4.9:
+
+        https://gcc.gnu.org/onlinedocs/gcc-4.9.0/gcc/i386-and-x86-64-Options.html
+
+   Setting this variable to an incorrect value for your processor may cause the
+   executable to no longer be able to run. Special care should be taken to
+   select the lowest common denominator when running on machines with
+   heterogeneous processor architectures.
+
+   The default value for this setting will vary based on settings in your
+   environment, in order of application these rules are:
+
+        * If CHPL_TARGET_COMPILER is cray-prgenv-* you do not need to set
+          anything in CHPL_TARGET_ARCH. One of the craype-* modules (e.g.
+          craype-sandybridge) should be loaded to provide equivalent
+          functionality. Once the proper module is loaded, CRAY_CPU_TARGET will
+          have the architecture being used in it.
+
+        * If CHPL_COMM is set, no attempt to set a useful value will be made,
+          CHPL_TARGET_ARCH will be 'unknown'.
+
+        * If CHPL_TARGET_PLATFORM is 'darwin', 'linux*', or 'cygwin'
+          CHPL_TARGET_ARCH will be 'native', passing the responsibility off to
+          the backend C compiler to detect the specifics of the hardware.
+
+
 *  Optionally, set the CHPL_MAKE environment variable to indicate the
    GNU-compatible make utility that you want the compiler back-end to
    invoke when compiling the generated C code.  If not set, this will

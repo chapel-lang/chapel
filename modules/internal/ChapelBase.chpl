@@ -32,6 +32,11 @@ module ChapelBase {
     compilerWarning("CHPL_TARGET_COMPILER not set");
   }
 
+  config param CHPL_TARGET_ARCH: string = "unset";
+  if (CHPL_TARGET_ARCH == "unset") {
+    compilerWarning("CHPL_TARGET_ARCH not set");
+  }
+
   config param CHPL_LOCALE_MODEL: string = "unset";
   if (CHPL_LOCALE_MODEL == "unset") {
     compilerWarning("CHPL_LOCALE_MODEL not set");

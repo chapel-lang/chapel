@@ -43,13 +43,21 @@ LIB_STATIC_FLAG =
 LIB_DYNAMIC_FLAG = -shared
 SHARED_LIB_CFLAGS = -fPIC
 
+# Set the target architecture for optimization
+ifneq ($(CHPL_MAKE_TARGET_ARCH), unknown)
+SPECIALIZE_CFLAGS = -march=$(CHPL_MAKE_TARGET_ARCH)
+endif
+
 ifeq ($(CHPL_MAKE_PLATFORM), darwin)
 # build 64-bit binaries when on a 64-bit capable PowerPC
 ARCH := $(shell test -x /usr/bin/machine -a `/usr/bin/machine` = ppc970 && echo -arch ppc64)
-RUNTIME_CFLAGS += $(ARCH)
-RUNTIME_CXXFLAGS += $(ARCH)
+# -Wa,-q passes control over from the horribly outdated version of as to clang's
+#  as this is needed to set things like -march=native or else gcc will generate
+#  instructions as can't actually assemble.
+RUNTIME_CFLAGS += $(ARCH) -Wa,-q
+RUNTIME_CXXFLAGS += $(ARCH) -Wa,-q
 # the -D_POSIX_C_SOURCE flag prevents nonstandard functions from polluting the global name space
-GEN_CFLAGS += -D_POSIX_C_SOURCE $(ARCH)
+GEN_CFLAGS += -D_POSIX_C_SOURCE $(ARCH) -Wa,-q
 GEN_LFLAGS += $(ARCH)
 endif
 
