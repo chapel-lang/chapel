@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+# add 'with' support for python 2.5
+from __future__ import with_statement
+
 import os, re, subprocess, sys, string, optparse
 
 # very simple logger (should be easy to replace with a real system if needed)
