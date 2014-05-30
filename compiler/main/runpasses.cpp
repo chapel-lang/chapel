@@ -7,7 +7,6 @@
 #include <cstdio>
 #include <sys/time.h>
 
-
 bool        printPasses     = false;
 FILE*       printPassesFile = NULL;
 
@@ -15,12 +14,11 @@ int         currentPassNo   = 0;
 const char* currentPassName = 0;
 
 struct PassInfo {
-  void (*pass_fn) ();      // The function which implements the pass.
-  void (*check_fn)();      // per-pass check function
+  void (*passFunction) ();      // The function which implements the pass.
+  void (*checkFunction)();      // per-pass check function
   const char* name;
-  char        log_tag;
+  char        logTag;
 };
-
 
 #define RUN(x) {    x, check_ ## x,   #x, LOG_ ## x }
 
@@ -94,8 +92,13 @@ static PassInfo sPassList[] = {
 };
 
 static void advanceCurrentPass(const char* passName);
-static void runPass(const char* passName, void (*pass)(), void (*check)(), char log_tag);
+static void runPass(size_t passIndex);
 static void printPassTiming(char const* fmt, ...);
+
+static struct timeval startTimeBetweenPasses;
+static struct timeval stopTimeBetweenPasses;
+static double         timeBetweenPasses =  0.0;
+static double         totalTime         =  0.0;
 
 void runPasses() {
   bool   chpldoc      = (strcmp(chplBinaryName, "chpldoc") == 0) ? true : false;
@@ -107,19 +110,25 @@ void runPasses() {
     fDocs = true;
 
   for (size_t i = 0; i < passListSize; i++) {
-    PassInfo* pass = &sPassList[i];
+    advanceCurrentPass(sPassList[i].name);
 
-    advanceCurrentPass(pass->name);
-
-    runPass(pass->name, pass->pass_fn, pass->check_fn, pass->log_tag);
+    runPass(i);
 
     USR_STOP(); // quit if fatal errors were encountered in pass
 
     // Break early if this is a chpl doc run
-    if (chpldoc == true && strcmp(pass->name, "docs") == 0) {
+    if (chpldoc == true && strcmp(sPassList[i].name, "docs") == 0) {
       break;
     }
   }
+
+  printPassTiming("%32s :%8.3f seconds\n", 
+                  "time between passes",
+                  timeBetweenPasses);
+
+  printPassTiming("%32s :%8.3f seconds\n",
+                  "total time",
+                  totalTime + timeBetweenPasses);
 
   advanceCurrentPass("finishing up");
 
@@ -132,78 +141,63 @@ static void advanceCurrentPass(const char* passName) {
   currentPassName = passName;
 }
 
-static void runPass(const char* passName, void (*pass)(), void (*check)(), char log_tag) {
-  static struct timeval startTimeBetweenPasses;
-  static struct timeval stopTimeBetweenPasses;
-  static double         timeBetweenPasses = -1.0;
-  static double         totalTime         =  0.0;
-  static bool           performTiming     = printPasses || (printPassesFile != NULL);
+static void runPass(size_t passIndex) {
+  PassInfo* info          = &sPassList[passIndex];
+  bool      performTiming = printPasses == true || printPassesFile != NULL;
 
-  struct timeval        startTime;
-  struct timeval        stopTime;
-  struct timezone       timezone;
+  struct timeval startTime;
+  struct timeval stopTime;
+  double         passTime = 0.0;
 
-  if (performTiming) {
-    gettimeofday(&stopTimeBetweenPasses, &timezone);
+  gettimeofday(&stopTimeBetweenPasses, 0);
 
-    if (timeBetweenPasses < 0.0)
-      timeBetweenPasses = 0.0;
-    else
-      timeBetweenPasses += 
-        ((double)((stopTimeBetweenPasses.tv_sec * 1e6 +
-                   stopTimeBetweenPasses.tv_usec) - 
-                  (startTimeBetweenPasses.tv_sec * 1e6 +
-                   startTimeBetweenPasses.tv_usec))) / 1e6;
-  }
+  if (passIndex > 0)
+    timeBetweenPasses += 
+      ((stopTimeBetweenPasses.tv_sec  * 1e6 + stopTimeBetweenPasses.tv_usec ) - 
+       (startTimeBetweenPasses.tv_sec * 1e6 + startTimeBetweenPasses.tv_usec)) / 1e6;
 
-  if (strlen(fPrintStatistics) && strcmp(passName, "parse"))
+  if (fPrintStatistics[0] != '\0' && passIndex > 0)
     printStatistics("clean");
 
+
+  // Determine time taken to run this pass of the compiler
+  gettimeofday(&startTime, 0);
+
+  (*(info->passFunction))();
+
+  gettimeofday(&stopTime, 0);
+
+
+
+  if (fPrintStatistics[0] != '\0')
+    printStatistics(info->name);
+
+  log_writeLog(info->name, currentPassNo, info->logTag);
+
+
+  // Start a timer that will complete at the entry to the next pass
+  gettimeofday(&startTimeBetweenPasses, 0);
+
+  considerExitingEndOfPass();
+  cleanAst();
+
+  (*(info->checkFunction))(); // Run per-pass check function.
+
+
+  // Do the accounting/printing for this pass
+  passTime   = ((stopTime.tv_sec  * 1e6 + stopTime.tv_usec ) - 
+                (startTime.tv_sec * 1e6 + startTime.tv_usec)) / 1e6;
+
+  totalTime += passTime;
+
   if (performTiming) {
-    printPassTiming("%32s :", passName);
-    gettimeofday(&startTime, &timezone);
-  }
-
-  (*pass)();
-
-  if (performTiming) {
-    gettimeofday(&stopTime, &timezone);
-
-    printPassTiming("%8.3f seconds",
-            ((double)((stopTime.tv_sec*1e6+stopTime.tv_usec) - 
-                      (startTime.tv_sec*1e6+startTime.tv_usec))) / 1e6);
+    printPassTiming("%32s :%8.3f seconds", info->name, passTime);
 
     if (developer && printPasses)
       fprintf(stderr, "  [%d]", lastNodeIDUsed());
 
     printPassTiming("\n");
-
-    totalTime += ((double)((stopTime.tv_sec*1e6+stopTime.tv_usec) - 
-                           (startTime.tv_sec*1e6+startTime.tv_usec))) / 1e6;
-
-    if (strcmp(passName, "makeBinary") == 0) {
-      printPassTiming("%32s :%8.3f seconds\n", 
-                      "time between passes",
-                      timeBetweenPasses);
-
-      printPassTiming("%32s :%8.3f seconds\n",
-                      "total time",
-                      totalTime + timeBetweenPasses);
-    }
   }
-
-  if (strlen(fPrintStatistics))
-    printStatistics(passName);
-
-  log_writeLog(passName, currentPassNo, log_tag);
-
-  if (performTiming) {
-    gettimeofday(&startTimeBetweenPasses, &timezone);
-  }
-
-  considerExitingEndOfPass();
-  cleanAst();
-  (*check)(); // Run per-pass check function.
 }
 
 // wrapper for printing timing info to stderr and/or a file
@@ -236,7 +230,7 @@ void initLogFlags(Vec<char>& valid_log_flags) {
 
   for (size_t i = 0; i < passListSize; i++) {
     PassInfo* pass = &sPassList[i];
-    char      tag  = pass->log_tag;
+    char      tag  = pass->logTag;
 
     if (tag != NUL) {
       INT_ASSERT(!valid_log_flags.set_in(tag));
