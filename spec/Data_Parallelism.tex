@@ -12,8 +12,10 @@ This chapter details data parallelism as follows:
 \begin{itemize}
 \item \rsec{Forall} describes the forall statement.
 \item \rsec{Forall_Expressions} describes forall expressions
+\item \rsec{Forall_Intents} specifies how variables from outer scopes
+are handled within forall statements and expressions.
 \item \rsec{Promotion} describes promotion.
-\item \rsec{Reductions_and_Scans} describes reductions and scans
+\item \rsec{Reductions_and_Scans} describes reductions and scans.
 \item \rsec{data_parallel_knobs} describes the configuration constants for
 controlling default data parallelism.
 \end{itemize}       
@@ -35,16 +37,19 @@ described in~\rsec{The_For_Loop}.
 The syntax of the forall statement is given by
 \begin{syntax}
 forall-statement:
-  `forall' index-var-declaration `in' iteratable-expression `do' statement
-  `forall' index-var-declaration `in' iteratable-expression block-statement
-  `forall' iteratable-expression `do' statement
-  `forall' iteratable-expression block-statement
-  [ index-var-declaration `in' iteratable-expression ] statement
-  [ iteratable-expression ] statement
+  `forall' index-var-declaration `in' iteratable-expression task-intent-clause[OPT] `do' statement
+  `forall' index-var-declaration `in' iteratable-expression task-intent-clause[OPT] block-statement
+  `forall' iteratable-expression task-intent-clause[OPT] `do' statement
+  `forall' iteratable-expression task-intent-clause[OPT] block-statement
+  [ index-var-declaration `in' iteratable-expression task-intent-clause[OPT] ] statement
+  [ iteratable-expression task-intent-clause[OPT] ] statement
 \end{syntax}
 As with the for statement, the indices may be omitted if they are
 unnecessary and the \chpl{do} keyword may be omitted before a block
 statement.  The square bracketed form is a syntactic convenience.
+
+The handling of the outer variables within the forall statement and
+the role of \sntx{task-intent-clause} are defined in \rsec{Forall_Intents}.
 
 \subsection{Execution and Serializability}
 \label{forall_semantics}
@@ -63,6 +68,8 @@ distinct task.  The \chpl{coforall} loop thus has potentially higher
 overhead than a forall loop with the same number of iterations, but in
 cases where concurrency is required for correctness, it is essential.
 
+\index{leading the execution of a loop}
+\index{data parallelism!leader iterator}
 In practice, the number of tasks that will be used to evaluate
 a \chpl{forall} loop is determined by the object or iterator that
 is \emph{leading} the execution of the loop, as is the mapping of
@@ -111,7 +118,6 @@ writeln(a);
 \end{chapeloutput}
 \end{chapelexample}
 
-
 \subsection{Zipper Iteration}
 \label{forall_zipper}
 \index{statements!forall!zipper iteration}
@@ -119,6 +125,7 @@ writeln(a);
 Zipper iteration has the same semantics as described
 in~\rsec{Zipper_Iteration} and~\rsec{Parallel_Iterators} for parallel
 iteration.
+
 
 \section{The Forall Expression}
 \label{Forall_Expressions}
@@ -136,15 +143,18 @@ described in~\rsec{For_Expressions}.
 The syntax of a forall expression is given by
 \begin{syntax}
 forall-expression:
-  `forall' index-var-declaration `in' iteratable-expression `do' expression
-  `forall' iteratable-expression `do' expression
-  [ index-var-declaration `in' iteratable-expression ] expression
-  [ iteratable-expression ] expression
+  `forall' index-var-declaration `in' iteratable-expression task-intent-clause[OPT] `do' expression
+  `forall' iteratable-expression task-intent-clause[OPT] `do' expression
+  [ index-var-declaration `in' iteratable-expression task-intent-clause[OPT] ] expression
+  [ iteratable-expression task-intent-clause[OPT] ] expression
 \end{syntax}
 As with the for expression, the indices may be omitted if they are
 unnecessary.  The \chpl{do} keyword is always required in the
 keyword-based notation.  The bracketed form is a syntactic
 convenience.
+
+The handling of the outer variables within the forall expression and
+the role of \sntx{task-intent-clause} are defined in \rsec{Forall_Intents}.
 
 \subsection{Execution and Serializability}
 \label{Forall_Expression_Execution_and_Serializability}
@@ -176,7 +186,6 @@ Forall expression also support zippered iteration semantics as
 described in~\rsec{Zipper_Iteration} and~\rsec{Parallel_Iterators} for
 parallel iteration.
 
-
 \subsection{Filtering Predicates in Forall Expressions}
 \label{Filtering_Predicates_Forall}
 \index{expressions!forall!and conditional expressions}
@@ -206,6 +215,54 @@ writeln(result);
 1 3 5 7 9
 \end{chapeloutput}
 \end{chapelexample}
+
+
+\section{Forall Intents}
+\label{Forall_Intents}
+\index{forall intents}
+\index{data parallelism!forall intents}
+
+If a variable is referenced within the lexical scope of a
+forall statement or expression and is declared outside
+that statement or expression, it is subject to \emph{forall intents},
+analogously to task intents (\rsec{Task_Intents})
+for task-parallel constructs. That is, the variable is considered
+to be passed as an actual argument to
+each task function created by the object or iterator leading
+the execution of the loop. If no tasks are created,
+it is considered to be an actual argument to the leader
+iterator itself. All references to the variable
+within the forall statement or expression implicitly refer
+to the corresponding formal argument of the task function
+or the leader iterator.
+
+Each formal argument of a task function or iterator has the blank
+intent by default.  For variables of primitive, enum, class, record
+and union types, this has the effect of capturing the value of the
+variable at task creation time.  Within the lexical scope of the
+forall statement or expression, the variable name references the
+captured value instead of the original value.
+
+A formal can be given the \chpl{ref} intent explicitly by listing it
+in the optional \sntx{task-intent-clause}. For variables of most
+types, this enables the task construct to modify the original variable
+or to read the original variable's value after concurrent modifications.
+
+\begin{rationale}
+A forall statement or expression may create tasks in its implementation.
+Forall intents affect those tasks in the same way that task intents
+affect the behavior of a task construct such as a \chpl{coforall} loop.
+\end{rationale}
+
+\begin{future}
+As with task intents, we would like to make other intents available
+for use in a \sntx{task-intent-clause} of a forall statement or expression.
+For example, an \chpl{in} intent would be a way to obtain
+task-private variables in a forall loop.
+In addition, we would like to introduce "reduction" intents
+that will let us implement reductions using forall intents.
+\end{future}
+
 
 \section{Promotion}
 \label{Promotion}

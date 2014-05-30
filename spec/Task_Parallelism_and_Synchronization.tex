@@ -795,7 +795,7 @@ the last line until all of the tasks have completed.
 % a colloquialism.
 If a variable is referenced within the lexical scope of a
 \chpl{begin}, \chpl{cobegin}, or \chpl{coforall} statement
-but is declared outside that statement, it is considered
+and is declared outside that statement, it is considered
 to be passed as an actual argument to the corresponding task function 
 at task creation time. All references to the variable
 within the task function implicitly refer to the task function's
@@ -902,17 +902,6 @@ For a given intent, we would also like to provide a blanket clause,
 which would apply the intent to all variables.
 An example of syntax would be \chpl{ref(*)}.
 \end{future}
-
-\begin{openissue}
-We consider extending task intents to \chpl{forall} loops
-(\rsec{Forall}, \rsec{Forall_Expressions}). This could be seen
-as a natural application of the idea in yet another context,
-to extend its benefits and for consistency. The details and
-semantics of task intents for a \chpl{forall} need to be
-worked out. We would like to gain some experience with task intents
-for \chpl{begin}, \chpl{cobegin}, \chpl{coforall} before venturing
-into \chpl{forall}.
-\end{openissue}
 
 
 \section{The Sync Statement}
