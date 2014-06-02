@@ -19,17 +19,11 @@
 ===========================================================
 general regressions (seem to happen in most configurations)
 ===========================================================
-[Error matching .bad file for studies/shootout/pidigits/bradc/pidigits-pretty2]
-in no-local, qthreads+numa, gasnet-everything result of Brad making the test a
-future because of its memory leaks.  Should be resolved shortly.
 
 ==============================================
 linux64 regressions (in addition to the above)
-(Reviewed for accuracy 04/02/14)
+(Reviewed for accuracy 05/30/14)
 ==============================================
-gcc error message changed from "error:" to "note:"
---------------------------------------------------
-[Error matching .bad file for functions/gbt/retRecordMultiDef]
 
 
 ==============================================
@@ -40,17 +34,14 @@ linux32 regressions (in addition to the above)
 
 ================================
 performance-specific regressions
-(Reviewed for accuracy 04/02/14)
+(Reviewed for accuracy 05/30/14)
 ================================
 
 consistent execution timeouts on chap04 (since ??? -- at least 11/20/13)
 ------------------------------------------------------------------------
-In the case of ra-dist, believed to be because the verification is done
-in such a brain-dead way -- bradc owns, but hasn't found time to fix yet.
-Feel free to bug him.
-------------------------------------------------------------------------
 [Error: Timed out executing program release/examples/benchmarks/hpcc/ptrans (compopts: 1)]
-[Error: Timed out executing program studies/hpcc/RA/bradc/parallel/ra-dist (compopts: 1)]
+ - This only times out on chap04 (and has been passing sometimes since gcc 4.7
+   was installed.) This should be fixed this week.
 
 consistent failures on bradc-lnx and chap03 due to insane memory usage
 this should get better with better string memory management
@@ -60,7 +51,7 @@ this should get better with better string memory management
 
 ================================
 --fast regressions
-(Reviewed for accuracy 05/14/14)
+(Reviewed for accuracy 05/30/14)
 ================================
 
 Both of these pass with gcc 4.8 but fail with 4.3
@@ -722,85 +713,43 @@ sig_send: wait for sig_complete event failed
 
 ===============================
 qthreads.flat regressions
-Reviewed for accuracy 04/02/14
+Reviewed for accuracy 05/30/14
 ===============================
 
 Passing future (just lucky)
----------------------------
-Future (semantic: what should happen when a domain is reassigned in parallelconstructs?) [Success matching program output for domains/diten/domainReassignNoAlias] (4/3/14)
-
-segv (no backtrace) (2/18/14)
------------------------------
-[Error matching program output for exercises/RandomNumber6]
-[Error matching program output for memory/shannon/outofmemory/mallocOutOfMemory]
-
-timeouts (12/7/12, numa 4/12/14)
-------------------
-[Error: Timed out executing program studies/sudoku/dinan/sudoku]
+----------------------------
+Future (semantic: what should happen when a domain is reassigned in parallelconstructs?) [Success matching program output for domains/diten/domainReassignNoAlias] (4/3/14, 5/31/14)
 
 
 =======================================
 qthreads.numa regressions
 (other than qthreads regressions above)
-(Reviewed for accuracy 04/02/14)
+(Reviewed for accuracy 05/30/14)
 =======================================
-
-yield within on error (before 02/25/14)
----------------------------------------
-[Error matching compiler output for functions/iterators/bradc/onInIterator2]
-[Error matching compiler output for users/shetag/iteratorWithOn]
-
-Unknown extra memory leaks
---------------------------
-[Error matching program output for memory/figueroa/LeakedMemory5 (compopts: 1)]
-
-signal 11 (since 11/03/13 -- the first runs)
---------------------------------------------
-[Error matching program output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 2, execopts: 3)]
-
-extra memory leaks/usage due to bigger locale type (since first run -- 11/03/13)
---------------------------------------------------------------------------------
-[TODO: locale model specific .good files]
---------------------------------------------------------------------------------
-[Error matching program output for memory/shannon/printFinalMemStat]
-[Error matching program output for memory/sungeun/refCount/domainMaps]
-
-invalid use of 'new' on Block1D (02/25/14)
-------------------------------------------
-[Error matching program output for studies/hpcc/common/bradc/unit/multipleDomains2 (compopts: 1)]
-
-pointers have an extra locale field when printed
-------------------------------------------------
-[Error matching program output for trivial/bradc/ref2string (compopts: 1)]
-[Error matching program output for trivial/diten/classRef2string-local (compopts: 1)]
 
 
 ====================================
 gasnet.qthreads.flat regressions
 (in addition to qthreads.flat above)
-(reviewed for accuracy 04/02/14)
+(reviewed for accuracy 05/30/14)
 ====================================
 
-failures within examples
-~~~~~~~~~~~~~~~~~~~~~~~~
+general gasnet failures, not specifc to qthreads. See note in fifo+gasnet everything
+------------------------------------------------------------------------------------
+[Error matching program output for classes/sungeun/remoteDynamicDispatch (compopts: 1)]
+[Error matching program output for multilocale/diten/needMultiLocales/remoteStringTuple]
 
-*** random stuff times out with no discernable pattern -- too hard to track ***
-
-The pre-user code hook is called from the main thread instead of a qthreads
-task on locales other than 0 causing task-local storage to not be set up
-correctly. Every test that runs with multiple locales in this
-configuration. (gbt)
-
-
-failures outside examples
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The number of times the follower is called has changed.  Perhaps related to 
-"nondeterministic failure due to decrementing task counts after task has run".
-------------------------------------------------------------------------------
-[Error matching program output for distributions/deitz/test_aligned_unaligned_block_forall (compopts: 1)](3/10/14)
-[Error matching program output for distributions/deitz/test_aligned_unaligned_block_forall_no_fast_follower (compopts: 1)](3/10/14)
-
+Misc execution timeouts due to the fact that we set
+CHPL_RT_NUM_THREADS_PER_LOCALE=2 for gasnet+qthreads testing. fifo+gasnet also
+times out for most of these if CHPL_RT_NUM_THREADS_PER_LOCALE=2 is set. There
+may be others that will timeout intermittently.
+-------------------------------------------------------------------------------
+[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains]
+[Error: Timed out executing program domains/sungeun/assoc/stress (compopts: 1, execopts: 2)]
+[Error: Timed out executing program functions/vass/ref-intent-bug-2big]
+[Error: Timed out executing program optimizations/bulkcomm/alberto/Block/perfTest_v2 (compopts: 1)]
+[Error: Timed out executing program parallel/coforall/bradc/nested/nestedForall3]
+[Error: Timed out executing program users/shetag/fock/fock-1-begin-blc]
 
 
 ===========================================================
