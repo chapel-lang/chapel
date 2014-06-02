@@ -291,7 +291,9 @@ domainReassignNoAlias future passes intermittently with qthreads.none
 Has been passing on and off under qthreads.none.flat or .numa since
 4'2014 or earlier:
 [Success matching program output for domains/diten/domainReassignNoAlias]
-
+ - Most recent "success" on 05/31/14. Domain size for test was bumped on
+   06/02/14 in an attempt to quiet the future, but left this entry in case the
+   problem still persists.
 
 incorrect answer suggestive of a --no-local race : iteration terminated
 too early or too late (?)

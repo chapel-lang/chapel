@@ -716,10 +716,6 @@ qthreads.flat regressions
 Reviewed for accuracy 05/30/14
 ===============================
 
-Passing future (just lucky)
-----------------------------
-Future (semantic: what should happen when a domain is reassigned in parallelconstructs?) [Success matching program output for domains/diten/domainReassignNoAlias] (4/3/14, 5/31/14)
-
 
 =======================================
 qthreads.numa regressions
