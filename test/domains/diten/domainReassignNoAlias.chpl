@@ -2,7 +2,7 @@ config const verbose = false;
 config const iters = 100;
 
 proc f() {
-  var D = {1..10000};
+  var D = {1..1000000};
   var A: [D] real;
 
   cobegin {
