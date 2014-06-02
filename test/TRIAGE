@@ -158,14 +158,6 @@ This take 10s of seconds at most:
 These things regularly cause noise in testing:
 ==============================================
 
-barrier for 'stop polling' - linux64.gnu.gasnet.qthreads.numa and flat
-----------------------------------------------------------------------
-[Error matching program output for multilocale/deitz/needMultiLocales/diagnostics/test_private_broadcast_small] (4/29/14,5/01/14)
-This started failing on 4/29/14 and has done so intermittently.
-The error is due to extra verbose-comm output.
-Vass initiated an email discussion between Greg and Sung.
-- I believe this is resolved with r23452, leaving for now since it was pretty
-  intermittent before.
 
 pthread mutex lock assertion failed (after 22303, unassigned)
 -----------------------------------
@@ -186,12 +178,10 @@ Fails for gasnet, but passes on a single node:
 [Success matching program output for arrays/deitz/jacobi-no-inline]
   linux64.gnu.none.fifo.pthreads.flat
 
+
 Perf (linux64.gnu.none.fifo.pthreads.flat)
 ------------------------------------------
-[Error matching compiler output for studies/shootout/mandelbrot/mandelbrot-fancy] (chap03: 10/11/13,11/02/13, chap04: 10/11/13,11/02/13, bradc-lnx: 10/11/13,11/02/13)
-- I believe this can be removed, I don't remember seeing this fail this year,
-  leaving for now in case I'm wrong. Will remove next triage rotation unless I
-  see otherwise (unless somebody beats me to it)  (ejr)
+
 
 valgrind compilation timeouts
 -----------------------------
