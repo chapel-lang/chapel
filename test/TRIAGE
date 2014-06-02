@@ -51,6 +51,22 @@ number of occurrences:
 - error: internal failure EXP3124 chpl Version 1.8.0.-999
 - error: internal failure EXP0244 chpl Version 1.8.0.-999
 
+Update 05/30/14:
+- Taking a closer look at the compiler segfaults (MIS0355) for darwin-clang:
+  They seem to happen for any test program if run for enough iterations. Fails
+  roughly once every ~250 compiles, but does not fail under gdb (at least not
+  after ~20,000 compiles.) Could be because address space randomization is
+  turned off with gdb for osx.
+
+  Tried to debug with a core dump, but core dumps don't work with gdb on osx
+  (at least when clang is the compiler) so had to debug with lldb. Segfault
+  appears in compiler/AST/expr.cpp in method SymExpr::codegen() with line ret =
+  ret = var->codegen(); (line 298 at r23460)
+
+  That doesn't make a lot of sense so my best guess at this point is a buffer
+  overflow at some point. Valgrind turned up clean, although valgrind is
+  notoriously unreliable for osx and wouldn't catch a stack overflow anyways.
+  (ejr)
 
 gasnet time out (possible gasnet race condition/deadlock)
 ---------------------------------------------------------
@@ -148,6 +164,8 @@ barrier for 'stop polling' - linux64.gnu.gasnet.qthreads.numa and flat
 This started failing on 4/29/14 and has done so intermittently.
 The error is due to extra verbose-comm output.
 Vass initiated an email discussion between Greg and Sung.
+- I believe this is resolved with r23452, leaving for now since it was pretty
+  intermittent before.
 
 pthread mutex lock assertion failed (after 22303, unassigned)
 -----------------------------------
@@ -168,20 +186,12 @@ Fails for gasnet, but passes on a single node:
 [Success matching program output for arrays/deitz/jacobi-no-inline]
   linux64.gnu.none.fifo.pthreads.flat
 
-linux64.gnu.gasnet.qthreads.flat (sungeun)
-------------------------------------------
-Recently, the main test that's been flitting back and forth is:
-
-[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains]
-
-I've deleted historical notes on this entry that seem less useful
-at present.  See the archives for more detail. (bradc, 1/27/14)
-
 Perf (linux64.gnu.none.fifo.pthreads.flat)
 ------------------------------------------
 [Error matching compiler output for studies/shootout/mandelbrot/mandelbrot-fancy] (chap03: 10/11/13,11/02/13, chap04: 10/11/13,11/02/13, bradc-lnx: 10/11/13,11/02/13)
-[Error: Timed out executing program release/examples/benchmarks/hpcc/ptrans (compopts: 1)] (chap04: 10/11/13,11/02/13,03/06/14)
-[Error: Timed out executing program studies/hpcc/RA/bradc/parallel/ra-dist (compopts: 1)] (chap04: 10/11/13,11/02/13,03/06/14)
+- I believe this can be removed, I don't remember seeing this fail this year,
+  leaving for now in case I'm wrong. Will remove next triage rotation unless I
+  see otherwise (unless somebody beats me to it)  (ejr)
 
 valgrind compilation timeouts
 -----------------------------
@@ -227,12 +237,9 @@ nondet. segfault for linux64.gnu.gasnet.qthreads.none.flat
 ----------------------------------------------------------
 [Error matching program output for multilocale/deitz/linked/test_linked3b] (12/17/13)
 [Error matching program output for release/examples/benchmarks/hpcc/stream-ep] (12/18/13)
-
-qthreads execution timeouts
----------------------------
-[Error: Timed out executing program distributions/robust/associative/stress/many_array] (4/12/14)
-[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)] (4/12/14)
-[Error: Timed out executing program studies/sudoku/dinan/sudoku] (4/12/14)
+- gasnet+qthreads segfauls should be able to be removed but leaving until
+  gasnet+qthreads testing has run for a little longer. Full testing just
+  started again on 05/28/14 but these seem to be gone.
 
 nondet. baseline compilation timeout (10/15/13)
 -----------------------------------------------
