@@ -6794,9 +6794,6 @@ initializeClass(Expr* stmt, Symbol* sym) {
 //
 static void
 pruneResolvedTree() {
-  removeUnusedFunctions();
-  removeUnusedTypes();
-
   // insertRuntimeTypeTemps is also called earlier in resolve().  That call
   // can insert variables that need autoCopies and inserting autoCopies can
   // insert things that need runtime type temps.  These need to be fixed up
@@ -6805,6 +6802,9 @@ pruneResolvedTree() {
   // actual/formal type mismatch (with --verify) for the code:
   // record R { var A: [1..1][1..1] real; }
   insertRuntimeTypeTemps();
+
+  removeUnusedFunctions();
+  removeUnusedTypes();
 
   // Ideally positioned to lose the "best function name" contest. Suggestions?
   // insertRuntimeTypeTemps() can insert method calls including the
@@ -6887,93 +6887,155 @@ static void removeUnusedTypes() {
   }
 }
 
-static void removeRandomJunk() {
-  Vec<BaseAST*> asts;
-  collect_asts_postorder(rootModule, asts);
-  forv_Vec(BaseAST, ast, asts) {
-    Expr* expr = toExpr(ast);
-    if (!expr || !expr->parentSymbol)
-      continue;
-    if (DefExpr* def = toDefExpr(ast)) {
-      // Remove unused global variables
-      if (toVarSymbol(def->sym))
-        if (toModuleSymbol(def->parentSymbol))
-          if (def->sym->type == dtUnknown)
-            def->remove();
-    } else if (CallExpr* call = toCallExpr(ast)) {
-      if (call->isPrimitive(PRIM_NOOP)) {
-        // Remove Noops
+static void removeUnusedGlobals()
+{
+  forv_Vec(DefExpr, def, gDefExprs)
+  {
+    // Remove unused global variables
+    if (toVarSymbol(def->sym))
+      if (toModuleSymbol(def->parentSymbol))
+        if (def->sym->type == dtUnknown)
+          def->remove();
+  }
+}
+
+static void removeRandomPrimitive(CallExpr* call)
+{
+  if (! call->primitive)
+    // TODO: This is weird.  Turn it into an assert that this never
+    // happens and hunt down the guilty code.
+    return;
+
+  // A primitive.
+  switch (call->primitive->tag)
+  {
+    default: /* do nothing */ break;
+
+    case PRIM_NOOP:
+      call->remove();
+      break;
+
+    case PRIM_TYPEOF:
+    {
+      // Remove move(x, PRIM_TYPEOF(y)) calls -- useless after this
+      CallExpr* parentCall = toCallExpr(call->parentExpr);
+      if (parentCall && parentCall->isPrimitive(PRIM_MOVE) && 
+          parentCall->get(2) == call) {
+        parentCall->remove();
+      } else {
+        // Replace PRIM_TYPEOF with argument
+        call->replace(call->get(1)->remove());
+      }
+    }
+    break;
+
+    case PRIM_CAST:
+      // Remove trivial casts.
+      if (call->get(1)->typeInfo() == call->get(2)->typeInfo())
+        call->replace(call->get(2)->remove());
+       break;
+
+    case PRIM_SET_MEMBER:
+    case PRIM_GET_MEMBER:
+    case PRIM_GET_MEMBER_VALUE:
+    {
+      // Remove member accesses of types
+      // Replace string literals with field symbols in member primitives
+      Type* baseType = call->get(1)->typeInfo();
+      if (!call->parentSymbol->hasFlag(FLAG_REF) &&
+          baseType->symbol->hasFlag(FLAG_REF))
+        baseType = baseType->getValType();
+      const char* memberName = get_string(call->get(2));
+      Symbol* sym = baseType->getField(memberName);
+      if ((sym->hasFlag(FLAG_TYPE_VARIABLE) && !sym->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) ||
+          !strcmp(sym->name, "_promotionType") ||
+          sym->isParameter())
+        call->getStmtExpr()->remove();
+      else {
+        SET_LINENO(call->get(2));
+        call->get(2)->replace(new SymExpr(sym));
+      }
+    }
+    break;
+
+    case PRIM_MOVE:
+    {
+      // Remove types to enable --baseline
+      SymExpr* sym = toSymExpr(call->get(2));
+      if (sym && isTypeSymbol(sym->var))
         call->remove();
-      } else if (call->isPrimitive(PRIM_TYPEOF)) {
-        // Remove move(x, PRIM_TYPEOF(y)) calls -- useless after this
-        CallExpr* parentCall = toCallExpr(call->parentExpr);
-        if (parentCall && parentCall->isPrimitive(PRIM_MOVE) && 
-            parentCall->get(2) == call) {
-          parentCall->remove();
-        } else {
-          // Replace PRIM_TYPEOF with argument
-          call->replace(call->get(1)->remove());
-        }
-      } else if (call->isPrimitive(PRIM_CAST)) {
-        if (call->get(1)->typeInfo() == call->get(2)->typeInfo())
-          call->replace(call->get(2)->remove());
-      } else if (call->isPrimitive(PRIM_SET_MEMBER) ||
-                 call->isPrimitive(PRIM_GET_MEMBER) ||
-                 call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
-        // Remove member accesses of types
-        // Replace string literals with field symbols in member primitives
-        Type* baseType = call->get(1)->typeInfo();
-        if (!call->parentSymbol->hasFlag(FLAG_REF) &&
-            baseType->symbol->hasFlag(FLAG_REF))
-          baseType = baseType->getValType();
-        const char* memberName = get_string(call->get(2));
-        Symbol* sym = baseType->getField(memberName);
-        if ((sym->hasFlag(FLAG_TYPE_VARIABLE) && !sym->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) ||
-            !strcmp(sym->name, "_promotionType") ||
-            sym->isParameter())
-          call->getStmtExpr()->remove();
-        else {
-          SET_LINENO(call->get(2));
-          call->get(2)->replace(new SymExpr(sym));
-        }
-      } else if (call->isPrimitive(PRIM_MOVE)) {
-        // Remove types to enable --baseline
-        SymExpr* sym = toSymExpr(call->get(2));
-        if (sym && isTypeSymbol(sym->var))
-          call->remove();
-      } else if (FnSymbol* fn = call->isResolved()) {
-        // Remove method and leader token actuals
-        for (int i = fn->numFormals(); i >= 1; i--) {
-          ArgSymbol* formal = fn->getFormal(i);
-          if (formal->type == dtMethodToken ||
-              formal->instantiatedParam ||
-              (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
-               !formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))) {
-            if (!fn->hasFlag(FLAG_EXTERN)) {
-              call->get(i)->remove();
-            } else {
-              // extern function with a type parameter
-              INT_ASSERT(toSymExpr(call->get(1)));
-              TypeSymbol *ts = toSymExpr(call->get(1))->var->type->symbol;
-              // Remove the tmp and just pass the type through directly
-              SET_LINENO(call->get(i));
-              call->get(i)->replace(new SymExpr(ts));
-            }
+    }
+    break;
+  }
+}
+
+static void removeRandomCalls()
+{
+  forv_Vec(CallExpr, call, gCallExprs)
+  {
+    if (! call->parentSymbol)
+      continue;
+
+    if (FnSymbol* fn = call->isResolved()) {
+      // Remove method and leader token actuals
+      for (int i = fn->numFormals(); i >= 1; i--) {
+        ArgSymbol* formal = fn->getFormal(i);
+        if (formal->type == dtMethodToken ||
+            formal->instantiatedParam ||
+            (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
+             !formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))) {
+          if (!fn->hasFlag(FLAG_EXTERN)) {
+            call->get(i)->remove();
+          } else {
+            // extern function with a type parameter
+            INT_ASSERT(toSymExpr(call->get(1)));
+            TypeSymbol *ts = toSymExpr(call->get(1))->var->type->symbol;
+            // Remove the tmp and just pass the type through directly
+            SET_LINENO(call->get(i));
+            call->get(i)->replace(new SymExpr(ts));
           }
         }
       }
-    } else if (NamedExpr* named = toNamedExpr(ast)) {
-      // Remove names of named actuals
-      Expr* actual = named->actual;
-      actual->remove();
-      named->replace(actual);
-    } else if (BlockStmt* block = toBlockStmt(ast)) {
-      // Remove type blocks--code that exists only to determine types
-      if (block->blockTag == BLOCK_TYPE)
-        block->remove();
     }
+    else
+      removeRandomPrimitive(call);
   }
 }
+
+static void removeActualNames()
+{
+  forv_Vec(NamedExpr, named, gNamedExprs)
+  {
+    if (! named->parentSymbol)
+      continue;
+    // Remove names of named actuals
+    Expr* actual = named->actual;
+    actual->remove();
+    named->replace(actual);
+  }
+}
+
+static void removeTypeBlocks()
+{
+  forv_Vec(BlockStmt, block, gBlockStmts)
+  {
+    if (! block->parentSymbol)
+      continue;
+
+    // Remove type blocks--code that exists only to determine types
+    if (block->blockTag == BLOCK_TYPE)
+      block->remove();
+  }
+}
+
+static void removeRandomJunk()
+{
+  removeUnusedGlobals();
+  removeRandomCalls();
+  removeActualNames();
+  removeTypeBlocks();
+}
+
 
 //
 // buildRuntimeTypeInitFns: Build a 'chpl__convertRuntimeTypeToValue'
