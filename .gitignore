@@ -198,6 +198,18 @@
 # /runtime/src/launch/mpirun/
 /runtime/src/launch/mpirun/gen
 
+# /runtime/src/launch/pbs-aprun/
+/runtime/src/launch/pbs-aprun/gen
+
+# /runtime/src/launch/pbs-gasnetrun_ibv/
+/runtime/src/launch/pbs-gasnetrun_ibv/gen
+
+# /runtime/src/launch/slurm-gasnetrun_ibv/
+/runtime/src/launch/slurm-gasnetrun_ibv/gen
+
+# /runtime/src/launch/slurm-srun/
+/runtime/src/launch/slurm-srun/gen
+
 # /runtime/src/mem/default/
 /runtime/src/mem/default/gen
 
@@ -231,17 +243,11 @@
 # /runtime/src/tasks/massivethreads/
 /runtime/src/tasks/massivethreads/gen
 
-# /runtime/src/tasks/none/
-/runtime/src/tasks/none/gen
-
 # /runtime/src/tasks/qthreads/
 /runtime/src/tasks/qthreads/gen
 
 # /runtime/src/threads/
 /runtime/src/threads/soft-threads
-
-# /runtime/src/threads/minimal/
-/runtime/src/threads/minimal/gen
 
 # /runtime/src/threads/none/
 /runtime/src/threads/none/gen
@@ -737,6 +743,11 @@
 /test/compflags/bradc/license/declint.good
 /test/compflags/bradc/license/*.tmp
 
+# /test/compflags/bradc/minimalModules/
+/test/compflags/bradc/minimalModules/a.out
+/test/compflags/bradc/minimalModules/output
+/test/compflags/bradc/minimalModules/*.tmp
+
 # /test/compflags/bradc/nameoutput/
 /test/compflags/bradc/nameoutput/output
 /test/compflags/bradc/nameoutput/*.tmp
@@ -987,10 +998,7 @@
 /test/domains/waynew/log
 
 # /test/execflags/bradc/
-/test/execflags/bradc/*tmp
-/test/execflags/bradc/a.out
-/test/execflags/bradc/output
-/test/execflags/bradc/log
+/test/execflags/bradc/callStackSize.good
 
 # /test/execflags/bradc/gdbddash/
 /test/execflags/bradc/gdbddash/a.out
@@ -1053,6 +1061,9 @@
 /test/expressions/figueroa/a.out
 /test/expressions/figueroa/*.tmp
 /test/expressions/figueroa/output
+
+# /test/expressions/lydia/noinit/
+/test/expressions/lydia/noinit/ccode
 
 # /test/extern/bradc/
 /test/extern/bradc/*.tmp
@@ -1245,6 +1256,11 @@
 /test/functions/iterators/bradc/a.out
 /test/functions/iterators/bradc/output
 /test/functions/iterators/bradc/*.tmp
+
+# /test/functions/iterators/bradc/badzip/
+/test/functions/iterators/bradc/badzip/a.out
+/test/functions/iterators/bradc/badzip/output
+/test/functions/iterators/bradc/badzip/*.tmp
 
 # /test/functions/iterators/bradc/compileTime/
 /test/functions/iterators/bradc/compileTime/a.out
@@ -1489,6 +1505,10 @@
 /test/modules/standard/memory/countMemory/countMemory.chap08.good
 /test/modules/standard/memory/countMemory/countMemory.chap09.good
 /test/modules/standard/memory/countMemory/countMemory.chap10.good
+/test/modules/standard/memory/countMemory/countMemory.chap11.good
+/test/modules/standard/memory/countMemory/countMemory.chap12.good
+/test/modules/standard/memory/countMemory/countMemory.chap13.good
+/test/modules/standard/memory/countMemory/countMemory.chap14.good
 /test/modules/standard/memory/countMemory/countMemory.lnx-vass.good
 /test/modules/standard/memory/countMemory/countMemory.stemp7.good
 
@@ -1821,6 +1841,9 @@
 /test/performance/compiler/bradc/*.tmp
 /test/performance/compiler/bradc/output
 /test/performance/compiler/bradc/perfdat
+
+# /test/performance/compiler/elliot/
+/test/performance/compiler/elliot/passCheck.good
 
 # /test/performance/deitz/
 /test/performance/deitz/*.tmp
@@ -2367,6 +2390,11 @@
 /test/studies/shootout/fannkuch-redux/*.tmp
 /test/studies/shootout/fannkuch-redux/perfdat
 
+# /test/studies/shootout/fannkuch-redux/bradc/
+/test/studies/shootout/fannkuch-redux/bradc/a.out
+/test/studies/shootout/fannkuch-redux/bradc/output
+/test/studies/shootout/fannkuch-redux/bradc/*.tmp
+
 # /test/studies/shootout/fasta/
 /test/studies/shootout/fasta/a.out
 /test/studies/shootout/fasta/output
@@ -2378,6 +2406,12 @@
 /test/studies/shootout/mandelbrot/output
 /test/studies/shootout/mandelbrot/*.tmp
 /test/studies/shootout/mandelbrot/perfdat
+
+# /test/studies/shootout/mandelbrot/bradc/
+/test/studies/shootout/mandelbrot/bradc/a.out
+/test/studies/shootout/mandelbrot/bradc/output
+/test/studies/shootout/mandelbrot/bradc/*.tmp
+/test/studies/shootout/mandelbrot/bradc/perfdat
 
 # /test/studies/shootout/mandelbrot/bugs/
 /test/studies/shootout/mandelbrot/bugs/a.out
@@ -2411,6 +2445,11 @@
 /test/studies/shootout/spectral-norm/output
 /test/studies/shootout/spectral-norm/*.tmp
 /test/studies/shootout/spectral-norm/perfdat
+
+# /test/studies/shootout/spectral-norm/bradc/
+/test/studies/shootout/spectral-norm/bradc/a.out
+/test/studies/shootout/spectral-norm/bradc/output
+/test/studies/shootout/spectral-norm/bradc/*.tmp
 
 # /test/studies/shootout/thread-ring/
 /test/studies/shootout/thread-ring/a.out
@@ -3033,11 +3072,17 @@
 # /third-party/gmp/
 /third-party/gmp/build
 /third-party/gmp/install
+/third-party/gmp/gmp-6.0.0
 
 # /third-party/hwloc/
 /third-party/hwloc/hwloc-1.7.2
 /third-party/hwloc/build
 /third-party/hwloc/install
+
+# /third-party/llvm/
+/third-party/llvm/build
+/third-party/llvm/install
+/third-party/llvm/llvm
 
 # /third-party/massivethreads/
 /third-party/massivethreads/build
@@ -3046,6 +3091,11 @@
 # /third-party/qthread/
 /third-party/qthread/build
 /third-party/qthread/install
+
+# /third-party/re2/
+/third-party/re2/build
+/third-party/re2/install
+/third-party/re2/re2
 
 # /third-party/tcmalloc/
 /third-party/tcmalloc/build
