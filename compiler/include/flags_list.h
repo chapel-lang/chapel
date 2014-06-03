@@ -44,8 +44,6 @@ symbolFlag( FLAG_CALLS_CONSTRUCTOR , npr, "calls constructor" , "for functions t
 // 3. Assignment operations flagged as 'compiler generated' shall contain only
 // field assignments and assignment primitives.
 symbolFlag( FLAG_COMPILER_GENERATED , ypr, "compiler generated" , "marks functions and labels that are compiler-generated or supplied by an internal module" )
-symbolFlag( FLAG_LOCALE_MODEL_ALLOC , ypr, "locale model alloc" , "locale model specific alloc" )
-symbolFlag( FLAG_LOCALE_MODEL_FREE , ypr, "locale model free" , "locale model specific free" )
 symbolFlag( FLAG_COBEGIN_OR_COFORALL , npr, "cobegin or coforall" , ncm )
 symbolFlag( FLAG_COBEGIN_OR_COFORALL_BLOCK , npr, "cobegin or coforall block" , ncm )
 symbolFlag( FLAG_COFORALL_INDEX_VAR , npr, "coforall index var" , ncm )
@@ -63,6 +61,7 @@ symbolFlag( FLAG_DISTRIBUTION , ypr, "distribution" , ncm )
 symbolFlag( FLAG_DOMAIN , ypr, "domain" , ncm )
 symbolFlag( FLAG_DONOR_FN, ypr, "donor fn" , "function donates ownership of the returned object to the calling function" )
 symbolFlag( FLAG_DONT_DISABLE_REMOTE_VALUE_FORWARDING , ypr, "dont disable remote value forwarding" , ncm )
+symbolFlag( FLAG_EXPANDED_VARARGS, npr, "expanded varargs", ncm)
 symbolFlag( FLAG_EXPAND_TUPLES_WITH_VALUES , ypr, "expand tuples with values" , ncm )
 symbolFlag( FLAG_EXPORT , ypr, "export" , ncm )
 symbolFlag( FLAG_EXPORT_INIT, ypr, "export init", "indicate that the module's initialization function should be exported" )
@@ -102,6 +101,8 @@ symbolFlag( FLAG_ITERATOR_RECORD , npr, "iterator record" , ncm )
 symbolFlag( FLAG_ITERATOR_WITH_ON , npr, "iterator with on" , "iterator which contains an on block" )
 symbolFlag( FLAG_LABEL_BREAK , npr, "label break" , ncm )
 symbolFlag( FLAG_LABEL_CONTINUE , npr, "label continue" , ncm )
+symbolFlag( FLAG_LOCALE_MODEL_ALLOC , ypr, "locale model alloc" , "locale model specific alloc" )
+symbolFlag( FLAG_LOCALE_MODEL_FREE , ypr, "locale model free" , "locale model specific free" )
 
 // The arguments to this function are all values or narrow pointers.
 // Calls to an extern function use only narrow args and expect a narrow return.
@@ -163,7 +164,6 @@ symbolFlag( FLAG_PARAM , npr, "param" , "parameter (compile-time constant)" )
 
 symbolFlag( FLAG_PARTIAL_COPY, npr, "partial copy", ncm )
 symbolFlag( FLAG_PARTIAL_TUPLE, npr, "partial tuple", ncm)
-symbolFlag( FLAG_EXPANDED_VARARGS, npr, "expanded varargs", ncm)
 
 symbolFlag( FLAG_PRIMITIVE_TYPE , ypr, "primitive type" , "attached to primitive types to keep them from being deleted" )
 symbolFlag( FLAG_PRINT_MODULE_INIT_FN , ypr, "print module init fn" , ncm )
@@ -180,6 +180,7 @@ symbolFlag( FLAG_REF_TO_CONST , npr, "reference to a const" , "a temp or a funct
 symbolFlag( FLAG_REMOVABLE_AUTO_COPY , ypr, "removable auto copy" , ncm )
 symbolFlag( FLAG_REMOVABLE_AUTO_DESTROY , ypr, "removable auto destroy" , ncm )
 // See buildRuntimeTypeToValueFns() in functionResolution.cpp for more info on FLAG_RUNTIME_TYPE_INIT_FN
+symbolFlag( FLAG_RESOLVED , npr, "resolved" , "this function has been resolved" )
 symbolFlag( FLAG_RUNTIME_TYPE_INIT_FN , ypr, "runtime type init fn" , "function for initializing runtime time types" )
 symbolFlag( FLAG_RUNTIME_TYPE_VALUE , npr, "runtime type value" , "associated runtime type (value)" )
 symbolFlag( FLAG_SHOULD_NOT_PASS_BY_REF, npr, "should not pass by ref", "this symbol should be passed by value (not by reference) for performance, not for correctness")

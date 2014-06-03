@@ -34,8 +34,8 @@ static void checkFlagRelationships(); // Checks expected relationships between
                                       // flags.
 static void checkAutoCopyMap();
 static void checkFormalActualBaseTypesMatch();
+static void checkRetTypeMatchesRetVarType();
 static void checkFormalActualTypesMatch();
-static void checkNoWrapperMoves();
 
 
 //
@@ -380,9 +380,8 @@ static void check_afterResolution()
 // See test/extern/hilde/namedExtern.chpl.
 //    checkNoUnresolveds();
     checkFormalActualBaseTypesMatch();
+    checkRetTypeMatchesRetVarType();
     checkAutoCopyMap();
-    // This one can be removed after all wrapper moves are purged.
-    checkNoWrapperMoves();
   }
 }
 
@@ -535,6 +534,26 @@ checkFormalActualBaseTypesMatch()
   }
 }
 
+// After resolution the retType field is just a cached version of the type of
+// the return value variable.
+static void
+checkRetTypeMatchesRetVarType()
+{
+  forv_Vec(FnSymbol, fn, gFnSymbols)
+  {
+    if (fn->hasFlag(FLAG_ITERATOR_FN))
+      // Iterators break this rule.
+      // retType is the type of the iterator record
+      // The return value type is the type of the index the iterator returns.
+      continue;
+    if (fn->hasFlag(FLAG_AUTO_II))
+      // auto ii functions break this rule, but only during the time that
+      // they are prototypes.  After the body is filled in, they should obey it.
+      continue;
+    INT_ASSERT(fn->retType == fn->getReturnSymbol()->type);
+  }
+}
+
 static void
 checkFormalActualTypesMatch()
 {
@@ -560,28 +579,6 @@ checkFormalActualTypesMatch()
                     actual->typeInfo()->symbol->name,
                     formal->type->symbol->name);
       }
-    }
-  }
-}
-
-// Checks to make sure there are no wrapper moves around assignment operator calls.
-static void
-checkNoWrapperMoves()
-{
-  forv_Vec(CallExpr, call, gCallExprs)
-  {
-    if (FnSymbol* fn = call->isResolved())
-    {
-      // We are only interested in assign ops.
-      if (! fn->hasFlag(FLAG_ASSIGNOP))
-        continue;
-
-      CallExpr* parent = toCallExpr(call->parentExpr);
-      if (! parent)
-        continue;
-
-      if (parent->isPrimitive(PRIM_MOVE))
-        INT_FATAL(parent, "Tree should not contain any wrapper moves.");
     }
   }
 }

@@ -173,7 +173,6 @@ static int explainCallLine;
 static ModuleSymbol* explainCallModule;
 
 static Vec<CallExpr*> inits;
-static std::map<FnSymbol*,bool> resolvedFns;
 static Vec<FnSymbol*> resolvedFormals;
 Vec<CallExpr*> callStack;
 
@@ -709,13 +708,13 @@ protoIteratorClass(FnSymbol* fn) {
 
   makeRefType(fn->retType);
 
-  resolvedFns[fn->iteratorInfo->zip1] = true;
-  resolvedFns[fn->iteratorInfo->zip2] = true;
-  resolvedFns[fn->iteratorInfo->zip3] = true;
-  resolvedFns[fn->iteratorInfo->zip4] = true;
-  resolvedFns[fn->iteratorInfo->advance] = true;
-  resolvedFns[fn->iteratorInfo->hasMore] = true;
-  resolvedFns[fn->iteratorInfo->getValue] = true;
+  fn->iteratorInfo->zip1->addFlag(FLAG_RESOLVED);
+  fn->iteratorInfo->zip2->addFlag(FLAG_RESOLVED);
+  fn->iteratorInfo->zip3->addFlag(FLAG_RESOLVED);
+  fn->iteratorInfo->zip4->addFlag(FLAG_RESOLVED);
+  fn->iteratorInfo->advance->addFlag(FLAG_RESOLVED);
+  fn->iteratorInfo->hasMore->addFlag(FLAG_RESOLVED);
+  fn->iteratorInfo->getValue->addFlag(FLAG_RESOLVED);
 
   ii->getIterator = new FnSymbol("_getIterator");
   ii->getIterator->addFlag(FLAG_AUTO_II);
@@ -1540,6 +1539,7 @@ expandVarArgs(FnSymbol* origFn, int numActuals) {
 
       if (workingFn == origFn) {
         workingFn = origFn->copy(&substitutions);
+        INT_ASSERT(! workingFn->hasFlag(FLAG_RESOLVED));
         workingFn->addFlag(FLAG_INVISIBLE_FN);
         
         origFn->defPoint->insertBefore(new DefExpr(workingFn));
@@ -5726,6 +5726,7 @@ static void buildValueFunction(FnSymbol* fn) {
     if (!valueFunctionExists) {
       // Build the value function when it does not already exist.
       copy = fn->copy();
+      copy->removeFlag(FLAG_RESOLVED);
       copy->addFlag(FLAG_INVISIBLE_FN);
       if (fn->hasFlag(FLAG_NO_IMPLICIT_COPY))
         copy->addFlag(FLAG_NO_IMPLICIT_COPY);
@@ -5795,11 +5796,10 @@ static void resolveReturnType(FnSymbol* fn)
 
 static void
 resolveFns(FnSymbol* fn) {
-  if (resolvedFns.count(fn) != 0) {
+  if (fn->isResolved())
     return;
-  }
   
-  resolvedFns[fn] = true;
+  fn->addFlag(FLAG_RESOLVED);
 
   if (fn->hasFlag(FLAG_EXTERN)) {
     resolveBlock(fn->body);
@@ -5819,7 +5819,7 @@ resolveFns(FnSymbol* fn) {
   resolveBlock(fn->body);
 
   if (tryFailure) {
-    resolvedFns.erase(fn);
+    fn->removeFlag(FLAG_RESOLVED);
     return;
   }
 
@@ -6112,9 +6112,9 @@ addAllToVirtualMaps(FnSymbol* fn, AggregateType* ct) {
     AggregateType* ct = toAggregateType(t);
     if (ct->defaultTypeConstructor &&
         (ct->defaultTypeConstructor->hasFlag(FLAG_GENERIC) ||
-         resolvedFns.count(ct->defaultTypeConstructor) != 0)) {
+         ct->defaultTypeConstructor->isResolved()))
       addToVirtualMaps(fn, ct);
-    }
+
     if (!ct->instantiatedFrom)
       addAllToVirtualMaps(fn, ct);
   }
@@ -6124,14 +6124,28 @@ addAllToVirtualMaps(FnSymbol* fn, AggregateType* ct) {
 static void
 buildVirtualMaps() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (!fn->hasFlag(FLAG_WRAPPER) && resolvedFns.count(fn) != 0 && !fn->hasFlag(FLAG_NO_PARENS) && fn->retTag != RET_PARAM && fn->retTag != RET_TYPE) {
-      if (fn->numFormals() > 1) {
-        if (fn->getFormal(1)->type == dtMethodToken) {
-          if (AggregateType* pt = toAggregateType(fn->getFormal(2)->type)) {
-            if (isClass(pt) && !pt->symbol->hasFlag(FLAG_GENERIC)) {
-              addAllToVirtualMaps(fn, pt);
-            }
-          }
+    if (fn->hasFlag(FLAG_WRAPPER))
+      // Only "true" functions are used to populate virtual maps.
+      continue;
+
+    if (! fn->isResolved())
+      // Only functions that are actually used go into the virtual map.
+      continue;
+
+    if (fn->hasFlag(FLAG_NO_PARENS))
+      // Parenthesesless functions are statically bound; that is, they are not
+      // dispatched through the virtual table.
+      continue;
+
+    if (fn->retTag == RET_PARAM || fn->retTag == RET_TYPE) 
+      // Only run-time functions populate the virtual map.
+      continue;
+
+    if (fn->numFormals() > 1 && fn->getFormal(1)->type == dtMethodToken) {
+      // Only methods go in the virtual function table.
+      if (AggregateType* pt = toAggregateType(fn->getFormal(2)->type)) {
+        if (isClass(pt) && !pt->symbol->hasFlag(FLAG_GENERIC)) {
+          addAllToVirtualMaps(fn, pt);
         }
       }
     }
@@ -6812,8 +6826,10 @@ static void removeUnusedFunctions() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_PRINT_MODULE_INIT_FN)) continue;
     if (fn->defPoint && fn->defPoint->parentSymbol) {
-      if (resolvedFns.count(fn) == 0 || fn->retTag == RET_PARAM)
+      if (! fn->isResolved() || fn->retTag == RET_PARAM)
         fn->defPoint->remove();
+      // Why don't we remove type functions, too?
+      // (Here, we apparently remove only param functions.)
     }
   }
 }
@@ -6825,10 +6841,12 @@ isUnusedClass(AggregateType *ct) {
     return false;
 
   // FALSE if initializers are used
-  if (resolvedFns.count(ct->defaultInitializer) != 0 ||
-      resolvedFns.count(ct->defaultTypeConstructor) != 0) {
+  if (ct->defaultInitializer && ct->defaultInitializer->isResolved())
     return false;
-  }
+
+  // FALSE if the type constructor is used.
+  if (ct->defaultTypeConstructor && ct->defaultTypeConstructor->isResolved())
+    return false;
 
   bool allChildrenUnused = true;
   forv_Vec(Type, child, ct->dispatchChildren) {
@@ -7017,6 +7035,7 @@ static void buildRuntimeTypeInitFns() {
         //
         // Clone the original function
         FnSymbol* runtimeTypeToValueFn = fn->copy();
+        runtimeTypeToValueFn->removeFlag(FLAG_RESOLVED);
         runtimeTypeToValueFn->name = astr("chpl__convertRuntimeTypeToValue");
         runtimeTypeToValueFn->cname = runtimeTypeToValueFn->name;
         // Clean up flags

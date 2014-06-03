@@ -625,6 +625,7 @@ buildPromotionWrapper(FnSymbol* fn,
 
     SymbolMap leaderMap;
     FnSymbol* lifn = wrapper->copy(&leaderMap);
+    INT_ASSERT(! lifn->hasFlag(FLAG_RESOLVED));
     iteratorLeaderMap.put(wrapper,lifn);
     lifn->body = new BlockStmt(); // indices are not used in leader
     form_Map(SymbolMapElem, e, leaderMap) {
@@ -656,6 +657,7 @@ buildPromotionWrapper(FnSymbol* fn,
 
     SymbolMap followerMap;
     FnSymbol* fifn = wrapper->copy(&followerMap);
+    INT_ASSERT(! fifn->hasFlag(FLAG_RESOLVED));
     iteratorFollowerMap.put(wrapper,fifn);
     form_Map(SymbolMapElem, e, followerMap) {
       if (Symbol* s = paramMap.get(e->key))

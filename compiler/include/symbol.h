@@ -289,6 +289,7 @@ class FnSymbol : public Symbol {
   ArgSymbol* getFormal(int i); // return ith formal
 
   bool tag_generic();
+  bool isResolved() { return this->hasFlag(FLAG_RESOLVED); }
 };
 
 

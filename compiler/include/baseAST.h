@@ -145,6 +145,9 @@ static inline bool isType(AstTag tag)
   }                                                                     \
   virtual type* copyInner(SymbolMap* map)
 
+// This should be expanded verbatim and overloaded, so we don't create a map if
+// internal is false.
+// copyInner must now copy flags.
 #define DECLARE_SYMBOL_COPY(type)                                       \
   type* copy(SymbolMap* map = NULL, bool internal = false) {            \
     SymbolMap localMap;                                                 \
@@ -152,7 +155,6 @@ static inline bool isType(AstTag tag)
       map = &localMap;                                                  \
     type* _this = copyInner(map);                                       \
     _this->astloc = astloc;                                             \
-    _this->copyFlags(this);                                             \
     map->put(this, _this);                                              \
     if (!internal)                                                      \
       update_symbols(_this, map);                                       \
