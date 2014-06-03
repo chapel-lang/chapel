@@ -18,9 +18,6 @@ int   AstDumpToHtml::sPassIndex = 1;
 FILE* AstDumpToHtml::sIndexFP   = 0;
 
 AstDumpToHtml::AstDumpToHtml() {
-  mPassNum = 0;
-  mName    = 0;
-  mPath    = 0;
   mFP      = 0;
 }
 
@@ -54,12 +51,11 @@ void AstDumpToHtml::done() {
 }
 
 void AstDumpToHtml::view(const char* passName) {
-  INT_ASSERT(sPassIndex  == currentPassNo);
-  INT_ASSERT(passName    == currentPassName);
 
   fprintf(sIndexFP, "<TR><TD>");
   fprintf(sIndexFP,
-          "%s%s[%d]", passName,
+          "%s%s[%d]",
+          passName,
           fdump_html_include_system_modules ? "<br>" : " ", lastNodeIDUsed());
   fprintf(sIndexFP, "</TD><TD>");
 
@@ -69,7 +65,7 @@ void AstDumpToHtml::view(const char* passName) {
         module->modTag                    == MOD_USER) {
       AstDumpToHtml logger;
 
-      if (logger.open(module, passName, sPassIndex) == true) {
+      if (logger.open(module, passName) == true) {
         for_alist(stmt, module->block->body)
           stmt->accept(&logger);
 
@@ -84,14 +80,14 @@ void AstDumpToHtml::view(const char* passName) {
   sPassIndex++;
 }
 
-bool AstDumpToHtml::open(ModuleSymbol* module, const char* passName, int passNum) {
-  mName    = html_file_name(passNum, module->name);
-  mPath    = astr(log_dir, mName);
-  mFP      = fopen(mPath, "w");
-  mPassNum = passNum;
+bool AstDumpToHtml::open(ModuleSymbol* module, const char* passName) {
+  const char* name = html_file_name(sPassIndex, module->name);
+  const char* path = astr(log_dir, name);
+
+  mFP = fopen(path, "w");
 
   if (mFP != 0) {
-    fprintf(sIndexFP, "&nbsp;&nbsp;<a href=\"%s\">%s</a>\n", mName, module->name);
+    fprintf(sIndexFP, "&nbsp;&nbsp;<a href=\"%s\">%s</a>\n", name, module->name);
 
     fprintf(mFP, "<CHPLTAG=\"%s\">\n", passName);
     fprintf(mFP, "<HTML>\n");
@@ -486,7 +482,7 @@ void AstDumpToHtml::writeSymbol(Symbol* sym, bool def) {
     INT_ASSERT(hasHref(sym));
 
     fprintf(mFP, "<A HREF=\"%s#SYM%d\">",
-            html_file_name(mPassNum, sym->defPoint->getModule()->name),
+            html_file_name(sPassIndex, sym->defPoint->getModule()->name),
             sym->id);
   } else {
     INT_ASSERT(!hasHref(sym));
@@ -521,11 +517,11 @@ void AstDumpToHtml::writeSymbol(Symbol* sym, bool def) {
 
 void AstDumpToHtml::adjacent_passes(Symbol* sym) {
   if (hasHref(sym)) {
-    if (mPassNum > 1)
-      fprintf(mFP, "<A HREF=\"%s#SYM%d\">&laquo</A>",   html_file_name(mPassNum - 1, sym), sym->id);
+    if (sPassIndex > 1)
+      fprintf(mFP, "<A HREF=\"%s#SYM%d\">&laquo</A>",   html_file_name(sPassIndex - 1, sym), sym->id);
 
     if (true)
-      fprintf(mFP, "<A HREF=\"%s#SYM%d\">&raquo</A>\n", html_file_name(mPassNum + 1, sym), sym->id);
+      fprintf(mFP, "<A HREF=\"%s#SYM%d\">&raquo</A>\n", html_file_name(sPassIndex + 1, sym), sym->id);
   }
 }
 

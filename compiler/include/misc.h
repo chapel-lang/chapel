@@ -3,6 +3,8 @@
 
 #include "driver.h"
 
+#include <cstdio>
+
 #define exit(x) dont_use_exit_use_clean_exit_instead
 
 // INT_FATAL(ast, format, ...)
@@ -16,14 +18,16 @@
 #define USR_FATAL_CONT setupError(__FILE__, __LINE__, 3), handleError
 #define USR_WARN       setupError(__FILE__, __LINE__, 4), handleError
 #define USR_PRINT      setupError(__FILE__, __LINE__, 5), handleError
-#define USR_STOP exitIfFatalErrorsEncountered
+
+#define USR_STOP       exitIfFatalErrorsEncountered
 
 // INT_ASSERT is intended to become no-op in production builds of compiler
 #define INT_ASSERT(x) do { if (!(x)) INT_FATAL("assertion error"); } while (0)
-#define iterKindTypename "iterKind"
-#define iterKindLeaderTagname "leader"
-#define iterKindFollowerTagname "follower"
-#define iterFollowthisArgname "followThis"
+
+#define iterKindTypename          "iterKind"
+#define iterKindLeaderTagname     "leader"
+#define iterKindFollowerTagname   "follower"
+#define iterFollowthisArgname     "followThis"
 
 class BaseAST;
 

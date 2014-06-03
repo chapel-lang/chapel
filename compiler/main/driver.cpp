@@ -7,6 +7,7 @@
 
 #include "arg.h"
 #include "chpl.h"
+#include "config.h"
 #include "countTokens.h"
 #include "files.h"
 #include "log.h"
@@ -17,8 +18,8 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "timer.h"
 #include "version.h"
-#include "config.h"
 
 #include <inttypes.h>
 
@@ -881,17 +882,22 @@ int main(int argc, char *argv[]) {
   if (fdump_html || strcmp(log_flags, ""))
     init_logs();
   compile_all();
+
   if (fEnableTimers) {
-    printf("timer 1: %8.3lf\n", timer1.elapsed());
-    printf("timer 2: %8.3lf\n", timer2.elapsed());
-    printf("timer 3: %8.3lf\n", timer3.elapsed());
-    printf("timer 4: %8.3lf\n", timer4.elapsed());
-    printf("timer 5: %8.3lf\n", timer5.elapsed());
+    printf("timer 1: %8.3lf\n", timer1.elapsedSecs());
+    printf("timer 2: %8.3lf\n", timer2.elapsedSecs());
+    printf("timer 3: %8.3lf\n", timer3.elapsedSecs());
+    printf("timer 4: %8.3lf\n", timer4.elapsedSecs());
+    printf("timer 5: %8.3lf\n", timer5.elapsedSecs());
   }
+
   free_args(&arg_state);
+
   if(printPassesFile != NULL) {
     fclose(printPassesFile);
   }
+
   clean_exit(0);
+
   return 0;
 }

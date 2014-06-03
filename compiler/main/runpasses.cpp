@@ -7,11 +7,10 @@
 #include <cstdio>
 #include <sys/time.h>
 
-bool        printPasses     = false;
-FILE*       printPassesFile = NULL;
+bool  printPasses     = false;
+FILE* printPassesFile = NULL;
 
-int         currentPassNo   = 0;
-const char* currentPassName = 0;
+int   currentPassNo   = 1;
 
 struct PassInfo {
   void (*passFunction) ();      // The function which implements the pass.
@@ -91,7 +90,6 @@ static PassInfo sPassList[] = {
   RUN(makeBinary)                        // invoke underlying C compiler
 };
 
-static void advanceCurrentPass(const char* passName);
 static void runPass(size_t passIndex);
 static void printPassTiming(char const* fmt, ...);
 
@@ -110,11 +108,11 @@ void runPasses() {
     fDocs = true;
 
   for (size_t i = 0; i < passListSize; i++) {
-    advanceCurrentPass(sPassList[i].name);
-
     runPass(i);
 
     USR_STOP(); // quit if fatal errors were encountered in pass
+
+    currentPassNo++;
 
     // Break early if this is a chpl doc run
     if (chpldoc == true && strcmp(sPassList[i].name, "docs") == 0) {
@@ -130,15 +128,8 @@ void runPasses() {
                   "total time",
                   totalTime + timeBetweenPasses);
 
-  advanceCurrentPass("finishing up");
-
   destroyAst();
   teardownLogfiles();
-}
-
-static void advanceCurrentPass(const char* passName) {
-  currentPassNo++;
-  currentPassName = passName;
 }
 
 static void runPass(size_t passIndex) {

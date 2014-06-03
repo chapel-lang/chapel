@@ -42,21 +42,21 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define _list_H_
 
 #include <cstddef>
-#if defined(__FreeBSD__) && (__FreeBSD_version < 500000)
-#include <stdint.h>
-#endif
+#include <cstdint>
 
 template <class C> class SLink {
  public:
   C *next;
   SLink() : next(NULL) {};
 };
+
 #define GetSLinkNext(_c, _e, _o) (((SLink<_c> *)(void*)(((intptr_t)(void*)_e) + _o))->next)
 
 template <class C> struct Link : SLink<C> {
   C *prev;
   Link() : prev(NULL) {}
 };
+
 #define GetLinkNext(_c, _e, _o) (((Link<_c> *)(void*)(((intptr_t)(void*)_e) + _o))->next)
 #define GetLinkPrev(_c, _e, _o) (((Link<_c> *)(void*)(((intptr_t)(void*)_e) + _o))->prev)
 
@@ -70,6 +70,7 @@ template <class C, int o> class SLL {
 
   SLL() : head(NULL) {}
 };
+
 #define SList(_c, _f)  SLL<_c, offsetof(_c, _f)>
 #define forl_LL(_c, _p, _l) for (_c *_p = (_l).head; _p; _p = (_l).next_link(_p))
 
@@ -87,6 +88,7 @@ template <class C, int o> class DLL {
 
   DLL() : head(NULL) {}
 };
+
 #define DList(_c, _f)  DLL<_c, offsetof(_c, _f)>
 
 template <class C, int o> class Queue : public DLL<C, o> {
@@ -105,6 +107,7 @@ template <class C, int o> class Queue : public DLL<C, o> {
   
   Queue() : tail(NULL) {}
 };
+
 #define Que(_c, _f) Queue<_c, offsetof(_c, _f)>
 
 template <class C, int o>
@@ -121,6 +124,7 @@ class CountQueue : public Queue<C, o> {
   inline void append(CountQueue<C, o> &q);
   inline void append_clear(CountQueue<C, o> &q);
 };
+
 #define CountQue(_c, _f) CountQueue<_c, offsetof(_c, _f)>
 
 template <class C>

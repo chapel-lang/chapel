@@ -1,10 +1,13 @@
 #ifndef _driver_H_
 #define _driver_H_
 
-#include <cstdio>
-#include "timer.h"
-#include "map.h"
 #include "chpl.h"
+#include "map.h"
+
+#include <cstdio>
+
+class Timer;
+
 
 // For versions of bison beyond 2.3, this struct and the following
 // two defines should be moved back into chapel.ypp into a %code requires

@@ -64,7 +64,7 @@ private:
                    AstDumpToHtml();
                   ~AstDumpToHtml();
 
-  bool             open(ModuleSymbol* module, const char* passName, int passNum);
+  bool             open(ModuleSymbol* module, const char* passName);
   bool             close();
   
   void             writeFnSymbol(FnSymbol* fn);
@@ -80,10 +80,6 @@ private:
   static int       sPassIndex;
   static  FILE*    sIndexFP;
 
-  int              mPassNum;        // The pass that generated this AST
-
-  const char*      mName;           // The name of the file for the log
-  const char*      mPath;           // The full path to the file for the log
   FILE*            mFP;             // The FILE* to the log file if the file is open
 };
 

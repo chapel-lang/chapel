@@ -1,18 +1,21 @@
+#include "passes.h"
+
 #include "astutil.h"
 #include "bb.h"
-#include "passes.h"
-#include "stmt.h"
-#include "expr.h"
-#include "symbol.h"
 #include "bitVec.h"
 #include "dominator.h"
+#include "expr.h"
+#include "stmt.h"
+#include "stringutil.h"
+#include "symbol.h"
+#include "timer.h"
+#include "view.h"
 
 #include <stack>
 #include <set>
 #include <algorithm>
 
 
-#include "view.h"
 
 //#define debugHoisting
 #ifdef debugHoisting
@@ -22,7 +25,8 @@
 #endif
 
 
-//#define detailedTiming
+// #define detailedTiming
+
 #ifdef detailedTiming
   #define startTimer(timer) timer.start()
   #define stopTimer(timer) timer.stop()
@@ -1187,36 +1191,36 @@ void loopInvariantCodeMotion(void) {
   maxTimeFile = fopen(astr(CHPL_HOME,"/LICMmaxTime.txt"), "a");
 
   fprintf(timingFile, "For compilation of %s:                         \n", compileCommand );
-  fprintf(timingFile, "Spent %2.3f seconds building basic blocks      \n", buildBBTimer.elapsed()); 
-  fprintf(timingFile, "Spent %2.3f seconds computing dominators       \n", computeDominatorTimer.elapsed()); 
-  fprintf(timingFile, "Spent %2.3f seconds collecting natural loops   \n", collectNaturalLoopsTimer.elapsed()); 
-  fprintf(timingFile, "Spent %2.3f seconds building local def maps    \n", buildLocalDefMapsTimer.elapsed()); 
-  fprintf(timingFile, "Spent %2.3f seconds on can perform code motion \n", canPerformCodeMotionTimer.elapsed());
-  fprintf(timingFile, "Spent %2.3f seconds computing loop invariants  \n", computeLoopInvariantsTimer.elapsed()); 
+  fprintf(timingFile, "Spent %2.3f seconds building basic blocks      \n", buildBBTimer.elapsedSecs()); 
+  fprintf(timingFile, "Spent %2.3f seconds computing dominators       \n", computeDominatorTimer.elapsedSecs()); 
+  fprintf(timingFile, "Spent %2.3f seconds collecting natural loops   \n", collectNaturalLoopsTimer.elapsedSecs()); 
+  fprintf(timingFile, "Spent %2.3f seconds building local def maps    \n", buildLocalDefMapsTimer.elapsedSecs()); 
+  fprintf(timingFile, "Spent %2.3f seconds on can perform code motion \n", canPerformCodeMotionTimer.elapsedSecs());
+  fprintf(timingFile, "Spent %2.3f seconds computing loop invariants  \n", computeLoopInvariantsTimer.elapsedSecs()); 
    
-  double estimateOverall = buildBBTimer.elapsed() + computeDominatorTimer.elapsed() + collectNaturalLoopsTimer.elapsed() + \
-  buildLocalDefMapsTimer.elapsed() + canPerformCodeMotionTimer.elapsed() + computeLoopInvariantsTimer.elapsed();
+  double estimateOverall = buildBBTimer.elapsedSecs() + computeDominatorTimer.elapsedSecs() + collectNaturalLoopsTimer.elapsedSecs() + \
+  buildLocalDefMapsTimer.elapsedSecs() + canPerformCodeMotionTimer.elapsedSecs() + computeLoopInvariantsTimer.elapsedSecs();
   
   
-  fprintf(timingFile, "Spent %2.3f seconds loop hoisting on %ld loops \n", overallTimer.elapsed(), numLoops);
-  fprintf(timingFile, "      %2.3f seconds unaccounted for            \n", overallTimer.elapsed() - estimateOverall);
+  fprintf(timingFile, "Spent %2.3f seconds loop hoisting on %ld loops \n", overallTimer.elapsedSecs(), numLoops);
+  fprintf(timingFile, "      %2.3f seconds unaccounted for            \n", overallTimer.elapsedSecs() - estimateOverall);
   
-  double estimateInvariant = allOperandsAreLoopInvariantTimer.elapsed() + computeAliasTimer.elapsed() + \
-  collectSymExprAndDefTimer.elapsed() + calculateActualDefsTimer.elapsed();
+  double estimateInvariant = allOperandsAreLoopInvariantTimer.elapsedSecs() + computeAliasTimer.elapsedSecs() + \
+  collectSymExprAndDefTimer.elapsedSecs() + calculateActualDefsTimer.elapsedSecs();
   
   fprintf(timingFile, "\n");
   fprintf(timingFile, "In loop invariant computation:                 \n");
-  fprintf(timingFile, "Spent %2.3f seconds collecting sym/def Expr    \n", collectSymExprAndDefTimer.elapsed());
-  fprintf(timingFile, "Spent %2.3f seconds computing aliases          \n", computeAliasTimer.elapsed());
-  fprintf(timingFile, "Spent %2.3f seconds calculating actual defs    \n", calculateActualDefsTimer.elapsed());
-  fprintf(timingFile, "Spent %2.3f seconds in allOperandsAreInvariant \n", allOperandsAreLoopInvariantTimer.elapsed());
+  fprintf(timingFile, "Spent %2.3f seconds collecting sym/def Expr    \n", collectSymExprAndDefTimer.elapsedSecs());
+  fprintf(timingFile, "Spent %2.3f seconds computing aliases          \n", computeAliasTimer.elapsedSecs());
+  fprintf(timingFile, "Spent %2.3f seconds calculating actual defs    \n", calculateActualDefsTimer.elapsedSecs());
+  fprintf(timingFile, "Spent %2.3f seconds in allOperandsAreInvariant \n", allOperandsAreLoopInvariantTimer.elapsedSecs());
 
-  fprintf(timingFile, "      %2.3f seconds unaccounted for            \n\n", computeLoopInvariantsTimer.elapsed() - estimateInvariant);
+  fprintf(timingFile, "      %2.3f seconds unaccounted for            \n\n", computeLoopInvariantsTimer.elapsedSecs() - estimateInvariant);
   fprintf(timingFile, "_______________________________________________\n\n\n");
   
   
   fprintf(maxTimeFile, "For compilation of %s:                         \n", compileCommand );
-  fprintf(maxTimeFile, "Spent %2.3f seconds loop hoisting on %ld loops \n\n", overallTimer.elapsed(), numLoops);
+  fprintf(maxTimeFile, "Spent %2.3f seconds loop hoisting on %ld loops \n\n", overallTimer.elapsedSecs(), numLoops);
   fprintf(maxTimeFile, "_______________________________________________\n\n\n");
   
   fclose(timingFile);
