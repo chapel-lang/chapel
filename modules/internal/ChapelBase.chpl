@@ -262,8 +262,6 @@ module ChapelBase {
   inline proc =(ref a: string, b: string) { __primitive("move", a, b); }
 
   inline proc =(ref a, b: a.type) where isClassType(a.type)
-  // "move" is used instead of "=", to pick up wide pointer codegen not yet
-  // ported to PRIM_ASSIGN. (TODO)
   { __primitive("=", a, b); }
 
   // Because resolution prefers user-defined versions to ones marked as "compiler
@@ -273,8 +271,6 @@ module ChapelBase {
     // The CG pragma is needed because this function interferes with
     // assignments defined for sync and single class types.
   inline proc =(ref a, b:_nilType) where isClassType(a.type) {
-    // "move" is used here because the codegen for PRIM_ASSIGN does not yet
-    // handle the assignment of nil.
     __primitive("=", a, nil); 
   }
 
@@ -759,13 +755,8 @@ module ChapelBase {
     }
   }
   
-  // TODO: See if the special codegen code for handling ddata pointers can be
-  // split out as a separate move primitive.  Then, this assignment would call
-  // that ddata-specific primitive.
   inline proc =(ref a: _ddata(?t), b: _ddata(t)) {
-    // "move" is used instead of "=", to pick up wide pointer codegen not yet
-    // ported to PRIM_ASSIGN.
-    __primitive("move", a, b);
+    __primitive("=", a, b);
   }
 
   inline proc _cast(type t, x) where t:_ddata && x:_nilType {
