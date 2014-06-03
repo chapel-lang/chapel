@@ -4,6 +4,7 @@
 #       and 2) is less confusing. (thomasvandoren, 2014-02-12)
 
 . /etc/profile
+source /etc/bash.bashrc.local
 
 export CHPL_HOME_REPOSITORY=${CHPL_HOME_REPOSITORY:-"svn://svn.code.sf.net/p/chapel/code/trunk"}
 export CHPL_LAUNCHER=none
