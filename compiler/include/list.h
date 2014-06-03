@@ -42,7 +42,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define _list_H_
 
 #include <cstddef>
-#include <cstdint>
+
+#include <stdint.h>
 
 template <class C> class SLink {
  public:
