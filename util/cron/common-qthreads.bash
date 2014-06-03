@@ -8,7 +8,6 @@ if [ "${comm}" != "none" ] ; then
     # Set these to use oversubscription to help with timeouts
     export QT_AFFINITY=no
     export CHPL_QTHREAD_ENABLE_OVERSUBSCRIPTION=1
-    export CHPL_RT_NUM_THREADS_PER_LOCALE=2
 fi
 
 export CHPL_TASKS=qthreads
