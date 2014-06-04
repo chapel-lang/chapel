@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
-source $(cd $(dirname $0) ; pwd)/common-perf.bash
+CWD=$(cd $(dirname $0) ; pwd)
 
-export LOGFILE=$HOME/tmp/nightly-perf.linux64.chap04.out
-log_info "Testing performance.  Log file: $LOGFILE"
+source $CWD/common-perf.bash
 
-with_logging $LOGFILE ~/chapel/util/cron/nightly -cron -performance -releasePerformance -numtrials 5 -startdate 07/28/12
+log_info "Testing performance."
+$CWD/nightly -cron -performance -releasePerformance -numtrials 5 -startdate 07/28/12
 
 log_info "Finished ${0}."
