@@ -1,0 +1,4 @@
+If we call a function without passing the all ref arguments we get a compile error.
+
+If we call a function that has an initialized (implicit) argument with ref intent, we
+get a compiler error with non-lvalue passed by ref.
