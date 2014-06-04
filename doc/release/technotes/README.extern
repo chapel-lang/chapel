@@ -34,8 +34,8 @@ All of the following sections rely on the same general approach:
    listed on the Chapel compiler's command line to fulfill the missing
    concepts at back-end C compile and link-time.
 
-   For example, if an external function foo() function was defined in
-   foo.h and foo.c, it could be added to the compilation using either:
+   For example, if an external function foo() was defined in foo.h and
+   foo.c, it could be added to the compilation using either:
 
        chpl foo.h foo.c myProgram.chpl
 or:    chpl foo.h foo.o myProgram.chpl (if foo.c had already been compiled)
