@@ -6,4 +6,3 @@ MAILTO=chapel_build@cray.com
 # there and use the install_crontab.bash script to update.
 
 0 0 * * * ~/chapel/util/cron/machine.lnx-vass > ~/tmp/nightly.lnx-vass.out 2>&1
-45 23 * * * ~/chapel/util/cron/historify-logs
