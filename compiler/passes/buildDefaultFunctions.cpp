@@ -521,8 +521,8 @@ static void build_enum_enumerate_function(EnumType* et) {
   // Build a function that returns a tuple of the enum's values
   // Each enum type has its own _enum_enumerate function.
   FnSymbol* fn = new FnSymbol("_enum_enumerate");
-// TODO: This flag should be enabled, so a user-defined version of the record
-//  assignment function can override the compiler-generated version.
+// TODO: This flag should be enabled, so a user-defined version of the enum
+//  enumerate function can override the compiler-generated version.
 //  fn->addFlag(FLAG_COMPILER_GENERATED);
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "t", dtAny);
   arg->addFlag(FLAG_TYPE_VARIABLE);
@@ -672,7 +672,8 @@ static void build_record_assignment_function(AggregateType* ct) {
   fn->retType = dtVoid;
 
   if (externRecord) {
-    fn->insertAtTail(new CallExpr(PRIM_MOVE, arg1, arg2));
+    fn->insertAtTail(new CallExpr(PRIM_ASSIGN, arg1, arg2));
+    fn->addFlag(FLAG_TRIVIAL_ASSIGNMENT);
     fn->addFlag(FLAG_INLINE);
   } else {
     for_fields(tmp, ct) {
@@ -723,7 +724,7 @@ static void build_extern_assignment_function(Type* type)
 static void build_record_cast_function(AggregateType* ct) {
   FnSymbol* fn = new FnSymbol("_cast");
 // TODO: This flag should be enabled, so a user-defined version of the record
-//  assignment function can override the compiler-generated version.
+//  cast function can override the compiler-generated version.
 //  fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_INLINE);
   ArgSymbol* t = new ArgSymbol(INTENT_BLANK, "t", dtAny);
@@ -804,7 +805,7 @@ static void build_record_hash_function(AggregateType *ct) {
 
   FnSymbol *fn = new FnSymbol("chpl__defaultHash");
 // TODO: This flag should be enabled, so a user-defined version of the record
-//  assignment function can override the compiler-generated version.
+//  hash function can override the compiler-generated version.
 //  fn->addFlag(FLAG_COMPILER_GENERATED);
   ArgSymbol *arg = new ArgSymbol(INTENT_BLANK, "r", ct);
   arg->markedGeneric = true;
