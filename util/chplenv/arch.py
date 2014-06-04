@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import os, re, subprocess, sys, string, optparse
+#sys.stdout.write("native")
+#sys.exit(0)
 
 # very simple logger (should be easy to replace with a real system if needed)
 class Logger(object):
@@ -279,6 +281,18 @@ class InvalidLocationError(ValueError):
     pass
 
 def get_arch_flag(location, map_to_compiler=False):
+
+    if not location or location == "host":
+        arch = os.environ.get('CHPL_HOST_ARCH', '')
+    elif location == 'target':
+        arch = os.environ.get('CHPL_TARGET_ARCH', '')
+    else:
+        raise InvalidLocationError(location)
+
+    # fast path out for when the user as set arch=none
+    if arch == 'none':
+        return arch
+
     chpl_home = os.environ.get('CHPL_HOME', '')
     if not chpl_home:
         dirname = os.path.dirname
@@ -293,13 +307,6 @@ def get_arch_flag(location, map_to_compiler=False):
 
     platform_path = os.path.join(chpl_home, 'util', 'chplenv', 'platform')
     platform = run_command([platform_path, '--'+location]).strip()
-
-    if not location or location == "host":
-        arch = os.environ.get('CHPL_HOST_ARCH', '')
-    elif location == 'target':
-        arch = os.environ.get('CHPL_TARGET_ARCH', '')
-    else:
-        raise InvalidLocationError(location)
 
     if 'cray-prgenv' in compiler:
         if arch and (arch != 'none' or arch != 'unknown'):
