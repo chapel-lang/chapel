@@ -68,14 +68,14 @@ bool AstDump::close() {
 //
 // ArgSymbol
 //
-bool AstDump::visitEnter(ArgSymbol* node) {
+bool AstDump::enterArgSym(ArgSymbol* node) {
   return false;
 }
 
 //
 // CallExpr
 //
-bool AstDump::visitEnter(CallExpr* node) {
+bool AstDump::enterCallExpr(CallExpr* node) {
   if (isBlockStmt(node->parentExpr)) {
     newline();
   }
@@ -119,7 +119,7 @@ bool AstDump::visitEnter(CallExpr* node) {
   return true;
 }
 
-void AstDump::visitExit(CallExpr* node) {
+void AstDump::exitCallExpr(CallExpr* node) {
   write(false, ")", true);
 }
 
@@ -127,7 +127,7 @@ void AstDump::visitExit(CallExpr* node) {
 //
 // DefExpr
 //
-bool AstDump::visitEnter(DefExpr* node) {
+bool AstDump::enterDefExpr(DefExpr* node) {
   Symbol* sym    = node->sym;
   bool    retval = true;
 
@@ -177,7 +177,7 @@ bool AstDump::visitEnter(DefExpr* node) {
 //
 // NamedExpr
 //
-bool AstDump::visitEnter(NamedExpr* node) {
+bool AstDump::enterNamedExpr(NamedExpr* node) {
   if (isBlockStmt(node->parentExpr)) {
     newline();
   }
@@ -188,7 +188,7 @@ bool AstDump::visitEnter(NamedExpr* node) {
   return true;
 }
 
-void AstDump::visitExit(NamedExpr* node) {
+void AstDump::exitNamedExpr(NamedExpr* node) {
   write(false, ")", true);
 }
 
@@ -196,7 +196,7 @@ void AstDump::visitExit(NamedExpr* node) {
 //
 // SymExpr
 //
-void AstDump::visit(SymExpr* node) {
+void AstDump::visitSymExpr(SymExpr* node) {
   Symbol*    sym = node->var;
   VarSymbol* var = toVarSymbol(sym);
 
@@ -223,7 +223,7 @@ void AstDump::visit(SymExpr* node) {
 //
 // UnresolvedSymExpr
 //
-void AstDump::visit(UnresolvedSymExpr* node) {
+void AstDump::visitUsymExpr(UnresolvedSymExpr* node) {
   if (isBlockStmt(node->parentExpr)) {
     newline();
   }
@@ -235,7 +235,7 @@ void AstDump::visit(UnresolvedSymExpr* node) {
 //
 // BlockStmt
 //
-bool AstDump::visitEnter(BlockStmt* node) {
+bool AstDump::enterBlockStmt(BlockStmt* node) {
   newline();
 
   if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
@@ -249,7 +249,7 @@ bool AstDump::visitEnter(BlockStmt* node) {
   return true;
 }
 
-void AstDump::visitExit(BlockStmt* node) {
+void AstDump::exitBlockStmt(BlockStmt* node) {
   --mIndent;
   newline();
   write(false, "}", true);
@@ -260,7 +260,7 @@ void AstDump::visitExit(BlockStmt* node) {
 //
 // CondStmt
 //
-bool AstDump::visitEnter(CondStmt* node) {
+bool AstDump::enterCondStmt(CondStmt* node) {
   newline();
   write("if");
 
@@ -270,7 +270,7 @@ bool AstDump::visitEnter(CondStmt* node) {
 //
 // ExternBlockStmt
 //
-void AstDump::visit(ExternBlockStmt* node) {
+void AstDump::visitEblockStmt(ExternBlockStmt* node) {
   write("(ExternBlockStmt");
 }
 
@@ -278,7 +278,7 @@ void AstDump::visit(ExternBlockStmt* node) {
 //
 // GotoStmt
 //
-bool AstDump::visitEnter(GotoStmt* node) {
+bool AstDump::enterGotoStmt(GotoStmt* node) {
   switch (node->gotoTag) {
     case GOTO_NORMAL:      write("goto");           break;
     case GOTO_BREAK:       write("break");          break;

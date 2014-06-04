@@ -33,28 +33,28 @@ public:
   // declared public so that they can be invoked by the AST nodes
   // themselves
   //
-  virtual bool     visitEnter(ArgSymbol*         node);
+  virtual bool     enterArgSym    (ArgSymbol*         node);
 
-  virtual bool     visitEnter(CallExpr*          node);
-  virtual void     visitExit (CallExpr*          node);
+  virtual bool     enterCallExpr  (CallExpr*          node);
+  virtual void     exitCallExpr   (CallExpr*          node);
 
-  virtual bool     visitEnter(DefExpr*           node);
+  virtual bool     enterDefExpr   (DefExpr*           node);
 
-  virtual bool     visitEnter(NamedExpr*         node);
-  virtual void     visitExit (NamedExpr*         node);
+  virtual bool     enterNamedExpr (NamedExpr*         node);
+  virtual void     exitNamedExpr  (NamedExpr*         node);
 
-  virtual void     visit     (SymExpr*           node);
+  virtual void     visitSymExpr   (SymExpr*           node);
 
-  virtual void     visit     (UnresolvedSymExpr* node);
+  virtual void     visitUsymExpr  (UnresolvedSymExpr* node);
 
-  virtual bool     visitEnter(BlockStmt*         node);
-  virtual void     visitExit (BlockStmt*         node);
+  virtual bool     enterBlockStmt (BlockStmt*         node);
+  virtual void     exitBlockStmt  (BlockStmt*         node);
 
-  virtual bool     visitEnter(CondStmt*          node);
+  virtual bool     enterCondStmt  (CondStmt*          node);
 
-  virtual void     visit     (ExternBlockStmt*   node);
+  virtual void     visitEblockStmt(ExternBlockStmt*   node);
 
-  virtual bool     visitEnter(GotoStmt*          node);
+  virtual bool     enterGotoStmt  (GotoStmt*          node);
 
 private:
                    AstDump();

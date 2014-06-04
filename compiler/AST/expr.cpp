@@ -338,7 +338,7 @@ void SymExpr::prettyPrint(std::ostream *o) {
 }
 
 void SymExpr::accept(AstVisitor* visitor) {
-  visitor->visit(this);
+  visitor->visitSymExpr(this);
 }
 
 UnresolvedSymExpr::UnresolvedSymExpr(const char* i_unresolved) :
@@ -392,7 +392,7 @@ void UnresolvedSymExpr::prettyPrint(std::ostream *o) {
 }
 
 void UnresolvedSymExpr::accept(AstVisitor* visitor) {
-  visitor->visit(this);
+  visitor->visitUsymExpr(this);
 }
 
 DefExpr::DefExpr(Symbol* initSym, BaseAST* initInit, BaseAST* initExprType) :
@@ -508,7 +508,7 @@ GenRet DefExpr::codegen() {
 }
 
 void DefExpr::accept(AstVisitor* visitor) {
-  if (visitor->visitEnter(this) == true) {
+  if (visitor->enterDefExpr(this) == true) {
     if (init)
       init->accept(visitor);
 
@@ -518,7 +518,7 @@ void DefExpr::accept(AstVisitor* visitor) {
     if (sym)
       sym->accept(visitor);
 
-    visitor->visitExit(this);
+    visitor->exitDefExpr(this);
   }
 }
 
@@ -3502,7 +3502,7 @@ void CallExpr::prettyPrint(std::ostream *o) {
 }
 
 void CallExpr::accept(AstVisitor* visitor) {
-  if (visitor->visitEnter(this) == true) {
+  if (visitor->enterCallExpr(this) == true) {
 
     if (baseExpr)
       baseExpr->accept(visitor);
@@ -3510,7 +3510,7 @@ void CallExpr::accept(AstVisitor* visitor) {
     for_alist(next_ast, argList)
       next_ast->accept(visitor);
 
-    visitor->visitExit(this);
+    visitor->exitCallExpr(this);
   }
 }
 
@@ -5474,12 +5474,12 @@ void NamedExpr::prettyPrint(std::ostream *o) {
 
 
 void NamedExpr::accept(AstVisitor* visitor) {
-  if (visitor->visitEnter(this) == true) {
+  if (visitor->enterNamedExpr(this) == true) {
 
     if (actual)
       actual->accept(visitor);
 
-    visitor->visitExit(this);
+    visitor->exitNamedExpr(this);
   }
 }
 

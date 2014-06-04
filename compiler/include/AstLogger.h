@@ -8,55 +8,64 @@ public:
                    AstLogger();
   virtual         ~AstLogger();
 
-  virtual bool     visitEnter(AggregateType*     node);
-  virtual void     visitExit (AggregateType*     node);
+  //
+  // The sub-classes of Type
+  //
+  virtual bool     enterAggrType  (AggregateType*     node);
+  virtual void     exitAggrType   (AggregateType*     node);
 
-  virtual bool     visitEnter(EnumType*          node);
-  virtual void     visitExit (EnumType*          node);
+  virtual bool     enterEnumType  (EnumType*          node);
+  virtual void     exitEnumType   (EnumType*          node);
 
-  virtual void     visit     (PrimitiveType*     node);
+  virtual void     visitPrimType  (PrimitiveType*     node);
 
-  virtual bool     visitEnter(ArgSymbol*         node);
-  virtual void     visitExit (ArgSymbol*         node);
+  //
+  // The sub-classes of Symbol
+  //
+  virtual bool     enterArgSym    (ArgSymbol*         node);
+  virtual void     exitArgSym     (ArgSymbol*         node);
 
-  virtual void     visit     (EnumSymbol*        node);
+  virtual void     visitEnumSym   (EnumSymbol*        node);
 
-  virtual bool     visitEnter(FnSymbol*          node);
-  virtual void     visitExit (FnSymbol*          node);
+  virtual bool     enterFnSym     (FnSymbol*          node);
+  virtual void     exitFnSym      (FnSymbol*          node);
 
-  virtual void     visit     (LabelSymbol*       node);
+  virtual void     visitLabelSym  (LabelSymbol*       node);
 
-  virtual bool     visitEnter(ModuleSymbol*      node);
-  virtual void     visitExit (ModuleSymbol*      node);
+  virtual bool     enterModSym    (ModuleSymbol*      node);
+  virtual void     exitModSym     (ModuleSymbol*      node);
 
-  virtual bool     visitEnter(TypeSymbol*        node);
-  virtual void     visitExit (TypeSymbol*        node);
+  virtual bool     enterTypeSym   (TypeSymbol*        node);
+  virtual void     exitTypeSym    (TypeSymbol*        node);
 
-  virtual void     visit     (VarSymbol*         node);
+  virtual void     visitVarSym    (VarSymbol*         node);
 
-  virtual bool     visitEnter(CallExpr*          node);
-  virtual void     visitExit (CallExpr*          node);
+  //
+  // The sub-classes of Expr
+  //
+  virtual bool     enterCallExpr  (CallExpr*          node);
+  virtual void     exitCallExpr   (CallExpr*          node);
 
-  virtual bool     visitEnter(DefExpr*           node);
-  virtual void     visitExit (DefExpr*           node);
+  virtual bool     enterDefExpr   (DefExpr*           node);
+  virtual void     exitDefExpr    (DefExpr*           node);
 
-  virtual bool     visitEnter(NamedExpr*         node);
-  virtual void     visitExit (NamedExpr*         node);
+  virtual bool     enterNamedExpr (NamedExpr*         node);
+  virtual void     exitNamedExpr  (NamedExpr*         node);
 
-  virtual void     visit     (SymExpr*           node);
+  virtual void     visitSymExpr   (SymExpr*           node);
 
-  virtual void     visit     (UnresolvedSymExpr* node);
+  virtual void     visitUsymExpr  (UnresolvedSymExpr* node);
 
-  virtual bool     visitEnter(BlockStmt*         node);
-  virtual void     visitExit (BlockStmt*         node);
+  virtual bool     enterBlockStmt (BlockStmt*         node);
+  virtual void     exitBlockStmt  (BlockStmt*         node);
 
-  virtual bool     visitEnter(CondStmt*          node);
-  virtual void     visitExit (CondStmt*          node);
+  virtual bool     enterCondStmt  (CondStmt*          node);
+  virtual void     exitCondStmt   (CondStmt*          node);
 
-  virtual void     visit     (ExternBlockStmt*   node);
+  virtual void     visitEblockStmt(ExternBlockStmt*   node);
 
-  virtual bool     visitEnter(GotoStmt*          node);
-  virtual void     visitExit (GotoStmt*          node);
+  virtual bool     enterGotoStmt  (GotoStmt*          node);
+  virtual void     exitGotoStmt   (GotoStmt*          node);
 };
 
 #endif

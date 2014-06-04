@@ -18,7 +18,7 @@ int   AstDumpToHtml::sPassIndex = 1;
 FILE* AstDumpToHtml::sIndexFP   = 0;
 
 AstDumpToHtml::AstDumpToHtml() {
-  mFP      = 0;
+  mFP = 0;
 }
 
 AstDumpToHtml::~AstDumpToHtml() {
@@ -133,7 +133,7 @@ bool AstDumpToHtml::close() {
 //
 // CallExpr
 //
-bool AstDumpToHtml::visitEnter(CallExpr* node) {
+bool AstDumpToHtml::enterCallExpr(CallExpr* node) {
   if (isBlockStmt(node->parentExpr)) {
     fprintf(mFP, "<DL>\n");
   }
@@ -169,7 +169,7 @@ bool AstDumpToHtml::visitEnter(CallExpr* node) {
   return true;
 }
 
-void AstDumpToHtml::visitExit(CallExpr* node) {
+void AstDumpToHtml::exitCallExpr(CallExpr* node) {
   fprintf(mFP, ")");
 
   if (isBlockStmt(node->parentExpr)) {
@@ -181,7 +181,7 @@ void AstDumpToHtml::visitExit(CallExpr* node) {
 //
 // DefExpr
 //
-bool AstDumpToHtml::visitEnter(DefExpr* node) {
+bool AstDumpToHtml::enterDefExpr(DefExpr* node) {
   bool retval = true;
 
   if (isBlockStmt(node->parentExpr)) {
@@ -267,7 +267,7 @@ bool AstDumpToHtml::visitEnter(DefExpr* node) {
   return retval;
 }
 
-void AstDumpToHtml::visitExit(DefExpr* node) {
+void AstDumpToHtml::exitDefExpr(DefExpr* node) {
   if (isFnSymbol(node->sym) || 
       (isTypeSymbol(node->sym) &&
        isAggregateType(node->sym->type))) {
@@ -290,7 +290,7 @@ void AstDumpToHtml::visitExit(DefExpr* node) {
 //
 // NamedExpr
 //
-bool AstDumpToHtml::visitEnter(NamedExpr* node) {
+bool AstDumpToHtml::enterNamedExpr(NamedExpr* node) {
   if (isBlockStmt(node->parentExpr)) {
     fprintf(mFP, "<DL>\n");
   }
@@ -300,7 +300,7 @@ bool AstDumpToHtml::visitEnter(NamedExpr* node) {
   return true;
 }
 
-void AstDumpToHtml::visitExit(NamedExpr* node) {
+void AstDumpToHtml::exitNamedExpr(NamedExpr* node) {
   fprintf(mFP, ")");
 
   if (isBlockStmt(node->parentExpr)) {
@@ -312,7 +312,7 @@ void AstDumpToHtml::visitExit(NamedExpr* node) {
 //
 // SymExpr
 //
-void AstDumpToHtml::visit(SymExpr* node) {
+void AstDumpToHtml::visitSymExpr(SymExpr* node) {
   Symbol*    sym = node->var;
   VarSymbol* var = toVarSymbol(sym);
 
@@ -343,7 +343,7 @@ void AstDumpToHtml::visit(SymExpr* node) {
 //
 // UnresolvedSymExpr
 //
-void AstDumpToHtml::visit(UnresolvedSymExpr* node) {
+void AstDumpToHtml::visitUsymExpr(UnresolvedSymExpr* node) {
   if (isBlockStmt(node->parentExpr)) {
     fprintf(mFP, "<DL>\n");
   }
@@ -359,7 +359,7 @@ void AstDumpToHtml::visit(UnresolvedSymExpr* node) {
 //
 // BlockStmt
 //
-bool AstDumpToHtml::visitEnter(BlockStmt* node) {
+bool AstDumpToHtml::enterBlockStmt(BlockStmt* node) {
   fprintf(mFP, "<DL>\n");
 
   if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
@@ -373,7 +373,7 @@ bool AstDumpToHtml::visitEnter(BlockStmt* node) {
   return true;
 }
 
-void AstDumpToHtml::visitExit(BlockStmt* node) {
+void AstDumpToHtml::exitBlockStmt(BlockStmt* node) {
   fprintf(mFP, "}");
   printBlockID(node);
   fprintf(mFP, "</DL>\n");
@@ -383,21 +383,21 @@ void AstDumpToHtml::visitExit(BlockStmt* node) {
 //
 // CondStmt
 //
-bool AstDumpToHtml::visitEnter(CondStmt* node) {
+bool AstDumpToHtml::enterCondStmt(CondStmt* node) {
   fprintf(mFP, "<DL>\n");
   fprintf(mFP, "<B>if</B> ");
 
   return true;
 }
 
-void AstDumpToHtml::visitExit(CondStmt* node) {
+void AstDumpToHtml::exitCondStmt(CondStmt* node) {
   fprintf(mFP, "</DL>\n");
 }
 
 //
 // ExternBlockStmt
 //
-void AstDumpToHtml::visit(ExternBlockStmt* node) {
+void AstDumpToHtml::visitEblockStmt(ExternBlockStmt* node) {
   fprintf(mFP, "(%s", node->astTagAsString());
 
   if (isBlockStmt(node->parentExpr)) {
@@ -409,7 +409,7 @@ void AstDumpToHtml::visit(ExternBlockStmt* node) {
 //
 // GotoStmt
 //
-bool AstDumpToHtml::visitEnter(GotoStmt* node) {
+bool AstDumpToHtml::enterGotoStmt(GotoStmt* node) {
   fprintf(mFP, "<DL>\n");
 
   switch (node->gotoTag) {
@@ -429,7 +429,7 @@ bool AstDumpToHtml::visitEnter(GotoStmt* node) {
   return true;
 }
 
-void AstDumpToHtml::visitExit(GotoStmt* node) {
+void AstDumpToHtml::exitGotoStmt(GotoStmt* node) {
   fprintf(mFP, "</DL>\n");
 }
 

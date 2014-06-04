@@ -156,7 +156,7 @@ int PrimitiveType::codegenStructure(FILE* outfile, const char* baseoffset) {
 }
 
 void PrimitiveType::accept(AstVisitor* visitor) {
-  visitor->visit(this);
+  visitor->visitPrimType(this);
 }
 
 EnumType::EnumType() :
@@ -458,13 +458,13 @@ PrimitiveType* EnumType::getIntegerType() {
 }
 
 void EnumType::accept(AstVisitor* visitor) {
-  if (visitor->visitEnter(this) == true) {
+  if (visitor->enterEnumType(this) == true) {
 
     for_alist(next_ast, constants) {
       next_ast->accept(visitor);
     }
 
-    visitor->visitExit(this);
+    visitor->exitEnumType(this);
   }
 }
 
@@ -953,7 +953,7 @@ int AggregateType::codegenStructure(FILE* outfile, const char* baseoffset) {
 }
 
 void AggregateType::accept(AstVisitor* visitor) {
-  if (visitor->visitEnter(this) == true) {
+  if (visitor->enterAggrType(this) == true) {
 
     for_alist(next_ast, fields) {
       next_ast->accept(visitor);
@@ -963,7 +963,7 @@ void AggregateType::accept(AstVisitor* visitor) {
       next_ast->accept(visitor);
     }
 
-    visitor->visitExit(this);
+    visitor->exitAggrType(this);
   }
 }
 

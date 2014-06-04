@@ -333,7 +333,7 @@ BlockStmt::removeUse(ModuleSymbol* mod) {
 }
 
 void BlockStmt::accept(AstVisitor* visitor) {
-  if (visitor->visitEnter(this) == true) {
+  if (visitor->enterBlockStmt(this) == true) {
     for_alist(next_ast, body)
       next_ast->accept(visitor);
 
@@ -346,7 +346,7 @@ void BlockStmt::accept(AstVisitor* visitor) {
     if (byrefVars)
       byrefVars->accept(visitor);
 
-    visitor->visitExit(this);
+    visitor->exitBlockStmt(this);
   }
 }
 
@@ -577,7 +577,7 @@ GenRet CondStmt::codegen() {
 
 
 void CondStmt::accept(AstVisitor* visitor) {
-  if (visitor->visitEnter(this) == true) {
+  if (visitor->enterCondStmt(this) == true) {
 
     if (condExpr)
       condExpr->accept(visitor);
@@ -588,7 +588,7 @@ void CondStmt::accept(AstVisitor* visitor) {
     if (elseStmt)
       elseStmt->accept(visitor);
 
-    visitor->visitExit(this);
+    visitor->exitCondStmt(this);
   }
 }
 
@@ -767,12 +767,12 @@ const char* GotoStmt::getName() {
 }
 
 void GotoStmt::accept(AstVisitor* visitor) {
-  if (visitor->visitEnter(this) == true) {
+  if (visitor->enterGotoStmt(this) == true) {
 
     if (label)
       label->accept(visitor);
 
-    visitor->visitExit(this);
+    visitor->exitGotoStmt(this);
   }
 }
 
@@ -813,6 +813,6 @@ ExternBlockStmt* ExternBlockStmt::copyInner(SymbolMap* map) {
 }
 
 void ExternBlockStmt::accept(AstVisitor* visitor) {
-  visitor->visit(this);
+  visitor->visitEblockStmt(this);
 }
 

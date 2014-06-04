@@ -769,7 +769,7 @@ bool VarSymbol::isImmediate() const {
 }
 
 void VarSymbol::accept(AstVisitor* visitor) {
-  visitor->visit(this);
+  visitor->visitVarSym(this);
 }
 
 ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName, 
@@ -975,7 +975,7 @@ GenRet ArgSymbol::codegen() {
 }
 
 void ArgSymbol::accept(AstVisitor* visitor) {
-  if (visitor->visitEnter(this) == true) {
+  if (visitor->enterArgSym(this) == true) {
 
     if (typeExpr)
       typeExpr->accept(visitor);
@@ -986,7 +986,7 @@ void ArgSymbol::accept(AstVisitor* visitor) {
     if (variableExpr)
       variableExpr->accept(visitor);
 
-    visitor->visitExit(this);
+    visitor->exitArgSym(this);
   }
 }
 
@@ -1215,12 +1215,12 @@ GenRet TypeSymbol::codegen() {
 }
 
 void TypeSymbol::accept(AstVisitor* visitor) {
-  if (visitor->visitEnter(this) == true) {
+  if (visitor->enterTypeSym(this) == true) {
 
     if (type)
       type->accept(visitor);
 
-    visitor->visitExit(this);
+    visitor->exitTypeSym(this);
   }
 }
 
@@ -2066,7 +2066,7 @@ bool FnSymbol::tag_generic() {
 }
 
 void FnSymbol::accept(AstVisitor* visitor) {
-  if (visitor->visitEnter(this) == true) {
+  if (visitor->enterFnSym(this) == true) {
 
     for_alist(next_ast, formals) {
       next_ast->accept(visitor);
@@ -2085,7 +2085,7 @@ void FnSymbol::accept(AstVisitor* visitor) {
       retExprType->accept(visitor);
     }
 
-    visitor->visitExit(this);
+    visitor->exitFnSym(this);
   }
 }
 
@@ -2129,7 +2129,7 @@ Immediate* EnumSymbol::getImmediate(void) {
 }
 
 void EnumSymbol::accept(AstVisitor* visitor) {
-  visitor->visit(this);
+  visitor->visitEnumSym(this);
 }
 
 ModuleSymbol::ModuleSymbol(const char* iName, ModTag iModTag, BlockStmt* iBlock)
@@ -2304,12 +2304,12 @@ void ModuleSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 void ModuleSymbol::accept(AstVisitor* visitor) {
-  if (visitor->visitEnter(this) == true) {
+  if (visitor->enterModSym(this) == true) {
 
     if (block)
       block->accept(visitor);
 
-    visitor->visitExit(this);
+    visitor->exitModSym(this);
   }
 }
 
@@ -2369,7 +2369,7 @@ void LabelSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 void LabelSymbol::codegenDef() { }
   
 void LabelSymbol::accept(AstVisitor* visitor) {
-  visitor->visit(this);
+  visitor->visitLabelSym(this);
 }
 
 static int literal_id = 1;

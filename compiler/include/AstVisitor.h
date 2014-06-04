@@ -30,63 +30,72 @@ public:
   virtual       ~AstVisitor();
 
   //
+  // The first implementation of this pattern used a traditional naming
+  // convention that relied on overloading of virtual functions.  Although
+  // this was functionally safe for this use-case, one of our configurations
+  // causes GCC to be more particular and issue warnings.
+  //
+  // Switched to a more robust naming convention that avoids this issue.
+  //
+
+  //
   // The sub-classes of Type
   //
-  virtual bool   visitEnter(AggregateType*     node) = 0;
-  virtual void   visitExit (AggregateType*     node) = 0;
+  virtual bool   enterAggrType  (AggregateType*     node) = 0;
+  virtual void   exitAggrType   (AggregateType*     node) = 0;
 
-  virtual bool   visitEnter(EnumType*          node) = 0;
-  virtual void   visitExit (EnumType*          node) = 0;
+  virtual bool   enterEnumType  (EnumType*          node) = 0;
+  virtual void   exitEnumType   (EnumType*          node) = 0;
 
-  virtual void   visit     (PrimitiveType*     node) = 0;
+  virtual void   visitPrimType  (PrimitiveType*     node) = 0;
 
   //
   // The sub-classes of Symbol
   //
-  virtual bool   visitEnter(ArgSymbol*         node) = 0;
-  virtual void   visitExit (ArgSymbol*         node) = 0;
+  virtual bool   enterArgSym    (ArgSymbol*         node) = 0;
+  virtual void   exitArgSym     (ArgSymbol*         node) = 0;
 
-  virtual void   visit     (EnumSymbol*        node) = 0;
+  virtual void   visitEnumSym   (EnumSymbol*        node) = 0;
 
-  virtual bool   visitEnter(FnSymbol*          node) = 0;
-  virtual void   visitExit (FnSymbol*          node) = 0;
+  virtual bool   enterFnSym     (FnSymbol*          node) = 0;
+  virtual void   exitFnSym      (FnSymbol*          node) = 0;
 
-  virtual void   visit     (LabelSymbol*       node) = 0;
+  virtual void   visitLabelSym  (LabelSymbol*       node) = 0;
 
-  virtual bool   visitEnter(ModuleSymbol*      node) = 0;
-  virtual void   visitExit (ModuleSymbol*      node) = 0;
+  virtual bool   enterModSym    (ModuleSymbol*      node) = 0;
+  virtual void   exitModSym     (ModuleSymbol*      node) = 0;
 
-  virtual bool   visitEnter(TypeSymbol*        node) = 0;
-  virtual void   visitExit (TypeSymbol*        node) = 0;
+  virtual bool   enterTypeSym   (TypeSymbol*        node) = 0;
+  virtual void   exitTypeSym    (TypeSymbol*        node) = 0;
 
-  virtual void   visit     (VarSymbol*         node) = 0;
+  virtual void   visitVarSym    (VarSymbol*         node) = 0;
 
   //
   // The sub-classes of Expr
   //
-  virtual bool   visitEnter(CallExpr*          node) = 0;
-  virtual void   visitExit (CallExpr*          node) = 0;
+  virtual bool   enterCallExpr  (CallExpr*          node) = 0;
+  virtual void   exitCallExpr   (CallExpr*          node) = 0;
 
-  virtual bool   visitEnter(DefExpr*           node) = 0;
-  virtual void   visitExit (DefExpr*           node) = 0;
+  virtual bool   enterDefExpr   (DefExpr*           node) = 0;
+  virtual void   exitDefExpr    (DefExpr*           node) = 0;
 
-  virtual bool   visitEnter(NamedExpr*         node) = 0;
-  virtual void   visitExit (NamedExpr*         node) = 0;
+  virtual bool   enterNamedExpr (NamedExpr*         node) = 0;
+  virtual void   exitNamedExpr  (NamedExpr*         node) = 0;
 
-  virtual void   visit     (SymExpr*           node) = 0;
+  virtual void   visitSymExpr   (SymExpr*           node) = 0;
 
-  virtual void   visit     (UnresolvedSymExpr* node) = 0;
+  virtual void   visitUsymExpr  (UnresolvedSymExpr* node) = 0;
 
-  virtual bool   visitEnter(BlockStmt*         node) = 0;
-  virtual void   visitExit (BlockStmt*         node) = 0;
+  virtual bool   enterBlockStmt (BlockStmt*         node) = 0;
+  virtual void   exitBlockStmt  (BlockStmt*         node) = 0;
 
-  virtual bool   visitEnter(CondStmt*          node) = 0;
-  virtual void   visitExit (CondStmt*          node) = 0;
+  virtual bool   enterCondStmt  (CondStmt*          node) = 0;
+  virtual void   exitCondStmt   (CondStmt*          node) = 0;
 
-  virtual void   visit     (ExternBlockStmt*   node) = 0;
+  virtual void   visitEblockStmt(ExternBlockStmt*   node) = 0;
 
-  virtual bool   visitEnter(GotoStmt*          node) = 0;
-  virtual void   visitExit (GotoStmt*          node) = 0;
+  virtual bool   enterGotoStmt  (GotoStmt*          node) = 0;
+  virtual void   exitGotoStmt   (GotoStmt*          node) = 0;
 };
 
 #endif
