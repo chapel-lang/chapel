@@ -302,7 +302,7 @@ def get_arch_flag(location, map_to_compiler=False):
         raise InvalidLocationError(location)
 
     if 'cray-prgenv' in compiler:
-        if arch != 'none':
+        if arch and (arch != 'none' or arch != 'unknown'):
             logger.warn("Setting the processor type through environment variables "
                         "is not supported for cray-prgenv-*. Please use the "
                         "appropriate craype-* module for your processor type.")
