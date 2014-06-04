@@ -303,14 +303,14 @@ def get_arch_flag(location, map_to_compiler=False):
 
     if 'cray-prgenv' in compiler:
         if arch != 'none':
-            log.warn("Setting the processor type through environment variables "
-                      "is not supported for cray-prgenv-*. Please use the "
-                      "appropriate craype-* module for your processor type.")
+            logger.warn("Setting the processor type through environment variables "
+                        "is not supported for cray-prgenv-*. Please use the "
+                        "appropriate craype-* module for your processor type.")
         arch = os.environ.get('CRAY_CPU_TARGET', 'none')
         if arch == 'none':
-            log.warn("No craype-* processor type module was detected, please "
-                     "load the appropriate one if you want any specialization "
-                     "to occur.")
+            logger.warn("No craype-* processor type module was detected, please "
+                        "load the appropriate one if you want any specialization "
+                        "to occur.")
         return arch
     elif 'pgi' in compiler:
         return 'none'
