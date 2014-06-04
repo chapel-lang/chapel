@@ -94,6 +94,9 @@ log_info "CHPL_HOST_PLATFORM is: ${CHPL_HOST_PLATFORM}"
 # Enable warnings and errors.
 export CHPL_DEVELOPER=true
 
+# Disable processor specialization (overridden in some configurations)
+export CHPL_TARGET_ARCH=none
+
 # Enable GMP testing
 case "${CHPL_HOST_PLATFORM}" in
  (darwin)         log_info "Not setting CHPL_GMP for ${CHPL_HOST_PLATFORM}, to avoid build issues.";;

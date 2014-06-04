@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 
-# add 'with' support for python 2.5
-from __future__ import with_statement
-
 import os, re, subprocess, sys, string, optparse
 
 # very simple logger (should be easy to replace with a real system if needed)
@@ -33,13 +30,13 @@ class argument_map(object):
         'ivybridge':   'core-avx-i',
         'haswell':     'core-avx2',
         'broadwell':   'core-avx2',
-        'k8':          '',
-        'k8sse3':      '',
-        'barcelona':   '',
-        'bdver1':      '',
-        'bdver2':      '',
-        'bdver3':      '',
-        'bdver4':      '',
+        'k8':          'none',
+        'k8sse3':      'none',
+        'barcelona':   'none',
+        'bdver1':      'none',
+        'bdver2':      'none',
+        'bdver3':      'none',
+        'bdver4':      'none',
     }
 
     gcc43 = {
@@ -102,6 +99,8 @@ class argument_map(object):
     def find(cls, arch, compiler, version):
         if arch == 'unknown' or arch == '':
             return 'unknown'
+        elif arch == 'none':
+            return 'none'
 
         arg_value = cls._get(arch, compiler, version)
         if not arg_value:
@@ -303,11 +302,22 @@ def get_arch_flag(location, map_to_compiler=False):
         raise InvalidLocationError(location)
 
     if 'cray-prgenv' in compiler:
-        if arch:
-            log.warn("Setting the architecture through environment variables is"
-                      "not supported for cray-prgenv-*. Please use the"
-                      "appropriate craype-* module for your architecture.")
-        return os.environ.get('CRAY_CPU_TARGET', 'unknown')
+        if arch != 'none':
+            log.warn("Setting the processor type through environment variables "
+                      "is not supported for cray-prgenv-*. Please use the "
+                      "appropriate craype-* module for your processor type.")
+        arch = os.environ.get('CRAY_CPU_TARGET', 'none')
+        if arch == 'none':
+            log.warn("No craype-* processor type module was detected, please "
+                     "load the appropriate one if you want any specialization "
+                     "to occur.")
+        return arch
+    elif 'pgi' in compiler:
+        return 'none'
+    elif 'cray' in compiler:
+        return 'none'
+    elif 'ibm' in compiler:
+        return 'none'
 
     # Only try to do any auto-detection or verification when:
     # comm == none  -- The inverse means that we are probably cross-compiling.
@@ -330,9 +340,10 @@ def get_arch_flag(location, map_to_compiler=False):
                     vendor_string, feature_string = get_cpuinfo(platform)
                     detected_arch = feature_sets.find(vendor_string, feature_string)
                     if not feature_sets.subset(arch, detected_arch):
-                        logger.warn("The supplied architecture does not appear to be "
-                                    "compatible with the host architecture. The resultant "
-                                    "binary may not run on the current machine.")
+                        logger.warn("The supplied processor type does not "
+                                    "appear to be compatible with the host "
+                                    "processor type. The resultant binary may "
+                                    "not run on the current machine.")
                 except ValueError:
                     logger.warn("Unknown platform, could not find CPU information")
         else:
@@ -351,7 +362,7 @@ def get_arch_flag(location, map_to_compiler=False):
 
 if __name__ == '__main__':
     logger.enabled = True
-    usage = "usage: architecture [--host|target] [--compflag]\n"
+    usage = "usage: arch.py [--host|target] [--compflag]\n"
 
     location = ''
     map_to_compiler = False

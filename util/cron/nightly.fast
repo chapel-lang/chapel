@@ -10,6 +10,7 @@
 # -compperformance (--fast). 
  
 source $(cd $(dirname $0) ; pwd)/common.bash
+source $(cd $(dirname $0) ; pwd)/common-fast.bash
 
 if [ "${1}" == "-examples" ] ; then
     examples_opt="-examples -no-futures"

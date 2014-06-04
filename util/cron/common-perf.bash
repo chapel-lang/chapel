@@ -4,6 +4,7 @@
 # scripts that wish to make use of the variables set here.
 
 source $(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)/common.bash
+source $(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)/common-fast.bash
 
 # It is tempting to use hostname --short, but macs only support the short form
 # of the argument.
