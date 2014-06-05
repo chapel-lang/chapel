@@ -340,25 +340,32 @@ const char* nthFilename(int i) {
 }
 
 
-const char* createGDBFile(int argc, char* argv[]) {
-  const char* gdbfilename = genIntFilename("gdb.commands");
-  FILE* gdbfile = openfile(gdbfilename);
+const char* createDebuggerFile(const char* debugger, int argc, char* argv[]) {
+  const char* dbgfilename = genIntFilename(astr(debugger, ".commands"));
+  FILE* dbgfile = openfile(dbgfilename);
   int i;
 
-  fprintf(gdbfile, "set args");
+  if (strcmp(debugger, "gdb") == 0) {
+    fprintf(dbgfile, "set args");
+  } else if (strcmp(debugger, "lldb") == 0) {
+    fprintf(dbgfile, "settings set target.run-args");
+  } else {
+      INT_FATAL(astr("createDebuggerFile doesn't know how to handle the given "
+                     "debugger: '", debugger, "'"));
+  }
   for (i=1; i<argc; i++) {
-    if (strcmp(argv[i], "--gdb") != 0) {
-      fprintf(gdbfile, " %s", argv[i]);
+    if (strcmp(argv[i], astr("--", debugger)) != 0) {
+      fprintf(dbgfile, " %s", argv[i]);
     }
   }
-  fprintf(gdbfile, "\n");
-  closefile(gdbfile);
-  mysystem(astr("cat ", CHPL_HOME, "/compiler/etc/gdb.commands >> ", 
-                gdbfilename), 
-           "appending gdb commands", 0);
 
+  fprintf(dbgfile, "\n");
+  closefile(dbgfile);
+  mysystem(astr("cat ", CHPL_HOME, "/compiler/etc/", debugger, ".commands >> ",
+                dbgfilename),
+           astr("appending ", debugger, " commands"), 0);
 
-  return gdbfilename;
+  return dbgfilename;
 }
 
 

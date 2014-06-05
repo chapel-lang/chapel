@@ -60,6 +60,7 @@ static char incFilename[FILENAME_MAX] = "";
 static char moduleSearchPath[FILENAME_MAX] = "";
 static char log_flags[512] = "";
 static bool rungdb = false;
+static bool runlldb = false;
 bool fLibraryCompile = false;
 bool no_codegen = false;
 bool genExternPrototypes = false;
@@ -454,9 +455,18 @@ compute_program_name_loc(const char* orig_argv0, const char** name, const char**
 
 
 static void runCompilerInGDB(int argc, char* argv[]) {
-  const char* gdbCommandFilename = createGDBFile(argc, argv);
+  const char* gdbCommandFilename = createDebuggerFile("gdb", argc, argv);
   const char* command = astr("gdb -q ", argv[0]," -x ", gdbCommandFilename);
   int status = mysystem(command, "running gdb", 0);
+
+  clean_exit(status);
+}
+
+
+static void runCompilerInLLDB(int argc, char* argv[]) {
+  const char* lldbCommandFilename = createDebuggerFile("lldb", argc, argv);
+  const char* command = astr("lldb -s ", lldbCommandFilename, " ", argv[0]);
+  int status = mysystem(command, "running lldb", 0);
 
   clean_exit(status);
 }
@@ -762,6 +772,7 @@ static ArgumentDescription arg_desc[] = {
  {"default-dist", ' ', "<distribution>", "Change the default distribution", "S256", defaultDist, "CHPL_DEFAULT_DIST", NULL},
  {"explain-call-id", ' ', "<call-id>", "Explain resolution of call by ID", "I", &explainCallID, NULL, NULL},
  {"gdb", ' ', NULL, "Run compiler in gdb", "F", &rungdb, NULL, NULL},
+ {"lldb", ' ', NULL, "Run compiler in lldb", "F", &runlldb, NULL, NULL},
  {"heterogeneous", ' ', NULL, "Compile for heterogeneous nodes", "F", &fHeterogeneous, "", NULL},
  {"ignore-errors", ' ', NULL, "[Don't] attempt to ignore errors", "N", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
  {"ignore-errors-for-pass", ' ', NULL, "[Don't] attempt to ignore errors until the end of the pass in which they occur", "N", &ignore_errors_for_pass, "CHPL_IGNORE_ERRORS_FOR_PASS", NULL},
@@ -879,6 +890,8 @@ int main(int argc, char *argv[]) {
   printStuff(argv[0]);
   if (rungdb)
     runCompilerInGDB(argc, argv);
+  if (runlldb)
+    runCompilerInLLDB(argc, argv);
   if (fdump_html || strcmp(log_flags, ""))
     init_logs();
   compile_all();

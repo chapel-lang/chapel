@@ -51,7 +51,7 @@ void addIncInfo(const char* incDir);
 
 void genIncludeCommandLineHeaders(FILE* outfile);
 
-const char* createGDBFile(int argc, char* argv[]);
+const char* createDebuggerFile(const char* debugger, int argc, char* argv[]);
 
 const char* runUtilScript(const char* script);
 
