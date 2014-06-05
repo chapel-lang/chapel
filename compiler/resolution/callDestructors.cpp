@@ -472,10 +472,15 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
         }
       }
     }
-    //USR_WARN(move, "possible premature free");
+    // When this was USR_WARN, release/examples/hello.chpl generates 10 warnings
+    // if this was uncommented.  Really, it should be an internal error, though.
+    //INT_FATAL(move, "possible premature free");
   } else {
     if (useMap.get(lhs) && useMap.get(lhs)->n > 0) {
-      //USR_WARN(move, "possible premature free (use not found)");
+      // When this was USR_WARN, release/examples/hello.chpl generates 10
+      // warnings if this was uncommented.  Really, it should be an internal
+      // error, though.
+      //INT_FATAL(move, "possible premature free (use not found)");
     }
   }
 }
