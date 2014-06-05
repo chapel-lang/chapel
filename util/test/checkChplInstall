@@ -137,7 +137,7 @@ cp $TESTS $TMP_TEST_DIR/
     # Run the tests.
     echo "Running the hello world tests found in: $TEST_DIR"
 
-    $CHPL_HOME/util/start_test --no-chpl-home-warn --progress *.chpl > $test_output_log
+    $CHPL_HOME/util/start_test --no-chpl-home-warn --progress $CHPL_START_TEST_ARGS *.chpl > $test_output_log
 
     test_status=$?
     log_debug "start_test exit code: ${test_status}"
