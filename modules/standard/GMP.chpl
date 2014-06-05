@@ -141,14 +141,14 @@ module GMP {
   extern proc mpz_divisible_2exp_p(ref N: mpz_t, B:c_ulong):c_int;
 
   extern proc mpz_conguent_p(ref N: mpz_t, ref C:mpz_t, ref D:mpz_t):c_int;
-  extern proc mpz_congruent_ui_p(ref N: mpz_t, ref C:c_ulong, D:c_ulong):c_int;
+  extern proc mpz_congruent_ui_p(ref N: mpz_t, C:c_ulong, D:c_ulong):c_int;
   extern proc mpz_congruent_2exp_p(ref N: mpz_t, ref C:mpz_t, B:c_int):c_int;
 
   // Exponentiation Functions
   extern proc mpz_powm(ref ROP: mpz_t, ref BASE: mpz_t, ref EXP: mpz_t, ref MOD: mpz_t);
   extern proc mpz_powm_ui(ref ROP: mpz_t, ref BASE: mpz_t, EXP: c_ulong, ref MOD: mpz_t);
   extern proc mpz_pow_ui(ref ROP: mpz_t, ref BASE: mpz_t, EXP: c_ulong);
-  extern proc mpz_ui_pow_ui(ref ROP: mpz_t, ref BASE: c_ulong, EXP: c_ulong);
+  extern proc mpz_ui_pow_ui(ref ROP: mpz_t, BASE: c_ulong, EXP: c_ulong);
 
   // Root Extraction Functions
   extern proc mpz_root(ref ROP: mpz_t, ref OP: mpz_t, N: c_ulong): c_int;
@@ -406,7 +406,7 @@ module GMP {
     }
     proc get_si():c_long
     {
-      var x:c_ulong;
+      var x:c_long;
       on this do x = mpz_get_si(this.mpz);
       return x;
     }
