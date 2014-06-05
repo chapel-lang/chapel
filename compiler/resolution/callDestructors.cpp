@@ -320,13 +320,6 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
             useFn->hasFlag(FLAG_AUTO_COPY_FN) ||
             useFn->hasFlag(FLAG_INIT_COPY_FN)) {
 
-//           printf("CALL SITE\n");
-//           list_view(move->getFunction());
-//           printf("MOVE => ");
-//           list_view(move);
-//           printf("OLD FUNCTION\n");
-//           list_view(fn);
-
           FnSymbol* newFn = NULL;
 
           //
@@ -454,13 +447,6 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
             move->replace(call->remove());
             useMove->remove();
             call->insertAtTail(useLhs);
-
-//           printf("NEW FUNCTION\n");
-//           list_view(newFn);
-//           printf("TRANSFORMED CALL SITE\n");
-//           list_view(call->getFunction());
-//           printf("MOVE => ");
-//           list_view(move);
 
             return;
           }
