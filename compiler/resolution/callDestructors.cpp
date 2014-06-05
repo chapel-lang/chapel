@@ -5,7 +5,6 @@
 #include "resolveIntents.h"
 #include "stmt.h"
 #include "symbol.h"
-#include "view.h"
 #include "stlUtil.h"
 
 
@@ -474,13 +473,9 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
       }
     }
     //USR_WARN(move, "possible premature free");
-    //nprint_view(move);
-    //  list_view(move->getFunction());
-    //  list_view(fn);
   } else {
     if (useMap.get(lhs) && useMap.get(lhs)->n > 0) {
       //USR_WARN(move, "possible premature free (use not found)");
-      //nprint_view(move);
     }
   }
 }
