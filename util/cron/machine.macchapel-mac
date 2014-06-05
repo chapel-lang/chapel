@@ -8,6 +8,10 @@ source $CWD/common.bash
 # 1.4 and frequently has issues with invalid working copies.
 rm -rf /tmp/chapel-cron-$USER-readonly
 
+# Update ~/chapel.
+log_info "Updating ~/chapel with nightly.update-repo script."
+$CWD/nightly.update-repo
+
 log_info "Starting nightly."
 $CWD/nightly -cron -examples -sysprediff $CWD/../test/prediff-for-old-macs
 
