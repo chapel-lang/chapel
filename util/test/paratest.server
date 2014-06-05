@@ -358,7 +358,7 @@ sub nodes_free {
 }
 
 
-# Return true if a *.chpl exists. Otherwise false.
+# Return true if a *.chpl or *.test.c exists. Otherwise false.
 sub chpl_files {
     local (@fnames) = @_;
     local ($found);
@@ -368,6 +368,9 @@ sub chpl_files {
             return 0;
         }
         if ($fname =~ /\.chpl$/) {
+            $found = 1;
+        }
+        if ($fname =~ /\.test\.c$/) {
             $found = 1;
         }
     }
@@ -425,6 +428,11 @@ sub find_files {
 	    if ($filepath =~ /\.chpl$/) {
 		$futuref = $filepath;
 		$futuref =~ s/\.chpl$/.future/;
+		next if ((-e $futuref) && $no_futures);
+		push @foundfiles, $filepath;
+	    } elsif ($filepath =~ /\.test\.c$/) {
+		$futuref = $filepath;
+		$futuref =~ s/\.test\.c$/.future/;
 		next if ((-e $futuref) && $no_futures);
 		push @foundfiles, $filepath;
 	    }
