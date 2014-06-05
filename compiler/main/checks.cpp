@@ -505,6 +505,8 @@ checkAutoCopyMap()
   }
 }
 
+
+// TODO: Can this be merged with checkFormalActualTypesMatch()?
 static void
 checkFormalActualBaseTypesMatch()
 {
@@ -514,13 +516,21 @@ checkFormalActualBaseTypesMatch()
     {
       if (fn->hasFlag(FLAG_EXTERN))
         continue;
+
       for_formals_actuals(formal, actual, call)
       {
         if (actual->typeInfo() == dtNil) {
-          if (!isClass(formal->type))
-            INT_FATAL(call, "nil is passed to the formal %s of a non-class type",
-                      formal->name);
-          continue;
+          if (formal->type == dtNil)
+            // Exact match, so OK.
+            continue;
+
+          if (isClass(formal->type))
+            // dtNil can be converted to any class type, so OK.
+            continue;
+
+          // All other cases == error.
+          INT_FATAL(call, "nil is passed to the formal %s of a non-class type",
+                    formal->name);
         }
 
         if (formal->type->getValType() != actual->typeInfo()->getValType())
@@ -563,13 +573,21 @@ checkFormalActualTypesMatch()
     {
       if (fn->hasFlag(FLAG_EXTERN))
         continue;
+
       for_formals_actuals(formal, actual, call)
       {
         if (actual->typeInfo() == dtNil) {
-          if (!isClass(formal->type))
-            INT_FATAL(call, "nil is passed to the formal %s of a non-class type",
-                      formal->name);
-          continue;
+          if (formal->type == dtNil)
+            // Exact match, so OK.
+            continue;
+
+          if (isClass(formal->type))
+            // dtNil can be converted to any class type, so OK.
+            continue;
+
+          // All other cases == error.
+          INT_FATAL(call, "nil is passed to the formal %s of a non-class type",
+                    formal->name);
         }
 
         if (formal->type != actual->typeInfo())

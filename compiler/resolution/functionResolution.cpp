@@ -358,7 +358,6 @@ static void removeUnusedFormals();
 static void insertRuntimeInitTemps();
 static void removeInitFields();
 static void removeMootFields();
-static void removeNilTypeArgs();
 static void expandInitFieldPrims();
 static void fixTypeNames(AggregateType* ct);
 static void setScalarPromotionType(AggregateType* ct);
@@ -6817,7 +6816,6 @@ pruneResolvedTree() {
   insertRuntimeInitTemps();
   removeInitFields();
   removeMootFields();
-  removeNilTypeArgs();
   expandInitFieldPrims();
 }
 
@@ -7313,35 +7311,6 @@ static void removeMootFields() {
     }
   }
 }
-
-static void removeNilTypeArgs() {
-  // Remove nilType formals and actuals
-  Vec<ArgSymbol*> nilFormalSet;
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->parentSymbol && call->isResolved()) {
-      for_formals_actuals(formal, actual, call) {
-        if (formal->type == dtNil) {
-          actual->remove();
-          nilFormalSet.set_add(formal);
-        }
-      }
-    }
-  }
-  forv_Vec(ArgSymbol, arg, nilFormalSet) {
-    if (arg) {
-      FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
-      INT_ASSERT(fn);
-      arg->defPoint->remove();
-      Vec<SymExpr*> symExprs;
-      collectSymExprs(fn, symExprs);
-      forv_Vec(SymExpr, se, symExprs) {
-        if (se->var == arg)
-          se->var = gNil;
-      }
-    }
-  }
-}
-
 
 static void expandInitFieldPrims()
 {

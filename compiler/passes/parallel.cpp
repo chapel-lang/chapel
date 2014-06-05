@@ -1619,11 +1619,12 @@ static void convertNilToObject()
         fn->retType = dtObject;
     }
 
-    // replace symbols of type nil by nil
-    if (isVarSymbol(def->sym) || isArgSymbol(def->sym)) {
+    // Remove all variables of type nil except for gNil.
+    // These are never referenced, so can be safely removed.
+    if (isVarSymbol(def->sym)) {
       if (def->sym->type == dtNil &&
           !isTypeSymbol(def->parentSymbol))
-        if (def->sym != gNil) // TODO: Do we need this test?  If so, document why.
+        if (def->sym != gNil)
           def->remove();
     }
   }
