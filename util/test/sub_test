@@ -438,6 +438,12 @@ if os.getenv('CHPL_TEST_PERF')!=None:
     perftest=True
     perflabel=os.getenv('CHPL_TEST_PERF_LABEL')
     perfdir=os.getenv('CHPL_TEST_PERF_DIR')
+    perfdescription = os.getenv('CHPL_TEST_PERF_DESCRIPTION')
+    if perfdescription != None:
+        sys.stdout.write('Setting perfdir to %s from %s because of additional perf description\n' %(os.path.join(perfdir, perfdescription), perfdir))
+        perfdir = os.path.join(perfdir, perfdescription)
+    else:
+        perfdescription= ''
     if perflabel==None or perfdir==None:
         Fatal('$CHPL_TEST_PERF_DIR and $CHPL_TEST_PERF_LABEL must be set for performance testing')
 else:
@@ -1465,17 +1471,17 @@ for testname in testsrc:
                     if perfdate == None:
                         perfdate = datetime.date.today().strftime("%m/%d/%y")
 
-                    sys.stdout.write('[Executing %s/computePerfStats %s %s %s %s %s %s]\n'%(utildir, perfexecname, perfdir, keyfile, execlog, str(exectimeout), perfdate))
+                    sys.stdout.write('[Executing %s/computePerfStats %s %s %s %s %s %s %s]\n'%(utildir, perfexecname, perfdir, keyfile, execlog, str(exectimeout), perfdate, perfdescription))
                     sys.stdout.flush()
 
                     p = subprocess.Popen([utildir+'/computePerfStats',
-                                          perfexecname, perfdir, keyfile, execlog, str(exectimeout), perfdate],
+                                          perfexecname, perfdir, keyfile, execlog, str(exectimeout), perfdate, perfdescription],
                                          stdout=subprocess.PIPE)
                     sys.stdout.write('%s'%(p.communicate()[0]))
                     sys.stdout.flush()
 
                     status = p.returncode
-                    if not exectimeout: 
+                    if not exectimeout:
                         if status == 0:
                             sys.stdout.write('[Success')
                         else:

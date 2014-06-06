@@ -19,6 +19,7 @@ $hello = 0;
 $allhellos = 0;
 $examples = 0;
 $performance = 0;
+$performancedescription = "";
 $releasePerformance = 0;
 $compperformance = 0;
 $compperformancedescription = "";
@@ -76,6 +77,9 @@ while (@ARGV) {
         $localeModelSuite = 1;
     } elsif ($flag eq "-performance") {
         $performance = 1;
+    } elsif ($flag eq "-performance-description") {
+        $performance = 1;
+        $performancedescription = shift @ARGV;
     } elsif ($flag eq "-releasePerformance") {
         $releasePerformance = 1;
     } elsif ($flag eq "-compperformance") {
@@ -171,6 +175,7 @@ if ($printusage == 1) {
     print "\t-valgrind    : run tests in valgrind mode\n";
 #    print "\t-interpret   : run tests in interpreted mode\n";
     print "\t-performance : run performance tests\n";
+    print "\t-performance-description : run performance tests with additional description";
     print "\t-compperformance <description>: run tests with compiler performance tracking\n";
     print "\t-numtrials <number> : number of trials to run\n";
     print "\t-startdate	  : run performance tests providing a common start date to all the graphs\n";
@@ -678,6 +683,9 @@ if ($performance == 1) {
     } else {
         $testflags = "$testflags -performance -startdate $startdate";
     }
+    if ($performancedescription ne "") {
+       $testflags = "$testflags -performance-description $performancedescription";
+    }
 }
 if ($compperformance == 1) { 
     if ($startdate eq "-1") {
@@ -807,7 +815,7 @@ if ($runtests == 0) {
 
     if ($performance == 1 or $compperformance == 1) {
         mysystem("cd $svnPerfDir && svn update", "svn-updating perf data after running tests" . $svnPerfMsgXtra, 0, 1, 1);
-        mysystem("cd $svnPerfDir && svn add *.dat 2>&1 | grep -v '^svn: warning: .* is already under version control\$'", "svn-adding perf data files", 0, 0, 1);  # can fail easily - ignore failures
+        mysystem("cd $svnPerfDir && svn add --force *.dat --parents --depth infinity 2>&1 | grep -v '^svn: warning: .* is already under version control\$'", "svn-adding perf data files", 0, 0, 1);  # can fail easily - ignore failures
         mysystem("cd $svnPerfDir && svn commit -m \"Subject: Perf data update $host  `date '+%F %T'`  $revision\n\nDescription: <empty>\n\"", "svn-committing perf data" . $svnPerfMsgXtra, 0, 1, 1);
 
         # sync the performance graphs over to sourceforge 

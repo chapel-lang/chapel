@@ -45,6 +45,10 @@ parser.add_option('-u', '--numericX', dest='numericX',
                   help='expect numbers (e.g. revisions), not dates,' +
                        ' for the X axis',
                   action='store_true', default=False)
+parser.add_option('-m', '--multiple-descriptions', dest='multiDesc',
+                  help='look for multiple versions of the keys',
+                  default=[], action='append')
+
 if annotate:
     parser.add_option('-j', '--annotate', dest='annotation_file',
                       default=None)
@@ -52,6 +56,7 @@ if annotate:
 debug = False
 verbose = False
 numericX = False
+multiDesc = []
 
 def try_parse_float(value):
     try:
@@ -138,6 +143,7 @@ class GraphStuff:
         runDate = time.strftime('%Y-%m-%d', time.localtime())
         self.gfile.write('var runDate= "%s";\n'%(runDate))
         self.gfile.write('var numericX = %s;\n'%(str(numericX).lower()))
+        self.gfile.write('var descriptions = [%s];\n' %(', '.join([ '" ('+desc+')"' for desc in multiDesc])))
         self.gfile.write('var allGraphs = [\n')
         self.firstGraph = True
         return 0
@@ -244,7 +250,7 @@ class GraphStuff:
                     return
                 keysRange = range(0, (len(graphs[currgraph].perfkeys) / len(dFiles)))
                 for dFile in dFiles:
-                    graphs[currgraph].datfilenames += [ dFile for i in keysRange ]
+		    graphs[currgraph].datfilenames += [ dFile for i in keysRange ]
             elif key == 'graphtitle':
                 graphs[currgraph].title = rest.strip()
             elif key == 'graphname':
@@ -546,7 +552,7 @@ class GraphClass:
         for i in range(nperfkeys):
             for j in range(nperfkeys):
                 if (i != j) and (self.graphkeys[i]==self.graphkeys[j]):
-                    sys.stdout.write('WARNING: Duplicate graph label (%s)\n'%(self.graphkeys[i]))
+                    sys.stdout.write('WARNING: Duplicate graph keys (%s)\n'%(self.graphkeys[i]))
 
         defaultFilename = self.srcdatfname
         if nperfkeys != len(self.datfilenames):
@@ -567,6 +573,33 @@ class GraphClass:
                     self.datfilenames[i] = './'+fn[0:idx]+'/'+graphInfo.perfdir+fn[idx:]
             else:
                 self.datfilenames[i] = graphInfo.perfdir+'/'+fn
+
+        if multiDesc:
+            # copy datfiles, and keys to temp copies, and clear originals
+            tempdatfilenames = self.datfilenames[0:]
+            tempperfkeys = self.perfkeys[0:]
+            tempgraphkeys = self.graphkeys[0:]
+            self.datfilenames = []
+            self.perfkeys = []
+            self.graphkeys = []
+
+            graphDescs = [ ' ('+desc+')' for desc in multiDesc if desc ]
+            for desc, graphdesc in zip(multiDesc, graphDescs):
+                if desc == 'default':
+                    desc = ''
+                for dat, perf, graph in zip(tempdatfilenames, tempperfkeys, tempgraphkeys):
+                    datpath = os.path.dirname(dat)
+                    datfile = os.path.basename(dat)
+                    self.datfilenames.append(os.path.join(datpath, desc, datfile))
+                    self.perfkeys.append(perf+desc)
+                    # strip trailing colons, equals and spaces, we seem to have
+                    # a lot of these coming from our perfkeys
+                    while graph.endswith((':', '=', ' ')):
+                        graph = graph[:-1]
+                    # append description
+                    self.graphkeys.append(graph + graphdesc)
+
+            nperfkeys = len(self.perfkeys)
 
         # create a hashmap of open datfiles
         datfiles = {}
@@ -608,6 +641,7 @@ def main():
     verbose = options.verbose
     global numericX
     numericX = options.numericX
+    global multiDesc
 
     if options.perfdir != None:
         perfdir = options.perfdir
@@ -631,6 +665,11 @@ def main():
            enddate = None
        else:
            enddate = time.localtime()
+
+    if options.multiDesc:
+        multiDesc = options.multiDesc
+    else:
+        multiDesc = []
 
     if annotate:
         if options.annotation_file != None:

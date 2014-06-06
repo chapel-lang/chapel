@@ -47,6 +47,18 @@ var gs = []; // array of current graphs
 var blockRedraw = false;
 var numGraphsReady = 0;
 
+// hack to use the previous compiler performance keys to set
+// colors/dashed lines for various configurations. Will be
+// updated in the near term.
+if (descriptions[0])
+    var primaryString = descriptions[0];
+else
+    var primaryString = ' (all)';
+if (descriptions[1])
+    var secondaryString =  descriptions[1];
+else
+    var secondaryString = ' (examples)';
+
 // The main elements that all the graphs and graph legends will be put in
 var parent = document.getElementById('graphdisplay');
 var legend = document.getElementById('legenddisplay');
@@ -234,7 +246,7 @@ function expandGraphs(graph) {
     var j = 0;
     while (i < expandNum && j < labels.length -1 ) {
         j++;
-        if (labels[j].endsWith('(examples)')) {
+        if (labels[j].endsWith(secondaryString)) {
             continue;
         }
         visibility[j-1] = true;
@@ -248,7 +260,7 @@ function expandGraphs(graph) {
     var i = 0;
     var j = 1;
     while ( i < expandNum && j < labels.length) {
-        if (!labels[j].endsWith('(examples)')) {
+        if (!labels[j].endsWith(secondaryString)) {
             i++;
         }
         j++;
@@ -258,7 +270,7 @@ function expandGraphs(graph) {
     var i = 0;
     while (i < expandNum && j > 1 ) {
         j--;
-        if (labels[j].endsWith('(examples)')) {
+        if (labels[j].endsWith(secondaryString)) {
             continue;
         }
 
@@ -272,7 +284,7 @@ function expandGraphs(graph) {
 
         // gen the expanded graph with visibility set for the current series
         for (var k = 0; k < visibility.length; k++) { visibility[k] = false; }
-        var exampleLabel = labels[j].replace('(all)', '(examples)');
+        var exampleLabel = labels[j].replace(primaryString, secondaryString);
         var exampleIndex = graph.getPropertiesForSeries(exampleLabel).column;
         visibility[j-1] = true;
         visibility[exampleIndex-1] = true;
@@ -348,18 +360,18 @@ function setColors(g, origColors) {
     // Reset the colors to the original ones
     var curColor = 0;
     for (var i = 1; i < labels.length; i++) {
-        if(!labels[i].endsWith('(examples)') && visibility[i-1]) {
+        if(!labels[i].endsWith(secondaryString) && visibility[i-1]) {
             colors[labelToColorMap[i]] = origColors[curColor];
             curColor += 1;
         }
     }
 
     // This is for compiler performance graphs only. If a series ends with
-    // '(examples)' we want to make sure it has the same colors as the '(all)
+    // secondaryString we want to make sure it has the same colors as the '(all)
     // series and that it has a dashed line to make it easier to distinguish.
     for (var i = 1; i < labels.length; i++) {
-        if(labels[i].endsWith('(examples)')) {
-            allLabel = labels[i].replace('(examples)', '(all)');
+        if(labels[i].endsWith(secondaryString)) {
+            allLabel = labels[i].replace(secondaryString, primaryString);
             allIndex = g.indexFromSetName(allLabel);
             if (!visibility[allIndex-1]) continue;
             var color = colors[labelToColorMap[allIndex]];
@@ -568,6 +580,25 @@ function perfGraphInit() {
         dateElem.style.color = "RED";
     }
 
+    // generate the configuration menu and toggle options
+    var toggleConf = document.getElementById('toggleConf');
+    if (descriptions.length > 0) {
+      for (var i = 0; i < descriptions.length; i++) {
+        var elem = document.createElement('div');
+        var description = descriptions[i];
+        elem.className = 'graph';
+        elem.innerHTML = '<input id="hide' + i + '"type="checkbox">' + description;
+        toggleConf.appendChild(elem);
+        var checkBox = document.getElementById('hide' + i);
+        checkBox.checked = true;
+        checkBox.onchange = function() {
+          setConfigurationVisibility();
+        };
+      }
+    } else {
+      toggleConf.textContent = '';
+    }
+
     // generate the suite menu
     var suiteMenu = document.getElementById('suiteMenu');
     var f = document.createElement('form');
@@ -600,6 +631,31 @@ function perfGraphInit() {
     setCheckBoxesFromURL();
     displaySelectedGraphs();
 }
+
+function setConfigurationVisibility() {
+  var checked = {};
+  for (var i = 0; i<descriptions.length; i++) {
+    var checkBox = document.getElementById('hide' + i);
+      checked[descriptions[i]] = checkBox.checked;
+  }
+
+  for (var i = 0; i < gs.length; i++) {
+    var labels = gs[i].getLabels();
+    var visibility = gs[i].visibility();
+    for (var j = 1; j < labels.length; j++) {
+      var prop = gs[i].getPropertiesForSeries(labels[j]);
+      for (var check in checked) {
+        if (checked.hasOwnProperty(check)) {
+          if (labels[j].endsWith(check)) {
+            visibility[j-1] = checked[check];
+          }
+        }
+      }
+    }
+    gs[i].updateOptions({visibility: visibility});
+  }
+}
+
 
 // This function parses the query string of the url and sets check boxes
 // accordingly. All check boxes are set to not checked by default but if the

@@ -49,6 +49,16 @@ if ($argc >= 7) {
     print "Using default date $perfdate\n";
 }
 
+# perf description is used to append an additional description fo the current
+# perf testing to each label generated for .dat files. It is used so that we
+# can create unique perfkeys for things like --no-local and --local testing
+my $perfdescription;
+if ($argc >= 8) {
+    $perfdescription = $ARGV[6];
+} else {
+    $perfdescription = "";
+}
+
 my $data_file = "$outputdir/$testname.dat";
 my $errors_file = "$outputdir/$testname.errors";
 my $fatal_errors = 0;
@@ -161,7 +171,7 @@ if ($valid_output) {
       print ERRORS "created $data_file\n";
       print STATS "# Date";
       foreach my $key (@keys) {
-          print STATS "\t$key";
+          print STATS "\t$key$perfdescription";
       }
       print STATS "\n";
       close (STATS);

@@ -17,15 +17,15 @@ div.gspacer {
 }
 div.perfLegend {
     vertical-align: top;
-    width: 300px;
+    width: 400px;
     height: 300px;
     overflow: auto
 }
-span.highlight { 
-    border: 1px solid grey; 
+span.highlight {
+    border: 1px solid grey;
 }
 div.lspacer {
-    width: 300px;
+    width: 400px;
     height: 30px;
 }
 .graphList {
