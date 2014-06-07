@@ -31,6 +31,15 @@ New problems
 (Ones that prove persistent should be moved to REGRESSIONS.)
 =========================================================
 
+linux64.gnu.gasnet.qthreads.flat
+--------------------------------
+
+The following racy test started failing to match its .bad file after
+r23477. Sung is thinking about it.
+
+[Error matching .bad file for prallel/taskPar/sungeun/endCountTest]
+[Error matching .bad file for parallel/taskPar/sungeun/taskCount (compopts: 1)]
+
 darwin-gnu and darwin-clang non-deterministic compiler failures
 ---------------------------------------------------------------
 
@@ -254,7 +263,6 @@ nondet. timeout on gasnet-everything
 [Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dBDtoDRTest] (07/08/13)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (7/22/13, 09/02/13, 09/30/13, 12/13/13)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (7/19/13, 10/9/13, 01/08/14)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff] (8/9/13)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (9/30/13, 11/8/13, 12/13/13)
 
 libmpich_intel.so failure for
@@ -297,6 +305,9 @@ numerical discrepancies - same cause as for --no-local above?
 
 intermittent valgrind error
 ---------------------------
+* Timed out on 2014-06-05, fixed itself on 2014-06-06.
+[Error: Timed out executing program domains/sungeun/assoc/stress (compopts: 1, execopts: 2)]
+
 - studies/madness/aniruddha/madchap/mytests/par-compress/test_compress
 (compopts: 1) (02/26/13)
 - distributions/dm/t5a
@@ -317,6 +328,9 @@ The type of Bar.super is at least partially corrupt at that point.
 
 valgrind timeouts
 -----------------
+* Timed out on 2014-06-06
+[Error: Timed out executing program release/examples/spec/Memory_Consistency/syncSpinWait]
+[Error: Timed out executing program studies/lulesh/sungeun/lulesh (compopts: 1)]
 * Timed out on (2/3/14, 2/14/14) probably due to over-subscribing the test machine:
 [Error: Timed out executing program studies/amr/diffusion/level/Level_DiffusionBE_driver (compopts: 1)]
 * The following timed out on chap09 on 10/26-10/30/13, following an OS upgrade:

@@ -169,7 +169,7 @@ compilation timeouts
 
 execution timeouts (probably since committed or at least 08/2012)
 -----------------------------------------------------------------
-[Error: Timed out executing program domains/sungeun/assoc/stress.numthr (compopts: 1, execopts: 1)]
+[Error: Timed out executing program domains/sungeun/assoc/stress.numthr (compopts: 2, execopts: 1)]
 [Error: Timed out executing program release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4)]
 [Error: Timed out executing program release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4)]
 [Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)]
