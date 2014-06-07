@@ -9,14 +9,14 @@ config const n1 = 100;
 config const n2 = 20;
 config const n3 = 5;
 config const n4 = 3;
-config const n5 = max(int(32));
+config const n5 = 12345679:int(32);
 config const o5 = 8;
 
 const Space1 = {1..n1};
 const Space2 = {1..n2, 1..n2};
 const Space3 = {1..n3, 1..n3, 1..n3};
 const Space4 = {1..n4, 1..n4, 1..n4, 1..n4};
-const Space2D32 = {n5-o5:int(32)..n5, n5-o5:int(32)..n5};
+const Space2D32 = {n5-o5:int(32)..n5, n5..n5+o5:int(32)};
 
 proc setupDistributions() {
   if distType == DistType.default {
