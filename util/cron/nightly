@@ -732,6 +732,11 @@ if ($execopts ne "") {
 $testflags = "$testflags -execopts '$execopts'";
 }
 
+if (exists($ENV{"CHPL_START_TEST_ARGS"})) {
+    $starttestargs = $ENV{"CHPL_START_TEST_ARGS"};
+    $testflags = "$testflags $starttestargs";
+}
+
 
 if ($runtests == 0) {
     $endtime = localtime;
