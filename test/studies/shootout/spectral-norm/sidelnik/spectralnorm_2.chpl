@@ -7,7 +7,7 @@
  */
 
 use BlockDist;
-config const NUM = 500 : int(64);
+config const n = 500 : int(64);
 
 
 /* Return: 1.0 / (i + j) * (i + j +1) / 2 + i + 1; */
@@ -40,27 +40,23 @@ proc eval_AtA_times_u(u,AtAu,v : [] real, inRange)
      eval_At_times_u(v, inRange, AtAu);
 }
 
-proc spectral_game(N) : real
-{
-  var Dist = new dmap(new Block(rank=1, idxType=int(64), boundingBox={0..#N},
+proc main() {
+  var Dist = new dmap(new Block(rank=1, idxType=int(64), boundingBox={0..#n},
                                       dataParTasksPerLocale=here.numCores));
-  var Dom : domain(1, int(64)) dmapped Dist = {0..#N};
+  var Dom : domain(1, int(64)) dmapped Dist = {0..#n};
 
   var tmp, U, V : [Dom] real;
 
   U = 1.0;
 
   for 1..10 do {
-    eval_AtA_times_u(U,V,tmp,N);
-    eval_AtA_times_u(V,U,tmp,N);
+    eval_AtA_times_u(U, V, tmp, n);
+    eval_AtA_times_u(V, U, tmp, n);
   }
 
   var vv = + reduce [v in V] (v * v);
   var vBv = + reduce [(u,v) in zip(U,V)] (u * v);
 
-  return sqrt(vBv/vv);
-}
-
-proc main() {
-  writeln(spectral_game(NUM), new iostyle(precision=10));
+  const res = sqrt(vBv/vv);
+  writeln(res, new iostyle(precision=10));
 }

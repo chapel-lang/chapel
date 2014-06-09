@@ -6,7 +6,7 @@
  * Conversion to Chapel by Albert Sidelnik
  */
 
-config const NUM = 500;
+config const n = 500;
 
 use barrierWF;
 var b: BarrierWF;
@@ -43,11 +43,10 @@ proc eval_AtA_times_u(u,AtAu,v : [] real, inRange, range1, range2 : int)
            b.barrier();
 }
 
-proc spectral_game(N : int) : real
-{
-  var tmp, u, v : [0..#N] real;
+proc main() {
+  var tmp, u, v : [0..#n] real;
   var numThreads = here.numCores;
-  var chunk = N / numThreads;
+  var chunk = n / numThreads;
 
   u = 1.0;
         b = new BarrierWF(numThreads);
@@ -58,19 +57,16 @@ proc spectral_game(N : int) : real
     if (i < (numThreads - 1)) then
       r_end = r_begin + chunk;
     else
-      r_end = N;
+      r_end = n;
 
     for 1..10 do {
-      eval_AtA_times_u(u,v,tmp,N,r_begin,r_end);
-      eval_AtA_times_u(v,u,tmp,N,r_begin,r_end);
+      eval_AtA_times_u(u, v, tmp, n, r_begin, r_end);
+      eval_AtA_times_u(v, u, tmp, n, r_begin, r_end);
     }
   }
   var vv = + reduce (v * v);
   var vBv = + reduce (u * v);
 
-  return sqrt(vBv/vv);
-}
-
-proc main() {
-  writeln(spectral_game(NUM), new iostyle(precision=10));
+  const res = sqrt(vBv/vv);
+  writeln(res, new iostyle(precision=10));
 }

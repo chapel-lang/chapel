@@ -7,7 +7,7 @@
  * Updated by Lydia Duncan
  */
 
-config const NUM = 500 : int(64);
+config const n = 500 : int(64);
 config const step = 2 : int(64);
 // step allows for control over the reduction, i.e. how parallel/serial it is
 
@@ -73,23 +73,19 @@ proc eval_AtA_times_u(u, AtAu, v : [] real, inRange)
      eval_At_times_u(v, inRange, AtAu);
 }
 
-proc spectral_game(N) : real
-{
-  var tmp, U, V : [0..#N] real;
+proc main() {
+  var tmp, U, V : [0..#n] real;
 
   U = 1.0;
 
   for 1..10 do {
-    eval_AtA_times_u(U,V,tmp,N);
-    eval_AtA_times_u(V,U,tmp,N);
+    eval_AtA_times_u(U, V, tmp, n);
+    eval_AtA_times_u(V, U, tmp, n);
   }
 
   const vv = + reduce [v in V] (v * v);
   const vBv = + reduce [(u,v) in zip(U,V)] (u * v);
 
-  return sqrt(vBv/vv);
-}
-
-proc main() {
-  writeln(spectral_game(NUM), new iostyle(precision=10));
+  const res = sqrt(vBv/vv);
+  writeln(res, new iostyle(precision=10));
 }
