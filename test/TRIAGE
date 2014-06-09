@@ -39,6 +39,30 @@ This test appears to be close to the timeout threshold. It failed on
 
 [Error: Timed out executing program studies/lulesh/sungeun/lulesh (compopts: 1)]
 
+cray-xe.cray-prgenv-cray.none.fifo.flat--linux64.gnu
+----------------------------------------------------
+
+This test is missing some whitespace in the output. First failure occurred
+2014-06-07.
+
+[Error matching program output for functions/deitz/iterators/test_instantiate_iterator3a]
+
+These all timed out on 2014-06-07 on chpbld02. The cray PrgEnv is notoriously
+slow, and it's possible the box was extra busy doing something else (like
+installing automatic updates).
+
+[Error: Timed out compilation for distributions/dm/t5a]
+[Error: Timed out compilation for functions/deitz/nested/test_nested_var_iterator2]
+[Error: Timed out compilation for functions/deitz/nested/test_nested_var_iterator3 (compopts: 1)]
+[Error: Timed out compilation for functions/deitz/nested/test_nested_with_begin]
+[Error: Timed out compilation for functions/deitz/varargs/test_varargs_write]
+[Error: Timed out compilation for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1)]
+[Error: Timed out compilation for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 3)]
+[Error: Timed out compilation for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 4)]
+[Error: Timed out compilation for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5)]
+[Error: Timed out compilation for release/examples/hello4-datapar-dist]
+[Error: Timed out compilation for release/examples/hello]
+
 linux64.gnu.gasnet.qthreads.flat
 --------------------------------
 
