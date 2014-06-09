@@ -13,7 +13,7 @@ log_info "Updating ~/chapel with nightly.update-repo script."
 $CWD/nightly.update-repo
 
 log_info "Starting nightly."
-export CHPL_START_TEST_ARGS="-sysprediff $CWD/../test/prediff-for-old-macs"
+export CHPL_START_TEST_ARGS="-syspreexec $CWD/../test/preexec-for-old-macs"
 $CWD/nightly -cron -examples
 
 # Note: Supressions are only required when we're not restricting

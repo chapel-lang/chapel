@@ -35,7 +35,7 @@ source $CHPL_HOME/util/cron/common.bash
 # Special case for older mac we use for testing. Warnings from arch.py and as
 # need to be filtered.
 if [ "$(uname -s)" = "Darwin" -a "$(uname -r)" = "9.8.0" ] ; then
-    export CHPL_START_TEST_ARGS="--sysprediff ${CHPL_HOME}/util/test/prediff-for-old-macs"
+    export CHPL_START_TEST_ARGS="--syspreexec ${CHPL_HOME}/util/test/preexec-for-old-macs"
 fi
 
 # Compile chapel and make sure the hello world examples run.
