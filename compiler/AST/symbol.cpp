@@ -780,9 +780,7 @@ ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName,
   typeExpr(NULL),
   defaultExpr(NULL),
   variableExpr(NULL),
-  instantiatedFrom(NULL),
-  instantiatedParam(false),
-  markedGeneric(false)
+  instantiatedFrom(NULL)
 {
   if (intentsResolved) {
     if (iIntent == INTENT_BLANK || iIntent == INTENT_CONST) {
@@ -847,8 +845,6 @@ ArgSymbol::copyInner(SymbolMap* map) {
   ps->copyFlags(this);
   ps->cname = cname;
   ps->instantiatedFrom = instantiatedFrom;
-  ps->instantiatedParam = instantiatedParam;
-  ps->markedGeneric = markedGeneric;
   return ps;
 }
 
@@ -994,8 +990,7 @@ TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
   Symbol(E_TypeSymbol, init_name, init_type),
     llvmType(NULL),
     llvmTbaaNode(NULL), llvmConstTbaaNode(NULL),
-    llvmTbaaStructNode(NULL), llvmConstTbaaStructNode(NULL),
-    codegenned(false)
+    llvmTbaaStructNode(NULL), llvmConstTbaaStructNode(NULL)
 {
   addFlag(FLAG_TYPE_VARIABLE);
   if (!type)
@@ -1050,7 +1045,7 @@ void TypeSymbol::codegenDef() {
     type->codegenDef();
   }
 
-  codegenned = true;
+  this->addFlag(FLAG_CODEGENNED);
 
   if( info->cfile ) {
     // no action required.
@@ -2024,7 +2019,7 @@ hasGenericArgs(FnSymbol* fn) {
   for_formals(formal, fn) {
     if ((formal->type->symbol->hasFlag(FLAG_GENERIC) &&
          (!formal->type->hasGenericDefaults ||
-          formal->markedGeneric ||
+          formal->hasFlag(FLAG_MARKED_GENERIC) ||
           formal == fn->_this ||
           formal->hasFlag(FLAG_IS_MEME))) ||
         formal->intent == INTENT_PARAM) {

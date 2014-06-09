@@ -151,8 +151,6 @@ class ArgSymbol : public Symbol {
   BlockStmt* defaultExpr;
   BlockStmt* variableExpr;
   Type* instantiatedFrom;
-  bool instantiatedParam;
-  bool markedGeneric;
 
   ArgSymbol(IntentTag iIntent, const char* iName, Type* iType,
             Expr* iTypeExpr = NULL, Expr* iDefaultExpr = NULL,
@@ -195,7 +193,6 @@ class TypeSymbol : public Symbol {
   void* llvmTbaaStructNode;
   void* llvmConstTbaaStructNode;
 #endif
-  bool codegenned;
 
   TypeSymbol(const char* init_name, Type* init_type);
   void verify(); 

@@ -133,8 +133,8 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
         SET_LINENO(sym);
         ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, sym->name, sym->type);
         if (ArgSymbol* symArg = toArgSymbol(sym))
-          if (symArg->markedGeneric)
-            arg->markedGeneric = true;
+          if (symArg->hasFlag(FLAG_MARKED_GENERIC))
+            arg->addFlag(FLAG_MARKED_GENERIC);
         fn->insertFormalAtTail(new DefExpr(arg));
         vars->put(sym, arg);
       }

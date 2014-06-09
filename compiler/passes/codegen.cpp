@@ -405,8 +405,8 @@ static inline bool shouldCodegenAggregate(AggregateType* ct)
 
 static void codegen_aggregate_def(AggregateType* ct) {
   if (!shouldCodegenAggregate(ct)) return;
-  if (ct->symbol->codegenned) return;
-  ct->symbol->codegenned = true;
+  if (ct->symbol->hasFlag(FLAG_CODEGENNED)) return;
+  ct->symbol->addFlag(FLAG_CODEGENNED);
 
   // For reference or data class types, first generate
   // the referenced type

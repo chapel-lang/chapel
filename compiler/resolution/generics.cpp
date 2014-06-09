@@ -633,7 +633,7 @@ instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
       INT_ASSERT(formal->intent == INTENT_PARAM || isTypeSymbol(value));
       if (formal->intent == INTENT_PARAM) {
         newFormal->intent = INTENT_BLANK;
-        newFormal->instantiatedParam = true;
+        newFormal->addFlag(FLAG_INSTANTIATED_PARAM);
         if (newFormal->type->symbol->hasFlag(FLAG_GENERIC))
           newFormal->type = paramMap.get(newFormal)->type;
       } else {

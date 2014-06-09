@@ -620,7 +620,7 @@ const char* toString(FnSymbol* fn) {
         str = astr(str, " ");
     } else
       str = astr(str, ", ");
-    if (arg->intent == INTENT_PARAM || arg->instantiatedParam)
+    if (arg->intent == INTENT_PARAM || arg->hasFlag(FLAG_INSTANTIATED_PARAM))
       str = astr(str, "param ");
     if (arg->hasFlag(FLAG_TYPE_VARIABLE))
       str = astr(str, "type ", arg->name);
@@ -1584,7 +1584,7 @@ resolve_type_constructor(FnSymbol* fn, CallInfo& info) {
         if (fn->_this->type->symbol->hasFlag(FLAG_TUPLE)) {
           if (formal->instantiatedFrom) {
             typeConstructorCall->insertAtTail(formal->type->symbol);
-          } else if (formal->instantiatedParam) {
+          } else if (formal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
             typeConstructorCall->insertAtTail(paramMap.get(formal));
           }
         } else {
@@ -1592,7 +1592,7 @@ resolve_type_constructor(FnSymbol* fn, CallInfo& info) {
             typeConstructorCall->insertAtTail(formal);
           } else if (formal->instantiatedFrom) {
             typeConstructorCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(formal->type->symbol)));
-          } else if (formal->instantiatedParam) {
+          } else if (formal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
             typeConstructorCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(paramMap.get(formal))));
           }
         }
@@ -1646,7 +1646,7 @@ filterConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
         return;
       }
       
-      if (!canDispatch(actual->type, actual, formal->type, currCandidate->fn, NULL, formal->instantiatedParam)) {
+      if (!canDispatch(actual->type, actual, formal->type, currCandidate->fn, NULL, formal->hasFlag(FLAG_INSTANTIATED_PARAM))) {
         return;
       }
     }
@@ -1699,7 +1699,7 @@ filterGenericCandidate(Vec<ResolutionCandidate*>& candidates,
             
           }
         } else {
-          if (!canDispatch(actual->type, actual, formal->type, currCandidate->fn, NULL, formal->instantiatedParam)) {
+          if (!canDispatch(actual->type, actual, formal->type, currCandidate->fn, NULL, formal->hasFlag(FLAG_INSTANTIATED_PARAM))) {
             return;
           }
         }
@@ -1985,7 +1985,7 @@ static void testArgMapping(FnSymbol* fn1, ArgSymbol* formal1,
     TRACE_DISAMBIGUATE_BY_MATCH("Actual DOES NOT require promotion to match formal 1\n");
   }
   
-  if (formal1->instantiatedParam) {
+  if (formal1->hasFlag(FLAG_INSTANTIATED_PARAM)) {
     TRACE_DISAMBIGUATE_BY_MATCH("Formal 1 is an instantiated param.\n");
   } else {
     TRACE_DISAMBIGUATE_BY_MATCH("Formal 1 is NOT an instantiated param.\n");
@@ -2002,17 +2002,17 @@ static void testArgMapping(FnSymbol* fn1, ArgSymbol* formal1,
     TRACE_DISAMBIGUATE_BY_MATCH("Actual DOES NOT require promotion to match formal 2\n");
   }
   
-  if (formal2->instantiatedParam) {
+  if (formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
     TRACE_DISAMBIGUATE_BY_MATCH("Formal 2 is an instantiated param.\n");
   } else {
     TRACE_DISAMBIGUATE_BY_MATCH("Formal 2 is NOT an instantiated param.\n");
   }
 
-  if (formal1->type == formal2->type && formal1->instantiatedParam && !formal2->instantiatedParam) {
+  if (formal1->type == formal2->type && formal1->hasFlag(FLAG_INSTANTIATED_PARAM) && !formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
     TRACE_DISAMBIGUATE_BY_MATCH("A: Fn %d is more specific\n", DC.i);
     DS.fn1MoreSpecific = true;
     
-  } else if (formal1->type == formal2->type && !formal1->instantiatedParam && formal2->instantiatedParam) {
+  } else if (formal1->type == formal2->type && !formal1->hasFlag(FLAG_INSTANTIATED_PARAM) && formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
     TRACE_DISAMBIGUATE_BY_MATCH("B: Fn %d is more specific\n", DC.j);
     DS.fn2MoreSpecific = true;
     
@@ -2045,12 +2045,12 @@ static void testArgMapping(FnSymbol* fn1, ArgSymbol* formal1,
     // The actual matches formal1's type, but not formal2's
     if (paramWorks(actual, formal2->type)) {
       // but the actual is a param and works for formal2
-      if (formal1->instantiatedParam) {
+      if (formal1->hasFlag(FLAG_INSTANTIATED_PARAM)) {
         // the param works equally well for both, but
         // matches the first slightly better if we had to
         // decide
         registerParamPreference(DS.paramPrefers, 1, "formal1", DC);
-      } else if (formal2->instantiatedParam) {
+      } else if (formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
         registerParamPreference(DS.paramPrefers, 2, "formal2", DC);
       } else {
         // neither is a param, but formal1 is an exact type
@@ -2066,12 +2066,12 @@ static void testArgMapping(FnSymbol* fn1, ArgSymbol* formal1,
     // The actual matches formal2's type, but not formal1's
     if (paramWorks(actual, formal1->type)) {
       // but the actual is a param and works for formal1
-      if (formal2->instantiatedParam) {
+      if (formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
         // the param works equally well for both, but
         // matches the second slightly better if we had to
         // decide
         registerParamPreference(DS.paramPrefers, 2, "formal2", DC);
-      } else if (formal1->instantiatedParam) {
+      } else if (formal1->hasFlag(FLAG_INSTANTIATED_PARAM)) {
         registerParamPreference(DS.paramPrefers, 1, "formal1", DC);
       } else {
         // neither is a param, but formal1 is an exact type
@@ -6295,7 +6295,7 @@ static void unmarkDefaultedGenerics() {
   // make it so that arguments with types that have default values for
   // all generic arguments used those defaults
   //
-  // markedGeneric is used to identify places where the user inserted
+  // FLAG_MARKED_GENERIC is used to identify places where the user inserted
   // '?' (queries) to mark such a type as generic.
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -6305,7 +6305,7 @@ static void unmarkDefaultedGenerics() {
     bool unmark = fn->hasFlag(FLAG_GENERIC);
     for_formals(formal, fn) {
       if (formal->type->hasGenericDefaults) {
-        if (!formal->markedGeneric &&
+        if (!formal->hasFlag(FLAG_MARKED_GENERIC) &&
             formal != fn->_this &&
             !formal->hasFlag(FLAG_IS_MEME)) {
           SET_LINENO(formal);
@@ -6708,7 +6708,7 @@ buildRuntimeTypeInfo(FnSymbol* fn) {
   AggregateType* ct = new AggregateType(AGGREGATE_RECORD);
   TypeSymbol* ts = new TypeSymbol(astr("_RuntimeTypeInfo"), ct);
   for_formals(formal, fn) {
-    if (!formal->instantiatedParam) {
+    if (!formal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
       VarSymbol* field = new VarSymbol(formal->name, formal->type);
       ct->fields.insertAtTail(new DefExpr(field));
       if (formal->hasFlag(FLAG_TYPE_VARIABLE))
@@ -6979,7 +6979,7 @@ static void removeRandomCalls()
       for (int i = fn->numFormals(); i >= 1; i--) {
         ArgSymbol* formal = fn->getFormal(i);
         if (formal->type == dtMethodToken ||
-            formal->instantiatedParam ||
+            formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
             (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
              !formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))) {
           if (!fn->hasFlag(FLAG_EXTERN)) {
@@ -7118,7 +7118,7 @@ static void buildRuntimeTypeInitFns() {
         block->insertAtTail(new DefExpr(var));
         // Bundle all non-static arguments into the runtime type record
         for_formals(formal, fn) {
-          if (!formal->instantiatedParam) {
+          if (!formal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
             Symbol* field = runtimeType->getField(formal->name);
             if (!formal->hasFlag(FLAG_TYPE_VARIABLE) || field->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))
               block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, var, field, formal));
@@ -7143,7 +7143,7 @@ static void removeUnusedFormals() {
         if (formal->typeExpr)
           formal->typeExpr->remove();
         // Remove method and leader token formals
-        if (formal->type == dtMethodToken || formal->instantiatedParam)
+        if (formal->type == dtMethodToken || formal->hasFlag(FLAG_INSTANTIATED_PARAM))
           formal->defPoint->remove();
         if (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
             (!formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&

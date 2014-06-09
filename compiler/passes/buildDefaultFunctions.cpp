@@ -467,7 +467,7 @@ static void build_record_equality_function(AggregateType* ct) {
   FnSymbol* fn = new FnSymbol("==");
   fn->addFlag(FLAG_COMPILER_GENERATED);
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
-  arg1->markedGeneric = true;
+  arg1->addFlag(FLAG_MARKED_GENERIC);
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
@@ -496,7 +496,7 @@ static void build_record_inequality_function(AggregateType* ct) {
   FnSymbol* fn = new FnSymbol("!=");
   fn->addFlag(FLAG_COMPILER_GENERATED);
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
-  arg1->markedGeneric = true;
+  arg1->addFlag(FLAG_MARKED_GENERIC);
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
@@ -652,7 +652,7 @@ static void build_record_assignment_function(AggregateType* ct) {
   fn->addFlag(FLAG_COMPILER_GENERATED);
 
   ArgSymbol* arg1 = new ArgSymbol(INTENT_REF, "_arg1", ct);
-  arg1->markedGeneric = true; // TODO: Check if we really want this.
+  arg1->addFlag(FLAG_MARKED_GENERIC); // TODO: Check if we really want this.
 
   bool externRecord = ct->symbol->hasFlag(FLAG_EXTERN);
   // If the LHS is extern, the RHS must be of matching type; otherwise
@@ -783,7 +783,7 @@ static void build_record_copy_function(AggregateType* ct) {
   fn->addFlag(FLAG_INIT_COPY_FN);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
-  arg->markedGeneric = true;
+  arg->addFlag(FLAG_MARKED_GENERIC);
   fn->insertFormalAtTail(arg);
   CallExpr* call = new CallExpr(ct->defaultInitializer);
   for_fields(tmp, ct) {
@@ -808,7 +808,7 @@ static void build_record_hash_function(AggregateType *ct) {
 //  hash function can override the compiler-generated version.
 //  fn->addFlag(FLAG_COMPILER_GENERATED);
   ArgSymbol *arg = new ArgSymbol(INTENT_BLANK, "r", ct);
-  arg->markedGeneric = true;
+  arg->addFlag(FLAG_MARKED_GENERIC);
   fn->insertFormalAtTail(arg);
 
   if (ct->fields.length == 0) {

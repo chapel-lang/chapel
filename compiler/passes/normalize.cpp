@@ -1208,7 +1208,7 @@ fixup_query_formals(FnSymbol* fn) {
           }
         }
         formal->typeExpr->replace(new BlockStmt(call->baseExpr->remove()));
-        formal->markedGeneric = true;
+        formal->addFlag(FLAG_MARKED_GENERIC);
       }
     }
   }

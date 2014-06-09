@@ -409,7 +409,7 @@ buildOrderWrapper(FnSymbol* fn,
   for_formals(formal, fn) {
     SET_LINENO(formal);
     wrapper->insertFormalAtTail(copy_map.get(order_map->get(formal)));
-    if (formal->instantiatedParam)
+    if (formal->hasFlag(FLAG_INSTANTIATED_PARAM))
       call->insertAtTail(paramMap.get(formal));
     else
       call->insertAtTail(copy_map.get(formal));
@@ -512,7 +512,7 @@ buildCoercionWrapper(FnSymbol* fn,
         // dereference reference actual
         //
         call->insertAtTail(new CallExpr(PRIM_DEREF, wrapperFormal));
-      } else if (wrapperFormal->instantiatedParam) {
+      } else if (wrapperFormal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
         call->insertAtTail(new CallExpr("_cast", formal->type->symbol, paramMap.get(formal)));
       } else {
         call->insertAtTail(new CallExpr("_cast", formal->type->symbol, wrapperFormal));
