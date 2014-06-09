@@ -59,29 +59,6 @@ Both of these pass with gcc 4.8 but fail with 4.3
 [Error matching program output for modules/standard/math/infinity]
 [Error matching program output for studies/dijkstra/driverEdgeBtw (compopts: 1)]
 
-These pass with gcc 4.3.4 but get a segfault with 4.7.2
--------------------------------------------------------------------
-Note from Sung: the problem appears to be that the "shiftedData"
-pointer in DefaultRectangularArr is not being properly initialized.
--------------------------------------------------------------------
-[Error matching program output for distributions/robust/arithmetic/basics/test_array_accesses1]
-[Error matching program output for distributions/robust/arithmetic/basics/test_array_assignment]
-[Error matching program output for distributions/robust/arithmetic/basics/test_array_iteration1]
-[Error matching program output for distributions/robust/arithmetic/basics/test_array_swap]
-[Error matching program output for distributions/robust/arithmetic/basics/test_domain_iteration1]
-[Error matching program output for distributions/robust/arithmetic/basics/test_infer_array_type]
-[Error matching program output for distributions/robust/arithmetic/basics/test_zipper_default]
-[Error matching program output for distributions/robust/arithmetic/modules/test_module_Norm]
-[Error matching program output for distributions/robust/arithmetic/modules/test_module_Random]
-[Error matching program output for distributions/robust/arithmetic/reindexing/test_array_alias4]
-[Error matching program output for distributions/robust/arithmetic/reindexing/test_reindexing1]
-[Error matching program output for distributions/robust/arithmetic/reindexing/test_reindexing2]
-[Error matching program output for distributions/robust/arithmetic/reindexing/test_reindexing3]
-[Error matching program output for distributions/robust/arithmetic/reindexing/test_reindexing4]
-[Error matching program output for distributions/robust/arithmetic/reindexing/test_reindexing5]
-[Error matching program output for distributions/robust/arithmetic/reindexing/test_reindexing7]
-[Error matching program output for distributions/robust/arithmetic/trivial/test_writeln]
-
 
 ================================
 memory leaks regressions
