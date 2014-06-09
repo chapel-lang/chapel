@@ -13,6 +13,7 @@
 #include "log.h"
 #include "misc.h"
 #include "mysystem.h"
+#include "PhaseTracker.h"
 #include "primitive.h"
 #include "runpasses.h"
 #include "stmt.h"
@@ -89,6 +90,9 @@ bool fNoLiveAnalysis = false;
 bool fNoBoundsChecks = false;
 bool fNoLocalChecks = false;
 bool fNoNilChecks = false;
+
+bool  printPasses     = false;
+FILE* printPassesFile = NULL;
 
 // flag for llvmWideOpt
 bool fLLVMWideOpt = false;
@@ -863,38 +867,57 @@ static void printStuff(const char* argv0) {
 }
 
 
-static void
-compile_all(void) {
-  testInputFiles(arg_state.nfile_arguments, arg_state.file_argument);
-  runPasses();
-}
+int main(int argc, char* argv[]) {
+  PhaseTracker tracker;
 
-int main(int argc, char *argv[]) {
   startCatchingSignals();
- {
-  astlocMarker markAstLoc(0, "<internal>");
-  initFlags();
-  initChplProgram();
-  initPrimitive();
-  initPrimitiveTypes();
-  initTheProgram();
-  setupOrderedGlobals(argv[0]);
-  compute_program_name_loc(argv[0], &(arg_state.program_name),
-                           &(arg_state.program_loc));
-  process_args(&arg_state, argc, argv);
-  initCompilerGlobals(); // must follow argument parsing
-  setupDependentVars();
-  setupModulePaths();
-  recordCodeGenStrings(argc, argv);
- } // astlocMarker scope
+
+  {
+    astlocMarker markAstLoc(0, "<internal>");
+
+    tracker.StartPhase("init");
+
+    initFlags();
+    initChplProgram();
+    initPrimitive();
+    initPrimitiveTypes();
+    initTheProgram();
+
+    setupOrderedGlobals(argv[0]);
+
+    compute_program_name_loc(argv[0], 
+                             &(arg_state.program_name),
+                             &(arg_state.program_loc));
+
+    process_args(&arg_state, argc, argv);
+
+    initCompilerGlobals(); // must follow argument parsing
+
+    setupDependentVars();
+    setupModulePaths();
+
+    recordCodeGenStrings(argc, argv);
+  } // astlocMarker scope
+
   printStuff(argv[0]);
+
   if (rungdb)
     runCompilerInGDB(argc, argv);
+
   if (runlldb)
     runCompilerInLLDB(argc, argv);
+
   if (fdump_html || strcmp(log_flags, ""))
     init_logs();
-  compile_all();
+
+  testInputFiles(arg_state.nfile_arguments, arg_state.file_argument);
+
+  if (strcmp(chplBinaryName, "chpldoc") == 0)
+    fDocs = true;
+
+  runPasses(tracker);
+
+  tracker.StartPhase("driverCleanup");
 
   if (fEnableTimers) {
     printf("timer 1: %8.3lf\n", timer1.elapsedSecs());
@@ -906,7 +929,15 @@ int main(int argc, char *argv[]) {
 
   free_args(&arg_state);
 
-  if(printPassesFile != NULL) {
+  tracker.Stop();
+
+  if (printPasses == true || printPassesFile != NULL) {
+    tracker.ReportPass();
+    tracker.ReportTotal();
+    tracker.ReportRollup();
+  }
+
+  if (printPassesFile != NULL) {
     fclose(printPassesFile);
   }
 

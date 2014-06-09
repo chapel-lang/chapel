@@ -1,14 +1,12 @@
 #include "runpasses.h"
 
-#include "checks.h"      // For check function prototypes.
-#include "log.h"         // For LOG_<passname> #defines.
-#include "passes.h"      // For pass function prototypes.
+#include "checks.h"        // For check function prototypes.
+#include "log.h"           // For LOG_<passname> #defines.
+#include "passes.h"        // For pass function prototypes.
+#include "PhaseTracker.h"
 
 #include <cstdio>
 #include <sys/time.h>
-
-bool  printPasses     = false;
-FILE* printPassesFile = NULL;
 
 int   currentPassNo   = 1;
 
@@ -26,8 +24,8 @@ struct PassInfo {
 //
 static PassInfo sPassList[] = {
   // Chapel to AST
-  RUN(parse),                            // parse files and create AST
-  RUN(checkParsed),                      // checks semantics of parsed AST
+  RUN(parse),                   // parse files and create AST
+  RUN(checkParsed),             // checks semantics of parsed AST
 
   // Read in runtime and included C header file types/prototypes
   RUN(readExternC),
@@ -36,186 +34,128 @@ static PassInfo sPassList[] = {
   RUN(expandExternArrayCalls),
 
   // Scope resolution and normalization
-  RUN(cleanup),                          // post parsing transformations
-  RUN(scopeResolve),                     // resolve symbols by scope
-  RUN(flattenClasses),                   // denest nested classes
-  RUN(docs),                             // generates documentation instead of executable
-                                         // if chpldoc is used instead of chpl, otherwise
-                                         // generates both documentation and an executable
+  RUN(cleanup),                 // post parsing transformations
+  RUN(scopeResolve),            // resolve symbols by scope
+  RUN(flattenClasses),          // denest nested classes
+  RUN(docs),                    // if fDocs is set, this will generate docs.
+                                // if the executable is named "chpldoc" then
+                                // the application will stop after this phase
 
-  RUN(normalize),                        // normalization transformations
-  RUN(checkNormalized),                  // check semantics of normalized AST
+  RUN(normalize),               // normalization transformations
+  RUN(checkNormalized),         // check semantics of normalized AST
 
-  RUN(buildDefaultFunctions),            // build default functions
-  RUN(createTaskFunctions),              // convert 'begin' et al. to functions
+  RUN(buildDefaultFunctions),   // build default functions
+  RUN(createTaskFunctions),     // convert 'begin' et al. to functions
 
   // Function resolution and shallow type inference
-  RUN(resolve),                          // resolves function calls and types
-  RUN(resolveIntents),                   // resolve argument intents
-  RUN(checkResolved),                    // checks semantics of resolved AST
+  RUN(resolve),                 // resolves function calls and types
+  RUN(resolveIntents),          // resolve argument intents
+  RUN(checkResolved),           // checks semantics of resolved AST
 
   // Post-resolution cleanup
-  RUN(processIteratorYields),            // adjustments to iterators
-  RUN(flattenFunctions),                 // denest nested functions
-  RUN(cullOverReferences),               // remove excess references
+  RUN(processIteratorYields),   // adjustments to iterators
+  RUN(flattenFunctions),        // denest nested functions
+  RUN(cullOverReferences),      // remove excess references
   RUN(callDestructors),
-  RUN(lowerIterators),                   // lowers iterators into functions/classes
-  RUN(parallel),                         // parallel transforms
-  RUN(prune),                            // prune AST of dead functions and types
+  RUN(lowerIterators),          // lowers iterators into functions/classes
+  RUN(parallel),                // parallel transforms
+  RUN(prune),                   // prune AST of dead functions and types
 
   // Optimizations
-  RUN(complex2record),                   // change complex numbers into records
-  RUN(bulkCopyRecords),                  // replace simple assignments with PRIM_ASSIGN.
+  RUN(complex2record),          // change complex numbers into records
+  RUN(bulkCopyRecords),         // replace simple assignments with PRIM_ASSIGN.
   RUN(removeUnnecessaryAutoCopyCalls),
-  RUN(inlineFunctions),                  // function inlining
-  RUN(scalarReplace),                    // scalar replace all tuples
-  RUN(refPropagation),                   // reference propagation
-  RUN(copyPropagation),                  // copy propagation
-  RUN(deadCodeElimination),              // eliminate dead code
-  RUN(removeWrapRecords),                // remove _array, _domain, and _distribution records
-  RUN(removeEmptyRecords),               // remove empty records
-  RUN(localizeGlobals),                  // pull out global constants from loop runs
-  RUN(prune2),                           // prune AST of dead functions and types again
+  RUN(inlineFunctions),         // function inlining
+  RUN(scalarReplace),           // scalar replace all tuples
+  RUN(refPropagation),          // reference propagation
+  RUN(copyPropagation),         // copy propagation
+  RUN(deadCodeElimination),     // eliminate dead code
+  RUN(removeWrapRecords),       // remove _array, _domain, and 
+                                // _distribution records
+  RUN(removeEmptyRecords),      // remove empty records
+  RUN(localizeGlobals),         // pull out global constants from loop runs
+  RUN(prune2),                  // prune AST of dead functions and types again
 
   RUN(returnStarTuplesByRefArgs),
 
-  RUN(insertWideReferences),             // inserts wide references for on clauses
-  RUN(optimizeOnClauses),                // Optimize on clauses
-  RUN(addInitCalls),                     // Add module initialization calls and guards.  
-  RUN(loopInvariantCodeMotion),          // move loop invarient code above loop runs
+  RUN(insertWideReferences),    // inserts wide references for on clauses
+  RUN(optimizeOnClauses),       // Optimize on clauses
+  RUN(addInitCalls),            // Add module init calls and guards.
+  RUN(loopInvariantCodeMotion), // move loop invarient code above loop runs
 
   // AST to C or LLVM
-  RUN(insertLineNumbers),                // insert line numbers for error messages
-  RUN(codegen),                          // generate C code
-  RUN(makeBinary)                        // invoke underlying C compiler
+  RUN(insertLineNumbers),       // insert line numbers for error messages
+  RUN(codegen),                 // generate C code
+  RUN(makeBinary)               // invoke underlying C compiler
 };
 
-static void runPass(size_t passIndex);
-static void printPassTiming(char const* fmt, ...);
+static void runPass(PhaseTracker& tracker, size_t passIndex);
 
-static struct timeval startTimeBetweenPasses;
-static struct timeval stopTimeBetweenPasses;
-static double         timeBetweenPasses =  0.0;
-static double         totalTime         =  0.0;
-
-void runPasses() {
-  bool   chpldoc      = (strcmp(chplBinaryName, "chpldoc") == 0) ? true : false;
+void runPasses(PhaseTracker& tracker) {
+  bool   isChpldoc    = (strcmp(chplBinaryName, "chpldoc") == 0);
   size_t passListSize = sizeof(sPassList) / sizeof(sPassList[0]);
 
   setupLogfiles();
 
-  if (chpldoc) 
-    fDocs = true;
+  if (printPasses == true || printPassesFile != 0) {
+    tracker.ReportPass();
+  }
 
   for (size_t i = 0; i < passListSize; i++) {
-    runPass(i);
+    runPass(tracker, i);
 
     USR_STOP(); // quit if fatal errors were encountered in pass
 
     currentPassNo++;
 
     // Break early if this is a chpl doc run
-    if (chpldoc == true && strcmp(sPassList[i].name, "docs") == 0) {
+    if (isChpldoc == true && strcmp(sPassList[i].name, "docs") == 0) {
       break;
     }
   }
-
-  printPassTiming("%32s :%8.3f seconds\n", 
-                  "time between passes",
-                  timeBetweenPasses);
-
-  printPassTiming("%32s :%8.3f seconds\n",
-                  "total time",
-                  totalTime + timeBetweenPasses);
 
   destroyAst();
   teardownLogfiles();
 }
 
-static void runPass(size_t passIndex) {
-  PassInfo* info          = &sPassList[passIndex];
-  bool      performTiming = printPasses == true || printPassesFile != NULL;
+static void runPass(PhaseTracker& tracker, size_t passIndex) {
+  PassInfo* info = &sPassList[passIndex];
 
-  struct timeval startTime;
-  struct timeval stopTime;
-  double         passTime = 0.0;
-
-  gettimeofday(&stopTimeBetweenPasses, 0);
-
-  if (passIndex > 0)
-    timeBetweenPasses += 
-      ((stopTimeBetweenPasses.tv_sec  * 1e6 + stopTimeBetweenPasses.tv_usec ) - 
-       (startTimeBetweenPasses.tv_sec * 1e6 + startTimeBetweenPasses.tv_usec)) / 1e6;
+  tracker.StartPhase(info->name, PhaseTracker::kPrimary);
 
   if (fPrintStatistics[0] != '\0' && passIndex > 0)
     printStatistics("clean");
 
-
-  // Determine time taken to run this pass of the compiler
-  gettimeofday(&startTime, 0);
-
   (*(info->passFunction))();
 
-  gettimeofday(&stopTime, 0);
-
-
+  tracker.StartPhase(info->name, PhaseTracker::kVerify);
 
   if (fPrintStatistics[0] != '\0')
     printStatistics(info->name);
 
   log_writeLog(info->name, currentPassNo, info->logTag);
 
-
-  // Start a timer that will complete at the entry to the next pass
-  gettimeofday(&startTimeBetweenPasses, 0);
-
   considerExitingEndOfPass();
+
+  tracker.StartPhase(info->name, PhaseTracker::kCleanAst);
   cleanAst();
 
   (*(info->checkFunction))(); // Run per-pass check function.
 
-
-  // Do the accounting/printing for this pass
-  passTime   = ((stopTime.tv_sec  * 1e6 + stopTime.tv_usec ) - 
-                (startTime.tv_sec * 1e6 + startTime.tv_usec)) / 1e6;
-
-  totalTime += passTime;
-
-  if (performTiming) {
-    printPassTiming("%32s :%8.3f seconds", info->name, passTime);
-
-    if (developer && printPasses)
-      fprintf(stderr, "  [%d]", lastNodeIDUsed());
-
-    printPassTiming("\n");
+  if (printPasses == true || printPassesFile != 0) {
+    tracker.ReportPass();
   }
 }
-
-// wrapper for printing timing info to stderr and/or a file
-static void printPassTiming(char const* fmt, ...) {
-  va_list ap;
-  
-  if (printPasses) {
-    va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
-    va_end(ap);
-  }
-
-  if (printPassesFile != NULL) {
-    va_start(ap, fmt);
-    vfprintf(printPassesFile, fmt, ap);
-    va_end(ap);
-  }
-}
-
-
 
 //
-// The logging machinery wants to know a "name" for every pass that it can match
-// to command line arguments but does not, currently, want to know about the pass
-// list itself.  This function provides a vector of the pass list names
+// The logging machinery wants to know a "name" for every pass that it can
+// match to command line arguments but does not, currently, want to know
+// about the pass list itself.
+//
+//  This function provides a vector of the pass list names
 //
 // This routine also verifies that each non-NUL flag is unique.
+
 void initLogFlags(Vec<char>& valid_log_flags) {
   size_t passListSize = sizeof(sPassList) / sizeof(sPassList[0]);
 
