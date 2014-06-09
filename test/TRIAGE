@@ -31,6 +31,14 @@ New problems
 (Ones that prove persistent should be moved to REGRESSIONS.)
 =========================================================
 
+linux64.gnu.gasnet-fast.fifo.flat.dlmalloc
+------------------------------------------
+
+This test appears to be close to the timeout threshold. It failed on
+2014-06-07.
+
+[Error: Timed out executing program studies/lulesh/sungeun/lulesh (compopts: 1)]
+
 linux64.gnu.gasnet.qthreads.flat
 --------------------------------
 
