@@ -1,8 +1,10 @@
 use UtilMath;                      // get the int ceil function, divceilpos()
+use AdvancedIters;
 
 config const n = 200,              // the problem size
              maxIter = 50,         // the maximum # of iterations
-             limit = 4.0;          // the limit before quitting
+             limit = 4.0,          // the limit before quitting
+             chunkSize = 1;        // the chunk size of the dynamic iterator
 
 param bitsPerElt = 8;              // the # of bits to store per element
 type eltType = uint(bitsPerElt);   // the element type to store
@@ -16,7 +18,7 @@ proc main() {
 
   var image : [ydim, xdim] eltType;            // the bitmap image
 
-  forall y in ydim {                           // forall rows...
+  forall y in dynamic(ydim, chunkSize) {       // forall rows...
     for xelt in xdim {                         //   forall column elements
 
       var mask = 0: eltType;                   // zero out the mask
