@@ -44,6 +44,7 @@
 # CHPL_TEST_PERF_TRIALS: Default number of trials for perf tests
 # CHPL_ONETEST: Name of the one test in this directory to run
 # CHPL_TEST_SINGLES: If false, test the entire directory
+# CHPL_SYSTEM_PREEXEC: If set, run script on test output prior to execution
 # CHPL_SYSTEM_PREDIFF: If set, run that script on each test output
 # CHPL_COMM: Chapel communication layer
 # CHPL_COMPONLY: Only build the test (same as -noexec flag)
@@ -111,6 +112,7 @@
 # instead of "perf" in the above suffixes, and its all-caps version is used
 # in the all-caps file names instead "PERF".
 
+from __future__ import with_statement
 
 import sys, os, subprocess, string, signal
 import select, fcntl
@@ -400,6 +402,12 @@ platform = platform.strip()
 # Machine name we are running on
 machine=os.uname()[1].split('.', 1)[0]
 # sys.stdout.write('machine='+machine+'\n')
+
+# Get the system-wide preexec
+systemPreexec = os.getenv('CHPL_SYSTEM_PREEXEC')
+if systemPreexec is not None:
+    if not os.access(systemPreexec, os.R_OK|os.X_OK):
+        Fatal("Cannot execute system-wide preexec '{0}'".format(systemPreexec))
 
 # Get the system-wide prediff
 systemPrediff = os.getenv('CHPL_SYSTEM_PREDIFF')
@@ -695,6 +703,8 @@ else:
 #
 sys.stdout.write('[Starting subtest - %s]\n'%(time.strftime('%a %b %d %H:%M:%S %Z %Y', time.localtime())))
 #sys.stdout.write('[compiler: \'%s\']\n'%(compiler))
+if systemPreexec:
+    sys.stdout.write("[system-wide preexec: '{0}']\n".format(systemPreexec))
 if systemPrediff:
     sys.stdout.write('[system-wide prediff: \'%s\']\n'%(systemPrediff))
 
@@ -1120,6 +1130,10 @@ for testname in testsrc:
         else:
             compoutput = output # save for diff
 
+            # Write the log, so it can be modified by preexec.
+            with open('{0}.exec.out.tmp'.format(execname), 'w') as execlogfile:
+                execlogfile.write(compoutput)
+
 
         #
         # Compile successful
@@ -1219,6 +1233,12 @@ for testname in testsrc:
             else:
                 explicitexecgoodfile = explicitcompgoodfile
             del tlist
+
+            if systemPreexec:
+                sys.stdout.write('[Executing system-wide preexec]\n')
+                sys.stdout.flush()
+                subprocess.Popen([systemPreexec,
+                                  execname,execlog,compiler]).wait()
 
             if globalPreexec:
                 sys.stdout.write('[Executing ./PREEXEC]\n')
@@ -1355,10 +1375,8 @@ for testname in testsrc:
                                             stderr=subprocess.STDOUT).communicate()[0]
 
                 # Sadly the scripts used below require an actual file
-                execlogfile=file(execlog, 'w')
-                execlogfile.write('%s'%(compoutput))
-                execlogfile.write('%s'%(output))
-                execlogfile.close()
+                with open(execlog, 'a') as execlogfile:
+                    execlogfile.write('%s'%(output))
 
                 if not exectimeout:
                     if systemPrediff:

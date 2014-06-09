@@ -78,6 +78,7 @@
 #   -futuresonly
 #   -valgrind
 #   -valgrindexe
+#   -syspreexec <path>
 #   -sysprediff <path>
 #   -suppress <suppression file>
 #   -nostdinredirect
@@ -575,6 +576,8 @@
 #    executable can be specified using a PREEXEC or foo.preexec
 #    script.  (other such commands can be added to various
 #    stages of the sub_test script on request).
+#    A system-wide PREEXEC script, to be run on the compiler output for *all*
+#    tests, can be provided via the -syspreexec option.
 #
 #  - it is also possible to add a PRECOMP file which is run prior to
 #    running the main test.  This can be used to set up certain files
@@ -768,6 +771,12 @@ while ( $#argv > 0 )
         shift
         set valgrind = 1
         breaksw
+    case -syspreexec:
+    case --syspreexec:
+        shift
+        setenv CHPL_SYSTEM_PREEXEC "$argv[1]"
+        shift
+        breaksw
     case -sysprediff:
     case --sysprediff:
         shift
@@ -951,6 +960,7 @@ while ( $#argv > 0 )
         echo "          -futuresonly"
         echo "          -valgrind"
         echo "          -valgrindexe"
+        echo "          -syspreexec <path>"
         echo "          -sysprediff <path>"
         echo "          -suppress <filename>"
         echo "          -numlocales <number>"
@@ -1146,6 +1156,20 @@ else
     echo \[numlocales: \"$numlocales\"\] |& $tee -a $logfile
 endif
 setenv NUMLOCALES "$numlocales"
+
+# if system-wide preexec is requested, get absolute path name for it
+if ($?CHPL_SYSTEM_PREEXEC) then
+    if ( -f $CHPL_SYSTEM_PREEXEC && -x $CHPL_SYSTEM_PREEXEC ) then
+        pushd `dirname $CHPL_SYSTEM_PREEXEC` >& /dev/null
+        setenv CHPL_SYSTEM_PREEXEC $cwd/`basename $CHPL_SYSTEM_PREEXEC`
+        popd >& /dev/null
+
+        echo "[system-wide preexec: $CHPL_SYSTEM_PREEXEC]" |& $tee -a $logfile
+    else
+        echo "[Error: Cannot find or execute system-wide preexec: $CHPL_SYSTEM_PREEXEC]" |& $tee -a $logfile
+        goto err_exit
+    endif
+endif
 
 # if system-wide prediff is requested,  get absolute path name for it
 if ($?CHPL_SYSTEM_PREDIFF) then
