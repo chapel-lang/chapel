@@ -21,9 +21,56 @@
 # all failed) it will not be displayed.
 
 all:
+  02/04/14:
+    - flipped default value of dataParIgnoreRunningTasks
   02/27/14:
     - copy propagation rework r22796
+  10/14/13:
+    - locale ID changes
+  10/17/13:
+    - initial sync var change
+    - variety of multilocale performance changes
+  10/29/13:
+    - reversion of sync change to threads
+  05/08/14:
+    - switched to gcc-4.7
 
 fasta:
   01/14/14:
     - enabled unlocked I/O on fasta and fasta-printf
+
+lulesh:
+  03/15/14:
+    - improved constness of de-nested functions, improved remove value forwarding
+
+lulesh-dense:
+  03/15/14:
+    - improved constness of de-nested functions, improved remove value forwarding
+
+nbody:
+  03/17/14:
+    - removed extra formal temps
+
+memleaks:
+  11/13/13:
+    - Plugged the massive memory leak in fileIO.chpl
+  11/26/13:
+    - Fixed valgrind regression and some associated memory leaks
+  12/03/13:
+    - Made some tests leak-free
+  12/07/13:
+    - Fixed leakage of sync and single array elements
+
+meteor:
+  12/18/13:
+    - Chapel level improvement by using implicit domains
+
+mandelbrot:
+  01/03/14:
+    - Chapel level improvement by using a nonlocking writer
+  03/19/14:
+    - Bulk IO optimization
+
+jacobi:
+  03/07/14:
+    - Added a "trivial assignment" optimization to replace field-by-field assignment with a bulk copy.
