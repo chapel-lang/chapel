@@ -9,12 +9,17 @@ file = open(logfile, 'r')
 tmpfile = open(tmplogfile, 'w')
 
 # remove all of the actual times from --print-passes
-# It outputs passname : <time for pass> and we want 
-# to just remove <time for pass> 
+# It outputs passname : <time for pass> and we want
+# to just remove <time for pass>
 lines = file.readlines()
 for line in lines:
-  line = line.split(':')[0].strip() + ' :'
-  tmpfile.write(line + '\n')
+  splitline = line.split(':')[0].strip() + ' :'
+  tmpfile.write(splitline + '\n')
+  # --print-passes prints detailed output after printing the total time for
+  # each pass. This just strips all that output which occurs after the total
+  # is printed.
+  if line.strip().startswith('total :') :
+    break
 
 file.close()
 tmpfile.close()
@@ -22,7 +27,6 @@ tmpfile.close()
 os.rename(tmplogfile, logfile)
 
 # copy the compilerPerformance perf keys as the .good file for this test. That
-# way we don't have to update the .good and the perfkeys 
-
+# way we don't have to update the .good and the perfkeys
 shutil.copy('../compilerPerformance.perfkeys', 'passCheck.good')
 

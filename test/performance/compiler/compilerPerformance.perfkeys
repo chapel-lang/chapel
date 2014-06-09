@@ -1,3 +1,4 @@
+init :
 parse :
 checkParsed :
 readExternC :
@@ -40,5 +41,5 @@ loopInvariantCodeMotion :
 insertLineNumbers :
 codegen :
 makeBinary :
-time between passes :
-total time :
+driverCleanup :
+total :
