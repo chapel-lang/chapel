@@ -269,6 +269,27 @@ insertAutoDestroyCalls() {
 //
 static Map<FnSymbol*,Vec<FnSymbol*>*> retToArgCache;
 
+// Helper method for changeRetToArgAndClone, assisting in symbol replacement
+//
+// This method takes in the current call which we are replacing around
+// (focalPt), the VarSymbol we are trying to replace (oldSym), the symbol we are
+// replacing it with (newSym), and the function that was called in the first
+// use of oldSym in the callee, to replace oldSym with newSym without breaking
+// the AST.
+static void
+replacementHelper(CallExpr* focalPt, VarSymbol* oldSym, Symbol* newSym,
+                  FnSymbol* useFn) {
+  CallExpr* refTmpAssign = NULL;
+  oldSym = createRefArgIfNeeded(useFn, oldSym, &refTmpAssign);
+  focalPt->insertAfter(new CallExpr(PRIM_MOVE, newSym,
+                                    new CallExpr(useFn, oldSym)));
+  if (refTmpAssign) {
+    focalPt->insertAfter(refTmpAssign);
+    focalPt->insertAfter(new DefExpr(oldSym));
+  }
+}
+
+
 static void
 changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
                        CallExpr* call, FnSymbol* fn,
@@ -352,60 +373,21 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
             // deref temp is inserted if needed.  The result is fed through a
             // call to the useFn -- effectively sucking the use function call
             // inside the clone function.
-            forv_Vec(SymExpr, se, symExprs)
-            {
-              if (se->var == ret)
-              {
+            forv_Vec(SymExpr, se, symExprs) {
+              if (se->var == ret) {
                 CallExpr* move = toCallExpr(se->parentExpr);
                 if (move && move->isPrimitive(PRIM_MOVE) && move->get(1) == se) {
                   SET_LINENO(move);
-                  if (!strcmp(useFn->name, "=")) {
-                    // This case only captures the "old style" assignment:
-                    // ('move' lhs (= lhs rhs))
-                    Symbol* tmp = newTemp("_ret_to_arg_tmp_", useFn->retType);
-                    move->insertBefore(new DefExpr(tmp));
-                    move->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, arg)));
-                    move->insertAfter(new CallExpr(PRIM_MOVE, arg, new CallExpr(useFn, tmp, ret)));
-                  } else {
-                    // Some other kind of call within a move.
-                    CallExpr* refTmpAssign = NULL;
-                    ret = createRefArgIfNeeded(useFn, ret, &refTmpAssign);
-                    move->insertAfter(new CallExpr(PRIM_MOVE, arg, new CallExpr(useFn, ret)));
-                    if (refTmpAssign) {
-                      move->insertAfter(refTmpAssign);
-                      move->insertAfter(new DefExpr(ret));
-                    }
-                  }
-                }
-                else
-                {
+                  replacementHelper(move, ret, arg, useFn);
+                } else {
                   // Any other call or primitive.
-                  // TODO: We special-case assignment here.  Can we generalize
-                  // to other functions that pass the return value by
-                  // reference?
                   FnSymbol* calledFn = move->isResolved();
                   CallExpr* parent = toCallExpr(move->parentExpr);
                   if (calledFn && !strcmp(calledFn->name, "=") &&
                       // Filter out case handled above.
-                      (!parent || !parent->isPrimitive(PRIM_MOVE)))
-                  {
-                    if (!strcmp(useFn->name, "=")) {
-                      Symbol* tmp = newTemp("_ret_to_arg_tmp_", useFn->retType);
-                      move->insertBefore(new DefExpr(tmp));
-                      move->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, arg)));
-                      move->insertAfter(new CallExpr(PRIM_MOVE, arg, new CallExpr(useFn, tmp, ret)));
-                    } else {
-                      CallExpr* refTmpAssign = NULL;
-                      ret = createRefArgIfNeeded(useFn, ret, &refTmpAssign);
-                      move->insertAfter(new CallExpr(PRIM_MOVE, arg, new CallExpr(useFn, ret)));
-                      if (refTmpAssign) {
-                        move->insertAfter(refTmpAssign);
-                        move->insertAfter(new DefExpr(ret));
-                      }
-                    }
-                  }
-                  else
-                  {
+                      (!parent || !parent->isPrimitive(PRIM_MOVE))) {
+                    replacementHelper(move, ret, arg, useFn);
+                  } else {
                     Symbol* tmp = newTemp("ret_to_arg_tmp_", useFn->retType);
                     se->getStmtExpr()->insertBefore(new DefExpr(tmp));
                     se->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, arg)));
