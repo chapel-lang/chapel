@@ -341,6 +341,7 @@ Pass::~Pass()
 void Pass::Reset()
 {
   mName     = 0;
+  mPassId   = 0;
   mIndex    = 0;
   mPrimary  = 0;
   mVerify   = 0;
