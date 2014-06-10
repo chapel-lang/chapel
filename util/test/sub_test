@@ -333,6 +333,14 @@ def FindGoodFile(basename, commExecNums=['']):
 
     return goodfile
 
+def get_exec_log_name(execname, comp_opts_count=None, exec_opts_count=None):
+    """Returns the execution output log name based on number of comp and exec opts."""
+    suffix = '.exec.out.tmp'
+    if comp_opts_count is None and exec_opts_count is None:
+        return '{0}{1}'.format(execname, suffix)
+    else:
+        return '{0}.{1}-{2}{3}'.format(execname, comp_opts_count, exec_opts_count, suffix)
+
 # Start of sub_test proper
 #
 
@@ -1130,10 +1138,32 @@ for testname in testsrc:
         else:
             compoutput = output # save for diff
 
-            # Write the log, so it can be modified by preexec.
-            with open('{0}.exec.out.tmp'.format(execname), 'w') as execlogfile:
-                execlogfile.write(compoutput)
+            exec_log_names = []
 
+            # Exactly one execution output file.
+            if len(compoptslist) == 1 and len(execoptslist) <= 1:
+                exec_log_names.append(get_exec_log_name(execname))
+
+            # One execution output file for the current compiler opt.
+            elif len(compoptslist) > 1 and len(execoptslist) <= 1:
+                exec_log_names.append(get_exec_log_name(execname, compoptsnum, 0))
+
+            # One execution output file for each of the execution opts.
+            elif len(compoptslist) == 1 and len(execoptslist) > 1:
+                for i in xrange(1, len(execoptslist) + 1):
+                    exec_log_names.append(get_exec_log_name(execname, compoptsnum, i))
+
+            # This enumerates the cross product of all compiler and execution
+            # opts. It's not clear whether this is actually supported elsewhere
+            # (like start_test), but it's here.
+            else:
+                for i in xrange(1, len(execoptslist) + 1):
+                    exec_log_names.append(get_exec_log_name(execname, compoptsnum, i))
+
+            # Write the log(s), so it/they can be modified by preexec.
+            for exec_log_name in exec_log_names:
+                with open(exec_log_name, 'a+') as execlogfile:
+                    execlogfile.write(compoutput)
 
         #
         # Compile successful
@@ -1215,12 +1245,12 @@ for testname in testsrc:
 
             if (len(compoptslist)==1) and (len(execoptslist)==1):
                 onlyone = True
-                execlog=execname+'.exec.out.tmp'
+                execlog = get_exec_log_name(execname)
             else:
                 onlyone = False
                 if texecopts != ' ':
                     execoptsnum += 1
-                execlog = execname+'.'+str(compoptsnum)+'-'+str(execoptsnum)+'.exec.out.tmp'
+                execlog = get_exec_log_name(execname, compoptsnum, execoptsnum)
 
             tlist = texecopts.split('#')
             execopts = tlist[0].strip()
@@ -1375,7 +1405,7 @@ for testname in testsrc:
                                             stderr=subprocess.STDOUT).communicate()[0]
 
                 # Sadly the scripts used below require an actual file
-                with open(execlog, 'a') as execlogfile:
+                with open(execlog, 'a+') as execlogfile:
                     execlogfile.write('%s'%(output))
 
                 if not exectimeout:
