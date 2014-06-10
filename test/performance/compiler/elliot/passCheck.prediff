@@ -18,7 +18,7 @@ for line in lines:
   # --print-passes prints detailed output after printing the total time for
   # each pass. This just strips all that output which occurs after the total
   # is printed.
-  if line.strip().startswith('total :') :
+  if line.strip().startswith('total time :') :
     break
 
 file.close()

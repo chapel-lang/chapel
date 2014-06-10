@@ -42,4 +42,4 @@ insertLineNumbers :
 codegen :
 makeBinary :
 driverCleanup :
-total :
+total time :

@@ -1,5 +1,4 @@
-perfkeys: total (all), total (examples)
-graphkeys: total time (all), total time (examples)
+perfkeys: total time (all), total time (examples)
 
 files: compilerPerformance-all.dat, compilerPerformance-examples.dat
 
