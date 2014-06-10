@@ -1,1 +1,2 @@
---main-module=endCountTest
+--main-module=endCountTest -sprintGetPutCnt=true
+

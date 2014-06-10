@@ -2,8 +2,23 @@ use CommDiagnostics;
 config param doVerboseComm = false;
 config const noisy = false;
 config const target = numLocales-1;
+config const printForkCnt = false;
+config const printGetPutCnt = false;
+
 proc foo() {
   if noisy then writeln("hi");
+}
+
+proc printDiags() {
+  const diags = getCommDiagnostics();
+  for i in 0..numLocales-1 do {
+    write(i, ": ");
+    if printForkCnt then
+      write((diags[i].fork, diags[i].fork_fast, diags[i].fork_nb));
+    if printGetPutCnt then
+      write((diags[i].get, diags[i].get_nb, diags[i].put));
+    writeln();
+  }
 }
 
 proc main() {
@@ -13,7 +28,7 @@ proc main() {
   on Locales[numLocales-1] do if here.id==target then begin foo();
   if doVerboseComm then stopVerboseComm();
   stopCommDiagnostics();
-  writeln(getCommDiagnostics());
+  printDiags();
 
   resetCommDiagnostics();
   startCommDiagnostics();
@@ -23,7 +38,7 @@ proc main() {
     }
   if doVerboseComm then stopVerboseComm();
   stopCommDiagnostics();
-  writeln(getCommDiagnostics());
+  printDiags();
 
   resetCommDiagnostics();
   startCommDiagnostics();
@@ -34,5 +49,5 @@ proc main() {
   }
   if doVerboseComm then stopVerboseComm();
   stopCommDiagnostics();
-  writeln(getCommDiagnostics());
+  printDiags();
 }
