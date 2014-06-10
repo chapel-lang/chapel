@@ -822,7 +822,7 @@ if ($runtests == 0) {
         mysystem("cd $svnPerfDir && svn update", "svn-updating perf data after running tests" . $svnPerfMsgXtra, 0, 1, 1);
         mysystem("cd $svnPerfDir && find . -name '*.dat' -print0 | xargs -0 svn add  --parents 2>&1 | grep -v '^svn: warning: .* is already under version control\$'", "svn-adding perf data files", 0, 0, 1);  # can fail easily - ignore failures
         $fileTypesToIgnore = "\"*.gif\n*.gpl\n*.errors\nday*.log\nday*.log.summary\nday*.log.sorted\ndebug-*.log\ndebug-*.log.summary\ndebug-*.log.sorted\nlast-*.log.sorted\nindex.html\nhtml\nOLD\"";
-        mysystem("svn propset svn:ignore $fileTypesToIgnore . --recursive", "svn-ignoring non-dat files", 0, 0, 1);
+        mysystem("cd $svnPerfDir && svn propset svn:ignore $fileTypesToIgnore . --recursive", "svn-ignoring non-dat files", 0, 0, 1);
         mysystem("cd $svnPerfDir && svn commit -m \"Subject: Perf data update $host  `date '+%F %T'`  $revision\n\nDescription: <empty>\n\"", "svn-committing perf data" . $svnPerfMsgXtra, 0, 1, 1);
 
         # sync the performance graphs over to sourceforge 
