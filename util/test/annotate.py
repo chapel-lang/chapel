@@ -1,4 +1,5 @@
 import socket, time
+import cgi
 from collections import defaultdict
 
 import yaml
@@ -68,7 +69,7 @@ def _find_annotations(graph, matches, data, start, end):
         for ann in annotations:
           if isinstance(ann, dict):
             if _hostname in ann['host']:
-              matches[date].append(ann['text'])
+              matches[date].append(cgi.escape(ann['text'], True))
           else:
-            matches[date].append(ann)
+            matches[date].append(cgi.escape(ann, True))
 
