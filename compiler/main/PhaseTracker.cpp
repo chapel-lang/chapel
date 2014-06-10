@@ -300,7 +300,7 @@ void Phase::ReportPass(unsigned long now) const
 
 void Phase::ReportTotal(unsigned long totalTime)
 {
-  ReportTime("total", totalTime / 1e6);
+  ReportTime("total time", totalTime / 1e6);
   ReportText("\n\n\n\n");
 }
 
@@ -427,7 +427,7 @@ void Pass::Footer(FILE*         fp,
 {
   fprintf(fp,
           "\n     %-33s  %7.3f  %7.3f  %7.3f  %7.3f\n",
-          "total",
+          "total time",
           mainTime / 1e6,
           checkTime / 1e6,
           cleanTime / 1e6,
