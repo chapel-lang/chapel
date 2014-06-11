@@ -16,45 +16,9 @@ The subversion repository for the project is set up as follows:
 
 * Anyone can read the repository.
 
-* To commit to the repository, you need a SourceForge account and
-  permissions granted by a Chapel administrator.  If you are not a
-  Cray employee, a contributor's agreement is required to obtain
-  commit privileges.  Different versions of the form exist for
-  students and government employees.  The forms can be found in
-  $CHPL_HOME/doc/developer/contributorAgreements
-
-* Most external collaborations of any scope will be encouraged to work
-  in a project-specific branch in the branches/collaborations/ space.
-
-
-Contributor Notes
------------------
-
-In general, contributors should work using the following guidelines,
-which are designed to protect the broad Chapel team's ability to make
-forward progress:
-
-* Recall that commits to subversion are extremely difficult to remove
-  from the source tree's history, so be very careful not to commit
-  anything that you might regret later (e.g., sensitive code, code
-  owned by anyone other than yourself).
-
-* Apropos of the above, please avoid committing third-party source
-  code to any part of the repository without clearing it with a member
-  of the core Chapel team.
-
-* Commit changes to your branch as often as you find worthwhile.
-
-* Any non-test commits to code or documentation to trunk/ should go
-  through a pre-commit review with someone on the core development
-  team.  Adding new tests or future tests to trunk/test can generally
-  be done without a review; just be sure that the tests work well
-  within the testing system and that they are sorted into a reasonable
-  location in the test hierarchy.
-
-* Experienced developers may make minor fixes to code or documentation
-  without review, but the changes should generally be quite minor and
-  innocuous in scope.
+* To commit to the repository, you'll need a SourceForge account and
+  permissions granted by a Chapel administrator.  See
+  CommittingCode.txt in this directory for further details.
 
 
 SVN "cheat sheet" (with comparisons to git)
