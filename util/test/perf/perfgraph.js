@@ -477,6 +477,7 @@ function customDrawCallback(g, initial) {
         if (g.graphInfo.sort) {
             var origColors = g.getColors().slice();
             g.rawData_ = sortData(g);
+            g.setAnnotations(g.annotations());
             setColors(g, origColors, true);
         }
         if (descriptions.length > 0) {
