@@ -196,9 +196,11 @@ function genDygraph(graphInfo, expandInfo) {
     // We use numGraphsReady to handle that. We also make our buttons visible
     // here that way they don't show up before the graph does.
     g.ready(function() {
-        g.setAnnotations(graphInfo.annotations);
         setupLogToggle(g, graphInfo, logToggle);
-        setupAnnToggle(g, graphInfo, annToggle);
+        // Keep hidden for now until we actually have annotations. When we have
+        // annotations. Keeps annotaiton button hidden, and prevents redraw
+        // from setting the annotations. When enabled look in perfgraph.css too
+        // setupAnnToggle(g, graphInfo, annToggle);
         numGraphsReady += 1;
     });
 
@@ -321,9 +323,10 @@ function setupLogToggle(g, graphInfo, logToggle) {
 
 // Setup the annotation button
 function setupAnnToggle(g, graphInfo, annToggle) {
-    // Keep hidden for now until we actually have annotations. When we have
-    // annotations also change the button margin in perfgraph.css
-    // annToggle.style.visibility = 'visible';
+    annToggle.style.visibility = 'visible';
+
+    // set the annotations for the graph
+    g.setAnnotations(graphInfo.annotations);
 
     annToggle.onclick = function() {
         if (g.annotations().length === 0) {
@@ -339,7 +342,7 @@ function setupAnnToggle(g, graphInfo, annToggle) {
 // with the series. This just resets the order of the colors back to the
 // original. This way we don't have multiple series with the same colors next
 // to each other, which would make the graph hard to read.
-function setColors(g, origColors) {
+function setColors(g, origColors, blockRedraw) {
     var labels = g.getLabels();
     var visibility = g.visibility();
     var colors = origColors.slice();
@@ -383,7 +386,7 @@ function setColors(g, origColors) {
     }
 
     // update the colors array with the new colors
-    g.updateOptions({ 'colors' : colors }) ;
+    g.updateOptions({ 'colors' : colors }, blockRedraw);
 }
 
 // Function to sort the data after it has been converted to an array
@@ -474,9 +477,13 @@ function customDrawCallback(g, initial) {
         if (g.graphInfo.sort) {
             var origColors = g.getColors().slice();
             g.rawData_ = sortData(g);
-            g.setAnnotations(g.annotations());
-            setColors(g, origColors);
+            setColors(g, origColors, true);
         }
+        if (descriptions.length > 0) {
+          setConfigurationVisibility(g, true);
+        }
+
+        g.setAnnotations(g.annotations());
         expandGraphs(g);
     }
 
@@ -590,9 +597,15 @@ function perfGraphInit() {
         elem.innerHTML = '<input id="hide' + i + '"type="checkbox">' + description;
         toggleConf.appendChild(elem);
         var checkBox = document.getElementById('hide' + i);
-        checkBox.checked = true;
+        if (i === 0) {
+          checkBox.checked = true;
+        } else {
+          checkBox.checked = false;
+        }
         checkBox.onchange = function() {
-          setConfigurationVisibility();
+          for (var i = 0; i < gs.length; i++) {
+            setConfigurationVisibility(gs[i], false);
+          }
         };
       }
     } else {
@@ -632,27 +645,26 @@ function perfGraphInit() {
     displaySelectedGraphs();
 }
 
-function setConfigurationVisibility() {
+function setConfigurationVisibility(graph, blockRedraw) {
   var checked = {};
   for (var i = 0; i<descriptions.length; i++) {
     var checkBox = document.getElementById('hide' + i);
       checked[descriptions[i]] = checkBox.checked;
   }
 
-  for (var i = 0; i < gs.length; i++) {
-    var labels = gs[i].getLabels();
-    var visibility = gs[i].visibility();
-    for (var j = 1; j < labels.length; j++) {
-      var prop = gs[i].getPropertiesForSeries(labels[j]);
-      for (var check in checked) {
-        if (checked.hasOwnProperty(check)) {
-          if (labels[j].endsWith(check)) {
-            visibility[j-1] = checked[check];
-          }
+  var labels = graph.getLabels();
+  var visibility = graph.visibility();
+  for (var j = 1; j < labels.length; j++) {
+    var prop = graph.getPropertiesForSeries(labels[j]);
+    for (var check in checked) {
+      if (checked.hasOwnProperty(check)) {
+        if (labels[j].endsWith(check)) {
+          visibility[j-1] = checked[check];
         }
       }
     }
-    gs[i].updateOptions({visibility: visibility});
+
+    graph.updateOptions({visibility: visibility}, blockRedraw);
   }
 }
 
