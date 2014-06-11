@@ -6,6 +6,7 @@
 #include <stdint.h>
 
 uint64_t chpl_bytesPerLocale(void);
+size_t chpl_bytesAvailOnThisLocale(void);
 int64_t chpl_numCoresOnThisLocale(void);
 
 //

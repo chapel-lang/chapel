@@ -40,8 +40,45 @@ void chpl_newPrivatizedClass(void* v) {
   chpl_privateObjects[chpl_numPrivateObjects-1] = v;
 }
 
+
 extern void* chpl_getPrivatizedClass(int32_t i) {
   return chpl_privateObjects[i];
 }
 
 
+size_t chpl_comm_getenvMaxHeapSize(void)
+{
+  char*  p;
+  static int    env_checked = 0;
+  static size_t size = 0;
+
+  if (env_checked)
+    return size;
+
+  if ((p = getenv("CHPL_RT_MAX_HEAP_SIZE")) != NULL) {
+    //
+    // The user specified a maximum size, so start with that.
+    //
+    int  num_scanned;
+    char units;
+
+    if ((num_scanned = sscanf(p, "%zi%c", &size, &units)) != 1) {
+      if (num_scanned == 2 && strchr("kKmMgG", units) != NULL) {
+        switch (units) {
+        case 'k' : case 'K': size <<= 10; break;
+        case 'm' : case 'M': size <<= 20; break;
+        case 'g' : case 'G': size <<= 30; break;
+        }
+      }
+      else {
+        chpl_warning("Cannot parse CHPL_RT_MAX_HEAP_SIZE environment "
+                     "variable; assuming 1g", 0, NULL);
+        size = ((size_t) 1) << 30;
+      }
+    }
+  }
+
+  env_checked = 1;
+
+  return size;
+}

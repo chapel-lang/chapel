@@ -35,6 +35,9 @@ int32_t chpl_numPrivatizedClasses(void) { return chpl_numPrivateObjects; }
 extern void chpl_newPrivatizedClass(void*);
 extern void* chpl_getPrivatizedClass(int32_t);
 
+size_t chpl_comm_getenvMaxHeapSize(void);
+
+
 //
 // Shared interface (implemented in the compiler generated code)
 //

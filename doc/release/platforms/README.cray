@@ -272,6 +272,52 @@ system rather than the login node's.
 Special Notes for Cray XC, XE, and XK Series Systems
 ----------------------------------------------------
 
+Controlling the Heap Size
+-------------------------
+
+When running on Cray XC/XE/XK systems using either of the following
+configurations, the comm layer needs to know the maximum size the
+program heap will grow to during execution:
+
+  CHPL_COMM=gasnet
+    CHPL_COMM_SUBSTRATE=gemini or aries
+    CHPL_GASNET_SEGMENT=fast or large
+
+  -- or --
+
+  CHPL_COMM=ugni
+
+By default the heap will occupy as much of the free memory on the locale
+(compute node) as the runtime can acquire, less a certain amount to
+allow for demands from other (system) programs running there.  Advanced
+users may want to make the heap smaller than this.  Programs start more
+quickly with a smaller heap, and in the unfortunate event that you need
+to produce core files, those will be written more quickly if the heap is
+smaller.  However, note that if you reduce the heap size to less than
+the amount your program actually needs and then run it, it will
+terminate prematurely due to not having enough memory.
+
+To change the heap size, set the CHPL_RT_MAX_HEAP_SIZE environment
+variable.  Set it to just a number to specify the size of the heap in
+bytes, or to a number with a "k" or "K", "m" or "M", or "g" or "G"
+suffix with no intervening spaces to specify the heap size in KiB (2^10
+bytes), MiB (2^20 bytes), or GiB (2^30 bytes), respectively.  Any of the
+following would set the heap size to 1 GiB, for example:
+
+  export CHPL_RT_MAX_HEAP_SIZE=1073741824
+  export CHPL_RT_MAX_HEAP_SIZE=1048576k
+  export CHPL_RT_MAX_HEAP_SIZE=1024m
+  export CHPL_RT_MAX_HEAP_SIZE=1g
+
+Note that the value you set in CHPL_RT_MAX_HEAP_SIZE may get rounded up
+internally to match the page alignment.  How much, if any, this will add
+depends on the hugepage size in the hugepage module you have loaded at
+the time you execute the program.
+
+Note that for CHPL_COMM=gasnet, CHPL_RT_MAX_HEAP_SIZE is synonymous with
+GASNET_MAX_SEGSIZE, and the former overrides the latter if both are set.
+
+
 Native Runtime Layers
 ---------------------
 
@@ -372,7 +418,6 @@ default values:
     CHPL_RT_CALL_STACK_SIZE        : 8 MiB (see README.executing)
     CHPL_RT_NUM_HARDWARE_THREADS   : number of cores per locale
     CHPL_RT_NUM_THREADS_PER_LOCALE : 16 * CHPL_RT_NUM_HARDWARE_THREADS
-    CHPL_UGNI_MAX_HEAP_SIZE        : free node memory, less 1 GiB
     CHPL_RT_COMM_CONCURRENCY       : CHPL_RT_NUM_HARDWARE_THREADS
 
 The default values were consciously chosen to achieve high performance
@@ -449,37 +494,6 @@ Parameters associated with the muxed tasking layer:
 
 
 Parameters associated with the ugni communication layer:
-
-    Heap Size
-    ---------
-
-    By default the heap will occupy as much of the free memory on the
-    locale as the runtime can acquire, less a modest percentage to allow
-    for unforeseen demands from other (system) programs running on the
-    locale.  Advanced users may want to make the heap smaller than this.
-    The benefits of doing so include slighter quicker program startup
-    and smaller core files. However, note that if you reduce the heap
-    size to less than the amount some program actually needs and then
-    run that program, it will terminate prematurely due to not having
-    enough memory.
-
-    To change the heap size, set the CHPL_UGNI_MAX_HEAP_SIZE environment
-    variable.  Set it to just a number to specify the size of the heap in
-    bytes, or to a number with a "k" or "K", "m" or "M", or "g" or "G"
-    suffix with no intervening spaces to specify the heap size in KiB
-    (2^10 bytes), MiB (2^20 bytes), or GiB (2^30 bytes), respectively.
-    Any of the following would set the heap size to 1 GiB, for example:
-
-      export CHPL_UGNI_MAX_HEAP_SIZE=1073741824
-      export CHPL_UGNI_MAX_HEAP_SIZE=1048576k
-      export CHPL_UGNI_MAX_HEAP_SIZE=1024m
-      export CHPL_UGNI_MAX_HEAP_SIZE=1g
-
-    Note that the value you set in CHPL_UGNI_MAX_HEAP_SIZE will be
-    rounded up to the next higher hugepage boundary.  How much, if any,
-    this will add will depend on the hugepage size in the hugepage
-    module you have loaded.
-
 
     Communication Layer Concurrency
     -------------------------------
@@ -579,9 +593,10 @@ Known Constraints and Bugs
      node 1 log gasnetc_init_segment() at /path/to/chapel/third-party/gasnet/GASNet-1.22.0/gemini-conduit/gasnet_gemini.c:562: MemRegister segment fault 8 at  0x2aab6ae00000 60000000, code GNI_RC_ERROR_RESOURCE
 
   If your Chapel program exits with such an error, try setting the
-  environment variable GASNET_MAX_SEGSIZE it to a lower value than the
-  default (say 1G) and re-running your program.  For more information
-  on GASNET_MAX_SEGSIZE, refer to:
+  environment variable CHPL_RT_MAX_HEAP_SIZE or GASNET_MAX_SEGSIZE to a
+  lower value than the default (say 1G) and re-running your program.
+  For more information, refer to the discussion of CHPL_RT_MAX_HEAP_SIZE
+  above and/or the discussion of GASNET_MAX_SEGSIZE here:
 
      $CHPL_HOME/third-party/gasnet/GASNet-*/README
 

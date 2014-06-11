@@ -24,12 +24,6 @@
 #include <assert.h>
 #include <time.h>
 
-#ifdef GASNET_NEEDS_MAX_SEGSIZE
-#define CHPL_COMM_GASNET_SETENV chpl_comm_gasnet_set_max_segsize();
-#else
-#define CHPL_COMM_GASNET_SETENV
-#endif
-
 static chpl_sync_aux_t chpl_comm_diagnostics_sync;
 static chpl_commDiagnostics chpl_comm_commDiagnostics;
 static int chpl_comm_no_debug_private = 0;
@@ -442,41 +436,46 @@ static void polling(void* x) {
   pollingRunning = 0;
 }
 
-#ifdef GASNET_NEEDS_MAX_SEGSIZE
-static char segsizeval[80];
+static void set_max_segsize_env_var(size_t size) {
+  char segsizeval[22]; // big enough for an unsigned 64-bit quantity
 
-static void chpl_comm_gasnet_set_max_segsize() {
+  snprintf(segsizeval, sizeof(segsizeval), "%zd", size);
+  if (setenv("GASNET_MAX_SEGSIZE", segsizeval, 1) != 0) {
+    chpl_error("Cannot setenv(\"GASNET_MAX_SEGSIZE\")", 0, NULL);
+  }
+}
+
+static void set_max_segsize() {
   FILE* file = NULL;
-  int memtotal;
+  size_t size;
 
+  if ((size = chpl_comm_getenvMaxHeapSize()) != 0) {
+    set_max_segsize_env_var(size);
+    return;
+  }
+
+  // If GASNET_NEEDS_MAX_SEGSIZE is defined then we have to have
+  // GASNET_MAX_SEGSIZE set.  Otherwise, we don't.
+#ifdef GASNET_NEEDS_MAX_SEGSIZE
   if (getenv("GASNET_MAX_SEGSIZE")) {
     return;
   }
 
-  file = fopen( "/proc/meminfo", "r" );
-  if (file == NULL) {
-    return;
-  }
-  /* The first line of /proc/meminfo looks something like:
-   * MemTotal:      1027296 kB
-   */
-  if (fscanf(file, "MemTotal: %d kB", &memtotal) != 1) {
+  // Use 90% of the available memory as the maximum segment size,
+  // heuristically
+  if ((size = chpl_bytesAvailOnThisLocale()) != 0) {
+    set_max_segsize_env_var((size_t) (0.9 * size));
     return;
   }
 
-  /* Use 90% of the /proc/meminfo as the maximum segment size,
-     heuristically */
-  memtotal *= 0.9;
-
-  snprintf(segsizeval, 80, "%dKB", memtotal);
-  setenv( "GASNET_MAX_SEGSIZE", segsizeval, 0 );
-}
+  chpl_internal_error("Could not determine maximum segment size");
 #endif
+}
 
 void chpl_comm_init(int *argc_p, char ***argv_p) {
 //  int status; // Some compilers complain about unused variable 'status'.
 
-  CHPL_COMM_GASNET_SETENV
+  set_max_segsize();
 
   assert(sizeof(gasnet_handlerarg_t)==sizeof(uint32_t));
 

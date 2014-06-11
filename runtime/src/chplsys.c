@@ -16,6 +16,9 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#ifdef __linux__
+#include <sys/sysinfo.h>
+#endif
 #include <errno.h>
 #include <unistd.h>
 
@@ -51,6 +54,32 @@ uint64_t chpl_bytesPerLocale(void) {
   if (pageSize < 0)
     chpl_internal_error("query of physical memory failed");
   return (uint64_t)numPages * (uint64_t)pageSize;
+#endif
+}
+
+
+size_t chpl_bytesAvailOnThisLocale(void) {
+#if defined __APPLE__
+  int membytes;
+  size_t len = sizeof(membytes);
+  if (sysctlbyname("hw.usermem", &membytes, &len, NULL, 0)) 
+    chpl_internal_error("query of physical memory failed");
+  return (size_t) membytes;
+#elif defined __NetBSD__
+  int64_t membytes;
+  size_t len = sizeof(membytes);
+  if (sysctlbyname("hw.usermem64", &membytes, &len, NULL, 0))
+    chpl_internal_error("query of hw.usermem64 failed");
+  return (size_t) membytes;
+#elif defined(__linux__)
+  struct sysinfo s;
+
+  if (sysinfo(&s) != 0)
+    chpl_internal_error("sysinfo() failed");
+  return (size_t) s.freeram;
+#else
+  chpl_internal_error("bytesAvailOnThisLocale not supported on this platform");
+  return 0;
 #endif
 }
 
