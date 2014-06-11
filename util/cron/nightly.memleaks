@@ -5,7 +5,9 @@
 # -examples and -full options.
 
 # run memleaks regressions
-source $(cd $(dirname $0) ; pwd)/common-memleaks.bash
+CWD=$(cd $(dirname $0) ; pwd)
+
+source $CWD/common-memleaks.bash
 
 if [ "${1}" == "-examples" ] ; then
     examples_opt="-examples"
@@ -23,11 +25,10 @@ else
     exit 1
 fi
 
-export LOGFILE=~/tmp/nightly.memleaks.$tests_to_run.out
 export MEMLOGFILE=memleaks.$(date '+%Y-%m-%d').$memleaks_suffix.log
 
-log_info "Running memleaks regressions over suite: ${tests_to_run}. Log file: ${LOGFILE}. Memleaks log file: ${MEMLOGFILE}"
-with_logging $LOGFILE ~/chapel/util/cron/nightly -cron -memleaks $MEMLOGFILE $examples_opt
+log_info "Running memleaks regressions over suite: ${tests_to_run}. Memleaks log file: ${MEMLOGFILE}"
+$CWD/nightly -cron -memleaks $MEMLOGFILE $examples_opt
 
 # Save the raw log file
 log_info "Saving raw memory leaks log file."
