@@ -318,8 +318,31 @@ def _launch_qsub(test_command, job_name, num_locales, walltime):
         #           S -  (Unicos only) job is suspend.
         #
         #       (thomasvandoren, 2014-04-09)
-        while _qstat(job_id) != 'C':
-            time.sleep(0.2)
+
+        def is_done(job_id, output_file):
+            """Returns True when one of two events occur:
+
+             1) _qstat(job_id) returns 'C' indicating the job is complete.
+
+             2) _qstat(job_id) raises a ValueError, which can indicate that the
+                job has completed *and* been dequeued, AND the output file
+                exists. If the output file exists and the job has been
+                dequeued, it is safe to assume it completed.
+            """
+            try:
+                job_status = _qstat(job_id)
+                return job_status == 'C'
+            except ValueError as ex:
+                # ValueError may indicate that the job completed and was
+                # dequeued before we last checked the status. If the output
+                # file exists, assume success. Otherwise re raise error
+                # message.
+                if os.path.exists(output_file):
+                    return True
+                raise
+
+        while not is_done(job_id, output_file):
+            time.sleep(1.0)
         logging.debug('qstat reports job {0} as complete.'.format(job_id))
 
         if not os.path.exists(output_file):
