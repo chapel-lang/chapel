@@ -9,6 +9,7 @@ $CWD/nightly -cron -performance-description 'default --genGraphOpts "-m default 
 
 log_info "Testing qthreads performance."
 source $CWD/common-qthreads.bash
+export QT_GUARD_PAGES=false
 # releasePerformance still generates results based on the fifo timings. It's
 # run here again, otherwise syncing the qthreads results blows away the
 # directory with the releaseOverRelease graphs in
