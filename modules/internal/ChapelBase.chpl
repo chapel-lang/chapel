@@ -819,10 +819,13 @@ module ChapelBase {
   // sync statements and for joining coforall and cobegin tasks
   //
   
+  config param useAtomicTaskCnt =  CHPL_NETWORK_ATOMICS!="none";
+  type taskCntType = if useAtomicTaskCnt then atomic int
+                                         else int;
   pragma "no default functions"
   class _EndCount {
     var i: atomic int,
-        taskCnt: int,
+        taskCnt: taskCntType,
         taskList: _task_list = _nullTaskList;
   }
   
@@ -845,8 +848,15 @@ module ChapelBase {
   // statement needed.
   pragma "dont disable remote value forwarding"
   proc _upEndCount(e: _EndCount) {
-    e.i.add(1);
-    e.taskCnt = e.taskCnt + 1;
+    if useAtomicTaskCnt {
+      e.i.add(1);
+      e.taskCnt.add(1);
+    } else {
+      on e {
+        e.i.add(1);
+        e.taskCnt += 1;
+      }
+    }
     here.runningTaskCntAdd(1);  // decrement is in _waitEndCount()
   }
   
@@ -868,7 +878,8 @@ module ChapelBase {
     // Wait for all tasks to finish
     e.i.waitFor(0);
 
-    here.runningTaskCntSub(e.taskCnt);  // increment is in _upEndCount()
+    const taskDec = if useAtomicTaskCnt then e.taskCnt.read() else e.taskCnt;
+    here.runningTaskCntSub(taskDec);  // increment is in _upEndCount()
   
     // It is now safe to free the task list, because we know that all the
     // tasks have been completed.  We could free this list when all the

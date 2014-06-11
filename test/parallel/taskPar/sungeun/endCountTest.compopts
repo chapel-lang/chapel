@@ -1,2 +1,2 @@
--sprintForkCnt=true
+-suseAtomicTaskCnt=false -sprintForkCnt=true
 
