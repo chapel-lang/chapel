@@ -461,7 +461,7 @@ compute_program_name_loc(const char* orig_argv0, const char** name, const char**
 static void runCompilerInGDB(int argc, char* argv[]) {
   const char* gdbCommandFilename = createDebuggerFile("gdb", argc, argv);
   const char* command = astr("gdb -q ", argv[0]," -x ", gdbCommandFilename);
-  int status = mysystem(command, "running gdb", 0);
+  int status = mysystem(command, "running gdb", false);
 
   clean_exit(status);
 }
@@ -470,7 +470,7 @@ static void runCompilerInGDB(int argc, char* argv[]) {
 static void runCompilerInLLDB(int argc, char* argv[]) {
   const char* lldbCommandFilename = createDebuggerFile("lldb", argc, argv);
   const char* command = astr("lldb -s ", lldbCommandFilename, " ", argv[0]);
-  int status = mysystem(command, "running lldb", 0);
+  int status = mysystem(command, "running lldb", false);
 
   clean_exit(status);
 }

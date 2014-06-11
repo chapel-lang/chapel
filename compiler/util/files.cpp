@@ -6,56 +6,59 @@
 #define _XOPEN_SOURCE_EXTENDED 1
 #endif
 
-#include "beautify.h"
 #include "files.h"
+
+#include "beautify.h"
+#include "driver.h"
 #include "misc.h"
 #include "mysystem.h"
 #include "stringutil.h"
 #include "tmpdirname.h"
-#include <cstring>
-#include <cstdlib>
+
 #include <pwd.h>
-#include <cerrno>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <unistd.h>
 
+#include <cstring>
+#include <cstdlib>
+#include <cerrno>
 #include <string>
 
-char executableFilename[FILENAME_MAX+1] = "a.out";
-char saveCDir[FILENAME_MAX+1] = "";
-char ccflags[256] = "";
-char ldflags[256] = "";
-bool ccwarnings = false;
+#include <sys/types.h>
+#include <sys/stat.h>
 
-extern bool fFastFlag;
+char               executableFilename[FILENAME_MAX + 1] = "a.out";
+char               saveCDir[FILENAME_MAX + 1]           = "";
+
+char               ccflags[256]                         = "";
+char               ldflags[256]                         = "";
+bool               ccwarnings                           = false;
+
+int                numLibFlags                          = 0;
+const char**       libFlag                              = NULL;
+
+Vec<const char*>   incDirs;
 
 // directory for intermediates; tmpdir or saveCDir
-static const char* intDirName = NULL;
+static const char* intDirName        = NULL;
 
-static const int MAX_CHARS_PER_PID = 32;
-
-int numLibFlags = 0;
-const char** libFlag = NULL;
-
-Vec<const char*> incDirs;
-
+static const int   MAX_CHARS_PER_PID = 32;
 
 void addLibInfo(const char* libName) {
   static int libSpace = 0;
 
   numLibFlags++;
+
   if (numLibFlags > libSpace) {
     libSpace = 2*numLibFlags;
     libFlag = (const char**)realloc(libFlag, libSpace*sizeof(char*));
   }
+
   libFlag[numLibFlags-1] = astr(libName);
 }
 
 void addIncInfo(const char* incDir) {
   incDirs.add(astr(incDir));
 }
-
 
 void ensureDirExists(const char* dirname, const char* explanation) {
   const char* mkdircommand = "mkdir -p ";
@@ -151,18 +154,7 @@ const char* genIntermediateFilename(const char* filename) {
 
   ensureTmpDirExists();    
 
-  const char* newfilename = astr(intDirName, slash, filename);
-
-  return newfilename;
-}
-
-// MPF - genIntermediateFilename is a better name, declared in files.h,
-// but didn't want to modify all the code here yet so we have
-// this 2nd name for the same routine. 
-static
-const char* genIntFilename(const char* filename)
-{
-  return genIntermediateFilename(filename);
+  return astr(intDirName, slash, filename);
 }
 
 static const char* stripdirectories(const char* filename) {
@@ -180,7 +172,7 @@ static const char* stripdirectories(const char* filename) {
 
 const char* objectFileForCFile(const char* inputFilename) {
   const char* pathlessFilename = stripdirectories(inputFilename);
-  const char* objFilename = genIntFilename(astr(pathlessFilename, ".o"));
+  const char* objFilename = genIntermediateFilename(astr(pathlessFilename, ".o"));
   return objFilename;
 }
 
@@ -229,7 +221,7 @@ void openCFile(fileinfo* fi, const char* name, const char* ext) {
   else
     fi->filename = astr(name);
 
-  fi->pathname = genIntFilename(fi->filename);
+  fi->pathname = genIntermediateFilename(fi->filename);
   fi->fptr = fopen(fi->pathname, "w");
 }
 
@@ -239,7 +231,7 @@ void appendCFile(fileinfo* fi, const char* name, const char* ext) {
   else
     fi->filename = astr(name);
   
-  fi->pathname = genIntFilename(fi->filename);
+  fi->pathname = genIntermediateFilename(fi->filename);
   fi->fptr = fopen(fi->pathname, "a+");
 }
 void closeCFile(fileinfo* fi, bool beautifyIt) {
@@ -253,7 +245,7 @@ fileinfo* openTmpFile(const char* tmpfilename, const char* mode) {
   fileinfo* newfile = (fileinfo*)malloc(sizeof(fileinfo));
 
   newfile->filename = astr(tmpfilename);
-  newfile->pathname = genIntFilename(tmpfilename);
+  newfile->pathname = genIntermediateFilename(tmpfilename);
   openfile(newfile, mode);
 
   return newfile;
@@ -341,7 +333,7 @@ const char* nthFilename(int i) {
 
 
 const char* createDebuggerFile(const char* debugger, int argc, char* argv[]) {
-  const char* dbgfilename = genIntFilename(astr(debugger, ".commands"));
+  const char* dbgfilename = genIntermediateFilename(astr(debugger, ".commands"));
   FILE* dbgfile = openfile(dbgfilename);
   int i;
 
@@ -363,7 +355,8 @@ const char* createDebuggerFile(const char* debugger, int argc, char* argv[]) {
   closefile(dbgfile);
   mysystem(astr("cat ", CHPL_HOME, "/compiler/etc/", debugger, ".commands >> ",
                 dbgfilename),
-           astr("appending ", debugger, " commands"), 0);
+           astr("appending ", debugger, " commands"),
+           false);
 
   return dbgfilename;
 }
@@ -371,9 +364,9 @@ const char* createDebuggerFile(const char* debugger, int argc, char* argv[]) {
 
 static const char* mysystem_getresult(const char* command, 
                                       const char* description,
-                                      int ignorestatus) {
+                                      bool ignorestatus) {
   const char* systemFilename = "system.out.tmp";
-  const char* fullSystemFilename = genIntFilename(systemFilename);
+  const char* fullSystemFilename = genIntermediateFilename(systemFilename);
   char* result = (char*)malloc(256*sizeof(char));
   mysystem(astr(command, " > ", fullSystemFilename), description, ignorestatus);
   fileinfo* systemFile = openTmpFile(systemFilename, "r");
@@ -388,7 +381,7 @@ static const char* mysystem_getresult(const char* command,
 
 const char* runUtilScript(const char* script) {
   return mysystem_getresult(astr(CHPL_HOME, "/util/", script), 
-                            astr("running $CHPL_HOME/util/", script), 0);
+                            astr("running $CHPL_HOME/util/", script), false);
 }
 
 const char* getIntermediateDirName() {
@@ -441,7 +434,7 @@ static void genObjFiles(FILE* makefile) {
         fprintf(makefile, "\t%s \\\n", inputFilename);
       } else {
         const char* pathlessFilename = stripdirectories(inputFilename);
-        const char* objFilename = genIntFilename(astr(pathlessFilename, ".o"));
+        const char* objFilename = genIntermediateFilename(astr(pathlessFilename, ".o"));
         fprintf(makefile, "\t%s \\\n", objFilename);
       }
     }

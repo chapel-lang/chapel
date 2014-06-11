@@ -1050,20 +1050,24 @@ void codegen(void) {
 
   SET_LINENO(rootModule);
 
-  fileinfo hdrfile, mainfile;
-  GenInfo *info = gGenInfo;
+  fileinfo hdrfile  = { NULL, NULL, NULL };
+  fileinfo mainfile = { NULL, NULL, NULL };
+
+  GenInfo* info     = gGenInfo;
+
   INT_ASSERT(info);
+
   if( llvmCodegen ) {
 #ifdef HAVE_LLVM
-    fileinfo nullfile = {NULL, NULL, NULL};
-    hdrfile = mainfile = nullfile; 
     if( fHeterogeneous )
       INT_FATAL("fHeretogeneous not yet supported with LLVM");
+
     prepareCodegenLLVM();
 #endif
   } else {
-    openCFile(&hdrfile, "chpl__header", "h");
-    openCFile(&mainfile, "_main", "c");
+    openCFile(&hdrfile,  "chpl__header", "h");
+    openCFile(&mainfile, "_main",        "c");
+
     fprintf(mainfile.fptr, "#include \"chpl__header.h\"\n");
 
     codegen_makefile(&mainfile);
