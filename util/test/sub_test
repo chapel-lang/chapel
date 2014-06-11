@@ -1294,8 +1294,10 @@ for testname in testsrc:
                 cmd='time'
                 args+=['-p']+['./'+execname]
             elif launchcmd:
-                cmd=launchcmd
-                args+=['./'+execname]
+                launch_cmd_list = shlex.split(launchcmd)
+                cmd = launch_cmd_list[0]
+                args += launch_cmd_list[1:]
+                args += ['./'+execname]
             elif valgrindbin:
                 cmd=valgrindbin
                 args+=valgrindbinopts+['./'+execname]
@@ -1325,7 +1327,8 @@ for testname in testsrc:
                         my_stdin = None
                     else:
                         my_stdin=file(redirectin, 'r')
-                    p = subprocess.Popen([cmd]+LauncherTimeoutArgs(timeout)+args,
+                    test_command = [cmd] + LauncherTimeoutArgs(timeout) + args
+                    p = subprocess.Popen(test_command,
                                         env=testenv,
                                         stdin=my_stdin,
                                         stdout=subprocess.PIPE,
