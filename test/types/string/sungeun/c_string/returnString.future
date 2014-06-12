@@ -1,0 +1,1 @@
+bug: Return types of functions that return string literals should be string

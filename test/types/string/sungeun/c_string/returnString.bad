@@ -1,0 +1,3 @@
+$CHPL_HOME/modules/internal/ChapelBase.chpl:180: In function 'compilerError':
+$CHPL_HOME/modules/internal/ChapelBase.chpl:181: warning: compiler diagnostic depth value exceeds call stack depth
+returnString.chpl:21: error: Expected type string, got c_string
