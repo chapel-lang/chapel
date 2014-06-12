@@ -1,0 +1,5 @@
+--testError=0 # ioerror.ENOMEM.good
+--testError=1 # ioerror.EINVAL.good
+--testError=2 # ioerror.EPERM.good
+--testError=3 # ioerror.EACCES.good
+--testError=4 # ioerror.ENOERR.good

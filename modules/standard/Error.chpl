@@ -25,10 +25,12 @@ proc quote_string(s:string, len:ssize_t) {
 
 proc ioerror(error:syserr, msg:string)
 {
-  var errstr:c_string;
-  var strerror_err:err_t = ENOERR;
-  errstr = sys_strerror_syserr_str(error, strerror_err); 
-  __primitive("chpl_error", errstr + " " + msg.c_str());
+  if( error ) {
+    var errstr:c_string;
+    var strerror_err:err_t = ENOERR;
+    errstr = sys_strerror_syserr_str(error, strerror_err); 
+    __primitive("chpl_error", errstr + " " + msg.c_str());
+  }
 }
 
 proc ioerror(error:syserr, msg:string, path:string)
@@ -45,12 +47,14 @@ proc ioerror(error:syserr, msg:string, path:string)
 
 proc ioerror(error:syserr, msg:string, path:string, offset:int(64))
 {
-  var errstr:c_string;
-  var quotedpath:c_string;
-  var strerror_err:err_t = ENOERR;
-  errstr = sys_strerror_syserr_str(error, strerror_err); 
-  quotedpath = quote_string(path, path.length:ssize_t);
-  __primitive("chpl_error", errstr + " " + msg.c_str() + " with path " + quotedpath + " offset " + offset:c_string);
+  if( error ) {
+    var errstr:c_string;
+    var quotedpath:c_string;
+    var strerror_err:err_t = ENOERR;
+    errstr = sys_strerror_syserr_str(error, strerror_err); 
+    quotedpath = quote_string(path, path.length:ssize_t);
+    __primitive("chpl_error", errstr + " " + msg.c_str() + " with path " + quotedpath + " offset " + offset:c_string);
+  }
 }
 
 proc ioerror(errstr:string, msg:string, path:string, offset:int(64))
