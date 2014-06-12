@@ -357,7 +357,6 @@ static void removeUnusedGlobals();
 static void removeRandomCalls();
 static void removeActualNames();
 static void removeTypeBlocks();
-static void removeUnusedFormals();
 static void removeFormalTypeAndInitBlocks();
 static void removeMethodTokenFormals();
 static void removeInstantiatedParams();
