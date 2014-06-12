@@ -290,6 +290,11 @@ nondet. seg fault for prgenv-cray on chpbld01
 [Error matching compiler output for release/examples/benchmarks/hpcc/stream] (10/9/13)
 [Error matching compiler output for release/examples/benchmarks/miniMD/miniMD (compopts: 1)] (10/9/13,12/20/13)
 
+nondet. output corruption for prgenv-cray on chpbld01
+---------------------------------------------
+[Error matching program output for release/examples/benchmarks/hpcc/hpl] (06/11/14)
+* I could not duplicate this on chpbld01 using the same configuration later in the day. <hilde>
+
 nondet. timeout on gasnet-everything
 ------------------------------------
 [Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dBDtoDRTest] (07/08/13)
