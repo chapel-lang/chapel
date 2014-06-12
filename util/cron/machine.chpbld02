@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
 
-source $(cd $(dirname $0) ; pwd)/common.bash
-~/chapel/util/cron/nightly.chpbld02 weekend
+CWD=$(cd $(dirname $0) ; pwd)
+
+source $CWD/common.bash
+
+$CWD/nightly.chpbld02 weekend
