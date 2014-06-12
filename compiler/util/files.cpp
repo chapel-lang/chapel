@@ -340,7 +340,7 @@ const char* createDebuggerFile(const char* debugger, int argc, char* argv[]) {
   if (strcmp(debugger, "gdb") == 0) {
     fprintf(dbgfile, "set args");
   } else if (strcmp(debugger, "lldb") == 0) {
-    fprintf(dbgfile, "settings set target.run-args");
+    fprintf(dbgfile, "settings set target.run-args --");
   } else {
       INT_FATAL(astr("createDebuggerFile doesn't know how to handle the given "
                      "debugger: '", debugger, "'"));
