@@ -32,6 +32,12 @@ if ($tmpstatus != 0) then
     echo "ERROR: source of setchplenv.csh failed"
     exit($tmpstatus)
 endif
+$mymake check
+set tmpstatus = $status
+if ($tmpstatus != 0) then
+    echo "ERROR: make check failed"
+    exit($tmpstatus)
+endif
 chpl -o hello examples/hello.chpl
 set tmpstatus = $status
 if ($tmpstatus != 0) then
