@@ -364,7 +364,7 @@ static void removeInstantiatedParams();
 static void replaceTypeArgsWithFormalTypeTemps();
 static void replaceValuesWithRuntimeTypes();
 static void removeWhereClauses();
-static void replaceReturnedValuesWIthRuntimeTypes();
+static void replaceReturnedValuesWithRuntimeTypes();
 static void insertRuntimeInitTemps();
 static void removeInitFields();
 static void removeMootFields();
@@ -6846,7 +6846,16 @@ pruneResolvedTree() {
   removeTypeBlocks();
 
   buildRuntimeTypeInitFns();
-  removeUnusedFormals();
+
+  removeFormalTypeAndInitBlocks();
+  removeMethodTokenFormals();
+  removeInstantiatedParams();
+  replaceTypeArgsWithFormalTypeTemps();
+
+  replaceValuesWithRuntimeTypes();
+  removeWhereClauses();
+  replaceReturnedValuesWithRuntimeTypes();
+
   insertRuntimeInitTemps();
   removeInitFields();
   removeMootFields();
@@ -7156,16 +7165,6 @@ static void buildRuntimeTypeInitFns() {
   }
 }
 
-static void removeUnusedFormals() {
-  removeFormalTypeAndInitBlocks();
-  removeMethodTokenFormals();
-  removeInstantiatedParams();
-  replaceTypeArgsWithFormalTypeTemps();
-  replaceValuesWithRuntimeTypes();
-  removeWhereClauses();
-  replaceReturnedValuesWIthRuntimeTypes();
-}
-
 static void removeFormalTypeAndInitBlocks()
 {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -7266,7 +7265,7 @@ static void removeWhereClauses()
   }
 }
 
-static void replaceReturnedValuesWIthRuntimeTypes()
+static void replaceReturnedValuesWithRuntimeTypes()
 {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->defPoint && fn->defPoint->parentSymbol) {
@@ -7294,7 +7293,7 @@ static void replaceInitPrims(Vec<BaseAST*>& asts)
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->parentSymbol && call->isPrimitive(PRIM_INIT)) {
         SymExpr* se = toSymExpr(call->get(1));
-        Type* rt =se->var->type;
+        Type* rt = se->var->type;
 
         if (rt->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
           SET_LINENO(call);
