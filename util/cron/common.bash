@@ -12,6 +12,9 @@ if [ -z "${CHPL_SOURCED_BASHRC}" ] ; then
     export CHPL_SOURCED_BASHRC=true
 fi
 
+log_info "gcc version: $(which gcc)"
+gcc --version
+
 SCRIPT_NAME=$0
 start_time=$(date '+%s')
 log_info "Starting ${SCRIPT_NAME} on $(hostname -s)"
