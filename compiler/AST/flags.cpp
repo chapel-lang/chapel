@@ -42,6 +42,14 @@ initFlags() {
 
 }
 
+void writeFlags(FILE* fp, Symbol* sym) {
+  form_Map(FlagMapElem, e, flagMap) {
+    if (sym->flags[e->value]) {
+      fprintf(fp, "\"%s\"", e->key);
+    }
+  }
+}
+
 
 // these affect what viewFlags() prints
 bool viewFlagsShort = true;

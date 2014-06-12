@@ -17,7 +17,9 @@ AST_SRCS = \
         AstLogger.cpp        \
         AstVisitor.cpp       \
         AstDump.cpp          \
-        AstDumpToHtml.cpp
+        AstDumpToHtml.cpp    \
+        AstDumpToNode.cpp
+
 
 SVN_SRCS = $(AST_SRCS)
 SRCS = $(SVN_SRCS)
