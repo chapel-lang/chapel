@@ -432,7 +432,7 @@ renameInstantiatedType(TypeSymbol* sym, SymbolMap& subs, FnSymbol* fn) {
         VarSymbol* var = toVarSymbol(value);
         if (var && var->immediate) {
           Immediate* immediate = var->immediate;
-          if (var->type == dtString)
+          if (var->type == dtStringC)
             renameInstantiatedTypeString(sym, var);
           else if (immediate->const_kind == NUM_KIND_UINT &&
                    immediate->num_index == INT_SIZE_1) {

@@ -21,7 +21,7 @@ extern proc qio_regexp_retain(ref compiled:qio_regexp_t);
 extern proc qio_regexp_release(ref compiled:qio_regexp_t);
 
 extern proc qio_regexp_get_options(ref regexp:qio_regexp_t, ref options: qio_regexp_options_t);
-extern proc qio_regexp_get_pattern(ref regexp:qio_regexp_t, ref pattern: string);
+extern proc qio_regexp_get_pattern(ref regexp:qio_regexp_t, ref pattern: c_string);
 extern proc qio_regexp_get_ncaptures(ref regexp:qio_regexp_t):int(64);
 extern proc qio_regexp_ok(ref regexp:qio_regexp_t):bool;
 extern proc qio_regexp_error(ref regexp:qio_regexp_t):string;
@@ -471,7 +471,7 @@ record regexp {
     return str;
   }
   proc writeThis(f: Writer) {
-    var pattern:string;
+    var pattern:c_string;
     on this.home {
       qio_regexp_get_pattern(this._regexp, pattern);
     }
@@ -505,7 +505,7 @@ proc =(ref ret:regexp, x:regexp)
     }
     ret._regexp = x._regexp;
   } else {
-    var pattern:string;
+    var pattern:c_string;
     var options:qio_regexp_options_t;
 
     on ret.home {
@@ -531,11 +531,12 @@ proc chpl__initCopy(x: regexp) {
 
 // Cast regexp to string.
 inline proc _cast(type t, x: regexp) where t == string {
-  var pattern:string;
+  var pattern:c_string;
   on x.home {
     qio_regexp_get_pattern(x._regexp, pattern);
   }
-  return pattern;
+  // FIX ME: leak c_string
+  return toString(pattern);
 }
 // Cast string to regexp
 inline proc _cast(type t, x: string) where t == regexp {

@@ -1305,11 +1305,11 @@ void initPrimitiveTypes(void) {
   INIT_PRIM_COMPLEX( "complex(64)", 64);
   INIT_PRIM_COMPLEX( "complex", 128);       // default size
 
-  dtString = createPrimitiveType( "string", "chpl_string");
-  dtString->defaultValue = new_StringSymbol("");
   dtStringC = createPrimitiveType( "c_string", "c_string" );
+  dtStringC->defaultValue = new_StringSymbol("");
+  dtString = createPrimitiveType( "string", "chpl_string");
+  dtString->defaultValue = NULL;
   dtStringC->symbol->addFlag(FLAG_EXTERN);
-  CREATE_DEFAULT_SYMBOL(dtStringC, gStringC, "chpl_emptyCstring");
 
   dtSymbol = createPrimitiveType( "symbol", "_symbol"); 
 

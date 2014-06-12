@@ -135,21 +135,140 @@ inline proc string.c_str():c_string {
   return __primitive("c_string_from_string", this);
 }
 
+inline proc ==(param s0: c_string, param s1: c_string) param {
+  return __primitive("string_compare", s0, s1) == 0;
+}
+
+inline proc ==(s0: c_string, s1: c_string) {
+  return __primitive("string_compare", s0, s1) == 0;
+}
+
 inline proc ==(s0: string, s1: c_string) {
-  return __primitive("chpl_string_compare", s0.c_str(), s1) == 0;
+  return __primitive("string_compare", s0.c_str(), s1) == 0;
 }
 
 inline proc ==(s0: c_string, s1: string) {
-  return __primitive("chpl_string_compare", s0, s1.c_str()) == 0;
+  return __primitive("string_compare", s0, s1.c_str()) == 0;
+}
+
+inline proc !=(param s0: c_string, param s1: c_string) param {
+  return __primitive("string_compare", s0, s1) != 0;
+}
+
+inline proc !=(s0: c_string, s1: c_string) {
+  return __primitive("string_compare", s0, s1) != 0;
 }
 
 inline proc !=(s0: string, s1: c_string) {
-  return __primitive("chpl_string_compare", s0.c_str(), s1) != 0;
+  return __primitive("string_compare", s0.c_str(), s1) != 0;
 }
 
 inline proc !=(s0: c_string, s1: string) {
-  return __primitive("chpl_string_compare", s0, s1.c_str()) != 0;
+  return __primitive("string_compare", s0, s1.c_str()) != 0;
 }
+
+inline proc <=(a: c_string, b: c_string) {
+  return (__primitive("string_compare", a, b) <= 0);
+}
+
+inline proc <=(param a: c_string, param b: c_string) param {
+  return (__primitive("string_compare", a, b) <= 0);
+}
+
+inline proc >=(a: c_string, b: c_string) {
+  return (__primitive("string_compare", a, b) >= 0);
+}
+
+inline proc >=(param a: c_string, param b: c_string) param {
+  return (__primitive("string_compare", a, b) >= 0);
+}
+
+inline proc <(a: c_string, b: c_string) {
+  return (__primitive("string_compare", a, b) < 0);
+}
+
+inline proc <(param a: c_string, param b: c_string) param {
+  return (__primitive("string_compare", a, b) < 0);
+}
+
+inline proc >(a: c_string, b: c_string) {
+  return (__primitive("string_compare", a, b) > 0);
+}
+
+inline proc >(param a: c_string, param b: c_string) param {
+  return (__primitive("string_compare", a, b) > 0);
+}
+
+inline proc =(ref a: c_string, b: c_string) {
+  __primitive("=", a, b);
+}
+
+inline proc =(ref a: c_string, b: string) {
+  __primitive("=", a, __primitive("c_string_from_string", b));
+}
+
+inline proc =(ref a: string, b: c_string) {
+  __primitive("=", a, __primitive("string_from_c_string", b, 0, 0));
+}
+
+inline proc _cast(type t, x: c_string) where t == string {
+  return __primitive("string_from_c_string", x, 0, 0);
+}
+
+inline proc _cast(type t, x: string) where t == c_string {
+  return __primitive("c_string_from_string", x);
+}
+
+// Only support param c_string concatenation (for now)
+inline proc +(param a: c_string, param b: c_string) param
+  return __primitive("string_concat", a, b);
+
+inline proc +(param s: c_string, param x: integral) param
+  return __primitive("string_concat", s, x:c_string);
+
+inline proc +(param x: integral, param s: c_string) param
+  return __primitive("string_concat", x:c_string, s);
+
+inline proc +(param s: c_string, param x: enumerated) param
+  return __primitive("string_concat", s, x:c_string);
+
+inline proc +(param x: enumerated, param s: c_string) param
+  return __primitive("string_concat", x:c_string, s);
+
+inline proc +(param s: c_string, param x: bool) param
+  return __primitive("string_concat", s, x:c_string);
+
+inline proc +(param x: bool, param s: c_string) param
+  return __primitive("string_concat", x:c_string, s);
+
+proc ref c_string.writeThis(x: Writer) {
+  x.write(this); // FIX ME? toString
+}
+
+
+//
+// primitive c_string functions and methods
+//
+inline proc ascii(param a: c_string) param return __primitive("ascii", a);
+inline proc ascii(a: c_string) return __primitive("ascii", a);
+inline proc c_string.length return __primitive("string_length", this);
+inline proc c_string.size return this.length;
+inline proc c_string.substring(i: int)
+  return __primitive("string_index", this, i);
+inline proc _string_contains(a: string, b: string)
+  return __primitive("string_contains", a, b);
+
+inline proc param c_string.length param
+return __primitive("string_length", this);
+inline proc _string_contains(param a: c_string, param b: c_string) param
+  return __primitive("string_contains", a, b);
+
+/** Returns the index of the first occurrence of a substring within a string,
+    or 0 if the substring is not in the string.
+*/
+inline proc c_string.indexOf(substring:c_string):int
+  return string_index_of(this, substring);
+extern proc string_index_of(haystack:c_string, needle:c_string):int;
 
 // error numbers
 

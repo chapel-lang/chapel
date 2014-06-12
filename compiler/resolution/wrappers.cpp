@@ -514,7 +514,9 @@ buildCoercionWrapper(FnSymbol* fn,
         call->insertAtTail(new CallExpr(PRIM_DEREF, wrapperFormal));
       } else if (wrapperFormal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
         call->insertAtTail(new CallExpr("_cast", formal->type->symbol, paramMap.get(formal)));
-      } else {
+        /*** } else if ((ts->type == dtStringC) && (formal->typeInfo() == dtString)) {
+             call->insertAtTail(new CallExpr("_cast", formal->type->symbol, wrapperFormal)); ***/
+        } else {
         call->insertAtTail(new CallExpr("_cast", formal->type->symbol, wrapperFormal));
       }
     } else {

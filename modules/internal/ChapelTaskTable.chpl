@@ -45,7 +45,7 @@ module ChapelTaskTable {
   record chpldev_Task {
     var state     : taskState;
     var lineno    : uint(32);
-    var filename  : string;
+    var filename  : c_string;
     var tl_info   : uint(64);
   }
   
@@ -90,7 +90,7 @@ module ChapelTaskTable {
   
   export proc chpldev_taskTable_add(taskID   : chpl_taskID_t,
                                     lineno   : uint(32),
-                                    filename : string,
+                                    filename : c_string,
                                     tl_info  : uint(64))
   {
     if (chpldev_taskTable == nil) then return;

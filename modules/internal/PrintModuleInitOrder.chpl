@@ -23,7 +23,7 @@ module PrintModuleInitOrder {
   }
 
   proc initPrint() {
-    extern proc printf(s: string);
+    extern proc printf(s: c_string);
     printf ("Initializing Modules:\n");
   }
 

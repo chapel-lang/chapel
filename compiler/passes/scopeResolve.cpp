@@ -550,9 +550,28 @@ static void build_type_constructor(AggregateType* ct) {
                                           newInit);
           fn->insertAtTail(newSet);
         } else if (init) {
-          fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, fn->_this,
-                                        new_StringSymbol(field->name),
-                                        new CallExpr("chpl__initCopy", init->copy())));
+          // Non-param fields initialized with a string literal but
+          // without a type are assumed to be of type string.  Note
+          // that we do this for other functions/methods in
+          // fix_def_expr() in normalize.cpp.
+          if ((toSymExpr(init) &&
+               (toSymExpr(init)->typeInfo() == dtStringC)) &&
+              !field->hasFlag(FLAG_PARAM)) {
+            // Put in an explicit type expression for string
+            exprType = new UnresolvedSymExpr("string");
+            field->defPoint->exprType = exprType;
+            insert_help(exprType, init->parentExpr, init->parentSymbol);
+            // Now do the same as above in the 'if (exprType)' case
+            CallExpr* newInit = new CallExpr(PRIM_INIT, exprType->copy());
+            CallExpr* newSet = new CallExpr(PRIM_SET_MEMBER, fn->_this,
+                                            new_StringSymbol(field->name),
+                                            newInit);
+            fn->insertAtTail(newSet);
+          } else {
+            fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, fn->_this,
+                                          new_StringSymbol(field->name),
+                                          new CallExpr("chpl__initCopy", init->copy())));
+          }
         }
       }
     }

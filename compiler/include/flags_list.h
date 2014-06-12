@@ -57,6 +57,7 @@ symbolFlag( FLAG_CONSTRUCTOR , npr, "constructor" , "constructor (but not type c
 symbolFlag( FLAG_DATA_CLASS , ypr, "data class" , ncm )
 symbolFlag( FLAG_DATA_SET_ERROR , npr, "data set error" , ncm )
 symbolFlag( FLAG_DEFAULT_CONSTRUCTOR , npr, "default constructor" , ncm )
+symbolFlag( FLAG_DEFAULT_STRING_VALUE , ypr, "default string value" , "default value for a string, defined in the modules" )
 symbolFlag( FLAG_DESTRUCTOR , npr, "destructor" , "applied to functions that are destructors" )
 symbolFlag( FLAG_DISTRIBUTION , ypr, "distribution" , ncm )
 symbolFlag( FLAG_DOMAIN , ypr, "domain" , ncm )

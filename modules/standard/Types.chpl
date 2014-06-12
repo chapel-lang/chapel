@@ -16,7 +16,7 @@ proc _isPrimitiveType(type t) param return
   _isRealType(t)     ||
 //To allow imag, need to define casts from primitive types into imag.
 //_isImagType(t)     ||
-  (t == string);
+  (t == c_string);
 
 pragma "no instantiation limit"
 proc _isSimpleScalarType(type t) param return

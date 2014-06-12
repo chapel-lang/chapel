@@ -100,10 +100,10 @@ void printHelpTable(void) {
 
 static int32_t _argNumLocales = 0;
 
-void parseNumLocales(const char* numPtr, int32_t lineno, chpl_string filename) {
+void parseNumLocales(const char* numPtr, int32_t lineno, c_string filename) {
   int invalid;
   char invalidChars[2] = "\0\0";
-  _argNumLocales = chpl_string_to_int32_t_precise(numPtr, &invalid, invalidChars);
+  _argNumLocales = c_string_to_int32_t_precise(numPtr, &invalid, invalidChars);
   if (invalid) {
     char* message = chpl_glom_strings(3, "\"", numPtr, 
                                       "\" is not a valid number of locales");

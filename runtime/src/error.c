@@ -15,7 +15,7 @@
 
 int verbosity = 1;
 
-void chpl_warning(const char* message, int32_t lineno, chpl_string filename) {
+void chpl_warning(const char* message, int32_t lineno, c_string filename) {
   // squash warnings if --quiet flag is used
   if (verbosity == 0) {
     return;
@@ -48,7 +48,7 @@ static void spinhaltIfAlreadyExiting(void) {
 #endif
 }
 
-static void chpl_error_common(const char* message, int32_t lineno, chpl_string filename) {
+static void chpl_error_common(const char* message, int32_t lineno, c_string filename) {
   spinhaltIfAlreadyExiting();
   fflush(stdout);
   if (lineno > 0)
@@ -60,7 +60,7 @@ static void chpl_error_common(const char* message, int32_t lineno, chpl_string f
 }
 
 
-void chpl_error(const char* message, int32_t lineno, chpl_string filename) {
+void chpl_error(const char* message, int32_t lineno, c_string filename) {
   chpl_error_common(message, lineno, filename);
   fprintf(stderr, "\n");
   chpl_exit_any(1);

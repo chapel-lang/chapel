@@ -212,7 +212,7 @@ checkUseBeforeDefs() {
               defined.set_add(se->var);
         } else if (DefExpr* def = toDefExpr(ast)) {
 
-          // All arg sumbols are defined.
+          // All arg symbols are defined.
           if (isArgSymbol(def->sym))
             defined.set_add(def->sym);
 
@@ -889,13 +889,38 @@ fix_def_expr(VarSymbol* var) {
     //      issue since we will do a double free.
     //
     CallExpr* initCall = toCallExpr(init);
-    if (initCall && initCall->isPrimitive(PRIM_NEW))
+    if (initCall && initCall->isPrimitive(PRIM_NEW)) {
       stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, init->remove()));
-    else
-      stmt->insertAfter(
-        new CallExpr(PRIM_MOVE, constTemp,
-          new CallExpr("chpl__initCopy", init->remove())));
-
+    } else {
+      // Non-param variables initialized with a string literal but
+      // without a type are assumed to be of type string.  This case
+      // must be handled here, rather than in resolution because we
+      // cannot recognize this situtation easily (if at all) during
+      // resolution due to PRIM_INIT handling.
+      //
+      // Note that we have to do a similar thing during scope resolve
+      // when building default type constructors.
+      if ((toSymExpr(init) && (toSymExpr(init)->typeInfo() == dtStringC)) &&
+          !var->hasFlag(FLAG_PARAM)) {
+        INT_ASSERT(type==NULL);
+        // This logic is the same as the case above under 'if (type)',
+        // but simplified for this specific case.
+        SET_LINENO(stmt);
+        VarSymbol* typeTemp = newTemp("type_tmp");
+        stmt->insertBefore(new DefExpr(typeTemp));
+        CallExpr* newInit;
+        newInit = new CallExpr(PRIM_MOVE, typeTemp,
+                               new CallExpr(PRIM_INIT, new SymExpr(dtString->
+                                                                   symbol)));
+        stmt->insertBefore(newInit);
+        stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
+        stmt->insertAfter(new CallExpr("=", typeTemp, init->remove()));
+      } else {
+        stmt->insertAfter(
+          new CallExpr(PRIM_MOVE, constTemp,
+            new CallExpr("chpl__initCopy", init->remove())));
+      }
+    }
   }
 }
 
@@ -909,6 +934,13 @@ static void hack_resolve_types(ArgSymbol* arg) {
           se = toSymExpr(arg->defaultExpr->body.tail);
         if (!se || se->var != gTypeDefaultToken) {
           SET_LINENO(arg->defaultExpr);
+          if ((arg->intent != INTENT_PARAM) &&
+              se && se->var->isImmediate() &&
+              toVarSymbol(se->var)->immediate->const_kind == CONST_KIND_STRING) {
+            // String literal default expressions for non-param
+            // generic formals are converted to strings.
+            arg->defaultExpr->body.insertAtTail(new CallExpr("toString", arg->defaultExpr->body.tail->remove()));
+          }
           arg->typeExpr = arg->defaultExpr->copy();
           insert_help(arg->typeExpr, NULL, arg);
         }

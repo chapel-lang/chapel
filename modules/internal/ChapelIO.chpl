@@ -425,10 +425,26 @@ module ChapelIO {
   
   inline proc Reader.readWriteLiteral(lit:string, ignoreWhiteSpace=true)
   {
+    /***
+    var iolit = new ioLiteral(lit.c_str(), ignoreWhiteSpace);
+    this.readwrite(iolit);
+    ***/
+    this.readWriteLiteral(lit.c_str(), ignoreWhiteSpace);
+  }
+  inline proc Reader.readWriteLiteral(lit:c_string, ignoreWhiteSpace=true)
+  {
     var iolit = new ioLiteral(lit, ignoreWhiteSpace);
     this.readwrite(iolit);
   }
   inline proc Writer.readWriteLiteral(lit:string, ignoreWhiteSpace=true)
+  {
+    /***
+    var iolit = new ioLiteral(lit.c_str(), ignoreWhiteSpace);
+    this.readwrite(iolit);
+    ***/
+    this.readWriteLiteral(lit.c_str(), ignoreWhiteSpace);
+  }
+  inline proc Writer.readWriteLiteral(lit:c_string, ignoreWhiteSpace=true)
   {
     var iolit = new ioLiteral(lit, ignoreWhiteSpace);
     this.readwrite(iolit);
@@ -455,7 +471,7 @@ module ChapelIO {
   
   proc assert(test: bool, args ...?numArgs) {
     if !test {
-      var tmpstring: string;
+      var tmpstring: c_string;
       tmpstring.write((...args));
       __primitive("chpl_error", "assert failed - " + tmpstring);
     }
@@ -466,21 +482,29 @@ module ChapelIO {
   }
   
   proc halt(s:string) {
+    halt(s.c_str());
+  }
+
+  proc halt(s:c_string) {
     __primitive("chpl_error", "halt reached - " + s);
   }
   
   proc halt(args ...?numArgs) {
-    var tmpstring: string;
+    var tmpstring: c_string;
     tmpstring.write((...args));
     __primitive("chpl_error", "halt reached - " + tmpstring);
   }
   
   proc warning(s:string) {
+    warning(s.c_str());
+  }
+
+  proc warning(s:c_string) {
     __primitive("chpl_warning", s);
   }
   
   proc warning(args ...?numArgs) {
-    var tmpstring: string;
+    var tmpstring: c_string;
     tmpstring.write((...args));
     warning(tmpstring);
   }
@@ -501,13 +525,13 @@ module ChapelIO {
   }
   
   class StringWriter: Writer {
-    var s: string = "";
-    proc writePrimitive(x) { this.s += (x:string); }
+    var s: c_string = "";
+    proc writePrimitive(x) { this.s += (x:c_string); }
   }
   
   // Convert 'x' to a string just the way it would be written out.
   // Includes Writer.write, with modifications (for simplicity; to avoid 'on').
-  proc _cast(type t, x) where t == string {
+  proc _cast(type t, x) where t == c_string {
     //proc isNilObject(o: object) return o == nil;
     //proc isNilObject(o) param return false;
     const w = new StringWriter();
@@ -520,18 +544,26 @@ module ChapelIO {
   }
   
   pragma "dont disable remote value forwarding"
-  proc ref string.write(args ...?n) {
+  proc ref c_string.write(args ...?n) {
     var sc = new StringWriter(this);
     sc.write((...args));
     this = sc.s;
     delete sc;
   }
   
+  pragma "dont disable remote value forwarding"
+  proc ref string.write(args ...?n) {
+    var sc = new StringWriter(this.c_str());
+    sc.write((...args));
+    this = toString(sc.s);
+    delete sc;
+  }
+  
   // C can't handle overloaded declarations, so just don't prototype this one.
   pragma "no prototype"
-  extern proc chpl_format(fmt: string, x): string;
+  extern proc chpl_format(fmt: c_string, x): c_string;
   
-  proc format(fmt: string, x:?t) where _isIntegralType(t) || _isFloatType(t) {
+  proc format(fmt: c_string, x:?t) where _isIntegralType(t) || _isFloatType(t) {
     if fmt.substring(1) == "#" {
       var fmt2 = _getoutputformat(fmt);
       if _isImagType(t) then
@@ -539,10 +571,10 @@ module ChapelIO {
       else
         return chpl_format(fmt2, x:real);
     } else 
-      return chpl_format(fmt, x);
+        return chpl_format(fmt, x);
   }
   
-  proc format(fmt: string, x:?t) where _isComplexType(t) {
+  proc format(fmt: c_string, x:?t) where _isComplexType(t) {
     if fmt.substring(1) == "#" {
       var fmt2 = _getoutputformat(fmt);
       return (chpl_format(fmt2, x.re)+" + "+ chpl_format(fmt2, x.im)+"i");
@@ -550,11 +582,15 @@ module ChapelIO {
       return chpl_format(fmt, x);
   }
   
-  proc format(fmt: string, x: ?t) {
+  proc format(fmt: c_string, x: ?t) {
     return chpl_format(fmt, x);
   }
   
-  proc _getoutputformat(s: string):string {
+  proc format(fmt: string, x: ?t) {
+    return format(fmt.c_str(), x);
+  }
+  
+  proc _getoutputformat(s: c_string):c_string {
     var sn = s.length;
     var afterdot = false;
     var dplaces = 0;
@@ -587,7 +623,7 @@ module ChapelIO {
   
   proc chpl__testPar(args...) where chpl__testParFlag == true {
     if chpl__testParFlag && chpl__testParOn {
-      const file : string = __primitive("_get_user_file");
+      const file : c_string = __primitive("_get_user_file");
       const line = __primitive("_get_user_line");
       writeln("CHPL TEST PAR (", file, ":", line, "): ", (...args));
     }

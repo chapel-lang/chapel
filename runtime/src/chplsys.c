@@ -108,7 +108,7 @@ int64_t chpl_numCoresOnThisLocale(void) {
 }
 
 
-chpl_string chpl_nodeName(void) {
+c_string chpl_nodeName(void) {
   static char* namespace = NULL;
   static int namelen = 0;
   struct utsname utsinfo;

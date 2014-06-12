@@ -4,125 +4,126 @@
 pragma "no use ChapelStandard"
 module ChapelBase {
   
-  extern proc chpl_config_has_value(name, module_name): bool;
-  extern proc chpl_config_get_value(name, module_name): string;
+  pragma "default string value" extern var defaultStringValue: string = noinit;
 
-  config param CHPL_HOME: string = "unset";
+  extern proc chpl_config_has_value(name:c_string, module_name:c_string): bool;
+  extern proc chpl_config_get_value(name:c_string, module_name:c_string): c_string;
+
+  config param CHPL_HOME = "unset";
   if (CHPL_HOME == "unset") {
     compilerWarning("CHPL_HOME not set");
   }
 
-  config param CHPL_HOST_PLATFORM: string = "unset";
+  config param CHPL_HOST_PLATFORM = "unset";
   if (CHPL_HOST_PLATFORM == "unset") {
     compilerWarning("CHPL_HOST_PLATFORM not set");
   }
 
-  config param CHPL_TARGET_PLATFORM: string = "unset";
+  config param CHPL_TARGET_PLATFORM = "unset";
   if (CHPL_TARGET_PLATFORM == "unset") {
-    compilerWarning("CHPL_TARGET_PLATFORM not set");
-  }
+    compilerWarning("CHPL_TARGET_PLATFORM not set");  }
 
-  config param CHPL_HOST_COMPILER: string = "unset";
+  config param CHPL_HOST_COMPILER = "unset";
   if (CHPL_HOST_COMPILER == "unset") {
     compilerWarning("CHPL_HOST_COMPILER not set");
   }
 
-  config param CHPL_TARGET_COMPILER: string = "unset";
+  config param CHPL_TARGET_COMPILER = "unset";
   if (CHPL_TARGET_COMPILER == "unset") {
     compilerWarning("CHPL_TARGET_COMPILER not set");
   }
 
-  config param CHPL_TARGET_ARCH: string = "unset";
+  config param CHPL_TARGET_ARCH = "unset";
   if (CHPL_TARGET_ARCH == "unset") {
     compilerWarning("CHPL_TARGET_ARCH not set");
   }
 
-  config param CHPL_LOCALE_MODEL: string = "unset";
+  config param CHPL_LOCALE_MODEL = "unset";
   if (CHPL_LOCALE_MODEL == "unset") {
     compilerWarning("CHPL_LOCALE_MODEL not set");
   }
 
-  config param CHPL_COMM: string = "unset";
+  config param CHPL_COMM = "unset";
   if (CHPL_COMM == "unset") {
     compilerWarning("CHPL_COMM not set");
   }
 
-  config param CHPL_COMM_SUBSTRATE: string = "unset";
+  config param CHPL_COMM_SUBSTRATE = "unset";
   if (CHPL_COMM_SUBSTRATE == "unset") {
     compilerWarning("CHPL_COMM_SUBSTRATE not set");
   }
 
-  config param CHPL_GASNET_SEGMENT: string = "unset";
+  config param CHPL_GASNET_SEGMENT = "unset";
   if (CHPL_GASNET_SEGMENT == "unset") {
     compilerWarning("CHPL_GASNET_SEGMENT not set");
   }
 
-  config param CHPL_TASKS: string = "unset";
+  config param CHPL_TASKS = "unset";
   if (CHPL_TASKS == "unset") {
     compilerWarning("CHPL_TASKS not set");
   }
 
-  config param CHPL_THREADS: string = "unset";
+  config param CHPL_THREADS = "unset";
   if (CHPL_THREADS == "unset") {
     compilerWarning("CHPL_THREADS not set");
   }
 
-  config param CHPL_LAUNCHER: string = "unset";
+  config param CHPL_LAUNCHER = "unset";
   if (CHPL_LAUNCHER == "unset") {
     compilerWarning("CHPL_LAUNCHER not set");
   }
 
-  config param CHPL_TIMERS: string = "unset";
+  config param CHPL_TIMERS = "unset";
   if (CHPL_TIMERS == "unset") {
     compilerWarning("CHPL_TIMERS not set");
   }
 
-  config param CHPL_MEM: string = "unset";
+  config param CHPL_MEM = "unset";
   if (CHPL_MEM == "unset") {
     compilerWarning("CHPL_MEM not set");
   }
 
-  config param CHPL_MAKE: string = "unset";
+  config param CHPL_MAKE = "unset";
   if (CHPL_MAKE == "unset") {
     compilerWarning("CHPL_MAKE not set");
   }
 
-  config param CHPL_ATOMICS: string = "unset";
+  config param CHPL_ATOMICS = "unset";
   if (CHPL_ATOMICS == "unset") {
     compilerWarning("CHPL_ATOMICS not set");
   }
 
-  config param CHPL_NETWORK_ATOMICS: string = "unset";
+  config param CHPL_NETWORK_ATOMICS = "unset";
   if (CHPL_NETWORK_ATOMICS == "unset") {
     compilerWarning("CHPL_NETWORK_ATOMICS not set");
   }
 
-  config param CHPL_GMP: string = "unset";
+  config param CHPL_GMP = "unset";
   if (CHPL_GMP == "unset") {
     compilerWarning("CHPL_GMP not set");
   }
 
-  config param CHPL_HWLOC: string = "unset";
+  config param CHPL_HWLOC = "unset";
   if (CHPL_HWLOC == "unset") {
     compilerWarning("CHPL_HWLOC not set");
   }
 
-  config param CHPL_REGEXP: string = "unset";
+  config param CHPL_REGEXP = "unset";
   if (CHPL_REGEXP == "unset") {
     compilerWarning("CHPL_REGEXP not set");
   }
 
-  config param CHPL_WIDE_POINTERS: string = "unset";
+  config param CHPL_WIDE_POINTERS = "unset";
   if (CHPL_WIDE_POINTERS == "unset") {
     compilerWarning("CHPL_WIDE_POINTERS not set");
   }
 
-  config param CHPL_LLVM: string = "unset";
+  config param CHPL_LLVM = "unset";
   if (CHPL_LLVM == "unset") {
     compilerWarning("CHPL_LLVM not set");
   }
 
-  config param CHPL_AUX_FILESYS: string = "unset";
+  config param CHPL_AUX_FILESYS = "unset";
   if (CHPL_AUX_FILESYS == "unset") {
     compilerWarning("CHPL_AUX_FILESYS not set");
   }
@@ -134,44 +135,41 @@ module ChapelBase {
   
   config param warnMaximalRange = false;    // Warns if integer rollover will cause
                     // the iterator to yield zero times.
-  
+
+  // String concatenation
+  inline proc +(s: string, x: string)
+    // FIX ME: leak c_string
+    return toString(__primitive("string_concat", s.c_str(), x.c_str()));
+
+  pragma "compiler generated"
+  inline proc +(s: c_string, x: string)
+    // FIX ME: leak c_string
+    return toString(__primitive("string_concat", s, x.c_str()));
+
+  pragma "compiler generated"
+  inline proc +(s: string, x: c_string)
+    // FIX ME: leak c_string
+    return toString(__primitive("string_concat", s.c_str(), x));
+
   inline proc +(s: string, x: numeric)
     return s + x:string;
-  
+
   inline proc +(x: numeric, s: string)
     return x:string + s;
-  
-  proc +(param s: string, param x: integral) param
-    return s + x:string;
-  
-  proc +(param x: integral, param s: string) param
-    return x:string + s;
-  
+
   inline proc +(s: string, x: enumerated)
     return s + x:string;
-  
+
   inline proc +(x: enumerated, s: string)
     return x:string + s;
-  
-  proc +(param s: string, param x: enumerated) param
-    return s + x:string;
-  
-  proc +(param x: enumerated, param s: string) param
-    return x:string + s;
-  
+
   inline proc +(s: string, x: bool)
     return s + x:string;
-  
+
   inline proc +(x: bool, s: string)
     return x:string + s;
-  
-  proc +(param s: string, param x: bool) param
-    return s + x:string;
-  
-  proc +(param x: bool, param s: string) param
-    return x:string + s;
-  
-  proc _throwOpError(param op: string) {
+
+  proc _throwOpError(param op: c_string) {
       compilerError("illegal use of '", op, "' on operands of type uint(64) and signed integer");
   }
 
@@ -179,22 +177,22 @@ module ChapelBase {
     halt("Pure virtual function called.");
   }
 
-  proc compilerError(param x:string ...?n, param errorDepth:int) {
+  proc compilerError(param x:c_string ...?n, param errorDepth:int) {
     __primitive("error", (...x));
   }
-  
-  proc compilerError(param x:string ...?n) {
+
+  proc compilerError(param x:c_string ...?n) {
     __primitive("error", (...x));
   }
-  
-  proc compilerWarning(param x:string ...?n, param errorDepth:int) {
+
+  proc compilerWarning(param x:c_string ...?n, param errorDepth:int) {
     __primitive("warning", (...x));
   }
-  
-  proc compilerWarning(param x:string ...?n) {
+
+  proc compilerWarning(param x:c_string ...?n) {
     __primitive("warning", (...x));
   }
-  
+
   // for compilerAssert, as param tuples do not de-tuple into params yet,
   // we handle only up to 5 message args and omit the rest
   
@@ -284,7 +282,7 @@ module ChapelBase {
   inline proc ==(a: real(?w), b: real(w)) return __primitive("==", a, b);
   inline proc ==(a: imag(?w), b: imag(w)) return __primitive("==", a, b);
   inline proc ==(a: complex(?w), b: complex(w)) return a.re == b.re && a.im == b.im;
-  inline proc ==(a: string, b: string) return (__primitive("chpl_string_compare", a, b) == 0);
+  inline proc ==(a: string, b: string) return (__primitive("string_compare", a.c_str(), b.c_str()) == 0);
   inline proc ==(a: object, b: object) return __primitive("ptr_eq", a, b);
   
   inline proc !=(a: bool, b: bool) return __primitive("!=", a, b);
@@ -293,20 +291,18 @@ module ChapelBase {
   inline proc !=(a: real(?w), b: real(w)) return __primitive("!=", a, b);
   inline proc !=(a: imag(?w), b: imag(w)) return __primitive("!=", a, b);
   inline proc !=(a: complex(?w), b: complex(w)) return a.re != b.re || a.im != b.im;
-  inline proc !=(a: string, b: string) return (__primitive("chpl_string_compare", a, b) != 0);
+  inline proc !=(a: string, b: string) return (__primitive("string_compare", a.c_str(), b.c_str()) != 0);
   inline proc !=(a: object, b: object) return __primitive("ptr_neq", a, b);
   
   inline proc ==(param a: bool, param b: bool) param return __primitive("==", a, b);
   inline proc ==(param a: int(?w), param b: int(w)) param return __primitive("==", a, b);
   inline proc ==(param a: uint(?w), param b: uint(w)) param return __primitive("==", a, b);
   inline proc ==(param a: enumerated, param b: enumerated) param return __primitive("==", a, b);
-  inline proc ==(param a: string, param b: string) param return __primitive("chpl_string_compare", a, b) == 0;
   
   inline proc !=(param a: bool, param b: bool) param return __primitive("!=", a, b);
   inline proc !=(param a: int(?w), param b: int(w)) param return __primitive("!=", a, b);
   inline proc !=(param a: uint(?w), param b: uint(w)) param return __primitive("!=", a, b);
   inline proc !=(param a: enumerated, param b: enumerated) param return __primitive("!=", a, b);
-  inline proc !=(param a: string, param b: string) param return __primitive("chpl_string_compare", a, b) != 0;
   
   //
   // ordered comparison on primitive types
@@ -315,45 +311,41 @@ module ChapelBase {
   inline proc <=(a: uint(?w), b: uint(w)) return __primitive("<=", a, b);
   inline proc <=(a: real(?w), b: real(w)) return __primitive("<=", a, b);
   inline proc <=(a: imag(?w), b: imag(w)) return __primitive("<=", a, b);
-  inline proc <=(a: string, b: string) return (__primitive("chpl_string_compare", a, b) <= 0);
+  inline proc <=(a: string, b: string) return a.c_str()<=b.c_str();
   
   inline proc >=(a: int(?w), b: int(w)) return __primitive(">=", a, b);
   inline proc >=(a: uint(?w), b: uint(w)) return __primitive(">=", a, b);
   inline proc >=(a: real(?w), b: real(w)) return __primitive(">=", a, b);
   inline proc >=(a: imag(?w), b: imag(w)) return __primitive(">=", a, b);
-  inline proc >=(a: string, b: string) return (__primitive("chpl_string_compare", a, b) >= 0);
+  inline proc >=(a: string, b: string) return a.c_str()>=b.c_str();
   
   inline proc <(a: int(?w), b: int(w)) return __primitive("<", a, b);
   inline proc <(a: uint(?w), b: uint(w)) return __primitive("<", a, b);
   inline proc <(a: real(?w), b: real(w)) return __primitive("<", a, b);
   inline proc <(a: imag(?w), b: imag(w)) return __primitive("<", a, b);
-  inline proc <(a: string, b: string) return (__primitive("chpl_string_compare", a, b) < 0);
+  inline proc <(a: string, b: string) return a.c_str()<b.c_str();
   
   inline proc >(a: int(?w), b: int(w)) return __primitive(">", a, b);
   inline proc >(a: uint(?w), b: uint(w)) return __primitive(">", a, b);
   inline proc >(a: real(?w), b: real(w)) return __primitive(">", a, b);
   inline proc >(a: imag(?w), b: imag(w)) return __primitive(">", a, b);
-  inline proc >(a: string, b: string) return (__primitive("chpl_string_compare", a, b) > 0);
+  inline proc >(a: string, b: string) return a.c_str()>b.c_str();
   
   inline proc <=(param a: int(?w), param b: int(w)) param return __primitive("<=", a, b);
   inline proc <=(param a: uint(?w), param b: uint(w)) param return __primitive("<=", a, b);
   inline proc <=(param a: enumerated, param b: enumerated) param return __primitive("<=", a, b);
-  inline proc <=(param a: string, param b: string) param return __primitive("chpl_string_compare", a, b) <= 0;
   
   inline proc >=(param a: int(?w), param b: int(w)) param return __primitive(">=", a, b);
   inline proc >=(param a: uint(?w), param b: uint(w)) param return __primitive(">=", a, b);
   inline proc >=(param a: enumerated, param b: enumerated) param return __primitive(">=", a, b);
-  inline proc >=(param a: string, param b: string) param return __primitive("chpl_string_compare", a, b) >= 0;
   
   inline proc <(param a: int(?w), param b: int(w)) param return __primitive("<", a, b);
   inline proc <(param a: uint(?w), param b: uint(w)) param return __primitive("<", a, b);
   inline proc <(param a: enumerated, param b: enumerated) param return __primitive("<", a, b);
-  inline proc <(param a: string, param b: string) param return __primitive("chpl_string_compare", a, b) < 0;
   
   inline proc >(param a: int(?w), param b: int(w)) param return __primitive(">", a, b);
   inline proc >(param a: uint(?w), param b: uint(w)) param return __primitive(">", a, b);
   inline proc >(param a: enumerated, param b: enumerated) param return __primitive(">", a, b);
-  inline proc >(param a: string, param b: string) param return (__primitive("chpl_string_compare", a, b) > 0);
   
   //
   // unary + and - on primitive types
@@ -389,8 +381,7 @@ module ChapelBase {
   inline proc +(a: real(?w), b: real(w)) return __primitive("+", a, b);
   inline proc +(a: imag(?w), b: imag(w)) return __primitive("+", a, b);
   inline proc +(a: complex(?w), b: complex(w)) return (a.re+b.re, a.im+b.im):complex(w);
-  inline proc +(a: string, b: string) return __primitive("string_concat", a, b);
-  
+
   inline proc +(a: real(?w), b: imag(w)) return (a, _i2r(b)):complex(w*2);
   inline proc +(a: imag(?w), b: real(w)) return (b, _i2r(a)):complex(w*2);
   inline proc +(a: real(?w), b: complex(w*2)) return (a+b.re, b.im):complex(w*2);
@@ -679,21 +670,22 @@ module ChapelBase {
   //
   // primitive string functions and methods
   //
-  inline proc ascii(a: string) return __primitive("ascii", a);
-  inline proc string.length return __primitive("string_length", this);
+  inline proc ascii(a: string) return ascii(a.c_str());
+  inline proc string.length return this.c_str().length;
   inline proc string.size return this.length;
-  inline proc string.substring(i: int) return __primitive("string_index", this, i);
-  inline proc _string_contains(a: string, b: string) return __primitive("string_contains", a, b);
+  inline proc string.substring(i: int)
+    // FIX ME: leak c_string
+    return toString(this.c_str().substring(i));
+  inline proc _string_contains(a: string, b: string)
+    return _string_contains(a.c_str(), b.c_str());
   
-  inline proc ascii(param a: string) param return __primitive("ascii", a);
-  inline proc param string.length param return __primitive("string_length", this);
-  inline proc _string_contains(param a: string, param b: string) param return __primitive("string_contains", a, b);
-
   /** Returns the index of the first occurrence of a substring within a string,
       or 0 if the substring is not in the string.
    */
-  inline proc string.indexOf(substring:string):int return string_index_of(this, substring);
-  extern proc string_index_of(haystack:string, needle:string):int;
+  inline proc string.indexOf(substring:string):int
+    return this.c_str().indexOf(substring.c_str());
+  inline proc string.indexOf(substring:c_string):int
+    return this.c_str().indexOf(substring);
   
   //
   // min and max
@@ -908,8 +900,18 @@ module ChapelBase {
   }
   
   pragma "command line setting"
-  proc _command_line_cast(param s: string, type t, x) return _cast(t, x);
+  proc _command_line_cast(param s: c_string, type t, x) return _cast(t, x);
 
+  // cast to and from Chapel strings use c_string
+  pragma "compiler generated"
+  inline proc _cast(type t, x) where t==string && x.type != c_string
+    // FIX ME: leak c_string
+    return toString(_cast(c_string, x));
+
+  pragma "compiler generated"
+  inline proc _cast(type t, x: string) where t !=c_string
+    return _cast(t, x.c_str());
+  
   inline proc _cast(type t, x: bool) where _isPrimitiveType(t)
     return __primitive("cast", t, x);
   
@@ -924,13 +926,13 @@ module ChapelBase {
   
   inline proc _cast(type t, x: real(?w)) where _isPrimitiveType(t)
     return __primitive("cast", t, x);
-  
-  inline proc _cast(type t, x: string) where _isPrimitiveType(t)
+ 
+  inline proc _cast(type t, x: c_string) where _isPrimitiveType(t) && t!=string
     return __primitive("cast", t, x);
-  
-  inline proc _cast(type t, x: enumerated) where _isPrimitiveType(t) && t != string
+
+  inline proc _cast(type t, x: enumerated) where _isPrimitiveType(t) && t!=c_string && t!=string
     return __primitive("cast", t, x);
-  
+
   inline proc _cast(type t, x) where t:object && x:t
     return __primitive("cast", t, x);
   
@@ -964,7 +966,7 @@ module ChapelBase {
   inline proc _cast(type t, x: complex(?w)) where _isComplexType(t)
     return (x.re, x.im):t;
   
-  inline proc _cast(type t, x: string) where _isComplexType(t)
+  inline proc _cast(type t, x: c_string) where _isComplexType(t)
     return __primitive("cast", t, x);
   
   //
@@ -988,26 +990,30 @@ module ChapelBase {
   inline proc _cast(type t, x: complex(?w)) where _isImagType(t)
     return let xim = x.im in __primitive("cast", t, xim);
   
-  inline proc _cast(type t, x: string) where _isImagType(t)
+  inline proc _cast(type t, x: c_string) where _isImagType(t)
     return __primitive("cast", t, x);
   
   //
   // casts from complex
   //
-  inline proc _cast(type t, x: complex(?w)) where t == string {
+  inline proc _cast(type t, x: complex(?w)) where t == c_string {
     if isnan(x.re) || isnan(x.im) then
       return "nan";
-    var re = x.re:string, op = " + ", im = x.im:string;
+    var re = (x.re):c_string;
+    var im, op: c_string;
     if x.im < 0 {
-      im = (-x.im):string;
+      im = (-x.im):c_string;
       op = " - ";
     } else if im == "-0.0" {
       im = "0.0";
       op = " - ";
+    } else {
+      im = (x.im):c_string;
+      op = " + ";
     }
-    return re + op + im + "i";
+    return (re + op + im + "i").c_str();
   }
-  
+
   inline proc _cast(type t, x: complex(?w)) where _isRealType(t) || _isIntegralType(t) {
     var y: t;
     y = x.re:t;
@@ -1017,9 +1023,9 @@ module ChapelBase {
   //
   // casts from imag
   //
-  inline proc _cast(type t, x: imag(?w)) where t == string
+  inline proc _cast(type t, x: imag(?w)) where t == c_string
     return __primitive("cast", t, x);
-  
+
   inline proc _cast(type t, x: imag(?w)) where _isRealType(t) || _isIntegralType(t)
     return 0:t;
   

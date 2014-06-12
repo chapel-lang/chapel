@@ -51,7 +51,7 @@ module GMP {
   extern proc mpz_set_d(ref ROP: mpz_t, OP: c_double);
   // mpz_set_q once rationals are supported
   // mpz_set_f once mpf supported
-  extern proc mpz_set_str(ref ROP: mpz_t, STR: string, BASE: c_int);
+  extern proc mpz_set_str(ref ROP: mpz_t, STR: c_string, BASE: c_int);
   extern proc mpz_swap(ref ROP1: mpz_t, ref ROP2: mpz_t);
 
   // Combined initialization and setting
@@ -59,14 +59,14 @@ module GMP {
   extern proc mpz_init_set_ui(ref ROP: mpz_t, OP:c_ulong);
   extern proc mpz_init_set_si(ref ROP: mpz_t, OP:c_long);
   extern proc mpz_init_set_d(ref ROP: mpz_t, OP:c_double);
-  extern proc mpz_init_set_str(ref ROP: mpz_t, STR: string, BASE:c_int):c_int;
+  extern proc mpz_init_set_str(ref ROP: mpz_t, STR: c_string, BASE:c_int):c_int;
 
   // Conversion functions
   extern proc mpz_get_ui(ref OP: mpz_t): c_ulong;
   extern proc mpz_get_si(ref OP: mpz_t): c_long;
   extern proc mpz_get_d(ref OP: mpz_t): c_double;
   extern proc mpz_get_d_2exp(ref exp:c_long, ref OP: mpz_t): c_double;
-  extern proc mpz_get_str(STR:string, BASE:c_int, ref OP: mpz_t): string;
+  extern proc mpz_get_str(STR:c_string, BASE:c_int, ref OP: mpz_t): c_string;
 
 
   // Arithmetic functions
@@ -261,10 +261,10 @@ module GMP {
 
 
   // printf/scanf
-  extern proc gmp_printf(fmt: string, arg...);
-  extern proc gmp_fprintf(fp: _file, fmt: string, arg...);
-  extern proc gmp_fprintf(fp: _file, fmt: string, arg...);
-  extern proc gmp_asprintf(ref ret: string, fmt: string, arg...);
+  extern proc gmp_printf(fmt: c_string, arg...);
+  extern proc gmp_fprintf(fp: _file, fmt: c_string, arg...);
+  extern proc gmp_fprintf(fp: _file, fmt: c_string, arg...);
+  extern proc gmp_asprintf(ref ret: c_string, fmt: c_string, arg...);
 
 
 
@@ -273,7 +273,7 @@ module GMP {
   extern proc chpl_gmp_get_randstate(not_inited_state:gmp_randstate_t, src_locale:int, from:__gmp_randstate_struct);
   extern proc chpl_gmp_mpz_nlimbs(from:__mpz_struct):uint(64);
   extern proc chpl_gmp_mpz_print(x:mpz_t);
-  extern proc chpl_gmp_mpz_get_str(base: c_int, x:mpz_t):string;
+  extern proc chpl_gmp_mpz_get_str(base: c_int, x:mpz_t):c_string;
 
 
   enum Round {
@@ -294,7 +294,7 @@ module GMP {
     }
     proc BigInt(str:string, base:c_int=0) {
       var e:c_int;
-      e = mpz_init_set_str(this.mpz, str, base);
+      e = mpz_init_set_str(this.mpz, str.c_str(), base);
       if e {
         mpz_clear(this.mpz);
         halt("Error initializing big integer: bad format");
@@ -303,7 +303,7 @@ module GMP {
     proc BigInt(str:string, base:c_int=0, out error:syserr) {
       var e:c_int;
       error = ENOERR;
-      e = mpz_init_set_str(this.mpz, str, base);
+      e = mpz_init_set_str(this.mpz, str.c_str(), base);
       if e {
         mpz_clear(this.mpz);
         error = EFORMAT;
@@ -380,7 +380,7 @@ module GMP {
     }
     proc set_str(str:string, base:c_int=0)
     {
-      on this do mpz_set_str(this.mpz, str, base);
+      on this do mpz_set_str(this.mpz, str.c_str(), base);
     }
     proc swap(a:BigInt)
     {
@@ -432,7 +432,7 @@ module GMP {
     {
       var ret:string;
       on this {
-        ret = chpl_gmp_mpz_get_str(base, this.mpz);
+        ret = toString(chpl_gmp_mpz_get_str(base, this.mpz));
       }
       return ret;
     }

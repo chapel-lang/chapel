@@ -138,13 +138,14 @@ module ChapelUtil {
 
   proc chpl_convert_args(arg: chpl_main_argument) {
     var local_arg = arg;
-    extern proc chpl_get_argument_i(ref args:chpl_main_argument, i:int(32)):string;
+    extern proc chpl_get_argument_i(ref args:chpl_main_argument, i:int(32)):c_string;
     // This is odd.  Why are the strings inside the array getting destroyed?
     pragma "no auto destroy"
     var array: [0..#local_arg.argc] string;
 
     for i in 0..#arg.argc {
-      array[i] = chpl_get_argument_i(local_arg, i:int(32));
+      // FIX ME: leak c_string
+      array[i] = toString(chpl_get_argument_i(local_arg, i:int(32)));
     }
 
     return array;

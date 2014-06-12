@@ -6,18 +6,18 @@ proc foo(x: int) {
   writeln("Got into non-param foo with value ", x);
 }
 
-proc param string.bar param return 3;
+proc param int.bar param return 3;
 
-proc string.bar param return 4;
+proc int.bar param return 4;
 
-proc string.baz return 5;
+proc int.baz return 5;
 
-foo("test".bar);
-foo("test".baz);
+foo(77.bar);
+foo(77.baz);
 
 config const which = true;
 
-var mystring = if which then "hi" else "bye";
+var myVar = if which then -1 else 1;
 
-foo(mystring.bar);
-foo(mystring.baz);
+foo(myVar.bar);
+foo(myVar.baz);

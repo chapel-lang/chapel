@@ -32,9 +32,9 @@ extern char* chpl_executionCommand;
 /* generated */
 extern chpl_fn_p chpl_ftable[];
 
-void chpl__init_preInit(int64_t _ln, chpl_string _fn);
-void chpl__init_PrintModuleInitOrder(int64_t _ln, chpl_string _fn);
-void chpl__init_ChapelStandard(int64_t _ln, chpl_string _fn);
+void chpl__init_preInit(int64_t _ln, c_string _fn);
+void chpl__init_PrintModuleInitOrder(int64_t _ln, c_string _fn);
+void chpl__init_ChapelStandard(int64_t _ln, c_string _fn);
 
 /* used for entry point: */
 extern int64_t chpl_gen_main(chpl_main_argument* const _arg);

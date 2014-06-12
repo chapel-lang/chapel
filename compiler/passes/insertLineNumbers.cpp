@@ -45,7 +45,7 @@ static ArgSymbol* newLine(FnSymbol* fn) {
 }
 
 static ArgSymbol* newFile(FnSymbol* fn) {
-  ArgSymbol* file = new ArgSymbol(INTENT_CONST_REF, "_fn", dtString);
+  ArgSymbol* file = new ArgSymbol(INTENT_CONST_REF, "_fn", dtStringC);
   fn->insertFormalAtTail(file);
   filenameMap.put(fn, file);
   queue.add(fn);
@@ -118,7 +118,7 @@ insertLineNumber(CallExpr* call) {
         if (!gCLine) {
           gCLine = new VarSymbol("__LINE__", dtInt[INT_SIZE_DEFAULT]);
           rootModule->block->insertAtTail(new DefExpr(gCLine));
-          gCFile = new VarSymbol("__FILE__", dtString);
+          gCFile = new VarSymbol("__FILE__", dtStringC);
           rootModule->block->insertAtTail(new DefExpr(gCFile));
         }
         call->insertAtTail(gCLine);

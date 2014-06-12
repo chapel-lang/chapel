@@ -340,7 +340,7 @@ static gasnet_handlerentry_t ftable[] = {
 chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
                                        int32_t elemSize, int32_t typeIndex,
                                        int32_t len,
-                                       int ln, chpl_string fn)
+                                       int ln, c_string fn)
 {
   size_t nbytes = elemSize*len;
   gasnet_handle_t ret;
@@ -359,7 +359,7 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
 chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
                                        int32_t elemSize, int32_t typeIndex,
                                        int32_t len,
-                                       int ln, chpl_string fn)
+                                       int ln, c_string fn)
 {
   size_t nbytes = elemSize*len;
   gasnet_handle_t ret;
@@ -772,7 +772,7 @@ void chpl_comm_exit(int all, int status) {
 
 void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
                     int32_t elemSize, int32_t typeIndex, int32_t len,
-                    int ln, chpl_string fn) {
+                    int ln, c_string fn) {
   const int size = elemSize*len;
   if (chpl_nodeID == node) {
     memmove(raddr, addr, size);
@@ -793,7 +793,7 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
 ////GASNET - look at GASNET tools at top of README.tools has atomic counters
 void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
                     int32_t elemSize, int32_t typeIndex, int32_t len,
-                    int ln, chpl_string fn) {
+                    int ln, c_string fn) {
   const int size = elemSize*len;
   if (chpl_nodeID == node) {
     memmove(addr, raddr, size);
@@ -819,7 +819,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
 void  chpl_comm_get_strd(void* dstaddr, void* dststrides, c_nodeid_t srcnode_id, 
                          void* srcaddr, void* srcstrides, void* count,
                          int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
-                         int ln, chpl_string fn) {
+                         int ln, c_string fn) {
   int i;
   const size_t strlvls = (size_t)stridelevels;
   const gasnet_node_t srcnode = (gasnet_node_t)srcnode_id;
@@ -870,7 +870,7 @@ void  chpl_comm_get_strd(void* dstaddr, void* dststrides, c_nodeid_t srcnode_id,
 void  chpl_comm_put_strd(void* dstaddr, void* dststrides, c_nodeid_t dstnode_id, 
                          void* srcaddr, void* srcstrides, void* count,
                          int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
-                         int ln, chpl_string fn) {
+                         int ln, c_string fn) {
   int i;
   const size_t strlvls = (size_t)stridelevels;
   const gasnet_node_t dstnode = (gasnet_node_t)dstnode_id;

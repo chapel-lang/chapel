@@ -192,7 +192,7 @@ module Sys {
   proc sys_addrinfo_ptr_t.socktype:c_int { return sys_getaddrinfo_socktype(this); }
   proc sys_addrinfo_ptr_t.addr:sys_sockaddr_t { return sys_getaddrinfo_addr(this); }
   // Not supported yet
-  // proc sys_addrinfo_ptr_t.canonname:string { return sys_getaddrinfo_canonname(this); }
+  // proc sys_addrinfo_ptr_t.canonname:c_string { return sys_getaddrinfo_canonname(this); }
   proc sys_addrinfo_ptr_t.next:sys_addrinfo_ptr_t { return sys_getaddrinfo_next(this); }
 
   extern proc sys_init_sys_sockaddr(ref addr:sys_sockaddr_t);
@@ -227,7 +227,7 @@ module Sys {
   extern proc sys_getaddrinfo_next(res:sys_addrinfo_ptr_t):sys_addrinfo_ptr_t;
   extern proc sys_freeaddrinfo(res:sys_addrinfo_ptr_t);
 
-  extern proc sys_getnameinfo(ref addr:sys_sockaddr_t, ref host_out:c_string, ref serv_outc_:string, flags:c_int):err_t;
+  extern proc sys_getnameinfo(ref addr:sys_sockaddr_t, ref host_out:c_string, ref serv_outc_:c_string, flags:c_int):err_t;
   extern proc sys_getpeername(sockfd:fd_t, ref addr:sys_sockaddr_t):err_t;
   extern proc sys_getsockname(sockfd:fd_t, ref addr:sys_sockaddr_t):err_t;
 

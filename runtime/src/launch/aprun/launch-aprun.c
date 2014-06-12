@@ -82,7 +82,7 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales) {
 
 
 int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
-                           int32_t lineno, chpl_string filename) {
+                           int32_t lineno, c_string filename) {
   int numArgs = 0;
   if (!strcmp(argv[argNum], CHPL_CC_ARG)) {
     _ccArg = argv[argNum+1];

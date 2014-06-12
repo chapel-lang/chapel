@@ -49,7 +49,7 @@ char* chpl_glom_strings(int numstrings, ...) {
 }
 
 
-chpl_string chpl_format(chpl_string format, ...) {
+c_string chpl_format(c_string format, ...) {
   va_list ap;
   char z[128];
 
@@ -260,7 +260,7 @@ string_select(c_string x, int low, int high, int stride, int32_t lineno, c_strin
   char* result = NULL;
   char* dst = NULL;
   int size = high-low+1;
-  chpl_string src;
+  c_string src;
 
   if (low  < 1) low = 1;
   if (high < 1) return "";
@@ -314,7 +314,7 @@ string_contains(c_string x, c_string y) {
 }
 
 
-int32_t chpl_string_compare(c_string x, c_string y) {
+int32_t string_compare(c_string x, c_string y) {
   return (int32_t)strcmp(x, y);
 }
 

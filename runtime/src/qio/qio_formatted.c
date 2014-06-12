@@ -1397,15 +1397,6 @@ error:
 #undef WRITEC
 }
 
-const char* qio_quote_string_chpl(const char* ptr, ssize_t len)
-{
-  const char* ret = NULL;
-  err_t err;
-  err = qio_quote_string('"', '"', QIO_STRING_FORMAT_CHPL, ptr, len, &ret, NULL);
-  if( err || !ret ) return qio_strdup("<error>");
-  return ret;
-}
-
 // only support floating point numbers in
 // base 10, or base 16 (with decimal exponent).
 //
@@ -3207,7 +3198,7 @@ err_t _qio_channel_read_char_slow_unlocked(qio_channel_t* restrict ch, int32_t* 
   return err;
 }
 
-const char* qio_encode_to_string(int32_t chr)
+c_string qio_encode_to_string(int32_t chr)
 {
   int nbytes;
   char* buf;
@@ -3353,12 +3344,12 @@ int _qio_regexp_flags_then_rcurly(const char* ptr, int * len)
 }
 
 
-qioerr qio_conv_parse(const char* fmt,
-                     size_t start,
-                     uint64_t* end,
-                     int scanning,
-                     qio_conv_t* spec_out,
-                     qio_style_t* style_out)
+qioerr qio_conv_parse(c_string fmt,
+                      size_t start,
+                      uint64_t* end,
+                      int scanning,
+                      qio_conv_t* spec_out,
+                      qio_style_t* style_out)
 {
   size_t i;
   int in_group = 0;

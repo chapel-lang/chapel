@@ -28,7 +28,7 @@ int chpl_mem_inited(void);
 static ___always_inline
 void* chpl_mem_allocMany(size_t number, size_t size,
                          chpl_mem_descInt_t description,
-                         int32_t lineno, chpl_string filename) {
+                         int32_t lineno, c_string filename) {
   void* memAlloc;
   chpl_memhook_malloc_pre(number, size, description, lineno, filename);
   memAlloc = chpl_malloc(number*size);
@@ -39,14 +39,14 @@ void* chpl_mem_allocMany(size_t number, size_t size,
 
 static ___always_inline
 void* chpl_mem_alloc(size_t size, chpl_mem_descInt_t description,
-                     int32_t lineno, chpl_string filename) {
+                     int32_t lineno, c_string filename) {
   return chpl_mem_allocMany(1, size, description, lineno, filename);
 }
 
 static ___always_inline
 void* chpl_mem_allocManyZero(size_t number, size_t size,
                              chpl_mem_descInt_t description,
-                             int32_t lineno, chpl_string filename) {
+                             int32_t lineno, c_string filename) {
   void* memAlloc;
   chpl_memhook_malloc_pre(number, size, description, lineno, filename);
   memAlloc = chpl_calloc(number, size);
@@ -57,14 +57,14 @@ void* chpl_mem_allocManyZero(size_t number, size_t size,
 
 static ___always_inline
 void* chpl_mem_calloc(size_t size, chpl_mem_descInt_t description,
-                      int32_t lineno, chpl_string filename) {
+                      int32_t lineno, c_string filename) {
   return chpl_mem_allocManyZero(1, size, description, lineno, filename);
 }
 
 static ___always_inline
 void* chpl_mem_realloc(void* memAlloc, size_t size,
                        chpl_mem_descInt_t description,
-                       int32_t lineno, chpl_string filename) {
+                       int32_t lineno, c_string filename) {
   void* moreMemAlloc;
 
   chpl_memhook_realloc_pre(memAlloc, size, description,
@@ -81,7 +81,7 @@ void* chpl_mem_realloc(void* memAlloc, size_t size,
 }
 
 static ___always_inline
-void chpl_mem_free(void* memAlloc, int32_t lineno, chpl_string filename) {
+void chpl_mem_free(void* memAlloc, int32_t lineno, c_string filename) {
   chpl_memhook_free_pre(memAlloc, lineno, filename);
   chpl_free(memAlloc);
 }
@@ -89,9 +89,9 @@ void chpl_mem_free(void* memAlloc, int32_t lineno, chpl_string filename) {
 
 void chpl_mem_layerInit(void);
 void chpl_mem_layerExit(void);
-void* chpl_mem_layerAlloc(size_t, int32_t, chpl_string);
-void* chpl_mem_layerRealloc(void*, size_t, int32_t, chpl_string);
-void chpl_mem_layerFree(void*, int32_t, chpl_string);
+void* chpl_mem_layerAlloc(size_t, int32_t, c_string);
+void* chpl_mem_layerRealloc(void*, size_t, int32_t, c_string);
+void chpl_mem_layerFree(void*, int32_t, c_string);
 
 #else // LAUNCHER
 

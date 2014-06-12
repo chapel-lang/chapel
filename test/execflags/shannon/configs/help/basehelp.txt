@@ -29,6 +29,6 @@ Built-in config vars:
               memLeaksTable: bool
                      memMax: uint(64)
                memThreshold: uint(64)
-                     memLog: string
-                memLeaksLog: string
+                     memLog: c_string
+                memLeaksLog: c_string
 

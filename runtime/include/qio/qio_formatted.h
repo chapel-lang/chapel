@@ -546,7 +546,7 @@ err_t qio_encode_char_buf(char* dst, int32_t chr)
 }
 
 // Returns NULL if it's an illegal character OR we're out of memory.
-const char* qio_encode_to_string(int32_t chr);
+c_string qio_encode_to_string(int32_t chr);
 
 static inline
 err_t qio_decode_char_buf(int32_t* restrict chr, int* restrict nbytes, const char* buf, ssize_t buflen)
@@ -730,8 +730,6 @@ err_t qio_quote_string(uint8_t string_start, uint8_t string_end, uint8_t string_
 // like qio_quote_string, but only get length information.
 err_t qio_quote_string_length(uint8_t string_start, uint8_t string_end, uint8_t string_format, const char* restrict ptr, ssize_t len, qio_truncate_info_t* ti);
 
-const char* qio_quote_string_chpl(const char* ptr, ssize_t len);
-
 // Prints a string according to the style.
 err_t qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict ptr, ssize_t len);
 
@@ -796,7 +794,7 @@ typedef struct qio_conv_s {
 
 void qio_conv_destroy(qio_conv_t* spec);
 void qio_conv_init(qio_conv_t* spec_out);
-qioerr qio_conv_parse(const char* fmt, size_t start, uint64_t* end_out, int scanning, qio_conv_t* spec_out, qio_style_t* style_out);
+qioerr qio_conv_parse(c_string fmt, size_t start, uint64_t* end_out, int scanning, qio_conv_t* spec_out, qio_style_t* style_out);
 
 // These error codes can be used by callers to qio_conv_parse
 qioerr qio_format_error_too_many_args(void);

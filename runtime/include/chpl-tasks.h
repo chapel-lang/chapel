@@ -31,9 +31,9 @@
 void      chpl_sync_lock(chpl_sync_aux_t *);
 void      chpl_sync_unlock(chpl_sync_aux_t *);
 void      chpl_sync_waitFullAndLock(chpl_sync_aux_t *,
-                                       int32_t, chpl_string);
+                                       int32_t, c_string);
 void      chpl_sync_waitEmptyAndLock(chpl_sync_aux_t *,
-                                        int32_t, chpl_string);
+                                        int32_t, c_string);
 void      chpl_sync_markAndSignalFull(chpl_sync_aux_t *);     // and unlock
 void      chpl_sync_markAndSignalEmpty(chpl_sync_aux_t *);    // and unlock
 chpl_bool chpl_sync_isFull(void *, chpl_sync_aux_t *);
@@ -51,7 +51,7 @@ static ___always_inline
 void chpl_single_unlock(chpl_sync_aux_t * s) { chpl_sync_unlock(s); }
 static ___always_inline
 void chpl_single_waitFullAndLock(chpl_sync_aux_t * s,
-                                 int32_t lineno, chpl_string filename) {
+                                 int32_t lineno, c_string filename) {
   chpl_sync_waitFullAndLock(s,lineno,filename);
 }
 static ___always_inline
@@ -125,7 +125,7 @@ void chpl_task_addToTaskList(
          c_nodeid_t,         // locale (node) where task list resides
          chpl_bool,          // is begin{} stmt?  (vs. cobegin or coforall)
          int,                // line at which function begins
-         chpl_string);       // name of file containing functions
+         c_string);          // name of file containing functions
 void chpl_task_processTaskList(chpl_task_list_p);
 void chpl_task_executeTasksInList(chpl_task_list_p);
 void chpl_task_freeTaskList(chpl_task_list_p);
@@ -263,8 +263,8 @@ size_t chpl_task_getMinCallStackSize(void);
 // These are service functions provided to the runtime by the module
 // code.
 //
-extern void chpl_taskRunningCntInc(int64_t _ln, chpl_string _fn);
-extern void chpl_taskRunningCntDec(int64_t _ln, chpl_string _fn);
+extern void chpl_taskRunningCntInc(int64_t _ln, c_string _fn);
+extern void chpl_taskRunningCntDec(int64_t _ln, c_string _fn);
 
 #else // LAUNCHER
 

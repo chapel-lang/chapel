@@ -498,7 +498,7 @@ initPrimitive() {
   prim_def(PRIM_ERROR, "error", returnInfoVoid, true);
   prim_def(PRIM_WARNING, "warning", returnInfoVoid, true);
   prim_def(PRIM_WHEN, "when case expressions", returnInfoVoid);
-  prim_def(PRIM_TYPE_TO_STRING, "typeToString", returnInfoString);
+  prim_def(PRIM_TYPE_TO_STRING, "typeToString", returnInfoStringC);
 
   // These are the block info primitives.
   prim_def(PRIM_BLOCK_PARAM_LOOP, "param loop", returnInfoVoid);
@@ -547,13 +547,13 @@ initPrimitive() {
   prim_def(PRIM_CAPTURE_FN, "capture fn", returnInfoVoid);
   prim_def(PRIM_CREATE_FN_TYPE, "create fn type", returnInfoVoid);
 
-  prim_def("chpl_string_compare", returnInfoDefaultInt, true);
+  prim_def("string_compare", returnInfoDefaultInt, true);
   prim_def("string_contains", returnInfoBool, true);
-  prim_def("string_concat", returnInfoString, true, true);
+  prim_def("string_concat", returnInfoStringC, true, true);
   prim_def("string_length", returnInfoDefaultInt);
   prim_def("ascii", returnInfoInt32);
-  prim_def("string_index", returnInfoString, true, true);
-  prim_def(PRIM_STRING_COPY, "string_copy", returnInfoString, false, true);
+  prim_def("string_index", returnInfoStringC, true, true);
+  prim_def(PRIM_STRING_COPY, "string_copy", returnInfoStringC, false, true);
   prim_def(PRIM_STRING_NORMALIZE, "string_normalize", returnInfoVoid, true, false);
   prim_def(PRIM_STRING_FROM_C_STRING, "string_from_c_string", returnInfoString, false, true);
   prim_def(PRIM_C_STRING_FROM_STRING, "c_string_from_string", returnInfoStringC, false, true);
@@ -572,7 +572,7 @@ initPrimitive() {
   prim_def(PRIM_GET_PRIV_CLASS, "chpl_getPrivatizedClass",  returnInfoFirst);
   
   prim_def(PRIM_GET_USER_LINE, "_get_user_line", returnInfoDefaultInt, true, true);
-  prim_def(PRIM_GET_USER_FILE, "_get_user_file", returnInfoString, true, true);
+  prim_def(PRIM_GET_USER_FILE, "_get_user_file", returnInfoStringC, true, true);
 
   prim_def(PRIM_FTABLE_CALL, "call ftable function", returnInfoVoid, true);
 

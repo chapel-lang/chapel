@@ -597,6 +597,10 @@ module DefaultAssociative {
   
   // Use djb2 (Dan Bernstein in comp.lang.c)
   inline proc chpl__defaultHash(x : string): int(64) {
+    return chpl__defaultHash(x.c_str());
+  }
+
+  inline proc chpl__defaultHash(x : c_string): int(64) {
     var hash: int(64) = 0;
     for c in 1..(x.length) {
       hash = ((hash << 5) + hash) ^ ascii(x.substring(c));
@@ -633,6 +637,7 @@ module DefaultAssociative {
       _isImagType(idxType)        ||
       idxType == chpl_taskID_t    ||
       idxType == string           ||
+      idxType == c_string         ||
       isClassType(idxType)        ||
       // these are handled differently
       _isEnumeratedType(idxType)  ||

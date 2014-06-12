@@ -19,7 +19,7 @@ enum GeoDistrib  { GeoFixed, GeoLinear, GeoPoly, GeoCyclic };
 /**** COMPILE PARAMS ****/
 config param debug:    bool = false;
 config param parallel: bool = true;
-param uts_version:   string = "2.1";
+param uts_version = "2.1";
 
 
 /**** UTS CONFIG VARS ****/

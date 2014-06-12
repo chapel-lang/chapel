@@ -147,7 +147,7 @@ static unsigned hash(void* memAlloc, int hashSize) {
 }
 
 
-static void increaseMemStat(size_t chunk, int32_t lineno, chpl_string filename) {
+static void increaseMemStat(size_t chunk, int32_t lineno, c_string filename) {
   totalMem += chunk;
   totalAllocated += chunk;
   if (memMax && (totalMem > memMax)) {
@@ -192,7 +192,7 @@ resizeTable(int direction) {
 }
 
 
-static void addMemTableEntry(void* memAlloc, size_t number, size_t size, chpl_mem_descInt_t description, int32_t lineno, chpl_string filename) {
+static void addMemTableEntry(void* memAlloc, size_t number, size_t size, chpl_mem_descInt_t description, int32_t lineno, c_string filename) {
   unsigned hashValue;
   memTableEntry* memEntry;
 
@@ -253,7 +253,7 @@ static memTableEntry* removeMemTableEntry(void* address) {
 }
 
 
-uint64_t chpl_memoryUsed(int32_t lineno, chpl_string filename) {
+uint64_t chpl_memoryUsed(int32_t lineno, c_string filename) {
   if (!chpl_memTrack)
     chpl_error("invalid call to memoryUsed(); rerun with --memTrack",
                lineno, filename);
@@ -261,7 +261,7 @@ uint64_t chpl_memoryUsed(int32_t lineno, chpl_string filename) {
 }
 
 
-void chpl_printMemStat(int32_t lineno, chpl_string filename) {
+void chpl_printMemStat(int32_t lineno, c_string filename) {
   if (!chpl_memTrack)
     chpl_error("invalid call to printMemStat(); rerun with --memTrack",
                lineno, filename);
@@ -382,7 +382,7 @@ static int descCmp(const void* p1, const void* p2) {
 }
 
 
-void chpl_printMemTable(int64_t threshold, int32_t lineno, chpl_string filename) {
+void chpl_printMemTable(int64_t threshold, int32_t lineno, c_string filename) {
   const int numberWidth   = 9;
   const int precision     = sizeof(uintptr_t) * 2;
   const int addressWidth  = precision+4;
@@ -472,7 +472,7 @@ void chpl_printMemTable(int64_t threshold, int32_t lineno, chpl_string filename)
 
 void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
                        chpl_mem_descInt_t description,
-                       int32_t lineno, chpl_string filename) {
+                       int32_t lineno, c_string filename) {
   c_string c_filename;
 
   if (number * size > memThreshold) {
@@ -493,7 +493,7 @@ void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
 }
 
 
-void chpl_track_free(void* memAlloc, int32_t lineno, chpl_string filename) {
+void chpl_track_free(void* memAlloc, int32_t lineno, c_string filename) {
   memTableEntry* memEntry = NULL;
   c_string c_filename;
 
@@ -524,7 +524,7 @@ void chpl_track_free(void* memAlloc, int32_t lineno, chpl_string filename) {
 
 void chpl_track_realloc_pre(void* memAlloc, size_t size,
                          chpl_mem_descInt_t description,
-                         int32_t lineno, chpl_string filename) {
+                         int32_t lineno, c_string filename) {
   memTableEntry* memEntry = NULL;
 
   if (chpl_memTrack && size > memThreshold) {
@@ -542,7 +542,7 @@ void chpl_track_realloc_pre(void* memAlloc, size_t size,
 void chpl_track_realloc_post(void* moreMemAlloc,
                          void* memAlloc, size_t size,
                          chpl_mem_descInt_t description,
-                         int32_t lineno, chpl_string filename) {
+                         int32_t lineno, c_string filename) {
   c_string c_filename;
 
   if (size > memThreshold) {

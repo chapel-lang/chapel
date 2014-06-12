@@ -35,7 +35,7 @@ chpl_main_argument chpl_gen_main_arg;
 char* chpl_executionCommand;
 
 int handleNonstandardArg(int* argc, char* argv[], int argNum, 
-                         int32_t lineno, chpl_string filename) {
+                         int32_t lineno, c_string filename) {
 
   if (mainHasArgs) {
     chpl_gen_main_arg.argv[chpl_gen_main_arg.argc] = argv[argNum];

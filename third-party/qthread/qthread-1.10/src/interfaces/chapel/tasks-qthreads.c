@@ -108,7 +108,7 @@ static void profile_print(void)
 struct chpl_task_list {
     chpl_fn_p        fun;
     void            *arg;
-    chpl_string      filename;
+    c_string         filename;
     int              lineno;
     chpl_task_list_p next;
 };
@@ -162,8 +162,8 @@ void chpl_sync_unlock(chpl_sync_aux_t *s)
     qthread_incr(&s->lockers_out, 1);
 }
 
-static inline void about_to_block(int32_t     lineno,
-                                  chpl_string filename)
+static inline void about_to_block(int32_t  lineno,
+                                  c_string filename)
 {
     chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
     assert(data);
@@ -174,7 +174,7 @@ static inline void about_to_block(int32_t     lineno,
 
 void chpl_sync_waitFullAndLock(chpl_sync_aux_t *s,
                                int32_t          lineno,
-                               chpl_string      filename)
+                               c_string         filename)
 {
     PROFILE_INCR(profile_sync_waitFullAndLock, 1);
 
@@ -189,7 +189,7 @@ void chpl_sync_waitFullAndLock(chpl_sync_aux_t *s,
 
 void chpl_sync_waitEmptyAndLock(chpl_sync_aux_t *s,
                                 int32_t          lineno,
-                                chpl_string      filename)
+                                c_string         filename)
 {
     PROFILE_INCR(profile_sync_waitEmptyAndLock, 1);
 
@@ -515,7 +515,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
                              int32_t           task_list_locale,
                              chpl_bool         is_begin_stmt,
                              int               lineno,
-                             chpl_string       filename)
+                             c_string          filename)
 {
     qthread_shepherd_id_t const here_shep_id = qthread_shep();
     chpl_bool serial_state = chpl_task_getSerial();

@@ -304,7 +304,7 @@ char* chpl_get_enviro_keys(char sep)
 }
 
 int handleNonstandardArg(int* argc, char* argv[], int argNum, 
-                         int32_t lineno, chpl_string filename) {
+                         int32_t lineno, c_string filename) {
   int numHandled = chpl_launch_handle_arg(*argc, argv, argNum, 
                                           lineno, filename);
   if (numHandled == 0) {

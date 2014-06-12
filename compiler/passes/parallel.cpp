@@ -95,7 +95,7 @@ static void buildWideClasses();
 static void widenClasses();
 static void buildWideRefMap();
 static void widenRefs();
-static void insertElementAccessTemps();
+static void insertStringLiteralTemps();
 static void narrowWideClassesThroughCalls();
 static void insertWideClassTempsForNil();
 static void insertWideCastTemps();
@@ -1588,7 +1588,7 @@ insertWideReferences(void) {
   buildWideRefMap();
   widenRefs();
 
-  insertElementAccessTemps();
+  insertStringLiteralTemps();
   narrowWideClassesThroughCalls();
   insertWideClassTempsForNil();
   insertWideCastTemps();
@@ -1670,7 +1670,7 @@ static void widenClasses()
     // do not widen literals
     //
     if (VarSymbol* var = toVarSymbol(def->sym))
-      if (var->immediate)
+      if ((var->immediate) || (var == dtString->defaultValue))
         continue;
 
     //
@@ -1784,16 +1784,18 @@ static void widenRefs()
 }
 
 
-static void insertElementAccessTemps()
+static void insertStringLiteralTemps()
 {
   //
-  // Special case string literals passed to functions, set member primitives
-  // and array element initializers by pushing them into temps first.
+  // Special case string literals (and the default string value)
+  // passed to functions, set member primitives and array element
+  // initializers by pushing them into temps first so that they will
+  // be widened.
   //
   forv_Vec(SymExpr, se, gSymExprs) {
-    if (se->var->type == dtString) {
+    if ((se->var->type == dtStringC) || (se->var->type == dtString)) {
       if (VarSymbol* var = toVarSymbol(se->var)) {
-        if (var->immediate) {
+        if (var->immediate || (var == dtString->defaultValue)) {
           if (CallExpr* call = toCallExpr(se->parentExpr)) {
             SET_LINENO(se);
             if (call->isResolved())

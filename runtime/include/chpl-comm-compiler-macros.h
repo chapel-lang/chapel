@@ -21,7 +21,7 @@
 static ___always_inline
 void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
                        int32_t elemSize, int32_t typeIndex, int32_t len,
-                       int ln, chpl_string fn)
+                       int ln, c_string fn)
 {
   if (chpl_nodeID == node) {
     memcpy(addr, raddr, elemSize*len);
@@ -37,7 +37,7 @@ void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
 static ___always_inline
 void chpl_gen_comm_put(void* addr, c_nodeid_t node, void* raddr,
                        int32_t elemSize, int32_t typeIndex, int32_t len,
-                       int ln, chpl_string fn)
+                       int ln, c_string fn)
 {
   if (chpl_nodeID == node) {
     memcpy(raddr, addr, elemSize*len);
@@ -54,7 +54,7 @@ static ___always_inline
 void chpl_gen_comm_get_strd(void *addr, void *dststr, c_nodeid_t node, void *raddr,
                        void *srcstr, void *count, int32_t strlevels, 
                        int32_t elemSize, int32_t typeIndex,
-                       int ln, chpl_string fn)
+                       int ln, c_string fn)
 {
 #ifdef CHPL_TASK_COMM_GET_STRD
   chpl_task_comm_get_strd(addr, dststr, node, raddr, srcstr, count, strlevels, elemSize, typeIndex, ln, fn);
@@ -67,7 +67,7 @@ static ___always_inline
 void chpl_gen_comm_put_strd(void *addr, void *dststr, c_nodeid_t node, void *raddr,
                        void *srcstr, void *count, int32_t strlevels, 
                        int32_t elemSize, int32_t typeIndex,
-                       int ln, chpl_string fn)
+                       int ln, c_string fn)
 {
 #ifdef CHPL_TASK_COMM_PUT_STRD
   chpl_task_comm_put_strd(addr, dststr, node, raddr, srcstr, count, strlevels, elemSize, typeIndex, ln, fn);

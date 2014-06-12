@@ -151,7 +151,7 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales) {
 #define CHPL_QUEUE_FLAG "--queue"
 
 int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
-                           int32_t lineno, chpl_string filename) {
+                           int32_t lineno, c_string filename) {
   if (!strcmp(argv[argNum], CHPL_WALLTIME_FLAG)) {
     walltime = argv[argNum+1];
     return 2;

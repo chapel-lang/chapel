@@ -114,6 +114,11 @@ static void addPragmaFlags(Symbol* sym, Vec<const char*>* pragmas) {
           USR_WARN(fn, "function's return type is not a value type.  Ignoring.");
         }
         fn->retTag = RET_TYPE;
+      } else if (flag == FLAG_DEFAULT_STRING_VALUE) {
+        INT_ASSERT(dtString->defaultValue==NULL);
+        INT_ASSERT(toVarSymbol(sym));
+        sym->type = dtString;
+        dtString->defaultValue = sym;
       }
     }
   }
@@ -134,13 +139,33 @@ BlockStmt* buildPragmaStmt(Vec<const char*>* pragmas,
   return stmt;
 }
 
+static Expr* convertStringLiteral(Expr *e) {
+  if (SymExpr* s = toSymExpr(e)) {
+    VarSymbol *v = toVarSymbol(s->var);
+    INT_ASSERT(v);
+    if (v->immediate &&
+        v->immediate->const_kind==CONST_KIND_STRING) {
+      return new CallExpr("toString", s);
+    }
+  }
+  return e;
+}
+
+static void convertStringLiteralArgList(CallExpr* call) {
+  // Automatically convert string literals into Chapel strings
+  for (int i = 1; i <= call->numActuals(); i++) {
+    call->argList.insertAtTail(convertStringLiteral(call->argList.head->remove()));
+  }
+}
+
 CallExpr* buildOneTuple(Expr* elem) {
-  return new CallExpr("_build_tuple", elem);
+  return new CallExpr("_build_tuple", convertStringLiteral(elem));
 }
 
 CallExpr* buildTuple(CallExpr* call) {
   // The call is expected to be a PRIM_ACTUALS_LIST.
   INT_ASSERT(call->isPrimitive(PRIM_ACTUALS_LIST));
+  convertStringLiteralArgList(call);
   return new CallExpr("_build_tuple", call);
 }
 

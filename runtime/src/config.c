@@ -60,7 +60,7 @@ static void parseModVarName(char* modVarName, const char** moduleName,
    the hash table.  
 */
 static int aParsedString(FILE* argFile, char* setConfigBuffer, 
-                         int32_t lineno, chpl_string filename) {
+                         int32_t lineno, c_string filename) {
   char* equalsSign = strchr(setConfigBuffer, '=');
   int stringLength = strlen(setConfigBuffer);
   char firstChar;
@@ -270,7 +270,7 @@ static void checkDeprecatedConfig(const char* varName,
 
 void initSetValue(const char* varName, const char* value, 
                   const char* moduleName, 
-                  int32_t lineno, chpl_string filename) {
+                  int32_t lineno, c_string filename) {
   configVarType* configVar;
   if  (*varName == '\0') {
     const char* message = "No variable name given";
@@ -332,7 +332,7 @@ static configVarType* breakIntoPiecesAndLookup(char* str, char** equalsSign,
                                                const char** moduleName, 
                                                char** varName,
                                                int32_t lineno, 
-                                               chpl_string filename) {
+                                               c_string filename) {
   configVarType* configVar;
 
   *equalsSign = strchr(str, '=');
@@ -356,7 +356,7 @@ static configVarType* breakIntoPiecesAndLookup(char* str, char** equalsSign,
 
 
 static void handleUnexpectedConfigVar(const char* moduleName, char* varName,
-                                      int32_t lineno, chpl_string filename) {
+                                      int32_t lineno, c_string filename) {
   const char* message;
   if (moduleName[0]) {
     message = chpl_glom_strings(5, "Module '", moduleName, 
@@ -373,7 +373,7 @@ static void handleUnexpectedConfigVar(const char* moduleName, char* varName,
 
 
 int handlePossibleConfigVar(int* argc, char* argv[], int argnum, 
-                            int32_t lineno, chpl_string filename) {
+                            int32_t lineno, c_string filename) {
   int retval = 0;
   int arglen = strlen(argv[argnum]+2)+1;
   char* argCopy = chpl_mem_allocMany(arglen, sizeof(char),
@@ -418,7 +418,7 @@ int handlePossibleConfigVar(int* argc, char* argv[], int argnum,
 
 // TODO: Change all the 0 linenos below into real line numbers
 void parseConfigFile(const char* configFilename, 
-                     int32_t lineno, chpl_string filename) {
+                     int32_t lineno, c_string filename) {
   FILE* argFile = fopen(configFilename, "r");
   if (!argFile) {
     char* message = chpl_glom_strings(2, "Unable to open ", configFilename);
@@ -464,12 +464,12 @@ void parseConfigFile(const char* configFilename,
 }
 
 
-chpl_bool chpl_config_has_value(chpl_string v, chpl_string m) { 
+chpl_bool chpl_config_has_value(c_string v, c_string m) { 
   return lookupSetValue(v, m) != NULL;
 }
 
 
-chpl_string chpl_config_get_value(chpl_string v, chpl_string m) { 
+c_string chpl_config_get_value(c_string v, c_string m) { 
   return lookupSetValue(v, m);
 }
 

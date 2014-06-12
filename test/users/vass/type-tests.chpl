@@ -33,9 +33,9 @@ var sng: single int;     test("single", sng.type);
 compilerError("done"); // no need for a C compile
 
 proc test(param msg, ref v) {
-  compilerWarning(msg + " is a class:  " + isClassType(v.type):string);
-  compilerWarning(msg + " is a record: " + isRecordType(v.type):string);
-  compilerWarning(msg + " is a union:  " + isUnionType(v.type):string);
+  compilerWarning(msg + " is a class:  " + isClassType(v.type):c_string);
+  compilerWarning(msg + " is a record: " + isRecordType(v.type):c_string);
+  compilerWarning(msg + " is a union:  " + isUnionType(v.type):c_string);
   if isRangeType(v.type)  then compilerWarning(msg + " is a range");
   if isTupleType(v.type)  then compilerWarning(msg + " is a tuple");
   if isDmapType(v.type)   then compilerWarning(msg + " is a dmap");
@@ -52,9 +52,9 @@ proc test(param msg, ref v) {
 // temporarily here to confirm that isRecordType et al. actually work.
 // Once that future is fixed, we should probably remove this workaround.
 proc test(param msg, type tp) {
-  compilerWarning(msg + " - class:  " + isClassType(tp):string);
-  compilerWarning(msg + " - record: " + isRecordType(tp):string);
-  compilerWarning(msg + " - union:  " + isUnionType(tp):string);
+  compilerWarning(msg + " - class:  " + isClassType(tp):c_string);
+  compilerWarning(msg + " - record: " + isRecordType(tp):c_string);
+  compilerWarning(msg + " - union:  " + isUnionType(tp):c_string);
   if isRangeType(tp)   then compilerWarning(msg + " is range");
   if isTupleType(tp)   then compilerWarning(msg + " is tuple");
   if isDmapType(tp)    then compilerWarning(msg + " is dmap");

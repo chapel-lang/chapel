@@ -10,11 +10,11 @@ module MemTracking
     memLeaksTable: bool = false,
     memMax: size_t = 0,
     memThreshold: size_t = 0,
-    memLog: string = "";
+    memLog: c_string = "";
   
   pragma "no auto destroy"
   config const
-    memLeaksLog: string = "";
+    memLeaksLog: c_string = "";
 
   //
   // This communicates the settings of the various memory tracking
@@ -36,7 +36,7 @@ module MemTracking
     ret_memLeaksTable = memLeaksTable;
     ret_memMax = memMax;
     ret_memThreshold = memThreshold;
-    ret_memLog = __primitive("c_string_from_string", memLog);
-    ret_memLeaksLog = __primitive("c_string_from_string", memLeaksLog);
+    ret_memLog = memLog;
+    ret_memLeaksLog = memLeaksLog;
   }
 }

@@ -317,7 +317,7 @@ extern proc qio_channel_write_float(threadsafe:c_int, byteorder:c_int, ch:qio_ch
 extern proc qio_channel_read_complex(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, ref re_ptr, ref im_ptr, len:size_t):err_t;
 extern proc qio_channel_write_complex(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, const ref re_ptr, const ref im_ptr, len:size_t):err_t;
 
-extern proc qio_channel_read_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, ref s:string, ref len:int(64), maxlen:ssize_t):err_t;
+extern proc qio_channel_read_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, ref s:c_string, ref len:int(64), maxlen:ssize_t):err_t;
 extern proc qio_channel_write_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, const s:c_string, len:ssize_t):err_t;
 
 extern proc qio_channel_scan_int(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:size_t, issigned:c_int):err_t;
@@ -348,12 +348,12 @@ extern proc qio_channel_write_char(threadsafe:c_int, ch:qio_channel_ptr_t, char:
 extern proc qio_channel_skip_past_newline(threadsafe:c_int, ch:qio_channel_ptr_t, skipOnlyWs:c_int):err_t;
 extern proc qio_channel_write_newline(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
 
-extern proc qio_channel_scan_string(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr:string, ref len:int(64), maxlen:ssize_t):err_t;
+extern proc qio_channel_scan_string(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr:c_string, ref len:int(64), maxlen:ssize_t):err_t;
 extern proc qio_channel_print_string(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:c_string, len:ssize_t):err_t;
 
 extern proc qio_channel_scan_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:c_string, len:ssize_t, skipws:c_int):err_t;
 extern proc qio_channel_scan_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_void_ptr, len:ssize_t, skipws:c_int):err_t;
-extern proc qio_channel_print_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:string, len:ssize_t):err_t;
+extern proc qio_channel_print_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:c_string, len:ssize_t):err_t;
 extern proc qio_channel_print_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_void_ptr, len:ssize_t):err_t;
 
 extern record qio_conv_t {
@@ -614,7 +614,7 @@ proc file.getPath(out error:syserr) : string {
   check();
   var ret:string;
   on this.home {
-    var tmp:c_string;
+    var tmp:c_string; // FIX ME: leak c_string
     var tmp2:c_string;
     error = qio_file_path(_file_internal, tmp);
     // Wide strings must be fixed up after extern calls (see Note 1).
@@ -624,6 +624,7 @@ proc file.getPath(out error:syserr) : string {
       __primitive("string_normalize", tmp2);    // See Note 1.
     }
     if !error {
+    // FIX ME: leak c_string
       ret = toString(tmp2);
     } else {
       ret = "unknown";
@@ -696,6 +697,7 @@ proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle(
     var e2:syserr = ENOERR;
     e2 = qio_file_path_for_fd(fd, path);
     if e2 then path = "unknown".c_str();
+    // FIX ME: leak c_string
     ioerror(err, "in openfd", toString(path));
   }
   return ret;
@@ -717,6 +719,7 @@ proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle
     var e2:syserr = ENOERR;
     e2 = qio_file_path_for_fp(fp, path);
     if e2 then path = "unknown".c_str();
+    // FIX ME: leak c_string
     ioerror(err, "in openfp", toString(path));
   }
   return ret;
@@ -815,8 +818,8 @@ record ioChar {
     halt("ioChar.writeThis must be written in Writer subclasses");
   }
 }
-inline proc _cast(type t, x: ioChar) where t == string {
-  return toString(qio_encode_to_string(x.ch));
+inline proc _cast(type t, x: ioChar) where t == c_string {
+  return qio_encode_to_string(x.ch);
 }
 
 
@@ -831,13 +834,13 @@ record ioNewline {
     f.write("\n");
   }
 }
-inline proc _cast(type t, x: ioNewline) where t == string {
+inline proc _cast(type t, x: ioNewline) where t == c_string {
   return "\n";
 }
 
 // Used to represent a constant string we want to read or write...
 record ioLiteral {
-  var val: string;
+  var val: c_string;
   var ignoreWhiteSpace: bool = true;
   proc writeThis(f: Writer) {
     // Normally this is handled explicitly in read/write.
@@ -845,7 +848,8 @@ record ioLiteral {
   }
 }
 
-inline proc _cast(type t, x: ioLiteral) where t == string {
+inline proc _cast(type t, x: ioLiteral) where t == c_string {
+  // FIX ME: should this be copied?
   return x.val;
 }
 
@@ -859,8 +863,10 @@ record ioBits {
   }
 }
 
-inline proc _cast(type t, x: ioBits) where t == string {
-  return "ioBits(v=" + x.v:string + ", nbits=" + x.nbits:string + ")";
+inline proc _cast(type t, x: ioBits) where t == c_string {
+  const ret = "ioBits(v=" + x.v:string + ", nbits=" + x.nbits:string + ")";
+  // FIX ME: should this be copied?
+  return ret.c_str();
 }
 
 
@@ -874,6 +880,7 @@ proc channel._ch_ioerror(error:syserr, msg:string) {
     err = qio_channel_path_offset(locking, _channel_internal, tmp_path, tmp_offset);
     __primitive("string_normalize", tmp_path);  // See Note 1.
     if !err {
+      // FIX ME: leak c_string
       path = toString(tmp_path);
       offset = tmp_offset;
     }
@@ -890,6 +897,7 @@ proc channel._ch_ioerror(errstr:string, msg:string) {
     err = qio_channel_path_offset(locking, _channel_internal, tmp_path, tmp_offset);
     __primitive("string_normalize", tmp_path);  // See Note 1.
     if !err {
+      // FIX ME: leak c_string
       path = toString(tmp_path);
       offset = tmp_offset;
     }
@@ -1052,13 +1060,13 @@ proc _isSimpleIoType(type t) param return
   _isSimpleScalarType(t) || _isComplexType(t) || _isEnumeratedType(t);
 
 proc _isIoPrimitiveType(type t) param return
-  _isSimpleIoType(t) || (t == string);
+  _isSimpleIoType(t) || (t == c_string) || (t == string);
 
  proc _isIoPrimitiveTypeOrNewline(type t) param return
   _isIoPrimitiveType(t) || t == ioNewline || t == ioLiteral || t == ioChar || t == ioBits;
 
-const _trues = ("true",);
-const _falses = ("false",);
+const _trues: 1*c_string  = ("true",);
+const _falses: 1*c_string = ("false",);
 const _i = "i";
 
 // Read routines for all primitive types.
@@ -1071,14 +1079,14 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
     err = EFORMAT;
 
     for i in 1..num {
-      err = qio_channel_scan_literal(false, _channel_internal, _trues(i).c_str(), (_trues(i).length):ssize_t, 1);
+      err = qio_channel_scan_literal(false, _channel_internal, _trues(i), (_trues(i).length):ssize_t, 1);
       if !err {
         got = true;
         break;
       } else if err == EEOF {
         break;
       }
-      err = qio_channel_scan_literal(false, _channel_internal, _falses(i).c_str(), (_falses(i).length):ssize_t, 1);
+      err = qio_channel_scan_literal(false, _channel_internal, _falses(i), (_falses(i).length):ssize_t, 1);
       if !err {
         got = false;
         break;
@@ -1120,18 +1128,22 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
     err = qio_channel_scan_complex(false, _channel_internal, re, im, numBytes(x.re.type));
     x = (re, im):t; // cast tuple to complex to get complex num.
     return err;
-  } else if t == string {
-    // handle string
+  } else if (t == c_string) || (t == string) {
+    // handle c_string and string
     var len:int(64);
-    var ret = qio_channel_scan_string(false, _channel_internal, x, len, -1);
+    var tx: c_string;
+    var ret = qio_channel_scan_string(false, _channel_internal, tx, len, -1);
+    if t == c_string then x = tx;
+    // FIX ME: leak c_string
+    else x = toString(tx);
     __primitive("string_normalize", x, 1+len);  // See Note 1.
     return ret;
   } else if _isEnumeratedType(t) {
     var err:syserr = ENOERR;
     for i in chpl_enumerate(t) {
-      var str:string = i:string;
+      var str = i:c_string; // FIX ME: leak c_string
       var slen:ssize_t = str.length:ssize_t;
-      err = qio_channel_scan_literal(false, _channel_internal, str.c_str(), slen, 1);
+      err = qio_channel_scan_literal(false, _channel_internal, str, slen, 1);
       if !err {
         x = i;
         break;
@@ -1178,11 +1190,14 @@ proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):syserr wher
     var re = x.re;
     var im = x.im;
     return qio_channel_print_complex(false, _channel_internal, re, im, numBytes(x.re.type));
+  } else if t == c_string {
+    // handle c_string
+    return qio_channel_print_string(false, _channel_internal, x, x.length:ssize_t);
   } else if t == string {
     // handle string
     return qio_channel_print_string(false, _channel_internal, x.c_str(), x.length:ssize_t);
   } else if _isEnumeratedType(t) {
-    var s = x:string;
+    var s = x:c_string;
     return qio_channel_print_literal(false, _channel_internal, s, s.length:ssize_t);
   } else {
     compilerError("Unknown primitive type in _write_text_internal ", typeToString(t));
@@ -1225,10 +1240,14 @@ inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param byt
     err = qio_channel_read_complex(false, byteorder, _channel_internal, re, im, numBytes(x.re.type));
     x = (re, im):t; // cast tuple to complex to get complex num.
     return err;
-  } else if t == string {
-    // handle string
+  } else if (t == c_string) || (t == string) {
+    // handle c_string and string
     var len:int(64);
-    var ret = qio_channel_read_string(false, byteorder, qio_channel_str_style(_channel_internal), _channel_internal, x, len, -1);
+    var tx: c_string;
+    var ret = qio_channel_read_string(false, byteorder, qio_channel_str_style(_channel_internal), _channel_internal, tx, len, -1);
+    if t == c_string then x = tx;
+    // FIX ME: leak c_string
+    else x = toString(tx);
     __primitive("string_normalize", x, len+1);  // See Note 1.
     return ret;
   } else if _isEnumeratedType(t) {
@@ -1262,6 +1281,8 @@ inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, param by
     var re = x.re;
     var im = x.im;
     return qio_channel_write_complex(false, byteorder, _channel_internal, re, im, numBytes(x.re.type));
+  } else if t == c_string {
+    return qio_channel_write_string(false, byteorder, qio_channel_str_style(_channel_internal), _channel_internal, x, x.length: ssize_t);
   } else if t == string {
     return qio_channel_write_string(false, byteorder, qio_channel_str_style(_channel_internal), _channel_internal, x.c_str(), x.length: ssize_t);
   } else if _isEnumeratedType(t) {
@@ -1283,7 +1304,7 @@ inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:i
     return qio_channel_read_char(false, _channel_internal, x.ch);
   } else if t == ioLiteral {
     //writeln("in scan literal ", x.val);
-    return qio_channel_scan_literal(false, _channel_internal, x.val.c_str(), x.val.length: ssize_t, x.ignoreWhiteSpace);
+    return qio_channel_scan_literal(false, _channel_internal, x.val, x.val.length: ssize_t, x.ignoreWhiteSpace);
     //e = qio_channel_scan_literal(false, _channel_internal, x.val, x.val.length, x.ignoreWhiteSpace);
     //writeln("Scanning literal ", x.val,  " yeilded error ", e);
     //return e;
@@ -1374,15 +1395,18 @@ inline proc channel.read(inout args ...?k,
 var _arg_to_proto_names = ("a", "b", "c", "d", "e", "f");
 proc _args_to_proto(args ...?k,
                     preArg:string) {
-  var err_args:string = "";
+  // FIX ME: lot of potential leaking going on here with string concat
+  // But this is used for error handlling so maybe we don't care.
+  var err_args:c_string = "";
   for param i in 1..k {
-    var name:string;
-    if i <= _arg_to_proto_names.size then name = _arg_to_proto_names(i);
-    else name = "x" + i:string;
+    var name:c_string;
+    if i <= _arg_to_proto_names.size then name = _arg_to_proto_names[i];
+    else name = "x" + i:c_string;
     err_args += preArg + name + ":" + typeToString(args(i).type);
     if i != k then err_args += ", ";
   }
-  return err_args;
+  // FIX ME: leak c_string
+  return toString(err_args);
 }
 
 inline proc channel.read(ref args ...?k):bool {
@@ -2278,7 +2302,7 @@ proc channel._match_regexp_if_needed(cur:size_t, len:size_t, ref error:syserr, r
 // Assumes, for a reading channel, that we are withn a mark/revert/commit
 //  in readf. (used in the regexp handling here).
 proc channel._format_reader(
-    fmt:string, ref cur:size_t, len:size_t, ref error:syserr,
+    fmt:c_string, ref cur:size_t, len:size_t, ref error:syserr,
     ref conv:qio_conv_t, ref gotConv:bool, ref style:iostyle,
     ref r:_channel_regexp_info,
     isReadf:bool)
@@ -2291,7 +2315,7 @@ proc channel._format_reader(
       if error then break;
       if _format_debug then stdout.writeln("TOP OF LOOP cur=", cur, " len=", len);
       var end:uint(64);
-      error = qio_conv_parse(fmt.c_str(), cur, end, isReadf, conv, style);
+      error = qio_conv_parse(fmt, cur, end, isReadf, conv, style);
       if error {
         if _format_debug then stdout.writeln("TODO ACC");
       }
@@ -2698,6 +2722,10 @@ proc channel._read_complex(width:uint(32), out t:complex, i:int)
 
 // 1st arg is format string
 proc channel.writef(fmt:string, args ...?k, out error:syserr):bool {
+  return this.writef(fmt.c_str(), (...args), error);
+}
+
+proc channel.writef(fmt:c_string, args ...?k, out error:syserr):bool {
   if !writing then compilerError("writef on read-only channel");
   error = ENOERR;
   on this.home {
@@ -2849,7 +2877,13 @@ proc channel.writef(fmt:string, args ...?k, out error:syserr):bool {
   }
   return !error;
 }
+
+
 proc channel.writef(fmt:string, out error:syserr):bool {
+  return this.writef(fmt.c_str(), error);
+}
+
+proc channel.writef(fmt:c_string, out error:syserr):bool {
   if !writing then compilerError("writef on read-only channel");
   error = ENOERR;
   on this.home {
@@ -2891,6 +2925,10 @@ proc channel.writef(fmt:string, out error:syserr):bool {
 }
 
 proc channel.readf(fmt:string, ref args ...?k, out error:syserr):bool {
+  return this.readf(fmt.c_str(), (...args), error);
+}
+
+proc channel.readf(fmt:c_string, ref args ...?k, out error:syserr):bool {
   if writing then compilerError("readf on write-only channel");
   error = ENOERR;
   on this.home {
@@ -3128,6 +3166,10 @@ proc channel.readf(fmt:string, ref args ...?k, out error:syserr):bool {
 }
 
 proc channel.readf(fmt:string, out error:syserr):bool {
+  return this.readf(fmt.c_str(), error);
+}
+
+proc channel.readf(fmt:c_string, out error:syserr):bool {
   if writing then compilerError("readf on write-only channel");
   error = ENOERR;
   on this.home {
@@ -3174,9 +3216,11 @@ proc channel.readf(fmt:string, out error:syserr):bool {
   return !error;
 }
 
+proc channel.writef(fmt: string, args ...?k) {
+  return this.writef(fmt.c_str(), (...args));
+}
 
-
-proc channel.writef(fmt:string, args ...?k) {
+proc channel.writef(fmt:c_string, args ...?k) {
   var e:syserr = ENOERR;
   this.writef(fmt, (...args), error=e);
   if !e then return true;
@@ -3185,7 +3229,12 @@ proc channel.writef(fmt:string, args ...?k) {
     return false;
   }
 }
-proc channel.writef(fmt:string) {
+
+proc channel.writef(fmt: string) {
+  return this.writef(fmt.c_str());
+}
+
+proc channel.writef(fmt:c_string) {
   var e:syserr = ENOERR;
   this.writef(fmt, error=e);
   if !e then return true;
@@ -3195,8 +3244,11 @@ proc channel.writef(fmt:string) {
   }
 }
 
-
 proc channel.readf(fmt:string, ref args ...?k) {
+  return this.readf(fmt.c_str(), (...args));
+}
+
+proc channel.readf(fmt:c_string, ref args ...?k) {
   var e:syserr = ENOERR;
   this.readf(fmt, (...args), error=e);
   if !e then return true;
@@ -3209,6 +3261,10 @@ proc channel.readf(fmt:string, ref args ...?k) {
 }
 
 proc channel.readf(fmt:string) {
+  return this.readf(fmt.c_str());
+}
+
+proc channel.readf(fmt:c_string) {
   var e:syserr = ENOERR;
   this.readf(fmt, error=e);
   if !e then return true;
@@ -3220,16 +3276,16 @@ proc channel.readf(fmt:string) {
   }
 }
 
-proc writef(fmt:string, args ...?k):bool {
+proc writef(fmt:c_string, args ...?k):bool {
   return stdout.writef(fmt, (...args));
 }
-proc writef(fmt:string):bool {
+proc writef(fmt:c_string):bool {
   return stdout.writef(fmt);
 }
-proc readf(fmt:string, ref args ...?k):bool {
+proc readf(fmt:c_string, ref args ...?k):bool {
   return stdin.readf(fmt, (...args));
 }
-proc readf(fmt:string):bool {
+proc readf(fmt:c_string):bool {
   return stdin.readf(fmt);
 }
 
@@ -3268,7 +3324,10 @@ proc channel._extractMatch(m:reMatch, ref arg:string, ref error:syserr) {
   var s:string;
   if ! error {
     var gotlen:int(64);
-    error = qio_channel_read_string(false, iokind.native, stringStyleExactLen(len), _channel_internal, s, gotlen, len:ssize_t);
+    var ts: c_string;
+    error = qio_channel_read_string(false, iokind.native, stringStyleExactLen(len), _channel_internal, ts, gotlen, len:ssize_t);
+    // FIX ME: leak c_string
+    s = toString(ts);
     __primitive("string_normalize", s, gotlen+1);   // See Note 1.
   }
  

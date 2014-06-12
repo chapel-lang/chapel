@@ -188,7 +188,7 @@ void chpl_sync_unlock(chpl_sync_aux_t *s) {
 }
 
 void chpl_sync_waitFullAndLock(chpl_sync_aux_t *s, int32_t lineno,
-    chpl_string filename) {
+    c_string filename) {
   assert(!is_worker_in_cs());
   {
     //wait until F/E bit is empty, and acquire lock
@@ -197,7 +197,7 @@ void chpl_sync_waitFullAndLock(chpl_sync_aux_t *s, int32_t lineno,
 }
 
 void chpl_sync_waitEmptyAndLock(chpl_sync_aux_t *s, int32_t lineno,
-    chpl_string filename) {
+    c_string filename) {
   assert(!is_worker_in_cs());
   {
     myth_felock_wait_lock(s->lock, 0);
@@ -369,7 +369,7 @@ void chpl_task_stdModulesInitialized(void) {
 
 void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg, c_sublocid_t subLoc,
     chpl_task_list_p *task_list, int32_t task_list_locale,
-    chpl_bool is_begin_stmt, int lineno, chpl_string filename) {
+    chpl_bool is_begin_stmt, int lineno, c_string filename) {
   //Create a new task directly
   myth_thread_option opt;
   myth_thread_t th;

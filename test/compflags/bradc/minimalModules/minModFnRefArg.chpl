@@ -1,7 +1,7 @@
 pragma "trivial assignment"
 inline proc =(ref a: int(?w), b: int(w)) { __primitive("=", a, b); }
 
-extern proc printf(x...);
+extern proc printf(f:c_string, x...);
 proc foo(ref x) {
   printf("%d\n", x);
   x = 2: int(8);

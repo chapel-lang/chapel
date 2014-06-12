@@ -39,7 +39,7 @@ void _chpl_gc_cleanup(void);
 /* Allocate space in the from-space.  If not enough space exists,
    run a garbage collection cycle. */
 void* _chpl_gc_malloc(size_t number, size_t size, const char* description,
-                      int32_t lineno, chpl_string filename);
+                      int32_t lineno, c_string filename);
 
 /* Run a garbage collection cycle */
 void _chpl_gc_copy_collect(void);

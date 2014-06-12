@@ -2378,7 +2378,7 @@ VarSymbol *new_StringSymbol(const char *str) {
   imm.const_kind = CONST_KIND_STRING;
   imm.v_string = astr(str);
   VarSymbol *s = uniqueConstantsHash.get(&imm);
-  PrimitiveType* dtRetType = dtString;
+  PrimitiveType* dtRetType = dtStringC;
   if (s) {
     return s;
   }
@@ -2537,7 +2537,7 @@ static Type*
 immediate_type(Immediate *imm) {
   switch (imm->const_kind) {
     case CONST_KIND_STRING:
-      return dtString;
+      return dtStringC;
     case NUM_KIND_UINT:
       return dtUInt[imm->num_index];
     case NUM_KIND_INT:

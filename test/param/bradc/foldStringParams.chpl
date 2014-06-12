@@ -1,4 +1,4 @@
-config param s: string = "true";
+config param s = "true";
 
 proc main() {
   if (s == "true") then

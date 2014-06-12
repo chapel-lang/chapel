@@ -42,7 +42,7 @@ typedef struct task_pool_struct {
   void*            arg;          // argument to the function
   chpl_bool        begun;        // whether execution of this task has begun
   chpl_task_list_p ltask;        // points to the task list entry, if there is one
-  chpl_string      filename;
+  c_string         filename;
   int              lineno;
   chpl_task_prvDataImpl_t chpl_data;
   task_pool_p      next;
@@ -60,7 +60,7 @@ struct chpl_task_list {
   void* arg;
   chpl_task_prvDataImpl_t chpl_data;
   volatile task_pool_p ptask; // when null, execution of the associated task has begun
-  chpl_string filename;
+  c_string filename;
   int lineno;
   chpl_task_list_p next;
 };
@@ -126,7 +126,7 @@ static lockReport_t* lockReportTail = NULL;
 static chpl_bool do_taskReport = false;
 static chpl_thread_mutex_t taskTable_lock;     // critical section lock
 
-static chpl_string idleTaskName = "|idle|";
+static c_string idleTaskName = "|idle|";
 
 static chpl_fn_p comm_task_fn;
 
@@ -140,7 +140,7 @@ static void                    report_locked_threads(void);
 static void                    report_all_tasks(void);
 static void                    SIGINT_handler(int sig);
 static void                    initializeLockReportForThread(void);
-static chpl_bool               set_block_loc(int, chpl_string);
+static chpl_bool               set_block_loc(int, c_string);
 static void                    unset_block_loc(void);
 static void                    check_for_deadlock(void);
 static void                    thread_begin(void*);
@@ -171,7 +171,7 @@ static void chpl_thread_sync_awaken(chpl_sync_aux_t *s);
 
 static void sync_wait_and_lock(chpl_sync_aux_t *s,
                                chpl_bool want_full,
-                               int32_t lineno, chpl_string filename) {
+                               int32_t lineno, c_string filename) {
   chpl_bool suspend_using_cond;
 
   chpl_thread_mutexLock(&s->lock);
@@ -235,12 +235,12 @@ void chpl_sync_unlock(chpl_sync_aux_t *s) {
 }
 
 void chpl_sync_waitFullAndLock(chpl_sync_aux_t *s,
-                                  int32_t lineno, chpl_string filename) {
+                                  int32_t lineno, c_string filename) {
   sync_wait_and_lock(s, true, lineno, filename);
 }
 
 void chpl_sync_waitEmptyAndLock(chpl_sync_aux_t *s,
-                                   int32_t lineno, chpl_string filename) {
+                                   int32_t lineno, c_string filename) {
   sync_wait_and_lock(s, false, lineno, filename);
 }
 
@@ -461,7 +461,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg,
                              int32_t task_list_locale,
                              chpl_bool is_begin_stmt,
                              int lineno,
-                             chpl_string filename) {
+                             c_string filename) {
   chpl_task_prvDataImpl_t chpl_data = {
     .prvdata = { .serial_state = chpl_task_getSerial() } };
 
@@ -1033,7 +1033,7 @@ static void initializeLockReportForThread(void) {
 // may be deadlocked, indicating that the thread should use a timeout
 // deadline on its suspension if possible, and false otherwise.
 //
-static chpl_bool set_block_loc(int lineno, chpl_string filename) {
+static chpl_bool set_block_loc(int lineno, c_string filename) {
   thread_private_data_t* tp;
   chpl_bool isLastUnblockedThread;
 

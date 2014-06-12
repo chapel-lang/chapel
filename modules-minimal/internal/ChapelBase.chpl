@@ -4,6 +4,8 @@
 pragma "no use ChapelStandard"
 module ChapelBase {
 
+  pragma "default string value" extern var defaultStringValue: string = noinit;
+
   //
   // internal reference type
   //

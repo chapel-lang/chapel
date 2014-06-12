@@ -1064,6 +1064,8 @@ canInstantiate(Type* actualType, Type* formalType) {
       (is_int_type(actualType) || is_uint_type(actualType) || is_imag_type(actualType) ||
        is_real_type(actualType) || is_complex_type(actualType)))
     return true;
+  if (formalType == dtString && actualType==dtStringC)
+    return true;
   if (formalType == dtIteratorRecord && actualType->symbol->hasFlag(FLAG_ITERATOR_RECORD))
     return true;
   if (formalType == dtIteratorClass && actualType->symbol->hasFlag(FLAG_ITERATOR_CLASS))
@@ -1178,6 +1180,15 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
   }
   if (actualType->symbol->hasFlag(FLAG_REF))
     return canDispatch(actualType->getValType(), NULL, formalType, fn, promotes);
+  if ((((toVarSymbol(actualSym) || toArgSymbol(actualSym))) &&
+       (actualType==dtStringC)) && (formalType == dtString))
+    /*** ((toVarSymbol(actualSym) &&
+        (toVarSymbol(actualSym)->typeInfo()==dtStringC)) ||
+       ((toArgSymbol(actualSym) &&
+       toArgSymbol(actualSym)->typeInfo()==dtStringC))) &&
+       (formalType == dtString)) ***/
+    // I'm wondering if I can just use actualType here
+    return true;
   return false;
 }
 
@@ -1373,8 +1384,22 @@ computeGenericSubs(SymbolMap &subs,
         USR_FATAL(formal, "invalid generic type specification on class field");
 
       if (alignedActuals.v[i]) {
-        if (Type* type = getInstantiationType(alignedActuals.v[i]->type, formal->type))
-          subs.put(formal, type->symbol);
+        if (Type* type = getInstantiationType(alignedActuals.v[i]->type, formal->type)) {
+          // String literal actuals aligned with non-param generic
+          // formals of type dtAny will result in an instantiation of
+          // a dtString formal.  This is in line with variable
+          // declarations with non-typed initializing expressions and
+          // non-param formals with string literal default expressions
+          // (see fix_def_expr() and hack_resolve_types() in
+          // normalize.cpp).
+          if ((formal->type == dtAny) && (!formal->hasFlag(FLAG_PARAM)) &&
+              (type == dtStringC) &&
+              (alignedActuals.v[i]->type == dtStringC) &&
+              (alignedActuals.v[i]->isImmediate()))
+            subs.put(formal, dtString->symbol);
+          else
+            subs.put(formal, type->symbol);
+        }
       } else if (formal->defaultExpr) {
 
         // break because default expression may reference generic
@@ -4517,7 +4542,7 @@ preFold(Expr* expr) {
                      is_bool_type(src)) &&
                     (is_int_type(dst) || is_uint_type(dst) ||
                      is_bool_type(dst) || is_enum_type(dst) ||
-                     dst == dtString)) {
+                     (dst == dtStringC))) {
                   VarSymbol* typevar = toVarSymbol(dst->defaultValue);
                   EnumType* typeenum = toEnumType(dst);
                   if (typevar) {
@@ -4557,7 +4582,7 @@ preFold(Expr* expr) {
           } else if (EnumSymbol* enumSym = toEnumSymbol(sym->var)) {
             if (SymExpr* sym = toSymExpr(call->get(1))) {
               Type* dst = sym->var->type;
-              if (dst == dtString) {
+              if (dst == dtStringC) {
                 result = new SymExpr(new_StringSymbol(enumSym->name));
                 call->replace(result);
               }
@@ -5249,7 +5274,7 @@ postFold(Expr* expr) {
       if (t == dtUnknown)
         INT_FATAL(call, "Unable to resolve type");
       call->get(1)->replace(new SymExpr(t->symbol));
-    } else if (call->isPrimitive("chpl_string_compare")) {
+    } else if (call->isPrimitive("string_compare")) {
       SymExpr* lhs = toSymExpr(call->get(1));
       SymExpr* rhs = toSymExpr(call->get(2));
       INT_ASSERT(lhs && rhs);

@@ -285,7 +285,7 @@ typedef struct {
 typedef struct {
     void                     *fn;
     void                     *args;
-    chpl_string              task_filename;
+    c_string                 task_filename;
     int                      lineno;
     chpl_bool                countRunning;
     chpl_task_prvDataImpl_t  chpl_data;
@@ -296,7 +296,7 @@ typedef struct chpl_qthread_tls_s {
     /* Task private data: serial state, etc. */
     chpl_task_prvDataImpl_t chpl_data;
     /* Reports */
-    chpl_string lock_filename;
+    c_string    lock_filename;
     size_t      lock_lineno;
     const char *task_filename;
     size_t      task_lineno;
