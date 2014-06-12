@@ -4,7 +4,9 @@
 # flags if -full option is passed. The log files have distinct names for
 # -examples and -full options.
 
-source $(cd $(dirname $0) ; pwd)/common.bash
+CWD=$(cd $(dirname $0) ; pwd)
+
+source $CWD/common.bash
 
 if [ "${1}" == "-examples" ] ; then
     examples_opt="-examples -no-futures"
@@ -23,7 +25,5 @@ fi
 #
 # Verify full suite.
 #
-export LOGFILE=~/tmp/nightly.verify.$tests_to_run.out
-log_info "Running verifications on test suite: ${tests_to_run}. Log file: $LOGFILE"
-
-with_logging $LOGFILE $CHPL_HOME/util/cron/nightly -cron $examples_opt -verify
+log_info "Running verifications on test suite: ${tests_to_run}."
+$CWD/nightly -cron $examples_opt -verify
