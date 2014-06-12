@@ -39,8 +39,7 @@ div.lspacer {
     height: 20px;
     border: 1px solid grey;
     padding: 0px 5px;
-    /* change margin back to 5px 10px 0px 0px when annotations are added */
-    margin: 0px 10px 0px 0px;
+    margin: 5px 10px 0px 0px;
 }
 .blackAnnotation {
   color: black !important;

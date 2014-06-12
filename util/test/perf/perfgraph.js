@@ -197,10 +197,7 @@ function genDygraph(graphInfo, expandInfo) {
     // here that way they don't show up before the graph does.
     g.ready(function() {
         setupLogToggle(g, graphInfo, logToggle);
-        // Keep hidden for now until we actually have annotations. When we have
-        // annotations. Keeps annotaiton button hidden, and prevents redraw
-        // from setting the annotations. When enabled look in perfgraph.css too
-        // setupAnnToggle(g, graphInfo, annToggle);
+        setupAnnToggle(g, graphInfo, annToggle);
         numGraphsReady += 1;
     });
 
@@ -324,9 +321,6 @@ function setupLogToggle(g, graphInfo, logToggle) {
 // Setup the annotation button
 function setupAnnToggle(g, graphInfo, annToggle) {
     annToggle.style.visibility = 'visible';
-
-    // set the annotations for the graph
-    g.setAnnotations(graphInfo.annotations);
 
     annToggle.onclick = function() {
         if (g.annotations().length === 0) {
