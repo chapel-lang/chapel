@@ -352,9 +352,19 @@ static void initializeClass(Expr* stmt, Symbol* sym);
 static void pruneResolvedTree();
 static void removeUnusedFunctions();
 static void removeUnusedTypes();
-static void buildRuntimeTypeInitFns();
-static void removeRandomJunk();
+static void buildRuntimeTypeInitFns(); 
+static void removeUnusedGlobals();
+static void removeRandomCalls();
+static void removeActualNames();
+static void removeTypeBlocks();
 static void removeUnusedFormals();
+static void removeFormalTypeAndInitBlocks();
+static void removeMethodTokenFormals();
+static void removeInstantiatedParams();
+static void replaceTypeArgsWithFormalTypeTemps();
+static void replaceValuesWithRuntimeTypes();
+static void removeWhereClauses();
+static void replaceReturnedValuesWIthRuntimeTypes();
 static void insertRuntimeInitTemps();
 static void removeInitFields();
 static void removeMootFields();
@@ -6830,11 +6840,10 @@ pruneResolvedTree() {
   removeUnusedFunctions();
   removeUnusedTypes();
 
-  // Ideally positioned to lose the "best function name" contest. Suggestions?
-  // insertRuntimeTypeTemps() can insert method calls including the
-  // methodToken argument.  removeRandomJunk() needs to come after it to
-  // remove the methodToken.
-  removeRandomJunk();
+  removeUnusedGlobals();
+  removeRandomCalls();
+  removeActualNames();
+  removeTypeBlocks();
 
   buildRuntimeTypeInitFns();
   removeUnusedFormals();
@@ -7051,15 +7060,6 @@ static void removeTypeBlocks()
   }
 }
 
-static void removeRandomJunk()
-{
-  removeUnusedGlobals();
-  removeRandomCalls();
-  removeActualNames();
-  removeTypeBlocks();
-}
-
-
 //
 // buildRuntimeTypeInitFns: Build a 'chpl__convertRuntimeTypeToValue'
 // (value) function for all functions tagged as runtime type
@@ -7157,9 +7157,19 @@ static void buildRuntimeTypeInitFns() {
 }
 
 static void removeUnusedFormals() {
+  removeFormalTypeAndInitBlocks();
+  removeMethodTokenFormals();
+  removeInstantiatedParams();
+  replaceTypeArgsWithFormalTypeTemps();
+  replaceValuesWithRuntimeTypes();
+  removeWhereClauses();
+  replaceReturnedValuesWIthRuntimeTypes();
+}
+
+static void removeFormalTypeAndInitBlocks()
+{
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->defPoint && fn->defPoint->parentSymbol) {
-      Vec<SymExpr*> symExprs;
       for_formals(formal, fn) {
         // Remove formal default values
         if (formal->defaultExpr)
@@ -7167,9 +7177,42 @@ static void removeUnusedFormals() {
         // Remove formal type expressions
         if (formal->typeExpr)
           formal->typeExpr->remove();
-        // Remove method and leader token formals
-        if (formal->type == dtMethodToken || formal->hasFlag(FLAG_INSTANTIATED_PARAM))
+      }
+    }
+  }
+}
+
+static void removeMethodTokenFormals()
+{
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->defPoint && fn->defPoint->parentSymbol) {
+      for_formals(formal, fn) {
+        // Remove method token formals
+        if (formal->type == dtMethodToken)
           formal->defPoint->remove();
+      }
+    }
+  }
+}
+
+static void removeInstantiatedParams()
+{
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->defPoint && fn->defPoint->parentSymbol) {
+      for_formals(formal, fn) {
+        if (formal->hasFlag(FLAG_INSTANTIATED_PARAM))
+          formal->defPoint->remove();
+      }
+    }
+  }
+}
+
+static void replaceTypeArgsWithFormalTypeTemps()
+{
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->defPoint && fn->defPoint->parentSymbol) {
+      Vec<SymExpr*> symExprs;
+      for_formals(formal, fn) {
         if (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
             (!formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
              !fn->hasFlag(FLAG_EXTERN))) {
@@ -7188,6 +7231,16 @@ static void removeUnusedFormals() {
             }
           }
         }
+      }
+    }
+  }
+}
+
+static void replaceValuesWithRuntimeTypes()
+{
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->defPoint && fn->defPoint->parentSymbol) {
+      for_formals(formal, fn) {
         if (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
             formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
           if (FnSymbol* fn = valueToRuntimeTypeMap.get(formal->type)) {
@@ -7199,8 +7252,24 @@ static void removeUnusedFormals() {
           }
         }
       }
+    }
+  }
+}
+
+static void removeWhereClauses()
+{
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->defPoint && fn->defPoint->parentSymbol) {
       if (fn->where)
         fn->where->remove();
+    }
+  }
+}
+
+static void replaceReturnedValuesWIthRuntimeTypes()
+{
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->defPoint && fn->defPoint->parentSymbol) {
       if (fn->retTag == RET_TYPE) {
         VarSymbol* ret = toVarSymbol(fn->getReturnSymbol());
         if (ret && ret->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
