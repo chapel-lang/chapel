@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 
-source $(cd $(dirname $0) ; pwd)/common.bash
+CWD=$(cd $(dirname $0) ; pwd)
+
+source $CWD/common.bash
 
 # qthreads + numa + none
-~/chapel/util/cron/nightly.numa -full
+$CWD/nightly.numa -full
 
 # This should be common-gasnet.bash, but since it also sources
 # common.bash, we copy it here
@@ -15,4 +17,4 @@ export CHPL_GASNET_CFG_OPTIONS=--disable-ibv
 export GASNET_QUIET=Y
 
 # qthreads + numa + gasnet + multilocale suite
-~/chapel/util/cron/nightly.numa -multilocale
+$CWD/nightly.numa -multilocale
