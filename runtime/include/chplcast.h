@@ -78,14 +78,14 @@ c_string chpl_bool64_to_c_string(chpl_bool64 x) {
   return x ? "true" : "false";
 }
 
-static __always_inline
+static ___always_inline
 c_string chpl_string_to_c_string(chpl_string s, int lineno, c_string filename) {
   c_string ret;
   c_string_from_string(&ret, &s, -1, "");
   return ret; // leaky?
 }
 
-static __always_inline
+static ___always_inline
 chpl_string c_string_to_chpl_string(c_string s, int lineno, c_string filename) {
   chpl_string ret;
   string_from_c_string(&ret, s, 0, -1, -1, "");
