@@ -293,19 +293,15 @@ def get_arch_flag(location, map_to_compiler=False):
     if arch == 'none':
         return arch
 
-    chpl_home = os.environ.get('CHPL_HOME', '')
-    if not chpl_home:
-        dirname = os.path.dirname
-        chpl_home  = dirname(dirname(dirname(os.path.realpath(__file__))))
-        logger.warn('CHPL_HOME not set, assuming "%s"', chpl_home)
+    util_dir = os.path.dirname(os.path.realpath(__file__))
 
-    comm_path = os.path.join(chpl_home, 'util', 'chplenv', 'comm')
+    comm_path = os.path.join(util_dir, 'comm')
     comm = run_command([comm_path, '--'+location]).strip()
 
-    compiler_path = os.path.join(chpl_home, 'util', 'chplenv', 'compiler')
+    compiler_path = os.path.join(util_dir, 'compiler')
     compiler = run_command([compiler_path, '--'+location]).strip()
 
-    platform_path = os.path.join(chpl_home, 'util', 'chplenv', 'platform')
+    platform_path = os.path.join(util_dir, 'platform')
     platform = run_command([platform_path, '--'+location]).strip()
 
     if 'cray-prgenv' in compiler:
