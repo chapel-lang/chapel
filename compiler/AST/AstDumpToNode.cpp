@@ -50,7 +50,7 @@ AstDumpToNode::AstDumpToNode()
  
 AstDumpToNode::~AstDumpToNode()
 {
-  if (mFP != 0)
+  if (mPath != 0 && mFP != 0)
   {
     close();
   }
@@ -690,9 +690,10 @@ void AstDumpToNode::visitPrimType(PrimitiveType* node)
 bool AstDumpToNode::enterArgSym(ArgSymbol* node)
 {
   newline();
-  fprintf(mFP, "#<ArgSymbol ");
+  fprintf(mFP, "#<ArgSymbol  ");
 
   mOffset = mOffset + 2;
+
   ast_symbol(node, true);
 
   if (node->typeExpr)
@@ -817,11 +818,13 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
     sprintf(name, "%s.%s", mod->name, sym->name);
 
   if (false)
-    ;
+  {
+
+  }
   
   else if (isArgSymbol(sym) == true)
   {
-    fprintf(mFP, "#<ArgSymbol name: %s", name);
+    fprintf(mFP, "#<ArgSymbol    name: %-36s", name);
 
     if (sym->type != 0)
     {
@@ -836,7 +839,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
 
   else if (isEnumSymbol(sym) == true)
   {
-    fprintf(mFP, "#EnumSymbol name: %s", name);
+    fprintf(mFP, "#<EnumSymbol   name: %-36s", name);
 
     if (sym->type != 0)
     {
@@ -851,7 +854,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
 
   else if (isFnSymbol(sym) == true)
   {
-    fprintf(mFP, "#<FnSymbol name: %s", name);
+    fprintf(mFP, "#<FnSymbol     name: %-36s", name);
 
     if (sym->type != 0)
     {
@@ -866,7 +869,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
 
   else if (isLabelSymbol(sym) == true)
   {
-    fprintf(mFP, "#<LabelSymbol name: %s", name);
+    fprintf(mFP, "#<LabelSymbol  name: %-36s", name);
 
     if (sym->type != 0)
     {
@@ -881,7 +884,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
 
   else if (isModuleSymbol(sym) == true)
   {
-    fprintf(mFP, "#<ModuleSymbol name: %s ", name);
+    fprintf(mFP, "#<ModuleSymbol name: %-36s ", name);
 
     if (sym->type != 0)
     {
@@ -897,7 +900,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
   
   else if (isTypeSymbol(sym) == true)
   {
-    fprintf(mFP, "#<TypeSymbol name: %s", name);
+    fprintf(mFP, "#<TypeSymbol   name: %-36s", name);
 
     if (sym->type != 0)
     {
@@ -927,7 +930,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
         *tail   = '\0';
       }
 
-      fprintf(mFP, "#<VarSymbol imm:  %s", imm);
+      fprintf(mFP, "#<VarSymbol    imm:  %-36s", imm);
 
       if (sym->type) 
       {
@@ -943,7 +946,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
 
     else
     {
-      fprintf(mFP, "#<VarSymbol name: %s", name);
+      fprintf(mFP, "#<VarSymbol    name: %-36s", name);
 
       if (sym->type) 
       {

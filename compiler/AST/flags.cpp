@@ -45,7 +45,7 @@ initFlags() {
 void writeFlags(FILE* fp, Symbol* sym) {
   form_Map(FlagMapElem, e, flagMap) {
     if (sym->flags[e->value]) {
-      fprintf(fp, "\"%s\"", e->key);
+      fprintf(fp, " \"%s\"", e->key);
     }
   }
 }
