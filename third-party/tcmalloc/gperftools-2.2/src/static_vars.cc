@@ -42,6 +42,9 @@
 #include "common.h"
 #include "sampler.h"           // for Sampler
 #include "base/googleinit.h"
+#include "thread_cache.h"
+
+using tcmalloc::ThreadCache;
 
 namespace tcmalloc {
 
@@ -97,7 +100,9 @@ void Static::InitStaticVars() {
   // which leads to it missing some memory leaks.
   pageheap_ = new (MetaDataAlloc(sizeof(PageHeap))) PageHeap;
   DLL_Init(&sampled_objects_);
+#ifndef NO_TCMALLOC_SAMPLES
   Sampler::InitStatics();
+#endif
 }
 
 
@@ -117,6 +122,9 @@ REGISTER_MODULE_INITIALIZER(tcmalloc_fork_handler, SetupAtForkLocksHandler());
 static
 void SetupAggressiveDecommit()
 {
+#if !defined(LIBC_MALLOC_OVERRIDE)
+  ThreadCache::InitModule();
+#endif
   Static::pageheap()->SetAggressiveDecommit(EnvToBool("TCMALLOC_AGGRESSIVE_DECOMMIT", false));
 }
 REGISTER_MODULE_INITIALIZER(tcmalloc_setup_aggressive_decommit, SetupAggressiveDecommit());

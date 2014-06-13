@@ -216,6 +216,12 @@ AC_CHECK_LIB(unwind, backtrace, UNWIND_LIBS=-lunwind,
              [AC_CHECK_LIB(execinfo, backtrace, UNWIND_LIBS=-lexecinfo, UNWIND_LIBS=)])
 AC_SUBST(UNWIND_LIBS)
 
+AC_ARG_ENABLE(libc_malloc_override,
+              AS_HELP_STRING([--enable-libc-malloc-override],
+                             [make the tcmalloc entry points override their libc malloc counterparts [default=yes]]),
+              , enable_libc_malloc_override=yes)
+ AM_CONDITIONAL(ENABLE_LIBC_MALLOC_OVERRIDE, test "$enable_libc_malloc_override" = yes)
+
 # On x86_64, instead of libunwind, we can choose to compile with frame-pointers.
 AC_ARG_ENABLE(frame_pointers,
               AS_HELP_STRING([--enable-frame-pointers],

@@ -58,6 +58,7 @@
 #endif
 #include <gperftools/tcmalloc.h>
 
+#if defined(LIBC_MALLOC_OVERRIDE)
 static void ReplaceSystemAlloc();  // defined in the .h files below
 
 // For windows, there are two ways to get tcmalloc.  If we're
@@ -72,9 +73,6 @@ static void ReplaceSystemAlloc() { PatchWindowsFunctions(); }
 #elif defined(_WIN32) && !defined(WIN32_DO_PATCHING)
 #include "libc_override_redefine.h"
 
-#elif defined(__APPLE__)
-#include "libc_override_osx.h"
-
 #elif defined(__GLIBC__)
 #include "libc_override_glibc.h"
 
@@ -86,6 +84,12 @@ static void ReplaceSystemAlloc() { PatchWindowsFunctions(); }
 #else
 #error Need to add support for your libc/OS here
 
+#endif
+
+#endif
+
+#if defined(__APPLE__)
+#include "libc_override_osx.h"
 #endif
 
 #endif  // TCMALLOC_LIBC_OVERRIDE_INL_H_

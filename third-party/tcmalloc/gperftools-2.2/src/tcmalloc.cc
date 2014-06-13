@@ -178,7 +178,7 @@ DECLARE_double(tcmalloc_release_rate);
 #ifdef _WIN32
 const int64 kDefaultLargeAllocReportThreshold = static_cast<int64>(1) << 62;
 #else
-const int64 kDefaultLargeAllocReportThreshold = static_cast<int64>(1) << 30;
+const int64 kDefaultLargeAllocReportThreshold = 0;
 #endif
 DEFINE_int64(tcmalloc_large_alloc_report_threshold,
              EnvToInt64("TCMALLOC_LARGE_ALLOC_REPORT_THRESHOLD",
@@ -917,7 +917,9 @@ TCMallocGuard::TCMallocGuard() {
     // Check whether the kernel also supports TLS (needs to happen at runtime)
     tcmalloc::CheckIfKernelSupportsTLS();
 #endif
+#if defined(LIBC_MALLOC_OVERRIDE)
     ReplaceSystemAlloc();    // defined in libc_override_*.h
+#endif
     tc_free(tc_malloc(1));
     ThreadCache::InitTSD();
     tc_free(tc_malloc(1));
@@ -1008,6 +1010,7 @@ namespace {
 // automatic increases factored in.
 static int64_t large_alloc_threshold =
   (kPageSize > FLAGS_tcmalloc_large_alloc_report_threshold
+   && FLAGS_tcmalloc_large_alloc_report_threshold > 0
    ? kPageSize : FLAGS_tcmalloc_large_alloc_report_threshold);
 
 static void ReportLargeAlloc(Length num_pages, void* result) {

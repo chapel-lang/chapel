@@ -63,6 +63,10 @@ else !GCC
 NO_EXCEPTIONS =
 endif !GCC
 
+if ENABLE_LIBC_MALLOC_OVERRIDE
+AM_CXXFLAGS += -DLIBC_MALLOC_OVERRIDE
+endif ENABLE_LIBC_MALLOC_OVERRIDE
+
 # These are x86-specific, having to do with frame-pointers.  In
 # particular, some x86_64 systems do not insert frame pointers by
 # default (all i386 systems that I know of, do.  I don't know about
@@ -98,6 +102,9 @@ if HAVE_OBJCOPY_WEAKEN
 WEAKEN = $(OBJCOPY) -W malloc -W free -W realloc -W calloc -W cfree \
          -W memalign -W posix_memalign -W valloc -W pvalloc \
          -W malloc_stats -W mallopt -W mallinfo \
+         -W __libc_malloc -W __libc_free -W __libc_realloc -W __libc_calloc \
+         -W __libc_memalign -W __posix_memalign \
+         -W __libc_valloc -W __libc_pvalloc \
          -W _Znwm -W _ZnwmRKSt9nothrow_t -W _Znam -W _ZnamRKSt9nothrow_t \
          -W _ZdlPv -W _ZdaPv \
          -W __Znwm -W __ZnwmRKSt9nothrow_t -W __Znam -W __ZnamRKSt9nothrow_t \
