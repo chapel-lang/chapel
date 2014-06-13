@@ -8,31 +8,31 @@ var sng: single int;     test("single", sng);
 compilerError("done"); // no need for a C compile
 
 proc test(param msg, ref v) {
-  compilerWarning(msg + " is a class:  " + isClassType(v.type):string);
-  compilerWarning(msg + " is a record: " + isRecordType(v.type):string);
-  compilerWarning(msg + " is a union:  " + isUnionType(v.type):string);
-  compilerWarning(msg + " is a sync:   " + _isSyncType(v.type):string
+  compilerWarning(msg + " is a class:  " + isClassType(v.type):c_string);
+  compilerWarning(msg + " is a record: " + isRecordType(v.type):c_string);
+  compilerWarning(msg + " is a union:  " + isUnionType(v.type):c_string);
+  compilerWarning(msg + " is a sync:   " + _isSyncType(v.type):c_string
                   + " / " + _isSync(v));
-  compilerWarning(msg + " is a single: " + _isSingleType(v.type):string
+  compilerWarning(msg + " is a single: " + _isSingleType(v.type):c_string
                   + " / " + _isSingle(v));
 }
 
 proc test(param msg, ref v: sync) {
-  compilerWarning(msg + " is a class:  " + isClassType(v.type):string);
-  compilerWarning(msg + " is a record: " + isRecordType(v.type):string);
-  compilerWarning(msg + " is a union:  " + isUnionType(v.type):string);
-  compilerWarning(msg + " is a sync:   " + _isSyncType(v.type):string
+  compilerWarning(msg + " is a class:  " + isClassType(v.type):c_string);
+  compilerWarning(msg + " is a record: " + isRecordType(v.type):c_string);
+  compilerWarning(msg + " is a union:  " + isUnionType(v.type):c_string);
+  compilerWarning(msg + " is a sync:   " + _isSyncType(v.type):c_string
                   + " / " + _isSync(v));
-  compilerWarning(msg + " is a single: " + _isSingleType(v.type):string
+  compilerWarning(msg + " is a single: " + _isSingleType(v.type):c_string
                   + " / " + _isSingle(v));
 }
 
 proc test(param msg, ref v: single) {
-  compilerWarning(msg + " is a class:  " + isClassType(v.type):string);
-  compilerWarning(msg + " is a record: " + isRecordType(v.type):string);
-  compilerWarning(msg + " is a union:  " + isUnionType(v.type):string);
-  compilerWarning(msg + " is a sync:   " + _isSyncType(v.type):string
+  compilerWarning(msg + " is a class:  " + isClassType(v.type):c_string);
+  compilerWarning(msg + " is a record: " + isRecordType(v.type):c_string);
+  compilerWarning(msg + " is a union:  " + isUnionType(v.type):c_string);
+  compilerWarning(msg + " is a sync:   " + _isSyncType(v.type):c_string
                   + " / " + _isSync(v));
-  compilerWarning(msg + " is a single: " + _isSingleType(v.type):string
+  compilerWarning(msg + " is a single: " + _isSingleType(v.type):c_string
                   + " / " + _isSingle(v));
 }
