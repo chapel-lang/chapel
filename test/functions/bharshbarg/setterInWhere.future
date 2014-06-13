@@ -1,0 +1,10 @@
+bug: setter in where clause fails to compile
+
+compiler output:
+setterInWhere.chpl:7: In function 'this':
+setterInWhere.chpl:7: error: invalid where clause [generics.cpp:267]
+
+from hilde:
+The compiler is wrapping the "setter" symbol in a call to _statementLevelSymbol().
+
+As I understand it _statementLevelSymbol() calls are intended to 'dereference' references to sync and single variables.  So that suggests that expression folding should be able to punch through the call and just return the original "setter" reference.  Another approach would be to apply the _statementLevelSymbol calls more judiciously.
