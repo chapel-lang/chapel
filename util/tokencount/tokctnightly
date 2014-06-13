@@ -72,7 +72,7 @@ if ($debug == 1) {
 #
 $tmpdir = "/tmp/chapel-tokctnightly-uw.$user.$pid.deleteme";
 $chapeldir = "$tmpdir/chapel";
-$logdir = "/data/sea/cascade/chapel/Nightly";
+$logdir = "/data/sea/chapel/Nightly";
 $statdir = "$logdir/Stats";
 if ($debug == 1) {
     $statfile = "$statdir/tokctnightly.debug.dat";

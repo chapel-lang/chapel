@@ -119,7 +119,7 @@ esac
 #       system hierarchy. (thomasvandoren, 2014-01-24)
 
 default_prefix=${TMPDIR:-/tmp}/chapel_logs
-cascade_prefix=/data/sea/cascade/chapel
+cascade_prefix=/data/sea/chapel
 if [ -d $cascade_prefix ] ; then
     logdir_prefix=$cascade_prefix
 else

@@ -248,9 +248,9 @@ $cronlogdir = $ENV{'CHPL_NIGHTLY_CRON_LOGDIR'};
 $host = hostname;
 if ($cronlogdir eq "") {
     if ($performance == 1) {
-        $cronlogdir = "/data/sea/cascade/chapel/NightlyPerformance/$host";
+        $cronlogdir = "/data/sea/chapel/NightlyPerformance/$host";
     } else {
-        $cronlogdir = "/data/sea/cascade/chapel/Nightly";
+        $cronlogdir = "/data/sea/chapel/Nightly";
     }
 }
 
@@ -754,7 +754,7 @@ if ($runtests == 0) {
     close(MAIL);
     
 } else {
-    my $svnPerfBaseDir =  "/data/sea/cascade/chapel/NightlyPerformance/";
+    my $svnPerfBaseDir =  "/data/sea/chapel/NightlyPerformance/";
     my $svnPerfDir = "$svnPerfBaseDir/$host";
     my $svnPerfMsgXtra = ".\nData dir: $svnPerfDir\n(Testing continues despite failure.) Error code";
     if ($performance == 1 || $compperformance == 1) {

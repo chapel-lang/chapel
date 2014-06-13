@@ -25,8 +25,8 @@ fi
 echo `date` "" Starting $0 on `hostname`. EXAMPLES=$EXAMPLES. dayType=$dayType.; module list; printenv; echo
 
 
-export CHPL_NIGHTLY_LOGDIR=/data/sea/cascade/chapel/Nightly${dayType}
-export CHPL_NIGHTLY_STATDIR=/data/sea/cascade/chapel/Nightly${dayType}/Stats
+export CHPL_NIGHTLY_LOGDIR=/data/sea/chapel/Nightly${dayType}
+export CHPL_NIGHTLY_STATDIR=/data/sea/chapel/Nightly${dayType}/Stats
 export CHPL_NIGHTLY_CRON_LOGDIR="$CHPL_NIGHTLY_LOGDIR"
 
 CHPL_HOME="$HOME/chapel"
