@@ -1545,6 +1545,7 @@ for testname in testsrc:
                     status = p.returncode
                     if not exectimeout:
                         if status == 0:
+                            os.unlink(execlog)
                             sys.stdout.write('[Success')
                         else:
                             sys.stdout.write('[Error')
