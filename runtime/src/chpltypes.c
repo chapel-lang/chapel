@@ -54,8 +54,9 @@ c_string chpl_format(c_string format, ...) {
   char z[128];
 
   va_start(ap, format);
-  if (!vsnprintf(z, 127, format, ap))
+  if (vsnprintf(z, sizeof(z), format, ap) >= sizeof(z))
     chpl_error("overflow encountered in format", 0, 0);
+  va_end(ap);
   return string_copy(z, 0, 0);
 }
 
