@@ -386,10 +386,6 @@ darwin-gnu/mac-specific regressions
 (started full testing 12/14)
 ===================================
 
-warnings from arch.py and as due to r23459
-------------------------------------------
-[Error matching program output for release/examples/benchmarks/shootout/mandelbrot]
-
 Bad .bad file
 -------------
 [Error matching .bad file for functions/gbt/retRecordMultiDef]
