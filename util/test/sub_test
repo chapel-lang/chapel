@@ -473,12 +473,15 @@ timeoutsuffix  = PerfSfx('timeout')   # .timeout  or .perftimeout  or ...
 # sys.stdout.write('perftest=%d perflabel=%s\n'%(perftest,perflabel))
 
 # Get global timeout
-if os.access('./TIMEOUT',os.R_OK):
-    globalTimeout = ReadIntegerValue('./TIMEOUT', localdir)
-elif os.getenv('CHPL_TEST_VGRND_COMP')=='on':
+if os.getenv('CHPL_TEST_VGRND_COMP')=='on':
     globalTimeout=1000
 else:
     globalTimeout=300
+# directory level timeout
+if os.access('./TIMEOUT',os.R_OK):
+    directoryTimeout = ReadIntegerValue('./TIMEOUT', localdir)
+else:
+    directoryTimeout = globalTimeout
 # sys.stdout.write('globalTimeout=%d\n'%(globalTimeout))
 
 #
@@ -765,7 +768,7 @@ for testname in testsrc:
         sys.stdout.write('[Skipping noperf test: %s/%s]\n'%(localdir,execname))
         continue # on to next test
 
-    timeout = globalTimeout
+    timeout = directoryTimeout
     killtimeout = globalKillTimeout
     numTrials = globalNumTrials
     if (perftest):
@@ -906,8 +909,10 @@ for testname in testsrc:
 
     # if any performance test has a timeout longer than the default we only
     # want to run it once
-    if (timeout != globalTimeout):
-      numTrials = 1
+    if (timeout > globalTimeout):
+        if numTrials != 1:
+            sys.stdout.write('[Lowering number of trials for {0} to 1]\n'.format(execname))
+            numTrials = 1
 
     # Get list of test specific compiler options
     if os.access(execname+compoptssuffix, os.R_OK):
