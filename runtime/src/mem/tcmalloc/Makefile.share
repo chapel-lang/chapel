@@ -3,6 +3,10 @@ MEM_SRCS = mem-tcmalloc.c tcmalloc-interface.cc
 SVN_SRCS = $(MEM_SRCS)
 SRCS = $(SVN_SRCS)
 
+ifeq ($(CHPL_MAKE_PLATFORM),darwin)
+	RUNTIME_CXXFLAGS += -Wno-deprecated-declarations
+endif
+
 MEM_COMMON_OBJS = \
         $(addprefix $(MEM_OBJDIR)/,$(addsuffix .o,$(basename $(MEM_SRCS))))
 

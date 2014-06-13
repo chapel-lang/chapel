@@ -10,10 +10,10 @@ TCMALLOC_INSTALL_DIR=$(TCMALLOC_ABS_DIR)/$(TCMALLOC_INSTALL_SUBDIR)
 TCMALLOC_BUILD_DIR = $(TCMALLOC_ABS_DIR)/$(TCMALLOC_BUILD_SUBDIR)
 TCMALLOC_DIR = $(TCMALLOC_ABS_DIR)
 
+# enable minimal and frame pointers??
 CONFIG_FLAGS = --config-cache \
                --enable-shared=no \
-               --disable-cpu-profiler --disable-heap-profiler \
-               --disable-heap-checker --disable-debugalloc \
+               --enable-minimal \
                --disable-libc-malloc-override \
                --prefix=$(TCMALLOC_INSTALL_DIR)
 
