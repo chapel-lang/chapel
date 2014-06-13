@@ -3877,19 +3877,19 @@ static Expr* dropUnnecessaryCast(CallExpr* call) {
   if (SymExpr* sym = toSymExpr(call->get(2))) {
     if (VarSymbol* var = toVarSymbol(sym->var)) {
       if (SymExpr* sym = toSymExpr(call->get(1))) {
-        Type* src = var->type;
-        Type* dst = sym->var->type;
+        Type* oldType = var->type;
+        Type* newType = sym->var->type;
 
-        if (dst == src) {
+        if (newType == oldType) {
           result = new SymExpr(var);
           call->replace(result);
         }
       }
     } else if (EnumSymbol* e = toEnumSymbol(sym->var)) {
       if (SymExpr* sym = toSymExpr(call->get(1))) {
-        EnumType* src = toEnumType(e->type);
-        EnumType* dst = toEnumType(sym->var->type);
-        if (dst && src == dst) {
+        EnumType* oldType = toEnumType(e->type);
+        EnumType* newType = toEnumType(sym->var->type);
+        if (newType && oldType == newType) {
           result = new SymExpr(e);
           call->replace(result);
         }
@@ -4545,15 +4545,15 @@ preFold(Expr* expr) {
           if (VarSymbol* var = toVarSymbol(sym->var)) {
             if (var->immediate) {
               if (SymExpr* sym = toSymExpr(call->get(1))) {
-                Type* src = var->type;
-                Type* dst = sym->var->type;
-                if ((is_int_type(src) || is_uint_type(src) ||
-                     is_bool_type(src)) &&
-                    (is_int_type(dst) || is_uint_type(dst) ||
-                     is_bool_type(dst) || is_enum_type(dst) ||
-                     (dst == dtStringC))) {
-                  VarSymbol* typevar = toVarSymbol(dst->defaultValue);
-                  EnumType* typeenum = toEnumType(dst);
+                Type* oldType = var->type;
+                Type* newType = sym->var->type;
+                if ((is_int_type(oldType) || is_uint_type(oldType) ||
+                     is_bool_type(oldType)) &&
+                    (is_int_type(newType) || is_uint_type(newType) ||
+                     is_bool_type(newType) || is_enum_type(newType) ||
+                     (newType == dtStringC))) {
+                  VarSymbol* typevar = toVarSymbol(newType->defaultValue);
+                  EnumType* typeenum = toEnumType(newType);
                   if (typevar) {
                     if (!typevar->immediate)
                       INT_FATAL("unexpected case in cast_fold");
@@ -4590,8 +4590,8 @@ preFold(Expr* expr) {
             }
           } else if (EnumSymbol* enumSym = toEnumSymbol(sym->var)) {
             if (SymExpr* sym = toSymExpr(call->get(1))) {
-              Type* dst = sym->var->type;
-              if (dst == dtStringC) {
+              Type* newType = sym->var->type;
+              if (newType == dtStringC) {
                 result = new SymExpr(new_StringSymbol(enumSym->name));
                 call->replace(result);
               }
