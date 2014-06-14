@@ -907,9 +907,6 @@ int main(int argc, char* argv[]) {
   if (runlldb)
     runCompilerInLLDB(argc, argv);
 
-  if (fdump_html || strcmp(log_flags, ""))
-    init_logs();
-
   testInputFiles(arg_state.nfile_arguments, arg_state.file_argument);
 
   if (strcmp(chplBinaryName, "chpldoc") == 0)

@@ -109,12 +109,12 @@ void printStatistics(const char* pass) {
 // for debugging purposes only
 void trace_remove(BaseAST* ast, char flag) {
   // crash if deletedIdHandle is not initialized but deletedIdFilename is
-  if (deletedIdON) {
+  if (deletedIdON() == true) {
     fprintf(deletedIdHandle, "%d %c %p %d\n",
             currentPassNo, flag, ast, ast->id);
   }
   if (ast->id == breakOnDeleteID) {
-    if (deletedIdON) fflush(deletedIdHandle);
+    if (deletedIdON() == true) fflush(deletedIdHandle);
     gdbShouldBreakHere();
   }
   // There should never be an attempt to delete a global type.

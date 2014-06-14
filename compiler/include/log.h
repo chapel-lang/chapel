@@ -37,67 +37,18 @@ struct ArgumentState;
  #define NUL '\0'
 #endif
 
-// Used in passlist.h to match up pass designator letters (used on the command line
-// with these slightly more mnemonic #defines.
-
-// These entries should be kept in the same order as the entries in passlist.h.
-#define LOG_parse                              'p'
-#define LOG_checkParsed                        NUL
-#define LOG_readExternC                        'c'
-#define LOG_cleanup                            'u'
-#define LOG_scopeResolve                       'S'
-#define LOG_flattenClasses                     'b'
-#define LOG_docs                               NUL
-#define LOG_normalize                          'N'
-#define LOG_checkNormalized                    NUL
-#define LOG_buildDefaultFunctions              'D'
-#define LOG_createTaskFunctions                't'
-#define LOG_expandExternArrayCalls             NUL
-#define LOG_resolve                            'R'
-#define LOG_resolveIntents                     'i'
-#define LOG_checkResolved                      NUL
-#define LOG_processIteratorYields              'y'
-#define LOG_flattenFunctions                   'e'
-#define LOG_cullOverReferences                 'O'
-#define LOG_callDestructors                    'd'
-#define LOG_lowerIterators                     'L'
-#define LOG_parallel                           'P'
-#define LOG_prune                              'X'
-#define LOG_complex2record                     'C'
-#define LOG_bulkCopyRecords                    'B'
-#define LOG_removeUnnecessaryAutoCopyCalls     'U'
-#define LOG_inlineFunctions                    'I'
-#define LOG_scalarReplace                      'r'
-#define LOG_refPropagation                     'g'
-#define LOG_copyPropagation                    'G'
-#define LOG_deadCodeElimination                'x'
-#define LOG_removeWrapRecords                  'w'
-#define LOG_removeEmptyRecords                 'm'
-#define LOG_localizeGlobals                    'l'
-#define LOG_loopInvariantCodeMotion            'q'
-#define LOG_prune2                             'Y'
-#define LOG_returnStarTuplesByRefArgs          's'
-#define LOG_insertWideReferences               'W'
-#define LOG_optimizeOnClauses                  'o'
-#define LOG_addInitCalls                       'M'
-#define LOG_insertLineNumbers                  'n'
-#define LOG_codegen                            'E'
-#define LOG_makeBinary                         NUL
-#define LOG_ANY                                 -1
-
-void  init_logs();
+// Driver uses this to configure the logger
 void  log_flags_arg(ArgumentState* arg_state, char* arg);
-FILE* log_fp(int log);
-int   log(int log, char* str, ...);
-bool  logging(int log = LOG_ANY);    // Default means "any pass".
 
 void  setupLogfiles();
 void  teardownLogfiles();
+
 void  log_writeLog(const char* passName, int passNum, char logTag);
+
+bool  deletedIdON();
 
 extern char  log_dir   [FILENAME_MAX + 1];
 extern char  log_module[FILENAME_MAX + 1];
-extern char  log_symbol[FILENAME_MAX + 1];
 
 extern bool  fLogIds;
 
@@ -109,7 +60,5 @@ extern bool  fdump_html_print_block_IDs;
 
 extern FILE* deletedIdHandle;
 extern char  deletedIdFilename[FILENAME_MAX + 1];
-
-#define deletedIdON (deletedIdFilename[0] != '\0')
 
 #endif
