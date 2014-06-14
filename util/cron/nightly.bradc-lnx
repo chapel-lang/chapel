@@ -4,11 +4,11 @@ CWD=$(cd $(dirname $0) ; pwd)
 
 source $CWD/common-perf.bash
 
-log_info "Running testRelease."
-$CWD/../buildRelease/testRelease -cron
-
 log_info "Testing performance."
 $CWD/nightly -cron -performance -numtrials 5 -startdate 02/19/10
+
+log_info "Running testRelease."
+$CWD/../buildRelease/testRelease -cron
 
 log_info "Counting tokens."
 $CWD/../tokencount/tokctnightly -cron
