@@ -27,18 +27,19 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *****************************************************************************/
 
+#include "arg.h"
 
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
 #endif
-
-#include "arg.h"
 
 #include "misc.h"
 #include "stringutil.h"
 
 #include <cstdio>
 #include <inttypes.h>
+
+static char* get_envvar_setting(ArgumentDescription& desc);
 
 /************************************* | **************************************
 *                                                                             *
@@ -47,24 +48,29 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ************************************** | *************************************/
 
 static void  print_n_spaces(int n);
-static void  word_wrap_print(const char* text, int start_column, int end_column);
-static char* get_envvar_setting(ArgumentDescription& desc);
+static void  word_wrap_print(const char* text, int startCol, int endCol);
 
+void usage(ArgumentState* arg_state, 
+           int            status, 
+           bool           printEnvHelp,
+           bool           printCurrentSettings)
+{
+  ArgumentDescription* desc           = arg_state->desc;
+  const int            desc_start_col = 39;
+  const int            end_col        = 79;
 
-void usage(ArgumentState* arg_state, int status, bool printEnvHelp,
-           bool printCurrentSettings) {
-  ArgumentDescription *desc = arg_state->desc;
-  const int desc_start_col = 39, end_col = 79;
-  int i, nprinted;
+  fprintf(stdout, "Usage: %s [flags] [source files]\n", arg_state->program_name);
 
-  fprintf(stdout,"Usage: %s [flags] [source files]\n",arg_state->program_name);
-
-  for (i = 0;; i++) {
-    if (!desc[i].name)
-      break;
-    if (desc[i].name[0] == '\0') {
-      if (!strncmp(desc[i].description, "Developer Flags", 15)) {
-        if (!developer) {
+  // The last row is the only row where the name is NULL
+  for (int i = 0; desc[i].name != 0; i++)
+  {
+    // If this is a header row (the name is the empty string)
+    if (desc[i].name[0] == '\0')
+    {
+      if (strncmp(desc[i].description, "Developer Flags", 15) == 0)
+      {
+        if (developer == false)
+        {
           // We assume that developer flags are listed at the end of the
           // argument list in driver.cpp.  If we encounter a section header
           // whose prefix matches "Developer Flags" and (developer == false),
@@ -72,113 +78,145 @@ void usage(ArgumentState* arg_state, int status, bool printEnvHelp,
           break;
         }
       }
+
       fprintf(stdout, "\n%s:\n", desc[i].description);
-      continue;
     }
-    if (desc[i].key != ' ') {
-      nprinted = fprintf(stdout, "  -%c, --", desc[i].key);
-    } else {
-      nprinted = fprintf(stdout, "      --");
-    }
-    if (desc[i].type && 
-        (!strcmp(desc[i].type, "N") || !strcmp(desc[i].type, "n")))
-      nprinted += fprintf(stdout, "[no-]");
-    nprinted += fprintf(stdout, "%s", desc[i].name);
+    else
+    {
+      int nprinted = 0;
 
-    if (desc[i].argumentOptions)
-      nprinted += fprintf(stdout, " %s", desc[i].argumentOptions);
-    if (nprinted > (desc_start_col - 2)) {
-      fprintf(stdout, "\n");
-      print_n_spaces(desc_start_col - 1);
-    } else {
-      print_n_spaces(desc_start_col - nprinted - 1);
-    }
-    word_wrap_print(desc[i].description, desc_start_col, end_col);
-
-    if (printEnvHelp || printCurrentSettings) {
-      /* print environment variable stuff */
-      if (printEnvHelp) {
-        printf("          env var: ");
-        const char* envvar = desc[i].env;
-        if (envvar) {
-          char* setting = get_envvar_setting(desc[i]);
-          printf("%s", envvar);
-          if (setting) {
-            printf(" (set to '%s')", setting);
-          } else {
-            printf(" (not set)");
-          }
-        } else {
-          printf("<none>");
-        }
-        printf("\n");
-      }
-      /* print default setting stuff */
-      if (printCurrentSettings) {
-        printf("          currently: ");
-        char type = desc[i].type[0];
-        switch (type) {
-        case 'I':
-        case '+':
-          printf("%d", *(int*)desc[i].location);
-          break;
-        case 'P':
-        case 'S':
-          if (desc[i].location) {
-            printf("'%s'", (char*)desc[i].location);
-          } else {
-            printf("''");
-          }
-          break;
-        case 'D':
-          printf("%g", *(double*)desc[i].location);
-          break;
-        case 'f':
-        case 'F':
-        case 'T':
-          printf("%s", *(bool*)desc[i].location ? "selected" : "not selected");
-          break;
-        case 'L':
-          printf("%"PRId64, *(int64_t*)desc[i].location);
-          break;
-        case 'N':
-        case 'n':
-          printf("--%s%s", 
-                 (*(bool*)desc[i].location ^ (type == 'N')) ? "no-" : "",
-                 desc[i].name);
-          break;
-        default:
-          INT_FATAL("Unexpected case in usage()");
-          break;
-        }
-        printf("\n");
-      }
-      printf("\n");
-    }
-  }
-  clean_exit(status);
-}
-
-static char* get_envvar_setting(ArgumentDescription& desc) {
-  /*
-   * Return NULL if the option has no corresponding environment variable
-   * or if that env var is not set.
-   * (For non-S or P flags, env var set to empty is considered not set.)
-   */
-  const char* envvar = desc.env;
-  if (!envvar)
-    return NULL;
-  char* setting = getenv(envvar);
-  switch (desc.type[0]) {
-    case 'P':
-    case 'S':
-      return setting;
-    default:
-      if (!setting || !setting[0])
-        return NULL;
+      if (desc[i].key != ' ')
+        nprinted = fprintf(stdout, "  -%c, --", desc[i].key);
       else
-        return setting;
+        nprinted = fprintf(stdout, "      --");
+
+      if (desc[i].type && 
+          (strcmp(desc[i].type, "N") == 0 || strcmp(desc[i].type, "n") == 0))
+        nprinted += fprintf(stdout, "[no-]");
+
+      nprinted += fprintf(stdout, "%s", desc[i].name);
+
+      if (desc[i].argumentOptions)
+        nprinted += fprintf(stdout, " %s", desc[i].argumentOptions);
+
+      if (nprinted > (desc_start_col - 2))
+      {
+        fprintf(stdout, "\n");
+        print_n_spaces(desc_start_col - 1);
+      }
+      else 
+      {
+        print_n_spaces(desc_start_col - nprinted - 1);
+      }
+
+      word_wrap_print(desc[i].description, desc_start_col, end_col);
+
+      if (printEnvHelp || printCurrentSettings)
+      {
+        /* print environment variable stuff */
+        if (printEnvHelp)
+        {
+          const char* envvar = desc[i].env;
+
+          printf("          env var:   ");
+
+          if (envvar)
+          {
+            const char* setting = get_envvar_setting(desc[i]);
+
+            printf("%s", envvar);
+
+            if (setting)
+              printf(" (set to '%s')", setting);
+            else
+              printf(" (not set)");
+          }
+          else
+          {
+            printf("<none>");
+          }
+
+          printf("\n");
+        }
+
+        /* print default setting stuff */
+        if (printCurrentSettings)
+        {
+          char type = desc[i].type[0];
+
+          printf("          currently: ");
+
+          switch (type)
+          {
+          case 'I':
+          case '+':
+            if (desc[i].location != 0)
+              printf("%d", *(int*) desc[i].location);
+            else
+              printf("''");
+
+            break;
+
+          case 'P':
+          case 'S':
+            if (desc[i].location != 0)
+              printf("'%s'", (char*) desc[i].location);
+            else
+              printf("''");
+
+            break;
+
+          case 'D':
+            if (desc[i].location != 0)
+              printf("%g", *(double*) desc[i].location);
+            else
+              printf("''");
+
+            break;
+
+          case 'f':
+          case 'F':
+          case 'T':
+            if (desc[i].location != 0)
+              printf("%s", *(bool*) desc[i].location ? "selected" : "not selected");
+            else
+              printf("''");
+
+            break;
+
+          case 'L':
+            if (desc[i].location != 0)
+              printf("%"PRId64, *(int64_t*) desc[i].location);
+            else
+              printf("''");
+
+            break;
+
+          case 'N':
+          case 'n':
+            if (desc[i].location != 0)
+              printf("--%s%s", 
+                     (*(bool*) desc[i].location ^ (type == 'N')) ? "no-" : "",
+                     desc[i].name);
+            else
+              printf("''");
+
+            break;
+
+          default:
+            INT_FATAL("Unexpected case in usage()");
+            break;
+          }
+
+          printf("\n");
+        }
+
+        printf("\n");
+      }
+    }
   }
+
+  clean_exit(status);
 }
 
 static void print_n_spaces(int n) {
@@ -464,6 +502,28 @@ static void missing_arg(const char* currentFlag) {
           "Missing argument for flag: '%s' (use '-h' for help)\n", 
           currentFlag);
   clean_exit(1);
+}
+
+static char* get_envvar_setting(ArgumentDescription& desc) {
+  /*
+   * Return NULL if the option has no corresponding environment variable
+   * or if that env var is not set.
+   * (For non-S or P flags, env var set to empty is considered not set.)
+   */
+  const char* envvar = desc.env;
+  if (!envvar)
+    return NULL;
+  char* setting = getenv(envvar);
+  switch (desc.type[0]) {
+    case 'P':
+    case 'S':
+      return setting;
+    default:
+      if (!setting || !setting[0])
+        return NULL;
+      else
+        return setting;
+  }
 }
 
 /************************************* | **************************************
