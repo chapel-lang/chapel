@@ -48,6 +48,15 @@ this should get better with better string memory management
 -------------------------------------------------------------------------------
 [Error matching performance keys for studies/shootout/fasta/kbrady/fasta-lines]
 
+consistent change in amount of memory leaked due to r23558
+(may regress until strings-as-records)
+----------------------------------------------------------
+[Error matching .bad file for studies/shootout/pidigits/bradc/pidigits-pretty2]
+ - cray-xe.cray-prgenv-gnu.none.fifo.flat--linux64.gnu-std (2014/06/13)
+ - linux64.gnu.none.fifo.flat (2014/06/13)
+ - linux64.gnu.none.qthreads.flat (2014/06/13)
+
+
 
 ================================
 --fast regressions
@@ -81,6 +90,13 @@ verify regressions
 valgrind-specific regressions
 (Reviewed for accuracy 05/14/14)
 ================================
+
+invalid write of size 1 
+ - probably due to r23558 (assigned: sungeun)
+-----------------------
+[Error matching program output for chpldoc/compflags/comment/basic (compopts: 1)]
+[Error matching program output for chpldoc/compflags/comment/loseComments (compopts: 1)]
+ - linux64.gnu.none.fifo.flat-vgr (2014/06/13)
 
 possible stack overflow? (3/30/14)
 ----------------------------------
@@ -428,6 +444,22 @@ chpbld01 (PrgEnv/XC test system) failures
 =========================================
 
 
+=====================================
+chpbld01 (Intel test system) failures
+=====================================
+Build failure due to bad/outdated license file? (2014/06/16 and before)
+ - linux64.intel.none.fifo.flat
+ - cray-xc.cray-prgenv-intel.none.fifo.flat-exm
+ - cray-xc.cray-prgenv-intel.none.fifo.flat--linuex64.gnu-exm
+
+ 
+
+=============================================
+tiger (cray-module-cray) test system failures
+=============================================
+Build failures (possibly earlier and 2014/06/15-2014/06/16)
+
+
 =========================================
 chpbld02 (PrgEnv/XE test system) failures
 (Reviewed for accuracy 02/27/14)
@@ -764,6 +796,15 @@ Failure due to r22900 (bradc)
 Note: this succeeds with just --baseline and also with '--baseline
 --inline --copy-propagation --remote-value-forwarding'
 [Error matching compiler output for studies/ssca2/graphio/graphio (compopts: 1)]
+
+different amount of string data leaked without optimization (2014/06/13)
+(may be resolved by strings-as-records)
+-----------------------------------------------------------
+[Error matching program output for arrays/deitz/part7/test_descriptor_frees]
+[Error matching program output for memory/figueroa/LeakedMemory2]
+[Error matching program output for memory/figueroa/LeakedMemoryArrayOfClasses]
+[Error matching program output for memory/sungeun/refCount/arraysAndDomains]
+[Error matching program output for memory/sungeun/refCount/arrays]
 
 incorrect output -- expected? (04/03/10)
 ----------------------------------------

@@ -31,6 +31,32 @@ New problems
 (Ones that prove persistent should be moved to REGRESSIONS.)
 =========================================================
 
+error: cannot create C string from remote string
+-----------------------------------------
+[Error matching program output for optimizations/sungeun/RADOpt/access1d (compopts: 1)] (2014/06/14)
+[Error matching program output for optimizations/sungeun/RADOpt/access2d (compopts: 1)] (2014/06/14)
+[Error matching program output for optimizations/sungeun/RADOpt/access3d (compopts: 1)] (2014/06/14)
+ - These most likely due to r23559 (assigned: sungeun)
+ - linux64.gnu.gasnet-everythin.fifo.flat (2014/06/13)
+ - linux64.gnu.gasnet.qthreads.flat (2014/06/13)
+
+Bad .bad file -- includes filename/lineno info. (fix committed: bharshbarg)
+--------------------------------------------------------
+[Error matching .bad file for functions/bharshbarg/setterInWhere] (2014/06/14)
+
+
+Bad .bad files -- due to r23558 (assigned: sungeun)
+--------------------------------------------------------
+[Error matching .bad file for types/records/const-checking/scenario-3-assoc-dom-of-record-with-const-fld] -- changed line numbers
+[Error matching .bad file for users/vass/dont-eval-dot-type] -- "string" --> "c_string"
+[Error matching .bad file for users/vass/type-tests.todo] -- unresolved call 'compilerWarning(string)'
+ - linux64.gnu.gasnet-everything.fifo.flat (2014/06/13)
+ - linux64.gnu.gasnet.qthreads.flat (2014/06/13)
+ - linux64.gnu.none.fifo.flat (2014/06/13)
+ - linux64.gnu.none.fifo.numa (2014/06/13)
+ - linux64.gnu.none.qthreads.flat (2014/06/13)
+
+
 linux64.gnu.gasnet-fast.fifo.flat.dlmalloc
 ------------------------------------------
 
