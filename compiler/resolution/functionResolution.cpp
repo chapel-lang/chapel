@@ -3066,14 +3066,6 @@ static void resolveNormalCall(CallExpr* call) {
     call->partialTag = false;
   }
     
-  if (resolvedFn && resolvedFn->hasFlag(FLAG_DATA_SET_ERROR)) {
-    Type* elt_type = resolvedFn->getFormal(1)->type->substitutions.v[0].value->type;
-    if (!elt_type)
-      INT_FATAL(call, "Unexpected substitution of ddata class");
-    USR_FATAL(userCall(call), "type mismatch in assignment from %s to %s",
-              toString(info.actuals.v[3]->type), toString(elt_type));
-  }
-    
   if (resolvedFn &&
       !strcmp("=", resolvedFn->name) &&
       isRecord(resolvedFn->getFormal(1)->type) &&

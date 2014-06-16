@@ -1143,7 +1143,6 @@ void TypeSymbol::codegenMetadata() {
   // Don't try to create tbaa.struct metadata for non-struct.
   if( isUnion(type) ||
       hasFlag(FLAG_STAR_TUPLE) ||
-      hasFlag(FLAG_FIXED_STRING) ||
       hasFlag(FLAG_REF) ||
       hasFlag(FLAG_DATA_CLASS) ||
       hasEitherFlag(FLAG_WIDE,FLAG_WIDE_CLASS) ) {

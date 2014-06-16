@@ -26,9 +26,6 @@ removeEmptyRecords() {
       if (isRecord(ct) && ct->symbol->defPoint->parentSymbol && 
           !ct->symbol->hasFlag(FLAG_EXTERN)) {
         bool empty = true;
-        if (ct->symbol->hasFlag(FLAG_FIXED_STRING)) {
-          break;
-        }
         for_fields(field, ct) {
           if (!emptyRecordTypeSet.set_in(field->type)) {
             empty = false;

@@ -670,19 +670,6 @@ void AggregateType::codegenDef() {
       type = llvm::ArrayType::get(elementType, fields.length);
 #endif
     }
-  } else if (symbol->hasFlag(FLAG_FIXED_STRING)) {
-    int size = toVarSymbol(
-        symbol->type->substitutions.v[0].value)->immediate->int_value();
-    if( outfile ) {
-      fprintf(outfile, "typedef char %s[%i];\n", symbol->cname, size);
-      return;
-    } else {
-#ifdef HAVE_LLVM
-      llvm::Type *elementType =
-        llvm::IntegerType::getInt8Ty(info->module->getContext());
-      type = llvm::ArrayType::get(elementType, size);
-#endif
-    }
   } else if (symbol->hasFlag(FLAG_REF)) {
     TypeSymbol* base = getField(1)->type->symbol;
     const char* baseType = base->cname;

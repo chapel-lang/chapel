@@ -3711,8 +3711,7 @@ GenRet CallExpr::codegen() {
               // set get(1) = *(call->get(1));
               codegenAssign(get(1),codegenDeref(call->get(1)));
             }
-          } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE) ||
-                     get(1)->typeInfo()->symbol->hasFlag(FLAG_FIXED_STRING)) {
+          } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
             // star tuple handled in codegenAssign
             // set get(1) = *(call->get(1));
             codegenAssign(get(1),codegenDeref(call->get(1)));
