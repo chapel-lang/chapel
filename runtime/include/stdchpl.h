@@ -23,7 +23,6 @@
 #include "chpl-atomics.h"
 #include "chpl-bitops.h"
 #include "chpl-comm.h"
-#include "chplcopygc.h"
 #include "chplexit.h"
 #include <chplfp.h>
 #include "chplio.h"
