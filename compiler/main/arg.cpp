@@ -31,90 +31,132 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
 #endif
-#include <cstdio>
-#include <inttypes.h>
+
 #include "arg.h"
-#include "chpl.h"
+
+#include "misc.h"
 #include "stringutil.h"
 
-/*
-Flag types:
+#include <cstdio>
+#include <inttypes.h>
 
-  I = int
-  P = path
-  S = string
-  D = double
-  f = set to false
-  F = set to true
-  + = increment
-  T = toggle
-  L = int64 (long)
-  N = --no-... flag, --no version sets to false
-  n = --no-... flag, --no version sets to true
-*/
+/************************************* | **************************************
+*                                                                             *
+* Generate a usage page                                                       *
+*                                                                             *
+************************************** | *************************************/
 
-static void bad_flag(char* flag) {
-  fprintf(stderr, "Unrecognized flag: '%s' (use '-h' for help)\n", flag);
-  clean_exit(1);
-}
+static void  print_n_spaces(int n);
+static void  word_wrap_print(const char* text, int start_column, int end_column);
+static char* get_envvar_setting(ArgumentDescription& desc);
 
 
-static void missing_arg(char* currentFlag) {
-  fprintf(stderr, "Missing argument for flag: '%s' (use '-h' for help)\n", 
-          currentFlag);
-  clean_exit(1);
-}
-
-static void extraneous_arg(char* flag, char* extras) {
-  fprintf(stderr, "Extra characters after flag '%s': '%s' (use 'h' for help)\n",
-          flag, extras);
-  clean_exit(1);
-}
-
-
-static void
-process_arg(ArgumentState *arg_state, int i, char ***argv, char* currentFlag) {
-  char * arg = NULL;
+void usage(ArgumentState* arg_state, int status, bool printEnvHelp,
+           bool printCurrentSettings) {
   ArgumentDescription *desc = arg_state->desc;
-  if (desc[i].type) {
-    char type = desc[i].type[0];
-    if (type=='F'||type=='f'||type=='N'||type=='n')
-      *(bool *)desc[i].location = (type=='F'||type=='N') ? true : false;
-    else if (type=='T')
-      *(int *)desc[i].location = !*(int *)desc[i].location;
-    else if (type == '+') 
-      (*(int *)desc[i].location)++;
-    else {
-      // If there's an equal sign or characters remain, take the current arg.
-      // Otherwise, take the next one (which may be null).
-      arg = ***argv ? **argv : *++(*argv);
-      if (!arg) missing_arg(currentFlag);
-      if (*arg == '=') ++arg;
-      switch (type) {
+  const int desc_start_col = 39, end_col = 79;
+  int i, nprinted;
+
+  fprintf(stdout,"Usage: %s [flags] [source files]\n",arg_state->program_name);
+
+  for (i = 0;; i++) {
+    if (!desc[i].name)
+      break;
+    if (desc[i].name[0] == '\0') {
+      if (!strncmp(desc[i].description, "Developer Flags", 15)) {
+        if (!developer) {
+          // We assume that developer flags are listed at the end of the
+          // argument list in driver.cpp.  If we encounter a section header
+          // whose prefix matches "Developer Flags" and (developer == false),
+          // then we truncate the rest of the options list.
+          break;
+        }
+      }
+      fprintf(stdout, "\n%s:\n", desc[i].description);
+      continue;
+    }
+    if (desc[i].key != ' ') {
+      nprinted = fprintf(stdout, "  -%c, --", desc[i].key);
+    } else {
+      nprinted = fprintf(stdout, "      --");
+    }
+    if (desc[i].type && 
+        (!strcmp(desc[i].type, "N") || !strcmp(desc[i].type, "n")))
+      nprinted += fprintf(stdout, "[no-]");
+    nprinted += fprintf(stdout, "%s", desc[i].name);
+
+    if (desc[i].argumentOptions)
+      nprinted += fprintf(stdout, " %s", desc[i].argumentOptions);
+    if (nprinted > (desc_start_col - 2)) {
+      fprintf(stdout, "\n");
+      print_n_spaces(desc_start_col - 1);
+    } else {
+      print_n_spaces(desc_start_col - nprinted - 1);
+    }
+    word_wrap_print(desc[i].description, desc_start_col, end_col);
+
+    if (printEnvHelp || printCurrentSettings) {
+      /* print environment variable stuff */
+      if (printEnvHelp) {
+        printf("          env var: ");
+        const char* envvar = desc[i].env;
+        if (envvar) {
+          char* setting = get_envvar_setting(desc[i]);
+          printf("%s", envvar);
+          if (setting) {
+            printf(" (set to '%s')", setting);
+          } else {
+            printf(" (not set)");
+          }
+        } else {
+          printf("<none>");
+        }
+        printf("\n");
+      }
+      /* print default setting stuff */
+      if (printCurrentSettings) {
+        printf("          currently: ");
+        char type = desc[i].type[0];
+        switch (type) {
         case 'I':
-          *(int *)desc[i].location = atoi(arg);
+        case '+':
+          printf("%d", *(int*)desc[i].location);
+          break;
+        case 'P':
+        case 'S':
+          if (desc[i].location) {
+            printf("'%s'", (char*)desc[i].location);
+          } else {
+            printf("''");
+          }
           break;
         case 'D':
-          *(double *)desc[i].location = atof(arg);
+          printf("%g", *(double*)desc[i].location);
+          break;
+        case 'f':
+        case 'F':
+        case 'T':
+          printf("%s", *(bool*)desc[i].location ? "selected" : "not selected");
           break;
         case 'L':
-          *(int64_t *)desc[i].location = atoll(arg);
+          printf("%"PRId64, *(int64_t*)desc[i].location);
           break;
-        case 'P': strncpy((char *)desc[i].location,arg, FILENAME_MAX);
-          break;
-        case 'S': strncpy((char *)desc[i].location,arg, atoi(desc[i].type+1));
+        case 'N':
+        case 'n':
+          printf("--%s%s", 
+                 (*(bool*)desc[i].location ^ (type == 'N')) ? "no-" : "",
+                 desc[i].name);
           break;
         default:
-          fprintf(stdout, "%s:bad argument description\n", 
-                 arg_state->program_name);
-          clean_exit(1);
+          INT_FATAL("Unexpected case in usage()");
           break;
+        }
+        printf("\n");
       }
-      **argv += strlen(**argv); // Consume the argument value.
+      printf("\n");
     }
   }
-  if (desc[i].pfn)
-    desc[i].pfn(arg_state, arg);
+  clean_exit(status);
 }
 
 static char* get_envvar_setting(ArgumentDescription& desc) {
@@ -139,8 +181,83 @@ static char* get_envvar_setting(ArgumentDescription& desc) {
   }
 }
 
-void
-process_args(ArgumentState *arg_state, int argc, char **aargv) {
+static void print_n_spaces(int n) {
+  for (int i = 0; i < n; i++)
+    fprintf(stdout, " ");
+}
+
+
+static void word_wrap_print(const char* text, int start_column, int end_column) {
+  /*
+   * Print the buffer "text" to stdout with all non-whitespace text at or
+   * after start_column, and print at most end_column characters per line.
+   * Do not break lines in the middle of words. When this function is called,
+   * stdout must be in a state such that the next character fprintf will print
+   * is in start_column.
+   */
+  int space_left = 1 + end_column - start_column;
+  bool first = true;
+  const char* delims = " ";
+  char* save_ptr, *text_dup, *word;
+  text_dup = strdup(text);
+  word = strtok_r(text_dup, delims, &save_ptr);
+
+  while (word) {
+    int wordlength = strlen(word);
+    if (first) {
+      space_left -= fprintf(stdout, "%s", word);
+      first = false;
+    } else {
+      if (wordlength + 1 < space_left) {
+        space_left -= fprintf(stdout, " %s", word);
+      } else {
+        fprintf(stdout, "\n");
+        print_n_spaces(start_column - 1);
+        space_left = 1 + end_column - start_column;
+        space_left -= fprintf(stdout, "%s", word);
+      }
+    }
+    word = strtok_r(NULL, delims, &save_ptr);
+  }
+  free(text_dup);
+  fprintf(stdout, "\n");
+}
+
+
+/************************************* | **************************************
+*                                                                             *
+* Process the argument descriptor                                             *
+*                                                                             *
+************************************** | *************************************/
+
+/*
+Flag types:
+
+  I = int
+  P = path
+  S = string
+  D = double
+  f = set to false
+  F = set to true
+  + = increment
+  T = toggle
+  L = int64 (long)
+  N = --no-... flag, --no version sets to false
+  n = --no-... flag, --no version sets to true
+*/
+
+
+static void bad_flag(const char* flag);
+static void extraneous_arg(const char* flag, const char* extras);
+
+static void process_arg(ArgumentState* arg_state,
+                        int            i, 
+                        char***        argv,
+                        const char*    currentFlag);
+
+static void missing_arg(const char* currentFlag);
+
+void process_args(ArgumentState *arg_state, int argc, char **aargv) {
   int i, len;
   char *end = 0;
   char **argv = (char**)malloc((argc+1)*sizeof(char*));
@@ -261,169 +378,101 @@ process_args(ArgumentState *arg_state, int argc, char **aargv) {
       arg_state->file_argument = (char **)realloc(
         arg_state->file_argument, 
         sizeof(char*) * (arg_state->nfile_arguments + 2));
+
       arg_state->file_argument[arg_state->nfile_arguments++] = *argv;
-      arg_state->file_argument[arg_state->nfile_arguments] = NULL;
+      arg_state->file_argument[arg_state->nfile_arguments]   = NULL;
     }
   }
 }
 
-
-static void
-print_n_spaces(int n) {
-  int i;
-  for (i = 0; i < n; i++)
-    fprintf(stdout, " ");
+static void bad_flag(const char* flag) {
+  fprintf(stderr, "Unrecognized flag: '%s' (use '-h' for help)\n", flag);
+  clean_exit(1);
 }
 
-
-static void
-word_wrap_print(const char* text, int start_column, int end_column) {
-  /*
-   * Print the buffer "text" to stdout with all non-whitespace text at or
-   * after start_column, and print at most end_column characters per line.
-   * Do not break lines in the middle of words. When this function is called,
-   * stdout must be in a state such that the next character fprintf will print
-   * is in start_column.
-   */
-  int space_left = 1 + end_column - start_column;
-  bool first = true;
-  const char* delims = " ";
-  char* save_ptr, *text_dup, *word;
-  text_dup = strdup(text);
-  word = strtok_r(text_dup, delims, &save_ptr);
-
-  while (word) {
-    int wordlength = strlen(word);
-    if (first) {
-      space_left -= fprintf(stdout, "%s", word);
-      first = false;
-    } else {
-      if (wordlength + 1 < space_left) {
-        space_left -= fprintf(stdout, " %s", word);
-      } else {
-        fprintf(stdout, "\n");
-        print_n_spaces(start_column - 1);
-        space_left = 1 + end_column - start_column;
-        space_left -= fprintf(stdout, "%s", word);
-      }
-    }
-    word = strtok_r(NULL, delims, &save_ptr);
-  }
-  free(text_dup);
-  fprintf(stdout, "\n");
+static void extraneous_arg(const char* flag, const char* extras) {
+  fprintf(stderr, "Extra characters after flag '%s': '%s' (use 'h' for help)\n",
+          flag, 
+          extras);
+  clean_exit(1);
 }
 
+static void process_arg(ArgumentState* arg_state,
+                        int            i,
+                        char***        argv,
+                        const char*    currentFlag) {
+  char * arg = NULL;
 
-void usage(ArgumentState* arg_state, int status, bool printEnvHelp,
-           bool printCurrentSettings) {
   ArgumentDescription *desc = arg_state->desc;
-  const int desc_start_col = 39, end_col = 79;
-  int i, nprinted;
 
-  fprintf(stdout,"Usage: %s [flags] [source files]\n",arg_state->program_name);
+  if (desc[i].type) {
+    char type = desc[i].type[0];
 
-  for (i = 0;; i++) {
-    if (!desc[i].name)
-      break;
-    if (desc[i].name[0] == '\0') {
-      if (!strncmp(desc[i].description, "Developer Flags", 15)) {
-        if (!developer) {
-          // We assume that developer flags are listed at the end of the
-          // argument list in driver.cpp.  If we encounter a section header
-          // whose prefix matches "Developer Flags" and (developer == false),
-          // then we truncate the rest of the options list.
-          break;
-        }
-      }
-      fprintf(stdout, "\n%s:\n", desc[i].description);
-      continue;
-    }
-    if (desc[i].key != ' ') {
-      nprinted = fprintf(stdout, "  -%c, --", desc[i].key);
-    } else {
-      nprinted = fprintf(stdout, "      --");
-    }
-    if (desc[i].type && 
-        (!strcmp(desc[i].type, "N") || !strcmp(desc[i].type, "n")))
-      nprinted += fprintf(stdout, "[no-]");
-    nprinted += fprintf(stdout, "%s", desc[i].name);
+    if (type=='F'||type=='f'||type=='N'||type=='n')
+      *(bool *)desc[i].location = (type=='F'||type=='N') ? true : false;
 
-    if (desc[i].argumentOptions)
-      nprinted += fprintf(stdout, " %s", desc[i].argumentOptions);
-    if (nprinted > (desc_start_col - 2)) {
-      fprintf(stdout, "\n");
-      print_n_spaces(desc_start_col - 1);
-    } else {
-      print_n_spaces(desc_start_col - nprinted - 1);
-    }
-    word_wrap_print(desc[i].description, desc_start_col, end_col);
+    else if (type=='T')
+      *(int *)desc[i].location = !*(int *)desc[i].location;
 
-    if (printEnvHelp || printCurrentSettings) {
-      /* print environment variable stuff */
-      if (printEnvHelp) {
-        printf("          env var: ");
-        const char* envvar = desc[i].env;
-        if (envvar) {
-          char* setting = get_envvar_setting(desc[i]);
-          printf("%s", envvar);
-          if (setting) {
-            printf(" (set to '%s')", setting);
-          } else {
-            printf(" (not set)");
-          }
-        } else {
-          printf("<none>");
-        }
-        printf("\n");
-      }
-      /* print default setting stuff */
-      if (printCurrentSettings) {
-        printf("          currently: ");
-        char type = desc[i].type[0];
-        switch (type) {
+    else if (type == '+') 
+      (*(int *)desc[i].location)++;
+
+    else {
+      // If there's an equal sign or characters remain, take the current arg.
+      // Otherwise, take the next one (which may be null).
+      arg = ***argv ? **argv : *++(*argv);
+
+      if (!arg) missing_arg(currentFlag);
+      if (*arg == '=') ++arg;
+
+      switch (type) {
         case 'I':
-        case '+':
-          printf("%d", *(int*)desc[i].location);
+          *(int *)desc[i].location = atoi(arg);
           break;
-        case 'P':
-        case 'S':
-          if (desc[i].location) {
-            printf("'%s'", (char*)desc[i].location);
-          } else {
-            printf("''");
-          }
-          break;
+
         case 'D':
-          printf("%g", *(double*)desc[i].location);
+          *(double *)desc[i].location = atof(arg);
           break;
-        case 'f':
-        case 'F':
-        case 'T':
-          printf("%s", *(bool*)desc[i].location ? "selected" : "not selected");
-          break;
+
         case 'L':
-          printf("%"PRId64, *(int64_t*)desc[i].location);
+          *(int64_t *)desc[i].location = atoll(arg);
           break;
-        case 'N':
-        case 'n':
-          printf("--%s%s", 
-                 (*(bool*)desc[i].location ^ (type == 'N')) ? "no-" : "",
-                 desc[i].name);
+
+        case 'P': strncpy((char *)desc[i].location,arg, FILENAME_MAX);
           break;
+
+        case 'S': strncpy((char *)desc[i].location,arg, atoi(desc[i].type+1));
+          break;
+
         default:
-          INT_FATAL("Unexpected case in usage()");
+          fprintf(stdout, "%s:bad argument description\n", 
+                 arg_state->program_name);
+          clean_exit(1);
           break;
-        }
-        printf("\n");
       }
-      printf("\n");
+
+      **argv += strlen(**argv); // Consume the argument value.
     }
   }
-  clean_exit(status);
+
+  if (desc[i].pfn)
+    desc[i].pfn(arg_state, arg);
 }
 
-void
-free_args(ArgumentState *arg_state) {
+static void missing_arg(const char* currentFlag) {
+  fprintf(stderr,
+          "Missing argument for flag: '%s' (use '-h' for help)\n", 
+          currentFlag);
+  clean_exit(1);
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Cleanup                                                                     *
+*                                                                             *
+************************************** | *************************************/
+
+void free_args(ArgumentState* arg_state) {
   if (arg_state->file_argument)
     free(arg_state->file_argument);
 }
