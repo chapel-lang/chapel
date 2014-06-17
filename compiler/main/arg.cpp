@@ -426,6 +426,7 @@ static void ProcessCommandLine(ArgumentState* state, int argc, char* aargv[])
             else
               *argv = end;
             process_arg(state, i, &argv, currentFlag);
+            free(currentFlag);
             break;
           }
           else if (desc[i].type && 
@@ -457,6 +458,7 @@ static void ProcessCommandLine(ArgumentState* state, int argc, char* aargv[])
             {
               desc[i].type = "n";
             }
+            free(currentFlag);
             break;
           }
         }
