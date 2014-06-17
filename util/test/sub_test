@@ -946,6 +946,10 @@ for testname in testsrc:
         execoptslist = ReadFileWithComments(execname+execoptssuffix, False)
     else:
         execoptslist = list()
+    # Handle empty execopts list
+    if len(execoptslist) == 0:
+        # cf. for compoptslist, a warning is issued in this case
+        execoptslist.append(' ')
 
     if (os.getenv('CHPL_TEST_INTERP')=='on' and
         (noexecfile or testfuturesfile or execoptsfile)):
@@ -1238,10 +1242,6 @@ for testname in testsrc:
         explicitcompgoodfile = None
         # Execute the test for all requested execopts
         execoptsnum = 0
-        # Handle empty execopts list
-        if len(execoptslist)==0:
-            # cf. for compoptslist, a warning is issued in this case
-            execoptslist.append(' ')
         if len(clist)!=0:
             if len(clist[0].split('#')) > 1:
                 explicitcompgoodfile = clist[0].split('#')[1].strip()
