@@ -520,12 +520,6 @@ initPrimitive() {
 
   prim_def(PRIM_DELETE, "delete", returnInfoVoid);
 
-  prim_def(PRIM_GC_CC_INIT, "_chpl_gc_init", returnInfoVoid);
-  prim_def(PRIM_GC_ADD_ROOT, "_addRoot", returnInfoVoid);
-  prim_def(PRIM_GC_ADD_NULL_ROOT, "_addNullRoot", returnInfoVoid);
-  prim_def(PRIM_GC_DELETE_ROOT, "_deleteRoot", returnInfoVoid);
-  prim_def(PRIM_GC_CLEANUP, "_chpl_gc_cleanup", returnInfoVoid);
-
   prim_def(PRIM_CALL_DESTRUCTOR, "call destructor", returnInfoVoid, true);
 
   prim_def(PRIM_LOGICAL_FOLDER, "_paramFoldLogical", returnInfoBool);

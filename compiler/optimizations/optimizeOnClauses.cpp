@@ -205,14 +205,6 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
    // These may block, so are deemed slow.
    return false;
 
-  case PRIM_GC_CC_INIT:
-  case PRIM_GC_ADD_ROOT:
-  case PRIM_GC_ADD_NULL_ROOT:
-  case PRIM_GC_DELETE_ROOT:
-  case PRIM_GC_CLEANUP:
-    INT_FATAL("This primitive has not yet been implemented.");
-    break;
-
   case PRIM_NEW:
   case PRIM_INIT:
   case PRIM_NO_INIT:

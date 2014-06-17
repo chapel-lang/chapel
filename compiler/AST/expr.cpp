@@ -4992,13 +4992,6 @@ GenRet CallExpr::codegen() {
       ret = codegenTernary(ok, cast, nul);
       break;
     }
-    case PRIM_GC_CC_INIT:
-    case PRIM_GC_ADD_ROOT:
-    case PRIM_GC_ADD_NULL_ROOT:
-    case PRIM_GC_DELETE_ROOT:
-    case PRIM_GC_CLEANUP:
-      INT_FATAL("GC primitives not supported");
-      break;
     case PRIM_HEAP_REGISTER_GLOBAL_VAR: 
     {
       GenRet idx = codegenValue(get(1));

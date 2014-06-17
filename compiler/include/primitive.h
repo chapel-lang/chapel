@@ -165,12 +165,6 @@ enum PrimitiveTag {
 
   PRIM_DELETE,
 
-  PRIM_GC_CC_INIT,              // Initialize heap for copy-collecting
-  PRIM_GC_ADD_ROOT,             // Add a root variable for garbage collection
-  PRIM_GC_ADD_NULL_ROOT,        // Add a root and point it to NULL
-  PRIM_GC_DELETE_ROOT,          // Remove a root variable for garbage collection
-  PRIM_GC_CLEANUP,              // Free GC heaps
-
   PRIM_CALL_DESTRUCTOR,         // call destructor on type (do not free)
 
   PRIM_LOGICAL_FOLDER,          // Help fold logical && and ||

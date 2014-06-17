@@ -214,11 +214,6 @@ void checkPrimitives()
      case PRIM_BLOCK_LOCAL:             // BlockStmt::blockInfo - local block
      case PRIM_BLOCK_UNLOCAL:           // BlockStmt::blockInfo - unlocal local block
      case PRIM_DELETE:
-     case PRIM_GC_CC_INIT:              // Initialize heap for copy-collecting
-     case PRIM_GC_ADD_ROOT:             // Add a root variable for garbage collection
-     case PRIM_GC_ADD_NULL_ROOT:        // Add a root and point it to NULL
-     case PRIM_GC_DELETE_ROOT:          // Remove a root variable for garbage collection
-     case PRIM_GC_CLEANUP:              // Free GC heaps
      case PRIM_CALL_DESTRUCTOR:         // call destructor on type (do not free)
      case PRIM_LOGICAL_FOLDER:          // Help fold logical && and ||
      case PRIM_WIDE_GET_LOCALE:         // Returns the "locale" portion of a wide pointer.
