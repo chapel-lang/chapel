@@ -39,7 +39,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <cstdio>
 #include <inttypes.h>
 
-static char* get_envvar_setting(ArgumentDescription& desc);
+static const char* get_envvar_setting(ArgumentDescription& desc);
 
 /************************************* | **************************************
 *                                                                             *
@@ -306,6 +306,12 @@ Flag types:
 static void ProcessEnvironment(ArgumentState* state);
 static void ProcessCommandLine(ArgumentState* state, int argc, char* argv[]);
 
+static void ApplyValue(ArgumentState*             state, 
+                       const ArgumentDescription* desc,
+                       const char*                value);
+
+
+
 static void bad_flag(const char* flag);
 static void extraneous_arg(const char* flag, const char* extras);
 
@@ -330,60 +336,113 @@ static void ProcessEnvironment(ArgumentState* state)
 {
   ArgumentDescription* desc = state->desc;
 
-  for (int i = 0;; i++) 
+  // The name field is defined by every row except the final guard
+  for (int i = 0; desc[i].name != 0; i++) 
   {
-    if (!desc[i].name)
-      break; 
-
     if (desc[i].env) 
     {
-      char type = desc[i].type[0];
-      char * env = get_envvar_setting(desc[i]);
+      const char* env = get_envvar_setting(desc[i]);
 
-      if (!env) continue;
-
-      switch (type) 
+      if (env != 0)
       {
-        case '+': (*(int *)desc[i].location)++; break;
-        case 'f': 
-        case 'F': 
-          *(bool *)desc[i].location = type!='f'?1:0; break;
+        char sel = desc[i].type[0];
 
-        case 'N':
-        case 'n':
+        if (sel == 'N' || sel == 'n')
+        {
           switch (env[0])
           {
-            case 'Y': case 'y': case 'T': case 't': case '1':
-              *(bool *)desc[i].location = type=='N'?1:0; break;
-
-            case 'N': case 'n': case 'F': case 'f': case '0':
-              *(bool *)desc[i].location = type=='N'?0:1; break;
-
-            default:
-              USR_FATAL_CONT("When the environment variable %s"
-                " is set and not empty, it must start with one of Y y T t 1"
-                " (indicates 'yes') or N n F f 0 (indicates '--no')."
-                " Currently it is set to \"%s\".", desc[i].env, env); break;
-          }
+          case 'Y':
+          case 'y':
+          case 'T':
+          case 't':
+          case '1':
+            env = (sel == 'N') ? "true" : "false";
           break;
 
-        case 'T': *(int *)desc[i].location = !*(int *)desc[i].location; break;
+          case 'N':
+          case 'n':
+          case 'F':
+          case 'f':
+          case '0':
+            env = (sel == 'N') ? "false" : "true";
+          break;
 
-        case 'I': *(int *)desc[i].location = strtol(env, NULL, 0); break;
+          default:
+            USR_FATAL_CONT("When the environment variable %s"
+                           " is set and not empty, it must start with one of Y y T t 1"
+                           " (indicates 'yes') or N n F f 0 (indicates '--no')."
+                           " Currently it is set to \"%s\".", 
+                           desc[i].env,
+                           env);
+            break;
+          }
+        }
 
-        case 'D': *(double *)desc[i].location = strtod(env, NULL); break;
-
-        case 'L': *(int64_t *)desc[i].location = str2int64(env); break;
-
-        case 'P': strncpy((char *)desc[i].location, env, FILENAME_MAX); break;
-
-        case 'S': strncpy((char *)desc[i].location, env, strtol(desc[i].type+1, NULL, 0)); break;
+        ApplyValue(state, &desc[i], env);
       }
-
-      if (desc[i].pfn)
-        desc[i].pfn(state, env);
     }
   }
+}
+
+static void ApplyValue(ArgumentState*             state, 
+                       const ArgumentDescription* desc,
+                       const char*                value)
+{
+  void* location = desc->location;
+
+  if (location != 0)
+  {
+    char type = desc->type[0];
+
+    switch (type) 
+    {
+      case '+':
+        *((int*)     location) = *((int*) location) + 1;
+        break;
+
+      case 'T':
+        *((int*)     location) = !(*((int*) location));
+        break;
+
+      case 'F': 
+      case 'f': 
+        *((bool*)    location) = (type == 'F') ? 1 : 0; 
+        break;
+
+      case 'n':
+      case 'N':
+        *((bool*)    location) = (strcmp(value, "true") == 0) ? true : false;
+        break;
+
+      case 'I':
+        *((int*)     location) = strtol(value, NULL, 0);
+        break;
+
+      case 'L':
+        *((int64_t*) location) = str2int64(value);
+        break;
+
+      case 'D':
+        *((double*)  location) = strtod(value, NULL);
+        break;
+
+      case 'P':
+        strncpy((char*) location, value, FILENAME_MAX);
+        break;
+
+      case 'S':
+      {
+        long bufSize = strtol(desc->type + 1, NULL, 10);
+
+        strncpy((char*) location, value, bufSize);
+
+        break;
+      }
+    }
+  }
+  
+  if (desc->pfn)
+    desc->pfn(state, value);
 }
 
 static void ProcessCommandLine(ArgumentState* state, int argc, char* aargv[])
@@ -596,32 +655,44 @@ static void missing_arg(const char* currentFlag)
   clean_exit(1);
 }
 
-static char* get_envvar_setting(ArgumentDescription& desc)
+/*
+ * The value in the environment could be one of
+ *     NULL    (no value)
+ *     ""      (the value is the empty string)
+ *     string  (the value is a general string)
+ *
+ * If the value is NULL     then the result is NULL
+ *
+ * If the value is ""       then
+ *    If the type is 'P' or 'S' (Path or String) then return ""
+ *    otherwise return NULL
+ *
+ * If the value is a string then the result is that string
+ *
+ */
+static const char* get_envvar_setting(ArgumentDescription& desc)
 {
-  /*
-   * Return NULL if the option has no corresponding environment variable
-   * or if that env var is not set.
-   * (For non-S or P flags, env var set to empty is considered not set.)
-   */
-  const char* envvar = desc.env;
+  const char* retval = 0;
 
-  if (!envvar)
-    return NULL;
-
-  char* setting = getenv(envvar);
-
-  switch (desc.type[0])
+  if (desc.env != 0)
   {
-    case 'P':
-    case 'S':
-      return setting;
+    // The result of getenv() must not be modified or free'd
+    const char* env = getenv(desc.env);
 
-    default:
-      if (!setting || !setting[0])
-        return NULL;
-      else
-        return setting;
+    // The environment variable is not set
+    if (env == 0)
+      retval = 0;
+
+    // The environment variable IS the empty string
+    else if (env[0] == '\0')
+      retval = (desc.type[0] == 'P' || desc.type[0] == 'S') ? "" : 0;
+
+    // The environment variable IS NOT the empty string
+    else
+      retval = env;
   }
+
+  return retval;
 }
 
 /************************************* | **************************************

@@ -712,7 +712,7 @@ static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "Compilation Trace Options", NULL, NULL, NULL, NULL},
  {"print-commands", ' ', NULL, "[Don't] print system commands", "N", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
  {"print-passes", ' ', NULL, "[Don't] print compiler passes", "N", &printPasses, "CHPL_PRINT_PASSES", NULL},
- {"print-passes-file", ' ', "<filename>", "Print compiler passes to <filename>", "S", printPassesFile, "CHPL_PRINT_PASSES_FILE", setPrintPassesFile},
+ {"print-passes-file", ' ', "<filename>", "Print compiler passes to <filename>", "S", NULL, "CHPL_PRINT_PASSES_FILE", setPrintPassesFile},
 
  {"", ' ', NULL, "Miscellaneous Options", NULL, NULL, NULL, NULL},
 // Support for extern { c-code-here } blocks could be toggled with this
@@ -910,6 +910,7 @@ int main(int argc, char* argv[]) {
 
   if (strcmp(chplBinaryName, "chpldoc") == 0)
     fDocs = true;
+
 
   runPasses(tracker);
 
