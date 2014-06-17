@@ -26,7 +26,6 @@ typedef void* c_void_ptr;
 #define c_nil NULL
 static inline c_int is_c_nil(void* x) { return x==NULL; }
 static inline void* c_pointer_return(void* x) { return x; }
-typedef const char* c_string;
 
 typedef enum {
   CHPL_TYPE_chpl_bool,
@@ -137,7 +136,6 @@ typedef void* _chpl_value;
 typedef void* chpl_opaque;
 
 #define nilRef 0
-#define chpl_emptyCstring ""
 
 // macros for specifying the correct C literal type
 #define INT8( i)   ((int8_t)(INT8_C(i)))
@@ -180,7 +178,6 @@ typedef float               _imag32;
 typedef double              _imag64;
 typedef struct __complex64 { _real32 re; _real32 im; } _complex64;
 typedef struct __complex128 { _real64 re; _real64 im; } _complex128;
-typedef const char*         chpl_string;
 typedef int64_t              _symbol;
 
 // macros for Chapel min/max -> C stdint.h or values.h min/max
@@ -207,40 +204,6 @@ typedef int64_t              _symbol;
 #define MAX_FLOAT32         FLT_MAX
 #define MAX_FLOAT64         DBL_MAX
 
-static ___always_inline
-int8_t ascii(c_string s) {
-  return (int8_t) *s;
-}
-
-struct chpl_chpl____wide_chpl_string_s;
-
-//
-// stopgap formatting
-//
-c_string chpl_format(c_string format, ...)
-  __attribute__((format(printf, 1, 2)));
-
-// Uses the system allocator.
-char* chpl_glom_strings(int numstrings, ...);
-
-chpl_bool string_contains(c_string x, c_string y);
-c_string string_copy(c_string x, int32_t lineno, c_string filename);
-chpl_string chpl_wide_string_copy(struct chpl_chpl____wide_chpl_string_s* x, int32_t lineno, c_string filename);
-void chpl_string_widen(struct chpl_chpl____wide_chpl_string_s* x, chpl_string from, int32_t lineno, c_string filename);
-void chpl_comm_wide_get_string(chpl_string* local, struct chpl_chpl____wide_chpl_string_s* x, int32_t tid, int32_t lineno, c_string filename);
-c_string string_concat(c_string x, c_string y, int32_t lineno, c_string filename);
-int string_index_of(c_string x, c_string y);
-c_string string_index(c_string x, int i, int32_t lineno, c_string filename);
-c_string string_select(c_string x, int low, int high, int stride, int32_t lineno, c_string filename);
-int32_t string_compare(c_string x, c_string y);
-int64_t string_length(c_string x);
-
-// implement string_from_c_string and c_string_from_string primitives.
-void string_from_c_string(chpl_string *ret, c_string str, int haslen, int64_t len, int32_t lineno, c_string filename);
-void wide_string_from_c_string(struct chpl_chpl____wide_chpl_string_s *ret, c_string str, int haslen, int64_t len, int32_t lineno, c_string filename);
-void c_string_from_string(c_string* ret, chpl_string* str, int32_t lineno, c_string filename);
-void c_string_from_wide_string(c_string* ret, struct chpl_chpl____wide_chpl_string_s* str, int32_t lineno, c_string filename);
-
 int64_t real2int( _real64 f);       // return the raw bytes of the float
 int64_t object2int( _chpl_object o);  // return the ptr
 
@@ -252,6 +215,9 @@ typedef struct chpl_main_argument_s {
   int32_t return_value;
 } chpl_main_argument;
 
+/* This should be moved somewhere else, but where is the question */
 const char* chpl_get_argument_i(chpl_main_argument* args, int32_t i);
+
+#include "chpl-string.h"
 
 #endif

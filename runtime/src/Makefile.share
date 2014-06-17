@@ -3,6 +3,7 @@ COMMON_LAUNCHER_SRCS = \
 	chplcast.c \
 	config.c \
 	error.c \
+	chpl-string.c \
 	chpltypes.c \
 
 COMMON_NOGEN_SRCS = \
