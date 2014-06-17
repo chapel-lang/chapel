@@ -1,0 +1,17 @@
+bug: pragma "fixed string" is improperly implemented
+
+Given the code in .chpl, the compiler translates record fixed_length_string
+into 'typedef char fixed_length_string_5[5];' in the generated C code.
+This makes sense.
+However, later the generated C code accesses 'fixed_length_string_5'
+as if it were a C struct. This is clearly inconsistent with the above.
+
+Note: seems like this code used to compile fine earlier in the season,
+because initially it was filed with a different future.
+That original future is below and may well still hold.
+
+-----------
+bug: There is a double-free case when we use an '=' instead of a normal function.
+
+In the generated C code, this sample will double free the contained string at the end of the function generated to handle the '=' function.  By commending out this free, or using a non-'=' function, we can avoid the error.
+

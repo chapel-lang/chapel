@@ -1,0 +1,2 @@
+badArrArgErrMsg.chpl:6: error: unresolved call 'foo([domain(1,int(64),false)] complex(128))'
+badArrArgErrMsg.chpl:8: note: candidates are: foo(X: [?Dlocal] real)

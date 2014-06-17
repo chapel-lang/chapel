@@ -1,0 +1,2 @@
+#! /bin/sh
+sed -e 's/Player [12]/Player X/' -e 's/rock$/rock, paper, or scissors/' -e 's/paper$/rock, paper, or scissors/' -e 's/: scissors/: rock, paper, or scissors/' -e 's/Tied/Player X wins/' -e 's/^Referee: I/Player X: I/' -e 's/^Referee: Me/Player X: Me/' <$2 | sort -u >$1.prediff.tmp && mv $1.prediff.tmp $2

@@ -1,0 +1,4 @@
+multipledestructor.chpl:6: In function 'main':
+multipledestructor.chpl:7: error: ambiguous call 'C.~chpl_destroy()'
+multipledestructor.chpl:2: note: candidates are: C.~C()
+multipledestructor.chpl:4: note:                 C.~C()

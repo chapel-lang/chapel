@@ -1,0 +1,142 @@
+#!/usr/bin/env perl
+#
+# computePerfStats is called by sub_test which is called by 
+# start_test, if run with -performance.
+#
+# For every performance run on a particular file, this script 
+# maintains a .dat by searching the output of the run for values 
+# of performance keys specified in .perfkeys. It then writes 
+# these values to the .dat for every run.  
+use strict;
+use Text::ParseWords;
+#use strict;
+my $testname = $ARGV[0];
+my $outputdir = $ARGV[1];
+
+my $argc = @ARGV+1;
+my $key_file;
+if ($argc >= 4) {
+    $key_file = $ARGV[2];
+} else {
+    $key_file = "$testname.perfkeys";
+}
+
+my $test_output_file;
+if ($argc >= 5) {
+    $test_output_file = $ARGV[3];
+} else {
+    $test_output_file = "$testname.exec.out.tmp";
+}
+
+my $exec_time_out;
+if ($argc >= 6) {
+    $exec_time_out = $ARGV[4];
+} else {
+    $exec_time_out = "False";
+}
+my $data_file = "$outputdir/$testname.dat";
+my $errors_file = "$outputdir/$testname.errors";
+my $fatal_errors = 0;
+
+# open a fresh .errors file for writing ..
+if (-e "$errors_file") {
+    system("rm $errors_file");
+}
+open ERRORS, ">$errors_file" or die "can't open $errors_file for creating: $!";
+
+# get keys from .perfkeys
+open KEYS, "$key_file" or die "can't open $key_file: $!";
+my @keys;
+my @tmp_keys = <KEYS>;
+close (KEYS);
+foreach my $key (@tmp_keys) {
+    my $real_key = &trim($key);
+    if (substr($real_key,0,1) ne "#") {
+        push(@keys, $real_key);
+    } else {
+        # ignore comments unless they specify a .dat file
+        my $comment = &trim(substr($real_key,1));
+        if (index($comment,"file:") == 0) {
+            my @crap = split(/\s+/, $comment);
+            $data_file = $outputdir."/".@crap[1];
+        }
+    }
+}
+print ERRORS "processed $key_file\n";
+
+# get lines from output file
+my @file_lines;
+# if ($exec_time_out eq "False") {
+    open TEST, "$test_output_file" or die "can't open $test_output_file: $!";
+    @file_lines = <TEST>;
+    close (TEST);
+    print ERRORS "processed $test_output_file\n";
+# } else {
+#     print ERRORS "timed out executing $testname, no $test_output_file to process\n";
+# }
+
+# if this is first performance run, create the .dat
+if (! -e "$data_file") {
+# } else {
+    open STATS, ">$data_file" or die "can't open $data_file for creating: $!";
+    print ERRORS "created $data_file\n";
+    print STATS "# Date";
+    foreach my $key (@keys) {
+        print STATS "\t$key";
+    }
+    print STATS "\n";
+    close (STATS);
+}
+
+# write new data to the .dat
+open STATS, ">>$data_file" or die "can't open $data_file for appending: $!";
+print ERRORS "appending $data_file\n";
+
+my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime time;
+
+$mon += 1;
+$year -= 100;
+
+# check all output lines for values following keys, values get written to the .dat
+my $foundEverything = 1;
+if ($exec_time_out eq "True") {
+    # Timed out executions will be comments
+    printf STATS "# ";
+}
+printf STATS "%.2d/%.2d/%.2d ", $mon, $mday, $year;
+foreach my $key (@keys) {
+    print "Looking for $key...";
+    print STATS "\t";
+    my $found = 0;
+    foreach my $line (@file_lines) {
+        if ($line =~ m/\Q$key\E(\s*)(\S*)/ && $found == 0) {
+            print "found it: $2\n";
+            print STATS "$2";
+            $found = 1;
+        }
+    }
+    if ($found == 0) {
+        print STATS "-";
+        print "didn't find it\n";
+        $foundEverything = 0;
+
+    }
+}
+if ($exec_time_out eq "True") {
+    print STATS " ### EXECUTION TIMED OUT ###";
+}
+print STATS "\n";
+
+if ($foundEverything != 1 and $exec_time_out eq "False") {
+    print "output was:\n";
+    system("cat $test_output_file");
+    exit 1;
+} 
+
+# remove white space surrounding a string
+sub trim($) {
+    my $string = shift;
+    $string =~ s/^\s+//;
+    $string =~ s/\s+$//;
+    return $string;
+}

@@ -1,0 +1,2 @@
+raiseType3-blc.chpl:1: In function 'raiseType':
+raiseType3-blc.chpl:1: error: illegal return of type where value is expected

@@ -1,0 +1,132 @@
+============================
+Multilocale Chapel Execution
+============================
+
+To run Chapel on multiple locales, the following steps are required:
+
+
+0) The following information describes a fairly generic use of
+   multi-locale Chapel, suitable for networked workstations and
+   generic parallel platforms.  For other platforms, refer to the
+   platform-specific READMEs for additional tips.
+
+
+1) Set your CHPL_COMM environment variable to "gasnet".  For example:
+
+     export CHPL_COMM=gasnet
+
+   This specifies that you wish to use the GASNet library for
+   inter-locale communication.  GASNet is a one-sided communication
+   and active message layer being developed by Lawrence Berkeley
+   National Lab and UC Berkeley.  For details, refer to:
+
+     $CHPL_HOME/third-party/gasnet/README and
+     $CHPL_HOME/third-party/README
+
+
+2) Advanced users can set CHPL_COMM_SUBSTRATE to indicate the GASNet
+   conduit that they wish to use.  Novice users can leave this unset
+   and Chapel will make a choice for them.  Current defaults are:
+
+     When compiling for...       Chapel will choose...
+       cray-xc                     mpi
+       cray-xe                     mpi
+       cray-xk                     mpi
+       cray-xt                     mpi
+       pwr5                        lapi
+       pwr6                        ibv
+       (other)                     udp
+
+
+3) Advanced GASNet users can set CHPL_GASNET_SEGMENT to choose a
+   memory segment to use with GASNet.  Current defaults are:
+
+     When CHPL_COMM_SUBSTRATE is...    Chapel will choose...
+       portals                           fast
+       gemini                            fast
+       (other)                           everything
+
+
+4) Re-make the compiler and runtime from CHPL_HOME:
+
+     cd $CHPL_HOME
+     gmake
+
+   Or:
+
+     cd $CHPL_HOME
+     make
+
+   Note that the runtime libraries used by the Chapel compiler are
+   based on your choices of conduit, substrate, and debugging mode
+   (steps 2, 3, and 9), so the runtime directory will need to be
+   recompiled for each variation in these settings that you use for a
+   given choice of target platform, compiler, and launcher.
+
+
+5) Set up GASNet environment variables for execution:
+
+   (a) Set up variables telling GASNet how to spawn program instances.
+       Most of our experience to date has been with two options:
+
+       (i) To run on a network of workstations to which you have
+           access via ssh, configure GASNet as follows:
+
+             export GASNET_SPAWNFN=S
+             export SSH_SERVERS="host1 host2 host3 ..."
+             export SSH_CMD=ssh
+             export SSH_OPTIONS=-x
+
+           where host1, host2, host3, ... are the names of the
+           workstations that will serve as your Chapel locales.  In
+           order to run your Chapel program on k locales, you must
+           have k entries in the SSH_SERVERS variable.  To avoid
+           typing in passwords for each node, you will probably want
+           to use normal ssh-agent/ssh-add capabilities to support
+           password-less ssh-ing.
+
+       (ii) To simulate multiple Chapel locales with one workstation,
+            you can request that GASNet spawn its child functions on
+            your local machine using:
+
+              export GASNET_SPAWNFN=L
+
+            If you have problems with the local spawn, you may need to
+            set GASNET_MASTERIP to your IP address.
+
+       (iii) For other options, please refer to:
+               $CHPL_HOME/third-party/gasnet/GASNet-1.*.*/udp-conduit/README
+
+
+   (b) We've had best results with console I/O using:
+
+         export GASNET_ROUTE_OUTPUT=0
+
+       but your mileage may vary.
+
+
+6) Compile your Chapel program as usual:
+
+     chpl -o hello6-taskpar-dist $CHPL_HOME/examples/hello6-taskpar-dist.chpl
+
+
+7) When you compile a Chapel program for multiple locales, you should
+   typically see two binaries (e.g., hello6-taskpar-dist and
+   hello6-taskpar-dist_real).  The first binary contains code to
+   launch the Chapel program onto the compute nodes using a GASNet run
+   command.  The second contains the program code itself.  You can use
+   the -v flag to see the commands used to launch your program.  See
+   README.launcher for further details.
+
+
+8) Multi-locale executions require the number of locales to be
+   specified on the command line.  Other than this, execute your
+   Chapel program as usual.  For example:
+
+     ./hello6-taskpar-dist -nl 2
+
+
+9) Advanced users may want to set CHPL_COMM_DEBUG in order to enable
+   GASNet's internal sanity checking. (It is off by default.)
+   You need to re-make the compiler and runtime when changing
+   this setting (step 4).

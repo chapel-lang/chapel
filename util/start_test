@@ -1,0 +1,1367 @@
+#!/bin/csh -f
+#
+#
+# Main test script for Chapel compiler -- based on testing system from
+# the ZPL testing system, originally developed by Jason Secosky with
+# later mods by Brad Chamberlain, Sung-Eun Choi, Steve Deitz, and
+# E Christopher Lewis.
+#
+# DIRECTORY STRUCTURE
+#
+# $CHPL_HOME/util/
+#   test     -- contains binary files/scripts required by the testing
+#               system, such as the timedexec script which kills a
+#               test if it takes too long
+#
+# $CHPL_HOME/test/
+#   Logs/    -- logs of testing runs go here by default
+#   Samples/ -- sample tests go here; these are for illustration only
+#               and won't be run by default.  To try running the
+#               test system against these samples, use:
+#                      start_test ./Samples
+#   Share/   -- a place to put codes to share with other developers.
+#               These will not be run by default.
+#   */       -- all other directories will contain tests
+#
+#
+# EXECUTIVE SUMMARY
+#
+# The overall flow of the testing system is that by default it will
+# recursively descend into subdirectories looking for Chapel programs
+# to compile and run (*.chpl).  The output of these runs will
+# typically be logged in a file stored in the Logs/ subdirectory of
+# the testing directory, along with a summary of the errors reported
+# (determined by grepping for the string "[Error", so don't have your
+# program print this out) and the status of "future tests" -- those
+# that are not expected to work, but are checked in for the purpose of
+# sharing and staking out future work.
+#
+# The main arguments to start_test are a list of directories and/or
+# list of files that should be tested.  The test system will test all
+# of the files listed and then all of the directories, including their
+# children (unless the -norecurse flag is used).  If no list of
+# directories or files is provided, the starting directory is either:
+#
+#   * "test" if start_test is invoked from $CHPL_HOME
+#
+#   * "."  otherwise (i.e., all subdirectories of the current
+#                     directory will be tested).
+#
+# In addition to source-based tests (*.chpl), tests can also execute
+# arbitrary commands (see sub_test below).
+#
+#
+# COMMAND-LINE OPTIONS
+#
+# The '-h' option lists the options that the script accepts and the
+# default values.  Current options are:
+#
+#   option     argument               default value
+#   ---------  ---------------------  -------------
+#              [list of directories]  "test" if in $CHPL_HOME, "." otherwise
+#              [list of tests]        ""
+#   -clean-only
+#   -compiler  <compiler executable>  $CHPL_HOME/bin/<host-platform>/chpl
+#   -compopts  <option list>          "--cc-warnings"
+#   -execopts  <option list>          ""
+#   -launchcmd <launcher command>     ""
+#   -norecurse
+#   -comp-only
+#   -performance
+#   -generate-graphs
+#   -startdate <MM/DD/YY>
+#   -futures
+#   -futuresonly
+#   -valgrind
+#   -valgrindexe
+#   -comm [none|gasnet|pvm]           $CHPL_HOME/util/chplenv/comm
+#   -suppress <suppression file>
+#   -interpret (DEPRECATED)
+#   -logfile   <log filename>         $testdir/Logs/<username>.<tgt-platform>.log
+#                                     (where $testdir is $CHPL_HOME/test if
+#                                     it exists, $CHPL_HOME/examples, if it
+#                                     exists, . otherwise)
+#   -memleaks
+#
+# All options can be used with a double-dash format as well 
+# (e.g. --compopts).
+#
+# The -compiler option allows the user to specify the compiler to test
+# if it is something other than the obvious one in the current SVN
+# structure.  This lets one run other people's compilers, old copies
+# of compilers, etc.
+#
+# The -compopts option allows the user to specify a set of compiler
+# options that should be used on every invocation to the compiler.
+# Additional compiler options can be specified on a directory-by-
+# directory basis using mechanisms described below (COMPOPTS/.compopts).
+# By default, -compopts is set to --cc-warnings, and additional
+# -compopts arguments will append to this list.  If, for some reason,
+# one wants to disable the --cc-warnings flag, currently the only
+# way to do so is by specifying "-compopts --no-cc-warnings" to
+# reverse the effects of that flag.
+#
+# The -comp-only option specifies that this testing run should only
+# be compiled and not executed; this causes success of a test to
+# be related to the success or failure of the compile step, not to
+# its execution.
+#
+# The -execopts option allows the user to specify a set of execution
+# options that should be used on every invocation of a program.  As
+# with compiler options, these can be ammended in each subdirectory.
+#
+# The -launchcmd option allows the user to specify a program launch
+# utility to use to start generated executables. When tests are
+# executed, the launchcmd is prepended to the command line used. This
+# allows, for example, for a binary generated by a cross compiler to
+# be copied over to the target machine before it is executed.
+#
+# The -norecurse flag requests that the base directory/ies be tested
+# but that no subdirectories be visited recursively.  This is useful
+# for pinpointing the testing of a single directory when you do not
+# want to test any of its subdirectories.
+#
+# The -logfile option indicates where the log of the test run should
+# be kept.  By default it's based on the user's name and the target
+# platform you're testing.  At the end of the run, a second log file
+# named <logfile>.summary will be generated containing only the Errors
+# and future tests that were logged.
+#
+# A -suppress option can be used to specify a file listing tests that
+# should be ignored for a particular run if they fail (and an error
+# will be generated if they pass when they were expected to fail).
+# The format of this suppress file is to list a single test per line
+# with optional comment lines starting with an initial '#' character.
+# After the whole testing system has been run, the tests in the
+# suppression file will be grepped out of the summary log file.
+#
+# The -valgrind option specifies that the compiler and generated
+# executable should be run using valgrind in order to find errors.
+# The -valgrindexe option specifies that the generated executable
+# should be run using valgrind, but not the compiler.
+#
+# The -futures option specifies that the testing system should test
+# both future and non-future tests.  By default, future tests are
+# skipped over.  The -futuresonly option specifies that the testing
+# system should test only the future tests and not the others.
+#
+# The -performance flag specifies that the testing system should
+# search for and execute performance tests within the testing
+# system.  A test foo.chpl is considered a performance test if a
+# file "foo.perfkeys" exists.  This file contains a string per
+# line that is used to read performance-related cues from the
+# test's compiler+execution output file.  For example, if a test
+# generates a line "Time: x.yz seconds", putting the key "Time:"
+# into its .perfkeys file would cause the testing system to grab
+# the value "x.yz" out of the output file (all non-whitespace 
+# characters after the key string until the next whitespace 
+# character).  These data values will then be written to a file
+# named $CHPL_TEST_PERF_DIR/<machine name>/foo.dat (where
+# $CHPL_TEST_PERF_DIR is "./perfdat" by default) in a TAB-separated
+# manner for graphing or display using gnuplot or Excel.
+#
+# When running with the -performance flag, compiler and executable
+# options are specified in files with .perfcompopts and 
+# .perfexecopts since they will most likely require different
+# compiler options (to specify optimization, turn off bounds
+# checking) and execution options (to request timings and other
+# unpredictable values to be printed out, whereas they're likely
+# to be squelched in the correctness run).
+#
+# Success/failure summaries after a performance run indicate
+# whether all the performance keys for a test were matched or not.
+# In particular, a failure indicates that a test's performance
+# keys couldn't all be found.
+#
+# After all the performance tests are run, a second pass is taken
+# through the list of files or directories to generate graphs.  You
+# can use the -generate-graphs flag to only generate graphs (no building
+# or executing test programs).  Graphs are generated using a .graph file
+# where the contents of the .graph specify what data should be graphed,
+# and basic information about the format of the graph. The graphs are
+# generated using gnuplot (gnuplot must be in your path) and dumped out
+# in .gif format.  In each $CHPL_TEST_PERF_DIR, an html index is created
+# that includes all the .gif files in that directory.
+#
+# The graphing is performed in a second pass so that a single .graph file
+# can use data from more than one test (thus avoiding dependences).  A caveat
+# with this dual pass design is that the graphing step is executed even if
+# the test fails (due to compilation, execution, etc.).  In such case,
+# there may be a Success counted for the graphing step in the test Summary
+# in addition to the test Failure.
+#
+# If a foo.chpl and foo.perfkeys are accompanied by a foo.graph, and
+# foo.graph is empty, the testing system will by default graph all
+# columns in foo.dat, with a y-axis labeled "Performance", where the 
+# x-axis represents time in the format of MM/DD/YY.  The start date 
+# if not set as a flag to start_test, will be the earliest date of all
+# the data files the .graph must read from.
+#
+# The user can also choose the graph settings by writing to the
+# .graph the format desired, as follows:
+#
+# -- to specify which performance keys are to be graphed,
+#    in .graph should be the line:
+#
+#    perfkeys: key1, key2, key3
+#
+#    where key1, key2 and key3 are all keys in a .perfkeys.  if not all keys
+#    specified come from the same .perfkeys, the .dat files they should be 
+#    extracted from should be listed (see below).  The .graph file may
+#    contain comments formatted by starting a line with '#'.
+#
+# -- if the performance keys specified above come from more than one 
+#    .perfkey, or come from a .perfkey that has its root name different
+#    than its .graph (e.g. foo.graph's listed perfkeys don't come from
+#    foo.perfkey, but from baz.perfkey etc.), specify the different files
+#    where the data should come from.
+#     
+#    For example,
+#
+#    files: file1.dat, file2.dat, file3.dat
+#
+#    where file1.dat has key1's data, file2.dat has key2's data, etc.
+#
+#    The .perfkeys file may contain comments formatted by starting a line
+#    with '#'.
+#
+# -- if you want the .dat file to be written to a file other than the
+#    the default file name (e.g., in foo.perfkeys, write the performance
+#    data to myfoo.dat), in the .perfkeys file, use the 'file: <filename>'
+#    in a comment.  For example,
+#
+#    # file: myfoo.dat
+#
+#    The filename must end in .dat.
+#
+# -- if you would like to specify the name of the key to be different
+#    on the graph than it is in .perfkeys, specify the name it should
+#    have:
+#
+#    graphkeys: key11, key12, key13
+#
+#    (this can be useful if you are graphing data across different 
+#    files which have the same keys in .perfkeys, and you want to distinguish
+#    them when viewing the graph.)
+#
+# -- to specify the name of the output graph,
+#    in .graph should be the line:
+#
+#    graphname: foo
+# 
+#    such that foo.gif will be put in $CHPL_TEST_PERF_DIR at end of a
+#    performance run
+#  
+# -- to specify the start date of the graph (the earliest date on the x-axis)
+#    in .graph should be the line:
+#
+#    startdate: 07/08/10
+#   
+#    Format is MM/DD/YY.  If no start date specified, the start date will be
+#    the earliest start date of all data files specified.  The start date
+#    specified in the .graph file will override the start date specified by
+#    the -startdate flag to start_test.
+#
+# -- to specify the title of the graph,
+#    in .graph should be the line:
+#
+#    graphtitle: Title
+#
+# -- to specify the y-axis label of the graph,
+#    in .graph should be the line:
+#    
+#    ylabel: Performance
+#
+# If want to specify more than one set of keys per .graph, such that
+# each set of keys corresponds to its own graph, please specify the perfkeys
+# first, followed by any lines pertaining to the above keys. Then
+# the next set of lines to specify any other set of keys, and so on.
+#
+# Sets of keys can be line separated from another set of keys, but no line separation
+# within a set of keys and its own attributes.
+#
+# The -startdate option allows the user to specify a date that all
+# graphs should start with (having a common start date for all graphs 
+# unifies the x-axis).  if in a .graph, there is a specified start date
+# for a particular graph, that graph will use the date in the .graph
+# and not the date by the -startdate option.  
+#
+# The -comm option requests that testing be performed with respect to
+# a specific comm layer.  At the time of this writing, none, gasnet,
+# and pvm are the three supported options.  Choosing something other
+# than "none" will cause "-nl 1" to be prefixed to the generated
+# executable's command-line options to set the number of locales.
+# Setting the number of locales to something other than 1 can be done
+# using NUMLOCALES and <testname>.numlocales files in the testing
+# directories themselves.  Using these mechanisms to set the number of
+# locales to 0 will cause the testing system to not use the -nl flag
+# by default.  Any directory or test that has a NUMLOCALES file, or
+# that has a .numlocales file specifying a number other than 0 or 1
+# will be skipped when using "none" as the communic layer (either
+# explicitly or by not specifying a -comm flag).
+#
+# The -nostdinredirect option makes the tests (but not the compiler)
+# run without redirecting stdin from /dev/null.  This is intended to
+# be used e.g. with qsub-based launchers, which at present do not
+# support stdin redirect.  The tests that have .stdin files are skipped
+# (because this would not be supported with those launchers).
+#
+# The -launchertimeout option makes start_test rely on the launcher
+# to enforce the timeout, instead of using 'timedexec'. This works
+# only if the launcher supports an appropriate option, whose format
+# is determined by the argument after -launchertimeout. Currently,
+# '-launchertimeout pbs' passes the option '--walltime=HH:MM:SS' .
+#
+# The -memleaks=<filename> option requests that the executable run
+# with --memLeaksLog=<filename> option.
+#
+# DEPRECATED The -interpret option requests that the compiler be executed in
+# DEPRECATED interpreter mode.  This will cause the test system to invoke the
+# DEPRECATED compiler to interpret the program rather than compile and run it.
+# DEPRECATED Future tests, those utilizing executable options (execopts), and
+# DEPRECATED those that are not executed (noexec) tests are skipped when this
+# DEPRECATED flag is invoked.  In addition, a directory can be requested to
+# DEPRECATED be skipped by dropping a NOINTERP file into it.  Because the
+# DEPRECATED Chapel compiler's interpreter feature is currently disabled, this
+# DEPRECATED flags is currenty deprecated.
+#
+#
+# STRUCTURE OF TEST DIRECTORIES
+#
+# By default, setting up a subdirectory for testing simply consists
+# of creating the directory, putting Chapel (.chpl) source files
+# into it and an expected output file (.good) for each source file
+# (using the same base name).  Upon reaching such a directory, the
+# testing system will run the specified compiler on each Chapel
+# source file using the specified compiler options, then (assuming
+# the compile completed successfully, execute the resulting program 
+# using the specified execution options.  The output from both the
+# compilation and the execution are concatenated and diff'd against
+# the .good file.  This allows programs that are supposed to generate
+# errors, warnings, and correct programs to all be tested using the
+# same mechanisms.  
+#
+# If a test generates files that should be cleaned up before running
+# the test again the next time (to start with a blank slate), these
+# files can be listed in a .cleanfiles or a directory-level file
+# called CLEANFILES.  Before each file or directory is tested (or when
+# the --clean-only flag is specified) the files listed in .cleanfiles
+# and/or CLEANFILES will be removed.  If a particular Chapel file is
+# specified, only the files listed in the .cleanfiles for that Chapel
+# file will be removed.  Both .cleanfiles and CLEANFILES will accept
+# the UNIX shell wildcard character '*', but not all shell expansions
+# (e.g., ~).  See the Python documentation for the glob module for
+# more info.
+#
+# If the output for a test varies by machine, communication layer, or
+# target platform name, files named <testname>.<machname>.good,
+# <testname>.comm-<commlayer>.good, or <testname>.<platform>.good can
+# be used to specify the output for such tests, where "machname" is
+# the output of "uname -n" with any "." qualifiers after the machine
+# name stripped off, commlayer is the communication layer being tested
+# (e.g., "none", "gasnet", etc.) and "platform" is the value of
+# $CHPL_TARGET_PLATFORM.  In addition, if "--no-local" is selected as
+# a compiler option, the file <testname>.no-local.good may be used.
+# The most specific good file will be used, in this order:
+# machname, "no-local", commlayer, platform, generic.
+#
+# Tests that are not yet expected to work can be marked as such
+# by creating a <testname>.future file.  The presence of the
+# .future file will prevent the test from counting toward our
+# nightly successes and regressions, and is intended to allow
+# tests to be checked in to share them between multiple developers
+# in-line with other tests that work.  In general, once a test
+# is working and stable, its future file should be removed and 
+# should not be re-added (for future failures of the test should
+# be counted as regressions).  The .future file should contain
+# the userid of the developer whose court it's in on the first
+# line (this will appear in the test system's summaries), or some
+# other categorization of what the future is dependent on to pass.
+# Subsequent lines can contain notes and will be ignored by the
+# testing system.
+#
+# As mentioned above, running the test system in interpreter mode
+# does not attempt to execute tests with .future files.  The
+# interpreter mode of the testing system has a parallel mechanism
+# for creating future tests using a .ifuture file (the "i"
+# stands for interpreter)
+#
+# If the test-writer wants to redirect standard input from a file,
+# they may do so by supplying a .stdin file with the same base
+# name as the test itself (e.g., if mytest.stdin exists, it will
+# be piped into stdin when running the executable created from
+# mytest.chpl).  If no such file exists, standard input is piped
+# from /dev/null (i.e., tests can't read from the console...)
+#
+# Particular subdirectories can also be customized if necessary.
+# Note that such customizations are not inherited recursively by
+# further subdirectories, but apply only to the directory in
+# question (we might consider changing this in future versions).
+# The customizations are as follows:
+#
+#   - if the subdirectory contains an executable sub_test script, that
+#     script will be used to run the tests in that directory rather
+#     than the default sub_test script (located in the
+#     $CHPL_HOME/util/test/ directory).  A sub_test script may take
+#     whatever actions it wants, and is simply expected to generate
+#     any errors using the "[Error ...]" format so that it will show
+#     up in the summary.  Similarly, the script should generate any
+#     warnings or successful tests using "[Warning ...]" "[Success
+#     ...]"  messages for consistency.  The sub_test script will be
+#     sent two arguments: (1) the compiler to use, and (2) the
+#     location of this main test/ directory.  The compiler and
+#     execution options will be stored in environment variables named
+#     COMPOPTS and EXECOPTS, respectively.
+#
+#  - if the subdirectory contains a NOTEST file, that directory
+#    will not be considered for testing.  This can be useful for
+#    disabling subdirectories containing tests that don't work
+#    yet, or subdirectories that contain input files for other
+#    tests (though they will also be ignored if they fail to
+#    contain any .chpl files...).  This may also be selected for
+#    a single test, foo.chpl, by creating a foo.notest file.
+#
+#  - if the subdirectory contains a SKIPIF file, the contents of
+#    the file will be checked to determine whether or not the
+#    directory's tests should be skipped.  The current format of
+#    the SKIPIF file is as follows:
+#      # ...          : a line starting with a # is a comment
+#      <blank>        : a blank line is skipped
+#      <var> == <val> : checks to see if envvar "var" is "val"
+#      <var> != <val> : checks to see if envvar "var" is not "val"
+#       <var> <= <val> : true if <var> contains the substring "val".
+#      CHPL_MEM_LEAK_TESTING == true : check if we are testing for memory leaks
+#    All of the lines of containing conditional expressions are logically
+#    or'd together, and if any of them are true, the test is
+#    skipped.  As with other options, a SKIPIF condition can
+#    be placed on a file-by-file basis using a <testname>.skipif
+#    file.  Tests that are explicitly named on the start_test
+#    command line will be tested regardless of any .skipif files.
+#    If -- for a given subdirectory <dir> -- there is a <dir>.skipif
+#    file and the condition in the file evaluates to true, then
+#    that directory and all of its descendents are skipped.
+#    The condition is ignored if the <dir>.skipif file corresponds
+#    to the current working directory, or if <dir> is explicitly named
+#    on the start_test command line.
+#
+#    Planned extensions to this capability:
+#    - ability to logically-and filters together
+#
+#  - if the subdirectory contains a NOEXEC file, any executables
+#    built in that directory will not attempt to be executed.
+#    Rather, only the compiler output will be diffed against the
+#    expected output (note that when a compile fails, this will
+#    also happen automatically).  This may also be selected for
+#    a single test, foo.chpl, by creating a foo.noexec file.
+#
+#  - if the subdirectory contains a NOVGRBIN file and the -valgrind
+#    flag was used, the generated binary will not be run using 
+#    valgrind (the compiler still would be).
+#
+#  - if the subdirectory contains a COMPOPTS or EXECOPTS file,
+#    the options listed in that file will be added to the compiler
+#    and execution options for that subdirectory.  In addition, 
+#    a test named foo.chpl can add its own compilation and execution
+#    options by specifying them in foo.compopts and foo.execopts.
+#
+#    The .compopts and .execopts files may contain multiple lines
+#    where each line specifies a different set of compilation or
+#    execution options.  All such files also support single line
+#    comments via the '#' character.  In addition, for the .compopts
+#    and .execopts files, if a line of options is followed by a
+#    '#' the first token following the '#' is treated as the .good file
+#    for the test using those options (.execopts .good files override
+#    .compopts ones).  If no .good file name is specified, the .good file
+#    will be assumed to be
+#         <testname>.<compopts line no>-<execopts line no>.good
+#    A '0' will be used if there is no appropriate line number.
+#
+#  - also added support for a LASTCOMPOPTS file that contains
+#    compiler options to be added after the source file.  Thus:
+#    ./chpl <COMPOPTS> <-compopts> source.chpl <LASTCOMPOPTS>.
+#    This can be specified on a test by test basis using foo.lastcompopts.
+# 
+#  - also added support for a LASTEXECOPTS file that contains
+#    program options to be added after the other execopts.  Thus:
+#    ./a.out <EXECOPTS> <-execopts> <LASTEXECOPTS>.
+#    This can be specified on a test by test basis using foo.lastexecopts.
+# 
+#  - if the subdirectory contains a COMPSTDIN file, the contents of
+#    COMPSTDIN will be piped into the execution of the compile step as
+#    stdin.  I can add a similar feature for the execution step as
+#    soon as there's need for it.
+#
+#  - if the subdirectory contains a CATFILES file, then the files
+#    listed in that file will be concatenated to the end of the
+#    compiler/execution output for each test.  For tests that
+#    generate files (either as a result of the compilation or
+#    as part of the executable's behavior), this can be used to
+#    ensure that the generated file's contents are correct without
+#    writing a specialized sub_test script.  Again, this file should
+#    be a single line with no linefeeds.  In addition, a test named 
+#    foo.chpl can add its own concatenation files by specifying them 
+#    in foo.catfiles.
+#
+#  - if the subdirectory contains an executable PREDIFF file, that
+#    file will be executed prior to running any diff command and
+#    will be sent five arguments:
+#      1) the name of the current test
+#      2) the name of the output file that the diff is going to
+#         be taken against
+#      3) the compiler being used
+#      4) the compiler options used
+#      5) the execution options used
+#    A test-specific PREDIFF script can be added  by using a foo.prediff
+#    script. Arguments 1 and 2 do not include any path components
+#    (regardless of how start_test is invoked). Argument 3 gives
+#    the absolute path to the compiler.
+#    A system-wide PREDIFF script, to be run on on the compiled executable's
+#    output for *all* tests, can be provided via the -sysprediff option.
+#    It is invoked with the same five arguments listed above,
+#    prior to invoking the two other PREDIFFs.
+#
+#  - similarly, actions desired before running the generated
+#    executable can be specified using a PREEXEC or foo.preexec
+#    script.  (other such commands can be added to various
+#    stages of the sub_test script on request).
+#
+#  - it is also possible to add a PRECOMP file which is run prior to
+#    running the main test.  This can be used to set up certain files
+#    which are used in the test itself.
+#
+#  - if the subdirectory contains a TIMEOUT file, then that file
+#    will be read to determine the number of seconds that the tests
+#    in the directory should be allowed to run before being killed.
+#    The default is currently 5 minutes.  A test foo.chpl can also
+#    override the timeout just for itself by supplying a timeout
+#    value in a foo.timeout file.
+#
+#  - using subdirectory-specific svn:ignore properties can also be
+#    very helpful so that files generated during testing won't
+#    clutter the results of a svn status command.
+#
+# Again, to see a sample run of the testing system, look through
+# the Samples/ directory, then run:
+#
+#     ./start_test Samples
+#
+# and inspect the Samples/ and Logs/ subdirectories to see what
+# was generated.
+#
+
+set user = `whoami`
+
+#
+# unset things that users may have set in their environment
+#
+unsetenv CHPL_DEVELOPER
+
+# Commented this out, because it only seems useful in shared environments:
+## Make sure that other testers can modify what another 
+## tester does
+#umask 002
+
+#
+if ($?CHPL_HOME) then
+    if (! -d $CHPL_HOME || ! -x $CHPL_HOME) then
+        echo "Error: CHPL_HOME must be a legal directory"
+        exit 1
+    endif
+else
+    echo "Error: CHPL_HOME must be set in order to run start_test"
+    exit 1
+endif
+
+set utildir = "$CHPL_HOME/util/test"
+if (! -d $utildir || ! -x $utildir) then
+    echo "Error: Cannot find $CHPL_HOME/test/util"
+    exit 1
+endif
+
+set testdir = "$CHPL_HOME/test"
+if (! -d $testdir || ! -x $testdir || ! -w $testdir) then
+    set testdir = "$CHPL_HOME/examples"
+    if (! -d $testdir || ! -x $testdir || ! -w $testdir) then
+        set testdir = "."
+    endif
+endif
+if (! -d $testdir || ! -x $testdir || ! -w $testdir) then
+    echo "Cannot write test directory '$testdir'"
+    exit -1
+endif
+
+if (! -e $testdir/Logs) then
+   mkdir $testdir/Logs
+endif
+set logsdir = "$testdir/Logs"
+if (! -d $logsdir || ! -x $logsdir || ! -w $logsdir) then
+    echo "Cannot write Logs directory '$testdir'"
+    exit -1
+endif
+
+set datestr = `date +"%y%m%d.%H%M%S"`
+
+set host_platform = `$CHPL_HOME/util/chplenv/platform --host`
+set tgt_platform = `$CHPL_HOME/util/chplenv/platform --target`
+
+#
+# some sets to get locale, environment reasonable
+#
+if ($tgt_platform != "sunos") then
+    setenv LC_ALL C
+    setenv LANG en_US
+endif
+
+
+set clean_only = 0
+set execopts = ""
+set compiler = ""
+set compopts = "--cc-warnings"
+set launchcmd = ""
+set dirlist = ""
+set testlist = ""
+set logfile = "$logsdir/$user.$tgt_platform.log"
+set valgrind = 0
+set valgrindexe = 0
+set interpret = 0
+set performance = 0
+set gengraphs = 0
+set startdate = ""
+set testfutures = 0
+set testfuturesonly = 0
+set testnotests = 0
+set recurse = 1
+set tee = "tee"
+set numlocales = 0
+set comm = `$CHPL_HOME/util/chplenv/comm`
+set suppressions = ""
+set optionerr = 0
+
+while ( $#argv > 0 )
+    switch ( $argv[1] )
+    case -execopts:
+    case --execopts:
+        shift
+        set execopts = "$execopts $argv[1]"
+        shift
+        breaksw
+    case -compiler:
+    case --compiler:
+        shift
+        set compiler = $argv[1]
+        shift
+        breaksw
+        case -launchcmd:
+        case --launchcmd:
+                shift
+                set launchcmd = "$argv[1]"
+                shift
+                breaksw
+    case -cleanonly:
+    case --cleanonly:
+    case -clean-only:
+    case --clean-only:
+        shift
+        set clean_only = 1
+        breaksw
+    case -compopts:
+    case --compopts:
+        shift
+        set compopts = "$compopts $argv[1]"
+        shift
+        breaksw
+    case -logfile:
+    case --logfile:
+        shift
+        set logfile = $argv[1]
+        shift
+        breaksw
+    case -memleaks:
+    case --memleaks:
+        shift
+                if ($argv[1] =~ "/*") then
+                    set execopts = "$execopts --memLeaksLog=$argv[1]"
+                else
+                    set execopts = "$execopts --memLeaksLog=$cwd/$argv[1]"
+                endif
+        setenv CHPL_MEM_LEAK_TESTING true
+        shift
+        breaksw
+    case -valgrind:
+    case --valgrind:
+        shift
+        set valgrind = 1
+        breaksw
+    case -sysprediff:
+    case --sysprediff:
+        shift
+                setenv CHPL_SYSTEM_PREDIFF "$argv[1]"
+        shift
+        breaksw
+        case -futures:
+        case --futures:
+                shift
+                set testfutures = 1
+                breaksw
+        case -futures-only
+        case --futures-only
+        case -futuresonly
+        case --futuresonly
+                shift
+                set testfuturesonly = 1
+                breaksw
+        case -i:
+        case --interpret:
+        case -interpret:
+                shift
+                set interpret = 1
+                breaksw
+        case --performance:
+        case -performance:
+                shift
+                set performance = 1
+                set gengraphs = 1
+                breaksw
+        case --generate-graphs:
+        case -generate-graphs:
+                shift
+                set gengraphs = 1
+                breaksw
+    case --startdate:
+    case -startdate:
+        shift
+        set startdate = $argv[1]
+        shift
+        breaksw
+        case -norecurse:
+        case --norecurse:
+        case -no-recurse:
+        case --no-recurse:
+                shift
+                set recurse = 0
+                breaksw
+    case -comp-only:
+    case --comp-only:
+        shift
+        setenv CHPL_COMPONLY true
+        breaksw
+        case -valgrindexe:
+        case --valgrindexe:
+                shift
+                set valgrindexe = 1
+                breaksw
+        case -comm:
+        case --comm:
+                shift
+                set comm = $argv[1]
+                if ($comm == "") then
+                    set comm = "none"
+                endif
+                shift
+                breaksw
+        case -suppress:
+        case --suppress:
+                shift
+                set suppressions = $argv[1]
+                shift
+                breaksw
+        case -nostdinredirect:
+        case --nostdinredirect:
+                shift
+                setenv CHPL_NO_STDIN_REDIRECT true
+                breaksw
+        case -launchertimeout:
+        case --launchertimeout:
+                shift
+                setenv CHPL_LAUNCHER_TIMEOUT $argv[1]
+                shift
+                breaksw
+    case -h:
+    case -help:
+    case --help:
+        echo Usage and defaults\:
+        echo "     start_test <options> <files> <directories>"
+                echo "          -clean-only"
+        echo "          -compiler <path>      (currently: $CHPL_HOME/bin/$host_platform/chpl)"
+        echo "          -compopts <options>   (currently: '--cc-warnings')"
+        echo "          -execopts <options>   (currently: '')"
+                echo "          -launchcmd <command>  (currently: '')"
+                echo "          -norecurse"
+        echo "          -comp-only"
+                echo "          -performance"
+                echo "          -generate-graphs"
+        echo "          -startdate <MM/DD/YY> (currently: '')"
+                echo "          -futures"
+                echo "          -futuresonly"
+        echo "          -valgrind"
+                echo "          -valgrindexe"
+                echo "          -sysprediff <path>"
+                echo "          -comm [none|gasnet|pvm]  (currently: $comm)"
+                echo "          -suppress <filename>"
+                echo "          -nostdinredirect"
+                echo "          -launchertimeout pbs"
+#                echo "          -interpret (or -i)"
+        echo "          -logfile <file>      (currently: $logfile)"
+        echo "          -memleaks <file>"
+        echo "          -h, -help"
+        exit 0
+        breaksw
+    default:
+                if ( -d "$argv[1]" && -x "$argv[1]") then
+#                    echo "$argv[1] is a directory"
+                    set dirlist = "$dirlist $argv[1]"
+                    shift
+                    breaksw
+                else if ( -r "$argv[1]") then
+#                    echo "$argv[1] is a file"
+                    set testlist = "$testlist $argv[1]"
+                    shift
+                    breaksw
+                else
+                    echo \[ERROR: Unknown command line parameter \"$argv[1]\", aborting.\]
+                    shift
+        set optionerr = 1
+        breaksw
+    endsw
+end
+
+if ($optionerr == 1) then
+    exit 1
+endif
+
+if ($comm != "none") then
+    set numlocales = "1"
+endif
+
+set invocationDir = "$cwd"
+
+#if logfile directory exists, then get absolute path for
+if ( -d `dirname $logfile` && -x `dirname $logfile` && -w `dirname $logfile` ) then
+    pushd `dirname $logfile` >& /dev/null
+    set logfile = `pwd`/`basename $logfile`
+    popd >& /dev/null
+else
+    echo \[Permission denied for logfile directory: \"`dirname $logfile`\"\] \
+    exit 1
+endif
+
+if ( -w $logfile ) then
+    echo ""
+    echo \[Removing log file with duplicate name \"$logfile\"\]
+    rm -f $logfile
+endif
+
+echo \[Starting Chapel regression tests - $datestr\] |& $tee $logfile
+echo \[starting directory: \"$invocationDir\"] |& $tee -a $logfile
+echo \[Logs directory: \"$logsdir\"\] |& $tee -a $logfile
+echo \[logfile: \"$logfile\"\] |& $tee -a $logfile
+
+echo \[CHPL_HOME: $CHPL_HOME\] |& $tee -a $logfile
+echo \[host platform: $host_platform\] |& $tee -a $logfile
+echo \[target platform: $tgt_platform\] |& $tee -a $logfile
+# see if valgrind is on.  If it is, reset the compiler
+if ($valgrind) then
+    echo \[valgrind: ON\] |& $tee -a $logfile
+    which valgrind > /dev/null
+    if ( $status != 0 ) then
+       echo "[Error: Could not find valgrind]" |& $tee -a $logfile
+       goto err_exit
+    endif
+    echo \[valgrind binary: `which valgrind` \] |& $tee -a $logfile
+    echo \[valgrind version: `valgrind --version` \] |& $tee -a $logfile
+    setenv CHPL_TEST_VGRND_COMP on
+    setenv CHPL_TEST_VGRND_EXE on
+else
+    setenv CHPL_TEST_VGRND_COMP off
+    if ($valgrindexe) then
+        echo \[valgrind: EXE only\] |& $tee -a $logfile
+        setenv CHPL_TEST_VGRND_EXE on
+    else
+        echo \[valgrind: OFF\] |& $tee -a $logfile
+        setenv CHPL_TEST_VGRND_EXE off
+    endif
+endif
+
+if ($compiler == "") then
+  set compiler = "$CHPL_HOME/bin/$host_platform/chpl"
+endif
+
+if ($interpret) then
+#     echo \[interpreter: ON\] |& $tee -a $logfile
+#    set compopts = "-i $compopts"
+    setenv CHPL_TEST_INTERP on
+else
+#    echo \[interpreter: OFF\] |& $tee -a $logfile
+    setenv CHPL_TEST_INTERP off
+endif
+
+if ($performance) then
+    echo \[performance tests: ON\] |& $tee -a $logfile
+    setenv CHPL_TEST_PERF on
+else
+    echo \[performance tests: OFF\] |& $tee -a $logfile
+endif
+
+if ($gengraphs) then
+    echo \[performance graph generation: ON\] |& $tee -a $logfile
+else
+    echo \[performance graph generation: OFF\] |& $tee -a $logfile
+endif
+
+
+# if compiler exists then get absolute path name for
+if ( -f $compiler && -x $compiler ) then
+    pushd `dirname $compiler` >& /dev/null
+    set compiler = $cwd/`basename $compiler`
+    popd >& /dev/null
+
+    echo \[compiler: \"$compiler\"\] |& $tee -a $logfile
+else
+    echo "[Error: Cannot find or execute compiler: $compiler]" |& $tee -a $logfile
+    goto err_exit
+endif
+
+echo \[compopts: \"$compopts\"\] |& $tee -a $logfile
+setenv COMPOPTS "$compopts"
+
+echo \[execopts: \"$execopts\"\] |& $tee -a $logfile
+setenv EXECOPTS "$execopts"
+
+echo \[launchcmd: \"$launchcmd\"\] |& $tee -a $logfile
+setenv LAUNCHCMD "$launchcmd"
+
+echo \[comm: \"$comm\"\] |& $tee -a $logfile
+setenv CHPL_COMM $comm
+setenv CHPL_GASNET_SEGMENT `$CHPL_HOME/util/chplenv/commSegment`
+
+if ($numlocales == "0") then
+    echo \[numlocales: \"\(default\)\"\] |& $tee -a $logfile
+else
+    echo \[numlocales: \"$numlocales\"\] |& $tee -a $logfile
+endif
+setenv NUMLOCALES "$numlocales"
+
+# if system-wide prediff is requested,  get absolute path name for it
+if ($?CHPL_SYSTEM_PREDIFF) then
+    if ( -f $CHPL_SYSTEM_PREDIFF && -x $CHPL_SYSTEM_PREDIFF ) then
+        pushd `dirname $CHPL_SYSTEM_PREDIFF` >& /dev/null
+        setenv CHPL_SYSTEM_PREDIFF  $cwd/`basename $CHPL_SYSTEM_PREDIFF`
+        popd >& /dev/null
+
+        echo "[system-wide prediff: $CHPL_SYSTEM_PREDIFF]" |& $tee -a $logfile
+    else
+        echo "[Error: Cannot find or execute system-wide prediff: $CHPL_SYSTEM_PREDIFF]" |& $tee -a $logfile
+        goto err_exit
+    endif
+endif
+
+# Set up vars for performance testing/graphing
+if ($performance || $gengraphs) then
+    if ($?CHPL_TEST_PERF_DIR) then
+        set perfdir = $CHPL_TEST_PERF_DIR
+    else
+    set perfdir = ./perfdat/`uname -n | sed 's@\..*@@'`
+    endif
+    set createGraphs = $utildir/createGraphs
+    set viewGraphs = $utildir/viewGraphs
+endif
+
+# Auto-generate tests from the spec
+if ("$dirlist" == "" && "$testlist" == "") then
+    pushd $CHPL_HOME >& /dev/null
+    set chplhome = $cwd
+    if (("$invocationDir" == "$CHPL_HOME" || "$invocationDir" == "$CHPL_HOME/test") && ($clean_only == 0)) then
+        echo \[Generating tests from the Chapel Spec in $chplhome/spec\] |& $tee -a $logfile
+        if ($performance) then
+            set blah=`make spectests >& test/spectests.exec.out.tmp`
+            set exitval = $?            
+            if ( $exitval != 0 ) then
+                echo "[Error: Failed to generate Spec tests.  Run 'make spectests' in $chplhome for more info]" |& $tee -a $logfile
+                goto err_exit
+            endif
+            pushd $CHPL_HOME/test >& /dev/null
+            if (! -e $perfdir) then
+                mkdir -p $perfdir
+            endif
+            set blah=`$utildir/computePerfStats spectests "$perfdir"`
+            set exitval = $?
+            if ( $exitval != 0 ) then
+                echo "[Error: Failed to compute perf stats for Spec tests]" |& $tee -a $logfile
+                goto err_exit
+            endif
+            rm spectests.exec.out.tmp
+            popd >& /dev/null
+        else
+            if ("$gengraphs" == "") then
+                set autogen=`make spectests` # capture output to keep it quiet
+                set exitval = $?
+                if ( $exitval != 0 ) then
+                    echo "[Error: Failed to generate Spec tests.  Run 'make spectests' in $chplhome for more info]" |& $tee -a $logfile
+                    goto err_exit
+                endif
+            endif
+        endif
+    endif
+    popd >& /dev/null
+    if ("$cwd" == "$chplhome") then
+        set dirlist = "test"
+    else
+        set dirlist = "."
+    endif
+endif
+
+# get absolute path for each directory
+set absdirs = ""
+foreach dir ($dirlist)
+    pushd "$dir" >& /dev/null
+    set currentdir = "$cwd"
+    popd >& /dev/null
+
+    set absdirs = "$absdirs $currentdir"
+end
+
+
+echo \[tests: \"$testlist\"] |& $tee -a $logfile
+
+if ($recurse == 1) then
+    echo \[directories: \"$absdirs\"] |& $tee -a $logfile
+else
+    echo \[directories: \(nonrecursive\): \"$absdirs\"] |& $tee -a $logfile
+endif
+
+# If we are running the performance tests, then check for unique .dat
+#  filenames.  Issue a error and exit if we have specified a common
+#  common directory via CHPL_TEST_PERF_DIR otherwise issue a warning.
+# NOTE: I am not proud of having written the following.
+if ($performance) then
+    echo ""
+    echo "[Checking for duplicate performance data filenames]" |& $tee -a $logfile
+    # NOTE: this logic is currently repeated in sub_test
+
+    # find all the .perfkeys files and grep any .dat files names from them
+    set perffiles = `find . -name \*.perfkeys -print -exec grep "^#[[:space:]]*file:" {} \;`
+    # dummy element at the end to handle the last file
+    set perffiles = ($perffiles "file:")
+    set lastfile = "#"
+    set yucktmpfile = /tmp/$user-start_test-$$
+    touch $yucktmpfile
+    foreach pfline ($perffiles)
+        set thisfile = `basename $pfline`
+        # NOTE: this doesn't handle the case where these is no space after the :
+        if ($lastfile != "#" && $lastfile != "#file:" && $lastfile != "file:") then
+            if ($thisfile != "#" && $thisfile != "#file:") then
+                set dotdatfile = `basename $lastfile .perfkeys`
+                set basefilename = `basename $dotdatfile .dat`
+                echo $basefilename >> $yucktmpfile
+            endif
+        endif
+        set lastfile = $thisfile
+    end
+
+    set perfcount = `sort $yucktmpfile | uniq -d`
+    set duperror = 0
+    foreach token ($perfcount)
+        if ($?CHPL_TEST_PERF_DIR) then
+            echo "[Error: Duplicate performance data filenames ($token.dat)]" |& $tee -a $logfile
+            set duperror = 1
+        else
+            echo "[Warning: Duplicate performance data filenames ($token.dat)]" |& $tee -a $logfile
+        endif
+    end
+    rm $yucktmpfile
+    if ($duperror != 0) then
+        goto err_exit
+    endif
+    echo ""
+endif
+
+
+#
+# Environment setup complete, print out the current Chapel environment
+#
+echo "" | & $tee -a $logfile
+echo "### Chapel Environment ###" | & $tee -a $logfile
+$CHPL_HOME/util/printchplenv | & $tee -a $logfile
+echo "##########################" | & $tee -a $logfile
+
+#
+# Utility functions
+#
+set gsub_test = $utildir/sub_test
+
+
+#####################################################
+#
+# test all of the tests that the user listed (if any)
+#
+
+# For this mode, test futures, non-futures, and notests
+setenv CHPL_TEST_FUTURES 1
+setenv CHPL_TEST_NOTESTS 1
+setenv CHPL_TEST_SINGLES 1
+
+foreach test ($testlist)
+    set basedir = `dirname $test`
+    set testname = `basename $test`
+
+    pushd $basedir >& /dev/null
+    echo " " |& $tee -a $logfile
+    echo "[Cleaning file $test]" |& $tee -a $logfile
+
+    set sub_clean = $utildir/sub_clean
+    echo "[Starting $sub_clean $testname `date`]" |& $tee -a $logfile
+
+    $sub_clean $testname |& $tee -a $logfile
+
+    if ($clean_only == 0) then
+        # run the test
+        if ($performance || ($performance == 0 && $gengraphs == 0)) then
+            echo " " |& $tee -a $logfile
+            echo "[Working on file $test]" |& $tee -a $logfile
+
+            if (-x ./sub_test) then
+                set sub_test = ./sub_test
+            else
+                set sub_test = $gsub_test
+            endif
+
+            setenv CHPL_ONETEST "$testname"
+            echo "[Starting $sub_test `date`]" |& $tee -a $logfile
+
+            $sub_test "$compiler" |& $tee -a $logfile
+            set errcode = $?
+            if ($errcode != 0) then
+                echo "[Error running sub_test for $test]" |& $tee -a $logfile
+            endif
+
+            unsetenv CHPL_ONETEST
+        endif
+
+        # generate performance graphs
+        if ($gengraphs) then
+            # For single tests, we only look for a $testname.graph file
+            set graphfile = `basename $testname .chpl`.graph
+            if (-e $graphfile) then
+                echo "[Executing createGraphs for $basedir/$graphfile in $perfdir]" |& $tee -a $logfile
+                $createGraphs "$graphfile" "$perfdir" "$startdate" |& $tee -a $logfile
+            endif
+        endif
+    endif
+
+    popd >& /dev/null
+end
+
+
+#####################################################
+#
+# test all of the directories that the user specified
+#
+
+setenv CHPL_TEST_SINGLES 0
+
+# for this mode, only test futures and notests as specified
+# by the command-line flags
+if ($testfuturesonly == 1) then
+    setenv CHPL_TEST_FUTURES 2
+else
+    if ($testfutures == 1) then
+        setenv CHPL_TEST_FUTURES 1
+    else
+        setenv CHPL_TEST_FUTURES 0
+    endif
+endif
+
+if ($testnotests == 1) then
+    setenv CHPL_TEST_NOTESTS 1
+else
+    setenv CHPL_TEST_NOTESTS 0
+endif
+
+# set up for multiple passes through the directories
+if ($performance) then
+    set testTypes = "performance graph"
+else
+    if ($gengraphs) then
+        set testTypes = "graph"
+    else
+        set testTypes = "run"
+    endif
+endif
+
+foreach testType ($testTypes)
+    # run the tests
+    foreach absdir ($absdirs)
+        # if specified to start in a specific directory, start there
+        set basedir = $absdir
+        cd $basedir
+        echo "[Working from directory $absdir]"
+
+        # Recursively list all directories, ignoring some (should we really do
+        # this?  Maybe add NOTEST files instead?)
+        if ($recurse == 1) then
+            set dirs = `find . -name ".svn" -prune -o -name Logs -prune -o -name Samples -prune -o -name Share -prune -o -name perfdat -prune -o -type d -print`
+        else
+            set dirs = (./)
+        endif
+
+        foreach dir ($dirs)
+            cd $basedir
+            if ( -x $dir ) then
+                pushd $dir >& /dev/null
+                set dir = $cwd
+                popd >& /dev/null
+            else
+                echo \["Warning: Cannot cd into" $dir "skipping directory"\]|&\
+                    $tee -a $logfile
+                continue
+            endif
+
+            echo " " |& $tee -a $logfile
+            echo "[Working on directory $dir]" |& $tee -a $logfile
+
+            # Skip this directory if there is a SKIPIF file
+            # and the condition it contains evaluates to true.
+            cd $dir
+            if (-e ./SKIPIF) then
+                set skiptest = `$utildir/testEnv ./SKIPIF`
+                if ($skiptest == 1) then
+                    echo "[Skipping directory based on SKIPIF environment settings]"
+                    continue
+                endif
+            endif
+
+            # Skip this directory if there is any matching <dir>.skipif file
+            # returning true, where <dir> is the current directory up to $basedir.
+            cd $dir
+            set pruneif = 0
+            while (! $pruneif && $cwd != $basedir)
+                set skipfilen = $cwd.skipif
+                if (-e $skipfilen) then
+                    set pruneif = `$utildir/testEnv $skipfilen`
+                endif
+                cd ..
+            end
+            if ($pruneif) then
+                echo "[Skipping directory based on ancestor .skipif environment settings in $skipfilen]"
+                continue
+            endif
+
+            cd $dir
+            if ($testType != "graph") then
+                # run tests
+                if ($performance) then
+                    set areTests = `find . -maxdepth 1 -name \*.perfkeys`
+                else
+                    set areTests = `find . -maxdepth 1 -name \*.chpl`
+                endif
+                if ((! -e ./NOTEST && ("$areTests" != "" || -x ./sub_test) && \
+                    (($CHPL_TEST_INTERP == "off") || \
+                    (! -e ./NOINTERP && ! -e ./NOEXEC && ! -e ./EXECOPTS)))) then
+                    # clean up
+                    set sub_clean = $utildir/sub_clean
+                    $sub_clean |& $tee -a $logfile
+
+                    if ($clean_only == 0)  then
+                        if (-x ./sub_test) then
+                            set sub_test = ./sub_test
+                        else
+                            set sub_test = $gsub_test
+                        endif
+                        echo "[Starting $sub_test `date`]" |& $tee -a $logfile
+                    
+                        $sub_test "$compiler" |& $tee -a $logfile
+                        set errcode = $?
+                        if ($errcode != 0) then
+                            echo "[Error running sub_test in $dir ($errcode)]" |& $tee -a $logfile
+                        endif
+                    endif
+                else
+                    echo \["No tests in directory" $dir\] |& $tee -a $logfile
+                endif
+            else
+                # generate performance graphs
+                # do this in a somewhat kludgy way to avoid stderr output
+                set graphfiles = `find . -maxdepth 1 -name \*.graph`
+                foreach gfile ($graphfiles)
+                    set graphfile = `basename $gfile`
+                    echo "[Executing createGraphs for $graphfile in $perfdir]" |& $tee -a $logfile
+                    $createGraphs "$graphfile" "$perfdir" "$startdate" |& $tee -a $logfile
+                    if ($? == 0) then
+                        echo "[Success generating graphs for $graphfile in $perfdir]" |& $tee -a $logfile
+                    endif
+                end
+
+            endif
+        end
+    end
+end
+
+if ($gengraphs && $?CHPL_TEST_PERF_DIR) then
+    echo "[Executing viewGraphs for $graphfile in $perfdir]" |& $tee -a $logfile
+    $viewGraphs "$perfdir" |& $tee -a $logfile
+    if ($? == 0) then
+        echo "[Success generating graph views in $perfdir]" |& $tee -a $logfile
+    else
+        echo "[Error generating graph views in $perfdir]" |& $tee -a $logfile
+    endif
+endif
+
+# exit here if there were errors before running the tests
+err_exit:
+
+# return to where we started
+cd $invocationDir
+
+echo \[Done with tests - `date +"%y%m%d.%H%M%S"`\] |& $tee -a $logfile
+echo \[Log file: $logfile \] |& $tee -a $logfile
+echo " " |& $tee -a $logfile
+
+# Output grep to a temp file, don't want to infinite loop
+set futuremarker = "^Future"
+set errormarker = "^\[Error"
+set warningmarker = "^\[Warning"
+if ($performance == 0 && $gengraphs) then
+    set successmarker = "^\[Success generating"
+else
+    if ($?CHPL_COMPONLY) then
+        set successmarker = "^\[Success compiling"
+    else
+        set successmarker = "^\[Success matching"
+    endif
+endif
+set skipstdinredirectmarker = "^\[Skipping test with .stdin input"
+
+echo \[Test Summary - $datestr\] |& $tee $logfile.summary
+if ($clean_only == 0) then
+    grep "$errormarker" $logfile |& $tee -a $logfile.summary
+    if ($suppressions != "") then
+        $utildir/filterSuppressions $suppressions $logfile.summary
+    endif
+
+    grep "$futuremarker" $logfile |& $tee -a $logfile.summary
+    grep "$warningmarker" $logfile |& $tee -a $logfile.summary
+
+    set successes = `grep -c "$successmarker" $logfile`
+    set skipstdinredirs = `grep -c "$skipstdinredirectmarker" $logfile`
+
+    # count failures from the summary file rather than the log file because
+    # it's already have its suppressions removed => better count (plus
+    # the summary file is smaller, so do it for the others too)
+    set failures = `grep -c "$errormarker" $logfile.summary`
+    set futures = `grep -c "$futuremarker" $logfile.summary`
+    set warnings = `grep -c "$warningmarker" $logfile.summary`
+
+    if ($skipstdinredirs != 0) echo \[Skipped $skipstdinredirs tests with .stdin input\]
+    echo "[Summary: #Successes = $successes | #Failures = $failures | #Futures = $futures | #Warnings = $warnings ]" |& $tee -a $logfile.summary
+else
+    echo \[Summary: CLEAN ONLY\] |& $tee $logfile.summary
+endif
+
+echo \[END\] |& $tee -a $logfile.summary
+cat $logfile.summary >> $logfile
+
+echo ''
+echo
+
+exit 0
+

@@ -1,0 +1,33 @@
+This directory contains several versions of Kristi's Graph500 code.
+
+v3/ is a staging area for improvements to kristyn/Graph500_1D_onV/
+(branched at r20229).
+
+Differences between v1/ and v2/, as of rr18792:
+
+* v2 removes a lock guarding associative domain adds.
+
+* v1 uses the Block distribution for edge and node lists,
+  v2 uses the default distribution.
+
+* v2 pre-allocates each node's array of neighbors
+  by building a "histogram" that estimates the neighbor count.
+  (The estimate counts duplicate neighbors, if there are any
+   duplicate edges, so it may over-estimate the count.)
+
+  v1, by contrast, adds one element to the neighbors array for each edge
+  (excluding the edges that connect to the neighbors added already,
+  as determined by a linear scan of neighbors).
+
+We may want to:
+
+* Decide whether the above differences are significant
+and so whether v1 should be kept around and/or included in testing.
+
+* Add v1 and/or v2 to performance testing.
+Maybe extract just the graph setup from v1
+to test domain reassignment and the subsequent array resizing.
+
+* Try to make the behavior deterministic. (Applies at least to v1 and v2.)
+Especially make the edge list deterministic.
+(As of this writing, even min/max (over the edge list) node IDs can vary.)

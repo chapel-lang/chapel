@@ -1,0 +1,2 @@
+bug: Associative domains do not support arrays as index types
+

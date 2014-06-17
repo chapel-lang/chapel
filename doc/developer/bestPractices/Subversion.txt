@@ -1,0 +1,65 @@
+=======================
+Subversion repositories
+=======================
+
+Repository
+------------
+The subversion repository for the project is set up as follows:
+
+* URL: svn://svn.code.sf.net/p/chapel/code
+         branches/
+           collaborations/     -- used for external collaborators
+           release/            -- used to capture release branches
+         tags/                 -- used to tag releases
+         third-party-norelease -- third party code not yet intended for release
+         trunk/                -- our main development branch ($CHPL_HOME)
+
+* Anyone can read the repository.
+
+* To commit to the repository, you need a SourceForge account and
+  permissions granted by a Chapel administrator.  If you are not a
+  Cray employee, a contributor's agreement is required to obtain
+  commit privileges.  Different versions of the form exist for
+  students and government employees.  The forms can be found in
+  $CHPL_HOME/doc/developer/contributorAgreements
+
+* Most external collaborations of any scope will be encouraged to work
+  in a project-specific branch in the branches/collaborations/ space.
+
+
+External Contributor Notes
+--------------------------
+In general, external contributors should work using the following
+guidelines, which are designed to protect the core Chapel team's
+ability to make forward progress and meet their contractual
+requirements:
+
+* Recall that commits to subversion are extremely difficult to remove
+  from the source tree's history, so be very careful not to commit
+  anything that you will regret later.
+
+* Please avoid committing third-party source code to any part of the
+  repository without clearing it with a member of the core Chapel
+  team.
+
+* Commit changes to your branch as often as you find worthwhile; when
+  committing merges of trunk/ into your branch, please try to minimize
+  the number of commits required in order to avoid creating too much
+  noise for developers or users who may be tracking the commits
+  through email or RSS feeds.
+
+* Most commits to trunk/ should be done with someone on the main
+  development team in the loop in order to avoid stepping on toes.  If
+  you have changes in your branch that you believe are ready and
+  worthwhile to migrate to trunk, please work with someone on the main
+  development team to review the changes and approve their inclusion.
+
+* Adding new tests or future tests to trunk/test can generally be done
+  without prior approval; just be sure that the tests work well within
+  the testing system and that they are sorted into a reasonable
+  location in the test hierarchy.
+
+* Other improvements, such as fixes to the documentation or vim/emacs
+  highlighting modes, are also valued.  Minor changes can be committed
+  to trunk/ without review; more major changes should get approval
+  from the core team as with code changes.

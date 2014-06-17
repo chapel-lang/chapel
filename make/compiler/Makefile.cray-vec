@@ -1,0 +1,29 @@
+#
+# Settings for the Cray vector machines
+#
+
+#
+# tools
+#
+
+CC = cc
+CXX = CC
+
+RANLIB = ranlib
+
+
+#
+# flags
+#
+
+DEBUG_CFLAGS = -g
+OPT_CFLAGS = 
+NO_IEEE_FLOAT_GEN_CFLAGS = -hfp2
+IEEE_FLOAT_GEN_CFLAGS = -hfp0
+CFLAGS = -hcpu=cray-$(subst -sim,,$(CHPL_MAKE_PLATFORM)) -hgnu
+
+COMP_CFLAGS = $(CFLAGS)
+RUNTIME_CFLAGS = $(CFLAGS) -DNO_BYTES_PER_LOCALE -DNO_CORES_PER_LOCALE
+RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
+GEN_CFLAGS = $(CFLAGS)
+

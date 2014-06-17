@@ -1,0 +1,1 @@
+error message: clean error instead of an assertion failure for bad loop index

@@ -1,0 +1,277 @@
+======================================
+Setting up your environment for Chapel
+======================================
+
+To get started with Chapel, there are four environment settings that
+are strongly recommended for effective use of the release, and a few
+other optional settings that are useful for cross-compiling or
+overriding the default settings.  To check the values of the Chapel
+environment variables that are set or can be inferred, run the script:
+$CHPL_HOME/util/printchplenv
+
+
+--------------------
+Recommended Settings
+--------------------
+
+1) Set the CHPL_HOME environment variable to point to the location of
+   the chapel/ directory that was created when you unpacked the
+   release.  This is the parent of the directory containing this file.
+   For example:
+
+        export CHPL_HOME=~/chapel-1.7.0
+
+   [This, and all other examples in Chapel READMEs, assumes you're
+    using the 'bash' shell.  If using 'csh' or 'tcsh', mentally change
+    'export FOO=BAR' to 'setenv FOO BAR'.  If using some other shell,
+    make the appropriate adjustment.]
+
+
+2) Set the CHPL_HOST_PLATFORM environment variable to represent the
+   platform on which you're working.  For standard UNIX workstations,
+   this can be done by running the $CHPL_HOME/util/chplenv/platform
+   script.  For example:
+
+        export CHPL_HOST_PLATFORM=`$CHPL_HOME/util/chplenv/platform`
+
+   For other platforms that appear very similar to a UNIX workstation
+   from the shell prompt (e.g., a Cray XK (TM)), the value may need to
+   be set explicitly.  The strings for our currently-supported host
+   platforms are as follows:
+
+        cygwin       : Cygwin (Windows) platforms
+        darwin       : Macintosh OS X platforms
+        linux32      : 32-bit Linux platforms
+        linux64      : 64-bit Linux platforms
+        marenostrum  : BSC's MareNostrum platform
+        netbsd       : NetBSD platforms
+        pwr5         : IBM Power5 SMP cluster
+        pwr6         : IBM Power6 SMP cluster
+        sunos        : SunOS platforms
+        cray-xc      : Cray XC (TM)
+        cray-xe      : Cray XE (TM)
+        cray-xk      : Cray XK (TM)
+        cray-xt      : Cray XT (TM)
+
+   Platform-specific READMEs are available for most of these platforms
+   in $CHPL_HOME/doc/platforms.  See $CHPL_HOME/doc/README for a
+   directory of these files.
+
+   The Chapel Makefiles and sources are designed to work for any
+   UNIX-compatible environment that supports a GNU-compatible make
+   utility.  The list above represents the set of platforms that we
+   have access to and can test easily.  We are interested in making
+   our code framework portable to other platforms -- if you are using
+   Chapel on a platform other than the ones listed above, please refer
+   to the README.building file and/or contact us at:
+   chapel_info@cray.com
+
+
+3) Set your PATH to include the directory $CHPL_HOME/bin/$CHPL_HOST_PLATFORM
+   which is created when you build the compiler.  For example:
+
+        export PATH="$PATH":"$CHPL_HOME/bin/$CHPL_HOST_PLATFORM"
+
+
+4) Set your man path to include the directory $CHPL_HOME/man.
+   For example:
+
+        export MANPATH="$MANPATH":"$CHPL_HOME"/man
+
+
+The setchplenv.* scripts in the $CHPL_HOME/util/ directory contain
+commands that set the above variables for various shells and host
+platforms when they are sourced from the $CHPL_HOME directory.
+Frequent Chapel users may want to add the above settings to their
+shell's dotfile(s).
+
+
+-----------------
+Optional Settings
+-----------------
+
+1) If you are cross-compiling for a platform other than your
+   $CHPL_HOST_PLATFORM, set the CHPL_TARGET_PLATFORM environment
+   variable to describe that platform.  See CHPL_HOST_PLATFORM above
+   for legal values (though whether or not a given setting will
+   support cross-compilation depends on your specific environment).
+
+   If CHPL_TARGET_PLATFORM is not set, the target platform defaults to
+   the same value as $CHPL_HOST_PLATFORM.
+
+
+2) Optionally, you can set CHPL_HOST_COMPILER and/or
+   CHPL_TARGET_COMPILER to indicate the compiler suite to use in
+   building the sources.  CHPL_HOST_COMPILER is the compiler used to
+   build the Chapel compiler itself so that it will run on
+   CHPL_HOST_PLATFORM.  CHPL_TARGET_COMPILER is the compiler used to
+   build the runtime libraries and generated code for
+   CHPL_TARGET_PLATFORM.  Currently supported values are as follows:
+
+        cray-mta          : the Cray compiler for multithreaded architectures
+        cray-prgenv-cray  : the Cray PrgEnv compiler using the Cray CCE backend
+        cray-prgenv-gnu   : the Cray PrgEnv compiler using the GNU backend
+        cray-prgenv-intel : the Cray PrgEnv compiler using the Intel backend
+        cray-prgenv-pgi   : the Cray PrgEnv compiler using the PGI backend
+        gnu               : the GNU compiler suite -- gcc and g++
+        ibm               : the IBM compiler suite -- xlc and xlC
+        intel             : the Intel compiler suite -- icc and icpc
+	pgi               : the PGI compiler suite -- pgcc and pgCC
+
+   The default for CHPL_HOST_COMPILER depends on the value of the
+   CHPL_HOST_PLATFORM environment variable:
+
+        platform        compiler
+        --------        --------
+        cray-*      ->  cray-prgenv-$PE_ENV (PE_ENV is set by PrgEnv-* modules)
+        cray-xmt    ->  cray-mta
+        marenostrum ->  ibm
+        pwr5, pwr6  ->  ibm
+        x1, x2      ->  cray-vec
+        other       ->  gnu
+
+   The default for CHPL_TARGET_COMPILER is CHPL_HOST_COMPILER if it is
+   set *and* CHPL_HOST_PLATFORM == CHPL_TARGET_PLATFORM (i.e., you are
+   not cross-compiling).  Otherwise, it will default to a value based
+   on CHPL_TARGET_PLATFORM according to the preceding table.
+
+
+3) Optionally, set the CHPL_MAKE environment variable to indicate the
+   GNU-compatible make utility that you want the compiler back-end to
+   invoke when compiling the generated C code.  If not set, this will
+   default to a value based on $CHPL_HOST_PLATFORM:
+
+        platform              make utility
+        --------              ------------
+        cygwin, darwin    ->  make
+        linux32, linux64  ->  gmake if available, otherwise make
+        other             ->  gmake
+        
+
+4) Optionally, set the CHPL_TASKS and/or CHPL_THREADS environment
+   variables to indicate what tasking and threading layer you want to
+   use to implement intra-locale parallelism (see README.tasks for
+   more information on these options).  Current options are:
+
+   CHPL_TASKS:
+        fifo           : run tasks to completion, in FIFO order
+        massivethreads : run tasks using U Tokyo's MassiveThreads package
+        mta            : each task runs on a Cray XMT thread
+        qthreads       : run tasks using Sandia's Qthreads package
+        none           : do not support multiple tasks
+
+   CHPL_THREADS:
+        minimal  : use one thread (the process itself)
+        pthreads : use POSIX threads (pthreads)
+        none     : no threading
+
+   The allowed combinations of these two are:
+
+        CHPL_TASKS      CHPL_THREADS
+        ----------      ------------
+        fifo            pthreads, minimal (with limitations)
+        mta             none
+        massivethreads  none
+        qthreads        none
+        none            none
+
+   If the CHPL_TASKS variable is set, the CHPL_THREADS variable will
+   default to the first corresponding value shown above.  If both are
+   unset, they default to values based on $CHPL_TARGET_PLATFORM:
+
+        platform     tasks    threads
+        --------     -----    -------
+        cray-xmt ->  mta      none
+        other    ->  fifo     pthreads
+
+   See README.tasks for more information about executing using the
+   various CHPL_TASKS and CHPL_THREADS options.
+
+
+5) Optionally, set the CHPL_COMM environment variable to indicate what
+   communication layer you want to use to implement inter-locale
+   communication.  Current options are:
+
+        none   : only supports single-locale execution
+        gasnet : use the GASNet-based communication layer
+
+   If unset, CHPL_COMM defaults to "none".  See README.multilocale for
+   more information on executing Chapel programs using multiple
+   locales.
+
+
+6) Optionally, the CHPL_MEM environment variable can be used to select
+   a memory management layer.  Current options are:
+
+        default  : use the standard C malloc/free commands
+        dlmalloc : use Doug Lea's memory allocation package
+        tcmalloc : use the tcmalloc package from Google Performance Tools
+
+   If unset, CHPL_MEM defaults to "default" unless CHPL_COMM is
+   gasnet and you are using the fast or large segments.  See
+   README.multilocale for more information on GASNet segments.
+
+
+7) Optionally, the CHPL_LAUNCHER environment variable can be used to
+   select a launcher to get your program up and running.  See
+   README.launcher for more information on this variable's default and
+   possible settings.
+
+
+8) Optionally, the CHPL_TIMERS environment variable can be used to
+   select an implementation for Chapel's timers.  Current options are:
+
+        generic : use a gettimeofday()-based implementation
+        mta     : use an mta_get_clock()-based implementation (Cray XMT only)
+
+   If unset, CHPL_TIMERS defaults to "generic" unless
+   CHPL_TARGET_PLATFORM is set to "cray-xmt" in which case it defaults
+   to "mta".
+
+9) Optionally, the CHPL_GMP environment variable can select between
+   no GMP support, using the GMP distributed with Chapel in third-party,
+   or using a system GMP. Current options are:
+
+        system : assume GMP is already installed (#include gmp.h, -lgmp)
+        none   : do not build GMP support into the Chapel runtime
+        gmp    : use the gmp implementation bundled with Chapel in third-party
+
+   If unset, CHPL_GMP defaults to "system" if you are on a Cray system,
+   "gmp" if you've already built the third-party installation of GMP for
+   your installation, and "none" otherwise.  Note that the included gmp
+   distribution may not build on all platforms supported by Chapel.
+
+10) Optionally, the CHPL_REGEXP environment variable can be used to
+    enable regular expression operations as documented in
+    doc/technotes/README.regexp and defined in modules/standard/Regexp.chpl.  
+    Current options are:
+
+        re2  : use the re2 implementation in third-party
+               (downloading, building, and installing it if it is not already)
+        none : do not support regular expression operations
+
+    If unset, CHPL_REGEXP defaults to "re2" if you've already installed 
+    regular expression support in third-party and "none" otherwise.
+
+11) Optionally, the CHPL_LLVM environment variable can be used to
+    enable support for the LLVM back-end to the Chapel compiler
+    (see doc/technotes/README.llvm) or to support extern blocks in
+    Chapel code via the CLANG compiler (see doc/technotes/README.extern).
+    Current options are:
+
+        llvm : use the llvm/clang implementation in third-party
+               (downloading, building, and installing it if it is not already)
+        none : do not support llvm-/clang-related features
+
+    If unset, CHPL_LLVM dfeaults to "llvm" if you've already installed
+    llvm in third-party and "none" otherwise.
+
+-------------------------------------
+Compiler Command Line Option Defaults
+-------------------------------------
+
+Most of the compiler's command line options support setting a default
+value for the option via an environment variable.  To see a list of
+the environment variables that support each option, run the compiler
+with the --help-env flag.  For boolean flags and toggles, setting the
+environment variable to any value selects that flag.

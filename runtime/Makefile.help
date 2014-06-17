@@ -1,0 +1,135 @@
+#
+# Makefile: builds Chapel runtime
+#
+
+RUNTIME_ROOT = .
+RUNTIME_SUBDIR = .
+
+ifeq ($(MAKE_LAUNCHER), 0)
+CHPL_MAKE_HOST_TARGET = --target
+else
+CHPL_MAKE_HOST_TARGET = --host
+endif
+
+#
+# include standard header for runtime
+#
+include $(RUNTIME_ROOT)/make/Makefile.runtime.head
+
+
+printstuff:
+	@echo CHPL_MAKE_PLATFORM = $(CHPL_MAKE_PLATFORM)
+	@echo AR = $(AR)
+	@echo GOOPY = $(GOOPY)
+	@echo $(CHPL_MAKE_HOME)/make/platform/Makefile.$(CHPL_MAKE_PLATFORM)
+	@echo CHPL_MAKE_MEM = $(CHPL_MAKE_MEM)
+	@echo CHPL_MAKE_HOST_TARGET = $(CHPL_MAKE_HOST_TARGET)
+
+
+#
+# include source subdirectories here
+#
+include src/Makefile.include
+include src/tasks/$(CHPL_MAKE_TASKS)/Makefile.include
+include src/threads/$(CHPL_MAKE_THREADS)/Makefile.include
+include src/timers/$(CHPL_MAKE_TIMERS)/Makefile.include
+include src/comm/$(CHPL_MAKE_COMM)/Makefile.include
+include src/launch/$(CHPL_MAKE_LAUNCHER)/Makefile.include
+include src/mem/$(CHPL_MAKE_MEM)/Makefile.include
+include src/qio/Makefile.include
+
+
+#
+# subdirectories and false subdirectory-oriented targets to force recursion
+#
+
+SUBDIRS = \
+	src \
+
+SVN_SRCS = 
+
+RUNTIME_OBJS = \
+	$(COMMON_OBJS) \
+	$(TASKS_OBJS) \
+	$(THREADS_OBJS) \
+        $(TIMERS_OBJS) \
+	$(COMM_OBJS) \
+	$(MEM_COMMON_OBJS) \
+	$(QIO_OBJS) \
+	$(REGEXP_OBJS)
+
+LAUNCH_LIB_OBJS = \
+	$(COMMON_LAUNCHER_OBJS) \
+	$(COMM_LAUNCHER_OBJS) \
+	$(LAUNCHER_OBJS)
+
+RUNTIME_DIR = ../$(LIB_RT_DIR)
+RUNTIME_LIB = $(RUNTIME_DIR)/libchpl.a
+RUNTIME_DIR_TIMESTAMP = $(RUNTIME_DIR)/.timestamp
+
+LAUNCHER_DIR = ../$(LIB_LN_DIR)
+LAUNCHER_LIB = $(LAUNCHER_DIR)/libchpllaunch.a
+LAUNCHER_DIR_TIMESTAMP = $(LAUNCHER_DIR)/.timestamp
+
+RUNTIME_TARGETS = \
+	$(RUNTIME_LIB) \
+	$(RUNTIME_DIR)/main.o \
+
+ifneq ($(CHPL_MAKE_LAUNCHER),none)
+LAUNCHER_TARGETS = \
+	$(LAUNCHER_LIB) \
+	$(LAUNCHER_DIR)/main_launcher.o \
+
+endif
+
+ifeq ($(MAKE_LAUNCHER),0)
+TARGETS = $(RUNTIME_TARGETS)
+else
+TARGETS = $(LAUNCHER_TARGETS)
+endif
+
+CLEAN_TARGS += $(RUNTIME_TARGETS) $(LAUNCHER_TARGETS)
+
+#
+# main rules
+#
+
+include $(RUNTIME_ROOT)/make/Makefile.runtime.rules
+
+
+#
+# target-based rules
+#
+
+$(RUNTIME_LIB): $(RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP)
+	@rm -f $@
+	$(AR) -rc $@ $(RUNTIME_OBJS)
+	$(RANLIB) $@
+	-@(which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && echo "Updating TAGS..." && $(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(ALL_SRCS) $(CURDIR)/include/*.h $(CURDIR)/include/tasks/$(CHPL_MAKE_TASKS)/*.h $(CURDIR)/include/threads/$(CHPL_MAKE_THREADS)/*.h) || echo "$(CHPL_TAGS_UTIL) not available"
+
+$(RUNTIME_DIR)/main.o: src/$(RUNTIME_OBJDIR)/main.o
+	cp $< $@
+
+
+#
+# launcher rules
+#
+$(LAUNCHER_LIB): $(LAUNCH_LIB_OBJS) $(LAUNCHER_DIR_TIMESTAMP)
+	@rm -f $@
+	$(AR) -rc $@ $(LAUNCH_LIB_OBJS)
+	$(RANLIB) $@
+
+$(LAUNCHER_DIR)/main_launcher.o: src/$(LAUNCHER_OBJDIR)/main_launcher.o
+	cp $< $@
+
+
+#
+# include standard footer for runtime
+#
+include $(RUNTIME_ROOT)/make/Makefile.runtime.foot
+
+#
+# qthreads-specific bootstrapping
+#
+src/tasks/qthreads/Makefile.include:
+	cd src/tasks/qthreads && $(MAKE) copy_qthread_files

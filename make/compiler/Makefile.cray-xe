@@ -1,0 +1,4 @@
+#
+# Settings for Cray XE systems
+#
+include $(CHPL_MAKE_HOME)/make/compiler/Makefile.cray-x-series

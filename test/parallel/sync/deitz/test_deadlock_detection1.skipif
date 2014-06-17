@@ -1,0 +1,2 @@
+# Deadlock detection is only implemented in the pthread version of the runtime
+CHPL_THREADS != pthread

@@ -1,0 +1,13 @@
+#
+# Copyright (c) 2004-2011, Cray Inc.  (See LICENSE file for more details)
+#
+
+TASKS_SRCS = tasks-$(CHPL_MAKE_TASKS).c
+
+SVN_SRCS = $(TASKS_SRCS)
+SRCS = $(SVN_SRCS)
+
+TASKS_OBJS = $(TASKS_SRCS:%.c=$(TASKS_OBJDIR)/%.o)
+
+RUNTIME_CFLAGS += -I$(MYTH_INCLUDE_DIR)
+

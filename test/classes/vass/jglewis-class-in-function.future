@@ -1,0 +1,4 @@
+bug: compiler crashes with a segfault "seg fault [misc.cpp:216]"
+
+Seems like nesting the class in a function is the culprit.
+We may have a future for the same bug elsewhere.

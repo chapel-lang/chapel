@@ -1,0 +1,7 @@
+bug: array alias member without element type
+
+Was
+
+
+bug: Can not have member variable in record (or class) that has a specified
+dimensionality and is defined as an array alias.

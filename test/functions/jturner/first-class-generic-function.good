@@ -1,0 +1,3 @@
+first-class-generic-function.chpl:329: In function 'main':
+first-class-generic-function.chpl:387: error: generic functions cannot be used as first-class functions
+first-class-generic-function.chpl:387: error: 'scalar_outer_product_cholesky' is a generic funciton

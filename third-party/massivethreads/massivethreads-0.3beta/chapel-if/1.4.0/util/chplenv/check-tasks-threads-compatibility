@@ -1,0 +1,18 @@
+#!/usr/bin/env perl
+
+@ARGV == 2 or die "usage: $0 task-model-name threads-model-name\n";
+
+$tasks=$ARGV[0];
+$threads=$ARGV[1];
+
+unless (($tasks =~ /^dev-tasks-1|fifo$/ &&
+         $threads =~ /^dev-threads-1|minimal|pthreads$/) ||
+	($tasks eq "mta" && $threads eq "none") ||
+	($tasks eq "nanox" && $threads eq "none") ||
+	($tasks eq "qthreads" && $threads eq "none") ||
+	($tasks eq "none" && $threads eq "none") ||
+	($tasks eq "myth" && $threads eq "none")) {
+    die "Tasks \"$tasks\" is incompatible with threads \"$threads\".\n";
+}
+
+exit(0);

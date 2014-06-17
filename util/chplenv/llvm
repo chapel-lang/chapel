@@ -1,0 +1,34 @@
+#!/usr/bin/env perl
+
+use File::Basename;
+
+$utildirname = dirname($0);
+
+$home = $ENV{'CHPL_HOME'};
+if ( ! -d $home ) {
+  $home = $utildirname . "/../../";
+}
+
+$preset_llvm = $ENV{'CHPL_LLVM'};
+
+if ($preset_llvm eq "") {
+  $hostplatform = `$utildirname/platform --host`; chomp($hostplatform);
+  $hostcompiler = `$utildirname/compiler --host`; chomp($hostcompiler);
+  $targplatform = `$utildirname/platform --target`; chomp($targplatform);
+  if ($targplatform =~ /^cray-xmt(-sim)?$/) {
+    $llvm = 'none';
+  } else {
+    $subdir = $home . "/third-party/llvm/install/" .
+              $hostplatform . "-" . $hostcompiler;
+    if ( -d $subdir && -f "$subdir/include/llvm/Type.h" ) {
+      $llvm = 'llvm';
+    } else {
+      $llvm = 'none';
+    }
+  }
+} else {
+  $llvm = $preset_llvm;
+}
+
+print "$llvm\n";
+exit(0);

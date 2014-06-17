@@ -1,0 +1,59 @@
+=================
+Chapel doc README
+=================
+
+This directory contains the following documentation:
+
+  README             : this file
+  README.bugs        : how to report bugs or suggestions to the Chapel team
+  README.building    : information about building the Chapel compiler
+  README.chplenv     : setting up your environment to use Chapel
+  README.compiling   : how to use the Chapel compiler to compile code
+  README.executing   : execution options for Chapel programs
+  README.launcher    : using a launcher to get Chapel execution started
+  README.multilocale : how to use Chapel with multiple locales
+  README.prereqs     : prerequisites for using Chapel
+  README.tasks       : explains how Chapel tasks are implemented using threads
+
+  chapelLanguageSpec.pdf : the current draft of the Chapel language
+                           specification
+
+  quickReference.pdf : a one-sheet, tri-fold overview of Chapel syntax
+                       for quick reference
+
+  platforms/           : platform-specific notes:
+    README.cray        :  Cray XT (TM), Cray XE (TM), Cray XK (TM), Cray XC (TM)
+    README.cray-xmt    :  Cray XMT (TM)
+    README.cygwin      :  Cygwin
+    README.ibm         :  IBM
+    README.macosx      :  Mac
+    README.marenostrum :  MareNostrum (at BSC)
+    README.sgi         :  SGI Altix
+    README.tilera      :  Tilera
+
+  technotes/                : technical notes about our implementation:
+    README.atomics          :  information about using 'atomic' variables
+    README.chpldoc          :  notes on using the 'chpldoc' capability
+    README.comm-diagnostics :  tracking communication events
+    README.dsi              :  requirements/guidelines on writing a domain map
+    README.extern           :  calling external C routines
+    README.firstClassFns    :  first-class functions
+    README.format           :  value-to-string formatting
+    README.formattedIO      :  readf()/writef() and formatting strings
+    README.gmp              :  a prototype GMP module
+    README.io               :  the new I/O system in Chapel
+    README.libraries        :  information about creating libraries in Chapel
+    README.llvm             :  information about using the LLVM back-end
+    README.local            :  the 'local' statement
+    README.main             :  defining the 'main()' routine  TODO
+    README.module_search    :  how modules are searched for to fulfill 'use's
+    README.regexp           :  using regular expressions in Chapel
+
+
+--------------------
+For more Information
+--------------------
+
+For additional information about Chapel, please refer to our website:
+
+  http://chapel.cray.com/

@@ -1,0 +1,59 @@
+.TH qt_double_max 3 "JUNE 2007" libqthread "libqthread"
+.SH NAME
+.BR qt_double_max ,
+.BR qt_uint_max ,
+.B qt_int_max
+\- find the maximum value within an array in parallel
+.SH SYNOPSIS
+.B #include <qthread/qloop.h>
+
+.I double
+.br
+.B qt_double_max
+.RI "(double *" array ", size_t " length ", int " checkfeb );
+.PP
+.I unsigned int
+.br
+.B qt_uint_max
+.RI "(unsigned int *" array ", size_t " length ", int " checkfeb );
+.PP
+.I int
+.br
+.B qt_int_max
+.RI "(int *" array ", size_t " length ", int " checkfeb );
+.SH DESCRIPTION
+These functions take as input an
+.I array
+of
+.I length
+numbers and will return the maximum value within those numbers. This value is
+computed in parallel by dividing the possible values up among the shepherds
+evenly, using futures to restrict the parallelism to the available limits.
+.PP
+If
+.I checkfeb
+is non-zero, these functions will wait for the entries in the array to be full
+before comparing them. They
+.B DO NOT
+check whether the array entries are properly aligned.
+.SH RETURN VALUE
+The maximum value of the first
+.I length
+entries of
+.IR array .
+.SH SEE ALSO
+.BR qt_double_prod (3),
+.BR qt_double_sum (3),
+.BR qt_double_min (3),
+.BR qt_uint_prod (3),
+.BR qt_uint_sum (3),
+.BR qt_uint_min (3),
+.BR qt_int_prod (3),
+.BR qt_int_sum (3),
+.BR qt_int_min (3),
+.BR qt_loop (3),
+.BR qt_loop_future (3),
+.BR qt_loop_balance (3),
+.BR qt_loop_balance_future (3),
+.BR qt_loopaccum_balance (3),
+.BR qt_loopaccum_balance_future (3)

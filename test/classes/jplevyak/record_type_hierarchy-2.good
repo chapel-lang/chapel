@@ -1,0 +1,2 @@
+record_type_hierarchy-2.chpl:16: error: unresolved call 'f(D)'
+record_type_hierarchy-2.chpl:10: note: candidates are: f(a: C)

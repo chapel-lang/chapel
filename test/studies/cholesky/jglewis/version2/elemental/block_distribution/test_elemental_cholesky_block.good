@@ -1,0 +1,14 @@
+Cholesky Factorization Tests for Equal Unstrided Index Ranges
+   Matrix Dimension  : 59
+   Block Size        : 7
+   Indexing Base     : -3
+   Array distribution: block
+
+Parallel Environment
+   Number of Locales         : 1
+
+
+
+elemental cholesky factorization symmetric index range code
+ on symmetric index range
+factorization successful

@@ -1,0 +1,175 @@
+#!/usr/bin/env perl
+
+$version = "";
+
+while (@ARGV) {
+    $version = shift @ARGV;
+    last;
+}
+
+if ($version eq "") {
+} else {
+    $version = "-$version";
+}
+
+# check out a clean copy of the sources into a temporary directory
+$pid = getpgrp();
+$user = `whoami`;
+chomp($user);
+if ($basetmpdir eq "") {
+    $basetmpdir = $ENV{'TMPDIR'};
+}
+if ($basetmpdir eq "") {
+    $basetmpdir = "/tmp";
+}
+$tmpdir = "$basetmpdir/chapel-release.$user.$pid.deleteme";
+$reldir = "chapel$version";
+$rootdir = "$tmpdir/$reldir";
+$svnroot = $ENV{'CHPL_HOME_REPOSITORY'};
+if ($svnroot eq "") {
+    $svnroot = "svn://svn.code.sf.net/p/chapel/code/trunk";
+}
+system("mkdir $tmpdir > /dev/null");
+print "Checking out the sources...\n";
+system("cd $tmpdir && svn export -q $svnroot $reldir");
+
+
+# explicit files to include
+@files = (
+       "ACKNOWLEDGEMENTS",
+       "AGREEMENT",
+       "CHANGES",
+       "CONTRIBUTORS",
+       "COPYRIGHT", 
+       "GOALS",
+       "LICENSE",
+       "Makefile",
+       "README",
+       "README.files",
+       "STATUS",
+       "compiler/passes/reservedSymbolNames",
+       "etc/README",
+       "man/man1/chpl.1",
+       "util/README",
+       "util/printchplenv",
+       "util/setchplenv.bash",
+       "util/setchplenv.csh",
+       "util/setchplenv.fish",
+       "util/setchplenv.sh",
+       "util/start_test"
+);
+
+
+# C/C++ sources
+@code_dirs = (
+    "compiler"
+);
+
+# include these dirs and their entire contents
+@complete_dirs = (
+    "compiler/etc",
+    "doc",
+    "etc/emacs",
+    "etc/source-highlight",
+    "etc/vim",
+    "examples",
+    "make",
+    "modules",
+    "runtime",
+    "third-party",
+    "util/chplenv",
+    "util/config",
+    "util/docs",
+    "util/test"
+);
+
+
+chdir "$rootdir";
+
+print "Tagging the files with copyright messages...\n";
+system("make -f make/Makefile.release");
+
+print "Generating the bison/flex files...\n";
+system("cd compiler/parser && make lex.yy.cpp > /dev/null");
+
+print "Creating the examples directory...\n";
+system("cp -r test/release/examples .");
+system("cd util && cp start_test ../examples/");
+system("./util/devel/test/extract_tests --no-futures -o ./examples/spec spec/*.tex");
+
+print "Building the man page...\n";
+system("make man");
+
+print "Building the STATUS file...\n";
+system("make STATUS");
+
+print "Creating the docs directory...\n";
+system("mv doc doctmp");
+system("mv doctmp/release doc");
+system("rm -r doctmp");
+
+print "Removing Makefiles that are not intended for release...\n";
+system("cd make/platform && rm Makefile.sunos_old");
+
+print "Removing compiler directories that are not intended for release...\n";
+system("cd compiler/include && rm -r sunos_old");
+
+print "Removing runtime directories that are not ready for release...\n";
+system("cd runtime/src/launch && rm -r apsim");
+system("cd runtime/src/launch && rm -r dummy");
+system("cd runtime/src/launch && rm -r mpirun");
+system("cd runtime/src/launch && rm -r zebra");
+system("cd runtime/include && rm -r sunos_old");
+system("cd third-party && rm -rf txt2man");
+
+print "Removing third-party directories that are not intended for release...\n";
+system("cd third-party && rm *.devel*");
+
+chdir "$tmpdir";
+
+print "Chmodding the hierarchy\n";
+system("chmod -R ugo+rX $reldir");
+system("chmod -R go-w $reldir");
+
+foreach $file (@files) {
+    $dfile = "$reldir/$file";
+    if (!(-e $dfile)) {
+        print "$dfile does not exist\n";
+        exit( 9);
+    }
+    push @tarfiles, $dfile;
+}
+
+foreach $dir (@code_dirs) {
+    @filelist = `find $reldir/$dir`;
+    foreach $fullpath (@filelist) {
+        chomp $fullpath;
+        $file = $fullpath;
+        $file =~ s/(\S+\/)+//g;
+        if ($file =~ /(\.(h|cpp|c|ypp|lex)$)|Makefile|README|BUILD_VERSION/) {
+            # print "$fullpath\n";
+            push @tarfiles, $fullpath;
+        }
+    }
+}
+
+foreach $dir (@complete_dirs) {
+    push @tarfiles, "$reldir\/$dir";
+}
+
+
+if (defined($ENV{"CHPL_HOME"})) {
+    $resultdir = $ENV{"CHPL_HOME"};
+    $resultdir = "$resultdir/tar";
+} else {
+    $resultdir = $basetmpdir;
+}
+
+$cmd = "tar -cz -f $resultdir/$reldir.tar.gz @tarfiles";
+print "$cmd\n";
+system ($cmd);
+
+print "Left result in $resultdir/$reldir.tar.gz\n";
+
+system("rm -r $tmpdir");
+

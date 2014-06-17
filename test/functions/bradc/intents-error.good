@@ -1,0 +1,2 @@
+intents-error.chpl:23: In function 'callblank':
+intents-error.chpl:25: error: non-lvalue actual passed to ref argument

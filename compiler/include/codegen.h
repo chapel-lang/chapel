@@ -1,0 +1,133 @@
+/**************************************************************************
+  Copyright (c) 2004-2013, Cray Inc.  (See LICENSE file for more details)
+**************************************************************************/
+
+
+#ifndef CODEGEN_H
+#define CODEGEN_H
+
+#include <list>
+#include <map>
+#include <string>
+#include <vector>
+
+#ifdef HAVE_LLVM
+#include "clangUtil.h"
+#endif
+
+#include "files.h"
+#include "genret.h"
+
+#ifdef HAVE_LLVM
+
+// forward declare.
+namespace clang {
+  namespace CodeGen {
+    class CodeGenModule;
+  }
+}
+class CCodeGenAction;
+
+#endif
+
+/* GenInfo is meant to be a global variable which stores
+ * the code generator state - e.g. FILE* to print C to
+ * or LLVM module in which to generate.
+ */
+struct GenInfo {
+  // If we're generating C, this is the FILE* to print to
+  FILE* cfile;
+  // When generating C, sometimes the code generator needs
+  // to introduce a temporary variable. When it does,
+  // it saves them here.
+  std::vector<std::string> cLocalDecls;
+  // When generating C code *internal to a function*, we
+  // need to possibly insert some temporaries above the code
+  // for the function, so we can't print the function body
+  // until after we have generated the entire function.
+  // So, we accumulate statements here and when we finish
+  // code generating the function, we print out
+  // all of cLocalDecls and all of the cStatements.
+  std::vector<std::string> cStatements;
+
+  // We're always generating code for some AST element
+  // This is the astloc for the statement under consideration
+  // Normally, it refers to a statement
+  int lineno;
+  const char* filename;
+
+  bool parseOnly;
+#ifdef HAVE_LLVM
+  // If we're generating LLVM, the following are available
+  llvm::Module *module;
+  llvm::IRBuilder<> *builder;
+  LayeredValueTable *lvt;
+
+  // Clang Stuff
+  std::string clangInstallDir;
+  std::string compileline;
+  std::vector<std::string> clangCCArgs;
+  std::vector<std::string> clangLDArgs;
+  std::vector<std::string> clangOtherArgs;
+
+  clang::CodeGenOptions codegenOptions;
+  llvm::IntrusiveRefCntPtr<clang::DiagnosticOptions> diagOptions;
+  clang::TextDiagnosticPrinter* DiagClient;
+  llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs> DiagID;
+  llvm::IntrusiveRefCntPtr<clang::DiagnosticsEngine> Diags;
+
+  clang::CompilerInstance *Clang;
+  // We get these out of the compiler instance
+  // before delete'ing it.
+  clang::TargetOptions clangTargetOptions;
+  clang::LangOptions clangLangOptions;
+
+  // Once we get to code generation....
+  std::string moduleName;
+  llvm::LLVMContext llvmContext;
+  clang::ASTContext *Ctx;
+  LLVM_TARGET_DATA *targetData;
+  clang::CodeGen::CodeGenModule *cgBuilder;
+  CCodeGenAction *cgAction;
+
+
+  // We stash the layout that Clang would like to use here.
+  std::string targetLayout;
+  // Optimizations to apply immediately after code-generating a fn
+  llvm::FunctionPassManager* FPM_postgen;
+
+  // When using a function, just use cgModule->GetAddrOfFunction,
+  // which will cause cgModule to emit it on Builder->Release.
+  //
+  //
+  // defined in passes/codegen.cpp
+  GenInfo(std::string clangInstallDirIn,
+          std::string compilelineIn,
+          std::vector<std::string> clangCCArgs,
+          std::vector<std::string> clangLDArgs,
+          std::vector<std::string> clangOtherArgs,
+          bool parseOnly);
+#endif
+  GenInfo();
+
+};
+
+
+extern GenInfo* gGenInfo;
+extern int gMaxVMT;
+
+#ifdef HAVE_LLVM
+void setupClang(GenInfo* info, std::string rtmain);
+#endif
+
+bool isBuiltinExternCFunction(const char* cname);
+
+std::string numToString(int64_t num);
+std::string int64_to_string(int64_t i);
+std::string uint64_to_string(uint64_t i);
+void genComment(const char* comment, bool push=false);
+void genIdComment(int id);
+void flushStatements(void);
+
+
+#endif //CODEGEN_H

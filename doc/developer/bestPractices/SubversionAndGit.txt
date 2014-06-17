@@ -1,0 +1,57 @@
+It is possible to create a branch in git off of the trunk in svn.
+There is more than one way to do this, but the way I prefer
+is to simultaneously have both git and svn managing the same
+files.
+
+That way, you can gain the normal distributed development
+benefits of git, including local merging, and also you can
+still use svn to track trunk/ and to commit your changes
+once they are ready.
+
+Here's how you set it up.
+
+# First, set up a subversion checkout. We'll suppose the branch
+# you want to make is called mybranch
+# If you're working with an existing git+svn branch,
+# you'll want to be sure to check out last revision the branch
+# maintainer mentioned in the git commit log.
+
+ svn checkout svn://svn.code.sf.net/p/chapel/code/trunk mybranch
+
+# Next, create an empty git repository in that directory
+ cd mybranch
+ git init
+
+# CREATING A NEW REPOSITORY
+# Now, add a file to tell git to ignore the .svn directories.
+-- I put the following in mybranch/.gitignore 
+.svn/entries
+.svn
+.svn*
+
+# Now use 'git add' to add all the files you care to track
+# in your git branch. (You could, for example, choose not
+# to manage third-party/ or test/ in git, or only to manage
+# a subset of those).
+ git add *
+ git checkout -b mybranch
+
+# Now you probably want to upload your git repo to e.g. sourceforge
+# or somewhere else with something like:
+ git remote add sourceforge ssh://username@chapel.git.sourceforge.net/gitroot/chapel/chapel
+ git push sourceforge mybranch
+
+# USING AN EXISTING REPOSITORY
+# For example, here is how you would add a Sourceforge remote repository
+ git remote add sourceforge ssh://username@chapel.git.sourceforge.net/gitroot/chapel/chapel
+# Now download changes from Sourceforge git:
+ git fetch --all
+# Now tell git to overwrite the subversion files with
+# what is in the branch you want to work with (in this case, mybranch)
+ git reset --hard sourceforge/mybranch
+
+# USING AN EXISTING REPOSITORY WITHOUT SVN
+ # add the remote as above
+ git checkout -b sourceforge/llvm
+
+

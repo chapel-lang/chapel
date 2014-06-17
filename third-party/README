@@ -1,0 +1,148 @@
+============================
+Chapel third-party directory
+============================
+
+This directory is designed to hold sources that were not developed by
+the Chapel team and which are released under distinct licenses from
+Chapel itself.  Current subdirectories include:
+
+
+creoleparser/
+  Summary: This is a directory in which the python Creoleparser
+           package will be downloaded when running 'make creoleparser'
+           in the third-party directory.  It also relies on an
+           additional Python package 'Genshi' which will be downloaded
+           if it is not found within your path
+
+  License: MIT (Genshi is Revised BSD)
+
+  Website: http://pypi.python.org/pypi/Creoleparser
+             and
+           http://genshi.edgewall.org/
+
+
+dlmalloc/
+  Summary: Doug Lea's memory allocator (dlmalloc) which we use to
+           support malloc/free calls when running GASNet programs
+           using segment fast.
+
+  License: dlmalloc has been placed in the public domain as explained
+           at http://creativecommons.org/publicdomain/zero/1.0/
+
+  Website: http://g.oswego.edu/dl/html/malloc.html
+
+  See also: the comments in dlmalloc/src/dlmalloc.c
+
+
+gasnet/
+  Summary: the Berkeley GASNet library for one-sided communication
+           which we use as a communication layer to implement Chapel's
+           support for multi-locale/distributed-memory systems.
+
+  License: GASNet is made available under a BSD-style license, which
+           can be found in gasnet/GASNet-<version>/license.txt
+
+  Website: http://gasnet.cs.berkeley.edu
+
+  See also: gasnet/README
+
+
+gmp/
+  Summary: the GNU Multiple Precision Arithmetic Library
+
+  License: L-GPL (see gmp/gmp-*/COPYING and gmp/gmp-*/COPYING.LIB)
+
+  Website: http://gmplib.org
+
+  See also: gmp/README and gmp/gmp-*/README
+
+
+llvm/
+  Summary: This is a directory where the LLVM Compiler infrastructure,
+           including Clang, will be downloaded when running 'make
+           llvm' in the third-party directory.  We use LLVM as an
+           optional back-end for Chapel in place of C (see
+           doc/technotes/README.llvm for details); and we use CLANG to
+           support "extern blocks" within Chapel -- a capability for
+           embedding C code into a Chapel source file.
+
+  License: LLVM's BSD-style license (see llvm/llvm/LICENSE.TXT and
+           llvm/llvm/tools/clang/LICENSE.TXT)
+
+  Website: http://llvm.org/
+             and
+           http://clang.llvm.org/
+
+  See also: llvm/llvm/README.txt
+              and
+            llvm/llvm/tools/clang/README.txt)
+
+
+massivethreads/
+  Summary: MassiveThreads is a lightweight thread library being
+           developed by the University of Tokyo.  This package
+           represents a lighter-weight tasking alternative
+           to the default fifo/pthreads choice.
+
+  License: MassiveThreads is released under the Simplified BSD License,
+           which can be found in:
+             massivethreads/massivethreads-<version>/COPYRIGHT
+
+  Website: http://code.google.com/p/massivethreads/
+
+  See also: massivethreads/massivethreads-<version>/README
+
+
+qthread/ 
+  Summary: the Qthreads user-level tasking package being developed by
+           Sandia National Laboratory.  We are working on using this
+           as a lighter-weight tasking alternative to pthreads.
+
+  License: Qthreads is released under the New BSD License, which can
+           be found in qthread/qthread-<version>/COPYING
+
+  Website: http://code.google.com/p/qthreads/
+    and
+           http://www.cs.sandia.gov/qthreads/
+
+  See also: qthread/qthread-*/README
+
+
+re2/
+  Summary: This is a directory where the RE2 regular expression
+           library will be downloaded when running 'make re2' in the
+           third-party directory.  We use RE2 to support regular
+           expression operations as described in
+           doc/technotes/README.regexp).
+
+  License: New BSD license (see re2/re2/LICENSE)
+
+  Website: https://code.google.com/p/re2/
+
+  See also: re2/re2/README
+
+
+tcmalloc/
+  Summary: the Google perf-tools memory allocator (tcmalloc) which we
+           use to support malloc/free calls when running programs using
+           Cray's Gemini network interconnect chip
+
+  License: Google-perftools is released under the New BSD License (see
+           tcmalloc/google-perftools-*/COPYING)
+
+  Website: http://code.google.com/p/google-perftools/
+
+  See also: tcmalloc/README
+
+
+utf8-decoder/
+  Summary: A fast UTF-8 decoder, used for fast UTF-8 I/O.
+           This decoder is by Bjoern Hoehrmann.
+
+  License: MIT (see utf8-decoder/README)
+
+  Website: http://bjoern.hoehrmann.de/utf-8/decoder/dfa/
+
+  See also: utf8-decoder/README
+
+

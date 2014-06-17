@@ -1,0 +1,1 @@
+fwriteIntFailed.chpl:2: error: Invalid argument in file.writer with path "fwriteIntFailed.txt"

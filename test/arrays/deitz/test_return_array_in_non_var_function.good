@@ -1,0 +1,1 @@
+test_return_array_in_non_var_function.chpl:13: error: illegal lvalue in assignment

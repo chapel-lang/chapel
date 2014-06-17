@@ -1,0 +1,3 @@
+test_foo5-error.chpl:16: error: ambiguous call 'foo(type real(64), 2.0, 4.0)'
+test_foo5-error.chpl:1: note: candidates are: foo(type t, x: t, y: t)
+test_foo5-error.chpl:8: note:                 foo(type t, x: t, y: real(64))

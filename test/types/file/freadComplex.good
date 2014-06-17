@@ -1,0 +1,7 @@
+1.1 + 1.1i
+2.2 + 2.2i
+3.3 + 3.3i
+4.4 + 4.4i
+5.5 + 5.5i
+6.6 - 6.6i
+freadComplex.chpl:7: error: bad format in channel.read(inout a:complex(128)) with path "freadComplex.txt" offset 79

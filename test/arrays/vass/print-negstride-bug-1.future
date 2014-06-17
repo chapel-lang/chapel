@@ -1,0 +1,21 @@
+bug: printing a multi-d array where one of the dimension ranges has a negative stride misplaces a newline
+
+Right now I get:
+
+---
+0 0 0 00 0 0 0
+0 0 0 0
+0 0 0 0
+
+---
+
+for writeln(A) and writeln(C) and 
+
+---
+0 0 0 00 0 0 0
+
+---
+
+for writeln(X). Instead, I should get 4 and 2, resp., lines of 4 zeros.
+
+BTW we should test the same for 3/4-d arrays.

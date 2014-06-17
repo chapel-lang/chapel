@@ -1,0 +1,67 @@
+semantic: cobegin scope
+
+feature request: cobegins don't introduce new lexical scope
+
+This feature request asks that variables defined within a
+cobegin block not be considered to be in a new lexical scope
+defined by the cobegin, but rather be placed at the enclosing
+lexical scope, in order that the values be usable after the
+cobegin completes.
+
+Without this feature, declarations of such variables need
+to be moved outside of the cobegin, have types declared
+for them rather than using type inference, and have any
+const-ness be changed to var (potentially with single,
+though it's not necessarily what single was designed for).
+See varsEscape-workaround.chpl for an example.
+
+In this case, the workaround is not so bad.  The pain
+increases in cases where the type of the variable is 
+more complicated or harder to determine/describe without 
+having it be inferred from a function call (or where
+constness is more valuable to describe to the reader or
+compiler).
+
+The main downside to permitting this would seem to be
+potential confusion over the scope of such variables,
+since they seem to be in their own lexical scope.
+However, this seems like a minor downside given the
+convenience of the feature, the fact that the compiler
+should be able to do live range analysis to destroy
+the variable early if memory is an issue, and the fact
+that warnings will be generated if the variable name
+conflicts with one in the enclosing scope.
+
+
+Notes from 04/30/08 meeting
+---------------------------
+* seems inconsistent with definition of curly brackets
+  to change this.  Introduce a second type of compound
+  statement that doesn't open a new scope?
+
+* similarity here to desire in some cases to have an
+  on clause not open up a scope -- if one wanted a
+  complex on clause that just introduced new variables
+  remotely, e.g.
+
+  - both of the above might have an implementation challenge
+    in that we currently implement these early on by pushing
+    them into a function -- that would be harder to do
+
+* in generic programming instances, the annoyingness
+  of specifying types can be worse (or maybe even
+  impossible if the functions return array types)
+
+* support an expression-level cobegin?
+
+  const (lnodes, rnodes) = cobegin (left.countNodes(), right.countNodes());
+
+* what if we supported a type-less, init-less const as long as
+  it only had a single static assignment?
+
+    const lnodes, rnodes;
+    cobegin {
+      lnodes = left.countNodes();
+      rnodes = right.countNodes();
+    }
+    return lnodes + rnodes + 1;

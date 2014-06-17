@@ -1,0 +1,4 @@
+ceil(7:int(64),5:uint(64)) = 1
+ceil(7:uint,5:uint(64)) = 1
+ceil(7:uint(64),5:int(64)) = 1
+ceil(7:uint(64),5:uint) = 1

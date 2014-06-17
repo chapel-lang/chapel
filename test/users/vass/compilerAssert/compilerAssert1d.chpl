@@ -1,0 +1,2 @@
+
+compilerAssert(false, "message");

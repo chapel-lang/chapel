@@ -1,0 +1,76 @@
+#!/usr/bin/env python
+
+import os, sys
+
+if len(sys.argv) != 3:
+    sys.stderr.write('usage: %s <status file> <future list>\n'%(sys.argv[0]))
+    sys.exit(-1)
+
+status_file = sys.argv[1]
+futures_file = sys.argv[2]
+
+#
+# get futures in the status file
+#
+fh = open(status_file, 'r')
+mylines = fh.readlines()
+fh.close()
+status_futures = set()
+dups = set()
+for line in mylines:
+    l = line.strip()
+    if l and l[0] == '#':
+        ll = l.split()
+        if len(ll) > 1:
+            if ll[1] == 'OMITTED:':
+                fid = 2
+            else:
+                fid = 1
+            if ll[fid].rfind('.future') == len(ll[fid])-7:
+                # print ll[fid]
+                if ll[fid] not in status_futures:
+                    status_futures.add(ll[fid])
+                else:
+                    dups.add(ll[fid])
+
+#
+# get futures in the futures list
+#
+fh = open(futures_file, 'r')
+mylines = fh.readlines()
+fh.close()
+last = None
+futures = set()
+for line in mylines:
+    l = line.strip().split()
+    if not l:
+        continue
+    ll = l[0].strip()
+    if ll and ll == '==>':
+        last = l[1].strip()
+    if ll.lower() == 'bug:' or ll.lower() == 'unimplemented' or ll.lower() == 'performance:':
+        if last[0:2] == './':
+            # print last[2:]
+            futures.add(last[2:])
+        else:
+            # print last
+            futures.add(last)
+
+sys.stdout.write('%d total futures (bug/unimplemented feature/performance)\n'%len(futures))
+
+futures_only = sorted(list(futures - status_futures))
+status_only = sorted(list(status_futures - futures))
+
+sys.stdout.write('\nFutures missing from the STATUS file (%d total):\n'%(len(futures_only)))
+for f in futures_only:
+    sys.stdout.write(' # %s\n'%(f))
+    
+sys.stdout.write('\nAdditional futures in the STATUS file (%d total):\n'%(len(status_only)))
+for f in status_only:
+    sys.stdout.write(' # %s\n'%(f))
+
+sys.stdout.write('\nDuplicates futures in the STATUS file (%d total):\n'%(len(dups)))
+for f in dups:
+    sys.stdout.write(' # %s\n'%(f))
+
+sys.exit(0)

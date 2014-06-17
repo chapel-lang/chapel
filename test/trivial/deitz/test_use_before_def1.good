@@ -1,0 +1,1 @@
+test_use_before_def1.chpl:1: error: 'x' used before defined (first used here)

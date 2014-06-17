@@ -1,0 +1,48 @@
+This directory contains the files used in the experimental section of the
+PGAS'11 "Composable parallel iterators in Chapel". In particular the
+leader-follower iterators for the dynamic, guided and adaptative work-stealing
+scheduling strategies (dynamic.chpl, guided.chpl and
+distAdaptativeWS.chpl). In addition, there are other two versions for the
+adaptative work-stealing iterator (distAdaptativeWSv1.chpl and
+distAdaptativeWSv2.chpl). 
+
+Each file contains four workloads to test the correctness and performance of
+each iterator: fine (n=1e6 it., delay=1 microsec.); coarse (n=100 it.,
+delay=10000 microsec.); tri (triangular loop with n=1000, delay=(n-i)*100
+microsec.); and ran (random workload per iteration with n=1000 and
+delay=100000*rand() microsec.). For the performance results presented in the
+mentioned paper, the array references that appear on each workload are
+commented, but here we leave them to perform the correctness check. These
+workloads are executed under the performance run (see .perfexecopts files and
+the corresponding config variables).
+
+- dynamic represents the equivalent to OpenMP dynamic scheduling approach:
+ each thread splits chunks of fixed size when it finishes its previous chunk.
+  
+- guided represents the OpenMP guided policy: each thread splits chunks of
+ variable size when it finishes its previous chunk. The size of each chunk is
+ the number of unassigned iterations divided by the number of threads. These
+ sizes decrease approximately exponentially to 1. The splitting strategy is
+ therefore adaptative.
+
+- distAdaptativeWS represents a naive adaptative work-stealing leader
+ iterator: initially it distributes the range to split among the threads
+ (tasks). Then it performs adaptative splitting locally on each thread. When a
+ Threads exhausts its local range, it steals and splits from another thread
+ (victim). It keeps stealing from the victim until it exhausts the victim's
+ range. The Splitting method on the local range and on the stolen range 
+ is Binary. The Binary  strategy computes the size of each chunk as the number
+ of unassigned iterations  divided by 2. 
+
+- distAdaptativeWSv1 represents other version of adaptative work-stealing
+ leader iterator: it works similarly to distAdaptativeWS, but now the
+ heuristic to perform the stealing changes: when a threads exhausts its local
+ range, it steals and splits from another thread (victim). If it has success
+ on the stealing, then it does not keep stealing on the same victim range;
+ instead it chooses another victim and tries to steal again.
+
+- distAdaptativeWSv2 represents another version of adaptative work-stealing
+ leader iterator: it works similarly to distAdaptativeWS, but now when
+ stealing from a victim's range, the splitting is performed from the tail end
+ of its range. The idea is to steal the iterations that likely are less
+ local or are cooler in the victim's cache.

@@ -1,0 +1,4 @@
+1.0 2.0 3.0 4.0 5.0
+2.0i 2.0i 2.0i 2.0i 2.0i
+[domain(1,int(64),false)] real(64)
+[domain(1,int(64),false)] imag(64)

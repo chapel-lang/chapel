@@ -1,0 +1,61 @@
+# Highlight Language Definition File for GNU source-highlight
+
+# definitions for Chapel
+preproc = "use"
+
+# \< \> means all one token.
+number =
+'\<[+-]?((0x[[:xdigit:]]+)|(([[:digit:]]*\.)?
+[[:digit:]]+([eE][+-]?[[:digit:]]+)?))\>'
+
+
+string delim "\"" "\"" escape "\\"
+
+# double-quotes mean that parens are interpreted literally
+keyword = "atomic|begin|break|by|class|cobegin|coforall|config|const|continue|proc|iter|delete|dmapped|do|domain|else|enum|export|extern|false|for|forall|if|in|index|inline|inout|label|lambda|let|local|module|new|nil|on|otherwise|out|param|record|reduce|ref|return|scan|select|serial|single|sparse|subdomain|sync|then|true|type|union|use|var|when|where|while|yield|zip"
+
+
+# double-quotes mean that parens are interpreted literally
+type = "bool|complex|imag|int|opaque|range|real|string|uint"
+
+
+#include "c_comment.lang"
+
+symbol = "~","!","%","^","*","(",")","-","+","=","[",
+        "]","\\",":",";",",",".","/","?","&","<",">","\|","#"
+
+cbracket = "{|}"
+
+#vardef TOK = '([[:alpha:]]|_)([[:word:]]|\$)*'
+# what is TOK in `` context?
+#vardef TOK = `(?:[[:alpha:]]|_)(?:[[:word:]]|\$)*`
+
+# (?= is a lookahead assertion
+#vardef FUNCTION = $TOK + '(?=[[:blank:]]*\()'
+#function = $FUNCTION
+
+#vardef TYPE_EQ_TYPE = `\<(type)(\s+)(` + $TOK + `)(\s*=\s*)(` + $TYPES + `)\>`
+#(keyword,normal,usertype,normal,type) = $TYPE_EQ_TYPE
+#vardef TYPE_EQ_USERTYPE = `\<(type)(\s+)(` + $TOK + `)(\s*=\s*)(` + $TOK + `)\>`
+#(keyword,normal,usertype,normal,usertype) = $TYPE_EQ_USERTYPE
+#vardef RECCLASS_DECL = `\<(record|class)(\s+)(` + $TOK + `)\>`
+#(keyword,normal,usertype) = $RECCLASS_DECL
+#vardef TYPE_USE = `\<(:)(\s*)(` + $TOK + `)\>`
+#(symbol,normal,usertype) = $TYPE_USE
+#
+#
+#(keyword,normal,usertype) = `\<(record|class)(\s+)(` + $TOK + `)\>`
+#(keyword,normal,usertype,normal,type) = `\<(type)(\s+)(` + $TOK + `)(\s*=\s*)(` + $TYPES + `)\>`
+#(keyword,normal,usertype,normal,usertype) = `\<(type)(\s+)(` + $TOK + `)(\s*=\s*)(` + $TOK + `)\>`
+#(keyword,normal,usertype) = `\<(record|class)(\s+)(` + $TOK + `)\>`
+#
+# (?<= is a lookbehind assertion
+#usertype = '(?<=:\s*)([[:alpha:]]|_)([[:word:]]|\$)*'
+usertype = '(?<=\s)xxx'
+
+#(symbol,normal,usertype) = `(:)(\s*)((?:[[:alpha:]]|_)(?:[[:word:]]|\$)*)`
+#
+#vardef X = `(:)(\s*)((?:[[:alpha:]]|_)(` + $TOK + `)`
+#(symbol,normal,usertype) = $X
+##`(:)(\s*)((?:[[:alpha:]]|_)(` + $TOK + `)`
+

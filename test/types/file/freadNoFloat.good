@@ -1,0 +1,1 @@
+freadNoFloat.chpl:4: error: bad format in channel.read(inout a:real(64)) with path "freadNoFloat.txt" offset 0

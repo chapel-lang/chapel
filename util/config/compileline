@@ -1,0 +1,64 @@
+#!/usr/bin/env perl
+
+use File::Basename;
+use File::Spec;
+use Cwd 'abs_path';
+
+$chpl_home_dir = abs_path(dirname(__FILE__) . "/../../");
+$check_file = File::Spec->abs2rel( __FILE__, $chpl_home_dir );
+$check_path = $chpl_home_dir . "/" . $check_file;
+if( ! -f $check_path ) {
+  warn "Warning: check $check_path not found";
+}
+
+if( defined $ENV{"CHPL_HOME"} ) {
+  if( abs_path($ENV{"CHPL_HOME"}) ne $chpl_home_dir ) {
+    # to be sure, check that the inode numbers of our check file match
+    my ($deva, $inoa) = stat($ENV{"CHPL_HOME"} . "/" . $check_file);
+    my ($devb, $inob) = stat($chpl_home_dir . "/" . $check_file);
+
+    if( $deva == $devb && $inoa == $inob ) {
+      # No warning, it's OK, they are the same file.
+    } else {
+      warn "Warning: Mismatched CHPL_HOME; got " . abs_path($ENV{"CHPL_HOME"}) . " but expected " . $chpl_home_dir;
+    }
+  }
+} else {
+  $ENV{"CHPL_HOME"} = $chpl_home_dir;
+}
+
+$ENV{"CHPL_MAKE_HOME"} = $chpl_home_dir;
+
+sub mysystem {
+  my $cmd = shift;
+  # Run $cmd but filter out e.g. make[2]: lines
+  # (about which directory we are in)
+  open(CMD, "$cmd |") or die "Cannot run $cmd: $!";
+  while(<CMD>) {
+    if(! /^make/) {
+      print $_;
+    }
+  }
+  close(CMD) or die "Can't close pipe: $!";
+}
+
+for my $arg (@ARGV) {
+  if( $arg eq "--home" ) {
+    print $chpl_home_dir . "\n";
+  } elsif( $arg eq "--compile" ) {
+    mysystem("make -f $chpl_home_dir/runtime/etc/Makefile.include printcompileline");
+  } elsif ( $arg eq "--includes-and-defines" ) {
+    mysystem("make -f $chpl_home_dir/runtime/etc/Makefile.include printincludesanddefines");
+  } elsif( $arg eq "--libraries" ) {
+    mysystem("make -f $chpl_home_dir/runtime/etc/Makefile.include printlibraries");
+  } elsif( $arg eq "--main.o" ) {
+    mysystem("make -f $chpl_home_dir/runtime/etc/Makefile.include printmaino");
+  } elsif( $arg eq "--llvm-install-dir" ) {
+    mysystem("make -f $chpl_home_dir/runtime/etc/Makefile.include printllvminstall");
+  } elsif( $arg =~ /[^-=][^=]*=[^=]+/ ) {
+    ($key, $val) = split('=', $arg, 2);
+    $ENV{$key} = $val;
+  } else {
+    print "Unknown argument; try --compile or --link or --includes-and-defines\n";
+  }
+}

@@ -1,0 +1,2 @@
+CHPL_COMM == gasnet
+CHPL_TEST_NO_LOCAL == true

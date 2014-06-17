@@ -1,0 +1,1 @@
+test_scope_resolve_classes.chpl:13: error: cannot resolve base type for method 'foo'

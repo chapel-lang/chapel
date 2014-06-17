@@ -1,0 +1,3 @@
+need-ambiguous-error-1.chpl:5: error: ambiguous call 'compilerError("a", "a", "a", "a", "a")'
+need-ambiguous-error-1.chpl:2: note: candidates are: compilerError(_e0_x: string, _e1_x: string, _e2_x: string, _e3_x: string, _e4_x: string)
+ChapelBase.chpl:87: note:                 compilerError(_e0_x: string, _e1_x: string, _e2_x: string, _e3_x: string, _e4_x: string)

@@ -1,0 +1,580 @@
+#!/usr/bin/env perl
+
+# Usage: paratest.server [-compopts] [-dirfile d] [-filedist] [-futures] 
+#                         [-help|-h] [-nodefile n] [-logfile l] [-valgrind]
+#   -compopts s: s is a string that is passed with -compopts to start_test.
+#   -execopts s: s is a string that is passed with -execopts to start_test.
+#   -comm s    : s is a setting for CHPL_COMM, e.g., none or gasnet
+#   -dirfile  d: d is a file listing directories to test. Default is ".". Lines
+#                beginning with # are ignored.
+#   -filedist  : distribute work at the granularity of test files (directory
+#                granurality is the default).
+#   -futures   : include .future tests (default is none).
+#   -nodefile n: n is a file listing nodes to run on. Default is current node.
+#                To run multiple processes on MP nodes, list the node multiple
+#                times, once for each desired process. Lines with # are ignored.
+#   -logfile  l: l is the output logfile. Default is "user"."platform".log in
+#                subdirectory Logs.
+#   -valgrind  : pass -valgrind flag to start_test
+#   -memleaks f: f is the name of a file where the leak info should be stored
+#
+# Creating a file name PARAHALT in the root test directory halts the
+# distribution of more work.
+# (Do so on the host running paratest.server to avoid NFS delays if applicable.)
+#
+# Requirements:
+#  - $CHPL_HOME environment variable is set
+#  - paratest.server is run from $CHPL_HOME/test.
+#  - Chapel compiler bin as $CHPL_HOME/bin/"platform"/chpl.
+#  - Scripts start_test in $CHPL_HOME/util and paratest.client and
+#      filterSuppressions in the same directory as paratest.server. It
+#      will create a temporary directory (.synch) to synchronize the
+#      distribution of work to the client processes.
+#  - Be able to run start_test remotely. This may include the following:
+#    - Chapel built without node-specific local temporary directories.
+#        Nodes must be able to execute start_test. For example, the
+#        start_test script may invoke the compiler as ../bin/linux64/chpl.
+#        If Chapel is built with CHPLDEVTMP defined to a machine-specific local
+#        tmp directory (e.g., /ptmp), the script may not be able to execute
+#        chpl on a different machine. A good check is to run start_test with 
+#        a different machine to see if it can run successfully.
+#    - To run jobs remotely over a secured network without having to
+#      type a password each time, use ssh-agent and ssh-add. See
+#      http://upc.lbl.gov/docs/user/sshagent.html for a short tutorial.
+#
+
+
+# for debugging
+$debug = 0;                            # turn on debug output
+$verbose = 0;                          # more verbose output
+
+$dirs_to_ignore = "Bin|Logs|Samples|Share|OUTPUT|RCS";
+
+$logdir = "Logs";                      # dir under test to store logs
+$synchdir = "$logdir/.synch";          # where to store temporary metadata
+$rem_exe = "ssh -x";                   # disable X
+$pwd = `pwd`; chomp $pwd;
+$client_script = "$pwd/../util/test/paratest.client";
+$summary_len = 2;
+$sleep_time = 1;                       # polling time (sec) to distribute work
+$incl_futures = 0;
+$filedist = 0;
+$duplex = 0;				# run two tasks on each node.
+$valgrind = 0;
+$memleaks = "/dev/null";
+$memleaksflag = 0;
+$show_all_errors = 0;
+$suppressions = "";
+
+$localhost = `uname -n`;
+($localnode, $junk) = split (/\./, $localhost, 2);
+chomp $localnode;
+
+
+my (@testdir_list, @node_list, $nodeCount, $starttime, $endtime);
+
+sub systemd {
+    local ($cmd) = @_;
+    print "$cmd\n" if $debug;
+    system ($cmd);
+}
+
+
+# Collect individual logs into one final one.
+sub collect_logs {
+    local ($fin_log, @logs) = @_;
+    local ($len, $successes, $failures, $futures);
+    local ($grep_summ, $head_opts);
+
+    print "collecting logs\n" if $debug;
+
+    if ($platform eq "linux32") {
+        $head_opts = "-q";                     # quiet mode
+    }
+
+    systemd ("echo \\[Parallel testing started at $starttime\\] > $fin_log");
+    print "Collecting logs to $fin_log\n" if $verbose;
+    foreach $log (@logs) {
+        if (-e $log) {
+            print "Merging $log\n" if $verbose;
+            open GLOG, $log or die "Cannot open log '$log'\n";
+            $len = 0;
+            while (<GLOG>) {
+                last if (/^\[Test Summary/);
+                $len++;
+            }
+            close GLOG;
+
+            print "\nlen = $len\n" if $debug;
+            systemd ("head $head_opts -n $len $log >> $fin_log");
+            unlink $log if (-e $log);
+            unlink "$log.summary" if (-e "$log.summary");
+        }
+    }
+
+    local ($date) = `date +"%y%m%d.%H%M%S"`;
+    chomp $date;
+
+    # Generate the summary info
+    systemd ("echo \\[Parallel testing started at $starttime\\] >> $fin_log");
+    systemd ("echo \\[Parallel testing ended at $endtime\\] >> $fin_log");
+
+    # Generate summary file
+    $summ_log = "$fin_log.summary";
+    unlink $summ_log if (-e $summ_log);
+    systemd ("echo \\[Test Summary - $date\\] > $fin_log.summary");
+    systemd ("grep -a '^\\[Error' $fin_log >> $fin_log.summary");
+    if (!($suppressions eq "")) {
+        systemd ("$pwd/filterSuppressions $suppressions $fin_log.summary");
+    }
+    systemd ("grep -a '^Future' $fin_log >> $fin_log.summary");
+
+    # Count stuff
+    $successes = `grep -a "^\\[Success matching" $fin_log | wc -l`;
+    $successes =~ s/\s//g;
+    ($successes, $junk) = split (/\s+/, $successes, 2);
+    $failures = `grep -a "^\\[Error" $fin_log.summary | wc -l`;
+    $failures =~ s/\s//g;
+    ($failures, $junk) = split (/\s+/, $failures, 2);
+    $futures = `grep -a "^Future" $fin_log.summary | wc -l`;
+    $futures =~ s/\s//g;
+    ($futures, $junk) = split (/\s+/, $futures, 2);
+    systemd ("echo \\[Summary: \\#Successes = $successes \\| \\#Failures = $failures \\| \\#Futures = $futures\\] >> $fin_log.summary");
+    systemd ("echo \\[END\\] >> $fin_log.summary");
+
+    systemd ("cat $fin_log.summary >> $fin_log");
+
+    print "\n[Summary: #Successes = $successes | #Failures = $failures | #Futures = $futures]\n";
+
+}
+
+
+# Return a list of IDs of nodes ready to work
+sub free_workers {
+    local (@readyv, @readyids, $node, $id);
+    print "checking for available workers\n" if $debug;
+
+    opendir WORKDIR, "$synchdir";
+    @readyv = readdir WORKDIR;
+    closedir WORKDIR;
+
+    foreach $ready (@readyv) {
+        next if ($ready =~ /^\./);
+        my ($node, $id, $failed) = split (/\./, $ready);
+       if ($failed) {
+	$nodeCount--;
+	print "\n failure on $node, no more testing there\n";
+        unlink "$synchdir/$ready";
+       } else {
+        push @readyids, $id;
+        # Wait on the processes represented by each of the files being iterated
+        # over. The existence of each file implies a previously forked process
+        # has finished and is currently a zombie. The only exception to this
+        # is the first time this subroutine is called. The first time, all of
+        # these files were created by this driver script, not children. This
+        # is not a problem though since wait is non-blocking.
+        wait;
+       }
+    }
+
+    print (@readyids ? "," : ".");
+    return @readyids;
+}
+
+
+# While there is still work to do, continually feed the  nodes
+# bits of work. If the file "PARAHALT" exists in the test directory,
+# distribution of work stops.  This is one hack to stop the testing.
+# Of course, you'll have to wait on the client processes or kill them
+# manually.
+sub feed_nodes {
+    local (@readyidv, $logfile, @logs, $testdir, $node, $rem_cmd);
+    $nodeCount = $#node_list + 1;
+
+    $| = 1;    # autoflush stdout
+
+    print "about to start distributing work\n" if $debug;
+
+    @testdir_list = sort @testdir_list;
+    print $nodeCount; print " worker(s) (@node_list)\n";
+    print $#testdir_list+1; print " test(s) (@testdir_list)\n";
+
+    while (($#testdir_list >= 0) &&       # while still have work to do
+           ($nodeCount > 0)      &&       # not all nodes have failed
+           !(-e "PARAHALT")) {
+        @readyidv = free_workers ();      # get IDs of nodes that are ready
+
+        print @readyidv if $debug;
+        print "\n" if ($#readyidv >= 0);
+        foreach $readyid (@readyidv) {    # for ready nodes
+            next if ($#testdir_list < 0);
+
+            $testdir = $testdir_list[0];
+            $node = $node_list[$readyid]; # machine name to rem exec to
+            $synchfile = "$synchdir/$node.$readyid";
+
+            # remove synch file before forking work to worker
+            unless (-e $synchfile) {
+                printf ("Error: synch file '$synchfile' missing\n");
+                exit (7);
+            }
+            unlink $synchfile;
+
+            print "$node <- $testdir ($#testdir_list left)\n";
+            $testdirname = $testdir;
+            $testdirname =~ s/\//-/g;
+            $logfile = "$logdir/$testdirname.$node.log";
+            # fork work
+            unless ($pid = fork) {        # child
+                if ($node eq $localnode) {
+                    $rem_exec_cmd = "";
+                    $compopts = "\"$compopts\"";
+                    $execopts = "\"$execopts\"";
+                    $comm = "\"$comm\"";
+                } else {
+                    $rem_exec_cmd = "$rem_exe $node";
+                    $compopts = "\\\"$compopts\\\"";
+                    $execopts = "\\\"$execopts\\\"";
+                    $comm = "\\\"$comm\\\"";
+                }
+                $rem_cmd = "$rem_exec_cmd $client_script $readyid $pwd $testdir $incl_futures $valgrind $memleaksflag $compopts $execopts $comm";
+                if ($verbose) {
+                    systemd ($rem_cmd);
+                } else {
+                    systemd ("$rem_cmd 2>&1 | grep -i 'Error in paratest.client:'");
+                }
+                $partial_errors = `grep -a "^\\[Error" $logfile`;
+                if ($partial_errors =~ /^\[Error/) {
+                    @errors = split /^/m, $partial_errors;
+		    if ($show_all_errors) {
+		        print "\n:( \n @errors";
+		    } else {
+		        chomp $errors[0];
+			print "\n:( " . $errors[0] . "\n";
+		    }
+                } else {
+                    print ":)";
+                }
+                exit (0);
+            }
+
+            push @logs, $logfile;
+            shift @testdir_list;
+        }
+
+        # wait before checking for free workers
+        sleep $sleep_time;                          
+    }
+
+    # wait for everyone to finish;
+    @readyidv = free_workers ();
+    while (($#readyidv + 1 < $nodeCount) &&
+           !(-e "PARAHALT")) {
+        sleep $sleep_time;
+        @readyidv = free_workers ();
+    }
+
+    if (-e "PARAHALT" && ($#testdir_list > 0)) {
+        print "\nExiting early due to PARAHALT file\n";
+    }
+
+    if ($nodeCount <= 0 && $#testdir_list >= 0) {
+       print "\nExiting early due to failures on all nodes\n";
+    }
+
+    if ($#testdir_list >= 0) {
+       print $#testdir_list+1; 
+       print " directory(s) left untested: @testdir_list\n";
+    }
+
+    $endtime = `date`; chomp $endtime;
+    if ($memleaksflag) {
+        systemd("cat $logdir/tmp.*.memleaks > $memleaks");
+        systemd("rm -f $logdir/tmp.*.memleaks");
+    }
+    collect_logs ($fin_logfile, @logs);
+}
+
+
+# Signal that all nodes are free to do some work by writing their
+# synchronization files for them initially.
+sub nodes_free {
+    local ($id, $node, $fname, $dirv);
+
+    print "making all nodes available to work\n" if $debug;
+    # clean synch dir
+    opendir WORKDIR, "$synchdir";
+    @dirv = readdir WORKDIR;
+    closedir WORKDIR;
+    foreach $file (@dirv) {
+        unlink "$synchdir/$file";
+    }
+
+    systemd ("rm -f $synchdir/*");
+    # signal that all nodes are free
+    my $nodeCount = $#node_list + 1;
+    for ($id=0; $id<$nodeCount; $id++) {
+        $fname = "$node_list[$id].$id";
+        systemd ("echo feed me > $synchdir/$fname");
+    }
+}
+
+
+# Return true if a *.chpl exists. Otherwise false.
+sub chpl_files {
+    local (@fnames) = @_;
+    local ($found);
+    $found = 0;
+    foreach $fname (@fnames) {
+        if ($fname =~ /NOTEST$/) {
+            return 0;
+        }
+        if ($fname =~ /\.chpl$/) {
+            $found = 1;
+        }
+    }
+    return $found;
+}
+
+
+# Gather all the subdirectories into a flat list and return it.
+sub find_subdirs {
+    local ($targetdir, $level) = @_;
+    local ($filen, @cdir, @founddirs, $i);
+
+    print "looking in '$targetdir'\n" if $debug;
+    opendir CURRDIR, $targetdir or die "Cannot open directory '$targetdir'\n";
+    @cdir = grep !/^\./, readdir CURRDIR;             # curr dir list of files
+    closedir CURRDIR;
+
+    if (chpl_files (@cdir)) {                         # if *.chpl files in dir
+	push @founddirs, $targetdir;
+	print "$targetdir\n" if $debug;
+    }
+    
+    foreach $filen (@cdir) {
+	next if ($filen =~ /$dirs_to_ignore/);
+	if (-d "$targetdir/$filen") {                 # if dir
+        # .skipif does double duty here.  
+        # When attached to a directory name, skips it and all descendents if the condition is true.
+        my $skipfilen = "$targetdir/$filen.skipif";
+        if (-e "$skipfilen") {
+            print "$ENV{CHPL_HOME}/util/test/testEnv $skipfilen = " . `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen` if $debug;
+            next unless `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen` == 0;
+        }
+	    if ($debug) {for ($i=0; $i<$level; $i++)  {print "    ";}}
+	    push @founddirs, find_subdirs ("$targetdir/$filen", $level+1);
+        }
+    }
+    return @founddirs;
+}
+
+
+# Gather the list of files to test and return it.
+sub find_files {
+    local ($targetdir, $level, $no_futures, $recursive) = @_;
+    local ($filen, @cdir, @foundfiles);
+
+    print "looking in '$targetdir'\n" if $debug;
+    opendir CURRDIR, $targetdir or die "Cannot open directory '$targetdir'\n";
+    @cdir = grep !/^\./, readdir CURRDIR;             # curr dir list of files
+    closedir CURRDIR;
+
+    foreach $filen (@cdir) {
+	next if ($filen =~ /$dirs_to_ignore/);
+	$filepath = "$targetdir/$filen";
+	unless (-e "$targetdir/NOTEST") {             # do not ignore this dir?
+	    if ($filepath =~ /\.chpl$/) {
+		$futuref = $filepath;
+		$futuref =~ s/\.chpl$/.future/;
+		next if ((-e $futuref) && $no_futures);
+		push @foundfiles, $filepath;
+	    }
+	}
+
+	if ((-d $filepath) && $recursive) {           # if dir and recursive
+	    if ($debug) {for ($i=0; $i<$level; $i++)  {print "    ";}}
+	    push @foundfiles, find_files ($filepath, $level+1, $no_futures, $recursive);
+        }
+    }
+    return @foundfiles;
+}
+
+
+sub print_help {
+    print "Usage: paratest.server [-comm] [-compopts] [-execopts] [-dirfile d] [-filedist] [-futures] [-logfile l] [-nodefile n] [-duplex] [-valgrind] [-help|-h]\n";
+    print "    -compopts s: s is a string that is passed with -compopts to start_test.\n";
+    print "    -execopts s: s is a string that is passed with -execopts to start_test.\n";
+    print "    -comm s    : s is a setting for CHPL_COMM, e.g., none or gasnet.\n";
+    print "    -dirfile  d: d is a file listing directories to test. Default is the current diretory.\n";
+    print "    -filedist  : distribute work at the granularity of files (directory granurality is the default).\n";
+    print "    -futures   : include .future tests (default is none).\n";
+    print "    -logfile  l: l is the output log file. Default is \"user\".\"platform\".log. in the Logs subdirectory.\n";
+    print "    -nodefile n: n is a file listing nodes to run on. Default is current node.\n";
+    print "    -duplex    : Run two paratest.client tasks on each node.\n";
+    print "    -memleaks f: pass -memleaks to start_test; aggregate all output.\n";
+    print "    -valgrind  : pass -valgrind to start_test.\n";
+}
+
+
+sub main {
+    local ($id, $synchfile);
+    
+    $user = `whoami`; chomp $user;
+    $platform = `../util/chplenv/platform`; chomp $platform;
+    $fin_logfile = "$logdir/$user.$platform.log";      # final log file name
+    # $fin_logfile = "$logdir/$user.$platform.log";
+    unlink $fin_logfile if (-e $fin_logfile);          # remove final log file
+  
+    $starttime = `date`; chomp $starttime;
+
+    while ($#ARGV >= 0) {
+        $_ = $ARGV[0];
+        if (/^-compopts/) {
+            shift @ARGV;
+            if ($#ARGV >= 0) {
+                $compopts = $ARGV[0];
+            } else {
+                print "missing -compopts arg\n";
+                exit (8);
+            }
+        } elsif (/^-execopts/) {
+            shift @ARGV;
+            if ($#ARGV >= 0) {
+                $execopts = $ARGV[0];
+            } else {
+                print "missing -execopts arg\n";
+                exit (8);
+            }
+        } elsif (/^-comm/) {
+            shift @ARGV;
+            if ($#ARGV >= 0) {
+                $comm = $ARGV[0];
+            } else {
+                print "missing -comm arg\n";
+                exit (8);
+            }
+        } elsif (/^-filedist/) {
+            $filedist = 1;
+        } elsif (/^-dirfile/) {
+            shift @ARGV;
+            if ($#ARGV >= 0) {
+                $dirfile = $ARGV[0];
+            } else {
+                print "missing -dirfile arg\n";
+                exit (8);
+            }
+        } elsif (/^-futures/) {
+            $incl_futures = 1;
+        } elsif (/^-logfile/) {
+            shift @ARGV;
+            if ($#ARGV >= 0) {
+                $fin_logfile = $ARGV[0];
+            } else {
+                print "missing -logfile arg\n";
+                exit (8);
+            }
+        } elsif (/^-suppress/) {
+            shift @ARGV;
+            if ($#ARGV >= 0) {
+                $suppressions = $ARGV[0];
+            } else {
+                print "missing -suppress arg\n";
+                exit (8);
+            }
+        } elsif (/^-nodefile/) {
+            shift @ARGV;
+            if ($#ARGV >= 0) {
+                $nodefile = $ARGV[0];
+            } else {
+                print "missing -nodefile arg\n";
+                exit (8);
+            }
+        } elsif (/^-duplex/) {
+            $duplex = 1;
+        } elsif (/^-memleaks/) {
+            shift @ARGV;
+            if ($#ARGV >= 0) {
+                $memleaks = $ARGV[0];
+                $memleaksflag = 1;
+            } else {
+                print "missing -memleaks arg\n";
+                exit (8);
+            }
+        } elsif (/^-valgrind/) {
+            $valgrind = 1;
+        } elsif (/^-show-all-errors/) {
+	   $show_all_errors = 1;
+        } elsif (/^-help|^-h/) {
+            print_help;
+            exit (9);
+        } else {
+            print "unknown arg $_\n";
+            exit (9);
+        }
+        shift @ARGV;
+    }
+
+    if (defined $nodefile) {
+        open nodefile or die "Cannot open node file '$nodefile'\n";
+        while (<nodefile>) {
+            next if /^$|^\#/;
+            chomp;
+            push @node_list, $_;
+            push @node_list, $_ if $duplex;
+        }
+    } else { # else, just current node
+        push @node_list, $localnode;
+        push @node_list, $localnode if $duplex;
+    }
+
+    if (defined $dirfile) {
+        open dirfile or die "Cannot open directory file '$dirfile'\n";
+        while (<dirfile>) {
+            next if /^$|^\#/;
+            chomp;
+            if ($filedist) {
+                push @testdir_list, find_files( $_, 0, !$incl_futures, 0);
+            } else {
+                push @testdir_list, $_;
+            }
+        }
+    } else { # else, current working dir
+        use Cwd;
+        my $cwd = &Cwd::cwd();
+        print "[Generating tests from the Chapel Spec in $ENV{CHPL_HOME}/spec]\n";
+        chdir $ENV{CHPL_HOME} or die "Can't cd to $ENV{CHPL_HOME}: $!\n";
+        my $autogen=`make spectests`;
+        die "Error generating Spec tests in $ENV{CHPL_HOME}/spec\n" unless $? == 0;
+        chdir $cwd;
+        if ($filedist) {
+	    print "[Collecting test files in $cwd]\n";
+            @testdir_list = find_files (".", 0, !$incl_futures, 1);
+        } else {
+	    print "[Collecting test directories in $cwd]\n";
+            @testdir_list = find_subdirs (".", 0);
+        }
+    }
+
+    unless (-e $logdir) {
+        print "Error: log directory $logdir does not exist\n";
+        exit (2);
+    }
+    unless (-e "$synchdir") { 
+        systemd ("mkdir $synchdir"); 
+    }
+
+    nodes_free ();     # signal that all nodes free
+    feed_nodes ();     # parallel testing
+
+    # cleanup - remove synch files and synch dir
+    for ($id=0; $id<=$#node_list; $id++) {
+        $synchfile = "$synchdir/$node_list[$id].$id";
+        unlink $synchfile if (-e $synchfile);
+    }
+    rmdir $synchdir;
+}
+
+
+main ();
+

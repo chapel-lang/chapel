@@ -1,0 +1,5 @@
+#!/bin/csh -f
+
+setenv CHPL_MODULE_PATH subdir3:subdir4/subdir
+
+../../../../util/test/sub_test $1

@@ -1,0 +1,13 @@
+MAIN_SRCS = \
+        arg.cpp \
+	config.cpp \
+	driver.cpp \
+        log.cpp \
+	runpasses.cpp \
+	version.cpp
+
+SVN_SRCS = $(MAIN_SRCS)
+SRCS = $(SVN_SRCS)
+
+MAIN_OBJS = \
+	$(MAIN_SRCS:%.cpp=$(MAIN_OBJDIR)/%.$(OBJ_SUFFIX))

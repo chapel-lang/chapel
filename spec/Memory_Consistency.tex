@@ -1,0 +1,126 @@
+\sekshun{Memory Consistency Model}
+\label{Memory_Consistency_Model}
+\index{memory consistency model}
+
+\begin{openissue}
+  This chapter is a work-in-progress and represents an area where we
+  are particularly interested in feedback from, and collaboration
+  with, the broader community.
+\end{openissue}
+
+Chapel's memory consistency model is well-defined for programs that
+are {\em data-race-free}.  Such programs are sequentially consistent.
+For other programs, no specific guarantees can be made about the
+program's execution.
+
+\begin{rationale}
+  Chapel presents a memory consistency model that is less strict than
+  Java's.  It does so because it does not strive to provide the same
+  dynamic security requirements as Java does.
+\end{rationale}
+
+Accessing a synchronization variable (\chpl{sync} or \chpl{single}, \rsec{Synchronization_Variables}) is
+the only way to correctly synchronize between two Chapel tasks.
+Such reads and writes serve as memory fences, preventing
+reordering of reads and writes to traditional variables across the
+synchronization variable's access.  When the same memory location
+is written by one task and read by another, the ordering of the
+read relative to the write is undefined unless there is an intervening
+access to a synchronization variable.
+
+%\begin{chapelexample}{syncFenceFlag}
+\begin{example}
+  In this example, a synchronization variable is used to (a) ensure that
+  all writes to an array of unsynchronized variables are complete, (b)
+  signal that fact to a second task, and (c) pass along the number of
+  values that are valid for reading.
+
+\begin{chapel}
+var A: [1..100] real;
+var done(*\texttt{\$}*): sync int;           // initially empty
+cobegin {
+  { // Reader task
+    const numToRead = done(*\texttt{\$}*);   // block until writes are complete
+    for i in 1..numToRead do
+      writeln("A[", i, "] = ", A[i]);
+  }
+  {  // Writer task
+    const numToWrite = 23;     // an arbitrary number
+    for i in 1..numToWrite do
+      A[i] = i/10.0;
+    done(*\texttt{\$}*) = numToWrite;        // fence writes to A and signal done
+  }
+}
+\end{chapel}
+\begin{chapeloutput}
+A[1] = 0.1
+A[2] = 0.2
+A[3] = 0.3
+A[4] = 0.4
+A[5] = 0.5
+A[6] = 0.6
+A[7] = 0.7
+A[8] = 0.8
+A[9] = 0.9
+A[10] = 1.0
+A[11] = 1.1
+A[12] = 1.2
+A[13] = 1.3
+A[14] = 1.4
+A[15] = 1.5
+A[16] = 1.6
+A[17] = 1.7
+A[18] = 1.8
+A[19] = 1.9
+A[20] = 2.0
+A[21] = 2.1
+A[22] = 2.2
+A[23] = 2.3
+\end{chapeloutput}
+%\end{chapelexample}
+\end{example}
+
+
+\begin{chapelexample}{syncSpinWait.chpl}
+One consequence of Chapel's memory consistency model is that a task cannot spin-wait on a
+variable waiting for another task to write to that variable.  The behavior of
+the following code is undefined:
+
+\begin{chapelpre}
+if false { // }
+\end{chapelpre}
+\begin{chapel}
+var x: int;
+cobegin {
+  while x != 1 do ;  // spin wait
+  x = 1;
+}
+\end{chapel}
+\begin{chapelnoprint}
+// {
+}
+\end{chapelnoprint}
+In contrast, spinning on a synchronization variable has well-defined
+behavior:
+\begin{chapel}
+var x(*\texttt{\$}*): sync int;
+cobegin {
+  while x(*\texttt{\$}*).readXX() != 1 do ;  // spin wait
+  x(*\texttt{\$}*).writeXF(1);
+}
+\end{chapel}
+\begin{chapeloutput}
+\end{chapeloutput}
+
+In this code, the first statement in the cobegin statement executes a
+loop until the variable is set to one.  The second statement in the
+cobegin statement sets the variable to one.  Neither of these
+statements block.
+\end{chapelexample}
+
+
+\begin{future}
+Upon completion, Chapel's atomic statement~(\rsec{Atomic_Statement}) will serve as
+an additional means of correctly synchronizing between tasks.
+\end{future}
+

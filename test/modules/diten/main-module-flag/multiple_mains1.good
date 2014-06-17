@@ -1,0 +1,3 @@
+error: Ambiguous main() function (use --main-module to disambiguate):
+multiple_mains1.chpl:2: note: in module M1
+multiple_mains1.chpl:8: note: in module M2

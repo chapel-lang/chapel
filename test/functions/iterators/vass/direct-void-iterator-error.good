@@ -1,0 +1,1 @@
+direct-void-iterator-error.chpl:1: error: an iterator's return type cannot be 'void'; if specified, it must be the type of the expressions the iterator yields

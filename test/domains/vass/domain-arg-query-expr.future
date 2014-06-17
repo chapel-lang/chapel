@@ -1,0 +1,11 @@
+bug: query expressions on domain/subdomain arguments needs to be implemented
+
+Currently I get these from the compiler:
+
+  $CHPL_HOME/test/functions/vass/domain-arg-query-expr.chpl:1: error: 'chpl__buildDomainRuntimeType' undeclared (first use this function) [normalize.cpp:79]
+  $CHPL_HOME/test/functions/vass/domain-arg-query-expr.chpl:2: error: 'chpl__buildSubDomainType' undeclared (first use this function) [normalize.cpp:79]
+
+whereas, according to the spec, query expressions are legitimate.
+
+(I am not sure whether it'd be sufficient to define the function(s) the
+compiler is trying to invoke, or if deeper changes are needed.)

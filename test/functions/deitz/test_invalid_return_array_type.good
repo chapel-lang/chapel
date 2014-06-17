@@ -1,0 +1,2 @@
+test_invalid_return_array_type.chpl:1: In function 'f':
+test_invalid_return_array_type.chpl:2: error: illegal return of type where value is expected

@@ -1,0 +1,11 @@
+error message: const indices
+
+I believe that index variables should be constant to avoid
+confusion in believing that they are a single variable
+shared by multiple iterations rather than a private
+per-iteration variable.
+
+As Steve proposed at today's meeting, if the iterator is a
+var iterator, the index would be a variable; if the iterator
+is a const iterator, it would be a variable.
+

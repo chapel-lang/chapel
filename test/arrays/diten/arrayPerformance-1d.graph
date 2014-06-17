@@ -1,0 +1,5 @@
+perfkeys: One Dimensional         :, One Dimensional strided :
+files: arrayPerformance.dat, arrayPerformance.dat
+ylabel: Time (milliseconds)
+graphname: arrayPerformance-1d
+graphtitle: Serial 1D Array Performance

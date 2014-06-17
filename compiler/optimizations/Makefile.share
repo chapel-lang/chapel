@@ -1,0 +1,24 @@
+OPTIMIZATIONS_SRCS = \
+	collapseBlocks.cpp \
+	complex2record.cpp \
+	copyPropagation.cpp \
+	deadCodeElimination.cpp \
+	gpuFlattenArgs.cpp \
+	inlineFunctions.cpp \
+	liveVariableAnalysis.cpp \
+	localizeGlobals.cpp \
+	narrowWideReferences.cpp \
+	optimizeOnClauses.cpp \
+	reachingDefinitionsAnalysis.cpp \
+	remoteValueForwarding.cpp \
+	removeEmptyRecords.cpp \
+	removeUnnecessaryAutoCopyCalls.cpp \
+	removeUnnecessaryGotos.cpp \
+	removeWrapRecords.cpp \
+	scalarReplace.cpp
+
+SVN_SRCS = $(OPTIMIZATIONS_SRCS)
+SRCS = $(SVN_SRCS)
+
+OPTIMIZATIONS_OBJS = \
+	$(OPTIMIZATIONS_SRCS:%.cpp=$(OPTIMIZATIONS_OBJDIR)/%.$(OBJ_SUFFIX))

@@ -1,0 +1,41 @@
+module search dirs:
+  subdir
+  .
+  subdir1
+  subdir2
+  subdir3
+  subdir4/subdir
+  $CHPL_HOME/modules/standard/gen/...
+  $CHPL_HOME/modules/standard
+  $CHPL_HOME/modules/layouts
+  $CHPL_HOME/modules/dists
+  $CHPL_HOME/modules/dists/dims
+end of module search dirs
+Parsing module files:
+  subdir/bar.chpl
+  foo.chpl
+  subdir/baz.chpl
+  subdir1/bak.chpl
+  subdir3/bam.chpl
+  subdir2/bap.chpl
+  subdir4/subdir/bax.chpl
+  ./bah.chpl
+  $CHPL_HOME/modules/standard/Types.chpl
+  $CHPL_HOME/modules/standard/Math.chpl
+  $CHPL_HOME/modules/standard/List.chpl
+  $CHPL_HOME/modules/standard/SysBasic.chpl
+  $CHPL_HOME/modules/standard/IO.chpl
+  $CHPL_HOME/modules/dists/DSIUtil.chpl
+  $CHPL_HOME/modules/standard/Sort.chpl
+  $CHPL_HOME/modules/standard/Search.chpl
+  $CHPL_HOME/modules/standard/gen/.../SysCTypes.chpl
+  $CHPL_HOME/modules/standard/Error.chpl
+  $CHPL_HOME/modules/standard/Regexp.chpl
+In bar
+In baz
+In bak
+In bam
+In bap
+In bax
+In bah
+In foo

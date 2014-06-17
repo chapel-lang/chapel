@@ -1,0 +1,16 @@
+bug: 'setter' in var iterators
+
+Was:
+
+bug: promoted var function is always in setter mode when zippered
+
+The setter argument is not correctly set for var functions that are promoted
+and then iterated over in a zipper context.  This seems to be because
+cullOverReferences does not cull the reference field in tuples.  To do this,
+we'll need to clone the tuple.
+
+My proposed semantics are that the promotion of a var function that is iterated
+over, should set the setter field to true if the index may be written.  In var
+functions, since references cannot be captured, the setter=true version is used
+if the index is written.  The distinction has to be more conservative in the
+iterator case.

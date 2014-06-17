@@ -1,0 +1,3 @@
+currently-error.chpl:5: error: Type binding clauses ('C.' in this case) are not supported in declarations within a class, record or union
+currently-error.chpl:12: error: Type binding clauses ('R.' in this case) are not supported in declarations within a class, record or union
+currently-error.chpl:20: error: Type binding clauses ('U.' in this case) are not supported in declarations within a class, record or union

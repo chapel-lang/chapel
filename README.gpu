@@ -1,0 +1,40 @@
+This readme describes the steps necessary to enable GPU support from within 
+Chapel. For our initial prototype, we are dependent on Nvidia's CUDA support,
+which requires their CUDA compiler. Also, this README describes some of the 
+current limitations of the prototype.
+
+1) Make sure to download and install the NVIDIA CUDA Driver and Toolkit from 
+   Nvidia's website: http://www.nvidia.com/object/cuda_get.html
+
+   Note - If you are only testing emulation support and you do not have an 
+   actual Nvidia GPU installed, you don't need to download the CUDA driver file.
+
+   Run download_file as 'sh downloaded_file' and specify a path for installation.
+
+   Follow instructions to set PATH and LD_LIBRARY_PATH.
+
+2) Update trunk/make/compiler/Makefile.nvidia so that CUDA_LIB_PATH points to 
+   your newly install Cuda Toolkit library path.
+
+   Note - If you are testing emulation support, make sure DEVICEEMU is enabled 
+   and not commented out.
+
+3) In order to enable GPU code to be generated, make sure that the environment 
+   variable CHPL_TARGET_COMPILER is set to nvidia
+
+4) To test gpu functionality, compile the test app : 
+   test/gpu/sidelnik/simple-stream-domain.chpl
+
+--------------------------------------------------------------------------------
+Current Limitations:
+
+1) Only 1D arrays are supported
+2) We currently target GPU Global memory, and none of the specialized memories.
+3) You can not use any global variables from within the GPU kernel. Along with
+   that, you cannot reference any non-gpu allocated arrays within
+   the kernel, they need to be explicity assigned to gpu arrays.
+4) A limitation in using CUDA is that it does not support recursion and any
+   form on I/O from the GPU kernels. The same applies to our prototype.
+5) No support for multiple gpus as of yet.
+6) No support for array aliasing and strided accesses.
+

@@ -1,0 +1,25 @@
+#!/usr/bin/env perl
+
+#
+# Removes unique ID tags from mangled variable names in order to
+# compare generated code for a test from two different compilers.
+# This cleaned generated code will of course fail to compile because
+# of name conflicts.
+#
+
+@files = `find $ARGV[0]`;
+
+foreach $file (@files) {
+    chomp $file;
+    if ($file =~ m/[ch]$/){
+        @lines = `cat $file`;
+        open(OUT, ">$file.cleaned");
+        foreach $line (@lines) {
+            $line =~ s/(\W)_\d+_/$1/g;
+            $line =~ s/(\W)_tmp\d+(\w)/$1tmp/g;
+            print OUT $line;
+        }
+        close(OUT);
+    }
+}
+

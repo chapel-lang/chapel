@@ -1,0 +1,7 @@
+feature request: allow explicit conversion from range(int(64)) to range(int(32))
+
+Since we are allowed to have an explicit cast from int(64) to int(32),
+it only makes sense to allow the same thing for ranges.
+
+Alas, right now I get:
+  explicit-conversion-index-type.chpl:2: error: illegal cast from range(int(64),bounded,false) to range(int(32),bounded,false)

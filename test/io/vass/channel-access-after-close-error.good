@@ -1,0 +1,1 @@
+channel-access-after-close-error.chpl:4: error: writing to a channel after it has been closed

@@ -1,0 +1,6 @@
+in foo
+in bar
+done with bar
+in bar
+in foo
+done with foo

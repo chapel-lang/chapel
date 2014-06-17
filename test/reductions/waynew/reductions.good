@@ -1,0 +1,30 @@
+
+I[D] = 1 2 3 4 5 6 7 8 9 10
+min reduce I[D] = 1
+max reduce I[D] = 10
++ reduce I[D] = 55
+* reduce I[D] = 3628800
+
+I[D] = -1 -2 -3 -4 -5 -6 -7 -8 -9 -10
+min reduce I[D] = -10
+max reduce I[D] = -1
++ reduce I[D] = -55
+* reduce I[D] = 3628800
+
+I[D] = -1 2 -3 4 -5 6 -7 8 -9 10
+min reduce I[D] = -9
+max reduce I[D] = 10
++ reduce I[D] = 5
+* reduce I[D] = -3628800
+
+UI[D] = 1 2 3 4 5 6 7 8 9 10
+min UI[D] = 1
+max UI[D] = 10
++ reduce UI[D] = 55
+* reduce UI[D] = 3628800
+
+F[D] = -1.0 2.0 -3.0 4.0 -5.0 6.0 -7.0 8.0 -9.0 10.0
+min F[D] = -9.0
+max F[D] = 10.0
++ reduce F[D] = 5.0
+* reduce F[D] = -3.6288e+06

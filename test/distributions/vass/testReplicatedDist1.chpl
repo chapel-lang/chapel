@@ -1,0 +1,186 @@
+use ReplicatedDist, BlockDist, CyclicDist;
+
+// what to iterate over
+
+config const n = 5;
+config const lo = 2, b = 3;
+
+const Dbase = {1..n, 1..n};
+const Dsub = {lo..#b, lo..#b};
+
+// array element type
+
+config type elt = int;
+
+// ARepl - the replicated array to be tested
+
+const repllocales = Locales;  // in case this changes
+var ReplBlockDist = new dmap(new ReplicatedDist());
+var DRepl: domain(2) dmapped ReplBlockDist = Dsub;
+var ARepl: [DRepl] elt;
+
+proc show() { write(ARepl, "\n"); }
+
+// set everything to predetermined values
+proc reset() {
+  // explicitly go to each locale
+  coforall loc in repllocales do on loc do
+    // explicitly index into each element
+    for ix in Dsub do ARepl[ix] = 100 + here.id;
+}
+
+/*
+// differentiate elements based on their locales
+proc addLocale() {
+  // explicitly go to each locale
+  coforall loc in repllocales do on loc do
+    // explicitly index into each element
+    for ix in Dsub do ARepl[ix] += here.id;
+}
+*/
+
+proc start(msg...) { write("\n---  ", (...msg), "\n"); }
+
+// run all the tests when the reference array A is under a given domain map
+
+proc trydist(domainmap, teston: locale, dmname) {
+  write("\n----------- testing on ", teston,
+        " with ", dmname, " -----------\n");
+
+  // gotta create new dmap() on the same locale as 'domainmap'
+  var mydmap = new dmap(domainmap);
+
+on teston {
+
+  var D: domain(2) dmapped mydmap = Dbase;
+  var A: [D] elt;
+  proc resetA() { A = [(i,j) in D] i*10 + j; }
+  proc showA() { write(/*"A=\n",*/ A, "\n"); }
+
+  start("resetting A");
+  resetA();
+  showA();
+
+  // initialize ARepl
+  start("resetting ARepl");
+  reset();
+  show();
+
+  // Convention: for each test, reset ARepl before; if needed, resetA after.
+
+  // --- iterate over DRepl => each locale's replicant gets iterated over ---
+
+  // assignment
+  // => each locale's replicant gets a copy of A (here and below)
+  start("ARepl = A[Dsub];");
+  reset();
+  ARepl = A[Dsub];
+  show();
+
+  // equivalent to the assignment
+  start("forall (a,b) in zip(ARepl, A[Dsub]) do a = b;");
+  reset();
+  forall (a,b) in zip(ARepl, A[Dsub]) do a = b;
+  show();
+
+/* Given the current implementation and the semantics of zippered 'for',
+   this fails with "zippered iterations have non-equal lengths":
+
+  // sequential loop
+  start("for (a,b) in zip(ARepl, A[Dsub]) do a = b;");
+  reset();
+  for (a,b) in zip(ARepl, A[Dsub]) do a = b;
+  show();
+
+*/
+
+  // --- iterate over Dsub => only the current locale's replicant is visited --
+
+  // in a forall
+  start("forall ix in Dsub do ARepl[ix] = A[ix];");
+  reset();
+  forall ix in Dsub do ARepl[ix] = A[ix];
+  show();
+
+  // in a for
+  start("for ix in Dsub do ARepl[ix] = A[ix];");
+  reset();
+  for ix in Dsub do ARepl[ix] = A[ix];
+  show();
+
+  // --- iterate over D => each index visits only one replicant ---
+
+  // assignment - reverse
+  start("A[Dsub] = ARepl;");
+  reset();
+  resetA();
+  A[Dsub] = ARepl;
+  showA();
+  resetA();
+
+  // parallel loop
+  start("forall (b,a) in zip(A[Dsub],ARepl) do a = b;");
+  reset();
+  forall (b,a) in zip(A[Dsub],ARepl) do a = b;
+  show();
+
+/* Given the current implementation and the semantics of zippered 'for',
+   this fails with "zippered iterations have non-equal lengths":
+
+  // sequential loop
+  start("for (b,a) in zip(A[Dsub],ARepl) do a = b;");
+  reset();
+  for (b,a) in zip(A[Dsub],ARepl) do a = b;
+  show();
+
+*/
+
+  // --- explicitly iterating over DRepl, in a for (forall would lead to races)
+
+  // A is assigned (multiply) from the current locale's replicand
+  start("for ix in DRepl do A[ix] = ARepl[ix];");
+  reset();
+  for ix in DRepl do A[ix] = ARepl[ix];
+  showA();
+  resetA();
+
+  // --- verifying locality ---
+
+  // The following tries to assert that no communication is required to
+  // operate on a replicated array relative to local data; need to make
+  // 'A' Block or Cyclic-distributed to make it interesting; it will
+  // require privatization to work correctly (if A is truly distributed).
+
+/* this currently does not work because privatization is not implemented:
+
+  start("for (i,j) in Dsub do on (A(i,j)) do local { A(i,j) = ARepl(i,j); }");
+  reset();
+  for (i,j) in Dsub do
+    on (A(i,j)) do
+      local { A(i,j) = ARepl(i,j); }
+  showA();
+  resetA();
+
+*/
+
+} // on teston
+} // trydist()
+
+
+// driver for trydist()
+
+write("available locales: ", Locales, "\n");
+start("ARepl before reset"); show();
+
+iter testLocs(): locale {
+  yield Locales[0];
+  if numLocales > 2 then yield Locales[2];
+}
+
+for tloc in testLocs() {
+  trydist(new DefaultDist(), tloc, "default");
+  trydist(new Block(boundingBox=Dbase), tloc, "block");
+  trydist(new Cyclic(startIdx=Dbase.low), tloc, "cyclic");
+}
+
+write("\nDone\n");

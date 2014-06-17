@@ -1,0 +1,78 @@
+#
+# settings for the build
+#
+ifdef CHPL_DEVELOPER
+DEBUG=1
+DEPEND=1
+else
+OPTIMIZE=1
+endif
+
+
+#
+# include the standard Chapel Makefile.base
+#
+
+# CHAPEL_SUBDIR = runtime/$(RUNTIME_SUBDIR)
+
+ifneq ($(MAKE_LAUNCHER),1)
+CHPL_MAKE_HOST_TARGET = --target
+endif
+include $(RUNTIME_ROOT)/../make/Makefile.base
+
+
+LAUNCHER_CFLAGS = $(RUNTIME_CFLAGS) -DLAUNCHER
+LAUNCHER_INCLS = \
+        -I$(RUNTIME_ROOT)/include/comp-$(CHPL_MAKE_HOST_COMPILER) \
+        -I$(RUNTIME_ROOT)/include/$(subst -sim,,$(CHPL_MAKE_HOST_PLATFORM)) \
+        -I$(RUNTIME_ROOT)/include/comm/$(CHPL_MAKE_COMM) \
+        -I$(RUNTIME_ROOT)/include
+
+# Get runtime headers and required -D flags.
+# sets RUNTIME_INCLUDE_ROOT RUNTIME_CFLAGS RUNTIME_INCLS
+include $(RUNTIME_ROOT)/make/Makefile.runtime.include
+
+RUNTIME_OBJ_DIR = ./$(RUNTIME_OBJDIR)
+RUNTIME_OBJ_DIR_STAMP = $(RUNTIME_OBJ_DIR)/.timestamp
+
+LAUNCHER_OBJ_DIR = ./$(LAUNCHER_OBJDIR)
+LAUNCHER_OBJ_DIR_STAMP = $(LAUNCHER_OBJ_DIR)/.timestamp
+
+ifneq ($(MAKE_LAUNCHER),1)
+DEPEND_DIR = $(RUNTIME_OBJ_DIR)
+else
+DEPEND_DIR = $(LAUNCHER_OBJ_DIR)
+endif
+
+#
+# platform-specific subdirectory targets
+#
+SVN_DEPENDS = ./$(DEPEND_DIR)/*.d
+
+
+#
+# clean and clobber targets
+#
+CLEAN_TARGS = \
+	./$(RUNTIME_OBJ_DIR)/*.o \
+	./$(LAUNCHER_OBJ_DIR)/*.o \
+	core \
+	*.core \
+	*.gmon \
+	*.a \
+        $(GEN_HEADERS) \
+	$(GEN_SRCS) \
+	$(EXECS)
+
+CLOBBER_TARGS = \
+	$(CLEAN_TARGS) \
+	./$(GEN_SUBDIR) \
+	*~
+
+
+
+
+MAKEALLSUBDIRS = $(SUBDIRS:%=%.makedir)
+CLEANSUBDIRS = $(SUBDIRS:%=%.cleandir)
+CLEANSUBDIRDEPS = $(SUBDIRS:%=%.cleandirdeps)
+CLOBBERSUBDIRS = $(SUBDIRS:%=%.clobberdir)

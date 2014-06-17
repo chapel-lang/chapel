@@ -1,0 +1,6 @@
+#
+# CHPL_MAKE_LAUNCHER stuff
+#
+#
+#
+CHPL_MAKE_LAUNCHER = $(shell $(CHPL_MAKE_HOME)/util/chplenv/launcher)

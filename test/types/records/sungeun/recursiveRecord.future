@@ -1,0 +1,5 @@
+bug: Declaring a recursive record results in a compiler seg fault.
+
+This test results in a seg fault during function resolution due to
+infinite recursion in hasRefField().
+

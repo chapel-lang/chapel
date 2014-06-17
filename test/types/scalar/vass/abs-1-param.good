@@ -1,0 +1,3 @@
+abs-1-param.chpl:4: warning: abs(arg1) = 33
+abs-1-param.chpl:5: warning: abs(arg2) = 55
+abs-1-param.chpl:6: error: no need to codegen

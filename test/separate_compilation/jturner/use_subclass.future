@@ -1,0 +1,3 @@
+bug: subclassing across a separate compile fails
+
+Currently the Chapel compiler will assume that it's safe to de-virtual a method invocation site if it's in a compiler, which is not a safe assumption now that the class could have further subclasses outside of the library. 

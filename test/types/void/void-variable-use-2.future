@@ -1,0 +1,3 @@
+semantic: allow void-typed variables and fields
+
+See void-variable-def.future.

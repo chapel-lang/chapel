@@ -1,0 +1,5 @@
+perfkeys: Time for rectangular equality =, Time for rectangular inequality =, Time for sparse equality =, Time for sparse inequality =, Time for associative equality =, Time for associative inequality = 
+files: domEqualityPerf.dat, domEqualityPerf.dat, domEqualityPerf.dat, domEqualityPerf.dat, domEqualityPerf.dat, domEqualityPerf.dat
+graphtitle: Identical domain equality Timings (sec)
+ylabel: Time (sec)
+graphname: domEqualityPerf

@@ -1,0 +1,5 @@
+IFA_OBJDIR = $(COMPILER_ROOT)/ifa/$(OBJ_SUBDIR)
+
+ALL_SRCS += ifa/*.h ifa/*.cpp
+
+include $(COMPILER_ROOT)/ifa/Makefile.share

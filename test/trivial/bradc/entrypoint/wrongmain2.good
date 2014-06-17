@@ -1,0 +1,2 @@
+error: main() function with invalid signature
+wrongmain2.chpl:4: note: in module wrongmain2

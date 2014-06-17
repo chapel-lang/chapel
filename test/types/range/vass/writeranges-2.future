@@ -1,0 +1,11 @@
+feature request: distinguish ambiguous and unambiguous range alignments when printing
+
+When printing a range, I'd like to see an indication that its
+alignment is ambiguous, when that is the case. An ambiguous alignment
+could be printed as '?' (as in .good) or a legal Chapel expression
+could be provided, e.g.
+
+   (.. by 2)(1..5) printed for the range 1..5 by 2 align ?
+
+Right now 1..5 by 2 and 1..5 by 2 align ? print out the same,
+which is unsatisfactory.

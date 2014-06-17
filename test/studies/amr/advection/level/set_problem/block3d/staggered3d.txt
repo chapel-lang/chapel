@@ -1,0 +1,25 @@
+3    dimension
+
+1    number of levels
+
+-1.0 -1.0 -1.0   x_low
+ 1.0  1.0  1.0   x_high
+ 100  100  100   num_cells
+   1    1    1   num_ghost_cells
+
+5    number of grids
+
+-0.8 -1.0 -1.0   x_low
+ 0.0  0.0  0.0   x_high
+
+ 0.0  0.0  0.0   x_low
+ 1.0  1.0  1.0   x_high
+
+-0.5 -0.5  0.0   x_low
+ 0.9  0.0  0.5   x_high
+ 
+ 0.0 -0.5 -0.5   x_low
+ 0.9  0.9  0.0   x_high
+
+-0.5  0.0 -0.5   x_low
+ 0.0  0.5  0.5   x_high

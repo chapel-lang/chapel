@@ -1,0 +1,7 @@
+semantic: method resolution for un-used module
+
+It seems strange that we permit a class from a module to be used
+explicitly but then not to permit methods on that class to be
+called.  Is this an oversight or intentional?  If the latter, might
+convince me to take a stronger stance on direct module references
+without uses.

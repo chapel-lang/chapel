@@ -1,0 +1,6 @@
+#!/usr/bin/env perl
+
+# args: test name, output to diff against, compiler
+$outfile = $ARGV[1];
+system ("sort $outfile > $outfile.predifftmp");
+system ("mv $outfile.predifftmp $outfile");

@@ -1,0 +1,4 @@
+paramret-2.chpl:14: warning: providing an explicit return type on a 'param' function currently leads to incorrect results; as a workaround, remove the return type specification in function 'b'
+paramret-2.chpl:15: warning: providing an explicit return type on a 'param' function currently leads to incorrect results; as a workaround, remove the return type specification in function 'd'
+0
+0

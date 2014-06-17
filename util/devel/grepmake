@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+if [ ! -z "$CHPL_HOME" ] ; then
+    chapelDir="$CHPL_HOME"
+else
+    chapelDir="./"
+fi
+
+pushd $chapelDir > /dev/null
+
+find . -maxdepth 1 -name Make\* -print0 | xargs -0 grep -H "$@"
+find make -wholename "*/.svn" -prune -o -name Make\* -print0 | xargs -0 grep -H "$@"
+find compiler -wholename "*/.svn" -prune -o -name Make\* -print0 | xargs -0 grep -H "$@"
+find modules -wholename "*/.svn" -prune -o -name Make\* -print0 | xargs -0 grep -H "$@"
+find runtime -wholename "*/.svn" -prune -o -wholename "*/gen" -prune -o -name Make\* -print0 | xargs -0 grep -H "$@"
+find -L third-party -maxdepth 2 -wholename "*/.svn" -prune -o -name Make\* -print0 | xargs -0 grep -H "$@"
+find man -wholename "*/.svn" -prune -o -name Make\* -print0 | xargs -0 grep -H "$@"
+
+popd > /dev/null

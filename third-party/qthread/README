@@ -1,0 +1,12 @@
+==========================
+Qthreads README for Chapel
+==========================
+
+This copy of Qthreads is being released with Chapel for convenience
+and uses a snapshot of obtained from the Qthreads team at:
+
+  https://code.google.com/p/qthreads/downloads/list
+
+Any Chapel issues that seem to be related to Qthreads should be
+directed to the Chapel team at chapel-bugs@lists.sourceforge.net.
+

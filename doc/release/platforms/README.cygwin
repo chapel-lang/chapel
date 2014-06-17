@@ -1,0 +1,46 @@
+========================
+Using Chapel with Cygwin
+========================
+
+* For best results, avoid using WinZip to unpack the release, or make
+  sure that it is running in a mode that will not convert textfiles to
+  use Windows-style carriage-return/linefeed end-of-lines -- doing so
+  can change Makefiles such that they break the build process.  For
+  best results, use Cygwin's gunzip and tar utilities to unpack the
+  release in the traditional way:
+
+     gunzip chapel.tar.gz
+     tar xvf chapel.tar
+
+
+* For best results, unpack the release in a directory whose path
+  contains no spaces.  For example, unpacking the release in the root
+  directory of your hard-drive (/cygdrive/c/) to create
+  /cygdrive/c/chapel works very well.  Currently, our
+  compiler-generated Makefiles break when the compiler and runtime use
+  an absolute path that contains spaces.  If any Cygwin experts have
+  tips on addressing this issue in a portable way, please let us know
+  at chapel_info@cray.com.
+
+
+* In order to get the required tools listed in README.prereqs, Cygwin
+  users will need to ensure that the following packages are installed
+  in addition to the standard set of Cygwin packages:
+
+     Devel
+       + gcc
+       + make
+     Perl
+       + perl
+     Python
+       + python
+     Shells
+       + tcsh
+     Utils
+       + bc
+       + diffutils
+
+
+* For more information on Cygwin, please refer to:
+
+     http://www.cygwin.com

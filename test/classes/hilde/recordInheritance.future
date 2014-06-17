@@ -1,0 +1,4 @@
+feature request: Implement record method inheritance
+
+Currently, records support only field inheritance.
+We should add method inheritance.

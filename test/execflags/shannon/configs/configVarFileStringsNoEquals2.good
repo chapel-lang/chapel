@@ -1,0 +1,1 @@
+configVarFileStringsNoEquals.input: error: Configuration variable 'astring' is missing its initialization value

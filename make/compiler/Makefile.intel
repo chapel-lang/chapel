@@ -1,0 +1,108 @@
+#
+# settings for Intel compiler on Linux
+#
+
+#
+# Tools
+#
+CXX = icpc
+CC = icc
+
+RANLIB = ranlib
+
+
+#
+# General Flags
+#
+
+DEBUG_CFLAGS = -g
+OPT_CFLAGS = -O3
+PROFILE_CFLAGS = -pg
+PROFILE_LFLAGS = -pg
+
+
+#
+# Flags for compiler, runtime, and generated code
+#
+# Warnings squashed for non-Chapel code (bison/flex output):
+# 2215 : definition at end of file not followed by a semicolon or declarator
+# 2259 : non-pointer conversion from "int" to "yytype_int16={short}" may lose bits
+# 170 : pointer points outside outside of underlying object
+#
+# Warnings squashed for generated code:
+#  592 : squelch use-before-def problems -- we'll rely on valgrind to catch them
+
+COMP_CFLAGS = $(CFLAGS)
+COMP_CFLAGS_NONCHPL = -wr111,193,1418,1419,2215,2259,170
+RUNTIME_CFLAGS = -std=c99 $(CFLAGS) -wr181,188
+RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
+GEN_CFLAGS = -std=c99 -fp-model strict -wr592
+# NOTE: These are only supported for Linux
+GEN_STATIC_FLAG = -Bstatic
+GEN_DYNAMIC_FLAG = -Bdynamic
+LIB_STATIC_FLAG =
+LIB_DYNAMIC_FLAG = -shared
+SHARED_LIB_CFLAGS = -fpic
+
+#
+# Warnings squashed for flex-/bison-generated code
+#
+#  111 : statement is unreachable
+#  193 : zero used for undefined preprocessing identifier
+# 1418 : external function definition with no prior declaration
+# 1419 : external declaration in primary source file
+
+#
+# Warnings squashed for runtime code
+#
+#  181 : due to warning using PRIu8/PRIu16 to print uint8_t and uint16_t's --
+#        apparently a bug -- filed to intel to see what they say
+
+#
+# Warnings squashed for compiler/runtime C/C++ code
+#
+#  304 : requires inherited classes to specify access control (e.g. public)
+#  593 : variable was set but never used
+#  810 : numeric conversion may lose significant bits (e.g., long double->float)
+#  869 : warns about arguments that are never used
+#  981 : operands are evaluated in unspecified order (mysterious vec.h problems)
+# 1572 : floating point equality and inequality comparisons are unreliable
+# 1599 : one variable shadows another
+
+#
+# Warnings squashed for generated code
+#
+#  111 : warns about unreachable statements
+#  174 : warns about expressions that have no effect
+#  177 : warns about unused variable declarations
+
+WARN_CXXFLAGS = -Wall -Werror -diag-disable remark -wr304,593,810,869,981,1572,1599
+WARN_CFLAGS = $(WARN_CXXFLAGS)
+WARN_GEN_CFLAGS = $(WARN_CFLAGS) -wr111,174,177
+
+#
+# a hacky flag necessary currently due to our use of setenv in the runtime code
+#
+SUPPORT_SETENV_CFLAGS = -std=gnu89 -wr10121
+
+
+#
+# developer settings
+#
+ifdef CHPL_DEVELOPER
+COMP_CFLAGS += $(WARN_CXXFLAGS)
+RUNTIME_CFLAGS += $(WARN_CFLAGS)
+RUNTIME_GEN_CFLAGS += -Wno-unused
+# GEN_CFLAGS gets warnings added via WARN_GEN_CFLAGS in comp-generated Makefile
+
+#
+# When compiling GASNet...
+#
+# -Wno-strict-prototypes has to be used because most GASNet prototypes
+# aren't strict.
+#
+CHPL_GASNET_MORE_CFLAGS = -Wno-strict-prototypes
+endif
+ifdef CHPL_COMM_DEBUG
+CHPL_GASNET_MORE_CFLAGS += -O0 -wr10120
+endif

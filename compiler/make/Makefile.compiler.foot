@@ -1,0 +1,40 @@
+#
+# recursive subdirectory rules
+#
+
+STARS = \*\*\*\*\*
+
+echocompilerdir:
+	@echo $(STARS) $(COMPILER_SUBDIR)/ $(STARS)
+
+%.makedir:
+	@cd $* && $(MAKE)
+
+%.cleandir:
+	@cd $* && $(MAKE) clean
+
+%.cleandirdeps:
+	@cd $* && $(MAKE) cleandeps
+
+%.clobberdir:
+	@cd $* && $(MAKE) clobber
+
+
+#
+# dependences and misc. stuff
+#
+
+-include $(SVN_DEPENDS)
+
+#
+# pattern-based rules
+#
+
+$(OBJ_SUBDIR)/%.o: %.cpp $(OBJ_SUBDIR_MADE)
+	$(CXX) -c $(COMP_CXXFLAGS) -o $@ $<
+
+FORCE:
+
+.PHONY: all clean cleandeps clobber depend test echocompilerdir FORCE
+.SUFFIXES:
+.SUFFIXES: .cpp .o .h .makedir .cleandir .cleandirdeps .clobberdir

@@ -1,0 +1,16 @@
+(d = Block
+-------
+distributes: [1..2]
+across locales: LOCALE0
+indexed via: [0..0]
+resulting in: 
+  [0] locale 0 owns chunk: [-2147483648..2147483647]
+)
+(d = Block
+-------
+distributes: [2..3]
+across locales: LOCALE0
+indexed via: [0..0]
+resulting in: 
+  [0] locale 0 owns chunk: [-2147483648..2147483647]
+)

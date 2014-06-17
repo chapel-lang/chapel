@@ -1,0 +1,3 @@
+#!/bin/csh -f
+./copyrighthelp.csh $1 $2 $3 > copyright.good
+echo "Hello, Merl\!" >> copyright.good

@@ -1,0 +1,7 @@
+bug: Invalid extern declaration in class results in internal error in function resolution.
+
+This test essentially parallel/taskPar/sungeun/private.chpl except
+that the extern declaration is accidentally placed at the class-level
+in localePrivateData.  I made a few attempts to make this example
+simpler, but the simpler examples don't seem to work.
+

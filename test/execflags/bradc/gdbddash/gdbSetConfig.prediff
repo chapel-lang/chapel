@@ -1,0 +1,21 @@
+#!/bin/csh -f
+set testname = $1
+set outfile = $2
+
+set tmpfile = $outfile.raw.tmp
+
+#
+# some gdbs print out extra stuff.  This filters it out
+#
+mv $outfile $tmpfile
+grep "n is:" $tmpfile > $outfile
+rm $tmpfile
+
+#
+# some greps don't add a linefeed onto the end; others do
+# this ensures that a linefeed is added
+#
+set numlines = `wc -l $outfile`
+if ("$numlines" == "0 $outfile") then
+  echo >> $outfile
+endif

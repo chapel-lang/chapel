@@ -1,0 +1,9 @@
+bug: invalid generated code when a dynamically-dispatched method has a param argument
+
+Note: if I simplify the methods C.a() and D.a() to return just integer,
+the problem does not exhibit itself.
+
+Currently I get this during the C compilation phase:
+
+/tmp/chpl-vass-31670.deleteme/generic-method-with-param-arg-3.c: In function ‘chpl__init_generic_HYPHEN_method_HYPHEN_with_HYPHEN_param_HYPHEN_arg_HYPHEN_3’:
+/tmp/chpl-vass-31670.deleteme/generic-method-with-param-arg-3.c:27: error: passing argument 2 of ‘(void (*)(struct __C *, struct range_int64_t_bounded_T (*)[3]))(chpl_vmtable[_virtual_method_tmp_][1])’ makes pointer from integer without a cast

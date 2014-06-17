@@ -1,0 +1,12 @@
+bug: a bool config var or const, given on the command-line with '=' but without a 'true' or 'false' following it, needs to result in an error
+
+Given a bool configuration var/const, say 'bcv', we would like
+
+  this command-line option...    to set this value for 'bcv':
+    --bcv                           true
+    --bcv=true                      true
+    --bcv=false                     false
+    --bcv=                          report an error
+    --bcv[some other punctuation]   report an error
+
+Currently such an error is not reported; --bcv= is treated as --bcv=true.

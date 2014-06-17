@@ -1,0 +1,6 @@
+#
+# CHPL_MAKE_MEM
+#
+#
+#
+CHPL_MAKE_MEM = $(shell $(CHPL_MAKE_HOME)/util/chplenv/mem $(CHPL_MAKE_HOST_TARGET))

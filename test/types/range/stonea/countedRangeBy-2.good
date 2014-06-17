@@ -1,0 +1,1 @@
+countedRangeBy-2.chpl:1: error: unresolved call 'by(4, 2)'

@@ -1,0 +1,7 @@
+bug: Syntax check prohibits overloaded multiplication 
+with domain literals.
+
+The commented section of code does the same operation,
+but assigning each domain to a variable first.  Since
+this works fine, the version with literals probably
+should, too.

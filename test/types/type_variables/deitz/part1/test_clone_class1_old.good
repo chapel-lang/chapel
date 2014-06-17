@@ -1,0 +1,2 @@
+test_clone_class1_old.chpl:8: error: unresolved type specifier 'foo(2)'
+test_clone_class1_old.chpl:1: note: candidates are: foo(type x)

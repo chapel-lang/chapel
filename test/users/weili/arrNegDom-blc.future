@@ -1,0 +1,7 @@
+bug: old-style [i in D] array declaration generates error message
+
+This should no longer result in the syntactic sugar approach as before
+but it shouldn't be illegal either, just pointless.  In particular,
+we need to support this style of array declaration in order to support
+skyline arrays.
+

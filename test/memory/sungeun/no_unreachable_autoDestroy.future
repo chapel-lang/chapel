@@ -1,0 +1,4 @@
+Bug: Unreachable autoDestroy() inserted when a function's return points are all within the body of the function.
+
+This fails on XMT due to a compiler warning regarding the unreachable
+statement.

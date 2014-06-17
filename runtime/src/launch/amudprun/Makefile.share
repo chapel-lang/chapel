@@ -1,0 +1,14 @@
+LAUNCHER_SRCS = \
+        launch-amudprun.c \
+
+#
+# is this the right time to set this variable?  Or is user code
+# compile time
+#
+RUNTIME_CFLAGS += -DLAUNCH_PATH="$(THIRD_PARTY_DIR)/gasnet/$(GASNET_INSTALL_SUBDIR)/bin/"
+
+SVN_SRCS = $(LAUNCHER_SRCS)
+SRCS = $(SVN_SRCS)
+
+LAUNCHER_OBJS = \
+	$(LAUNCHER_SRCS:%.c=$(LAUNCH_OBJDIR)/%.o)

@@ -1,0 +1,38 @@
+#!/usr/bin/env perl
+
+use File::Basename;
+
+$utildirname = dirname($0);
+
+$home = $ENV{'CHPL_HOME'};
+if ( ! -d $home ) {
+  $home = $utildirname . "/../../";
+}
+
+$preset_gmp = $ENV{'CHPL_GMP'};
+
+if ($preset_gmp eq "") {
+  $targplatform = `$utildirname/platform --target`; chomp($targplatform);
+  $targcompiler = `$utildirname/compiler --target`; chomp($targcompiler);
+
+  if ($targplatform =~ /^cray-xmt(-sim)?$/) {
+      $gmp = 'none';
+  } elsif ($targplatform eq "cray-xt" || $targplatform eq "cray-xe" ||
+	   $targplatform eq "cray-xk" || $targplatform eq "cray-xc") {
+      $gmp = 'system';
+  } else {
+    $subdir = $home . "/third-party/gmp/install/" .
+              $targplatform . "-" . $targcompiler;
+    if ( -d $subdir && -f "$subdir/include/gmp.h" ) {
+      $gmp = 'gmp'
+    } else {
+#      $gmp = 'gmp'; check Lion, PGI, PrgEnv-gnu before enabling
+      $gmp = 'none';
+    }
+  }
+} else {
+  $gmp = $preset_gmp;
+}
+
+print "$gmp\n";
+exit(0);

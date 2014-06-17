@@ -1,0 +1,125 @@
+This document seeks to describe how to add a new threading model to the
+runtime.
+
+
+Getting Things Working Quickly
+==============================
+
+The quickest route will be to start with an existing threading model
+that is implemented in terms of the generic tasking implementation.  The
+"pthreads" threading model is a good candidate.  To get this working you
+will need to implement 7 of the tasking interface routines, along with
+about 15 supporting routines (some quite small) that support the generic
+implementation.
+
+To begin, copy the existing threading model you chose as a starting
+point.  We will pretend you are starting with the "pthreads" threading
+model, and you are creating the "wonderful" threading model.  Assuming a
+Linux working environment, from the $CHPL_THREADS directory, do the
+following commands to create the copy:
+
+    svn mkdir runtime/include/threads-wonderful
+    svn cp runtime/include/threads-pthreads/chpl_cfg_threads.h  \
+           runtime/include/threads-wonderful/
+
+    svn mkdir runtime/threads-wonderful
+    svn cp runtime/threads-pthreads/chpl_pthreads_threads.c  \
+           runtime/threads-wonderful/chpl_wonderful_threads.c
+    svn cp runtime/threads-pthreads/Makefile  \
+           runtime/threads-wonderful/
+    svn cp runtime/threads-pthreads/Makefile.include  \
+           runtime/threads-wonderful/
+    svn cp runtime/threads-pthreads/Makefile.share  \
+           runtime/threads-wonderful/
+
+This will leave you with the following new files:
+
+    runtime/include/threads-wonderful/chpl_cfg_threads.h
+
+    runtime/threads-wonderful/chpl_wonderful_threads.c
+                          .../Makefile
+                          .../Makefile.include
+                          .../Makefile.share
+
+First, there are some infrastructure changes that need to be done:
+
+In runtime/README:
+  Add an entry for your new threading model.
+
+In util/threads.pl:
+  If your new threading model will be the default or only model for some
+  Chapel target architecture, you will need to change this file to
+  select your model under the appropriate circumstances.
+
+In runtime/threads-wonderful/Makefile:
+  Change RUNTIME_SUBDIR to be threads-wonderful.
+
+In runtime/threads-wonderful/Makefile.include:
+  Change THREADS_SUBDIR to be threads-wonderful.  Assuming you will be
+  using the generic tasking implementation, retain the definition of
+  USE_GENERIC_THREADS.
+
+In runtime/threads-wonderful/Makefile.share:
+  Change THREADS_SRCS to be chpl_wonderful_threads.c.
+
+The file runtime/threads-wonderful/chpl_wonderful_threads.c will be most
+of the work.  First, you will need to supply bodies for the following
+functions which are part of the public threading interface.  These must
+be implemented in terms of primitives which work with your threading
+layer.
+  CHPL_MUTX_INIT()
+  CHPL_MUTX_NEW()
+  CHPL_MUTX_LOCK()
+  CHPL_MUTX_UNLOCK()
+  CHPL_THREAD_ID()
+  CHPL_THREAD_CANCEL()
+  CHPL_THREAD_JOIN()
+
+Then, you also have to supply the following callback functions, which
+will be invoked by the generic implementation.  These also must be
+implemented in terms of primitives which work with your threading
+layer.  There are helpful discussions about what each of these is
+supposed to do in runtime/include/threads-generic/chpl_cfg_threads.h.
+  threadlayer_sync_suspend()
+  threadlayer_sync_awaken()
+  threadlayer_init_sync()
+  threadlayer_destroy_sync()
+  threadlayer_single_suspend()
+  threadlayer_single_awaken()
+  threadlayer_init_single()
+  threadlayer_destroy_single()
+  threadlayer_init()
+  threadlayer_exit()
+  threadlayer_thread_create()
+  threadlayer_pool_suspend()
+  threadlayer_pool_awaken()
+  threadlayer_get_thread_private_data()
+  threadlayer_set_thread_private_data()
+
+While this may look like a lot to do, in some cases you can get by with
+empty versions of certain of these functions.  This is especially true
+for a first implementation, in which functionality is more important
+than performance.  As an example, you can look at the "pthreads-minimal"
+implementation, in which seven of the above routines do not do anything
+at all.
+
+Finally, runtime/include/threads-wonderful/chpl_cfg_threads.c will also
+need your attention.  Here you define several a couple of types that are
+used in the public Chapel threading interface:
+  chpl_mutex_t
+  chpl_threadID_t
+
+In addition, for the public chpl_sync_aux_t and chpl_single_aux_t struct
+types, you define the types of members in each one that hold information
+specific to the threading layer:
+  threadlayer_sync_aux_t
+  threadlayer_single_aux_t
+
+
+More to Follow
+==============
+
+There is more needed here, about using the generic implementation if you
+implement the interface yourself, doing a version that doesn't use the
+generic implmentation, how the function naming works, things to keep in
+mind when doing an overloaded model, and probably others.

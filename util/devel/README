@@ -1,0 +1,17 @@
+==================================
+Chapel Developer Utility Directory
+==================================
+
+This directory contains utility scripts that are useful mostly to developers.
+For example:
+
+  receive_patch    : two scripts useful for moving patches between trees
+  send_patch
+  test/
+    cat_futures    : prints all the futures to the console with name/lineno
+                     (Sung says could be written much more efficiently)
+    compileTest    : compiles a single test using appropriate COMPOPTS/.compopts
+    extract_tests  : used to extract tests from the language spec sources
+    list_futures   : lists all the futures by printing the first line in .future
+    setTestIgnores : sets standard files to svn:ignore in a test directory
+                     (note: overrides existing svn:ignores, so use with caution)

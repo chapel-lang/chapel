@@ -1,0 +1,14 @@
+#!/bin/csh -f
+set testname = $1
+set outfile  = $2
+set tmpfile  = $outfile.prediff.tmp
+
+echo "Outfile: " $outfile
+echo "tmpFile: " $tmpfile
+
+# Replace seconds and gflops values with "NUM"
+sed 's/[0-9]*\.[0-9]* seconds./NUM seconds./' $outfile > $tmpfile
+sed 's/[0-9]*\.[0-9]*\(e[+-][0-9]\+\)\? Gflops\/s/NUM Gflops\/s/' $tmpfile > $outfile
+
+rm $tmpfile
+

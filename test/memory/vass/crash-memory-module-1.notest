@@ -1,0 +1,4 @@
+This test doesn't fail consistently, so isn't a very good future.
+Futures that pass sometimes aren't very useful from a testing
+perspective, so making them not be tested by default (but keeping
+them in the system for reference) seems more constructive.

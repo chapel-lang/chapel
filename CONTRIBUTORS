@@ -1,0 +1,65 @@
+===================
+Chapel Contributors
+===================
+
+The following people have made significant contributions to the
+implementation of this release and to the design of the Chapel
+language:
+
+Contributors to the current release
+-----------------------------------
+Rafael Asenjo
+Brad Chamberlain
+Sung-Eun Choi
+Martha Dumler
+Michael Ferguson
+Tom Hildebrandt
+David Iten
+Jessica Jueckstock
+John Koenig
+Vassily Litvinov
+Alberto Sanz
+Greg Titus
+
+Contributors to previous releases
+---------------------------------
+Matthew Baker
+Steve Balensiefer
+Robert Bocchino
+Dan Bonachea
+David Callahan
+Lydia Davis
+Steve Deitz
+Joel Denny
+Roxana Diaconescu
+James Dinan
+Samuel Figueroa
+Roald Frederickx
+Paul Hargrove
+Hannah Hemmaplardh
+Steven Hemmy
+Shannon Hoffswell
+Mary Beth Hribar
+Mark James
+Mackale Joyner
+Matthew Lentz
+Juan Lopez
+Jun Nakashima
+Maria Angeles Navarro
+Jacob Nelson
+John Plevyak
+Lee Prokowich
+Albert Sidelnik
+Rachel Sobel
+Srinivas Sridharan
+Andy Stone
+Chris Swenson
+Jonathan Turner
+Wayne Wong
+Joe Yan
+Hans Zima
+
+
+We are grateful to our many enthusiastic and vocal users for helping
+us continually improve the quality of the Chapel language and
+compiler.

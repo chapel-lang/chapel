@@ -1,0 +1,11 @@
+#!/bin/csh -f
+cp testVerboseFlag.comm-$CHPL_COMM.goodstart $1.good
+#Need blank only if $EXECOPTS is non-empty
+if ($EXECOPTS != "") echo -n " " >> $1.good
+echo $EXECOPTS >> $1.good
+echo -n "executing on node 0 of 1 node(s): " >> $1.good
+uname -n >> $1.good
+cat testVerboseFlag.goodstop >> $1.good
+sed -e "s/^.*amudprun/amudprun/" $2 > $1.sed
+sed -e "/QTHREADS/d" $1.sed > $2
+rm $1.sed

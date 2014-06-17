@@ -1,0 +1,4 @@
+semantic: what should happen to array aliases when domain is reassigned?
+
+Currently, A2 remains aliased to the old, deallocated array, and is not valid
+to access. The .good is my guess as to the correct behavior.

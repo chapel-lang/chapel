@@ -1,0 +1,25 @@
+// Verify that accesses to replicated arrays do not involve communication.
+
+use ReplicatedDist;
+
+const ls = Locales;
+writeln("running on locales ", ls.domain);
+
+var d = {1..3,1..3} dmapped ReplicatedDist(ls);
+var a: [d] int;
+
+a = 33;
+
+for loc in ls {
+  write("on ", loc);
+  on loc {
+    var temp = 5;
+    write("  ", temp, " -> ");
+    local {
+      temp = a[2,3];  // should be purely local
+    }
+    writeln(temp);
+  }
+}
+
+writeln("done");

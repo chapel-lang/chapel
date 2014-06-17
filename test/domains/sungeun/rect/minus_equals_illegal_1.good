@@ -1,0 +1,1 @@
+minus_equals_illegal_1.chpl:9: error: Cannot remove indices from a rectangular domain

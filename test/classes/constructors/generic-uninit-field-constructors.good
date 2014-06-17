@@ -1,0 +1,8 @@
+{x = 0.0}
+{p = hello-user}
+{cst = 1.2}
+{vbl = 7}
+{x = 0.0}
+{p = hello-default}
+{cst = 1.33}
+{vbl = 55}

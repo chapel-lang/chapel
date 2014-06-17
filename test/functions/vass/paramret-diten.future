@@ -1,0 +1,4 @@
+bug: paramret - see paramret-1.future
+
+The .chpl file contains a solution proposal: it shows what the compiler
+could rewrite the offending function into to get the correct behavior.

@@ -1,0 +1,61 @@
+===============
+Getting Started
+===============
+
+It is recommended that all Chapel developers get aquainted with the
+project via the following steps:
+
+* Start taking notes as you undertake these steps in order to track suggestions,
+  any points of confusion and areas for possible improvement.  You'll
+  only be new to Chapel once, so this is the best way of making things
+  clearer and easier for users.  And soon you'll be in the position of
+  being able to start helping to make things better.
+
+* Download the official Chapel release from SourceForge and put
+  yourself in the shoes of a Chapel user.  Start from the top-level
+  README and build the compiler, run it, and execute the resulting
+  binary.  Follow as many of the "What's next?" steps as possible in
+  order to explore the contents of the release and familiarize
+  yourself with the language, compiler, documentation, and example
+  programs as presented to the end-user.
+
+* Read through presentations and tutorials from the Chapel webpage to
+  get a more abstract/visual overview of how we describe the language.
+  Most slide decks are better with a human delivering them, so see if
+  you can find someone to walk you through any that aren't
+  self-explanatory.
+
+* Familiarize yourself with the language specification.  This can be a
+  fairly dry/tedious task, so most people will tend to find other
+  tasks to interleave it with, like programming.  Nevertheless, we
+  must emphasize how important it is to be familiar with the language
+  spec, both to get an understanding of the language's scope and the
+  state of the documentation today.
+
+* Code up sample computations from scratch to get a feel for the
+  language and compiler.  Get feedback on your codes from an
+  experienced Chapel developer on ways to improve them from elegance
+  and/or performance standpoints.  If you need guidance on what to
+  code up, ask for suggestions from the team; we usually have more
+  computations to write than time to write them.
+
+* Check out the Chapel subversion repository from SourceForge.  Get
+  familiar with its organization, build and use the compiler.  In most
+  respects its directory structure is a superset of the official
+  release, but in some cases there are differences.  Refer to the
+  top-level README.devel to see what some of these differences are.
+
+* As a sub-step of the above, augment your shell environment:
+   - set CHPL_HOME to your preferred or current tree,
+   - incorporate the settings from $CHPL_HOME/util/setchplenv.bash
+     (or .csh) e.g. by source'ing it,
+   - add $CHPL_HOME/util and $CHPL_HOME/util/devel to your PATH,
+   - set CHPL_DEVELOPER to 'true' (see also CHPL_DEVELOPER.txt).
+
+* Get aquainted with the testing system which is a crucial technology
+  for the development team for test-first development, pre-commit
+  sanity checks, and nightly correctness and performance regression
+  testing.  See TestSystem.txt in this directory for an introduction.
+
+* Get aquainted with the compiler architecture via the compiler
+  overview document in $CHPL_HOME/doc/developer/compilerOverview/

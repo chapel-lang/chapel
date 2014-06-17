@@ -1,0 +1,10 @@
+LAUNCHER_SRCS = \
+        launch-apsim.c \
+
+RUNTIME_CFLAGS += -DLAUNCH_PATH="/cray/css/compiler/cost/sv2/apsim/latest/i686-pc-linux-gnu/opt" -DLAUNCH_TARGET_PLATFORM="$(CHPL_MAKE_TARGET_PLATFORM)"
+
+SVN_SRCS = $(LAUNCHER_SRCS)
+SRCS = $(SVN_SRCS)
+
+LAUNCHER_OBJS = \
+	$(LAUNCHER_SRCS:%.c=$(LAUNCH_OBJDIR)/%.o)

@@ -1,0 +1,52 @@
+#
+# settings for gnu-compatible platforms
+#
+
+#
+# Tools
+#
+CXX = pgCC
+CC = pgcc
+
+RANLIB = ranlib
+
+
+#
+# General Flags
+#
+
+DEBUG_CFLAGS = -g
+OPT_CFLAGS = -O3
+
+
+#
+# Flags for compiler, runtime, and generated code
+#
+
+COMP_CFLAGS = $(CFLAGS)
+COMP_CFLAGS_NONCHPL =
+RUNTIME_CFLAGS = $(CFLAGS)
+RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
+IEEE_FLOAT_GEN_CFLAGS = -Kieee
+# NOTE: These are only support for Linux
+GEN_STATIC_FLAG = -Bstatic
+GEN_DYNAMIC_FLAG = -Bdynamic
+LIB_STATIC_FLAG =
+LIB_DYNAMIC_FLAG = -shared
+
+#
+# Flags for turning on warnings for C++/C code
+#
+WARN_CXXFLAGS =
+WARN_CFLAGS =
+WARN_GEN_CFLAGS = 
+
+
+#
+# developer settings
+#
+ifdef CHPL_DEVELOPER
+COMP_CFLAGS += $(WARN_CXXFLAGS)
+RUNTIME_CFLAGS += $(WARN_CFLAGS)
+# GEN_CFLAGS gets warnings added via WARN_GEN_CFLAGS in comp-generated Makefile
+endif

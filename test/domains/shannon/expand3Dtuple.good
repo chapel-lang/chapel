@@ -1,0 +1,7 @@
+domain(2): 		{1..8, 1..8}
+twice: 			(-1, 1)
+expand(twice): 		{2..7, 0..9}
+
+domain(3): 		{1..8, 1..8, 1..8}
+thrice: 		(-2, 0, 5)
+expand(thrice): 	{3..6, 1..8, -4..13}

@@ -1,0 +1,2 @@
+inconsistent_return_type_specified.chpl:1: In function 'f':
+inconsistent_return_type_specified.chpl:1: warning: control reaches end of function that returns a value

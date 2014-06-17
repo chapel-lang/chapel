@@ -1,0 +1,8 @@
+feature request: fill array with random integers
+
+This captures a request from Richard Barrett in Nov/Dec 2007
+to have a Random number fill routine for integer arrays.
+I never completed it due to concerns about ability to generate
+the full set of integers requested for certain data types or
+min/max values.  See the commented out code in Random.chpl
+for more details.

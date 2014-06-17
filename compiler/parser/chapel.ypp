@@ -1,0 +1,1208 @@
+//
+// Chapel Parser Conventions
+//
+// opt_       -- optional
+//      _expr -- expression
+//      _ls   -- list
+//      _stmt -- statement
+//      _type -- type
+//
+// The rules are listed in depth-first order from stmt and expr
+//
+%{
+
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <stdint.h>
+#include "lexyacc.h" // all #includes here, for make depend
+#include "driver.h"
+
+  static int query_uid = 1;
+  int captureTokens;
+  char captureString[1024];
+
+ 
+#define YYLLOC_DEFAULT(Current, Rhs, N)                                 \
+  if (N) {                                                              \
+        (Current).first_line   = (Rhs)[1].first_line;                   \
+        if ((Current).first_line) yystartlineno = (Current).first_line; \
+        (Current).first_column = (Rhs)[1].first_column;                 \
+        (Current).last_line    = (Rhs)[N].last_line;                    \
+        (Current).last_column  = (Rhs)[N].last_column;                  \
+        (Current).comment = NULL;                                       \
+  } else  {                                                             \
+    (Current) = yylloc;                                                 \
+  }                                                                     \
+
+%}
+
+%start program
+
+%union {
+  const char* pch;
+  Vec<const char*>* vpch;
+  RetTag retTag;
+  bool b;
+  IntentTag pt;
+  Expr* pexpr;
+  DefExpr* pdefexpr;
+  CallExpr* pcallexpr;
+  BlockStmt* pblockstmt;
+  Type* ptype;
+  EnumType* penumtype;
+  FnSymbol* pfnsymbol;
+  Flag flag;
+  ProcIter procIter;
+  FlagSet* flagSet;
+};
+
+//
+// identifiers and literals
+//
+%token TIDENT IMAGLITERAL INTLITERAL REALLITERAL
+%token <pch> STRINGLITERAL
+%token <pch> EXTERNCODE
+
+//
+// keywords (alphabetical)
+//
+%token TALIGN TATOMIC TBEGIN TBREAK TBY
+%token TCLASS TCOBEGIN TCOFORALL TCONFIG TCONST TCONTINUE
+%token TDELETE TDMAPPED TDO TDOMAIN TELSE TENUM TEXPORT TEXTERN
+%token TFOR TFORALL TIF TIN TINDEX TINLINE TINOUT TITER
+%token TLABEL TLAMBDA TLET TLOCAL TMINUSMINUS TMODULE
+%token TNEW TNIL TON TOTHERWISE TOUT
+%token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIMITIVELOOP TPROC
+%token TRECORD TREDUCE TREF TRETURN
+%token TSCAN TSELECT TSERIAL TSINGLE TSPARSE TSUBDOMAIN
+%token TSYNC TTHEN TTYPE TUNDERSCORE TUNION TUSE TVAR
+%token TWHEN TWHERE TWHILE TYIELD TZIP
+
+//
+// operators and punctuation (alphabetical)
+//
+%token TALIAS TAND TASSIGN TASSIGNBAND TASSIGNBOR TASSIGNBXOR TASSIGNDIVIDE
+%token TASSIGNEXP TASSIGNLAND TASSIGNLOR TASSIGNMINUS TASSIGNMOD
+%token TASSIGNMULTIPLY TASSIGNPLUS TASSIGNSL TASSIGNSR TBAND TBNOT TBOR TBXOR
+%token TCOLON TCOMMA TDIVIDE TDOT TDOTDOT TDOTDOTDOT TEQUAL TEXP TGREATER
+%token TGREATEREQUAL THASH TLESS TLESSEQUAL TMINUS TMOD TNOT TNOTEQUAL TOR
+%token TPLUS TQUESTION TSEMI TSHIFTLEFT TSHIFTRIGHT TSTAR TSWAP
+%token TIO
+
+//
+// braces
+//
+%token TLCBR TRCBR TLP TRP TLSBR TRSBR
+
+//
+// keywords, operators, and punctuation that requires precedence
+//
+%left TNOELSE
+%left TELSE
+%left TCOMMA
+%left TFOR TFORALL TIF TATOMIC TSYNC TSINGLE
+%left TALIGN TBY THASH
+%left TIN
+%left TDOTDOT
+%left TOR
+%left TAND
+%left TBOR
+%left TBXOR
+%left TBAND
+%left TEQUAL TNOTEQUAL
+%left TLESSEQUAL TGREATEREQUAL TLESS TGREATER
+%left TSHIFTLEFT TSHIFTRIGHT
+%left TPLUS TMINUS
+%right TUPLUS TUMINUS 
+%left TSTAR TDIVIDE TMOD
+%right TBNOT TNOT
+%left TREDUCE TSCAN TDMAPPED
+%right TEXP
+%left TCOLON
+%right TNEW
+%left TDOT TLP TRSBR TLCBR 
+%nonassoc TPRAGMA
+
+%type <flag> opt_config
+%type <flag> opt_extern
+
+%type <pt> opt_intent_tag opt_this_intent_tag
+
+%type <retTag> opt_ret_tag
+
+%type <pch> ident fn_ident opt_ident
+
+%type <vpch> pragma_ls
+
+%type <pblockstmt> program toplevel_stmt_ls stmt_ls block_stmt
+%type <pblockstmt> class_level_stmt_ls
+
+%type <pblockstmt> toplevel_stmt stmt do_stmt
+%type <pblockstmt> if_stmt loop_stmt
+%type <pblockstmt> select_stmt assignment_stmt class_level_stmt
+%type <pblockstmt> extern_block_stmt
+%type <pblockstmt> type_select_stmt return_stmt
+
+%type <pblockstmt> type_alias_decl_stmt type_alias_decl_stmt_inner fn_decl_stmt class_decl_stmt module_decl_stmt
+%type <pblockstmt> enum_decl_stmt
+
+%type <pblockstmt> var_decl_stmt var_decl_stmt_inner_ls
+%type <pblockstmt> var_decl_stmt_inner tuple_var_decl_stmt_inner_ls
+
+%type <pblockstmt> function_body_stmt opt_function_body_stmt
+
+%type <pexpr> when_stmt
+%type <pblockstmt> when_stmt_ls
+
+%type <pcallexpr> array_type
+%type <pexpr> opt_type opt_formal_type formal_array_type opt_formal_array_elt_type lambda_decl_expr
+%type <pexpr> opt_reindex_expr
+%type <ptype> class_tag
+%type <penumtype> enum_ls
+
+%type <pexpr> zippered_iterator
+%type <pexpr> fun_expr call_expr dot_expr lhs_expr unary_op_expr binary_op_expr
+%type <pexpr> parenthesized_expr expr actual_expr
+%type <pexpr> literal_expr opt_where_part
+%type <pexpr> stmt_level_expr type_level_expr
+%type <pexpr> ident_expr for_expr cond_expr nil_expr io_expr new_expr let_expr
+%type <pexpr> reduce_expr scan_expr reduce_scan_op_expr opt_init_expr opt_init_type var_arg_expr
+%type <pexpr> tuple_component tuple_var_decl_component
+%type <pdefexpr> formal enum_item
+%type <pdefexpr> query_expr opt_query_expr
+
+%type <pcallexpr> opt_inherit expr_ls assoc_expr_ls tuple_expr_ls tuple_guts
+%type <pcallexpr> opt_actual_ls actual_ls
+
+%type <pfnsymbol> fn_decl_stmt_inner formal_ls opt_formal_ls req_formal_ls
+%type <procIter> proc_or_iter
+%type <pfnsymbol> linkage_spec
+
+%% 
+
+program:
+  toplevel_stmt_ls  { (void)@1.first_line; yyblock = $$; }
+;
+
+// 'toplevel_stmt_ls' is 'stmt_ls' plus resetTempID()
+toplevel_stmt_ls:
+                                   { $$ = new BlockStmt(); resetTempID(); }
+| toplevel_stmt_ls toplevel_stmt   { $1->insertAtTail($2); resetTempID(); }
+;
+
+// Switch between plain statements and those preceeded by pragmas
+toplevel_stmt:
+   stmt
+|  pragma_ls stmt  { $$ = buildPragmaStmt( $1, $2 ); }
+; 
+
+// Sequence of toplevel_stmts
+stmt_ls:
+  toplevel_stmt           { $$ = new BlockStmt(); $$->insertAtTail($1); }
+| stmt_ls toplevel_stmt   { $1->insertAtTail($2); }
+;
+
+// Sequence of pragmas
+pragma_ls:
+  TPRAGMA STRINGLITERAL             { $$ = new Vec<const char*>(); $$->add(astr($2)); }
+| pragma_ls TPRAGMA STRINGLITERAL   { $1->add(astr($3)); }
+;
+
+stmt:
+  assignment_stmt
+| block_stmt
+| class_level_stmt
+| extern_block_stmt
+| if_stmt
+| module_decl_stmt
+| loop_stmt
+| select_stmt
+| type_select_stmt
+| return_stmt
+| stmt_level_expr TSEMI      { $$ = buildChapelStmt($1); }
+| TATOMIC stmt               { $$ = buildAtomicStmt($2); }
+| TBEGIN stmt                { $$ = buildBeginStmt($2); }
+| TBREAK opt_ident TSEMI     { $$ = buildGotoStmt(GOTO_BREAK, $2); }
+| TCOBEGIN block_stmt        { $$ = buildCobeginStmt($2);  }
+| TCONTINUE opt_ident TSEMI  { $$ = buildGotoStmt(GOTO_CONTINUE, $2); }
+| TDELETE expr TSEMI         { $$ = buildPrimitiveStmt(PRIM_DELETE, $2); }
+| TLABEL ident stmt          { $$ = buildLabelStmt($2, $3); }
+| TLOCAL stmt                { $$ = buildLocalStmt($2); }
+| TON expr do_stmt           { $$ = buildOnStmt($2, $3); }
+| TSERIAL expr do_stmt       { $$ = buildSerialStmt($2, $3); }
+| TSYNC stmt                 { $$ = buildSyncStmt($2); }
+| TUSE expr_ls TSEMI         { $$ = buildUseStmt($2); }
+| TYIELD expr TSEMI          { $$ = buildPrimitiveStmt(PRIM_YIELD, $2); }
+| error                      { printf("syntax error"); clean_exit(1); }
+;
+
+assignment_stmt:
+  lhs_expr TASSIGN expr TSEMI          { $$ = buildAssignment($1, $3, "="); }
+| lhs_expr TASSIGNPLUS expr TSEMI      { $$ = buildAssignment($1, $3, "+="); }
+| lhs_expr TASSIGNMINUS expr TSEMI     { $$ = buildAssignment($1, $3, "-="); }
+| lhs_expr TASSIGNMULTIPLY expr TSEMI  { $$ = buildAssignment($1, $3, "*="); }
+| lhs_expr TASSIGNDIVIDE expr TSEMI    { $$ = buildAssignment($1, $3, "/="); }
+| lhs_expr TASSIGNMOD expr TSEMI       { $$ = buildAssignment($1, $3, "%="); }
+| lhs_expr TASSIGNEXP expr TSEMI       { $$ = buildAssignment($1, $3, "**="); }
+| lhs_expr TASSIGNBAND expr TSEMI      { $$ = buildAssignment($1, $3, "&="); }
+| lhs_expr TASSIGNBOR expr TSEMI       { $$ = buildAssignment($1, $3, "|="); }
+| lhs_expr TASSIGNBXOR expr TSEMI      { $$ = buildAssignment($1, $3, "^="); }
+| lhs_expr TASSIGNSR expr TSEMI        { $$ = buildAssignment($1, $3, ">>="); }
+| lhs_expr TASSIGNSL expr TSEMI        { $$ = buildAssignment($1, $3, "<<="); }
+| lhs_expr TSWAP expr TSEMI            { $$ = buildAssignment($1, $3, "<=>"); }
+| lhs_expr TASSIGNLAND expr TSEMI      { $$ = buildLAndAssignment($1, $3); }
+| lhs_expr TASSIGNLOR expr TSEMI       { $$ = buildLOrAssignment($1, $3); }
+;
+
+/* Grouping of statements into blocks.
+
+   Note:  There cannot be a blank production appearing immediately after TLCBR
+   as this results in a shift/reduce conflict with the statement level
+   expression expr TDOT expr (see domain literals).  This production (and the 
+   the other productions on which it depends) were purposefully redefined 
+   without blank productions to allow the full version of dot_expr to appear at
+   the statement level. */
+block_stmt:
+  TLCBR TRCBR           { $$ = new BlockStmt(); }
+| TLCBR stmt_ls TRCBR   { $$ = $2; }
+;
+
+opt_ident:
+         { $$ = NULL; }
+| ident
+;
+
+ident:
+  TIDENT  { $$ = astr(yytext); }
+;
+
+do_stmt:
+  TDO stmt    { $$ = $2; }
+| block_stmt  { $$ = $1; }
+;
+
+return_stmt:
+  TRETURN TSEMI       { $$ = buildPrimitiveStmt(PRIM_RETURN, new SymExpr(gVoid)); }
+| TRETURN expr TSEMI  { $$ = buildPrimitiveStmt(PRIM_RETURN, $2); }
+;
+
+class_level_stmt:
+  TSEMI                 { $$ = buildChapelStmt(new BlockStmt()); }
+| fn_decl_stmt
+| class_decl_stmt
+| enum_decl_stmt
+| type_alias_decl_stmt
+| var_decl_stmt
+;
+
+extern_block_stmt:
+  TEXTERN EXTERNCODE
+    {
+#ifdef HAVE_LLVM
+      if (externC) {
+        $$ = buildExternBlockStmt(astr($2));
+      } else {
+        USR_FATAL(new BlockStmt(), "extern block syntax is turned off. Use --extern-c flag to turn on.");
+      }
+#else
+      USR_FATAL(new BlockStmt(), "Chapel must be built with llvm in order to use the extern block syntax");
+#endif
+    }
+;
+
+loop_stmt:
+  TDO stmt TWHILE expr TSEMI                    { $$ = buildDoWhileLoopStmt($4, $2); }
+| TWHILE expr do_stmt                           { $$ = buildWhileDoLoopStmt($2, $3); }
+| TCOFORALL expr TIN expr do_stmt               { $$ = buildCoforallLoopStmt($2, $4, $5); }
+| TCOFORALL expr TIN zippered_iterator do_stmt  { $$ = buildCoforallLoopStmt($2, $4, $5, true); }
+| TCOFORALL expr do_stmt                        { $$ = buildCoforallLoopStmt(NULL, $2, $3); }
+| TPRIMITIVELOOP TLP opt_actual_ls TRP do_stmt  { $$ = buildPrimitiveLoopStmt($3, $5); }
+| TFOR expr TIN expr do_stmt                    { $$ = buildForLoopStmt($2, $4, $5); }
+| TFOR expr TIN zippered_iterator do_stmt       { $$ = buildForLoopStmt($2, $4, $5, false, true); }
+| TFOR expr do_stmt                             { $$ = buildForLoopStmt(NULL, $2, $3); }
+| TFOR zippered_iterator do_stmt                { $$ = buildForLoopStmt(NULL, $2, $3, false, true); }
+| TFOR TPARAM ident TIN expr do_stmt            { $$ = buildParamForLoopStmt($3, $5, $6); }
+| TFORALL expr TIN expr do_stmt                 { $$ = buildForallLoopStmt($2, $4, $5); }
+| TFORALL expr TIN zippered_iterator do_stmt    { $$ = buildForallLoopStmt($2, $4, $5, true); }
+| TFORALL expr do_stmt                          { $$ = buildForallLoopStmt(NULL, $2, $3); }
+| TLSBR expr_ls TIN expr TRSBR stmt
+    {
+      if ($2->argList.length != 1)
+        USR_FATAL($4, "invalid index expression");
+      $$ = buildForallLoopStmt($2->get(1)->remove(), $4, new BlockStmt($6));
+    }
+| TLSBR expr_ls TIN zippered_iterator TRSBR stmt
+    {
+      if ($2->argList.length != 1)
+        USR_FATAL($4, "invalid index expression");
+      $$ = buildForallLoopStmt($2->get(1)->remove(), $4, new BlockStmt($6), true);
+    }
+| TLSBR expr_ls TRSBR stmt
+    {
+      if ($2->argList.length > 1)
+        $$ = buildForallLoopStmt(NULL, new CallExpr("chpl__buildDomainExpr", $2), new BlockStmt($4));
+      else
+        $$ = buildForallLoopStmt(NULL, $2->get(1)->remove(), new BlockStmt($4));
+    }
+;
+
+zippered_iterator:
+    TZIP TLP expr_ls TRP    { $$ = new CallExpr("_build_tuple", $3); }
+;
+
+if_stmt:
+  TIF expr TTHEN stmt %prec TNOELSE  { $$ = buildIfStmt($2, $4); }
+| TIF expr block_stmt %prec TNOELSE  { $$ = buildIfStmt($2, $3); }
+| TIF expr TTHEN stmt TELSE stmt     { $$ = buildIfStmt($2, $4, $6); }
+| TIF expr block_stmt TELSE stmt     { $$ = buildIfStmt($2, $3, $5); }
+;
+
+select_stmt:
+  TSELECT expr TLCBR when_stmt_ls TRCBR
+    { $$ = buildChapelStmt(buildSelectStmt($2, $4)); }
+;
+
+when_stmt_ls:
+                          { $$ = buildChapelStmt(); }
+| when_stmt_ls when_stmt  { $1->insertAtTail($2); }
+;
+
+when_stmt:
+  TWHEN expr_ls do_stmt
+    { $$ = new CondStmt(new CallExpr(PRIM_WHEN, $2), $3); }
+| TOTHERWISE stmt
+    { $$ = new CondStmt(new CallExpr(PRIM_WHEN), $2); }
+;
+
+type_select_stmt:
+  TTYPE TSELECT expr_ls TLCBR when_stmt_ls TRCBR
+    { $$ = buildTypeSelectStmt($3, $5); }
+;
+
+/** DECLARATION STATEMENTS ***************************************************/
+
+class_decl_stmt:
+  opt_extern class_tag ident opt_inherit TLCBR class_level_stmt_ls TRCBR
+    { $$ = buildChapelStmt(buildClassDefExpr($3, $2, $4, $6, $1, @1.comment));
+      yylloc.comment = NULL; }
+;
+
+opt_extern:
+           { $$ = FLAG_UNKNOWN; }
+| TEXTERN  { $$ = FLAG_EXTERN; @$.comment = yylloc.comment; yylloc.comment = NULL;}
+;
+
+class_tag:
+  TCLASS   { $$ = new ClassType(CLASS_CLASS); @$.comment = yylloc.comment; 
+             yylloc.comment = NULL;}
+| TRECORD  { $$ = new ClassType(CLASS_RECORD); @$.comment = yylloc.comment; 
+             yylloc.comment = NULL;}
+| TUNION   { $$ = new ClassType(CLASS_UNION); }
+;
+
+opt_inherit:
+                  { $$ = NULL; }
+| TCOLON expr_ls  { $$ = $2; }
+;
+
+class_level_stmt_ls:
+  /* nothing */
+    { $$ = new BlockStmt(); }
+| class_level_stmt_ls class_level_stmt
+    { $1->insertAtTail($2); }
+| class_level_stmt_ls pragma_ls class_level_stmt
+    { $1->insertAtTail(buildPragmaStmt($2, $3)); }
+;
+
+enum_decl_stmt:
+  TENUM ident TLCBR enum_ls TRCBR
+    {
+      EnumType* pdt = $4;
+      TypeSymbol* pst = new TypeSymbol($2, pdt);
+      $4->symbol = pst;
+      $$ = buildChapelStmt(new DefExpr(pst));
+    }
+;
+
+enum_ls:
+  enum_item
+    {
+      $$ = new EnumType();
+      $1->sym->type = $$;
+      $$->constants.insertAtTail($1);
+      $$->defaultValue = $1->sym;
+    }
+| enum_ls TCOMMA
+    {
+      $$ = $1;
+    }
+| enum_ls TCOMMA enum_item
+    {
+      $1->constants.insertAtTail($3);
+      $3->sym->type = $1;
+    }
+;
+
+enum_item:
+  ident               { $$ = new DefExpr(new EnumSymbol($1)); }
+| ident TASSIGN expr  { $$ = new DefExpr(new EnumSymbol($1), $3); }
+;
+
+lambda_decl_expr:
+  TLAMBDA
+    {
+      captureTokens = 1;
+      captureString[0] = '\0';
+    }
+    req_formal_ls
+    {
+      captureTokens = 0;
+      $3->userString = astr(captureString);
+    }
+  opt_ret_tag opt_type opt_where_part function_body_stmt
+    {
+      $3->retTag = $5;
+      if ($5 == RET_VAR)
+        USR_FATAL("'var' return types are not allowed in lambdas");
+      if ($5 == RET_PARAM)
+        USR_FATAL("'param' return types are not allowed in lambdas");
+      if ($5 == RET_TYPE)
+        USR_FATAL("'type' return types are not allowed in lambdas");
+      if ($6)
+        $3->retExprType = new BlockStmt($6, BLOCK_SCOPELESS);
+      if ($7)
+        $3->where = new BlockStmt($7);
+      $3->insertAtTail($8);
+      $$ = new DefExpr(buildLambda($3));
+    }
+;
+
+// The FnSymbol is just used as a struct to carry the flag and
+// (for exports only) the cname of the function.
+linkage_spec:
+                { $$ = new FnSymbol(""); }
+| TINLINE       { $$ = new FnSymbol(""); $$->addFlag(FLAG_INLINE); 
+                  @$.comment = yylloc.comment; yylloc.comment = NULL;}
+| TEXPORT       { $$ = new FnSymbol(""); $$->addFlag(FLAG_EXPORT);  
+                  @$.comment = yylloc.comment; yylloc.comment = NULL;}
+| TEXPORT ident { $$ = new FnSymbol($2); $$->addFlag(FLAG_EXPORT);  
+                  @$.comment = yylloc.comment; yylloc.comment = NULL;}
+| TEXTERN       { $$ = new FnSymbol(""); $$->addFlag(FLAG_EXTERN);  
+                  @$.comment = yylloc.comment; yylloc.comment = NULL;}
+| TEXTERN ident { $$ = new FnSymbol($2); $$->addFlag(FLAG_EXTERN);  
+                  @$.comment = yylloc.comment; yylloc.comment = NULL;}
+
+fn_decl_stmt:
+  linkage_spec proc_or_iter
+    {
+      // Sets up to capture tokens while parsing the next grammar nonterminal.
+      captureTokens = 1;
+      captureString[0] = '\0';
+    }
+  fn_decl_stmt_inner
+    {
+      // Stop capturing and save the result.
+      captureTokens = 0;
+
+      $4->userString = astr(captureString);
+    }
+  opt_ret_tag opt_type opt_where_part opt_function_body_stmt
+    {
+      FnSymbol* fn = $4;
+
+      fn->copyFlags($1);
+      // The user explicitly named this function (controls mangling).
+      if ($1->hasFlag(FLAG_EXPORT) || $1->hasFlag(FLAG_EXTERN))
+        fn->addFlag(FLAG_USER_NAMED);
+      if (*$1->name)
+        fn->cname = $1->name;
+
+      if ($2 == ProcIter_ITER)
+      {
+        if (fn->hasFlag(FLAG_EXTERN))
+          USR_FATAL_CONT(fn, "'iter' is not legal with 'extern'");
+        fn->addFlag(FLAG_ITERATOR_FN);
+      }
+
+      $$ = buildFunctionDecl($4, $6, $7, $8, $9, @1.comment);
+      yylloc.comment = NULL;
+    }
+;
+
+fn_decl_stmt_inner:
+  opt_this_intent_tag fn_ident opt_formal_ls
+    {
+      $$ = $3;
+      $$->thisTag = $1;
+      $$->name = astr($2);
+      $$->cname = $$->name;
+      if ($2[0] == '~' && $2[1] != '\0')
+        $$->addFlag(FLAG_DESTRUCTOR);
+    }
+| opt_this_intent_tag ident TDOT fn_ident opt_formal_ls
+    {
+      $$ = $5;
+      $$->thisTag = $1;
+      $$->name = astr($4);
+      $$->cname = $$->name;
+      if ($4[0] == '~' && $4[1] != '\0')
+        $$->addFlag(FLAG_DESTRUCTOR);
+      $$->_this = new ArgSymbol($1, "this", dtUnknown, new UnresolvedSymExpr($2));
+      $$->_this->addFlag(FLAG_ARG_THIS);
+      $$->insertFormalAtHead(new DefExpr($$->_this));
+      $$->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
+    }
+;
+
+fn_ident:
+  ident
+| TBNOT ident    { $$ = astr("~", $2); }
+| TASSIGN        { $$ = "="; } 
+| TBAND          { $$ = "&"; } 
+| TBOR           { $$ = "|"; } 
+| TBXOR          { $$ = "^"; } 
+| TBNOT          { $$ = "~"; } 
+| TEQUAL         { $$ = "=="; } 
+| TNOTEQUAL      { $$ = "!="; } 
+| TLESSEQUAL     { $$ = "<="; } 
+| TGREATEREQUAL  { $$ = ">="; } 
+| TLESS          { $$ = "<"; } 
+| TGREATER       { $$ = ">"; } 
+| TPLUS          { $$ = "+"; } 
+| TMINUS         { $$ = "-"; } 
+| TSTAR          { $$ = "*"; } 
+| TDIVIDE        { $$ = "/"; } 
+| TSHIFTLEFT     { $$ = "<<"; }
+| TSHIFTRIGHT    { $$ = ">>"; }
+| TMOD           { $$ = "%"; } 
+| TEXP           { $$ = "**"; } 
+| TNOT           { $$ = "!"; }
+| TBY            { $$ = "by"; } 
+| THASH          { $$ = "#"; }
+| TALIGN         { $$ = "align"; }
+| TASSIGNPLUS    { $$ = "+="; }
+| TASSIGNMINUS   { $$ = "-="; }
+| TASSIGNMULTIPLY { $$ = "*="; }
+| TASSIGNDIVIDE  { $$ = "/="; }
+| TASSIGNMOD     { $$ = "%="; }
+| TASSIGNEXP     { $$ = "**="; }
+| TASSIGNBAND    { $$ = "&="; }
+| TASSIGNBOR     { $$ = "|="; }
+| TASSIGNBXOR    { $$ = "^="; }
+| TASSIGNSR      { $$ = ">>="; }
+| TASSIGNSL      { $$ = "<<="; }
+| TSWAP          { $$ = "<=>"; }
+| TIO            { $$ = "<~>"; }
+;
+
+opt_formal_ls:
+                     { $$ = new FnSymbol("_"); $$->addFlag(FLAG_NO_PARENS); }
+| TLP formal_ls TRP  { $$ = $2; }
+;
+
+req_formal_ls:
+  TLP formal_ls TRP  { $$ = $2; }
+;
+
+formal_ls:
+                           { $$ = buildFunctionFormal(NULL, NULL); }
+| formal                   { $$ = buildFunctionFormal(NULL, $1); }
+| formal_ls TCOMMA formal  { $$ = buildFunctionFormal($1, $3); }
+;
+
+formal:
+  opt_intent_tag ident opt_formal_type opt_init_expr
+    { $$ = buildArgDefExpr($1, $2, $3, $4, NULL); }
+| opt_intent_tag ident opt_formal_type var_arg_expr
+    { $$ = buildArgDefExpr($1, $2, $3, NULL, $4); }
+| opt_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type opt_init_expr
+    { $$ = buildTupleArgDefExpr($1, $3, $5, $6); }
+| opt_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type var_arg_expr
+    { USR_FATAL("variable-length argument may not be grouped in a tuple"); }
+;
+
+opt_intent_tag:
+          { $$ = INTENT_BLANK; }
+| TIN     { $$ = INTENT_IN; }
+| TINOUT  { $$ = INTENT_INOUT; }
+| TOUT    { $$ = INTENT_OUT; }
+| TCONST  { $$ = INTENT_CONST; }
+| TPARAM  { $$ = INTENT_PARAM; }
+| TREF    { $$ = INTENT_REF; }
+| TTYPE   { $$ = INTENT_TYPE; }
+;
+
+opt_this_intent_tag:
+         { $$ = INTENT_BLANK; }
+| TPARAM { $$ = INTENT_PARAM; }
+;
+
+proc_or_iter:
+  TPROC  { $$ = ProcIter_PROC; }
+| TITER  { $$ = ProcIter_ITER; }
+;
+
+opt_ret_tag:
+            { $$ = RET_VALUE; }
+| TCONST    { $$ = RET_VALUE; }
+| TVAR      { $$ = RET_VAR; }
+| TPARAM    { $$ = RET_PARAM; }
+| TTYPE     { $$ = RET_TYPE; }
+;
+
+opt_function_body_stmt:
+  TSEMI     { $$ = NULL; }
+| function_body_stmt
+;
+
+function_body_stmt:
+  block_stmt
+| return_stmt  { $$ = new BlockStmt($1); }
+;
+
+query_expr:
+  TQUESTION ident
+    { $$ = new DefExpr(new VarSymbol($2)); }
+| TQUESTION
+    { $$ = new DefExpr(new VarSymbol(astr("chpl__query", istr(query_uid++)))); }
+;
+
+opt_query_expr:
+    { $$ = new DefExpr(new VarSymbol(astr("chpl__query", istr(query_uid++)))); }
+| query_expr
+;
+
+var_arg_expr:
+  TDOTDOTDOT expr            { $$ = $2; }
+| TDOTDOTDOT opt_query_expr  { $2->sym->addFlag(FLAG_PARAM); $$ = $2; }
+;
+
+opt_where_part:
+               { $$ = NULL; }
+| TWHERE expr  { $$ = $2; }
+;
+
+module_decl_stmt:
+  module ident TLCBR TRCBR
+    { $$ = buildChapelStmt(new DefExpr(buildModule($2, new BlockStmt(), yyfilename, @1.comment))); }
+| module ident TLCBR stmt_ls TRCBR
+    { $$ = buildChapelStmt(new DefExpr(buildModule($2, $4, yyfilename, @1.comment))); }
+;
+
+module:
+  TMODULE 
+  {@$.comment = yylloc.comment; yylloc.comment = NULL;}
+;
+
+type_alias_decl_stmt:
+  TTYPE type_alias_decl_stmt_inner TSEMI 
+    { $$ = $2; }
+| TCONFIG TTYPE type_alias_decl_stmt_inner TSEMI 
+    { $$ = handleConfigTypes($3); }
+| TEXTERN TTYPE type_alias_decl_stmt_inner TSEMI 
+    { $$ = convertTypesToExtern($3); }
+;
+
+type_alias_decl_stmt_inner:
+  ident opt_init_type
+    {
+      VarSymbol* var = new VarSymbol($1);
+      var->addFlag(FLAG_TYPE_VARIABLE);
+      DefExpr* def = new DefExpr(var, $2);
+      $$ = buildChapelStmt(def);
+    }
+| ident opt_init_type TCOMMA type_alias_decl_stmt_inner
+    {
+      VarSymbol* var = new VarSymbol($1);
+      var->addFlag(FLAG_TYPE_VARIABLE);
+      DefExpr* def = new DefExpr(var, $2);
+      $4->insertAtHead(def);
+      $$ = buildChapelStmt($4);
+    }
+;
+
+opt_init_type:
+    { $$ = NULL; }
+| TASSIGN type_level_expr
+    { $$ = $2; }
+| TASSIGN array_type
+    { $$ = buildForallLoopExprFromArrayType($2); } // Cannot be a type_level_expr as expr inherits from type_level_expr.
+;
+
+var_decl_stmt:
+  opt_config TPARAM var_decl_stmt_inner_ls TSEMI
+    {
+      $$ = buildVarDecls($3, $1, FLAG_PARAM, @1.comment);
+    }
+| opt_config TCONST var_decl_stmt_inner_ls TSEMI
+    {
+      $$ = buildVarDecls($3, $1, FLAG_CONST, @1.comment);
+    }
+| opt_config TVAR var_decl_stmt_inner_ls TSEMI
+    {
+      $$ = buildVarDecls($3, $1, FLAG_UNKNOWN, @1.comment);
+    }
+;
+
+opt_config:
+            { $$ = FLAG_UNKNOWN; @$.comment = yylloc.comment; yylloc.comment = NULL;}
+| TCONFIG   { $$ = FLAG_CONFIG; @$.comment = yylloc.comment; yylloc.comment = NULL;}
+| TEXTERN   { $$ = FLAG_EXTERN; @$.comment = yylloc.comment; yylloc.comment = NULL;}
+;
+ 
+var_decl_stmt_inner_ls:
+  var_decl_stmt_inner
+| var_decl_stmt_inner_ls TCOMMA var_decl_stmt_inner
+    {
+      for_alist(expr, $3->body)
+        $1->insertAtTail(expr->remove());
+    }
+;
+
+var_decl_stmt_inner:
+  ident opt_type opt_init_expr
+    { $$ = buildChapelStmt(new DefExpr(new VarSymbol($1), $3, $2)); }
+| ident opt_reindex_expr TALIAS expr
+    {
+      VarSymbol* var = new VarSymbol($1);
+      var->addFlag(FLAG_ARRAY_ALIAS);
+      $$ = buildChapelStmt(new DefExpr(var, $4, $2));
+    }
+| TLP tuple_var_decl_stmt_inner_ls TRP opt_type opt_init_expr
+    { $$ = buildTupleVarDeclStmt($2, $4, $5); }
+;
+
+tuple_var_decl_component:
+  TUNDERSCORE
+    { $$ = new DefExpr(new VarSymbol("chpl__tuple_blank")); }
+| ident
+    { $$ = new DefExpr(new VarSymbol($1)); }
+| TLP tuple_var_decl_stmt_inner_ls TRP
+    { $$ = $2; }
+;
+
+tuple_var_decl_stmt_inner_ls:
+  tuple_var_decl_component
+    { $$ = buildChapelStmt($1); }
+| tuple_var_decl_component TCOMMA
+    { $$ = buildChapelStmt($1); }
+| tuple_var_decl_component TCOMMA tuple_var_decl_stmt_inner_ls
+    { $$ = ($3->insertAtHead($1), $3); }
+;
+
+/** TYPES ********************************************************************/
+
+opt_init_expr:
+                { $$ = NULL; }
+| TASSIGN expr  { $$ = $2; }
+;
+
+opt_reindex_expr:
+    { $$ = NULL; }
+| TCOLON TLSBR expr_ls TRSBR
+    { $$ = new CallExpr("chpl__buildDomainExpr", $3); }
+;
+
+opt_type:
+                          { $$ = NULL; }
+| TCOLON type_level_expr  { $$ = $2; }
+| TCOLON array_type       { $$ = $2; }
+| error {printf("bad type specification"); }
+;
+
+/* NOTE: Some things about the following rule concern me (blc), but I
+   don't have the time to fix them now, so am noting them for the
+   future when someone runs into them:
+
+   (1) there are 3 cases rather than the 4 I would expect based on symmetry
+       ('in' vs. not x 'type_level_expr' vs. 'array_type')
+
+   (2) it seems strange to me that the thing being iterated over is an
+       'expr_ls' in the first two cases, but an 'expr' in the third
+
+   (3) it also seems strange that the stuff preceding TIN would be an
+       'expr_ls' rather than something simpler, like a nested
+       parenthesization of identifiers; perhaps this is to support the
+       establishment of an explicit type declaration, though I thought we
+       didn't support that yet
+*/
+array_type:
+  TLSBR expr_ls TRSBR type_level_expr
+    { $$ = new CallExpr("chpl__buildArrayRuntimeType",
+             new CallExpr("chpl__buildDomainExpr", $2), $4); 
+    }
+| TLSBR expr_ls TRSBR array_type
+    { $$ = new CallExpr("chpl__buildArrayRuntimeType",
+             new CallExpr("chpl__buildDomainExpr", $2), $4); 
+    }
+| TLSBR expr_ls TIN expr TRSBR type_level_expr
+    { 
+      if ($2->argList.length != 1)
+        USR_FATAL($4, "invalid index expression");
+      $$ = new CallExpr("chpl__buildArrayRuntimeType",
+             new CallExpr("chpl__buildDomainExpr", $4), $6, $2->get(1)->remove(),
+             new CallExpr("chpl__buildDomainExpr", $4->copy()));
+    }
+| error  {printf("bad array type specification"); clean_exit(1); }
+;
+
+opt_formal_array_elt_type:
+                        { $$ = NULL; }
+| type_level_expr       { $$ = $1; }
+| query_expr            { $$ = $1; }
+;
+
+formal_array_type:
+  TLSBR TRSBR opt_formal_array_elt_type
+    { $$ = new CallExpr("chpl__buildArrayRuntimeType", gNil, $3); }
+| TLSBR expr_ls TRSBR opt_formal_array_elt_type
+    { $$ = buildFormalArrayType($2, $4); }
+
+// Johnk: Unclear to me what the type should be when [<range>][] <type> is encountered.
+//        At present buildArrayRuntimeType is undefined when gNil is passed and
+//        the second argument is a formal_array_type.  
+| TLSBR TRSBR formal_array_type
+    { $$ = new CallExpr("chpl__buildArrayRuntimeType", gNil, $3); }
+| TLSBR expr_ls TRSBR formal_array_type
+    { $$ = buildFormalArrayType($2, $4); }
+| TLSBR expr_ls TIN expr TRSBR opt_formal_array_elt_type
+    { $$ = buildFormalArrayType($4, $6, $2); }
+;
+
+opt_formal_type:
+                            { $$ = NULL; }
+| TCOLON type_level_expr    { $$ = $2; }
+| TCOLON query_expr         { $$ = $2; }
+| TCOLON TDOMAIN            { $$ = new UnresolvedSymExpr("_domain"); }
+| TCOLON TSINGLE            { $$ = new UnresolvedSymExpr( "_singlevar"); }
+| TCOLON TSYNC              { $$ = new UnresolvedSymExpr( "_syncvar"); }
+| TCOLON formal_array_type  { $$ = $2; }
+;
+
+/** EXPRESSIONS **************************************************************/
+
+expr_ls:
+  expr                       { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1); }
+| query_expr                 { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1); }
+| expr_ls TCOMMA expr        { $1->insertAtTail($3); }
+| expr_ls TCOMMA query_expr  { $1->insertAtTail($3); }
+;
+
+tuple_component:
+  TUNDERSCORE   { $$ = new UnresolvedSymExpr("chpl__tuple_blank"); }
+| expr          { $$ = $1; }
+| query_expr    { $$ = $1; }
+;
+
+tuple_guts:
+  tuple_component                      { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1); }
+| tuple_component TCOMMA               { $$ = buildOneTuple($1); }
+| tuple_component TCOMMA tuple_expr_ls { $$ = ($3->insertAtHead($1), $3); }
+;
+
+tuple_expr_ls:
+  tuple_component                      { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1); }
+| tuple_expr_ls TCOMMA tuple_component { $1->insertAtTail($3); }
+;
+
+opt_actual_ls:
+             { $$ = new CallExpr(PRIM_ACTUALS_LIST); }
+| actual_ls
+;
+
+actual_ls:
+  actual_expr                   { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1); }
+| actual_ls TCOMMA actual_expr  { $1->insertAtTail($3); }
+;
+
+actual_expr:
+  ident TASSIGN query_expr  { $$ = buildNamedActual($1, $3); }
+| ident TASSIGN expr        { $$ = buildNamedActual($1, $3); }
+| ident TALIAS expr         { $$ = buildNamedAliasActual($1, $3); }
+| query_expr                { $$ = $1; }
+| expr
+;
+
+ident_expr:
+  ident     { $$ = new UnresolvedSymExpr($1); }
+;
+
+/* Expressions which represent types.  type_level_exprs can appear within formal
+ * function parameter specifications as well as part of variable declarations.  
+
+   NOTE: Array type expressions do not appear in this production as array type
+   specifications are different for formal array parameters and variable arrays.
+   As such, array type expressions are individually defined for formal array
+   parameters and variables. */  
+type_level_expr:
+  nil_expr
+| lhs_expr                  // var b: a.type || (?,?) || foo() 
+| cond_expr                 // type b = if b then uint else int
+| unary_op_expr             // We allow binary exprs as types...why not unary?
+| binary_op_expr            // tuples, expr dmapped expr, overloaded binary ops
+| TSINGLE expr
+    { $$ = new CallExpr( "_singlevar", $2); }
+| TINDEX TLP opt_actual_ls TRP
+    { $$ = new CallExpr("chpl__buildIndexType", $3); }
+| TDOMAIN TLP opt_actual_ls TRP
+    { $$ = new CallExpr("chpl__buildDomainRuntimeType", new UnresolvedSymExpr("defaultDist"), $3); }
+| TSUBDOMAIN TLP opt_actual_ls TRP
+    { $$ = new CallExpr("chpl__buildSubDomainType", $3); }
+| TSPARSE TSUBDOMAIN TLP opt_actual_ls TRP
+    { $$ = new CallExpr("chpl__buildSparseDomainRuntimeType", new UnresolvedSymExpr("defaultDist"), $4); }
+| TATOMIC expr
+    { $$ = new CallExpr("chpl__atomicType", $2); }
+| TSYNC expr
+    { $$ = new CallExpr( "_syncvar", $2); }
+;
+
+for_expr:
+  TFOR expr TIN expr TDO expr %prec TFOR
+    { $$ = buildForLoopExpr($2, $4, $6); }
+| TFOR expr TIN zippered_iterator TDO expr %prec TFOR
+    { $$ = buildForLoopExpr($2, $4, $6, NULL, false, true); }
+| TFOR expr TDO expr %prec TFOR
+    { $$ = buildForLoopExpr(NULL, $2, $4); }
+| TFOR expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
+    { $$ = buildForLoopExpr($2, $4, $9, $7); }
+| TFOR expr TIN zippered_iterator TDO TIF expr TTHEN expr %prec TNOELSE
+    { $$ = buildForLoopExpr($2, $4, $9, $7, false, true); }
+| TFOR expr TDO TIF expr TTHEN expr %prec TNOELSE
+    { $$ = buildForLoopExpr(NULL, $2, $7, $5); }
+| TFORALL expr TIN expr TDO expr %prec TFOR
+    { $$ = buildForallLoopExpr($2, $4, $6); }
+| TFORALL expr TIN zippered_iterator TDO expr %prec TFOR
+    { $$ = buildForallLoopExpr($2, $4, $6, NULL, false, true); }
+| TFORALL expr TDO expr %prec TFOR
+    { $$ = buildForallLoopExpr(NULL, $2, $4); }
+| TFORALL expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
+    { $$ = buildForallLoopExpr($2, $4, $9, $7); }
+| TFORALL expr TIN zippered_iterator TDO TIF expr TTHEN expr %prec TNOELSE
+    { $$ = buildForallLoopExpr($2, $4, $9, $7, false, true); }
+| TFORALL expr TDO TIF expr TTHEN expr %prec TNOELSE
+    { $$ = buildForallLoopExpr(NULL, $2, $7, $5); }
+| TLSBR expr_ls TRSBR expr %prec TFOR
+    {
+      if ($2->argList.length > 1)
+        $$ = buildForallLoopExpr(NULL, new CallExpr("chpl__buildDomainExpr", $2), $4, NULL, true);
+      else
+        $$ = buildForallLoopExpr(NULL, $2->get(1)->remove(), $4, NULL, true);
+    }
+| TLSBR expr_ls TIN expr TRSBR expr %prec TFOR
+    {
+      if ($2->argList.length != 1)
+        USR_FATAL($4, "invalid index expression");
+      $$ = buildForallLoopExpr($2->get(1)->remove(), $4, $6, NULL, true);
+    }
+| TLSBR expr_ls TIN zippered_iterator TRSBR expr %prec TFOR
+    {
+      if ($2->argList.length != 1)
+        USR_FATAL($4, "invalid index expression");
+      $$ = buildForallLoopExpr($2->get(1)->remove(), $4, $6, NULL, false, true);
+    }
+| TLSBR expr_ls TIN expr TRSBR TIF expr TTHEN expr %prec TNOELSE
+    {
+      if ($2->argList.length != 1)
+        USR_FATAL($4, "invalid index expression");
+      $$ = buildForallLoopExpr($2->get(1)->remove(), $4, $9, $7);
+    }
+| TLSBR expr_ls TIN zippered_iterator TRSBR TIF expr TTHEN expr %prec TNOELSE
+    {
+      if ($2->argList.length != 1)
+        USR_FATAL($4, "invalid index expression");
+      $$ = buildForallLoopExpr($2->get(1)->remove(), $4, $9, $7, false, true);
+    }
+;
+
+cond_expr:
+  TIF expr TTHEN expr TELSE expr
+    { $$ = new CallExpr(new DefExpr(buildIfExpr($2, $4, $6))); }
+;
+
+nil_expr:
+  TNIL      { $$ = new SymExpr(gNil); }
+;
+
+/* Expressions permited at the statment level as <stmt_level_expr> TSEMI.
+   Keeping stmt_level_expr from appearing in any other expression productions
+   was done intentionally to allow for easier promotion/demotion of expressions
+   to the statement level. */
+stmt_level_expr:
+  nil_expr
+| ident_expr
+| dot_expr
+| call_expr
+| lambda_decl_expr
+| new_expr
+| let_expr
+| io_expr TIO expr
+    { $$ = new CallExpr("<~>", $1, $3); }
+;
+
+io_expr:
+  lhs_expr
+| io_expr TIO expr
+    { $$ = new CallExpr("<~>", $1, $3); }
+;
+
+new_expr:
+  TNEW expr
+    { $$ = new CallExpr(PRIM_NEW, $2); }
+;
+
+let_expr:
+  TLET var_decl_stmt_inner_ls TIN expr
+    { $$ = buildLetExpr($2, $4); }
+;
+
+/* exprs represent valid values and types. Any expression with a valid
+   type also has a valid value as types can appear on the rhs during 
+   type-aliasing.  Hence, type_level_expr must be a subset of expr. */ 
+expr:
+  literal_expr
+| type_level_expr
+| for_expr
+| reduce_expr
+| scan_expr
+| lambda_decl_expr
+| new_expr
+| let_expr
+| TLP TDOTDOTDOT expr TRP
+    { $$ = new CallExpr(PRIM_TUPLE_EXPAND, $3); }
+| expr TCOLON expr
+    { $$ = new CallExpr("_cast", $3, $1); }
+| expr TDOTDOT expr
+    { $$ = new CallExpr("_build_range", $1, $3); }
+| expr TDOTDOT
+    { $$ = new CallExpr("_build_range", buildDotExpr("BoundedRangeType", "boundedLow"), $1); }
+| TDOTDOT expr
+    { $$ = new CallExpr("_build_range", buildDotExpr("BoundedRangeType", "boundedHigh"), $2); }
+| TDOTDOT
+    { $$ = new CallExpr("_build_range", buildDotExpr("BoundedRangeType", "boundedNone")); }
+;
+
+lhs_expr:
+  ident_expr
+| call_expr
+| dot_expr
+| parenthesized_expr
+;
+
+/* Representations of values which can be invoked as functions. 
+ * Rather than allowing any value these values were deliberately restricted
+ * to valid lhs_values and anonymous lambda function declarations. 
+ * 
+ * NOTE:  In order to allow expr to be invoked as a function
+ *        opt_actual_ls, and every production it relies on, would need to be
+ *        reworked to not permit the empty production. */
+fun_expr: 
+  lhs_expr
+| lambda_decl_expr
+;
+
+call_expr:
+  fun_expr TLP opt_actual_ls TRP        { $$ = new CallExpr($1, $3); }
+| fun_expr TLSBR opt_actual_ls TRSBR    { $$ = buildSquareCallExpr($1, $3); }
+| TPRIMITIVE TLP opt_actual_ls TRP      { $$ = buildPrimitiveExpr($3); }
+;
+
+dot_expr:
+  expr TDOT ident    { $$ = buildDotExpr($1, $3); }
+| expr TDOT TTYPE    { $$ = new CallExpr(PRIM_TYPEOF, $1); }
+| expr TDOT TDOMAIN  { $$ = buildDotExpr($1, "_dom"); }
+;
+
+parenthesized_expr:
+/* BLC: The start of an incomplete zero-tuple implementation
+  TLP TRP { $$ = buildZeroTuple(); }
+| */
+  TLP tuple_guts TRP  { $$ = buildParenExpr($2); }
+;
+
+literal_expr:
+  INTLITERAL            { $$ = buildIntLiteral(yytext); }          
+| REALLITERAL           { $$ = buildRealLiteral(yytext); }
+| IMAGLITERAL           { $$ = buildImagLiteral(yytext); }
+| STRINGLITERAL         { $$ = buildStringLiteral($1); }
+| TLCBR expr_ls TRCBR   { $$ = new CallExpr("chpl__buildDomainExpr", $2); }
+| TLSBR expr_ls TRSBR   { $$ = new CallExpr("chpl__buildArrayExpr", $2); }
+| TLSBR assoc_expr_ls TRSBR
+    {
+      $$ = new CallExpr("chpl__buildAssociativeArrayExpr", $2);
+    }
+;
+  
+assoc_expr_ls:
+  expr TALIAS expr                      { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1, $3); }
+| assoc_expr_ls TCOMMA expr TALIAS expr { $1->insertAtTail($3); $1->insertAtTail($5); }
+;
+
+binary_op_expr:
+  expr TPLUS expr          { $$ = new CallExpr("+", $1, $3); }
+| expr TMINUS expr         { $$ = new CallExpr("-", $1, $3); }
+| expr TSTAR expr          { $$ = new CallExpr("*", $1, $3); }
+| expr TDIVIDE expr        { $$ = new CallExpr("/", $1, $3); }
+| expr TSHIFTLEFT expr     { $$ = new CallExpr("<<", $1, $3); }
+| expr TSHIFTRIGHT expr    { $$ = new CallExpr(">>", $1, $3); }
+| expr TMOD expr           { $$ = new CallExpr("%", $1, $3); }
+| expr TEQUAL expr         { $$ = new CallExpr("==", $1, $3); }
+| expr TNOTEQUAL expr      { $$ = new CallExpr("!=", $1, $3); }
+| expr TLESSEQUAL expr     { $$ = new CallExpr("<=", $1, $3); }
+| expr TGREATEREQUAL expr  { $$ = new CallExpr(">=", $1, $3); }
+| expr TLESS expr          { $$ = new CallExpr("<", $1, $3); }
+| expr TGREATER expr       { $$ = new CallExpr(">", $1, $3); }
+| expr TBAND expr          { $$ = new CallExpr("&", $1, $3); }
+| expr TBOR expr           { $$ = new CallExpr("|", $1, $3); }
+| expr TBXOR expr          { $$ = new CallExpr("^", $1, $3); }
+| expr TAND expr           { $$ = buildLogicalAndExpr($1, $3); }
+| expr TOR expr            { $$ = buildLogicalOrExpr($1, $3); }
+| expr TEXP expr           { $$ = new CallExpr("**", $1, $3); }
+| expr TBY expr            { $$ = new CallExpr("by", $1, $3); }
+| expr TALIGN expr         { $$ = new CallExpr("align", $1, $3); }
+| expr THASH expr          { $$ = new CallExpr("#", $1, $3); }
+| expr TDMAPPED expr  
+    {
+      if (strcmp(CHPL_TARGET_PLATFORM, "cray-xmt")) {
+        $$ = new CallExpr("chpl__distributed", $3, $1);
+      } else {
+        $$ = $1;
+      }
+    }
+;
+
+unary_op_expr:
+  TPLUS expr %prec TUPLUS         { $$ = new CallExpr("+", $2); }
+| TMINUS expr %prec TUMINUS       { $$ = new CallExpr("-", $2); }
+| TMINUSMINUS expr %prec TUMINUS  { $$ = buildPreDecIncWarning($2, '-'); }
+| TPLUSPLUS expr %prec TUPLUS     { $$ = buildPreDecIncWarning($2, '+'); }
+| TNOT expr                       { $$ = new CallExpr("!", $2); }
+| TBNOT expr                      { $$ = new CallExpr("~", $2); }
+;
+
+reduce_expr:
+  expr TREDUCE expr                              { $$ = buildReduceExpr($1, $3); }
+| expr TREDUCE zippered_iterator                 { $$ = buildReduceExpr($1, $3, true); }
+| reduce_scan_op_expr TREDUCE expr               { $$ = buildReduceExpr($1, $3); }
+| reduce_scan_op_expr TREDUCE zippered_iterator  { $$ = buildReduceExpr($1, $3, true); }
+;
+
+scan_expr:
+  expr TSCAN expr                              { $$ = buildScanExpr($1, $3); }
+| expr TSCAN zippered_iterator                 { $$ = buildScanExpr($1, $3, true); }
+| reduce_scan_op_expr TSCAN expr               { $$ = buildScanExpr($1, $3); }
+| reduce_scan_op_expr TSCAN zippered_iterator  { $$ = buildScanExpr($1, $3, true); }
+;
+
+
+reduce_scan_op_expr:
+  TPLUS  { $$ = new UnresolvedSymExpr("SumReduceScanOp"); }
+| TSTAR  { $$ = new UnresolvedSymExpr("ProductReduceScanOp"); }
+| TAND   { $$ = new UnresolvedSymExpr("LogicalAndReduceScanOp"); }
+| TOR    { $$ = new UnresolvedSymExpr("LogicalOrReduceScanOp"); }
+| TBAND  { $$ = new UnresolvedSymExpr("BitwiseAndReduceScanOp"); }
+| TBOR   { $$ = new UnresolvedSymExpr("BitwiseOrReduceScanOp"); }
+| TBXOR  { $$ = new UnresolvedSymExpr("BitwiseXorReduceScanOp"); }
+;
+
+%%

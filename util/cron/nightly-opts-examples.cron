@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+rm -f /tmp/nightly.opts.out
+export CHPL_HOME_REPOSITORY=svn://svn.code.sf.net/p/chapel/code/trunk && /users/chapelu/chapel/util/cron/start_opt_test -cron >& /tmp/nightly.opts.out

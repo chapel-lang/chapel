@@ -1,0 +1,66 @@
+=== n=1200000 1-d ===
+ix = const | par : XXX ms
+ix = const | seq : XXX ms
+ivar = const | par : XXX ms
+ivar = const | seq : XXX ms
+ix = ix, ix | par : XXX ms
+ix = ix, ix | seq : XXX ms
+ix1 = ix2, ix3 | par : XXX ms
+ix1 = ix2, ix3 | seq : XXX ms
+ivar1 = ivar2, ivar3 | par : XXX ms
+ivar1 = ivar2, ivar3 | seq : XXX ms
+=== n=1200000 2-d ===
+ix = const | par : XXX ms
+ix = const | seq : XXX ms
+ivar = const | par : XXX ms
+ivar = const | seq : XXX ms
+ix = ix, ix | par : XXX ms
+ix = ix, ix | seq : XXX ms
+ix1 = ix2, ix3 | par : XXX ms
+ix1 = ix2, ix3 | seq : XXX ms
+ivar1 = ivar2, ivar3 | par : XXX ms
+ivar1 = ivar2, ivar3 | seq : XXX ms
+=== n=1200000 1-d ===
+ix = const | par : XXX ms
+ix = const | seq : XXX ms
+ivar = const | par : XXX ms
+ivar = const | seq : XXX ms
+ix = ix, ix | par : XXX ms
+ix = ix, ix | seq : XXX ms
+ix1 = ix2, ix3 | par : XXX ms
+ix1 = ix2, ix3 | seq : XXX ms
+ivar1 = ivar2, ivar3 | par : XXX ms
+ivar1 = ivar2, ivar3 | seq : XXX ms
+=== n=1200000 2-d ===
+ix = const | par : XXX ms
+ix = const | seq : XXX ms
+ivar = const | par : XXX ms
+ivar = const | seq : XXX ms
+ix = ix, ix | par : XXX ms
+ix = ix, ix | seq : XXX ms
+ix1 = ix2, ix3 | par : XXX ms
+ix1 = ix2, ix3 | seq : XXX ms
+ivar1 = ivar2, ivar3 | par : XXX ms
+ivar1 = ivar2, ivar3 | seq : XXX ms
+=== n=1200000 1-d ===
+ix = const | par : XXX ms
+ix = const | seq : XXX ms
+ivar = const | par : XXX ms
+ivar = const | seq : XXX ms
+ix = ix, ix | par : XXX ms
+ix = ix, ix | seq : XXX ms
+ix1 = ix2, ix3 | par : XXX ms
+ix1 = ix2, ix3 | seq : XXX ms
+ivar1 = ivar2, ivar3 | par : XXX ms
+ivar1 = ivar2, ivar3 | seq : XXX ms
+=== n=1200000 2-d ===
+ix = const | par : XXX ms
+ix = const | seq : XXX ms
+ivar = const | par : XXX ms
+ivar = const | seq : XXX ms
+ix = ix, ix | par : XXX ms
+ix = ix, ix | seq : XXX ms
+ix1 = ix2, ix3 | par : XXX ms
+ix1 = ix2, ix3 | seq : XXX ms
+ivar1 = ivar2, ivar3 | par : XXX ms
+ivar1 = ivar2, ivar3 | seq : XXX ms

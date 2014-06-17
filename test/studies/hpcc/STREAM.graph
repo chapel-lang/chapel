@@ -1,0 +1,44 @@
+# Fragmented STREAM (EP)
+perfkeys: Performance (GB/s) =, Performance (GB/s) =
+graphkeys: STREAM, STREAM-local
+files: ./STREAMS/bradc/stream-fragmented.dat, ./STREAMS/diten/stream-fragmented-local.dat
+ylabel: Performance (GB/s)
+graphname: STREAM-fragmented-performance
+graphtitle: EP STREAM (fragmented)
+
+perfkeys: min =, avg =, min =, avg =
+graphkeys: STREAM-(min), STREAM-(avg), STREAM-local-(min), STREAM-local-(avg)
+files: ./STREAMS/bradc/stream-fragmented.dat, ./STREAMS/bradc/stream-fragmented.dat, ./STREAMS/diten/stream-fragmented-local.dat, ./STREAMS/diten/stream-fragmented-local.dat
+ylabel: Time (seconds)
+graphname: STREAM-fragmented-time
+graphtitle: EP STREAM (fragmented)
+
+# Global STREAM
+perfkeys: Performance (GB/s) =, Performance (GB/s) =, Performance (GB/s) =
+graphkeys: Global-STREAM, with--local, Global-STREAM-promote
+files: ./STREAMS/bradc/stream-block1d.dat, ./STREAMS/bradc/stream-block1d-local.dat, ./STREAMS/bradc/stream-block1d-promote.dat
+ylabel: Performance (GB/s)
+graphname: STREAM-global-performance
+graphtitle: Global STREAM
+
+perfkeys: min =, avg =, min =, avg =, min =, avg =
+graphkeys: Global-STREAM-(min), Global-STREAM-(avg), with--local-(min), with--local-(avg), Global-STREAM-promote-(min), Global-STREAM-promote-(avg)
+files: ./STREAMS/bradc/stream-block1d.dat, ./STREAMS/bradc/stream-block1d.dat, ./STREAMS/bradc/stream-block1d-local.dat, ./STREAMS/bradc/stream-block1d-local.dat, ./STREAMS/bradc/stream-block1d-promote.dat, ./STREAMS/bradc/stream-block1d-promote.dat
+ylabel: Time (seconds)
+graphname: STREAM-global-time
+graphtitle: Global STREAM
+
+perfkeys: Performance (GB/s) =
+graphkeys: Global-STREAM-promote
+files: ./STREAMS/bradc/stream-block1d-promote.dat
+ylabel: Performance (GB/s)
+graphname: STREAM-global-promote-performance
+graphtitle: Global STREAM using Promotion
+
+perfkeys: min =, avg =
+graphkeys: Global-STREAM-promote, Global-STREAM-promote
+files: ./STREAMS/bradc/stream-block1d-promote.dat, ./STREAMS/bradc/stream-block1d-promote.dat
+ylabel: Time (seconds)
+graphname: STREAM-global-promote-time
+graphtitle: Global STREAM using Promotion
+

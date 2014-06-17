@@ -1,0 +1,2 @@
+test_default_type.chpl:7: error: unresolved call 'foo(12.0, 12.0)'
+test_default_type.chpl:3: note: candidates are: foo(x, y = bar(x))

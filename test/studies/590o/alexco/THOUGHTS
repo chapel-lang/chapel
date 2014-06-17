@@ -1,0 +1,94 @@
+I've spent a bit of time with chapel and started playing the language.
+
+As motivation, I work with large medical image datasets
+http://www.cs.washington.edu/homes/alexco/projects/connectome/
+
+I was hoping to compare chapel to matlab for basic image statistics, but the
+file format issue was too much of a pain to really compare more than just
+ease of coding.  My testbed images are 4K * 4K tiff files - written to text
+are about 150MB each - so the idea of running the simple stats on 144 of
+these just got out of hand.
+
+I took the file IO example & simulated the most basic idea - what is the
+average and variance image of a set of images?  That is, for each pixel what
+is the average pixel value for that location?
+
+The code is really simple - I think easier in chapel than in matlab.
+
+One of the results I didn't expect was that an operation on an array may
+change the shape of the array in the result.
+
+For example if you have a NxN array A
+B = A + 1;
+I'd expect B to also be NxN rather than (N*N)x1
+
+Is const not implemented yet?  I tried to declare a const parameter variable
+& had no errors when I modified it.
+
+The default by reference is good, but it would be convenient to have "by
+value" for classes too, maybe with a warning for large data.
+
+I'd love to have some sort of interpreted version of chapel!  It would be a
+great way to explore ideas, then compile & and optimize the final runtime.
+
+-Alex
+
+BTW
+
+If you are interested the equivalent matlab is:
+
+function [M, S,H] = AverageCam(path, prefix, cam, nCols, nRows, nFrames,
+iNumVals)
+
+    I = AverageFrame( path, prefix,cam, 1, 1,1, 1);
+    [dx,dy ] = size(I);
+    iSum = zeros([dx,dy]);
+    iSum2 = zeros([dx,dy]);
+    
+    H = zeros(256,1);
+    for row = 1:nRows
+        for col = 1:nCols
+            I = AverageFrame( path, prefix, cam, col, row,
+nFrames,iNumVals(row,col));
+            iSum = iSum + I;
+            iSum2 = iSum2 + I.^2;
+        end
+    end
+     
+    M = iSum ./ (nCols * nRows);
+    S = (iSum2 ./ (nCols * nRows)) - ( M .^ 2);  %mean of squares - square
+of mean - should be ok overflow is low
+
+
+
+----------------
+next exchange  (> is Brad:)
+
+> > The code is really simple - I think easier in chapel than in matlab.
+> 
+> This is a nice testimonial -- in what way did Chapel make things
+> easier than Matlab?
+
+The question of "why is the code simpler?" Is a difficult one to
+answer.  Obviously matlab has better tools - Comparing make+XCode /w
+an unsupported language to the matlab environment isn't fair - so
+debugging and the IDE can't be considered.  Maybe it comes down to
+style and expectations.  Matlab still seems to me like a hacked up
+language, while incredibly useful still a hack.  Chapel just feels
+more modern and thought out.
+
+The other thing I kept thinking was that potentially I could get this
+running on a cluster so each CPU would be working - I'd love to add in
+the per pixel histogram, SIFT features and all of harder work.  I
+didn't get a chance to look at your C integration, but I think that
+would be super helpful to bootstrap functionality. I can easily
+imagine using chapel as glue code to help getting my C++/matlab onto a
+cluster.
+
+> I'm not sure what by value would mean for class argument passing
+> given that a class variable is itself a reference.  Would you want
+> it to mean that the object being referred to should be copied on the
+> way in?
+
+"in" was what I was looking for!
+

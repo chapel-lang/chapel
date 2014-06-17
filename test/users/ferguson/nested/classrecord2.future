@@ -1,0 +1,3 @@
+classrecord2.chpl:4: In function 'chpl__initCopy':
+classrecord2.chpl:4: error: unresolved call 'R2(y=int, outer=R(int))'
+classrecord2.chpl:4: note: candidates are: R2(_mt: _MT, outer: R, y)

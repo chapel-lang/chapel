@@ -1,0 +1,7 @@
+bug: type composed of runtime type is not a runtime type
+
+was:
+
+bug: explicit tuples of array types are not allocated
+
+A variable declared to have the type tuple of array of int crashes at runtime.

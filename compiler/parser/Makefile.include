@@ -1,0 +1,5 @@
+PARSER_OBJDIR = $(COMPILER_ROOT)/parser/$(OBJ_SUBDIR)
+
+ALL_SRCS += parser/*.h parser/*.cpp
+
+include $(COMPILER_ROOT)/parser/Makefile.share

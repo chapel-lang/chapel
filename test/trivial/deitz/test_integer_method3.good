@@ -1,0 +1,2 @@
+test_integer_method3.chpl:8: error: unresolved call 'uint(64).print()'
+test_integer_method3.chpl:1: note: candidates are: int.print()

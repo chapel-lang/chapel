@@ -1,0 +1,5 @@
+I expect to be able to use a nested type specifier to
+give the reduction.
+
+reductionex_class.chpl:43: error: invalid use of 'new'
+reductionex_class.chpl:43: error: invalid use of 'new'

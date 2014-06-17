@@ -1,0 +1,5 @@
+DuplicateConfigVars.chpl:5: warning: imported symbol 'RandomNumber.arraySize' shadows symbol at outer scope
+Generated points:
+7.8259e-06 0.131538 0.755605 0.45865 0.532767 0.218959 0.0470446 0.678865 0.679296 0.934693
+Number of points: 5
+Estimate of pi: 2.4

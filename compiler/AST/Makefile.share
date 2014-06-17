@@ -1,0 +1,20 @@
+AST_SRCS = \
+	alist.cpp \
+	astutil.cpp \
+	baseAST.cpp \
+	bb.cpp \
+	build.cpp \
+	expr.cpp \
+	iterator.cpp \
+	flags.cpp \
+	primitive.cpp \
+	stmt.cpp \
+	symbol.cpp \
+	type.cpp \
+	view.cpp
+
+SVN_SRCS = $(AST_SRCS)
+SRCS = $(SVN_SRCS)
+
+AST_OBJS = \
+	$(AST_SRCS:%.cpp=$(AST_OBJDIR)/%.$(OBJ_SUFFIX))

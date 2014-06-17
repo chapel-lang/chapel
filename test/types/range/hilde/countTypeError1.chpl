@@ -1,0 +1,12 @@
+writeln(typeToString((1:int(8).. # 10:uint).type));
+writeln(typeToString((1:int(8).. # 10:uint(64)).type));
+writeln(typeToString((1:int(16).. # 10:uint).type));
+writeln(typeToString((1:int(16).. # 10:uint(64)).type));
+writeln(typeToString((1:int(32).. # 10:uint).type));
+writeln(typeToString((1:int(32).. # 10:uint(64)).type));
+writeln(typeToString((1:uint(8).. # 10:uint).type));
+writeln(typeToString((1:uint(8).. # 10:uint(64)).type));
+writeln(typeToString((1:uint(16).. # 10:uint(64)).type));
+writeln(typeToString((1:uint(16).. # 10:uint).type));
+writeln(typeToString((1:uint(32).. # 10:uint(64)).type));
+writeln(typeToString((1:uint(32).. # 10:uint).type));

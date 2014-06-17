@@ -1,0 +1,66 @@
+# Description: Makefile fragment for #conduit_name#-conduit, GASNET_#THREAD_MODEL# mode
+# #AUTOGEN#
+# @configure_input@
+# $Revision: 1.3 $
+# Copyright 2002, Dan Bonachea <bonachea@cs.berkeley.edu>
+# Terms of use are as specified in license.txt
+
+# ----------------------------------------------------------------------
+# GASNet client usage instructions:
+#
+# Clients should include this file in their Makefile, using: (no leading '#')
+#     include ###INSTALL_PREFIX###/include/#conduit_name#-conduit/#conduit_name#-#thread_model#.mak  
+# or alternatively, just:
+#     include #conduit_name#-#thread_model#.mak
+# and use a -I###INSTALL_PREFIX###/include/#conduit_name#-conduit 
+# command-line option when invoking make
+#
+# Then in the Makefile, use a compile line something like this:
+#  $(GASNET_CC) $(GASNET_CPPFLAGS) $(GASNET_CFLAGS) -c myfile.c
+#
+# and a link line something like this:
+#  $(GASNET_LD) $(GASNET_LDFLAGS) -o myfile myfile.o $(GASNET_LIBS)
+# 
+# For GASNet clients who need finer-grained control over C compiler options, 
+#  GASNET_CFLAGS is an alias for: 
+#     $(GASNET_OPT_CFLAGS) $(GASNET_MISC_CFLAGS)
+#  GASNET_CPPFLAGS is an alias for: 
+#     $(GASNET_MISC_CPPFLAGS) $(GASNET_DEFINES) $(GASNET_INCLUDES)
+# and those finer-grained variables can be used rather than the convenience aliases
+#
+# ----------------------------------------------------------------------
+
+# ----------------------------------------------------------------------
+# GASNet conduit-writer instructions:
+#
+# Most conduit-specific tweaks for these fragments can be accomplished 
+# by setting specially-named variables in your conduit.mak file:
+#
+# * Variables of the form CONDUIT_WHATEVER will be added to the GASNET_WHATEVER
+#   variable in the fragment.
+#
+# * Variables of the form CONDUIT_WHATEVER_<MODE> (where <MODE> is SEQ, PAR or PARSYNC)
+#   will be added to the GASNET_WHATEVER variable for the <MODE> fragment only.
+#
+# * Settings which are contingent on whether the fragment is being used 
+#   within the build tree or from an installed copy should be controlled using
+#   the standard ###NO INSTALL### marker (without the internal space)
+#
+# * In the rare cases where a conduit needs to completely replace the 
+#   default value for a GASNET_WHATEVER variable (rather than simply adding
+#   to it), this can be accomplished by setting one of the GASNET_WHATEVER_OVERRIDE
+#   variables in the conduit.mak file. Note this is only supported for the 
+#   overridable variables listed below, and should only be used as a last resort
+#   because it clobbers the default values established by configure and
+#   complicates GASNet framework maintenance.
+#
+# ----------------------------------------------------------------------
+
+# ----------------------------------------------------------------------
+# conduit-overridable variables 
+
+GASNET_LD_OVERRIDE = @CC@
+GASNET_LDFLAGS_OVERRIDE = @CFLAGS@ @LDFLAGS@
+
+# ----------------------------------------------------------------------
+# #conduit_name#-conduit/conduit.mak settings

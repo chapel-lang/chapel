@@ -1,0 +1,2 @@
+type_eqeq_value.chpl:1: In function 'main':
+type_eqeq_value.chpl:2: error: unresolved call '==(type int(64), 1)'

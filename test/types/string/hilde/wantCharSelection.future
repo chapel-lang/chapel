@@ -1,0 +1,3 @@
+feature request: Index into a string to access characters.
+
+It would be nice to be able to index into a string to access the characters contained in it.

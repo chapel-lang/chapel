@@ -1,0 +1,9 @@
+bug: range op overflow
+
+Was:
+
+bug: range slice causes integral overflow
+
+When computing the alignment to snap a range to, an overflow can occur causing
+bad bounds for the result. In range.this, al1 + (al2 - al1)*factor, this
+test causes al2-al1 to overflow.

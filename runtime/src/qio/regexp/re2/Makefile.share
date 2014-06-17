@@ -1,0 +1,13 @@
+REGEXP_SRCS = re2-interface.cc
+
+SVN_SRCS = $(REGEXP_SRCS)
+SRCS = $(SVN_SRCS)
+
+REGEXP_OBJS = \
+      $(addprefix $(REGEXP_OBJDIR)/,$(addsuffix .o,$(basename $(REGEXP_SRCS))))
+
+RUNTIME_INCLS += -I$(RE2_INCLUDE_DIR) -I$(RE2_INCLUDE_DIR2)
+
+$(RUNTIME_OBJ_DIR)/re2-interface.o: re2-interface.cc \
+                                         $(RUNTIME_OBJ_DIR_STAMP)
+	$(CXX) -c $(RUNTIME_CXXFLAGS) $(RUNTIME_INCLS) -o $@ $<

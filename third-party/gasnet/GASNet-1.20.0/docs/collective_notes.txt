@@ -1,0 +1,2080 @@
+GASNet collectives design notes
+===============================
+* $Revision: 1.37 $
+* Copyright 2004, Dan Bonachea <bonachea@cs.berkeley.edu> and Paul Hargrove <PHHargrove@lbl.gov>
+* Terms of use are as specified in license.txt
+
+//===========================================================================
+* Goals of the design:
+
+** 1) Must be asynchronous, with distinct initiation and finalization
+calls.
+
+** 2) Must be "suitable" for implementing the UPC collectives.
+Specifically, we need to be able to enforce at least the minimum
+input/output constraints of the UPC sync_mode.
+
+** 3) Must be suitable for use on all (reasonable) GASNet platforms,
+including those with unaligned segments, progress via polling only,
+etc.
+
+** 4) Must be suitable for use in hierarchical implementations on
+CLUMPS (i.e. pthreaded clients and SysV shared memory bypass inside
+GASNet when it's enabled)
+
+** 5) Must be "efficient" in terms of synchronization - for instance
+avoid use of a full barrier where point-to-point synchronization is
+faster and still sufficient for correctness.  Of course, this goal
+will be achieved differently on each platform and the reference
+version need not be infinitely tunable.
+
+** 6) Must admit optimizations using likely hardware features where
+appropriate (barriers, broadcast, RDMA-atomics).
+
+** 7) Must NOT break any existing GASNet semantics.
+
+** 8) MAY assume that calls which initiate collective calls are, in
+fact, collective with calls made in the same order on all participating nodes, in
+the same barrier phase. Synchronization calls may happen in different
+orders on different nodes, but collectives will never be in-flight
+across a barrier notify/wait interval.
+
+** 9) Must allow for address (and related) arguments which are not
+"single-valued" in the sense used by the UPC-spec.  For instance, when
+implementing the Titanium exchange operation we have an operation
+which is similar to a upc_all_gather_all, except that each node knows
+only its own source and destination addresses, not the addresses on
+the other addresses.  It is reasonable to expect that GASNet can move
+the addresses around more efficiently than a network-independent
+GASNet client.  (With AMs, GASNet might even move the data w/o ever
+moving the addresses.)
+
+** 10) MAY perform "extra" communication and/or computation where
+there is some net savings (examples include implementing
+upc_all_scatter() with a broadcast and then discarding some of the
+data at each node, or use of full barriers where hardware support
+makes them superior to pairwise synchronization.)
+
+*** 11) Must be suitable for implementing the collective support
+required by Titanium (which may include future extensions to utilize
+the new GASNet support) and Co-Array FORTRAN.  Suitability for
+implementing the MPI collectives is also valuable, but not crucial.
+
+*** 12) Should provide support for aggregating the message and
+synchronization traffic of separate in-flight collectives, both within
+the GASNet implementation and with explicit help from the client. For
+example, the compiler should be able to transform several source-level
+IN_ALLSYNC|OUT_ALLSYNC collectives issued in a row which it determines
+to be data-independent into a series of GASNet calls expressing that
+all the collectives should be worked on simultaneously - ideally
+causing the implementation to piggy-back any data movement together,
+and use a single entry and exit barrier for the entire group of
+collectives.
+
+*** 13) Should support operating on in-segment and out-of-segment data
+
+*** 14) Should allow extension to variable-contribution data movement
+collectives in the future.
+
+*** 15) Should allow extension to team-based collectives in the future.
+
+//===========================================================================
+* Collectives and barriers
+
+At present it is not legal for GASNet collectives and barriers to be
+outstanding simultaneously.  This means that collectives may not be
+initiated between gasnet_barrier_notify() and the following _try() or
+_wait(), and collectives initiated before a gasnet_barrier_notify()
+call must also be synced before it.
+
+We may relax this constraint in a future specification.
+
+
+//===========================================================================
+* Collectives and handlers
+
+GASNet collectives may not be initiated or synchronized from within AM
+handlers.  This constraint will NOT be relaxed.
+
+
+//===========================================================================
+* Handles
+
+All GASNet collective initiation functions will have blocking and
+explicit-handle non-blocking versions.  The blocking versions exist
+because in some cases hardware support (such as the blocking hardware
+barrier in elan) can implement them more efficiently than the trivial
+one-liner.  We omit implicit-handle operations because we anticipate
+collectives will be used primarily by library authors with the number
+of outstanding operations being small and known at compile time, not
+by code generators where the number of operations may be potentially
+large and unknown at compile time.
+
+For many reasons we desire to have a handle type which is distinct
+from the gasnet_handle_t used for Extended API.  For the moment I'm
+assuming a gasnet_coll_* prefix for functions.  So we introduce
+"gasnet_coll_handle_t" and "GASNET_COLL_INVALID_HANDLE" to the GASNet
+specification.  Meanings are mostly analogous to the existing explicit
+handle, including:
+  + A handle has per-thread scope and must be synced by the same thread
+    which initiated it.
+  + A non-blocking collective may return GASNET_COLL_INVALID_HANDLE
+    to indicate the operation was completed synchronously.
+  + The invalid handle is all zero bits.
+  + A handle is "dead" once it has been successfully synced and may
+    not be used in future synchronization operations.
+
+//===========================================================================
+* Synchronization modes
+
+In order to efficiently implement the UPC collectives, the GASNet
+collectives will include the same nine sync modes that are described
+in the UPC collectives specification (though names and binary
+representations need not follow UPC).  To keep the synchronization
+calls lightweight, the synchronization mode will be passed to the
+initiation function, but not to the synchronization function.
+
+Here, using the UPC naming, are the three input sync modes given in
+terms of GASNet semantics:
+
++ IN_NOSYNC: All data movement may begin on any GASNet node as soon as
+any node has entered the collective initiation function.  This is
+sufficient synchronization when, for instance, no input data has been
+modified in the current barrier phase.
+
++ IN_MYSYNC: Each block of data movement may begin as soon as both its
+source and destination nodes have entered the collective initiation
+function.  This is sufficient synchronization when, for instance, all
+modification to the input data in the current barrier phase (if any) was
+done locally.
+
++ IN_ALLSYNC: Data movement may begin only when all nodes have entered
+the collective initiation function.  This is potentially the most costly
+synchronization, and is necessary when remote modification of input
+data (via a put) is possible in the current barrier phase.
+
+Here are the three output sync modes, with the corresponding GASNet
+semantics:
+
++ OUT_NOSYNC: The sync of a collective handle can succeed at any time
+so long as the last thread to sync does not do so until all data
+movement has completed.  This is sufficient synchronization when no
+output data will be consumed in the current barrier phase.
+
++ OUT_MYSYNC: The sync of a collective handle can succeed as soon as
+all data movement has completed to and from local data areas
+specified in the call (note that movement to or from buffers
+internal to the implementation and local to the node might still be
+taking place, for instance in tree-based broadcasts).  This is
+sufficient when, for instance, output data will be consumed only
+locally (if at all) in the current barrier phase.
+
++ OUT_ALLSYNC: The sync of a collective handle can succeed as soon as
+all data movement has completed to and from all data areas specified
+in the call.  This is weaker than a full barrier, since the equivalent
+of a zero-byte broadcast is sufficient.  This synchronization mode is
+potentially the most costly, and is necessary when output data may be
+consumed remotely (via a get) in the current barrier phase.
+
+In the presence of partial information (see Partial Information,
+below) the descriptions above "all data areas specified in the call"
+means the union of the information available from all nodes.
+
+
++ _OUT_ALLSYNC -> implies all buffers are safe for reuse.
++ _OUT_MYSYNC  -> implies local buffers are reusable
++ _OUT_NOSYNC  -> implies no specific buffers are reusable,
+                  until the last thread enters the next
+                  collective (barrier included)
+
+
+//===========================================================================
+* Bulk vs. non-bulk data reuse
+
+Consistent with the VIS (Vector, Indexed and Strided) interface, the
+collectives are specified only for "bulk" data lifetimes.  This means
+that if the client reads or writes source or destination memory areas
+between the initiation and synchronization of that memory, the results
+are undefined.  The same applies for meta-data passed by reference, such
+as vectors of addresses to the multi-address interfaces.
+
+As noted in "Synchronization Modes" the point at which
+the memory (as opposed to the collective operation) is considered
+synchronized depends on the synchronization mode.
+
++ _OUT_ALLSYNC: memory in all participating images is synchronized when the
+collective operation is synchronized in any image.
+
++ _OUT_MYSYNC: memory in each participating image is synchronized when the
+collective operation is synchronized by that image.
+
++ _OUT_NOSYNC: memory is synchronized when the collective operation is
+synchronized in all participating images.
+
+
+//===========================================================================
+* Bulk vs. non-bulk alignment
+
+The GASNet collectives for data movement do not assume any data
+alignment (consistent with UPC and with the GASNet-VIS interface).
+
+The computational collectives (reduce and prefix_reduce)
+requires alignment correct for the operation's data type.
+
+
+//===========================================================================
+* Synchronization calls
+
+We'll support the same family of explicit handle try and wait calls as
+for the gets and puts.  See the section "Synchronization Modes" for a
+description of what success of a sync call implies.
+
+void gasnet_coll_wait_sync(gasnet_coll_handle_t handle);
+int gasnet_coll_try_sync(gasnet_coll_handle_t handle);
+
+void gasnet_coll_wait_sync_all(gasnet_coll_handle_t *handles, size_t n);
+int gasnet_coll_try_sync_all(gasnet_coll_handle_t *handles, size_t n);
+
+void gasnet_coll_wait_sync_some(gasnet_coll_handle_t *handles, size_t n);
+int gasnet_coll_try_sync_some(gasnet_coll_handle_t *handles, size_t n);
+
+Synchronization of a GASNet collective is NOT itself a collective
+operation and the returns from the synchronization calls on individual
+nodes may occur as early as permitted by the sync mode argument passed
+to the collective initiation function.  Specifically, synchronization
+calls need not occur in the same order on all nodes. 
+
+
+//===========================================================================
+* Metadata lifetime
+
+Where arguments are passed by reference to the collective initiation
+functions, the argument values must remain unchanged between the
+initiation and synchronization of the collective operation on the node
+owning the referenced memory.  If this meta data lies in the GASNet
+segment, clients should take care to prevent remote modification of
+the meta-data, especially since a remote node may sync before the local
+node has finished with the meta-data.
+
+
+//===========================================================================
+* Progress
+
+We expect the non-blocking collectives to make progress in
+gasnet_AMPoll() or the sync call as the worst case.  A separate
+section addresses how this will interface with the conduit
+implementation to make progress in gasnet_AMPoll() or asynchronously
+when possible.
+
+
+//===========================================================================
+* Collectives and threads
+
+Collectives must be initiated in the same order on all participating nodes.
+To execute a collective operation a collective initiation function
+must be called on all nodes by all "images" (threads that have called
+gasnet_coll_init()) and the handles each thread receives must be synced
+by the same thread.
+
+The type gasnet_coll_handle_t specifies a handle which may be
+synchronized only by the thread to which it was returned when initiating
+the collective  (ie the gasnet_coll_handle_t handle is node-specific
+and thread-specific.)
+
+//===========================================================================
+* Data segment
+
+We want to optimize implementation in cases where the source and
+destination of the data movement collectives are in the GASNet
+segment.  However, we do not wish to require extra copies by the client
+to achive this.  Therefore, we allow the client to
+specify the following flags
+
+ + GASNET_COLL_DST_IN_SEGMENT -> If set, this bit is an assertion by the client
+   that the destination address argument(s) to this collective
+   operation lie in the GASNet segment.
+
+ + GASNET_COLL_SRC_IN_SEGMENT -> If set, this bit is an assertion by the client
+   that the source address argument(s) to this collective operation
+   lie in the GASNet segment.
+
+It is an error to set either of these flag bits when any portion of
+the corresponding memory lies outside the GASNet segment.
+
+
+//===========================================================================
+* "Single-valued" arguments
+
+To implement things like Titanium's Exchange operation, we want a
+mechanism to deal with the case that not all nodes know all addresses.
+One approach would be to require the client to move addresses around
+to construct a call to the GASNet collectives which is "single-valued"
+in the sense used in the specification of the UPC collectives.
+However, there exist a number of implementation choices which would
+allow the GASNet conduit to perform collectives with only partial
+information on each node, and to do so more efficiently than having
+the client perform a gather_all just to collect the single-valued
+arguments.  We also want to be able to use the fact that a client
+implementing the UPC collectives *will* provide us with single-valued
+arguments.
+
+The GASNet collectives are *NOT* limited to being called with
+single-valued arguments.  We will have flag values indicating if
+address arguments to the collective initiation function are given
+in the UPC or Titanium style.
+
+ + *_LOCAL -> The arguments provided by the local initiation call
+ include correct local addresses, but not correct remote addresses.
+
+ + *_SINGLE -> The arguments provided by the initiation calls on all
+ nodes include correct local and remote addresses, and they agree.
+
+In the future we may wish to add *_GLOBAL, which would mix freely with
+other nodes specifying *_LOCAL.  This would allow some nodes to know
+all addresses while others knew only local ones.  We have no consumers
+for this at present, and thus don't specify it yet.
+ 
+If any node calls with the _SINGLE flags, then all nodes must do so,
+and all addresses must agree across all nodes.
+
+The 'nbytes', 'root' (for broadcast, scatter and gather) and
+synchronization mode must agree across all nodes regardless of the
+_LOCAL, _SINGLE flag.
+
+
+//===========================================================================
+* Number outstanding
+
+There exists some concern that implementing synchronization using PUTS
+rather than AMs may require bounding the number of collective ops which
+are outstanding on the network and/or forcing ops to be completed (inside
+the conduit) in the order issued.  It has been determined that none of
+this should be visible to the client:
+
+The interface will expose a limit of no less than 2^16-1. The implementation
+may internally use back-pressure flow control at a smaller limit, but
+initiation calls must always independently make progress without any
+synchronization action by the client on any node.
+
+Sync calls must be non-collective to support a number of important
+paradigms (eg spawn many MYSYNC collectives and compute on
+the result as trysync reports them to be complete). It's not even
+clear what it would mean to require a collective try sync on a MYSYNC
+or NOSYNC operation (where some nodes succeed and others fail).
+However, internally completing the collectives in order is acceptable
+when it's necessary. That still provides significantly more flexibility
+to the client than forcing the syncs to be collective.
+
+//===========================================================================
+* Multiple Addresses
+
+To support a non-pthread UPC client with aligned segments requires the
+simplest form of addressing.  Because the segments are aligned and
+shared arrays are aligned within their segments, a single address
+describes the data placement on all participating nodes.  However, with unaligned
+segments one needs at least one address per node.  To perform direct
+data placement with multiple threads per node one needs multiple
+addresses, with the alignment of segments determining if you need one
+for every application thread or as many addresses as threads per node.
+For Titanium clients we have the added wrinkle that a given node has
+no knowledge of the addresses on the others.  Here is a summary of the
+five distinct cases that have been identified:
+ +  UPC or CAF w/ aligned segments, 1 thread/node
+    (or multi-threaded w/ hierarchical data movement)
+ +  UPC or CAF w/ unaligned segments, 1 thread/node
+    (or multi-threaded w/ hierarchical data movement)
+ +  UPC or CAF multi-threaded w/ direct data placement
+ +  Titanium, 1 thread/node
+    (or multi-threaded w/ hierarchical data movement)
+ +  Ti multi-threaded w/ direct data placement
+
+The current proposal allows for all of these cases by offering two
+types of interface - one taking scalar address arguments and one
+taking lists of addresses.
+
+//===========================================================================
+* Teams:
+
+Note that the major issues with adding teams to UPC are related to
+pointer arithmetic and memory allocation, neither of which affect
+GASNet.  Therefore, the GASNet collectives are designed to be
+team-ready immediately (even if we delay implementation until we have
+a client).  Therefore, all collectives take a team handle as the first
+argument.  GASNET_TEAM_ALL is predefined and is analogous to
+MPI_COMM_WORLD.  Looking for GASNET_TEAM_ALL we can identify non-team
+collectives at compile time and avoid paying any runtime cost for the
+team generality when it is not needed.
+
+To avoid deadlock when using team collectives, a client must follow
+certain ordering constraints.  Informally, we require that for any
+pair of collectives all images which participate in both must agree on
+their ordering.  Formally this may be expressed as follows.
+
+  For any collective X let Participants(X) denote the set of images which
+  are members of the corresponding team.  For non-team collectives,
+  Participants() is the set of all images across all the GASNet nodes.
+
+  For image I, and collectives X and Y, let Precedes_I(X,Y) be a
+  predicate true when X != Y and collective X is initiated before
+  collective Y on the node hosting image I.
+
+  For all collectives X and Y:
+    For all images I and J in Intersection(Participants(X), Participants(Y)):
+      Precedes_I(X,Y) = Precedes_J(X,Y).
+
+Note there is no ambiguity when X==Y or I==J
+
+An interface for the creation of teams is still an open issue.
+
+We also need to think about what thread serialization we require 
+for calling collective initiation functions when images on a node participate
+in teams that do not encompass all the local images. Specifically, 
+requiring client-level serialization for two team-collective
+initiation calls where the sets of locally participating images are disjoint
+can easily lead to deadlock, even for the simple case of blocking ALL/ALL
+collectives (because the collective ordering property does not apply across
+disjoint teams, so different nodes may invert the call ordering between
+independent teams).
+
+//===========================================================================
+END OF NORMATIVE STUFF (MOSTLY AGREED TO)
+START OF OPEN ISSUES
+//===========================================================================
+
+* OPEN ISSUE: Variable contributions
+
+What about calls where each node may contribute a different sized
+source to a gather or gather_all, or different sized dest to a scatter
+(with a proper constraint on the sums).  This would be a natural(?)
+"v" extension to the current two-flavor proposal.
+
+
+* OPEN ISSUE: Progress
+
+In-flight collectives should be guaranteed to make progress, provided
+all nodes poll occasionally. Allowing them to make progress
+independent of polling activity would be nice, but is not a firm
+requirement.
+
+Non-blocking initiation calls are collective, so in some
+implementations (esp with IN_ALLSYNC) they may stall waiting for all
+nodes to arrive. This specifically means that it would be an error for
+a GASNet client to construct a dependency cycle where node A stalls
+before reaching the collective initiation, waiting for the result of
+some action that will be taken by node B when it exits the collective
+initiation. We need to formalize this requirement in the spec.
+
+
+* OPEN ISSUE: Co-Array FORTRAN (CAF)
+
+The CAF "spec" does not provide any library or intrinsic collective
+interfaces.  However, the FORTRAN 95 array syntax is available and MIGHT
+express the collective operations (minus synchronization) in a manner
+that the compiler could easily translate into gasnet_coll_*() calls.
+
+Unfortunately, the lack of a defined interface encourages the calls like
+Exchange to be hand coded with staggered indexes to avoid communications
+bottle-necks.  Such hand-optimized collectives are NOT good candidates
+for automatic translation by the complier.  This fact is noted in an
+October 2003 paper from the group at Rice, which also state that they are
+working on a specification for CAF intrinsics for collective
+communication.
+
+CAF permits team syncs and team collectives.  We need to look at that
+when trying to extend GASNet for teams.
+
+
+* OPEN ISSUE: Computational collectives (reduce and prefix reduce).
+
+** Data lifetime and alignment
+
+Like the other collectives we want bulk lifetimes for both data and
+metadata.  Unlike the other collective operations, we require that the
+data be properly aligned for its type.
+
+At present the GASNet spec says that AM medium payload will have an
+alignment of 8-bytes or higher.  However, we don't know if some
+hypothetical system could require a higher alignment for some data
+type of interest (128-bit types?).  Therefore the library implementation
+should be parameterized by a constant value 
+GASNET_DATA_ALIGNMENT which gives the alignment enforced by the
+computation collectives.  This value will default to 8 (the AM
+Medium payload alignment), but at configuration time this could
+be increased on a given platform having stronger requirements.
+
+** Client-provided (prefix) reduction function.
+
+GASNet computational collectives use an untyped interface in which the
+client provides the number and size of elements, but not a data type.
+GASNet has no built-in reductions for particular data types or
+operations.
+
+GASNet does not assume a single-image environment and thus the address
+of the same function may differ across nodes.  Therefore the GASNet
+implementation of the computational collectives is constrained to only
+invoke a function pointer on the same node which provided it.
+Functions are referenced by a handle type to hide this issue.
+
+Like AM handlers, GASNet does not ensure that the client-provided
+function is executed in the context of any particular thread, and may
+legally execute it in a thread internal to the implementation.  GASNet
+also does not provide any serialization of these function invocations.
+However, the client does have control over whether these functions can
+be called from handler context.
+
+There is currently nothing in the UPC spec that would prohibit the
+app-provided function from accessing remote memory, or UPC thread-specific
+values/locations such as MYTHREAD or global-scope TLD.  Therefore the library does
+not evaluate callback functions from AM handler context or conduit-internal
+thread unless we have
+assurance from the client that it is safe to do so.  For this purpose,
+we include GASNET_COLL_AMSAFE flag, which may be included in the
+'flags' argument when registering a function (see below).  Inclusion
+of this flag is a hint to the GASNet implementation which permits it
+to evaluate the client-provided function (reduction, prefix-reduction,
+or comparison) in an AM context and/or using conduit-internal threads, 
+which the implementation must never do without this flag. 
+More specifically, all callbacks registered without the GASNET_COLL_AMSAFE flag
+are guaranteed to only run synchronously on an application thread 
+in a context where it is legal to invoke any (non-collective) GASNet functions.
+
+In the case of blocked and block
+cyclic layouts one may potentially benefit from an interface which can
+pass an entire block.  This interface has the advantage of
+placing the function call outside the loops.  This means that we
+should be able to get compiler optimization of the inner reduction
+loops.  This includes vectorization on some platforms, and things like
+loop unrolling, software pipelining and SIMD floating point on others.
+
+It is explicitly undefined how many times the callback functions will
+be invoked on behalf of a given collective or on which nodes it will
+be invoked - specifically, the callback may be invoked to calculate 
+partial or redundant results, resulting in the reduction operator 
+globally being evaluated a total number of times which exceeds the
+count one might expect from a naive translation of the reduction 
+operation (ie more than total_num_elements - 1 evaluations).
+It is additionally undefined which data locations may be passed as 
+input and output arguments to the reduction function - they may 
+include a mix of references to the client data areas and intermediate
+buffers which may or may not reside in the GASNet segment.
+
+
+We keep a single signature for both commutative and non-commutative
+operators and for reduction and prefix-reduction, so that we can pass
+the function pointers through the same call.  Note that a prefix
+reduction function, when called for exactly one output argument is
+semantically identical to a reduction.  This provides important
+freedom to the GASNet implementation of a prefix reduction, which can
+freely perform reductions of intermediate results while only requiring
+the client to provide a single prefix-reduce function, and not a
+distinct function for reduction only.
+
+We can easily allow for full generality of the implementation by
+making no assumptions about the number of partial reductions which
+might be present at any stage of the computation.  We may have zero or
+more operands which do not have corresponding outputs and will always
+have one or more operands which do have corresponding outputs.  In
+the case of a non-commutative prefix reduction, we know that the
+operands which have corresponding outputs will always lie to the right
+of those without.  In the case of a reduction we have exactly one
+output, but need not associate it with any particular input.  Thus we
+require all client callbacks to 
+support an arbitrary number of left-hand and a non-zero number of
+right-hand operands.  This leads to a simple interface with two
+pointers to vectors of operands and two scalars giving the vector
+lengths.  A third vector of outputs is also required, and will have
+the same length as the right-hand operand vector.  This is the natural
+choice for a prefix-reduction since there are never "optional"
+right-hand operands.
+
+To allow client freedom in implementing (prefix) reduction functions,
+we pass the size of the data elements, the commutativity and a
+client-provided integer argument from the initiation function through
+to the invocation of the client-provided function.
+
+Following the ideas above leads to this prototype:
+
+/* For flags to the reduce_fn: */
+#define GASNET_COLL_NONCOMM		???
+
+typedef void
+	(gasnet_coll_reduce_fn)(void *results, size_t result_count,
+				const void *left_operands, size_t left_count,
+				const void *right_operands,
+				size_t elem_size, int flags, int arg);
+	results: Output array
+		This argument is the address of the space into which the
+		result(s) should be written.
+	result_count: Result count
+		The number of results to be generated.  Since there is
+		a one-to-one correspondence between results and
+		right-hand operands, this is also the length of the
+		'right_operands' array. 
+
+/*** RAJESH: I REALLY DON'T THINK WE SHOULD ALLOW THIS We'll be forced into a function call overhead for every 
+             element in the reduction which could be very large****/
+    The client may safely assume that a
+		callback invoked on behalf of a (non-prefix) reduce function
+		will always have result_count == 1. Otherwise, it will be >= 1.
+
+	left_operands: Optional left-hand operand array
+		This argument is the address of 0 or more operands which lie
+		to the left of those given by the 'right_operands' argument.
+		The number of operands in this array is given by the
+		'left_count' argument.  If 'left_count' is zero then this
+		argument is ignored.
+	left_count: Left-hand operand count
+		The number of operands in the 'left_operands' array.
+		The client may safely assume that a callback invoked on behalf 
+		of a (non-prefix) reduce function will always have 
+		left_count > 0. No other guarantees are provided.
+	right_operands: Right-hand operand array
+		This argument is the address of 1 or more operands which lie
+		to the right of those given by the 'left_operands' argument.
+		The number of operands in this array is given by the
+		'result_count' argument.
+	elem_size: Size of the operand and result elements.
+		This argument gives the size of the data elements
+		which are to be manipulated.
+	flags: Flag values
+		This argument gives information about the operation and
+		is composed of a bitwise or of values.
+		The value of 'flags' will include GASNET_COLL_NONCOMM
+		if and only if the client passed this same flag to the
+		gasnet_coll_init() function when registering this function.
+		The remaining bits of 'flags' are reserved for future use and
+		the client must not assume they will have any particular
+		value.
+	arg: Client-supplied argument
+		This is the one argument passed into the gasnet_coll_init()
+		function by the client when registering this function.
+
+Here is an example for a reduction (summation of integers), which takes
+(slight) advantage of commutativity to start with the right-hand operands,
+knowing that they must be non-empty:
+
+void summation_example( void *results, size_t result_count,
+			const void *left_operands, size_t left_count,
+			const void *right_operands,
+			size_t elem_size, int flags, int arg)
+{
+	int *left = (int *)left_operands;
+	int *right = (int *)right_operands;
+	int sum;
+	int i;
+	
+	sum = right[0];
+	for (i = 1; i < right_count; ++i) sum += right[i];
+	for (i = 0; i < left_count;  ++i) sum += left[i];
+
+	*(int *)results = sum;
+}
+
+Here is an example where we call a non-commutative function on doubles
+to perform a prefix reduction.  Note that the application-provided
+function is passed "over" gasnet in the 'arg' which must be an index into
+a table, rather than an actual pointer.
+		
+void noncomm_prefix_example(void *results, size_t result_count,
+			    const void *left_operands, size_t left_count,
+			    const void *right_operands,
+			    size_t elem_size, int flags, int arg)
+{
+	double (*func)(double, double) = my_fn_tbl[arg];
+	double *output = (double *)results;
+	double *left = (double *)left_operands;
+	double *right = (double *)right_operands;
+	double tmp;
+	int i;
+
+	/* The computation of the first result will depend on the presence
+	 * or absence of partial reductions from "left neighbors". */
+	if (left_count > 0) {
+		/* Accumulate one or more partial reductions */
+		tmp = left[0];
+		for (i = 1; i < left_count; ++i) {
+			tmp = (*func)(tmp, left[i]);
+		}
+
+		tmp = (*func)(tmp, right[0]);
+	} else {
+		tmp = right[0];
+	}
+	
+	/* Compute and store all the prefix reductions corresponding
+	   to the right-hand operands */
+	output[0] = tmp;
+	for (i = 1; i < right_count; ++i) {
+		tmp = output[i] = (*func)(tmp, right[i]);
+	}
+}
+
+From these examples, one can see how this choice of interface can
+enable vectorization.
+
+** UPC-imposed complications (data layout)
+
+It is not hard to deal with cyclic, block and block-cyclic
+layouts of data by implementing block-cyclic and allowing the other
+two to fall out as the two natural extremes.  Using the generality
+allowed by the multiple-address data-movement collectives is enough to
+describe a block layout even for unaligned segments and multiple heaps
+per node.  The inclusion of a scalar "element size" is already assumed
+by the choice of a untyped interface.  The addition of one more
+scalar, "block size" allows us to express the block-cyclic layout.  A
+value blk_sz==1 conveys pure-cyclic.  The UPC interfaces have
+blk_size==0 to convey indefinite layout and that seems appropriate
+here as well, but more on that below.
+
+If UPC required phase==0 affinity=node0 for the source of a reduction
+(and dest of a prefix reduction), then indefinite layout would be the
+only corner case to deal with.  However, the UPC collective spec
+allows arbitrary alignment of the input and output arrays.  The first
+elements of the input need not have affinity to thread 0, nor is it
+required to have a phase of 0.  On top of that, the prefix reduction
+does not require the input and output arrays to have the same alignment.
+This requires at least some level of generality in the interface.
+Rather than go to the full generality of variable contributions to deal
+with this, we can add just one more scalar.
+
+Let us assume we have an interface which allows expression of a
+block-cyclic layout, including an element size, number of elements per
+node (one scalar value), block size and the addresses of the
+contributions on each node.  Then to deal with the non-aligned case we
+can pass a block-cyclic "bounding box" plus two additional scalars:
+the index of the first element to use (as input or output), and the
+total number of elements to use.  The second of these need not be a
+new argument, but can instead can replace the element count which
+previously described the full "bounding box".  The number of elements
+in the bounding box can be easily computed if it is ever needed.
+
+So, to express the input array requires the following 5-tuple:
+  (elem_sz, elem_count, blk_sz, offset, address(es))
+Where the addresses have the same freedom of expression as used in the
+data-movement collectives.  When specifying the output array for a
+prefix reduction the elem_size and elem_count must be the same, so we
+only need the other three: blk_sz, offset and the address(es).
+
+Note that UPC specifies the prefix reduction to have the same blk_sz
+but allows for a different starting offset (affinity and phase).  I
+propose to give gasnet the additional generality of different block
+sizes.  Once indefinite layout is accounted for (below), this will
+allow prefix_reduce+gather and scatter+prefix_reduce to become single
+prefix reductions. [ Note: UPC no longer allows this generality. ]
+
+To allow for reblocking indefinite layout is something we need to
+express cleanly.  As in UPC, we can use blk_sz=0 to express the fact
+that a given src or dst array has indefinite layout.  However, we
+would seem to need an additional argument to indicate to which node
+the array has affinity.  However, the offset needed for block-cyclic
+arrays is not needed for its original purpose.  Therefore, the
+"offset" would be an image number for the indefinite case and would
+remain an element count for the other cases.
+
+** Commutativity/Associativity
+
+In the UPC spec it is stated that all reduction ops are assumed
+associative and all are assumed commutative except UPC_NONCOMM_FUNC.
+The associativity assumption is consistent with MPI, which urges
+implementers to evaluate things in a predetermined order so that
+multiple runs produce identical results (with the same node/image 
+layout), even in the presence of floating-point roundoff.  I would 
+reiterate this advice as advice to GASNet implementers as well.
+
+GASNet provides the GASNET_COLL_NONCOMM flag so the client may
+indicate that the client-provided (prefix) reduction function is
+non-commutative.  The default, when this flag is not passed, is to
+assume a commutative operator.
+
+
+** Registration of functions
+
+Because we cannot assume a single image environment we must deal with
+the possibility that a client-provided function may not have the same
+address on all nodes.  To deal with this issue the function for a
+computational collective is passed as an integer valued handle.
+Similar to AM handler ids, these handles
+provide a mechanism to ensure that all the nodes can unambiguously
+refer to the same function on different nodes.  Additionally, by
+creating these handles before they are referenced, we can safely
+invoke functions on nodes that have not yet entered an IN_NOSYNC
+collective.
+
+To ensure that these handles are instantiated on all nodes prior to
+their use, the creation of these handles must be collective.  We
+envision the set of client-provided functions as those defined by some
+language or library specification.  Therefore registration is static,
+performed in the gasnet_coll_init() call.  These handles are "global".
+Once registered on a given node, the same handle can be used by any
+thread on that node and can be safely passed between nodes.
+
+The same handle table is used for the functions passed to reduction,
+and prefix reduction collectives.  This is possible because the
+reduction and prefix reduction take functions with the same signature.
+
+Some functions are safe to call from an AM handler context while
+others are not.  Some reduction functions are commutative while others
+may not be.  Both of these properties are considered to be features of
+the functions, rather than the collective calls in which they
+are used.  Therefore there are flags to the registration of a function.
+The corresponding flags are GASNET_COLL_AMSAFE and
+GASNET_COLL_NONCOMM.
+
+Unlike the registration of AM handlers, we are not permitting the
+client to specify independent handle values.  The handles are simply the position
+of each function in the handler table, and are not explicitly returned
+from the registration operation.
+
+To implement application-provided functions requires a level of
+indirection.  Because one cannot typically know how many distinct
+functions will be invoked, the GASNet-client will need to manage a
+table.  If one imagines keeping a simple FIFO or LRU cache of the
+application-provided functions, then an index into that cache can be
+used as the single-valued argument to the GASNet collective.  Ensuring
+that the cache entry is set correctly on all nodes before first use
+can be as simple as promoting IN_NOSYNC to IN_MYSYNC for any
+collective call which references a newly installed entry.  Note that
+in this scenario the GASNet-client will also need to track in-flight
+collectives that use app-provided functions to ensure that a cache
+entry is never evicted while in use (unbounded tables would eliminate
+eviction, but may still be undesirable). Once GASNet and UPC grow 
+real teams, this client table will likely need to be managed per-team.
+
+
+* OPEN ISSUE: Teams
+
+We need a representation for a team.  Once constructed, we want a team
+to be an immutable object.  Thus an opaque handle of some sort is
+appropriate.  We will need an unambiguous way for the implementation
+to refer to the teams on the wire.  Therefore we anticipate providing
+handles which will have the same bitwise representation across all
+team members. (Note that this does not prevent the same bitwise value
+from simultaneously denoting another team with a disjoint node
+membership; a property that allows the id to be generated by a
+reduction over the member nodes if desired.) Either way, we need to be
+clear about what guarantees (if any) are provided to the client regarding the
+team handles - specifically, can they safely be passed across threads and/or
+nodes, and can they be compared for equality to test team equality.
+
+We can imagine needing to access a team in at least three different
+ways.  The simplest is to ask "does image I belong to team T?"  With a
+vector of image numbers we can perform this test in O(|T|) time, or in
+O(log(|T|)) if the vector is sorted.  If we have a bitmap
+representation then we can perform the is_member() test in O(1) time.
+
+Another is a potential need to iterate over the members of a team.
+For a team with |T| << P, we'd like to perform the iteration in
+O(|T|).  The image vector implementation allows for a O(|T|)
+implementation of iteration (total time for all |T| iterations).
+
+We may also need a mapping between global image number and a "rank"
+within a team.  The image-vector representation makes the rank->image
+mapping trivial.  The inverse mapping will require either O(I)
+additional storage to perform the mapping in O(1) time, or could be
+done by binary search within the image vector on O(log(|T|)) time.
+
+By using an opaque identifier for teams, we can internally keep both
+the image vector representation and a bitmap (and the image->rank
+mapping array if desired).
+
+
+//===========================================================================
+END OF OPEN ISSUES
+START OF CURRENT PROPOSAL
+//===========================================================================
+
+There are two flavors of interface to each collective.  The simple
+addressing case moves an equal amount of contiguous data to or from
+each node, with the exception of the root node in the asymmetric
+collectives (broadcast, scatter and gather).  This type of interface
+takes a single src address and a single dst address.  This is suitable
+for the case of UPC collectives with aligned segments (and a single
+UPC thread per node or hierarchical movement of data for multiple
+threads), and also suitable for Titanium-style collectives in which
+each node may have a distinct source or destination, but lacks
+knowledge of the other addresses.
+
+The second flavor is the multiple-address interfaces, having an "m"
+suffix.  Like the gasnet_{get,put}i() family of interfaces, the
+multiple-address interfaces take lists of sources and destinations.
+This allows for the cases not covered by the basic interface.  If a
+UPC runtime has unaligned segments, then the list could specify
+exactly one address per node with the freedom for them to differ.  If
+there are multiple UPC or Titanium threads in the address space of a
+single GASNet node, then the lists could provide multiple addresses
+per node to avoid the need for hierarchical movement of data.  Note
+that this interface is designed for a static number of images, such as
+one per language-level thread, and not for varying the size of the
+contribution from each node dynamically.
+
+Common to all these interfaces is the presence of either
+GASNET_COLL_LOCAL or GASNET_COLL_SINGLE in the flags argument.  In the
+SINGLE case we have UPC-style arguments in which the addresses are
+known (and thus passed in) on all nodes.  In the LOCAL case we have
+Titanium-style arguments in which only the local addresses are known,
+and passed in.
+
+Note that when SINGLE is given, then all arguments are "single valued"
+providing identical information on all nodes (for arrays the contents
+of the arrays must be identical, not their addresses).  When LOCAL is
+given the address arguments may differ among the nodes while all
+remaining arguments are "single valued".  For instance the nodes must
+all agree on the "root" of a broadcast, scatter or gather, even though
+only the root node will provided its address.  Of course all nodes
+must agree on the nbytes and the flags.  Operation of any collective
+in which the arguments fail to agree as required will be undefined.
+In the event of such a user error, high-quality implementations are
+encouraged to issue an explanatory fatal error message if debugging
+is enabled or if checking for agreement does not require additional
+communication.
+
+For the multiple-address interfaces, there is additional metadata
+required to indicate how many images exist on each node.  Since these
+interfaces are designed for this metadata to be static, it is provided
+exactly once, through the gasnet_coll_init() function.  This function
+must be called by clients before they may invoke any other gasnet_coll_*
+function (even if they never use the multiple-address interfaces).  It
+is therefore a collective operation, called by all nodes in the same
+order (always first) among collectives.  It is also subject to the
+constraint that the arguments agree across nodes.  Unlike other
+collectives the _init call MUST be made collectively by every thread
+on a node.
+This is a blocking call.  This function may be called at most
+once by each thread and may only be called between gasnet_attach() and
+gasnet_exit().
+
+The 'images' argument to gasnet_coll_init() is an array of gasnet_image_t's,
+having exactly gasnet_nodes() elements.  The ith element of this array
+indicates the number of images present on node i.  Images are
+analogous to language-level threads in all the clients we envision,
+but this need not be the case.  The images are always given in
+"node-major" order, meaning that the blocks of data in a gather
+operation (for instance) include all the images from node 0, followed
+by all the images from node 1, etc. (consistent with the default
+thread layout of all the runtimes we examined).  All elements of the
+'images' array must be non-zero.  For use in the descriptions that
+follow, define NImages := SUM(i=0..gasnet_nodes(), images[i]).
+NImages must be less than or equal to SSIZE_MAX (as defined by POSIX).
+A NULL pointer for the 'images' argument indicates a single image
+per GASNet node.  In a GASNET_SEQ configuration, 'images' must be NULL.
+
+If 'images' is not NULL, then 'my_image' argument to gasnet_coll_init()
+gives the image number of the calling thread.  Otherwise it is ignored.
+
+There is a 'flag' value of GASNET_COLL_AGGREGATE which can be used to
+request that consecutive non-blocking collective initiation calls be
+aggregated into a single collective operation with a single handle.
+It is illegal to pass GASNET_COLL_AGGREGATE to a blocking collective
+initiation call.
+
+To simplify the definitions, we'll consider a single collective to be
+a trivial one-element aggregate.  A collective initiation call is the
+First member of an aggregate if either the previous collective
+initiation call for the current team did not have GASNET_COLL_AGGREGATE in the
+'flags', or if it is the first collective initiation call for the current team.
+A collective initiation call is the Last member of an aggregate if it does not
+have GASNET_COLL_AGGREGATE in the 'flags'.
+
+With these definitions, a sequence of initiation calls all without the
+GASNET_COLL_AGGREGATE flag are each trivially the First and Last
+members of their own aggregates and each has a distinct handle.  A
+sequence of initiation calls on a given team with the GASNET_COLL_AGGREGATE
+flag set form a multiple-member aggregate, together with the first following
+call without GASNET_COLL_AGGREGATE.
+
+Use of aggregation is semantically equivalent to what an nbi access region
+does for gets and puts.  Specifically, aggregation of a series of calls
+does not provide any semantics that are not provided by the same sequence
+of calls and gasnet_coll_wait_sync_all() or gasnet_coll_try_sync_all().
+If the inputs of one operation overlap the outputs of another in the
+aggregate then the result is undefined, just as in the absence of
+aggregation.  Furthermore, as all of the members of an aggregate by
+definition are in-flight for overlapping time intervals, the
+synchronization flags do not enforce synchronization between operations
+within an aggregate - only between each individual collective operation and
+surrounding, non-overlapping activities.
+
+The handle returned by any collective initiation call with
+GASNET_COLL_AGGREGATE in the flags is undefined.  If a client attempts
+to sync on a handle returned by such a call then the behavior is
+undefined.  If the Last member of an aggregate is a non-blocking
+initiation call, then it will return a valid handle, successful
+synchronization of which indicates that all members of the aggregate
+have completed to the extent required by their synchronization flags.
+If the Last member of an aggregate is a blocking call then it will not
+return until all members of the aggregate have completed to the extent
+required by their synchronization flags.
+
+GASNet non-blocking collectives have bulk data lifetime semantics
+regardless of the use of aggregation.  The lifetime of any given
+buffer starts with the initiation call describing that buffer, and is
+not deferred until the Last member of the aggregate.
+
+It is permitted to make other GASNet calls between the First and Last
+calls of an aggregate, excepting those calls that would be prohibited
+even in the absence of aggregation, such as the gasnet_barrier_*
+calls.  However, since some implementations of aggregation may delay
+the start of communication until the Last member is seen, use of any
+potentially time-consuming operations between the First and Last
+collective initiation calls is discouraged.
+
+Note to implementers:
+The description above allows for an implementation which does nothing
+but aggregate the handles in the spirit of an nbi access region,
+starting communications just as it would in the absence of
+aggregation.
+
+
+* PROTOTYPES:
+
+typedef void (*gasnet_coll_fn_t)();
+
+typedef struct {
+    gasnet_coll_fn_t		fnptr;
+    unsigned int		flags;
+} gasnet_coll_fn_entry_t;
+
+/* gasnet_coll_init: Initialize GASNet collectives
+ *
+ *  images:	Array of gasnet_nodes() elements giving the number of
+ *		images present on each node.  This must have the
+ *		same contents on all callers or the behavior is undefined.
+ *		If NULL, then there is one image per node.
+ *		In GASNET_SEQ mode, NULL is the only legal value.
+ *  my_image:   If 'images' is non-NULL, this gives the image number of
+ *		the calling thread.  These image numbers are zero-based,
+ *		always assigning image 0 to node 0.  Image numbers on a
+ *		given node are consecutive, and increase as node numbers
+ *		increase.
+ *  fn_tbl:	An array of type gasnet_coll_fn_entry_t, specifying
+ *		the functions which can be invoked for the
+ *		computational collectives.  This may safely differ
+ *		in fnptr contents (but not flags or size) across nodes,
+ *		but must agree across all images on a given node.
+ *		Multiple images on the same node may safely pass the
+ *		same pointer value, but this is not required.
+ *		The client may safely reuse the associated memory after
+ *		this call has returned (in all local images if the same
+ *		pointer was used across them).
+ *  fn_count:	The number of entries in 'fn_tbl'.  Must agree across
+ *		all callers or the behavior is undefined.
+ *  init_flags:	Presently unused.  Must be 0.
+ */
+void
+gasnet_coll_init(const gasnet_image_t images[], gasnet_image_t my_image,
+                 const gasnet_coll_fn_entry_t fn_tbl[], size_t fn_count,
+                 int init_flags);
+
+
+/* Argument conventions for data movement collectives:
+ * In the prototypes that follow the argument names are used
+ * consistently, so the following definitions apply to all arguments
+ * with the given name:
+ *
+ * team: Team handle
+ *	This argument is an opaque handle of type gasnet_team_handle_t.
+ *	This provides for an extension of the GASNet collectives to
+ *	support teams.  Presently this argument must have the value
+ *	GASNET_TEAM_ALL.
+ * flags: Flags
+ * 	The value of this argument must be equal across all callers or
+ *	the behavior is undefined.
+ *	This argument supplies flags which determine how the operation
+ *	will be performed.  This includes information about the
+ *	synchronization required and the scope of addresses.
+ *	Input synchronization flags are:
+ *	+ GASNET_COLL_IN_NOSYNC: All data movement may begin on any
+ *	  GASNet node as soon as any caller has entered the collective
+ *	  initiation function.
+ *	+ GASNET_COLL_IN_MYSYNC: Data movement in or out of the client memory
+ *	  of a given image may begin no earlier than the entry to
+ *	  the collective initiation function by that image.
+ *	+ GASNET_COLL_IN_ALLSYNC: Data movement may begin only when
+ *        all participating images have entered the collective 
+ *        initiation function.
+ *	Output synchronization flags are:
+ *	+ GASNET_COLL_OUT_NOSYNC: The sync of a collective handle may
+ *	  succeed at any time so long as the last thread to sync does
+ *	  not do so until all data movement has completed.
+ *	+ GASNET_COLL_OUT_MYSYNC: The sync of a collective handle may
+ *	  succeed as soon as all data movement has completed to and from
+ *	  local client data areas specified in the call (note that movement to
+ *	  or from buffers internal to the implementation and local to the
+ *	  node might still be taking place, for instance in tree-based
+ *	  broadcasts).
+ *	+ GASNET_COLL_OUT_ALLSYNC: The sync of a collective handle may
+ *	  succeed as soon as all data movement has completed to and from
+ *	  all client data areas specified in the call.  This is weaker than a
+ *	  full barrier.  For instance, the equivalent of a zero-byte
+ *	  broadcast is sufficient synchronization in the case of a rooted
+ *	  operation (broadcast, scatter and gather).
+ *	Addressing scope flags are:
+ *	+ GASNET_COLL_SINGLE: This indicates UPC-type addressing
+ *	  in which every caller provides addresses for the source(s) and
+ *	  destination(s) on all participating images, and these arguments
+ *	  agree.
+ *	+ GASNET_COLL_LOCAL: This indicates Titanium-type addressing
+ *	  in which each caller provides only the local address(es).
+ *      Defaults:
+ *	There are no default values for these three categories of flags.
+ *	The client must provide exactly one flag value from each of the
+ *	three categories above.
+ *	Aggregation:
+ *	If present, the flag GASNET_COLL_AGGREGATE indicates that a
+ *	sequence of non-blocking collective initiation calls should be
+ *	aggregated together into a operation with a single handle.
+ *	GASNet Segment:
+ *	+ GASNET_COLL_DST_IN_SEGMENT: If present, this bit is an assertion
+ *        by the client that the destination address argument(s) to this
+ *        collective operation lie in the GASNet segment.
+ *	+ GASNET_COLL_SRC_IN_SEGMENT: If present, this bit is an assertion
+ *        by the client that the source address argument(s) to this
+ *        collective operation lie in the GASNet segment.
+ *
+ * nbytes: Byte count
+ *	This is the number of bytes to be transfered per source block.
+ *      The value must be greater than zero.
+ *      The value of this argument must be equal across all callers or
+ *	the behavior is undefined.
+ *
+ * {dst,src}image: Destination/Source image.
+ *      This argument specifies the root image of an asymmetric collective
+ *	operation: Broadcast, Scatter or Gather.
+ * 	The value of this argument must be equal across all callers or
+ *	the behavior is undefined.  In a GASNET_SEQ configuration, the
+ *	image number is identical to a node number.  Otherwise, the
+ *	image numbering is the one established by the 'my_image' arguments
+ *	to gasnet_coll_init().
+ *
+ * {dst,src}: Destination (Source) address.
+ *	For Broadcast and Scatter the source address is only applicable
+ *	to the root image/node.  For the Gather operation the destination
+ *	address is only applicable to the root image/node.  For the remaining
+ *	operations both destination and source apply on all images.
+ *
+ * 	In the SINGLE case this argument is given an identical value
+ *	by all callers.  This value is used as the destination (source)
+ *	address on all images where the argument is applicable.  Where a
+ *	given argument is not applicable to the given image the identical
+ *	value must still be provided.
+ *
+ *	In the LOCAL case this argument may be passed independent values
+ *	by each caller.  Each caller's value is used as it's destination
+ *	(source) address where applicable.  Where a given argument is
+ *	not applicable to the given caller the argument is ignored.
+ *
+ * {dst,src}list: Destination (Source) address list.
+ * 	In the SINGLE case this argument is an array of NImages addresses.
+ *	The contents of this array must be identical across all callers.
+ *	The ith address is used as the destination (source) address of the
+ *	ith image.  The correspondence between images and GASNet nodes is
+ *	the one given by the gasnet_coll_init() call.
+ *
+ *	In the LOCAL case this argument may be passed independent values
+ *	on each node.  On node i, this argument is an array of images[i]
+ *	local addresses, where images[] is the argument passed to
+ *	gasnet_coll_init().
+ *
+ *  If the arguments to a multiple-address interface specify data
+ *  movement involving two blocks from images coexisting on a 
+ *  single node such that the blocks actually overlap in memory,
+ *  the behavior is undefined (even if both are source blocks).
+ *  Except where otherwise noted, if any of the source areas overlap
+ *  any of the destination areas, the behavior is undefined.
+ *
+ *  The following are the explicit exceptions to the above rule concerning
+ *  overlap of source and destination areas, where "identical" means
+ *  having the same values of node, address and length.  They have in common
+ *  that omitting a copy between matching source and destination blocks
+ *  would still result in correct results.
+ *  + Broadcast:
+ *    The source block may legally be identical to any one of the
+ *    destination blocks.
+ *  + Scatter, Gather, Gather_all and Exchange:
+ *    The i'th block of the source may legally be identical to the
+ *    i'th block of the destination.
+ *  + Exchange
+ *    There are no exceptions for the exchange operation.
+ */
+
+gasnet_coll_handle_t gasnet_coll_broadcast_nb(
+	gasnet_team_handle_t team,
+	void *dst,
+	gasnet_image_t srcimage, void *src,
+	size_t nbytes, int flags);
+gasnet_coll_handle_t gasnet_coll_broadcastm_nb(
+	gasnet_team_handle_t team,
+	void * const dstlist[],
+	gasnet_image_t srcimage, void * src,
+	size_t nbytes, int flags);
+void gasnet_coll_broadcast(
+	gasnet_team_handle_t team,
+	void *dst,
+	gasnet_image_t srcimage, void *src,
+	size_t nbytes, int flags);
+void gasnet_coll_broadcastm(
+	gasnet_team_handle_t team,
+	void * const dstlist[],
+	gasnet_image_t srcimage, void * src,
+	size_t nbytes, int flags);
+
+gasnet_coll_handle_t gasnet_coll_scatter_nb(
+	gasnet_team_handle_t team,
+	void *dst,
+	gasnet_image_t srcimage, void *src,
+	size_t nbytes, int flags);
+gasnet_coll_handle_t gasnet_coll_scatterm_nb(
+	gasnet_team_handle_t team,
+	void * const dstlist[],
+	gasnet_image_t srcimage, void * src,
+	size_t nbytes, int flags);
+void gasnet_coll_scatter(
+	gasnet_team_handle_t team,
+	void *dst,
+	gasnet_image_t srcimage, void *src,
+	size_t nbytes, int flags);
+void gasnet_coll_scatterm(
+	gasnet_team_handle_t team,
+	void * const dstlist[],
+	gasnet_image_t srcimage, void * src,
+	size_t nbytes, int flags);
+
+gasnet_coll_handle_t gasnet_coll_gather_nb(
+	gasnet_team_handle_t team,
+	gasnet_image_t dstimage, void *dst,
+	void *src,
+	size_t nbytes, int flags);
+gasnet_coll_handle_t gasnet_coll_gatherm_nb(
+	gasnet_team_handle_t team,
+	gasnet_image_t dstimage, void * dst,
+	void * const srclist[],
+	size_t nbytes, int flags);
+void gasnet_coll_gather(
+	gasnet_team_handle_t team,
+	gasnet_image_t dstimage, void *dst,
+	void *src,
+	size_t nbytes, int flags);
+void gasnet_coll_gatherm(
+	gasnet_team_handle_t team,
+	gasnet_image_t dstimage, void * dst,
+	void * const srclist[],
+	size_t nbytes, int flags);
+
+gasnet_coll_handle_t gasnet_coll_gather_all_nb(
+	gasnet_team_handle_t team,
+	void *dst, void *src,
+	size_t nbytes, int flags);
+gasnet_coll_handle_t gasnet_coll_gather_allm_nb(
+	gasnet_team_handle_t team,
+	void * const dstlist[], void * const srclist[],
+	size_t nbytes, int flags);
+void gasnet_coll_gather_all(
+	gasnet_team_handle_t team,
+	void *dst, void *src,
+	size_t nbytes, int flags);
+void gasnet_coll_gather_allm(
+	gasnet_team_handle_t team,
+	void * const dstlist[], void * const srclist[],
+	size_t nbytes, int flags);
+
+gasnet_coll_handle_t gasnet_coll_exchange_nb(
+	gasnet_team_handle_t team,
+	void *dst, void *src,
+	size_t nbytes, int flags);
+gasnet_coll_handle_t gasnet_coll_exchangem_nb(
+	gasnet_team_handle_t team,
+	void * const dstlist[], void * const srclist[],
+	size_t nbytes, int flags);
+void gasnet_coll_exchange(
+	gasnet_team_handle_t team,
+	void *dst, void *src,
+	size_t nbytes, int flags);
+void gasnet_coll_exchangem(
+	gasnet_team_handle_t team,
+	void * const dstlist[], void * const srclist[],
+	size_t nbytes, int flags);
+
+
+/* Argument conventions for computation collectives:
+ * In the prototypes that follow the argument names are used
+ * consistently, so the following definitions apply to all arguments
+ * with the given name except for the destination arguments as noted:
+ *
+ * Destination arguments for Reduction
+ *   The result of a reduction is a single data element of the size
+ *   given by the 'elem_size' argument.
+ * dstimage: Destination Image
+ *	This argument gives the destination image for a reduction.  The
+ *	value of this argument must be equal across all callers or the
+ *	behavior is undefined.  In a GASNET_SEQ configuration, the
+ *	image number is identical to a node number.  Otherwise, the
+ *	image numbering is the one established by the 'my_image' arguments
+ *	to gasnet_coll_init().
+ * dst: Destination Address
+ *	This argument gives the address at which the result will be
+ *	placed on the destination image/node.  For GASNET_COLL_LOCAL the
+ *	'dst' address is ignored on all callers except the destination
+ *	image/node.  For GASNET_COLL_SINGLE the value of this argument
+ *	must be equal across all callers or the behavior is undefined.
+ *
+ * Destination arguments for Scan (Prefix Reduction)
+ *   The result of a prefix reduction is an array of 'elem_count'
+ *   elements, each of the size given by the 'elem_size' argument.
+ * dst, dst_blksz, dst_offset: Destination (prefix_reduce)
+ *	These arguments give the address or addresses of the destination
+ *	array for the single-address interfaces.  See the descriptions
+ *	of the arguments 'src', 'src_blksz' and 'src_offset' for the
+ *	interpretation of this triplet as a specification of a
+ *	distributed array.
+ * dstlist, dst_blksz, dst_offset: Destination address(es) (prefix_reducem)
+ *	These arguments give the address or addresses of the destination
+ *	array for the multiple-address interfaces.  See the descriptions
+ *	of the arguments 'srclist', 'src_blksz' and 'src_offset' for the
+ *	interpretation of this triplet as a specification of a
+ *	distributed array.
+ *
+ * * Common Arguments
+ * team: Team handle
+ *	This argument is an opaque handle of type gasnet_team_handle_t.
+ *	This provides for an extension of the GASNet collectives to
+ *	support teams.  Presently this argument must have the value
+ *	GASNET_TEAM_ALL.
+ * src: Source address(es)
+ *	This argument gives the address or addresses of the source
+ *	array for the single-address interfaces.  The array holds
+ *	'elem_count' data items, each of size 'elem_size' bytes.  The
+ *	layout of elements across the images depend on additional
+ *	arguments.  When 'src_blksz' is zero, we have indefinite
+ *	layout and all 'elem_count' data elements reside on a single
+ *	image, given by 'src_offset'.  When 'src_blksz' is non-zero,
+ *	the data has a block-cyclic layout consisting of at least
+ *	('elem_count'+'src_offset') elements with a block size of
+ *	'src_blksz' elements per block.
+ *	When GASNET_COLL_SINGLE is included in the 'flags' argument,
+ *	the same value must be passed by all callers, and is used as the
+ *	starting address of the array on all nodes (when 'src_blksz'
+ *	is non-zero) or exactly one node (when 'src_blksz' is zero).
+ *	When GASNET_COLL_LOCAL is included in the 'flags' argument,
+ *	the value passed by each caller is independent and provides only
+ *	the address of the array on the given image.
+ * srclist: Source address(es)
+ *	This argument replaces 'src' for use in the multiple-address
+ *	interfaces.  When GASNET_COLL_SINGLE is included in the
+ *	'flags' argument, this argument is an array of NImages
+ *	addresses, which must be identical across all callers.  The ith
+ *	address is used as the address of the ith image, where the
+ *	correspondence between images and GASNet nodes is the one
+ *	given by the gasnet_coll_init() call.  In the LOCAL case this
+ *	argument may be passed independent values by each caller and on
+ *	node i, is an array of images[i] local addresses, where
+ *	images[] is the argument passed to gasnet_coll_init().
+ * src_blksz: Source blocksize
+ *	This argument gives the blocksize of the data layout for the
+ *	array.  When equal to zero, 'src_blksz' denotes indefinite
+ *	layout and 'src_offset' gives the index of the corresponding
+ *	node or image.  Otherwise, this is the blocksize, in units of
+ *	elements ('elem_size' bytes), of a block-cyclic layout.  The
+ *	value of this argument must be equal across all callers or the
+ *	behavior is undefined.
+ * src_offset: Source offset
+ *	This argument gives the offset to the first data element,
+ *	relative to the base of the distributed array defined by the
+ *	'src' or 'srclist' and 'src_blksz' arguments.  When
+ *	'src_blksz' is zero the offset is in units of images, and
+ *	gives the index of the image holding the data.  For the
+ *	single-address interfaces images are synonymous with nodes,
+ *	while for the multiple-address interfaces the node/image
+ *	correspondence is that given by the gasnet_coll_init() call.
+ *	When 'src_blksz' is non-zero the offset is in units of data
+ *	elements ('elem_size' bytes) and follows the ordering of the
+ *	block-cyclic layout.  The value of this argument must be equal
+ *	across all callers or the behavior is undefined.
+ *      Except where otherwise noted, if any of the source areas overlap any of
+ *      the destination areas, the behavior is undefined.
+ *      If the arguments to a multiple-address interface specify data
+ *      movement involving two blocks from images coexisting on a 
+ *      single node such that the blocks actually overlap in memory,
+ *      the behavior is undefined (even if both are source blocks).
+ * elem_size: Element size
+ *	This argument gives the size, in bytes, of the data elements
+ *	to be reduced, and must be equal across all callers or the
+ *	behavior is undefined.
+ * elem_count: Element count
+ *	This argument gives the number of elements to be reduced, and
+ *	must be equal across all callers or the behavior is undefined.
+ * func, func_arg: Reduction function and argument
+ *	These arguments define the client-provided function which will
+ *	perform the reduction or prefix reduction and its one client-
+ *	provided argument.  The 'func' argument is an integer index
+ *	into the fn_tbl table passed to gasnet_coll_init().
+ *	Both arguments must have uniform values across all callers or
+ *	the behavior is undefined.  Passing of pointers in 'func_arg'
+ *	is unsafe both because a pointer may be larger than an int,
+ *	and because the single-valued constraint may not be
+ *	satisfiable for pointers on some platforms.
+ * flags: Flags argument
+ *	The value of this argument must be equal across all callers or
+ *	the behavior is undefined.  This argument gives a bitwise OR
+ *	of flags which determine how the operation will be performed
+ *	The folowwing flags are identical to those defined above for
+ *	the data movement collectives:
+ *	+ GASNET_COLL_{IN,OUT}_{NO,MY,ALL}SYNC
+ *	+ GASNET_COLL_{SINGLE,LOCAL}
+ *	+ GASNET_COLL_AGGREGATE
+ *	+ GASNET_COLL_{DST,SRC}_IN_SEGMENT
+ *	Additionally, every scan operation must include exactly one of
+ *	GASNET_COLL_INCLUSIVE_SCAN or GASNET_COLL_EXCLUSIVE_SCAN:
+ *	+ GASNET_COLL_INCLUSIVE_SCAN indicates that element i of the
+ *	  result is the generalized sum over input elements 0 though i.
+ *	+ GASNET_COLL_EXCLUSIVE_SCAN indicates that element i of the
+ *	  result is the generalized sum over input elements 0 though i-1,
+ *	  leaving element 0 of the output undefined.
+ *	There is no default for the scan type.
+ */
+
+gasnet_coll_handle_t gasnet_coll_reduce_nb(
+	gasnet_team_handle_t team,
+	gasnet_image_t dstimage, void *dst,
+	void *src, size_t src_blksz, size_t src_offset,
+	size_t elem_size, size_t elem_count,
+	gasnet_coll_fn_handle_t func, int func_arg, int flags);	
+gasnet_coll_handle_t gasnet_coll_reducem_nb(
+	gasnet_team_handle_t team,
+	gasnet_image_t dstimage, void *dst,
+	void * const srclist[], size_t src_blksz, size_t src_offset,
+	size_t elem_size, size_t elem_count,
+	gasnet_coll_fn_handle_t func, int func_arg, int flags);
+void gasnet_coll_reduce(
+	gasnet_team_handle_t team,
+	gasnet_image_t dstimage, void *dst,
+	void *src, size_t src_blksz, size_t src_offset,
+	size_t elem_size, size_t elem_count,
+	gasnet_coll_fn_handle_t func, int func_arg, int flags);	
+void gasnet_coll_reducem(
+	gasnet_team_handle_t team,
+	gasnet_image_t dstimage, void *dst,
+	void * const srclist[], size_t src_blksz, size_t src_offset,
+	size_t elem_size, size_t elem_count,
+	gasnet_coll_fn_handle_t func, int func_arg, int flags);
+
+gasnet_coll_handle_t gasnet_coll_scan_nb(
+	gasnet_team_handle_t team,
+	void *dst, size_t dst_blksz, size_t dst_offset,
+	void *src, size_t src_blksz, size_t src_offset,
+	size_t elem_size, size_t elem_count,
+	gasnet_coll_fn_handle_t func, int func_arg, int flags);	
+gasnet_coll_handle_t gasnet_coll_scanm_nb(
+	gasnet_team_handle_t team,
+	void * const dstlist[], size_t dst_blksz, size_t dst_offset,
+	void * const srclist[], size_t src_blksz, size_t src_offset,
+	size_t elem_size, size_t elem_count,
+	gasnet_coll_fn_handle_t func, int func_arg, int flags);	
+void gasnet_coll_scan(
+	gasnet_team_handle_t team,
+	void *dst, size_t dst_blksz, size_t dst_offset,
+	void *src, size_t src_blksz, size_t src_offset,
+	size_t elem_size, size_t elem_count,
+	gasnet_coll_fn_handle_t func, int func_arg, int flags);	
+void gasnet_coll_scanm(
+	gasnet_team_handle_t team,
+	void * const dstlist[], size_t dst_blksz, size_t dst_offset,
+	void * const srclist[], size_t src_blksz, size_t src_offset,
+	size_t elem_size, size_t elem_count,
+	gasnet_coll_fn_handle_t func, int func_arg, int flags);	
+
+//===========================================================================
+END OF CURRENT PROPOSAL
+START OF IMPLEMENTATION NOTES
+//===========================================================================
+* Thoughts on progress of implementation:
+
+While not part of the GASNet spec for users, it is important that we
+have a good design for how the reference implementation will interact
+with the individual conduits.  In particular I see at least three ways
+in which a conduit would wish to make progress on collectives:
+
+1) Simple polling, for instance from gasnet_AMPoll().  This would be
+   what we include in template-conduit as well as pure-polling
+   implementations such as mpi-conduit.
+2) Blocked thread.  A conduit may wish to create an extra thread just
+   for the purpose of making progress on collectives.  For this reason
+   it would be nice to have something like a condition variable on
+   which such a thread could block until there was something to do.
+3) Interrupts.  A conduit such as LAPI may be able to switch to a
+   different operating mode in which the application is interrupted
+   when network traffic arrives.  This would make it more responsive
+   to the network for the purpose of advancing a collective operation
+   but the added overhead is not desirable for normal operation.  So,
+   one might wish to enter interrupt mode when one or more
+   collectives are "live" and return to polled mode when none are
+   live.
+
+There is similarity between #2 and #3 that argues for a general
+approach that they can each plug into.  In fact, #1 can be implemented
+over the same generalization as a part of the template-conduit.
+
+The general solution is to have hooks (provided by the conduit) which
+are called at each entry to a collective initiation function and when
+the collective is completed (probably in the "kick" function called by
+gasnete_poll()).
+
+/* Routine to make progress on collectives (if any): */
+extern void gasnete_poll(void);
+
+/* Conduit-specific hooks for counting live collectives: */
+extern void gasnete_collective_entry_hook(void);
+extern void gasnete_collective_leave_hook(void);
+
+
+Here are versions of all three designs (not guaranteed to compile). I
+would put these all into the template-conduit:
+
+1) Simple polling:
+
+
+Implement the following in gasnet_extended_fwd.h:
+
+extern gasneti_atomic_t gasnetc_collective_count;
+
+GASNETI_INLINE(gasnete_collective_entry_hook)
+void gasnete_collective_entry_hook(void)
+{
+  gasneti_atomic_increment(&gasnetc_collective_count);
+}
+
+GASNETI_INLINE(gasnete_collective_leave_hook)
+void gasnete_collective_leave_hook(void)
+{
+  gasneti_atomic_decrement(&gasnetc_collective_count);
+}
+
+#define GASNETE_POLL_IF_NEEDED() \
+  if_pf (gasneti_atomic_read(&gasnetc_collective_count) != 0) \
+    { gasnete_poll(); }
+
+In the core, one would then call GASNETE_POLL_IF_NEEDED() in
+gasnetc_poll(), at least in template-conduit, and perhaps at other
+places where it could be helpful (such as right after an AM handler is
+run).
+
+
+2) Blocking thread:
+
+To do this we just need to add a little to the case above.  Note that
+we are about to add condition variables to gasnet.  They should be a
+natural wrapper around pthread condition variables, taking a hsl in
+place of a pthread mutex.  Note also that a handler may NEVER wait on a
+condition variable, only signal it.  Prototypes for gasneti_cond*
+appear in the next section.
+
+Implement the following in gasnet_extended_fwd.h:
+
+extern gasneti_atomic_t gasnetc_collective_count;
+extern gasnet_hsl_t gasnetc_collective_hsl;
+extern gasneti_cond_t gasnetc_collective_cond;
+
+GASNETI_INLINE(gasnete_collective_entry_hook)
+void gasnete_collective_entry_hook(void)
+{
+  gasneti_atomic_increment(&gasnetc_collective_count);
+  gasneti_assert(gasneti_atomic_read(&gasnetc_collective_count) >= 1);
+  gasnet_hsl_lock(&gasnetc_collective_hsl);
+  gasneti_cond_signal(&gasnetc_collective_cond);
+  gasnet_hsl_unlock(&gasnetc_collective_hsl);
+}
+
+GASNETI_INLINE(gasnete_collective_leave_hook)
+void gasnete_collective_leave_hook(void)
+{
+  gasneti_atomic_decrement(&gasnetc_collective_count);
+}
+
+In the core, the thread would use something such as:
+
+void gasnetc_collective_poll_thread(void)
+{
+  while (!EXITING()) {
+    /* Note the "outer" test to reduce lock traffic.
+     * In a race this can only cause extra calls to gasnete_poll().
+     * Such extra calls are safe, but missing a wakeup is not.
+     */
+    if (gasneti_atomic_read(&gasnetc_collective_count) == 0) {
+      while (!EXITING() && gasneti_atomic_read(&gasnetc_collective_count) == 0) {
+         gasnet_hsl_lock(&gasnetc_collective_hsl);
+         gasneti_cond_wait(&gasnetc_collective_cond, &gasnetc_collective_hsl);
+         gasnet_hsl_unlock(&gasnetc_collective_hsl);
+      }
+    }
+
+    if_pt (!EXITING()) {
+      gasnete_poll();
+    }
+
+    // TODO: need a throttling mechanism here so that this thread
+    // doesn't starve the working threads (which it may be waiting on) 
+    // for CPU and lock resources
+  }
+
+  gasnetc_exit(0);
+}
+
+
+3) Interrupt mode
+
+Implement the following in gasnet_extended_fwd.h:
+
+extern unsigned gasnetc_collective_count;
+extern gasnet_hsl_t gasnetc_collective_hsl;
+
+GASNETI_INLINE(gasnete_collective_entry_hook)
+void gasnete_collective_entry_hook(void)
+{
+  gasnet_hsl_lock(&gasnetc_collective_hsl);
+  gasnetc_collective_count++;
+  if (gasnetc_collective_count == 1) {
+    ENTER_INTERRUPT_MODE();
+  }
+  gasnet_hsl_unlock(&gasnetc_collective_hsl);
+}
+
+GASNETI_INLINE(gasnete_collective_leave_hook)
+void gasnete_collective_leave_hook(void)
+{
+  gasnet_hsl_lock(&gasnetc_collective_hsl);
+  gasnetc_collective_count--;
+  if (gasnetc_collective_count == 0) {
+    LEAVE_INTERRUPT_MODE();
+  }
+  gasnet_hsl_unlock(&gasnetc_collective_hsl);
+}
+
+
+
+
+It might be tempting to merge the common ideas in #2 and #3 in to an
+"edge triggered" pair of hooks, one called on the 0->1 transition and
+the other on the 1->0 transition.  However, this would not work very
+cleanly with the condition variable unless the hsl used to trigger the
+hooks was exposed for use in the waiting thread.  I dislike that as an
+unclear interface, and the code duplicated between #2 and #3 is too
+small to justify such a design.
+
+
+Regardless of implementation, it is important that any thread that may
+have initiated RDMA or subordinate collectives continue to call
+gasnete_poll()/gasnete_coll_poll() to ensure the corresponding handles
+are synced to allow progress (and prevent a resource leak).  To ensure
+this, once a conduit-interal thread calls gasnete_poll(), it must continue
+to do so until there are no collectives in-flight (since we don't presently
+expose any "this thread has unsynced handles inside the collectives").
+This is true not only of any thread dedicated to collectives, but of ALL
+conduit-internal threads.  If a conduit-internal thread normally would
+go to sleep (such as the vapi AM recv thread that blocks until an AM
+arrival), then it must either
+ 1) Never enter the collective progress engine
+or
+ 2) Enter the collective progress engine, but disable the blocking/sleeping
+    behavior until there are no collectives in-flight.
+
+
+//===========================================================================
+* Notes on (non-)commutative (prefix) reduction operators.
+
+Imagine X # Y # Z, where # is some operator implemented by f(.,.).
+
+Let C={True,False} denote commutativity
+
+C = False:
+	Freedom to change grouping, but not order.
+	Only legal options are f(f(X,Y), Z) and f(X, f(Y,Z))
+C = True:
+	Freedom to change grouping and order, allowing 12 options:
+	    f(f(X,Y),Z)	      f(X,f(Y,Z))
+	    f(f(X,Z),Y)	      f(X,f(Z,Y))
+	    f(f(Y,X),Z)	      f(Y,f(X,Z))
+	    f(f(Y,Z),X)	      f(Y,f(Z,X))
+	    f(f(Z,X),Y)	      f(Z,f(X,Y))
+	    f(f(Z,Y),X)	      f(Z,f(Y,X))
+
+For operators which are non-commutative (i.e. matrix multiply on
+non-square matrices) we can perform partial reductions over the blocks
+in parallel, but cannot reduce multiple blocks per row on a given node
+w/o communication.  The communication that IS required for a reduction
+can be done in O(log(P)) stages which moves n_elems/blk_sz/P elements
+per node in each stage.  [This is not the only way to do it.]
+
+For operators which are commutative we can reduce the multiple blocks
+on a node to a single scalar before starting communication.  We can
+perform the full reduction in O(log(P)) stages requiring only a single
+scalar communicated per node per stage.
+
+Note that for pure-blocked layout there is no difference in
+implementation between commutative and non-commutative operators.  For
+the case of pure-cyclic the difference is the most extreme.
+
+
+//===========================================================================
+* Notes on algorithms 
+
+Broadcast:
+----------
+
+In [Karp93] we learn how to construct an optimal schedule for
+broadcast.  The tree can be built knowing only the ratio
+A=ELL/max(O_s,g).  Using a heap data structure one can determine the
+tree structure for a P-node broadcast in O(log(P!)) time.  Note that
+O(P) < O(log(P!)) < O(P*log(P)), so the cost to construct the schedule
+grows superlinearly.  However, it doesn't require any communication
+(deterministic algorithm allows all nodes to compute the same schedule
+independently).
+
+For the case of A>>1 the communication is latency dominant and the
+optimal broadcast is the naive one in which the root sends data to
+each other node in sequence.  For the case of A near 1, the optimal
+tree shape is a Binomial tree [Kielmann99].  Here are, for P=8, model
+results for the "EEL" of a broadcast with four different tree shapes
+on three different networks.  Note that these are in us and are
+directly comparable between networks.  However, they are just model
+results, not real timings.  The "Flat" tree is the one-level tree of
+the naive broadcast.  The percentages are relative to the optimal.
+
+		gm		vapi		mpi-conduit
+Optimal		21		24		334
+Binomial	21 		30 (+28%)	570 (+171%)
+Binary		26 (+24%)	30 (+28%)	570 (+171%)
+Flat		43 (+105%)	31 (+32%)	334
+
+The binary tree and the "flat" tree are the easiest two to implement.
+With just these two choices, we can get within 30% of the optimal on
+the two fast networks, and the flat tree is the optimal for the slow
+network.  I don't have any bound on just how bad we could do with
+these two, or any heuristic for choosing between them.  However, I
+expect to implement them as the first two versions.
+
+Later I hope to implement the construction of the optimal trees.  I
+can see doing it two ways:
+1) At init time for some fixed A, ignoring the data size.
+2) At runtime, using some size-dependent (and conduit-specific) model
+   for A and caching the results so it can be reused when the same
+   size is repeated.  Note that the data to cache would just be
+   P*sizeof(gasnet_node_t) bytes.
+
+
+Scatter:
+--------
+
+The LogGP paper [Alexandrov95] describes an algorithm for constructing
+the optimal scatter, analogous the the broadcast scahedule of [Karp93].
+This being log_G_P, takes proper consideration of the varying size of
+the messages when a tree is used to forward data.
+
+
+Gather:
+-------
+
+The Gather is exactly the same as scatter with all the data moving in
+the opposite direction.  Therefore whatever I decide for Scatter will
+also be used to implement Gather.
+
+
+Exchange:
+---------
+
+The final data placement is equivalent to doing P scatters, one with
+each node as the root.  In a simple LogP model where we can only send
+a single data item per communication operation, the optimal [Karp93]
+is to perform P naive scatters in lock-step, but choosing the order of
+each node's sends so each node receives exactly once per step.  The
+simplest such ordering is for node p to send to ((p+1) mod P), ((p+2)
+mod P),... ((p+P-1) mod P).
+
+
+Gather_All:
+-----------
+
+The final data placement is equivalent to doing P broadcasts.  In the
+LogP model with single-item sends the optimal [Karp93] is the same as
+described above for Exchange, but with the same data item instead of
+distinct ones.
+
+If we allow a node to send more than a single data item per send, then
+we can improve on the methods above.  If we divide the communication
+into ceil(lg(P)) rounds (where lg denoted base-2 log) then each round
+can forward an exponentially increasing amount of data (1 item in
+round 0, 2 items in round 1, 2^i items in round i).  At the end of the
+final round each node has received 2^i items.  With the correct
+pairings for these sends, we can ensure that all P <= 2^i items are
+received at each node (and with a little care we can even avoid
+sending the "surplus" 2^i-P that exists when P is not a power of two).
+The ordering for this is that in round i (starting from 0) node p will
+send to node ((p+2^i) mod P).  As it happens, this is exactly the same
+communication pattern used in the Dissemination barrier
+[Mellor-Crummey91; sec 3.3], but now we are also moving real data.
+
+For small P the Exchange-like algorithm is faster, even if we assume
+the timings are constant as the payload size grows in each round.  As
+the ratio A (=ELL/max(O_s,g)) increases the crossover point moves
+toward larger P.  The dominant term for the Exchange-like algorithm is
+O(P*max(O_s,g)), due to the gap between the P sends from each node.
+The dominant term for the Dissemination-like algorithm is
+O(lg(P)*ELL), due to the need to wait for data to arrive (before
+resending it) at each of the lg(P) rounds.  Both algorithms move the
+exact same number of data bytes in and out of each node.  The
+Dissemination-like algorithms tries to reduce the number of sends
+needed to actually move the data, but must pay a cost proportional to
+ELL to wait for the needed data to arrive.
+
+
+Permute:
+--------
+
+Other than implementing the UPC synchronization, there is no obvious
+mechanism by which GASNet can do any better than the use of Puts.
+
+
+Reduce:
+-------
+
+As noted in [Karp93], the optimal communication pattern for reduction
+in the LogP model is the same tree as for Broadcast.  The order and
+direction of the comms are reversed and the data elements moving are
+partial "sums" from each subtree.  There is no big concern over
+unequal contributions here, since each node must contribute exactly 1
+or 0 "sums" to the total reduction.
+
+The implementation of non-commutative operators will take a little
+extra work, since in a cyclic or block-cyclic layout we can't reduce
+all the elements on a given node to a single scalar before we begin
+communication.
+
+Getting non-commutative operators right will also slightly restrict
+the trees we could legally use.  However, the optimal trees are still
+optimal under any permutation of the node labels other than the root.
+Thus, we can always construct trees such that each subtree contains
+only consecutive contributions to the reduction.  We'd probably
+construct our tree this way regardless of commutativity of our
+operator.
+
+
+PrefixReduce:
+-------------
+
+The interface which is developing for this addresses how to express
+the unequal contribution from the nodes.  I've whiteboarded some ideas
+and found that the communication pattern used by the dissemination
+barrier (and discussed as a possible all-gather-all implementation) is
+also an efficient algorithm for prefix reduction, regardless of
+commutativity of the operator.
+
+Step 1: Setup dst array
+
+We first copy the src to the dst.  In the case that the first element
+of the src and dst array are not identically aligned, this will be a
+collective data movement not expressed by any of the existing
+interfaces.  Where the src and dst are aligned, this step is entirely
+free of communication.
+
+Step 2: Partial sums
+
+Once the dst array is initialized with a copy of the src array, each
+node performs a reduction (NOT a prefix reduction) over each "row" of
+its block-cyclic contribution.  This results in ceil(n_elem/blk_sz/P)
+partial reductions per node, with some nodes potentially having
+exactly one fewer if things aren't aligned perfectly.  This step is
+entirely free of communication.
+
+Step 3: Disseminating the partial reductions
+
+Using a communication pattern identical to that of the dissemination
+barrier, the partial reductions can be passed around in such a way
+that every node can accumulate the partial reductions it will need to
+complete the prefix reduction.  At each of log(P) phases each node
+will send to exactly one peer and receive from exactly one peer, thus
+there are no hot spots.  Each of these pairwise communications
+includes the partial reductions for each "row", and thus sends
+n_elem/blk_sz/P elements (give or take 1).  In each phase the partial
+reductions received are accumulated with the per-row reductions
+already received before sending the combined result in the next phase.
+
+This step is hard to convey w/o a whiteboard.  So, you'll have to take
+my word that when done in this way we naturally accumulate the partial
+reductions (w/o needing to assume the operator is commutative) that
+would be needed to perform either a all-reduce-all or a prefix-reduce.
+We can actually reduce the size of some of the messages since we don't
+need any partial reductions coming "from the right".  However, in the
+block-cyclic case it is only the partial reductions of the first and
+last "row" that might potentially be eliminated from some messages.
+
+Step 4: Prefix reduction
+
+At this point each node has the partial reductions it needs, one per
+"row".  For instance, if a given node in a block-cyclic layout holds
+elements 2 and 3 in one "row" and elements 6 and 7 in another, then
+step 3 has generated SUM(a[0]..a[1]) and SUM(a[2]..a[5]).  Using these
+two values one can finally perform the prefix reduction.
+
+
+//===========================================================================
+
+Notes on MPI Collectives:
+
+The MPI collectives interface design and implementations are an important
+precedent for our work. Here's a few notes from a brief reading of the spec
+that are relevant to our future work:
+
+* MPI's inter-communicators are primarily intended to support client-server
+  paradigms and dynamic job layouts that are outside the scope of GASNet. We can
+  safely ignore all the inter-communicator goop.
+
+* MPI's collectives are all blocking and all have semantics analogous to 
+  IN_MYSYNC/OUT_MYSYNC.
+
+* MPI collectives allows varying contributions from each node and do not require
+  single-valued arguments. We should consider generalizing UPC/GASNet
+  collectives similarly.
+
+* MPI reduce and scan operations allow the user to compute multiple, independent 
+  reductions at once using a single call and recieve all the results (the data
+  from each node is reduced element-wise with the corresponding elements on each
+  node and the result returned similarly). This trivialy allows coalescing of
+  messages, and is the only way to get communication overlap of logically
+  independent MPI collectives with respect to a given node. GASNet provides
+  non-blocking collectives, loose synchronization modes and aggregation to expose
+  communication overlap (and is more fully general because it allows
+  aggregation/overlap with reductions of other types, collectives of other
+  varieties, collective operations on other teams, and other arbitrary
+  computation and communication). However, the current UPC interface does not
+  expose non-blocking operations, which means that from a user level the MPI
+  reduction interface is currently more expressive. One notable advantage to the
+  MPI-style reduction interface is that multiple independent reduction results
+  can be computed using a single call to a user-provided callback - our current
+  callback interface does not allow this optimization.
+
+* MPI provides the interesting reduction operators MINLOC and MAXLOC, which
+  compute a minimum/maximum value and the index of the node holding that value
+  (the operator is carefully defined to break ties in such a way that the
+  operator is both commutative and associative). It may be nice for UPC to
+  provide these as built-in operators (of course, a user could write these
+  for themselves, but they may not realize that's what they want or that 
+  if can be done using a commutative/associative operator).
+
+* MPI provides a reduce-to-all operation that is currently lacking in
+  UPC/GASNet, and can presumably be implemented more efficiently in some cases
+  than a reduce followed by a broadcast.
+
+* MPI has a very powerful and expressive interface for efficiently creating and
+  manipulating teams (groups/communicators). We should definitely use it as a
+  model when defining our team constructors and ensure we can provide an equal
+  level of generality. However, we should probably leave out the silly attribute
+  caching in MPI communicators - it adds no useful functionality (all of the
+  provided rationales for it can trivially be addressed by adding a level of
+  indirection), so it just needlessly adds complexity. The MPI topology
+  description library is similarly extraneous.
+
+* MPI-2 adds a few new features to the MPI 1.2 collectives library which may be relevant for us:
+
+  - "in-place" versions of most of the collectives - an MPI_IN_PLACE flag
+    generally specifies the source arguments are ignored and the destination
+    arguments specify the source and destination for an in-place collective.
+    In-place versions are likely to add some copying costs, but may be helpful for
+    applications doing collectives over very large data sets (avoid doubling the
+    necessary heap space just for communication, especially if the collective
+    library can manage internal temporary space to get similar performance with
+    much less memory overhead). There may also be some benefits in cache/firehose
+    locality using an in-place operation that has a smaller memory footprint. 
+    We could add a similar flag if we convince UPC this is a useful feature. 
+
+  - "Exclusive-scan" prefix reduction - a prefix reduction where image 0 gets
+    an undefined result and image i gets the result of 0 op 1 op .. op i-1.
+    Exclusive scan is more general than inclusive scan and can implement inclusive
+    scan with one final local evaluation of the reduction operator (the converse 
+    is not true for important, non-invertable operators like MIN/MAX). We should 
+    consider providing both (and implement inclusive using the exclusive one)
+
+//===========================================================================
+
+Bibliography:
+
+@inproceedings{Karp93,
+ author = {Richard M. Karp and Abhijit Sahay and Eunice E. Santos and Klaus
+Erik Schauser},
+ title = {Optimal broadcast and summation in the LogP model},
+ booktitle = {Proceedings of the fifth annual ACM symposium on Parallel
+algorithms and architectures},
+ year = {1993},
+ isbn = {0-89791-599-2},
+ pages = {142--153},
+ location = {Velen, Germany},
+ doi = {http://doi.acm.org/10.1145/165231.165250},
+ publisher = {ACM Press},
+}
+
+@inproceedings{Kielmann99,
+ author = {Thilo Kielmann and Rutger F. H. Hofman and Henri E. Bal and Aske
+Plaat and Raoul A. F. Bhoedjang},
+ title = {MagPIe: MPI's collective communication operations for clustered wide
+area systems},
+ booktitle = {Proceedings of the seventh ACM SIGPLAN symposium on Principles
+and practice of parallel programming},
+ year = {1999},
+ isbn = {1-58113-100-3},
+ pages = {131--140},
+ location = {Atlanta, Georgia, United States},
+ doi = {http://doi.acm.org/10.1145/301104.301116},
+ publisher = {ACM Press},
+ }
+
+@article{Mellor-Crummey91,
+ author = {John M. Mellor-Crummey and Michael L. Scott},
+ title = {Algorithms for scalable synchronization on shared-memory
+multiprocessors},
+ journal = {ACM Trans. Comput. Syst.},
+ volume = {9},
+ number = {1},
+ year = {1991},
+ issn = {0734-2071},
+ pages = {21--65},
+ doi = {http://doi.acm.org/10.1145/103727.103729},
+ publisher = {ACM Press},
+ }
+
+@article{Santos02,
+ author = {Eunice E. Santos},
+ title = {Optimal and efficient algorithms for summing and prefix summing on
+parallel machines},
+ journal = {J. Parallel Distrib. Comput.},
+ volume = {62},
+ number = {4},
+ year = {2002},
+ issn = {0743-7315},
+ pages = {517--543},
+ doi = {http://dx.doi.org/10.1006/jpdc.2000.1698},
+ publisher = {Academic Press, Inc.},
+}
+
+@article{Dusseau96,
+ author = "Andrea C. Dusseau and David E. Culler and Klaus Erik Schauser
+and Richard P. Martin",
+ title = "Fast Parallel Sorting Under Log{P}: Experience with the {CM}-5:",
+ journal = "IEEE Transactions on Parallel and Distributed Systems",
+ volume = "7",
+ number = "8",
+ pages = "791--805",
+ year = "1996",
+ url = "citeseer.ist.psu.edu/dusseau96fast.html"
+}
+
+@inproceedings{Alexandrov95,
+ author = {Albert Alexandrov and Mihai F. Ionescu and Klaus E. Schauser and Chris Scheiman},
+ title = {LogGP: incorporating long messages into the LogP model\-one step closer towards a realistic model for parallel computation},
+ booktitle = {Proceedings of the seventh annual ACM symposium on Parallel algorithms and architectures},
+ year = {1995},
+ isbn = {0-89791-717-0},
+ pages = {95--105},
+ location = {Santa Barbara, California, United States},
+ doi = {http://doi.acm.org/10.1145/215399.215427},
+ publisher = {ACM Press},
+ note = {See also extended version: UCSB TRCS95-09},
+}
+
+Verriet "Scheduling tree-structured programs in the LogP model"

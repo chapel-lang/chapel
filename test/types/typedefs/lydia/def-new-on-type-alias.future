@@ -1,0 +1,34 @@
+bug: allow creation of new class instances on type aliases
+
+BLC: Here's a piece of code that pushes things past normalize at which
+     point it trips up in function resolution:
+
+--- passes/normalize.cpp        (revision 20203)
++++ passes/normalize.cpp        (working copy)
+@@ -91,12 +91,19 @@
+   
+   forv_Vec(CallExpr, call, gCallExprs) {
+     if (call->parentSymbol && call->isPrimitive(PRIM_NEW)) {
+-      if (CallExpr* classCall = toCallExpr(call->get(1)))  
++      if (CallExpr* classCall = toCallExpr(call->get(1))) {
+         if (UnresolvedSymExpr* use = toUnresolvedSymExpr(classCall->baseExpr))
+           if (isalpha(use->unresolved[0])) {
+             USR_FATAL_CONT(call, "invalid use of 'new' on %s", use->unresolved);
+             continue;
+           }
++        if (SymExpr* se = toSymExpr(classCall->baseExpr)) {
++          if (se->var->hasFlag(FLAG_TYPE_VARIABLE)) {
++            // This is a type alias, so we'll hope to resolve it later
++            continue;
++          }
++        }
++      }
+       USR_FATAL_CONT(call, "invalid use of 'new'");
+     }
+   }
+
+
+  
+  
+  
+ 

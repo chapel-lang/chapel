@@ -1,0 +1,3 @@
+warning: Ambiguous module source file -- using ./Containers.chpl over $CHPL_HOME/modules/standard/Containers.chpl
+In my Containers
+In foo

@@ -1,0 +1,13 @@
+UTS v2.1 - Unbalanced Tree Search (Parallel Chapel)
+Tree type: Geometric
+Tree shape parameters:
+  root branching factor b_0 = 4, root seed = 19
+  Geo. params: Max_Depth = 5, shape function = GeoFixed
+Random number generator: BRG SHA-1
+Parallel execution parameters:
+  MAX_THREADS = 20, MIN_THREADS = 5
+
+Performing tree creation..
+Performing tree traversal..
+
+Total nodes: Created = 3986, Counted = 3987

@@ -1,0 +1,9 @@
+#!/bin/bash --norc
+
+testname=$1
+outputfile=$2
+compiler=$3
+
+# sort the output
+grep "countTypeError1" $outputfile > $outputfile.tmp
+mv $outputfile.tmp $outputfile

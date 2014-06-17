@@ -1,0 +1,8 @@
+BACKEND_SRCS = \
+	beautify.cpp \
+
+SVN_SRCS = $(BACKEND_SRCS)
+SRCS = $(SVN_SRCS)
+
+BACKEND_OBJS = \
+	$(BACKEND_SRCS:%.cpp=$(BACKEND_OBJDIR)/%.$(OBJ_SUFFIX))

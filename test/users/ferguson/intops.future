@@ -1,0 +1,12 @@
+for loop with different size int indices fails
+
+intops.chpl:1: In function 'test':
+intops.chpl:9: error: type mismatch in assignment from int to int(8)
+
+
+BLC: The reason that this fails is that currently we only support range literals
+     of int(32) and int(64) index type, so 0..x is a range of int(32)s when x is
+     an int(8), making i an int(8) as well.  As noted in r19802 I think that
+     it would be a very worthwhile change to support range literals with any
+     idxType, but couldn't take it on in that change.  I suspect that doing so
+     would make this test work as intended.

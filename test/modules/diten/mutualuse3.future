@@ -1,0 +1,6 @@
+bug: out-of-order resolution
+
+bug: modules that mutually use each other can have some types lost
+
+This is like mutualuse.chpl, except in this case the type that is lost is
+a primitive type.

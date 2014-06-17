@@ -1,0 +1,3 @@
+This is a version of fock-1.chpl that Aniruddha was experimenting with
+to add parallelism.  It has a few races, so should not be tested.
+fock-1-begin-blc.chpl is my rewrite to try and eliminate those races.

@@ -1,0 +1,2 @@
+CHPL_TARGET_PLATFORM!=cray-xmt
+CHPL_TARGET_PLATFORM!=cray-xmt-sim

@@ -1,0 +1,3 @@
+0.0   initial time
+1.6   final time
+20     number of outputs

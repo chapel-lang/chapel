@@ -1,0 +1,714 @@
+\sekshun{Statements}
+\label{Statements}
+\index{statement}
+
+Chapel is an imperative language with statements that may have side
+effects.  Statements allow for the sequencing of program execution.
+Chapel provides the following statements:
+
+\begin{syntax}
+statement:
+  block-statement
+  expression-statement
+  assignment-statement
+  swap-statement
+  conditional-statement
+  select-statement
+  while-do-statement
+  do-while-statement
+  for-statement
+  label-statement
+  break-statement
+  continue-statement
+  param-for-statement
+  use-statement
+  type-select-statement
+  empty-statement
+  return-statement
+  yield-statement
+  module-declaration-statement
+  procedure-declaration-statement
+  external-procedure-declaration-statement
+  exported-procedure-declaration-statement
+  iterator-declaration-statement
+  method-declaration-statement
+  type-declaration-statement
+  variable-declaration-statement
+  remote-variable-declaration-statement
+  on-statement
+  cobegin-statement
+  coforall-statement
+  begin-statement
+  sync-statement
+  serial-statement
+  atomic-statement
+  forall-statement
+  delete-statement
+\end{syntax}
+
+Individual statements are defined in the remainder of this chapter
+and additionally as follows:
+
+\begin{itemize}
+\item return \rsec{The_Return_Statement}
+\item yield \rsec{The_Yield_Statement}
+\item module declaration \rsec{Modules}
+\item procedure declaration \rsec{Function_Definitions}
+\item iterator declaration \rsec{Iterator_Function_Definitions}
+\item method declaration \rsec{Class_Methods}
+\item type declaration \rsec{Types}
+\item variable declaration \rsec{Variable_Declarations}
+\item remote variable declaration ~\rsec{remote_variable_declarations}
+\item \chpl{on} statement \rsec{On}
+\item cobegin, coforall, begin, sync, serial and atomic statements
+      \rsec{Task_Parallelism_and_Synchronization}
+\item forall \rsec{Data_Parallelism}
+\item delete \rsec{Class_Delete}
+\end{itemize}
+
+\section{Blocks}
+\label{Blocks}
+\index{block}
+
+A block is a statement or a possibly empty list of statements that
+form their own scope.  A block is given by
+\begin{syntax}
+block-statement:
+  { statements[OPT] }
+
+statements:
+  statement
+  statement statements
+\end{syntax}
+
+Variables defined within a block are local
+variables~(\rsec{Local_Variables}).
+
+The statements within a block are executed serially unless the block
+is in a cobegin statement~(\rsec{Cobegin}).
+
+\section{Expression Statements}
+\label{Expression_Statements}
+\index{expressions!statement}
+\index{expression statement}
+\index{statements!expression}
+The expression statement evaluates an expression solely for side
+effects. The syntax for an expression statement is given by
+\begin{syntax}
+expression-statement:
+  variable-expression ;
+  member-access-expression ;
+  call-expression ;
+  constructor-call-expression ;
+  let-expression ; 
+\end{syntax}
+
+\section{Assignment Statements}
+\label{Assignment_Statements}
+\index{assignment}
+\index{statements!assignment}
+
+An assignment statement assigns the value of an expression to another
+expression, for
+example, a variable.  Assignment statements are given by
+
+\index{= (see also assignment)@\chpl{=} (see also assignment)}
+\index{+=@\chpl{+=}}
+\index{-=@\chpl{-=}}
+\index{*=@\chpl{*=}}
+\index{/=@\chpl{/=}}
+\index{\%=@\chpl{\%=}}
+\index{**=@\chpl{**=}}
+\index{&=@\chpl{&=}}
+\index{|=@\chpl{|=}}
+\index{^=@\chpl{^=}}
+\index{||=@\chpl{||=}}
+\index{&&=@\chpl{&&=}}
+\index{<<=@\chpl{<<=}}
+\index{>>=@\chpl{>>=}}
+\index{operators!assignment}
+\begin{syntax}
+assignment-statement:
+  lvalue-expression assignment-operator expression
+
+assignment-operator: one of
+   = += -= *= /= %= **= &= |= ^= &&= ||= <<= >>=
+\end{syntax}
+
+The expression on the left-hand side of the assignment operator must
+be a valid lvalue~(\rsec{LValue_Expressions}).  It is evaluated before the
+expression on the right-hand side of the assignment operator, which
+can be any expression.
+
+When the assignment operator is \chpl{=}, there is
+an implicit conversion~(\rsec{Implicit_Conversions})
+of the right-hand side expression
+to the type of the left-hand side expression.
+The left-hand side expression is updated with the result
+of this conversion.
+
+Additionally, the validity and semantics of assigning between
+classes~(\rsec{Class_Assignment}), records~(\rsec{Record_Assignment}),
+unions~(\rsec{Union_Assignment}), tuples~(\rsec{Tuple_Assignment}),
+ranges~(\rsec{Range_Assignment}),
+domains~(\rsec{Domain_Assignment}), and arrays~(\rsec{Array_Assignment})
+is discussed in these later sections.
+
+\index{operators!compound assignment}
+The assignment operators that contain a binary operator symbol as a prefix
+are \emph{compound assignment} operators.
+A compound assignment is
+a short-hand for applying the binary operator to the left and
+right-hand side expressions and then assigning the result
+to the left-hand side expression.
+As with \chpl{=}, the left-hand side expression is evaluated only once,
+and there is an implicit conversion of the result of the binary operator
+to the type of the left-hand side expression.  Thus, for
+example, \chpl{x += y} is equivalent to \chpl{x = x + y} where the
+expression \chpl{x} is evaluated once.
+
+%REVIEW: vass: this is inelegant, consider removing.
+% Plus should be defined on int(8) to produce an int(8) instead of this.
+In a compound assignment, an explicit cast to the type on the left-hand side is
+inserted before the simple assignment if the operator is a shift or
+both the right-hand side expression can be assigned to the left-hand
+side expression and the type of the left-hand side is a primitive
+type.
+
+\begin{rationale}
+This cast is necessary to handle \chpl{+=} where the type of the
+left-hand side is, for example, \chpl{int(8)} because the \chpl{+}
+operator is defined on \chpl{int(32)}, not \chpl{int(8)}.
+\end{rationale}
+
+The compound assignment operators can be overloaded for different
+types using operator overloading~(\rsec{Function_Overloading}).
+
+\section{The Swap Statement}
+\label{The_Swap_Statement}
+\index{swap!statement}
+\index{statements!swap}
+\index{swap!operator}
+\index{operators!swap}
+
+% TODO: if appropriate, define swap as a sequence of three assignments
+The swap statement indicates to swap the values in the expressions
+on either side of the swap operator.  Since both expressions are assigned
+to, each must be a valid lvalue expression~(\rsec{LValue_Expressions}).
+
+The swap operator can be overloaded for different types using operator
+overloading~(\rsec{Function_Overloading}).
+\begin{syntax}
+swap-statement:
+  lvalue-expression swap-operator lvalue-expression
+
+swap-operator:
+  <=>
+\end{syntax}
+
+To implement the swap operation, the compiler uses temporary variables
+as necessary.
+
+\begin{example}
+When resolved to the default swap operator, the following swap statement
+\begin{chapel}
+var a, b: real;
+
+a <=> b;
+\end{chapel}
+is semantically equivalent to:
+\begin{chapel}
+const t = b;
+b = a;
+a = t;
+\end{chapel}
+\end{example}
+
+\section{The Conditional Statement}
+\label{The_Conditional_Statement}
+\index{statements!conditional}
+\index{if@\chpl{if}}
+\index{then@\chpl{then}}
+\index{else@\chpl{else}}
+\index{conditional statements}
+
+The conditional statement allows execution to choose between two
+statements based on the evaluation of an expression of \chpl{bool}
+type. The syntax for a conditional statement is given by
+\begin{syntax}
+conditional-statement:
+  `if' expression `then' statement else-part[OPT]
+  `if' expression block-statement else-part[OPT]
+
+else-part:
+  `else' statement
+\end{syntax}
+
+A conditional statement evaluates an expression of bool type. If the
+expression evaluates to true, the first statement in the conditional
+statement is executed.  If the expression evaluates to false and the
+optional else-clause exists, the statement following the
+\chpl{else} keyword is executed.
+
+If the expression is a parameter, the conditional statement is folded
+by the compiler. If the expression evaluates to true, the first
+statement replaces the conditional statement. If the expression
+evaluates to false, the second statement, if it exists, replaces the
+conditional statement; if the second statement does not exist, the
+conditional statement is removed.
+
+\index{conditional statement!dangling else}
+If the statement that immediately follows the optional \chpl{then}
+keyword is a conditional statement and it is not in a block, the
+else-clause is bound to the nearest preceding conditional statement
+without an else-clause.
+
+Each statement embedded in the {\em conditional-statement} has its own
+scope whether or not an explicit block surrounds it.
+
+\section{The Select Statement}
+\label{The_Select_Statement}
+\index{select@\chpl{select}}
+\index{when@\chpl{when}}
+\index{statements!select@\chpl{select}}
+\index{statements!when@\chpl{when}}
+
+The select statement is a multi-way variant of the conditional
+statement.  The syntax is given by:
+\begin{syntax}
+select-statement:
+  `select' expression { when-statements }
+
+when-statements:
+  when-statement
+  when-statement when-statements
+
+when-statement:
+  `when' expression-list `do' statement
+  `when' expression-list block-statement
+  `otherwise' statement
+
+expression-list:
+  expression
+  expression , expression-list
+\end{syntax}
+The expression that follows the keyword \chpl{select}, the select
+expression, is compared with the list of expressions following the
+keyword \chpl{when}, the case expressions, using the equality
+operator \chpl{==}.  If the expressions cannot be compared with the
+equality operator, a compile-time error is generated.  The first case
+expression that contains an expression where that comparison
+is \chpl{true} will be selected and control transferred to the
+associated statement.  If the comparison is always \chpl{false}, the
+statement associated with the keyword \chpl{otherwise}, if it exists,
+will be selected and control transferred to it.  There may be at most
+one \chpl{otherwise} statement and its location within the select
+statement does not matter.
+
+Each statement embedded in the {\em when-statement} has its own scope
+whether or not an explicit block surrounds it.
+
+\section{The While Do and Do While Loops}
+\label{The_While_and_Do_While_Loops}
+\index{while loops}
+\index{while@\chpl{while}}
+\index{statements!while@\chpl{while}}
+
+There are two variants of the while loop in Chapel.  The syntax of the
+while-do loop is given by:
+\begin{syntax}
+while-do-statement:
+  `while' expression `do' statement
+  `while' expression block-statement
+\end{syntax}
+The syntax of the do-while loop is given by:
+\begin{syntax}
+do-while-statement:
+  `do' statement `while' expression ;
+\end{syntax}
+In both variants, the expression evaluates to a value of type \chpl{bool}
+which determines when the loop terminates and control continues with
+the statement following the loop.
+
+The while-do loop is executed as follows:
+\begin{enumerate}
+\item The expression is evaluated.
+\item If the expression evaluates to \chpl{false}, the statement is
+  not executed and control continues to the statement following the
+  loop.
+\item If the expression evaluates to \chpl{true}, the statement is
+  executed and control continues to step 1, evaluating the expression
+  again.
+\end{enumerate}
+
+The do-while loop is executed as follows:
+\begin{enumerate}
+\item The statement is executed.
+\item The expression is evaluated.
+\item If the expression evaluates to \chpl{false}, control continues
+  to the statement following the loop.
+\item If the expression evaluates to \chpl{true}, control continues to
+  step 1 and the the statement is executed again.
+\end{enumerate}
+In this second form of the loop, note that the statement is executed
+unconditionally the first time.
+
+\begin{chapelexample}{while.chpl}
+The following example illustrates the difference between
+the \sntx{do-while-statement} and the \sntx{while-do-statement}.  The body of
+the do-while loop is always executed at least once, even if the loop conditional
+is already false when it is entered.
+\begin{chapel}
+var t = 11;
+
+writeln("Scope of do while loop:");
+do {
+  t += 1;
+  writeln(t);
+} while (t <= 10);
+
+t = 11;
+writeln("Scope of while loop:");
+while (t <= 10) {
+  t += 1;
+  writeln(t);
+}
+\end{chapel}
+\begin{chapelprintoutput}
+Scope of do while loop:
+12
+Scope of while loop:
+\end{chapelprintoutput}
+\end{chapelexample}
+
+\section{The For Loop}
+\label{The_For_Loop}
+\index{for loops}
+\index{for@\chpl{for}}
+\index{statements!for@\chpl{for}}
+
+The for loop iterates over ranges, domains, arrays, iterators, or any
+class that implements an iterator named \chpl{these}.  The syntax of
+the for loop is given by:
+\begin{syntax}
+for-statement:
+  `for' index-var-declaration `in' iteratable-expression `do' statement
+  `for' index-var-declaration `in' iteratable-expression block-statement
+  `for' iteratable-expression `do' statement
+  `for' iteratable-expression block-statement
+
+index-var-declaration:
+  identifier
+  tuple-grouped-identifier-list
+
+iteratable-expression:
+  expression
+  `zip' ( expression-list )
+\end{syntax}
+
+The \sntx{index-var-declaration} declares new variables for the scope
+of the loop.  It may specify a new identifier or may specify multiple
+identifiers grouped using a tuple notation in order to destructure the
+values returned by the iterator expression, as described
+in~\rsec{Indices_in_a_Tuple}.
+
+The \sntx{index-var-declaration} is optional and may be omitted if the
+indices do not need to be referenced in the loop.
+
+If the iteratable-expression begins with the keyword \chpl{zip} followed
+by a parenthesized expression-list, the listed expressions must support 
+zipper iteration.
+
+\subsection{Zipper Iteration}
+\label{Zipper_Iteration}
+\index{zipper iteration}
+\index{iteration!zipper}
+
+When multiple iterators are iterated over in a zipper context, on each
+iteration, each expression is iterated over, the values are returned
+by the iterators in a tuple and assigned to the index, and then
+statement is executed.
+
+The shape of each iterator, the rank and the extents in each
+dimension, must be identical.
+
+\begin{chapelexample}{zipper.chpl}
+The output of
+\begin{chapel}
+for (i, j) in zip(1..3, 4..6) do
+  write(i, " ", j, " ");
+\end{chapel}
+\begin{chapelpost}
+writeln();
+\end{chapelpost}
+is
+\begin{chapelprintoutput}
+1 4 2 5 3 6 
+\end{chapelprintoutput}
+\end{chapelexample}
+
+\subsection{Parameter For Loops}
+\label{Parameter_For_Loops}
+\index{statements!param for}
+\index{for loops!parameters}
+\index{for@\chpl{for}}
+\index{param@\chpl{param}}
+
+Parameter for loops are unrolled by the compiler so that the index
+variable is a parameter rather than a variable.  The syntax for a
+parameter for loop statement is given by:
+\begin{syntax}
+param-iteratable-expression:
+  range-literal
+  range-literal `by' integer-literal
+
+param-for-statement:
+  `for' `param' identifier `in' param-iteratable-expression `do' statement
+  `for' `param' identifier `in' param-iteratable-expression block-statement
+\end{syntax}
+Parameter for loops are restricted to iteration over range literals
+with an optional by expression where the bounds and stride must be
+parameters.  The loop is then unrolled for each iteration.
+
+\section{The Break, Continue and Label Statements}
+\label{Label_Break_Continue}
+\index{statements!jumps}
+\index{label@\chpl{label}}
+\index{break@\chpl{break}}
+\index{continue@\chpl{continue}}
+\index{statements!label@\chpl{label}}
+\index{statements!break@\chpl{break}}
+\index{statements!continue@\chpl{continue}}
+
+The break- and continue-statements are used to alter the flow of control within a
+loop construct.  A break-statement causes flow to exit the containing loop and
+resume with the statement immediately following it.  A continue-statement causes
+control to jump to the end of the body of the containing loop and resume
+execution from there.  By default, break- and continue-statements exit
+or skip the body of the immediately-containing loop construct.
+
+The label-statement is used to name a specific loop so that \chpl{break}
+and \chpl{continue} can exit or resume a less-nested loop.
+Labels can only be attached to for-, while-do- and do-while-statements.
+When a break statement has a label, execution continues with the first statement
+following the loop statement with the matching label.  When a continue statement
+has a label, execution continues at the end of the body of the loop with the
+matching label.  If there is no containing loop construct with a matching label,
+a compile-time error occurs.
+
+The syntax for label, break, and continue statements is given by:
+\begin{syntax}
+break-statement:
+  `break' identifier[OPT] ;
+
+continue-statement:
+  `continue' identifier[OPT] ;
+
+label-statement:
+  `label' identifier statement
+\end{syntax}
+
+Break-statements cannot be used to exit parallel loops.  
+
+\begin{rationale}
+Breaks are not permitted in parallel loops because the execution order
+of the iterations of parallel loops is not defined.
+\end{rationale}
+
+\begin{future}
+We expect to support a \emph{eureka} concept which would enable one or
+more tasks to stop the execution of all current and future iterations
+of the loop.
+\end{future}
+
+\begin{example}
+In the following code, the index of the first element in each row of
+\chpl{A} that is equal to \chpl{findVal} is printed.  Once a match is
+found, the continue statement is executed causing the outer loop to
+move to the next row.
+\begin{chapel}
+label outer for i in 1..n {
+  for j in 1..n {
+    if A[i, j] == findVal {
+      writeln("index: ", (i, j), " matches.");
+      continue outer;
+    }
+  }
+}
+\end{chapel}
+\end{example}
+
+\section{The Use Statement}
+\label{The_Use_Statement}
+\index{use@\chpl{use}}
+\index{statements!use@\chpl{use}}
+\index{modules!using}
+
+The use statement makes the symbols defined by a module available
+within the scope containing the use statement without requiring them
+to be prefixed by the module's name.  The syntax of the use statement
+is given by:
+
+\begin{syntax}
+use-statement:
+  `use' module-name-list ;
+
+module-name-list:
+  module-name
+  module-name , module-name-list
+
+module-name:
+  identifier
+  module-name . module-name
+\end{syntax}
+The use statement makes symbols in each listed module's scope available
+from the scope where the use statement occurs.
+
+Symbols made available by a use statement are at an outer scope from those
+defined directly in the scope where the use statement occurs, but at a
+nearer scope than symbols defined in the scope containing the scope where
+the use statement occurs.
+
+If used modules themselves use other modules, symbols are scoped according
+the depth of use statements followed to find them. It is an error for two
+variables, types, or modules to be defined at the same depth.
+
+\begin{openissue}
+There is an expectation that this statement will be extended to allow
+the programmer to restrict which symbols are 'used' as well as to
+rename symbols that are 'used.'
+\end{openissue}
+
+\begin{chapelexample}{use.chpl}
+  The following example illustrates how the use statement makes
+  symbols declared in \chpl{M1}'s global scope (like procedure
+  \chpl{foo()}) visible within the scope of \chpl{M2}'s \chpl{main}
+  function.  Without the \chpl{use} statement, the procedure call to
+  \chpl{foo} could not be resolved since \chpl{M2} would not have
+  access to symbols in \chpl{M1}.
+\begin{chapel}
+module M1 {
+  proc foo() {
+    writeln("In M1's foo.");
+  }
+}
+
+module M2 {
+  proc main() {
+    use M1;
+
+    writeln("In M2's main.");
+    foo();
+  }
+}
+\end{chapel}
+\begin{chapelprintoutput}
+In M2's main.\\
+In M1's foo.
+\end{chapelprintoutput}
+\end{chapelexample}
+
+\section{The Type Select Statement}
+\label{The_Type_Select_Statement}
+\index{statements!type select}
+\index{type select statements}
+
+A type select statement has two uses.  It can be used to determine the
+type of a union, as discussed
+in~\rsec{The_Type_Select_Statement_and_Unions}.  In its more general
+form, it can be used to determine the types of one or more values
+using the same mechanisms used to disambiguate function definitions.
+It syntax is given by:
+\begin{syntax}
+type-select-statement:
+  `type' `select' expression-list { type-when-statements }
+
+type-when-statements:
+  type-when-statement
+  type-when-statement type-when-statements
+
+type-when-statement:
+  `when' type-list `do' statement
+  `when' type-list block-statement
+  `otherwise' statement
+
+expression-list:
+  expression
+  expression , expression-list
+
+type-list:
+  type-specifier
+  type-specifier , type-list
+\end{syntax}
+
+Let the expressions following the keyword \chpl{select} be called the 
+\emph{select expressions}.  The number of select expressions must be equal to the
+number of types following each of the \chpl{when} keywords.  Like the
+select statement, one of the statements associated with a \chpl{when}
+will be executed.  In this case, that statement is chosen by the
+function resolution mechanism.  The select expressions are the actual
+arguments, the types following the \chpl{when} keywords are the types
+of the formal arguments for different anonymous functions.  The
+function that would be selected by function resolution determines the
+statement that is executed.  If none of the functions are chosen, the
+the statement associated with the keyword \chpl{otherwise}, if it
+exists, will be selected.
+
+As with function resolution, this can result in an ambiguous
+situation.  Unlike with function resolution, in the event of an
+ambiguity, the first statement in the list of when statements is
+chosen.
+
+\begin{chapelexample}{typeselect.chpl}
+The following example shows how the type select statement can be used to perform
+a different action based on the static type of the operand.
+\begin{chapel}
+var x = 32, y = 15.5; 
+var z: int(8);
+var coord = (0.0,0.0);
+var yes: bool;
+
+writetype(x);
+writetype(y);
+writetype(z);
+writetype(coord);
+writetype(yes);
+writetype("no");
+writetype(here);
+
+proc writetype(x) {
+  type select x {
+    when int do writeln("Integer type");
+    when uint do writeln("Unsigned integer type");
+    when real do writeln("Real type");
+    when complex do writeln("Complex type");
+    when string do writeln("String type");
+    when bool do writeln("Boolean type");
+    when imag do writeln("Imag type");
+    when locale do writeln("Locale type");
+    when void do writeln("Void type");
+    otherwise writeln("Non-primitive type");
+  }
+}
+\end{chapel}
+\begin{chapelprintoutput}
+Integer type
+Real type
+Integer type
+Non-primitive type
+Boolean type
+String type
+Locale type
+\end{chapelprintoutput}
+\end{chapelexample}
+
+\section{The Empty Statement}
+\label{The_Empty_Statement}
+\index{statements!empty}
+
+An empty statement has no effect.  The syntax of an empty statement is
+given by
+\begin{syntax}
+empty-statement:
+  ;
+\end{syntax}

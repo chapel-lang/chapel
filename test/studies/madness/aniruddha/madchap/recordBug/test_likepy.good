@@ -1,0 +1,17 @@
+./FTree.chpl:30: In function '=':
+./FTree.chpl:30: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+./MRA.chpl:433: In function 'norm2':
+./MRA.chpl:436: warning: reduce has been serialized (see note in $CHPL_HOME/STATUS)
+./FTree.chpl:32: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+
+
+
+norm of function is 1.0
+
+
+
+norm of function is 1.73205
+
+
+
+norm of function is 6.55811

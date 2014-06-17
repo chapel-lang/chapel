@@ -1,0 +1,1 @@
+metaprog2.chpl:7: error: returning a runtime value from a param function

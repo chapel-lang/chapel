@@ -1,0 +1,2 @@
+-M modules/d1 -M modules/d2 --print-search-dirs
+-M modules/d2 -M modules/d1 --print-search-dirs

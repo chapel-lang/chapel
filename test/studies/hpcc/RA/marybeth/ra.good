@@ -1,0 +1,4 @@
+Main table size = 2^6 = 64 words
+Number of updates = 256
+Found 0 errors in 64 locations
+(passed)

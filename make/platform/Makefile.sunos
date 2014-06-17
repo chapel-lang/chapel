@@ -1,0 +1,20 @@
+# Makefile.sunos: contains SunOS-specific variables
+#
+
+ECHO = /usr/ucb/echo
+
+#
+# seemingly necessary to get vnsprintf for the runtime libraries
+#
+RUNTIME_CFLAGS += -U__STRICT_ANSI__
+
+#
+# seemingly necessary to get INT64_MAX and the like
+#
+GEN_CFLAGS +=  -U__STRICT_ANSI__
+
+#
+#
+#
+ARMCI_PLATFORM_SPECIFIC_LIBS = -lsocket
+PVM_PLATFORM_LIBS = -lrt

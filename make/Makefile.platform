@@ -1,0 +1,11 @@
+#
+# CHPL_MAKE_PLATFORM stuff
+#
+#
+# CHPL_MAKE_PLATFORM is simply the one-word description we'll use for
+# all platforms that we run on.  The long name is used to avoid
+# PLATFORM which is sometimes set by shell environments.
+#
+CHPL_MAKE_PLATFORM = $(shell $(CHPL_MAKE_HOME)/util/chplenv/platform $(CHPL_MAKE_HOST_TARGET))
+CHPL_MAKE_HOST_PLATFORM = $(shell $(CHPL_MAKE_HOME)/util/chplenv/platform --host)
+CHPL_MAKE_TARGET_PLATFORM = $(shell $(CHPL_MAKE_HOME)/util/chplenv/platform --target)

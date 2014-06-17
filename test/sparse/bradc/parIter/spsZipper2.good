@@ -1,0 +1,1 @@
+spsZipper2.chpl:12: error: halt reached - Sparse domains can't be zippered with anything other than themselves and their arrays

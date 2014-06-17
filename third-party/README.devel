@@ -1,0 +1,71 @@
+=============================================
+Chapel third-party directory : for developers
+=============================================
+
+This directory is designed to hold sources that were not developed by
+the Chapel team and which are released under distinct licenses from
+Chapel itself.  Current subdirectories that we do not make available in
+the release are:
+
+armci/
+  Summary: the PNNL ARMCI library for one-sided communication which we
+           are investigating using as an alternative to GASNet
+
+  License: Batelle Open Source License (see:
+           http://www.emsl.pnl.gov/docs/parsoft/armci/license.htm)
+
+  Contact: For more information, please refer to:
+           http://www.emsl.pnl.gov/docs/parsoft/armci/
+
+  See also: armci/armci-*/README
+
+
+mpich1/
+  Summary: the MPICH1 implementation of MPI that we use to launch
+           ARMCI programs
+
+  License: MPICH1 license and ROMIO license (see
+           mpich1/mpich-*/COPYRIGHT and mpich1/mpich-*/romio/COPYRIGHT)
+
+  Contact: For more information, please refer to:
+           http://www.mcs.anl.gov/research/projects/mpi/mpich1/
+
+  See also: mpich1/mpich-*/README
+
+
+openmpi/
+  Summary: the Open MPI message passing library used to implement a
+           prototype communication interface
+
+  License: The BSD license (see openmpi/openmpi-*/LICENSE)
+
+  Contact: For more information, please refer to:
+           http://www.open-mpi.org/
+
+  See also: openmpi/openmpi-*/README
+
+
+pvm/
+  Summary: the PVM message passing library that we are using to
+           prototype hybrid (multi-realm) Chapel execution
+
+  License: an ORNL variant off the BSD license (see the top of
+           pvm/pvm-*/pvm3/Readme for example)
+
+  Contact: For more information, please refer to:
+           http://www.csm.ornl.gov/pvm/)
+
+  See also: pvm/README
+
+
+txt2man/
+  Summary: Marc Vertes' shell script for converting text files to man
+           pages.  We use this to generate the Chapel man page
+
+  License: GPL (see comments at the top of txt2man/txt2man)
+
+  Contact: For more information, please refer to:
+           http://mvertes.free.fr/
+
+  See also: comments at the top of txt2man/txt2man
+

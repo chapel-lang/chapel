@@ -1,0 +1,7 @@
+Getting garbles with this pattern of usage of strings
+
+get_string returns Hello
+modify_string got Hž
+modify_string returns Až
+a is: Hello
+b is: Až

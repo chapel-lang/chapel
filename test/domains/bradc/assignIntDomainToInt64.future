@@ -1,0 +1,7 @@
+feature request: assign (param) int(32) domain to int(64) domain
+
+It seems like Chapel would be more orthogonal if one could assign an
+int(64) param domain literal to an int(32) domain without casting,
+much as one can assign an int(64) param to an int(32) variable.  I
+suspect that this is simply an overly constrained implementation of
+the domain classes than anything deep.

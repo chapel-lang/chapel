@@ -1,0 +1,27 @@
+myLocales = LOCALE0 LOCALE0 LOCALE0 LOCALE0
+ProblemDist =
+Block
+-------
+distributes: {1..10}
+across locales: LOCALE0 LOCALE0 LOCALE0 LOCALE0
+indexed via: {0..3}
+resulting in: 
+  [0] locale 0 owns chunk: {-9223372036854775808..3}
+  [1] locale 0 owns chunk: {4..5}
+  [2] locale 0 owns chunk: {6..8}
+  [3] locale 0 owns chunk: {9..9223372036854775807}
+
+
+myLocales = LOCALE0 LOCALE0 LOCALE0
+ProblemDist =
+Block
+-------
+distributes: {1..10}
+across locales: LOCALE0 LOCALE0 LOCALE0 LOCALE0
+indexed via: {0..3}
+resulting in: 
+  [0] locale 0 owns chunk: {-9223372036854775808..3}
+  [1] locale 0 owns chunk: {4..5}
+  [2] locale 0 owns chunk: {6..8}
+  [3] locale 0 owns chunk: {9..9223372036854775807}
+

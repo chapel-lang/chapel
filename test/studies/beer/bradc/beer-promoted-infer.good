@@ -1,0 +1,2 @@
+beer-promoted-infer.chpl:53: In function 'describeBottles':
+beer-promoted-infer.chpl:54: error: type '[domain(1,int(64),false)] int(64)' used in if or while condition

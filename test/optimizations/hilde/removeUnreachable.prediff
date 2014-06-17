@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# $1 = testname
+# $2 = outfile
+sed 's/Removed 0 /Removed no /' $2 > $1.prediff.tmp
+sed 's/Removed [0-9]* /Removed some /' $1.prediff.tmp > $2
+rm $1.prediff.tmp

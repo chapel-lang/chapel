@@ -1,0 +1,28 @@
+.TH qt_team_id 3 "NOVEMBER 2012" libqthread "libqthread"
+.SH NAME
+.B qt_team_id
+\- returns the current team's unique ID number
+.SH SYNOPSIS
+.B #include <qthread.h>
+
+.I unsigned int
+.br
+.B qt_team_id 
+(void);
+.SH DESCRIPTION
+This function returns the unique identifier associated with the qthread team to
+which the currently executing qthread belongs. Generally they are monotonically
+increasing values, but the value can wrap around after
+.BR UINT_MAX -1
+teams.
+.SH RETURN VALUE
+On success, the thread's team's identifying number is returned. If called from outside
+the Qthreads library,
+.B QTHREAD_NON_TEAM_ID
+is returned. The special value
+.B QTHREAD_NULL_TEAM_ID
+will never be returned.
+.SH SEE ALSO
+.BR qt_team_parent_id (3),
+.BR qthread_id (3),
+.BR qthread_shep (3)

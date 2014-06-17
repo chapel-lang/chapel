@@ -1,0 +1,4 @@
+vardecls.chpl:3: In function 'foo':
+vardecls.chpl:4: error: 'x' used before defined (first used here)
+vardecls.chpl:9: In function 'bar':
+vardecls.chpl:10: error: 'x' used before defined (first used here)

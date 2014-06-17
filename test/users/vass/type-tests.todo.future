@@ -1,0 +1,29 @@
+bug: isRecordType is implemented correctly on atomic types
+
+This test is breaking also because sync/single vars are not passable
+by ref intent. I put it here because it is a similar theme.
+(isRecordType seems already correct for sync and single types
+That but itself is covered in
+  test/functions/vass/sync-by-ref.future
+
+Currently I get:
+
+type-tests.todo.chpl:5: warning: atomic is a class:  false
+type-tests.todo.chpl:5: warning: atomic is a record: true
+type-tests.todo.chpl:5: warning: atomic is a union:  false
+type-tests.todo.chpl:10: error: non-lvalue actual passed to ref argument
+type-tests.todo.chpl:10: error: non-lvalue actual passed to ref argument
+
+(note an incorrect line number in the last two messages,
+which should be Lines 6 and 7 instead).
+
+Note on isRecordType for atomic types:
+isRecordType() is a check for *Chapel*-level records.
+Therefore it needs to return false for anything that (a) is declarable
+with the 'atomic' keyword or (b) is treated by the compiler specially.
+At the moment, it seems isRecordType can be adjusted for atomic types
+by providing an isAtomicType() function. The latter could be implemented
+e.g. like _isUnsignedType(), by comparison of the argument against all
+valid atomic types.
+
+As the issues are fixed, please move the test/.good code into type-tests.chpl.

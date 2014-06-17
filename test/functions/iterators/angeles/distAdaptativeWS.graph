@@ -1,0 +1,6 @@
+# Dist. Adaptative WS iterator (PGAS'11 paper): local Binary Splitting, remote-steal Binary Splitting 
+perfkeys: Total time fine (BS,BS), Total time coarse (BS,BS), Total time tri (BS,BS), Total time rand (BS,BS) 
+graphkeys: fine, coarse, triang, rand
+ylabel: Time (millisec.)
+graphname: distAdaptativeWS 
+graphtitle: Adaptative WS Iterator (BS, BS)

@@ -1,0 +1,9 @@
+feature request: private variables in modules
+
+RandomNumber.chpl defines arraySize and seed as configuration variables,
+but they are intended only for use within the main program defined in
+this source file.  Trying to make use of this module in some other program
+should not cause these configuration variables to be visible in other
+modules, but there is currently no way to avoid this.  This test case
+proposes the use of a keyword called private, but it is merely a placeholder
+for this feature.

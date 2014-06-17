@@ -1,0 +1,9 @@
+feature request: command line config value range check
+
+It would be great if config vars could have their command-line
+values range-checked for sanity/safety's sake.  We don't do
+this for general assignments due to the performance implications.
+In the case of config var command line parsing, we're already
+doing string conversion, and this is by nature in non-performant
+code, so it would be nice to have some done here.
+

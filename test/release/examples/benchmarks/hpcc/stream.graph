@@ -1,0 +1,11 @@
+perfkeys: Performance (GB/s) =
+files: hpcc-stream.dat
+graphtitle: Global STREAM Performance (GB/s)
+ylabel: Performance (GB/s)
+graphname: global-stream-perf
+
+perfkeys: min =, avg =
+files: hpcc-stream.dat, hpcc-stream.dat
+graphtitle: Global STREAM Performance
+ylabel: Time (seconds)
+graphname: global-stream

@@ -1,0 +1,1 @@
+zeroarity-bound-error-2.chpl:9: error: unresolved access of 'int(64)' by '()'

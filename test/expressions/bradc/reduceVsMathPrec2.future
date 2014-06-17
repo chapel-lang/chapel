@@ -1,0 +1,6 @@
+error message: assign array to scalar
+
+This future correctly throws an error, but the message exposes
+the iterator class.  I'm not particularly attached to the 
+message in my .good file, but we need to remove the exposure
+of the iterator class.

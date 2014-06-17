@@ -1,0 +1,2 @@
+# The issue is visible only when there are multiple locales.
+CHPL_COMM==none

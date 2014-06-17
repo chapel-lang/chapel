@@ -1,0 +1,1 @@
+fun_call_mismatch.chpl:3: error: illegal access of first class function

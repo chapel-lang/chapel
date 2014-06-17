@@ -1,0 +1,5 @@
+x8 is: -1
+x16 is: -1
+x32 is: -1
+x64 is: -1
+string2negval.chpl:15: error: Unexpected character when converting from string to uint(8): '-'

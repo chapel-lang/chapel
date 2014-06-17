@@ -1,0 +1,76 @@
+#!/usr/bin/env perl
+
+use File::Basename;
+
+$utildirname = dirname($0);
+
+my $flag = $ARGV[0];
+
+$preset_launcher=$ENV{'CHPL_LAUNCHER'};
+
+if ($preset_launcher eq "") {
+    $comm = `$utildirname/comm --target`; chomp($comm);
+    $substrate = `$utildirname/commSubstrate`; chomp($substrate);
+    $platform = `$utildirname/platform --target`; chomp($platform);
+    $compiler = `$utildirname/compiler --target`; chomp($compiler);
+
+    $launcher = "none";
+    if ($platform =~ /^cray-(xc|xe|xk|xt)$/) {
+        if (system("which aprun > /dev/null 2>&1")) {
+            $launcher = "none";
+        } else {
+            if (system("which qsub > /dev/null 2>&1")) {
+                $launcher = "aprun";
+            } else {
+                $launcher = "pbs-aprun";
+            }
+        }
+    } elsif ($platform eq "marenostrum") {
+        $launcher = "marenostrum";
+    } elsif ($compiler eq "tile-cc") {
+        $launcher = "tile-monitor";
+    } elsif ($comm eq "gasnet") {
+        if ($substrate eq "udp") {
+            $launcher = "amudprun";
+        } elsif ($substrate eq "mpi") {
+            $launcher = "gasnetrun_mpi";
+        } elsif ($substrate eq "ibv") {
+	    if ($platform eq "pwr6") {
+#
+# our loadleveler launcher is not yet portable/stable/flexible enough
+# to serve as a good default
+#
+#		$launcher = "loadleveler";
+                $launcher = "none";
+	    } else {
+		$launcher = "gasnetrun_ibv";
+	    }
+	} elsif ($substrate eq "lapi") {
+#
+# our loadleveler code doesn't seem compatible with a pwr5 version
+# of loadleveler yet
+#
+#	    $launcher = "loadleveler";
+            $launcher = "none";
+	}
+    } elsif ($comm eq "armci") {
+        if ($substrate eq "mpi") {
+            $launcher = "mpirun";
+        }
+    } elsif ($platform eq "cray-xmt-sim") {
+	$launcher = "zebra";
+    } elsif ($platform eq "cray-xmt") {
+        $launcher = "mtarun";
+    } elsif ($platform eq "x1-sim" || $platform eq "x2-sim") {
+      $launcher = "apsim";
+    } elsif ($comm eq "mpi") {
+        $launcher = "mpirun";
+    } elsif ($comm eq "pvm") {
+	$launcher = "pvm";
+    }
+} else {
+    $launcher = $preset_launcher;
+}
+
+print "$launcher\n";
+exit(0);

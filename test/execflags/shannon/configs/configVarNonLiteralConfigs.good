@@ -1,0 +1,4 @@
+a at compile time is 4
+b at compile time is 5
+x is initialized at compile time to a + b
+x at runtime is 333

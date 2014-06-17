@@ -1,0 +1,6 @@
+bug: multiple inheritance
+
+Was:
+
+bug: destructors of classes that inherit from multiple classes not allowed
+specifically in the case where more than one class from which it inherits have data.

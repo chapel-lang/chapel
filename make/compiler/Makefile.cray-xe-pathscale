@@ -1,0 +1,5 @@
+# put XE cross-compilation pathscale-specific settings here
+
+XE_GEN_CFLAGS = -OPT:Olimit=0
+
+include $(CHPL_MAKE_HOME)/make/compiler/Makefile.cray-xe

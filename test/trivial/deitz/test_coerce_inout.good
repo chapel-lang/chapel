@@ -1,0 +1,2 @@
+test_coerce_inout.chpl:10: error: unresolved call 'foo(int(64))'
+test_coerce_inout.chpl:1: note: candidates are: foo(inout x: string)

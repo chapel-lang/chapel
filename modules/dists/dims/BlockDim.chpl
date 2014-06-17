@@ -1,0 +1,316 @@
+//
+// Block dimension specifier - for use with DimensionalDist2D.
+//
+
+use DimensionalDist2D;
+
+
+class BlockDim {
+  // the type of bbStart, bbLength
+  // (also (ab)used as the idxType of the domains created over this dist.)
+  // (todo - straighten that out)
+  type idxType;
+
+  const numLocales: int;
+
+  // the .low and .length of BlockDist's 'boundingBox' for our dimension
+  const bbStart: idxType;
+  const bbLength: idxType;
+
+  proc boundingBox return bbStart .. (bbStart + bbLength - 1);
+}
+
+class Block1dom {
+  type idxType;
+  param stridable: bool;
+
+  // convenience
+  proc rangeT type  return range(idxType, BoundedRangeType.bounded, stridable);
+
+  // our range
+  var wholeR: rangeT;
+
+  // privatized distribution descriptor
+  const pdist;
+
+  proc dsiSetIndicesUnimplementedCase param return false;
+}
+
+class Block1locdom {
+  var myRange;
+}
+
+
+/////////// user constructor, for convenience
+
+proc BlockDim.BlockDim(numLocales: int, boundingBox: range(?),
+                 type idxType = boundingBox.idxType)
+{
+  if !isBoundedRange(boundingBox) then
+    compilerError("The 1-d block descriptor constructor was passed an unbounded range as the boundingBox");
+
+  this.numLocales = numLocales;
+  this.bbStart = boundingBox.low;
+  this.bbLength = boundingBox.length;
+}
+
+/////////// privatization - start
+
+proc BlockDim.dsiSupportsPrivatization1d() param return true;
+
+proc BlockDim.dsiGetPrivatizeData1d() {
+  return (numLocales, bbStart, bbLength);
+}
+
+proc BlockDim.dsiPrivatize1d(privatizeData) {
+  return new BlockDim(privatizeData, this.idxType);
+}
+
+// constructor for privatization
+proc BlockDim.BlockDim(privatizeData, type idxType) {
+  numLocales = privatizeData(1);
+  bbStart = privatizeData(2);
+  bbLength = privatizeData(3);
+}
+
+proc BlockDim.dsiUsesLocalLocID1d() param return false;
+
+proc Block1dom.dsiSupportsPrivatization1d() param return true;
+
+proc Block1dom.dsiGetPrivatizeData1d() {
+  return (wholeR,);
+}
+
+proc Block1dom.dsiPrivatize1d(privDist, privatizeData) {
+  assert(privDist.locale == here); // sanity check
+  return new Block1dom(idxType   = this.idxType,
+                  stridable = this.stridable,
+                  wholeR    = privatizeData(1),
+                  pdist     = privDist);
+}
+
+proc Block1dom.dsiGetReprivatizeData1d() {
+  return (wholeR,);
+}
+
+proc Block1dom.dsiReprivatize1d(other, reprivatizeData) {
+  if other.idxType   != this.idxType ||
+     other.stridable != this.stridable then
+    compilerError("inconsistent types in privatization");
+
+  this.wholeR = reprivatizeData(1);
+}
+
+proc Block1dom.dsiUsesLocalLocID1d() param return false;
+
+proc Block1dom.dsiLocalDescUsesPrivatizedGlobalDesc1d() param return false;
+
+/////////// privatization - end
+
+
+// Constructor. idxType is inferred from the 'bbLow' argument
+// (alternative: default to 'int' instead).
+proc BlockDim.BlockDim(numLocales, boundingBoxLow, boundingBoxHigh, type idxType = boundingBoxLow.type) {
+  if !(boundingBoxLow <= boundingBoxHigh) then halt("'BlockDim' distribution must have a non-empty bounding box between boundingBoxLow and boundingBoxHigh; got ", boundingBoxLow, " .. ", boundingBoxHigh);
+  assert(numLocales > 0); // so we can cast it to any int type
+  this.numLocales = numLocales;
+  this.bbStart = boundingBoxLow;
+  this.bbLength = (boundingBoxHigh - boundingBoxLow + 1):idxType;
+  assert(this.bbLength > 0);
+}
+
+proc BlockDim.toString()
+  return "BlockDim(" + numLocales:string + ", " + boundingBox:string + ")";
+
+proc BlockDim.dsiCreateReindexDist1d(newRange: range(?), oldRange: range(?)) {
+  const oldDesc = this;
+  if oldRange.stride != newRange.stride then
+    halt("reindexing from ", oldRange, " to ", newRange,
+         " is not supported by ", oldDesc.toString,
+         " due to a change in stride");
+  // TODO: this is overflow-oblivious. See Block.dsiCreateReindexDist().
+  const delta = newRange.first - oldRange.first;
+  return new BlockDim(idxType     = oldDesc.idxType,
+                   numLocales  = oldDesc.numLocales,
+                   boundingBox = oldDesc.boundingBox + delta);
+}
+
+proc BlockDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
+                                  type stoIndexT)
+{
+  // ignore stoIndexT - all we need is for other places to work out
+  if idxType != this.idxType then
+    compilerError("The index type ", typeToString(idxType),
+                  " does not match the index type ",typeToString(this.idxType),
+                  " of the 'BlockDim' 1-d distribution");
+  return new Block1dom(idxType = idxType, stridable = stridable, pdist = this);
+}
+
+proc Block1dom.dsiIsReplicated1d() param return false;
+
+proc Block1dom.dsiNewLocalDom1d(type stoIndexT, locId: locIdT) {
+  var defaultVal: range(stoIndexT, stridable=this.stridable);
+  return new Block1locdom(myRange = defaultVal);
+}
+
+proc BlockDim.dsiIndexToLocale1d(indexx): locIdT {
+  if indexx <= bbStart then
+    return 0;
+
+  const index0 = indexx - bbStart;  // always > 0
+
+  // (numLocales-1) is the answer when
+  //   index0 >= (numLocales-1) * (bbLength+1) / numLocales
+  // whose r.h.s. could be stored in 'BlockDim', trading memory for computation.
+  // We simplify the condition to 'index0 >= bbLength'.
+  // (Note: if index0 == bbLength - 1, the answer may not be (numLocales - 1)).
+  // If the condition doesn't hold, the later formula gives the answer.
+  // (Compared to the formula in Block.targetLocsIdx, we run comparisons
+  // *before* multiplying and dividing.)
+  //
+  if index0 >= bbLength then
+    return numLocales - 1;
+
+  // need to think what to do if numLocales is not int
+  type adjT =
+    if numLocales.type == int && idxType == uint(64)
+    then uint(64)
+    else numLocales.type;
+
+  const result = index0 * numLocales:adjT / bbLength;
+  assert(0 <= result && result < numLocales:adjT);
+  return result:locIdT;
+}
+
+proc Block1dom.dsiSetIndices1d(rangeArg: rangeT): void {
+  wholeR = rangeArg;
+}
+
+// Helper: compute the chunk to be stored on locID
+proc Block1dom._dsiComputeMyRange(locId): rangeT {
+  const dom = this;
+  const dist = dom.pdist;
+  // see LocBlock.LocBlock()
+  const (blo, bhi) = _computeBlock(dist.bbLength, dist.numLocales,
+           locId, max(dom.idxType), min(dom.idxType), dist.bbStart);
+  const myChunk = blo..bhi;
+  // see Block.getChunk()
+  const chunk = dom.wholeR(myChunk);
+  return chunk;
+}
+
+proc Block1locdom.dsiSetLocalIndices1d(globDD, locId: locIdT) {
+  myRange = globDD._dsiComputeMyRange(locId);
+  return myRange;
+}
+
+/////////////////////////////////
+
+proc Block1dom.dsiBuildRectangularDom1d(DD,
+                                   param stridable:bool,
+                                   rangeArg: range(idxType,
+                                                   BoundedRangeType.bounded,
+                                                   stridable))
+{
+  // There does not seem to be any optimizations from merging the two calls.
+  type dummy_stoIndexT = int;
+  const result = DD.dsiNewRectangularDom1d(this.idxType, stridable,
+                                           dummy_stoIndexT);
+  result.dsiSetIndices1d(rangeArg);
+  return result;
+}
+
+proc Block1locdom.dsiBuildLocalDom1d(newGlobDD, locId: locIdT) {
+  type  old_stoIndexT = this.myRange.idxType; // essentially 'this.stoIndexT'
+
+  const newLocDD = newGlobDD.dsiNewLocalDom1d(old_stoIndexT, locId);
+  const newStoRng = newLocDD.dsiSetLocalIndices1d(newGlobDD, locId);
+
+  return (newLocDD, newStoRng);
+}
+
+/////////////////////////////////
+
+proc Block1dom.dsiStorageUsesUserIndices() param return true;
+
+proc Block1dom.dsiAccess1d(indexx: idxType): (locIdT, idxType) {
+  return (pdist.dsiIndexToLocale1d(indexx), indexx);
+}
+
+iter Block1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
+  const locRange = densify(myRange, globDD.wholeR, userErrors=false);
+  yield locRange: range(globDD.idxType);
+}
+
+proc Block1dom.dsiSingleTaskPerLocaleOnly1d() param return false;
+
+proc Block1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTasks:int) {
+  const locRange = densify(myRange, globDD.wholeR, userErrors=false);
+  // Copied straight from BlockDom leader - replace locBlock(parDim)->locRange.
+  const (lo, hi) = _computeBlock(locRange.length, numTasks, taskid,
+                                 locRange.high, locRange.low, locRange.low);
+
+  // If this can occasionally be an empty range, add a check to Dimensional
+  // to not yield anything in such a case.
+  return lo..hi;
+}
+
+proc Block1locdom.dsiMyDensifiedRangeType1d(globDD) type
+  return range(globDD.idxType);
+
+iter Block1dom.dsiSerialArrayIterator1d() {
+  // The Block distribution assigns indices to locales contiguously and
+  // so that (i1<i2) => (locId1<=locId2). This is defined by the domain map.
+  // As we traverse the range (i.e. this.wholeR), locIds will increase
+  // if the stride is positive, and decrease otherwise.
+  // On a single locale, Block1locdom.myRange (aka this._dsiComputeMyRange())
+  // already happens to reflect the desired direction.
+
+  for locId in (0..#pdist.numLocales) by sgn(wholeR.stride) {
+    // We do not go to Block1locdom for myRange because (a) recomputing it
+    // is probably cheaper than going to a remote locale, and
+    // (b) we do not store Block1locdom objects in Block1dom.
+    const localRange = _dsiComputeMyRange(locId);
+//writeln("Block1dom.dsiSerialArrayIterator1d  ", locId, ", ", localRange);
+    yield (locId, localRange);
+  }
+}
+
+iter Block1dom.dsiFollowerArrayIterator1d(undensRange): (locIdT, idxType) {
+//writeln("Block1dom.dsiFollowerArrayIterator1d  undensRange ", undensRange);
+
+  const heuristic_weight_rangepoint = 2; // measure of work in (a) below
+  const heuristic_weight_locale = 3;     // measure of work in (b)
+
+  if heuristic_weight_locale * undensRange.stride >
+      heuristic_weight_rangepoint * pdist.bbLength / pdist.numLocales
+  {
+//writeln("Block1dom.dsiFollowerArrayIterator1d case A");
+    // (a) no benefit to factor out computations for a particular locale
+    for ix in undensRange do
+      yield dsiAccess1d(ix);
+
+  } else {
+    // (b) per-locale computation is amortized over enough undensRange indices
+    const lowLocId = pdist.dsiIndexToLocale1d(undensRange.alignedLow);
+    const highLocId = pdist.dsiIndexToLocale1d(undensRange.alignedHigh);
+
+    // check for a supposedly more common case of following our own leader
+    if lowLocId == highLocId {
+//writeln("Block1dom.dsiFollowerArrayIterator1d case B1  lowLocId ", lowLocId);
+      for i in undensRange do
+        yield (lowLocId, i);
+
+    } else {
+      assert(lowLocId < highLocId);
+      for locId in lowLocId .. highLocId by sgn(undensRange.stride) {
+        // We do not go to Block1locdom for myRange - same rationale as above.
+        const thisLocaleRange = _dsiComputeMyRange(locId);
+        const localRangeToFollow = undensRange(thisLocaleRange);
+//writeln("Block1dom.dsiFollowerArrayIterator1d case B2  locId ", locId, "  localRangeToFollow ", localRangeToFollow);
+        for i in localRangeToFollow do
+          yield (locId, i);
+      }
+    }
+  }
+}

@@ -1,0 +1,6 @@
+bug: compiler hits an internal failure in a certain case when 'ref' intent is used with comm=gasnet
+
+This is the same as ref-intent-bug-3med.future, but uses
+'begin' instead of 'on'.
+
+When this bug is fixed, .skipif should be removed.

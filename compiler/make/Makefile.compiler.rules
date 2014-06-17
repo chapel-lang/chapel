@@ -1,0 +1,4 @@
+
+include $(COMPILER_ROOT)/make/Makefile.compiler.commonrules
+
+depend:

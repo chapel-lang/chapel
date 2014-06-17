@@ -1,0 +1,7 @@
+error message: more specific error message upon missing close brace
+
+Right now I get
+  foo.chpl:NNNN: syntax error
+where NNNN points to the last line in the file plus one and there is no
+indication what cased the error. Pointing to the location of the offending
+open brace would reduce the time the user needs to fix the source code.

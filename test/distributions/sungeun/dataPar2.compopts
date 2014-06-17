@@ -1,0 +1,3 @@
+-sdebugDataPar=true -smyIntType=uint(64)
+-sdebugDataPar=true -smyIntType=int(32)
+-sdebugDataPar=true -smyIntType=int(64)

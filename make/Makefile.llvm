@@ -1,0 +1,6 @@
+#
+# CHPL_MAKE_LLVM
+#
+#
+#
+CHPL_MAKE_LLVM = $(shell $(CHPL_MAKE_HOME)/util/chplenv/llvm $(CHPL_MAKE_HOST_TARGET))

@@ -1,0 +1,2 @@
+# the test program works correctly if compiled with --baseline
+COMPOPTS <= --baseline

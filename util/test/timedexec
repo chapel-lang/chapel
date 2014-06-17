@@ -1,0 +1,59 @@
+#!/usr/bin/env perl
+
+#
+# @ARGV[0] = <timeout value>
+# @ARGV[1..@#ARGV] = command line to run
+#
+
+$| = 1;					# will flush buffers after write
+
+die "usage: timedexec timeout \"commandline\"\n" unless $#ARGV >= 1;
+
+eval {
+    local $SIG{ALRM} = sub { die "alarm\n" };
+    alarm @ARGV[0];
+    if (!defined($child_pid = fork())) {
+        print "timedexec cannot fork child\n";
+        exit(1);
+    } elsif ($child_pid == 0) {
+        setpgrp(0,0);
+        exec @ARGV[1..$#ARGV];
+        die "timedexec failed to execute target program: $1\n";
+    } else {
+        waitpid($child_pid, 0);
+        if ($? == -1) {
+            print "timedexec: waitpid() failed: $!\n";
+            exit(1);
+        } elsif ($? & 127) {
+            printf "timedexec: target program died with signal %d, %s coredump\n",
+                   ($? & 127), ($? & 128) ? 'with' : 'without';
+            exit(1);
+        } else {
+            $cmdStatus = $? >> 8;
+        }
+
+    }        
+    alarm 0;
+};
+if ($@) {
+    die unless $@ eq "alarm\n";
+    print "timedexec Alarm Clock\n";
+    eval {
+        local $SIG{ALRM} = sub { die "alarm\n" };
+        alarm @ARGV[0];
+        # allow proper cleanup if possible
+        print "timedexec sending SIGTERM\n";
+        kill SIGTERM, -$child_pid;
+        waitpid($child_pid, 0);
+        alarm 0;
+    };
+    if ($@) {
+        die unless $@ eq "alarm\n";
+        # hit it with the big hammer
+        print "timedexec sending SIGKILL\n";
+        kill SIGKILL, -$child_pid;
+    }
+    exit(222);
+} else {
+    exit($cmdStatus);
+}

@@ -1,0 +1,11 @@
+semantic: two promotions less specific than generic+promotion
+
+sjd: Are you sure this isn't going too far?
+
+My intuition is that function calls that rely on promotion
+should always be lower priority than those that do not,
+even if they use generics.
+
+
+See arrayVsPromotion.future for more discussion on this
+topic.

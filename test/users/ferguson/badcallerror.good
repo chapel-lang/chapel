@@ -1,0 +1,1 @@
+badcallerror.chpl:3: error: type mismatch in assignment from function ():int(64) to int(64)

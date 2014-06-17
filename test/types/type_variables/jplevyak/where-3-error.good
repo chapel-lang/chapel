@@ -1,0 +1,2 @@
+where-3-error.chpl:5: error: unresolved call 'f(t=type real(64), 1)'
+where-3-error.chpl:1: note: candidates are: f(type t, x: ?tt)

@@ -1,0 +1,1 @@
+bug794131.chpl:11: error: argument 'stuff': extern functions do not support formals of array type yet (see doc/technotes/README.extern for tips)

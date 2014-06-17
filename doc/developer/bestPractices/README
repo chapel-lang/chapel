@@ -1,0 +1,46 @@
+=====================
+Chapel Best Practices
+=====================
+
+This directory contains rough notes intended to be helpful in pointing
+out features/quirks of the Chapel development experience for new
+developers.  A possible reading order is roughly as follows:
+
+GettingStarted.txt
+  A list of suggested "first steps" for new developers.
+
+Subversion.txt
+  Notes on using the Chapel Subversion repository
+
+Compiler documentation:
+
+  The compiler overview document
+    in $CHPL_HOME/doc/developer/compilerOverview
+
+  CompilerDebugging.txt
+    Tips on debugging the compiler.
+
+  CompilerIRTricks.txt
+    Tips on examining compiler IR during/after compilation.
+
+  ErrorWarningMessaging.txt
+    The standard ways to report errors and warnings in Chapel/compiler/runtime.
+
+RuntimeLibrary.txt
+  All about the runtime library.
+
+GeneratedCode.txt
+  All about compiler-generated code: where it is, timing it,
+  debugging/profiling, etc.
+
+GASNetOnDesktops.txt
+  Tips on running and debugging Chapel programs with GASNet on your desktop.
+
+CHPL_DEVELOPER.txt
+  The most important environment variable you want to set, and what it does.
+
+TestSystem.txt
+  All about the Chapel testing system.
+
+Potpourri.txt
+  Notes not in any of the above categories.

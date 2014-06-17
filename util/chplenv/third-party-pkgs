@@ -1,0 +1,90 @@
+#!/usr/bin/env python
+#
+# Print the names of any third-party packages needed for the current
+# Chapel environment settings
+#
+# ASSUMPTIONS:
+# - This script is located in .../chapel/util/chplenv/third-party-pkgs
+# - The format of the output from 'printchplenv' follows the current
+#   conventions.  Specifically,
+#   - Chapel-specific environment variables are prefixed with 'CHPL_' (***)
+#   - Any Chapel environment variable ending in '_PLATFORM' describes
+#     the hardware/OS combo and will not considered in this script
+#   - "Top-level" Chapel environment variables are printed starting
+#     in the first column.  Any Chapel environment variables that 
+#     indented are assumed to be modifiers of the corresponding top-level
+#     variable and will not be considered in this script (*** and also
+#     do not necessarily have to be prefixed with 'CHPL_')
+# - $CHPL_HOME/third-party/<pkg>/Makefile.include defines any aliases
+#   for the package name in a variable called XXX_ALIASES where XXX
+#   is the directory name in all caps.
+#
+# - if the file COMPILERONLY exists in the third party directory,
+#   that package is emitted if --compiler is passed,
+#   and not by default (which gives dependencies for runtime).
+#
+import os, os.path, sys, subprocess
+
+utildir = os.path.split(sys.argv[0])
+chpl_home = utildir[0]+'/../..'
+
+third_party = chpl_home+'/third-party'
+third_party_pkgs = os.listdir(third_party)
+
+#
+# Add any aliases
+#
+pkg_aliases = list()
+for dir in third_party_pkgs:
+    if dir == '.svn':
+        continue
+    deffile = third_party+'/'+dir+'/Makefile.include'
+    aliasvar = dir.upper()+'_ALIASES'
+    if os.access(deffile, os.F_OK) and os.access(deffile, os.R_OK):
+        f = open(deffile, 'r')
+        for line in f.readlines():
+            varvalue = line.strip().split('=')
+            if varvalue[0] == aliasvar:
+                aliases = varvalue[1].split()
+                for a in aliases:
+                    pkg_aliases.append(a)
+                break
+        f.close()
+
+printchplenv = chpl_home+'/util/printchplenv'
+chplenv=subprocess.Popen([printchplenv],
+                         stdout=subprocess.PIPE).communicate()[0]
+
+pkgs=''
+for l in chplenv.split('\n'):
+    # Consider only lines to that start with 'CHPL_'.
+    if l.startswith('CHPL_'):
+        (var, val) = l.split(':')
+        var=var.strip()
+        val=val.strip()
+        # Ignore platform variables
+        if not var.endswith('_PLATFORM'):
+            if third_party_pkgs.count(val)==1:
+                pkgs += val+' '
+            elif pkg_aliases.count(val)==1:
+                pkgs += val+' '
+
+pkgs = pkgs.strip()
+# Filter dependencies into 2 list: compiler and runtime dependencies.
+comppkgs=''
+runpkgs=''
+for p in pkgs.split(' '):
+  if os.path.isfile(third_party + "/" + p + "/COMPILERONLY"):
+    comppkgs += p+' '
+  else:
+    runpkgs += p+' '
+
+if len(sys.argv) > 1 and sys.argv[1] == "--compiler":
+  pkgs = comppkgs
+else:
+  pkgs = runpkgs
+
+pkgs = pkgs.strip()
+
+print pkgs
+

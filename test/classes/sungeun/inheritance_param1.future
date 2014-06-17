@@ -1,0 +1,9 @@
+bug: Cannot use param declared in parent class in member initialization in subclass.
+
+This test declares a class A with a param x and another class B that
+is a subclass of A.  B has a member y that is initialized to x.
+
+Compilation results in the following error message:
+
+     inheritance_param1.chpl:6: error: unresolved call 'B.x'
+     inheritance_param1.chpl:2: note: candidates are: A.x

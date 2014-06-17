@@ -1,0 +1,4 @@
+# This test is designed to only to work on 32-bit systems
+# (or rather, those for which size_t == 32 bits,
+# so for now let's just test it on 32-bit linux
+CHPL_TARGET_PLATFORM != linux32

@@ -1,0 +1,1 @@
+test_return2.chpl:1: error: Not all returns in this function return a value

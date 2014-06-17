@@ -1,0 +1,12 @@
+-smyType=bool
+-smyType=uint(8)
+-smyType=uint(16)
+-smyType=uint(32)
+-smyType=uint(64)
+-smyType=uint
+-smyType=int(8)
+-smyType=int(16)
+-smyType=int(32)
+-smyType=int(64)
+-smyType=int
+

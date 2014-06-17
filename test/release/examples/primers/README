@@ -1,0 +1,29 @@
+==============
+Chapel Primers
+==============
+
+These primers are small Chapel program with narrative comments that
+demonstrate Chapel feature area in detail.
+
+     arrays.chpl            : Rectangular arrays/domains
+     atomics.chpl           : Atomic variables
+     chpldoc.chpl	    : The chpldoc feature
+     classes.chpl           : Defining and using classes
+     distributions.chpl     : Chapel standard distributions
+     domains.chpl           : Domains and methods on domains
+     fileIO.chpl            : File I/O example using arrays
+     genericClasses.chpl    : Defining and using generic classes
+     iterators.chpl         : Iterator examples
+     leaderfollower.chpl    : Introduction to leader/follower iterators
+     locales.chpl           : Chapel Locale types
+     opaque.chpl            : Opaque arrays
+     procedures.chpl        : Procedure examples
+     ranges.chpl            : Range types and operations on ranges
+     reductions.chpl        : Reduction examples
+     slices.chpl            : Array slicing and reindexing examples
+     sparse.chpl            : Sparse domains and arrays
+     syncsingle.chpl        : Sync and single variables
+     taskParallel.chpl      : Task parallel language concepts
+     timers.chpl            : Time standard module
+     varargs.chpl           : Variable argument procedures
+     variables.chpl         : Variables, constants and parameters

@@ -1,0 +1,8 @@
+feature request: param/type iterators
+
+Param/Type iterators seem like a natural extension to the language.
+Naturally, they would be completely evaluated/unrolled at compile
+time.  This series of tests shows a simple use of them to do some
+unit testing across a range of types.  Note that while these tests
+only use int(x) types, a type iterator could also yield a mix of
+types (e.g., reals, ints, strings, bools, and more complex things).

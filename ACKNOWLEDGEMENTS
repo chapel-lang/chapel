@@ -1,0 +1,37 @@
+=======================
+Chapel Acknowledgements
+=======================
+
+This material is based upon work that was supported by the Defense
+Advanced Research Projects Agency under its Agreement
+No. HR0011-07-9-0001 and its Contract No. NBCH3039003.  Any opinions,
+findings and conclusions or recommendations expressed in this material
+are those of the author(s) and do not necessarily reflect the views of
+the Defense Advanced Research Projects Agency.
+
+This work was also supported by the Center for Adaptive Supercomputing
+Software for Multithreaded Architectures program (CASS-MT) at the
+Pacific Northwest National Laboratory, as well as the Laboratory for
+Telecommunications Sciences at the University of Maryland.
+
+This project is currently hosted by SourceForge and we are grateful to
+them for their ongoing support.
+
+During its early years, this project was supported by a grant from
+Washington Technology Center, and it was hosted for several years by
+the University of Washington Computer Science and Engineering
+Department -- thanks to both groups for their support.
+
+This research has used resources of the National Center for
+Computational Sciences at Oak Ridge National Laboratory, which is
+supported by the Office of Science of the U.S. Department of Energy
+under Contract No. DE-AC05-00OR22725.
+
+Thanks very much to Argonne National Laboratory (www.anl.gov), 
+BSC (www.bsc.es), HPCx (www.hpcx.ac.uk), LBNL (www.lbl.gov), 
+PNNL (www.pnl.gov), SARA (www.sara.nl), and the University of 
+Vienna (www.univie.ac.at) for grants of machine time used for testing 
+the portability of our code over the course of the project.
+
+Thanks very much to Intel for donating compiler licenses during the
+initial years of the project for the purpose of portability testing.

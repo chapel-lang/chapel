@@ -1,0 +1,1 @@
+bad_label.chpl:7: error: cannot label non-loop statement

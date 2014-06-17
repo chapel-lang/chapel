@@ -1,0 +1,5 @@
+bug: Declaring a tuple of domains produces run-time error, "attempt to 
+dereference nil".  However, assigning the value directly with implicit
+typing does work, i.e.
+    var tuple_of_domains = ([1..0],[1..0]);
+works as expected.

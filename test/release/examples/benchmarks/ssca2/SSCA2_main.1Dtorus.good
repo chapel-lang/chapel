@@ -1,0 +1,640 @@
+=========================================================
+Problem Dimensions
+Scale: 6
+Number of Vertices: 64
+Kernel 3 Path Length: 3
+Kernel 4 Starting Set range
+low scale: 4
+high scale: 6
+
+Code Characteristics
+Filtering Edges by Weight
+Reproducible problem
+No additional work for bounds computation
+Not collecting timing statistics
+Vertex domain is block distributed
+=========================================================
+
+One D Torus: all nodes should have exact betweenness centrality: 961.0
+(upper bound on approximate or filtered betweenness centrality)
+
+--------------------------------
+One D Torus with 64 nodes
+explicit stencil representation
+--------------------------------
+
+
+One Dimension Torus
+index lower bound: 1
+index upper bound: 64
+
+vertex   Neighbors
+
+maximum edge weight:64
+
+vertex:   weights
+1: 2 32
+2: 40 22
+3: 55 40
+4: 54 21
+5: 11 14
+6: 48 25
+7: 60 39
+8: 26 61
+9: 50 24
+10: 46 41
+11: 59 13
+12: 8 56
+13: 5 61
+14: 52 49
+15: 11 41
+16: 44 1
+17: 44 42
+18: 24 56
+19: 17 46
+20: 2 64
+21: 64 62
+22: 29 8
+23: 23 31
+24: 49 22
+25: 35 45
+26: 12 4
+27: 2 34
+28: 22 60
+29: 54 57
+30: 8 2
+31: 52 32
+32: 50 46
+33: 7 19
+34: 30 19
+35: 44 30
+36: 56 41
+37: 24 44
+38: 30 40
+39: 9 3
+40: 6 16
+41: 23 4
+42: 38 9
+43: 52 13
+44: 26 14
+45: 32 30
+46: 28 64
+47: 51 35
+48: 24 61
+49: 58 13
+50: 53 45
+51: 64 11
+52: 4 33
+53: 19 3
+54: 60 19
+55: 22 22
+56: 35 57
+57: 58 33
+58: 33 35
+59: 46 63
+60: 48 52
+61: 32 47
+62: 61 43
+63: 56 24
+64: 38 59
+
+Heaviest weight      : 64
+Number of heavy edges:4
+
+Edges with largest weight and other neighbors:
+
+
+starting vertices for Betweenness Centrality
+{2 5 9 14 16 17 20 22 24 32 33 36 40 43 44 48}
+
+Between Centrality:
+BC(1) = 0.0
+BC(2) = 0.0
+BC(3) = 1.0
+BC(4) = 2.0
+BC(5) = 0.0
+BC(6) = 3.0
+BC(7) = 3.0
+BC(8) = 3.0
+BC(9) = 0.0
+BC(10) = 0.0
+BC(11) = 0.0
+BC(12) = 0.0
+BC(13) = 3.0
+BC(14) = 4.0
+BC(15) = 9.0
+BC(16) = 6.0
+BC(17) = 2.0
+BC(18) = 0.0
+BC(19) = 1.0
+BC(20) = 0.0
+BC(21) = 0.0
+BC(22) = 1.0
+BC(23) = 2.0
+BC(24) = 0.0
+BC(25) = 6.0
+BC(26) = 5.0
+BC(27) = 4.0
+BC(28) = 3.0
+BC(29) = 2.0
+BC(30) = 1.0
+BC(31) = 2.0
+BC(32) = 2.0
+BC(33) = 5.0
+BC(34) = 8.0
+BC(35) = 6.0
+BC(36) = 4.0
+BC(37) = 3.0
+BC(38) = 3.0
+BC(39) = 6.0
+BC(40) = 6.0
+BC(41) = 8.0
+BC(42) = 10.0
+BC(43) = 6.0
+BC(44) = 2.0
+BC(45) = 2.0
+BC(46) = 0.0
+BC(47) = 0.0
+BC(48) = 0.0
+BC(49) = 14.0
+BC(50) = 13.0
+BC(51) = 12.0
+BC(52) = 11.0
+BC(53) = 10.0
+BC(54) = 9.0
+BC(55) = 8.0
+BC(56) = 7.0
+BC(57) = 6.0
+BC(58) = 5.0
+BC(59) = 4.0
+BC(60) = 3.0
+BC(61) = 2.0
+BC(62) = 1.0
+BC(63) = 0.0
+BC(64) = 0.0
+
+Max Betweenness Centrality: 14.0
+Min Betweenness Centrality: 0.0
+
+Computed betweenness centrality satisfies vertex count constraint
+All betweenness centrality scores should be in range [0, 4032.0]
+
+
+starting vertices for Betweenness Centrality
+{2 5 6 9 11 13 14 16 17 18 19 20 22 23 24 26 32 33 35 36 37 38 40 42 43 44 47 48 49 55 60 62}
+
+Between Centrality:
+BC(1) = 0.0
+BC(2) = 0.0
+BC(3) = 1.0
+BC(4) = 2.0
+BC(5) = 0.0
+BC(6) = 3.0
+BC(7) = 6.0
+BC(8) = 6.0
+BC(9) = 3.0
+BC(10) = 4.0
+BC(11) = 0.0
+BC(12) = 0.0
+BC(13) = 3.0
+BC(14) = 8.0
+BC(15) = 12.0
+BC(16) = 8.0
+BC(17) = 3.0
+BC(18) = 0.0
+BC(19) = 1.0
+BC(20) = 0.0
+BC(21) = 0.0
+BC(22) = 3.0
+BC(23) = 4.0
+BC(24) = 10.0
+BC(25) = 16.0
+BC(26) = 10.0
+BC(27) = 12.0
+BC(28) = 9.0
+BC(29) = 6.0
+BC(30) = 3.0
+BC(31) = 3.0
+BC(32) = 4.0
+BC(33) = 8.0
+BC(34) = 12.0
+BC(35) = 6.0
+BC(36) = 6.0
+BC(37) = 4.0
+BC(38) = 4.0
+BC(39) = 8.0
+BC(40) = 9.0
+BC(41) = 12.0
+BC(42) = 10.0
+BC(43) = 9.0
+BC(44) = 4.0
+BC(45) = 3.0
+BC(46) = 1.0
+BC(47) = 0.0
+BC(48) = 15.0
+BC(49) = 28.0
+BC(50) = 39.0
+BC(51) = 36.0
+BC(52) = 34.0
+BC(53) = 32.0
+BC(54) = 30.0
+BC(55) = 24.0
+BC(56) = 28.0
+BC(57) = 24.0
+BC(58) = 20.0
+BC(59) = 16.0
+BC(60) = 12.0
+BC(61) = 10.0
+BC(62) = 5.0
+BC(63) = 0.0
+BC(64) = 0.0
+
+Max Betweenness Centrality: 39.0
+Min Betweenness Centrality: 0.0
+
+Computed betweenness centrality satisfies vertex count constraint
+All betweenness centrality scores should be in range [0, 4032.0]
+
+
+Computing Betweenness Centrality exactly
+
+Between Centrality:
+BC(1) = 0.0
+BC(2) = 0.0
+BC(3) = 2.0
+BC(4) = 2.0
+BC(5) = 4.0
+BC(6) = 6.0
+BC(7) = 10.0
+BC(8) = 10.0
+BC(9) = 6.0
+BC(10) = 4.0
+BC(11) = 1.0
+BC(12) = 0.0
+BC(13) = 4.0
+BC(14) = 10.0
+BC(15) = 12.0
+BC(16) = 10.0
+BC(17) = 4.0
+BC(18) = 0.0
+BC(19) = 1.0
+BC(20) = 0.0
+BC(21) = 0.0
+BC(22) = 7.0
+BC(23) = 12.0
+BC(24) = 22.0
+BC(25) = 28.0
+BC(26) = 30.0
+BC(27) = 28.0
+BC(28) = 22.0
+BC(29) = 12.0
+BC(30) = 7.0
+BC(31) = 4.0
+BC(32) = 6.0
+BC(33) = 11.0
+BC(34) = 12.0
+BC(35) = 9.0
+BC(36) = 8.0
+BC(37) = 5.0
+BC(38) = 6.0
+BC(39) = 10.0
+BC(40) = 12.0
+BC(41) = 12.0
+BC(42) = 14.0
+BC(43) = 12.0
+BC(44) = 6.0
+BC(45) = 4.0
+BC(46) = 1.0
+BC(47) = 0.0
+BC(48) = 15.0
+BC(49) = 29.0
+BC(50) = 39.0
+BC(51) = 48.0
+BC(52) = 62.0
+BC(53) = 72.0
+BC(54) = 78.0
+BC(55) = 80.0
+BC(56) = 78.0
+BC(57) = 72.0
+BC(58) = 62.0
+BC(59) = 48.0
+BC(60) = 39.0
+BC(61) = 28.0
+BC(62) = 15.0
+BC(63) = 0.0
+BC(64) = 1.0
+
+Max Betweenness Centrality: 80.0
+Min Betweenness Centrality: 0.0
+
+Computed betweenness centrality satisfies vertex count constraint
+All betweenness centrality scores should be in range [0, 4032.0]
+
+
+=========================================================
+
+
+[0] 10:    9 11
+[0] 11:    10 12
+[0] 12:    11 13
+[0] 13:    12 14
+[0] 14:    13 15
+[0] 15:    14 16
+[0] 16:    15 17
+[0] 17:    16 18
+[0] 18:    17 19
+[0] 19:    18 20
+[0] 1:    64 2
+[0] 20:    19 21
+[0] 21:    20 22
+[0] 22:    21 23
+[0] 23:    22 24
+[0] 24:    23 25
+[0] 25:    24 26
+[0] 26:    25 27
+[0] 27:    26 28
+[0] 28:    27 29
+[0] 29:    28 30
+[0] 2:    1 3
+[0] 30:    29 31
+[0] 31:    30 32
+[0] 32:    31 33
+[0] 33:    32 34
+[0] 34:    33 35
+[0] 35:    34 36
+[0] 36:    35 37
+[0] 37:    36 38
+[0] 38:    37 39
+[0] 39:    38 40
+[0] 3:    2 4
+[0] 40:    39 41
+[0] 41:    40 42
+[0] 42:    41 43
+[0] 43:    42 44
+[0] 44:    43 45
+[0] 45:    44 46
+[0] 46:    45 47
+[0] 47:    46 48
+[0] 48:    47 49
+[0] 49:    48 50
+[0] 4:    3 5
+[0] 50:    49 51
+[0] 51:    50 52
+[0] 52:    51 53
+[0] 53:    52 54
+[0] 54:    53 55
+[0] 55:    54 56
+[0] 56:    55 57
+[0] 57:    56 58
+[0] 58:    57 59
+[0] 59:    58 60
+[0] 5:    4 6
+[0] 60:    59 61
+[0] 61:    60 62
+[0] 62:    61 63
+[0] 63:    62 64
+[0] 64:    63 1
+[0] 6:    5 7
+[0] 7:    6 8
+[0] 8:    7 9
+[0] 9:    8 10
+[0] Building heavy edge subgraph from pair:(20, 21)
+[0] Building heavy edge subgraph from pair:(21, 20)
+[0] Building heavy edge subgraph from pair:(46, 47)
+[0] Building heavy edge subgraph from pair:(51, 50)
+[0] 19 2
+[0] 20 64
+[0] 21 64
+[0] 22 62
+[0] 45 28
+[0] 47 64
+[0] 50 64
+[0] 52 11
+[0] edge   (20, 21)
+[0] edge   (21, 20)
+[0] edge   (46, 47)
+[0] edge   (51, 50)
+[0] expanding from starting node 1
+[0] expanding from starting node 10
+[0] expanding from starting node 11
+[0] expanding from starting node 11
+[0] expanding from starting node 12
+[0] expanding from starting node 13
+[0] expanding from starting node 13
+[0] expanding from starting node 14
+[0] expanding from starting node 14
+[0] expanding from starting node 14
+[0] expanding from starting node 15
+[0] expanding from starting node 16
+[0] expanding from starting node 16
+[0] expanding from starting node 16
+[0] expanding from starting node 17
+[0] expanding from starting node 17
+[0] expanding from starting node 17
+[0] expanding from starting node 18
+[0] expanding from starting node 18
+[0] expanding from starting node 19
+[0] expanding from starting node 19
+[0] expanding from starting node 2
+[0] expanding from starting node 2
+[0] expanding from starting node 2
+[0] expanding from starting node 20
+[0] expanding from starting node 20
+[0] expanding from starting node 20
+[0] expanding from starting node 21
+[0] expanding from starting node 22
+[0] expanding from starting node 22
+[0] expanding from starting node 22
+[0] expanding from starting node 23
+[0] expanding from starting node 23
+[0] expanding from starting node 24
+[0] expanding from starting node 24
+[0] expanding from starting node 24
+[0] expanding from starting node 25
+[0] expanding from starting node 26
+[0] expanding from starting node 26
+[0] expanding from starting node 27
+[0] expanding from starting node 28
+[0] expanding from starting node 29
+[0] expanding from starting node 3
+[0] expanding from starting node 30
+[0] expanding from starting node 31
+[0] expanding from starting node 32
+[0] expanding from starting node 32
+[0] expanding from starting node 32
+[0] expanding from starting node 33
+[0] expanding from starting node 33
+[0] expanding from starting node 33
+[0] expanding from starting node 34
+[0] expanding from starting node 35
+[0] expanding from starting node 35
+[0] expanding from starting node 36
+[0] expanding from starting node 36
+[0] expanding from starting node 36
+[0] expanding from starting node 37
+[0] expanding from starting node 37
+[0] expanding from starting node 38
+[0] expanding from starting node 38
+[0] expanding from starting node 39
+[0] expanding from starting node 4
+[0] expanding from starting node 40
+[0] expanding from starting node 40
+[0] expanding from starting node 40
+[0] expanding from starting node 41
+[0] expanding from starting node 42
+[0] expanding from starting node 42
+[0] expanding from starting node 43
+[0] expanding from starting node 43
+[0] expanding from starting node 43
+[0] expanding from starting node 44
+[0] expanding from starting node 44
+[0] expanding from starting node 44
+[0] expanding from starting node 45
+[0] expanding from starting node 46
+[0] expanding from starting node 47
+[0] expanding from starting node 47
+[0] expanding from starting node 48
+[0] expanding from starting node 48
+[0] expanding from starting node 48
+[0] expanding from starting node 49
+[0] expanding from starting node 49
+[0] expanding from starting node 5
+[0] expanding from starting node 5
+[0] expanding from starting node 5
+[0] expanding from starting node 50
+[0] expanding from starting node 51
+[0] expanding from starting node 52
+[0] expanding from starting node 53
+[0] expanding from starting node 54
+[0] expanding from starting node 55
+[0] expanding from starting node 55
+[0] expanding from starting node 56
+[0] expanding from starting node 57
+[0] expanding from starting node 58
+[0] expanding from starting node 59
+[0] expanding from starting node 6
+[0] expanding from starting node 6
+[0] expanding from starting node 60
+[0] expanding from starting node 60
+[0] expanding from starting node 61
+[0] expanding from starting node 62
+[0] expanding from starting node 62
+[0] expanding from starting node 63
+[0] expanding from starting node 64
+[0] expanding from starting node 7
+[0] expanding from starting node 8
+[0] expanding from starting node 9
+[0] expanding from starting node 9
+[0] expanding from starting node 9
+[0] graph diameter from starting node 1  is 2
+[0] graph diameter from starting node 10  is 4
+[0] graph diameter from starting node 11  is 5
+[0] graph diameter from starting node 11  is 5
+[0] graph diameter from starting node 12  is 0
+[0] graph diameter from starting node 13  is 5
+[0] graph diameter from starting node 13  is 5
+[0] graph diameter from starting node 14  is 4
+[0] graph diameter from starting node 14  is 4
+[0] graph diameter from starting node 14  is 4
+[0] graph diameter from starting node 15  is 3
+[0] graph diameter from starting node 16  is 4
+[0] graph diameter from starting node 16  is 4
+[0] graph diameter from starting node 16  is 4
+[0] graph diameter from starting node 17  is 5
+[0] graph diameter from starting node 17  is 5
+[0] graph diameter from starting node 17  is 5
+[0] graph diameter from starting node 18  is 0
+[0] graph diameter from starting node 18  is 0
+[0] graph diameter from starting node 19  is 1
+[0] graph diameter from starting node 19  is 1
+[0] graph diameter from starting node 2  is 1
+[0] graph diameter from starting node 2  is 1
+[0] graph diameter from starting node 2  is 1
+[0] graph diameter from starting node 20  is 2
+[0] graph diameter from starting node 20  is 2
+[0] graph diameter from starting node 20  is 2
+[0] graph diameter from starting node 21  is 1
+[0] graph diameter from starting node 22  is 1
+[0] graph diameter from starting node 22  is 1
+[0] graph diameter from starting node 22  is 1
+[0] graph diameter from starting node 23  is 8
+[0] graph diameter from starting node 23  is 8
+[0] graph diameter from starting node 24  is 7
+[0] graph diameter from starting node 24  is 7
+[0] graph diameter from starting node 24  is 7
+[0] graph diameter from starting node 25  is 6
+[0] graph diameter from starting node 26  is 5
+[0] graph diameter from starting node 26  is 5
+[0] graph diameter from starting node 27  is 6
+[0] graph diameter from starting node 28  is 7
+[0] graph diameter from starting node 29  is 8
+[0] graph diameter from starting node 3  is 1
+[0] graph diameter from starting node 30  is 1
+[0] graph diameter from starting node 31  is 1
+[0] graph diameter from starting node 32  is 6
+[0] graph diameter from starting node 32  is 6
+[0] graph diameter from starting node 32  is 6
+[0] graph diameter from starting node 33  is 5
+[0] graph diameter from starting node 33  is 5
+[0] graph diameter from starting node 33  is 5
+[0] graph diameter from starting node 34  is 4
+[0] graph diameter from starting node 35  is 5
+[0] graph diameter from starting node 35  is 5
+[0] graph diameter from starting node 36  is 2
+[0] graph diameter from starting node 36  is 2
+[0] graph diameter from starting node 36  is 2
+[0] graph diameter from starting node 37  is 1
+[0] graph diameter from starting node 37  is 1
+[0] graph diameter from starting node 38  is 1
+[0] graph diameter from starting node 38  is 1
+[0] graph diameter from starting node 39  is 2
+[0] graph diameter from starting node 4  is 5
+[0] graph diameter from starting node 40  is 3
+[0] graph diameter from starting node 40  is 3
+[0] graph diameter from starting node 40  is 3
+[0] graph diameter from starting node 41  is 5
+[0] graph diameter from starting node 42  is 5
+[0] graph diameter from starting node 42  is 5
+[0] graph diameter from starting node 43  is 6
+[0] graph diameter from starting node 43  is 6
+[0] graph diameter from starting node 43  is 6
+[0] graph diameter from starting node 44  is 7
+[0] graph diameter from starting node 44  is 7
+[0] graph diameter from starting node 44  is 7
+[0] graph diameter from starting node 45  is 1
+[0] graph diameter from starting node 46  is 1
+[0] graph diameter from starting node 47  is 16
+[0] graph diameter from starting node 47  is 16
+[0] graph diameter from starting node 48  is 15
+[0] graph diameter from starting node 48  is 15
+[0] graph diameter from starting node 48  is 15
+[0] graph diameter from starting node 49  is 14
+[0] graph diameter from starting node 49  is 14
+[0] graph diameter from starting node 5  is 4
+[0] graph diameter from starting node 5  is 4
+[0] graph diameter from starting node 5  is 4
+[0] graph diameter from starting node 50  is 13
+[0] graph diameter from starting node 51  is 12
+[0] graph diameter from starting node 52  is 11
+[0] graph diameter from starting node 53  is 10
+[0] graph diameter from starting node 54  is 9
+[0] graph diameter from starting node 55  is 8
+[0] graph diameter from starting node 55  is 8
+[0] graph diameter from starting node 56  is 7
+[0] graph diameter from starting node 57  is 6
+[0] graph diameter from starting node 58  is 7
+[0] graph diameter from starting node 59  is 8
+[0] graph diameter from starting node 6  is 3
+[0] graph diameter from starting node 6  is 3
+[0] graph diameter from starting node 60  is 3
+[0] graph diameter from starting node 60  is 3
+[0] graph diameter from starting node 61  is 2
+[0] graph diameter from starting node 62  is 1
+[0] graph diameter from starting node 62  is 1
+[0] graph diameter from starting node 63  is 0
+[0] graph diameter from starting node 64  is 1
+[0] graph diameter from starting node 7  is 2
+[0] graph diameter from starting node 8  is 2
+[0] graph diameter from starting node 9  is 3
+[0] graph diameter from starting node 9  is 3
+[0] graph diameter from starting node 9  is 3

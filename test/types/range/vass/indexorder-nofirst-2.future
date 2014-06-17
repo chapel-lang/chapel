@@ -1,0 +1,1 @@
+bug: range.indexOrder() does not check whether the range has the first index

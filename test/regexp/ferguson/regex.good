@@ -1,0 +1,81 @@
+Compile/Delete
+Search 1
+(matched = true, offset = 1, length = 4)
+test
+Search 2
+(matched = true, offset = 1, length = 4)
+t
+test
+Search 3
+(matched = true, offset = 1, length = 4)
+(matched = true, offset = 1, length = 1)
+test
+Search 4
+(matched = true, offset = 1, length = 4)
+(matched = true, offset = 1, length = 4)
+test
+Search 5
+(matched = true, offset = 1, length = 2)
+57
+57
+Match 1
+(matched = true, offset = 0, length = 4)
+test
+Match 2
+(matched = true, offset = 0, length = 4)
+t
+test
+Match 3
+(matched = false, offset = -1, length = 0)
+
+
+Split 1
+Words
+words
+words
+
+Split 2
+Words
+, 
+words
+, 
+words
+.
+
+Split 3
+
+words
+words
+
+Split 4
+
+...
+words
+, 
+words
+...
+
+Split 5
+Words
+words, words.
+Split 6
+Words
+words
+words.
+Matches 1
+Words
+words
+word
+Matches 2
+words
+w
+ords
+word
+w
+ord
+sub 1
+Words, w-ords, w-ord.
+sub 2
+(Words, w-ords, w-ord., 2)
+sub 3
+Words, w-ords, word.

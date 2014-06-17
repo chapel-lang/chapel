@@ -1,0 +1,38 @@
+# Chapel language definition file for highlight http://www.andre-simon.de/
+#
+# Author: Michael Ferguson
+#   Mail: 
+#   Date:
+# ------------------------------------------
+# The file is used to describe keywords and special symbols of programming languages.
+# See README in the highlight directory for details.
+
+$DESCRIPTION=CHPL
+
+# Putting reserved identifiers here, from spec 0.796; section 6.4.2 Keywords
+$KEYWORDS(kwa)=atomic begin break by class cobegin coforall config const continue proc iter delete dmapped do domain else enum false for forall if in index inout label lambda let local module new nil on otherwise out param record reduce return scan select serial single sparse subdomain sync then true type union use var when where while yield zip
+
+# Putting built-in things that are not types things here
+$KEYWORDS(kwb)=bool complex int opaque range real string uint
+
+#$KEYWORDS(kwc)=regex((\w+)\s*\()
+#$KEYWORDS(kwb)=regex((\w+)\s*\()
+
+$STRINGDELIMITERS=" '
+
+$SL_COMMENT=//
+$ML_COMMENT=/* */
+
+$ALLOWNESTEDCOMMENTS=false
+
+$IGNORECASE=false
+
+$ESCCHAR=regex(\\u\p{XDigit}{4}|\\\d{3}|\\x\p{XDigit}{2}|\\[ntvbrfa\\\?'"])
+
+$SYMBOLS= ( ) [ ] { } , ; . : & | < > !  = / * %  + - ~ \#
+
+$DIGIT=regex((?:0x|0X)[0-9a-fA-F]+|\d*[\.\_]?\d+(?:[eE][\-\+]\d+)?[lLuUbfdm]*)
+
+#
+# end of [chpl.lang]
+#

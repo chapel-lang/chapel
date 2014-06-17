@@ -1,0 +1,2 @@
+construct-1b.chpl:6: error: unresolved type specifier 'R(t=type real(64), x="deitz was here")'
+construct-1b.chpl:1: note: candidates are: R(type t)

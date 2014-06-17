@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+
+. /etc/profile
+
+export CHPL_HOME_REPOSITORY="svn://svn.code.sf.net/p/chapel/code/trunk"
+export CHPL_LAUNCHER=none
+
+if [ $# == 0 ] ; then
+  EXAMPLES=-examples
+  dayType=""
+else
+  if [ $1 == "weekend" ] ; then
+    EXAMPLES=
+    dayType="/weekend"
+  else
+    EXAMPLES="-examples"
+    dayType=""
+  fi
+fi
+
+
+export CHPL_NIGHTLY_LOGDIR=/data/sea/cascade/chapel/Nightly${dayType}
+export CHPL_NIGHTLY_STATDIR=/data/sea/cascade/chapel/Nightly${dayType}/Stats
+export CHPL_NIGHTLY_CRON_LOGDIR="$CHPL_NIGHTLY_LOGDIR"
+
+CHPL_HOME="/users/chapelu/chapel"
+NIGHTLY="$CHPL_HOME/util/cron/nightly"
+
+PrgEnv_Version=""
+
+export XTPE_INFO_MESSAGE_OFF=true
+
+# done setting up PrgEnv modules
+
+compilers="gnu pgi cray intel" # pathscale
+
+# Test using $compiler as TARGET compiler
+for compiler in $compilers ; do
+(  # fire up a new shell
+  module load PrgEnv-${compiler}${PrgEnv_Version}
+  if [ $compiler == "cray" ] ; then   # avoid loading gemini libraries
+      module load craype-target-petest
+      module load mpich2
+  fi
+  module list
+  export CHPL_TARGET_PLATFORM=cray-xt
+  $NIGHTLY -combinedir -cron $EXAMPLES
+)
+done
+
+
+# Test using $compiler as HOST and TARGET compiler
+#for compiler in $compilers ; do
+#(  # fire up a new shell
+#  module load PrgEnv-${compiler}${PrgEnv_Version}
+#  module list
+#  export CHPL_HOST_PLATFORM=cray-xt
+#  export CHPL_TARGET_PLATFORM=cray-xt
+#  export CHPL_HOST_COMPILER=cray-xt-$compiler
+#  $NIGHTLY -combinedir -cron $EXAMPLES
+#)
+#done
+
+# Test using $compiler as HOST and TARGET compiler without the Cray wrapper scripts
+# cray compiler cannot be used without Cray wrapper scripts
+compilers="gnu pgi intel" # pathscale"
+
+for compiler in $compilers ; do
+(  # fire up a new shell
+  module load $compiler
+  module list
+  unset CHPL_HOST_PLATFORM
+  unset CHPL_TARGET_PLATFORM
+  export CHPL_HOST_COMPILER=$compiler
+  $NIGHTLY -combinedir -cron $EXAMPLES
+)
+done
+

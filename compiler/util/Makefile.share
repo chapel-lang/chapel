@@ -1,0 +1,15 @@
+UTIL_SRCS = \
+	clangUtil.cpp \
+	files.cpp \
+	llvmUtil.cpp \
+	misc.cpp \
+	mysystem.cpp \
+	stringutil.cpp \
+	timer.cpp \
+        tmpdirname.cpp
+
+SVN_SRCS = $(UTIL_SRCS)
+SRCS = $(SVN_SRCS)
+
+UTIL_OBJS = \
+	$(UTIL_SRCS:%.cpp=$(UTIL_OBJDIR)/%.$(OBJ_SUFFIX))

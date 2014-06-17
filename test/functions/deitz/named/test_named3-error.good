@@ -1,0 +1,3 @@
+test_named3-error.chpl:23: error: unresolved call 'foo(i=1, m=2, n=3)'
+test_named3-error.chpl:1: note: candidates are: foo(i: int, j: int, k: int)
+test_named3-error.chpl:5: note:                 foo(l: int, m: int, n: int)

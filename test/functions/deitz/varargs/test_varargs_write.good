@@ -1,0 +1,8 @@
+output int 1
+output real 2.0
+output string three
+output bool true
+output bool true
+output int 2
+output real 3.0
+output string four

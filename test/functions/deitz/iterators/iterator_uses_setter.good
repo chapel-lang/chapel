@@ -1,0 +1,8 @@
+(1, 2, 3)
+value version of foo() used
+1
+2
+3
+(1, 2, 3)
+setter version of foo() used
+(4, 4, 4)

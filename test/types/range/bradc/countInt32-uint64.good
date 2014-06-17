@@ -1,0 +1,1 @@
+countInt32-uint64.chpl:3: error: illegal use of '#' on operands of type signed integer and uint(64)

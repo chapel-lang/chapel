@@ -1,0 +1,1 @@
+test_begin_error_lineno.chpl:13: error: halt reached - a thread is out of control

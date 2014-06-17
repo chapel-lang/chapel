@@ -1,0 +1,59 @@
+#
+# recursive subdirectory rules
+#
+
+STARS = \*\*\*\*\*
+
+echoruntimedir:
+	@echo $(STARS) $(RUNTIME_SUBDIR)/ $(STARS)
+
+%.makedir:
+	@cd $* && $(MAKE)
+
+%.cleandir:
+	@cd $* && $(MAKE) clean
+
+%.cleandirdeps:
+	@cd $* && $(MAKE) cleandeps
+
+%.clobberdir:
+	@cd $* && $(MAKE) clobber
+
+
+
+#
+# dependences and misc. stuff
+#
+
+-include $(SVN_DEPENDS)
+
+#
+# pattern-based rules
+#
+
+#
+# The "$($(<:.c=)_CFLAGS)" construct lets your Makefile.share define,
+# say, a whatever_CFLAGS variable that contains command line options
+# to be used only when compiling whatever.c.  Note that this is a bit
+# fragile, however, since the only consideration given for filename
+# characters not legal in Makefile variable names is that we change
+# dash ("-") to underbar ("_").
+#
+$(RUNTIME_OBJ_DIR)/%.o: %.c $(RUNTIME_OBJ_DIR_STAMP)
+	@if [ `grep "chplrt.h" $< | wc -l` -ne 1 ]; then echo "PROBLEM:  $< does not include 'chplrt.h'."; exit 1; fi
+	$(CC) -c $(RUNTIME_CFLAGS) $($(subst -,_,$(<:.c=))_CFLAGS) $(RUNTIME_INCLS) -o $@ $<
+
+ifdef NVCC
+$(RUNTIME_OBJ_DIR)/%.o: %.cu $(RUNTIME_OBJ_DIR_STAMP)
+	$(NVCC) -c $(RUNTIME_CUDA_CFLAGS) $(RUNTIME_INCLS) -o $@ $<
+endif	
+
+$(LAUNCHER_OBJ_DIR)/%.o: %.c $(LAUNCHER_OBJ_DIR_STAMP)
+	$(CC) -c $(LAUNCHER_CFLAGS) $(LAUNCHER_INCLS) -o $@ $<
+
+FORCE:
+
+.PHONY: all clean cleandeps clobber depend test echoruntimedir FORCE
+.SUFFIXES:
+.SUFFIXES: .cpp .o .h .makedir .cleandir .cleandirdeps .clobberdir
+.SECONDARY: $(RUNTIME_OBJ_DIR_STAMP) $(LAUNCHER_OBJ_DIR_STAMP)

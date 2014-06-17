@@ -1,0 +1,4 @@
+
+include $(RUNTIME_ROOT)/make/Makefile.runtime.commonrules
+
+depend:

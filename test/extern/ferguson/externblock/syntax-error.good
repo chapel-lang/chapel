@@ -1,0 +1,7 @@
+In file included from <built-in>:153:
+In file included from <command line>:5:
+syntax-error.chpl:6:3: error: expected identifier or '('
+  &&;
+  ^
+1 error generated.
+error: error running clang on extern block

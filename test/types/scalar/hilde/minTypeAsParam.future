@@ -1,0 +1,6 @@
+feature request: Implement type minimum and maximum values as param properties.
+
+min() and max() on types currently return a run-time value rather than a compile-time value.  These values should be available at compile time, since we already know the size of the representation.
+
+Also, I'd prefer a property syntax (like a field accessor) for this kind of type trait query.
+

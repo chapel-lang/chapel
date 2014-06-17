@@ -1,0 +1,3 @@
+--N=7  # fannkuch-redux.N=7.good
+--N=10 # fannkuch-redux.N=10.good
+# This is the reference size: --N=12

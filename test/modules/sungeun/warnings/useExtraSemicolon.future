@@ -1,0 +1,8 @@
+feature request: No-op statements at the top-level of a file should give a "misunderstanding"-style warning
+
+Having an extra semicolon at the top-level of a module and then having
+the only module in the file have the same name as the filename causes
+the compiler to create a new top-level module.  This is a subtle
+mistake, and it would be nice to have a warning regarding it.
+
+See r18043 for a similar fix for top-level use statements.

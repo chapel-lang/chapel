@@ -1,0 +1,5 @@
+recursive-iterator-in-expr-context.chpl:1: In iterator 'try1':
+recursive-iterator-in-expr-context.chpl:3: warning: discarding the result of an iterator invoked in an expression context
+recursive-iterator-in-expr-context.chpl:6: In iterator 'try2':
+recursive-iterator-in-expr-context.chpl:8: warning: discarding the result of an iterator invoked in an expression context
+5

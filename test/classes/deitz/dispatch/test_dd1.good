@@ -1,0 +1,3 @@
+D.foo (z, this) = (12, {x = 3, y = 4})
+D.foo (z, this) = (1, {x = 3, y = 4})
+D.foo bool (z, this) = (true, {x = 3, y = 4})

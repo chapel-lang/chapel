@@ -1,0 +1,12 @@
+bug: an "ambiguous call" error is not reported
+
+Seems like the compilerError function that's in the internal module
+(and whose copy is in the test code)
+is not considered a worthy contestant for the function call
+when there is an exactly the same user-defined function.
+
+This doesn't sound right to me. If this is the intended behavior,
+we should discuss it as a group and document it.
+
+If I have two copies of the same compilerError() in the test code,
+I correctly get an "ambiguous call" error.

@@ -1,0 +1,2 @@
+modDomQuery.chpl:13: In function 'foo':
+modDomQuery.chpl:14: error: illegal lvalue in assignment

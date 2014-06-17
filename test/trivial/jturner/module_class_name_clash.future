@@ -1,0 +1,4 @@
+bug: classes with matching names in separate modules class when used together
+
+I can't seem to find a way to construct classes with the same name which are defined in separate modules.  These modules do not use each other, but 
+instead a new location uses both.

@@ -1,0 +1,2 @@
+#!/bin/sh
+grep \% output/clonedForall.c | wc -l >> clonedForall.exec.out.tmp

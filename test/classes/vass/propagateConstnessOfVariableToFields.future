@@ -1,0 +1,56 @@
+feature request: provide a mechanism for propagating const-ness from a record or class variable down to its fields and for allowing checking of const-ness within a record or class
+
+//see also: types/records/vass/constnessOfThisInMethods.future
+
+Today the const-ness of a field is the same for all instances of the class.
+In some cases it is limiting: instead, we'd like a field to be constant
+if the instance is referenced by a 'const' variable, otherwise we'd like
+the field to be variable.
+
+Const-ness of a record field declared as 'var' already follows the constness
+of the variable that stores the record. Reason: in my mind, if a
+record variable is declared as 'const', the program is disallowed to
+modify the record's value. The latter means exactly modifications of
+the record's fields.
+
+However, even within a record, it may be desirable to propagate its
+constness into its fields. E.g. if the record has the field myC that
+is of a class type C, we may want the constness of C's fields to
+match the constness of the myC field that references the C instance.
+
+
+This mechanism could be provided by as follows.
+
+* Provide an implicit generic argument to a class or record type, say,
+'isConst'. The compiler would set it to true when the class is referenced
+by or a record is contained in a 'const' variable.
+
+* Therefore the program could query that argument within the class/record
+scope.
+
+* Furthermore, allow individual fields to be 'const' or 'var'
+depending on the class's 'isConst'. In other words, it is under
+the user's control whether const-ness propagates down to fields.
+
+
+Here is an illustration, using made-up syntax:
+
+    class C {
+      var field1: if isConst then SomeType else AnotherType;
+      var field2: SomeOtherType(isConst = isConst);
+      (if isConst then const else var) field3: int;
+    }
+
+
+Some issues to be worked out:
+
+* The above strategy results in more generics/instantiations.
+Is the resulting code size growth reasonable? Can it be mitigated?
+E.g. when can genericity over 'isConst' be avoided?
+
+* If the only benefit of introducing genericity over 'isConst' is
+compile-time diagnostics, we should try to achieve the same behavior
+just by running an analysis over the call graph and avoid that genericity.
+
+* How exactly is 'isConst' determined? Especially how does it play
+with type inference? (This might be straightforward.)

@@ -1,0 +1,24 @@
+
+develall: man STATUS
+
+man: FORCE
+	cd man && $(MAKE)
+
+test: FORCE
+	cd test && start_test
+
+SPECTEST_DIR = ./test/release/examples/spec
+spectests: FORCE
+	rm -rf $(SPECTEST_DIR)
+	./util/devel/test/extract_tests -o $(SPECTEST_DIR) spec/*.tex
+
+STATUS: STATUS.devel
+	grep -v "^\ *#" STATUS.devel > STATUS
+
+
+FUTURES:
+	cd test && find . -wholename ".svn" -prune -o \( -name \*.future \) -exec head -n 1 {} + > FUTURES
+
+
+future_stats: FUTURES
+	./util/devel/test/future_stats STATUS.devel test/FUTURES

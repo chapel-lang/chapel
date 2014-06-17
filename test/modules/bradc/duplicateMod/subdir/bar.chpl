@@ -1,0 +1,1 @@
+writeln("In subdir/bar");

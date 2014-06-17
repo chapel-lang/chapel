@@ -1,0 +1,9 @@
+error message: use before def in module use statement
+
+error message: message unclear when using imported symbol before use statement
+In this test case, the same symbol, arraySize, is declared in two different
+modules.  There is a writeln statement that uses arraySize before the use
+statement.  The programmer may be unaware that arraySize is actually imported
+via the use statement, and could be left scratching his/her head until bald
+because the current error message ("actual type is unknown or generic") is not
+helpful in understanding what's wrong.

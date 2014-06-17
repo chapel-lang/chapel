@@ -1,0 +1,1 @@
+test-Random-evenseed.chpl:14: error: halt reached - RandomStream seed must be an odd integer between 0 and 2**46

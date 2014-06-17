@@ -1,0 +1,3 @@
+numLocales = 2
+LocaleSpace = {0..1}
+Locales = LOCALE0 LOCALE1

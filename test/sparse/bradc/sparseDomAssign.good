@@ -1,0 +1,17 @@
+sparseDomAssign.chpl:11: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+S is: {
+ (1, 1)
+ (2, 2)
+ (3, 3)
+ (4, 4)
+ (5, 5)
+}
+
+S2 is: {
+ (1, 1)
+ (2, 2)
+ (3, 3)
+ (4, 4)
+ (5, 5)
+}
+

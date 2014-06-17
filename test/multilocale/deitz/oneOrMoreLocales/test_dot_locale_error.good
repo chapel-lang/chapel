@@ -1,0 +1,5 @@
+test_dot_locale_error.chpl:14: warning: accessing the locale of a local expression
+test_dot_locale_error.chpl:18: warning: accessing the locale of a local expression
+0
+hi
+0

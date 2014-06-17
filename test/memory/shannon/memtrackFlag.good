@@ -1,0 +1,1 @@
+./freedMalloc.chpl:12: error: The printMemTable function only works with the --memTrack flag

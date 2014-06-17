@@ -1,0 +1,21 @@
+A is:
+11 13 15 17 19
+31 33 35 37 39
+51 53 55 57 59
+71 73 75 77 79
+91 93 95 97 99
+
+A[<slice>] is:
+11 13 15 17 19
+31 33 35 37 39
+51 53 55 57 59
+71 73 75 77 79
+91 93 95 97 99
+
+A[<slice>] is:
+33 35 37 39
+53 55 57 59
+73 75 77 79
+93 95 97 99
+
+sliceStridedArray.chpl:17: error: halt reached - array slice out of bounds in dimension 1: 1..10

@@ -1,0 +1,7 @@
+semantic: what should happen to array aliases when domain is reassigned?
+
+This is similar to domainReassignAlias.chpl, except here the alias is created
+by passing an array slice to a function.
+
+Currently, X remains aliased to the old, deallocated array, and is not valid
+to access. The .good is my guess as to the correct behavior.

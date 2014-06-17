@@ -1,0 +1,1 @@
+test_int8_error.chpl:2: error: type mismatch in assignment from int(64) to int(8)

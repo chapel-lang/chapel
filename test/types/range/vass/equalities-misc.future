@@ -1,0 +1,30 @@
+semantic: equality checks between int(64) and uint(64) ranges
+
+Prior to this commit, this test worked by virtue of the fact that
+int(32) and uint(32) supported comparison via promotion to int(64)
+comparison.  Now that integers are becoming 64-bits by default, we
+don't have an int(64), uint(64) comparison and therefore can't do this
+comparison between ranges of different types.  Possible options are:
+
+1) We shouldn't support this -- the user would need to iterate over
+   the ranges and cast one to the other explicitly.
+
+2) We should support this regardless of the cost.  In this case, the
+   cost would be calling into an equality operator that supported
+   int(64)/uint(64) comparisons at large sizes by doing value checking,
+   casts, etc.
+semantic: equality checks between int(64) and uint(64) ranges
+
+Prior to this commit, this test worked by virtue of the fact that
+int(32) and uint(32) supported comparison via promotion to int(64)
+comparison.  Now that integers are becoming 64-bits by default, we
+don't have an int(64), uint(64) comparison and therefore can't do this
+comparison between ranges of different types.  Possible options are:
+
+1) We shouldn't support this -- the user would need to iterate over
+   the ranges and cast one to the other explicitly.
+
+2) We should support this regardless of the cost.  In this case, the
+   cost would be calling into an equality operator that supported
+   int(64)/uint(64) comparisons at large sizes by doing value checking,
+   casts, etc.

@@ -1,0 +1,6 @@
+feature request: module help method
+
+This is a request to support a standard help() routine for
+modules that will be printed when --help is used when it's
+defined; when it's not, the default message that we already
+generate for a module would be used.

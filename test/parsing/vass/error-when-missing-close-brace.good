@@ -1,0 +1,2 @@
+error-when-missing-close-brace.chpl:3: syntax error: missing close brace
+error-when-missing-close-brace.chpl:2: note: the open brace was here

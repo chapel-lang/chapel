@@ -1,0 +1,4 @@
+feature request: external enums
+
+This general concept seems to make sense.  Need to add support to the
+parser at the very least.

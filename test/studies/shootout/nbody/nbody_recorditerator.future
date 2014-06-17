@@ -1,0 +1,5 @@
+semantic: Need way for iterator to yield modifiable records
+
+One possible way would be to use the var keyword at the end of it.
+This would be useful if we did not want to rely on the class object
+and instead use records.

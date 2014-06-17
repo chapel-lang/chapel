@@ -1,0 +1,9 @@
+bug: Cannot use type variable declared in parent class in member declaration of subclass.
+
+This test declares a class A with a type variable (myType) and another
+class B that is a subclass of A.  B has a member of type myType.
+
+Compilation results in the following error message:
+
+     inheritance_typeVar1.chpl:6: error: unresolved call 'B.myType'
+     inheritance_typeVar1.chpl:2: note: candidates are: A.myType

@@ -1,0 +1,12 @@
+Module: classFields
+   Class: Parent
+      field alone
+          This field should be first 
+      field nephew
+          This field should be second 
+      field niece
+          This field should be third 
+      field umbrella
+          This field should be last 
+      inherited from object
+

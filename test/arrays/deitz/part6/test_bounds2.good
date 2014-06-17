@@ -1,0 +1,2 @@
+0
+test_bounds2.chpl:4: error: halt reached - array index out of bounds: (1, 6)

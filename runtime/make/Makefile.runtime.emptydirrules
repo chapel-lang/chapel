@@ -1,0 +1,9 @@
+all: echoruntimedir $(MAKEALLSUBDIRS)
+
+clean: echoruntimedir $(CLEANSUBDIRS)
+
+cleandeps: echoruntimedir $(CLEANSUBDIRDEPS)
+
+clobber: echoruntimedir $(CLOBBERSUBDIRS)
+
+depend:

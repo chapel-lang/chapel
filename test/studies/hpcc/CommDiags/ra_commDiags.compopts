@@ -1,0 +1,3 @@
+--no-warnings -O --main-module ra -suseLCG=false
+--no-warnings -O --main-module ra # ra_commDiags-LCG.good
+

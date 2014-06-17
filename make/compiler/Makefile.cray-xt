@@ -1,0 +1,6 @@
+#
+# Settings for Cray XT3 and XT4 systems
+#
+include $(CHPL_MAKE_HOME)/make/compiler/Makefile.cray-x-series
+
+export XTPE_INFO_MESSAGE_OFF=true

@@ -1,0 +1,9 @@
+bug: param function with declared type doesn't create param value
+
+NOTE: I believe this is the same as functions/vass/paramret-1.future
+
+This code should behave identically to paramfn.chpl, but doesn't
+seem to.  Instead it captures the result of the param function
+as an empty string for some reason.  May have to do with how we
+implement non-inferred types by capturing a value of the declared
+type in the IR?

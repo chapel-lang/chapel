@@ -1,0 +1,7 @@
+0 initializing M1
+0 in M1 initialization x = 17
+0 initializing M2
+0 starting main
+1 using M1
+1 in main x = 17
+0 finishing main

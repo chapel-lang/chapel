@@ -1,0 +1,101 @@
+The Chapel runtime atomics interface is modelled after the
+upcoming C standard (currently called C1x). See
+ http://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf
+
+We require the C1x standard atomic functions for the types:
+   atomic_uint_least8_t
+   atomic_uint_least16_t
+   atomic_uint_least32_t
+   atomic_uint_least64_t
+   atomic_uintptr_t
+   atomic_int_least8_t
+   atomic_int_least16_t
+   atomic_int_least32_t
+   atomic_int_least64_t
+   atomic_flag
+and we require that the generic routines have the type appended
+to them, so that (for example), atomic_fetch_add( (uint_least64_t*) ptr, 100 )
+will be written atomic_fetch_add_uint_least64_t( (uint_least64_t*) ptr, 100 )
+
+In addition, we assume that there is a function e.g.
+ void atomic_destroy_uint_least64_t(volatile A* obj, C value);
+so that we have an opportunity to free memory occupied by a lock.
+
+   Here's what we expect in the C1X standard:
+
+   typedef enum {
+     memory_order_relaxed,
+     memory_order_consume,
+     memory_order_acquire,
+     memory_order_release,
+     memory_order_acq_rel,
+     memory_order_seq_cst
+   } memory_order;
+
+   // release, acq_rel, seq_cst store performs a release on affected memory.
+   // acquire, acq_rel, seq_cst load operation performs aquire on affected memory.
+   // consume a load operation performs a consume on affected memory
+   // seq_cst is 'sequentially consistent'
+
+   void atomic_thread_fence(memory_order order);
+
+   // only ordering between thread & signal handler executed on same thread.
+   void atomic_signal_thread_fence(memory_order order);
+
+   // an atomic flag; set or not; must be lock-free according to the standard.
+   atomic_flag type
+
+   // test and set
+   bool atomic_flag_test_and_set(volatile atomic_flag *object);
+   bool atomic_flag_test_and_set_explicit(volatile atomic_flag *object, memory_order order);
+
+   // clear atomic flag.
+   void atomic_flag_clear(volatile atomic_flag *object);
+   void atomic_flag_clear_explicit(volatile atomic_flag *object, memory_order order);
+
+   // standard specifies many types, but Chapel uses only:
+   atomic_uint_least8_t
+   atomic_uint_least16_t
+   atomic_uint_least32_t
+   atomic_uint_least64_t
+   atomic_uintptr_t
+   atomic_int_least8_t
+   atomic_int_least16_t
+   atomic_int_least32_t
+   atomic_int_least64_t
+   atomic_flag
+
+   // non _explicit versions use memory_order_seq_cst.
+
+   // All the following functions are generic - the Chapel runtime will assume
+   // that we have implementations with e.g. _uint_least64_t appended to the function
+   // name.
+
+   // is it implemented lock-free?
+   bool atomic_is_lock_free(const volatile A* obj);
+
+   // initialize with no possible concurrent access.
+   void atomic_init(volatile A* obj, C value);
+
+   C atomic_store(volatile A* object, C desired);
+   C atomic_store_explicit(volatile A* object, C desired, memory_order order);
+
+   C atomic_load(volatile A* object);
+   C atomic_load_explicit(volatile A* object, memory_order order);
+
+   C atomic_exchange(volatile A* object, C desired);
+   C atomic_exchange_explicit(volatile A* object, C desired, memory_order order);
+
+   bool atomic_compare_exchange_strong(volatile A* object, C* expected, C desired);
+   bool atomic_compare_exchange_strong_explicit(volatile A* object, C* expected, C desired, memory_order success, memory_order failure);
+
+   // weak compare-and-swap can fail for no real reason.
+   bool atomic_compare_exchange_weak(volatile A* object, C* expected, C desired);
+   bool atomic_compare_exchange_weak_explicit(volatile A* object, C* expected, C desired, memory_order success, memory_order failure);
+
+   // atomic fetch and op, for op in add, sub, or, and:
+   // (atomic xor only supported on some platforms)
+   C atomic_fetch_op(volatile A *object, M operand);
+   C atomic_fetch_op_explicit(volatile A *object, M operand, memory_order order);
+
+

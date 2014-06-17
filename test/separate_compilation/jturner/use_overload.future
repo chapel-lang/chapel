@@ -1,0 +1,8 @@
+unimplemented feature: User may specify exported name.
+
+Since we don't use name-mangling, we need to allow the user to optionally specify
+the symbol to be exported in an exported function declaration, such as
+
+    export "foo_r" foo(x:real) {}
+    export "foo_i" foo(i:int) {}
+

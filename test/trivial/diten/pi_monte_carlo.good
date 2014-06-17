@@ -1,0 +1,2 @@
+pi_monte_carlo.chpl:16: warning: reduce has been serialized (see note in $CHPL_HOME/STATUS)
+3.1112

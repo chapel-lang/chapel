@@ -1,0 +1,1 @@
+subdir/bar.chpl --main-module=foo

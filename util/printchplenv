@@ -1,0 +1,68 @@
+#!/usr/bin/env perl
+
+use File::Basename;
+
+$utildirname = dirname($0)."/chplenv";
+
+$uname = `uname -a`;
+
+print "uname -a: $uname";
+
+print "\$CHPL_HOME: $ENV{'CHPL_HOME'}\n";
+print "script location: $utildirname\n";
+
+$hostplatform = `$utildirname/platform --host 1`; chomp($hostplatform);
+$hostcompiler = `$utildirname/compiler --host`; chomp($hostcompiler);
+
+print "CHPL_HOST_PLATFORM: $hostplatform\n";
+print "CHPL_HOST_COMPILER: $hostcompiler\n";
+
+
+$targplatform = `$utildirname/platform --target`; chomp($targplatform);
+$targcompiler = `$utildirname/compiler --target`; chomp($targcompiler);
+
+print "CHPL_TARGET_PLATFORM: $targplatform\n";
+print "CHPL_TARGET_COMPILER: $targcompiler\n";
+
+$comm = `$utildirname/comm`; chomp($comm);
+print "CHPL_COMM: $comm\n";
+if ($comm eq "none" || $comm eq "ugni") {
+} else {
+    $commsubstrate = `$utildirname/commSubstrate`; chomp($commsubstrate);
+    print "  CHPL_COMM_SUBSTRATE: $commsubstrate\n";
+    if (($comm eq "armci" && $commsubstrate eq "mpi") ||
+        ($comm eq "mpi")) {
+        $mpiver = `$utildirname/chplmpi`; chomp($mpiver);
+        print "  CHPL_MPI_VERSION: $mpiver\n";
+    }
+    if ($comm eq "gasnet") {
+        $commsegment = `$utildirname/commSegment`; chomp($commsegment);
+        print "  CHPL_GASNET_SEGMENT: $commsegment\n";
+    }
+}
+
+$tasks = `$utildirname/tasks`; chomp($tasks);
+print "CHPL_TASKS: $tasks\n";
+$threads = `$utildirname/threads`; chomp($threads);
+print "CHPL_THREADS: $threads\n";
+$launcher = `$utildirname/launcher`; chomp($launcher);
+print "CHPL_LAUNCHER: $launcher\n";
+$timer = `$utildirname/timers`; chomp($timer);
+print "CHPL_TIMERS: $timer\n";
+$mem = `$utildirname/mem`; chomp($mem);
+print "CHPL_MEM: $mem\n";
+$make = `$utildirname/chplmake`; chomp($make);
+print "CHPL_MAKE: $make\n";
+$atomics = `$utildirname/atomics`; chomp($atomics);
+print "CHPL_ATOMICS: $atomics\n";
+if ($comm eq "none") {
+} else {
+$network_atomics = `$utildirname/atomics --network`; chomp($network_atomics);
+print "  CHPL_NETWORK_ATOMICS: $network_atomics\n";
+}
+$gmp = `$utildirname/gmp`; chomp($gmp);
+print "CHPL_GMP: $gmp\n";
+$regexp = `$utildirname/regexp`; chomp($regexp);
+print "CHPL_REGEXP: $regexp\n";
+$llvm = `$utildirname/llvm`; chomp($llvm);
+print "CHPL_LLVM: $llvm\n";

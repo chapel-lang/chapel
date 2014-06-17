@@ -1,0 +1,9 @@
+Whenever the output of --help changes from the user's
+perspective, the userhelp.good file must be updated to
+reflect the new contents of the help message.
+
+Why do we have this test?  (1) because we care about
+how help looks to the user, and (2) because the test
+forces us to think about how and where the new flag
+should go rather than just throwing it in and making
+a mess as we did earlier.

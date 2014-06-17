@@ -1,0 +1,10 @@
+#!/usr/bin/env tcsh
+
+#
+# Test a GASNet compile using the default segment (everything for linux64)
+#
+source ~/.chapelcshrc-cron-gasnet
+setenv CHPL_GASNET_SEGMENT everything
+setenv CHPL_GASNET_CFG_OPTIONS --disable-ibv
+$CHPL_HOME/util/cron/nightly -cron >&! ~/tmp/nightly-gasnet-everything.out
+

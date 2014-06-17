@@ -1,0 +1,1 @@
+badstring2int2.chpl:3: error: Unexpected character when converting from string to int(64): 'a'

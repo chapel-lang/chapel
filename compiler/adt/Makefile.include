@@ -1,0 +1,5 @@
+ADT_OBJDIR = $(COMPILER_ROOT)/adt/$(OBJ_SUBDIR)
+
+ALL_SRCS += adt/*.cpp
+
+include $(COMPILER_ROOT)/adt/Makefile.share

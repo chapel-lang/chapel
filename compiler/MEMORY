@@ -1,0 +1,12 @@
+Memory Management
+
+  The memory associated with all classes derived from BaseAST is
+  reclaimed automatically between passes.  AST class instances that
+  are not part of the program AST are deleted between passes.
+
+  The memory that a pass allocates, other than AST nodes, should be
+  reclaimed by that pass.  There is no automatic garbage collection.
+
+  Strings are currently a bit of a mess.  Unless excessive, do not
+  worry about reclaiming the space of strings.  Canonical strings in
+  the AST are reclaimed.

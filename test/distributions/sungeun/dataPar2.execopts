@@ -1,0 +1,4 @@
+--dataParTasksPerLocale=5 # dataPar2.tpl=5.good
+--dataParTasksPerLocale=1 # dataPar2.tpl=1.good
+--dataParTasksPerLocale=6 --dataParMinGranularity=100 # dataPar2.tpl=6.mg=100.good
+

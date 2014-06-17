@@ -1,0 +1,2 @@
+test_arrayops.chpl:10: error: unresolved call 'maxIndex(promoted expression)'
+test_arrayops.chpl:12: note: candidates are: maxIndex(A: [?D] )

@@ -1,0 +1,3 @@
+perfkeys: dgemm:, dgemm_local:
+graphtitle: DGEMM Performance (128x128)
+ylabel: Time (seconds)

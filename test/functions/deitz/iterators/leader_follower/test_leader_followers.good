@@ -1,0 +1,14 @@
+foo range follower called
+bar range follower called
+(1, 1)
+(2, 2)
+(3, 3)
+(4, 4)
+(5, 5)
+bar int follower called
+bar int follower called
+(1, 1)
+(2, 2)
+(3, 3)
+(4, 4)
+(5, 5)

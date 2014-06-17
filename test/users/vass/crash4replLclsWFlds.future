@@ -1,0 +1,14 @@
+bug: compiler crashes with an assertion in replaceLocalsWithFields()
+
+UPDATE: same as crash3tuple.future and iterator-cpp-assertion-crash.future
+
+I get this:
+
+error: assertion error [iterator.cpp:119]
+
+while processing myDims(dd) in crash4replLclsWFlds.chpl:815.
+
+Note: the assertion goes away if I pass 'myDims(dd)' as an (additional)
+argument to iter1dCheck().
+
+I have not investigated or trimmed the code to a smaller test case.

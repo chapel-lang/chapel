@@ -1,0 +1,70 @@
+===============================
+Using Chapel on a Cray XMT (TM)
+===============================
+
+The following information is assembled to help users get up and
+running on a Cray XMT.  If you are not familiar with Chapel, it is
+recommended that you first try the instructions in the top-level
+README to get started with the language.
+
+It should be noted that support for Chapel on Cray XMT systems is a
+work-in-progress.  While recent changes improve performance by
+utilizing parallel loop paradigms suggested by the design of the XMT
+C compiler, certain language constructs may exhibit unacceptable
+performance.  The Chapel framework is in place in the implementation
+of data parallel constructs (e.g., domain and array operations),
+however work is not complete in its optimization.
+
+1) Set CHPL_HOME and MANPATH as indicated in README.chplenv.
+
+2) Set CHPL_TARGET_PLATFORM to cray-xmt.  Notice that we are
+   cross-compiling, because the login node for a Cray XMT system is a
+   linux64 system (this is inferred and does not need to be explicitly
+   set).
+
+3) Ensure that you have the following modules loaded:
+
+     - mta-pe
+     - xmt-tools
+
+4) Make sure you're in the top-level chapel/ directory:
+
+     cd $CHPL_HOME
+
+   Make/re-make the compiler and runtime:
+
+     gmake
+
+6) Add the directory $CHPL_HOME/bin/linux64 to your PATH.
+   This is where the Chapel compiler is located.
+
+6) Compile your Chapel program as usual.  See README.compiling for
+   details.  For example:
+
+     chpl -o hello $CHPL_HOME/examples/hello.chpl
+
+7) When you compile a Chapel program for the Cray XMT, you should see
+   two binaries (e.g., hello and hello_real).  The first binary
+   contains code to launch the Chapel program onto the compute nodes.
+   The second contains the program code itself; it is not intended
+   to be executed directly from the shell prompt.
+
+8) The Cray XMT is treated as a single locale (shared memory) machine.
+   Chapel programs are executed as usual:
+
+     ./hello
+
+   You can use the -v flag to see the commands used to launch your
+   program.  See README.launcher for further details.
+
+   Chapel programs running on the Cray XMT may be executed using the
+   following additional flags:
+
+     --numInitialTeams <n>: Specifies the number of teams required to
+       start the program
+
+     --maxTeams <n>: Specifies the maximum number of teams the program
+       should ever use
+
+     --numNodes <n>: Equivalent to '--numInitialTeams <n> --maxTeams <n>'
+

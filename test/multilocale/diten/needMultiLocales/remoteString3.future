@@ -1,0 +1,8 @@
+bug: multi-locale strings assigned by reference
+
+Was:
+
+bug: string variable should stay on the locale it was declared on
+
+In this code, the assignment to s in the on statement makes s migrate to
+Locale(1).

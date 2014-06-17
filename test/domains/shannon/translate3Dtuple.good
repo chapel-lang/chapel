@@ -1,0 +1,7 @@
+domain(2): 			{1..4, 1..4}
+twice: 				(-1, 1)
+translate(twice): 		{0..3, 2..5}
+
+domain(3): 			{1..4, 1..4, 1..4}
+thrice: 			(-1, 0, 1)
+translate(thrice): 		{0..3, 1..4, 2..5}

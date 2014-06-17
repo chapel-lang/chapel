@@ -1,0 +1,11 @@
+bug: compiler crashes with "SymExpr::var::defPoint is not in AST"
+
+It complains about the first use of 'bd' in backwardSubVerifyLocal like:
+  crash6defPointNotInAST.chpl:29: error: SymExpr::var::defPoint is not in AST [expr.cpp:220]
+
+If I remove that use (or uncomment an earlier use), the complaint/
+crash moves to the other point.
+
+Seems like the deadCodeElimination pass removes the definition of 'bd'
+(because it follows the 'return' statement) but does not remove
+the uses of 'bd'.

@@ -1,0 +1,2 @@
+Tuesday
+readWriteEnum.chpl:6: error: bad format in channel.read(inout a:week) with path "readWriteEnum.stdin" offset 8

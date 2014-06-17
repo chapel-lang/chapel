@@ -1,0 +1,5 @@
+bug: Range length can overflow the index type.
+
+Brad started initial work on a "capacity" type for all lengths
+(and has admitted to failing to implement it in 20 minutes of his
+copious spare time).

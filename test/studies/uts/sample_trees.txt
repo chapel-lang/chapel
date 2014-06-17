@@ -1,0 +1,30 @@
+Interactive sizes:
+~~~~~~~~~~~~~~~~~
+
+* (T1) Geometric - fixed branching factor (4,130,071 nodes)
+  -sdistrib=Geometric -sgeoDist=GeoFixed -sSEED=19 -sB_0=4 -sMAX_DEPTH=10
+
+* (T5) Geometric - linear decrease (4,147,582 nodes)
+  -sdistrib=Geometric -sgeoDist=GeoLinear -sSEED=34 -sB_0=4 -sMAX_DEPTH=20
+
+* (T2) Geometric - cyclic (4,117,769 nodes)
+  -sdistrib=Geometric -sgeoDist=GeoCyclic -sSEED=502 -sB_0=6 -sMAX_DEPTH=16
+
+* (T3) Binomial (4,112,897 nodes)
+  -sSEED=42 -sdistrib=Binomial -sB_0=2000 -snonLeafProb=0.124875 -snonLeafBF=8
+
+* (T4) Hybrid (4,132,453 nodes)
+  -sdistrib=Hybrid -sgeoDist=GeoLinear -sSEED=1 -sMAX_DEPTH=16 -sB_0=6 -snonLeafProb=0.234375 -snonLeafBF=4
+
+100M Node Trees:
+~~~~~~~~~~~~~~
+
+* Geometric - Fixed branching factor (102,181,082 nodes)
+  -sdistrib=Geometric -sgeoDist=GeoFixed -sMAX_DEPTH=13 -sB_0=4 -sSEED=29
+
+* Geometric - Cyclic (96,793,510)
+  -sdistrib=Geometric -sgeoDist=GeoCyclic -sMAX_DEPTH=23 -sB_0=7 -sSEED=220
+
+* Binomial (111,345,631 nodes)
+  -sSEED=7 -sdistrib=Binomial -sB_0=2000 -snonLeafProb=0.200014 -snonLeafBF=5
+

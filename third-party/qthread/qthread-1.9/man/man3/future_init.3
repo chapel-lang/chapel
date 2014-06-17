@@ -1,0 +1,32 @@
+.TH future_init 3 "NOVEMBER 2006" libqthread "libqthread"
+.SH NAME
+.BR future_init " \- initialize the future library"
+.SH SYNOPSIS
+.B #include <qthread.h>
+.br
+.B #include <qthread/futurelib.h>
+
+.I void
+.br
+.B future_init
+.RI "(int " vp_per_loc );
+.PP
+
+.SH DESCRIPTION
+Initializes the futurelib environment so that threads may create
+future computations.
+.PP
+The argument,
+.IR vp_per_loc ,
+specifies how many futures may be active on each location at a time. This does
+not include qthreads which were not created as futures since futurelib is not
+aware of how many of these exists. Active threads include all created futures
+which are currently running and have not explicitly yielded. Inactive futures
+are not limited, as this could easily lead to deadlock.
+.PP
+.SH SEE ALSO
+.BR future_join_all (3),
+.BR future_init (3),
+.BR future_exit (3),
+.BR future_yield (3),
+.BR future_acquire (3)

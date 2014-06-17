@@ -1,0 +1,2 @@
+error: main() function with invalid signature
+main_with_formals.chpl:7: note: in module main_with_formals

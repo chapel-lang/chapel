@@ -1,0 +1,6 @@
+bug: compiler crashes with assertion error [callDestructors.cpp:256]
+
+I did not investigate, but seems like it is due to having the same
+declaration(s) in the current file *and* in a 'use'-ed module
+(see 'use crash1callDestructorsAddon' in the middle of the .chpl file
+- the contents of that module duplicate the first half of the .chpl file).

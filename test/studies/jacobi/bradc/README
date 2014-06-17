@@ -1,0 +1,8 @@
+jacobi-simple-brad.chpl      : My stab at a reasonably simple jacobi
+jacobi-slice-brad.chpl       : A rewrite using slice notation
+jacobi-simple-compilers.chpl : A failed attempt to modify the above until
+                               it would compile
+jacobi-play-brad.chpl        : Started to get playful with the simple version
+jacobi-play2-brad.chpl       : Continued playfulness
+jacobi-rankind-brad.chpl     : A somewhat unsatisfactory attempt to write a 
+                               rank-independent jacobi

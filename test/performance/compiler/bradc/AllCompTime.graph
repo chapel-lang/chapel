@@ -1,0 +1,5 @@
+perfkeys: total time :, total time :, total time :
+files: cg-sparse-timecomp.dat, fft-timecomp.dat, compSampler-timecomp.dat
+graphkeys: cg-sparse, fft, sampler
+graphtitle: Compilation Time
+ylabel: Time (seconds)

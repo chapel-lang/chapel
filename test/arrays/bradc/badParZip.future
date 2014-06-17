@@ -1,0 +1,6 @@
+bug: parallel zippered iteration does no size/shape checking
+
+Another variation of test/arrays/claridge/arraySizeMismatch.chpl
+
+The problem is that our parallel leader/follower interface does not
+support a size check.

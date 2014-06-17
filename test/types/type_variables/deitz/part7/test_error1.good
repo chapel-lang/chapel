@@ -1,0 +1,2 @@
+test_error1.chpl:14: error: unresolved call 'foo(C(int(64)))'
+test_error1.chpl:10: note: candidates are: foo(i: int)

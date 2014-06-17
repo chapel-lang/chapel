@@ -1,0 +1,536 @@
+\sekshun{Data Parallelism}
+\label{Data_Parallelism}
+\index{data parallelism}
+\index{parallelism!data}
+
+Chapel provides two explicit data-parallel constructs (the
+forall-statement and the forall-expression) and several idioms that
+support data parallelism implicitly (whole-array assignment, function
+and operator promotion, reductions, and scans).
+
+This chapter details data parallelism as follows:
+\begin{itemize}
+\item \rsec{Forall} describes the forall statement.
+\item \rsec{Forall_Expressions} describes forall expressions
+\item \rsec{Promotion} describes promotion.
+\item \rsec{Reductions_and_Scans} describes reductions and scans
+\item \rsec{data_parallel_knobs} describes the configuration constants for
+controlling default data parallelism.
+\end{itemize}       
+
+\section{The Forall Statement}
+\label{Forall}
+\index{forall@\chpl{forall} (see also statements, forall)}
+\index{loops!forall (see also statements, forall)}
+\index{data parallelism!forall}
+\index{statements!forall}
+
+The forall statement is a concurrent variant of the for statement
+described in~\rsec{The_For_Loop}.
+
+\subsection{Syntax}
+\label{forall_syntax}
+\index{statements!forall!syntax}
+
+The syntax of the forall statement is given by
+\begin{syntax}
+forall-statement:
+  `forall' index-var-declaration `in' iteratable-expression `do' statement
+  `forall' index-var-declaration `in' iteratable-expression block-statement
+  `forall' iteratable-expression `do' statement
+  `forall' iteratable-expression block-statement
+  [ index-var-declaration `in' iteratable-expression ] statement
+  [ iteratable-expression ] statement
+\end{syntax}
+As with the for statement, the indices may be omitted if they are
+unnecessary and the \chpl{do} keyword may be omitted before a block
+statement.  The square bracketed form is a syntactic convenience.
+
+\subsection{Execution and Serializability}
+\label{forall_semantics}
+\index{statements!forall!semantics}
+
+The forall statement evaluates the loop body once for each element
+yielded by the \sntx{iteratable-expression}.  Each instance of the
+forall loop's body may be executed concurrently with the others, but
+this is not guaranteed.  In particular, the loop must be serializable.
+Details regarding concurrency and iterator implementation are
+described in~\ref{Parallel_Iterators}.
+
+This differs from the semantics of the \chpl{coforall} loop, discussed
+in~\rsec{Coforall}, where each iteration is guaranteed to run using a
+distinct task.  The \chpl{coforall} loop thus has potentially higher
+overhead than a forall loop with the same number of iterations, but in
+cases where concurrency is required for correctness, it is essential.
+
+In practice, the number of tasks that will be used to evaluate
+a \chpl{forall} loop is determined by the object or iterator that
+is \emph{leading} the execution of the loop, as is the mapping of
+iterations to tasks.  This concept will be formalized in future drafts
+of the Chapel specification; for now, please refer
+to \chpl{CHPL_HOME/examples/primers/leaderfollower.chpl} for a brief
+introduction or to \emph{User-Defined Parallel Zippered Iterators in
+Chapel}, published in the PGAS 2011 workshop.
+
+Control continues with the statement following the forall loop only
+after every iteration has been completely evaluated.  At this point,
+all data accesses within the body of the forall loop will be
+guaranteed to be completed.
+
+The following statements may not be lexically enclosed in forall
+statements: break statements, and return statements.  Yield statement
+may only be lexically enclosed in forall statements in parallel
+iterators~(\rsec{Parallel_Iterators}).
+
+\begin{chapelexample}{forallStmt.chpl}
+In the code
+\begin{chapelpre}
+config const N = 5;
+var a: [1..N] int;
+var b = [i in 1..N] i;
+\end{chapelpre}
+\begin{chapel}
+forall i in 1..N do
+  a(i) = b(i);
+\end{chapel}
+the user has stated that the element-wise assignments can execute
+concurrently.  This loop may be executed serially with a single task,
+or by using a distinct task for every iteration, or by using a number
+of tasks where each task executes a number of iterations.  This loop
+can also be written as
+\begin{chapel}
+[i in 1..N] a(i) = b(i);
+\end{chapel}
+\begin{chapelpost}
+writeln(a);
+\end{chapelpost}
+\begin{chapeloutput}
+1 2 3 4 5
+\end{chapeloutput}
+\end{chapelexample}
+
+
+\subsection{Zipper Iteration}
+\label{forall_zipper}
+\index{statements!forall!zipper iteration}
+
+Zipper iteration has the same semantics as described
+in~\rsec{Zipper_Iteration} and~\rsec{Parallel_Iterators} for parallel
+iteration.
+
+\section{The Forall Expression}
+\label{Forall_Expressions}
+\index{data parallelism!forall expressions}
+\index{forall expressions (see also expressions, forall)}
+\index{expressions!forall}
+
+The forall expression is a concurrent variant of the for expression
+described in~\rsec{For_Expressions}.
+
+\subsection{Syntax}
+\label{forall_expr_syntax}
+\index{expressions!forall!syntax}
+
+The syntax of a forall expression is given by
+\begin{syntax}
+forall-expression:
+  `forall' index-var-declaration `in' iteratable-expression `do' expression
+  `forall' iteratable-expression `do' expression
+  [ index-var-declaration `in' iteratable-expression ] expression
+  [ iteratable-expression ] expression
+\end{syntax}
+As with the for expression, the indices may be omitted if they are
+unnecessary.  The \chpl{do} keyword is always required in the
+keyword-based notation.  The bracketed form is a syntactic
+convenience.
+
+\subsection{Execution and Serializability}
+\label{Forall_Expression_Execution_and_Serializability}
+\index{expressions!forall!semantics}
+
+The forall expression executes a forall loop (\rsec{Forall}),
+evaluates the body expression on each iteration of the loop, and
+returns the resulting values as a collection.  The size and shape of
+that collection are determined by the iteratable-expression.
+
+\begin{chapelexample}{forallExpr.chpl}
+The code
+\begin{chapel}
+writeln(+ reduce [i in 1..10] i**2);
+\end{chapel}
+\begin{chapeloutput}
+385
+\end{chapeloutput}
+applies a reduction to a forall-expression that evaluates the square
+of the indices in the range \chpl{1..10}.
+\end{chapelexample}
+
+The forall expression follows the semantics of the forall statement as
+described in~\ref{forall_semantics}.
+
+\subsection{Zipper Iteration}
+\index{expressions!forall!zipper iteration}
+Forall expression also support zippered iteration semantics as
+described in~\rsec{Zipper_Iteration} and~\rsec{Parallel_Iterators} for
+parallel iteration.
+
+
+\subsection{Filtering Predicates in Forall Expressions}
+\label{Filtering_Predicates_Forall}
+\index{expressions!forall!and conditional expressions}
+\index{expressions!forall!filtering}
+
+A filtering predicate is an if expression that is immediately enclosed
+by a forall expression and does not have an
+else clause.  Such an if expression filters the iterations of the
+forall expression.  The iterations for which the condition does not
+hold are not reflected in the result of the forall expression.
+
+\begin{chapelexample}{forallFilter.chpl}
+The following expression returns every other element starting with the
+first:
+\begin{chapelpre}
+var s: [1..10] int = [i in 1..10] i;
+var result =
+\end{chapelpre}
+\begin{chapel}
+[i in 1..s.numElements] if i % 2 == 1 then s(i)
+\end{chapel}
+\begin{chapelpost}
+;
+writeln(result);
+\end{chapelpost}
+\begin{chapeloutput}
+1 3 5 7 9
+\end{chapeloutput}
+\end{chapelexample}
+
+\section{Promotion}
+\label{Promotion}
+\index{promotion}
+
+A function that expects one or more scalar arguments but is called
+with one or more arrays, domains, ranges, or iterators is promoted if
+the element types of the arrays, the index types of the domains and/or
+ranges, or the yielded types of the iterators can be resolved to the
+type of the argument.  The rules of when an overloaded function can be
+promoted are discussed in~\rsec{Function_Resolution}.
+
+In addition to scalar functions, operators and casts are also
+promoted.
+
+\begin{chapelexample}{promotion.chpl}
+Given the array
+\begin{chapel}
+var A: [1..5] int = [i in 1..5] i;
+\end{chapel}
+and the function
+\begin{chapel}
+proc square(x: int) return x**2;
+\end{chapel}
+then the call \chpl{square(A)} results in the promotion of
+the \chpl{square} function over the values in the array \chpl{A}.  The
+result is an iterator that returns the
+values \chpl{1}, \chpl{4}, \chpl{9}, \chpl{16}, and \chpl{25}.
+\begin{chapelnoprint}
+for s in square(A) do writeln(s);
+\end{chapelnoprint}
+\begin{chapeloutput}
+1
+4
+9
+16
+25
+\end{chapeloutput}
+\end{chapelexample}
+
+%%
+%% sungeun: 10/2011
+%% I axed the following paragraph because comments from the peanut
+%% gallery suggested it was confusing, too much implementation
+%% details, etc.  One idea was to add something about defining
+%% iterators to support promotion.  Not sure where that would
+%% eventually go.
+%%
+%% If a promoted function returns a value, the promoted function becomes
+%% an iterator that is controlled by a loop over the iterator (or array,
+%% domain, or range) that it is promoted by.  If the function does not
+%% return a value, the function is controlled by a loop over the iterator
+%% that it is promoted by, but the promotion does not become an iterator.
+
+Whole array operations are a form of promotion as applied to operators
+rather than functions.
+
+
+\subsection{Zipper Promotion}
+\label{Zipper_Promotion}
+\index{promotion!zipper iteration}
+
+Promotion also supports zippered iteration semantics as described
+in~\rsec{Zipper_Iteration} and~\rsec{Parallel_Iterators} for parallel
+iteration.
+
+Consider a function \chpl{f} with formal
+arguments \chpl{s1}, \chpl{s2},~... that are promoted and formal
+arguments \chpl{a1}, \chpl{a2},~... that are not promoted.  The call
+\begin{chapel}
+f(s1, s2, ..., a1, a2, ...)
+\end{chapel}
+is equivalent to
+\begin{chapel}
+[(e1, e2, ...) in zip(s1, s2, ...)] f(e1, e2, ..., a1, a2, ...)
+\end{chapel}
+The usual constraints of zipper iteration apply to zipper promotion so
+the promoted actuals must have the same shape.
+
+\begin{chapelexample}{zipper-promotion.chpl}
+Given a function defined as
+\begin{chapel}
+proc foo(i: int, j: int) {
+  return (i,j);
+}
+\end{chapel}
+and a call to this function written
+\begin{chapel}
+writeln(foo(1..3, 4..6));
+\end{chapel}
+then the output is
+\begin{chapelprintoutput}
+(1, 4) (2, 5) (3, 6)
+\end{chapelprintoutput}
+\end{chapelexample}
+
+\subsection{Whole Array Assignment}
+\label{Whole_Array_Assignment}
+\index{whole array assignment}
+\index{arrays!assignment}
+\index{assignment!whole array}
+
+Whole array assignment is a considered a degenerate case of promotion
+and is implicitly parallel.  The assignment statement
+\begin{chapel}
+LHS = RHS;
+\end{chapel}
+is equivalent to
+\begin{chapel}
+forall (e1,e2) in zip(LHS,RHS) do
+  e1 = e2;
+\end{chapel}
+
+\subsection{Evaluation Order}
+\label{Evaluation_Order}
+\index{data parallelism!evaluation order}
+The semantics of whole array assignment and promotion are different
+from most array programming languages.  Specifically, the compiler
+does not insert array temporaries for such operations if any of the
+right-hand side array expressions alias the left-hand side expression.
+
+%
+% sungeun 4/8/2011
+% Did not convert this one due to non-deterministic output
+%
+\begin{example}
+If \chpl{A} is an array declared over the indices \chpl{1..5}, then
+the following codes are not equivalent:
+\begin{chapel}
+A[2..4] = A[1..3] + A[3..5];
+\end{chapel}
+and
+\begin{chapel}
+var T = A[1..3] + A[3..5];
+A[2..4] = T;
+\end{chapel}
+This follows because, in the former code, some of the new values that
+are assigned to \chpl{A} may be read to compute the sum depending on
+the number of tasks used to implement the data parallel statement.
+\end{example}
+
+
+
+\section{Reductions and Scans}
+\label{Reductions_and_Scans}
+\index{reductions}
+\index{scans}
+\index{data parallelism!reductions}
+\index{data parallelism!scans}
+
+Chapel provides reduction and scan expressions that apply operators to
+aggregate expressions in stylized ways.  Reduction expressions
+collapse the aggregate's values down to a summary value.  Scan
+expressions compute an aggregate of results where each result value
+stores the result of a reduction applied to all of the elements in the
+aggregate up to that expression.  Chapel provides a number of predefined
+reduction and scan operators, and also supports a mechanism for the
+user to define additional reductions and
+scans (Chapter~\ref{User_Defined_Reductions_and_Scans}).
+
+\subsection{Reduction Expressions}
+\label{reduce}
+\index{reduction expressions}
+\index{expressions!reduction}
+
+A reduction expression applies a reduction operator to an aggregate
+expression, collapsing the aggregate's dimensions down into a result
+value (typically a scalar or summary expression that is independent of
+the input aggregate's size).  For example, a sum reduction computes
+the sum of all the elements in the input aggregate expression.
+
+The syntax for a reduction expression is given by:
+\begin{syntax}
+reduce-expression:
+  reduce-scan-operator `reduce' iteratable-expression
+  class-type `reduce' iteratable-expression
+
+reduce-scan-operator: one of
+  + * && || & | ^ `min' `max' `minloc' `maxloc'
+\end{syntax}
+
+Chapel's predefined reduction operators are defined
+by \sntx{reduce-scan-operator} above.  In order, they are: sum,
+product, logical-and, logical-or, bitwise-and, bitwise-or,
+bitwise-exclusive-or, minimum, maximum, minimum-with-location, and
+maximum-with-location.  The minimum reduction returns the minimum
+value as defined by the \verb@<@ operator.  The maximum reduction
+returns the maximum value as defined by the \verb@>@ operator.  The
+minimum-with-location reduction returns the lowest index position with
+the minimum value (as defined by the \verb@<@ operator).  The
+maximum-with-location reduction returns the lowest index position with
+the maximum value (as defined by the \verb@>@ operator).
+
+The expression on the right-hand side of the \chpl{reduce} keyword
+can be of any type that can be iterated over, provided
+the reduction operator can be applied to the values yielded
+by the iteration. For example, the bitwise-and
+operator can be applied to arrays of boolean or integral types to
+compute the bitwise-and of all the values in the array.
+
+For the minimum-with-location and maximum-with-location reductions,
+the argument on the right-hand side of the \chpl{reduce} keyword
+must be a 2-tuple. Its first component is the collection
+of values for which the minimum/maximum value is to be computed.  The
+second argument component is a collection of indices with the same size and
+shape that provides names for the locations of the values in the first
+component.  The reduction returns a tuple containing the
+minimum/maximum value in the first argument component and the value
+at the corresponding location in the second argument component.
+
+\begin{chapelexample}{reduce-loc.chpl}
+The first line below computes the smallest element in an array
+\chpl{A} as well as its index, storing the results in \chpl{minA} and
+\chpl{minALoc}, respectively.  It then computes the largest element in
+a forall expression making calls to a function \chpl{foo()}, storing
+the value and its number in \chpl{maxVal} and \chpl{maxValNum}.
+\begin{chapelnoprint}
+config const n = 10;
+const D = {1..n};
+var A: [D] int = [i in D] i % 7;
+proc foo(x) return x % 7;
+\end{chapelnoprint}
+\begin{chapel}
+var (minA, minALoc) = minloc reduce zip(A, A.domain); 
+var (maxVal, maxValNum) = maxloc reduce zip([i in 1..n] foo(i), 1..n);
+\end{chapel}
+\begin{chapelnoprint}
+writeln((minA, minALoc));
+writeln((maxVal, maxValNum));
+\end{chapelnoprint}
+\begin{chapeloutput}
+(0, 7)
+(6, 6)
+\end{chapeloutput}
+\end{chapelexample}
+
+User-defined reductions are specified by preceding the
+keyword \chpl{reduce} by the class type that implements the reduction
+interface as described in~\rsec{User_Defined_Reductions_and_Scans}.
+
+\subsection{Scan Expressions}
+\label{scan}
+\index{scan expressions}
+\index{expressions!scan}
+
+A scan expression applies a scan operator to an aggregate expression,
+resulting in an aggregate expression of the same size and shape.  The
+output values represent the result of the operator applied to all
+elements up to and including the corresponding element in the input.
+
+The syntax for a scan expression is given by:
+\begin{syntax}
+scan-expression:
+  reduce-scan-operator `scan' iteratable-expression
+  class-type `scan' iteratable-expression
+\end{syntax}
+
+The predefined scans are defined by \sntx{reduce-scan-operator}.  These
+are identical to the predefined reductions and are described
+in~\rsec{reduce}.
+
+The expression on the right-hand side of the scan can be of any type
+that can be iterated over and to which the operator can be applied.
+
+%
+% sungeun: 4/8/2011
+% Did not convert this one yet due to warning about serializing scans
+%
+\begin{example}
+Given an array
+\begin{chapel}
+var A: [1..3] int = 1;
+\end{chapel}
+that is initialized such that each element contains one, then the code
+\begin{chapel}
+writeln(+ scan A);
+\end{chapel}
+outputs the results of scanning the array with the sum operator.  The
+output is
+\begin{chapelprintoutput}
+1 2 3
+\end{chapelprintoutput}
+\end{example}
+
+User-defined scans are specified by preceding the keyword \chpl{scan}
+by the class type that implements the scan interface as described
+in Chapter~\ref{User_Defined_Reductions_and_Scans}.
+
+\section{Configuration Constants for Default Data Parallelism}
+\label{data_parallel_knobs}
+\index{data parallelism!knobs for default data parallelism}
+\index{data parallelism!configuration constants}
+
+The following configuration constants are provided to control the
+degree of data parallelism over ranges, default domains, and default
+arrays:
+
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+{\bf Config Const} & {\bf Type} & {\bf Default} \\
+\hline
+\chpl{dataParTasksPerLocale} & \chpl{int} & Number of cores per locale \\
+\chpl{dataParIgnoreRunningTasks} & \chpl{bool} & \chpl{true} \\
+\chpl{dataParMinGranularity} & \chpl{int} & \chpl{1} \\
+\hline
+\end{tabular}
+\end{center}
+
+The configuration constant \chpl{dataParTasksPerLocale} specifies the
+number of tasks to use when executing a forall loop over a range,
+default domain, or default array.  The actual number of tasks may be
+fewer depending on the other two configuration constants.  A value of
+zero results in using the default value.
+
+The configuration constant \chpl{dataParIgnoreRunningTasks}, when
+true, has no effect on the number of tasks to use to execute the
+forall loop.  When false, the number of tasks per locale is decreased
+by the number of tasks that are already running on the locale, with a
+minimum value of one.
+
+The configuration constant \chpl{dataParMinGranularity} specifies the
+minimum number of iterations per task created.  The number of tasks is
+decreased so that the number of iterations per task is never less than
+the specified value.
+
+For distributed domains and arrays that have these same configuration
+constants (\eg, Block and Cyclic distributions), these same
+global configuration constants are used to specify their default
+behavior within each locale (\rsec{Block_Dist},~\rsec{Cyclic_Dist}).

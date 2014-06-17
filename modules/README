@@ -1,0 +1,11 @@
+============================================
+Chapel Modules Directory Structure and Files
+============================================
+
+The directory structure of the modules/ directory is as follows:
+
+./
+  internal/ : internal modules - used to implement the language
+  standard/ : standard library modules
+  layouts/  : standard domain maps for one locale
+  dists/    : standard domain maps for distributions

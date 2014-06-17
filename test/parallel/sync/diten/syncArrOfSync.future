@@ -1,0 +1,12 @@
+bug: 'sync' and 'single' should be allowed only on scalar types
+
+This is our current thinking, and Brad's rationale for it: Imagine we
+allowed 'sync' on aggregate types. Then, when is the full/empty bit
+set for a multiplicity of values?  When accessing any of them?  Only
+when accessing one of them?  How is the bookkeeping done?  Combined
+with a lack of compelling use cases.
+
+"Scalar" excludes string and complex.
+
+This is the same as
+  parallel/single/hilde/jbreitbart.future

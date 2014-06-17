@@ -1,0 +1,1 @@
+-M../ --fast --report-optimized-on -sdisableBlockLazyRAD=true -sdisableCyclicLazyRAD=true

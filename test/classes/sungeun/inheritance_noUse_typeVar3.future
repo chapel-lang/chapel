@@ -1,0 +1,10 @@
+bug: Confusing error message simple case of inheritance.
+
+This test is exactly like inheritance_noUse_typeVar1.chpl, except it
+calls new B();
+
+     inheritance2.chpl:5: error: unresolved type specifier 'B(myType=type real)'
+     inheritance2.chpl:5: note: candidates are: B
+     inheritance2.chpl:5: note: did you forget the 'new' keyword?
+
+I don't know what this is supposed to mean.

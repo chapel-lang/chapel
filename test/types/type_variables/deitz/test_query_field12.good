@@ -1,0 +1,4 @@
+bounded low ranges: (1.., 1.. by 2)
+bounded high ranges: (..4, ..4 by 2)
+mixed bounded type ranges: (1.., ..4, 1.. by 2, ..4 by 2)
+mixed bounded type ranges: (.., 1.., ..4, 1..4, 1..4 by 2)

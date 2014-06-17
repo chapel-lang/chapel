@@ -1,0 +1,38 @@
+COMM_LAUNCHER_SRCS = \
+        comm-gasnet-locales.c \
+
+COMM_SRCS = \
+	$(COMM_LAUNCHER_SRCS) \
+	comm-gasnet.c \
+
+SVN_SRCS = $(COMM_SRCS)
+SRCS = $(SVN_SRCS)
+
+COMM_OBJS = \
+	$(COMM_SRCS:%.c=$(COMM_OBJDIR)/%.o)
+
+COMM_LAUNCHER_OBJS = \
+	$(COMM_LAUNCHER_SRCS:%.c=$(COMM_LAUNCHER_OBJDIR)/%.o)
+
+ifneq ($(MAKE_LAUNCHER), 1)
+ifneq ($(CHPL_MAKE_RULE),clean)
+ifneq ($(CHPL_MAKE_RULE),clobber)
+-include $(GASNET_INC_MAKEFILE)
+endif
+endif
+
+# 
+# The following lines try to combine GASNet's favorite C compiler
+# flags with ours.  The CHPL_GASNET_MORE_CFLAGS macro is used in
+# case we need to dampen some of our own settings in order to
+# compile GASnet without warnings.
+
+GASNET_RUNTIME_CFLAGS = $(RUNTIME_CFLAGS) $(GASNET_CPPFLAGS) $(GASNET_CFLAGS) $(SUPPORT_SETENV_CFLAGS) $(CHPL_GASNET_MORE_CFLAGS)
+ifneq (, $(filter $(CHPL_MAKE_TARGET_PLATFORM),cray-xt cray-xe cray-xk cray-xc) )
+GASNET_RUNTIME_CFLAGS += -DGASNET_NEEDS_MAX_SEGSIZE
+endif
+endif
+
+$(RUNTIME_OBJ_DIR)/comm-gasnet.o: comm-gasnet.c $(RUNTIME_OBJ_DIR_STAMP)
+	$(ENSURE_GASNET_COMPATIBLE_COMPILER) $(CC) -c $(GASNET_RUNTIME_CFLAGS) $(RUNTIME_INCLS) -o $@ $<
+

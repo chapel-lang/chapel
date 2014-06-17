@@ -1,0 +1,2 @@
+iteratorBadError.chpl:1: In iterator 'itr':
+iteratorBadError.chpl:2: error: 'startval' undeclared (first use this function)

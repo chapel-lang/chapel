@@ -1,0 +1,4 @@
+error message: would like a more explanatory error message in the function-used-as-a-type situation
+
+Right now it says "invalid type specification", which may not
+offer a clear guidance in obscure cases.

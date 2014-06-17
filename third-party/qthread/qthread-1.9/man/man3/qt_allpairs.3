@@ -1,0 +1,55 @@
+.TH qt_allpairs 3 "OCTOBER 2009" libqthread "libqthread"
+.SH NAME
+.BR qt_allpairs ,
+.B qt_allpairs_output
+\- computes a given function over all pairs of the input data
+.SH SYNOPSIS
+.B #include <qthread/allpairs.h>
+
+.I void
+.br
+.B qt_allpairs
+.RI "(const qarray *" array1 ", const qarray *" array2 ,
+.ti +13
+.RI "const dist_f " distfunc );
+.PP
+.I void
+.br
+.B qt_allpairs_output
+.RI "(const qarray *" array1 ", const qarray *" array2 ,
+.ti +20
+.RI "const dist_out_f " distfunc ,
+.ti +20
+.RI "void *restrict *restrict " output ,
+.ti +20
+.RI "const size_t " outsize );
+.SH DESCRIPTION
+The All-Pairs abstraction takes as input two sets of data
+.RI ( array1
+and
+.IR array2 )
+and a "combination" function
+.RI ( distfunc )
+that accepts two elements as input, one from each data set. This function is
+then applied to all pairs of elements from the two sets. The computation occurs
+in locations influenced by the location of the input data.
+.PP
+The
+.I distfunc function must match the following prototype:
+.RS
+.PP
+int
+.B distfunc
+(void *a, void *b);
+.RE
+.PP
+There are two forms of the All-Pairs abstraction: one
+.RI ( qt_allpairs ) that leaves the output to the user, and one
+.RI ( qt_allpairs_output )
+that handles collecting the output. In the latter case, the
+.I output
+must be a pointer to a two-dimensional array and
+.I outsize
+specifies the size of the elements within that array.
+.SH SEE ALSO
+.BR qarray (3)

@@ -1,0 +1,5 @@
+MAIN_OBJDIR = $(COMPILER_ROOT)/main/$(OBJ_SUBDIR)
+
+ALL_SRCS += main/*.h main/*.cpp
+
+include $(COMPILER_ROOT)/main/Makefile.share

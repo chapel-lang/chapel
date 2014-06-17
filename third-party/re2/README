@@ -1,0 +1,37 @@
+======================
+RE2 for Chapel release
+======================
+
+Chapel can be built (by setting CHPL_REGEXP=re2) to include the RE2 library
+(see http://code.google.com/p/re2/). While building, the library
+will be downloaded from its Mercurial repository at re2.googlecode.com
+then patched (see below) - see update-re2.sh.
+
+For more information on the current support for RE2 within Chapel,
+please refer to $CHPL_HOME/doc/technotes/README.regexp.  For more
+information about RE2 itself, please refer to the website above or to
+the README in the re2/ subdirectory of this directory.
+
+We modify the RE2 library to allow regular expressions in the format
+string for Chapel's readf() for searching on QIO channels.
+
+Modified from revision:
+"re2: eliminate global c++ constructors" 94:401ab4168e8e
+
+- added option for dotnl
+- moved NFA and OnePass searches to be implemeted with templates
+  to allow string types other than const char*
+  Also modified these to use begin_reading() instead of begin()
+  for the pointer that will be dereferenced.
+- added file_strings.h to represent a portion of a file accessible
+  by calling some read routine (through a pointer)
+  and modified string_piece to include it.
+- implemented RE2::MatchFile which searches a buffer
+  (optionally) and then some other string type.
+- RE2 constructor now computes min/max possible match length
+  for use in MatchFile.
+
+We have created a patch for RE2 in hg_diff_g.patch. That, along with the
+files file_strings.h and file_strings.cc should allow a different version
+of RE2 to be patched.
+

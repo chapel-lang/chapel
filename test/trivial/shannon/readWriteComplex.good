@@ -1,0 +1,6 @@
+1.2 + 2.3i
+1.2 + 2.3i
+1.2 + 2.3i
+1.2 + 2.3i
+1.2 + 2.3i
+readWriteComplex.chpl:6: error: bad format in channel.read(inout a:complex(128)) with path "readWriteComplex.stdin" offset 50

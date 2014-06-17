@@ -1,0 +1,2 @@
+defaultFnValCreatesGeneric.chpl:10: error: unresolved call 'foo(1.0)'
+defaultFnValCreatesGeneric.chpl:5: note: candidates are: foo(x = bar())

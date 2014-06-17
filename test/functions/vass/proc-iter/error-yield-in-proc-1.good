@@ -1,0 +1,2 @@
+error-yield-in-proc-1.chpl:1: In function 'i11d':
+error-yield-in-proc-1.chpl:2: error: yield statement is in a non-iterator function

@@ -1,0 +1,16 @@
+feature request: 1D array writing -> newline
+
+When working with arrays of arrays recently, it was
+frustrating that our default array printing for them
+didn't generate linefeeds between the inner arrays.
+I think that this would probably require generating
+a linefeed after a 1D array is printed (at least
+that would be the easiest solution?), which we
+decided against originally, but not with this case in
+mind I believe.  I'd like to revisit this choice
+under the argument that most of our default writes 
+are pretty clean (and that it's easier for the user 
+to generate a 1-line display of an array of an arrays
+than it is to generate the multi-line display; and
+that we hope to have some nicer knobs [someday,
+eventually], to control this stuff anyway).

@@ -1,0 +1,1 @@
+circular_init_broken2.chpl:2: error: 'b' used before defined (first used here)

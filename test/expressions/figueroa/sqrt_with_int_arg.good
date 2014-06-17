@@ -1,0 +1,6 @@
+sqrt(5:int(8)) = 2.23607 : real(64)
+sqrt(5:int(16)) = 2.23607 : real(64)
+sqrt(5:int(32)) = 2.23607 : real(64)
+sqrt(5:int(64)) = 2.23607 : real(64)
+sqrt(5:real(32)) = 2.23607 : real(32)
+sqrt(5:real(64)) = 2.23607 : real(64)

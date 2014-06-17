@@ -1,0 +1,15 @@
+arrinit.<dommode>.<arrmode>.chpl
+
+dommode:
+  notype = "domain" specified, but no rank
+  type = "domain(k)" specified
+  *p = initializer parenthesized
+  *s = initializer bracketed
+
+arrmode:
+  notype = "[]" specified as type
+  type = "[D] float" specified as type
+  nodom = "[] float" specified as type
+  noelem = "[D]" specified as type
+  *pr = promoted initializer used
+  *ind = specify indices in the forall initializer

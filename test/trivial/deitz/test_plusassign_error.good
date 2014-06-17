@@ -1,0 +1,1 @@
+test_plusassign_error.chpl:3: error: type mismatch in assignment from int(64) to int(32)

@@ -1,0 +1,6 @@
+feature request: external structs and routines
+
+My sense is that external structs should be able to be passed to and
+from external routines.  I don't think we should be changing returned
+structs to arguments or inserting pointers (or copies) by default but
+haven't had a chance to implement that yet.

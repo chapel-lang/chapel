@@ -1,0 +1,4 @@
+-smyParam=4
+-smyParam="7*(n-15)"
+-smyType=string -smyParam='"blah blah blah"'
+-smyParam=-1 -smyType=uint(16)

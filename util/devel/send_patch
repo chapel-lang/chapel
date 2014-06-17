@@ -1,0 +1,9 @@
+#!/bin/csh
+
+set patchdir="~/patches"
+set patchfile="$patchdir/$1.patch"
+
+cd $CHPL_HOME
+mkdir -p $patchdir
+rm -f $patchfile
+svn diff --no-diff-deleted > $patchfile

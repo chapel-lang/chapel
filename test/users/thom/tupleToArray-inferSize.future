@@ -1,0 +1,4 @@
+feature request: support inferred-size arrays
+
+Permit array anonymous domains to be declared unbounded and have the
+size inferred from the initializer expression.

@@ -1,0 +1,26 @@
+GEN_HEADERS = \
+	reservedSymbolNames.h
+
+PASSES_SRCS = \
+        addInitGuards.cpp \
+        buildDefaultFunctions.cpp \
+        cleanup.cpp \
+        codegen.cpp \
+	docs.cpp \
+	externCResolve.cpp \
+        filesToAST.cpp \
+        flattenClasses.cpp \
+        flattenFunctions.cpp \
+        insertLineNumbers.cpp \
+        normalize.cpp \
+        parallel.cpp \
+        repositionDefExpressions.cpp \
+        returnStarTuplesByRefArgs.cpp \
+        scopeResolve.cpp \
+        semanticChecks.cpp
+
+SVN_SRCS = $(PASSES_SRCS)
+SRCS = $(SVN_SRCS)
+
+PASSES_OBJS = \
+	$(PASSES_SRCS:%.cpp=$(PASSES_OBJDIR)/%.$(OBJ_SUFFIX))

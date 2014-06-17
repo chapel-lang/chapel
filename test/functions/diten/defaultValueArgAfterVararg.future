@@ -1,0 +1,5 @@
+semantic: arg with default value after varargs
+
+When calling a function without specifying a value for the argument with a
+default value, the argument that was intended to be the last vararg is
+used instead of the default value.

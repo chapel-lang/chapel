@@ -1,0 +1,2 @@
+uint64FnInt.chpl:8: error: unresolved call 'foo(uint(64), int(64))'
+uint64FnInt.chpl:4: note: candidates are: foo(x: uint(64), y: uint(64))

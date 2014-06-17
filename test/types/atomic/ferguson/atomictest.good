@@ -1,0 +1,18 @@
+Testing 8 - bit atomics
+Increment OK
+Decrement OK
+Add OK
+Subtract OK
+Compare and Swap OK
+Testing 16 - bit atomics
+Increment OK
+Decrement OK
+Add OK
+Subtract OK
+Compare and Swap OK
+Testing 32 - bit atomics
+Increment OK
+Decrement OK
+Add OK
+Subtract OK
+Compare and Swap OK

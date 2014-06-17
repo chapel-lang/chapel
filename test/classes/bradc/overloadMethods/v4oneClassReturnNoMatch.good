@@ -1,0 +1,2 @@
+v4oneClassReturnNoMatch.chpl:2: error: conflicting return type specified for 'C.bbox(x: int): range(int(64),bounded,true)'
+v4oneClassReturnNoMatch.chpl:17: error:   overridden by 'D.bbox(x: int(64)): range(int(64),bounded,false)'

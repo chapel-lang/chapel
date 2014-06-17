@@ -1,0 +1,22 @@
+========================
+Chapel Utility Directory
+========================
+
+This directory contains utility scripts that are intended to be useful
+to end-users.  The current contents of the directory are as follows:
+
+   printchplenv    : helper script that prints your set/inferred env vars
+
+   setchplenv.bash : bash shell quick-start settings (see $CHPL_HOME/README)
+   setchplenv.csh  : csh/tcsh quick-start settings   (see $CHPL_HOME/README)
+   setchplenv.fish : fish shell quick-start settings (see $CHPL_HOME/README)
+   setchplenv.sh   : sh quick-start settings         (see $CHPL_HOME/README)
+
+   start_test      : the kickoff script for the Chapel testing system
+
+   update-sources  : a script designed to help update Chapel sources as
+                     the language evolves
+
+   chplenv/        : helper scripts for inferring CHPL_* variables if unset
+   config/         : helper scripts for configuring the Chapel build
+   test/           : helper scripts for the testing system

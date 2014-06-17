@@ -1,0 +1,5 @@
+redefineTypeNames3.chpl:1: In function 'main':
+redefineTypeNames3.chpl:3: error: 'real' used before defined (first used here)
+redefineTypeNames3.chpl:4: error: 'imag' used before defined (first used here)
+redefineTypeNames3.chpl:5: error: 'string' used before defined (first used here)
+redefineTypeNames3.chpl:6: error: 'complex' used before defined (first used here)

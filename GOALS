@@ -1,0 +1,24 @@
+===========================================
+Chapel Public Release Goals (version 1.7.0)
+===========================================
+
+The goals of this release are as follows:
+
+* to give the general public an opportunity to see the state and
+  evolution of the Chapel implementation first-hand
+
+* to get feedback on the Chapel language and its ongoing
+  implementation (please direct to chapel_info@cray.com)
+
+* to demonstrate Chapel's base language features
+
+* to demonstrate Chapel's task parallel features in a multi-threaded,
+  multi-locale setting
+
+* to demonstrate Chapel's data parallel features via a combination of
+
+  (i) a multi-threaded implementation of ranges and of non-distributed
+      regular and irregular domains and arrays;
+
+  (ii) a multi-threaded, multi-locale implementation of regular arrays
+       using some standard distributions.

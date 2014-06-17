@@ -1,0 +1,6 @@
+bug: function argument with type tuple of generic type causes assertion failure
+
+The argument type 3*C(?) where C is a generic class causes an assertion failure 
+in the compiler when constructing a CallInfo class.
+
+If this is not supported in the language, we should issue a helpful error.

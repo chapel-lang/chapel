@@ -1,0 +1,2 @@
+test_type_constructor_error2.chpl:6: error: unresolved type specifier 'C(type int(64), 1)'
+test_type_constructor_error2.chpl:1: note: candidates are: C(type t)

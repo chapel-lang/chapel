@@ -1,0 +1,11 @@
+MEM_SRCS = mem-tcmalloc.c tcmalloc-interface.cc
+
+SVN_SRCS = $(MEM_SRCS)
+SRCS = $(SVN_SRCS)
+
+MEM_COMMON_OBJS = \
+        $(addprefix $(MEM_OBJDIR)/,$(addsuffix .o,$(basename $(MEM_SRCS))))
+
+$(RUNTIME_OBJ_DIR)/tcmalloc-interface.o: tcmalloc-interface.cc \
+                                         $(RUNTIME_OBJ_DIR_STAMP)
+	$(CXX) -c $(RUNTIME_CXXFLAGS) -I$(TCMALLOC_SRC_DIR) -I$(TCMALLOC_INCLUDE2_DIR) -o $@ $<

@@ -1,0 +1,8 @@
+bug: range op overflow
+
+Was:
+
+bug: range slice causes integral overflow
+
+The extendedEuclid function defined in range.this correctly returns (1, -1)
+for these strides. The -1 value is then cast to uint where it gets used.

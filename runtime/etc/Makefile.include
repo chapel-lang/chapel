@@ -1,0 +1,51 @@
+CHPL_MAKE_HOST_TARGET = --target
+include $(CHPL_MAKE_HOME)/make/Makefile.base
+
+LD = $(CC)
+
+include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.threads-$(CHPL_MAKE_THREADS)
+-include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.tasks-$(CHPL_MAKE_TASKS)
+include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.comm-$(CHPL_MAKE_COMM)
+include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.mem-$(CHPL_MAKE_MEM)
+include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.gmp-$(CHPL_MAKE_GMP)
+include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.regexp-$(CHPL_MAKE_REGEXP)
+
+# Get runtime headers and required -D flags.
+# sets RUNTIME_INCLUDE_ROOT RUNTIME_CFLAGS RUNTIME_INCLS
+include $(CHPL_MAKE_HOME)/runtime/make/Makefile.runtime.include
+
+# RUNTIME_CFLAGS e.g. -DCHPL_TASKS_MODEL_H=... -DCHPL_THREADS_MODEL_H=...
+HEADER_CFLAGS = $(RUNTIME_CFLAGS)
+
+GEN_CFLAGS += $(HEADER_CFLAGS)
+
+CHPL_RT_INC_DIR = $(RUNTIME_INCLS)
+
+CHPL_RT_LIB_DIR = $(CHPL_MAKE_HOME)/$(LIB_RT_DIR)
+
+ifdef NVCC
+TMPBINNAME_GPU=$(TMPBINNAME).gpu
+endif
+
+printincludesanddefines:
+	@echo $(RUNTIME_DEFS) $(RUNTIME_INCLS)
+
+printcompileline:
+	@echo $(CC) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) $(CHPL_RT_INC_DIR)
+ifdef NVCC
+	@echo $(NVCC) $(HEADER_CFLAGS) $(RUNTIME_CUDA_CFLAGS) $(CHPL_RT_INC_DIR)
+endif
+
+printlibraries:
+	@echo $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) -L$(CHPL_RT_LIB_DIR) -lchpl -lm $(LIBS)
+
+printlinkline:
+	@echo $(LD) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) -L$(CHPL_RT_LIB_DIR) -lchpl -lm $(LIBS)
+
+
+printmaino:
+	@echo $(CHPL_RT_LIB_DIR)/main.o
+
+printllvminstall:
+	@echo $(LLVM_INSTALL_DIR)
+
