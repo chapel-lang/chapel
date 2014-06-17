@@ -263,8 +263,8 @@ return __primitive("string_length", this);
 inline proc _string_contains(param a: c_string, param b: c_string) param
   return __primitive("string_contains", a, b);
 
-/** Returns the index of the first occurrence of a substring within a string,
-    or 0 if the substring is not in the string.
+/* Returns the index of the first occurrence of a substring within a string,
+   or 0 if the substring is not in the string.
 */
 inline proc c_string.indexOf(substring:c_string):int
   return string_index_of(this, substring);
