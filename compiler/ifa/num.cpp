@@ -37,10 +37,11 @@ snprint_imm(char *str, size_t max, char *control_string, Immediate &imm) {
   switch (imm.const_kind) {
     case NUM_KIND_NONE:
       break;
+    case NUM_KIND_BOOL: {
+      res = snprintf(str, max, control_string, imm.bool_value()); break;
+    }
     case NUM_KIND_UINT: {
       switch (imm.num_index) {
-        case INT_SIZE_1: 
-          res = snprintf(str, max, control_string, imm.v_bool); break;
         case INT_SIZE_8: 
           res = snprintf(str, max, control_string, imm.v_uint8); break;
         case INT_SIZE_16:
@@ -55,8 +56,6 @@ snprint_imm(char *str, size_t max, char *control_string, Immediate &imm) {
     }
     case NUM_KIND_INT: {
       switch (imm.num_index) {
-        case INT_SIZE_1: 
-          res = snprintf(str, max, control_string, imm.v_bool); break;
         case INT_SIZE_8: 
           res = snprintf(str, max, control_string, imm.v_int8); break;
         case INT_SIZE_16:
@@ -104,10 +103,13 @@ snprint_imm(char *str, size_t max, Immediate &imm) {
   switch (imm.const_kind) {
     case NUM_KIND_NONE:
       break;
+    case NUM_KIND_BOOL: {
+      // Since I'm using uints to store the bools, should cast to the
+      // same to be consistent.
+      res = snprintf(str, max, "%u", (unsigned)imm.bool_value()); break;
+    }
     case NUM_KIND_UINT: {
       switch (imm.num_index) {
-        case INT_SIZE_1: 
-          res = snprintf(str, max, "%u", (unsigned)imm.v_bool); break;
         case INT_SIZE_8: 
           res = snprintf(str, max, "%u", (unsigned)imm.v_uint8); break;
         case INT_SIZE_16:
@@ -122,8 +124,6 @@ snprint_imm(char *str, size_t max, Immediate &imm) {
     }
     case NUM_KIND_INT: {
       switch (imm.num_index) {
-        case INT_SIZE_1: 
-          res = snprintf(str, max, "%d", imm.v_bool); break;
         case INT_SIZE_8: 
           res = snprintf(str, max, "%d", imm.v_int8); break;
         case INT_SIZE_16:
@@ -169,10 +169,13 @@ fprint_imm(FILE *fp, Immediate &imm) {
   switch (imm.const_kind) {
     case NUM_KIND_NONE:
       break;
+    case NUM_KIND_BOOL: {
+      // Since I'm using uints to store the bools, should cast to the
+      // same to be consistent.
+      res = fprintf(fp, "%"PRIu64, imm.bool_value()); break;
+    }
     case NUM_KIND_UINT: {
       switch (imm.num_index) {
-        case INT_SIZE_1: 
-          res = fprintf(fp, "%u", (unsigned)imm.v_bool); break;
         case INT_SIZE_8: 
           res = fprintf(fp, "%u", (unsigned)imm.v_uint8); break;
         case INT_SIZE_16:
@@ -187,8 +190,6 @@ fprint_imm(FILE *fp, Immediate &imm) {
     }
     case NUM_KIND_INT: {
       switch (imm.num_index) {
-        case INT_SIZE_1: 
-          res = fprintf(fp, "%d", imm.v_bool); break;
         case INT_SIZE_8: 
           res = fprintf(fp, "%d", imm.v_int8); break;
         case INT_SIZE_16:
@@ -249,10 +250,11 @@ coerce_immediate(Immediate *from, Immediate *to) {
       switch (imm->const_kind) { \
         case NUM_KIND_NONE: \
           break; \
+        case NUM_KIND_BOOL: { \
+          imm->v_bool = im1.bool_value() _op im2.bool_value(); break; \
+        } \
         case NUM_KIND_UINT: { \
           switch (imm->num_index) { \
-            case INT_SIZE_1:  \
-              imm->v_bool = im1.v_bool _op im2.v_bool; break; \
             case INT_SIZE_8:  \
               imm->v_uint8 = im1.v_uint8 _op im2.v_uint8; break; \
             case INT_SIZE_16: \
@@ -267,8 +269,6 @@ coerce_immediate(Immediate *from, Immediate *to) {
         } \
         case NUM_KIND_INT: { \
           switch (imm->num_index) { \
-            case INT_SIZE_1:  \
-              imm->v_bool = im1.v_bool _op im2.v_bool; break; \
             case INT_SIZE_8:  \
               imm->v_int8 = im1.v_int8 _op im2.v_int8; break; \
             case INT_SIZE_16: \
@@ -330,14 +330,13 @@ coerce_immediate(Immediate *from, Immediate *to) {
       switch (imm->const_kind) { \
         case NUM_KIND_NONE: \
           break; \
+        case NUM_KIND_BOOL: { \
+          COMPUTE_UINT_POW(uint64_t, im1.bool_value(), im2.bool_value()); \
+          imm->v_bool = res;                                     \
+          break;                                                  \
+        } \
         case NUM_KIND_UINT: { \
           switch (imm->num_index) { \
-            case INT_SIZE_1:  \
-              {                                                         \
-                COMPUTE_UINT_POW(uint8_t, im1.v_bool, im2.v_bool);       \
-                imm->v_bool = res;                                     \
-                break;                                                  \
-              }                                                         \
             case INT_SIZE_8:  \
               {                                                         \
                 COMPUTE_UINT_POW(uint8_t, im1.v_uint8, im2.v_uint8);       \
@@ -368,12 +367,6 @@ coerce_immediate(Immediate *from, Immediate *to) {
         } \
         case NUM_KIND_INT: { \
           switch (imm->num_index) { \
-            case INT_SIZE_1:  \
-              {                                                         \
-                COMPUTE_INT_POW(int8_t, im1.v_bool, im2.v_bool);       \
-                imm->v_bool = res;                                     \
-                break;                                                  \
-              }                                                         \
             case INT_SIZE_8: \
               {                                                         \
                 COMPUTE_INT_POW(int8_t, im1.v_int8, im2.v_int8);       \
@@ -411,10 +404,11 @@ coerce_immediate(Immediate *from, Immediate *to) {
       switch (im1.const_kind) { \
         case NUM_KIND_NONE: \
           break; \
+        case NUM_KIND_BOOL: { \
+          imm->v_bool = im1.bool_value() _op im2.bool_value(); break; \
+        } \
         case NUM_KIND_UINT: { \
           switch (im1.num_index) { \
-            case INT_SIZE_1:  \
-              imm->v_bool = im1.v_bool _op im2.v_bool; break; \
             case INT_SIZE_8:  \
               imm->v_bool = im1.v_uint8 _op im2.v_uint8; break; \
             case INT_SIZE_16: \
@@ -429,8 +423,6 @@ coerce_immediate(Immediate *from, Immediate *to) {
         } \
         case NUM_KIND_INT: { \
           switch (im1.num_index) { \
-            case INT_SIZE_1:  \
-              imm->v_bool = im1.v_bool _op im2.v_bool; break; \
             case INT_SIZE_8:  \
               imm->v_bool = im1.v_int8 _op im2.v_int8; break; \
             case INT_SIZE_16: \
@@ -458,10 +450,11 @@ coerce_immediate(Immediate *from, Immediate *to) {
       switch (imm->const_kind) { \
         case NUM_KIND_NONE: \
           break; \
+        case NUM_KIND_BOOL: { \
+          imm->v_bool = im1.bool_value() _op im2.bool_value(); break; \
+        } \
         case NUM_KIND_UINT: { \
           switch (imm->num_index) { \
-            case INT_SIZE_1:  \
-              imm->v_bool = im1.v_bool _op im2.v_bool; break; \
             case INT_SIZE_8:  \
               imm->v_uint8 = im1.v_uint8 _op im2.v_uint8; break; \
             case INT_SIZE_16: \
@@ -476,8 +469,6 @@ coerce_immediate(Immediate *from, Immediate *to) {
         } \
         case NUM_KIND_INT: { \
           switch (imm->num_index) { \
-            case INT_SIZE_1:  \
-              imm->v_bool = im1.v_bool _op im2.v_bool; break; \
             case INT_SIZE_8:  \
               imm->v_int8 = im1.v_int8 _op im2.v_int8; break; \
             case INT_SIZE_16: \
@@ -501,10 +492,11 @@ coerce_immediate(Immediate *from, Immediate *to) {
       switch (imm->const_kind) { \
         case NUM_KIND_NONE: \
           break; \
+        case NUM_KIND_BOOL: { \
+          imm->v_bool = _op im1.bool_value(); break; \
+        } \
         case NUM_KIND_UINT: { \
           switch (imm->num_index) { \
-            case INT_SIZE_1:  \
-              imm->v_bool = _op im1.v_bool; break; \
             case INT_SIZE_8:  \
               imm->v_uint8 = _op im1.v_uint8; break; \
             case INT_SIZE_16: \
@@ -519,8 +511,6 @@ coerce_immediate(Immediate *from, Immediate *to) {
         } \
         case NUM_KIND_INT: { \
           switch (imm->num_index) { \
-            case INT_SIZE_1:  \
-              imm->v_bool = _op im1.v_bool; break; \
             case INT_SIZE_8:  \
               imm->v_int8 = _op im1.v_int8; break; \
             case INT_SIZE_16: \
@@ -548,10 +538,11 @@ coerce_immediate(Immediate *from, Immediate *to) {
       switch (imm->const_kind) { \
         case NUM_KIND_NONE: \
           break; \
+        case NUM_KIND_BOOL: { \
+          imm->v_bool = _op im1.bool_value(); break; \
+        } \
         case NUM_KIND_UINT: { \
           switch (imm->num_index) { \
-            case INT_SIZE_1:  \
-              imm->v_bool = _op im1.v_bool; break; \
             case INT_SIZE_8:  \
               imm->v_uint8 = _op im1.v_uint8; break; \
             case INT_SIZE_16: \
@@ -566,8 +557,6 @@ coerce_immediate(Immediate *from, Immediate *to) {
         } \
         case NUM_KIND_INT: { \
           switch (imm->num_index) { \
-            case INT_SIZE_1:  \
-              imm->v_bool = _op im1.v_bool; break; \
             case INT_SIZE_8:  \
               imm->v_int8 = _op im1.v_int8; break; \
             case INT_SIZE_16: \
@@ -642,27 +631,53 @@ fold_result(Immediate *im1, Immediate *im2, Immediate *imm) {
     imm->num_index = FLOAT_SIZE_64;
     return;
   }
-  // mixed signed and unsigned
-  if (im1->num_index >= INT_SIZE_64 || im2->num_index >= INT_SIZE_64) {
-    imm->const_kind = NUM_KIND_INT;
+  if (im1->const_kind != NUM_KIND_BOOL && im2->const_kind != NUM_KIND_BOOL) {
+    // mixed signed and unsigned
+    if (im1->num_index >= INT_SIZE_64 || im2->num_index >= INT_SIZE_64) {
+      imm->const_kind = NUM_KIND_INT;
+      imm->num_index = INT_SIZE_64;
+      return;
+    } else if (im1->num_index >= INT_SIZE_32 || im2->num_index >= INT_SIZE_32) {
+      imm->const_kind = NUM_KIND_INT;
+      imm->num_index = INT_SIZE_32;
+      return;
+    } else if (im1->num_index >= INT_SIZE_16 || im2->num_index >= INT_SIZE_16) {
+      imm->const_kind = NUM_KIND_INT;
+      imm->num_index = INT_SIZE_16;
+      return;
+    } else if (im1->num_index >= INT_SIZE_8 || im2->num_index >= INT_SIZE_8) {
+      imm->const_kind = NUM_KIND_INT;
+      imm->num_index = INT_SIZE_8;
+      return;
+    }
+  }
+  // At this point, we can assume we are mixing a bool and either a uint or an
+  // int.
+  if (im2->const_kind == NUM_KIND_BOOL) {
+    // swap im1 to the bool to simplify the code
+    Immediate *t = im1;
+    im1 = im2;
+    im2 = t;
+  }
+  // The const_kind will be either a uint or an int, depending on what the
+  // non-bool argument is.  Keep the larger size
+  if (im1->num_index >= BOOL_SIZE_64 || im2->num_index >= INT_SIZE_64) {
+    imm->const_kind = im2->const_kind;
     imm->num_index = INT_SIZE_64;
     return;
-  } else if (im1->num_index >= INT_SIZE_32 || im2->num_index >= INT_SIZE_32) {
-    imm->const_kind = NUM_KIND_INT;
+  } else if (im1->num_index >= BOOL_SIZE_32 || im2->num_index >= INT_SIZE_32) {
+    imm->const_kind = im2->const_kind;
     imm->num_index = INT_SIZE_32;
     return;
-  } else if (im1->num_index >= INT_SIZE_16 || im2->num_index >= INT_SIZE_16) {
-    imm->const_kind = NUM_KIND_INT;
+  } else if (im1->num_index >= BOOL_SIZE_16 || im2->num_index >= INT_SIZE_16) {
+    imm->const_kind = im2->const_kind;
     imm->num_index = INT_SIZE_16;
     return;
-  } else if (im1->num_index >= INT_SIZE_8 || im2->num_index >= INT_SIZE_8) {
-    imm->const_kind = NUM_KIND_INT;
+  } else {
+    imm->const_kind = im2->const_kind;
     imm->num_index = INT_SIZE_8;
     return;
   }
-  imm->const_kind = NUM_KIND_UINT;
-  imm->num_index = INT_SIZE_1;
-  return;
 }
 
 void
@@ -697,14 +712,14 @@ fold_constant(int op, Immediate *aim1, Immediate *aim2, Immediate *imm) {
     case P_prim_equal:
     case P_prim_notequal:
       fold_result(&im1, &im2, &coerce);
-      imm->const_kind = NUM_KIND_UINT;
-      imm->num_index = INT_SIZE_1;
+      imm->const_kind = NUM_KIND_BOOL;
+      imm->num_index = BOOL_SIZE_SYS;
       break;
     case P_prim_land:
     case P_prim_lor:
     case P_prim_lnot:
-      coerce.const_kind = imm->const_kind = NUM_KIND_UINT;
-      coerce.num_index = imm->num_index = INT_SIZE_1;
+      coerce.const_kind = imm->const_kind = NUM_KIND_BOOL;
+      coerce.num_index = imm->num_index = BOOL_SIZE_SYS;
       break;
     case P_prim_plus:
     case P_prim_minus:
@@ -757,19 +772,20 @@ convert_string_to_immediate(const char *str, Immediate *imm) {
   switch (imm->const_kind) {
     case NUM_KIND_NONE:
       break;
+    case NUM_KIND_BOOL: {
+      if (!strcmp(str, "false")) {
+        imm->v_bool = false;
+      } else if (!strcmp(str, "true")) {
+        imm->v_bool = true;
+      } else if (str[0] == '\0') {
+        imm->v_bool = !imm->v_bool;
+      } else {
+        INT_FATAL("Bad bool value");
+      }
+      break;
+    }
     case NUM_KIND_UINT: {
       switch (imm->num_index) {
-        case INT_SIZE_1:
-          if (!strcmp(str, "false")) {
-            imm->v_bool = false;
-          } else if (!strcmp(str, "true")) {
-            imm->v_bool = true;
-          } else if (str[0] == '\0') {
-            imm->v_bool = !imm->v_bool;
-          } else {
-            INT_FATAL("Bad bool value");
-          }
-          break;
         case INT_SIZE_8: 
           if (str[0] != '\'')
             imm->v_uint8 = str2uint8(str);

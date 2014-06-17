@@ -1174,8 +1174,8 @@ createInternalType(const char *name, const char *cname) {
 // probably be something like int1, int8, etc. in the end. In that case
 // we can just specify the width (i.e., size).
 #define INIT_PRIM_BOOL(name, width)                                \
-  dtBools[BOOL_SIZE_##width] = createPrimitiveType(name, "chpl_bool" #width); \
-  dtBools[BOOL_SIZE_##width]->defaultValue = new_BoolSymbol( false, BOOL_SIZE_##width)
+  dtBools[BOOL_SIZE_ ## width] = createPrimitiveType(name, "chpl_bool" #width); \
+  dtBools[BOOL_SIZE_ ## width]->defaultValue = new_BoolSymbol( false, BOOL_SIZE_ ## width)
 
 #define INIT_PRIM_INT( name, width)                                 \
   dtInt[INT_SIZE_ ## width] = createPrimitiveType (name, "int" #width "_t"); \
@@ -1247,8 +1247,8 @@ void initPrimitiveTypes(void) {
   CREATE_DEFAULT_SYMBOL (dtBool, gFalse, "false");
   gFalse->immediate = new Immediate;
   gFalse->immediate->v_bool = false;
-  gFalse->immediate->const_kind = NUM_KIND_UINT;
-  gFalse->immediate->num_index = INT_SIZE_1;
+  gFalse->immediate->const_kind = NUM_KIND_BOOL;
+  gFalse->immediate->num_index = BOOL_SIZE_SYS;
   uniqueConstantsHash.put(gFalse->immediate, gFalse);
   dtBool->defaultValue = gFalse;
 
@@ -1257,15 +1257,15 @@ void initPrimitiveTypes(void) {
   rootModule->block->insertAtTail(new DefExpr(gTrue));
   gTrue->immediate = new Immediate;
   gTrue->immediate->v_bool = true;
-  gTrue->immediate->const_kind = NUM_KIND_UINT;
-  gTrue->immediate->num_index = INT_SIZE_1;
+  gTrue->immediate->const_kind = NUM_KIND_BOOL;
+  gTrue->immediate->num_index = BOOL_SIZE_SYS;
   uniqueConstantsHash.put(gTrue->immediate, gTrue);
 
   gTryToken = new VarSymbol("chpl__tryToken", dtBool);
   gTryToken->addFlag(FLAG_CONST);
   rootModule->block->insertAtTail(new DefExpr(gTryToken));
 
-  
+  INIT_PRIM_BOOL("bool(1)", 1);
   INIT_PRIM_BOOL("bool(8)", 8);
   INIT_PRIM_BOOL("bool(16)", 16);
   INIT_PRIM_BOOL("bool(32)", 32);

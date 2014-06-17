@@ -434,11 +434,10 @@ renameInstantiatedType(TypeSymbol* sym, SymbolMap& subs, FnSymbol* fn) {
           Immediate* immediate = var->immediate;
           if (var->type == dtStringC)
             renameInstantiatedTypeString(sym, var);
-          else if (immediate->const_kind == NUM_KIND_UINT &&
-                   immediate->num_index == INT_SIZE_1) {
+          else if (immediate->const_kind == NUM_KIND_BOOL) {
             // Handle boolean types specially.
-            const char* name4bool = immediate->uint_value() ? "true" : "false";
-            const char* cname4bool = immediate->uint_value() ? "T" : "F";
+            const char* name4bool = immediate->bool_value() ? "true" : "false";
+            const char* cname4bool = immediate->bool_value() ? "T" : "F";
             sym->name = astr(sym->name, name4bool);
             sym->cname = astr(sym->cname, cname4bool);
           } else {

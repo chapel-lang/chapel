@@ -13,4 +13,4 @@
 (false, true, false)
 3*bool
 (false, true, false)
-3*bool
+(bool(8),bool(16),bool(32))

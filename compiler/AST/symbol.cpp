@@ -253,9 +253,34 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
   llvm::Value* ret = NULL;
 
   switch(i->const_kind) {
+    case NUM_KIND_BOOL:
+      switch(i->num_index) {
+        case BOOL_SIZE_1:
+        case BOOL_SIZE_SYS:
+        case BOOL_SIZE_8:
+          ret = llvm::ConstantInt::get(
+              llvm::Type::getInt8Ty(info->module->getContext()),
+              i->bool_value());
+          break;
+        case BOOL_SIZE_16:
+          ret = llvm::ConstantInt::get(
+              llvm::Type::getInt16Ty(info->module->getContext()),
+              i->bool_value());
+          break;
+        case BOOL_SIZE_32:
+          ret = llvm::ConstantInt::get(
+              llvm::Type::getInt32Ty(info->module->getContext()),
+              i->bool_value());
+          break;
+        case BOOL_SIZE_64:
+          ret = llvm::ConstantInt::get(
+              llvm::Type::getInt64Ty(info->module->getContext()),
+              i->bool_value());
+          break;
+      }
+      break;
     case NUM_KIND_UINT:
       switch(i->num_index) {
-        case INT_SIZE_1:
         case INT_SIZE_8:
           ret = llvm::ConstantInt::get(
               llvm::Type::getInt8Ty(info->module->getContext()),
@@ -280,7 +305,6 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
       break;
     case NUM_KIND_INT:
       switch(i->num_index) {
-        case INT_SIZE_1:
         case INT_SIZE_8:
           ret = llvm::ConstantInt::get(
               llvm::Type::getInt8Ty(info->module->getContext()),
@@ -436,9 +460,8 @@ GenRet VarSymbol::codegen() {
         ret.c += '"';
         ret.c += immediate->v_string;
         ret.c += '"';
-      } else if (immediate->const_kind == NUM_KIND_UINT &&
-               immediate->num_index == INT_SIZE_1) {
-        ret.c =  immediate->uint_value() ? "true" : "false";
+      } else if (immediate->const_kind == NUM_KIND_BOOL) {
+        ret.c =  immediate->bool_value() ? "true" : "false";
       } else if (immediate->const_kind == NUM_KIND_INT) {
         int64_t iconst = immediate->int_value();
         if (iconst == (1ll<<63)) {
@@ -460,7 +483,6 @@ GenRet VarSymbol::codegen() {
           case INT_SIZE_64:
             castString = "INT64(";
             break;
-          case INT_SIZE_1:
           default:
             INT_FATAL("Unexpected immediate->num_index: %d\n", immediate->num_index);
           }
@@ -484,7 +506,6 @@ GenRet VarSymbol::codegen() {
           case INT_SIZE_64:
             castString = "UINT64(";
             break;
-          case INT_SIZE_1:
           default:
             INT_FATAL("Unexpected immediate->num_index: %d\n", immediate->num_index);
           }
@@ -2393,16 +2414,21 @@ VarSymbol *new_StringSymbol(const char *str) {
 VarSymbol* new_BoolSymbol(bool b, IF1_bool_type size) {
   Immediate imm;
   switch (size) {
-  case BOOL_SIZE_8  : imm.v_bool = b; break;
-  case BOOL_SIZE_16 : imm.v_bool = b; break;
-  case BOOL_SIZE_32 : imm.v_bool = b; break;
-  case BOOL_SIZE_64 : imm.v_bool = b; break;
-    // case BOOL_SIZE_128: imm.v_bool = b; break;
   default:
     INT_FATAL( "unknown BOOL_SIZE");
+    
+  case BOOL_SIZE_1  :
+  case BOOL_SIZE_SYS:
+  case BOOL_SIZE_8  :
+  case BOOL_SIZE_16 :
+  case BOOL_SIZE_32 :
+  case BOOL_SIZE_64 :
+    break;
+    // case BOOL_SIZE_128: imm.v_bool = b; break;
   }
-  imm.const_kind = NUM_KIND_UINT;
-  imm.num_index = INT_SIZE_1;
+  imm.v_bool = b;
+  imm.const_kind = NUM_KIND_BOOL;
+  imm.num_index = size;
   VarSymbol *s;
   PrimitiveType* dtRetType = dtBools[size];
   s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
@@ -2537,6 +2563,8 @@ immediate_type(Immediate *imm) {
   switch (imm->const_kind) {
     case CONST_KIND_STRING:
       return dtStringC;
+    case NUM_KIND_BOOL:
+      return dtBools[imm->num_index];
     case NUM_KIND_UINT:
       return dtUInt[imm->num_index];
     case NUM_KIND_INT:

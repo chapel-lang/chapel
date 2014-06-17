@@ -4972,8 +4972,8 @@ static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm) {
   }
 
   // All operators on enum types result in a bool
-  imm->const_kind = NUM_KIND_UINT;
-  imm->num_index = INT_SIZE_1;
+  imm->const_kind = NUM_KIND_BOOL;
+  imm->num_index = BOOL_SIZE_SYS;
   switch (op) {
     default: INT_FATAL("fold constant op not supported"); break;
     case P_prim_equal:

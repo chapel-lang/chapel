@@ -324,8 +324,8 @@ void SymExpr::prettyPrint(std::ostream *o) {
       if (VarSymbol *sym = toVarSymbol(var)) {
         if (sym->immediate->const_kind == CONST_KIND_STRING)
           *o << "\"" << sym->immediate->v_string << "\"";
-        else if (sym->immediate->num_index == INT_SIZE_1)
-          *o << sym->immediate->v_bool;
+        else if (sym->immediate->const_kind == NUM_KIND_BOOL)
+          *o << sym->immediate->bool_value();
         else if (sym->immediate->const_kind == NUM_KIND_INT)
           *o << sym->immediate->int_value();
         else if (sym->immediate->const_kind == NUM_KIND_UINT)

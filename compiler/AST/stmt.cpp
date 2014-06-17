@@ -412,16 +412,15 @@ CondStmt::fold_cond_stmt()
   {
     if (VarSymbol* var = toVarSymbol(cond->var)) {
       if (var->immediate &&
-          var->immediate->const_kind == NUM_KIND_UINT &&
-          var->immediate->num_index == INT_SIZE_1) {
+          var->immediate->const_kind == NUM_KIND_BOOL) {
         SET_LINENO(this);
         result = new CallExpr(PRIM_NOOP);
         this->insertBefore(result);
-        if (var->immediate->v_bool == gTrue->immediate->v_bool) {
+        if (var->immediate->bool_value() == gTrue->immediate->bool_value()) {
           Expr* then_stmt = thenStmt;
           then_stmt->remove();
           this->replace(then_stmt);
-        } else if (var->immediate->v_bool == gFalse->immediate->v_bool) {
+        } else if (var->immediate->bool_value() == gFalse->immediate->bool_value()) {
           Expr* else_stmt = elseStmt;
           if (else_stmt) {
             else_stmt->remove();
