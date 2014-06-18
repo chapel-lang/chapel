@@ -393,7 +393,7 @@ renameInstantiatedType(TypeSymbol* sym, SymbolMap& subs, FnSymbol* fn) {
   if (sym->name[strlen(sym->name)-1] == ')') {
     // avoid "strange" instantiated type names based on partial instantiation
     //  instead of C(int,real)(imag) this results in C(int,real,imag)
-    char* buf = (char*)malloc(strlen(sym->name));
+    char* buf = (char*)malloc(strlen(sym->name) + 1);
     memcpy(buf, sym->name, strlen(sym->name));
     buf[strlen(sym->name)-1] = '\0';
     sym->name = astr(buf, ",");
