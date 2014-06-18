@@ -1,0 +1,5 @@
+GENIR_OBJDIR = $(COMPILER_ROOT)/genir/$(OBJ_SUBDIR)
+
+ALL_SRCS += genir/*.cpp
+
+include $(COMPILER_ROOT)/genir/Makefile.share

@@ -1,0 +1,14 @@
+GENIR_SRCS = \
+	expr.cpp \
+	genir.cpp \
+	prim.cpp \
+	stmt.cpp \
+	subr.cpp \
+	symbol.cpp \
+	type.cpp
+
+SVN_SRCS = $(GENIR_SRCS)
+SRCS = $(SVN_SRCS)
+
+GENIR_OBJS = \
+	$(GENIR_SRCS:%.cpp=$(GENIR_OBJDIR)/%.$(OBJ_SUFFIX))

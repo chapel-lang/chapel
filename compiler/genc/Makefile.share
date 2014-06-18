@@ -1,0 +1,14 @@
+GENC_SRCS = \
+	expr.cpp \
+	genc.cpp \
+	prim.cpp \
+	stmt.cpp \
+	subr.cpp \
+	symbol.cpp \
+	type.cpp
+
+SVN_SRCS = $(GENC_SRCS)
+SRCS = $(SVN_SRCS)
+
+GENC_OBJS = \
+	$(GENC_SRCS:%.cpp=$(GENC_OBJDIR)/%.$(OBJ_SUFFIX))

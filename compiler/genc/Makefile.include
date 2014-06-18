@@ -1,0 +1,5 @@
+GENC_OBJDIR = $(COMPILER_ROOT)/genc/$(OBJ_SUBDIR)
+
+ALL_SRCS += genc/*.cpp
+
+include $(COMPILER_ROOT)/genc/Makefile.share
