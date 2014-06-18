@@ -3344,6 +3344,9 @@ err_t qio_channel_mark_maybe_flush_bits(const int threadsafe, qio_channel_t* ch,
 
     // Reallocate the mark buffer.
     if( ch->mark_stack == ch->mark_space ) {
+      // mark_space is the preallocated buffer, so we have to do an explicit
+      // copy here.  (Calling qio_realloc would try to free stack-allocated
+      // space :-O)
       new_buf = (int64_t*) qio_malloc(new_size*sizeof(int64_t));
       if( ! new_buf ) {
         err = ENOMEM;
@@ -3352,7 +3355,7 @@ err_t qio_channel_mark_maybe_flush_bits(const int threadsafe, qio_channel_t* ch,
       // Copy the values from our old stack.
       for( i = 0; i <= ch->mark_cur; i++ ) new_buf[i] = ch->mark_stack[i];
     } else {
-      new_buf = (int64_t*)qio_realloc(ch->mark_space, new_size*sizeof(int64_t));
+      new_buf = (int64_t*)qio_realloc(ch->mark_stack, new_size*sizeof(int64_t));
       if( ! new_buf ) {
         err = ENOMEM;
         goto error;
