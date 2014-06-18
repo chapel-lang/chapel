@@ -1,1 +1,1 @@
-cast-to-non-type-2.chpl:3: warning: c: string
+cast-to-non-type-2.chpl:3: warning: c: int(64)
