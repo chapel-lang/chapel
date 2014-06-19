@@ -31,39 +31,11 @@ New problems
 (Ones that prove persistent should be moved to REGRESSIONS.)
 =========================================================
 
-error: cannot create C string from remote string
------------------------------------------
-[Error matching program output for optimizations/sungeun/RADOpt/access1d (compopts: 1)] (2014/06/14)
-[Error matching program output for optimizations/sungeun/RADOpt/access2d (compopts: 1)] (2014/06/14)
-[Error matching program output for optimizations/sungeun/RADOpt/access3d (compopts: 1)] (2014/06/14)
- - These most likely due to r23559 (assigned: sungeun)
- - linux64.gnu.gasnet-everythin.fifo.flat (2014/06/13)
- - linux64.gnu.gasnet.qthreads.flat (2014/06/13)
-
-Bad .bad file -- includes filename/lineno info. (fix committed: bharshbarg)
---------------------------------------------------------
-[Error matching .bad file for functions/bharshbarg/setterInWhere] (2014/06/14)
-
-
-Bad .bad files -- due to r23558 (assigned: sungeun)
---------------------------------------------------------
-[Error matching .bad file for types/records/const-checking/scenario-3-assoc-dom-of-record-with-const-fld] -- changed line numbers
-[Error matching .bad file for users/vass/dont-eval-dot-type] -- "string" --> "c_string"
-[Error matching .bad file for users/vass/type-tests.todo] -- unresolved call 'compilerWarning(string)'
- - linux64.gnu.gasnet-everything.fifo.flat (2014/06/13)
- - linux64.gnu.gasnet.qthreads.flat (2014/06/13)
- - linux64.gnu.none.fifo.flat (2014/06/13)
- - linux64.gnu.none.fifo.numa (2014/06/13)
- - linux64.gnu.none.qthreads.flat (2014/06/13)
-
-
-linux64.gnu.gasnet-fast.fifo.flat.dlmalloc
-------------------------------------------
-
-This test appears to be close to the timeout threshold. It failed on
-2014-06-07.
-
-[Error: Timed out executing program studies/lulesh/sungeun/lulesh (compopts: 1)]
+Non-deterministic baseline 'glibc double free or corruption' (6/17/14)
+----------------------------------------------------------------------
+This i also listed in the REGRESSIONS file, but I'm not sure when it
+started being intermittent.
+[Error matching program output for release/examples/benchmarks/hpcc/hpl]
 
 cray-xe.cray-prgenv-cray.none.fifo.flat--linux64.gnu
 ----------------------------------------------------
@@ -88,15 +60,6 @@ installing automatic updates).
 [Error: Timed out compilation for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5)]
 [Error: Timed out compilation for release/examples/hello4-datapar-dist]
 [Error: Timed out compilation for release/examples/hello]
-
-linux64.gnu.gasnet.qthreads.flat
---------------------------------
-
-The following racy test started failing to match its .bad file after
-r23477. Sung is thinking about it.
-
-[Error matching .bad file for prallel/taskPar/sungeun/endCountTest]
-[Error matching .bad file for parallel/taskPar/sungeun/taskCount (compopts: 1)]
 
 darwin-gnu and darwin-clang non-deterministic compiler failures
 ---------------------------------------------------------------
@@ -156,6 +119,12 @@ sungeun: I believe this test pushes the stack size limit and gets
 lucky sometimes.  I've left the entry in the REGRESSIONS file for now.
 [Error matching program output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 1, execopts: 3)]
 
+numa+gasnet timeouts
+--------------------
+[Error: Timed out executing program distributions/robust/arithmetic/kernels/hpl (compopts: 1)] (6/17/14)
+[Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi] (6/17/14)
+[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_array] (6/19/14)
+
 nondet. baseline output
 -----------------------
 [Error matching program output for studies/amr/diffusion/level/Level_DiffusionBE_driver (compopts: 1)]
@@ -174,7 +143,6 @@ gbt: This seems to be due to memory corruption.  Because of the way the
 
 [Error matching program output for studies/madness/aniruddha/madchap/mytests/par-compress/test_compress (compopts: 1)]
 Failed on 02/18/14
-
 
 primers/locales fails semi-regularly for cray-prgenv-cray (11/14)
 -----------------------------------------------------------------
@@ -252,8 +220,9 @@ Perf (linux64.gnu.none.fifo.pthreads.flat)
 
 valgrind compilation timeouts
 -----------------------------
-[Error: Timed out compilation for distributions/dm/t5a]
-
+[Error: Timed out compilation for distributions/dm/t5a] (.., 6/18/14)
+[Error: Timed out compilation for release/examples/benchmarks/ssca2/SSCA2_main
+(compopts: 1)] (6/17/14)
 
 ==============================================================================
 Were once flagged as causing noise regularly, but not as familiar as the above
@@ -325,7 +294,7 @@ nondet. timeout on gasnet-everything
 ------------------------------------
 [Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dBDtoDRTest] (07/08/13)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (7/22/13, 09/02/13, 09/30/13, 12/13/13)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (7/19/13, 10/9/13, 01/08/14)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (7/19/13, 10/9/13, 01/08/14, 6/18/14)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (9/30/13, 11/8/13, 12/13/13)
 
 libmpich_intel.so failure for
@@ -445,6 +414,8 @@ prgenv-* compilation timeouts (maybe due to system updates or ...?)
 [Error: Timed out compilation for unicode/print_euro](prgenv-cray 3/8/14)
 [Error: Timed out compilation for unicode/write_read_euro](prgenv-cray 3/8/14)
 [Error: Timed out compilation for statements/vass/while-const](prgenv-cray 3/8/14)
+[Error: Timed out compilation for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 1)] (prgenv-cray 6/19/14)
+[Error: Timed out compilation for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 2)] (prgenv-cray 6/19/14)
 
 pgi compilation timeouts
 ------------------------
@@ -457,6 +428,11 @@ pgi compilation timeouts
 [Error: Timed out compilation for parallel/single/waynew/class0] (4/6/14)
 [Error: Timed out compilation for parallel/single/waynew/class1] (4/6/14)
 [Error: Timed out compilation for parallel/taskPool/figueroa/OneThread] (4/6/14)
+[Error: Timed out compilation for modules/standard/math/acos] (prior to 6/17/14)
+[Error: Timed out compilation for modules/standard/math/atanh] (prior to 6/17/14)
+[Error: Timed out compilation for modules/standard/math/cbrt] (prior to 6/17/14)
+[Error: Timed out compilation for modules/standard/math/lg] (prior to 6/17/14)
+[Error: Timed out compilation for types/range/hilde/typeInference] (6/17/14)
 
 
 intel compilation timeouts
@@ -470,6 +446,8 @@ intel compilation timeouts
 [Error: Timed out compilation for studies/lsms/shemmy/lsms-parallel-n4] (4/5/14)
 [Error: Timed out compilation for studies/lsms/shemmy/lsms] (4/5/14)
 [Error: Timed out compilation for distributions/robust/arithmetic/trivial/test_writeln] (4/14/14)
+[Error: Timed out compilation for domains/sungeun/assoc/forall (compopts: 1)] (prgenv-intel 6/15/14)
+[Error: Timed out compilation for domains/sungeun/assoc/forall (compopts: 2)] (prgenv-intel 6/15/14)
 
 
 occasional segfault on reports tests for prgenv-pgi
@@ -509,12 +487,12 @@ examples of what times out:
  distributions/nelson/MultiBlockDist2DLocales (maybe resolved?)
  distributions/robust/arithmetic/modules/test_module_Sort (maybe resolved?)
  distributions/robust/arithmetic/stress/test_many_domains (10/11/13)
- distributions/robust/arithmetic/stress/test_many_array (4/29/13)
+ distributions/robust/arithmetic/stress/test_many_array (4/29/13, 6/16/14)
  distributions/dm/t2 (2012/08/15)
- test_array_slicing3 (07/24/13, 07/12/13, 06/08/12, 6/16, 3/29/13, 5/3/13, 11/8/13, 12/9/13, 05/26/14)
+ test_array_slicing3 (07/24/13, 07/12/13, 06/08/12, 6/16, 3/29/13, 5/3/13, 11/8/13, 12/9/13, 05/26/14, 6/16/14)
  release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4) (04/08/13)
  studies/cholesky/jglewis/version2/performance/test_cholesky_performance (10/10/13)
- multilocale/diten/needMultiLocales/coforallon_maxThreads (07/04/13, 10/10/13, 10/22/13, 1/21/14, ..., 4/7/14, ...)
+ multilocale/diten/needMultiLocales/coforallon_maxThreads (07/04/13, 10/10/13, 10/22/13, 1/21/14, ..., 4/7/14, ..., 6/17/14)
  etc.
 [Error: Timed out executing program release/examples/hello3-datapar]
 [Error: Timed out executing program release/examples/hello]
@@ -523,6 +501,8 @@ examples of what times out:
 [Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5, execopts: 1)]
 [Error: Timed out executing program release/examples/benchmarks/hpcc/hpl]
 [Error: Timed out executing program release/examples/benchmarks/hpcc/stream]
+[Error: Timed out executing program studies/lulesh/sungeun/lulesh (compopts: 1)] (6/7/14)
+
 
 non-deterministic compilation timeouts with gasnet (UNASSIGNED)
 ---------------------------------------------------------------

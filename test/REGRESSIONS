@@ -91,13 +91,6 @@ valgrind-specific regressions
 (Reviewed for accuracy 05/14/14)
 ================================
 
-invalid write of size 1 
- - probably due to r23558 (assigned: sungeun)
------------------------
-[Error matching program output for chpldoc/compflags/comment/basic (compopts: 1)]
-[Error matching program output for chpldoc/compflags/comment/loseComments (compopts: 1)]
- - linux64.gnu.none.fifo.flat-vgr (2014/06/13)
-
 possible stack overflow? (3/30/14)
 ----------------------------------
 [Error matching program output for studies/sudoku/dinan/search/sudoku-reduce2]
@@ -196,10 +189,15 @@ gasnet-everything regressions (other than the above)
 (Reviewed for accuracy 03/31/14)
 ====================================================
 
-failure due to r22900 (bradc; may let regress until strings are records)
-------------------------------------------------------------------------
+error: cannot create C string from remote string
+------------------------------------------------
+(due to r22900)
 [Error matching program output for classes/sungeun/remoteDynamicDispatch (compopts: 1)]
 [Error matching program output for multilocale/diten/needMultiLocales/remoteStringTuple]
+(due to r23558)
+[Error matching program output for optimizations/sungeun/RADOpt/access1d (compopts: 1)] (2014/06/14)
+[Error matching program output for optimizations/sungeun/RADOpt/access2d (compopts: 1)] (2014/06/14)
+[Error matching program output for optimizations/sungeun/RADOpt/access3d (compopts: 1)] (2014/06/14)
 
 
 ==============================================
@@ -850,7 +848,7 @@ think we would prefer these errors.
 
 glibc double free or corruption (09/28/13)
 ----------------------------------------------------------------
-[Error matching program output for release/examples/benchmarks/hpcc/hpl]
+[Error matching program output for release/examples/benchmarks/hpcc/hpl] (also listed in TRIAGE file as it seems to flit in and out)
 [Error matching program output for studies/hpcc/FFT/marybeth/fft-test-even]
 [Error matching program output for studies/hpcc/HPL/bradc/hpl-blc-noreindex]
 [Error matching program output for studies/hpcc/HPL/bradc/hpl-blc]
