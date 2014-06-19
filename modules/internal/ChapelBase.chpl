@@ -4,8 +4,6 @@
 pragma "no use ChapelStandard"
 module ChapelBase {
   
-  pragma "default string value" extern var defaultStringValue: string = noinit;
-
   extern proc chpl_config_has_value(name:c_string, module_name:c_string): bool;
   extern proc chpl_config_get_value(name:c_string, module_name:c_string): c_string;
 
@@ -136,39 +134,6 @@ module ChapelBase {
   config param warnMaximalRange = false;    // Warns if integer rollover will cause
                     // the iterator to yield zero times.
 
-  // String concatenation
-  inline proc +(s: string, x: string)
-    // FIX ME: leak c_string
-    return toString(__primitive("string_concat", s.c_str(), x.c_str()));
-
-  pragma "compiler generated"
-  inline proc +(s: c_string, x: string)
-    // FIX ME: leak c_string
-    return toString(__primitive("string_concat", s, x.c_str()));
-
-  pragma "compiler generated"
-  inline proc +(s: string, x: c_string)
-    // FIX ME: leak c_string
-    return toString(__primitive("string_concat", s.c_str(), x));
-
-  inline proc +(s: string, x: numeric)
-    return s + x:string;
-
-  inline proc +(x: numeric, s: string)
-    return x:string + s;
-
-  inline proc +(s: string, x: enumerated)
-    return s + x:string;
-
-  inline proc +(x: enumerated, s: string)
-    return x:string + s;
-
-  inline proc +(s: string, x: bool)
-    return s + x:string;
-
-  inline proc +(x: bool, s: string)
-    return x:string + s;
-
   proc _throwOpError(param op: c_string) {
       compilerError("illegal use of '", op, "' on operands of type uint(64) and signed integer");
   }
@@ -226,14 +191,6 @@ module ChapelBase {
   proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4, param arg5, argrest...)
   { if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4, arg5, " [...]"); }
 
-  proc typeToString(type t) param {
-    return __primitive("typeToString", t);
-  }
-  
-  proc typeToString(x) param {
-    compilerError("typeToString()'s argument must be a type, not a value");
-  }
-  
   enum iterKind {leader, follower};
   
   //
@@ -253,11 +210,6 @@ module ChapelBase {
   inline proc =(ref a: imag(?w), b: imag(w)) { __primitive("=", a, b); }
   pragma "trivial assignment"
   inline proc =(ref a: complex(?w), b: complex(w)) { __primitive("=", a, b); }
-
-  // This implies that the *representation* of strings is shared.
-  // If strings are reimplemented as classes or records, a less trivial
-  // implementation for assignment will become necessary.
-  inline proc =(ref a: string, b: string) { __primitive("move", a, b); }
 
   inline proc =(ref a, b: a.type) where isClassType(a.type)
   { __primitive("=", a, b); }
@@ -282,7 +234,6 @@ module ChapelBase {
   inline proc ==(a: real(?w), b: real(w)) return __primitive("==", a, b);
   inline proc ==(a: imag(?w), b: imag(w)) return __primitive("==", a, b);
   inline proc ==(a: complex(?w), b: complex(w)) return a.re == b.re && a.im == b.im;
-  inline proc ==(a: string, b: string) return (__primitive("string_compare", a.c_str(), b.c_str()) == 0);
   inline proc ==(a: object, b: object) return __primitive("ptr_eq", a, b);
   
   inline proc !=(a: bool, b: bool) return __primitive("!=", a, b);
@@ -291,7 +242,6 @@ module ChapelBase {
   inline proc !=(a: real(?w), b: real(w)) return __primitive("!=", a, b);
   inline proc !=(a: imag(?w), b: imag(w)) return __primitive("!=", a, b);
   inline proc !=(a: complex(?w), b: complex(w)) return a.re != b.re || a.im != b.im;
-  inline proc !=(a: string, b: string) return (__primitive("string_compare", a.c_str(), b.c_str()) != 0);
   inline proc !=(a: object, b: object) return __primitive("ptr_neq", a, b);
   
   inline proc ==(param a: bool, param b: bool) param return __primitive("==", a, b);
@@ -311,25 +261,21 @@ module ChapelBase {
   inline proc <=(a: uint(?w), b: uint(w)) return __primitive("<=", a, b);
   inline proc <=(a: real(?w), b: real(w)) return __primitive("<=", a, b);
   inline proc <=(a: imag(?w), b: imag(w)) return __primitive("<=", a, b);
-  inline proc <=(a: string, b: string) return a.c_str()<=b.c_str();
   
   inline proc >=(a: int(?w), b: int(w)) return __primitive(">=", a, b);
   inline proc >=(a: uint(?w), b: uint(w)) return __primitive(">=", a, b);
   inline proc >=(a: real(?w), b: real(w)) return __primitive(">=", a, b);
   inline proc >=(a: imag(?w), b: imag(w)) return __primitive(">=", a, b);
-  inline proc >=(a: string, b: string) return a.c_str()>=b.c_str();
   
   inline proc <(a: int(?w), b: int(w)) return __primitive("<", a, b);
   inline proc <(a: uint(?w), b: uint(w)) return __primitive("<", a, b);
   inline proc <(a: real(?w), b: real(w)) return __primitive("<", a, b);
   inline proc <(a: imag(?w), b: imag(w)) return __primitive("<", a, b);
-  inline proc <(a: string, b: string) return a.c_str()<b.c_str();
   
   inline proc >(a: int(?w), b: int(w)) return __primitive(">", a, b);
   inline proc >(a: uint(?w), b: uint(w)) return __primitive(">", a, b);
   inline proc >(a: real(?w), b: real(w)) return __primitive(">", a, b);
   inline proc >(a: imag(?w), b: imag(w)) return __primitive(">", a, b);
-  inline proc >(a: string, b: string) return a.c_str()>b.c_str();
   
   inline proc <=(param a: int(?w), param b: int(w)) param return __primitive("<=", a, b);
   inline proc <=(param a: uint(?w), param b: uint(w)) param return __primitive("<=", a, b);
@@ -407,8 +353,7 @@ module ChapelBase {
   //
   inline proc +(param a: int(?w), param b: int(w)) param return __primitive("+", a, b);
   inline proc +(param a: uint(?w), param b: uint(w)) param return __primitive("+", a, b);
-  inline proc +(param a: string, param b: string) param return __primitive("string_concat", a, b);
-  
+
   inline proc -(param a: int(?w), param b: int(w)) param return __primitive("-", a, b);
   inline proc -(param a: uint(?w), param b: uint(w)) param return __primitive("-", a, b);
   
@@ -668,26 +613,6 @@ module ChapelBase {
   inline proc _r2i(a: real(?w)) return __primitive("cast", imag(w), a);
   
   //
-  // primitive string functions and methods
-  //
-  inline proc ascii(a: string) return ascii(a.c_str());
-  inline proc string.length return this.c_str().length;
-  inline proc string.size return this.length;
-  inline proc string.substring(i: int)
-    // FIX ME: leak c_string
-    return toString(this.c_str().substring(i));
-  inline proc _string_contains(a: string, b: string)
-    return _string_contains(a.c_str(), b.c_str());
-  
-  /** Returns the index of the first occurrence of a substring within a string,
-      or 0 if the substring is not in the string.
-   */
-  inline proc string.indexOf(substring:string):int
-    return this.c_str().indexOf(substring.c_str());
-  inline proc string.indexOf(substring:c_string):int
-    return this.c_str().indexOf(substring);
-  
-  //
   // min and max
   //
   inline proc min(x, y) return if x < y then x else y;
@@ -902,15 +827,6 @@ module ChapelBase {
   pragma "command line setting"
   proc _command_line_cast(param s: c_string, type t, x) return _cast(t, x);
 
-  // cast to and from Chapel strings use c_string
-  pragma "compiler generated"
-  inline proc _cast(type t, x) where t==string && x.type != c_string
-    // FIX ME: leak c_string
-    return toString(_cast(c_string, x));
-
-  pragma "compiler generated"
-  inline proc _cast(type t, x: string) where t !=c_string
-    return _cast(t, x.c_str());
   
   inline proc _cast(type t, x: bool) where _isPrimitiveType(t)
     return __primitive("cast", t, x);
@@ -927,9 +843,6 @@ module ChapelBase {
   inline proc _cast(type t, x: real(?w)) where _isPrimitiveType(t)
     return __primitive("cast", t, x);
  
-  inline proc _cast(type t, x: c_string) where _isPrimitiveType(t) && t!=string
-    return __primitive("cast", t, x);
-
   inline proc _cast(type t, x: enumerated) where _isPrimitiveType(t) && t!=c_string && t!=string
     return __primitive("cast", t, x);
 
@@ -966,9 +879,6 @@ module ChapelBase {
   inline proc _cast(type t, x: complex(?w)) where _isComplexType(t)
     return (x.re, x.im):t;
   
-  inline proc _cast(type t, x: c_string) where _isComplexType(t)
-    return __primitive("cast", t, x);
-  
   //
   // casts to imag
   //
@@ -990,30 +900,9 @@ module ChapelBase {
   inline proc _cast(type t, x: complex(?w)) where _isImagType(t)
     return let xim = x.im in __primitive("cast", t, xim);
   
-  inline proc _cast(type t, x: c_string) where _isImagType(t)
-    return __primitive("cast", t, x);
-  
   //
   // casts from complex
   //
-  inline proc _cast(type t, x: complex(?w)) where t == c_string {
-    if isnan(x.re) || isnan(x.im) then
-      return "nan";
-    var re = (x.re):c_string;
-    var im, op: c_string;
-    if x.im < 0 {
-      im = (-x.im):c_string;
-      op = " - ";
-    } else if im == "-0.0" {
-      im = "0.0";
-      op = " - ";
-    } else {
-      im = (x.im):c_string;
-      op = " + ";
-    }
-    return (re + op + im + "i").c_str();
-  }
-
   inline proc _cast(type t, x: complex(?w)) where _isRealType(t) || _isIntegralType(t) {
     var y: t;
     y = x.re:t;
@@ -1023,9 +912,6 @@ module ChapelBase {
   //
   // casts from imag
   //
-  inline proc _cast(type t, x: imag(?w)) where t == c_string
-    return __primitive("cast", t, x);
-
   inline proc _cast(type t, x: imag(?w)) where _isRealType(t) || _isIntegralType(t)
     return 0:t;
   
@@ -1055,14 +941,6 @@ module ChapelBase {
   inline proc _createFieldDefault(type t, init: _nilType) {
     pragma "no auto destroy" var x: t;
     return x;
-  }
-  
-  pragma "compiler generated"
-  pragma "init copy fn"
-  inline proc chpl__initCopy(a) {
-    // Currently, string representations are shared.
-    // (See note on proc =(a:string, b:string) above.)
-      return a;
   }
   
   pragma "init copy fn"
@@ -1161,18 +1039,6 @@ module ChapelBase {
   inline proc func() type { return __primitive("create fn type", void); }
   inline proc func(type rettype) type { return __primitive("create fn type", rettype); }
   inline proc func(type t...?n, type rettype) type { return __primitive("create fn type", (...t), rettype); }
-  
-  proc chpldev_refToString(ref arg) {
-  
-    //
-    // print out the address of class references as well
-    //
-    proc chpldev_classToString(x: object)
-      return " (class = " + __primitive("ref to string", x) + ")";
-    proc chpldev_classToString(x) return "";
-  
-    return __primitive("ref to string", arg) + chpldev_classToString(arg);
-  }
   
   proc isIterator(ic: _iteratorClass) param return true;
   proc isIterator(ir: _iteratorRecord) param return true;
