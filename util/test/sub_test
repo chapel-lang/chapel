@@ -1150,12 +1150,15 @@ for testname in testsrc:
             exec_log_names = []
 
             # Exactly one execution output file.
-            if len(compoptslist) == 1 and len(execoptslist) <= 1:
+            if len(compoptslist) == 1 and len(execoptslist) == 1:
                 exec_log_names.append(get_exec_log_name(execname))
 
             # One execution output file for the current compiler opt.
-            elif len(compoptslist) > 1 and len(execoptslist) <= 1:
-                exec_log_names.append(get_exec_log_name(execname, compoptsnum, 0))
+            elif len(compoptslist) > 1 and len(execoptslist) == 1:
+                exec_opts_num_tmp = 1
+                if execoptslist[0] == ' ':
+                    exec_opts_num_tmp = 0
+                exec_log_names.append(get_exec_log_name(execname, compoptsnum, exec_opts_num_tmp))
 
             # One execution output file for each of the execution opts.
             elif len(compoptslist) == 1 and len(execoptslist) > 1:
