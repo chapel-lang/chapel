@@ -1,0 +1,2 @@
+*** Caught a fatal signal: SIGSEGV(11) on node 0/2
+NOTICE: Before reporting bugs, run with GASNET_BACKTRACE=1 in the environment to generate a backtrace. 

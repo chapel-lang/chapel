@@ -1,0 +1,1 @@
+c_str_on_remote_string.chpl:4: error: cannot create a C string from a remote string
