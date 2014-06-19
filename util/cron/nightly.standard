@@ -7,8 +7,8 @@ CWD=$(cd $(dirname $0) ; pwd)
 
 source $CWD/common.bash
 
-TEST_PLATFORM=$($HOME/chapel/util/chplenv/platform)
-TEST_COMPILER=$($HOME/chapel/util/chplenv/compiler)
+TEST_PLATFORM=$($HOME/chapel/util/chplenv/chpl_platform.py)
+TEST_COMPILER=$($HOME/chapel/util/chplenv/chpl_compiler.py)
 
 log_info "Testing everything on $TEST_PLATFORM with $TEST_COMPILER."
 $CWD/nightly -cron

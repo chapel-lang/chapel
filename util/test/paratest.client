@@ -76,7 +76,7 @@ sub main {
     }
     print "\n* $node up @ $workingdir *\n";
 
-    $platform = `../util/chplenv/platform`; chomp $platform;
+    $platform = `../util/chplenv/chpl_platform.py`; chomp $platform;
     $compiler = "../bin/$platform/chpl";
     unless (-e $compiler) {
         fatal("cannot find or execute the compiler '$compiler'");

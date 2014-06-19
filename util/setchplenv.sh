@@ -19,7 +19,7 @@ if [ -d "util" ] && [ -d "compiler" ] && [ -d "runtime" ] && [ -d "modules" ]
           echo " "
 
           echo "Setting CHPL_HOST_PLATFORM..."
-          CHPL_HOST_PLATFORM=`"$CHPL_HOME"/util/chplenv/platform`
+          CHPL_HOST_PLATFORM=`"$CHPL_HOME"/util/chplenv/chpl_platform.py`
           export CHPL_HOST_PLATFORM
           echo "                        ...to $CHPL_HOST_PLATFORM"
           echo " "

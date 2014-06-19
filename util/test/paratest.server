@@ -468,7 +468,7 @@ sub main {
     local ($id, $synchfile);
     
     $user = `whoami`; chomp $user;
-    $platform = `../util/chplenv/platform`; chomp $platform;
+    $platform = `../util/chplenv/chpl_platform.py`; chomp $platform;
     $fin_logfile = "$logdir/$user.$platform.log";      # final log file name
     # $fin_logfile = "$logdir/$user.$platform.log";
     unlink $fin_logfile if (-e $fin_logfile);          # remove final log file

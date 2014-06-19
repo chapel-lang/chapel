@@ -17,7 +17,7 @@ if [ -d "util" ] && [ -d "compiler" ] && [ -d "runtime" ] && [ -d "modules" ]
           echo "to $CHPL_HOME"
 
           echo -n "Setting CHPL_HOST_PLATFORM "
-          export CHPL_HOST_PLATFORM=`"$CHPL_HOME"/util/chplenv/platform`
+          export CHPL_HOST_PLATFORM=`"$CHPL_HOME"/util/chplenv/chpl_platform.py`
           echo "to $CHPL_HOST_PLATFORM"
 
           echo -n "Updating PATH to include "

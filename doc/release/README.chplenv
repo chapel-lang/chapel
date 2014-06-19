@@ -1,5 +1,5 @@
 ======================================
-Setting up your environment for Chapel
+xetting up your environment for Chapel
 ======================================
 
 To get started with Chapel, there are four environment settings that
@@ -33,12 +33,11 @@ Recommended Settings
     make the appropriate adjustment.]
 
 
-2) Set the CHPL_HOST_PLATFORM environment variable to represent the
-   platform on which you're working.  For standard UNIX workstations,
-   this can be done by running the $CHPL_HOME/util/chplenv/platform
-   script.  For example:
+2) Set the CHPL_HOST_PLATFORM environment variable to represent the platform on
+   which you're working.  For standard UNIX workstations, this can be done by
+   running the $CHPL_HOME/util/chplenv/chpl_platform.py script.  For example:
 
-        export CHPL_HOST_PLATFORM=`$CHPL_HOME/util/chplenv/platform`
+        export CHPL_HOST_PLATFORM=`$CHPL_HOME/util/chplenv/chpl_platform.py`
 
    For other platforms that appear very similar to a UNIX workstation
    from the shell prompt (e.g., a Cray XK (TM)), the value may need to

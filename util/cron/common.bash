@@ -91,7 +91,7 @@ fi
 log_info "CHPL_HOME is: ${CHPL_HOME}"
 
 # Set the platform for nightly.
-export CHPL_HOST_PLATFORM=$($CHPL_HOME/util/chplenv/platform --host)
+export CHPL_HOST_PLATFORM=$($CHPL_HOME/util/chplenv/chpl_platform.py --host)
 log_info "CHPL_HOST_PLATFORM is: ${CHPL_HOST_PLATFORM}"
 
 # Enable warnings and errors.

@@ -403,7 +403,7 @@ if useTimedExec:
 # sys.stdout.write('timedexec='+timedexec+'\n');
 
 # HW platform
-platform=subprocess.Popen([chpl_home+'/util/chplenv/platform', '--target'], stdout=subprocess.PIPE).communicate()[0]
+platform=subprocess.Popen([chpl_home+'/util/chplenv/chpl_platform.py', '--target'], stdout=subprocess.PIPE).communicate()[0]
 platform = platform.strip()
 # sys.stdout.write('platform='+platform+'\n')
 

@@ -6,7 +6,7 @@
 #
 icss=$( sed 's/^CHPL_RT_CALL_STACK_SIZE=\([0-9]*\).*$/\1/' $1.execenv )
 
-case $( $CHPL_HOME/util/chplenv/tasks ) in
+case $( $CHPL_HOME/util/chplenv/chpl_tasks.py ) in
 fifo)
   # fifo rounds the call stack size to the next system page boundary
   pagesize=$( getconf PAGESIZE )
@@ -31,7 +31,7 @@ qthreads)
   ocss=$icss;;
 esac
 
-if [[ $( $CHPL_HOME/util/chplenv/comm ) == none ]] ; then
+if [[ $( $CHPL_HOME/util/chplenv/chpl_comm.py ) == none ]] ; then
   good_in=$1.comm-none.good.in
 else
   good_in=$1.good.in

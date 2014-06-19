@@ -154,7 +154,7 @@ if (! $CHPL_HOME) {
       error("\$CHPL_HOME is not defined");
    }
 } elsif (!$compiler) {
-   my $platform = `$CHPL_HOME/util/chplenv/platform`;
+   my $platform = `$CHPL_HOME/util/chplenv/chpl_platform.py`;
    if (!$platform) {
       error("could not determine the Chapel platform");
    } else {

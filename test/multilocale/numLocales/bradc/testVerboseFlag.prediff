@@ -1,9 +1,9 @@
 #!/bin/sh
 
 uname=$(uname -n)
-tasks=$($CHPL_HOME/util/chplenv/tasks)
-launcher=$($CHPL_HOME/util/chplenv/launcher)
-target=$($CHPL_HOME/util/chplenv/platform --target)
+tasks=$($CHPL_HOME/util/chplenv/chpl_tasks.py)
+launcher=$($CHPL_HOME/util/chplenv/chpl_launcher.py)
+target=$($CHPL_HOME/util/chplenv/chpl_platform.py --target)
 
 # Build a .good file; the lines are:
 # - .launcher-$CHPL_LAUNCHER, with ' EXECOPTS' replaced with $EXECOPTS

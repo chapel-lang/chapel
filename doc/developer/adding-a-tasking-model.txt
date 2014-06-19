@@ -45,12 +45,12 @@ This will leave you with the following new files:
 
 Then, you need to modify some existing infrastructure files:
 
-util/chplenv/tasks:
+util/chplenv/chpl_tasks.py:
   If your new tasking model will be the default or only model for some
   Chapel target architecture, you will need to change this file to
   select your model under the appropriate circumstances.
 
-util/chplenv/threads:
+util/chplenv/chpl_threads.py:
   Add code to select the appropriate threading model for your new
   tasking model.
 

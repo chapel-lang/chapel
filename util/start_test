@@ -667,8 +667,8 @@ endif
 
 set datestr = `date +"%y%m%d.%H%M%S"`
 
-set host_platform = `$CHPL_HOME/util/chplenv/platform --host`
-set tgt_platform = `$CHPL_HOME/util/chplenv/platform --target`
+set host_platform = `$CHPL_HOME/util/chplenv/chpl_platform.py --host`
+set tgt_platform = `$CHPL_HOME/util/chplenv/chpl_platform.py --target`
 
 #
 # some sets to get locale, environment reasonable
@@ -709,8 +709,8 @@ set testnotests = 0
 set recurse = 1
 set tee = "tee"
 set numlocales = 0
-set comm = `$CHPL_HOME/util/chplenv/comm`
-set locMod = `$CHPL_HOME/util/chplenv/localeModel`
+set comm = `$CHPL_HOME/util/chplenv/chpl_comm.py`
+set locMod = `$CHPL_HOME/util/chplenv/chpl_locale_model.py`
 set suppressions = ""
 set optionerr = 0
 set chplHomeWarn = 1
@@ -1141,7 +1141,7 @@ setenv LAUNCHCMD "$launchcmd"
 
 echo \[comm: \"$comm\"\] |& $tee -a $logfile
 setenv CHPL_COMM $comm
-setenv CHPL_GASNET_SEGMENT `$CHPL_HOME/util/chplenv/commSegment`
+setenv CHPL_GASNET_SEGMENT `$CHPL_HOME/util/chplenv/chpl_comm_segment.py`
 
 echo \[localeModel: \"$locMod\"\] |& $tee -a $logfile
 setenv CHPL_LOCALE_MODEL $locMod

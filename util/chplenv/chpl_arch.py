@@ -1,24 +1,11 @@
 #!/usr/bin/env python
 
-import os, re, subprocess, sys, string, optparse
-#sys.stdout.write("native")
-#sys.exit(0)
+import os, optparse
+from sys import stdout, stderr
+from string import punctuation
 
-# very simple logger (should be easy to replace with a real system if needed)
-class Logger(object):
-    enabled = False
-
-    def _log(self, fmt, msg, *args):
-        if self.enabled:
-            sys.stderr.write(fmt.format(msg % args))
-
-    def warn(self, msg, *args):
-        self._log("Warning: {0}\n", msg, *args)
-
-    def error(self, msg, *args):
-        self._log("Error: {0}\n", msg, *args)
-
-logger = Logger()
+import utils, chpl_platform, chpl_comm, chpl_compiler
+from utils import memoize
 
 class argument_map(object):
     # intel does not support amd archs... it may be worth testing setting the
@@ -106,8 +93,10 @@ class argument_map(object):
 
         arg_value = cls._get(arch, compiler, version)
         if not arg_value:
-            logger.warn('No valid option found: arch="%s" compiler="%s" version="%s"',
-                        arch, compiler, version)
+            stderr.write('Warning: No valid option found: arch="{0}" '
+                         'compiler="{1}" version="{2}"\n'.format(arch,
+                                                                 compiler,
+                                                                 version))
         return arg_value
 
     @classmethod
@@ -116,21 +105,21 @@ class argument_map(object):
             return arch
 
         if compiler == 'gnu':
-            if version >= '4.9':
+            if version >= 4.9:
                 return cls.gcc49.get(arch, '')
-            if version >= '4.7':
+            if version >= 4.7:
                 return cls.gcc47.get(arch, '')
-            if version >= '4.3':
+            if version >= 4.3:
                 return cls.gcc43.get(arch, '')
             else:
-                logger.warn('Argument map not found for GCC version: "%s"', version)
+                stderr.write('Warning: Argument map not found for GCC version: "{0}"\n'.format(version))
                 return ''
         elif compiler == 'intel':
             return cls.intel.get(arch, '')
         elif compiler == 'clang':
             return cls.clang.get(arch, '')
         else:
-            logger.warn('Unknown compiler: "%s"', compiler)
+            stderr.write('Warning: Unknown compiler: "{0}"\n'.format(compiler))
             return ''
 
 
@@ -153,8 +142,8 @@ class feature_sets(object):
         ('broadwell',   broadwell),
     ]
 
-    k8 =  ['mmx', 'sse', 'sse2']
-    k8sse3 =  k8 + ['sse3']
+    k8 = ['mmx', 'sse', 'sse2']
+    k8sse3 = k8 + ['sse3']
     barcelona = k8sse3 + ['sse4a', 'abm']
     bdver1 = barcelona + ['fma4', 'avx', 'xop', 'lwp', 'aes',
                           'pclmul', 'cx16', 'sse41', 'sse42']
@@ -163,13 +152,13 @@ class feature_sets(object):
     bdver4 = bdver3 + ['bmi2', 'avx2', 'movbe']
 
     amd = [
-      ('k8',        k8),
-      ('k8sse3',    k8sse3),
-      ('barcelona', barcelona),
-      ('bdver1',    bdver1),
-      ('bdver2',    bdver2),
-      ('bdver3',    bdver3),
-      ('bdver4',    bdver4),
+        ('k8',        k8),
+        ('k8sse3',    k8sse3),
+        ('barcelona', barcelona),
+        ('bdver1',    bdver1),
+        ('bdver2',    bdver2),
+        ('bdver3',    bdver3),
+        ('bdver4',    bdver4),
     ]
 
     combined = intel + amd
@@ -193,7 +182,7 @@ class feature_sets(object):
                     a_features = v
                 if k == b:
                     b_features = v
-            return (a_features != [] and list_in(a_features, b_features))
+            return a_features != [] and list_in(a_features, b_features)
 
         return check(sets.combined, a, b)
 
@@ -201,7 +190,7 @@ class feature_sets(object):
     @classmethod
     def find(sets, vendor, features):
         # remove all punctuation and split into a list
-        system_features = features.lower().translate(None, string.punctuation).split()
+        system_features = features.lower().translate(None, punctuation).split()
 
         options = []
         if "genuineintel" == vendor.lower():
@@ -218,38 +207,16 @@ class feature_sets(object):
 
         return found
 
-class CommandError(Exception):
-    pass
-
-# This could be replaced by subprocess.check_output, but that isn't available
-# until python 2.7 and we only have 2.6 on most machines :(
-def run_command(command, stdout=True, stderr=False):
-    process = subprocess.Popen(command,
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE)
-    output = process.communicate()
-    if process.returncode != 0:
-        raise CommandError("command {0} failed - output was \n{1}".format(command, output[1]))
-    else:
-        if stdout and stderr:
-            return output
-        elif stdout:
-            return output[0]
-        elif stderr:
-            return output[1]
-        else:
-            return ''
-
 def get_cpuinfo(platform='linux'):
     vendor_string = ''
     feature_string = ''
     if platform == "darwin":
-        vendor_string = run_command(['sysctl',
-                                      '-n',
-                                      'machdep.cpu.vendor'])
-        feature_string = run_command(['sysctl',
-                                      '-n',
-                                      'machdep.cpu.features'])
+        vendor_string = utils.run_command(['sysctl',
+                                           '-n',
+                                           'machdep.cpu.vendor'])
+        feature_string = utils.run_command(['sysctl',
+                                            '-n',
+                                            'machdep.cpu.features'])
         # osx reports AVX1.0 while linux reports it as AVX
         feature_string = feature_string.replace("AVX1.0", "AVX")
     elif os.path.isfile('/proc/cpuinfo'):
@@ -266,21 +233,11 @@ def get_cpuinfo(platform='linux'):
         raise ValueError("Unknown platform, could not find CPU information")
     return (vendor_string.strip(), feature_string.strip())
 
-def get_compiler_version(compiler):
-    if compiler == 'gnu':
-        output = run_command(['gcc', '-dumpversion'])
-        match = re.search(r'(\d+\.\d+)', output)
-        if match:
-            return match.group(1)
-        else:
-            raise ValueError("Could not find the GCC version")
-    else:
-        return ''
-
 class InvalidLocationError(ValueError):
     pass
 
-def get_arch_flag(location, map_to_compiler=False):
+@memoize
+def get(location, map_to_compiler=False):
 
     if not location or location == "host":
         arch = os.environ.get('CHPL_HOST_ARCH', '')
@@ -289,37 +246,31 @@ def get_arch_flag(location, map_to_compiler=False):
     else:
         raise InvalidLocationError(location)
 
-    # fast path out for when the user as set arch=none
+    # fast path out for when the user has set arch=none
     if arch == 'none':
         return arch
 
-    util_dir = os.path.dirname(os.path.realpath(__file__))
+    comm_val = chpl_comm.get()
+    compiler_val = chpl_compiler.get(location)
+    platform_val = chpl_platform.get(location)
 
-    comm_path = os.path.join(util_dir, 'comm')
-    comm = run_command([comm_path, '--'+location]).strip()
-
-    compiler_path = os.path.join(util_dir, 'compiler')
-    compiler = run_command([compiler_path, '--'+location]).strip()
-
-    platform_path = os.path.join(util_dir, 'platform')
-    platform = run_command([platform_path, '--'+location]).strip()
-
-    if 'cray-prgenv' in compiler:
+    if compiler_val.startswith('cray-prgenv'):
         if arch and (arch != 'none' or arch != 'unknown'):
-            logger.warn("Setting the processor type through environment variables "
-                        "is not supported for cray-prgenv-*. Please use the "
-                        "appropriate craype-* module for your processor type.")
+            stderr.write("Warning: Setting the processor type through "
+                         "environment variables is not supported for "
+                         "cray-prgenv-*. Please use the appropriate craype-* "
+                         "module for your processor type.\n")
         arch = os.environ.get('CRAY_CPU_TARGET', 'none')
         if arch == 'none':
-            logger.warn("No craype-* processor type module was detected, please "
-                        "load the appropriate one if you want any specialization "
-                        "to occur.")
+            stderr.write("Warning: No craype-* processor type module was "
+                         "detected, please load the appropriate one if you want "
+                         "any specialization to occur.\n")
         return arch
-    elif 'pgi' in compiler:
+    elif 'pgi' in compiler_val:
         return 'none'
-    elif 'cray' in compiler:
+    elif 'cray' in compiler_val:
         return 'none'
-    elif 'ibm' in compiler:
+    elif 'ibm' in compiler_val:
         return 'none'
 
     # Only try to do any auto-detection or verification when:
@@ -328,7 +279,9 @@ def get_arch_flag(location, map_to_compiler=False):
     # linux/dawin/  -- The only platforms that we should try and detect on.
     # cygwin           Crays will be handled through the craype-* modules
     #
-    if comm == 'none' and ('linux' in platform or platform == 'darwin' or platform == 'cygwin'):
+    if comm_val == 'none' and ('linux' in platform_val or
+                               platform_val == 'darwin' or
+                               platform_val == 'cygwin'):
         if arch:
             if not location or location == 'host':
                 # when a user supplies an architecture, and it seems reasonable
@@ -340,15 +293,15 @@ def get_arch_flag(location, map_to_compiler=False):
                 # conservatively assume that a setting for 'target' could be in
                 # a cross-compilation setting
                 try:
-                    vendor_string, feature_string = get_cpuinfo(platform)
+                    vendor_string, feature_string = get_cpuinfo(platform_val)
                     detected_arch = feature_sets.find(vendor_string, feature_string)
                     if not feature_sets.subset(arch, detected_arch):
-                        logger.warn("The supplied processor type does not "
-                                    "appear to be compatible with the host "
-                                    "processor type. The resultant binary may "
-                                    "not run on the current machine.")
+                        stderr.write("Warning: The supplied processor type does "
+                                     "not appear to be compatible with the host "
+                                     "processor type. The resultant binary may "
+                                     "not run on the current machine.\n")
                 except ValueError:
-                    logger.warn("Unknown platform, could not find CPU information")
+                    stderr.write("Warning: Unknown platform, could not find CPU information\n")
         else:
             # let the backend compiler do the actual feature set detection. We
             # could be more aggressive in setting a precise architecture using
@@ -356,33 +309,28 @@ def get_arch_flag(location, map_to_compiler=False):
             # to not use the work the backend compilers have already done
             arch = 'native'
 
-    if map_to_compiler:
-        version = get_compiler_version(compiler)
-        arch = argument_map.find(arch, compiler, version)
 
-    return arch
+    if map_to_compiler:
+        version = utils.get_compiler_version(compiler_val)
+        arch = argument_map.find(arch, compiler_val, version)
+
+    return arch or 'unknown'
+
+
+def _main():
+    parser = optparse.OptionParser(usage="usage: %prog [--host|target] [--compflag]")
+    parser.add_option('--target', dest='location', action='store_const',
+                      const='target', default='target')
+    parser.add_option('--host', dest='location', action='store_const',
+                      const='host')
+    parser.add_option('--compflag', dest='map_to_compiler', action='store_true',
+                      default=False)
+    (options, args) = parser.parse_args()
+
+    arch = get(options.location, options.map_to_compiler)
+
+    stdout.write("{0}\n".format(arch))
 
 
 if __name__ == '__main__':
-    logger.enabled = True
-    usage = "usage: arch.py [--host|target] [--compflag]\n"
-
-    location = ''
-    map_to_compiler = False
-    if len(sys.argv) >= 2:
-        for arg in sys.argv[1:]:
-            if arg == '--host' or arg == '--target':
-                location = arg[2:]
-            elif arg == '--compflag':
-                map_to_compiler = True
-            else:
-                sys.stderr.write("Error: Unknown argument: {0}\n".format(arg))
-                sys.stderr.write(usage)
-                sys.exit(1)
-
-    arch = get_arch_flag(location, map_to_compiler)
-
-    if not arch:
-        arch = "unknown"
-    sys.stdout.write("{0}\n".format(arch))
-    sys.exit(0)
+    _main()

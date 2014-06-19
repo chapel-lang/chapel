@@ -21,7 +21,7 @@ set -x CHPL_HOME $PWD
 echo "to $CHPL_HOME"
 
 echo -n "Setting CHPL_HOST_PLATFORM "
-set -x CHPL_HOST_PLATFORM (eval $CHPL_HOME/util/chplenv/platform)
+set -x CHPL_HOST_PLATFORM (eval $CHPL_HOME/util/chplenv/chpl_platform.py)
 echo "to $CHPL_HOST_PLATFORM"
 
 echo -n "Updating PATH "

@@ -327,29 +327,29 @@ static void setupOrderedGlobals(const char* argv0) {
   setupChplHome(argv0);
   
   // Then CHPL_* variables
-  SETUP_ENV_VAR(CHPL_HOST_PLATFORM, "chplenv/platform --host");
-  SETUP_ENV_VAR(CHPL_HOST_COMPILER, "chplenv/compiler --host");
-  SETUP_ENV_VAR(CHPL_TARGET_PLATFORM, "chplenv/platform --target");
-  SETUP_ENV_VAR(CHPL_TARGET_COMPILER, "chplenv/compiler --target");
-  SETUP_ENV_VAR(CHPL_TARGET_ARCH, "chplenv/arch.py --target");
-  SETUP_ENV_VAR(CHPL_LOCALE_MODEL, "chplenv/localeModel");
-  SETUP_ENV_VAR(CHPL_COMM, "chplenv/comm");
-  SETUP_ENV_VAR(CHPL_COMM_SUBSTRATE, "chplenv/commSubstrate");
-  SETUP_ENV_VAR(CHPL_GASNET_SEGMENT, "chplenv/commSegment");
-  SETUP_ENV_VAR(CHPL_TASKS, "chplenv/tasks");
-  SETUP_ENV_VAR(CHPL_THREADS, "chplenv/threads");
-  SETUP_ENV_VAR(CHPL_LAUNCHER, "chplenv/launcher");
-  SETUP_ENV_VAR(CHPL_TIMERS, "chplenv/timers");
-  SETUP_ENV_VAR(CHPL_MEM, "chplenv/mem");
-  SETUP_ENV_VAR(CHPL_MAKE, "chplenv/chplmake");
-  SETUP_ENV_VAR(CHPL_ATOMICS, "chplenv/atomics");
-  SETUP_ENV_VAR(CHPL_NETWORK_ATOMICS, "chplenv/atomics --network");
-  SETUP_ENV_VAR(CHPL_GMP, "chplenv/gmp");
-  SETUP_ENV_VAR(CHPL_HWLOC, "chplenv/hwloc");
-  SETUP_ENV_VAR(CHPL_REGEXP, "chplenv/regexp");
-  SETUP_ENV_VAR(CHPL_WIDE_POINTERS, "chplenv/widePointers");
-  SETUP_ENV_VAR(CHPL_LLVM, "chplenv/llvm");
-  SETUP_ENV_VAR(CHPL_AUX_FILESYS, "chplenv/auxFilesys");
+  SETUP_ENV_VAR(CHPL_HOST_PLATFORM, "chplenv/chpl_platform.py --host");
+  SETUP_ENV_VAR(CHPL_HOST_COMPILER, "chplenv/chpl_compiler.py --host");
+  SETUP_ENV_VAR(CHPL_TARGET_PLATFORM, "chplenv/chpl_platform.py --target");
+  SETUP_ENV_VAR(CHPL_TARGET_COMPILER, "chplenv/chpl_compiler.py --target");
+  SETUP_ENV_VAR(CHPL_TARGET_ARCH, "chplenv/chpl_arch.py --target");
+  SETUP_ENV_VAR(CHPL_LOCALE_MODEL, "chplenv/chpl_locale_model.py");
+  SETUP_ENV_VAR(CHPL_COMM, "chplenv/chpl_comm.py");
+  SETUP_ENV_VAR(CHPL_COMM_SUBSTRATE, "chplenv/chpl_comm_substrate.py");
+  SETUP_ENV_VAR(CHPL_GASNET_SEGMENT, "chplenv/chpl_comm_segment.py");
+  SETUP_ENV_VAR(CHPL_TASKS, "chplenv/chpl_tasks.py");
+  SETUP_ENV_VAR(CHPL_THREADS, "chplenv/chpl_threads.py");
+  SETUP_ENV_VAR(CHPL_LAUNCHER, "chplenv/chpl_launcher.py");
+  SETUP_ENV_VAR(CHPL_TIMERS, "chplenv/chpl_timers.py");
+  SETUP_ENV_VAR(CHPL_MEM, "chplenv/chpl_mem.py --target");
+  SETUP_ENV_VAR(CHPL_MAKE, "chplenv/chpl_make.py");
+  SETUP_ENV_VAR(CHPL_ATOMICS, "chplenv/chpl_atomics.py");
+  SETUP_ENV_VAR(CHPL_NETWORK_ATOMICS, "chplenv/chpl_atomics.py --network");
+  SETUP_ENV_VAR(CHPL_GMP, "chplenv/chpl_gmp.py");
+  SETUP_ENV_VAR(CHPL_HWLOC, "chplenv/chpl_hwloc.py");
+  SETUP_ENV_VAR(CHPL_REGEXP, "chplenv/chpl_regexp.py");
+  SETUP_ENV_VAR(CHPL_WIDE_POINTERS, "chplenv/chpl_wide_pointers.py");
+  SETUP_ENV_VAR(CHPL_LLVM, "chplenv/chpl_llvm.py");
+  SETUP_ENV_VAR(CHPL_AUX_FILESYS, "chplenv/chpl_aux_filesys.py");
 
   // These depend on the environment variables being set
   fLocal = !strcmp(CHPL_COMM, "none");

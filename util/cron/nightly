@@ -289,14 +289,14 @@ $utildir = "$testbindirname/../../util";
 # platform variables
 #
 print "Setting platform variables\n";
-$hostplatform = `$utildir/chplenv/platform --host`; chomp($hostplatform);
-$targetplatform = `$utildir/chplenv/platform --target`; chomp($targetplatform);
-$hostcompiler = `$utildir/chplenv/compiler --host`; chomp($hostcompiler);
-$targetcompiler = `$utildir/chplenv/compiler --target`; chomp($targetcompiler);
-$tasks = `$utildir/chplenv/tasks`; chomp($tasks);
-$localeModel =  `$utildir/chplenv/localeModel`; chomp($localeModel);
-$mem =  `$utildir/chplenv/mem`; chomp($mem);
-$comm = `$utildir/chplenv/comm`; chomp($comm);
+$hostplatform = `$utildir/chplenv/chpl_platform.py --host`; chomp($hostplatform);
+$targetplatform = `$utildir/chplenv/chpl_platform.py --target`; chomp($targetplatform);
+$hostcompiler = `$utildir/chplenv/chpl_compiler.py --host`; chomp($hostcompiler);
+$targetcompiler = `$utildir/chplenv/chpl_compiler.py --target`; chomp($targetcompiler);
+$tasks = `$utildir/chplenv/chpl_tasks.py`; chomp($tasks);
+$localeModel =  `$utildir/chplenv/chpl_locale_model.py`; chomp($localeModel);
+$mem =  `$utildir/chplenv/chpl_mem.py --target`; chomp($mem);
+$comm = `$utildir/chplenv/chpl_comm.py`; chomp($comm);
 if ($comm eq "gasnet" && $ENV{'CHPL_GASNET_SEGMENT'} ne "") {
     $comm = "$comm-$ENV{'CHPL_GASNET_SEGMENT'}";
 }
