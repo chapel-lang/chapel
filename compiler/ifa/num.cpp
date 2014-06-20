@@ -645,7 +645,7 @@ fold_result(Immediate *im1, Immediate *im2, Immediate *imm) {
       imm->const_kind = NUM_KIND_INT;
       imm->num_index = INT_SIZE_16;
       return;
-    } else if (im1->num_index >= INT_SIZE_8 || im2->num_index >= INT_SIZE_8) {
+    } else {
       imm->const_kind = NUM_KIND_INT;
       imm->num_index = INT_SIZE_8;
       return;
