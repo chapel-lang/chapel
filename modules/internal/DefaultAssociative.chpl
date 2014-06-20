@@ -119,13 +119,13 @@ module DefaultAssociative {
     iter these() {
       if !_isEnumeratedType(idxType) {
         for slot in _fullSlots() {
-          yield table(slot).idx;
+          yield table[slot].idx;
         }
       } else {
         for val in chpl_enumerate(idxType) {
           var (match, slot) = _findFilledSlot(val);
           if match then
-            yield table(slot).idx;
+            yield table[slot].idx;
         }
       }
     }
@@ -183,7 +183,7 @@ module DefaultAssociative {
         var mismatch = false;
         // could use a reduction
         for slot in chunk.low..chunk.high do
-          if followThisTab(slot).status != myTab(slot).status {
+          if followThisTab[slot].status != myTab[slot].status {
             mismatch = true;
             break;
           }
@@ -195,8 +195,8 @@ module DefaultAssociative {
         writeln("In domain follower code: Following ", chunk);
   
       for slot in chunk.low..chunk.high do
-        if table(slot).status == chpl__hash_status.full then
-          yield table(slot).idx;
+        if table[slot].status == chpl__hash_status.full then
+          yield table[slot].idx;
     }
   
     //
@@ -206,7 +206,7 @@ module DefaultAssociative {
       on this {
         if parSafe then lockTable();
         for slot in tableDom {
-          table(slot).status = chpl__hash_status.empty;
+          table[slot].status = chpl__hash_status.empty;
         }
         numEntries.write(0);
         if parSafe then unlockTable();
@@ -232,11 +232,14 @@ module DefaultAssociative {
   
     // This routine adds new indices without checking the table size and
     //  is thus appropriate for use by routines like _resize().
+    //
+    // NOTE: Calls to this routine assume that the tableLock has been acquired.
+    //
     proc _add(idx: idxType): index(tableDom) {
       const (foundSlot, slotNum) = _findEmptySlot(idx);
       if (foundSlot) {
-        table(slotNum).status = chpl__hash_status.full;
-        table(slotNum).idx = idx;
+        table[slotNum].status = chpl__hash_status.full;
+        table[slotNum].idx = idx;
         numEntries.add(1);
       } else {
         if (slotNum < 0) {
@@ -251,11 +254,11 @@ module DefaultAssociative {
     proc dsiRemove(idx: idxType) {
       on this {
         if parSafe then lockTable();
-        const (foundSlot, slotNum) = _findFilledSlot(idx);
+        const (foundSlot, slotNum) = _findFilledSlot(idx, haveLock=parSafe);
         if (foundSlot) {
           for a in _arrs do
             a.clearEntry(idx);
-          table(slotNum).status = chpl__hash_status.deleted;
+          table[slotNum].status = chpl__hash_status.deleted;
           numEntries.sub(1);
         } else {
           halt("index not in domain: ", idx);
@@ -308,7 +311,7 @@ module DefaultAssociative {
 
           // insert old data into newly resized table
           for slot in _fullSlots(copyTable) {
-            const newslot = _add(copyTable(slot).idx);
+            const newslot = _add(copyTable[slot].idx);
             _preserveArrayElements(oldslot=slot, newslot=newslot);
           }
             
@@ -332,7 +335,7 @@ module DefaultAssociative {
       var tableCopy: [0..#numEntries.read()] idxType;
   
       for (tmp, slot) in zip(tableCopy.domain, _fullSlots()) do
-        tableCopy(tmp) = table(slot).idx;
+        tableCopy(tmp) = table[slot].idx;
   
       QuickSort(tableCopy);
   
@@ -364,40 +367,50 @@ module DefaultAssociative {
   
       // insert old data into newly resized table
       for slot in _fullSlots(copyTable) {
-        const newslot = _add(copyTable(slot).idx);
+        const newslot = _add(copyTable[slot].idx);
         _preserveArrayElements(oldslot=slot, newslot=newslot);
       }
       
       _removeArrayBackups();
     }
   
-    proc _findFilledSlot(idx: idxType, tab = table): (bool, index(tableDom)) {
-      for slotNum in _lookForSlots(idx, tab.domain.high+1) {
-        const slotStatus = tab(slotNum).status;
+    proc _findFilledSlot(idx: idxType, param haveLock = false) : (bool, index(tableDom)) {
+      if parSafe && !haveLock then lockTable();
+      for slotNum in _lookForSlots(idx, table.domain.high+1) {
+        const slotStatus = table[slotNum].status;
         if (slotStatus == chpl__hash_status.empty) {
+          if parSafe && !haveLock then unlockTable();
           return (false, -1);
         } else if (slotStatus == chpl__hash_status.full) {
-          if (tab(slotNum).idx == idx) {
+          if (table[slotNum].idx == idx) {
+            if parSafe && !haveLock then unlockTable();
             return (true, slotNum);
           }
         }
       }
+      if parSafe && !haveLock then unlockTable();
       return (false, -1);
     }
-  
-    proc _findEmptySlot(idx: idxType): (bool, index(tableDom)) {
+
+    //
+    // NOTE: Calls to this routine assume that the tableLock has been acquired.
+    //
+    proc _findEmptySlot(idx: idxType, haveLock = false): (bool, index(tableDom)) {
       for slotNum in _lookForSlots(idx) {
-        const slotStatus = table(slotNum).status;
+        const slotStatus = table[slotNum].status;
         if (slotStatus == chpl__hash_status.empty ||
             slotStatus == chpl__hash_status.deleted) {
           return (true, slotNum);
-        } else if (table(slotNum).idx == idx) {
+        } else if (table[slotNum].idx == idx) {
           return (false, slotNum);
         }
       }
       return (false, -1);
     }
       
+    //
+    // NOTE: Calls to this routine assume that the tableLock has been acquired.
+    //
     iter _lookForSlots(idx: idxType, numSlots = tableSize) {
       const baseSlot = chpl__defaultHashWrapper(idx);
       for probe in 0..numSlots/2 {
@@ -407,7 +420,7 @@ module DefaultAssociative {
   
     iter _fullSlots(tab = table) {
       for slot in tab.domain {
-        if tab(slot).status == chpl__hash_status.full then
+        if tab[slot].status == chpl__hash_status.full then
           yield slot;
       }
     }
@@ -437,7 +450,7 @@ module DefaultAssociative {
     }
   
     proc dsiAccess(idx : idxType) var : eltType {
-      const (found, slotNum) = dom._findFilledSlot(idx);
+      const (found, slotNum) = dom._findFilledSlot(idx, haveLock=true /* never lock here */);
       if (found) then
         return data(slotNum);
       else {
@@ -466,7 +479,7 @@ module DefaultAssociative {
         var mismatch = false;
         // could use a reduction
         for slot in chunk.low..chunk.high do
-          if followThisTab(slot).status != myTab(slot).status {
+          if followThisTab[slot].status != myTab[slot].status {
             mismatch = true;
             break;
           }
@@ -477,7 +490,7 @@ module DefaultAssociative {
         writeln("In array follower code: Following ", chunk);
       var tab = dom.table;  // cache table for performance
       for slot in chunk.low..chunk.high do
-        if tab(slot).status == chpl__hash_status.full then
+        if tab[slot].status == chpl__hash_status.full then
           yield data(slot);
     }
   
@@ -525,7 +538,7 @@ module DefaultAssociative {
     }
   
     proc _preserveArrayElement(oldslot, newslot) {
-      data(newslot) = tmpTable(oldslot);
+      data(newslot) = tmpTable[oldslot];
     }
 
     proc dsiTargetLocDom() {
