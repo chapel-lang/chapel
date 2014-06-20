@@ -3300,6 +3300,9 @@ void CallExpr::verify() {
   for_actuals(actual, this) {
     if (actual->parentExpr != this)
       INT_FATAL(this, "Bad CallExpr::argList::parentExpr");
+    if (isSymExpr(actual) && toSymExpr(actual)->var == gMethodToken &&
+        actual != this->get(1))
+      INT_FATAL(this, "If present, the method token must be the first argument.");
   }
   if (primitive) {
     if (!(PRIM_UNKNOWN <= primitive->tag && primitive->tag < NUM_KNOWN_PRIMS))

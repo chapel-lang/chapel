@@ -4732,10 +4732,12 @@ preFold(Expr* expr) {
         leaderCall = new CallExpr(leader);
       else
         leaderCall = new CallExpr(iterator->name);
-      leaderCall->insertAtTail(new NamedExpr("tag", new SymExpr(gLeaderTag)));
       for_formals(formal, iterator) {
         leaderCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(formal)));
       }
+      // "tag" should be placed at the end of the formals in the source code as
+      // well, to avoid insertion of an order wrapper.
+      leaderCall->insertAtTail(new NamedExpr("tag", new SymExpr(gLeaderTag)));
       call->replace(leaderCall);
       result = leaderCall;
     } else if (call->isPrimitive(PRIM_TO_FOLLOWER)) {
@@ -4745,11 +4747,14 @@ preFold(Expr* expr) {
         followerCall = new CallExpr(follower);
       else
         followerCall = new CallExpr(iterator->name);
-      followerCall->insertAtTail(new NamedExpr("tag", new SymExpr(gFollowerTag)));
-      followerCall->insertAtTail(new NamedExpr(iterFollowthisArgname, call->get(2)->remove()));
       for_formals(formal, iterator) {
         followerCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(formal)));
       }
+      // "tag", "followThis" and optionally "fast" should be placed at the end
+      // of the formals in the source code as well, to avoid insertion of an
+      // order wrapper.
+      followerCall->insertAtTail(new NamedExpr("tag", new SymExpr(gFollowerTag)));
+      followerCall->insertAtTail(new NamedExpr(iterFollowthisArgname, call->get(2)->remove()));
       if (call->numActuals() > 1) {
         followerCall->insertAtTail(new NamedExpr("fast", call->get(2)->remove()));
       }
