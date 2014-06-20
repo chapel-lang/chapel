@@ -23,6 +23,8 @@
 #include "version.h"
 
 #include <inttypes.h>
+#include <string>
+#include <sstream>
 
 const char* chplBinaryName = NULL;
 
@@ -308,14 +310,51 @@ static void setCommentLabel(ArgumentState* arg_state, const char* label) {
 }
 
 
-static const char* setupEnvVar(const char* varname, const char* script) {
-  const char* val = runUtilScript(script);
-  parseCmdLineConfig(varname, astr("\"", val, "\""));
-  return val;
+static void setupEnvVar(std::istringstream& iss, const char** var, const char* varname) {
+  std::string line;
+  std::string value;
+
+  std::getline(iss, line);
+  if (!iss.good() || line.find(varname) == std::string::npos) {
+    INT_FATAL(astr("Parsing ", varname));
+  }
+  value = line.substr(line.find('=')+1, std::string::npos);
+
+  *var = astr(value.c_str());  // astr call is to canonicalize
+  parseCmdLineConfig(varname, astr("\"", *var, "\""));
 }
 
-#define SETUP_ENV_VAR(varname, script)          \
-  varname = setupEnvVar(#varname, script);
+#define SETUP_ENV_VAR(varname) \
+  setupEnvVar(iss, &varname, #varname);
+
+static void setupEnvVars() {
+  std::string vars = runUtilScript("printchplenv --simple");
+  std::istringstream iss(vars);
+
+  SETUP_ENV_VAR(CHPL_HOST_PLATFORM);
+  SETUP_ENV_VAR(CHPL_HOST_COMPILER);
+  SETUP_ENV_VAR(CHPL_TARGET_PLATFORM);
+  SETUP_ENV_VAR(CHPL_TARGET_COMPILER);
+  SETUP_ENV_VAR(CHPL_TARGET_ARCH);
+  SETUP_ENV_VAR(CHPL_LOCALE_MODEL);
+  SETUP_ENV_VAR(CHPL_COMM);
+  SETUP_ENV_VAR(CHPL_COMM_SUBSTRATE);
+  SETUP_ENV_VAR(CHPL_GASNET_SEGMENT);
+  SETUP_ENV_VAR(CHPL_TASKS);
+  SETUP_ENV_VAR(CHPL_THREADS);
+  SETUP_ENV_VAR(CHPL_LAUNCHER);
+  SETUP_ENV_VAR(CHPL_TIMERS);
+  SETUP_ENV_VAR(CHPL_MEM);
+  SETUP_ENV_VAR(CHPL_MAKE);
+  SETUP_ENV_VAR(CHPL_ATOMICS);
+  SETUP_ENV_VAR(CHPL_NETWORK_ATOMICS);
+  SETUP_ENV_VAR(CHPL_GMP);
+  SETUP_ENV_VAR(CHPL_HWLOC);
+  SETUP_ENV_VAR(CHPL_REGEXP);
+  SETUP_ENV_VAR(CHPL_WIDE_POINTERS);
+  SETUP_ENV_VAR(CHPL_LLVM);
+  SETUP_ENV_VAR(CHPL_AUX_FILESYS);
+}
 
 
 //
@@ -325,31 +364,9 @@ static const char* setupEnvVar(const char* varname, const char* script) {
 static void setupOrderedGlobals(const char* argv0) {
   // Set up CHPL_HOME first
   setupChplHome(argv0);
-  
+
   // Then CHPL_* variables
-  SETUP_ENV_VAR(CHPL_HOST_PLATFORM, "chplenv/chpl_platform.py --host");
-  SETUP_ENV_VAR(CHPL_HOST_COMPILER, "chplenv/chpl_compiler.py --host");
-  SETUP_ENV_VAR(CHPL_TARGET_PLATFORM, "chplenv/chpl_platform.py --target");
-  SETUP_ENV_VAR(CHPL_TARGET_COMPILER, "chplenv/chpl_compiler.py --target");
-  SETUP_ENV_VAR(CHPL_TARGET_ARCH, "chplenv/chpl_arch.py --target");
-  SETUP_ENV_VAR(CHPL_LOCALE_MODEL, "chplenv/chpl_locale_model.py");
-  SETUP_ENV_VAR(CHPL_COMM, "chplenv/chpl_comm.py");
-  SETUP_ENV_VAR(CHPL_COMM_SUBSTRATE, "chplenv/chpl_comm_substrate.py");
-  SETUP_ENV_VAR(CHPL_GASNET_SEGMENT, "chplenv/chpl_comm_segment.py");
-  SETUP_ENV_VAR(CHPL_TASKS, "chplenv/chpl_tasks.py");
-  SETUP_ENV_VAR(CHPL_THREADS, "chplenv/chpl_threads.py");
-  SETUP_ENV_VAR(CHPL_LAUNCHER, "chplenv/chpl_launcher.py");
-  SETUP_ENV_VAR(CHPL_TIMERS, "chplenv/chpl_timers.py");
-  SETUP_ENV_VAR(CHPL_MEM, "chplenv/chpl_mem.py --target");
-  SETUP_ENV_VAR(CHPL_MAKE, "chplenv/chpl_make.py");
-  SETUP_ENV_VAR(CHPL_ATOMICS, "chplenv/chpl_atomics.py");
-  SETUP_ENV_VAR(CHPL_NETWORK_ATOMICS, "chplenv/chpl_atomics.py --network");
-  SETUP_ENV_VAR(CHPL_GMP, "chplenv/chpl_gmp.py");
-  SETUP_ENV_VAR(CHPL_HWLOC, "chplenv/chpl_hwloc.py");
-  SETUP_ENV_VAR(CHPL_REGEXP, "chplenv/chpl_regexp.py");
-  SETUP_ENV_VAR(CHPL_WIDE_POINTERS, "chplenv/chpl_wide_pointers.py");
-  SETUP_ENV_VAR(CHPL_LLVM, "chplenv/chpl_llvm.py");
-  SETUP_ENV_VAR(CHPL_AUX_FILESYS, "chplenv/chpl_aux_filesys.py");
+  setupEnvVars();
 
   // These depend on the environment variables being set
   fLocal = !strcmp(CHPL_COMM, "none");
@@ -357,7 +374,7 @@ static void setupOrderedGlobals(const char* argv0) {
              || !strcmp(CHPL_TARGET_COMPILER, "cray-prgenv-pgi");
   // conservatively how much is needed for the current PGI compiler
   if (gotPGI) fMaxCIdentLen = 1020;
-  
+
   if( 0 == strcmp(CHPL_WIDE_POINTERS, "struct") ) {
     widePointersStruct = true;
   } else {

@@ -75,7 +75,7 @@ def print_mode(mode='list'):
     print_var('CHPL_TIMERS', timers, mode, 'tmr', ('runtime', 'launcher'))
 
     target_mem = chpl_mem.get('target')
-    if m == 'make':
+    if mode == 'make':
         host_mem = chpl_mem.get('host')
         print_var('CHPL_HOST_MEM', host_mem, mode, 'hostmem', ('runtime', 'launcher'))
         print_var('CHPL_TARGET_MEM', target_mem, mode, 'tgtmem', ('runtime', 'launcher'))
@@ -88,7 +88,7 @@ def print_mode(mode='list'):
 
     atomics = chpl_atomics.get()
     print_var('CHPL_ATOMICS', atomics, mode, 'atomics', ('runtime', 'launcher'))
-    if comm != 'none':
+    if comm != 'none' or mode == 'simple':
         net_atomics = chpl_atomics.get('network')
         print_var('  CHPL_NETWORK_ATOMICS', net_atomics, mode, filters=('runtime', 'launcher'))
 
@@ -103,7 +103,7 @@ def print_mode(mode='list'):
 
     wide_pointers = chpl_wide_pointers.get()
     print_var('CHPL_WIDE_POINTERS', wide_pointers, mode, 'wide')
-    if m == 'make':
+    if mode == 'make':
         wide_pointer_defines = chpl_wide_pointers.get('define')
         print_var('CHPL_WIDE_POINTERS_DEFINES', wide_pointer_defines, mode, 'widedef')
 
@@ -132,9 +132,7 @@ def print_var(env_var, value, mode, short_name='', filters=None):
         make_env_var = env_var.replace("CHPL_", "CHPL_MAKE_", 1).lstrip()
         stdout.write("{0}={1}\n".format(make_env_var, value))
     elif mode == 'simple':
-        # meant to be read in by the chpl compiler
-        # use '--make' to see the ordering
-        stdout.write("{0}\n".format(value))
+        stdout.write("{0}={1}\n".format(env_var.strip(), value))
     elif mode == 'compiler' or mode == 'runtime' or mode == 'launcher':
         if not filters or mode in filters:
             if not print_var.first_time:

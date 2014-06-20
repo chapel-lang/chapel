@@ -53,7 +53,7 @@ void genIncludeCommandLineHeaders(FILE* outfile);
 
 const char* createDebuggerFile(const char* debugger, int argc, char* argv[]);
 
-const char* runUtilScript(const char* script);
+const std::string runUtilScript(const char* script);
 
 void setupModulePaths(void);
 void addFlagModulePath(const char* newpath);

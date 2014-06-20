@@ -360,27 +360,25 @@ const char* createDebuggerFile(const char* debugger, int argc, char* argv[]) {
   return dbgfilename;
 }
 
+const std::string runUtilScript(const char* script) {
+  char buffer[256];
+  std::string result = "";
 
-static const char* mysystem_getresult(const char* command, 
-                                      const char* description,
-                                      bool ignorestatus) {
-  const char* systemFilename = "system.out.tmp";
-  const char* fullSystemFilename = genIntermediateFilename(systemFilename);
-  char* result = (char*)malloc(256*sizeof(char));
-  mysystem(astr(command, " > ", fullSystemFilename), description, ignorestatus);
-  fileinfo* systemFile = openTmpFile(systemFilename, "r");
-  if (fscanf(systemFile->fptr, "%s", result) != 1){
-    strcpy(result,"");
+  FILE* pipe = popen(astr(CHPL_HOME, "/util/", script), "r");
+  if (!pipe) {
+    USR_FATAL(astr("running $CHPL_HOME/util/", script));
   }
-  closefile(systemFile);
-  free(systemFile);
-  return astr(result);  // canonicalize
-}
 
+  while (!feof(pipe)) {
+    if (fgets(buffer, 256, pipe) != NULL) {
+      result += buffer;
+    }
+  }
+  if (pclose(pipe)) {
+    USR_FATAL(astr("'$CHPL_HOME/util/", script, "' did not run successfully"));
+  }
 
-const char* runUtilScript(const char* script) {
-  return mysystem_getresult(astr(CHPL_HOME, "/util/", script), 
-                            astr("running $CHPL_HOME/util/", script), false);
+  return result;
 }
 
 const char* getIntermediateDirName() {
