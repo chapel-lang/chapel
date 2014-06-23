@@ -63,6 +63,7 @@ proc calculate(ref data : [] uint(8), size : int) {
       d <<= 2;
       d |= tonum[data[i+size-1]];
     }
+    if !freqDom.member(d) then freqDom += d;
     freqs[d] += 1;
   }
 
