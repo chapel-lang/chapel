@@ -1536,11 +1536,11 @@ for testname in testsrc:
                     if perfdate == None:
                         perfdate = datetime.date.today().strftime("%m/%d/%y")
 
-                    sys.stdout.write('[Executing %s/computePerfStats %s %s %s %s %s %s %s]\n'%(utildir, perfexecname, perfdir, keyfile, execlog, str(exectimeout), perfdate, perfdescription))
+                    sys.stdout.write('[Executing %s/computePerfStats %s %s %s %s %s %s]\n'%(utildir, perfexecname, perfdir, keyfile, execlog, str(exectimeout), perfdate))
                     sys.stdout.flush()
 
                     p = subprocess.Popen([utildir+'/computePerfStats',
-                                          perfexecname, perfdir, keyfile, execlog, str(exectimeout), perfdate, perfdescription],
+                                          perfexecname, perfdir, keyfile, execlog, str(exectimeout), perfdate],
                                          stdout=subprocess.PIPE)
                     sys.stdout.write('%s'%(p.communicate()[0]))
                     sys.stdout.flush()

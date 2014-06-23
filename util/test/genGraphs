@@ -591,7 +591,7 @@ class GraphClass:
                     datpath = os.path.dirname(dat)
                     datfile = os.path.basename(dat)
                     self.datfilenames.append(os.path.join(datpath, desc, datfile))
-                    self.perfkeys.append(perf+desc)
+                    self.perfkeys.append(perf)
                     # strip trailing colons, equals and spaces, we seem to have
                     # a lot of these coming from our perfkeys
                     while graph.endswith((':', '=', ' ')):
@@ -634,7 +634,7 @@ class GraphClass:
 
 def main():
     (options, args) = parser.parse_args()
-
+    sys.stdout.write('Running genGraphs with %s\n'%(' '.join(sys.argv)))
     global debug
     debug = options.debug
     global verbose
