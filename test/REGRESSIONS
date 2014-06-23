@@ -786,14 +786,8 @@ comm count mismatches
 
 ================================
 baseline-specific tests
-(Reviewed for accuracy 05/14/14)
+(Reviewed for accuracy 06/20/14)
 ================================
-
-Failure due to r22900 (bradc)
------------------------------
-Note: this succeeds with just --baseline and also with '--baseline
---inline --copy-propagation --remote-value-forwarding'
-[Error matching compiler output for studies/ssca2/graphio/graphio (compopts: 1)]
 
 different amount of string data leaked without optimization (2014/06/13)
 (may be resolved by strings-as-records)

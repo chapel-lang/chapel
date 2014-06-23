@@ -31,7 +31,7 @@ New problems
 (Ones that prove persistent should be moved to REGRESSIONS.)
 =========================================================
 
-Non-deterministic baseline 'glibc double free or corruption' (6/17/14)
+Non-deterministic baseline 'glibc double free or corruption' (6/17/14, 6/23/14)
 ----------------------------------------------------------------------
 This i also listed in the REGRESSIONS file, but I'm not sure when it
 started being intermittent.
@@ -220,9 +220,10 @@ Perf (linux64.gnu.none.fifo.pthreads.flat)
 
 valgrind compilation timeouts
 -----------------------------
-[Error: Timed out compilation for distributions/dm/t5a] (.., 6/18/14)
+[Error: Timed out compilation for distributions/dm/t5a] (.., 6/18/14, 6/20/14)
 [Error: Timed out compilation for release/examples/benchmarks/ssca2/SSCA2_main
 (compopts: 1)] (6/17/14)
+[Error: Timed out executing program domains/sungeun/assoc/parSafeMember] (6/20/14)
 
 ==============================================================================
 Were once flagged as causing noise regularly, but not as familiar as the above
@@ -267,15 +268,9 @@ nondet. segfault for linux64.gnu.gasnet.qthreads.none.flat
   gasnet+qthreads testing has run for a little longer. Full testing just
   started again on 05/28/14 but these seem to be gone.
 
-nondet. baseline compilation timeout (10/15/13)
------------------------------------------------
-[Error: Timed out compilation for classes/bradc/writeclass3]
-The following timed out on 12/20/13:
-[Error: Timed out compilation for studies/cholesky/marybeth/blockChol]
-[Error: Timed out compilation for studies/cholesky/marybeth/blockCholChoice]
-[Error: Timed out compilation for studies/cholesky/marybeth/blockCholesky]
-[Error: Timed out compilation for studies/cholesky/marybeth/chol]
-[Error: Timed out compilation for studies/lulesh/bradc/xyztuple/lulesh-dense-3tuple]
+nondet (?) baseline timeout
+---------------------------
+[Error: Timed out executing program domains/sungeun/assoc/parSafeMember] (6/20/14)
 
 nondet. seg fault for prgenv-cray on chpbld01
 ---------------------------------------------
@@ -371,7 +366,7 @@ valgrind timeouts
 [Error: Timed out executing program studies/amr/diffusion/level/Level_DiffusionBE_driver (compopts: 1)]
 * The following timed out on chap09 on 10/26-10/30/13, following an OS upgrade:
 [Error: Timed out compilation for functions/iterators/vass/direct-void-iterator-error]
-[Error: Timed out compilation for release/examples/benchmarks/lulesh/lulesh (compopts: 2)]
+[Error: Timed out compilation for release/examples/benchmarks/lulesh/lulesh (compopts: 2)] (6/22/14)
 [Error: Timed out compilation for release/examples/benchmarks/miniMD/explicit/miniMD (compopts: 1)]
 [Error: Timed out compilation for release/examples/benchmarks/miniMD/miniMD (compopts: 1)]
 [Error: Timed out compilation for release/examples/benchmarks/miniMD/miniMD (compopts: 2)]
