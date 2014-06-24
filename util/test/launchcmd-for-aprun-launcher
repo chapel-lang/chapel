@@ -61,7 +61,8 @@ def main():
     job_name = _get_job_name(test_command)
 
     _ensure_qsub()
-    print(_launch_qsub(test_command, job_name, args.numLocales, args.walltime), end='')
+    print(_launch_qsub(test_command, job_name, args.numLocales, args.walltime, args.hostlist),
+          end='')
 
 
 def _parse_args():
@@ -69,9 +70,12 @@ def _parse_args():
     """Parse and return command line arguments. Returns tuple of Namespace with
     parsed args and unparsed args.
     """
+    class OurFormatter(argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter):
+        pass
+
     parser = argparse.ArgumentParser(
         description=__doc__,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        formatter_class=OurFormatter)
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='Verbose output.')
     parser.add_argument('-nl', '--numLocales', type=int, default=-1,
@@ -79,8 +83,15 @@ def _parse_args():
     parser.add_argument('--n', help='Placeholder')
     parser.add_argument('--walltime', type=_cli_walltime,
                         help='Timeout as walltime for qsub.')
+    parser.add_argument('--hostlist',
+                        help=('Optional hostlist specification for reserving '
+                              'specific nodes. Can also be set with env var CHPL_PBS_HOSTLIST'))
 
     args, unparsed_args = parser.parse_known_args()
+
+    # Allow hostlist to be set in environment variable CHPL_PBS_HOSTLIST.
+    if args.hostlist is None:
+        args.hostlist = os.environ.get('CHPL_PBS_HOSTLIST')
 
     # It is bad form to use a two character argument with only a single
     # dash. Unfortunately, we support it. And unfortunately, python argparse
@@ -236,7 +247,7 @@ def _get_job_name(test_command):
     return job_name
 
 
-def _launch_qsub(test_command, job_name, num_locales, walltime):
+def _launch_qsub(test_command, job_name, num_locales, walltime, hostlist):
 
     """Run qsub batch job in subprocess and wait for job to complete. When
     finished, returns output as string.
@@ -252,6 +263,9 @@ def _launch_qsub(test_command, job_name, num_locales, walltime):
 
     :type walltime: str
     :arg walltime: walltime argument for qsub of the form HH:MM:SS
+
+    :type hostlist: str
+    :arg hostlist: hostlist specification for qsub
 
     :rtype: str
     :returns: stdout/stderr from job
@@ -272,6 +286,10 @@ def _launch_qsub(test_command, job_name, num_locales, walltime):
         if walltime is not None:
             qsub_command.append('-l')
             qsub_command.append('walltime={0}'.format(walltime))
+        if hostlist is not None:
+            qsub_command.append('-l')
+            qsub_command.append('hostlist={0}'.format(hostlist))
+
         logging.debug('qsub command to run: {0}'.format(qsub_command))
 
         logging.debug('Opening qsub subprocess.')
