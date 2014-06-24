@@ -65,11 +65,11 @@ def try_parse_float(value):
     except ValueError:
         return value
 
-def parse_date(value):
+def parse_date(value, dateformat='%m/%d/%y'):
     if numericX:
         return value
     else:
-        return time.strptime(value.strip(),'%m/%d/%y')
+        return time.strptime(value.strip(), dateformat)
 
 def show_date(value):
     if numericX:
@@ -178,6 +178,24 @@ class GraphStuff:
         else:
             self.firstGraph = False
 
+        # find the series to attach annotations to. If there were multiple
+        # configurations, attach to a series in the default (first listed)
+        # configuration. Else attach to first series
+        if multiDesc:
+            defaultDesc = multiDesc[0]
+            for graphkey in ginfo.graphkeys:
+                if graphkey.endswith('(' + defaultDesc + ')'):
+                    series = graphkey
+        else:
+            series = ginfo.graphkeys[0]
+
+        # generate the annotations for this graph
+        if annotate and not numericX:
+            ginfo.annotations = annotate.get(
+                self.all_annotations, ginfo.name, series,
+                parse_date(ginfo.startdate, '%Y-%m-%d'),
+                parse_date(ginfo.enddate,'%Y-%m-%d'))
+
         self.gfile.write('{\n')
         if ginfo.title != '':
             self.gfile.write('   "title" : "%s",\n'%(ginfo.title))
@@ -277,16 +295,6 @@ class GraphStuff:
                 graphs[currgraph].expand = int(rest.strip())
             elif key == 'sort':
                 graphs[currgraph].sort = rest.lower() in ('true', 't', '1', 'on', 'y', 'yes')
-
-        if graphs[currgraph].graphkeys:
-          series = graphs[currgraph].graphkeys[0]
-        else:
-          series = graphs[currgraph].perfkeys[0]
-
-        if annotate:
-            graphs[currgraph].annotations = annotate.get(
-                self.all_annotations, basename, series,
-                graphs[currgraph].startdate, graphs[currgraph].enddate)
 
         try:
             graphs[currgraph].generateGraphData(self, currgraph)
