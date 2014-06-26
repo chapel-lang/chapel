@@ -35,6 +35,10 @@ all:
   05/08/14:
     - switched to gcc-4.7
 
+chameneos-redux:
+  07/08/13:
+    - altered output order for chameneos data, old data incompatible
+
 fasta:
   01/14/14:
     - enabled unlocked I/O on fasta and fasta-printf
@@ -60,6 +64,8 @@ memleaks:
     - Made some tests leak-free
   12/07/13:
     - Fixed leakage of sync and single array elements
+  04/08/14:
+    - Enabled GMP in nightly testing, allowing pidigits to run in memory leaks
 
 meteor:
   12/18/13:
@@ -74,3 +80,15 @@ mandelbrot:
 jacobi:
   03/07/14:
     - Added a "trivial assignment" optimization to replace field-by-field assignment with a bulk copy.
+
+parOpEquals:
+  09/06/13:
+    - (no-local) chpl_localeID_t's ignore_subloc field minimized to 1 bit
+  09/27/13:
+    - (no-local) Reversion of chpl_localeID_t's ignore subloc field being minimized to 1 bit
+
+STREAM_fragmented:
+  09/06/13:
+    - chpl_localeID_t's ignore_subloc field minimized to 1 bit
+  09/27/13:
+    - Reversion of chpl_localeID_t's ignore subloc field being minimized to 1 bit
