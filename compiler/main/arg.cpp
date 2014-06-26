@@ -39,7 +39,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <cstdio>
 #include <inttypes.h>
 
-static const char* get_envvar_setting(ArgumentDescription& desc);
+static const char* get_envvar_setting(const ArgumentDescription& desc);
 
 /************************************* | **************************************
 *                                                                             *
@@ -50,14 +50,14 @@ static const char* get_envvar_setting(ArgumentDescription& desc);
 static void  print_n_spaces(int n);
 static void  word_wrap_print(const char* text, int startCol, int endCol);
 
-void usage(ArgumentState* state, 
-           int            status, 
-           bool           printEnvHelp,
-           bool           printCurrentSettings)
+void usage(const ArgumentState* state, 
+           int                  status, 
+           bool                 printEnvHelp,
+           bool                 printCurrentSettings)
 {
-  ArgumentDescription* desc           = state->desc;
-  const int            desc_start_col = 39;
-  const int            end_col        = 79;
+  const ArgumentDescription* desc           = state->desc;
+  const int                  desc_start_col = 39;
+  const int                  end_col        = 79;
 
   fprintf(stdout, "Usage: %s [flags] [source files]\n", state->program_name);
 
@@ -303,24 +303,8 @@ Flag types:
   n = --no-... flag, --no version sets to true
 */
 
-static void ProcessEnvironment(ArgumentState* state);
+static void ProcessEnvironment(const ArgumentState* state);
 static void ProcessCommandLine(ArgumentState* state, int argc, char* argv[]);
-
-static void ApplyValue(ArgumentState*             state, 
-                       const ArgumentDescription* desc,
-                       const char*                value);
-
-
-
-static void bad_flag(const char* flag);
-static void extraneous_arg(const char* flag, const char* extras);
-
-static void process_arg(ArgumentState* state,
-                        int            i, 
-                        char***        argv,
-                        const char*    currentFlag);
-
-static void missing_arg(const char* currentFlag);
 
 void process_args(ArgumentState* state, int argc, char* argv[])
 {
@@ -332,7 +316,17 @@ void process_args(ArgumentState* state, int argc, char* argv[])
   ProcessCommandLine(state, argc, argv);
 }
 
-static void ProcessEnvironment(ArgumentState* state)
+/************************************* | **************************************
+*                                                                             *
+* Walk the descriptor and apply values from the environment                   *
+*                                                                             *
+************************************** | *************************************/
+
+static void ApplyValue(const ArgumentState*       state, 
+                       const ArgumentDescription* desc,
+                       const char*                value);
+
+static void ProcessEnvironment(const ArgumentState* state)
 {
   ArgumentDescription* desc = state->desc;
 
@@ -384,7 +378,7 @@ static void ProcessEnvironment(ArgumentState* state)
   }
 }
 
-static void ApplyValue(ArgumentState*             state, 
+static void ApplyValue(const ArgumentState*       state, 
                        const ArgumentDescription* desc,
                        const char*                value)
 {
@@ -445,6 +439,24 @@ static void ApplyValue(ArgumentState*             state,
     desc->pfn(state, value);
 }
 
+/************************************* | **************************************
+*                                                                             *
+* Walk the command line.                                                      *
+*    options start with "-" or "--" and must be matched in the descriptor     *
+*    non-options are assumed to be source filenames                           *
+*                                                                             *
+************************************** | *************************************/
+
+static void process_arg(const ArgumentState* state,
+                        int                  i, 
+                        char***              argv,
+                        const char*          currentFlag);
+
+static void bad_flag(const char* flag);
+static void extraneous_arg(const char* flag, const char* extras);
+
+static void missing_arg(const char* currentFlag);
+
 static void ProcessCommandLine(ArgumentState* state, int argc, char* aargv[])
 {
   ArgumentDescription* desc = state->desc;
@@ -460,7 +472,7 @@ static void ProcessCommandLine(ArgumentState* state, int argc, char* aargv[])
 
   while (*++argv)
   {
-    if (**argv == '-')
+    if ((*argv)[0] == '-')
     {
       if ((*argv)[1] == '-')
       {
@@ -563,42 +575,29 @@ static void ProcessCommandLine(ArgumentState* state, int argc, char* aargv[])
   }
 }
 
-static void bad_flag(const char* flag)
+static void process_arg(const ArgumentState* state,
+                        int                  i,
+                        char***              argv,
+                        const char*          currentFlag)
 {
-  fprintf(stderr, "Unrecognized flag: '%s' (use '-h' for help)\n", flag);
-  clean_exit(1);
-}
-
-static void extraneous_arg(const char* flag, const char* extras)
-{
-  fprintf(stderr,
-          "Extra characters after flag '%s': '%s' (use 'h' for help)\n",
-          flag, 
-          extras);
-  clean_exit(1);
-}
-
-static void process_arg(ArgumentState* state,
-                        int            i,
-                        char***        argv,
-                        const char*    currentFlag)
-{
-  char * arg = NULL;
-
-  ArgumentDescription *desc = state->desc;
+  const ArgumentDescription* desc = state->desc;
+  const char*                arg  = NULL;
 
   if (desc[i].type)
   {
     char type = desc[i].type[0];
 
-    if (type=='F'||type=='f'||type=='N'||type=='n')
-      *(bool *)desc[i].location = (type=='F'||type=='N') ? true : false;
+    if (type == 'F' || type == 'f')
+      *((bool*) desc[i].location) = (type == 'F') ? true : false;
+
+    else if (type == 'N' || type == 'n')
+      *((bool*) desc[i].location) = (type == 'N') ? true : false;
 
     else if (type=='T')
-      *(int *)desc[i].location = !*(int *)desc[i].location;
+      *((int*)  desc[i].location) = !(*((int*) desc[i].location));
 
     else if (type == '+') 
-      (*(int *)desc[i].location)++;
+      *((int*)  desc[i].location) = *((int*)  desc[i].location) + 1;
 
     else
     {
@@ -615,26 +614,30 @@ static void process_arg(ArgumentState* state,
       switch (type)
       {
         case 'I':
-          *(int *)desc[i].location = atoi(arg);
+          *((int*)     desc[i].location) = atoi(arg);
           break;
 
         case 'D':
-          *(double *)desc[i].location = atof(arg);
+          *((double*)  desc[i].location) = atof(arg);
           break;
 
         case 'L':
-          *(int64_t *)desc[i].location = atoll(arg);
+          *((int64_t*) desc[i].location) = atoll(arg);
           break;
 
-        case 'P': strncpy((char *)desc[i].location,arg, FILENAME_MAX);
+        case 'P':
+          strncpy((char*) desc[i].location,arg, FILENAME_MAX);
           break;
 
-        case 'S': strncpy((char *)desc[i].location,arg, atoi(desc[i].type+1));
+        case 'S':
+          strncpy((char*) desc[i].location,arg, atoi(desc[i].type + 1));
           break;
 
         default:
-          fprintf(stdout, "%s:bad argument description\n", 
+          fprintf(stdout,
+                  "%s: bad argument description\n", 
                  state->program_name);
+
           clean_exit(1);
           break;
       }
@@ -647,6 +650,21 @@ static void process_arg(ArgumentState* state,
     desc[i].pfn(state, arg);
 }
 
+static void bad_flag(const char* flag)
+{
+  fprintf(stderr, "Unrecognized flag: '%s' (use '-h' for help)\n", flag);
+  clean_exit(1);
+}
+
+static void extraneous_arg(const char* flag, const char* extras)
+{
+  fprintf(stderr,
+          "Extra characters after flag '%s': '%s' (use 'h' for help)\n",
+          flag, 
+          extras);
+  clean_exit(1);
+}
+
 static void missing_arg(const char* currentFlag)
 {
   fprintf(stderr,
@@ -655,22 +673,24 @@ static void missing_arg(const char* currentFlag)
   clean_exit(1);
 }
 
-/*
- * The value in the environment could be one of
- *     NULL    (no value)
- *     ""      (the value is the empty string)
- *     string  (the value is a general string)
- *
- * If the value is NULL     then the result is NULL
- *
- * If the value is ""       then
- *    If the type is 'P' or 'S' (Path or String) then return ""
- *    otherwise return NULL
- *
- * If the value is a string then the result is that string
- *
- */
-static const char* get_envvar_setting(ArgumentDescription& desc)
+/************************************* | **************************************
+*                                                                             *
+* The value in the environment could be one of                                *
+*     NULL    (no value)                                                      *
+*     ""      (the value is the empty string)                                 *
+*     string  (the value is a general string)                                 *
+*                                                                             *
+* If the value is NULL     then the result is NULL                            *
+*                                                                             *
+* If the value is ""       then                                               *
+*    If the type is 'P' or 'S' (Path or String) then return ""                *
+*    otherwise return NULL                                                    *
+*                                                                             *
+* If the value is a string then the result is that string                     *
+*                                                                             *
+************************************** | *************************************/
+
+static const char* get_envvar_setting(const ArgumentDescription& desc)
 {
   const char* retval = 0;
 

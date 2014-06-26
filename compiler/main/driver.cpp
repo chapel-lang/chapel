@@ -295,7 +295,7 @@ static void setupChplHome(const char* argv0) {
   parseCmdLineConfig("CHPL_HOME", astr("\"", CHPL_HOME, "\""));
 }
 
-static void setCommentLabel(ArgumentState* arg_state, const char* label) {
+static void setCommentLabel(const ArgumentState* arg_state, const char* label) {
   assert(label != NULL);
   size_t len = strlen(label);
   if (len != 0) {
@@ -412,7 +412,7 @@ static void recordCodeGenStrings(int argc, char* argv[]) {
   get_version(compileVersion);
 }
 
-static void setStaticLink(ArgumentState* arg_state, const char* arg_unused) {
+static void setStaticLink(const ArgumentState* state, const char* arg_unused) {
   if (strcmp(CHPL_TARGET_PLATFORM, "darwin") == 0) {
     USR_WARN("Static compilation is not supported on OS X, ignoring flag.");
     fLinkStyle = LS_DEFAULT;
@@ -421,15 +421,15 @@ static void setStaticLink(ArgumentState* arg_state, const char* arg_unused) {
   }
 }
 
-static void setDynamicLink(ArgumentState* arg_state, const char* arg_unused) {
+static void setDynamicLink(const ArgumentState* state, const char* arg_unused) {
   fLinkStyle = LS_DYNAMIC;
 }
 
-static void setChapelDebug(ArgumentState* arg_state, const char* arg_unused) {
+static void setChapelDebug(const ArgumentState* state, const char* arg_unused) {
   printCppLineno = true;
 }
 
-static void setDevelSettings(ArgumentState* arg_state, const char* arg_unused) {
+static void setDevelSettings(const ArgumentState* state, const char* arg_unused) {
   // have to handle both cases since this will be called with --devel
   // and --no-devel
   if (developer) {
@@ -439,20 +439,20 @@ static void setDevelSettings(ArgumentState* arg_state, const char* arg_unused) {
   }
 }
 
-static void handleLibrary(ArgumentState* arg_state, const char* arg_unused) {
+static void handleLibrary(const ArgumentState* state, const char* arg_unused) {
   addLibInfo(astr("-l", libraryFilename));
 }
 
-static void handleLibPath(ArgumentState* arg_state, const char* arg_unused) {
+static void handleLibPath(const ArgumentState* state, const char* arg_unused) {
   addLibInfo(astr("-L", libraryFilename));
 }
 
-static void handleMake(ArgumentState* arg_state, const char* arg_unused) {
+static void handleMake(const ArgumentState* state, const char* arg_unused) {
   CHPL_MAKE = makeArgument;
 }
 
 
-static void handleIncDir(ArgumentState* arg_state, const char* arg_unused) {
+static void handleIncDir(const ArgumentState* state, const char* arg_unused) {
   addIncInfo(incFilename);
 }
 
@@ -492,7 +492,7 @@ static void runCompilerInLLDB(int argc, char* argv[]) {
 }
 
 
-static void readConfig(ArgumentState* arg_state, const char* arg_unused) {
+static void readConfig(const ArgumentState* state, const char* arg_unused) {
   // Expect arg_unused to be a string of either of these forms:
   // 1. name=value -- set the config param "name" to "value"
   // 2. name       -- set the boolean config param "name" to NOT("name")
@@ -517,16 +517,15 @@ static void readConfig(ArgumentState* arg_state, const char* arg_unused) {
   }
 }
 
-
-static void addModulePath(ArgumentState* arg_state, const char* newpath) {
+static void addModulePath(const ArgumentState* state, const char* newpath) {
   addFlagModulePath(newpath);
 }
 
-static void noteCppLinesSet(ArgumentState* arg, const char* unused) {
+static void noteCppLinesSet(const ArgumentState* state, const char* unused) {
   userSetCppLineno = true;
 }
 
-static void verifySaveCDir(ArgumentState* arg, const char* unused) {
+static void verifySaveCDir(const ArgumentState* state, const char* unused) {
   if (saveCDir[0] == '-') {
     USR_FATAL("--savec takes a directory name as its argument\n"
               "       (you specified '%s', assumed to be another flag)",
@@ -534,14 +533,13 @@ static void verifySaveCDir(ArgumentState* arg, const char* unused) {
   }
 }
 
-
-static void turnOffChecks(ArgumentState* arg, const char* unused) {
-  fNoNilChecks = true;
+static void turnOffChecks(const ArgumentState* state, const char* unused) {
+  fNoNilChecks    = true;
   fNoBoundsChecks = true;
-  fNoLocalChecks = true;
+  fNoLocalChecks  = true;
 }
 
-static void setFastFlag(ArgumentState* arg, const char* unused) {
+static void setFastFlag(const ArgumentState* state, const char* unused) {
   //
   // Enable all compiler optimizations, disable all runtime checks
   //
@@ -569,7 +567,7 @@ static void setFastFlag(ArgumentState* arg, const char* unused) {
   specializeCCode = true;
 }
 
-static void setBaselineFlag(ArgumentState* arg, const char* unused) {
+static void setBaselineFlag(const ArgumentState* state, const char* unused) {
   //
   // disable all chapel compiler optimizations
   //
@@ -591,43 +589,44 @@ static void setBaselineFlag(ArgumentState* arg, const char* unused) {
   fConditionalDynamicDispatchLimit = 0;
 }
 
-static void setCacheEnable(ArgumentState* arg_state, const char* unused) {
+static void setCacheEnable(const ArgumentState* state, const char* unused) {
   const char *val = fCacheEnabled ? "true" : "false";
   parseCmdLineConfig("CHPL_CACHE_REMOTE", val);
 }
 
 
-static void setHelpTrue(ArgumentState* arg, const char* unused) {
+static void setHelpTrue(const ArgumentState* state, const char* unused) {
   printHelp = true;
 }
 
-static void setHtmlUser(ArgumentState* arg, const char* unused) {
+static void setHtmlUser(const ArgumentState* state, const char* unused) {
   fdump_html = true;
   fdump_html_include_system_modules = false;
 }
 
-static void setWarnTupleIteration(ArgumentState* arg_state, const char* unused) {
+static void setWarnTupleIteration(const ArgumentState* state, const char* unused) {
   const char *val = fNoWarnTupleIteration ? "false" : "true";
   parseCmdLineConfig("CHPL_WARN_TUPLE_ITERATION", astr("\"", val, "\""));
 }
 
-static void setWarnDomainLiteral(ArgumentState* arg_state, const char* unused) {
+static void setWarnDomainLiteral(const ArgumentState* state, const char* unused) {
   const char *val = fNoWarnDomainLiteral ? "false" : "true";
   parseCmdLineConfig("CHPL_WARN_DOMAIN_LITERAL", astr("\"", val, "\""));
 }
 
-static void setWarnSpecial(ArgumentState* arg_state, const char* unused) {
+static void setWarnSpecial(const ArgumentState* state, const char* unused) {
   fNoWarnSpecial = false;
 
   fNoWarnDomainLiteral = false;
-  setWarnDomainLiteral(arg_state, unused);
+  setWarnDomainLiteral(state, unused);
 
   fNoWarnTupleIteration = false;
-  setWarnTupleIteration(arg_state, unused);
+  setWarnTupleIteration(state, unused);
 }
 
-static void setPrintPassesFile(ArgumentState* arg, const char* fileName) {
+static void setPrintPassesFile(const ArgumentState* state, const char* fileName) {
   printPassesFile = fopen(fileName, "w");
+
   if(printPassesFile == NULL) {
     USR_WARN("Error opening printPassesFile: %s.", fileName);
   }
@@ -813,7 +812,8 @@ static ArgumentDescription arg_desc[] = {
 
 
 static ArgumentState arg_state = {
-  0, 0,
+  0, 
+  0,
   "program", 
   "path",
   arg_desc

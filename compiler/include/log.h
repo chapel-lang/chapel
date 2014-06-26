@@ -38,7 +38,7 @@ struct ArgumentState;
 #endif
 
 // Driver uses this to configure the logger
-void  log_flags_arg(ArgumentState* arg_state, const char* arg);
+void  log_flags_arg(const ArgumentState* state, const char* arg);
 
 void  setupLogfiles();
 void  teardownLogfiles();

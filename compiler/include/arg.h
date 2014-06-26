@@ -34,7 +34,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 struct ArgumentState;
 struct ArgumentDescription;
 
-typedef void ArgumentFunction(struct ArgumentState* arg_state, const char* arg);
+typedef void ArgumentFunction(const ArgumentState* state, const char* arg);
 
 struct ArgumentState
 {
@@ -58,12 +58,12 @@ struct ArgumentDescription
   ArgumentFunction*    pfn;
 };
 
-void usage(ArgumentState* arg_state,
-           int            status, 
-           bool           printEnvHelp, 
-           bool           printCurrentSettings);
+void usage(const ArgumentState* arg_state,
+           int                  status, 
+           bool                 printEnvHelp, 
+           bool                 printCurrentSettings);
 
-void process_args(ArgumentState* arg_state, int argc, char* argv[]);
+void process_args(ArgumentState* state, int argc, char* argv[]);
 
 void free_args(ArgumentState* arg_state);
 
