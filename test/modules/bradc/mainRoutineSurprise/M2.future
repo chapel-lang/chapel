@@ -1,5 +1,4 @@
-bug/feature request: main() gets ignored if not in primary .chpl file?
-
+bug: (or feature request) main() gets ignored if not in primary .chpl file?
 At present, this test runs the init code in both modules, but then,
 rather than calling the only procedure in the program called main()
 either exits without calling any main() or, possibly, creates an

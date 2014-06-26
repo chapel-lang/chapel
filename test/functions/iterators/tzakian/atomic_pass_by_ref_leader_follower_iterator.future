@@ -1,4 +1,4 @@
-We would like atomic variables to be passed by reference.
+bug: We would like atomic variables to be passed by reference.
 
 We would like atomic variables to be passed by reference when returned from a LF
 iterator. Currently, this value is copied between the leader, and the follower. This

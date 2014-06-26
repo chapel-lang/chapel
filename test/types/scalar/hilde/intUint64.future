@@ -1,4 +1,4 @@
-semantic bug: Choose one of int(64) or uint(64) for mixed operations.
+semantic: Choose one of int(64) or uint(64) for mixed operations.
 
 Keeping the result of this combination of types will make a lot of code break
 if we go to 64 bits for the default integer type.  It would be better to choose

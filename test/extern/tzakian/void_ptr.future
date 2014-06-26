@@ -1,4 +1,4 @@
-bad: "void*" in extern #include causes assertion error in CallInfo.cpp [line 37]
+bug: "void*" in extern #include causes assertion error in CallInfo.cpp [line 37]
 
 Support for void* in external C code used inside Chapel, via 
 extern #includes (only LLVM support)
