@@ -45,7 +45,6 @@ var branchInfo = [
 // stuff for dygraph
 var gs = []; // array of current graphs
 var blockRedraw = false;
-var numGraphsReady = 0;
 
 // hack to use the previous compiler performance keys to set
 // colors/dashed lines for various configurations. Will be
@@ -182,6 +181,7 @@ function genDygraph(graphInfo, expandInfo) {
 
     // actually create the dygraph
     var g = new Dygraph(div, 'CSVfiles/'+graphInfo.datfname, graphOptions);
+    g.isReady = false;
     setupSeriesLocking(g);
 
     // we use options in graphinfo in dygraph callbacks that we can't pass
@@ -190,15 +190,15 @@ function genDygraph(graphInfo, expandInfo) {
     g.graphInfo = graphInfo;
 
     // The dygraph is now setting up and rendering. Once the graph is fully
-    // drawn the ready state gets fired. We don't want to start synchronizing
-    // graph zooms until all the graphs have been fully rendered and drawn,
-    // or we will be modifying properties that don't actually exist yet.
-    // We use numGraphsReady to handle that. We also make our buttons visible
-    // here that way they don't show up before the graph does.
+    // drawn this ready state gets fired. We don't want to synchronize this
+    // grpahs x-axis until it has been fully rendered, or we will be modifying
+    // properties that don't exist yet. We use the isReady state to handle
+    // that. We also make our buttons visible here that way they don't show up
+    // before the graph does.
     g.ready(function() {
         setupLogToggle(g, graphInfo, logToggle);
         setupAnnToggle(g, graphInfo, annToggle);
-        numGraphsReady += 1;
+        g.isReady = true;
     });
 
     gs.push(g);
@@ -518,13 +518,13 @@ function customDrawCallback(g, initial) {
         g.divs.logToggle.style.color = 'black';
     }
 
-    // if this isn't the initial draw, and all our graphs have been fully
-    // created then synchronize our graphs along the x-axis
-    if (!initial && numGraphsReady === gs.length) {
+    // if this isn't the initial draw, and this graph is fully rendered then
+    // sync this graphs x-axis with all other ready graphs along the x-axis
+    if (!initial && g.isReady) {
         var range = g.xAxisRange();
         for (var j = 0; j < gs.length; j++) {
-            if (gs[j] === g || range.toString() ===
-                gs[j].xAxisRange().toString()) continue;
+            if (gs[j] === g || !gs[j].isReady ||
+                range.toString() === gs[j].xAxisRange().toString()) continue;
             gs[j].updateOptions({ dateWindow: range });
         }
     }
@@ -733,9 +733,6 @@ function displaySelectedGraphs() {
     while (gs.length > 0) {
         gs.pop().destroy();
     }
-
-    // reset the ready state for the graphs
-    numGraphsReady = 0;
 
     // generate the dygraph(s) for the currently selected graphs
     for (var i = 0; i < allGraphs.length; i++) {
