@@ -1,4 +1,4 @@
-Eliminate dead modules with dead variables. 
+feature request: Eliminate dead modules that only contain dead variables.
 
 This future is intended to capture when dead modules with dead variables are
 successfully eliminated. Currently modules will not be eliminated if they have
@@ -6,6 +6,4 @@ variables, even if those variables are dead because global variables are never
 candidates for dead code elimination.
 
 Once global variables are candidate for dead code elimination, this serves to
-test that dead modules with only dead variables are eliminated, and that
-modules that have only variables are not dead so long as one of the variables
-is used. 
+test that dead modules with only dead variables are eliminated.
