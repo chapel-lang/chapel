@@ -17,6 +17,7 @@ PASSES_SRCS = \
         flattenClasses.cpp \
         flattenFunctions.cpp \
         insertLineNumbers.cpp \
+        insertWideReferences.cpp \
         normalize.cpp \
         parallel.cpp \
         resolveIntents.cpp \
