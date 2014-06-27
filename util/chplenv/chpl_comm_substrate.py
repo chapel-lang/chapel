@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sys, os
 
-import chpl_platform, chpl_comm
+import chpl_arch, chpl_platform, chpl_comm
 from utils import memoize
 
 @memoize
@@ -10,6 +10,7 @@ def get():
     if not substrate_val:
         comm_val = chpl_comm.get()
         platform_val = chpl_platform.get('target')
+        arch_val = chpl_arch.get('target')
 
         if comm_val == 'gasnet':
             if platform_val == 'cray-xt':
@@ -19,7 +20,10 @@ def get():
             elif platform_val == 'cray-xk':
                 substrate_val = 'gemini'
             elif platform_val == 'cray-xc':
-                substrate_val = 'aries'
+                if arch_val == 'knc':
+                    substrate_val = 'mpi'
+                else:
+                    substrate_val = 'aries'
             elif platform_val == 'marenostrum':
                 substrate_val = 'udp'
             elif platform_val == 'pwr5':
