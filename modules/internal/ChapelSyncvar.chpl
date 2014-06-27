@@ -134,7 +134,6 @@ module ChapelSyncvar {
 
 
   // single variable support
-  pragma "sync"
     pragma "single"
     pragma "no object" // Optimize out the object base pointer.
     pragma "no default functions"

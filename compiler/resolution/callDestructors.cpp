@@ -35,7 +35,8 @@ static void cullAutoDestroyFlags()
       TypeSymbol* ts = ret->type->symbol;
       if (ts->hasFlag(FLAG_ARRAY) ||
           ts->hasFlag(FLAG_DOMAIN) ||
-          ts->hasFlag(FLAG_SYNC))
+          ts->hasFlag(FLAG_SYNC) ||
+          ts->hasFlag(FLAG_SINGLE))
         ret->removeFlag(FLAG_INSERT_AUTO_DESTROY);
       // Do we need to add other record-wrapped types here?  Testing will tell.
 
