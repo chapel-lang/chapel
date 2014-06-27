@@ -1,4 +1,4 @@
-inline proc chpl_sort_cmp(a, b, reverse=false, eq=false) {
+inline proc chpl_sort_cmp(a, b, param reverse=false, param eq=false) {
   if eq {
     if reverse then return a >= b;
     else return a <= b;
@@ -8,7 +8,7 @@ inline proc chpl_sort_cmp(a, b, reverse=false, eq=false) {
   }
 }
 
-proc HeapSort(Data: [?Dom] ?elType, doublecheck=false, reverse=false) where Dom.rank == 1 {
+proc HeapSort(Data: [?Dom] ?elType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
   const lo = Dom.dim(1).low;
   const hi = Dom.dim(1).high;
   const len = Dom.dim(1).size;
@@ -47,7 +47,7 @@ proc HeapSort(Data: [?Dom] ?elType, doublecheck=false, reverse=false) where Dom.
 }
 
 
-proc BubbleSort(Data: [?Dom] ?elType, doublecheck=false, reverse=false) where Dom.rank == 1 {
+proc BubbleSort(Data: [?Dom] ?elType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
   const lo = Dom.dim(1).low;
   const hi = Dom.dim(1).high;
   var swapped = true;
@@ -66,7 +66,7 @@ proc BubbleSort(Data: [?Dom] ?elType, doublecheck=false, reverse=false) where Do
 }
 
 
-proc InsertionSort(Data: [?Dom] ?elType, doublecheck=false, reverse=false) where Dom.rank == 1 {
+proc InsertionSort(Data: [?Dom] ?elType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
   const lo = Dom.low;
   for i in Dom {
     const ithVal = Data(i);
@@ -89,12 +89,12 @@ proc InsertionSort(Data: [?Dom] ?elType, doublecheck=false, reverse=false) where
 }
 
 
-proc MergeSort(Data: [?Dom], minlen=16, doublecheck=false, reverse=false) where Dom.rank == 1 {
+proc MergeSort(Data: [?Dom], minlen=16, doublecheck=false, param reverse=false) where Dom.rank == 1 {
   _MergeSort(Data, minlen, reverse=reverse);
   if (doublecheck) then VerifySort(Data, "MergeSort", reverse);
 }
 
-proc _MergeSort(Data: [?Dom], minlen=16, reverse=false) where Dom.rank == 1 {
+proc _MergeSort(Data: [?Dom], minlen=16, param reverse=false) where Dom.rank == 1 {
   const lo = Dom.dim(1).low;
   const hi = Dom.dim(1).high;
 
@@ -113,7 +113,7 @@ proc _MergeSort(Data: [?Dom], minlen=16, reverse=false) where Dom.rank == 1 {
   for (a, _a) in zip(Data[lo..hi], _MergeIterator(A1, A2, reverse=reverse)) do a = _a;
 }
 
-iter _MergeIterator(A1: [] ?elType, A2: [] elType, reverse=false) {
+iter _MergeIterator(A1: [] ?elType, A2: [] elType, param reverse=false) {
   var a1 = A1.domain.dim(1).low;
   const a1hi = A1.domain.dim(1).high;
   var a2 = A2.domain.dim(1).low;
@@ -138,7 +138,7 @@ iter _MergeIterator(A1: [] ?elType, A2: [] elType, reverse=false) {
 }
 
 
-proc QuickSort(Data: [?Dom] ?elType, minlen=16, doublecheck=false, reverse=false) where Dom.rank == 1 {
+proc QuickSort(Data: [?Dom] ?elType, minlen=16, doublecheck=false, param reverse=false) where Dom.rank == 1 {
   // grab obvious indices
   const lo = Dom.low, 
         hi = Dom.high,
@@ -181,7 +181,7 @@ proc QuickSort(Data: [?Dom] ?elType, minlen=16, doublecheck=false, reverse=false
 }
 
 
-proc SelectionSort(Data: [?Dom], doublecheck=false, reverse=false) where Dom.rank == 1 {
+proc SelectionSort(Data: [?Dom], doublecheck=false, param reverse=false) where Dom.rank == 1 {
   const lo = Dom.dim(1).low;
   const hi = Dom.dim(1).high;
   for i in lo..hi-1 {
@@ -193,7 +193,7 @@ proc SelectionSort(Data: [?Dom], doublecheck=false, reverse=false) where Dom.ran
   if (doublecheck) then VerifySort(Data, "SelectionSort", reverse);
 }
 
-inline proc VerifySort(Data: [?Dom] ?elType, str: string, reverse=false) {
+inline proc VerifySort(Data: [?Dom] ?elType, str: string, param reverse=false) {
   for i in Dom.low..Dom.high-1 do
     if chpl_sort_cmp(Data(i+1), Data(i), reverse) then
       halt(str, " did not sort properly (", i, "): ", Data);
