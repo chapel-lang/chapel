@@ -32,12 +32,22 @@ all:
     - variety of multilocale performance changes
   10/29/13:
     - reversion of sync change to threads
+  03/28/14:
+    - Add static flag for performance testing (22992)
   05/08/14:
     - switched to gcc-4.7
 
 chameneos-redux:
   07/08/13:
     - altered output order for chameneos data, old data incompatible
+
+dgemm.128:
+  09/06/13:
+    - LICM bug fixes
+
+dgemm.64:
+  09/06/13:
+    - LICM bug fixes
 
 fasta:
   01/14/14:
@@ -71,6 +81,10 @@ meteor:
   12/18/13:
     - Chapel level improvement by using implicit domains
 
+miniMD:
+  12/21/13:
+    - clean up of noRefCount related code in modules/internal (22473)
+
 mandelbrot:
   01/03/14:
     - Chapel level improvement by using a nonlocking writer
@@ -87,8 +101,26 @@ parOpEquals:
   09/27/13:
     - (no-local) Reversion of chpl_localeID_t's ignore subloc field being minimized to 1 bit
 
+SSCA2_main:
+  06/12/13:
+    - Initial support for hierarchical locales (21480)
+
+SSCA2_mem:
+  06/04/13:
+    - Add pre-shifted ddata pointer for DefaultRectangular (21457)
+
 STREAM_fragmented:
   09/06/13:
     - chpl_localeID_t's ignore_subloc field minimized to 1 bit
   09/27/13:
     - Reversion of chpl_localeID_t's ignore subloc field being minimized to 1 bit
+
+STREAM_performance:
+  09/06/13:
+    - chpl_localeID_t's ignore_subloc field minimized to 1 bit
+  09/27/13:
+    - Reversion of chpl_localeID_t's ignore subloc field being minimized to 1 bit
+
+time_iterate:
+  11/13/13:
+    - disabled optimizations based on no arithmetic flow (22290)
