@@ -11,6 +11,3 @@ if [ "${comm}" != "none" ] ; then
 fi
 
 export CHPL_TASKS=qthreads
-export QT_GUARD_PAGES=true
-export QT_WORKER_UNIT=core
-
