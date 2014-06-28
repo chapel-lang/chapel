@@ -12,13 +12,14 @@ HWLOC_ABS_DIR = $(shell pwd)
 HWLOC_INSTALL_DIR = $(HWLOC_ABS_DIR)/$(HWLOC_INSTALL_SUBDIR)
 HWLOC_BUILD_DIR = $(HWLOC_ABS_DIR)/$(HWLOC_BUILD_SUBDIR)
 HWLOC_DIR = $(HWLOC_ABS_DIR)
-HWLOC_TARBALL = hwloc-$(HWLOC_VERSION).tar.bz2
 
 CHPL_HWLOC_CFG_OPTIONS += --enable-static --disable-shared --disable-libxml2 --disable-pci
 
 ifneq ($(CHPL_MAKE_PLATFORM), darwin)
   CHPL_HWLOC_CFG_OPTIONS += LDFLAGS=-static
 endif
+
+CHPL_HWLOC_CFG_OPTIONS += $(CHPL_HWLOC_MORE_CFG_OPTIONS)
 
 default: all
 
@@ -35,7 +36,21 @@ clobber: FORCE
 
 
 hwloc-config: FORCE
-	cd $(HWLOC_DIR) && tar --bzip2 -xf $(HWLOC_TARBALL)
+#
+# These first few lines touch a bunch of autoconf-oriented files in a
+# certain order to prevent autoconf from running again; otherwise, we
+# ran into issues if a user's autoconf environment was not as far
+# ahead in version numbers as that which was used when packaging the
+# Qthreads release
+#
+	cd $(HWLOC_SUBDIR) && find . -name "*.m4" | xargs touch configure.ac
+	sleep 2
+	cd $(HWLOC_SUBDIR) && touch configure
+	sleep 2
+	cd $(HWLOC_SUBDIR) && find . -name "*.in" | xargs touch
+#
+# Then configure
+#
 	mkdir -p $(HWLOC_BUILD_DIR)
 	cd $(HWLOC_BUILD_DIR) && $(HWLOC_SUBDIR)/configure CC='$(CC)' CFLAGS='$(CFLAGS)' CXX='$(CXX)' CXXFLAGS='$(CFLAGS)' --prefix=$(HWLOC_INSTALL_DIR) $(CHPL_HWLOC_CFG_OPTIONS)
 
