@@ -1361,6 +1361,11 @@ err_t qio_file_length(qio_file_t* f, int64_t *len_out)
   return err;
 }
 
+// get the (total) length of the file that is backing this channel
+err_t qio_channel_get_filelength(qio_channel_t* chan, int64_t* len_out) 
+{ 
+  return qio_file_length(chan->file, len_out);
+}
 
 
 /* CHANNELS ----------------------------- */

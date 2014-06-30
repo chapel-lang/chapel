@@ -249,6 +249,7 @@ extern proc qio_file_unlock(f:qio_file_ptr_t);
 extern proc qio_file_sync(f:qio_file_ptr_t):err_t;
 
 //extern proc qio_file_style_ptr(f:qio_file_ptr_t):qio_style_ptr_t;
+extern proc qio_channel_get_filelength(chan:qio_channel_ptr_t, ref len:int(64)):err_t;
 extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyle);
 extern proc qio_file_set_style(f:qio_file_ptr_t, const ref style:iostyle);
 
@@ -1454,7 +1455,7 @@ proc channel.read(ref args ...?k,
   }
 }
 
-proc channel.readline(inout arg:string, out error:syserr):bool {
+proc channel.readline(ref arg:string, out error:syserr):bool {
   if writing then compilerError("read on write-only channel");
   error = ENOERR;
   on this.home {
@@ -1479,6 +1480,62 @@ proc channel.readline(ref arg:string):bool {
     this._ch_ioerror(e, "in channel.readline(ref arg:string)");
     return false;
   }
+}
+
+// channel.readstring: read a given amount of bytes from a channel
+// arg: str_out  -> The string to be read into
+// arg: len      -> The number of bytes to read from this channel. If nothing is
+//                  given, we read the entire channel starting at the current offset
+//                  in the channel. 
+// return: true  -> We have not encountered EOF
+//         false -> We have encountered EOF
+proc channel.readstring(ref str_out:string, len:int(64) = -1):bool {
+  var err:syserr = ENOERR;
+
+  on this.home {
+    var ret:string;
+    var lenread:int(64);
+    var tx:c_string;
+    var lentmp:int(64);
+    var actlen:int(64);
+
+    err = qio_channel_get_filelength(this._channel_internal, actlen);
+    if err then ioerror(err, "unable to get length in channel.readstring(ref str_out:string, len:int(64))"); 
+
+    // read the entire file
+    if (len == -1) then 
+      lentmp = actlen;
+    else // else, make a smart choice about how much we have to read
+      lentmp = min(actlen, len);
+
+    while (lentmp > max(int(32))) {
+      err = qio_channel_read_string(false, this._style().byteorder, max(int(32)),
+          this._channel_internal, tx, lenread, -1);
+
+      ret = toString(tx);
+      __primitive("string_normalize", ret, 1+lenread);
+      str_out += ret;
+
+      if (err == EEOF) then break; // done reading 
+
+      if err then ioerror(err, "in channel.readstring(ref str_out:string, len:int(64)"); // else, we actually do have an error.
+      lentmp = lentmp - max(int(32));
+    }
+
+    // len <= max(int(32))
+    if (!err) {
+      err = qio_channel_read_string(false, this._style().byteorder, lentmp,
+          this._channel_internal, tx, lenread, -1);
+
+      ret = toString(tx);
+      __primitive("string_normalize", ret, 1+lenread);
+      str_out += ret;
+    }
+  }
+
+  if (err == EEOF) then return false; // done reading
+  if err then ioerror(err, "in channel.readstring(ref str_out:string, len:int(64)"); // else, we actually do have an error.
+  return true;
 }
 
 inline proc channel.readbits(out v:uint(64), nbits:int(8), out error:syserr):bool {
