@@ -1,4 +1,8 @@
-I expected to be able to name a reduction type inside a record.
+bug: nested type specifier does not work for reduction
+
+I expect to be able to use a nested type specifier to
+give the reduction.
+
 
 reductionex_record.chpl:43: error: invalid use of 'new'
 reductionex_record.chpl:43: error: invalid use of 'new'

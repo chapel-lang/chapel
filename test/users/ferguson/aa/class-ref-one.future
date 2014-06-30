@@ -1,3 +1,5 @@
+error message: superclass type by reference
+
 Passing a superclass type by reference to a function
 
 If C and CC are classes, and CC : C, I expect

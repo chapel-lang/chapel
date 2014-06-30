@@ -1,3 +1,5 @@
+feature request: array query syntax for shape of array
+
 arrayreindex.chpl:17: syntax error: near '?'
 
 Would like to be able to use query syntax to get

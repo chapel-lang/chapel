@@ -1,3 +1,5 @@
+feature request: RAII for record containing object
+
 By-value record containing object.
 
 I'm pleased to see the effectiveness of overloading

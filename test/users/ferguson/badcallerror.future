@@ -1,3 +1,5 @@
+error message: when I forgot () to call a function
+
 badcallerror.chpl:3: error: type mismatch in assignment from chpl__fcf_type_void_int64_t to int(64)
 
 does not convey to me that the problem is that I actually forgot

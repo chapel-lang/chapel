@@ -1,4 +1,4 @@
-Seg fault when compiling record in generic iterator
+bug: compiler seg fault when compiling record in generic iterator
 
 I get
 error: seg fault [misc.cpp:302]

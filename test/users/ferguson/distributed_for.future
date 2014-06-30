@@ -1,4 +1,4 @@
-Feature Request: for over a distributed array should run loop body on owners.
+semantic: should for over a distributed array run loop body on owners?
 
 It seems to me that since 'on' is serial, a serial for
 loop over distributed data should run the loop body
