@@ -447,28 +447,19 @@ static void ApplyValue(const ArgumentState*       state,
 *                                                                             *
 ************************************** | *************************************/
 
-static void process_arg(const ArgumentState* state,
-                        int                  i, 
-                        char***              argv,
-                        const char*          currentFlag);
+static void process_arg(const ArgumentState*       state,
+                        const ArgumentDescription* desc,
+                        char***                    argv,
+                        const char*                currentFlag);
 
 static void bad_flag(const char* flag);
 static void extraneous_arg(const char* flag, const char* extras);
 
 static void missing_arg(const char* currentFlag);
 
-static void ProcessCommandLine(ArgumentState* state, int argc, char* aargv[])
+static void ProcessCommandLine(ArgumentState* state, int argc, char* argv[])
 {
   ArgumentDescription* desc = state->desc;
-  int                  i    = 0;
-  int                  len  = 0;
-  char*                end  = 0;
-  char**               argv = (char**) malloc((argc + 1) * sizeof(char*));
-
-  for (i = 0; i < argc; i++)
-    argv[i] = _dupstr(aargv[i]);
-
-  argv[i] = NULL;
 
   while (*++argv)
   {
@@ -476,91 +467,86 @@ static void ProcessCommandLine(ArgumentState* state, int argc, char* aargv[])
     {
       if ((*argv)[1] == '-')
       {
-        for (i = 0;; i++)
+        char* end   = strchr((*argv) + 2, '=');
+        int   len   = (end != 0) ? end - ((*argv) + 2) : strlen((*argv) + 2);
+        bool  found = false;
+
+        for (int i = 0; desc[i].name != 0 && found == false; i++)
         {
-          if (!desc[i].name)
-            bad_flag(*argv);
-
-          if ((end = strchr((*argv)+2, '=')))
-            len = end - ((*argv) + 2);
-          else
-            len = strlen((*argv) + 2);
-
-          int flaglen = (int)strlen(desc[i].name);
-
-          if (len == flaglen &&
-              !strncmp(desc[i].name,(*argv)+2, len))
+          // Skip sections headers
+          if (desc[i].type != 0) 
           {
-            char* currentFlag = _dupstr(*argv);
-            if (!end)
-              *argv += strlen(*argv);
-            else
-              *argv = end;
-            process_arg(state, i, &argv, currentFlag);
-            free(currentFlag);
-            break;
-          }
-          else if (desc[i].type && 
-                     (desc[i].type[0] == 'N' || desc[i].type[0] == 'n') &&
-                     len == flaglen+3 &&
-                     !strncmp("no-", (*argv)+2, 3) &&
-                     !strncmp(desc[i].name,(*argv)+5,len-3))
-          {
-            char* currentFlag = _dupstr(*argv);
-
-            if (!end)
-              *argv += strlen(*argv) - 1;
-            else
-              *argv = end;
-
-            if (desc[i].type[0] == 'N') {
-              desc[i].type = "f";
-            } else {
-              desc[i].type = "F";
-            }
-
-            process_arg(state, i, &argv, currentFlag);
-
-            if (desc[i].type[0] == 'f')
+            int flagLen = strlen(desc[i].name);
+          
+            if (len == flagLen && strncmp(desc[i].name, (*argv) + 2, len) == 0)
             {
-              desc[i].type = "N";
+              const char* currentFlag = *argv;
+
+              *argv = (end == 0) ? *argv + strlen(*argv) : end;
+
+              process_arg(state, &(state->desc[i]), &argv, currentFlag);
+
+              found = true;
+              break;
             }
-            else
+            else if ((desc[i].type[0] == 'N' || desc[i].type[0] == 'n')         &&
+                     len                                         == flagLen + 3 &&
+                     strncmp("no-",        (*argv) + 2,       3) == 0           &&
+                     strncmp(desc[i].name, (*argv) + 5, len - 3) == 0)
             {
-              desc[i].type = "n";
+              const char* currentFlag = *argv;
+
+              *argv        = (end == 0) ? *argv + strlen(*argv) - 1 : end;
+
+              desc[i].type = (desc[i].type[0] == 'N') ? "f" : "F";
+
+              process_arg(state, &(state->desc[i]), &argv, currentFlag);
+
+              desc[i].type = (desc[i].type[0] == 'f') ? "N" : "n";
+
+              found = true;
+              break;
             }
-            free(currentFlag);
-            break;
           }
+        }
+
+        if (found == false) 
+        {
+          // This does not return
+          bad_flag(*argv);
         }
       } 
       else 
       {
         char singleDashArg = *++(*argv);
-        char errFlag[3] = "-_";
+        char errFlag[3]    = { '-', singleDashArg, '\0' };
+        bool found         = false;
 
-        errFlag[1] = singleDashArg;
-
-        for (i = 0;; i++)
+        for (int i = 0; desc[i].name != 0 && found == false; i++)
         {
-          if (!desc[i].name)
+          // Skip sections headers
+          if (desc[i].type != 0) 
           {
-            // Ran off the end of the list of possible options
-            bad_flag(errFlag);
-          }
+            if (desc[i].key == singleDashArg)
+            {
+              ++(*argv);
 
-          if (desc[i].key == singleDashArg)
-          {
-            ++(*argv);
+              process_arg(state, &(state->desc[i]), &argv, (*argv)-2);
 
-            process_arg(state, i, &argv, (*argv)-2);
+              if (**argv != '\0')
+                extraneous_arg(errFlag, *argv);
 
-            if (**argv != '\0')
-              extraneous_arg(errFlag, *argv);
-
-            break;
+              found = true;
+            }
           }
         }
+
+        if (found == false) 
+        {
+          // This does not return
+          bad_flag(errFlag);
+        }
+
       }
     }
     else
@@ -569,35 +555,34 @@ static void ProcessCommandLine(ArgumentState* state, int argc, char* aargv[])
         state->file_argument, 
         sizeof(char*) * (state->nfile_arguments + 2));
 
-      state->file_argument[state->nfile_arguments++] = *argv;
+      state->file_argument[state->nfile_arguments++] = strdup(*argv);
       state->file_argument[state->nfile_arguments]   = NULL;
     }
   }
 }
 
-static void process_arg(const ArgumentState* state,
-                        int                  i,
-                        char***              argv,
-                        const char*          currentFlag)
+static void process_arg(const ArgumentState*       state,
+                        const ArgumentDescription* desc,
+                        char***                    argv,
+                        const char*                currentFlag)
 {
-  const ArgumentDescription* desc = state->desc;
-  const char*                arg  = NULL;
+  const char*  arg  = NULL;
 
-  if (desc[i].type)
+  if (desc->type)
   {
-    char type = desc[i].type[0];
+    char type = desc->type[0];
 
     if (type == 'F' || type == 'f')
-      *((bool*) desc[i].location) = (type == 'F') ? true : false;
+      *((bool*) desc->location) = (type == 'F') ? true : false;
 
     else if (type == 'N' || type == 'n')
-      *((bool*) desc[i].location) = (type == 'N') ? true : false;
+      *((bool*) desc->location) = (type == 'N') ? true : false;
 
     else if (type=='T')
-      *((int*)  desc[i].location) = !(*((int*) desc[i].location));
+      *((int*)  desc->location) = !(*((int*) desc->location));
 
     else if (type == '+') 
-      *((int*)  desc[i].location) = *((int*)  desc[i].location) + 1;
+      *((int*)  desc->location) = *((int*)  desc->location) + 1;
 
     else
     {
@@ -614,23 +599,23 @@ static void process_arg(const ArgumentState* state,
       switch (type)
       {
         case 'I':
-          *((int*)     desc[i].location) = atoi(arg);
+          *((int*)     desc->location) = atoi(arg);
           break;
 
         case 'D':
-          *((double*)  desc[i].location) = atof(arg);
+          *((double*)  desc->location) = atof(arg);
           break;
 
         case 'L':
-          *((int64_t*) desc[i].location) = atoll(arg);
+          *((int64_t*) desc->location) = atoll(arg);
           break;
 
         case 'P':
-          strncpy((char*) desc[i].location,arg, FILENAME_MAX);
+          strncpy((char*) desc->location,arg, FILENAME_MAX);
           break;
 
         case 'S':
-          strncpy((char*) desc[i].location,arg, atoi(desc[i].type + 1));
+          strncpy((char*) desc->location,arg, atoi(desc->type + 1));
           break;
 
         default:
@@ -646,8 +631,8 @@ static void process_arg(const ArgumentState* state,
     }
   }
 
-  if (desc[i].pfn)
-    desc[i].pfn(state, arg);
+  if (desc->pfn)
+    desc->pfn(state, arg);
 }
 
 static void bad_flag(const char* flag)
