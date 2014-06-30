@@ -1,40 +1,11 @@
-bug: _isSyncType misfires on single types
+bug: sync and single variables need to be passable to generic formals with 'ref' intent
 
-Once this bug is resolved, please:
+See also:  test/functions/vass/sync-by-ref.future
 
-* remove the second and third variants of test() from type-tests.todo.chpl:
+Within the callee we would like to see the formal to be a 'sync'
+when the actual is a sync, and analogously for 'single'.
 
- proc test(param msg, ref v: sync) ...
- proc test(param msg, ref v: single) ...
-
-leaving only the first variant proc test(param msg, ref v)...
-
-* adjust .bad correspondingly - it will need two extra lines like this:
-
-type-tests.todo.chpl:10: error: non-lvalue actual is passed to 'ref' formal 'v' of test()
-
-* the .good should remain unchanged
-
-* restore this .future to what's below the line
-
-Vass 5/4/2014
-
------------------------------------------------------------------------------
-bug: sync and single vars need to be passable to ref-intent generic formals
-
-This test (type-tests.todo.chpl) actually is to verify correctness of
-_isSync/Type and _isSingle/Type
-
-However, I made it into a .future because it currently does not work
-the way I'd like it to work, i.e. using the first variant of test():
-
-  proc test(param msg, ref v) ...
-
-because of the bug that's explicitly exercised by
-
-  test/functions/vass/sync-by-ref.future
-
-which is that I get:
+This is not happening right now, so I get:
 
 type-tests.todo.chpl:10: error: non-lvalue actual passed to ref argument
 type-tests.todo.chpl:10: error: non-lvalue actual passed to ref argument

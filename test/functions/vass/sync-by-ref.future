@@ -1,4 +1,6 @@
-bug: sync variables need to be passable by reference to generic formals
+bug: sync and single variables need to be passable to generic formals with 'ref' intent
+
+See also: test/users/vass/type-tests.todo.future
 
 Right now I get (notice also an inadequate line number):
 

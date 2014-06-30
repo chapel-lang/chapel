@@ -61,7 +61,6 @@ proc test(param msg, type tp) {
   if isDomainType(tp)  then compilerWarning(msg + " is domain");
   if isArrayType(tp)   then compilerWarning(msg + " is array");
   if isAtomicType(tp)  then compilerWarning(msg + " is atomic");
-// Temporarily disabled - _isSyncType misfires on single types:
-//  if _isSyncType(tp)   then compilerWarning(msg + " is sync");
+  if _isSyncType(tp)   then compilerWarning(msg + " is sync");
   if _isSingleType(tp) then compilerWarning(msg + " is single");
 }

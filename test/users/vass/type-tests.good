@@ -66,6 +66,7 @@ type-tests.chpl:27: warning: atomic is an atomic
 type-tests.chpl:31: warning: sync - class:  false
 type-tests.chpl:31: warning: sync - record: false
 type-tests.chpl:31: warning: sync - union:  false
+type-tests.chpl:31: warning: sync is sync
 type-tests.chpl:32: warning: single - class:  false
 type-tests.chpl:32: warning: single - record: false
 type-tests.chpl:32: warning: single - union:  false
