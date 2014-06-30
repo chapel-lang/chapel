@@ -32,7 +32,7 @@ cleanall: FORCE
 	rm -rf build
 
 clobber: FORCE
-	rm -rf build install $(HWLOC_SUBDIR)
+	rm -rf build install
 
 
 hwloc-config: FORCE
