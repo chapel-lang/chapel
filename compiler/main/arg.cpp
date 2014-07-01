@@ -457,9 +457,21 @@ static void extraneous_arg(const char* flag, const char* extras);
 
 static void missing_arg(const char* currentFlag);
 
-static void ProcessCommandLine(ArgumentState* state, int argc, char* argv[])
+static void ProcessCommandLine(ArgumentState* state, int argc, char* aargv[])
 {
-  ArgumentDescription* desc = state->desc;
+  ArgumentDescription* desc     = state->desc;
+  char**               argvSave = (char**) malloc((argc + 1) * sizeof(char*));
+  char**               argvBase = (char**) malloc((argc + 1) * sizeof(char*));
+  char**               argv     = argvBase;
+  
+  for (int i = 0; i < argc; i++) {
+    argvSave[i] = strdup(aargv[i]);
+  }
+
+  argvSave[argc] = NULL;
+
+  for (int i = 0; i < argc + 1; i++)
+    argvBase[i] = argvSave[i];
 
   while (*++argv)
   {
@@ -559,6 +571,15 @@ static void ProcessCommandLine(ArgumentState* state, int argc, char* argv[])
       state->file_argument[state->nfile_arguments]   = NULL;
     }
   }
+
+  // Free the allocated strings
+  for (int i = 0; i < argc; i++) {
+    free(argvSave[i]);
+  }
+
+  // Free the vectors
+  free(argvSave);
+  free(argvBase);
 }
 
 static void process_arg(const ArgumentState*       state,
@@ -566,7 +587,7 @@ static void process_arg(const ArgumentState*       state,
                         char***                    argv,
                         const char*                currentFlag)
 {
-  const char*  arg  = NULL;
+  const char* arg = NULL;
 
   if (desc->type)
   {
@@ -611,11 +632,11 @@ static void process_arg(const ArgumentState*       state,
           break;
 
         case 'P':
-          strncpy((char*) desc->location,arg, FILENAME_MAX);
+          strncpy((char*) desc->location, arg, FILENAME_MAX);
           break;
 
         case 'S':
-          strncpy((char*) desc->location,arg, atoi(desc->type + 1));
+          strncpy((char*) desc->location, arg, atoi(desc->type + 1));
           break;
 
         default:
