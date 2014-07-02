@@ -25,19 +25,20 @@ fi
 # Setup vars that will help load the correct compiler module.
 case $COMP_TYPE in
     TARGET)
-        module_prefix=PrgEnv-
-        set_chpl_host=false
-        chpl_host_prefix=""
+        module_name=PrgEnv-${COMPILER}
+        chpl_host_value=""
         ;;
     HOST-TARGET)
-        module_prefix=PrgEnv-
-        set_chpl_host=true
-        chpl_host_prefix=cray-prgenv-
+        module_name=PrgEnv-${COMPILER}
+        chpl_host_value=cray-prgenv-${COMPILER}
         ;;
     HOST-TARGET-no-PrgEnv)
-        module_prefix=""
-        set_chpl_host=true
-        chpl_host_prefix=""
+        the_cc=${COMPILER}
+        if [ "${COMPILER}" = "gnu" ] ; then
+            the_cc=gcc
+        fi
+        module_name=${the_cc}
+        chpl_host_value=${the_cc}
         ;;
     *)
         log_error "Unknown COMP_TYPE value: ${COMP_TYPE}. Exiting."
@@ -48,8 +49,8 @@ esac
 # Load compiler module.
 case $COMPILER in
     cray)
-        log_info "Loading module: ${module_prefix}${COMPILER}"
-        module load ${module_prefix}${COMPILER}
+        log_info "Loading module: ${module_name}"
+        module load ${module_name}
 
         # swap out network modules to get "host-only" environment
         log_info "Swap network module for host-only environment."
@@ -60,8 +61,8 @@ case $COMPILER in
         module unload cray-libsci
         ;;
     pgi|intel|gnu)
-        log_info "Loading module: ${module_prefix}${COMPILER}"
-        module load ${module_prefix}${COMPILER}
+        log_info "Loading module: ${module_name}"
+        module load ${module_name}
         ;;
     *)
         log_error "Unknown COMPILER value: ${COMPILER}. Exiting."
@@ -76,8 +77,8 @@ export CHPL_HOST_PLATFORM=cray-xc
 export CHPL_TARGET_PLATFORM=cray-xc
 
 # Set CHPL_HOST_COMPILER.
-if [ "${set_chpl_host}" = "true" ] ; then
-    export CHPL_HOST_COMPILER="${chpl_host_prefix}${COMPILER}"
+if [ -n "${chpl_host_value}" ] ; then
+    export CHPL_HOST_COMPILER="${chpl_host_value}"
     log_info "Set CHPL_HOST_COMPILER to: ${CHPL_HOST_COMPILER}"
 fi
 
