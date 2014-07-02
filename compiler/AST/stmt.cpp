@@ -251,6 +251,7 @@ GenRet BlockStmt::codegen() {
 // the construction of the parse tree.
 void
 BlockStmt::appendChapelStmt(BlockStmt* stmt) {
+#if 0
   if (stmt->isScopeless() == true) {
     for_alist(expr, stmt->body) {
       this->insertAtTail(expr->remove());
@@ -258,6 +259,11 @@ BlockStmt::appendChapelStmt(BlockStmt* stmt) {
   } else {
     insertAtTail(stmt);
   }
+#else
+
+  insertAtTail(stmt);
+
+#endif
 }
 
 
