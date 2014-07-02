@@ -50,7 +50,7 @@ if ($platform eq "linux") {
     } else {
         $platform = "linux32";
     }
-} elsif ($platform eq "cygwin_nt-5.1") {
+} elsif ($platform =~ /^cygwin/) {
     $platform = "cygwin";
 }
 
