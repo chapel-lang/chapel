@@ -1034,11 +1034,17 @@ overloading~(\rsec{Function_Overloading}).
 \index{\!@\chpl{!}}
 \index{operators!\!@\chpl{!}}
 
-The logical negation operator is predefined as follows:
+The logical negation operator is predefined for booleans and integers
+as follows:
+
 \begin{chapel}
 proc !(a: bool): bool
+proc !(a: int(?w)): bool
+proc !(a: uint(?w)): bool
 \end{chapel}
-The result is the logical negation of the operand.
+For the boolean form, the result is the logical negation of the
+operand.  For the integer forms, the result is true if the operand is
+zero and false otherwise.
 
 \subsection{The Logical And Operator}
 \label{Logical_And_Operators}

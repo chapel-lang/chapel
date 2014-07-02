@@ -23,6 +23,9 @@ Expressions
 * add a syntax production for index-expressions that duplicates the
   logic of call-expressions
 
+* add param prototypes for ! operator (and other operators whose
+  param versions aren't documented?)
+
 
 Ranges
 ------
