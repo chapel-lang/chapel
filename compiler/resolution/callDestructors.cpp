@@ -719,7 +719,7 @@ static void insertYieldTemps()
 static void insertReferenceTemps() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if ((call->parentSymbol && call->isResolved()) ||
-        call->isPrimitive(PRIM_VMT_CALL)) {
+        call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
       //
       // Insert reference temps for function arguments that expect them.
       //

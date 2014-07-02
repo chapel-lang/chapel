@@ -312,7 +312,7 @@ narrowSym(Symbol* sym, WideInfo* wi) {
         wi->fnToNarrow = fn;
         INT_ASSERT(fn);
         forv_Vec(CallExpr*, call, *fn->calledBy) {
-          if (call->isPrimitive(PRIM_VMT_CALL)) {
+          if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
             wi->mustBeWide = true;
             return;
           }
@@ -368,7 +368,7 @@ narrowArg(ArgSymbol* arg, WideInfo* wi) {
     }
   }
   forv_Vec(CallExpr, call, *fn->calledBy) {
-    if (call->isPrimitive(PRIM_VMT_CALL)) {
+    if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
       wi->mustBeWide = true;
       return;
     } else {

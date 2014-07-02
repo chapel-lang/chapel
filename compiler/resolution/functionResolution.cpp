@@ -6646,7 +6646,7 @@ static void insertDynamicDispatchCalls() {
       // That is, calls to isResolved() return NULL.
       call->get(1)->replace(call->baseExpr->remove());
       call->get(2)->insertBefore(new SymExpr(cid));
-      call->primitive = primitives[PRIM_VMT_CALL];
+      call->primitive = primitives[PRIM_VIRTUAL_METHOD_CALL];
       // This clause leads to necessary reference temporaries not being inserted, 
       // while the clause below works correctly. <hilde>
       // Increase --conditional-dynamic-dispatch-limit to see this.

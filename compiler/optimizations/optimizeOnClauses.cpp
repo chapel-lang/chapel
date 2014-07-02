@@ -288,7 +288,7 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_RT_ERROR:
   case PRIM_RT_WARNING:
   case PRIM_FTABLE_CALL:
-  case PRIM_VMT_CALL:
+  case PRIM_VIRTUAL_METHOD_CALL:
     return false;
 
   default:

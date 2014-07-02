@@ -214,7 +214,7 @@ enum PrimitiveTag {
   PRIM_GET_SVEC_MEMBER,
   PRIM_GET_SVEC_MEMBER_VALUE,
 
-  PRIM_VMT_CALL,        // virtual method call
+  PRIM_VIRTUAL_METHOD_CALL,
 
   PRIM_NUM_FIELDS,
   PRIM_FIELD_NUM_TO_NAME,

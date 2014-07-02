@@ -5168,7 +5168,7 @@ GenRet CallExpr::codegen() {
       ret = codegenCallExpr(fngen, args, NULL, true);
       break;
     }
-    case PRIM_VMT_CALL: {
+    case PRIM_VIRTUAL_METHOD_CALL: {
       GenRet fnPtr;
       GenRet index;
       FnSymbol* fn = NULL;

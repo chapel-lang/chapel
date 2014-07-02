@@ -586,7 +586,7 @@ static void insertStringLiteralTemps()
             }
             else // isResolved() is false for primitives.
             {
-              if (call->isPrimitive(PRIM_VMT_CALL)) {
+              if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
                 if (Type* type = actual_to_formal(se)->typeInfo()) {
                   VarSymbol* tmp = newTemp(type);
                   call->getStmtExpr()->insertBefore(new DefExpr(tmp));

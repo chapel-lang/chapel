@@ -240,7 +240,7 @@ void checkPrimitives()
      case PRIM_SET_SVEC_MEMBER:
      case PRIM_GET_SVEC_MEMBER:
      case PRIM_GET_SVEC_MEMBER_VALUE:
-     case PRIM_VMT_CALL:
+     case PRIM_VIRTUAL_METHOD_CALL:
      case PRIM_NUM_FIELDS:
       break;
     }
