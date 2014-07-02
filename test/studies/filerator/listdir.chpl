@@ -21,9 +21,9 @@ iter listdir(path: string, recur = false, dotfiles=false): string {
   var ent: direntptr;
   //  writeln("***Trying ", path);
   dir = opendir(path:c_string);
-  if (is_c_nil(dir) == 0) {
+  if (!is_c_nil(dir)) {
     ent = readdir(dir);
-    while (is_c_nil(ent) == 0) {
+    while (!is_c_nil(ent)) {
       const filename = ent.d_name();
       if (dotfiles || filename.substring(1) != '.') {
         const fullpath = path + "/" + filename;

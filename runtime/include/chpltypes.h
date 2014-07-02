@@ -23,8 +23,16 @@ typedef unsigned long long c_ulonglong;
 typedef float c_float;
 typedef double c_double;
 typedef void* c_void_ptr;
+
+// C++ does not support c99 bools
+#ifndef __cplusplus
+typedef _Bool chpl_bool;
+#else
+typedef bool chpl_bool;
+#endif
+
 #define c_nil NULL
-static inline c_int is_c_nil(void* x) { return x==NULL; }
+static inline chpl_bool is_c_nil(void* x) { return (chpl_bool)(x==c_nil); }
 static inline void* c_pointer_return(void* x) { return x; }
 
 typedef enum {
@@ -147,13 +155,6 @@ typedef void* chpl_opaque;
 #define UINT32( i) ((uint32_t)(UINT32_C(i)))
 #define UINT64( i) ((uint64_t)(UINT64_C(i)))
 
-
-// C++ does not support c99 bools
-#ifndef __cplusplus
-typedef _Bool chpl_bool;
-#else
-typedef bool chpl_bool;
-#endif
 
 typedef int8_t chpl_bool8;
 typedef int16_t chpl_bool16;

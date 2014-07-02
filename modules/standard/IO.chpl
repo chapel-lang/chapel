@@ -531,7 +531,7 @@ proc =(ref ret:file, x:file) {
 }
 
 proc file.check() {
-  if(1 == is_c_nil(_file_internal)) {
+  if(is_c_nil(_file_internal)) {
     halt("Operation attempted on an invalid file");
   }
 }

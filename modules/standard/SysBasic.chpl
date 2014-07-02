@@ -38,7 +38,7 @@ extern const c_nil:c_void_ptr;
 // To generate legal C prototypes, we have to manually instantiate this
 // prototype for each pointer type that might be associated with 'x'.
 pragma "no prototype"
-extern proc is_c_nil(x):c_int;
+extern proc is_c_nil(x):bool;
 
 // local C pointer class used in C integration.
 // Similar to _ddata from ChapelBase, but differs 
