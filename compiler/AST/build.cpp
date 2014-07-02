@@ -1,13 +1,14 @@
 #include "build.h"
+
 #include "astutil.h"
 #include "baseAST.h"
+#include "config.h"
 #include "expr.h"
 #include "parser.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
-#include "config.h"
 
 static void
 checkControlFlow(Expr* expr, const char* context) {
@@ -309,16 +310,8 @@ Expr* buildLogicalOrExpr(BaseAST* left, BaseAST* right) {
 }
 
 
-BlockStmt* buildChapelStmt(BaseAST* ast) {
-  BlockStmt* block = NULL;
-  if (!ast)
-    block = new BlockStmt();
-  else if (Expr* a = toExpr(ast))
-    block = new BlockStmt(a);
-  else
-    INT_FATAL(ast, "Illegal argument to buildChapelStmt");
-  block->blockTag = BLOCK_SCOPELESS;
-  return block;
+BlockStmt* buildChapelStmt(Expr* expr) {
+  return new BlockStmt(expr, BLOCK_SCOPELESS);
 }
 
 

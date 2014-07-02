@@ -104,7 +104,8 @@ bool AstDumpToNode::enterModSym(ModuleSymbol* node)
 
   // chpl_Program embeds a list of all the modules.
   // Skip the contents of the embedded ones.
-  if (strcmp(mModule->name, "chpl__Program") == 0  &&
+  if (mModule                                != 0  &&
+      strcmp(mModule->name, "chpl__Program") == 0  &&
       strcmp(node->name,    "chpl__Program") != 0)
   {
     fprintf(mFP, "#<ModuleSymbol %s>", node->name);
@@ -216,6 +217,11 @@ bool AstDumpToNode::enterDefExpr(DefExpr* node)
 
   } 
 
+  else if (node->sym == 0)
+  {
+
+  }
+
   else if (toArgSymbol(node->sym))
   {
 
@@ -224,7 +230,6 @@ bool AstDumpToNode::enterDefExpr(DefExpr* node)
   else if (toEnumSymbol(node->sym))
   {
     ast_symbol("def", node->sym, true);
-
   } 
 
   else if (toFnSymbol(node->sym))
@@ -254,7 +259,6 @@ bool AstDumpToNode::enterDefExpr(DefExpr* node)
     }
 
     ast_symbol("type", node->sym, true);
-
   }
 
   else if (toVarSymbol(node->sym))
@@ -793,29 +797,36 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
   char          name[1024];
   ModuleSymbol* mod        = sym->getModule();
 
-  if (false)
-    ;
+  if (mod != 0)
+  {
+    if (false)
+      ;
 
-  else if (mod       == 0 && sym       == 0)
-    sprintf(name, "NULL:NULL");
+    else if (sym == 0)
+      sprintf(name, "??:NULL");
   
-  else if (mod       == 0 && sym       != 0)
-    sprintf(name, "NULL:??");
+    else if (mod->name == 0 && sym->name == 0)
+      sprintf(name, "??:??");
 
-  else if (mod       != 0 && sym       == 0)
-    sprintf(name, "??:NULL");
-  
-  else if (mod->name == 0 && sym->name == 0)
-    sprintf(name, "??:??");
+    else if (mod->name != 0 && sym->name == 0)
+      sprintf(name, "%s:??", mod->name);
 
-  else if (mod->name != 0 && sym->name == 0)
-    sprintf(name, "%s:??", mod->name);
+    else if (mod->name == 0 && sym->name != 0)
+      sprintf(name, "??:%s", sym->name);
 
-  else if (mod->name == 0 && sym->name != 0)
-    sprintf(name, "??:%s", sym->name);
-
+    else
+      sprintf(name, "%s.%s", mod->name, sym->name);
+  }
   else
-    sprintf(name, "%s.%s", mod->name, sym->name);
+  {
+    if (sym->name == 0)
+      sprintf(name, "NULL:??");
+
+    else
+      sprintf(name, "NULL:%s", sym->name);
+  }
+
+
 
   if (false)
   {
@@ -976,6 +987,7 @@ void AstDumpToNode::ast_symbol(Symbol* sym, bool def)
     if (ArgSymbol* arg = toArgSymbol(sym))
     {
       newline();
+
       switch (arg->intent)
       {
         case INTENT_IN:        write("intent: in arg ");        break;
@@ -993,7 +1005,26 @@ void AstDumpToNode::ast_symbol(Symbol* sym, bool def)
   }
 
   newline();
-  fprintf(mFP, "name:   %s.%s", mod->name, sym->name);
+
+  if ((mod == 0 || mod->name == 0) && sym->name == 0)
+  {
+    fprintf(mFP, "name:   %s.%s", "??", "??");
+  }
+
+  else if ((mod == 0 || mod->name == 0) && sym->name != 0)
+  {
+    fprintf(mFP, "name:   %s.%s", "??", sym->name);
+  }
+
+  else if (mod->name != 0 && sym->name == 0)
+  {
+    fprintf(mFP, "name:   %s.%s", mod->name, "??");
+  }
+
+  else
+  {
+    fprintf(mFP, "name:   %s.%s", mod->name, sym->name);
+  }
 
   if (fLogIds)
     fprintf(mFP, "[%d]", sym->id);

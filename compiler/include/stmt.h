@@ -28,35 +28,41 @@ class Stmt : public Expr {
 
 
 class BlockStmt : public Stmt {
- public:
-  BlockTag blockTag;
-  AList body;
-  CallExpr* blockInfo;
-  CallExpr* modUses;  // module uses via PRIM_USE
-  LabelSymbol* breakLabel;
-  LabelSymbol* continueLabel;
-  const char* userLabel;
-  CallExpr* byrefVars;  // 'ref' clause in begin/cobegin/coforall
+public:
+  BlockTag      blockTag;
+  AList         body;
+  CallExpr*     blockInfo;
+  CallExpr*     modUses;       // module uses via PRIM_USE
+  LabelSymbol*  breakLabel;
+  LabelSymbol*  continueLabel;
+  const char*   userLabel;
+  CallExpr*     byrefVars;     // 'ref' clause in begin/cobegin/coforall
 
-  BlockStmt(Expr* init_body = NULL, BlockTag init_blockTag = BLOCK_NORMAL);
-  virtual ~BlockStmt();
+                BlockStmt(Expr* init_body = NULL, BlockTag init_blockTag = BLOCK_NORMAL);
+  virtual      ~BlockStmt();
+
   DECLARE_COPY(BlockStmt);
-  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
-  virtual void verify();
-  virtual void    accept(AstVisitor* visitor);
-  GenRet codegen();
 
-  void insertAtHead(Expr* ast);
-  void insertAtTail(Expr* ast);
-  void insertAtHead(const char* format, ...);
-  void insertAtTail(const char* format, ...);
-  void insertAtTailBeforeGoto(Expr* ast);
+  virtual void  replaceChild(Expr* old_ast, Expr* new_ast);
+  virtual void  verify();
+  virtual void  accept(AstVisitor* visitor);
+  GenRet        codegen();
 
-  bool isLoop(void);
-  int length(void);
+  void          appendChapelStmt(BlockStmt* stmt);
 
-  void addUse(ModuleSymbol* mod);
-  void removeUse(ModuleSymbol* mod);
+  void          insertAtHead(Expr* ast);
+  void          insertAtTail(Expr* ast);
+  void          insertAtTailBeforeGoto(Expr* ast);
+
+  void          insertAtHead(const char* format, ...);
+  void          insertAtTail(const char* format, ...);
+
+  bool          isScopeless()                           const;
+  bool          isLoop()                                const;
+  int           length()                                const;
+
+  void          addUse(ModuleSymbol* mod);
+  void          removeUse(ModuleSymbol* mod);
 };
 
 

@@ -1,14 +1,16 @@
-#include <cstring>
+#include "stmt.h"
+
 #include "astutil.h"
+#include "codegen.h"
 #include "expr.h"
 #include "files.h"
 #include "misc.h"
 #include "passes.h"
-#include "stmt.h"
 #include "stringutil.h"
-#include "codegen.h"
 
 #include "AstVisitor.h"
+
+#include <cstring>
 
 // remember these so we can update their labels' iterResumeGoto
 Map<GotoStmt*,GotoStmt*> copiedIterResumeGotos;
@@ -243,8 +245,20 @@ GenRet BlockStmt::codegen() {
   return ret;
 }
 
-  
-
+// The BISON productions generate a large number of scope-less BlockStmt
+// as an artifact of the processing.  This function is intended to be
+// called from well-defined points in the parser to collapse these during
+// the construction of the parse tree.
+void
+BlockStmt::appendChapelStmt(BlockStmt* stmt) {
+  if (stmt->isScopeless() == true) {
+    for_alist(expr, stmt->body) {
+      this->insertAtTail(expr->remove());
+    }
+  } else {
+    insertAtTail(stmt);
+  }
+}
 
 
 void
@@ -289,7 +303,12 @@ BlockStmt::insertAtTailBeforeGoto(Expr* ast) {
 
 
 bool
-BlockStmt::isLoop(void) {
+BlockStmt::isScopeless() const {
+  return blockTag == BLOCK_SCOPELESS;
+}
+
+bool
+BlockStmt::isLoop() const {
   return (blockInfo &&
           (blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP) ||
            blockInfo->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
@@ -299,7 +318,7 @@ BlockStmt::isLoop(void) {
 
 
 int
-BlockStmt::length(void) {
+BlockStmt::length() const {
   return body.length;
 }
 
