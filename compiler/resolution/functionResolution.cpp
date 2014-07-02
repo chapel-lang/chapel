@@ -1191,12 +1191,6 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
     return canDispatch(actualType->getValType(), NULL, formalType, fn, promotes);
   if ((((toVarSymbol(actualSym) || toArgSymbol(actualSym))) &&
        (actualType==dtStringC)) && (formalType == dtString))
-    /*** ((toVarSymbol(actualSym) &&
-        (toVarSymbol(actualSym)->typeInfo()==dtStringC)) ||
-       ((toArgSymbol(actualSym) &&
-       toArgSymbol(actualSym)->typeInfo()==dtStringC))) &&
-       (formalType == dtString)) ***/
-    // I'm wondering if I can just use actualType here
     return true;
   return false;
 }
