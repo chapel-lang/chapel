@@ -13,7 +13,7 @@ def print_mode(mode='list'):
     if 'shell' in mode:
         #cshell and shell are the same up until we print
         m = 'shell'
-    elif mode == 'simple':
+    elif mode == 'simple' or mode == 'debug':
         # make and simple are almost the same barring a few cases and when they
         # are printed
         m = 'make'
@@ -148,13 +148,18 @@ def print_var(env_var, value, mode, short_name='', filters=None):
         stdout.write("export {0}='{1}'\n".format(env_var, value))
     elif mode == 'cshell':
         stdout.write("setenv {0} '{1}'\n".format(env_var, value))
+    elif mode == 'debug':
+        user_set = os.environ.get(env_var, '')
+        if user_set:
+          user_set = '*'
+        stdout.write("{0}{1}={2}\n".format(user_set, env_var, value))
     else:
         raise ValueError("Invalid mode '{0}'".format(mode))
 
 
 def _main():
     parser = optparse.OptionParser(
-        usage='usage: %prog [--list|--make|--simple|--compiler|--runtime|--launcher|--sh|--csh]')
+        usage='usage: %prog [--list|--make|--simple|--compiler|--runtime|--launcher|--sh|--csh|--debug]')
 
     parser.add_option('--list', action='store_const', dest='mode', default='list',
                       const='list', help="print out a listing of the environment")
@@ -174,6 +179,9 @@ def _main():
                       help="print out a sh/bash script to reproduce the environment")
     parser.add_option('--csh', action='store_const', dest='mode', const='cshell',
                       help="print out a csh/tcsh script to reproduce the environment")
+    parser.add_option('--debug', action='store_const', dest='mode', const='debug',
+                      help="print out a listing of the environment indicating "
+                           "which options are user supplied with a *")
 
     (options, args) = parser.parse_args()
 
