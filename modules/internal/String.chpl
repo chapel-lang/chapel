@@ -60,7 +60,6 @@ module String {
   inline proc >=(a: string, b: string) return a.c_str()>=b.c_str();
   inline proc <(a: string, b: string) return a.c_str()<b.c_str();
   inline proc >(a: string, b: string) return a.c_str()>b.c_str();
-  inline proc +(param a: string, param b: string) param return __primitive("string_concat", a, b);
 
   //
   // primitive string functions and methods
@@ -276,6 +275,9 @@ module CString {
 
   inline proc +(param x: bool, param s: c_string) param
     return __primitive("string_concat", x:c_string, s);
+
+  inline proc +(a: c_string, b: c_string)
+    return __primitive("string_concat", a, b);
 
   proc ref c_string.writeThis(x: Writer) {
     x.write(this); // FIX ME? toString
