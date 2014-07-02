@@ -1,0 +1,4 @@
+bug: param c_strings should be the same as literal c_strings for type inference
+
+The inferred type from a param c_string is c_string, while for a c_string
+literal the type is inferred as string.  Both should be string.
