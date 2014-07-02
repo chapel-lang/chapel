@@ -239,19 +239,19 @@ module CString {
   }
 
   inline proc =(ref a: c_string, b: string) {
-    __primitive("=", a, __primitive("c_string_from_string", b));
+    __primitive("=", a, b.c_str());
   }
 
   inline proc =(ref a: string, b: c_string) {
-    __primitive("=", a, __primitive("string_from_c_string", b, 0, 0));
+    __primitive("=", a, toString(b));
   }
 
   inline proc _cast(type t, x: c_string) where t == string {
-    return __primitive("string_from_c_string", x, 0, 0);
+    return toString(x);
   }
 
   inline proc _cast(type t, x: string) where t == c_string {
-    return __primitive("c_string_from_string", x);
+    return x.c_str();
   }
 
   // Only support param c_string concatenation (for now)
