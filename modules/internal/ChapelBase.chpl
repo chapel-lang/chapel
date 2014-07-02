@@ -477,8 +477,8 @@ module ChapelBase {
   proc isTrue(a: integral) { compilerError("short-circuiting logical operators not supported on integers"); }
   
   inline proc !(param a: bool) param return __primitive("!", a);
-  inline proc !(param a: int(?w)) param return __primitive("!", a);
-  inline proc !(param a: uint(?w)) param return __primitive("!", a);
+  inline proc !(param a: int(?w)) param return (a == 0);
+  inline proc !(param a: uint(?w)) param return (a == 0);
   
   //
   // bitwise operations on primitive types
