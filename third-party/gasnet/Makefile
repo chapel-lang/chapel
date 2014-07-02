@@ -71,6 +71,20 @@ XTRA_CONFIG_COMMAND=cp --update $(GASNET_SUBDIR)/other/contrib/$(CHPL_GASNET_CFG
 XTRA_POST_INSTALL_COMMAND=rm -f $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT)
 endif
 
+CHPL_GASNET_ENV_VARS:= CC='$(CC)' CXX='$(CXX)'
+
+# Copied this usage from other/contrib/cross-configure-intel-mic
+ifeq ($(CHPL_MAKE_TARGET_ARCH),knc)
+ifeq ($(CHPL_MAKE_TARGET_COMPILER),intel)
+CHPL_GASNET_CFG_OPTIONS = --enable-cross-compile --host=x86_64-unknown-linux-gnu --build=mic-unknown-linux-gnu --disable-aligned-segments --enable-pshm
+CHPL_GASNET_ENV_VARS:= CC='icc -mmic' CXX='icpc -mmic' HOST_CC='icc' CROSS_PAGESIZE='4096' CROSS_HAVE_SHM_OPEN=1 CROSS_HAVE_MMAP=1
+# I personally don't have a way to test this
+# MPI_CC = mpiicc -mmic
+else
+# CHPL_GASNET_CFG_OPTIONS = --disable-aligned-segments --enable-pshm
+endif
+endif
+
 MKFILES=$(shell find $(GASNET_INSTALL_DIR) -name \*.mak)
 
 #
@@ -100,7 +114,7 @@ gasnet-config: FORCE
 	mkdir -p $(GASNET_BUILD_DIR)
 	cd $(GASNET_SUBDIR) && ./Bootstrap -T
 	$(XTRA_CONFIG_COMMAND)
-	$(ENSURE_GASNET_COMPATIBLE_COMPILER) cd $(GASNET_BUILD_DIR) && export CC && CC='$(CC)' && export CXX && CXX='$(CXX)' && $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT) --prefix=$(GASNET_INSTALL_DIR) $(CHPL_GASNET_CFG_OPTIONS) --disable-seq --enable-par --disable-parsync
+	$(ENSURE_GASNET_COMPATIBLE_COMPILER) cd $(GASNET_BUILD_DIR) && $(CHPL_GASNET_ENV_VARS) $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT) --prefix=$(GASNET_INSTALL_DIR) $(CHPL_GASNET_CFG_OPTIONS) --disable-seq --enable-par --disable-parsync $(CHPL_GASNET_CFG_OPTIONS)
 
 gasnet-build: FORCE
 	$(ENSURE_GASNET_COMPATIBLE_COMPILER) cd $(GASNET_BUILD_DIR) && $(MAKE) all

@@ -19,6 +19,7 @@ class argument_map(object):
         'ivybridge':   'core-avx-i',
         'haswell':     'core-avx2',
         'broadwell':   'core-avx2',
+        'knc':         'knc',
         'k8':          'none',
         'k8sse3':      'none',
         'barcelona':   'none',
@@ -37,6 +38,7 @@ class argument_map(object):
         'ivybridge':   'core2',
         'haswell':     'core2',
         'broadwell':   'core2',
+        'knc':         'none',
         'k8':          'k8',
         'k8sse3':      'k8-sse3',
         'barcelona':   'barcelona',
@@ -55,6 +57,7 @@ class argument_map(object):
         'ivybridge':   'core-avx-i',
         'haswell':     'core-avx2',
         'broadwell':   'core-avx2',
+        'knc':         'none',
         'k8':          'k8',
         'k8sse3':      'k8-sse3',
         'barcelona':   'barcelona',
@@ -73,6 +76,7 @@ class argument_map(object):
         'ivybridge':   'ivybridge',
         'haswell':     'haswell',
         'broadwell':   'broadwell',
+        'knc':         'none',
         'k8':          'k8',
         'k8sse3':      'k8-sse3',
         'barcelona':   'barcelona',
@@ -283,7 +287,7 @@ def get(location, map_to_compiler=False):
                                platform_val == 'darwin' or
                                platform_val == 'cygwin'):
         if arch:
-            if not location or location == 'host':
+            if arch != 'knc' and not location or location == 'host':
                 # when a user supplies an architecture, and it seems reasonable
                 # to double check their choice we do so. This will only
                 # generate a warning that the user may not be able to run

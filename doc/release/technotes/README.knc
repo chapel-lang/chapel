@@ -18,12 +18,65 @@ communication must bounce through the host processor.
 Current Status
 --------------
 
-Currently, this set up only works on Cray machines using PrgEnv-intel.
-See below for the TODO.
+Currently, the Chapel KNC port supports:
+
+- CHPL_TARGET_PLATFORM=cray-xc with PrgEnv-intel
+  - CHPL_COMM=none
+  - CHPL_COMM=gasnet, CHPL_COMM_SUBSTRATE=mpi
+  - CHPL_GMP=gmp|none
+
+- CHPL_TARGET_COMPILER=intel and CHPL_TARGET_ARCH=knc
+  - CHPL_COMM=none
+  - CHPL_COMM=gasnet, CHPL_COMM_SUBSTRATE=udp (built but not tested)
+  - CHPL_GMP=gmp|none
+
+For the above configurations:
+
+- CHPL_TASKS=fifo
+- CHPL_TASKS=qthreads, CHPL_HWLOC=none
+- CHPL_MEM=dlmalloc
 
 ---------------
 Getting started
 ---------------
+
+For vanilla Intel compiler:
+---------------------------
+
+- Set CHPL_TARGET_COMPILER=intel and CHPL_TARGET_ARCH=knc.
+
+- Set CHPL_REGEXP=none.
+
+- Set CHPL_GMP to 'none' or 'gmp'.
+
+- Build Chapel as normal.  Running printchplenv should look like this.
+
+  CHPL_HOST_PLATFORM: linux64
+  CHPL_HOST_COMPILER: gnu
+  CHPL_TARGET_PLATFORM: linux64
+  CHPL_TARGET_COMPILER: intel
+  CHPL_TARGET_ARCH: knc
+  CHPL_LOCALE_MODEL: flat
+  CHPL_COMM: none
+  CHPL_TASKS: fifo
+  CHPL_LAUNCHER: none
+  CHPL_TIMERS: generic
+  CHPL_MEM: default
+  CHPL_MAKE: gmake
+  CHPL_ATOMICS: intrinsics
+  CHPL_GMP: none
+  CHPL_HWLOC: none
+  CHPL_REGEXP: none
+  CHPL_WIDE_POINTERS: struct
+  CHPL_LLVM: none
+  CHPL_AUX_FILESYS: none
+
+- Build your Chapel program as normal.
+
+  % chpl hello.chpl
+
+For Cray XC:
+------------
 
 - Log into a Cray XC with KNC nodes.  Set CHPL_TARGET_PLATFORM=cray-xc
   and CHPL_HOME to the appropriate value.
@@ -35,14 +88,11 @@ Getting started
   % module unload cray-libsci atp craype-sandybridge craype-ivybridge
   % module load craype-intel-knc
 
-- Disable CHPL_GMP.  I could not find a pre-built GMP library, and I
-  couldn't get the third-party GMP build to do quite what I wanted.
+- Set CHPL_REGEXP=none.
 
-  % export CHPL_GMP=none
+- Set CHPL_GMP to 'none' or 'gmp'.
 
-- Set the launcher to none.
-
-  % export CHPL_LAUNCHER=none
+- Set CHPL_LAUNCHER=none.
 
 - Build Chapel as normal.  Running printchplenv should look like this.
 
@@ -93,9 +143,14 @@ TODO
 ----
 
 - OpenMP 4.0 pragma annotated loops
-- Vanilla Intel compiler support
-  - Pass -mmic flag to third-party builds
 - Figure out GMP story for Cray machines
+  - Currently you must set CHPL_GMP to 'none' or 'gmp' when using the
+    PrgEnv for Cray machines.  I'm hoping that there will be support
+    soon, so I haven't changed the chplenv script to do this
+    automatically yet.
+- tcmalloc not supported (lfence not implemented)
+- hwloc not supported (build says not supported)
+- Fix regexp build to use other CHPL_TARGET_COMPILER
 - aprun/srun support
   - Need CHPL_TARGET_ARCH value used to compile the Chapel program
 - non-Cray platform support (launcher)

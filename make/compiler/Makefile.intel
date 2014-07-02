@@ -45,9 +45,16 @@ LIB_DYNAMIC_FLAG = -shared
 SHARED_LIB_CFLAGS = -fpic
 
 # Set the target architecture for optimization
+ifeq ($(CHPL_MAKE_TARGET_ARCH), knc)
+SPECIALIZE_CFLAGS = -mmic
+GEN_LFLAGS += -mmic
+RUNTIME_CFLAGS += -mmic
+RUNTIME_LFLAGS += -mmic
+else
 ifneq ($(CHPL_MAKE_TARGET_ARCH), none)
 ifneq ($(CHPL_MAKE_TARGET_ARCH), unknown)
 SPECIALIZE_CFLAGS = -march=$(CHPL_MAKE_TARGET_ARCH)
+endif
 endif
 endif
 

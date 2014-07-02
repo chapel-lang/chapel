@@ -19,6 +19,13 @@ ifeq ($(CHPL_MAKE_TARGET_PLATFORM),cray-xt)
 CHPL_QTHREAD_CFG_OPTIONS += --host=x86_64-pc-linux-gnu --build=x86_64-suse-linux-gnu
 endif
 
+ifeq ($(CHPL_MAKE_TARGET_ARCH),knc)
+CHPL_QTHREAD_CFG_OPTIONS += --host=x86_64-unknown-linux-gnu
+ifeq ($(CHPL_MAKE_TARGET_COMPILER),intel)
+CFLAGS += -mmic
+endif
+endif
+
 ifneq (, $(filter $(CHPL_MAKE_TARGET_PLATFORM),cray-xe cray-xk cray-xc))
 CHPL_QTHREAD_CFG_OPTIONS += --host=x86_64-pc-linux-gnu --build=x86_64-suse-linux-gnu
 endif
