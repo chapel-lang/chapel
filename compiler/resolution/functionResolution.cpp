@@ -7007,17 +7007,21 @@ static void removeRandomCalls()
     if (! call->parentSymbol)
       continue;
 
-    if (FnSymbol* fn = call->isResolved()) {
+    if (FnSymbol* fn = call->isResolved())
+    {
       // Remove method and leader token actuals
-      for (int i = fn->numFormals(); i >= 1; i--) {
+      for (int i = fn->numFormals(); i >= 1; i--)
+      {
         ArgSymbol* formal = fn->getFormal(i);
         if (formal->type == dtMethodToken ||
             formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
             (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
-             !formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))) {
-          if (!fn->hasFlag(FLAG_EXTERN)) {
+             !formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)))
+        {
+          if (!fn->hasFlag(FLAG_EXTERN))
             call->get(i)->remove();
-          } else {
+          else
+          {
             // extern function with a type parameter
             INT_ASSERT(toSymExpr(call->get(1)));
             TypeSymbol *ts = toSymExpr(call->get(1))->var->type->symbol;
@@ -7026,6 +7030,26 @@ static void removeRandomCalls()
             call->get(i)->replace(new SymExpr(ts));
           }
         }
+      }
+    }
+    else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))
+    {
+      // This should be replaced by a call to for_formals_actuals, which
+      // matches up the argument in a virtual method call with the
+      // corresponding formals.
+      FnSymbol* vfn = toFnSymbol(toSymExpr(call->get(1))->var);
+      for (int i = vfn->numFormals(); i >= 2; --i)
+      {
+        ArgSymbol* formal = vfn->getFormal(i);
+        // The first arg in a VM call is the function symbol and the second is
+        // the function index.  The "real" arguments come after that.
+        // The method token does not appear in the call but it does appear in
+        // the function signature.  That is why there is a net offset of 1.
+        if (formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
+            (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
+             ! formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)))
+          // Dynamic dispatch to extern functions is not supported.
+          call->get(i+1)->remove();
       }
     }
     else
