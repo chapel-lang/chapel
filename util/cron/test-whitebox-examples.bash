@@ -27,10 +27,20 @@ case $COMP_TYPE in
     TARGET)
         module_name=PrgEnv-${COMPILER}
         chpl_host_value=""
+
+        # FIXME: Generalize this for XE and XC. (thomasvandoren, 2014-07-03)
+        export CHPL_TARGET_PLATFORM=cray-xc
+        log_info "Set CHPL_TARGET_PLATFORM to: ${CHPL_TARGET_PLATFORM}"
         ;;
     HOST-TARGET)
         module_name=PrgEnv-${COMPILER}
         chpl_host_value=cray-prgenv-${COMPILER}
+
+        # FIXME: Generalize this for XE and XC. (thomasvandoren, 2014-07-03)
+        export CHPL_HOST_PLATFORM=cray-xc
+        export CHPL_TARGET_PLATFORM=cray-xc
+        log_info "Set CHPL_HOST_PLATFORM to: ${CHPL_HOST_PLATFORM}"
+        log_info "Set CHPL_TARGET_PLATFORM to: ${CHPL_TARGET_PLATFORM}"
         ;;
     HOST-TARGET-no-PrgEnv)
         the_cc=${COMPILER}
@@ -78,10 +88,6 @@ case $COMPILER in
 esac
 
 export CHPL_HOME=$(cd $CWD/../.. ; pwd)
-
-# FIXME: Generalize this for XE and XC. (thomasvandoren, 2014-07-01)
-export CHPL_HOST_PLATFORM=cray-xc
-export CHPL_TARGET_PLATFORM=cray-xc
 
 # Set CHPL_HOST_COMPILER.
 if [ -n "${chpl_host_value}" ] ; then
