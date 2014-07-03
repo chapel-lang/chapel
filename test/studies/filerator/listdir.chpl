@@ -28,15 +28,17 @@ iter listdir(path: string, recur = false, dotfiles=false, nosvn=true): string {
       if (dotfiles || filename.substring(1) != '.') {
         if (!nosvn || filename != '.svn') {
           const fullpath = path + "/" + filename;
-          yield fullpath;
-          if recur && ent.isDir() && filename != "." && filename != ".." {
+          if (!ent.isDir()) {
+            yield fullpath;
+          } else {
             //        writeln("^^^ it's a directory!");
-
-            //
-            // feature request: This is a nice place for a yieldall concept
-            //
-            for filename in listdir(fullpath, recur, dotfiles) do
-              yield filename;
+            if recur && filename != "." && filename != ".." {
+              //
+              // feature request: This is a nice place for a yieldall concept
+              //
+              for filename in listdir(fullpath, recur, dotfiles) do
+                yield filename;
+            }
           }
         }
       }
