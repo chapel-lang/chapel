@@ -1,7 +1,7 @@
+subdir/fileInSubdir
 subdir/subdir2
 subdir/subdir2/A.txt
 subdir/subdir2/B.txt
 subdir/subdir3
 subdir/subdir3/C.txt
 subdir/subdir3/D.txt
-subdir/fileInSubdir

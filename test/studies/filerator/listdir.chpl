@@ -1,4 +1,4 @@
-iter listdir(path: string, recur = false, dotfiles=false): string {
+iter listdir(path: string, recur = false, dotfiles=false, nosvn=true): string {
   extern type DIRptr;
   extern type direntptr;
   extern proc opendir(name: c_string): DIRptr;
@@ -26,16 +26,18 @@ iter listdir(path: string, recur = false, dotfiles=false): string {
     while (!is_c_nil(ent)) {
       const filename = ent.d_name();
       if (dotfiles || filename.substring(1) != '.') {
-        const fullpath = path + "/" + filename;
-        yield fullpath;
-        if recur && ent.isDir() && filename != "." && filename != ".." {
-          //        writeln("^^^ it's a directory!");
+        if (!nosvn || filename != '.svn') {
+          const fullpath = path + "/" + filename;
+          yield fullpath;
+          if recur && ent.isDir() && filename != "." && filename != ".." {
+            //        writeln("^^^ it's a directory!");
 
-          //
-          // feature request: This is a nice place for a yieldall concept
-          //
-          for filename in listdir(fullpath, recur, dotfiles) do
-            yield filename;
+            //
+            // feature request: This is a nice place for a yieldall concept
+            //
+            for filename in listdir(fullpath, recur, dotfiles) do
+              yield filename;
+          }
         }
       }
       ent = readdir(dir);
@@ -47,9 +49,23 @@ iter listdir(path: string, recur = false, dotfiles=false): string {
   }
 }
 
+iter sorted(x) {
+  use Sort;
+
+  var y = x;
+  QuickSort(y);
+  for i in y do
+    yield i;
+}
+
 config const startdir = "subdir";
 config const recur = false;
 config const dotfiles = false;
+config param sort = true;
 
-for filename in listdir(startdir, recur, dotfiles) do
-  writeln(filename);
+if sort then
+  for filename in sorted(listdir(startdir, recur, dotfiles, nosvn=true)) do
+    writeln(filename);
+else
+  for filename in listdir(startdir, recur, dotfiles, nosvn=true) do
+    writeln(filename);

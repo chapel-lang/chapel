@@ -1,9 +1,8 @@
 subdir/.
 subdir/..
-subdir/subdir2
-subdir/subdir3
-subdir/fileInSubdir
 subdir/.dotFileInSubdir
-subdir/.svn
 subdir/.dotfile
 subdir/.dotsubdir
+subdir/fileInSubdir
+subdir/subdir2
+subdir/subdir3
