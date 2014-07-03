@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+outfile=$2
+grep -v 'Elapsed time is:' $outfile > $outfile.tmp
+mv $outfile.tmp $outfile
