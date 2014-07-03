@@ -3,7 +3,8 @@
 # This should be sourced by other scripts that wish to make use of the
 # variables set here.
 
-source $(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)/functions.bash
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+source $CWD/functions.bash
 
 # For our internal testing, this is necessary to get the latest version of gcc
 # on the system.
@@ -76,17 +77,11 @@ else
 fi
 log_info "Using SVN repo: ${CHPL_HOME_REPOSITORY}"
 
-# Assume chapel repo is checked out to ~/chapel.
-
-# If $CHPL_HOME is already set, use it.
 if [ "${CHPL_HOME+x}" = "x" ] ; then
     log_info "CHPL_HOME is already set to: ${CHPL_HOME}"
-# Else, use a well known and established location for $CHPL_HOME.
-elif [ -d ~/chapel ] ; then
-    export CHPL_HOME=$(cd ~/chapel ; pwd)
 else
-    log_error "Expected chapel repo to be at ~/chapel. No directory exists at ~/chapel."
-    exit 1
+    export CHPL_HOME=$(cd $CWD/../.. ; pwd)
+    log_info "CHPL_HOME is not set. Defaulting to: ${CHPL_HOME}"
 fi
 log_info "CHPL_HOME is: ${CHPL_HOME}"
 

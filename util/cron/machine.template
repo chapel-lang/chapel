@@ -6,12 +6,14 @@
 # crontab file, redirecting output to machine.<hostname>.out.
 #
 
-source $(cd $(dirname $0) ; pwd)/common.bash
+CWD=$(cd $(dirname $0) ; pwd)
+
+source $CWD/common.bash
 
 # Call one or more nightly scripts for various configurations
 # here. e.g.,
 #
-#       ~/chapel/util/cron/nightly.standard
+#       $CWD/nightly.standard
 #
 # Do not redirect output of these scripts, as the scripts themselves
 # should do this.

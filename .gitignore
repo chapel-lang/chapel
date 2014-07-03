@@ -4,6 +4,7 @@ a.out_real
 *.bak
 output
 gen
+*.ntoks
 *.pyc
 *.tmp
 

@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # tcmalloc testing
 
-source $(cd $(dirname $0) ; pwd)/common.bash
+CWD=$(cd $(dirname $0) ; pwd)
+
+source $CWD/common.bash
 
 # tcmalloc with comm none
 export CHPL_MEM=tcmalloc
-export LOGFILE=~/tmp/nightly.tcmalloc.out
-log_info "Testing CHPL_MEM=tcmalloc. Log file: $LOGFILE"
-
-with_logging $LOGFILE $CHPL_HOME/util/cron/nightly -cron -no-futures
+log_info "Testing CHPL_MEM=tcmalloc."
+$CWD/nightly -cron -no-futures
 
 log_info "Finished."

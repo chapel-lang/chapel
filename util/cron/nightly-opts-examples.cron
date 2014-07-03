@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
-echo `date` "" Starting $0 on `hostname`.
 
-LOGFILE=$HOME/tmp/nightly.opts.out
-echo `date` "" "Testing -cron.  Log file: $LOGFILE"
+CWD=$(cd $(dirname $0) ; pwd)
 
-export CHPL_HOME_REPOSITORY=${CHPL_HOME_REPOSITORY:-"svn://svn.code.sf.net/p/chapel/code/trunk"}
-~/chapel/util/cron/start_opt_test -cron >& $LOGFILE
+source $CWD/common.bash
 
-echo `date` "" Finished $0.
+log_info "Testing -cron."
+$CWD/start_opt_test -cron
+log_info "Finished."

@@ -4,14 +4,6 @@ CWD=$(cd $(dirname $0) ; pwd)
 
 source $CWD/common.bash
 
-# Remove the readonly checkout before running the script. This is running svn
-# 1.4 and frequently has issues with invalid working copies.
-rm -rf /tmp/chapel-cron-$USER-readonly
-
-# Update ~/chapel.
-log_info "Updating ~/chapel with nightly.update-repo script."
-$CWD/nightly.update-repo
-
 log_info "Starting nightly."
 export CHPL_START_TEST_ARGS="-syspreexec $CWD/../test/preexec-for-old-macs"
 $CWD/nightly -cron -examples
