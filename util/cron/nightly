@@ -3,6 +3,7 @@
 use File::Basename;
 use File::Path qw(mkpath);
 use Cwd;
+use Cwd 'abs_path';
 use Sys::Hostname;
 
 # Mailing lists.
@@ -32,7 +33,6 @@ $fast = 0;
 $nolocal = 0;
 $verify = 0;
 $retaintree = 0;
-$combinedir = 0;
 $dist = "";
 $localeModelSuite = 0;
 $memleaks = "";
@@ -115,8 +115,6 @@ while (@ARGV) {
         $verify = 1;
     } elsif ($flag eq "-retaintree") {
         $retaintree = 1;
-    } elsif ($flag eq "-combinedir") {
-      $combinedir = 1;
     } elsif ($flag eq "-r") {
         $svnrevopt = "-r " . shift @ARGV;
     } elsif ($flag eq "-cron-recipient") {
@@ -130,15 +128,8 @@ while (@ARGV) {
 
 print localtime() . "  host: " . hostname . "\n";
 
-# Do not include comments and blank lines from crontab listing.
-$crontab = join("\n", grep(!/^#|^$/, split(/\n/, `crontab -l`)));
-
-if ($debug == 0) {
-    print "Currently installed crontab on ".hostname.":\n";
-    print $crontab;
-}
-
-# If this is running in jenkins, link to the job instead of using the crontab.
+# If this is running in jenkins, link to the job in the email.
+$crontab = "Unknown origin for this job...";
 if (exists($ENV{"BUILD_URL"})) {
     $buildurl = $ENV{"BUILD_URL"};
     $crontab = "View this job at:\n\t$buildurl";
@@ -203,7 +194,6 @@ print "\n";
 #
 # get uniquifiers
 #
-$pid = $$;
 $user = `whoami`;
 chomp($user);
 $debugmail = $ENV{'CHPL_NIGHTLY_DEBUG_EMAIL'};
@@ -229,13 +219,13 @@ if ($cronrecipient ne "") {
 #
 # directory locations
 #
-$basetmpdir = $ENV{'CHPL_NIGHTLY_TMPDIR'};
-if ($basetmpdir eq "") {
-    $basetmpdir = $ENV{'TMPDIR'};
-}
-if ($basetmpdir eq "") {
-    $basetmpdir = "/tmp";
-}
+$basetmpdir = $ENV{'CHPL_NIGHTLY_TMPDIR'}; 
+if ($basetmpdir eq "") { 
+    $basetmpdir = $ENV{'TMPDIR'}; 
+} 
+if ($basetmpdir eq "") { 
+    $basetmpdir = "/tmp"; 
+} 
 $make = $ENV{'CHPL_NIGHTLY_MAKE'};
 if ($make eq "") {
     $make = $ENV{'MAKE'};
@@ -323,22 +313,10 @@ if ($mailer eq "") {
 #
 # directory variables
 #
-if ($debug == 1) {
-    if ($combinedir == 1) {
-        $tmpdir = "$basetmpdir/chapel-debug-combined-$user";
-    } else {
-        $tmpdir = "$basetmpdir/chapel-debug-$fullplatform-$user";
-    }
-} else {
-    if ($combinedir == 1) {
-        $tmpdir = "$basetmpdir/chapel-cron-combined-$user";
-    } else {
-        $tmpdir = "$basetmpdir/chapel-cron-$fullplatform-$user";
-    }
-}
-$chapeldir = "$tmpdir/chapel";
-$testdir = "$chapeldir/test";
-print "\$chapeldir = $chapeldir\n";
+$cwd = abs_path(dirname(__FILE__));
+$chplhomedir = abs_path("$cwd/../..");
+$testdir = "$chplhomedir/test";
+print "\$chplhomedir = $chplhomedir\n";
 
 
 $launchcmd = "$ENV{'CHPL_APP_LAUNCH_CMD'}";
@@ -519,14 +497,6 @@ ensureSummaryExists($prevsummary);
 
 $somethingfailed = 0;
 
-#
-# make temp directory
-#
-if (! -d $tmpdir) {
-    mysystem("mkdir $tmpdir > /dev/null", "creating temp dir", 1, 1);
-}
-
-
 
 #
 # make environment is set properly
@@ -537,50 +507,21 @@ delete($ENV{'CHPL_HOME'});
 #mysystem("which chpl", "locating chpl", 0, 0);
 #mysystem("env", "checking environment", 0, 0);
 
- 
-#
-# checkout sources
-#
-$svnroot = $ENV{'CHPL_HOME_REPOSITORY'};
-if ($svnroot eq "") {
-    $svnroot = "svn://svn.code.sf.net/p/chapel/code/trunk";
-}
-
-$readonlydirname = "chapel-cron-$user-readonly";
-$readonlydir = "$basetmpdir/$readonlydirname";
-if ($retaintree) {
-  print "Retaining the working tree $chapeldir\n";
-} else {
-  print "\$readonlydir = $readonlydir\n";
-  if (! (-r $readonlydir && -d $readonlydir)) {
-    print "The SVN directory has not been checked out yet\n";
-    print "***** $svnrevopt $svnroot $readonlydirname *****\n";
-    mysystem("cd $basetmpdir && svn checkout -q $svnrevopt $svnroot $readonlydirname", "svn checkout", 1, 1);
-  } else {
-    print "The SVN directory has already been checked out, updating it $svnrevopt\n";
-    mysystem("cd $basetmpdir && svn update -q $svnrevopt $readonlydirname", "svn update", 1, 1);
-  }
-  $revision = `svn info $readonlydir | grep Revision`; chomp($revision);
-  print "(Re-)creating the working tree $chapeldir\n";
-  mysystem("rm -rf $chapeldir", "removing previous writeable chapel dir", 0, 1);
-  mysystem("cp -r $readonlydir $chapeldir", "creating writeable chapel dir");
-}
-
+$revision = mysystem("cd $chplhomedir && svnversion");
 
 #
 # if on cygwin, blow away FILES files because they wreak havoc on stuff
 #
 if ($hostplatform eq "cygwin") {
-    mysystem("cd $chapeldir && find . -name FILES -exec rm {} \\;");
+    mysystem("cd $chplhomedir && find . -name FILES -exec rm {} \\;");
 }
 
 
-
 print "Making DEBUG=0 OPTIMIZE=1 compiler\n";
-$makestat = mysystem("cd $chapeldir && $make DEBUG=0 OPTIMIZE=1 compiler", "making chapel compiler", 0, 1);
+$makestat = mysystem("cd $chplhomedir && $make DEBUG=0 OPTIMIZE=1 compiler", "making chapel compiler", 0, 1);
 if ($makestat != 0) {
     print "Making DEBUG=0 compiler\n";
-    mysystem("cd $chapeldir && $make DEBUG=0 compiler", "making chapel compiler", 1, 1);
+    mysystem("cd $chplhomedir && $make DEBUG=0 compiler", "making chapel compiler", 1, 1);
 }
 
 if ($buildruntime == 0) {
@@ -601,14 +542,14 @@ if ($buildruntime == 0) {
 }
 
 print "Making DEBUG=0 OPTIMIZE=1 $qthreadopts runtime\n";
-$makestat = mysystem("cd $chapeldir && $make DEBUG=0 OPTIMIZE=1 $qthreadopts runtime", "making chapel runtime", 0, 1);
+$makestat = mysystem("cd $chplhomedir && $make DEBUG=0 OPTIMIZE=1 $qthreadopts runtime", "making chapel runtime", 0, 1);
 if ($makestat != 0) {
     print "Making DEBUG=0 $qthreadopts runtime\n";
-    mysystem("cd $chapeldir && $make DEBUG=0 $qthreadopts runtime", "making chapel runtime", 1, 1);
+    mysystem("cd $chplhomedir && $make DEBUG=0 $qthreadopts runtime", "making chapel runtime", 1, 1);
 }
 
 print "Making modules\n";
-$makestat = mysystem("cd $chapeldir && $make modules", "making chapel modules", 0, 1);
+$makestat = mysystem("cd $chplhomedir && $make modules", "making chapel modules", 0, 1);
 
 
 #
@@ -633,7 +574,7 @@ if ($nofutures == 0) {
 #
 if ($examples == 1) {
     print "Making spectests\n";
-    mysystem("cd $chapeldir && $make spectests", "making spec tests", 0, 1);
+    mysystem("cd $chplhomedir && $make spectests", "making spec tests", 0, 1);
     $testdirs = "release/examples";
     if ($multilocale == 1) {
         $testdirs .= " multilocale distributions";
@@ -761,7 +702,7 @@ if ($runtests == 0) {
         mysystem("cd $svnPerfDir && svn update", "svn-updating perf data before running tests" . $svnPerfMsgXtra, 0, 1, 1);
     }
 
-    $ENV{'CHPL_HOME'} = $chapeldir;
+    $ENV{'CHPL_HOME'} = $chplhomedir;
     if ($parnodefile eq "") {
         $testcommand = "cd $testdir && ../util/start_test $testflags";
         print "Executing $testcommand\n";
@@ -826,7 +767,7 @@ if ($runtests == 0) {
         mysystem("cd $svnPerfDir && svn commit -m \"Subject: Perf data update $host  `date '+%F %T'`  $revision\n\nDescription: <empty>\n\"", "svn-committing perf data" . $svnPerfMsgXtra, 0, 1, 1);
 
         # sync the performance graphs over to sourceforge 
-        $rsyncCommand = "$chapeldir/util/cron/syncPerfGraphs.py $svnPerfBaseDir/ $host --logFile $logdir/syncToSourceForge.errors";
+        $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnPerfBaseDir/ $host --logFile $logdir/syncToSourceForge.errors";
         $rsyncMessage = "syncing performance graph to sourceforge -- log file at $logdir/syncToSourceForge.errors";
         mysystem($rsyncCommand, $rsyncMessage , 0, 1, 1);
         
@@ -878,12 +819,12 @@ if ($runtests == 0) {
             $altTitle = "Chapel Release Over Release Performance Graphs";
             $startdate = "04/10/12"; # earliest date that we generate historical data for
             $genGraphs = "$utildir/test/genGraphs";
-            $genGraphsCommand = "$genGraphs -p $tmpDatDir -o $svnReleasePerfDir/html/ -t $chapeldir/test/ -a \"$altTitle\" -n $host  -g $chapeldir/test/GRAPHFILES -s $startdate";
+            $genGraphsCommand = "$genGraphs -p $tmpDatDir -o $svnReleasePerfDir/html/ -t $chplhomedir/test/ -a \"$altTitle\" -n $host  -g $chplhomedir/test/GRAPHFILES -s $startdate";
             $genGraphsMessage = "Generating release over release performance graphs";
             mysystem($genGraphsCommand, $genGraphsMessage, 0, 1, 1);
             
             # sync the perf graphs over to sourceforge 
-            $rsyncCommand = "$chapeldir/util/cron/syncPerfGraphs.py $svnPerfBaseDir $host/releaseOverRelease/ --logFile $logdir/syncReleaseToSourceForge.errors";
+            $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnPerfBaseDir $host/releaseOverRelease/ --logFile $logdir/syncReleaseToSourceForge.errors";
             $rsyncMessage = "syncing release performance graph to sourceforge -- log file at $logdir/syncReleaseToSourceForge.errors";
             mysystem($rsyncCommand, $rsyncMessage , 0, 1, 1);
         }
@@ -989,7 +930,7 @@ if ($runtests == 0) {
 # analyze memory leaks tests
 #
     if (!($memleaks eq "")) {
-        mysystem("$chapeldir/util/devel/analyzeMemLeaksLog $basetmpdir/$memleaks > $logdir/$memleaks");
+        mysystem("$chplhomedir/util/devel/analyzeMemLeaksLog $basetmpdir/$memleaks > $logdir/$memleaks");
 
         # Update the memory leaks status for performance testing runs to
         #  generate graphs for the memory leaks data
@@ -997,9 +938,9 @@ if ($runtests == 0) {
         # This is not ideal (we may be a day behind depending on when
         #  the tests finish), but it good enough for now.
         if ($examples == 0) {
-            mysystem("cd $testdir && cp $logdir/$memleaks ./memleaksfull.exec.out.tmp && $chapeldir/util/test/computePerfStats memleaksfull $logdir");
+            mysystem("cd $testdir && cp $logdir/$memleaks ./memleaksfull.exec.out.tmp && $chplhomedir/util/test/computePerfStats memleaksfull $logdir");
         } else {
-            mysystem("cd $testdir && cp $logdir/$memleaks ./memleaks.exec.out.tmp && $chapeldir/util/test/computePerfStats memleaks $logdir");
+            mysystem("cd $testdir && cp $logdir/$memleaks ./memleaks.exec.out.tmp && $chplhomedir/util/test/computePerfStats memleaks $logdir");
         }
     }
 }

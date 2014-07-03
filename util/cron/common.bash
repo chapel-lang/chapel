@@ -62,21 +62,6 @@ function with_logging()
     return $exit_code
 }
 
-# If the test machine is on the cray network, set this to true.`
-export CHPL_CRAY_NETWORK=false
-domain_ends_with_cray=$(python -c 'import socket ; print(socket.getfqdn().endswith("cray.com"))')
-if [ "${domain_ends_with_cray}" = "True" ] ; then
-    export CHPL_CRAY_NETWORK=true
-fi
-
-# Use the internal subversion repo mirror when running on the cray network.
-if [ "${CHPL_CRAY_NETWORK}" = "true" ] ; then
-    export CHPL_HOME_REPOSITORY=http://svn/svn/chapel-mirror/trunk
-else
-    export CHPL_HOME_REPOSITORY=svn://svn.code.sf.net/p/chapel/code/trunk
-fi
-log_info "Using SVN repo: ${CHPL_HOME_REPOSITORY}"
-
 if [ "${CHPL_HOME+x}" = "x" ] ; then
     log_info "CHPL_HOME is already set to: ${CHPL_HOME}"
 else
