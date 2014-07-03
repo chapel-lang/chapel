@@ -8,7 +8,8 @@ source $CWD/common.bash
 $CWD/nightly.qthreads -full
 
 # TODO: Uncomment the below and remove the above once qthreads is the
-#       default. (thomasvandoren, 2014-02-12)
+#       default. Also be sure to split the below into two separate scripts and
+#       create separate jenkins jobs for them. (thomasvandoren, 2014-07-01)
 
 # # fifo + flat + none + full suite
 # $CWD/nightly.fifo -full

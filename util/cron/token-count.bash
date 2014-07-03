@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
 CWD=$(cd $(dirname $0) ; pwd)
-
 source $CWD/common.bash
-
-$CWD/nightly.tcmalloc
-$CWD/nightly.tcmalloc-gasnet
+$CWD/../tokencount/tokctnightly -cron

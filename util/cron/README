@@ -1,42 +1,10 @@
-Proposed scheme for testing scripts
-===================================
+Cray Testing
+============
 
-For each machine, there should be a file named machine.<hostname>.
-See machine.template for more information.  For each configuration,
-there should be a file named nightly.<config>.  The script
-machine.<hostname> calls one or more nightly.<config> scripts.
+The Chapel team at Cray, Inc. manages a suite of correctness and performance
+tests on a variety of platforms and environments.
 
-The crontab file should call machine.<hostname> and redirect output
-into machine.<hostname>.out.  The nightly.<config> scripts should
-redirect output to appropriately named files, e.g., nightly.gasnet.out
-or nightly.gasnet.fast.out. nightly.standard provides an example of running
-the testing suite with just the default options.
-
-CF machines
-===========
-chap01 : linux64 (comm none, default everything)
-chap02 : gasnet: segment fast (M,W,F,Su), segment everything (Tu,Thu,Sa)
-chap03 : linux64 performance (comm none, default everything) -- old HW
-chap04 : linux64 performance (comm none, default everything) -- new HW
-chap05 : qthreads (comm none examples, gasnet multilocale-examples), --fast
-chap06 : --baseline
-chpbld01 : XC PrgEnvs examples, nightly
-chpbld02 : XE PrgEnvs all, weekly
-chpbld03 : (no testing - non-standard: RHEL5.7 with Tilera PCI card)
-chpbld04 : (no testing - non-standard: RHEL5.7 with Tilera PCI card)
-cflbs32  : linux32 (comm none, default everything)
-
-Seattle machines
-================
-chap09    : valgrind (comm none)
-chap10    : --no-local
-bradc-lnx : 11pm update of ~chapelu/chapel, release testing, linux64 performance, token count, tab check
-lnx-vass  : block, memory leaks; historify-logs
-lnx-hilde : (no testing)
-lnx-diten : cyclic
-mbp-kbrady: darwin/clang, darwin/gnu
-macchapel-mac            : mac
-4LR97C1 (windows laptop) : cygwin
+TODO: list the cray tests here... (thomasvandoren, 2014-07-01)
 
 Discontinued testing (that we might like to revive)
 ===================================================
@@ -48,7 +16,6 @@ Discontinued testing (that we don't care about anymore)
 - mpi    (was: nightly.chap04     up to r19116)
 - XMT (was nightly.chap07, preserved as nightly.xmt)
 
-
 Other notes
 ===========
 
@@ -59,17 +26,3 @@ Currently unused - in part because there were always holes and there
 wasn't a good diffing system as with the normal nightly runs. So
 sifting through logs to see what was changing required a lot of
 human effort. We keep it around in hopes of resurrecting it.
-
-crontab entry format
---------------------
-
-* * * * * command to be executed
-- - - - -
-| | | | |
-| | | | ----- day of week (0 - 6) (Sunday=0) (3-letter names are allowed?)
-| | | ------- month (1 - 12)
-| | --------- day of month (1 - 31)
-| ----------- hour (0 - 23)
-------------- min (0 - 59)
-'*' in a given position means "any".
-

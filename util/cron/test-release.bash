@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
 CWD=$(cd $(dirname $0) ; pwd)
-
 source $CWD/common.bash
-
-$CWD/nightly.chap03
+$CWD/../buildRelease/testRelease -cron

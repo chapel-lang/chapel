@@ -39,6 +39,17 @@ $debugmail = $ENV{'CHPL_NIGHTLY_DEBUG_EMAIL'};
 if ($debugmail eq "") {
     $debugmail = "$user\@cray.com";
 }
+
+if ($cronrecipient eq "" and exists($ENV{"CHPL_NIGHTLY_CRON_RECIPIENT"})) {
+    $cronrecipient = $ENV{"CHPL_NIGHTLY_CRON_RECIPIENT"};
+}
+
+if ($cronrecipient ne "") {
+    print "Overriding \$failuremail and \$allmail with: $cronrecipient.\n";
+    $failuremail = $cronrecipient;
+    $allmail = $cronrecipient;
+}
+
 $platform = `uname -s`;
 chomp($platform);
 $platform = lc($platform);

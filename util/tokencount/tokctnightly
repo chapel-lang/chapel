@@ -54,6 +54,17 @@ $mailer = $ENV{'CHPL_MAILER'};
 if ($mailer eq "") {
     $mailer = "Mail";
 }
+
+if ($cronrecipient eq "" and exists($ENV{"CHPL_NIGHTLY_CRON_RECIPIENT"})) {
+    $cronrecipient = $ENV{"CHPL_NIGHTLY_CRON_RECIPIENT"};
+}
+
+if ($cronrecipient ne "") {
+    print "Overriding \$failuremail with: $cronrecipient.\n";
+    $failuremail = $cronrecipient;
+}
+
+
 if ($debug == 1) {
     $subjectid = "Dbg token count";
     $recipient = $debugmail;
