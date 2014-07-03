@@ -60,7 +60,14 @@ case $COMPILER in
         log_info "Unloading cray-libsci module."
         module unload cray-libsci
         ;;
-    pgi|intel|gnu)
+    intel|gnu)
+        export CHPL_REGEXP=re2
+        export CHPL_GMP=gmp
+
+        log_info "Loading module: ${module_name}"
+        module load ${module_name}
+        ;;
+    pgi)
         log_info "Loading module: ${module_name}"
         module load ${module_name}
         ;;
