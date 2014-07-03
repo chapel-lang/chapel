@@ -337,5 +337,6 @@ gen
 /util/tokencount/tokencount
 /util/tokencount/tokencount.cron
 /util/tokencount/tokencount.dbg
+/util/tokencount/tokencount.output
 /util/tokencount/tokencount.tab.c
 /util/tokencount/tokencount.tab.h
