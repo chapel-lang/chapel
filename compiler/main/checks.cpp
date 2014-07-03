@@ -512,9 +512,20 @@ checkFormalActualBaseTypesMatch()
 {
   forv_Vec(CallExpr, call, gCallExprs)
   {
+    if (! call->parentSymbol)
+      // Call is not in tree
+      continue;
+
+    // Only look at calls in functions that have been resolved.
+    if (! call->parentSymbol->hasFlag(FLAG_RESOLVED))
+      continue;
+
     if (FnSymbol* fn = call->isResolved())
     {
       if (fn->hasFlag(FLAG_EXTERN))
+        continue;
+
+      if (! fn->hasFlag(FLAG_RESOLVED))
         continue;
 
       for_formals_actuals(formal, actual, call)
