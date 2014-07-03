@@ -49,6 +49,14 @@ hwloc-config: FORCE
 	sleep 2
 	cd $(HWLOC_SUBDIR) && find . -name "*.in" | xargs touch
 #
+# For reasons not yet understood, our use of a separate build dir breaks
+# the doxygen doc rebuild step.  Ensuring that $(HWLOC_SUBDIR)/README is
+# at least as new as $(HWLOC_SUBDIR)/doc/doxygen-doc/hwloc.tag prevents
+# make from trying to do that step.
+#
+	touch -m -r $(HWLOC_SUBDIR)/doc/doxygen-doc/hwloc.tag \
+	      $(HWLOC_SUBDIR)/README
+#
 # Then configure
 #
 	mkdir -p $(HWLOC_BUILD_DIR)
