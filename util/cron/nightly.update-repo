@@ -3,6 +3,7 @@
 # Update the ~/chapel repo. This need only be run once on systems using the
 # kerberos chapelu account (the home dir is shared accross all machines).
 
+export CHPL_HOME=~/chapel
 source $(cd $(dirname $0) ; pwd)/common.bash
 
 (
