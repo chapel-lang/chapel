@@ -189,6 +189,24 @@ This take 10s of seconds at most:
 [Error: Timed out compilation for arrays/stonea/outOfBoundsSlice] (2/3/14)
 [Error: Timed out compilation for domains/sungeun/assoc/plus_equals (compopts: 1)] (5/2/14)
 
+Qio 'restrict' keyword error
+============================
+Some tests have come back with this message: "Error making chapel runtime: 2".
+During the weekend of 07/04/14 we saw qio fail to build. The failure seems to be
+associated with the 'restrict' keyword. This appears to be a build configuration
+issue.
+
+Tests displayed as both 'New' and 'Resolved'
+============================================
+Tests might not be properly sorted due to LC_ALL not having been set 
+consistently.
+
+Qthreads doxygen make error
+===========================
+hwloc's doxygen was being rebuilt due to a timestamp issue now that we are 
+not storing in the original tarball (as we did with 1.7). We may decide to 
+go back to this method.
+
 ==============================================
 These things regularly cause noise in testing:
 ==============================================
