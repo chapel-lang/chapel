@@ -432,6 +432,62 @@ static void codegen_aggregate_def(AggregateType* ct) {
 }
 
 
+//
+// Produce compilation-time configuration info into a .h file and
+// #include that .h into the current codegen output file.
+//
+// Only put C data objects into this file, not Chapel ones, as it may
+// also be #include'd into a launcher, and those are C/C++ code.
+//
+static void codegen_header_compilation_config() {
+  GenInfo* info = gGenInfo;
+  FILE* save_cfile = info->cfile;
+
+  fileinfo cfgfile = { NULL, NULL, NULL };
+  const char* cfg_fname = "chpl_compilation_config";
+
+  openCFile(&cfgfile, cfg_fname, "h");
+
+  info->cfile = cfgfile.fptr;
+
+  genComment("Compilation Info");
+
+  genGlobalString("chpl_compileCommand", compileCommand);
+  genGlobalString("chpl_compileVersion", compileVersion);
+  genGlobalString("CHPL_HOME", CHPL_HOME);
+  genGlobalString("CHPL_HOST_PLATFORM", CHPL_HOST_PLATFORM);
+  genGlobalString("CHPL_HOST_COMPILER", CHPL_HOST_COMPILER);
+  genGlobalString("CHPL_TARGET_PLATFORM", CHPL_TARGET_PLATFORM);
+  genGlobalString("CHPL_TARGET_COMPILER", CHPL_TARGET_COMPILER);
+  genGlobalString("CHPL_TARGET_ARCH", CHPL_TARGET_ARCH);
+  genGlobalString("CHPL_LOCALE_MODEL", CHPL_LOCALE_MODEL);
+  genGlobalString("CHPL_COMM", CHPL_COMM);
+  genGlobalString("CHPL_COMM_SUBSTRATE", CHPL_COMM_SUBSTRATE);
+  genGlobalString("CHPL_GASNET_SEGMENT", CHPL_GASNET_SEGMENT);
+  genGlobalString("CHPL_TASKS", CHPL_TASKS);
+  genGlobalString("CHPL_THREADS", CHPL_THREADS);
+  genGlobalString("CHPL_LAUNCHER", CHPL_LAUNCHER);
+  genGlobalString("CHPL_TIMERS", CHPL_TIMERS);
+  genGlobalString("CHPL_MEM", CHPL_MEM);
+  genGlobalString("CHPL_MAKE", CHPL_MAKE);
+  genGlobalString("CHPL_ATOMICS", CHPL_ATOMICS);
+  genGlobalString("CHPL_NETWORK_ATOMICS", CHPL_NETWORK_ATOMICS);
+  genGlobalString("CHPL_GMP", CHPL_GMP);
+  genGlobalString("CHPL_HWLOC", CHPL_HWLOC);
+  genGlobalString("CHPL_REGEXP", CHPL_REGEXP);
+  genGlobalString("CHPL_WIDE_POINTERS", CHPL_WIDE_POINTERS);
+  genGlobalString("CHPL_LLVM", CHPL_LLVM);
+  genGlobalString("CHPL_AUX_FILESYS", CHPL_AUX_FILESYS);
+  genGlobalInt("CHPL_CACHE_REMOTE", fCacheEnabled);
+
+  closeCFile(&cfgfile);
+
+  info->cfile = save_cfile;
+
+  fprintf(save_cfile, "#include \"%s.h\"\n", cfg_fname);
+}
+
+
 // TODO: Split this into a number of smaller routines.<hilde>
 static void codegen_header() {
   GenInfo* info = gGenInfo;
@@ -585,36 +641,9 @@ static void codegen_header() {
     uniquifyNameCounts.clear();
   }
 
-  FILE* hdrfile = info->cfile;
-  genComment("Compilation Info");
+  codegen_header_compilation_config();
 
-  genGlobalString("chpl_compileCommand", compileCommand);
-  genGlobalString("chpl_compileVersion", compileVersion);
-  genGlobalString("CHPL_HOME", CHPL_HOME);
-  genGlobalString("CHPL_HOST_PLATFORM", CHPL_HOST_PLATFORM);
-  genGlobalString("CHPL_HOST_COMPILER", CHPL_HOST_COMPILER);
-  genGlobalString("CHPL_TARGET_PLATFORM", CHPL_TARGET_PLATFORM);
-  genGlobalString("CHPL_TARGET_COMPILER", CHPL_TARGET_COMPILER);
-  genGlobalString("CHPL_TARGET_ARCH", CHPL_TARGET_ARCH);
-  genGlobalString("CHPL_LOCALE_MODEL", CHPL_LOCALE_MODEL);
-  genGlobalString("CHPL_COMM", CHPL_COMM);
-  genGlobalString("CHPL_COMM_SUBSTRATE", CHPL_COMM_SUBSTRATE);
-  genGlobalString("CHPL_GASNET_SEGMENT", CHPL_GASNET_SEGMENT);
-  genGlobalString("CHPL_TASKS", CHPL_TASKS);
-  genGlobalString("CHPL_THREADS", CHPL_THREADS);
-  genGlobalString("CHPL_LAUNCHER", CHPL_LAUNCHER);
-  genGlobalString("CHPL_TIMERS", CHPL_TIMERS);
-  genGlobalString("CHPL_MEM", CHPL_MEM);
-  genGlobalString("CHPL_MAKE", CHPL_MAKE);
-  genGlobalString("CHPL_ATOMICS", CHPL_ATOMICS);
-  genGlobalString("CHPL_NETWORK_ATOMICS", CHPL_NETWORK_ATOMICS);
-  genGlobalString("CHPL_GMP", CHPL_GMP);
-  genGlobalString("CHPL_HWLOC", CHPL_HWLOC);
-  genGlobalString("CHPL_REGEXP", CHPL_REGEXP);
-  genGlobalString("CHPL_WIDE_POINTERS", CHPL_WIDE_POINTERS);
-  genGlobalString("CHPL_LLVM", CHPL_LLVM);
-  genGlobalString("CHPL_AUX_FILESYS", CHPL_AUX_FILESYS);
-  genGlobalInt("CHPL_CACHE_REMOTE", fCacheEnabled);
+  FILE* hdrfile = info->cfile;
 
   if( hdrfile ) {
     // This is done in runClang for LLVM version.
