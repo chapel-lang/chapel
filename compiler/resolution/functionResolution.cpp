@@ -349,17 +349,18 @@ static void insertDynamicDispatchCalls();
 static Type* buildRuntimeTypeInfo(FnSymbol* fn);
 static void insertReturnTemps();
 static void initializeClass(Expr* stmt, Symbol* sym);
+static void handleRuntimeTypes();
 static void pruneResolvedTree();
 static void removeUnusedFunctions();
 static void removeUnusedTypes();
 static void buildRuntimeTypeInitFns(); 
+static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType);
 static void removeUnusedGlobals();
-static void removeRandomCalls();
+static void removeParamArgs();
+static void removeRandomPrimitives();
 static void removeActualNames();
 static void removeTypeBlocks();
 static void removeFormalTypeAndInitBlocks();
-static void removeMethodTokenFormals();
-static void removeInstantiatedParams();
 static void replaceTypeArgsWithFormalTypeTemps();
 static void replaceValuesWithRuntimeTypes();
 static void removeWhereClauses();
@@ -6287,9 +6288,11 @@ resolve() {
   resolveAutoCopies();
   resolveRecordInitializers();
   resolveOther();
-  insertDynamicDispatchCalls();
 
-  insertReturnTemps(); // must be done before pruneResolvedTree is called.
+  insertDynamicDispatchCalls();
+  insertReturnTemps();
+
+  handleRuntimeTypes();
 
   pruneResolvedTree();
 
@@ -6631,8 +6634,9 @@ static void insertDynamicDispatchCalls() {
     
     if ((fns->n + 1 > fConditionalDynamicDispatchLimit) && (!referencesOuterVars)) {
       //
-      // change call of root method into virtual method call; replace
-      // method token with function
+      // change call of root method into virtual method call; 
+      // Insert function SymExpr and virtual method temp at head of argument
+      // list.
       //
       // N.B.: The following variable must have the same size as the type of
       // chpl__class_id / chpl_cid_* -- otherwise communication will cause
@@ -6642,10 +6646,10 @@ static void insertDynamicDispatchCalls() {
       VarSymbol* cid = newTemp("_virtual_method_tmp_", dtInt[INT_SIZE_32]);
       call->getStmtExpr()->insertBefore(new DefExpr(cid));
       call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, cid, new CallExpr(PRIM_GETCID, call->get(2)->copy())));
+      call->get(1)->insertBefore(new SymExpr(cid));
       // "remove" here means VMT calls are not really "resolved".
       // That is, calls to isResolved() return NULL.
-      call->get(1)->replace(call->baseExpr->remove());
-      call->get(2)->insertBefore(new SymExpr(cid));
+      call->get(1)->insertBefore(call->baseExpr->remove());
       call->primitive = primitives[PRIM_VIRTUAL_METHOD_CALL];
       // This clause leads to necessary reference temporaries not being inserted, 
       // while the clause below works correctly. <hilde>
@@ -6733,12 +6737,14 @@ buildRuntimeTypeInfo(FnSymbol* fn) {
   AggregateType* ct = new AggregateType(AGGREGATE_RECORD);
   TypeSymbol* ts = new TypeSymbol(astr("_RuntimeTypeInfo"), ct);
   for_formals(formal, fn) {
-    if (!formal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-      VarSymbol* field = new VarSymbol(formal->name, formal->type);
-      ct->fields.insertAtTail(new DefExpr(field));
-      if (formal->hasFlag(FLAG_TYPE_VARIABLE))
-        field->addFlag(FLAG_TYPE_VARIABLE);
-    }
+    if (formal->hasFlag(FLAG_INSTANTIATED_PARAM))
+      continue;
+
+    VarSymbol* field = new VarSymbol(formal->name, formal->type);
+    ct->fields.insertAtTail(new DefExpr(field));
+
+    if (formal->hasFlag(FLAG_TYPE_VARIABLE))
+      field->addFlag(FLAG_TYPE_VARIABLE);
   }
   theProgram->block->insertAtTail(new DefExpr(ts));
   ct->symbol->addFlag(FLAG_RUNTIME_TYPE_VALUE);
@@ -6812,12 +6818,8 @@ initializeClass(Expr* stmt, Symbol* sym) {
 }
 
 
-//
-// pruneResolvedTree -- prunes and cleans the AST after all of the
-// function calls and types have been resolved
-//
-static void
-pruneResolvedTree() {
+static void handleRuntimeTypes()
+{
   // insertRuntimeTypeTemps is also called earlier in resolve().  That call
   // can insert variables that need autoCopies and inserting autoCopies can
   // insert things that need runtime type temps.  These need to be fixed up
@@ -6826,28 +6828,32 @@ pruneResolvedTree() {
   // actual/formal type mismatch (with --verify) for the code:
   // record R { var A: [1..1][1..1] real; }
   insertRuntimeTypeTemps();
+  buildRuntimeTypeInitFns();
+  replaceValuesWithRuntimeTypes();
+  replaceReturnedValuesWithRuntimeTypes();
+  insertRuntimeInitTemps();
+}
+
+
+//
+// pruneResolvedTree -- prunes and cleans the AST after all of the
+// function calls and types have been resolved
+//
+static void
+pruneResolvedTree() {
 
   removeUnusedFunctions();
-  removeUnusedTypes();
+  removeRandomPrimitives();
+  replaceTypeArgsWithFormalTypeTemps();
+  removeParamArgs();
 
   removeUnusedGlobals();
-  removeRandomCalls();
+  removeUnusedTypes();
   removeActualNames();
-  removeTypeBlocks();
-
-  buildRuntimeTypeInitFns();
-
   removeFormalTypeAndInitBlocks();
-  removeMethodTokenFormals();
-  removeInstantiatedParams();
-  replaceTypeArgsWithFormalTypeTemps();
-
-  replaceValuesWithRuntimeTypes();
-  removeWhereClauses();
-  replaceReturnedValuesWithRuntimeTypes();
-
-  insertRuntimeInitTemps();
+  removeTypeBlocks();
   removeInitFields();
+  removeWhereClauses();
   removeMootFields();
   expandInitFieldPrims();
 }
@@ -6859,8 +6865,6 @@ static void removeUnusedFunctions() {
     if (fn->defPoint && fn->defPoint->parentSymbol) {
       if (! fn->isResolved() || fn->retTag == RET_PARAM)
         fn->defPoint->remove();
-      // Why don't we remove type functions, too?
-      // (Here, we apparently remove only param functions.)
     }
   }
 }
@@ -6869,6 +6873,10 @@ static bool
 isUnusedClass(AggregateType *ct) {
   // Special case for global types.
   if (ct->symbol->hasFlag(FLAG_GLOBAL_TYPE_SYMBOL))
+    return false;
+
+  // Runtime types are assumed to be always used.
+  if (ct->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))
     return false;
 
   // FALSE if initializers are used
@@ -6891,26 +6899,40 @@ isUnusedClass(AggregateType *ct) {
   return allChildrenUnused;
 }
 
+// Remove unused types
 static void removeUnusedTypes() {
-  // Remove unused types
 
+  // Remove unused aggregate types.
   forv_Vec(TypeSymbol, type, gTypeSymbols) {
     if (type->defPoint && type->defPoint->parentSymbol)
-      if (!type->hasFlag(FLAG_REF))
-        if (AggregateType* ct = toAggregateType(type->type))
-          if (isUnusedClass(ct)) {
-            ct->symbol->defPoint->remove();
-          }
+    {
+      // Skip ref and runtime value types:
+      //  ref types are handled below;
+      //  runtime value types are assumed to be always used.
+      if (type->hasFlag(FLAG_REF))
+        continue;
+      if (type->hasFlag(FLAG_RUNTIME_TYPE_VALUE))
+        continue;
+
+      if (AggregateType* ct = toAggregateType(type->type))
+        if (isUnusedClass(ct))
+          ct->symbol->defPoint->remove();
+    }
   }
 
+  // Remove unused ref types.
   forv_Vec(TypeSymbol, type, gTypeSymbols) {
     if (type->defPoint && type->defPoint->parentSymbol) {
       if (type->hasFlag(FLAG_REF)) {
+        // Get the value type of the ref type.
         if (AggregateType* ct = toAggregateType(type->getValType())) {
           if (isUnusedClass(ct)) {
+            // If the value type is unused, its ref type can also be removed.
             type->defPoint->remove();
           }
         }
+        // If the default type constructor for this ref type is in the tree, it
+        // can be removed.
         if (type->type->defaultTypeConstructor->defPoint->parentSymbol)
           type->type->defaultTypeConstructor->defPoint->remove();
       }
@@ -6933,8 +6955,15 @@ static void removeUnusedGlobals()
 static void removeRandomPrimitive(CallExpr* call)
 {
   if (! call->primitive)
-    // TODO: This is weird.  Turn it into an assert that this never
-    // happens and hunt down the guilty code.
+    // TODO: This is weird.  
+    // Calls which trigger this case appear as the init clause of a type
+    // variable.
+    // The parent module or function may be resolved, but apparently the type
+    // variable is resolved only if it is used.
+    // Generally speaking, we resolve a declaration only if it is used.
+    // But right now, we only apply this test to functions.  
+    // The test should be extended to variable declarations as well.  That is,
+    // variables need only be resolved if they are actually used.
     return;
 
   // A primitive.
@@ -6973,12 +7002,17 @@ static void removeRandomPrimitive(CallExpr* call)
       // Remove member accesses of types
       // Replace string literals with field symbols in member primitives
       Type* baseType = call->get(1)->typeInfo();
+      if (baseType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))
+        break;
+
       if (!call->parentSymbol->hasFlag(FLAG_REF) &&
           baseType->symbol->hasFlag(FLAG_REF))
         baseType = baseType->getValType();
+
       const char* memberName = get_string(call->get(2));
+
       Symbol* sym = baseType->getField(memberName);
-      if ((sym->hasFlag(FLAG_TYPE_VARIABLE) && !sym->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) ||
+      if (sym->hasFlag(FLAG_TYPE_VARIABLE) ||
           !strcmp(sym->name, "_promotionType") ||
           sym->isParameter())
         call->getStmtExpr()->remove();
@@ -7000,60 +7034,59 @@ static void removeRandomPrimitive(CallExpr* call)
   }
 }
 
-static void removeRandomCalls()
+
+// Remove the method token, parameter and type arguments from
+// function signatures and corresponding calls.
+static void removeParamArgs()
+{
+  compute_call_sites();
+
+  forv_Vec(FnSymbol, fn, gFnSymbols)
+  {
+    if (! fn->isResolved())
+      // Don't bother with unresolved functions.
+      // They will be removed from the tree.
+      continue;
+
+    for_formals(formal, fn)
+    {
+      if (formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
+          formal->type == dtMethodToken)
+      {
+        // Remove the argument from the call site.
+        forv_Vec(CallExpr, call, *fn->calledBy)
+        {
+          // Performance note: AList::get(int) also performs a linear search.
+          for_formals_actuals(cf, ca, call)
+          {
+            if (cf == formal)
+            {
+              ca->remove();
+              break;
+            }
+          }
+        }
+        formal->defPoint->remove();
+      }
+    }
+  }
+}
+
+
+static void removeRandomPrimitives()
 {
   forv_Vec(CallExpr, call, gCallExprs)
   {
+    // Don't bother with calls that are not in the tree.
     if (! call->parentSymbol)
       continue;
 
-    if (FnSymbol* fn = call->isResolved())
-    {
-      // Remove method and leader token actuals
-      for (int i = fn->numFormals(); i >= 1; i--)
-      {
-        ArgSymbol* formal = fn->getFormal(i);
-        if (formal->type == dtMethodToken ||
-            formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
-            (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
-             !formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)))
-        {
-          if (!fn->hasFlag(FLAG_EXTERN))
-            call->get(i)->remove();
-          else
-          {
-            // extern function with a type parameter
-            INT_ASSERT(toSymExpr(call->get(1)));
-            TypeSymbol *ts = toSymExpr(call->get(1))->var->type->symbol;
-            // Remove the tmp and just pass the type through directly
-            SET_LINENO(call->get(i));
-            call->get(i)->replace(new SymExpr(ts));
-          }
-        }
-      }
-    }
-    else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))
-    {
-      // This should be replaced by a call to for_formals_actuals, which
-      // matches up the argument in a virtual method call with the
-      // corresponding formals.
-      FnSymbol* vfn = toFnSymbol(toSymExpr(call->get(1))->var);
-      for (int i = vfn->numFormals(); i >= 2; --i)
-      {
-        ArgSymbol* formal = vfn->getFormal(i);
-        // The first arg in a VM call is the function symbol and the second is
-        // the function index.  The "real" arguments come after that.
-        // The method token does not appear in the call but it does appear in
-        // the function signature.  That is why there is a net offset of 1.
-        if (formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
-            (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
-             ! formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)))
-          // Dynamic dispatch to extern functions is not supported.
-          call->get(i+1)->remove();
-      }
-    }
-    else
-      removeRandomPrimitive(call);
+    // Ignore calls to actual functions.
+    if (call->isResolved())
+      continue;
+
+    // Only primitives remain.
+    removeRandomPrimitive(call);
   }
 }
 
@@ -7107,7 +7140,7 @@ static void removeTypeBlocks()
 //
 // In practice, we currently use these to create
 // runtime types for domains and arrays (via procedures named
-// 'chpl__buildDOmainRuntimeType' and 'chpl__buildArrayRuntimeType',
+// 'chpl__buildDomainRuntimeType' and 'chpl__buildArrayRuntimeType',
 // respectively).
 //
 // For each such flagged function:
@@ -7130,53 +7163,91 @@ static void removeTypeBlocks()
 static void buildRuntimeTypeInitFns() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->defPoint && fn->defPoint->parentSymbol) {
+      // Look only at functions flagged as "runtime type init fn".
       if (fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN)) {
-        // Look only at functions flagged as "runtime type init fn".
+
+        // Look only at resolved instances.
+        if (! fn->isResolved())
+          continue;
+
         INT_ASSERT(fn->retType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE));
         SET_LINENO(fn);
+
         // Build a new runtime type for this function
         Type* runtimeType = buildRuntimeTypeInfo(fn);
         runtimeTypeMap.put(fn->retType, runtimeType);
 
-        //
-        // Build chpl__convertRuntimeTypeToValue()
-        //
-        // Clone the original function
-        FnSymbol* runtimeTypeToValueFn = fn->copy();
-        runtimeTypeToValueFn->removeFlag(FLAG_RESOLVED);
-        runtimeTypeToValueFn->name = astr("chpl__convertRuntimeTypeToValue");
-        runtimeTypeToValueFn->cname = runtimeTypeToValueFn->name;
-        // Clean up flags
-        runtimeTypeToValueFn->removeFlag(FLAG_RUNTIME_TYPE_INIT_FN);
-        // Make this a value function
-        runtimeTypeToValueFn->getReturnSymbol()->removeFlag(FLAG_TYPE_VARIABLE);
-        runtimeTypeToValueFn->retTag = RET_VALUE;
-        fn->defPoint->insertBefore(new DefExpr(runtimeTypeToValueFn));
-        runtimeTypeToValueMap.put(runtimeType, runtimeTypeToValueFn);
-
-        // Build a function to return the runtime type by modifying
-        // the original function.
-        //
-        // Change the return type
-        fn->retType = runtimeType;
-        fn->getReturnSymbol()->type = runtimeType;
-        // Build the new body
-        BlockStmt* block = new BlockStmt();
-        VarSymbol* var = newTemp("_return_tmp_", fn->retType);
-        block->insertAtTail(new DefExpr(var));
-        // Bundle all non-static arguments into the runtime type record
-        for_formals(formal, fn) {
-          if (!formal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-            Symbol* field = runtimeType->getField(formal->name);
-            if (!formal->hasFlag(FLAG_TYPE_VARIABLE) || field->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))
-              block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, var, field, formal));
-          }
-        }
-        block->insertAtTail(new CallExpr(PRIM_RETURN, var));
-        fn->body->replace(block);
+        // Build chpl__convertRuntimeTypeToValue() instance.
+        buildRuntimeTypeInitFn(fn, runtimeType);
       }
     }
   }
+}
+
+// Build a function to return the runtime type by modifying
+// the original function.
+static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType)
+{
+  // Clone the original function and call the clone chpl__convertRuntimeTypeToValue.
+  FnSymbol* runtimeTypeToValueFn = fn->copy();
+  INT_ASSERT(runtimeTypeToValueFn->hasFlag(FLAG_RESOLVED));
+  runtimeTypeToValueFn->name = astr("chpl__convertRuntimeTypeToValue");
+  runtimeTypeToValueFn->cname = runtimeTypeToValueFn->name;
+
+  // Remove this flag from the clone.
+  runtimeTypeToValueFn->removeFlag(FLAG_RUNTIME_TYPE_INIT_FN);
+
+  // Make the clone a value function.
+  runtimeTypeToValueFn->getReturnSymbol()->removeFlag(FLAG_TYPE_VARIABLE);
+  runtimeTypeToValueFn->retTag = RET_VALUE;
+  fn->defPoint->insertBefore(new DefExpr(runtimeTypeToValueFn));
+
+  // Remove static arguments from the RTTV function.
+  for_formals(formal, runtimeTypeToValueFn)
+  {
+    if (formal->hasFlag(FLAG_INSTANTIATED_PARAM))
+      formal->defPoint->remove();
+
+    if (formal->hasFlag(FLAG_TYPE_VARIABLE))
+    {
+      Symbol* field = runtimeType->getField(formal->name);
+      if (! field->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))
+        formal->defPoint->remove();
+    }
+  }
+
+  // Insert the clone (convertRuntimeTypeToValue) into the runtimeTypeToValueMap.
+  runtimeTypeToValueMap.put(runtimeType, runtimeTypeToValueFn);
+
+  // Change the return type of the original function.
+  fn->retType = runtimeType;
+  fn->getReturnSymbol()->type = runtimeType;
+
+  // Build a new body for the original function.
+  BlockStmt* block = new BlockStmt();
+  VarSymbol* var = newTemp("_return_tmp_", fn->retType);
+  block->insertAtTail(new DefExpr(var));
+
+  // Bundle all non-static arguments into the runtime type record.
+  // Remove static arguments from this specialized buildRuntimeType function.
+  for_formals(formal, fn)
+  {
+    if (formal->hasFlag(FLAG_INSTANTIATED_PARAM))
+      continue;
+
+    Symbol* field = runtimeType->getField(formal->name);
+
+    if (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
+        ! field->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))
+      continue;
+
+    block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, var, field, formal));
+  }
+
+  block->insertAtTail(new CallExpr(PRIM_RETURN, var));
+
+  // Replace the body of the orignal chpl__buildRuntime...Type() function.
+  fn->body->replace(block);
 }
 
 static void removeFormalTypeAndInitBlocks()
@@ -7195,56 +7266,52 @@ static void removeFormalTypeAndInitBlocks()
   }
 }
 
-static void removeMethodTokenFormals()
-{
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->defPoint && fn->defPoint->parentSymbol) {
-      for_formals(formal, fn) {
-        // Remove method token formals
-        if (formal->type == dtMethodToken)
-          formal->defPoint->remove();
-      }
-    }
-  }
-}
-
-static void removeInstantiatedParams()
-{
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->defPoint && fn->defPoint->parentSymbol) {
-      for_formals(formal, fn) {
-        if (formal->hasFlag(FLAG_INSTANTIATED_PARAM))
-          formal->defPoint->remove();
-      }
-    }
-  }
-}
-
 static void replaceTypeArgsWithFormalTypeTemps()
 {
+  compute_call_sites();
+
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->defPoint && fn->defPoint->parentSymbol) {
-      Vec<SymExpr*> symExprs;
-      for_formals(formal, fn) {
-        if (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
-            (!formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
-             !fn->hasFlag(FLAG_EXTERN))) {
-          SET_LINENO(formal);
-          formal->defPoint->remove();
-          VarSymbol* tmp = newTemp("_formal_type_tmp_", formal->type);
-          fn->insertAtHead(new DefExpr(tmp));
-          if (symExprs.n == 0)
-            collectSymExprs(fn->body, symExprs);
-          forv_Vec(SymExpr, se, symExprs) {
-            if (se->var == formal) {
-              if (CallExpr* call = toCallExpr(se->parentExpr))
-                if (call->isPrimitive(PRIM_DEREF))
-                  se->getStmtExpr()->remove();
-              se->var = tmp;
-            }
+    if (! fn->isResolved())
+      // Don't bother with unresolved functions.
+      // They will be removed from the tree.
+      continue;
+
+    // Skip this function if it is not in the tree.
+    if (! fn->defPoint)
+      continue;
+    if (! fn->defPoint->parentSymbol)
+      continue;
+
+    // We do not remove type args from extern functions
+    // TODO: Find out if we really support type args in extern functions.
+    if (fn->hasFlag(FLAG_EXTERN))
+      continue;
+
+    for_formals(formal, fn)
+    {
+      // We are only interested in type formals
+      if (! formal->hasFlag(FLAG_TYPE_VARIABLE))
+        continue;
+
+      // Replace the formal with a _formal_type_tmp_.
+      SET_LINENO(formal);
+      VarSymbol* tmp = newTemp("_formal_type_tmp_", formal->type);
+      fn->insertAtHead(new DefExpr(tmp));
+      subSymbol(fn, formal, tmp);
+
+      // Remove the corresponding actual from all call sites.
+      forv_Vec(CallExpr, call, *fn->calledBy)
+      {
+        for_formals_actuals(cf, ca, call)
+        {
+          if (cf == formal)
+          {
+            ca->remove();
+            break;
           }
         }
       }
+      formal->defPoint->remove();
     }
   }
 }
@@ -7305,11 +7372,27 @@ static void replaceInitPrims(Vec<BaseAST*>& asts)
 {
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
-      if (call->parentSymbol && call->isPrimitive(PRIM_INIT)) {
+      // We are only interested in INIT primitives.
+      if (call->isPrimitive(PRIM_INIT)) {
+        FnSymbol* parent = toFnSymbol(call->parentSymbol);
+
+        // Call must be in the tree and lie in a resolved function.
+        if (! parent || ! parent->isResolved())
+          continue;
+
         SymExpr* se = toSymExpr(call->get(1));
         Type* rt = se->var->type;
 
         if (rt->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
+          // ('init' foo), where typeof(foo) has flag "runtime type value"
+          //
+          // ==>
+          // 
+          // (var _runtime_type_tmp_1)
+          // ('move' _runtime_type_tmp_1 ('.v' foo "field1"))
+          // (var _runtime_type_tmp_2)
+          // ('move' _runtime_type_tmp_2 ('.v' foo "field2"))
+          // (chpl__convertRuntimeTypeToValue _runtime_type_tmp_1 _rtt_2 ... )
           SET_LINENO(call);
           FnSymbol* runtimeTypeToValueFn = runtimeTypeToValueMap.get(rt);
           INT_ASSERT(runtimeTypeToValueFn);
