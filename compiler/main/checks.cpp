@@ -440,6 +440,8 @@ checkResolveRemovedPrims(void) {
         case PRIM_IS_SUBTYPE:
         case PRIM_TUPLE_EXPAND:
         case PRIM_QUERY:
+        case PRIM_QUERY_PARAM_FIELD:
+        case PRIM_QUERY_TYPE_FIELD:
         case PRIM_ERROR:
           if (call->parentSymbol)
             INT_FATAL("Primitive should no longer be in AST");

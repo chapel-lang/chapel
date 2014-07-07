@@ -5132,6 +5132,30 @@ postFold(Expr* expr) {
           expr->replace(result);
         }
       }
+    } else if (call->isPrimitive(PRIM_QUERY_TYPE_FIELD) ||
+               call->isPrimitive(PRIM_QUERY_PARAM_FIELD)) {
+      SymExpr* classWrap = toSymExpr(call->get(1));
+      // Really should be a symExpr
+      INT_ASSERT(classWrap);
+      AggregateType* ct = toAggregateType(classWrap->var->type);
+      if (!ct) {
+        USR_FATAL(call, "Attempted to obtain field of a type that was not a record or class");
+      }
+      const char* memberName = get_string(call->get(2));
+
+      // Finds the field matching the specified name.
+      Vec<Symbol *> keys;
+      ct->substitutions.get_keys(keys);
+      forv_Vec(Symbol, key, keys) {
+        if (!strcmp(memberName, key->name)) {
+          // If there is a substitution for it, replace this call with that
+          // substitution
+          if (Symbol* value = ct->substitutions.get(key)) {
+              result = new SymExpr(value);
+              expr->replace(result);
+          }
+        }
+      }
     }
     // param initialization should not involve PRIM_ASSIGN or "=".
     else if (call->isPrimitive(PRIM_MOVE)) {

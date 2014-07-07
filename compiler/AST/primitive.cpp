@@ -418,6 +418,8 @@ initPrimitive() {
   prim_def(PRIM_GET_REAL, "complex_get_real", returnInfoComplexField);
   prim_def(PRIM_GET_IMAG, "complex_get_imag", returnInfoComplexField);
   prim_def(PRIM_QUERY, "query", returnInfoUnknown);
+  prim_def(PRIM_QUERY_PARAM_FIELD, "query param field", returnInfoGetMemberRef);
+  prim_def(PRIM_QUERY_TYPE_FIELD, "query type field", returnInfoGetMember);
 
   prim_def(PRIM_ADDR_OF, "addr of", returnInfoRef);
   prim_def(PRIM_DEREF,   "deref",   returnInfoVal, false, true);

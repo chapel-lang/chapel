@@ -223,6 +223,8 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_TUPLE_EXPAND:
   case PRIM_TUPLE_AND_EXPAND:
   case PRIM_QUERY:
+  case PRIM_QUERY_PARAM_FIELD:
+  case PRIM_QUERY_TYPE_FIELD:
   case PRIM_ERROR:
   case PRIM_WARNING:
 

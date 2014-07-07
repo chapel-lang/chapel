@@ -68,6 +68,8 @@ enum PrimitiveTag {
   PRIM_GET_REAL,            // get complex real component
   PRIM_GET_IMAG,            // get complex imag component
   PRIM_QUERY,               // query expression primitive
+  PRIM_QUERY_PARAM_FIELD,
+  PRIM_QUERY_TYPE_FIELD,
 
   PRIM_ADDR_OF,             // set a reference to a value
   PRIM_DEREF,               // dereference a reference
