@@ -7,7 +7,6 @@ proc channel.bulkget(len:int(64) = max(int(32)), ref str_out:string):bool {
   err = qio_channel_read_string(false, this._style().byteorder, len,
       this._channel_internal, temp, lenRead, -1);
   str_out = toString(temp);
-  __primitive("string_normalize", str_out, 1+lenRead);
   return err != EEOF;
 }
 

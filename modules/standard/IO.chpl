@@ -618,11 +618,8 @@ proc file.getPath(out error:syserr) : string {
     var tmp:c_string; // FIX ME: leak c_string
     var tmp2:c_string;
     error = qio_file_path(_file_internal, tmp);
-    // Wide strings must be fixed up after extern calls (see Note 1).
-    __primitive("string_normalize", tmp);
     if !error {
       error = qio_shortest_path(_file_internal, tmp2, tmp);
-      __primitive("string_normalize", tmp2);    // See Note 1.
     }
     if !error {
     // FIX ME: leak c_string
@@ -879,7 +876,6 @@ proc channel._ch_ioerror(error:syserr, msg:string) {
     var tmp_offset:int(64);
     var err:syserr = ENOERR;
     err = qio_channel_path_offset(locking, _channel_internal, tmp_path, tmp_offset);
-    __primitive("string_normalize", tmp_path);  // See Note 1.
     if !err {
       // FIX ME: leak c_string
       path = toString(tmp_path);
@@ -896,7 +892,6 @@ proc channel._ch_ioerror(errstr:string, msg:string) {
     var tmp_offset:int(64);
     var err:syserr = ENOERR;
     err = qio_channel_path_offset(locking, _channel_internal, tmp_path, tmp_offset);
-    __primitive("string_normalize", tmp_path);  // See Note 1.
     if !err {
       // FIX ME: leak c_string
       path = toString(tmp_path);
@@ -1137,7 +1132,6 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
     if t == c_string then x = tx;
     // FIX ME: leak c_string
     else x = toString(tx);
-    __primitive("string_normalize", x, 1+len);  // See Note 1.
     return ret;
   } else if _isEnumeratedType(t) {
     var err:syserr = ENOERR;
@@ -1249,7 +1243,6 @@ inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param byt
     if t == c_string then x = tx;
     // FIX ME: leak c_string
     else x = toString(tx);
-    __primitive("string_normalize", x, len+1);  // See Note 1.
     return ret;
   } else if _isEnumeratedType(t) {
     var i:enum_mintype(t);
@@ -1513,7 +1506,6 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1):bool {
           this._channel_internal, tx, lenread, -1);
 
       ret = toString(tx);
-      __primitive("string_normalize", ret, 1+lenread);
       str_out += ret;
 
       if (err == EEOF) then break; // done reading 
@@ -1528,7 +1520,6 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1):bool {
           this._channel_internal, tx, lenread, -1);
 
       ret = toString(tx);
-      __primitive("string_normalize", ret, 1+lenread);
       str_out += ret;
     }
   }
@@ -3385,7 +3376,6 @@ proc channel._extractMatch(m:reMatch, ref arg:string, ref error:syserr) {
     error = qio_channel_read_string(false, iokind.native, stringStyleExactLen(len), _channel_internal, ts, gotlen, len:ssize_t);
     // FIX ME: leak c_string
     s = toString(ts);
-    __primitive("string_normalize", s, gotlen+1);   // See Note 1.
   }
  
   if ! error {
@@ -3733,42 +3723,3 @@ iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
   if error then this._ch_ioerror(error, "in channel.matches");
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// NOTES
-//
-// Note 1.
-//  Chapel strings are narrowed through extern calls, such that in the 
-//  generated C code, the string argument in Chapel code becomes a reference 
-//  to the character data contained therein.  For example:
-//
-//    extern proc qio_file_path(f:qio_file_ptr_t, ref path:c_string):err_t;
-//
-//  matches
-//
-//    err_t qio_file_path(qio_file_t* f, const char** path);
-//
-//  .
-//
-//  This works fine with Chapel's current idea of a narrow string being equivalent 
-//  to an ASCIIZ (NUL-terminated ASCII character) string.  But it fails when used
-//  with wide strings.  The extern routine can return the character data in the
-//  pointer provided by the caller, but it has no knowledge of the accompanying 
-//  "size" field that appears in wide pointers.
-//
-//  The expedient solution to this problem was to add a "string_normalize" primitive
-//  and call this immediately after calls to extern routines that might update
-//  or replace the character data in a wide string.  The primitive updates the 
-//  size field of a wide string to be consistent with the contained character 
-//  data.  When applied to a narrow string, it does nothing.
-//
-//  There are two forms of the primitive, one which takes a length argument and one
-//  which does not.  If the length argument is supplied, the primitive simply 
-//  copies this into the wide string's size field.  If the length argument is not
-//  supplied, the primitive computes the size field using "1 + strlen(data)".
-//  If a length is available it should be used, since strlen entails a character
-//  by character search of the underlying string data.
-//
-//  A longer-term solution involves carrying a length field along with all 
-//  character strings and modifying low-level string-manipulation utilities to
-//  update this field appropriately.
-//

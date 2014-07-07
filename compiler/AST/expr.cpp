@@ -1058,16 +1058,6 @@ static GenRet codegenRlocale(GenRet wide)
   return ret;
 }
 
-// Applies to wide strings only.
-// Returns a reference to the size field in a wide string struct.
-static GenRet codegenRsize(GenRet wideString)
-{
-  Type* type = wideString.chplType;
-  INT_ASSERT(isWideString(type));
-  GenRet ret = codegenWideThingField(wideString, WIDE_GEP_SIZE);
-  return ret;
-}
-
 static GenRet codegenRnode(GenRet wide){
   GenRet ret;
   Type* type = NODE_ID_TYPE;
@@ -5047,32 +5037,6 @@ GenRet CallExpr::codegen() {
         ret = codegenCallExpr("chpl_wide_string_copy", cpyFrom, get(2), get(3));
       } else
         ret = codegenBasicPrimitiveExpr(this);
-      break;
-    }
-    case PRIM_STRING_NORMALIZE:
-     // string_normalize(ptr, len);
-     // string_normalize(ptr);
-    {
-      // If this is a wide string, overwrite the size field with the second arg
-      // (if present) or the internally-computed length.  Otherwise, do nothing.
-      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        // This applies only to wide strings.
-        GenRet ptr = get(1);
-        GenRet size = codegenRsize(ptr);    // Get a pointer to the size field.
-        GenRet len;
-
-        // Use the len argument if present, otherwise use string_length().
-        if (numActuals() > 1)
-          len = codegenValue(get(2));
-        else
-        {
-          GenRet strlen = codegenCallExpr("string_length", codegenRaddr(get(1)));
-          len = codegenAdd(codegenOne(), strlen);
-        }
-
-        // Set the value of the size field.
-        codegenAssign(size, len);
-      }
       break;
     }
     case PRIM_CAST_TO_VOID_STAR:
