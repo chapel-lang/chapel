@@ -103,6 +103,13 @@ export CHPL_NIGHTLY_LOGDIR=/data/sea/chapel/Nightly/whitebox/${platform}
 export CHPL_NIGHTLY_STATDIR=/data/sea/chapel/Nightly/Stats
 export CHPL_NIGHTLY_CRON_LOGDIR="$CHPL_NIGHTLY_LOGDIR"
 
+# Ensure that one of the CPU modules is loaded.
+my_arch=$($CHPL_HOME/util/chplenv/chpl_arch.py 2> /dev/null)
+if [ "${my_arch}" = "none" ] ; then
+    log_info "Loading craype-shanghai module to stifle chpl_arch.py warnings."
+    module load craype-shanghai
+fi
+
 log_info "Current loaded modules:"
 module list
 
