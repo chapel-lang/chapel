@@ -1,0 +1,11 @@
+globerator
+globerator.chpl
+globerator.compopts
+globerator.exec.out.tmp
+globerator.good
+globhelp.h
+one/a.c
+one/b.c
+one/two/f.c
+one/two/y.c
+recursive-par-glob.chpl
