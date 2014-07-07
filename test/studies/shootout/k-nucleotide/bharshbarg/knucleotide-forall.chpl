@@ -3,18 +3,6 @@ use AdvancedIters;
 
 extern proc memcpy(a:[], b, len);
 
-proc channel.bulkget(len:int(64) = max(int(32)), ref str_out:string):bool {
-  var ret:string;
-  var err:syserr = ENOERR;
-  var lenRead:int(64);
-  var temp : c_string;
-
-  err = qio_channel_read_string(false, this._style().byteorder, len,
-      this._channel_internal, temp, lenRead, -1);
-  str_out = toString(temp);
-  return err != EEOF;
-}
-
 var datalen = 1;
 
 var tonum : [1..128] int;
@@ -97,20 +85,10 @@ proc write_count(ref data : [] uint(8), str : string) {
 }
 
 proc main() {
-  var st = stdin._style();
-  st.string_format = QIO_STRING_FORMAT_TOEND;
-  st.string_end = 0x3E; // '>'
-
-  var chunk : string;
-  var res:syserr;
-  stdin.read(chunk, st, res); // >
-  stdin.read(chunk, st, res); // ONE ... >
-  stdin.read(chunk, st, res); // TWO ... >
-  stdin.readline(chunk);      // THREE ... \n
-
-  // read in everything
   var info : string;
-  stdin.bulkget(max(int(32)), info);
+  var temp : string;
+  while stdin.readline(temp) && temp.substring(1..3) != ">TH" {}
+  while stdin.readline(temp) do info += temp;
 
   var data = info.toBytes();
 
