@@ -71,7 +71,8 @@ proc main() {
     valueHighSoFar, valueProvisional, consumption, capitalChoice: real;
 
   while (maxDifference > tolerance) {
-    // these two foralls: mValueFunction dot transpose(mTransition)
+    // these two foralls:
+    //   expectedValueFunction = mValueFunction dot transpose(mTransition)
     forall nProductivity in 1..nGridProductivity {
       forall nCapital in 1..nGridCapital {
         expectedValueFunction[nCapital, nProductivity] = 0.0;
