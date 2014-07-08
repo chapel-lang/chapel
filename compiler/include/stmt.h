@@ -17,13 +17,13 @@ enum BlockTag {
 
 
 class Stmt : public Expr {
- public:
+public:
   Stmt(AstTag astTag) : Expr(astTag) {}
   virtual ~Stmt();
+
   virtual bool isStmt() const { return true; }
-//  DECLARE_COPY(Stmt); // Needed?
   virtual void replaceChild(Expr* old_ast, Expr* new_ast) = 0;
-  virtual void verify() = 0;
+  virtual void verify()                                   = 0;
 };
 
 
@@ -63,6 +63,9 @@ public:
 
   void          addUse(ModuleSymbol* mod);
   void          removeUse(ModuleSymbol* mod);
+
+private:
+  bool         canFlattenChapelStmt(const BlockStmt* stmt)    const;
 };
 
 

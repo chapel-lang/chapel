@@ -251,19 +251,42 @@ GenRet BlockStmt::codegen() {
 // the construction of the parse tree.
 void
 BlockStmt::appendChapelStmt(BlockStmt* stmt) {
-#if 0
-  if (stmt->isScopeless() == true) {
+  if (canFlattenChapelStmt(stmt) == true) {
     for_alist(expr, stmt->body) {
       this->insertAtTail(expr->remove());
     }
   } else {
     insertAtTail(stmt);
   }
-#else
+}
 
-  insertAtTail(stmt);
+//
+// The Parser routinely generates scope-less BlockStmts to
+// represent Chapel "statements".  In some cases it is possible
+// to flatten the BlockStmt when appending a Chapel statement to
+// a statement list.  This function returns TRUE if this is safe
+//
+//
+// The BlockStmt must in fact be scope-less.  Then one or more of
+// the following must be true
+//
+// 2014/07/03:  Pass 1
+//   a) The BlockStmt contains a single item
+//
 
-#endif
+bool
+BlockStmt::canFlattenChapelStmt(const BlockStmt* stmt) const {
+  bool retval = false;
+
+  if (stmt->isScopeless() == true) {
+    if (stmt->length() == 1)
+      retval =  true;
+
+    else
+      retval = false;
+  }
+
+  return retval;
 }
 
 

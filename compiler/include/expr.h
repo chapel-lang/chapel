@@ -28,6 +28,8 @@ public:
   virtual bool    isNoInitExpr()                                     const;
   virtual void    prettyPrint(std::ostream* o);
 
+  bool            isModuleDefinition();
+
   void            insertBefore(Expr* new_ast);
   void            insertAfter(Expr* new_ast);
   void            replace(Expr* new_ast);

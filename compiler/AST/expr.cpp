@@ -95,6 +95,30 @@ Expr::~Expr() {
 
 }
 
+// Return true if this expression is a ModuleDefinition i.e. it
+// is a DefExpr and the referenced symbol is a Module Symbol
+
+bool Expr::isModuleDefinition() {
+  bool retval = false;
+
+#if 1
+  //  MDN 2014/07/02  
+  //  Leaving the old definition here until the scope-less BlockStmt
+  //  change is stable.
+  if (BlockStmt* block = toBlockStmt(this))
+    if (block->length() == 1)
+      if (DefExpr* def = toDefExpr(block->body.only()))
+        if (isModuleSymbol(def->sym))
+          retval = true;
+#endif
+
+  if (DefExpr* def = toDefExpr(this))
+    if (isModuleSymbol(def->sym))
+      retval = true;
+
+  return retval;
+}
+
 Expr* Expr::getStmtExpr() {
   for (Expr* expr = this; expr; expr = expr->parentExpr) {
     if (expr->isStmt() || isBlockStmt(expr->parentExpr))
@@ -268,13 +292,15 @@ void SymExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
   INT_FATAL(this, "Unexpected case in SymExpr::replaceChild");
 }
 
-
 void SymExpr::verify() {
   Expr::verify();
+
   if (astTag != E_SymExpr)
     INT_FATAL(this, "Bad SymExpr::astTag");
+
   if (!var)
     INT_FATAL(this, "SymExpr::var is NULL");
+
   if (var && var->defPoint && !var->defPoint->parentSymbol)
     INT_FATAL(this, "SymExpr::var::defPoint is not in AST");
 }
@@ -429,7 +455,6 @@ DefExpr::DefExpr(Symbol* initSym, BaseAST* initInit, BaseAST* initExprType) :
 
   gDefExprs.add(this);
 }
-
 
 void DefExpr::verify() {
   Expr::verify();

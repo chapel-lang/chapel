@@ -454,14 +454,8 @@ void createInitFn(ModuleSymbol* mod) {
   // move module-level statements into module's init function
   //
   for_alist(stmt, mod->block->body) {
-    // except for module definitions
-    if (BlockStmt* block = toBlockStmt(stmt))
-      if (block->length() == 1)
-        if (DefExpr* def = toDefExpr(block->body.only()))
-          if (isModuleSymbol(def->sym))
-            continue;
-
-    mod->initFn->insertAtTail(stmt->remove());
+    if (stmt->isModuleDefinition() == false)
+      mod->initFn->insertAtTail(stmt->remove());
   }
   mod->block->insertAtHead(new DefExpr(mod->initFn));
 }
