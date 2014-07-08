@@ -26,8 +26,8 @@ Automatic coercions can be supported by using Chapel's support for operator over
 See example: test/futures/futures_with_coercions.chpl
 
 
-Current Compiler Issues
------------------------
+(Future :) Compiler Issues
+------------------------
 
 1. Futures syntax / Begin expressions
 It is possible to have syntax sugar for futures, e.g. instead of writing
@@ -48,4 +48,32 @@ test/futures/fib_with_futures.chpl fails to compile with the following error:
 It doesn’t allow type coercion for user-defined methods.
 When Chapel compiler add support for Scala-like implicit conversions the following can be supported.
 Example: addInts(2, aFuture)needs to be replaced intoaddInts(2, aFuture.read())
+Alternatively the compiler can generate a future version of the method that transitively passes the future along down the call chain until its value is actually used.
+Example:
+  Original code:
+   var f = buildFuture(int, lambda() { return 5; };
+   addInts(2, f);
+   
+   proc addInts(a: int, b: int): int {
+     return a + power(b, 3);
+   }
+   proc power(a: int, b: int): int {
+     return a * a * a;
+   }
 
+gets compiled as:
+   var f = buildFuture(int, lambda() { return 5; };
+   addInts_if(2, f);
+   
+   proc addInts(a: int, b: int): int {
+     return a + power(b, 3);
+   }
+   proc addInts_if(a: int, b: future(int)): int {
+     return a + power_fi(b, 3);
+   }
+   proc power(a: int, b: int): int {
+     return a * a * a;
+   }
+   proc power_fi(a: future(int), b: int): int {
+     return a.read() * a.read() * a.read();
+   }
