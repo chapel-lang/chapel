@@ -36,10 +36,10 @@ locale.
 \index{locale@\chpl{locale}}
 \index{types!locale@\chpl{locale}}
 
-The identifier \chpl{locale} is a primitive type that abstracts a
+The identifier \chpl{locale} is a class type that abstracts a
 locale as described above.  Both data and tasks can be associated with
-a value of locale type. The only operators defined over locales are
-the equality and inequality comparison operators.
+a value of locale type.  A Chapel implementation may define subclass(es)
+of \chpl{locale} for a richer description of the target architecture.
 
 \subsection{Locale Methods}
 \label{Locale_Methods}
@@ -241,11 +241,11 @@ on Locales(1) {
 }
 \end{chapel}
 results in the output
-\begin{chapel}
+\begin{chapelprintoutput}{}
 1
 3
 1
-\end{chapel}
+\end{chapelprintoutput}
 The variable \chpl{x} is declared and exists on \chpl{Locales(1)}.
 The variable \chpl{c} is a class reference.  The reference exists
 on \chpl{Locales(1)} but the object itself exists
@@ -268,13 +268,13 @@ for loc in Locales do on loc do
     writeln(c.locale.id);
 \end{chapel}
 outputs
-\begin{chapel}
+\begin{chapelprintoutput}{}
 0
 1
 2
 3
 4
-\end{chapel}
+\end{chapelprintoutput}
 when running on 5 locales.
 \end{example}
 
@@ -298,7 +298,7 @@ statement occurs on this specified locale and then continues after
 the \chpl{on-statement}.
 
 Return statements may not be lexically enclosed in on statements.
-Yield statement may only be lexically enclosed in on statements in
+Yield statements may only be lexically enclosed in on statements in
 parallel iterators~\rsec{Parallel_Iterators}.
 
 \subsection{Remote Variable Declarations}

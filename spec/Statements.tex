@@ -132,57 +132,70 @@ assignment-statement:
   lvalue-expression assignment-operator expression
 
 assignment-operator: one of
-   = += -= *= /= %= **= &= |= ^= &&= ||= <<= >>=
+   = $ $ $ $ += $ $ $ $ -= $ $ $ $ *= $ $ $ $ /= $ $ $ $ %= $ $ $ $ **= $ $ $ $ &= $ $ $ $ |= $ $ $ $ ^= $ $ $ $ &&= $ $ $ $ ||= $ $ $ $ <<= $ $ $ $ >>=
 \end{syntax}
+
+\index{operators!compound assignment}
+\index{operators!assignment!compound}
+\index{operators!simple assignment}
+\index{operators!assignment!simple}
+The assignment operators that contain a binary operator symbol as a prefix
+are \emph{compound assignment} operators.  The remaining assignment
+operator \chpl{=} is called \emph{simple assignment}.
 
 The expression on the left-hand side of the assignment operator must
 be a valid lvalue~(\rsec{LValue_Expressions}).  It is evaluated before the
 expression on the right-hand side of the assignment operator, which
 can be any expression.
 
-When the assignment operator is \chpl{=}, there is
+When the left-hand side is of a numerical type, there is
 an implicit conversion~(\rsec{Implicit_Conversions})
 of the right-hand side expression
-to the type of the left-hand side expression.
-The left-hand side expression is updated with the result
-of this conversion.
+to the type of the left-hand side expression.  Additionally, for simple
+assignment, if the left-hand side is of Boolean type, the right-hand side is
+implicitly converted to the type of the left-hand side (i.e. a \chpl{bool(?w)}
+with the same width \chpl{w}).
 
-Additionally, the validity and semantics of assigning between
+For simple assignment, the validity and semantics of assigning between
 classes~(\rsec{Class_Assignment}), records~(\rsec{Record_Assignment}),
 unions~(\rsec{Union_Assignment}), tuples~(\rsec{Tuple_Assignment}),
 ranges~(\rsec{Range_Assignment}),
 domains~(\rsec{Domain_Assignment}), and arrays~(\rsec{Array_Assignment})
-is discussed in these later sections.
+are discussed in these later sections.
 
-\index{operators!compound assignment}
-The assignment operators that contain a binary operator symbol as a prefix
-are \emph{compound assignment} operators.
 A compound assignment is
-a short-hand for applying the binary operator to the left and
+shorthand for applying the binary operator to the left- and
 right-hand side expressions and then assigning the result
 to the left-hand side expression.
-As with \chpl{=}, the left-hand side expression is evaluated only once,
+For numerical types, the left-hand side expression is evaluated only once,
 and there is an implicit conversion of the result of the binary operator
 to the type of the left-hand side expression.  Thus, for
 example, \chpl{x += y} is equivalent to \chpl{x = x + y} where the
 expression \chpl{x} is evaluated once.
 
-%REVIEW: vass: this is inelegant, consider removing.
-% Plus should be defined on int(8) to produce an int(8) instead of this.
-In a compound assignment, an explicit cast to the type on the left-hand side is
-inserted before the simple assignment if the operator is a shift or
-both the right-hand side expression can be assigned to the left-hand
-side expression and the type of the left-hand side is a primitive
-type.
+For all other compound assignments, Chapel provides a completely generic
+catch-all implementation defined in the obvious way.  For example:
 
-\begin{rationale}
-This cast is necessary to handle \chpl{+=} where the type of the
-left-hand side is, for example, \chpl{int(8)} because the \chpl{+}
-operator is defined on \chpl{int(32)}, not \chpl{int(8)}.
-\end{rationale}
+\begin{chapel}
+inline proc +=(ref lhs, rhs) {
+  lhs = lhs + rhs;
+}
+\end{chapel}
 
-The compound assignment operators can be overloaded for different
+Thus, compound assignment can be used with operands of arbitrary types,
+provided that the following provisions are met: If the type of the left-hand
+argument of a compound assignment operator \chpl{op=} is $L$ and that of the
+right-hand argument is $R$, then a definition for the corresponding binary
+operator \chpl{op} exists, such that $L$ is coercible to the type of its
+left-hand formal and $R$ is coercible to the type of its right-hand formal.
+Further, the result of \chpl{op} must be coercible to $L$, and there must exist
+a definition for simple assignment between objects of type $L$.
+
+Both simple and compound assignment operators can be overloaded for different
 types using operator overloading~(\rsec{Function_Overloading}).
+In such an overload, the left-hand side expression should have
+\chpl{ref} intent and be modified within the body of the function.  The return
+type of the function should be \chpl{void}.
 
 \section{The Swap Statement}
 \label{The_Swap_Statement}
@@ -257,14 +270,46 @@ evaluates to false, the second statement, if it exists, replaces the
 conditional statement; if the second statement does not exist, the
 conditional statement is removed.
 
+Each statement embedded in the {\em conditional-statement} has its own
+scope whether or not an explicit block surrounds it.
+
 \index{conditional statement!dangling else}
 If the statement that immediately follows the optional \chpl{then}
 keyword is a conditional statement and it is not in a block, the
 else-clause is bound to the nearest preceding conditional statement
 without an else-clause.
+The statement in the else-clause can be a conditional statement, too.
 
-Each statement embedded in the {\em conditional-statement} has its own
-scope whether or not an explicit block surrounds it.
+\begin{chapelexample}{conditionals.chpl}
+The following function prints \chpl{two} when \chpl{x} is \chpl{2}
+and \chpl{B,four} when \chpl{x} is \chpl{4}.
+\begin{chapel}
+proc condtest(x:int) {
+  if x > 3 then
+    if x > 5 then
+      write("A,");
+    else
+      write("B,");
+
+  if x == 2 then
+    writeln("two");
+  else if x == 4 then
+    writeln("four");
+  else
+    writeln("other");
+}
+\end{chapel}
+\begin{chapelpost}
+for i in 2..6 do condtest(i);
+\end{chapelpost}
+\begin{chapeloutput}
+two
+other
+B,four
+B,other
+A,other
+\end{chapeloutput}
+\end{chapelexample}
 
 \section{The Select Statement}
 \label{The_Select_Statement}
@@ -357,7 +402,7 @@ unconditionally the first time.
 The following example illustrates the difference between
 the \sntx{do-while-statement} and the \sntx{while-do-statement}.  The body of
 the do-while loop is always executed at least once, even if the loop conditional
-is already false when it is entered.
+is already false when it is entered.  The code
 \begin{chapel}
 var t = 11;
 
@@ -374,7 +419,8 @@ while (t <= 10) {
   writeln(t);
 }
 \end{chapel}
-\begin{chapelprintoutput}
+produces the output
+\begin{chapelprintoutput}{}
 Scope of do while loop:
 12
 Scope of while loop:
@@ -442,7 +488,7 @@ for (i, j) in zip(1..3, 4..6) do
 writeln();
 \end{chapelpost}
 is
-\begin{chapelprintoutput}
+\begin{chapelprintoutput}{}
 1 4 2 5 3 6 
 \end{chapelprintoutput}
 \end{chapelexample}
@@ -586,6 +632,8 @@ rename symbols that are 'used.'
   function.  Without the \chpl{use} statement, the procedure call to
   \chpl{foo} could not be resolved since \chpl{M2} would not have
   access to symbols in \chpl{M1}.
+
+  When executed, the program
 \begin{chapel}
 module M1 {
   proc foo() {
@@ -602,8 +650,9 @@ module M2 {
   }
 }
 \end{chapel}
-\begin{chapelprintoutput}
-In M2's main.\\
+prints out
+\begin{chapelprintoutput}{}
+In M2's main.
 In M1's foo.
 \end{chapelprintoutput}
 \end{chapelexample}
@@ -662,6 +711,8 @@ chosen.
 \begin{chapelexample}{typeselect.chpl}
 The following example shows how the type select statement can be used to perform
 a different action based on the static type of the operand.
+
+The program
 \begin{chapel}
 var x = 32, y = 15.5; 
 var z: int(8);
@@ -691,7 +742,8 @@ proc writetype(x) {
   }
 }
 \end{chapel}
-\begin{chapelprintoutput}
+produces the output
+\begin{chapelprintoutput}{}
 Integer type
 Real type
 Integer type

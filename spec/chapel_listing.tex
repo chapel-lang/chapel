@@ -5,17 +5,17 @@
       begin, bool, break, by,
       class, cobegin, coforall, complex, config, const, continue,
       delete, dmapped, do, domain,
-      else, enum, extern,
+      else, enum, extern, export,
       false, for, forall,
-      if, imag, in, index, inline, int, inout, iter,
-      label, let, local, locale,
+      if, imag, in, index, inline, inout, int, iter,
+      label, lambda, let, local, locale,
       module,
-      new, nil,
+      new, nil, noinit,
       on, opaque, otherwise, out,
       param, proc,
       range, real, record, reduce, ref, return,
       scan, select, serial, single, sparse, string, subdomain, sync,
-      then, true, tuple, type,
+      then, true, type,
       uint, union, use,
       var,
       when, where, while,
@@ -57,6 +57,15 @@
 \lstnewenvironment{numberedchapel}{\lstset{language=chapel,xleftmargin=15pt,stepnumber=1}}{}
 
 \lstnewenvironment{chapelcode}{\lstset{language=chapel,stepnumber=1}}{}
+
+% Uses the same listing style as the {chapel} environment, but keyword
+% formatting is turned off.  The argument is ignored in LaTeX
+% but used to name the .good file during test extraction.
+% The argument must be supplied but may be empty.
+% If empty it defaults to null, which signals the test extractor to 
+% autogenerate the .good file name as ``<test_name>.good''.
+\lstnewenvironment{chapelprintoutput}[1]
+  {\lstset{language=chapel,xleftmargin=2pc,stepnumber=0,keywordstyle=}}{}
 
 \lstnewenvironment{commandline}{\lstset{keywordstyle=,xleftmargin=2pc}}{}
 

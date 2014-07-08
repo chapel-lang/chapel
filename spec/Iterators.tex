@@ -55,6 +55,7 @@ When an iterator is executed and a \chpl{yield} is encountered, the value of the
 expression is returned.  However, the state of execution of the iterator is
 saved.  On its next invocation, execution resumes from the point immediately
 following that \chpl{yield} statement and with the saved state of execution.
+A yield statement in a variable iterator must contain an lvalue expression.
 
 When a \chpl{return} is encountered, the iterator finishes without yielding another
 index value.  The \chpl{return} statements appearing in an iterator are not
@@ -63,6 +64,9 @@ An iterator also completes after the last
 statement in the iterator is executed.
 An iterator need not contain any yield statements.
 % TODO: the current implementation requires at least one yield
+
+% TODO specify how the return type is established/checked for an iterator,
+% analogously to \label{Return_Types}.
 
 \section{Iterator Calls}
 \label{Iterator_Calls}
@@ -99,7 +103,7 @@ assigned to an array, the iterator is iterated over in total and the
 expression evaluates to a one-dimensional arithmetic array that
 contains the values returned by the iterator on each iteration.
 \begin{chapelexample}{as-arrays.chpl}
-Given an iterator
+Given this iterator
 \begin{chapel}
 iter squares(n: int): int {
   for i in 1..n do
@@ -109,10 +113,10 @@ iter squares(n: int): int {
 \begin{chapelpost}
 writeln(squares(5));
 \end{chapelpost}
-\begin{chapelprintoutput}
+the expression \chpl{squares(5)} evaluates to
+\begin{chapelprintoutput}{}
 1 4 9 16 25
 \end{chapelprintoutput}
-the expression \chpl{squares(5)} evaluates to the array \chpl{1, 4, 9, 16, 25}.
 \end{chapelexample}
 
 \subsection{Iterators and Generics}
@@ -142,6 +146,10 @@ A post-order traversal of a tree data structure could be written like this:
 class Tree {
   var data: string;
   var left, right: Tree;
+  proc ~Tree() {
+    if left then delete left;
+    if right then delete right;
+  }
 }
 
 var tree = new Tree("a", new Tree("b"), new Tree("c", new Tree("d"), new Tree("e")));
@@ -169,6 +177,7 @@ proc Tree.writeThis(x: Writer)
 }
 writeln("Tree Data");
 writeln(tree);
+delete tree;
 \end{chapelnoprint}
 By contrast, using calls \chpl{postorder(tree.left)}
 and \chpl{postorder(tree.right)} as stand-alone statements would
@@ -204,10 +213,4 @@ typically implement forall loops with multiple tasks on multiple
 locales.  For ranges, default domains, and default arrays, all tasks
 are executed on the current locale.
 
-A more detailed definition of parallel iterators is forthcoming.  The
-following paper sketches out the parallel iterator interface:
-\begin{quote}
-B.~L.~Chamberlain, S.~Choi, ~S.~J.~Deitz, and A.~Navarro.  {\bf
-Composable Parallel Iterators in Chapel}. 2011.
-\end{quote}
-
+A more detailed definition of parallel iterators is forthcoming.

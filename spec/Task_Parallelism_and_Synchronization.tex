@@ -10,10 +10,15 @@ chapter details task parallelism as follows:
 to introduce concurrency into a program.
 \item \rsec{Synchronization_Variables} describes synchronization
 variables, an unstructured mechanism for synchronizing tasks.
+\item \rsec{Atomic_Variables} describes atomic variables, a mechanism
+for supporting atomic operations. 
 \item \rsec{Cobegin} describes the cobegin statement, a structured way to
 introduce concurrency into a program.
 \item \rsec{Coforall} describes the coforall loop, another structured way to
 introduce concurrency into a program.
+\item \rsec{Task_Intents} specifies how variables from outer scopes
+are handled within \chpl{begin}, \chpl{cobegin} and \chpl{coforall}
+statements.
 \item \rsec{Sync_Statement} describes the sync statement, a structured
 way to control parallelism.
 \item \rsec{Serial} describes the serial statement, a structured way to suppress
@@ -27,21 +32,36 @@ support atomic transactions.
 \index{task parallelism}
 \index{parallelism!task}
 
-A Chapel \emph{task} is a distinct context of execution that maybe
+A Chapel \emph{task} is a distinct context of execution that may be
 running concurrently with other tasks.  Chapel provides a simple
-construct, the begin statement, to create tasks, introducing
+construct, the \chpl{begin} statement, to create tasks, introducing
 concurrency into a program in an unstructured way.  In addition,
 Chapel introduces two type qualifiers, \chpl{sync} and \chpl{single},
 for synchronization between tasks.
 
-Chapel provides two constructs, the cobegin and coforall statements,
+Chapel provides two constructs, the \chpl{cobegin} and \chpl{coforall} statements,
 to introduce concurrency in a more structured way.  These constructs
-create multiple tasks but do not continue until the tasks have
-completed.  In addition, Chapel provides two constructs, the sync- and
-serial statements, to suppress parallelism and insert synchronization.
+create multiple tasks but do not continue until these tasks have
+completed.  In addition, Chapel provides two constructs, the \chpl{sync} and
+\chpl{serial} statements, to insert synchronization and suppress parallelism.
 All four of these constructs can be implemented through judicious uses
 of the unstructured task-parallel constructs described in the previous
-section.
+paragraph.
+
+\index{task parallelism!task creation}
+\index{task creation}
+Tasks are considered to be created when execution reaches the start
+of a \chpl{begin}, \chpl{cobegin}, or \chpl{coforall} statement.
+When the tasks are actually executed depends on the Chapel
+implementation and run-time execution state.
+
+\index{task function}
+\index{task parallelism!task function}
+A task is represented as a call to a \emph{task function}, whose body
+contains the Chapel code for the task. Variables defined in outer
+scopes are considered to be passed into a task function by blank intent,
+unless a different \emph{task intent} is specified explicitly
+by a \sntx{task-intent-clause}.
 
 
 \section{The Begin Statement}
@@ -53,7 +73,7 @@ The begin statement creates a task to execute a statement.  The syntax
 for the begin statement is given by
 \begin{syntax}
 begin-statement:
-  `begin' statement
+  `begin' task-intent-clause[OPT] statement
 \end{syntax}
 Control continues concurrently with the statement following the
 begin statement.
@@ -83,6 +103,11 @@ the \chpl{writeln} statement within it.  However, execution will
 continue immediately after task creation with the next statement.
 \end{chapelexample}
 
+A begin statement creates a single task function,
+whose body is the body of the begin statement.
+The handling of the outer variables within the task function and
+the role of \sntx{task-intent-clause} are defined in \rsec{Task_Intents}.
+
 Yield and return statements are not allowed in begin blocks.  Break
 and continue statements may not be used to exit a begin block.
 
@@ -104,14 +129,14 @@ variable's state is full.  Normal writes of a synchronization variable
 cannot proceed until the variable's state is empty.
 
 Chapel supports two types of synchronization variables: sync and
-single.  Both types behave similarly, expect that a single variable
+single.  Both types behave similarly, except that a single variable
 may only be written once.  Consequently, when a sync variable is read,
 its state transitions to empty, where as when a single variable is
 read, its state does not change.  When either type of synchronization
 variable is written, its state transitions to full.
 
-Sync and single are type qualifiers and preceed the variable's type in
-the declaration.  Sync and single are only supported for all Chapel
+Sync and single are type qualifiers and precede the variable's type in
+the declaration.  Sync and single are supported for all Chapel
 primitive types (~\rsec{Primitive_Types}) except strings and complex.
 
 If a task attempts to read or write a synchronization variable that is
@@ -160,6 +185,12 @@ var tree: Tree = new Tree(false, new Tree(false, new Tree(true, nil, nil, 1),
                                  new Tree(false, new Tree(true, nil, nil, 1),
                                                  new Tree(true, nil, nil, 1), 1), 1);
 writeln(tree.sum());
+proc Tree.~Tree() {
+  if isLeaf then return;
+  delete left;
+  delete right;
+}
+delete tree;
 \end{chapelpost}
 \begin{chapeloutput}
 4
@@ -398,6 +429,232 @@ writeln((x(*\texttt{\$}*).readXX(), y(*\texttt{\$}*), z));
 \end{chapeloutput}
 \end{chapelexample}
 
+
+
+\section{Atomic Variables}
+\label{Atomic_Variables}
+\index{atomic variables!atomic@\chpl{atomic}}
+\index{atomic@\chpl{atomic}}
+
+Atomic variables are variables that support atomic operations. Chapel
+currently supports atomic operations for bools, all supported sizes of
+signed and unsigned integers, as well as all supported sizes of reals. 
+
+\begin{rationale}
+The choice of supported atomic variable types as well as the atomic
+operations was strongly influenced by the C11 standard.
+\end{rationale}
+
+Atomic is a type qualifier that precedes the variable's type in
+the declaration. Atomic operations are supported for bools, and all
+sizes of ints, uints, and reals.  
+
+An atomic variable is specified with an atomic type given by the 
+following syntax:
+
+\begin{syntax}
+atomic-type:
+  `atomic' type-specifier
+\end{syntax}
+
+\subsection{Predefined Atomic Methods}
+\label{Functions_on_Atomic_Variables}
+\index{atomic variables!predefined methods on}
+
+The following methods are defined for variables of atomic type. Note
+that not all operations are supported for all atomic types. The
+supported types are listed for each method.  
+
+\index{atomic types!memory order}
+Most of the predefined atomic methods accept an optional argument
+named \chpl{order} of type memory\_order. The \chpl{order} argument is
+used to specify the ordering constraints of atomic operations. The
+supported memory\_order values are:
+\begin{itemize}
+\item{memory\_order\_relaxed}
+\item{memory\_order\_consume}
+\item{memory\_order\_acquire}
+\item{memory\_order\_release}
+\item{memory\_order\_acq\_rel}
+\item{memory\_order\_seq\_cst}
+\end{itemize}
+
+\begin{openissue}
+  The memory\_order values were taken directly from the C11
+  specification.  We expect to review and better define the supported
+  values with work on Chapel's memory consistency model
+  (see~\ref{Memory_Consistency_Model}).
+\end{openissue}
+
+Unless specified, the default for the memory\_order parameter is
+memory\_order\_seq\_cst.
+
+\begin{note}
+Not all architectures or implementations may support all memory\_order
+values.  In these cases, the implementation should default to a more
+conservative ordering than specified.
+\end{note}
+
+\index{read (atomic var)@\chpl{read} (atomic var)}
+\index{predefined functions!read (atomic var)@\chpl{read} (atomic var)}
+\begin{protohead}
+proc (atomic t).read(memory_order order): t
+\end{protohead}
+\begin{protobody}
+Reads and returns the stored value. Defined for all atomic types.  
+\end{protobody}
+
+\index{peek (atomic var)@\chpl{peek} (atomic var)}
+\index{predefined functions!peek (atomic var)@\chpl{peek} (atomic var)}
+\begin{protohead}
+proc (atomic t).peek(): t
+\end{protohead}
+\begin{protobody}
+Reads and returns the stored value using memory\_order\_relaxed.
+Defined for all atomic types.
+\end{protobody}
+
+\index{write (atomic var)@\chpl{write} (atomic var)}
+\index{predefined functions!write (atomic var)@\chpl{write} (atomic var)}
+\begin{protohead}
+proc (atomic t).write(v: t, memory_order order)
+\end{protohead}
+\begin{protobody}
+Stores \chpl{v} as the new value. Defined for all atomic types.  
+\end{protobody}
+
+\index{poke (atomic var)@\chpl{poke} (atomic var)}
+\index{predefined functions!poke (atomic var)@\chpl{poke} (atomic var)}
+\begin{protohead}
+proc (atomic t).poke(v: t)
+\end{protohead}
+\begin{protobody}
+Stores \chpl{v} as the new value using memory\_order\_relaxed.
+Defined for all atomic types.
+\end{protobody}
+
+\index{exchange (atomic var)@\chpl{exchange} (atomic var)}
+\index{predefined functions!exchange (atomic var)@\chpl{exchange} (atomic var)}
+\begin{protohead}
+proc (atomic t).exchange(v: t, memory_order order): t
+\end{protohead}
+\begin{protobody}
+Stores \chpl{v} as the new value and returns the original
+value. Defined for all atomic types. 
+\end{protobody}
+
+\index{compareExchangWeak (atomic var)@\chpl{compareExchangeWeak} (atomic var)}
+\index{predefined functions!compareExchangeWeak (atomic var)@\chpl{compareExchangeWeak} (atomic var)}
+\index{compareExchangStrong (atomic var)@\chpl{compareExchangeStrong} (atomic var)}
+\index{predefined functions!compareExchangeStrong (atomic var)@\chpl{compareExchangeStrong} (atomic var)}
+\index{compareExchange (atomic var)@\chpl{compareExchange} (atomic var)}
+\index{predefined functions!compareExchange (atomic var)@\chpl{compareExchange} (atomic var)}
+\begin{protohead}
+proc (atomic t).compareExchangeWeak(e: t, v: t, memory_order order): bool
+proc (atomic t).compareExchangeStrong(e: t, v: t, memory_order order): bool
+proc (atomic t).compareExchange(e: t, v: t, memory_order order): bool
+\end{protohead}
+\begin{protobody}
+Stores \chpl{v} as the new value, if and only if the original value is
+equal to \chpl{e}. Returns \chpl{true} if \chpl{v} was
+stored, \chpl{false} otherwise. The 'weak' variation may
+return \chpl{false} even if the original value was equal to \chpl{e},
+if, for example, the value could not be updated
+atomically. \chpl{compareExchange} is equivalent to
+\chpl{compareExchangeStrong}.  Defined for all atomic types.
+\end{protobody}
+
+\index{add (atomic var)@\chpl{add} (atomic var)}
+\index{predefined functions!add (atomic var)@\chpl{add} (atomic var)}
+\index{sub (atomic var)@\chpl{sub} (atomic var)}
+\index{predefined functions!sub (atomic var)@\chpl{sub} (atomic var)}
+\index{or (atomic var)@\chpl{or} (atomic var)}
+\index{predefined functions!or (atomic var)@\chpl{or} (atomic var)}
+\index{and (atomic var)@\chpl{and} (atomic var)}
+\index{predefined functions!and (atomic var)@\chpl{and} (atomic var)}
+\index{xor (atomic var)@\chpl{xor} (atomic var)}
+\index{predefined functions!xor (atomic var)@\chpl{xor} (atomic var)}
+\begin{protohead}
+proc (atomic t).add(v: t, memory_order order)
+proc (atomic t).sub(v: t, memory_order order)
+proc (atomic t).or(v: t, memory_order order)
+proc (atomic t).and(v: t, memory_order order)
+proc (atomic t).xor(v: t, memory_order order)
+\end{protohead}
+\begin{protobody}
+Applies the appropriate operator (\verb@+@, \verb@-@, \verb@|@,
+\verb@&@, \verb@^@) to the original value and \chpl{v} and stores the result.
+All of the methods are defined for integral atomic types. Only add and
+sub (\verb@+@, \verb@-@) are defined for \chpl{real} atomic types.
+None of the methods are defined for the \chpl{bool} atomic type.
+\end{protobody}
+
+\begin{future}
+In the future we may overload certain operations such as \verb@+=@ to
+call the above methods automatically for atomic variables.
+\end{future}
+
+\index{fetchAdd (atomic var)@\chpl{fetchAdd} (atomic var)}
+\index{predefined functions!fetchAdd (atomic var)@\chpl{fetchAdd} (atomic var)}
+\index{fetchSub (atomic var)@\chpl{fetchSub} (atomic var)}
+\index{predefined functions!fetchSub (atomic var)@\chpl{fetchSub} (atomic var)}
+\index{fetchOr (atomic var)@\chpl{fetchOr} (atomic var)}
+\index{predefined functions!fetchOr (atomic var)@\chpl{fetchOr} (atomic var)}
+\index{fetchAnd (atomic var)@\chpl{fetchAnd} (atomic var)}
+\index{predefined functions!fetchAnd (atomic var)@\chpl{fetchAnd} (atomic var)}
+\index{fetchXor (atomic var)@\chpl{fetchXor} (atomic var)}
+\index{predefined functions!fetchXor (atomic var)@\chpl{fetchXor} (atomic var)}
+\begin{protohead}
+proc (atomic t).fetchAdd(v: t, memory_order order): t
+proc (atomic t).fetchSub(v: t, memory_order order): t
+proc (atomic t).fetchOr(v: t, memory_order order): t
+proc (atomic t).fetchAnd(v: t, memory_order order): t
+proc (atomic t).fetchXor(v: t, memory_order order): t
+\end{protohead}
+\begin{protobody}
+Applies the appropriate operator (\verb@+@, \verb@-@, \verb@|@,
+\verb@&@, \verb@^@) to the original value and \chpl{v}, stores the result, and
+returns the original value. All of the methods are defined for
+integral atomic types. Only add and sub (\verb@+@, \verb@-@) are
+defined for \chpl{real} atomic types.  None of the methods are defined
+for the \chpl{bool} atomic type.
+\end{protobody}
+
+
+\index{testAndSet (atomic bool)@\chpl{testAndSet} (atomic bool)}
+\index{predefined functions!testAndSet (atomic bool)@\chpl{testAndSet}
+(atomic bool)}
+\begin{protohead}
+proc (atomic bool).testAndSet(memory_order order): bool
+\end{protohead}
+\begin{protobody}
+Stores \chpl{true} as the new value and returns the old
+value. Equivalent to \chpl{exchange(true)}. Only defined for
+the \chpl{bool} atomic type.
+\end{protobody}
+
+\index{clear (atomic bool)@\chpl{clear} (atomic bool)}
+\index{predefined functions!clear (atomic bool)@\chpl{clear} (atomic bool)}
+\begin{protohead}
+proc (atomic bool).clear(memory_order order)
+\end{protohead}
+\begin{protobody}
+Stores \chpl{false} as the new value. Equivalent
+to \chpl{write(false)}. Only defined for the \chpl{bool} atomic type.
+\end{protobody}
+
+\index{waitFor (atomic var)@\chpl{waitFor} (atomic var)}
+\index{predefined functions!waitFor (atomic var)@\chpl{waitFor} (atomic var)}
+\begin{protohead}
+proc (atomic t).waitFor(v: t)
+\end{protohead}
+\begin{protobody}
+Waits until the stored value is equal to \chpl{v}. The implementation
+may yield the running task while waiting.  Defined for all atomic types.
+\end{protobody}
+
+
+
 \section{The Cobegin Statement}
 \label{Cobegin}
 \index{cobegin@\chpl{cobegin}}
@@ -407,10 +664,14 @@ The cobegin statement is used to introduce concurrency within a
 block.  The \chpl{cobegin} statement syntax is
 \begin{syntax}
 cobegin-statement:
-  `cobegin' block-statement
+  `cobegin' task-intent-clause[OPT] block-statement
 \end{syntax}
-A new task is created for each statement in the block.  Control
+
+A new task and a corresponding task function are created for each statement
+in the \sntx{block-statement}.  Control
 continues when all of the tasks have finished.
+The handling of the outer variables within each task function and
+the role of \sntx{task-intent-clause} are defined in \rsec{Task_Intents}.
 
 Return statements are not allowed in cobegin blocks.  Yield statement
 may only be lexically enclosed in cobegin blocks in parallel
@@ -458,16 +719,21 @@ The coforall loop is a variant of the cobegin statement in loop form.
 The syntax for the coforall loop is given by
 \begin{syntax}
 coforall-statement:
-  `coforall' index-var-declaration `in' iteratable-expression `do' statement
-  `coforall' index-var-declaration `in' iteratable-expression block-statement
-  `coforall' iteratable-expression `do' statement
-  `coforall' iteratable-expression block-statement
+  `coforall' index-var-declaration `in' iteratable-expression task-intent-clause[OPT] `do' statement
+  `coforall' index-var-declaration `in' iteratable-expression task-intent-clause[OPT] block-statement
+  `coforall' iteratable-expression task-intent-clause[OPT] `do' statement
+  `coforall' iteratable-expression task-intent-clause[OPT] block-statement
 \end{syntax}
 
 The \chpl{coforall} loop creates a separate task for each iteration of
 the loop.  Control continues with the statement following
 the \chpl{coforall} loop after all tasks corresponding to the
 iterations of the loop have completed.
+
+The single task function created for a \chpl{coforall} and invoked by
+each task contains the loop body.
+The handling of the outer variables within the task function and
+the role of \sntx{task-intent-clause} are defined in \rsec{Task_Intents}.
 
 Return statements are not allowed in coforall blocks.  Yield statement
 may only be lexically enclosed in coforall blocks in parallel
@@ -516,6 +782,127 @@ variable \chpl{finished$\mbox{\texttt{\$}}$} is used to signal that
 all of the tasks have completed.  Thus control does not continue past
 the last line until all of the tasks have completed.
 \end{chapelexample}
+
+
+\section{Task Intents}
+\label{Task_Intents}
+\index{task intents}
+\index{task parallelism!task functions}
+\index{task parallelism!task intents}
+
+% Would be nice to give this arrangement a name. Could say
+% "the task intent rule", although that sounds a bit like
+% a colloquialism.
+If a variable is referenced within the lexical scope of a
+\chpl{begin}, \chpl{cobegin}, or \chpl{coforall} statement
+and is declared outside that statement, it is considered
+to be passed as an actual argument to the corresponding task function 
+at task creation time. All references to the variable
+within the task function implicitly refer to the task function's
+corresponding formal argument.
+
+Each formal argument of a task function has the blank intent by default.
+For variables of primitive and class types, this has the effect
+of capturing the value of the variable at task creation time
+and referencing that value instead of the original variable
+within the lexical scope of the task construct.
+
+A formal can be given the \chpl{ref} intent explicitly by listing it
+in the optional \sntx{task-intent-clause}. For variables of most
+types, this enables the task construct to modify the original variable
+or to read the original variable's value after concurrent modifications.
+
+The syntax of the task intent clause is:
+
+\begin{syntax}
+task-intent-clause:
+  `ref' ( var-list )
+
+var-list:
+  identifier
+  identifier, var-list
+\end{syntax}
+
+The implicit treatment of outer scope variables as the task function's
+formal arguments applies to both global and local variables.
+It applies to variable references within the lexical scope
+of a task construct, but does not extend to its dynamic scope, i.e.,
+to the functions called from the task(s) but declared outside of
+the lexical scope.
+The loop index variables of a \chpl{coforall} statement are not
+subject to such treatment within that statement; however, they are
+subject to such treatment within nested task constructs, if any.
+
+
+\begin{rationale}
+% Ideally, replace "task intents" throughout the foregoing
+% with a more appropriate name for this feature.
+The primary motivation for task intents is to avoid some races on
+scalar/record variables, which are possible when one task modifies a
+variable and another task reads it. Without task intents,
+for example, it would be easy to introduce and overlook a bug
+illustrated by this simplified example:
+
+  \begin{chapel}
+  {
+    var i = 0;
+    while i < 10 {
+      begin {
+        f(i);
+      }
+      i += 1;
+    }
+  }
+  \end{chapel}
+
+If all the tasks created by the \chpl{begin} statement start executing
+only after the \chpl{while} loop completes, and \chpl{i} within the
+\chpl{begin} is treated as a reference to the original \chpl{i},
+there will be ten tasks executing \chpl{f(10)}. However, the user most
+likely intended to generate ten tasks executing
+\chpl{f(0)}, \chpl{f(1)}, ..., \chpl{f(9)}.
+Task intents ensure that, regardless of the timing of task execution.
+
+Another motivation for task intents is that referring to a captured
+copy in a task is often more efficient than referring to the original
+variable. That's because the copy is a local constant, e.g. it could
+be placed in a register when it fits.  Without task intents,
+references to the original variable would need to be implemented using
+a pointer dereference. This is less efficient and can hinder optimizations
+in the surrounding code, for example loop-invariant code motion.
+
+Furthermore, in the above example the scope where \chpl{i} is declared
+may exit before all the ten tasks complete.  Without task intents,
+the implementation needs to ensure that \chpl{i} can still be
+referenced by the tasks after its scope ends.
+
+We decided to treat \chpl{cobegin} and \chpl{coforall} statements the
+same way as \chpl{begin}. This is for consistency and to make the
+race-avoidance benefit available to more code.
+
+We decided to apply task intents to global variables, in addition to local
+variables. Again, this is for consistency. One could view global
+variables differently than local variables (e.g. a global variable is
+``always available''), but we favored consistency over such an approach.
+
+We decided not to apply task intents to ``closure'' variables, i.e.,
+the variables in the dynamic scope of a task construct. This is to
+keep this feature manageable, so that all variables subject to task
+intents can be obtained by examining just the lexical scope of the
+task construct. In general, the set of closure variables can be hard
+to determine, unweildy to implement and reason about, it is unclear
+what to do with extern functions, etc.
+\end{rationale}
+
+
+\begin{future}
+We would like to make other intents available for use in a
+\sntx{task-intent-clause}.
+For a given intent, we would also like to provide a blanket clause,
+which would apply the intent to all variables.
+An example of syntax would be \chpl{ref(*)}.
+\end{future}
+
 
 \section{The Sync Statement}
 \label{Sync_Statement}
@@ -595,14 +982,18 @@ The \chpl{serial} statement can be used to dynamically disable
 parallelism.  The syntax is:
 \begin{syntax}
 serial-statement:
-  `serial' expression `do' statement
-  `serial' expression block-statement
+  `serial' expression[OPT] `do' statement
+  `serial' expression[OPT] block-statement
 \end{syntax}
-where the expression evaluates to a bool type.  Independent of that
-value, the \sntx{statement} is evaluated. If the expression is true,
-any dynamically encountered code that would result in new tasks is
-executed without creating any new tasks.  In effect, execution is
-serialized.
+where the optional \sntx{expression} evaluates to a boolean value.  If
+the expression is omitted, it is as though 'true' were specified.
+Whatever the expression's value, the statement following it is
+evaluated. If the expression is true, any dynamically encountered code
+that would normally create new tasks within the statement is instead
+executed by the original task without creating any new ones.  In
+effect, execution is serialized.  If the expression is false, code
+within the statement will generates task according to normal Chapel
+rules.
 
 \begin{chapelexample}{serialStmt1.chpl}
 In the code
@@ -654,7 +1045,7 @@ proc stmt4() { write(4); }
 var n = 3;
 \end{chapelpre}
 \begin{chapel}
-serial true {
+serial {
   begin stmt1();
   cobegin {
     stmt2();
@@ -746,6 +1137,16 @@ proc Node.insertAfter(newNode: Node) {
 \end{chapel}
 \begin{chapelpost}
 writeln(head.data, head.next.data, head.next.next.data, head.next.next.next.data);
+proc Node.remove() {
+  if this.prev then this.prev = this.next;
+  if this.next then this.next = this.prev;
+  return this;
+}
+while (head) {
+  next = head.next;
+  delete head;
+  head = next;
+} 
 \end{chapelpost}
 \begin{chapeloutput}
 atomic.chpl:13: warning: atomic keyword is ignored (not implemented)

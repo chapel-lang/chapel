@@ -2,9 +2,9 @@
 \label{Classes}
 \index{classes}
 
-Classes are data structures with associated state and functions. Storage for
 \index{classes!instances}
 \index{objects}
+Classes are data structures with associated state and functions. Storage for
 a class instance, or object, is allocated independently of the scope of
 the variable that refers to it.
 An object is created by calling a class constructor
@@ -122,12 +122,17 @@ The default value of a class type is \chpl{nil}.
 \begin{chapelexample}{declaration.chpl}
 \begin{chapel}
 class C { }
-var c : C;	// c has the class type C, initialized with the value nil.
-c = new C();	// Now c refers to an object of type C.
-var c2 = new C();	// The type of c2 is also C.
-class D : C {}	// Class D is derived from C.
-c = new D();	// Now c refers to an object of type D.
+var c : C;      // c has the class type C, initialized with the value nil.
+c = new C();    // Now c refers to an object of type C.
+var c2 = c;     // The type of c2 is also C.
+                // c2 refers to the same object as c.
+class D : C {}  // Class D is derived from C.
+c = new D();    // Now c refers to an object of type D.
 \end{chapel}
+\begin{chapelpost}
+delete c;   // This deletes the new D.
+delete c2;  // This deletes the new C.
+\end{chapelpost}
 \begin{chapeloutput}
 \end{chapeloutput}
 When the variable \chpl{c} is declared, it initially has the value
@@ -150,6 +155,9 @@ Variable fields define the storage associated with a class instance.
 
 \begin{chapelexample}{defineActor.chpl}
 The code
+\begin{chapelpre}
+config param cleanUp = false;
+\end{chapelpre}
 \begin{chapel}
 class Actor {
   var name: string;
@@ -174,27 +182,27 @@ A class method is a procedure or iterator that is bound to a class.
 Methods are declared with the following syntax:
 \begin{syntax}
 method-declaration-statement:
-  linkage-specifier[OPT] proc-or-iter param-clause[OPT] type-binding function-name argument-list[OPT] 
+  linkage-specifier[OPT] proc-or-iter this-intent[OPT] type-binding function-name argument-list[OPT] 
     return-intent[OPT] return-type[OPT] where-clause[OPT] function-body
 
 proc-or-iter:
   `proc'
   `iter'
 
-param-clause:
+this-intent:
   `param'
+  `ref'
 
 type-binding:
   identifier .
 \end{syntax}
 If a method is declared within the lexical scope of a class, record,
 or union, the type binding can be omitted and is taken to be the
-innermost class, record, or union that the method is defined in.  If a
-method declaration contains the optional \sntx{param-clause}, it
-implies that it can only be applied to param objects of the given type
-binding.
+innermost class, record, or union that the method is defined in.
 
 Method calls are described in \rsec{Class_Method_Calls}.
+
+The use of \sntx{this-intent} is described in \rsec{The_em_this_Reference}.
 
 \subsection{Nested Classes}
 \label{Nested_Classes}
@@ -459,6 +467,8 @@ var mp2 = new MessagePoint("point mp2");
 \begin{chapelpost}
 writeln(mp1);
 writeln(mp2);
+delete mp1;
+delete mp2;
 \end{chapelpost}
 \begin{chapeloutput}
 {x = 1.0, y = 2.0, message = a point}
@@ -552,6 +562,11 @@ var c3 = new C(z="");
 var c4 = new C(2, z="");
 var c5 = new C(0, 0.0, "");
 writeln((c1, c2, c3, c4, c5));
+delete c1;
+delete c2;
+delete c3;
+delete c4;
+delete c5;
 \end{chapelpost}
 \begin{chapeloutput}
 ({x = 0, y = 3.14, z = Hello, World!}, {x = 2, y = 3.14, z = Hello, World!}, {x = 0, y = 3.14, z = }, {x = 2, y = 3.14, z = }, {x = 0, y = 0.0, z = })
@@ -621,7 +636,11 @@ anActor.age = 27;
 \end{chapel}
 \begin{chapelpost}
 writeln((s, anActor));
+if (cleanUp) then delete anActor;
 \end{chapelpost}
+\begin{chapelcompopts}
+-scleanUp=true
+\end{chapelcompopts}
 \begin{chapeloutput}
 (Tommy, {name = Tommy, age = 27})
 \end{chapeloutput}
@@ -663,6 +682,7 @@ writeln(c.x);
 c.x = 3;
 writeln(c.x);
 writeln(c.setCount);
+delete c;
 \end{chapelpost}
 \begin{chapeloutput}
 1
@@ -707,6 +727,7 @@ proc Actor.print() {
 \end{chapel}
 \begin{chapelpost}
 anActor.print();
+delete anActor;
 \end{chapelpost}
 \begin{chapeloutput}
 (Tommy, {name = Tommy, age = 27})
@@ -752,6 +773,7 @@ proc bar(c: C) { writeln(c); }
 \begin{chapelpost}
 var c1: C = new C();
 c1.foo();
+delete c1;
 \end{chapelpost}
 \begin{chapeloutput}
 {}
@@ -759,6 +781,32 @@ c1.foo();
 Then given an instance of \chpl{C} called \chpl{c1}, the method
 call \chpl{c1.foo()} results in a call to \chpl{bar} where the argument
 is \chpl{c1}.
+\end{chapelexample}
+
+The optional \sntx{this-intent} declares the intent by which the receiver
+argument will be passed.  When the value of \sntx{this-intent} is \chpl{param},
+it implies that the function can only be applied to param objects of the given
+type binding.  If the value is \chpl{ref}, the argument will be passed by
+reference---allowing modification of \chpl{this}.  Otherwise, the argument will
+be passed with the blank intent as specified in \rsec{The_Blank_Intent}.
+
+\begin{chapelexample}{refThisIntent.chpl}
+In the following code, the \chpl{doubleMe} function is defined with a
+\sntx{this-intent} of \chpl{ref}, allowing variables of type \chpl{int} to
+double themselves.
+\begin{chapel}
+proc ref int.doubleMe() { this *= 2; }
+\end{chapel}
+\begin{chapelpost}
+var x: int = 2;
+x.doubleMe();
+writeln(x);
+\end{chapelpost}
+\begin{chapeloutput}
+4
+\end{chapeloutput}
+Given a variable \chpl{x = 2}, a call to \chpl{x.doubleMe()} will set \chpl{x}
+to \chpl{4}.
 \end{chapelexample}
 
 \section{The {\em this} Method}
@@ -841,6 +889,7 @@ for (i, j) in zip(ta, 1..) do
 
 for i in ta do
   writeln(i);
+delete ta;
 \end{chapelpost}
 \begin{chapeloutput}
 1
@@ -858,7 +907,7 @@ for i in ta do
 \index{assignment!class}
 
 Classes are assigned by reference.  After an assignment from one
-variable of a class type to another, the variables reference the same
+variable of a class type to another, both variables reference the same
 class instance.
 
 \subsection{Implicit Class Conversions}
@@ -870,7 +919,8 @@ class instance.
 An implicit conversion from class type \chpl{D} to
 another class type \chpl{C} is allowed when \chpl{D} is a subclass
 of \chpl{C}.
-Such conversion does not change the value.
+The value \chpl{nil} can be implicitly converted to any class type.
+These conversions do not change the value.
 
 \section{Dynamic Memory Management}
 \label{Dynamic_Memory_Management}
@@ -888,6 +938,9 @@ delete-statement:
 \end{syntax}
 
 where the expression is a reference to the instance that will be reclaimed.
+The expression may evaluate to \chpl{nil}, in which case the \chpl{delete}
+statement has no effect.  If an object is referenced after it has
+been deleted, the behavior is undefined.
 
 \begin{chapelexample}{delete.chpl}
 The following example allocates a new object \chpl{c} of class type \chpl{C}
@@ -898,8 +951,17 @@ class C {
 }
 \end{chapelpre}
 \begin{chapel}
-var c = new C();
-delete c;
+var c : C = nil;
+delete c;        // Does nothing: c is nil.
+
+c = new C();     // Creates a new object.
+delete c;        // Deletes that object.
+
+// The following statements reference an object after it has been deleted, so
+// the behavior of each is "undefined":
+// writeln(c.i); // May read from freed memory.
+// c.i = 3;      // May overwrite freed memory.
+// delete c;     // May confuse some allocators.
 \end{chapel}
 \begin{chapelpost}
 \end{chapelpost}

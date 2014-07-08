@@ -33,14 +33,15 @@ An implicit conversion occurs at each of the following program locations:
 
 \item The actual argument of a function call or an operator is converted
       to the type of the corresponding formal argument, if the formal's
-      intent is \chpl{in} or the blank intent with the semantics of
-      \chpl{in}.
+      intent is \chpl{in} or \chpl{const in} or an abstract intent
+      (\rsec{Abstract Intents}) with the semantics of
+      \chpl{in} or \chpl{const in}.
 
 \item The formal argument of a function call is converted
       to the type of the corresponding actual argument, if the formal's
       intent is \chpl{out}.
 
-\item The return or yield expression within a function is converted
+\item The return or yield expression within a non-variable function is converted
       to the return type of that function.
 
 \item The condition of a conditional expression,
@@ -68,6 +69,8 @@ as defined in the referenced subsections:
 In addition,
 an implicit conversion from a type to the same type is allowed for any type.
 Such conversion does not change the value of the expression.
+
+% TODO: If an implicit conversion is not allowed, it is an error.
 
 Implicit conversion is not transitive. That is, if an implicit conversion
 is allowed from type \chpl{T1} to \chpl{T2} and from \chpl{T2} to \chpl{T3},
@@ -210,6 +213,9 @@ types than implicit conversions, but explicit conversions are not
 supported between all types.
 
 The explicit conversions are a superset of the implicit conversions.
+In addition to the following definitions,
+an explicit conversion from a type to the same type is allowed for any type.
+Such conversion does not change the value of the expression.
 
 \subsection{Explicit Numeric Conversions}
 \label{Explicit_Numeric_Conversions}
@@ -225,6 +231,8 @@ or \chpl{uint} of equal or larger size, its value is zero-extended to fit the
 new representation.  When a \chpl{bool} is converted to a
 smaller \chpl{bool}, \chpl{int} or \chpl{uint}, its most significant
 bits are truncated (as appropriate) to fit the new representation.
+
+When a \chpl{int}, \chpl{uint}, or \chpl{real} is converted to a \chpl{bool}, the result is \chpl{false} if the number was equal to 0 and \chpl{true} otherwise.
 % This has the odd effect that a bool stored in a signed one-bit bitfield would
 % change sign without generating a conversion error.  But its subsequent
 % conversion back to a bool would yield the original value.
@@ -290,6 +298,19 @@ The rules for converting from \chpl{imag} to \chpl{complex} are the same as for
 converting from real, except that the imaginary part of the result is set using
 the input value, and the real part of the result is set to zero.
 
+\subsection{Explicit Tuple to Complex Conversion}
+\label{Explicit_Tuple_to_Complex_Conversion}
+\index{conversions!tuple to complex}
+\index{conversions!explicit!tuple to complex}
+
+A two-tuple of numerical values may be converted to a \chpl{complex} value.  If
+the destination type is \chpl{complex(128)}, each member of the two-tuple must
+be convertible to \chpl{real(64)}.  If the destination type
+is \chpl{complex(64)}, each member of the two-tuple must be convertible
+to \chpl{real(32)}.  The first member of the tuple becomes the real part of the
+resulting complex value; the second member of the tuple becomes the imaginary
+part of the resulting complex value.
+
 \subsection{Explicit Enumeration Conversions}
 \label{Explicit_Enumeration_Conversions}
 \index{conversions!enumeration}
@@ -341,10 +362,12 @@ string is selected.  If no such enumerator exists, a runtime error occurs.
 
 An expression of static class type \chpl{C} can be explicitly
 converted to a class type \chpl{D} provided that \chpl{C} is derived
-from \chpl{D} or \chpl{D} is derived from \chpl{C}.  In the event
-that \chpl{D} is derived from \chpl{C}, it is a runtime error if the
-the dynamic class type of \chpl{C} is not derived from or equal
-to \chpl{D}.
+from \chpl{D} or \chpl{D} is derived from \chpl{C}.
+
+When at run time the source expression refers to an instance of
+\chpl{D} or it subclass, its value is not changed.
+Otherwise, or when the source expression is \chpl{nil},
+the result of the conversion is \chpl{nil}.
 
 \subsection{Explicit Record Conversions}
 \label{Explicit_Record_Conversions}

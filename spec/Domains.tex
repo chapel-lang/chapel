@@ -15,14 +15,16 @@ indices may potentially be distributed across multiple locales as
 described in~\rsec{Domain_Maps}, thus supporting global-view data
 structures.
 
-In the next subsection, we introduce the key characteristics of domains.
-In~\rsec{Base_Domains}, we discuss the types and values that
-can be associated with a base domain.  In~\rsec{Simple_Subdomains}, we discuss the
-types and values of simple subdomains that can be created from those base
-domains.  In~\rsec{Sparse_Subdomains}, we discuss the types and values of sparse
-subdomains.  The remaining sections describe the important manipulations
-that can be performed with domains, as well as the predefined operators and
-functions defined for domains.
+In the next subsection, we introduce the key characteristics of
+domains.  In~\rsec{Base_Domain_Types_and_Values}, we discuss the types
+and values that can be associated with a base domain.
+In~\rsec{Simple_Subdomain_Types_and_Values}, we discuss the types and
+values of simple subdomains that can be created from those base
+domains.  In~\rsec{Sparse_Subdomain_Types_and_Values}, we discuss the
+types and values of sparse subdomains.  The remaining sections
+describe the important manipulations that can be performed with
+domains, as well as the predefined operators and functions defined for
+domains.
 
 \section{Domain Overview}
 \index{domains!kinds}
@@ -76,9 +78,9 @@ The runtime representation of a domain is controlled by its domain map.
 Domain maps are presented in \rsec{Domain_Maps}.
 
 
-\section{Base Domains}
-\label{Base_Domains}
-\index{domains!base}
+\section{Base Domain Types and Values}
+\label{Base_Domain_Types_and_Values}
+\index{domains!types and values}
 
 Base domain types can be classified as regular or irregular.  Dense and
 strided rectangular domains are regular domains.
@@ -206,7 +208,7 @@ promoted to the same type, then that type is used as the \chpl{idxType}.
 Otherwise, the domain literal is invalid.
 
 \begin{example}
-The expression \chpl{{1..5, 1..5}} defines a rectangular domain with
+The expression \chpl{\{1..5, 1..5\}} defines a rectangular domain with
 type \chpl{domain(rank=2,} \chpl{ idxType=int,} \chpl{ stridable=false)}.
 It is a $5 \times 5$ domain with the indices:
 \begin{equation}
@@ -240,6 +242,8 @@ The following creates a two-dimensional rectangular domain and then uses this to
 declare an array.  The array indices are iterated over using the domain's
 \chpl{dim()} method, and each element is filled with
 some value.  Then the array is printed out.
+
+Thus, the code
 \begin{chapel}
 var D : domain(2) = {1..2, 1..7};
 var A : [D] int;
@@ -248,7 +252,8 @@ for i in D.dim(1) do
     A[i,j] = 7 * i**2 + j;
 writeln(A);
 \end{chapel}
-\begin{chapelprintoutput}
+produces
+\begin{chapelprintoutput}{}
 8 9 10 11 12 13 14
 29 30 31 32 33 34 35
 \end{chapelprintoutput}
@@ -361,12 +366,17 @@ The following example illusrates construction of an associative domain
 containing string indices "bar" and "foo".  Note that due to internal hashing 
 of indices the order in which the values of the associative domain are iterated
 is not the same as their specification order.
+
+This code
 \begin{chapel}
 var D : domain(string) = {"bar", "foo"};
 writeln(D);
 \end{chapel}
-\begin{chapelprintoutput}
-associativeDomain.chpl:1: warning: whole-domain assignment has been serialized (see note in (*\texttt{\$}*)CHPL\_HOME/STATUS)
+\begin{chapelcompopts}
+--no-warnings
+\end{chapelcompopts}
+produces the output
+\begin{chapelprintoutput}{}
 {foo, bar}
 \end{chapelprintoutput}
 \end{chapelexample}
@@ -400,8 +410,8 @@ Indices can be added to or removed from an associative domain
 as described in \rsec{Adding_and_Removing_Domain_Indices}.
 
 
-\section{Simple Subdomains}
-\label{Simple_Subdomains}
+\section{Simple Subdomain Types and Values}
+\label{Simple_Subdomain_Types_and_Values}
 \index{subdomains}
 \index{subdomains!simple}
 
@@ -411,11 +421,12 @@ A subdomain has the same type as its parent domain, and by default
 it inherits the domain map of its parent domain.  All domain types
 support subdomains.
 
-Simple subdomains are subdomains which are not sparse.  Sparse subdomains are
-discussed in the following section (\rsec{Sparse_Subdomains}).  A simple
-subdomain inherits its representation (regular or irregular) from its base domain (or base
-subdomain).  A sparse subdomain is always irregular, even if its base domain is
-regular.  
+Simple subdomains are subdomains which are not sparse.  Sparse
+subdomains are discussed in the following section
+(\rsec{Sparse_Subdomain_Types_and_Values}).  A simple subdomain
+inherits its representation (regular or irregular) from its base
+domain (or base subdomain).  A sparse subdomain is always irregular,
+even if its base domain is regular.
 
 In all other respects, the two kinds of subdomain behave identically.  In this
 specification, ``subdomain'' refers to both simple and sparse subdomains, unless
@@ -476,8 +487,8 @@ It is an error to attempt to add an index to a subdomain that is not also
 a member of the parent domain.
 
 
-\section{Sparse Subdomains}
-\label{Sparse_Subdomains}
+\section{Sparse Subdomain Types and Values}
+\label{Sparse_Subdomain_Types_and_Values}
 \index{domains!sparse}
 \index{subdomains!sparse}
 
@@ -900,6 +911,8 @@ Resets this domain's index set to the empty set.
 \begin{chapelexample}{emptyEnumeratedDomain}
 In the case of an enumerated domain, this function provides a way to produce an
 empty index set.
+
+When run, the code
 \begin{chapel}
 enum Counter { one, two, three };
 var D : domain ( Counter );
@@ -907,7 +920,8 @@ writeln("D has ", D.numIndices, " indices.");
 D.clear();
 writeln("D has ", D.numIndices, " indices.");
 \end{chapel}
-\begin{chapelprintoutput}
+prints out
+\begin{chapelprintoutput}{}
 D has 3 indices.
 D has 0 indices.
 \end{chapelprintoutput}
@@ -1211,4 +1225,13 @@ proc -(d1: domain, d2: domain)
 \begin{protobody}
 Removes the indices in domain \chpl{d2} from those in \chpl{d1}.  It is an error
 if \chpl{d2} contains indices which are not also in \chpl{d1}.
+\end{protobody}
+
+\index{domains!requestCapacity@\chpl{requestCapacity}}
+\index{predefined functions!requestCapacity@\chpl{requestCapacity}}
+\begin{protohead}
+proc requestCapacity(s: int)
+\end{protohead}
+\begin{protobody}
+Resizes the domain internal storage to hold at least \chpl{s} indicies.
 \end{protobody}

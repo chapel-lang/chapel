@@ -555,7 +555,7 @@ The \chpl{iostyle} type is an implementation-defined record.
 
 \begin{craychapel}
 The \chpl{iostyle} type is presented in
-\chpl{CHPL_HOME/doc/technotes/README.io}.
+\chpl{doc/technotes/README.io}.
 \end{craychapel}
 
 \begin{future}
@@ -589,7 +589,7 @@ Returns a string describing the success or error condition in \chpl{error}.
 \begin{craychapel}
 Other \chpl{syserr} constants are described in
 \\ %formatting
-\chpl{CHPL_HOME/doc/technotes/README.io}.
+\chpl{doc/technotes/README.io}.
 \end{craychapel}
 
 The \chpl{syserr} type is implementation-defined.
@@ -654,7 +654,10 @@ For text I/O, any whitespace is skipped over and is used only to separate one
 argument from the next.  The predefined function \chpl{readln} is
 identical except that upon reading all of its arguments it scans ahead
 in the input stream until just after the next {\em end-of-line}
-character.
+character. The \chpl{read} and \chpl{readln} functions taking in variable
+arguments return a \chpl{bool} value of true if all values were read or
+false if not. In this way, these functions can be used to iterate over a file
+of unknown length.
 
 The \chpl{read} and \chpl{readln} functions are also defined to take
 an arbitrary number of types as arguments.  In this case, the
@@ -669,13 +672,14 @@ on the \chpl{stdout} channel (\rsec{IO_channel_write}).
 \chpl{read} and \chpl{readln} invoke the correspondingly-named methods
 on the \chpl{stdin} channel (\rsec{IO_channel_read}).
 
-\begin{chapelexample}{writeln.chpl}
+\begin{chapelexample}{HelloWorld.chpl}
 The \chpl{writeln} function allows for a simple implementation
 of the {\em Hello-World} program:
 \begin{chapel}
 writeln("Hello, World!");
 \end{chapel}
-\begin{chapelprintoutput}
+The expected output is
+\begin{chapelprintoutput}{}
 Hello, World!
 \end{chapelprintoutput}
 \end{chapelexample}
@@ -687,8 +691,9 @@ variables \chpl{x} and \chpl{y}:
 var x: int;
 var y: real;
 
-/* reading into variable expressions */
-read(x, y);
+/* reading into variable expressions, returning
+   true if the values were read, false on EOF */
+var ok:bool = read(x, y);
 
 /* reading via a single type argument */
 x = read(int);
@@ -815,7 +820,10 @@ Note that objects of type \chpl{Reader} or \chpl{Writer} may represent a locked 
 Because it is often more convenient to use an operator for I/O, instead of writing \chpl{f.readwrite(x); f.readwrite(y);}, one can write \chpl{f <~> x <~> y;}. Note that the types \chpl{ioLiteral} and \chpl{ioNewline} may be useful when using the \chpl{<~>}. \chpl{ioLiteral} represents some string that must be read or written as-is (e.g. \chpl{","} when working with a tuple), and \chpl{ioNewline} will emit a newline when writing but skip to and consume a newline when reading.
 
 \begin{chapelexample}{UserReadWrite.chpl}
-This example defines a readWriteThis method and demonstrates how \chpl{<~>} will call the read or write routine, depending on the situation.
+This example defines a readWriteThis method and demonstrates how \chpl{<~>} will
+call the read or write routine, depending on the situation.
+
+When run, the code
 \begin{chapel}
 class IntPair {
   var x: int;
@@ -827,7 +835,11 @@ class IntPair {
 var ip = new IntPair(17,2);
 write(ip);
 \end{chapel}
-\begin{chapelprintoutput}
+\begin{chapelpost}
+delete ip;
+\end{chapelpost}
+produces the output
+\begin{chapelprintoutput}{}
 17,2
 \end{chapelprintoutput}
 \end{chapelexample}
@@ -835,6 +847,7 @@ write(ip);
 \begin{chapelexample}{UserWrite.chpl}
 This example defines a only a writeThis method - so that there will be a function resolution error if the class NoRead is read.
 
+The code
 \begin{chapel}
 class NoRead {
   var x: int;
@@ -848,7 +861,11 @@ var nr = new NoRead();
 write(nr);
 // Note that read(nr) will generate a compiler error.
 \end{chapel}
-\begin{chapelprintoutput}
+\begin{chapelpost}
+delete nr;
+\end{chapelpost}
+prints out
+\begin{chapelprintoutput}{}
 hello
 \end{chapelprintoutput}
 \end{chapelexample}
@@ -884,11 +901,14 @@ var c = new C();
 c.write(41, 32, 23, 14);
 writeln(c);
 \end{chapel}
+\begin{chapelpost}
+delete c;
+\end{chapelpost}
 The \chpl{C} class filters the arguments sent to it, printing out only
 the first letter.  The output to the above is thus:
 % TODO: when 'chapelprintoutput' is extended with some wording,
 % move things around so that the printed text is well-composed.
-\begin{chapelprintoutput}
+\begin{chapelprintoutput}{}
 4321
 \end{chapelprintoutput}
 \end{chapelexample}

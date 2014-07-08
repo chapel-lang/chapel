@@ -14,8 +14,8 @@ The automatic modules
 are as follows:
 
 \begin{tabular}{lll}
-\hspace{1pc} & \chpl{Math} & Math routines \\
-             & \chpl{Base} & Basic routines \\
+\hspace{1pc} & \chpl{Base} & Basic routines \\
+             & \chpl{Math} & Math routines \\
              & \chpl{Types} & Routines related to primitive types \\
 \end{tabular}
 
@@ -35,6 +35,10 @@ are as follows:
 There is an expectation that each of these modules will be extended
 and that more standard modules will be defined over time.
 
+We list functions in alphabetical order for each module.
+
+
+
 \section{Automatic Modules}
 \index{automatic modules (see also modules, standard, automatic)}
 \index{standard modules!automatic (see also modules, standard, automatic)}
@@ -43,6 +47,138 @@ and that more standard modules will be defined over time.
 Automatic modules are used by a Chapel program automatically.  There
 is currently no way to avoid their use by a program, although we
 anticipate adding such a capability in the future.
+
+
+\subsection{Base}
+\label{Standard}
+\index{modules!standard!Base@\chpl{Base}}
+\index{modules!standard!automatic!Base@\chpl{Base}}
+
+\begin{protohead}
+proc ascii(s: string): int
+\end{protohead}
+\begin{protobody}
+Returns the ASCII code number of the first letter in the
+argument \chpl{s}.
+\end{protobody}
+
+\begin{protohead}
+proc assert(test: bool)
+proc assert(test: bool, args...)
+\end{protohead}
+\begin{protobody}
+If \chpl{test} is true, no action is taken.
+If \chpl{test} is false,
+prints an error message to stderr giving the location of the call to \chpl{assert}
+in the Chapel source, followed by the remaining arguments to the call, if any,
+then exits the program.
+\end{protobody}
+
+\begin{protohead}
+proc complex.re: real
+\end{protohead}
+\begin{protobody}
+Returns the real component of the complex number.
+\end{protobody}
+
+\begin{protohead}
+proc complex.im: real
+\end{protohead}
+\begin{protobody}
+Returns the imaginary component of the complex number.
+\end{protobody}
+
+\begin{protohead}
+proc complex.=re(f: real)
+\end{protohead}
+\begin{protobody}
+Sets the real component of the complex number to \chpl{f}.
+\end{protobody}
+
+\begin{protohead}
+proc complex.=im(f: real)
+\end{protohead}
+\begin{protobody}
+Sets the imaginary component of the complex number to \chpl{f}.
+\end{protobody}
+
+\begin{protohead}
+proc exit(status: int)
+\end{protohead}
+\begin{protobody}
+Exits the program with code \chpl{status}.
+\end{protobody}
+
+\begin{protohead}
+proc halt()
+proc halt(args...)
+\end{protohead}
+\begin{protobody}
+Prints an error message to stderr giving the location of the call to \chpl{halt}
+in the Chapel source, followed by the arguments to the call, if any,
+then exits the program.
+\end{protobody}
+
+\begin{protohead}
+proc string.length: int
+\end{protohead}
+\begin{protobody}
+Returns the number of characters in the base expression of type string.
+\end{protobody}
+
+\begin{protohead}
+proc max(x, y...?k)
+\end{protohead}
+\begin{protobody}
+Returns the maximum of the arguments when compared using the
+``greater-than'' operator.  The return type is inferred from the types
+of the arguments as allowed by implicit conversions.
+\end{protobody}
+
+\begin{protohead}
+proc min(x, y...?k)
+\end{protohead}
+\begin{protobody}
+Returns the minimum of the arguments when compared using the
+``less-than'' operator.  The return type is inferred from the types of
+the arguments as allowed by implicit conversions.
+\end{protobody}
+
+\begin{protohead}
+proc string.size: int
+\end{protohead}
+\begin{protobody}
+Same as string.length.
+\end{protobody}
+
+\begin{protohead}
+proc string.substring(x): string
+\end{protohead}
+\begin{protobody}
+Returns a value of string type that is a substring of the base
+expression.  If \chpl{x} is $i$, a value of type \chpl{int}, then the
+result is the $i$th character.  If \chpl{x} is a range, the result is
+the substring where the characters in the substring are given by the
+values in the range.
+\end{protobody}
+
+\begin{protohead}
+proc typeToString(type t) param : string
+\end{protohead}
+\begin{protobody}
+Returns a string parameter that represents the name of the
+type \chpl{t}.
+\end{protobody}
+
+\begin{protohead}
+proc warning(s:string)
+proc warning(args...)
+\end{protohead}
+\begin{protobody}
+Prints a warning to stderr giving the location of the call to \chpl{warning}
+in the Chapel source, followed by the argument(s) to the call.
+\end{protobody}
+
 
 \subsection{Math}
 \label{Math}
@@ -62,6 +198,8 @@ proc abs(i: uint(?w)): uint(w)
 proc abs(param i: integral) param
 proc abs(x: real): real
 proc abs(x: real(32)): real(32)
+proc abs(x: imag): real;
+proc abs(x: imag(32)): real(32);
 proc abs(x: complex): real
 \end{protohead}
 \begin{protobody}
@@ -434,163 +572,28 @@ than the argument in absolute value.
 \end{protobody}
 
 
-\subsection{Base}
-\label{Standard}
-\index{modules!standard!Base@\chpl{Base}}
-\index{modules!standard!automatic!Base@\chpl{Base}}
-
-\begin{protohead}
-proc ascii(s: string): int
-\end{protohead}
-\begin{protobody}
-Returns the ASCII code number of the first letter in the
-argument \chpl{s}.
-\end{protobody}
-
-\begin{protohead}
-proc assert(test: bool) {
-\end{protohead}
-\begin{protobody}
-Exits the program if \chpl{test} is false and prints to standard error
-the location in the Chapel code of the call to \chpl{assert}.
-If \chpl{test} is true, no action is taken.
-\end{protobody}
-
-\begin{protohead}
-proc assert(test: bool, args ...?numArgs) {
-\end{protohead}
-\begin{protobody}
-Exits the program if \chpl{test} is false and prints to standard error
-the location in the Chapel code of the call to \chpl{assert} as well
-as the rest of the arguments to the call.  If \chpl{test} is true, no
-action is taken.
-\end{protobody}
-
-\begin{protohead}
-proc complex.re: real
-\end{protohead}
-\begin{protobody}
-Returns the real component of the complex number.
-\end{protobody}
-
-\begin{protohead}
-proc complex.im: real
-\end{protohead}
-\begin{protobody}
-Returns the imaginary component of the complex number.
-\end{protobody}
-
-\begin{protohead}
-proc complex.=re(f: real)
-\end{protohead}
-\begin{protobody}
-Sets the real component of the complex number to \chpl{f}.
-\end{protobody}
-
-\begin{protohead}
-proc complex.=im(f: real)
-\end{protohead}
-\begin{protobody}
-Sets the imaginary component of the complex number to \chpl{f}.
-\end{protobody}
-
-\begin{protohead}
-proc exit(status: int)
-\end{protohead}
-\begin{protobody}
-Exits the program with code \chpl{status}.
-\end{protobody}
-
-\begin{protohead}
-proc halt()
-\end{protohead}
-\begin{protobody}
-Exits the program and prints to standard error the location in the
-Chapel code of the call to \chpl{halt}.
-\end{protobody}
-
-\begin{protohead}
-proc halt(args ...?numArgs)
-\end{protohead}
-\begin{protobody}
-Exits the program and prints to standard error the location in the
-Chapel code of the call to \chpl{halt} as well as the rest of the
-arguments to the call.
-\end{protobody}
-
-\begin{protohead}
-proc string.length: int
-\end{protohead}
-\begin{protobody}
-Returns the number of characters in the base expression of type string.
-\end{protobody}
-
-\begin{protohead}
-proc max(x, y...?k)
-\end{protohead}
-\begin{protobody}
-Returns the maximum of the arguments when compared using the
-``greater-than'' operator.  The return type is inferred from the types
-of the arguments as allowed by implicit conversions.
-\end{protobody}
-
-\begin{protohead}
-proc min(x, y...?k)
-\end{protohead}
-\begin{protobody}
-Returns the minimum of the arguments when compared using the
-``less-than'' operator.  The return type is inferred from the types of
-the arguments as allowed by implicit conversions.
-\end{protobody}
-
-\begin{protohead}
-proc string.size: int
-\end{protohead}
-\begin{protobody}
-Same as string.length.
-\end{protobody}
-
-\begin{protohead}
-proc string.substring(x): string
-\end{protohead}
-\begin{protobody}
-Returns a value of string type that is a substring of the base
-expression.  If \chpl{x} is $i$, a value of type \chpl{int}, then the
-result is the $i$th character.  If \chpl{x} is a range, the result is
-the substring where the characters in the substring are given by the
-values in the range.
-\end{protobody}
-
-\begin{protohead}
-proc typeToString(type t) param : string
-\end{protohead}
-\begin{protobody}
-Returns a string parameter that represents the name of the
-type \chpl{t}.
-\end{protobody}
-
 \subsection{Types}
 \label{Types_standard_module}
 \index{modules!standard!Types@\chpl{Types}}
 \index{modules!standard!automatic!Types@\chpl{Types}}
 
 \begin{protohead}
-proc numBits(type t) param : int
+proc isProperSubtype(type sub, type super) param : bool
 \end{protohead}
 \begin{protobody}
-Returns the number of bits used to store the values of type \chpl{t}.
-This is implemented for all numeric types and fixed-width \chpl{bool} types.
-It is not implemented for default-width \chpl{bool}.
+Indicates whether \chpl{sub} is a proper subtype of \chpl{super}.
+The proper subtype relationship holds if \chpl{sub} is a class or
+a record type that inherits, directly or indirectly, from \chpl{super}.
 \end{protobody}
 
-
 \begin{protohead}
-proc numBytes(type t) param : int
+proc isSubtype(type sub, type super) param : bool
 \end{protohead}
 \begin{protobody}
-Returns the number of bytes used to store the values of type \chpl{t}.
-This is implemented for all numeric types and fixed-width \chpl{bool} types.
-It is not implemented for default-width \chpl{bool}.
+Indicates whether \chpl{sub} is a subtype of \chpl{super}.
+The subtype relationship holds if the proper subtype relationship holds
+(see \chpl{isProperSubtype}) or if \chpl{sub} is a subtype of \chpl{super}
+are the same type.
 \end{protobody}
 
 \begin{protohead}
@@ -609,6 +612,24 @@ Returns the minimum value that can be stored in type \chpl{t}.  This
 is implemented for all numeric types.
 \end{protobody}
 
+\begin{protohead}
+proc numBits(type t) param : int
+\end{protohead}
+\begin{protobody}
+Returns the number of bits used to store the values of type \chpl{t}.
+This is implemented for all numeric types and fixed-width \chpl{bool} types.
+It is not implemented for default-width \chpl{bool}.
+\end{protobody}
+
+\begin{protohead}
+proc numBytes(type t) param : int
+\end{protohead}
+\begin{protobody}
+Returns the number of bytes used to store the values of type \chpl{t}.
+This is implemented for all numeric types and fixed-width \chpl{bool} types.
+It is not implemented for default-width \chpl{bool}.
+\end{protobody}
+
 
 
 \section{Optional Modules}
@@ -617,6 +638,7 @@ is implemented for all numeric types.
 
 Optional modules can be used by a Chapel program via the \chpl{use}
 keyword (\rsec{Using_Modules}).
+
 
 \subsection{AdvancedIters}
 \label{AdvancedIters}
@@ -771,6 +793,7 @@ Compute the default norm on array \chpl{x}.  For a 1D array this is
 the 2-norm, for a 2D array, this is the Frobenius norm.
 \end{protobody}
 
+
 \subsection{Random}
 \label{Random}
 \index{modules!optional!Random@\chpl{Random}}
@@ -871,6 +894,7 @@ the \chpl{RandomStream} class.  If unspecified, the default for the
 class will be used.
 \end{protobody}
 
+
 \subsection{Search}
 \label{Search}
 \index{modules!optional!Search@\chpl{Search}}
@@ -889,7 +913,6 @@ indicating (1) whether or not the value was found and (2) the location
 of the value if it was found, or the location where the value should
 have been if it was not found.
 \end{protobody}
-
 
 \begin{protohead}
 proc BinarySearch(Data: [?Dom], val, in lo = Dom.low, in hi = Dom.high)
@@ -992,7 +1015,6 @@ enum Day { sunday=0, monday, tuesday, wednesday, thursday, friday, saturday };
 The enumeration Day defines the days of the week, with Sunday defined to be 0.
 \end{protobody}
 
-
 \begin{protohead}
 proc getCurrentDate(): (int, int, int)
 \end{protohead}
@@ -1022,7 +1044,7 @@ proc Timer.clear()
 \begin{protobody}
 Clears the elapsed time stored in the Timer.  This routine can be called
 whether or not the timer is running and doesn't change its status in that
-regard.
+regard.  If the timer is running it is restarted.
 \end{protobody}
 
 \begin{protohead}

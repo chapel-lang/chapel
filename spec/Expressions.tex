@@ -229,21 +229,9 @@ A cast is specified with the following syntax:
 cast-expression:
   expression : type-specifier
 \end{syntax}
-The expression is converted to the specified type.  Except for the
-cast listed below, casts are restricted to valid explicit
-conversions~(\rsec{Explicit_Conversions}).
-
-The following cast has a special meaning and does not correspond to an
-explicit conversion:
-\begin{itemize}
-\index{complex@\chpl{complex}!casts from tuples}
-\item
-  A cast from a 2-tuple to \chpl{complex} converts the 2-tuple into a
-  complex where the first component becomes the real part and the
-  second component becomes the imaginary part.  The size of the
-  complex is determined from the size of the components based on
-  implicit conversions.
-\end{itemize}
+The expression is converted to the specified type.  A cast expression invokes
+the corresponding explicit conversion~(\rsec{Explicit_Conversions}).  A
+resolution error occurs if no such conversion exists.
 
 \section{LValue Expressions}
 \label{LValue_Expressions}
@@ -316,11 +304,19 @@ precedence than those listed later.
 unary \verb@+@ & \multirow{2}{*}{right} & positive identity \\
 unary \verb@-@ & & negation \\
 \hline
+\verb@<<@ & \multirow{2}{*}{left} & left shift \\
+\verb@>>@ & & right shift \\
+\hline
+\verb@&@ & left & bitwise/logical and \\
+\hline
+\verb@^@ & left & bitwise/logical xor \\
+\hline
+\verb@|@ & left & bitwise/logical or \\
+\hline
 \verb@+@ & \multirow{2}{*}{left} & addition \\
 \verb@-@ & & subtraction \\
 \hline
-\verb@<<@ & \multirow{2}{*}{left} & left shift \\
-\verb@>>@ & & right shift \\
+\verb@..@ & left & range construction \\
 \hline
 \verb@<=@ & \multirow{4}{*}{left} & less-than-or-equal-to comparison \\
 \verb@>=@ & & greater-than-or-equal-to comparison \\
@@ -330,28 +326,21 @@ unary \verb@-@ & & negation \\
 \verb@==@ & \multirow{2}{*}{left} & equal-to comparison \\
 \verb@!=@ & & not-equal-to comparison \\
 \hline
-\verb@&@ & left & bitwise/logical and \\
-\hline
-\verb@^@ & left & bitwise/logical xor \\
-\hline
-\verb@|@ & left & bitwise/logical or \\
-\hline
 \verb@&&@ & left & short-circuiting logical and \\
 \hline
 \verb@||@ & left & short-circuiting logical or \\
 \hline
-\verb@..@ & left & range construction \\
-\hline
 \verb@in@ & left & forall expression \\
 \hline
-\verb@by@ & \multirow{2}{*}{left} & range/domain stride application \\
+\verb@by@ & \multirow{3}{*}{left} & range/domain stride application \\
 \verb@#@ & & range count application \\
+\verb@align@ & & range alignment \\
 \hline
 \verb@if then else@ & \multirow{5}{*}{left} & conditional expression \\
 \verb@forall do@ & & forall expression \\
 \verb@[ ]@ & & forall expression \\
 \verb@for do@ & & for expression \\
-\verb@sync single@ & & sync and single type \\
+\verb@sync single atomic@ & & sync, single and atomic type \\
 \hline
 \verb@,@ & left & comma separated expressions \\
 \hline
@@ -422,6 +411,18 @@ change, we felt it unwise to stray from the pack.  The typical
 rationale for the C ordering is to allow these operators to be used as
 non-short-circuiting logical operations.
 
+In contrast to C, we give bitwise operations a higher precedence than binary
+addition/subtraction and comparison operators.  This enables using the shift
+operators as shorthand for multiplication/division by powers of 2, and also
+makes it easier to extract and test a bitmapped field:
+
+\begin{center}
+\begin{tabular}{lcl}
+\chpl{(x \& MASK) == MASK} & as & \chpl{x \& MASK == MASK} \\
+\chpl{a + b * pow(2,y)} & as & \chpl{a * b << y} \\
+\end{tabular}
+\end{center}
+
 One final area of note is the precedence of reductions.  Two common
 cases tend to argue for making reductions very low or very high in the
 precedence table:
@@ -469,7 +470,7 @@ unary-expression:
   unary-operator expression
 
 unary-operator: one of
-  + - ~ !
+  + $ $ $ $ - $ $ $ $ ~ $ $ $ $ !
 \end{syntax}
 
 \index{operators!binary}
@@ -480,7 +481,7 @@ binary-expression:
   expression binary-operator expression
 
 binary-operator: one of
-  + - * / % ** & | ^ << >> && || == != <= >= < > `by' #
+  + $ $ $ $ - $ $ $ $ * $ $ $ $ / $ $ $ $ % $ $ $ $ ** $ $ $ $ & $ $ $ $ | $ $ $ $ ^ $ $ $ $ << $ $ $ $ >> $ $ $ $ && $ $ $ $ || $ $ $ $ == $ $ $ $ != $ $ $ $ <= $ $ $ $ >= $ $ $ $ < $ $ $ $ > $ $ $ $ `by' $ $ $ $ #
 \end{syntax}
 
 The operators are defined in subsequent sections.
@@ -499,11 +500,6 @@ forms listed, those listed earlier in the list being given
 preference.  If no compatible implicit conversions exist, then a
 compile-time error occurs.  In these cases, an explicit cast is required.
 
-All integral arithmetic operators are implemented over integral types
-of size 32 and 64 bits only.  For example, adding two 8-bit integers
-is done by first converting them to 32-bit integers and then adding
-the 32-bit integers.  The result is a 32-bit integer.
-
 \subsection{Unary Plus Operators}
 \label{Unary_Plus_Operators}
 \index{+ (unary)@\chpl{+} (unary)}
@@ -511,14 +507,22 @@ the 32-bit integers.  The result is a 32-bit integer.
 
 The unary plus operators are predefined as follows:
 \begin{chapel}
+proc +(a: int(8)): int(8)
+proc +(a: int(16)): int(16)
 proc +(a: int(32)): int(32)
 proc +(a: int(64)): int(64)
+
+proc +(a: uint(8)): uint(8)
+proc +(a: uint(16)): uint(16)
 proc +(a: uint(32)): uint(32)
 proc +(a: uint(64)): uint(64)
+
 proc +(a: real(32)): real(32)
 proc +(a: real(64)): real(64)
+
 proc +(a: imag(32)): imag(32)
 proc +(a: imag(64)): imag(64)
+
 proc +(a: complex(64)): complex(64)
 proc +(a: complex(128)): complex(128)
 \end{chapel}
@@ -532,13 +536,17 @@ For each of these definitions, the result is the value of the operand.
 
 The unary minus operators are predefined as follows:
 \begin{chapel}
+proc -(a: int(8)): int(8)
+proc -(a: int(16)): int(16)
 proc -(a: int(32)): int(32)
 proc -(a: int(64)): int(64)
-proc -(a: uint(64))
+
 proc -(a: real(32)): real(32)
 proc -(a: real(64)): real(64)
+
 proc -(a: imag(32)): imag(32)
 proc -(a: imag(64)): imag(64)
+
 proc -(a: complex(64)): complex(64)
 proc -(a: complex(128)): complex(128)
 \end{chapel}
@@ -561,8 +569,13 @@ to \chpl{int(64)} using an implicit conversion.
 
 The addition operators are predefined as follows:
 \begin{chapel}
+proc +(a: int(8), b: int(8)): int(8)
+proc +(a: int(16), b: int(16)): int(16)
 proc +(a: int(32), b: int(32)): int(32)
 proc +(a: int(64), b: int(64)): int(64)
+
+proc +(a: uint(8), b: uint(8)): uint(8)
+proc +(a: uint(16), b: uint(16)): uint(16)
 proc +(a: uint(32), b: uint(32)): uint(32)
 proc +(a: uint(64), b: uint(64)): uint(64)
 
@@ -609,12 +622,15 @@ type.
 
 The subtraction operators are predefined as follows:
 \begin{chapel}
+proc -(a: int(8), b: int(8)): int(8)
+proc -(a: int(16), b: int(16)): int(16)
 proc -(a: int(32), b: int(32)): int(32)
 proc -(a: int(64), b: int(64)): int(64)
+
+proc -(a: uint(8), b: uint(8)): uint(8)
+proc -(a: uint(16), b: uint(16)): uint(16)
 proc -(a: uint(32), b: uint(32)): uint(32)
 proc -(a: uint(64), b: uint(64)): uint(64)
-proc -(a: uint(64), b: int(64))
-proc -(a: int(64), b: uint(64))
 
 proc -(a: real(32), b: real(32)): real(32)
 proc -(a: real(64), b: real(64)): real(64)
@@ -660,12 +676,15 @@ versa, also produces a value of complex type.
 
 The multiplication operators are predefined as follows:
 \begin{chapel}
+proc *(a: int(8), b: int(8)): int(8)
+proc *(a: int(16), b: int(16)): int(16)
 proc *(a: int(32), b: int(32)): int(32)
 proc *(a: int(64), b: int(64)): int(64)
+
+proc *(a: uint(8), b: uint(8)): uint(8)
+proc *(a: uint(16), b: uint(16)): uint(16)
 proc *(a: uint(32), b: uint(32)): uint(32)
 proc *(a: uint(64), b: uint(64)): uint(64)
-proc *(a: uint(64), b: int(64))
-proc *(a: int(64), b: uint(64))
 
 proc *(a: real(32), b: real(32)): real(32)
 proc *(a: real(64), b: real(64)): real(64)
@@ -711,12 +730,15 @@ value of complex type.
 
 The division operators are predefined as follows:
 \begin{chapel}
+proc /(a: int(8), b: int(8)): int(8)
+proc /(a: int(16), b: int(16)): int(16)
 proc /(a: int(32), b: int(32)): int(32)
 proc /(a: int(64), b: int(64)): int(64)
+
+proc /(a: uint(8), b: uint(8)): uint(8)
+proc /(a: uint(16), b: uint(16)): uint(16)
 proc /(a: uint(32), b: uint(32)): uint(32)
 proc /(a: uint(64), b: uint(64)): uint(64)
-proc /(a: uint(64), b: int(64))
-proc /(a: int(64), b: uint(64))
 
 proc /(a: real(32), b: real(32)): real(32)
 proc /(a: real(64), b: real(64)): real(64)
@@ -767,12 +789,15 @@ The integer result $q$ is the candidate quotient which lies closest to zero.
 
 The modulus operators are predefined as follows:
 \begin{chapel}
+proc %(a: int(8), b: int(8)): int(8)
+proc %(a: int(16), b: int(16)): int(16)
 proc %(a: int(32), b: int(32)): int(32)
 proc %(a: int(64), b: int(64)): int(64)
+
+proc %(a: uint(8), b: uint(8)): uint(8)
+proc %(a: uint(16), b: uint(16)): uint(16)
 proc %(a: uint(32), b: uint(32)): uint(32)
 proc %(a: uint(64), b: uint(64)): uint(64)
-proc %(a: uint(64), b: int(64))
-proc %(a: int(64), b: uint(64))
 \end{chapel}
 For each of these definitions that return a value, the result is the
 remainder when the first operand is divided by the second operand.
@@ -802,12 +827,15 @@ extended to handle real, imaginary, and complex types in the future.
 
 The exponentiation operators are predefined as follows:
 \begin{chapel}
+proc **(a: int(8), b: int(8)): int(8)
+proc **(a: int(16), b: int(16)): int(16)
 proc **(a: int(32), b: int(32)): int(32)
 proc **(a: int(64), b: int(64)): int(64)
+
+proc **(a: uint(8), b: uint(8)): uint(8)
+proc **(a: uint(16), b: uint(16)): uint(16)
 proc **(a: uint(32), b: uint(32)): uint(32)
 proc **(a: uint(64), b: uint(64)): uint(64)
-proc **(a: uint(64), b: int(64))
-proc **(a: int(64), b: uint(64))
 
 proc **(a: real(32), b: real(32)): real(32)
 proc **(a: real(64), b: real(64)): real(64)
@@ -839,8 +867,14 @@ overloading~(\rsec{Function_Overloading}).
 The bitwise complement operators are predefined as follows:
 \begin{chapel}
 proc ~(a: bool): bool
+
+proc ~(a: int(8)): int(8)
+proc ~(a: int(16)): int(16)
 proc ~(a: int(32)): int(32)
 proc ~(a: int(64)): int(64)
+
+proc ~(a: uint(8)): uint(8)
+proc ~(a: uint(16)): uint(16)
 proc ~(a: uint(32)): uint(32)
 proc ~(a: uint(64)): uint(64)
 \end{chapel}
@@ -856,14 +890,12 @@ the operand.
 The bitwise and operators are predefined as follows:
 \begin{chapel}
 proc &(a: bool, b: bool): bool
-proc &(a: int(32), b: int(32)): int(32)
-proc &(a: int(64), b: int(64)): int(64)
-proc &(a: uint(32), b: uint(32)): uint(32)
-proc &(a: uint(64), b: uint(64)): uint(64)
-proc &(a: int(32), b: uint(32)): uint(32)
-proc &(a: int(64), b: uint(64)): uint(64)
-proc &(a: uint(32), b: int(32)): uint(32)
-proc &(a: uint(64), b: int(64)): uint(64)
+
+proc &(a: int(?w), b: int(w)): int(w)
+proc &(a: uint(?w), b: uint(w)): uint(w)
+
+proc &(a: int(?w), b: uint(w)): uint(w)
+proc &(a: uint(?w), b: int(w)): uint(w)
 \end{chapel}
 For each of these definitions, the result is
 computed by applying the logical and operation to the bits of the
@@ -895,14 +927,12 @@ reflects the semantics of standard C.
 The bitwise or operators are predefined as follows:
 \begin{chapel}
 proc |(a: bool, b: bool): bool
-proc |(a: int(32), b: int(32)): int(32)
-proc |(a: int(64), b: int(64)): int(64)
-proc |(a: uint(32), b: uint(32)): uint(32)
-proc |(a: uint(64), b: uint(64)): uint(64)
-proc |(a: int(32), b: uint(32)): uint(32)
-proc |(a: int(64), b: uint(64)): uint(64)
-proc |(a: uint(32), b: int(32)): uint(32)
-proc |(a: uint(64), b: int(64)): uint(64)
+
+proc |(a: int(?w), b: int(w)): int(w)
+proc |(a: uint(?w), b: uint(w)): uint(w)
+
+proc |(a: int(?w), b: uint(w)): uint(w)
+proc |(a: uint(?w), b: int(w)): uint(w)
 \end{chapel}
 
 For each of these definitions, the result is
@@ -926,14 +956,12 @@ The same as for bitwise and (\rsec{Bitwise_And_Operators}).
 The bitwise xor operators are predefined as follows:
 \begin{chapel}
 proc ^(a: bool, b: bool): bool
-proc ^(a: int(32), b: int(32)): int(32)
-proc ^(a: int(64), b: int(64)): int(64)
-proc ^(a: uint(32), b: uint(32)): uint(32)
-proc ^(a: uint(64), b: uint(64)): uint(64)
-proc ^(a: int(32), b: uint(32)): uint(32)
-proc ^(a: int(64), b: uint(64)): uint(64)
-proc ^(a: uint(32), b: int(32)): uint(32)
-proc ^(a: uint(64), b: int(64)): uint(64)
+
+proc ^(a: int(?w), b: int(w)): int(w)
+proc ^(a: uint(?w), b: uint(w)): uint(w)
+
+proc ^(a: int(?w), b: uint(w)): uint(w)
+proc ^(a: uint(?w), b: int(w)): uint(w)
 \end{chapel}
 
 For each of these definitions, the result is
@@ -961,13 +989,24 @@ overloading~(\rsec{Function_Overloading}).
 
 The shift operators are predefined as follows:
 \begin{chapel}
+proc <<(a: int(8), b): int(8)
+proc <<(a: int(16), b): int(16)
 proc <<(a: int(32), b): int(32)
-proc >>(a: int(32), b): int(32)
 proc <<(a: int(64), b): int(64)
-proc >>(a: int(64), b): int(64)
+
+proc <<(a: uint(8), b): uint(8)
+proc <<(a: uint(16), b): uint(16)
 proc <<(a: uint(32), b): uint(32)
-proc >>(a: uint(32), b): uint(32)
 proc <<(a: uint(64), b): uint(64)
+
+proc >>(a: int(8), b): int(8)
+proc >>(a: int(16), b): int(16)
+proc >>(a: int(32), b): int(32)
+proc >>(a: int(64), b): int(64)
+
+proc >>(a: uint(8), b): uint(8)
+proc >>(a: uint(16), b): uint(16)
+proc >>(a: uint(32), b): uint(32)
 proc >>(a: uint(64), b): uint(64)
 \end{chapel}
 The type of the second actual argument must be any integral type.
@@ -995,11 +1034,17 @@ overloading~(\rsec{Function_Overloading}).
 \index{\!@\chpl{!}}
 \index{operators!\!@\chpl{!}}
 
-The logical negation operator is predefined as follows:
+The logical negation operator is predefined for booleans and integers
+as follows:
+
 \begin{chapel}
 proc !(a: bool): bool
+proc !(a: int(?w)): bool
+proc !(a: uint(?w)): bool
 \end{chapel}
-The result is the logical negation of the operand.
+For the boolean form, the result is the logical negation of the
+operand.  For the integer forms, the result is true if the operand is
+zero and false otherwise.
 
 \subsection{The Logical And Operator}
 \label{Logical_And_Operators}
@@ -1079,12 +1124,19 @@ overloading~(\rsec{Function_Overloading}).
 The ``less than'' comparison operators are predefined over numeric
 types as follows:
 \begin{chapel}
+proc <(a: int(8), b: int(8)): bool
+proc <(a: int(16), b: int(16)): bool
 proc <(a: int(32), b: int(32)): bool
 proc <(a: int(64), b: int(64)): bool
+
+proc <(a: uint(8), b: uint(8)): bool
+proc <(a: uint(16), b: uint(16)): bool
 proc <(a: uint(32), b: uint(32)): bool
 proc <(a: uint(64), b: uint(64)): bool
+
 proc <(a: real(32), b: real(32)): bool
 proc <(a: real(64), b: real(64)): bool
+
 proc <(a: imag(32), b: imag(32)): bool
 proc <(a: imag(64), b: imag(64)): bool
 \end{chapel}
@@ -1097,12 +1149,19 @@ otherwise the result is false.
 The ``greater than'' comparison operators are predefined over numeric
 types as follows:
 \begin{chapel}
+proc >(a: int(8), b: int(8)): bool
+proc >(a: int(16), b: int(16)): bool
 proc >(a: int(32), b: int(32)): bool
 proc >(a: int(64), b: int(64)): bool
+
+proc >(a: uint(8), b: uint(8)): bool
+proc >(a: uint(16), b: uint(16)): bool
 proc >(a: uint(32), b: uint(32)): bool
 proc >(a: uint(64), b: uint(64)): bool
+
 proc >(a: real(32), b: real(32)): bool
 proc >(a: real(64), b: real(64)): bool
+
 proc >(a: imag(32), b: imag(32)): bool
 proc >(a: imag(64), b: imag(64)): bool
 \end{chapel}
@@ -1115,12 +1174,19 @@ than \chpl{b}; otherwise the result is false.
 The ``less than or equal to'' comparison operators are predefined over
 numeric types as follows:
 \begin{chapel}
+proc <=(a: int(8), b: int(8)): bool
+proc <=(a: int(16), b: int(16)): bool
 proc <=(a: int(32), b: int(32)): bool
 proc <=(a: int(64), b: int(64)): bool
+
+proc <=(a: uint(8), b: uint(8)): bool
+proc <=(a: uint(16), b: uint(16)): bool
 proc <=(a: uint(32), b: uint(32)): bool
 proc <=(a: uint(64), b: uint(64)): bool
+
 proc <=(a: real(32), b: real(32)): bool
 proc <=(a: real(64), b: real(64)): bool
+
 proc <=(a: imag(32), b: imag(32)): bool
 proc <=(a: imag(64), b: imag(64)): bool
 \end{chapel}
@@ -1133,12 +1199,19 @@ to \chpl{b}; otherwise the result is false.
 The ``greater than or equal to'' comparison operators are predefined
 over numeric types as follows:
 \begin{chapel}
+proc >=(a: int(8), b: int(8)): bool
+proc >=(a: int(16), b: int(16)): bool
 proc >=(a: int(32), b: int(32)): bool
 proc >=(a: int(64), b: int(64)): bool
+
+proc >=(a: uint(8), b: uint(8)): bool
+proc >=(a: uint(16), b: uint(16)): bool
 proc >=(a: uint(32), b: uint(32)): bool
 proc >=(a: uint(64), b: uint(64)): bool
+
 proc >=(a: real(32), b: real(32)): bool
 proc >=(a: real(64), b: real(64)): bool
+
 proc >=(a: imag(32), b: imag(32)): bool
 proc >=(a: imag(64), b: imag(64)): bool
 \end{chapel}
@@ -1168,24 +1241,41 @@ elementwise to the string's characters in order.
 The equality comparison operators \chpl{==} and \chpl{\!=} are predefined over bool and the
 numeric types as follows:
 \begin{chapel}
+proc ==(a: int(8), b: int(8)): bool
+proc ==(a: int(16), b: int(16)): bool
 proc ==(a: int(32), b: int(32)): bool
 proc ==(a: int(64), b: int(64)): bool
+
+proc ==(a: uint(8), b: uint(8)): bool
+proc ==(a: uint(16), b: uint(16)): bool
 proc ==(a: uint(32), b: uint(32)): bool
 proc ==(a: uint(64), b: uint(64)): bool
+
 proc ==(a: real(32), b: real(32)): bool
 proc ==(a: real(64), b: real(64)): bool
+
 proc ==(a: imag(32), b: imag(32)): bool
 proc ==(a: imag(64), b: imag(64)): bool
+
 proc ==(a: complex(64), b: complex(64)): bool
 proc ==(a: complex(128), b: complex(128)): bool
+
+proc !=(a: int(8), b: int(8)): bool
+proc !=(a: int(16), b: int(16)): bool
 proc !=(a: int(32), b: int(32)): bool
 proc !=(a: int(64), b: int(64)): bool
+
+proc !=(a: uint(8), b: uint(8)): bool
+proc !=(a: uint(16), b: uint(16)): bool
 proc !=(a: uint(32), b: uint(32)): bool
 proc !=(a: uint(64), b: uint(64)): bool
+
 proc !=(a: real(32), b: real(32)): bool
 proc !=(a: real(64), b: real(64)): bool
+
 proc !=(a: imag(32), b: imag(32)): bool
 proc !=(a: imag(64), b: imag(64)): bool
+
 proc !=(a: complex(64), b: complex(64)): bool
 proc !=(a: complex(128), b: complex(128)): bool
 \end{chapel}
@@ -1201,7 +1291,7 @@ proc !=(a: object, b: object): bool
 \end{chapel}
 The result of \chpl{a == b} is true if \chpl{a} and \chpl{b} reference
 the same storage location; otherwise the result is false.  The result
-of \chpl{a != b} is equivalent to \chpl{!(a == b)}.
+of \chpl{a \!= b} is equivalent to \chpl{\!(a == b)}.
 
 Default equality comparison operators are generated for records if the
 user does not define them.  These operators are described
@@ -1347,7 +1437,7 @@ respectively.
 
 \begin{chapelexample}{condexp.chpl}
 This example shows how if-then-else can be used in a context in which an
-expression is expected.
+expression is expected.  The code
 \begin{chapel}
 writehalf(8);
 writehalf(21);
@@ -1358,7 +1448,8 @@ proc writehalf(i: int) {
   writeln("Half of ",i," is ",half); 
 }
 \end{chapel}
-\begin{chapelprintoutput}
+produces the output
+\begin{chapelprintoutput}{}
 Half of 8 is 4
 Half of 21 is 11
 Half of 1000 is 500

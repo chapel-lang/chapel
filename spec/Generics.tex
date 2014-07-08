@@ -262,6 +262,8 @@ Type queries can also be used to constrain the types of other function arguments
 and/or the return type.  In this example, the type query on the first argument
 establishes type constraints on the other arguments and also determines the
 return type.
+
+The code
 \begin{chapel}
 writeln(sumOfThree(1,2,3));
 writeln(sumOfThree(4.0,5.0,3.0));
@@ -273,7 +275,8 @@ proc sumOfThree(x: ?t, y:t, z:t):t {
    return sum;
 }
 \end{chapel}
-\begin{chapelprintoutput}
+produces the output
+\begin{chapelprintoutput}{}
 6
 12.0
 \end{chapelprintoutput}
@@ -467,6 +470,7 @@ var n: Node(real) = new Node(real, 3.14);
 writeln(n.data);
 writeln(n.next);
 writeln(typeToString(n.next.type));
+delete n;
 \end{chapelpost}
 \begin{chapeloutput}
 3.14
@@ -520,6 +524,7 @@ class IntegerTuple {
 \begin{chapelpost}
 var x = new IntegerTuple(3);
 writeln(x.data);
+delete x;
 \end{chapelpost}
 \begin{chapeloutput}
 (0, 0, 0)
@@ -715,6 +720,8 @@ var g2 = new MyGenericClass(int, "this is g2", 3.3, 333, 3333,
 \begin{chapelpost}
 writeln(g1);
 writeln(g2);
+delete g1;
+delete g2;
 \end{chapelpost}
 \begin{chapeloutput}
 {p1 = 1, c1 = 11, v1 = 111, x1 = 0, p5 = a string, c5 = 5.5, v5 = 555, x5 = 0.0}

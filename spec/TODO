@@ -23,6 +23,9 @@ Expressions
 * add a syntax production for index-expressions that duplicates the
   logic of call-expressions
 
+* add param prototypes for ! operator (and other operators whose
+  param versions aren't documented?)
+
 
 Ranges
 ------
@@ -33,6 +36,8 @@ Ranges
 
 Functions
 ---------
+* need to make sure to explain the use of default values (and
+  non-lvalue default values) for inout/out/ref arguments
 * move oveloading and resolution subsections to the end of the section
   *** this should be true after first class function stuff is removed.
 * define semantics of creating tuples with array components, etc.
