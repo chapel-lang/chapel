@@ -1,4 +1,0 @@
-performance: Access to the Locales array should involve no communication.
-
-We should replicate the Locales array (e.g., via the Private
-distribution) so that accesses to the Locales array are local.

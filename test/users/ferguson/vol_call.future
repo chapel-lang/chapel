@@ -1,5 +1,0 @@
-I exect to be able to call a C function with an inout generic parameter -
-passing a pointer to a variable - with a volatile int.
-
-vol_call.chpl:12: error: unresolved call 'c_func(volatile int)' [functionResolution.cpp:1460]
-vol_call.chpl:5: note: candidates are: c_func(inout x) [92971] [functionResolution.cpp:1474]

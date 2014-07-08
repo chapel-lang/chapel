@@ -1,2 +1,0 @@
-amudprun  -np 1 ./testVerboseFlag_real --verbose -nl 1
-executing on locale 0 of 1 locale(s): 

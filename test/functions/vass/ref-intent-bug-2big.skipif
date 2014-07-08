@@ -1,2 +1,0 @@
-# This test fails only for gasnet.
-CHPL_COMM == none

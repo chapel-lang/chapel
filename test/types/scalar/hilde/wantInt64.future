@@ -1,4 +1,0 @@
-feature request: The default integer type should be 64 bits wide.
-
-Operations should proceed in the smallest type that will accommodate both operand types 
-after each has been promoted to its corresponding 32-bit type.

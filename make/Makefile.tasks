@@ -1,7 +1,0 @@
-#
-# CHPL_MAKE_TASKS stuff
-#
-#
-#
-CHPL_MAKE_TASKS      := $(shell $(CHPL_MAKE_HOME)/util/chplenv/tasks)
-CHPL_MAKE_TASKS_UBAR := $(subst -,_,$(CHPL_MAKE_TASKS))

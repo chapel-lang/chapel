@@ -1,7 +1,0 @@
-#!/bin/bash
-
-outfile=$2
-RE='^PGC-W-0155-.*/wctype.h:|^PGC.*compilation completed with warnings$'
-
-grep -v -E "$RE" $outfile > $outfile.tmp
-mv $outfile.tmp $outfile

@@ -29,19 +29,33 @@ third-party: FORCE
 
 clean: FORCE
 	cd compiler && $(MAKE) clean
-	cd runtime && $(MAKE) clean
 	cd modules && $(MAKE) clean
+	cd runtime && $(MAKE) clean
+	cd third-party && $(MAKE) clean
+
+cleanall: FORCE
+	cd compiler && $(MAKE) cleanall
+	cd modules && $(MAKE) cleanall
+	cd runtime && $(MAKE) cleanall
+	cd third-party && $(MAKE) cleanall
+
+cleandeps: FORCE
+	cd compiler && $(MAKE) cleandeps
+	cd runtime && $(MAKE) cleandeps
 
 clobber: FORCE
 	cd compiler && $(MAKE) clobber
-	cd runtime && $(MAKE) clobber
 	cd modules && $(MAKE) clobber
+	cd runtime && $(MAKE) clobber
+	cd third-party && $(MAKE) clobber
 	rm -rf bin
 	rm -rf lib
 
-depend: FORCE
-	cd compiler && $(MAKE) depend
-	cd runtime && $(MAKE) depend
+depend:
+	@echo "make depend has been deprecated for the time being"
+
+check: all
+	@bash $(CHPL_MAKE_HOME)/util/test/checkChplInstall
 
 -include Makefile.devel
 

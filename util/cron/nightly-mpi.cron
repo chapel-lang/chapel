@@ -1,7 +1,0 @@
-#!/usr/bin/tcsh
-
-source ~/.chapelcshrc-cron
-
-setenv CHPL_COMM mpi
-
-~/chapel/util/cron/nightly -examples -cron

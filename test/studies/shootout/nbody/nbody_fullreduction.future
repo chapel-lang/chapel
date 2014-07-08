@@ -1,6 +1,0 @@
-bug: reduction of arrays
-
-We are seeing a strange bug in where performing a reduction
-on an array element type, AND, traversing the outer array in a
-for loop is causing a floating point error exception. If we take
-out the traversing of the outer array, the output is correct.
