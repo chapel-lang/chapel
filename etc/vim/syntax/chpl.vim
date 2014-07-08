@@ -250,7 +250,7 @@ endif
 "  - Ranges need better support eg: [.., ..)
 
 " Chapel extentions
-syn keyword chplStatement	goto break return continue compilerWarning delete
+syn keyword chplStatement	goto break return continue compilerWarning delete noinit
 syn keyword chplStatement	new delete this these use module yield compilerError zip
 syn keyword chplIntent		param type in out inout ref
 syn keyword chplStorageClass    const config export extern var
