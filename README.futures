@@ -2,15 +2,21 @@
 Chapel Futures Status: README
 ===============================
 
+A future represents a handle to some asynchronous computation that can return a value (think begin expressions).
 Chapel futures are implemented as a library (see modules/standard/Futures.chpl) that uses
 - sync variables
+- atomic ints
 - lambdas.
-
-Users can instantiate (using a factory method) and use future objects, e.g.
-  var f = buildFuture(int, lambda() { return someComputation(); });
-  var r = f.read();
-
 Lambdas allow users to write multiple statements inside the computation body.
+
+Users can instantiate a future (using a factory method) and use future objects, e.g.
+  var f = buildFuture(int, lambda() { return someComputation(); });
+The value in the future is retrieved by calling the read method:  
+  var r = f.read();
+This is a blocking call and waits until the future task is executed and a value is available in the future handle.
+
+The status of a future can also be queries using the isResolved() method.
+This method returns true if the future task has been executed and a value is available in the handle.
 
 
 Automatic coercions
