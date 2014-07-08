@@ -1,0 +1,45 @@
+===============================
+Chapel Futures Status: README
+===============================
+
+Chapel futures are implemented as a library (see modules/standard/Futures.chpl) that uses
+- sync variables
+- lambdas.
+
+Users can instantiate (using a factory method) and use future objects, e.g.
+  var f = buildFuture(int, lambda() { return someComputation(); });
+  var r = f.read();
+
+Lambdas allow users to write multiple statements inside the computation body.
+
+
+Automatic coercions
+-------------------
+
+Automatic coercions can be supported by using Chapel's support for operator overloading.
+See example: test/futures/futures_with_coercions.chpl
+
+
+Current Compiler Issues
+-----------------------
+
+1. Futures syntax / Begin expressions
+It is possible to have syntax sugar for futures, e.g. instead of writing
+  var f = buildFuture(int, lambda() { return someComputation(); });
+the user writes:
+  var f = begin { return someComputation(); };
+The compiler then automatically does type inference to know that f is of type future(int).
+The compiler also adds the syntax sugar for the call to the factory method buildFuture() after creating the lambda.
+
+2. Issues in compiling lambdas used inside begin blocks:
+
+test/futures/fib_with_futures.chpl fails to compile with the following error:
+  In file included from /tmp/chpl-shamsimam-18982.deleteme/_main.c:31:
+  /tmp/chpl-...deleteme/Futures.c:208:34: error: use of undeclared identifier 'n2'
+  _return_tmp_ = this9(_cast_tmp_, n2, _endCount);
+
+3. Current support for coercions using generics and operator overloading is limiting.
+It doesn’t allow type coercion for user-defined methods.
+When Chapel compiler add support for Scala-like implicit conversions the following can be supported.
+Example: addInts(2, aFuture)needs to be replaced intoaddInts(2, aFuture.read())
+
