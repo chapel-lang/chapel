@@ -15,7 +15,21 @@ fi
 
 loghome=/data/sea/chapel
 loghistdir=NightlyHistory
-logsources="Nightly Nightly/weekend NightlyBaseline NightlyDists NightlyMemLeaks NightlyPerformance/bradc-lnx NightlyPerformance/chap03 NightlyPerformance/chap04"
+logsources="\
+Nightly \
+Nightly/weekend \
+Nightly/whitebox \
+NightlyBaseline \
+NightlyDists \
+NightlyMemLeaks \
+NightlyPerformance/bradc-lnx \
+NightlyPerformance/chap01 \
+NightlyPerformance/chap03 \
+NightlyPerformance/chap04 \
+NightlyPerformance/chap08 \
+NightlyPerformance/chap12 \
+NightlyPerformance/tiger \
+"
 
 verbose=false
 numerrors=
