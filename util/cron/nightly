@@ -488,7 +488,6 @@ if ($parnodefile eq "") {
   $permsum = "<invalid use of permsum>";
 }
 
-
 #
 # make "prev" logs if they don't already exist
 #
@@ -507,7 +506,8 @@ delete($ENV{'CHPL_HOME'});
 #mysystem("which chpl", "locating chpl", 0, 0);
 #mysystem("env", "checking environment", 0, 0);
 
-$revision = mysystem("cd $chplhomedir && svnversion");
+$revision = `cd $chplhomedir && svnversion`; chomp($revision);
+$revision = "Revision: $revision";
 
 #
 # if on cygwin, blow away FILES files because they wreak havoc on stuff
