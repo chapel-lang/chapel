@@ -31,9 +31,9 @@ Current Compiler Issues
 
 1. Futures syntax / Begin expressions
 It is possible to have syntax sugar for futures, e.g. instead of writing
-  var f = buildFuture(int, lambda() { return someComputation(); });
+  var f = buildFuture(int, lambda() { return someComputationReturningAnInt(); });
 the user writes:
-  var f = begin { return someComputation(); };
+  var f = begin { return someComputationReturningAnInt(); };
 The compiler then automatically does type inference to know that f is of type future(int).
 The compiler also adds the syntax sugar for the call to the factory method buildFuture() after creating the lambda.
 
