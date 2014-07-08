@@ -1,9 +1,2 @@
-ifeq ($(CHPL_TARGET_PLATFORM),cray-xmt-sim)
-AR = /usr/bin/ar
-RANLIB = /usr/bin/ranlib
-endif
-
-ifeq ($(CHPL_TARGET_PLATFORM),cray-xmt)
-AR = /usr/bin/ar
-RANLIB = /usr/bin/ranlib
-endif
+# Makefile.linux64
+# Special AR and RANLIB definitions for XMT used to be here.

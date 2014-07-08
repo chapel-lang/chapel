@@ -7,8 +7,6 @@
 #
 CXX = xlC
 CC = xlc
-MAKEDEPEND = g++ -M
-CMAKEDEPEND = g++ -M
 
 
 RANLIB = ranlib

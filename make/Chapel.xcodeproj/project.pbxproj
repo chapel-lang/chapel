@@ -1900,7 +1900,9 @@
 					"-Wmissing-prototypes",
 					"-Wstrict-prototypes",
 					"-Wnested-externs",
-					"-Wdeclaration-after-statement",
+                                        /* For compilers that don't support
+                                           c99. See commit message 21665 */ 
+					"-Wdeclaration-after-statement",  
 					"-Wmissing-format-attribute",
 					"-Wno-unused-function",
 					"-Wno-unused-variable",
@@ -1936,6 +1938,8 @@
 					"-Wmissing-prototypes",
 					"-Wstrict-prototypes",
 					"-Wnested-externs",
+                                        /* For compilers that don't support 
+                                           c99. See commit message 21665 */
 					"-Wdeclaration-after-statement",
 					"-Wmissing-format-attribute",
 					"-Wno-unused-function",

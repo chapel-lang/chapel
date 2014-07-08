@@ -7,8 +7,6 @@
 #
 CXX = g++
 CC = gcc
-MAKEDEPEND = $(CXX) -MM -MG
-CMAKEDEPEND = $(CC) -MM -MG
 
 RANLIB = ranlib
 
@@ -18,6 +16,7 @@ RANLIB = ranlib
 #
 
 DEBUG_CFLAGS = -g
+DEPEND_CFLAGS = -MMD -MP
 OPT_CFLAGS = -O3
 PROFILE_CFLAGS = -pg
 PROFILE_LFLAGS = -pg
@@ -44,13 +43,23 @@ LIB_STATIC_FLAG =
 LIB_DYNAMIC_FLAG = -shared
 SHARED_LIB_CFLAGS = -fPIC
 
+# Set the target architecture for optimization
+ifneq ($(CHPL_MAKE_TARGET_ARCH), none)
+ifneq ($(CHPL_MAKE_TARGET_ARCH), unknown)
+SPECIALIZE_CFLAGS = -march=$(CHPL_MAKE_TARGET_ARCH)
+endif
+endif
+
 ifeq ($(CHPL_MAKE_PLATFORM), darwin)
 # build 64-bit binaries when on a 64-bit capable PowerPC
 ARCH := $(shell test -x /usr/bin/machine -a `/usr/bin/machine` = ppc970 && echo -arch ppc64)
-RUNTIME_CFLAGS += $(ARCH)
-RUNTIME_CXXFLAGS += $(ARCH)
+# -Wa,-q passes control over from the horribly outdated version of as to clang's
+#  as this is needed to set things like -march=native or else gcc will generate
+#  instructions as can't actually assemble.
+RUNTIME_CFLAGS += $(ARCH) -Wa,-q
+RUNTIME_CXXFLAGS += $(ARCH) -Wa,-q
 # the -D_POSIX_C_SOURCE flag prevents nonstandard functions from polluting the global name space
-GEN_CFLAGS += -D_POSIX_C_SOURCE $(ARCH)
+GEN_CFLAGS += -D_POSIX_C_SOURCE $(ARCH) -Wa,-q
 GEN_LFLAGS += $(ARCH)
 endif
 
@@ -71,14 +80,24 @@ SUPPORT_SETENV_CFLAGS = -std=gnu89
 #
 # query gcc version
 #
-GNU_GPP_MAJOR_VERSION = $(shell $(CXX) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[1]);}')
-GNU_GPP_MINOR_VERSION = $(shell $(CXX) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[2]);}')
-GNU_GPP_SUPPORTS_MISSING_DECLS = $(shell test $(GNU_GPP_MAJOR_VERSION) -lt 4 || (test $(GNU_GPP_MAJOR_VERSION) -eq 4 && test $(GNU_GPP_MINOR_VERSION) -le 2); echo "$$?")
+ifndef GNU_GPP_MAJOR_VERSION
+export GNU_GPP_MAJOR_VERSION = $(shell $(CXX) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[1]);}')
+endif
+ifndef GNU_GPP_MINOR_VERSION
+export GNU_GPP_MINOR_VERSION = $(shell $(CXX) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[2]);}')
+endif
+ifndef GNU_GPP_SUPPORTS_MISSING_DECLS
+export GNU_GPP_SUPPORTS_MISSING_DECLS = $(shell test $(GNU_GPP_MAJOR_VERSION) -lt 4 || (test $(GNU_GPP_MAJOR_VERSION) -eq 4 && test $(GNU_GPP_MINOR_VERSION) -le 2); echo "$$?")
+endif
+ifndef GNU_GPP_SUPPORTS_STRICT_OVERFLOW
+export GNU_GPP_SUPPORTS_STRICT_OVERFLOW = $(shell test $(GNU_GPP_MAJOR_VERSION) -lt 4 || (test $(GNU_GPP_MAJOR_VERSION) -eq 4 && test $(GNU_GPP_MINOR_VERSION) -le 2); echo "$$?")
+endif
 
 #
 # Flags for turning on warnings for C++/C code
 #
 WARN_CXXFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings -Wno-strict-aliasing
+# decl-after-stmt for non c99 compilers. See commit message 21665
 WARN_CFLAGS = $(WARN_CXXFLAGS) -Wmissing-prototypes -Wstrict-prototypes -Wnested-externs -Wdeclaration-after-statement -Wmissing-format-attribute
 WARN_GEN_CFLAGS = $(WARN_CFLAGS) -Wno-unused -Wno-uninitialized
 
@@ -86,6 +105,15 @@ ifeq ($(GNU_GPP_SUPPORTS_MISSING_DECLS),1)
 WARN_CXXFLAGS += -Wmissing-declarations
 else
 WARN_CFLAGS += -Wmissing-declarations
+endif
+
+ifeq ($(GNU_GPP_SUPPORTS_STRICT_OVERFLOW),1)
+# -Wno-strict-overflow is needed only because the way we code range iteration
+# (ChapelRangeBase.chpl:793) generates code which can overflow.  
+GEN_CFLAGS += -Wno-strict-overflow
+# -fstrict-overflow was introduced in GCC 4.2 and is on by default.  When on,
+# it allows the compiler to assume that integer sums will not overflow, which
+#  can change the programs runtime behavior (when -O2 or greater is tossed).
 endif
 
 #

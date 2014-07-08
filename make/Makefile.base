@@ -3,6 +3,11 @@
 # before using
 #
 
+#
+# utilities
+#
+isTrue = $(filter yes Yes YES y Y true True TRUE t T, $(1))
+
 MAKEFLAGS = --no-print-directory
 
 ifndef CHPL_MAKE_HOST_TARGET
@@ -10,54 +15,86 @@ CHPL_MAKE_HOST_TARGET = --host
 endif
 
 #
-# determine what platform we're running on
-#
-include $(CHPL_MAKE_HOME)/make/Makefile.platform
-
-ifndef CHPL_MAKE_COMPILER
-include $(CHPL_MAKE_HOME)/make/Makefile.compiler
+# Set all configuration variables provided by
+# printchplenv. This magically sets e.g.
+# CHPL_MAKE_HOST_PLATFORM="linux64"
+# CHPL_MAKE_HOST_COMPILER="gnu"
+# CHPL_MAKE_TARGET_PLATFORM="linux64"
+# CHPL_MAKE_TARGET_COMPILER="gnu"
+# CHPL_MAKE_LOCALE_MODEL="flat"
+# CHPL_MAKE_COMM="gasnet"
+# CHPL_MAKE_COMM_SUBSTRATE="udp"
+# CHPL_MAKE_GASNET_SEGMENT="fast"
+# CHPL_MAKE_TASKS="fifo"
+# CHPL_MAKE_THREADS="pthreads"
+# CHPL_MAKE_LAUNCHER="amudprun"
+# CHPL_MAKE_TIMERS="generic"
+# CHPL_MAKE_HOST_MEM="default"
+# CHPL_MAKE_TARGET_MEM="dlmalloc"
+# CHPL_MAKE_MAKE="gmake"
+# CHPL_MAKE_ATOMICS="intrinsics"
+# CHPL_MAKE_NETWORK_ATOMICS="none"
+# CHPL_MAKE_GMP="none"
+# CHPL_MAKE_HWLOC="none"
+# CHPL_MAKE_REGEXP="re2"
+# CHPL_MAKE_WIDE_POINTERS="struct"
+# CHPL_MAKE_WIDE_POINTERS_DEFINES="-DCHPL_WIDE_POINTER_STRUCT"
+# CHPL_MAKE_LLVM="llvm"
+# CHPL_MAKE_AUX_FILESYS="none"
+# CHPL_MAKE_COMPILER_SUBDIR=linux64.gnu.loc-flat.wide-struct.llvm-none
+# CHPL_MAKE_RUNTIME_SUBDIR=linux64.gnu.loc-flat.udp.everything.tasks-fifo.pthreads.tmr-generic.mem-default.atomics-intrinsics.none.gmp-none.hwloc-none.re-none.wide-struct.fs-none
+# CHPL_MAKE_LAUNCHER_SUBDIR=linux64.gnu.loc-flat.udp.everything.tasks-fifo.pthreads.launch-amudprun.tmr-generic.mem-default.atomics-intrinsics.none.wide-struct
+# Don't recompute the settings every time!
+ifndef CHPL_MAKE_SETTINGS_NO_NEWLINES
+# ... but it involves a little bit of Make-craziness because
+# $(shell) changes newlines into spaces.
+export CHPL_MAKE_SETTINGS_NO_NEWLINES = $(shell $(CHPL_MAKE_HOME)/util/printchplenv --make | tr '\n' '|' )
 endif
 
-ifndef CHPL_MAKE_TASKS
-include $(CHPL_MAKE_HOME)/make/Makefile.tasks
-endif
+# This really needs TWO newlines!
+define newline
 
-ifndef CHPL_MAKE_THREADS
-include $(CHPL_MAKE_HOME)/make/Makefile.threads
-endif
 
-ifndef CHPL_MAKE_TIMERS
-include $(CHPL_MAKE_HOME)/make/Makefile.timers
-endif
+endef
 
-ifndef CHPL_MAKE_COMM
-include $(CHPL_MAKE_HOME)/make/Makefile.comm
-endif
+# Turn the newlines we replaced with | back into newlines
+# and use a multi-line define so Make is OK having newlines in the variable.
+define CHPL_MAKE_SETTINGS
+$(subst |,$(newline),$(CHPL_MAKE_SETTINGS_NO_NEWLINES))
+endef
 
-ifndef CHPL_MAKE_LAUNCHER
-include $(CHPL_MAKE_HOME)/make/Makefile.launcher
-endif
+# Now eval our settings to set the Make variables to
+# set all of the CHPL_MAKE_... configuration-based variables!
+$(eval $(CHPL_MAKE_SETTINGS))
 
-ifndef CHPL_MAKE_MEM
-include $(CHPL_MAKE_HOME)/make/Makefile.mem
-endif
+# Now do some minor situational clean-ups.
 
-ifndef CHPL_MAKE_ATOMICS
-include $(CHPL_MAKE_HOME)/make/Makefile.atomics
-endif
+# The config variable for segment is CHPL_GASNET_SEGMENT
+# but the makefiles call it CHPL_MAKE_COMM_SEGMENT (no GASNET);
+# similarly CHPL_MAKE_AUX_FILESYS has make var CHPL_MAKE_AUXFS
+# so we adjust that here.
+CHPL_MAKE_COMM_SEGMENT = $(CHPL_MAKE_GASNET_SEGMENT)
+CHPL_MAKE_AUXFS = $(CHPL_MAKE_AUX_FILESYS)
 
-ifndef CHPL_MAKE_GMP
-include $(CHPL_MAKE_HOME)/make/Makefile.gmp
+# Set compiler and platform variables that depend
+# on CHPL_MAKE_HOST_TARGET to the HOST or TARGET versions.
+ifeq ($(strip $(CHPL_MAKE_HOST_TARGET)),--target)
+CHPL_MAKE_COMPILER = $(CHPL_MAKE_TARGET_COMPILER)
+CHPL_MAKE_PLATFORM = $(CHPL_MAKE_TARGET_PLATFORM)
+CHPL_MAKE_MEM = $(CHPL_MAKE_TARGET_MEM)
+else
+CHPL_MAKE_COMPILER = $(CHPL_MAKE_HOST_COMPILER)
+CHPL_MAKE_PLATFORM = $(CHPL_MAKE_HOST_PLATFORM)
+CHPL_MAKE_MEM = $(CHPL_MAKE_HOST_MEM)
 endif
-
-ifndef CHPL_MAKE_LLVM
-include $(CHPL_MAKE_HOME)/make/Makefile.llvm
-endif
-
 
 #
 # default CFLAGS, based on other settings
 #
+ifeq ($(DEPEND), 1)
+CFLAGS += $(DEPEND_CFLAGS)
+endif
+
 ifeq ($(DEBUG), 1)
 CFLAGS += $(DEBUG_CFLAGS)
 endif
@@ -80,10 +117,11 @@ include $(THIRD_PARTY_DIR)/creoleparser/Makefile.include
 include $(THIRD_PARTY_DIR)/gasnet/Makefile.include
 include $(THIRD_PARTY_DIR)/dlmalloc/Makefile.include
 include $(THIRD_PARTY_DIR)/massivethreads/Makefile.include
-include $(THIRD_PARTY_DIR)/nanox/Makefile.include
 include $(THIRD_PARTY_DIR)/qthread/Makefile.include
 include $(THIRD_PARTY_DIR)/tcmalloc/Makefile.include
 include $(THIRD_PARTY_DIR)/gmp/Makefile.include
+include $(THIRD_PARTY_DIR)/hwloc/Makefile.include
+include $(THIRD_PARTY_DIR)/re2/Makefile.include
 include $(THIRD_PARTY_DIR)/llvm/Makefile.include-$(CHPL_MAKE_LLVM)
 
 -include $(THIRD_PARTY_DIR)/Makefile.devel.include
@@ -100,6 +138,8 @@ printplatform:
 	@echo "CHPL_MAKE_HOST_PLATFORM   = $(CHPL_MAKE_HOST_PLATFORM)"
 	@echo "CHPL_MAKE_TARGET_PLATFORM = $(CHPL_MAKE_TARGET_PLATFORM)"
 	@echo "CHPL_MAKE_COMPILER        = $(CHPL_MAKE_COMPILER)"
+	@echo "CHPL_MAKE_LOCALE_MODEL    = $(CHPL_MAKE_LOCALE_MODEL)"
+	@echo "CHPL_MAKE_TASKS           = $(CHPL_MAKE_TASKS)"
 	@echo "CHPL_MAKE_THREADS         = $(CHPL_MAKE_THREADS)"
 	@echo "CHPL_MAKE_TIMERS          = $(CHPL_MAKE_TIMERS)"
 	@echo "CHPL_MAKE_COMM            = $(CHPL_MAKE_COMM)"
@@ -113,18 +153,17 @@ printplatform:
 #
 print-%: ; @echo $* is $($*)
 
-#
-# OBJ_SUBDIR_MADE creates either a directory or a symbolic link,
-# depending on how CHPLDEVTMP is set -- well, actually it creates a
-# timestamp file (OBJ_SUBDIR_TIMESTAMP) so that the varying time
-# stamps of directories don't cause things to rebuild indiscriminately.
-# OBJ_SUBDIR is the actual directory.  OBJ_SUBDIR_SAFESLASH
-# is the directory with slashes escaped appropriately for use in
-# Makefile command rules.
+
+# OBJ_SUBDIR is used in compiler/
+# OBJ_SUBDIR_MADE creates a timestamp file (OBJ_SUBDIR_TIMESTAMP) so
+# that the varying time stamps of directories don't cause things to
+# rebuild indiscriminately.  OBJ_SUBDIR is the actual directory.
+# OBJ_SUBDIR_SAFESLASH is the directory with slashes escaped
+# appropriately for use in Makefile command rules.
 #
 GEN_SUBDIR = gen
 PLAT_COMPILER_SUBDIR = $(CHPL_MAKE_HOST_PLATFORM)/$(CHPL_MAKE_COMPILER)
-OBJ_SUBDIR = $(GEN_SUBDIR)/$(PLAT_COMPILER_SUBDIR)
+OBJ_SUBDIR = $(GEN_SUBDIR)/$(CHPL_MAKE_COMPILER_SUBDIR)
 OBJ_SUBDIR_TIMESTAMP = $(OBJ_SUBDIR)/.timestamp
 OBJ_SUBDIR_MADE = $(OBJ_SUBDIR_TIMESTAMP)
 OBJ_SUBDIR_SAFESLASH = $(subst /,\\/, $(OBJ_SUBDIR))
@@ -134,15 +173,10 @@ OBJ_SUBDIR_SAFESLASH = $(subst /,\\/, $(OBJ_SUBDIR))
 	@mkdir -p $*
 	@-touch $*/.timestamp
 
-COMMON_LAYER_SUBDIR = comm-$(CHPL_MAKE_COMM)$(CHPL_MAKE_COMM_EXTRAS)/substrate-$(CHPL_MAKE_COMM_SUBSTRATE)/seg-$(CHPL_MAKE_COMM_SEGMENT)/mem-$(CHPL_MAKE_MEM)
-RUNTIME_LAYER_SUBDIR = $(COMMON_LAYER_SUBDIR)/tasks-$(CHPL_MAKE_TASKS)/threads-$(CHPL_MAKE_THREADS)/atomics-$(CHPL_MAKE_ATOMICS)
-LAUNCHER_LAYER_SUBDIR = $(COMMON_LAYER_SUBDIR)/launch-$(CHPL_MAKE_LAUNCHER)
-TARGET_COMPILER_SUBDIR = $(CHPL_MAKE_TARGET_PLATFORM)/$(CHPL_MAKE_COMPILER)
-RT_LN_OBJ_SUBDIR = $(GEN_SUBDIR)/$(TARGET_COMPILER_SUBDIR)
-RUNTIME_OBJDIR = $(RT_LN_OBJ_SUBDIR)/$(RUNTIME_LAYER_SUBDIR)
-LAUNCHER_OBJDIR = $(RT_LN_OBJ_SUBDIR)/$(LAUNCHER_LAYER_SUBDIR)
-LIB_RT_DIR = lib/$(TARGET_COMPILER_SUBDIR)/$(RUNTIME_LAYER_SUBDIR)
-LIB_LN_DIR = lib/$(TARGET_COMPILER_SUBDIR)/$(LAUNCHER_LAYER_SUBDIR)
+RUNTIME_OBJDIR = $(GEN_SUBDIR)/$(CHPL_MAKE_RUNTIME_SUBDIR)
+LAUNCHER_OBJDIR = $(GEN_SUBDIR)/$(CHPL_MAKE_LAUNCHER_SUBDIR)
+LIB_RT_DIR = lib/$(CHPL_MAKE_RUNTIME_SUBDIR)
+LIB_LN_DIR = lib/$(CHPL_MAKE_LAUNCHER_SUBDIR)
 
 
 CHPL_BIN_DIR = $(CHPL_MAKE_HOME)/bin/$(CHPL_MAKE_HOST_PLATFORM)
@@ -187,5 +221,6 @@ EXE_SUFFIX =
 #
 -include $(CHPL_MAKE_HOME)/make/compiler/Makefile.$(CHPL_MAKE_COMPILER)
 -include $(CHPL_MAKE_HOME)/make/platform/Makefile.$(CHPL_MAKE_PLATFORM)
--include $(CHPL_MAKE_HOME)/make/comm/Makefile.$(CHPL_MAKE_COMM)
 -include $(CHPL_MAKE_HOME)/make/tasks/Makefile.$(CHPL_MAKE_TASKS)
+
+.SECONDARY: $(OBJ_SUBDIR_TIMESTAMP)
