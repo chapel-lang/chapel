@@ -324,7 +324,9 @@ void chpl_task_init(void)
     // Experience has shown that we hardly ever win by using more than
     // one PU per core, so default to that.  If this was explicitly
     // set by the user we won't override it, however.
-    (void) setenv("QT_WORKER_UNIT", "core", 0);
+    if (getenv("QTHREAD_WORKER_UNIT") == NULL) {
+	(void) setenv("QT_WORKER_UNIT", "core", 0);
+    }
 
     // Determine the thread count.  CHPL_RT_NUM_THREADS_PER_LOCALE has
     // the highest precedence but we limit it to the number of PUs.
