@@ -1,5 +1,7 @@
 use Futures;
 
+config const N: int = 4;
+
 proc fib(n: int): int {
   if (n <= 1) {
     return 1;
@@ -14,8 +16,7 @@ proc fib(n: int): int {
 
 }
 
-var n: int = 4;
-var r = fib(n);
+var r = fib(N);
 
 // print the results
-writeln("fib(", n, ") = ", r);
+writeln("fib(", N, ") = ", r);
