@@ -14,10 +14,8 @@
 #ifndef _BASEAST_H_
 #define _BASEAST_H_
 
-#include "chpl.h"
-#include "stringutil.h"
-
-#include "genret.h"
+#include "map.h"
+#include "vec.h"
 
 //
 // foreach_ast_sep: invoke a 'macro' for every AST node type,
@@ -28,7 +26,7 @@
 #define foreach_ast_sep(macro, sep)                \
   macro(PrimitiveType) sep                         \
   macro(EnumType) sep                              \
-  macro(ClassType) sep                             \
+  macro(AggregateType) sep                         \
   macro(ModuleSymbol) sep                          \
   macro(VarSymbol) sep                             \
   macro(ArgSymbol) sep                             \
@@ -43,17 +41,18 @@
   macro(NamedExpr) sep                             \
   macro(BlockStmt) sep                             \
   macro(CondStmt) sep                              \
-  macro(GotoStmt)
+  macro(GotoStmt) sep                              \
+  macro(ExternBlockStmt)
 
-#define foreach_ast(macro)                      \
+#define foreach_ast(macro)                         \
   foreach_ast_sep(macro, ;)
 
-//
-// prototype Symbol, Type, Expr, and all AST node types
-//
+class AstVisitor;
+class Expr;
+class GenRet;
 class Symbol;
 class Type;
-class Expr;
+
 #define proto_classes(type) class type
 foreach_ast(proto_classes);
 #undef proto_classes
@@ -73,27 +72,23 @@ foreach_ast(decl_gvecs);
 //
 // type definitions for common maps
 //
-typedef Map<Symbol*,Symbol*> SymbolMap;
+typedef Map<Symbol*,Symbol*>     SymbolMap;
 typedef MapElem<Symbol*,Symbol*> SymbolMapElem;
-
-// get the current AST node id
-extern int lastNodeIDUsed();
-
-// trace various AST node removals
-extern void trace_remove(BaseAST* ast, char flag);
 
 // how an AST node knows its location in the source code
 // (assumed to get copied upon assignment and parameter passing)
-struct astlocT {
-  const char* filename;  // filename of location
-  int lineno;    // line number of location
-  astlocT(int linenoArg, const char* filenameArg):
+class astlocT {
+public:
+  astlocT(int linenoArg, const char* filenameArg) :
     filename(filenameArg), lineno(linenoArg)
     {}
+
+  const char* filename;  // filename of location
+  int         lineno;    // line number of location
 };
 
 //
-// enumerated type of all AST node types (and superclass types)
+// enumerated type of all AST node types
 //
 enum AstTag {
   E_SymExpr,
@@ -104,7 +99,7 @@ enum AstTag {
   E_BlockStmt,
   E_CondStmt,
   E_GotoStmt,
-  E_Expr,
+  E_ExternBlockStmt,
 
   E_ModuleSymbol,
   E_VarSymbol,
@@ -113,20 +108,21 @@ enum AstTag {
   E_FnSymbol,
   E_EnumSymbol,
   E_LabelSymbol,
-  E_Symbol,
 
   E_PrimitiveType,
   E_EnumType,
-  E_ClassType,
-  E_Type,
-
-  E_BaseAST
+  E_AggregateType
 };
 
-//
-// string names of all AST node types (used for debugging)
-//
-extern const char* astTagName[];
+static inline bool isExpr(AstTag tag)
+{ return tag >= E_SymExpr        && tag <= E_ExternBlockStmt; }
+
+static inline bool isSymbol(AstTag tag)
+{ return tag >= E_ModuleSymbol   && tag <= E_LabelSymbol; }
+
+static inline bool isType(AstTag tag)
+{ return tag >= E_PrimitiveType  && tag <= E_AggregateType; }
+
 
 //
 // macros used to define the copy method on all AST node types, and to
@@ -149,6 +145,9 @@ extern const char* astTagName[];
   }                                                                     \
   virtual type* copyInner(SymbolMap* map)
 
+// This should be expanded verbatim and overloaded, so we don't create a map if
+// internal is false.
+// copyInner must now copy flags.
 #define DECLARE_SYMBOL_COPY(type)                                       \
   type* copy(SymbolMap* map = NULL, bool internal = false) {            \
     SymbolMap localMap;                                                 \
@@ -156,7 +155,6 @@ extern const char* astTagName[];
       map = &localMap;                                                  \
     type* _this = copyInner(map);                                       \
     _this->astloc = astloc;                                             \
-    _this->copyFlags(this);                                             \
     map->put(this, _this);                                              \
     if (!internal)                                                      \
       update_symbols(_this, map);                                       \
@@ -173,34 +171,48 @@ extern const char* astTagName[];
 // abstract parent of all AST node types
 //
 class BaseAST {
- public:
-  AstTag astTag; // BaseAST subclass
-  int id;        // Unique ID
-  astlocT astloc; // Location of this node in the source code
+public:
+  virtual GenRet    codegen()                                          = 0;
+  virtual bool      inTree()                                           = 0;
+  virtual Type*     typeInfo()                                         = 0;
+  virtual void      verify()                                           = 0;
+  virtual void      accept(AstVisitor* visitor)                        = 0;
 
-  BaseAST(AstTag type);
-  virtual ~BaseAST() { }
-  virtual void verify() = 0;
-  virtual BaseAST* copy(SymbolMap* map = NULL, bool internal = false) = 0;
-  virtual BaseAST* copyInner(SymbolMap* map) = 0;
-  virtual bool inTree(void) = 0;
-  virtual GenRet codegen() = 0;
+  const char*       fname()                                      const;
+  int               linenum()                                    const;
+  const char*       stringLoc()                                  const;
 
-  const char* stringLoc(void);
-  ModuleSymbol* getModule();
-  FnSymbol* getFunction();
-  int linenum() { return astloc.lineno; }
-  const char* fname() { return astloc.filename; }
+  FnSymbol*         getFunction();
+  ModuleSymbol*     getModule();
+  Type*             getValType();
 
-  virtual Type* typeInfo(void) = 0;
-  Type* getValType();
-  Type* getRefType();
-  Type* getWideRefType();
+  const char*       astTagAsString()                             const;
+
+  AstTag            astTag;     // BaseAST subclass
+  int               id;         // Unique ID
+  astlocT           astloc;     // Location of this node in the source code
+
+protected:
+                    BaseAST(AstTag type);
+  virtual          ~BaseAST();
+
+private:
+                    BaseAST();
+
+  Type*             getRefType();
+  Type*             getWideRefType();
 };
 
 GenRet baseASTCodegen(BaseAST* ast);
 GenRet baseASTCodegenInt(int x);
 GenRet baseASTCodegenString(const char* str);
+
+// get the current AST node id
+int    lastNodeIDUsed();
+
+// trace various AST node removals
+void   trace_remove(BaseAST* ast, char flag);
+
 
 //
 // macro to update the global line number used to set the line number
@@ -214,29 +226,16 @@ GenRet baseASTCodegenString(const char* str);
 // todo - should we add it to DECLARE_COPY/DECLARE_SYMBOL_COPY ?
 //
 #define SET_LINENO(ast) astlocMarker markAstLoc(ast->astloc)
+
 extern astlocT currentAstLoc;
 
-struct astlocMarker {
-  astlocT previousAstLoc;
+class astlocMarker {
+public:
+  astlocMarker(astlocT newAstLoc);
+  astlocMarker(int lineno, const char* filename);
+  ~astlocMarker();
 
-  // constructor, invoked upon SET_LINENO
-  astlocMarker(astlocT newAstLoc)
-    : previousAstLoc(currentAstLoc)
-  {
-    //previousAstLoc = currentAstLoc;
-    currentAstLoc = newAstLoc;
-  }
-  // constructor, for special occasions
-  astlocMarker(int lineno, const char* filename)
-    : previousAstLoc(currentAstLoc)
-  {
-    currentAstLoc.lineno = lineno;
-    currentAstLoc.filename = astr(filename);
-  }
-  // destructor, invoked upon leaving SET_LINENO's scope
-  ~astlocMarker() {
-    currentAstLoc = previousAstLoc;
-  }
+  astlocT previousAstLoc;
 };
 
 //
@@ -247,64 +246,70 @@ extern Vec<ModuleSymbol*> userModules; // contains main + user modules
 extern Vec<ModuleSymbol*> mainModules; // contains main modules
 
 //
-// class test macros: determine the dynamic type of a BaseAST*
+// class test inlines: determine the dynamic type of a BaseAST*
 //
-#define isExpr(a)   ((a) && (a)->astTag < E_Expr)
-#define isSymbol(a) ((a) && (a)->astTag > E_Expr && (a)->astTag < E_Symbol)
-static inline bool isType(BaseAST* a) {
-  return (a && a->astTag > E_Symbol && a->astTag < E_Type);
-}
+static inline bool isExpr(const BaseAST* a)
+{ return a && isExpr(a->astTag); }
 
-#define isSymExpr(a)           ((a) && (a)->astTag == E_SymExpr)
-#define isUnresolvedSymExpr(a) ((a) && (a)->astTag == E_UnresolvedSymExpr)
-#define isDefExpr(a)           ((a) && (a)->astTag == E_DefExpr)
-#define isCallExpr(a)          ((a) && (a)->astTag == E_CallExpr)
-#define isNamedExpr(a)         ((a) && (a)->astTag == E_NamedExpr)
-#define isBlockStmt(a)         ((a) && (a)->astTag == E_BlockStmt)
-#define isCondStmt(a)          ((a) && (a)->astTag == E_CondStmt)
-#define isGotoStmt(a)          ((a) && (a)->astTag == E_GotoStmt)
-#define isModuleSymbol(a)      ((a) && (a)->astTag == E_ModuleSymbol)
-#define isVarSymbol(a)         ((a) && (a)->astTag == E_VarSymbol)
-#define isArgSymbol(a)         ((a) && (a)->astTag == E_ArgSymbol)
-#define isTypeSymbol(a)        ((a) && (a)->astTag == E_TypeSymbol)
-#define isFnSymbol(a)          ((a) && (a)->astTag == E_FnSymbol)
-#define isEnumSymbol(a)        ((a) && (a)->astTag == E_EnumSymbol)
-#define isLabelSymbol(a)       ((a) && (a)->astTag == E_LabelSymbol)
-static inline bool isPrimitiveType(BaseAST* a) {
-  return (a && a->astTag == E_PrimitiveType);
-}
-#define isEnumType(a)          ((a) && (a)->astTag == E_EnumType)
-static inline bool isClassType(BaseAST* a) {
-  return (a && a->astTag == E_ClassType);
-}
+static inline bool isSymbol(const BaseAST* a)
+{ return a && isSymbol(a->astTag); }
+
+static inline bool isType(const BaseAST* a)
+{ return a && isType(a->astTag); }
+
+#define def_is_ast(Type) \
+  static inline bool is##Type(BaseAST* a) { return a && a->astTag == E_##Type; }
+
+def_is_ast(SymExpr)
+def_is_ast(UnresolvedSymExpr)
+def_is_ast(DefExpr)
+def_is_ast(CallExpr)
+def_is_ast(NamedExpr)
+def_is_ast(BlockStmt)
+def_is_ast(CondStmt)
+def_is_ast(GotoStmt)
+def_is_ast(ExternBlockStmt)
+def_is_ast(ModuleSymbol)
+def_is_ast(VarSymbol)
+def_is_ast(ArgSymbol)
+def_is_ast(TypeSymbol)
+def_is_ast(FnSymbol)
+def_is_ast(EnumSymbol)
+def_is_ast(LabelSymbol)
+def_is_ast(PrimitiveType)
+def_is_ast(EnumType)
+def_is_ast(AggregateType)
+#undef def_is_ast
 
 //
-// safe downcast macros: downcast BaseAST*, Expr*, Symbol*, or Type*
+// safe downcast inlines: downcast BaseAST*, Expr*, Symbol*, or Type*
 //   note: toDerivedClass is equivalent to dynamic_cast<DerivedClass*>
 //
-#define def_to_ast(Type, a)    (is##Type(a) ? ((Type*)(a)) : NULL)
-#define toSymExpr(a)           def_to_ast(SymExpr, a)
-#define toUnresolvedSymExpr(a) def_to_ast(UnresolvedSymExpr, a)
-#define toDefExpr(a)           def_to_ast(DefExpr, a)
-#define toCallExpr(a)          def_to_ast(CallExpr, a)
-#define toNamedExpr(a)         def_to_ast(NamedExpr, a)
-#define toBlockStmt(a)         def_to_ast(BlockStmt, a)
-#define toCondStmt(a)          def_to_ast(CondStmt, a)
-#define toGotoStmt(a)          def_to_ast(GotoStmt, a)
-#define toExpr(a)              def_to_ast(Expr, a)
-#define toModuleSymbol(a)      def_to_ast(ModuleSymbol, a)
-#define toVarSymbol(a)         def_to_ast(VarSymbol, a)
-#define toArgSymbol(a)         def_to_ast(ArgSymbol, a)
-#define toTypeSymbol(a)        def_to_ast(TypeSymbol, a)
-#define toFnSymbol(a)          def_to_ast(FnSymbol, a)
-#define toEnumSymbol(a)        def_to_ast(EnumSymbol, a)
-#define toLabelSymbol(a)       def_to_ast(LabelSymbol, a)
-#define toSymbol(a)            def_to_ast(Symbol, a)
-#define toPrimitiveType(a)     def_to_ast(PrimitiveType, a)
-#define toEnumType(a)          def_to_ast(EnumType, a)
-#define toClassType(a)         def_to_ast(ClassType, a)
-#define toType(a)              def_to_ast(Type, a)
-
+#define def_to_ast(Type) \
+  static inline Type * to##Type(BaseAST* a) { return is##Type(a) ? (Type*)a : NULL; }
+def_to_ast(SymExpr)
+def_to_ast(UnresolvedSymExpr)
+def_to_ast(DefExpr)
+def_to_ast(CallExpr)
+def_to_ast(NamedExpr)
+def_to_ast(BlockStmt)
+def_to_ast(CondStmt)
+def_to_ast(GotoStmt)
+def_to_ast(ExternBlockStmt)
+def_to_ast(Expr)
+def_to_ast(ModuleSymbol)
+def_to_ast(VarSymbol)
+def_to_ast(ArgSymbol)
+def_to_ast(TypeSymbol)
+def_to_ast(FnSymbol)
+def_to_ast(EnumSymbol)
+def_to_ast(LabelSymbol)
+def_to_ast(Symbol)
+def_to_ast(PrimitiveType)
+def_to_ast(EnumType)
+def_to_ast(AggregateType)
+def_to_ast(Type)
+#undef def_to_ast
 //
 // traversal macros
 //
@@ -342,6 +347,7 @@ static inline bool isClassType(BaseAST* a) {
     AST_CALL_LIST(_a, BlockStmt, body, call, __VA_ARGS__);              \
     AST_CALL_CHILD(_a, BlockStmt, blockInfo, call, __VA_ARGS__);        \
     AST_CALL_CHILD(_a, BlockStmt, modUses, call, __VA_ARGS__);          \
+    AST_CALL_CHILD(_a, BlockStmt, byrefVars, call, __VA_ARGS__);        \
     break;                                                              \
   case E_CondStmt:                                                      \
     AST_CALL_CHILD(_a, CondStmt, condExpr, call, __VA_ARGS__);          \
@@ -372,9 +378,9 @@ static inline bool isClassType(BaseAST* a) {
   case E_EnumType:                                                      \
     AST_CALL_LIST(_a, EnumType, constants, call, __VA_ARGS__);          \
     break;                                                              \
-  case E_ClassType:                                                     \
-    AST_CALL_LIST(_a, ClassType, fields, call, __VA_ARGS__);            \
-    AST_CALL_LIST(_a, ClassType, inherits, call, __VA_ARGS__);          \
+  case E_AggregateType:                                                 \
+    AST_CALL_LIST(_a, AggregateType, fields, call, __VA_ARGS__);        \
+    AST_CALL_LIST(_a, AggregateType, inherits, call, __VA_ARGS__);      \
     break;                                                              \
   default:                                                              \
     break;                                                              \

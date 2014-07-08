@@ -96,14 +96,20 @@ else
 CheckForStandardCHeaders:
 endif
 
+CHPL_CONFIG_CHECK_PREFIX = $(CHPL_BIN_DIR)/.built-for
+CHPL_CONFIG_CHECK = $(CHPL_CONFIG_CHECK_PREFIX)-$(CHPL_MAKE_COMPILER_SUBDIR)
+
 UPDATE_BUILD_VERSION = $(CHPL_MAKE_HOME)/util/devel/updateBuildVersion
 
 $(BUILD_VERSION_FILE): CheckForStandardCHeaders
 	@(test -x $(CHPL_MAKE_HOME)/.svn && test -x $(UPDATE_BUILD_VERSION) && \
 	$(UPDATE_BUILD_VERSION) $@) || (echo 0 > $@);
 
+$(CHPL_CONFIG_CHECK): | $(CHPL_BIN_DIR)
+	rm -f $(CHPL_CONFIG_CHECK_PREFIX)-*
+	echo $(CHPL_MAKE_COMPILER_SUBDIR) > $(CHPL_CONFIG_CHECK)
 
-$(CHPL): $(CHPL_BIN_DIR) $(CHPL_OBJS)
+$(CHPL): $(CHPL_OBJS) $(CHPL_CONFIG_CHECK) | $(CHPL_BIN_DIR)
 	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS) $(LLVM_LIBS)
 	rm -f $(CHPLDOC)
 	ln -s $(notdir $(CHPL)) $(CHPLDOC)

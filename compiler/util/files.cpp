@@ -6,48 +6,53 @@
 #define _XOPEN_SOURCE_EXTENDED 1
 #endif
 
-#include "beautify.h"
 #include "files.h"
+
+#include "beautify.h"
+#include "driver.h"
 #include "misc.h"
 #include "mysystem.h"
 #include "stringutil.h"
 #include "tmpdirname.h"
-#include <cstring>
-#include <cstdlib>
+
 #include <pwd.h>
-#include <cerrno>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <unistd.h>
 
+#include <cstring>
+#include <cstdlib>
+#include <cerrno>
 #include <string>
 
-char executableFilename[FILENAME_MAX+1] = "a.out";
-char saveCDir[FILENAME_MAX+1] = "";
-char ccflags[256] = "";
-char ldflags[256] = "";
-bool ccwarnings = false;
+#include <sys/types.h>
+#include <sys/stat.h>
 
-extern bool fFastFlag;
+char               executableFilename[FILENAME_MAX + 1] = "a.out";
+char               saveCDir[FILENAME_MAX + 1]           = "";
 
-static const char* intDirName = NULL; // directory for intermediates; tmpdir or saveCDir
+char               ccflags[256]                         = "";
+char               ldflags[256]                         = "";
+bool               ccwarnings                           = false;
 
-static const int MAX_CHARS_PER_PID = 32;
+int                numLibFlags                          = 0;
+const char**       libFlag                              = NULL;
 
-int numLibFlags = 0;
-const char** libFlag = NULL;
+Vec<const char*>   incDirs;
 
-Vec<const char*> incDirs;
+// directory for intermediates; tmpdir or saveCDir
+static const char* intDirName        = NULL;
 
+static const int   MAX_CHARS_PER_PID = 32;
 
 void addLibInfo(const char* libName) {
   static int libSpace = 0;
 
   numLibFlags++;
+
   if (numLibFlags > libSpace) {
     libSpace = 2*numLibFlags;
     libFlag = (const char**)realloc(libFlag, libSpace*sizeof(char*));
   }
+
   libFlag[numLibFlags-1] = astr(libName);
 }
 
@@ -55,12 +60,25 @@ void addIncInfo(const char* incDir) {
   incDirs.add(astr(incDir));
 }
 
-
 void ensureDirExists(const char* dirname, const char* explanation) {
   const char* mkdircommand = "mkdir -p ";
   const char* command = astr(mkdircommand, dirname);
 
   mysystem(command, explanation);
+}
+
+
+static void removeSpacesFromString(char* str)
+{
+  char* src = str;
+  char* dst = str;
+  while (*src != '\0')
+  {
+    *dst = *src++;
+    if (*dst != ' ')
+        dst++;
+  }
+  *dst = '\0';
 }
 
 
@@ -85,10 +103,14 @@ static void ensureTmpDirExists(void) {
       } else {
         userid = passwdinfo->pw_name;
       }
-      
-      tmpdirname = astr(tmpdirprefix, userid, mypidstr, tmpdirsuffix);
+      char* myuserid = strdup(userid);
+      removeSpacesFromString(myuserid);
+
+      tmpdirname = astr(tmpdirprefix, myuserid, mypidstr, tmpdirsuffix);
       intDirName = tmpdirname;
       ensureDirExists(intDirName, "making temporary directory");
+
+      free(myuserid); myuserid = NULL;
     }
   } else {
     if (intDirName != saveCDir) {
@@ -131,18 +153,7 @@ const char* genIntermediateFilename(const char* filename) {
 
   ensureTmpDirExists();    
 
-  const char* newfilename = astr(intDirName, slash, filename);
-
-  return newfilename;
-}
-
-// MPF - genIntermediateFilename is a better name, declared in files.h,
-// but didn't want to modify all the code here yet so we have
-// this 2nd name for the same routine. 
-static
-const char* genIntFilename(const char* filename)
-{
-  return genIntermediateFilename(filename);
+  return astr(intDirName, slash, filename);
 }
 
 static const char* stripdirectories(const char* filename) {
@@ -160,7 +171,7 @@ static const char* stripdirectories(const char* filename) {
 
 const char* objectFileForCFile(const char* inputFilename) {
   const char* pathlessFilename = stripdirectories(inputFilename);
-  const char* objFilename = genIntFilename(astr(pathlessFilename, ".o"));
+  const char* objFilename = genIntermediateFilename(astr(pathlessFilename, ".o"));
   return objFilename;
 }
 
@@ -209,7 +220,7 @@ void openCFile(fileinfo* fi, const char* name, const char* ext) {
   else
     fi->filename = astr(name);
 
-  fi->pathname = genIntFilename(fi->filename);
+  fi->pathname = genIntermediateFilename(fi->filename);
   fi->fptr = fopen(fi->pathname, "w");
 }
 
@@ -219,12 +230,12 @@ void appendCFile(fileinfo* fi, const char* name, const char* ext) {
   else
     fi->filename = astr(name);
   
-  fi->pathname = genIntFilename(fi->filename);
+  fi->pathname = genIntermediateFilename(fi->filename);
   fi->fptr = fopen(fi->pathname, "a+");
 }
 void closeCFile(fileinfo* fi, bool beautifyIt) {
   fclose(fi->fptr);
-  if (beautifyIt)
+  if (beautifyIt && saveCDir[0])
     beautify(fi);
 }
 
@@ -233,7 +244,7 @@ fileinfo* openTmpFile(const char* tmpfilename, const char* mode) {
   fileinfo* newfile = (fileinfo*)malloc(sizeof(fileinfo));
 
   newfile->filename = astr(tmpfilename);
-  newfile->pathname = genIntFilename(tmpfilename);
+  newfile->pathname = genIntermediateFilename(tmpfilename);
   openfile(newfile, mode);
 
   return newfile;
@@ -320,45 +331,54 @@ const char* nthFilename(int i) {
 }
 
 
-const char* createGDBFile(int argc, char* argv[]) {
-  const char* gdbfilename = genIntFilename("gdb.commands");
-  FILE* gdbfile = openfile(gdbfilename);
+const char* createDebuggerFile(const char* debugger, int argc, char* argv[]) {
+  const char* dbgfilename = genIntermediateFilename(astr(debugger, ".commands"));
+  FILE* dbgfile = openfile(dbgfilename);
   int i;
 
-  fprintf(gdbfile, "set args");
+  if (strcmp(debugger, "gdb") == 0) {
+    fprintf(dbgfile, "set args");
+  } else if (strcmp(debugger, "lldb") == 0) {
+    fprintf(dbgfile, "settings set target.run-args ");
+  } else {
+      INT_FATAL(astr("createDebuggerFile doesn't know how to handle the given "
+                     "debugger: '", debugger, "'"));
+  }
   for (i=1; i<argc; i++) {
-    if (strcmp(argv[i], "--gdb") != 0) {
-      fprintf(gdbfile, " %s", argv[i]);
+    if (strcmp(argv[i], astr("--", debugger)) != 0) {
+      fprintf(dbgfile, " %s", argv[i]);
     }
   }
-  fprintf(gdbfile, "\n");
-  closefile(gdbfile);
-  mysystem(astr("cat ", CHPL_HOME, "/compiler/etc/gdb.commands >> ", 
-                gdbfilename), 
-           "appending gdb commands", 0);
 
+  fprintf(dbgfile, "\n");
+  closefile(dbgfile);
+  mysystem(astr("cat ", CHPL_HOME, "/compiler/etc/", debugger, ".commands >> ",
+                dbgfilename),
+           astr("appending ", debugger, " commands"),
+           false);
 
-  return gdbfilename;
+  return dbgfilename;
 }
 
+const std::string runUtilScript(const char* script) {
+  char buffer[256];
+  std::string result = "";
 
-static const char* mysystem_getresult(const char* command, 
-                                      const char* description,
-                                      int ignorestatus) {
-  const char* systemFilename = "system.out.tmp";
-  const char* fullSystemFilename = genIntFilename(systemFilename);
-  char* result = (char*)malloc(256*sizeof(char));
-  mysystem(astr(command, " > ", fullSystemFilename), description, ignorestatus);
-  fileinfo* systemFile = openTmpFile(systemFilename, "r");
-  fscanf(systemFile->fptr, "%s", result);
-  closefile(systemFile);
-  return astr(result);  // canonicalize
-}
+  FILE* pipe = popen(astr(CHPL_HOME, "/util/", script), "r");
+  if (!pipe) {
+    USR_FATAL(astr("running $CHPL_HOME/util/", script));
+  }
 
+  while (!feof(pipe)) {
+    if (fgets(buffer, 256, pipe) != NULL) {
+      result += buffer;
+    }
+  }
+  if (pclose(pipe)) {
+    USR_FATAL(astr("'$CHPL_HOME/util/", script, "' did not run successfully"));
+  }
 
-const char* runUtilScript(const char* script) {
-  return mysystem_getresult(astr(CHPL_HOME, "/util/", script), 
-                            astr("running $CHPL_HOME/util/", script), 0);
+  return result;
 }
 
 const char* getIntermediateDirName() {
@@ -387,7 +407,8 @@ static void genCFileBuildRules(FILE* makefile) {
     if (isCSource(inputFilename)) {
       const char* objFilename = objectFileForCFile(inputFilename);
       fprintf(makefile, "%s: %s FORCE\n", objFilename, inputFilename);
-      fprintf(makefile, "\t$(CC) -c -o $@ $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) $<\n");
+      fprintf(makefile,
+                   "\t$(CC) -c -o $@ $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) $<\n");
       fprintf(makefile, "\n");
     }
   }
@@ -410,7 +431,7 @@ static void genObjFiles(FILE* makefile) {
         fprintf(makefile, "\t%s \\\n", inputFilename);
       } else {
         const char* pathlessFilename = stripdirectories(inputFilename);
-        const char* objFilename = genIntFilename(astr(pathlessFilename, ".o"));
+        const char* objFilename = genIntermediateFilename(astr(pathlessFilename, ".o"));
         fprintf(makefile, "\t%s \\\n", objFilename);
       }
     }
@@ -430,15 +451,22 @@ void genIncludeCommandLineHeaders(FILE* outfile) {
 }
 
 
-void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
+void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_compile_link) {
   fileinfo makefile;
   openCFile(&makefile, "Makefile");
   const char* tmpDirName = intDirName;
   const char* strippedExeFilename = stripdirectories(executableFilename);
   const char* exeExt = "";
+  const char* tmpbin = "";
 
   fprintf(makefile.fptr, "CHPL_MAKE_HOME = %s\n\n", CHPL_HOME);
   fprintf(makefile.fptr, "TMPDIRNAME = %s\n", tmpDirName);
+
+  // LLVM builds just use the makefile for the launcher and
+  // so want to skip the actual program generation.
+  if( skip_compile_link ) {
+    fprintf(makefile.fptr, "SKIP_COMPILE_LINK = skip\n");
+  }
 
   if (fLibraryCompile) {
     if (fLinkStyle==LS_DYNAMIC) exeExt = ".so";
@@ -447,8 +475,9 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
   fprintf(makefile.fptr, "BINNAME = %s%s\n\n", executableFilename, exeExt);
   // BLC: This munging is done so that cp won't complain if the source
   // and destination are the same file (e.g., a.out and ./a.out)
-  fprintf(makefile.fptr, "TMPBINNAME = $(TMPDIRNAME)/%s.tmp%s\n", 
-          strippedExeFilename, exeExt);  
+  tmpbin = astr(tmpDirName, "/", strippedExeFilename, ".tmp", exeExt);
+  if( tmpbinname ) *tmpbinname = tmpbin;
+  fprintf(makefile.fptr, "TMPBINNAME = %s\n", tmpbin);
   // BLC: We generate a TMPBINNAME which is the name that will be used
   // by the C compiler in creating the executable, and is in the
   // --savec directory (a /tmp directory by default).  We then copy it
@@ -466,6 +495,9 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
   }
   if (optimizeCCode) {
     fprintf(makefile.fptr, " $(OPT_CFLAGS)");
+  }
+  if (specializeCCode) {
+    fprintf(makefile.fptr, " $(SPECIALIZE_CFLAGS)");
   }
   if (fieeefloat) {
     fprintf(makefile.fptr, " $(IEEE_FLOAT_GEN_CFLAGS)");
@@ -500,17 +532,14 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
             "test -f $(CHPL_MAKE_HOME)/runtime/$(CHPL_TAGS_FILE) && "
             "cd %s && "
             "cp $(CHPL_MAKE_HOME)/runtime/$(CHPL_TAGS_FILE) . && "
-            "$(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(CHPL_TAGS_APPEND_FLAG) *.c *.h",
+            "$(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) "
+              "$(CHPL_TAGS_APPEND_FLAG) *.c *.h",
             saveCDir);
   }
   fprintf(makefile.fptr, "\n");
 
   fprintf(makefile.fptr, "CHPLSRC = \\\n");
   fprintf(makefile.fptr, "\t%s \\\n\n", mainfile->pathname);
-  if (fGPU) {
-    fprintf(makefile.fptr, "CHPL_GPU_SRC = \\\n");
-    fprintf(makefile.fptr, "\t%s \\\n\n", gpusrcfile->pathname);
-  }
   genCFiles(makefile.fptr);
   genObjFiles(makefile.fptr);
   fprintf(makefile.fptr, "\nLIBS =");
@@ -518,7 +547,8 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
     fprintf(makefile.fptr, " %s", libFlag[i]);
   fprintf(makefile.fptr, "\n");
 
-  // MPF - we want to allow the runtime to make use of debug/optimize information
+  // MPF - we want to allow the runtime to make use of debug/optimize
+  // information
   if (debugCCode) {
     fprintf(makefile.fptr, "DEBUG = 1\n");
   }
@@ -529,12 +559,15 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
   fprintf(makefile.fptr, "\n");
 
   if (!fLibraryCompile) {
-    fprintf(makefile.fptr, "include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.exe\n");
+    fprintf(makefile.fptr,
+            "include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.exe\n");
   } else {
     if (fLinkStyle == LS_DYNAMIC)
-      fprintf(makefile.fptr, "include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.shared\n");
+      fprintf(makefile.fptr,
+              "include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.shared\n");
     else
-      fprintf(makefile.fptr, "include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.static\n");
+      fprintf(makefile.fptr,
+              "include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.static\n");
   }
   fprintf(makefile.fptr, "\n");
   genCFileBuildRules(makefile.fptr);
@@ -612,20 +645,24 @@ void addDashMsToUserPath(void) {
 
 
 void setupModulePaths(void) {
-  intModPath.add(astr(CHPL_HOME, "/modules/internal/threads/", CHPL_THREADS));
-  intModPath.add(astr(CHPL_HOME, "/modules/internal/tasks/", CHPL_TASKS));
-  intModPath.add(astr(CHPL_HOME, "/modules/internal/comm/", CHPL_COMM));
-  // These three are deprecated, superseded by the above three.
-  intModPath.add(astr(CHPL_HOME, "/modules/internal/", CHPL_THREADS));
-  intModPath.add(astr(CHPL_HOME, "/modules/internal/", CHPL_TASKS));
-  intModPath.add(astr(CHPL_HOME, "/modules/internal/", CHPL_COMM));
-  intModPath.add(astr(CHPL_HOME, "/modules/internal"));
-  stdModPath.add(astr(CHPL_HOME, "/modules/standard/gen/", CHPL_TARGET_PLATFORM,
+  const char* modulesRoot = (fMinimalModules ? "modules-minimal" : "modules");
+
+  intModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/internal/localeModels/",
+                      CHPL_LOCALE_MODEL));
+  intModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/internal/threads/", 
+                      CHPL_THREADS));
+  intModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/internal/tasks/", 
+                      CHPL_TASKS));
+  intModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/internal/comm/", 
+                      CHPL_COMM));
+  intModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/internal"));
+  stdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/standard/gen/", 
+                      CHPL_TARGET_PLATFORM,
                       "-", CHPL_TARGET_COMPILER));
-  stdModPath.add(astr(CHPL_HOME, "/modules/standard"));
-  stdModPath.add(astr(CHPL_HOME, "/modules/layouts"));
-  stdModPath.add(astr(CHPL_HOME, "/modules/dists"));
-  stdModPath.add(astr(CHPL_HOME, "/modules/dists/dims"));
+  stdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/standard"));
+  stdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/layouts"));
+  stdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/dists"));
+  stdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/dists/dims"));
   const char* envvarpath = getenv("CHPL_MODULE_PATH");
   if (envvarpath) {
     char path[FILENAME_MAX+1];
@@ -722,9 +759,6 @@ void readArgsFromCommand(const char* cmd, std::vector<std::string> & args)
 static
 char* chplRealPath(const char* path)
 {
-#ifdef __MTA__
-  return NULL;
-#else
   // We would really rather use
   // char* got = realpath(path, NULL);
   // but that doesn't work on some Mac OS X versions.
@@ -734,7 +768,6 @@ char* chplRealPath(const char* path)
   if( got ) ret = strdup(got);
   free(buf);
   return ret;
-#endif
 }
 
 
@@ -775,30 +808,43 @@ static int sys_getcwd(char** path_out)
 {
   int sz = 128;
   char* buf;
-  char* got;
-  int err = 0;
 
   buf = (char*) malloc(sz);
   if( !buf ) return ENOMEM;
+  
   while( 1 ) {
-    got = getcwd(buf, sz);
-    if( got != NULL ) break;
-    else if( errno == ERANGE ) {
+    if ( getcwd(buf, sz) != NULL ) {
+      break;
+      
+    } else if ( errno == ERANGE ) {
       // keep looping but with bigger buffer.
-      sz = 2*sz;
-      got = (char*) realloc(buf, sz);
-      if( ! got ) {
+      sz *= 2;
+      
+      /*
+       * Realloc may return NULL, in which case we will need to free the memory
+       * initially pointed to by buf.  This is why we store the result of the
+       * call in newP instead of directly into buf.  If a non-NULL value is
+       * returned we update the buf pointer.
+       */
+      void* newP = realloc(buf, sz);
+      
+      if (newP != NULL) {
+        buf = static_cast<char*>(newP);
+      
+      } else {
         free(buf);
         return ENOMEM;
       }
+      
     } else {
       // Other error, stop.
-      err = errno;
+      free(buf);
+      return errno;
     }
   }
 
   *path_out = buf;
-  return err;
+  return 0;
 }
 
 // Find the path to the running program

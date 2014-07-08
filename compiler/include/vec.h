@@ -61,22 +61,14 @@ class Vec {
   int add_exclusive(C a);
   C& add();
   C head() { return n>0 ? *v : 0; }
+  C only() { return n == 1 ? *v : 0; }
   C tail() { return n>0 ? v[n-1] : 0; }
   C pop();
   void clear();
   void set_clear();
   C *set_add(C a);
-  void set_remove(C a); // expensive, use BlockHash for cheaper remove
   C *set_add_internal(C a);
   int set_union(Vec<C,S> &v);
-  int set_intersection(Vec<C,S> &v);
-  int some_intersection(Vec<C,S> &v);
-  int some_disjunction(Vec<C,S> &v);
-  int some_difference(Vec<C,S> &v);
-  void set_intersection(Vec<C,S> &v, Vec<C,S> &result);
-  void set_disjunction(Vec<C,S> &v, Vec<C,S> &result);
-  void set_difference(Vec<C,S> &v, Vec<C,S> &result);
-  int set_count();
   int count();
   C *in(C a);
   C *set_in(C a);
@@ -222,15 +214,6 @@ Vec<C,S>::set_add(C a) {
       set_add_internal(*c);
   }
   return set_add_internal(a);
-}
-
-template <class C, int S> void
-Vec<C,S>::set_remove(C a) {
-  Vec<C,S> tmp;
-  tmp.move(*this);
-  for (C *c = tmp.v; c < tmp.v + tmp.n; c++)
-    if (*c != a)
-      set_add(a);
 }
 
 template <class C, int S> inline int
@@ -429,89 +412,6 @@ Vec<C,S>::set_union(Vec<C,S> &vv) {
     if (vv.v[i])
       changed = set_add(vv.v[i]) || changed;
   return changed;
-} 
-
-template <class C, int S> int
-Vec<C,S>::set_intersection(Vec<C,S> &vv) {
-  Vec<C,S> tv;
-  tv.move(*this);
-  int changed = 0;
-  for (int i = 0; i < tv.n; i++)
-    if (tv.v[i]) {
-      if (vv.set_in(tv.v[i]))
-        set_add(tv.v[i]);
-      else
-        changed = 1;
-    }
-  return changed;
-} 
-
-template <class C, int S> int
-Vec<C,S>::some_intersection(Vec<C,S> &vv) {
-  for (int i = 0; i < n; i++)
-    if (v[i])
-      if (vv.set_in(v[i]))
-        return 1;
-  return 0;
-} 
-
-template <class C, int S> int
-Vec<C,S>::some_disjunction(Vec<C,S> &vv) {
-  for (int i = 0; i < n; i++)
-    if (v[i])
-      if (!vv.set_in(v[i]))
-        return 1;
-  for (int i = 0; i < vv.n; i++)
-    if (vv.v[i])
-      if (!set_in(vv.v[i]))
-        return 1;
-  return 0;
-} 
-
-template <class C, int S> void
-Vec<C,S>::set_intersection(Vec<C,S> &vv, Vec<C,S> &result) {
-  for (int i = 0; i < n; i++)
-    if (v[i])
-      if (vv.set_in(v[i]))
-        result.set_add(v[i]);
-} 
-
-template <class C, int S> void
-Vec<C,S>::set_disjunction(Vec<C,S> &vv, Vec<C,S> &result) {
-  for (int i = 0; i < n; i++)
-    if (v[i])
-      if (!vv.set_in(v[i]))
-        result.set_add(v[i]);
-  for (int i = 0; i < vv.n; i++)
-    if (vv.v[i])
-      if (!set_in(vv.v[i]))
-        result.set_add(vv.v[i]);
-} 
-
-template <class C, int S> void
-Vec<C,S>::set_difference(Vec<C,S> &vv, Vec<C,S> &result) {
-  for (int i = 0; i < n; i++)
-    if (v[i])
-      if (!vv.set_in(v[i]))
-        result.set_add(v[i]);
-} 
-
-template <class C, int S> int
-Vec<C,S>::some_difference(Vec<C,S> &vv) {
-  for (int i = 0; i < n; i++)
-    if (v[i])
-      if (!vv.set_in(v[i]))
-        return 1;
-  return 0;
-} 
-
-template <class C, int S> int
-Vec<C,S>::set_count() {
-  int x = 0;
-  for (int i = 0; i < n; i++)
-    if (v[i])
-      x++;
-  return x;
 } 
 
 template <class C, int S> void

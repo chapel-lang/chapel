@@ -8,11 +8,8 @@
 
 BlockStmt* buildPragmaStmt(Vec<const char*>*, BlockStmt*);
 
-/* The start of an incomplete zero-tuple implementation
-CallExpr* buildZeroTuple(void);
-*/
 CallExpr* buildOneTuple(Expr* elem);
-Expr* buildParenExpr(CallExpr* call);
+CallExpr* buildTuple(CallExpr* call);
 
 Expr* buildSquareCallExpr(Expr* base, CallExpr* args);
 
@@ -32,14 +29,13 @@ Expr* buildDotExpr(const char* base, const char* member);
 Expr* buildLogicalAndExpr(BaseAST* left, BaseAST* right);
 Expr* buildLogicalOrExpr(BaseAST* left, BaseAST* right);
 
-BlockStmt* buildChapelStmt(BaseAST* ast = NULL);
+BlockStmt* buildChapelStmt(Expr* expr = NULL);
 BlockStmt* buildUseStmt(CallExpr* modules);
 BlockStmt* buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init);
 BlockStmt* buildLabelStmt(const char* name, Expr* stmt);
 BlockStmt* buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr = NULL);
 ModuleSymbol* buildModule(const char* name, BlockStmt* block, const char* filename, char *docs);
 CallExpr* buildPrimitiveExpr(CallExpr* exprs);
-BlockStmt* buildPrimitiveLoopStmt(CallExpr* exprs, BlockStmt* body);
 
 FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2 = NULL);
 CallExpr* buildLetExpr(BlockStmt* decls, Expr* expr);
@@ -48,6 +44,7 @@ BlockStmt* buildDoWhileLoopStmt(Expr* cond, BlockStmt* body);
 BlockStmt* buildSerialStmt(Expr* cond, BlockStmt* body);
 BlockStmt* buildCoforallLoopStmt(Expr* indices,
                                  Expr* iterator,
+                                 CallExpr* byref_vars,
                                  BlockStmt* body,
                                  bool zippered = false);
 BlockStmt* buildGotoStmt(GotoTag tag, const char* name);
@@ -92,16 +89,18 @@ DefExpr* buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* ini
 DefExpr* buildTupleArgDefExpr(IntentTag tag, BlockStmt* tuple, Expr* type, Expr* init);
 FnSymbol* buildFunctionFormal(FnSymbol* fn, DefExpr* def);
 FnSymbol* buildLambda(FnSymbol *fn);
+FnSymbol* buildFunctionSymbol(FnSymbol* fn, const char* name,
+                              IntentTag thisTag, const char* class_name);
 BlockStmt* buildFunctionDecl(FnSymbol* fn, RetTag optRetTag, Expr* optRetType,
                              Expr* optWhere, BlockStmt* optFnBody, char *docs);
 BlockStmt* buildLocalStmt(Expr* stmt);
 BlockStmt* buildOnStmt(Expr* expr, Expr* stmt);
-BlockStmt* buildBeginStmt(Expr* stmt);
-BlockStmt* buildFutureBeginStmt(const char* ident, Expr* type, BlockStmt* stmt);
+BlockStmt* buildBeginStmt(CallExpr* byref_vars, Expr* stmt);
 BlockStmt* buildSyncStmt(Expr* stmt);
-BlockStmt* buildCobeginStmt(BlockStmt* block);
+BlockStmt* buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block);
 BlockStmt* buildAtomicStmt(Expr* stmt);
 void createInitFn(ModuleSymbol* mod);
+BlockStmt* buildExternBlockStmt(const char* c_code);
 CallExpr* buildPreDecIncWarning(Expr* expr, char sign);
 BlockStmt* convertTypesToExtern(BlockStmt*);
 BlockStmt* handleConfigTypes(BlockStmt*);

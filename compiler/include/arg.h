@@ -27,45 +27,44 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *****************************************************************************/
 
-#ifndef _arg_H
-#define _arg_H
+#ifndef _ARG_H_
+#define _ARG_H_
 
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
 
-#ifndef __alpha
-#define atoll atol
-#endif
-
-/* Argument Handling
-*/
 struct ArgumentState;
+struct ArgumentDescription;
 
-typedef void ArgumentFunction(struct ArgumentState *arg_state, char *arg);
+typedef void ArgumentFunction(const ArgumentState* state, const char* arg);
 
-typedef struct {
-  const char *name;
-  char key;
-  const char *argumentOptions;
-  const char *description;
-  const char *type;
-  void *location;
-  const char *env;
-  ArgumentFunction *pfn;
-} ArgumentDescription;
+struct ArgumentState
+{
+  char**               file_argument;
+  int                  nfile_arguments;
 
-typedef struct ArgumentState {
-  char **file_argument;
-  int nfile_arguments;
-  const char *program_name;
-  const char *program_loc;
-  ArgumentDescription *desc;
-} ArgumentState;
+  const char*          program_name;
+  const char*          program_loc;
+  ArgumentDescription* desc;
+};
 
-void usage(ArgumentState *arg_state, int status, bool printEnvHelp, 
-           bool printCurrentSettings);
-void process_args(ArgumentState *arg_state, int argc, char **argv);
-void free_args(ArgumentState *arg_state);
+struct ArgumentDescription
+{
+  const char*          name;
+  char                 key;
+  const char*          argumentOptions;
+  const char*          description;
+  const char*          type;
+  void*                location;
+  const char*          env;
+  ArgumentFunction*    pfn;
+};
+
+void usage(const ArgumentState* arg_state,
+           int                  status, 
+           bool                 printEnvHelp, 
+           bool                 printCurrentSettings);
+
+void process_args(ArgumentState* state, int argc, char* argv[]);
+
+void free_args(ArgumentState* arg_state);
 
 #endif

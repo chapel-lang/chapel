@@ -24,6 +24,8 @@
 
 
 class BaseAST;
+class Symbol;
+class TypeSymbol;
 
 
 enum Flag {
@@ -42,6 +44,7 @@ enum Flag {
 Flag pragma2flag(const char* str);
 void initFlags();
 void viewFlags(BaseAST* sym);
+void writeFlags(FILE* fp, Symbol* sym);
 TypeSymbol* getDataClassType(TypeSymbol* ts);
 void setDataClassType(TypeSymbol* ts, TypeSymbol* ets);
 

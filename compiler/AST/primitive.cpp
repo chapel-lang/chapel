@@ -1,11 +1,13 @@
+#include "primitive.h"
+
 #include "expr.h"
 #include "iterator.h"
-#include "primitive.h"
+#include "stringutil.h"
 #include "type.h"
 
 static Type*
-returnInfoBool(CallExpr* call) {
-  return dtBool;
+returnInfoUnknown(CallExpr* call) {
+  return dtUnknown;
 }
 
 static Type*
@@ -14,8 +16,13 @@ returnInfoVoid(CallExpr* call) {
 }
 
 static Type*
-returnInfoUnknown(CallExpr* call) {
-  return dtUnknown;
+returnInfoOpaque(CallExpr* call) {
+  return dtOpaque;
+}
+
+static Type*
+returnInfoBool(CallExpr* call) {
+  return dtBool;
 }
 
 static Type*
@@ -24,22 +31,19 @@ returnInfoString(CallExpr* call) {
 }
 
 static Type*
+returnInfoStringC(CallExpr* call) {
+  return dtStringC;
+}
+
+
+static Type*
 returnInfoLocaleID(CallExpr* call) {
   return dtLocaleID;
 }
 
-// This is a crutch.
-// It would be nice to be able to pick up and use backend types here
-// (and in returnInfoSublocID).
-// For now, we just use a hardcoded int32.
 static Type*
 returnInfoNodeID(CallExpr* call) {
-  return dtInt[INT_SIZE_32];
-}
-
-static Type*
-returnInfoSublocID(CallExpr* call) {
-  return dtInt[INT_SIZE_32];
+  return NODE_ID_TYPE;
 }
 
 static Type*
@@ -50,6 +54,11 @@ returnInfoInt32(CallExpr* call) {
 static Type*
 returnInfoInt64(CallExpr* call) {
   return dtInt[INT_SIZE_64];
+}
+
+static Type*
+returnInfoSizeType(CallExpr* call) {
+  return SIZE_TYPE;
 }
 
 //
@@ -64,12 +73,12 @@ returnInfoDefaultInt(CallExpr* call) {
   return returnInfoInt64(call);
 }
 
+/*
 static Type*
 returnInfoUInt32(CallExpr* call) { // unexecuted none/gasnet on 4/25/08
   return dtUInt[INT_SIZE_32];
 }
 
-/*
 static Type*
 returnInfoUInt64(CallExpr* call) {
   return dtUInt[INT_SIZE_64];
@@ -110,13 +119,6 @@ returnInfoFirstDeref(CallExpr* call) {
 }
 
 static Type*
-returnIteratorType(CallExpr* call) {
-  Type* ict = call->get(1)->typeInfo();
-  INT_ASSERT(ict->symbol->hasFlag(FLAG_ITERATOR_CLASS));
-  return ict->initializer->getReturnSymbol()->type;
-}
-
-static Type*
 returnInfoCast(CallExpr* call) {
   Type* t1 = call->get(1)->typeInfo();
   Type* t2 = call->get(2)->typeInfo();
@@ -131,7 +133,7 @@ returnInfoCast(CallExpr* call) {
 
 static Type*
 returnInfoVal(CallExpr* call) {
-  ClassType* ct = toClassType(call->get(1)->typeInfo());
+  AggregateType* ct = toAggregateType(call->get(1)->typeInfo());
   if (!ct || !ct->symbol->hasFlag(FLAG_REF))
     INT_FATAL(call, "attempt to get value type of non-reference type");
   return ct->getField(1)->type;
@@ -185,23 +187,13 @@ returnInfoArrayIndex(CallExpr* call) {
 }
 
 static Type*
-returnInfoChplAlloc(CallExpr* call) {
-  SymExpr* sym = toSymExpr(call->get(1));
-  INT_ASSERT(sym);
-  Type* type = sym->var->type;
-  if (type->symbol->hasFlag(FLAG_WIDE_CLASS))
-    type = type->getField("addr")->type;
-  return type;
-}
-
-static Type*
 returnInfoGetMember(CallExpr* call) {
   SymExpr* sym1 = toSymExpr(call->get(1));
   if (!sym1)
     INT_FATAL(call, "bad member primitive");
-  ClassType* ct = toClassType(sym1->var->type);
+  AggregateType* ct = toAggregateType(sym1->var->type);
   if (ct->symbol->hasFlag(FLAG_REF))
-    ct = toClassType(ct->getValType());
+    ct = toAggregateType(ct->getValType());
   if (!ct)
     INT_FATAL(call, "bad member primitive");
   SymExpr* sym = toSymExpr(call->get(2));
@@ -224,7 +216,7 @@ returnInfoGetMember(CallExpr* call) {
 
 static Type*
 returnInfoGetTupleMember(CallExpr* call) {
-  ClassType* ct = toClassType(call->get(1)->getValType());
+  AggregateType* ct = toAggregateType(call->get(1)->getValType());
   INT_ASSERT(ct && ct->symbol->hasFlag(FLAG_STAR_TUPLE));
   return ct->getField("x1")->type;
 }
@@ -237,18 +229,27 @@ returnInfoGetTupleMemberRef(CallExpr* call) {
 
 static Type*
 returnInfoGetMemberRef(CallExpr* call) {
-  ClassType* ct = toClassType(call->get(1)->getValType());
+  AggregateType* ct = toAggregateType(call->get(1)->getValType());
   INT_ASSERT(ct);
   SymExpr* se = toSymExpr(call->get(2));
   INT_ASSERT(se);
   VarSymbol* var = toVarSymbol(se->var);
   INT_ASSERT(var);
-  if (var->immediate) {
-    const char* name = var->immediate->v_string;
-    for_fields(field, ct) {
-      if (!strcmp(field->name, name))
-        return field->type->refType ? field->type->refType : field->type;
+  if (Immediate* imm = var->immediate)
+  {
+    Symbol* field = NULL;
+    if (imm->const_kind == CONST_KIND_STRING)
+    {
+      const char* name = var->immediate->v_string;
+      field = ct->getField(name);
     }
+    if (imm->const_kind == NUM_KIND_INT)
+    {
+      int64_t i = imm->int_value();
+      field = ct->getField(i);
+    }
+    INT_ASSERT(field);
+    return field->type->refType ? field->type->refType : field->type;
   } else
     return var->type->refType ? var->type->refType : var->type;
   INT_FATAL(call, "bad member primitive");
@@ -363,6 +364,7 @@ initPrimitive() {
   prim_def(PRIM_NOOP, "noop", returnInfoVoid);
   prim_def(PRIM_MOVE, "move", returnInfoVoid, false, true);
   prim_def(PRIM_INIT, "init", returnInfoFirstDeref);
+  prim_def(PRIM_NO_INIT, "no init", returnInfoFirstDeref);
   prim_def(PRIM_REF_TO_STRING, "ref to string", returnInfoString);
   prim_def(PRIM_RETURN, "return", returnInfoFirst, true);
   prim_def(PRIM_YIELD, "yield", returnInfoFirst, true);
@@ -387,6 +389,18 @@ initPrimitive() {
   prim_def(PRIM_OR, "|", returnInfoFirst);
   prim_def(PRIM_XOR, "^", returnInfoFirst);
   prim_def(PRIM_POW, "**", returnInfoNumericUp);
+
+  prim_def(PRIM_ASSIGN, "=", returnInfoVoid, true);
+  prim_def(PRIM_ADD_ASSIGN, "+=", returnInfoVoid, true);
+  prim_def(PRIM_SUBTRACT_ASSIGN, "-=", returnInfoVoid, true);
+  prim_def(PRIM_MULT_ASSIGN, "*=", returnInfoVoid, true);
+  prim_def(PRIM_DIV_ASSIGN, "/=", returnInfoVoid, true);
+  prim_def(PRIM_MOD_ASSIGN, "%=", returnInfoVoid, true);
+  prim_def(PRIM_LSH_ASSIGN, "<<=", returnInfoVoid, true);
+  prim_def(PRIM_RSH_ASSIGN, ">>=", returnInfoVoid, true);
+  prim_def(PRIM_AND_ASSIGN, "&=", returnInfoVoid, true);
+  prim_def(PRIM_OR_ASSIGN, "|=", returnInfoVoid, true);
+  prim_def(PRIM_XOR_ASSIGN, "^=", returnInfoVoid, true);
 
   prim_def(PRIM_MIN, "_min", returnInfoFirst);
   prim_def(PRIM_MAX, "_max", returnInfoFirst);
@@ -431,13 +445,11 @@ initPrimitive() {
   prim_def(PRIM_WRITEEF, "write_EF", returnInfoVoid, true);
   prim_def(PRIM_WRITEFF, "write_FF", returnInfoVoid, true);
   prim_def(PRIM_WRITEXF, "write_XF", returnInfoVoid, true);
-  prim_def(PRIM_SYNC_RESET, "sync_reset", returnInfoVoid, true);
   prim_def(PRIM_READFE, "read_FE", returnInfoFirst, true);
   prim_def(PRIM_READFF, "read_FF", returnInfoFirst, true);
   prim_def(PRIM_READXX, "read_XX", returnInfoFirst, true);
   prim_def(PRIM_SYNC_IS_FULL, "sync_is_full", returnInfoBool, true);
   prim_def(PRIM_SINGLE_WRITEEF, "single_write_EF", returnInfoVoid, true);
-  prim_def(PRIM_SINGLE_RESET, "single_reset", returnInfoVoid, true);
   prim_def(PRIM_SINGLE_READFF, "single_read_FF", returnInfoFirst, true);
   prim_def(PRIM_SINGLE_READXX, "single_read_XX", returnInfoFirst, true);
   prim_def(PRIM_SINGLE_IS_FULL, "single_is_full", returnInfoBool, true);
@@ -445,17 +457,17 @@ initPrimitive() {
   prim_def(PRIM_GET_END_COUNT, "get end count", returnInfoEndCount);
   prim_def(PRIM_SET_END_COUNT, "set end count", returnInfoVoid, true);
 
-  prim_def(PRIM_PROCESS_TASK_LIST, "process task list", returnInfoVoid, true);
-  prim_def(PRIM_EXECUTE_TASKS_IN_LIST, "execute tasks in list", returnInfoVoid, true);
-  prim_def(PRIM_FREE_TASK_LIST, "free task list", returnInfoVoid, true);
+  prim_def(PRIM_PROCESS_TASK_LIST, "process task list", returnInfoVoid, true, true);
+  prim_def(PRIM_EXECUTE_TASKS_IN_LIST, "execute tasks in list", returnInfoVoid, true, true);
+  prim_def(PRIM_FREE_TASK_LIST, "free task list", returnInfoVoid, true, true);
 
   // task primitives
   prim_def(PRIM_GET_SERIAL, "task_get_serial", returnInfoBool);
   prim_def(PRIM_SET_SERIAL, "task_set_serial", returnInfoVoid, true);
 
-  prim_def(PRIM_CHPL_ALLOC, "chpl_mem_alloc", returnInfoChplAlloc, true, true);
-  prim_def(PRIM_CHPL_ALLOC_PERMIT_ZERO, "chpl_mem_allocPermitZero", returnInfoChplAlloc, true, true);
-  prim_def(PRIM_CHPL_FREE, "chpl_mem_free", returnInfoVoid, true, true);
+  // These are used for task-aware allocation.
+  prim_def(PRIM_SIZEOF, "sizeof", returnInfoSizeType);
+
   prim_def(PRIM_INIT_FIELDS, "chpl_init_record", returnInfoVoid, true);
   prim_def(PRIM_PTR_EQUAL, "ptr_eq", returnInfoBool);
   prim_def(PRIM_PTR_NOTEQUAL, "ptr_neq", returnInfoBool);
@@ -463,7 +475,6 @@ initPrimitive() {
   prim_def(PRIM_CAST, "cast", returnInfoCast, false, true);
   prim_def(PRIM_DYNAMIC_CAST, "dynamic_cast", returnInfoCast, false, true);
   prim_def(PRIM_TYPEOF, "typeof", returnInfoFirstDeref);
-  prim_def(PRIM_GET_ITERATOR_RETURN, "get iterator return", returnIteratorType);
   prim_def(PRIM_USE, "use", returnInfoVoid, true);
   prim_def(PRIM_USED_MODULES_LIST, "used modules list", returnInfoVoid);
   prim_def(PRIM_TUPLE_EXPAND, "expand_tuple", returnInfoVoid);
@@ -474,6 +485,7 @@ initPrimitive() {
   prim_def(PRIM_CHPL_COMM_GET_STRD, "chpl_comm_get_strd", returnInfoVoid, true, true);
   prim_def(PRIM_CHPL_COMM_PUT_STRD, "chpl_comm_put_strd", returnInfoVoid, true, true);
 
+  prim_def(PRIM_ARRAY_SHIFT_BASE_POINTER, "shift_base_pointer", returnInfoVoid, true, true);
   prim_def(PRIM_ARRAY_ALLOC, "array_alloc", returnInfoVoid, true, true);
   prim_def(PRIM_ARRAY_FREE, "array_free", returnInfoVoid, true, true);
   prim_def(PRIM_ARRAY_FREE_ELTS, "array_free_elts", returnInfoVoid, true);
@@ -483,19 +495,10 @@ initPrimitive() {
   prim_def(PRIM_ARRAY_SET, "array_set", returnInfoVoid, true, true);
   prim_def(PRIM_ARRAY_SET_FIRST, "array_set_first", returnInfoVoid, true, true);
 
-  prim_def(PRIM_GPU_GET_ARRAY, "get_gpu_array", returnInfoArrayIndex, false, true);
-  prim_def(PRIM_GPU_GET_VALUE, "get_gpu_value", returnInfoArrayIndex, false, true);
-  prim_def(PRIM_GPU_GET_VAL, "get_gpu_val", returnInfoArrayIndex, false, true);
-  prim_def(PRIM_GPU_ALLOC, "gpu_alloc", returnInfoVoid, true, true);
-  prim_def(PRIM_COPY_HOST_GPU, "copy_host_to_gpu", returnInfoVoid, true, false);
-  prim_def(PRIM_COPY_GPU_HOST, "copy_gpu_to_host", returnInfoVoid, true, false);
-  prim_def(PRIM_GPU_FREE, "gpu_free", returnInfoVoid, true, true);
-  prim_def(PRIM_ON_GPU, "chpl_on_gpu", returnInfoInt32);
-
   prim_def(PRIM_ERROR, "error", returnInfoVoid, true);
   prim_def(PRIM_WARNING, "warning", returnInfoVoid, true);
   prim_def(PRIM_WHEN, "when case expressions", returnInfoVoid);
-  prim_def(PRIM_TYPE_TO_STRING, "typeToString", returnInfoString);
+  prim_def(PRIM_TYPE_TO_STRING, "typeToString", returnInfoStringC);
 
   // These are the block info primitives.
   prim_def(PRIM_BLOCK_PARAM_LOOP, "param loop", returnInfoVoid);
@@ -505,10 +508,10 @@ initPrimitive() {
   prim_def(PRIM_BLOCK_BEGIN, "begin block", returnInfoVoid);
   prim_def(PRIM_BLOCK_COBEGIN, "cobegin block", returnInfoVoid);
   prim_def(PRIM_BLOCK_COFORALL, "coforall loop", returnInfoVoid);
-  prim_def(PRIM_BLOCK_XMT_PRAGMA_FORALL_I_IN_N, "xmt pragma forall i in n", returnInfoVoid);
-  prim_def(PRIM_BLOCK_XMT_PRAGMA_NOALIAS, "noalias pragma", returnInfoVoid, true);
   prim_def(PRIM_BLOCK_ON, "on block", returnInfoVoid);
-  prim_def(PRIM_BLOCK_ON_NB, "non-blocking on block", returnInfoVoid);
+  prim_def(PRIM_BLOCK_BEGIN_ON, "begin on block", returnInfoVoid);
+  prim_def(PRIM_BLOCK_COBEGIN_ON, "cobegin on block", returnInfoVoid);
+  prim_def(PRIM_BLOCK_COFORALL_ON, "coforall on block", returnInfoVoid);
   prim_def(PRIM_BLOCK_LOCAL, "local block", returnInfoVoid);
   prim_def(PRIM_BLOCK_UNLOCAL, "unlocal block", returnInfoVoid);
 
@@ -517,34 +520,18 @@ initPrimitive() {
 
   prim_def(PRIM_DELETE, "delete", returnInfoVoid);
 
-  prim_def(PRIM_GC_CC_INIT, "_chpl_gc_init", returnInfoVoid);
-  prim_def(PRIM_GC_ADD_ROOT, "_addRoot", returnInfoVoid);
-  prim_def(PRIM_GC_ADD_NULL_ROOT, "_addNullRoot", returnInfoVoid);
-  prim_def(PRIM_GC_DELETE_ROOT, "_deleteRoot", returnInfoVoid);
-  prim_def(PRIM_GC_CLEANUP, "_chpl_gc_cleanup", returnInfoVoid);
-
   prim_def(PRIM_CALL_DESTRUCTOR, "call destructor", returnInfoVoid, true);
 
   prim_def(PRIM_LOGICAL_FOLDER, "_paramFoldLogical", returnInfoBool);
 
   prim_def(PRIM_WIDE_GET_LOCALE, "_wide_get_locale", returnInfoLocaleID, false, true);
-  // These two are unnecessary after Chapel understands the c_locale_t structure.
+  // This will be unnecessary once the module code calls the corresponding
+  // function directly.
   prim_def(PRIM_WIDE_GET_NODE, "_wide_get_node", returnInfoNodeID, false, true);
-  prim_def(PRIM_WIDE_GET_SUBLOC, "_wide_get_subloc", returnInfoSublocID, false, true);
   prim_def(PRIM_WIDE_GET_ADDR, "_wide_get_addr", returnInfoInt64, false, true);
 
-  // These will go away after code up c_locale_t as a record in Chapel.
-  prim_def(PRIM_LOC_GET_NODE, "_loc_get_node", returnInfoNodeID);
-  prim_def(PRIM_LOC_SET_NODE, "_loc_set_node", returnInfoVoid);
-  prim_def(PRIM_LOC_GET_SUBLOC, "_loc_get_subloc", returnInfoSublocID);
-  prim_def(PRIM_LOC_SET_SUBLOC, "_loc_set_subloc", returnInfoVoid);
-
-  prim_def(PRIM_NODE_ID, "chpl_localeID", returnInfoNodeID);    // Our GASNet node ID.
   prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoLocaleID);
-  prim_def(PRIM_SET_SUBLOC_ID, "_set_subloc_id", returnInfoVoid, true);
-  prim_def(PRIM_GET_SUBLOC_ID, "_get_subloc_id", returnInfoSublocID);
 
-  prim_def(PRIM_ALLOC_GVR, "allocchpl_globals_registry", returnInfoVoid);
   prim_def(PRIM_HEAP_REGISTER_GLOBAL_VAR, "_heap_register_global_var", returnInfoVoid, true, true);
   prim_def(PRIM_HEAP_BROADCAST_GLOBAL_VARS, "_heap_broadcast_global_vars", returnInfoVoid, true, true);
   prim_def(PRIM_PRIVATE_BROADCAST, "_private_broadcast", returnInfoVoid, true, true);
@@ -554,22 +541,22 @@ initPrimitive() {
   prim_def(PRIM_CAPTURE_FN, "capture fn", returnInfoVoid);
   prim_def(PRIM_CREATE_FN_TYPE, "create fn type", returnInfoVoid);
 
-  prim_def("chpl_string_compare", returnInfoDefaultInt, true);
+  prim_def("string_compare", returnInfoDefaultInt, true);
   prim_def("string_contains", returnInfoBool, true);
-  prim_def("string_concat", returnInfoString, true, true);
+  prim_def("string_concat", returnInfoStringC, true, true);
   prim_def("string_length", returnInfoDefaultInt);
   prim_def("ascii", returnInfoInt32);
-  prim_def("string_index", returnInfoString, true, true);
-  prim_def(PRIM_STRING_COPY, "string_copy", returnInfoString, false, true);
+  prim_def("string_index", returnInfoStringC, true, true);
+  prim_def(PRIM_STRING_COPY, "string_copy", returnInfoStringC, false, true);
+  prim_def(PRIM_STRING_NORMALIZE, "string_normalize", returnInfoVoid, true, false);
+  prim_def(PRIM_STRING_FROM_C_STRING, "string_from_c_string", returnInfoString, false, true);
+  prim_def(PRIM_C_STRING_FROM_STRING, "c_string_from_string", returnInfoStringC, false, true);
+  prim_def(PRIM_CAST_TO_VOID_STAR, "cast_to_void_star", returnInfoOpaque, true, false);
   prim_def("string_select", returnInfoString, true, true);
-  prim_def("string_strided_select", returnInfoString, true, true);
   prim_def("sleep", returnInfoVoid, true);
   prim_def("real2int", returnInfoDefaultInt);
   prim_def("object2int", returnInfoDefaultInt);
   prim_def("chpl_exit_any", returnInfoVoid, true);
-  prim_def("chpl_localeName", returnInfoString);
-
-  prim_def("chpl_setMemFlags", returnInfoVoid, true);
 
   prim_def(PRIM_RT_ERROR, "chpl_error", returnInfoVoid, true, true);
   prim_def(PRIM_RT_WARNING, "chpl_warning", returnInfoVoid, true, true);
@@ -578,18 +565,20 @@ initPrimitive() {
   prim_def(PRIM_NUM_PRIV_CLASSES, "chpl_numPrivatizedClasses", returnInfoDefaultInt);
   prim_def(PRIM_GET_PRIV_CLASS, "chpl_getPrivatizedClass",  returnInfoFirst);
   
-  prim_def(PRIM_NEXT_UINT32, "_next_uint32", returnInfoUInt32);
   prim_def(PRIM_GET_USER_LINE, "_get_user_line", returnInfoDefaultInt, true, true);
-  prim_def(PRIM_GET_USER_FILE, "_get_user_file", returnInfoString, true, true);
+  prim_def(PRIM_GET_USER_FILE, "_get_user_file", returnInfoStringC, true, true);
 
   prim_def(PRIM_FTABLE_CALL, "call ftable function", returnInfoVoid, true);
 
+  prim_def(PRIM_IS_SYNC_TYPE, "is sync type", returnInfoBool);
+  prim_def(PRIM_IS_SINGLE_TYPE, "is single type", returnInfoBool);
+  prim_def(PRIM_IS_TUPLE_TYPE, "is tuple type", returnInfoBool);
   prim_def(PRIM_IS_STAR_TUPLE_TYPE, "is star tuple type", returnInfoBool);
   prim_def(PRIM_SET_SVEC_MEMBER, "set svec member", returnInfoVoid, true, true);
   prim_def(PRIM_GET_SVEC_MEMBER, "get svec member", returnInfoGetTupleMemberRef);
   prim_def(PRIM_GET_SVEC_MEMBER_VALUE, "get svec member value", returnInfoGetTupleMember, false, true);
 
-  prim_def(PRIM_VMT_CALL, "virtual method call", returnInfoVirtualMethodCall, true, true);
+  prim_def(PRIM_VIRTUAL_METHOD_CALL, "virtual method call", returnInfoVirtualMethodCall, true, true);
 
   prim_def(PRIM_NUM_FIELDS, "num fields", returnInfoInt32);
   prim_def(PRIM_FIELD_NUM_TO_NAME, "field num to name", returnInfoString);
@@ -597,6 +586,7 @@ initPrimitive() {
   prim_def(PRIM_FIELD_ID_BY_NUM, "field id by num", returnInfoInt32);
   prim_def(PRIM_FIELD_VALUE_BY_NAME, "field value by name", returnInfoUnknown);
   prim_def(PRIM_IS_UNION_TYPE, "is union type", returnInfoBool);
+  prim_def(PRIM_IS_ATOMIC_TYPE, "is atomic type", returnInfoBool);
 
   prim_def(PRIM_ENUM_MIN_BITS, "enum min bits", returnInfoInt32);
   prim_def(PRIM_ENUM_IS_SIGNED, "enum is signed", returnInfoBool);

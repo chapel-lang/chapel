@@ -3,19 +3,16 @@
 
 #include <string>
 
-#ifdef HAVE_LLVM
 // need llvm::Value, Type
-#include "llvm/Module.h"
-#include "llvm/Value.h"
-#endif
+#include "llvmUtil.h"
 
-#define GEN_VAL 0
-#define GEN_PTR 1
+#define GEN_VAL      0
+#define GEN_PTR      1
 #define GEN_WIDE_PTR 2
 
 class BaseAST;
 class Type;
-struct GenRet;
+class GenRet;
 
 extern GenRet baseASTCodegen(BaseAST* ast);
 extern GenRet baseASTCodegenInt(int x);
@@ -66,7 +63,8 @@ extern GenRet baseASTCodegenString(const char* str);
    int (generate an int)
 
  */
-struct GenRet {
+class GenRet {
+public:
   // When generating c, this should be set.
   // expression or type goes here
   std::string c;
@@ -82,6 +80,10 @@ struct GenRet {
 #endif
 
   // always set if available
+  // note that the chplType of a GenRet corresponds to the Chapel
+  // type of the result of codegenValue on it - that is, chplType
+  // corresponds to the case when isLVPtr == GEN_VAL, and does not change
+  // if isLVPtr is GEN_PTR or GEN_WIDE_PTR.
   Type *chplType;
   uint8_t isLVPtr; // for some L-value expression, we set isLVPtr
                    // if the generated expression is a possible lvalue

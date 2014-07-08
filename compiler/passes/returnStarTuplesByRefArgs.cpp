@@ -13,14 +13,17 @@ void returnStarTuplesByRefArgs() {
   compute_call_sites();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if ((fn->retType->symbol->hasFlag(FLAG_STAR_TUPLE)) || (fn->retType->symbol->hasFlag(FLAG_FIXED_STRING))) {
+    if ((fn->retType->symbol->hasFlag(FLAG_STAR_TUPLE))) {
       SET_LINENO(fn);
 
       //
       // change function interface to take a reference
       //
       Symbol* ret = fn->getReturnSymbol();
-      ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_ret", ret->type->refType);
+      //
+      // Is it redundant to make this both have ref intent and ref type?
+      //
+      ArgSymbol* arg = new ArgSymbol(INTENT_REF, "_ret", ret->type->refType);
       fn->insertFormalAtTail(arg);
       fn->retType = dtVoid;
       fn->insertBeforeReturn(new CallExpr(PRIM_MOVE, arg, ret));
@@ -69,7 +72,7 @@ void returnStarTuplesByRefArgs() {
       Type* type = call->get(1)->getValType();
       if (type->symbol->hasFlag(FLAG_STAR_TUPLE)) {
         SET_LINENO(call);
-        ClassType* ct = toClassType(type);
+        AggregateType* ct = toAggregateType(type);
         SymExpr* se = toSymExpr(call->get(2));
         int i = atoi(se->var->name+1);
         INT_ASSERT(i >= 1 && i <= ct->fields.length);

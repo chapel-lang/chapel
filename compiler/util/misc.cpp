@@ -27,6 +27,7 @@ void gdbShouldBreakHere(void) {
 
 static bool exit_immediately = true;
 static bool exit_eventually = false;
+static bool exit_end_of_pass = false;
 
 static const char* err_filename;
 static int err_lineno;
@@ -36,6 +37,21 @@ static int err_print;
 static int err_ignore;
 static FnSymbol* err_fn = NULL;
 
+bool forceWidePtrs() {
+  return !strcmp(CHPL_LOCALE_MODEL, "numa");
+}
+
+bool forceWidePtrsForLocal() {
+  return fLocal && forceWidePtrs();
+}
+
+bool requireWideReferences() {
+  return !fLocal || forceWidePtrs();
+}
+
+bool requireOutlinedOn() {
+  return !fLocal || forceWidePtrs();
+}
 
 const char* cleanFilename(const char* name) {
   static int chplHomeLen = strlen(CHPL_HOME);
@@ -45,16 +61,17 @@ const char* cleanFilename(const char* name) {
   } else {
     return name;
   }
-}  
+}
 
 
 static const char* cleanFilename(BaseAST* ast) {
-  ModuleSymbol* mod = ast->getModule();
-  if (mod) {
-    return cleanFilename(ast->fname());
-  } else {
+  const char* astFname = ast->fname();
+  if (astFname)
+    return cleanFilename(astFname);
+  else if (yyfilename)
     return cleanFilename(yyfilename);
-  }
+  else
+    return astr("<unknown>");
 }
 
 
@@ -75,7 +92,7 @@ print_user_internal_error() {
     }
   }
 
-  fprintf(stderr, "internal failure %s ", error);
+  fprintf(stderr, "%s ", error);
   char version[128];
   get_version(version);
   fprintf(stderr, "chpl Version %s\n", version);
@@ -83,6 +100,31 @@ print_user_internal_error() {
     clean_exit(1);
 }
 
+
+// find a caller (direct or not) that is not in a task function,
+// for line number reporting
+static FnSymbol*
+findNonTaskCaller(FnSymbol* fn) {
+  if (!fn || !fn->inTree()) return fn;
+  while (true) {
+    if (!isTaskFun(fn)) return fn;
+
+    // who calls this?
+    FnSymbol* caller = NULL;
+    forv_Vec(CallExpr, call, gCallExprs) {
+      if (call->inTree()) {
+        if (FnSymbol* cfn = call->isResolved()) {
+          if (cfn == fn) {
+            caller = toFnSymbol(call->parentSymbol);
+            break;
+          }
+        }
+      }
+    }
+    if (!caller) return fn; // or should it return the original value of 'fn'?
+    fn = caller;
+  }
+}
 
 void
 setupError(const char *filename, int lineno, int tag) {
@@ -105,6 +147,7 @@ printDevelErrorHeader(BaseAST* ast) {
       if (isArgSymbol(parent))
         parent = parent->defPoint->parentSymbol;
       FnSymbol* fn = toFnSymbol(parent);
+      fn = findNonTaskCaller(fn);
       if (fn && fn != err_fn) {
         err_fn = fn;
         while ((fn = toFnSymbol(err_fn->defPoint->parentSymbol))) {
@@ -112,8 +155,10 @@ printDevelErrorHeader(BaseAST* ast) {
             break;
           err_fn = fn;
         }
+        // If the function is compiler-generated, or inlined, or doesn't match
+        // the error function and line number, nothing is printed.
         if (err_fn->getModule()->initFn != err_fn &&
-            !err_fn->hasFlag(FLAG_TEMP) &&
+            !err_fn->hasFlag(FLAG_COMPILER_GENERATED) &&
             !err_fn->hasFlag(FLAG_INLINE) &&
             err_fn->linenum()) {
           fprintf(stderr, "%s:%d: In ",
@@ -134,7 +179,17 @@ printDevelErrorHeader(BaseAST* ast) {
   if (ast && ast->linenum())
     fprintf(stderr, "%s:%d: ", cleanFilename(ast), ast->linenum());
 
-  fprintf(stderr, err_print ? "note: " : err_fatal ? "error: " : "warning: ");
+  if (err_print) {
+    fprintf(stderr, "note: ");
+  } else if (err_fatal) {
+    if (err_user) {
+      fprintf(stderr, "error: ");
+    } else {
+      fprintf(stderr, "internal error: ");
+    }
+  } else {
+    fprintf(stderr, "warning: ");
+  }
 
   if (!err_user && !developer) {
     print_user_internal_error();
@@ -168,7 +223,7 @@ void printCallStack(bool force, bool shortModule, FILE* out) {
             (shortModule ? module->name : cleanFilename(fn->fname())),
             call->linenum(), toString(fn),
             (module->modTag == MOD_INTERNAL ? " [internal module]" : ""),
-            (fn->hasFlag(FLAG_TEMP) ? " [compiler-generated]" : ""));
+            (fn->hasFlag(FLAG_COMPILER_GENERATED) ? " [compiler-generated]" : ""));
   }
 }
 
@@ -182,6 +237,20 @@ static void printCallStackOnError() {
 void printCallStack();
 void printCallStack() {
   printCallStack(true, true, stdout);
+}
+
+// another one
+void printCallStackCalls();
+void printCallStackCalls() {
+  printf("\n" "callStack %d elms\n\n", callStack.n);
+  for (int i = 0; i < callStack.n; i++) {
+    CallExpr* call = callStack.v[i];
+    FnSymbol* cfn = call->isResolved();
+    printf("%d  %d %s  <-  %d %s\n", i,
+           cfn ? cfn->id : 0, cfn ? cfn->name: "<no callee>",
+           call ? call->id : 0, call ? call->stringLoc() : "<no call>");
+  }
+  printf("\n");
 }
 
 
@@ -208,8 +277,12 @@ void handleError(const char *fmt, ...) {
 
   printCallStackOnError();
 
-  if (exit_immediately && !ignore_errors) {
-    clean_exit(1);
+  if (exit_immediately) {
+    if (ignore_errors_for_pass) {
+      exit_end_of_pass = true;
+    } else if (!ignore_errors) {
+      clean_exit(1);
+    }
   }
 }
 
@@ -253,21 +326,38 @@ static void vhandleError(FILE* file, BaseAST* ast, const char *fmt, va_list args
   if (file == stderr)
     printCallStackOnError();
 
-  if (exit_immediately && !ignore_errors) {
-    clean_exit(1);
+  if (exit_immediately) {
+    if (ignore_errors_for_pass) {
+      exit_end_of_pass = true;
+    } else if (!ignore_errors) {
+      clean_exit(1);
+    }
   }
 }
 
 
 void exitIfFatalErrorsEncountered() {
-  if (exit_eventually && !ignore_errors) {
-    clean_exit(1);
+  if (exit_eventually) {
+    if (ignore_errors_for_pass) {
+      exit_end_of_pass = true;
+    } else if (!ignore_errors) {
+      clean_exit(1);
+    }
+  }
+}
+
+
+void considerExitingEndOfPass() {
+  if (exit_end_of_pass) {
+    if (!ignore_errors) {
+      clean_exit(1);
+    }
   }
 }
 
 
 static void handleInterrupt(int sig) {
-  INT_FATAL("received interrupt");
+  USR_FATAL("received interrupt");
 }
 
 

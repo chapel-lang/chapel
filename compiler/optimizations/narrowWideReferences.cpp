@@ -189,12 +189,15 @@ narrowSym(Symbol* sym, WideInfo* wi) {
   bool isWideRef = sym->type->symbol->hasFlag(FLAG_WIDE);
   INT_ASSERT(isWideObj ^ isWideRef);
 
+  // This scans the definitions of the given symbol and weeds out calls that can
+  // be narrowed.  If any such call fails to get weeded out, the symbol is
+  // marked as "mustBeWide" and this routine returns.
+  // Otherwise, all defs can be narrowed, and control drops down to the next loop.
   for_defs(def, defMap, sym) {
     if (CallExpr* call = toCallExpr(def->parentExpr)) {
-      if (call->isPrimitive(PRIM_MOVE)) {
+      if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
         if (CallExpr* rhs = toCallExpr(call->get(2))) {
-          if (rhs->isPrimitive(PRIM_CHPL_ALLOC) ||
-              rhs->isPrimitive(PRIM_GET_PRIV_CLASS) ||
+          if (rhs->isPrimitive(PRIM_GET_PRIV_CLASS) ||
               rhs->isPrimitive(PRIM_ADDR_OF))
             continue;
           if (rhs->isPrimitive(PRIM_GET_MEMBER)) {
@@ -231,6 +234,8 @@ narrowSym(Symbol* sym, WideInfo* wi) {
             continue;
           }
           if (FnSymbol* fn = rhs->isResolved()) {
+            if (fn->hasFlag(FLAG_LOCALE_MODEL_ALLOC))
+              continue;
             if ((isWideRef && fn->retType->symbol->hasFlag(FLAG_WIDE)) ||
                 (isWideObj && fn->retType->symbol->hasFlag(FLAG_WIDE_CLASS)))
               addNarrowDep(fn->getReturnSymbol(), sym);
@@ -243,6 +248,15 @@ narrowSym(Symbol* sym, WideInfo* wi) {
             addNarrowDep(rhs->var, sym);
           continue;
         }
+      } else if(isOpEqualPrim(call)) {
+        continue;
+      } else if (call->isResolved() &&
+                 !strcmp(call->isResolved()->name, "=")) // A flag should be
+                                                         // used to distinguish
+                                                         // assignment
+                                                         // operators.
+      {
+        continue;
       }
     }
 #ifdef PRINT_NARROW_EFFECT
@@ -256,6 +270,7 @@ narrowSym(Symbol* sym, WideInfo* wi) {
   for_uses(use, useMap, sym) {
     if (CallExpr* call = toCallExpr(use->parentExpr)) {
       if ((call->isPrimitive(PRIM_MOVE) && call->get(2) == use) ||
+          (call->isPrimitive(PRIM_ASSIGN) && call->get(2) == use) ||
           (call->isPrimitive(PRIM_SET_MEMBER) && call->get(1) == use) ||
           (call->isPrimitive(PRIM_GET_MEMBER) && call->get(1) == use) ||
           (call->isPrimitive(PRIM_GET_MEMBER_VALUE) && call->get(1) == use) ||
@@ -263,8 +278,8 @@ narrowSym(Symbol* sym, WideInfo* wi) {
           (call->isPrimitive(PRIM_GET_SVEC_MEMBER) && call->get(1) == use) ||
           (call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE) && call->get(1) == use) ||
           (call->isPrimitive(PRIM_CAST) && call->get(2) == use) ||
+          (call->isPrimitive(PRIM_CAST_TO_VOID_STAR) && call->get(1) == use) ||
           (call->isPrimitive(PRIM_DEREF)) ||
-          //          (call->isPrimitive(PRIM_GET_LOCALEID)) ||
           (call->isPrimitive(PRIM_SYNC_INIT)) ||
           (call->isPrimitive(PRIM_SYNC_LOCK)) ||
           (call->isPrimitive(PRIM_SYNC_DESTROY)) ||
@@ -272,8 +287,12 @@ narrowSym(Symbol* sym, WideInfo* wi) {
           (call->isPrimitive(PRIM_PROCESS_TASK_LIST)) ||
           (call->isPrimitive(PRIM_STRING_COPY)) ||
           (call->isPrimitive(PRIM_SETCID)) ||
-          (call->isPrimitive(PRIM_CHPL_ALLOC) && call->get(1) == use) ||
-          (call->isPrimitive(PRIM_CHPL_FREE) && call->get(1) == use))
+          (call->isPrimitive(PRIM_SIZEOF)) ||
+          (call->isResolved() &&
+           (call->isResolved()->hasFlag(FLAG_LOCALE_MODEL_ALLOC) ||
+            call->isResolved()->hasFlag(FLAG_LOCALE_MODEL_FREE)) &&
+           call->get(1)==use) ||
+          (isOpEqualPrim(call)) )
         continue;
       if (call->isResolved() ||
           (call->isPrimitive(PRIM_SET_MEMBER) && call->get(3) == use) ||
@@ -286,10 +305,14 @@ narrowSym(Symbol* sym, WideInfo* wi) {
         continue;
       }
       if (call->isPrimitive(PRIM_RETURN)) {
-        wi->fnToNarrow = toFnSymbol(call->parentSymbol);
-        INT_ASSERT(wi->fnToNarrow);
-        forv_Vec(CallExpr*, call, *wi->fnToNarrow->calledBy) {
-          if (call->isPrimitive(PRIM_VMT_CALL)) {
+        FnSymbol* fn = toFnSymbol(call->parentSymbol);
+        if (!fn->retType->symbol->hasEitherFlag(FLAG_WIDE, FLAG_WIDE_CLASS))
+          // already narrow, so skip it.
+          continue;
+        wi->fnToNarrow = fn;
+        INT_ASSERT(fn);
+        forv_Vec(CallExpr*, call, *fn->calledBy) {
+          if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
             wi->mustBeWide = true;
             return;
           }
@@ -301,6 +324,28 @@ narrowSym(Symbol* sym, WideInfo* wi) {
     printf("%d %s use fail to narrow ", sym->id, sym->cname);
     print_view(use->getStmtExpr());
 #endif
+    //
+    // It's not clear to me (bradcray) why falling through to this
+    // point has traditionally meant "this case must be wide"; this
+    // has the effect of causing things to be widened unnecessarily.
+    // See, for example, test/users/ferguson/ddata/cToChapelArray.chpl
+    // under r22899: the 'array' argument to chapelProc() is passed
+    // in narrow, but then gets widened unnecessarily.
+    //
+    // Once formal temps were eliminated in r22900, this 'mustBeWide'
+    // case became incorrect because it caused a formal that must be
+    // narrow (due to being an exported function) to be incorrectly
+    // widened.  This suggests that there are other cases that could
+    // also be narrowed by adding additional checks here.  More to
+    // the point, it raises questions for me about why the default
+    // behavior for 'narrowSym()' is "it must be wide."
+    //
+    if (ArgSymbol* arg = toArgSymbol(sym)) {
+      if (arg->defPoint->parentSymbol->hasFlag(FLAG_LOCAL_ARGS)) {
+        // this arg can't be wide, so don't set mustBeWide
+        return;
+      }
+    }
     wi->mustBeWide = true;
     return;
   }
@@ -323,7 +368,7 @@ narrowArg(ArgSymbol* arg, WideInfo* wi) {
     }
   }
   forv_Vec(CallExpr, call, *fn->calledBy) {
-    if (call->isPrimitive(PRIM_VMT_CALL)) {
+    if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
       wi->mustBeWide = true;
       return;
     } else {
@@ -348,13 +393,13 @@ narrowWideReferences() {
 
   compute_call_sites();
 
+  // Insert all wide variables and arguments into wideInfoMap.
   forv_Vec(VarSymbol, var, gVarSymbols) {
     if (var->type->symbol->hasFlag(FLAG_WIDE) ||
         var->type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       wideInfoMap.put(var, new WideInfo(var));
     }
   }
-
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
     if (arg->type->symbol->hasFlag(FLAG_WIDE) ||
         arg->type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
@@ -362,11 +407,19 @@ narrowWideReferences() {
     }
   }
 
+  // Now populate the map
   form_Map(WideInfoMapElem, e, wideInfoMap) {
     WideInfo* wi = e->value;
+
+    // Narrow arguments unconditionally.
     if (ArgSymbol* arg = toArgSymbol(wi->sym)) {
       narrowArg(arg, wi);
-    } else if (VarSymbol* var = toVarSymbol(wi->sym)) {
+    }
+
+    // Narrow variables if they appear in functions or user-defined types.
+    // Otherwise leave them wide.
+    // I believe this is intended to leave module-level variables wide.
+    if (VarSymbol* var = toVarSymbol(wi->sym)) {
       if (isFnSymbol(var->defPoint->parentSymbol))
         narrowSym(var, wi);
       else if (isTypeSymbol(var->defPoint->parentSymbol))
@@ -376,12 +429,16 @@ narrowWideReferences() {
     }
   }
 
+  // Forward propagate necessary wideness (those for which wi->mustBeWide was
+  // set to true above).
   form_Map(WideInfoMapElem, e, wideInfoMap) {
     WideInfo* wi = e->value;
     if (wi->mustBeWide)
       forwardPropagateFailToNarrow(wi);
   }
 
+  // Now, traverse the wideInfoMap, and perform the narrowings it calls for.
+  // Uses of the variable or argument requiring widening are added to widenMap.
   form_Map(WideInfoMapElem, e, wideInfoMap) {
     WideInfo* wi = e->value;
     if (!wi->mustBeWide) {
@@ -460,8 +517,9 @@ narrowWideReferences() {
     SymExpr* key = e->key;
     Type* value = e->value;
     if (value && key->var->type != value) { // can this be an assert?
-      Symbol* tmp = newTemp(value);
       Expr* stmt = key->getStmtExpr();
+      SET_LINENO(stmt);
+      Symbol* tmp = newTemp(value);
       stmt->insertBefore(new DefExpr(tmp));
       key->replace(new SymExpr(tmp));
       stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, key));

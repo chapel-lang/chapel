@@ -14,9 +14,9 @@
 #include "stringutil.h"
 #include "symbol.h"
 
-static ClassType*
+static AggregateType*
 buildComplexRecord(const char* name, Type* real) {
-  ClassType* ct = new ClassType(CLASS_RECORD);
+  AggregateType* ct = new AggregateType(AGGREGATE_RECORD);
   TypeSymbol* ts = new TypeSymbol(name, ct);
   ct->fields.insertAtTail(new DefExpr(new VarSymbol("re", real)));
   ct->fields.insertAtTail(new DefExpr(new VarSymbol("im", real)));
@@ -36,8 +36,8 @@ buildComplexRecord(const char* name, Type* real) {
 void
 complex2record() {
   SET_LINENO(rootModule);
-  ClassType* complex64 = buildComplexRecord("_complex64", dtReal[FLOAT_SIZE_32]);
-  ClassType* complex128 = buildComplexRecord("_complex128", dtReal[FLOAT_SIZE_64]);
+  AggregateType* complex64 = buildComplexRecord("_complex64", dtReal[FLOAT_SIZE_32]);
+  AggregateType* complex128 = buildComplexRecord("_complex128", dtReal[FLOAT_SIZE_64]);
 
   complex64->GEPMap.insert(std::pair<std::string, int>("re", 0));
   complex64->GEPMap.insert(std::pair<std::string, int>("im", 1));
@@ -53,7 +53,7 @@ complex2record() {
     if (VarSymbol* var = toVarSymbol(se->var)) {
       if (is_complex_type(var->type)) {
         if (var->immediate) {
-          ClassType* ct = complex2rec(se->var->type);
+          AggregateType* ct = complex2rec(se->var->type);
           VarSymbol* tmp = newTemp(ct);
           se->getStmtExpr()->insertBefore(new DefExpr(tmp));
           se->getStmtExpr()->insertBefore(new CallExpr(PRIM_SET_MEMBER, tmp, ct->getField(1), complex2real(se->var->type)->defaultValue));
@@ -82,11 +82,11 @@ complex2record() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_GET_REAL)) {
       call->primitive = primitives[PRIM_GET_MEMBER];
-      ClassType* ct = toClassType(call->get(1)->getValType());
+      AggregateType* ct = toAggregateType(call->get(1)->getValType());
       call->insertAtTail(ct->getField(1));
     } else if (call->isPrimitive(PRIM_GET_IMAG)) {
       call->primitive = primitives[PRIM_GET_MEMBER];
-      ClassType* ct = toClassType(call->get(1)->getValType());
+      AggregateType* ct = toAggregateType(call->get(1)->getValType());
       call->insertAtTail(ct->getField(2));
     }
   }

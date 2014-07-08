@@ -1,15 +1,12 @@
 #ifndef _SYMBOL_H_
 #define _SYMBOL_H_
 
-#include <bitset>
-#include <stdint.h>
-#include "alist.h"
 #include "baseAST.h"
-#include "bitVec.h"
+
 #include "flags.h"
 #include "type.h"
 
-#include "genret.h"
+#include <bitset>
 #include <vector>
 
 //
@@ -17,13 +14,13 @@
 //
 extern FnSymbol* chpl_gen_main;
 
-class SymExpr;
-class DefExpr;
-class Stmt;
-class BlockStmt;
-class Immediate;
 class BasicBlock;
+class BlockStmt;
+class DefExpr;
+class Immediate;
 class IteratorInfo;
+class Stmt;
+class SymExpr;
 
 enum RetTag {
   RET_VALUE,
@@ -32,15 +29,27 @@ enum RetTag {
   RET_TYPE
 };
 
+const int INTENT_FLAG_IN    = 0x01;
+const int INTENT_FLAG_OUT   = 0x02;
+const int INTENT_FLAG_CONST = 0x04;
+const int INTENT_FLAG_REF   = 0x08;
+const int INTENT_FLAG_PARAM = 0x10;
+const int INTENT_FLAG_TYPE  = 0x20;
+const int INTENT_FLAG_BLANK = 0x40;
+
+// If this enum is modified, ArgSymbol::intentDescrString should also be
+// updated to match
 enum IntentTag {
-  INTENT_BLANK,
-  INTENT_IN,
-  INTENT_INOUT,
-  INTENT_OUT,
-  INTENT_CONST,
-  INTENT_REF,
-  INTENT_PARAM,
-  INTENT_TYPE
+  INTENT_IN        = INTENT_FLAG_IN,
+  INTENT_OUT       = INTENT_FLAG_OUT,
+  INTENT_INOUT     = INTENT_FLAG_IN    | INTENT_FLAG_OUT,
+  INTENT_CONST     = INTENT_FLAG_CONST,
+  INTENT_CONST_IN  = INTENT_FLAG_CONST | INTENT_FLAG_IN,
+  INTENT_REF       = INTENT_FLAG_REF,
+  INTENT_CONST_REF = INTENT_FLAG_CONST | INTENT_FLAG_REF,
+  INTENT_PARAM     = INTENT_FLAG_PARAM,
+  INTENT_TYPE      = INTENT_FLAG_TYPE,
+  INTENT_BLANK     = INTENT_FLAG_BLANK
 };
 
 enum ModTag {
@@ -54,40 +63,54 @@ typedef std::bitset<NUM_FLAGS> FlagSet;
 
 
 class Symbol : public BaseAST {
- public:
-  const char* name;
-  const char* cname; // Name of symbol for generating C code
-  Type* type;
-  DefExpr* defPoint; // Point of definition
-  FlagSet flags;
+public:
+  virtual Symbol*    copy(SymbolMap* map = NULL, bool internal = false) = 0;
+  virtual void       replaceChild(BaseAST* old_ast, BaseAST* new_ast)   = 0;
 
-  Symbol(AstTag astTag, const char* init_name, Type* init_type = dtUnknown);
-  virtual ~Symbol();
-  virtual Symbol* copy(SymbolMap* map = NULL, bool internal = false) = 0;
-  virtual Symbol* copyInner(SymbolMap* map) = 0;
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast) = 0;
+  // Interface for BaseAST
+  virtual GenRet     codegen();
+  virtual bool       inTree();
+  virtual Type*      typeInfo();
+  virtual void       verify(); 
 
-  virtual void verify(); 
-  virtual bool inTree();
-  virtual Type* typeInfo(void);
+  virtual FnSymbol*  getFnSymbol();
 
-  virtual bool isConstant(void);
-  virtual bool isParameter(void);
+  virtual bool       isConstant()                                      const;
+  virtual bool       isConstValWillNotChange()                         const;
+  virtual bool       isImmediate()                                     const;
+  virtual bool       isParameter()                                     const;
 
-  virtual GenRet codegen();
-  virtual void codegenDef();
-  virtual void codegenPrototype(); // ie type decl
+  virtual void       codegenDef();
 
-  virtual FnSymbol* getFnSymbol(void);
-  virtual bool isImmediate();
+  bool               hasFlag(Flag flag)                                const;
+  bool               hasEitherFlag(Flag aflag, Flag bflag)             const;
 
-  bool hasFlag(Flag flag);
-  void addFlag(Flag flag);
-  void copyFlags(Symbol* other);
-  void removeFlag(Flag flag);
+  void               addFlag(Flag flag);
+  void               removeFlag(Flag flag);
+  void               copyFlags(const Symbol* other);
 
-  bool hasEitherFlag(Flag aflag, Flag bflag);
+
+  Type*              type;
+  FlagSet            flags;
+
+  const char*        name;
+  const char*        cname;    // Name of symbol for generating C code
+
+  DefExpr*           defPoint; // Point of definition
+
+protected:
+                     Symbol(AstTag      astTag, 
+                            const char* init_name,
+                            Type*       init_type = dtUnknown);
+
+  virtual           ~Symbol();
+
+private:
+                     Symbol();
+
+  virtual void       codegenPrototype(); // ie type decl
 };
+
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
 
 
@@ -101,20 +124,23 @@ class VarSymbol : public Symbol {
   VarSymbol(const char* init_name, Type* init_type = dtUnknown);
   ~VarSymbol();
   void verify(); 
+  virtual void    accept(AstVisitor* visitor);
   DECLARE_SYMBOL_COPY(VarSymbol);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
-  bool isConstant(void);
-  bool isParameter(void);
+  virtual bool       isConstant()                                      const;
+  virtual bool       isConstValWillNotChange()                         const;
+  virtual bool       isImmediate()                                     const;
+  virtual bool       isParameter()                                     const;
+
   const char* doc;
 
   GenRet codegen();
-  void codegenDefC();
+  void codegenDefC(bool global = false);
   void codegenDef();
   // global vars are different ...
   void codegenGlobalDef();
   
-  bool isImmediate();
 };
 
 
@@ -125,20 +151,22 @@ class ArgSymbol : public Symbol {
   BlockStmt* defaultExpr;
   BlockStmt* variableExpr;
   Type* instantiatedFrom;
-  bool instantiatedParam;
-  bool markedGeneric;
 
   ArgSymbol(IntentTag iIntent, const char* iName, Type* iType,
             Expr* iTypeExpr = NULL, Expr* iDefaultExpr = NULL,
             Expr* iVariableExpr = NULL);
 
   void verify(); 
+  virtual void    accept(AstVisitor* visitor);
   DECLARE_SYMBOL_COPY(ArgSymbol);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
+  virtual bool       isConstant()                                      const;
+  virtual bool       isConstValWillNotChange()                         const;
+  virtual bool       isParameter()                                     const;
+
   bool requiresCPtr(void);
-  bool isConstant(void);
-  bool isParameter(void);
+  const char* intentDescrString(void);
 
   GenRet codegen();
   GenRet codegenType();
@@ -152,21 +180,31 @@ class TypeSymbol : public Symbol {
   // and cache it if it has.
 #ifdef HAVE_LLVM
   llvm::Type* llvmType;
+  llvm::MDNode* llvmTbaaNode;
+  llvm::MDNode* llvmConstTbaaNode;
+  llvm::MDNode* llvmTbaaStructNode;
+  llvm::MDNode* llvmConstTbaaStructNode;
 #else
   // Keep same layout so toggling HAVE_LLVM
   // will not lead to build errors without make clean
-  // For C, we will store a pointer to the cname here
   void* llvmType;
+  void* llvmTbaaNode;
+  void* llvmConstTbaaNode;
+  void* llvmTbaaStructNode;
+  void* llvmConstTbaaStructNode;
 #endif
-  bool codegenned;
 
   TypeSymbol(const char* init_name, Type* init_type);
   void verify(); 
+  virtual void    accept(AstVisitor* visitor);
   DECLARE_SYMBOL_COPY(TypeSymbol);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   GenRet codegen();
   void codegenDef();
   void codegenPrototype();
+  // This function is used to code generate the LLVM TBAA metadata
+  // after all of the types have been defined.
+  void codegenMetadata();
 };
 
 
@@ -174,7 +212,10 @@ class FnSymbol : public Symbol {
  public:
   AList formals;
   DefExpr* setter; // implicit setter argument to var functions
-  Type* retType;
+  Type* retType; // The return type of the function.  This field is not
+                 // fully established until resolution, and could be NULL
+                 // before then.  Up to that point, return type information is
+                 // stored in the retExprType field.
   BlockStmt* where;
   BlockStmt* retExprType;
   BlockStmt* body;
@@ -193,15 +234,29 @@ class FnSymbol : public Symbol {
                            // resolve and used in cullOverReferences)
   int codegenUniqueNum;
   const char *doc;
+  
+  /// Used to keep track of symbol substitutions during partial copying.
+  SymbolMap partialCopyMap;
+  /// Source of a partially copied function.
+  FnSymbol* partialCopySource;
+  /// Used to store the return symbol during partial copying.
+  Symbol* retSymbol;
+  /// Number of formals before tuple type constructor formals are added.
+  int numPreTupleFormals;
 
   FnSymbol(const char* initName);
   ~FnSymbol();
            
   void verify(); 
+  virtual void    accept(AstVisitor* visitor);
   DECLARE_SYMBOL_COPY(FnSymbol);
+  FnSymbol* copyInnerCore(SymbolMap* map);
   FnSymbol* getFnSymbol(void);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-
+  
+  FnSymbol* partialCopy(SymbolMap* map);
+  void finalizeCopy(void);
+  
   // Returns an LLVM type or a C-cast expression
   GenRet codegenFunctionType(bool forHeader);
   GenRet codegenCast(GenRet fnPtr);
@@ -220,6 +275,7 @@ class FnSymbol : public Symbol {
 
   void insertBeforeReturn(Expr* ast);
   void insertBeforeReturnAfterLabel(Expr* ast);
+  void insertBeforeDownEndCount(Expr* ast);
 
   void insertFormalAtHead(BaseAST* ast);
   void insertFormalAtTail(BaseAST* ast);
@@ -230,6 +286,7 @@ class FnSymbol : public Symbol {
   ArgSymbol* getFormal(int i); // return ith formal
 
   bool tag_generic();
+  bool isResolved() { return this->hasFlag(FLAG_RESOLVED); }
 };
 
 
@@ -237,14 +294,18 @@ class EnumSymbol : public Symbol {
  public:
   EnumSymbol(const char* init_name);
   void verify(); 
+  virtual void    accept(AstVisitor* visitor);
   DECLARE_SYMBOL_COPY(EnumSymbol);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void codegenDef();
   
-  bool isParameter(void);
+  virtual bool       isParameter()                                     const;
+
   Immediate* getImmediate(void);
 };
 
+
+struct ExternBlockInfo;
 
 class ModuleSymbol : public Symbol {
  public:
@@ -255,15 +316,18 @@ class ModuleSymbol : public Symbol {
   Vec<ModuleSymbol*> modUseList;
   Vec<ModuleSymbol*> modUseSet;
   const char *doc;
-  
+  // These are used for extern C blocks.
+  ExternBlockInfo* extern_info;
+
   ModuleSymbol(const char* iName, ModTag iModTag, BlockStmt* iBlock);
   ~ModuleSymbol();
   void verify(); 
+  virtual void    accept(AstVisitor* visitor);
   DECLARE_SYMBOL_COPY(ModuleSymbol);
   Vec<VarSymbol*> getConfigVars();
   Vec<FnSymbol*> getFunctions();
   Vec<ModuleSymbol*> getModules();
-  Vec<ClassType*> getClasses();
+  Vec<AggregateType*> getClasses();
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void codegenDef();
 };
@@ -274,19 +338,43 @@ class LabelSymbol : public Symbol {
   GotoStmt* iterResumeGoto;
   LabelSymbol(const char* init_name);
   void verify(); 
+  virtual void    accept(AstVisitor* visitor);
   DECLARE_SYMBOL_COPY(LabelSymbol);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void codegenDef();
 };
 
 
+// Creates a new string literal with the given value.
 VarSymbol *new_StringSymbol(const char *s);
+
+// Creates a new boolean literal with the given value and bit-width.
 VarSymbol *new_BoolSymbol(bool b, IF1_bool_type size=BOOL_SIZE_SYS);
+
+// Creates a new (signed) integer literal with the given value and bit-width.
 VarSymbol *new_IntSymbol(int64_t b, IF1_int_type size=INT_SIZE_64);
+
+// Creates a new unsigned integer literal with the given value and bit-width.
 VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size=INT_SIZE_64);
-VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size=FLOAT_SIZE_64);
-VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size=FLOAT_SIZE_64);
-VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_complex_type size=COMPLEX_SIZE_128);
+
+// Creates a new real literal with the given value and bit-width.
+// n is used for the cname of the new symbol,
+// but only if the value has not already been cached.
+VarSymbol *new_RealSymbol(const char *n, long double b,
+                          IF1_float_type size=FLOAT_SIZE_64);
+
+// Creates a new imaginary literal with the given value and bit-width.
+// n is used for the cname of the new symbol,
+// but only if the value has not already been cached.
+VarSymbol *new_ImagSymbol(const char *n, long double b,
+                          IF1_float_type size=FLOAT_SIZE_64);
+
+// Creates a new complex literal with the given value and bit-width.
+// n is used for the cname of the new symbol,
+// but only if the value has not already been cached.
+VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i,
+                             IF1_complex_type size=COMPLEX_SIZE_128);
+
 VarSymbol *new_ImmediateSymbol(Immediate *imm);
 void resetTempID();
 FlagSet getRecordWrappedFlags(Symbol* s);
@@ -308,13 +396,16 @@ extern ModuleSymbol* theProgram;
 extern ModuleSymbol* mainModule;
 extern ModuleSymbol* baseModule;
 extern ModuleSymbol* standardModule;
+extern ModuleSymbol* printModuleInitModule;
 extern Symbol *gNil;
 extern Symbol *gUnknown;
 extern Symbol *gMethodToken;
 extern Symbol *gTypeDefaultToken;
 extern Symbol *gLeaderTag, *gFollowerTag;
 extern Symbol *gModuleToken;
+extern Symbol *gNoInit;
 extern Symbol *gVoid;
+extern Symbol *gStringC;
 extern Symbol *gFile;
 extern Symbol *gOpaque;
 extern Symbol *gTimer;
@@ -325,6 +416,11 @@ extern VarSymbol *gTryToken; // try token for conditional function resolution
 extern VarSymbol *gBoundsChecking;
 extern VarSymbol *gPrivatization;
 extern VarSymbol *gLocal;
+extern VarSymbol *gNodeID;
+extern VarSymbol *gModuleInitIndentLevel;
+extern FnSymbol *gPrintModuleInitFn;
+extern FnSymbol *gChplHereAlloc;
+extern FnSymbol *gChplHereFree;
 extern Symbol *gCLine, *gCFile;
 
 extern Symbol *gSyncVarAuxFields;

@@ -16,14 +16,16 @@
 //      (C has no notion of scalar operator promotion.)
 ////////////////////////////////////////////////////////////////////////////////}
 
+#include "resolution.h"
+
 #include "astutil.h"
 #include "build.h"
 #include "caches.h"
 #include "callInfo.h"
 #include "chpl.h"
 #include "expr.h"
-#include "resolution.h"
 #include "stmt.h"
+#include "stringutil.h"
 #include "symbol.h"
 
 
@@ -63,6 +65,14 @@ buildEmptyWrapper(FnSymbol* fn, CallInfo* info) {
   wrapper->addFlag(FLAG_WRAPPER);
   wrapper->addFlag(FLAG_INVISIBLE_FN);
   wrapper->addFlag(FLAG_INLINE);
+  if (fn->hasFlag(FLAG_INIT_COPY_FN))
+    wrapper->addFlag(FLAG_INIT_COPY_FN);
+  if (fn->hasFlag(FLAG_AUTO_COPY_FN))
+    wrapper->addFlag(FLAG_AUTO_COPY_FN);
+  if (fn->hasFlag(FLAG_AUTO_DESTROY_FN))
+    wrapper->addFlag(FLAG_AUTO_DESTROY_FN);
+  if (fn->hasFlag(FLAG_DONOR_FN))
+    wrapper->addFlag(FLAG_DONOR_FN);
   if (fn->hasFlag(FLAG_NO_PARENS))
     wrapper->addFlag(FLAG_NO_PARENS);
   if (fn->hasFlag(FLAG_CONSTRUCTOR))
@@ -74,8 +84,10 @@ buildEmptyWrapper(FnSymbol* fn, CallInfo* info) {
   }
   if (fn->hasFlag(FLAG_METHOD))
     wrapper->addFlag(FLAG_METHOD);
+  if (fn->hasFlag(FLAG_ASSIGNOP))
+    wrapper->addFlag(FLAG_ASSIGNOP);
   wrapper->instantiationPoint = getVisibilityBlock(info->call);
-  wrapper->addFlag(FLAG_TEMP);
+  wrapper->addFlag(FLAG_COMPILER_GENERATED);
   return wrapper;
 }
 
@@ -91,7 +103,7 @@ static ArgSymbol* copyFormalForWrapper(ArgSymbol* formal) {
       formal->hasFlag(FLAG_WRAP_WRITTEN_FORMAL)) {
     wrapperFormal->addFlag(FLAG_WRAP_WRITTEN_FORMAL);
   }
-  if (formal->intent != INTENT_REF) {
+  if (formal->intent != INTENT_REF && formal->intent != INTENT_CONST_REF) {
     wrapperFormal->intent = INTENT_BLANK;
   }
   return wrapperFormal;
@@ -100,11 +112,10 @@ static ArgSymbol* copyFormalForWrapper(ArgSymbol* formal) {
 
 static void
 insertWrappedCall(FnSymbol* fn, FnSymbol* wrapper, CallExpr* call) {
-  if ((!fn->hasFlag(FLAG_EXTERN) && fn->getReturnSymbol() == gVoid) ||
-      (fn->hasFlag(FLAG_EXTERN) && fn->retType == dtVoid)) {
+  if (fn->getReturnSymbol() == gVoid || fn->retType == dtVoid) {
     wrapper->insertAtTail(call);
   } else {
-    Symbol* tmp = newTemp();
+    Symbol* tmp = newTemp("wrap_call_tmp");
     tmp->addFlag(FLAG_EXPR_TEMP);
     tmp->addFlag(FLAG_MAYBE_PARAM);
     tmp->addFlag(FLAG_MAYBE_TYPE);
@@ -144,15 +155,14 @@ buildDefaultWrapper(FnSymbol* fn,
     !isSyncType(fn->_this->type) &&
     !fn->_this->type->symbol->hasFlag(FLAG_REF);
   if (specializeDefaultConstructor) {
-    wrapper->removeFlag(FLAG_TEMP);
+    wrapper->removeFlag(FLAG_COMPILER_GENERATED);
     wrapper->_this = fn->_this->copy();
     copy_map.put(fn->_this, wrapper->_this);
     wrapper->insertAtTail(new DefExpr(wrapper->_this));
     if (defaults->v[defaults->n-1]->hasFlag(FLAG_IS_MEME)) {
       if (!isRecord(fn->_this->type) && !isUnion(fn->_this->type)) {
         wrapper->insertAtTail(new CallExpr(PRIM_MOVE, wrapper->_this,
-                                new CallExpr(PRIM_CHPL_ALLOC, wrapper->_this,
-                                newMemDesc(fn->_this->type->symbol->name))));
+                                           callChplHereAlloc((wrapper->_this->typeInfo())->symbol)));
         wrapper->insertAtTail(new CallExpr(PRIM_SETCID, wrapper->_this));
       }
     }
@@ -186,14 +196,14 @@ buildDefaultWrapper(FnSymbol* fn,
       // Check for the fixup cases:
       if (formal->type->symbol->hasFlag(FLAG_REF)) {
         // Formal is passed by reference.
-        temp = newTemp();
+        temp = newTemp("wrap_ref_arg");
         temp->addFlag(FLAG_MAYBE_PARAM);
         wrapper->insertAtTail(new DefExpr(temp));
         wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_ADDR_OF, wrapper_formal)));
       } else if (specializeDefaultConstructor && wrapper_formal->typeExpr &&
                  isRefCountedType(wrapper_formal->type)) {
         // Formal has a type expression attached and is reference counted (?).
-        temp = newTemp();
+        temp = newTemp("wrap_type_arg");
         if (Symbol* field = fn->_this->type->getField(formal->name, false))
           if (field->defPoint->parentSymbol == fn->_this->type->symbol)
             temp->addFlag(FLAG_INSERT_AUTO_DESTROY);
@@ -215,7 +225,7 @@ buildDefaultWrapper(FnSymbol* fn,
         if (isArrayAliasField) {
           // The array type is the return type of this wrapper.
           Expr* arrayTypeExpr = wrapper->body->body.tail->remove();
-          Symbol* arrayTypeTmp = newTemp();
+          Symbol* arrayTypeTmp = newTemp("wrap_array_alias");
           arrayTypeTmp->addFlag(FLAG_MAYBE_TYPE);
           arrayTypeTmp->addFlag(FLAG_EXPR_TEMP);
           temp->addFlag(FLAG_EXPR_TEMP);
@@ -228,7 +238,7 @@ buildDefaultWrapper(FnSymbol* fn,
           // Not an array alias field.  Just initialize this formal with
           // its default type expression.
           wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_INIT, wrapper->body->body.tail->remove())));
-          wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr("=", temp, wrapper_formal)));
+          wrapper->insertAtTail(new CallExpr("=", temp, wrapper_formal));
         }
       }
 
@@ -247,7 +257,7 @@ buildDefaultWrapper(FnSymbol* fn,
           if (Symbol* field = wrapper->_this->type->getField(formal->name, false))
             if (field->defPoint->parentSymbol == wrapper->_this->type->symbol)
             {
-              Symbol* copyTemp = newTemp();
+              Symbol* copyTemp = newTemp("wrap_arg");
               wrapper->insertAtTail(new DefExpr(copyTemp));
               wrapper->insertAtTail(new CallExpr(PRIM_MOVE, copyTemp, new CallExpr("chpl__autoCopy", temp)));
               wrapper->insertAtTail(
@@ -268,7 +278,7 @@ buildDefaultWrapper(FnSymbol* fn,
 
       call->insertAtTail(wrapper->_this);
     } else {
-      const char* temp_name = astr("_default_temp_", formal->name);
+      const char* temp_name = astr("default_arg", formal->name);
       VarSymbol* temp = newTemp(temp_name);
       if (formal->intent != INTENT_INOUT && formal->intent != INTENT_OUT) {
         temp->addFlag(FLAG_MAYBE_PARAM);
@@ -307,6 +317,7 @@ buildDefaultWrapper(FnSymbol* fn,
         if (formal->intent != INTENT_INOUT) {
           wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, wrapper->body->body.tail->remove()));
         } else {
+          // This calls the copy-construtor, to copy the return value into the calling context.
           wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr("chpl__initCopy", wrapper->body->body.tail->remove())));
           INT_ASSERT(!temp->hasFlag(FLAG_EXPR_TEMP));
           temp->removeFlag(FLAG_MAYBE_PARAM);
@@ -398,7 +409,7 @@ buildOrderWrapper(FnSymbol* fn,
   for_formals(formal, fn) {
     SET_LINENO(formal);
     wrapper->insertFormalAtTail(copy_map.get(order_map->get(formal)));
-    if (formal->instantiatedParam)
+    if (formal->hasFlag(FLAG_INSTANTIATED_PARAM))
       call->insertAtTail(paramMap.get(formal));
     else
       call->insertAtTail(copy_map.get(formal));
@@ -482,7 +493,11 @@ buildCoercionWrapper(FnSymbol* fn,
         // apply readFF or readFE to single or sync actual unless this
         // is a member access of the sync or single actual
         //
-        if (fn->numFormals() >= 2 &&
+        if (fn->numFormals() == 3 &&
+            !strcmp(fn->name, "free"))
+          // Special case: Don't insert a readFE or readFF when deleting a sync/single.
+          call->insertAtTail(new CallExpr("_cast", formal->type->symbol, wrapperFormal));
+        else if (fn->numFormals() >= 2 &&
             fn->getFormal(1)->type == dtMethodToken &&
             formal == fn->_this)
           call->insertAtTail(new CallExpr("value", gMethodToken, wrapperFormal));
@@ -497,15 +512,16 @@ buildCoercionWrapper(FnSymbol* fn,
         // dereference reference actual
         //
         call->insertAtTail(new CallExpr(PRIM_DEREF, wrapperFormal));
-      } else if (wrapperFormal->instantiatedParam) {
+      } else if (wrapperFormal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
         call->insertAtTail(new CallExpr("_cast", formal->type->symbol, paramMap.get(formal)));
-      } else {
+        /*** } else if ((ts->type == dtStringC) && (formal->typeInfo() == dtString)) {
+             call->insertAtTail(new CallExpr("_cast", formal->type->symbol, wrapperFormal)); ***/
+        } else {
         call->insertAtTail(new CallExpr("_cast", formal->type->symbol, wrapperFormal));
       }
     } else {
       if (Symbol* actualTypeSymbol = coercion_map->get(formal))
-        if (!(formal == fn->_this && fn->hasFlag(FLAG_REF_THIS)))
-          wrapperFormal->type = actualTypeSymbol->type;
+        wrapperFormal->type = actualTypeSymbol->type;
       call->insertAtTail(wrapperFormal);
     }
   }
@@ -557,7 +573,7 @@ static FnSymbol*
 buildPromotionWrapper(FnSymbol* fn,
                       SymbolMap* promotion_subs,
                       CallInfo* info) {
-  SET_LINENO(fn);
+  SET_LINENO(info->call);
   FnSymbol* wrapper = buildEmptyWrapper(fn, info);
   wrapper->addFlag(FLAG_PROMOTION_WRAPPER);
   wrapper->cname = astr("_promotion_wrap_", fn->cname);
@@ -580,7 +596,7 @@ buildPromotionWrapper(FnSymbol* fn,
       new_formal->type = ts->type;
       wrapper->insertFormalAtTail(new_formal);
       iteratorCall->insertAtTail(new_formal);
-      VarSymbol* index = newTemp(astr("_p_i_", istr(i)));
+      VarSymbol* index = newTemp(astr("p_i_", istr(i)));
       wrapper->insertAtTail(new DefExpr(index));
       indicesCall->insertAtTail(index);
       actualCall->insertAtTail(index);
@@ -604,84 +620,82 @@ buildPromotionWrapper(FnSymbol* fn,
 
   if ((!fn->hasFlag(FLAG_EXTERN) && fn->getReturnSymbol() == gVoid) ||
       (fn->hasFlag(FLAG_EXTERN) && fn->retType == dtVoid)) {
-    if (fSerial || fSerialForall)
-      wrapper->insertAtTail(new BlockStmt(buildForLoopStmt(indices, iterator, new BlockStmt(actualCall), false, zippered)));
-    else{
-        wrapper->insertAtTail(new BlockStmt(buildForallLoopStmt(indices, iterator, new BlockStmt(actualCall), zippered)));
-    }
+      wrapper->insertAtTail(new BlockStmt(buildForallLoopStmt(indices, iterator, new BlockStmt(actualCall), zippered)));
   } else {
     wrapper->addFlag(FLAG_ITERATOR_FN);
     wrapper->removeFlag(FLAG_INLINE);
-    if (!fSerial && !fSerialForall) {
-      SymbolMap leaderMap;
-      FnSymbol* lifn = wrapper->copy(&leaderMap);
-      iteratorLeaderMap.put(wrapper,lifn);
-      lifn->body = new BlockStmt(); // indices are not used in leader
-      form_Map(SymbolMapElem, e, leaderMap) {
-        if (Symbol* s = paramMap.get(e->key))
-          paramMap.put(e->value, s);
-      }
-      ArgSymbol* lifnTag = new ArgSymbol(INTENT_PARAM, "tag", gLeaderTag->type);
-      lifn->addFlag(FLAG_INLINE_ITERATOR);
-      lifn->insertFormalAtTail(lifnTag);
-      lifn->where = new BlockStmt(new CallExpr("==", lifnTag, gLeaderTag));
-      VarSymbol* leaderIndex = newTemp("_leaderIndex");
-      VarSymbol* leaderIterator = newTemp("_leaderIterator");
-      leaderIterator->addFlag(FLAG_EXPR_TEMP);
-      lifn->insertAtTail(new DefExpr(leaderIterator));
 
-      if( !zippered ) {
-        lifn->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_toLeader", iterator->copy(&leaderMap))));
-      } else {
-        lifn->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_toLeaderZip", iterator->copy(&leaderMap))));
-      }
-
-      BlockStmt* body = new BlockStmt(new CallExpr(PRIM_YIELD, leaderIndex));
-      BlockStmt* loop = buildForLoopStmt(new SymExpr(leaderIndex), new SymExpr(leaderIterator), body, false, zippered);
-      body->insertAtHead(new DefExpr(leaderIndex));
-      lifn->insertAtTail(loop);
-      theProgram->block->insertAtTail(new DefExpr(lifn));
-      normalize(lifn);
-      lifn->instantiationPoint = getVisibilityBlock(info->call);
-
-      SymbolMap followerMap;
-      FnSymbol* fifn = wrapper->copy(&followerMap);
-      iteratorFollowerMap.put(wrapper,fifn);
-      form_Map(SymbolMapElem, e, followerMap) {
-        if (Symbol* s = paramMap.get(e->key))
-          paramMap.put(e->value, s);
-      }
-      ArgSymbol* fifnTag = new ArgSymbol(INTENT_PARAM, "tag", gFollowerTag->type);
-      fifn->insertFormalAtTail(fifnTag);
-      ArgSymbol* fifnFollower = new ArgSymbol(INTENT_BLANK, iterFollowthisArgname, dtAny);
-      fifn->insertFormalAtTail(fifnFollower);
-      fifn->where = new BlockStmt(new CallExpr("==", fifnTag, gFollowerTag));
-      VarSymbol* followerIterator = newTemp("_followerIterator");
-      followerIterator->addFlag(FLAG_EXPR_TEMP);
-      fifn->insertAtTail(new DefExpr(followerIterator));
-
-      if( !zippered ) {
-        fifn->insertAtTail(new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFollower", iterator->copy(&followerMap), fifnFollower)));
-      } else {
-        Expr* tMe = iterator->copy(&followerMap);
-        fifn->insertAtTail(new CallExpr(PRIM_MOVE, followerIterator, new
-                    CallExpr("_toFollowerZip", tMe, fifnFollower)));
-      }
-
-      BlockStmt* followerBlock = new BlockStmt();
-      Symbol* yieldTmp = newTemp();
-      yieldTmp->addFlag(FLAG_EXPR_TEMP);
-      followerBlock->insertAtTail(new DefExpr(yieldTmp));
-      followerBlock->insertAtTail(new CallExpr(PRIM_MOVE, yieldTmp, actualCall->copy(&followerMap)));
-      followerBlock->insertAtTail(new CallExpr(PRIM_YIELD, yieldTmp));
-      fifn->insertAtTail(buildForLoopStmt(indices->copy(&followerMap), new SymExpr(followerIterator), followerBlock, false, zippered));
-      theProgram->block->insertAtTail(new DefExpr(fifn));
-      normalize(fifn);
-      fifn->addFlag(FLAG_GENERIC);
-      fifn->instantiationPoint = getVisibilityBlock(info->call);
+    SymbolMap leaderMap;
+    FnSymbol* lifn = wrapper->copy(&leaderMap);
+    INT_ASSERT(! lifn->hasFlag(FLAG_RESOLVED));
+    iteratorLeaderMap.put(wrapper,lifn);
+    lifn->body = new BlockStmt(); // indices are not used in leader
+    form_Map(SymbolMapElem, e, leaderMap) {
+      if (Symbol* s = paramMap.get(e->key))
+        paramMap.put(e->value, s);
     }
+    ArgSymbol* lifnTag = new ArgSymbol(INTENT_PARAM, "tag", gLeaderTag->type);
+    lifn->addFlag(FLAG_INLINE_ITERATOR); // Leader iterators are always inlined.
+    lifn->insertFormalAtTail(lifnTag);
+    lifn->where = new BlockStmt(new CallExpr("==", lifnTag, gLeaderTag));
+    VarSymbol* leaderIndex = newTemp("p_leaderIndex");
+    VarSymbol* leaderIterator = newTemp("p_leaderIterator");
+    leaderIterator->addFlag(FLAG_EXPR_TEMP);
+    lifn->insertAtTail(new DefExpr(leaderIterator));
+
+    if( !zippered ) {
+      lifn->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_toLeader", iterator->copy(&leaderMap))));
+    } else {
+      lifn->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_toLeaderZip", iterator->copy(&leaderMap))));
+    }
+
+    BlockStmt* body = new BlockStmt(new CallExpr(PRIM_YIELD, leaderIndex));
+    BlockStmt* loop = buildForLoopStmt(new SymExpr(leaderIndex), new SymExpr(leaderIterator), body, false, zippered);
+    lifn->insertAtTail(loop);
+    theProgram->block->insertAtTail(new DefExpr(lifn));
+    toBlockStmt(body->parentExpr)->insertAtHead(new DefExpr(leaderIndex));
+    normalize(lifn);
+    lifn->instantiationPoint = getVisibilityBlock(info->call);
+
+    SymbolMap followerMap;
+    FnSymbol* fifn = wrapper->copy(&followerMap);
+    INT_ASSERT(! fifn->hasFlag(FLAG_RESOLVED));
+    iteratorFollowerMap.put(wrapper,fifn);
+    form_Map(SymbolMapElem, e, followerMap) {
+      if (Symbol* s = paramMap.get(e->key))
+        paramMap.put(e->value, s);
+    }
+    ArgSymbol* fifnTag = new ArgSymbol(INTENT_PARAM, "tag", gFollowerTag->type);
+    fifn->insertFormalAtTail(fifnTag);
+    ArgSymbol* fifnFollower = new ArgSymbol(INTENT_BLANK, iterFollowthisArgname, dtAny);
+    fifn->insertFormalAtTail(fifnFollower);
+    fifn->where = new BlockStmt(new CallExpr("==", fifnTag, gFollowerTag));
+    VarSymbol* followerIterator = newTemp("p_followerIterator");
+    followerIterator->addFlag(FLAG_EXPR_TEMP);
+    fifn->insertAtTail(new DefExpr(followerIterator));
+
+    if( !zippered ) {
+      fifn->insertAtTail(new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFollower", iterator->copy(&followerMap), fifnFollower)));
+    } else {
+      Expr* tMe = iterator->copy(&followerMap);
+      fifn->insertAtTail(new CallExpr(PRIM_MOVE, followerIterator, new
+                  CallExpr("_toFollowerZip", tMe, fifnFollower)));
+    }
+
+    BlockStmt* followerBlock = new BlockStmt();
+    Symbol* yieldTmp = newTemp("p_yield");
+    yieldTmp->addFlag(FLAG_EXPR_TEMP);
+    followerBlock->insertAtTail(new DefExpr(yieldTmp));
+    followerBlock->insertAtTail(new CallExpr(PRIM_MOVE, yieldTmp, actualCall->copy(&followerMap)));
+    followerBlock->insertAtTail(new CallExpr(PRIM_YIELD, yieldTmp));
+    fifn->insertAtTail(buildForLoopStmt(indices->copy(&followerMap), new SymExpr(followerIterator), followerBlock, false, zippered));
+    theProgram->block->insertAtTail(new DefExpr(fifn));
+    normalize(fifn);
+    fifn->addFlag(FLAG_GENERIC);
+    fifn->instantiationPoint = getVisibilityBlock(info->call);
+
     BlockStmt* yieldBlock = new BlockStmt();
-    Symbol* yieldTmp = newTemp();
+    yieldTmp = newTemp("p_yield");
     yieldTmp->addFlag(FLAG_EXPR_TEMP);
     yieldBlock->insertAtTail(new DefExpr(yieldTmp));
     yieldBlock->insertAtTail(new CallExpr(PRIM_MOVE, yieldTmp, actualCall));
@@ -715,7 +729,7 @@ promotionWrap(FnSymbol* fn, CallInfo* info) {
     }
   }
   if (promotion_wrapper_required) {
-    if (fWarnPromotion)
+    if (fReportPromotion)
       USR_WARN(info->call, "promotion on %s", toString(info));
 
     promoted_subs.put(fn, (Symbol*)info->call->square); // add value of square to cache

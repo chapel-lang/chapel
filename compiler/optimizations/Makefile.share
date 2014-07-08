@@ -1,12 +1,13 @@
 OPTIMIZATIONS_SRCS = \
+	bulkCopyRecords.cpp \
 	collapseBlocks.cpp \
 	complex2record.cpp \
 	copyPropagation.cpp \
 	deadCodeElimination.cpp \
-	gpuFlattenArgs.cpp \
 	inlineFunctions.cpp \
 	liveVariableAnalysis.cpp \
 	localizeGlobals.cpp \
+	loopInvariantCodeMotion.cpp \
 	narrowWideReferences.cpp \
 	optimizeOnClauses.cpp \
 	reachingDefinitionsAnalysis.cpp \

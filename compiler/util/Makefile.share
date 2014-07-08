@@ -1,10 +1,13 @@
 UTIL_SRCS = \
+	clangUtil.cpp \
 	files.cpp \
+	llvmAggregateGlobalOps.cpp \
+	llvmGlobalToWide.cpp \
+	llvmUtil.cpp \
 	misc.cpp \
 	mysystem.cpp \
 	stringutil.cpp \
 	timer.cpp \
-	llvmUtil.cpp \
         tmpdirname.cpp
 
 SVN_SRCS = $(UTIL_SRCS)

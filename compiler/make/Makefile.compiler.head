@@ -1,6 +1,7 @@
 #
 # settings for the build
 #
+DEPEND=1
 ifdef CHPL_DEVELOPER
 DEBUG=1
 else
@@ -53,14 +54,17 @@ CLEAN_TARGS = \
 	core \
 	*.core \
 	*.gmon \
-	*.a \
 	$(GEN_HEADERS) \
 	$(GEN_SRCS) \
-	$(EXECS)
+
+CLEANALL_TARGS = \
+	$(CLEAN_TARGS) \
+	./$(GEN_SUBDIR)
 
 CLOBBER_TARGS = \
-	$(CLEAN_TARGS) \
-	./$(GEN_SUBDIR) \
+	$(CLEANALL_TARGS) \
+	$(EXECS) \
+	*.a \
 	*~
 
 
@@ -68,12 +72,12 @@ CLOBBER_TARGS = \
 # platform-specific subdirectory targets
 #
 
-SVN_DEPENDS = ./$(OBJ_SUBDIR)/Makefile.svn.depend
+SVN_DEPENDS = ./$(OBJ_SUBDIR)/*.d
 
 
 
 MAKEALLSUBDIRS = $(SUBDIRS:%=%.makedir)
 CLEANSUBDIRS = $(SUBDIRS:%=%.cleandir)
+CLEANALLSUBDIRS = $(SUBDIRS:%=%.cleanalldir)
 CLEANSUBDIRDEPS = $(SUBDIRS:%=%.cleandirdeps)
 CLOBBERSUBDIRS = $(SUBDIRS:%=%.clobberdir)
-DEPENDSUBDIRS = $(SUBDIRS:%=%.dependdir)

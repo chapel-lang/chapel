@@ -18,11 +18,11 @@ void printVarType(std::ofstream *file, VarSymbol *var);
 
 void printVarDocs(std::ofstream *file, VarSymbol *var);
 
-void printClass(std::ofstream *file, ClassType *cl);
+void printClass(std::ofstream *file, AggregateType *cl);
 
-void printFields(std::ofstream *file, ClassType *cl);
+void printFields(std::ofstream *file, AggregateType *cl);
 
-void inheritance(Vec<ClassType*> *list, ClassType *cl);
+void inheritance(Vec<AggregateType*> *list, AggregateType *cl);
 
 bool devOnlyFunction(FnSymbol *fn);
 

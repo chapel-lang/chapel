@@ -1,11 +1,14 @@
 #ifndef _TYPE_H_
 #define _TYPE_H_
 
-#include <cstdio>
 #include "baseAST.h"
+
+#include "alist.h"
+#include "genret.h"
+
 #include "../ifa/num.h"
 
-#include "genret.h"
+#include <cstdio>
 #include <map>
 
 /*
@@ -17,61 +20,73 @@
 
 */
 
-class Symbol;
-class EnumSymbol;
-class VarSymbol;
-class TypeSymbol;
+class AggregateType;
 class ArgSymbol;
-class FnSymbol;
-class Expr;
-class DefExpr;
+class BlockStmt;
 class CallExpr;
 class CondStmt;
-class BlockStmt;
-class ClassType;
-
+class DefExpr;
+class EnumSymbol;
+class Expr;
+class FnSymbol;
+class Symbol;
+class TypeSymbol;
+class VarSymbol;
 
 class Type : public BaseAST {
- public:
-  Vec<Type*> dispatchParents; // dispatch hierarchy
-  Vec<Type*> dispatchChildren; // dispatch hierarchy
-  Type* scalarPromotionType;
+public:
+  virtual Type*    copy(SymbolMap* map = NULL, bool internal = false) = 0;
 
-  TypeSymbol* symbol;
-  Symbol* defaultValue;
-  FnSymbol* initializer;
-  FnSymbol* defaultTypeConstructor;
-  FnSymbol* destructor;
-  Vec<FnSymbol*> methods;
-  bool hasGenericDefaults; // all generic fields have defaults
-  Type *instantiatedFrom;
-  SymbolMap substitutions;
-  ClassType* refType;  // pointer to references for non-reference types
-  bool isInternalType; // Used only in PrimitiveType; replace with flag?
+  // Interface for BaseAST
+  virtual GenRet   codegen();
+  virtual bool     inTree();
+  virtual Type*    typeInfo();
+  virtual void     verify(); 
+
+  virtual void     codegenDef();
+  virtual void     codegenPrototype();
+
+  // only used for heterogeneous compilations in which we need to define
+  // what our data structures are for the point of conversions
+  virtual int      codegenStructure(FILE* outfile, const char* baseoffset);
+
+  virtual Symbol*  getField(const char* name, bool fatal = true);
+
+  void             addSymbol(TypeSymbol* newSymbol);
+
+  TypeSymbol*      symbol;
+  AggregateType*   refType;  // pointer to references for non-reference types
+  Vec<FnSymbol*>   methods;
+
+  bool             hasGenericDefaults; // all generic fields have defaults
+
+  Symbol*          defaultValue;
+  FnSymbol*        defaultInitializer; // This is the compiler-supplied
+                                       // default-initializer.
+                                       // It provides initial values for the
+                                       // fields in an aggregate type.
+  FnSymbol*        defaultTypeConstructor;
+  FnSymbol*        destructor;
+
+  // Used only in PrimitiveType; replace with flag?
+  bool             isInternalType;
+
+  Type*            instantiatedFrom;
+  Type*            scalarPromotionType;
+
+  SymbolMap        substitutions;
+  Vec<Type*>       dispatchChildren;   // dispatch hierarchy
+  Vec<Type*>       dispatchParents;    // dispatch hierarchy
 
   // Only used for LLVM.
   std::map<std::string, int> GEPMap;
 
-  Type(AstTag astTag, Symbol* init_defaultVal);
-  virtual ~Type();
-  virtual Type* copy(SymbolMap* map = NULL, bool internal = false) = 0;
-  virtual Type* copyInner(SymbolMap* map) = 0;
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast) = 0;
+protected:
+                   Type(AstTag astTag, Symbol* init_defaultVal);
+  virtual         ~Type();
 
-  virtual void verify(); 
-  virtual bool inTree();
-  virtual Type* typeInfo(void);
-
-  void addSymbol(TypeSymbol* newSymbol);
-
-  virtual GenRet codegen();
-  virtual void codegenDef();
-  virtual void codegenPrototype();
-
-  // only used for emitting CUDA
-  virtual int codegenStructure(FILE* outfile, const char* baseoffset);
-  
-  virtual Symbol* getField(const char* name, bool fatal=true);
+private:
+  virtual void     replaceChild(BaseAST* old_ast, BaseAST* new_ast) = 0;
 };
 
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
@@ -87,6 +102,7 @@ class EnumType : public Type {
   EnumType();
   ~EnumType();
   void verify(); 
+  virtual void    accept(AstVisitor* visitor);
   DECLARE_COPY(EnumType);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
@@ -100,30 +116,32 @@ class EnumType : public Type {
 };
 
 
-enum ClassTag {
-  CLASS_CLASS,
-  CLASS_RECORD,
-  CLASS_UNION
+enum AggregateTag {
+  AGGREGATE_CLASS,
+  AGGREGATE_RECORD,
+  AGGREGATE_UNION
 };
 
-class ClassType : public Type {
+class AggregateType : public Type {
  public:
-  ClassTag classTag;
+  AggregateTag aggregateTag;
   AList fields;
   AList inherits; // used from parsing, sets dispatchParents
   Symbol* outer;  // pointer to an outer class if this is an inner class
   const char *doc;
 
-  ClassType(ClassTag initClassTag);
-  ~ClassType();
+  AggregateType(AggregateTag initTag);
+  ~AggregateType();
   void verify(); 
-  DECLARE_COPY(ClassType);
+  virtual void    accept(AstVisitor* visitor);
+  DECLARE_COPY(AggregateType);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void addDeclarations(Expr* expr, bool tail = true);
 
   GenRet codegenClassStructType();
   void codegenDef();
   void codegenPrototype();
+  const char* classStructName(bool standalone);
   int codegenStructure(FILE* outfile, const char* baseoffset);
   int codegenFieldStructure(FILE* outfile, bool nested, const char* baseoffset);
 
@@ -132,6 +150,9 @@ class ClassType : public Type {
   int getFieldPosition(const char* name, bool fatal = true);
   Symbol* getField(const char* name, bool fatal = true);
   Symbol* getField(int i);
+  bool isClass() { return aggregateTag == AGGREGATE_CLASS; }
+  bool isRecord() { return aggregateTag == AGGREGATE_RECORD; }
+  bool isUnion() { return aggregateTag == AGGREGATE_UNION; }
 };
 
 
@@ -139,6 +160,7 @@ class PrimitiveType : public Type {
  public:
   PrimitiveType(Symbol *init_defaultVal = NULL, bool internalType=false);
   void verify(); 
+  virtual void    accept(AstVisitor* visitor);
   DECLARE_COPY(PrimitiveType);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void codegenDef();
@@ -186,17 +208,21 @@ TYPE_EXTERN PrimitiveType* dtSingleVarAuxFields;
 TYPE_EXTERN PrimitiveType* dtTaskList;
 
 // a fairly special wide type
-extern ClassType* wideStringType;
+extern AggregateType* wideStringType;
 
-// standard module types
-TYPE_EXTERN ClassType* dtArray;
-TYPE_EXTERN ClassType* dtReader;
-TYPE_EXTERN ClassType* dtWriter;
-TYPE_EXTERN ClassType* dtBaseArr;
-TYPE_EXTERN ClassType* dtBaseDom;
-TYPE_EXTERN ClassType* dtDist;
-TYPE_EXTERN ClassType* dtTuple;
-TYPE_EXTERN ClassType* dtLocaleID;
+// Well-known types
+TYPE_EXTERN AggregateType* dtArray;
+TYPE_EXTERN AggregateType* dtReader;
+TYPE_EXTERN AggregateType* dtWriter;
+TYPE_EXTERN AggregateType* dtBaseArr;
+TYPE_EXTERN AggregateType* dtBaseDom;
+TYPE_EXTERN AggregateType* dtDist;
+TYPE_EXTERN AggregateType* dtTuple;
+TYPE_EXTERN AggregateType* dtLocale;
+TYPE_EXTERN AggregateType* dtLocaleID;
+TYPE_EXTERN AggregateType* dtMainArgument;
+
+TYPE_EXTERN PrimitiveType* dtStringC; // the type of a C string.
 
 // base object type (for all classes)
 TYPE_EXTERN Type* dtObject;
@@ -230,7 +256,9 @@ bool isReferenceType(Type* t);
 bool isRefCountedType(Type* t);
 bool isRecordWrappedType(Type* t);
 bool isSyncType(Type* t);
+bool isAtomicType(Type* t);
 
+bool isSubClass(Type* type, Type* baseType);
 bool isDistClass(Type* type);
 bool isDomainClass(Type* type);
 bool isArrayClass(Type* type);
@@ -242,6 +270,7 @@ void codegenTypeStructureInclude(FILE* outfile);
 
 Type* getNamedType(std::string name);
 
+bool needsCapture(Type* t);
 VarSymbol* resizeImmediate(VarSymbol* s, PrimitiveType* t);
 
 // defined in codegen.cpp
@@ -249,8 +278,8 @@ GenRet codegenImmediate(Immediate* i);
 #define CLASS_ID_TYPE dtInt[INT_SIZE_32]
 #define UNION_ID_TYPE dtInt[INT_SIZE_64]
 #define SIZE_TYPE dtInt[INT_SIZE_64]
-#define NODE_ID_TYPE dtLocaleID->getField("node")->typeInfo();
-#define SUBLOC_ID_TYPE dtLocaleID->getField("subloc")->typeInfo();
-#define LOCALE_ID_TYPE dtLocaleID->typeInfo();
+#define LOCALE_TYPE dtLocale->typeInfo()
+#define LOCALE_ID_TYPE dtLocaleID->typeInfo()
+#define NODE_ID_TYPE dtInt[INT_SIZE_32]
 
 #endif

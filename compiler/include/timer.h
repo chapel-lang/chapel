@@ -1,25 +1,28 @@
 #ifndef _timer_h_
 #define _timer_h_
 
-#include <cstdio>
 #include <sys/time.h>
-
-typedef struct timeval _timervalue;
 
 class Timer {
 public:
-  _timervalue time;
-  double accumulated;
-  bool running;
+                 Timer();
+                ~Timer();
 
-  Timer();
-  virtual ~Timer() { }
+  void           clear();
 
-  void clear();
-  void start();
-  void stop();
-  double elapsed();
-  void print(FILE* f);
+  void           start();
+  void           stop();
+
+  double         elapsedSecs()  const;
+  unsigned long  elapsedUsecs() const;
+
+private:
+  unsigned long  diffUsec()     const;
+
+  struct timeval mRefTime;
+
+  bool           mRunning;
+  unsigned long  mAccumUsec;
 };
 
 #endif

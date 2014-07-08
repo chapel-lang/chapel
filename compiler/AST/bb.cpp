@@ -372,7 +372,7 @@ void printLocalsVectorSets(std::vector<BitVec*>& sets, Vec<Symbol*> locals) {
   int i = 0;
   for_vector(BitVec, set, sets) {
     printf("%2d: ", i);
-    for (int j = 0; j < set->size; j++) {
+    for (int j = 0; j < set->size(); j++) {
       if (set->get(j))
         printf("%s[%d] ", locals.v[j]->name, locals.v[j]->id);
     }
@@ -386,7 +386,7 @@ void printBitVectorSets(std::vector<BitVec*>& sets) {
   int i = 0;
   for_vector(BitVec, set, sets) {
     printf("%2d: ", i);
-    for (int j = 0; j < set->size; j++) {
+    for (int j = 0; j < set->size(); j++) {
       printf("%d", (set->get(j)) ? 1 : 0);
       if ((j+1) % 10 == 0) printf(" ");
     }

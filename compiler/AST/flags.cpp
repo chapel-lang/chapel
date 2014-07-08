@@ -1,5 +1,6 @@
-#include "baseAST.h"
 #include "flags.h"
+
+#include "baseAST.h"
 #include "stringutil.h"
 #include "symbol.h"
 
@@ -41,6 +42,14 @@ initFlags() {
 
 }
 
+void writeFlags(FILE* fp, Symbol* sym) {
+  form_Map(FlagMapElem, e, flagMap) {
+    if (sym->flags[e->value]) {
+      fprintf(fp, " \"%s\"", e->key);
+    }
+  }
+}
+
 
 // these affect what viewFlags() prints
 bool viewFlagsShort = true;
@@ -78,7 +87,7 @@ static Symbol* symflagOK(const char* msg, BaseAST* ast, int flag) {
   Symbol* sym = toSymbol(ast);
   if (!sym) {
     printf("%s: [%d] is a %s (does not support Flags)\n", msg, ast->id,
-           astTagName[ast->astTag]);
+           ast->astTagAsString());
     return NULL;
   } else if (flag <= 0) {
     printf("%s: flag is non-positive: %d\n", msg, flag);

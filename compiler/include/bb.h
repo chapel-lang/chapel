@@ -2,7 +2,8 @@
 #define _BB_H_
 
 #include "chpl.h"
-#include "vector.h"
+#include <vector>
+#include "stlUtil.h"
 
 class BitVec;
 class Expr;

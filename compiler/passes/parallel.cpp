@@ -12,176 +12,403 @@
 #include "stringutil.h"
 #include "driver.h"
 #include "files.h"
+#include "stlUtil.h"
 
-static void create_block_fn_wrapper(CallExpr* fcall, ClassType* ctype, VarSymbol* tempc);
+// Notes on
+//   makeHeapAllocations()    //invoked from parallel()
+//   insertWideReferences()
+//
+//------
+// Terminology/abbreviations:
+//
+// 'on'+'begin' is considered to be both an 'on' and a 'begin'
+// - see also FLAG_NON_BLOCKING
+//
+// A "global" is a module-level symbol, usu. a VarSymbol.
+// A 'var' is a global if, equivalently:
+//  isModuleSymbol(var->defPoint->parentSymbol)
+//  isGlobal(var)
+//
+// MHA = makeHeapAllocations() and functions it invokes
+// IWR = insertWideReferences() and functions it invokes
+//------
+//
+// MHA and IWR take care of the following, among others:
+// - heap allocation for remote access
+// - heap allocation for 'begin'
+// - change acces to variable -> access to its ._value
+// - set up wide references
+// - broadcasting of globals
+//
+// In more details:
+//
+// Heap allocation for remote access is done:
+// - for globals - in IWR, if:
+//    requireWideReferences()
+// - for a local - in MHA, if:
+//    needHeapVars() && the local can be passed to an 'on'
+//
+// Heap allocation for 'begin' is done:
+// - for globals - n/a
+//    see above instead
+// - for a local - in MHA, if:
+//    the local can be passed to a 'begin'
+//
+// Change acces to variable -> access to its ._value
+// - for globals - in MHA, if:
+//    requireWideReferences()
+// - for locals - in MHA, if:
+//    the local is subject to heap allocation
+//    in either of the above two categories
+//
+// Wide references are set up in IWR, if:
+//    requireWideReferences()
+//
+// Broadcasting:
+// - of certain global constants       - in MHA/findHeapVarsAndRefs, if:
+//    !fLocal
+// - of global arrays/domains/distribs - in MHA/findHeapVarsAndRefs, if:
+//    !fLocal
+// - of locations of the other globals - in IWR, if:
+//    requireWideReferences()
+
+
+typedef struct {
+  bool firstCall;
+  AggregateType* ctype;
+  FnSymbol*  wrap_fn;
+} BundleArgsFnData;
+
+// bundleArgsFnDataInit: the initial value for BundleArgsFnData
+static BundleArgsFnData bundleArgsFnDataInit = { true, NULL, NULL };
+
+static void insertEndCounts();
+static void passArgsToNestedFns(Vec<FnSymbol*>& nestedFunctions);
+static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnData &baData);
+static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol* tempc, FnSymbol *wrap_fn);
 static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec);
 static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                                 Vec<Symbol*>& refSet, Vec<Symbol*>& refVec,
                                 Vec<Symbol*>& varSet, Vec<Symbol*>& varVec);
-static void convertNilToObject();
-static void buildWideClasses();
-static void widenClasses();
-static void buildWideRefMap();
-static void widenRefs();
-static void insertElementAccessTemps();
-static void narrowWideClassesThroughCalls();
-static void insertWideClassTempsForNil();
-static void insertWideCastTemps();
-static void derefWideStringActuals();
-static void derefWideRefsToWideClasses();
-static void widenGetPrivClass();
-static void moveAddressSourcesToTemp(void);
 
 // Package args into a class and call a wrapper function with that
 // object. The wrapper function will then call the function
 // created by the previous parallel pass. This is a way to pass along
 // multiple args through the limitation of one arg in the runtime's
 // thread creation interface. 
-static void
-bundleArgs(CallExpr* fcall) {
-  SET_LINENO(fcall);
-  ModuleSymbol* mod = fcall->getModule();
-  FnSymbol* fn = fcall->isResolved();
+//
+// Implemented using BundleArgsFnData and the functions:
+//   create_arg_bundle_class
+//   bundleArgs
+//   create_block_fn_wrapper
+//   call_block_fn_wrapper
+
+// Even though the arg bundle class depends only on the iterator,
+// current code unfortunately uses the call site for some information
+// If there are multiple call sites, the first one is used.
+
+static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol* mod, BundleArgsFnData &baData) {
+  INT_ASSERT(!baData.ctype);
+  SET_LINENO(fn);
+
+// Here, 'fcall' is the first of fn's callees and so it acts as a
+// representative of all the other callees, if any.
+// As of this writing, this should be OK because the callees are
+// obtained by duplicating the original call, which resulted in
+// outlining a block into 'fn' and so is unique.
+// To eliminate 'fcall' in create_arg_bundle_class(), we need
+// to rely on fn's formal types instead of fcall's actual types.
 
   // create a new class to capture refs to locals
-  ClassType* ctype = new ClassType( CLASS_CLASS);
-  TypeSymbol* new_c = new TypeSymbol( astr("_class_locals", 
-                                           fn->name),
-                                      ctype);
+  AggregateType* ctype = new AggregateType(AGGREGATE_CLASS);
+  TypeSymbol* new_c = new TypeSymbol(astr("_class_locals", fn->name), ctype);
   new_c->addFlag(FLAG_NO_OBJECT);
   new_c->addFlag(FLAG_NO_WIDE_CLASS);
 
   // add the function args as fields in the class
-  int i = 0;
+  int i = 0;    // Fields are numbered for uniqueness.
   for_actuals(arg, fcall) {
     SymExpr *s = toSymExpr(arg);
     Symbol  *var = s->var; // arg or var
-    var->addFlag(FLAG_CONCURRENTLY_ACCESSED);
+    if (var->type->symbol->hasFlag(FLAG_REF) || isClass(var->type))
+      // Only a variable that is passed by reference out of its current scope
+      // is concurrently accessed -- which means that it has to be passed by
+      // reference.
+      var->addFlag(FLAG_CONCURRENTLY_ACCESSED);
     VarSymbol* field = new VarSymbol(astr("_", istr(i), "_", var->name), var->type);
     ctype->fields.insertAtTail(new DefExpr(field));
     i++;
   }
+  // BTW 'mod' may differ from fn->defPoint->getModule()
+  // e.g. due to iterator inlining.
   mod->block->insertAtHead(new DefExpr(new_c));
 
-  // create the class variable instance and allocate it
-  VarSymbol *tempc = newTemp(astr("_args_for", fn->name), ctype);
-  fcall->insertBefore( new DefExpr( tempc));
-  CallExpr *tempc_alloc = new CallExpr(PRIM_CHPL_ALLOC_PERMIT_ZERO,
-                                       ctype->symbol,
-                                       newMemDesc("compiler-inserted argument bundle"));
-  fcall->insertBefore( new CallExpr( PRIM_MOVE,
-                                     tempc,
-                                     tempc_alloc));
-  
-  // set the references in the class instance
-  i = 1;
-  for_actuals(arg, fcall) {
-    SymExpr *s = toSymExpr(arg);
-    Symbol  *var = s->var; // var or arg
-    CallExpr *setc=new CallExpr(PRIM_SET_MEMBER,
-                                tempc,
-                                ctype->getField(i),
-                                var);
-    fcall->insertBefore( setc);
-    i++;
-  }
-
-  // insert autoCopy for array/domain/distribution before begin call
-  // and insert autoDestroy at end of begin function (i.e., reference count)
-  if (fn->hasFlag(FLAG_BEGIN)) {
-    for_actuals(arg, fcall) {
-      SymExpr* s = toSymExpr(arg);
-      Symbol* var = s->var; // var or arg
-      Type* baseType = arg->typeInfo();
-      if (isReferenceType(baseType)) {
-        baseType = arg->typeInfo()->getField("_val", true)->type;
-      }
-      if (isRefCountedType(baseType)) {
-        FnSymbol* autoCopyFn = getAutoCopy(baseType);
-        FnSymbol* autoDestroyFn = getAutoDestroy(baseType);
-        VarSymbol* valTmp = newTemp(baseType);
-        fcall->insertBefore(new DefExpr(valTmp));
-        if (baseType == arg->typeInfo()) {
-          fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp, var));
-        } else {
-          fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp, new CallExpr(PRIM_DEREF, var)));
-        }
-        fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp, new CallExpr(autoCopyFn, valTmp)));
-        VarSymbol* derefTmp = newTemp(baseType);
-        fn->insertBeforeReturnAfterLabel(new DefExpr(derefTmp));
-        if (baseType == arg->typeInfo()) {
-          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, derefTmp, new SymExpr(actual_to_formal(arg))));
-        } else {
-          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, derefTmp, new CallExpr(PRIM_DEREF, new SymExpr(actual_to_formal(arg)))));
-        }
-        fn->insertBeforeReturnAfterLabel(new CallExpr(autoDestroyFn, derefTmp));
-      }
-    }
-  }
-
-  // create wrapper-function that uses the class instance
-  create_block_fn_wrapper(fcall, ctype, tempc);
+  baData.ctype = ctype;
 }
 
 
-static void create_block_fn_wrapper(CallExpr* fcall, ClassType* ctype, VarSymbol* tempc)
+/// Optionally autoCopies an argument being inserted into an argument bundle.
+///
+/// This routine optionally inserts an autoCopy ahead of each invocation of a
+/// task function that begins asynchronous execution (currently just "begin" and
+/// "nonblocking on" functions).  
+/// If such an autoCopy call is inserted, a matching autoDestroy call is placed
+/// at the end of the tasking routine before the call to _downEndCount.  Since a
+/// tasking function may be called from several call sites, the task function is
+/// modified only when processing the first invocation.
+/// The insertion of autoCopy calls is required for internally reference-counted
+/// types, and also for all user-defined record types (passed by value).  For
+/// internally reference-counted types, the autoCopy call increases the
+/// reference count, so the internal (reference-counted) data is not reclaimed
+/// before the task function exits.  For user-defined record types, the autoCopy
+/// call provides a hook so the record author can ensure that the task function
+/// owns its own copy of the record (including, but not limited to,
+/// reference-counting it).
+/// \param firstCall Should be set to \p true for the first invocation of a
+/// given task function and \p false thereafter.
+/// \ret Returns the result of calling autoCopy on the given arg, if necessary;
+/// otherwise, just returns 
+static Symbol* insertAutoCopyDestroyForTaskArg
+  (Expr* arg, ///< The actual argument being passed.
+   CallExpr* fcall, ///< The call that invokes the task function.
+   FnSymbol* fn, ///< The task function.
+   bool firstCall)
 {
+  SymExpr* s = toSymExpr(arg);
+  Symbol* var = s->var;
+
+  // This applies only to arguments being passed to asynchronous task functions.
+  // No need to increment+decrement the reference counters for cobegins/coforalls.
+  if (fn->hasFlag(FLAG_BEGIN))
+  {
+    Type* baseType = arg->getValType();
+    FnSymbol* autoCopyFn = getAutoCopy(baseType);
+    FnSymbol* autoDestroyFn = getAutoDestroy(baseType);
+
+    if (isRefCountedType(baseType))
+    {
+      if (arg->typeInfo() != baseType)
+      {
+        // For internally reference-counted types, this punches through
+        // references to bump the reference count.
+        VarSymbol* derefTmp = newTemp(baseType);
+        fcall->insertBefore(new DefExpr(derefTmp));
+        fcall->insertBefore(new CallExpr(PRIM_MOVE, derefTmp,
+                                         new CallExpr(PRIM_DEREF, var)));
+        // The result of the autoCopy call is dropped on the floor.
+        // It is only called to increment the ref count.
+        fcall->insertBefore(new CallExpr(autoCopyFn, derefTmp));
+        // But the original var is passed through to the field assignment.
+      }
+      else
+      {
+        VarSymbol* valTmp = newTemp(baseType);
+        valTmp->addFlag(FLAG_NECESSARY_AUTO_COPY);
+        fcall->insertBefore(new DefExpr(valTmp));
+        fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp,
+                                         new CallExpr(autoCopyFn, var)));
+        // If the arg is not passed by reference, the result of the autoCopy is
+        // passed to the field assignment.
+        var = valTmp;
+      }
+
+      if (firstCall)
+      {
+        // The task function may be called from several call sites, so insert
+        // the autodestroy call only once (when processing the first fcall).
+        Symbol* formal = actual_to_formal(arg);
+        if (arg->typeInfo() != baseType)
+        {
+          VarSymbol* derefTmp = newTemp(baseType);
+          fn->insertBeforeDownEndCount(new DefExpr(derefTmp));
+          fn->insertBeforeDownEndCount(
+            new CallExpr(PRIM_MOVE, derefTmp, new CallExpr(PRIM_DEREF,  formal)));
+          formal = derefTmp;
+        }
+        fn->insertBeforeDownEndCount(new CallExpr(autoDestroyFn, formal));
+      }
+    }
+    else if (isRecord(baseType))
+    {
+      // Do this only if the record is passed by value.
+      if (arg->typeInfo() == baseType)
+      {
+        // TODO: Find out why _RuntimeTypeInfo records do not have autoCopy
+        // functions, so we can get rid of this special test.
+        if (autoCopyFn == NULL) return var;
+
+        // Insert a call to the autoCopy function ahead of the call.
+        VarSymbol* valTmp = newTemp(baseType);
+        fcall->insertBefore(new DefExpr(valTmp));
+        CallExpr* autoCopyCall = new CallExpr(autoCopyFn, var);
+        fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp, autoCopyCall));
+        var = valTmp;
+
+        if (firstCall)
+        {
+          // Insert a call to the autoDestroy function ahead of the return.
+          // (But only once per function for each affected argument.)
+          Symbol* formal = actual_to_formal(arg);
+          CallExpr* autoDestroyCall = new CallExpr(autoDestroyFn,formal);
+          fn->insertBeforeDownEndCount(autoDestroyCall);
+        }
+      }
+    }
+  }
+  return var;
+}
+
+
+static void
+bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
+  SET_LINENO(fcall);
   ModuleSymbol* mod = fcall->getModule();
   FnSymbol* fn = fcall->isResolved();
+
+  const bool firstCall = baData.firstCall;
+  if (firstCall)
+    create_arg_bundle_class(fn, fcall, mod, baData);
+  AggregateType* ctype = baData.ctype;
+
+  // create the class variable instance and allocate space for it
+  VarSymbol *tempc = newTemp(astr("_args_for", fn->name), ctype);
+  fcall->insertBefore( new DefExpr( tempc));
+  insertChplHereAlloc(fcall, false /*insertAfter*/, tempc,
+                      ctype, newMemDesc("bundled args"));
+
+  // set the references in the class instance
+  int i = 1;
+  for_actuals(arg, fcall) 
+  {
+    // Insert autoCopy/autoDestroy as needed for "begin" or "nonblocking on"
+    // calls.
+    Symbol  *var = insertAutoCopyDestroyForTaskArg(arg, fcall, fn, firstCall);
+
+    // Copy the argument into the corresponding slot in the argument bundle.
+    CallExpr *setc = new CallExpr(PRIM_SET_MEMBER,
+                                  tempc,
+                                  ctype->getField(i),
+                                  var);
+    fcall->insertBefore(setc);
+    i++;
+  }
+
+  // create wrapper-function that uses the class instance
+  create_block_fn_wrapper(fn, fcall, baData);
+  call_block_fn_wrapper(fn, fcall, tempc, baData.wrap_fn);
+  baData.firstCall = false;
+}
+
+
+static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnData &baData)
+{
+  ModuleSymbol* mod = fcall->getModule();
+  INT_ASSERT(fn == fcall->isResolved());
+
+  INT_ASSERT(baData.firstCall == !baData.wrap_fn);
+  if (!baData.firstCall) return;
+
+  AggregateType* ctype = baData.ctype;
   FnSymbol *wrap_fn = new FnSymbol( astr("wrap", fn->name));
 
-  // Add special flags to the wrapper-function as appropriate.
+  // Add a special flag to the wrapper-function as appropriate.
   // These control aspects of code generation.
-  if (fn->hasFlag(FLAG_GPU_ON))                 wrap_fn->addFlag(FLAG_GPU_CALL);
   if (fn->hasFlag(FLAG_ON))                     wrap_fn->addFlag(FLAG_ON_BLOCK);
   if (fn->hasFlag(FLAG_NON_BLOCKING))           wrap_fn->addFlag(FLAG_NON_BLOCKING);
   if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL))    wrap_fn->addFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK);
   if (fn->hasFlag(FLAG_BEGIN))                  wrap_fn->addFlag(FLAG_BEGIN_BLOCK);
 
   if (fn->hasFlag(FLAG_ON)) {
-    // The wrapper function for 'on' block has an additional argument,
-    // which is how we pass the destination node ID to the forking function.
-    ArgSymbol* locale = new ArgSymbol(INTENT_BLANK, "_locale_arg", dtLocaleID);
-    wrap_fn->insertFormalAtTail(locale);
+    // The wrapper function for 'on' block has an additional argument, which
+    // passes the new wide locale pointer to the fork function.
+    // This argument is stripped from the wrapper function during code generation.
+    // As far as the compiler knows, the call looks like:
+    //  wrapon_fn(new_locale, wrapped_args)
+    // and the wrapon_fn has a matching signature.  But at codegen time, this is
+    // translated to:
+    //  fork(new_locale.locale.node, wrapon_fn, wrapped_args)
+    // The fork function effective generates the call
+    //  wrapon_fn(wrapped_args)
+    // (without the locale arg).
+
+    // The locale arg is originally attached to the on_fn, but we copy it 
+    // into the wrapper here, and then later on remove it completely.
+    // The on_fn does not need this extra argument, and can find out its locale
+    // by reading the task-private "here" pointer.
+    DefExpr* localeArg = toDefExpr(fn->formals.get(1)->copy());
+    // The above copy() used to be a remove(), based on the assumption that there was
+    // exactly one wrapper for each on.  Now, the on_fn is outlined early and has
+    // several callers, therefore severall wrapon_fns are generated.
+    // So, we leave the extra locale arg in place here and remove it later 
+    // (see the last if (fn->hasFlag(FLAG_ON)) clause in passArgsToNestedFns()).
+    wrap_fn->insertFormalAtTail(localeArg);
   }
 
-  ArgSymbol *wrap_c = new ArgSymbol( INTENT_BLANK, "c", ctype);
-  wrap_fn->insertFormalAtTail( wrap_c);
+  ArgSymbol *wrap_c = new ArgSymbol( INTENT_CONST_REF, "c", ctype);
+  wrap_fn->insertFormalAtTail(wrap_c);
 
   mod->block->insertAtTail(new DefExpr(wrap_fn));
-  if (fn->hasFlag(FLAG_ON)) {
-    // The wrapper function is called with a copy of the locale argument.
-    fcall->insertBefore(new CallExpr(wrap_fn, fcall->get(1)->copy(), tempc));
-  } else
-    fcall->insertBefore(new CallExpr(wrap_fn, tempc));
 
   // Create a call to the original function
-  CallExpr *call_orig = new CallExpr( (toSymExpr(fcall->baseExpr))->var);
-  int count = -1;
+  CallExpr *call_orig = new CallExpr(fn);
+  bool first = true;
   for_fields(field, ctype)
   {
     // insert args
-    ++count;
-    VarSymbol* tmp = newTemp(field->type);
+    VarSymbol* tmp = newTemp(field->name, field->type);
     wrap_fn->insertAtTail(new DefExpr(tmp));
     wrap_fn->insertAtTail(
         new CallExpr(PRIM_MOVE, tmp,
         new CallExpr(PRIM_GET_MEMBER_VALUE, wrap_c, field)));
-    call_orig->insertAtTail(tmp);
+
+    // Special case: 
+    // If this is an on block, remember the first field,
+    // but don't add to the list of actuals passed to the original on_fn.
+    // It contains the locale on which the new task is launched.
+    if (first && fn->hasFlag(FLAG_ON))
+      /* no-op */;
+    else
+      call_orig->insertAtTail(tmp);
+
+    first = false;
   }
 
   wrap_fn->retType = dtVoid;
   wrap_fn->insertAtTail(call_orig);     // add new call
-  if (fn->hasFlag(FLAG_ON) || fn->hasFlag(FLAG_GPU_ON))
-    fcall->insertAfter(new CallExpr(PRIM_CHPL_FREE, tempc));
-  else
-    wrap_fn->insertAtTail(new CallExpr(PRIM_CHPL_FREE, wrap_c));
 
-  DefExpr  *fcall_def= (toSymExpr( fcall->baseExpr))->var->defPoint;
+  if (fn->hasFlag(FLAG_ON))
+    ; // the caller will free the actual
+  else
+    wrap_fn->insertAtTail(callChplHereFree(wrap_c));
+
+  wrap_fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+
+  // 'fn' has already been flattened and hoisted to the top level.
+  // We leave 'fn' in the module where it was placed originally,
+  // whereas 'wrap_fn' is in fcall's module.
+  // These two modules may be different, e.g. due to iterator inlining.
+  INT_ASSERT(isGlobal(fn));
+
+  baData.wrap_fn = wrap_fn;
+}
+
+static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol* tempc, FnSymbol *wrap_fn)
+{
+  // The wrapper function is called with the bundled argument list.
+  if (fn->hasFlag(FLAG_ON)) {
+    // For an on block, the first argument is also passed directly
+    // to the wrapper function.
+    // The forking function uses this to fork a task on the target locale.
+    fcall->insertBefore(new CallExpr(wrap_fn, fcall->get(1)->remove(), tempc));
+  } else
+    fcall->insertBefore(new CallExpr(wrap_fn, tempc));
+
+  if (fn->hasFlag(FLAG_ON))
+    fcall->insertAfter(callChplHereFree(tempc));
+  else
+    ; // wrap_fn will free the formal
+
   fcall->remove();                     // rm orig. call
-  fcall_def->remove();                 // move orig. def
-  mod->block->insertAtTail(fcall_def); // to top-level
-  normalize(wrap_fn);
 }
 
 
@@ -196,7 +423,7 @@ insertEndCount(FnSymbol* fn,
     endCountMap.put(fn, var);
     queue.add(fn);
   } else {
-    ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_endCount", endCountType);
+    ArgSymbol* arg = new ArgSymbol(INTENT_CONST_REF, "_endCount", endCountType);
     fn->insertFormalAtTail(arg);
     VarSymbol* var = newTemp("_endCount", endCountType);
     fn->insertAtHead(new CallExpr(PRIM_MOVE, var, arg));
@@ -265,14 +492,14 @@ replicateGlobalRecordWrappedVars(DefExpr *def) {
 }
 
 
-static ClassType*
+static AggregateType*
 buildHeapType(Type* type) {
-  static Map<Type*,ClassType*> heapTypeMap;
+  static Map<Type*,AggregateType*> heapTypeMap;
   if (heapTypeMap.get(type))
     return heapTypeMap.get(type);
 
   SET_LINENO(type->symbol);
-  ClassType* heap = new ClassType(CLASS_CLASS);
+  AggregateType* heap = new AggregateType(AGGREGATE_CLASS);
   TypeSymbol* ts = new TypeSymbol(astr("heap_", type->symbol->cname), heap);
   ts->addFlag(FLAG_NO_OBJECT);
   ts->addFlag(FLAG_HEAP);
@@ -338,9 +565,11 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
               if (call->isPrimitive(PRIM_ADDR_OF) ||
                   call->isPrimitive(PRIM_GET_MEMBER) ||
                   call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
-                  call->isPrimitive(PRIM_WIDE_GET_LOCALE))
+                  call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
+                  call->isPrimitive(PRIM_WIDE_GET_NODE))
+                // Treat the use of these primitives as a use of their arguments.
                 call = toCallExpr(call->parentExpr);
-              if (call->isPrimitive(PRIM_MOVE))
+              if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
                 varsToTrack.add(toSymExpr(call->get(1))->var);
               else if (fnsContainingTaskll.in(call->isResolved())) {
                 freeVar = false;
@@ -400,17 +629,24 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
         FnSymbol* fn = toFnSymbol(move->parentSymbol);
         SET_LINENO(var);
         if (fn && innermostBlock == fn->body)
-          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_CHPL_FREE, move->get(1)->copy()));
+          fn->insertBeforeReturnAfterLabel(callChplHereFree(move->get(1)->copy()));
         else {
           BlockStmt* block = toBlockStmt(innermostBlock);
           INT_ASSERT(block);
-          block->insertAtTailBeforeGoto(new CallExpr(PRIM_CHPL_FREE, move->get(1)->copy()));
+          block->insertAtTailBeforeGoto(callChplHereFree(move->get(1)->copy()));
         }
       }
     }
   }
 }
 
+// Returns false if 
+//  fLocal == true
+// or
+//  CHPL_COMM == "ugni"
+// of
+//  CHPL_COMM == "gasnet" && CHPL_GASNET_SEGMENT == "everything";
+// true otherwise.
 static bool
 needHeapVars() {
   if (fLocal) return false;
@@ -423,6 +659,16 @@ needHeapVars() {
   return true;
 }
 
+//
+// In the following, through makeHeapAllocations():
+//   refSet, refVec - symbols whose referencees need to be heap-allocated
+//   varSet, varVec - symbols that themselves need to be heap-allocated
+//
+
+// Traverses all 'begin' or 'on' task functions flagged as needing heap
+// allocation (for its formals) or flagged as nonblockikng.
+// Traverses all ref formals of these functions and adds them to the refSet and
+// refVec.
 static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec)
 {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -440,6 +686,18 @@ static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec)
 }
 
 
+// Traverses all DefExprs.
+//  If the symbol is a coforall index expression,
+//   If it is of reference type,
+//    Add it to refSet and refVec.
+//   Otherwise, if it is not of primitive type or other undesired cases,
+//    Add it to varSet and varVec.
+//  Otherwise, select module-level vars that are not private or extern.
+//   If the var is const and has value semantics except record-wrapped types,
+//    Insert a prim_private_broadcast call after the def.
+//   Otherwise, if it is a record-wrapped type, replicate it.
+//   Otherwise,
+//    Add it to varSet and varVec, so it will be put on the heap.
 static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                                 Vec<Symbol*>& refSet, Vec<Symbol*>& refVec,
                                 Vec<Symbol*>& varSet, Vec<Symbol*>& varVec)
@@ -462,10 +720,13 @@ static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                !def->sym->hasFlag(FLAG_PRIVATE) &&
                !def->sym->hasFlag(FLAG_EXTERN)) {
       if (def->sym->hasFlag(FLAG_CONST) &&
-          (is_int_type(def->sym->type) ||
+          (is_bool_type(def->sym->type) ||
+           is_enum_type(def->sym->type) ||
+           is_int_type(def->sym->type) ||
            is_uint_type(def->sym->type) ||
            is_real_type(def->sym->type) ||
-           def->sym->type == dtBool ||
+           is_imag_type(def->sym->type) ||
+           is_complex_type(def->sym->type) ||
            (isRecord(def->sym->type) &&
             !isRecordWrappedType(def->sym->type) &&
             // sync/single are currently classes, so this shouldn't matter
@@ -571,8 +832,22 @@ makeHeapAllocations() {
               }
             } else
               INT_FATAL(ref, "unexpected case");
-          } else
-            INT_FATAL(ref, "unexpected case");
+          } else { // !call->isPrimitive(PRIM_MOVE)
+            // This definition is created by passing the variable to a function
+            // by ref, out or inout intent.  We then assume that the function
+            // updates the reference.
+
+            // If the definition of the ref var does not appear in this
+            // function, then most likely it was established in an calling
+            // routine.
+            // We may need to distinguish between definition of the reference
+            // var itself (i.e. the establishment of an alias) as compared to
+            // when the variable being referenced is updated....
+            // In any case, it is safe to ignore this case, because either the
+            // value of the ref variable was established elsewhere, or it will
+            // appear in another def associated with the ref var.
+//            INT_FATAL(ref, "unexpected case");
+          }
         } else
           INT_FATAL(ref, "unexpected case");
       }
@@ -588,6 +863,19 @@ makeHeapAllocations() {
       // don't widen external variables
       continue;
     }
+
+    if (var->hasFlag(FLAG_PRINT_MODULE_INIT_INDENT_LEVEL)) {
+      // don't widen PrintModuleInitOrder variables
+      continue;
+    }
+
+    if (isModuleSymbol(var->defPoint->parentSymbol)) {
+      if (!requireWideReferences()) {
+        // don't heap-allocate globals
+        continue;
+      }
+    }
+
     SET_LINENO(var);
 
     if (ArgSymbol* arg = toArgSymbol(var)) {
@@ -608,7 +896,7 @@ makeHeapAllocations() {
       }
       continue;
     }
-    ClassType* heapType = buildHeapType(var->type);
+    AggregateType* heapType = buildHeapType(var->type);
 
     //
     // allocate local variables on the heap; global variables are put
@@ -618,20 +906,23 @@ makeHeapAllocations() {
         ((useMap.get(var) && useMap.get(var)->n > 0) ||
          (defMap.get(var) && defMap.get(var)->n > 0))) {
       SET_LINENO(var->defPoint);
-      var->defPoint->getStmtExpr()->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_CHPL_ALLOC, heapType->symbol, newMemDesc("local heap-converted data"))));
+      insertChplHereAlloc(var->defPoint->getStmtExpr(),
+                          true /*insertAfter*/,var, heapType,
+                          newMemDesc("local heap-converted data"));
       heapAllocatedVars.add(var);
     }
 
     for_defs(def, defMap, var) {
       if (CallExpr* call = toCallExpr(def->parentExpr)) {
         SET_LINENO(call);
+        // Do we need a case for PRIM_ASSIGN?
         if (call->isPrimitive(PRIM_MOVE)) {
           VarSymbol* tmp = newTemp(var->type);
           call->insertBefore(new DefExpr(tmp));
           call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(2)->remove()));
           call->replace(new CallExpr(PRIM_SET_MEMBER, call->get(1)->copy(), heapType->getField(1), tmp));
         } else if (call->isResolved() &&
-                   !strcmp("chpl__autoDestroy", call->isResolved()->name)) {
+                   call->isResolved()->hasFlag(FLAG_AUTO_DESTROY_FN)) {
           call->remove();
         } else {
           VarSymbol* tmp = newTemp(var->type);
@@ -654,7 +945,19 @@ makeHeapAllocations() {
             call->replace(new CallExpr(PRIM_GET_MEMBER, use->var, heapType->getField(1)));
           }
         } else if (call->isResolved()) {
-          if (!strcmp("chpl__autoDestroy", call->isResolved()->name)) {
+          if (call->isResolved()->hasFlag(FLAG_AUTO_DESTROY_FN_SYNC)) {
+            //
+            // We don't move sync vars to the heap and don't do the
+            // analysis to determine whether or not they outlive a
+            // task that refers to them, so conservatively remove
+            // their autodestroy calls to avoid freeing them before
+            // all tasks are done with them.  While this is
+            // unfortunate and needs to be fixed in the future to
+            // avoid leaks (TODO), it is better than the previous
+            // version of this code that would remove all autodestroy
+            // calls in this conditional.  See the commit message for
+            // this commenet for more detail.
+            //
             call->remove();
           } else if (actual_to_formal(use)->type == heapType) {
             // do nothing
@@ -668,7 +971,8 @@ makeHeapAllocations() {
                     call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
                     call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
                     call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE) ||
-                    call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
+                    call->isPrimitive(PRIM_WIDE_GET_LOCALE) || //I'm not sure this is cricket.
+                    call->isPrimitive(PRIM_WIDE_GET_NODE) ||// what member are we extracting?
                     call->isPrimitive(PRIM_SET_SVEC_MEMBER) ||
                     call->isPrimitive(PRIM_SET_MEMBER)) &&
                    call->get(1) == use) {
@@ -698,9 +1002,12 @@ makeHeapAllocations() {
 //
 static void
 reprivatizeIterators() {
+  if (fLocal)
+    return; // no need for privatization
+
   Vec<Symbol*> privatizedFields;
 
-  forv_Vec(ClassType, ct, gClassTypes) {
+  forv_Vec(AggregateType, ct, gAggregateTypes) {
     for_fields(field, ct) {
       if (ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
           field->type->symbol->hasFlag(FLAG_PRIVATIZED_CLASS)) {
@@ -717,7 +1024,7 @@ reprivatizeIterators() {
           CallExpr* move = toCallExpr(call->parentExpr);
           INT_ASSERT(move->isPrimitive(PRIM_MOVE));
           SymExpr* lhs = toSymExpr(move->get(1));
-          ClassType* ct = toClassType(se->var->type);
+          AggregateType* ct = toAggregateType(se->var->type);
           VarSymbol* tmp = newTemp(ct->getField("pid")->type);
           move->insertBefore(new DefExpr(tmp));
           lhs->replace(new SymExpr(tmp));
@@ -726,7 +1033,7 @@ reprivatizeIterators() {
           CallExpr* move = toCallExpr(call->parentExpr);
           INT_ASSERT(move->isPrimitive(PRIM_MOVE));
           SymExpr* lhs = toSymExpr(move->get(1));
-          ClassType* ct = toClassType(se->var->type);
+          AggregateType* ct = toAggregateType(se->var->type);
           VarSymbol* tmp = newTemp(ct->getField("pid")->type);
           move->insertBefore(new DefExpr(tmp));
           lhs->replace(new SymExpr(tmp));
@@ -736,7 +1043,7 @@ reprivatizeIterators() {
           move->insertAfter(new CallExpr(PRIM_MOVE, lhs, new CallExpr(PRIM_ADDR_OF, valTmp)));
           move->insertAfter(new CallExpr(PRIM_MOVE, valTmp, new CallExpr(PRIM_GET_PRIV_CLASS, lhs->getValType()->symbol, tmp)));
         } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
-          ClassType* ct = toClassType(se->var->type);
+          AggregateType* ct = toAggregateType(se->var->type);
           VarSymbol* tmp = newTemp(ct->getField("pid")->type);
           call->insertBefore(new DefExpr(tmp));
           call->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, call->get(3)->remove(), ct->getField("pid"))));
@@ -756,99 +1063,34 @@ reprivatizeIterators() {
 
 void
 parallel(void) {
-  //
-  // convert begin/cobegin/coforall/on blocks into nested functions and flatten
-  //
-  Vec<FnSymbol*> nestedFunctions;
-  forv_Vec(BlockStmt, block, gBlockStmts) {
-    if (CallExpr* info = block->blockInfo) {
-      SET_LINENO(block);
-      FnSymbol* fn = NULL;
-      VarSymbol* oldSubLoc = NULL;
-      if (info->isPrimitive(PRIM_BLOCK_BEGIN)) {
-        fn = new FnSymbol("begin_fn");
-        fn->addFlag(FLAG_BEGIN);
-      } else if (info->isPrimitive(PRIM_BLOCK_COBEGIN)) {
-        fn = new FnSymbol("cobegin_fn");
-        fn->addFlag(FLAG_COBEGIN_OR_COFORALL);
-      } else if (info->isPrimitive(PRIM_BLOCK_COFORALL)) {
-        fn = new FnSymbol("coforall_fn");
-        fn->addFlag(FLAG_COBEGIN_OR_COFORALL);
-      } else if (info->isPrimitive(PRIM_BLOCK_ON) ||
-                 info->isPrimitive(PRIM_BLOCK_ON_NB)) {
-        fn = new FnSymbol("on_fn");
-        fn->addFlag(FLAG_ON);
-        if (block->blockInfo->isPrimitive(PRIM_BLOCK_ON_NB))
-          fn->addFlag(FLAG_NON_BLOCKING);
-        // This is now a real locale arg.
-        ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_locale_arg", dtLocaleID);
-        fn->insertFormalAtTail(arg);
-        // Special case for the first argument of an on_fn, which carries the destination locale ID.
-        // We set the sublocale field in task-private data before executing the body of the task,
-        // saving off a copy for restoration at the end of the on block.
-        oldSubLoc = newTemp(dtInt[INT_SIZE_32]);
-        fn->insertAtTail(new DefExpr(oldSubLoc));
-        fn->insertAtTail(new CallExpr(PRIM_MOVE, oldSubLoc, new CallExpr(PRIM_GET_SUBLOC_ID)));
-        fn->insertAtTail(new CallExpr(PRIM_SET_SUBLOC_ID, new CallExpr(PRIM_LOC_GET_SUBLOC, arg)));
-      }
-      else if (info->isPrimitive(PRIM_ON_GPU)) {
-        fn = new FnSymbol("on_gpu_kernel");
-        fn->addFlag(FLAG_GPU_ON);
-        //Add two formal arguments:
-        // nBlocks = Number of Thread blocks
-        // threadsPerBlock = Number of threads per single thread block
-        ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "nBlocks", dtInt[INT_SIZE_DEFAULT]);
-        ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "threadsPerBlock", dtInt[INT_SIZE_DEFAULT]);
-        fn->insertFormalAtTail(arg1);
-        fn->insertFormalAtTail(arg2);
-      }
-      else if (// info->isPrimitive(PRIM_BLOCK_PARAM_LOOP) || // resolution should remove this case.
-               info->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
-               info->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP) ||
-               info->isPrimitive(PRIM_BLOCK_FOR_LOOP) ||
-               info->isPrimitive(PRIM_BLOCK_XMT_PRAGMA_FORALL_I_IN_N) ||
-               info->isPrimitive(PRIM_BLOCK_XMT_PRAGMA_NOALIAS) ||
-               info->isPrimitive(PRIM_BLOCK_LOCAL) ||
-               info->isPrimitive(PRIM_BLOCK_UNLOCAL))
-        ; // Not a parallel block construct, so do nothing special.
-      else
-        INT_FATAL(block, "Unhandled blockInfo case.");
+  Vec<FnSymbol*> taskFunctions;
 
-      if (fn) {
-        nestedFunctions.add(fn);
-        CallExpr* call = new CallExpr(fn);
-        if (block->blockInfo->isPrimitive(PRIM_BLOCK_ON) ||
-            block->blockInfo->isPrimitive(PRIM_BLOCK_ON_NB))
-          // This puts the target locale expression "onExpr" at the start of the call.
-          call->insertAtTail(block->blockInfo->get(1)->remove());
-        else if (block->blockInfo->isPrimitive(PRIM_ON_GPU)) {
-          call->insertAtTail(block->blockInfo->get(1)->remove());
-          call->insertAtTail(block->blockInfo->get(1)->remove());
-        }
-
-        block->insertBefore(new DefExpr(fn));
-        block->insertBefore(call);
-        block->blockInfo->remove();
-        // This block becomes the body of the new function.
-        fn->insertAtTail(block->remove());
-        if (oldSubLoc) // only true for ON blocks
-          fn->insertAtTail(new CallExpr(PRIM_SET_SUBLOC_ID, oldSubLoc));
-        fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
-        fn->retType = dtVoid;
-      }
+  // Collect the task functions for processing.
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (isTaskFun(fn)) {
+      taskFunctions.add(fn);
+      // Would need to flatten them if they are not already.
+      INT_ASSERT(isGlobal(fn));
     }
   }
 
-  flattenNestedFunctions(nestedFunctions);
-
   compute_call_sites();
 
-  remoteValueForwarding(nestedFunctions);
+  // TODO: Move this into a separate pass.
+  remoteValueForwarding(taskFunctions);
 
   reprivatizeIterators();
 
   makeHeapAllocations();
 
+  insertEndCounts();
+
+  passArgsToNestedFns(taskFunctions);
+}
+
+
+static void insertEndCounts()
+{
   Vec<FnSymbol*> queue;
   Map<FnSymbol*,Symbol*> endCountMap;
 
@@ -877,88 +1119,51 @@ parallel(void) {
       call->insertAtTail(endCountMap.get(pfn));
     }
   }
+}
 
+
+// For each "nested" function created to represent remote execution, 
+// bundle args so they can be passed through a fork function.
+// Fork functions in general have the signature
+//  fork(int32_t destNode, void (*)(void* args), void* args, ...);
+// In Chapel, we wrap the arguments passed to the nested function in an object
+// whose type is just a list of the arguments passed to the nested function.
+// Those arguments consist of variables in the scope of the nested function call
+// that are accessed within the body of the nested function (recursively, of course).
+static void passArgsToNestedFns(Vec<FnSymbol*>& nestedFunctions)
+{
   forv_Vec(FnSymbol, fn, nestedFunctions) {
+
+    BundleArgsFnData baData = bundleArgsFnDataInit;
+
     forv_Vec(CallExpr, call, *fn->calledBy) {
       SET_LINENO(call);
-      // Overhead is high for on statements if locale==here, so
-      //  perform a simple optimization here to call fn() directly if
-      //  this is the case.  In the non-blocking case if the serial
-      //  state is false, we could effectively put a begin before the
-      //  non-blocking fork but the resulting code would have similar
-      //  overhead.  In the non-blocking case when the serial state is
-      //  true, we could perform this optimization, but in our current
-      //  implementation, we don't generate code for the two paths.
-      //  Rather we use a macro, so the optimization would have to be
-      //  performed within the macro.
-      if (fn->hasFlag(FLAG_ON) && !fn->hasFlag(FLAG_NON_BLOCKING)) {
-        CallExpr *newCall = call->copy();
-        BlockStmt* lblock = new BlockStmt();
-        lblock->insertAtHead(newCall);
-        BlockStmt* rblock = new BlockStmt();
+      bundleArgs(call, baData);
+    }
 
-        INT_ASSERT(call->get(1));
-        // nodeID is the node ID for the datum used in the "on" expression.
-        CallExpr* nodeID = new CallExpr(PRIM_LOC_GET_NODE, call->get(1)->copy());
-        CallExpr* localeID = new CallExpr(PRIM_NODE_ID);    // Runtime (GASNet) node.
-        VarSymbol* tmpNode = newTemp(nodeID->typeInfo());
-        VarSymbol* tmpLoc = newTemp(localeID->typeInfo());
-        VarSymbol* tmpBool = newTemp(dtBool);
-        call->insertBefore(new DefExpr(tmpNode));
-        call->insertBefore(new DefExpr(tmpLoc));
-        call->insertBefore(new DefExpr(tmpBool));
-        call->insertBefore(new CallExpr(PRIM_MOVE, tmpNode, nodeID));
-        call->insertBefore(new CallExpr(PRIM_MOVE, tmpLoc, localeID));
-        call->insertBefore(new CallExpr(PRIM_MOVE, tmpBool,
-                                        new CallExpr(PRIM_EQUAL, tmpNode, tmpLoc)));
-        call->insertBefore(new CondStmt(new SymExpr(tmpBool), lblock, rblock));
-        rblock->insertAtHead(call->remove());
+    if (fn->hasFlag(FLAG_ON))
+    {
+      // Now we can remove the dummy locale arg from the on_fn
+      DefExpr* localeArg = toDefExpr(fn->formals.get(1));
+      std::vector<SymExpr*> symExprs;
+      collectSymExprsSTL(fn->body, symExprs);
+      for_vector(SymExpr, sym, symExprs)
+      {
+        if (sym->var->defPoint == localeArg)
+          sym->getStmtExpr()->remove();
       }
-      bundleArgs(call);
+      localeArg->remove();
     }
   }
 }
 
-ClassType* wideStringType = NULL;
-
-
-static void
-buildWideClass(Type* type) {
-  SET_LINENO(type->symbol);
-  ClassType* wide = new ClassType(CLASS_RECORD);
-  TypeSymbol* wts = new TypeSymbol(astr("__wide_", type->symbol->cname), wide);
-  wts->addFlag(FLAG_WIDE_CLASS);
-  theProgram->block->insertAtTail(new DefExpr(wts));
-  wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtLocaleID)));
-  wide->fields.insertAtTail(new DefExpr(new VarSymbol("addr", type)));
-
-  //
-  // Strings need an extra field in their wide class to hold their length
-  //
-  if (type == dtString) {
-    wide->fields.insertAtTail(new DefExpr(new VarSymbol("size", dtInt[INT_SIZE_DEFAULT])));
-    if (wideStringType) {
-      INT_FATAL("Created two wide string types");
-    }
-    wideStringType = wide;
-  }
-
-  //
-  // set reference type of wide class to reference type of class since
-  // it will be widened
-  //
-  if (type->refType)
-    wide->refType = type->refType;
-
-  wideClassMap.put(type, wide);
-}
 
 Type* getOrMakeRefTypeDuringCodegen(Type* type) {
   Type* refType;
   refType = type->refType;
   if( ! refType ) {
     SET_LINENO(type->symbol);
-    ClassType* ref = new ClassType(CLASS_RECORD);
+    AggregateType* ref = new AggregateType(AGGREGATE_RECORD);
     TypeSymbol* refTs = new TypeSymbol(astr("_ref_", type->symbol->cname), ref);
     refTs->addFlag(FLAG_REF);
     refTs->addFlag(FLAG_NO_DEFAULT_FUNCTIONS);
@@ -989,7 +1194,7 @@ Type* getOrMakeWideTypeDuringCodegen(Type* refType) {
   if( wideType ) return wideType;
 
   // Now, create a wide pointer type.
-  ClassType* wide = new ClassType(CLASS_RECORD);
+  AggregateType* wide = new AggregateType(AGGREGATE_RECORD);
   TypeSymbol* wts = new TypeSymbol(astr("chpl____wide_", refType->symbol->cname), wide);
   if( refType->symbol->hasFlag(FLAG_REF) || refType == dtNil )
     wts->addFlag(FLAG_WIDE);
@@ -1008,716 +1213,28 @@ Type* getOrMakeWideTypeDuringCodegen(Type* refType) {
 
  
 //
-// This is a utility function that handles a case when wide strings
-// are passed to extern functions.  If strings were a little better
-// behaved, it arguably wouldn't/shouldn't be required.
+// Returns true if the type t is a reference to a wide string
 //
-bool passingWideStringToExtern(Type* t) {
-  ClassType* ct = toClassType(t);
-  if (ct) {
+// This is used to handle cases where wide strings are passed to
+// functions that require local arguments.  If strings were a little
+// better behaved, it arguably wouldn't/shouldn't be required.
+//
+bool isRefWideString(Type* t) {
+  if (isReferenceType(t)) {
+    AggregateType* ct = toAggregateType(t);
+    INT_ASSERT(ct);
     Symbol* valField = ct->getField("_val", false);
-    if (valField && valField->type == wideStringType) {
-      return true;
-    }
+    INT_ASSERT(valField);
+    return isWideString(valField->type);
   }
   return false;
 }
 
-//
-// The argument expr is a use of a wide reference. Insert a check to ensure
-// that it is on the current locale, then drop its wideness by moving the
-// addr field into a non-wide of otherwise the same type. Then, replace its
-// use with the non-wide version.
-//
-static void insertLocalTemp(Expr* expr) {
-  SymExpr* se = toSymExpr(expr);
-  Expr* stmt = expr->getStmtExpr();
-  INT_ASSERT(se && stmt);
-  SET_LINENO(se);
-  VarSymbol* var = newTemp(astr("local_", se->var->name),
-                           se->var->type->getField("addr")->type);
-  if (!fNoLocalChecks) {
-    stmt->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, se->copy()));
-  }
-  stmt->insertBefore(new DefExpr(var));
-  stmt->insertBefore(new CallExpr(PRIM_MOVE, var, se->copy()));
-  se->replace(new SymExpr(var));
+bool isWideString(Type* t) {
+  if (!requireWideReferences()) return false; // no wide string type will exist if wide references weren't created
+  INT_ASSERT(wideStringType); // should only be called after it exists!
+  if (t == NULL) return false;
+  if( t == wideStringType ) return true;
+  return false;
 }
 
-
-//
-// If call has the potential to cause communication, assert that the wide
-// reference that might cause communication is local and remove its wide-ness
-//
-// The organization of this function follows the order of CallExpr::codegen()
-// leaving out primitives that don't communicate.
-//
-static void localizeCall(CallExpr* call) {
-  if (call->primitive) {
-    switch (call->primitive->tag) {
-    case PRIM_ARRAY_SET: /* Fallthru */
-    case PRIM_ARRAY_SET_FIRST:
-      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        insertLocalTemp(call->get(1));
-      }
-      break;
-    case PRIM_MOVE:
-      if (CallExpr* rhs = toCallExpr(call->get(2))) {
-        if (rhs->isPrimitive(PRIM_WIDE_GET_LOCALE)) {
-          if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
-            if (rhs->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-              insertLocalTemp(rhs->get(1));
-            }
-          }
-          break;
-        } else if (rhs->isPrimitive(PRIM_DEREF)) {
-          if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
-              rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-            insertLocalTemp(rhs->get(1));
-            if (!rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
-              INT_ASSERT(rhs->get(1)->typeInfo() == dtString);
-              // special handling for wide strings
-              rhs->replace(rhs->get(1)->remove());
-            }
-          }
-          break;
-        } else if (rhs->isPrimitive(PRIM_GET_MEMBER) ||
-                   rhs->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
-                   rhs->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
-                   rhs->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
-          if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
-              rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-            SymExpr* sym = toSymExpr(rhs->get(2));
-            INT_ASSERT(sym);
-            if (!sym->var->hasFlag(FLAG_SUPER_CLASS)) {
-              insertLocalTemp(rhs->get(1));
-            }
-          }
-          break;
-        } else if (rhs->isPrimitive(PRIM_ARRAY_GET) ||
-                   rhs->isPrimitive(PRIM_ARRAY_GET_VALUE)) {
-          if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-            SymExpr* lhs = toSymExpr(call->get(1));
-            Expr* stmt = call->getStmtExpr();
-            INT_ASSERT(lhs && stmt);
-            insertLocalTemp(rhs->get(1));
-            VarSymbol* localVar = NULL;
-            if (rhs->isPrimitive(PRIM_ARRAY_GET))
-              localVar = newTemp(astr("local_", lhs->var->name),
-                                 lhs->var->type->getField("addr")->type);
-            else
-              localVar = newTemp(astr("local_", lhs->var->name),
-                                 lhs->var->type);
-            stmt->insertBefore(new DefExpr(localVar));
-            lhs->replace(new SymExpr(localVar));
-            stmt->insertAfter(new CallExpr(PRIM_MOVE, lhs,
-                                           new SymExpr(localVar)));
-          }
-          break;
-        } else if (rhs->isPrimitive(PRIM_GET_UNION_ID)) {
-          if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
-            insertLocalTemp(rhs->get(1));
-          }
-          break;
-        } else if (rhs->isPrimitive(PRIM_TESTCID) ||
-                   rhs->isPrimitive(PRIM_GETCID)) {
-          if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-            insertLocalTemp(rhs->get(1));
-          }
-          break;
-        }
-        ;
-      }
-      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
-          !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        break;
-      }
-      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
-          !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
-          !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
-        insertLocalTemp(call->get(1));
-      }
-      break;
-    case PRIM_DYNAMIC_CAST:
-      if (call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        insertLocalTemp(call->get(2));
-        if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
-            call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
-          toSymExpr(call->get(1))->var->type = call->get(1)->typeInfo()->getField("addr")->type;
-        }
-      }
-      break;
-    case PRIM_SETCID:
-      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        insertLocalTemp(call->get(1));
-      }
-      break;
-    case PRIM_SET_UNION_ID:
-      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
-        insertLocalTemp(call->get(1));
-      }
-      break;
-    case PRIM_SET_MEMBER:
-    case PRIM_SET_SVEC_MEMBER:
-      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
-          call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
-        insertLocalTemp(call->get(1));
-      }
-      break;
-    default:
-      break;
-    }
-  }
-}
-
-
-//
-// Do a breadth first search starting from functions generated for local blocks
-// for all function calls in each level of the search, if they directly cause
-// communication, add a local temp that isn't wide. If it is a resolved call,
-// meaning that it isn't a primitive or external function, clone it and add it
-// to the queue of functions to handle at the next iteration of the BFS.
-//
-static void handleLocalBlocks() {
-  Map<FnSymbol*,FnSymbol*> cache; // cache of localized functions
-  Vec<BlockStmt*> queue; // queue of blocks to localize
-
-  forv_Vec(BlockStmt, block, gBlockStmts) {
-    if (block->parentSymbol)
-      if (block->blockInfo)
-        if (block->blockInfo->isPrimitive(PRIM_BLOCK_LOCAL))
-          queue.add(block);
-  }
-
-  forv_Vec(BlockStmt, block, queue) {
-    Vec<CallExpr*> calls;
-    collectCallExprs(block, calls);
-    forv_Vec(CallExpr, call, calls) {
-      localizeCall(call);
-      if (FnSymbol* fn = call->isResolved()) {
-        if (FnSymbol* alreadyLocal = cache.get(fn)) {
-          call->baseExpr->replace(new SymExpr(alreadyLocal));
-        } else {
-          if (!fn->hasFlag(FLAG_EXTERN)) {
-            FnSymbol* local = fn->copy();
-            local->name = astr("_local_", fn->name);
-            local->cname = astr("_local_", fn->cname);
-            fn->defPoint->insertBefore(new DefExpr(local));
-            call->baseExpr->replace(new SymExpr(local));
-            queue.add(local->body);
-            cache.put(fn, local);
-            cache.put(local, local); // to handle recursion
-            if (local->retType->symbol->hasFlag(FLAG_WIDE)) {
-              CallExpr* ret = toCallExpr(local->body->body.tail);
-              INT_ASSERT(ret && ret->isPrimitive(PRIM_RETURN));
-              Type* narrowType = local->retType->getField("addr")->type;
-              local->retType = narrowType;
-              VarSymbol* tmp = newTemp(narrowType);
-              ret->insertBefore(new DefExpr(tmp));
-              if (!fNoLocalChecks)
-                ret->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, ret->get(1)->copy()));
-              ret->insertBefore(new CallExpr(PRIM_MOVE, tmp, ret->get(1)->copy()));
-              ret->get(1)->replace(new SymExpr(tmp));
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-
-//
-// change all classes into wide classes
-// change all references into wide references
-//
-void
-insertWideReferences(void) {
-  SET_LINENO(baseModule);
-  FnSymbol* heapAllocateGlobals = new FnSymbol("chpl__heapAllocateGlobals");
-  heapAllocateGlobals->retType = dtVoid;
-  theProgram->block->insertAtTail(new DefExpr(heapAllocateGlobals));
-  heapAllocateGlobals->insertAtHead(new CallExpr(PRIM_ALLOC_GVR));
-
-  if (fLocal) {
-    heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
-    return;
-  }
-
-  Vec<Symbol*> heapVars;
-  forv_Vec(DefExpr, def, gDefExprs) {
-    if (!fLocal &&
-        isModuleSymbol(def->parentSymbol) &&
-        def->parentSymbol != rootModule &&
-        isVarSymbol(def->sym) &&
-        def->sym->type->symbol->hasFlag(FLAG_HEAP)) {
-      heapVars.add(def->sym);
-    }
-  }
-
-  convertNilToObject();
-  wideClassMap.clear();
-  buildWideClasses();
-  widenClasses();
-
-  wideRefMap.clear();
-  buildWideRefMap();
-  widenRefs();
-  insertElementAccessTemps();
-  narrowWideClassesThroughCalls();
-  insertWideClassTempsForNil();
-  insertWideCastTemps();
-  derefWideStringActuals();
-  derefWideRefsToWideClasses();
-  widenGetPrivClass();
-
-  CallExpr* nodeID = new CallExpr(PRIM_NODE_ID);
-  VarSymbol* tmp = newTemp(nodeID->typeInfo());
-  VarSymbol* tmpBool = newTemp(dtBool);
-
-  heapAllocateGlobals->insertAtTail(new DefExpr(tmp));
-  heapAllocateGlobals->insertAtTail(new DefExpr(tmpBool));
-  heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_MOVE, tmp, nodeID));
-  heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_MOVE, tmpBool, new CallExpr(PRIM_EQUAL, tmp, new_IntSymbol(0))));
-  BlockStmt* block = new BlockStmt();
-  forv_Vec(Symbol, sym, heapVars) {
-    block->insertAtTail(new CallExpr(PRIM_MOVE, sym, new CallExpr(PRIM_CHPL_ALLOC, sym->type->getField("addr")->type->symbol, newMemDesc("global heap-converted data"))));
-  }
-  heapAllocateGlobals->insertAtTail(new CondStmt(new SymExpr(tmpBool), block));
-  int i = 0;
-  forv_Vec(Symbol, sym, heapVars) {
-    heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_HEAP_REGISTER_GLOBAL_VAR, new_IntSymbol(i++), sym));
-  }
-  heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_HEAP_BROADCAST_GLOBAL_VARS, new_IntSymbol(i)));
-  heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
-  numGlobalsOnHeap = i;
-
-  handleLocalBlocks();
-  narrowWideReferences();
-  moveAddressSourcesToTemp();
-}
-
-
-static void convertNilToObject()
-{
-  //
-  // change dtNil return type into dtObject
-  // replace symbols of type nil by nil
-  //
-  forv_Vec(DefExpr, def, gDefExprs) {
-    if (FnSymbol* fn = toFnSymbol(def->sym)) {
-      if (fn->retType == dtNil)
-        fn->retType = dtObject;
-    } else if (!isTypeSymbol(def->sym)) {
-      if (def->sym != gNil &&
-          def->sym->type == dtNil &&
-          !isTypeSymbol(def->parentSymbol))
-        def->remove();
-    }
-  }
-  forv_Vec(SymExpr, se, gSymExprs) {
-    if (se->var != gNil && se->var->type == dtNil) {
-      se->var = gNil;
-      if (CallExpr* parent = toCallExpr(se->parentExpr))
-        if (parent->isPrimitive(PRIM_MOVE) && parent->get(1) == se)
-          parent->remove();
-    }
-  }
-}
-
-
-static void buildWideClasses()
-{
-  //
-  // build wide class type for every class type
-  //
-  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    ClassType* ct = toClassType(ts->type);
-    if (ct && isClass(ct) && !ts->hasFlag(FLAG_REF) && !ts->hasFlag(FLAG_NO_WIDE_CLASS)) {
-      buildWideClass(ct);
-    }
-  }
-  buildWideClass(dtString);
-}
-
-
-static void widenClasses()
-{
-  //
-  // change all classes into wide classes
-  //
-  forv_Vec(DefExpr, def, gDefExprs) {
-    //
-    // do not widen literals or nil reference
-    //
-    if (VarSymbol* var = toVarSymbol(def->sym))
-      if (var->immediate)
-        continue;
-
-    //
-    // do not change class field in wide class type
-    //
-    if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol))
-      if (ts->hasFlag(FLAG_WIDE_CLASS))
-        continue;
-
-    //
-    // do not change super class field - it's really a record
-    //
-    if (def->sym->hasFlag(FLAG_SUPER_CLASS))
-      continue;
-
-    if (FnSymbol* fn = toFnSymbol(def->sym)) {
-      if (Type* wide = wideClassMap.get(fn->retType))
-        if (!fn->hasEitherFlag(FLAG_EXTERN,FLAG_LOCAL))
-          fn->retType = wide;
-    } else if (!isTypeSymbol(def->sym)) {
-      if (Type* wide = wideClassMap.get(def->sym->type)) {
-        if (def->parentSymbol->hasEitherFlag(FLAG_EXTERN,FLAG_LOCAL)) {
-          if (toArgSymbol(def->sym))
-            continue; // don't change extern function's arguments
-        }
-        def->sym->type = wide;
-      }
-    }
-  }
-
-  //
-  // change arrays of classes into arrays of wide classes
-  //
-  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (ts->hasFlag(FLAG_DATA_CLASS)) {
-      if (Type* nt = wideClassMap.get(getDataClassType(ts)->type)) {
-        setDataClassType(ts, nt->symbol);
-      }
-    }
-  }
-}
-
-
-static void buildWideRefMap()
-{
-  //
-  // build wide reference type for every reference type
-  //
-  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (ts->hasFlag(FLAG_REF)) {
-      ClassType* wide = new ClassType(CLASS_RECORD);
-      TypeSymbol* wts = new TypeSymbol(astr("__wide_", ts->cname), wide);
-      wts->addFlag(FLAG_WIDE);
-      theProgram->block->insertAtTail(new DefExpr(wts));
-      wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtLocaleID)));
-      wide->fields.insertAtTail(new DefExpr(new VarSymbol("addr", ts->type)));
-      wideRefMap.put(ts->type, wide);
-    }
-  }
-}
-
-
-static void widenRefs()
-{
-  //
-  // change all references into wide references
-  //
-  forv_Vec(DefExpr, def, gDefExprs) {
-    //
-    // do not change reference field in wide reference type
-    //
-    if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol))
-      if (ts->hasFlag(FLAG_WIDE))
-        continue;
-
-    //
-    // do not change super field - it's really a record
-    //
-    if (def->sym->hasFlag(FLAG_SUPER_CLASS))
-      continue;
-
-    if (FnSymbol* fn = toFnSymbol(def->sym)) {
-      if (Type* wide = wideRefMap.get(fn->retType))
-        fn->retType = wide;
-    } else if (!isTypeSymbol(def->sym)) {
-      if (Type* wide = wideRefMap.get(def->sym->type))
-        def->sym->type = wide;
-    }
-  }
-}
-
-
-static void insertElementAccessTemps()
-{
-  //
-  // Special case string literals passed to functions, set member primitives
-  // and array element initializers by pushing them into temps first.
-  //
-  forv_Vec(SymExpr, se, gSymExprs) {
-    if (se->var->type == dtString) {
-      if (VarSymbol* var = toVarSymbol(se->var)) {
-        if (var->immediate) {
-          if (CallExpr* call = toCallExpr(se->parentExpr)) {
-            if (call->isPrimitive(PRIM_VMT_CALL) ||
-                (call->isResolved() && !call->isResolved()->hasEitherFlag(FLAG_EXTERN,FLAG_LOCAL))) {
-              if (Type* type = actual_to_formal(se)->typeInfo()) {
-                VarSymbol* tmp = newTemp(type);
-                SET_LINENO(se);
-                call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-                se->replace(new SymExpr(tmp));
-                call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
-              }
-            } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
-              if (SymExpr* wide = toSymExpr(call->get(2))) {
-                Type* type = wide->var->type;
-                VarSymbol* tmp = newTemp(type);
-                SET_LINENO(se);
-                call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-                se->replace(new SymExpr(tmp));
-                call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
-              }
-            } else if (call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
-              Type* valueType = call->get(1)->getValType();
-              Type* componentType = valueType->getField("x1")->type;
-              if (componentType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-                VarSymbol* tmp = newTemp(componentType);
-                SET_LINENO(se);
-                call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-                se->replace(new SymExpr(tmp));
-                call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
-              }
-            } else if (call->isPrimitive(PRIM_ARRAY_SET_FIRST)) {
-              if (SymExpr* wide = toSymExpr(call->get(3))) {
-                Type* type = wide->var->type;
-                VarSymbol* tmp = newTemp(wideClassMap.get(type));
-                call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-                se->replace(new SymExpr(tmp));
-                call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-
-static void narrowWideClassesThroughCalls()
-{
-  //
-  // Turn calls to extern functions involving wide classes into moves
-  // of the wide class into a non-wide type and then use that in the call.
-  // After the call, copy the value back into the wide class.
-  //
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isResolved() && call->isResolved()->hasEitherFlag(FLAG_EXTERN,FLAG_LOCAL)) {
-      for_alist(arg, call->argList) {
-        SymExpr* sym = toSymExpr(arg);
-        INT_ASSERT(sym);
-        Type* symType = sym->typeInfo();
-        if (symType->symbol->hasFlag(FLAG_WIDE_CLASS) ||
-            symType->symbol->hasFlag(FLAG_WIDE)) {
-          Type* narrowType = symType->getField("addr")->type;
-          
-          VarSymbol* var = newTemp(narrowType);
-          SET_LINENO(call);
-          call->getStmtExpr()->insertBefore(new DefExpr(var));
-          if ((symType->symbol->hasFlag(FLAG_WIDE_CLASS) &&
-               var->type->symbol->hasEitherFlag(FLAG_EXTERN,FLAG_LOCAL)) ||
-              passingWideStringToExtern(narrowType)) {
-            // Insert a local check because we cannot reflect any changes
-            // made to the class back to another locale
-            if (!fNoLocalChecks)
-              call->getStmtExpr()->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, sym->copy()));
-            // If we pass a extern class to an extern function, we must treat
-            // it like a reference (this is by definition)
-            call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, sym->copy()));
-          } else if (var->type->symbol->hasEitherFlag(FLAG_REF,FLAG_DATA_CLASS))
-            call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, sym->copy()));
-          else
-            call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_DEREF, sym->copy())));
-          call->getStmtExpr()->insertAfter(new CallExpr(PRIM_MOVE, sym->copy(), var));
-          sym->replace(new SymExpr(var));
-        }
-      }
-    }
-  }
-}
-
-
-static void insertWideClassTempsForNil()
-{
-  //
-  // insert wide class temps for nil
-  //
-  forv_Vec(SymExpr, se, gSymExprs) {
-    if (se->var == gNil) {
-      if (CallExpr* call = toCallExpr(se->parentExpr)) {
-        if (call->isResolved()) {
-          if (Type* type = actual_to_formal(se)->typeInfo()) {
-            if (type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-              VarSymbol* tmp = newTemp(type);
-              SET_LINENO(se);
-              call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-              se->replace(new SymExpr(tmp));
-              call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
-            }
-          }
-        } else if (call->isPrimitive(PRIM_MOVE)) {
-          if (Type* wtype = call->get(1)->typeInfo()) {
-            if (wtype->symbol->hasFlag(FLAG_WIDE)) {
-              if (Type* wctype = wtype->getField("addr")->type->getField("_val")->type) {
-                if (wctype->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-                  VarSymbol* tmp = newTemp(wctype);
-                  SET_LINENO(se);
-                  call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-                  se->replace(new SymExpr(tmp));
-                  call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
-                }
-              }
-            }
-          }
-        } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
-          if (Type* wctype = call->get(2)->typeInfo()) {
-            if (wctype->symbol->hasFlag(FLAG_WIDE_CLASS) ||
-                wctype->symbol->hasFlag(FLAG_WIDE)) {
-              VarSymbol* tmp = newTemp(wctype);
-              SET_LINENO(se);
-              call->insertBefore(new DefExpr(tmp));
-              se->replace(new SymExpr(tmp));
-              call->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
-            }
-          }
-        } else if (call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
-          Type* valueType = call->get(1)->getValType();
-          Type* componentType = valueType->getField("x1")->type;
-          if (componentType->symbol->hasFlag(FLAG_WIDE_CLASS) ||
-              componentType->symbol->hasFlag(FLAG_WIDE)) {
-            VarSymbol* tmp = newTemp(componentType);
-            SET_LINENO(se);
-            call->insertBefore(new DefExpr(tmp));
-            se->replace(new SymExpr(tmp));
-            call->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
-          }
-        } else if (call->isPrimitive(PRIM_RETURN)) {
-          FnSymbol* fn = toFnSymbol(call->parentSymbol);
-          INT_ASSERT(fn);
-          VarSymbol* tmp = newTemp(fn->retType);
-          SET_LINENO(se);
-          call->insertBefore(new DefExpr(tmp));
-          call->insertBefore(new CallExpr(PRIM_MOVE, tmp, gNil));
-          se->var = tmp;
-        }
-      }
-    }
-  }
-}
-
-
-static void insertWideCastTemps()
-{
-  //
-  // insert cast temps if lhs type does not match cast type
-  //   allows separation of the remote put with the wide cast
-  //
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIM_CAST)) {
-      if (CallExpr* move = toCallExpr(call->parentExpr)) {
-        if (move->isPrimitive(PRIM_MOVE)) {
-          if (move->get(1)->typeInfo() != call->typeInfo()) {
-            VarSymbol* tmp = newTemp(call->typeInfo());
-            SET_LINENO(call);
-            move->insertBefore(new DefExpr(tmp));
-            call->replace(new SymExpr(tmp));
-            move->insertBefore(new CallExpr(PRIM_MOVE, tmp, call));
-          }
-        }
-      }
-    }
-  }
-}
-
-
-static void derefWideStringActuals()
-{
-  //
-  // dereference wide string actual argument to primitive
-  //
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->parentSymbol && call->primitive) {
-      if (call->primitive->tag == PRIM_UNKNOWN ||
-          call->isPrimitive(PRIM_CAST)) {
-        for_actuals(actual, call) {
-          if (actual->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-            if (actual->typeInfo()->getField("addr")->typeInfo() == dtString) {
-              VarSymbol* tmp = newTemp(actual->typeInfo()->getField("addr")->typeInfo());
-              SET_LINENO(call);
-              call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-              call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, actual->copy())));
-              actual->replace(new SymExpr(tmp));
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-
-static void derefWideRefsToWideClasses()
-{
-  //
-  // dereference wide references to wide classes in select primitives;
-  // this simplifies the implementation of these primitives
-  //
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIM_GET_MEMBER) ||
-        call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
-        call->isPrimitive(PRIM_SET_MEMBER)) {
-      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
-          call->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        VarSymbol* tmp = newTemp(call->get(1)->getValType());
-        SET_LINENO(call);
-        call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-        call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, call->get(1)->remove())));
-        call->insertAtHead(tmp);
-      }
-    }
-  }
-}
-
-
-static void widenGetPrivClass()
-{
-  //
-  // widen class types in certain primitives, e.g., GET_PRIV_CLASS
-  //
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIM_GET_PRIV_CLASS)) {
-      SET_LINENO(call);
-      if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
-        call->get(1)->replace(new SymExpr(wideClassMap.get(call->get(1)->typeInfo())->symbol));
-      else
-        call->get(1)->replace(new SymExpr(call->get(1)->typeInfo()->symbol));
-    }
-  }
-}
-
-static void moveAddressSourcesToTemp()
-{
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIM_MOVE)) {
-      if ((call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
-           call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) &&
-          call->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
-          call->get(2)->typeInfo() == call->get(1)->getValType()->getField("addr")->type) {
-        //
-        // widen rhs class
-        //
-        VarSymbol* tmp = newTemp(call->get(1)->getValType());
-        SET_LINENO(call);
-        call->insertBefore(new DefExpr(tmp));
-        call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(2)->remove()));
-        call->insertAtTail(tmp);
-      }
-    }
-  }
-}

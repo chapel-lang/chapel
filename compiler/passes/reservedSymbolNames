@@ -1,5 +1,6 @@
   // reserved words in C
   auto
+  bool
   break
   case
   char
@@ -52,10 +53,13 @@
   close
   fwrite
   fread
+  fsync
   main
   open
   pow
   printf
+  scanf
+  sync
   quad
   read
   sleep
@@ -101,7 +105,6 @@
   isnan
   random
   truncate
-  int
   time
   nearbyint
   round
@@ -206,15 +209,13 @@
   INTMAX_C
   UINTMAX_C
 
+  // symbols from stdio.h
+  EOF
+
   // symbols from QIO
   EEOF
   ESHORT
   EFORMAT
-
-  // additional reserved words in the MTA/XMT compiler
-  ; if (!strcmp(CHPL_TASKS, "mta")) {
-  purge
-  task }
 
   // reserved words in c++
   this
@@ -222,3 +223,27 @@
   assert
 
   flag
+
+  // New additions from the PGI 13.3 C runtime libpgc.a (relaxedmath.o):
+  alloca
+  add128
+  add192
+  eq128
+  le128
+  lt128
+  ne128
+  sub128
+  sub192
+  a1
+  a2
+  a3
+  inc
+  inv32
+  invln2
+  isign
+  ln2
+  pi
+  table
+  ten23
+  ts
+  two

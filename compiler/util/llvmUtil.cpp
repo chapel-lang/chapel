@@ -5,8 +5,6 @@
 
 #ifdef HAVE_LLVM
 
-#include "codegen.h"
-
 static
 bool isArrayVecOrStruct(llvm::Type* t)
 {
@@ -43,60 +41,14 @@ llvm::Type* arrayVecEltType(llvm::Type *t)
   }
 }
 
-/*
-static
-void accumulateBasicTypes(llvm::Type *t, std::vector<llvm::Type*> & out)
+llvm::Constant* codegenSizeofLLVM(llvm::Type* type)
 {
-  if( t->isStructTy() ) {
-    llvm::StructType *st = llvm::dyn_cast<llvm::StructType>(t);
-    unsigned n = st->getStructNumElements();
-    for( unsigned i = 0; i < n; i++ ) {
-      out.push_back(st->getElementType(i));
-    }
-  } else if( t->isArrayTy() ) {
-    llvm::ArrayType *at = llvm::dyn_cast<llvm::ArrayType>(t);
-    unsigned n = at->getNumElements();
-    for( unsigned i = 0; i < n; i++ ) {
-      out.push_back(at->getElementType());
-    }
-  } else if( t->isVectorTy() ) {
-    llvm::VectorType *vt = llvm::dyn_cast<llvm::VectorType>(t);
-    unsigned n = vt->getNumElements();
-    for( unsigned i = 0; i < n; i++ ) {
-      out.push_back(vt->getElementType());
-    }
-  } else {
-    out.push_back(t);
-  }
-}
-*/
-
-llvm::Value* codegenSizeofLLVM(llvm::Type* type)
-{
-  GenInfo* info = gGenInfo;
-  // use getelementptr from the null pointer to compute sizeof
-  // e.g.  %Size = getelementptr %T* null, int 1
-  //       %SizeI = cast %T* %Size to uint
-  //          to get the sizeof(T)
-  // (see http://nondot.org/sabre/LLVMNotes/SizeOf-OffsetOf-VariableSizedStructs.txt)
-
-  llvm::Type* sizeTy = llvm::Type::getInt64Ty(info->llvmContext);
-  llvm::Constant* one = llvm::ConstantInt::get(sizeTy, 1);
-  llvm::PointerType* ptrType = llvm::PointerType::getUnqual(type);
-  llvm::Constant* nullPtr = llvm::Constant::getNullValue(ptrType);
-  /*llvm::Constant* gep = llvm::ConstantExpr::getGetElementPtr(nullPtr, one);
-  llvm::Constant* size = llvm::ConstantExpr::getPointerCast(gep, sizeTy);
-  */
-  llvm::Value* gep = info->builder->CreateGEP(nullPtr, one);
-  llvm::Value* size = info->builder->CreatePointerCast(gep, sizeTy);
-  return size;
+  return llvm::ConstantExpr::getSizeOf(type);
 }
 
 static
-bool isTypeEquivalent(llvm::Type* a, llvm::Type* b)
+bool isTypeEquivalent(LLVM_TARGET_DATA * targetData, llvm::Type* a, llvm::Type* b)
 {
-  GenInfo* info = gGenInfo;
-
   int64_t aN = arrayVecN(a);
   int64_t bN = arrayVecN(a);
   if( a == b ) {
@@ -110,47 +62,73 @@ bool isTypeEquivalent(llvm::Type* a, llvm::Type* b)
     return true;
   } else {
     // Are they the same size?
-    if( info->targetData->getTypeSizeInBits(a) == info->targetData->getTypeSizeInBits(b) ) {
+    if( targetData->getTypeSizeInBits(a) ==
+        targetData->getTypeSizeInBits(b) ) {
       return true;
     }
   }
   return false;
 }
 
-/*
-  // Try flattening and converting.
-  std::vector<llvm::Type*> af;
-  std::vector<llvm::Type*> bf;
+llvm::AllocaInst* makeAlloca(llvm::Type* type,
+                             const char* name,
+                             llvm::Instruction* insertBefore,
+                             unsigned n, unsigned align)
+{
+  // It's important to alloca at the front of the function in order
+  // to avoid having an alloca in a loop which is a good way to achieve
+  // stack overflow.
+  llvm::Function *func = insertBefore->getParent()->getParent();
+  llvm::BasicBlock* entryBlock = & func->getEntryBlock();
 
-  accumulateBasicTypes(a, af);
-  accumulateBasicTypes(b, bf);
-
-  if( af.size() != bf.size() ) return false;
-
-  unsigned ai, bi;
-  ai = bi = 0;
-  // Now try comparing them.
-  while( ai < af.size() && bi < bf.size() ) {
-    if( af[ai] == bf[bi] ) {
-      ai++;
-      bi++;
-    } else if( af[ai]->isEmptyTy() ) {
-      ai++;
-    } else if( bf[ai]->isEmptyTy() ) {
-      bi++;
-    } else {
-      // Not equivalent.
-      return false;
-    }
+  if( insertBefore->getParent() == entryBlock ) {
+    // Add before specific instruction in entry block.
+  } else if(llvm::Instruction *i = func->getEntryBlock().getTerminator()) {
+    // Add before terminator in entry block.
+    insertBefore = i;
+  } else {
+    // Add at the end of entry block.
+    insertBefore = NULL;
   }
-  if( ai != af.size() ||
-      bi != bf.size() ) return false;
-  return true;
-}
-*/
 
-llvm::Value *convertValueToType(llvm::Value *value, llvm::Type *newType, bool isSigned) {
-  GenInfo* info = gGenInfo;
+  llvm::AllocaInst *tempVar;
+
+  llvm::Value* size =
+    llvm::ConstantInt::get(llvm::Type::getInt32Ty(type->getContext()), n);
+
+  if( insertBefore ) {
+    tempVar = new llvm::AllocaInst(type, size, align, name, insertBefore);
+  } else {
+    tempVar = new llvm::AllocaInst(type, size, align, name, entryBlock);
+  }
+
+  return tempVar;
+}
+
+llvm::Value* createTempVarLLVM(llvm::IRBuilder<>* builder, llvm::Type* type, const char* name)
+{
+  // It's important to alloca at the front of the function in order
+  // to avoid having an alloca in a loop which is a good way to achieve
+  // stack overflow.
+  llvm::Function *func = builder->GetInsertBlock()->getParent();
+  if(llvm::Instruction *i = func->getEntryBlock().getTerminator()) {
+    builder->SetInsertPoint(i);
+  } else {
+    builder->SetInsertPoint(&func->getEntryBlock());
+  }
+
+  llvm::AllocaInst *tempVar = builder->CreateAlloca(type, 0, name);
+  builder->SetInsertPoint(&func->back());
+  return tempVar;
+}
+
+llvm::Value *convertValueToType(
+    llvm::IRBuilder<> *builder,
+    LLVM_TARGET_DATA * targetData,
+    llvm::Value *value,
+    llvm::Type *newType,
+    bool isSigned) {
+
   llvm::Type *curType = value->getType();
   
   if(curType == newType) {
@@ -162,64 +140,68 @@ llvm::Value *convertValueToType(llvm::Value *value, llvm::Type *newType, bool is
     if(newType->getPrimitiveSizeInBits() > curType->getPrimitiveSizeInBits()) {
       // Sign extend if isSigned, but never sign extend single bits.
       if(isSigned && ! curType->isIntegerTy(1)) {
-        return info->builder->CreateSExtOrBitCast(value, newType);
+        return builder->CreateSExtOrBitCast(value, newType);
       }
       else {
-        return info->builder->CreateZExtOrBitCast(value, newType);
+        return builder->CreateZExtOrBitCast(value, newType);
       }
     }
     else {
-      return info->builder->CreateTruncOrBitCast(value, newType);
+      return builder->CreateTruncOrBitCast(value, newType);
     }
   }
   
   //Floating point values
   if(newType->isFloatingPointTy() && curType->isFloatingPointTy()) {
     if(newType->getPrimitiveSizeInBits() > curType->getPrimitiveSizeInBits()) {
-      return info->builder->CreateFPExt(value, newType);
+      return builder->CreateFPExt(value, newType);
     }
     else {
-      return info->builder->CreateFPTrunc(value, newType);
+      return builder->CreateFPTrunc(value, newType);
     }
   }
 
   //Integer value to floating point value
   if(newType->isFloatingPointTy() && curType->isIntegerTy()) {
     if(isSigned) {
-      return info->builder->CreateSIToFP(value, newType);
+      return builder->CreateSIToFP(value, newType);
     }
     else {
-      return info->builder->CreateUIToFP(value, newType);
+      return builder->CreateUIToFP(value, newType);
     }
   }
 
   //Floating point value to integer value
   if(newType->isIntegerTy() && curType->isFloatingPointTy()) {
-    return info->builder->CreateFPToSI(value, newType);
+    return builder->CreateFPToSI(value, newType);
   }
   
   //Integer to pointer
   if(newType->isPointerTy() && curType->isIntegerTy()) {
-    return info->builder->CreateIntToPtr(value, newType);
+    return builder->CreateIntToPtr(value, newType);
   }
 
   //Pointers
   if(newType->isPointerTy() && curType->isPointerTy()) {
-    return info->builder->CreatePointerCast(value, newType);
+    if( newType->getPointerAddressSpace() !=
+        curType->getPointerAddressSpace() ) {
+      assert( 0 && "Can't convert pointer to different address space");
+    }
+    return builder->CreatePointerCast(value, newType);
   }
 
   // Structure types. 
   // This is important in order to handle clang structure expansion
   // (e.g. calling a function that returns {int64,int64})
   if( isArrayVecOrStruct(curType) || isArrayVecOrStruct(newType) ) {
-    if( isTypeEquivalent(curType, newType) ) {
+    if( isTypeEquivalent(targetData, curType, newType) ) {
       // We turn it into a store/load to convert the type
       // since LLVM does not allow bit casts on structure types.
-      llvm::Value* tmp = info->builder->CreateAlloca(newType);
+      llvm::Value* tmp = createTempVarLLVM(builder, newType, "");
       llvm::Type* fromType = curType->getPointerTo();
-      llvm::Value* tmp2 = info->builder->CreatePointerCast(tmp, fromType);
-      info->builder->CreateStore(value, tmp2);
-      return info->builder->CreateLoad(tmp);
+      llvm::Value* tmp2 = builder->CreatePointerCast(tmp, fromType);
+      builder->CreateStore(value, tmp2);
+      return builder->CreateLoad(tmp);
     }
   }
 
@@ -262,8 +244,13 @@ operand with signed integer type.
 Otherwise, both operands are converted to the unsigned integer type
 corresponding to the type of the operand with signed integer type.
 */
-PromotedPair convertValuesToLarger(llvm::Value *value1, llvm::Value *value2, bool isSigned1, bool isSigned2) {
-  GenInfo* info = gGenInfo;
+PromotedPair convertValuesToLarger(
+    llvm::IRBuilder<> *builder,
+    llvm::Value *value1,
+    llvm::Value *value2,
+    bool isSigned1,
+    bool isSigned2) {
+
   llvm::Type *type1 = value1->getType();
   llvm::Type *type2 = value2->getType();
   
@@ -274,27 +261,33 @@ PromotedPair convertValuesToLarger(llvm::Value *value1, llvm::Value *value2, boo
   //Floating point values
   if(type1->isFloatingPointTy() && type2->isFloatingPointTy()) {
     if(type1->getPrimitiveSizeInBits() > type2->getPrimitiveSizeInBits()) {
-      return PromotedPair(value1, info->builder->CreateFPExt(value2, type1), true);
+      return PromotedPair(value1,
+                          builder->CreateFPExt(value2, type1), true);
     } else {
-      return PromotedPair(info->builder->CreateFPTrunc(value1, type2), value2, true);
+      return PromotedPair(builder->CreateFPTrunc(value1, type2),
+                          value2, true);
     }
   }
 
   //Floating point / Integer values
   if(type1->isFloatingPointTy() && type2->isIntegerTy()) {
     if(isSigned2) {
-      return PromotedPair(value1, info->builder->CreateSIToFP(value2, type1), true);
+      return PromotedPair(value1,
+                          builder->CreateSIToFP(value2, type1), true);
     } else {
-      return PromotedPair(value1, info->builder->CreateUIToFP(value2, type1), true);
+      return PromotedPair(value1,
+                          builder->CreateUIToFP(value2, type1), true);
     }
   }
 
   //Integer / Floating point values
   if(type2->isFloatingPointTy() && type1->isIntegerTy()) {
     if(isSigned1) {
-      return PromotedPair(info->builder->CreateSIToFP(value1, type2), value2, true);
+      return PromotedPair(builder->CreateSIToFP(value1, type2),
+                          value2, true);
     } else {
-      return PromotedPair(info->builder->CreateUIToFP(value1, type2), value2, true);
+      return PromotedPair(builder->CreateUIToFP(value1, type2),
+                          value2, true);
     }
   }
 
@@ -304,47 +297,75 @@ PromotedPair convertValuesToLarger(llvm::Value *value1, llvm::Value *value2, boo
       // both are signed or both are unsigned.
       if(type1->getPrimitiveSizeInBits() > type2->getPrimitiveSizeInBits()) {
         if(isSigned2) {
-          return PromotedPair(value1, info->builder->CreateSExtOrBitCast(value2, type1), true);
+          return PromotedPair(value1,
+                        builder->CreateSExtOrBitCast(value2, type1),
+                        true);
         } else {
-          return PromotedPair(value1, info->builder->CreateZExtOrBitCast(value2, type1), false);
+          return PromotedPair(
+                        value1,
+                        builder->CreateZExtOrBitCast(value2, type1),
+                        false);
         }
       } else {
         if(isSigned1) {
-          return PromotedPair(info->builder->CreateSExtOrBitCast(value1, type2), value2, true);
+          return PromotedPair(
+                        builder->CreateSExtOrBitCast(value1, type2),
+                        value2, true);
         } else {
-          return PromotedPair(info->builder->CreateZExtOrBitCast(value1, type2), value2, false);
+          return PromotedPair(
+                        builder->CreateZExtOrBitCast(value1, type2),
+                        value2, false);
         }
       }
     } else {
       // signed/unsigned. Does unsigned integer type have > rank?
       // if so, convert to unsigned.
-      if( !isSigned1 && type1->getPrimitiveSizeInBits() >= type2->getPrimitiveSizeInBits()) {
+      if( !isSigned1 &&
+              type1->getPrimitiveSizeInBits() >=
+              type2->getPrimitiveSizeInBits()) {
         // value1 is unsigned and >= bits; value2 is signed
-        return PromotedPair(value1, info->builder->CreateSExtOrBitCast(value2, type1), false);
-      } else if( !isSigned2 && type1->getPrimitiveSizeInBits() <= type2->getPrimitiveSizeInBits() ) {
+        return PromotedPair(value1,
+                            builder->CreateSExtOrBitCast(value2, type1),
+                            false);
+      } else if( !isSigned2 &&
+                     type1->getPrimitiveSizeInBits() <=
+                     type2->getPrimitiveSizeInBits() ) {
         // value2 is unsigned and >= bits; value1 is signed
-        return PromotedPair(info->builder->CreateSExtOrBitCast(value1, type2), value2, false);
+        return PromotedPair(builder->CreateSExtOrBitCast(value1, type2),
+                            value2, false);
       } else {
         // Otherwise, if the type of the operand with signed integer
         // type can represent all of the values of the type of the operand
         // with unsigned integer type, then the operand with unsigned
         // integer type is converted to the type of the operand with
         // signed integer type.
-        if( isSigned1 && type1->getPrimitiveSizeInBits()-1 >= type2->getPrimitiveSizeInBits()) {
+        if( isSigned1 &&
+               type1->getPrimitiveSizeInBits()-1 >=
+               type2->getPrimitiveSizeInBits()) {
           // value1 is signed, value2 is not
-          return PromotedPair(value1, info->builder->CreateZExtOrBitCast(value2, type1), true);
-        } else if( isSigned2 && type1->getPrimitiveSizeInBits() <= type2->getPrimitiveSizeInBits() - 1) {
-          return PromotedPair(info->builder->CreateZExtOrBitCast(value1, type2), value2, true);
+          return PromotedPair(value1,
+                        builder->CreateZExtOrBitCast(value2, type1),
+                        true);
+        } else if( isSigned2 &&
+                      type1->getPrimitiveSizeInBits() <=
+                      type2->getPrimitiveSizeInBits() - 1) {
+          return PromotedPair(
+                        builder->CreateZExtOrBitCast(value1, type2),
+                        value2, true);
         } else {
           // otherwise, both operands are converted to the unsigned
           // integer type corresponding to the type of the operand
           // with signed integer type.
           if( isSigned1 ) {
             // convert both to unsigned type1
-            return PromotedPair(value1, info->builder->CreateZExtOrBitCast(value2, type1), false);
+            return PromotedPair(value1,
+                          builder->CreateZExtOrBitCast(value2, type1),
+                          false);
           } else {
             // convert both to unsigned type2
-            return PromotedPair(info->builder->CreateZExtOrBitCast(value1, type2), value2, false);
+            return PromotedPair(
+                          builder->CreateZExtOrBitCast(value1, type2),
+                          value2, false);
           }
         }
       }
@@ -354,20 +375,37 @@ PromotedPair convertValuesToLarger(llvm::Value *value1, llvm::Value *value2, boo
   //Pointers
   if(type1->isPointerTy() && type2->isPointerTy()) {
     llvm::Type *castTy;
-    llvm::Type *voidPtr = llvm::Type::getInt8PtrTy(gGenInfo->llvmContext);
+    llvm::Type* int8_type = llvm::Type::getInt8Ty(value1->getContext());
+    bool t1isVoidStar = (type1->getPointerElementType() == int8_type);
+    bool t2isVoidStar = (type2->getPointerElementType() == int8_type);
+
+    assert(type1->getPointerAddressSpace() == type2->getPointerAddressSpace());
 
     // if type2 a non-void pointer type, then set castTy to type2
     // otherwise just use type1
-    if ((type1 == voidPtr) && (type2 != voidPtr) ){
+    if ((t1isVoidStar) && (!t2isVoidStar)) {
       castTy = type2;
     } else {
       castTy = type1;
     }
 
-    return PromotedPair(info->builder->CreatePointerCast(value1, castTy), info->builder->CreatePointerCast(value2, castTy), false);
+    return PromotedPair(builder->CreatePointerCast(value1, castTy),
+                        builder->CreatePointerCast(value2, castTy),
+                        false);
   }
   
   return PromotedPair(NULL, NULL, false);
+}
+
+bool isTypeSizeSmallerThan(LLVM_TARGET_DATA * layout, llvm::Type* ty, uint64_t max_size_bytes)
+{
+  if( ! ty->isSized() ) return false; // who knows how big it is!
+
+  uint64_t sz = layout->getTypeSizeInBits(ty);
+  sz = (sz + 7)/8; // now in bytes.
+
+  if( sz < max_size_bytes ) return true;
+  return false;
 }
 
 #endif

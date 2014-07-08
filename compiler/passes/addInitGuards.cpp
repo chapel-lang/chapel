@@ -13,14 +13,16 @@
 //
 
 #include "passes.h"
-#include "stmt.h"
-#include "build.h"
+
 #include "astutil.h"
+#include "build.h"
+#include "stmt.h"
+#include "stringutil.h"
 
 static void addModuleInitBlocks();
 static void addInitGuards();
 static void addInitGuard(FnSymbol* fn, FnSymbol* preInitFn);
-
+static void addPrintModInitOrder(FnSymbol* fn);
 
 void addInitCalls()
 {
@@ -54,27 +56,34 @@ void addModuleInitBlocks() {
     // Now, traverse my use statements, and call the initializer for each
     // module I use.
     forv_Vec(ModuleSymbol, usedMod, mod->modUseList) {
+      if (usedMod == standardModule) continue;
       initBlock->insertAtTail(new CallExpr(usedMod->initFn));
     }
 
-    fn->insertAtHead(initBlock);
+    if (initBlock->body.length > 0) fn->insertAtHead(initBlock);
   }
 }
 
 
-// This function makes the initialization functions idempotent -- meaning that they can
-// be executed any number of times, but the net effect is as if they were only 
-// called once.  That is done using the idiom:
+// This function makes the initialization functions idempotent --
+// meaning that they can be executed any number of times, but the net
+// effect is as if they were only called once.  That is done using the
+// idiom:
 //
 //      /* Assume flag_p is initially false. */
 //      if (flag_p) return;
 //      flag_p = true;
 //      ...     // Rest of initialization code.
 //
-// The guard code is added only if the initialization function has a nontrivial body.
+// The guard code is added only if the initialization function has a
+// nontrivial body.
 //
 // This pass also creates the function "chpl__init_preInit()", which 
 // initializes all of the initialization flags to false.
+//
+// It also adds code that will print the module names as they are
+// being initialized if the config const --printModuleInitOrder is set
+// at run time.
 //
 static void addInitGuards(void) {
   // We need a function to drop the initializers into.
@@ -82,6 +91,7 @@ static void addInitGuards(void) {
   FnSymbol* preInitFn = new FnSymbol(astr("chpl__init_preInit"));
   preInitFn->retType = dtVoid;
   preInitFn->addFlag(FLAG_EXPORT);
+  preInitFn->addFlag(FLAG_LOCAL_ARGS);
   preInitFn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
   theProgram->block->insertAtTail(new DefExpr(preInitFn));
   normalize(preInitFn);
@@ -132,6 +142,9 @@ static void addInitGuard(FnSymbol* fn, FnSymbol* preInitFn)
     Expr* asgnExprTrue = new CallExpr(PRIM_MOVE, var, new SymExpr(gTrue));
     fn->insertAtHead(asgnExprTrue);
 
+    // Add debugging aid that prints module init order
+    addPrintModInitOrder(fn);
+
     // The guard:
     //      if (<init_fn_name>_p) goto _exit_<init_fn_name>.
     // Precedes everything in the module initialization function,
@@ -142,3 +155,74 @@ static void addInitGuard(FnSymbol* fn, FnSymbol* preInitFn)
     Expr* ifStmt = new CondStmt(new SymExpr(var), gotoExit);
     fn->insertAtHead(ifStmt);
 }
+
+//
+// Insert code that prints out the name of the module as it is
+// initialized.  We do this by inserting a call to printModInitOrder()
+// and incrementing the indent level at the beginning of the function
+// (but after the guard) and then decrementing the indent level at the
+// end of the function.
+//
+static void addPrintModInitOrder(FnSymbol* fn)
+{
+  //
+  // Only do this if gPrintModuleInitFn exists.  It won't exist when
+  // compiling --minimal-modules
+  //
+  if (gPrintModuleInitFn == NULL)
+    return;
+
+  // The function printModuleIInit() takes 3 arguments:
+  //   s1:  the format string "%*s"
+  //   s2:  string to be printed
+  //   len: length of s2
+  // Since no other modules are initialized prior to this
+  // PrintModuleinitOrder, we'll be conservative and generate s1 and
+  // len here.
+  VarSymbol* s1tmp = newTemp("modFormatStr", dtStringC);
+  VarSymbol* s2tmp = newTemp("modStr", dtStringC);
+  const char* s1 = astr("%*s\\n");
+  const char* s2 = astr(fn->getModule()->name);
+  int myLen = strlen(s2);
+  char lenStr[5];
+  sprintf(lenStr, "%d", myLen);
+  Expr *es1 = buildStringLiteral(s1);
+  Expr *es2 = buildStringLiteral(s2);
+  Expr *elen = buildIntLiteral(lenStr);
+  CallExpr* s1Init = new CallExpr(PRIM_MOVE, new SymExpr(s1tmp),
+                                  new CallExpr(PRIM_C_STRING_FROM_STRING,
+                                               es1));
+  CallExpr* s2Init = new CallExpr(PRIM_MOVE, new SymExpr(s2tmp),
+                                  new CallExpr(PRIM_C_STRING_FROM_STRING,
+                                               es2));
+  CallExpr *printModInit = new CallExpr(gPrintModuleInitFn,
+                                        new SymExpr(s1tmp),
+                                        new SymExpr(s2tmp), elen);
+
+  // += and -+ take ref args, so we must first get a reference to the
+  // indent level variable
+  Type* refIndentLevelType = gModuleInitIndentLevel->typeInfo()->refType;
+  INT_ASSERT(refIndentLevelType);
+  VarSymbol* refIndentLevel = newTemp("refIndentLevel",refIndentLevelType);
+  CallExpr *getAddr = new CallExpr(PRIM_MOVE,
+                                   new SymExpr(refIndentLevel),
+                                   new CallExpr(PRIM_ADDR_OF,
+                                                new SymExpr(gModuleInitIndentLevel)));
+  CallExpr *incIndentLevel = new CallExpr(PRIM_ADD_ASSIGN,
+                                          new SymExpr(refIndentLevel),
+                                          buildIntLiteral("1"));
+  CallExpr *decIndentLevel = new CallExpr(PRIM_SUBTRACT_ASSIGN,
+                                          new SymExpr(refIndentLevel),
+                                          buildIntLiteral("1"));
+  fn->insertAtHead(incIndentLevel);
+  fn->insertAtHead(getAddr);
+  fn->insertAtHead(printModInit);
+  fn->insertAtHead(s2Init);
+  fn->insertAtHead(s1Init);
+  fn->insertAtHead(new DefExpr(refIndentLevel));
+  fn->insertAtHead(new DefExpr(s2tmp));
+  fn->insertAtHead(new DefExpr(s1tmp));
+  fn->insertBeforeReturn(decIndentLevel);
+}
+
+

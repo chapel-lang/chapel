@@ -1,52 +1,49 @@
 #ifndef _EXPR_H_
 #define _EXPR_H_
 
-#include <cstdlib>
-#include <cstdio>
-#include <fstream>
-#include "alist.h"
 #include "baseAST.h"
-#include "symbol.h"
+
 #include "primitive.h"
+#include "symbol.h"
 
-#include "genret.h"
+#include <ostream>
 
-class FnSymbol;
+class PrimitiveOp;
 
-#define IS_EXPR(e)                                          \
-  ((e)->astTag == E_CallExpr || (e)->astTag == E_SymExpr || \
-   (e)->astTag == E_DefExpr || (e)->astTag == E_NamedExpr)
-
-#define IS_STMT(e)                                              \
-  ((e)->astTag == E_BlockStmt ||                                \
-   (e)->astTag == E_CondStmt || (e)->astTag == E_GotoStmt)
 
 class Expr : public BaseAST {
- public:
-  Expr* prev;           // alist previous pointer
-  Expr* next;           // alist next pointer
-  AList* list;          // alist pointer
-  Expr* parentExpr;
-  Symbol* parentSymbol;
+public:
+                  Expr(AstTag astTag);
+  virtual        ~Expr();
 
-  Expr(AstTag astTag);
-  virtual ~Expr() { }
-  virtual Expr* copy(SymbolMap* map = NULL, bool internal = false) = 0;
-  virtual Expr* copyInner(SymbolMap* map) = 0;
-  virtual void replaceChild(Expr* old_ast, Expr* new_ast) = 0;
+  virtual Expr*   copy(SymbolMap* map = NULL, bool internal = false)   = 0;
+  virtual void    replaceChild(Expr* old_ast, Expr* new_ast)           = 0;
 
-  virtual void verify();
-  virtual bool inTree();
-  virtual Type* typeInfo(void);
+  // Interface for BaseAST
+  virtual bool    inTree();
+  virtual bool    isStmt() const { return false; }
+  virtual Type*   typeInfo();
+  virtual void    verify();
 
-  virtual void prettyPrint(std::ofstream *o);
+  virtual bool    isNoInitExpr()                                     const;
+  virtual void    prettyPrint(std::ostream* o);
 
-  Expr* getStmtExpr();
+  void            insertBefore(Expr* new_ast);
+  void            insertAfter(Expr* new_ast);
+  void            replace(Expr* new_ast);
 
-  Expr* remove(void);
-  void replace(Expr* new_ast);
-  void insertBefore(Expr* new_ast);
-  void insertAfter(Expr* new_ast);
+  Expr*           remove();
+  Expr*           getStmtExpr();
+
+  Symbol*         parentSymbol;
+  Expr*           parentExpr;
+
+  AList*          list;           // alist pointer
+  Expr*           prev;           // alist previous pointer
+  Expr*           next;           // alist next     pointer
+
+private:
+  virtual Expr*   copyInner(SymbolMap* map) = 0;
 };
 
 
@@ -59,12 +56,14 @@ class DefExpr : public Expr {
   DefExpr(Symbol* initSym = NULL,
           BaseAST* initInit = NULL,
           BaseAST* initExprType = NULL);
-  void verify(); 
+  virtual void verify(); 
   DECLARE_COPY(DefExpr);
-  void replaceChild(Expr* old_ast, Expr* new_ast);
+
+  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
+  virtual void    accept(AstVisitor* visitor);
 
   Type* typeInfo(void);
-  void prettyPrint(std::ofstream *o);
+  void prettyPrint(std::ostream *o);
   
   GenRet codegen();
 };
@@ -75,24 +74,29 @@ class SymExpr : public Expr {
   Symbol* var;
   SymExpr(Symbol* init_var);
   DECLARE_COPY(SymExpr);
-  void replaceChild(Expr* old_ast, Expr* new_ast);
-  void verify(); 
+  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
+  virtual void verify(); 
+  virtual void    accept(AstVisitor* visitor);
+
   Type* typeInfo(void);
+  bool isNoInitExpr() const;
   GenRet codegen();
-  void prettyPrint(std::ofstream *o);
+  void prettyPrint(std::ostream *o);
 };
 
 
 class UnresolvedSymExpr : public Expr {
  public:
   const char* unresolved;
+
   UnresolvedSymExpr(const char* init_var);
   DECLARE_COPY(UnresolvedSymExpr);
-  void replaceChild(Expr* old_ast, Expr* new_ast);
-  void verify(); 
+  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
+  virtual void verify(); 
+  virtual void    accept(AstVisitor* visitor);
   Type* typeInfo(void);
   GenRet codegen();
-  void prettyPrint(std::ofstream *o);
+  void prettyPrint(std::ostream *o);
 };
 
 
@@ -103,7 +107,10 @@ class CallExpr : public Expr {
   AList argList;          // function actuals
   PrimitiveOp* primitive; // primitive expression (baseExpr == NULL)
   bool partialTag;
-  bool methodTag;
+  bool methodTag; ///< Set to true if the call is a method call.
+  // It is used in gatherCandidates to filter out method field extraction
+  // (partials).
+  // TODO: Maybe use a new primitive to represent partials, and get rid of this tag.
   bool square; // true if call made with square brackets
 
   CallExpr(BaseAST* base, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
@@ -118,10 +125,12 @@ class CallExpr : public Expr {
   void verify(); 
   DECLARE_COPY(CallExpr);
 
+  virtual void    accept(AstVisitor* visitor);
+
   void replaceChild(Expr* old_ast, Expr* new_ast);
 
   GenRet codegen();
-  void prettyPrint(std::ofstream *o);
+  void prettyPrint(std::ostream *o);
 
   void insertAtHead(BaseAST* ast);
   void insertAtTail(BaseAST* ast);
@@ -146,9 +155,10 @@ class NamedExpr : public Expr {
   void verify(); 
   DECLARE_COPY(NamedExpr);
   void replaceChild(Expr* old_ast, Expr* new_ast);
+  virtual void    accept(AstVisitor* visitor);
   Type* typeInfo(void);
   GenRet codegen();
-  void prettyPrint(std::ofstream *o);
+  void prettyPrint(std::ostream *o);
 };
 
 
@@ -180,12 +190,45 @@ static inline bool isAlive(Type* type) {
 #define isRootModuleWithType(ast, type)  \
   (E_##type == E_ModuleSymbol && ((ModuleSymbol*)(ast)) == rootModule)
 
+static inline bool isGlobal(Symbol* symbol) {
+  return isModuleSymbol(symbol->defPoint->parentSymbol);
+}
+
+static inline bool isTaskFun(FnSymbol* fn) {
+  INT_ASSERT(fn);
+  // Testing individual flags is more efficient than ops on entire FlagSet?
+  return fn->hasFlag(FLAG_BEGIN) ||
+         fn->hasFlag(FLAG_COBEGIN_OR_COFORALL) ||
+         fn->hasFlag(FLAG_ON);
+}
+
+static inline FnSymbol* resolvedToTaskFun(CallExpr* call) {
+  INT_ASSERT(call);
+  if (FnSymbol* cfn = call->isResolved()) {
+    if (isTaskFun(cfn))
+      return cfn;
+  }
+  return NULL;
+}
+
+// Does this function require "capture for parallelism"?
+// Yes, if it comes from a begin/cobegin/coforall block in Chapel source.
+static inline bool needsCapture(FnSymbol* taskFn) {
+  return taskFn->hasFlag(FLAG_BEGIN) ||
+         taskFn->hasFlag(FLAG_COBEGIN_OR_COFORALL) ||
+         taskFn->hasFlag(FLAG_NON_BLOCKING);
+}
+
 
 bool get_int(Expr* e, int64_t* i); // false is failure
 bool get_uint(Expr *e, uint64_t *i); // false is failure
 bool get_string(Expr *e, const char **s); // false is failure
 const char* get_string(Expr* e); // fatal on failure
-VarSymbol *get_constant(Expr *e);
+
+CallExpr* callChplHereAlloc(Symbol *s, VarSymbol* md = NULL);
+void insertChplHereAlloc(Expr *call, bool insertAfter, Symbol *sym,
+                         Type* t, VarSymbol* md = NULL);
+CallExpr* callChplHereFree(BaseAST* p);
 
 #define for_exprs_postorder(e, expr)                            \
   for (Expr* e = getFirstExpr(expr); e; e = getNextExpr(e))
@@ -203,7 +246,6 @@ llvm::Value* createTempVarLLVM(llvm::Type* type, const char* name);
 llvm::Value* createTempVarLLVM(llvm::Type* type);
 #endif
 GenRet createTempVarWith(GenRet v);
-GenRet createTempVar(Type *t);
 
 GenRet codegenDeref(GenRet toDeref);
 GenRet codegenLocalDeref(GenRet toDeref);

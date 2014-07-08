@@ -97,7 +97,7 @@ class AList {
          _alist_prev = actual ? actual->prev : NULL)
 
 // Visits the formal and actual parameters of a normal call or a virtual method call.
-// Virtual method calls are represented by the PRIM_VMT_CALL primitive.
+// Virtual method calls are represented by the PRIM_VIRTUAL_METHOD_CALL primitive.
 // In this case, the first actual argument contains the FnSymbol representing the 
 // function being called, and the second argument contains the call id (cid).
 // These two initial arguments are elided when the actuals list is traversed.
@@ -109,8 +109,10 @@ class AList {
   if (_alist_fn) {                                                      \
     if (_alist_fn->numFormals() != (call)->argList.length)              \
       INT_FATAL(call, "number of actuals does not match number of formals"); \
-  } else if ((call)->isPrimitive(PRIM_VMT_CALL)) {                      \
+  } else if ((call)->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {           \
     _alist_fn = toFnSymbol(toSymExpr(call->get(1))->var);               \
+    if (_alist_fn->numFormals() != (call)->argList.length - 2)          \
+      INT_FATAL(call, "number of actuals does not match number of formals"); \
     actual = actual->next->next;                                        \
   }                                                                     \
   Expr* _alist_actual_next = (actual) ? actual->next : NULL;            \

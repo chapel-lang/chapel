@@ -13,14 +13,14 @@ echocompilerdir:
 %.cleandir:
 	@cd $* && $(MAKE) clean
 
+%.cleanalldir:
+	@cd $* && $(MAKE) cleanall
+
 %.cleandirdeps:
 	@cd $* && $(MAKE) cleandeps
 
 %.clobberdir:
 	@cd $* && $(MAKE) clobber
-
-%.dependdir:
-	@cd $* && $(MAKE) depend
 
 
 #
@@ -33,9 +33,6 @@ echocompilerdir:
 # pattern-based rules
 #
 
-%.depend: %.cpp $(OBJ_SUBDIR_MADE)
-	@$(MAKEDEPEND) $(COMP_CFLAGS) $< | sed s/$*\\\.o/\\\$(OBJ_SUBDIR_SAFESLASH)\\\/$*\\\.o/ >> $(SVN_DEPENDS).tmp
-
 $(OBJ_SUBDIR)/%.o: %.cpp $(OBJ_SUBDIR_MADE)
 	$(CXX) -c $(COMP_CXXFLAGS) -o $@ $<
 
@@ -43,4 +40,4 @@ FORCE:
 
 .PHONY: all clean cleandeps clobber depend test echocompilerdir FORCE
 .SUFFIXES:
-.SUFFIXES: .cpp .o .h .makedir .cleandir .cleandirdeps .clobberdir .dependdir
+.SUFFIXES: .cpp .o .h .makedir .cleandir .cleandirdeps .clobberdir

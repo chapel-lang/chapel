@@ -1,10 +1,12 @@
-MAIN_SRCS = \
-        arg.cpp \
-	config.cpp \
-	driver.cpp \
-        log.cpp \
-	runpasses.cpp \
-	version.cpp
+MAIN_SRCS =                  \
+            arg.cpp          \
+            checks.cpp       \
+            config.cpp       \
+            driver.cpp       \
+            log.cpp          \
+            runpasses.cpp    \
+            version.cpp      \
+            PhaseTracker.cpp 
 
 SVN_SRCS = $(MAIN_SRCS)
 SRCS = $(SVN_SRCS)

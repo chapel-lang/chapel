@@ -2,6 +2,7 @@
 #include "astutil.h"
 #include "expr.h"
 #include "passes.h"
+#include "resolveIntents.h"
 #include "stmt.h"
 
 
@@ -57,16 +58,24 @@ passableByVal(Type* type) {
       0)
     return true;
 
-  // TODO: allow reasonably-sized records.
+  // TODO: allow reasonably-sized records. NB this-in-taskfns-in-ctors.chpl
   // TODO: allow reasonably-sized tuples - heterogeneous and homogeneous.
 
   return false;
 }
 
 
-// Should we pass 'sym' by reference?
+// Should we pass 'sym' by reference? This is needed if 'sym' may be modified.
+// Otherwise passing by value is more efficient.
 static bool
 passByRef(Symbol* sym) {
+  //
+  // If it's constant (in the sense that the value will not change),
+  // there's no need to pass it by reference
+  //
+  if (sym->isConstValWillNotChange()) {
+    return false;
+  }
 
   if (sym->hasFlag(FLAG_DISTRIBUTION) ||
       sym->hasFlag(FLAG_DOMAIN) ||
@@ -82,6 +91,12 @@ passByRef(Symbol* sym) {
   }
 
   Type* type = sym->type;
+
+  if (sym->hasFlag(FLAG_ARG_THIS))
+   if (passableByVal(type)) // NB this-in-taskfns-in-ctors.chpl
+    // This is also constant. TODO: mark with FLAG_CONST.
+    // TODO: join with the passableByVal(type) test below.
+    return false;
 
   // These simply document the current state.
   INT_ASSERT(type->symbol->hasFlag(FLAG_REF) == (type->refType == NULL));
@@ -133,7 +148,23 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
            an LHS expr. */
         type = type->refType;
       SET_LINENO(sym);
-      ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, sym->name, type);
+      //
+      // BLC: TODO: This routine is part of the reason that we aren't
+      // consistent in representing 'ref' argument intents in the AST.
+      // In particular, the code above uses a certain test to decide
+      // to pass something by reference and changes the formal's type
+      // to the corresponding reference type if it believes it should.
+      // But the blankIntentForType() call below (and the INTENT_BLANK
+      // that was used before it) may pass the argument by 'const in'
+      // which seems inconsistent (because most 'ref' formals reflect
+      // INTENT_REF in the current compiler).  My current thought is
+      // to only indicate ref-ness through intents for most of the
+      // compilation (at a Chapel level) and only worry about ref
+      // types very close to code generation, primarily to avoid
+      // inconsistencies like this and keep things more
+      // uniform/simple; but we haven't made this switch yet.
+      //
+      ArgSymbol* arg = new ArgSymbol(blankIntentForType(type), sym->name, type);
       if (sym->hasFlag(FLAG_ARG_THIS))
         arg->addFlag(FLAG_ARG_THIS);
       fn->insertFormalAtTail(new DefExpr(arg));
@@ -158,13 +189,15 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
             } else {
               CallExpr* call = toCallExpr(se->parentExpr);
               INT_ASSERT(call);
-              FnSymbol* fn = call->isResolved();
+              FnSymbol* fnc = call->isResolved();
               if ((call->isPrimitive(PRIM_MOVE) && call->get(1) == se) ||
+                  (call->isPrimitive(PRIM_ASSIGN) && call->get(1) == se) ||
                   (call->isPrimitive(PRIM_SET_MEMBER) && call->get(1) == se) ||
                   (call->isPrimitive(PRIM_GET_MEMBER)) ||
                   (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) ||
                   (call->isPrimitive(PRIM_WIDE_GET_LOCALE)) ||
-                  (fn && arg->type == actual_to_formal(se)->type)) {
+                  (call->isPrimitive(PRIM_WIDE_GET_NODE)) ||
+                  (fnc && arg->type == actual_to_formal(se)->type)) {
                 se->var = arg; // do not dereference argument in these cases
               } else if (call->isPrimitive(PRIM_ADDR_OF)) {
                 SET_LINENO(se);
@@ -191,6 +224,8 @@ addVarsToActuals(CallExpr* call, SymbolMap* vars, bool outerCall) {
     if (Symbol* sym = e->key) {
       SET_LINENO(sym);
       if (!outerCall && passByRef(sym)) {
+        // This is only a performance issue.
+        INT_ASSERT(!sym->hasFlag(FLAG_SHOULD_NOT_PASS_BY_REF));
         /* NOTE: See note above in addVarsToFormals() */
         VarSymbol* tmp = newTemp(sym->type->refType);
         call->getStmtExpr()->insertBefore(new DefExpr(tmp));
@@ -258,6 +293,9 @@ flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
 
       //
       // call not in a nested function; handle the toFollower/toLeader cases
+      // Note: outerCall=true implies the 'call' does not see defPoint
+      // of the var 'use->key' anywhere in call's enclosing scopes. With
+      // toFollower/toLeader, the 'call' does not see defPoint of 'fn' either.
       //
       bool outerCall = false;
       if (FnSymbol* parent = toFnSymbol(call->parentSymbol)) {

@@ -21,7 +21,7 @@ struct fileinfo {
   const char* pathname;
 };
 
-void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile = NULL);
+void codegen_makefile(fileinfo* mainfile, const char** tmpbinname=NULL, bool skip_compile_link=false);
 
 void ensureDirExists(const char* /* dirname */, const char* /* explanation */);
 void deleteTmpDir(void);
@@ -51,9 +51,9 @@ void addIncInfo(const char* incDir);
 
 void genIncludeCommandLineHeaders(FILE* outfile);
 
-const char* createGDBFile(int argc, char* argv[]);
+const char* createDebuggerFile(const char* debugger, int argc, char* argv[]);
 
-const char* runUtilScript(const char* script);
+const std::string runUtilScript(const char* script);
 
 void setupModulePaths(void);
 void addFlagModulePath(const char* newpath);

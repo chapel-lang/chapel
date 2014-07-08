@@ -4,6 +4,9 @@ all: $(PRETARGETS) $(MAKEALLSUBDIRS) echocompilerdir $(TARGETS)
 clean: $(CLEANSUBDIRS) echocompilerdir
 	rm -f $(CLEAN_TARGS)
 
+cleanall: $(CLEANALLSUBDIRS) echocompilerdir
+	rm -rf $(CLEANALL_TARGS)
+
 cleandeps: $(CLEANSUBDIRDEPS) echocompilerdir
 	rm -f $(SVN_DEPENDS)
 

@@ -1,11 +1,7 @@
 #ifndef _log_H_
 #define _log_H_
 
-#include <vec.h>
 #include <cstdio>
-
-
-//#include "../ifa/defs.h"
 
 /*
   To add a new log type, add a new LOG_XXX with a unique letter:
@@ -35,58 +31,34 @@
   specifies AST log level 2 and IF1 log level 1
  */
 
-class ArgumentState;
+struct ArgumentState;
 
 #ifndef NUL
  #define NUL '\0'
 #endif
 
-// Used in passlist.h to match up pass designator letters (used on the command line
-// with these slightly more mnemonic #defines.
-#define LOG_parse               'p'
-#define LOG_checkParsed         NUL
-#define LOG_docs                NUL
-#define LOG_cleanup             'u'
-#define LOG_scopeResolve        'S'
-#define LOG_flattenClasses      'b'
-#define LOG_normalize           'N'
-#define LOG_checkNormalized     NUL
-#define LOG_buildDefaultFunctions 'D'
-#define LOG_resolve             'R'
-#define LOG_checkResolved       NUL
-#define LOG_flattenFunctions    'e'
-#define LOG_cullOverReferences  'O'
-#define LOG_callDestructors     'd'
-#define LOG_lowerIterators      'L'
-#define LOG_parallel            'P'
-#define LOG_prune               'X'
-#define LOG_complex2record      'C'
-#define LOG_removeUnnecessaryAutoCopyCalls 'U'
-#define LOG_inlineFunctions     'I'
-#define LOG_scalarReplace       'r'
-#define LOG_refPropagation      'g'
-#define LOG_copyPropagation     'G'
-#define LOG_deadCodeElimination 'x'
-#define LOG_removeWrapRecords   'w'
-#define LOG_removeEmptyRecords  'm'
-#define LOG_localizeGlobals     'l'
-#define LOG_prune2              'Y'
-#define LOG_returnStarTuplesByRefArgs 's'
-#define LOG_gpuFlattenArgs      'a'
-#define LOG_insertWideReferences 'W'
-#define LOG_optimizeOnClauses   'o'
-#define LOG_addInitCalls        'M'
-#define LOG_insertLineNumbers   'n'
-#define LOG_repositionDefExpressions 'f'
-#define LOG_codegen             'E'
-#define LOG_makeBinary          NUL
-#define LOG_readCTypes          'c'
-#define LOG_ANY -1
+// Driver uses this to configure the logger
+void  log_flags_arg(const ArgumentState* state, const char* arg);
 
-void init_logs();
-void log_flags_arg(ArgumentState *arg_state, char *arg);
-FILE *log_fp(int log);
-int log(int log, char *str, ...);
-bool logging(int log = LOG_ANY);    // Default means "any pass".
+void  setupLogfiles();
+void  teardownLogfiles();
+
+void  log_writeLog(const char* passName, int passNum, char logTag);
+
+bool  deletedIdON();
+
+extern char  log_dir   [FILENAME_MAX + 1];
+extern char  log_module[FILENAME_MAX + 1];
+
+extern bool  fLogIds;
+
+extern int   fdump_html;
+extern char  fdump_html_chpl_home[FILENAME_MAX + 1];
+extern bool  fdump_html_include_system_modules;
+extern bool  fdump_html_wrap_lines;
+extern bool  fdump_html_print_block_IDs;
+
+extern FILE* deletedIdHandle;
+extern char  deletedIdFilename[FILENAME_MAX + 1];
 
 #endif

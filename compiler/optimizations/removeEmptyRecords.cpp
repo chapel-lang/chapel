@@ -22,14 +22,10 @@ removeEmptyRecords() {
   bool change = true;
   while (change) {
     change = false;
-    forv_Vec(ClassType, ct, gClassTypes) {
+    forv_Vec(AggregateType, ct, gAggregateTypes) {
       if (isRecord(ct) && ct->symbol->defPoint->parentSymbol && 
           !ct->symbol->hasFlag(FLAG_EXTERN)) {
         bool empty = true;
-        if (ct->symbol->hasFlag(FLAG_FIXED_STRING)) {
-          empty = false;
-          break;
-        }
         for_fields(field, ct) {
           if (!emptyRecordTypeSet.set_in(field->type)) {
             empty = false;

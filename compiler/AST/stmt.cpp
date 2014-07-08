@@ -1,13 +1,16 @@
-#include <cstring>
+#include "stmt.h"
+
 #include "astutil.h"
+#include "codegen.h"
 #include "expr.h"
 #include "files.h"
 #include "misc.h"
 #include "passes.h"
-#include "stmt.h"
 #include "stringutil.h"
-#include "codegen.h"
 
+#include "AstVisitor.h"
+
+#include <cstring>
 
 // remember these so we can update their labels' iterResumeGoto
 Map<GotoStmt*,GotoStmt*> copiedIterResumeGotos;
@@ -37,18 +40,23 @@ void codegenStmt(Expr* stmt) {
     if (fGenIDS)
       info->cStatements.push_back("/* " + numToString(stmt->id) + "*/ ");
   }
+  ++stmtCount;
 }
 
 
+Stmt::~Stmt() {}
+
+
 BlockStmt::BlockStmt(Expr* init_body, BlockTag init_blockTag) :
-  Expr(E_BlockStmt),
+  Stmt(E_BlockStmt),
   blockTag(init_blockTag),
   body(),
   blockInfo(NULL),
   modUses(NULL),
   breakLabel(NULL),
   continueLabel(NULL),
-  userLabel(NULL)
+  userLabel(NULL),
+  byrefVars(NULL)
 {
   body.parent = this;
   if (init_body)
@@ -75,6 +83,14 @@ void BlockStmt::verify() {
     INT_FATAL(this, "Bad BlockStmt::blockInfo::parentExpr");
   if (modUses && modUses->parentExpr != this)
     INT_FATAL(this, "Bad BlockStmt::blockInfo::parentExpr");
+  if (byrefVars) {
+    if (byrefVars->parentExpr != this)
+      INT_FATAL(this, "Bad BlockStmt::byrefVars::parentExpr");
+    for_actuals(varExp, byrefVars) {
+      if (!isSymExpr(varExp) && !isUnresolvedSymExpr(varExp))
+        INT_FATAL(this, "Bad expresion kind in BlockStmt::byrefVars");
+    }
+  }
 }
 
 
@@ -88,6 +104,7 @@ BlockStmt::copyInner(SymbolMap* map) {
   _this->modUses = COPY_INT(modUses);
   _this->breakLabel = breakLabel;
   _this->continueLabel = continueLabel;
+  _this->byrefVars = COPY_INT(byrefVars);
   return _this;
 }
 
@@ -97,6 +114,8 @@ void BlockStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
     blockInfo = toCallExpr(new_ast);
   else if (old_ast == modUses)
     modUses = toCallExpr(new_ast);
+  else if (old_ast == byrefVars)
+    byrefVars = toCallExpr(new_ast);
   else
     INT_FATAL(this, "Unexpected case in BlockStmt::replaceChild");
 }
@@ -119,39 +138,16 @@ GenRet BlockStmt::codegen() {
       } else if (blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)) {
         std::string hdr = "for (;" + codegenValue(blockInfo->get(1)).c + ";) ";
         info->cStatements.push_back(hdr);
-      } else if (blockInfo->isPrimitive(PRIM_BLOCK_XMT_PRAGMA_FORALL_I_IN_N)) {
-        std::string hdr = "_Pragma(\"mta for all streams ";
-        hdr += codegenValue(blockInfo->get(1)).c;
-        hdr += " of ";
-        hdr += codegenValue(blockInfo->get(2)).c;
-        hdr += "\")\n";
-        info->cStatements.push_back(hdr);
       }
     }
 
     if (this != getFunction()->body)
       info->cStatements.push_back("{\n");
 
-    if (!(fNoRepositionDefExpr)) {
-      Vec<BaseAST*> asts;
-      collect_top_asts(this, asts);
-      forv_Vec(BaseAST, ast, asts) {
-        if (DefExpr* def = toDefExpr(ast)) {
-          if (def->parentExpr == this) {
-            if (!toTypeSymbol(def->sym)) {
-              if (fGenIDS && isVarSymbol(def->sym))
-                info->cStatements.push_back("/* " + numToString(def->sym->id) + " */ ");
-              def->sym->codegenDef();
-            }
-          }
-        }
-      }
-    }
-
     body.codegen("");
 
     if (blockInfo && blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP)) {
-      std::string ftr = "} while (" + codegenValue(blockInfo->get(1)).c + ");\n";
+      std::string ftr= "} while (" + codegenValue(blockInfo->get(1)).c + ");\n";
       info->cStatements.push_back(ftr);
     } else if (this != getFunction()->body) {
       std::string end = "}";
@@ -162,9 +158,6 @@ GenRet BlockStmt::codegen() {
     }
   } else {
 #ifdef HAVE_LLVM
-    if (blockInfo && blockInfo->isPrimitive(PRIM_BLOCK_XMT_PRAGMA_FORALL_I_IN_N))
-      INT_FATAL("xmt forall not supported with LLVM");
-
     llvm::Function *func = info->builder->GetInsertBlock()->getParent();
 
     getFunction()->codegenUniqueNum++;
@@ -174,21 +167,29 @@ GenRet BlockStmt::codegen() {
     llvm::BasicBlock *blockStmtEndCond = NULL;
     llvm::BasicBlock *blockStmtEnd = NULL;
  
-    blockStmtBody = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_body"));
+    blockStmtBody = llvm::BasicBlock::Create(
+        info->module->getContext(), FNAME("blk_body"));
    
     if(blockInfo) {
-      blockStmtEnd = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_end"));
-      if(blockInfo->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) || blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)) {
+      blockStmtEnd = llvm::BasicBlock::Create(
+          info->module->getContext(), FNAME("blk_end"));
+      if (blockInfo->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
+          blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)) {
         // Add the condition block.
-        blockStmtCond = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_cond"));
+        blockStmtCond = llvm::BasicBlock::Create(
+            info->module->getContext(), FNAME("blk_cond"));
         func->getBasicBlockList().push_back(blockStmtCond);
         // Insert an explicit branch from the current block to the loop start.
         info->builder->CreateBr(blockStmtCond);
         // Now switch to the condition for code generation 
         info->builder->SetInsertPoint(blockStmtCond);
 
-        llvm::Value *condValue = info->builder->CreateLoad(blockInfo->get(1)->codegen().val);
-        condValue = info->builder->CreateICmpNE(condValue, llvm::ConstantInt::get(condValue->getType(), 0), FNAME("condition"));
+        llvm::Value *condValue =
+          info->builder->CreateLoad(blockInfo->get(1)->codegen().val);
+        condValue = info->builder->CreateICmpNE(
+            condValue,
+            llvm::ConstantInt::get(condValue->getType(), 0),
+            FNAME("condition"));
 
         // Now we might do either to the Body or to the End.
         info->builder->CreateCondBr(condValue, blockStmtBody, blockStmtEnd);
@@ -205,34 +206,25 @@ GenRet BlockStmt::codegen() {
     
     info->lvt->addLayer();
 
-    if (!(fNoRepositionDefExpr)) {
-      Vec<BaseAST*> asts;
-      collect_top_asts(this, asts);
-      forv_Vec(BaseAST, ast, asts) {
-        if (DefExpr* def = toDefExpr(ast)) {
-          if (def->parentExpr == this) {
-            if (!toTypeSymbol(def->sym)) {
-              def->sym->codegenDef();
-            }
-          }
-        }
-      }
-    }
-
     body.codegen("");
     info->lvt->removeLayer();
     
     if(blockInfo) {
       if(blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP)) {
         // Add the condition block.
-        blockStmtEndCond = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_end_cond"));
+        blockStmtEndCond = llvm::BasicBlock::Create(
+            info->module->getContext(), FNAME("blk_end_cond"));
         func->getBasicBlockList().push_back(blockStmtEndCond);
         // Insert an explicit branch from the body block to the loop condition.
         info->builder->CreateBr(blockStmtEndCond);
         // set insert point
         info->builder->SetInsertPoint(blockStmtEndCond);
-        llvm::Value *condValue = info->builder->CreateLoad(blockInfo->get(1)->codegen().val);
-        condValue = info->builder->CreateICmpNE(condValue, llvm::ConstantInt::get(condValue->getType(), 0), FNAME("condition"));
+        llvm::Value *condValue =
+          info->builder->CreateLoad(blockInfo->get(1)->codegen().val);
+        condValue = info->builder->CreateICmpNE(
+            condValue,
+            llvm::ConstantInt::get(condValue->getType(), 0),
+            FNAME("condition"));
         info->builder->CreateCondBr(condValue, blockStmtBody, blockStmtEnd);
       } else if( blockStmtCond ) {
         info->builder->CreateBr(blockStmtCond);
@@ -249,11 +241,30 @@ GenRet BlockStmt::codegen() {
  
 #endif
   }
+  INT_ASSERT(!byrefVars); // these should not persist past parallel()
   return ret;
 }
 
-  
+// The BISON productions generate a large number of scope-less BlockStmt
+// as an artifact of the processing.  This function is intended to be
+// called from well-defined points in the parser to collapse these during
+// the construction of the parse tree.
+void
+BlockStmt::appendChapelStmt(BlockStmt* stmt) {
+#if 0
+  if (stmt->isScopeless() == true) {
+    for_alist(expr, stmt->body) {
+      this->insertAtTail(expr->remove());
+    }
+  } else {
+    insertAtTail(stmt);
+  }
+#else
 
+  insertAtTail(stmt);
+
+#endif
+}
 
 
 void
@@ -298,7 +309,12 @@ BlockStmt::insertAtTailBeforeGoto(Expr* ast) {
 
 
 bool
-BlockStmt::isLoop(void) {
+BlockStmt::isScopeless() const {
+  return blockTag == BLOCK_SCOPELESS;
+}
+
+bool
+BlockStmt::isLoop() const {
   return (blockInfo &&
           (blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP) ||
            blockInfo->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
@@ -308,7 +324,7 @@ BlockStmt::isLoop(void) {
 
 
 int
-BlockStmt::length(void) {
+BlockStmt::length() const {
   return body.length;
 }
 
@@ -324,8 +340,43 @@ BlockStmt::addUse(ModuleSymbol* mod) {
 }
 
 
+// Remove a module from the list of modules used by the module this block
+// statement belongs to. The list of used modules is stored in modUses
+void
+BlockStmt::removeUse(ModuleSymbol* mod) {
+  if (modUses) {
+    for_alist(expr, modUses->argList) {
+      if (SymExpr* symExpr = toSymExpr(expr)) {
+        if (ModuleSymbol* curMod = toModuleSymbol(symExpr->var)) {
+          if (curMod == mod) {
+            symExpr->remove();  
+          }
+        }
+      }
+    }
+  }
+}
+
+void BlockStmt::accept(AstVisitor* visitor) {
+  if (visitor->enterBlockStmt(this) == true) {
+    for_alist(next_ast, body)
+      next_ast->accept(visitor);
+
+    if (blockInfo)
+      blockInfo->accept(visitor);
+
+    if (modUses)
+      modUses->accept(visitor);
+
+    if (byrefVars)
+      byrefVars->accept(visitor);
+
+    visitor->exitBlockStmt(this);
+  }
+}
+
 CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
-  Expr(E_CondStmt),
+  Stmt(E_CondStmt),
   condExpr(iCondExpr),
   thenStmt(NULL),
   elseStmt(NULL)
@@ -373,7 +424,8 @@ CondStmt::fold_cond_stmt()
       this->remove();
       return NULL;
     }
-    // Otherwise, invert the condition and move the else clause into the THEN slot.
+    // Otherwise, invert the condition and move the else clause into
+    // the THEN slot.
     Expr* cond = new CallExpr(PRIM_UNARY_LNOT, condExpr);
     this->replaceChild(condExpr, cond);
     this->replaceChild(thenStmt, elseStmt);
@@ -385,16 +437,15 @@ CondStmt::fold_cond_stmt()
   {
     if (VarSymbol* var = toVarSymbol(cond->var)) {
       if (var->immediate &&
-          var->immediate->const_kind == NUM_KIND_UINT &&
-          var->immediate->num_index == INT_SIZE_1) {
+          var->immediate->const_kind == NUM_KIND_BOOL) {
         SET_LINENO(this);
         result = new CallExpr(PRIM_NOOP);
         this->insertBefore(result);
-        if (var->immediate->v_bool == gTrue->immediate->v_bool) {
+        if (var->immediate->bool_value() == gTrue->immediate->bool_value()) {
           Expr* then_stmt = thenStmt;
           then_stmt->remove();
           this->replace(then_stmt);
-        } else if (var->immediate->v_bool == gFalse->immediate->v_bool) {
+        } else if (var->immediate->bool_value() == gFalse->immediate->bool_value()) {
           Expr* else_stmt = elseStmt;
           if (else_stmt) {
             else_stmt->remove();
@@ -488,13 +539,17 @@ GenRet CondStmt::codegen() {
     llvm::Function *func = info->builder->GetInsertBlock()->getParent();
     getFunction()->codegenUniqueNum++;
 
-    llvm::BasicBlock *condStmtIf = llvm::BasicBlock::Create(info->module->getContext(), FNAME("cond_if"));
-    llvm::BasicBlock *condStmtThen = llvm::BasicBlock::Create(info->module->getContext(), FNAME("cond_then"));
+    llvm::BasicBlock *condStmtIf = llvm::BasicBlock::Create(
+        info->module->getContext(), FNAME("cond_if"));
+    llvm::BasicBlock *condStmtThen = llvm::BasicBlock::Create(
+        info->module->getContext(), FNAME("cond_then"));
     llvm::BasicBlock *condStmtElse = NULL;
-    llvm::BasicBlock *condStmtEnd = llvm::BasicBlock::Create(info->module->getContext(), FNAME("cond_end"));
+    llvm::BasicBlock *condStmtEnd = llvm::BasicBlock::Create(
+        info->module->getContext(), FNAME("cond_end"));
           
     if(elseStmt) {
-      condStmtElse = llvm::BasicBlock::Create(info->module->getContext(), FNAME("cond_else"));
+      condStmtElse = llvm::BasicBlock::Create(
+          info->module->getContext(), FNAME("cond_else"));
     }
           
     info->lvt->addLayer();
@@ -507,8 +562,14 @@ GenRet CondStmt::codegen() {
     llvm::Value *condValue = condExpr->codegen().val;
 
     condValue = info->builder->CreateLoad(condValue, FNAME("condValue"));
-    condValue = info->builder->CreateICmpNE(condValue, llvm::ConstantInt::get(condValue->getType(), 0), FNAME("condition"));
-    info->builder->CreateCondBr(condValue, condStmtThen, (elseStmt) ? condStmtElse : condStmtEnd);
+    condValue = info->builder->CreateICmpNE(
+        condValue,
+        llvm::ConstantInt::get(condValue->getType(), 0),
+        FNAME("condition"));
+    info->builder->CreateCondBr(
+        condValue,
+        condStmtThen,
+        (elseStmt) ? condStmtElse : condStmtEnd);
     
     func->getBasicBlockList().push_back(condStmtThen);
     info->builder->SetInsertPoint(condStmtThen);
@@ -539,17 +600,34 @@ GenRet CondStmt::codegen() {
 }
 
 
+void CondStmt::accept(AstVisitor* visitor) {
+  if (visitor->enterCondStmt(this) == true) {
+
+    if (condExpr)
+      condExpr->accept(visitor);
+
+    if (thenStmt)
+      thenStmt->accept(visitor);
+
+    if (elseStmt)
+      elseStmt->accept(visitor);
+
+    visitor->exitCondStmt(this);
+  }
+}
+
 GotoStmt::GotoStmt(GotoTag init_gotoTag, const char* init_label) :
-  Expr(E_GotoStmt),
+  Stmt(E_GotoStmt),
   gotoTag(init_gotoTag),
-  label(init_label ? (Expr*)new UnresolvedSymExpr(init_label) : (Expr*)new SymExpr(gNil))
+  label(init_label ? (Expr*)new UnresolvedSymExpr(init_label)
+                   : (Expr*)new SymExpr(gNil))
 {
   gGotoStmts.add(this);
 }
 
 
 GotoStmt::GotoStmt(GotoTag init_gotoTag, Symbol* init_label) :
-  Expr(E_GotoStmt),
+  Stmt(E_GotoStmt),
   gotoTag(init_gotoTag),
   label(new SymExpr(init_label))
 {
@@ -558,7 +636,7 @@ GotoStmt::GotoStmt(GotoTag init_gotoTag, Symbol* init_label) :
 
 
 GotoStmt::GotoStmt(GotoTag init_gotoTag, Expr* init_label) :
-  Expr(E_GotoStmt),
+  Stmt(E_GotoStmt),
   gotoTag(init_gotoTag),
   label(init_label)
 {
@@ -605,9 +683,11 @@ void GotoStmt::verify() {
         INT_FATAL(this, "goto label is in a different function than the goto");
       GotoStmt* igs = getGotoLabelsIterResumeGoto(this);
       if ((gotoTag == GOTO_ITER_RESUME) == (igs == NULL))
-        INT_FATAL(this, "goto must be GOTO_ITER_RESUME iff its label has iterResumeGoto");
+        INT_FATAL(this,
+            "goto must be GOTO_ITER_RESUME iff its label has iterResumeGoto");
       if (gotoTag == GOTO_ITER_RESUME && igs != this)
-        INT_FATAL(this, "GOTO_ITER_RESUME goto's label's iterResumeGoto does not match the goto");
+        INT_FATAL(this,
+      "GOTO_ITER_RESUME goto's label's iterResumeGoto does not match the goto");
     }
   }
 }
@@ -691,7 +771,8 @@ GenRet GotoStmt::codegen() {
  
     getFunction()->codegenUniqueNum++;
 
-    llvm::BasicBlock *afterGoto = llvm::BasicBlock::Create(info->module->getContext(), FNAME("afterGoto"));
+    llvm::BasicBlock *afterGoto = llvm::BasicBlock::Create(
+        info->module->getContext(), FNAME("afterGoto"));
     func->getBasicBlockList().push_back(afterGoto);
     info->builder->SetInsertPoint(afterGoto);
 
@@ -708,3 +789,54 @@ const char* GotoStmt::getName() {
   else
     return NULL;
 }
+
+void GotoStmt::accept(AstVisitor* visitor) {
+  if (visitor->enterGotoStmt(this) == true) {
+
+    if (label)
+      label->accept(visitor);
+
+    visitor->exitGotoStmt(this);
+  }
+}
+
+ExternBlockStmt::ExternBlockStmt(const char* init_c_code) :
+  Stmt(E_ExternBlockStmt),
+  c_code(init_c_code)
+{
+  gExternBlockStmts.add(this);
+}
+
+void ExternBlockStmt::verify() {
+  Expr::verify();
+  if (astTag != E_ExternBlockStmt) {
+    INT_FATAL(this, "Bad ExternBlockStmt::astTag");
+  }
+  if (!c_code) {
+    INT_FATAL(this, "ExternBlockStmt has no c_code");
+  }
+}
+
+void ExternBlockStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
+  INT_FATAL(this, "ExternBlockStmt replaceChild called");
+}
+
+GenRet ExternBlockStmt::codegen() {
+  GenRet ret;
+  // Needs to be handled specially by creating a C
+  //  file per module..
+  INT_FATAL(this, "ExternBlockStmt codegen called");
+  return ret;
+}
+
+
+ExternBlockStmt* ExternBlockStmt::copyInner(SymbolMap* map) {
+  ExternBlockStmt* copy = new ExternBlockStmt(c_code);
+
+  return copy;
+}
+
+void ExternBlockStmt::accept(AstVisitor* visitor) {
+  visitor->visitEblockStmt(this);
+}
+

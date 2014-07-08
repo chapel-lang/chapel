@@ -3,6 +3,8 @@
 
 extern bool printSystemCommands;
 
-int mysystem(const char* command, const char* description, int ignorestatus=0);
+int mysystem(const char* command, 
+             const char* description, 
+             bool        ignorestatus = false);
 
 #endif

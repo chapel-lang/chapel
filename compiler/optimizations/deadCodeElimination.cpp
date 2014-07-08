@@ -7,16 +7,19 @@
 #include "stmt.h"
 #include "view.h"
 
+#include <set>
+#include <queue>
+
 
 //
 // Static function declarations.
 //
-static bool deadBlockElimination(FnSymbol* fn);
+static void deadBlockElimination(FnSymbol* fn);
 // static void deadGotoElimination(FnSymbol* fn);
 
 // Static variables.
 static unsigned deadBlockCount;
-
+static unsigned deadModuleCount;
 
 //
 // Removes local variables that are only targets for moves, but are
@@ -44,11 +47,22 @@ void deadVariableElimination(FnSymbol* fn) {
   Map<Symbol*,Vec<SymExpr*>*> useMap;
   buildDefUseMaps(symSet, symExprs, defMap, useMap);
 
-  forv_Vec(Symbol, sym, symSet) if (isVarSymbol(sym)) {
+  forv_Vec(Symbol, sym, symSet)
+  {
+    // We're interested only in VarSymbols.
+    if (!isVarSymbol(sym))
+      continue;
+
+    // A method must have a _this symbol, even if it is not used.
+    if (sym == fn->_this)
+      continue;
+
     if (isDeadVariable(sym, defMap, useMap)) {
       for_defs(se, defMap, sym) {
         CallExpr* call = toCallExpr(se->parentExpr);
-        INT_ASSERT(call && call->isPrimitive(PRIM_MOVE));
+        INT_ASSERT(call && 
+                   (call->isPrimitive(PRIM_MOVE) ||
+                    call->isPrimitive(PRIM_ASSIGN)));
         Expr* rhs = call->get(2)->remove();
         if (!isSymExpr(rhs))
           call->replace(rhs);
@@ -83,7 +97,7 @@ void deadExpressionElimination(FnSymbol* fn) {
           expr->isPrimitive(PRIM_ADDR_OF))
         if (expr == expr->getStmtExpr())
           expr->remove();
-      if (expr->isPrimitive(PRIM_MOVE))
+      if (expr->isPrimitive(PRIM_MOVE) || expr->isPrimitive(PRIM_ASSIGN))
         if (SymExpr* lhs = toSymExpr(expr->get(1)))
           if (SymExpr* rhs = toSymExpr(expr->get(2)))
             if (lhs->var == rhs->var)
@@ -118,7 +132,7 @@ void deadCodeElimination(FnSymbol* fn)
               (call->primitive && call->primitive->isEssential))
             essential = true;
           // mark assignments to global variables as essential
-          if (call->isPrimitive(PRIM_MOVE))
+          if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
             if (SymExpr* se = toSymExpr(call->get(1)))
               if (DU.count(se) == 0 || // DU chain only contains locals
                   !se->var->type->refType) // reference issue
@@ -171,78 +185,172 @@ void deadCodeElimination(FnSymbol* fn)
   freeDefUseChains(DU, UD);
 }
 
+
+// Determines if a module is dead. A module is dead if the module's init
+// function can only be called from module code, and the init function
+// is empty, and the init function is the only thing in the module, and the
+// module is not a nested module. 
+static bool isDeadModule(ModuleSymbol* mod) {
+  // The main module and any module whose init function is exported
+  // should never be considered dead, as the init function can be
+  // explicitly called from the runtime, or other c code
+  if (mod == mainModule || mod->hasFlag(FLAG_EXPORT_INIT)) return false;
+
+  // because of the way modules are initialized, we don't want to consider a
+  // nested function as dead as its outer module and all of its uses should
+  // have their initializer called by the inner module. 
+  if (mod->defPoint->getModule() != theProgram && 
+      mod->defPoint->getModule() != rootModule) 
+    return false;
+
+  // if there is only one thing in the module
+  if (mod->block->body.length == 1) {
+    // and that thing is the init function 
+    if (mod->block->body.only() == mod->initFn->defPoint) {
+      // and the init function is empty (only has a return)
+      if (mod->initFn->body->body.length == 1) {
+        // then the module is dead 
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+
+// Removes a dead module. Because modules (such as the standard module) can
+// serve as groupings of other modules to include, you have to add all the
+// modules a dead module used to any module that used the dead one. 
+static void removeDeadModule(ModuleSymbol* deadMod) {
+  // remove the dead module and its initFn
+  deadMod->defPoint->remove();
+  deadMod->initFn->defPoint->remove();
+
+  // find all the modules that used the dead one, and remove the dead
+  // one from their modUseList, modUseSet and block. 
+  forv_Vec(ModuleSymbol, modThatUsedDeadMod, allModules) {
+    int vecIndex = modThatUsedDeadMod->modUseList.index(deadMod);
+    int setIndex = modThatUsedDeadMod->modUseSet.index(deadMod);
+    if (vecIndex >= 0 && setIndex >= 0) {
+      modThatUsedDeadMod->block->removeUse(deadMod);
+      modThatUsedDeadMod->modUseSet.remove(setIndex);
+      modThatUsedDeadMod->modUseList.remove(vecIndex);
+       
+      // for each module that the dead module used, add that module to
+      // the current module's modUseList, modUseSet, and block
+      forv_Vec(ModuleSymbol, modUsedByDeadMod, deadMod->modUseList) {
+        if (modThatUsedDeadMod->modUseList.index(modUsedByDeadMod) < 0) {
+          SET_LINENO(modThatUsedDeadMod);
+          modThatUsedDeadMod->block->addUse(modUsedByDeadMod);
+          modThatUsedDeadMod->modUseSet.set_add(modUsedByDeadMod);
+          modThatUsedDeadMod->modUseList.add(modUsedByDeadMod);
+        }
+      }
+    }
+  }
+}
+
+
+// Eliminates all dead modules
+static void deadModuleElimination() {
+  forv_Vec(ModuleSymbol, mod, allModules) {
+    if (isDeadModule(mod)) {
+      deadModuleCount++;
+      removeDeadModule(mod);
+    }
+  }
+}
+
+
 void deadCodeElimination() {
   if (!fNoDeadCodeElimination) {
     deadBlockCount = 0;
+    deadModuleCount = 0;
     forv_Vec(FnSymbol, fn, gFnSymbols) {
-      bool change = false;
-      do {
-        change = deadBlockElimination(fn);
-      } while (change);
+      deadBlockElimination(fn);
 //      deadGotoElimination(fn);
       deadCodeElimination(fn);
       deadVariableElimination(fn);
       deadExpressionElimination(fn);
     }
-
+    deadModuleElimination();
+    
     if (fReportDeadBlocks)
       printf("\tRemoved %d dead blocks.\n", deadBlockCount);
+    if (fReportDeadModules)
+      printf("Removed %d dead modules.\n", deadModuleCount);
+
   }
 }
 
 // Look for and remove unreachable blocks.
-static bool deadBlockElimination(FnSymbol* fn)
+// Muchnick says we can enumerate the unreachable blocks first and then just
+// remove them.  We only need to do this once, because removal of an
+// unreachable block cannot possibly make any reachable block unreachable.
+static void deadBlockElimination(FnSymbol* fn)
 {
-  // We need the basic block information to be right here.
+  // We need the basic block information to be correct, so recompute it.
   buildBasicBlocks(fn);
 
-  bool change = false;
-  for_vector(BasicBlock, bb, *fn->basicBlocks)
+  // Find the reachable basic blocks within this function.
+  std::set<BasicBlock*> reachable;
+
+  // We set up a work queue to perform a BFS on reachable blocks, and seed it
+  // with the first block in the function.
+  std::queue<BasicBlock*> work_queue;
+  work_queue.push((*fn->basicBlocks)[0]);
+
+  // Then we iterate until there are no more blocks to visit.
+  while (!work_queue.empty())
   {
-    // Ignore the first block.
-    if (bb == (*fn->basicBlocks)[0])
+    // Fetch and remove the next block.
+    BasicBlock* bb = work_queue.front(); 
+    work_queue.pop();
+
+    // Ignore it if we've already seen it.
+    if (reachable.count(bb))
       continue;
 
-    // If this block has no predecessors, then it is dead.
-    if (bb->ins.size() == 0)
-    {
-      if (bb->exprs.size() > 0)
-      {
-        change = true;
-        ++deadBlockCount;
-
-        // Remove all of its expressions.
-        for_vector(Expr, expr, bb->exprs)
-        {
-          if (! expr->parentExpr)
-            continue;   // This node is no longer in the tree.
-
-          CondStmt* cond = toCondStmt(expr->parentExpr);
-          if (cond && cond->condExpr == expr)
-            // If expr is the condition expression in an if statement,
-            // then remove the entire if.
-            cond->remove();
-          else
-            expr->remove();
-        }
-      }
-
-#if 0
-      // Get more out of one pass by removing this BB from the predecessor
-      // lists of its successors.
-      // FIXME: This causes memory corruption in std::vectors.
-      // Or ... stop trying to be so clever and just remove this block.
-      for_vector(BasicBlock, succ, bb->outs)
-        for_vector(BasicBlock, self, succ->ins)
-          if (self == bb)
-            succ->ins.erase(self);
-#endif
-      // We leave the "dead" bb structure in place.
-      // The next time we construct basic blocks for this fn, it should be gone.
-    }
+    // Otherwise, mark it as reachable, and append all of its successors to the
+    // work queue.
+    reachable.insert(bb);
+    for_vector(BasicBlock, out, bb->outs)
+      work_queue.push(out);
   }
 
-  return change;
+  // Now we simply visit all the blocks, deleting all those that are not
+  // rechable.
+  for_vector(BasicBlock, bb, *fn->basicBlocks)
+  {
+    if (reachable.count(bb))
+      continue;
+
+    ++deadBlockCount;
+
+    // Remove all of its expressions.
+    for_vector(Expr, expr, bb->exprs)
+    {
+      if (! expr->parentExpr)
+        continue;   // This node is no longer in the tree.
+
+      // Do not remove def expressions (for now)
+      // In some cases (associated with iterator code), defs appear in dead
+      // blocks but are used in later blocks, so removing the defs results
+      // in a verify error.
+      // TODO: Perhaps this reformulation of unreachable block removal does a better
+      // job and those blocks are now removed as well.  If so, this IF can be removed.
+      if (toDefExpr(expr))
+        continue;
+
+      CondStmt* cond = toCondStmt(expr->parentExpr);
+      if (cond && cond->condExpr == expr)
+        // If expr is the condition expression in an if statement,
+        // then remove the entire if.
+        cond->remove();
+      else
+        expr->remove();
+    }
+  }
 }
 
 //

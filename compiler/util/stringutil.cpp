@@ -92,7 +92,7 @@ void deleteStrings() {
   Vec<const char*> keys;
   chapelStringsTable.get_keys(keys);
   forv_Vec(const char, key, keys) {
-    free((void*)key);
+    free(const_cast<char*>(key));
   }
 }
 

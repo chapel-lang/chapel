@@ -18,7 +18,8 @@ buildSyncAccessFunctionSet(Vec<FnSymbol*>& syncAccessFunctionSet) {
   // Find all functions that directly call sync access primitives.
   //
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->parentSymbol) {
+    if (FnSymbol* parent = toFnSymbol(call->parentSymbol))
+    {
       if (call->isPrimitive(PRIM_SYNC_INIT) ||
           call->isPrimitive(PRIM_SYNC_LOCK) ||
           call->isPrimitive(PRIM_SYNC_UNLOCK) ||
@@ -34,18 +35,14 @@ buildSyncAccessFunctionSet(Vec<FnSymbol*>& syncAccessFunctionSet) {
           call->isPrimitive(PRIM_WRITEEF) ||
           call->isPrimitive(PRIM_WRITEFF) ||
           call->isPrimitive(PRIM_WRITEXF) ||
-          call->isPrimitive(PRIM_SYNC_RESET) ||
           call->isPrimitive(PRIM_READFE) ||
           call->isPrimitive(PRIM_READFF) ||
           call->isPrimitive(PRIM_READXX) ||
           call->isPrimitive(PRIM_SYNC_IS_FULL) ||
           call->isPrimitive(PRIM_SINGLE_WRITEEF) ||
-          call->isPrimitive(PRIM_SINGLE_RESET) ||
           call->isPrimitive(PRIM_SINGLE_READFF) ||
           call->isPrimitive(PRIM_SINGLE_READXX) ||
           call->isPrimitive(PRIM_SINGLE_IS_FULL)) {
-        FnSymbol* parent = toFnSymbol(call->parentSymbol);
-        INT_ASSERT(parent);
         if (!parent->hasFlag(FLAG_DONT_DISABLE_REMOTE_VALUE_FORWARDING) &&
             !syncAccessFunctionSet.set_in(parent)) {
           syncAccessFunctionSet.set_add(parent);
@@ -144,6 +141,31 @@ static bool isSufficientlyConst(ArgSymbol* arg) {
     return true;
   }
 
+  //
+  // See if this argument is 'const in'; if it is, it's a good
+  // candidate for remote value forwarding.  My current thinking is
+  // that we should not forward 'const ref' arguments because the
+  // const-ness only means that the callee will not modify them, not
+  // that the caller won't.  If someone can successfully argue that
+  // I'm being too conservative, I'm open to that.  My thinking is
+  // that I'd rather find a case that we think we could be r.v.f.'ing
+  // later on than to have to chase down a race condition due to
+  // optimizing too aggressively.
+  //
+  // Why the additional check against 'ref' types?  Because some
+  // compiler-created arguments currently indicate ref-ness only via
+  // the type and not the intent.  See the big comment I added in
+  // addVarsToFormals() (flattenFunctions.cpp) in this same commit for
+  // an example.  A case that currently fails without this test is:
+  //
+  //     test/multilocale/bradc/needMultiLocales/remoteReal.chpl
+  //
+  if (arg->intent == INTENT_CONST_IN  &&
+      !arg->type->symbol->hasFlag(FLAG_REF)) {
+    return true;
+  }
+
+
   // We may want to add additional cases here as we discover them
 
   // otherwise, conservatively assume it varies
@@ -174,7 +196,7 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
   // (created when transforming recursive leader iterators into
   // recursive functions) to value type fields if safe
   //
-  forv_Vec(ClassType, ct, gClassTypes) {
+  forv_Vec(AggregateType, ct, gAggregateTypes) {
     if (ct->symbol->hasFlag(FLAG_LOOP_BODY_ARGUMENT_CLASS)) {
       for_fields(field, ct) {
         if (field->type->symbol->hasFlag(FLAG_REF)) {
@@ -224,8 +246,6 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
   }
 
   forv_Vec(FnSymbol, fn, fns) {
-    INT_ASSERT(fn->calledBy->n == 1);
-    CallExpr* call = fn->calledBy->v[0];
 
     //
     // For each reference arg that is safe to dereference
@@ -239,16 +259,30 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
         continue;
       }
 
+      // If this argument is a reference atomic type, we need to preserve
+      // reference semantics, i.e. that the referenced atomic gets updated.
+      // Therefore, dereferencing a ref atomic and forwarding its value is not
+      // what we want.  That is, all atomics implicitly disable remote value
+      // forwarding.
+      // See resolveFormals() [functionResolution.cpp:839] for where we decide
+      // to convert atomic formals to ref formals.
+      if (isAtomicType(arg->type))
+        continue;
+
       if (arg->type->symbol->hasFlag(FLAG_REF) &&
           isSafeToDeref(arg, defMap, useMap, NULL, NULL)) {
 
+       // Dereference the arg type.
+       Type* prevArgType = arg->type;
+       arg->type = arg->getValType();
+
+       forv_Vec(CallExpr, call, *fn->calledBy) {
         //
-        // Find actual for arg and dereference arg type.
+        // Find actual for arg.
         //
         SymExpr* actual = toSymExpr(formal_to_actual(call, arg));
-        INT_ASSERT(actual && actual->var->type == arg->type);
+        INT_ASSERT(actual && actual->var->type == prevArgType);
         SET_LINENO(actual);
-        arg->type = arg->getValType();
         
         //
         // Insert de-reference temp of value.
@@ -258,6 +292,7 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
         call->insertBefore(new CallExpr(PRIM_MOVE, deref,
                                         new CallExpr(PRIM_DEREF, actual->var)));
         actual->replace(new SymExpr(deref));
+       }  // for call
         
         //
         // Insert re-reference temps at use points.
@@ -271,7 +306,7 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
             use->replace(new CallExpr(PRIM_ADDR_OF, arg));
           } else {
             Expr* stmt = use->getStmtExpr();
-            VarSymbol* reref = newTemp("rvfRerefTmp", actual->var->type);
+            VarSymbol* reref = newTemp("rvfRerefTmp", prevArgType);
             stmt->insertBefore(new DefExpr(reref));
             stmt->insertBefore(new CallExpr(PRIM_MOVE, reref,
                                             new CallExpr(PRIM_ADDR_OF, arg)));

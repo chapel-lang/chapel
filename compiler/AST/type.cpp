@@ -1,38 +1,73 @@
 #define TYPE_EXTERN
+
+#include "type.h"
+
 #include "astutil.h"
 #include "build.h"
+#include "codegen.h"
 #include "expr.h"
 #include "files.h"
+#include "intlimits.h"
 #include "misc.h"
+#include "passes.h" // for isWideString
 #include "stringutil.h"
 #include "symbol.h"
-#include "type.h"
 #include "vec.h"
 
-#include "intlimits.h"
+#include "AstVisitor.h"
 
-#include "codegen.h"
+
+  TypeSymbol*      symbol;
+  AggregateType*   refType;  // pointer to references for non-reference types
+  Vec<FnSymbol*>   methods;
+
+  bool             hasGenericDefaults; // all generic fields have defaults
+
+  Symbol*          defaultValue;
+  FnSymbol*        defaultInitializer; // This is the compiler-supplied
+                                       // default-initializer.
+                                       // It provides initial values for the
+                                       // fields in an aggregate type.
+  FnSymbol*        defaultTypeConstructor;
+  FnSymbol*        destructor;
+
+  // Used only in PrimitiveType; replace with flag?
+  bool             isInternalType;
+
+  Type*            instantiatedFrom;
+  Type*            scalarPromotionType;
+
+  SymbolMap        substitutions;
+  Vec<Type*>       dispatchChildren;   // dispatch hierarchy
+  Vec<Type*>       dispatchParents;    // dispatch hierarchy
+
+
+
 
 
 Type::Type(AstTag astTag, Symbol* init_defaultVal) :
   BaseAST(astTag),
-  scalarPromotionType(NULL),
+
   symbol(NULL),
+  refType(NULL),
+  hasGenericDefaults(false),
   defaultValue(init_defaultVal),
-  initializer(NULL),
+  defaultInitializer(NULL),
   defaultTypeConstructor(NULL),
   destructor(NULL),
-  hasGenericDefaults(false),
+  isInternalType(false),
   instantiatedFrom(NULL),
-  refType(NULL)
-{}
+  scalarPromotionType(NULL) {
+
+}
 
 
-Type::~Type() { }
+Type::~Type() {
 
+}
 
-void Type::verify() { }
-
+void Type::verify() {
+}
 
 void Type::addSymbol(TypeSymbol* newsymbol) {
   symbol = newsymbol;
@@ -74,7 +109,7 @@ int Type::codegenStructure(FILE* outfile, const char* baseoffset) {
 
 
 Symbol* Type::getField(const char* name, bool fatal) {
-  INT_FATAL(this, "getField not called on ClassType");
+  INT_FATAL(this, "getField not called on AggregateType");
   return NULL;
 }
 
@@ -118,6 +153,10 @@ int PrimitiveType::codegenStructure(FILE* outfile, const char* baseoffset) {
   } else
     INT_FATAL(this, "Cannot codegen an internal type");
   return 1;
+}
+
+void PrimitiveType::accept(AstVisitor* visitor) {
+  visitor->visitPrimType(this);
 }
 
 EnumType::EnumType() :
@@ -202,19 +241,9 @@ void EnumType::codegenDef() {
         INT_ASSERT(s->immediate);
 
         VarSymbol* sizedImmediate = resizeImmediate(s, ty);
-        //llvm::Value *initValue = sizedImmediate->codegen().val;
-        //initConstant = llvm::cast<llvm::Constant>(initValue);
-        
-        /*if(initConstant == NULL)
-          INT_FATAL(this, "Invalid enumeration constant init value");
-        */
-        
-        /*llvm::GlobalVariable *globalConstant = llvm::cast<llvm::GlobalVariable>(info->module->getOrInsertGlobal(constant->sym->cname, type));
-        globalConstant->setInitializer(initConstant);
-        globalConstant->setConstant(true);
-        */
 
-        info->lvt->addGlobalValue(constant->sym->cname, sizedImmediate->codegen());
+        info->lvt->addGlobalValue(constant->sym->cname,
+                                  sizedImmediate->codegen());
       }
     }
 #endif
@@ -428,54 +457,64 @@ PrimitiveType* EnumType::getIntegerType() {
   return integerType;
 }
 
+void EnumType::accept(AstVisitor* visitor) {
+  if (visitor->enterEnumType(this) == true) {
 
-ClassType::ClassType(ClassTag initClassTag) :
-  Type(E_ClassType, NULL),
-  classTag(initClassTag),
+    for_alist(next_ast, constants) {
+      next_ast->accept(visitor);
+    }
+
+    visitor->exitEnumType(this);
+  }
+}
+
+AggregateType::AggregateType(AggregateTag initTag) :
+  Type(E_AggregateType, NULL),
+  aggregateTag(initTag),
   fields(),
   inherits(),
   outer(NULL),
   doc(NULL)
 {
-  if (classTag == CLASS_CLASS) { // set defaultValue to nil to keep it
+  if (aggregateTag == AGGREGATE_CLASS) { // set defaultValue to nil to keep it
                                  // from being constructed
     defaultValue = gNil;
   }
   methods.clear();
   fields.parent = this;
   inherits.parent = this;
-  gClassTypes.add(this);
+  gAggregateTypes.add(this);
 }
 
 
-ClassType::~ClassType() { }
+AggregateType::~AggregateType() { }
 
 
-void ClassType::verify() {
+void AggregateType::verify() {
   Type::verify();
-  if (astTag != E_ClassType) {
-    INT_FATAL(this, "Bad ClassType::astTag");
+  if (astTag != E_AggregateType) {
+    INT_FATAL(this, "Bad AggregateType::astTag");
   }
-  if (classTag != CLASS_CLASS &&
-      classTag != CLASS_RECORD &&
-      classTag != CLASS_UNION)
-    INT_FATAL(this, "Bad ClassType::classTag");
+  if (aggregateTag != AGGREGATE_CLASS &&
+      aggregateTag != AGGREGATE_RECORD &&
+      aggregateTag != AGGREGATE_UNION)
+    INT_FATAL(this, "Bad AggregateType::aggregateTag");
   if (fields.parent != this || inherits.parent != this)
-    INT_FATAL(this, "Bad AList::parent in ClassType");
+    INT_FATAL(this, "Bad AList::parent in AggregateType");
   for_alist(expr, fields) {
     if (expr->parentSymbol != symbol)
-      INT_FATAL(this, "Bad ClassType::fields::parentSymbol");
+      INT_FATAL(this, "Bad AggregateType::fields::parentSymbol");
   }
   for_alist(expr, inherits) {
     if (expr->parentSymbol != symbol)
-      INT_FATAL(this, "Bad ClassType::inherits::parentSymbol");
+      INT_FATAL(this, "Bad AggregateType::inherits::parentSymbol");
   }
 }
 
 
-ClassType*
-ClassType::copyInner(SymbolMap* map) {
-  ClassType* copy_type = new ClassType(classTag);
+AggregateType*
+AggregateType::copyInner(SymbolMap* map) {
+  AggregateType* copy_type = new AggregateType(aggregateTag);
   copy_type->outer = outer;
   for_alist(expr, fields)
     copy_type->fields.insertAtTail(COPY_INT(expr));
@@ -490,7 +529,7 @@ ClassType::copyInner(SymbolMap* map) {
 
 
 static void
-addDeclaration(ClassType* ct, DefExpr* def, bool tail) {
+addDeclaration(AggregateType* ct, DefExpr* def, bool tail) {
   if (FnSymbol* fn = toFnSymbol(def->sym)) {
     ct->methods.add(fn);
     if (fn->_this) {
@@ -503,12 +542,15 @@ addDeclaration(ClassType* ct, DefExpr* def, bool tail) {
       UnresolvedSymExpr* sym = toUnresolvedSymExpr(firstexpr); INT_ASSERT(sym);
       const char* name = sym->unresolved;
       // ... then report it to the user
-      USR_FATAL_CONT(fn->_this, "Type binding clauses ('%s.' in this case) are not supported in declarations within a class, record or union", name);
+      USR_FATAL_CONT(fn->_this,
+         "Type binding clauses ('%s.' in this case) are not supported in "
+         "declarations within a class, record or union", name);
     } else {
       fn->_this = new ArgSymbol(fn->thisTag, "this", ct);
       fn->_this->addFlag(FLAG_ARG_THIS);
       fn->insertFormalAtHead(new DefExpr(fn->_this));
-      fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
+      fn->insertFormalAtHead(
+          new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
       fn->addFlag(FLAG_METHOD);
     }
   }
@@ -521,7 +563,7 @@ addDeclaration(ClassType* ct, DefExpr* def, bool tail) {
 }
 
 
-void ClassType::addDeclarations(Expr* expr, bool tail) {
+void AggregateType::addDeclarations(Expr* expr, bool tail) {
   if (DefExpr* def = toDefExpr(expr)) {
     addDeclaration(this, def, tail);
   } else if (BlockStmt* block = toBlockStmt(expr)) {
@@ -534,20 +576,70 @@ void ClassType::addDeclarations(Expr* expr, bool tail) {
 }
 
 
-void ClassType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  INT_FATAL(this, "Unexpected case in ClassType::replaceChild");
+void AggregateType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  INT_FATAL(this, "Unexpected case in AggregateType::replaceChild");
 }
 
-GenRet ClassType::codegenClassStructType()
+#define CLASS_STRUCT_PREFIX "chpl_"
+
+//
+// Construct the name of the struct used in the generated code to
+// represent the object definition for a AggregateType.
+//
+// When 'standalone'== false, we generates an identifier designed to
+// be used in combination with "struct "; true generates a name that's
+// been typedef'd such that the 'struct ' is not required (i.e., it
+// stands alone).
+//
+// By example, for a Chapel class named C, we'd generate:
+//
+//   typedef struct <classStructName(false)> {
+//     ...class members here...
+//   } <classStructName(true)>;
+//  typedef <classStructName(true)>* C;
+//
+// which in the current implementation amounts to:
+//
+//   typedef struct chpl_C_s {
+//     ...class members here...
+//   } chpl_C_object;
+//  typedef struct chpl_C_s* C;
+//
+// For records and unions (aggregateTag != AGGREGATE_CLASS), the pointer
+// version above isn't used, so the original identifier is used to
+// name the typedef for the struct itself.
+//
+const char* AggregateType::classStructName(bool standalone) {
+  if (standalone) {
+    const char* basename = symbol->cname;
+    if (aggregateTag == AGGREGATE_CLASS) {
+      //
+      // For extern classes, we've traditionally required them to be
+      // named _C; we could use a different naming convention, but
+      // have never agreed upon one.
+      //
+      if (symbol->hasFlag(FLAG_EXTERN)) {
+        return astr("_", basename);
+      } else {
+        return astr(CLASS_STRUCT_PREFIX, basename, "_object");
+      }
+    } else
+      return basename;
+  } else {
+    return astr(CLASS_STRUCT_PREFIX, symbol->cname, "_s");
+  }
+}
+
+GenRet AggregateType::codegenClassStructType()
 {
   GenInfo* info = gGenInfo;
   GenRet ret;
-  if(classTag == CLASS_CLASS) {
+  if(aggregateTag == AGGREGATE_CLASS) {
     if( info->cfile ) {
-      ret.c = std::string("_") + symbol->cname;
+      ret.c = std::string(classStructName(true));
     } else {
 #ifdef HAVE_LLVM
-      ret.type = info->lvt->getType(std::string("_") + symbol->cname);
+      ret.type = info->lvt->getType(classStructName(true));
 #endif
     }
   } else {
@@ -557,7 +649,7 @@ GenRet ClassType::codegenClassStructType()
   return ret;
 }
 
-void ClassType::codegenDef() {
+void AggregateType::codegenDef() {
   GenInfo* info = gGenInfo;
   FILE* outfile = info->cfile;
 
@@ -568,7 +660,7 @@ void ClassType::codegenDef() {
   if (symbol->hasFlag(FLAG_STAR_TUPLE)) {
     if( outfile ) {
       fprintf(outfile, "typedef ");
-      fprintf(outfile, "%s", getField("x1")->type->codegen().c.c_str());;
+      fprintf(outfile, "%s", getField("x1")->type->codegen().c.c_str());
       fprintf(outfile, " %s", symbol->codegen().c.c_str());
       fprintf(outfile, "[%d];\n\n", fields.length);
       return;
@@ -578,100 +670,113 @@ void ClassType::codegenDef() {
       type = llvm::ArrayType::get(elementType, fields.length);
 #endif
     }
-  } else if (symbol->hasFlag(FLAG_FIXED_STRING)) {
-    int size = toVarSymbol(symbol->type->substitutions.v[0].value)->immediate->int_value();
-    if( outfile ) {
-      fprintf(outfile, "typedef char %s[%i];\n", symbol->cname, size);
-      return;
-    } else {
-#ifdef HAVE_LLVM
-      llvm::Type *elementType = llvm::IntegerType::getInt8Ty(info->module->getContext());
-      type = llvm::ArrayType::get(elementType, size);
-#endif
-    }
   } else if (symbol->hasFlag(FLAG_REF)) {
-    const char* baseType = getField(1)->type->symbol->cname;
+    TypeSymbol* base = getField(1)->type->symbol;
+    const char* baseType = base->cname;
     if( outfile ) {
       fprintf(outfile, "typedef %s *%s;\n", baseType, symbol->cname);
       return;
     } else {
 #ifdef HAVE_LLVM
-      llvm::Type* llBaseType = info->lvt->getType(baseType);
+      llvm::Type* llBaseType;
+      if( base->typeInfo() == dtVoid ) {
+        llBaseType = llvm::IntegerType::getInt8Ty(info->module->getContext());
+      } else {
+        llBaseType = base->codegen().type;
+      }
       INT_ASSERT(llBaseType);
       type = llvm::PointerType::getUnqual(llBaseType);
 #endif
     }
   } else if (symbol->hasFlag(FLAG_DATA_CLASS)) {
-    const char* baseType = getDataClassType(symbol)->cname;
+    TypeSymbol* base = getDataClassType(symbol);
+    const char* baseType = base->cname;
     if( outfile ) {
       fprintf(outfile, "typedef %s *%s;\n", baseType, symbol->cname);
     } else {
 #ifdef HAVE_LLVM
-      llvm::Type* llBaseType = info->lvt->getType(baseType);
+      llvm::Type* llBaseType;
+      if( base->typeInfo() == dtVoid ) {
+        llBaseType = llvm::IntegerType::getInt8Ty(info->module->getContext());
+      } else {
+        llBaseType = base->codegen().type;
+      }
       INT_ASSERT(llBaseType);
       type = llvm::PointerType::getUnqual(llBaseType);
 #endif
     }
   } else {
     if( outfile ) {
-      fprintf(outfile, "typedef struct __%s", symbol->cname);
-      if (classTag == CLASS_CLASS && dispatchParents.n > 0) {
-        /* Add a comment to class definitions listing super classes */
-        bool first = true;
-        fprintf(outfile, " /* : ");
-        forv_Vec(Type, parent, dispatchParents) {
-          if (parent) {
-            if (!first) {
-              fprintf(outfile, ", ");
+      if( symbol->hasEitherFlag(FLAG_WIDE, FLAG_WIDE_CLASS) &&
+          (! isWideString(this)) &&
+          (! widePointersStruct ) ) {
+        // Reach this branch when generating a wide/wide class as a
+        // global pointer!
+        Type* baseType = this->getField("addr")->type;
+        GenRet c = baseType;
+ 
+        // could use __attribute__(address_space(101))
+        //  if we wanted to emit packed pointers in a different AS with clang.
+        fprintf(outfile, "typedef %s * %s;\n",
+            baseType->symbol->codegen().c.c_str(),
+            this->classStructName(true));
+      } else {
+        fprintf(outfile, "typedef struct %s", this->classStructName(false));
+        if (aggregateTag == AGGREGATE_CLASS && dispatchParents.n > 0) {
+          /* Add a comment to class definitions listing super classes */
+          bool first = true;
+          fprintf(outfile, " /* : ");
+          forv_Vec(Type, parent, dispatchParents) {
+            if (parent) {
+              if (!first) {
+                fprintf(outfile, ", ");
+              }
+              fprintf(outfile, "%s", parent->symbol->codegen().c.c_str());
+              first = false;
             }
-            fprintf(outfile, "%s", parent->symbol->codegen().c.c_str());
-            first = false;
+          }
+          fprintf(outfile, " */");
+        }
+        fprintf(outfile, " {\n");
+        if (symbol->hasFlag(FLAG_OBJECT_CLASS) && aggregateTag == AGGREGATE_CLASS) {
+          fprintf(outfile, "chpl__class_id chpl__cid;\n");
+        } else if (aggregateTag == AGGREGATE_UNION) {
+          fprintf(outfile, "int64_t _uid;\n");
+          if (this->fields.length != 0)
+            fprintf(outfile, "union {\n");
+        } else if (this->fields.length == 0) {
+          fprintf(outfile, "int dummyFieldToAvoidWarning;\n");
+        }
+
+        if (this->fields.length != 0) {
+          for_fields(field, this) {
+            field->codegenDef();
           }
         }
-        fprintf(outfile, " */");
-      }
-      fprintf(outfile, " {\n");
-      if (symbol->hasFlag(FLAG_OBJECT_CLASS) && classTag == CLASS_CLASS) {
-        fprintf(outfile, "chpl__class_id chpl__cid;\n");
-      } else if (classTag == CLASS_UNION) {
-        fprintf(outfile, "int64_t _uid;\n");
-        if (this->fields.length != 0)
-          fprintf(outfile, "union {\n");
-      } else if (this->fields.length == 0) {
-        fprintf(outfile, "int dummyFieldToAvoidWarning;\n");
-      }
+        flushStatements();
 
-      if (this->fields.length != 0) {
-        for_fields(field, this) {
-          field->codegenDef();
+        if (aggregateTag == AGGREGATE_UNION) {
+          if (this->fields.length != 0)
+            fprintf(outfile, "} _u;\n");
         }
+        fprintf(outfile, "} %s;\n\n", this->classStructName(true));
       }
-      flushStatements();
-
-      if (classTag == CLASS_UNION) {
-        if (this->fields.length != 0)
-          fprintf(outfile, "} _u;\n");
-      }
-      fprintf(outfile, "} ");
-      if (classTag == CLASS_CLASS)
-        fprintf(outfile, "_");
-      fprintf(outfile, "%s;\n\n", symbol->codegen().c.c_str());
     } else {
 #ifdef HAVE_LLVM
       int paramID = 0;
       std::vector<llvm::Type*> params;
 
-      if ((symbol->hasFlag(FLAG_OBJECT_CLASS) && classTag == CLASS_CLASS)) {
+      if ((symbol->hasFlag(FLAG_OBJECT_CLASS) && aggregateTag == AGGREGATE_CLASS)) {
         llvm::Type* cidType = info->lvt->getType("chpl__class_id");
         INT_ASSERT(cidType);
         params.push_back(cidType);
         GEPMap.insert(std::pair<std::string, int>("chpl__cid", paramID++));
-      } else if(classTag == CLASS_UNION) {
+      } else if(aggregateTag == AGGREGATE_UNION) {
         params.push_back(llvm::Type::getInt64Ty(info->module->getContext()));
         GEPMap.insert(std::pair<std::string, int>("_uid", paramID++));
       }
 
-      if(classTag == CLASS_UNION) {
+      if(aggregateTag == AGGREGATE_UNION) {
 
         llvm::Type *largestType = NULL;
         uint64_t largestSize = 0;
@@ -687,7 +792,8 @@ void ClassType::codegenDef() {
           }
 
           GEPMap.insert(std::pair<std::string, int>(field->cname, paramID));
-          GEPMap.insert(std::pair<std::string, int>(std::string("_u.") + field->cname, paramID));
+          GEPMap.insert(std::pair<std::string, int>(
+                std::string("_u.") + field->cname, paramID));
         }
 
         llvm::StructType * st;
@@ -706,8 +812,9 @@ void ClassType::codegenDef() {
         }
         for_fields(field, this) {
           llvm::Type* fieldType = field->type->symbol->codegen().type;
-          if(field->hasFlag(FLAG_SUPER_CLASS))
-            fieldType = info->lvt->getType(std::string("_") + field->type->symbol->cname);
+          AggregateType* ct = toAggregateType(field->type);
+          if(ct && field->hasFlag(FLAG_SUPER_CLASS))
+            fieldType = info->lvt->getType(ct->classStructName(true));
           INT_ASSERT(fieldType);
           params.push_back(fieldType);
           GEPMap.insert(std::pair<std::string, int>(field->cname, paramID++));
@@ -718,21 +825,63 @@ void ClassType::codegenDef() {
       // if it's a record, we make the new type now.
       // if it's a class, we update the existing type.
       
-      // need to define _cname (for CLASS_CLASS) or cname
-      if(classTag == CLASS_CLASS) {
-        type = info->lvt->getType(std::string("_") + symbol->cname);
-        INT_ASSERT(type);
+      if( symbol->hasEitherFlag(FLAG_WIDE, FLAG_WIDE_CLASS) &&
+          (! isWideString(this)) &&
+          (! widePointersStruct ) ) {
+        // Reach this branch when generating a wide/wide class as a
+        // global pointer!
+        unsigned globalAddressSpace = 0;
+        if( fLLVMWideOpt )
+          globalAddressSpace = info->globalToWideInfo.globalSpace; 
+
+        Type* baseType = this->getField("addr")->type;
+        llvm::Type* llBaseType = baseType->symbol->codegen().type;
+        INT_ASSERT(llBaseType);
+        llvm::Type *globalPtrTy = NULL;
+
+        // Remove one level of indirection since the addr field
+        // of a wide pointer is always a local address.
+        llBaseType = llBaseType->getPointerElementType();
+        INT_ASSERT(llBaseType);
+
+        globalPtrTy = llvm::PointerType::get(llBaseType, globalAddressSpace);
+        type = globalPtrTy; // set to use alternative address space ptr
+
+        if( fLLVMWideOpt ) {
+          // These are here so that the types are generated during codegen..
+          if( ! info->globalToWideInfo.localeIdType ) {
+            Type* localeType = LOCALE_ID_TYPE;
+            info->globalToWideInfo.localeIdType = localeType->codegen().type;
+          }
+          if( ! info->globalToWideInfo.nodeIdType ) {
+            Type* nodeType = NODE_ID_TYPE;
+            info->globalToWideInfo.nodeIdType = nodeType->codegen().type;
+          }
+          // populateFunctions
+          populateFunctionsForGlobalType(info->module, &info->globalToWideInfo, globalPtrTy);
+        }
       } else {
-        type = llvm::StructType::create(info->module->getContext(), symbol->cname);
+        // Normal (wide or struct) code path.
+        //
+        // need to define _cname (for AGGREGATE_CLASS) or cname
+        if(aggregateTag == AGGREGATE_CLASS) {
+          const char* struct_name = this->classStructName(true);
+          type = info->lvt->getType(struct_name);
+          INT_ASSERT(type);
+        } else {
+          type = llvm::StructType::create(info->module->getContext(),
+                                          symbol->cname);
+        }
+
+
+        llvm::StructType* stype = llvm::cast<llvm::StructType>(type);
+        stype->setBody(params);
+  
+        if (aggregateTag == AGGREGATE_CLASS) {
+          type = stype->getPointerTo();
+        }
       }
 
-
-      llvm::StructType* stype = llvm::cast<llvm::StructType>(type);
-      stype->setBody(params);
-
-      if (classTag == CLASS_CLASS) {
-        type = stype->getPointerTo();
-      }
 #endif
     }
   }
@@ -748,19 +897,23 @@ void ClassType::codegenDef() {
 }
 
 
-void ClassType::codegenPrototype() {
+void AggregateType::codegenPrototype() {
   GenInfo* info = gGenInfo;
-  if (symbol->hasFlag(FLAG_REF)) return; // done in codegenDef
-  else if (symbol->hasFlag(FLAG_DATA_CLASS)) return; // done in codegenDef
-  else if (classTag == CLASS_CLASS) {
+  // Only generates prototypes for AGGREGATE_CLASS (ie a Chapel class,
+  // not a record or wide pointer)
+  if (aggregateTag == AGGREGATE_CLASS) {
     if( info->cfile ) {
-      fprintf(info->cfile, "typedef struct __%s *%s;\n",
-              symbol->cname, symbol->cname);
+      fprintf(info->cfile, "typedef struct %s* %s;\n", 
+              this->classStructName(false), symbol->cname);
     } else {
 #ifdef HAVE_LLVM
-      std::string sname("_"); sname += symbol->cname; // ie _ClassType
-      llvm::StructType* st = llvm::StructType::create(info->module->getContext(), sname);
-      info->lvt->addGlobalType(sname, st);
+      // ie _AggregateType
+      const char* struct_name = this->classStructName(true);
+ 
+      llvm::StructType* st;
+      st = llvm::StructType::create(info->module->getContext(), struct_name);
+      info->lvt->addGlobalType(struct_name, st);
+
       llvm::PointerType* pt = llvm::PointerType::getUnqual(st);
       info->lvt->addGlobalType(symbol->cname, pt);
       symbol->llvmType = pt;
@@ -770,30 +923,42 @@ void ClassType::codegenPrototype() {
   return;
 }
 
-
-
-int ClassType::codegenStructure(FILE* outfile, const char* baseoffset) {
-  switch (classTag) {
-  case CLASS_CLASS:
+int AggregateType::codegenStructure(FILE* outfile, const char* baseoffset) {
+  switch (aggregateTag) {
+  case AGGREGATE_CLASS:
     fprintf(outfile, "{CHPL_TYPE_CLASS_REFERENCE, %s},\n", baseoffset);
     return 1;
-  case CLASS_RECORD:
+  case AGGREGATE_RECORD:
     return codegenFieldStructure(outfile, true, baseoffset);
-  case CLASS_UNION:
+  case AGGREGATE_UNION:
     INT_FATAL(this, "Don't know how to codegenStructure for unions yet");
     return 0;
   default:
-    INT_FATAL(this, "Unexpected case in ClassType::codegenStructure");
+    INT_FATAL(this, "Unexpected case in AggregateType::codegenStructure");
     return 0;
   }
 }
 
+void AggregateType::accept(AstVisitor* visitor) {
+  if (visitor->enterAggrType(this) == true) {
+
+    for_alist(next_ast, fields) {
+      next_ast->accept(visitor);
+    }
+
+    for_alist(next_ast, inherits) {
+      next_ast->accept(visitor);
+    }
+
+    visitor->exitAggrType(this);
+  }
+}
 
 // BLC: I'm not understanding why special cases would need to be called
 // out here
 static const char* genUnderscore(Symbol* sym) {
-  ClassType* classtype = toClassType(sym->type);
-  if (classtype && classtype->classTag == CLASS_CLASS && 
+  AggregateType* classtype = toAggregateType(sym->type);
+  if (classtype && classtype->isClass() &&
       !sym->hasFlag(FLAG_REF)) {
     return "_";
   } else {
@@ -814,7 +979,7 @@ static const char* genSizeofStr(TypeSymbol* typesym) {
 
 static const char* genNewBaseOffsetString(TypeSymbol* typesym, int fieldnum,
                                           const char* baseoffset, Symbol* field,
-                                          ClassType* classtype) {
+                                          AggregateType* classtype) {
   if (classtype->symbol->hasFlag(FLAG_STAR_TUPLE)) {
     char fieldnumstr[64];
     sprintf(fieldnumstr, "%d", fieldnum);
@@ -824,12 +989,12 @@ static const char* genNewBaseOffsetString(TypeSymbol* typesym, int fieldnum,
     return astr(baseoffset, " + offsetof(", 
                 genUnderscore(classtype->symbol),
                 classtype->symbol->cname, ", ", 
-                classtype->classTag == CLASS_UNION ? "_u." : "",
+                classtype->isUnion() ? "_u." : "",
                 field->cname, ")");
   }
 }
 
-int ClassType::codegenFieldStructure(FILE* outfile, bool nested, 
+int AggregateType::codegenFieldStructure(FILE* outfile, bool nested, 
                                      const char* baseoffset) {
   // Handle ref types as pointers
   if (symbol->hasFlag(FLAG_REF)) {
@@ -860,7 +1025,7 @@ int ClassType::codegenFieldStructure(FILE* outfile, bool nested,
 extern int getCRecordMemberGEP(const char* typeName, const char* fieldName);
 #endif
 
-int ClassType::getMemberGEP(const char *name) {
+int AggregateType::getMemberGEP(const char *name) {
 #ifdef HAVE_LLVM
   if( symbol->hasFlag(FLAG_EXTERN) ) {
     // We will cache the info in the local GEP map.
@@ -878,7 +1043,7 @@ int ClassType::getMemberGEP(const char *name) {
 
     while (current_p->n != 0) {
       forv_Vec(Type, t, *current_p) {
-        std::map<std::string, int>::const_iterator GEPIdx = t->GEPMap.find(name);
+        std::map<std::string,int>::const_iterator GEPIdx = t->GEPMap.find(name);
         if(GEPIdx != t->GEPMap.end()) {
           return GEPIdx->second;
         }
@@ -906,7 +1071,7 @@ int ClassType::getMemberGEP(const char *name) {
 }
 
 
-int ClassType::getFieldPosition(const char* name, bool fatal) {
+int AggregateType::getFieldPosition(const char* name, bool fatal) {
   Vec<Type*> next, current;
   Vec<Type*>* next_p = &next, *current_p = &current;
   current_p->set_add(this);
@@ -914,7 +1079,7 @@ int ClassType::getFieldPosition(const char* name, bool fatal) {
   int fieldPos = 0;
   while (current_p->n != 0) {
     forv_Vec(Type, t, *current_p) {
-      if (ClassType* ct = toClassType(t)) {
+      if (AggregateType* ct = toAggregateType(t)) {
         for_fields(sym, ct) {
           if (!strcmp(sym->name, name)) {
             return fieldPos;
@@ -948,13 +1113,13 @@ int ClassType::getFieldPosition(const char* name, bool fatal) {
 }
 
 
-Symbol* ClassType::getField(const char* name, bool fatal) {
+Symbol* AggregateType::getField(const char* name, bool fatal) {
   Vec<Type*> next, current;
   Vec<Type*>* next_p = &next, *current_p = &current;
   current_p->set_add(this);
   while (current_p->n != 0) {
     forv_Vec(Type, t, *current_p) {
-      if (ClassType* ct = toClassType(t)) {
+      if (AggregateType* ct = toAggregateType(t)) {
         for_fields(sym, ct) {
           if (!strcmp(sym->name, name))
             return sym;
@@ -983,7 +1148,7 @@ Symbol* ClassType::getField(const char* name, bool fatal) {
 }
 
 
-Symbol* ClassType::getField(int i) {
+Symbol* AggregateType::getField(int i) {
   return toDefExpr(fields.get(i))->sym;
 }
 
@@ -1009,8 +1174,8 @@ createInternalType(const char *name, const char *cname) {
 // probably be something like int1, int8, etc. in the end. In that case
 // we can just specify the width (i.e., size).
 #define INIT_PRIM_BOOL(name, width)                                \
-  dtBools[BOOL_SIZE_##width] = createPrimitiveType(name, "chpl_bool" #width); \
-  dtBools[BOOL_SIZE_##width]->defaultValue = new_BoolSymbol( false, BOOL_SIZE_##width)
+  dtBools[BOOL_SIZE_ ## width] = createPrimitiveType(name, "chpl_bool" #width); \
+  dtBools[BOOL_SIZE_ ## width]->defaultValue = new_BoolSymbol( false, BOOL_SIZE_ ## width)
 
 #define INIT_PRIM_INT( name, width)                                 \
   dtInt[INT_SIZE_ ## width] = createPrimitiveType (name, "int" #width "_t"); \
@@ -1050,6 +1215,7 @@ void initChplProgram(void) {
   rootModule->addFlag(FLAG_NO_USE_CHAPELSTANDARD);
 
   theProgram = new ModuleSymbol("chpl__Program", MOD_INTERNAL, new BlockStmt());
+  theProgram->addFlag(FLAG_NO_CODEGEN);
   theProgram->filename = astr("<internal>");
   theProgram->addFlag(FLAG_NO_USE_CHAPELSTANDARD);
 
@@ -1062,22 +1228,27 @@ void initPrimitiveTypes(void) {
   dtNil = createInternalType ("_nilType", "_nilType");
   CREATE_DEFAULT_SYMBOL (dtNil, gNil, "nil");
 
+  dtVoid = createInternalType ("void", "void");
+
+  // This type should not be visible past normalize.
+  CREATE_DEFAULT_SYMBOL (dtVoid, gNoInit, "_gnoinit");
+
   dtUnknown = createInternalType ("_unknown", "_unknown");
   CREATE_DEFAULT_SYMBOL (dtUnknown, gUnknown, "_gunknown");
+  gUnknown->addFlag(FLAG_TYPE_VARIABLE);
 
-  dtVoid = createInternalType ("void", "void");
   CREATE_DEFAULT_SYMBOL (dtVoid, gVoid, "_void");
 
   dtBool = createPrimitiveType ("bool", "chpl_bool");
 
-  dtObject = new ClassType(CLASS_CLASS);
+  dtObject = new AggregateType(AGGREGATE_CLASS);
   dtValue = createInternalType("value", "_chpl_value");
 
   CREATE_DEFAULT_SYMBOL (dtBool, gFalse, "false");
   gFalse->immediate = new Immediate;
   gFalse->immediate->v_bool = false;
-  gFalse->immediate->const_kind = NUM_KIND_UINT;
-  gFalse->immediate->num_index = INT_SIZE_1;
+  gFalse->immediate->const_kind = NUM_KIND_BOOL;
+  gFalse->immediate->num_index = BOOL_SIZE_SYS;
   uniqueConstantsHash.put(gFalse->immediate, gFalse);
   dtBool->defaultValue = gFalse;
 
@@ -1086,15 +1257,15 @@ void initPrimitiveTypes(void) {
   rootModule->block->insertAtTail(new DefExpr(gTrue));
   gTrue->immediate = new Immediate;
   gTrue->immediate->v_bool = true;
-  gTrue->immediate->const_kind = NUM_KIND_UINT;
-  gTrue->immediate->num_index = INT_SIZE_1;
+  gTrue->immediate->const_kind = NUM_KIND_BOOL;
+  gTrue->immediate->num_index = BOOL_SIZE_SYS;
   uniqueConstantsHash.put(gTrue->immediate, gTrue);
 
   gTryToken = new VarSymbol("chpl__tryToken", dtBool);
   gTryToken->addFlag(FLAG_CONST);
   rootModule->block->insertAtTail(new DefExpr(gTryToken));
 
-  
+  INIT_PRIM_BOOL("bool(1)", 1);
   INIT_PRIM_BOOL("bool(8)", 8);
   INIT_PRIM_BOOL("bool(16)", 16);
   INIT_PRIM_BOOL("bool(32)", 32);
@@ -1121,19 +1292,30 @@ void initPrimitiveTypes(void) {
   INIT_PRIM_COMPLEX( "complex(64)", 64);
   INIT_PRIM_COMPLEX( "complex", 128);       // default size
 
+  dtStringC = createPrimitiveType( "c_string", "c_string" );
+  dtStringC->defaultValue = new_StringSymbol("");
   dtString = createPrimitiveType( "string", "chpl_string");
-  dtString->defaultValue = new_StringSymbol("");
+  dtString->defaultValue = NULL;
+  dtStringC->symbol->addFlag(FLAG_EXTERN);
 
   dtSymbol = createPrimitiveType( "symbol", "_symbol"); 
 
   dtFile = createPrimitiveType ("_file", "_cfile");
+  dtFile->symbol->addFlag(FLAG_EXTERN);
   CREATE_DEFAULT_SYMBOL(dtFile, gFile, "NULL");
+  // In codegen, this prevents the "&NULL" absurdity.
+  gFile->addFlag(FLAG_EXTERN);
 
   dtOpaque = createPrimitiveType("opaque", "chpl_opaque");
+  // Treat this as an extern to get the auto-genned assignment function.
+  dtOpaque->symbol->addFlag(FLAG_EXTERN);
   CREATE_DEFAULT_SYMBOL(dtOpaque, gOpaque, "_nullOpaque");
   gOpaque->cname = "NULL";
+  // In codegen, this prevents the "&NULL" absurdity.
+  gOpaque->addFlag(FLAG_EXTERN);
 
   dtTaskID = createPrimitiveType("chpl_taskID_t", "chpl_taskID_t");
+  dtTaskID->symbol->addFlag(FLAG_EXTERN);
   CREATE_DEFAULT_SYMBOL(dtTaskID, gTaskID, "chpl_nullTaskID");
 
   dtSyncVarAuxFields = createPrimitiveType( "_sync_aux_t", "chpl_sync_aux_t");
@@ -1144,6 +1326,7 @@ void initPrimitiveTypes(void) {
   gSingleVarAuxFields->cname = "NULL";
 
   dtTaskList = createPrimitiveType( "_task_list", "chpl_task_list_p");
+  dtTaskList->symbol->addFlag(FLAG_EXTERN);
   CREATE_DEFAULT_SYMBOL (dtTaskList, gTaskList, "_nullTaskList");
   gTaskList->cname = "NULL";
 
@@ -1172,7 +1355,6 @@ void initPrimitiveTypes(void) {
 
 void initTheProgram(void) {
   createInitFn(theProgram);
-  theProgram->initFn->addFlag(FLAG_EXPORT);     // Called from main.c
 
   theProgram->initFn->insertAtTail(
     new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelBase")));
@@ -1197,10 +1379,13 @@ void initTheProgram(void) {
   //  in possibly more special case code.
   //
   DefExpr* objectDef = buildClassDefExpr("object", dtObject,
-                                         NULL, new BlockStmt(), FLAG_UNKNOWN, NULL);
+                                         NULL, new BlockStmt(),
+                                         FLAG_UNKNOWN, NULL);
   objectDef->sym->addFlag(FLAG_OBJECT_CLASS);
+  objectDef->sym->addFlag(FLAG_GLOBAL_TYPE_SYMBOL); // Prevents removal in pruneResovedTree().
   objectDef->sym->addFlag(FLAG_NO_OBJECT);
   theProgram->initFn->insertAtHead(objectDef);
+
 }
 
 void initCompilerGlobals(void) {
@@ -1237,6 +1422,11 @@ void initCompilerGlobals(void) {
     gLocal->immediate = new Immediate;
     *gLocal->immediate = *gFalse->immediate;
   }
+
+  // defined and maintained by the runtime
+  gNodeID = new VarSymbol("chpl_nodeID", dtInt[INT_SIZE_32]);
+  gNodeID->addFlag(FLAG_EXTERN);
+  rootModule->block->insertAtTail(new DefExpr(gNodeID));
 
 }
 
@@ -1347,24 +1537,21 @@ int get_width(Type *t) {
 
 
 bool isClass(Type* t) {
-  if (ClassType* ct = toClassType(t))
-    if (ct->classTag == CLASS_CLASS)
-      return true;
+  if (AggregateType* ct = toAggregateType(t))
+    return ct->isClass();
   return false;
 }
 
 
 bool isRecord(Type* t) {
-  if (ClassType* ct = toClassType(t))
-    if (ct->classTag == CLASS_RECORD)
-      return true;
+  if (AggregateType* ct = toAggregateType(t))
+    return ct->isRecord();
   return false;
 }
 
 bool isUnion(Type* t) {
-  if (ClassType* ct = toClassType(t))
-    if (ct->classTag == CLASS_UNION)
-      return true;
+  if (AggregateType* ct = toAggregateType(t))
+    return ct->isUnion();
   return false;
 }
 
@@ -1388,6 +1575,22 @@ bool isRecordWrappedType(Type* t) {
 
 bool isSyncType(Type* t) {
   return getSyncFlags(t->symbol).any();
+}
+
+bool isAtomicType(Type* t) {
+  return t->symbol->hasFlag(FLAG_ATOMIC_TYPE);
+}
+
+bool isSubClass(Type* type, Type* baseType)
+{
+  if (type == baseType)
+    return true;
+
+  forv_Vec(Type, pt, type->dispatchParents)
+    if (isSubClass(pt, baseType))
+      return true;
+
+  return false;
 }
 
 bool
@@ -1419,7 +1622,6 @@ isArrayClass(Type* type) {
       return true;
   return false;
 }
-
 
 static Vec<TypeSymbol*> typesToStructurallyCodegen;
 static Vec<TypeSymbol*> typesToStructurallyCodegenList;
@@ -1456,7 +1658,8 @@ GenRet genTypeStructureIndex(TypeSymbol* typesym) {
       ret.c = "-1";
     else {
 #ifdef HAVE_LLVM
-      ret.val = llvm::ConstantInt::get(llvm::Type::getInt32Ty(info->module->getContext()), -1, true);
+      ret.val = llvm::ConstantInt::get(
+          llvm::Type::getInt32Ty(info->module->getContext()), -1, true);
 #endif
     }
   }
@@ -1467,8 +1670,8 @@ GenRet genTypeStructureIndex(TypeSymbol* typesym) {
 // Compare the cnames of different types alphabetically
 static int compareCnames(const void* v1, const void* v2) {
   int retval;
-  TypeSymbol* t1 = *(TypeSymbol**)v1;
-  TypeSymbol* t2 = *(TypeSymbol**)v2;
+  TypeSymbol* t1 = *(TypeSymbol* const *)v1;
+  TypeSymbol* t2 = *(TypeSymbol* const *)v2;
   retval = strcmp(t1->cname, t2->cname);
   if (retval > 0)
     return 1;
@@ -1493,9 +1696,13 @@ void codegenTypeStructures(FILE* hdrfile) {
   fprintf(outfile, "chpl_num_rt_type_ids\n");
   fprintf(outfile, "} chpl_rt_types;\n\n");
 
-  fprintf(outfile, "chpl_fieldType chpl_structType[][CHPL_MAX_FIELDS_PER_TYPE] = {\n");
+  fprintf(outfile,
+      "chpl_fieldType chpl_structType[][CHPL_MAX_FIELDS_PER_TYPE] = {\n");
             
-  qsort(typesToStructurallyCodegenList.v, typesToStructurallyCodegenList.n, sizeof(typesToStructurallyCodegenList.v[0]), compareCnames);
+  qsort(typesToStructurallyCodegenList.v,
+        typesToStructurallyCodegenList.n,
+        sizeof(typesToStructurallyCodegenList.v[0]),
+        compareCnames);
   int num = 0;
   forv_Vec(TypeSymbol*, typesym, typesToStructurallyCodegenList) {
     if (num) {
@@ -1503,7 +1710,7 @@ void codegenTypeStructures(FILE* hdrfile) {
     }
     fprintf(outfile, "/* %s (%s) */\n", typesym->name, typesym->cname);
     fprintf(outfile, "{\n");
-    if (ClassType* classtype = toClassType(typesym->type)) {
+    if (AggregateType* classtype = toAggregateType(typesym->type)) {
       int numfields = classtype->codegenFieldStructure(outfile, false, "0");
       if (numfields > maxFieldsPerType) {
         maxFieldsPerType = numfields;
@@ -1541,7 +1748,8 @@ void codegenTypeStructures(FILE* hdrfile) {
   fprintf(outfile, "}\n\n");
   closeCFile(&typeStructFile);
   fprintf(hdrfile, "#define CHPL_MAX_FIELDS_PER_TYPE %d\n", maxFieldsPerType);
-  fprintf(hdrfile, "const int chpl_max_fields_per_type = %d;\n", maxFieldsPerType);
+  fprintf(hdrfile, "const int chpl_max_fields_per_type = %d;\n",
+                   maxFieldsPerType);
 }
 
 
@@ -1557,6 +1765,38 @@ Type* getNamedType(std::string name) {
   }
 
   return NULL;
+}
+
+// Do variables of the type 't' need capture for tasks?
+bool needsCapture(Type* t) {
+  INT_ASSERT(!isReferenceType(t)); // responsibility of the caller
+
+  if (is_bool_type(t) ||
+      is_int_type(t) ||
+      is_uint_type(t) ||
+      is_real_type(t) ||
+      is_imag_type(t) ||
+      is_complex_type(t) ||
+      is_enum_type(t) ||
+      is_string_type(t) ||
+      t == dtStringC ||
+      isClass(t) ||
+      isRecord(t) ||
+      isUnion(t) ||
+      t == dtTaskID ||
+      t == dtFile ||
+      t == dtTaskList ||
+      t == dtNil ||
+      t == dtOpaque ||
+      t->symbol->hasFlag(FLAG_EXTERN)) {
+    return true;
+  } else {
+    // Ensure we have covered all types.
+    INT_ASSERT(isRecordWrappedType(t) ||  // domain, array, or distribution
+               isSyncType(t) ||
+               isAtomicType(t));
+    return false;
+  }
 }
 
 VarSymbol* resizeImmediate(VarSymbol* s, PrimitiveType* t)

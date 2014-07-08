@@ -6,6 +6,7 @@
 
 void processNewline(void);
 char* eatStringLiteral(const char* c);
+char* eatExternCode(void);
 void processSingleLineComment(void);
 void processMultiLineComment(void);
 void processWhitespace(const char* tabOrSpace);

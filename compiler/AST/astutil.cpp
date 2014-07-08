@@ -7,6 +7,11 @@
 #include "type.h"
 
 
+static void pruneUnusedAggregateTypes(Vec<TypeSymbol*>& types);
+static void pruneUnusedRefs(Vec<TypeSymbol*>& types);
+static void changeDeadTypesToVoid(Vec<TypeSymbol*>& types);
+
+
 void collectFnCalls(BaseAST* ast, Vec<CallExpr*>& calls) {
   AST_CHILDREN_CALL(ast, collectFnCalls, calls);
   if (CallExpr* call = toCallExpr(ast))
@@ -14,6 +19,19 @@ void collectFnCalls(BaseAST* ast, Vec<CallExpr*>& calls) {
       calls.add(call);
 }
 
+
+void collectFnCallsSTL(BaseAST* ast, std::vector<CallExpr*>& calls) {
+  AST_CHILDREN_CALL(ast, collectFnCallsSTL, calls);
+  if (CallExpr* call = toCallExpr(ast))
+    if (call->isResolved())
+      calls.push_back(call);
+}
+
+void collectExprs(BaseAST* ast, std::vector<Expr*>& exprs) {
+  AST_CHILDREN_CALL(ast, collectExprs, exprs);
+  if (Expr* expr = toExpr(ast))
+    exprs.push_back(expr);
+}
 
 void collect_stmts(BaseAST* ast, Vec<Expr*>& stmts) {
   if (Expr* expr = toExpr(ast)) {
@@ -24,16 +42,37 @@ void collect_stmts(BaseAST* ast, Vec<Expr*>& stmts) {
   }
 }
 
+void collect_stmts_STL(BaseAST* ast, std::vector<Expr*>& stmts) {
+  if (Expr* expr = toExpr(ast)) {
+    stmts.push_back(expr);
+    if (isBlockStmt(expr) || isCondStmt(expr)) {
+      AST_CHILDREN_CALL(ast, collect_stmts_STL, stmts);
+    }
+  }
+}
+
 void collectDefExprs(BaseAST* ast, Vec<DefExpr*>& defExprs) {
   AST_CHILDREN_CALL(ast, collectDefExprs, defExprs);
   if (DefExpr* defExpr = toDefExpr(ast))
     defExprs.add(defExpr);
 }
 
+void collectDefExprsSTL(BaseAST* ast, std::vector<DefExpr*>& defExprs) {
+  AST_CHILDREN_CALL(ast, collectDefExprsSTL, defExprs);
+  if (DefExpr* defExpr = toDefExpr(ast))
+    defExprs.push_back(defExpr);
+}
+
 void collectCallExprs(BaseAST* ast, Vec<CallExpr*>& callExprs) {
   AST_CHILDREN_CALL(ast, collectCallExprs, callExprs);
   if (CallExpr* callExpr = toCallExpr(ast))
     callExprs.add(callExpr);
+}
+
+void collectCallExprsSTL(BaseAST* ast, std::vector<CallExpr*>& callExprs) {
+  AST_CHILDREN_CALL(ast, collectCallExprsSTL, callExprs);
+  if (CallExpr* callExpr = toCallExpr(ast))
+    callExprs.push_back(callExpr);
 }
 
 void collectMyCallExprs(BaseAST* ast, Vec<CallExpr*>& callExprs,
@@ -44,10 +83,24 @@ void collectMyCallExprs(BaseAST* ast, Vec<CallExpr*>& callExprs,
       callExprs.add(callExpr);
 }
 
+void collectMyCallExprsSTL(BaseAST* ast, std::vector<CallExpr*>& callExprs,
+                           FnSymbol* parent_fn) {
+  AST_CHILDREN_CALL(ast, collectMyCallExprsSTL, callExprs, parent_fn);
+  if (CallExpr* callExpr = toCallExpr(ast))
+    if (callExpr->parentSymbol == parent_fn)
+      callExprs.push_back(callExpr);
+}
+
 void collectGotoStmts(BaseAST* ast, Vec<GotoStmt*>& gotoStmts) {
   AST_CHILDREN_CALL(ast, collectGotoStmts, gotoStmts);
   if (GotoStmt* gotoStmt = toGotoStmt(ast))
     gotoStmts.add(gotoStmt);
+}
+
+void collectGotoStmtsSTL(BaseAST* ast, std::vector<GotoStmt*>& gotoStmts) {
+  AST_CHILDREN_CALL(ast, collectGotoStmtsSTL, gotoStmts);
+  if (GotoStmt* gotoStmt = toGotoStmt(ast))
+    gotoStmts.push_back(gotoStmt);
 }
 
 void collectSymExprs(BaseAST* ast, Vec<SymExpr*>& symExprs) {
@@ -56,10 +109,49 @@ void collectSymExprs(BaseAST* ast, Vec<SymExpr*>& symExprs) {
     symExprs.add(symExpr);
 }
 
+void collectSymExprsSTL(BaseAST* ast, std::vector<SymExpr*>& symExprs) {
+  AST_CHILDREN_CALL(ast, collectSymExprsSTL, symExprs);
+  if (SymExpr* symExpr = toSymExpr(ast))
+    symExprs.push_back(symExpr);
+}
+
+static void collectMySymExprsHelp(BaseAST* ast, Vec<SymExpr*>& symExprs) {
+  if (isSymbol(ast)) return; // do not descend into nested symbols
+  AST_CHILDREN_CALL(ast, collectMySymExprsHelp, symExprs);
+  if (SymExpr* se = toSymExpr(ast))
+    symExprs.add(se);
+}
+
+static void collectMySymExprsHelp(BaseAST* ast, std::vector<SymExpr*>& symExprs) {
+  if (isSymbol(ast)) return; // do not descend into nested symbols
+  AST_CHILDREN_CALL(ast, collectMySymExprsHelp, symExprs);
+  if (SymExpr* se = toSymExpr(ast))
+    symExprs.push_back(se);
+}
+
+// Collect the SymExprs only *directly* under 'me'.
+// Do not include those in nested functions/other nested symbols.
+void collectMySymExprs(Symbol* me, Vec<SymExpr*>& symExprs) {
+  // skip the isSymbol(ast) check in collectMySymExprsHelp()
+  AST_CHILDREN_CALL(me, collectMySymExprsHelp, symExprs);
+}
+
+// The same for std::vector.
+void collectMySymExprs(Symbol* me, std::vector<SymExpr*>& symExprs) {
+  // skip the isSymbol(ast) check in collectMySymExprsHelp()
+  AST_CHILDREN_CALL(me, collectMySymExprsHelp, symExprs);
+}
+
 void collectSymbols(BaseAST* ast, Vec<Symbol*>& symbols) {
   AST_CHILDREN_CALL(ast, collectSymbols, symbols);
   if (Symbol* symbol = toSymbol(ast))
     symbols.add(symbol);
+}
+
+void collectSymbolsSTL(BaseAST* ast, std::vector<Symbol*>& symbols) {
+  AST_CHILDREN_CALL(ast, collectSymbolsSTL, symbols);
+  if (Symbol* symbol = toSymbol(ast))
+    symbols.push_back(symbol);
 }
 
 void collect_asts(BaseAST* ast, Vec<BaseAST*>& asts) {
@@ -67,9 +159,19 @@ void collect_asts(BaseAST* ast, Vec<BaseAST*>& asts) {
   AST_CHILDREN_CALL(ast, collect_asts, asts);
 }
 
+void collect_asts_STL(BaseAST* ast, std::vector<BaseAST*>& asts) {
+  asts.push_back(ast);
+  AST_CHILDREN_CALL(ast, collect_asts_STL, asts);
+}
+
 void collect_asts_postorder(BaseAST* ast, Vec<BaseAST*>& asts) {
   AST_CHILDREN_CALL(ast, collect_asts_postorder, asts);
   asts.add(ast);
+}
+
+void collect_asts_postorder_STL(BaseAST* ast, std::vector<BaseAST*>& asts) {
+  AST_CHILDREN_CALL(ast, collect_asts_postorder_STL, asts);
+  asts.push_back(ast);
 }
 
 static void collect_top_asts_internal(BaseAST* ast, Vec<BaseAST*>& asts) {
@@ -82,6 +184,25 @@ static void collect_top_asts_internal(BaseAST* ast, Vec<BaseAST*>& asts) {
 void collect_top_asts(BaseAST* ast, Vec<BaseAST*>& asts) {
   AST_CHILDREN_CALL(ast, collect_top_asts_internal, asts);
   asts.add(ast);
+}
+              
+static void collect_top_asts_internal_STL(BaseAST* ast, std::vector<BaseAST*>& asts) {
+  if (!isSymbol(ast) || isArgSymbol(ast)) {
+    AST_CHILDREN_CALL(ast, collect_top_asts_internal_STL, asts);
+    asts.push_back(ast);
+  }
+}
+
+//
+// Collect only top-level AST nodes, i.e., expressions but not
+// symbols, but also includes arg symbols and types (not sure why).
+// In fact, current uses of this function seem like they could be
+// replaced by more specific traversals implemented in this file.
+// Something to check out another day.
+//
+void collect_top_asts_STL(BaseAST* ast, std::vector<BaseAST*>& asts) {
+  AST_CHILDREN_CALL(ast, collect_top_asts_internal_STL, asts);
+  asts.push_back(ast);
 }
               
 void reset_ast_loc(BaseAST* destNode, BaseAST* sourceNode) {
@@ -107,7 +228,7 @@ void compute_call_sites() {
     } else if (call->isPrimitive(PRIM_FTABLE_CALL)) {
       // sjd: do we have to do anything special here?
       //      should this call be added to some function's calledBy list?
-    } else if (call->isPrimitive(PRIM_VMT_CALL)) {
+    } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
       FnSymbol* fn = toFnSymbol(toSymExpr(call->get(1))->var);
       Vec<FnSymbol*>* children = virtualChildrenMap.get(fn);
       fn->calledBy->add(call);
@@ -117,9 +238,12 @@ void compute_call_sites() {
   }
 }
 
-
+// builds the def and use maps for every variable/argument
+// in the entire program.
 void buildDefUseMaps(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                      Map<Symbol*,Vec<SymExpr*>*>& useMap) {
+  // Collect the set of symbols to track by extracting all var and arg
+  // symbols from among all def expressions.
   Vec<Symbol*> symSet;
   forv_Vec(DefExpr, def, gDefExprs) {
     if (def->parentSymbol) {
@@ -128,10 +252,15 @@ void buildDefUseMaps(Map<Symbol*,Vec<SymExpr*>*>& defMap,
       }
     }
   }
+
+  // The set of uses is the set of all SymExprs.
   buildDefUseMaps(symSet, gSymExprs, defMap, useMap);
 }
 
 
+// Within the current AST element, recursively collect
+// the set of all symbols appearing in var or arg declarations
+// and the set of all uses (i.e. SymExprs).
 void collectSymbolSetSymExprVec(BaseAST* ast,
                                 Vec<Symbol*>& symSet,
                                 Vec<SymExpr*>& symExprs) {
@@ -145,23 +274,29 @@ void collectSymbolSetSymExprVec(BaseAST* ast,
   AST_CHILDREN_CALL(ast, collectSymbolSetSymExprVec, symSet, symExprs);
 }
 
-
+// builds the vectors for every variable/argument in 'fn' and looks
+// for uses and defs only in 'fn'
 void buildDefUseMaps(FnSymbol* fn,
                      Map<Symbol*,Vec<SymExpr*>*>& defMap,
                      Map<Symbol*,Vec<SymExpr*>*>& useMap) {
   Vec<Symbol*> symSet;
   Vec<SymExpr*> symExprs;
+  // Collect symbols and sym expressions on within the given function
   collectSymbolSetSymExprVec(fn, symSet, symExprs);
   buildDefUseMaps(symSet, symExprs, defMap, useMap);
 }
 
-
-void buildDefUseMaps(Vec<Symbol*>& symSet,
+// builds the vectors for every variable declaration in the given block
+// and looks for uses and defs within the same block (scope).
+void buildDefUseMaps(BlockStmt* block,
                      Map<Symbol*,Vec<SymExpr*>*>& defMap,
                      Map<Symbol*,Vec<SymExpr*>*>& useMap) {
-  buildDefUseMaps(symSet, gSymExprs, defMap, useMap);
+  Vec<Symbol*> symSet;
+  Vec<SymExpr*> symExprs;
+  // Collect symbols and sym expressions only within the given block.
+  collectSymbolSetSymExprVec(block, symSet, symExprs);
+  buildDefUseMaps(symSet, symExprs, defMap, useMap);
 }
-
 
 static void addUseOrDef(Map<Symbol*,Vec<SymExpr*>*>& ses, SymExpr* se) {
   Vec<SymExpr*>* sev = ses.get(se->var);
@@ -186,13 +321,43 @@ void addUse(Map<Symbol*,Vec<SymExpr*>*>& useMap, SymExpr* use) {
 
 
 //
+// Checks if a callExpr is one of the op= primitives
+// Note, this does not check if a callExpr is an 
+// op= function call (such as before inlining)
+//
+bool isOpEqualPrim(CallExpr* call) {
+  if (call->isPrimitive(PRIM_ADD_ASSIGN) ||
+      call->isPrimitive(PRIM_SUBTRACT_ASSIGN) ||
+      call->isPrimitive(PRIM_MULT_ASSIGN) ||
+      call->isPrimitive(PRIM_DIV_ASSIGN) ||
+      call->isPrimitive(PRIM_MOD_ASSIGN) ||
+      call->isPrimitive(PRIM_LSH_ASSIGN) ||
+      call->isPrimitive(PRIM_RSH_ASSIGN) ||
+      call->isPrimitive(PRIM_AND_ASSIGN) ||
+      call->isPrimitive(PRIM_OR_ASSIGN) ||
+      call->isPrimitive(PRIM_XOR_ASSIGN)) {
+    return true;      
+    }
+    //otherwise false
+    return false;
+}
+
+
+//
+// TODO this should be fixed to include PRIM_SET_MEMBER
+// See notes in iterator.cpp and/or loopInvariantCodeMotion.cpp
+// TODO this should also be fixed to include the PRIM_SVEC_SET_MEMBER
+// which gets inserted from the returnStartTuplesByRefArgs pass 
 // return & 1 is true if se is a def
 // return & 2 is true if se is a use
 //
 int isDefAndOrUse(SymExpr* se) {
   if (CallExpr* call = toCallExpr(se->parentExpr)) {
-    if (call->isPrimitive(PRIM_MOVE) && call->get(1) == se) {
+    if ((call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) &&
+        call->get(1) == se) {
       return 1;
+    } else if (isOpEqualPrim(call) && call->get(1) == se) {
+      return 3;
     } else if (FnSymbol* fn = call->isResolved()) {
       ArgSymbol* arg = actual_to_formal(se);
       if (arg->intent == INTENT_REF ||
@@ -347,7 +512,7 @@ actual_to_formal(Expr *a) {
         if (a == actual)
           return formal;
       }
-    } else if (call->isPrimitive(PRIM_VMT_CALL)) {
+    } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
       FnSymbol* fn = toFnSymbol(toSymExpr(call->get(1))->var);
       int i = 0;
       for_actuals(actual, call) {
@@ -371,6 +536,67 @@ Expr* formal_to_actual(CallExpr* call, Symbol* arg) {
   }
   INT_FATAL(call, "bad call to formal_to_actual");
   return NULL;
+}
+
+
+bool isTypeExpr(Expr* expr)
+{
+  if (SymExpr* sym = toSymExpr(expr))
+  {
+    if (isTypeSymbol(sym->var))
+      return true;
+
+    if (sym->var->hasFlag(FLAG_TYPE_VARIABLE))
+      return true;
+
+    if (FnSymbol* fn = toFnSymbol(sym->var))
+      if (fn->retTag == RET_TYPE)
+        return true;
+  }
+
+  if (CallExpr* call = toCallExpr(expr))
+  {
+    if (call->isPrimitive(PRIM_TYPEOF))
+      return true;
+
+    if (call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+        call->isPrimitive(PRIM_GET_MEMBER))
+    {
+      AggregateType* ct = toAggregateType(call->get(1)->typeInfo());
+      INT_ASSERT(ct);
+
+      if (ct->symbol->hasFlag(FLAG_REF))
+        ct = toAggregateType(ct->getValType());
+
+      SymExpr* left = toSymExpr(call->get(1));
+
+      if (left->var->type->symbol->hasFlag(FLAG_TUPLE) &&
+          left->var->hasFlag(FLAG_TYPE_VARIABLE))
+        return true;
+
+      SymExpr* right = toSymExpr(call->get(2));
+      VarSymbol* var = toVarSymbol(right->var);
+
+      if (var->hasFlag(FLAG_TYPE_VARIABLE))
+        return true;
+
+      if (var->immediate)
+      {
+        const char* name = var->immediate->v_string;
+        for_fields(field, ct) {
+          if (!strcmp(field->name, name))
+            if (field->hasFlag(FLAG_TYPE_VARIABLE))
+              return true;
+        }
+      }
+    }
+
+    if (FnSymbol* fn = call->isResolved())
+      if (fn->retTag == RET_TYPE)
+        return true;
+  }
+
+  return false;
 }
 
 
@@ -418,6 +644,12 @@ visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
   // chpl_gen_main is always visible (if it exists).
   pruneVisit(chpl_gen_main, fns, types);
 
+  // When present, the printModuleInitOrder function is always visible;
+  // it will be NULL for --minimal-modules compilations
+  if (gPrintModuleInitFn) {
+    pruneVisit(gPrintModuleInitFn, fns, types);
+  }
+
   // Functions appearing the function pointer table are visible.
   // These are blocks that can be started through a forall, coforall or on statement.
   forv_Vec(FnSymbol, fn, ftableVec)
@@ -442,61 +674,120 @@ visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
 static void
 pruneUnusedTypes(Vec<TypeSymbol*>& types)
 {
+
+  pruneUnusedAggregateTypes(types);
+  pruneUnusedRefs(types);
+  changeDeadTypesToVoid(types);
+}
+
+
+static void pruneUnusedAggregateTypes(Vec<TypeSymbol*>& types)
+{
   //
-  // delete unused ClassType types, only deleting references to such
+  // delete unused AggregateType types, only deleting references to such
   // types when the value types are deleted
   //
-  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+  forv_Vec(TypeSymbol, ts, gTypeSymbols)
+  {
+    // Do not delete reference types.
+    // We delete the reference type if the base type is dead (below).
+    if (ts->hasFlag(FLAG_REF))
+      continue;
+
     // Ignore types flagged as primitive.
     if (ts->hasFlag(FLAG_PRIMITIVE_TYPE))
+      continue;
+
+    // Ignore types that are not class types
+    if (!isAggregateType(ts->type))
+      continue;
+
+    // Do not delete the object class.  It's pretty crucial.
+    if (ts->hasFlag(FLAG_OBJECT_CLASS))
       continue;
 
     // Visit only those types not marked as visible.
     if (types.set_in(ts))
       continue;
 
-    if (isClassType(ts->type)) {
-      //
-      // delete reference types for classes/records/unions only if
-      // deleting value types
-      //
-      if (ts->hasFlag(FLAG_REF) && isClassType(ts->getValType()))
+    ts->defPoint->remove();
+  }
+}
+
+
+static void pruneUnusedRefs(Vec<TypeSymbol*>& types)
+{
+  forv_Vec(TypeSymbol, ts, gTypeSymbols)
+  {
+    // This pass, we are interested only in ref types.
+    if (!ts->hasFlag(FLAG_REF))
+      continue;
+
+    // Ignore types flagged as primitive.
+    if (ts->hasFlag(FLAG_PRIMITIVE_TYPE))
+      continue;
+
+    // Ignore types that are not class types
+    if (!isAggregateType(ts->type))
+    {
+      // hilde sez: Ref types are always class types.
+      // So we can't get here.
+      INT_ASSERT(false);
+      continue;
+    }
+
+    // Visit only those types not marked as visible.
+    if (types.set_in(ts))
+      continue;
+
+    if (Type* vt = ts->getValType())
+    {
+      // Don't remove a ref type if it refers to a class type
+      if (isAggregateType(vt))
+        // and the class type is still alive.
+        if (types.set_in(vt->symbol))
+          continue;
+
+      // Don't delete nil ref as it is used in widening.
+      if (vt == dtNil)
         continue;
 
-      //
-      // delete reference type if type is not used
-      //
-      if (!ts->hasFlag(FLAG_REF))
-        if (Type* refType = ts->getRefType())
-          refType->symbol->defPoint->remove();
-
-      //
-      // unlink reference type from value type
-      //
-      if (ts->hasFlag(FLAG_REF)) {
-        if (Type* vt = ts->getValType()) {
-          if (vt == dtNil) // don't delete nil ref as it is used when widening
-            continue;
-          vt->refType = NULL;
-        }
-      }
-
-      ts->defPoint->remove();
+      // Unlink reference type from value type.
+      vt->refType = NULL;
     }
-  }
 
+    ts->defPoint->remove();
+  }
+}
+
+
+static void changeDeadTypesToVoid(Vec<TypeSymbol*>& types)
+{
   //
   // change symbols with dead types to void (important for baseline)
   //
   forv_Vec(DefExpr, def, gDefExprs) {
-    if (def->parentSymbol && def->sym->type && isClassType(def->sym->type) && !isTypeSymbol(def->sym) && !types.set_in(def->sym->type->symbol))
+    if (def->parentSymbol && def->sym->type && isAggregateType(def->sym->type) && !isTypeSymbol(def->sym) && !types.set_in(def->sym->type->symbol))
       def->sym->type = dtVoid;
   }
 }
 
-// Done this way because the log letter and hence the pass name for
-// each pass must be unique.  See initLogFlags() in runpasses.cpp.
-void prune2() { prune(); } // Synonym for prune.
+
+static void removeVoidMoves()
+{
+  forv_Vec(CallExpr, call, gCallExprs)
+  {
+    if (! call->isPrimitive(PRIM_MOVE))
+      continue;
+
+    SymExpr* se = toSymExpr(call->get(1));
+    if (se->var->type != dtVoid)
+      continue;
+
+    call->remove();
+  }
+}
+
 
 // Determine sets of used functions and types, and then delete
 // functions which are not visible and classes which are not used.
@@ -516,6 +807,12 @@ prune() {
   }
 
   pruneUnusedTypes(types);
+
+  removeVoidMoves();
 }
 
+
+// Done this way because the log letter and hence the pass name for
+// each pass must be unique.  See initLogFlags() in runpasses.cpp.
+void prune2() { prune(); } // Synonym for prune.
 

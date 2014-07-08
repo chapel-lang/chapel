@@ -14,8 +14,8 @@
 #endif
 
 enum IF1_num_kind {
-  NUM_KIND_NONE, NUM_KIND_UINT, NUM_KIND_INT, NUM_KIND_FLOAT, NUM_KIND_IMAG, 
-  NUM_KIND_COMPLEX
+  NUM_KIND_NONE, NUM_KIND_BOOL, NUM_KIND_UINT, NUM_KIND_INT, NUM_KIND_REAL,
+  NUM_KIND_IMAG, NUM_KIND_COMPLEX
 };
 
 enum IF1_const_kind {
@@ -28,8 +28,7 @@ enum IF1_bool_type {
 };
 
 enum IF1_int_type { 
-  INT_SIZE_1, INT_SIZE_8, INT_SIZE_16, INT_SIZE_32, INT_SIZE_64,
-  INT_SIZE_NUM
+  INT_SIZE_8, INT_SIZE_16, INT_SIZE_32, INT_SIZE_64, INT_SIZE_NUM
 };
 
 enum IF1_float_type { 
@@ -58,10 +57,10 @@ enum IF1_complex_type {
 
 
 class Immediate { public:
-  unsigned int const_kind : 4;
-  unsigned int num_index : 3;
+  uint32_t const_kind;
+  uint32_t num_index;
   union {
-    bool       v_bool;
+    uint64_t   v_bool;
     int8_t     v_int8;
     int16_t    v_int16;
     int32_t    v_int32;
@@ -81,11 +80,12 @@ class Immediate { public:
 
   int64_t  int_value( void);
   uint64_t uint_value( void);
+  uint64_t bool_value( void);
 
   Immediate& operator=(const Immediate&);
   Immediate& operator=(bool b) {
-    const_kind = NUM_KIND_UINT;
-    num_index = INT_SIZE_1;
+    const_kind = NUM_KIND_BOOL;
+    num_index = BOOL_SIZE_SYS;
     v_bool = b;
     return *this;
   }
@@ -96,8 +96,8 @@ class Immediate { public:
   }
   Immediate(bool b) {
     memset(this, 0, sizeof(*this));
-    const_kind = NUM_KIND_UINT;
-    num_index = INT_SIZE_1;
+    const_kind = NUM_KIND_BOOL;
+    num_index = BOOL_SIZE_SYS;
     v_bool = b;
   }
   Immediate(const char *s) {
@@ -109,12 +109,15 @@ class Immediate { public:
   Immediate(const Immediate &im);
 };
 
+inline uint64_t
+Immediate::bool_value( void) {
+  return v_bool;
+}
 
 inline int64_t
 Immediate::int_value( void) {
   int64_t val = 0;
   switch (num_index) {
-  case INT_SIZE_1 : val = v_bool; break;
   case INT_SIZE_8 : val = v_int8;  break;
   case INT_SIZE_16: val = v_int16; break;
   case INT_SIZE_32: val = v_int32; break;
@@ -130,7 +133,6 @@ inline uint64_t
 Immediate::uint_value( void) {
   uint64_t val = 0;
   switch (num_index) {
-  case INT_SIZE_1 : val = v_bool;  break;
   case INT_SIZE_8 : val = v_uint8;  break;
   case INT_SIZE_16: val = v_uint16; break;
   case INT_SIZE_32: val = v_uint32; break;

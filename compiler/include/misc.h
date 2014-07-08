@@ -3,6 +3,8 @@
 
 #include "driver.h"
 
+#include <cstdio>
+
 #define exit(x) dont_use_exit_use_clean_exit_instead
 
 // INT_FATAL(ast, format, ...)
@@ -16,17 +18,23 @@
 #define USR_FATAL_CONT setupError(__FILE__, __LINE__, 3), handleError
 #define USR_WARN       setupError(__FILE__, __LINE__, 4), handleError
 #define USR_PRINT      setupError(__FILE__, __LINE__, 5), handleError
-#define USR_STOP exitIfFatalErrorsEncountered
+
+#define USR_STOP       exitIfFatalErrorsEncountered
 
 // INT_ASSERT is intended to become no-op in production builds of compiler
 #define INT_ASSERT(x) do { if (!(x)) INT_FATAL("assertion error"); } while (0)
 
-#define iterKindTypename "iterKind"
-#define iterKindLeaderTagname "leader"
-#define iterKindFollowerTagname "follower"
-#define iterFollowthisArgname "followThis"
+#define iterKindTypename          "iterKind"
+#define iterKindLeaderTagname     "leader"
+#define iterKindFollowerTagname   "follower"
+#define iterFollowthisArgname     "followThis"
 
 class BaseAST;
+
+bool forceWidePtrs();
+bool forceWidePtrsForLocal();
+bool requireWideReferences();
+bool requireOutlinedOn();
 
 const char* cleanFilename(const char* name);
 
@@ -35,6 +43,7 @@ void handleError(const char* fmt, ...);
 void handleError(BaseAST* ast, const char* fmt, ...);
 void handleError(FILE* file, BaseAST* ast, const char* fmt, ...);
 void exitIfFatalErrorsEncountered(void);
+void considerExitingEndOfPass(void);
 void printCallStack(bool force, bool shortModule, FILE* out);
 
 void startCatchingSignals(void);

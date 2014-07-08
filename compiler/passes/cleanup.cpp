@@ -42,7 +42,7 @@ static void normalize_nested_function_expressions(DefExpr* def) {
     Expr* stmt = def->getStmtExpr();
     if (!stmt) {
       if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol)) {
-        if (ClassType* ct = toClassType(ts->type)) {
+        if (AggregateType* ct = toAggregateType(ts->type)) {
           def->replace(new UnresolvedSymExpr(def->sym->name));
           ct->addDeclarations(def, true);
           return;
@@ -59,7 +59,7 @@ static void normalize_nested_function_expressions(DefExpr* def) {
            !strncmp("_seqloopexpr", parent->defPoint->parentSymbol->name, 12))
       parent = toFnSymbol(parent->defPoint->parentSymbol);
     if (TypeSymbol* ts = toTypeSymbol(parent->defPoint->parentSymbol)) {
-      ClassType* ct = toClassType(ts->type);
+      AggregateType* ct = toAggregateType(ts->type);
       INT_ASSERT(ct);
       ct->addDeclarations(def->remove(), true);
     } else {
@@ -75,6 +75,14 @@ static void normalize_nested_function_expressions(DefExpr* def) {
 static void
 insertDestructureStatements(Expr* S1, Expr* S2, CallExpr* lhs, Expr* rhs) {
   int i = 0;
+
+  S1->getStmtExpr()->insertAfter(
+    buildIfStmt(new CallExpr("!=",
+                             new SymExpr(new_IntSymbol(lhs->numActuals())),
+                             new CallExpr(".", rhs->copy(),
+                                          new_StringSymbol("size"))),
+                new CallExpr("compilerError", new_StringSymbol("tuple size must match the number of grouped variables"), new_IntSymbol(0))));
+
   for_actuals(expr, lhs) {
     i++;
     expr->remove();
@@ -140,6 +148,8 @@ static void flatten_primary_methods(FnSymbol* fn) {
       fn->addFlag(FLAG_SYNC);
     if (ts->hasFlag(FLAG_SINGLE))
       fn->addFlag(FLAG_SINGLE);
+    if (ts->hasFlag(FLAG_ATOMIC_TYPE))
+      fn->addFlag(FLAG_ATOMIC_TYPE);
   }
 }
 

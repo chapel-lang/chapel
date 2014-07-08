@@ -1,62 +1,73 @@
 #include "timer.h"
+
 #include "misc.h"
 
-static void
-_now_timer(_timervalue* time) {
-  struct timezone tz;
-  gettimeofday(time, &tz);
+Timer::Timer() {
+  clear();
 }
 
-static double
-_diff_timer(_timervalue* time1, _timervalue* time2) {
-  double s1 = (double)(time1->tv_sec);
-  double s2 = (double)(time2->tv_sec);
-  double us1 = (double)(time1->tv_usec);
-  double us2 = (double)(time2->tv_usec);
-  return (s1*1.0e+6+us1)-(s2*1.0e+6+us2);
-}
+Timer::~Timer() {
 
-Timer::Timer() :
-  time(),
-  accumulated(0.0),
-  running(false)
-{}
+}
 
 void Timer::clear() {
-  accumulated = 0.0;
-  running = false;
+  mRefTime.tv_sec  = 0;
+  mRefTime.tv_usec = 0;
+
+  mAccumUsec       = 0;
+  mRunning         = false;
 }
 
 void Timer::start() {
-  if (!running) {
-    running = true;
-    _now_timer(&time);
+  if (mRunning == false) {
+    gettimeofday(&mRefTime, 0);
+    mRunning = true;
+
   } else {
     INT_FATAL("start called on a timer that has not been stopped");
   }
 }
 
 void Timer::stop() {
-  if (running) {
-    _timervalue time2;
-    _now_timer(&time2);
-    accumulated += _diff_timer(&time2, &time);
-    running = false;
+  if (mRunning == true) {
+    mAccumUsec = elapsedUsecs();
+    mRunning   = false;
+
   } else {
     INT_FATAL("stop called on a timer that has not been started");
   }
 }
 
-double Timer::elapsed() {
-  if (running) {
-    _timervalue time2;
-    _now_timer(&time2);
-    return (accumulated + _diff_timer(&time2, &time)) / 1.0e+6;
-  } else {
-    return accumulated / 1.0e+6;
-  }
+double Timer::elapsedSecs() const {
+  return elapsedUsecs() / 1.0e6;
 }
 
-void Timer::print(FILE* f) {
-  fprintf(f, "%0.3lf", elapsed());
+unsigned long Timer::elapsedUsecs() const {
+  return mAccumUsec + ((mRunning == true) ? diffUsec() : 0);
+}
+
+unsigned long Timer::diffUsec() const {
+  struct timeval now;
+
+  unsigned long  deltaSec  = 0;
+  unsigned long  deltaUsec = 0;
+
+  gettimeofday(&now, 0);
+
+  /* 
+     Careful: The arithmetic is based on unsigned longs.
+
+     If now.tv_usec < mRefTime.tv_usec then now.tv_sec > mRefTime.tv.usec
+  */
+
+  if (now.tv_usec < mRefTime.tv_usec) {
+    deltaSec  = (now.tv_sec  - mRefTime.tv_sec) - 1;
+    deltaUsec = (1000000 + now.tv_usec) - mRefTime.tv_usec;
+
+  } else {
+    deltaSec  = now.tv_sec  - mRefTime.tv_sec;
+    deltaUsec = now.tv_usec - mRefTime.tv_usec;
+  }
+
+  return deltaSec * 1000000 + deltaUsec;
 }

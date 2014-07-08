@@ -231,13 +231,8 @@ void beautify(fileinfo* origfile) {
       fprintf(outputfile, "%s", cp);    /* output line */
       break;
     default:
-      if (strncmp(cp, "case", 4) == 0)
-        i = 1;
-      else
-        i = 0;
-
       if ((indent == TRUE) && (cp[0] != '#'))
-        for (i = 0; i < 2*depth+justify; i++)
+        for (i = (strncmp(cp, "case", 4) == 0) ? 1 : 0; i < 2*depth+justify; i++)
           fprintf(outputfile, " ");
       fprintf(outputfile, "%s", cp);  /* output line */
 

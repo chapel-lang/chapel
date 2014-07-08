@@ -1,12 +1,16 @@
-#include "astutil.h"
 #include "baseAST.h"
+
+#include "astutil.h"
 #include "expr.h"
+#include "log.h"
 #include "passes.h"
+#include "runpasses.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
 #include "yy.h"
+
 
 static void cleanModuleList();
 
@@ -44,13 +48,13 @@ void printStatistics(const char* pass) {
   foreach_ast(decl_counters);
 
   int nStmt = nCondStmt + nBlockStmt + nGotoStmt;
-  int kStmt = kCondStmt + kBlockStmt + kGotoStmt;
+  int kStmt = kCondStmt + kBlockStmt + kGotoStmt + kExternBlockStmt;
   int nExpr = nUnresolvedSymExpr + nSymExpr + nDefExpr + nCallExpr + nNamedExpr;
   int kExpr = kUnresolvedSymExpr + kSymExpr + kDefExpr + kCallExpr + kNamedExpr;
   int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nTypeSymbol+nFnSymbol+nEnumSymbol+nLabelSymbol;
   int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kTypeSymbol+kFnSymbol+kEnumSymbol+kLabelSymbol;
-  int nType = nPrimitiveType+nEnumType+nClassType;
-  int kType = kPrimitiveType+kEnumType+kClassType;
+  int nType = nPrimitiveType+nEnumType+nAggregateType;
+  int kType = kPrimitiveType+kEnumType+kAggregateType;
 
   fprintf(stderr, "%7d asts (%6dK) %s\n", nStmt+nExpr+nSymbol+nType, kStmt+kExpr+kSymbol+kType, pass);
 
@@ -92,25 +96,25 @@ void printStatistics(const char* pass) {
 
   if (strstr(fPrintStatistics, "n"))
     fprintf(stderr, "    Type %9d  Prim  %9d  Enum %9d  Class %9d \n",
-            nType, nPrimitiveType, nEnumType, nClassType);
+            nType, nPrimitiveType, nEnumType, nAggregateType);
   if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
     fprintf(stderr, "    Type %9dK Prim  %9dK Enum %9dK Class %9dK\n",
-            kType, kPrimitiveType, kEnumType, kClassType);
+            kType, kPrimitiveType, kEnumType, kAggregateType);
   if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
     fprintf(stderr, "    Type %6dK Prim  %6dK Enum %6dK Class %6dK\n",
-            kType, kPrimitiveType, kEnumType, kClassType);
+            kType, kPrimitiveType, kEnumType, kAggregateType);
   last_nasts = nasts;
 }
 
 // for debugging purposes only
 void trace_remove(BaseAST* ast, char flag) {
   // crash if deletedIdHandle is not initialized but deletedIdFilename is
-  if (deletedIdON) {
+  if (deletedIdON() == true) {
     fprintf(deletedIdHandle, "%d %c %p %d\n",
             currentPassNo, flag, ast, ast->id);
   }
   if (ast->id == breakOnDeleteID) {
-    if (deletedIdON) fflush(deletedIdHandle);
+    if (deletedIdON() == true) fflush(deletedIdHandle);
     gdbShouldBreakHere();
   }
   // There should never be an attempt to delete a global type.
@@ -132,6 +136,17 @@ void trace_remove(BaseAST* ast, char flag) {
   }                                             \
   g##type##s.n = i##type
 
+
+static void clean_modvec(Vec<ModuleSymbol*>& modvec) {
+  int aliveMods = 0;
+  forv_Vec(ModuleSymbol, mod, modvec) {
+    if (isAlive(mod) || isRootModuleWithType(mod, ModuleSymbol)) { 
+      modvec.v[aliveMods++] = mod;            
+    }                                           
+  } 
+  modvec.n = aliveMods;
+}
+
 void cleanAst() {
   cleanModuleList();
   //
@@ -142,9 +157,9 @@ void cleanAst() {
       FnSymbol* method = ts->type->methods.v[i];
       if (method && !isAliveQuick(method))
         ts->type->methods.v[i] = NULL;
-      if (ClassType* ct = toClassType(ts->type)) {
-        if (ct->initializer && !isAliveQuick(ct->initializer))
-          ct->initializer = NULL;
+      if (AggregateType* ct = toAggregateType(ts->type)) {
+        if (ct->defaultInitializer && !isAliveQuick(ct->defaultInitializer))
+          ct->defaultInitializer = NULL;
         if (ct->destructor && !isAliveQuick(ct->destructor))
           ct->destructor = NULL;
       }
@@ -160,6 +175,12 @@ void cleanAst() {
   verifyNcleanRemovedIterResumeGotos();
   verifyNcleanCopiedIterResumeGotos();
 
+  // clean the other module vectors, without deleting the ast instances (they
+  // will be deleted with the clean_gvec call for ModuleSymbols.) 
+  clean_modvec(allModules);
+  clean_modvec(userModules);
+  clean_modvec(mainModules);
+ 
   //
   // clean global vectors and delete dead ast instances
   //
@@ -236,8 +257,18 @@ BaseAST::BaseAST(AstTag type) :
   }
 }
 
+BaseAST::~BaseAST() { 
+}
 
-const char* BaseAST::stringLoc(void) {
+int BaseAST::linenum() const {
+  return astloc.lineno; 
+}
+
+const char* BaseAST::fname() const {
+  return astloc.filename; 
+}
+
+const char* BaseAST::stringLoc(void) const {
   const int tmpBuffSize = 256;
   char tmpBuff[tmpBuffSize];
 
@@ -245,29 +276,6 @@ const char* BaseAST::stringLoc(void) {
   return astr(tmpBuff);
 }
 
-// stringLoc for debugging only
-const char* stringLoc(BaseAST* ast);
-const char* stringLoc(int id);
-BaseAST* aid(int id);
-
-const char* stringLoc(BaseAST* ast) {
-  if (!ast)
-    return "<no node provided>";
-
-  const int tmpBuffSize = 256;
-  static char tmpBuff[tmpBuffSize];
-
-  snprintf(tmpBuff, tmpBuffSize, "%s:%d", ast->fname(), ast->linenum());
-  return tmpBuff;
-}
-
-const char* stringLoc(int id) {
-  BaseAST* ast = aid(id);
-  if (ast)
-    return stringLoc(aid(id));
-  else
-    return "<the given ID does not correspond to any AST node>";
-}
 
 ModuleSymbol* BaseAST::getModule() {
   if (!this)
@@ -338,34 +346,90 @@ Type* BaseAST::getWideRefType() {
     return wideRefMap.get(type->getRefType());
 }
 
+const char* BaseAST::astTagAsString() const {
+  const char* retval = "BaseAST??";
 
-const char* astTagName[E_BaseAST+1] = {
-  "SymExpr",
-  "UnresolvedSymExpr",
-  "DefExpr",
-  "CallExpr",
-  "NamedExpr",
-  "BlockStmt",
-  "CondStmt",
-  "GotoStmt",
-  "Expr",
+  switch (astTag) {
+    case E_SymExpr:
+      retval = "SymExpr";
+      break;
 
-  "ModuleSymbol",
-  "VarSymbol",
-  "ArgSymbol",
-  "TypeSymbol",
-  "FnSymbol",
-  "EnumSymbol",
-  "LabelSymbol",
-  "Symbol",
+    case E_UnresolvedSymExpr:
+      retval = "UnresolvedSymExpr";
+      break;
 
-  "PrimitiveType",
-  "EnumType",
-  "ClassType",
-  "Type",
+    case E_DefExpr:
+      retval = "DefExpr";
+      break;
 
-  "BaseAST"
-};
+    case E_CallExpr:
+      retval = "CallExpr";
+      break;
+
+    case E_NamedExpr:
+      retval = "NamedExpr";
+      break;
+
+    case E_BlockStmt:
+      retval = "BlockStmt";
+      break;
+
+    case E_CondStmt:
+      retval = "CondStmt";
+      break;
+
+    case E_GotoStmt:
+      retval = "GotoStmt";
+      break;
+
+    case E_ExternBlockStmt:
+      retval = "ExternBlockStmt";
+      break;
+
+    case E_ModuleSymbol:
+      retval = "ModuleSymbol";
+      break;
+
+    case E_VarSymbol:
+      retval = "VarSymbol";
+      break;
+
+    case E_ArgSymbol:
+      retval = "ArgSymbol";
+      break;
+
+    case E_TypeSymbol:
+      retval = "TypeSymbol";
+      break;
+
+    case E_FnSymbol:
+      retval = "FnSymbol";
+      break;
+
+    case E_EnumSymbol:
+      retval = "EnumSymbol";
+      break;
+
+    case E_LabelSymbol:
+      retval = "LabelSymbol";
+      break;
+
+    case E_PrimitiveType:
+      retval = "PrimitiveType";
+      break;
+
+    case E_EnumType:
+      retval = "EnumType";
+      break;
+
+    case E_AggregateType:
+      retval = "AggregateType";
+      break;
+  }
+
+  return retval;
+}
+
 
 astlocT currentAstLoc(0,NULL);
 
@@ -447,4 +511,29 @@ GenRet baseASTCodegenString(const char* str)
   return baseASTCodegen(new_StringSymbol(str));
 }
 
+/************************************* | **************************************
+*                                                                             *
+* Definitions for astlocMarker                                                *
+*                                                                             *
+************************************** | *************************************/
 
+// constructor, invoked upon SET_LINENO
+astlocMarker::astlocMarker(astlocT newAstLoc)
+  : previousAstLoc(currentAstLoc)
+{
+  //previousAstLoc = currentAstLoc;
+  currentAstLoc = newAstLoc;
+}
+
+// constructor, for special occasions
+astlocMarker::astlocMarker(int lineno, const char* filename)
+  : previousAstLoc(currentAstLoc)
+{
+  currentAstLoc.lineno   = lineno;
+  currentAstLoc.filename = astr(filename);
+}
+
+// destructor, invoked upon leaving SET_LINENO's scope
+astlocMarker::~astlocMarker() {
+  currentAstLoc = previousAstLoc;
+}
