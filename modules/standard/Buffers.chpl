@@ -447,8 +447,9 @@ module Buffers {
   }
   proc buffer.copyout(it:buffer_iterator, out value):buffer_iterator {
     var err:syserr = ENOERR;
-    this.copyout(it, value, err);
+    var ret = this.copyout(it, value, err);
     if err then ioerror(err, "in buffer.copyout");
+    return ret;
   }
 
   proc buffer.copyin( it:buffer_iterator, value, out error:syserr):buffer_iterator {
@@ -473,8 +474,9 @@ module Buffers {
   }
   proc buffer.copyin( it:buffer_iterator, value):buffer_iterator {
     var err:syserr = ENOERR;
-    this.copyin(it, value, err);
+    var ret = this.copyin(it, value, err);
     if err then ioerror(err, "in buffer.copyin");
+    return ret;
   }
 }
 
