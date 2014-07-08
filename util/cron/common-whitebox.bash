@@ -47,7 +47,7 @@ case $COMP_TYPE in
             the_cc=gcc
         fi
         module_name=${the_cc}
-        chpl_host_value=${the_cc}
+        chpl_host_value=${COMPILER}
         ;;
     *)
         log_error "Unknown COMP_TYPE value: ${COMP_TYPE}. Exiting."
