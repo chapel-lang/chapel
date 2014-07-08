@@ -7,6 +7,9 @@
 use Math;
 use Time;
 
+// When true, print the elapsed time at the end.
+config const printElapsed = true;
+
 proc main() {
   // 0. Housekeeping
   var timer: Timer;
@@ -124,5 +127,7 @@ proc main() {
   writeln("My check = ", mPolicyFunction[1000, 3], "\n");
 
   timer.stop();
-  writeln("Elapsed time is: ", timer.elapsed());
+  if printElapsed {
+    writeln("Elapsed time is: ", timer.elapsed());
+  }
 }
