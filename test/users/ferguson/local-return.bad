@@ -1,0 +1,3 @@
+local-return.chpl:1: In function 'go':
+local-return.chpl:1: warning: control reaches end of function that returns a value
+10

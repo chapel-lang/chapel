@@ -1,0 +1,135 @@
+\section{Examples}\label{s:examples}
+
+The examples here show how one might go about interfacing with the various APIs
+provided in section ~\ref{s:API} and while they are not supposed to be comprehensive, the
+hope is that this section will provide enough guidance to get started.
+
+\subsection{System API}
+In this section we'll walk through a simple example of implementing {\tt preadv} for
+HDFS.
+
+\begin{lstlisting}
+qioerr hdfs_preadv (void* file, 
+                    const struct iovec *vector, 
+                    int count, off_t offset, 
+                    ssize_t* num_read_out)
+{
+  ssize_t got;
+  ssize_t got_total;
+  qioerr err_out = 0;
+  int i;
+
+  STARTING_SLOW_SYSCALL;
+
+  err_out = 0;
+  got_total = 0;
+  for(i = 0; i < count; i++) {
+    got = hdfsPread(to_hdfs_file(file)->fs,
+                    to_hdfs_file(file)->file, 
+                    offset + got_total, 
+                    (void*)vector[i].iov_base, 
+                    vector[i].iov_len);
+    if( got != -1 ) {
+      got_total += got;
+    } else {
+      err_out = qio_mkerror_errno();
+      break;
+    }
+    if(got != (ssize_t)vector[i].iov_len ) {
+      break;
+    }
+  }
+
+  if( err_out == 0 && 
+    got_total == 0 && 
+    sys_iov_total_bytes(vector, count) != 0 ) 
+    err_out = qio_int_to_err(EEOF);
+
+  *num_read_out = got_total;
+
+  DONE_SLOW_SYSCALL;
+
+  return err_out;
+}
+\end{lstlisting}
+In lines 1-5, we take in the file pointer for our filesystem as a {\tt void*}, a vector
+of preallocated {\tt iovec} buffers, the number of these vectors, the offset to read from and the
+output to tell the runtime how much we were able to read. {\tt qioerr} is a QIO defined
+struct, and consists of an error number field and a message field (\ie an {\tt int} and a
+{\tt const char*}) and is a {\tt syserr} in Chapel code.
+
+In lines 11-30 we call {\tt STARTING\_SLOW\_SYSCALL} which at this time does nothing - and
+is meant to signify that we are doing a system call that might block - however in the
+future this might do something to migrate threads, and therefore errno's might go
+away if you tried accessing them after {\tt DONE\_SLOW\_SYSCALL}. Inside the for loop we
+simply populate our vector of buffers until we cannot read anymore, or until we
+have filled up all the buffers. 
+
+In lines 32-42 we check to see if we have read anything, if we don't have an error
+and we didn't read anything and the vectors total length is not 0, then we have
+encountered an unexpected EOF, and set the error to {\tt EEOF}. We then simply set the
+amount we've read and return.
+
+\subsection{Other APIs}
+
+In this example, we walk through the implementation of the HDFS leader-follower
+iterator which uses the User API along with the RecordParser API. The code for the
+leader is:
+\begin{lstlisting}
+
+iter HDFSiter(param tag: iterKind, 
+              path: string, type rec, regex: string)
+  where tag == iterKind.leader {
+
+    type hdfsInfo = 2*int(64);
+
+    var workQueue: [LocaleSpace] domain(hdfsInfo);
+
+    // ----- Create a file per locale ----
+    var hdfs = hdfsChapelConnect("default", 0);
+    var fl   = hdfs.hdfsOpen(path, iomode.r);
+
+    // -------- Get locales for blocks ------
+    var fll = fl.getLocal();
+    var (hosts, t) = getHosts(fll);
+
+    for j in 0..t-1 {
+      var h = getLocaleBytes(hosts, j);
+      writeln(h);
+      var r: hdfsInfo;
+      r(1) = h.start_byte;
+      r(2) = h.len;
+      workQueue[h.locale_id] += r;
+    }
+
+    coforall loc in Locales {
+      on loc {
+        forall block in workQueue[loc.id] {
+          var rr = fl.hdfsReader(start=block(1));
+          var N  = new RecordReader(rec, rr, regex);
+          for n in N.stream_num(block(1), block(2)) {
+            yield n;
+          }
+        }
+      }
+    }
+
+    fl.hdfsClose();
+    hdfs.hdfsChapelDisconnect();
+  }
+\end{lstlisting}
+
+In lines 7-11 We first create an associative domain over our locales with tuples of
+the form {\tt (start\_byte, length)} (in essence creating a work-queue for each locale),
+we then connect to HDFS and open files on each of our locales.
+
+In lines 14-24 we then get our local file and get a C array of structs of
+the form {\tt (locale\_id, start\_byte, length)} and the number of elements in that array are returned as the
+second element of the tuple. We then go through each element in the array and add it
+to our work-queue for that locale.
+
+In lines 26-35, we go on each locale and in parallel run through the work queue for that
+locale, returning records in parallel.
+
+
+

@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+#
+# In practice, CHPL_RT_CALL_STACK_SIZE is really a minimum task call
+# stack size.  Some tasking layers actually use a higher value.  We
+# adjust for that here.
+#
+icss=$( sed 's/^CHPL_RT_CALL_STACK_SIZE=\([0-9]*\).*$/\1/' $1.execenv )
+
+case $( $CHPL_HOME/util/chplenv/chpl_tasks.py ) in
+fifo)
+  # fifo rounds the call stack size to the next system page boundary
+  pagesize=$( getconf PAGESIZE )
+  ocss=$(( ($icss + $pagesize - 1) & ~($pagesize - 1) ));;
+qthreads)
+  # qthreads rounds the call stack size to the next system page boundary
+  # iff it's using guard pages
+  # Note: This code won't work if guard pages are disabled at qthreads
+  #       config time and you run without setting QT[HREAD]_GUARD_PAGES,
+  #       because we assume here that the default is to have guard pages.
+  # Note: The QT_* and QTHREAD_* order in the concatenation is important;
+  #       it has to match the qthreads precedence for these or we do the
+  #       wrong thing in the unlikely event that both env vars are set,
+  #       but to conflicting values.
+  if [[ ,$QT_GUARD_PAGES$QTHREAD_GUARD_PAGES =~ ,[0nNfF] ]] ; then
+    ocss=$icss
+  else
+    pagesize=$( getconf PAGESIZE )
+    ocss=$(( ($icss + $pagesize - 1) & ~($pagesize - 1) ))
+  fi;;
+*)
+  ocss=$icss;;
+esac
+
+if [[ $( $CHPL_HOME/util/chplenv/chpl_comm.py ) == none ]] ; then
+  good_in=$1.comm-none.good.in
+else
+  good_in=$1.good.in
+fi
+
+sed "s/$icss/$ocss/" < $good_in > $1.good

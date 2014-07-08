@@ -1,0 +1,11 @@
+semantic: should for over a distributed array run loop body on owners?
+
+It seems to me that since 'on' is serial, a serial for
+loop over distributed data should run the loop body
+wherever the data is stored.
+
+Right now you get that with forall, but that also
+implies parallelism, and parallelism and locality
+are supposed to be orthogonal....
+
+

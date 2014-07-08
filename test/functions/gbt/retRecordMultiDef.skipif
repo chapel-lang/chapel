@@ -1,0 +1,2 @@
+# The .bad file depends on matching the gcc error messages.
+CHPL_TARGET_COMPILER != gnu

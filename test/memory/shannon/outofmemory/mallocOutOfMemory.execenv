@@ -1,0 +1,10 @@
+#
+# This test dials back the amount of virtual memory allowed to make sure that
+# we get sane error messages when we run out of memory. The limit is fairly low
+# which can be a problem for qthreads. Qthreads bulk allocates memory for a
+# couple hundred threads on initialization. For qthreads default stack size
+# that's not a problem, but if you bump the stack size up to 8MB or something
+# that quickly turns into multiple GBs, which exceeds the ulimit that gets set.
+# This just dials back the default stack size to avoid this. 
+#
+CHPL_RT_CALL_STACK_SIZE=64k

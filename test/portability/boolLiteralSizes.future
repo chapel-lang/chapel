@@ -1,0 +1,6 @@
+bug: boolean literals don't preserve their sizes
+
+Our generated code calls sizeof(true), which is a C constant value.  This will
+always return the same size, no matter what boolean size we cast it to.  In
+order to display correctly, we need to define and use separate values for each
+boolean size.

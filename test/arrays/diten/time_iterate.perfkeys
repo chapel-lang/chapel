@@ -1,0 +1,4 @@
+chpl wrote 100000000 elements 100 times in 
+C    wrote 100000000 elements 100 times in
+verify:1: chpl wrote \d+ elements \d+ times in [0-9.]+
+verify:2: C    wrote \d+ elements \d+ times in [0-9.]+

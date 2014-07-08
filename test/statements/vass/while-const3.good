@@ -1,0 +1,2 @@
+while-const3.chpl:3: warning: A while loop with a constant condition
+while-const3.chpl:6: warning: A while loop with a constant condition

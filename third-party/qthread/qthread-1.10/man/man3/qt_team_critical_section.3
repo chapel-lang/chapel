@@ -1,0 +1,29 @@
+.TH qt_team_critical_section 3 "NOVEMBER 2012" libqthread "libqthread"
+.SH NAME
+.B qt_team_critical_section
+\- marks a region of code that must not be interrupted by a eureka
+.SH SYNOPSIS
+.B #include <qthread.h>
+
+.I void 
+.br
+.B qt_team_critical_section
+.RI "(qt_team_critical_section_t " boundary );
+.SH DESCRIPTION
+This function is used to mark a region of code that must not be interrupted by
+a eureka. This is primarily to allow small operations that do not work well
+when interrupted (such as printf()) to be performed in eureka-able code, and to
+allow for correct manipulation of shared data structures that require locking.
+If a eureka moment is reached by another thread while the current thread is
+within a critical section, the effect will be as if the current thread was able
+to complete its critical section just before the eureka moment was reached.
+.PP
+The argument,
+.IR boundary ,
+may be one of two values:
+.I BEGIN
+and
+.IR END ,
+indicating whether this is the beginning of a critical section or the end of one. Critical sections CAN be nested, if necessary.
+.SH SEE ALSO
+.BR qt_team_eureka (3)

@@ -1,0 +1,41 @@
+Source changes
+--------------
+* drop main()?
+
+* why doesn't the complex math look like complex math?  What can I
+  learn from Jacob's?  What would it take to incur the same number
+  of ops?
+
+* we should have the modules automatically strength reduce divisions
+  by powers of two?  Though the arguments that the C compiler should
+  do it are reasonable (** is different since C doesn't have **).
+
+* if we only have 2 writes (rather than O(n)) does unlocked really
+  matter?
+
+* can we make a version that handles problem sizes that don't divide
+  evenly by the eltType?
+
+* if so, is using a 64-bit uint even faster (might reduce aligning)
+
+Performance improvements
+------------------------
+* make writes on contiguous RMO arrays blast it out with one write
+  rather than element-by-elementother notes
+
+other notes
+-----------
+
+* what would it take to do a good row-at-a-time implementation?
+  - task private 'in' array variables
+  - search to right place in the file
+  - BUT Can't search to stdout.
+  - OK, forget it for now.
+
+* Q: why can't we open the writer using stdin.writer()?
+  A: because stdin is a writer not a file
+
+* Q: why don't writeln()s to the writer work as hoped?
+  A: something to do with the native format IIRC?
+
+

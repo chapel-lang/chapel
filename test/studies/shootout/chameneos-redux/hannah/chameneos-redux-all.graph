@@ -1,0 +1,23 @@
+perfkeys: time for chameneos1 to meet =, time for chameneos1 to meet =, time for chameneos1 to meet =
+graphkeys: time for chameneos1 to meet, time for chameneos1 to meet (v1), time for chameneos1 to meet (mmp)
+files: chameneos-redux.dat, chameneos-redux-v1.dat, chameneos-redux-multiple-meeting-places.dat
+ylabel: Time (seconds)
+graphtitle: Chameneos-redux chameneos1 time to meet
+graphname: chameneos-redux-ch1-all
+startdate: 07/26/10
+
+perfkeys: time for chameneos2 to meet =, time for chameneos2 to meet =, time for chameneos2 to meet =
+graphkeys: time for chameneos2 to meet, time for chameneos2 to meet (v1), time for chameneos2 to meet (mmp)
+files: chameneos-redux.dat, chameneos-redux-v1.dat, chameneos-redux-multiple-meeting-places.dat
+ylabel: Time (seconds)
+graphtitle: Chameneos-redux chameneos2 time to meet
+graphname: chameneos-redux-ch2-all
+startdate: 07/26/10
+
+perfkeys: total execution time =, total execution time =, total execution time =
+graphkeys: total execution time, total execution time (v1), total execution time (mmp)
+files: chameneos-redux.dat, chameneos-redux-v1.dat, chameneos-redux-multiple-meeting-places.dat
+ylabel: Time (seconds)
+graphtitle: Chameneos-redux
+graphname: chameneos-redux-all
+startdate: 07/26/10

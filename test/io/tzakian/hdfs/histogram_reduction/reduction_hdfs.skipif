@@ -1,0 +1,2 @@
+CHPL_AUX_FILESYS!=hdfs
+CHPL_REGEXP!=re2

@@ -1,0 +1,22 @@
+__all__ = [
+    'chpl_arch',
+    'chpl_atomics',
+    'chpl_aux_filesys',
+    'chpl_make',
+    'chpl_platform',
+    'chpl_comm',
+    'chpl_comm_segment',
+    'chpl_comm_substrate',
+    'chpl_compiler',
+    'chpl_gmp',
+    'chpl_hwloc',
+    'chpl_launcher',
+    'chpl_llvm',
+    'chpl_locale_model',
+    'chpl_mem',
+    'chpl_regexp',
+    'chpl_tasks',
+    'chpl_threads',
+    'chpl_timers',
+    'chpl_wide_pointers'
+]

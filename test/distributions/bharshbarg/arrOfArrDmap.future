@@ -1,0 +1,64 @@
+bug: Iterating directly over the array results in a data access error
+
+Runtime output:
+arrOfArrDmap.chpl:6: error: cannot access remote data in local block
+
+----------------------------------------------------------------------
+
+Temporary solution: compile with --no-fast-followers
+
+----------------------------------------------------------------------
+
+Offending code:
+
+When compiling with $CHPL_DEVELOPER, you'll see that in 
+dsiDim (DefaultRectangular.chpl:262), the generated C asserts the domain is 
+local, but fails. The domain exists globally (Locale0), but the array pointer 
+and data exists on Locale1. The local version of dsiDim seems to be called 
+because a fast follower is generated.
+
+----------------------------------------------------------------------
+
+Useful information
+
+Disclaimer:
+  At this time, I know relatively little about fast-followers and how their
+  code is generated. Therefore, assumptions and observations in this 
+  file may be completely inaccurate, but are hopefully at least 
+  useful in giving you a rough idea of what's happening.
+
+The root cause of this bug appears to be the local {} assertion in 
+BlockArr.these (BlockDist.chpl:949) This code allows for the optimized 
+fast-follower. The code that allows a fast-follower is: 
+
+proc BlockArr.dsiDynamicFastFollowCheck(lead : [])
+  return lead.domain._value == this.dom;
+
+at BlockDist.chpl:903. The generated C correctly asserts that the domains' 
+addresses and locales are the same. The issue is that the domain exists on 
+Locale0, but the array pointer/data exists on the current Locale.
+
+By commenting out the local assertion, the program compiles and executes as 
+expected.
+
+----------------------------------------------------------------------
+
+gdb backtrace of this issue (sans addresses):
+	#0  _local_dsiDim ()
+	#1  _local_initialize4 ()
+	#2  _local__construct_DefaultRectangularArr2 ()
+	#3  _local_dsiBuildArray ()
+	#4  _local_buildArray ()
+	#5   _local_chpl__convertRuntimeTypeToValue2 ()
+	#6  _local_chpl_incRefCountsForDomainsInArrayEltTypes ()
+	#7  _local_initialize ()
+	#8   _local__construct__array ()
+	#9   _local__newArray ()
+	#10 _local_this2 ()
+	#11 coforall_fn6 ()
+	#12 wrapcoforall_fn6 ()
+	#13 thread_begin ()
+	#14 pthread_func ()
+	#15 start_thread () from /lib64/libpthread.so.0
+	#16 clone () from /lib64/libc.so.6
+	#17?? () 

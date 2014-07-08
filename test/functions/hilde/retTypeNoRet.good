@@ -1,0 +1,11 @@
+retTypeNoRet.chpl:1: In function 'foo':
+retTypeNoRet.chpl:1: warning: control reaches end of function that returns a value
+retTypeNoRet.chpl:10: In function 'bar':
+retTypeNoRet.chpl:10: warning: control reaches end of function that returns a value
+10
+In foo.
+0
+0.0
+1.0
+0.0
+retTypeNoRet.chpl:15: error: halt reached - Invalid argument in bar

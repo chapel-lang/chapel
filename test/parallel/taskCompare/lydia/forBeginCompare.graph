@@ -1,0 +1,6 @@
+perfkeys: real, real
+graphkeys: for + begin, for + begin early exit
+files: for-begin-orderly-exit.dat, for-begin.dat
+graphtitle: For+Begin Timings
+ylabel: Time (seconds)
+graphname: task-parallel-compare-for-begin

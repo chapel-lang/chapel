@@ -1,0 +1,12 @@
+QIO_SRCS = \
+	bulkget.c \
+	deque.c \
+	qbuffer.c \
+	qio.c \
+	qio_formatted.c \
+	sys.c \
+	sys_xsi_strerror_r.c \
+
+QIO_OBJS = \
+	$(QIO_SRCS:%.c=$(QIO_OBJDIR)/%.o)
+

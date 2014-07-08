@@ -1,0 +1,12 @@
+bug: unable to return tuple from a var function when created on the fly
+
+Based on a conversation with bradc: We should be able to return non-lvalues when setter == false.
+
+sample compiler output:
+
+setterBranch.c:37:10: error: incompatible pointer to integer conversion passing '_tuple_2_star_int64_t'
+(aka 'int64_t [2]') to parameter of type 'int64_t' (aka 'long long') [-Werror,-Wint-conversion]
+writeln3(T);
+^
+chpl__header.h:1074:30: note: passing argument to parameter '_e0_args' here
+static void writeln3(int64_t _e0_args);

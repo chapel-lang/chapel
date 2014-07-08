@@ -1,0 +1,3 @@
+inferRecursive.chpl:9: error: unable to resolve return type of function 'fibInfer'
+inferRecursive.chpl:9: In function 'fibInfer':
+inferRecursive.chpl:13: error: called recursively at this point

@@ -1,0 +1,16 @@
+The reference version of the largest size of IS we can run on a desktop (size C)
+takes ~20 seconds to run.  Due to implementation issues, however, the Chapel
+version (as of revision 21580) of IS takes more than 10x that to run the
+algorithm, and more than 200x that for setup, the algorithm, and verification.
+
+In an effort to minimize time taken for performance testing, we have disabled
+size W, B, and C.  This is because size B and C take a very long time to
+complete, and W takes enough time and provides no more relevant data than size
+A.
+
+We have also lowered the timeout to 400 seconds, since chap04's unusual
+performance means that it will time out on 300 seconds.
+
+Note: when the timeout was extended to 800 seconds, on bradc-lnx size C ran out
+of memory instead of timing out or completing.  Because of this, we are
+disabling it until we've written a better version of IS.

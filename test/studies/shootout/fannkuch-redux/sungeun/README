@@ -1,0 +1,5 @@
+As of Jan. 13, 2014 this version of Fannkuch is not run as a performance test
+
+It does not calculate or output the checksum that is required in an
+implementation of this benchmark. If it is desired to run this as a performance
+test in the future, the checksum should be put in beforehand.

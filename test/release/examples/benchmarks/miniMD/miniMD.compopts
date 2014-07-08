@@ -1,0 +1,2 @@
+--fast --no-cc-warnings -sprintCorrect=true -sprintPerf=false -M helpers
+--fast --no-cc-warnings -sprintCorrect=true -sprintPerf=false -M helpers -suseStencilDist=true -sdefaultDoRADOpt=false

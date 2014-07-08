@@ -1,0 +1,6 @@
+--probClass=S # cg.S
+--probClass=W # cg.W
+--probClass=A # cg.A
+#--probClass=B # cg.B
+#--probClass=C # cg.C
+#--probClass=D # cg.D

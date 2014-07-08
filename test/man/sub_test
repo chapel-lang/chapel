@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+if [ $# -lt 1 ]; then
+    echo '[Error (sub_test): missing compiler argument]'
+    exit -1
+fi
+
+$1 --no-devel -h | ./checkManPages
+if [ $? != 0 ]; then
+    echo '[Error matching man page with compiler environment]'
+else
+    echo '[Success matching man page with compiler environment]'
+fi

@@ -1,0 +1,1 @@
+this-in-method.chpl:11: error: illegal to invoke mod() on r2 because r2 is declared const

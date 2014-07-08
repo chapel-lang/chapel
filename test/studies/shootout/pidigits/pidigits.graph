@@ -1,0 +1,5 @@
+perfkeys: real, real, real, real
+files: pidigits-blc.dat, pidigits-iter.dat, pidigits.dat, pidigits-ledrug.dat
+graphkeys: pidigits-blc, pidigits-iter, pidigits (release), pidigits (Ledrug version)
+ylabel: Time (seconds)
+graphtitle: Pi digits variations

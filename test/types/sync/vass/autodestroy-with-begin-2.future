@@ -1,0 +1,10 @@
+bug: sync variable is deleted prematurely when passed by ref and used in 'begin'
+
+See:
+  autodestroy-with-begin-1.future
+
+
+autodestroy-with-begin-2.chpl:
+
+It is a variation on autodestroy-with-begin-1.chpl that adds another
+sync variable used in an uninteresting way, for comparison.

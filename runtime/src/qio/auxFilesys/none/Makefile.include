@@ -1,0 +1,7 @@
+AUXFS_SUBDIR = src/qio/auxFilesys/none
+
+ALL_SRCS += $(CURDIR)/$(AUXFS_SUBDIR)/*.c
+
+AUXFS_OBJDIR = $(RUNTIME_ROOT)/$(AUXFS_SUBDIR)/$(RUNTIME_OBJDIR)
+
+include $(RUNTIME_ROOT)/$(AUXFS_SUBDIR)/Makefile.share

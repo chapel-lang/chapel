@@ -1,0 +1,16 @@
+==========================
+dygraphs README for Chapel
+==========================
+
+This copy of dygraphs is being released with Chapel for convenience and
+uses a snapshot obtained at: 
+
+  http://dygraphs.com
+
+It is used to generate graphs of our performance data and to display
+previously created graphs at http://chapel.sourceforge.net/perf/
+
+Any problems with viewing or using these graphs should be directed to
+the Chapel team at chapel-bugs@lists.sourceforge.net, as the cause is
+most likely due to Chapel's use of dygraphs and not the library code
+itself.

@@ -1,0 +1,18 @@
+bug: sync variable is deleted prematurely when passed by ref and used in 'begin'
+
+See:
+  autodestroy-with-begin-1.future
+
+
+autodestroy-with-begin-ref.chpl:
+
+It is a variation on autodestroy-with-begin-1.chpl that specifies
+the 'ref' intent explicitly for the sync variable formals.
+
+This behavior should be identical to blank intent, but currently
+it triggers an unimplemented case in the compiler:
+
+  autodestroy-with-begin-ref.chpl:14: error: unexpected case [parallel.cpp:578]
+
+I think there is a separate future for the above issue.  Once that issue
+is addressed, this test can perhaps still be retained.

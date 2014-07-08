@@ -1,0 +1,2 @@
+class-ref-two.chpl:25: In function 'doit':
+class-ref-two.chpl:32: error: non-lvalue actual is passed to 'ref' formal 'q' of foo()

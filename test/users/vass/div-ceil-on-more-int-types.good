@@ -1,0 +1,8 @@
+divceil(7:int(32),5:uint(64)) = 2
+divfloor(7:int(32),5:uint(64)) = 1
+divceil(7:uint(32),5:uint(64)) = 2
+divfloor(7:uint(32),5:uint(64)) = 1
+divceil(7:uint(64),5:int(32)) = 2
+divfloor(7:uint(64),5:int(32)) = 1
+divceil(7:uint(64),5:uint(32)) = 2
+divfloor(7:uint(64),5:uint(32)) = 1

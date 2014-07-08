@@ -1,0 +1,34 @@
+==============================================
+Chapel Computer Language Benchmarks Game Codes
+==============================================
+
+This directory contains Chapel versions of the Computer Language
+Benchmarks Game programs (http://benchmarksgame.alioth.debian.org/)
+written in Chapel.  In these versions, we strive for a combination of
+elegant use of Chapel and performance.  Most of these codes are
+written for serial or parallel single-locale (shared-memory)
+execution, following the lead of the competition.
+
+At present, this directory contains the following codes:
+
+    binarytrees.chpl    : Allocates and deallocates many, many binary trees
+    chameneosredux.chpl : Simulates meetings between color-changing Chameneos
+    fannkuchredux.chpl  : Performs many operations on small arrays
+    mandelbrot.chpl     : Plots the mandelbrot set [-1.5-i,0.5+i] on a bitmap
+    meteor.chpl         : Performs a parallel search for all solutions to a
+                          puzzle
+    nbody.chpl          : Performs an n-body simulation of the Jovian planets
+    pidigits.chpl       : Computes digits of pi using GMP, if available
+    spectralnorm.chpl   : Calculates the spectral norm of an infinite matrix
+    threadring.chpl     : Passes a token between a large number of threads
+
+Over time, we plan to create versions of all the benchmarks and to
+enter Chapel into the competition.  Draft versions of other benchmarks
+that have not yet been promoted to the release can be found in our SVN
+repository under the test/studies/shootout/ directory.
+
+The provided Makefile can be used to compile the programs, or they can
+be run in correctness or performance modes using the Chapel testing
+system (see $CHPL_HOME/util/sub_test).
+
+Note that chameneosredux.chpl has non-deterministic output

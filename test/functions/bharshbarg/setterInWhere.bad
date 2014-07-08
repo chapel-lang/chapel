@@ -1,0 +1,2 @@
+setterInWhere.chpl:7: In function 'this':
+setterInWhere.chpl:7: error: invalid where clause

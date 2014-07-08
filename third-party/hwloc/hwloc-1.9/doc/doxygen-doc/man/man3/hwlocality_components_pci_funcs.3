@@ -1,0 +1,45 @@
+.TH "Components and Plugins: PCI functions to be used by components" 3 "Wed Mar 26 2014" "Version 1.9" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+Components and Plugins: PCI functions to be used by components \- 
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "int \fBhwloc_insert_pci_device_list\fP (struct \fBhwloc_backend\fP *backend, struct \fBhwloc_obj\fP *first_obj)"
+.br
+.ti -1c
+.RI "unsigned \fBhwloc_pci_find_cap\fP (const unsigned char *config, unsigned cap)"
+.br
+.ti -1c
+.RI "int \fBhwloc_pci_find_linkspeed\fP (const unsigned char *config, unsigned offset, float *linkspeed)"
+.br
+.ti -1c
+.RI "int \fBhwloc_pci_prepare_bridge\fP (\fBhwloc_obj_t\fP obj, const unsigned char *config)"
+.br
+.in -1c
+.SH "Detailed Description"
+.PP 
+
+.SH "Function Documentation"
+.PP 
+.SS "int hwloc_insert_pci_device_list (struct \fBhwloc_backend\fP *backend, struct \fBhwloc_obj\fP *first_obj)"
+
+.PP
+Insert a list of PCI devices and bridges in the backend topology\&. Insert a list of objects (either PCI device or bridges) starting at first_obj (linked by next_sibling in the topology, and ending with NULL)\&. Objects are placed under the right bridges, and the remaining upstream bridges are then inserted in the topology by calling the get_obj_cpuset() callback to find their locality\&. 
+.SS "unsigned hwloc_pci_find_cap (const unsigned char *config, unsignedcap)"
+
+.PP
+Return the offset of the given capability in the PCI config space buffer\&. This function requires a 256-bytes config space\&. Unknown/unavailable bytes should be set to 0xff\&. 
+.SS "int hwloc_pci_find_linkspeed (const unsigned char *config, unsignedoffset, float *linkspeed)"
+
+.PP
+Fill linkspeed by reading the PCI config space where PCI_CAP_ID_EXP is at position offset\&. Needs 20 bytes of EXP capability block starting at offset in the config space for registers up to link status\&. 
+.SS "int hwloc_pci_prepare_bridge (\fBhwloc_obj_t\fPobj, const unsigned char *config)"
+
+.PP
+Modify the PCI device object into a bridge and fill its attribute if a bridge is found in the PCI config space\&. This function requires 64 bytes of common configuration header at the beginning of config\&. 
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code\&.

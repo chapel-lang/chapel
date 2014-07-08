@@ -1,0 +1,60 @@
+.TH qutil_double_max 3 "APRIL 2011" libqthread "libqthread"
+.SH NAME
+.BR qutil_double_max ,
+.BR qutil_uint_max ,
+.B qutil_int_max
+\- find the maximum value within an array in parallel
+.SH SYNOPSIS
+.B #include <qthread.h>
+.br
+.B #include <qthread/qutil.h>
+
+.I double
+.br
+.B qutil_double_max
+.RI "(double *" array ", size_t " length ", int " checkfeb );
+.PP
+.I unsigned int
+.br
+.B qutil_uint_max
+.RI "(unsigned int *" array ", size_t " length ", int " checkfeb );
+.PP
+.I int
+.br
+.B qutil_int_max
+.RI "(int *" array ", size_t " length ", int " checkfeb );
+.SH DESCRIPTION
+These functions take as input an
+.I array
+of
+.I length
+numbers and will return the maximum value within those numbers. This value is
+computed in parallel by using a chained-loop structure, using qthreads to
+compute the maximum in chunks.
+.PP
+If
+.I checkfeb
+is non-zero, these functions will wait for the entries in the array to be full
+before comparing them. They
+.B DO NOT
+check whether the array entries are properly aligned. If the datatype is too
+small to do a FEB operation on,
+.B they will abort,
+if sanity checks are turned on.
+.SH RETURN VALUE
+The maximum value of the first
+.I length
+entries of
+.IR array .
+.SH SEE ALSO
+.BR qutil_double_mult (3),
+.BR qutil_double_sum (3),
+.BR qutil_double_min (3),
+.BR qutil_uint_mult (3),
+.BR qutil_uint_sum (3),
+.BR qutil_uint_min (3),
+.BR qutil_int_mult (3),
+.BR qutil_int_sum (3),
+.BR qutil_int_min (3),
+.BR qutil_mergesort (3),
+.BR qutil_qsort (3)

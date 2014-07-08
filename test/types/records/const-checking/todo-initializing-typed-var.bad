@@ -1,0 +1,1 @@
+todo-initializing-typed-var.chpl:11: error: cannot assign to a record of the type RECTYPE using the default assignment operator because it has 'const' field(s)

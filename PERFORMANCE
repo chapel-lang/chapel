@@ -1,0 +1,41 @@
+========================
+Chapel Performance Notes
+========================
+
+Though Chapel has been designed to ultimately yield high performance,
+our focus to date has predominantly been on implementing its features
+correctly and providing user-supported control of features like array
+implementations, loop schedules, and architectural descriptions.  To
+that end, the current compiler is lacking several key optimizations
+and therefore is often not competitive with hand-coded C, Fortran,
+MPI, and the like.  We are currently working on improving performance
+to close the gap between Chapel and conventional compiled languages
+and parallel programming models.
+
+In measuring Chapel performance, users should be sure to compile with
+the --fast flag once their program is correct.  This is a meta-flag
+that turns on C-level optimizations and turns off several
+execution-time correctness checks (bounds checks, NULL pointer checks,
+etc.).  See the 'chpl' man page for more information.
+
+To characterize Chapel performance, generally speaking...
+
+* single-locale (CHPL_COMM=none | --local) compilations perform better
+  than multi-locale (CHPL_COMM!=none | --no-local) compilations;
+
+* 1D loops/arrays perform better than multidimensional cases;
+
+* codes with structured communication (e.g., stencils) tend not to
+  perform competitively with hand-coded computations, whereas
+  embarrassingly parallel and unstructured communications tend to be
+  more competitive.
+
+We are currently working to improve Chapel performance with each
+release and are making significant strides.  To track our progress
+over time, refer to:
+
+        http://chapel.sourceforge.net/perf/
+
+(particularly the release-over-release performance graphs, which
+provide a way to track performance trends on a release-by-release
+granularity).

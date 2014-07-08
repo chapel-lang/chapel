@@ -1,0 +1,11 @@
+REGEXP_SRCS = fail-regexp.c
+
+SVN_SRCS = $(REGEXP_SRCS)
+SRCS = $(SVN_SRCS)
+
+REGEXP_OBJS = \
+      $(addprefix $(REGEXP_OBJDIR)/,$(addsuffix .o,$(basename $(REGEXP_SRCS))))
+
+$(RUNTIME_OBJ_DIR)/fail-regexp.o: fail-regexp.c \
+                                         $(RUNTIME_OBJ_DIR_STAMP)
+	$(CC) -c $(RUNTIME_CFLAGS) $(RUNTIME_DEFS) $(RUNTIME_INCLS) -o $@ $<

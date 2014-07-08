@@ -1,0 +1,7 @@
+todo-multiple-asgn-errors.chpl:9: error: cannot assign to a record of the type RECTYPE using the default assignment operator because it has 'const' field(s)
+todo-multiple-asgn-errors.chpl:10: error: cannot assign to a record of the type RECTYPE using the default assignment operator because it has 'const' field(s)
+todo-multiple-asgn-errors.chpl:13: error: cannot pass a record of the type RECTYPE by out, inout, or ref intent because it has 'const' field(s)
+todo-multiple-asgn-errors.chpl:25: error: cannot assign to a record of the type OUTERREC using the default assignment operator because it has 'const' field(s)
+todo-multiple-asgn-errors.chpl:26: error: cannot assign to a record of the type OUTERREC using the default assignment operator because it has 'const' field(s)
+todo-multiple-asgn-errors.chpl:28: error: cannot assign to a record of the type RECTYPE using the default assignment operator because it has 'const' field(s)
+todo-multiple-asgn-errors.chpl:31: error: cannot pass a record of the type OUTERREC by out, inout, or ref intent because it has 'const' field(s)

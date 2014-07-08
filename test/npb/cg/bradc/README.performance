@@ -1,0 +1,12 @@
+Currently, we run cg-sparse.chpl for performance testing, using the same
+compopts as the correctness version.  The reference version of CG on the
+largest size we can run currently (size C) takes ~1,100 seconds to complete
+on a desktop machine.  Thus, to ensure we get any comparison values, 
+cg-sparse.chpl must be allowed to run for at least 3,000 seconds, if not more.
+However, we know that cg-sparse probably times out for size B and C for the
+current implementation (revision 21580).  Which means performance testing
+will take a very long time.
+
+Since size B, C and D timeout so ridiculously, there isn't much point having
+testing on them until someone is actually working on improving their
+performance, so we turned them off as of 10/03/13

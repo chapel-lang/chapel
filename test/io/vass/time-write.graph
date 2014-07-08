@@ -1,0 +1,5 @@
+perfkeys: C printf, C puts, C/chpl string literal, C/chpl c_string local, C/chpl string global, C/chpl c_string global, chpl non-blocking, chpl stdout
+file: time-write.dat
+ylabel: Time (seconds)
+graphname: time-write
+graphtitle: c vs chpl writing single newlines to stdout

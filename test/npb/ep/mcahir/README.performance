@@ -1,0 +1,10 @@
+The reference version of EP for the largest size (size D) takes ~2,400 seconds
+on a desktop machine.  For a good balance of reasonable comparison numbers 
+versus performance tests taking too long, it would be optimal for Chapel's
+version to be allowed to run for ~7,200 seconds.
+
+To save ourselves time when running the entire performance directory, we are
+lowering the timeout to ~5 minutes and are no longer running size C and D
+because it is guaranteed to time out.  When someone chooses to look into EP
+performance, they may restore the running of this problem size.  We have also
+turned off graph generation in the meanwhile.

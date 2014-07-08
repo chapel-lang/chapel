@@ -1,0 +1,1 @@
+ioerror.chpl:10: error: Permission denied EACCES with path "this/is/my/path" offset -1

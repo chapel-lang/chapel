@@ -1,0 +1,29 @@
+perfkeys: Execution time =
+files: cg.S.dat
+graphkeys: runtime - S
+graphtitle: NAS Parallel Benchmarks: CG timings - size S
+
+perfkeys: Execution time =
+files: cg.W.dat
+graphkeys: runtime - W
+graphtitle: NAS Parallel Benchmarks: CG timings - size W
+
+perfkeys: Execution time =
+files: cg.A.dat
+graphkeys: runtime - A
+graphtitle: NAS Parallel Benchmarks: CG timings - size A
+
+#perfkeys: Execution time =
+#files: cg.B.dat
+#graphkeys: runtime - B
+#graphtitle: NAS Parallel Benchmarks: CG timings - size B
+
+#perfkeys: Execution time =
+#files: cg.C.dat
+#graphkeys: runtime - C
+#graphtitle: NAS Parallel Benchmarks: CG timings - size C
+
+#perfkeys: Execution time =
+#files: cg.D.dat
+#graphkeys: runtime - D
+#graphtitle: NAS Parallel Benchmarks: CG timings - size D

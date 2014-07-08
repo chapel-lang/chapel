@@ -1,0 +1,6 @@
+--probClass=S # ep.S
+--probClass=W # ep.W
+--probClass=A # ep.A
+--probClass=B # ep.B
+#--probClass=C # ep.C
+#--probClass=D # ep.D

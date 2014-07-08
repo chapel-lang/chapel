@@ -1,0 +1,9 @@
+The directory-wide PREDIFF script copies the appropriate .good file
+into the expected .good file.  For example, when running alloc.chpl
+using the block distribution with gasnet, alloc.block.good is copied
+to alloc.good for comparison during testing.  Similarly, when running
+alloc.chpl using the default distribution, it copies
+alloc.default.good.
+
+You should never check in a "plain" .good file in this directory,
+where plain means foo.good when the test is in a file named foo.chpl.

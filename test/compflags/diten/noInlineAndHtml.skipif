@@ -1,0 +1,2 @@
+# Some configurations sometimes pass despite the bug. Valgrind always trips it.
+CHPL_TEST_VGRND_COMP != on

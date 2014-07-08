@@ -1,0 +1,1 @@
+implicit_arg_pass_by_ref.chpl:1: error: non-lvalue actual is passed to 'ref' formal 't' of foo()

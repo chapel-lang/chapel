@@ -1,0 +1,6 @@
+perfkeys: Timer Wall Time:
+graphkeys: SAD serial
+files: sadSerial.dat
+graphtitle: Parboil SAD Serial Execution Time
+ylabel: Time (seconds)
+graphname: SAD

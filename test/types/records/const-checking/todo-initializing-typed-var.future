@@ -1,0 +1,7 @@
+bug: When a record variable declaration has an explicit type and an initializer, and the record has 'const' field(s), it should be legal but an error is reported.
+
+For now, the workaround is to omit the explicit type.
+A compilerAssert for the variable's type could be added
+separately, if desired.
+Another workaround, although probably not as good,
+is to change 'const' fields to 'var' in that type.

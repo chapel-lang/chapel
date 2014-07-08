@@ -1,0 +1,5 @@
+#!/bin/bash
+repl="internal error: CAL or MIS"
+sed "s/^\(internal error: CAL\).*$/$repl/" < $2 > $2.tmp
+sed "s/^\(internal error: MIS\).*$/$repl/" < $2.tmp > $2
+rm $2.tmp

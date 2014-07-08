@@ -1,0 +1,47 @@
+body {
+    font-family: "Arial";
+}
+.graph {
+    vertical-align: top;
+    white-space: nowrap;
+    font-size: 11px;
+}
+div.perfGraph {
+    vertical-align: top;
+    width: 700px;
+    height: 300px;
+}
+div.gspacer {
+    width: 700px;
+    height: 30px;
+}
+div.perfLegend {
+    vertical-align: top;
+    width: 400px;
+    height: 300px;
+    overflow: auto
+}
+span.highlight {
+    border: 1px solid grey;
+}
+div.lspacer {
+    width: 400px;
+    height: 30px;
+}
+.graphList {
+    vertical-align: top;
+    width: 200px;
+    padding-left: 20px;
+    padding-right: 20px;
+    border-right: 1px solid black;
+}
+.toggle {
+    height: 20px;
+    border: 1px solid grey;
+    padding: 0px 5px;
+    margin: 5px 10px 0px 0px;
+}
+.blackAnnotation {
+  color: black !important;
+  border-color: black !important;
+}

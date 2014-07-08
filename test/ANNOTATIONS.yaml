@@ -1,0 +1,126 @@
+# The format for this file is as follows:
+#
+# group:
+#   mm/dd/yy:
+#     - example annotation 1
+#     - example annotation 2
+#   mm/dd/yy:
+#     - text: example annotation 3
+#       host: [hostname1, hostname2]
+#
+# all:
+#   mm/dd/yy:
+#     - example annotation 5
+#
+# where group is the name of the .graph file that attached set of annotations
+# should apply to. When the long form of an annotation is used (when text and
+# host are specified) the annotation is only added to the graphs if the current
+# hostname is in the host list. 'all' is a special group where any annotations
+# are added to to every single graph. One limitation of dygraphs is that if you
+# try and place an annotation on a date that has no data (tests didn't run or
+# all failed) it will not be displayed.
+
+all:
+  02/04/14:
+    - flipped default value of dataParIgnoreRunningTasks
+  02/27/14:
+    - copy propagation rework r22796
+  10/14/13:
+    - locale ID changes
+  10/17/13:
+    - initial sync var change
+    - variety of multilocale performance changes
+  10/29/13:
+    - reversion of sync change to threads
+  03/28/14:
+    - Add static flag for performance testing (22992)
+  05/08/14:
+    - switched to gcc-4.7
+
+chameneos-redux:
+  07/08/13:
+    - altered output order for chameneos data, old data incompatible
+
+dgemm.128:
+  09/06/13:
+    - LICM bug fixes
+
+dgemm.64:
+  09/06/13:
+    - LICM bug fixes
+
+fasta:
+  01/14/14:
+    - enabled unlocked I/O on fasta and fasta-printf
+
+lulesh:
+  03/15/14:
+    - improved constness of de-nested functions, improved remove value forwarding
+
+lulesh-dense:
+  03/15/14:
+    - improved constness of de-nested functions, improved remove value forwarding
+
+nbody:
+  03/17/14:
+    - removed extra formal temps
+
+memleaks:
+  11/13/13:
+    - Plugged the massive memory leak in fileIO.chpl
+  11/26/13:
+    - Fixed valgrind regression and some associated memory leaks
+  12/03/13:
+    - Made some tests leak-free
+  12/07/13:
+    - Fixed leakage of sync and single array elements
+  04/08/14:
+    - Enabled GMP in nightly testing, allowing pidigits to run in memory leaks
+
+meteor:
+  12/18/13:
+    - Chapel level improvement by using implicit domains
+
+miniMD:
+  12/21/13:
+    - clean up of noRefCount related code in modules/internal (22473)
+
+mandelbrot:
+  01/03/14:
+    - Chapel level improvement by using a nonlocking writer
+  03/19/14:
+    - Bulk IO optimization
+
+jacobi:
+  03/07/14:
+    - Added a "trivial assignment" optimization to replace field-by-field assignment with a bulk copy.
+
+parOpEquals:
+  09/06/13:
+    - (no-local) chpl_localeID_t's ignore_subloc field minimized to 1 bit
+  09/27/13:
+    - (no-local) Reversion of chpl_localeID_t's ignore subloc field being minimized to 1 bit
+
+SSCA2_main:
+  06/12/13:
+    - Initial support for hierarchical locales (21480)
+
+SSCA2_mem:
+  06/04/13:
+    - Add pre-shifted ddata pointer for DefaultRectangular (21457)
+
+STREAM_fragmented:
+  09/06/13:
+    - chpl_localeID_t's ignore_subloc field minimized to 1 bit
+  09/27/13:
+    - Reversion of chpl_localeID_t's ignore subloc field being minimized to 1 bit
+
+STREAM_performance:
+  09/06/13:
+    - chpl_localeID_t's ignore_subloc field minimized to 1 bit
+  09/27/13:
+    - Reversion of chpl_localeID_t's ignore subloc field being minimized to 1 bit
+
+time_iterate:
+  11/13/13:
+    - disabled optimizations based on no arithmetic flow (22290)

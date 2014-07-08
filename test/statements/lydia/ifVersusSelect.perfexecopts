@@ -1,0 +1,6 @@
+--fillBy=balanced # ifVersusSelect.balanced
+--fillBy=reversed # ifVersusSelect.reversed
+--fillBy=skewedLow # ifVersusSelect.skewedLow
+--fillBy=skewedMid # ifVersusSelect.skewedMid
+--fillBy=skewedHigh # ifVersusSelect.skewedHigh
+--fillBy=random # ifVersusSelect.random

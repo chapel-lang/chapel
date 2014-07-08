@@ -1,0 +1,11 @@
+feature request: Implement field-by-field comparison in the default record equality function
+
+This used to work, but the implementation used a generic default
+implementation that was unsatisfactory.  Specifically, it resulted in
+a difficult to track bug where the default == and != for empty records
+compared to variables of *any* type always did nothing and always
+returned true or false.
+
+In an effort to go towards a more sane implementation, we disabled
+this feature, which also disables comparison of records with variables
+that are sub-records of the record.

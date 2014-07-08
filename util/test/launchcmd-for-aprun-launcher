@@ -1,0 +1,444 @@
+#!/usr/bin/env python
+
+"""Run Chapel test (execution only) inside pbs batch job using qsub.
+
+The job name is set from the environment variable CHPL_PBS_NAME_PREFIX
+(defaulting to Chpl) and the name of the program being executing. For
+example, running launchcmd-for-aprun-launcher ./hello would use the name
+Chpl-hello.
+
+Here is the high level overview of what this does:
+
+ * Ensures qsub is not PBSPro.
+ * Parses number locales and wall time from the test command args so they can
+   be sent to qsub.
+ * Rebuilds the test command.
+ * Launches the job by passing the test command on stdin to qsub (batch
+   mode). Stdout/stderr are directed to a temporary file designated by the
+   script.
+ * Polls qstat with the given qsub job id every 0.2 seconds until the status is
+   C (aka complete).
+ * Prints the contents of the temp file with stdout/stderr from the job to stdout.
+ * Cleans up the temp file and exits.
+
+"""
+
+from __future__ import print_function, unicode_literals, with_statement
+
+import argparse
+import contextlib
+import datetime
+import logging
+import os
+import os.path
+import shlex
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+import xml.etree.ElementTree
+
+__all__ = ('main')
+
+
+def main():
+    """Run the program!"""
+    args, unparsed_args = _parse_args()
+    _setup_logging(args.verbose)
+
+    logging.info('Num locales is: {0}'.format(args.numLocales))
+    logging.info('Walltime is set to: {0}'.format(args.walltime))
+
+    # The first item in argv is this script, so remove it. The rest should be
+    # the command to run.
+    test_command = _get_test_command(args, unparsed_args)
+    logging.debug('Test command is: {0}'.format(' '.join(test_command)))
+    if not test_command:
+        logging.error('No test command provided.')
+        raise ValueError('No test command found.')
+
+    job_name = _get_job_name(test_command)
+
+    _ensure_qsub()
+    print(_launch_qsub(test_command, job_name, args.numLocales, args.walltime, args.hostlist),
+          end='')
+
+
+def _parse_args():
+
+    """Parse and return command line arguments. Returns tuple of Namespace with
+    parsed args and unparsed args.
+    """
+    class OurFormatter(argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter):
+        pass
+
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=OurFormatter)
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help='Verbose output.')
+    parser.add_argument('-nl', '--numLocales', type=int, default=-1,
+                        help='Number locales.')
+    parser.add_argument('--n', help='Placeholder')
+    parser.add_argument('--walltime', type=_cli_walltime,
+                        help='Timeout as walltime for qsub.')
+    parser.add_argument('--hostlist',
+                        help=('Optional hostlist specification for reserving '
+                              'specific nodes. Can also be set with env var CHPL_PBS_HOSTLIST'))
+
+    args, unparsed_args = parser.parse_known_args()
+
+    # Allow hostlist to be set in environment variable CHPL_PBS_HOSTLIST.
+    if args.hostlist is None:
+        args.hostlist = os.environ.get('CHPL_PBS_HOSTLIST')
+
+    # It is bad form to use a two character argument with only a single
+    # dash. Unfortunately, we support it. And unfortunately, python argparse
+    # thinks --n is the same thing. So, we pull out --n above so we can put it
+    # back in the unparsed args here.
+    if args.n:
+        logging.debug('Found a --n arg. Putting it back in the unparsed args.')
+        unparsed_args.append('--n={0}'.format(args.n))
+
+    return args, unparsed_args
+
+
+def _get_test_command(args, unparsed_args):
+    """Returns test command by folding walltime and numLocales args into unparsed
+    command line args.
+
+    :type args: argparse.Namespace
+    :arg args: Namespace from parsing original args
+
+    :type unparsed_args: list
+    :arg unparsed_args: list of unparsed command line args that make up test command
+
+    :rtype: list
+    :returns: command to be tested in qsub
+
+    """
+    logging.debug('Rebuilding test command from parsed args: {0} and '
+                  'unparsed args: {1}'.format(args, unparsed_args))
+    if args.numLocales >= 0:
+        unparsed_args.append('-nl')
+        unparsed_args.append(str(args.numLocales))
+    logging.debug('Rebuild test command: {0}'.format(unparsed_args))
+    return unparsed_args
+
+
+def _cli_walltime(walltime_str):
+    """Returns walltime_str if it can be parsed by one of the known walltime
+    formats. Raises ValueError if walltime_str does not match a known format.
+
+    :type walltime_str: str
+    :arg walltime_str: walltime string from command line
+
+    :rtype: str
+    :returns: valid walltime string from command line
+    """
+    try:
+        seconds = int(walltime_str)
+        logging.debug('Parsed walltime as integer seconds: {0}'.format(seconds))
+        return walltime_str
+    except ValueError:
+        pass
+
+    try:
+        seconds = float(walltime_str)
+        logging.debug('Parsed walltime as float seconds: {0}'.format(seconds))
+        return walltime_str
+    except ValueError:
+        pass
+
+    # http://www.csc.fi/english/pages/louhi_guide/batch_jobs/commands/qsub
+    known_formats = [
+        '%M:%S',
+        '%H:%M:%S',
+        '%M:%S.%f',
+        '%H:%M:%S.%f',
+    ]
+    for fmt in known_formats:
+        try:
+            walltime = datetime.datetime.strptime(walltime_str, fmt)
+            logging.debug('Parsed walltime as datetime with format {0}: {1}'.format(
+                fmt, walltime))
+            return walltime_str
+        except ValueError:
+            pass
+
+    raise ValueError('Did not recognize walltime: {0}'.format(walltime_str))
+
+
+def _setup_logging(verbose=False):
+    """Setup logging to console.
+
+    :type verbose: bool
+    :arg verbose: if True, set log level to DEBUG
+    """
+    # logging module configures default handlers when logging.debug/info/etc
+    # are called. In order for our basicConfig call to work, we need to get rid
+    # of those. This is generally a bad practice unless we are absolutely sure
+    # we are the top level script and we won't break other logging. That's
+    # probably true here.
+    #
+    # See note here: https://docs.python.org/2/library/logging.html#logging.log
+    logging.root.handlers = []
+
+    if verbose:
+        log_level = logging.DEBUG
+    else:
+        log_level = logging.WARN
+    logging.basicConfig(
+        level=log_level, format='[%(module)s] %(asctime)s [%(levelname)s] %(msg)s')
+    logging.debug('Verbose logging enabled.')
+
+
+def _ensure_qsub():
+    """Check that qsub is available on the current path. Raises RuntimeError if it
+    cannot be found.
+    """
+    def _qsub_not_found(ex):
+        error_msg = ('qsub error: "{0}". Make sure it is installed and '
+                     'available in the PATH.').format(ex)
+        logging.error(error_msg)
+        raise RuntimeError(error_msg)
+
+    try:
+        logging.debug('Starting qsub process to check availability.')
+        qsub_proc = subprocess.Popen(
+            ['qsub', '--version'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT)
+
+        logging.debug('Communicating with qsub process.')
+        stdout, stderr = qsub_proc.communicate()
+    except OSError as ex:
+        _qsub_not_found(ex)
+
+    if qsub_proc.returncode != 0:
+        _qsub_not_found('Non-zero exit code when running qsub --version')
+    elif 'PBSPro' in stdout:
+        _qsub_not_found('PBSPro found. Moab/Torque is only supported at this time.')
+    else:
+        logging.debug('Found qsub version: {0}'.format(stdout))
+
+
+def _get_job_name(test_command):
+    """Returns job name string from test command and CHPL_PBS_NAME_PREFIX env var.
+
+    :type test_command: list
+    :arg test_command: command to run in qsub
+
+    :rtype: str
+    :returns: pbs job name
+    """
+    prefix = os.environ.get('CHPL_PBS_NAME_PREFIX', 'Chpl')
+    logging.debug('Job name prefix is: {0}'.format(prefix))
+
+    cmd_basename = os.path.basename(test_command[0])
+    logging.debug('Test command basname: {0}'.format(cmd_basename))
+
+    # TODO: Are there job name restrictions for pbs? If so, implement them
+    #       here. (thomasvandoren, 2014-04-09)
+
+    job_name = '{0}-{1}'.format(prefix, cmd_basename)
+    logging.info('PBS job name is: {0}'.format(job_name))
+    return job_name
+
+
+def _launch_qsub(test_command, job_name, num_locales, walltime, hostlist):
+
+    """Run qsub batch job in subprocess and wait for job to complete. When
+    finished, returns output as string.
+
+    :type test_command: list
+    :arg test_command: command to execute in qsub job
+
+    :type job_name: str
+    :arg job_name: pbs job name
+
+    :type num_locales: int
+    :arg num_locales: number of nodes to reserve
+
+    :type walltime: str
+    :arg walltime: walltime argument for qsub of the form HH:MM:SS
+
+    :type hostlist: str
+    :arg hostlist: hostlist specification for qsub
+
+    :rtype: str
+    :returns: stdout/stderr from job
+    """
+    with _temp_dir() as working_dir:
+        output_file = os.path.join(working_dir, 'test_output.log')
+        testing_dir = os.getcwd()
+
+        logging.info('Starting qsub job "{0}" on {1} nodes with walltime {2} '
+                     'and output file: {3}'.format(
+                         job_name, num_locales, walltime, output_file))
+
+        qsub_command = ['qsub', '-V', '-N', job_name, '-j', 'oe',
+                        '-o', output_file, '-d', testing_dir]
+        if num_locales >= 0:
+            qsub_command.append('-l')
+            qsub_command.append('nodes={0}'.format(num_locales))
+        if walltime is not None:
+            qsub_command.append('-l')
+            qsub_command.append('walltime={0}'.format(walltime))
+        if hostlist is not None:
+            qsub_command.append('-l')
+            qsub_command.append('hostlist={0}'.format(hostlist))
+
+        logging.debug('qsub command to run: {0}'.format(qsub_command))
+
+        logging.debug('Opening qsub subprocess.')
+        qsub_proc = subprocess.Popen(
+            qsub_command,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            cwd=testing_dir,
+            env=os.environ.copy()
+        )
+
+        test_command_str = ' '.join(test_command)
+        logging.debug('Communicating with qsub subprocess. Sending test command on stdin: {0}'.format(
+            test_command_str))
+        stdout, stderr = qsub_proc.communicate(input=test_command_str)
+        logging.debug('qsub process returned with status {0}, stdout: {1} stderr: {2}'.format(
+            qsub_proc.returncode, stdout, stderr))
+
+        if qsub_proc.returncode != 0:
+            msg = 'qsub failed with exit code {0} and output: {1}'.format(
+                qsub_proc.returncode, stdout)
+            logging.error(msg)
+            raise ValueError(msg)
+
+        job_id = stdout.strip()
+        logging.info('Test has been queued (job id: {0}). Waiting for output...'.format(job_id))
+
+        # TODO: The while condition here should look for jobs that become held,
+        #       are in the queue too long, or ??? and do something
+        #       intelligent. For example, if the job is in the queue longer
+        #       than the walltime, it should probably be deleted (qdel
+        #       <job_id>) and a timeout should be reported. Here are all the
+        #       pbs (torque) job statuses:
+        #
+        #           C -     Job is completed after having run/
+        #           E -  Job is exiting after having run.
+        #           H -  Job is held.
+        #           Q -  job is queued, eligible to run or routed.
+        #           R -  job is running.
+        #           T -  job is being moved to new location.
+        #           W -  job is waiting for its execution time
+        #                (-a option) to be reached.
+        #           S -  (Unicos only) job is suspend.
+        #
+        #       (thomasvandoren, 2014-04-09)
+
+        def is_done(job_id, output_file):
+            """Returns True when one of two events occur:
+
+             1) _qstat(job_id) returns 'C' indicating the job is complete.
+
+             2) _qstat(job_id) raises a ValueError, which can indicate that the
+                job has completed *and* been dequeued, AND the output file
+                exists. If the output file exists and the job has been
+                dequeued, it is safe to assume it completed.
+            """
+            try:
+                job_status = _qstat(job_id)
+                return job_status == 'C'
+            except ValueError as ex:
+                # ValueError may indicate that the job completed and was
+                # dequeued before we last checked the status. If the output
+                # file exists, assume success. Otherwise re raise error
+                # message.
+                if os.path.exists(output_file):
+                    return True
+                raise
+
+        while not is_done(job_id, output_file):
+            time.sleep(1.0)
+        logging.debug('qstat reports job {0} as complete.'.format(job_id))
+
+        if not os.path.exists(output_file):
+            logging.error('Output file from pbs job does not exist at: {0}'.format(
+                output_file))
+            raise ValueError('[Error: output file from pbs job (id: {0}) does not exist at: {1}]'.format(
+                job_id, output_file))
+
+        logging.debug('Reading output file.')
+        with open(output_file, 'r') as fp:
+            output = fp.read()
+        logging.info('The test finished with output of length {0}.'.format(len(output)))
+
+    return output
+
+
+def _qstat(job_id):
+    """Query job status using qstat.
+
+    :type job_id: str
+    :arg job_id: pbs job id
+
+    :rtype: str
+    :returns: qsub job status
+    """
+    qstat_command = ['qstat', '-x', job_id]
+    logging.debug('qstat command to run: {0}'.format(qstat_command))
+
+    logging.debug('Opening qstat subprocess.')
+    qstat_proc = subprocess.Popen(
+        qstat_command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        env=os.environ.copy()
+    )
+
+    logging.debug('Communicating with qstat subprocess.')
+    stdout, stderr = qstat_proc.communicate()
+    logging.debug('qstat process returned with status {0}, stdout: {1}, and stderr: {2}'.format(
+        qstat_proc.returncode, stdout, stderr))
+
+    if qstat_proc.returncode != 0:
+        raise ValueError('Non-zero exit code {0} from qstat: "{1}"'.format(
+            qstat_proc.returncode, stdout))
+
+    try:
+        root = xml.etree.ElementTree.fromstring(stdout)
+        return root.find('Job').find('job_state').text
+    except AttributeError as ex:
+        logging.exception('Could not find job_state element in xml output: {0}'.format(ex))
+        logging.error('XML output: {0}'.format(stdout))
+        raise
+    except Exception as ex:
+        logging.exception('Failed to parse qstat output: {0}'.format(ex))
+        logging.error('XML output: {0}'.format(stdout))
+        raise
+
+
+@contextlib.contextmanager
+def _temp_dir(dir_prefix='chapel-test-tmp'):
+    """Context manager that creates a temporary directory in the current working
+    directory with name of dir_prefix. When the manager exits, the directory is
+    deleted.
+
+    :type dir_prefix: str
+    :arg dir_prefix: temp dir name prefix
+    """
+    try:
+        cwd = os.getcwd()
+        logging.debug('Creating temporary working directory in: {0}'.format(cwd))
+        tmp_dir = tempfile.mkdtemp(prefix=dir_prefix, dir=cwd)
+
+        logging.debug('Yielding temporary directory context manager.')
+        yield tmp_dir
+    finally:
+        logging.debug('Deleting temporary working directory at: {0}'.format(tmp_dir))
+        shutil.rmtree(tmp_dir)
+
+
+if __name__ == '__main__':
+    main()

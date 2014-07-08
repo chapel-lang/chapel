@@ -1,0 +1,5 @@
+perfkeys: For loop underwent 1000000 iterations 10000 times in, While loop underwent 1000000 iterations 10000 times in
+graphkeys: for loop, while loop
+graphtitle: Loop Time Compare
+ylabel: Time (seconds)
+graphname: loopCompare

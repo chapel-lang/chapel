@@ -1,0 +1,7 @@
+REGEXP_SUBDIR = src/qio/regexp/none
+
+ALL_SRCS += $(CURDIR)/$(REGEXP_SUBDIR)/*.c
+
+REGEXP_OBJDIR = $(RUNTIME_ROOT)/$(REGEXP_SUBDIR)/$(RUNTIME_OBJDIR)
+
+include $(RUNTIME_ROOT)/$(REGEXP_SUBDIR)/Makefile.share

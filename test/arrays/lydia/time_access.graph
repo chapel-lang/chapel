@@ -1,0 +1,5 @@
+perfkeys: chpl accessed [1000 1000] elements 100 times in, chpl accessed [1000][1000] elements 100 times in, C    accessed [1000][1000] elements 100 times in
+files: time_access.dat, time_access.dat
+ylabel: Time (seconds)
+graphname: time_access
+graphtitle: c vs chpl multidimensional and array of arrays serial accesses

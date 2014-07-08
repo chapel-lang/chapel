@@ -1,0 +1,24 @@
+in foo
+local x is: 3
+3
+in bar
+local x is: 3
+3
+in baz
+local x is: 11
+3
+in boo
+local x is: 13
+13
+in goo
+local x is: 13
+13
+in hoo
+local x is: 13
+13
+in moo
+local x is: 21
+21
+in zoo
+local x is: 23
+23

@@ -1,0 +1,11 @@
+AUXFS_SRCS = fail-hdfs.c
+
+SVN_SRCS = $(AUXFS_SRCS)
+SRCS = $(SVN_SRCS)
+
+AUXFS_OBJS = \
+      $(addprefix $(AUXFS_OBJDIR)/,$(addsuffix .o,$(basename $(AUXFS_SRCS))))
+
+$(RUNTIME_OBJ_DIR)/fail-hdfs.o: fail-hdfs.c \
+                                         $(RUNTIME_OBJ_DIR_STAMP)
+	$(CC) -c $(RUNTIME_CFLAGS) $(RUNTIME_DEFS) $(RUNTIME_INCLS) -o $@ $<

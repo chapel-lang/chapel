@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# This test is nondeterministic in the number of threads it creates.  If,
+# in the final forall loop, an iteration reads the sync var then has a delay
+# before writing it back, every other iteration could be forced to run in its
+# own thread.  In this case it will warn that max threads per locale is
+# unbounded, but unable to create more than NNNN threads.  Remove that
+# warning since the limit is not always hit.
+
+outfile=$2
+
+grep -v "warning: max threads per locale is unbounded, but unable to create more than [0-9]* threads" $outfile > $outfile.temp
+mv $outfile.temp $outfile

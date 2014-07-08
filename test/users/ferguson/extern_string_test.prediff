@@ -1,0 +1,43 @@
+#!/usr/bin/perl
+
+# This is the prediff for the future users/ferguson/extern_string_test.chpl
+# 
+# While second line in the output of the test is non-deterministic,
+# most of the time it is "returned string arg r". This has been in .bad.
+# 
+# Occasionally, however, there is some stuff at the end of that string,
+# most recently five \0-characters. This prediff produces a predictable
+# string in this case, so that the test still does not trigger the
+# ".bad mismatch" error.
+# 
+# It may be that the test will still produce something nondeterministic
+# that this prediff will not handle. We can deal with that when it happens.
+# 
+# My intention for the prediff is that if the output of the test is correct
+# (i.e. what's in .good), the prediff does not change that.
+
+use English;
+use strict;
+use warnings;
+
+my $testoutput = $ARGV[1];
+open TEST, $testoutput;
+open CLEANED, ">$testoutput.tmp";
+
+while (<TEST>) {
+   my $line = $_;
+   if ($line =~ /^returned string arg r/) {
+      if ($line =~ /^returned string arg return string arg test/) {
+	 # this line is good - keep unchanged
+      } else {
+	 # strip random stuff after r - put a predictable string instead
+	 $line = "returned string arg r...\n";
+      }
+   }
+   print CLEANED $line;
+}
+
+close CLEANED;
+close TEST;
+
+system("mv $testoutput.tmp $testoutput");
