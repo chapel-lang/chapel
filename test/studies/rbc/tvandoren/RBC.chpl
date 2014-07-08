@@ -121,7 +121,7 @@ proc main() {
   }
 
   writeln("Iteration = ", iteration, ", Sup Diff = ", maxDifference, "\n");
-  writeln("My check = ", mPolicyFunction[999, 2], "\n");
+  writeln("My check = ", mPolicyFunction[1000, 3], "\n");
 
   timer.stop();
   writeln("Elapsed time is: ", timer.elapsed());
