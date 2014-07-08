@@ -52,12 +52,12 @@ static thread_list_p   thread_list_tail = NULL; // tail of thread_list
 
 static pthread_attr_t  thread_attributes;
 
-static pthread_key_t   thread_id_key;
-static pthread_key_t   thread_private_key;
+CHPL_TLS_DECL(chpl_thread_id_t,chpl_thread_id);
+CHPL_TLS_DECL(void*, chpl_thread_data);
 
-static int32_t         threadMaxThreadsPerLocale  = 0;
-static uint32_t        threadNumThreads           = 0;
-static pthread_mutex_t threadNumThreadsLock;
+static int32_t         maxThreads = 0;
+static uint32_t        numThreads = 0;
+static pthread_mutex_t numThreadsLock;
 
 static size_t          threadCallStackSize = 0;
 
@@ -85,12 +85,14 @@ chpl_thread_mutex_p chpl_thread_mutexNew(void) {
 }
 
 void chpl_thread_mutexLock(chpl_thread_mutex_p mutex) {
-  if (pthread_mutex_lock((pthread_mutex_t*) mutex))
+  int result = pthread_mutex_lock((pthread_mutex_t*) mutex);
+  if (result)
     chpl_internal_error("pthread_mutex_lock() failed");
 }
 
 void chpl_thread_mutexUnlock(chpl_thread_mutex_p mutex) {
-  if (pthread_mutex_unlock((pthread_mutex_t*) mutex))
+  int result = pthread_mutex_unlock((pthread_mutex_t*) mutex);
+  if (result)
     chpl_internal_error("pthread_mutex_unlock() failed");
 }
 
@@ -98,7 +100,7 @@ void chpl_thread_mutexUnlock(chpl_thread_mutex_p mutex) {
 // Thread management
 
 chpl_thread_id_t chpl_thread_getId(void) {
-  void* val = pthread_getspecific(thread_id_key);
+  void* val = (void*) (intptr_t) CHPL_TLS_GET(chpl_thread_id);
 
   if (val == NULL)
     return chpl_thread_nullThreadId;
@@ -121,29 +123,28 @@ void chpl_thread_yield(void) {
 }
 
 
-void chpl_thread_init(int32_t numThreadsPerLocale,
-                      int32_t maxThreadsPerLocale,
-                      uint64_t callStackSize,
-                      void(*threadBeginFn)(void*),
+void chpl_thread_init(void(*threadBeginFn)(void*),
                       void(*threadEndFn)(void)) {
   //
-  // Tuck maxThreadsPerLocale away in a static global for use by other
-  // routines.  This threading layer uses a user-specified (non-zero)
-  // numThreadsPerLocale as the max.
+  // This threading layer does not have any inherent limit on the number
+  // of threads.  Its limit is the lesser of any limits imposed by the
+  // comm layer and the user.
   //
+  {
+    uint32_t lim;
 
-  if (numThreadsPerLocale != 0) {
-    threadMaxThreadsPerLocale = numThreadsPerLocale;
-  } else {
-    threadMaxThreadsPerLocale = maxThreadsPerLocale;
+    if ((lim = chpl_task_getenvNumThreadsPerLocale()) > 0)
+      maxThreads = lim;
+    else if ((lim = chpl_comm_getMaxThreads()) > 0)
+      maxThreads = lim;
   }
 
   //
   // Count the main thread on locale 0 as already existing, since it
   // is (or soon will be) running the main program.
   //
-  if (chpl_localeID == 0)
-    threadNumThreads = 1;
+  if (chpl_nodeID == 0)
+    numThreads = 1;
 
   //
   // If a value was specified for the call stack size config const, use
@@ -154,34 +155,43 @@ void chpl_thread_init(int32_t numThreadsPerLocale,
     chpl_internal_error("pthread_attr_init() failed");
 
   //
-  // If a value was specified for the call stack size config const, use
-  // that (rounded up to a whole number of pages) to set the system
-  // stack limit.
+  // If a value was specified for the call stack size, use that (rounded
+  // up to a whole number of pages) to set the system and pthread stack
+  // limits.  This will in turn limit the stack for any task hosted by
+  // either the main process or a pthread.
   //
-  if (callStackSize != 0) {
-    uint64_t      pagesize = (uint64_t) sysconf(_SC_PAGESIZE);
+  {
+    size_t        css = chpl_task_getMinCallStackSize();
+    size_t        pagesize = (size_t) sysconf(_SC_PAGESIZE);
     struct rlimit rlim;
 
-    callStackSize = (callStackSize + pagesize - 1) & ~(pagesize - 1);
+    assert(css > 0);
+
+    css = (css + pagesize - 1) & ~(pagesize - 1);
 
     if (getrlimit(RLIMIT_STACK, &rlim) != 0)
       chpl_internal_error("getrlimit() failed");
 
-    if (rlim.rlim_max != RLIM_INFINITY && callStackSize > rlim.rlim_max) {
+    if (rlim.rlim_max != RLIM_INFINITY && css > rlim.rlim_max) {
       char warning[128];
-      sprintf(warning, "callStackSize capped at %lu\n", 
+      sprintf(warning, "call stack size capped at %lu\n", 
               (unsigned long)rlim.rlim_max);
       chpl_warning(warning, 0, NULL);
 
-      callStackSize = rlim.rlim_max;
+      css = rlim.rlim_max;
     }
 
-    rlim.rlim_cur = callStackSize;
+    rlim.rlim_cur = css;
 
+#ifndef __CYGWIN__
+    //
+    // Cygwin can't do setrlimit(RLIMIT_STACK).
+    //
     if (setrlimit(RLIMIT_STACK, &rlim) != 0)
       chpl_internal_error("setrlimit() failed");
+#endif
 
-    if (pthread_attr_setstacksize(&thread_attributes, callStackSize) != 0)
+    if (pthread_attr_setstacksize(&thread_attributes, css) != 0)
       chpl_internal_error("pthread_attr_setstacksize() failed");
   }
 
@@ -191,17 +201,12 @@ void chpl_thread_init(int32_t numThreadsPerLocale,
   saved_threadBeginFn = threadBeginFn;
   saved_threadEndFn   = threadEndFn;
 
-  if (pthread_key_create(&thread_id_key, NULL))
-    chpl_internal_error("pthread_key_create(thread_id_key) failed");
-
-  if (pthread_setspecific(thread_id_key, (void*) (intptr_t) --curr_thread_id))
-    chpl_internal_error("thread id data key doesn't work");
-
-  if (pthread_key_create(&thread_private_key, NULL))
-    chpl_internal_error("pthread_key_create(thread_private_key) failed");
+  CHPL_TLS_INIT(chpl_thread_id);
+  CHPL_TLS_SET(chpl_thread_id, (intptr_t) --curr_thread_id);
+  CHPL_TLS_INIT(chpl_thread_data);
 
   pthread_mutex_init(&thread_info_lock, NULL);
-  pthread_mutex_init(&threadNumThreadsLock, NULL);
+  pthread_mutex_init(&numThreadsLock, NULL);
 
   //
   // This is something of a hack, but it makes us a bit more resilient
@@ -262,19 +267,19 @@ void chpl_thread_exit(void) {
     chpl_mem_free(tlp, 0, 0);
   }
 
-  if (pthread_key_delete(thread_id_key) != 0)
-    chpl_internal_error("pthread_key_delete(thread_id_key) failed");
+  CHPL_TLS_DELETE(chpl_thread_id);
+  CHPL_TLS_DELETE(chpl_thread_data);
 
   if (pthread_attr_destroy(&thread_attributes) != 0)
     chpl_internal_error("pthread_attr_destroy() failed");
 
   if (debug)
-    fprintf(stderr, "A total of %u threads were created\n", threadNumThreads);
+    fprintf(stderr, "A total of %u threads were created\n", numThreads);
 }
 
 chpl_bool chpl_thread_canCreate(void) {
-  return (threadMaxThreadsPerLocale == 0 ||
-          threadNumThreads < (uint32_t) threadMaxThreadsPerLocale);
+  return (maxThreads == 0 ||
+          numThreads < (uint32_t) maxThreads);
 }
 
 int chpl_thread_create(void* arg)
@@ -302,14 +307,14 @@ int chpl_thread_create(void* arg)
 
   pthread_t pthread;
 
-  pthread_mutex_lock(&threadNumThreadsLock);
-  threadNumThreads++;
-  pthread_mutex_unlock(&threadNumThreadsLock);
+  pthread_mutex_lock(&numThreadsLock);
+  numThreads++;
+  pthread_mutex_unlock(&numThreadsLock);
 
   if (pthread_create(&pthread, &thread_attributes, pthread_func, arg)) {
-    pthread_mutex_lock(&threadNumThreadsLock);
-    threadNumThreads--;
-    pthread_mutex_unlock(&threadNumThreadsLock);
+    pthread_mutex_lock(&numThreadsLock);
+    numThreads--;
+    pthread_mutex_unlock(&numThreadsLock);
 
     return -1;
   }
@@ -350,15 +355,15 @@ static void* pthread_func(void* arg) {
 
   pthread_mutex_unlock(&thread_info_lock);
 
-  if (pthread_setspecific(thread_id_key, (void*) (intptr_t) my_thread_id))
-    chpl_internal_error("thread id data key doesn't work");
+  CHPL_TLS_SET(chpl_thread_id, (intptr_t) my_thread_id);
 
   if (saved_threadEndFn == NULL)
     (*saved_threadBeginFn)(arg);
   else {
     pthread_cleanup_push((void (*)(void*)) saved_threadEndFn, NULL);
     (*saved_threadBeginFn)(arg);
-    pthread_cleanup_pop(0);
+    pthread_cleanup_pop(1); // Shouldn't we run the thread
+                            // end function even if not cancelled?
   }
 
   return NULL;
@@ -383,23 +388,14 @@ void chpl_thread_destroy(void) {
   (void) pthread_setcancelstate(last_cancel_state, NULL);
 }
 
-void* chpl_thread_getPrivateData(void) {
-  return pthread_getspecific(thread_private_key);
-}
-
-void chpl_thread_setPrivateData(void* p) {
-  if (pthread_setspecific(thread_private_key, p))
-    chpl_internal_error("thread private data key doesn't work");
-}
-
 uint32_t chpl_thread_getMaxThreads(void) {
-  return threadMaxThreadsPerLocale;
+  return maxThreads;
 }
 
 uint32_t chpl_thread_getNumThreads(void) {
-  return threadNumThreads;
+  return numThreads;
 }
 
-uint64_t chpl_thread_getCallStackSize(void) {
-    return (uint64_t) threadCallStackSize;
+size_t chpl_thread_getCallStackSize(void) {
+    return threadCallStackSize;
 }

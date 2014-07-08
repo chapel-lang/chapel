@@ -1,32 +1,20 @@
 NAME
-  chpl - Cray Inc. compiler for the Chapel parallel language
+  chpl - Compiler for the Chapel Programming Language
 
 SYNOPSIS
   chpl [-O] [--no-checks] [--fast]
        [-g] [--savec directory]
        [-M directory...] [--main-module mod]
-       [-o outfile] [flags...] source-files...
+       [-o outfile] [options] source-files...
 
 DESCRIPTION
 
-  The Chapel compiler, chpl, converts one or more Chapel source files
-  into an executable. It does this by compiling Chapel to ISO C code
-  and then invoking the target platform's C compiler to create the
-  executable. However, most users will not need to be aware of the
-  use of C as an intermediate format during compilation.
-
-  The current implementation of chpl supports the creation of multiple
-  threads on multiple locales. It uses POSIX threads (pthreads) to
-  implement user-level tasks on each locale and GASNet to implement
-  communication and coordination between locales.
-
-  This version of chpl focuses primarily on demonstrating Chapel
-  language features in order to support experimentation with the
-  language and generate user feedback. The performance and memory
-  utilization of the generated code are known to be suboptimal and
-  should not be considered representative of Chapel's potential.
-  Future versions of the compiler will continue to result in improved
-  performance.
+  The chpl command invokes the Chapel compiler. chpl converts one or
+  more Chapel source files into an executable. It does this by
+  compiling Chapel code to C99 code and then invoking the target
+  platform's C compiler to create the executable. However, most users
+  will not need to be aware of the use of C as an intermediate format
+  during compilation.
 
 SOURCE FILES
   Chapel currently recognizes four source file types: .chpl, .c, .h and .o.
@@ -37,7 +25,7 @@ SOURCE FILES
 
   foo.c         C source files are passed directly to the target C compiler.
 
-  foo.h         C header files are placed in the generated chpl_header.h file
+  foo.h         C header files are included in the generated C code.
 
   foo.o         Object files are passed directly to the target linker. 
 
@@ -90,23 +78,17 @@ OPTIONS
                     is set to "none", --local is the default; otherwise
                     --no-local is the default.
 
-  --[no-]serial     Compile code for single/[multi-] threaded execution,
-                    changing forall- and coforall-loops into for loops;
-                    changing begin, cobegin, and atomic blocks into regular
-                    block statements; and removing the serial keyword,
-                    evaluating its expression only for side effects.
-                    When $CHPL_THREADS is set to "none" --serial is the
-                    default; otherwise --no-serial is the default.
-
-  --[no-]serial-forall   Compile forall-loops for single/[multi-] threaded
-                    execution. If set, forall-loops are treated like
-                    for-loops.
-
   Optimization Control Options
 
-  --[no-]baseline        Turns off all optimizations in the Chapel compiler and
+  --baseline        Turns off all optimizations in the Chapel compiler and
                     generates naive C code with many temporaries.
 
+  --cache-remote    Enables the cache for remote data. This cache can
+                    improve communication performance for some programs by
+                    adding aggregation, write behind, and read ahead. This
+                    cache is not enabled by any other optimization options
+                    such as --fast.
+.
   --conditional-dynamic-dispatch-limit   When greater than zero, this
                     limit controls when the compiler will generate
                     code to handle dynamic dispatch with conditional
@@ -121,8 +103,8 @@ OPTIONS
   --[no-]dead-code-elimination   Enable [disable] dead code elimination.
 
   --fast            Turns off all runtime checks using --no-checks, turns
-                    on --no-ieee-float and -O, and enables all compiler
-                    optimizations in the rest of this section.
+                    on --no-ieee-float, -O and --specialize, and enables all
+                    compiler optimizations in the rest of this section.
  
   --[no-]fast-followers   Enable [disable] the fast follower
                     optimization in which fast implementations of
@@ -131,6 +113,12 @@ OPTIONS
   --[no-]ieee-float   Disable [enable] optimizations that may affect IEEE
                     floating point conformance. The default is --ieee-float,
                     which ensures IEEE conformance.
+
+  --[no-]loop-invariant-code-motion   Enable [disable] the optimization that
+                    moves loop invariant code from loop runs into the loop's
+                    "pre-header." By default invariant code is moved. This is
+                    currently a rather conservative pass in the sense that 
+                    it may not identify all code that is truly invariant.
 
   --[no-]inline     Enable [disable] function inlining.
 
@@ -261,6 +249,12 @@ OPTIONS
                     used. If you would like additional flags to be used with
                     the C compiler command, use the --ccflags option.
 
+  --[no-]specialize  Causes the generated C code to be compiled with flags that
+                     specialize the executable to the architecture that is
+                     defined by CHPL_TARGET_ARCH. The effects of this flag will
+                     vary based on choice of back-end compiler and the
+                     value of CHPL_TARGET_ARCH.
+
   -o, --output <filename>   Specify the name of the compiler-generated
                      executable (defaults to a.out if unspecified).
 
@@ -270,8 +264,18 @@ OPTIONS
 
   LLVM Code Generation Options
 
-  --[no-]llvm            Use LLVM as the code generation target rather than C. See
+  --[no-]llvm       Use LLVM as the code generation target rather than C. See
                     $CHPL_HOME/doc/technotes/README.llvm for details.
+
+  --[no-]llvm-wide-opt   Enable [disable] LLVM wide pointer communication 
+                    optimizations.
+                    This option requires --llvm and packed wide pointers.
+                    Packed wide pointers are enabled by setting
+                    CHPL_WIDE_POINTERS = node16. You must also supply --fast
+                    to enable wide pointer optimizations. This flag allows
+                    existing LLVM optimizations to work with wide pointers -
+                    for example, they might be able to hoist a 'get' out of a
+                    loop. See $CHPL_HOME/doc/technotes/README.llvm for details.
 
   Documentation Options
 
@@ -302,6 +306,11 @@ OPTIONS
   --[no-]print-passes    Prints the compiler passes during compilation and the
                     amount of wall clock time required for the pass.
 
+  --print-passes-file <filename>   Saves the compiler passes and the amount of
+                    wall clock time required for the pass to <filename>. An 
+                    error is displayed if the file cannot be opened but no
+                    recovery attempt is made. 
+
   Miscellaneous Options
 
   --[no-]devel       Puts the compiler into [out of] developer mode, which
@@ -325,6 +334,10 @@ OPTIONS
                      those calls within a specific module or at a
                      particular line number.
 
+  --[no-]explain-verbose   In combination with explain-call or
+                     explain-instantiation, causes the compiler to output more
+                     debug information related to disambiguation.
+
   --instantiate-max <max>   In order to avoid infinite loops when
                      instantiating generic functions, the compiler
                      limits the number of times a single function
@@ -343,16 +356,27 @@ OPTIONS
                      boolean configuration variables, the value can
                      be omitted, causing the default value to be toggled.
 
+  --[no-]warn-const-loops  Enable [disable] warnings for 'while' loops
+                     whose condition is a 'const' variable, because such
+                     a loop condition is likely unintended.  'While' loops
+                     with 'param' conditions do not trigger this warning.
+
+  --[no-]warn-special  Enable [disable] all special compiler warnings
+                     issued due to syntax and other language
+                     changes. Currently, these include
+                     --[no-]warn-domain-literal and
+                     --[no-]warn-tuple-iteration.
+
   --[no-]warn-domain-literal  Enable [disable] compiler warnings
-                     about potential old-syntax domain literals.
-                     Such a literal is a list of range expressions within
-                     square brackets, e.g. [1..2,3..4]. Currently they are
-                     array literals, but prior to v1.6 they were domain
-                     literals. The warning is intended for use with pre-1.6
-                     Chapel code, pointing to places where domain literals
-                     need to be converted to the new syntax. Do so by replacing
-                     the square brackets with curly braces, e.g. {1..2,3..4}.
-                     This warning will be removed in the next major release.
+                     regarding the potential use of the old-style
+                     domain literal syntax (e.g. [1..2, 3..4]). All
+                     array literals with range elements will result in
+                     warnings.
+
+  --[no-]warn-tuple-iteration  Enable [disable] compiler warnings
+                     regarding the potential use of old-style
+                     zippering syntax. All uses of tuple iteration
+                     will produce warnings.
 
   --no-warnings      Turns off compiler warnings.
 
@@ -375,7 +399,6 @@ OPTIONS
   --license       Print the compiler's license information.
 
   --version       Print the version number of the compiler.
-
 
 ENVIRONMENT VARIABLES FOR OPTIONS
 
@@ -414,6 +437,86 @@ ENVIRONMENT
 
   CHPL_HOME           Specifies the location of the Chapel installation directory.
 
+  CHPL_HOST_PLATFORM  Specifies the platform on which the Chapel compiler is
+                      running (defaults to our best guess).
+
+  CHPL_TARGET_PLATFORM   Specifies the platform on which the target executable
+                         is to be run for the purposes of cross-compiling
+                         (defaults to $CHPL_HOST_PLATFORM).
+
+  CHPL_HOST_COMPILER  Specifies the compiler suite that should be used
+                      to build the Chapel compiler (defaults to a best
+                      guess based on $CHPL_HOST_PLATFORM).
+
+  CHPL_TARGET_COMPILER  Specifies the compiler suite that should be used
+                      to build the generated C code for a Chapel program
+                      and the Chapel runtime (defaults to a best guess 
+                      based on $CHPL_HOST_PLATFORM, $CHPL_TARGET_PLATFORM,
+                      and $CHPL_HOST_COMPILER).
+
+  CHPL_TARGET_ARCH    Specifies the architecture that the compiled executable
+                      will be specialized to when --specialize is enabled
+                      (defaults to a best guess based on $CHPL_COMM,
+                      $CHPL_TARGET_COMPILER, and $CHPL_TARGET_PLATFORM).
+
+  CHPL_LOCALE_MODEL   Specifies the locale model to use for describing
+                      your locale architecture (defaults to 'flat')
+
+  CHPL_COMM           Specifies the communication layer to use for
+                      inter-locale data transfers (defaults to 'none').
+
+  CHPL_TASKS          Specifies the tasking layer to use for implementing
+                      tasks (defaults to a best guess based on
+                      $CHPL_TARGET_PLATFORM).
+
+  CHPL_LAUNCHER       Specifies the launcher, if any, used to start job
+                      execution (defaults to a best guess based on
+                      $CHPL_COMM and $CHPL_TARGET_PLATFORM).
+
+  CHPL_TIMERS         Specifies a timer implementation to be used by
+                      the Time module (defaults to 'generic').
+
+  CHPL_MEM            Specifies the memory allocator used for dynamic memory
+                      management (defaults to a best guess based on $CHPL_COMM).
+
+  CHPL_MAKE           Specifies the GNU compatible make utility
+                      (defaults to a best guess based on
+                      $CHPL_HOST_PLATFORM).
+
+  CHPL_ATOMICS        Specifies the implementation to use for Chapel's atomic
+                      variables (defaults to a best guess based on
+                      $CHPL_TARGET_COMPILER, $CHPL_TARGET_PLATFORM, and
+                      $CHPL_COMM).
+
+  CHPL_GMP            Specifies the GMP library implementation to be
+                      used by the GMP module (defaults to a best guess
+                      based on $CHPL_TARGET_PLATFORM and whether
+                      you've built the included GMP library in the
+                      third-party directory).
+
+  CHPL_HWLOC          Specifies whether or not to use the hwloc library
+                      (defaults to a best guess based on whether you've
+                      built the included library in the third-party
+                      hwloc directory).
+
+  CHPL_REGEXP         Specifies the regular expression library to use
+                      (defaults to 'none' or 're2' if you've installed
+                      the re2 package in the third-party directory).
+
+  CHPL_WIDE_POINTERS  Specifies the wide porter format format
+                      (defaults to 'struct').
+
+  CHPL_LLVM           When set to 'llvm', use the LLVM/Clang back-end
+                      (defaults to 'none').
+
+  CHPL_AUX_FILESYS    Specify runtime support for additional file
+                      systems (defaults to 'none').
+
+  CHPL_DEVELOPER      When set, build and compile in developer mode,
+                      which generates line numbers in internal module
+                      code and throws extra warning flags when
+                      compiling the generated C code.
+
   CHPL_MODULE_PATH    Specifies a list of colon-separated directories to be 
                       added to the module search path. The module search path
                       is used to satisfy module 'use' statements. In the current
@@ -434,39 +537,6 @@ ENVIRONMENT
                       $CHPL_MODULE_PATH environment variable, (4) the
                       compiler's standard module search path. 
 
-  CHPL_HOST_PLATFORM  Specifies the platform on which the Chapel compiler is
-                      running (defaults to our best guess).
-
-  CHPL_TARGET_PLATFORM   Specifies the platform on which the target executable
-                         is to be run for the purposes of cross-compiling
-                         (defaults to $CHPL_HOST_PLATFORM).
-
-  CHPL_HOST_COMPILER  Specifies the compiler suite that should be used
-                      to build the Chapel compiler (defaults to a best
-                      guess based on $CHPL_HOST_PLATFORM).
-
-  CHPL_TARGET_COMPILER  Specifies the compiler suite that should be used
-                      to build the generated C code for a Chapel program
-                      and the Chapel runtime (defaults to a best guess 
-                      based on $CHPL_HOST_PLATFORM, $CHPL_TARGET_PLATFORM,
-                      and $CHPL_HOST_COMPILER).
-
-  CHPL_TASKS          Specified the tasking layer to use for implementing
-                      tasks (defaults to a best guess based on
-                      $CHPL_TARGET_PLATFORM).
-
-  CHPL_COMM           Specifies the communication layer to use for
-                      inter-locale data transfers (defaults to 'none').
-
-  CHPL_LAUNCHER       Specifies the launcher, if any, used to start job
-                      execution (defaults to a best guess based on
-                      $CHPL_COMM and $CHPL_TARGET_PLATFORM).
-
-  CHPL_MEM            Specifies the memory allocator used for dynamic memory
-                      management (defaults to a best guess based on $CHPL_COMM).
-
-  CHPL_ATOMICS        Specifies the implementation to use for Chapel's atomic
-                      variables (defaults to a best guess based on $CHPL_TARGET_COMPILER, $CHPL_TARGET_PLATFORM, and $CHPL_COMM).
 
 BUGS
   See $CHPL_HOME/STATUS for a list of known bugs and $CHPL_HOME/doc/README.bugs
@@ -476,4 +546,4 @@ SEE ALSO
 AUTHORS
   See $CHPL_HOME/CONTRIBUTORS for a list of contributors to Chapel.
 COPYRIGHT
-  Copyright (c) 2004-2012 Cray Inc. (See $CHPL_HOME/LICENSE for more details.)
+  Copyright (c) 2004-2014 Cray Inc. (See $CHPL_HOME/LICENSE for more details.)

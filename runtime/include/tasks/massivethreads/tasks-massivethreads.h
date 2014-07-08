@@ -15,4 +15,7 @@ typedef struct{
 typedef intptr_t chpl_taskID_t;
 #define chpl_nullTaskID 0
 
+#define CHPL_TASK_STD_MODULES_INITIALIZED chpl_task_stdModulesInitialized
+void chpl_task_stdModulesInitialized(void);
+
 #endif

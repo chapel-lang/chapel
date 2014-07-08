@@ -40,9 +40,9 @@ static int illegalFirstUnsChar(char c) {
 #define _type(base, width) base##width##_t
 
 #define _define_string_to_int_precise(base, width, uns)                 \
-  _type(base,width) chpl_string_to_##base##width##_t_precise(const char* str, \
-                                                             int* invalid,    \
-                                                             char* invalidCh) { \
+  _type(base,width) c_string_to_##base##width##_t_precise(c_string str, \
+                                                          int* invalid,    \
+                                                          char* invalidCh) { \
     char* endPtr;                                                       \
     _type(base, width) val = (_type(base, width))strtol(str, &endPtr, 10);  \
     *invalid = (*str == '\0' || *endPtr != '\0');                       \
@@ -56,9 +56,9 @@ static int illegalFirstUnsChar(char c) {
   }
 
 #define _define_string_to_bigint_precise(base, width, uns, format)      \
-  _type(base, width)  chpl_string_to_##base##width##_t_precise(const char* str, \
-                                                               int* invalid,  \
-                                                               char* invalidCh) { \
+  _type(base, width)  c_string_to_##base##width##_t_precise(c_string str, \
+                                                            int* invalid,  \
+                                                            char* invalidCh) { \
     _type(base, width)  val;                                            \
     int numbytes;                                                       \
     int numitems = sscanf(str, format"%n", &val, &numbytes);            \
@@ -97,10 +97,10 @@ _define_string_to_int_precise(uint, 32, 1)
 _define_string_to_bigint_precise(uint, 64, 1, "%" SCNu64)
 
 
-chpl_bool chpl_string_to_chpl_bool(const char* str, int lineno, const char* filename) {
-  if (chpl_string_compare(str, "true") == 0) {
+chpl_bool c_string_to_chpl_bool(c_string str, int lineno, c_string filename) {
+  if (string_compare(str, "true") == 0) {
     return true;
-  } else if (chpl_string_compare(str, "false") == 0) {
+  } else if (string_compare(str, "false") == 0) {
     return false;
   } else {
     const char* message = 
@@ -115,9 +115,9 @@ chpl_bool chpl_string_to_chpl_bool(const char* str, int lineno, const char* file
 #define _real_type(base, width) _##base##width
 
 #define _define_string_to_float_precise(base, width, format)            \
-  _real_type(base, width) chpl_string_to_##base##width##_precise(const char* str, \
-                                                                 int* invalid,   \
-                                                                 char* invalidCh) { \
+  _real_type(base, width) c_string_to_##base##width##_precise(c_string str, \
+                                                              int* invalid,   \
+                                                              char* invalidCh) { \
     _real_type(base, width) val;                                        \
     int numbytes;                                                       \
     int numitems = sscanf(str, format"%n", &val, &numbytes);            \
@@ -144,9 +144,9 @@ _define_string_to_float_precise(real, 32, "%f")
 _define_string_to_float_precise(real, 64, "%lf")
 
 #define _define_string_to_imag_precise(base, width, format)             \
-  _real_type(base, width) chpl_string_to_##base##width##_precise(const char* str, \
-                                                                 int* invalid,   \
-                                                                 char* invalidCh) { \
+  _real_type(base, width) c_string_to_##base##width##_precise(c_string str, \
+                                                              int* invalid,   \
+                                                              char* invalidCh) { \
     _real_type(base, width) val;                                        \
     int numbytes;                                                       \
     char i = '\0';                                                      \
@@ -183,12 +183,12 @@ _define_string_to_imag_precise(imag, 64, "%lf")
 
 
 #define _define_string_to_complex_precise(base, width, format, halfwidth) \
-  _real_type(base, width) chpl_string_to_##base##width##_precise(const char* str, \
-                                                                 int* invalid,   \
-                                                                 char* invalidCh) { \
+  _real_type(base, width) c_string_to_##base##width##_precise(c_string str, \
+                                                              int* invalid,   \
+                                                              char* invalidCh) { \
     _real_type(base, width) val = {0.0, 0.0};                           \
     /* check for pure imaginary case first */                           \
-    val.im = chpl_string_to_imag##halfwidth##_precise(str, invalid, invalidCh); \
+    val.im = c_string_to_imag##halfwidth##_precise(str, invalid, invalidCh); \
     if (*invalid) {                                                     \
       int numbytes = -1;                                                \
       char sign = '\0';                                                 \
@@ -258,11 +258,11 @@ _define_string_to_complex_precise(complex, 128, "%lf", 64)
 
 
 #define _define_string_to_type(base, width)                             \
-  _type(base, width) chpl_string_to_##base##width##_t(const char* str, int lineno, \
-                                                      const char* filename) {   \
+  _type(base, width) c_string_to_##base##width##_t(c_string str, int lineno, \
+                                                   c_string filename) {   \
     int invalid;                                                        \
     char invalidStr[2] = "\0\0";                                        \
-    _type(base, width) val = chpl_string_to_##base##width##_t_precise(str,    \
+    _type(base, width) val = c_string_to_##base##width##_t_precise(str,    \
                                                                       &invalid, \
                                                                       invalidStr); \
     if (invalid) {                                                      \
@@ -293,11 +293,11 @@ _define_string_to_type(uint, 32)
 _define_string_to_type(uint, 64)
 
 #define _define_string_to_real_type(base, width)                        \
-  _real_type(base, width) chpl_string_to_##base##width(const char* str, int lineno, \
-                                                       const char* filename) {   \
+  _real_type(base, width) c_string_to_##base##width(c_string str, int lineno, \
+                                                    c_string filename) {   \
     int invalid;                                                        \
     char invalidStr[2] = "\0\0";                                        \
-    _real_type(base, width) val = chpl_string_to_##base##width##_precise(str,    \
+    _real_type(base, width) val = c_string_to_##base##width##_precise(str,    \
                                                                          &invalid, \
                                                                          invalidStr); \
     if (invalid) {                                                      \
@@ -313,7 +313,7 @@ _define_string_to_type(uint, 64)
       } else {                                                          \
         message = "Empty string when converting from string to " #base "(" #width ")"; \
       }                                                                 \
-      chpl_error(message, lineno, filename);                           \
+      chpl_error(message, lineno, filename);                            \
     }                                                                   \
     return val;                                                         \
   }
@@ -330,10 +330,10 @@ _define_string_to_real_type(complex, 128)
  *  int and uint to string
  */
 #define integral_to_string(type, format)        \
-  chpl_string type##_to_chpl_string(type x) {   \
+  c_string type##_to_c_string(type x) {   \
     char buffer[256];                           \
     sprintf(buffer, format, x);                 \
-    return chpl_glom_strings(1, buffer);        \
+    return string_copy(buffer, 0, NULL);        \
   }
 
 integral_to_string(int8_t, "%" PRId8)
@@ -367,20 +367,20 @@ static void ensureDecimal(char* buffer) {
 // the above strings are copied below so the return value of real_to_string
 // can be freed unconditionally
 #define real_to_string(type, format)           \
-  chpl_string type##_to_chpl_string(type x) {  \
+  c_string type##_to_c_string(type x) {  \
     if (isnan(x)) {                            \
-      return chpl_glom_strings(1, NANSTRING);  \
+      return string_copy(NANSTRING, 0, NULL);  \
     } else if (isinf(x)) {                     \
       if (x < 0) {                             \
-        return chpl_glom_strings(1, NEGINFSTRING); \
+        return string_copy(NEGINFSTRING, 0, NULL);  \
       } else {                                 \
-        return chpl_glom_strings(1, POSINFSTRING); \
+        return string_copy(POSINFSTRING, 0, NULL);  \
       }                                        \
     } else {                                   \
       char buffer[256];                        \
       sprintf(buffer, format, x);              \
       ensureDecimal(buffer);                   \
-      return chpl_glom_strings(1, buffer);     \
+      return string_copy(buffer, 0, NULL);     \
     }                                          \
   }
 

@@ -15,7 +15,7 @@
 //
 // Initialize the threading layer.
 //
-void chpl_thread_init(int32_t, int32_t, uint64_t, void(*)(void*), void(*)(void));
+void chpl_thread_init(void(*)(void*), void(*)(void));
 
 //
 // Create a thread for a communication task to run function 'fn' with
@@ -69,8 +69,14 @@ void chpl_thread_yield(void);
 // the threading layer also needs to store some data private to each
 // thread, it must make other arrangements to do so.
 //
+
+#ifndef CHPL_THREAD_SETPRIVATEDATA_IMPL_DECL
 void  chpl_thread_setPrivateData(void*);
+#endif
+
+#ifndef CHPL_THREAD_GETPRIVATEDATA_IMPL_DECL
 void* chpl_thread_getPrivateData(void);
+#endif
 
 //
 // Get the maximum number of threads that can exist.
@@ -85,7 +91,7 @@ uint32_t chpl_thread_getNumThreads(void);
 //
 // Get the current thread stack size.
 //
-uint64_t chpl_thread_getCallStackSize(void);
+size_t chpl_thread_getCallStackSize(void);
 
 //
 // Mutexes, and operations upon them.

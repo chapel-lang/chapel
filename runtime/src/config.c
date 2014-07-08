@@ -36,6 +36,10 @@ static configVarType* ambiguousConfigVar = &_ambiguousConfigVar;
 
 static configVarType* lookupConfigVar(const char* moduleName, 
                                       const char* varName);
+static void handleDeprecatedConfig(const char* varName,
+                                   const char* value,
+                                   const char* envVarName);
+static void checkDeprecatedConfig(const char* varName, const char* value);
 
 
 static void parseModVarName(char* modVarName, const char** moduleName, 
@@ -56,7 +60,7 @@ static void parseModVarName(char* modVarName, const char** moduleName,
    the hash table.  
 */
 static int aParsedString(FILE* argFile, char* setConfigBuffer, 
-                         int32_t lineno, chpl_string filename) {
+                         int32_t lineno, c_string filename) {
   char* equalsSign = strchr(setConfigBuffer, '=');
   int stringLength = strlen(setConfigBuffer);
   char firstChar;
@@ -199,7 +203,7 @@ void printConfigVarTable(void) {
         fprintf(stdout, "\n");
       }
   }
-  chpl_exit_any(0);
+
 }
 
 
@@ -236,9 +240,37 @@ static configVarType* lookupConfigVar(const char* moduleName,
 }
 
 
+static void handleDeprecatedConfig(const char* varName,
+                                   const char* value,
+                                   const char* envVarName) {
+  if (getenv(envVarName) == NULL) {
+    chpl_msg(0,
+             "warning: The config variable \"%s\" is deprecated.  Please use\n"
+             "         the environment variable \"%s\" instead.\n",
+             varName, envVarName);
+    if (value != NULL)
+      setenv(envVarName, value, 0);
+  }
+  else
+    chpl_msg(0,
+             "warning: The config variable \"%s\" is deprecated, and is\n"
+             "         overridden by the environment variable \"%s\".\n",
+             varName, envVarName);
+}
+
+
+static void checkDeprecatedConfig(const char* varName,
+                                  const char* value) {
+  if (strcmp(varName, "callStackSize") == 0)
+    handleDeprecatedConfig(varName, value, "CHPL_RT_CALL_STACK_SIZE");
+  else if (strcmp(varName, "numThreadsPerLocale") == 0)
+    handleDeprecatedConfig(varName, value, "CHPL_RT_NUM_THREADS_PER_LOCALE");
+}
+
+
 void initSetValue(const char* varName, const char* value, 
                   const char* moduleName, 
-                  int32_t lineno, chpl_string filename) {
+                  int32_t lineno, c_string filename) {
   configVarType* configVar;
   if  (*varName == '\0') {
     const char* message = "No variable name given";
@@ -300,7 +332,7 @@ static configVarType* breakIntoPiecesAndLookup(char* str, char** equalsSign,
                                                const char** moduleName, 
                                                char** varName,
                                                int32_t lineno, 
-                                               chpl_string filename) {
+                                               c_string filename) {
   configVarType* configVar;
 
   *equalsSign = strchr(str, '=');
@@ -324,7 +356,7 @@ static configVarType* breakIntoPiecesAndLookup(char* str, char** equalsSign,
 
 
 static void handleUnexpectedConfigVar(const char* moduleName, char* varName,
-                                      int32_t lineno, chpl_string filename) {
+                                      int32_t lineno, c_string filename) {
   const char* message;
   if (moduleName[0]) {
     message = chpl_glom_strings(5, "Module '", moduleName, 
@@ -341,7 +373,7 @@ static void handleUnexpectedConfigVar(const char* moduleName, char* varName,
 
 
 int handlePossibleConfigVar(int* argc, char* argv[], int argnum, 
-                            int32_t lineno, chpl_string filename) {
+                            int32_t lineno, c_string filename) {
   int retval = 0;
   int arglen = strlen(argv[argnum]+2)+1;
   char* argCopy = chpl_mem_allocMany(arglen, sizeof(char),
@@ -363,6 +395,7 @@ int handlePossibleConfigVar(int* argc, char* argv[], int argnum,
     }
   } else {
     char* value = equalsSign + 1;
+    checkDeprecatedConfig(varName, equalsSign ? value : equalsSign);
     if (equalsSign && *value) {
       initSetValue(varName, value, moduleName, lineno, filename);
     } else if (!strcmp(configVar->defaultValue, "bool")) {
@@ -385,7 +418,7 @@ int handlePossibleConfigVar(int* argc, char* argv[], int argnum,
 
 // TODO: Change all the 0 linenos below into real line numbers
 void parseConfigFile(const char* configFilename, 
-                     int32_t lineno, chpl_string filename) {
+                     int32_t lineno, c_string filename) {
   FILE* argFile = fopen(configFilename, "r");
   if (!argFile) {
     char* message = chpl_glom_strings(2, "Unable to open ", configFilename);
@@ -409,6 +442,7 @@ void parseConfigFile(const char* configFilename,
           handleUnexpectedConfigVar(moduleName, varName, 0, configFilename);
         } else {
           char* value = equalsSign + 1;
+          checkDeprecatedConfig(varName, equalsSign ? value : equalsSign);
           if (equalsSign && *value) {
             initSetValue(varName, value, moduleName, 0, configFilename);
           } else {
@@ -428,3 +462,15 @@ void parseConfigFile(const char* configFilename,
   }
   fclose(argFile);
 }
+
+
+chpl_bool chpl_config_has_value(c_string v, c_string m) { 
+  return lookupSetValue(v, m) != NULL;
+}
+
+
+c_string chpl_config_get_value(c_string v, c_string m) { 
+  return lookupSetValue(v, m);
+}
+
+

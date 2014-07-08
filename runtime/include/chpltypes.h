@@ -8,6 +8,33 @@
 #include <stdlib.h>
 #include <sys/time.h> // for struct timeval
 
+// C types usable from Chapel.
+typedef char c_char;
+typedef signed char c_schar;
+typedef unsigned char c_uchar;
+typedef short c_short;
+typedef unsigned short c_ushort;
+typedef int c_int;
+typedef unsigned int c_uint;
+typedef long c_long;
+typedef unsigned long c_ulong;
+typedef long long c_longlong;
+typedef unsigned long long c_ulonglong;
+typedef float c_float;
+typedef double c_double;
+typedef void* c_void_ptr;
+
+// C++ does not support c99 bools
+#ifndef __cplusplus
+typedef _Bool chpl_bool;
+#else
+typedef bool chpl_bool;
+#endif
+
+#define c_nil NULL
+static inline chpl_bool is_c_nil(void* x) { return (chpl_bool)(x==c_nil); }
+static inline void* c_pointer_return(void* x) { return x; }
+
 typedef enum {
   CHPL_TYPE_chpl_bool,
   CHPL_TYPE_chpl_bool8,
@@ -48,23 +75,66 @@ typedef struct _chpl_fieldType {
 } chpl_fieldType;
 
 // This allocation of bits is arbitrary.
-// Seemingly, 64 bits is enough to represent both the node_id and sublocale_id portions 
-// of a locale ID, and an even split is a good first guess.
+// Seemingly, 64 bits is enough to represent both the node_id and sublocale_id
+// portions  of a locale ID, and an even split is a good first guess.
 typedef int32_t c_nodeid_t;
 #define FORMAT_c_nodeid_t PRId32
-typedef int32_t c_subloc_t;
-#define FORMAT_c_subloc_t PRId32
+typedef int32_t c_sublocid_t;
+#define FORMAT_c_sublocid_t PRId32
+typedef int64_t c_localeid_t;
 
-// It is unfortunate that we need this definition in parallel with the module definition.
-// If runtime routines that depend on c_locale_t can be eliminated, then this
-// definition can be moved entirely within the module code.
-typedef struct
-{
-  c_nodeid_t node;    // This is the comm node index.
-  c_subloc_t subloc;  // This carries the sublocale index if there is one, otherwise zero.
-} c_locale_t;
+// These are special values that mean "no sublocale and "any sublocale".
+#define c_sublocid_none_val -1
+#define c_sublocid_any_val  -2
 
-//extern const c_locale_t _rootLocaleID;
+static const c_sublocid_t c_sublocid_none = c_sublocid_none_val;
+static const c_sublocid_t c_sublocid_any  = c_sublocid_any_val;
+
+#ifndef LAUNCHER
+
+// The type for wide-pointer-to-void. This is used in the runtime in order to
+// store and transmit global variable addresses. It is needed in order to make
+// that code able to support packed multilocale pointers.
+
+// We can't include chpl-locale-model.h until after we've defined the node and
+// sublocale types and constants, so these cases are also responsible to
+// include chpl-locale-model.h.  (note: moving it out of the #ifdef leads to
+// problems building the launcher).
+
+#ifdef CHPL_WIDE_POINTER_STRUCT
+#include "chpl-locale-model.h"
+typedef struct wide_ptr_s {
+  chpl_localeID_t locale;
+  void* addr;
+} wide_ptr_t;
+typedef wide_ptr_t* ptr_wide_ptr_t;
+#else
+// It's useful to have the type for a wide pointer-to-void.
+// This is the packed pointer version (the other version would be
+// {{node,subloc}, address}).
+#ifdef CHPL_WIDE_POINTER_PACKED
+#include "chpl-locale-model.h"
+typedef void * wide_ptr_t;
+typedef wide_ptr_t* ptr_wide_ptr_t;
+#ifndef CHPL_WIDE_POINTER_NODE_BITS
+#error Missing packed wide pointer definition CHPL_WIDE_POINTER_NODE_BITS
+#endif
+
+#else
+// Just don't define wide_ptr_t. That way, other programs
+// (like the launcher) can still use chpltypes.h but anything
+// using it that doesn't get a wide pointer definition will
+// fail.
+//
+// We define ptr_wide_ptr_t however so some things, like qthreads
+// builds using chpl-comm.h (which uses that type to declare the
+// global variables registry), can continue to work.
+typedef void* ptr_wide_ptr_t;
+#endif
+
+#endif
+
+#endif // LAUNCHER
 
 #define nil 0 
 typedef void* _nilType;
@@ -75,23 +145,17 @@ typedef void* chpl_opaque;
 
 #define nilRef 0
 
-// macros for specifying the correct C constant type
-#define INT8( i)   (i)
-#define INT16( i)  (i)
-#define INT32( i)  (i ## L)
-#define INT64( i)  (i ## LL)
-#define UINT8( i)  (i ## U)
-#define UINT16( i) (i ## U)
-#define UINT32( i) (i ## UL)
-#define UINT64( i) (i ## ULL)
+// macros for specifying the correct C literal type
+#define INT8( i)   ((int8_t)(INT8_C(i)))
+#define INT16( i)  ((int16_t)(INT16_C(i)))
+#define INT32( i)  ((int32_t)(INT32_C(i)))
+#define INT64( i)  ((int64_t)(INT64_C(i)))
+#define UINT8( i)  ((uint8_t)(UINT8_C(i)))
+#define UINT16( i) ((uint16_t)(UINT16_C(i)))
+#define UINT32( i) ((uint32_t)(UINT32_C(i)))
+#define UINT64( i) ((uint64_t)(UINT64_C(i)))
 
 
-// Cuda does not suuport c99 bools
-#ifndef ENABLE_GPU
-typedef _Bool chpl_bool;
-#else
-typedef bool chpl_bool;
-#endif
 typedef int8_t chpl_bool8;
 typedef int16_t chpl_bool16;
 typedef int32_t chpl_bool32;
@@ -115,7 +179,6 @@ typedef float               _imag32;
 typedef double              _imag64;
 typedef struct __complex64 { _real32 re; _real32 im; } _complex64;
 typedef struct __complex128 { _real64 re; _real64 im; } _complex128;
-typedef const char*         chpl_string;
 typedef int64_t              _symbol;
 
 // macros for Chapel min/max -> C stdint.h or values.h min/max
@@ -142,36 +205,20 @@ typedef int64_t              _symbol;
 #define MAX_FLOAT32         FLT_MAX
 #define MAX_FLOAT64         DBL_MAX
 
-static ___always_inline
-int8_t ascii(chpl_string s) {
-  return (int8_t) *s;
-}
-
-struct __chpl____wide_chpl_string;
-
-//
-// stopgap formatting
-//
-chpl_string chpl_format(chpl_string format, ...)
-  __attribute__((format(printf, 1, 2)));
-
-char* chpl_glom_strings(int numstrings, ...);
-
-chpl_bool string_contains(chpl_string x, chpl_string y);
-chpl_string string_copy(chpl_string x, int32_t lineno, chpl_string filename);
-chpl_string chpl_wide_string_copy(struct __chpl____wide_chpl_string* x, int32_t lineno, chpl_string filename);
-void chpl_string_widen(struct __chpl____wide_chpl_string* x, chpl_string from);
-void chpl_comm_wide_get_string(chpl_string* local, struct __chpl____wide_chpl_string* x, int32_t tid, int32_t lineno, chpl_string filename);
-chpl_string string_concat(chpl_string x, chpl_string y, int32_t lineno, chpl_string filename);
-chpl_string string_index(chpl_string x, int i, int32_t lineno, chpl_string filename);
-chpl_string string_select(chpl_string x, int low, int high, int32_t lineno, chpl_string filename);
-chpl_string string_strided_select(chpl_string x, int low, int high, int stride, int32_t lineno, chpl_string filename);
-int32_t chpl_string_compare(chpl_string x, chpl_string y);
-int64_t string_length(chpl_string x);
-
 int64_t real2int( _real64 f);       // return the raw bytes of the float
 int64_t object2int( _chpl_object o);  // return the ptr
 
 typedef int32_t chpl__class_id;
+
+typedef struct chpl_main_argument_s {
+  int64_t argc;
+  const char **argv;
+  int32_t return_value;
+} chpl_main_argument;
+
+/* This should be moved somewhere else, but where is the question */
+const char* chpl_get_argument_i(chpl_main_argument* args, int32_t i);
+
+#include "chpl-string.h"
 
 #endif

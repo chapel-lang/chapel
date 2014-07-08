@@ -15,10 +15,10 @@
 #include "chpl-comm.h"
 
 static void* chpl_gmp_alloc(size_t sz) {
-  return chpl_mem_allocMany( 1, sz, CHPL_RT_MD_GMP, __LINE__, __FILE__);
+  return chpl_mem_alloc(sz, CHPL_RT_MD_GMP, __LINE__, __FILE__);
 }
 static void* chpl_gmp_realloc(void* ptr, size_t old_size, size_t new_size) {
-  return chpl_mem_realloc( ptr, 1, new_size, CHPL_RT_MD_GMP, __LINE__, __FILE__);
+  return chpl_mem_realloc( ptr, new_size, CHPL_RT_MD_GMP, __LINE__, __FILE__);
 }
 static void chpl_gmp_free(void* ptr, size_t old_size) {
   chpl_mem_free( ptr, __LINE__, __FILE__);
@@ -38,7 +38,7 @@ void chpl_gmp_get_mpz(mpz_t ret, int64_t src_locale, __mpz_struct from)
   ret[0]._mp_size = from._mp_size;
 
   // Next, use GASNET to move the pointer data.
-  chpl_comm_get( ret[0]._mp_d, src_locale, from._mp_d, sizeof(mp_limb_t), CHPL_TYPE_uint64_t, ret[0]._mp_alloc, __LINE__, __FILE__);
+  chpl_gen_comm_get( ret[0]._mp_d, src_locale, from._mp_d, sizeof(mp_limb_t), CHPL_TYPE_uint64_t, ret[0]._mp_alloc, __LINE__, __FILE__);
 
   //gmp_printf("got %Zd\n", ret);
 }
@@ -67,12 +67,11 @@ void chpl_gmp_mpz_print(mpz_t x)
 }
 
 
-chpl_string chpl_gmp_mpz_get_str(int base, mpz_t x)
+c_string chpl_gmp_mpz_get_str(int base, mpz_t x)
 {
   size_t len = mpz_sizeinbase(x, base);
 
-  char* str = (char*)chpl_mem_allocMany(len+1, sizeof(char),
-                                        CHPL_RT_MD_GLOM_STRINGS_DATA, 0, 0);
+  char* str = (char*)chpl_mem_calloc(len+1, CHPL_RT_MD_GLOM_STRINGS_DATA, 0, 0);
 
   mpz_get_str(str, base, x);
 

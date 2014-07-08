@@ -12,18 +12,18 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "chpl-bitops.h"
 #include "chplcast.h"
 #include "chplio.h"
 #include "chpl-mem.h"
+#include "chpl-prefetch.h"
 #include "chpl-tasks.h"
 #include "chpltimers.h"
 #include "chpltypes.h"
 #include "error.h"
 
-#include "qbuffer.h"
-#include "qio.h"
-#include "qio_formatted.h"
-#include "bulkget.h"
+#ifndef __cplusplus
 #include "chplgmp.h"
+#endif
 
 #endif

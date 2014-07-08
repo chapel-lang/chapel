@@ -34,8 +34,8 @@ const char* getCoresPerLocaleStr(void);
 int getCoresPerLocale(void);
 const char* getLocalesPerNodeStr(void);
 int getLocalesPerNode(void);
-const char* getCPUsPerNodeStr(void);
-int getCPUsPerNode(void);
+const char* getCPUsPerCUStr(void);
+int getCPUsPerCU(void);
 const char* getNumLocalesStr(void);
 const char* getAprunArgStr(aprun_arg_t arg); // possibly inline
 int getAprunArg(aprun_arg_t argt);           // possibly inline
@@ -72,7 +72,7 @@ int getAprunArg(aprun_arg_t argt) {
   case aprun_N:
     return getLocalesPerNode();
   case aprun_j:
-    return getCPUsPerNode();
+    return getCPUsPerCU();
   default:
     return -1;
   }
@@ -180,47 +180,22 @@ int getLocalesPerNode() {
   return 1;
 }
 
-const char* getCPUsPerNodeStr() {
+const char* getCPUsPerCUStr() {
   return getAprunArgStr(aprun_j);
 }
-int getCPUsPerNode() {
-  int numCPUsPerNode = -1;
-  char* numCPUsPerNodeString = getenv("CHPL_LAUNCHER_CPUS_PER_CU");
+int getCPUsPerCU() {
+  int numCPUsPerCU = -1;
+  char* numCPUsPerCUString = getenv("CHPL_LAUNCHER_CPUS_PER_CU");
 
-  if (numCPUsPerNodeString) {
-    numCPUsPerNode = atoi(numCPUsPerNodeString);
-    if (numCPUsPerNode <= 0)
-      chpl_warning("CHPL_LAUNCHER_CPUS_PER_CU set to invalid value.", 0, 0);
+  if (numCPUsPerCUString) {
+    numCPUsPerCU = atoi(numCPUsPerCUString);
+    if (numCPUsPerCU < 0)
+      chpl_warning("CHPL_LAUNCHER_CPUS_PER_CU set to invalid value; "
+                   "using 0 instead.", 0, 0);
   }
 
-  if ((numCPUsPerNode <= 0) && strstr(CNA, "cpus_per_cu") != NULL) {
-    // cpus_per_cu is available in this version of cnselect
-    int tncpn = numCPUsPerNode;
-    const int buflen = 1024;
-    char buf[buflen];
-    char* argv[3];
+  if (numCPUsPerCU < 0 && strstr(CNA, "cpus_per_cu") != NULL)
+    numCPUsPerCU = 0;
 
-    argv[0] = (char *) "cnselect";
-    argv[1] = (char *) "-Lcpus_per_cu";
-    argv[2] = NULL;
-  
-    memset(buf, 0, buflen);
-    if (chpl_run_utility1K("cnselect", argv, buf, buflen) <= 0) {
-      chpl_error("Error trying to determine number of CPUs per CU", 0, 0);
-    }
-
-    if (sscanf(buf, "%d", &tncpn) == 1) {
-      char *tbuf = strstr(buf, "\n")+1;
-      numCPUsPerNode = tncpn;
-      while (sscanf(tbuf, "%d", &tncpn) == 1) {
-        if (numCPUsPerNode < tncpn) numCPUsPerNode = tncpn;
-        tbuf = strstr(tbuf, "\n")+1;
-      }
-    } else {
-      chpl_error("unable to determine number of CPUs per CU; please set CHPL_LAUNCHER_CPUS_PER_CU", 0, 0);
-    }
-  }
-
-  return numCPUsPerNode;
+  return numCPUsPerCU;
 }
-

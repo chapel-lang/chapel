@@ -2,7 +2,7 @@ ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(shell pwd)/../..
 endif
 
-CHPL_MAKE_HOST_TARGET = --target
+CHPL_MAKE_HOST_TARGET = --host
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 #
@@ -15,27 +15,43 @@ LLVM_BUILD_DIR = $(LLVM_ABS_DIR)/$(LLVM_BUILD_SUBDIR)
 LLVM_DIR = $(LLVM_ABS_DIR)
 BINUTILS_GOLD_DIR = $(LLVM_ABS_DIR)/binutils
 
-LLVM_FILE := $(LLVM_INSTALL_DIR)/include/llvm/Type.h
+# decide whether to do a debug or no-debug build
+ifdef CHPL_DEVELOPER
+CHPL_LLVM_DEBUG = --enable-debug-runtime --enable-debug-symbols
+else
+CHPL_LLVM_DEBUG = 
+endif
+
+LLVM_FILE := $(LLVM_INSTALL_DIR)/include/llvm/PassSupport.h
 
 default: $(LLVM_FILE)
 
 all: $(LLVM_FILE)
 
 clean: FORCE
-	cd $(LLVM_BUILD_DIR) && make clean
+	rm -rf $(LLVM_BUILD_DIR)
+
+cleanall: FORCE
+	rm -rf build
 
 clobber: FORCE
-	rm -r $(LLVM_INSTALL_DIR)
+	rm -rf build install llvm
+
+# Determine the number of available cpus on the system. Used as the -j argument
+# when calling make below. This can be overridden at the command line with
+# NPROCS=<int>.
+NPROCS := $(shell python -c 'import multiprocessing ; print multiprocessing.cpu_count()')
 
 # -enable-debug-runtime --enable-debug-symbols creates huge binaries
 #  so we by default do not include LLVM debugging information.
 $(LLVM_FILE):
-	if [ ! -d llvm ]; then ./update-llvm.sh; fi
+	if [ ! -d llvm ]; then ./unpack-llvm.sh; fi
 	mkdir -p $(LLVM_BUILD_DIR)
-	cd $(LLVM_BUILD_DIR) && $(LLVM_SRC_DIR)/configure CC='$(CC)' CXX='$(CXX)' --prefix=$(LLVM_INSTALL_DIR) --enable-optimized
-	cd $(LLVM_BUILD_DIR) && $(MAKE)
+	cd $(LLVM_BUILD_DIR) && $(LLVM_SRC_DIR)/configure CC='$(CC)' CXX='$(CXX)' --prefix=$(LLVM_INSTALL_DIR) --enable-optimized $(CHPL_LLVM_DEBUG)
+	cd $(LLVM_BUILD_DIR) && $(MAKE) -j$(NPROCS)
 	cd $(LLVM_BUILD_DIR) && $(MAKE) install
-	
+	cd $(LLVM_BUILD_DIR) && cd test && make lit.site.cfg
+
 llvm: $(LLVM_FILE)
 
 llvm-reconfig:

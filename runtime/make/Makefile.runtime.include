@@ -11,24 +11,34 @@ RUNTIME_INCLUDE_ROOT = $(RUNTIME_ROOT)/include
 
 RUNTIME_DEFS += \
         -DCHPL_TASKS_MODEL_H=\"tasks-$(CHPL_MAKE_TASKS).h\" \
-        -DCHPL_THREADS_MODEL_H=\"threads-$(CHPL_MAKE_THREADS).h\"
+        -DCHPL_THREADS_MODEL_H=\"threads-$(CHPL_MAKE_THREADS).h\" \
+	$(CHPL_MAKE_WIDE_POINTERS_DEFINES)
 
 ifeq ($(DEBUG),1)
 RUNTIME_DEFS += -DCHPL_DEBUG
+endif
+
+ifneq ($(CHPL_COMM_DEBUG),)
+RUNTIME_DEFS += -DCHPL_COMM_DEBUG
 endif
 
 ifeq ($(OPTIMIZE),1)
 RUNTIME_DEFS += -DCHPL_OPTIMIZE
 endif
 
-RUNTIME_INCLS = \
+# Some tasking layers put something in RUNTIME_INCLS first.
+RUNTIME_INCLS += \
         -I. \
+        -I$(RUNTIME_INCLUDE_ROOT)/localeModels/$(CHPL_MAKE_LOCALE_MODEL) \
+        -I$(RUNTIME_INCLUDE_ROOT)/localeModels \
         -I$(RUNTIME_INCLUDE_ROOT)/comm/$(CHPL_MAKE_COMM) \
+        -I$(RUNTIME_INCLUDE_ROOT)/comm \
         -I$(RUNTIME_INCLUDE_ROOT)/tasks/$(CHPL_MAKE_TASKS) \
         -I$(RUNTIME_INCLUDE_ROOT)/threads/$(CHPL_MAKE_THREADS) \
         -I$(RUNTIME_INCLUDE_ROOT)/comp-$(CHPL_MAKE_COMPILER) \
         -I$(RUNTIME_INCLUDE_ROOT)/$(subst -sim,,$(CHPL_MAKE_TARGET_PLATFORM)) \
         -I$(RUNTIME_INCLUDE_ROOT) \
+        -I$(RUNTIME_INCLUDE_ROOT)/qio \
         -I$(RUNTIME_INCLUDE_ROOT)/atomics/$(CHPL_MAKE_ATOMICS) \
         -I$(RUNTIME_INCLUDE_ROOT)/mem/$(CHPL_MAKE_MEM) \
         -I$(THIRD_PARTY_DIR)/utf8-decoder \
@@ -43,5 +53,10 @@ endif
 GMP_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.gmp-$(CHPL_MAKE_GMP)
 -include $(GMP_INCLUDE)
 
+# Add any further includes for HWLOC.
+HWLOC_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.hwloc-$(CHPL_MAKE_HWLOC)
+-include $(HWLOC_INCLUDE)
+
 RUNTIME_CFLAGS += $(RUNTIME_DEFS)
+RUNTIME_CXXFLAGS += $(RUNTIME_DEFS)
 

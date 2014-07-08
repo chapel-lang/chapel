@@ -4,7 +4,7 @@ Chapel Runtime Directory Structure and Files
 
 This directory contains the source code for Chapel's runtime library
 routines.  Note that make-ing this directory will only build it for
-the current (or inferred) values of $CHPL_COMM and $CHPL_THREADS.
+the current (or inferred) values of $CHPL_COMM and $CHPL_TASKS.
 Multiple versions of the runtime can coexist simultaneously, but each
 must be explicitly built.
 

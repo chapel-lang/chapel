@@ -5,6 +5,8 @@
 #include <sys/types.h>
 
 #include "tcmalloc-interface.h"
+#include "internal_logging.h"
+#include <gperftools/malloc_extension.h>
 
 #include "base/basictypes.h"
 #include "base/googleinit.h"
@@ -31,7 +33,7 @@ private:
 
 
 void ChapelSysAllocator::DumpStats(TCMalloc_Printer* printer) {
-  printer->printf("ChapelHugeSysAllocator: base=%"PRIu64", size=%"PRId64"\n",
+  printer->printf("ChapelHugeSysAllocator: base=%"PRIu64", size=%"PRIuS"\n",
                   reinterpret_cast<uint64_t>(heap_base_), max_size_);
 }
 
@@ -67,8 +69,7 @@ void* ChapelSysAllocator::Alloc(size_t size, size_t* actual_size,
 void ChapelSysAllocatorInit(void*, size_t);
 void ChapelSysAllocatorInit(void* addr, size_t size) {
   if (addr != NULL) {
-    RegisterSystemAllocator(new ChapelSysAllocator(addr, size), 0);
-    DisableAllButThisSystemAllocator(0);
+    MallocExtension::instance()->SetSystemAllocator(new ChapelSysAllocator(addr, size));
   }
 }
 

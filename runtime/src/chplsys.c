@@ -1,13 +1,10 @@
-#if defined __APPLE__ || defined __MTA__
+#if defined __APPLE__
 #include <sys/sysctl.h>
 #endif
 #if defined _AIX
 #include <sys/systemcfg.h>
 #endif
 #include <sys/utsname.h>
-#if defined __MTA__
-#include <machine/runtime.h>
-#endif
 #include "chplrt.h"
 
 #include "chpl-mem.h"
@@ -19,6 +16,9 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#ifdef __linux__
+#include <sys/sysinfo.h>
+#endif
 #include <errno.h>
 #include <unistd.h>
 
@@ -36,11 +36,6 @@ uint64_t chpl_bytesPerLocale(void) {
   size_t len = sizeof(membytes);
   if (sysctlbyname("hw.memsize", &membytes, &len, NULL, 0)) 
     chpl_internal_error("query of physical memory failed");
-  return membytes;
-#elif defined __MTA__
-  int mib[2] = {CTL_HW, HW_PHYSMEM}, membytes;
-  size_t len = sizeof(membytes);
-  sysctl(mib, 2, &membytes, &len, NULL, 0);
   return membytes;
 #elif defined _AIX
   return _system_configuration.physmem;
@@ -63,6 +58,32 @@ uint64_t chpl_bytesPerLocale(void) {
 }
 
 
+size_t chpl_bytesAvailOnThisLocale(void) {
+#if defined __APPLE__
+  int membytes;
+  size_t len = sizeof(membytes);
+  if (sysctlbyname("hw.usermem", &membytes, &len, NULL, 0)) 
+    chpl_internal_error("query of physical memory failed");
+  return (size_t) membytes;
+#elif defined __NetBSD__
+  int64_t membytes;
+  size_t len = sizeof(membytes);
+  if (sysctlbyname("hw.usermem64", &membytes, &len, NULL, 0))
+    chpl_internal_error("query of hw.usermem64 failed");
+  return (size_t) membytes;
+#elif defined(__linux__)
+  struct sysinfo s;
+
+  if (sysinfo(&s) != 0)
+    chpl_internal_error("sysinfo() failed");
+  return (size_t) s.freeram;
+#else
+  chpl_internal_error("bytesAvailOnThisLocale not supported on this platform");
+  return 0;
+#endif
+}
+
+
 int64_t chpl_numCoresOnThisLocale(void) {
 #ifdef NO_CORES_PER_LOCALE
   return 1;
@@ -77,9 +98,6 @@ int64_t chpl_numCoresOnThisLocale(void) {
   numcores = numcores >> 32;
 #endif
   return numcores;
-#elif defined __MTA__
-  int32_t numcores = mta_get_num_teams();
-  return numcores;
 #else
   static int32_t numcores = 0;
   if (numcores == 0) {
@@ -90,12 +108,7 @@ int64_t chpl_numCoresOnThisLocale(void) {
 }
 
 
-int32_t chpl_maxThreads(void) {
-  return chpl_comm_getMaxThreads();
-}
-
-
-chpl_string chpl_localeName(void) {
+c_string chpl_nodeName(void) {
   static char* namespace = NULL;
   static int namelen = 0;
   struct utsname utsinfo;
@@ -104,7 +117,7 @@ chpl_string chpl_localeName(void) {
   newnamelen = strlen(utsinfo.nodename)+1;
   if (newnamelen > namelen) {
     namelen = newnamelen;
-    namespace = chpl_mem_realloc(namespace, newnamelen, sizeof(char), 
+    namespace = chpl_mem_realloc(namespace, newnamelen * sizeof(char), 
                                  CHPL_RT_MD_LOCALE_NAME_BUFFER, 0, NULL);
   }
   strcpy(namespace, utsinfo.nodename);

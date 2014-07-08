@@ -40,16 +40,8 @@ The structure of this directory is as follows:
   Makefile               : a Makefile to help build google-perftools for
                            Chapel's use
   README                 : this file
-  tcmalloc.patch         : do "patch -p0 <tcmalloc.patch" in the parent
-                           directory of a pristine google-perftools-1.7/
-                           release directory to reproduce the Chapel
-                           changes described above (this is primarily to
-                           simplify upgrading to new google-perftools
-                           releases)
   google-perftools-1.7/  : the google-perftools release, with Chapel's
                            changes applied
   install/               : as google-perftools is built it will be
                            installed here: 
-    $CHPL_TARGET_PLATFORM-$CHPL_TARGET_COMPILER/
-      seg-$CHPL_GASNET_SEGMENT/
-        nodbg/
+                           $CHPL_TARGET_PLATFORM/{bin,include,lib,share}

@@ -9,7 +9,7 @@ http://bjoern.hoehrmann.de/utf-8/decoder/dfa/
 Any Chapel issues that seem to be related to this UTF-8 decoder should be
 directed to the Chapel team at chapel-bugs@lists.sourceforge.net, as the
 cause is most likely due to Chapel's use of the UTF-8 decoder and not the
-google-perftools library itself.
+UTF-8 decoder code itself.
 
 Changes from the version on the website:
  - the symbols are prefixed with 'qio' to avoid collisions

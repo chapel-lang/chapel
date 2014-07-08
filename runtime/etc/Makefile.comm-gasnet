@@ -9,6 +9,11 @@ include $(GASNET_INC_MAKEFILE)
 ifneq ($(CHPL_MAKE_TARGET_COMPILER),cray-prgenv-cray)
 CHPL_GASNET_CFLAGS = $(GASNET_CPPFLAGS) $(GASNET_MISC_CFLAGS) $(MANUAL_CFLAGS)
 OPT_CFLAGS += $(GASNET_OPT_CFLAGS)
+# squash inlining warnings for compilers that provide a flag to do so 
+ifneq (, $(filter $(CHPL_MAKE_TARGET_COMPILER),cray-prgenv-gnu gnu \
+                    cray-prgenv-intel intel clang))
+OPT_CFLAGS += -Wno-inline
+endif
 CHPL_GASNET_LFLAGS = $(GASNET_LFLAGS)
 else
 CHPL_GASNET_CFLAGS =

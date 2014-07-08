@@ -24,8 +24,8 @@ const char* getCoresPerLocaleStr(void);
 int getCoresPerLocale(void);
 const char* getLocalesPerNodeStr(void);
 int getLocalesPerNode(void);
-const char* getCPUsPerNodeStr(void);
-int getCPUsPerNode(void);
+const char* getCPUsPerCUStr(void);
+int getCPUsPerCU(void);
 const char* getNumLocalesStr(void);
 const char* getAprunArgStr(aprun_arg_t arg); // possibly inline
 int getAprunArg(aprun_arg_t argt);           // possibly inline
@@ -49,7 +49,7 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
   int largc = 8;
   char *largv[largc];
   const char *ccArg = _ccArg ? _ccArg : "none";
-  int CPUsPerNode;
+  int CPUsPerCU;
 
   initAprunAttributes();
 
@@ -63,8 +63,8 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
   largv[5] = _nbuf;
   sprintf(_Nbuf, "%s%d", getLocalesPerNodeStr(), getLocalesPerNode());
   largv[6] = _Nbuf;
-  if ((CPUsPerNode = getCPUsPerNode()) > 0) {
-    sprintf(_jbuf, "%s%d", getCPUsPerNodeStr(), getCPUsPerNode());
+  if ((CPUsPerCU = getCPUsPerCU()) >= 0) {
+    sprintf(_jbuf, "%s%d", getCPUsPerCUStr(), getCPUsPerCU());
     largv[7] = _jbuf;
   } else {
     largc--;
@@ -82,7 +82,7 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales) {
 
 
 int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
-                           int32_t lineno, chpl_string filename) {
+                           int32_t lineno, c_string filename) {
   int numArgs = 0;
   if (!strcmp(argv[argNum], CHPL_CC_ARG)) {
     _ccArg = argv[argNum+1];

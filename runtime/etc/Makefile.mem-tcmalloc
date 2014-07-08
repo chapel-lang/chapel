@@ -1,4 +1,4 @@
 GEN_LFLAGS += -L$(TCMALLOC_LIB_DIR)
-LIBS += -ltcmalloc_minimal
+LIBS += -ltcmalloc_minimal -lpthread
 
 LD=$(CXX)

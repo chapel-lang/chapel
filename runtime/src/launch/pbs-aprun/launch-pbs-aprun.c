@@ -27,8 +27,8 @@ const char* getCoresPerLocaleStr(void);
 int getCoresPerLocale(void);
 const char* getLocalesPerNodeStr(void);
 int getLocalesPerNode(void);
-const char* getCPUsPerNodeStr(void);
-int getCPUsPerNode(void);
+const char* getCPUsPerCUStr(void);
+int getCPUsPerCU(void);
 const char* getNumLocalesStr(void);
 const char* getAprunArgStr(aprun_arg_t arg); // possibly inline
 int getAprunArg(aprun_arg_t argt);           // possibly inline
@@ -63,6 +63,7 @@ extern int fileno(FILE *stream);
 typedef enum {
   pbspro,
   nccs,
+  moab, 
   unknown
 } qsubVersion;
 
@@ -70,6 +71,9 @@ typedef enum {
 static qsubVersion determineQsubVersion(void) {
   const int buflen = 256;
   char version[buflen];
+  char whichMoab[buflen];
+  FILE *whichOutput;
+  int fileError = 1;
   char *argv[3];
   argv[0] = (char *) "qsub";
   argv[1] = (char *) "--version";
@@ -80,11 +84,21 @@ static qsubVersion determineQsubVersion(void) {
     chpl_error("Error trying to determine qsub version", 0, 0);
   }
 
-  if (strstr(version, "NCCS")) {
+  if (strstr(version, "NCCS")||strstr(version, "OLCF")) {
     return nccs;
   } else if (strstr(version, "PBSPro")) {
     return pbspro;
   } else {
+    memset(whichMoab, 0, buflen);
+    whichOutput = popen("which moab 2>&1 >/dev/null", "r");  
+    if (whichOutput != NULL ) {
+      fgets(whichMoab, buflen, whichOutput);
+      fileError = ferror(whichOutput); 
+      pclose(whichOutput);
+      if (strlen(whichMoab) == 0 && !fileError) {
+        return moab;
+      }
+    }
     return unknown;
   }
 }
@@ -160,16 +174,24 @@ static char* genQsubOptions(char* genFilename, char* projectString, qsubVersion 
                          numLocales, procsPerNode, numCoresPerLocale);
     }
     break;
+  case moab:
+    if (generate_qsub_script) {
+      fprintf(qsubScript, "#PBS -l nodes=%d\n", numLocales);
+    } else {
+      length += snprintf(optionString + length, maxOptLength - length,
+                         " -l nodes=%d", numLocales);
+    }
+    break;
   case nccs:
     if (generate_qsub_script) {
-      fprintf(qsubScript, "#PBS -l size=%d\n", numCoresPerLocale*numLocales);
+      fprintf(qsubScript, "#PBS -l nodes=%d\n", numLocales);
     } else {
       if (!queue && !walltime)
         chpl_error("An execution time must be specified for the NCCS launcher if no queue is\n"
                    "specified -- use the CHPL_LAUNCHER_WALLTIME and/or CHPL_LAUNCHER_QUEUE\n"
                    "environment variables", 0, 0);
       length += snprintf(optionString + length, maxOptLength - length,
-                         " -l size=%d\n", numCoresPerLocale*numLocales);
+                         " -l nodes=%d\n", numLocales);
     }
     break;
   }
@@ -195,7 +217,7 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
   FILE *outfile;
   pid_t mypid;
   int numCoresPerLocale;
-  int CPUsPerNode;
+  int CPUsPerCU;
   int LocalesPerNode;
   const char *ccArg = _ccArg ? _ccArg : "none";
 
@@ -216,7 +238,7 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
 
   initAprunAttributes();
   numCoresPerLocale = getCoresPerLocale();
-  CPUsPerNode = getCPUsPerNode();
+  CPUsPerCU = getCPUsPerCU();
   LocalesPerNode = getLocalesPerNode();
 
   qsubOptions = genQsubOptions(basenamePtr, projectString,
@@ -288,8 +310,8 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
               getCoresPerLocaleStr(), numCoresPerLocale,
               getNumLocalesStr(), 1 /* only run on one locale */,
               getLocalesPerNodeStr(), LocalesPerNode);
-      if (CPUsPerNode != -1) {
-        fprintf(expectFile, "%s%d ", getCPUsPerNodeStr(), CPUsPerNode);
+      if (CPUsPerCU >= 0) {
+        fprintf(expectFile, "%s%d ", getCPUsPerCUStr(), CPUsPerCU);
       }
       fprintf(expectFile, "ls %s\\n\"\n", chpl_get_real_binary_name());
       fprintf(expectFile, "expect {\n");
@@ -317,8 +339,8 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
           getCoresPerLocaleStr(), numCoresPerLocale,
           getNumLocalesStr(), numLocales,
           getLocalesPerNodeStr(), LocalesPerNode);
-  if (CPUsPerNode != -1) {
-    fprintf(outfile, "%s%d ", getCPUsPerNodeStr(), CPUsPerNode);
+  if (CPUsPerCU >= 0) {
+    fprintf(outfile, "%s%d ", getCPUsPerCUStr(), CPUsPerCU);
   }
   fprintf(outfile, "%s", chpl_get_real_binary_name());
   for (i=1; i<argc; i++) {
@@ -393,7 +415,7 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales) {
 
 
 int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
-                           int32_t lineno, chpl_string filename) {
+                           int32_t lineno, c_string filename) {
   int numArgs = 0;
   if (!strcmp(argv[argNum], CHPL_WALLTIME_FLAG)) {
     walltime = argv[argNum+1];

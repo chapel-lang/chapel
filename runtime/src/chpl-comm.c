@@ -10,8 +10,8 @@
 #include <string.h>
 #include <unistd.h>
 
-int32_t chpl_localeID = -1;
-int32_t chpl_numLocales = -1;
+int32_t chpl_nodeID = -1;
+int32_t chpl_numNodes = -1;
 int32_t chpl_numPrivateObjects = 0;
 static int32_t chpl_capPrivateObjects = 0;
 void** chpl_privateObjects;
@@ -24,6 +24,7 @@ void chpl_newPrivatizedClass(void* v) {
   chpl_numPrivateObjects += 1;
   if (chpl_numPrivateObjects == 1) {
     chpl_capPrivateObjects = 8;
+    // "private" means "node-private", so we can use the system allocator.
     chpl_privateObjects = chpl_mem_allocMany(chpl_capPrivateObjects, sizeof(void*), CHPL_RT_MD_COMM_PRIVATE_OBJECTS_ARRAY, 0, "");
   } else {
     if (chpl_numPrivateObjects > chpl_capPrivateObjects) {
@@ -39,7 +40,45 @@ void chpl_newPrivatizedClass(void* v) {
   chpl_privateObjects[chpl_numPrivateObjects-1] = v;
 }
 
+
 extern void* chpl_getPrivatizedClass(int32_t i) {
   return chpl_privateObjects[i];
 }
 
+
+size_t chpl_comm_getenvMaxHeapSize(void)
+{
+  char*  p;
+  static int    env_checked = 0;
+  static size_t size = 0;
+
+  if (env_checked)
+    return size;
+
+  if ((p = getenv("CHPL_RT_MAX_HEAP_SIZE")) != NULL) {
+    //
+    // The user specified a maximum size, so start with that.
+    //
+    int  num_scanned;
+    char units;
+
+    if ((num_scanned = sscanf(p, "%zi%c", &size, &units)) != 1) {
+      if (num_scanned == 2 && strchr("kKmMgG", units) != NULL) {
+        switch (units) {
+        case 'k' : case 'K': size <<= 10; break;
+        case 'm' : case 'M': size <<= 20; break;
+        case 'g' : case 'G': size <<= 30; break;
+        }
+      }
+      else {
+        chpl_warning("Cannot parse CHPL_RT_MAX_HEAP_SIZE environment "
+                     "variable; assuming 1g", 0, NULL);
+        size = ((size_t) 1) << 30;
+      }
+    }
+  }
+
+  env_checked = 1;
+
+  return size;
+}

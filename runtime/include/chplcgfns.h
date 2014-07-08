@@ -17,24 +17,6 @@
 
 /* defined in chpl__header.h: */
 
-#if 0
-// TODO: Factor runtime includes so that we can compile with this declaration enabled.
-// It is a verbatim copy of the declaration produced by the compiler, but since
-// the runtime library is compiled first and depends on chpl_localeID_t, we need
-// an early definition.
-// As long as chplcgfns.h is not included by any compiler-generated code, we can
-// remove the #if 0 and it will work.  Then, the duplicate declaration in chpltypes.c
-// can be removed (q.v.).
-typedef struct __chpl_localeID_t {
-  c_nodeid_t node;
-  c_subloc_t subloc;
-} chpl_localeID_t;
-#endif
-
-extern int64_t numThreadsPerLocale;
-extern int32_t chpl__maxThreadsPerLocale;
-extern int64_t callStackSize;
-
 extern const char* chpl_compileCommand;
 extern const char* chpl_compileVersion;
 extern const char* CHPL_HOST_PLATFORM;
@@ -50,12 +32,12 @@ extern char* chpl_executionCommand;
 /* generated */
 extern chpl_fn_p chpl_ftable[];
 
-void chpl__init_preInit(int64_t _ln, chpl_string _fn);
-void chpl__init_ChapelThreads(int64_t _ln, chpl_string _fn);
-void chpl__init_ChapelStandard(int64_t _ln, chpl_string _fn);
+void chpl__init_preInit(int64_t _ln, c_string _fn);
+void chpl__init_PrintModuleInitOrder(int64_t _ln, c_string _fn);
+void chpl__init_ChapelStandard(int64_t _ln, c_string _fn);
 
 /* used for entry point: */
-extern void chpl_gen_main(void);
+extern int64_t chpl_gen_main(chpl_main_argument* const _arg);
 
 /* used for config vars: */
 extern void CreateConfigVarTable(void);

@@ -44,7 +44,7 @@ static void printHeaders(char thisType, char* lastType) {
 }
 
 
-static void printHelpTable(void) {
+void printHelpTable(void) {
   typedef struct _flagType {
     const char* flag;
     const char* description;
@@ -100,10 +100,10 @@ static void printHelpTable(void) {
 
 static int32_t _argNumLocales = 0;
 
-void parseNumLocales(const char* numPtr, int32_t lineno, chpl_string filename) {
+void parseNumLocales(const char* numPtr, int32_t lineno, c_string filename) {
   int invalid;
   char invalidChars[2] = "\0\0";
-  _argNumLocales = chpl_string_to_int32_t_precise(numPtr, &invalid, invalidChars);
+  _argNumLocales = c_string_to_int32_t_precise(numPtr, &invalid, invalidChars);
   if (invalid) {
     char* message = chpl_glom_strings(3, "\"", numPtr, 
                                       "\" is not a valid number of locales");
@@ -127,6 +127,7 @@ void parseArgs(int* argc, char* argv[]) {
   int i;
   int printHelp = 0;
   int origargc = *argc;
+  int stop_parsing = 0;
 
   for (i = 1; i < *argc; i++) {
     const char* filename = "<command-line arg>";
@@ -134,6 +135,23 @@ void parseArgs(int* argc, char* argv[]) {
     int argLength = 0;
     const char* currentArg = argv[i];
     argLength = strlen(currentArg);
+
+    if (mainHasArgs && (stop_parsing || argLength < 2)) {
+      /* update the argv structure passed to a Chapel program, but don't parse
+       * the arguments
+       */
+      chpl_gen_main_arg.argv[chpl_gen_main_arg.argc] = argv[i];
+      chpl_gen_main_arg.argc++;
+      continue;
+    }
+
+    /* if the Chapel main takes arguments, then "--" is a magic argument that
+     * will prevent parsing of any additional arguments
+     */
+    if (mainHasArgs && strcmp(currentArg, "--") == 0) {
+      stop_parsing = 1;
+      continue;
+    }
 
     if (argLength < 2) {
       const char* message = chpl_glom_strings(3, "\"", currentArg, 
@@ -155,6 +173,8 @@ void parseArgs(int* argc, char* argv[]) {
             
           if (strcmp(flag, "help") == 0) {
             printHelp = 1;
+            chpl_gen_main_arg.argv[chpl_gen_main_arg.argc] = "--help";
+            chpl_gen_main_arg.argc++;
             break;
           }
           if (strcmp(flag, "verbose") == 0) {
@@ -199,6 +219,8 @@ void parseArgs(int* argc, char* argv[]) {
       case 'h':
         if (currentArg[2] == '\0') {
           printHelp = 1;
+          chpl_gen_main_arg.argv[chpl_gen_main_arg.argc] = "-h";
+          chpl_gen_main_arg.argc++;
         } else {
           i += handleNonstandardArg(argc, argv, i, lineno, filename);
         }
@@ -275,8 +297,11 @@ void parseArgs(int* argc, char* argv[]) {
   }
 
   if (printHelp) {
-    printHelpTable();
-    printConfigVarTable();
+    if (!mainHasArgs) {
+      printHelpTable();
+      printConfigVarTable();
+      chpl_exit_any(0);
+    }
   }
 }
 

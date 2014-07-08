@@ -5,12 +5,6 @@
 RUNTIME_ROOT = .
 RUNTIME_SUBDIR = .
 
-ifeq ($(MAKE_LAUNCHER), 0)
-CHPL_MAKE_HOST_TARGET = --target
-else
-CHPL_MAKE_HOST_TARGET = --host
-endif
-
 #
 # include standard header for runtime
 #
@@ -18,7 +12,11 @@ include $(RUNTIME_ROOT)/make/Makefile.runtime.head
 
 
 printstuff:
+	@echo MAKE_LAUNCHER = $(MAKE_LAUNCHER)
 	@echo CHPL_MAKE_PLATFORM = $(CHPL_MAKE_PLATFORM)
+	@echo CHPL_MAKE_COMPILER = $(CHPL_MAKE_COMPILER)
+	@echo CHPL_MAKE_HOST_COMPILER = $(CHPL_MAKE_HOST_COMPILER)
+	@echo CHPL_MAKE_TARGET_COMPILER = $(CHPL_MAKE_TARGET_COMPILER)
 	@echo AR = $(AR)
 	@echo GOOPY = $(GOOPY)
 	@echo $(CHPL_MAKE_HOME)/make/platform/Makefile.$(CHPL_MAKE_PLATFORM)
@@ -36,6 +34,7 @@ include src/timers/$(CHPL_MAKE_TIMERS)/Makefile.include
 include src/comm/$(CHPL_MAKE_COMM)/Makefile.include
 include src/launch/$(CHPL_MAKE_LAUNCHER)/Makefile.include
 include src/mem/$(CHPL_MAKE_MEM)/Makefile.include
+include src/qio/Makefile.include
 
 
 #
@@ -53,7 +52,10 @@ RUNTIME_OBJS = \
 	$(THREADS_OBJS) \
         $(TIMERS_OBJS) \
 	$(COMM_OBJS) \
-	$(MEM_COMMON_OBJS)
+	$(MEM_COMMON_OBJS) \
+	$(QIO_OBJS) \
+	$(REGEXP_OBJS) \
+	$(AUXFS_OBJS)
 
 LAUNCH_LIB_OBJS = \
 	$(COMMON_LAUNCHER_OBJS) \
@@ -84,8 +86,6 @@ TARGETS = $(RUNTIME_TARGETS)
 else
 TARGETS = $(LAUNCHER_TARGETS)
 endif
-
-CLEAN_TARGS += $(RUNTIME_TARGETS) $(LAUNCHER_TARGETS)
 
 #
 # main rules

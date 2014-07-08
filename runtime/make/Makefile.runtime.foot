@@ -13,14 +13,15 @@ echoruntimedir:
 %.cleandir:
 	@cd $* && $(MAKE) clean
 
+%.cleanalldir:
+	@cd $* && $(MAKE) cleanall
+
 %.cleandirdeps:
 	@cd $* && $(MAKE) cleandeps
 
 %.clobberdir:
 	@cd $* && $(MAKE) clobber
 
-%.dependdir:
-	@cd $* && $(MAKE) depend
 
 
 #
@@ -32,14 +33,6 @@ echoruntimedir:
 #
 # pattern-based rules
 #
-
-%.depend: %.c $(DEPEND_STAMP)
-	@$(CMAKEDEPEND) $(DEPEND_CFLAGS) $(DEPEND_INCLS) $< | sed s/$*\\\.o/\\\$(DEPEND_DIR_SAFESLASH)\\\/$*\\\.o/ >> $(SVN_DEPENDS).tmp
-
-ifdef NVCC
-%.depend: %.cu $(DEPEND_STAMP)
-	@$(CMAKEDEPEND) $(DEPEND_CFLAGS) $(DEPEND_INCLS) $< | sed s/$*\\\.o/\\\$(DEPEND_DIR_SAFESLASH)\\\/$*\\\.o/ >> $(SVN_DEPENDS).tmp
-endif	
 
 #
 # The "$($(<:.c=)_CFLAGS)" construct lets your Makefile.share define,
@@ -53,11 +46,6 @@ $(RUNTIME_OBJ_DIR)/%.o: %.c $(RUNTIME_OBJ_DIR_STAMP)
 	@if [ `grep "chplrt.h" $< | wc -l` -ne 1 ]; then echo "PROBLEM:  $< does not include 'chplrt.h'."; exit 1; fi
 	$(CC) -c $(RUNTIME_CFLAGS) $($(subst -,_,$(<:.c=))_CFLAGS) $(RUNTIME_INCLS) -o $@ $<
 
-ifdef NVCC
-$(RUNTIME_OBJ_DIR)/%.o: %.cu $(RUNTIME_OBJ_DIR_STAMP)
-	$(NVCC) -c $(RUNTIME_CUDA_CFLAGS) $(RUNTIME_INCLS) -o $@ $<
-endif	
-
 $(LAUNCHER_OBJ_DIR)/%.o: %.c $(LAUNCHER_OBJ_DIR_STAMP)
 	$(CC) -c $(LAUNCHER_CFLAGS) $(LAUNCHER_INCLS) -o $@ $<
 
@@ -65,4 +53,5 @@ FORCE:
 
 .PHONY: all clean cleandeps clobber depend test echoruntimedir FORCE
 .SUFFIXES:
-.SUFFIXES: .cpp .o .h .makedir .cleandir .cleandirdeps .clobberdir .dependdir
+.SUFFIXES: .cpp .o .h .makedir .cleandir .cleandirdeps .clobberdir
+.SECONDARY: $(RUNTIME_OBJ_DIR_STAMP) $(LAUNCHER_OBJ_DIR_STAMP)

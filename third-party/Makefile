@@ -3,28 +3,52 @@ export CHPL_MAKE_HOME=$(shell pwd)/..
 endif
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
+ifdef CHPL_DEVELOPER
+DEBUG=1
+export DEBUG
+else
+OPTIMIZE=1
+export OPTIMIZE
+endif
+
 default: all
 
-all: creoleparser dlmalloc gasnet gmp nanox qthread tcmalloc llvm
+all: creoleparser dlmalloc gasnet gmp hwloc qthread tcmalloc llvm
 
 clean: FORCE
 	cd creoleparser && $(MAKE) clean
 	cd dlmalloc && $(MAKE) clean
 	cd gasnet && $(MAKE) clean
 	cd gmp && $(MAKE) clean
+	cd hwloc && $(MAKE) clean
+	cd llvm && $(MAKE) clean
 	cd massivethreads && $(MAKE) clean
-	cd nanox && $(MAKE) clean
 	cd qthread && $(MAKE) clean
+	cd re2 && $(MAKE) clean
 	cd tcmalloc && $(MAKE) clean
+
+cleanall: FORCE
+	cd creoleparser && $(MAKE) cleanall
+	cd dlmalloc && $(MAKE) cleanall
+	cd gasnet && $(MAKE) cleanall
+	cd gmp && $(MAKE) cleanall
+	cd hwloc && $(MAKE) cleanall
+	cd llvm && $(MAKE) cleanall
+	cd massivethreads && $(MAKE) cleanall
+	cd qthread && $(MAKE) cleanall
+	cd re2 && $(MAKE) cleanall
+	cd tcmalloc && $(MAKE) cleanall
 
 clobber: FORCE
 	cd creoleparser && $(MAKE) clobber
 	cd dlmalloc && $(MAKE) clobber
 	cd gasnet && $(MAKE) clobber
 	cd gmp && $(MAKE) clobber
+	cd hwloc && $(MAKE) clobber
+	cd llvm && $(MAKE) clobber
 	cd massivethreads && $(MAKE) clobber
-	cd nanox && $(MAKE) clobber
 	cd qthread && $(MAKE) clobber
+	cd re2 && $(MAKE) clobber
 	cd tcmalloc && $(MAKE) clobber
 
 depend:
@@ -46,15 +70,19 @@ gmp: $(GMP_INSTALL_DIR)
 $(GMP_INSTALL_DIR):
 	cd gmp && $(MAKE)
 
+hwloc: $(HWLOC_INSTALL_DIR)
+$(HWLOC_INSTALL_DIR):
+	cd hwloc && $(MAKE)
+
 massivethreads: $(MASSIVETHREADS_INSTALL_DIR)
 $(MASSIVETHREADS_INSTALL_DIR):
 	cd massivethreads && $(MAKE)
 
-nanox: $(NANOX_INSTALL_DIR)
-$(NANOX_INSTALL_DIR):
-	cd nanox && $(MAKE)
-
+ifeq ($(CHPL_MAKE_HWLOC), hwloc)
+qthread: $(HWLOC_INSTALL_DIR) $(QTHREAD_INSTALL_DIR)
+else
 qthread: $(QTHREAD_INSTALL_DIR)
+endif
 $(QTHREAD_INSTALL_DIR):
 	cd qthread && $(MAKE)
 $(QTHREAD_ALIASES): qthread
@@ -66,6 +94,8 @@ $(TCMALLOC_INSTALL_DIR):
 llvm: FORCE
 	cd llvm && $(MAKE)
 
+re2: FORCE
+	cd re2 && $(MAKE)
 
 -include Makefile.devel
 

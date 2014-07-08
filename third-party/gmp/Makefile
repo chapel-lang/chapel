@@ -12,24 +12,42 @@ GMP_ABS_DIR = $(shell pwd)
 GMP_INSTALL_DIR = $(GMP_ABS_DIR)/$(GMP_INSTALL_SUBDIR)
 GMP_BUILD_DIR = $(GMP_ABS_DIR)/$(GMP_BUILD_SUBDIR)
 GMP_DIR = $(GMP_ABS_DIR)
+GMP_UNPACKED_DIR = gmp-$(GMP_VERSION)
+GMP_TARBALL = $(GMP_UNPACKED_DIR)a.tar.bz2
+
+ifeq ($(CHPL_MAKE_TARGET_ARCH),knc)
+CHPL_GMP_CFG_OPTIONS=--host=x86_64 --disable-assembly
+ifeq ($(CHPL_MAKE_TARGET_COMPILER),intel)
+CHPL_GMP_CFLAGS=-mmic
+CHPL_GMP_CXXFLAGS=-mmic
+endif
+endif
 
 default: all
 
 all: gmp
 
 clean: FORCE
-	rm -rf $(GMP_BUILD_DIR)
+	rm -rf $(GMP_BUILD_SUBDIR)
+
+cleanall: FORCE
+	rm -rf build
 
 clobber: FORCE
-	rm -rf build install
+	rm -rf build install $(GMP_SUBDIR)
 
-gmp-config: FORCE
+$(GMP_UNPACKED_DIR):
+	cd $(GMP_DIR) && tar --bzip2 -xf $(GMP_TARBALL)
+
+gmp-config: $(GMP_UNPACKED_DIR) FORCE
 	mkdir -p $(GMP_BUILD_DIR)
-	cd $(GMP_BUILD_DIR) && $(GMP_SUBDIR)/configure CC='$(CC)' CXX='$(CXX)' --prefix=$(GMP_INSTALL_DIR)
+	cd $(GMP_BUILD_DIR) && $(GMP_SUBDIR)/configure CC='$(CC)' CFLAGS='$(CFLAGS) $(CHPL_GMP_CFLAGS)' CXX='$(CXX)' CXXFLAGS='$(CXXFLAGS) $(CHPL_GMP_CXXFLAGS)' --prefix=$(GMP_INSTALL_DIR) $(CHPL_GMP_CFG_OPTIONS)
 
 gmp-build: FORCE
 	cd $(GMP_BUILD_DIR) && $(MAKE)
+ifneq ($(CHPL_MAKE_TARGET_ARCH),knc)
 	cd $(GMP_BUILD_DIR) && $(MAKE) check
+endif
 	cd $(GMP_BUILD_DIR) && $(MAKE) install
 
 gmp: gmp-config gmp-build

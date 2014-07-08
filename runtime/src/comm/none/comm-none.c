@@ -6,13 +6,18 @@
 #include "chpl-mem.h"
 #include "chpl-tasks.h"
 
-#include "chplcgfns.h"  // for chpl_ftable
+#include "chplcgfns.h"
+#include "chpl-gen-includes.h"
+
+// Don't get warning macros for chpl_comm_get etc
+#include "chpl-comm-no-warning-macros.h"
 
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <assert.h>
 
 // Helper functions
 
@@ -30,14 +35,50 @@ static int mysystem(const char* command, const char* description,
 }
 
 // Chapel interface
+chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
+                                       int32_t elemSize, int32_t typeIndex,
+                                       int32_t len,
+                                       int ln, c_string fn)
+{
+  assert(node == 0);
+  memcpy(raddr, addr, len*elemSize);
+  return NULL;
+}
+
+chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
+                                       int32_t elemSize, int32_t typeIndex,
+                                       int32_t len,
+                                       int ln, c_string fn)
+{
+  assert(node == 0);
+  memcpy(addr, raddr, len*elemSize);
+  return NULL;
+}
+
+int chpl_comm_nb_handle_is_complete(chpl_comm_nb_handle_t h)
+{
+  return ((void*)h) == NULL;
+}
+
+void chpl_comm_nb_wait_some(chpl_comm_nb_handle_t* h, size_t nhandles)
+{
+  size_t i;
+  for( i = 0; i < nhandles; i++ ) {
+    assert(h[i] == NULL);
+  }
+}
+int chpl_comm_is_in_segment(c_nodeid_t node, void* start, size_t len)
+{
+  return 0;
+}
 
 int32_t chpl_comm_getMaxThreads(void) {
   return 0;
 }
 
 void chpl_comm_init(int *argc_p, char ***argv_p) {
-  chpl_numLocales = 1;
-  chpl_localeID = 0;
+  chpl_numNodes = 1;
+  chpl_nodeID = 0;
 }
 
 void chpl_comm_post_mem_init(void) { }
@@ -59,16 +100,12 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 void chpl_comm_post_task_init(void) { }
 
 void chpl_comm_rollcall(void) {
-  chpl_msg(2, "executing on a single locale\n");
+  chpl_msg(2, "executing on a single node\n");
 }
 
 void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p) {
   *start_p = NULL;
   *size_p  = 0;
-}
-
-void chpl_comm_alloc_registry(int numGlobals) {
-  chpl_globals_registry = chpl_globals_registry_static;
 }
 
 void chpl_comm_broadcast_global_vars(int numGlobals) { }
@@ -83,20 +120,24 @@ void chpl_comm_exit(int all, int status) { }
 
 void  chpl_comm_put(void* addr, int32_t locale, void* raddr,
                     int32_t size, int32_t typeIndex, int32_t len,
-                    int ln, chpl_string fn) {
+                    int ln, c_string fn) {
+  assert(locale==0);
+
   memmove(raddr, addr, size*len);
 }
 
 void  chpl_comm_get(void* addr, int32_t locale, void* raddr,
                     int32_t size, int32_t typeIndex, int32_t len,
-                    int ln, chpl_string fn) {
+                    int ln, c_string fn) {
+  assert(locale==0);
+
   memmove(addr, raddr, size*len);
 }
 
 void  chpl_comm_put_strd(void* dstaddr_arg, void* dststrides, int32_t dstlocale,
                          void* srcaddr_arg, void* srcstrides, void* count,
                          int32_t stridelevels, int32_t elemSize, int32_t typeIndex,
-                         int ln, chpl_string fn)
+                         int ln, c_string fn)
 {
   const size_t strlvls = (size_t)stridelevels;
   int i,j,k,l,m,t,total,off,x,carry;
@@ -109,6 +150,8 @@ void  chpl_comm_put_strd(void* dstaddr_arg, void* dststrides, int32_t dstlocale,
   size_t dststr[strlvls];
   size_t srcstr[strlvls];
   size_t cnt[strlvls+1];
+
+  assert(dstlocale==0);
 
   //Only count[0] and strides are meassured in number of bytes.
   cnt[0] = ((int32_t*)count)[0] * elemSize;
@@ -214,8 +257,10 @@ void  chpl_comm_put_strd(void* dstaddr_arg, void* dststrides, int32_t dstlocale,
       total = total*cnt[i+1];
 
     //displacement from the dstaddr and srcaddr start points
-    srcdisp = chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
-    dstdisp = chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
+    // We want these allocations to be locale-aware, since computing these stripes is 
+    // a kind of kernel code.
+    srcdisp = chpl_mem_allocManyZero(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
+    dstdisp = chpl_mem_allocManyZero(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
 
     for (j=0; j<total; j++) {
       carry = 1;
@@ -246,7 +291,7 @@ void  chpl_comm_put_strd(void* dstaddr_arg, void* dststrides, int32_t dstlocale,
 void  chpl_comm_get_strd(void* dstaddr_arg, void* dststrides, int32_t srclocale,
                          void* srcaddr_arg, void* srcstrides, void* count,
                          int32_t stridelevels, int32_t elemSize, int32_t typeIndex,
-                         int ln, chpl_string fn)
+                         int ln, c_string fn)
 {
   const size_t strlvls = (size_t)stridelevels;
   int i,j,k,l,m,t,total,off,x,carry;
@@ -258,6 +303,8 @@ void  chpl_comm_get_strd(void* dstaddr_arg, void* dststrides, int32_t srclocale,
   size_t dststr[strlvls];
   size_t srcstr[strlvls];
   size_t cnt[strlvls+1];
+
+  assert(srclocale==0);
 
   //Only count[0] and strides are meassured in number of bytes.
   cnt[0] = ((int32_t*)count)[0] * elemSize;
@@ -365,8 +412,8 @@ void  chpl_comm_get_strd(void* dstaddr_arg, void* dststrides, int32_t srclocale,
       total = total*cnt[i+1];
 
     //displacement from the dstaddr and srcaddr start points
-    srcdisp = chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
-    dstdisp = chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
+    srcdisp = chpl_mem_allocManyZero(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
+    dstdisp = chpl_mem_allocManyZero(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
 
     for (j=0; j<total; j++) {
       carry = 1;
@@ -400,40 +447,52 @@ typedef struct {
   char          arg[0];       // variable-sized data here
 } fork_t;
 
+void chpl_comm_fork(c_nodeid_t node, c_sublocid_t subloc,
+                    chpl_fn_int_t fid, void *arg, int32_t arg_size) {
+  assert(node==0);
+
+  chpl_ftable_call(fid, arg);
+}
+
 static void fork_nb_wrapper(fork_t* f) {
   if (f->arg_size)
-    (*chpl_ftable[f->fid])(&f->arg);
+    chpl_ftable_call(f->fid, &f->arg);
   else
-    (*chpl_ftable[f->fid])(0);
+    chpl_ftable_call(f->fid, NULL);
   chpl_mem_free(f, 0, 0);
 }
 
-void chpl_comm_fork_nb(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
-                       int32_t arg_size, int32_t arg_tid) {
+void chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
+                       chpl_fn_int_t fid, void *arg, int32_t arg_size) {
   fork_t *info;
   int     info_size;
 
+  assert(node==0);
+
   info_size = sizeof(fork_t) + arg_size;
-  info = (fork_t*)chpl_mem_allocMany(info_size, sizeof(char), CHPL_RT_MD_COMM_FORK_SEND_NB_INFO, 0, 0);
+  info = (fork_t*)chpl_mem_allocMany(info_size, sizeof(char),
+                                     CHPL_RT_MD_COMM_FORK_SEND_NB_INFO, 0, 0);
   info->fid = fid;
   info->arg_size = arg_size;
   if (arg_size)
     memcpy(&(info->arg), arg, arg_size);
-  chpl_task_begin((chpl_fn_p)fork_nb_wrapper, (void*)info, false, false, NULL);
-}
-
-void chpl_comm_fork(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
-                    int32_t arg_size, int32_t arg_tid) {
-  (*chpl_ftable[fid])(arg);
+  chpl_task_startMovedTask((chpl_fn_p)fork_nb_wrapper, (void*)info,
+                           subloc, chpl_nullTaskID, false);
 }
 
 // Same as chpl_comm_fork()
-void chpl_comm_fork_fast(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
-                         int32_t arg_size, int32_t arg_tid) {
-  (*chpl_ftable[fid])(arg);
+void chpl_comm_fork_fast(c_nodeid_t node, c_sublocid_t subloc,
+                         chpl_fn_int_t fid, void *arg, int32_t arg_size) {
+  assert(node==0);
+
+  chpl_ftable_call(fid, arg);
 }
 
 int chpl_comm_numPollingTasks(void) { return 0; }
+
+void chpl_comm_make_progress(void)
+{
+}
 
 void chpl_startVerboseComm() { }
 void chpl_stopVerboseComm() { }
@@ -453,6 +512,7 @@ uint64_t chpl_numCommNBGets(void) { return 0; }
 uint64_t chpl_numCommTestNBGets(void) { return 0; }
 uint64_t chpl_numCommWaitNBGets(void) { return 0; }
 uint64_t chpl_numCommPuts(void) { return 0; }
+uint64_t chpl_numCommNBPuts(void) { return 0; }
 uint64_t chpl_numCommForks(void) { return 0; }
 uint64_t chpl_numCommFastForks(void) { return 0; }
 uint64_t chpl_numCommNBForks(void) { return 0; }
