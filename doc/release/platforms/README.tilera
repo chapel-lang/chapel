@@ -17,7 +17,7 @@ The native Tilera development tools must be installed and added to PATH.  For
 compiling the Chapel compiler and runtime, the default environment settings
 should work:
 
-    setenv CHPL_HOME <my-chapel-root>
+    export CHPL_HOME=<my-chapel-root>
     cd $CHPL_HOME
     source ./util/setchplenv.sh
     make
@@ -39,8 +39,8 @@ prefix set to "tile-".  Hence the C compiler is "tile-cc", etc.
 
 The basic Chapel environment settings for cross-compiling to the Tilera are:
 
-    setenv CHPL_TARGET_COMPILER tile-cc
-    setenv CHPL_COMM gasnet
+    export CHPL_TARGET_COMPILER=tile-cc
+    export CHPL_COMM=gasnet
 
 It is necessary to rebuild the runtime after choosing these settings, to produce
 GASNet and runtime support that can run on the Tilera target.  With the target
@@ -56,7 +56,7 @@ desired boot parameters.  Consult the Tilera documentation for tile-monitor and
 
 With a single target, use of the gasnet communication layer is optional:
 
-    setenv CHPL_COMM none
+    export CHPL_COMM=none
 
 Since no launcher is produced when CHPL_COMM == none, it is necessary to
 manually download and launch the executable.  The tile-monitor utility makes

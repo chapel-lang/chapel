@@ -4,11 +4,21 @@ Initial support for diagnosing communication behavior in Chapel
 
 This README describes initial support for diagnosing the actual
 communication events that a running Chapel program executes when using
-CHPL_COMM=gasnet.  There are two distinct mechanisms:
+CHPL_COMM=gasnet.  
+
+There are two distinct mechanisms:
 
  * Use verbose communication to report events as they happen
  * Use communication diagnostics to gather statistics about specific events
 
+These facilities are provided by the standard module CommDiagnostics.  To use
+them, add the line
+
+  use CommDiagnostics;
+
+before their first use in your program.
+
+  
 Verbose Communication
 ---------------------
 
@@ -53,6 +63,7 @@ line number information is not yet reported.)
 Note that non-blocking forks are an optimization that fires when an
 on-statement immediately precedes or follows a begin or coforall
 statement.
+
 
 Communication Diagnostics
 -------------------------

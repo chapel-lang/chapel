@@ -22,9 +22,8 @@ This directory contains the following documentation:
                        for quick reference
 
   platforms/           : platform-specific notes:
-    README.cray        :  Cray XT (TM), Cray XE (TM), Cray XK (TM),
-                          Cray XC (TM)
-    README.cray-xmt    :  Cray XMT (TM)
+    README.cray        :  Cray XC(TM), Cray XE(TM), Cray XK(TM), and 
+                          Cray CS(TM) series
     README.cygwin      :  Cygwin
     README.ibm         :  IBM
     README.macosx      :  Mac
@@ -40,26 +39,23 @@ This directory contains the following documentation:
     README.extern           :  calling external C routines
     README.firstClassFns    :  first-class functions
     README.format           :  value-to-string formatting
+    README.formattedIO      :  readf()/writef() and formatting strings
     README.gmp              :  a prototype GMP module
+    README.hdfs             :  information about using the Hadoop Filesystem
     README.io               :  the new I/O system in Chapel
-    README.libraries        :  initial information about creating libraries in
-                               Chapel
+    README.libraries        :  information about creating libraries in Chapel
     README.llvm             :  information about using the LLVM back-end
     README.local            :  the 'local' statement
+    README.localeModels     :  information about Chapel locale models
+    README.main             :  defining the 'main()' routine  TODO
     README.module_search    :  how modules are searched for to fulfill 'use's
+    README.regexp           :  using regular expressions in Chapel
 
 
 --------------------
 For more Information
 --------------------
 
-For additional information about Chapel, please refer to:
-
-* "Parallel Programmability and the Chapel Language" by Bradford
-  L. Chamberlain, David Callahan, and Hans P. Zima, published in the
-  International Journal of High Performance Computing Applications,
-  August 2007, 21(3): 291-312.
-
-* Our website:
+For additional information about Chapel, please refer to our website:
 
   http://chapel.cray.com/

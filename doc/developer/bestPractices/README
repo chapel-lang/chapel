@@ -12,6 +12,9 @@ GettingStarted.txt
 Subversion.txt
   Notes on using the Chapel Subversion repository
 
+CommittingCode.txt
+  Notes on how to prepare and commit code to the Chapel repository
+
 Compiler documentation:
 
   The compiler overview document

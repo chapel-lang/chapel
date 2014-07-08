@@ -82,13 +82,11 @@ Makefiles support the following targets:
      default     : Build the appropriate output files
      all        /  e.g. objects, libraries, executables
 
-     depend     : Compute dependences for the output files
-                  (these are not computed by the previous targets)
+     clean      : Remove the intermediate files for this configuration
 
-     clean      : Remove the output files
+     cleanall   : Remove the intermediate files for all configurations
 
      clobber    : Remove everything created by the Makefiles
-                  including output files and dependency files
 
 Each target processes all subdirectories then the current directory.
 

@@ -58,6 +58,9 @@ or
 The compiler-established default can still be overridden when
 executing the program, as shown above.
 
+Chapel programs can also accept C-like command line arguments to their
+main() procedure in addition to the aforementioned configuration
+variables. See $CHPL_HOME/doc/technotes/README.main for more information.
 
 -----------------------------
 Setting the Number of Locales
@@ -83,22 +86,22 @@ in a second binary named <original_binary_name>_real.  See
 README.launcher for more information about the launcher executable.
 
 
-------------------------------
-Limiting the number of threads
-------------------------------
+---------------------------------
+Controlling the Number of Threads
+---------------------------------
 
-For multithreaded Chapel executions, the following built-in
-configuration constant can be used:
+The following environment variable can be used to change the number of
+system threads used by a program.
 
-  numThreadsPerLocale  : Controls the number of threads used on each
-                         locale when running the program.
+  CHPL_RT_NUM_THREADS_PER_LOCALE  : Controls the number of threads used
+                                    on each locale when running the program.
 
 See README.tasks for more information on the role of this variable in
 creating threads and executing tasks for the various tasking layers.
 
 
 --------------------------------------
-Controlling degree of data parallelism
+Controlling Degree of Data Parallelism
 --------------------------------------
 
 Data parallel operations over ranges, default domains, and default
@@ -113,8 +116,8 @@ constants:
   dataParIgnoreRunningTasks   : If true, always use dataParTasksPerLocale
                                 tasks to execute forall loops.  If false,
                                 reduce the number of tasks used by the
-                                number of tasks already running 
-                                (default: true).
+                                number of tasks already running
+                                (default: false).
 
   dataParMinGranularity       : The number of tasks used to execute forall
                                 loops should be reduced such that the number
@@ -128,34 +131,41 @@ values for these arguments are set to the corresponding global
 configuration constants.
 
 
-------------------------
-Limiting Per-Task Memory
-------------------------
+-------------------------------
+Controlling the Call Stack Size
+-------------------------------
 
-An active task requires space for its call stack.  This space is created
-at a fixed size when the task starts executing, and remains in existence
-until the task completes.  The default size of a call stack is set by
-the particular tasking layer in use.  For the default (FIFO) tasking
-layer, the default call stack size is the system stack limit (typically
-8 MiB on Linux-based systems) or 8 MiB if that limit is not set.  The
-README.tasks file discusses tasking and threading layers, including
-their default call stack sizes.
+The main Chapel program requires space for its call stack, as does any
+task created by it.  This stack space has a fixed size.  It is created
+automatically when the program or task starts executing, and remains in
+existence until it completes.  The default call stack size is 8 MiB on
+Linux-based systems, since this is a common value for the process stack
+limit on such systems.  On Cygwin systems the default call stack size is
+2 MiB.
 
-The automatically selected call stack size may not be appropriate in all
-cases.  For programs in which some tasks have deep call trees it may be
-too small, leading to stack overflow.  For programs which use tasks only
-for data parallelism it may be unnecessarily large.
+The default call stack size may not be appropriate in all cases.  For
+programs in which some tasks have large stack frames or deep call trees
+it may be too small, leading to stack overflow.  For programs which use
+tasks only for data parallelism it may be unnecessarily large.  Stacks
+that are unnecessarily large are typically only a problem for programs
+in which many tasks (thus their stacks) exist at once, when using a comm
+layer that has to pre-register memory.  For the particular case of using
+the native runtime communication and tasking layers on Cray X* systems,
+further discussion about this can be found in platforms/README.cray.
 
-The following built-in configuration constant can be used to change the
-task call stack size:
+The following environment variable can be used to change the task call
+stack size.
 
-  callStackSize  : Size, in bytes, of the call stack for a task.  If the
-                   size is 0, the tasking layer being used will select a
-                   default size.
+  CHPL_RT_CALL_STACK_SIZE : Size of the call stack for a task.  A plain
+                            numeric value indicates bytes.  A suffix can
+                            be appended to indicate larger units:
+                             'k' or 'K' meaning KiB (2**10 bytes),
+                             'm' or 'M' meaning MiB (2**20 bytes), or
+                             'g' or 'G' meaning GiB (2**30 bytes).
 
 
 -----------------------------------------
-Controlling the amount of non-user output
+Controlling the Amount of Non-User Output
 -----------------------------------------
 
 The compiler-generated executable supports "verbose" and "quiet" modes
@@ -187,8 +197,8 @@ The utility of this feature depends greatly on your familiarity with
 the Chapel generated code.  However, if your program is crashing or
 running into a runtime error, you can often determine where that is
 taking place by looking at a stack trace within gdb.  In addition,
-scalar Chapel variables can often be inspected using "p <name>" 
-(or "p _<name><TAB>" in cases where the compiler has renamed the 
+scalar Chapel variables can often be inspected using "p <name>"
+(or "p _<name><TAB>" in cases where the compiler has renamed the
 variable).
 
 Over time, we plan to improve our ability to debug the generated C
@@ -220,7 +230,7 @@ overhead to task parallel programs. The flags are as follows:
                      tasks will be printed to the screen, giving an
                      indication of which tasks are at which source
                      locations.
-                      
+
 
 -------------------------------------------
 Configuration Constants for Tracking Memory
@@ -260,8 +270,7 @@ The configuration constants can be set as follows:
   --memLeaks        : prints out a table of all memory that has
                       not been freed when the program completes.  It
                       is similar to printMemTable() except that the
-                      entries in the table are aggregated and
-                      summarized.
+                      entries in the table are aggregated and summarized.
 
   --memLeaksTable   : calls printMemTable at the end of the program,
                       thus printing out a table of all memory that has
