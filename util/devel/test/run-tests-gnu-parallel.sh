@@ -63,14 +63,14 @@ unset CHPL_COMM
 unset CHPL_ATOMICS
 export CHPL_COMM=$COMM
 # set things used by skipif files.
-export CHPL_HOST_PLATFORM=`$CHPL_HOME/util/chplenv/platform --host`
-export CHPL_TARGET_PLATFORM=`$CHPL_HOME/util/chplenv/platform --target`
-export CHPL_HOST_COMPILER=`$CHPL_HOME/util/chplenv/compiler --host`
-export CHPL_TARGET_COMPILER=`$CHPL_HOME/util/chplenv/compiler --target`
-export CHPL_TASKS=`$CHPL_HOME/util/chplenv/tasks`
-export CHPL_THREADS=`$CHPL_HOME/util/chplenv/threads`
-export CHPL_COMM=`$CHPL_HOME/util/chplenv/comm`
-export CHPL_GMP=`$CHPL_HOME/util/chplenv/gmp`
+export CHPL_HOST_PLATFORM=`$CHPL_HOME/util/chplenv/chpl_platform.py --host`
+export CHPL_TARGET_PLATFORM=`$CHPL_HOME/util/chplenv/chpl_platform.py --target`
+export CHPL_HOST_COMPILER=`$CHPL_HOME/util/chplenv/chpl_compiler.py --host`
+export CHPL_TARGET_COMPILER=`$CHPL_HOME/util/chplenv/chpl_compiler.py --target`
+export CHPL_TASKS=`$CHPL_HOME/util/chplenv/chpl_tasks.py`
+export CHPL_COMM=`$CHPL_HOME/util/chplenv/chpl_comm.py`
+export CHPL_GMP=`$CHPL_HOME/util/chplenv/chpl_gmp.py`
+export CHPL_HWLOC=`$CHPL_HOME/util/chplenv/chpl_hwloc.py`
 
 
 findtestsretry () {

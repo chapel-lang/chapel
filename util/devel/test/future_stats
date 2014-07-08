@@ -39,38 +39,70 @@ for line in mylines:
 fh = open(futures_file, 'r')
 mylines = fh.readlines()
 fh.close()
+numFutures = 0
+numErrorMessage = 0
+numFeatureRequest = 0
+numMemory = 0
+numMultilocale = 0
+numSemantic = 0
 last = None
 futures = set()
+uncategorized = set()
 for line in mylines:
     l = line.strip().split()
     if not l:
         continue
     ll = l[0].strip()
     if ll and ll == '==>':
-        last = l[1].strip()
-    if ll.lower() == 'bug:' or ll.lower() == 'unimplemented':
-        if last[0:2] == './':
-            # print last[2:]
-            futures.add(last[2:])
+        numFutures += 1
+        sl = l[1].strip()
+        if sl[0:2] == './':
+            last = sl[2:]
         else:
-            # print last
+            last = sl
+        continue
+    lll = line.strip().split(':')[0].lower()
+    if lll == 'bug' or lll == 'unimplemented feature' or lll == 'performance':
             futures.add(last)
+    elif lll == 'error message':
+        numErrorMessage += 1
+    elif lll == 'feature request':
+        numFeatureRequest += 1
+    elif lll == 'memory':
+        numMemory += 1
+    elif lll == 'multilocale':
+        numMultilocale += 1
+    elif lll == 'semantic':
+        numSemantic += 1
+    else:
+        uncategorized.add(last)
 
-sys.stdout.write('%d total futures (bug/unimplemented feature)\n'%len(futures))
+sys.stdout.write('%d total futures\n'%numFutures)
+sys.stdout.write('\t%d bug/unimplemented feature/performance\n'%len(futures))
+sys.stdout.write('\t%d error message\n'%numErrorMessage)
+sys.stdout.write('\t%d feature request\n'%numFeatureRequest)
+sys.stdout.write('\t%d memory\n'%numMemory)
+sys.stdout.write('\t%d multilocale\n'%numMultilocale)
+sys.stdout.write('\t%d semantic\n'%numSemantic)
+sys.stdout.write('\t%d uncategorized\n'%len(uncategorized))
+
+sys.stdout.write('\nUncategorized futures (%d total):\n'%(len(uncategorized)))
+for f in uncategorized:
+    sys.stdout.write(' # %s\n'%(f))
 
 futures_only = sorted(list(futures - status_futures))
 status_only = sorted(list(status_futures - futures))
 
 sys.stdout.write('\nFutures missing from the STATUS file (%d total):\n'%(len(futures_only)))
 for f in futures_only:
-    sys.stdout.write('\t%s\n'%(f))
+    sys.stdout.write(' # %s\n'%(f))
     
 sys.stdout.write('\nAdditional futures in the STATUS file (%d total):\n'%(len(status_only)))
 for f in status_only:
-    sys.stdout.write('\t%s\n'%(f))
+    sys.stdout.write(' # %s\n'%(f))
 
 sys.stdout.write('\nDuplicates futures in the STATUS file (%d total):\n'%(len(dups)))
 for f in dups:
-    sys.stdout.write('\t%s\n'%(f))
+    sys.stdout.write(' # %s\n'%(f))
 
 sys.exit(0)

@@ -22,6 +22,7 @@
 # - chapelexecopts
 # - chapelprediff
 # - chapeloutput|chapelprintoutput
+# - chapelwideoutput
 #
 # GENERAL CAVEATS:
 # - All environments may contain special formatting due the fact that
@@ -37,13 +38,7 @@
 #
 #   If this becomes too unwieldy, we'll probably have to find a better
 #   way to do it.
-
 #
-# - The 'chapelprintoutput' enviroment is special since the output is
-#   also in the spec document itself and must contain LaTeX formatting.
-#   The formatting must be removed for the .good file.   Currently the
-#   only additional LaTex formatting that is removed from the output is
-#   new line ('//').
 
 import os, sys
 
@@ -112,6 +107,7 @@ def ClearLists():
     del chapelexecopts[:]
     del chapelprediff[:]
     del chapeloutput[:]
+    del chapelwideoutput[:]
     del chapelprintoutput[:]
 
 # Write out the test files
@@ -195,6 +191,11 @@ def OutputTest(lineno, currTestName):
         fh = open(testName+'.good', 'w')
         fh.close()
 
+    # write out .no-local.good file if it exists.
+    if len(chapelwideoutput) > 0:
+        WriteGoodFile(fh, chapelwideoutput, testName+'.no-local')
+        WriteGoodFile(fh, chapelprintoutput, testName+'.no-local')
+
     ClearLists()
 
 
@@ -216,6 +217,7 @@ chapelcompopts = list()
 chapelexecopts = list()
 chapelprediff = list()
 chapeloutput = list()
+chapelwideoutput = list()
 chapelprintoutput = list()
 current = None
 currTestNames = list()
@@ -361,9 +363,20 @@ for infile in args:
             elif line.find('output}', pos) == pos:
                 printToOutfile = True
                 current = chapeloutput;
+            elif line.find('wideoutput}', pos) == pos:
+                printToOutfile = True
+                current = chapelwideoutput;
             elif line.find('printoutput}', pos) == pos:
                 printToOutfile = True
                 current = chapelprintoutput;
+                pos += 12
+                # Extract an explicit good file name
+                if line.find('{', pos) == pos:
+                    goodName = line[pos+1:-2]
+                    # Drop the parameter into the output stream as a comment
+                    # only if non-null.
+                    if len(goodName) > 0:
+                        current += [' '.join(('%',goodName,'\n'))]
 
         pos = line.find('\\begin{example}')
         if (line[0].strip() != '%') and pos > -1:

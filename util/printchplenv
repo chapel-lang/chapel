@@ -1,66 +1,192 @@
-#!/usr/bin/env perl
+#!/usr/bin/env python
+import optparse, os
+from sys import stdout
 
-use File::Basename;
+from chplenv import *
 
-$utildirname = dirname($0)."/chplenv";
+def print_mode(mode='list'):
+    print_var.first_time = True
+    # `m` is a 'simplified' version of `mode` that merges some cases that can
+    # be treated the same by print_mode, but need to be dealt with separately
+    # in print_var
+    m = mode
+    if 'shell' in mode:
+        #cshell and shell are the same up until we print
+        m = 'shell'
+    elif mode == 'simple' or mode == 'debug':
+        # make and simple are almost the same barring a few cases and when they
+        # are printed
+        m = 'make'
 
-$uname = `uname -a`;
+    chpl_home = os.environ.get('CHPL_HOME', '')
 
-print "uname -a: $uname";
+    if m == 'list':
+        stdout.write("machine info: {0} {1} {2} {3} {4}\n".format(*os.uname()))
+        stdout.write("CHPL_HOME: {0}\n".format(chpl_home))
+        this_dir = os.path.realpath(os.path.dirname(__file__))
+        stdout.write("script location: {0}\n".format(this_dir))
+    elif chpl_home and m == 'shell':
+        print_var('CHPL_HOME', chpl_home, mode)
 
-print "\$CHPL_HOME: $ENV{'CHPL_HOME'}\n";
-print "script location: $utildirname\n";
+    if m != 'runtime':
+        host_platform = chpl_platform.get('host')
+        host_compiler = chpl_compiler.get('host')
+        #host_arch = arch.get('host')
 
-$hostplatform = `$utildirname/platform --host 1`; chomp($hostplatform);
-$hostcompiler = `$utildirname/compiler --host`; chomp($hostcompiler);
+        print_var('CHPL_HOST_PLATFORM', host_platform, mode)
+        print_var('CHPL_HOST_COMPILER', host_compiler, mode)
+        # print_var('CHPL_HOST_ARCH', host_arch, mode, 'arch')
 
-print "CHPL_HOST_PLATFORM: $hostplatform\n";
-print "CHPL_HOST_COMPILER: $hostcompiler\n";
+    if m != 'compiler' and m != 'launcher':
+        target_platform = chpl_platform.get('target')
+        target_compiler = chpl_compiler.get('target')
+
+        print_var('CHPL_TARGET_PLATFORM', target_platform, mode)
+        print_var('CHPL_TARGET_COMPILER', target_compiler, mode)
+
+    if m != 'compiler' and m != 'runtime' and m != 'launcher':
+        target_arch = chpl_arch.get('target', mode == 'make')
+        print_var('CHPL_TARGET_ARCH', target_arch, mode, 'arch')
+
+    if m != 'compiler':
+        locale_model = chpl_locale_model.get()
+        print_var('CHPL_LOCALE_MODEL', locale_model, mode, 'loc')
+
+    comm = chpl_comm.get()
+    print_var('CHPL_COMM', comm, mode, 'comm', ('runtime',))
+    if m == 'make' or (comm != 'none' and comm != 'ugni'):
+        comm_substrate = chpl_comm_substrate.get()
+        print_var('  CHPL_COMM_SUBSTRATE', comm_substrate, mode, filters=('runtime',))
+        if m == 'make' or comm == 'gasnet':
+            comm_segment = chpl_comm_segment.get()
+            print_var('  CHPL_GASNET_SEGMENT', comm_segment, mode, filters=('runtime',))
+
+    tasks = chpl_tasks.get()
+    print_var('CHPL_TASKS', tasks, mode, 'tasks', ('runtime', 'launcher'))
+
+    if m == 'make':
+        threads = chpl_threads.get()
+        print_var('CHPL_THREADS', threads, mode, 'threads')
+
+    launcher = chpl_launcher.get()
+    print_var('CHPL_LAUNCHER', launcher, mode, 'launch', ('launcher',))
+
+    timers = chpl_timers.get()
+    print_var('CHPL_TIMERS', timers, mode, 'tmr', ('runtime', 'launcher'))
+
+    target_mem = chpl_mem.get('target')
+    if mode == 'make':
+        host_mem = chpl_mem.get('host')
+        print_var('CHPL_HOST_MEM', host_mem, mode, 'hostmem', ('runtime', 'launcher'))
+        print_var('CHPL_TARGET_MEM', target_mem, mode, 'tgtmem', ('runtime', 'launcher'))
+    else:
+        print_var('CHPL_MEM', target_mem, mode, 'mem', ('runtime', 'launcher'))
+
+    if m == 'list' or m == 'make' or m == 'shell':
+        make = chpl_make.get()
+        print_var('CHPL_MAKE', make, mode, 'make')
+
+    atomics = chpl_atomics.get()
+    print_var('CHPL_ATOMICS', atomics, mode, 'atomics', ('runtime', 'launcher'))
+    if comm != 'none' or mode == 'simple':
+        net_atomics = chpl_atomics.get('network')
+        print_var('  CHPL_NETWORK_ATOMICS', net_atomics, mode, filters=('runtime', 'launcher'))
+
+    gmp = chpl_gmp.get()
+    print_var('CHPL_GMP', gmp, mode, 'gmp', ('runtime',))
+
+    hwloc = chpl_hwloc.get()
+    print_var('CHPL_HWLOC', hwloc, mode, 'hwloc', ('runtime',))
+
+    regexp = chpl_regexp.get()
+    print_var('CHPL_REGEXP', regexp, mode, 're', ('runtime',))
+
+    wide_pointers = chpl_wide_pointers.get()
+    print_var('CHPL_WIDE_POINTERS', wide_pointers, mode, 'wide')
+    if mode == 'make':
+        wide_pointer_defines = chpl_wide_pointers.get('define')
+        print_var('CHPL_WIDE_POINTERS_DEFINES', wide_pointer_defines, mode, 'widedef')
+
+    llvm = chpl_llvm.get()
+    print_var('CHPL_LLVM', llvm, mode, 'llvm', ('compiler',))
+
+    aux_filesys = chpl_aux_filesys.get()
+    print_var('CHPL_AUX_FILESYS', aux_filesys, mode, 'fs', ('runtime',))
+
+    # NOT using `m` here, 'simple' does not need these values
+    if mode == 'make':
+        stdout.write('CHPL_MAKE_COMPILER_SUBDIR=')
+        print_mode('compiler')
+        stdout.write('CHPL_MAKE_RUNTIME_SUBDIR=')
+        print_mode('runtime')
+        stdout.write('CHPL_MAKE_LAUNCHER_SUBDIR=')
+        print_mode('launcher')
+    elif m == 'compiler' or m == 'runtime' or m == 'launcher':
+        stdout.write('\n')
 
 
-$targplatform = `$utildirname/platform --target`; chomp($targplatform);
-$targcompiler = `$utildirname/compiler --target`; chomp($targcompiler);
+def print_var(env_var, value, mode, short_name='', filters=None):
+    if mode == 'list':
+        stdout.write("{0}: {1}\n".format(env_var, value))
+    elif mode == 'make':
+        make_env_var = env_var.replace("CHPL_", "CHPL_MAKE_", 1).lstrip()
+        stdout.write("{0}={1}\n".format(make_env_var, value))
+    elif mode == 'simple':
+        stdout.write("{0}={1}\n".format(env_var.strip(), value))
+    elif mode == 'compiler' or mode == 'runtime' or mode == 'launcher':
+        if not filters or mode in filters:
+            if not print_var.first_time:
+                stdout.write(".")
+            else:
+                print_var.first_time = False
 
-print "CHPL_TARGET_PLATFORM: $targplatform\n";
-print "CHPL_TARGET_COMPILER: $targcompiler\n";
+            if not short_name or value.startswith(short_name):
+                stdout.write(value)
+            else:
+                stdout.write("{0}-{1}".format(short_name, value))
+    elif mode == 'shell':
+        stdout.write("export {0}='{1}'\n".format(env_var, value))
+    elif mode == 'cshell':
+        stdout.write("setenv {0} '{1}'\n".format(env_var, value))
+    elif mode == 'debug':
+        user_set = os.environ.get(env_var, '')
+        if user_set:
+          user_set = '*'
+        stdout.write("{0}{1}={2}\n".format(user_set, env_var, value))
+    else:
+        raise ValueError("Invalid mode '{0}'".format(mode))
 
-$comm = `$utildirname/comm`; chomp($comm);
-print "CHPL_COMM: $comm\n";
-if ($comm eq "none" || $comm eq "ugni") {
-} else {
-    $commsubstrate = `$utildirname/commSubstrate`; chomp($commsubstrate);
-    print "  CHPL_COMM_SUBSTRATE: $commsubstrate\n";
-    if (($comm eq "armci" && $commsubstrate eq "mpi") ||
-        ($comm eq "mpi")) {
-        $mpiver = `$utildirname/chplmpi`; chomp($mpiver);
-        print "  CHPL_MPI_VERSION: $mpiver\n";
-    }
-    if ($comm eq "gasnet") {
-        $commsegment = `$utildirname/commSegment`; chomp($commsegment);
-        print "  CHPL_GASNET_SEGMENT: $commsegment\n";
-    }
-}
 
-$tasks = `$utildirname/tasks`; chomp($tasks);
-print "CHPL_TASKS: $tasks\n";
-$threads = `$utildirname/threads`; chomp($threads);
-print "CHPL_THREADS: $threads\n";
-$launcher = `$utildirname/launcher`; chomp($launcher);
-print "CHPL_LAUNCHER: $launcher\n";
-$timer = `$utildirname/timers`; chomp($timer);
-print "CHPL_TIMERS: $timer\n";
-$mem = `$utildirname/mem`; chomp($mem);
-print "CHPL_MEM: $mem\n";
-$make = `$utildirname/chplmake`; chomp($make);
-print "CHPL_MAKE: $make\n";
-$atomics = `$utildirname/atomics`; chomp($atomics);
-print "CHPL_ATOMICS: $atomics\n";
-if ($comm eq "none") {
-} else {
-$network_atomics = `$utildirname/atomics --network`; chomp($network_atomics);
-print "  CHPL_NETWORK_ATOMICS: $network_atomics\n";
-}
-$gmp = `$utildirname/gmp`; chomp($gmp);
-print "CHPL_GMP: $gmp\n";
-$llvm = `$utildirname/llvm`; chomp($llvm);
-print "CHPL_LLVM: $llvm\n";
+def _main():
+    parser = optparse.OptionParser(
+        usage='usage: %prog [--list|--make|--simple|--compiler|--runtime|--launcher|--sh|--csh|--debug]')
+
+    parser.add_option('--list', action='store_const', dest='mode', default='list',
+                      const='list', help="print out a listing of the environment")
+    parser.add_option('--make', action='store_const', dest='mode', const='make',
+                      help="print out a listing of the environment that is "
+                           "used in the build process")
+    parser.add_option('--simple', action='store_const', dest='mode', const='simple',
+                      help="print out a listing of the environment that is "
+                           "meant to be used in the compiler")
+    parser.add_option('--compiler', action='store_const', dest='mode', const='compiler',
+                      help="print out path component for compiler objects")
+    parser.add_option('--runtime', action='store_const', dest='mode', const='runtime',
+                      help="print out path component for runtime objects")
+    parser.add_option('--launcher', action='store_const', dest='mode', const='launcher',
+                      help="print out path component for launcher objects")
+    parser.add_option('--sh', action='store_const', dest='mode', const='shell',
+                      help="print out a sh/bash script to reproduce the environment")
+    parser.add_option('--csh', action='store_const', dest='mode', const='cshell',
+                      help="print out a csh/tcsh script to reproduce the environment")
+    parser.add_option('--debug', action='store_const', dest='mode', const='debug',
+                      help="print out a listing of the environment indicating "
+                           "which options are user supplied with a *")
+
+    (options, args) = parser.parse_args()
+
+    print_mode(options.mode)
+
+
+if __name__ == '__main__':
+    _main()

@@ -1,22 +1,6 @@
 #!/usr/bin/env perl
 
-# Usage: paratest.server [-compopts] [-dirfile d] [-filedist] [-futures] 
-#                         [-help|-h] [-nodefile n] [-logfile l] [-valgrind]
-#   -compopts s: s is a string that is passed with -compopts to start_test.
-#   -execopts s: s is a string that is passed with -execopts to start_test.
-#   -comm s    : s is a setting for CHPL_COMM, e.g., none or gasnet
-#   -dirfile  d: d is a file listing directories to test. Default is ".". Lines
-#                beginning with # are ignored.
-#   -filedist  : distribute work at the granularity of test files (directory
-#                granurality is the default).
-#   -futures   : include .future tests (default is none).
-#   -nodefile n: n is a file listing nodes to run on. Default is current node.
-#                To run multiple processes on MP nodes, list the node multiple
-#                times, once for each desired process. Lines with # are ignored.
-#   -logfile  l: l is the output logfile. Default is "user"."platform".log in
-#                subdirectory Logs.
-#   -valgrind  : pass -valgrind flag to start_test
-#   -memleaks f: f is the name of a file where the leak info should be stored
+# See print_help for usage instructions 
 #
 # Creating a file name PARAHALT in the root test directory halts the
 # distribution of more work.
@@ -59,19 +43,34 @@ $summary_len = 2;
 $sleep_time = 1;                       # polling time (sec) to distribute work
 $incl_futures = 0;
 $filedist = 0;
-$duplex = 0;				# run two tasks on each node.
+$node_para = 1;				                 # the number of tasks to run on each node
 $valgrind = 0;
 $memleaks = "/dev/null";
 $memleaksflag = 0;
 $show_all_errors = 0;
 $suppressions = "";
+# Once a node has timed out, we don't send it any more work, so this timeout 
+# should be set higher than the time needed to process the largest directory.
+# -1 means "never time out".
+$timeout = -1;
+if (exists $ENV{CHPL_PARATEST_TIMEOUT}) { $timeout = $ENV{CHPL_PARATEST_TIMEOUT}; } 
 
 $localhost = `uname -n`;
 ($localnode, $junk) = split (/\./, $localhost, 2);
 chomp $localnode;
 
 
+#
+# clean up temporary files from previous parallel runs
+#
+system("rm -f $logdir/.-*.log $logdir/.-*log.summary");
+
+
 my (@testdir_list, @node_list, $nodeCount, $starttime, $endtime);
+
+# The callboard is used to ignore spawned processes that have timed out.
+# Each entry contains the timestamp at which that node id was last fed.
+my @callboard;
 
 sub systemd {
     local ($cmd) = @_;
@@ -82,7 +81,7 @@ sub systemd {
 
 # Collect individual logs into one final one.
 sub collect_logs {
-    local ($fin_log, @logs) = @_;
+    local ($fin_log, @logs, $dead) = @_;
     local ($len, $successes, $failures, $futures);
     local ($grep_summ, $head_opts);
 
@@ -123,9 +122,18 @@ sub collect_logs {
     $summ_log = "$fin_log.summary";
     unlink $summ_log if (-e $summ_log);
     systemd ("echo \\[Test Summary - $date\\] > $fin_log.summary");
+
+    if ($dead > 0) {
+        systemd("echo \\[Error: paratest failed to exit cleanly\\] >> $summ_log");
+        for ($id = 0; $id < $nodeCount; $id++) {
+            systemd("echo \\[Error: Worker $id on node $node_list[$id] timed out.\\] >> $summ_log")
+                if $callboard[$id] > 0;
+        }
+    }
+
     systemd ("grep -a '^\\[Error' $fin_log >> $fin_log.summary");
     if (!($suppressions eq "")) {
-        systemd ("$pwd/filterSuppressions $suppressions $fin_log.summary");
+        systemd ("$pwd/../util/test/filterSuppressions $suppressions $fin_log.summary");
     }
     systemd ("grep -a '^Future' $fin_log >> $fin_log.summary");
 
@@ -161,20 +169,19 @@ sub free_workers {
     foreach $ready (@readyv) {
         next if ($ready =~ /^\./);
         my ($node, $id, $failed) = split (/\./, $ready);
-       if ($failed) {
-	$nodeCount--;
-	print "\n failure on $node, no more testing there\n";
-        unlink "$synchdir/$ready";
-       } else {
-        push @readyids, $id;
-        # Wait on the processes represented by each of the files being iterated
-        # over. The existence of each file implies a previously forked process
-        # has finished and is currently a zombie. The only exception to this
-        # is the first time this subroutine is called. The first time, all of
-        # these files were created by this driver script, not children. This
-        # is not a problem though since wait is non-blocking.
-        wait;
-       }
+        if ($failed) {
+            print "\n failure on $node, no more testing there\n";
+            unlink "$synchdir/$ready";
+        } else {
+            push @readyids, $id;
+            # Wait on the processes represented by each of the files being iterated
+            # over. The existence of each file implies a previously forked process
+            # has finished and is currently a zombie. The only exception to this
+            # is the first time this subroutine is called. The first time, all of
+            # these files were created by this driver script, not children. This
+            # is not a problem though since wait is non-blocking.
+            wait;
+        }
     }
 
     print (@readyids ? "," : ".");
@@ -188,6 +195,7 @@ sub free_workers {
 # Of course, you'll have to wait on the client processes or kill them
 # manually.
 sub feed_nodes {
+    my $chplenv = $_[0];
     local (@readyidv, $logfile, @logs, $testdir, $node, $rem_cmd);
     $nodeCount = $#node_list + 1;
 
@@ -197,6 +205,7 @@ sub feed_nodes {
 
     @testdir_list = sort @testdir_list;
     print $nodeCount; print " worker(s) (@node_list)\n";
+    print "timeout = $timeout\n" if $debug > 0;
     print $#testdir_list+1; print " test(s) (@testdir_list)\n";
 
     while (($#testdir_list >= 0) &&       # while still have work to do
@@ -212,6 +221,7 @@ sub feed_nodes {
             $testdir = $testdir_list[0];
             $node = $node_list[$readyid]; # machine name to rem exec to
             $synchfile = "$synchdir/$node.$readyid";
+            $callboard[$readyid] = time();
 
             # remove synch file before forking work to worker
             unless (-e $synchfile) {
@@ -228,16 +238,17 @@ sub feed_nodes {
             unless ($pid = fork) {        # child
                 if ($node eq $localnode) {
                     $rem_exec_cmd = "";
+                    $chplenv = "\"$chplenv\"";
                     $compopts = "\"$compopts\"";
                     $execopts = "\"$execopts\"";
-                    $comm = "\"$comm\"";
                 } else {
                     $rem_exec_cmd = "$rem_exe $node";
+                    $chplenv = "\\\"$chplenv\\\"";
                     $compopts = "\\\"$compopts\\\"";
                     $execopts = "\\\"$execopts\\\"";
-                    $comm = "\\\"$comm\\\"";
                 }
-                $rem_cmd = "$rem_exec_cmd $client_script $readyid $pwd $testdir $incl_futures $valgrind $memleaksflag $compopts $execopts $comm";
+                # If the command line gets too long, consider using xargs
+                $rem_cmd = "$rem_exec_cmd $client_script $readyid $pwd $testdir $chplenv $incl_futures $valgrind $memleaksflag $compopts $execopts";
                 if ($verbose) {
                     systemd ($rem_cmd);
                 } else {
@@ -246,12 +257,12 @@ sub feed_nodes {
                 $partial_errors = `grep -a "^\\[Error" $logfile`;
                 if ($partial_errors =~ /^\[Error/) {
                     @errors = split /^/m, $partial_errors;
-		    if ($show_all_errors) {
-		        print "\n:( \n @errors";
-		    } else {
-		        chomp $errors[0];
-			print "\n:( " . $errors[0] . "\n";
-		    }
+                    if ($show_all_errors) {
+                        print "\n:( \n @errors";
+                    } else {
+                        chomp $errors[0];
+                        print "\n:( " . $errors[0] . "\n";
+                    }
                 } else {
                     print ":)";
                 }
@@ -267,19 +278,46 @@ sub feed_nodes {
     }
 
     # wait for everyone to finish;
-    @readyidv = free_workers ();
-    while (($#readyidv + 1 < $nodeCount) &&
-           !(-e "PARAHALT")) {
-        sleep $sleep_time;
+    my ($done, $dead) = (0, 0);
+    while (! (-e "PARAHALT")) {
+        # For workers that are ready, set their last-fed time to zero.
         @readyidv = free_workers ();
+        foreach $readyid (@readyidv) {
+            $callboard[$readyid] = 0;
+
+            # This worker's termination has been noted.
+            $node = $node_list[$readyid]; # machine name to rem exec to
+            $synchfile = "$synchdir/$node.$readyid";
+            unless (-e $synchfile) {
+                printf ("Error: synch file '$synchfile' missing\n");
+                exit (7);
+            }
+            unlink $synchfile;
+        }
+
+        # Now check that all nodes have timed out.
+        ($done, $dead) = (0, 0);
+        for ($id = 0; $id < $nodeCount; $id++) {
+            if ($callboard[$id] == 0) { $done++; next; }
+            $dead++ if ($timeout > 0) && ((time() - $callboard[$id]) > $timeout);
+        }
+        last if ($done + $dead) >= $nodeCount;
+
+        sleep $sleep_time;
+    }
+
+    # Note that hung processes on remote nodes must be killed manually
+    # if we exit this loop due to one or more workers being declared dead.
+    if ($dead > 0) {
+        print "\n[Error: paratest failed to exit cleanly]\n";
+        for ($id = 0; $id < $nodeCount; $id++) {
+            print "[Error: Worker $id on node $node_list[$id] timed out.]\n"
+                if $callboard[$id] > 0;
+        }
     }
 
     if (-e "PARAHALT" && ($#testdir_list > 0)) {
         print "\nExiting early due to PARAHALT file\n";
-    }
-
-    if ($nodeCount <= 0 && $#testdir_list >= 0) {
-       print "\nExiting early due to failures on all nodes\n";
     }
 
     if ($#testdir_list >= 0) {
@@ -292,7 +330,7 @@ sub feed_nodes {
         systemd("cat $logdir/tmp.*.memleaks > $memleaks");
         systemd("rm -f $logdir/tmp.*.memleaks");
     }
-    collect_logs ($fin_logfile, @logs);
+    collect_logs ($fin_logfile, @logs, $dead);
 }
 
 
@@ -320,7 +358,7 @@ sub nodes_free {
 }
 
 
-# Return true if a *.chpl exists. Otherwise false.
+# Return true if a *.chpl or *.test.c exists. Otherwise false.
 sub chpl_files {
     local (@fnames) = @_;
     local ($found);
@@ -330,6 +368,9 @@ sub chpl_files {
             return 0;
         }
         if ($fname =~ /\.chpl$/) {
+            $found = 1;
+        }
+        if ($fname =~ /\.test\.c$/) {
             $found = 1;
         }
     }
@@ -389,6 +430,11 @@ sub find_files {
 		$futuref =~ s/\.chpl$/.future/;
 		next if ((-e $futuref) && $no_futures);
 		push @foundfiles, $filepath;
+	    } elsif ($filepath =~ /\.test\.c$/) {
+		$futuref = $filepath;
+		$futuref =~ s/\.test\.c$/.future/;
+		next if ((-e $futuref) && $no_futures);
+		push @foundfiles, $filepath;
 	    }
 	}
 
@@ -402,18 +448,19 @@ sub find_files {
 
 
 sub print_help {
-    print "Usage: paratest.server [-comm] [-compopts] [-execopts] [-dirfile d] [-filedist] [-futures] [-logfile l] [-nodefile n] [-duplex] [-valgrind] [-help|-h]\n";
+    print "Usage: paratest.server [-compopts s] [-dirfile d] [-execopts s] [-filedist] [-futures] [-logfile l] [-memleaks f] [-nodefile n] [-nodepara m] [-suppress f] [-valgrind] [-help|-h] [-timeout t]\n";
     print "    -compopts s: s is a string that is passed with -compopts to start_test.\n";
-    print "    -execopts s: s is a string that is passed with -execopts to start_test.\n";
-    print "    -comm s    : s is a setting for CHPL_COMM, e.g., none or gasnet.\n";
     print "    -dirfile  d: d is a file listing directories to test. Default is the current diretory.\n";
+    print "    -execopts s: s is a string that is passed with -execopts to start_test.\n";
     print "    -filedist  : distribute work at the granularity of files (directory granurality is the default).\n";
     print "    -futures   : include .future tests (default is none).\n";
     print "    -logfile  l: l is the output log file. Default is \"user\".\"platform\".log. in the Logs subdirectory.\n";
-    print "    -nodefile n: n is a file listing nodes to run on. Default is current node.\n";
-    print "    -duplex    : Run two paratest.client tasks on each node.\n";
     print "    -memleaks f: pass -memleaks to start_test; aggregate all output.\n";
+    print "    -nodefile n: n is a file listing nodes to run on. Default is current node.\n";
+    print "    -nodepara m: Run m paratest.client tasks on each node.\n";
+    print "    -suppress f: f is a file with the tests to suppress using filterSuppressions.\n";  
     print "    -valgrind  : pass -valgrind to start_test.\n";
+    print "    -timeout  t: t is the max time to wait after last directory is served.\n";
 }
 
 
@@ -421,7 +468,7 @@ sub main {
     local ($id, $synchfile);
     
     $user = `whoami`; chomp $user;
-    $platform = `../util/chplenv/platform`; chomp $platform;
+    $platform = `../util/chplenv/chpl_platform.py`; chomp $platform;
     $fin_logfile = "$logdir/$user.$platform.log";      # final log file name
     # $fin_logfile = "$logdir/$user.$platform.log";
     unlink $fin_logfile if (-e $fin_logfile);          # remove final log file
@@ -444,14 +491,6 @@ sub main {
                 $execopts = $ARGV[0];
             } else {
                 print "missing -execopts arg\n";
-                exit (8);
-            }
-        } elsif (/^-comm/) {
-            shift @ARGV;
-            if ($#ARGV >= 0) {
-                $comm = $ARGV[0];
-            } else {
-                print "missing -comm arg\n";
                 exit (8);
             }
         } elsif (/^-filedist/) {
@@ -490,8 +529,22 @@ sub main {
                 print "missing -nodefile arg\n";
                 exit (8);
             }
-        } elsif (/^-duplex/) {
-            $duplex = 1;
+        } elsif (/^-nodepara/) {
+            shift @ARGV;
+            if ($#ARGV >= 0) {
+                $node_para = $ARGV[0];
+            } else {
+                print "missing -nodepara arg\n";
+                exit(8);
+            }
+        } elsif (/^-timeout/) {
+            shift @ARGV;
+            if ($#ARGV >= 0) {
+                $timeout = $ARGV[0];
+            } else {
+                print "missing -timeout arg\n";
+                exit(8);
+            }
         } elsif (/^-memleaks/) {
             shift @ARGV;
             if ($#ARGV >= 0) {
@@ -515,17 +568,35 @@ sub main {
         shift @ARGV;
     }
 
+    die "Error: CHPL_HOME must be set\n" unless defined $ENV{CHPL_HOME};
+
     if (defined $nodefile) {
         open nodefile or die "Cannot open node file '$nodefile'\n";
         while (<nodefile>) {
             next if /^$|^\#/;
             chomp;
-            push @node_list, $_;
-            push @node_list, $_ if $duplex;
+            $count = $node_para;
+            while ($count--) {
+                push @node_list, $_;
+            }
         }
     } else { # else, just current node
-        push @node_list, $localnode;
-        push @node_list, $localnode if $duplex;
+        if( defined $ENV{'SLURM_JOB_NODELIST'} ) {
+            my $SLURM_NODELIST = $ENV{'SLURM_JOB_NODELIST'};
+            my $SLURM_NODES = `scontrol show hostnames $SLURM_NODELIST`;
+            my @SLURM_NODES = split(' ', $SLURM_NODES);
+            for my $node (@SLURM_NODES) {
+                print "using node $node from SLURM\n";
+                $count = $node_para;
+                while ($count--) {
+                    push @node_list, $node;
+                }
+            }
+        } else {
+            while ($node_para--) {
+                push @node_list, $localnode;
+            }
+        }
     }
 
     if (defined $dirfile) {
@@ -564,8 +635,23 @@ sub main {
         systemd ("mkdir $synchdir"); 
     }
 
-    nodes_free ();     # signal that all nodes free
-    feed_nodes ();     # parallel testing
+    # Package up the environment
+    my $tmpchplenv = `$ENV{CHPL_HOME}/util/printchplenv --sh`;
+    my $chplenv = "";
+    my @lines = split(/\n/, $tmpchplenv);
+    for my $line (@lines) {
+        $line =~ s/export\s+//;
+        my ($key,$value) = split(/=/, $line, 2);
+        # Now remove the single quotes in the value.
+        if( $value =~ /^'.+'$/ ) {
+            $value =~ s/^'//;
+            $value =~ s/'$//;
+        }
+        $chplenv .= "$key=$value ";
+    }
+
+    nodes_free ();         # signal that all nodes free
+    feed_nodes ($chplenv); # parallel testing
 
     # cleanup - remove synch files and synch dir
     for ($id=0; $id<=$#node_list; $id++) {

@@ -13,7 +13,7 @@ if [ -n "$*" ]; then
   exit 1
 fi
 
-loghome=/data/sea/cascade/chapel
+loghome=/data/sea/chapel
 loghistdir=NightlyHistory
 logsources="Nightly Nightly/weekend NightlyBaseline NightlyDists NightlyMemLeaks NightlyPerformance/bradc-lnx NightlyPerformance/chap03 NightlyPerformance/chap04"
 

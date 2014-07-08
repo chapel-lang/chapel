@@ -3,7 +3,7 @@
 use File::Basename;
 
 $found_test = 0;
-$command = "chpl ";
+$command = "chpl --fast ";
 while (@ARGV) {
     $arg = shift @ARGV;
     if ($arg =~ m/.chpl$/) {

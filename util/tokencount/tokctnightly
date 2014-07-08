@@ -1,10 +1,10 @@
 #!/usr/bin/env perl
 
-if (!defined $ENV{'CHPL_HOME_REPOSITORY'}) {
-    print "ERROR: CHPL_HOME_REPOSITORY must be set to use tokctnightly\n";
-    exit(1);
-}
-$svnroot = $ENV{'CHPL_HOME_REPOSITORY'};
+use Cwd 'abs_path';
+use File::Basename;
+
+# Mailing lists.
+$failuremail = "chapel-test-results-regressions\@lists.sourceforge.net";
 
 $printusage = 0;
 if (@ARGV) {
@@ -38,7 +38,6 @@ if ($printusage == 1) {
 #
 # get uniquifiers
 #
-$pid = getpgrp();
 $user = `whoami`;
 chomp($user);
 $debugmail = $ENV{'CHPL_NIGHTLY_DEBUG_EMAIL'};
@@ -55,72 +54,81 @@ $mailer = $ENV{'CHPL_MAILER'};
 if ($mailer eq "") {
     $mailer = "Mail";
 }
+
+if ($cronrecipient eq "" and exists($ENV{"CHPL_NIGHTLY_CRON_RECIPIENT"})) {
+    $cronrecipient = $ENV{"CHPL_NIGHTLY_CRON_RECIPIENT"};
+}
+
+if ($cronrecipient ne "") {
+    print "Overriding \$failuremail with: $cronrecipient.\n";
+    $failuremail = $cronrecipient;
+}
+
+
 if ($debug == 1) {
     $subjectid = "Dbg token count";
     $recipient = $debugmail;
 } else {
     $subjectid = "Cron token count";
-    $recipient = "chapel_cronmail\@cray.com";
+    $recipient = "$failuremail";
 }
 
 
 #
 # directory locations
 #
-$tmpdir = "/tmp/chapel-tokctnightly-uw.$user.$pid.deleteme";
-$chapeldir = "$tmpdir/chapel";
-$logdir = "/data/sea/cascade/chapel/Nightly";
+$tokctdir = abs_path(dirname(__FILE__));
+$tokctr = "$tokctdir/tokencount.cron";
+$chplhomedir = abs_path("$tokctdir/../..");
+$logdir = "/data/sea/chapel/Nightly";
 $statdir = "$logdir/Stats";
 if ($debug == 1) {
-    $statfile = "$statdir/tokctnightly.debug.dat";
+    $statfile = "$chplhomedir/tokctnightly.debug.dat";
 } else {
     $statfile = "$statdir/tokctnightly.cron.dat";
 }
-$tokctdir = "~/chapel/util/tokencount";
-$tokctr = "$tokctdir/tokencount.cron";
 
 mysystem("cd $tokctdir && make > /dev/null", "building token counter", 1, 1);
 
 $somethingfailed = 0;
 
-#
-# make temp directory
-#
-mysystem("mkdir $tmpdir > /dev/null", "creating temp dir", 1, 1);
-
-#
-# checkout sources
-#
-
-mysystem("cd $tmpdir && svn export -q -r '$svndate' $svnroot chapel", "svn checkout", 1, 1);
-
 $allcppfiles = "`find -name '*.cpp'` `find -name '*.c'` `find -name '*.h'`";
-$compdir = "$tmpdir/chapel/compiler";
-$bindir = "$tmpdir/chapel/bin/$ENV{'CHPL_HOST_PLATFORM'}";
+$findflags = "-name '*.cpp' -print -or -name '*.c' -print -or -name '*.h' -print";
+
+$compdir = "$chplhomedir/compiler";
+$bindir = "$chplhomedir/bin/$ENV{'CHPL_HOST_PLATFORM'}";
 
 # remove generated files
 mysystem("cd $compdir && rm -f */*.g.d_parser.cpp vparser/cast_code.cpp analysis/prim_data.h analysis/prim_data.cpp");
 
-mysystem("cd $compdir/AST && $tokctr $allcppfiles > ../AST.ntoks", "counting AST tokens", 0, 1);
-mysystem("cd $compdir/adt && $tokctr $allcppfiles > ../adt.ntoks", "counting adt tokens", 0, 1);
-#mysystem("cd $compdir/analysis && $tokctr $allcppfiles > ../analysis.ntoks", "counting AST tokens", 0, 1);
-mysystem("cd $compdir/ifa && $tokctr $allcppfiles > ../ifa.ntoks", "counting ifa tokens", 0, 1);
-mysystem("cd $compdir/backend && $tokctr $allcppfiles > ../backend.ntoks", "counting backend tokens", 0, 1);
-mysystem("cd $compdir/include && $tokctr $allcppfiles > ../include.ntoks", "counting include tokens", 0, 1);
-mysystem("cd $compdir/main && $tokctr $allcppfiles > ../main.ntoks", "counting main tokens", 0, 1);
-mysystem("cd $compdir/optimizations && $tokctr $allcppfiles > ../opt.ntoks", "counting optimizations tokens", 0, 1);
-mysystem("cd $compdir/resolution && $tokctr $allcppfiles > ../resolution.ntoks", "counting resolution tokens", 0, 1);
-mysystem("cd $compdir/parser && $tokctr $allcppfiles > ../parser.ntoks", "counting parser tokens", 0, 1);
-mysystem("cd $compdir/passes && $tokctr $allcppfiles > ../passes.ntoks", "counting passes tokens", 0, 1);
-#mysystem("cd $compdir/symtab && $tokctr $allcppfiles > ../symtab.ntoks", "counting AST tokens", 0, 1);
-#mysystem("cd $compdir/traversals && $tokctr $allcppfiles > ../traversals.ntoks", "counting AST tokens", 0, 1);
-mysystem("cd $compdir/util && $tokctr $allcppfiles > ../util.ntoks", "counting util tokens", 0, 1);
-#mysystem("cd $compdir/vparser && $tokctr $allcppfiles > ../vparser.ntoks", "counting AST tokens", 0, 1);
-mysystem("cd $tmpdir/chapel/runtime && $tokctr $allcppfiles > runtime.ntoks", "counting runtime tokens",0, 1);
+@compilerdirs = (
+    "AST",
+    "adt",
+    #"analysis",
+    "ifa",
+    "backend",
+    "include",
+    "main",
+    "optimizations",
+    "resolution",
+    "parser",
+    "passes",
+    #"symtab",
+    #"traversals",
+    "util",
+    #"vparser",
+);
 
-mysystem("cd $chapeldir && make comprt", "making compiler", 1, 1);
-$ENV{'CHPL_HOME'} = $chapeldir;
-mysystem("$bindir/chpl --count-tokens $chapeldir/modules/standard/*.chpl $chapeldir/modules/internal/*.chpl $chapeldir/modules/dists/*.chpl $chapeldir/modules/layouts/*.chpl >& $compdir/chpcode.ntoks", "counting module tokens", 1, 1);
+foreach $currentcompilerdir (@compilerdirs) {
+    mysystem("$tokctr `find $compdir/$currentcompilerdir $findflags` > $compdir/$currentcompilerdir.ntoks", "counting $currentcompilerdir tokens", 0, 1);
+}
+
+# Now count tokens in the runtime.
+mysystem("$tokctr `find $chplhomedir/runtime $findflags` > $chplhomedir/runtime/runtime.ntoks", "counting runtime tokens", 0, 1);
+
+mysystem("cd $chplhomedir && make comprt", "making compiler", 1, 1);
+$ENV{'CHPL_HOME'} = $chplhomedir;
+mysystem("$bindir/chpl --count-tokens $chplhomedir/modules/standard/*.chpl $chplhomedir/modules/internal/*.chpl $chplhomedir/modules/dists/*.chpl $chplhomedir/modules/layouts/*.chpl >& $compdir/chpcode.ntoks", "counting module tokens", 1, 1);
 
 $asttoks = `cat $compdir/AST.ntoks`; chomp($asttoks);
 $adttoks = `cat $compdir/adt.ntoks`; chomp($adttoks);
@@ -129,7 +137,7 @@ $ifatoks = `cat $compdir/ifa.ntoks`; chomp($ifatoks);
 $backendtoks = `cat $compdir/backend.ntoks`; chomp($backendtoks);
 $includetoks = `cat $compdir/include.ntoks`; chomp($includetoks);
 $maintoks = `cat $compdir/main.ntoks`; chomp($maintoks);
-$opttoks = `cat $compdir/opt.ntoks`; chomp($opttoks);
+$opttoks = `cat $compdir/optimizations.ntoks`; chomp($opttoks);
 $parsertoks = `cat $compdir/parser.ntoks`; chomp($parsertoks);
 $passestoks = `cat $compdir/passes.ntoks`; chomp($passestoks);
 $resolutiontoks = `cat $compdir/resolution.ntoks`; chomp($resolutiontoks);
@@ -137,7 +145,7 @@ $symtabtoks = 0;
 $traversalstoks = 0;
 $utiltoks = `cat $compdir/util.ntoks`; chomp($utiltoks);
 $vparsertoks = 0;
-$runtimetoks = `cat $tmpdir/chapel/runtime/runtime.ntoks`; chomp($runtimetoks);
+$runtimetoks = `cat $chplhomedir/runtime/runtime.ntoks`; chomp($runtimetoks);
 $chpcodetoks = `cat $compdir/chpcode.ntoks`; chomp($chpcodetoks);
 
 if ($asttoks == "") {
@@ -195,8 +203,10 @@ if ($chpcodetoks == "") {
 $comptoks = 0;
 $fetoks = 0;
 
-`echo -n "$statdate" >> $statfile`;
-`echo -n "\t-\t-\t-" >> $statfile`;
+open(my $fh, '>>', $statfile);
+print $fh "$statdate";
+print $fh "\t-\t-\t-";
+close($fh);
 
 $tot = 0;
 
@@ -233,15 +243,9 @@ emit($tot);
 $tot += $resolutiontoks;
 emit($tot);
 
-`echo -n "\n" >> $statfile`;
-
-
-#
-# clean up
-#
-if (1 || $somethingfailed == 0) {
-    mysystem("rm -rf $tmpdir", "removing temp dir", 0, 1);
-}
+open(my $fh, '>>', $statfile);
+print $fh "\n";
+close($fh);
 
 exit 0;
 
@@ -276,11 +280,7 @@ sub mysystem {
 
 	if ($fatal != 0) {
 	    `echo "$statdate\t-" >> $statfile`;
-	    if ($debug == 0) {
-		`ci -l -m"automated nightly checkin" $statfile`;
-	    }
 	    `cd $statdir && ./makeplot`;
-            mysystem("rm -rf $tmpdir", "removing temp dir", 0, 1);
 	    exit 1;
 	}
     }
@@ -290,10 +290,12 @@ sub mysystem {
 
 sub emit {
     $toks = $_[0];
-    `echo -n "\t" >> $statfile`;
+    open(my $fh, '>>', $statfile);
+    print $fh "\t";
     if ($toks == 0) {
-	`echo -n "-" >> $statfile`;
+        print $fh "-";
     } else {
-	`echo -n "$toks" >> $statfile`;
+        print $fh "$toks";
     }
+    close($fh);
 }

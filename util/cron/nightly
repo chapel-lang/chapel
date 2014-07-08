@@ -1,8 +1,14 @@
 #!/usr/bin/env perl
 
 use File::Basename;
+use File::Path qw(mkpath);
 use Cwd;
+use Cwd 'abs_path';
 use Sys::Hostname;
+
+# Mailing lists.
+$failuremail = "chapel-test-results-regressions\@lists.sourceforge.net";
+$allmail = "chapel-test-results-all\@lists.sourceforge.net";
 
 $valgrind = 0;
 $interpret = 0;
@@ -13,19 +19,30 @@ $buildruntime = 1;
 $hello = 0;
 $allhellos = 0;
 $examples = 0;
+$performance = 0;
+$performancedescription = "";
+$releasePerformance = 0;
+$compperformance = 0;
+$compperformancedescription = "";
 $componly = 0;
 $nofutures = 0;
 $suppressions = "";
 $parnodefile = "";
+$baseline = 0;
+$fast = 0;
 $nolocal = 0;
-$combinedir = 0;
+$verify = 0;
+$retaintree = 0;
 $dist = "";
+$localeModelSuite = 0;
 $memleaks = "";
 $multilocale = 0;
 $svnrevopt = "";
 $compopts = "";
 $execopts = "";
 $startdate = "-1";
+$numtrials = "";
+$cronrecipient = "";
 
 while (@ARGV) {
     $flag = shift @ARGV;
@@ -53,8 +70,23 @@ while (@ARGV) {
     } elsif ($flag eq "-multilocale") {
         $examples = 1;
         $multilocale = 1;
+    } elsif ($flag eq "-localeModel") {
+        # TODO: Allow -localeModel to run full suite (e.g. w/o setting
+        #       $examples = 1) (thomasvandoren, 2014-02-10)
+        $examples = 1;
+        $localeModelSuite = 1;
     } elsif ($flag eq "-performance") {
         $performance = 1;
+    } elsif ($flag eq "-performance-description") {
+        $performance = 1;
+        $performancedescription = shift @ARGV;
+    } elsif ($flag eq "-releasePerformance") {
+        $releasePerformance = 1;
+    } elsif ($flag eq "-compperformance") {
+        $compperformance = 1;
+        $compperformancedescription = shift @ARGV;
+    } elsif ($flag eq "-numtrials") {
+        $numtrials = shift @ARGV;
     } elsif ($flag eq "-compopts") {
 	$compopts = shift @ARGV;
     } elsif ($flag eq "-execopts") {
@@ -65,6 +97,8 @@ while (@ARGV) {
         $baseline = 1;
     } elsif ($flag eq "-dist") {
         $dist = shift @ARGV;
+    } elsif ($flag eq "-fast") {
+        $fast = 1;
     } elsif ($flag eq "-memleaks") {
         $memleaks = shift @ARGV;
     } elsif ($flag eq "-suppress") {
@@ -77,10 +111,14 @@ while (@ARGV) {
         $parnodefile = shift @ARGV;
     } elsif ($flag eq "-no-local") {
         $nolocal = 1;
-    } elsif ($flag eq "-combinedir") {
-      $combinedir = 1;
+    } elsif ($flag eq "-verify") {
+        $verify = 1;
+    } elsif ($flag eq "-retaintree") {
+        $retaintree = 1;
     } elsif ($flag eq "-r") {
         $svnrevopt = "-r " . shift @ARGV;
+    } elsif ($flag eq "-cron-recipient") {
+        $cronrecipient = shift @ARGV;
     } else {
         $printusage = 1;
         last;
@@ -89,15 +127,12 @@ while (@ARGV) {
 
 
 print localtime() . "  host: " . hostname . "\n";
-$ctmp = `crontab -l`;
-@blah = split(/\n/, $ctmp);
-# Ignore the first 3 (commented) lines added by crontab
-# I'm not sure how standard this is, but let's see how it goes.
-$crontab = join("\n", splice(@blah , 3))."\n";
 
-if ($debug == 0) {
-    print "Currently installed crontab on ".hostname.":\n";
-    print $crontab;
+# If this is running in jenkins, link to the job in the email.
+$crontab = "Unknown origin for this job...";
+if (exists($ENV{"BUILD_URL"})) {
+    $buildurl = $ENV{"BUILD_URL"};
+    $crontab = "View this job at:\n\t$buildurl";
 }
 
 $svntoday = `date +%F`; chomp($svntoday);
@@ -124,30 +159,41 @@ if ($printusage == 1) {
     print "\t-notest      : don't run the tests (check the build only)\n";
     print "\t-noruntime   : don't build the runtime or run the tests\n";
     print "\t-examples    : run the release/examples tests only\n";
+    print "\t-localeModel : run localeModel suite only\n";
     print "\t-multilocale : run multilocale suite only\n";
     print "\t-hello       : run the release/examples/hello.chpl test only\n";
     print "\t-hellos      : run the release/examples/hello*.chpl tests only\n";
     print "\t-valgrind    : run tests in valgrind mode\n";
 #    print "\t-interpret   : run tests in interpreted mode\n";
     print "\t-performance : run performance tests\n";
+    print "\t-performance-description : run performance tests with additional description";
+    print "\t-compperformance <description>: run tests with compiler performance tracking\n";
+    print "\t-numtrials <number> : number of trials to run\n";
     print "\t-startdate	  : run performance tests providing a common start date to all the graphs\n";
-    print "\t-baseline    : run baseline tests\n";
+    print "\t-baseline    : run testins using --baseline\n";
     print "\t-dist <dist> : run distribution robustness tests\n";
+    print "\t-fast        : run tests using --fast\n";
     print "\t-memleaks <log> : run memleaks tests\n";
     print "\t-no-local    : run tests using --no-local\n";
     print "\t-componly    : only run the compiler, not the generated binary\n";
     print "\t-no-futures  : do not run future tests\n";
     print "\t-parnodefile : specify a node file to use for parallel testing\n";
+    print "\t-cron-recipient : send -cron emails to this address instead of SourceForge mailing list(s)\n";
     exit 1;
 }
 
 
 $ENV{'CHPL_DEVELOPER'} = "true";
 
+print "\n";
+system("printenv");
+$modulecmd = "/sw/modules/bin/linux/modulecmd"; # heuristic
+if (-x $modulecmd) { system("$modulecmd bash list"); }
+print "\n";
+
 #
 # get uniquifiers
 #
-$pid = $$;
 $user = `whoami`;
 chomp($user);
 $debugmail = $ENV{'CHPL_NIGHTLY_DEBUG_EMAIL'};
@@ -157,17 +203,29 @@ if ($debugmail eq "") {
 $today = `date +%w-%a`; chomp($today);
 $starttime = localtime;
 
+# Override $failuremail and $allmail if -cron-recipient argument or
+# CHPL_NIGHTLY_CRON_RECIPIENT is set.
+
+if ($cronrecipient eq "" and exists($ENV{"CHPL_NIGHTLY_CRON_RECIPIENT"})) {
+    $cronrecipient = $ENV{"CHPL_NIGHTLY_CRON_RECIPIENT"};
+}
+
+if ($cronrecipient ne "") {
+    print "Overriding \$failuremail and \$allmail with: $cronrecipient.\n";
+    $failuremail = $cronrecipient;
+    $allmail = $cronrecipient;
+}
 
 #
 # directory locations
 #
-$basetmpdir = $ENV{'CHPL_NIGHTLY_TMPDIR'};
-if ($basetmpdir eq "") {
-    $basetmpdir = $ENV{'TMPDIR'};
-}
-if ($basetmpdir eq "") {
-    $basetmpdir = "/tmp";
-}
+$basetmpdir = $ENV{'CHPL_NIGHTLY_TMPDIR'}; 
+if ($basetmpdir eq "") { 
+    $basetmpdir = $ENV{'TMPDIR'}; 
+} 
+if ($basetmpdir eq "") { 
+    $basetmpdir = "/tmp"; 
+} 
 $make = $ENV{'CHPL_NIGHTLY_MAKE'};
 if ($make eq "") {
     $make = $ENV{'MAKE'};
@@ -180,11 +238,17 @@ $cronlogdir = $ENV{'CHPL_NIGHTLY_CRON_LOGDIR'};
 $host = hostname;
 if ($cronlogdir eq "") {
     if ($performance == 1) {
-        $cronlogdir = "/data/sea/cascade/chapel/NightlyPerformance/$host";
+        $cronlogdir = "/data/sea/chapel/NightlyPerformance/$host";
     } else {
-        $cronlogdir = "/data/sea/cascade/chapel/Nightly";
+        $cronlogdir = "/data/sea/chapel/Nightly";
     }
 }
+
+# Create cronlogdir if it does not exist.
+unless(-d $cronlogdir) {
+    mkpath $cronlogdir;
+}
+
 $logdir = $ENV{'CHPL_NIGHTLY_LOGDIR'};
 if ($debug == 1 && $logdir eq "") {
     $logdir = getcwd()."/Log";
@@ -214,19 +278,20 @@ $utildir = "$testbindirname/../../util";
 #
 # platform variables
 #
-$hostplatform = `$utildir/chplenv/platform --host`; chomp($hostplatform);
-$targetplatform = `$utildir/chplenv/platform --target`; chomp($targetplatform);
-$hostcompiler = `$utildir/chplenv/compiler --host`; chomp($hostcompiler);
-$targetcompiler = `$utildir/chplenv/compiler --target`; chomp($targetcompiler);
-$tasks = `$utildir/chplenv/tasks`; chomp($tasks);
-$threads = `$utildir/chplenv/threads`; chomp($threads);
-$mem =  `$utildir/chplenv/mem`; chomp($mem);
-$comm = `$utildir/chplenv/comm`; chomp($comm);
+print "Setting platform variables\n";
+$hostplatform = `$utildir/chplenv/chpl_platform.py --host`; chomp($hostplatform);
+$targetplatform = `$utildir/chplenv/chpl_platform.py --target`; chomp($targetplatform);
+$hostcompiler = `$utildir/chplenv/chpl_compiler.py --host`; chomp($hostcompiler);
+$targetcompiler = `$utildir/chplenv/chpl_compiler.py --target`; chomp($targetcompiler);
+$tasks = `$utildir/chplenv/chpl_tasks.py`; chomp($tasks);
+$localeModel =  `$utildir/chplenv/chpl_locale_model.py`; chomp($localeModel);
+$mem =  `$utildir/chplenv/chpl_mem.py --target`; chomp($mem);
+$comm = `$utildir/chplenv/chpl_comm.py`; chomp($comm);
 if ($comm eq "gasnet" && $ENV{'CHPL_GASNET_SEGMENT'} ne "") {
     $comm = "$comm-$ENV{'CHPL_GASNET_SEGMENT'}";
 }
 
-$fullplatform = "$targetplatform.$targetcompiler.$comm.$tasks.$threads";
+$fullplatform = "$targetplatform.$targetcompiler.$comm.$tasks.$localeModel";
 if ($mem ne "default") {
     $fullplatform = "$fullplatform.$mem";
 }
@@ -248,22 +313,10 @@ if ($mailer eq "") {
 #
 # directory variables
 #
-if ($debug == 1) {
-    if ($combinedir == 1) {
-        $tmpdir = "$basetmpdir/chapel-debug-combined-$user";
-    } else {
-        $tmpdir = "$basetmpdir/chapel-debug-$fullplatform-$user";
-    }
-} else {
-    if ($combinedir == 1) {
-        $tmpdir = "$basetmpdir/chapel-cron-combined-$user";
-    } else {
-        $tmpdir = "$basetmpdir/chapel-cron-$fullplatform-$user";
-    }
-}
-$chapeldir = "$tmpdir/chapel";
-$testdir = "$chapeldir/test";
-print "\$chapeldir = $chapeldir\n";
+$cwd = abs_path(dirname(__FILE__));
+$chplhomedir = abs_path("$cwd/../..");
+$testdir = "$chplhomedir/test";
+print "\$chplhomedir = $chplhomedir\n";
 
 
 $launchcmd = "$ENV{'CHPL_APP_LAUNCH_CMD'}";
@@ -273,8 +326,12 @@ if ($debug == 1) {
         $statfile = "$statdir/nightly-perf.$fullplatform-debug.dat";
     } elsif ($baseline == 1) {
         $statfile = "$statdir/nightly-baseline.$fullplatform-debug.dat";
+    } elsif ($fast == 1) {
+        $statfile = "$statdir/nightly-fast.$fullplatform-debug.dat";
     } elsif ($nolocal == 1) {
         $statfile = "$statdir/nightly-nolocal.$fullplatform-debug.dat";
+    } elsif ($verify == 1) {
+        $statfile = "$statdir/nightly-verify.$fullplatform-debug.dat";
     } else {
         $statfile = "$statdir/nightly.$fullplatform-debug.dat";
     }
@@ -283,8 +340,12 @@ if ($debug == 1) {
         $statfile = "$statdir/nightly-perf.$fullplatform-cron.dat";
     } elsif ($baseline == 1) {
         $statfile = "$statdir/nightly-baseline.$fullplatform-cron.dat";
+    } elsif ($fast == 1) {
+        $statfile = "$statdir/nightly-fast.$fullplatform-cron.dat";
     } elsif ($nolocal == 1) {
         $statfile = "$statdir/nightly-nolocal.$fullplatform-cron.dat";
+    } elsif ($verify == 1) {
+        $statfile = "$statdir/nightly-verify.$fullplatform-cron.dat";
     } else {
         $statfile = "$statdir/nightly.$fullplatform-cron.dat";
     }
@@ -298,10 +359,14 @@ if ($performance == 1) {
     $subjectid = " Baseline";
 } elsif (!($dist eq "")) {
     $subjectid = " Dist $dist";
+} elsif ($fast == 1) {
+    $subjectid = " Fast";
 } elsif (!($memleaks eq "")) {
     $subjectid = " Memory-Leaks";
 } elsif ($nolocal == 1) {
     $subjectid = " No-local";
+} elsif ($verify == 1) {
+    $subjectid = " Verify";
 } elsif ($runtests == 0) {
     $subjectid = " Build-only";
 } elsif ($buildruntime == 0) {
@@ -320,11 +385,11 @@ if ($debug == 1) {
     $nochangerecipient = $debugmail;
 } else {
     $subjectid = "Cron$subjectid";
-    $recipient = "chapel_cronmail\@cray.com chapel_cronmail_all\@cray.com";
+    $recipient = "$failuremail $allmail";
     if ($tasks eq "qthreads") {
       $recipient = "$recipient qthreads-chapel\@googlegroups.com";
     }
-    $nochangerecipient = "$user\@cray.com chapel_cronmail_all\@cray.com";
+    $nochangerecipient = $allmail;
 }
 
 
@@ -342,6 +407,9 @@ if ($valgrind == 1) {
     } elsif (!($dist eq "")) {
         $threechars = "vgrdist$dist";
         $morechars = "dist-$dist+vgrnd";
+    } elsif ($fast == 1) {
+        $threechars = "vgn";
+        $morechars = "fast+vgrnd";
     } elsif (!($memleaks eq "")) {
         $threechars = "vgrmem";
         $morechars = "mem+vgrnd";
@@ -364,16 +432,29 @@ if ($valgrind == 1) {
 } elsif (!($dist eq "")) {
     $threechars = "dist$dist";
     $morechars = "dist-$dist";
+} elsif ($fast == 1) {
+    $threechars = "fst";
+    $morechars = "fast";
 } elsif (!($memleaks eq "")) {
-    $threechars = "mem";
-    $morechars = "memoryleaks";
+    if ($examples == 1) {
+        $threechars = "mem";
+        $morechars = "memoryleaks";
+    } else {
+        $threechars = "mlf";
+        $morechars = "memoryleaks-full";
+    }
 } elsif ($nolocal == 1) {
     $threechars = "nlc";
     $morechars = "nolocal";
+} elsif ($verify == 1) {
+    $threechars = "vfy";
+    $morechars = "verify";
 } elsif ($examples == 1) {
     $threechars = "exm";
     if ($multilocale == 1) {
         $morechars = "multilocale-examples";
+    } elsif ($localeModelSuite) {
+        $morechars = "localeModel-examples";
     } else {
         $morechars = "examples";
     }
@@ -395,6 +476,18 @@ $rawsummary = "$rawlog.summary";
 $sortedsummary = "$rawlog.sorted";
 $prevsummary = "$cronlogdir/last-$fullplatform-$threechars.log.sorted";
 
+if ($parnodefile eq "") {
+  # put the log in /tmp, avoid NFS
+  # $sortedsummary and $prevsummary do not move
+  $permlog = $rawlog;
+  $permsum = $rawsummary;
+  $rawlog     = $basetmpdir . "/" . basename($rawlog) . "." . $$;
+  $rawsummary = "$rawlog.summary";
+} else {
+  $permlog = "<invalid use of permlog>";
+  $permsum = "<invalid use of permsum>";
+}
+
 
 #
 # make "prev" logs if they don't already exist
@@ -403,14 +496,6 @@ ensureSummaryExists($prevsummary);
 
 
 $somethingfailed = 0;
-
-#
-# make temp directory
-#
-if (! -d $tmpdir) {
-    mysystem("mkdir $tmpdir > /dev/null", "creating temp dir", 1, 1);
-}
-
 
 
 #
@@ -422,43 +507,21 @@ delete($ENV{'CHPL_HOME'});
 #mysystem("which chpl", "locating chpl", 0, 0);
 #mysystem("env", "checking environment", 0, 0);
 
- 
-#
-# checkout sources
-#
-$svnroot = $ENV{'CHPL_HOME_REPOSITORY'};
-if ($svnroot eq "") {
-    $svnroot = "svn://svn.code.sf.net/p/chapel/code/trunk";
-}
-
-$readonlydirname = "chapel-cron-$user-readonly";
-$readonlydir = "$basetmpdir/$readonlydirname";
-print "\$readonlydir = $readonlydir\n";
-if (! (-r $readonlydir && -d $readonlydir)) {
-    print "The SVN directory has not been checked out yet\n";
-    print "***** $svnrevopt $svnroot $readonlydirname *****\n";
-    mysystem("cd $basetmpdir && svn checkout -q $svnrevopt $svnroot $readonlydirname", "svn checkout", 1, 1);
-} else {
-    print "The SVN directory has already been checked out\n";
-    mysystem("cd $basetmpdir && svn update -q $svnrevopt $readonlydirname", "svn update", 1, 1);
-}
-$revision = `svn info $readonlydir | grep Revision`; chomp($revision);
-mysystem("rm -rf $chapeldir", "removing previous writeable chapel dir", 0, 1);
-mysystem("cp -r $readonlydir $chapeldir", "creating writeable chapel dir");
-
+$revision = mysystem("cd $chplhomedir && svnversion");
 
 #
 # if on cygwin, blow away FILES files because they wreak havoc on stuff
 #
 if ($hostplatform eq "cygwin") {
-    mysystem("cd $chapeldir && find . -name FILES -exec rm {} \\;");
+    mysystem("cd $chplhomedir && find . -name FILES -exec rm {} \\;");
 }
 
 
-
-$makestat = mysystem("cd $chapeldir && $make DEBUG=0 OPTIMIZE=1 compiler", "making chapel compiler", 0, 1);
+print "Making DEBUG=0 OPTIMIZE=1 compiler\n";
+$makestat = mysystem("cd $chplhomedir && $make DEBUG=0 OPTIMIZE=1 compiler", "making chapel compiler", 0, 1);
 if ($makestat != 0) {
-    mysystem("cd $chapeldir && $make DEBUG=0 compiler", "making chapel compiler", 1, 1);
+    print "Making DEBUG=0 compiler\n";
+    mysystem("cd $chplhomedir && $make DEBUG=0 compiler", "making chapel compiler", 1, 1);
 }
 
 if ($buildruntime == 0) {
@@ -466,8 +529,9 @@ if ($buildruntime == 0) {
     $shortstatus = "Passed";
 
     $mailsubject = "$subjectid ($fullplatform) $shortstatus";
-    $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
+    $mailcommand = "| $mailer -s \"$mailsubject \" $nochangerecipient";
     
+    print "Mailing to minimal group\n";
     open(MAIL, $mailcommand);
     
     print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime, $crontab);
@@ -477,12 +541,15 @@ if ($buildruntime == 0) {
     exit 0;
 }
 
-$makestat = mysystem("cd $chapeldir && $make DEBUG=0 OPTIMIZE=1 $qthreadopts runtime", "making chapel runtime", 0, 1);
+print "Making DEBUG=0 OPTIMIZE=1 $qthreadopts runtime\n";
+$makestat = mysystem("cd $chplhomedir && $make DEBUG=0 OPTIMIZE=1 $qthreadopts runtime", "making chapel runtime", 0, 1);
 if ($makestat != 0) {
-    mysystem("cd $chapeldir && $make DEBUG=0 $qthreadopts runtime", "making chapel runtime", 1, 1);
+    print "Making DEBUG=0 $qthreadopts runtime\n";
+    mysystem("cd $chplhomedir && $make DEBUG=0 $qthreadopts runtime", "making chapel runtime", 1, 1);
 }
 
-$makestat = mysystem("cd $chapeldir && $make modules", "making chapel modules", 0, 1);
+print "Making modules\n";
+$makestat = mysystem("cd $chplhomedir && $make modules", "making chapel modules", 0, 1);
 
 
 #
@@ -506,10 +573,18 @@ if ($nofutures == 0) {
 # to make them if we're testing the examples directory.
 #
 if ($examples == 1) {
-    mysystem("cd $chapeldir && $make spectests", "making spec tests", 0, 1);
+    print "Making spectests\n";
+    mysystem("cd $chplhomedir && $make spectests", "making spec tests", 0, 1);
     $testdirs = "release/examples";
     if ($multilocale == 1) {
         $testdirs .= " multilocale distributions";
+    }
+    if ($localeModelSuite == 1) {
+        if ($multilocale == 1) {
+            $testdirs .= " localeModels memory";
+        } else {
+            $testdirs .= " localeModels memory distributions/robust/arithmetic";
+        }
     }
     if ($parnodefile eq "") {
         $testflags = "$testflags $testdirs";
@@ -539,8 +614,8 @@ if ($hello == 1) {
 	    $testflags = "$testflags release/examples/hello.chpl";
 	}
     } else {
-	print("Error: Can't yet run the parallel tests with --hello[s]");
-	exit(1);
+	mysystem("cd $testdir && echo $testdir > DIRFILE", "making directory file", 1, 1);
+	$testflags = "$testflags -dirfile DIRFILE";
     }
 }
 if ($performance == 1) { 
@@ -549,6 +624,19 @@ if ($performance == 1) {
     } else {
         $testflags = "$testflags -performance -startdate $startdate";
     }
+    if ($performancedescription ne "") {
+       $testflags = "$testflags -performance-description $performancedescription";
+    }
+}
+if ($compperformance == 1) { 
+    if ($startdate eq "-1") {
+        $testflags = "$testflags -compperformance-description \"$compperformancedescription\"";
+    } else {
+        $testflags = "$testflags -compperformance-description \"$compperformancedescription\" -startdate $startdate";
+    }
+}
+if (!($numtrials eq "")) {
+    $testflags = "$testflags -numtrials $numtrials"
 }
 if ($baseline == 1) {
     $testflags = "$testflags -compopts --baseline";
@@ -556,12 +644,17 @@ if ($baseline == 1) {
 if (!($dist eq "")) {
     $testflags = "$testflags -compopts -sdistType=DistType.$dist";
 }
+if ($fast == 1) {
+    $testflags = "$testflags -compopts --fast";
+}
 if (!($memleaks eq "")) {
-    $testflags = "$testflags -memleaks /tmp/$memleaks";
+    $testflags = "$testflags -memleaks $basetmpdir/$memleaks";
 }
 if ($nolocal == 1) {
     $testflags = "$testflags -compopts --no-local";
-    $ENV{'CHPL_TEST_NO_LOCAL'} = true;
+}
+if ($verify == 1) {
+    $testflags = "$testflags -compopts --verify";
 }
 if (!($suppressions eq "")) {
     $testflags = "$testflags -suppress $suppressions";
@@ -578,6 +671,11 @@ $testflags = "$testflags -compopts '$compopts'";
 }
 if ($execopts ne "") {
 $testflags = "$testflags -execopts '$execopts'";
+}
+
+if (exists($ENV{"CHPL_START_TEST_ARGS"})) {
+    $starttestargs = $ENV{"CHPL_START_TEST_ARGS"};
+    $testflags = "$testflags $starttestargs";
 }
 
 
@@ -597,11 +695,22 @@ if ($runtests == 0) {
     close(MAIL);
     
 } else {
-    $ENV{'CHPL_HOME'} = $chapeldir;
+    my $svnPerfBaseDir =  "/data/sea/chapel/NightlyPerformance/";
+    my $svnPerfDir = "$svnPerfBaseDir/$host";
+    my $svnPerfMsgXtra = ".\nData dir: $svnPerfDir\n(Testing continues despite failure.) Error code";
+    if ($performance == 1 || $compperformance == 1) {
+        mysystem("cd $svnPerfDir && svn update", "svn-updating perf data before running tests" . $svnPerfMsgXtra, 0, 1, 1);
+    }
+
+    $ENV{'CHPL_HOME'} = $chplhomedir;
     if ($parnodefile eq "") {
         $testcommand = "cd $testdir && ../util/start_test $testflags";
         print "Executing $testcommand\n";
         $status = mysystem($testcommand, "running standard tests", 0, 0);
+        print "Moving the log and summary files\n";
+        mysystem("cd $testdir && mv -v $rawlog $permlog && mv -v $rawsummary $permsum", "moving the log files", 0, 0);
+        $rawlog = $permlog;
+        $rawsummary = $permsum;
     } else {
         mysystem("cp $parnodefile $testdir/", "copying parallel node file", 1, 1);
         print "about to execute: cd $testdir && ../util/test/paratest.server -nodefile $parnodefile $testflags\n";
@@ -616,7 +725,7 @@ if ($runtests == 0) {
 #
 
     if ($status == 0) {
-        `cat $rawsummary | grep -v "^.END" | grep -v "^.Test Summary" | sort > $sortedsummary`;
+        `cat $rawsummary | grep -v "^.END" | grep -v "^.Test Summary" | LC_ALL=C sort > $sortedsummary`;
 
         $oldsummary = `grep Summary: $prevsummary`; chomp($oldsummary);
         $cursummary = `grep Summary: $sortedsummary`; chomp($cursummary);
@@ -650,7 +759,76 @@ if ($runtests == 0) {
     }
 
 
+    if ($performance == 1 or $compperformance == 1) {
+        mysystem("cd $svnPerfDir && svn update", "svn-updating perf data after running tests" . $svnPerfMsgXtra, 0, 1, 1);
+        mysystem("cd $svnPerfDir && find . -name '*.dat' -print0 | xargs -0 svn add  --parents 2>&1 | grep -v '^svn: warning: .* is already under version control\$'", "svn-adding perf data files", 0, 0, 1);  # can fail easily - ignore failures
+        $fileTypesToIgnore = "\"*.gif\n*.gpl\n*.errors\nday*.log\nday*.log.summary\nday*.log.sorted\ndebug-*.log\ndebug-*.log.summary\ndebug-*.log.sorted\nlast-*.log.sorted\nindex.html\nhtml\nOLD\"";
+        mysystem("cd $svnPerfDir && svn propset svn:ignore $fileTypesToIgnore . --recursive", "svn-ignoring non-dat files", 0, 0, 1);
+        mysystem("cd $svnPerfDir && svn commit -m \"Subject: Perf data update $host  `date '+%F %T'`  $revision\n\nDescription: <empty>\n\"", "svn-committing perf data" . $svnPerfMsgXtra, 0, 1, 1);
 
+        # sync the performance graphs over to sourceforge 
+        $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnPerfBaseDir/ $host --logFile $logdir/syncToSourceForge.errors";
+        $rsyncMessage = "syncing performance graph to sourceforge -- log file at $logdir/syncToSourceForge.errors";
+        mysystem($rsyncCommand, $rsyncMessage , 0, 1, 1);
+        
+   }
+  
+    if ($releasePerformance == 1) {
+        my $svnReleasePerfDir = "$svnPerfDir/releaseOverRelease/";
+        mysystem("cd $svnReleasePerfDir && svn update", "svn-updating release over release perf data after running tests" , 0, 1, 1);
+
+        # check to make sure there is a release over release directory
+        if (not -e "$svnReleasePerfDir") {
+            print "Error there is no release over release perf data at $svnReleasePerfDir";
+        } else {
+
+            # get all of the nightly .dat files that have been recently
+            # modified (to weed out .dat files from old tests.)
+            chdir $svnPerfDir;
+            @nightlyDats;
+            foreach $datFile (glob "*.dat") {
+                if ( -M $datFile < 2 ) {
+                    push(@nightlyDats, $datFile);
+                }
+            }
+
+            #delete the previous spliced data (from yesterday) and make a fresh directory
+            $tmpDatDir = "/tmp/releaseOverReleaseDats/";
+            `rm -rf $tmpDatDir && mkdir $tmpDatDir`;
+
+            # for each .dat file, splice the historical data with the nightly
+            # data. Do not send a message on failiure because you could end up
+            # with 100's of emails on failure. If there is a nightly file but
+            # not a historical file (tests didn't compile under any previous
+            # release.) then we just take the nightly data by passing /dev/null
+            # to the splice script for the historical data. Because of this we
+            # have to pass in the historical data as the second file
+            $today = `date +%D`; chomp ($today);
+            foreach $datName (@nightlyDats) {
+                $historicalFile = "$svnReleasePerfDir/$datName";
+                if (not -f $historicalFile) {
+                    $historicalFile = "/dev/null";
+                }
+                $splice = "$utildir/devel/test/spliceDat";
+                $spliceCommand = "$splice -from_a $today -to_a $today $svnPerfDir/$datName $historicalFile> $tmpDatDir/$datName";
+                $spliceDatMessage = "Attempting to splice historical data $historicalFile with nightly data $svnPerfDir/$datName";
+                mysystem($spliceCommand, $spliceMessage, 0, 0, 1);
+            }
+
+            # create the performance graphs from the newly spliced .dat files
+            $altTitle = "Chapel Release Over Release Performance Graphs";
+            $startdate = "04/10/12"; # earliest date that we generate historical data for
+            $genGraphs = "$utildir/test/genGraphs";
+            $genGraphsCommand = "$genGraphs -p $tmpDatDir -o $svnReleasePerfDir/html/ -t $chplhomedir/test/ -a \"$altTitle\" -n $host  -g $chplhomedir/test/GRAPHFILES -s $startdate";
+            $genGraphsMessage = "Generating release over release performance graphs";
+            mysystem($genGraphsCommand, $genGraphsMessage, 0, 1, 1);
+            
+            # sync the perf graphs over to sourceforge 
+            $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnPerfBaseDir $host/releaseOverRelease/ --logFile $logdir/syncReleaseToSourceForge.errors";
+            $rsyncMessage = "syncing release performance graph to sourceforge -- log file at $logdir/syncReleaseToSourceForge.errors";
+            mysystem($rsyncCommand, $rsyncMessage , 0, 1, 1);
+        }
+    }
 
 #
 # send mail
@@ -659,9 +837,9 @@ if ($runtests == 0) {
     
     $newfailures = "???";
     if ($status == 0) {
-        $newfailures = `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | wc -l`; chomp($newfailures);
-        $newresolved = `comm -23 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | wc -l`; chomp($newresolved);
-        $newpassingfutures = `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success" | wc -l`; chomp($newpassingfutures);
+        $newfailures = `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | wc -l`; chomp($newfailures);
+        $newresolved = `LC_ALL=C comm -23 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | wc -l`; chomp($newresolved);
+        $newpassingfutures = `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success" | wc -l`; chomp($newpassingfutures);
         $passingfutures = `grep "$futuremarker" $sortedsummary | grep "\\[Success" | wc -l`; chomp($passingfutures);
         $newfailures += 0;
         $shortstatus = "$newfailures/$newpassingfutures/$curfail";
@@ -678,7 +856,8 @@ if ($runtests == 0) {
 
     $mailsubject = "$subjectid ($fullplatform) $shortstatus";
     $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
-    
+
+    print "Trying... $mailcommand\n";
     open(MAIL, $mailcommand);
     
     print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime, $crontab);
@@ -688,43 +867,31 @@ if ($runtests == 0) {
     
     if ($status == 0) {
         print MAIL "--- New Errors ($morechars) -------------------------------\n";
-        print MAIL `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
+        print MAIL `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
         print MAIL "\n";
-    }
-    
-    if ($status == 0) {
+
         print MAIL "--- Resolved Errors ($morechars) --------------------------\n";
-        print MAIL `comm -23 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
+        print MAIL `LC_ALL=C comm -23 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
         print MAIL "\n";
-    }
     
-    if ($status == 0) {
         print MAIL "--- New Passing Future tests ($morechars) ---------------------\n";
-        print MAIL `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success"`;
+        print MAIL `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success"`;
         print MAIL "\n";    
-    }
-    
-    if ($status == 0) {
+
         print MAIL "--- Passing Future tests ($morechars) ---------------------\n";
-        print MAIL `comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success"`;
+        print MAIL `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success"`;
         print MAIL "\n";    
-    }
-    
-    if ($status == 0) {
+
         print MAIL "--- Unresolved Errors ($morechars) ------------------------\n";
-        print MAIL `comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
+        print MAIL `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
         print MAIL "\n";
-    }
-    
-    if ($status == 0) {
+
         print MAIL "--- New Failing Future tests ($morechars) -----------------\n";
-        print MAIL `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Error"`;
+        print MAIL `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Error"`;
         print MAIL "\n";    
-    }
-    
-    if ($status == 0) {
+
         print MAIL "--- Unresolved Future tests ($morechars) ------------------\n";
-        print MAIL `comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Error"`;
+        print MAIL `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Error"`;
         print MAIL "\n";    
     }
     
@@ -736,7 +903,7 @@ if ($runtests == 0) {
 #
     if ($debug == 0) {
         if ($status == 0) {
-            `cp $sortedsummary $prevsummary`;
+            system("cp -pv $sortedsummary $prevsummary");
         }
     }
     
@@ -763,14 +930,18 @@ if ($runtests == 0) {
 # analyze memory leaks tests
 #
     if (!($memleaks eq "")) {
-        mysystem("$chapeldir/util/devel/analyzeMemLeaksLog /tmp/$memleaks > $logdir/$memleaks");
+        mysystem("$chplhomedir/util/devel/analyzeMemLeaksLog $basetmpdir/$memleaks > $logdir/$memleaks");
 
         # Update the memory leaks status for performance testing runs to
         #  generate graphs for the memory leaks data
         #
         # This is not ideal (we may be a day behind depending on when
         #  the tests finish), but it good enough for now.
-        mysystem("cd $testdir && cp $logdir/$memleaks ./memleaks.exec.out.tmp && $chapeldir/util/test/computePerfStats memleaks $logdir");
+        if ($examples == 0) {
+            mysystem("cd $testdir && cp $logdir/$memleaks ./memleaksfull.exec.out.tmp && $chplhomedir/util/test/computePerfStats memleaksfull $logdir");
+        } else {
+            mysystem("cd $testdir && cp $logdir/$memleaks ./memleaks.exec.out.tmp && $chplhomedir/util/test/computePerfStats memleaks $logdir");
+        }
     }
 }
 
@@ -786,13 +957,15 @@ sub mysystem {
     $errorname = $_[1];
     $fatal = $_[2];
     $mailmsg = $_[3];
+    $showcommand = $_[4];
 
-    $status = system($command);
+    if ($showcommand) { print "Executing $command\n"; }
+    my $status = system($command);
     if ($status != 0) {
         $endtime = localtime;
 	$somethingfailed = 1;
-        $status = $status / 256;
-	print "Error $_[1]: $status\n";
+        if($status != -1) {$status = $status / 256; }
+	print "Error $errorname: $status\n";
 
 	if ($mailmsg != 0) {
             $mailsubject = "$subjectid ($fullplatform) Failure";
@@ -801,7 +974,7 @@ sub mysystem {
             print "Trying to mail message... using $mailcommand\n";
 	    open(MAIL, $mailcommand);
             print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime, $crontab);
-	    print MAIL "ERROR $_[1]: $status\n";
+	    print MAIL "ERROR $errorname: $status\n";
 	    print MAIL "(workspace left at $tmpdir)\n";
             print MAIL endMailHeader();
 	    close(MAIL);
@@ -819,14 +992,16 @@ sub mysystem {
 sub commitstats {
   if ($performance == 0) {
     if ($debug == 0) {
-        `ci -l -m"automated nightly checkin" $statfile`;
+        print "Checking in $statfile\n";
+        system("ci -l -m'automated nightly checkin' $statfile");
     }
     $makeplot = $statdir."/makeplot";
     if (! -x $makeplot) {
         print "skipping makeplot step\n";
     } else {
         if ($hostplatform eq "linux64") {
-            `cd $statdir && ./makeplot`;
+            print "Running cd $statdir && ./makeplot\n";
+            system("cd $statdir && ./makeplot");
         }
     }
   }
@@ -849,7 +1024,7 @@ sub numfailures {
 sub numfutures {
   $mystr = $_[0];
   $mystr =~ s/.* #Futures = //;
-  $mystr =~ s/]//;
+  $mystr =~ s/ \|.*//;
   $mystr;
 }
 
@@ -880,7 +1055,7 @@ sub startMailHeader {
         "Ended:    " . shift(@_) . "\n\n";
 
     if ($debug == 0) {
-        $mystr .= "Crontab:\n". shift(@_) . "\n";
+        $mystr .= shift(@_) . "\n\n";
     }
 
     $mystr;

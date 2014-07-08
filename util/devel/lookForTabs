@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 #
 # either CHPL_HOME must be set or this must be run from the root chapel
@@ -7,11 +7,23 @@
 
 pushd $CHPL_HOME >& /dev/null
 
-find compiler -wholename "*/.svn" -prune -o -name lex.yy.cpp -prune -o -name chapel.tab.cpp -prune -o -name chapel.tab.h -prune -o \( -name \*.lex -o -name \*.y -o -name \*.ypp -o -name \*.h -o -name \*.c -o -name \*.cpp \) -exec grep -n --with-filename -P '\t' {} \;
+find compiler \
+    -type d -name .svn -prune -o \
+    -name lex.yy.cpp -prune -o \
+    -name chapel.tab.cpp -prune -o \
+    -name chapel.tab.h -prune -o \
+    \( -name \*.lex -o -name \*.y -o -name \*.ypp -o -name \*.h -o -name \*.c -o -name \*.cpp \) \
+    -exec grep -n --with-filename $'\t' {} \;
 
-find runtime -wholename "*/.svn" -prune -o \( -name \*.h -o -name \*.c -o -name \*.cpp \) -exec grep -n --with-filename -P '\t' {} \;
+find runtime \
+    -type d -name .svn -prune -o \
+    \( -name \*.h -o -name \*.c -o -name \*.cpp \) \
+    -exec grep -n --with-filename $'\t' {} \;
 
-find modules -wholename "*/.svn" -prune -o -name \*.chpl  -exec grep -n --with-filename -P '\t' {} \;
+find modules \
+    -type d -name .svn -prune -o \
+    -name \*.chpl \
+    -exec grep -n --with-filename $'\t' {} \;
 
 popd >& /dev/null
 

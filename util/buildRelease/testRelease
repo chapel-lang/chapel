@@ -1,5 +1,9 @@
 #!/usr/bin/env perl
 
+# Mailing lists.
+$failuremail = "chapel-test-results-regressions\@lists.sourceforge.net";
+$allmail = "chapel-test-results-all\@lists.sourceforge.net";
+
 $printusage = 1;
 $debug = 1;
 
@@ -35,6 +39,17 @@ $debugmail = $ENV{'CHPL_NIGHTLY_DEBUG_EMAIL'};
 if ($debugmail eq "") {
     $debugmail = "$user\@cray.com";
 }
+
+if ($cronrecipient eq "" and exists($ENV{"CHPL_NIGHTLY_CRON_RECIPIENT"})) {
+    $cronrecipient = $ENV{"CHPL_NIGHTLY_CRON_RECIPIENT"};
+}
+
+if ($cronrecipient ne "") {
+    print "Overriding \$failuremail and \$allmail with: $cronrecipient.\n";
+    $failuremail = $cronrecipient;
+    $allmail = $cronrecipient;
+}
+
 $platform = `uname -s`;
 chomp($platform);
 $platform = lc($platform);
@@ -46,7 +61,7 @@ if ($platform eq "linux") {
     } else {
         $platform = "linux32";
     }
-} elsif ($platform eq "cygwin_nt-5.1") {
+} elsif ($platform =~ /^cygwin/) {
     $platform = "cygwin";
 }
 
@@ -103,7 +118,7 @@ mysystem("cp $chplhome/tar/chapel-test.tar.gz $tmpdir", "copying release", 1, 1)
 mysystem("cd $tmpdir && gunzip chapel-test.tar.gz", "unzipping release", 1, 1);
 mysystem("cd $tmpdir && tar xf chapel-test.tar", "untarring release", 1, 1);
 mysystem("cp $chplhome/util/buildRelease/testReleaseHelp $tmpdir/chapel-test/", "copying testReleaseHelp script", 1, 1);
-$teststatus = mysystem("cd $tmpdir/chapel-test && ./testReleaseHelp `$chplhome/util/chplenv/chplmake`", "running testReleaseHelp script", 1, 1);
+$teststatus = mysystem("cd $tmpdir/chapel-test && ./testReleaseHelp `$chplhome/util/chplenv/chpl_make.py`", "running testReleaseHelp script", 1, 1);
 
 
 #
@@ -113,13 +128,14 @@ if ($teststatus == 0) {
     $failures = `grep Error $tmpdir/chapel-test/examples/Logs/testReleaseHelp.log | wc -l`; chomp($failures);
     if ($failures == "0") {
         $shortstatus = "Passed";
-        $successmail = "chapel_cronmail_all\@cray.com";
+        $successmail = "$allmail";
     } else {
         $shortstatus = "Failed: Tests";
-        $successmail = "chapel_cronmail\@cray.com";
+        $successmail = "$failuremail";
     }
 } else {
     $shortstatus = "Failed: Something";
+    $successmail = "$failuremail";
 }
 if ($debug == 1) {
     $mailsubject = "Dbug Release $shortstatus ($platform)";
@@ -134,6 +150,13 @@ if ($debug == 1) {
 }
     
 open(MAIL, $mailcommand);
+
+print MAIL "=== Results - testRelease =================================================\n";
+print MAIL "Hostname:   ", `hostname`;
+print MAIL "\$tmpdir:    $tmpdir\n";
+print MAIL "\$chplhome:  $chplhome\n";
+print MAIL "Ended:      ", scalar(localtime()), "\n";
+print MAIL "\n";
 
 print MAIL `cat $tmpdir/chapel-test/examples/Logs/testReleaseHelp.log.summary`;
     
@@ -173,12 +196,12 @@ sub mysystem {
                 $mailcommand = "| $mailer -s \"$mailsubject \" $debugmail";
             } else {
                 $mailsubject = "Cron Release Failed ($platform)";
-                $mailcommand = "| $mailer -s \"$mailsubject \" chapel_cronmail\@cray.com";
+                $mailcommand = "| $mailer -s \"$mailsubject \" $failuremail";
             }
 
             print "Trying to mail message... using $mailcommand\n";
 	    open(MAIL, $mailcommand);
-	    print MAIL "=== Summary ===================================================\n";
+	    print MAIL "=== Summary - testRelease ===================================================\n";
 	    print MAIL "ERROR $_[1]: $status\n";
             $host = `hostname`; chomp($host);
 	    print MAIL "(workspace left at $host:$tmpdir)\n";

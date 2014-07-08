@@ -9,18 +9,19 @@
 #
 # -cron: check out a new copy of chapel, make it, run tests as above,
 #        reading options from test/OPT_TESTING_FLAGS in the checkout,
-#        and mail results to chapel_cronmail@cray.com ; on Saturdays
+#        and mail results to test failures mailing list ; on Saturdays
 #        run tests on every directory and on Sundays, do nothing
 #
 # -all: run tests on almost all test/ subdirectories, not just
 #       release/examples
 #
 
-if (!defined $ENV{'CHPL_HOME_REPOSITORY'}) {
-    print "ERROR: CHPL_HOME_REPOSITORY must be set to use getoldperf\n";
-    exit(1);
-}
-$svnroot = $ENV{'CHPL_HOME_REPOSITORY'};
+use Cwd 'abs_path';
+use File::Basename;
+
+# Mailing lists.
+$failuremail = "chapel-test-results-regressions\@lists.sourceforge.net";
+$allmail = "chapel-test-results-all\@lists.sourceforge.net";
 
 while (@ARGV) {
   $flag = shift @ARGV;
@@ -28,27 +29,27 @@ while (@ARGV) {
     $cron = 1;
   } elsif ($flag eq "--all" || $flag eq "-all") {
     $all = 1;
+  } elsif ($flag eq "--hello" || $flag eq "-hello") {
+      $hello = 1;
   } else {
     die "usage: start_opt_test [--cron] [--all]\n";
   }
 }
 
+$cwd = abs_path(dirname(__FILE__));
+$chplhomedir = abs_path("$cwd/../..");
+$chpltestdir = "$chplhomedir/test";
+$ENV{'CHPL_HOME'} = $chplhomedir;
 if ($cron) {
-  $testdir = "/tmp/opt_testing$all";
-  `rm -rf $testdir`;
-  `mkdir $testdir`;
-  `cd $testdir && svn export -q $svnroot chapel >& /dev/null`;
-  `cd $testdir/chapel && make all >& /dev/null`;
-  $home = "$testdir/chapel/test";
-  $ENV{'CHPL_HOME'} = "$testdir/chapel";
-} else {
-  $home = ".";
+    `cd $chplhomedir && make all`;
 }
 
-@OPTS = `cat $home/OPT_TESTING_FLAGS`;
+@OPTS = `cat $chpltestdir/OPT_TESTING_FLAGS`;
 
 if ($all) {
   $dir = "arrays associative classes demo dispatch distributions domains expressions functions io modules multilocale no_infer npb parallel param parsing portability puzzles reductions release/examples sparse spec statements studies trivial types users";
+} elsif ($hello) {
+    $dir = "release/examples/hello.chpl";
 } else {
   $dir = "release/examples";
 }
@@ -57,13 +58,13 @@ if ($all) {
 
 foreach $opt (@OPTS) {
     chomp $opt;
-    system("echo \"\" | tee -a $home/.opt_testing.tmp");
-    system("echo \"OPTIMIZATION FLAGS: $opt\" | tee -a $home/.opt_testing.tmp");
-    system("echo \"\" | tee -a $home/.opt_testing.tmp");
-    system("cd $home && ../util/start_test $dir --compopts \"$opt\" | tee -a .opt_testing.tmp");
+    system("echo \"\" | tee -a $chpltestdir/.opt_testing.tmp");
+    system("echo \"OPTIMIZATION FLAGS: $opt\" | tee -a $chpltestdir/.opt_testing.tmp");
+    system("echo \"\" | tee -a $chpltestdir/.opt_testing.tmp");
+    system("cd $chpltestdir && ../util/start_test $dir --compopts \"$opt\" | tee -a .opt_testing.tmp");
 }
 
-@lines = `cat $home/.opt_testing.tmp`;
+@lines = `cat $chpltestdir/.opt_testing.tmp`;
 
 foreach $line (@lines) {
     if ($line =~ /\[Error/) {
@@ -74,9 +75,9 @@ foreach $line (@lines) {
 if ($cron) {
     $nerror = $nerrort2/2;
     if ($nerror == 0) {
-        open(FILE, "| mail -s \"Cron $nerror/$nerror (chap02:opts tests)\" chapel_cronmail_all\@cray.com $ENV{'USER'}\@cray.com");
+        open(FILE, "| mail -s \"Cron $nerror/$nerror (chap02:opts tests)\" $allmail $ENV{'USER'}\@cray.com");
     } else { 
-        open(FILE, "| mail -s \"Cron $nerror/$nerror (chap02:opts tests)\" chapel_cronmail\@cray.com chapel_cronmail_all\@cray.com");
+        open(FILE, "| mail -s \"Cron $nerror/$nerror (chap02:opts tests)\" $failuremail $allmail");
     }
 } else {
     open(FILE, ">&STDOUT");

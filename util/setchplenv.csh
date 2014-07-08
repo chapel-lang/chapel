@@ -11,7 +11,7 @@ endif
 set MYPATH = `./util/config/fixpath "$PATH" :`
 set MYMANPATH = `./util/config/fixpath "$MANPATH" :`
 
-if ( $MYPATH == "" ) then
+if ( "$MYPATH" == "" ) then
   echo "Error running ./util/config/fixpath"
   exit
 endif
@@ -21,7 +21,7 @@ setenv CHPL_HOME "$cwd"
 echo "to $CHPL_HOME"
 
 echo -n "Setting CHPL_HOST_PLATFORM "
-setenv CHPL_HOST_PLATFORM `"$CHPL_HOME/util/chplenv/platform"`
+setenv CHPL_HOST_PLATFORM `"$CHPL_HOME/util/chplenv/chpl_platform.py"`
 echo "to $CHPL_HOST_PLATFORM"
 
 echo -n "Updating PATH "
