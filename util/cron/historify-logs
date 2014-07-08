@@ -18,7 +18,8 @@ loghistdir=NightlyHistory
 logsources="\
 Nightly \
 Nightly/weekend \
-Nightly/whitebox \
+Nightly/whitebox/cray-xc \
+Nightly/whitebox/cray-xe \
 NightlyBaseline \
 NightlyDists \
 NightlyMemLeaks \
