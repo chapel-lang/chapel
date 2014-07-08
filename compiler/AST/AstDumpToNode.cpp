@@ -630,7 +630,7 @@ bool AstDumpToNode::enterGotoStmt(GotoStmt* node)
   newline();
   fprintf(mFP, ">");
 
-  return true;
+  return false;
 }
 
 void AstDumpToNode::exitGotoStmt(GotoStmt* node)
