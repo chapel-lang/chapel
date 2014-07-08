@@ -1,1 +1,1 @@
-feature request? bug? it would be nice if int-to-uint coercion worked for parameters.
+bug: (feature request?): it would be nice if int-to-uint coercion worked for parameters.

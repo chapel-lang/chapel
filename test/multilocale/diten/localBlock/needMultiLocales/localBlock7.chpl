@@ -34,7 +34,7 @@ writeln("Second local block");
 foo(A);
 writeln("Third local block");
 local {
-  serial true do foo(A); // this line causes the error
+  serial do foo(A); // this line causes the error
 }
 
 writeln(A);

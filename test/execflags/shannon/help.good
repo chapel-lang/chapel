@@ -17,9 +17,8 @@ CONFIG VAR FLAGS:
 
 CONFIG VARS:
 ============
+       printModuleInitOrder: bool
                  numLocales: int(64)
-        numThreadsPerLocale: int(64)
-              callStackSize: int(64)
       dataParTasksPerLocale: int(64)
   dataParIgnoreRunningTasks: bool
       dataParMinGranularity: int(64)
@@ -27,7 +26,7 @@ CONFIG VARS:
                    memStats: bool
                    memLeaks: bool
               memLeaksTable: bool
-                     memMax: int(64)
-               memThreshold: int(64)
-                     memLog: string
-                memLeaksLog: string
+                     memMax: uint(64)
+               memThreshold: uint(64)
+                     memLog: c_string
+                memLeaksLog: c_string

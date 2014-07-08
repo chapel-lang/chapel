@@ -3,8 +3,6 @@
  *
  * This primer covers procedures including overloading, argument
  * intents and dynamic dispatch.
- * 
- * For examples of generic (template) functions, see generics.chpl.
  *
  */
 
@@ -127,6 +125,29 @@ writeln(c);
 writeln();
 
 //
+// Procedures can also have arguments of indeterminate type: these are known
+// as generic procedures.
+//
+proc unknownArg(x)
+{
+  writeln(x);
+  if x.type == int then
+    writeln("I see you've passed me an integer!");
+  else if x.type == string {
+    writeln("I liked that last variable so much, I'll write it again!");
+    writeln(x);
+  }
+}
+var intArg = 5;
+var strArg = "Greetings, procedure unknownArg!";
+var boolArg = false;
+writeln("Using generic arguments");
+unknownArg(intArg);
+unknownArg(strArg);
+unknownArg(boolArg);
+writeln();
+
+//
 // This configuration parameter allows automated tests to run faster
 //  by skipping the sleep delays.
 // You can try this yourself by adding -suseSleep=false as a compiler option.
@@ -171,15 +192,40 @@ proc countDownToZero(inout n : uint = 10) : void
   writeln("Boink?");
 }
 
-writeln("Using the inout intent");
+writeln("Using the \"inout\" intent");
 var t = 3 : uint;
 countDownToZero(t);
 writeln("t is now ", t);	// 0
 writeln();
 
 //
-// The out intent causes the actual argument to be ignored when the procedure starts.
-// The actual is assigned the value of the corresponding formal when the routine exits.
+// Similar to the inout intent, the ref intent causes the value of the actual
+// to change depending on the function.  However, while the inout copies the
+// argument in upon entering the function and copies the new value out upon
+// exiting, using a ref intent causes any updates to the formal to immediately
+// affect the call site.
+//
+proc countDownToZeroToo(ref n : uint = 10) : void
+{
+  while n > 0 
+  {
+    writeln(n, " ...");
+    if useSleep then sleep(1);
+    n -= 1;
+  }
+  writeln("Flippity boop");
+}
+
+writeln("Using the \"ref\" intent");
+var bip = 3 : uint;
+countDownToZeroToo(bip);
+writeln("bip is now ", bip);	// 0
+writeln();
+
+//
+// The out intent causes the actual argument to be ignored when the procedure
+// starts. The actual is assigned the value of the corresponding formal when
+// the routine exits.
 //
 // This arctan routine puts the result in res and returns the number of
 // iterations it needed to converge.
@@ -206,7 +252,7 @@ proc atan(x : real, out result : real)
   return count;
 }
 
-writeln("Using the out intent");
+writeln("Using the \"out\" intent");
 var theta : real;
 var n = atan(1.0, theta);
 writeln("Computed Pi as about ", 4.0 * theta, " in ", n, " iterations.");
@@ -214,8 +260,11 @@ writeln();
 
 //
 // A procedure can take a variable number of arguments -- of indeterminate type.
-// It is expanded like a generic procedure, with the required number of arguments
-// having types which match the actual arguments.
+// It is expanded like a generic procedure, with the required number of
+// arguments having types which match the actual arguments.
+//
+// Note: see varargs.chpl for further information on procedures with a variable
+// number of arguments
 //
 proc writeList(x ...?k) {
   var first = true;

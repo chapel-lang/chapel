@@ -1,5 +1,4 @@
-bug: reduction of arrays
+bug: reduction over the arrays in an arrays of arrays does not work
 
-We are seeing a strange bug where in declaring an  array C that is dead (unused)
-is causing a floating point exception, even though it is never referenced. Once
-C is removed, we then see "error: attempt to dereference nil".
+This test fails in different ways for different compilers (?), so for
+now, only it run it for CHPL_HOST_COMPILER=gnu.

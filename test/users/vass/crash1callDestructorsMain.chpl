@@ -465,6 +465,8 @@ proc DimensionalDom.dsiReprivatize(other, reprivatizeData) {
 
 proc DimensionalDom.dsiMyDist() return dist;
 
+proc DimensionalDom.dsiDims()     return whole.dims();
+
 proc DimensionalDom.dsiNumIndices return whole.numIndices;
 
 proc DimensionalDom.subordinate1dDist(param dim: int) {
@@ -656,13 +658,13 @@ proc DimensionalArr.dsiSerialWrite(f: Writer): void {
   if dom.dsiNumIndices == 0 then return;
 
   var nextD1 = false;
-  for (l1,r1) in dom.dom1.dsiSerialArrayIterator1d(tuple(this, 1)) do
+  for (l1,r1) in dom.dom1.dsiSerialArrayIterator1d((this, 1)) do
     for i1 in r1 {
       if nextD1 then f.writeln();
       nextD1 = true;
 
       var nextD2 = false;
-      for (l2,r2) in dom.dom2.dsiSerialArrayIterator1d(tuple(this, 2)) do
+      for (l2,r2) in dom.dom2.dsiSerialArrayIterator1d((this, 2)) do
         for i2 in r2 {
           const locAdesc = localAdescs[l1,l2];
           const elem = locAdesc.myStorageArr(i1:stoSzT,i2:stoSzT);
@@ -830,8 +832,8 @@ iter DimensionalArr.these() var {
 
   // TODO: is this the right approach?
   // e.g. is it right that the *global* subordinate 1-d descriptors are used?
-  for (l1,r1) in dom.dom1.dsiSerialArrayIterator1d(tuple(this, 1)) do
-    for (l2,r2) in dom.dom2.dsiSerialArrayIterator1d(tuple(this, 2)) do
+  for (l1,r1) in dom.dom1.dsiSerialArrayIterator1d((this, 1)) do
+    for (l2,r2) in dom.dom2.dsiSerialArrayIterator1d((this, 2)) do
       {
         const locAdesc = localAdescs[l1,l2];
         _traceddc(traceDimensionalDistIterators,
@@ -1104,7 +1106,7 @@ proc vdom.dsiPrivatize1d(privatizeData) {
 
 // REQ if privatization is supported - same purpose as dsiGetReprivatizeData()
 proc vdom.dsiGetReprivatizeData1d() {
-  return tuple(wholeR);
+  return (wholeR,);
 }
 
 // REQ if privatization is supported - same purpose as dsiReprivatize()
@@ -1238,7 +1240,7 @@ class sdom {
 class slocdom {
   // for now, store everything on locale with id=0
   // TODO replace 0
-  const myLocID: locIdT;
+  var myLocID: locIdT;
   var myRange;
 }
 
@@ -1270,7 +1272,7 @@ proc sdom.dsiPrivatize1d(privatizeData) {
 }
 
 proc sdom.dsiGetReprivatizeData1d() {
-  return tuple(wholeR);
+  return (wholeR,);
 }
 
 proc sdom.dsiReprivatize1d(other, reprivatizeData) {

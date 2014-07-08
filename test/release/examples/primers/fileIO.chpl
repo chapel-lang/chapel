@@ -13,7 +13,7 @@
 
 config var n = 9,            // the problem size for example 1
            filename = "Arr.dat";  // the filename for writing/reading the array
-config const num = 1*1024*1024;
+config const num = 128*1024;
 config const example = 0;
 config const testfile = "test.bin";
 
@@ -90,13 +90,10 @@ proc readArray(filename) {
   var X: [1..m, 1..n] real;
 
   //
-  // Read in the array elements one by one (eventually, you should be
-  // able to read in the array wholesale, but this isn't currently
-  // supported.
+  // Read in the array (row-major order is used for whole-array reads
+  // like this)
   //
-  for i in 1..m do
-    for j in 1..n do
-      reader.read(X(i,j));
+  reader.read(X);
 
   // Close the file
   reader.close();
@@ -274,7 +271,7 @@ if example == 0 || example == 5 {
   writeln("Running Example 5");
 
   // Error handling.
-  var err = ENOERR;
+  var err:syserr;
   // Who knows, maybe 1st unlink succeeds.
   unlink(testfile, error=err);
 
@@ -350,6 +347,8 @@ if example == 0 || example == 7 {
 
     r.readbits(tmp, 9);
     assert(tmp == 0b011110000);
+
+    r.close();
   }
 
   // Try reading it back all as one big chunk.
@@ -363,6 +362,10 @@ if example == 0 || example == 7 {
 
     r.read(tmp);
     assert(tmp == 0b11110000);
+
+    r.close();
   }
+
+  f.close();
 }
 

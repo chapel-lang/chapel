@@ -28,12 +28,13 @@ record R {
 
 }
 
-/*
+pragma "init copy fn"
 proc chpl__initCopy(x: R) {
   writeln("In R initCopy ", x.refcnt);
   x.retain();
   return x;
 }
+/*
 proc chpl__autoCopy(x: R) {
   writeln("In R autoCopy ", x.refcnt);
   x.retain();
@@ -42,14 +43,13 @@ proc chpl__autoCopy(x: R) {
 */
 
 
-proc =(ret:R, x:R) {
+proc =(ref ret:R, x:R) {
   // retain then release.
   writeln("Starting R assign ", ret.refcnt, x.refcnt);
   x.retain();
   ret.release();
   ret.refcnt = x.refcnt;
   writeln("Done R assign ", ret.refcnt);
-  return ret;
 }
 
 proc R.routine() {
@@ -109,10 +109,12 @@ writeln("Before scope (setting global)");
 writeln("After scope (setting global)");
 
 writeln("Before scope (begin)");
-sync {
+{
   var r:R;
-  begin {
-    test_one(r, false);
+  sync {
+    begin {
+      test_one(r, false);
+    }
   }
 }
 writeln("After scope (begin)");

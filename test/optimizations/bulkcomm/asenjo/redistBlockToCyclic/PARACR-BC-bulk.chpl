@@ -20,14 +20,14 @@ proc BlockArr.copyBtoC(B)
 
     var numLocales: int(32)=dom.dist.targetLocDom.dim(1).length:int(32);
     var n:int(32)=dom.dist.boundingBox.dim(1).length:int(32);
-    var src = locArr[lid].myElems._value.data;
+    var src = locArr[lid].myElems._value.theData;
 
     dststrides[1]=1;
     srcstrides[1]=numLocales;
 
-    var dststr=dststrides._value.data;
-    var srcstr=srcstrides._value.data;
-    var cnt=count._value.data;
+    var dststr=dststrides._value.theData;
+    var srcstr=srcstrides._value.theData;
+    var cnt=count._value.theData;
 
     //Domain size (n) and first index (arrayini)
 
@@ -57,8 +57,8 @@ proc BlockArr.copyBtoC(B)
       if (schunkini+(blksize/numLocales)*numLocales>b) then chunksize=blksize/numLocales;
       else chunksize=blksize/numLocales+1;
 
-      //var destr = privB.locArr[dst].myElems._value.data;
-      var destr = B._value.locArr[dst].myElems._value.data;
+      //var destr = privB.locArr[dst].myElems._value.theData;
+      var destr = B._value.locArr[dst].myElems._value.theData;
       count[1]=1;
       count[2]=chunksize;
 
@@ -90,9 +90,9 @@ proc  BlockArr.copyCtoB(B)
     var numLocales: int=dom.dist.targetLocDom.dim(1).length;
     var n:int(32)=dom.dist.boundingBox.dim(1).length:int(32);
 
-    var dststr=dststrides._value.data;
-    var srcstr=srcstrides._value.data;
-    var cnt=count._value.data;
+    var dststr=dststrides._value.theData;
+    var srcstr=srcstrides._value.theData;
+    var cnt=count._value.theData;
 
     //On each locale (src) we compute the chunk that goes to each dst
     var num: int;
@@ -102,7 +102,7 @@ proc  BlockArr.copyCtoB(B)
     var b: int(32)=dom.locDoms[lid].myBlock.high:int(32);
     num=b-a+1;
 
-    var src = locArr[lid].myElems._value.data;
+    var src = locArr[lid].myElems._value.theData;
     var arrayini:int(32)=dom.dsiLow:int(32);
 
     var t,t1,t2: real;
@@ -117,7 +117,7 @@ proc  BlockArr.copyCtoB(B)
       if (schunkini+(num/numLocales)*numLocales>b) then chunksize=num/numLocales;
       else chunksize=num/numLocales+1;
 
-      var destr = B._value.locArr[dst].myElems._value.data;
+      var destr = B._value.locArr[dst].myElems._value.theData;
       dststrides[1]=numLocales:int(32);
       srcstrides[1]=1;
       count[1]=1;
@@ -232,7 +232,7 @@ proc main(){
   /*          Cyclic Distribution             */
   /********************************************/
 
-  for j in {(RedistStage+1)..stages-1} by 2 do {
+  for j in (RedistStage+1)..stages-1 by 2 do {
     //  Stage (j) 
     ComputeStage(PP,QQ,RR,SS,P,Q,R,S,j,DomC);   
     //  Stage (j+1)
@@ -353,7 +353,7 @@ proc SetExampleMatrix()
   }
   
   A(1)=0;C(n)=0;
-  forall i in {1..(n+1)/2} do {
+  forall i in 1..(n+1)/2 do {
     D(i)=i;
     D(n-i+1)=i;
   }

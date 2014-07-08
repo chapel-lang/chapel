@@ -131,7 +131,8 @@ proc rank(iteration: int) {
     const low = thread * blkSize;
     const high = if thread == nThreads-1 then D.high else (thread+1)*blkSize-1;
     keyBuff1(0..maxKey-1, thread) = 0;
-    keyBuff1(keyArray(low..high), thread) += 1;
+    for k in keyArray(low..high) do
+      keyBuff1(k, thread) += 1;
     keyBuff1(0..maxKey-1, thread) = + scan keyBuff1(0..maxKey-1, thread);
   }
   partialVerification(iteration);
@@ -238,7 +239,7 @@ proc fullVerify() {
     keyBuff1(i, 0) = + reduce keyBuff1(i, 0..nThreads-1);
   buffer = keyArray;
 
-  serial true {
+  serial {
     [i in D] {
       atomic {
 	keyBuff1(buffer(i), 0) -= 1;

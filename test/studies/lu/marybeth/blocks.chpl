@@ -14,7 +14,7 @@ initA(A,'Adata.dat');
 writeln("Unfactored Matrix:");
 writeln(A);
 
-for jblk in {1..n} by blk {
+for jblk in 1..n by blk {
   var low = jblk;
   var hi = if (jblk + blk-1) <= n then jblk+blk-1 else n;
   var D11 = {low..hi,low..hi};
@@ -23,11 +23,11 @@ for jblk in {1..n} by blk {
   var D22 = {hi+1..n,hi+1..n};
   for k in D11.dim(2) {
     if (A(k,k) != 0.0) {
-      for i in {k+1..hi} {
+      for i in k+1..hi {
         A(i,k) = A(i,k)/A(k,k);
       }
-      for i in {k+1..hi} {
-        for j in {k+1..hi} {
+      for i in k+1..hi {
+        for j in k+1..hi {
           A(i,j) -= A(i,k)*A(k,j);
         }
       }
@@ -47,9 +47,9 @@ for jblk in {1..n} by blk {
       }
     }
     for j in D12.dim(2) {
-      for k in {low..hi} {
+      for k in low..hi {
         if (A(k,j)!= 0.0) {
-          for i in {k+1..hi} {
+          for i in k+1..hi {
             A(i,j) -= A(k,j)*A(i,k);
           }
         }
@@ -58,7 +58,7 @@ for jblk in {1..n} by blk {
     for ind in D22 {
       var i = ind(1);
       var j = ind(2);
-      for k in {low..hi} {
+      for k in low..hi {
         A(i,j) -= A(i,k)*A(k,j);
       }
     }
@@ -96,9 +96,9 @@ P(10,6) = 1.0;
 
 temp = 0.0;
 const i = 1..10;
-for i in {1..10} {
-  for j in {1..10} {
-    for k in {1..10} {
+for i in 1..10 {
+  for j in 1..10 {
+    for k in 1..10 {
       temp(i,j) = temp(i,j) + P(i,k)*A(k,j);
     }
   }

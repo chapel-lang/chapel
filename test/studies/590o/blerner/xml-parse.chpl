@@ -24,7 +24,7 @@ class XmlTag : XmlElement {
   var childrenValues: [childrenValueSpace] XmlElement;
   proc printHelp(indent) {
     writeln(indent, "<", name, ">");
-    for child in {1..numChildren} do
+    for child in 1..numChildren do
        childrenValues[child].printHelp(indent + "  ");
   }
 }
@@ -75,7 +75,7 @@ proc hasIndex(start, stop, indices) {
 }
 
 proc hasSpace(str) {
-  for i in {1..(str.length)} do
+  for i in 1..(str.length) do
      if str.substring(i) == " " then return true;
   return false;
 }
@@ -106,7 +106,7 @@ proc processTag(i,j) {
   if (stop == i && sourceText.substring[j-1] == "/" && sourceText.substring[i+1] != " ") {
     /* at a self-closing tag? */
     var name : string = "";
-    for stop in {i+2..j-2} do
+    for stop in i+2..j-2 do
       if sourceText.substring[stop] == ' ' {
         name = sourceText.substring[i+1..stop-1];
         break;

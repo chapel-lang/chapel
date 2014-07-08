@@ -29,7 +29,7 @@ record FakeLeader {
   }
 
   iter these(param tag: iterKind) where tag == iterKind.leader {
-    yield tuple(0:indexType..#N_U);
+    yield (0:indexType..#N_U, );
   }
   
   iter these(param tag: iterKind, followThis) where tag == iterKind.follower {

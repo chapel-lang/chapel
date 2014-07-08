@@ -10,7 +10,8 @@ use Time;
 // This initializes the seed used for the random number generator.
 var seed: sync uint(32) = getCurrentTime() : uint(32);
 
-var notThereYet = true;
+var notThereYet: atomic bool;
+notThereYet.write(true);
 
 // The begin statement spawns off a thread of execution that is
 // independent from the rest of the program.  In this case, imagine a
@@ -18,7 +19,7 @@ var notThereYet = true;
 // yet?" until someone else gets fed up with the incessant questions.
 
 begin
-  while notThereYet {
+  while notThereYet.read() {
     writeln ("Are we there yet?");
     var delay = RandomNumber() * 4.0;
     sleep (delay : uint);  // wait between 0 and 3 seconds before asking again
@@ -30,7 +31,7 @@ begin
 begin {
   var delay = RandomNumber() * 8.0 + 5.0;
   sleep (delay : uint);
-  notThereYet = false;
+  notThereYet.write(false);
   writeln ("Shut up!");
 }
 

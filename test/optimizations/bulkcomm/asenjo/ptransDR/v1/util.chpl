@@ -24,11 +24,11 @@ proc setupGridLocales(ensureManyLocs = false) {
 
 // show what we have
 config const vsend = true;
-const fpstyle = new iostyle(realfmt = 1, precision = 2, min_width = 6);
+const fpstyle = new iostyle(realfmt = 1, precision = 2, min_width_columns = 6);
 
 const colsep = "  ";
 proc showdummyrow() {
-  const width = (m) * fpstyle.min_width;
+  const width = (m) * fpstyle.min_width_columns;
   for 1..width do write(" ");
 }
 proc showrealrow(oddphase: bool, gi:int, gj:int, i:int) {

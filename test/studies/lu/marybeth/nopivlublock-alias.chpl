@@ -117,9 +117,9 @@ P(10,6) = 1.0;
 
 temp = 0.0;
 const i = 1..10;
-for i in {1..10} {
-  for j in {1..10} {
-    for k in {1..10} {
+for i in 1..10 {
+  for j in 1..10 {
+    for k in 1..10 {
       temp(i,j) = temp(i,j) + P(i,k)*A(k,j);
     }
   }

@@ -10,7 +10,7 @@ var rng = new RandomStream(314159265);
 
 rng.fillRandom(R1D);
 rng.fillRandom(R2D);
-rng.fillRandom(R2D64);
+rng.fillRandom(R2D32);
 
 var saved: [1..3][normType.norm1..normType.normFrob] int;
 
@@ -70,8 +70,8 @@ writeln("\tR1D:");
 doNorm(R1D, 1, true);
 writeln("\tR2D:");
 doNorm(R2D, 2, true);
-writeln("\tR2D64:");
-doNorm(R2D64, 3, true);
+writeln("\tR2D32:");
+doNorm(R2D32, 3, true);
 
 
 writeln("Vector norm");
@@ -79,20 +79,20 @@ writeln("\tR1D:");
 doNorm(R1D, 1);
 writeln("\tR2D:");
 doNorm(R2D, 2);
-writeln("\tR2D64:");
-doNorm(R2D64, 3);
+writeln("\tR2D32:");
+doNorm(R2D32, 3);
 
 
 writeln("Vector norm aliased arrays");
 var aR1D => R1D;
 var aR2D => R2D;
-var aR2D64 => R2D64;
+var aR2D32 => R2D32;
 writeln("\tR1D:");
 doNorm(aR1D, 1);
 writeln("\tR2D:");
 doNorm(aR2D, 2);
-writeln("\tR2D64:");
-doNorm(aR2D64, 3);
+writeln("\tR2D32:");
+doNorm(aR2D32, 3);
 
 
 writeln("Vector norm reindexed arrays");
@@ -101,13 +101,13 @@ proc foo(D: domain, A: [D], loc) {
 }
 const TD1D: domain(1) = Space1.translate(-o5);
 const TD2D: domain(2) = Space2.translate(-o5,-o5);
-const TD2D64: domain(2,int(64)) = Space2D64.translate(-o5:int(64),-o5:int(64));
+const TD2D32: domain(2,int(32)) = Space2D32.translate(-o5:int(32),-o5:int(32));
 writeln("\tR1D:");
 foo(TD1D, R1D, 1);
 writeln("\tR2D:");
 foo(TD2D, R2D, 2);
-writeln("\tR2D64:");
-foo(TD2D64, R2D64, 3);
+writeln("\tR2D32:");
+foo(TD2D32, R2D32, 3);
 
 
 writeln("Vector norm rank changed arrays (baseline)");

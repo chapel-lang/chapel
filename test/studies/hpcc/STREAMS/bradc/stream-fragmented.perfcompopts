@@ -1,1 +1,1 @@
-../../common/probSize.chpl ../../common/bradc/hpccMultilocale.chpl -O --no-checks --no-local
+../../common/probSize.chpl ../../common/bradc/hpccMultilocale.chpl --no-local

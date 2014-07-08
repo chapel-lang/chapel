@@ -31,7 +31,7 @@ proc in_mandelbrot_set(real_part, imag_part) {
   start.im = imag_part;
   z = start;
 
-  for i in {1..iterations} {
+  for i in 1..iterations {
     z = z * z + start;
     if (z.re**2 + z.im**2 > 4) then
       break;

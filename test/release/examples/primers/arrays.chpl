@@ -67,6 +67,10 @@ writeln();
 writeln("A(2..4) is: ", A(2..4), "\n");
 
 //
+// Note: further information on slicing can be found in "slices.chpl"
+//
+
+//
 // Arrays can be multidimensional as well:
 //
 
@@ -92,7 +96,7 @@ writeln("After incrementing B's elements, B is:\n", B, "\n");
 // An array's index set is referred to as a domain -- a first-class
 // language concept that stores the set of indices used to access the
 // array.  The arrays above are declared with the anonymous domains
-// [1..n] and [1..n, 1..n].  An array's domain can be accessed using
+// {1..n} and {1..n, 1..n}.  An array's domain can be accessed using
 // the .domain method:
 //
 
@@ -132,7 +136,7 @@ writeln("After calling printArr, B is:\n", B, "\n");
 // variables.
 //
 // The following domain declaration defines a 2D arithemetic domain
-// called ProbSpace that's the same size and shape as B was above.
+// called ProbSpace which is the same size and shape as B was above.
 //
 
 var ProbSpace: domain(2) = {1..n, 1..n};

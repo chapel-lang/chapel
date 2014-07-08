@@ -1,4 +1,4 @@
-semantic bug: Param functions can call functions with side effects, but they are ignored.
+semantic: Param functions can call functions with side effects, but they are ignored.
 
 This code currently ignores the fact that a writeln() call is made
 within a param function and basically drops the writeln() calls on the

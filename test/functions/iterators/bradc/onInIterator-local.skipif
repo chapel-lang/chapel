@@ -1,2 +1,3 @@
 CHPL_COMM!=none
-CHPL_TEST_NO_LOCAL == true
+CHPL_LOCALE_MODEL != flat
+COMPOPTS <= --no-local

@@ -24,7 +24,7 @@ var rng: range(int);     test("range", rng);
 var tu1 = (1,);          test("tuple-1", tu1);
 var tu2 = (1,2);         test("tuple-2", tu2);
 var tu3 = (1,2,3);       test("tuple-3", tu3);
-//var atm: atomic int;     test("atomic", atm);
+var atm: atomic int;     test("atomic", atm);
 //var snc: sync int;       test("sync", snc);
 //var sng: single int;     test("single", sng);
 // these are temporary workarounds - see the comment below
@@ -33,17 +33,34 @@ var sng: single int;     test("single", sng.type);
 compilerError("done"); // no need for a C compile
 
 proc test(param msg, ref v) {
-  compilerWarning(msg + " is a class:  " + isClassType(v.type):string);
-  compilerWarning(msg + " is a record: " + isRecordType(v.type):string);
-  compilerWarning(msg + " is a union:  " + isUnionType(v.type):string);
-  if chpl__isDmap(v) then compilerWarning(msg + " is dmap: true");
+  compilerWarning(msg + " is a class:  " + isClassType(v.type):c_string);
+  compilerWarning(msg + " is a record: " + isRecordType(v.type):c_string);
+  compilerWarning(msg + " is a union:  " + isUnionType(v.type):c_string);
+  if isRangeType(v.type)  then compilerWarning(msg + " is a range");
+  if isTupleType(v.type)  then compilerWarning(msg + " is a tuple");
+  if isDmapType(v.type)   then compilerWarning(msg + " is a dmap");
+  if isDomainType(v.type) then compilerWarning(msg + " is a domain");
+  if isArrayType(v.type)  then compilerWarning(msg + " is an array");
+  if isAtomicType(v.type) then compilerWarning(msg + " is an atomic");
+  if _isSyncType(v.type)  then compilerWarning(msg + " is a sync");
+  if _isSingleType(v.type)then compilerWarning(msg + " is a single");
+// Todo: would be nice to add versions of the above tests on variables
+// instead of types, e.g. isTuple(v) in addition to isTupleType(v.type).
 }
 
 // This is a workaround for test/functions/vass/sync-by-ref.future,
 // temporarily here to confirm that isRecordType et al. actually work.
 // Once that future is fixed, we should probably remove this workaround.
-proc test(param msg, type t) {
-  compilerWarning(msg + " - class:  " + isClassType(t):string);
-  compilerWarning(msg + " - record: " + isRecordType(t):string);
-  compilerWarning(msg + " - union:  " + isUnionType(t):string);
+proc test(param msg, type tp) {
+  compilerWarning(msg + " - class:  " + isClassType(tp):c_string);
+  compilerWarning(msg + " - record: " + isRecordType(tp):c_string);
+  compilerWarning(msg + " - union:  " + isUnionType(tp):c_string);
+  if isRangeType(tp)   then compilerWarning(msg + " is range");
+  if isTupleType(tp)   then compilerWarning(msg + " is tuple");
+  if isDmapType(tp)    then compilerWarning(msg + " is dmap");
+  if isDomainType(tp)  then compilerWarning(msg + " is domain");
+  if isArrayType(tp)   then compilerWarning(msg + " is array");
+  if isAtomicType(tp)  then compilerWarning(msg + " is atomic");
+  if _isSyncType(tp)   then compilerWarning(msg + " is sync");
+  if _isSingleType(tp) then compilerWarning(msg + " is single");
 }

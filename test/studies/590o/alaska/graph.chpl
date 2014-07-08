@@ -212,7 +212,7 @@ class Graph {
   }
 
   proc preprocess(n : Node){
-    forall e in edges do {
+    for e in edges do {
       if( e.src == n ){
 	outEdges[n.id].append(e);
 	adjacent[n.id].append(e.dst.id);
@@ -599,7 +599,8 @@ proc main() {
   DFS(G);
 
 
-  [i in G.NodeDom] writeln(G.nodes(i)," points to ",G.adjacent(i));
+  for i in G.NodeDom do
+    writeln(G.nodes(i)," points to ",G.adjacent(i));
 
   G.feasible_tree();
 }

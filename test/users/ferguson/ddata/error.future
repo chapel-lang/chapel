@@ -1,3 +1,5 @@
+error message: invalid use of ddata
+
 Sung and I could not agree on where to put the error message
 for "cannot new _ddata" into the compiler. I put it in wrappers.cpp
 as below, which gives an error in a hack-y way.

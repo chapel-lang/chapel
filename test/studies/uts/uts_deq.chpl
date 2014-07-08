@@ -19,7 +19,7 @@ enum GeoDistrib  { GeoFixed, GeoLinear, GeoPoly, GeoCyclic };
 /**** COMPILE PARAMS ****/
 config param debug:    bool = false;
 config param parallel: bool = true;
-param uts_version:   string = "2.1";
+param uts_version = "2.1";
 
 
 /**** UTS CONFIG VARS ****/
@@ -82,7 +82,7 @@ class TreeNode {
 
     if debug then writeln("Constructing ", nChildren, " children");
 
-    for i in {0..nChildren-1} {
+    for i in 0..nChildren-1 {
       if debug then writeln("  + (", depth, ", ", i, ")");
       var t = new TreeNode(depth+1);
       rng_spawn(hash[1], t.hash[1], i:sha_int);
@@ -218,7 +218,7 @@ proc balance_load(inout state: LDBalanceState, inout q: DeQueue(TreeNode)): int 
       var tmp = thread_cnt; // Lock the access to threads_spawned
       threads_spawned += 1;
       thread_cnt = tmp + 1;
-      begin create_tree(work);
+      begin ref(work) create_tree(work);
       return 1;
     }
   }

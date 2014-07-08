@@ -28,6 +28,8 @@
  and/or fitness for purpose.
  ---------------------------------------------------------------------------
  Issue 20/10/2006
+
+ Source code origin listed in README file.
 */
 
 #ifndef BRG_ENDIAN_H

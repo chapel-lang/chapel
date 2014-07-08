@@ -801,7 +801,8 @@ writeln(lls(2), "-", taskid,
         "  dens. myPiece ", myPiece);
 
             // ensure we got a subset
-            assert(densify(myDims(dd), whole.dim(dd))(myPiece) == myPiece);
+            if !(densify(myDims(dd), whole.dim(dd))(myPiece) == myPiece) then
+              writeln("assert 1 failed");
 
             // Similar to the assert 'lo <= hi' in BlockDom leader.
             // Upon a second thought, if there is a legitimate reason
@@ -809,7 +810,8 @@ writeln(lls(2), "-", taskid,
             // with _computeChunkStuff (i.e. the latter returns more tasks
             // than the former wants to use) - fine. Then, replace assert with
             //   if myPiece.length == 0 then do not yield anything
-            assert(myPiece.length > 0);
+            if !(myPiece.length > 0) then
+              writeln("assert 2 failed");
 
             // apply myPiece
             follow(dd) = myPiece;
@@ -939,7 +941,7 @@ proc vdist.dsiSupportsPrivatization1d() param return true;
 
 // REQ if privatization is supported - same purpose as dsiGetPrivatizeData()
 proc vdist.dsiGetPrivatizeData1d() {
-  return tuple(numLocales);
+  return (numLocales,);
 }
 
 // REQ if privatization is supported - same purpose as dsiPrivatize()
@@ -986,7 +988,7 @@ proc vdom.dsiPrivatize1d(privDist, privatizeData) {
 
 // REQ if privatization is supported - same purpose as dsiGetReprivatizeData()
 proc vdom.dsiGetReprivatizeData1d() {
-  return tuple(wholeR);
+  return (wholeR,);
 }
 
 // REQ if privatization is supported - same purpose as dsiReprivatize()
@@ -1184,7 +1186,7 @@ proc sdom.dsiPrivatize1d(privDist, privatizeData) {
 }
 
 proc sdom.dsiGetReprivatizeData1d() {
-  return tuple(wholeR);
+  return (wholeR,);
 }
 
 proc sdom.dsiReprivatize1d(other, reprivatizeData) {
@@ -1312,7 +1314,7 @@ writeln(myLocId, "-", taskid, " -wholeR ", globDD.wholeR,
 
 //=============================================================================
 
-config const s2 = 3;
+config const s2 = if numLocales < 3 then numLocales else 3;
 
 var mylocs: [0..0, 0..#s2] locale;
 mylocs[0, 0..#s2] = Locales[0..#s2];

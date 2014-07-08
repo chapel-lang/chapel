@@ -19,4 +19,4 @@ foo(Dom4D, Dist4D);
 writeln(Dom2D.expand(2, 3));
 writeln(Dom3D.expand(-1, 2, 3));
 writeln(Dom4D.expand(2));
-writeln(Dom2D64.expand(-1));
+writeln(Dom2D32.expand(-1));

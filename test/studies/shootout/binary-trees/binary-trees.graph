@@ -1,4 +1,8 @@
-perfkeys: Time elapsed :
-graphkeys: binary-trees
-graphtitle: Binary Trees Shootout Benchmark
+perfkeys: real, real, real, real
+graphkeys: binary-trees, binary-trees_iter, binarytrees, binary-trees-freeWhileAdding
+files: binary-trees.20.dat, binary-trees_iter.20.dat, binarytrees.20.dat, binarytrees-freeWhileAdding.20.dat
+graphtitle: Binary Trees Shootout Benchmark (n=20)
 ylabel: Time (seconds)
+graphname: binary-trees.20
+
+

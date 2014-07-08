@@ -7,7 +7,7 @@ var c = 1;
 proc work() {
   var b = 2;
 
-  begin {
+  begin ref(b, c) {
     go;
     b = 2 * c;
     writeln("b is ", b);

@@ -5,7 +5,6 @@ const gridDom = {1..gx, 1..gy};
 const gridBig = {0..gx+1, 0..gy+1};
 
 var gridLocales: [gridDom] locale;
-const gridDist = gridDom dmapped Block(gridDom, gridLocales);
 var manylocs: bool;
 config const showlocales = false;
 
@@ -32,6 +31,8 @@ proc setupGridLocales(ensureManyLocs = false) {
     gridLocales.numElements, ", got ", numLocales);
   writeln();
 }
+
+const gridDist = gridDom dmapped Block(gridDom, gridLocales);
 
 config var chk = true;
 config const v1 = true;
@@ -66,7 +67,7 @@ class GlobalInfo {
 
 // constructor for GlobalInfo
 proc GlobalInfo.GlobalInfo() {
-  coforall ((ix,iy), inf) in zip(gridDist, infos) {
+  coforall ((ix,iy), inf) in zip(gridDist, infos) do on inf {
     inf = new LocalInfo(mygx=ix, mygy=iy);
   }
 }
@@ -97,7 +98,7 @@ class GlobalData {
 // constructor for GlobalData
 proc GlobalData.GlobalData(nameArg: string) {
   name=nameArg;
-  coforall (inf, dat, loc) in zip(WI.infos, datas, gridLocales) {
+  coforall (inf, dat, loc) in zip(WI.infos, datas, gridLocales) do on loc {
     dat = new LocalData(inf);
     // sanity checks
     assert(dat.locale == loc);
@@ -124,7 +125,7 @@ proc GlobalData.GlobalData(nameArg: string) {
 	msg1("  ", ind, "  slice at [", slicex, ",", slicey, "]");
 	var slice => nbr.ldata[slicex, slicey];
 	cache = slice._value;
-	if !noRefCount then cache._arrCnt.add(1);  // this is a bit low-level
+	if !noRefCount then cache._arrCnt.inc(1);  // this is a bit low-level
       }
     }  // storecache()
   }  // forall

@@ -1,3 +1,5 @@
+bug: uninitialized variables when using opaque extern type 
+
 Some C compilers complain, something like
 error: ‘_formal_type_tmp_’ is used uninitialized in this function
 

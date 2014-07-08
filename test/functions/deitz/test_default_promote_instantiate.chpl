@@ -4,10 +4,10 @@ proc foo(x: integral = 1..3) {
 
 foo(1);
 writeln();
-serial true {
+serial {
   foo();
 }
 writeln();
-serial true {
+serial {
   foo(1..4);
 }

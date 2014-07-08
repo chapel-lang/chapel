@@ -8,7 +8,7 @@ Module: fields
           This field has a doc attached, does that work? 
       var typeComment: int(64)
           This field has a doc and an explicit type 
-      const initialized = "bleah"
+      const initialized: string
       var initializedType: int(64)
       inherited from object
 

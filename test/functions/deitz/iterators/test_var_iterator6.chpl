@@ -8,16 +8,6 @@ for (a, b, c, i, j, k) in zip(A, B, C, 1..5, 6..10, 11..15) {
 
 writeln((A, B, C));
 
-A = 0; B = 0; C = 0; // reset
-
-for (a, (b, (c, (i, (j, k))))) in zip(A, (B, (C, (1..5, (6..10, 11..15))))) {
-  a = i;
-  b = j;
-  c = k;
-}
-
-writeln((A, B, C));
-
 for (a, b, c) in zip(A, B, C) {
   a += b + c;
 }

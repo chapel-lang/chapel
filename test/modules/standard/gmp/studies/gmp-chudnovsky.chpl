@@ -72,7 +72,7 @@ const terms   = (d/DIGITS_PER_ITER): c_long,
 
 record fac_t {
   var num_facs: c_long;
-  const sdom: domain(1, idxType=c_long);
+  var sdom: domain(1, idxType=c_long);
   var fac, pow: [sdom] c_ulong;
 };
 
@@ -293,7 +293,7 @@ proc build_sieve(s: [] sieve_t) {
 }
 
 
-proc my_sqrt_ui(inout r: mpf_t, x: c_ulong) {
+proc my_sqrt_ui(ref r: mpf_t, x: c_ulong) {
   const prec0 = mpf_get_prec(r);
 
   if (prec0 <= DOUBLE_PREC) {
@@ -344,7 +344,7 @@ proc my_sqrt_ui(inout r: mpf_t, x: c_ulong) {
 
 
 // r = y/x   WARNING: r cannot be the same as y.
-proc my_div(inout r: mpf_t, inout y: mpf_t, in x: mpf_t) {
+proc my_div(ref r: mpf_t, ref y: mpf_t, in x: mpf_t) {
   const prec0 = mpf_get_prec(r);
 
   if (prec0<=DOUBLE_PREC) {
@@ -399,11 +399,11 @@ proc fac_show(f: fac_t) {
   writeln();
 }
 
-proc fac_reset(inout f: fac_t) {
+proc fac_reset(ref f: fac_t) {
   f.num_facs = 0;
 }
 
-proc fac_init_size(inout f: fac_t, in s: c_long) {
+proc fac_init_size(ref f: fac_t, in s: c_long) {
   if (s<INIT_FACS) then
     s=INIT_FACS;
 
@@ -412,16 +412,16 @@ proc fac_init_size(inout f: fac_t, in s: c_long) {
   fac_reset(f);
 }
 
-proc fac_init(inout f: fac_t) {
+proc fac_init(ref f: fac_t) {
   fac_init_size(f, INIT_FACS);
 }
 
 
-proc fac_clear(inout f: fac_t) {
+proc fac_clear(ref f: fac_t) {
   f.sdom.clear();
 }
 
-proc fac_resize(inout f: fac_t, s: c_long)
+proc fac_resize(ref f: fac_t, s: c_long)
 {
   if (f.sdom.numIndices < s) {
     fac_clear(f);
@@ -430,13 +430,13 @@ proc fac_resize(inout f: fac_t, s: c_long)
 }
 
 // BLC: unfortunate -- original GMP took advantage of long/ulong conversions
-proc fac_set_bp(inout f: fac_t, base: c_ulong, pow: c_long) {
+proc fac_set_bp(ref f: fac_t, base: c_ulong, pow: c_long) {
   assert (base < max(c_long): c_ulong);
   fac_set_bp(f, base: c_long, pow: c_long);
 }
 
 // f = base^pow
-proc fac_set_bp(inout f: fac_t, in base: c_long, pow: c_long) {
+proc fac_set_bp(ref f: fac_t, in base: c_long, pow: c_long) {
   assert(base < sieve_size);
   var i: c_long;
   base /= 2;
@@ -451,10 +451,10 @@ proc fac_set_bp(inout f: fac_t, in base: c_long, pow: c_long) {
 }
 
 // r = f*g
-proc fac_mul2(inout r: fac_t, f: fac_t, g: fac_t) {
+proc fac_mul2(ref r: fac_t, f: fac_t, g: fac_t) {
 
   var i, j, k: c_long;
-  while (i<f.num_facs & j<g.num_facs) {
+  while (i<f.num_facs && j<g.num_facs) {
     if (f.fac[i] == g.fac[j]) {
       r.fac[k] = f.fac[i];
       r.pow[k] = f.pow[i] + g.pow[j];
@@ -487,26 +487,26 @@ proc fac_mul2(inout r: fac_t, f: fac_t, g: fac_t) {
 }
 
 // f *= g
-proc fac_mul(inout f: fac_t, g: fac_t) {
+proc fac_mul(ref f: fac_t, g: fac_t) {
   fac_resize(fmul, f.num_facs + g.num_facs);
   fac_mul2(fmul, f, g);
   f <=> fmul;
 }
 
 // BLC: unfortunate -- original GMP took advantage of long/ulong conversions
-proc fac_mul_bp(inout f: fac_t, base: c_ulong, pow: c_long) {
+proc fac_mul_bp(ref f: fac_t, base: c_ulong, pow: c_long) {
   assert (base < max(c_long): c_ulong);
   fac_mul_bp(f, base:c_long, pow);
 }
 
 // f *= base^pow
-proc fac_mul_bp(inout f: fac_t, base: c_long, pow: c_long) {
+proc fac_mul_bp(ref f: fac_t, base: c_long, pow: c_long) {
   fac_set_bp(ftmp, base, pow);
   fac_mul(f, ftmp);
 }
 
 // remove factors of power 0
-proc fac_compact(inout f: fac_t) {
+proc fac_compact(ref f: fac_t) {
   var j: c_long;
   for i in 0..#f.num_facs {
     if (f.pow[i]>0) {
@@ -521,7 +521,7 @@ proc fac_compact(inout f: fac_t) {
 }
 
 // convert factorized form to number
-proc bs_mul(inout r: mpz_t, a: c_long, b: c_long) {
+proc bs_mul(ref r: mpz_t, a: c_long, b: c_long) {
   if (b-a <= 32) {
     mpz_set_ui(r, 1);
     for i in a..b-1 do
@@ -545,7 +545,7 @@ proc bs_mul(inout r: mpz_t, a: c_long, b: c_long) {
 //#endif
 
 // f /= gcd(f,g), g /= gcd(f,g)
-proc fac_remove_gcd(inout p: mpz_t, inout fp: fac_t, inout g: mpz_t, inout fg: fac_t) {
+proc fac_remove_gcd(ref p: mpz_t, ref fp: fac_t, ref g: mpz_t, ref fg: fac_t) {
   var i, j, k: c_long;
   var c: c_ulong;
   fac_resize(fmul, min(fp.num_facs, fg.num_facs));

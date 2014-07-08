@@ -12,7 +12,7 @@ record R {
   var k:int;
 }
 
-proc rfun(x:R) {
+proc rfun(in x:R) {
   x.j = 17;
 }
 

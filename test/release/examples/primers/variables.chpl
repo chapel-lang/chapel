@@ -1,7 +1,7 @@
 /*
  * Variables Primer
  *
- * This primver demonstrates variable declaration syntax.
+ * This primer demonstrates variable declaration syntax.
  *
  */ 
 

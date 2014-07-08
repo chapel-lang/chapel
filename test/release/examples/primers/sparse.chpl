@@ -45,7 +45,7 @@ var spsArr: [spsDom] real;
 
 
 //
-// I/O on sparse domains and arrays only prints out "non-zeroe" values;
+// I/O on sparse domains and arrays only prints out "non-zero" values;
 // initially there are none, so these will both print in a degenerate manner
 //
 writeln("Initially, spsDom is: ", spsDom);
@@ -137,6 +137,27 @@ writeSpsArr();
 
 
 //
+// Values can only be assigned to array positions that are members in
+// the sparse domain index set.  The boolean method Domain.member(x) 
+// can be used to check whether a certain index (x) is a member of the
+// domain's index set. Note that, in multi-dimensional domains, the member
+// method can accept the index as a tuple like spsDom.member((i,j)) 
+// or as a parameter list like spsDom.member(i,j). Below, we print '*' for 
+// the positions that are members in the sparse domain, and '.' otherwise.
+//
+writeln("Positions that are members in the sparse domain are marked by a '*':");
+
+for (i,j) in dnsDom {
+  if spsDom.member(i,j) then 
+    write("* "); // (i,j) is a member in the sparse index set
+  else 
+    write(". "); // (i,j) is not a member in the sparse index set
+	
+  if (j == n) then writeln();
+}
+writeln();
+
+//
 // Like other domains and arrays, sparse Chapel domains and arrays can
 // be iterated over...
 //
@@ -224,7 +245,7 @@ writeSpsArr();
 // a dense vector of elements.  This format is general, meaning that
 // we can support 1D, 2D, 3D, ..., nD sparse domains and arrays in
 // addition to the 2D case shown here.  However, it is also very
-// general which is why we use it.  As Chapel continues to develop, it
+// general, which is why we use it.  As Chapel continues to develop, it
 // will support additional sparse formats that make various tradeoffs
 // in efficiency and representation as part of its standard
 // distribution library.  In addition, advanced users will be able to
@@ -262,7 +283,7 @@ writeSpsArr();
 // Anyone reading this far who is interested in exploring more with
 // sparse domains and arrays in Chapel is encouraged to contact us at
 // chapel_info@cray.com.  We currently have a Compressed Sparse Row
-// (CSR) sparse domain/array implementation in the works and a
-// virtually complete implementation of the NAS CG benchmark that
-// makes use of it, and would be happy to share those examples with
-// users of the release.
+// (CSR) sparse domain/array layout within our modules and an
+// implementation of the NAS CG benchmark that makes use of it, and
+// would be happy to provide the curious with full explanations of
+// the features therein, and are open to new suggestions.

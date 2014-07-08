@@ -11,6 +11,9 @@
 // warnings for cases like the first below, which we may want
 // to adopt as well.
 //
+// Addendum 2014 - changing precedence to address perceived
+// problems with C rules and to be more natural, so the first
+// statement now does behave like the second.
 
 var x = 3;
 var y = 5;

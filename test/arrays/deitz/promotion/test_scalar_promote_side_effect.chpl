@@ -7,7 +7,7 @@ proc foo(i: int) {
 
 proc bar(i: int) return n + i;
 
-serial true {
+serial {
   foo(bar(1..10));
 }
 

@@ -1,4 +1,4 @@
-semantic future: should member accesses to an instance of a class be allowed outside of a function when the class is declared inside the function?
+semantic: should member accesses to an instance of a class be allowed outside of a function when the class is declared inside the function?
 
 Let's say we declare a class inside a function that returns the class's
 instance:

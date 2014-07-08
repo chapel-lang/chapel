@@ -11,7 +11,7 @@ module Edges {
 
     Counts[nNodes] = nEdges;
     for i in D2 do Counts[Edges[i].n1] += 1;
-    for i in {1..(nNodes-1)} do Counts[i] += Counts[i-1];
+    for i in 1..(nNodes-1) do Counts[i] += Counts[i-1];
 
     for i in D2 {
       var ndx = Edges[i].n1;
@@ -21,9 +21,9 @@ module Edges {
       OutEdges[ndx-1] = Edges[i];
     }
 
-    for i in {0..(nNodes-1)} {
-      for end in {Counts[i+1]..Counts[i] by -1} {
-        for start in {Counts[i]..(end-1)} {
+    for i in 0..(nNodes-1) {
+      for end in Counts[i+1]..Counts[i] by -1 {
+        for start in Counts[i]..(end-1) {
           if (OutEdges[start].n2 > OutEdges[start+1].n2) {
             var temp: Edge = OutEdges[start]; 
             OutEdges[start] = OutEdges[start+1];
@@ -65,7 +65,7 @@ module Edges {
     Edges = SortEdges(nEdges, nodes, Edges);
 
     // mark duplicate edges
-    for i in {1..(nEdges-1)} {
+    for i in 1..(nEdges-1) {
       if (Edges[i].n1 == Edges[i-1].n1 && 
           Edges[i].n2 == Edges[i-1].n2) then Edges[i].dupl = 0;
     }
@@ -73,7 +73,7 @@ module Edges {
     for i in D1 {
       if (Edges[i].dupl != 0) {  // not the first of duplicates
         var sum: real = 1.0/Edges[i].distance;
-        for j in {(i+1)..(nEdges-1)} {
+        for j in (i+1)..(nEdges-1) {
           if (Edges[j].dupl == 1) then break; else sum += 1/Edges[j].distance;
         }
         Edges[i].distance = 1.0/sum;
@@ -86,10 +86,10 @@ module Edges {
 
   proc displayGroups(Groups, nGroups: int) {
     writeln("Group Information:");
-    for g in {0..(nGroups-1)} {
+    for g in 0..(nGroups-1) {
       writeln("*ID: ", Groups[g].id+1, ", Size: ", Groups[g].size, ", GBC: ", Groups[g].vb);
       writeln("Edges: ");
-      for i in {0..(Groups[g].size-1)} {
+      for i in 0..(Groups[g].size-1) {
         writeln("(", Groups[g].edgeList[i].n1+1, ",", Groups[g].edgeList[i].n2+1, ")");
       }
     }
@@ -97,7 +97,7 @@ module Edges {
 
   proc displayGroupBC(Groups, nGroups: int) {
     writeln("Group Betweenness Centrality Scores:");
-    for g in {0..(nGroups-1)} {
+    for g in 0..(nGroups-1) {
       writeln("*ID: ", Groups[g].id+1, ", Size: ", Groups[g].size, ", GBC: ", Groups[g].vb);
     }
   }
@@ -105,7 +105,7 @@ module Edges {
   proc displayNonBoundaryEdges(nEdges: int, Edges, Nodes) {
     var numNewEdges: int;
 
-    for i in {0..(nEdges-1)} {
+    for i in 0..(nEdges-1) {
       var v: int = Edges[i].n1;
       var w: int = Edges[i].n2;
 

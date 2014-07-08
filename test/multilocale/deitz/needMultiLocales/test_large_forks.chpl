@@ -18,7 +18,7 @@ proc main() {
 
   sync {
     on Locales(1) {
-      begin {
+      begin ref(z) {
         z = x;
       }
     }

@@ -10,7 +10,7 @@
  */
 
 record Node {
-    const lvl, idx : int;
+    var lvl, idx : int;
 
     proc get_coords() {
         return (lvl, idx);

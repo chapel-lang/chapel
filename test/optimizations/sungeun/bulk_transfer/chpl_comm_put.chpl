@@ -3,8 +3,8 @@ config const printOutput=false;
 
 var A: [1..n] int = 777;
 var B: [1..n] int = -1;
-var Ad = A._value.data;
-var Bd = B._value.data;
+var Ad = A._value.theData;
+var Bd = B._value.theData;
 __primitive("chpl_comm_put",
             __primitive("array_get", Ad, A._value.getDataIndex(1)),
             0,
@@ -17,7 +17,7 @@ for i in B.domain do
 
 on Locales(numLocales-1) {
   var C: [1..n] int = -1;
-  var Cd = C._value.data;
+  var Cd = C._value.theData;
   on Locales(0) {
     __primitive("chpl_comm_put",
                 __primitive("array_get", Ad, A._value.getDataIndex(1)),
@@ -34,10 +34,10 @@ on Locales(numLocales-1) {
 
 on Locales(numLocales-1) {
   var D: [1..n] int = 777;
-  var Dd = D._value.data;
+  var Dd = D._value.theData;
   on Locales(0) {
     var E: [1..n] int = -1;
-    var Ed = E._value.data;
+    var Ed = E._value.theData;
     on Locales(numLocales-1) {
       __primitive("chpl_comm_put",
                   __primitive("array_get", Dd, D._value.getDataIndex(1)),

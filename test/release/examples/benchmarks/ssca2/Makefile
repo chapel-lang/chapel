@@ -14,7 +14,8 @@ DO_REPRODUCIBLE_PROBLEMS=yes
 DO_PRINT_TIMING_STATISTICS=
 MORE_CHPL_FLAGS=
 
-CHPL_FLAGS = --fast --no-warnings -M SSCA2_Modules \
+OPT = --fast
+CHPL_FLAGS = $(OPT) --no-warnings -M SSCA2_Modules \
              SSCA2_Modules/SSCA2_kernels.chpl \
              SSCA2_Modules/analyze_torus_graphs_stencil_rep_v1.chpl
 

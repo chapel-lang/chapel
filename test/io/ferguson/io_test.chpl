@@ -14,7 +14,7 @@ proc testio(param typ:iokind, style:iostyle, x)
   }
   {
     var ch = f.reader(typ, style=style);
-    var y = x;
+    var y = x; // assignments here so ioLiteral works
     var z = x;
     if noisy then writeln("Reading element");
     var got = ch.read(y);
@@ -31,34 +31,6 @@ proc testio(param typ:iokind, style:iostyle, x)
   }
   f.close();
 }
-
-/*
-proc testeof()
-{
-  var f = opentmp(style=defaultIOStyle().native());
-  {
-    var ch = f.writer();
-    ch.write(5,6);
-  }
-  {
-    var ch = f.reader();
-    var x:int;
-    var y:int;
-    var z:int;
-    var got:bool;
-    got = ch.read(x);
-    writeln("Got ",x);
-    assert(got);
-    assert(x==5);
-    got = ch.read(y);
-    writeln("Got ",y);
-    assert(got);
-    assert(y==6);
-    got = ch.read(z);
-    writeln("Got ",z);
-    assert(!got);
-  }
-}*/
 
 proc testio(x)
 {

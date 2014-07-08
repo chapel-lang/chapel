@@ -1,3 +1,2 @@
 --doSerial=true
---doSerial=false --numThreadsPerLocale=250
 --doSerial=false --numAdds=5000

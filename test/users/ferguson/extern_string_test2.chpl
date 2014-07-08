@@ -1,5 +1,5 @@
-extern proc get_string(inout string_out:string);
-extern proc modify_string(inout string_out:string, string_in:string);
+extern proc get_string(ref string_out:string);
+extern proc modify_string(ref string_out:string, string_in:string);
 
 var a:string;
 var b:string;

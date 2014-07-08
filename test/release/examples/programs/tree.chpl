@@ -18,6 +18,10 @@ config const treeHeight: uint = 4;
 class node {
   var id: int;
   var left, right: node;
+  proc ~node() {
+    if left then delete left;
+    if right then delete right;
+  }
 }
 
 
@@ -27,6 +31,7 @@ class node {
 proc main() {
   var root = buildTree();
   writeln("sum=", sum(root));
+  delete root;
 }
 
 //
@@ -57,7 +62,7 @@ proc sum(n: node): int {
 
   if n.left != nil {
     var sumLeft, sumRight: int;
-    cobegin {
+    cobegin ref(sumLeft, sumRight) {
       sumLeft = sum(n.left);
       sumRight = sum(n.right);
     }

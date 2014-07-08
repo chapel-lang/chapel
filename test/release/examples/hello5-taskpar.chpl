@@ -23,7 +23,7 @@ config const numTasks = here.numCores;
 //
 // Each iteration prints out a message that is unique according to the
 // value of tid.  Due to the task parallelism, the messages may come
-// out in any order.  Hoever, the writeln() procedure will prevent
+// out in any order.  However, the writeln() procedure will prevent
 // against finer-grained interleaving of the messages themselves.
 //
 coforall tid in 0..#numTasks do

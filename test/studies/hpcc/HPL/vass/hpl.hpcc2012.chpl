@@ -52,6 +52,13 @@ config const printParams = false,
              printArrays = false,
              printStats = true;
 
+// Perform verification?
+config const verify = true;
+
+// These are solely to make the testing system happy given the COMPOPTS file.
+// To be removed once COMPOPTS becomes a non-issue.
+config var reproducible = false, verbose = false;
+
 config param maxBlkSize = 200;
 if blkSize > maxBlkSize then
   halt("maxBlkSize ", maxBlkSize,
@@ -388,10 +395,10 @@ proc DimensionalArr.dsiLocalSlice1((sliceDim1, sliceDim2)) {
   const reindexExpr =
     if origScalar(1) then
       if origScalar(2) then compilerError("dsiLocalSlice1 is not supported for two scalars")
-      else tuple(sliceDim2)
+      else (sliceDim2,)
     else
-      if origScalar(2) then tuple(sliceDim1)
-      else tuple(sliceDim1, sliceDim2);
+      if origScalar(2) then (sliceDim1,)
+      else (sliceDim1, sliceDim2);
   var result: [(...reindexExpr)] => locAdesc.myStorageArr[r1, r2];
   return result;
 }
@@ -953,6 +960,7 @@ proc initAB() {
 // calculate norms and residuals to verify the results
 //
 proc verifyResults(x) {
+  if !verify then return true;
   if printStats then writeln("verifying results locally");
   initAB();
 
@@ -1109,6 +1117,7 @@ proc targetLocaleCorner(blk) {
 // print success/failure, the execution time and the Gflop/s value
 //
 proc printResults(successful, execTime) {
+  if !verify then writeln("Validation: skipped"); else
   if successful then writeln("Validation: success");
   else               writeln("Validation: FAILURE");
   if (printStats) {
@@ -1140,7 +1149,7 @@ proc gaxpyMinus(A: [],
 
   forall i in 1..n do
 // TODO: 'serial' makes the following faster?
-    serial(true) { res[i] = (+ reduce [j in xD] (A[i,j] * x[j])) - y[i,n+1]; }
+    serial { res[i] = (+ reduce [j in xD] (A[i,j] * x[j])) - y[i,n+1]; }
 
   return res;
 }

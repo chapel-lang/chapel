@@ -1,1 +1,1 @@
-freadNotABoolean.chpl:5: error: bad format in channel.read(inout a:bool) with path "freadNotABoolean.txt" offset 0
+freadNotABoolean.chpl:5: error: bad format in channel.read(ref a:bool) with path "freadNotABoolean.txt" offset 0

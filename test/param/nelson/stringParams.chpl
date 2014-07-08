@@ -1,11 +1,11 @@
 
 
 record X {
-  param s : string;
+  param s;
 }
 
 record Y {
-  param s : string;
+  param s;
   param i : int;
 }
 

@@ -1,1 +1,1 @@
-../../common/probSize.chpl -O --no-checks --local
+../../common/probSize.chpl --local

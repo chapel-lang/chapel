@@ -2,7 +2,7 @@
 var x : int;
 
 x = 92;
-cobegin {
+cobegin ref(x) {
   x = x + 1;
   x = x + 67;
 }

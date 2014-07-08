@@ -4,7 +4,7 @@ proc main {
   m1 = memoryUsed();
   var o: opaque = chpl_mem_allocMany(1, 100, 0, 0, "");
   m2 = memoryUsed();
-  chpl_mem_realloc(o, 0, 0, 0);
+  chpl_mem_realloc(o, 0, 0, 0, "");
   m3 = memoryUsed();
 
   writeln((m2-m1, m3-m1));

@@ -1,6 +1,44 @@
-#!/bin/csh -f
-cp testVFlag.comm-$CHPL_COMM.goodstart $1.good
-uname -n >> $1.good
-cat testVFlag.goodstop >> $1.good
-sed -e "s/^.*amudprun/amudprun/" $2 > $1.sed
-mv $1.sed $2
+#!/bin/sh
+
+uname=$(uname -n)
+tasks=$($CHPL_HOME/util/chplenv/chpl_tasks.py)
+launcher=$($CHPL_HOME/util/chplenv/chpl_launcher.py)
+target=$($CHPL_HOME/util/chplenv/chpl_platform.py --target)
+
+# Build a .good file; the lines are:
+# - .launcher-$CHPL_LAUNCHER, with ' EXECOPTS' replaced with $EXECOPTS
+#   (the leading space allows separating this from the command line in
+#   the .goodstart, for readability, while still matching correctly in
+#   all cases)
+# - .comm-$CHPL_COMM, with 'UNAME' replaced by the result of 'uname -n'
+# - .goodstop, which is the expected program output
+sed "s# EXECOPTS#$EXECOPTS#" < $1.launcher-$launcher.goodstart > $1.good
+sed "s/UNAME/$uname/" < $1.comm-$CHPL_COMM.goodcont >> $1.good
+cat $1.goodstop >> $1.good
+
+# Address program output variations peculiar to the various configuation
+# settings.
+
+# On Cray X* systems, compute node system names aren't meaningful.
+case $target in
+  cray-x*) sed "s/\(executing on node 0 of 1 node(s): \).*/\1$uname/" \
+               < $2 > $2.tmp &&
+           mv $2.tmp $2;;
+esac
+
+# With Qthreads, -v results in some lines of QTHREADS info we don't need.
+case $tasks in
+  qthreads) grep -v '^QTHREADS' $2 > $2.tmp &&
+            mv $2.tmp $2;;
+esac
+
+# If we use the amudprun launcher, there's a path on the front of it.
+# If we use the aprun launcher, the depth (-d) value may vary.
+case $launcher in
+  amudprun) sed -e "s/^.*amudprun/amudprun/" \
+                -e "/QTHREADS/d" $2 > $2.tmp &&
+            mv $2.tmp $2;;
+  aprun) sed -e "s/ -d[1-9][0-9]* / -dN /" $2 > $2.tmp &&
+         mv $2.tmp $2;;
+esac
+

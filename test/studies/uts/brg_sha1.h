@@ -28,6 +28,8 @@
  and/or fitness for purpose.
  ---------------------------------------------------------------------------
  Issue Date: 01/08/2005
+
+ Source code origin listed in README file.
 */
 
 #ifndef _SHA1_H

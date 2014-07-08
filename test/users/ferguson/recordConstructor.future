@@ -1,3 +1,5 @@
+semantic: record no-arguments constructor
+
 A record with a zero-argument constructor
 should perhaps have the zero-argument constructor
 called automatically. Or at least the spec should

@@ -15,7 +15,7 @@
 use BlockDist;
 
 // use this instead of a PrivateDist for performance reasons (PrivateDists are expensive!)
-const PrivateSpace = {LocaleSpace} dmapped Block(boundingBox={LocaleSpace});
+const PrivateSpace = LocaleSpace dmapped Block(boundingBox=LocaleSpace);
 
 record Barrier {
   param reusable = true;

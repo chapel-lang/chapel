@@ -1,11 +1,7 @@
-error message: const indices
+bug: indices not treated as const
 
-I believe that index variables should be constant to avoid
-confusion in believing that they are a single variable
-shared by multiple iterations rather than a private
-per-iteration variable.
-
-As Steve proposed at today's meeting, if the iterator is a
-var iterator, the index would be a variable; if the iterator
-is a const iterator, it would be a variable.
-
+This test shows that const-ness checking is not done properly for
+iterators generating non-var/ref return values.  It was originally
+filed as though this was a language-level decision; since then, we've
+determined (wisely, I believe) that it should be a function of the
+iterator's return intent, not the language itself.

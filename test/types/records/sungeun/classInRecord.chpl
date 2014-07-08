@@ -9,13 +9,12 @@ record myR {
   proc ~myR() { delete c; }
 }
 
+pragma "auto destroy fn"
 inline proc chpl__autoDestroy(x: myR) { }
 
-proc =(a: myR, b: myR) {
-  var aa: myR;
-  aa.c = new myC();
-  aa.c.i = b.c.i;
-  return aa;
+proc =(ref a: myR, b: myR) {
+  a.c = new myC(); // leak memory here.
+  a.c.i = b.c.i;
 }
 
 var r: myR;

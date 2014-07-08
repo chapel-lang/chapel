@@ -100,7 +100,7 @@ proc main() {
       
       // Recover original distance of edge
       var sum: real = 1.0 / Edges[i].distance;
-      for j in {(i+1)..(nEdges-1)} {
+      for j in (i+1)..(nEdges-1) {
         if (Edges[j].dupl == 1) then break;
         sum -= 1.0 / Edges[j].distance;
       }
@@ -109,7 +109,7 @@ proc main() {
       
       // Compute total distance of component edges (= total distance)
       sum = Edges[i].distance;
-      for j in {(i+1)..(nEdges-1)} {
+      for j in (i+1)..(nEdges-1) {
         if (Edges[j].dupl == 1) then break; 
         sum += Edges[j].distance;
       }
@@ -119,7 +119,7 @@ proc main() {
       var vbHL: real = Edges[i].vb$.readXX() / sum;
       Edges[i].vb$.writeXF(Edges[i].distance * vbHL);
       
-      for j in {(i+1)..(nEdges-1)} {
+      for j in (i+1)..(nEdges-1) {
         if (Edges[j].dupl == 1) then break;
         Edges[j].vb$.writeXF(Edges[j].distance * vbHL);
       }

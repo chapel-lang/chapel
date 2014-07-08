@@ -7,3 +7,4 @@ Total memory in use before Kernel 3:
 Total memory in use after Kernel 3:
 Total memory in use before Kernel 4:
 Total memory in use after Kernel 4:
+verify:48: Total memory in use after Kernel 4: \d+

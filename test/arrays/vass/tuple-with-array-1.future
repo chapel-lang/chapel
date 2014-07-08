@@ -17,3 +17,14 @@ instance variable off a NULL pointer, which crashes.
 
 It seems like this happens during the initialization of that tuple
 variable (e.g. 'x1').
+
+Looking at it again - the generated code for this function:
+
+  type AT = [1..3] int;
+  proc test()
+    var myTuple: (AT, AT);
+    writeln(myTuple(1).domain);
+  }
+
+has very little in terms of initializing myTuple, and goes straight
+into computing the domain.

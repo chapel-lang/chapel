@@ -3,7 +3,7 @@ use Time;
 var s: sync int;
 var x: int = 0;
 
-begin {
+begin ref(x) {
   while true {
     s.readXX();
     x += 1;

@@ -70,7 +70,7 @@ proc checkSTREAMresults( doIO: bool): bool {
 
   // now execute timing loop
   var scalar = SCALAR;
-  for k in (1..NTIMES) {
+  for k in 1..NTIMES {
     cj = aj;
     bj = scalar * cj;
     cj = aj + bj;
@@ -161,7 +161,7 @@ proc HPCC_Stream( params: HPCC_Params,  doIO: bool): bool {
 
   // --- MAIN LOOP --- repeat test cases NTIMES times ---
   var scalar = SCALAR;
-  for k in {1..NTIMES} {
+  for k in 1..NTIMES {
     // tuned_STREAM_Copy();
     // [j in Vector] c[j] = a[j];
     c = a;

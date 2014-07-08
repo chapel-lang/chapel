@@ -1,17 +1,17 @@
 
 record R {
-  param q : string = "default";
+  param q = "default";
   param p : int = 0;
 }
 
 record S {
-  param q : string = "default";
+  param q = "default";
   param p : int = 1;
 }
 
 record T {
   param p : int = 1;
-  param q : string = "default";
+  param q = "default";
 }
 
 record U {

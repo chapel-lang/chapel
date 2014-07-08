@@ -27,8 +27,8 @@ for i in Space4 {
 }
 
 value = 1;
-for i in Space2D64 {
-  A2D64[i] = value;
+for i in Space2D32 {
+  A2D32[i] = value;
   value += 1;
 }
 

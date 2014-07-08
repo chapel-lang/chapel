@@ -1,12 +1,12 @@
 Module: classFields
    Class: Parent
-      field alone
+      var alone
           This field should be first 
-      field nephew
+      var nephew
           This field should be second 
-      field niece
+      var niece
           This field should be third 
-      field umbrella
+      var umbrella
           This field should be last 
       inherited from object
 

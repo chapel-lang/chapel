@@ -38,40 +38,11 @@ const m = 2**n,
 config const verify = true;
 
 //
-// Unless we protect against it, the verification pass can get wrong
-// answers due to races in the same way that the main computation can.
-// This can lead to a total error count that exceeds the threshold,
-// causing a spurious failure report.  We protect against errors in
-// verification by using sync variables to single-thread accesses to
-// blocks of table elements, with no more than verifyBlockSize elements
-// per block.  As a rule of thumb, verifyBlockSize should be chosen such
-// that there are a few times as many blocks (thus sync variables) as
-// the maximum number of tasks that could actually be running at any one
-// time.  The "few times" multiplier, named coreConcurrencyFactor here,
-// accounts for two effects.  One is that task switching during critical
-// sections can make it seem as though more tasks are competing for
-// access to those critical sections than there are hardware cores.  The
-// other is that a smaller block size reduces the likelihood that two
-// tasks will try to work on table elements in the same block at the
-// same time.  Of course, reducing the protection block size increases
-// the number of protection blocks and thus the amount of memory needed
-// for sync variables.  So we have the classic tradeoff: using a higher
-// coreConcurrencyFactor increases performance because it reduces the
-// number of single-threading conflicts, but it means that the program
-// requires more memory.  Here we set coreConcurrencyFactor to 4 by
-// default, but that value was chosen intuitively rather than as a
-// result of careful study.
-//
-config const coreConcurrencyFactor = 4;
-config const verifyBlockSize = m / (numLocales
-                                    * here.numCores
-                                    * coreConcurrencyFactor):indexType;
-
-//
 // Configuration constant defining the number of errors to allow (as a
-// fraction of the number of updates, N_U)
+// fraction of the number of updates, N_U).  When using atomic, this
+// should be 0.
 //
-config const errorTolerance = 1e-2;
+param errorTolerance = 0.0;
 
 //
 // Configuration constants to control what's printed -- benchmark
@@ -107,13 +78,13 @@ const TableSpace: domain(1, indexType) dmapped TableDist = {0..m-1},
 // The program entry point
 //
 proc main() {
+  printConfiguration();   // print the problem size, number of trials, etc.
+
   //
   // T is the distributed table itself, storing a variable of type
   // elemType for each index in TableSpace.
   //
   var T: [TableSpace] atomic elemType;
-
-  printConfiguration();   // print the problem size, number of trials, etc.
 
   //
   // In parallel, initialize the table such that each position
@@ -158,35 +129,12 @@ proc verifyResults(T) {
   if (!verify) then return true;
 
   //
-  // We protect against errors in verification by using sync variables
-  // to protect accesses to blocks of table elements.  The configuration
-  // constant verifyBlockSize is the initial, user adjustable, setting
-  // of the size of a protection block.  Its actual size is the largest
-  // power of 2 less than or equal to verifyBlockSize.  This allows us
-  // to use an inexpensive mask operation to compute the strided sync
-  // var array index that corresponds to a given table index.  It may
-  // also cause us to use more memory for sync variables than we would
-  // if we used verifyBlockSize directly, but if so it will also provide
-  // more conflict avoidance.
-  //
-  const lockStride = if verifyBlockSize < 1
-                     then 1
-                     else 2 ** log2(verifyBlockSize),
-        lockIndexMask = indexMask & ~(lockStride - 1);
-  const lockSpace = TableSpace by lockStride;
-  var locks$: [lockSpace] sync bool;
-
-  //
   // Print the table, if requested
   //
   if (printArrays) then writeln("After updates, T is: ", T, "\n");
 
   //
-  // Reverse the updates by recomputing them, this time using sync
-  // variables to ensure no conflicting updates.  The sync variable
-  // that protects a given table element will usually be on the same
-  // locale with that table element, but not always, so we cannot
-  // reference it safely in the "local" statement.
+  // Reverse the updates by recomputing them.
   //
    forall (_, r) in zip(Updates, RAStream()) do
      T(r & indexMask).xor(r);

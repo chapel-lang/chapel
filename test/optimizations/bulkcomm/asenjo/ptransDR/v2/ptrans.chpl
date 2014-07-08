@@ -17,8 +17,8 @@ setupGridLocales();
 type elType = real;
 
 record localInfo {
-  const domA = {1..n, 1..m};
-  const domB = {1..m, 1..n};
+  var domA = {1..n, 1..m};  // does not change
+  var domB = {1..m, 1..n};  // does not change
 
   var A, C: [domA] elType;
   var B: [domB] elType;

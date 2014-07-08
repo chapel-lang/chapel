@@ -1,1 +1,4 @@
-bug: type output is wrong
+bug: output order is wrong
+
+With the alphabetical flag, class fields should also be alphabetized.  However,
+they are currently printed out in order of definition.

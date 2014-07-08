@@ -9,30 +9,43 @@ fo = open(origfile, 'r');
 single = fo.readline()
 sync = fo.readline()
 
-ssi = single.split()
-ssy = sync.split()
+def fixForkCounts(fn, orig):
+    # forks on locale 4 may vary by 1 due to the begin syncing with main
+    counts = orig.split(')')
+    l4 = counts[-2].split()
+    if l4[0]=='(get':
+        forks = l4[17]
+        if forks >= '4,' and forks <= '5,':
+            forks = '5,'
+        for c in counts[0:-2]:
+            fn.write(c+')')
+        for e in l4[0:17]:
+            fn.write(' '+e)
+        fn.write(' '+forks)
+        for c in l4[18:]:
+            fn.write(' '+c)
+        fn.write(')\n')
+    else:
+        # leave the original line as is
+        fn.write(orig)
 
-if ssi[0]=='(get' and ssy[0]=='(get':
-    # gets on locale 0 may be <= 17 due to isFull optimization
-
-    si = ssi[2].rstrip(',')
-    if int(si) <= 17:
-        # value within range
-        ssi[2] = '17,'
-
-    fn = open(newfile, 'w');
-    fn.write(string.join(ssi)+'\n')
+fn = open(newfile, 'w');
+if single[0:4] == '(get':
+    fixForkCounts(fn, single)
+else:
+    fn.write(single)
+if sync[0:4] == '(get':
+    fixForkCounts(fn, sync)
+else:
     fn.write(sync)
 
-    rest = fo.readlines()
-    for l in rest:
-        fn.write(l)
+rest = fo.readlines()
+fo.close()
 
-    fn.close()
+for l in rest:
+    fn.write(l)
+fn.close()
 
-    os.rename(newfile, origfile)
+os.rename(newfile, origfile)
 
-else:
-    # leave the original file as is
-    fo.close()
 

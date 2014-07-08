@@ -1,3 +1,5 @@
+feature request: using modules with different parameters
+
 When the other module examples worked, it made me think that there
 is late binding of free variables at 'use' time. However, when I
 try to give a module two different parameters, it does not work.

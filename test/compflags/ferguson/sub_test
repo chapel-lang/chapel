@@ -7,7 +7,7 @@ use Cwd qw/ realpath /;
 #$TMP = shift @ARGV;
 
 $ORIG_CHPL_HOME = $ENV{"CHPL_HOME"};
-$PLAT=`$ORIG_CHPL_HOME/util/chplenv/platform --host`;
+$PLAT=`$ORIG_CHPL_HOME/util/chplenv/chpl_platform.py --host`;
 chomp $PLAT;
 
 $ORIG_CHPL = "$ORIG_CHPL_HOME/bin/$PLAT/chpl";

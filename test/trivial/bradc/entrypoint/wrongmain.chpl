@@ -9,6 +9,6 @@ proc main(argc: int, argv: [1..argc] string) {
 }
 
 proc foo() {
-  writeln("If we see this, I think it worked");
+  writeln("If we see this, the program ran");
   return 0;
 }

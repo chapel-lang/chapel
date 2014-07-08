@@ -33,8 +33,8 @@ class F {
   proc ddName() { return name; }
 }
 
-proc object.name return "object";
-proc object.ddName() { return "object"; }
+proc object.name: string return "object";
+proc object.ddName(): string { return "object"; }
 
 //
 // Begin interesting code

@@ -5,7 +5,7 @@ record R {
 
 var gr : R;
 
-proc foo(lr : R) {
+proc foo(in lr : R) {
   lr.x = 100;
   writeln(lr);
   writeln(gr);

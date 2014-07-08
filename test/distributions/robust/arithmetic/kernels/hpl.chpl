@@ -321,10 +321,10 @@ proc backwardSub(n: int,
                 b: [1..n] elemType) {
   var x: [b.domain] elemType;
 
-  for i in {b.domain by -1} {
+  for i in b.domain by -1 {
     x[i] = b[i];
     
-    for j in {i+1..b.domain.high} do
+    for j in i+1..b.domain.high do
       x[i] -= A[i,j] * x[j];
 
     x[i] /= A[i,i];

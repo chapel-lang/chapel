@@ -50,6 +50,9 @@ config const printParams = true,
              printArrays = false,
              printStats = true;
 
+// Perform verification?
+config const verify = true;
+
 //
 // The 2D grid of locales and its extents
 // Optionally allow using only some of the locales
@@ -368,6 +371,7 @@ proc initAB(Ab: [] elemType) {
 // calculate norms and residuals to verify the results
 //
 proc verifyResults(Ab, MatrixSpace, x) {
+  if !verify then return true;
   initAB(Ab);
 
   const axmbNorm = norm(gaxpyMinus(Ab[.., 1..n], x, Ab[.., n+1..n+1]), normType.normInf);
@@ -394,7 +398,7 @@ proc verifyResults(Ab, MatrixSpace, x) {
 // print success/failure, the execution time and the Gflop/s value
 //
 proc printResults(successful, execTime) {
-  writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
+  writeln("Validation: ", if !verify then "skipped" else if successful then "SUCCESS" else "FAILURE");
   if (printStats) {
     writeln("Execution time = ", execTime);
     const GflopPerSec = ((2.0/3.0) * n**3 + (3.0/2.0) * n**2) / execTime * 1e-9;

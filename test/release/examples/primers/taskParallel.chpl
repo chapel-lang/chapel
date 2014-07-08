@@ -13,7 +13,7 @@ writeln("1: ### The begin statement ###");
 begin writeln("1: output from spawned task");
 
 // The main thread of execution continues on to the next statement.
-// There is no guarantee as to which statment will execute first.
+// There is no guarantee as to which statement will execute first.
 writeln("1: output from main task");
 
 
@@ -38,7 +38,7 @@ writeln("2: output from main task");
 writeln("3: ### The cobegin statement with nested begin statements ###");
 
 // If any begin statements are used within a cobegin statement,
-// the thread of execution does not a wait for those begin statements
+// the thread of execution does not wait for those begin statements
 // to complete.
 cobegin {
   begin writeln("3: output from spawned task 1");

@@ -1,6 +1,12 @@
 use BlockDist, CyclicDist;
-config const n = 3;
-const Space = {1..n,1..n,1..n,1..n,1..n,1..n};
+config type myIntType=uint(64);
+config const n:myIntType = 3;
+const Space = {1:myIntType..n,
+               1:myIntType..n,
+               1:myIntType..n,
+               1:myIntType..n,
+               1:myIntType..n,
+               1:myIntType..n};
 
 proc dit(D, A, B, C) {
   forall i in D {
@@ -62,7 +68,12 @@ var BA, BB, BC: [BDom] real;
 dit(BDom, BA, BB, BC);
 err += checkdit("Block", BA, BB, BC);
 
-const CDom = Space dmapped new dmap(new Cyclic(startIdx=(1,1,1,1,1,1)));
+const CDom = Space dmapped new dmap(new Cyclic(startIdx=(1:myIntType,
+                                                         1:myIntType,
+                                                         1:myIntType,
+                                                         1:myIntType,
+                                                         1:myIntType,
+                                                         1:myIntType)));
 var CA, CB, CC: [CDom] real;
 dit(CDom, CA, CB, CC);
 err += checkdit("Cyclic", CA, CB, CC);

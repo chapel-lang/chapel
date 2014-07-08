@@ -1,5 +1,5 @@
 extern proc chpl_mem_allocMany(number, size, description, userCode=true, lineno=-1, filename=""): opaque;
-extern proc chpl_mem_realloc(ptr, number, size, description, lineno=-1, filename=""): opaque;
+extern proc chpl_mem_realloc(ptr, size, description, lineno=-1, filename=""): opaque;
 extern proc chpl_mem_free(ptr, userCode=true, lineno=-1, filename="");
 
 extern proc resetMemStat();
@@ -30,7 +30,7 @@ chpl_mem_free(b);
 writeln("freed the int and the bool");
 printMemStat();
 
-f = chpl_mem_realloc(f, 10, numBytes(real), "_real64", -1, "");
+f = chpl_mem_realloc(f, 10 * numBytes(real), "_real64", -1, "");
 writeln("realloc'd 10 times the real");
 printMemStat();
 

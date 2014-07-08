@@ -28,7 +28,7 @@ config const debug   = false;
 class Function {
     const k            : int;  // use first k Legendre polynomials as the basis in each box
     const thresh       : real; // truncation threshold for small wavelet coefficients
-    const f            : AFcn; // analytic f(x) to project into the numerical represntation
+    var   f            : AFcn; // analytic f(x) to project into the numerical represntation
     const initial_level: int;  // initial level of refinement
     const max_level    : int;  // maximum level of refinement mostly as a sanity check
     const autorefine   : bool; // automatically refine during multiplication

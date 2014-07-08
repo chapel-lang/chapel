@@ -1,4 +1,4 @@
-feature requst: ability to overload ChapelBase.chpl operators in user code
+feature request: ability to overload ChapelBase.chpl operators in user code
 
 This is a copy of the original test_override_operators.chpl which I'm
 preserving in deference to David's original intent which was to permit

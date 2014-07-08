@@ -42,25 +42,25 @@ config const verify = true;
 // answers due to races in the same way that the main computation can.
 // This can lead to a total error count that exceeds the threshold,
 // causing a spurious failure report.  We protect against errors in
-// verification by using sync variables to single-thread accesses to
-// blocks of table elements, with no more than verifyBlockSize elements
-// per block.  As a rule of thumb, verifyBlockSize should be chosen such
-// that there are a few times as many blocks (thus sync variables) as
-// the maximum number of tasks that could actually be running at any one
-// time.  The "few times" multiplier, named coreConcurrencyFactor here,
-// accounts for two effects.  One is that task switching during critical
-// sections can make it seem as though more tasks are competing for
-// access to those critical sections than there are hardware cores.  The
-// other is that a smaller block size reduces the likelihood that two
+// verification by using locks to limit accesses to blocks of table
+// elements, with no more than verifyBlockSize elements per block.  As
+// a rule of thumb, verifyBlockSize should be chosen such that there
+// are a few times as many blocks (thus locks) as the maximum number
+// of tasks that could actually be running at any one time.  The "few
+// times" multiplier, named coreConcurrencyFactor here, accounts for
+// two effects.  One is that task switching during critical sections
+// can make it seem as though more tasks are competing for access to
+// those critical sections than there are hardware cores.  The other
+// is that a smaller block size reduces the likelihood that two
 // tasks will try to work on table elements in the same block at the
 // same time.  Of course, reducing the protection block size increases
 // the number of protection blocks and thus the amount of memory needed
-// for sync variables.  So we have the classic tradeoff: using a higher
+// for the locks.  So we have the classic tradeoff: using a higher
 // coreConcurrencyFactor increases performance because it reduces the
-// number of single-threading conflicts, but it means that the program
-// requires more memory.  Here we set coreConcurrencyFactor to 4 by
-// default, but that value was chosen intuitively rather than as a
-// result of careful study.
+// number of conflicts, but it means that the program requires more
+// memory.  Here we set coreConcurrencyFactor to 4 by default, but
+// that value was chosen intuitively rather than as a result of
+// careful study.
 //
 config const coreConcurrencyFactor = 4;
 config const verifyBlockSize = m / (numLocales
@@ -84,7 +84,7 @@ config const printParams = true,
 //
 // Use "on" statement in kernel, or remote memory references?
 //
-config const useOn = (CHPL_COMM != "ugni");
+config const useOn = (CHPL_COMM != "ugni") && (CHPL_COMM != "none");
 
 //
 // TableDist is a 1D block distribution for domains storing indices
@@ -112,20 +112,20 @@ const TableSpace: domain(1, indexType) dmapped TableDist = {0..m-1},
 // The program entry point
 //
 proc main() {
+  printConfiguration();   // print the problem size, number of trials, etc.
+
   //
   // T is the distributed table itself, storing a variable of type
   // elemType for each index in TableSpace.
   //
   var T: [TableSpace] elemType;
 
-  printConfiguration();   // print the problem size, number of trials, etc.
-
   //
   // In parallel, initialize the table such that each position
   // contains its index.  "[i in TableSpace]" is shorthand for "forall
   // i in TableSpace"
   //
-  [i in TableSpace] T(i) = i;
+  [i in TableSpace] T[i] = i;
 
   const startTime = getCurrentTime();              // capture the start time
 
@@ -143,15 +143,15 @@ proc main() {
   //
   if (useOn) then
     forall (_, r) in zip(Updates, RAStream()) do
-      on TableDist.idxToLocale(r & indexMask) do {
+      on TableDist.idxToLocale[r & indexMask] do {
         const myR = r;
         local {
-          T(myR & indexMask) ^= myR;
+          T[myR & indexMask] ^= myR;
         }
       }
   else
     forall (_, r) in zip(Updates, RAStream()) do
-      T(r & indexMask) ^= r;
+      T[r & indexMask] ^= r;
 
   const execTime = getCurrentTime() - startTime;   // capture the elapsed time
 
@@ -175,17 +175,16 @@ proc printConfiguration() {
 //
 proc verifyResults(T) {
   if (!verify) then return true;
-
   //
-  // We protect against errors in verification by using sync variables
-  // to protect accesses to blocks of table elements.  The configuration
+  // We protect against errors in verification by using locks to
+  // protect accesses to blocks of table elements.  The configuration
   // constant verifyBlockSize is the initial, user adjustable, setting
   // of the size of a protection block.  Its actual size is the largest
   // power of 2 less than or equal to verifyBlockSize.  This allows us
-  // to use an inexpensive mask operation to compute the strided sync
-  // var array index that corresponds to a given table index.  It may
-  // also cause us to use more memory for sync variables than we would
-  // if we used verifyBlockSize directly, but if so it will also provide
+  // to use an inexpensive mask operation to compute the strided lock
+  // array index that corresponds to a given table index.  It may also
+  // cause us to use more memory for the locks than we would if we
+  // used verifyBlockSize directly, but if so it will also provide
   // more conflict avoidance.
   //
   const lockStride = if verifyBlockSize < 1
@@ -193,7 +192,7 @@ proc verifyResults(T) {
                      else 2 ** log2(verifyBlockSize),
         lockIndexMask = indexMask & ~(lockStride - 1);
   const lockSpace = TableSpace by lockStride;
-  var locks$: [lockSpace] sync bool;
+  var locks: [lockSpace] vlock;
 
   //
   // Print the table, if requested
@@ -201,27 +200,27 @@ proc verifyResults(T) {
   if (printArrays) then writeln("After updates, T is: ", T, "\n");
 
   //
-  // Reverse the updates by recomputing them, this time using sync
-  // variables to ensure no conflicting updates.  The sync variable
-  // that protects a given table element will usually be on the same
-  // locale with that table element, but not always, so we cannot
-  // reference it safely in the "local" statement.
+  // Reverse the updates by recomputing them, this time using locks
+  // variables to ensure no conflicting updates.  The lock that
+  // protects a given table element will usually be on the same locale
+  // with that table element, but not always, so we cannot reference
+  // it safely in the "local" statement.
   //
   if (useOn) then
     forall (_, r) in zip(Updates, RAStream()) do
-      on TableDist.idxToLocale(r & indexMask) do {
+      on TableDist.idxToLocale[r & indexMask] do {
         const myR = r;
-        locks$(myR & lockIndexMask) = true;
+        locks[myR & lockIndexMask].lock();
         local {
-          T(myR & indexMask) ^= myR;
+          T[myR & indexMask] ^= myR;
         }
-        locks$(myR & lockIndexMask);
+        locks[myR & lockIndexMask].unlock();
       }
   else
     forall (_, r) in zip(Updates, RAStream()) do {
-      locks$(r & lockIndexMask) = true;
-      T(r & indexMask) ^= r;
-      locks$(r & lockIndexMask);
+      locks[r & lockIndexMask].lock();
+      T[r & indexMask] ^= r;
+      locks[r & lockIndexMask].unlock();
     }
 
   //
@@ -234,7 +233,7 @@ proc verifyResults(T) {
   // correctly.  This is an indication of the number of conflicting
   // updates.
   //
-  const numErrors = + reduce [i in TableSpace] (T(i) != i);
+  const numErrors = + reduce [i in TableSpace] (T[i] != i);
   if (printStats) then writeln("Number of errors is: ", numErrors, "\n");
 
   //
@@ -242,6 +241,19 @@ proc verifyResults(T) {
   // tolerance.
   //
   return numErrors <= (errorTolerance * N_U);
+}
+
+//
+// lock for verification
+//
+record vlock {
+  var l: atomic bool;
+  proc lock() {
+    on this do while l.testAndSet() != false do chpl_task_yield();
+  }
+  proc unlock() {
+    l.write(false);
+  }
 }
 
 //

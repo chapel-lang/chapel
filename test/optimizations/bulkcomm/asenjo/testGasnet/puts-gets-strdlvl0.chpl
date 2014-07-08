@@ -32,12 +32,12 @@ proc BlockArr.TestGetsPuts(B)
       count[1]=2;
       count[2]=4;
       writeln();
-      var dest = locArr[0].myElems._value.data; // can this be myLocArr?
-      var srcl = B._value.locArr[lid].myElems._value.data;
-      var srcr = B._value.locArr[rid].myElems._value.data;
-      var dststr=dststrides._value.data;
-      var srcstr=srcstrides._value.data;
-      var cnt=count._value.data;
+      var dest = locArr[0].myElems._value.theData; // can this be myLocArr?
+      var srcl = B._value.locArr[lid].myElems._value.theData;
+      var srcr = B._value.locArr[rid].myElems._value.theData;
+      var dststr=dststrides._value.theData;
+      var srcstr=srcstrides._value.theData;
+      var cnt=count._value.theData;
 
 // 1.- get 2 elements from B (B[58..59]) on locale 1 to A[8..9] on locale 0      
       __primitive("chpl_comm_get_strd",
@@ -63,9 +63,9 @@ proc BlockArr.TestGetsPuts(B)
       		  __primitive("array_get",cnt, count._value.getDataIndex(1)),
       		  stridelevels);
 
-      var src = locArr[0].myElems._value.data; // can this be myLocArr?
-      var destl = B._value.locArr[lid].myElems._value.data;
-      var destr = B._value.locArr[rid].myElems._value.data;
+      var src = locArr[0].myElems._value.theData; // can this be myLocArr?
+      var destl = B._value.locArr[lid].myElems._value.theData;
+      var destr = B._value.locArr[rid].myElems._value.theData;
 
 // 3.- put 2 elements from A (A[26..27]) on locale 0 to B[76..77] on locale 1
       __primitive("chpl_comm_put_strd",

@@ -3,11 +3,11 @@ Chapel Primers
 ==============
 
 These primers are small Chapel program with narrative comments that
-demonstrate Chapel feature area in detail.
+demonstrate Chapel feature areas in detail.
 
      arrays.chpl            : Rectangular arrays/domains
      atomics.chpl           : Atomic variables
-     chpldoc.chpl	    : The chpldoc feature
+     chpldoc.chpl           : The chpldoc feature
      classes.chpl           : Defining and using classes
      distributions.chpl     : Chapel standard distributions
      domains.chpl           : Domains and methods on domains
@@ -26,4 +26,4 @@ demonstrate Chapel feature area in detail.
      taskParallel.chpl      : Task parallel language concepts
      timers.chpl            : Time standard module
      varargs.chpl           : Variable argument procedures
-     variables.chpl         : Variables, constants and parameters
+     variables.chpl         : Variables, constants, and parameters

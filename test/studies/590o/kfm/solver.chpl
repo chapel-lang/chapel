@@ -64,7 +64,7 @@ var rowRemainders: [1..9] domain(int) = All;
 var colRemainders: [1..9] domain(int) = All;
 var boxRemainders: [1..9] domain(int) = All;
 // ----- Initialize the values we still need for each row ----
-for i in {1..9}{ 
+for i in 1..9 { 
     for v in Table[i, ..] {
     	if (v != 0) {
      	  rowRemainders[i] -= v;
@@ -73,7 +73,7 @@ for i in {1..9}{
 }
 
 // ----- Initialize the values we still need for each column ----
-for i in {1..9}{ 
+for i in 1..9 { 
     for v in Table[.., i] {
     	if (v != 0) {
      	  colRemainders[i] -= v;
@@ -101,7 +101,7 @@ BoxDomains[6] = Box6;
 BoxDomains[7] = Box7;
 BoxDomains[8] = Box8;
 BoxDomains[9] = Box9;
-for i in {1..9} {
+for i in 1..9 {
     var currDom = Table[BoxDomains[i]];
     for j in currDom {
         if (j != 0) {

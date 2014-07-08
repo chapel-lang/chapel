@@ -29,6 +29,6 @@ proc bar((x,y)) {
   x(1) = y;
 }
 
-proc baz(x,y) {
+proc baz(in x,y) {
   x.A(1) = y;
 }

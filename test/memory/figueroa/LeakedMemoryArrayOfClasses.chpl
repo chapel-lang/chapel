@@ -9,7 +9,7 @@ proc foo() {
   for cc in c do delete cc;
 }
 
-serial true {
+serial {
   var m1 = memoryUsed();
   foo();
   var m2 = memoryUsed();

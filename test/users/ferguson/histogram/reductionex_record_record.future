@@ -1,3 +1,5 @@
+semantic: nest a record in a class
+
 Like bugs in ../nested, I expected record in record to work.
 
 reductionex_record_record.chpl:12: In function 'chpl__initCopy':

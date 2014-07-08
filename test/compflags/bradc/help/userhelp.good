@@ -10,11 +10,11 @@ Module Processing Options:
 
 Parallelism Control Options:
       --[no-]local                    Target one [many] locale[s]
-      --[no-]serial                   [Don't] Serialize parallel constructs
-      --[no-]serial-forall            [Don't] Serialize forall constructs
 
 Optimization Control Options:
-      --[no-]baseline                 [Don't] disable all Chapel optimizations
+      --baseline                      Disable all Chapel optimizations
+      --cache-remote                  Enable cache for remote data (must be
+                                      enabled specifically)
       --conditional-dynamic-dispatch-limit <limit>
                                       Set limit on # of inline conditionals
                                       used for dynamic dispatch
@@ -24,6 +24,9 @@ Optimization Control Options:
       --[no-]fast-followers           Enable [disable] fast followers
       --[no-]ieee-float               Generate code that is strict [lax] with
                                       respect to IEEE compliance
+      --[no-]loop-invariant-code-motion
+                                      Enable [disable] loop invariant code
+                                      motion
       --[no-]inline                   Enable [disable] function inlining
       --[no-]inline-iterators         Enable [disable] iterator inlining
       --[no-]live-analysis            Enable [disable] live variable analysis
@@ -70,11 +73,15 @@ C Code Compilation Options:
   -L, --lib-search-path <directory>   C library search path
       --make <make utility>           Make utility for generated code
   -O, --[no-]optimize                 [Don't] Optimize generated C code
+      --[no-]specialize               [Don't] Specialize generated C code for
+                                      CHPL_TARGET_ARCH
   -o, --output <filename>             Name output executable
       --static                        Generate a statically linked binary
 
 LLVM Code Generation Options:
       --[no-]llvm                     [Don't] use the LLVM code generator
+      --[no-]llvm-wide-opt            Enable [disable] LLVM wide pointer
+                                      optimizations
 
 Documentation Options:
       --[no-]docs                     Runs documentation on the source file
@@ -89,6 +96,7 @@ Documentation Options:
 Compilation Trace Options:
       --[no-]print-commands           [Don't] print system commands
       --[no-]print-passes             [Don't] print compiler passes
+      --print-passes-file <filename>  Print compiler passes to <filename>
 
 Miscellaneous Options:
       --[no-]devel                    Compile as a developer [user]
@@ -96,12 +104,19 @@ Miscellaneous Options:
                                       Explain resolution of call
       --explain-instantiation <function|type>[:<module>][:<line>]
                                       Explain instantiation of type
+      --[no-]explain-verbose          Enable [disable] tracing of
+                                      disambiguation with 'explain' options
       --instantiate-max <max>         Limit number of instantiations
       --[no-]print-callstack-on-error print the Chapel call stack leading to
                                       each error or warning
   -s, --set <name>[=<value>]          Set config param value
-      --[no-]warn-domain-literal      [Disable] Enable old domain literal
+      --[no-]warn-const-loops         Enable [disable] warnings for some
+                                      'while' loops with constant conditions
+      --[no-]warn-special             Enable [disable] special warnings
+      --[no-]warn-domain-literal      Enable [disable] old domain literal
                                       syntax warnings
+      --[no-]warn-tuple-iteration     Enable [disable] warnings for tuple
+                                      iteration
       --no-warnings                   Disable output of warnings
 
 Compiler Information Options:

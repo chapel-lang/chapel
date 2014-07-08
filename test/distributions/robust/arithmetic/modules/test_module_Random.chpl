@@ -13,7 +13,7 @@ proc fillRefArrays() {
   rng.fillRandom(R2D);
   rng.fillRandom(R3D);
   rng.fillRandom(R4D);
-  rng.fillRandom(R2D64);
+  rng.fillRandom(R2D32);
 }
 
 proc checkRNG(R, T: [?D2]) {
@@ -29,14 +29,14 @@ var T1D: [Dom1D] real;
 var T2D: [Dom2D] real;
 var T3D: [Dom3D] real;
 var T4D: [Dom4D] real;
-var T2D64: [Dom2D64] real;
+var T2D32: [Dom2D32] real;
 
 proc resetTempArrays() {
   [i in Dom1D] T1D[i] = -1;
   [ij in Dom2D] T2D[ij] = -1;
   [ijk in Dom3D] T3D[ijk] = -1;
   [ijkl in Dom4D] T4D[ijkl] = -1;
-  [ij in Dom2D64] T2D64[ij] = -1;
+  [ij in Dom2D32] T2D32[ij] = -1;
 }
 
 
@@ -53,8 +53,8 @@ trng.fillRandom(T3D);
 writeln("\tR3D: ", checkRNG(R3D, T3D), " errors");
 trng.fillRandom(T4D);
 writeln("\tR4D: ", checkRNG(R4D, T4D), " errors");
-trng.fillRandom(T2D64);
-writeln("\tR2D64: ", checkRNG(R2D64, T2D64), " errors");
+trng.fillRandom(T2D32);
+writeln("\tR2D32: ", checkRNG(R2D32, T2D32), " errors");
 
 
 writeln("fillRandom() aliased arrays");
@@ -62,7 +62,7 @@ var aT1D => T1D;
 var aT2D => T2D;
 var aT3D => T3D;
 var aT4D => T4D;
-var aT2D64 => T2D64;
+var aT2D32 => T2D32;
 resetTempArrays();
 fillRefArrays();
 trng.fillRandom(aT1D);
@@ -73,8 +73,8 @@ trng.fillRandom(aT3D);
 writeln("\tR3D: ", checkRNG(R3D, aT3D), " errors");
 trng.fillRandom(aT4D);
 writeln("\tR4D: ", checkRNG(R4D, aT4D), " errors");
-trng.fillRandom(aT2D64);
-writeln("\tR2D64: ", checkRNG(R2D64, aT2D64), " errors");
+trng.fillRandom(aT2D32);
+writeln("\tR2D32: ", checkRNG(R2D32, aT2D32), " errors");
 
 
 writeln("fillRandom() reindexed arrays");
@@ -95,9 +95,9 @@ writeln("\tR3D: ", checkRNG(R3D, T3D), " errors");
 const TD4D: domain(4) = Space4.translate(-o5,-o5,-o5,-o5);
 foo(trng, TD4D, T4D);
 writeln("\tR4D: ", checkRNG(R4D, T4D), " errors");
-const TD2D64: domain(2,int(64)) = Space2D64.translate(-o5:int(64),-o5:int(64));
-foo(trng, TD2D64, T2D64);
-writeln("\tR2D64: ", checkRNG(R2D64, T2D64), " errors");
+const TD2D32: domain(2,int(32)) = Space2D32.translate(-o5:int(32),-o5:int(32));
+foo(trng, TD2D32, T2D32);
+writeln("\tR2D32: ", checkRNG(R2D32, T2D32), " errors");
 
 
 writeln("fillRandom() rank changed arrays");

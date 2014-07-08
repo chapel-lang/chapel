@@ -44,7 +44,7 @@ module BC_dijkstra {
       var numberNeighbors: int = Nodes[node].nNeighbors;
 
       // for each neighbor of node
-      label examineneighbors for i in {0..(numberNeighbors-1)} {
+      label examineneighbors for i in 0..(numberNeighbors-1) {
         var neighbor: int = Nodes[node].Neighbors[i];
         // is neighbor already on stack?
         if (Records[neighbor].onStack != -2) then continue examineneighbors;

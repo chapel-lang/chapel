@@ -5,7 +5,7 @@ use Memory;
 
 const N = 5;
 var A: [1..N] int;
-serial true do A = 7;
+serial do A = 7;
 var sum = -3;
 
 proc foo (X) {

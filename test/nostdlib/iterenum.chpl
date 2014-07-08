@@ -16,7 +16,7 @@ proc main() {
 
   for i in myiter() {
     var str:string = i:string;
-    var slen:ssize_t = str.length;
+    var slen:ssize_t = str.length:ssize_t;
     err = 1;
     if i == MyEnum.B then err = 0;
     if err == 0 {

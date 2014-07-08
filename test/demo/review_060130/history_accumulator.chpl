@@ -4,12 +4,11 @@ record history_real {
   var f : real;
 }
 
-proc =(x : history_real, y : real) {
+proc =(ref x : history_real, y : real) {
   for i in 2..x.size by -1 do
     x.h(i) = x.h(i-1);
   x.h(1) = x.f;
   x.f = y;
-  return x;
 }
 
 proc >(x : history_real, y : real) {

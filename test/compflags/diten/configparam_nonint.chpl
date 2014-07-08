@@ -1,7 +1,7 @@
 config param areal: real = 3.14;
-config param astring: string = "hello";
+config param ac_string: c_string = "hello";
 
 proc main() {
   writeln(areal);
-  writeln(astring);
+  writeln(ac_string);
 }

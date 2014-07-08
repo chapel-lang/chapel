@@ -53,7 +53,7 @@ var timer:Timer;
 writeln("-- LAMMPS - (Parallel,Chapel) -- ");
 timer.start();
 
-for i in {1..numSteps}
+for i in 1..numSteps
 {
 //    var it:Timer;
 //    it.start();
@@ -109,7 +109,7 @@ proc computeForces()
 	local
 	{
 	    var p:3*real = positionsLoc[here.id,i];	
-	    for m in {0..membcounts[i]-1}
+	    for m in 0..membcounts[i]-1
 	    {		
 		var j:int = neighbors[i,m];
 		var q:3*real = positionsLoc[here.id,j];
@@ -170,7 +170,7 @@ proc updatePositions()
     forall i in atomsDist
     {
 	locks[here.id]=true;
-	for m in {0..membcounts[i]-1}
+	for m in 0..membcounts[i]-1
 	{
 	    var j:int=neighbors[i,m];
 	    if(needsUpdate[here.id,j])
@@ -200,7 +200,7 @@ proc updateNeighbors()
 	local
 	{
 	    var cnt:int=0;
-	    for j in {0..numAtoms-1}
+	    for j in 0..numAtoms-1
 	    {
 		var p:3*real=positionsLoc[here.id,i];
 		if(i!=j)

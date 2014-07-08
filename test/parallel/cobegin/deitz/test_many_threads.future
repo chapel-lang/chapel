@@ -61,6 +61,7 @@ On Tue, 25 Mar 2008, Steve Deitz wrote:
 >  wrote 2
 >  wrote 3
 >
+> [gbt: this would now be: $ CHPL_RT_NUM_THREADS_PER_LOCALE=4 a.out]
 > and then it hangs.  Shouldn't this test be able to finish using the task
 > pool?
 >

@@ -171,7 +171,7 @@ module SSCA2_kernels
   config const defaultNumTPVs = 16;
   config var numTPVs = min(defaultNumTPVs, numLocales);
   // Would be nice to use PriavteDist, but aliasing is not supported (yet)
-  const PrivateSpace = {LocaleSpace} dmapped Block(boundingBox={LocaleSpace});
+  const PrivateSpace = LocaleSpace dmapped Block(boundingBox=LocaleSpace);
 
   // ==================================================================
   //                              KERNEL 4
@@ -240,8 +240,8 @@ module SSCA2_kernels
         TPVLocales[t] = Locales[_computeChunkStartEnd(numLocales,
                                                       numTPVs, t+1)[1]-1];
       }
-      const TPVLocaleSpace = {TPVSpace} dmapped Block(boundingBox={TPVSpace},
-                                                      targetLocales=TPVLocales);
+      const TPVLocaleSpace = TPVSpace dmapped Block(boundingBox=TPVSpace,
+                                                    targetLocales=TPVLocales);
 
       // There will be numTPVs copies of the temps, thus throttling the
       // number of starting vertices being considered simultaneously.
@@ -331,7 +331,7 @@ module SSCA2_kernels
 
         var barrier = new Barrier();
 
-        coforall loc in Locales do on loc {
+        coforall loc in Locales ref(remaining,barrier) do on loc {
           Active_Level[here.id].Members.clear();
           Active_Level[here.id].next.Members.clear();
           if vertex_domain.dist.idxToLocale(s) == here {

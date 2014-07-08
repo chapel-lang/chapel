@@ -10,7 +10,7 @@ proc myDM(param dmType: DMType) {
     when DMType.default do return new dmap(new DefaultDist());
     when DMType.block do return new dmap(new Block(rank=1, boundingBox={1..n}));
     when DMType.cyclic do return new dmap(new Cyclic(startIdx=1));
-    when DMType.blockcyclic do return new dmap(new BlockCyclic(startIdx=tuple(1), blocksize=tuple(3)));
+    when DMType.blockcyclic do return new dmap(new BlockCyclic(startIdx=(1,), blocksize=(3,)));
     when DMType.replicated do return new dmap(new ReplicatedDist());
     otherwise halt("unexpected 'dmType': ", dmType);
     }
@@ -69,7 +69,7 @@ proc main() {
   writeln("Default Dist");
   writeln("============");
   var m1 = memoryUsed();
-  doit(DMType.default);
+  serial do doit(DMType.default);
   var m2 = memoryUsed();
   writeln("total:");
   writeln("\t", m2-m1, " bytes leaked");
@@ -78,7 +78,7 @@ proc main() {
   writeln("Block Dist");
   writeln("==========");
   m1 = memoryUsed();
-  doit(DMType.block);
+  serial do doit(DMType.block);
   m2 = memoryUsed();
   writeln("total:");
   writeln("\t", m2-m1, " bytes leaked");
@@ -87,7 +87,7 @@ proc main() {
   writeln("Cyclic Dist");
   writeln("===========");
   m1 = memoryUsed();
-  doit(DMType.cyclic);
+  serial do doit(DMType.cyclic);
   m2 = memoryUsed();
   writeln("total:");
   writeln("\t", m2-m1, " bytes leaked");
@@ -96,7 +96,7 @@ proc main() {
   writeln("Block-Cyclic Dist");
   writeln("=================");
   m1 = memoryUsed();
-  doit(DMType.blockcyclic);
+  serial do doit(DMType.blockcyclic);
   m2 = memoryUsed();
   writeln("total:");
   writeln("\t", m2-m1, " bytes leaked");
@@ -105,7 +105,7 @@ proc main() {
   writeln("Replicated Dist");
   writeln("===============");
   m1 = memoryUsed();
-  doit(DMType.replicated);
+  serial do doit(DMType.replicated);
   m2 = memoryUsed();
   writeln("total:");
   writeln("\t", m2-m1, " bytes leaked");

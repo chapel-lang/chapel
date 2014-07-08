@@ -9,14 +9,14 @@ config const n1 = 100;
 config const n2 = 20;
 config const n3 = 5;
 config const n4 = 3;
-config const n5 = max(int(64));
+config const n5 = 12345679:int(32);
 config const o5 = 8;
 
 const Space1 = {1..n1};
 const Space2 = {1..n2, 1..n2};
 const Space3 = {1..n3, 1..n3, 1..n3};
 const Space4 = {1..n4, 1..n4, 1..n4, 1..n4};
-const Space2D64 = {n5-o5..n5, n5-o5..n5};
+const Space2D32 = {n5-o5:int(32)..n5, n5..n5+o5:int(32)};
 
 proc setupDistributions() {
   if distType == DistType.default {
@@ -34,7 +34,7 @@ proc setupDistributions() {
             new dmap(new Block(rank=2, boundingBox=Space2)),
             new dmap(new Block(rank=3, boundingBox=Space3)),
             new dmap(new Block(rank=4, boundingBox=Space4)),
-            new dmap(new Block(rank=2, idxType=int(64), boundingBox=Space2D64))
+            new dmap(new Block(rank=2, idxType=int(32), boundingBox=Space2D32))
            );
   }
   if distType == DistType.cyclic {
@@ -43,16 +43,16 @@ proc setupDistributions() {
             new dmap(new Cyclic(startIdx=(0,0))),
             new dmap(new Cyclic(startIdx=(0,0,0))),
             new dmap(new Cyclic(startIdx=(0,0,0,0))),
-            new dmap(new Cyclic(startIdx=(0:int(64), 0:int(64))))
+            new dmap(new Cyclic(startIdx=(0:int(32), 0:int(32))))
            );
   }
   if distType == DistType.blockcyclic {
     return (
-            new dmap(new BlockCyclic(startIdx=tuple(0), blocksize=tuple(3))),
+            new dmap(new BlockCyclic(startIdx=(0,), blocksize=(3,))),
             new dmap(new BlockCyclic(startIdx=(0,0), blocksize=(3,3))),
             new dmap(new BlockCyclic(startIdx=(0,0,0), blocksize=(3,3,3))),
             new dmap(new BlockCyclic(startIdx=(0,0,0,0), blocksize=(3,3,3,3))),
-            new dmap(new BlockCyclic(startIdx=(0:int(64),0:int(64)), blocksize=(2,3)))
+            new dmap(new BlockCyclic(startIdx=(0:int(32),0:int(32)), blocksize=(2:int(32),3:int(32))))
            );
   }
   if distType == DistType.replicated {
@@ -67,7 +67,7 @@ proc setupDistributions() {
   halt("unexpected 'distType': ", distType);
 }
 
-const (Dist1D, Dist2D, Dist3D, Dist4D, Dist2D64) = setupDistributions();
+const (Dist1D, Dist2D, Dist3D, Dist4D, Dist2D32) = setupDistributions();
 
 //
 // creates a tuple of size 'rank' initialized with values 'x'

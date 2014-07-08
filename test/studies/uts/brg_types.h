@@ -37,6 +37,8 @@
  since the latter are of the form uint<nn>_t, a regular expression search
  and replace (in VC++ search on 'uint_{:z}t' and replace with 'uint\1_t')
  can be used to convert the types used here to the C99 standard types.
+
+ Source code origin listed in README file.
 */
 
 #ifndef BRG_TYPES_H
