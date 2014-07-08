@@ -7,11 +7,6 @@ proc fib(n: int): int {
     return 1;
   }
 
-  // Chapel compiler fails to compile this statement, generates an invalid identifier
-  // In file included from /tmp/chpl-shamsimam-18982.deleteme/_main.c:31:
-  // /tmp/chpl-...deleteme/Futures.c:208:34: error: use of undeclared identifier 'n2'
-  // _return_tmp_ = this9(_cast_tmp_, n2, _endCount);
-
   var f1 = new future(int);
   begin { f1.write(fib(n - 1)); }
 
