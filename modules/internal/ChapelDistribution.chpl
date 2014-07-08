@@ -3,37 +3,24 @@ module ChapelDistribution {
   
   use List;
   
-  config const dataParTasksPerLocale = 0;
-  config const dataParIgnoreRunningTasks = true;
-  config const dataParMinGranularity: int = 1;
-  
   extern proc chpl_task_yield();
-  
-  // NOTE: If module initialization order changes, this may be affected
-  if dataParTasksPerLocale<0 then halt("dataParTasksPerLocale must be >= 0");
-  if dataParMinGranularity<=0 then halt("dataParMinGranularity must be > 0");
   
   //
   // Abstract distribution class
   //
   pragma "base dist"
   class BaseDist {
-    var _distCnt: atomic int;   // distribution reference count
+    // The common case seems to be local access to this class, so we
+    // will use explicit processor atomics, even when network
+    // atomics are available
+    var _distCnt: atomic_refcnt; // distribution reference count
     var _doms: list(BaseDom);   // domains declared over this domain
-    var _domsLock: atomic bool; //   and lock for concurrent access
+    var _domsLock: atomicflag;  //   and lock for concurrent access
   
     pragma "dont disable remote value forwarding"
-    proc destroyDist(dom: BaseDom = nil) {
-      if dom then remove_dom(dom);
-      var cnt = _distCnt.fetchSub(1)-1;
-      if !noRefCount {
-        if cnt < 0 then
-          halt("distribution reference count is negative!");
-      } else {
-        if cnt > 0 then
-          halt("distribution reference count has been modified!");
-      }
-      return cnt;
+    proc destroyDist(): int {
+      compilerAssert(!noRefCount);
+      return decRefCount();
     }
   
     inline proc remove_dom(x) {
@@ -85,6 +72,19 @@ module ChapelDistribution {
       compilerError("sparse domains not supported by this distribution");
     }
   
+    inline proc incRefCount(cnt=1) {
+      compilerAssert(!noRefCount);
+      _distCnt.inc(cnt);
+    }
+
+    inline proc decRefCount() {
+      compilerAssert(!noRefCount);
+      const cnt = _distCnt.dec();
+      if cnt < 0 then
+          halt("distribution reference count is negative!");
+      return cnt;
+    }
+
     proc dsiSupportsPrivatization() param return false;
     proc dsiRequiresPrivatization() param return false;
   
@@ -98,9 +98,12 @@ module ChapelDistribution {
   //
   pragma "base domain"
   class BaseDom {
-    var _domCnt: atomic int;    // domain reference count
-    var _arrs: list(BaseArr);   // arrays declared over this domain
-    var _arrsLock: atomic bool; //   and lock for concurrent access
+    // The common case seems to be local access to this class, so we
+    // will use explicit processor atomics, even when network
+    // atomics are available
+    var _domCnt: atomic_refcnt; // domain reference count
+    var _arrs: list(BaseArr);  // arrays declared over this domain
+    var _arrsLock: atomicflag; //   and lock for concurrent access
   
     proc dsiMyDist(): BaseDist {
       halt("internal error: dsiMyDist is not implemented");
@@ -108,25 +111,17 @@ module ChapelDistribution {
     }
   
     pragma "dont disable remote value forwarding"
-    proc destroyDom(arr: BaseArr = nil) {
-      if arr then remove_arr(arr);
-      var cnt = _domCnt.fetchSub(1)-1;
-      if !noRefCount {
-        if cnt < 0 then
-          halt("domain reference count is negative!");
-      } else {
-        if cnt > 0 then
-          halt("domain reference count has been modified!");
-      }
-      if !noRefCount {
-        if cnt == 0 && dsiLinksDistribution() {
+    proc destroyDom(): int {
+      compilerAssert(!noRefCount);
+      var cnt = decRefCount();
+      if cnt == 0 && dsiLinksDistribution() {
           var dist = dsiMyDist();
           on dist {
-            var cnt = dist.destroyDist(this);
+            local dist.remove_dom(this);
+            var cnt = dist.destroyDist();
             if cnt == 0 then
               delete dist;
           }
-        }
       }
       return cnt;
     }
@@ -175,6 +170,19 @@ module ChapelDistribution {
         arr._preserveArrayElement(oldslot, newslot);
     }
   
+    inline proc incRefCount(cnt=1) {
+      compilerAssert(!noRefCount);
+      _domCnt.inc(cnt);
+    }
+
+    inline proc decRefCount() {
+      compilerAssert(!noRefCount);
+      const cnt = _domCnt.dec(); //_domCnt.fetchSub(1)-1;
+      if cnt < 0 then
+          halt("domain reference count is negative!");
+      return cnt;
+    }
+
     proc dsiSupportsPrivatization() param return false;
     proc dsiRequiresPrivatization() param return false;
   
@@ -242,13 +250,13 @@ module ChapelDistribution {
   //
   pragma "base array"
   class BaseArr {
-    var _arrCnt: atomic int; // array reference count
-    var _arrAlias: BaseArr;  // reference to base array if an alias
+    // The common case seems to be local access to this class, so we
+    // will use explicit processor atomics, even when network
+    // atomics are available
+    var _arrCnt: atomic_refcnt; // array reference count
+    var _arrAlias: BaseArr;    // reference to base array if an alias
   
     proc dsiStaticFastFollowCheck(type leadType) param return false;
-  
-    proc canCopyFromDevice param return false;
-    proc canCopyFromHost param return false;
   
     proc dsiGetBaseDom(): BaseDom {
       halt("internal error: dsiGetBaseDom is not implemented");
@@ -257,14 +265,8 @@ module ChapelDistribution {
   
     pragma "dont disable remote value forwarding"
     proc destroyArr(): int {
-      var cnt = _arrCnt.fetchSub(1)-1;
-      if !noRefCount {
-        if cnt < 0 then
-          halt("array reference count is negative!");
-      } else {
-        if cnt > 0 then
-          halt("array reference count has been modified!");
-      }
+      compilerAssert(!noRefCount);
+      var cnt = decRefCount();
       if cnt == 0 {
         if _arrAlias {
           on _arrAlias {
@@ -276,15 +278,14 @@ module ChapelDistribution {
           dsiDestroyData();
         }
       }
-      if !noRefCount {
-        if cnt == 0 {
+      if cnt == 0 {
           var dom = dsiGetBaseDom();
           on dom {
-            var cnt = dom.destroyDom(this);
+            local dom.remove_arr(this);
+            var cnt = dom.destroyDom();
             if cnt == 0 then
               delete dom;
           }
-        }
       }
       return cnt;
     }
@@ -342,6 +343,19 @@ module ChapelDistribution {
       halt("_preserveArrayElement() not supported for non-associative arrays");
     }
   
+    inline proc incRefCount(cnt=1) {
+      compilerAssert(!noRefCount);
+      _arrCnt.inc(cnt);
+    }
+
+    inline proc decRefCount() {
+      compilerAssert(!noRefCount);
+      const cnt = _arrCnt.dec(); //_arrCnt.fetchSub(1)-1;
+      if cnt < 0 then
+          halt("array reference count is negative!");
+      return cnt;
+    }
+
     proc dsiSupportsAlignedFollower() param return false;
   
     proc dsiSupportsPrivatization() param return false;
@@ -354,8 +368,9 @@ module ChapelDistribution {
     }
   
     proc dsiDisplayRepresentation() { }
-    proc isBlockDist() param {return false;}
-    proc isDefaultRectangular() param {return false;}
+    proc isDefaultRectangular() param return false;
+    proc dsiSupportsBulkTransferInterface() param return false;
+    proc doiCanBulkTransferStride() param return false;
   }
   
 }

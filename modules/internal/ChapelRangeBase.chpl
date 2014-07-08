@@ -74,7 +74,7 @@ module ChapelRangeBase {
       if boundedType == BoundedRangeType.bounded
       {
         if _low <= _high && this.last + stride : idxType == this.first then
-          __primitive("chpl_warning", "Maximal range declared.  " +
+          warning("Maximal range declared.  " +
           "A for loop on this range will execute zero times.  " +
           "Try using a wider index type.");
       }
@@ -508,7 +508,32 @@ module ChapelRangeBase {
   //#
   
   // Assignment
-  proc =(r1: rangeBase(stridable=?s1), r2: rangeBase(stridable=?s2))
+  pragma "compiler generated"
+    // The "compiler generated" flag is added so this explicit definition of
+    // assignment does not disable the POD optimization.
+    // It effectively labels the function as trivial, even though this is not
+    // precisely true.  In the case of an assignment from a stridable to non-
+    // stridable range, there is a run-time check which will be missed when the
+    // optimization is applied.  The rest of the routine is trivial in the
+    // sense that it performs the equivalent of a bit-wise copy.
+    // The POD optimization currently removes initCopy, autoCopy and destructor
+    // calls whose arguments are of plain-old-data type.  Future applications
+    // of this optimization may also remove assignment calls.
+    // The determination of whether a type is POD or not is currently based on
+    // whether a destructor or any assignment operators are defined taking that
+    // that type as an operand.  In the future, the initCopy and default
+    // constructor (yet to be defined) functions and possibly the autoCopy
+    // function will be considered as well.
+    // The purpose of considering POD-ness as the criterion for removing 
+    // initCopy and autoCopy calls is that destructors are removed at the same
+    // time.  So at least both functions participating in the optimization must
+    // be trivial.  In the future, the optimization may also remove assignments
+    // and default constructor calls, in which case the optimization should only
+    // be applied when all four of these functions (or their generic equivalents) 
+    // are trivial.
+
+    // See also removePODinitDestroy() in removeUnnecessaryAutoCopyCalls.cpp.
+  proc =(ref r1: rangeBase(stridable=?s1), r2: rangeBase(stridable=?s2))
   {
     if r1.boundedType != r2.boundedType then
       compilerError("type mismatch in assignment of ranges with different boundedType parameters");
@@ -521,8 +546,6 @@ module ChapelRangeBase {
     r1._high = r2._high;
     r1._stride = r2._stride;
     r1._alignment = r2._alignment;
-  
-    return r1;
   }
   
   //////////////////////////////////////////////////////////////////////////////////
@@ -781,39 +804,88 @@ module ChapelRangeBase {
   
     if debugChapelRange then
       writeln("*** In range leader:"); // ", this);
-  
-    var v = this.length;
-    var numChunks = _computeNumChunks(v);
-  
-    if debugChapelRange
-    {
-      writeln("*** RI: length=", v, " numChunks=", numChunks);
-      writeln("*** RI: Using ", numChunks, " chunk(s)");
-    }
-  
-    if (CHPL_TARGET_PLATFORM == "cray-xmt")
-    {
-      var per_stream_i: uint(64) = 0;
-      var total_streams_n: uint(64) = 0;
-  
-      __primitive_loop("xmt pragma forall i in n", per_stream_i,
-                       total_streams_n) {
-        const (lo,hi) = _computeBlock(v, total_streams_n, per_stream_i, v-1);
-        yield tuple(lo..hi);
+    const numSublocs = here.getChildCount();
+
+    if localeModelHasSublocales && numSublocs != 0 {
+      const len = this.length;
+      const tasksPerLocale = dataParTasksPerLocale;
+      const ignoreRunning = dataParIgnoreRunningTasks;
+      const minIndicesPerTask = dataParMinGranularity;
+      const dptpl = if tasksPerLocale==0 then here.numCores
+                    else tasksPerLocale;
+
+      // Make sure we don't use more sublocales than the numbers of
+      // tasksPerLocale requested
+      const numSublocTasks = min(numSublocs, dptpl);
+      // For serial tasks, we will only have a singel chunk
+      const numChunks =  if __primitive("task_get_serial") then
+                         1 else _computeNumChunks(numSublocTasks,
+                                                  ignoreRunning,
+                                                  minIndicesPerTask,
+                                                  len);
+      if debugDataParNuma {
+        writeln("### numSublocs = ", numSublocs, "\n" +
+                "### numTasksPerSubloc = ", numSublocTasks, "\n" +
+                "### ignoreRunning = ", ignoreRunning, "\n" +
+                "### minIndicesPerTask = ", minIndicesPerTask, "\n" +
+                "### numChunks = ", numChunks);
       }
-    }
-    else
-    {
+        
+      if numChunks == 1 {
+        yield (0..len-1,);
+      } else {
+        coforall chunk in 0..#numChunks {
+          on here.getChild(chunk) {
+            if debugDataParNuma {
+              extern proc chpl_task_getSubloc(): chpl_sublocID_t;
+              if chunk!=chpl_task_getSubloc() then
+                writeln("*** ERROR: ON WRONG SUBLOC (should be "+chunk+
+                        ", on "+chpl_task_getSubloc()+") ***");
+            }
+            const (lo,hi) = _computeBlock(len, numChunks, chunk, len-1);
+            const locRange = lo..hi;
+            const locLen = locRange.length;
+            // Divide the locale's tasks approximately evenly
+            // among the sublocales
+            const numCoreTasks = dptpl/numChunks +
+              if chunk==numChunks-1 then dptpl%numChunks else 0;
+            const numTasks = _computeNumChunks(numCoreTasks,
+                                               ignoreRunning,
+                                               minIndicesPerTask,
+                                               locLen);
+            coforall core in 0..#numTasks {
+              const (low, high) = _computeBlock(locLen, numTasks, core, hi, lo, lo);
+              if debugDataParNuma {
+                writeln("### chunk = ", chunk, "  core = ", core, "  " +
+                        "locRange = ", locRange, "  coreRange = ", low..high);
+              }
+              yield (low..high,);
+            }
+          }
+        }
+      }
+      
+    } else {
+      var v = this.length;
+      const numChunks = if __primitive("task_get_serial") then
+                        1 else _computeNumChunks(v);
+  
+      if debugChapelRange
+      {
+        writeln("*** RI: length=", v, " numChunks=", numChunks);
+        writeln("*** RI: Using ", numChunks, " chunk(s)");
+      }
+  
       if numChunks == 1 then
-        yield tuple(0..v-1);
+        yield (0..v-1,);
       else
       {
         coforall chunk in 0..#numChunks
         {
           const (lo,hi) = _computeBlock(v, numChunks, chunk, v-1);
           if debugChapelRange then
-            writeln("*** RI: tuple = ", tuple(lo..hi));
-          yield tuple(lo..hi);
+            writeln("*** RI: tuple = ", (lo..hi,));
+          yield (lo..hi,);
         }
       }
     }
@@ -893,11 +965,8 @@ module ChapelRangeBase {
         writeln("Expanded range = ",r);
   
       // todo: factor out this loop (and the above writeln) into a function?
-      for i in r
-      {
-        __primitive("noalias pragma");
+      for i in r do
         yield i;
-      }
     }
     else // ! myFollowThis.hasLast()
     {
@@ -914,11 +983,8 @@ module ChapelRangeBase {
         if debugChapelRange then
           writeln("Expanded range = ",r);
       
-        for i in r
-          {
-            __primitive("noalias pragma");
-            yield i;
-          }
+        for i in r do
+          yield i;
       }
       else
       {
@@ -926,11 +992,8 @@ module ChapelRangeBase {
         if debugChapelRange then
           writeln("Expanded range = ",r);
       
-        for i in r
-          {
-            __primitive("noalias pragma");
-            yield i;
-          }
+        for i in r do
+          yield i;
       }
     } // if myFollowThis.hasLast()
   }
@@ -973,18 +1036,6 @@ module ChapelRangeBase {
     }
   }
   
-  // Return a substring of a string with a range of indices.
-  inline proc string.substring(r: rangeBase(?))
-  {
-    if r.boundedType != BoundedRangeType.bounded then
-      compilerError("substring indexing undefined on unbounded ranges");
-  
-    if r.stride != 1 then
-      return __primitive("string_strided_select", this, r.alignedLow, r.alignedHigh, r.stride);
-    else
-      return __primitive("string_select", this, r.low, r.high);
-  }
-  
   
   //################################################################################
   //# Internal helper functions.
@@ -1018,8 +1069,10 @@ module ChapelRangeBase {
     // modulus is positive, so this cast is OK unless it is very large
     // and the dividend is signed.
     var m = modulus : dType;
-    if m : modulus.type != modulus then
-      halt("Modulus too large.");
+    if dType != modulus.type {
+      if m : modulus.type != modulus then
+        halt("Modulus too large.");
+    }
   
     var tmp = dividend % m;
     if _isSignedType(dividend.type) then
@@ -1045,8 +1098,10 @@ module ChapelRangeBase {
   
     modulus = abs(modulus);
     var m = modulus : minType;
-    if m : modulus.type != modulus then
-      halt("Modulus too large.");
+    if minType != modulus.type {
+      if m : modulus.type != modulus then
+        halt("Modulus too large.");
+    }
   
     var minMod = chpl__mod(minuend, m);
     var subMod = chpl__mod(subtrahend, m);

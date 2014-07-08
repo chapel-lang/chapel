@@ -13,6 +13,15 @@ inline proc getDataParMinGranularity() {
 }
 
 //
+// return a rank*t tuple initialized to val
+//
+proc createTuple(param rank, type t, val) {
+  var tup: rank*t;
+  for param i in 1..rank do tup(i) = val;
+  return tup;
+}
+
+//
 // helper functions for determining the number of chunks and the
 //   dimension to chunk over
 //
@@ -190,16 +199,17 @@ proc computeZeroBasedDomain(dom: domain)
   return {(...computeZeroBasedRanges(dom.dims()))};
 
 proc computeZeroBasedRanges(ranges: _tuple) {
-  proc helper(first, rest...) {
+  proc helper(type idxType, first, rest...) {
     if rest.size > 1 then
-      return (0..#first.length, (...helper((...rest))));
+      return (0:idxType..#first.length:idxType, (...helper(idxType, (...rest))));
     else
-      return (0..#first.length, 0..#rest(1).length);
+      return (0:idxType..#first.length:idxType, 0:idxType..#rest(1).length:idxType);
   }
+  type idxType = ranges(1).idxType;
   if ranges.size > 1 then
-    return helper((...ranges));
+    return helper(idxType, (...ranges));
   else
-    return tuple(0..#ranges(1).length);
+    return (0:idxType..#ranges(1).length:idxType,);
 }
 
 //

@@ -104,27 +104,11 @@ module ChapelRange {
   //////////////////////////////////////////////////////////////////////////////////
   // Range builders for bounded ranges
   // Range builders are used by the parser to create literal ranges.
-  // hilde sez: I think that these need to be spelled out explicitly
-  // because param loop unrolling is performed before generic expansion.
   //
-  /* BLC: I think we want to add these eventually... maybe soon
-  proc _build_range(low: int(8), high: int(8))
-    return new range(idxType = int(8), _low = low, _high = high);
-  proc _build_range(low: uint(8), high: uint(8))
-    return new range(uint(8), _low = low, _high = high);
-  proc _build_range(low: int(16), high: int(16))
-    return new range(idxType = int(16), _low = low, _high = high);
-  proc _build_range(low: uint(16), high: uint(16))
-    return new range(uint(16), _low = low, _high = high);
-  */
-  proc _build_range(low: int(32), high: int(32))
-    return new range(idxType = int(32), _low = low, _high = high);
-  proc _build_range(low: uint(32), high: uint(32))
-    return new range(uint(32), _low = low, _high = high);
-  proc _build_range(low: int(64), high: int(64))
-    return new range(int(64), _low = low, _high = high);
-  proc _build_range(low: uint(64), high: uint(64))
-    return new range(uint(64), _low = low, _high = high);
+  proc _build_range(low: int(?w), high: int(w))
+    return new range(idxType = int(w), _low = low, _high = high);
+  proc _build_range(low: uint(?w), high: uint(w))
+    return new range(uint(w), _low = low, _high = high);
   proc _build_range(low, high) {
     compilerError("Bounds of '..' must be integers of compatible types, when specified.");
   }
@@ -132,26 +116,11 @@ module ChapelRange {
   
   //////////////////////////////////////////////////////////////////////////////////
   // Range builders for unbounded ranges
-  // hilde sez: Ditto here: Generic types don't work.
   //
-  /*
-  proc _build_range(param bt: BoundedRangeType, bound: int(8))
-    return new range(int(8), bt, false, bound, bound);
-  proc _build_range(param bt: BoundedRangeType, bound: uint(8))
-    return new range(uint(8), bt, false, bound, bound);
-  proc _build_range(param bt: BoundedRangeType, bound: int(16))
-    return new range(int(16), bt, false, bound, bound);
-  proc _build_range(param bt: BoundedRangeType, bound: uint(16))
-    return new range(uint(16), bt, false, bound, bound);
-  */
-  proc _build_range(param bt: BoundedRangeType, bound: int(32))
-    return new range(int(32), bt, false, bound, bound);
-  proc _build_range(param bt: BoundedRangeType, bound: uint(32))
-    return new range(uint(32), bt, false, bound, bound);
-  proc _build_range(param bt: BoundedRangeType, bound: int(64))
-    return new range(int(64), bt, false, bound, bound);
-  proc _build_range(param bt: BoundedRangeType, bound: uint(64))
-    return new range(uint(64), bt, false, bound, bound);
+  proc _build_range(param bt: BoundedRangeType, bound: int(?w))
+    return new range(int(w), bt, false, bound, bound);
+  proc _build_range(param bt: BoundedRangeType, bound: uint(?w))
+    return new range(uint(w), bt, false, bound, bound);
   proc _build_range(param bt: BoundedRangeType)
     return new range(int, bt);
   
@@ -377,11 +346,16 @@ module ChapelRange {
   //#
   
   // Assignment
-  inline proc =(r1: range(stridable=?s1), r2: range(stridable=?s2))
+  pragma "compiler generated"
+    // The "compiler generated" flag is added so this explicit definition
+    // of assignment does not disable the POD optimization.
+    // Although provided explicitly, this function is effectively trivial,
+    // since it performs what is effectively a bit-wise copy.
+    // See the comment on proc=(:rangeBase, :rangeBase) for more information.
+  inline proc =(ref r1: range(stridable=?s1), r2: range(stridable=?s2))
   {
     r1._base = r2._base;
     r1._aligned = r2._aligned;
-    return r1;
   }
   
   //////////////////////////////////////////////////////////////////////////////////
@@ -622,12 +596,11 @@ module ChapelRange {
   }
   
   // Return a substring of a string with a range of indices.
-  proc string.substring(r: range(?))
-  {
-    if r.isAmbiguous() then
-      __primitive("chpl_error", "substring -- Cannot select from a string using a range with ambiguous alignment.");
-  
-    return this.substring(r._base);
+  inline proc string.substring(r: range(?)) {
+    var r2 = r[1..this.length];  // This may warn about ambiguously aligned ranges.
+    if r2.isEmpty() then return "";
+    var lo:int = r2.alignedLow, hi:int = r2.alignedHigh;
+    return __primitive("string_select", this, lo, hi, r2.stride);
   }
   
   

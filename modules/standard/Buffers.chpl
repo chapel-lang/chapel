@@ -12,43 +12,44 @@ module BufferInternals {
   extern proc qbytes_retain(qb:qbytes_ptr_t);
   extern proc qbytes_release(qb:qbytes_ptr_t);
   extern proc qbytes_len(qb:qbytes_ptr_t):int(64);
-  extern proc qbytes_data(qb:qbytes_ptr_t):c_ptr;
+  extern proc qbytes_data(qb:qbytes_ptr_t):c_void_ptr;
 
-  extern proc qbytes_create_iobuf(inout ret:qbytes_ptr_t):syserr;
-  extern proc qbytes_create_calloc(inout ret:qbytes_ptr_t, len:int(64)):syserr;
+  extern proc qbytes_create_iobuf(out ret:qbytes_ptr_t):err_t;
+  extern proc qbytes_create_calloc(out ret:qbytes_ptr_t, len:int(64)):err_t;
 
   extern proc qbuffer_iter_null():qbuffer_iter_t;
 
   /*
-  extern proc qbuffer_init(inout buf:qbuffer_t):syserr;
-  extern proc qbuffer_destroy(inout buf:qbuffer_t);
+  extern proc qbuffer_init(ref buf:qbuffer_t):err_t;
+  extern proc qbuffer_destroy(ref buf:qbuffer_t);
   */
-  extern proc qbuffer_create(inout buf:qbuffer_ptr_t):syserr;
+  extern proc qbuffer_create(out buf:qbuffer_ptr_t):err_t;
   extern proc qbuffer_retain(buf:qbuffer_ptr_t);
   extern proc qbuffer_release(buf:qbuffer_ptr_t);
 
-  extern proc qbuffer_append(buf:qbuffer_ptr_t, bytes:qbytes_ptr_t, skip_bytes:int(64), len_bytes:int(64)):syserr;
-  extern proc qbuffer_append_buffer(buf:qbuffer_ptr_t, src:qbuffer_ptr_t, src_start:qbuffer_iter_t, src_end:qbuffer_iter_t):syserr;
-  extern proc qbuffer_prepend(buf:qbuffer_ptr_t, bytes:qbytes_ptr_t, skip_bytes:int(64), len_bytes:int(64)):syserr;
-  extern proc qbuffer_flatten(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, inout bytes_out):syserr;
-  //extern proc qbuffer_clone(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, inout buf_out:qbuffer_t):syserr;
-  extern proc qbuffer_copyout(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, inout x, size):syserr;
-  extern proc qbuffer_copyin(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, inout x, size):syserr;
+  extern proc qbuffer_append(buf:qbuffer_ptr_t, bytes:qbytes_ptr_t, skip_bytes:int(64), len_bytes:int(64)):err_t;
+  extern proc qbuffer_append_buffer(buf:qbuffer_ptr_t, src:qbuffer_ptr_t, src_start:qbuffer_iter_t, src_end:qbuffer_iter_t):err_t;
+  extern proc qbuffer_prepend(buf:qbuffer_ptr_t, bytes:qbytes_ptr_t, skip_bytes:int(64), len_bytes:int(64)):err_t;
+  extern proc qbuffer_flatten(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, out bytes_out):err_t;
+  //extern proc qbuffer_clone(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, out buf_out:qbuffer_t):err_t;
+  extern proc qbuffer_copyout(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, ref x, size):err_t;
+  extern proc qbuffer_copyin(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, ref x, size):err_t;
 
   extern proc qbuffer_begin(buf:qbuffer_ptr_t):qbuffer_iter_t;
   extern proc qbuffer_end(buf:qbuffer_ptr_t):qbuffer_iter_t;
-  extern proc qbuffer_iter_next_part(buf:qbuffer_ptr_t, inout it:qbuffer_iter_t);
-  extern proc qbuffer_iter_prev_part(buf:qbuffer_ptr_t, inout it:qbuffer_iter_t);
-  extern proc qbuffer_iter_advance(buf:qbuffer_ptr_t, inout it:qbuffer_iter_t, amt:int(64));
+  extern proc qbuffer_iter_next_part(buf:qbuffer_ptr_t, ref it:qbuffer_iter_t);
+  extern proc qbuffer_iter_prev_part(buf:qbuffer_ptr_t, ref it:qbuffer_iter_t);
+  extern proc qbuffer_iter_advance(buf:qbuffer_ptr_t, ref it:qbuffer_iter_t, amt:int(64));
 
   extern proc qbuffer_iter_get(it: qbuffer_iter_t, end:qbuffer_iter_t, 
-                                inout bytes_out:qbytes_ptr_t,
-                                inout skip_out:int(64),
-                                inout len_out:int(64));
+                                out bytes_out:qbytes_ptr_t,
+                                out skip_out:int(64),
+                                out len_out:int(64));
   extern proc qbuffer_iter_num_bytes(start:qbuffer_iter_t, end:qbuffer_iter_t):int(64);
 
+  extern proc qbuffer_len(buf:qbuffer_ptr_t):int(64);
 
-  extern proc debug_print_qbuffer_iter(inout it:qbuffer_iter_t);
+  extern proc debug_print_qbuffer_iter(/*const*/ ref it:qbuffer_iter_t);
 
 
   extern proc qbuffer_start_offset(buf:qbuffer_ptr_t):int(64);
@@ -57,7 +58,7 @@ module BufferInternals {
 
   extern proc bulk_get_bytes(src_locale:int, src_addr:qbytes_ptr_t):qbytes_ptr_t;
 
-  extern proc bulk_put_buffer(dst_locale:int, dst_addr:c_ptr, dst_len:int(64), buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t):syserr;
+  extern proc bulk_put_buffer(dst_locale:int, dst_addr:c_void_ptr, dst_len:int(64), buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t):err_t;
 
 }
 
@@ -102,12 +103,14 @@ module Buffers {
   }
   proc bytes.bytes(len:int(64), out error:syserr) {
     error = qbytes_create_calloc(this._bytes_internal, len);
+    // The buffer is "retained" internally on creation, but only on success.
     this.home = here;
   }
   proc bytes.bytes(len:int(64)) {
     var error:syserr = ENOERR;
     error = qbytes_create_calloc(this._bytes_internal, len);
     if error then ioerror(error, "in bytes constructor");
+    // The buffer is retained internally on construction, but only on success.
     this.home = here;
   }
 
@@ -115,6 +118,7 @@ module Buffers {
   proc create_iobuf(out error:syserr):bytes {
     var ret:bytes;
     error = qbytes_create_iobuf(ret._bytes_internal);
+    // The buffer is "retained" internally on creation, but only on success.
     ret.home = here;
     return ret;
   }
@@ -127,6 +131,7 @@ module Buffers {
 
 
   // TODO -- shouldn't have to write this this way!
+  pragma "init copy fn"
   proc chpl__initCopy(x: bytes) {
     if x.home == here {
       qbytes_retain(x._bytes_internal);
@@ -135,12 +140,13 @@ module Buffers {
       var ret:bytes;
       ret.home = here;
       writeln("Bulk moving bytes");
+      // The initial ref count is 1, so no need to call qbytes_retain here.
       ret._bytes_internal = bulk_get_bytes(x.home.id, x._bytes_internal); 
       return ret;
     }
   }
 
-  proc =(ret:bytes, x:bytes) {
+  proc =(ref ret:bytes, x:bytes) {
     // retain -- release
     if( x.home == here ) {
       on x.home {
@@ -160,8 +166,10 @@ module Buffers {
       ret.home = here;
       writeln("Bulk moving bytes");
       ret._bytes_internal = bulk_get_bytes(x.home.id, x._bytes_internal); 
+      // On return from bulk_get_bytes, the ref count in ret._bytes_internal 
+      // should be 1.
+      // Note that the error case is not handled (bulk_get_bytes must succeed).
     }
-    return ret;
   }
 
   proc bytes.~bytes() {
@@ -184,6 +192,7 @@ module Buffers {
     this._bufit_internal = qbuffer_iter_null();
   }
   /* don't believe this is necessary...
+  pragma "init copy fn"
   proc chpl__initCopy(x: buffer_iterator) {
     return x;
   }
@@ -226,6 +235,7 @@ module Buffers {
   }
 
   // TODO -- shouldn't have to write this this way!
+  pragma "init copy fn"
   proc chpl__initCopy(x: buffer) {
     if x.home == here {
       qbuffer_retain(x._buf_internal);
@@ -263,7 +273,7 @@ module Buffers {
     }
   }
 
-  proc =(ret:buffer, x:buffer) {
+  proc =(ref ret:buffer, x:buffer) {
     ret.home = here;
     // retain -- release
     if( x.home == ret.home ) {

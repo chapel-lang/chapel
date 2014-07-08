@@ -7,6 +7,8 @@ inline proc NAN return chpl_macro_NAN();
 inline proc abs(i : int(?w)) return if i < 0 then -i else i;
 inline proc abs(i : uint(?w)) return i;
 proc abs(param i : integral) param return if i < 0 then -i else i;
+inline proc abs(r : real) return fabs(r);
+inline proc abs(im : imag) return fabs(_i2r(im));
 inline proc abs(x : complex(?w)) return sqrt(x.re*x.re + x.im*x.im);
 
 inline proc sgn(i : int(?w))
@@ -67,6 +69,15 @@ extern proc tanh(x: real(64)): real(64);
 extern proc tgamma(x: real(64)): real(64);
 extern proc trunc(x: real(64)): real(64);
 
+inline proc abs(im: imag(32)) {
+  extern proc fabsf(x: real(32)): real(32);
+  return fabsf(_i2r(im));
+}
+
+inline proc abs(x : real(32)) {
+  extern proc fabsf(x: real(32)): real(32);
+  return fabsf(x);
+}
 inline proc acos(x : real(32)) {
   extern proc acosf(x: real(32)): real(32);
   return acosf(x);
@@ -130,10 +141,6 @@ inline proc exp2(x : real(32)) {
 inline proc expm1(x : real(32)) {
   extern proc expm1f(x: real(32)): real(32);
   return expm1f(x);
-}
-inline proc abs(x : real(32)) {
-  extern proc fabsf(x: real(32)): real(32);
-  return fabsf(x);
 }
 inline proc floor(x : real(32)) {
   extern proc floorf(x: real(32)): real(32);

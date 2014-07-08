@@ -1,4 +1,14 @@
-proc HeapSort(Data: [?Dom], doublecheck=false) where Dom.rank == 1 {
+inline proc chpl_sort_cmp(a, b, param reverse=false, param eq=false) {
+  if eq {
+    if reverse then return a >= b;
+    else return a <= b;
+  } else {
+    if reverse then return a > b;
+    else return a < b;
+  }
+}
+
+proc HeapSort(Data: [?Dom] ?elType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
   const lo = Dom.dim(1).low;
   const hi = Dom.dim(1).high;
   const len = Dom.dim(1).size;
@@ -23,8 +33,8 @@ proc HeapSort(Data: [?Dom], doublecheck=false) where Dom.rank == 1 {
     while (root * 2 + 1 - lo <= end) {
       const child = root * 2 + 1 - lo;
       var swap = root;
-      if Data(swap) < Data(child) then swap = child;
-      if (child + 1 <= end) && (Data(swap) < Data(child + 1)) then swap = child + 1;
+      if chpl_sort_cmp(Data(swap), Data(child), reverse) then swap = child;
+      if (child + 1 <= end) && (chpl_sort_cmp(Data(swap), Data(child + 1), reverse)) then swap = child + 1;
       if swap != root {
         Data(root) <=> Data(swap);
         root = swap;
@@ -33,35 +43,36 @@ proc HeapSort(Data: [?Dom], doublecheck=false) where Dom.rank == 1 {
       }
     }
   }
-  if (doublecheck) then VerifySort(Data, "HeapSort");
+  if (doublecheck) then VerifySort(Data, "HeapSort", reverse);
 }
 
 
-proc BubbleSort(Data: [?Dom], doublecheck=false) where Dom.rank == 1 {
+proc BubbleSort(Data: [?Dom] ?elType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
   const lo = Dom.dim(1).low;
   const hi = Dom.dim(1).high;
   var swapped = true;
+
   while (swapped) {
     swapped = false;
     for i in lo..hi-1 {
-      if Data(i) > Data(i+1) {
+      if !chpl_sort_cmp(Data(i), Data(i+1), reverse, true) {
         Data(i) <=> Data(i+1);
         swapped = true;
       }
     }
   }
 
-  if (doublecheck) then VerifySort(Data, "BubbleSort");
+  if (doublecheck) then VerifySort(Data, "BubbleSort", reverse);
 }
 
 
-proc InsertionSort(Data: [?Dom], doublecheck=false) where Dom.rank == 1 {
+proc InsertionSort(Data: [?Dom] ?elType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
   const lo = Dom.low;
   for i in Dom {
     const ithVal = Data(i);
     var inserted = false;
     for j in lo..i-1 by -1 {
-      if (ithVal < Data(j)) {
+      if (chpl_sort_cmp(ithVal, Data(j), reverse)) {
         Data(j+1) = Data(j);
       } else {
         Data(j+1) = ithVal;
@@ -74,47 +85,47 @@ proc InsertionSort(Data: [?Dom], doublecheck=false) where Dom.rank == 1 {
     }
   }
 
-  if (doublecheck) then VerifySort(Data, "InsertionSort");
+  if (doublecheck) then VerifySort(Data, "InsertionSort", reverse);
 }
 
 
-proc MergeSort(Data: [?Dom], minlen=16, doublecheck=false) where Dom.rank == 1 {
-  _MergeSort(Data, minlen);
-  if (doublecheck) then VerifySort(Data, "MergeSort");
+proc MergeSort(Data: [?Dom], minlen=16, doublecheck=false, param reverse=false) where Dom.rank == 1 {
+  _MergeSort(Data, minlen, reverse=reverse);
+  if (doublecheck) then VerifySort(Data, "MergeSort", reverse);
 }
 
-proc _MergeSort(Data: [?Dom], minlen=16) where Dom.rank == 1 {
+proc _MergeSort(Data: [?Dom], minlen=16, param reverse=false) where Dom.rank == 1 {
   const lo = Dom.dim(1).low;
   const hi = Dom.dim(1).high;
 
   if hi-lo < minlen {
-    InsertionSort(Data);
+    InsertionSort(Data, reverse=reverse);
     return;
   }
   const mid = (hi-lo)/2+lo;
   var A1 = Data[lo..mid];
   var A2 = Data[mid+1..hi];
   cobegin {
-    { _MergeSort(A1, minlen); }
-    { _MergeSort(A2, minlen); }
+    { _MergeSort(A1, minlen, reverse=reverse); }
+    { _MergeSort(A2, minlen, reverse=reverse); }
   }
 
-  for (a, _a) in zip(Data[lo..hi], _MergeIterator(A1, A2)) do a = _a;
+  for (a, _a) in zip(Data[lo..hi], _MergeIterator(A1, A2, reverse=reverse)) do a = _a;
 }
 
-iter _MergeIterator(A1: [], A2: []) {
+iter _MergeIterator(A1: [] ?elType, A2: [] elType, param reverse=false) {
   var a1 = A1.domain.dim(1).low;
   const a1hi = A1.domain.dim(1).high;
   var a2 = A2.domain.dim(1).low;
   const a2hi = A2.domain.dim(1).high;
   while ((a1 <= a1hi) && (a2 <= a2hi)) {
-    while (A1(a1) <= A2(a2)) {
+    while (chpl_sort_cmp(A1(a1) ,A2(a2), reverse, true)) {
       yield A1(a1);
       a1 += 1;
       if a1 > a1hi then break;
     }
     if a1 > a1hi then break;
-    while (A2(a2) < A1(a1)) {
+    while (chpl_sort_cmp(A2(a2), A1(a1), reverse, true)) {
       yield A2(a2);
       a2 += 1;
       if a2 > a2hi then break;
@@ -127,7 +138,7 @@ iter _MergeIterator(A1: [], A2: []) {
 }
 
 
-proc QuickSort(Data: [?Dom], minlen=16, doublecheck=false) where Dom.rank == 1 {
+proc QuickSort(Data: [?Dom] ?elType, minlen=16, doublecheck=false, param reverse=false) where Dom.rank == 1 {
   // grab obvious indices
   const lo = Dom.low, 
         hi = Dom.high,
@@ -135,14 +146,14 @@ proc QuickSort(Data: [?Dom], minlen=16, doublecheck=false) where Dom.rank == 1 {
 
   // base case -- use insertion sort
   if (hi - lo < minlen) {
-    InsertionSort(Data);
+    InsertionSort(Data, reverse=reverse);
     return;
   }
 
   // find pivot using median-of-3 method
-  if (Data(mid) < Data(lo)) then Data(mid) <=> Data(lo);
-  if (Data(hi) < Data(lo)) then Data(hi) <=> Data(lo);
-  if (Data(hi) < Data(mid)) then Data(hi) <=> Data(mid);
+  if (chpl_sort_cmp(Data(mid), Data(lo), reverse)) then Data(mid) <=> Data(lo);
+  if (chpl_sort_cmp(Data(hi), Data(lo), reverse)) then Data(hi) <=> Data(lo);
+  if (chpl_sort_cmp(Data(hi), Data(mid), reverse)) then Data(hi) <=> Data(mid);
   const pivotVal = Data(mid);
   Data(mid) = Data(hi-1);
   Data(hi-1) = pivotVal;
@@ -151,8 +162,8 @@ proc QuickSort(Data: [?Dom], minlen=16, doublecheck=false) where Dom.rank == 1 {
   var loptr = lo, 
       hiptr = hi-1;
   while (loptr < hiptr) {
-    do { loptr += 1; } while (Data(loptr) < pivotVal);
-    do { hiptr -= 1; } while (pivotVal < Data(hiptr));
+    do { loptr += 1; } while (chpl_sort_cmp(Data(loptr), pivotVal, reverse));
+    do { hiptr -= 1; } while (chpl_sort_cmp(pivotVal, Data(hiptr), reverse));
     if (loptr < hiptr) {
       Data(loptr) <=> Data(hiptr);
     }
@@ -162,27 +173,28 @@ proc QuickSort(Data: [?Dom], minlen=16, doublecheck=false) where Dom.rank == 1 {
   Data(loptr) = pivotVal;
 
   //  cobegin {
-    QuickSort(Data[..loptr-1]);  // could use unbounded ranges here
-    QuickSort(Data[loptr+1..]);
+    QuickSort(Data[..loptr-1], reverse=reverse);  // could use unbounded ranges here
+    QuickSort(Data[loptr+1..], reverse=reverse);
     //  }
 
-  if (doublecheck) then VerifySort(Data, "QuickSort");
+  if (doublecheck) then VerifySort(Data, "QuickSort", reverse);
 }
 
 
-proc SelectionSort(Data: [?Dom], doublecheck=false) where Dom.rank == 1 {
+proc SelectionSort(Data: [?Dom], doublecheck=false, param reverse=false) where Dom.rank == 1 {
   const lo = Dom.dim(1).low;
   const hi = Dom.dim(1).high;
-  for i in {lo..hi-1} {
-    var (_, loc) = minloc reduce zip(Data[i..hi], {i..hi});
+  for i in lo..hi-1 {
+    var (_, loc) = if reverse then maxloc reduce zip(Data[i..hi], {i..hi})
+      else minloc reduce zip(Data[i..hi], {i..hi});
     Data(i) <=> Data(loc);
   }
 
-  if (doublecheck) then VerifySort(Data, "SelectionSort");
+  if (doublecheck) then VerifySort(Data, "SelectionSort", reverse);
 }
 
-inline proc VerifySort(Data: [?Dom], str: string) {
+inline proc VerifySort(Data: [?Dom] ?elType, str: string, param reverse=false) {
   for i in Dom.low..Dom.high-1 do
-    if (Data(i+1) < Data(i)) then
+    if chpl_sort_cmp(Data(i+1), Data(i), reverse) then
       halt(str, " did not sort properly (", i, "): ", Data);
 }

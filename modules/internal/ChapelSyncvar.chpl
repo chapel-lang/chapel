@@ -5,29 +5,13 @@
 
 pragma "no use ChapelStandard"
 module ChapelSyncvar {
-  proc chpl__readXX(x: sync) return x.readXX();
-  proc chpl__readXX(x: single) return x.readXX();
-  proc chpl__readXX(x) return x;
-
-  // Returns whether an object of type t occupies a 64-bit word on Cray's MTA/XMT
-  // (The definition of this function should be target dependent.  This would avoid
-  // the need to write C macros in the runtime that essentially duplicate
-  // the functionality of the read/write methods of the _syncvar and _singlevar classes
-  // for targets that don't have particularly fast ways of achieving this functionality
-  // for simple base types.)
-  proc isSimpleSyncBaseType (type t) param {
-    if CHPL_TASKS == "mta" then
-      if t == int(64) || t == uint(64) || t == int(32) || t == uint(32)
-        || t == int(16) || t == uint(16) || t == int(8) || t == uint(8)
-        || t == real(32) || t == real(64) || t == imag(32) || t == imag(64) then
-        return true;
-    else return false;
-    else return false;
-  }
+  inline proc chpl__readXX(x: sync) return x.readXX();
+  inline proc chpl__readXX(x: single) return x.readXX();
+  inline proc chpl__readXX(x) return x;
 
   pragma "sync"
+    pragma "no object" // Optimize out the object base pointer.
     pragma "no default functions"
-    pragma "no object"
     class _syncvar {
       type base_type;
       var  value: base_type;       // actual data - may need to be declared specially on some targets!
@@ -39,12 +23,14 @@ module ChapelSyncvar {
 
       proc initialize() {
         __primitive("sync_init", this);
-        if (isSimpleSyncBaseType(this.base_type)) {
-          // The sync_aux field might not be used on some targets!
-          __primitive("sync_reset", this);
-        }
       }
     }
+
+  proc _isSyncType(type t) param
+    return __primitive("is sync type", t);
+
+  proc _isSync(x: sync) param return true;
+  proc _isSync(x) param return false;
 
   // The operations are:
   //  readFE - wait for full, leave empty
@@ -62,13 +48,9 @@ module ChapelSyncvar {
     var ret: base_type;
     on this {
       var localRet: base_type;
-      if isSimpleSyncBaseType(base_type) then
-        localRet = __primitive("read_FE", localRet, this);
-      else {
-        __primitive("sync_wait_full_and_lock", this);
-        localRet = value;
-        __primitive("sync_mark_and_signal_empty", this);
-      }
+      __primitive("sync_wait_full_and_lock", this);
+      localRet = value;
+      __primitive("sync_mark_and_signal_empty", this);
       ret = localRet;
     }
     return ret;
@@ -79,13 +61,9 @@ module ChapelSyncvar {
     var ret: base_type;
     on this {
       var localRet: base_type;
-      if isSimpleSyncBaseType(base_type) then
-        localRet = __primitive("read_FF", localRet, this);
-      else {
-        __primitive("sync_wait_full_and_lock", this);
-        localRet = value;
-        __primitive("sync_mark_and_signal_full", this); // in case others are waiting
-      }
+      __primitive("sync_wait_full_and_lock", this);
+      localRet = value;
+      __primitive("sync_mark_and_signal_full", this); // in case others are waiting
       ret = localRet;
     }
     return ret;
@@ -96,13 +74,9 @@ module ChapelSyncvar {
     var ret: base_type;
     on this {
       var localRet: base_type;
-      if isSimpleSyncBaseType(base_type) then
-        localRet = __primitive("read_XX", localRet, this);
-      else {
-        __primitive("sync_lock", this);
-        localRet = value;
-        __primitive("sync_unlock", this);
-      }
+      __primitive("sync_lock", this);
+      localRet = value;
+      __primitive("sync_unlock", this);
       ret = localRet;
     }
     return ret;
@@ -111,75 +85,58 @@ module ChapelSyncvar {
   // This is the default write on sync vars. Wait for empty, set and signal full.
   proc _syncvar.writeEF(val:base_type) {
     on this {
-      if isSimpleSyncBaseType(base_type) then
-        __primitive("write_EF", this, val);
-      else {
-        __primitive("sync_wait_empty_and_lock", this);
-        value = val;
-        __primitive("sync_mark_and_signal_full", this);
-      }
+      __primitive("sync_wait_empty_and_lock", this);
+      value = val;
+      __primitive("sync_mark_and_signal_full", this);
     }
   }
 
-  proc =(sv: sync, val:sv.base_type) {
+  proc =(ref sv: sync, val:sv.base_type) {
     sv.writeEF(val);
   }
 
   // Wait for full, set and signal full.
   proc _syncvar.writeFF(val:base_type) {
     on this {
-      if isSimpleSyncBaseType(base_type) then
-        __primitive("write_FF", this, val);
-      else {
-        __primitive("sync_wait_full_and_lock", this);
-        value = val;
-        __primitive("sync_mark_and_signal_full", this);
-      }
+      __primitive("sync_wait_full_and_lock", this);
+      value = val;
+      __primitive("sync_mark_and_signal_full", this);
     }
   }
 
   // Ignore F/E, set and signal full.
   proc _syncvar.writeXF(val:base_type) {
     on this {
-      if isSimpleSyncBaseType(base_type) then
-        __primitive("write_XF", this, val);
-      else {
-        __primitive("sync_lock", this);
-        value = val;
-        __primitive("sync_mark_and_signal_full", this);
-      }
+      __primitive("sync_lock", this);
+      value = val;
+      __primitive("sync_mark_and_signal_full", this);
+
     }
   }
 
   // Ignore F/E, set to zero or default value and signal empty.
   proc _syncvar.reset() {
     on this {
-      if isSimpleSyncBaseType(base_type) then
-        // Reset this's value to zero.
-        __primitive("sync_reset", this);
-      else {
-        const default_value: base_type;
-        __primitive("sync_lock", this);
-        value = default_value;
-        __primitive("sync_mark_and_signal_empty", this);
-      }
+      const default_value: base_type;
+      __primitive("sync_lock", this);
+      value = default_value;
+      __primitive("sync_mark_and_signal_empty", this);
     }
   }
 
   proc _syncvar.isFull {
     var b: bool;
     on this {
-      b = __primitive("sync_is_full", this, isSimpleSyncBaseType(base_type));
+      b = __primitive("sync_is_full", this);
     }
     return b;
   }
 
 
   // single variable support
-  pragma "sync"
     pragma "single"
+    pragma "no object" // Optimize out the object base pointer.
     pragma "no default functions"
-    pragma "no object"
     class _singlevar {
       type base_type;
       var  value: base_type;     // actual data - may need to be declared specially on some targets!
@@ -191,21 +148,21 @@ module ChapelSyncvar {
 
       proc initialize() {
         __primitive("single_init", this);
-        if (isSimpleSyncBaseType(this.base_type)) {
-          // The single_aux field might not be used on some targets!
-          __primitive("single_reset", this);  // No locking or unlocking done here!
-        }
       }
     }
+
+  proc _isSingleType(type t) param
+    return __primitive("is single type", t);
+
+  proc _isSingle(x: single) param return true;
+  proc _isSingle(x) param return false;
 
   // Wait for full. Set and signal full.
   proc _singlevar.readFF() {
     var ret: base_type;
     on this {
       var localRet: base_type;
-      if isSimpleSyncBaseType(base_type) then
-        localRet = __primitive("single_read_FF", localRet, this);
-      else if this.isFull then
+      if this.isFull then
         localRet = value;
       else {
         __primitive("single_wait_full", this);
@@ -223,9 +180,7 @@ module ChapelSyncvar {
     var ret: base_type;
     on this {
       var localRet: base_type;
-      if isSimpleSyncBaseType(base_type) then
-        localRet = __primitive("single_read_XX", localRet, this);
-      else if this.isFull then
+      if this.isFull then
         localRet = value;
       else {
         __primitive("single_lock", this);
@@ -241,26 +196,22 @@ module ChapelSyncvar {
   // Can only write once.  Otherwise, it is an error.
   proc _singlevar.writeEF(val:base_type) {
     on this {
-      if isSimpleSyncBaseType(base_type) then
-        __primitive("single_write_EF", this, val);
-      else {
-        __primitive("single_lock", this);
-        if this.isFull then
-          halt("single var already defined");
-        value = val;
-        __primitive("single_mark_and_signal_full", this);
-      }
+      __primitive("single_lock", this);
+      if this.isFull then
+        halt("single var already defined");
+      value = val;
+      __primitive("single_mark_and_signal_full", this);
     }
   }
 
-  proc =(sv: single, value:sv.base_type) {
+  proc =(ref sv: single, value:sv.base_type) {
     sv.writeEF(value);
   }
 
   proc _singlevar.isFull {
     var b: bool;
     on this {
-      b = __primitive("single_is_full", this, isSimpleSyncBaseType(base_type));
+      b = __primitive("single_is_full", this);
     }
     return b;
   }
@@ -275,53 +226,59 @@ module ChapelSyncvar {
     return init;
   }
   
+  pragma "init copy fn"
   inline proc chpl__initCopy(sv: sync) {
     return sv.readFE();
   }
   
+  pragma "init copy fn"
   inline proc chpl__initCopy(sv: single) {
     return sv.readFF();
   }
 
   pragma "dont disable remote value forwarding"
+  pragma "donor fn"
+  pragma "auto copy fn"
   inline proc chpl__autoCopy(x: sync) return x;
 
   pragma "dont disable remote value forwarding"
+  pragma "donor fn"
+  pragma "auto copy fn"
   inline proc chpl__autoCopy(x: single) return x;
 
+  // Be explicit about whether syncs and singles are auto-destroyed.
+  inline proc chpl__maybeAutoDestroyed(x: _syncvar) param return true;
+  inline proc chpl__maybeAutoDestroyed(x: _singlevar) param return true;
+
+  pragma "auto destroy fn"
+  pragma "auto destroy fn sync"
   inline proc chpl__autoDestroy(x: _syncvar) {
     delete x;
   }
+  pragma "auto destroy fn"
+  pragma "auto destroy fn sync"
   inline proc chpl__autoDestroy(x: _singlevar) {
     delete x;
   }
 
-  /* op= for sync variables */
-  inline proc +=(lhs: sync, rhs)  { lhs = lhs + rhs; }
-  inline proc -=(lhs: sync, rhs)  { lhs = lhs - rhs; }
-  inline proc *=(lhs: sync, rhs)  { lhs = lhs * rhs; }
-  inline proc /=(lhs: sync, rhs)  { lhs = lhs / rhs; }
-  inline proc %=(lhs: sync, rhs)  { lhs = lhs % rhs; }
-  inline proc **=(lhs: sync, rhs) { lhs = lhs ** rhs; }
-  inline proc &=(lhs: sync, rhs)  { lhs = lhs & rhs; }
-  inline proc |=(lhs: sync, rhs)  { lhs = lhs | rhs; }
-  inline proc ^=(lhs: sync, rhs)  { lhs = lhs ^ rhs; }
-  inline proc >>=(lhs: sync, rhs) { lhs = lhs >> rhs; }
-  inline proc <<=(lhs: sync, rhs) { lhs = lhs << rhs; }
-  
-  /* op= for sync variables with param rhs */
-  inline proc +=(lhs: sync, param rhs)  { lhs = lhs + rhs; }
-  inline proc -=(lhs: sync, param rhs)  { lhs = lhs - rhs; }
-  inline proc *=(lhs: sync, param rhs)  { lhs = lhs * rhs; }
-  inline proc /=(lhs: sync, param rhs)  { lhs = lhs / rhs; }
-  inline proc %=(lhs: sync, param rhs)  { lhs = lhs % rhs; }
-  inline proc **=(lhs: sync, param rhs) { lhs = lhs ** rhs; }
-  inline proc &=(lhs: sync, param rhs)  { lhs = lhs & rhs; }
-  inline proc |=(lhs: sync, param rhs)  { lhs = lhs | rhs; }
-  inline proc ^=(lhs: sync, param rhs)  { lhs = lhs ^ rhs; }
-  inline proc >>=(lhs: sync, param rhs) { lhs = lhs >> rhs; }
-  inline proc <<=(lhs: sync, param rhs) { lhs = lhs << rhs; }
+  proc chpl__syncBaseType(s) type {
+    var x = s;
+    return x.type;
+  }
 
+  /* op= for sync variables */
+  inline proc  +=(ref lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs  + rhs; }
+  inline proc  -=(ref lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs  - rhs; }
+  inline proc  *=(ref lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs  * rhs; }
+  inline proc  /=(ref lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs  / rhs; }
+  inline proc  %=(ref lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs  % rhs; }
+  inline proc **=(ref lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs ** rhs; }
+  inline proc  &=(ref lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs  & rhs; }
+  inline proc  |=(ref lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs  | rhs; }
+  inline proc  ^=(ref lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs  ^ rhs; }
+  inline proc >>=(ref lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs >> rhs; }
+  inline proc <<=(ref lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs << rhs; }
+  
   inline proc <=>(lhs: sync, ref rhs) {
     const tmp = lhs;
     lhs = rhs;

@@ -247,10 +247,10 @@ proc newDimensionalDist2D(
 // Check all restrictions/assumptions that must be satisfied by the user
 // when constructing a DimensionalDist2D.
 proc DimensionalDist2D.checkInvariants(): void {
-  proc ensure(param cond:bool, param msg:string) {
+  proc ensure(param cond:bool, param msg:c_string) {
     if !cond then compilerError(msg, 3);
   }
-  ensure(targetLocales.rank == 2, "DimensionalDist2D requires 'targetLocales' to be a 2-dimensional array, got " + targetLocales.rank:string + " dimension(s)");
+  ensure(targetLocales.rank == 2, "DimensionalDist2D requires 'targetLocales' to be a 2-dimensional array, got " + targetLocales.rank:c_string + " dimension(s)");
   ensure(rank == targetLocales.rank, "DimensionalDist2D bug: inconsistent rank");
   ensure(targetLocales.eltType == locale, "DimensionalDist2D requires 'targetLocales' to be an array of locales, got an array of " + typeToString(targetLocales.eltType));
   ensure(targetIds.idxType == locIdT, "DimensionalDist2D currently requires 'idxType' of 'targetLocales.domain' to be " + typeToString(locIdT) + ", got " + typeToString(targetIds.idxType));
@@ -358,7 +358,7 @@ proc DimensionalDist2D.dimSpecifier(param dim: int) {
     return di2;
   else
     compilerError("DimensionalDist2D presently supports dimSpecifier()",
-                  " only for dimension 1 or 2, got dim=", dim:string);
+                  " only for dimension 1 or 2, got dim=", dim:c_string);
 }
 
 
@@ -580,7 +580,7 @@ proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
            (rank, typeToString(idxType), stridable));
   if rank != 2 then
     compilerError("DimensionalDist2D presently supports only 2 dimensions,",
-                  " got ", rank:string, " dimensions");
+                  " got ", rank:c_string, " dimensions");
 
   // todo: ideally, this will not be required;
   // furthermore, DimensionalDist2D shouldn't be specific to idxType.

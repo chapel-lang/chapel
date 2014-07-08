@@ -30,28 +30,29 @@ module Sys {
   extern const O_TRUNC:c_int;
 
   // Linux flags (make them 0 if not on linux, please)
-  extern const O_ASYNC:c_int;
-  extern const O_CLOEXEC:c_int;
-  extern const O_DIRECT:c_int;
-  extern const O_DIRECTORY:c_int;
-  extern const O_LARGEFILE:c_int;
-  extern const O_NOATIME:c_int;
-  extern const O_NOFOLLOW:c_int;
-  extern const O_NDELAY:c_int;
+  //extern const O_ASYNC:c_int;
+  //extern const O_CLOEXEC:c_int;
+  //extern const O_DIRECT:c_int;
+  //extern const O_DIRECTORY:c_int;
+  //extern const O_LARGEFILE:c_int;
+  //extern const O_NOATIME:c_int;
+  //extern const O_NOFOLLOW:c_int;
+  //extern const O_NDELAY:c_int;
 
   // open permission flags.
-  extern const S_IRWXU:c_int;
-  extern const S_IRUSR:c_int;
-  extern const S_IWUSR:c_int;
-  extern const S_IXUSR:c_int;
-  extern const S_IRWXG:c_int;
-  extern const S_IRGRP:c_int;
-  extern const S_IWGRP:c_int;
-  extern const S_IXGRP:c_int;
-  extern const S_IRWXO:c_int;
-  extern const S_IROTH:c_int;
-  extern const S_IWOTH:c_int;
-  extern const S_IXOTH:c_int;
+  // These are too complicated for the LLVM backend!
+  //extern const S_IRWXU:c_int;
+  //extern const S_IRUSR:c_int;
+  //extern const S_IWUSR:c_int;
+  //extern const S_IXUSR:c_int;
+  //extern const S_IRWXG:c_int;
+  //extern const S_IRGRP:c_int;
+  //extern const S_IWGRP:c_int;
+  //extern const S_IXGRP:c_int;
+  //extern const S_IRWXO:c_int;
+  //extern const S_IROTH:c_int;
+  //extern const S_IWOTH:c_int;
+  //extern const S_IXOTH:c_int;
 
   // socket domains
   extern const AF_UNIX:c_int;
@@ -138,9 +139,9 @@ module Sys {
   extern const IPV6_PKTINFO:c_int;
   extern const IPV6_RTHDR:c_int;
   extern const IPV6_AUTHHDR:c_int;
-  extern const IPV6_DSTOPS:c_int;
+  extern const IPV6_DSTOPTS:c_int;
   extern const IPV6_HOPOPTS:c_int;
-  extern const IPV6_FLOWINFO:c_int;
+  //extern const IPV6_FLOWINFO:c_int;
   extern const IPV6_HOPLIMIT:c_int;
   extern const IPV6_RECVERR:c_int;
   extern const IPV6_ROUTER_ALERT:c_int;
@@ -157,12 +158,12 @@ module Sys {
   extern const TCP_LINGER2:c_int;
   extern const TCP_MAXSEG:c_int;
   extern const TCP_NODELAY:c_int;
-  extern const TCY_QUICKACK:c_int;
-  extern const SYNCNT:c_int;
+  extern const TCP_QUICKACK:c_int;
+  extern const TCP_SYNCNT:c_int;
   extern const TCP_WINDOW_CLAMP:c_int;
 
   // UDP socket options
-  extern const UDP_CORK:c_int;
+  //extern const UDP_CORK:c_int;
 
 
   /* SOCKET STRUCTURE TYPES */
@@ -190,33 +191,34 @@ module Sys {
   proc sys_addrinfo_ptr_t.socktype:c_int { return sys_getaddrinfo_socktype(this); }
   proc sys_addrinfo_ptr_t.socktype:c_int { return sys_getaddrinfo_socktype(this); }
   proc sys_addrinfo_ptr_t.addr:sys_sockaddr_t { return sys_getaddrinfo_addr(this); }
-  proc sys_addrinfo_ptr_t.canonname:string { return sys_getaddrinfo_cannonname(this); }
+  // Not supported yet
+  // proc sys_addrinfo_ptr_t.canonname:c_string { return sys_getaddrinfo_canonname(this); }
   proc sys_addrinfo_ptr_t.next:sys_addrinfo_ptr_t { return sys_getaddrinfo_next(this); }
 
-  extern proc sys_init_sys_sockaddr(inout addr:sys_sockaddr_t);
-  extern proc sys_strerror(error:syserr, inout string_out:string):syserr;
-  extern proc sys_strerror_str(error:syserr, inout err_in_strerror:syserr):string;
+  extern proc sys_init_sys_sockaddr(ref addr:sys_sockaddr_t);
+  extern proc sys_strerror(error:err_t, ref string_out:c_string):err_t;
 
-  extern proc sys_readlink(path:string, inout string_out):syserr;
-  extern proc sys_readlink(path:string, inout string_out):syserr;
-  extern proc sys_open(pathname:string, flags:c_int, mode:mode_t, inout fd_out:fd_t):syserr;
-  extern proc sys_close(fd:fd_t):syserr;
+  extern proc sys_readlink(path:c_string, ref string_out:c_string):err_t;
+  extern proc sys_readlink(path:c_string, ref string_out:c_string):err_t;
+  extern proc sys_getenv(name:c_string, ref string_out:c_string):c_int;
+  extern proc sys_open(pathname:c_string, flags:c_int, mode:mode_t, ref fd_out:fd_t):err_t;
+  extern proc sys_close(fd:fd_t):err_t;
 
-  extern proc sys_mmap(addr:c_ptr, length:size_t, prot:c_int, flags:c_int, fd:fd_t, offset:off_t, inout ret_out:c_ptr):syserr;
-  extern proc sys_munmap(addr:c_ptr, length:size_t):syserr;
+  extern proc sys_mmap(addr:c_void_ptr, length:size_t, prot:c_int, flags:c_int, fd:fd_t, offset:off_t, ref ret_out:c_void_ptr):err_t;
+  extern proc sys_munmap(addr:c_void_ptr, length:size_t):err_t;
 
   // readv, writev, preadv, pwritev -- can't (yet) pass array.
   
-  extern proc sys_fcntl(fd:fd_t, cmd:c_int, inout ret_out:c_int):syserr;
-  extern proc sys_fcntl_long(fd:fd_t, cmd:c_int, arg:c_long, inout ret_out:c_int):syserr;
-  extern proc sys_fcntl_ptr(fd:fd_t, cmd:c_int, arg:c_ptr, inout ret_out:c_int):syserr;
-  extern proc sys_dup(oldfd:fd_t, inout fd_out:fd_t):syserr;
-  extern proc sys_dup2(oldfd:fd_t, newfd:fd_t, inout fd_out:fd_t):syserr;
-  extern proc sys_pipe(inout read_fd_out:fd_t, inout write_fd_out:fd_t):syserr;
-  extern proc sys_accept(sockfd:fd_t, inout add_out:sys_sockaddr_t, inout fd_out:fd_t):syserr;
-  extern proc sys_bind(sockfd:fd_t, inout addr:sys_sockaddr_t):syserr;
-  extern proc sys_connect(sockfd:fd_t, inout addr:sys_sockaddr_t):syserr;
-  extern proc sys_getaddrinfo(node:string, service:string, inout hints:sys_addrinfo_t, inout res_out:sys_addrinfo_ptr_t):syserr;
+  extern proc sys_fcntl(fd:fd_t, cmd:c_int, ref ret_out:c_int):err_t;
+  extern proc sys_fcntl_long(fd:fd_t, cmd:c_int, arg:c_long, ref ret_out:c_int):err_t;
+  extern proc sys_fcntl_ptr(fd:fd_t, cmd:c_int, arg:c_void_ptr, ref ret_out:c_int):err_t;
+  extern proc sys_dup(oldfd:fd_t, ref fd_out:fd_t):err_t;
+  extern proc sys_dup2(oldfd:fd_t, newfd:fd_t, ref fd_out:fd_t):err_t;
+  extern proc sys_pipe(ref read_fd_out:fd_t, ref write_fd_out:fd_t):err_t;
+  extern proc sys_accept(sockfd:fd_t, ref add_out:sys_sockaddr_t, ref fd_out:fd_t):err_t;
+  extern proc sys_bind(sockfd:fd_t, ref addr:sys_sockaddr_t):err_t;
+  extern proc sys_connect(sockfd:fd_t, ref addr:sys_sockaddr_t):err_t;
+  extern proc sys_getaddrinfo(node:c_string, service:c_string, ref hints:sys_addrinfo_t, ref res_out:sys_addrinfo_ptr_t):err_t;
   extern proc sys_getaddrinfo_flags(res:sys_addrinfo_ptr_t):c_int;
   extern proc sys_getaddrinfo_family(res:sys_addrinfo_ptr_t):c_int;
   extern proc sys_getaddrinfo_socktype(res:sys_addrinfo_ptr_t):c_int;
@@ -225,19 +227,19 @@ module Sys {
   extern proc sys_getaddrinfo_next(res:sys_addrinfo_ptr_t):sys_addrinfo_ptr_t;
   extern proc sys_freeaddrinfo(res:sys_addrinfo_ptr_t);
 
-  extern proc sys_getnameinfo(inout addr:sys_sockaddr_t, inout host_out:string, inout serv_out:string, flags:c_int):syserr;
-  extern proc sys_getpeername(sockfd:fd_t, inout addr:sys_sockaddr_t):syserr;
-  extern proc sys_getsockname(sockfd:fd_t, inout addr:sys_sockaddr_t):syserr;
+  extern proc sys_getnameinfo(ref addr:sys_sockaddr_t, ref host_out:c_string, ref serv_outc_:c_string, flags:c_int):err_t;
+  extern proc sys_getpeername(sockfd:fd_t, ref addr:sys_sockaddr_t):err_t;
+  extern proc sys_getsockname(sockfd:fd_t, ref addr:sys_sockaddr_t):err_t;
 
   // TODO -- these should be generic, assuming caller knows what they
   // are doing.
-  extern proc sys_getsockopt(sockfd:fd_t, level:c_int, optname:c_int, optval:c_ptr, inout optlen:socklen_t):syserr;
-  extern proc sys_setsockopt(sockfd:fd_t, level:c_int, optname:c_int, optval:c_ptr, optlen:socklen_t):syserr;
+  extern proc sys_getsockopt(sockfd:fd_t, level:c_int, optname:c_int, optval:c_void_ptr, ref optlen:socklen_t):err_t;
+  extern proc sys_setsockopt(sockfd:fd_t, level:c_int, optname:c_int, optval:c_void_ptr, optlen:socklen_t):err_t;
 
-  extern proc sys_listen(sockfd:fd_t, backlog:c_int):syserr;
-  extern proc sys_shutdown(sockfd:fd_t, how:c_int):syserr;
-  extern proc sys_socket(_domain:c_int, _type:c_int, protocol:c_int, inout sockfd_out:fd_t):syserr;
-  extern proc sys_socketpair(_domain:c_int, _type:c_int, protocol:c_int, inout sockfd_out_a:fd_t, inout sockfd_out_b:fd_t):syserr;
+  extern proc sys_listen(sockfd:fd_t, backlog:c_int):err_t;
+  extern proc sys_shutdown(sockfd:fd_t, how:c_int):err_t;
+  extern proc sys_socket(_domain:c_int, _type:c_int, protocol:c_int, ref sockfd_out:fd_t):err_t;
+  extern proc sys_socketpair(_domain:c_int, _type:c_int, protocol:c_int, ref sockfd_out_a:fd_t, ref sockfd_out_b:fd_t):err_t;
 
   // recv, recvfrom, recvmsg, send, sendto, sendmsg are in io
 }

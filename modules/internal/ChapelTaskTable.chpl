@@ -16,12 +16,15 @@ module ChapelTaskTable {
      The task information is used to generate a task report (optionally
      displayed when the user Ctrl+C's out of the program).
   
-     The type chpl_taskID_t is a primitve type defined in the include
+     The type chpl_taskID_t is a primitive type defined in the include
      files for each tasking layer.
   
   */
   
   // Define a few operations over chpl_taskID_t
+  inline proc =(ref a:chpl_taskID_t, b:chpl_taskID_t) {
+    __primitive("=", a, b);
+  }
   inline proc ==(a: chpl_taskID_t, b: chpl_taskID_t)
     return __primitive("==", a, b);
   inline proc _cast(type t, x: chpl_taskID_t) where _isPrimitiveType(t)
@@ -29,7 +32,6 @@ module ChapelTaskTable {
   
   
   enum taskState { pending, active, suspended };
-  _ensure_reference_type(taskState);
   
   //
   // This represents a currently running task.  The state, lineno, and
@@ -43,7 +45,7 @@ module ChapelTaskTable {
   record chpldev_Task {
     var state     : taskState;
     var lineno    : uint(32);
-    var filename  : string;
+    var filename  : c_string;
     var tl_info   : uint(64);
   }
   
@@ -59,16 +61,17 @@ module ChapelTaskTable {
   //- Code to initialize the task table on each locale.
   //-
   proc chpldev_taskTable_init() {
-    for locid in 0..numLocales-1 do
-      on __primitive("chpl_on_locale_num", locid) {
-        // Task tables require that the local default distribution be initialized first.
-        if (defaultDist._value == nil) then
-          defaultDist = new dmap(new DefaultDist());
-        chpldev_taskTable = new chpldev_taskTable_t();
-      }
+    // Doing this in parallel should be safe as long as this module is
+    // initialized late (after DefaultRectangular and most other
+    // internal modules are already initialized)
+    coforall loc in Locales ref(chpldev_taskTable) do on loc {
+      chpldev_taskTable = new chpldev_taskTable_t();
+    }
   }
-  
-  chpldev_taskTable_init();
+
+  extern var taskreport: int(32);
+  if taskreport then chpldev_taskTable_init();
+
   //-
   //----------------------------------------------------------------------}
   
@@ -77,7 +80,8 @@ module ChapelTaskTable {
   //
   // Exported task table code.
   //
-  // In general, tasks may have been created before the task table was initialized.
+  // In general, tasks may have been created before the task table was
+  // initialized.
   // In that case, operations may be attempted on the task table using
   // taskIDs that are unknown to it.  That is why we check
   // for membership on all operations.
@@ -86,13 +90,15 @@ module ChapelTaskTable {
   
   export proc chpldev_taskTable_add(taskID   : chpl_taskID_t,
                                     lineno   : uint(32),
-                                    filename : string,
+                                    filename : c_string,
                                     tl_info  : uint(64))
   {
     if (chpldev_taskTable == nil) then return;
   
     if (!chpldev_taskTable.dom.member(taskID)) then
-      // This must be serial to avoid deadlock in a coforall. <hilde>
+      // This must be serial, because if add() results in parallelism
+      // (due to _resize), it may lead to deadlock (due to reentry
+      // into the runtime tasking layer for task table operations).
       serial true do
         chpldev_taskTable.dom.add(taskID);
   
@@ -105,7 +111,9 @@ module ChapelTaskTable {
     if (chpldev_taskTable == nil ||
         !chpldev_taskTable.dom.member(taskID)) then return;
   
-    // This must also be serial
+    // This must be serial, because if remove() results in parallelism
+    // (due to _resize), it may lead to deadlock (due to reentry into
+    // the runtime tasking layer for task table operations).
     serial true do
       chpldev_taskTable.dom.remove(taskID);
   }

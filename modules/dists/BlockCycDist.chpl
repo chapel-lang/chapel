@@ -317,7 +317,7 @@ class BlockCyclicDom: BaseRectangularDom {
   //
   // a domain describing the complete domain
   //
-  const whole: domain(rank=rank, idxType=idxType, stridable=stridable);
+  var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
   //  const startLoc: index(dist.targetLocDom);
 
   var pid: int = -1; // privatized object id
@@ -771,6 +771,33 @@ proc BlockCyclicArr.dsiSlice(d: BlockCyclicDom) {
 
 proc BlockCyclicArr.dsiReindex(dom) {
   compilerError("reindexing not yet implemented for Block-Cyclic");
+}
+    
+proc BlockCyclicArr.dsiTargetLocDom() {
+  return dom.dist.targetLocDom;
+}
+
+proc BlockCyclicArr.dsiTargetLocales() {
+  return dom.dist.targetLocales;
+}
+
+proc BlockCyclicArr.dsiOneLocalSubdomain() param return false;
+
+// essentially enumerateBlocks()
+// basically add blocksize to the start indices
+iter BlockCyclicArr.dsiGetLocalSubdomains() {
+  for i in myLocArr.indexDom.myStarts {
+    var temp : rank*range(idxType);
+    const blockSizes = myLocArr.indexDom.globDom.dist.blocksize;
+    const globDims = myLocArr.indexDom.globDom.whole.dims();
+    for param j in 1..rank {
+      var lo: idxType;
+      if rank == 1 then lo = i;
+      else lo = i(j);
+      temp(j) = lo .. min(lo + blockSizes(j)-1, globDims(j).high);
+    }
+    yield {(...temp)};
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

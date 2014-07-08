@@ -1,7 +1,7 @@
 extern type _timevalue;
 extern proc chpl_null_timevalue():_timevalue;
 extern proc chpl_now_timevalue():_timevalue;
-extern proc chpl_timevalue_parts(t:_timevalue, inout seconds:int(32), inout minutes:int(32), inout hours:int(32), inout mday:int(32), inout month:int(32), inout year:int(32), inout wday:int(32), inout yday:int(32), inout isdst:int(32));
+extern proc chpl_timevalue_parts(t:_timevalue, out seconds:int(32), out minutes:int(32), out hours:int(32), out mday:int(32), out month:int(32), out year:int(32), out wday:int(32), out yday:int(32), out isdst:int(32));
 extern proc chpl_timevalue_seconds(t:_timevalue):int(64);
 extern proc chpl_timevalue_microseconds(t:_timevalue):int(64);
 extern proc chpl_now_time():real;
@@ -41,6 +41,9 @@ record Timer {
 
   proc clear() {
     accumulated = 0.0;
+    if running {
+      time = chpl_now_timevalue();
+    }
   }
 
   proc start() {

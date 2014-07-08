@@ -16,7 +16,7 @@ proc _isPrimitiveType(type t) param return
   _isRealType(t)     ||
 //To allow imag, need to define casts from primitive types into imag.
 //_isImagType(t)     ||
-  (t == string);
+  (t == c_string);
 
 pragma "no instantiation limit"
 proc _isSimpleScalarType(type t) param return
@@ -91,6 +91,33 @@ proc chpl__maxIntTypeSameSign(type t) type {
     return uint(64);
 }
 
+
+//
+// These procedures indicate whether or not a type t is a specific type
+//
+proc isRangeType(type t) param where   t: range  return true;
+proc isRangeType(type t) param where !(t: range) return false;
+
+proc isDmapType(type t) param where   t: _distribution  return true;
+proc isDmapType(type t) param where !(t: _distribution) return false;
+
+proc isDomainType(type t) param where   t: _domain  return true;
+proc isDomainType(type t) param where !(t: _domain) return false;
+  
+proc isArrayType(type t) param where   t: _array  return true;
+proc isArrayType(type t) param where !(t: _array) return false;
+
+
+// Is 'sub' a subtype (or equal to) 'super'?
+proc isSubtype(type sub, type super) param where   sub: super  return true;
+proc isSubtype(type sub, type super) param where !(sub: super) return false;
+
+// Is 'sub' a proper subtype of 'super'?
+proc isProperSubtype(type sub, type super) param
+  where isSubtype(sub, super) && sub != super
+  return true;
+proc isProperSubtype(type sub, type super) param
+  return false;
 
 
 // Returns true if it is legal to coerce t1 to t2, false otherwise.

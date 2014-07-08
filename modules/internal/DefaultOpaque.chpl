@@ -96,6 +96,20 @@ module DefaultOpaque {
   
     proc dsiAccess(ind : idxType) var : eltType
       return anarray.dsiAccess(ind);
+    
+    proc dsiTargetLocDom() {
+      compilerError("targetLocDom is unsupported by opaque domains");
+    }
+
+    proc dsiTargetLocales() {
+      compilerError("targetLocales is unsupported by opaque domains");
+    }
+
+    proc dsiOneLocalSubdomain() param return true;
+
+    proc dsiGetLocalSubdomain() {
+      return _newDomain(dom);
+    }
   
     iter these() var {
       for e in anarray do
