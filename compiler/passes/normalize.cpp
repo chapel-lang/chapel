@@ -788,10 +788,39 @@ fix_def_expr(VarSymbol* var) {
   //
   // insert temporary for constants to assist constant checking
   //
-  if (var->hasFlag(FLAG_CONST) && !var->hasFlag(FLAG_EXTERN)) {
+  if (var->hasFlag(FLAG_CONST) && !var->hasEitherFlag(FLAG_EXTERN, FLAG_REF_VAR)) {
     constTemp = newTemp("const_tmp");
     stmt->insertBefore(new DefExpr(constTemp));
     stmt->insertAfter(new CallExpr(PRIM_MOVE, var, constTemp));
+  }
+
+  //
+  // handle ref variables
+  //
+  if (var->hasFlag(FLAG_REF_VAR)) {
+    Expr* varLocation = NULL;
+
+    // If this is a const reference to an immediate, we need to insert a temp
+    // variable so we can take the address of it, non-const references to an
+    // immediate are not allowed.
+    if (var->hasFlag(FLAG_CONST)) {
+      if (SymExpr* initSym = toSymExpr(init)) {
+        if (initSym->var->isImmediate()) {
+          VarSymbol* constRefTemp  = newTemp("const_ref_immediate_tmp");
+          stmt->insertBefore(new DefExpr(constRefTemp));
+          stmt->insertBefore(new CallExpr(PRIM_MOVE, constRefTemp, init->remove()));
+          varLocation = new SymExpr(constRefTemp);
+        }
+      }
+    }
+
+    if (!varLocation) {
+      varLocation = init->remove();
+    }
+
+    stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_ADDR_OF, varLocation)));
+
+    return;
   }
 
   //

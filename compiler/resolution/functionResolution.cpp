@@ -4656,11 +4656,12 @@ preFold(Expr* expr) {
         // This test is turned off if we are in a wrapper function.
         FnSymbol* fn = call->getFunction();
         if (!fn->hasFlag(FLAG_WRAPPER)) {
+          SymExpr* lhs = NULL;
           // check legal var function return
           if (CallExpr* move = toCallExpr(call->parentExpr)) {
             if (move->isPrimitive(PRIM_MOVE)) {
-              SymExpr* lhs = toSymExpr(move->get(1));
-              if (lhs->var == fn->getReturnSymbol()) {
+              lhs = toSymExpr(move->get(1));
+              if (lhs && lhs->var == fn->getReturnSymbol()) {
                 SymExpr* ret = toSymExpr(call->get(1));
                 INT_ASSERT(ret);
                 if (ret->var->defPoint->getFunction() == move->getFunction() &&
@@ -4673,15 +4674,27 @@ preFold(Expr* expr) {
               }
             }
           }
+          //
           // check that the operand of 'addr of' is a legal lvalue.
           if (SymExpr* rhs = toSymExpr(call->get(1))) {
-            if (rhs->var->hasFlag(FLAG_EXPR_TEMP) || rhs->var->isConstant() || rhs->var->isParameter())
-              // This probably indicates that an invalid 'addr of' primitive
-              // was inserted, which would be the compiler's fault, not the
-              // user's.
-              // At least, we might perform the check at or before the 'addr
-              // of' primitive is inserted.
-              INT_FATAL(call, "A non-lvalue appears where an lvalue is expected.");
+            if (!(lhs && lhs->var->hasFlag(FLAG_REF_VAR) && lhs->var->hasFlag(FLAG_CONST))) {
+              if (rhs->var->hasFlag(FLAG_EXPR_TEMP) || rhs->var->isConstant() || rhs->var->isParameter()) {
+                if (lhs && lhs->var->hasFlag(FLAG_REF_VAR)) {
+                  if (rhs->var->isImmediate()) {
+                    USR_FATAL_CONT(call, "Can not set a non-const reference to a literal value.");
+                  } else {
+                    USR_FATAL_CONT(call, "Can not set a non-const reference to a const variable.");
+                  }
+                } else {
+                  // This probably indicates that an invalid 'addr of' primitive
+                  // was inserted, which would be the compiler's fault, not the
+                  // user's.
+                  // At least, we might perform the check at or before the 'addr
+                  // of' primitive is inserted.
+                  INT_FATAL(call, "A non-lvalue appears where an lvalue is expected.");
+                }
+              }
+            }
           }
         }
       }

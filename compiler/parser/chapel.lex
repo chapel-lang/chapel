@@ -25,6 +25,7 @@
         t == TINOUT ||                          \
         t == TOUT ||                            \
         t == TREF ||                            \
+        t == TREFVAR ||                         \
         t == TCOLON ||                          \
         t == TASSIGN ||                         \
         t == TRSBR)                             \
@@ -133,6 +134,7 @@ proc             processToken(TPROC);
 record           processToken(TRECORD);
 reduce           processToken(TREDUCE);
 ref              processToken(TREF);
+refvar           processToken(TREFVAR);
 return           processToken(TRETURN);
 scan             processToken(TSCAN);
 select           processToken(TSELECT);

@@ -78,6 +78,7 @@
 %token TSCAN TSELECT TSERIAL TSINGLE TSPARSE TSUBDOMAIN
 %token TSYNC TTHEN TTYPE TUNDERSCORE TUNION TUSE TVAR
 %token TWHEN TWHERE TWHILE TYIELD TZIP
+%token TREFVAR
 
 //
 // operators and punctuation (alphabetical)
@@ -762,15 +763,23 @@ opt_init_type:
 var_decl_stmt:
   opt_config TPARAM var_decl_stmt_inner_ls TSEMI
     {
-      $$ = buildVarDecls($3, $1, FLAG_PARAM, @1.comment);
+      $$ = buildVarDecls($3, $1, FLAG_PARAM, FLAG_UNKNOWN, @1.comment);
     }
 | opt_config TCONST var_decl_stmt_inner_ls TSEMI
     {
-      $$ = buildVarDecls($3, $1, FLAG_CONST, @1.comment);
+      $$ = buildVarDecls($3, $1, FLAG_CONST, FLAG_UNKNOWN, @1.comment);
+    }
+| opt_config TREFVAR var_decl_stmt_inner_ls TSEMI
+    {
+      $$ = buildVarDecls($3, $1, FLAG_UNKNOWN, FLAG_REF_VAR, @1.comment);
+    }
+| opt_config TCONST TREFVAR var_decl_stmt_inner_ls TSEMI
+    {
+      $$ = buildVarDecls($4, $1, FLAG_CONST, FLAG_REF_VAR, @1.comment);
     }
 | opt_config TVAR var_decl_stmt_inner_ls TSEMI
     {
-      $$ = buildVarDecls($3, $1, FLAG_UNKNOWN, @1.comment);
+      $$ = buildVarDecls($3, $1, FLAG_UNKNOWN, FLAG_UNKNOWN, @1.comment);
     }
 ;
 

@@ -82,7 +82,7 @@ BlockStmt* buildTypeSelectStmt(CallExpr* s, BlockStmt* whenstmts);
 CallExpr* buildReduceExpr(Expr* op, Expr* data, bool zippered = false);
 CallExpr* buildScanExpr(Expr* op, Expr* data, bool zippered = false);
 
-BlockStmt* buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst, char* docs);
+BlockStmt* buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst, Flag ref, char* docs);
 
 DefExpr* buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls, Flag isExtern, char *docs);
 DefExpr* buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable);

@@ -1559,17 +1559,20 @@ backPropagateInitsTypes(BlockStmt* stmts) {
 
 
 BlockStmt*
-buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst, char* docs) {
+buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst, Flag ref, char* docs) {
   for_alist(stmt, stmts->body) {
     if (DefExpr* defExpr = toDefExpr(stmt)) {
       if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
         if (externconfig == FLAG_EXTERN && varconst == FLAG_PARAM)
           USR_FATAL(var, "external params are not supported");
 
+        //TODO: Ideally we would just pass in a list of Flag's to apply
         if (externconfig != FLAG_UNKNOWN)
           var->addFlag(externconfig);
         if (varconst != FLAG_UNKNOWN)
           var->addFlag(varconst);
+        if (ref != FLAG_UNKNOWN)
+          var->addFlag(ref);
 
         if (var->hasFlag(FLAG_CONFIG)) {
           if (Expr *configInit = getCmdLineConfig(var->name)) {
