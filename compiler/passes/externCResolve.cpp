@@ -76,7 +76,7 @@ static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Ve
 
           fields->insertAtTail(buildVarDecls(buildChapelStmt(
               new DefExpr(new VarSymbol(field_name), NULL, field_type)
-           ), FLAG_UNKNOWN, FLAG_UNKNOWN, NULL));
+           ), FLAG_UNKNOWN, FLAG_UNKNOWN, FLAG_UNKNOWN, NULL));
         }
 
         DefExpr* strct = buildClassDefExpr(tmp_name, new AggregateType(AGGREGATE_RECORD), NULL, fields, FLAG_EXTERN, NULL);
