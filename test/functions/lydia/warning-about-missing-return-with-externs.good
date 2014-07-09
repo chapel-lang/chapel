@@ -1,0 +1,3 @@
+warning-about-missing-return-with-externs.chpl:3: In function 'foo':
+warning-about-missing-return-with-externs.chpl:3: warning: control reaches end of function that returns a value
+I should print a warning
