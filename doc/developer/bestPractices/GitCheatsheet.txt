@@ -1,0 +1,169 @@
+Git "cheat sheet" (with comparisons to svn)
+===========================================
+
+Additional docs available online at: http://git-scm.com/docs/
+
+Git help pages can be viewed with:
+
+.. code-block:: bash
+
+    git help <command>
+
+Update to HEAD: (this is what you'll typically want to use)
+
+.. code-block:: bash
+
+    git pull
+
+    # or:
+    git fetch origin
+    git merge origin/master # replace master with whatever branch you're on
+
+    # similar to:
+    svn update
+
+Update to specific revision number:
+
+.. code-block:: bash
+
+    git checkout <commit sha1>
+
+    # similar to:
+    svn update -r<revision number>
+
+Stage a file/dir for commit:
+
+.. code-block:: bash
+
+    git add path/to/file
+
+    # (sort of) similar to:
+    svn add path/to/file
+
+Delete a file/dir and stage the change for commit:
+
+.. code-block:: bash
+
+    git rm [-r] path/to/dir/or/file
+
+    # similar to:
+    svn delete path/to/dir/or/file
+
+Move a file/dir:
+
+.. code-block:: bash
+
+    git mv orig/path/a.txt new/path/to/b.txt
+
+    # similar to:
+    svn move orig/path/a.txt new/path/to/b.txt
+
+Copy a file/dir and stage target for commit:
+
+.. code-block:: bash
+
+    cp <src> <target>
+    git add <target>
+
+    # similar to:
+    svn copy <src> <target>
+
+Get the status of files/dirs (staged and unstaged):
+
+.. code-block:: bash
+
+    git status
+
+    # similar to:
+    svn status
+
+Get the diff of unstaged changes:
+
+.. code-block:: bash
+
+    git diff
+
+    # similar to:
+    svn diff
+
+Get the diff of staged changes (those that were staged with ``git add``):
+
+.. code-block:: bash
+
+    git diff --cached
+
+Backing out unstaged changes:
+
+.. code-block:: bash
+
+    git checkout path/to/file/a.txt
+
+    # similar to:
+    svn revert path/to/file/a.txt
+
+Committing staged changes:
+
+.. code-block:: bash
+
+    git commit [-m <message>]
+
+    # similar to:
+    svn commit [-m <message>]
+
+Fixing a commit message:
+
+.. code-block:: bash
+
+    git commit --amend
+
+.. note::
+
+    This should only every be done to commits that **have not been pushed** to
+    a remote repository.
+
+Synchronizing feature branch with master:
+
+.. code-block:: bash
+
+    # with feature branch checked out:
+    git merge [--no-ff] origin/master
+
+If there are conflicts, you will be asked to resolve them. Once the affected
+files have been fixed, stage them with ``git add``, and then call ``git
+commit`` to finish the merge process.
+
+.. _initial_git_setup:
+
+Initial Git Setup
+-----------------
+
+Follow the GitHub directions to setup a new account.
+
+  https://help.github.com/categories/53/articles
+
+If you plan to use ssh to push/pull, setup SSH keys.
+
+  https://help.github.com/categories/56/articles
+
+Here is the uncommented version of the commands:
+
+.. code-block:: bash
+
+    git config --global user.name 'Thomas Van Doren'
+    git config --global user.email 'thomas@example.com'
+
+    # linux/mac
+    git config --global core.autocrlf input
+
+    # windows
+    git config --global core.autocrlf true
+
+    # If using ssh keys, verify access to github. It should respond with a
+    # message including your github username.
+    ssh git@github.com
+
+    # Clone your fork of the chapel repo!
+    git clone git@github.com:<github_username>/chapel.git
+
+    # Or, if using HTTPS instead of SSH.
+    git clone https://github.com/<github_username>/chapel.git

@@ -59,12 +59,12 @@ project via the following steps:
   code up, ask for suggestions from the team; we usually have more
   computations to write than time to write them.
 
-* If you haven't already, check out the Chapel subversion repository
-  from SourceForge.  Get familiar with its organization, build and use
-  the compiler.  In most respects its directory structure is a
-  superset of the official release, but in some cases there are
-  differences.  Refer to the top-level README.devel to see what some
-  of these differences are.
+* If you haven't already, clone the `Chapel git repository
+  <https://github.com/chapel-lang/chapel>`_ from GitHub. Get familiar with its
+  organization, build and use the compiler. In most respects its directory
+  structure is a superset of the official release, but in some cases there are
+  differences. Refer to the top-level README.devel to see what some of these
+  differences are.
 
 * As a sub-step of the above, augment your shell environment:
    - set CHPL_HOME to your preferred or current tree,

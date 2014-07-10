@@ -9,11 +9,9 @@ developers.  A possible reading order is roughly as follows:
 GettingStarted.txt
   A list of suggested "first steps" for new developers.
 
-Subversion.txt
-  Notes on using the Chapel Subversion repository
-
-CommittingCode.txt
-  Notes on how to prepare and commit code to the Chapel repository
+ContributorInfo.txt
+  Information for contributors about setting up github accounts, the
+  developer workflow, and testing changes.
 
 Compiler documentation:
 
