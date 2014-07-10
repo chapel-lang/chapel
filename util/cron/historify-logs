@@ -17,7 +17,6 @@ loghome=/data/sea/chapel
 loghistdir=NightlyHistory
 logsources="\
 Nightly \
-Nightly/weekend \
 Nightly/whitebox/cray-xc \
 Nightly/whitebox/cray-xe \
 NightlyBaseline \
