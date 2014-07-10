@@ -857,7 +857,7 @@ makeHeapAllocations() {
   Vec<Symbol*> heapAllocatedVars;
 
   forv_Vec(Symbol, var, varVec) {
-    INT_ASSERT(!var->type->symbol->hasFlag(FLAG_REF));
+    INT_ASSERT(var->hasFlag(FLAG_REF_VAR) || !var->type->symbol->hasFlag(FLAG_REF));
 
     if (var->hasFlag(FLAG_EXTERN)) {
       // don't widen external variables
