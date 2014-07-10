@@ -478,6 +478,7 @@ static void codegen_header_compilation_config() {
   genGlobalString("CHPL_WIDE_POINTERS", CHPL_WIDE_POINTERS);
   genGlobalString("CHPL_LLVM", CHPL_LLVM);
   genGlobalString("CHPL_AUX_FILESYS", CHPL_AUX_FILESYS);
+  genGlobalInt("CHPL_NO_CHECKS", fNoChecks);
   genGlobalInt("CHPL_CACHE_REMOTE", fCacheEnabled);
 
   closeCFile(&cfgfile);
