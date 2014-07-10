@@ -1,5 +1,5 @@
-extern proc return_string_test():string;
-extern proc return_string_arg_test(ref string);
+extern proc return_string_test():c_string;
+extern proc return_string_arg_test(ref c_string);
 
 writeln("returned string ",return_string_test()); stdout.flush();
 var s:string;
