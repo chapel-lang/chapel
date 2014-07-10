@@ -5082,6 +5082,10 @@ GenRet CallExpr::codegen() {
     case PRIM_RT_WARNING:
       ret = codegenBasicPrimitiveExpr(this);
       break;
+    case PRIM_START_RMEM_FENCE:
+    case PRIM_FINISH_RMEM_FENCE:
+      ret = codegenBasicPrimitiveExpr(this);
+      break;
     case PRIM_NEW_PRIV_CLASS: 
     {
       GenRet arg = get(1);

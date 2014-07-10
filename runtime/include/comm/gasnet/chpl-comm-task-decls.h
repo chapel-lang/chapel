@@ -6,6 +6,7 @@ typedef void* chpl_comm_nb_handle_t;
 
 // The type of task private data.
 //#include "chpl-cache-task-decls.h"
+//#define HAS_CHPL_CACHE_FNS
 
 typedef struct {
   int dummy;
@@ -14,7 +15,5 @@ typedef struct {
 
 //    chpl_cache_taskPrvData_t cache_data;
 } chpl_comm_taskPrvData_t;
-
-#define HAS_CHPL_CACHE_FNS
 
 #endif

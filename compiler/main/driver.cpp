@@ -75,7 +75,7 @@ bool ignore_errors_for_pass = false;
 bool ignore_warnings = false;
 int fcg = 0;
 static bool fBaseline = false;
-bool fCacheEnabled = false;
+bool fCacheRemote = false;
 bool fFastFlag = false;
 int fConditionalDynamicDispatchLimit = 0;
 bool fNoCopyPropagation = false;
@@ -590,7 +590,7 @@ static void setBaselineFlag(const ArgumentState* state, const char* unused) {
 }
 
 static void setCacheEnable(const ArgumentState* state, const char* unused) {
-  const char *val = fCacheEnabled ? "true" : "false";
+  const char *val = fCacheRemote ? "true" : "false";
   parseCmdLineConfig("CHPL_CACHE_REMOTE", val);
 }
 
@@ -666,7 +666,7 @@ static ArgumentDescription arg_desc[] = {
 
  {"", ' ', NULL, "Optimization Control Options", NULL, NULL, NULL, NULL},
  {"baseline", ' ', NULL, "Disable all Chapel optimizations", "F", &fBaseline, "CHPL_BASELINE", setBaselineFlag},
- {"cache-remote", ' ', NULL, "Enable cache for remote data (must be enabled specifically)", "F", &fCacheEnabled, "CHPL_CACHE_REMOTE", setCacheEnable},
+ {"cache-remote", ' ', NULL, "Enable cache for remote data (must be enabled specifically)", "F", &fCacheRemote, "CHPL_CACHE_REMOTE", setCacheEnable},
  {"conditional-dynamic-dispatch-limit", ' ', "<limit>", "Set limit on # of inline conditionals used for dynamic dispatch", "I", &fConditionalDynamicDispatchLimit, "CHPL_CONDITIONAL_DYNAMIC_DISPATCH_LIMIT", NULL},
  {"copy-propagation", ' ', NULL, "Enable [disable] copy propagation", "n", &fNoCopyPropagation, "CHPL_DISABLE_COPY_PROPAGATION", NULL},
  {"dead-code-elimination", ' ', NULL, "Enable [disable] dead code elimination", "n", &fNoDeadCodeElimination, "CHPL_DISABLE_DEAD_CODE_ELIMINATION", NULL},

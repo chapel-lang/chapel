@@ -755,7 +755,9 @@ module ChapelBase {
   // locale as the sync/cofall/cobegin was initiated on and thus the
   // same locale on which the object is allocated.
   pragma "dont disable remote value forwarding"
-  inline proc _endCountAlloc() return new _EndCount();
+  inline proc _endCountAlloc() {
+    return new _EndCount();
+  }
   
   // This function is called once by the initiating task.  As above, no
   // on statement needed.
@@ -768,13 +770,18 @@ module ChapelBase {
   // task *before* any of the tasks are started.  As above, no on
   // statement needed.
   pragma "dont disable remote value forwarding"
+  pragma "no remote memory fence"
   proc _upEndCount(e: _EndCount) {
     if useAtomicTaskCnt {
-      e.i.add(1);
-      e.taskCnt.add(1);
+      e.i.add(1, memory_order_release);
+      e.taskCnt.add(1, memory_order_release);
     } else {
+      // note that this on statement does not have the usual
+      // remote memory fence becaues of pragma "no remote memory fence"
+      // above. So we do an acquire fence before it.
+      chpl_rmem_consist_fence(memory_order_release);
       on e {
-        e.i.add(1);
+        e.i.add(1, memory_order_release);
         e.taskCnt += 1;
       }
     }
@@ -786,7 +793,7 @@ module ChapelBase {
   // fork (on) if needed.
   pragma "dont disable remote value forwarding"
   proc _downEndCount(e: _EndCount) {
-    e.i.sub(1);
+    e.i.sub(1, memory_order_release);
   }
   
   // This function is called once by the initiating task.  As above, no
@@ -797,7 +804,7 @@ module ChapelBase {
     __primitive("execute tasks in list", e.taskList);
   
     // Wait for all tasks to finish
-    e.i.waitFor(0);
+    e.i.waitFor(0, memory_order_acquire);
 
     const taskDec = if useAtomicTaskCnt then e.taskCnt.read() else e.taskCnt;
     here.runningTaskCntSub(taskDec);  // increment is in _upEndCount()

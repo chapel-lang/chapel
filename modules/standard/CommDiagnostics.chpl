@@ -30,10 +30,10 @@ module CommDiagnostics
   extern proc chpl_stopVerboseComm();
   extern proc chpl_startVerboseCommHere();
   extern proc chpl_stopVerboseCommHere();
-  extern proc chpl_startCommDiagnostics();
-  extern proc chpl_stopCommDiagnostics();
-  extern proc chpl_startCommDiagnosticsHere();
-  extern proc chpl_stopCommDiagnosticsHere();
+  extern proc chpl_gen_startCommDiagnostics();
+  extern proc chpl_gen_stopCommDiagnostics();
+  extern proc chpl_gen_startCommDiagnosticsHere();
+  extern proc chpl_gen_stopCommDiagnosticsHere();
   extern proc chpl_resetCommDiagnosticsHere();
   extern proc chpl_getCommDiagnosticsHere(out cd: commDiagnostics);
   
@@ -42,10 +42,18 @@ module CommDiagnostics
   proc startVerboseCommHere() { chpl_startVerboseCommHere(); }
   proc stopVerboseCommHere() { chpl_stopVerboseCommHere(); }
   
-  proc startCommDiagnostics() { chpl_startCommDiagnostics(); }
-  proc stopCommDiagnostics() { chpl_stopCommDiagnostics(); }
-  proc startCommDiagnosticsHere() { chpl_startCommDiagnosticsHere(); }
-  proc stopCommDiagnosticsHere() { chpl_stopCommDiagnosticsHere(); }
+  proc startCommDiagnostics() {
+    chpl_gen_startCommDiagnostics();
+  }
+  proc stopCommDiagnostics() {
+    chpl_gen_stopCommDiagnostics();
+  }
+  proc startCommDiagnosticsHere() {
+    chpl_gen_startCommDiagnosticsHere();
+  }
+  proc stopCommDiagnosticsHere() {
+    chpl_gen_stopCommDiagnosticsHere();
+  }
   
   proc resetCommDiagnostics() {
     for loc in Locales do on loc do

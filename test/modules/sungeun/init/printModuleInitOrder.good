@@ -2,6 +2,7 @@ Initializing Modules:
    ChapelStandard
     ChapelBase
     String
+    MemConsistency
     Atomics
     NetworkAtomics
     AtomicsCommon

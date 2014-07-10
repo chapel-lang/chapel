@@ -1,3 +1,4 @@
+pragma "atomic module"
 pragma "no use ChapelStandard"
 module NetworkAtomics {
   const LINENO = -1:int(32); // it'd be nice if we had something like __LINENO__
@@ -58,24 +59,24 @@ module NetworkAtomics {
   pragma "atomic type"
   record ratomic_int64 {
     var _v: int(64);
-    inline proc read(order = memory_order_seq_cst) {
+    inline proc read(order:memory_order = memory_order_seq_cst) {
       var ret: int(64);
       chpl_comm_atomic_get_int64(ret, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
       return ret;
     }
-    inline proc write(value:int(64), order = memory_order_seq_cst) {
+    inline proc write(value:int(64), order:memory_order = memory_order_seq_cst) {
       var v = value;
       chpl_comm_atomic_put_int64(v, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
     }
 
-    inline proc exchange(value:int(64), order = memory_order_seq_cst):int(64) {
+    inline proc exchange(value:int(64), order:memory_order = memory_order_seq_cst):int(64) {
       var ret:int(64);
       var v = value;
       chpl_comm_atomic_xchg_int64(v, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
       return ret;
     }
     inline proc compareExchange(expected:int(64), desired:int(64),
-                                order = memory_order_seq_cst):bool {
+                                order:memory_order = memory_order_seq_cst):bool {
       var ret:bool(32);
       var te = expected;
       var td = desired;
@@ -83,71 +84,79 @@ module NetworkAtomics {
       return ret;
     }
     inline proc compareExchangeWeak(expected:int(64), desired:int(64),
-                                    order = memory_order_seq_cst):bool {
+                                    order:memory_order = memory_order_seq_cst):bool {
       return this.compareExchange(expected, desired);
     }
     inline proc compareExchangeStrong(expected:int(64), desired:int(64),
-                                      order = memory_order_seq_cst):bool {
+                                      order:memory_order = memory_order_seq_cst):bool {
       return this.compareExchange(expected, desired);
     }
 
-    inline proc fetchAdd(value:int(64), order = memory_order_seq_cst):int(64) {
+    inline proc fetchAdd(value:int(64), order:memory_order = memory_order_seq_cst):int(64) {
       var v = value;
       var ret:int(64);
       chpl_comm_atomic_fetch_add_int64(v, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
       return ret;
     }
-    inline proc add(value:int(64), order = memory_order_seq_cst) {
+    inline proc add(value:int(64), order:memory_order = memory_order_seq_cst):int(64) {
       var v = value;
       chpl_comm_atomic_add_int64(v, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
     }
 
-    inline proc fetchSub(value:int(64), order = memory_order_seq_cst):int(64) {
+    inline proc fetchSub(value:int(64), order:memory_order = memory_order_seq_cst):int(64) {
       var v = value;
       var ret:int(64);
       chpl_comm_atomic_fetch_sub_int64(v, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
       return ret;
     }
-    inline proc sub(value:int(64), order = memory_order_seq_cst) {
+    inline proc sub(value:int(64), order:memory_order = memory_order_seq_cst):int(64) {
       var v = value;
       chpl_comm_atomic_sub_int64(v, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
     }
 
-    inline proc fetchOr(value:int(64), order = memory_order_seq_cst):int(64) {
+    inline proc fetchOr(value:int(64), order:memory_order = memory_order_seq_cst):int(64) {
       var v = value;
       var ret:int(64);
       chpl_comm_atomic_fetch_or_int64(v, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
       return ret;
     }
-    inline proc or(value:int(64), order = memory_order_seq_cst) {
+    inline proc or(value:int(64), order:memory_order = memory_order_seq_cst):int(64) {
       var v = value;
       chpl_comm_atomic_or_int64(v, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
     }
 
-    inline proc fetchAnd(value:int(64), order = memory_order_seq_cst):int(64) {
+    inline proc fetchAnd(value:int(64), order:memory_order = memory_order_seq_cst):int(64) {
       var v = value;
       var ret:int(64);
       chpl_comm_atomic_fetch_and_int64(v, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
       return ret;
     }
-    inline proc and(value:int(64), order = memory_order_seq_cst) {
+    inline proc and(value:int(64), order:memory_order = memory_order_seq_cst):int(64) {
       var v = value;
       chpl_comm_atomic_and_int64(v, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
     }
 
-    inline proc fetchXor(value:int(64), order = memory_order_seq_cst):int(64) {
+    inline proc fetchXor(value:int(64), order:memory_order = memory_order_seq_cst):int(64) {
       var v = value;
       var ret:int(64);
       chpl_comm_atomic_fetch_xor_int64(v, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
       return ret;
     }
-    inline proc xor(value:int(64), order = memory_order_seq_cst) {
+    inline proc xor(value:int(64), order:memory_order = memory_order_seq_cst):int(64) {
       var v = value;
       chpl_comm_atomic_xor_int64(v, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
     }
 
-    inline proc waitFor(val:int(64)) {
-      on this do while (read() != val) do chpl_task_yield();
+    inline proc waitFor(val:int(64), order:memory_order = memory_order_seq_cst) {
+      chpl_rmem_consist_maybe_release(order);
+      on this {
+        while (read(memory_order_relaxed) != val) do chpl_task_yield();
+        // After waiting for the value, do a thread fence
+        // in order to guarantee e.g. an acquire barrier even
+        // if the on statement is not included.
+        atomic_thread_fence(order);
+      }
+      chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {
@@ -246,24 +255,24 @@ module NetworkAtomics {
   pragma "atomic type"
   record ratomic_int32 {
     var _v: int(32);
-    inline proc read(order = memory_order_seq_cst) {
+    inline proc read(order:memory_order = memory_order_seq_cst) {
       var ret: int(32);
       chpl_comm_atomic_get_int32(ret, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
       return ret;
     }
-    inline proc write(value:int(32), order = memory_order_seq_cst) {
+    inline proc write(value:int(32), order:memory_order = memory_order_seq_cst) {
       var v = value;
       chpl_comm_atomic_put_int32(v, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
     }
 
-    inline proc exchange(value:int(32), order = memory_order_seq_cst):int(32) {
+    inline proc exchange(value:int(32), order:memory_order = memory_order_seq_cst):int(32) {
       var ret:int(32);
       var v = value;
       chpl_comm_atomic_xchg_int32(v, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
       return ret;
     }
     inline proc compareExchange(expected:int(32), desired:int(32),
-                                order = memory_order_seq_cst):bool {
+                                order:memory_order = memory_order_seq_cst):bool {
       var ret:bool(32);
       var te = expected;
       var td = desired;
@@ -271,71 +280,76 @@ module NetworkAtomics {
       return ret;
     }
     inline proc compareExchangeWeak(expected:int(32), desired:int(32),
-                                    order = memory_order_seq_cst):bool {
+                                    order:memory_order = memory_order_seq_cst):bool {
       return this.compareExchange(expected, desired);
     }
     inline proc compareExchangeStrong(expected:int(32), desired:int(32),
-                                      order = memory_order_seq_cst):bool {
+                                      order:memory_order = memory_order_seq_cst):bool {
       return this.compareExchange(expected, desired);
     }
 
-    inline proc fetchAdd(value:int(32), order = memory_order_seq_cst):int(32) {
+    inline proc fetchAdd(value:int(32), order:memory_order = memory_order_seq_cst):int(32) {
       var v = value;
       var ret:int(32);
       chpl_comm_atomic_fetch_add_int32(v, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
       return ret;
     }
-    inline proc add(value:int(32), order = memory_order_seq_cst) {
+    inline proc add(value:int(32), order:memory_order = memory_order_seq_cst):int(32) {
       var v = value;
       chpl_comm_atomic_add_int32(v, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
     }
 
-    inline proc fetchSub(value:int(32), order = memory_order_seq_cst):int(32) {
+    inline proc fetchSub(value:int(32), order:memory_order = memory_order_seq_cst):int(32) {
       var v = value;
       var ret:int(32);
       chpl_comm_atomic_fetch_sub_int32(v, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
       return ret;
     }
-    inline proc sub(value:int(32), order = memory_order_seq_cst) {
+    inline proc sub(value:int(32), order:memory_order = memory_order_seq_cst):int(32) {
       var v = value;
       chpl_comm_atomic_sub_int32(v, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
     }
 
-    inline proc fetchOr(value:int(32), order = memory_order_seq_cst):int(32) {
+    inline proc fetchOr(value:int(32), order:memory_order = memory_order_seq_cst):int(32) {
       var v = value;
       var ret:int(32);
       chpl_comm_atomic_fetch_or_int32(v, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
       return ret;
     }
-    inline proc or(value:int(32), order = memory_order_seq_cst) {
+    inline proc or(value:int(32), order:memory_order = memory_order_seq_cst):int(32) {
       var v = value;
       chpl_comm_atomic_or_int32(v, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
     }
 
-    inline proc fetchAnd(value:int(32), order = memory_order_seq_cst):int(32) {
+    inline proc fetchAnd(value:int(32), order:memory_order = memory_order_seq_cst):int(32) {
       var v = value;
       var ret:int(32);
       chpl_comm_atomic_fetch_and_int32(v, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
       return ret;
     }
-    inline proc and(value:int(32), order = memory_order_seq_cst) {
+    inline proc and(value:int(32), order:memory_order = memory_order_seq_cst):int(32) {
       var v = value;
       chpl_comm_atomic_and_int32(v, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
     }
 
-    inline proc fetchXor(value:int(32), order = memory_order_seq_cst):int(32) {
+    inline proc fetchXor(value:int(32), order:memory_order = memory_order_seq_cst):int(32) {
       var v = value;
       var ret:int(32);
       chpl_comm_atomic_fetch_xor_int32(v, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
       return ret;
     }
-    inline proc xor(value:int(32), order = memory_order_seq_cst) {
+    inline proc xor(value:int(32), order:memory_order = memory_order_seq_cst):int(32) {
       var v = value;
       chpl_comm_atomic_xor_int32(v, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
     }
 
-    inline proc waitFor(val:int(32)) {
-      on this do while (read() != val) do chpl_task_yield();
+    inline proc waitFor(val:int(32), order:memory_order = memory_order_seq_cst) {
+      chpl_rmem_consist_maybe_release(order);
+      on this {
+        while (read(memory_order_relaxed) != val) do chpl_task_yield();
+        atomic_thread_fence(order);
+      }
+      chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {
@@ -434,24 +448,24 @@ module NetworkAtomics {
   pragma "atomic type"
   record ratomic_uint64 {
     var _v: uint(64);
-    inline proc read(order = memory_order_seq_cst) {
+    inline proc read(order:memory_order = memory_order_seq_cst) {
       var ret: uint(64);
       chpl_comm_atomic_get_uint64(ret, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
       return ret;
     }
-    inline proc write(value:uint(64), order = memory_order_seq_cst) {
+    inline proc write(value:uint(64), order:memory_order = memory_order_seq_cst) {
       var v = value;
       chpl_comm_atomic_put_uint64(v, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
     }
 
-    inline proc exchange(value:uint(64), order = memory_order_seq_cst):uint(64) {
+    inline proc exchange(value:uint(64), order:memory_order = memory_order_seq_cst):uint(64) {
       var ret:uint(64);
       var v = value;
       chpl_comm_atomic_xchg_uint64(v, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
       return ret;
     }
     inline proc compareExchange(expected:uint(64), desired:uint(64),
-                                order = memory_order_seq_cst):bool {
+                                order:memory_order = memory_order_seq_cst):bool {
       var ret:bool(32);
       var te = expected;
       var td = desired;
@@ -459,71 +473,76 @@ module NetworkAtomics {
       return ret;
     }
     inline proc compareExchangeWeak(expected:uint(64), desired:uint(64),
-                                    order = memory_order_seq_cst):bool {
+                                    order:memory_order = memory_order_seq_cst):bool {
       return this.compareExchange(expected, desired);
     }
     inline proc compareExchangeStrong(expected:uint(64), desired:uint(64),
-                                      order = memory_order_seq_cst):bool {
+                                      order:memory_order = memory_order_seq_cst):bool {
       return this.compareExchange(expected, desired);
     }
 
-    inline proc fetchAdd(value:uint(64), order = memory_order_seq_cst):uint(64) {
+    inline proc fetchAdd(value:uint(64), order:memory_order = memory_order_seq_cst):uint(64) {
       var v = value;
       var ret:uint(64);
       chpl_comm_atomic_fetch_add_uint64(v, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
       return ret;
     }
-    inline proc add(value:uint(64), order = memory_order_seq_cst) {
+    inline proc add(value:uint(64), order:memory_order = memory_order_seq_cst):uint(64) {
       var v = value;
       chpl_comm_atomic_add_uint64(v, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
     }
 
-    inline proc fetchSub(value:uint(64), order = memory_order_seq_cst):uint(64) {
+    inline proc fetchSub(value:uint(64), order:memory_order = memory_order_seq_cst):uint(64) {
       var v = value;
       var ret:uint(64);
       chpl_comm_atomic_fetch_sub_uint64(v, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
       return ret;
     }
-    inline proc sub(value:uint(64), order = memory_order_seq_cst) {
+    inline proc sub(value:uint(64), order:memory_order = memory_order_seq_cst):uint(64) {
       var v = value;
       chpl_comm_atomic_sub_uint64(v, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
     }
 
-    inline proc fetchOr(value:uint(64), order = memory_order_seq_cst):uint(64) {
+    inline proc fetchOr(value:uint(64), order:memory_order = memory_order_seq_cst):uint(64) {
       var v = value;
       var ret:uint(64);
       chpl_comm_atomic_fetch_or_uint64(v, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
       return ret;
     }
-    inline proc or(value:uint(64), order = memory_order_seq_cst) {
+    inline proc or(value:uint(64), order:memory_order = memory_order_seq_cst):uint(64) {
       var v = value;
       chpl_comm_atomic_or_uint64(v, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
     }
 
-    inline proc fetchAnd(value:uint(64), order = memory_order_seq_cst):uint(64) {
+    inline proc fetchAnd(value:uint(64), order:memory_order = memory_order_seq_cst):uint(64) {
       var v = value;
       var ret:uint(64);
       chpl_comm_atomic_fetch_and_uint64(v, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
       return ret;
     }
-    inline proc and(value:uint(64), order = memory_order_seq_cst) {
+    inline proc and(value:uint(64), order:memory_order = memory_order_seq_cst):uint(64) {
       var v = value;
       chpl_comm_atomic_and_uint64(v, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
     }
 
-    inline proc fetchXor(value:uint(64), order = memory_order_seq_cst):uint(64) {
+    inline proc fetchXor(value:uint(64), order:memory_order = memory_order_seq_cst):uint(64) {
       var v = value;
       var ret:uint(64);
       chpl_comm_atomic_fetch_xor_uint64(v, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
       return ret;
     }
-    inline proc xor(value:uint(64), order = memory_order_seq_cst) {
+    inline proc xor(value:uint(64), order:memory_order = memory_order_seq_cst):uint(64) {
       var v = value;
       chpl_comm_atomic_xor_uint64(v, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
     }
 
-    inline proc waitFor(val:uint(64)) {
-      on this do while (read() != val) do chpl_task_yield();
+    inline proc waitFor(val:uint(64), order:memory_order = memory_order_seq_cst) {
+      chpl_rmem_consist_maybe_release(order);
+      on this {
+        while (read(memory_order_relaxed) != val) do chpl_task_yield();
+        atomic_thread_fence(order);
+      }
+      chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {
@@ -622,24 +641,24 @@ module NetworkAtomics {
   pragma "atomic type"
   record ratomic_uint32 {
     var _v: uint(32);
-    inline proc read(order = memory_order_seq_cst) {
+    inline proc read(order:memory_order = memory_order_seq_cst) {
       var ret: uint(32);
       chpl_comm_atomic_get_uint32(ret, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
       return ret;
     }
-    inline proc write(value:uint(32), order = memory_order_seq_cst) {
+    inline proc write(value:uint(32), order:memory_order = memory_order_seq_cst) {
       var v = value;
       chpl_comm_atomic_put_uint32(v, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
     }
 
-    inline proc exchange(value:uint(32), order = memory_order_seq_cst):uint(32) {
+    inline proc exchange(value:uint(32), order:memory_order = memory_order_seq_cst):uint(32) {
       var ret:uint(32);
       var v = value;
       chpl_comm_atomic_xchg_uint32(v, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
       return ret;
     }
     inline proc compareExchange(expected:uint(32), desired:uint(32),
-                                order = memory_order_seq_cst):bool {
+                                order:memory_order = memory_order_seq_cst):bool {
       var ret:bool(32);
       var te = expected;
       var td = desired;
@@ -647,71 +666,76 @@ module NetworkAtomics {
       return ret;
     }
     inline proc compareExchangeWeak(expected:uint(32), desired:uint(32),
-                                    order = memory_order_seq_cst):bool {
+                                    order:memory_order = memory_order_seq_cst):bool {
       return this.compareExchange(expected, desired);
     }
     inline proc compareExchangeStrong(expected:uint(32), desired:uint(32),
-                                      order = memory_order_seq_cst):bool {
+                                      order:memory_order = memory_order_seq_cst):bool {
       return this.compareExchange(expected, desired);
     }
 
-    inline proc fetchAdd(value:uint(32), order = memory_order_seq_cst):uint(32) {
+    inline proc fetchAdd(value:uint(32), order:memory_order = memory_order_seq_cst):uint(32) {
       var v = value;
       var ret:uint(32);
       chpl_comm_atomic_fetch_add_uint32(v, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
       return ret;
     }
-    inline proc add(value:uint(32), order = memory_order_seq_cst) {
+    inline proc add(value:uint(32), order:memory_order = memory_order_seq_cst):uint(32) {
       var v = value;
       chpl_comm_atomic_add_uint32(v, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
     }
 
-    inline proc fetchSub(value:uint(32), order = memory_order_seq_cst):uint(32) {
+    inline proc fetchSub(value:uint(32), order:memory_order = memory_order_seq_cst):uint(32) {
       var v = value;
       var ret:uint(32);
       chpl_comm_atomic_fetch_sub_uint32(v, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
       return ret;
     }
-    inline proc sub(value:uint(32), order = memory_order_seq_cst) {
+    inline proc sub(value:uint(32), order:memory_order = memory_order_seq_cst):uint(32) {
       var v = value;
       chpl_comm_atomic_sub_uint32(v, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
     }
 
-    inline proc fetchOr(value:uint(32), order = memory_order_seq_cst):uint(32) {
+    inline proc fetchOr(value:uint(32), order:memory_order = memory_order_seq_cst):uint(32) {
       var v = value;
       var ret:uint(32);
       chpl_comm_atomic_fetch_or_uint32(v, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
       return ret;
     }
-    inline proc or(value:uint(32), order = memory_order_seq_cst) {
+    inline proc or(value:uint(32), order:memory_order = memory_order_seq_cst):uint(32) {
       var v = value;
       chpl_comm_atomic_or_uint32(v, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
     }
 
-    inline proc fetchAnd(value:uint(32), order = memory_order_seq_cst):uint(32) {
+    inline proc fetchAnd(value:uint(32), order:memory_order = memory_order_seq_cst):uint(32) {
       var v = value;
       var ret:uint(32);
       chpl_comm_atomic_fetch_and_uint32(v, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
       return ret;
     }
-    inline proc and(value:uint(32), order = memory_order_seq_cst) {
+    inline proc and(value:uint(32), order:memory_order = memory_order_seq_cst):uint(32) {
       var v = value;
       chpl_comm_atomic_and_uint32(v, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
     }
 
-    inline proc fetchXor(value:uint(32), order = memory_order_seq_cst):uint(32) {
+    inline proc fetchXor(value:uint(32), order:memory_order = memory_order_seq_cst):uint(32) {
       var v = value;
       var ret:uint(32);
       chpl_comm_atomic_fetch_xor_uint32(v, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
       return ret;
     }
-    inline proc xor(value:uint(32), order = memory_order_seq_cst) {
+    inline proc xor(value:uint(32), order:memory_order = memory_order_seq_cst):uint(32) {
       var v = value;
       chpl_comm_atomic_xor_uint32(v, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
     }
 
-    inline proc waitFor(val:uint(32)) {
-      on this do while (read() != val) do chpl_task_yield();
+    inline proc waitFor(val:uint(32), order:memory_order = memory_order_seq_cst) {
+      chpl_rmem_consist_maybe_release(order);
+      on this {
+        while (read(memory_order_relaxed) != val) do chpl_task_yield();
+        atomic_thread_fence(order);
+      }
+      chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {
@@ -758,24 +782,24 @@ module NetworkAtomics {
   pragma "atomic type"
   record ratomicflag {
     var _v: int(64);
-    inline proc read(order = memory_order_seq_cst) {
+    inline proc read(order:memory_order = memory_order_seq_cst) {
       var ret: int(64);
       chpl_comm_atomic_get_int64(ret, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
       return ret:bool;
     }
-    inline proc write(value:bool, order = memory_order_seq_cst) {
+    inline proc write(value:bool, order:memory_order = memory_order_seq_cst) {
       var v = value:int(64);
       chpl_comm_atomic_put_int64(v, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
     }
 
-    inline proc exchange(value:bool, order = memory_order_seq_cst):bool {
+    inline proc exchange(value:bool, order:memory_order = memory_order_seq_cst):bool {
       var ret:int(64);
       var v = value:int(64);
       chpl_comm_atomic_xchg_int64(v, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
       return ret:bool;
     }
     inline proc compareExchange(expected:bool, desired:bool,
-                                order = memory_order_seq_cst):bool {
+                                order:memory_order = memory_order_seq_cst):bool {
       var ret:bool(32);
       var te = expected:int(64);
       var td = desired:int(64);
@@ -783,11 +807,11 @@ module NetworkAtomics {
       return ret;
     }
 inline proc compareExchangeWeak(expected:bool, desired:bool,
-                                order = memory_order_seq_cst):bool {
+                                order:memory_order = memory_order_seq_cst):bool {
       return this.compareExchange(expected, desired);
     }
     inline proc compareExchangeStrong(expected:bool, desired:bool,
-                                      order = memory_order_seq_cst):bool {
+                                      order:memory_order = memory_order_seq_cst):bool {
       return this.compareExchange(expected, desired);
     }
 
@@ -798,8 +822,13 @@ inline proc compareExchangeWeak(expected:bool, desired:bool,
       this.write(false);
     }
 
-    inline proc waitFor(val:bool) {
-      on this do while (read() != val) do chpl_task_yield();
+    inline proc waitFor(val:bool, order:memory_order = memory_order_seq_cst) {
+      chpl_rmem_consist_maybe_release(order);
+      on this {
+        while (read(memory_order_relaxed) != val) do chpl_task_yield();
+        atomic_thread_fence(order);
+      }
+      chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {
@@ -876,24 +905,24 @@ inline proc compareExchangeWeak(expected:bool, desired:bool,
   pragma "atomic type"
   record ratomic_real64 {
     var _v: real(64);
-    inline proc read(order = memory_order_seq_cst) {
+    inline proc read(order:memory_order = memory_order_seq_cst) {
       var ret: real(64);
       chpl_comm_atomic_get_real64(ret, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
       return ret;
     }
-    inline proc write(value:real(64), order = memory_order_seq_cst) {
+    inline proc write(value:real(64), order:memory_order = memory_order_seq_cst) {
       var v = value;
       chpl_comm_atomic_put_real64(v, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
     }
 
-    inline proc exchange(value:real(64), order = memory_order_seq_cst):real(64) {
+    inline proc exchange(value:real(64), order:memory_order = memory_order_seq_cst):real(64) {
       var ret:real(64);
       var v = value;
       chpl_comm_atomic_xchg_real64(v, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
       return ret;
     }
     inline proc compareExchange(expected:real(64), desired:real(64),
-                                order = memory_order_seq_cst):bool {
+                                order:memory_order = memory_order_seq_cst):bool {
       var ret:bool(32);
       var te = expected;
       var td = desired;
@@ -901,59 +930,65 @@ inline proc compareExchangeWeak(expected:bool, desired:bool,
       return ret;
     }
     inline proc compareExchangeWeak(expected:real(64), desired:real(64),
-                                    order = memory_order_seq_cst):bool {
+                                    order:memory_order = memory_order_seq_cst):bool {
       return compareExchange(expected, desired);
     }
     inline proc compareExchangeStrong(expected:real(64), desired:real(64),
-                                      order = memory_order_seq_cst):bool {
+                                      order:memory_order = memory_order_seq_cst):bool {
       return compareExchange(expected, desired);
     }
 
-    inline proc fetchAdd(value:real(64), order = memory_order_seq_cst):real(64) {
+    inline proc fetchAdd(value:real(64), order:memory_order = memory_order_seq_cst):real(64) {
       var v = value;
       var ret:real(64);
       chpl_comm_atomic_fetch_add_real64(v, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
       return ret;
     }
-    inline proc add(value:real(64), order = memory_order_seq_cst) {
+    inline proc add(value:real(64), order:memory_order = memory_order_seq_cst):real(64) {
       var v = value;
       chpl_comm_atomic_add_real64(v, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
     }
 
-    inline proc fetchSub(value:real(64), order = memory_order_seq_cst):real(64) {
+    inline proc fetchSub(value:real(64), order:memory_order = memory_order_seq_cst):real(64) {
       var v = value;
       var ret:real(64);
       chpl_comm_atomic_fetch_sub_real64(v, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
       return ret;
     }
-    inline proc sub(value:real(64), order = memory_order_seq_cst) {
+    inline proc sub(value:real(64), order:memory_order = memory_order_seq_cst):real(64) {
       var v = value;
       chpl_comm_atomic_sub_real64(v, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
     }
 
-    inline proc fetchOr(value:real(64), order = memory_order_seq_cst):real(64) {
+    inline proc fetchOr(value:real(64), order:memory_order = memory_order_seq_cst):real(64) {
       compilerError("or not defined for network atomic real");
     }
-    inline proc or(value:real(64), order = memory_order_seq_cst) {
+    inline proc or(value:real(64), order:memory_order = memory_order_seq_cst):real(64) {
       compilerError("or not defined for network atomic real");
     }
 
-    inline proc fetchAnd(value:real(64), order = memory_order_seq_cst):real(64) {
+    inline proc fetchAnd(value:real(64), order:memory_order = memory_order_seq_cst):real(64) {
       compilerError("and not defined for network atomic real");
     }
-    inline proc and(value:real(64), order = memory_order_seq_cst) {
+    inline proc and(value:real(64), order:memory_order = memory_order_seq_cst):real(64) {
       compilerError("and not defined for network atomic real");
     }
 
-    inline proc fetchXor(value:real(64), order = memory_order_seq_cst):real(64) {
+    inline proc fetchXor(value:real(64), order:memory_order = memory_order_seq_cst):real(64) {
       compilerError("xor not defined for network atomic real");
     }
-    inline proc xor(value:real(64), order = memory_order_seq_cst) {
+    inline proc xor(value:real(64), order:memory_order = memory_order_seq_cst) {
       compilerError("xor not defined for network atomic real");
     }
 
-    inline proc waitFor(val:real(64)) {
-      on this do while (read() != val) do chpl_task_yield();
+
+    inline proc waitFor(val:real(64), order:memory_order = memory_order_seq_cst) {
+      chpl_rmem_consist_maybe_release(order);
+      on this {
+        while (read(memory_order_relaxed) != val) do chpl_task_yield();
+        atomic_thread_fence(order);
+      }
+      chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {

@@ -8,6 +8,7 @@ module ChapelStandard {
   // Internal modules.
   use ChapelBase;
   use String;
+  use MemConsistency;
   use Atomics;
   use NetworkAtomics;
   use NetworkAtomicTypes;

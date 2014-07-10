@@ -5,6 +5,7 @@
 #include "chplrt.h"
 #include "chpl-comm.h"
 #include "chpl-mem.h"
+#include "chpl-mem-consistency.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -43,6 +44,45 @@ void chpl_newPrivatizedClass(void* v) {
 
 extern void* chpl_getPrivatizedClass(int32_t i) {
   return chpl_privateObjects[i];
+}
+
+void chpl_startCommDiagnostics(void); // this one implemented by comm layers
+void chpl_gen_startCommDiagnostics(void); // this one implemented in chpl-comm.c
+void chpl_stopCommDiagnostics(void);
+void chpl_gen_stopCommDiagnostics(void);
+void chpl_startCommDiagnosticsHere(void);
+void chpl_gen_startCommDiagnosticsHere(void);
+void chpl_stopCommDiagnosticsHere(void);
+void chpl_gen_stopCommDiagnosticsHere(void);
+void chpl_resetCommDiagnosticsHere(void);
+void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd);
+
+void chpl_gen_startCommDiagnostics(void) {
+  // Make sure that there are no pending communication operations.
+  chpl_rmem_consist_release(__LINE__, __FILE__);
+  // And then start the comm diagnostics as usual.
+  chpl_startCommDiagnostics();
+}
+
+void chpl_gen_stopCommDiagnostics(void) {
+  // Make sure that there are no pending communication operations.
+  chpl_rmem_consist_release(__LINE__, __FILE__);
+  // And then stop the comm diagnostics as usual.
+  chpl_stopCommDiagnostics();
+}
+
+void chpl_gen_startCommDiagnosticsHere(void) {
+  // Make sure that there are no pending communication operations.
+  chpl_rmem_consist_release(__LINE__, __FILE__);
+  // And then start the comm diagnostics as usual.
+  chpl_startCommDiagnosticsHere();
+}
+
+void chpl_gen_stopCommDiagnosticsHere(void) {
+  // Make sure that there are no pending communication operations.
+  chpl_rmem_consist_release(__LINE__, __FILE__);
+  // And then stop the comm diagnostics as usual.
+  chpl_stopCommDiagnosticsHere();
 }
 
 

@@ -1,16 +1,38 @@
 // See runtime/include/atomics/README for more info about these functions
 
+/* Note that when compiling with --cache-enable, the compiler
+   will add fences to methods in atomic types with order arguments e.g.
+    proc sub (... order:memory_order = memory_order_seq_cst):void {
+      on this do atomic_fetch_sub_explicit_...(_v, value, order);
+    }
+   becomes
+    proc sub (... order:memory_order = memory_order_seq_cst):void {
+      chpl_rmem_consist_maybe_release(order);
+      on this do atomic_fetch_sub_explicit_...(_v, value, order);
+      chpl_rmem_consist_maybe_acquire(order);
+    }
+   In addition, when --cache-enable is activated, the normally required
+   memory fence for an 'on' statement is omitted for these functions
+   (since the maybe_release/maybe_acquire fence takes care of it).
+
+   These methods are detected based on the type of the order argument,
+   but to avoid errors, the compiler will give an error if the
+   order argument is not explicitly specified (because the relevant
+   pass runs before function resolution).
+
+   waitFor methods retain the fences written here so that the
+   implementation is correct even if the cache is not enabled
+   (and we want to use relaxed ordering in the waitFor loop). We
+   also must call atomic_thread_fence after the loop in order
+   to correctly single-locale compilation where the 'on' statement is omitted.
+
+   */
+
+pragma "atomic module"
 pragma "no use ChapelStandard"
 module Atomics {
 
-  extern type memory_order;
-
-  extern const memory_order_relaxed:memory_order;
-  extern const memory_order_consume:memory_order;
-  extern const memory_order_acquire:memory_order;
-  extern const memory_order_release:memory_order;
-  extern const memory_order_acq_rel:memory_order;
-  extern const memory_order_seq_cst:memory_order;
+  use MemConsistency;
 
   extern type atomic_int_least8_t;
   extern type atomic_int_least16_t;
@@ -203,11 +225,11 @@ module Atomics {
   //extern proc atomic_signal_thread_fence(order:memory_order);
   // but they only handle the local portion of a fence.
   // To include PUTs or GETs in the fence, use atomic_fence instead:
-  proc atomic_fence(order:memory_order) {
+  proc atomic_fence(order:memory_order = memory_order_seq_cst) {
     atomic_thread_fence(order);
+    chpl_rmem_consist_fence(order);
   }
- 
-  
+
   proc chpl__atomicType(type base_type) type {
     if CHPL_NETWORK_ATOMICS == "none" {
       if base_type==bool then return atomicflag;
@@ -227,6 +249,7 @@ module Atomics {
     }
   };
 
+
   inline proc create_atomic_flag():atomic_flag {
     var ret:atomic_flag;
     atomic_init_flag(ret, false);
@@ -239,44 +262,52 @@ module Atomics {
     inline proc ~atomicflag() {
       atomic_destroy_flag(_v);
     }
-    inline proc read(order = memory_order_seq_cst):bool {
+    inline proc read(order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
       on this do ret = atomic_load_explicit_flag(_v, order);
       return ret;
     }
-    inline proc write(value:bool, order = memory_order_seq_cst) {
+    inline proc write(value:bool, order:memory_order = memory_order_seq_cst) {
       on this do atomic_store_explicit_flag(_v, value, order);
     }
-    inline proc exchange(value:bool, order = memory_order_seq_cst):bool {
+    inline proc exchange(value:bool, order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
       on this do ret = atomic_exchange_explicit_flag(_v, value, order);
       return ret;
     }
-    inline proc compareExchange(expected:bool, desired:bool, order = memory_order_seq_cst):bool {
+    inline proc compareExchange(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst):bool {
       return compareExchangeStrong(expected, desired, order);
     }
-    inline proc compareExchangeWeak(expected:bool, desired:bool, order = memory_order_seq_cst):bool {
+    inline proc compareExchangeWeak(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
       on this do ret = atomic_compare_exchange_weak_explicit_flag(_v, expected, desired, order);
       return ret;
     }
-    inline proc compareExchangeStrong(expected:bool, desired:bool, order = memory_order_seq_cst):bool {
+    inline proc compareExchangeStrong(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
       on this do ret = atomic_compare_exchange_strong_explicit_flag(_v, expected, desired, order);
       return ret;
     }
 
-    inline proc testAndSet(order = memory_order_seq_cst) {
+    inline proc testAndSet(order:memory_order = memory_order_seq_cst) {
       var ret:bool;
       on this do ret = atomic_flag_test_and_set_explicit(_v, order);
       return ret;
     }
-    inline proc clear(order = memory_order_seq_cst) {
+    inline proc clear(order:memory_order = memory_order_seq_cst) {
       on this do atomic_flag_clear_explicit(_v, order);
     }
 
-    inline proc waitFor(val:bool) {
-      on this do while (read() != val) do chpl_task_yield();
+    inline proc waitFor(val:bool, order:memory_order = memory_order_seq_cst) {
+      chpl_rmem_consist_maybe_release(order);
+      on this {
+        while (read(memory_order_relaxed) != val) do chpl_task_yield();
+        // After waiting for the value, do a thread fence
+        // in order to guarantee e.g. an acquire barrier even
+        // if the on statement is not included.
+        atomic_thread_fence(order);
+      }
+      chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {
@@ -303,75 +334,80 @@ module Atomics {
     inline proc ~atomic_uint8() {
       atomic_destroy_uint_least8_t(_v);
     }
-    inline proc read(order = memory_order_seq_cst):uint(8) {
+    inline proc read(order:memory_order = memory_order_seq_cst):uint(8) {
       var ret:uint(8);
       on this do ret = atomic_load_explicit_uint_least8_t(_v, order);
       return ret;
     }
-    inline proc write(value:uint(8), order = memory_order_seq_cst) {
+    inline proc write(value:uint(8), order:memory_order = memory_order_seq_cst) {
       on this do atomic_store_explicit_uint_least8_t(_v, value, order);
     }
-    inline proc exchange(value:uint(8), order = memory_order_seq_cst):uint(8) {
+    inline proc exchange(value:uint(8), order:memory_order = memory_order_seq_cst):uint(8) {
       var ret:uint(8);
       on this do ret = atomic_exchange_explicit_uint_least8_t(_v, value, order);
       return ret;
     }
-    inline proc compareExchange(expected:uint(8), desired:uint(8), order = memory_order_seq_cst):bool {
+    inline proc compareExchange(expected:uint(8), desired:uint(8), order:memory_order = memory_order_seq_cst):bool {
       return compareExchangeStrong(expected, desired, order);
     }
-    inline proc compareExchangeWeak(expected:uint(8), desired:uint(8), order = memory_order_seq_cst):bool {
+    inline proc compareExchangeWeak(expected:uint(8), desired:uint(8), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
       on this do ret = atomic_compare_exchange_weak_explicit_uint_least8_t(_v, expected, desired, order);
       return ret;
     }
-    inline proc compareExchangeStrong(expected:uint(8), desired:uint(8), order = memory_order_seq_cst):bool {
+    inline proc compareExchangeStrong(expected:uint(8), desired:uint(8), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
       on this do ret = atomic_compare_exchange_strong_explicit_uint_least8_t(_v, expected, desired, order);
       return ret;
     }
-    inline proc fetchAdd(value:uint(8), order = memory_order_seq_cst):uint(8) {
+    inline proc fetchAdd(value:uint(8), order:memory_order = memory_order_seq_cst):uint(8) {
       var ret:uint(8);
       on this do ret = atomic_fetch_add_explicit_uint_least8_t(_v, value, order);
       return ret;
     }
-    inline proc add(value:uint(8), order = memory_order_seq_cst):void {
+    inline proc add(value:uint(8), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_add_explicit_uint_least8_t(_v, value, order);
     }
-    inline proc fetchSub(value:uint(8), order = memory_order_seq_cst):uint(8) {
+    inline proc fetchSub(value:uint(8), order:memory_order = memory_order_seq_cst):uint(8) {
       var ret:uint(8);
       on this do ret = atomic_fetch_sub_explicit_uint_least8_t(_v, value, order);
       return ret;
     }
-    inline proc sub(value:uint(8), order = memory_order_seq_cst):void {
+    inline proc sub(value:uint(8), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_sub_explicit_uint_least8_t(_v, value, order);
     }
-    inline proc fetchOr(value:uint(8), order = memory_order_seq_cst):uint(8) {
+    inline proc fetchOr(value:uint(8), order:memory_order = memory_order_seq_cst):uint(8) {
       var ret:uint(8);
       on this do ret = atomic_fetch_or_explicit_uint_least8_t(_v, value, order);
       return ret;
     }
-    inline proc or(value:uint(8), order = memory_order_seq_cst):void {
+    inline proc or(value:uint(8), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_or_explicit_uint_least8_t(_v, value, order);
     }
-    inline proc fetchAnd(value:uint(8), order = memory_order_seq_cst):uint(8) {
+    inline proc fetchAnd(value:uint(8), order:memory_order = memory_order_seq_cst):uint(8) {
       var ret:uint(8);
       on this do ret = atomic_fetch_and_explicit_uint_least8_t(_v, value, order);
       return ret;
     }
-    inline proc and(value:uint(8), order = memory_order_seq_cst):void {
+    inline proc and(value:uint(8), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_and_explicit_uint_least8_t(_v, value, order);
     }
-    inline proc fetchXor(value:uint(8), order = memory_order_seq_cst):uint(8) {
+    inline proc fetchXor(value:uint(8), order:memory_order = memory_order_seq_cst):uint(8) {
       var ret:uint(8);
       on this do ret = atomic_fetch_xor_explicit_uint_least8_t(_v, value, order);
       return ret;
     }
-    inline proc xor(value:uint(8), order = memory_order_seq_cst):void {
+    inline proc xor(value:uint(8), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_xor_explicit_uint_least8_t(_v, value, order);
     }
 
-    inline proc waitFor(val:uint(8)) {
-      on this do while (read() != val) do chpl_task_yield();
+    inline proc waitFor(val:uint(8), order:memory_order = memory_order_seq_cst) {
+      chpl_rmem_consist_maybe_release(order);
+      on this {
+        while (read(memory_order_relaxed) != val) do chpl_task_yield();
+        atomic_thread_fence(order);
+      }
+      chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {
@@ -398,75 +434,80 @@ module Atomics {
     inline proc ~atomic_uint16() {
       atomic_destroy_uint_least16_t(_v);
     }
-    inline proc read(order = memory_order_seq_cst):uint(16) {
+    inline proc read(order:memory_order = memory_order_seq_cst):uint(16) {
       var ret:uint(16);
       on this do ret = atomic_load_explicit_uint_least16_t(_v, order);
       return ret;
     }
-    inline proc write(value:uint(16), order = memory_order_seq_cst) {
+    inline proc write(value:uint(16), order:memory_order = memory_order_seq_cst) {
       on this do atomic_store_explicit_uint_least16_t(_v, value, order);
     }
-    inline proc exchange(value:uint(16), order = memory_order_seq_cst):uint(16) {
+    inline proc exchange(value:uint(16), order:memory_order = memory_order_seq_cst):uint(16) {
       var ret:uint(16);
       on this do ret = atomic_exchange_explicit_uint_least16_t(_v, value, order);
       return ret;
     }
-    inline proc compareExchange(expected:uint(16), desired:uint(16), order = memory_order_seq_cst):bool {
+    inline proc compareExchange(expected:uint(16), desired:uint(16), order:memory_order = memory_order_seq_cst):bool {
       return compareExchangeStrong(expected, desired, order);
     }
-    inline proc compareExchangeWeak(expected:uint(16), desired:uint(16), order = memory_order_seq_cst):bool {
+    inline proc compareExchangeWeak(expected:uint(16), desired:uint(16), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
       on this do ret = atomic_compare_exchange_weak_explicit_uint_least16_t(_v, expected, desired, order);
       return ret;
     }
-    inline proc compareExchangeStrong(expected:uint(16), desired:uint(16), order = memory_order_seq_cst):bool {
+    inline proc compareExchangeStrong(expected:uint(16), desired:uint(16), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
       on this do ret = atomic_compare_exchange_strong_explicit_uint_least16_t(_v, expected, desired, order);
       return ret;
     }
-    inline proc fetchAdd(value:uint(16), order = memory_order_seq_cst):uint(16) {
+    inline proc fetchAdd(value:uint(16), order:memory_order = memory_order_seq_cst):uint(16) {
       var ret:uint(16);
       on this do ret = atomic_fetch_add_explicit_uint_least16_t(_v, value, order);
       return ret;
     }
-    inline proc add(value:uint(16), order = memory_order_seq_cst):void {
+    inline proc add(value:uint(16), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_add_explicit_uint_least16_t(_v, value, order);
     }
-    inline proc fetchSub(value:uint(16), order = memory_order_seq_cst):uint(16) {
+    inline proc fetchSub(value:uint(16), order:memory_order = memory_order_seq_cst):uint(16) {
       var ret:uint(16);
       on this do ret = atomic_fetch_sub_explicit_uint_least16_t(_v, value, order);
       return ret;
     }
-    inline proc sub(value:uint(16), order = memory_order_seq_cst):void {
+    inline proc sub(value:uint(16), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_sub_explicit_uint_least16_t(_v, value, order);
     }
-    inline proc fetchOr(value:uint(16), order = memory_order_seq_cst):uint(16) {
+    inline proc fetchOr(value:uint(16), order:memory_order = memory_order_seq_cst):uint(16) {
       var ret:uint(16);
       on this do ret = atomic_fetch_or_explicit_uint_least16_t(_v, value, order);
       return ret;
     }
-    inline proc or(value:uint(16), order = memory_order_seq_cst):void {
+    inline proc or(value:uint(16), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_or_explicit_uint_least16_t(_v, value, order);
     }
-    inline proc fetchAnd(value:uint(16), order = memory_order_seq_cst):uint(16) {
+    inline proc fetchAnd(value:uint(16), order:memory_order = memory_order_seq_cst):uint(16) {
       var ret:uint(16);
       on this do ret = atomic_fetch_and_explicit_uint_least16_t(_v, value, order);
       return ret;
     }
-    inline proc and(value:uint(16), order = memory_order_seq_cst):void {
+    inline proc and(value:uint(16), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_and_explicit_uint_least16_t(_v, value, order);
     }
-    inline proc fetchXor(value:uint(16), order = memory_order_seq_cst):uint(16) {
+    inline proc fetchXor(value:uint(16), order:memory_order = memory_order_seq_cst):uint(16) {
       var ret:uint(16);
       on this do ret = atomic_fetch_xor_explicit_uint_least16_t(_v, value, order);
       return ret;
     }
-    inline proc xor(value:uint(16), order = memory_order_seq_cst):void {
+    inline proc xor(value:uint(16), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_xor_explicit_uint_least16_t(_v, value, order);
     }
 
-    inline proc waitFor(val:uint(16)) {
-      on this do while (read() != val) do chpl_task_yield();
+    inline proc waitFor(val:uint(16), order:memory_order = memory_order_seq_cst) {
+      chpl_rmem_consist_maybe_release(order);
+      on this {
+        while (read(memory_order_relaxed) != val) do chpl_task_yield();
+        atomic_thread_fence(order);
+      }
+      chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {
@@ -493,75 +534,80 @@ module Atomics {
     inline proc ~atomic_uint32() {
       atomic_destroy_uint_least32_t(_v);
     }
-    inline proc read(order = memory_order_seq_cst):uint(32) {
+    inline proc read(order:memory_order = memory_order_seq_cst):uint(32) {
       var ret:uint(32);
       on this do ret = atomic_load_explicit_uint_least32_t(_v, order);
       return ret;
     }
-    inline proc write(value:uint(32), order = memory_order_seq_cst) {
+    inline proc write(value:uint(32), order:memory_order = memory_order_seq_cst) {
       on this do atomic_store_explicit_uint_least32_t(_v, value, order);
     }
-    inline proc exchange(value:uint(32), order = memory_order_seq_cst):uint(32) {
+    inline proc exchange(value:uint(32), order:memory_order = memory_order_seq_cst):uint(32) {
       var ret:uint(32);
       on this do ret = atomic_exchange_explicit_uint_least32_t(_v, value, order);
       return ret;
     }
-    inline proc compareExchange(expected:uint(32), desired:uint(32), order = memory_order_seq_cst):bool {
+    inline proc compareExchange(expected:uint(32), desired:uint(32), order:memory_order = memory_order_seq_cst):bool {
       return compareExchangeStrong(expected, desired, order);
     }
-    inline proc compareExchangeWeak(expected:uint(32), desired:uint(32), order = memory_order_seq_cst):bool {
+    inline proc compareExchangeWeak(expected:uint(32), desired:uint(32), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
       on this do ret = atomic_compare_exchange_weak_explicit_uint_least32_t(_v, expected, desired, order);
       return ret;
     }
-    inline proc compareExchangeStrong(expected:uint(32), desired:uint(32), order = memory_order_seq_cst):bool {
+    inline proc compareExchangeStrong(expected:uint(32), desired:uint(32), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
       on this do ret = atomic_compare_exchange_strong_explicit_uint_least32_t(_v, expected, desired, order);
       return ret;
     }
-    inline proc fetchAdd(value:uint(32), order = memory_order_seq_cst):uint(32) {
+    inline proc fetchAdd(value:uint(32), order:memory_order = memory_order_seq_cst):uint(32) {
       var ret:uint(32);
       on this do ret = atomic_fetch_add_explicit_uint_least32_t(_v, value, order);
       return ret;
     }
-    inline proc add(value:uint(32), order = memory_order_seq_cst):void {
+    inline proc add(value:uint(32), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_add_explicit_uint_least32_t(_v, value, order);
     }
-    inline proc fetchSub(value:uint(32), order = memory_order_seq_cst):uint(32) {
+    inline proc fetchSub(value:uint(32), order:memory_order = memory_order_seq_cst):uint(32) {
       var ret:uint(32);
       on this do ret = atomic_fetch_sub_explicit_uint_least32_t(_v, value, order);
       return ret;
     }
-    inline proc sub(value:uint(32), order = memory_order_seq_cst):void {
+    inline proc sub(value:uint(32), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_sub_explicit_uint_least32_t(_v, value, order);
     }
-    inline proc fetchOr(value:uint(32), order = memory_order_seq_cst):uint(32) {
+    inline proc fetchOr(value:uint(32), order:memory_order = memory_order_seq_cst):uint(32) {
       var ret:uint(32);
       on this do ret = atomic_fetch_or_explicit_uint_least32_t(_v, value, order);
       return ret;
     }
-    inline proc or(value:uint(32), order = memory_order_seq_cst):void {
+    inline proc or(value:uint(32), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_or_explicit_uint_least32_t(_v, value, order);
     }
-    inline proc fetchAnd(value:uint(32), order = memory_order_seq_cst):uint(32) {
+    inline proc fetchAnd(value:uint(32), order:memory_order = memory_order_seq_cst):uint(32) {
       var ret:uint(32);
       on this do ret = atomic_fetch_and_explicit_uint_least32_t(_v, value, order);
       return ret;
     }
-    inline proc and(value:uint(32), order = memory_order_seq_cst):void {
+    inline proc and(value:uint(32), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_and_explicit_uint_least32_t(_v, value, order);
     }
-    inline proc fetchXor(value:uint(32), order = memory_order_seq_cst):uint(32) {
+    inline proc fetchXor(value:uint(32), order:memory_order = memory_order_seq_cst):uint(32) {
       var ret:uint(32);
       on this do ret = atomic_fetch_xor_explicit_uint_least32_t(_v, value, order);
       return ret;
     }
-    inline proc xor(value:uint(32), order = memory_order_seq_cst):void {
+    inline proc xor(value:uint(32), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_xor_explicit_uint_least32_t(_v, value, order);
     }
 
-    inline proc waitFor(val:uint(32)) {
-      on this do while (read() != val) do chpl_task_yield();
+    inline proc waitFor(val:uint(32), order:memory_order = memory_order_seq_cst) {
+      chpl_rmem_consist_maybe_release(order);
+      on this {
+        while (read(memory_order_relaxed) != val) do chpl_task_yield();
+        atomic_thread_fence(order);
+      }
+      chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {
@@ -588,75 +634,80 @@ module Atomics {
     inline proc ~atomic_uint64() {
       atomic_destroy_uint_least64_t(_v);
     }
-    inline proc read(order = memory_order_seq_cst):uint(64) {
+    inline proc read(order:memory_order = memory_order_seq_cst):uint(64) {
       var ret:uint(64);
       on this do ret = atomic_load_explicit_uint_least64_t(_v, order);
       return ret;
     }
-    inline proc write(value:uint(64), order = memory_order_seq_cst) {
+    inline proc write(value:uint(64), order:memory_order = memory_order_seq_cst) {
       on this do atomic_store_explicit_uint_least64_t(_v, value, order);
     }
-    inline proc exchange(value:uint(64), order = memory_order_seq_cst):uint(64) {
+    inline proc exchange(value:uint(64), order:memory_order = memory_order_seq_cst):uint(64) {
       var ret:uint(64);
       on this do ret = atomic_exchange_explicit_uint_least64_t(_v, value, order);
       return ret;
     }
-    inline proc compareExchange(expected:uint(64), desired:uint(64), order = memory_order_seq_cst):bool {
+    inline proc compareExchange(expected:uint(64), desired:uint(64), order:memory_order = memory_order_seq_cst):bool {
       return compareExchangeStrong(expected, desired, order);
     }
-    inline proc compareExchangeWeak(expected:uint(64), desired:uint(64), order = memory_order_seq_cst):bool {
+    inline proc compareExchangeWeak(expected:uint(64), desired:uint(64), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
       on this do ret = atomic_compare_exchange_weak_explicit_uint_least64_t(_v, expected, desired, order);
       return ret;
     }
-    inline proc compareExchangeStrong(expected:uint(64), desired:uint(64), order = memory_order_seq_cst):bool {
+    inline proc compareExchangeStrong(expected:uint(64), desired:uint(64), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
       on this do ret = atomic_compare_exchange_strong_explicit_uint_least64_t(_v, expected, desired, order);
       return ret;
     }
-    inline proc fetchAdd(value:uint(64), order = memory_order_seq_cst):uint(64) {
+    inline proc fetchAdd(value:uint(64), order:memory_order = memory_order_seq_cst):uint(64) {
       var ret:uint(64);
       on this do ret = atomic_fetch_add_explicit_uint_least64_t(_v, value, order);
       return ret;
     }
-    inline proc add(value:uint(64), order = memory_order_seq_cst):void {
+    inline proc add(value:uint(64), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_add_explicit_uint_least64_t(_v, value, order);
     }
-    inline proc fetchSub(value:uint(64), order = memory_order_seq_cst):uint(64) {
+    inline proc fetchSub(value:uint(64), order:memory_order = memory_order_seq_cst):uint(64) {
       var ret:uint(64);
       on this do ret = atomic_fetch_sub_explicit_uint_least64_t(_v, value, order);
       return ret;
     }
-    inline proc sub(value:uint(64), order = memory_order_seq_cst):void {
+    inline proc sub(value:uint(64), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_sub_explicit_uint_least64_t(_v, value, order);
     }
-    inline proc fetchOr(value:uint(64), order = memory_order_seq_cst):uint(64) {
+    inline proc fetchOr(value:uint(64), order:memory_order = memory_order_seq_cst):uint(64) {
       var ret:uint(64);
       on this do ret = atomic_fetch_or_explicit_uint_least64_t(_v, value, order);
       return ret;
     }
-    inline proc or(value:uint(64), order = memory_order_seq_cst):void {
+    inline proc or(value:uint(64), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_or_explicit_uint_least64_t(_v, value, order);
     }
-    inline proc fetchAnd(value:uint(64), order = memory_order_seq_cst):uint(64) {
+    inline proc fetchAnd(value:uint(64), order:memory_order = memory_order_seq_cst):uint(64) {
       var ret:uint(64);
       on this do ret = atomic_fetch_and_explicit_uint_least64_t(_v, value, order);
       return ret;
     }
-    inline proc and(value:uint(64), order = memory_order_seq_cst):void {
+    inline proc and(value:uint(64), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_and_explicit_uint_least64_t(_v, value, order);
     }
-    inline proc fetchXor(value:uint(64), order = memory_order_seq_cst):uint(64) {
+    inline proc fetchXor(value:uint(64), order:memory_order = memory_order_seq_cst):uint(64) {
       var ret:uint(64);
       on this do ret = atomic_fetch_xor_explicit_uint_least64_t(_v, value, order);
       return ret;
     }
-    inline proc xor(value:uint(64), order = memory_order_seq_cst):void {
+    inline proc xor(value:uint(64), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_xor_explicit_uint_least64_t(_v, value, order);
     }
 
-    inline proc waitFor(val:uint(64)) {
-      on this do while (read() != val) do chpl_task_yield();
+    inline proc waitFor(val:uint(64), order:memory_order = memory_order_seq_cst) {
+      chpl_rmem_consist_maybe_release(order);
+      on this {
+        while (read(memory_order_relaxed) != val) do chpl_task_yield();
+        atomic_thread_fence(order);
+      }
+      chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {
@@ -683,75 +734,80 @@ module Atomics {
     inline proc ~atomic_int8() {
       atomic_destroy_int_least8_t(_v);
     }
-    inline proc read(order = memory_order_seq_cst):int(8) {
+    inline proc read(order:memory_order = memory_order_seq_cst):int(8) {
       var ret:int(8);
       on this do ret = atomic_load_explicit_int_least8_t(_v, order);
       return ret;
     }
-    inline proc write(value:int(8), order = memory_order_seq_cst) {
+    inline proc write(value:int(8), order:memory_order = memory_order_seq_cst) {
       on this do atomic_store_explicit_int_least8_t(_v, value, order);
     }
-    inline proc exchange(value:int(8), order = memory_order_seq_cst):int(8) {
+    inline proc exchange(value:int(8), order:memory_order = memory_order_seq_cst):int(8) {
       var ret:int(8);
       on this do ret = atomic_exchange_explicit_int_least8_t(_v, value, order);
       return ret;
     }
-    inline proc compareExchange(expected:int(8), desired:int(8), order = memory_order_seq_cst):bool {
+    inline proc compareExchange(expected:int(8), desired:int(8), order:memory_order = memory_order_seq_cst):bool {
       return compareExchangeStrong(expected, desired, order);
     }
-    inline proc compareExchangeWeak(expected:int(8), desired:int(8), order = memory_order_seq_cst):bool {
+    inline proc compareExchangeWeak(expected:int(8), desired:int(8), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
       on this do ret = atomic_compare_exchange_weak_explicit_int_least8_t(_v, expected, desired, order);
       return ret;
     }
-    inline proc compareExchangeStrong(expected:int(8), desired:int(8), order = memory_order_seq_cst):bool {
+    inline proc compareExchangeStrong(expected:int(8), desired:int(8), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
       on this do ret = atomic_compare_exchange_strong_explicit_int_least8_t(_v, expected, desired, order);
       return ret;
     }
-    inline proc fetchAdd(value:int(8), order = memory_order_seq_cst):int(8) {
+    inline proc fetchAdd(value:int(8), order:memory_order = memory_order_seq_cst):int(8) {
       var ret:int(8);
       on this do ret = atomic_fetch_add_explicit_int_least8_t(_v, value, order);
       return ret;
     }
-    inline proc add(value:int(8), order = memory_order_seq_cst):void {
+    inline proc add(value:int(8), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_add_explicit_int_least8_t(_v, value, order);
     }
-    inline proc fetchSub(value:int(8), order = memory_order_seq_cst):int(8) {
+    inline proc fetchSub(value:int(8), order:memory_order = memory_order_seq_cst):int(8) {
       var ret:int(8);
       on this do ret = atomic_fetch_sub_explicit_int_least8_t(_v, value, order);
       return ret;
     }
-    inline proc sub(value:int(8), order = memory_order_seq_cst):void {
+    inline proc sub(value:int(8), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_sub_explicit_int_least8_t(_v, value, order);
     }
-    inline proc fetchOr(value:int(8), order = memory_order_seq_cst):int(8) {
+    inline proc fetchOr(value:int(8), order:memory_order = memory_order_seq_cst):int(8) {
       var ret:int(8);
       on this do ret = atomic_fetch_or_explicit_int_least8_t(_v, value, order);
       return ret;
     }
-    inline proc or(value:int(8), order = memory_order_seq_cst):void {
+    inline proc or(value:int(8), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_or_explicit_int_least8_t(_v, value, order);
     }
-    inline proc fetchAnd(value:int(8), order = memory_order_seq_cst):int(8) {
+    inline proc fetchAnd(value:int(8), order:memory_order = memory_order_seq_cst):int(8) {
       var ret:int(8);
       on this do ret = atomic_fetch_and_explicit_int_least8_t(_v, value, order);
       return ret;
     }
-    inline proc and(value:int(8), order = memory_order_seq_cst):void {
+    inline proc and(value:int(8), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_and_explicit_int_least8_t(_v, value, order);
     }
-    inline proc fetchXor(value:int(8), order = memory_order_seq_cst):int(8) {
+    inline proc fetchXor(value:int(8), order:memory_order = memory_order_seq_cst):int(8) {
       var ret:int(8);
       on this do ret = atomic_fetch_xor_explicit_int_least8_t(_v, value, order);
       return ret;
     }
-    inline proc xor(value:int(8), order = memory_order_seq_cst):void {
+    inline proc xor(value:int(8), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_xor_explicit_int_least8_t(_v, value, order);
     }
 
-    inline proc waitFor(val:int(8)) {
-      on this do while (read() != val) do chpl_task_yield();
+    inline proc waitFor(val:int(8), order:memory_order = memory_order_seq_cst) {
+      chpl_rmem_consist_maybe_release(order);
+      on this {
+        while (read(memory_order_relaxed) != val) do chpl_task_yield();
+        atomic_thread_fence(order);
+      }
+      chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {
@@ -778,75 +834,80 @@ module Atomics {
     inline proc ~atomic_int16() {
       atomic_destroy_int_least16_t(_v);
     }
-    inline proc read(order = memory_order_seq_cst):int(16) {
+    inline proc read(order:memory_order = memory_order_seq_cst):int(16) {
       var ret:int(16);
       on this do ret = atomic_load_explicit_int_least16_t(_v, order);
       return ret;
     }
-    inline proc write(value:int(16), order = memory_order_seq_cst) {
+    inline proc write(value:int(16), order:memory_order = memory_order_seq_cst) {
       on this do atomic_store_explicit_int_least16_t(_v, value, order);
     }
-    inline proc exchange(value:int(16), order = memory_order_seq_cst):int(16) {
+    inline proc exchange(value:int(16), order:memory_order = memory_order_seq_cst):int(16) {
       var ret:int(16);
       on this do ret = atomic_exchange_explicit_int_least16_t(_v, value, order);
       return ret;
     }
-    inline proc compareExchange(expected:int(16), desired:int(16), order = memory_order_seq_cst):bool {
+    inline proc compareExchange(expected:int(16), desired:int(16), order:memory_order = memory_order_seq_cst):bool {
       return compareExchangeStrong(expected, desired, order);
     }
-    inline proc compareExchangeWeak(expected:int(16), desired:int(16), order = memory_order_seq_cst):bool {
+    inline proc compareExchangeWeak(expected:int(16), desired:int(16), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
       on this do ret = atomic_compare_exchange_weak_explicit_int_least16_t(_v, expected, desired, order);
       return ret;
     }
-    inline proc compareExchangeStrong(expected:int(16), desired:int(16), order = memory_order_seq_cst):bool {
+    inline proc compareExchangeStrong(expected:int(16), desired:int(16), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
       on this do ret = atomic_compare_exchange_strong_explicit_int_least16_t(_v, expected, desired, order);
       return ret;
     }
-    inline proc fetchAdd(value:int(16), order = memory_order_seq_cst):int(16) {
+    inline proc fetchAdd(value:int(16), order:memory_order = memory_order_seq_cst):int(16) {
       var ret:int(16);
       on this do ret = atomic_fetch_add_explicit_int_least16_t(_v, value, order);
       return ret;
     }
-    inline proc add(value:int(16), order = memory_order_seq_cst):void {
+    inline proc add(value:int(16), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_add_explicit_int_least16_t(_v, value, order);
     }
-    inline proc fetchSub(value:int(16), order = memory_order_seq_cst):int(16) {
+    inline proc fetchSub(value:int(16), order:memory_order = memory_order_seq_cst):int(16) {
       var ret:int(16);
       on this do ret = atomic_fetch_sub_explicit_int_least16_t(_v, value, order);
       return ret;
     }
-    inline proc sub(value:int(16), order = memory_order_seq_cst):void {
+    inline proc sub(value:int(16), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_sub_explicit_int_least16_t(_v, value, order);
     }
-    inline proc fetchOr(value:int(16), order = memory_order_seq_cst):int(16) {
+    inline proc fetchOr(value:int(16), order:memory_order = memory_order_seq_cst):int(16) {
       var ret:int(16);
       on this do ret = atomic_fetch_or_explicit_int_least16_t(_v, value, order);
       return ret;
     }
-    inline proc or(value:int(16), order = memory_order_seq_cst):void {
+    inline proc or(value:int(16), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_or_explicit_int_least16_t(_v, value, order);
     }
-    inline proc fetchAnd(value:int(16), order = memory_order_seq_cst):int(16) {
+    inline proc fetchAnd(value:int(16), order:memory_order = memory_order_seq_cst):int(16) {
       var ret:int(16);
       on this do ret = atomic_fetch_and_explicit_int_least16_t(_v, value, order);
       return ret;
     }
-    inline proc and(value:int(16), order = memory_order_seq_cst):void {
+    inline proc and(value:int(16), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_and_explicit_int_least16_t(_v, value, order);
     }
-    inline proc fetchXor(value:int(16), order = memory_order_seq_cst):int(16) {
+    inline proc fetchXor(value:int(16), order:memory_order = memory_order_seq_cst):int(16) {
       var ret:int(16);
       on this do ret = atomic_fetch_xor_explicit_int_least16_t(_v, value, order);
       return ret;
     }
-    inline proc xor(value:int(16), order = memory_order_seq_cst):void {
+    inline proc xor(value:int(16), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_xor_explicit_int_least16_t(_v, value, order);
     }
 
-    inline proc waitFor(val:int(16)) {
-      on this do while (read() != val) do chpl_task_yield();
+    inline proc waitFor(val:int(16), order:memory_order = memory_order_seq_cst) {
+      chpl_rmem_consist_maybe_release(order);
+      on this {
+        while (read(memory_order_relaxed) != val) do chpl_task_yield();
+        atomic_thread_fence(order);
+      }
+      chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {
@@ -873,75 +934,80 @@ module Atomics {
     inline proc ~atomic_int32() {
       atomic_destroy_int_least32_t(_v);
     }
-    inline proc read(order = memory_order_seq_cst):int(32) {
+    inline proc read(order:memory_order = memory_order_seq_cst):int(32) {
       var ret:int(32);
       on this do ret = atomic_load_explicit_int_least32_t(_v, order);
       return ret;
     }
-    inline proc write(value:int(32), order = memory_order_seq_cst) {
+    inline proc write(value:int(32), order:memory_order = memory_order_seq_cst) {
       on this do atomic_store_explicit_int_least32_t(_v, value, order);
     }
-    inline proc exchange(value:int(32), order = memory_order_seq_cst):int(32) {
+    inline proc exchange(value:int(32), order:memory_order = memory_order_seq_cst):int(32) {
       var ret:int(32);
       on this do ret = atomic_exchange_explicit_int_least32_t(_v, value, order);
       return ret;
     }
-    inline proc compareExchange(expected:int(32), desired:int(32), order = memory_order_seq_cst):bool {
+    inline proc compareExchange(expected:int(32), desired:int(32), order:memory_order = memory_order_seq_cst):bool {
       return compareExchangeStrong(expected, desired, order);
     }
-    inline proc compareExchangeWeak(expected:int(32), desired:int(32), order = memory_order_seq_cst):bool {
+    inline proc compareExchangeWeak(expected:int(32), desired:int(32), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
       on this do ret = atomic_compare_exchange_weak_explicit_int_least32_t(_v, expected, desired, order);
       return ret;
     }
-    inline proc compareExchangeStrong(expected:int(32), desired:int(32), order = memory_order_seq_cst):bool {
+    inline proc compareExchangeStrong(expected:int(32), desired:int(32), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
       on this do ret = atomic_compare_exchange_strong_explicit_int_least32_t(_v, expected, desired, order);
       return ret;
     }
-    inline proc fetchAdd(value:int(32), order = memory_order_seq_cst):int(32) {
+    inline proc fetchAdd(value:int(32), order:memory_order = memory_order_seq_cst):int(32) {
       var ret:int(32);
       on this do ret = atomic_fetch_add_explicit_int_least32_t(_v, value, order);
       return ret;
     }
-    inline proc add(value:int(32), order = memory_order_seq_cst):void {
+    inline proc add(value:int(32), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_add_explicit_int_least32_t(_v, value, order);
     }
-    inline proc fetchSub(value:int(32), order = memory_order_seq_cst):int(32) {
+    inline proc fetchSub(value:int(32), order:memory_order = memory_order_seq_cst):int(32) {
       var ret:int(32);
       on this do ret = atomic_fetch_sub_explicit_int_least32_t(_v, value, order);
       return ret;
     }
-    inline proc sub(value:int(32), order = memory_order_seq_cst):void {
+    inline proc sub(value:int(32), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_sub_explicit_int_least32_t(_v, value, order);
     }
-    inline proc fetchOr(value:int(32), order = memory_order_seq_cst):int(32) {
+    inline proc fetchOr(value:int(32), order:memory_order = memory_order_seq_cst):int(32) {
       var ret:int(32);
       on this do ret = atomic_fetch_or_explicit_int_least32_t(_v, value, order);
       return ret;
     }
-    inline proc or(value:int(32), order = memory_order_seq_cst):void {
+    inline proc or(value:int(32), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_or_explicit_int_least32_t(_v, value, order);
     }
-    inline proc fetchAnd(value:int(32), order = memory_order_seq_cst):int(32) {
+    inline proc fetchAnd(value:int(32), order:memory_order = memory_order_seq_cst):int(32) {
       var ret:int(32);
       on this do ret = atomic_fetch_and_explicit_int_least32_t(_v, value, order);
       return ret;
     }
-    inline proc and(value:int(32), order = memory_order_seq_cst):void {
+    inline proc and(value:int(32), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_and_explicit_int_least32_t(_v, value, order);
     }
-    inline proc fetchXor(value:int(32), order = memory_order_seq_cst):int(32) {
+    inline proc fetchXor(value:int(32), order:memory_order = memory_order_seq_cst):int(32) {
       var ret:int(32);
       on this do ret = atomic_fetch_xor_explicit_int_least32_t(_v, value, order);
       return ret;
     }
-    inline proc xor(value:int(32), order = memory_order_seq_cst):void {
+    inline proc xor(value:int(32), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_xor_explicit_int_least32_t(_v, value, order);
     }
 
-    inline proc waitFor(val:int(32)) {
-      on this do while (read() != val) do chpl_task_yield();
+    inline proc waitFor(val:int(32), order:memory_order = memory_order_seq_cst) {
+      chpl_rmem_consist_maybe_release(order);
+      on this {
+        while (read(memory_order_relaxed) != val) do chpl_task_yield();
+        atomic_thread_fence(order);
+      }
+      chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {
@@ -968,75 +1034,80 @@ module Atomics {
     inline proc ~atomic_int64() {
       atomic_destroy_int_least64_t(_v);
     }
-    inline proc read(order = memory_order_seq_cst):int(64) {
+    inline proc read(order:memory_order = memory_order_seq_cst):int(64) {
       var ret:int(64);
       on this do ret = atomic_load_explicit_int_least64_t(_v, order);
       return ret;
     }
-    inline proc write(value:int(64), order = memory_order_seq_cst) {
+    inline proc write(value:int(64), order:memory_order = memory_order_seq_cst) {
       on this do atomic_store_explicit_int_least64_t(_v, value, order);
     }
-    inline proc exchange(value:int(64), order = memory_order_seq_cst):int(64) {
+    inline proc exchange(value:int(64), order:memory_order = memory_order_seq_cst):int(64) {
       var ret:int(64);
       on this do ret = atomic_exchange_explicit_int_least64_t(_v, value, order);
       return ret;
     }
-    inline proc compareExchange(expected:int(64), desired:int(64), order = memory_order_seq_cst):bool {
+    inline proc compareExchange(expected:int(64), desired:int(64), order:memory_order = memory_order_seq_cst):bool {
       return compareExchangeStrong(expected, desired, order);
     }
-    inline proc compareExchangeWeak(expected:int(64), desired:int(64), order = memory_order_seq_cst):bool {
+    inline proc compareExchangeWeak(expected:int(64), desired:int(64), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
       on this do ret = atomic_compare_exchange_weak_explicit_int_least64_t(_v, expected, desired, order);
       return ret;
     }
-    inline proc compareExchangeStrong(expected:int(64), desired:int(64), order = memory_order_seq_cst):bool {
+    inline proc compareExchangeStrong(expected:int(64), desired:int(64), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
       on this do ret = atomic_compare_exchange_strong_explicit_int_least64_t(_v, expected, desired, order);
       return ret;
     }
-    inline proc fetchAdd(value:int(64), order = memory_order_seq_cst):int(64) {
+    inline proc fetchAdd(value:int(64), order:memory_order = memory_order_seq_cst):int(64) {
       var ret:int(64);
       on this do ret = atomic_fetch_add_explicit_int_least64_t(_v, value, order);
       return ret;
     }
-    inline proc add(value:int(64), order = memory_order_seq_cst):void {
+    inline proc add(value:int(64), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_add_explicit_int_least64_t(_v, value, order);
     }
-    inline proc fetchSub(value:int(64), order = memory_order_seq_cst):int(64) {
+    inline proc fetchSub(value:int(64), order:memory_order = memory_order_seq_cst):int(64) {
       var ret:int(64);
       on this do ret = atomic_fetch_sub_explicit_int_least64_t(_v, value, order);
       return ret;
     }
-    inline proc sub(value:int(64), order = memory_order_seq_cst):void {
+    inline proc sub(value:int(64), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_sub_explicit_int_least64_t(_v, value, order);
     }
-    inline proc fetchOr(value:int(64), order = memory_order_seq_cst):int(64) {
+    inline proc fetchOr(value:int(64), order:memory_order = memory_order_seq_cst):int(64) {
       var ret:int(64);
       on this do ret = atomic_fetch_or_explicit_int_least64_t(_v, value, order);
       return ret;
     }
-    inline proc or(value:int(64), order = memory_order_seq_cst):void {
+    inline proc or(value:int(64), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_or_explicit_int_least64_t(_v, value, order);
     }
-    inline proc fetchAnd(value:int(64), order = memory_order_seq_cst):int(64) {
+    inline proc fetchAnd(value:int(64), order:memory_order = memory_order_seq_cst):int(64) {
       var ret:int(64);
       on this do ret = atomic_fetch_and_explicit_int_least64_t(_v, value, order);
       return ret;
     }
-    inline proc and(value:int(64), order = memory_order_seq_cst):void {
+    inline proc and(value:int(64), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_and_explicit_int_least64_t(_v, value, order);
     }
-    inline proc fetchXor(value:int(64), order = memory_order_seq_cst):int(64) {
+    inline proc fetchXor(value:int(64), order:memory_order = memory_order_seq_cst):int(64) {
       var ret:int(64);
       on this do ret = atomic_fetch_xor_explicit_int_least64_t(_v, value, order);
       return ret;
     }
-    inline proc xor(value:int(64), order = memory_order_seq_cst):void {
+    inline proc xor(value:int(64), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_xor_explicit_int_least64_t(_v, value, order);
     }
 
-    inline proc waitFor(val:int(64)) {
-      on this do while (read() != val) do chpl_task_yield();
+    inline proc waitFor(val:int(64), order:memory_order = memory_order_seq_cst) {
+      chpl_rmem_consist_maybe_release(order);
+      on this {
+        while (read(memory_order_relaxed) != val) do chpl_task_yield();
+        atomic_thread_fence(order);
+      }
+      chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {
@@ -1049,8 +1120,8 @@ module Atomics {
     proc writeThis(x: Writer) {
       x.write(read());
     }
-  }
 
+  }
 
   inline proc create_atomic__real64():atomic__real64 {
     var ret:atomic__real64;
@@ -1064,51 +1135,56 @@ module Atomics {
     inline proc ~atomic_real64() {
       atomic_destroy__real64(_v);
     }
-    inline proc read(order = memory_order_seq_cst):real(64) {
+    inline proc read(order:memory_order = memory_order_seq_cst):real(64) {
       var ret:real(64);
       on this do ret = atomic_load_explicit__real64(_v, order);
       return ret;
     }
-    inline proc write(value:real(64), order = memory_order_seq_cst) {
+    inline proc write(value:real(64), order:memory_order = memory_order_seq_cst) {
       on this do atomic_store_explicit__real64(_v, value, order);
     }
 
-    inline proc exchange(value:real(64), order = memory_order_seq_cst):real(64) {
+    inline proc exchange(value:real(64), order:memory_order = memory_order_seq_cst):real(64) {
       var ret:real(64);
       on this do ret = atomic_exchange_explicit__real64(_v, value, order);
       return ret;
     }
-    inline proc compareExchange(expected:real(64), desired:real(64), order = memory_order_seq_cst):bool {
+    inline proc compareExchange(expected:real(64), desired:real(64), order:memory_order = memory_order_seq_cst):bool {
       return compareExchangeStrong(expected, desired, order);
     }
-    inline proc compareExchangeWeak(expected:real(64), desired:real(64), order = memory_order_seq_cst):bool {
+    inline proc compareExchangeWeak(expected:real(64), desired:real(64), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
       on this do ret = atomic_compare_exchange_weak_explicit__real64(_v, expected, desired, order);
       return ret;
     }
-    inline proc compareExchangeStrong(expected:real(64), desired:real(64), order = memory_order_seq_cst):bool {
+    inline proc compareExchangeStrong(expected:real(64), desired:real(64), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
       on this do ret = atomic_compare_exchange_strong_explicit__real64(_v, expected, desired, order);
       return ret;
     }
-    inline proc fetchAdd(value:real(64), order = memory_order_seq_cst):real(64) {
+    inline proc fetchAdd(value:real(64), order:memory_order = memory_order_seq_cst):real(64) {
       var ret:real(64);
       on this do ret = atomic_fetch_add_explicit__real64(_v, value, order);
       return ret;
     }
-    inline proc add(value:real(64), order = memory_order_seq_cst):void {
+    inline proc add(value:real(64), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_add_explicit__real64(_v, value, order);
     }
-    inline proc fetchSub(value:real(64), order = memory_order_seq_cst):real(64) {
+    inline proc fetchSub(value:real(64), order:memory_order = memory_order_seq_cst):real(64) {
       var ret:real(64);
       on this do ret = atomic_fetch_sub_explicit__real64(_v, value, order);
       return ret;
     }
-    inline proc sub(value:real(64), order = memory_order_seq_cst):void {
+    inline proc sub(value:real(64), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_sub_explicit__real64(_v, value, order);
     }
-    inline proc waitFor(val:real(64)) {
-      on this do while (read() != val) do chpl_task_yield();
+    inline proc waitFor(val:real(64), order:memory_order = memory_order_seq_cst) {
+      chpl_rmem_consist_maybe_release(order);
+      on this {
+        while (read(memory_order_relaxed) != val) do chpl_task_yield();
+        atomic_thread_fence(order);
+      }
+      chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {
@@ -1136,51 +1212,56 @@ module Atomics {
     inline proc ~atomic_real32() {
       atomic_destroy__real32(_v);
     }
-    inline proc read(order = memory_order_seq_cst):real(32) {
+    inline proc read(order:memory_order = memory_order_seq_cst):real(32) {
       var ret:real(32);
       on this do ret = atomic_load_explicit__real32(_v, order);
       return ret;
     }
-    inline proc write(value:real(32), order = memory_order_seq_cst) {
+    inline proc write(value:real(32), order:memory_order = memory_order_seq_cst) {
       on this do atomic_store_explicit__real32(_v, value, order);
     }
 
-    inline proc exchange(value:real(32), order = memory_order_seq_cst):real(32) {
+    inline proc exchange(value:real(32), order:memory_order = memory_order_seq_cst):real(32) {
       var ret:real(32);
       on this do ret = atomic_exchange_explicit__real32(_v, value, order);
       return ret;
     }
-    inline proc compareExchange(expected:real(32), desired:real(32), order = memory_order_seq_cst):bool {
+    inline proc compareExchange(expected:real(32), desired:real(32), order:memory_order = memory_order_seq_cst):bool {
       return compareExchangeStrong(expected, desired, order);
     }
-    inline proc compareExchangeWeak(expected:real(32), desired:real(32), order = memory_order_seq_cst):bool {
+    inline proc compareExchangeWeak(expected:real(32), desired:real(32), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
       on this do ret = atomic_compare_exchange_weak_explicit__real32(_v, expected, desired, order);
       return ret;
     }
-    inline proc compareExchangeStrong(expected:real(32), desired:real(32), order = memory_order_seq_cst):bool {
+    inline proc compareExchangeStrong(expected:real(32), desired:real(32), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
       on this do ret = atomic_compare_exchange_strong_explicit__real32(_v, expected, desired, order);
       return ret;
     }
-    inline proc fetchAdd(value:real(32), order = memory_order_seq_cst):real(32) {
+    inline proc fetchAdd(value:real(32), order:memory_order = memory_order_seq_cst):real(32) {
       var ret:real(32);
       on this do ret = atomic_fetch_add_explicit__real32(_v, value, order);
       return ret;
     }
-    inline proc add(value:real(32), order = memory_order_seq_cst):void {
+    inline proc add(value:real(32), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_add_explicit__real32(_v, value, order);
     }
-    inline proc fetchSub(value:real(32), order = memory_order_seq_cst):real(32) {
+    inline proc fetchSub(value:real(32), order:memory_order = memory_order_seq_cst):real(32) {
       var ret:real(32);
       on this do ret = atomic_fetch_sub_explicit__real32(_v, value, order);
       return ret;
     }
-    inline proc sub(value:real(32), order = memory_order_seq_cst):void {
+    inline proc sub(value:real(32), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_sub_explicit__real32(_v, value, order);
     }
-    inline proc waitFor(val:real(32)) {
-      on this do while (read() != val) do chpl_task_yield();
+    inline proc waitFor(val:real(32), order:memory_order = memory_order_seq_cst) {
+      chpl_rmem_consist_maybe_release(order);
+      on this {
+        while (read(memory_order_relaxed) != val) do chpl_task_yield();
+        atomic_thread_fence(order);
+      }
+      chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {

@@ -5,6 +5,8 @@
 
 pragma "no use ChapelStandard"
 module ChapelSyncvar {
+  use MemConsistency;
+
   inline proc chpl__readXX(x: sync) return x.readXX();
   inline proc chpl__readXX(x: single) return x.readXX();
   inline proc chpl__readXX(x) return x;
@@ -48,9 +50,11 @@ module ChapelSyncvar {
     var ret: base_type;
     on this {
       var localRet: base_type;
+      chpl_rmem_consist_release();
       __primitive("sync_wait_full_and_lock", this);
       localRet = value;
       __primitive("sync_mark_and_signal_empty", this);
+      chpl_rmem_consist_acquire();
       ret = localRet;
     }
     return ret;
@@ -61,9 +65,11 @@ module ChapelSyncvar {
     var ret: base_type;
     on this {
       var localRet: base_type;
+      chpl_rmem_consist_release();
       __primitive("sync_wait_full_and_lock", this);
       localRet = value;
       __primitive("sync_mark_and_signal_full", this); // in case others are waiting
+      chpl_rmem_consist_acquire();
       ret = localRet;
     }
     return ret;
@@ -74,9 +80,11 @@ module ChapelSyncvar {
     var ret: base_type;
     on this {
       var localRet: base_type;
+      chpl_rmem_consist_release();
       __primitive("sync_lock", this);
       localRet = value;
       __primitive("sync_unlock", this);
+      chpl_rmem_consist_acquire();
       ret = localRet;
     }
     return ret;
@@ -85,9 +93,11 @@ module ChapelSyncvar {
   // This is the default write on sync vars. Wait for empty, set and signal full.
   proc _syncvar.writeEF(val:base_type) {
     on this {
+      chpl_rmem_consist_release();
       __primitive("sync_wait_empty_and_lock", this);
       value = val;
       __primitive("sync_mark_and_signal_full", this);
+      chpl_rmem_consist_acquire();
     }
   }
 
@@ -98,19 +108,22 @@ module ChapelSyncvar {
   // Wait for full, set and signal full.
   proc _syncvar.writeFF(val:base_type) {
     on this {
+      chpl_rmem_consist_release();
       __primitive("sync_wait_full_and_lock", this);
       value = val;
       __primitive("sync_mark_and_signal_full", this);
+      chpl_rmem_consist_acquire();
     }
   }
 
   // Ignore F/E, set and signal full.
   proc _syncvar.writeXF(val:base_type) {
     on this {
+      chpl_rmem_consist_release();
       __primitive("sync_lock", this);
       value = val;
       __primitive("sync_mark_and_signal_full", this);
-
+      chpl_rmem_consist_acquire();
     }
   }
 
@@ -118,16 +131,20 @@ module ChapelSyncvar {
   proc _syncvar.reset() {
     on this {
       const default_value: base_type;
+      chpl_rmem_consist_release();
       __primitive("sync_lock", this);
       value = default_value;
       __primitive("sync_mark_and_signal_empty", this);
+      chpl_rmem_consist_acquire();
     }
   }
 
   proc _syncvar.isFull {
     var b: bool;
     on this {
+      chpl_rmem_consist_release();
       b = __primitive("sync_is_full", this);
+      chpl_rmem_consist_acquire();
     }
     return b;
   }
@@ -162,6 +179,7 @@ module ChapelSyncvar {
     var ret: base_type;
     on this {
       var localRet: base_type;
+      chpl_rmem_consist_release();
       if this.isFull then
         localRet = value;
       else {
@@ -169,6 +187,7 @@ module ChapelSyncvar {
         localRet = value;
         __primitive("single_mark_and_signal_full", this); // in case others are waiting
       }
+      chpl_rmem_consist_acquire();
       ret = localRet;
     }
     return ret;
@@ -179,6 +198,7 @@ module ChapelSyncvar {
   proc _singlevar.readXX() {
     var ret: base_type;
     on this {
+      chpl_rmem_consist_release();
       var localRet: base_type;
       if this.isFull then
         localRet = value;
@@ -187,6 +207,7 @@ module ChapelSyncvar {
         localRet = value;
         __primitive("single_unlock", this);
       }
+      chpl_rmem_consist_acquire();
       ret = localRet;
     }
     return ret;
@@ -196,11 +217,13 @@ module ChapelSyncvar {
   // Can only write once.  Otherwise, it is an error.
   proc _singlevar.writeEF(val:base_type) {
     on this {
+      chpl_rmem_consist_release();
       __primitive("single_lock", this);
       if this.isFull then
         halt("single var already defined");
       value = val;
       __primitive("single_mark_and_signal_full", this);
+      chpl_rmem_consist_acquire();
     }
   }
 
@@ -211,7 +234,9 @@ module ChapelSyncvar {
   proc _singlevar.isFull {
     var b: bool;
     on this {
+      chpl_rmem_consist_release();
       b = __primitive("single_is_full", this);
+      chpl_rmem_consist_acquire();
     }
     return b;
   }

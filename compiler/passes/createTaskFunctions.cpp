@@ -176,6 +176,32 @@ addVarsToActuals(CallExpr* call, SymbolMap* vars) {
   }
 }
 
+static
+bool isAtomicFunctionWithOrderArgument(FnSymbol* fnSymbol, ArgSymbol** order = NULL)
+{
+  if( !fnSymbol ) return false;
+  Symbol* _this = fnSymbol->_this;
+  if( !_this ) return false;
+  if( !_this->typeInfo()->symbol->hasFlag(FLAG_ATOMIC_TYPE) ) return false;
+  // is the last formal the order= argument?
+  // Note that it must have the type specified since inferring it happens
+  // in a later pass (resolution).
+  int numFormals = fnSymbol->numFormals();
+  if( numFormals >= 1 ) {
+    ArgSymbol* lastFormal = fnSymbol->getFormal(numFormals);
+    int has_order_type = lastFormal->typeInfo()->symbol->hasFlag(FLAG_MEMORY_ORDER_TYPE);
+    int has_order_name = (0 == strcmp(lastFormal->name, "order"));
+    if( has_order_name && ! has_order_type ) {
+      INT_FATAL(lastFormal, "atomic method has order without type");
+    }
+    if( has_order_type ) {
+      if( order ) *order = lastFormal;
+      return true;
+    }
+  }
+  return false;
+}
+
 //
 // Converts blocks implementing various task constructs into
 // functions, so they can be invoked by a separate task.
@@ -195,6 +221,37 @@ void createTaskFunctions(void) {
   // one-time initialization
   markPruned = gVoid;
 
+  if( fCacheRemote ) {
+    // Add fences to Atomics methods
+    //  -- or do it with a flag on the network atomic impl fns
+    //  for each method in an atomics type that has an order= argument,
+    //   and which does not start/end with chpl_rmem_consist_maybe_release,
+    //   add chpl_rmem_consist_maybe_release(order)
+    //   add chpl_rmem_consist_maybe_acquire(order)
+    //  only do this when the remote data cache is enabled.
+    // Go through TypeSymbols looking for flag ATOMIC_TYPE
+    forv_Vec(ModuleSymbol, module, gModuleSymbols) {
+      if( module->hasFlag(FLAG_ATOMIC_MODULE) ) {
+        // we could do this with for_alist ... as in getFunctions()
+        // instead of creating a copy of the list of functions here.
+        Vec<FnSymbol*> moduleFunctions = module->getFunctions();
+        forv_Vec(FnSymbol, fnSymbol, moduleFunctions) {
+          ArgSymbol* order = NULL;
+          // Does this function have an order= argument?
+          // If so, add memory consistency functions (future - if they are not
+          // already there).
+          if( isAtomicFunctionWithOrderArgument(fnSymbol, &order) ) {
+            SET_LINENO(fnSymbol);
+            fnSymbol->insertAtHead(
+                new CallExpr("chpl_rmem_consist_maybe_release", order));
+            fnSymbol->insertBeforeReturn(
+                new CallExpr("chpl_rmem_consist_maybe_acquire", order));
+          }
+        }
+      }
+    }
+  }
+ 
   // Process task-creating constructs. We include 'on' blocks, too.
   // This code used to be in parallel().
   forv_Vec(BlockStmt, block, gBlockStmts) {
@@ -242,13 +299,79 @@ void createTaskFunctions(void) {
       if (fn) {
         INT_ASSERT(isTaskFun(fn));
         CallExpr* call = new CallExpr(fn);
-        if (fn->hasFlag(FLAG_ON))
+
+        // These variables are only used if fCacheRemote is set.
+        bool needsMemFence = true;
+        bool isBlockingOn = false;
+
+        if( fCacheRemote ) {
+          Symbol* parent = block->parentSymbol;
+          if( parent ) {
+            if( parent->hasFlag( FLAG_NO_REMOTE_MEMORY_FENCE ) ) {
+              // Do not add remote memory barriers.
+              needsMemFence = false;
+            } else {
+              FnSymbol* fnSymbol = parent->getFnSymbol();
+              // For methods on atomic types, we do not add the memory
+              // barriers, because these functions have an 'order'
+              // argument, which needs to get passed to the memory barrier,
+              // so they are handled above.
+              needsMemFence = ! isAtomicFunctionWithOrderArgument(fnSymbol);
+            }
+          }
+        }
+
+        if (fn->hasFlag(FLAG_ON)) {
           // This puts the target locale expression "onExpr" at the start of the call.
           call->insertAtTail(block->blockInfo->get(1)->remove());
+        }
 
         block->insertBefore(new DefExpr(fn));
+
+        if( fCacheRemote ) {
+          if( block->blockInfo->isPrimitive(PRIM_BLOCK_ON) ) {
+            isBlockingOn = true;
+          }
+
+          /* We don't need to add a fence for the parent side of
+             PRIM_BLOCK_BEGIN_ON
+             PRIM_BLOCK_COBEGIN_ON
+             PRIM_BLOCK_COFORALL_ON
+             PRIM_BLOCK_BEGIN
+               since upEndCount takes care of it. */
+
+          // If we need memory barriers, put them around the call to the
+          // task function. These memory barriers are ensuring memory
+          // consistency.  Spawn barrier (release) is needed for any
+          // blocking on statement. Other statements, including cobegin,
+          // coforall, begin handle this in upEndCount.
+          if( needsMemFence && isBlockingOn )
+            block->insertBefore(new CallExpr("chpl_rmem_consist_release"));
+        }
+        // Add the call to the outlined task function.
         block->insertBefore(call);
+        if( fCacheRemote ) {
+          // Join barrier (acquire) is needed for a blocking on, and it
+          // will make sure that writes in the on statement are available
+          // to the caller. Nonblocking on or begin don't block so it
+          // doesn't make sense to acquire barrier after running them. 
+          // coforall, cobegin, and sync blocks do this in waitEndCount.
+          if( needsMemFence && isBlockingOn )
+            block->insertBefore(new CallExpr("chpl_rmem_consist_acquire"));
+           // block->insertBefore(new CallExpr(PRIM_JOIN_RMEM_FENCE));
+        }
+
         block->blockInfo->remove();
+
+        // Now build the fn for the task or on statement.
+
+        if( fCacheRemote ) {
+          // We do a 'start' (acquire) memory barrier to prevent the task
+          // from re-using cached elements from another task. This could
+          // conceivably be handled by the tasking layer, but they already
+          // have enough to worry about...
+          fn->insertAtTail(new CallExpr(PRIM_START_RMEM_FENCE));
+        }
 
         // This block becomes the body of the new function.
         // It is flattened so _downEndCount appears in the same scope as the
@@ -256,6 +379,18 @@ void createTaskFunctions(void) {
         for_alist(stmt, block->body)
           fn->insertAtTail(stmt->remove());
 
+        if( fCacheRemote ) {
+          // In order to make sure that any 'put' from the task is completed,
+          // we do a 'finish' (release) barrier. If it's a begin,
+          // nonblocking on, coforall, or cobegin though this will be
+          // handled in _downEndCount -- so we just need to add the barrier
+          // here for a blocking on statement. We don't add it redundantly
+          // because other parts of the compiler rely on finding _downEndCount
+          // at the end of certain functions.
+          if( isBlockingOn )
+            fn->insertAtTail(new CallExpr(PRIM_FINISH_RMEM_FENCE));
+        }
+        
         fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
         fn->retType = dtVoid;
 
