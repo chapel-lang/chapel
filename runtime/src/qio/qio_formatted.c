@@ -2850,7 +2850,11 @@ static qioerr maybe_right_pad(qio_channel_t* restrict ch, int gotsize)
 }
 
 
-qioerr qio_channel_print_complex(const int threadsafe, qio_channel_t* restrict ch, const void* restrict re_ptr, const void* restrict im_ptr, size_t len)
+qioerr qio_channel_print_complex(const int threadsafe,
+                                 qio_channel_t* restrict ch,
+                                 const void* restrict re_ptr,
+                                 const void* restrict im_ptr,
+                                 size_t len)
 {
   int re_max = MAX_DOUBLE_DIGITS;
   int im_max = MAX_DOUBLE_DIGITS;
@@ -2858,7 +2862,8 @@ qioerr qio_channel_print_complex(const int threadsafe, qio_channel_t* restrict c
   char* im_buf = NULL;
   MAYBE_STACK_SPACE(char, re_buf_onstack);
   MAYBE_STACK_SPACE(char, im_buf_onstack);
-  double re_num, im_num;
+  double re_num = 0.0;
+  double im_num = 0.0;
   int re_got, im_got;
   qioerr err;
   int im_neg = 0;
