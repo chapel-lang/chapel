@@ -22,7 +22,7 @@ size_t qbytes_iobuf_size = 64*1024;
 
 void qbytes_free_iobuf(qbytes_t* b);
 void debug_print_bytes(qbytes_t* b);
-err_t qbuffer_init_part(qbuffer_part_t* p, qbytes_t* bytes, int64_t skip_bytes, int64_t len_bytes, int64_t end_offset);
+qioerr qbuffer_init_part(qbuffer_part_t* p, qbytes_t* bytes, int64_t skip_bytes, int64_t len_bytes, int64_t end_offset);
 
 
 // global, shared pools.
@@ -90,12 +90,12 @@ void _qbytes_init_generic(qbytes_t* ret, void* give_data, int64_t len, qbytes_fr
 }
 
 // On return, the ref count is 1.
-err_t qbytes_create_generic(qbytes_t** out, void* give_data, int64_t len, qbytes_free_t free_function)
+qioerr qbytes_create_generic(qbytes_t** out, void* give_data, int64_t len, qbytes_free_t free_function)
 {
   qbytes_t* ret = NULL;
 
   ret = (qbytes_t*) qio_calloc(1, sizeof(qbytes_t));
-  if( ! ret ) return ENOMEM;
+  if( ! ret ) return QIO_ENOMEM;
 
   // On return the ref count is 1.
   _qbytes_init_generic(ret, give_data, len, free_function);
@@ -108,14 +108,14 @@ err_t qbytes_create_generic(qbytes_t** out, void* give_data, int64_t len, qbytes
 // On return, the ref count in ret is 1.
 // The caller owns the returned qbytes buffer until qbytes_release
 // is called on it.
-err_t _qbytes_init_iobuf(qbytes_t* ret)
+qioerr _qbytes_init_iobuf(qbytes_t* ret)
 {
   void* data = NULL;
   
   // allocate 4K-aligned (or page size aligned)
   // multiple of 4K
   data = valloc(qbytes_iobuf_size);
-  if( !data ) return ENOMEM;
+  if( !data ) return QIO_ENOMEM;
   // We used to use posix_memalign, but that didn't work on an old Mac;
   // also, this should be page-aligned (vs iobuf_size aligned).
   //err_t err = posix_memalign(&data, qbytes_iobuf_size, qbytes_iobuf_size);
@@ -129,15 +129,15 @@ err_t _qbytes_init_iobuf(qbytes_t* ret)
 }
 
 
-err_t qbytes_create_iobuf(qbytes_t** out)
+qioerr qbytes_create_iobuf(qbytes_t** out)
 {
   qbytes_t* ret = NULL;
-  err_t err;
+  qioerr err;
 
   ret = (qbytes_t*) qio_calloc(1, sizeof(qbytes_t));
   if( ! ret ) {
     *out = NULL;
-    return ENOMEM;
+    return QIO_ENOMEM;
   }
 
   err = _qbytes_init_iobuf(ret);
@@ -152,13 +152,13 @@ err_t qbytes_create_iobuf(qbytes_t** out)
 }
 
 /*
-err_t _qbytes_init_calloc(qbytes_t* ret, int64_t len)
+qioerr _qbytes_init_calloc(qbytes_t* ret, int64_t len)
 {
   void* data;
 
   data = qio_calloc(1,len);
   if( data == NULL ) {
-    return ENOMEM;
+    return QIO_ENOMEM;
   }
 
   _qbytes_init_generic(ret, data, len, qbytes_free_free);
@@ -168,7 +168,7 @@ err_t _qbytes_init_calloc(qbytes_t* ret, int64_t len)
 
 // The ref count returned in 'out' is initially 1.
 // The caller is responsible for calling qbytes_release on it.
-err_t qbytes_create_calloc(qbytes_t** out, int64_t len)
+qioerr qbytes_create_calloc(qbytes_t** out, int64_t len)
 {
   qbytes_t* ret = NULL;
   void* data;
@@ -176,7 +176,7 @@ err_t qbytes_create_calloc(qbytes_t** out, int64_t len)
   ret = (qbytes_t*) qio_calloc(1, sizeof(qbytes_t) + len);
   if( ! ret ) {
     *out = NULL;
-    return ENOMEM;
+    return QIO_ENOMEM;
   }
 
   data = ret + 1; // ie ret + sizeof(qbytes_t)
@@ -214,7 +214,7 @@ int qbytes_append_realloc(qbytes_t* qb, size_t item_size, void* item)
       while( len + item_size > exp ) exp = 2*exp; 
 
       a = (unsigned char*) realloc(a, exp);
-      if( !a ) return ENOMEM;
+      if( !a ) return QIO_ENOMEM;
       qb->data = a;
    }
    // now put the new value in.
@@ -260,7 +260,7 @@ void debug_print_qbuffer(qbuffer_t* buf)
   }
 }
 
-err_t qbuffer_init(qbuffer_t* buf)
+qioerr qbuffer_init(qbuffer_t* buf)
 {
   memset(buf, 0, sizeof(qbuffer_t));
   DO_INIT_REFCNT(buf);
@@ -268,9 +268,9 @@ err_t qbuffer_init(qbuffer_t* buf)
   //return 0;
 }
 
-err_t qbuffer_destroy(qbuffer_t* buf)
+qioerr qbuffer_destroy(qbuffer_t* buf)
 {
-  err_t err = 0;
+  qioerr err = 0;
   deque_iterator_t cur = deque_begin(& buf->deque);
   deque_iterator_t end = deque_end(& buf->deque);
 
@@ -294,15 +294,15 @@ err_t qbuffer_destroy(qbuffer_t* buf)
   return err;
 }
 
-err_t qbuffer_create(qbuffer_t** out)
+qioerr qbuffer_create(qbuffer_t** out)
 {
   qbuffer_t* ret = NULL;
-  err_t err;
+  qioerr err;
 
   ret = (qbuffer_t*) qio_malloc(sizeof(qbuffer_t));
   if( ! ret ) {
     *out = NULL;
-    return ENOMEM;
+    return QIO_ENOMEM;
   }
 
   err = qbuffer_init(ret);
@@ -317,19 +317,18 @@ err_t qbuffer_create(qbuffer_t** out)
   return 0;
 }
 
-err_t qbuffer_destroy_free(qbuffer_t* buf)
+qioerr qbuffer_destroy_free(qbuffer_t* buf)
 {
-  err_t err;
+  qioerr err;
   err = qbuffer_destroy(buf);
   qio_free(buf);
   return err;
 }
 
-err_t qbuffer_init_part(qbuffer_part_t* p, qbytes_t* bytes, int64_t skip_bytes, int64_t len_bytes, int64_t end_offset)
+qioerr qbuffer_init_part(qbuffer_part_t* p, qbytes_t* bytes, int64_t skip_bytes, int64_t len_bytes, int64_t end_offset)
 {
-  if( len_bytes < 0 || skip_bytes < 0 ) return EINVAL;
-
-  if( skip_bytes + len_bytes > bytes->len ) return EINVAL;
+  if( len_bytes < 0 || skip_bytes < 0 || skip_bytes + len_bytes > bytes->len )
+    QIO_RETURN_CONSTANT_ERROR(EINVAL, "range outside of buffer");
 
   qbytes_retain(bytes);
 
@@ -372,11 +371,11 @@ void qbuffer_extend_front(qbuffer_t* buf)
   }
 }
 
-err_t qbuffer_append(qbuffer_t* buf, qbytes_t* bytes, int64_t skip_bytes, int64_t len_bytes)
+qioerr qbuffer_append(qbuffer_t* buf, qbytes_t* bytes, int64_t skip_bytes, int64_t len_bytes)
 {
   qbuffer_part_t part;
   int64_t new_end;
-  err_t err;
+  qioerr err;
 
   new_end = buf->offset_end + len_bytes;
   // init part retains the bytes.
@@ -397,15 +396,15 @@ err_t qbuffer_append(qbuffer_t* buf, qbytes_t* bytes, int64_t skip_bytes, int64_
   return 0;
 }
 
-err_t qbuffer_append_buffer(qbuffer_t* buf, qbuffer_t* src, qbuffer_iter_t src_start, qbuffer_iter_t src_end)
+qioerr qbuffer_append_buffer(qbuffer_t* buf, qbuffer_t* src, qbuffer_iter_t src_start, qbuffer_iter_t src_end)
 {
   qbuffer_iter_t src_cur = src_start;
   qbytes_t* bytes;
   int64_t skip;
   int64_t len;
-  err_t err;
+  qioerr err;
 
-  if( buf == src ) return EINVAL;
+  if( buf == src ) QIO_RETURN_CONSTANT_ERROR(EINVAL, "cannot append a buffer to itself");
 
   while( qbuffer_iter_num_bytes(src_cur, src_end) > 0 ) {
     qbuffer_iter_get(src_cur, src_end, &bytes, &skip, &len);
@@ -419,11 +418,11 @@ err_t qbuffer_append_buffer(qbuffer_t* buf, qbuffer_t* src, qbuffer_iter_t src_s
   return 0;
 }
 
-err_t qbuffer_prepend(qbuffer_t* buf, qbytes_t* bytes, int64_t skip_bytes, int64_t len_bytes)
+qioerr qbuffer_prepend(qbuffer_t* buf, qbytes_t* bytes, int64_t skip_bytes, int64_t len_bytes)
 {
   qbuffer_part_t part;
   int64_t old_start, new_start;
-  err_t err;
+  qioerr err;
 
   old_start = buf->offset_start;
   new_start = old_start - len_bytes;
@@ -530,14 +529,14 @@ void qbuffer_trim_back(qbuffer_t* buf, int64_t remove_bytes)
   qbuffer_clear_cached(buf);
 }
 
-err_t qbuffer_pop_front(qbuffer_t* buf)
+qioerr qbuffer_pop_front(qbuffer_t* buf)
 {
   qbytes_t* bytes;
   int64_t skip;
   int64_t len;
   qbuffer_iter_t chunk;
 
-  if ( qbuffer_num_parts(buf) == 0 ) return EINVAL;
+  if ( qbuffer_num_parts(buf) == 0 ) QIO_RETURN_CONSTANT_ERROR(EINVAL, "cannot pop from empty buffer");
 
   chunk = qbuffer_begin(buf);
 
@@ -550,14 +549,14 @@ err_t qbuffer_pop_front(qbuffer_t* buf)
   return 0;
 }
 
-err_t qbuffer_pop_back(qbuffer_t* buf)
+qioerr qbuffer_pop_back(qbuffer_t* buf)
 {
   qbytes_t* bytes;
   int64_t skip;
   int64_t len;
   qbuffer_iter_t chunk;
 
-  if ( qbuffer_num_parts(buf) == 0 ) return EINVAL;
+  if ( qbuffer_num_parts(buf) == 0 ) QIO_RETURN_CONSTANT_ERROR(EINVAL, "cannot pop from empty buffer");
   
   chunk = qbuffer_end(buf);
   qbuffer_iter_prev_part(buf, &chunk);
@@ -765,7 +764,7 @@ qbuffer_iter_t qbuffer_iter_at(qbuffer_t* buf, int64_t offset)
   return ret;
 }
 
-err_t qbuffer_to_iov(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, 
+qioerr qbuffer_to_iov(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, 
                      size_t max_iov, struct iovec *iov_out, 
                      qbytes_t** bytes_out /* can be NULL */,
                      size_t *iovcnt_out)
@@ -780,7 +779,7 @@ err_t qbuffer_to_iov(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end,
   // invalid range!
   if( start.offset > end.offset ) {
     *iovcnt_out = 0;
-    return EINVAL;
+    QIO_RETURN_CONSTANT_ERROR(EINVAL, "invalid range");
   }
 
   if( deque_it_equals(iter, d_end) ) {
@@ -816,7 +815,7 @@ err_t qbuffer_to_iov(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end,
       if( deque_it_equals( iter, d_end ) ) {
         // error: end is not in deque.
         *iovcnt_out = 0;
-        return EINVAL;
+        QIO_RETURN_CONSTANT_ERROR(EINVAL, "end is not in deque");
       }
 
       qbp = (qbuffer_part_t*) deque_it_get_cur_ptr(sizeof(qbuffer_part_t), iter);
@@ -852,10 +851,11 @@ err_t qbuffer_to_iov(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end,
 
 error_nospace:
   *iovcnt_out = 0;
-  return EMSGSIZE; // EOVERFLOW or ENOBUFS would make sense too
+  // EOVERFLOW or ENOBUFS would make sense too
+  QIO_RETURN_CONSTANT_ERROR(EMSGSIZE, "no space in buffer");
 }
 
-err_t qbuffer_flatten(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, qbytes_t** bytes_out)
+qioerr qbuffer_flatten(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, qbytes_t** bytes_out)
 {
   int64_t num_bytes = qbuffer_iter_num_bytes(start, end);
   ssize_t num_parts = qbuffer_iter_num_parts(start, end);
@@ -864,11 +864,12 @@ err_t qbuffer_flatten(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, 
   size_t i,j;
   qbytes_t* ret;
   MAYBE_STACK_SPACE(struct iovec, iov_onstack);
-  err_t err;
+  qioerr err;
  
-  if( num_bytes < 0 || num_parts < 0 || start.offset < buf->offset_start || end.offset > buf->offset_end ) {
+  if( num_bytes < 0 || num_parts < 0 ||
+      start.offset < buf->offset_start || end.offset > buf->offset_end ) {
     *bytes_out = 0;
-    return EINVAL;
+    QIO_RETURN_CONSTANT_ERROR(EINVAL, "range outside of buffer");
   }
 
   err = qbytes_create_calloc(&ret, num_bytes);
@@ -882,7 +883,7 @@ err_t qbuffer_flatten(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, 
     // The buffer was successfully allocated, so we have to release it here.
     qbytes_release(ret);
     *bytes_out = 0;
-    return ENOMEM;
+    return QIO_ENOMEM;
   }
 
   err = qbuffer_to_iov(buf, start, end, num_parts, iov, NULL, &iovcnt);
@@ -907,7 +908,7 @@ err_t qbuffer_flatten(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, 
 }
 
 /*
-err_t qbuffer_clone(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, qbuffer_ptr_t* buf_out)
+qioerr qbuffer_clone(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, qbuffer_ptr_t* buf_out)
 {
   int64_t num_bytes = qbuffer_iter_num_bytes(start, end);
   ssize_t num_parts = qbuffer_iter_num_parts(start, end);
@@ -917,7 +918,7 @@ err_t qbuffer_clone(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, qb
   size_t i;
   MAYBE_STACK_SPACE(struct iovec, iov_onstack);
   MAYBE_STACK_SPACE(qbytes_t*, bytes_onstack);
-  err_t err;
+  qioerr err;
   qbuffer_ptr_t ret = NULL;
  
   if( num_bytes < 0 || num_parts < 0 || start.offset < buf->offset_start || end.offset > buf->offset_end ) return EINVAL;
@@ -928,7 +929,7 @@ err_t qbuffer_clone(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, qb
   MAYBE_STACK_ALLOC(struct iovec, num_parts, iov, iov_onstack);
   MAYBE_STACK_ALLOC(qbytes_t*, num_parts, bytes, bytes_onstack);
   if( ! iov || ! bytes ) {
-    err = ENOMEM;
+    err = QIO_ENOMEM;
     goto error;
   }
 
@@ -962,7 +963,7 @@ error:
 }
 */
 
-err_t qbuffer_copyout(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, void* ptr, size_t ret_len)
+qioerr qbuffer_copyout(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, void* ptr, size_t ret_len)
 {
   int64_t num_bytes = qbuffer_iter_num_bytes(start, end);
   ssize_t num_parts = qbuffer_iter_num_parts(start, end);
@@ -970,12 +971,15 @@ err_t qbuffer_copyout(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, 
   size_t iovcnt;
   size_t i,j;
   MAYBE_STACK_SPACE(struct iovec, iov_onstack);
-  err_t err;
+  qioerr err;
  
-  if( num_bytes < 0 || num_parts < 0 || start.offset < buf->offset_start || end.offset > buf->offset_end ) return EINVAL;
+  if( num_bytes < 0 || num_parts < 0 ||
+      start.offset < buf->offset_start || end.offset > buf->offset_end ) {
+    QIO_RETURN_CONSTANT_ERROR(EINVAL, "range outside of buffer");
+  }
 
   MAYBE_STACK_ALLOC(struct iovec, num_parts, iov, iov_onstack);
-  if( ! iov ) return ENOMEM;
+  if( ! iov ) return QIO_ENOMEM;
 
   err = qbuffer_to_iov(buf, start, end, num_parts, iov, NULL, &iovcnt);
   if( err ) goto error;
@@ -991,13 +995,13 @@ err_t qbuffer_copyout(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, 
   return 0;
 
 error_nospace:
-  err = EMSGSIZE;
+  QIO_GET_CONSTANT_ERROR(err, EMSGSIZE, "no space in buffer");
 error:
   MAYBE_STACK_FREE(iov, iov_onstack);
   return err;
 }
 
-err_t qbuffer_copyin(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, const void* ptr, size_t ret_len)
+qioerr qbuffer_copyin(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, const void* ptr, size_t ret_len)
 {
   int64_t num_bytes = qbuffer_iter_num_bytes(start, end);
   ssize_t num_parts = qbuffer_iter_num_parts(start, end);
@@ -1005,12 +1009,15 @@ err_t qbuffer_copyin(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, c
   size_t iovcnt;
   size_t i,j;
   MAYBE_STACK_SPACE(struct iovec, iov_onstack);
-  err_t err;
+  qioerr err;
  
-  if( num_bytes < 0 || num_parts < 0 || start.offset < buf->offset_start || end.offset > buf->offset_end ) return EINVAL;
+  if( num_bytes < 0 || num_parts < 0 ||
+      start.offset < buf->offset_start || end.offset > buf->offset_end ) {
+    QIO_RETURN_CONSTANT_ERROR(EINVAL, "range outside of buffer");
+  }
 
   MAYBE_STACK_ALLOC(struct iovec, num_parts, iov, iov_onstack);
-  if( ! iov ) return ENOMEM;
+  if( ! iov ) return QIO_ENOMEM;
 
   err = qbuffer_to_iov(buf, start, end, num_parts, iov, NULL, &iovcnt);
   if( err ) goto error;
@@ -1026,13 +1033,13 @@ err_t qbuffer_copyin(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, c
   return 0;
 
 error_nospace:
-  err = EMSGSIZE;
+  QIO_GET_CONSTANT_ERROR(err, EMSGSIZE, "no space in buffer");
 error:
   MAYBE_STACK_FREE(iov, iov_onstack);
   return err;
 }
 
-err_t qbuffer_copyin_buffer(qbuffer_t* dst, qbuffer_iter_t dst_start, qbuffer_iter_t dst_end,
+qioerr qbuffer_copyin_buffer(qbuffer_t* dst, qbuffer_iter_t dst_start, qbuffer_iter_t dst_end,
                             qbuffer_t* src, qbuffer_iter_t src_start, qbuffer_iter_t src_end)
 {
   int64_t dst_num_bytes = qbuffer_iter_num_bytes(dst_start, dst_end);
@@ -1043,15 +1050,16 @@ err_t qbuffer_copyin_buffer(qbuffer_t* dst, qbuffer_iter_t dst_start, qbuffer_it
   size_t iovcnt;
   size_t i;
   MAYBE_STACK_SPACE(struct iovec, iov_onstack);
-  err_t err;
+  qioerr err;
   qbuffer_iter_t dst_cur, dst_cur_end;
  
-  if( dst == src ) return EINVAL;
-  if( dst_num_bytes < 0 || dst_num_parts < 0 || dst_start.offset < dst->offset_start || dst_end.offset > dst->offset_end ) return EINVAL;
-  if( src_num_bytes < 0 || src_num_parts < 0 || src_start.offset < src->offset_start || src_end.offset > src->offset_end ) return EINVAL;
+  if( dst == src ) QIO_RETURN_CONSTANT_ERROR(EINVAL, "cannot copy a buffer to itself");
+
+  if( dst_num_bytes < 0 || dst_num_parts < 0 || dst_start.offset < dst->offset_start || dst_end.offset > dst->offset_end ) QIO_RETURN_CONSTANT_ERROR(EINVAL, "dst range outside of buffer");
+  if( src_num_bytes < 0 || src_num_parts < 0 || src_start.offset < src->offset_start || src_end.offset > src->offset_end ) QIO_RETURN_CONSTANT_ERROR(EINVAL, "src range outside of buffer");
 
   MAYBE_STACK_ALLOC(struct iovec, src_num_parts, iov, iov_onstack);
-  if( ! iov ) return ENOMEM;
+  if( ! iov ) return QIO_ENOMEM;
 
   err = qbuffer_to_iov(src, src_start, src_end, src_num_parts, iov, NULL, &iovcnt);
   if( err ) goto error;
@@ -1073,7 +1081,7 @@ error:
   return err;
 }
 
-err_t qbuffer_memset(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, unsigned char byte)
+qioerr qbuffer_memset(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, unsigned char byte)
 {
   int64_t num_bytes = qbuffer_iter_num_bytes(start, end);
   ssize_t num_parts = qbuffer_iter_num_parts(start, end);
@@ -1081,12 +1089,12 @@ err_t qbuffer_memset(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, u
   size_t iovcnt;
   size_t i;
   MAYBE_STACK_SPACE(struct iovec, iov_onstack);
-  err_t err;
+  qioerr err;
  
-  if( num_bytes < 0 || num_parts < 0 || start.offset < buf->offset_start || end.offset > buf->offset_end ) return EINVAL;
+  if( num_bytes < 0 || num_parts < 0 || start.offset < buf->offset_start || end.offset > buf->offset_end ) QIO_RETURN_CONSTANT_ERROR(EINVAL, "range outside of buffer");
 
   MAYBE_STACK_ALLOC(struct iovec, num_parts, iov, iov_onstack);
-  if( ! iov ) return ENOMEM;
+  if( ! iov ) return QIO_ENOMEM;
 
   err = qbuffer_to_iov(buf, start, end, num_parts, iov, NULL, &iovcnt);
   if( err ) goto error;

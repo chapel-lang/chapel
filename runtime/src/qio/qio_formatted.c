@@ -46,8 +46,8 @@ static int wcwidth(int wc) {
 }
 #endif
 
-err_t qio_channel_read_uvarint(const int threadsafe, qio_channel_t* restrict ch, uint64_t* restrict ptr) {
-  err_t err = 0;
+qioerr qio_channel_read_uvarint(const int threadsafe, qio_channel_t* restrict ch, uint64_t* restrict ptr) {
+  qioerr err = 0;
   uint8_t byte;
   long part;
   uint64_t num;
@@ -74,7 +74,8 @@ err_t qio_channel_read_uvarint(const int threadsafe, qio_channel_t* restrict ch,
     }
   }
 
-  if( !err && (byte & 0x80) ) err = EOVERFLOW;
+  if( !err && (byte & 0x80) )
+    QIO_GET_CONSTANT_ERROR(err, EFORMAT, "overflow in varint");
 
 error:
   *ptr = num;
@@ -87,15 +88,15 @@ error:
   return err;
 }
 
-err_t qio_channel_read_svarint(const int threadsafe, qio_channel_t* restrict ch, int64_t* restrict ptr) {
-  err_t err;
+qioerr qio_channel_read_svarint(const int threadsafe, qio_channel_t* restrict ch, int64_t* restrict ptr) {
+  qioerr err;
   uint64_t u_num;
   err = qio_channel_read_uvarint(threadsafe, ch, &u_num);
   *ptr = (u_num >> 1) ^ -((int64_t)(u_num & 1));
   return err;
 }
-err_t qio_channel_write_uvarint(const int threadsafe, qio_channel_t* restrict ch, uint64_t num) {
-  err_t err = 0;
+qioerr qio_channel_write_uvarint(const int threadsafe, qio_channel_t* restrict ch, uint64_t num) {
+  qioerr err = 0;
   uint8_t byte;
   int i;
 
@@ -128,7 +129,7 @@ error:
   return err;
 }
 
-err_t qio_channel_write_svarint(const int threadsafe, qio_channel_t* restrict ch, int64_t num) {
+qioerr qio_channel_write_svarint(const int threadsafe, qio_channel_t* restrict ch, int64_t num) {
   uint64_t u_num = (num << 1) ^ (num >> 63);
   return qio_channel_write_uvarint(threadsafe, ch, u_num);
 }
@@ -136,9 +137,9 @@ err_t qio_channel_write_svarint(const int threadsafe, qio_channel_t* restrict ch
 
 
 static
-err_t _peek_until_byte(qio_channel_t* restrict ch, uint8_t term_byte, int64_t* restrict amt_read_out, int* restrict found_term_out)
+qioerr _peek_until_byte(qio_channel_t* restrict ch, uint8_t term_byte, int64_t* restrict amt_read_out, int* restrict found_term_out)
 {
-  err_t err;
+  qioerr err;
   int64_t mark_offset = 0;
   int64_t end_offset = 0;
   uint64_t num = 0;
@@ -171,9 +172,9 @@ err_t _peek_until_byte(qio_channel_t* restrict ch, uint8_t term_byte, int64_t* r
 }
 
 static
-err_t _getc_after_whitespace(qio_channel_t* restrict ch, int32_t* restrict got_chr)
+qioerr _getc_after_whitespace(qio_channel_t* restrict ch, int32_t* restrict got_chr)
 {
-  err_t err = 0;
+  qioerr err = 0;
   int32_t chr = 0;
 
   while( 1 ) {
@@ -188,9 +189,9 @@ err_t _getc_after_whitespace(qio_channel_t* restrict ch, int32_t* restrict got_c
 
 /*
 static inline
-err_t _peek_until_char(qio_channel_t* ch, int32_t term_chr, int64_t* amt_read_out, int* found_term_out)
+qioerr _peek_until_char(qio_channel_t* ch, int32_t term_chr, int64_t* amt_read_out, int* found_term_out)
 {
-  err_t err, newerr;
+  qioerr err, newerr;
   int64_t mark_offset = 0;
   int64_t end_offset = 0;
   uint64_t num = 0;
@@ -227,7 +228,7 @@ err_t _peek_until_char(qio_channel_t* ch, int32_t term_chr, int64_t* amt_read_ou
 
 // always appends room for a NULL byte at the end.
 static
-err_t _append_char(char* restrict * restrict buf, size_t* restrict buf_len, size_t* restrict buf_max, int32_t chr)
+qioerr _append_char(char* restrict * restrict buf, size_t* restrict buf_len, size_t* restrict buf_max, int32_t chr)
 {
   char* buf_in = *buf;
   size_t len_in = *buf_len;
@@ -245,7 +246,7 @@ err_t _append_char(char* restrict * restrict buf, size_t* restrict buf_len, size
   need = len_in + chbytes + 1;
   if( need < len_in || need > (SSIZE_MAX-1) ) {
     // Too big.
-    return EOVERFLOW;
+    QIO_RETURN_CONSTANT_ERROR(EOVERFLOW, "");
   }
   // First, make sure that there is room.
   if( need >= max_in ) {
@@ -254,7 +255,7 @@ err_t _append_char(char* restrict * restrict buf, size_t* restrict buf_len, size
     if( newsz < 16  ) newsz = 16;
     if( newsz < need  ) newsz = need;
     newbuf = qio_realloc(buf_in, newsz);
-    if( ! newbuf ) return ENOMEM;
+    if( ! newbuf ) return QIO_ENOMEM;
     buf_in = newbuf;
     max_in = newsz;
   }
@@ -278,9 +279,9 @@ err_t _append_char(char* restrict * restrict buf, size_t* restrict buf_len, size
 // -10 -- variable byte length before (hi-bit 1 means more, little endian)
 // -0x01XX -- read until terminator XX is read
 //  + -- nonzero positive -- read exactly this length.
-err_t qio_channel_read_string(const int threadsafe, const int byteorder, const int64_t str_style, qio_channel_t* restrict ch, const char* restrict* restrict out, int64_t* restrict len_out, ssize_t maxlen)
+qioerr qio_channel_read_string(const int threadsafe, const int byteorder, const int64_t str_style, qio_channel_t* restrict ch, const char* restrict* restrict out, int64_t* restrict len_out, ssize_t maxlen)
 {
-  err_t err;
+  qioerr err;
   uint8_t term = 0;
   uint8_t num8 = 0;
   uint16_t num16 = 0;
@@ -291,6 +292,7 @@ err_t qio_channel_read_string(const int threadsafe, const int byteorder, const i
   int found_term=0;
   ssize_t len=0;
   ssize_t amt = 0;
+  err_t errcode;
 
   if( maxlen <= 0 ) maxlen = SSIZE_MAX - 1;
 
@@ -333,17 +335,18 @@ err_t qio_channel_read_string(const int threadsafe, const int byteorder, const i
         // What is the position we're marking?
         err = _peek_until_byte(ch, term, &peek_amt, &found_term);
         num = peek_amt;
-        if( !err && !found_term ) err = EFORMAT;
+        if( !err && !found_term )
+          QIO_GET_CONSTANT_ERROR(err, EFORMAT, "missing string terminator");
       }
   }
   if( err ) goto rewind;
 
   if( num > (SSIZE_MAX-1) ) {
-    err = EOVERFLOW;
+    QIO_GET_CONSTANT_ERROR(err, EOVERFLOW, "");
     goto rewind;
   }
   if( num > maxlen ) {
-    err = EOVERFLOW;
+    QIO_GET_CONSTANT_ERROR(err, EOVERFLOW, "");
     goto rewind;
   }
   len = num;
@@ -351,7 +354,7 @@ err_t qio_channel_read_string(const int threadsafe, const int byteorder, const i
   // Now read that many bytes into an allocated area.
   ret = qio_malloc(len + 1); // room for \0.
   if( ! ret ) {
-    err = ENOMEM;
+    err = QIO_ENOMEM;
     goto rewind;
   }
 
@@ -360,7 +363,7 @@ err_t qio_channel_read_string(const int threadsafe, const int byteorder, const i
   ret[len] = '\0'; // always add terminator at the end
   if( err ) goto rewind;
   if( amt != len ) {
-    err = ESHORT;
+    err = QIO_ESHORT;
     // zero out the rest of it...
     memset(ret + amt, 0, len - amt);
     goto rewind;
@@ -385,7 +388,8 @@ unlock:
     qio_unlock(&ch->lock);
   }
 
-  if( err && err != EEOF && err != ESHORT ) qio_free(ret);
+  errcode = qio_err_to_int(err);
+  if( errcode && errcode != EEOF && errcode != ESHORT ) qio_free(ret);
   else {
     // don't modify out if we didn't read anything.
     if( ret ) {
@@ -398,9 +402,9 @@ unlock:
 }
 
 // allocates and returns a string. maxlen is in CHARACTERS.
-err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict * restrict out, int64_t* restrict len_out, ssize_t maxlen)
+qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict * restrict out, int64_t* restrict len_out, ssize_t maxlen)
 {
-  err_t err;
+  qioerr err;
   char* restrict ret = NULL;
   size_t ret_len = 0;
   size_t ret_max = 0;
@@ -504,7 +508,7 @@ err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, 
         if( err ) break;
       } else {
         // Format error.
-        err = EFORMAT;
+        QIO_GET_CONSTANT_ERROR(err, EFORMAT, "missing string start");
         break;
       }
     }
@@ -535,7 +539,7 @@ err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, 
         errno = 0;
         conv = strtol(tmp, NULL, 16);
         if( (conv == ULONG_MAX || conv == 0) && errno ) {
-          err = errno;
+          err = qio_mkerror_errno();
           break;
         }
 
@@ -559,7 +563,7 @@ err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, 
         errno = 0;
         conv = strtol(tmp, NULL, 16);
         if( (conv == ULONG_MAX || conv == 0) && errno ) {
-          err = errno;
+          err = qio_mkerror_errno();
           break;
         }
 
@@ -571,14 +575,14 @@ err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, 
           err = qio_channel_read_char(false, ch, &chr);
           if( err ) break;
           if( chr != '\\' ) {
-            err = EFORMAT;
+            QIO_GET_CONSTANT_ERROR(err, EILSEQ, "expected surrogate pair");
             break;
           }
           // Read u character
           err = qio_channel_read_char(false, ch, &chr);
           if( err ) break;
           if( chr != 'u' ) {
-            err = EFORMAT;
+            QIO_GET_CONSTANT_ERROR(err, EILSEQ, "expected surrogate pair");
             break;
           }
           tmpi = 0;
@@ -596,7 +600,7 @@ err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, 
           errno = 0;
           conv2 = strtol(tmp, NULL, 16);
           if( (conv2 == ULONG_MAX || conv2 == 0) && errno ) {
-            err = errno;
+            err = qio_mkerror_errno();
             break;
           }
 
@@ -607,7 +611,7 @@ err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, 
             conv = ((conv - 0xD800) << 10) | (conv2 - 0xDC00);
           } else {
             // Format error.
-            err = EFORMAT;
+            QIO_GET_CONSTANT_ERROR(err, EILSEQ, "bad surrogate pair");
             break;
           }
         }
@@ -650,7 +654,7 @@ err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, 
     }
 
     // Not an error to reach EOF with these ones.
-    if( ret_len > 0 && err == EEOF ) err = 0;
+    if( ret_len > 0 && qio_err_to_int(err) == EEOF ) err = 0;
   }
 
   if( err ) {
@@ -675,9 +679,9 @@ unlock:
   return err;
 }
 
-err_t qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch, const char* restrict match, ssize_t len, int skipws)
+qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch, const char* restrict match, ssize_t len, int skipws)
 {
-  err_t err;
+  qioerr err;
   int32_t wchr = -1;
   char chr = -1;
   ssize_t nread = 0;
@@ -729,7 +733,7 @@ err_t qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch,
     }
 
     // ignore EOF when looking for whitespace.
-    if( err == EEOF ) err = 0;
+    if( qio_err_to_int(err) == EEOF ) err = 0;
 
     qio_channel_revert_unlocked(ch);
 
@@ -754,7 +758,7 @@ err_t qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch,
       // we matched the whole thing!
       err = 0;
     } else {
-      err = EFORMAT;
+      QIO_GET_CONSTANT_ERROR(err, EFORMAT, "missing expected literal");
     }
   }
 
@@ -771,7 +775,7 @@ err_t qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch,
     }
 
     // ignore EOF when looking for whitespace.
-    if( err == EEOF ) err = 0;
+    if( qio_err_to_int(err) == EEOF ) err = 0;
 
     qio_channel_revert_unlocked(ch);
 
@@ -791,7 +795,7 @@ revert:
   }
   // Don't set error indicator on EFORMAT because
   // that's probably a temporary error.
-  if( err != EFORMAT ) _qio_channel_set_error_unlocked(ch, err);
+  if( qio_err_to_int(err) != EFORMAT ) _qio_channel_set_error_unlocked(ch, err);
 unlock:
   if( threadsafe ) {
     qio_unlock(&ch->lock);
@@ -800,18 +804,18 @@ unlock:
   return err;
 }
 
-err_t qio_channel_scan_literal_2(const int threadsafe, qio_channel_t* ch, void* match, ssize_t len, int skipws)
+qioerr qio_channel_scan_literal_2(const int threadsafe, qio_channel_t* ch, void* match, ssize_t len, int skipws)
 {
   return qio_channel_scan_literal(threadsafe, ch, (const char*) match, len, skipws);
 }
 
 
-err_t qio_channel_print_literal(const int threadsafe, qio_channel_t* restrict ch, const char* restrict ptr, ssize_t len)
+qioerr qio_channel_print_literal(const int threadsafe, qio_channel_t* restrict ch, const char* restrict ptr, ssize_t len)
 {
   return qio_channel_write_amt(threadsafe, ch, ptr, len);
 }
 
-err_t qio_channel_print_literal_2(const int threadsafe, qio_channel_t* ch, void* ptr, ssize_t len)
+qioerr qio_channel_print_literal_2(const int threadsafe, qio_channel_t* ch, void* ptr, ssize_t len)
 {
   return qio_channel_write_amt(threadsafe, ch, ptr, len);
 }
@@ -824,9 +828,9 @@ err_t qio_channel_print_literal_2(const int threadsafe, qio_channel_t* ch, void*
 // -10 -- variable byte length before (hi-bit 1 means more, little endian)
 // -0x01XX -- read until terminator XX is read
 //  + -- nonzero positive -- read exactly this length.
-err_t qio_channel_write_string(const int threadsafe, const int byteorder, const int64_t str_style, qio_channel_t* restrict ch, const char* restrict ptr, ssize_t len)
+qioerr qio_channel_write_string(const int threadsafe, const int byteorder, const int64_t str_style, qio_channel_t* restrict ch, const char* restrict ptr, ssize_t len)
 {
-  err_t err;
+  qioerr err;
   uint8_t num8 = 0;
   uint16_t num16 = 0;
   uint32_t num32 = 0;
@@ -846,28 +850,33 @@ err_t qio_channel_write_string(const int threadsafe, const int byteorder, const 
   switch (str_style) {
     case -1:
       num8 = len;
-      if( (ssize_t) num8 != len ) err = EOVERFLOW;
-      else err = qio_channel_write_uint8(false, ch, num8);
+      if( (ssize_t) num8 != len ) {
+        QIO_GET_CONSTANT_ERROR(err, EOVERFLOW, "overflow in string length");
+      } else err = qio_channel_write_uint8(false, ch, num8);
       break;
     case -2:
       num16 = len;
-      if( (ssize_t) num16 != len ) err = EOVERFLOW;
-      else err = qio_channel_write_uint16(false, byteorder, ch, num16);
+      if( (ssize_t) num16 != len ) {
+        QIO_GET_CONSTANT_ERROR(err, EOVERFLOW, "overflow in string length");
+      } else err = qio_channel_write_uint16(false, byteorder, ch, num16);
       break;
     case -4:
       num32 = len;
-      if( (ssize_t) num32 != len ) err = EOVERFLOW;
-      else err = qio_channel_write_uint32(false, byteorder, ch, num32);
+      if( (ssize_t) num32 != len ) {
+        QIO_GET_CONSTANT_ERROR(err, EOVERFLOW, "overflow in string length");
+      } else err = qio_channel_write_uint32(false, byteorder, ch, num32);
       break;
     case -8:
       num64 = len;
-      if( (ssize_t) num64 != len ) err = EOVERFLOW;
-      else err = qio_channel_write_uint64(false, byteorder, ch, num64);
+      if( (ssize_t) num64 != len ) {
+        QIO_GET_CONSTANT_ERROR(err, EOVERFLOW, "overflow in string length");
+      } else err = qio_channel_write_uint64(false, byteorder, ch, num64);
       break;
     case -10:
       num64 = len;
-      if( (ssize_t) num64 != len ) err = EOVERFLOW;
-      else err = qio_channel_write_uvarint(false, ch, num64);
+      if( (ssize_t) num64 != len ) {
+        QIO_GET_CONSTANT_ERROR(err, EOVERFLOW, "overflow in string length");
+      } else err = qio_channel_write_uvarint(false, ch, num64);
       break;
     default:
       if( str_style >= 0 ) {
@@ -876,8 +885,9 @@ err_t qio_channel_write_string(const int threadsafe, const int byteorder, const 
         // and truncate it if it's too long?
 
         // Verify that the length matches.
-        if( len != str_style ) err = EOVERFLOW;
-        else err = 0;
+        if( len != str_style ) {
+          QIO_GET_CONSTANT_ERROR(err, EOVERFLOW, "unexpected string length");
+        } else err = 0;
       } else {
         // We're going to write a terminating character.
         use_term = 1;
@@ -940,7 +950,7 @@ int _qio_chr_escape(int32_t chr, int32_t string_end, int string_format, char* tm
   int32_t tmpchr;
   int i = 0;
   int clen = 0;
-  err_t err;
+  qioerr err;
   int width_chars = 0;
   int width_cols = 0;
   int cwidth;
@@ -1061,9 +1071,9 @@ error:
 #undef WRITEC
 }
 
-err_t qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict ptr, ssize_t len)
+qioerr qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict ptr, ssize_t len)
 {
-  err_t err;
+  qioerr err;
   ssize_t i;
   int clen = 1;
   int32_t chr;
@@ -1144,7 +1154,7 @@ err_t qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch,
 
       tmplen = _qio_chr_escape(chr, style->string_end, style->string_format, tmp, NULL, NULL);
       if( tmplen < 0 ) {
-        err = EFORMAT;
+        QIO_GET_CONSTANT_ERROR(err, EILSEQ, "");
         goto rewind;
       }
 
@@ -1195,9 +1205,9 @@ unlock:
 
 // Returns length information for how we would quote ptr
 // without actually saving it anywhere. 
-err_t qio_quote_string_length(uint8_t string_start, uint8_t string_end, uint8_t string_format, const char* restrict ptr, ssize_t len, qio_truncate_info_t* ti)
+qioerr qio_quote_string_length(uint8_t string_start, uint8_t string_end, uint8_t string_format, const char* restrict ptr, ssize_t len, qio_truncate_info_t* ti)
 {
-  err_t err;
+  qioerr err;
   ssize_t i; // how far along the input are we (ie ptr[i])
   ssize_t quoted_bytes = 0; // how many bytes of output?
   ssize_t quoted_chars = 0; // how many chars of output?
@@ -1248,7 +1258,7 @@ err_t qio_quote_string_length(uint8_t string_start, uint8_t string_end, uint8_t 
     tmplen = _qio_chr_escape(chr, string_end, string_format, NULL,
                              &tmpchars, &tmpcols);
     if( tmplen < 0 ) {
-      err = EFORMAT;
+      QIO_GET_CONSTANT_ERROR(err, EILSEQ, "");
       goto error;
     }
     if( quoted_bytes + elipses_size + end_quote_size <= max_bytes &&
@@ -1307,9 +1317,9 @@ error:
 }
 
 
-err_t qio_quote_string(uint8_t string_start, uint8_t string_end, uint8_t string_format, const char* restrict ptr, ssize_t len, const char** out, qio_truncate_info_t* ti_arg)
+qioerr qio_quote_string(uint8_t string_start, uint8_t string_end, uint8_t string_format, const char* restrict ptr, ssize_t len, const char** out, qio_truncate_info_t* ti_arg)
 {
-  err_t err;
+  qioerr err;
   ssize_t i;
   ssize_t ilen;
   ssize_t q;
@@ -1338,7 +1348,7 @@ err_t qio_quote_string(uint8_t string_start, uint8_t string_end, uint8_t string_
   // Now, allocate a string of the right size
   ret = qio_malloc(ti.ret_bytes + 1); // room for \0.
   if( !ret ) {
-    return ENOMEM;
+    return QIO_ENOMEM;
   }
 
   // Now, copy while escaping.
@@ -1369,7 +1379,7 @@ err_t qio_quote_string(uint8_t string_start, uint8_t string_end, uint8_t string_
     // handle escaping for the different formats.
     tmplen = _qio_chr_escape(chr,string_end,string_format,&ret[q], NULL, NULL);
     if( tmplen < 0 ) {
-      err = EFORMAT;
+      QIO_GET_CONSTANT_ERROR(err, EILSEQ, "");
       goto error;
     }
     q += tmplen;
@@ -1437,7 +1447,7 @@ typedef struct number_reading_state_s {
 } number_reading_state_t;
 
 static
-err_t _peek_number_unlocked(qio_channel_t* restrict ch, number_reading_state_t* restrict s, int64_t* restrict amount)
+qioerr _peek_number_unlocked(qio_channel_t* restrict ch, number_reading_state_t* restrict s, int64_t* restrict amount)
 {
 #define NEXT_CHR \
   { \
@@ -1448,7 +1458,7 @@ err_t _peek_number_unlocked(qio_channel_t* restrict ch, number_reading_state_t* 
 #define NEXT_CHR_OR_EOF \
   { \
     err = qio_channel_read_char(false, ch, &chr); \
-    if( err == EEOF ) chr = -1; \
+    if( qio_err_to_int(err) == EEOF ) chr = -1; \
     else if( err ) goto error; \
     chr = towlower(chr); \
   }
@@ -1470,7 +1480,7 @@ err_t _peek_number_unlocked(qio_channel_t* restrict ch, number_reading_state_t* 
 
   int64_t mark_offset;
   int32_t chr;
-  err_t err;
+  qioerr err;
 
   s->sign = 0;
   s->is_nan = 0;
@@ -1516,28 +1526,52 @@ err_t _peek_number_unlocked(qio_channel_t* restrict ch, number_reading_state_t* 
     START_DIGITS;
     // Read infinity.
     NEXT_CHR;
-    if( chr != 'n' ) { err = EFORMAT; goto error; }
+    if( chr != 'n' ) {
+      QIO_GET_CONSTANT_ERROR(err, EFORMAT, "expected 'n' in inf");
+      goto error;
+    }
     NEXT_CHR;
-    if( chr != 'f' ) { err = EFORMAT; goto error; }
+    if( chr != 'f' ) {
+      QIO_GET_CONSTANT_ERROR(err, EFORMAT, "expected 'f' in inf");
+      goto error;
+    }
     s->is_inf = 1;
     NEXT_CHR_OR_EOF;
     if( chr != 'i' ) UNGET_ACCEPT;
     NEXT_CHR;
-    if( chr != 'n' ) { err = EFORMAT; goto error; }
+    if( chr != 'n' ) {
+      QIO_GET_CONSTANT_ERROR(err, EFORMAT, "expected 'n' in infinity");
+      goto error;
+    }
     NEXT_CHR;
-    if( chr != 'i' ) { err = EFORMAT; goto error; }
+    if( chr != 'i' ) {
+      QIO_GET_CONSTANT_ERROR(err, EFORMAT, "expected 'i' in infinity");
+      goto error;
+    }
     NEXT_CHR;
-    if( chr != 't' ) { err = EFORMAT; goto error; }
+    if( chr != 't' ) {
+      QIO_GET_CONSTANT_ERROR(err, EFORMAT, "expected 't' in infinity");
+      goto error;
+    }
     NEXT_CHR;
-    if( chr != 'y' ) { err = EFORMAT; goto error; }
+    if( chr != 'y' ) {
+      QIO_GET_CONSTANT_ERROR(err, EFORMAT, "expected 'y' in infinity");
+      goto error;
+    }
     ACCEPT;
   } else if( s->allow_real && chr == 'n' ) {
     START_DIGITS;
     // Read not a number.
     NEXT_CHR;
-    if( chr != 'a' ) { err = EFORMAT; goto error; }
+    if( chr != 'a' ) {
+      QIO_GET_CONSTANT_ERROR(err, EFORMAT, "expected 'a' in nan");
+      goto error;
+    }
     NEXT_CHR;
-    if( chr != 'n' ) { err = EFORMAT; goto error; }
+    if( chr != 'n' ) {
+      QIO_GET_CONSTANT_ERROR(err, EFORMAT, "expected 'n' in nan");
+      goto error;
+    }
     s->is_nan = 1;
     NEXT_CHR_OR_EOF;
     if( chr != '(' ) UNGET_ACCEPT;
@@ -1548,7 +1582,7 @@ err_t _peek_number_unlocked(qio_channel_t* restrict ch, number_reading_state_t* 
   } else if( chr == '0' ) {
     // Read x or b
     NEXT_CHR_OR_EOF;
-    if( err == EEOF ) {
+    if( qio_err_to_int(err) == EEOF ) {
       s->digits_start = qio_channel_offset_unlocked(ch) - 1;
     } else if( s->allow_base && chr == 'x' ) {
       s->gotbase = s->usebase = 16;
@@ -1571,7 +1605,7 @@ err_t _peek_number_unlocked(qio_channel_t* restrict ch, number_reading_state_t* 
   // Read some digits.
   while( 1 ) {
     //printf("In read digit, chr is %c\n", chr);
-    if( err == EEOF ) ACCEPT;
+    if( qio_err_to_int(err) == EEOF ) ACCEPT;
     if( s->allow_real && chr == s->point_char && s->point == -1 ) {
       NEXT_CHR_OR_EOF;
       s->end = s->point = qio_channel_offset_unlocked(ch);
@@ -1611,7 +1645,7 @@ done:
   err = 0;
   *amount = s->end - mark_offset;
   if( *amount == 0 ) {
-    err = EFORMAT;
+    QIO_GET_CONSTANT_ERROR(err, EFORMAT, "malformed number");
   }
 error:
   qio_channel_revert_unlocked(ch);
@@ -1619,7 +1653,7 @@ error:
 }
 
 
-err_t qio_channel_scan_int(const int threadsafe, qio_channel_t* restrict ch, void* restrict out, size_t len, int issigned)
+qioerr qio_channel_scan_int(const int threadsafe, qio_channel_t* restrict ch, void* restrict out, size_t len, int issigned)
 {
   unsigned long long int num = 0;
   long long int signed_num;
@@ -1631,7 +1665,7 @@ err_t qio_channel_scan_int(const int threadsafe, qio_channel_t* restrict ch, voi
   char* end;
   char* buf = NULL;
   MAYBE_STACK_SPACE(char, buf_onstack);
-  err_t err;
+  qioerr err;
   qio_style_t* style;
 
 
@@ -1654,12 +1688,12 @@ err_t qio_channel_scan_int(const int threadsafe, qio_channel_t* restrict ch, voi
   st.negative_char = tolower(style->negative_char);
 
   err = _peek_number_unlocked(ch, &st, &amount);
-  if( err == EEOF && st.end > 0 ) err = 0; // we tolerate EOF if there's data.
+  if( qio_err_to_int(err) == EEOF && st.end > 0 ) err = 0; // we tolerate EOF if there's data.
   if( err ) goto error;
 
   MAYBE_STACK_ALLOC(char, amount + 1, buf, buf_onstack);
   if( ! buf ) {
-    err = ENOMEM;
+    err = QIO_ENOMEM;
     goto error;
   }
   buf[amount] = '\0';
@@ -1684,12 +1718,12 @@ err_t qio_channel_scan_int(const int threadsafe, qio_channel_t* restrict ch, voi
   num = strtoull( buf + st.digits_start - start, &end, st.gotbase );
   if( num == ULLONG_MAX ) {
     // overflow.
-    err = errno;
+    err = qio_mkerror_errno();
     goto error;
   }
   if( end - buf != st.end - start ) {
     // some kind of format error.
-    err = EFORMAT;
+    QIO_GET_CONSTANT_ERROR(err, EFORMAT, "malformed integer");
     goto error;
   }
 
@@ -1709,38 +1743,46 @@ error:
   switch( signed_len ) {
     case -1:
       *(int8_t*) out = signed_num;
-      if( signed_num > INT8_MAX || signed_num < INT8_MIN ) err = ERANGE;
+      if( signed_num > INT8_MAX || signed_num < INT8_MIN )
+        QIO_GET_CONSTANT_ERROR(err, ERANGE, "read out of bounds integer");
       break;
     case 1:
       *(uint8_t*) out = num;
-      if( num > UINT8_MAX ) err = ERANGE;
+      if( num > UINT8_MAX )
+        QIO_GET_CONSTANT_ERROR(err, ERANGE, "read out of bounds integer");
       break;
     case -2:
       *(int16_t*) out = signed_num;
-      if( signed_num > INT16_MAX || signed_num < INT16_MIN ) err = ERANGE;
+      if( signed_num > INT16_MAX || signed_num < INT16_MIN )
+        QIO_GET_CONSTANT_ERROR(err, ERANGE, "read out of bounds integer");
       break;
     case 2:
       *(uint16_t*) out = num;
-      if( num > UINT16_MAX ) err = ERANGE;
+      if( num > UINT16_MAX )
+        QIO_GET_CONSTANT_ERROR(err, ERANGE, "read out of bounds integer");
       break;
     case -4:
       *(int32_t*) out = signed_num;
-      if( signed_num > INT32_MAX || signed_num < INT32_MIN ) err = ERANGE;
+      if( signed_num > INT32_MAX || signed_num < INT32_MIN )
+        QIO_GET_CONSTANT_ERROR(err, ERANGE, "read out of bounds integer");
       break;
     case 4:
       *(uint32_t*) out = num;
-      if( num > UINT32_MAX ) err = ERANGE;
+      if( num > UINT32_MAX )
+        QIO_GET_CONSTANT_ERROR(err, ERANGE, "read out of bounds integer");
       break;
     case -8:
       *(int64_t*) out = signed_num;
-      //if( signed_num > INT64_MAX || signed_num < INT64_MIN ) err = ERANGE;
+      //if( signed_num > INT64_MAX || signed_num < INT64_MIN )
+      //  QIO_GET_CONSTANT_ERROR(err, ERANGE, "read out of bounds integer");
       break;
     case 8:
       *(uint64_t*) out = num;
-      //if( num > UINT64_MAX ) err = ERANGE;
+      //if( num > UINT64_MAX )
+      //  QIO_GET_CONSTANT_ERROR(err, ERANGE, "read out of bounds integer");
       break;
     default:
-      err = EINVAL;
+      QIO_GET_CONSTANT_ERROR(err, EINVAL, "bad integer type");
   }
 
   MAYBE_STACK_FREE(buf, buf_onstack);
@@ -1754,7 +1796,7 @@ error:
 }
 
 static
-err_t qio_channel_scan_float_or_imag(const int threadsafe, qio_channel_t* restrict ch, void* restrict out, size_t len, bool imag)
+qioerr qio_channel_scan_float_or_imag(const int threadsafe, qio_channel_t* restrict ch, void* restrict out, size_t len, bool imag)
 {
   double num = 0.0;
   number_reading_state_t st;
@@ -1767,7 +1809,7 @@ err_t qio_channel_scan_float_or_imag(const int threadsafe, qio_channel_t* restri
   ssize_t digits_start;
   ssize_t point;
   ssize_t exponent;
-  err_t err;
+  qioerr err;
   qio_style_t* style;
   bool needs_i = 0;
 
@@ -1799,7 +1841,7 @@ err_t qio_channel_scan_float_or_imag(const int threadsafe, qio_channel_t* restri
   st.i_char = style->i_char;
 
   err = _peek_number_unlocked(ch, &st, &amount);
-  if( err == EEOF && st.end > 0 ) err = 0; // we tolerate EOF if there's data.
+  if( qio_err_to_int(err) == EEOF && st.end > 0 ) err = 0; // we tolerate EOF if there's data.
   if( err ) goto error;
 
 
@@ -1807,7 +1849,7 @@ err_t qio_channel_scan_float_or_imag(const int threadsafe, qio_channel_t* restri
     if( st.i_after != -1 ) {
       // OK! we found an i after.
     } else {
-      err = EFORMAT;
+      QIO_GET_CONSTANT_ERROR(err, EFORMAT, "missing i after imaginary number");
       goto error;
     }
   }
@@ -1815,7 +1857,7 @@ err_t qio_channel_scan_float_or_imag(const int threadsafe, qio_channel_t* restri
 
   MAYBE_STACK_ALLOC(char, amount + 4, buf, buf_onstack);
   if( ! buf ) {
-    err = ENOMEM;
+    err = QIO_ENOMEM;
     goto error;
   }
   buf[0] = ' ';
@@ -1852,7 +1894,7 @@ err_t qio_channel_scan_float_or_imag(const int threadsafe, qio_channel_t* restri
       buf[i++] = 'x';
     }
   } else {
-    err = EFORMAT;
+    QIO_GET_CONSTANT_ERROR(err, EFORMAT, "unknown floating point base");
     goto error;
   }
  
@@ -1894,12 +1936,12 @@ err_t qio_channel_scan_float_or_imag(const int threadsafe, qio_channel_t* restri
   num = strtod( buf, &end_conv);
   if( num == 0 && end_conv == buf ) {
     // no conversion is performed.
-    err = EFORMAT;
+    QIO_GET_CONSTANT_ERROR(err, EFORMAT, "not a floating point number");
     goto error;
   }
   if((num == HUGE_VAL||num == -HUGE_VAL||num == 0.0) && errno == ERANGE){
     // overflow or underflow
-    err = ERANGE;
+    QIO_GET_CONSTANT_ERROR(err, ERANGE, "floating point number out of bounds");
     goto error;
   }
 
@@ -1916,7 +1958,7 @@ error:
       *(float*) out = num;
       break;
     default:
-      err = EINVAL;
+      QIO_GET_CONSTANT_ERROR(err, EINVAL, "bad floating point type");
   }
 
   MAYBE_STACK_FREE(buf, buf_onstack);
@@ -1929,11 +1971,11 @@ error:
   return err;
 }
 
-err_t qio_channel_scan_float(const int threadsafe, qio_channel_t* restrict ch, void* restrict out, size_t len)
+qioerr qio_channel_scan_float(const int threadsafe, qio_channel_t* restrict ch, void* restrict out, size_t len)
 {
   return qio_channel_scan_float_or_imag(false, ch, out, len, false);
 }
-err_t qio_channel_scan_imag(const int threadsafe, qio_channel_t* restrict ch, void* restrict out, size_t len)
+qioerr qio_channel_scan_imag(const int threadsafe, qio_channel_t* restrict ch, void* restrict out, size_t len)
 {
   return qio_channel_scan_float_or_imag(false, ch, out, len, true);
 }
@@ -2038,6 +2080,9 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
   return i;
 }
 
+// error codes:
+//  -1 for out of memory
+//  -2 for error in conversion
 static
 int _ftoa(char* restrict dst, size_t size, double num, int base, bool needs_i, const qio_style_t* restrict style )
 {
@@ -2322,7 +2367,7 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, bool needs_i, c
 }
 
 // TODO -- support max_width
-err_t qio_channel_print_int(const int threadsafe, qio_channel_t* restrict ch, const void* restrict ptr, size_t len, int issigned)
+qioerr qio_channel_print_int(const int threadsafe, qio_channel_t* restrict ch, const void* restrict ptr, size_t len, int issigned)
 {
   uint64_t num=0;
   int64_t num_s=0;
@@ -2333,7 +2378,7 @@ err_t qio_channel_print_int(const int threadsafe, qio_channel_t* restrict ch, co
   char* tmp = NULL;
   MAYBE_STACK_SPACE(char, tmp_onstack);
   int got;
-  err_t err;
+  qioerr err;
   qio_style_t* style;
 
   if( threadsafe ) {
@@ -2381,7 +2426,7 @@ err_t qio_channel_print_int(const int threadsafe, qio_channel_t* restrict ch, co
       num_s = *(int64_t*) ptr;
       break;
     default:
-      err = EINVAL;
+      QIO_GET_CONSTANT_ERROR(err, EINVAL, "bad integer type");
   }
   if( err ) goto error;
 
@@ -2401,7 +2446,7 @@ err_t qio_channel_print_int(const int threadsafe, qio_channel_t* restrict ch, co
     got = _ltoa(ch->cached_cur, VOID_PTR_DIFF(ch->cached_end,ch->cached_cur), 
                 num, isneg, base, style);
     if( got < 0 ) {
-      err = EFORMAT;
+      QIO_GET_CONSTANT_ERROR(err, EINVAL, "unknown base or bad width");
       goto error;
     } else if( got < VOID_PTR_DIFF(ch->cached_end,ch->cached_cur) ) {
       ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, got);
@@ -2421,7 +2466,7 @@ err_t qio_channel_print_int(const int threadsafe, qio_channel_t* restrict ch, co
     // copy that in to the buffer.
     MAYBE_STACK_ALLOC(char, max, tmp, tmp_onstack);
     if( ! tmp ) {
-      err = ENOMEM;
+      err = QIO_ENOMEM;
       goto error;
     }
 
@@ -2429,7 +2474,7 @@ err_t qio_channel_print_int(const int threadsafe, qio_channel_t* restrict ch, co
     got = _ltoa(tmp, max,
                 num, isneg, base, style);
     if( got < 0 ) {
-      err = EFORMAT;
+      QIO_GET_CONSTANT_ERROR(err, EINVAL, "unknown base or bad width");
       goto error;
     } else if( got < max ) {
       err = qio_channel_write_amt(false, ch, tmp, got);
@@ -2458,14 +2503,14 @@ error:
 
 // TODO -- support max_width.
 static
-err_t qio_channel_print_float_or_imag(const int threadsafe, qio_channel_t* restrict ch, const void* restrict ptr, size_t len, bool imag)
+qioerr qio_channel_print_float_or_imag(const int threadsafe, qio_channel_t* restrict ch, const void* restrict ptr, size_t len, bool imag)
 {
   int max = MAX_DOUBLE_DIGITS;
   char* buf = NULL;
   MAYBE_STACK_SPACE(char, buf_onstack);
   int got;
   int base;
-  err_t err;
+  qioerr err;
   double num;
   qio_style_t* style;
   bool needs_i;
@@ -2492,7 +2537,7 @@ err_t qio_channel_print_float_or_imag(const int threadsafe, qio_channel_t* restr
       num = *(double*) ptr;
       break;
     default:
-      err = EINVAL;
+      QIO_GET_CONSTANT_ERROR(err, EINVAL, "bad floating point type");
   }
   if( err ) goto error;
 
@@ -2502,7 +2547,8 @@ err_t qio_channel_print_float_or_imag(const int threadsafe, qio_channel_t* restr
     got = _ftoa(ch->cached_cur, VOID_PTR_DIFF(ch->cached_end, ch->cached_cur), 
                 num, base, needs_i, style);
     if( got < 0 ) {
-      err = EFORMAT;
+      if( got == -1 ) err = QIO_ENOMEM;
+      QIO_GET_CONSTANT_ERROR(err, EINVAL, "converting floating point number to string");
       goto error;
     } else if( got < VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) ) {
       ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, got);
@@ -2522,14 +2568,14 @@ err_t qio_channel_print_float_or_imag(const int threadsafe, qio_channel_t* restr
     // copy that in to the buffer.
     MAYBE_STACK_ALLOC(char, max, buf, buf_onstack);
     if( ! buf ) {
-      err = ENOMEM;
+      err = QIO_ENOMEM;
       goto error;
     }
 
     // Print it all to buf
     got = _ftoa(buf, max, num, base, needs_i, style);
     if( got < 0 ) {
-      err = EFORMAT;
+      QIO_GET_CONSTANT_ERROR(err, EINVAL, "converting floating point number to string");
       goto error;
     } else if( got < max ) {
       err = qio_channel_write_amt(false, ch, buf, got);
@@ -2555,20 +2601,20 @@ error:
 
 }
 
-err_t qio_channel_print_float(const int threadsafe, qio_channel_t* restrict ch, const void* restrict ptr, size_t len)
+qioerr qio_channel_print_float(const int threadsafe, qio_channel_t* restrict ch, const void* restrict ptr, size_t len)
 {
   return qio_channel_print_float_or_imag(threadsafe, ch, ptr, len, false);
 }
-err_t qio_channel_print_imag(const int threadsafe, qio_channel_t* restrict ch, const void* restrict ptr, size_t len)
+qioerr qio_channel_print_imag(const int threadsafe, qio_channel_t* restrict ch, const void* restrict ptr, size_t len)
 {
   return qio_channel_print_float_or_imag(threadsafe, ch, ptr, len, true);
 }
 
 
-err_t qio_channel_scan_complex(const int threadsafe, qio_channel_t* restrict ch, void* restrict re_out, void* restrict im_out, size_t len)
+qioerr qio_channel_scan_complex(const int threadsafe, qio_channel_t* restrict ch, void* restrict re_out, void* restrict im_out, size_t len)
 {
   int32_t chr;
-  err_t err;
+  qioerr err;
 
   if( threadsafe ) {
     err = qio_lock(&ch->lock);
@@ -2585,7 +2631,7 @@ err_t qio_channel_scan_complex(const int threadsafe, qio_channel_t* restrict ch,
   if( err ) goto rewind;
 
   if( chr == '(' && ch->style.complex_style == (QIO_COMPLEX_FORMAT_READ_STRICT | QIO_COMPLEX_FORMAT_ABI) ) {
-    err = EFORMAT;
+    QIO_GET_CONSTANT_ERROR(err, EFORMAT, "missing ( when reading (#.#,#.#) complex");
     goto rewind;
   }
 
@@ -2598,7 +2644,7 @@ err_t qio_channel_scan_complex(const int threadsafe, qio_channel_t* restrict ch,
     if( err ) goto rewind;
 
     if( chr != ',' ) {
-      err = EFORMAT;
+      QIO_GET_CONSTANT_ERROR(err, EFORMAT, "missing , when reading (#.#,#.#) complex");
       goto rewind;
     }
 
@@ -2609,7 +2655,7 @@ err_t qio_channel_scan_complex(const int threadsafe, qio_channel_t* restrict ch,
     if( err ) goto rewind;
 
     if( chr != ')' ) {
-      err = EFORMAT;
+      QIO_GET_CONSTANT_ERROR(err, EFORMAT, "missing ) when reading (#.#,#.#) complex");
       goto rewind;
     }
   } else {
@@ -2659,7 +2705,7 @@ err_t qio_channel_scan_complex(const int threadsafe, qio_channel_t* restrict ch,
             *(float*) im_out = - *(float*) im_out;
             break;
           default:
-            err = EINVAL;
+            QIO_GET_CONSTANT_ERROR(err, EINVAL, "bad floating point type");
         }
       }
       if( err ) goto rewind;
@@ -2669,7 +2715,7 @@ err_t qio_channel_scan_complex(const int threadsafe, qio_channel_t* restrict ch,
       err = qio_channel_read_char(false, ch, &chr);
       if( err ) goto rewind;
       if( chr != 'i' ) {
-        err = EFORMAT;
+        QIO_GET_CONSTANT_ERROR(err, EFORMAT, "missing i when reading #.# + #.#i complex");
         goto rewind;
       }
     } else {
@@ -2688,7 +2734,7 @@ err_t qio_channel_scan_complex(const int threadsafe, qio_channel_t* restrict ch,
           err = 0;
           break;
         default:
-          err = EINVAL;
+          QIO_GET_CONSTANT_ERROR(err, EINVAL, "bad floating point type");
       }
 
       // unget that character.
@@ -2725,10 +2771,10 @@ unlock:
   return err;
 }
 
-err_t qio_channel_skip_past_newline(const int threadsafe, qio_channel_t* restrict ch, int skipOnlyWs)
+qioerr qio_channel_skip_past_newline(const int threadsafe, qio_channel_t* restrict ch, int skipOnlyWs)
 {
   int32_t c = 0;
-  err_t err;
+  qioerr err;
   int needs_backup = 0;
   int64_t lastpos;
 
@@ -2747,7 +2793,7 @@ err_t qio_channel_skip_past_newline(const int threadsafe, qio_channel_t* restric
     err = qio_channel_read_char(threadsafe, ch, &c);
     if( err  || c == '\n' ) break;
     if( skipOnlyWs && ! iswspace(c) ) {
-      err = EFORMAT;
+      QIO_GET_CONSTANT_ERROR(err, EFORMAT, "encountered non-whitespace");
       needs_backup = 1; // we have to unread this character.
       break;
     }
@@ -2772,15 +2818,15 @@ unlock:
   return err;
 }
 
-err_t qio_channel_write_newline(const int threadsafe, qio_channel_t* restrict ch)
+qioerr qio_channel_write_newline(const int threadsafe, qio_channel_t* restrict ch)
 {
   char c = '\n';
   return qio_channel_write_amt(threadsafe, ch, &c, 1);
 }
 
-static err_t maybe_left_pad(qio_channel_t* restrict ch, int gotsize)
+static qioerr maybe_left_pad(qio_channel_t* restrict ch, int gotsize)
 {
-  err_t err = 0;
+  qioerr err = 0;
   // left justify == pad on the right
   // right justify == pad on the left!
   if( ! ch->style.leftjustify ) {
@@ -2791,9 +2837,9 @@ static err_t maybe_left_pad(qio_channel_t* restrict ch, int gotsize)
   }
   return err;
 }
-static err_t maybe_right_pad(qio_channel_t* restrict ch, int gotsize)
+static qioerr maybe_right_pad(qio_channel_t* restrict ch, int gotsize)
 {
-  err_t err = 0;
+  qioerr err = 0;
   if( ch->style.leftjustify ) {
     while( gotsize < ch->style.min_width_columns && !err ) {
       err = qio_channel_write_char(false, ch, ch->style.pad_char);
@@ -2804,7 +2850,7 @@ static err_t maybe_right_pad(qio_channel_t* restrict ch, int gotsize)
 }
 
 
-err_t qio_channel_print_complex(const int threadsafe, qio_channel_t* restrict ch, const void* restrict re_ptr, const void* restrict im_ptr, size_t len)
+qioerr qio_channel_print_complex(const int threadsafe, qio_channel_t* restrict ch, const void* restrict re_ptr, const void* restrict im_ptr, size_t len)
 {
   int re_max = MAX_DOUBLE_DIGITS;
   int im_max = MAX_DOUBLE_DIGITS;
@@ -2814,7 +2860,7 @@ err_t qio_channel_print_complex(const int threadsafe, qio_channel_t* restrict ch
   MAYBE_STACK_SPACE(char, im_buf_onstack);
   double re_num, im_num;
   int re_got, im_got;
-  err_t err;
+  qioerr err;
   int im_neg = 0;
   int re_isnan = 0;
   int im_isnan = 0;
@@ -2840,7 +2886,7 @@ err_t qio_channel_print_complex(const int threadsafe, qio_channel_t* restrict ch
       im_num = *(double*)im_ptr;
       break;
     default:
-      return EINVAL;
+      QIO_GET_CONSTANT_ERROR(err, EINVAL, "bad floating point type");
   }
 
   re_isnan = isnan(re_num);
@@ -2895,14 +2941,14 @@ err_t qio_channel_print_complex(const int threadsafe, qio_channel_t* restrict ch
   while( 1 ) {
     MAYBE_STACK_ALLOC(char, re_max, re_buf, re_buf_onstack);
     if( ! re_buf ) {
-      err = ENOMEM;
+      err = QIO_ENOMEM;
       goto rewind;
     }
 
     // Convert re_num8 into digits in re_buf
     re_got = _ftoa(re_buf, re_max, re_num, base, false, style);
     if( re_got < 0 ) {
-      err = EFORMAT;
+      QIO_GET_CONSTANT_ERROR(err, EFORMAT, "error in floating point to string conversion");
       goto rewind;
     } else if( re_got < re_max ) {
       break;
@@ -2922,14 +2968,14 @@ err_t qio_channel_print_complex(const int threadsafe, qio_channel_t* restrict ch
   while( 1 ) {
     MAYBE_STACK_ALLOC(char, im_max, im_buf, im_buf_onstack);
     if( ! im_buf ) {
-      err = ENOMEM;
+      err = QIO_ENOMEM;
       goto rewind;
     }
 
     // Convert im_num8 into digits in im_buf
     im_got = _ftoa(im_buf, im_max, im_num, base, imag_needs_i, style);
     if( im_got < 0 ) {
-      err = EFORMAT;
+      QIO_GET_CONSTANT_ERROR(err, EFORMAT, "error in floating point to string conversion");
       goto rewind;
     } else if( im_got < im_max ) {
       break;
@@ -2988,7 +3034,7 @@ err_t qio_channel_print_complex(const int threadsafe, qio_channel_t* restrict ch
     err = maybe_right_pad(ch, width);
     if( err ) goto rewind;
   } else {
-    err = EINVAL;
+    QIO_GET_CONSTANT_ERROR(err, EINVAL, "unknow complex format");
     goto rewind;
   }
 
@@ -3017,8 +3063,8 @@ unlock:
 }
 
 
-err_t _qio_channel_read_char_slow_unlocked(qio_channel_t* restrict ch, int32_t* restrict chr) {
-  err_t err=0;
+qioerr _qio_channel_read_char_slow_unlocked(qio_channel_t* restrict ch, int32_t* restrict chr) {
+  qioerr err=0;
   int32_t gotch;
   uint32_t codepoint=0, state;
 
@@ -3112,16 +3158,16 @@ err_t _qio_channel_read_char_slow_unlocked(qio_channel_t* restrict ch, int32_t* 
       err = 0;
     } else if( gotch < 0 ) {
       *chr = -1; // ie like EOF.
-      err = -gotch;
+      err = qio_int_to_err(-gotch);
     } else {
       *chr = 0xfffd; // replacement character
-      err = EILSEQ;
+      QIO_GET_CONSTANT_ERROR(err, EILSEQ, "");
     }
   } else if( qio_glocale_utf8 == QIO_GLOCALE_ASCII ) {
     // character == byte.
     gotch = qio_channel_read_byte(false, ch);
     if( gotch < 0 ) {
-      err = -gotch;
+      err = qio_int_to_err(-gotch);
       *chr = -1;
     } else {
       *chr = gotch;
@@ -3149,7 +3195,7 @@ err_t _qio_channel_read_char_slow_unlocked(qio_channel_t* restrict ch, int32_t* 
         // (even though we had MB_LEN_MAX!).
         // errno should be EILSEQ.
         *chr = -3; // invalid character... think 0xfffd for unicode
-        err = EILSEQ;
+        QIO_GET_CONSTANT_ERROR(err, EILSEQ, "");
       } else {
         *chr = tmp_chr;
         err = 0;
@@ -3162,7 +3208,7 @@ err_t _qio_channel_read_char_slow_unlocked(qio_channel_t* restrict ch, int32_t* 
         // We always read 1 character at least.
         gotch = qio_channel_read_byte(false, ch);
         if( gotch < 0 ) {
-          err = -got;
+          err = qio_int_to_err(-got);
           *chr = -1;
           break;
         }
@@ -3183,7 +3229,7 @@ err_t _qio_channel_read_char_slow_unlocked(qio_channel_t* restrict ch, int32_t* 
           // it contains an invalid multibyte sequence.
           // errno should be EILSEQ.
           *chr = -3; // invalid character... think 0xfffd for unicode
-          err = EILSEQ;
+          QIO_GET_CONSTANT_ERROR(err, EILSEQ, "");
           break;
         } else if( got == (size_t) -2 ) {
           // continue as long as we have an incomplete char.
@@ -3202,7 +3248,7 @@ c_string qio_encode_to_string(int32_t chr)
 {
   int nbytes;
   char* buf;
-  err_t err;
+  qioerr err;
 
   nbytes = qio_nbytes_char(chr);
   if( nbytes == 0 ) {
@@ -3222,9 +3268,9 @@ c_string qio_encode_to_string(int32_t chr)
   return buf;
 }
 
-err_t _qio_channel_write_char_slow_unlocked(qio_channel_t* restrict ch, int32_t chr) {
+qioerr _qio_channel_write_char_slow_unlocked(qio_channel_t* restrict ch, int32_t chr) {
   char mbs[MB_LEN_MAX];
-  err_t err;
+  qioerr err;
 
   if( qio_glocale_utf8 == QIO_GLOCALE_UTF8 ) {
     // #1           00000000 0xxxxxxx <-> 0xxxxxxx
@@ -3233,7 +3279,7 @@ err_t _qio_channel_write_char_slow_unlocked(qio_channel_t* restrict ch, int32_t 
     // #4  000uuuzz zzzzyyyy yyxxxxxx <-> 11110uuu 10zzzzzz 10yyyyyy 10xxxxxx
 
     if( chr < 0 ) {
-      err = EILSEQ;
+      QIO_GET_CONSTANT_ERROR(err, EILSEQ, "");
     } else if( chr < 0x80 ) {
       // OK, we got a 1-byte character; case #1
       err = qio_channel_write_byte(false, ch, chr);
@@ -3268,12 +3314,12 @@ err_t _qio_channel_write_char_slow_unlocked(qio_channel_t* restrict ch, int32_t 
     memset(&ps, 0, sizeof(mbstate_t));
     got = wcrtomb(mbs, chr, &ps);
     if( got == (size_t) -1 ) {
-      err = EILSEQ;
+      QIO_GET_CONSTANT_ERROR(err, EILSEQ, "");
     } else {
       err = qio_channel_write_amt(false, ch, mbs, got);
     }
 #else
-    err = ENOSYS;
+    QIO_GET_CONSTANT_ERROR(err, ENOSYS, "missing wctype.h");
 #endif
   }
 

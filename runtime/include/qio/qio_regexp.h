@@ -116,6 +116,6 @@ int64_t qio_regexp_replace(qio_regexp_t* regexp, const char* repl, int64_t repl_
 //  - if there was a match, put it after the match
 //  - if there was an error, we do not adjust the channel position afterwards
 //
-err_t qio_regexp_channel_match(qio_regexp_t* regexp, const int threadsafe, struct qio_channel_s* ch, int64_t maxlen, int anchor, qio_bool can_discard, qio_bool keep_unmatched, qio_bool keep_whole_pattern, qio_regexp_string_piece_t* submatch, int64_t nsubmatch);
+qioerr qio_regexp_channel_match(qio_regexp_t* regexp, const int threadsafe, struct qio_channel_s* ch, int64_t maxlen, int anchor, qio_bool can_discard, qio_bool keep_unmatched, qio_bool keep_whole_pattern, qio_regexp_string_piece_t* submatch, int64_t nsubmatch);
 
 #endif

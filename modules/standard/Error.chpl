@@ -7,12 +7,12 @@ proc quote_string(s:string, len:ssize_t) {
   extern const QIO_STRING_FORMAT_CHPL: uint(8);
   extern proc qio_quote_string(s:uint(8), e:uint(8), f:uint(8),
                                ptr: c_string, len:ssize_t,
-                               ref ret:c_string, ti: c_void_ptr): err_t;
+                               ref ret:c_string, ti: c_void_ptr): syserr;
   extern proc qio_strdup(s: c_string): c_string;
 
   var ret: c_string;
   // 34 is ASCII double quote
-  var err: err_t = qio_quote_string(34:uint(8), 34:uint(8),
+  var err: syserr = qio_quote_string(34:uint(8), 34:uint(8),
                                     QIO_STRING_FORMAT_CHPL,
                                     s.c_str(), len, ret, c_nil);
 

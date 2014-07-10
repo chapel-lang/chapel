@@ -167,14 +167,14 @@ void _deque_destroy_nodes(deque_node_t* start, deque_node_t* finish)
 }
 
 static inline
-err_t _deque_create_nodes(const ssize_t item_size, deque_node_t* start, deque_node_t* finish)
+qioerr _deque_create_nodes(const ssize_t item_size, deque_node_t* start, deque_node_t* finish)
 {
   deque_node_t* cur;
   for( cur = start; cur < finish; ++cur ) {
     cur->data = deque_calloc( __deque_buf_size(item_size), item_size );
     if( ! cur->data ) {
       _deque_destroy_nodes(start, cur);
-      return ENOMEM;
+      return QIO_ENOMEM;
     }
   }
 
@@ -182,20 +182,20 @@ err_t _deque_create_nodes(const ssize_t item_size, deque_node_t* start, deque_no
 }
 
 static inline
-err_t _deque_initialize_map(const ssize_t item_size, deque_t* d, ssize_t num_elements)
+qioerr _deque_initialize_map(const ssize_t item_size, deque_t* d, ssize_t num_elements)
 {
   const ssize_t buf_size = __deque_buf_size(item_size);
   const ssize_t num_nodes = (num_elements / buf_size) + 1;
   deque_node_t* nstart;
   deque_node_t* nfinish;
-  err_t err;
+  qioerr err;
 
-  if( num_elements < 0 ) return EINVAL;
+  if( num_elements < 0 ) QIO_RETURN_CONSTANT_ERROR(EINVAL, "negative num_elements");
 
   d->map_size = _DEQUE_MAX(_DEQUE_INITIAL_MAP_SIZE, num_nodes + 2);
   d->map = (deque_node_t*) deque_calloc(d->map_size, sizeof(deque_node_t));
   if( ! d->map ) {
-    return ENOMEM;
+    return QIO_ENOMEM;
   }
 
   // For "small" maps (needing less than _M_map_size nodes), allocation
@@ -223,7 +223,7 @@ err_t _deque_initialize_map(const ssize_t item_size, deque_t* d, ssize_t num_ele
 }
 
 static inline
-err_t deque_init(const ssize_t item_size, deque_t* d, ssize_t num_elements)
+qioerr deque_init(const ssize_t item_size, deque_t* d, ssize_t num_elements)
 {
   return _deque_initialize_map(item_size, d, num_elements);
 }
@@ -280,10 +280,10 @@ ssize_t deque_size(const ssize_t item_size, deque_t* d)
 // These functions are in the C file.
 void _deque_map_copy_forward(deque_node_t* start, deque_node_t* end, deque_node_t* dst);
 void _deque_map_copy_backward(deque_node_t* start, deque_node_t* end, deque_node_t* dst_end);
-err_t _deque_reallocate_map(const ssize_t item_size, const ssize_t buf_size, deque_t* d, ssize_t nodes_to_add, char add_at_front);
+qioerr _deque_reallocate_map(const ssize_t item_size, const ssize_t buf_size, deque_t* d, ssize_t nodes_to_add, char add_at_front);
 
 static inline
-err_t _deque_reserve_map_at_back(const ssize_t item_size, deque_t* d, ssize_t nodes_to_add)
+qioerr _deque_reserve_map_at_back(const ssize_t item_size, deque_t* d, ssize_t nodes_to_add)
 {
   if( nodes_to_add + 1 > d->map_size - (d->finish.node - d->map) ) {
     return _deque_reallocate_map(item_size, __deque_buf_size(item_size), d, nodes_to_add, 0);
@@ -293,7 +293,7 @@ err_t _deque_reserve_map_at_back(const ssize_t item_size, deque_t* d, ssize_t no
 }
 
 static inline
-err_t _deque_reserve_map_at_front(const ssize_t item_size, deque_t* d, ssize_t nodes_to_add)
+qioerr _deque_reserve_map_at_front(const ssize_t item_size, deque_t* d, ssize_t nodes_to_add)
 {
   if( nodes_to_add > (d->start.node - d->map) ) {
     return _deque_reallocate_map(item_size, __deque_buf_size(item_size), d, nodes_to_add, 1);
@@ -304,17 +304,17 @@ err_t _deque_reserve_map_at_front(const ssize_t item_size, deque_t* d, ssize_t n
 
 // Called only if _M_impl._M_finish._M_cur == _M_impl._M_finish._M_last - 1.
 static inline
-err_t _deque_push_back_aux(const ssize_t item_size, deque_t* d, void* value)
+qioerr _deque_push_back_aux(const ssize_t item_size, deque_t* d, void* value)
 {
   void *newdata;
-  err_t err;
+  qioerr err;
 
   err = _deque_reserve_map_at_back(item_size, d, 1);
   if( err ) return err;
 
   newdata = deque_calloc( __deque_buf_size(item_size), item_size );
   if( !newdata ) {
-    return ENOMEM;
+    return QIO_ENOMEM;
   }
 
   (d->finish.node + 1)->data = newdata;
@@ -330,17 +330,17 @@ err_t _deque_push_back_aux(const ssize_t item_size, deque_t* d, void* value)
 
 // Called only if _M_impl._M_start._M_cur == _M_impl._M_start._M_first.
 static inline
-err_t _deque_push_front_aux(const ssize_t item_size, deque_t* d, void* value)
+qioerr _deque_push_front_aux(const ssize_t item_size, deque_t* d, void* value)
 {
   void *newdata;
-  err_t err;
+  qioerr err;
 
   err = _deque_reserve_map_at_front(item_size, d, 1);
   if( err ) return err;
 
   newdata = deque_calloc( __deque_buf_size(item_size), item_size );
   if( !newdata ) {
-    return ENOMEM;
+    return QIO_ENOMEM;
   }
 
   (d->start.node - 1)->data = newdata;
@@ -387,7 +387,7 @@ void _deque_pop_front_aux(const ssize_t item_size, deque_t* d)
 }
 
 static inline
-err_t deque_push_front(const ssize_t item_size, deque_t* d, void* value)
+qioerr deque_push_front(const ssize_t item_size, deque_t* d, void* value)
 {
   if( d->start.cur != d->start.first ) {
     //construct(d->start.cur - item_size, value);
@@ -402,7 +402,7 @@ err_t deque_push_front(const ssize_t item_size, deque_t* d, void* value)
 }
 
 static inline
-err_t deque_push_back(const ssize_t item_size, deque_t* d, void* value)
+qioerr deque_push_back(const ssize_t item_size, deque_t* d, void* value)
 {
   if( d->finish.cur != PTR_ADDBYTES(d->finish.last, -item_size) ) {
     //construct(d->finish.cur, value);

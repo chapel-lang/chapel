@@ -360,10 +360,10 @@ void qio_regexp_channel_discard(qio_channel_s* ch, int64_t cur, int64_t min)
 }
 
 
-err_t qio_regexp_channel_match(qio_regexp_t* regexp, const int threadsafe, struct qio_channel_s* ch, int64_t maxlen, int anchor, qio_bool can_discard, qio_bool keep_unmatched, qio_bool keep_whole_pattern, qio_regexp_string_piece_t* captures, int64_t ncaptures)
+qioerr qio_regexp_channel_match(qio_regexp_t* regexp, const int threadsafe, struct qio_channel_s* ch, int64_t maxlen, int anchor, qio_bool can_discard, qio_bool keep_unmatched, qio_bool keep_whole_pattern, qio_regexp_string_piece_t* captures, int64_t ncaptures)
 {
   RE2* re = (RE2*) regexp->regexp;
-  err_t err;
+  qioerr err;
   void* bufstart = NULL;
   void* bufend = NULL;
   RE2::Anchor ranchor = RE2::UNANCHORED;
@@ -419,7 +419,7 @@ err_t qio_regexp_channel_match(qio_regexp_t* regexp, const int threadsafe, struc
 
   if( ! qio_channel_has_mark_unlocked(ch) ) {
     // Should always have a mark when calling this function.
-    err = EINVAL;
+    QIO_GET_CONSTANT_ERROR(err, EINVAL, "missing mark");
     goto markerror;
   }
 
@@ -428,12 +428,12 @@ err_t qio_regexp_channel_match(qio_regexp_t* regexp, const int threadsafe, struc
   if( need <= 0 ) need = 1;
   if( need > 1024) need = 1024;
   err = qio_channel_require_read(false, ch, need);
-  if( err == EEOF ) err = 0; // ignore EOF
+  if( qio_err_to_int(err) == EEOF ) err = 0; // ignore EOF
   if( err ) goto error;
 
   // Get the current buffer information...
   err = qio_channel_begin_peek_cached(false, ch, &bufstart, &bufend);
-  if( err == EEOF ) err = 0; // ignore EOF
+  if( qio_err_to_int(err) == EEOF ) err = 0; // ignore EOF
   if( err ) goto error;
 
   // We never call end_peek_cached. (should be OK since we do unlock)
@@ -473,9 +473,9 @@ err_t qio_regexp_channel_match(qio_regexp_t* regexp, const int threadsafe, struc
 error:
 
   // Get channel errors from within MatchSpecial1/qio_channel_read_byte 
-  if( err == EEOF ) err = 0; // ignore EOF
+  if( qio_err_to_int(err) == EEOF ) err = 0; // ignore EOF
   if( ! err ) err = qio_channel_error(ch);
-  if( err == EEOF ) err = 0; // ignore EOF
+  if( qio_err_to_int(err) == EEOF ) err = 0; // ignore EOF
 
   end_offset = qio_channel_offset_unlocked(ch);
   qio_channel_revert_unlocked(ch);
@@ -500,7 +500,7 @@ markerror:
     qio_unlock(&ch->lock);
   }
 
-  if( err == 0 && ! found ) err = EFORMAT;
+  if( err == 0 && ! found ) QIO_GET_CONSTANT_ERROR(err, EFORMAT, "no match");
 
   return err;
 }

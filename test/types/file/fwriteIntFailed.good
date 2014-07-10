@@ -1,1 +1,1 @@
-fwriteIntFailed.chpl:2: error: Invalid argument in file.writer with path "fwriteIntFailed.txt"
+fwriteIntFailed.chpl:2: error: Bad file descriptor: not writeable in file.writer with path "fwriteIntFailed.txt"

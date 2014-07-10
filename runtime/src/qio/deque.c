@@ -28,7 +28,7 @@ void _deque_map_copy_backward(deque_node_t* start, deque_node_t* end, deque_node
 }
 
 
-err_t _deque_reallocate_map(const ssize_t item_size, const ssize_t buf_size, deque_t* d, ssize_t nodes_to_add, char add_at_front) {
+qioerr _deque_reallocate_map(const ssize_t item_size, const ssize_t buf_size, deque_t* d, ssize_t nodes_to_add, char add_at_front) {
   const ssize_t old_num_nodes = d->finish.node - d->start.node + 1;
   const ssize_t new_num_nodes = old_num_nodes + nodes_to_add;
 
@@ -46,7 +46,7 @@ err_t _deque_reallocate_map(const ssize_t item_size, const ssize_t buf_size, deq
   } else {
     ssize_t new_map_size = d->map_size + _DEQUE_MAX(d->map_size, nodes_to_add) + 2;
     deque_node_t* new_map = (deque_node_t*) deque_calloc(new_map_size, sizeof(deque_node_t));
-    if( ! new_map ) return ENOMEM;
+    if( ! new_map ) return QIO_ENOMEM;
 
     new_nstart = new_map + (new_map_size - new_num_nodes ) / 2 + (add_at_front ? nodes_to_add : 0 );
     // copy from d->start.node to d->finish.node + 1 to new_nstart 

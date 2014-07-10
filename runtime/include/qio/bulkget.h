@@ -13,7 +13,7 @@
 // under normal program flow.
 qbytes_t* bulk_get_bytes(int64_t src_locale, qbytes_t* src_addr);
 
-err_t bulk_put_buffer(int64_t dst_locale, void* dst_addr, int64_t dst_len,
+qioerr bulk_put_buffer(int64_t dst_locale, void* dst_addr, int64_t dst_len,
                       qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end);
 
 

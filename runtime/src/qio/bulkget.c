@@ -10,7 +10,7 @@ qbytes_t* bulk_get_bytes(int64_t src_locale, qbytes_t* src_addr)
 {
   qbytes_t* ret;
   int64_t src_len;
-  err_t err;
+  qioerr err;
 
   // First, get the length of the bytes.
   chpl_gen_comm_get( &src_len, src_locale, & src_addr->len, sizeof(int64_t), CHPL_TYPE_int64_t, 1, -1, "<internal>");
@@ -31,7 +31,7 @@ qbytes_t* bulk_get_bytes(int64_t src_locale, qbytes_t* src_addr)
   return ret; 
 }
 
-err_t bulk_put_buffer(int64_t dst_locale, void* dst_addr, int64_t dst_len,
+qioerr bulk_put_buffer(int64_t dst_locale, void* dst_addr, int64_t dst_len,
                       qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end)
 {
   int64_t num_bytes = qbuffer_iter_num_bytes(start, end);
@@ -40,12 +40,12 @@ err_t bulk_put_buffer(int64_t dst_locale, void* dst_addr, int64_t dst_len,
   size_t iovcnt;
   size_t i,j;
   MAYBE_STACK_SPACE(struct iovec, iov_onstack);
-  err_t err;
+  qioerr err;
  
-  if( num_bytes < 0 || num_parts < 0 || start.offset < buf->offset_start || end.offset > buf->offset_end ) return EINVAL;
+  if( num_bytes < 0 || num_parts < 0 || start.offset < buf->offset_start || end.offset > buf->offset_end )  QIO_RETURN_CONSTANT_ERROR(EINVAL, "range outside of buffer");
 
   MAYBE_STACK_ALLOC(struct iovec, num_parts, iov, iov_onstack);
-  if( ! iov ) return ENOMEM;
+  if( ! iov ) return QIO_ENOMEM;
 
   err = qbuffer_to_iov(buf, start, end, num_parts, iov, NULL, &iovcnt);
   if( err ) goto error;
@@ -71,7 +71,7 @@ err_t bulk_put_buffer(int64_t dst_locale, void* dst_addr, int64_t dst_len,
   return 0;
 
 error_nospace:
-  err = EMSGSIZE;
+  QIO_RETURN_CONSTANT_ERROR(EMSGSIZE, "no space in buffer");
 error:
   MAYBE_STACK_FREE(iov, iov_onstack);
   return err;

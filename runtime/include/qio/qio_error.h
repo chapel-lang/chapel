@@ -2,12 +2,21 @@
 #define _QIO_ERROR_H
 
 #include "sys_basic.h"
+#include <assert.h>
+
+#define QIO_ERROR_DOUBLE_CHECK 0
 
 typedef int err_t;
 
 struct qio_err_s {
   int code;
   const char* const_msg;
+  // These are not currently output but could be output
+  // in some kind of debug mode. For now, we save them
+  // for debugging purposes.
+  const char* const_fn;
+  const char* const_file;
+  int lineno;
 };
 // qioerr is meant to store either an error code directly
 // or a pointer to a struct err_s. There are several ways
@@ -67,9 +76,16 @@ static inline qioerr qio_mkerror_errno(void) {
   return qio_int_to_err(errno);
 }
 #define QIO_GET_CONSTANT_ERROR(ptr,code,note) { \
-  static const struct qio_err_s qio_macro_tmp_err__ = {code, note}; \
+  static const struct qio_err_s qio_macro_tmp_err__ = {code, note, __func__, __FILE__, __LINE__}; \
   ptr = &qio_macro_tmp_err__; \
-  assert( qio_err_to_int(ptr) == code ); \
+  if( QIO_ERROR_DOUBLE_CHECK ) \
+    assert( qio_err_to_int(ptr) == code ); \
+}
+#define QIO_RETURN_CONSTANT_ERROR(code,note) { \
+  static const struct qio_err_s qio_macro_tmp_err__ = {code, note, __func__, __FILE__, __LINE__}; \
+  if( QIO_ERROR_DOUBLE_CHECK ) \
+    assert( qio_err_to_int(&qio_macro_tmp_err__) == code ); \
+  return &qio_macro_tmp_err__; \
 }
 
 // EEOF 
@@ -96,6 +112,12 @@ static inline qioerr qio_mkerror_errno(void) {
 #endif
 
 #define EXTEND_ERROR_NUM 5
+
+
+#define QIO_ENOMEM (qio_int_to_err(ENOMEM))
+#define QIO_ESHORT (qio_int_to_err(ESHORT))
+#define QIO_EEOF (qio_int_to_err(EEOF))
+
 
 // This could be done optionally only under Chapel.
 typedef qioerr syserr;

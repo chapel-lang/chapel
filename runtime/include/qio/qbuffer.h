@@ -6,6 +6,7 @@ extern "C" {
 #endif
 
 #include "sys_basic.h"
+#include "qio_error.h"
 #ifndef __cplusplus
 #include <stdbool.h>
 #endif
@@ -123,13 +124,13 @@ void qbytes_free_sys_free(qbytes_t* b);
 void qbytes_free_qio_free(qbytes_t* b);
 
 void _qbytes_init_generic(qbytes_t* ret, void* give_data, int64_t len, qbytes_free_t free_function);
-err_t qbytes_create_generic(qbytes_t** out, void* give_data, int64_t len, qbytes_free_t free_function);
-err_t _qbytes_init_iobuf(qbytes_t* ret);
-err_t qbytes_create_iobuf(qbytes_t** out);
-err_t _qbytes_init_calloc(qbytes_t* ret, int64_t len);
+qioerr qbytes_create_generic(qbytes_t** out, void* give_data, int64_t len, qbytes_free_t free_function);
+qioerr _qbytes_init_iobuf(qbytes_t* ret);
+qioerr qbytes_create_iobuf(qbytes_t** out);
+qioerr _qbytes_init_calloc(qbytes_t* ret, int64_t len);
 
 // The caller is responsible for calling qbytes_release on the return value.
-err_t qbytes_create_calloc(qbytes_t** out, int64_t len);
+qioerr qbytes_create_calloc(qbytes_t** out, int64_t len);
 
 static inline
 int64_t qbytes_len(qbytes_t* b)
@@ -208,16 +209,16 @@ int qbuffer_is_initialized(qbuffer_t* buf) {
 }
 
 /* Initialize a buffer */
-err_t qbuffer_init(qbuffer_t* buf);
+qioerr qbuffer_init(qbuffer_t* buf);
 
 /* Destroy a buffer inited with qbuffer_init */
-err_t qbuffer_destroy(qbuffer_t* buf);
+qioerr qbuffer_destroy(qbuffer_t* buf);
 
 /* Destroy a buffer and free() the pointer */
-err_t qbuffer_destroy_free(qbuffer_t* buf);
+qioerr qbuffer_destroy_free(qbuffer_t* buf);
 
 /* Create a reference-counted buffer ptr */
-err_t qbuffer_create(qbuffer_ptr_t* out);
+qioerr qbuffer_create(qbuffer_ptr_t* out);
 
 /* Increment a reference count
  */
@@ -239,14 +240,14 @@ void qbuffer_extend_front(qbuffer_t* buf);
 
 /* Append a bytes_t to a buffer group.
  */
-err_t qbuffer_append(qbuffer_t* buf, qbytes_t* bytes, int64_t skip_bytes, int64_t len_bytes);
+qioerr qbuffer_append(qbuffer_t* buf, qbytes_t* bytes, int64_t skip_bytes, int64_t len_bytes);
 
 /* Append a buffer to another buffer; the bytes will be shared (reference counts increased) */
-err_t qbuffer_append_buffer(qbuffer_t* buf, qbuffer_t* src, qbuffer_iter_t src_start, qbuffer_iter_t src_end);
+qioerr qbuffer_append_buffer(qbuffer_t* buf, qbuffer_t* src, qbuffer_iter_t src_start, qbuffer_iter_t src_end);
 
 /* Prepend a bytes_t to a buffer group.
  */
-err_t qbuffer_prepend(qbuffer_t* buf, qbytes_t* bytes, int64_t skip_bytes, int64_t len_bytes);
+qioerr qbuffer_prepend(qbuffer_t* buf, qbytes_t* bytes, int64_t skip_bytes, int64_t len_bytes);
 
 /* trim functions remove parts that are completely in the area
  * to be removed. */
@@ -254,8 +255,8 @@ void qbuffer_trim_front(qbuffer_t* buf, int64_t remove_bytes);
 void qbuffer_trim_back(qbuffer_t* buf, int64_t remove_bytes);
 
 /* Remove a part from the front or back. */
-err_t qbuffer_pop_front(qbuffer_t* buf);
-err_t qbuffer_pop_back(qbuffer_t* buf);
+qioerr qbuffer_pop_front(qbuffer_t* buf);
+qioerr qbuffer_pop_back(qbuffer_t* buf);
 
 /* Without changing any memory, changes the offsets
  * used in the buffer (offset_start, offset_end, and offsets in the parts).
@@ -384,7 +385,7 @@ int64_t qbuffer_len(qbuffer_t* buf)
 /* Turn a range from a qbuffer into an io-vector. Note that this contains
  * pointers into the qbuffer and is only valid until the qbuffer is changed...
  */
-err_t qbuffer_to_iov(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, 
+qioerr qbuffer_to_iov(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, 
                    size_t max_iov, struct iovec *iov_out, 
                    qbytes_t** bytes_out /* can be NULL */,
                    size_t *iovcnt_out);
@@ -395,29 +396,29 @@ err_t qbuffer_to_iov(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end,
  * It is the responsibility of the caller to call
  * qbytes_release on the result of this function.
  */
-err_t qbuffer_flatten(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, qbytes_t** bytes_out);
+qioerr qbuffer_flatten(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, qbytes_t** bytes_out);
 
 /* Create a reference-sharing version of the buffer,
  * starting from current iterator position.
  */
-//err_t qbuffer_clone(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, qbuffer_ptr_t* buf_out);
+//qioerr qbuffer_clone(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, qbuffer_ptr_t* buf_out);
 
 /* Copies bytes from start to end in buffer to ptr.
  * Returns an error if we would exceed ret_len
  * */
-err_t qbuffer_copyout(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, void* ptr, size_t ret_len);
+qioerr qbuffer_copyout(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, void* ptr, size_t ret_len);
 
 /* Copies bytes from ptr to start to end in buffer.
  * Returns an error if we would exceed ret_len
  * */
-err_t qbuffer_copyin(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, const void* ptr, size_t ret_len);
+qioerr qbuffer_copyin(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, const void* ptr, size_t ret_len);
 
-err_t qbuffer_copyin_buffer(qbuffer_t* dst, qbuffer_iter_t dst_start, qbuffer_iter_t dst_end,
+qioerr qbuffer_copyin_buffer(qbuffer_t* dst, qbuffer_iter_t dst_start, qbuffer_iter_t dst_end,
                             qbuffer_t* src, qbuffer_iter_t src_start, qbuffer_iter_t src_end);
 
 /* Overwrites the qbuffer buffers with a fixed byte.
  * */
-err_t qbuffer_memset(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, unsigned char byte);
+qioerr qbuffer_memset(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, unsigned char byte);
 
 // How many bytes to try to store on stack in some functions that don't
 // really want to call malloc
