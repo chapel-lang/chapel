@@ -930,7 +930,7 @@ if ($runtests == 0) {
 # analyze memory leaks tests
 #
     if (!($memleaks eq "")) {
-        mysystem("$chplhomedir/util/devel/analyzeMemLeaksLog $basetmpdir/$memleaks > $logdir/$memleaks");
+        mysystem("$chplhomedir/util/devel/analyzeMemLeaksLog -show_strings $basetmpdir/$memleaks > $logdir/$memleaks");
 
         # Update the memory leaks status for performance testing runs to
         #  generate graphs for the memory leaks data

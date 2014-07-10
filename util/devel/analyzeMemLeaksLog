@@ -1,4 +1,28 @@
 #!/usr/bin/env perl
+#
+# Usage: analyzeMemLeaksLog [-show_strings] file ...
+#
+# Summarize the data in a memleaks log file.
+#
+# The input log file contains one entry for each program run.
+# The output sums the total memory allocated, freed and leaked, as well as the maximum
+# amount of memory leaked.  
+# The output also lists the amount of memory leaked in each category, and in a separate
+# list, the total amount of memory leaked by each program that leaks.
+#
+#  -show_strings -- Causes programs that leak only string-related memory to be included 
+#                   in the list of leaking programs and and in the number of programs
+#                   that leak.  By default, programs that leak only string-related memory
+#                   are not tallied and are not listed.
+#
+
+$show_strings = 0;
+if ($#ARGV > 0) {
+    $flag = shift @ARGV;
+    if ($flag eq "-show_strings") {
+        $show_strings = 1;
+    }
+}
 
 while (<>) {
     if (m/Compiler Command : .*\s(.*\.chpl )$/) {
@@ -39,12 +63,13 @@ while (<>) {
         if (m/==============================================================/) {
             $memleaks = 0;
         } elsif (m/(\d*)\s*(\d*)\s*(.*)$/) {
-            if (($3 eq "string copy data") ||
-                ($3 eq "glom strings data") ||
-                ($3 eq "string concat data") ||
-                ($3 eq "set wide string") ||
-                ($3 eq "get wide string") ||
-                ($3 eq "string strided select data")) {
+            if (($show_strings == 0) &&
+                (($3 eq "string copy data") ||
+                 ($3 eq "glom strings data") ||
+                 ($3 eq "string concat data") ||
+                 ($3 eq "set wide string") ||
+                 ($3 eq "get wide string") ||
+                 ($3 eq "string strided select data"))) {
             } else {
                 $TP{$program} += $2;
             }
@@ -82,7 +107,7 @@ printf("==============================================================\n");
 printf("\n");
 printf("=======================\n");
 printf("Memory Leaking Programs\n");
-printf("   (ignoring strings)\n");
+printf("   (ignoring strings)\n") unless $show_strings;
 printf("==============================================================\n");
 printf("Total leaked memory (bytes)\n");
 printf("              Program\n");
