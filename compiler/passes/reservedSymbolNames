@@ -211,6 +211,8 @@
 
   // symbols from stdio.h
   EOF
+  puts
+  gets
 
   // symbols from QIO
   EEOF
