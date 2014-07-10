@@ -46,7 +46,7 @@ iter listdir(path: string, recur = false, dotfiles=false, nosvn=true): string {
     }
     closedir(dir);
   } else {
-    extern proc perror(s: string);
+    extern proc perror(s: c_string);
     perror("error in listdir(): ");
   }
 }

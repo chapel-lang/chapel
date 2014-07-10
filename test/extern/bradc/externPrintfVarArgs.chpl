@@ -1,4 +1,4 @@
-extern proc printf(fmt: string, vals...?numvals): int;
+extern proc printf(fmt: c_string, vals...?numvals): int;
 
 var x = 12.34;
 

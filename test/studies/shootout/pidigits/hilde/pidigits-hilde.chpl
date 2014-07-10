@@ -7,7 +7,7 @@
 // Translated to Chapel by Tom Hildebrandt (hilde@cray.com)
 
 
-extern proc printf(s:string, args ...);
+extern proc printf(s:c_string, args ...);
 extern proc putchar(c:int);
 
 use GMP;

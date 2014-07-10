@@ -1,4 +1,4 @@
-extern proc fopen(name: string, mode: string): _file;
+extern proc fopen(name: c_string, mode: c_string): _file;
 extern proc fread(ref data, size: int, n: int, f: _file): int;
 extern proc fwrite(ref data, size: int, n: int, f: _file): int;
 extern proc fclose(f: _file);

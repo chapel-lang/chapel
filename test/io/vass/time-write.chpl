@@ -71,7 +71,7 @@ extern proc cf_trial(n: int);
 extern proc cs_trial(n: int);
 
 proc lstr_trial() {
-  extern proc printf(format: string);
+  extern proc printf(format: c_string);
   for 1..n do
     printf("\n");
 }
@@ -85,9 +85,9 @@ proc lcs_trial() {
 
 const str_newline_global = "\n";
 proc gstr_trial() {
-  extern proc printf(format: string);
+  extern proc printf(format: c_string);
   for 1..n do
-    printf(str_newline_global);
+    printf(str_newline_global.c_str());
 }
 
 const c_newline_global = "\n".c_str();

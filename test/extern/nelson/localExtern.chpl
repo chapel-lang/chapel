@@ -1,5 +1,5 @@
 
-extern proc puts(s : string) : int;
+extern proc puts(s : c_string) : int;
 
 local {
   puts("inside local");

@@ -6,7 +6,7 @@
 //
 use BlockDist, PrivateDist;
 
-extern proc system(s: string): int;
+extern proc system(s: c_string): int;
 
 record taskPrivateData {
   var tid$: sync chpl_taskID_t = chpl_nullTaskID;

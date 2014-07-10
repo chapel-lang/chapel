@@ -10,9 +10,9 @@ config const LOOKUP_SIZE = 4*1024;
 config const LOOKUP_SCALE : real = LOOKUP_SIZE - 1;
 config const n = 1000;
 
-//extern proc printf(s:string, ref args ...);
-extern proc printf(s:string, len:int(32), ref args ...);
-extern proc printf(s:string, ref args ...);
+//extern proc printf(s:c_string, ref args ...);
+extern proc printf(s:c_string, len:int(32), ref args ...);
+extern proc printf(s:c_string, ref args ...);
 
 class Freq {
   var c: int(8);
