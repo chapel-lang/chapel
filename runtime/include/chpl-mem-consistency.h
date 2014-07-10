@@ -3,7 +3,7 @@
 
 #include "chpl-atomics.h" // for memory_order
 
-//#include "chpl-cache.h" // for chpl_cache_release, chpl_cache_acquire
+#include "chpl-cache.h" // for chpl_cache_release, chpl_cache_acquire
 
 // These functions support memory consistency with the remote
 // data cache. They do not need to do anything if the cache is

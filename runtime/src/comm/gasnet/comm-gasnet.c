@@ -12,6 +12,7 @@
 #include "chpl-gen-includes.h"
 #include "chpl-atomics.h"
 #include "error.h"
+#include "chpl-cache.h" // to call chpl_cache_init()
 
 // Don't get warning macros for chpl_comm_get etc
 #include "chpl-comm-no-warning-macros.h"
@@ -582,6 +583,9 @@ void chpl_comm_post_task_init(void) {
 
   // clear diags
   memset(&chpl_comm_commDiagnostics, 0, sizeof(chpl_commDiagnostics));
+
+  // Initialize the caching layer, if it is active.
+  chpl_cache_init();
 }
 
 void chpl_comm_rollcall(void) {
