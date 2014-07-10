@@ -95,7 +95,7 @@
 # (e.g. --compopts).
 #
 # The -compiler option allows the user to specify the compiler to test
-# if it is something other than the obvious one in the current SVN
+# if it is something other than the obvious one in the current git
 # structure.  This lets one run other people's compilers, old copies
 # of compilers, etc.
 #
@@ -590,9 +590,9 @@
 #    override the timeout just for itself by supplying a timeout
 #    value in a foo.timeout file.
 #
-#  - using subdirectory-specific svn:ignore properties can also be
+#  - using the .gitignore file in the root of repo can also be
 #    very helpful so that files generated during testing won't
-#    clutter the results of a svn status command.
+#    clutter the results of a git status command.
 #
 # Again, to see a sample run of the testing system, look through
 # the Samples/ directory, then run:
@@ -1519,7 +1519,7 @@ foreach testType ($testTypes)
         # Recursively list all directories, ignoring some (should we really do
         # this?  Maybe add NOTEST files instead?)
         if ($recurse == 1) then
-            set dirs = `find . -name ".svn" -prune -o -name Logs -prune -o -name Samples -prune -o -name Share -prune -o -name perfdat -prune -o -type d -print`
+            set dirs = `find . -name ".svn" -prune -o -name ".git" -prune -o -name Logs -prune -o -name Samples -prune -o -name Share -prune -o -name perfdat -prune -o -type d -print`
         else
             set dirs = (./)
         endif

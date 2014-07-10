@@ -24,7 +24,7 @@ At present, this directory contains the following codes:
 
 Over time, we plan to create versions of all the benchmarks and to
 enter Chapel into the competition.  Draft versions of other benchmarks
-that have not yet been promoted to the release can be found in our SVN
+that have not yet been promoted to the release can be found in our git
 repository under the test/studies/shootout/ directory.
 
 The provided Makefile can be used to compile the programs, or they can

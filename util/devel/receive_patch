@@ -1,8 +1,0 @@
-#!/bin/csh
-
-set patchdir=~/patches
-set patchfile=$patchdir/$1.patch
-
-cd $CHPL_HOME
-svn diff --no-diff-deleted > $patchdir/auto_bkup_$1.patch
-svn revert --recursive . && svn update && patch -p0 < $patchfile

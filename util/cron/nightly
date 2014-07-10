@@ -699,6 +699,10 @@ if ($runtests == 0) {
     my $svnPerfDir = "$svnPerfBaseDir/$host";
     my $svnPerfMsgXtra = ".\nData dir: $svnPerfDir\n(Testing continues despite failure.) Error code";
     if ($performance == 1 || $compperformance == 1) {
+
+        # FIXME: Update this logic to work with git repo that manages perf
+        #        data. (thomasvandoren, 2014-07-10)
+
         mysystem("cd $svnPerfDir && svn update", "svn-updating perf data before running tests" . $svnPerfMsgXtra, 0, 1, 1);
     }
 

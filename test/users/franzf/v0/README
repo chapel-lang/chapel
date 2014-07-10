@@ -1,6 +1,6 @@
 
 This is the original version of SPIRAL-generated C and Chapel that
-Franz sent us.  There are a few revisions under SVN control, based
+Franz sent us.  There are a few revisions under source control, based
 on some quick feedback we gave him about improving performance.
 
 Inspecting larger problem sizes will show some differences between C

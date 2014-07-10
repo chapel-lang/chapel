@@ -17,22 +17,24 @@ simplest one that actually support parallelism.
 To begin, copy the existing tasking model you chose as a starting point.
 We will pretend you are starting with the "fifo" tasking model, and you
 are creating the "wonderful" tasking model.  Assuming a Linux working
-environment, from the $CHPL_HOME directory, perform the following svn
+environment, from the $CHPL_HOME directory, perform the following git
 commands to create the copy:
 
-    svn mkdir runtime/include/tasks/wonderful
-    svn cp runtime/include/tasks/fifo/tasks-fifo.h  \
-           runtime/include/tasks/wonderful/tasks-wonderful.h
+    mkdir runtime/include/tasks/wonderful
+    cp runtime/include/tasks/fifo/tasks-fifo.h  \
+        runtime/include/tasks/wonderful/tasks-wonderful.h
+    git add runtime/include/tasks/wonderful
 
-    svn mkdir runtime/src/tasks/wonderful
-    svn cp runtime/tasks/fifo/tasks-fifo.c  \
-           runtime/tasks/wonderful/tasks-wonderful.c
-    svn cp runtime/tasks/fifo/Makefile  \
-           runtime/tasks/wonderful/
-    svn cp runtime/tasks/fifo/Makefile.include  \
-           runtime/tasks/wonderful/
-    svn cp runtime/tasks/fifo/Makefile.share  \
-           runtime/tasks/wonderful/
+    mkdir runtime/src/tasks/wonderful
+    cp runtime/tasks/fifo/tasks-fifo.c  \
+        runtime/tasks/wonderful/tasks-wonderful.c
+    cp runtime/tasks/fifo/Makefile  \
+        runtime/tasks/wonderful/
+    cp runtime/tasks/fifo/Makefile.include  \
+        runtime/tasks/wonderful/
+    cp runtime/tasks/fifo/Makefile.share  \
+        runtime/tasks/wonderful/
+    git add runtime/tasks/wonderful
 
 This will leave you with the following new files:
 

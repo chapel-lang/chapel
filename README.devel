@@ -4,7 +4,7 @@ Chapel developer's file map
 
 The README and README.files files in this directory are intended for
 the end-user whose directory and file structure differs somewhat from
-what a developer would see in their SVN tree.  This file is meant to
+what a developer would see in their git tree.  This file is meant to
 provide similar information as README.files for developers, and to map
 between the developer directory structure and the release directory
 structure.
@@ -44,7 +44,7 @@ same place for developers and end users:
 
 
 The following files/directories in the release are based on those in
-the SVN tree, but not exactly the same:
+the git tree, but not exactly the same:
 
   compiler/ : a copyright-annotated (and possibly pruned) copy of the
               developer's version of this compiler sources directory

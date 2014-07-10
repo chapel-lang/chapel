@@ -69,6 +69,9 @@ mysystem("mkdir $tmpdir > /dev/null", "creating temp dir", 1, 1);
 #
 # checkout sources
 #
+
+# FIXME: Update this to use git version of perf data repo.
+#        (thomasvandoren, 2014-07-10)
 mysystem("cd $tmpdir && svn export -q -r '{$svndate}' $svnroot chapel", "svn checkout", 1, 1);
 
 #

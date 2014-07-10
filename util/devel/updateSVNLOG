@@ -1,5 +1,7 @@
 #!/usr/bin/env perl
 
+# FIXME: Delete this after git conversion. (thomasvandoren, 2014-07-10)
+
 $svnlogfile = "./SVNLOG";
 $svnnumfile = "./.SVNLOG-revnum";
 $completelog = 0;

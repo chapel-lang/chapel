@@ -8,7 +8,7 @@ fi
 
 pushd $chapelDir > /dev/null
 
-find . -name test -prune -o \( -name third-party -prune \) -o \( -name .svn -prune \) -o \( -iname README\* -exec grep -H "$@" {} \; \) -o \( -iname \*.txt -exec grep -H "$@" {} \; \)
+find . -name test -prune -o \( -name third-party -prune \) -o \( -name .svn -prune \) -o \( -name .git \) -o \( -iname README\* -exec grep -H "$@" {} \; \) -o \( -iname \*.txt -exec grep -H "$@" {} \; \)
 find test/release/examples -name .svn -prune -o \( -iname README\* -exec grep -H "$@" {} \; \) -o \( -iname \*.txt -exec grep -H "$@" {} \; \)
 
 popd > /dev/null

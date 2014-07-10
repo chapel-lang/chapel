@@ -20,7 +20,7 @@ In recursive Makefile structure...
    computed during compilation.
 
    There used to be a bunch of old notes on troubles with 'make
-   depend' here.  Refer to the svn archives if you're interested
+   depend' here.  Refer to the git archives if you're interested
    in them.
 
 4) Don't give a rule that tells how to make files that are included,
