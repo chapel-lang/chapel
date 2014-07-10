@@ -7,6 +7,9 @@
 # compared to how we normally count BUILD_VERSIONS
 #
 
+# FIXME: Use git sha1 instead of svn revision number here.
+#        (thomasvandoren, 2014-07-09)
+
 $chplhome = $ENV{'CHPL_HOME'};
 $build_version_file = $ARGV[0];
 

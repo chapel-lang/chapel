@@ -127,6 +127,8 @@ if [ -f /etc/modules/bash ] ; then
 
     if [ -n "$(type module 2> /dev/null)" ] ; then
         log_info "Loading subversion module."
+        # FIXME: Can we get rid of this in a github world?
+        #        (thomasvandoren, 2014-07-09)
         module load cpkg all/append subversion
     else
         log_error "Failed to find module command after sourcing /etc/modules/bash."

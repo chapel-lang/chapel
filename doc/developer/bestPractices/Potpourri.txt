@@ -5,10 +5,9 @@ Miscellaneous Notes
 README files
 ------------
 
-The subversion repository has a collection of REAMDE files on various
-topics. The main file is $CHPL_HOME/README. Each file points to other
-related READMEs so that any README can be reached from the main one
-by following such "links".
+The repository has a collection of REAMDE files on various topics. The main
+file is $CHPL_HOME/README. Each file points to other related READMEs so that
+any README can be reached from the main one by following such "links".
 
 Some directories also have README.devel, which contain additional
 information for Chapel developers. They are not (necessarily)

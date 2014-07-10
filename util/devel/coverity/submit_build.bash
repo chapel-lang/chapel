@@ -33,8 +33,8 @@ if [ "${cov_error}" = "true" ] ; then
 fi
 
 # Grab the current revision and set description.
-version=$(svnversion)
-description="Subversion trunk build."
+version=$(git rev-parse --short HEAD)
+description="Git master build."
 
 # Build chapel with cov-build.
 $COV_BUILD_PREFIX/cov-build --dir cov-int make
