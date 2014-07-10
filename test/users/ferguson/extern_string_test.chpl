@@ -1,8 +1,9 @@
-extern proc return_string_test():string;
-extern proc return_string_arg_test(inout string);
+extern proc return_string_test():c_string;
+extern proc return_string_arg_test(ref c_string);
 
 writeln("returned string ",return_string_test());
-var s:string;
-return_string_arg_test(s);
+var cs: c_string;
+return_string_arg_test(cs);
+var s = toString(cs);
 writeln("returned string arg ",s);
 
