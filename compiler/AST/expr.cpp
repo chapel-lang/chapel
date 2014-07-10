@@ -2571,7 +2571,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a6);
   codegenCall(fnName, args);
 }
-/*
+
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5, GenRet a6, GenRet a7)
@@ -2586,7 +2586,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a7);
   codegenCall(fnName, args);
 }
-*/
+
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5, GenRet a6, GenRet a7, GenRet a8)
@@ -4705,7 +4705,7 @@ GenRet CallExpr::codegen() {
     case PRIM_CHPL_COMM_GET:
     case PRIM_CHPL_COMM_PUT: {
       // args are:
-      //   localvar, locale, remote addr, eltSize, get(4)==length, line, file
+      //   localvar, locale, remote addr, (eltSize), get(4)==length, line, file
       const char* fn;
       if (primitive->tag == PRIM_CHPL_COMM_GET) {
         fn = "chpl_gen_comm_get";
@@ -4782,6 +4782,50 @@ GenRet CallExpr::codegen() {
                             codegenMul(eltSize, len), NULL);
         }
       }
+      break;
+    }
+    case PRIM_CHPL_COMM_REMOTE_PREFETCH: {
+      // args are:
+      //   locale, remote addr, (eltSize), get(3)==length, line, file
+
+      TypeSymbol *dt;
+      // Get the element type.
+      if (get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+        Symbol *sym = get(2)->typeInfo()->getField("addr", true);
+        INT_ASSERT(sym);
+        dt = sym->typeInfo()->getValType()->symbol;
+      } else {
+        dt = get(2)->typeInfo()->getValType()->symbol;
+      }
+
+      // Get the locale
+      GenRet locale;
+      if( get(1)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE,FLAG_REF) ) {
+        locale = codegenValue(codegenDeref(get(1)));
+      } else {
+        locale = codegenValue(get(1));
+      }
+
+      // source data array
+      GenRet remoteAddr = get(2);
+      SymExpr *sym = toSymExpr(get(2));
+      INT_ASSERT(sym);
+      if( sym->typeInfo()->symbol->hasFlag(FLAG_WIDE) ) {
+        remoteAddr = codegenRaddr(remoteAddr);
+      } else {
+        if( !sym->typeInfo()->symbol->hasFlag(FLAG_REF) ) {
+          remoteAddr = codegenAddrOf(remoteAddr);
+        }
+      }
+      GenRet eltSize = codegenSizeof(dt->typeInfo());
+      GenRet len;
+      if( get(3)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE,FLAG_REF) ) {
+        len = codegenValue(codegenDeref(get(3)));
+      } else {
+        len = codegenValue(get(3));
+      }
+      codegenCall("chpl_gen_comm_prefetch", locale, remoteAddr, 
+          eltSize, genTypeStructureIndex(dt), len, get(4), get(5));
       break;
     }
       //Strided versions of get and put

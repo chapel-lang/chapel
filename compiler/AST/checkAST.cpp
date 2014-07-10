@@ -187,6 +187,7 @@ void checkPrimitives()
      case PRIM_TUPLE_AND_EXPAND:
      case PRIM_CHPL_COMM_GET:           // Direct calls to the Chapel comm layer
      case PRIM_CHPL_COMM_PUT:           // may eventually add others (e.g.: non-blocking)
+     case PRIM_CHPL_COMM_REMOTE_PREFETCH:
      case PRIM_CHPL_COMM_GET_STRD:      // Direct calls to the Chapel comm layer for strided comm
      case PRIM_CHPL_COMM_PUT_STRD:      //  may eventually add others (e.g.: non-blocking)
      case PRIM_ARRAY_ALLOC:

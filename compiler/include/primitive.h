@@ -129,6 +129,7 @@ enum PrimitiveTag {
 
   PRIM_CHPL_COMM_GET,           // Direct calls to the Chapel comm layer
   PRIM_CHPL_COMM_PUT,           // may eventually add others (e.g., non-blocking)
+  PRIM_CHPL_COMM_REMOTE_PREFETCH,
   PRIM_CHPL_COMM_GET_STRD,      // Direct calls to the Chapel comm layer for strided comm
   PRIM_CHPL_COMM_PUT_STRD,      //  may eventually add others (e.g., non-blocking)
 

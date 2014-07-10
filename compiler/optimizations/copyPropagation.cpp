@@ -350,6 +350,13 @@ static bool isUse(SymExpr* se)
       if (se == call->get(2) || se == call->get(4))
         return true;
       return false;
+     case PRIM_CHPL_COMM_REMOTE_PREFETCH:
+      // comm prefetch locale widePtr len
+      // second argument is an address
+      // first and third are values.
+      if (se == call->get(1) || se == call->get(3))
+        return true;
+      return false;
      case PRIM_SET_MEMBER:
       // The first operand works like a reference, and the second is a field
       // name.  Only the third is a replaceable use.
