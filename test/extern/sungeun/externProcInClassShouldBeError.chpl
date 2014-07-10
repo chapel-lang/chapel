@@ -10,7 +10,7 @@
 //
 use BlockDist, PrivateDist;
 
-extern proc system(s: string): int;
+extern proc system(s: c_string): int;
 
 record taskPrivateData {
   var tid$: sync chpl_taskID_t = chpl_nullTaskID;
@@ -18,7 +18,7 @@ record taskPrivateData {
   var y: [0..#numLocales] real;
 };
 
-inline proc =(a: chpl_taskID_t, b: chpl_taskID_t) return b;
+inline proc =(ref a: chpl_taskID_t, b: chpl_taskID_t) { __primitive("=", a, b); }
 inline proc !=(a: chpl_taskID_t, b: chpl_taskID_t) return __primitive("!=", a, b);
 class localePrivateData {
   type myStuff;
