@@ -508,7 +508,6 @@ static void normalize_returns(FnSymbol* fn) {
         CallExpr* initExpr =
           new CallExpr(PRIM_INIT, retExprType->body.tail->remove());
         fn->insertAtHead(new CallExpr(PRIM_MOVE, retval, initExpr));
-        fn->insertAtHead(retExprType);
       }
     }
     fn->insertAtHead(new DefExpr(retval));
