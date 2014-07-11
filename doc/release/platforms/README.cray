@@ -455,6 +455,28 @@ Parameters associated with the muxed tasking layer:
       export CHPL_RT_CALL_STACK_SIZE=64k
 
 
+    Stack Overflow Checking
+    -----------------------
+
+    With muxed tasking, the compiler --stack-checks setting specifies
+    the default setting for execution-time stack overflow checking.
+    Final control over stack overflow checks is provided by the
+    CHPL_RT_STACK_CHECK_LEVEL environment variable, which can take the
+    following values:
+      0:  no stack overflow checking
+      1:  limited stack overflow checking (default)
+      2:  more stack overflow checking
+
+    Due to the use of hugepages in the ugni comm layer, muxed tasking
+    cannot use guard pages for stack overflow detection as fifo and
+    qthreads tasking do.  So, overflow is detected by means of explicit
+    checks against the task's stack limit, on entry to certain selected
+    functions in the muxed tasking layer.  If overflow is seen, the
+    runtime prints an error message and halts the program.  Successively
+    higher levels (0, 1, 2) of overflow checking cause more overhead and
+    correspondingly have more impact on performance.
+
+
     Number of Threads per Locale
     ----------------------------
 

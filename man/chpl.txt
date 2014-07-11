@@ -177,6 +177,7 @@ OPTIONS
 
   --no-checks       Turns off many run-time checks, equivalent to:
                       --no-bounds-checks --no-nil-checks --no-local-checks
+                      --no-stack-checks.
                     Currently, it is typically necessary to use this flag
                     (or --fast) in order to have any hope of achieving
                     performance competitive with hand-coded C or Fortran.
@@ -189,6 +190,9 @@ OPTIONS
 
   --[no-]nil-checks   Enable [disable] run-time checking for accessing nil
                     object references.
+
+  --[no-]stack-checks   Enable [disable] run-time checking for stack
+                    overflow.
 
   C Code Generation Options
 

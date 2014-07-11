@@ -54,6 +54,7 @@ Run-time Semantic Check Options:
       --[no-]bounds-checks            Enable [disable] bounds checking
       --[no-]local-checks             Enable [disable] local block checking
       --[no-]nil-checks               Enable [disable] nil checking
+      --[no-]stack-checks             Enable [disable] stack overflow checking
 
 C Code Generation Options:
       --[no-]codegen                  [Don't] Do code generation

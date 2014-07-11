@@ -92,6 +92,7 @@ bool fNoLiveAnalysis = false;
 bool fNoBoundsChecks = false;
 bool fNoLocalChecks = false;
 bool fNoNilChecks = false;
+bool fNoStackChecks = true;
 
 bool  printPasses     = false;
 FILE* printPassesFile = NULL;
@@ -537,6 +538,13 @@ static void turnOffChecks(const ArgumentState* state, const char* unused) {
   fNoNilChecks    = true;
   fNoBoundsChecks = true;
   fNoLocalChecks  = true;
+  fNoStackChecks  = true;
+}
+
+static void handleStackCheck(const ArgumentState* state, const char* unused) {
+  if (!fNoStackChecks && strcmp(CHPL_TASKS, "massivethreads") == 0) {
+    USR_WARN("CHPL_TASKS=%s cannot do stack checks.", CHPL_TASKS);
+  }
 }
 
 static void setFastFlag(const ArgumentState* state, const char* unused) {
@@ -562,6 +570,7 @@ static void setFastFlag(const ArgumentState* state, const char* unused) {
   fNoBoundsChecks = true;
   fNoLocalChecks = true;
   fNoNilChecks = true;
+  fNoStackChecks = true;
   fNoOptimizeOnClauses = false;
   optimizeCCode = true;
   specializeCCode = true;
@@ -693,6 +702,7 @@ static ArgumentDescription arg_desc[] = {
  {"bounds-checks", ' ', NULL, "Enable [disable] bounds checking", "n", &fNoBoundsChecks, "CHPL_NO_BOUNDS_CHECKING", NULL},
  {"local-checks", ' ', NULL, "Enable [disable] local block checking", "n", &fNoLocalChecks, NULL, NULL},
  {"nil-checks", ' ', NULL, "Enable [disable] nil checking", "n", &fNoNilChecks, "CHPL_NO_NIL_CHECKS", NULL},
+ {"stack-checks", ' ', NULL, "Enable [disable] stack overflow checking", "n", &fNoStackChecks, "CHPL_STACK_CHECKS", handleStackCheck},
 
  {"", ' ', NULL, "C Code Generation Options", NULL, NULL, NULL, NULL},
  {"codegen", ' ', NULL, "[Don't] Do code generation", "n", &no_codegen, "CHPL_NO_CODEGEN", NULL},
