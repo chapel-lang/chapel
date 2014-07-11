@@ -1,5 +1,8 @@
 #!/usr/bin/env perl
 
+use Cwd;
+use Cwd 'abs_path';
+use File::Path qw(make_path);
 use File::Spec;
 use File::Temp qw/ tempdir /;
 
@@ -25,6 +28,7 @@ if (exists($ENV{"CHPL_GEN_RELEASE_TMPDIR"})) {
 }
 $tmpdir = tempdir("chapel-release.$user.deleteme.XXXXX", DIR => $basetmpdir, CLEANUP => 1);
 
+$origCwd = abs_path(cwd());
 $reldir = "chapel$version";
 $rootdir = "$tmpdir/$reldir";
 $svnroot = $ENV{'CHPL_HOME_REPOSITORY'};
@@ -166,8 +170,15 @@ if (defined($ENV{"CHPL_HOME"})) {
     $resultdir = $basetmpdir;
 }
 
+if (! -d $resultdir) {
+    print("Creating $resultdir\n");
+    make_path($resultdir, verbose => 1);
+}
+
 $cmd = "tar -cz -f $resultdir/$reldir.tar.gz @tarfiles";
 print "$cmd\n";
 system ($cmd);
 
 print "Left result in $resultdir/$reldir.tar.gz\n";
+
+chdir $origCwd;
