@@ -197,8 +197,6 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
   FILE *outfile;
   pid_t mypid;
   int numCoresPerLocale;
-  int CPUsPerCU;
-  int LocalesPerNode;
   char **aprun_cmd;
 
   if (basenamePtr == NULL) {
@@ -218,8 +216,6 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
 
   initAprunAttributes();
   numCoresPerLocale = getCoresPerLocale();
-  CPUsPerCU = getCPUsPerCU();
-  LocalesPerNode = getLocalesPerNode();
 
   qsubOptions = genQsubOptions(basenamePtr, projectString,
                                determineQsubVersion(),
