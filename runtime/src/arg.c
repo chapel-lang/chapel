@@ -202,6 +202,14 @@ void parseArgs(int* argc, char* argv[]) {
           break;
         }
 
+      case 'b':
+        if (currentArg[2] == '\0') {
+          blockreport = 1;
+        } else {
+          i += handleNonstandardArg(argc, argv, i, lineno, filename);
+        }
+        break;
+
       case 'f':
         if (currentArg[2] == '\0') {
           i++;
@@ -265,6 +273,14 @@ void parseArgs(int* argc, char* argv[]) {
           break;
         }
 
+      case 't':
+        if (currentArg[2] == '\0') {
+          taskreport = 1;
+        } else {
+          i += handleNonstandardArg(argc, argv, i, lineno, filename);
+        }
+        break;
+
       case 'v':
         if (currentArg[2] == '\0') {
           verbosity = 2;
@@ -272,27 +288,16 @@ void parseArgs(int* argc, char* argv[]) {
           i += handleNonstandardArg(argc, argv, i, lineno, filename);
         }
         break;
-      case 'b':
-        if (currentArg[2] == '\0') {
-          blockreport = 1;
-        } else {
-          i += handleNonstandardArg(argc, argv, i, lineno, filename);
-        }
-        break;
-      case 't':
-        if (currentArg[2] == '\0') {
-            taskreport = 1;
-        } else {
-          i += handleNonstandardArg(argc, argv, i, lineno, filename);
-        }
-        break;
+
       default:
         i += handleNonstandardArg(argc, argv, i, lineno, filename);
+        break;
       }
       break;
 
     default:
       i += handleNonstandardArg(argc, argv, i, lineno, filename);
+      break;
     }
   }
 
