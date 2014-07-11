@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <inttypes.h>
 
 #include "chpl-bitops.h"
 #include "chpltimers.h"
@@ -32,7 +33,7 @@ int main(int argc, char** argv) {
 #ifdef PRINT_TIMING
   printf("%f\n", diff_time(end_time, start_time)/1000000.0);
 #endif
-  printf("%llu\n", accumulator);
+  printf("%" PRIu64 "\n", accumulator);
 
   accumulator = 0;
   printf("%s", "clz: ");
@@ -44,7 +45,7 @@ int main(int argc, char** argv) {
 #ifdef PRINT_TIMING
   printf("%f\n", diff_time(end_time, start_time)/1000000.0);
 #endif
-  printf("%llu\n", accumulator);
+  printf("%" PRIu64 "\n", accumulator);
 
   accumulator = 0;
   printf("%s", "ctz: ");
@@ -56,7 +57,7 @@ int main(int argc, char** argv) {
 #ifdef PRINT_TIMING
   printf("%f\n", diff_time(end_time, start_time)/1000000.0);
 #endif
-  printf("%llu\n", accumulator);
+  printf("%" PRIu64 "\n", accumulator);
 
   return 0;
 }

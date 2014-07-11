@@ -3,7 +3,7 @@
  */
 module BitOps {
 
-  inline proc clz(x: uint(?bits)) : uint(32) {
+  inline proc clz(x: uint(?bits)) {
     // the select will be folded out at compile time.
     select bits {
       when 64 do
@@ -12,10 +12,10 @@ module BitOps {
         return BitOps_internal.chpl_bitops_clz_32(x);
       when 16 do
         // gets promoted to 32bit, subtract the extra leading 0s
-        return BitOps_internal.chpl_bitops_clz_32(x)-16;
+        return (BitOps_internal.chpl_bitops_clz_32(x)-16):uint(16);
       when 8 do
         // gets promoted to 32bit, subtract the extra leading 0s
-        return BitOps_internal.chpl_bitops_clz_32(x)-24;
+        return (BitOps_internal.chpl_bitops_clz_32(x)-24):uint(8);
       otherwise
         // NOTE: this actually cant happen with how the integer types are setup
         //       right now - leaving it here for the future when we support
@@ -24,7 +24,11 @@ module BitOps {
     }
   }
 
-  inline proc ctz(x: uint(?bits)) : uint(32) {
+  inline proc clz(x: int(?bits)) {
+    return clz(x:uint(bits)):int(bits);
+  }
+
+  inline proc ctz(x: uint(?bits)) {
     // the select will be folded out at compile time.
     select bits {
       when 64 do
@@ -32,9 +36,9 @@ module BitOps {
       when 32 do
         return BitOps_internal.chpl_bitops_ctz_32(x);
       when 16 do
-        return BitOps_internal.chpl_bitops_ctz_32(x);
+        return BitOps_internal.chpl_bitops_ctz_32(x):uint(16);
       when 8 do
-        return BitOps_internal.chpl_bitops_ctz_32(x);
+        return BitOps_internal.chpl_bitops_ctz_32(x):uint(8);
       otherwise
         // NOTE: this actually cant happen with how the integer types are setup
         //       right now - leaving it here for the future when we support
@@ -43,7 +47,11 @@ module BitOps {
     }
   }
 
-  inline proc popcount(x: uint(?bits)) : uint(32) {
+  inline proc ctz(x: int(?bits)) {
+    return ctz(x:uint(bits)):int(bits);
+  }
+
+  inline proc popcount(x: uint(?bits)) {
     // the select will be folded out at compile time.
     select bits {
       when 64 do
@@ -51,9 +59,9 @@ module BitOps {
       when 32 do
         return BitOps_internal.chpl_bitops_popcount_32(x);
       when 16 do
-        return BitOps_internal.chpl_bitops_popcount_32(x);
+        return BitOps_internal.chpl_bitops_popcount_32(x):uint(16);
       when 8 do
-        return BitOps_internal.chpl_bitops_popcount_32(x);
+        return BitOps_internal.chpl_bitops_popcount_32(x):uint(8);
       // In the future we could also break a large int (128+) into 64bit chucks
       // and add up the results.
       otherwise
@@ -62,6 +70,10 @@ module BitOps {
         //       >64bit types
         compilerError("popcount is not supported for that bit width.");
     }
+  }
+
+  inline proc popcount(x: int(?bits)) {
+    return popcount(x:uint(bits)):int(bits);
   }
 
   // Legacy operations
@@ -142,12 +154,12 @@ module BitOps {
  * module to hide the extern procedures
  */
 module BitOps_internal {
-  extern proc chpl_bitops_popcount_32(x: uint(32)) : uint(32);
-  extern proc chpl_bitops_popcount_64(x: uint(64)) : uint(32);
+  extern proc chpl_bitops_popcount_32(x: c_uint) : uint(32);
+  extern proc chpl_bitops_popcount_64(x: c_ulonglong) : uint(64);
 
-  extern proc chpl_bitops_clz_32(x: uint(32)) : uint(32);
-  extern proc chpl_bitops_clz_64(x: uint(64)) : uint(32);
+  extern proc chpl_bitops_clz_32(x: c_uint) : uint(32);
+  extern proc chpl_bitops_clz_64(x: c_ulonglong) : uint(64);
 
-  extern proc chpl_bitops_ctz_32(x: uint(32)) : uint(32);
-  extern proc chpl_bitops_ctz_64(x: uint(64)) : uint(32);
+  extern proc chpl_bitops_ctz_32(x: c_uint) : uint(32);
+  extern proc chpl_bitops_ctz_64(x: c_ulonglong) : uint(64);
 }
