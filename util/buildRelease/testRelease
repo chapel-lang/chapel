@@ -103,7 +103,7 @@ mysystem("rm -rf $tmpdir", "removing previous tmp dir", 1, 1);
 mysystem("mkdir $tmpdir > /dev/null", "creating temp dir", 1, 1);
 
 
-mysystem("cd $chplhome/tar && rm -f chapel-test.tar.gz", "deleting previous tarball", 0, 0);
+mysystem("rm -f $chplhome/tar/chapel-test.tar.gz", "deleting previous tarball", 0, 0);
 
 #
 # make release
