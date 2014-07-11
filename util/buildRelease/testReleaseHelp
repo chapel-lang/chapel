@@ -49,8 +49,9 @@ endif
 #
 # run make in examples directory
 #
+set nprocs = `python -c "import multiprocessing; print(multiprocessing.cpu_count())"`
 cd examples
-$mymake
+$mymake -j$nprocs
 cd ..
 
 
