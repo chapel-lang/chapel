@@ -1,12 +1,12 @@
+#include "passes.h"
+
 #include "astutil.h"
 #include "expr.h"
-#include "passes.h"
 #include "resolution.h"
 #include "resolveIntents.h"
+#include "stlUtil.h"
 #include "stmt.h"
 #include "symbol.h"
-#include "stlUtil.h"
-
 
 
 // Clear autoDestroy flags on variables that get assigned to the return value of
@@ -129,21 +129,6 @@ static void cullExplicitAutoDestroyFlags()
   }
 }
 
-
-static bool
-doesExitBlock(BlockStmt* block, GotoStmt* gotoStmt) {
-  SymExpr* labelSymExpr = toSymExpr(gotoStmt->label);
-  INT_ASSERT(labelSymExpr);
-  Expr* expr = labelSymExpr->var->defPoint;
-  while (expr) {
-    if (expr == block)
-      return false;
-    expr = expr->parentExpr;
-  }
-  return true;
-}
-
-
 //
 // This is a helper function that determines, when we're creating a
 // new function call to 'fn' with actual 'arg', whether the argument
@@ -157,8 +142,9 @@ doesExitBlock(BlockStmt* block, GotoStmt* gotoStmt) {
 // must insert the assignment returned through this argument, as well
 // as a DefExpr for the ref tmp itself, before the call occurs.
 //
-static VarSymbol*
-createRefArgIfNeeded(FnSymbol* fn, VarSymbol* arg, CallExpr** refTmpAssign) {
+static VarSymbol* createRefArgIfNeeded(FnSymbol*  fn, 
+                                       VarSymbol* arg,
+                                       CallExpr** refTmpAssign) {
   DefExpr* formalDef = toDefExpr(fn->formals.only());
   INT_ASSERT(formalDef);
   Type* formalType = formalDef->sym->type;
@@ -180,85 +166,201 @@ createRefArgIfNeeded(FnSymbol* fn, VarSymbol* arg, CallExpr** refTmpAssign) {
 }
 
 
-static void
-insertAutoDestroyCalls() {
+/******************************** | *********************************
+*                                                                   *
+* A set of functions that scan every BlockStmt to determine whether *
+* it is necessary to insert autoDestroy calls at any of the exit    *
+* points rom the block.                                             *
+*                                                                   *
+* This computation consists of a linear scan of every BlockStmt     *
+* scanning for                                                      *
+*                                                                   *
+*    1) Statements that define a variable that requires an          *
+*       autoDestroy operation.                                      *
+*                                                                   *
+*    2) Statements that contain, recursively, a transfer of         *
+*       control that exits the BlockStmt being scanned.             *
+*                                                                   *
+*    3) Statements "at the end" of the BlockStmt.                   *
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
+
+static bool       stmtDefinesAnAutoDestroyedVariable(Expr* stmt);
+static VarSymbol* stmtTheDefinedVariable(Expr* stmt);
+
+static void       updateJumpsFromBlockStmt(Expr*            stmt,
+                                           BlockStmt*       block,
+                                           Vec<VarSymbol*>& vars);
+static bool       gotoExitsBlock(GotoStmt* gotoStmt, BlockStmt* block);
+
+static bool       stmtMustExitBlock(Expr* stmt);
+static void       updateBlockExit(Expr*            stmt,
+                                  BlockStmt*       block,
+                                  Vec<VarSymbol*>& vars);
+
+static void insertAutoDestroyCalls() {
   forv_Vec(BlockStmt, block, gBlockStmts) {
-    // Module blocks are not of interest, so skip them.
-    if (isModuleSymbol(block->parentSymbol))
-      continue;
+    // Ignore BlockStmts for a Module
+    if (isModuleSymbol(block->parentSymbol) == false) {
 
-    Vec<VarSymbol*> vars;
-    for_alist(stmt, block->body) {
-      //
-      // find variables that should be destroyed before exiting block
-      //
-      if (DefExpr* def = toDefExpr(stmt))
-        if (VarSymbol* var = toVarSymbol(def->sym))
-          if (var->hasFlag(FLAG_INSERT_AUTO_DESTROY) ||
-              (var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW) &&
-               !var->type->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
-               !isRefCountedType(var->type)))
-            // TODO: I think this can be changed into an assert:
-            // All type variables removed from the AST by this stage.
-            if (!var->hasFlag(FLAG_TYPE_VARIABLE))
-              vars.add(var);
+      Vec<VarSymbol*> vars;
 
-      //
-      // find 'may' exit points and insert autoDestroy calls
-      //   a 'may' exit point is a point where control may exit the
-      //   block such as a 'break' or 'continue' out of a loop, or a
-      //   'return' in a conditional
-      // do not clear vector of variables
-      //
-      if (!isDefExpr(stmt) &&
-          !isSymExpr(stmt) &&
-          !isCallExpr(stmt) &&
-          !isGotoStmt(stmt)) {
-        Vec<GotoStmt*> gotoStmts;
-        collectGotoStmts(stmt, gotoStmts);
-        forv_Vec(GotoStmt, gotoStmt, gotoStmts) {
-          if (doesExitBlock(block, gotoStmt)) {
-            forv_Vec(VarSymbol, var, vars) {
-              if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
-                SET_LINENO(var);
-                gotoStmt->insertBefore(new CallExpr(autoDestroyFn, var));
-              }
-            }
-          }
+      // A linear traversal of the statements in the body
+      for_alist(stmt, block->body) {
+
+        if (stmtDefinesAnAutoDestroyedVariable(stmt) == true) {
+          vars.add(stmtTheDefinedVariable(stmt));
         }
-      }
 
-      //
-      // find 'must' exit points and insert autoDestroy calls
-      // clear vector of variables
-      // A 'must' exit point is typically the last statement in a block
-      // (i.e. the stmt has no successor).  We also consider the block ended if
-      // the next statement is a goto, a return or a call to _downEndCount.
-      //
-      CallExpr* call = toCallExpr(stmt->next);
-      if (!stmt->next ||
-          isGotoStmt(stmt->next) ||
-          (call && (call->isPrimitive(PRIM_RETURN) || // If the return statement
-                    (call->isResolved() &&
-                     !strcmp(call->isResolved()->name, "_downEndCount"))))) {
-        forv_Vec(VarSymbol, var, vars) {
-          if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
-            SET_LINENO(var);
-            CallExpr* refTmpAssign = NULL;
-            var = createRefArgIfNeeded(autoDestroyFn, var, &refTmpAssign);
-            stmt->insertAfter(new CallExpr(autoDestroyFn, var));
-            if (refTmpAssign) {
-              stmt->insertAfter(refTmpAssign);
-              stmt->insertAfter(new DefExpr(var));
-            }
-          }
+        updateJumpsFromBlockStmt(stmt, block, vars);
+
+        if (stmtMustExitBlock(stmt) == true) {
+          updateBlockExit(stmt, block, vars);
+
+          vars.clear();
+          break;
         }
-        vars.clear();
-        break;
       }
     }
   }
 }
+
+static bool stmtDefinesAnAutoDestroyedVariable(Expr* stmt) {
+  bool retval = false;
+
+  if (DefExpr* def = toDefExpr(stmt)) {
+    if (VarSymbol* var = toVarSymbol(def->sym)) {
+      if (
+          // Flagged with "simple" AUTO_DESTROY
+          var->hasFlag(FLAG_INSERT_AUTO_DESTROY) ||
+
+          // Flagged with "complex" AUTO_DESTROY
+          (var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW) &&
+           !var->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)       &&
+           !isRefCountedType(var->type))) {
+
+        if (!var->hasFlag(FLAG_TYPE_VARIABLE)) {
+          retval = true;
+        }
+      }
+    }
+  }
+
+  return retval;
+}
+
+static VarSymbol* stmtTheDefinedVariable(Expr* stmt) {
+  VarSymbol* retval = 0;
+
+  if (DefExpr* def = toDefExpr(stmt)) {
+    retval = toVarSymbol(def->sym);
+  }
+
+  return retval;
+}
+
+// Update any jumps *contained within* this stmt that escape the block
+static void updateJumpsFromBlockStmt(Expr*            stmt,
+                                     BlockStmt*       block,
+                                     Vec<VarSymbol*>& vars) {
+  if (isDefExpr(stmt)  == false &&
+      isSymExpr(stmt)  == false &&
+      isCallExpr(stmt) == false &&
+      isGotoStmt(stmt) == false) {
+    Vec<GotoStmt*> gotoStmts;
+
+    collectGotoStmts(stmt, gotoStmts);
+
+    forv_Vec(GotoStmt, gotoStmt, gotoStmts) {
+      if (gotoExitsBlock(gotoStmt, block)) {
+        forv_Vec(VarSymbol, var, vars) {
+          if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
+            SET_LINENO(var);
+            
+            gotoStmt->insertBefore(new CallExpr(autoDestroyFn, var));
+          }
+        }
+      }
+    }
+  }
+}
+
+static bool gotoExitsBlock(GotoStmt* gotoStmt, BlockStmt* block) {
+  SymExpr* labelSymExpr = toSymExpr(gotoStmt->label);
+
+  INT_ASSERT(labelSymExpr);
+
+  Expr* expr = labelSymExpr->var->defPoint;
+
+  while (expr != 0 && expr != block) {
+    expr = expr->parentExpr;
+  }
+
+  return (expr == 0) ? true : false;
+}
+
+static bool stmtMustExitBlock(Expr* stmt) {
+  Expr*     next   = stmt->next;
+  CallExpr* call   = 0;
+  bool      retval = false;
+
+  if (next == 0) {
+    retval = true;
+
+  } else if (isGotoStmt(next) == true) {
+    retval = true;
+
+  } else if ((call = toCallExpr(next)) == 0) {
+    retval = false;
+
+  } else if (call->isPrimitive(PRIM_RETURN)) {
+    retval = true;
+
+  } else if (call->isResolved() &&
+             strcmp(call->isResolved()->name, "_downEndCount") == 0) {
+    retval = true;
+
+  } else {
+    retval = false;
+  }
+
+
+  return retval;
+}
+
+static void updateBlockExit(Expr*            stmt,
+                            BlockStmt*       block,
+                            Vec<VarSymbol*>& vars) {
+  forv_Vec(VarSymbol, var, vars) {
+    if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
+      CallExpr* refTmpAssign = NULL;
+
+      SET_LINENO(var);
+      
+      var = createRefArgIfNeeded(autoDestroyFn, var, &refTmpAssign);
+
+      stmt->insertAfter(new CallExpr(autoDestroyFn, var));
+      
+      if (refTmpAssign) {
+        stmt->insertAfter(refTmpAssign);
+        stmt->insertAfter(new DefExpr(var));
+      }
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 //
