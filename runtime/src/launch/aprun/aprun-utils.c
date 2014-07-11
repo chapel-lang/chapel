@@ -1,3 +1,6 @@
+//
+// This file is used by both the aprun and pbs-aprun launcher code
+//
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,40 +12,19 @@
 #include "chpl-mem.h"
 #include "chpltypes.h"
 #include "error.h"
+//
+// We need to specify the path to aprun-utils.c since this file is
+// also compiled in the pbs-aprun directory
+//
+#include "../aprun/aprun-utils.h"
 
 //
 // First stab at unifying aprun functionality
 //
 // TODO:
-// - restructure to enable actual unification
 // - add init routine that does the cnselect (and -cc flag stuff)
 //
 
-// FIX ME WHEN WE SORT OUT THIS BATCH SCHEDULER + LAUNCHER STUFF
-// THIS SHOULD GO INTO SOME HEADER FILE
-typedef enum {
-  aprun_cc,   // binding policy
-  aprun_n,    // cores per locale
-  aprun_d,    // num locales
-  aprun_N,    // locales per node
-  aprun_j,    // cpus per node (newer versions of aprun)
-  aprun_none
-} aprun_arg_t;
-
-void initAprunAttributes(void);
-const char* getCoresPerLocaleStr(void);
-int getCoresPerLocale(void);
-const char* getLocalesPerNodeStr(void);
-int getLocalesPerNode(void);
-const char* getCPUsPerCUStr(void);
-int getCPUsPerCU(void);
-const char* getNumLocalesStr(void);
-const char* getAprunArgStr(aprun_arg_t arg); // possibly inline
-int getAprunArg(aprun_arg_t argt);           // possibly inline
-
-//
-// FIX ME ABOVE
-//
 
 #define CNAbuflen 2048
 static char CNA[CNAbuflen];
@@ -51,7 +33,8 @@ static char const *aprun_arg_strings[aprun_none] = { "-cc",
                                                      "-n",
                                                      "-d",
                                                      "-N",
-                                                     "-j"};
+                                                     "-j",
+                                                     "-k"};
 
 //
 // Return the appropriate integer value for given argument type
@@ -73,6 +56,8 @@ int getAprunArg(aprun_arg_t argt) {
     return getLocalesPerNode();
   case aprun_j:
     return getCPUsPerCU();
+  case aprun_k:
+    return -1; // no arg needed
   default:
     return -1;
   }
@@ -198,4 +183,48 @@ int getCPUsPerCU() {
     numCPUsPerCU = 0;
 
   return numCPUsPerCU;
+}
+
+//
+// This function allocates and returns a NULL terminated argument list
+// with the aprun command to be run
+//
+extern const char *CHPL_TARGET_ARCH; // supplied by the generated code
+char** chpl_create_aprun_cmd(int argc, char* argv[],
+                             int32_t numLocales, const char* _ccArg) {
+  char _nbuf[16];
+  char _dbuf[16];
+  char _Nbuf[16];
+  char _jbuf[16];
+  char *largv[8];
+  int largc = 0;
+  const char *ccArg = _ccArg ? _ccArg : "none";
+  int CPUsPerCU;
+
+  initAprunAttributes();
+
+  largv[largc++] = (char *) "aprun";
+  if (verbosity < 2) {
+    largv[largc++] = (char *) "-q";
+  }
+  sprintf(_nbuf, "%s%d", getNumLocalesStr(), numLocales);
+  if (strcmp(CHPL_TARGET_ARCH, "knc")==0) {
+    largv[largc++] = _nbuf;
+    largv[largc++] = (char *) getAprunArgStr(aprun_k);
+    
+  } else {
+    largv[largc++] = (char *) getAprunArgStr(aprun_cc);
+    largv[largc++] = (char *) ccArg;
+    sprintf(_dbuf, "%s%d", getCoresPerLocaleStr(), getCoresPerLocale());
+    largv[largc++] = _dbuf;
+    largv[largc++] = _nbuf;
+    sprintf(_Nbuf, "%s%d", getLocalesPerNodeStr(), getLocalesPerNode());
+    largv[largc++] = _Nbuf;
+    if ((CPUsPerCU = getCPUsPerCU()) >= 0) {
+      sprintf(_jbuf, "%s%d", getCPUsPerCUStr(), getCPUsPerCU());
+      largv[largc++] = _jbuf;
+    }
+  }
+
+  return chpl_bundle_exec_args(argc, argv, largc, largv);
 }

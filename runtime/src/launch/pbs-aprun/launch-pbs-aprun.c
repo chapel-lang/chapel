@@ -1,3 +1,7 @@
+// get popen/pclose
+#ifndef _XOPEN_SOURCE
+#define _XOPEN_SOURCE 600
+#endif
 #include <libgen.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,31 +14,7 @@
 #include "chpl-mem.h"
 #include "chpltypes.h"
 #include "error.h"
-
-// FIX ME WHEN WE SORT OUT THIS BATCH SCHEDULER + LAUNCHER STUFF
-// THIS SHOULD GO INTO SOME HEADER FILE
-typedef enum {
-  aprun_cc,   // binding policy
-  aprun_n,    // cores per locale
-  aprun_d,    // num locales
-  aprun_N,    // locales per node
-  aprun_j,    // cpus per node (newer versions of aprun)
-  aprun_none
-} aprun_arg_t;
-
-void initAprunAttributes(void);
-const char* getCoresPerLocaleStr(void);
-int getCoresPerLocale(void);
-const char* getLocalesPerNodeStr(void);
-int getLocalesPerNode(void);
-const char* getCPUsPerCUStr(void);
-int getCPUsPerCU(void);
-const char* getNumLocalesStr(void);
-const char* getAprunArgStr(aprun_arg_t arg); // possibly inline
-int getAprunArg(aprun_arg_t argt);           // possibly inline
-//
-// FIX ME ABOVE
-//
+#include "../aprun/aprun-utils.h"
 
 #define baseExpectFilename ".chpl-expect-"
 #define EXPECT "expect"
@@ -219,7 +199,7 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
   int numCoresPerLocale;
   int CPUsPerCU;
   int LocalesPerNode;
-  const char *ccArg = _ccArg ? _ccArg : "none";
+  char **aprun_cmd;
 
   if (basenamePtr == NULL) {
       basenamePtr = argv[0];
@@ -306,13 +286,8 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
     fprintf(expectFile, "send \"cd \\$PBS_O_WORKDIR\\n\"\n");
     fprintf(expectFile, "expect -re \"\\n$chpl_prompt\" {}\n");
     if (verbosity > 2) {
-      fprintf(expectFile, "send \"aprun -cc %s -q -b %s%d %s%d %s%d ", ccArg,
-              getCoresPerLocaleStr(), numCoresPerLocale,
-              getNumLocalesStr(), 1 /* only run on one locale */,
-              getLocalesPerNodeStr(), LocalesPerNode);
-      if (CPUsPerCU >= 0) {
-        fprintf(expectFile, "%s%d ", getCPUsPerCUStr(), CPUsPerCU);
-      }
+      fprintf(expectFile, "send \"aprun -q %s%d ",
+              getNumLocalesStr(), 1 /* only run on one locale */);
       fprintf(expectFile, "ls %s\\n\"\n", chpl_get_real_binary_name());
       fprintf(expectFile, "expect {\n");
       fprintf(expectFile, "  \"failed: chdir\" {send_user "
@@ -332,20 +307,16 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
     outfile = expectFile;
   }
 
-  if (verbosity < 2) {
-    fprintf(outfile, "-q ");
+  aprun_cmd = chpl_create_aprun_cmd(argc, argv, numLocales, _ccArg);
+
+  for (i=1; ; i++) {
+    if (aprun_cmd[i] != NULL)
+      fprintf(outfile, "%s ", aprun_cmd[i]);
+    else
+      break;
   }
-  fprintf(outfile, "-cc %s %s%d %s%d %s%d ", ccArg,
-          getCoresPerLocaleStr(), numCoresPerLocale,
-          getNumLocalesStr(), numLocales,
-          getLocalesPerNodeStr(), LocalesPerNode);
-  if (CPUsPerCU >= 0) {
-    fprintf(outfile, "%s%d ", getCPUsPerCUStr(), CPUsPerCU);
-  }
-  fprintf(outfile, "%s", chpl_get_real_binary_name());
-  for (i=1; i<argc; i++) {
-    fprintf(outfile, " '%s'", argv[i]);
-  }
+
+  free(aprun_cmd);
 
   if (generate_qsub_script) {
     fprintf(qsubScript, "\n\n");

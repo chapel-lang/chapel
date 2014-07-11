@@ -92,8 +92,6 @@ For Cray XC:
 
 - Set CHPL_GMP to 'none' or 'gmp'.
 
-- Set CHPL_LAUNCHER=none.
-
 - Build Chapel as normal.  Running printchplenv should look like this.
 
   CHPL_HOST_PLATFORM: linux64
@@ -106,7 +104,7 @@ For Cray XC:
     CHPL_COMM_SUBSTRATE: mpi
     CHPL_GASNET_SEGMENT: everything
   CHPL_TASKS: fifo
-  CHPL_LAUNCHER: none
+  CHPL_LAUNCHER: aprun
   CHPL_TIMERS: generic
   CHPL_MEM: default
   CHPL_MAKE: gmake
@@ -151,8 +149,7 @@ TODO
 - tcmalloc not supported (lfence not implemented)
 - hwloc not supported (build says not supported)
 - Fix regexp build to use other CHPL_TARGET_COMPILER
-- aprun/srun support
-  - Need CHPL_TARGET_ARCH value used to compile the Chapel program
+- slurm/srun support
 - non-Cray platform support (launcher)
   - ditto about CHPL_TARGET_ARCH
 - Possible WLM support
