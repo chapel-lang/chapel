@@ -804,14 +804,20 @@ while ( $#argv > 0 )
     case --performance:
     case -performance:
         shift
-        set compopts = "$compopts --fast --static"
+        set compopts = "$compopts --fast"
+        if ("$tgt_platform" != "darwin") then
+            set compopts = "$compopts --static"
+        endif
         set performance = 1
         set gengraphs = 1
         breaksw
     case --performance-description:
     case -performance-description:
         shift
-        set compopts = "$compopts --fast --static"
+        set compopts = "$compopts --fast"
+        if ("$tgt_platform" != "darwin") then
+            set compopts = "$compopts --static"
+        endif
         set performance = 1
         set gengraphs = 1
         set performancedescription = $argv[1]
