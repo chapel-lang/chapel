@@ -838,23 +838,34 @@ module ChapelBase {
   pragma "command line setting"
   proc _command_line_cast(param s: c_string, type t, x) return _cast(t, x);
 
+
+  //
+  // Similar to isPrimitiveType, but excludes imaginaries because they
+  // are handled within the Chapel code directly (using overloads further
+  // down in the file) to save complexity in the compiler.
+  //
+  inline proc chpl_typeSupportsPrimitiveCast(type t) param
+    return _isBooleanType(t) || 
+           _isIntegralType(t) || 
+           _isRealType(t) || 
+           t == c_string;
   
-  inline proc _cast(type t, x: bool) where _isPrimitiveType(t)
+  inline proc _cast(type t, x: bool) where chpl_typeSupportsPrimitiveCast(t)
     return __primitive("cast", t, x);
   
-  inline proc _cast(type t, x: bool(?w)) where _isPrimitiveType(t)
+  inline proc _cast(type t, x: bool(?w)) where chpl_typeSupportsPrimitiveCast(t)
     return __primitive("cast", t, x);
   
-  inline proc _cast(type t, x: int(?w)) where _isPrimitiveType(t)
+  inline proc _cast(type t, x: int(?w)) where chpl_typeSupportsPrimitiveCast(t)
     return __primitive("cast", t, x);
   
-  inline proc _cast(type t, x: uint(?w)) where _isPrimitiveType(t)
+  inline proc _cast(type t, x: uint(?w)) where chpl_typeSupportsPrimitiveCast(t)
     return __primitive("cast", t, x);
   
-  inline proc _cast(type t, x: real(?w)) where _isPrimitiveType(t)
+  inline proc _cast(type t, x: real(?w)) where chpl_typeSupportsPrimitiveCast(t)
     return __primitive("cast", t, x);
  
-  inline proc _cast(type t, x: enumerated) where _isPrimitiveType(t) && t!=c_string && t!=string
+  inline proc _cast(type t, x: enumerated) where chpl_typeSupportsPrimitiveCast(t)
     return __primitive("cast", t, x);
 
   inline proc _cast(type t, x) where t:object && x:t
