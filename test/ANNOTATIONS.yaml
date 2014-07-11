@@ -81,7 +81,7 @@ memleaks:
 
 memleaksfull:
   07/08/14:
-    - Removal of string_normalize calls (r23730) caused knucleotide-forall and -coforall to leak much less io memory (2Gb each).
+    - Conversion of knucleotide-forall and -coforall to read input line-by-line (23733).
   07/10/14:
     - Included tests that leak only string data in the Number of Tests with Leaks (r23785).
 
