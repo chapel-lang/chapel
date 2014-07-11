@@ -76,6 +76,14 @@ memleaks:
     - Fixed leakage of sync and single array elements
   04/08/14:
     - Enabled GMP in nightly testing, allowing pidigits to run in memory leaks
+  07/09/14:
+    - Included tests that leak only string data in the Number of Tests with Leaks (r23785).
+
+memleaksfull:
+  07/08/14:
+    - Removal of string_normalize calls (r23730) caused knucleotide-forall and -coforall to leak much less io memory (2Gb each).
+  07/10/14:
+    - Included tests that leak only string data in the Number of Tests with Leaks (r23785).
 
 meteor:
   12/18/13:
