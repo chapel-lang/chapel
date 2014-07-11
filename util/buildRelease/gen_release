@@ -2,7 +2,7 @@
 
 use Cwd;
 use Cwd 'abs_path';
-use File::Path qw(make_path);
+use File::Path qw(mkpath);
 use File::Spec;
 use File::Temp qw/ tempdir /;
 
@@ -172,7 +172,7 @@ if (defined($ENV{"CHPL_HOME"})) {
 
 if (! -d $resultdir) {
     print("Creating $resultdir\n");
-    make_path($resultdir, verbose => 1);
+    mkpath($resultdir, 1);
 }
 
 $cmd = "tar -cz -f $resultdir/$reldir.tar.gz @tarfiles";
