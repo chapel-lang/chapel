@@ -221,8 +221,8 @@ void parseArgs(int* argc, char* argv[]) {
           parseConfigFile(currentArg, lineno, filename);
         } else {
           parseConfigFile(currentArg + 2, lineno, filename);
-          break;
         }
+        break;
 
       case 'h':
         if (currentArg[2] == '\0') {
