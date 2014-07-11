@@ -185,22 +185,22 @@
 # In particular, a failure indicates that a test's performance
 # keys couldn't all be found.
 #
-# Performance tests can also be timed via the UNIX 'time' command by
-# supplying a PERFTIMEEXEC or .perftimeexec file (contents don't
-# matter).  This has the effect of executing the program with 
-# 'time -p' on the command line such that the output of the 'time'
-# command gets appended to the end of the .exec.out.tmp file.  A
+# Performance tests can also be timed via a user specifiable timer by
+# supplying a PERFTIMEEXEC or .perftimeexec file (whose contents are
+# only a single non-comment line that is the name of a timer to use
+# (must be located in util/test/timers/.) For example a PERFTIMEEXEC
+# file may contain the line 'defaultTimer' which has the effect of
+# running "defaultTimer ./executable" where defaultTimer is
+# essentailly a wrapper that is responsible for running the executable
+# and adding timing information to the .exec.out.tmp file. A
 # .perfkeys entry can then be read to read these values as with any
-# other key/value pair in performance testing.  The intent of this
+# other key/value pair in performance testing. The intent of this
 # feature is to time the whole Chapel program externally rather than
 # using Chapel-level timing mechanisms, either to time
 # startup/shutdown code that's normally outside of the user's ability
 # to time; or to avoid cluttering the sources with timing-related
-# code.  If desired, we can also add a PERFTIMECOMP/.perftimecomp
-# capability; we've also discussed the idea of adding the ability to
-# specify the timing routine within the file's contents, though we
-# should consider whether the flexibility is worth the confusion/
-# potential for problems.
+# code. If desired, we can also add a PERFTIMECOMP/.perftimecomp
+# capability
 #
 # If the -perflabel <label> option is given, the label is used
 # instead of "perf" in file name suffixes, and its all-caps version

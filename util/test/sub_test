@@ -298,6 +298,29 @@ def Fatal(message):
     sys.stdout.write('[Error (sub_test): '+message+']\n')
     sys.exit(-1)
 
+# Attempts to find an appropriate timer to use. The timer must be in
+# utildir/timers/. Expects to be passed a file containing only the name of
+# the timer script. If the file is improperly formatted the default timer is
+# used, and if the timer is not executable or can't be found 'time -p' is used
+def GetTimer(f):
+    timersdir = os.path.join(utildir, 'timers')
+    defaultTimer = os.path.join(timersdir, 'defaultTimer')
+
+    lines = ReadFileWithComments(f)
+    if len(lines) != 1:
+        sys.stdout.write('[Error "%s" must contain exactly one non-comment line '
+            'with the name of the timer located in %s to use. Using default ' 
+            'timer %s.]\n' %(f, timersdir, defaultTimer))
+        timer = defaultTimer
+    else:
+        timer = os.path.join(timersdir, lines[0])
+
+    if not os.access(timer,os.R_OK|os.X_OK):
+        sys.stdout.write('[Error cannot execute timer "%s", using "time -p"]\n' %(timer))
+        return 'time -p'
+
+    return timer
+
 # attempts to find an appropriate .good file. Good files are expected to be of
 # the form basename.<configuration>.<commExecNums>.good. Where configuration
 # options are one of the below configuration specific parameters that are
@@ -484,17 +507,12 @@ else:
     directoryTimeout = globalTimeout
 # sys.stdout.write('globalTimeout=%d\n'%(globalTimeout))
 
-#
 # Check for global PERFTIMEEXEC option
-#
-# TODO: Eventually, we could store the time command to use within this
-# file itself to permit various other options to be used; on the other
-# hand, that could be considered a potential security risk...
-#
-if os.access(PerfDirFile('TIMEEXEC'),os.R_OK):  # e.g. ./PERFTIMEEXEC
-    globalTimeExec=True
+timerFile = PerfDirFile('TIMEEXEC') # e.g. ./PERFTIMEEXEC
+if os.access(timerFile, os.R_OK):
+    globalTimer = GetTimer(timerFile)
 else:
-    globalTimeExec=False
+    globalTimer = None
 
 # Get global timeout for kill
 if os.access('./KILLTIMEOUT',os.R_OK):
@@ -772,9 +790,9 @@ for testname in testsrc:
     killtimeout = globalKillTimeout
     numTrials = globalNumTrials
     if (perftest):
-        timeExec = globalTimeExec
+        timer = globalTimer
     else:
-        timeExec = False;
+        timer = None
     futuretest=''
     executebin=execute
     testfuturesfile=False
@@ -831,7 +849,7 @@ for testname in testsrc:
             timeout=ReadIntegerValue(f, localdir)
             sys.stdout.write('[Overriding default timeout with %d]\n'%(timeout))
         elif (perftest and suffix==PerfSfx('timeexec') and os.access(f, os.R_OK)): #e.g. .perftimeexec
-            timeExec = True
+            timer = GetTimer(f)
 
         elif (perftest and suffix==PerfSfx('numtrials') and os.access(f, os.R_OK)): #e.g. .perfnumtrials
             numTrials = ReadIntegerValue(f, localdir)
@@ -1303,9 +1321,9 @@ for testname in testsrc:
                 break; # on to next compopts
 
             args=list()
-            if timeExec:
-                cmd='time'
-                args+=['-p']+['./'+execname]
+            if timer:
+                cmd=timer
+                args+=['./'+execname]
             elif launchcmd:
                 launch_cmd_list = shlex.split(launchcmd)
                 cmd = launch_cmd_list[0]
