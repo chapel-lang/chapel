@@ -142,6 +142,8 @@ memleaks.graph
 memleaksfull.graph
 # suite: Code size tracking
 studies/jacobi/jacobi.graph
+# suite: Startup tracking
+performance/elliot/no-op.graph
 # suite: Misc
 users/franzf/v0/chpl/main.graph
 reductions/diten/testSerialReductions.graph
