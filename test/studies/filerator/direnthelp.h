@@ -1,7 +1,16 @@
 #include "dirent.h"
 
 typedef DIR* DIRptr;
+
+#ifndef __USE_FILE_OFFSET64
 typedef struct dirent* direntptr;
+#else
+#ifdef __REDIRECT
+typedef struct dirent* direntptr;
+#else
+typedef struct dirent64* direntptr;
+#endif
+#endif
 
 #define chpl_rt_direntptr_getname(x) ((x)->d_name)
 
