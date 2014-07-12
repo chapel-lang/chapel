@@ -925,9 +925,10 @@ void validate_cache(struct rdcache_s* tree);
 
 static
 int get_top_bits(raddr_t raddr, int32_t node) {
-  uintptr_t val;
+  uint64_t val;
 
-  val = raddr >> (HALF_BITS + CACHEPAGE_BITS);
+  val = raddr;
+  val = val >> (HALF_BITS + CACHEPAGE_BITS);
   val ^= (node & 0xaaaaaaaa); // spread node variation between top and bottom
   val &= (TOP_SIZE-1);
 
@@ -944,7 +945,8 @@ int get_bottom_bits(raddr_t raddr, int32_t node) {
 
 static
 uint32_t get_high_bits(raddr_t raddr) {
-  return (raddr >> (HALF_BITS + CACHEPAGE_BITS)) & (HALF_SIZE-1);
+  uint64_t val = raddr;
+  return (val >> (HALF_BITS + CACHEPAGE_BITS)) & (HALF_SIZE-1);
 }
 
 static
