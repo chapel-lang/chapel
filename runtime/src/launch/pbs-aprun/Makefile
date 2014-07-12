@@ -12,12 +12,8 @@ include $(RUNTIME_ROOT)/make/Makefile.runtime.head
 
 LAUNCH_OBJDIR = $(LAUNCHER_OBJDIR)
 include Makefile.share
-
-aprun_utils.c: FORCE
-	cp ../aprun/aprun-utils.c .
-
 TARGETS = \
-	aprun_utils.c \
+	aprun-utils.c \
 	$(LAUNCHER_OBJS) \
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.subdirrules
