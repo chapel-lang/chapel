@@ -174,7 +174,9 @@ static inline void qio_lock_destroy(qio_lock_t* x) {
 
 typedef pthread_mutex_t qio_lock_t;
 // these should return 0 on success; otherwise, an error number.
-static inline qioerr qio_lock(qio_lock_t* x) { return pthread_mutex_lock(x); }
+static inline qioerr qio_lock(qio_lock_t* x) {
+  return qio_int_to_err(pthread_mutex_lock(x));
+}
 
 // qio_unlock does not return an error because it can only usefully
 // return the error that the mutex isn't owned by this process
@@ -187,7 +189,7 @@ static inline qioerr qio_lock_init(qio_lock_t* x) {
   err_t err, newerr;
 
   err = pthread_mutexattr_init(&attr);
-  if( err ) return err;
+  if( err ) return qio_int_to_err(err);
   err = pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
   if( ! err ) {
     err = pthread_mutex_init(x, &attr);
