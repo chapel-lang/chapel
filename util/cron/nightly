@@ -508,6 +508,7 @@ delete($ENV{'CHPL_HOME'});
 
 if (-d "$chplhomedir/.git") {
     $revision = `git rev-parse --short HEAD`;
+    $revision = "https://github.com/chapel-lang/chapel/commit/$revision";
 } elsif (-d "$chplhomedir/.svn") {
     $revision = `cd $chplhomedir && svnversion`;
 } else {
