@@ -10,7 +10,7 @@ void test_endian(void)
   // as big endian and little endian, and then we check
   // that the data is what we expected.
   
-  err_t err;
+  qioerr err;
   qio_file_t* f;
   qio_channel_t* writing;
   qio_channel_t* reading;
@@ -87,7 +87,7 @@ void test_endian(void)
 
 void test_readwriteint(void)
 {
-  err_t err;
+  qioerr err;
   qio_file_t* f;
   qio_channel_t* writing;
   qio_channel_t* reading;
@@ -157,7 +157,7 @@ void test_readwriteint(void)
 
 void test_printscan_int(void)
 {
-  err_t err;
+  qioerr err;
   qio_file_t* f;
   qio_channel_t* writing;
   qio_channel_t* reading;
@@ -317,7 +317,7 @@ void test_printscan_int(void)
       assert(!err);
 
       err = qio_channel_read(true, reading, got, sizeof(got), &amt_read);
-      assert(err == EEOF);
+      assert(qio_err_to_int(err) == EEOF);
 
       //printf("Got    '%s' expect '%s'\n", got, expect);
       //
@@ -352,7 +352,7 @@ void test_printscan_int(void)
 
 void test_printscan_float(void)
 {
-  err_t err;
+  qioerr err;
   qio_file_t* f;
   qio_channel_t* writing;
   qio_channel_t* reading;
@@ -569,7 +569,7 @@ void test_printscan_float(void)
       assert(!err);
 
       err = qio_channel_read(true, reading, got, sizeof(got), &amt_read);
-      assert(err == EEOF);
+      assert(qio_err_to_int(err) == EEOF);
 
       //printf("Got    '%s'\n", got);
 
@@ -611,7 +611,7 @@ void test_verybasic()
 	qio_file_t *f = NULL;
 	qio_channel_t *writing = NULL;
 	qio_channel_t *reading = NULL;
-	err_t err; 
+	qioerr err; 
 	char buf[4] = {0};
 	
 	//open the tmp file, create a write channel, write our data, and release the channel
@@ -651,7 +651,7 @@ void string_escape_tests()
 	qio_channel_t *reading;
 	qio_channel_t *writing;
 	qio_file_t *f = NULL;
-	err_t err;
+	qioerr err;
         const char* inputs[2][4] = { {"a \"\\b\x01", // original string
                                       "\"a \\\"\\\\b\x01\"", // simple encoding
                                       "\"a \\\"\\\\b\\x01\"", // chapel encoding
@@ -723,7 +723,7 @@ void write_65k_test()
 {
         const char *out = NULL;
 	char *p = NULL;
-        err_t err;
+        qioerr err;
         qio_file_t *f = NULL;
         qio_channel_t *reading = NULL;
         qio_channel_t *writing = NULL;
@@ -781,7 +781,7 @@ void max_width_test()
 {
         const char *out = NULL;
         ssize_t out_len = 0;
-        err_t err;
+        qioerr err;
         qio_file_t *f = NULL;
         qio_channel_t *reading = NULL;
         qio_channel_t *writing = NULL;
@@ -831,7 +831,7 @@ void min_width_test()
 {
         const char *out = NULL;
         ssize_t out_len = 0;
-        err_t err;
+        qioerr err;
         qio_file_t *f = NULL;
         qio_channel_t *reading = NULL;
         qio_channel_t *writing = NULL;
@@ -876,7 +876,7 @@ void basicstring_test()
 { 
  	const char *out = NULL;
         ssize_t out_len = 0;
-        err_t err;
+        qioerr err;
 	int x,y=0;
         qio_file_t *f = NULL;
         qio_channel_t *reading = NULL;
@@ -996,7 +996,7 @@ void test_readwritestring()
 
 void test_scanmatch()
 {
-  err_t err;
+  qioerr err;
   qio_file_t *f = NULL;
   qio_channel_t *reading = NULL;
   qio_channel_t *writing = NULL;
@@ -1027,11 +1027,11 @@ void test_scanmatch()
   assert(!err);
 
   err = qio_channel_scan_literal(true, reading, "test", 4, 1);
-  assert(err == EFORMAT);
+  assert(qio_err_to_int(err) == EFORMAT);
   err = qio_channel_scan_literal(true, reading, "match", 5, 1);
   assert(err == 0);
   err = qio_channel_scan_literal(true, reading, "match", 5, 1);
-  assert(err == EEOF);
+  assert(qio_err_to_int(err) == EEOF);
 
   qio_channel_release(reading);
 
@@ -1064,7 +1064,7 @@ void test_scanmatch()
   assert(!err);
 
   err = qio_channel_scan_literal(true, reading, "ab", 2, 1);
-  assert(err == EFORMAT);
+  assert(qio_err_to_int(err) == EFORMAT);
   err = qio_channel_scan_literal(true, reading, "a", 1, 1);
   assert(err == 0);
   err = qio_channel_scan_literal(true, reading, " ", 1, 1);
@@ -1072,7 +1072,7 @@ void test_scanmatch()
   err = qio_channel_scan_literal(true, reading, "b", 1, 1);
   assert(err == 0);
   err = qio_channel_scan_literal(true, reading, "a", 1, 1);
-  assert(err == EEOF);
+  assert(qio_err_to_int(err) == EEOF);
 
   qio_channel_release(reading);
 
@@ -1080,13 +1080,13 @@ void test_scanmatch()
   assert(!err);
 
   err = qio_channel_scan_literal(true, reading, "ab", 2, 1);
-  assert(err == EFORMAT);
+  assert(qio_err_to_int(err) == EFORMAT);
   err = qio_channel_scan_literal(true, reading, "a ", 2, 1);
   assert(err == 0);
   err = qio_channel_scan_literal(true, reading, "b", 1, 1);
   assert(err == 0);
   err = qio_channel_scan_literal(true, reading, "a", 1, 1);
-  assert(err == EEOF);
+  assert(qio_err_to_int(err) == EEOF);
 
   qio_channel_release(reading);
 
@@ -1097,7 +1097,7 @@ void test_scanmatch()
 
 void do_test_utf8(int wchar, char* utf8)
 {
-  err_t err;
+  qioerr err;
   qio_file_t *f = NULL;
   qio_channel_t *reading = NULL;
   qio_channel_t *writing = NULL;
@@ -1190,7 +1190,7 @@ void test_quoted_string_maxlength(void)
   qio_channel_t *reading;
   qio_channel_t *writing;
   qio_file_t *f = NULL;
-  err_t err;
+  qioerr err;
   const char* inputs[8][16] = {
     { "",     // original string
       "\"\"", // maxlen = 1

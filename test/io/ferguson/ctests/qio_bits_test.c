@@ -22,7 +22,7 @@ void check_bits(int offset, int padding)
                        };
 
   uint8_t expect[] = {0xb2, 0xb8, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x03, 0xf7, 0xfb, 0xfb, 0x08, 0xc0, 0x80, 0x7f, 0x80, 0x7f, 0x90, 0x7f, 0xc0, 0x80, 0x40, 0xff, 0x40, 0xff, 0x40};
-  err_t err;
+  qioerr err;
   int i;
 
 
@@ -159,7 +159,7 @@ void check_write_read_pat(int width, int num, int pat, qio_chtype_t type, qio_hi
   qio_file_t* f;
   qio_channel_t* writing;
   qio_channel_t* reading;
-  err_t err;
+  qioerr err;
   int memory;
   char* chhints;
   char* fhints;
@@ -337,7 +337,7 @@ int main(int argc, char** argv)
     qio_channel_t* reading;
     uint64_t got;
     uint64_t expect;
-    err_t err;
+    qioerr err;
     
 
     //qbytes_iobuf_size = 256;

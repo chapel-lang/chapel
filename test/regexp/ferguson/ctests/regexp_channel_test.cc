@@ -157,7 +157,7 @@ void check_channel(qio_hint_t file_hints, qio_hint_t ch_hints, char unbounded_ch
   qio_channel_t* writing;
   qio_channel_t* reading;
   int64_t start = 0;
-  int err;
+  qioerr err;
   char* chhints;
   char* fhints;
   int memory;
@@ -248,9 +248,10 @@ void check_channel(qio_hint_t file_hints, qio_hint_t ch_hints, char unbounded_ch
       assert( got == 0 );
     } else {
       off_t off;
+      int syserr;
 
-      err = sys_lseek(f->fd, start, SEEK_SET, &off);
-      assert(!err);
+      syserr = sys_lseek(f->fd, start, SEEK_SET, &off);
+      assert(!syserr);
     }
   }
 
@@ -284,9 +285,10 @@ void check_channel(qio_hint_t file_hints, qio_hint_t ch_hints, char unbounded_ch
   // Rewind the file to the start of what we should read.
   if( !memory ) {
     off_t off;
+    int syserr;
 
-    err = sys_lseek(f->fd, test_start, SEEK_SET, &off);
-    assert(!err);
+    syserr = sys_lseek(f->fd, test_start, SEEK_SET, &off);
+    assert(!syserr);
   }
 
   // Read the data.
@@ -343,7 +345,7 @@ void check_channel(qio_hint_t file_hints, qio_hint_t ch_hints, char unbounded_ch
       }
 
       if( re_test->first_offset == -1 ) {
-        assert( err == EFORMAT );
+        assert( qio_err_to_int(err) == EFORMAT );
       } else {
         assert(!err);
       }

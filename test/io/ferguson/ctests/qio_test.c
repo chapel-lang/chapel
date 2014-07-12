@@ -25,7 +25,7 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
   int64_t offset;
   int64_t usesz;
   int64_t end = start + len;
-  int err;
+  qioerr err;
   unsigned char* chunk;
   unsigned char* got_chunk;
   int64_t k;
@@ -108,9 +108,10 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
       assert( got == 0 );
     } else {
       off_t off;
+      int syserr;
 
-      err = sys_lseek(f->fd, start, SEEK_SET, &off);
-      assert(!err);
+      syserr = sys_lseek(f->fd, start, SEEK_SET, &off);
+      assert(!syserr);
     }
   }
 
@@ -163,7 +164,7 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
 
       err = qio_channel_write(threadsafe, writing, chunk, 1, &amt_written);
       assert(amt_written == 0);
-      assert( err == EEOF );
+      assert( qio_err_to_int(err) == EEOF );
     }
   }
 
@@ -180,8 +181,9 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
   // Check that the file is the right length.
   if( !memory ) {
     struct stat stats;
-    err = sys_fstat(f->fd, &stats);
-    assert(!err);
+    int syserr;
+    syserr = sys_fstat(f->fd, &stats);
+    assert(!syserr);
     assert(stats.st_size == end);
   }
 
@@ -191,9 +193,10 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
   // Rewind the file 
   if( !memory ) {
     off_t off;
+    int syserr;
 
-    sys_lseek(f->fd, start, SEEK_SET, &off);
-    assert(!err);
+    syserr = sys_lseek(f->fd, start, SEEK_SET, &off);
+    assert(!syserr);
   }
 
   // Read the data.
@@ -212,8 +215,10 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
     if( readfp ) {
       amt_read = fread(got_chunk, 1, usesz, readfp);
     } else {
+      int errcode;
       err = qio_channel_read(threadsafe, reading, got_chunk, usesz, &amt_read);
-      assert( err == EEOF || err == 0);
+      errcode = qio_err_to_int(err);
+      assert( errcode == EEOF || errcode == 0);
     }
     assert(amt_read == usesz);
 
@@ -240,7 +245,7 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
     }
 
     err = qio_channel_read(threadsafe, reading, got_chunk, 1, &amt_read);
-    assert( err == EEOF );
+    assert( qio_err_to_int(err) == EEOF );
   }
 
   qio_channel_release(reading);

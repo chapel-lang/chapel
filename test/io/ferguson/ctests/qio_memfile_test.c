@@ -8,7 +8,7 @@ int main(int argc, char** argv)
   qbuffer_t* buf;
   qio_file_t* f;
   qio_channel_t* ch;
-  err_t err;
+  qioerr err;
   char* testone = "the first test ";
   char* testtwo = "the second test";
   char* expect = "the first test the second test";

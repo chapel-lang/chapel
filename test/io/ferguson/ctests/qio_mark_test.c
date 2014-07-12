@@ -8,7 +8,7 @@ void check_mark_easy(void)
   qio_channel_t* reading;
   int64_t offset;
 
-  err_t err;
+  qioerr err;
 
   err = qio_file_open_tmp(&f, 0, NULL);
   assert(!err);
@@ -78,7 +78,7 @@ void check_mark(char* writepattern, char* readpattern)
   int64_t offset;
   int32_t got;
 
-  err_t err;
+  qioerr err;
   int i;
 
   err = qio_file_open_tmp(&f, 0, NULL);
@@ -134,7 +134,7 @@ void check_mark(char* writepattern, char* readpattern)
       default:
         got = qio_channel_read_byte(true, reading);
         if( got >= 0 ) assert(got == readpattern[i]);
-        else err = -got;
+        else err = qio_int_to_err(-got);
     }
     assert(!err);
   }

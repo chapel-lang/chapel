@@ -45,7 +45,7 @@ void test_reallocate(void)
   // let's reallocate.
   {
     deque_t d;
-    int err;
+    qioerr err;
     ssize_t saved_size;
     deque_node_t saved_nodes[2*_DEQUE_INITIAL_MAP_SIZE];
     deque_node_t* cur;

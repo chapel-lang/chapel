@@ -4,7 +4,7 @@
 void test_qbytes(void)
 {
   qbytes_t* b;
-  int err;
+  qioerr err;
 
   // easiest test -- create and release.
   err = qbytes_create_iobuf(&b);
@@ -91,7 +91,7 @@ void test_qbuffer_iterators(qbuffer_t* buf, qbytes_t** qb, int num, int skip, in
     qbytes_t* flat;
     qbytes_t* flat2;
     qbytes_t* zeros;
-    int err;
+    qioerr err;
 
     err = qbuffer_flatten(buf, start, end, &flat);
     assert(!err);
@@ -218,7 +218,7 @@ void test_qbuffer_iterators(qbuffer_t* buf, qbytes_t** qb, int num, int skip, in
 void test_qbuffer_with(qbytes_t** qb, int num, int skip, int trunc)
 {
   qbuffer_t buf;
-  int err;
+  qioerr err;
   int i;
   int j;
 
@@ -288,7 +288,7 @@ void test_qbuffer(void)
   qbuffer_t buf;
   qbytes_t* b[8];
   int i,j, skip, trunc;
-  int err;
+  qioerr err;
   int maxskip = 3;
   int maxtrunc = 3;
 
@@ -345,7 +345,7 @@ void test_qbuffer_two(void)
   qbytes_t* bufab2_flat;
   qbytes_t* bufb2_flat;
   int i,j, x,y;
-  err_t err;
+  qioerr err;
 
   // create some bytes objects...
   i = 0;
@@ -479,7 +479,7 @@ void test_qbuffer_edges(void)
   qbytes_t *b1;
   qbytes_t *b2;
   qbytes_t *b3;
-  err_t err;
+  qioerr err;
   int len = 1;
   qbuffer_iter_t start, end, cur;
   int totallen = 3*len;
