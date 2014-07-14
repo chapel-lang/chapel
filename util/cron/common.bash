@@ -111,7 +111,7 @@ else
 fi
 export logdir_prefix
 
-export CHPL_NIGHTLY_LOGDIR=$logdir_prefix/Nightly
+export CHPL_NIGHTLY_LOGDIR=${CHPL_NIGHTLY_LOGDIR:-$logdir_prefix/Nightly}
 export CHPL_NIGHTLY_STATDIR=$CHPL_NIGHTLY_LOGDIR/Stats
 export CHPL_NIGHTLY_CRON_LOGDIR=$CHPL_NIGHTLY_LOGDIR
 
