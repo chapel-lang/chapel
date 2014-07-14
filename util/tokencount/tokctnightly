@@ -48,6 +48,16 @@ $today = `date +%w-%a`; chomp($today);
 
 
 #
+# get build url
+#
+if (exists($ENV{"BUILD_URL"})) {
+    $buildurl = $ENV{"BUILD_URL"};
+} else {
+    $buildurl = "unknown";
+}
+
+
+#
 # set mail options
 #
 $mailer = $ENV{'CHPL_MAILER'};
@@ -275,6 +285,7 @@ sub mysystem {
 	    print MAIL "=== Summary ===================================================\n";
 	    print MAIL "ERROR $_[1]: $status\n";
 	    print MAIL "===============================================================\n";
+	    print MAIL "Build: ", $buildurl;
 	    close(MAIL);
 	}
 

@@ -50,6 +50,17 @@ if ($cronrecipient ne "") {
     $allmail = $cronrecipient;
 }
 
+
+#
+# get build url
+#
+if (exists($ENV{"BUILD_URL"})) {
+    $buildurl = $ENV{"BUILD_URL"};
+} else {
+    $buildurl = "unknown";
+}
+
+
 $platform = `uname -s`;
 chomp($platform);
 $platform = lc($platform);
@@ -153,6 +164,7 @@ open(MAIL, $mailcommand);
 
 print MAIL "=== Results - testRelease =================================================\n";
 print MAIL "Hostname:   ", `hostname`;
+print MAIL "Build: ", $buildurl;
 print MAIL "\$tmpdir:    $tmpdir\n";
 print MAIL "\$chplhome:  $chplhome\n";
 print MAIL "Ended:      ", scalar(localtime()), "\n";
