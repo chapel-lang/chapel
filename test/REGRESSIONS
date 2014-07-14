@@ -25,6 +25,11 @@ linux64 regressions (in addition to the above)
 (Reviewed for accuracy 05/30/14)
 ==============================================
 
+an issue with empty directories under git
+-----------------------------------------
+[Error matching compiler output for compflags/bradc/readDirInsteadOfFile (compopts: 1)]
+[Error matching program output for io/bradc/testPath]
+
 
 ==============================================
 linux32 regressions (in addition to the above)
@@ -182,6 +187,10 @@ nondeterministic compilation segfault
 (believed to be due to memory limit; brad tried increasing 04/02/14)
 --------------------------------------------------------------------
 [Error matching compiler output for memory/shannon/outofmemory/mallocOutOfMemory]
+
+Memory use increased by 8 bytes on 7/11/14
+------------------------------------------
+[Error matching program output for memory/shannon/printFinalMemStat]
 
 
 ====================================================
@@ -730,6 +739,10 @@ qthreads.numa regressions
 (Reviewed for accuracy 05/30/14)
 =======================================
 
+Memory use increased by 8 bytes on 7/11/14
+------------------------------------------
+[Error matching program output for memory/shannon/printFinalMemStat]
+
 
 ====================================
 gasnet.qthreads.flat regressions
@@ -822,7 +835,7 @@ the iterator record should be zero-initialized (or initialized in some way)
 so that it is valid when passed to _freeIterator46.
 ---------------------------------------------------------------------------
 [Error matching program output for modules/standard/Sort/sungeun/sorty (execopts: 1)]
-[Error matching program output for modules/standard/Sort/sungeun/sorty (execopts: 2)]
+[Error matching program output for modules/standard/Sort/sungeun/sorty (execopts: 2)] (succeeded 7/7/14)
 [Error matching program output for modules/standard/Sort/sungeun/sorty (execopts: 3)]
 Note: execopts: 2 started non-deterministically failing on 5/15/14 instead of
 consistently failing due to r23385
@@ -842,7 +855,8 @@ think we would prefer these errors.
 
 glibc double free or corruption (09/28/13)
 ----------------------------------------------------------------
-[Error matching program output for release/examples/benchmarks/hpcc/hpl] (also listed in TRIAGE file as it seems to flit in and out)
+ (some of these and more are also in TRIAGE as they seem to flit in and out)
+[Error matching program output for release/examples/benchmarks/hpcc/hpl]
 [Error matching program output for studies/hpcc/FFT/marybeth/fft-test-even]
 [Error matching program output for studies/hpcc/HPL/bradc/hpl-blc-noreindex]
 [Error matching program output for studies/hpcc/HPL/bradc/hpl-blc]

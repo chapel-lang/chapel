@@ -31,19 +31,20 @@ New problems
 (Ones that prove persistent should be moved to REGRESSIONS.)
 =========================================================
 
-Non-deterministic baseline 'glibc double free or corruption' (6/17/14, 6/23/14)
-----------------------------------------------------------------------
-This i also listed in the REGRESSIONS file, but I'm not sure when it
-started being intermittent.
-[Error matching program output for release/examples/benchmarks/hpcc/hpl]
+Comes up in whitebox/cray-xe testing; last noticed 7/14/14
+----------------------------------------------------------
+[Error matching program output for studies/filerator/listdir (compopts: 1, execopts: 1)]
+[Error matching program output for studies/filerator/listdir (compopts: 1, execopts: 2)]
+[Error matching program output for studies/filerator/listdir (compopts: 1, execopts: 3)]
+[Error matching program output for studies/filerator/listdir (compopts: 1, execopts: 4)]
+
 
 cray-xe.cray-prgenv-cray.none.fifo.flat--linux64.gnu
 ----------------------------------------------------
 
-This test is missing some whitespace in the output. First failure occurred
-2014-06-07.
-
-[Error matching program output for functions/deitz/iterators/test_instantiate_iterator3a]
+This test is missing some whitespace in the output.
+(Its failures on 4/27, 4/28, 5/9, 6/2, 7/6/14 were not specific to this test.)
+[Error matching program output for functions/deitz/iterators/test_instantiate_iterator3a] (5/3, 6/7/14)
 
 These all timed out on 2014-06-07 on chpbld02. The cray PrgEnv is notoriously
 slow, and it's possible the box was extra busy doing something else (like
@@ -125,8 +126,16 @@ numa+gasnet timeouts
 [Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi] (6/17/14)
 [Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_array] (6/19/14)
 
-nondet. baseline output
------------------------
+Non-deterministic 'glibc detected'
+ "double free or corruption", "invalid pointer", others?
+ happens mostly under --baseline, but also
+ for intel and pgi on chpbld02 (aka whitebox/cray-xe)
+----------------------------------------------------------------------
+* Some of these are also listed in the REGRESSIONS file under --baseline:
+[Error matching program output for release/examples/benchmarks/hpcc/hpl] (succeeded 6/13, 6/16/14 etc.)
+[Error matching program output for studies/hpcc/HPL/vass/hpl] (succeeded 6/30, 7/6/14)
+[Error matching program output for modules/standard/Sort/sungeun/sorty (execopts: 2)] (failed 7/10/14)
+* Greg looked into this:
 [Error matching program output for studies/amr/diffusion/level/Level_DiffusionBE_driver (compopts: 1)]
 11/3/13: has been failing frequently (for --baseline) since 9/28/13
 12/29/2013:
@@ -140,6 +149,15 @@ gbt: This seems to be due to memory corruption.  Because of the way the
      output postprocessing wants to work on doesn't exist.  A gripe
      about this missing file is the most obvious thing in the output if
      start_test is used.
+* intel and pgi on chpbld02:
+Most errors like that are for futures. Here are non-futures, the earliest
+occurrences in 2014, with the error "free(): invalid next size"
+PGI 7/7/14:
+[Error matching program output for types/file/fwriteIntFailed]
+Intel 7/9/14: 
+[Error matching program output for io/ferguson/asserteof]
+[Error matching program output for types/file/freadIntFailed]
+[Error matching program output for types/file/fwriteIntFailed]
 
 [Error matching program output for studies/madness/aniruddha/madchap/mytests/par-compress/test_compress (compopts: 1)]
 Failed on 02/18/14
@@ -153,6 +171,16 @@ compiler internal errors (misc.cpp)" issue below, but one of the
 few cases that triggers on the compute node rather than on the
 front-end
 
+parSafeMember execution timeouts
+--------------------------------
+[Error: Timed out executing program domains/sungeun/assoc/parSafeMember]
+Valgrind and baseline timeouts are listed elsewhere in this file.
+In addition, this test has been timing out in various configurations
+since 6/22/14, e.g.
+  linux64.gnu.gasnet-fast.fifo.flat.dlmalloc
+  weekend/linux64.pgi.none.fifo.flat
+  whitebox-cray-xe/cray-xe.cray-prgenv-pgi.none.fifo.flat--linux64.gnu
+  whitebox-cray-xe/linux64.pgi.none.fifo.flat
 
 =========================================================
 Problems analyzed and assigned that should be fixed soon:
@@ -227,7 +255,7 @@ Perf (linux64.gnu.none.fifo.pthreads.flat)
 
 valgrind compilation timeouts
 -----------------------------
-[Error: Timed out compilation for distributions/dm/t5a] (.., 6/18/14, 6/20/14)
+[Error: Timed out compilation for distributions/dm/t5a] (.., 6/18/14, 6/20/14, 7/7/14)
 [Error: Timed out compilation for release/examples/benchmarks/ssca2/SSCA2_main
 (compopts: 1)] (6/17/14)
 [Error: Timed out executing program domains/sungeun/assoc/parSafeMember] (6/20/14)
@@ -261,13 +289,20 @@ Not so noisy as to be familiar annoyances, but worth noting to see if they
 come up again
 ==========================================================================
 
+Perf timeout
+------------
+Intermittent timeout starting 6/28/14, chap03/linux64.gnu.none.qthreads.flat
+[Error: Timed out executing program studies/shootout/binary-trees/binary-trees_iter (execopts: 2)]
+
 nondet. slave error
 -------------------
-linux64.gnu.gasnet.qthreads.none.flat (2013/11/13)
-[Error matching program output for multilocale/local/diten/test_local2]
 *** FATAL ERROR: slave got an unknown command on coord socket:  
+linux64.gnu.gasnet.qthreads.flat (2013/11/13)
+[Error matching program output for multilocale/local/diten/test_local2]
+linux64.gnu.gasnet-fast.fifo.flat.dlmalloc
+[Error matching program output for extern/bradc/extern_string_test-remote (compopts: 1)] (started 7/8/14)
 
-nondet. segfault for linux64.gnu.gasnet.qthreads.none.flat
+nondet. segfault for linux64.gnu.gasnet.qthreads.flat
 ----------------------------------------------------------
 [Error matching program output for multilocale/deitz/linked/test_linked3b] (12/17/13)
 [Error matching program output for release/examples/benchmarks/hpcc/stream-ep] (12/18/13)
@@ -338,13 +373,12 @@ numerical discrepancies - same cause as for --no-local above?
 
 numerical discrepancies with --fast - same cause as for --no-local above?
 -------------------------------------------------------------
-studies/jacobi/waynew/example2 (06/13/14)
+studies/jacobi/waynew/example2 (06/13, 7/10/14)
 
 
 intermittent valgrind error
 ---------------------------
-* Timed out on 2014-06-05, fixed itself on 2014-06-06.
-[Error: Timed out executing program domains/sungeun/assoc/stress (compopts: 1, execopts: 2)]
+[Error: Timed out executing program domains/sungeun/assoc/stress (compopts: 1, execopts: 2)] (6/5/14, 7/7/14)
 
 - studies/madness/aniruddha/madchap/mytests/par-compress/test_compress
 (compopts: 1) (02/26/13)
@@ -480,7 +514,8 @@ release/examples/programs/tree.chpl on cray-xc.cray-prgenv-cray.none.fifo.pthrea
 non-deterministic timeouts with gasnet (UNASSIGNED)
 ---------------------------------------------------
 The following configurations are affected:
- linux64.gnu.gasnet.qthreads.none
+ linux64.gnu.gasnet.qthreads.flat
+ linux64.gnu.gasnet.qthreads.numa
  linux64.gnu.gasnet.fifo.pthreads.tcmalloc
  linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc
  linux64.gnu.gasnet-everything.fifo.pthreads
@@ -504,7 +539,7 @@ examples of what times out:
 [Error: Timed out executing program release/examples/benchmarks/hpcc/hpl]
 [Error: Timed out executing program release/examples/benchmarks/hpcc/stream]
 [Error: Timed out executing program studies/lulesh/sungeun/lulesh (compopts: 1)] (6/7/14)
-
+[Error: Timed out executing program domains/sungeun/assoc/stress (compopts: 1, execopts: 1)] (6/25/14, 7/7/14)
 
 non-deterministic compilation timeouts with gasnet (UNASSIGNED)
 ---------------------------------------------------------------
