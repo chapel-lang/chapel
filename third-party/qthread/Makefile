@@ -54,6 +54,10 @@ CHPL_QTHREAD_CFG_OPTIONS += --enable-static --disable-shared
 
 CHPL_QTHREAD_CFG_OPTIONS += $(CHPL_QTHREAD_MORE_CFG_OPTIONS)
 
+ifneq (, $(CHPL_QTHREAD_SCHEDULER))
+CHPL_QTHREAD_CFG_OPTIONS += --with-scheduler=$(CHPL_QTHREAD_SCHEDULER)
+endif
+
 default: all
 
 all: qthread
