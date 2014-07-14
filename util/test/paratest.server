@@ -364,13 +364,14 @@ sub chpl_files {
     local ($found);
     $found = 0;
     foreach $fname (@fnames) {
-        if ($fname =~ /NOTEST$/) {
+        if ($fname eq "NOTEST") {
             return 0;
         }
-        if ($fname =~ /\.chpl$/) {
-            $found = 1;
-        }
-        if ($fname =~ /\.test\.c$/) {
+        if ($fname =~ /\.chpl$/     ||
+	    $fname =~ /\.test\.c$/  ||
+	    $fname eq "sub_test"
+	) {
+	    # still a NOTEST would override
             $found = 1;
         }
     }
