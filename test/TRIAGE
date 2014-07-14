@@ -353,9 +353,9 @@ undiagnosed cygwin failures
 
 
 
-domainReassignNoAlias future passes intermittently with qthreads.none
+domainReassignNoAlias future passes intermittently with none.qthreads
 ---------------------------------------------------------------------
-Has been passing on and off under qthreads.none.flat or .numa since
+Has been passing on and off under qthreads.flat or .numa (comm=none) since
 4'2014 or earlier:
 [Success matching program output for domains/diten/domainReassignNoAlias]
  - Most recent "success" on 05/31/14. Domain size for test was bumped on
