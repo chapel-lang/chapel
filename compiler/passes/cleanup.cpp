@@ -33,12 +33,7 @@ flatten_scopeless_block(BlockStmt* block) {
 // call expressions
 //
 static void normalize_nested_function_expressions(DefExpr* def) {
-  if ((!strncmp("_anon_record", def->sym->name, 12)) ||
-      (!strncmp("_parloopexpr", def->sym->name, 12)) ||
-      (!strncmp("_seqloopexpr", def->sym->name, 12)) ||
-      (!strncmp("_forallexpr", def->sym->name, 11)) ||
-      (!strncmp("_forallinit", def->sym->name, 11)) ||
-      def->sym->hasFlag(FLAG_COMPILER_NESTED_FUNCTION)) {
+  if (def->sym->hasFlag(FLAG_COMPILER_NESTED_FUNCTION)) {
     Expr* stmt = def->getStmtExpr();
     if (!stmt) {
       if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol)) {

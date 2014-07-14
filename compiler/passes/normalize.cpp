@@ -20,7 +20,7 @@ bool normalized = false;
 // Static functions: forward declaration
 // 
 static void checkUseBeforeDefs();
-static void flattenGlobalFunctions();
+static void moveGlobalDeclarationsToModuleScope();
 static void insertUseForExplicitModuleCalls(void);
 static void processSyntacticDistributions(CallExpr* call);
 static bool is_void_return(CallExpr* call);
@@ -93,7 +93,7 @@ void normalize(void) {
   normalize(theProgram);
   normalized = true;
   checkUseBeforeDefs();
-  flattenGlobalFunctions();
+  moveGlobalDeclarationsToModuleScope();
   insertUseForExplicitModuleCalls();
 
   if (!fMinimalModules) {
@@ -280,7 +280,7 @@ checkUseBeforeDefs() {
 }
 
 static void
-flattenGlobalFunctions() {
+moveGlobalDeclarationsToModuleScope() {
   forv_Vec(ModuleSymbol, mod, allModules) {
     for_alist(expr, mod->initFn->body->body) {
       if (DefExpr* def = toDefExpr(expr)) {
@@ -289,13 +289,7 @@ flattenGlobalFunctions() {
         if ((toVarSymbol(def->sym) && !def->sym->hasFlag(FLAG_TEMP)) ||
             toTypeSymbol(def->sym) ||
             toFnSymbol(def->sym)) {
-          FnSymbol* fn = toFnSymbol(def->sym);
-          if (!fn ||                    // always flatten non-functions
-              fn->numFormals() != 0 || // always flatten methods
-              !((!strncmp("_forallexpr", def->sym->name, 11)) ||
-                def->sym->hasFlag(FLAG_COMPILER_NESTED_FUNCTION))) {
-            mod->block->insertAtTail(def->remove());
-          }
+          mod->block->insertAtTail(def->remove());
         }
       }
     }

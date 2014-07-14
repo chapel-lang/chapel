@@ -750,6 +750,7 @@ static int loopexpr_uid = 1;
 CallExpr*
 buildForLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType, bool zippered) {
   FnSymbol* fn = new FnSymbol(astr("_seqloopexpr", istr(loopexpr_uid++)));
+  fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
   BlockStmt* block = fn->body;
 
   if (maybeArrayType) {
@@ -870,6 +871,7 @@ static FnSymbol* buildFollowerIteratorFn(FnSymbol* fn, const char* iteratorName,
 CallExpr*
 buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType, bool zippered) {
   FnSymbol* fn = new FnSymbol(astr("_parloopexpr", istr(loopexpr_uid++)));
+  fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
   BlockStmt* block = fn->body;
 
   if (maybeArrayType) {
