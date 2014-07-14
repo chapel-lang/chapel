@@ -895,7 +895,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
 
   else if (isModuleSymbol(sym) == true)
   {
-    fprintf(mFP, "#<ModuleSymbol name: %-36s ", name);
+    fprintf(mFP, "#<ModuleSymbol name: %-36s", name);
 
     if (sym->type != 0)
     {
