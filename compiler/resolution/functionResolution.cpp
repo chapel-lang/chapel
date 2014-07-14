@@ -6391,16 +6391,20 @@ static void unmarkDefaultedGenerics() {
   }
 }
 
-static Vec<ModuleSymbol*> initMods;
-
-static void resolveUses(ModuleSymbol* mod) {
-  // We have to resolve modules in dependency order, 
-  // so that the types of globals are ready when we need them.
+// Resolve uses in postorder (removing back-links).
+// We have to resolve modules in dependency order, 
+// so that the types of globals are ready when we need them.
+static void resolveUses(ModuleSymbol* mod)
+{
+  static Vec<ModuleSymbol*> initMods;
+  static int module_resolution_depth = 0;
 
   // Test and set to break loops and prevent infinite recursion.
   if (initMods.set_in(mod))
     return;
   initMods.set_add(mod);
+
+  ++module_resolution_depth;
 
   // I use my parent implicitly.
   if (ModuleSymbol* parent = mod->defPoint->getModule())
@@ -6413,9 +6417,17 @@ static void resolveUses(ModuleSymbol* mod) {
     resolveUses(usedMod);
 
   // Finally, myself.
+  if (fPrintModuleResolution)
+    fprintf(stderr, "%2d Resolving module %s ...", module_resolution_depth, mod->name);
+
   FnSymbol* fn = mod->initFn;
   resolveFormals(fn);
   resolveFns(fn);
+
+  if (fPrintModuleResolution)
+    putc('\n', stderr);
+
+  --module_resolution_depth;
 }
 
 static void resolveExports() {
