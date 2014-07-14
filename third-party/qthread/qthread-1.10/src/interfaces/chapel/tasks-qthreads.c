@@ -41,7 +41,6 @@
 #include "qt_syncvar.h" // for blockreporting
 #include "qt_hash.h" /* for qt_key_t */
 #include "qt_atomics.h"      /* for SPINLOCK_BODY() */
-#include "qt_threadqueues.h" // for qthread_steal_disable
 #include "qt_envariables.h"
 #include "qt_debug.h"
 
@@ -431,10 +430,6 @@ void chpl_task_init(void)
             perror("Could not register SIGINT handler");
         }
     }
-
-    // qthreads has work stealing on by default for schedulers that support it,
-    // but we want it off by default.
-    qthread_steal_disable();
 }
 
 void chpl_task_exit(void)
