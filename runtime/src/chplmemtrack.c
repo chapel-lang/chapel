@@ -211,7 +211,7 @@ static void addMemTableEntry(void* memAlloc, size_t number, size_t size, chpl_me
   memEntry->description = description;
   memEntry->memAlloc = memAlloc;
   memEntry->lineno = lineno;
-  c_string_from_string(&memEntry->filename, &filename, 0, NULL);
+  memEntry->filename = filename; // do we want to copy this string?
   memEntry->number = number;
   memEntry->size = size;
   increaseMemStat(number*size, lineno, filename);
@@ -473,8 +473,6 @@ void chpl_printMemTable(int64_t threshold, int32_t lineno, c_string filename) {
 void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
                        chpl_mem_descInt_t description,
                        int32_t lineno, c_string filename) {
-  c_string c_filename;
-
   if (number * size > memThreshold) {
     if (chpl_memTrack) {
       chpl_sync_lock(&memTrack_sync);
@@ -482,11 +480,10 @@ void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
       chpl_sync_unlock(&memTrack_sync);
     }
     if (chpl_verbose_mem) {
-      c_string_from_string(&c_filename, &filename, 0, NULL);
       fprintf(memLogFile,
               "%" FORMAT_c_nodeid_t ": %s:%" PRId32
               ": allocate %zuB of %s at %p\n",
-              chpl_nodeID, (c_filename ? c_filename : "--"), lineno,
+              chpl_nodeID, (filename ? filename : "--"), lineno,
               number*size, chpl_mem_descString(description), memAlloc);
     }
   }
@@ -495,18 +492,15 @@ void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
 
 void chpl_track_free(void* memAlloc, int32_t lineno, c_string filename) {
   memTableEntry* memEntry = NULL;
-  c_string c_filename;
-
   if (chpl_memTrack) {
     chpl_sync_lock(&memTrack_sync);
     memEntry = removeMemTableEntry(memAlloc);
     if (memEntry) {
       if (chpl_verbose_mem) {
-        c_string_from_string(&c_filename, &filename, 0, NULL);
         fprintf(memLogFile,
                 "%" FORMAT_c_nodeid_t ": %s:%" PRId32
                 ": free %zuB of %s at %p\n",
-                chpl_nodeID, (c_filename ? c_filename : "--"), lineno,
+                chpl_nodeID, (filename ? filename : "--"), lineno,
                 memEntry->number*memEntry->size,
                 chpl_mem_descString(memEntry->description), memAlloc);
       }
@@ -514,10 +508,9 @@ void chpl_track_free(void* memAlloc, int32_t lineno, c_string filename) {
     }
     chpl_sync_unlock(&memTrack_sync);
   } else if (chpl_verbose_mem && !memEntry) {
-    c_string_from_string(&c_filename, &filename, 0, NULL);
     fprintf(memLogFile,
             "%" FORMAT_c_nodeid_t ": %s:%" PRId32 ": free at %p\n",
-            chpl_nodeID, (c_filename ? c_filename : "--"), lineno, memAlloc);
+            chpl_nodeID, (filename ? filename : "--"), lineno, memAlloc);
   }
 }
 
@@ -543,8 +536,6 @@ void chpl_track_realloc_post(void* moreMemAlloc,
                          void* memAlloc, size_t size,
                          chpl_mem_descInt_t description,
                          int32_t lineno, c_string filename) {
-  c_string c_filename;
-
   if (size > memThreshold) {
     if (chpl_memTrack) {
       chpl_sync_lock(&memTrack_sync);
@@ -552,11 +543,10 @@ void chpl_track_realloc_post(void* moreMemAlloc,
       chpl_sync_unlock(&memTrack_sync);
     }
     if (chpl_verbose_mem) {
-      c_string_from_string(&c_filename, &filename, 0, NULL);
       fprintf(memLogFile,
               "%" FORMAT_c_nodeid_t ": %s:%" PRId32
               ": reallocate %zuB of %s at %p -> %p\n",
-              chpl_nodeID, (c_filename ? c_filename : "--"), lineno,
+              chpl_nodeID, (filename ? filename : "--"), lineno,
               size, chpl_mem_descString(description), memAlloc, moreMemAlloc);
     }
   }
