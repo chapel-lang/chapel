@@ -54,6 +54,12 @@ const char* CHPL_WIDE_POINTERS = NULL;
 const char* CHPL_LLVM = NULL;
 const char* CHPL_AUX_FILESYS = NULL;
 
+// quick and dirty
+#define MAX_CHPL_ENV_VARS 50
+int num_chpl_env_vars = 0;
+const char *chpl_env_vars[MAX_CHPL_ENV_VARS];
+const char *chpl_env_var_names[MAX_CHPL_ENV_VARS];
+
 bool widePointersStruct;
 
 static char makeArgument[256] = "";
@@ -327,7 +333,11 @@ static void setupEnvVar(std::istringstream& iss, const char** var, const char* v
 }
 
 #define SETUP_ENV_VAR(varname) \
-  setupEnvVar(iss, &varname, #varname);
+  INT_ASSERT(num_chpl_env_vars < MAX_CHPL_ENV_VARS); \
+  setupEnvVar(iss, &varname, #varname); \
+  chpl_env_var_names[num_chpl_env_vars] = #varname; \
+  chpl_env_vars[num_chpl_env_vars] = varname; \
+  num_chpl_env_vars++;
 
 static void setupEnvVars() {
   std::string vars = runUtilScript("printchplenv --simple");

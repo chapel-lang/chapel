@@ -53,6 +53,7 @@ void printHelpTable(void) {
 
   static flagType flagList[] = {
     {"-h, --help", "print this message", 'g'},
+    {"-a, --about", "print compilation information", 'g'},
     {"-nl <n>", "run program using n locales", 'g'},
     {"", "(equivalent to setting the numLocales config const)", 'g'},
     {"-q, --quiet", "run program in quiet mode", 'g'},
@@ -123,9 +124,11 @@ int32_t getArgNumLocales(void) {
 }
 
 
+extern void chpl_program_about(void); // The generated code provides this
 void parseArgs(int* argc, char* argv[]) {
   int i;
   int printHelp = 0;
+  int printAbout = 0;
   int origargc = *argc;
   int stop_parsing = 0;
 
@@ -177,6 +180,10 @@ void parseArgs(int* argc, char* argv[]) {
             chpl_gen_main_arg.argc++;
             break;
           }
+          if (strcmp(flag, "about") == 0) {
+            printAbout = 1;
+            break;
+          }
           if (strcmp(flag, "verbose") == 0) {
             verbosity=2;
             break;
@@ -201,6 +208,14 @@ void parseArgs(int* argc, char* argv[]) {
           i += handlePossibleConfigVar(argc, argv, i, lineno, filename);
           break;
         }
+
+      case 'a':
+        if (currentArg[2] == '\0') {
+          printAbout = 1;
+        } else {
+          i += handleNonstandardArg(argc, argv, i, lineno, filename);
+        }
+        break;
 
       case 'b':
         if (currentArg[2] == '\0') {
@@ -299,6 +314,11 @@ void parseArgs(int* argc, char* argv[]) {
       i += handleNonstandardArg(argc, argv, i, lineno, filename);
       break;
     }
+  }
+
+  if (printAbout) {
+    chpl_program_about();
+    chpl_exit_any(0);
   }
 
   if (printHelp) {

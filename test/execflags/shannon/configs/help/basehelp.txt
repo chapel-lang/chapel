@@ -2,6 +2,7 @@
 FLAGS:
 ======
   -h, --help            : print this message
+  -a, --about           : print compilation information
   -nl <n>               : run program using n locales
                           (equivalent to setting the numLocales config const)
   -q, --quiet           : run program in quiet mode
