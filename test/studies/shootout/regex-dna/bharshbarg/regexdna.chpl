@@ -1,15 +1,3 @@
-proc channel.bulkget(len:int(64) = max(int(32)), ref str_out:string):bool {
-  var ret:string;
-  var err:syserr = ENOERR;
-  var lenRead:int(64);
-  var temp : c_string;
-
-  err = qio_channel_read_string(false, this._style().byteorder, len,
-      this._channel_internal, temp, lenRead, -1);
-  str_out = toString(temp);
-  return err != EEOF;
-}
-
 proc main() {
   var variants = [
     "agggtaaa|tttaccct",
@@ -30,7 +18,7 @@ proc main() {
   ];
 
   var total : string;
-  stdin.bulkget(str_out=total);
+  stdin.readstring(total);
   const initLen = total.length;
 
   var noLines = compile(">.*\n|\n");
