@@ -4443,38 +4443,72 @@ preFold(Expr* expr) {
           }
         }
       }
-    } else if (call->isPrimitive(PRIM_INIT) || call->isPrimitive(PRIM_NO_INIT)) {
+    } else if (call->isPrimitive(PRIM_NO_INIT)) {
       SymExpr* se = toSymExpr(call->get(1));
       INT_ASSERT(se);
       if (!se->var->hasFlag(FLAG_TYPE_VARIABLE))
         USR_FATAL(call, "invalid type specification");
       Type* type = call->get(1)->getValType();
-      // Currently noinit is not fully functional for arrays and types which
-      // allocate space, so in those cases we will pretend to not initialize
-      // them when really we still are.
-      if (call->isPrimitive(PRIM_INIT) || (isAggregateType(type) &&
-                                           !type->symbol->hasFlag(FLAG_TUPLE) &&
-                                           !type->symbol->hasFlag(FLAG_RANGE))) {
-        if (call->isPrimitive(PRIM_NO_INIT))
+      if (isAggregateType(type)) {
+        if (type->symbol->hasFlag(FLAG_DOMAIN) ||
+            type->symbol->hasFlag(FLAG_ARRAY) ||
+            type->symbol->hasFlag(FLAG_DISTRIBUTION) ||
+            type->symbol->hasFlag(FLAG_SYNC) ||
+            type->symbol->hasFlag(FLAG_SINGLE)) {
+          // These types deal with their uninitialized fields differently than
+          // normal records/classes.  They will require special case
+          // implementations, but were capable of being isolated from the new
+          // cases that do work.
           USR_WARN("type %s does not currently support noinit, using default initialization", type->symbol->name);
-        if (type->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
-          result = new CallExpr(PRIM_CAST, type->symbol, gNil);
+          result = new CallExpr(PRIM_INIT, call->get(1)->remove());
           call->replace(result);
-        } else if (type->defaultValue == gNil) {
-          result = new CallExpr("_cast", type->symbol, type->defaultValue);
-          call->replace(result);
-        } else if (type->defaultValue) {
-          result = new SymExpr(type->defaultValue);
-          call->replace(result);
+          inits.add((CallExpr *)result);
         } else {
-          if (call->isPrimitive(PRIM_NO_INIT)) {
-            result = new CallExpr(PRIM_INIT, call->get(1)->remove());
-            call->replace(result);
-            inits.add((CallExpr *)result);
-          } else {
-            inits.add(call);
+          // Replaces noinit with a call to the defaultTypeConstructor,
+          // providing the param and type arguments necessary to allocate
+          // space for the instantiation of this (potentially) generic type.
+          // defaultTypeConstructor calls are already cleaned up at the end of
+          // function resolution, so the noinit cleanup would be redundant.
+
+          CallExpr* res = new CallExpr(type->defaultTypeConstructor);
+          for_formals(formal, type->defaultTypeConstructor) {
+            Vec<Symbol *> keys;
+            // Finds each named argument in the type constructor and inserts
+            // the substitution provided.
+            type->substitutions.get_keys(keys);
+            // I don't think we can guarantee that the substitutions will be
+            // in the same order as the arguments for the defaultTypeConstructor.
+            // That would make this O(n) instead of potentially O(n*n)
+            forv_Vec(Symbol, key, keys) {
+              if (!strcmp(formal->name, key->name)) {
+                Symbol* formalVal = type->substitutions.get(key);
+                res->insertAtTail(new NamedExpr(formal->name,
+                                                new SymExpr(formalVal)));
+              }
+            }
           }
+          call->get(1)->replace(res);
         }
+      }
+
+    } else if (call->isPrimitive(PRIM_INIT)) {
+      SymExpr* se = toSymExpr(call->get(1));
+      INT_ASSERT(se);
+      if (!se->var->hasFlag(FLAG_TYPE_VARIABLE))
+        USR_FATAL(call, "invalid type specification");
+      Type* type = call->get(1)->getValType();
+      
+      if (type->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
+        result = new CallExpr(PRIM_CAST, type->symbol, gNil);
+        call->replace(result);
+      } else if (type->defaultValue == gNil) {
+        result = new CallExpr("_cast", type->symbol, type->defaultValue);
+        call->replace(result);
+      } else if (type->defaultValue) {
+        result = new SymExpr(type->defaultValue);
+        call->replace(result);
+      } else {
+        inits.add(call);
       }
     } else if (call->isPrimitive(PRIM_TYPEOF)) {
       Type* type = call->get(1)->getValType();
