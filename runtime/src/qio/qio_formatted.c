@@ -1115,6 +1115,8 @@ qioerr qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch
       style->max_width_characters != UINT32_MAX ) {
 
     err = qio_quote_string_length(style->string_start, style->string_end, style->string_format, ptr, len, &ti);
+    if( err ) goto rewind;
+
     use_len = ti.ret_truncated_at_byte;
     overfull = ti.ret_truncated;
     len = use_len;
@@ -2548,7 +2550,7 @@ qioerr qio_channel_print_float_or_imag(const int threadsafe, qio_channel_t* rest
                 num, base, needs_i, style);
     if( got < 0 ) {
       if( got == -1 ) err = QIO_ENOMEM;
-      QIO_GET_CONSTANT_ERROR(err, EINVAL, "converting floating point number to string");
+      else QIO_GET_CONSTANT_ERROR(err, EINVAL, "converting floating point number to string");
       goto error;
     } else if( got < VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) ) {
       ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, got);

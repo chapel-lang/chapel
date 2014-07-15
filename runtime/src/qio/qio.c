@@ -835,7 +835,7 @@ qioerr qio_file_init_usr(qio_file_t** file_out, void* file_info, qio_hint_t iohi
   qioerr err = 0;
   err_t err_code;
   qio_file_t* file = NULL;
-  off_t seek_ret;
+  off_t seek_ret = 0;
   int seekable = 0;
 
   if(fns->seek) { // we have seek in our FS
@@ -862,6 +862,7 @@ qioerr qio_file_init_usr(qio_file_t** file_out, void* file_info, qio_hint_t iohi
     initial_pos = seek_ret;
     if (fns->filelength) { // We can get length in our FS
       err = fns->filelength(file_info, &initial_length, fs_info);
+      if( err ) return err;
     }
   } else {
      // Not seekable.
@@ -3848,6 +3849,7 @@ qioerr _qio_channel_read_bits_slow(qio_channel_t* restrict ch, uint64_t* restric
     buf = 0;
     if( tmp_read > 0 ) {
       err = qio_channel_read_amt(false, ch, &buf, tmp_read);
+      if( err ) goto error;
     }
 
     // we're going to have to read something.
@@ -3856,6 +3858,7 @@ qioerr _qio_channel_read_bits_slow(qio_channel_t* restrict ch, uint64_t* restric
 
     buf = 0;
     err = qio_channel_read_amt(false, ch, &buf, tmp_read);
+    if( err ) goto error;
     // move it to host endian.
     buf = qio_bitbuffer_unbe(buf);
 
@@ -3888,6 +3891,7 @@ qioerr _qio_channel_read_bits_slow(qio_channel_t* restrict ch, uint64_t* restric
     ch->bits_read_bytes = tmp_read;
   }
 
+error:
   _qio_channel_set_error_unlocked(ch, err);
   
   return err;
