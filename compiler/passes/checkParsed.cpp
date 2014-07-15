@@ -7,16 +7,16 @@
 #include "astutil.h"
 
 
-static void check_named_arguments(CallExpr* call);
-static void check_parsed_vars(VarSymbol* var);
-static void check_functions(FnSymbol* fn);
-static void check_exported_names();
-
+static void checkNamedArguments(CallExpr* call);
+static void checkParsedVar(VarSymbol* var);
+static void checkFunction(FnSymbol* fn);
+static void checkExportedNames();
+static void checkModule(ModuleSymbol* mod);
 
 void
-checkParsed(void) {
+checkParsed() {
   forv_Vec(CallExpr, call, gCallExprs) {
-    check_named_arguments(call);
+    checkNamedArguments(call);
   }
 
   forv_Vec(DefExpr, def, gDefExprs) {
@@ -34,27 +34,35 @@ checkParsed(void) {
   }
 
   forv_Vec(VarSymbol, var, gVarSymbols) {
-    check_parsed_vars(var);
+    checkParsedVar(var);
   }
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    check_functions(fn);
+    checkFunction(fn);
   }
 
-  check_exported_names();
+  forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
+    checkModule(mod);
+  }
+
+  checkExportedNames();
 }
 
 
 static void
-check_named_arguments(CallExpr* call) {
+checkNamedArguments(CallExpr* call) {
   Vec<const char*> names;
+
   for_actuals(expr, call) {
     if (NamedExpr* named = toNamedExpr(expr)) {
       forv_Vec(const char, name, names) {
         if (!strcmp(name, named->name))
-          USR_FATAL_CONT(named, "The named argument '%s' is used more "
-                    "than once in the same function call.", name);
+          USR_FATAL_CONT(named,
+                         "The named argument '%s' is used more "
+                         "than once in the same function call.",
+                         name);
       }
+
       names.add(named->name);
     }
   }
@@ -62,25 +70,34 @@ check_named_arguments(CallExpr* call) {
 
 
 static void
-check_parsed_vars(VarSymbol* var) {
+checkParsedVar(VarSymbol* var) {
   if (var->isParameter() && !var->immediate)
     if (!var->defPoint->init &&
         (toFnSymbol(var->defPoint->parentSymbol) ||
          toModuleSymbol(var->defPoint->parentSymbol)))
       USR_FATAL_CONT(var, "Top-level params must be initialized.");
+
   if (var->defPoint->init && var->defPoint->init->isNoInitExpr()) {
     if (var->hasFlag(FLAG_CONST))
       USR_FATAL_CONT(var, "const variables specified with noinit must be explicitly initialized.");
   }
+
+  //
+  // Verify that config variables are only at Module scope i.e. it is
+  // an error if any config variable is not an immediate child of a
+  // module
+
   if (var->hasFlag(FLAG_CONFIG) &&
-      var->defPoint->parentSymbol != var->getModule()->initFn) {
-    const char *varType = NULL;
+      isModuleSymbol(var->defPoint->parentSymbol) == false) {
+    const char* varType = NULL;
+
     if (var->hasFlag(FLAG_PARAM))
       varType = "parameters";
     else if (var->hasFlag(FLAG_CONST))
       varType = "constants";
     else
       varType = "variables";
+
     USR_FATAL_CONT(var->defPoint,
                    "Configuration %s are allowed only at module scope.", varType);
   }
@@ -88,7 +105,7 @@ check_parsed_vars(VarSymbol* var) {
 
 
 static void
-check_functions(FnSymbol* fn) {
+checkFunction(FnSymbol* fn) {
   // Ensure that the lhs of "=" and "<op>=" is passed by ref.
   if (fn->hasFlag(FLAG_ASSIGNOP))
     if (fn->getFormal(1)->intent != INTENT_REF)
@@ -146,9 +163,34 @@ check_functions(FnSymbol* fn) {
   }
 }
 
+//
+// This is a special test to ensure that there are no instances of a return
+// or yield statement at the top level of a module.  This "special" semantic
+// check is needed to resolve 4 test applications that failed once the
+// insertion of a Module init function was moved to a later pass.
+//
+// Those tests have historically relied on the matching call in checkFunction
+// which was executed when scanning the module initFunction.
+//
+// This is probably a good anchor for a family of tests of this form.
+//
 
 static void
-check_exported_names()
+checkModule(ModuleSymbol* mod) {
+  for_alist(stmt, mod->block->body) {
+    if (CallExpr* call = toCallExpr(stmt)) {
+      if (call->isPrimitive(PRIM_RETURN)) {
+        USR_FATAL_CONT(call, "return statement is not in a function or iterator");
+
+      } else if (call->isPrimitive(PRIM_YIELD)) {
+        USR_FATAL_CONT(call, "yield statement is outside an iterator");
+      }
+    }
+  }
+}
+
+static void
+checkExportedNames()
 {
   // The right side of the map is a dummy Boolean.
   // We are just using the map to implement a set.

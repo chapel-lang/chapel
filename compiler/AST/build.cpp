@@ -89,16 +89,8 @@ static void addPragmaFlags(Symbol* sym, Vec<const char*>* pragmas) {
       USR_FATAL_CONT(sym, "unknown pragma: \"%s\"", str);
     else {
       sym->addFlag(flag);
-      //
-      // Propagate export init flag to module's init function
-      //
-      if (flag == FLAG_EXPORT_INIT) {
-        ModuleSymbol* mod = toModuleSymbol(sym);
-        INT_ASSERT(mod);
-        INT_ASSERT(mod->initFn);
-        mod->initFn->addFlag(FLAG_EXPORT);
-        mod->initFn->addFlag(FLAG_LOCAL_ARGS);
-      } else if (flag == FLAG_RUNTIME_TYPE_INIT_FN) {
+
+      if (flag == FLAG_RUNTIME_TYPE_INIT_FN) {
         //
         // These functions must be marked as type functions early in
         // compilation, as calls to them are inserted by the compiler
@@ -437,35 +429,12 @@ buildExternBlockStmt(const char* c_code) {
   return buildChapelStmt(new ExternBlockStmt(c_code));
 }
 
-//
-// TODO: This should probably be moved into its own post-parsing pass
-// if possible; in a quick check, it appears to be at least not
-// completely trivial.
-//
-void createInitFn(ModuleSymbol* mod) {
-  SET_LINENO(mod);
-
-  mod->initFn = new FnSymbol(astr("chpl__init_", mod->name));
-  mod->initFn->retType = dtVoid;
-  mod->initFn->addFlag(FLAG_MODULE_INIT);
-  mod->initFn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
-
-  //
-  // move module-level statements into module's init function
-  //
-  for_alist(stmt, mod->block->body) {
-    if (stmt->isModuleDefinition() == false)
-      mod->initFn->insertAtTail(stmt->remove());
-  }
-  mod->block->insertAtHead(new DefExpr(mod->initFn));
-}
-
-
-ModuleSymbol* buildModule(const char* name, BlockStmt* block, const char* filename, char *docs) {
+ModuleSymbol* buildModule(const char* name, BlockStmt* block, const char* filename, char* docs) {
   ModuleSymbol* mod = new ModuleSymbol(name, currentModuleType, block);
+
   mod->filename = astr(filename);
-  mod->doc = docs;
-  createInitFn(mod);
+  mod->doc      = docs;
+
   return mod;
 }
 

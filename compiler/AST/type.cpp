@@ -17,29 +17,28 @@
 #include "AstVisitor.h"
 
 
-  TypeSymbol*      symbol;
-  AggregateType*   refType;  // pointer to references for non-reference types
-  Vec<FnSymbol*>   methods;
+TypeSymbol*    symbol;
+AggregateType* refType;            // pointer to references for non-reference types
+Vec<FnSymbol*> methods;
 
-  bool             hasGenericDefaults; // all generic fields have defaults
+bool           hasGenericDefaults; // all generic fields have defaults
 
-  Symbol*          defaultValue;
-  FnSymbol*        defaultInitializer; // This is the compiler-supplied
-                                       // default-initializer.
-                                       // It provides initial values for the
-                                       // fields in an aggregate type.
-  FnSymbol*        defaultTypeConstructor;
-  FnSymbol*        destructor;
+Symbol*        defaultValue;
+FnSymbol*      defaultInitializer; // This is the compiler-supplied default-initializer.
+                                   // It provides initial values for the
+                                   // fields in an aggregate type.
+FnSymbol*      defaultTypeConstructor;
+FnSymbol*      destructor;
 
-  // Used only in PrimitiveType; replace with flag?
-  bool             isInternalType;
+// Used only in PrimitiveType; replace with flag?
+bool           isInternalType;
 
-  Type*            instantiatedFrom;
-  Type*            scalarPromotionType;
+Type*          instantiatedFrom;
+Type*          scalarPromotionType;
 
-  SymbolMap        substitutions;
-  Vec<Type*>       dispatchChildren;   // dispatch hierarchy
-  Vec<Type*>       dispatchParents;    // dispatch hierarchy
+SymbolMap      substitutions;
+Vec<Type*>     dispatchChildren;   // dispatch hierarchy
+Vec<Type*>     dispatchParents;    // dispatch hierarchy
 
 
 
@@ -1353,15 +1352,13 @@ void initPrimitiveTypes(void) {
   dtAnyEnumerated->symbol->addFlag(FLAG_GENERIC);
 }
 
-void initTheProgram(void) {
-  createInitFn(theProgram);
-
-  theProgram->initFn->insertAtTail(
+void initTheProgram() {
+  theProgram->block->insertAtTail(
     new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelBase")));
 
   // it may be better to add the following use after parsing
   // to simplify insertion of module guard sync var defs
-  theProgram->initFn->insertAtTail(
+  theProgram->block->insertAtTail(
     new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelStandard")));
   
   // The base object class looks like this:
@@ -1378,14 +1375,18 @@ void initTheProgram(void) {
   //  throughout compilation, and it seemed to me that the it might result
   //  in possibly more special case code.
   //
-  DefExpr* objectDef = buildClassDefExpr("object", dtObject,
-                                         NULL, new BlockStmt(),
-                                         FLAG_UNKNOWN, NULL);
+  DefExpr* objectDef = buildClassDefExpr("object",
+                                         dtObject,
+                                         NULL,
+                                         new BlockStmt(),
+                                         FLAG_UNKNOWN,
+                                         NULL);
+
   objectDef->sym->addFlag(FLAG_OBJECT_CLASS);
   objectDef->sym->addFlag(FLAG_GLOBAL_TYPE_SYMBOL); // Prevents removal in pruneResovedTree().
   objectDef->sym->addFlag(FLAG_NO_OBJECT);
-  theProgram->initFn->insertAtHead(objectDef);
 
+  theProgram->block->insertAtHead(objectDef);
 }
 
 void initCompilerGlobals(void) {

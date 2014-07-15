@@ -1,10 +1,18 @@
 #ifndef _BUILD_H_
 #define _BUILD_H_
 
-#include "alist.h"
-#include "expr.h"
+#include "flags.h"
 #include "stmt.h"
-#include "symbol.h"
+#include "vec.h"
+
+class BaseAST;
+class BlockStmt;
+class CallExpr;
+class DefExpr;
+class Expr;
+class FnSymbol;
+class ModuleSymbol;
+class Type;
 
 BlockStmt* buildPragmaStmt(Vec<const char*>*, BlockStmt*);
 
@@ -84,24 +92,34 @@ CallExpr* buildScanExpr(Expr* op, Expr* data, bool zippered = false);
 
 BlockStmt* buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst, Flag ref, char* docs);
 
-DefExpr* buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls, Flag isExtern, char *docs);
-DefExpr* buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable);
-DefExpr* buildTupleArgDefExpr(IntentTag tag, BlockStmt* tuple, Expr* type, Expr* init);
+DefExpr*  buildClassDefExpr(const char* name, 
+                            Type*       type,
+                            Expr*       inherit,
+                            BlockStmt*  decls,
+                            Flag        isExtern,
+                            char*       docs);
+DefExpr*  buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable);
+DefExpr*  buildTupleArgDefExpr(IntentTag tag, BlockStmt* tuple, Expr* type, Expr* init);
 FnSymbol* buildFunctionFormal(FnSymbol* fn, DefExpr* def);
-FnSymbol* buildLambda(FnSymbol *fn);
-FnSymbol* buildFunctionSymbol(FnSymbol* fn, const char* name,
-                              IntentTag thisTag, const char* class_name);
-BlockStmt* buildFunctionDecl(FnSymbol* fn, RetTag optRetTag, Expr* optRetType,
-                             Expr* optWhere, BlockStmt* optFnBody, char *docs);
+FnSymbol* buildLambda(FnSymbol* fn);
+FnSymbol* buildFunctionSymbol(FnSymbol*   fn, 
+                              const char* name,
+                              IntentTag   thisTag,
+                              const char* class_name);
+BlockStmt* buildFunctionDecl(FnSymbol*  fn, 
+                             RetTag     optRetTag,
+                             Expr*      optRetType,
+                             Expr*      optWhere, 
+                             BlockStmt* optFnBody,
+                             char*      docs);
 BlockStmt* buildLocalStmt(Expr* stmt);
 BlockStmt* buildOnStmt(Expr* expr, Expr* stmt);
 BlockStmt* buildBeginStmt(CallExpr* byref_vars, Expr* stmt);
 BlockStmt* buildSyncStmt(Expr* stmt);
 BlockStmt* buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block);
 BlockStmt* buildAtomicStmt(Expr* stmt);
-void createInitFn(ModuleSymbol* mod);
 BlockStmt* buildExternBlockStmt(const char* c_code);
-CallExpr* buildPreDecIncWarning(Expr* expr, char sign);
+CallExpr*  buildPreDecIncWarning(Expr* expr, char sign);
 BlockStmt* convertTypesToExtern(BlockStmt*);
 BlockStmt* handleConfigTypes(BlockStmt*);
 
