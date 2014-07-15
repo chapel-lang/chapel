@@ -1,5 +1,5 @@
 @ECHO OFF
-REM Test default configuration against examples on windows.
+REM Test default configuration against full suite on windows.
 
 REM WORKSPACE is always set inside our testing environment. If this is run
 REM outside that environment, the caller is responsible for setting it.
