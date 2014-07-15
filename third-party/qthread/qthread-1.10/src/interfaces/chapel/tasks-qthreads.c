@@ -18,7 +18,7 @@
 #include "chplsys.h"
 #include "tasks-qthreads.h"
 #include "chplcgfns.h" // for chpl_ftable()
-#include "chpl-comm.h" // for chpl_localeID
+#include "chpl-comm.h" // for chpl_nodeID
 #include "chpl-locale-model.h" // for sublocale information
 #include "chpl-tasks.h"
 #include "config.h"   // for chpl_config_get_value()
@@ -328,7 +328,7 @@ void chpl_task_init(void)
     // set by the user we won't override it, however.
     if (getenv("QTHREAD_WORKER_UNIT") == NULL) {
         we_set_worker_unit = (getenv("QT_WORKER_UNIT") == NULL);
-	(void) setenv("QT_WORKER_UNIT", "core", 0);
+        (void) setenv("QT_WORKER_UNIT", "core", 0);
     }
 
     // Determine the thread count.  CHPL_RT_NUM_THREADS_PER_LOCALE has
@@ -344,7 +344,7 @@ void chpl_task_init(void)
     if (numThreadsPerLocale != 0) {
         int32_t numPUsPerLocale;
 
-	hwpar = numThreadsPerLocale;
+        hwpar = numThreadsPerLocale;
 
         numPUsPerLocale = chpl_numCoresOnThisLocale();
         if (0 < numPUsPerLocale && numPUsPerLocale < hwpar) {
@@ -359,19 +359,19 @@ void chpl_task_init(void)
         }
 
         if (0 < commMaxThreads && commMaxThreads < hwpar) {
-	    hwpar = commMaxThreads;
-	}
+            hwpar = commMaxThreads;
+        }
     } else {
-	if (0 < commMaxThreads) {
-	    hwpar = qt_internal_get_env_num("HWPAR", 0, 0);
-	    if (commMaxThreads < hwpar) {
-		hwpar = commMaxThreads;
-	    }
-	}
+        if (0 < commMaxThreads) {
+            hwpar = qt_internal_get_env_num("HWPAR", 0, 0);
+            if (commMaxThreads < hwpar) {
+                hwpar = commMaxThreads;
+            }
+        }
     }
 
     if (hwpar > 0) {
-	char newenv[100];
+        char newenv[100];
         char *sched;
 
         // Unset relevant Qthreads environment variables.  Currently
@@ -388,18 +388,18 @@ void chpl_task_init(void)
         // and if it's around after July 2014, yell at Elliot.  
         sched = getenv("CHPL_QTHREAD_SCHEDULER");
         if (sched != NULL && strncmp(sched, "nemesis", 7) == 0) {
-          // Set environment variable for Qthreads
-          snprintf(newenv, sizeof(newenv), "%i", (int)hwpar);
-          setenv("QT_NUM_SHEPHERDS", newenv, 1);
-          setenv("QT_NUM_WORKERS_PER_SHEPHERD", "1", 1);
-          // Unset QT_WORKER_UNIT iff we set it.
-          if (we_set_worker_unit) {
-            (void) unsetenv("QT_WORKER_UNIT");
-          }
+            // Set environment variable for Qthreads
+            snprintf(newenv, sizeof(newenv), "%i", (int)hwpar);
+            setenv("QT_NUM_SHEPHERDS", newenv, 1);
+            setenv("QT_NUM_WORKERS_PER_SHEPHERD", "1", 1);
+            // Unset QT_WORKER_UNIT iff we set it.
+            if (we_set_worker_unit) {
+              (void) unsetenv("QT_WORKER_UNIT");
+            }
         } else {
-          // Set environment variable for Qthreads
-          snprintf(newenv, sizeof(newenv), "%i", (int)hwpar);
-          setenv("QT_HWPAR", newenv, 1);
+            // Set environment variable for Qthreads
+            snprintf(newenv, sizeof(newenv), "%i", (int)hwpar);
+            setenv("QT_HWPAR", newenv, 1);
         }
     }
 
@@ -493,10 +493,10 @@ void chpl_task_callMain(void (*chpl_main)(void))
         {chpl_main, NULL, NULL, 0, false,
          PRV_DATA_IMPL_VAL(c_sublocid_any_val, false) };
 
-    qthread_debug(CHAPEL_CALLS, "[%d] begin chpl_task_callMain()\n", chpl_localeID);
+    qthread_debug(CHAPEL_CALLS, "[%d] begin chpl_task_callMain()\n", chpl_nodeID);
 
 #ifdef QTHREAD_MULTINODE
-    qthread_debug(CHAPEL_BEHAVIOR, "[%d] calling spr_unify\n", chpl_localeID);
+    qthread_debug(CHAPEL_BEHAVIOR, "[%d] calling spr_unify\n", chpl_nodeID);
     int const rc = spr_unify();
     assert(SPR_OK == rc);
 #endif /* QTHREAD_MULTINODE */
@@ -504,8 +504,8 @@ void chpl_task_callMain(void (*chpl_main)(void))
     qthread_fork_syncvar(chapel_wrapper, &wrapper_args, &exit_ret);
     qthread_syncvar_readFF(NULL, &exit_ret);
 
-    qthread_debug(CHAPEL_BEHAVIOR, "[%d] main task finished\n", chpl_localeID);
-    qthread_debug(CHAPEL_CALLS, "[%d] end chpl_task_callMain()\n", chpl_localeID);
+    qthread_debug(CHAPEL_BEHAVIOR, "[%d] main task finished\n", chpl_nodeID);
+    qthread_debug(CHAPEL_CALLS, "[%d] end chpl_task_callMain()\n", chpl_nodeID);
 }
 
 void chpl_task_stdModulesInitialized(void)
