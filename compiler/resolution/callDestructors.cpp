@@ -195,6 +195,11 @@ static void       updateJumpsFromBlockStmt(Expr*            stmt,
 static bool       gotoExitsBlock(GotoStmt* gotoStmt, BlockStmt* block);
 
 static bool       stmtMustExitBlock(Expr* stmt);
+static bool       stmtIsLabelDefnBeforeReturn(Expr* stmt);
+static bool       stmtIsLabelDefn(Expr* stmt);
+static bool       stmtIsReturn(Expr* stmt);
+static bool       stmtIsDownEndCount(Expr* stmt);
+
 static void       updateBlockExit(Expr*            stmt,
                                   BlockStmt*       block,
                                   Vec<VarSymbol*>& vars);
@@ -213,12 +218,14 @@ static void insertAutoDestroyCalls() {
           vars.add(stmtTheDefinedVariable(stmt));
         }
 
-        updateJumpsFromBlockStmt(stmt, block, vars);
+        // It is appropriate to skip this analysis if there aren't
+        // currently any variables that need autoDestroy calls
+        if (vars.n > 0) {
+          updateJumpsFromBlockStmt(stmt, block, vars);
+        }
 
         if (stmtMustExitBlock(stmt) == true) {
           updateBlockExit(stmt, block, vars);
-
-          vars.clear();
           break;
         }
       }
@@ -240,8 +247,13 @@ static bool stmtDefinesAnAutoDestroyedVariable(Expr* stmt) {
            !var->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)       &&
            !isRefCountedType(var->type))) {
 
-        if (!var->hasFlag(FLAG_TYPE_VARIABLE)) {
-          retval = true;
+        // There are variables that have been tagged with an AUTO_DESTROY
+        // flag, presumably before the type was known, that should not in
+        // fact be auto-destroyed.  Don't gum things up by collecting them.
+        if (autoDestroyMap.get(var->type) != 0) {
+          if (var->hasFlag(FLAG_TYPE_VARIABLE) == false) {
+            retval = true;
+          }
         }
       }
     }
@@ -286,45 +298,95 @@ static void updateJumpsFromBlockStmt(Expr*            stmt,
   }
 }
 
+// The outer loop of this business logic is walking a given BlockStmt
+// and is inspecting every goto-stmt that is recursively within this
+// block.  
+
+// This function is testing with a particular goto jumps to a point
+// outside the block being tested.
+
 static bool gotoExitsBlock(GotoStmt* gotoStmt, BlockStmt* block) {
-  SymExpr* labelSymExpr = toSymExpr(gotoStmt->label);
+  bool retval = false;
 
-  INT_ASSERT(labelSymExpr);
+  // Every GOTO that implements a RETURN is sure to be exiting the
+  // block.  This test is necessary to handle an edge case in the more
+  // general logic below; a return from the outer-most BlockStmt
+  // for a procedure.  It also provides a small performance gain.
+  if (gotoStmt->gotoTag == GOTO_RETURN) {
+    retval = true;
 
-  Expr* expr = labelSymExpr->var->defPoint;
+  // This test is more general than the first check and handles
+  // break, continue, yield and most, but not all, uses of return.
+  //
+  // The code finds the definition-point for the label that the
+  // goto has targetted and then works up the parent chain until
+  // it hits NULL or the block under consideration.
+  //
+  // If it traverses to NULL then it is certain the target label
+  // is outside the block being scanned.  However it will not
+  // be NULL, currently, if the goto is implementing a return
+  // for a statement at the top-level of the procedure.
 
-  while (expr != 0 && expr != block) {
-    expr = expr->parentExpr;
+  } else {
+    SymExpr* labelSymExpr = toSymExpr(gotoStmt->label);
+    Expr*    expr         = labelSymExpr->var->defPoint;
+
+    while (expr != 0 && expr != block) {
+      expr = expr->parentExpr;
+    }
+
+    retval = (expr == 0) ? true : false;
   }
 
-  return (expr == 0) ? true : false;
+  return retval;
 }
 
 static bool stmtMustExitBlock(Expr* stmt) {
-  Expr*     next   = stmt->next;
-  CallExpr* call   = 0;
-  bool      retval = false;
+  Expr* next   = stmt->next;
+  bool  retval = false;
 
-  if (next == 0) {
+  if (next == 0                         ||
+      isGotoStmt(next)                  ||
+      stmtIsLabelDefnBeforeReturn(next) ||
+      stmtIsReturn(next)                ||
+      stmtIsDownEndCount(next))
     retval = true;
 
-  } else if (isGotoStmt(next) == true) {
-    retval = true;
+  return retval;
+}
 
-  } else if ((call = toCallExpr(next)) == 0) {
-    retval = false;
+static bool stmtIsLabelDefnBeforeReturn(Expr* stmt) {
+  return stmtIsLabelDefn(stmt) && stmtIsReturn(stmt->next);
+}
 
-  } else if (call->isPrimitive(PRIM_RETURN)) {
-    retval = true;
+static bool stmtIsLabelDefn(Expr* stmt) {
+  bool retval = false;
 
-  } else if (call->isResolved() &&
-             strcmp(call->isResolved()->name, "_downEndCount") == 0) {
-    retval = true;
-
-  } else {
-    retval = false;
+  if (DefExpr* defn = toDefExpr(stmt)) {
+    retval = isLabelSymbol(defn->sym);
   }
 
+  return retval;
+}
+
+static bool stmtIsReturn(Expr* stmt) {
+  bool retval = false;
+
+  if (CallExpr* call = toCallExpr(stmt)) {
+    retval = call->isPrimitive(PRIM_RETURN);
+  }
+
+  return retval;
+}
+
+static bool stmtIsDownEndCount(Expr* stmt) {
+  bool retval = false;
+
+  if (CallExpr* call = toCallExpr(stmt)) {
+    if (call->isResolved()) {
+      retval = (strcmp(call->isResolved()->name, "_downEndCount") == 0);
+    }
+  }
 
   return retval;
 }

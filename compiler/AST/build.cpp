@@ -1746,51 +1746,66 @@ FnSymbol* buildLambda(FnSymbol *fn) {
 
 // Replaces the dummy function name "_" with the real name, sets the 'this'
 // intent tag. For methods, it also adds a method tag and "this" declaration.
-FnSymbol* buildFunctionSymbol(FnSymbol* fn, const char* name,
-                              IntentTag thisTag, const char* class_name)
+FnSymbol*
+buildFunctionSymbol(FnSymbol*   fn, 
+                    const char* name,
+                    IntentTag   thisTag,
+                    const char* class_name)
 {
-  fn->cname = fn->name = astr(name);
+  fn->cname   = fn->name = astr(name);
   fn->thisTag = thisTag;
+
   if (fn->name[0] == '~' && fn->name[1] != '\0')
     fn->addFlag(FLAG_DESTRUCTOR);
+
   if (class_name)
   {
-    fn->_this = new ArgSymbol(thisTag, "this", dtUnknown,
+    fn->_this = new ArgSymbol(thisTag,
+                              "this", 
+                              dtUnknown,
                               new UnresolvedSymExpr(class_name));
+
     fn->_this->addFlag(FLAG_ARG_THIS);
     fn->insertFormalAtHead(new DefExpr(fn->_this));
+
     ArgSymbol* mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
+
     fn->insertFormalAtHead(new DefExpr(mt));
   }
+
   return fn;
 }
 
 // Called like:
 // buildFunctionDecl($4, $6, $7, $8, $9, @$.comment);
 BlockStmt*
-buildFunctionDecl(FnSymbol* fn, RetTag optRetTag, Expr* optRetType,
-                  Expr* optWhere, BlockStmt* optFnBody, char *docs)
+buildFunctionDecl(FnSymbol*  fn,
+                  RetTag     optRetTag,
+                  Expr*      optRetType,
+                  Expr*      optWhere,
+                  BlockStmt* optFnBody,
+                  char*      docs)
 {
-  // This clause can be removed when the old _extern keyword is obsoleted. <hilde>
-
   fn->retTag = optRetTag;
+
   if (optRetTag == RET_VAR)
   {
     if (fn->hasFlag(FLAG_EXTERN))
       USR_FATAL_CONT(fn, "Extern functions cannot be setters.");
+
     fn->setter = new DefExpr(new ArgSymbol(INTENT_BLANK, "setter", dtBool));
   }
 
   if (optRetType)
     fn->retExprType = new BlockStmt(optRetType, BLOCK_SCOPELESS);
-  else
-    if (fn->hasFlag(FLAG_EXTERN))
-      fn->retType = dtVoid;
+  else if (fn->hasFlag(FLAG_EXTERN))
+    fn->retType     = dtVoid;
 
   if (optWhere)
   {
     if (fn->hasFlag(FLAG_EXTERN))
       USR_FATAL_CONT(fn, "Extern functions cannot have where clauses.");
+
     fn->where = new BlockStmt(optWhere);
   }
 
@@ -1798,13 +1813,31 @@ buildFunctionDecl(FnSymbol* fn, RetTag optRetTag, Expr* optRetType,
   {
     if (fn->hasFlag(FLAG_EXTERN))
       USR_FATAL_CONT(fn, "Extern functions cannot have a body.");
-    fn->insertAtTail(optFnBody);
+
+    if (fn->body->length() == 0)
+    {
+      // Copy the statements from optFnBody to the function's
+      // body to preserve line numbers
+      for_alist(expr, optFnBody->body)
+      {
+        fn->body->insertAtTail(expr->remove());
+      }
+
+    } 
+    else
+    {
+      fn->insertAtTail(optFnBody);
+    }
+
   }
   else
+  {
     // Looks like this flag is redundant with FLAG_EXTERN. <hilde>
     fn->addFlag(FLAG_FUNCTION_PROTOTYPE);
+  }
 
   fn->doc = docs;
+
   return buildChapelStmt(new DefExpr(fn));
 }
 
