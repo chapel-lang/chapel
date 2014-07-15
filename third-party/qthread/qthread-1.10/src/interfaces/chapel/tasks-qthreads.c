@@ -313,6 +313,7 @@ static void *initializer(void *junk)
 
 void chpl_task_init(void)
 {
+    chpl_bool we_set_worker_unit = false;
     int32_t   numThreadsPerLocale;
     int32_t   commMaxThreads;
     int32_t   hwpar;
@@ -326,6 +327,7 @@ void chpl_task_init(void)
     // one PU per core, so default to that.  If this was explicitly
     // set by the user we won't override it, however.
     if (getenv("QTHREAD_WORKER_UNIT") == NULL) {
+        we_set_worker_unit = (getenv("QT_WORKER_UNIT") == NULL);
 	(void) setenv("QT_WORKER_UNIT", "core", 0);
     }
 
@@ -390,6 +392,10 @@ void chpl_task_init(void)
           snprintf(newenv, sizeof(newenv), "%i", (int)hwpar);
           setenv("QT_NUM_SHEPHERDS", newenv, 1);
           setenv("QT_NUM_WORKERS_PER_SHEPHERD", "1", 1);
+          // Unset QT_WORKER_UNIT iff we set it.
+          if (we_set_worker_unit) {
+            (void) unsetenv("QT_WORKER_UNIT");
+          }
         } else {
           // Set environment variable for Qthreads
           snprintf(newenv, sizeof(newenv), "%i", (int)hwpar);
