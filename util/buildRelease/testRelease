@@ -164,7 +164,7 @@ open(MAIL, $mailcommand);
 
 print MAIL "=== Results - testRelease =================================================\n";
 print MAIL "Hostname:   ", `hostname`;
-print MAIL "Build: ", $buildurl;
+print MAIL "Build: ", $buildurl, "\n";
 print MAIL "\$tmpdir:    $tmpdir\n";
 print MAIL "\$chplhome:  $chplhome\n";
 print MAIL "Ended:      ", scalar(localtime()), "\n";

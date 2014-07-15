@@ -285,7 +285,7 @@ sub mysystem {
 	    print MAIL "=== Summary ===================================================\n";
 	    print MAIL "ERROR $_[1]: $status\n";
 	    print MAIL "===============================================================\n";
-	    print MAIL "Build: ", $buildurl;
+	    print MAIL "Build: ", $buildurl, "\n";
 	    close(MAIL);
 	}
 
