@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 
+if [ "$(uname -s)" = "Darwin" ] ; then
+    sed_args="-E"
+fi
+
 outfile=$2
 cat $outfile | \
-    sed -E \
+    sed $sed_args \
     -e '/^My name is.*$/!d' \
     -e 's/^My name is ([a-zA-Z]+).*$/\1/' \
     > $outfile.tmp
