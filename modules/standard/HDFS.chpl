@@ -1,10 +1,13 @@
 use IO, SysBasic, Error, UtilReplicatedVar;
 
-extern type qio_locale_map_ptr_t; // array of locale to byte range mappings
+extern type qio_locale_map_ptr_t;     // array of locale to byte range mappings
 extern type qio_file_functions_ptr_t; // pointer to function ptr struct
-extern type char_ptr_ptr; // char**
+extern type qio_file_functions_t;     // function ptr struct
+extern type char_ptr_ptr;             // char**
 
 extern const QIO_LOCALE_MAP_PTR_T_NULL: qio_locale_map_ptr_t;
+extern const hdfs_function_struct:qio_file_functions_t;
+extern const hdfs_function_struct_ptr:qio_file_functions_ptr_t;
 
 extern record hdfs_block_byte_map_t {
   var locale_id: int; 
@@ -28,14 +31,11 @@ extern proc hdfs_create_locale_mapping(ref arr: char_ptr_ptr, num: int, loc_name
 // Return arr[i]
 extern proc hdfs_index_array(locs: qio_locale_map_ptr_t, i: int): hdfs_block_byte_map_t;
 
-// Populate function_ptr struct
-extern proc hdfs_create_file_functions(fs: c_void_ptr): qio_file_functions_ptr_t;
-
 // Same as qio_file_open_access in IO.chpl, except this time we pass though our
 // struct that will initilize the file with the appropriate functions for that FS
 extern proc qio_file_open_access_usr(out file_out:qio_file_ptr_t, path:string, 
                                      access:string, iohints:c_int, /*const*/ ref style:iostyle,
-                                     s: qio_file_functions_ptr_t):err_t;
+                                     fs:c_void_ptr, s: qio_file_functions_ptr_t):syserr;
 
 // Get block owners. 
 // Returns an array of hdfs_block_byte_map_t's
@@ -56,9 +56,9 @@ record hdfsChapelFileSystem {
 // --------- Connecting/disconnecting ---------
 
 // Connect to HDFS
-proc hdfsChapelConnect(out error: syserr, path: string, port: int): c_void_ptr{
+proc hdfsChapelConnect(out error: syserr, path: c_string, port: int): c_void_ptr{
   var ret: c_void_ptr;
-  error = hdfs_connect(ret, path.c_str(), port);
+  error = hdfs_connect(ret, path, port);
   return ret;
 }
 
@@ -68,8 +68,12 @@ proc hdfsChapelConnect(path: string, port: int): hdfsChapelFileSystem {
   forall loc in Locales {
     on loc {
       var err: syserr;
-      rcLocal(ret._internal_file) = hdfsChapelConnect(err, path, port);
-      if err then ioerror(err, "Unable to connect to HDFS", path);
+      // XXX: HACK: this accessing of locale.id copies the string onto this locale...
+      // If you get rid of this IT WILL BREAK. (at least as strings currently stand)
+      var hack = path.locale.id;
+      const tmpstr = path;
+      rcLocal(ret._internal_file) = hdfsChapelConnect(err, tmpstr.c_str(), port);
+      if err then ioerror(err, "Unable to connect to HDFS", tmpstr);
     }
   }
   return ret;
@@ -95,8 +99,7 @@ proc hdfsChapelFileSystem.hdfsOpen(path:string, mode:iomode, hints:iohints=IOHIN
   var ret: hdfsChapelFile;
   forall loc in Locales {
     on loc {
-      var struct: qio_file_functions_ptr_t = hdfs_create_file_functions(rcLocal(this._internal_file));
-      rcLocal(ret.files) = open(err, path, mode, hints, style, struct);
+      rcLocal(ret.files) = open(err, path, mode, hints, style, rcLocal(this._internal_file));
       if err then ioerror(err, "in foreign open", path);
     }
   }
@@ -143,19 +146,18 @@ record hdfsChapelFileSystem_local {
 }
 
 proc open(out error:syserr, path:string, mode:iomode, hints:iohints=IOHINT_NONE,
-    style:iostyle = defaultIOStyle(), struct: qio_file_functions_ptr_t):file {
+    style:iostyle = defaultIOStyle(), fs:c_void_ptr):file {
   var local_style = style;
   var ret:file;
   ret.home = here;
   error = qio_file_open_access_usr(ret._file_internal, path, _modestring(mode),
-      hints, local_style, struct); 
+      hints, local_style, fs, hdfs_function_struct_ptr); 
   return ret;
 }
 
 proc hdfsChapelFileSystem_local.hdfs_chapel_open(path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
   var err:syserr = ENOERR;
-  var struct: qio_file_functions_ptr_t = hdfs_create_file_functions(this._internal_);
-  var ret = open(err, path, mode, hints, style, struct);
+  var ret = open(err, path, mode, hints, style, this._internal_);
   if err then ioerror(err, "in foreign open", path);
   return ret;
 }
@@ -179,7 +181,7 @@ proc hdfs_chapel_connect(path:string, port: int): hdfsChapelFileSystem_local{
 proc hdfs_chapel_connect(out error:syserr, path:string, port: int): hdfsChapelFileSystem_local{
   var ret:hdfsChapelFileSystem_local;
   ret.home = here;
-  error = hdfs_connect(ret._internal_, path, port);
+  error = hdfs_connect(ret._internal_, path.c_str(), port);
   return ret;
 }
 
