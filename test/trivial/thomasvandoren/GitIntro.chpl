@@ -13,17 +13,17 @@
 //                         verb
 const TheTeam = [
   ("Ben", "C", "productive", "enjoy"),
-  ("Brad", "", "", ""),
+  ("Brad", "xfig", "liberated", "begat"),
   ("David", "", "", ""),
   ("Greg", "", "", ""),
-  ("Kyle", "", "", ""),
+  ("Kyle", "C", "well", "like"),
   ("Lydia", "", "", ""),
   ("Michael", "", "", ""),
   ("Elliot", "", "", ""),
   ("Simon", "", "", ""),
   ("Sung", "", "", ""),
-  ("Thomas", "", "", ""),
-  ("Tim", "", "", ""),
+  ("Thomas", "Python", "ecstatic", "<3"),
+  ("Tim", "C", "free", "sorta kinda like"),
   ("TMac", "", "", ""),
   ("Tom", "", "", ""),
   ("Vass", "", "", "")
