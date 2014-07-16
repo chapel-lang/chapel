@@ -12,7 +12,7 @@
 //                 feeling
 //                         verb
 const TheTeam = [
-  ("Ben", "", "", ""),
+  ("Ben", "C", "productive", "enjoy"),
   ("Brad", "", "", ""),
   ("David", "", "", ""),
   ("Greg", "", "", ""),
