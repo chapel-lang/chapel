@@ -11,8 +11,14 @@ extern "C" {
 
 #define QIO_LOCALE_MAP_PTR_T_NULL NULL
   
+// the struct that holds all the functions for our FS
+extern qio_file_functions_t hdfs_function_struct;
+extern const qio_file_functions_ptr_t hdfs_function_struct_ptr;
+
 // The "fd" for HDFS
 typedef struct hdfs_file hdfs_file;
+// The "fs" for HDFS
+typedef struct hdfs_fs hdfs_fs;
 
 typedef struct hdfs_block_byte_map_t {
   int locale_id; // locale ID
@@ -22,13 +28,13 @@ typedef struct hdfs_block_byte_map_t {
 
 typedef hdfs_block_byte_map_t* qio_locale_map_ptr_t;
 
-qioerr hdfs_readv(void* file, const struct iovec *vector, int count, ssize_t* num_read_out);
+qioerr hdfs_readv(void* file, const struct iovec *vector, int count, ssize_t* num_read_out, void* fs);
 
-qioerr hdfs_pwritev(void* fd, const struct iovec* iov, int iovcnt, off_t see_to_offset, ssize_t* num_read_out);
+qioerr hdfs_pwritev(void* fd, const struct iovec* iov, int iovcnt, off_t see_to_offset, ssize_t* num_read_out, void* fs);
 
-qioerr hdfs_writev(void* fl, const struct iovec* iov, int iovcnt, ssize_t* num_written_out);
+qioerr hdfs_writev(void* fl, const struct iovec* iov, int iovcnt, ssize_t* num_written_out, void* fs);
 
-qioerr hdfs_preadv(void* file, const struct iovec *vector, int count, off_t offset, ssize_t* num_read_out);
+qioerr hdfs_preadv(void* file, const struct iovec *vector, int count, off_t offset, ssize_t* num_read_out, void* fs);
 
 // This doesn't need to become an fptr since we call this from chapel
 qioerr hdfs_connect(void** fs_out, const char* pathname, int port);
@@ -38,22 +44,22 @@ qioerr hdfs_disconnect(void* fs);
 
 qioerr hdfs_open(void** file, const char* path, int* flags, mode_t mode, qio_hint_t iohints, void* fs);
 
-qioerr hdfs_close(void* fl);
+qioerr hdfs_close(void* fl, void* fs);
 
-qioerr hdfs_seek(void* fl, off_t offset, int whence, off_t* offset_out);
+qioerr hdfs_seek(void* fl, off_t offset, int whence, off_t* offset_out, void* fs);
 
-qioerr hdfs_fsync(void* fl);
+qioerr hdfs_fsync(void* fl, void* fs);
 
-qioerr hdfs_getcwd(void* file, const char** path_out);
+qioerr hdfs_getcwd(void* file, const char** path_out, void* fs);
 
-qioerr hdfs_getpath(void* file, const char** string_out);
+qioerr hdfs_getpath(void* file, const char** string_out, void* fs);
 
 qio_file_functions_ptr_t hdfs_create_file_functions(void* fs);
 
 // ----- multilocale ------
 typedef char** char_ptr_ptr;
 
-void hdfs_create_locale_mapping(char ***char_arr, int num, char *loc_name);
+void hdfs_create_locale_mapping(char ***char_arr, int num, const char *loc_name);
 
 char** hdfs_alloc_array(int num_locales); 
 

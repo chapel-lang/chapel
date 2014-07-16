@@ -93,15 +93,6 @@ ch.writef("%6.6'S\n", "abcdefg");
 ch.writef("%.3'S\n", "a");
 ch.writef("%.3'S\n", "abcd");
 
-ch.writef("|%10i|%-10i|\n", 1, 2);
-ch.writef("|%10i|%-10i|\n", -1, -2);
-ch.writef("|%10z|%-10z|\n", 1+1i, 2+2i);
-ch.writef("|%10z|%-10z|\n", -1-1i, -2-2i);
-ch.writef("|%@10z|%@-10z|\n", 1+1i, 2+2i);
-ch.writef("|%@10z|%@-10z|\n", -1-1i, -2-2i);
-ch.writef("|%10n|%-10n|\n", 1i, 2i);
-ch.writef("|%10n|%-10n|\n", -1i, -2i);
-
 ch.close();
 ff.close();
 var r = hdfs.hdfs_chapel_open("/tmp/writef_test.txt", iomode.r);
