@@ -23,7 +23,7 @@ const TheTeam = [
   ("Simon", "", "", ""),
   ("Sung", "", "", ""),
   ("Thomas", "Python", "ecstatic", "<3"),
-  ("Tim", "", "", ""),
+  ("Tim", "C", "very very very very happy", "like"),
   ("TMac", "", "", ""),
   ("Tom", "", "", ""),
   ("Vass", "", "", "")
