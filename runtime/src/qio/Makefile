@@ -14,7 +14,7 @@ QIO_OBJDIR = $(RUNTIME_OBJDIR)
 include Makefile.share
 
 SUBDIRS = regexp/$(CHPL_MAKE_REGEXP)
-SUBDIRS += auxFilesys/$(CHPL_MAKE_AUXFS)
+SUBDIRS += auxFilesys/hdfs
 TARGETS = $(QIO_OBJS)
 
 
