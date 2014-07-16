@@ -14,8 +14,6 @@
 int chpl_glob(const char* pattern, int flags, glob_t* ret_glob);
 int chpl_wordexp(const char* pattern, int flags, wordexp_t* ret_glob);
 int chpl_isdir(const char* path);
-void chpl_glob_free(glob_t* glb);
-void chpl_word_free(wordexp_t* glb);
 
 int chpl_glob(const char* pattern, int flags, glob_t* ret_glob)
 {
@@ -38,15 +36,3 @@ int chpl_isdir(const char* path)
     err = sys_lstat(path, &buf);
     return S_ISDIR(buf.st_mode);
 }
-
-void chpl_glob_free(glob_t* glb)
-{
-  globfree(glb);
-}
-
-void chpl_word_free(wordexp_t* glb)
-{
-  wordfree(glb);
-}
-
-

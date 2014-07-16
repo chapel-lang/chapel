@@ -13,9 +13,8 @@ extern proc wordexp_num(x:wordexp_t): size_t;
 extern proc wordexp_index(x:wordexp_t, idx:size_t): c_string;
 
 extern proc chpl_isdir(path:c_string):c_int;
-extern proc chpl_glob_free(ref glb:glob_t);
-extern proc chpl_word_free(ref glb:wordexp_t);
-
+extern proc globfree(ref glb:glob_t);
+extern proc wordfree(ref glb:wordexp_t);
 // For glob
 extern const GLOB_ERR:c_int;
 extern const GLOB_MARK:c_int;
@@ -45,7 +44,7 @@ iter wordexp(pattern:string, recursive:bool = false, flags:int = 0, directory:st
           yield fl;
     } else yield toString(tx);
   }
-  chpl_word_free(glb);
+  wordfree(glb);
 }
 
 iter wordexp(param tag:iterKind, pattern:string, recursive:bool = false, flags:int = 0, directory:string = "") : string
@@ -95,7 +94,7 @@ iter glob(pattern:string, recursive:bool = false, flags:int = 0, directory:strin
           yield fl;
     } else yield toString(tx);
   }
-  chpl_glob_free(glb);
+  globfree(glb);
 }
 
 iter glob(param tag:iterKind, pattern:string, recursive:bool = false, flags:int = 0, directory:string = "") : string
