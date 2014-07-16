@@ -13,7 +13,7 @@
 //                         verb
 const TheTeam = [
   ("Ben", "", "", ""),
-  ("Brad", "", "", ""),
+  ("Brad", "xfig", "liberated", "begat"),
   ("David", "", "", ""),
   ("Greg", "", "", ""),
   ("Kyle", "C", "well", "like"),
@@ -22,7 +22,7 @@ const TheTeam = [
   ("Elliot", "", "", ""),
   ("Simon", "", "", ""),
   ("Sung", "", "", ""),
-  ("Thomas", "", "", ""),
+  ("Thomas", "Python", "ecstatic", "<3"),
   ("Tim", "", "", ""),
   ("TMac", "", "", ""),
   ("Tom", "", "", ""),
