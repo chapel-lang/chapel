@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+outfile=$2
+cat $outfile | \
+    sed -E \
+    -e '/^My name is.*$/!d' \
+    -e 's/^My name is ([a-zA-Z]+).*$/\1/' \
+    > $outfile.tmp
+mv $outfile.tmp $outfile
