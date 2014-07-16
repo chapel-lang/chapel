@@ -2,6 +2,8 @@
 
 if [ "$(uname -s)" = "Darwin" ] ; then
     sed_args="-E"
+else
+    sed_args="-r"
 fi
 
 outfile=$2
