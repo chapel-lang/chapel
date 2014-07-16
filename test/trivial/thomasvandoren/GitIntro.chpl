@@ -17,7 +17,7 @@ const TheTeam = [
   ("David", "", "", ""),
   ("Greg", "", "", ""),
   ("Kyle", "C", "well", "like"),
-  ("Lydia", "", "", ""),
+  ("Lydia", "Java", "pleasantly intrigued", "poke"),
   ("Michael", "", "", ""),
   ("Elliot", "", "", ""),
   ("Simon", "", "", ""),
