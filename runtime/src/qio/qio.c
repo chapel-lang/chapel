@@ -3960,9 +3960,6 @@ qioerr qio_get_chunk(qio_file_t* fl, off_t* len_out)
     return err;
   }
 
-  // TAKZ - Note that we are only wanting to return an inclusive range -- i.e., we
-  // will only return a non-zero start and end [n,m], iff n and m are in [start, end].
-
   *len_out = transfer_size;
   return err;
 }

@@ -252,6 +252,7 @@ extern proc qio_file_sync(f:qio_file_ptr_t):syserr;
 extern proc qio_channel_get_filelength(chan:qio_channel_ptr_t, ref len:int(64)):syserr;
 extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyle);
 extern proc qio_file_set_style(f:qio_file_ptr_t, const ref style:iostyle);
+extern proc qio_file_length(f:qio_file_ptr_t, ref len:int(64)):syserr;
 
 pragma "no prototype" // FIXME
 extern proc qio_channel_create(ref ch:qio_channel_ptr_t, file:qio_file_ptr_t, hints:c_int, readable:c_int, writeable:c_int, start:int(64), end:int(64), const ref style:iostyle):syserr;
@@ -648,6 +649,16 @@ proc file.path : string {
   var ret:string;
   ret = this.getPath(err);
   if err then ioerror(err, "in file.path");
+}
+
+proc file.length():int(64) {
+  var err:syserr = ENOERR;
+  var len:int(64) = 0;
+  on this.home {
+    err = qio_file_length(this._file_internal, len);
+  }
+  if err then ioerror(err, "in file.length()");
+  return len;
 }
 
 // these strings are here (vs in _modestring)
@@ -3734,7 +3745,7 @@ enum ffst {
   none = 0,
 }
 
-proc file.get_fs_type():ffst {
+proc file.fstype():ffst {
   var t:c_int;
   var err:syserr = ENOERR;
   on this.home {
@@ -3748,31 +3759,31 @@ proc file.get_fs_type():ffst {
 }
 
 // Returns (chunk start, chunk end) for the first chunk in the file
-// containing data in the range (start, end).
+// containing data in the range [start, end].
 // Returns (0,0) if no such value exists.
-proc file.getChunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(64)) {
+proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(64)) {
   var err:syserr = ENOERR;
   var entered: bool = false;
-  var s = start;
-  var e = end;
+  var s = 0;
+  var e = 0;
 
   on this.home {
-    var t:ffst = this.get_fs_type();
+    var t:ffst = this.fstype();
     var len:int(64);
     if t != ffst.l then
       err = qio_get_chunk(this._file_internal, len);
     else {
-      writeln("Foo");
       /*var struc:c_void_ptr = alloc_lum();*/
       /*err = chpl_lustre_get_stripe(this.path.c_str(), struc);*/
       /*len = chpl_lustre_get_stripe_size(struc);*/
     }
+
+    // TAKZ - Note that we are only wanting to return an inclusive range -- i.e., we
+    // will only return a non-zero start and end [n,m], iff n and m are in [start, end].
       for i in start..end by len {
         // Our stripes are too large, so we can't give back a range within the given
         // bounds
         if i > end {
-          s = 0;
-          e = 0;
           break;
         }
 
@@ -3783,8 +3794,6 @@ proc file.getChunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(6
             then new_end = if end < this.length() then end else this.length();
           else new_end = i + len;
           if new_start == new_end {
-            s = 0;
-            e = 0;
             break;
           } else {
             s = new_start;
@@ -3793,11 +3802,7 @@ proc file.getChunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(6
         }
       }
   }
-
-  // Otherwise, we no longer have blocks or stripes
-  if entered then
-    return (s, e);
-  else return (0,0);
+  return (s, e);
 }
 
 
