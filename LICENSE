@@ -8,8 +8,8 @@ The Chapel implementation is composed of two categories of code:
    Chapel project.  This code comprises the core of the Chapel
    implementation: the compiler, runtime, and standard/internal
    modules.  Code in this category is made available under the
-   3-clause BSD license, which can be found in 'LICENSE.chapel' in
-   this directory.
+   Apache v2.0 license, which can be found in 'LICENSE.chapel' in
+   this directory or at http://www.apache.org/licenses/LICENSE-2.0.html.
 
 2) code from other open-source projects that we package and
    redistribute for the convenience of end-users.  Packages in this
