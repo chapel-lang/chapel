@@ -2,10 +2,8 @@
 Chapel Contributor Agreements
 =============================
 
-This directory contains contributor agreements that are a precondition
-for obtaining write access to the Chapel repository.  There are three
-versions:
+This directory contains contributor agreements that are a precondition for
+obtaining write access to the Chapel repository.  There are two versions:
 
-ContributorAgreement-govt.pdf    : For US Government employees
-ContributorAgreement-student.pdf : For students
-ContributorAgreement.pdf         : For other contributors
+chapel-ccla.pdf : For corporate contributors
+chapel-icla.pdf : For individual contributors
