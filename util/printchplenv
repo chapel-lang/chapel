@@ -110,10 +110,9 @@ def print_mode(mode='list'):
     llvm = chpl_llvm.get()
     print_var('CHPL_LLVM', llvm, mode, 'llvm', ('compiler',))
 
+    aux_filesys = chpl_aux_filesys.get()
     if mode == 'make' or mode == 'runtime':
-      aux_filesys = chpl_aux_filesys.get().replace(' ', '_')
-    else:
-      aux_filesys = chpl_aux_filesys.get()
+        aux_filesys = aux_filesys.replace(' ', '_')
     print_var('CHPL_AUX_FILESYS', aux_filesys, mode, 'fs', ('runtime',))
 
     # NOT using `m` here, 'simple' does not need these values
