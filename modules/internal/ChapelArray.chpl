@@ -2,38 +2,39 @@
 //
 pragma "no use ChapelStandard"
 module ChapelArray {
-  
+
   use ChapelBase; // For opaque type.
   use ChapelTuple;
   use ChapelLocale;
 
-  var privatizeLock$: sync int;
-  
+  var numPrivateObjects: atomic int(32);
+
   config param debugBulkTransfer = false;
   config param useBulkTransfer = true;
   config param useBulkTransferStride = false;
-  
+
   pragma "privatized class"
   proc _isPrivatized(value) param
     return !_local & ((_privatization & value.dsiSupportsPrivatization()) | value.dsiRequiresPrivatization());
-  
+
   proc _newPrivatizedClass(value) {
-    privatizeLock$.writeEF(true);
-    var n = __primitive("chpl_numPrivatizedClasses");
+
+    var n = numPrivateObjects.fetchAdd(1);
+
     var hereID = here.id;
     const privatizeData = value.dsiGetPrivatizeData();
     on Locales[0] do
       _newPrivatizedClassHelp(value, value, n, hereID, privatizeData);
-  
+
     proc _newPrivatizedClassHelp(parentValue, originalValue, n, hereID, privatizeData) {
       var newValue = originalValue;
       if hereID != here.id {
         newValue = parentValue.dsiPrivatize(privatizeData);
-        __primitive("chpl_newPrivatizedClass", newValue);
-        newValue.pid = n;
+        __primitive("chpl_newPrivatizedClass", newValue, n);
+        newValue.pid = n:int(64);
       } else {
-        __primitive("chpl_newPrivatizedClass", newValue);
-        newValue.pid = n;
+        __primitive("chpl_newPrivatizedClass", newValue, n);
+        newValue.pid = n:int(64);
       }
       cobegin {
         if chpl_localeTree.left then
@@ -44,18 +45,17 @@ module ChapelArray {
             _newPrivatizedClassHelp(newValue, originalValue, n, hereID, privatizeData);
       }
     }
-  
-    privatizeLock$.readFE();
-    return n;
+
+    return n:int(64);
   }
-  
+
   proc _reprivatize(value) {
     var pid = value.pid;
     var hereID = here.id;
     const reprivatizeData = value.dsiGetReprivatizeData();
     on Locales[0] do
       _reprivatizeHelp(value, value, pid, hereID, reprivatizeData);
-  
+
     proc _reprivatizeHelp(parentValue, originalValue, pid, hereID, reprivatizeData) {
       var newValue = originalValue;
       if hereID != here.id {
