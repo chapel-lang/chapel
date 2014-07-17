@@ -25,7 +25,7 @@ similar, though the specific people involved are likely to change and grow).
 
 * If you will need commit/push access to the main repository,
   `chapel-lang/chapel`_, send a request including your github username to
-  chapel-developers_.
+  chapel_admin@cray.com.
 
 .. note::
 
@@ -45,7 +45,7 @@ similar, though the specific people involved are likely to change and grow).
   packages must be approved by Cray leadership before being committed.
 
 * Sign a Chapel contributor's agreement, located at the URL below, and send it
-  to your contact at Cray (ask for one at the chapel-developers_ list if you
+  to your contact at Cray (ask for one at the chapel_admin@cray.com list if you
   don't).
 
   https://github.com/chapel-lang/chapel/tree/master/doc/developer/contributorAgreements/
