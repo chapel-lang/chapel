@@ -348,6 +348,7 @@ qio_file_functions_t hdfs_function_struct = {
   .getpath    = &hdfs_getpath,
   .fsync      = &hdfs_fsync,
   .getcwd     = &hdfs_getcwd,
+  .fs_type    = 1,
 };
 
 const qio_file_functions_ptr_t hdfs_function_struct_ptr = &hdfs_function_struct;
