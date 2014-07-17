@@ -62,6 +62,7 @@ Chapel programs can also accept C-like command line arguments to their
 main() procedure in addition to the aforementioned configuration
 variables. See $CHPL_HOME/doc/technotes/README.main for more information.
 
+
 -----------------------------
 Setting the Number of Locales
 -----------------------------
@@ -311,3 +312,19 @@ The configuration constants can be set as follows:
                          the compiler and execution commands).  This
                          is useful for running multiple programs and
                          aggregating memory statistics.
+
+
+----------------
+Launcher Support
+----------------
+
+For multilocale execution (see README.multilocale), Chapel programs are
+executed indirectly by a launcher.  This section covers command line
+options that assist launchers in doing their job.  These options are not
+supported for general use.  We document them here so that their presence
+in, say, the verbose output produced by "-v" can be understood.
+
+At present there is only one launcher support option:
+
+  -E<name=value> : set the given environment variable "name" to
+                   "value".

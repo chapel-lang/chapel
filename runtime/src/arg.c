@@ -11,6 +11,7 @@
 #include "config.h"
 #include "error.h"
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -62,6 +63,7 @@ void printHelpTable(void) {
     {"-t, --taskreport",
      "report list of pending and executing tasks on SIGINT", 'g'},
     {"--gdb", "run program in gdb", 'g'},
+    {"-E<name=value>", "set the value of an environment variable", 'g'},
 
     {"-s, --<cfgVar>=<val>", "set the value of a config var", 'c'},    
     {"-f<filename>", "read in a file of config var assignments", 'c'},
@@ -125,6 +127,31 @@ int32_t getArgNumLocales(void) {
 
 
 extern void chpl_program_about(void); // The generated code provides this
+
+
+static void defineEnvVar(const char* estr, int32_t lineno, c_string filename) {
+  //
+  // Note that you must pass a writable string to defineEnvVar(),
+  // because it relies on being able to replace the internal '='
+  // with a '\0' in order to have separate name and value strings
+  // to pass to setenv(3), which duplicates those.
+  //
+  static char errmsg[1000];
+  char* estr_val;
+
+  if ((estr_val = strchr(estr, '=')) == NULL) {
+    chpl_error("-E argument must be of the form name=value", lineno, filename);
+  }
+
+  *estr_val = '\0';
+  if (setenv(estr, estr_val + 1, 0) != 0) {
+    snprintf(errmsg, sizeof(errmsg),
+             "Cannot setenv(\"%s\"): %s", estr, strerror(errno));
+  }
+  *estr_val = '=';
+}
+
+
 void parseArgs(int* argc, char* argv[]) {
   int i;
   int printHelp = 0;
@@ -222,6 +249,20 @@ void parseArgs(int* argc, char* argv[]) {
           blockreport = 1;
         } else {
           i += handleNonstandardArg(argc, argv, i, lineno, filename);
+        }
+        break;
+
+      case 'E':
+        if (currentArg[2] == '\0') {
+          i++;
+          if (i >= *argc) {
+            chpl_error("-f flag is missing <filename> argument", 
+                       lineno, filename);
+          }
+          currentArg = argv[i];
+          defineEnvVar(currentArg, lineno, filename);
+        } else {
+          defineEnvVar(currentArg + 2, lineno, filename);
         }
         break;
 
