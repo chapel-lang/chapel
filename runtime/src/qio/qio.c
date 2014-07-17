@@ -3922,8 +3922,6 @@ int64_t qio_channel_style_element(qio_channel_t* ch, int64_t element)
   return 0;
 }
 
-// FIXME: move the rounding out into chapel level code. This should only return the
-// chunksize
 qioerr qio_get_chunk(qio_file_t* fl, off_t* len_out)
 {
   // In the case where we do not have a Lustre or block type fs, we set the chunk
@@ -3957,7 +3955,7 @@ qioerr qio_get_chunk(qio_file_t* fl, off_t* len_out)
 #endif
   }
 
-  if (transfer_size == -1) { // undefined for this system 
+  if (transfer_size == -1) { // undefined for this system
     *len_out = 0;
     return err;
   }
