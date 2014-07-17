@@ -298,6 +298,10 @@ extern proc qio_channel_write_bits(threadsafe:c_int, ch:qio_channel_ptr_t, v:uin
 extern proc qio_channel_flush_bits(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
 extern proc qio_channel_read_bits(threadsafe:c_int, ch:qio_channel_ptr_t, ref v:uint(64), nbits:int(8)):syserr;
 
+extern proc qio_locale_for_region(fl:qio_file_ptr_t, start:int(64), end:int(64), loc_name:c_string, ref good:c_int):syserr;
+extern proc qio_get_chunk(fl:qio_file_ptr_t, ref start:int(64), ref end:int(64)):syserr;
+extern proc qio_get_fs_type(fl:qio_file_ptr_t, ref tp:c_int):syserr;
+
 pragma "no prototype" // FIXME
 extern proc qio_file_path_for_fd(fd:fd_t, ref path:c_string):syserr;
 pragma "no prototype" // FIXME
@@ -3722,5 +3726,83 @@ iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
   if error == EFORMAT || error == EEOF then error = ENOERR;
   if error then this._ch_ioerror(error, "in channel.matches");
 }
+
+enum ffst {
+  h = 1,
+  l = 2,
+  curl = 3,
+  none = 0,
+}
+
+proc file.get_fs_type():ffst {
+  var t:c_int;
+  var err:syserr = ENOERR;
+  on this.home {
+    err = qio_get_fs_type(this._file_internal, t);
+  }
+  if err then ioerror(err, "in file.get_fs_type()");
+  if t == 3 then return ffst.curl;
+  if t == 2 then return ffst.l;
+  if t == 1 then return ffst.h;
+  return ffst.none;
+}
+
+/*// Returns (chunk start, chunk end) for the first chunk in the file*/
+/*// containing data in the range (start, end).*/
+/*// Returns (0,0) if no such value exists.*/
+/*proc file.getChunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(64)) {*/
+  /*var err:syserr = ENOERR;*/
+  /*var entered: bool = false;*/
+  /*var s = start;*/
+  /*var e = end;*/
+
+  /*on this.home {*/
+    /*var t:ffst = this.get_fs_type();*/
+    /*var len:int(64);*/
+    /*err = qio_get_chunk(this._file_internal, len);*/
+
+
+
+    /*if (t == ffst.l) {*/
+      /*entered = true;*/
+      /*var path = this.path;*/
+      /*var struc:c_void_ptr = alloc_lum();*/
+      /*err = chpl_lustre_get_stripe(path, struc);*/
+      /*var stripe_size = chpl_lustre_get_stripe_size(struc);*/
+      /*for i in start..end by stripe_size {*/
+        /*// Our stripes are too large, so we can't give back a range within the given*/
+        /*// bounds*/
+        /*if i > end {*/
+          /*s = 0;*/
+          /*e = 0;*/
+          /*break;*/
+        /*} */
+        /*if i >= start {*/
+          /*var new_start = i;*/
+          /*var new_end:int(64);*/
+          /*if i + stripe_size >= this.length()*/
+            /*then new_end = if end < this.length() then end else this.length();*/
+          /*else new_end = i + stripe_size;*/
+          /*if new_start == new_end {*/
+            /*s = 0;*/
+            /*e = 0;*/
+            /*break;*/
+          /*} else {*/
+            /*s = new_start;*/
+            /*e = new_end;*/
+          /*}*/
+        /*}*/
+      /*}*/
+    /*} else if (t == ffst.h){ */
+      /*entered = true;*/
+      /*err = qio_get_chunk(this._file_internal, s, e);*/
+      /*if err then ioerror(err, "file.getChunk()");*/
+    /*} */
+  /*}*/
+  /*// Otherwise, we no longer have blocks or stripes*/
+  /*if entered then  */
+    /*return (s, e);*/
+  /*else return (0,0);*/
+/*}*/
 
 

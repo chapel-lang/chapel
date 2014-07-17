@@ -3922,16 +3922,16 @@ int64_t qio_channel_style_element(qio_channel_t* ch, int64_t element)
   return 0;
 }
 
-qioerr qio_get_chunk(qio_file_t* fl, off_t* start, off_t* end)
+// FIXME: move the rounding out into chapel level code. This should only return the
+// chunksize
+qioerr qio_get_chunk(qio_file_t* fl, off_t* len_out)
 {
   // In the case where we do not have a Lustre or block type fs, we set the chunk
   // size to be the optimal transfer block size
   qioerr err = 0;
   int rc = 0;
-  long transfer_size = 0;
+  off_t transfer_size = 0;
   off_t i = 0;
-  off_t start_local = *start;
-  off_t end_local = *end;
   struct statfs s;
 
   if (fl->fsfns && fl->fsfns->get_chunk) {
@@ -3951,37 +3951,21 @@ qioerr qio_get_chunk(qio_file_t* fl, off_t* start, off_t* end)
   if (!i){
     // We got stuff from stat if we are here, so start rounding out to return our blocksize
 #if defined(__APPLE__)
-    transfer_size = s.f_iosize;
+    transfer_size = (off_t)s.f_iosize;
 #else
-    transfer_size = s.f_bsize;
+    transfer_size = (off_t)s.f_bsize;
 #endif
   }
 
-  if (transfer_size == -1 || transfer_size == 0) {
-    // undefined for this system, also handle possible div by 0 errors
-    *start = 0;
-    *end = 0;
+  if (transfer_size == -1) { // undefined for this system 
+    *len_out = 0;
     return err;
   }
 
   // TAKZ - Note that we are only wanting to return an inclusive range -- i.e., we
   // will only return a non-zero start and end [n,m], iff n and m are in [start, end].
-  for(i = 0; i < (end_local - start_local)/transfer_size + 1; i+=transfer_size) {
-    if (i > end_local) {
-      *start = 0;
-      *end = 0;
-    }
 
-    if (i >= start_local) {
-      *start = i;
-      *end = (i + transfer_size >= end_local) ? end_local : i + transfer_size;
-      return err;
-    }
-  }
-
-  // we weren't able to get a good blocksize
-  *start = 0;
-  *end = 0;
+  *len_out = transfer_size;
   return err;
 }
 
@@ -4016,7 +4000,7 @@ qioerr qio_get_fs_type(qio_file_t* fl, int* out)
   }
 
   // else
-  *out = -1;
+  *out = 0;
   return 0;
 }
 

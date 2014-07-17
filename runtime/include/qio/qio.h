@@ -118,7 +118,7 @@ typedef qioerr (*qio_getcwd_fptr)(void*,  // file information (maybe NULL)
                                   void*); // plugin filesystem pointer
 
 typedef qioerr (*qio_get_chunk_fptr)(void*, // file info
-                                     long*, // length
+                                     off_t*, // length
                                      void*); // fs info
 
 typedef qioerr (*qio_get_locale_for_region_fptr) (void*,       // file info
@@ -516,7 +516,7 @@ qioerr qio_file_open_access_usr(qio_file_t** file_out, const char* pathname,
                                const qio_file_functions_t* s);
 
 qioerr qio_get_fs_type(qio_file_t* fl, int* out);
-qioerr qio_get_chunk(qio_file_t* fl, off_t* start, off_t* end);
+qioerr qio_get_chunk(qio_file_t* fl, off_t* len_out);
 qioerr qio_locale_for_region(qio_file_t* fl, off_t start, off_t end, const char* locale_name, int* good);
 
 // This can be called to run close and to check the return value.
