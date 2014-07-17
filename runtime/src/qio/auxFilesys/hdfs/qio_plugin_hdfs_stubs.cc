@@ -59,7 +59,7 @@ qioerr hdfs_getpath(void* file, const char** string_out, void* fs) HDFS_ERROR
 // ----- multilocale ------
 void hdfs_create_locale_mapping(char ***char_arr, int num, const char *loc_name) HDFS_ERROR
 
-char** hdfs_alloc_array(int num_locales) HDFS_ERROR 
+char** hdfs_alloc_array(int num_locales) HDFS_ERROR
 
 qioerr hdfs_get_owners_for_bytes(qio_file_t* file, hdfs_block_byte_map_t** locs, int* out_num_blocks, char** locale_array, int num_locales, off_t start_byte, off_t len) HDFS_ERROR
 
@@ -68,17 +68,17 @@ qioerr hdfs_get_owners(qio_file_t* file, hdfs_block_byte_map_t** loc, int* out_n
 hdfs_block_byte_map_t hdfs_index_array(hdfs_block_byte_map_t* locs, int index) HDFS_ERROR
 
 qio_file_functions_t hdfs_function_struct = {
-    .writev = &hdfs_writev,
-    .readv = &hdfs_readv,
-    .pwritev = NULL,
-    .preadv = &hdfs_preadv,
-    .close  = &hdfs_close,
-    .open   = &hdfs_open,
-    .seek   = &hdfs_seek,
-    .filelength =  NULL,
-    .getpath = &hdfs_getpath,
-    .fsync = &hdfs_fsync,
-    .getcwd = &hdfs_getcwd,
+    &hdfs_writev,
+    &hdfs_readv,
+    NULL,
+    &hdfs_preadv,
+    &hdfs_close,
+    &hdfs_open,
+    &hdfs_seek,
+    NULL,
+    &hdfs_getpath,
+    &hdfs_fsync,
+    &hdfs_getcwd,
 };
 
 const qio_file_functions_ptr_t hdfs_function_struct_ptr = &hdfs_function_struct;
