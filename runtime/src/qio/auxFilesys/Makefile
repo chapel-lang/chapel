@@ -12,7 +12,7 @@ include $(RUNTIME_ROOT)/make/Makefile.runtime.head
 
 TARGETS =
 
-SUBDIRS = $(CHPL_MAKE_AUXFS)
+SUBDIRS = hdfs
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.emptydirrules
 

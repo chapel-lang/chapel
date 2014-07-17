@@ -7,11 +7,11 @@ endif
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.head
  
-AUXFS_OBJDIR = $(RUNTIME_OBJDIR)
+AUXFS_HDFS_OBJDIR = $(RUNTIME_OBJDIR)
 
 include Makefile.share
 
-TARGETS = $(AUXFS_OBJS)
+TARGETS = $(AUXFS_HDFS_OBJS)
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.subdirrules
 

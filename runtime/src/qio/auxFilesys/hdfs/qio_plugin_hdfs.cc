@@ -31,10 +31,15 @@
   } \
 }
 
+// Darwin does not define EREMOTEIO
+#if !defined(EREMOTEIO)
+#define EREMOTEIO 121
+#endif
+
 // The "fd" for HDFS
 struct hdfs_file {
   hdfsFile file;      // file info
-  const char* pathnm; // The path to our file. Need this for locality 
+  const char* pathnm; // The path to our file. Need this for locality
 };
 
 // our FS
@@ -42,7 +47,7 @@ struct hdfs_fs {
   qbytes_refcnt_t ref_cnt; // ref count on the FS handle
   hdfsFS          hfs;     // the actual HDFS handle
   const char*     fs_name; // name (for later on)
-  int             fs_port; // port 
+  int             fs_port; // port
 };
 
 qioerr hdfs_readv (void* file, const struct iovec *vector, int count, ssize_t* num_read_out, void* fs)
@@ -68,7 +73,7 @@ qioerr hdfs_readv (void* file, const struct iovec *vector, int count, ssize_t* n
     }
   }
 
-  if( err_out == 0 && got_total == 0 && sys_iov_total_bytes(vector, count) != 0 ) 
+  if( err_out == 0 && got_total == 0 && sys_iov_total_bytes(vector, count) != 0 )
     err_out = qio_int_to_err(EEOF);
 
   *num_read_out = got_total;
@@ -78,15 +83,15 @@ qioerr hdfs_readv (void* file, const struct iovec *vector, int count, ssize_t* n
   return err_out;
 }
 
-qioerr hdfs_pwritev(void* fd, const struct iovec* iov, int iovcnt, off_t see_to_offset, ssize_t* num_read_out, void* fs) 
+qioerr hdfs_pwritev(void* fd, const struct iovec* iov, int iovcnt, off_t see_to_offset, ssize_t* num_read_out, void* fs)
 {
-  qioerr t = 0; 
+  qioerr t = 0;
   QIO_GET_CONSTANT_ERROR(t, ENOSYS, "pwrites in HDFS are not supported");
   fprintf(stderr, "positional writes in HDFS are not supported!!\n");
   return t;
 }
 
-qioerr hdfs_writev(void* fl, const struct iovec* iov, int iovcnt, ssize_t* num_written_out, void* fs) 
+qioerr hdfs_writev(void* fl, const struct iovec* iov, int iovcnt, ssize_t* num_written_out, void* fs)
 {
   ssize_t got;
   ssize_t got_total = 0;
@@ -97,7 +102,7 @@ qioerr hdfs_writev(void* fl, const struct iovec* iov, int iovcnt, ssize_t* num_w
   for (i = 0; i < iovcnt; i++) {
     got = hdfsWrite(to_hdfs_fs(fs)->hfs, to_hdfs_file(fl)->file, (void*)(iov[i].iov_base), iov[i].iov_len);
 
-    if (got != -1) 
+    if (got != -1)
       got_total += got;
     else {
       err_out = qio_mkerror_errno();
@@ -138,7 +143,7 @@ qioerr hdfs_preadv (void* file, const struct iovec *vector, int count, off_t off
     }
   }
 
-  if( err_out == 0 && got_total == 0 && sys_iov_total_bytes(vector, count) != 0 ) 
+  if( err_out == 0 && got_total == 0 && sys_iov_total_bytes(vector, count) != 0 )
     err_out = qio_int_to_err(EEOF);
 
   *num_read_out = got_total;
@@ -148,8 +153,8 @@ qioerr hdfs_preadv (void* file, const struct iovec *vector, int count, off_t off
   return err_out;
 }
 
-static 
-qioerr hdfs_disconnect_and_free(void* fs) 
+static
+qioerr hdfs_disconnect_and_free(void* fs)
 {
   qioerr err = 0;
   int ret= 0;
@@ -166,7 +171,7 @@ qioerr hdfs_disconnect_and_free(void* fs)
   return err;
 }
 
-qioerr hdfs_close(void* fl, void* fs) 
+qioerr hdfs_close(void* fl, void* fs)
 {
   int got = 0;
   qioerr err_out = 0;
@@ -181,7 +186,7 @@ qioerr hdfs_close(void* fl, void* fs)
   return err_out;
 }
 
-qioerr hdfs_connect(void** fs_out, const char* pathname, int port) 
+qioerr hdfs_connect(void** fs_out, const char* pathname, int port)
 {
   qioerr err_out = 0;
   hdfsFS fs;
@@ -204,7 +209,7 @@ error:
   return err_out;
 }
 
-qioerr hdfs_disconnect(void* fs) 
+qioerr hdfs_disconnect(void* fs)
 {
   qioerr err_out = 0;
   DO_RELEASE(((hdfs_fs*)fs), hdfs_disconnect_and_free);
@@ -213,7 +218,7 @@ qioerr hdfs_disconnect(void* fs)
 }
 
 
-qioerr hdfs_open(void** fd, const char* path, int* flags, mode_t mode, qio_hint_t iohints, void* fs) 
+qioerr hdfs_open(void** fd, const char* path, int* flags, mode_t mode, qio_hint_t iohints, void* fs)
 {
   qioerr err_out = 0;
   int rc;
@@ -221,8 +226,8 @@ qioerr hdfs_open(void** fd, const char* path, int* flags, mode_t mode, qio_hint_
 
   STARTING_SLOW_SYSCALL;
   DO_RETAIN(((hdfs_fs*)fs));
-  
-  // assert that we connected 
+
+  // assert that we connected
   CREATE_ERROR((to_hdfs_fs(fs)->hfs == NULL), err_out, ECONNREFUSED,"Unable to open HDFS file", error);
 
   fl->file =  hdfsOpenFile(to_hdfs_fs(fs)->hfs, path, *flags, 0, 0, 0);
@@ -240,7 +245,7 @@ qioerr hdfs_open(void** fd, const char* path, int* flags, mode_t mode, qio_hint_
   rc = *flags | ~O_ACCMODE;
   rc &= O_ACCMODE;
   if( rc == O_RDONLY ) {
-    *flags |= QIO_FDFLAG_READABLE; 
+    *flags |= QIO_FDFLAG_READABLE;
   } else if( rc == O_WRONLY ) {
     *flags |= QIO_FDFLAG_WRITEABLE;
   } else if( rc == O_RDWR ) {
@@ -251,7 +256,7 @@ qioerr hdfs_open(void** fd, const char* path, int* flags, mode_t mode, qio_hint_
   *fd = fl; // Set fd to fl and return
   return err_out;
 
-error: 
+error:
   qio_free(fl);
   return err_out;
 }
@@ -286,7 +291,7 @@ qioerr hdfs_fsync(void* fl, void* fs)
   STARTING_SLOW_SYSCALL;
   got = hdfsFlush(to_hdfs_fs(fs)->hfs, to_hdfs_file(fl)->file);
 
-  if(got == -1)     
+  if(got == -1)
     err_out = qio_mkerror_errno();
   DONE_SLOW_SYSCALL;
 
@@ -301,12 +306,12 @@ qioerr hdfs_getcwd(void* file, const char** path_out, void* fs)
   qioerr err = 0;
 
   buf = (char*) qio_malloc(sz);
-  if( !buf ) 
+  if( !buf )
     QIO_GET_CONSTANT_ERROR(err, ENOMEM, "Out of memory in hdfs_getcwd");
   while( 1 ) {
     got = hdfsGetWorkingDirectory(to_hdfs_fs(fs)->hfs, buf, sz);
     if( got != NULL ) break;
-    else if( errno == ERANGE ) { 
+    else if( errno == ERANGE ) {
       // keep looping but with bigger buffer.
       sz = 2*sz;
       got = (char*) qio_realloc(buf, sz);
@@ -324,7 +329,7 @@ qioerr hdfs_getcwd(void* file, const char** path_out, void* fs)
   return err;
 }
 
-qioerr hdfs_getpath(void* file, const char** string_out, void* fs) 
+qioerr hdfs_getpath(void* file, const char** string_out, void* fs)
 {
   qioerr err = 0;
   *string_out = to_hdfs_file(file)->pathnm;
@@ -338,9 +343,9 @@ qio_file_functions_t hdfs_function_struct = {
   .preadv     = &hdfs_preadv,
   .close      = &hdfs_close,
   .open       = &hdfs_open,
-  .seek       = &hdfs_seek, 
-  .filelength = NULL, // Don't need this for HDFS 
-  .getpath    = &hdfs_getpath, 
+  .seek       = &hdfs_seek,
+  .filelength = NULL, // Don't need this for HDFS
+  .getpath    = &hdfs_getpath,
   .fsync      = &hdfs_fsync,
   .getcwd     = &hdfs_getcwd,
 };
@@ -349,22 +354,22 @@ const qio_file_functions_ptr_t hdfs_function_struct_ptr = &hdfs_function_struct;
 
 // ----- multilocale -------
 
-static 
-char* get_locale_name(char *loc) 
+static
+char* get_locale_name(char *loc)
 {
   const char *keys = "."; // We lop off the .us.cray...
-  int i = strcspn (loc, keys); 
+  int i = strcspn (loc, keys);
 
   return strndup(loc, i);
 }
 
 // char_arr is already allocated
-void hdfs_create_locale_mapping(char ***char_arr, int num, const char *loc_name) 
+void hdfs_create_locale_mapping(char ***char_arr, int num, const char *loc_name)
 {
   (*char_arr)[num] = (char*)loc_name;
 }
 
-char **hdfs_alloc_array(int num_locales) 
+char **hdfs_alloc_array(int num_locales)
 {
   return (char**)qio_calloc(sizeof(char*), num_locales);
 }
@@ -399,7 +404,7 @@ qioerr hdfs_get_owners_for_bytes(qio_file_t* file, hdfs_block_byte_map_t** locs,
     rnd = rand() % f_info->mReplication;  // pick an owner
     if (info[i][rnd]) {// Valid access
       tmp = get_locale_name(info[i][rnd]); // strip off .___
-      for (k = 0; k < num_locales; k++) { // Now find the owner 
+      for (k = 0; k < num_locales; k++) { // Now find the owner
         if (strcmp(tmp, locale_array[k]) == 0) {
           loc[i].locale_id = k; // return locale ID for that name
           break;
@@ -429,7 +434,7 @@ qioerr hdfs_get_owners(qio_file_t* file, hdfs_block_byte_map_t** locs_out, int* 
   return hdfs_get_owners_for_bytes(file, locs_out, out_num_blocks, locale_array, num_locales, 0, -1);
 }
 
-hdfs_block_byte_map_t hdfs_index_array(hdfs_block_byte_map_t* locs, int index) 
+hdfs_block_byte_map_t hdfs_index_array(hdfs_block_byte_map_t* locs, int index)
 {
   return locs[index];
 }
