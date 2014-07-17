@@ -80,7 +80,7 @@ proc initialise() {
   var y: [0..4] int(32);
   for yBase in 2..3:int(32) {
     for xBase in 0..4:int(32) {
-      var pos: uint(32) = (xBase+5*yBase):uint(32);
+      const pos: uint(32) = (xBase+5*yBase):uint(32);
       maskStart[pos][0] = totalCount;
       for piece in 0..pieceCount-1 {
         for j in 0..4 {
@@ -121,13 +121,13 @@ proc initialise() {
           }
 
           for i in 0..4 {
-            var xnew: int(32) = x[i]+y[i];
-            var ynew: int(32) = -x[i];
+            const xnew: int(32) = x[i]+y[i];
+            const ynew: int(32) = -x[i];
             x[i] = xnew;
             y[i] = ynew;
             if currentRotation == 5 {
-              var xnew:int(32) = x[i]+y[i];
-              var ynew:int(32) = -y[i];
+              const xnew:int(32) = x[i]+y[i];
+              const ynew:int(32) = -y[i];
               x[i] = xnew;
               y[i] = ynew;
             }
@@ -144,12 +144,12 @@ proc initialise() {
   for yBase in 0..9:int(32) {
     if yBase!=2 && yBase!=3 {
       for xBase in 0..4:int(32) {
-        var pos: uint(32) = (xBase+5*yBase):uint(32);
-        var origPos: int(32) = xBase+5*(yBase%2+2);
+        const pos: uint(32) = (xBase+5*yBase):uint(32);
+        const origPos: int(32) = xBase+5*(yBase%2+2);
         maskStart[pos][0] = totalCount;
         var pMask: uint(32) = maskStart[origPos][0];
-        var bottom: uint(32) = ((0xFFFC000000000000>>pos) & 0x003FFFFF):uint(32);
-        var lastRow: uint(32) = ((0xFFFC000000000000>>(pos+5)) & 0x003FFFFF):uint(32);
+        const bottom: uint(32) = ((0xFFFC000000000000>>pos) & 0x003FFFFF):uint(32);
+        const lastRow: uint(32) = ((0xFFFC000000000000>>(pos+5)) & 0x003FFFFF):uint(32);
         while allMasks[pMask] {
           var mask: uint(32) = allMasks[pMask];
           pMask += 1;
@@ -176,7 +176,7 @@ proc initialise() {
       filterMask = ((filter&1)<<1) | ((filter&6)<<(4-(evenRowsLookup[pos]&1)));
       var pMask: uint(32) = maskStart[pos][0];
       while allMasks[pMask] {
-        var mask:uint(32) = allMasks[pMask];
+        const mask:uint(32) = allMasks[pMask];
         if (mask&filterMask) == 0 {
           allMasks[totalCount] = mask;
           totalCount += 1;
@@ -310,9 +310,8 @@ proc searchLinear(in board: uint(32), in pos: uint(32), in used: uint(32),
     pos += count;
     board >>= count;
 
-    var f: uint(32);
-    f = ((board>>1)&1)|((board>>(4-(evenRowsLookup[pos]&1)))&6);
-    var boardAndUsed = board | used;
+    const f: uint(32) = ((board>>1)&1) | ((board >> (4-(evenRowsLookup[pos] & 1)))&6);
+    const boardAndUsed = board|used;
 
     var mask: uint(32);
     var currentMask: uint(32) = maskStart[pos][f];
@@ -324,8 +323,9 @@ proc searchLinear(in board: uint(32), in pos: uint(32), in used: uint(32),
       if allMasks[currentMask] {
         mask = allMasks[currentMask];
         currentSolution[placed] = mask;
-        searchLinear(board|(mask&0x003FFFFF), pos, used|(mask&0xFFC00000:uint(32)),
-              placed+1, currentSolution);
+        searchLinear(board|(mask & 0x003FFFFF:uint(32)), pos,
+                     used|(mask & 0xFFC00000:uint(32)), placed+1,
+                     currentSolution);
         currentMask += 1;
       }
     }
@@ -350,7 +350,7 @@ proc searchParallel(in board: uint(32), in pos: uint(32), in used: uint(32),
   pos += count;
   board >>= count;
 
-  var boardAndUsed: uint(32) = board|used;
+  const boardAndUsed: uint(32) = board|used;
   var currentMask: uint(32) = maskStart[pos][0];
   var mask: uint(32);
 
@@ -359,7 +359,8 @@ proc searchParallel(in board: uint(32), in pos: uint(32), in used: uint(32),
       if allMasks[currentMask] {
         mask = allMasks[currentMask];
         currentMask += 1;
-        searchParallel(board|(mask&0x003FFFFF), pos, used|(mask&0xFFC00000:uint(32)), placed+1, mask);
+        searchParallel(board|(mask&0x003FFFFF), pos,
+                       used|(mask&0xFFC00000:uint(32)), placed+1, mask);
       }
     }
   } else {   // placed == 1
@@ -370,8 +371,9 @@ proc searchParallel(in board: uint(32), in pos: uint(32), in used: uint(32),
       if allMasks[currentMask] {
         mask = allMasks[currentMask];
         currentMask += 1;
-        searchLinearHelper(board|((mask&0x003FFFFF)), pos, used|(mask&0xFFC00000:uint(32)),
-          placed+1, firstPiece, mask);
+        searchLinearHelper(board|((mask&0x003FFFFF)), pos,
+                           used|(mask&0xFFC00000:uint(32)),  placed+1,
+                           firstPiece, mask);
       }
     }
   }
