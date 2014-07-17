@@ -12,18 +12,18 @@
 //                 feeling
 //                         verb
 const TheTeam = [
-  ("Ben", "", "", ""),
-  ("Brad", "", "", ""),
+  ("Ben", "C", "productive", "enjoy"),
+  ("Brad", "xfig", "liberated", "begat"),
   ("David", "", "", ""),
   ("Greg", "", "", ""),
-  ("Kyle", "", "", ""),
-  ("Lydia", "", "", ""),
+  ("Kyle", "C", "well", "like"),
+  ("Lydia", "Java", "pleasantly intrigued", "poke"),
   ("Michael", "", "", ""),
   ("Elliot", "", "", ""),
   ("Simon", "", "", ""),
   ("Sung", "", "", ""),
-  ("Thomas", "", "", ""),
-  ("Tim", "", "", ""),
+  ("Thomas", "Python", "ecstatic", "<3"),
+  ("Tim", "C", "free", "sorta kinda like"),
   ("TMac", "", "", ""),
   ("Tom", "", "", ""),
   ("Vass", "", "", "")

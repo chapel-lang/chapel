@@ -29,7 +29,8 @@ writeln("========== test of stream() ==============");
 for r in N.stream() do
 write(".");
 writeln();
-
+ffr.close();
+ff.close();
 
 writeln();
 writeln();

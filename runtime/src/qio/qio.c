@@ -942,6 +942,7 @@ qioerr _qio_file_do_close(qio_file_t* f)
       rc = fclose(f->fp);
       if( rc ) err = qio_mkerror_errno();
     }
+    f->hints &= ~QIO_HINT_OWNED;
     f->fp = NULL;
     f->fd = -1;
   }
@@ -949,6 +950,7 @@ qioerr _qio_file_do_close(qio_file_t* f)
   if (f->fsfns) {
     if (f->hints & QIO_HINT_OWNED)  // Should always be true
       err = f->fsfns->close(f->file_info, f->fs_info);
+    f->hints &= ~QIO_HINT_OWNED;
   }
 
   if( f->fd >= 0 ) {
@@ -963,6 +965,7 @@ qioerr _qio_file_do_close(qio_file_t* f)
                 qio_err_to_int(err), path);
       }
     }
+    f->hints &= ~QIO_HINT_OWNED;
     f->fp = NULL;
     f->fd = -1;
   }
