@@ -23,6 +23,15 @@ extern "C" {
 // any mention of the token "mmap".  Most unfortunate. <hilde>
 #include <sys/mman.h>
 
+#if defined(__APPLE__)
+#include <sys/param.h>
+#include <sys/mount.h>
+#elif defined(__linux__)
+#include <sys/vfs.h>
+#endif
+// Magic value to be found in the statfs man page
+#define LUSTRE_SUPER_MAGIC     0x0BD00BD0
+
 #define DEBUG_QIO 0
 
 // synonym for iovec
@@ -108,6 +117,18 @@ typedef qioerr (*qio_getcwd_fptr)(void*,  // file information (maybe NULL)
                                   const char**,  // path on return
                                   void*); // plugin filesystem pointer
 
+typedef qioerr (*qio_get_chunk_fptr)(void*, // file info
+                                     off_t*, // length
+                                     void*); // fs info
+
+typedef qioerr (*qio_get_locale_for_region_fptr) (void*, // file info
+                                                  off_t, // start
+                                                  off_t, // end
+                                                  const char*, // locale name
+                                                  int*,  // is this locale good or not
+                                                  void*); // fs info
+
+// The ordering of these fields is important due to struct initialization
 typedef struct qio_file_functions_s {
   qio_writev_fptr  writev; 
   qio_readv_fptr   readv;
@@ -126,6 +147,11 @@ typedef struct qio_file_functions_s {
 
   qio_fsync_fptr fsync;
   qio_getcwd_fptr getcwd;
+  int fs_type;
+
+  // multilocale API
+  qio_get_chunk_fptr get_chunk;
+  qio_get_locale_for_region_fptr get_locale_for_region;
 
   // We used to store void* fs here, but it moved to the
   // qio file structure and an argument to qio file functions
@@ -488,6 +514,10 @@ qioerr qio_file_open_access_usr(qio_file_t** file_out, const char* pathname,
                                const char* access, qio_hint_t iohints, 
                                const qio_style_t* style, void* fs_info,
                                const qio_file_functions_t* s);
+
+qioerr qio_get_fs_type(qio_file_t* fl, const char* path, int* out);
+qioerr qio_get_chunk(qio_file_t* fl, off_t* start, off_t* end);
+qioerr qio_locale_for_region(qio_file_t* fl, off_t start, off_t end, const char* locale_name, int* good);
 
 // This can be called to run close and to check the return value.
 // That's important because some implementations (such as NFS)

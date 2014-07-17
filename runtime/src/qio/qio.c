@@ -3922,3 +3922,95 @@ int64_t qio_channel_style_element(qio_channel_t* ch, int64_t element)
   return 0;
 }
 
+qioerr qio_get_chunk(qio_file_t* fl, off_t* start, off_t* end)
+{
+  // In the case where we do not have a Lustre or block type fs, we set the chunk
+  // size to be the optimal transfer block size
+  struct statfs s;
+  int rc = 0;
+  long transfer_size = 0;
+  qioerr err = 0;
+  off_t i = 0;
+  off_t start_local = *start;
+  off_t end_local = *end;
+
+  if (fl->fsfns && fl->fsfns->get_chunk) {
+    err = fl->fsfns->get_chunk(fl->file_info, &transfer_size, fl->fs_info);
+    // so we know that we got the blocksize this way.
+    i = 1;
+  } else if (fl->fp) {
+    rc = fstatfs(fileno(fl->fp), &s);
+    if (rc)
+      QIO_RETURN_CONSTANT_ERROR(ENOTSUP, "Unable to stat optimal transfer size for local file");
+  } else if (fl->fd != -1) {
+    rc = fstatfs(fl->fd, &s);
+    if (rc)
+      QIO_RETURN_CONSTANT_ERROR(ENOTSUP, "Unable to stat optimal transfer size for local file");
+  } else QIO_RETURN_CONSTANT_ERROR(ENOSYS, "Unable to get chunk size for file");
+
+  if (!i){
+    // We got stuff from stat if we are here, so start rounding out to return our blocksize 
+#if defined(__APPLE__)
+    transfer_size = s.f_iosize;
+#else 
+    transfer_size = s.f_bsize;
+#endif
+  }
+
+  if (transfer_size == -1 || transfer_size == 0) { 
+    // undefined for this system, also handle possible div by 0 errors
+    *start = 0;
+    *end = 0;
+    return err;
+  } 
+
+  // TAKZ - Note that we are only wanting to return an inclusive range -- i.e., we
+  // will only return a non-zero start and end [n,m], iff n and m are in [start, end].
+  for(i = 0; i < (end_local - start_local)/transfer_size + 1; i+=transfer_size) {
+    if (i > end_local) {
+      *start = 0;
+      *end = 0;
+    }
+
+    if (i >= start_local) {
+      *start = i;
+      *end = (i + transfer_size >= end_local) ? end_local : i + transfer_size;
+      return err;
+    }
+  }
+
+  // we weren't able to get a good blocksize
+  *start = 0;
+  *end = 0;
+  return err;
+}
+
+qioerr qio_locale_for_region(qio_file_t* fl, off_t start, off_t end, const char* loc_name, int* good)
+{
+  qioerr err = 0;
+  if (fl->fsfns && fl->fsfns->get_locale_for_region) {
+    err = fl->fsfns->get_locale_for_region(fl->file_info, start, end, loc_name, good, fl->fs_info);
+    return err;
+  } else QIO_RETURN_CONSTANT_ERROR(ENOSYS, "Unable to get locale for specified region of file");
+}
+
+qioerr qio_get_fs_type(qio_file_t* fl, const char* path, int* out)
+{
+  struct statfs s;
+  int rc = statfs(path, &s);
+  // can't stat, and we don't have a foreign FS
+  if (rc && (fl->fsfns == NULL)) 
+    QIO_RETURN_CONSTANT_ERROR(ENOTSUP, "Unable to find file system type");
+
+  if (s.f_type == LUSTRE_SUPER_MAGIC) { *out = 2; return 0; }
+
+  if (fl->fsfns && fl->fsfns->fs_type) { 
+    *out = fl->fsfns->fs_type; 
+    return 0; 
+  }
+
+  // else
+  *out = 0;
+  return 0;
+}
+
