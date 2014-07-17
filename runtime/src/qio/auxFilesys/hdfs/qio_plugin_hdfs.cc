@@ -336,6 +336,20 @@ qioerr hdfs_getpath(void* file, const char** string_out, void* fs)
   return err;
 }
 
+//qioerr hdfs_get_chunk(void* fl, off_t* start, off_t* end, void* fs)
+//{
+  //qioerr err = 0;
+
+  //hdfsFileInfo* f_info = NULL;
+  //f_info = hdfsGetPathInfo(to_hdfs_file(fl)->fs->hfs, to_hdfs_file(fl)->pathnm);
+
+  //if (f_info == NULL) {
+     //QIO_GET_CONSTANT_ERROR(err, EREMOTEIO, "Unable to get length of file in HDFS");
+     //return err;
+  //}
+//}
+
+
 qio_file_functions_t hdfs_function_struct = {
   &hdfs_writev,
   &hdfs_readv,

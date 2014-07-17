@@ -3738,24 +3738,26 @@ iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
   if error then this._ch_ioerror(error, "in channel.matches");
 }
 
-enum ffst {
-  h = 1,
-  l = 2,
-  curl = 3,
-  none = 0,
+/************** Distributed File Systems ***************/
+
+enum ftype {
+  none   = 0,
+  hdfs   = 1,
+  lustre = 2,
+  curl   = 3,
 }
 
-proc file.fstype():ffst {
+proc file.fstype():ftype {
   var t:c_int;
   var err:syserr = ENOERR;
   on this.home {
     err = qio_get_fs_type(this._file_internal, t);
   }
-  if err then ioerror(err, "in file.get_fs_type()");
-  if t == 3 then return ffst.curl;
-  if t == 2 then return ffst.l;
-  if t == 1 then return ffst.h;
-  return ffst.none;
+  if err then ioerror(err, "in file.fstype()");
+  if t == 3 then return ftype.curl;
+  if t == 2 then return ftype.lustre;
+  if t == 1 then return ftype.hdfs;
+  return ftype.none;
 }
 
 // Returns (chunk start, chunk end) for the first chunk in the file
@@ -3768,9 +3770,10 @@ proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(6
   var e = 0;
 
   on this.home {
-    var t:ffst = this.fstype();
+  var real_end = min(end, this.length());
+    var t:ftype = this.fstype();
     var len:int(64);
-    if t != ffst.l then
+    if t != ftype.lustre then
       err = qio_get_chunk(this._file_internal, len);
     else {
       /*var struc:c_void_ptr = alloc_lum();*/
@@ -3780,7 +3783,7 @@ proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(6
 
     // TAKZ - Note that we are only wanting to return an inclusive range -- i.e., we
     // will only return a non-zero start and end [n,m], iff n and m are in [start, end].
-      for i in start..end by len {
+      for i in start..real_end by len {
         // Our stripes are too large, so we can't give back a range within the given
         // bounds
         if i > end {
@@ -3790,8 +3793,8 @@ proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(6
         if i >= start {
           var new_start = i;
           var new_end:int(64);
-          if i + len >= this.length()
-            then new_end = if end < this.length() then end else this.length();
+          if i + len >= real_end then 
+            new_end = real_end;
           else new_end = i + len;
           if new_start == new_end {
             break;
