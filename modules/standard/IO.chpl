@@ -3770,7 +3770,7 @@ proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(6
   var e = 0;
 
   on this.home {
-  var real_end = min(end, this.length());
+    var real_end = min(end, this.length());
     var t:ftype = this.fstype();
     var len:int(64);
     if t != ftype.lustre then
@@ -3786,9 +3786,8 @@ proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(6
       for i in start..real_end by len {
         // Our stripes are too large, so we can't give back a range within the given
         // bounds
-        if i > end {
+        if i > end then
           break;
-        }
 
         if i >= start {
           var new_start = i;
@@ -3807,5 +3806,3 @@ proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(6
   }
   return (s, e);
 }
-
-
