@@ -131,7 +131,7 @@ var line_buff : [0..LINE_LENGTH] int(8);
 proc addLine(bytes: int) {
   for i in 0..bytes-1 {
     var r  = random.next();
-    var ai = r : int; 
+    var ai = r : int;
     while (lookup[ai].p < r) {
       ai = ai + 1;
     }
@@ -165,13 +165,11 @@ proc repeatMake(desc : string, alu : [], n : int) {
 
   for i in 0..(n / LINE_LENGTH)-1 {
     j = (i * LINE_LENGTH) % r;
-    stdout.write(s[j..#LINE_LENGTH]);
-    stdout.write(10:int(8));
+    stdout.write(s[j..#LINE_LENGTH], 10:int(8));
   }
   if (n % LINE_LENGTH) {
     j = ((n / LINE_LENGTH)*LINE_LENGTH) % r;
-    stdout.write(s[j..#(n % LINE_LENGTH)]);
-    stdout.write(10:int(8));
+    stdout.write(s[j..#(n % LINE_LENGTH)], 10:int(8));
   }
 }
 
