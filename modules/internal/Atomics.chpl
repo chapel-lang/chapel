@@ -257,6 +257,7 @@ module Atomics {
   }
 
   pragma "atomic type"
+  pragma "do not noinit"
   record atomicflag {
     var _v:atomic_flag = create_atomic_flag();
     inline proc ~atomicflag() {

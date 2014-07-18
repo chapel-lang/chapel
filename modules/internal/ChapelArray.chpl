@@ -541,6 +541,7 @@ module ChapelArray {
   // Distribution wrapper record
   //
   pragma "distribution"
+  pragma "do not noinit"
   record _distribution {
     var _value;
     var _valueType;
@@ -642,6 +643,7 @@ module ChapelArray {
   //
   pragma "domain"
   pragma "has runtime type"
+  pragma "do not noinit"
   record _domain {
     var _value;     // stores domain class, may be privatized
     var _valueType; // stores type of privatized domains
@@ -1205,6 +1207,7 @@ module ChapelArray {
   //
   pragma "array"
   pragma "has runtime type"
+  pragma "do not noinit"
   record _array {
     var _value;     // stores array class, may be privatized
     var _valueType; // stores type of privatized arrays
