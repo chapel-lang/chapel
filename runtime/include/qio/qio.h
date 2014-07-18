@@ -118,7 +118,7 @@ typedef qioerr (*qio_getcwd_fptr)(void*,  // file information (maybe NULL)
                                   void*); // plugin filesystem pointer
 
 typedef qioerr (*qio_get_chunk_fptr)(void*, // file info
-                                     off_t*, // length
+                                     int64_t*, // length
                                      void*); // fs info
 
 typedef qioerr (*qio_get_locale_for_region_fptr) (void*,       // file info

@@ -3781,29 +3781,33 @@ proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(6
       /*len = chpl_lustre_get_stripe_size(struc);*/
     }
 
-    // TAKZ - Note that we are only wanting to return an inclusive range -- i.e., we
-    // will only return a non-zero start and end [n,m], iff n and m are in [start, end].
-    for i in start..real_end by len {
-      // Our stripes are too large, so we can't give back a range within the given
-      // bounds
-      if i > end {
-        break;
-      }
-
-      if i >= start {
-        var new_start = i;
-        var new_end:int(64);
-        if i + len >= real_end then 
-          new_end = real_end;
-        else new_end = i + len;
-        if new_start == new_end {
+    if (len != 0 && (real_end > start)) {
+      // TAKZ - Note that we are only wanting to return an inclusive range -- i.e., we
+      // will only return a non-zero start and end [n,m], iff n and m are in [start, end].
+      for i in start..real_end by len {
+        // Our stripes are too large, so we can't give back a range within the given
+        // bounds
+        if i > end {
           break;
-        } else {
-          s = new_start;
-          e = new_end;
+        }
+
+        if i >= start {
+          var new_start = i;
+          var new_end:int(64);
+          if (i / len + 1) * len >= real_end then  
+            new_end = real_end;
+          // rounding
+          else new_end = (i / len + 1) * len;
+          if new_start == new_end {
+            break;
+          } else {
+            s = new_start;
+            e = new_end;
+            break;
+          }
         }
       }
-    }
+    } 
   }
   return (s, e);
 }

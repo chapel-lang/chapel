@@ -48,6 +48,8 @@ qioerr hdfs_close(void* fl, void* fs);
 
 qioerr hdfs_seek(void* fl, off_t offset, int whence, off_t* offset_out, void* fs);
 
+qioerr hdfs_getlength(void* fl, int64_t* len_out, void* fs);
+
 qioerr hdfs_fsync(void* fl, void* fs);
 
 qioerr hdfs_getcwd(void* file, const char** path_out, void* fs);
@@ -68,6 +70,7 @@ qioerr hdfs_get_owners_for_bytes(qio_file_t* file, hdfs_block_byte_map_t** locs,
 qioerr hdfs_get_owners(qio_file_t* file, hdfs_block_byte_map_t** loc, int* out_num_blocks, char** arr, int n);
 
 hdfs_block_byte_map_t hdfs_index_array(hdfs_block_byte_map_t* locs, int index);
+qioerr hdfs_get_chunk(void* fl, int64_t* len_out, void* fs);
 
 #ifdef __cplusplus
 } // end extern "C"

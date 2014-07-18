@@ -49,6 +49,8 @@ qioerr hdfs_close(void* fl, void* fs) HDFS_ERROR(return 0)
 
 qioerr hdfs_seek(void* fl, off_t offset, int whence, off_t* offset_out, void* fs) HDFS_ERROR(return 0)
 
+qioerr hdfs_getlength(void* fl, int64_t* len_out, void* fs) HDFS_ERROR(return 0)
+
 qioerr hdfs_fsync(void* fl, void* fs) HDFS_ERROR(return 0)
 
 qioerr hdfs_getcwd(void* file, const char** path_out, void* fs) HDFS_ERROR(return 0)
@@ -66,6 +68,8 @@ qioerr hdfs_get_owners(qio_file_t* file, hdfs_block_byte_map_t** loc, int* out_n
 
 hdfs_block_byte_map_t hdfs_index_array(hdfs_block_byte_map_t* locs, int index) HDFS_ERROR(return locs[0])
 
+qioerr hdfs_get_chunk(void* fl, int64_t* len_out, void* fs) HDFS_ERROR(return 0)
+
 qio_file_functions_t hdfs_function_struct = {
     &hdfs_writev,
     &hdfs_readv,
@@ -74,10 +78,12 @@ qio_file_functions_t hdfs_function_struct = {
     &hdfs_close,
     &hdfs_open,
     &hdfs_seek,
-    NULL,
+    &hdfs_getlength,
     &hdfs_getpath,
     &hdfs_fsync,
     &hdfs_getcwd,
+    1,
+    &hdfs_get_chunk,
 };
 
 const qio_file_functions_ptr_t hdfs_function_struct_ptr = &hdfs_function_struct;
