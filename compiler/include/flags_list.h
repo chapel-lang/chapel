@@ -121,7 +121,7 @@ symbolFlag( FLAG_MODULE_INIT , npr, "module init" , "a module init function" )
 // This flag marks the result of an autoCopy as necessary.
 // Necessary autoCopies are not removed by the removeUnnecessaryAutoCopyCalls optimization.
 symbolFlag( FLAG_NECESSARY_AUTO_COPY, npr, "necessary auto copy", "a variable containing a necessary autoCopy" )
-symbolFlag( FLAG_NEVER_NOINIT, ypr, "never noinit", "this type must be initialized" )
+symbolFlag( FLAG_IGNORE_NOINIT, ypr, "ignore noinit", "this type must be initialized" )
 symbolFlag( FLAG_NON_BLOCKING , npr, "non blocking" , "with FLAG_ON/FLAG_ON_BLOCK, non-blocking on functions" )
 symbolFlag( FLAG_NO_AUTO_DESTROY , ypr, "no auto destroy" , ncm )
 symbolFlag( FLAG_NO_CODEGEN , ypr, "no codegen" , "do not generate e.g. C code defining this symbol" )

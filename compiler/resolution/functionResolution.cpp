@@ -4450,7 +4450,7 @@ preFold(Expr* expr) {
         USR_FATAL(call, "invalid type specification");
       Type* type = call->get(1)->getValType();
       if (isAggregateType(type)) {
-        if (type->symbol->hasFlag(FLAG_NEVER_NOINIT)) {
+        if (type->symbol->hasFlag(FLAG_IGNORE_NOINIT)) {
           // These types deal with their uninitialized fields differently than
           // normal records/classes.  They may require special case
           // implementations, but were capable of being isolated from the new
