@@ -257,7 +257,7 @@ module Atomics {
   }
 
   pragma "atomic type"
-  pragma "do not noinit"
+  pragma "never noinit"
   record atomicflag {
     var _v:atomic_flag = create_atomic_flag();
     inline proc ~atomicflag() {
@@ -330,6 +330,7 @@ module Atomics {
   }
 
   pragma "atomic type"
+  pragma "never noinit" 
   record atomic_uint8 {
     var _v:atomic_uint_least8_t = create_atomic_uint_least8();
     inline proc ~atomic_uint8() {
@@ -430,6 +431,7 @@ module Atomics {
   }
 
   pragma "atomic type"
+  pragma "never noinit"
   record atomic_uint16 {
     var _v:atomic_uint_least16_t = create_atomic_uint_least16();
     inline proc ~atomic_uint16() {
@@ -530,6 +532,7 @@ module Atomics {
   }
 
   pragma "atomic type"
+  pragma "never noinit"
   record atomic_uint32 {
     var _v:atomic_uint_least32_t = create_atomic_uint_least32();
     inline proc ~atomic_uint32() {
@@ -630,6 +633,7 @@ module Atomics {
   }
 
   pragma "atomic type"
+  pragma "never noinit"
   record atomic_uint64 {
     var _v:atomic_uint_least64_t = create_atomic_uint_least64();
     inline proc ~atomic_uint64() {
@@ -730,6 +734,7 @@ module Atomics {
   }
 
   pragma "atomic type"
+  pragma "never noinit"
   record atomic_int8 {
     var _v:atomic_int_least8_t = create_atomic_int_least8();
     inline proc ~atomic_int8() {
@@ -830,6 +835,7 @@ module Atomics {
   }
 
   pragma "atomic type"
+  pragma "never noinit"
   record atomic_int16 {
     var _v:atomic_int_least16_t = create_atomic_int_least16();
     inline proc ~atomic_int16() {
@@ -930,6 +936,7 @@ module Atomics {
   }
 
   pragma "atomic type"
+  pragma "never noinit"
   record atomic_int32 {
     var _v:atomic_int_least32_t = create_atomic_int_least32();
     inline proc ~atomic_int32() {
@@ -1030,6 +1037,7 @@ module Atomics {
   }
 
   pragma "atomic type"
+  pragma "never noinit"
   record atomic_int64 {
     var _v:atomic_int_least64_t = create_atomic_int_least64();
     inline proc ~atomic_int64() {
@@ -1131,6 +1139,7 @@ module Atomics {
   }
 
   pragma "atomic type"
+  pragma "never noinit"
   record atomic_real64 {
     var _v:atomic__real64 = create_atomic__real64();
     inline proc ~atomic_real64() {
@@ -1208,6 +1217,7 @@ module Atomics {
   }
 
   pragma "atomic type"
+  pragma "never noinit"
   record atomic_real32 {
     var _v:atomic__real32 = create_atomic__real32();
     inline proc ~atomic_real32() {
