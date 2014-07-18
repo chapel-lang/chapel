@@ -3922,13 +3922,13 @@ int64_t qio_channel_style_element(qio_channel_t* ch, int64_t element)
   return 0;
 }
 
-qioerr qio_get_chunk(qio_file_t* fl, off_t* len_out)
+qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out)
 {
   // In the case where we do not have a Lustre or block type fs, we set the chunk
   // size to be the optimal transfer block size
   qioerr err = 0;
   int rc = 0;
-  off_t transfer_size = 0;
+  int64_t transfer_size = 0;
   struct statfs s;
 
   if (fl->fsfns && fl->fsfns->get_chunk) {
@@ -3939,18 +3939,18 @@ qioerr qio_get_chunk(qio_file_t* fl, off_t* len_out)
     if (rc)
       QIO_RETURN_CONSTANT_ERROR(ENOTSUP, "Unable to stat optimal transfer size for local file");
 #if defined(__APPLE__)
-    transfer_size = (off_t)s.f_iosize;
+    transfer_size = (int64_t)s.f_iosize;
 #else
-    transfer_size = (off_t)s.f_bsize;
+    transfer_size = (int64_t)s.f_bsize;
 #endif
   } else if (fl->fd != -1) {
     rc = fstatfs(fl->fd, &s);
     if (rc)
       QIO_RETURN_CONSTANT_ERROR(ENOTSUP, "Unable to stat optimal transfer size for local file");
 #if defined(__APPLE__)
-    transfer_size = (off_t)s.f_iosize;
+    transfer_size = (int64_t)s.f_iosize;
 #else
-    transfer_size = (off_t)s.f_bsize;
+    transfer_size = (int64_t)s.f_bsize;
 #endif
   } else QIO_RETURN_CONSTANT_ERROR(ENOSYS, "Unable to get chunk size for file");
 
