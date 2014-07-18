@@ -3933,7 +3933,6 @@ qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out)
 
   if (fl->fsfns && fl->fsfns->get_chunk) {
     err = fl->fsfns->get_chunk(fl->file_info, &transfer_size, fl->fs_info);
-    // so we know that we got the blocksize this way.
   } else if (fl->fp) {
     rc = fstatfs(fileno(fl->fp), &s);
     if (rc)
@@ -3953,8 +3952,6 @@ qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out)
     transfer_size = (int64_t)s.f_bsize;
 #endif
   } else QIO_RETURN_CONSTANT_ERROR(ENOSYS, "Unable to get chunk size for file");
-
-  // We got stuff from stat if we are here, so start rounding out to return our blocksize
 
   if (transfer_size == -1) { // undefined for this system
     *len_out = 0;
