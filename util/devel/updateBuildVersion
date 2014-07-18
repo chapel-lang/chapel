@@ -26,17 +26,14 @@ if (-r "$build_version_file") {
 }
 
 if (defined $ENV{'CHPL_HOME'} &&
-    -e "$chplhome/.svn") {
+    -d "$chplhome/.git") {
 
-    $revline = `svn info $ENV{'CHPL_HOME'} | grep Revision`;
-    chomp($revline);
+    $git_branch = `cd $ENV{'CHPL_HOME'} && git rev-parse --abbrev-ref HEAD`;
+    chomp($git_branch);
+    $git_rev = `cd $ENV{'CHPL_HOME'} && git rev-parse --short HEAD`;
+    chomp($git_rev);
 
-    if ($revline =~ m/Revision: (\d*)/) {
-        $build_version = $1;
-    } else {
-        print "ERROR: updateBuildVersion failed!";
-        exit(1);
-    }
+    $build_version = "$git_branch\@$git_rev";
 } else {
     $build_version = "-999";
 }
@@ -47,6 +44,6 @@ if ($build_version eq $last_build_version ||
 } else {
 #    print "Updating build version ($build_version != $last_build_version)\n";
     open BUILD_VERSION, ">$build_version_file" or die "can't open $build_version_file for writing $!";
-    print BUILD_VERSION "$build_version\n";
+    print BUILD_VERSION "\"$build_version\"\n";
     close BUILD_VERSION;
 }
