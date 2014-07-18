@@ -4450,13 +4450,9 @@ preFold(Expr* expr) {
         USR_FATAL(call, "invalid type specification");
       Type* type = call->get(1)->getValType();
       if (isAggregateType(type)) {
-        if (type->symbol->hasFlag(FLAG_DOMAIN) ||
-            type->symbol->hasFlag(FLAG_ARRAY) ||
-            type->symbol->hasFlag(FLAG_DISTRIBUTION) ||
-            type->symbol->hasFlag(FLAG_SYNC) ||
-            type->symbol->hasFlag(FLAG_SINGLE)) {
+        if (type->symbol->hasFlag(FLAG_IGNORE_NOINIT)) {
           // These types deal with their uninitialized fields differently than
-          // normal records/classes.  They will require special case
+          // normal records/classes.  They may require special case
           // implementations, but were capable of being isolated from the new
           // cases that do work.
           USR_WARN("type %s does not currently support noinit, using default initialization", type->symbol->name);
