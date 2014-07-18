@@ -3933,25 +3933,23 @@ qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out)
 
   if (fl->fsfns && fl->fsfns->get_chunk) {
     err = fl->fsfns->get_chunk(fl->file_info, &transfer_size, fl->fs_info);
-  } else if (fl->fp) {
-    rc = fstatfs(fileno(fl->fp), &s);
+  } else {
+
+    if (fl->fp){
+      rc = fstatfs(fileno(fl->fp), &s);
+    } else if (fl->fd != -1) {
+      rc = fstatfs(fl->fd, &s);
+    } else QIO_RETURN_CONSTANT_ERROR(ENOSYS, "Unable to get chunk size for file");
+
     if (rc)
       QIO_RETURN_CONSTANT_ERROR(ENOTSUP, "Unable to stat optimal transfer size for local file");
+
 #if defined(__APPLE__)
     transfer_size = (int64_t)s.f_iosize;
 #else
     transfer_size = (int64_t)s.f_bsize;
 #endif
-  } else if (fl->fd != -1) {
-    rc = fstatfs(fl->fd, &s);
-    if (rc)
-      QIO_RETURN_CONSTANT_ERROR(ENOTSUP, "Unable to stat optimal transfer size for local file");
-#if defined(__APPLE__)
-    transfer_size = (int64_t)s.f_iosize;
-#else
-    transfer_size = (int64_t)s.f_bsize;
-#endif
-  } else QIO_RETURN_CONSTANT_ERROR(ENOSYS, "Unable to get chunk size for file");
+  }
 
   if (transfer_size == -1) { // undefined for this system
     *len_out = 0;
