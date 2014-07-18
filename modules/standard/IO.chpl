@@ -3770,7 +3770,7 @@ proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(6
   var e = 0;
 
   on this.home {
-  var real_end = min(end, this.length());
+    var real_end = min(end, this.length());
     var t:ftype = this.fstype();
     var len:int(64);
     if t != ftype.lustre then
@@ -3783,29 +3783,27 @@ proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(6
 
     // TAKZ - Note that we are only wanting to return an inclusive range -- i.e., we
     // will only return a non-zero start and end [n,m], iff n and m are in [start, end].
-      for i in start..real_end by len {
-        // Our stripes are too large, so we can't give back a range within the given
-        // bounds
-        if i > end {
-          break;
-        }
+    for i in start..real_end by len {
+      // Our stripes are too large, so we can't give back a range within the given
+      // bounds
+      if i > end {
+        break;
+      }
 
-        if i >= start {
-          var new_start = i;
-          var new_end:int(64);
-          if i + len >= real_end then 
-            new_end = real_end;
-          else new_end = i + len;
-          if new_start == new_end {
-            break;
-          } else {
-            s = new_start;
-            e = new_end;
-          }
+      if i >= start {
+        var new_start = i;
+        var new_end:int(64);
+        if i + len >= real_end then 
+          new_end = real_end;
+        else new_end = i + len;
+        if new_start == new_end {
+          break;
+        } else {
+          s = new_start;
+          e = new_end;
         }
       }
+    }
   }
   return (s, e);
 }
-
-
