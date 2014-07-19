@@ -318,8 +318,10 @@ moveGlobalDeclarationsToModuleScope() {
             BlockStmt* block = toBlockStmt(def->next);
             if (block)
             {
-              // We expect this to be a type block.
-              INT_ASSERT(block->blockTag == BLOCK_TYPE);
+              // Mark this as a type block, so it is removed later.
+              // Casts are because C++ is lame.
+              (uint&)(block->blockTag) |= (uint) BLOCK_TYPE_ONLY;
+              // Set the flag, so we move it out to module scope.
               move = true;
             }
           }
@@ -922,10 +924,11 @@ fix_def_expr(VarSymbol* var) {
     }
     else
     {
-      // Create an empty type block.
-      BlockStmt* block = new BlockStmt(NULL, BLOCK_TYPE);
-
       // Is not noInit
+
+      // Create an empty type block.
+      BlockStmt* block = new BlockStmt(NULL, BLOCK_SCOPELESS);
+
       VarSymbol* typeTemp = newTemp("type_tmp");
       block->insertAtTail(new DefExpr(typeTemp));
 
@@ -943,10 +946,16 @@ fix_def_expr(VarSymbol* var) {
       else
       {
         if (constTemp->hasFlag(FLAG_TYPE_VARIABLE))
+        {
           block->insertAtTail(new CallExpr(PRIM_MOVE, constTemp,
                                            new CallExpr(PRIM_TYPEOF, typeTemp)));
+        }
         else
+        {
           block->insertAtTail(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
+          if (constTemp->hasFlag(FLAG_EXTERN))
+            (uint&) block->blockTag |= BLOCK_EXTERN | BLOCK_TYPE;
+        }
       }
 
       stmt->insertAfter(block);

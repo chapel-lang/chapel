@@ -7357,8 +7357,10 @@ static void removeTypeBlocks()
       continue;
 
     // Remove type blocks--code that exists only to determine types
-    if (block->blockTag == BLOCK_TYPE)
+    if (block->blockTag & BLOCK_TYPE_ONLY)
+    {
       block->remove();
+    }
   }
 }
 
