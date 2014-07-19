@@ -1649,10 +1649,11 @@ filterConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
                         CallInfo& info) {
   
   currCandidate->fn = expandVarArgs(currCandidate->fn, info.actuals.n);
-  resolveTypedefedArgTypes(currCandidate->fn);
 
   if (!currCandidate->fn) return;
   
+  resolveTypedefedArgTypes(currCandidate->fn);
+
   if (!currCandidate->computeAlignment(info)) {
     return;
   }
