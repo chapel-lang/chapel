@@ -274,7 +274,7 @@ getVisibleFunctions(BlockStmt* block,
                     const char* name,
                     Vec<FnSymbol*>& visibleFns,
                     Vec<BlockStmt*>& visited);
-static Type* resolve_type_expr(Expr* expr);
+static Expr* resolve_type_expr(Expr* expr);
 static void makeNoop(CallExpr* call);
 static void resolveDefaultGenericType(CallExpr* call);
 
@@ -336,6 +336,7 @@ static void addAllToVirtualMaps(FnSymbol* fn, AggregateType* ct);
 static void buildVirtualMaps();
 static void
 addVirtualMethodTableEntry(Type* type, FnSymbol* fn, bool exclusive = false);
+static void resolveTypedefedArgTypes(FnSymbol* fn);
 static void computeStandardModuleSet();
 static void unmarkDefaultedGenerics();
 static void resolveUses(ModuleSymbol* mod);
@@ -365,6 +366,7 @@ static void replaceTypeArgsWithFormalTypeTemps();
 static void replaceValuesWithRuntimeTypes();
 static void removeWhereClauses();
 static void replaceReturnedValuesWithRuntimeTypes();
+static Expr* resolvePrimInit(CallExpr* call);
 static void insertRuntimeInitTemps();
 static void removeInitFields();
 static void removeMootFields();
@@ -1014,7 +1016,6 @@ static void ensureEnumTypeResolved(EnumType* etype) {
     // Make sure to resolve all enum types.
     for_enums(def, etype) {
       if (def->init) {
-        // Type* enumtype =
         resolve_type_expr(def->init);
 
         // printf("Type of %s.%s is %s\n", etype->symbol->name, def->sym->name,
@@ -1648,6 +1649,7 @@ filterConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
                         CallInfo& info) {
   
   currCandidate->fn = expandVarArgs(currCandidate->fn, info.actuals.n);
+  resolveTypedefedArgTypes(currCandidate->fn);
 
   if (!currCandidate->fn) return;
   
@@ -2620,7 +2622,8 @@ getVisibleFunctions(BlockStmt* block,
   //
   if (visited.set_in(block))
     return NULL;
-  else if (isModuleSymbol(block->parentSymbol))
+
+  if (isModuleSymbol(block->parentSymbol))
     visited.set_add(block);
 
   bool canSkipThisBlock = true;
@@ -2732,14 +2735,14 @@ static void handleCaptureArgs(CallExpr* call, FnSymbol* taskFn, CallInfo* info) 
 }
 
 
-static Type*
+static Expr*
 resolve_type_expr(Expr* expr) {
-  bool stop = false;
+
+  Expr* result = NULL;
+
   for_exprs_postorder(e, expr) {
-    if (expr == e)
-      stop = true;
-    e = preFold(e);
-    if (CallExpr* call = toCallExpr(e)) {
+    result = preFold(e);
+    if (CallExpr* call = toCallExpr(result)) {
       if (call->parentSymbol) {
         callStack.add(call);
         resolveCall(call);
@@ -2753,16 +2756,10 @@ resolve_type_expr(Expr* expr) {
         callStack.pop();
       }
     }
-    e = postFold(e);
-    if (stop) {
-      expr = e;
-      break;
-    }
+    result = postFold(result);
   }
-  Type* t = expr->typeInfo();
-  if (t == dtUnknown)
-    INT_FATAL(expr, "Unable to resolve type expression");
-  return t;
+
+  return result;
 }
 
 
@@ -4272,6 +4269,122 @@ isNormalField(Symbol* field)
   return true;
 }
 
+// Recursively resolve typedefs
+static Type* resolveTypeAlias(SymExpr* se)
+{
+  if (! se)
+    return NULL;
+
+  // Quick exit if the type is already known.
+  Type* result = se->getValType();
+  if (result != dtUnknown)
+    return result;
+
+  VarSymbol* var = toVarSymbol(se->var);
+  if (! var)
+    return NULL;
+
+  DefExpr* def = var->defPoint;
+  SET_LINENO(def);
+  Expr* typeExpr = resolve_type_expr(def->init);
+  SymExpr* tse = toSymExpr(typeExpr);
+  
+  return resolveTypeAlias(tse);
+}
+
+// Returns NULL if no substitution was made.  Otherwise, returns the expression
+// that replaced the PRIM_INIT (or PRIM_NO_INIT) expression.
+// Here, "replaced" means that the PRIM_INIT (or PRIM_NO_INIT) primitive is no
+// longer in the tree.
+static Expr* resolvePrimInit(CallExpr* call)
+{
+  Expr* result = NULL;
+
+  // ('init' foo) --> A default value or the result of an initializer call.
+  // ('no_init' foo) --> Ditto, only in some cases a simpler default value.
+
+  // The argument is expected to be a type variable.
+  SymExpr* se = toSymExpr(call->get(1));
+  INT_ASSERT(se);
+  if (!se->var->hasFlag(FLAG_TYPE_VARIABLE))
+    USR_FATAL(call, "invalid type specification");
+
+  Type* type = resolveTypeAlias(se);
+
+  // Do not resolve PRIM_INIT on extern types.
+  // These are removed later.
+  // It is useful to leave them in the tree, because PRIM_INIT behaves like an
+  // expression and has a type.
+  if (type->symbol->hasFlag(FLAG_EXTERN))
+  {
+    CallExpr* stmt = toCallExpr(call->parentExpr);
+    INT_ASSERT(stmt->isPrimitive(PRIM_MOVE));
+//    makeNoop(stmt);
+//    result = stmt;
+    return result;
+  }
+
+  // Do not resolve runtime type values yet.
+  // Let these flow through to replaceInitPrims().
+  if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))
+    return result;
+
+  // Currently noinit is not fully functional for arrays and types which
+  // allocate space, so in those cases we will pretend to not initialize
+  // them when really we still are.
+  if (call->isPrimitive(PRIM_INIT) || (isAggregateType(type) &&
+                                       !type->symbol->hasFlag(FLAG_TUPLE) &&
+                                       !type->symbol->hasFlag(FLAG_RANGE))) {
+    if (call->isPrimitive(PRIM_NO_INIT))
+      USR_WARN("type %s does not currently support noinit, using default initialization", type->symbol->name);
+
+    SET_LINENO(call);
+
+    if (type->defaultValue) {
+      // Has a default value, so use it.
+      result = new SymExpr(type->defaultValue);
+      if (type->defaultValue == gNil) {
+        // If the default value is "nil", we have to cast it to the right type.
+        result = new CallExpr("_cast", type->symbol, result);
+      }
+      call->replace(result);
+      return result;
+    } 
+    
+    // No default value.
+
+    if (se->var->hasFlag(FLAG_EXTERN))
+    {
+      INT_ASSERT(false); // Do we get here?
+      makeNoop(call);
+      // This seems to work.  May have to replace with
+      // call->getStmtExpr()->remove();
+      result = call;
+      return result;
+    }
+
+    if (type->defaultInitializer)
+    {
+      if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+        // defaultInitializers for iterator record types cannot be called as
+        // default constructors.  So give up now!
+        return result;
+
+      CallExpr* initCall = new CallExpr(type->defaultInitializer);
+      call->replace(initCall);
+      resolveCall(initCall);
+      result = initCall;
+      return result;
+    }
+
+    // If we reach here, we'll fall through and report an error in
+    // replaceInitPrims().
+  }
+
+  return result;
+}
+
+
 static Expr*
 preFold(Expr* expr) {
   Expr* result = expr;
@@ -4443,6 +4556,16 @@ preFold(Expr* expr) {
           }
         }
       }
+    }
+    else if (call->isPrimitive(PRIM_INIT))
+    {
+      if (Expr* expr = resolvePrimInit(call))
+      {
+        // call was replaced by expr.
+        result = expr;
+      }
+      // No default value yet, so defer resolution of this init
+      // primitive until record initializer resolution.
     } else if (call->isPrimitive(PRIM_NO_INIT)) {
       SymExpr* se = toSymExpr(call->get(1));
       INT_ASSERT(se);
@@ -4485,6 +4608,8 @@ preFold(Expr* expr) {
           }
           call->get(1)->replace(res);
         }
+
+        inits.add(call);
       }
 
     } else if (call->isPrimitive(PRIM_INIT)) {
@@ -5750,11 +5875,13 @@ insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
     if (call->parentSymbol == fn) {
       if (call->isPrimitive(PRIM_MOVE)) {
         if (SymExpr* lhs = toSymExpr(call->get(1))) {
+          Type* lhsType = lhs->var->type;
+          if (lhsType != dtUnknown) {
           Expr* rhs = call->get(2);
           Type* rhsType = rhs->typeInfo();
-          if (rhsType != lhs->var->type &&
-              rhsType->refType != lhs->var->type &&
-              rhsType != lhs->var->type->refType) {
+          if (rhsType != lhsType &&
+              rhsType->refType != lhsType &&
+              rhsType != lhsType->refType) {
             SET_LINENO(rhs);
             rhs->remove();
             Symbol* tmp = NULL;
@@ -5765,9 +5892,10 @@ insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
               call->insertBefore(new DefExpr(tmp));
               call->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs));
             }
-            CallExpr* cast = new CallExpr("_cast", lhs->var->type->symbol, tmp);
+            CallExpr* cast = new CallExpr("_cast", lhsType->symbol, tmp);
             call->insertAtTail(cast);
             casts.add(cast);
+          }
           }
         }
       }
@@ -6296,6 +6424,48 @@ parseExplainFlag(char* flag, int* line, ModuleSymbol** module) {
 }
 
 
+static void resolveExternVarSymbols()
+{
+  forv_Vec(VarSymbol, vs, gVarSymbols)
+  {
+    if (! vs->hasFlag(FLAG_EXTERN))
+      continue;
+
+    DefExpr* def = vs->defPoint;
+    Expr* init = def->next;
+    // We expect the expression following the DefExpr for an extern to be a
+    // type block that initializes the variable.
+    BlockStmt* block = toBlockStmt(init);
+    if (block)
+      resolveBlock(block);
+  }
+}
+
+
+static void resolveTypedefedArgTypes(FnSymbol* fn)
+{
+  for_formals(formal, fn)
+  {
+    INT_ASSERT(formal->type); // Should be *something*.
+    if (formal->type != dtUnknown)
+      continue;
+
+    if (BlockStmt* block = formal->typeExpr)
+    {
+      if (SymExpr* se = toSymExpr(block->body.first()))
+      {
+        if (se->var->hasFlag(FLAG_TYPE_VARIABLE))
+        {
+          Type* type = resolveTypeAlias(toSymExpr(se));
+          INT_ASSERT(type);
+          formal->type = type;
+        }
+      }
+    }
+  }
+}
+
+
 static void
 computeStandardModuleSet() {
   standardModuleSet.set_add(rootModule->block);
@@ -6339,6 +6509,8 @@ resolve() {
   }
 
   unmarkDefaultedGenerics();
+
+  resolveExternVarSymbols();
 
   resolveUses(mainModule);
   resolveUses(printModuleInitModule);
@@ -7500,8 +7672,51 @@ static void replaceInitPrims(Vec<BaseAST*>& asts)
           // keyword; it should be removed when possible
           //
           call->getStmtExpr()->remove();
-        } else {
-          INT_FATAL(call, "PRIM_INIT should have already been handled");
+        }
+        else
+        {
+          Expr* expr = resolvePrimInit(call);
+#if 0
+// Types which are not runtime types should be resolved earlier.
+          if (!expr && rt->defaultInitializer)
+          {
+            if (!rt->defaultInitializer->defPoint->parentSymbol)
+            {
+              // The initializer function is not in the tree, so we have to
+              // insert it.
+              SET_LINENO(rt->defaultInitializer);
+              DefExpr* def = new DefExpr(rt->defaultInitializer);
+              rt->symbol->defPoint->insertBefore(def);
+            }
+
+            SET_LINENO(call);
+            CallExpr* init = new CallExpr(rt->defaultInitializer);
+            call->replace(init);
+            expr = init;
+            resolveCall(init);
+            if (init->isResolved())
+              resolveFns(init->isResolved());
+          }
+#endif
+          if (! expr)
+          {
+            // This PRIM_INIT could not be resolved.
+
+            // But that's OK if it's an extern type.
+            // (We don't expect extern types to have initializers.)
+            // Also, we don't generate initializers for iterator records.
+            // Maybe we can avoid adding PRIM_INIT for these cases in the first
+            // place....
+            if (rt->symbol->hasFlag(FLAG_EXTERN) ||
+                rt->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+            {
+              INT_ASSERT(toCallExpr(call->parentExpr)->isPrimitive(PRIM_MOVE));
+              makeNoop(toCallExpr(call->parentExpr));
+              continue;
+            }
+
+            INT_FATAL(call, "PRIM_INIT should have already been handled");
+          }
         }
       }
     } 

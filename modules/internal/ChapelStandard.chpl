@@ -13,7 +13,6 @@ module ChapelStandard {
   use NetworkAtomics;
   use NetworkAtomicTypes;
   use AtomicsCommon;
-  use ChapelNumLocales;
   use ChapelThreads;
   use ChapelThreadsInternal;
   use ChapelTasksInternal;
@@ -21,9 +20,9 @@ module ChapelStandard {
   use ChapelRange;
   use ChapelReduce;
   use ChapelSyncvar;
+  use LocaleModel;
   use ChapelLocale;
   use DefaultRectangular; // This might be able to go just after Atomics
-  use LocaleModel;
   use LocalesArray;
   use ChapelArray;
   use ChapelDistribution;
