@@ -363,7 +363,6 @@ qioerr hdfs_get_chunk(void* fl, int64_t* len_out, void* fs)
   return 0;
 }
 
-
 qio_file_functions_t hdfs_function_struct = {
   &hdfs_writev,
   &hdfs_readv,
@@ -378,6 +377,7 @@ qio_file_functions_t hdfs_function_struct = {
   &hdfs_getcwd,
   1,
   &hdfs_get_chunk,
+  &hdfs_locales_for_range,
 };
 
 const qio_file_functions_ptr_t hdfs_function_struct_ptr = &hdfs_function_struct;
@@ -391,6 +391,35 @@ char* get_locale_name(char *loc)
   int i = strcspn (loc, keys);
 
   return strndup(loc, i);
+}
+
+qioerr hdfs_locales_for_range(void* file, off_t start_byte, off_t end_byte, const char* loc_name, int* good, void* fs) 
+{
+  int i = 0;
+  char*** info = NULL;
+
+  info = hdfsGetHosts(to_hdfs_fs(fs)->hfs, to_hdfs_file(file)->pathnm, start_byte, end_byte);
+
+  // unable to get hosts for this byte range
+  if (!info || !info[0]) {
+    *good = 0;
+    goto end;
+  }
+
+  // look for the locale name in the "good" locales.
+  for (i = 0; info[0][i]; i++) {
+    if (strcmp(get_locale_name(info[0][i]), loc_name) == 0) {
+      *good = 1;
+      goto end;
+    }
+  }
+
+  // couldn't find it in the "good" locales 
+  *good = 0;
+
+end:
+  hdfsFreeHosts(info);
+  return 0;
 }
 
 // char_arr is already allocated

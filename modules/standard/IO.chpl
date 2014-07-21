@@ -3811,3 +3811,22 @@ proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(6
   }
   return (s, e);
 }
+
+// Returns the 'best' locales to run something working with this
+// region of the file. This *must* return the same result when
+// called from different locales. Returns a n-length array if
+// no locales are 'best'. (where n = #locales)
+proc file.locsforregion(start:int(64), end:int(64)) {
+  var ret: domain(locale);
+  on this.home {
+    var err:syserr;
+    var good:c_int;
+    for loc in Locales {
+      err = qio_locale_for_region(this._file_internal, start, end, loc.name.c_str(), good);
+      if good == 1 {
+        ret += loc;
+      }
+    }
+  }
+  return ret;
+}

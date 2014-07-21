@@ -70,7 +70,10 @@ qioerr hdfs_get_owners_for_bytes(qio_file_t* file, hdfs_block_byte_map_t** locs,
 qioerr hdfs_get_owners(qio_file_t* file, hdfs_block_byte_map_t** loc, int* out_num_blocks, char** arr, int n);
 
 hdfs_block_byte_map_t hdfs_index_array(hdfs_block_byte_map_t* locs, int index);
+
 qioerr hdfs_get_chunk(void* fl, int64_t* len_out, void* fs);
+
+qioerr hdfs_locales_for_range(void* file, off_t start_byte, off_t end_byte, const char* loc_name, int* good, void* fs);
 
 #ifdef __cplusplus
 } // end extern "C"
