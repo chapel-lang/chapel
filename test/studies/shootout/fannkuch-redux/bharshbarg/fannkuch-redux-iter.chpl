@@ -1,4 +1,4 @@
-/* The ComputeI Language Benchmarks Game
+/* The Computer Language Benchmarks Game
  * http://benchmarksgame.alioth.debian.org/
  *
  * contributed by Ben Harshbarger
@@ -28,9 +28,7 @@ proc main() {
 
   const work = 0 .. (Fact[n] - chunksz) by chunksz;
 
-  forall idx in dynamic(work, 1) {
-    fannkuch(idx, idx+chunksz);
-  }
+  forall idx in dynamic(work, 1) do fannkuch(idx, idx+chunksz);
   
   writeln(checks.read(), "\nPfannkuchen(", n, ") = ", flips.read());
 }
