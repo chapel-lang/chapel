@@ -66,6 +66,8 @@ static void     process_import_expr(CallExpr* call);
 static void     add_class_to_hierarchy(AggregateType*       ct, 
                                        Vec<AggregateType*>* localSeenPtr = NULL);
 
+static void addRecordDefaultConstruction();
+
 static void     resolveGotoLabels();
 static void     resolveUnresolvedSymExprs();
 static void     resolveEnumeratedTypes();
@@ -145,6 +147,8 @@ void scopeResolve() {
       }
     }
   }
+
+  addRecordDefaultConstruction();
 
   //
   // build constructors (type and value versions)
@@ -522,6 +526,36 @@ void add_root_type(AggregateType* ct)
     }
   }
 }
+
+
+static void addRecordDefaultConstruction()
+{
+  forv_Vec(DefExpr, def, gDefExprs)
+  {
+    // We're only interested in declarations that do not have initializers.
+    if (def->init)
+      continue;
+
+    if (VarSymbol* var = toVarSymbol(def->sym))
+    {
+      if (AggregateType* at = toAggregateType(var->type))
+      {
+        if (!at->isRecord())
+          continue;
+
+        // No initializer for extern records.
+        if (at->symbol->hasFlag(FLAG_EXTERN))
+          continue;
+
+        SET_LINENO(def);
+        CallExpr* ctor_call = new CallExpr(new SymExpr(at->symbol));
+        def->init = new CallExpr(PRIM_NEW, ctor_call);
+        insert_help(def->init, def, def->parentSymbol);
+      }
+    }
+  }
+}
+ 
 
 /******************************** | *********************************
 *                                                                   *
@@ -1186,6 +1220,7 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
   if (!strcmp(name, "."))
     return;
 
+  // Skip unresolveds that are not in the tree.
   if (!unresolvedSymExpr->parentSymbol)
     return;
 

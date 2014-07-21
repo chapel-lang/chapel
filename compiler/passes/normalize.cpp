@@ -43,6 +43,7 @@ static void change_method_into_constructor(FnSymbol* fn);
 static void find_printModuleInit_stuff();
 
 void normalize(void) {
+
   // tag iterators and replace delete statements with calls to ~chpl_destroy
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_YIELD)) {
@@ -96,6 +97,9 @@ void normalize(void) {
   moveGlobalDeclarationsToModuleScope();
   insertUseForExplicitModuleCalls();
 
+// See what breaks if we just don't.
+// Will insertReturnTemps() in functionResolution take care of this?
+#if 0
   if (!fMinimalModules) {
     // Calls to _statementLevelSymbol() are inserted here and in
     // function resolution to ensure that sync vars are in the correct
@@ -109,6 +113,7 @@ void normalize(void) {
       }
     }
   }
+#endif
 
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
     if (arg->defPoint->parentSymbol)
@@ -279,16 +284,54 @@ checkUseBeforeDefs() {
   }
 }
 
+
 static void
 moveGlobalDeclarationsToModuleScope() {
+  bool move = false;
   forv_Vec(ModuleSymbol, mod, allModules) {
     for_alist(expr, mod->initFn->body->body) {
+      // If the last iteration set "move" to true, move this block to the end
+      // of the module (see below).
+      if (move)
+      {
+        INT_ASSERT(isBlockStmt(expr));
+        mod->block->insertAtTail(expr->remove());
+        move = false;
+        continue;
+      }
+
       if (DefExpr* def = toDefExpr(expr)) {
-        // FLAG_TEMP selects non-compiler-generated variables in the module init
-        // function to be moved out to module scope.
-        if ((toVarSymbol(def->sym) && !def->sym->hasFlag(FLAG_TEMP)) ||
-            toTypeSymbol(def->sym) ||
-            toFnSymbol(def->sym)) {
+
+        // Non-temporary variable declarations are moved out to module scope.
+        if (VarSymbol* vs = toVarSymbol(def->sym))
+        {
+          // Ignore compiler-inserted temporaries.
+          // Only non-compiler-generated variables in the module init
+          // function are moved out to module scope.
+          if (vs->hasFlag(FLAG_TEMP))
+            continue;
+
+          // If the var declaration is an extern, we want to move its
+          // initializer block with it.
+          if (vs->hasFlag(FLAG_EXTERN))
+          {
+            BlockStmt* block = toBlockStmt(def->next);
+            if (block)
+            {
+              // Mark this as a type block, so it is removed later.
+              // Casts are because C++ is lame.
+              (uint&)(block->blockTag) |= (uint) BLOCK_TYPE_ONLY;
+              // Set the flag, so we move it out to module scope.
+              move = true;
+            }
+          }
+
+          mod->block->insertAtTail(def->remove());
+        }
+        
+        // All type and function symbols are moved out to module scope.
+        if (isTypeSymbol(def->sym) || isFnSymbol(def->sym))
+        {
           mod->block->insertAtTail(def->remove());
         }
       }
@@ -502,6 +545,16 @@ static void normalize_returns(FnSymbol* fn) {
         CallExpr* initExpr =
           new CallExpr(PRIM_INIT, retExprType->body.tail->remove());
         fn->insertAtHead(new CallExpr(PRIM_MOVE, retval, initExpr));
+      }
+    }
+    else // fn->retTag == RET_VAR || !fn->retExprType
+    {
+      if (fn->retTag != RET_TYPE &&
+          fn->retType != dtVoid && fn->retType != dtUnknown)
+      {
+      CallExpr* initExpr =
+        new CallExpr(PRIM_INIT, new SymExpr(fn->retType->symbol));
+      fn->insertAtHead(new CallExpr(PRIM_MOVE, retval, initExpr));
       }
     }
     fn->insertAtHead(new DefExpr(retval));
@@ -861,37 +914,51 @@ fix_def_expr(VarSymbol* var) {
     // initialize variable based on specified type and then assign it
     // the initialization expression if it exists
     //
-    VarSymbol* typeTemp = newTemp("type_tmp");
     bool isNoinit = init && init->isNoInitExpr();
-    if (!isNoinit)
-      stmt->insertBefore(new DefExpr(typeTemp));
-
-    CallExpr* initCall;
-    if (isNoinit) {
+    if (isNoinit)
+    {
       var->defPoint->init->remove();
-      initCall = new CallExpr(PRIM_MOVE, var,
-                   new CallExpr(PRIM_NO_INIT, type->remove()));
-    } else {
+        CallExpr* initCall = new CallExpr(PRIM_MOVE, var,
+                                new CallExpr(PRIM_NO_INIT, type->remove()));
+      stmt->insertBefore(initCall);
+    }
+    else
+    {
+      // Is not noInit
+
+      // Create an empty type block.
+      BlockStmt* block = new BlockStmt(NULL, BLOCK_SCOPELESS);
+
+      VarSymbol* typeTemp = newTemp("type_tmp");
+      block->insertAtTail(new DefExpr(typeTemp));
+
+      CallExpr* initCall;
       initCall = new CallExpr(PRIM_MOVE, typeTemp,
                    new CallExpr(PRIM_INIT, type->remove()));
-    }
-    stmt->insertBefore(initCall);
-    if (init) {
-      if (!isNoinit) {
-        stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
-        stmt->insertAfter(new CallExpr("=", typeTemp, init->remove()));
+
+      block->insertAtTail(initCall);
+
+      if (init) {
+        // This should be copy-initialization, not assignment.
+        block->insertAtTail(new CallExpr("=", typeTemp, init->remove()));
+        block->insertAtTail(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
       }
-    } else {
-      if (constTemp->hasFlag(FLAG_TYPE_VARIABLE))
-        stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, new CallExpr(PRIM_TYPEOF, typeTemp)));
-      else {
-        CallExpr* moveToConst = new CallExpr(PRIM_MOVE, constTemp, typeTemp);
-        Expr* newExpr = moveToConst;
-        if (var->hasFlag(FLAG_EXTERN)) {
-          newExpr = new BlockStmt(moveToConst, BLOCK_TYPE);
+      else
+      {
+        if (constTemp->hasFlag(FLAG_TYPE_VARIABLE))
+        {
+          block->insertAtTail(new CallExpr(PRIM_MOVE, constTemp,
+                                           new CallExpr(PRIM_TYPEOF, typeTemp)));
         }
-        stmt->insertAfter(newExpr);
+        else
+        {
+          block->insertAtTail(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
+          if (constTemp->hasFlag(FLAG_EXTERN))
+            (uint&) block->blockTag |= BLOCK_EXTERN | BLOCK_TYPE;
+        }
       }
+
+      stmt->insertAfter(block);
     }
 
   } else {
