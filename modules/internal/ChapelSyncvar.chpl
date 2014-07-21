@@ -33,6 +33,7 @@ module ChapelSyncvar {
   pragma "sync"
     pragma "no object" // Optimize out the object base pointer.
     pragma "no default functions"
+    pragma "ignore noinit"
     class _syncvar {
       type base_type;
       var  value: base_type;       // actual data - may need to be declared specially on some targets!
@@ -173,6 +174,7 @@ module ChapelSyncvar {
     pragma "single"
     pragma "no object" // Optimize out the object base pointer.
     pragma "no default functions"
+    pragma "ignore noinit"
     class _singlevar {
       type base_type;
       var  value: base_type;     // actual data - may need to be declared specially on some targets!
