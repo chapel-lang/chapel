@@ -189,10 +189,10 @@ int getCPUsPerCU() {
 // This function allocates and returns a NULL terminated argument list
 // with the aprun command to be run
 //
-char _nbuf[16];
-char _dbuf[16];
-char _Nbuf[16];
-char _jbuf[16];
+static char _nbuf[16];
+static char _dbuf[16];
+static char _Nbuf[16];
+static char _jbuf[16];
 extern const char *CHPL_TARGET_ARCH; // supplied by the generated code
 char** chpl_create_aprun_cmd(int argc, char* argv[],
                              int32_t numLocales, const char* _ccArg) {
