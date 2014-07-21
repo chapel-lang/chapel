@@ -3765,7 +3765,6 @@ proc file.fstype():ftype {
 // Returns (0,0) if no such value exists.
 proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(64)) {
   var err:syserr = ENOERR;
-  var entered: bool = false;
   var s = 0;
   var e = 0;
 
@@ -3794,7 +3793,7 @@ proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(6
         if i >= start {
           var new_start = i;
           var new_end:int(64);
-          if (i / len + 1) * len >= real_end then  
+          if (i / len + 1) * len >= real_end then
             new_end = real_end;
           // rounding
           else new_end = (i / len + 1) * len;
@@ -3807,7 +3806,7 @@ proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(6
           }
         }
       }
-    } 
+    }
   }
   return (s, e);
 }
