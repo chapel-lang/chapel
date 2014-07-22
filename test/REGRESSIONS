@@ -21,6 +21,18 @@ general regressions (seem to happen in most configurations)
 (Reviewed for accuracy 07/15/14)
 ===========================================================
 
+expect this to be temporary; Ben committed a fix the same day
+-------------------------------------------------------------
+[Error matching performance keys for studies/shootout/fannkuch-redux/bharshbarg/fannkuch-redux-iter] (7/22/14)
+
+failures retrieving and storing perf data, started 7/19/14
+----------------------------------------------------------
+These seem to be occurring for all testing:
+  ERROR svn-updating perf data before running tests.
+  ERROR svn-updating perf data after running tests.
+  ERROR svn-updating release over release perf data after running tests: 1
+  ERROR svn-committing perf data.
+
 
 ==============================================
 linux64 regressions (in addition to the above)
@@ -67,6 +79,7 @@ tests time out nondeterministically since testing started b/c VMs are slower (07
 [Error: Timed out executing program release/examples/benchmarks/shootout/threadring]
 [Error: Timed out executing program studies/shootout/thread-ring/lydia/thread-ring-coforall]
 [Error: Timed out executing program studies/shootout/thread-ring/lydia/thread-ring-for-begin]
+should these maybe just move into TRIAGE?  -- gbt
 
 
 ================================
@@ -457,11 +470,21 @@ chpbld01 (PrgEnv/XC whitebox) failures
 (Reviewed for accuracy 07/18/14)
 ======================================
 
+svn problem during the build
+----------------------------
+First reported 7/20/14; Thomas is looking
+svn: Server sent unexpected return value (500 Internal Server Error) in response to PROPFIND request
+
 
 ======================================
 chpbld02 (PrgEnv/XE whitebox) failures
 (Reviewed for accuracy 07/18/14)
 ======================================
+
+svn problem during the build
+----------------------------
+First reported 7/20/14; Thomas is looking
+svn: Server sent unexpected return value (500 Internal Server Error) in response to PROPFIND request
 
 
 ==========================================================
@@ -478,6 +501,12 @@ problem with static/dynamic linking?
 cray-prgenv-cray/cce-specific regressions
 (Reviewed for accuracy 07/16/14)
 =========================================
+
+***GBT
+[Error matching program output for optimizations/cache-remote/ferguson/c_tests/chpl-cache-support-test (compopts: 1)]
+whitebox/cray-xe/day0-Sun-cray-xe.cray-prgenv-cray.none.fifo.flat--linux64.gnu-std.log
+whitebox/cray-xe/day1-Mon-linux64.pgi.none.fifo.flat-std.log
+
 
 portability failures due to QIO refactoring (mppf)
 --------------------------------------------------
@@ -800,6 +829,10 @@ error matching
 qthreads.flat regressions
 (Reviewed for accuracy 07/15/14)
 ================================
+
+output ordering?  started 7/22/14;  Tim has been notified
+---------------------------------------------------------
+[Error matching program output for studies/glob/test_glob (compopts: 1)]
 
 
 =======================================
