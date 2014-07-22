@@ -1,6 +1,4 @@
-#include <stdlib.h>
-#include <stdio.h>
-// Both Glob.h and wordexp.h are part of POSIX
+// Both Glob.h and wordexp.h are part of POSIX (and can be found on mac and Linux)
 #include <glob.h>
 #include <wordexp.h>
 // from qio runtime
@@ -38,5 +36,3 @@ int chpl_isdir(const char* path)
     err = sys_lstat(path, &buf);
     return S_ISDIR(buf.st_mode);
 }
-
-
