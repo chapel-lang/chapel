@@ -211,13 +211,11 @@ qioerr curl_readv(void* file, const struct iovec *vector, int count, ssize_t* nu
 
   // Read our data into the buf
   err = curl_easy_perform(TCH(file)->curl);
-  if (err != CURLE_OK)
-    err_out = qio_int_to_err(ENOTSUP);
   DONE_SLOW_SYSCALL;
 
   got_total = write_vec.total_read;
 
-  if (err_out == 0 && got_total == 0 && sys_iov_total_bytes(vector, count) != 0)
+  if ((err == CURLE_RANGE_ERROR ||  err == CURLE_OK) && got_total == 0 && sys_iov_total_bytes(vector, count) != 0)
     err_out = qio_int_to_err(EEOF);
 
   *num_read_out = got_total;
@@ -255,13 +253,11 @@ qioerr curl_preadv(void* file, const struct iovec *vector, int count, off_t offs
 
   // Read our data into the buf
   err = curl_easy_perform(TCH(file)->curl);
-  if (err != CURLE_OK)
-    err_out = qio_int_to_err(ENOTSUP);
   DONE_SLOW_SYSCALL;
 
   got_total = write_vec.total_read;
   
-  if (err_out == 0 && got_total == 0 && sys_iov_total_bytes(vector, count) != 0)
+  if ((err == CURLE_RANGE_ERROR ||  err == CURLE_OK) && got_total == 0 && sys_iov_total_bytes(vector, count) != 0)
     err_out = qio_int_to_err(EEOF);
 
   *num_read_out = got_total;
