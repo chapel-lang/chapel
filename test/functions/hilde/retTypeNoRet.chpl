@@ -5,7 +5,6 @@ proc foo(x:bool) : int
 }
 
 writeln(foo(true));
-writeln(foo(false));
 
 proc bar(x:int) : real
 {
@@ -17,7 +16,3 @@ proc bar(x:int) : real
 }
 
 writeln(bar(0));
-writeln(bar(1));
-writeln(bar(2));
-
-writeln("Done.");
