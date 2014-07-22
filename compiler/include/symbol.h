@@ -6,8 +6,8 @@
 #include "flags.h"
 #include "type.h"
 
-#include <vector>
 #include <bitset>
+#include <vector>
 
 //
 // The function that represents the compiler-generated entry point
