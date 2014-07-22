@@ -390,7 +390,7 @@ BlockStmt::length() const {
 
 void
 BlockStmt::moduleAddUse(ModuleSymbol* mod) {
-  if (modUses == 0) {
+  if (modUses == NULL) {
     modUses = new CallExpr(PRIM_USED_MODULES_LIST);
 
     if (parentSymbol)
@@ -405,7 +405,7 @@ BlockStmt::moduleAddUse(ModuleSymbol* mod) {
 // statement belongs to. The list of used modules is stored in modUses
 void
 BlockStmt::moduleRemoveUse(ModuleSymbol* mod) {
-  if (modUses != 0) {
+  if (modUses != NULL) {
     for_alist(expr, modUses->argList) {
       if (SymExpr* symExpr = toSymExpr(expr)) {
         if (ModuleSymbol* curMod = toModuleSymbol(symExpr->var)) {
