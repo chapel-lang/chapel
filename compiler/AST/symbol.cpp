@@ -74,19 +74,10 @@ Map<FnSymbol*,int> virtualMethodMap;
 Map<FnSymbol*,Vec<FnSymbol*>*> virtualChildrenMap;
 Map<FnSymbol*,Vec<FnSymbol*>*> virtualRootsMap;
 
-
-
-
-  Type*              type;
-  FlagSet            flags;
-
-  const char*        name;
-  const char*        cname;    // Name of symbol for generating C code
-
-  DefExpr*           defPoint; // Point of definition
-
-
-
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
 
 Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   BaseAST(astTag),
@@ -190,6 +181,10 @@ bool Symbol::isImmediate() const {
   return false;
 }
 
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
 
 VarSymbol::VarSymbol(const char *init_name,
                      Type    *init_type) :
@@ -793,6 +788,11 @@ void VarSymbol::accept(AstVisitor* visitor) {
   visitor->visitVarSym(this);
 }
 
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
+
 ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName, 
                      Type* iType, Expr* iTypeExpr,
                      Expr* iDefaultExpr, Expr* iVariableExpr) :
@@ -1006,6 +1006,11 @@ void ArgSymbol::accept(AstVisitor* visitor) {
     visitor->exitArgSym(this);
   }
 }
+
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
 
 TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
   Symbol(E_TypeSymbol, init_name, init_type),
@@ -1238,6 +1243,11 @@ void TypeSymbol::accept(AstVisitor* visitor) {
     visitor->exitTypeSym(this);
   }
 }
+
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
 
 FnSymbol::FnSymbol(const char* initName) :
   Symbol(E_FnSymbol, initName),
@@ -2104,6 +2114,11 @@ void FnSymbol::accept(AstVisitor* visitor) {
   }
 }
 
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
+
 EnumSymbol::EnumSymbol(const char* init_name) :
   Symbol(E_EnumSymbol, init_name)
 {
@@ -2147,16 +2162,29 @@ void EnumSymbol::accept(AstVisitor* visitor) {
   visitor->visitEnumSym(this);
 }
 
-ModuleSymbol::ModuleSymbol(const char* iName, ModTag iModTag, BlockStmt* iBlock)
-  : Symbol(E_ModuleSymbol, iName),
-    modTag(iModTag),
-    block(iBlock),
-    initFn(NULL),
-    filename(NULL),
-    doc(NULL),
-    extern_info(NULL)
-{
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
+
+ModuleSymbol::ModuleSymbol(const char* iName,
+                           ModTag      iModTag,
+                           BlockStmt*  iBlock)
+  : Symbol(E_ModuleSymbol, iName) {
+
+  modTag              = iModTag;
+
+  block               = iBlock;
   block->parentSymbol = this;
+
+  initFn              = NULL;
+
+  filename            = NULL;
+
+  doc                 = NULL;
+
+  extern_info         = NULL;
+
   registerModule(this);
   gModuleSymbols.add(this);
 }
@@ -2167,11 +2195,14 @@ ModuleSymbol::~ModuleSymbol() { }
 
 void ModuleSymbol::verify() {
   Symbol::verify();
+
   if (astTag != E_ModuleSymbol) {
     INT_FATAL(this, "Bad ModuleSymbol::astTag");
   }
+
   if (block && block->parentSymbol != this)
     INT_FATAL(this, "Bad ModuleSymbol::block::parentSymbol");
+
   if (initFn && !toFnSymbol(initFn))
     INT_FATAL(this, "Bad ModuleSymbol::initFn");
 }
@@ -2180,6 +2211,7 @@ void ModuleSymbol::verify() {
 ModuleSymbol*
 ModuleSymbol::copyInner(SymbolMap* map) {
   INT_FATAL(this, "Illegal call to ModuleSymbol::copy");
+
   return NULL;
 }
 
@@ -2187,10 +2219,13 @@ ModuleSymbol::copyInner(SymbolMap* map) {
 static int compareLineno(const void* v1, const void* v2) {
   FnSymbol* fn1 = *(FnSymbol* const *)v1;
   FnSymbol* fn2 = *(FnSymbol* const *)v2;
+
   if (fn1->linenum() > fn2->linenum())
     return 1;
+
   else if (fn1->linenum() < fn2->linenum())
     return -1;
+
   else
     return 0;
 }
@@ -2200,11 +2235,13 @@ void ModuleSymbol::codegenDef() {
   GenInfo* info = gGenInfo;
 
   info->filename = fname();
-  info->lineno = linenum();
+  info->lineno   = linenum();
+
   info->cStatements.clear();
   info->cLocalDecls.clear();
  
   Vec<FnSymbol*> fns;
+
   for_alist(expr, block->body) {
     if (DefExpr* def = toDefExpr(expr))
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
@@ -2212,19 +2249,23 @@ void ModuleSymbol::codegenDef() {
         if (fn->hasFlag(FLAG_EXTERN) ||
             fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))
           continue;
+
         fns.add(fn);
       }
   }
+
   qsort(fns.v, fns.n, sizeof(fns.v[0]), compareLineno);
+
   forv_Vec(FnSymbol, fn, fns) {
     fn->codegenDef();
   }
+
   flushStatements();
-  return;
 }
  
 Vec<AggregateType*> ModuleSymbol::getClasses() {
   Vec<AggregateType*> classes;
+
   for_alist(expr, block->body) {
     if (DefExpr* def = toDefExpr(expr))
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
@@ -2240,11 +2281,13 @@ Vec<AggregateType*> ModuleSymbol::getClasses() {
         }
       }
   }
+
   return classes;
 }
 
 Vec<VarSymbol*> ModuleSymbol::getConfigVars() {
   Vec<VarSymbol*> configs;
+
   for_alist(expr, block->body) {
     if (DefExpr* def = toDefExpr(expr))
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
@@ -2261,11 +2304,13 @@ Vec<VarSymbol*> ModuleSymbol::getConfigVars() {
         }
       }
   }
+
   return configs;
 }
 
 Vec<ModuleSymbol*> ModuleSymbol::getModules() {
   Vec<ModuleSymbol*> mods;
+
   for_alist(expr, block->body) {
     if (DefExpr* def = toDefExpr(expr))
       if (ModuleSymbol* mod = toModuleSymbol(def->sym)) {
@@ -2273,11 +2318,13 @@ Vec<ModuleSymbol*> ModuleSymbol::getModules() {
           mods.add(mod);
       }
   }
+
   return mods;
 }
 
 Vec<FnSymbol*> ModuleSymbol::getFunctions() {
   Vec<FnSymbol*> fns;
+
   for_alist(expr, block->body) {
     if (DefExpr* def = toDefExpr(expr))
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
@@ -2286,7 +2333,9 @@ Vec<FnSymbol*> ModuleSymbol::getFunctions() {
             (fn->hasFlag(FLAG_EXTERN) ||
              fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)))
           continue;
+
         fns.add(fn);
+
         // The following additional overhead and that present in getConfigVars 
         // and getClasses is a result of the docs pass occurring before
         // the functions/configvars/classes are taken out of the module
@@ -2307,6 +2356,7 @@ Vec<FnSymbol*> ModuleSymbol::getFunctions() {
         }
       }
   }
+
   return fns;
 }
   
@@ -2327,6 +2377,11 @@ void ModuleSymbol::accept(AstVisitor* visitor) {
     visitor->exitModSym(this);
   }
 }
+
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
 
 LabelSymbol::LabelSymbol(const char* init_name) :
   Symbol(E_LabelSymbol, init_name, NULL),
@@ -2386,6 +2441,11 @@ void LabelSymbol::codegenDef() { }
 void LabelSymbol::accept(AstVisitor* visitor) {
   visitor->visitLabelSym(this);
 }
+
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
 
 static int literal_id = 1;
 HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;

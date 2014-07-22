@@ -6,8 +6,8 @@
 #include "flags.h"
 #include "type.h"
 
-#include <bitset>
 #include <vector>
+#include <bitset>
 
 //
 // The function that represents the compiler-generated entry point
@@ -62,39 +62,46 @@ enum ModTag {
 typedef std::bitset<NUM_FLAGS> FlagSet;
 
 
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
+
 class Symbol : public BaseAST {
 public:
-  virtual Symbol*    copy(SymbolMap* map = NULL, bool internal = false) = 0;
-  virtual void       replaceChild(BaseAST* old_ast, BaseAST* new_ast)   = 0;
-
   // Interface for BaseAST
   virtual GenRet     codegen();
   virtual bool       inTree();
   virtual Type*      typeInfo();
   virtual void       verify(); 
 
+  // New interfaces
+  virtual Symbol*    copy(SymbolMap* map      = NULL,
+                          bool       internal = false)           = 0;
+  virtual void       replaceChild(BaseAST* oldAst, 
+                                  BaseAST* newAst)               = 0;
+
   virtual FnSymbol*  getFnSymbol();
 
-  virtual bool       isConstant()                                      const;
-  virtual bool       isConstValWillNotChange()                         const;
-  virtual bool       isImmediate()                                     const;
-  virtual bool       isParameter()                                     const;
+  virtual bool       isConstant()                              const;
+  virtual bool       isConstValWillNotChange()                 const;
+  virtual bool       isImmediate()                             const;
+  virtual bool       isParameter()                             const;
 
   virtual void       codegenDef();
 
-  bool               hasFlag(Flag flag)                                const;
-  bool               hasEitherFlag(Flag aflag, Flag bflag)             const;
+  bool               hasFlag(Flag flag)                        const;
+  bool               hasEitherFlag(Flag aflag, Flag bflag)     const;
 
   void               addFlag(Flag flag);
   void               removeFlag(Flag flag);
   void               copyFlags(const Symbol* other);
 
-
   Type*              type;
   FlagSet            flags;
 
   const char*        name;
-  const char*        cname;    // Name of symbol for generating C code
+  const char*        cname;    // Name of symbol for C code
 
   DefExpr*           defPoint; // Point of definition
 
@@ -113,6 +120,10 @@ private:
 
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
 
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
 
 class VarSymbol : public Symbol {
  public:
@@ -128,10 +139,10 @@ class VarSymbol : public Symbol {
   DECLARE_SYMBOL_COPY(VarSymbol);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
-  virtual bool       isConstant()                                      const;
-  virtual bool       isConstValWillNotChange()                         const;
-  virtual bool       isImmediate()                                     const;
-  virtual bool       isParameter()                                     const;
+  virtual bool       isConstant()                              const;
+  virtual bool       isConstValWillNotChange()                 const;
+  virtual bool       isImmediate()                             const;
+  virtual bool       isParameter()                             const;
 
   const char* doc;
 
@@ -143,35 +154,53 @@ class VarSymbol : public Symbol {
   
 };
 
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
 
 class ArgSymbol : public Symbol {
- public:
-  IntentTag intent;
-  BlockStmt* typeExpr;  // A type expression for the argument type, or NULL.
-  BlockStmt* defaultExpr;
-  BlockStmt* variableExpr;
-  Type* instantiatedFrom;
+public:
+  ArgSymbol(IntentTag   iIntent,
+            const char* iName, 
+            Type*       iType,
+            Expr*       iTypeExpr     = NULL, 
+            Expr*       iDefaultExpr  = NULL,
+            Expr*       iVariableExpr = NULL);
 
-  ArgSymbol(IntentTag iIntent, const char* iName, Type* iType,
-            Expr* iTypeExpr = NULL, Expr* iDefaultExpr = NULL,
-            Expr* iVariableExpr = NULL);
+  // Interface for BaseAST
+  virtual GenRet  codegen();
 
-  void verify(); 
+  virtual void    verify(); 
   virtual void    accept(AstVisitor* visitor);
   DECLARE_SYMBOL_COPY(ArgSymbol);
-  void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
-  virtual bool       isConstant()                                      const;
-  virtual bool       isConstValWillNotChange()                         const;
-  virtual bool       isParameter()                                     const;
+  // Interface for Symbol
+  virtual void    replaceChild(BaseAST* oldAst, BaseAST* newAst);
 
-  bool requiresCPtr(void);
-  const char* intentDescrString(void);
 
-  GenRet codegen();
-  GenRet codegenType();
+  // New interface
+  virtual bool    isConstant()                              const;
+  virtual bool    isConstValWillNotChange()                 const;
+  virtual bool    isParameter()                             const;
+
+  bool            requiresCPtr();
+  const char*     intentDescrString();
+
+  GenRet          codegenType();
+
+  IntentTag       intent;
+  BlockStmt*      typeExpr;    // Type expr for arg type, or NULL.
+  BlockStmt*      defaultExpr;
+  BlockStmt*      variableExpr;
+  Type*           instantiatedFrom;
+
 };
 
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
 
 class TypeSymbol : public Symbol {
  public:
@@ -207,6 +236,10 @@ class TypeSymbol : public Symbol {
   void codegenMetadata();
 };
 
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
 
 class FnSymbol : public Symbol {
  public:
@@ -289,49 +322,78 @@ class FnSymbol : public Symbol {
   bool isResolved() { return this->hasFlag(FLAG_RESOLVED); }
 };
 
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
 
 class EnumSymbol : public Symbol {
  public:
-  EnumSymbol(const char* init_name);
-  void verify(); 
-  virtual void    accept(AstVisitor* visitor);
-  DECLARE_SYMBOL_COPY(EnumSymbol);
-  void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void codegenDef();
-  
-  virtual bool       isParameter()                                     const;
+                  EnumSymbol(const char* initName);
 
-  Immediate* getImmediate(void);
+  virtual void    verify(); 
+  virtual void    accept(AstVisitor* visitor);
+
+  DECLARE_SYMBOL_COPY(EnumSymbol);
+
+  virtual void    replaceChild(BaseAST* oldAst, BaseAST* newAst);
+  virtual void    codegenDef();
+  
+  virtual bool    isParameter()                             const;
+
+  Immediate*      getImmediate();
 };
 
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
 
 struct ExternBlockInfo;
 
 class ModuleSymbol : public Symbol {
- public:
-  ModTag modTag;
-  BlockStmt* block;
-  FnSymbol* initFn;
-  const char* filename;
-  Vec<ModuleSymbol*> modUseList;
-  Vec<ModuleSymbol*> modUseSet;
-  const char *doc;
-  // These are used for extern C blocks.
-  ExternBlockInfo* extern_info;
+public:
+                       ModuleSymbol(const char* iName,
+                                    ModTag      iModTag,
+                                    BlockStmt*  iBlock);
 
-  ModuleSymbol(const char* iName, ModTag iModTag, BlockStmt* iBlock);
-  ~ModuleSymbol();
-  void verify(); 
-  virtual void    accept(AstVisitor* visitor);
+                      ~ModuleSymbol();
+
+  // Interface to BaseAST
+  virtual void         verify(); 
+  virtual void         accept(AstVisitor* visitor);
+
   DECLARE_SYMBOL_COPY(ModuleSymbol);
-  Vec<VarSymbol*> getConfigVars();
-  Vec<FnSymbol*> getFunctions();
-  Vec<ModuleSymbol*> getModules();
-  Vec<AggregateType*> getClasses();
-  void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void codegenDef();
+
+  // Interface to Symbol
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  virtual void codegenDef();
+
+  // New interface
+  Vec<VarSymbol*>       getConfigVars();
+  Vec<FnSymbol*>        getFunctions();
+  Vec<ModuleSymbol*>    getModules();
+  Vec<AggregateType*>   getClasses();
+
+  ModTag                modTag;
+
+  BlockStmt*            block;
+  FnSymbol*             initFn;
+
+  Vec<ModuleSymbol*>    modUseList;
+  Vec<ModuleSymbol*>    modUseSet;
+
+  const char*           filename;
+  const char*           doc;
+
+  // LLVM uses this for extern C blocks.
+  ExternBlockInfo*      extern_info;
 };
 
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
 
 class LabelSymbol : public Symbol {
  public:
@@ -344,6 +406,10 @@ class LabelSymbol : public Symbol {
   void codegenDef();
 };
 
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
 
 // Creates a new string literal with the given value.
 VarSymbol *new_StringSymbol(const char *s);
