@@ -4353,7 +4353,8 @@ static Expr* resolvePrimInit(CallExpr* call)
     } 
     
     // No default value.
-
+#if 0
+    // I think we don't need this, as extern type blocks get removed later.
     if (se->var->hasFlag(FLAG_EXTERN))
     {
       INT_ASSERT(false); // Do we get here?
@@ -4363,6 +4364,7 @@ static Expr* resolvePrimInit(CallExpr* call)
       result = call;
       return result;
     }
+#endif
 
     if (type->defaultInitializer)
     {
