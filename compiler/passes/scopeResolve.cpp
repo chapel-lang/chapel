@@ -548,7 +548,7 @@ static void build_type_constructor(AggregateType* ct) {
           new BlockStmt(
             new CallExpr(PRIM_SET_MEMBER, fn->_this, 
               new_StringSymbol(field->name),
-              new CallExpr(PRIM_INIT, exprType->remove())),
+              new CallExpr(PRIM_TYPE_INIT, exprType->remove())),
             BLOCK_TYPE));
 
       } else {
@@ -572,20 +572,21 @@ static void build_type_constructor(AggregateType* ct) {
 
           else if (arg->type == dtAny &&
                    !ct->symbol->hasFlag(FLAG_REF))
+            // It would be nice to be able to remove this case.
             fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
                                           fn->_this,
                                           new_StringSymbol(field->name),
                                           new CallExpr("chpl__initCopy",
-                                                       new CallExpr(PRIM_INIT, arg))));
+                                                       new CallExpr(PRIM_TYPE_INIT, arg))));
 
           else
             fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
                                           fn->_this,
                                           new_StringSymbol(field->name),
-                                          new CallExpr(PRIM_INIT, arg)));
+                                          new CallExpr(PRIM_TYPE_INIT, arg)));
 
         } else if (exprType) {
-          CallExpr* newInit = new CallExpr(PRIM_INIT, exprType->copy());
+          CallExpr* newInit = new CallExpr(PRIM_TYPE_INIT, exprType->copy());
           CallExpr* newSet  = new CallExpr(PRIM_SET_MEMBER, 
                                            fn->_this,
                                            new_StringSymbol(field->name),
@@ -608,7 +609,7 @@ static void build_type_constructor(AggregateType* ct) {
             insert_help(exprType, init->parentExpr, init->parentSymbol);
 
             // Now do the same as above in the 'if (exprType)' case
-            CallExpr* newInit = new CallExpr(PRIM_INIT, exprType->copy());
+            CallExpr* newInit = new CallExpr(PRIM_TYPE_INIT, exprType->copy());
             CallExpr* newSet  = new CallExpr(PRIM_SET_MEMBER,
                                              fn->_this,
                                              new_StringSymbol(field->name),
