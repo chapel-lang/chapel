@@ -312,7 +312,7 @@ checkReturnPaths(FnSymbol* fn) {
   // actually a proper assignment
   if (result == 0 || (result == 1 && fn->hasFlag(FLAG_SPECIFIED_RETURN_TYPE) &&
                       !fn->retType->symbol->hasFlag(FLAG_EXTERN)))
-    USR_WARN(fn->body, "control reaches end of function that returns a value");
+    USR_FATAL_CONT(fn->body, "control reaches end of function that returns a value");
 }
 
 
