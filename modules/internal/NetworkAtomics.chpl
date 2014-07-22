@@ -148,7 +148,6 @@ module NetworkAtomics {
     }
 
     inline proc waitFor(val:int(64), order:memory_order = memory_order_seq_cst) {
-      chpl_rmem_consist_maybe_release(order);
       on this {
         while (read(memory_order_relaxed) != val) do chpl_task_yield();
         // After waiting for the value, do a thread fence
@@ -156,7 +155,6 @@ module NetworkAtomics {
         // if the on statement is not included.
         atomic_thread_fence(order);
       }
-      chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {
@@ -344,12 +342,10 @@ module NetworkAtomics {
     }
 
     inline proc waitFor(val:int(32), order:memory_order = memory_order_seq_cst) {
-      chpl_rmem_consist_maybe_release(order);
       on this {
         while (read(memory_order_relaxed) != val) do chpl_task_yield();
         atomic_thread_fence(order);
       }
-      chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {
@@ -537,12 +533,10 @@ module NetworkAtomics {
     }
 
     inline proc waitFor(val:uint(64), order:memory_order = memory_order_seq_cst) {
-      chpl_rmem_consist_maybe_release(order);
       on this {
         while (read(memory_order_relaxed) != val) do chpl_task_yield();
         atomic_thread_fence(order);
       }
-      chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {
@@ -730,12 +724,10 @@ module NetworkAtomics {
     }
 
     inline proc waitFor(val:uint(32), order:memory_order = memory_order_seq_cst) {
-      chpl_rmem_consist_maybe_release(order);
       on this {
         while (read(memory_order_relaxed) != val) do chpl_task_yield();
         atomic_thread_fence(order);
       }
-      chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {
@@ -823,12 +815,10 @@ inline proc compareExchangeWeak(expected:bool, desired:bool,
     }
 
     inline proc waitFor(val:bool, order:memory_order = memory_order_seq_cst) {
-      chpl_rmem_consist_maybe_release(order);
       on this {
         while (read(memory_order_relaxed) != val) do chpl_task_yield();
         atomic_thread_fence(order);
       }
-      chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {
@@ -983,12 +973,10 @@ inline proc compareExchangeWeak(expected:bool, desired:bool,
 
 
     inline proc waitFor(val:real(64), order:memory_order = memory_order_seq_cst) {
-      chpl_rmem_consist_maybe_release(order);
       on this {
         while (read(memory_order_relaxed) != val) do chpl_task_yield();
         atomic_thread_fence(order);
       }
-      chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {
