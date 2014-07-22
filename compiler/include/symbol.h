@@ -370,24 +370,24 @@ public:
   virtual void codegenDef();
 
   // New interface
-  Vec<VarSymbol*>       getConfigVars();
-  Vec<FnSymbol*>        getFunctions();
-  Vec<ModuleSymbol*>    getModules();
-  Vec<AggregateType*>   getClasses();
+  Vec<VarSymbol*>      getConfigVars();
+  Vec<FnSymbol*>       getFunctions();
+  Vec<ModuleSymbol*>   getModules();
+  Vec<AggregateType*>  getClasses();
 
-  ModTag                modTag;
+  ModTag               modTag;
 
-  BlockStmt*            block;
-  FnSymbol*             initFn;
+  BlockStmt*           block;
+  FnSymbol*            initFn;
 
-  Vec<ModuleSymbol*>    modUseList;
-  Vec<ModuleSymbol*>    modUseSet;
+  Vec<ModuleSymbol*>   modUseList;
+  Vec<ModuleSymbol*>   modUseSet;
 
-  const char*           filename;
-  const char*           doc;
+  const char*          filename;
+  const char*          doc;
 
   // LLVM uses this for extern C blocks.
-  ExternBlockInfo*      extern_info;
+  ExternBlockInfo*     extern_info;
 };
 
 /******************************** | *********************************
