@@ -3,15 +3,6 @@
 
 #include "expr.h"
 
-#if 0
-#include <cstdio>
-#include "alist.h"
-#include "baseAST.h"
-#include "symbol.h"
-
-#include "genret.h"
-#endif
-
 /******************************** | *********************************
 *                                                                   *
 *                                                                   *
