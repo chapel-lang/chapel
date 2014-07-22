@@ -149,14 +149,14 @@ proc nocapture() {
 
   cobegin ref(i) {
     {
-      s$;
+      s$.readFE();
       i = 5;
       q$ = true;
     }
     {
       forall j in ITR(3) {
         s$.writeXF(true);
-        q$;
+        q$.readFF();
         writeln("A-", j, "  i=", i);
       }
     }
@@ -172,7 +172,7 @@ proc captureManually() {
 
   cobegin ref(i) {
     {
-      s$;
+      s$.readFE();
       i = 5;
       q$ = true;
     }
@@ -180,7 +180,7 @@ proc captureManually() {
       var iCapture = i;
       forall j in ITR(3) {
         s$.writeXF(true);
-        q$;
+        q$.readFF();
         writeln("B-", j, "  i=", iCapture);
       }
     }
@@ -196,7 +196,7 @@ proc noCaptureWithIntent() {
 
   cobegin ref(i) {
     {
-      s$;
+      s$.readFE();
       i = 5;
       q$ = true;
     }
@@ -206,7 +206,7 @@ proc noCaptureWithIntent() {
         for j in ITR(3, tag=iterKind.follower, followThis) {
 
           s$.writeXF(true);
-          q$;
+          q$.readFF();
           writeln("C-", j, "  i=", i);
 
         }  // follower
@@ -224,7 +224,7 @@ proc captureWithIntent() {
 
   cobegin ref(i) {
     {
-      s$;
+      s$.readFE();
       i = 5;
       q$ = true;
     }
@@ -237,7 +237,7 @@ proc captureWithIntent() {
         for j in ITR(3, tag=iterKind.follower, followThis) {
 
           s$.writeXF(true);
-          q$;
+          q$.readFF();
           writeln("D-", j, "  i=", iCapture);
 
         }  // follower
