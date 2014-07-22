@@ -7,16 +7,16 @@
  */
 
 const NCHUNKS = 150;
-config const N : int = 7;
+config const n : int = 7;
 const ntasks = 0..#here.numCores;
 
-var Fact : [0..N] int;
+var Fact : [0..n] int;
 Fact[0] = 1;
-for i in 1..N do
+for i in 1..n do
   Fact[i] = Fact[i-1] * i;
 
-const CHUNKSZ = (Fact[N] + NCHUNKS - 1) / NCHUNKS;
-const NTASKS = (Fact[N] + CHUNKSZ - 1) / CHUNKSZ;
+const CHUNKSZ = (Fact[n] + NCHUNKS - 1) / NCHUNKS;
+const NTASKS = (Fact[n] + CHUNKSZ - 1) / CHUNKSZ;
 
 var maxFlips, checkSums : [0..#NTASKS] int;
 
@@ -34,15 +34,15 @@ coforall i in ntasks {
 }
 const c = + reduce checkSums;
 const r = max reduce maxFlips;
-writeln(c, "\nPfannkuchen(", N, ") = ", r);
+writeln(c, "\nPfannkuchen(", n, ") = ", r);
 
 class Fann {
-  const D = {0..#N};
+  const D = {0..#n};
   var p, pp, count : [D] int;
 
   proc work(task : int) {
     const idxMin = task * CHUNKSZ;
-    const idxMax = min(Fact[N], idxMin + CHUNKSZ);
+    const idxMax = min(Fact[n], idxMin + CHUNKSZ);
 
     firstPerm(idxMin);
 
@@ -71,7 +71,7 @@ class Fann {
   proc firstPerm(in idx : int) {
     p = D;
 
-    for i in 1..N-1 by -1 {
+    for i in 1..n-1 by -1 {
       const d = idx / Fact[i];
       count[i] = d;
       idx = idx % Fact[i];
