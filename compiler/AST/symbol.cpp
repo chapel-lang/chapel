@@ -2170,21 +2170,15 @@ void EnumSymbol::accept(AstVisitor* visitor) {
 ModuleSymbol::ModuleSymbol(const char* iName,
                            ModTag      iModTag,
                            BlockStmt*  iBlock)
-  : Symbol(E_ModuleSymbol, iName) {
+  : Symbol(E_ModuleSymbol, iName),
+    modTag(iModTag),
+    block(iBlock),
+    initFn(NULL),
+    filename(NULL),
+    doc(NULL),
+    extern_info(NULL) {
 
-  modTag              = iModTag;
-
-  block               = iBlock;
   block->parentSymbol = this;
-
-  initFn              = NULL;
-
-  filename            = NULL;
-
-  doc                 = NULL;
-
-  extern_info         = NULL;
-
   registerModule(this);
   gModuleSymbols.add(this);
 }

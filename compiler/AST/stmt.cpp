@@ -68,15 +68,14 @@ bool Stmt::isStmt() const {
 ********************************* | ********************************/
 
 BlockStmt::BlockStmt(Expr* initBody, BlockTag initBlockTag) :
-  Stmt(E_BlockStmt) {
-
-  blockTag      = initBlockTag;
-  blockInfo     = NULL;
-  modUses       = NULL;
-  breakLabel    = NULL;
-  continueLabel = NULL;
-  userLabel     = NULL;
-  byrefVars     = NULL;
+  Stmt(E_BlockStmt),
+  blockTag(initBlockTag),
+  blockInfo(NULL),
+  modUses(NULL),
+  breakLabel(NULL),
+  continueLabel(NULL),
+  userLabel(NULL),
+  byrefVars(NULL) {
 
   body.parent = this;
 
