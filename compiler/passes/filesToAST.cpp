@@ -164,12 +164,14 @@ void parse(void) {
 
   gatherWellKnownTypes();
 
-  int filenum = 0;
-  const char* inputFilename;
+  {
+    int         filenum       = 0;
+    const char* inputFilename = 0;
 
-  while ((inputFilename = nthFilename(filenum++))) {
-    if (isChplSource(inputFilename)) {
-      addModulePathFromFilename(inputFilename);
+    while ((inputFilename = nthFilename(filenum++))) {
+      if (isChplSource(inputFilename)) {
+        addModulePathFromFilename(inputFilename);
+      }
     }
   }
 
@@ -179,10 +181,14 @@ void parse(void) {
     printModuleSearchPath();
   }
 
-  filenum = 0;
-  while ((inputFilename = nthFilename(filenum++))) {
-    if (isChplSource(inputFilename)) {
-      ParseFile(inputFilename, MOD_MAIN);
+  {
+    int         filenum       = 0;
+    const char* inputFilename = 0;
+
+    while ((inputFilename = nthFilename(filenum++))) {
+      if (isChplSource(inputFilename)) {
+        ParseFile(inputFilename, MOD_MAIN);
+      }
     }
   }
 
@@ -196,7 +202,7 @@ void parse(void) {
     // ChapelStandard is added implicity to the "use" list of all other modules.
     {
       SET_LINENO(mod);
-      mod->block->addUse(standardModule);
+      mod->block->moduleAddUse(standardModule);
       mod->modUseSet.clear();
       mod->modUseList.clear();
       mod->modUseSet.set_add(standardModule);
@@ -210,7 +216,7 @@ void parse(void) {
   // variable).
   {
     SET_LINENO(baseModule);
-    baseModule->block->addUse(rootModule);
+    baseModule->block->moduleAddUse(rootModule);
   }
 
   finishCountingTokens();

@@ -165,6 +165,10 @@ void runPasses(PhaseTracker& tracker) {
 static void runPass(PhaseTracker& tracker, size_t passIndex) {
   PassInfo* info = &sPassList[passIndex];
 
+  //
+  // The primary work for this pass
+  //
+
   tracker.StartPhase(info->name, PhaseTracker::kPrimary);
 
   if (fPrintStatistics[0] != '\0' && passIndex > 0)
@@ -172,7 +176,9 @@ static void runPass(PhaseTracker& tracker, size_t passIndex) {
 
   (*(info->passFunction))();
 
-  tracker.StartPhase(info->name, PhaseTracker::kVerify);
+  //
+  // Statistics and logging
+  //
 
   if (fPrintStatistics[0] != '\0')
     printStatistics(info->name);
@@ -181,8 +187,19 @@ static void runPass(PhaseTracker& tracker, size_t passIndex) {
 
   considerExitingEndOfPass();
 
+  //
+  // Clean up the global pointers to AST
+  //
+
   tracker.StartPhase(info->name, PhaseTracker::kCleanAst);
+
   cleanAst();
+
+  //
+  // An optional verify pass
+  //
+
+  tracker.StartPhase(info->name, PhaseTracker::kVerify);
 
   (*(info->checkFunction))(); // Run per-pass check function.
 
