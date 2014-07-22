@@ -477,6 +477,7 @@ extern type fdflag_t = c_int;
 */
 extern type iohints = c_int;
 
+pragma "ignore noinit"
 record file {
   var home: locale = here;
   var _file_internal:qio_file_ptr_t = QIO_FILE_PTR_NULL;
@@ -772,6 +773,7 @@ proc openmem(style:iostyle = defaultIOStyle()):file {
 
 /* in the future, this will be an interface.
    */
+pragma "ignore noinit"
 record channel {
   param writing:bool;
   param kind:iokind;
@@ -3765,7 +3767,6 @@ proc file.fstype():ftype {
 // Returns (0,0) if no such value exists.
 proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(64)) {
   var err:syserr = ENOERR;
-  var entered: bool = false;
   var s = 0;
   var e = 0;
 
@@ -3781,8 +3782,9 @@ proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(6
       /*len = chpl_lustre_get_stripe_size(struc);*/
     }
 
-    // TAKZ - Note that we are only wanting to return an inclusive range -- i.e., we
-    // will only return a non-zero start and end [n,m], iff n and m are in [start, end].
+    if (len != 0 && (real_end > start)) {
+      // TAKZ - Note that we are only wanting to return an inclusive range -- i.e., we
+      // will only return a non-zero start and end [n,m], iff n and m are in [start, end].
       for i in start..real_end by len {
         // Our stripes are too large, so we can't give back a range within the given
         // bounds
@@ -3792,17 +3794,39 @@ proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(6
         if i >= start {
           var new_start = i;
           var new_end:int(64);
-          if i + len >= real_end then 
+          if (i / len + 1) * len >= real_end then
             new_end = real_end;
-          else new_end = i + len;
+          // rounding
+          else new_end = (i / len + 1) * len;
           if new_start == new_end {
             break;
           } else {
             s = new_start;
             e = new_end;
+            break;
           }
         }
       }
+    }
   }
   return (s, e);
+}
+
+// Returns the 'best' locales to run something working with this
+// region of the file. This *must* return the same result when
+// called from different locales. Returns a n-length array if
+// no locales are 'best'. (where n = #locales)
+proc file.locsforregion(start:int(64), end:int(64)) {
+  var ret: domain(locale);
+  on this.home {
+    var err:syserr;
+    var good:c_int;
+    for loc in Locales {
+      err = qio_locale_for_region(this._file_internal, start, end, loc.name.c_str(), good);
+      if good == 1 {
+        ret += loc;
+      }
+    }
+  }
+  return ret;
 }

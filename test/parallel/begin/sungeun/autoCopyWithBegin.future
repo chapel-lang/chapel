@@ -1,7 +1,8 @@
 bug: Cannot have begin statements in chpl__autoCopy() or anything called from it
 
 Due to the implicit sync around main, all begin statements require the
-global _endCount var for this sync.
+global _endCount var for this sync, which requires it to be passed
+through all enclosing calls.
 
 If CHPL_VERIFY is set, this test gets an internal error during verify
 after the parallel pass.  Otherwise, it asserts during the

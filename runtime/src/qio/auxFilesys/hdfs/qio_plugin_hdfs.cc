@@ -160,6 +160,7 @@ qioerr hdfs_disconnect_and_free(void* fs)
   int ret= 0;
 
   STARTING_SLOW_SYSCALL;
+  errno = 0;
   ret = hdfsDisconnect(((hdfs_fs*)fs)->hfs);
 
   if ((ret == -2) || (ret == -1))  {
@@ -209,12 +210,15 @@ error:
   return err_out;
 }
 
-qioerr hdfs_disconnect(void* fs)
-{
-  qioerr err_out = 0;
+qioerr hdfs_disconnect(void* fs) {
+  // TAKZ - Note that this "lazily" disconnects from our system. Since, if the user
+  // does not close all files on this FS handle before calling disconnect, we need to
+  // wait until that file is closed (either by them, or by the MM runtime). In this
+  // case (where we have an open file on this handle when disconnect is called) we
+  // simply decrement the reference count on the handle so that when we close the
+  // last open file on this FS handle we will also call disconnect.
   DO_RELEASE(((hdfs_fs*)fs), hdfs_disconnect_and_free);
-  err_out = qio_mkerror_errno();
-  return err_out;
+  return 0;
 }
 
 
@@ -283,6 +287,16 @@ qioerr hdfs_seek(void* fl, off_t offset, int whence, off_t* offset_out, void* fs
   return err_out;
 }
 
+qioerr hdfs_getlength(void* fl, int64_t* len_out, void* fs)
+{
+  hdfsFileInfo* f_info = NULL;
+  f_info = hdfsGetPathInfo(to_hdfs_fs(fs)->hfs, to_hdfs_file(fl)->pathnm);
+  if (f_info == NULL)
+    QIO_RETURN_CONSTANT_ERROR(EREMOTEIO, "Unable to get length of file in HDFS");
+  *len_out = f_info->mSize;
+  return 0;
+}
+
 qioerr hdfs_fsync(void* fl, void* fs)
 {
   int got;
@@ -336,19 +350,18 @@ qioerr hdfs_getpath(void* file, const char** string_out, void* fs)
   return err;
 }
 
-//qioerr hdfs_get_chunk(void* fl, off_t* start, off_t* end, void* fs)
-//{
-  //qioerr err = 0;
+qioerr hdfs_get_chunk(void* fl, int64_t* len_out, void* fs)
+{
+  hdfsFileInfo* f_info = NULL;
+  f_info = hdfsGetPathInfo(to_hdfs_fs(fs)->hfs, to_hdfs_file(fl)->pathnm);
 
-  //hdfsFileInfo* f_info = NULL;
-  //f_info = hdfsGetPathInfo(to_hdfs_file(fl)->fs->hfs, to_hdfs_file(fl)->pathnm);
+  if (f_info == NULL) {
+     QIO_RETURN_CONSTANT_ERROR(EREMOTEIO, "Unable to get length of file in HDFS");
+  }
 
-  //if (f_info == NULL) {
-     //QIO_GET_CONSTANT_ERROR(err, EREMOTEIO, "Unable to get length of file in HDFS");
-     //return err;
-  //}
-//}
-
+  *len_out = f_info->mBlockSize;
+  return 0;
+}
 
 qio_file_functions_t hdfs_function_struct = {
   &hdfs_writev,
@@ -358,10 +371,13 @@ qio_file_functions_t hdfs_function_struct = {
   &hdfs_close,
   &hdfs_open,
   &hdfs_seek,
-  NULL, // Don't need this for HDFS
+  &hdfs_getlength,
   &hdfs_getpath,
   &hdfs_fsync,
   &hdfs_getcwd,
+  1,
+  &hdfs_get_chunk,
+  &hdfs_locales_for_range,
 };
 
 const qio_file_functions_ptr_t hdfs_function_struct_ptr = &hdfs_function_struct;
@@ -375,6 +391,35 @@ char* get_locale_name(char *loc)
   int i = strcspn (loc, keys);
 
   return strndup(loc, i);
+}
+
+qioerr hdfs_locales_for_range(void* file, off_t start_byte, off_t end_byte, const char* loc_name, int* good, void* fs) 
+{
+  int i = 0;
+  char*** info = NULL;
+
+  info = hdfsGetHosts(to_hdfs_fs(fs)->hfs, to_hdfs_file(file)->pathnm, start_byte, end_byte);
+
+  // unable to get hosts for this byte range
+  if (!info || !info[0]) {
+    *good = 0;
+    goto end;
+  }
+
+  // look for the locale name in the "good" locales.
+  for (i = 0; info[0][i]; i++) {
+    if (strcmp(get_locale_name(info[0][i]), loc_name) == 0) {
+      *good = 1;
+      goto end;
+    }
+  }
+
+  // couldn't find it in the "good" locales 
+  *good = 0;
+
+end:
+  hdfsFreeHosts(info);
+  return 0;
 }
 
 // char_arr is already allocated

@@ -2,10 +2,12 @@
 #include "baseAST.h"
 #include "expr.h"
 #include "passes.h"
+#include "stlUtil.h"
 #include "stmt.h"
 #include "symbol.h"
 #include "type.h"
 
+#include <vector>
 
 static void pruneUnusedAggregateTypes(Vec<TypeSymbol*>& types);
 static void pruneUnusedRefs(Vec<TypeSymbol*>& types);
@@ -603,12 +605,11 @@ bool isTypeExpr(Expr* expr)
 static void
 pruneVisit(TypeSymbol* ts, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
   types.set_add(ts);
-  Vec<BaseAST*> asts;
-  collect_asts(ts, asts);
-  forv_Vec(BaseAST, ast, asts) {
-    if (DefExpr* def = toDefExpr(ast))
-      if (def->sym->type && !types.set_in(def->sym->type->symbol))
-        pruneVisit(def->sym->type->symbol, fns, types);
+  std::vector<DefExpr*> defExprs;
+  collectDefExprsSTL(ts, defExprs);
+  for_vector(DefExpr, def, defExprs) {
+    if (def->sym->type && !types.set_in(def->sym->type->symbol))
+      pruneVisit(def->sym->type->symbol, fns, types);
   }
   if (ts->hasFlag(FLAG_DATA_CLASS))
     pruneVisit(getDataClassType(ts), fns, types);
@@ -618,16 +619,14 @@ pruneVisit(TypeSymbol* ts, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
 static void
 pruneVisit(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
   fns.set_add(fn);
-  Vec<BaseAST*> asts;
-  collect_asts(fn, asts);
-  forv_Vec(BaseAST, ast, asts) {
-    if (SymExpr* se = toSymExpr(ast)) {
-      if (FnSymbol* next = toFnSymbol(se->var))
-        if (!fns.set_in(next))
-          pruneVisit(next, fns, types);
-      if (se->var && se->var->type && !types.set_in(se->var->type->symbol))
-        pruneVisit(se->var->type->symbol, fns, types);
-    }
+  std::vector<SymExpr*> symExprs;
+  collectSymExprsSTL(fn, symExprs);
+  for_vector(SymExpr, se, symExprs) {
+    if (FnSymbol* next = toFnSymbol(se->var))
+      if (!fns.set_in(next))
+        pruneVisit(next, fns, types);
+    if (se->var && se->var->type && !types.set_in(se->var->type->symbol))
+      pruneVisit(se->var->type->symbol, fns, types);
   }
   for_formals(formal, fn) {
     if (!types.set_in(formal->type->symbol))
