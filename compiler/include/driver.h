@@ -180,7 +180,6 @@ extern char compileVersion[64];
 
 // This flag is useful for testing
 // the compiler but breaks the language!
-extern bool fNoInternalModules;
 extern bool fMinimalModules;
 
 #endif
