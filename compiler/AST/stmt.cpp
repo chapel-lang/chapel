@@ -141,9 +141,10 @@ BlockStmt::copyInner(SymbolMap* map) {
 }
 
 
+// Note that newAst can be NULL to reflect deletion
 void BlockStmt::replaceChild(Expr* oldAst, Expr* newAst) {
   CallExpr* oldExpr = toCallExpr(oldAst);
-  CallExpr* newExpr = toCallExpr(newAst);
+  CallExpr* newExpr = (newAst != NULL) ? toCallExpr(newAst) : NULL;
 
   if (oldExpr == NULL)
     INT_FATAL(this, "BlockStmt::replaceChild. oldAst is not a CallExpr");
