@@ -107,9 +107,6 @@ class AbstractPbsJob(object):
         cmd_basename = os.path.basename(self.test_command[0])
         logging.debug('Test command basname: {0}'.format(cmd_basename))
 
-        # FIXME: PBSPro has a 15 character limit for job names.
-        #        (thomasvandoren, 2014-07-23)
-
         job_name = '{0}-{1}'.format(prefix, cmd_basename)
         logging.info('PBS job name is: {0}'.format(job_name))
         return job_name
@@ -444,7 +441,6 @@ class MoabJob(AbstractPbsJob):
         :rtype: str
         :returns: qsub job status
         """
-        # FIXME: PBSPro args will be different. (thomasvandoren, 2014-07-23)
         qstat_command = ['qstat', '-x', job_id]
         logging.debug('qstat command to run: {0}'.format(qstat_command))
 
@@ -465,7 +461,6 @@ class MoabJob(AbstractPbsJob):
             raise ValueError('Non-zero exit code {0} from qstat: "{1}"'.format(
                 qstat_proc.returncode, stdout))
 
-        # FIXME: PBSPro output will be different. (thomasvandoren, 2014-07-23)
         try:
             root = xml.etree.ElementTree.fromstring(stdout)
             return root.find('Job').find('job_state').text
@@ -486,6 +481,8 @@ class PbsProJob(AbstractPbsJob):
 
     @property
     def job_name(self):
+        # FIXME: PBSPro has a 15 character limit for job names.
+        #        (thomasvandoren, 2014-07-23)
         raise NotImplementedError('job_name is not yet implemented for PBSPro.')
 
     @classmethod
