@@ -2922,6 +2922,7 @@ resolveCall(CallExpr* call)
      case PRIM_TUPLE_EXPAND:        resolveTupleExpand(call);           break;
      case PRIM_SET_MEMBER:          resolveSetMember(call);             break;
      case PRIM_MOVE:                resolveMove(call);                  break;
+     case PRIM_TYPE_INIT:
      case PRIM_INIT:                resolveDefaultGenericType(call);    break;
      case PRIM_NO_INIT:             resolveDefaultGenericType(call);    break;
      case PRIM_NEW:                 resolveNew(call);                   break;
