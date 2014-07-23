@@ -16,7 +16,6 @@
 #include "chplrt.h"
 #endif
 
-#include "qio_plugin_hdfs.h"
 #include "qio_plugin_curl.h"
 #include <curl/curl.h>
 
