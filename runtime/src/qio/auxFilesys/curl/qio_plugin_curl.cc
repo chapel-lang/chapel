@@ -28,7 +28,7 @@ struct curl_handle {
   CURL*       curl;           // Curl handle
   const char* pathnm;         // Path/URL (etc.)
   ssize_t     length;         // length of what we are reading, -1 if we are not able to get the length
-  size_t      seek_offset;    // Offset to seek to, set in curl_seek
+  size_t      seek_offset;    // Offset to seek to, set in curl_seek -- set to 0 when nothing is set
   size_t      current_offset; // The current offset in the file
   int         seekable;       // Can we request byteranges from this URL?
 };
@@ -131,13 +131,13 @@ size_t chpl_curl_write_string(void *contents, size_t size, size_t nmemb, void *u
   return realsize;
 }
 
-
 qioerr curl_readv(void* file, const struct iovec *vector, int count, ssize_t* num_read_out, void* fs)
 {
   CURLcode err;
   ssize_t got_total;
   qioerr err_out = 0;
   struct curl_iovec_t write_vec;
+  curl_handle* local_handle = to_curl_handle(file);
 
   STARTING_SLOW_SYSCALL;
 
@@ -149,21 +149,27 @@ qioerr curl_readv(void* file, const struct iovec *vector, int count, ssize_t* nu
   write_vec.offset = 0;
   write_vec.curr = 0;
 
-  if (to_curl_handle(file)->seekable != -1)  // we can request byteranges
-    curl_easy_setopt(to_curl_handle(file)->curl, CURLOPT_RESUME_FROM_LARGE, to_curl_handle(file)->seek_offset);
+  if (local_handle->seekable != -1)  // we can request byteranges
+    curl_easy_setopt(local_handle->curl, CURLOPT_RESUME_FROM_LARGE, local_handle->seek_offset);
   else
-    write_vec.offset = to_curl_handle(file)->seek_offset;
+    write_vec.offset = local_handle->seek_offset;
 
-  curl_easy_setopt(to_curl_handle(file)->curl, CURLOPT_WRITEFUNCTION, buf_writer);
+  if (local_handle->seek_offset == 0)
+    curl_easy_setopt(local_handle->curl, CURLOPT_RESUME_FROM_LARGE, local_handle->current_offset);
+  else
+    write_vec.offset = local_handle->current_offset;
+
+  curl_easy_setopt(local_handle->curl, CURLOPT_WRITEFUNCTION, buf_writer);
 
   // Read into write_vec
-  curl_easy_setopt(to_curl_handle(file)->curl, CURLOPT_WRITEDATA, &write_vec);
+  curl_easy_setopt(local_handle->curl, CURLOPT_WRITEDATA, &write_vec);
 
   // Read our data into the buf
-  err = curl_easy_perform(to_curl_handle(file)->curl);
+  err = curl_easy_perform(local_handle->curl);
   DONE_SLOW_SYSCALL;
 
   got_total = write_vec.total_read;
+  local_handle->current_offset += got_total;
 
   if ((err == CURLE_RANGE_ERROR ||  err == CURLE_OK) && got_total == 0 && sys_iov_total_bytes(vector, count) != 0)
     err_out = qio_int_to_err(EEOF);
@@ -178,6 +184,7 @@ qioerr curl_preadv(void* file, const struct iovec *vector, int count, off_t offs
   ssize_t got_total;
   qioerr err_out = 0;
   struct curl_iovec_t write_vec;
+  curl_handle* local_handle = to_curl_handle(file);
 
   STARTING_SLOW_SYSCALL;
 
@@ -189,21 +196,22 @@ qioerr curl_preadv(void* file, const struct iovec *vector, int count, off_t offs
   write_vec.offset = 0;
   write_vec.curr = 0;
 
-  if (to_curl_handle(file)->seekable != -1)  // we can request byteranges
-    curl_easy_setopt(to_curl_handle(file)->curl, CURLOPT_RESUME_FROM_LARGE, offset);
+  if (local_handle->seekable != -1)  // we can request byteranges
+    curl_easy_setopt(local_handle->curl, CURLOPT_RESUME_FROM_LARGE, offset);
   else
     write_vec.offset = offset;
 
-  curl_easy_setopt(to_curl_handle(file)->curl, CURLOPT_WRITEFUNCTION, buf_writer);
+  curl_easy_setopt(local_handle->curl, CURLOPT_WRITEFUNCTION, buf_writer);
 
   // Read into write_vec
-  curl_easy_setopt(to_curl_handle(file)->curl, CURLOPT_WRITEDATA, &write_vec);
+  curl_easy_setopt(local_handle->curl, CURLOPT_WRITEDATA, &write_vec);
 
   // Read our data into the buf
-  err = curl_easy_perform(to_curl_handle(file)->curl);
+  err = curl_easy_perform(local_handle->curl);
   DONE_SLOW_SYSCALL;
 
   got_total = write_vec.total_read;
+  local_handle->current_offset += got_total;
 
   if ((err == CURLE_RANGE_ERROR ||  err == CURLE_OK) && got_total == 0 && sys_iov_total_bytes(vector, count) != 0)
     err_out = qio_int_to_err(EEOF);
@@ -364,10 +372,19 @@ qioerr curl_close(void* fl, void* fs)
 // Note: libcurl really doesn't support seeking. See:
 // http://curl.haxx.se/mail/lib-2009-05/0085.html
 // So instead, we keep track of where we need to seek to, in order to replicate the
-// correct behaviour
+// correct behaviour. We return ESPIPE in the case that we can't get the length
+// since we can't get the length of the file (which we expect in this case in qio).
+// Instead, in this case we fall back to using readv instead of preadv. In the case
+// where we can get the length of the file we call preadv.
+// Note: We could get rid of this requirement if we don't have getlength return
+// an error message in the case that we don't have the length (but this can cause
+// weird user level behaviour).
 qioerr curl_seek(void* fl, off_t offset, int whence, off_t* offset_out, void* fs)
 {
   curl_handle* curl_local = to_curl_handle(fl);
+
+  if (curl_local->length == -1)
+    QIO_RETURN_CONSTANT_ERROR(ESPIPE, "Unable to seek: URL does not support byte ranges");
 
   switch (whence) {
     case SEEK_CUR:
@@ -396,6 +413,10 @@ qioerr curl_getpath(void* file, const char** string_out, void* fs)
 
 qioerr curl_getlength(void* fl, int64_t* len_out, void* fs)
 {
+  if (to_curl_handle(fl)->length == -1) {
+    QIO_RETURN_CONSTANT_ERROR(ENOTSUP, "Unable to get length of curl URL");
+  }
+
   *len_out = to_curl_handle(fl)->length;
   return 0;
 }
