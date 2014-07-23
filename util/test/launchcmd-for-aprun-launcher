@@ -132,7 +132,8 @@ class AbstractJob(object):
         logging.info('PBS job name is: {0}'.format(job_name))
         return job_name
 
-    def _ensure_qsub(self):
+    @classmethod
+    def ensure_qsub(cls):
         """Check that qsub is available on the current path. Raises RuntimeError if it
         cannot be found.
         """
