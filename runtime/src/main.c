@@ -10,6 +10,7 @@
 #include "chpl-main.h"
 #include "chpl-mem.h"
 #include "chplmemtrack.h"
+#include "chpl-privatization.h"
 #include "chpl-tasks.h"
 #include "chplsys.h"
 #include "config.h"
@@ -192,6 +193,9 @@ int main(int argc, char* argv[]) {
   // Initialize the task management layer.
   //
   chpl_task_init();
+
+  // Initialize privatization, needs to happen before hitting module init
+  chpl_privatization_init();
 
   //
   // Some comm layer initialization has to wait until after the
