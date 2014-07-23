@@ -3947,7 +3947,7 @@ qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out)
     transfer_size = s.f_bsize;
   }
 
-  if (transfer_size == -1) { // undefined for this system
+  if (transfer_size == 0) { // undefined for this system
     *len_out = 0;
     return err;
   }
@@ -3976,7 +3976,7 @@ qioerr qio_get_fs_type(qio_file_t* fl, int* out)
     rc = sys_fstatfs(fl->fd, &s);
 
   // can't stat, and we don't have a foreign FS
-  if (rc == -1 && (fl->fsfns == NULL))
+  if (rc != 0 && (fl->fsfns == NULL))
     QIO_RETURN_CONSTANT_ERROR(ENOTSUP, "Unable to find file system type");
 
   if (s.f_type == LUSTRE_SUPER_MAGIC) {

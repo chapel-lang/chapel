@@ -22,7 +22,7 @@ extern "C" {
 #include <sys/param.h>
 #include <sys/mount.h>
 #define SYS_HAS_STATFS 1
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__CYGWIN__)
 #include <sys/vfs.h>
 #define SYS_HAS_STATFS 1
 #else
