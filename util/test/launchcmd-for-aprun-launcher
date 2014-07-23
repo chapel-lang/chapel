@@ -132,41 +132,6 @@ class AbstractJob(object):
         logging.info('PBS job name is: {0}'.format(job_name))
         return job_name
 
-    @classmethod
-    def ensure_qsub(cls):
-        """Check that qsub is available on the current path. Raises RuntimeError if it
-        cannot be found.
-        """
-        def _qsub_not_found(ex):
-            error_msg = ('qsub error: "{0}". Make sure it is installed and '
-                         'available in the PATH.').format(ex)
-            logging.error(error_msg)
-            raise RuntimeError(error_msg)
-
-        try:
-            logging.debug('Starting qsub process to check availability.')
-            qsub_proc = subprocess.Popen(
-                ['qsub', '--version'],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT)
-
-            logging.debug('Communicating with qsub process.')
-            stdout, stderr = qsub_proc.communicate()
-        except OSError as ex:
-            _qsub_not_found(ex)
-
-        if qsub_proc.returncode != 0:
-            _qsub_not_found('Non-zero exit code when running qsub --version')
-
-        # FIXME: This moab specific... (thomasvandoren, 2014-07-23)
-        # TODO: probably should have a factory method
-        #       AbstractJob.init_from_environment that picks the correct class,
-        #       moab vs. pbspro, inits and returns it.
-        elif 'PBSPro' in stdout:
-            _qsub_not_found('PBSPro found. Moab/Torque is only supported at this time.')
-        else:
-            logging.debug('Found qsub version: {0}'.format(stdout))
-
     def launch_qsub(self):
         """Run qsub batch job in subprocess and wait for job to complete. When
         finished, returns output as string.
@@ -282,6 +247,41 @@ class AbstractJob(object):
             logging.info('The test finished with output of length {0}.'.format(len(output)))
 
         return output
+
+    @classmethod
+    def ensure_qsub(cls):
+        """Check that qsub is available on the current path. Raises RuntimeError if it
+        cannot be found.
+        """
+        def _qsub_not_found(ex):
+            error_msg = ('qsub error: "{0}". Make sure it is installed and '
+                         'available in the PATH.').format(ex)
+            logging.error(error_msg)
+            raise RuntimeError(error_msg)
+
+        try:
+            logging.debug('Starting qsub process to check availability.')
+            qsub_proc = subprocess.Popen(
+                ['qsub', '--version'],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT)
+
+            logging.debug('Communicating with qsub process.')
+            stdout, stderr = qsub_proc.communicate()
+        except OSError as ex:
+            _qsub_not_found(ex)
+
+        if qsub_proc.returncode != 0:
+            _qsub_not_found('Non-zero exit code when running qsub --version')
+
+        # FIXME: This moab specific... (thomasvandoren, 2014-07-23)
+        # TODO: probably should have a factory method
+        #       AbstractJob.init_from_environment that picks the correct class,
+        #       moab vs. pbspro, inits and returns it.
+        elif 'PBSPro' in stdout:
+            _qsub_not_found('PBSPro found. Moab/Torque is only supported at this time.')
+        else:
+            logging.debug('Found qsub version: {0}'.format(stdout))
 
     @classmethod
     def qstat(cls, job_id):
