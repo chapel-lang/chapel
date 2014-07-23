@@ -375,7 +375,7 @@ qio_file_functions_t hdfs_function_struct = {
   &hdfs_getpath,
   &hdfs_fsync,
   &hdfs_getcwd,
-  1,
+  FTYPE_HDFS,
   &hdfs_get_chunk,
   &hdfs_locales_for_range,
 };

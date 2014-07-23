@@ -3968,7 +3968,7 @@ qioerr qio_locale_for_region(qio_file_t* fl, off_t start, off_t end, const char*
 qioerr qio_get_fs_type(qio_file_t* fl, int* out)
 {
   sys_statfs_t s;
-  int rc = -1;
+  int rc = 1;
 
   if (fl->fp)
     rc = sys_fstatfs(fileno(fl->fp), &s);
@@ -3980,7 +3980,7 @@ qioerr qio_get_fs_type(qio_file_t* fl, int* out)
     QIO_RETURN_CONSTANT_ERROR(ENOTSUP, "Unable to find file system type");
 
   if (s.f_type == LUSTRE_SUPER_MAGIC) {
-    *out = 2;
+    *out = FTYPE_LUSTRE;
     return 0;
   }
 
@@ -3990,7 +3990,7 @@ qioerr qio_get_fs_type(qio_file_t* fl, int* out)
   }
 
   // else
-  *out = 0;
+  *out = FTYPE_NONE;
   return 0;
 }
 
