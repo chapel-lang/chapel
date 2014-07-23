@@ -86,37 +86,38 @@ BlockStmt::BlockStmt(Expr* initBody, BlockTag initBlockTag) :
 }
 
 
-BlockStmt::~BlockStmt() { }
+BlockStmt::~BlockStmt() { 
 
+}
 
 void BlockStmt::verify() {
   Expr::verify();
 
   if (astTag != E_BlockStmt) {
-    INT_FATAL(this, "Bad BlockStmt::astTag");
+    INT_FATAL(this, "BlockStmt::verify. Bad astTag");
   }
 
   if (body.parent != this)
-    INT_FATAL(this, "Bad AList::parent in BlockStmt");
+    INT_FATAL(this, "BlockStmt::verify. Bad body.parent");
 
   for_alist(expr, body) {
     if (expr->parentExpr != this)
-      INT_FATAL(this, "Bad BlockStmt::body::parentExpr");
+      INT_FATAL(this, "BlockStmt::verify. Bad body.expr->parentExpr");
   }
 
   if (blockInfo && blockInfo->parentExpr != this)
-    INT_FATAL(this, "Bad BlockStmt::blockInfo::parentExpr");
+    INT_FATAL(this, "BlockStmt::verify. Bad blockInfo->parentExpr");
 
-  if (modUses && modUses->parentExpr != this)
-    INT_FATAL(this, "Bad BlockStmt::blockInfo::parentExpr");
+  if (modUses   && modUses->parentExpr   != this)
+    INT_FATAL(this, "BlockStmt::verify. Bad modUses->parentExpr");
 
   if (byrefVars) {
     if (byrefVars->parentExpr != this)
-      INT_FATAL(this, "Bad BlockStmt::byrefVars::parentExpr");
+      INT_FATAL(this, "BlockStmt::verify. Bad byrefVars->parentExpr");
 
     for_actuals(varExp, byrefVars) {
       if (!isSymExpr(varExp) && !isUnresolvedSymExpr(varExp))
-        INT_FATAL(this, "Bad expresion kind in BlockStmt::byrefVars");
+        INT_FATAL(this, "BlockStmt::verify. Bad expression kind in byrefVars");
     }
   }
 }
@@ -140,18 +141,24 @@ BlockStmt::copyInner(SymbolMap* map) {
 }
 
 
-void BlockStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
-  if (old_ast == blockInfo)
-    blockInfo = toCallExpr(new_ast);
+void BlockStmt::replaceChild(Expr* oldAst, Expr* newAst) {
+  CallExpr* oldExpr = toCallExpr(oldAst);
+  CallExpr* newExpr = toCallExpr(newAst);
 
-  else if (old_ast == modUses)
-    modUses = toCallExpr(new_ast);
+  if (oldExpr == NULL)
+    INT_FATAL(this, "BlockStmt::replaceChild. oldAst is not a CallExpr");
 
-  else if (old_ast == byrefVars)
-    byrefVars = toCallExpr(new_ast);
+  else if (oldExpr == blockInfo)
+    blockInfo = newExpr;
+
+  else if (oldExpr == modUses)
+    modUses   = newExpr;
+
+  else if (oldExpr == byrefVars)
+    byrefVars = newExpr;
 
   else
-    INT_FATAL(this, "Unexpected case in BlockStmt::replaceChild");
+    INT_FATAL(this, "BlockStmt::replaceChild. Failed to match the oldAst ");
 }
 
 
@@ -424,7 +431,24 @@ BlockStmt::moduleRemoveUse(ModuleSymbol* mod) {
   return retval;
 }
 
-void BlockStmt::accept(AstVisitor* visitor) {
+void
+BlockStmt::moduleClearUse() {
+  if (modUses != 0) {
+
+    for_alist(expr, modUses->argList) {
+      expr->remove();
+    }
+
+    // It's possible that this use definition is not alive
+    if (isAlive(modUses))
+      modUses->remove();
+
+    modUses = 0;
+  }
+}
+
+void 
+BlockStmt::accept(AstVisitor* visitor) {
   if (visitor->enterBlockStmt(this) == true) {
     for_alist(next_ast, body)
       next_ast->accept(visitor);

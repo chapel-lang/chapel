@@ -2373,11 +2373,12 @@ void ModuleSymbol::accept(AstVisitor* visitor) {
 }
 
 void ModuleSymbol::modUseAddChapelStandard() {
+  UnresolvedSymExpr* modRef = 0;
+
   SET_LINENO(this);
 
-  block->moduleAddUse(standardModule);
-
-  modUseAdd(standardModule);
+  modRef = new UnresolvedSymExpr("ChapelStandard");
+  block->insertAtHead(new CallExpr(PRIM_USE, modRef));
 }
 
 //

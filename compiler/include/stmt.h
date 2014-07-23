@@ -60,6 +60,7 @@ public:
 
   void            moduleAddUse(ModuleSymbol* mod);
   bool            moduleRemoveUse(ModuleSymbol* mod);
+  void            moduleClearUse();
 
   BlockTag        blockTag;
   AList           body;
