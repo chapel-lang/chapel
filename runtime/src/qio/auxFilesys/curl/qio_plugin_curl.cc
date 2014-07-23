@@ -56,7 +56,7 @@ size_t buf_writer_no_seek(char* ptr_data, size_t size, size_t nmemb, void* userd
   size_t realsize = size*nmemb;
   size_t real_realsize = realsize;
   struct curl_iovec_t* ret = ((struct curl_iovec_t *)userdata);
-  
+
 
   // so that we can "seek"
   if (realsize < ret->offset) {
@@ -165,7 +165,7 @@ size_t chpl_curl_write_string(void *contents, size_t size, size_t nmemb, void *u
 {
   size_t realsize = size * nmemb;
   struct str_t *str = (struct str_t *)userp;
-  
+
 
   str->mem = (char*)qio_realloc(str->mem, str->size + realsize + 1);
   if(str->mem == NULL) {
@@ -186,7 +186,7 @@ qioerr curl_readv(void* file, const struct iovec *vector, int count, ssize_t* nu
   ssize_t got_total;
   qioerr err_out = 0;
   struct curl_iovec_t write_vec;
-  
+
 
   STARTING_SLOW_SYSCALL;
 
@@ -228,7 +228,7 @@ qioerr curl_preadv(void* file, const struct iovec *vector, int count, off_t offs
   ssize_t got_total;
   qioerr err_out = 0;
   struct curl_iovec_t write_vec;
-  
+
 
   STARTING_SLOW_SYSCALL;
 
@@ -256,7 +256,7 @@ qioerr curl_preadv(void* file, const struct iovec *vector, int count, off_t offs
   DONE_SLOW_SYSCALL;
 
   got_total = write_vec.total_read;
-  
+
   if ((err == CURLE_RANGE_ERROR ||  err == CURLE_OK) && got_total == 0 && sys_iov_total_bytes(vector, count) != 0)
     err_out = qio_int_to_err(EEOF);
 
@@ -280,7 +280,7 @@ qioerr curl_writev(void* fl, const struct iovec* iov, int iovcnt, ssize_t* num_w
   qioerr err_out = 0;
   int i;
 
-  
+
   STARTING_SLOW_SYSCALL;
     /*tell it to "upload" to the URL*/
     curl_easy_setopt(TCH(fl)->curl, CURLOPT_UPLOAD, 1L);
@@ -315,12 +315,12 @@ qioerr curl_writev(void* fl, const struct iovec* iov, int iovcnt, ssize_t* num_w
   return err_out;
 }
 
-static 
+static
 int curl_seekable(void* file)
 {
   struct str_t buf;
   int ret = 0;
-  
+
 
   buf.mem = (char*)qio_calloc(1, 1); // doesn't really matter, we just want a place on the heap
   buf.size = 0;
@@ -352,7 +352,7 @@ qioerr curl_open(void** fd, const char* path, int* flags, mode_t mode, qio_hint_
   double filelength;
   curl_handle* fl = (curl_handle*)qio_calloc(sizeof(curl_handle), 1);
 
-  
+
   STARTING_SLOW_SYSCALL;
 
   // assert that we connected
@@ -404,7 +404,7 @@ error:
 qioerr curl_close(void* fl, void* fs)
 {
   qioerr err_out = 0;
-  
+
 
   STARTING_SLOW_SYSCALL;
   curl_easy_cleanup(TCH(fl)->curl);
@@ -421,7 +421,7 @@ qioerr curl_close(void* fl, void* fs)
 qioerr curl_seek(void* fl, off_t offset, int whence, off_t* offset_out, void* fs)
 {
   curl_handle* curl_local = TCH(fl);
-  
+
 
   switch (whence) {
     case SEEK_CUR:
@@ -430,7 +430,7 @@ qioerr curl_seek(void* fl, off_t offset, int whence, off_t* offset_out, void* fs
     case SEEK_END:
       if (curl_local->length != -1)  // we have the length
         curl_local->seek_offset = curl_local->length + offset;
-      else 
+      else
         QIO_RETURN_CONSTANT_ERROR(ESPIPE, "Unable to SEEK_END for path with unkown length");
       break;
     case SEEK_SET:
@@ -444,7 +444,7 @@ qioerr curl_seek(void* fl, off_t offset, int whence, off_t* offset_out, void* fs
 
 qioerr curl_getpath(void* file, const char** string_out, void* fs)
 {
-  
+
   qioerr err = 0;
   *string_out = TCH(file)->pathnm;
   return err;
@@ -452,7 +452,7 @@ qioerr curl_getpath(void* file, const char** string_out, void* fs)
 
 qioerr curl_getlength(void* fl, int64_t* len_out, void* fs)
 {
-  
+
   qioerr err = 0;
   *len_out = TCH(fl)->length;
   // don't have the length
@@ -525,10 +525,12 @@ qioerr chpl_curl_stream_file(qio_file_t* fl_curl, qio_file_t* fl_local)
     // curl defaults CURLOPT_WRITEFUNCTION = fwrite
     curl_easy_setopt(TCH(fl_curl->file_info)->curl, CURLOPT_FILE, fl_local->fp);
     err = qio_int_to_err(curl_easy_perform(TCH(fl_curl->file_info)->curl));
+    fflush(fl_local->fp);
   } else if (fl_local->fd != -1) {
     curl_easy_setopt(TCH(fl_curl->file_info)->curl, CURLOPT_WRITEFUNCTION, chpl_curl_write);
     curl_easy_setopt(TCH(fl_curl->file_info)->curl, CURLOPT_FILE, (void*)((intptr_t)&fl_local->fd));
     err = qio_int_to_err(curl_easy_perform(TCH(fl_curl->file_info)->curl));
+    err = qio_int_to_err(sys_fsync(fl_local->fd));
   } else {
     return err;
   }
@@ -537,18 +539,18 @@ qioerr chpl_curl_stream_file(qio_file_t* fl_curl, qio_file_t* fl_local)
 }
 
 qio_file_functions_t glob_struct = {
-    &curl_writev,    //writev     
-    &curl_readv,     //readv      
-    NULL,            //pwritev    
-    &curl_preadv,    //preadv     
-    &curl_close,     //close      
-    &curl_open,      //open       
-    &curl_seek,      //seek       
-    &curl_getlength, //filelength 
-    &curl_getpath,   //getpath    
-    NULL,            //fsync      
-    NULL,            //getcwd     
-    /*3,*/           //fs_type  
+    &curl_writev,    //writev
+    &curl_readv,     //readv
+    NULL,            //pwritev
+    &curl_preadv,    //preadv
+    &curl_close,     //close
+    &curl_open,      //open
+    &curl_seek,      //seek
+    &curl_getlength, //filelength
+    &curl_getpath,   //getpath
+    NULL,            //fsync
+    NULL,            //getcwd
+    /*3,*/           //fs_type
 };
 
 const qio_file_functions_ptr_t ptr_glob_struct = &glob_struct;
