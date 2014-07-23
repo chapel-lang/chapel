@@ -546,6 +546,7 @@ err_t sys_fstatfs(fd_t fd, sys_statfs_t* buf)
 
 #if defined(__APPLE__)
     buf->f_bsize   = (int64_t)tmp.f_iosize;
+
 #if defined(_DARWIN_FEATURE_64_BIT_INODE)
     buf->f_type    = safe_inode_cast_uint32(tmp.f_type);
     buf->f_blocks  = safe_inode_cast64(tmp.f_blocks);
@@ -554,7 +555,7 @@ err_t sys_fstatfs(fd_t fd, sys_statfs_t* buf)
     buf->f_files   = safe_inode_cast64(tmp.f_files);
     buf->f_ffree   = safe_inode_cast64(tmp.f_ffree);
     buf->f_namelen = safe_inode_cast64(MNAMELEN);
-#else 
+#else
     buf->f_type    = safe_inode_cast32(tmp.f_type);
     buf->f_blocks  = safe_inode_cast32(tmp.f_blocks);
     buf->f_bfree   = safe_inode_cast32(tmp.f_bfree);
@@ -563,28 +564,31 @@ err_t sys_fstatfs(fd_t fd, sys_statfs_t* buf)
     buf->f_ffree   = safe_inode_cast32(tmp.f_ffree);
     buf->f_namelen = safe_inode_cast32(MNAMELEN);
 #endif
+
 #else // linux or cygwin
     // We don't have to deal with possible conversion from signed to unsiged numbers
     // here, since in linux the field will be set to 0 if it is undefined for the FS.
     buf->f_bsize   = (int64_t)tmp.f_bsize;
-    buf->f_namelen = (uint64_t)tmp.f_namelen;
     buf->f_type    = (uint64_t)tmp.f_type;
     buf->f_blocks  = (uint64_t)tmp.f_blocks;
     buf->f_bfree   = (uint64_t)tmp.f_bfree;
     buf->f_bavail  = (uint64_t)tmp.f_bavail;
     buf->f_files   = (uint64_t)tmp.f_files;
     buf->f_ffree   = (uint64_t)tmp.f_ffree;
+    buf->f_namelen = (uint64_t)tmp.f_namelen;
 #endif
+
+#else
     // unable to get fstatfs, so set all the fields of the struct to be 0 to say
     // that we were unable to get any information
     buf->f_bsize   = 0;
-    buf->f_namelen = 0;
     buf->f_type    = 0;
     buf->f_blocks  = 0;
     buf->f_bfree   = 0;
     buf->f_bavail  = 0;
     buf->f_files   = 0;
     buf->f_ffree   = 0;
+    buf->f_namelen = 0;
     got = 0;
 #endif
     if (got != -1) {
