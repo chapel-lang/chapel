@@ -21,14 +21,35 @@ extern "C" {
 #if defined(__APPLE__)
 #include <sys/param.h>
 #include <sys/mount.h>
+#define SYS_HAS_STATFS 1
 #elif defined(__linux__)
 #include <sys/vfs.h>
+#define SYS_HAS_STATFS 1
+#else
+#define SYS_HAS_STATFS 0
 #endif
 
 #ifndef LUSTRE_SUPER_MAGIC
 // Magic value to be found in the statfs man page
 #define LUSTRE_SUPER_MAGIC     0x0BD00BD0
 #endif
+
+// TAKZ - In the case where we are unable to include statfs or fstatfs, we need to
+// have a struct defined. As well, the Mac and linux statfs structs differ on what
+// different field names represent, and this way we have a uniform struct across all
+// OSs. Besides this fact, on apple, depending upon whether or not
+// _DARWIN_FEATURE_64_BIT_INODE is defined, we get different types for the same
+// members of the statfs struct (!!).
+typedef struct sys_statfs_s {
+  uint64_t    f_type;     /* type of filesystem */
+  int64_t     f_bsize;    /* optimal transfer block size */
+  uint64_t    f_blocks;   /* total data blocks in file system */
+  uint64_t    f_bfree;    /* free blocks in fs */
+  uint64_t    f_bavail;   /* free blocks avail to non-superuser */
+  uint64_t    f_files;    /* total file nodes in file system */
+  uint64_t    f_ffree;    /* free file nodes in fs */
+  uint64_t    f_namelen;  /* maximum length of filenames */
+} sys_statfs_t;
 
 typedef int fd_t;
 
@@ -116,7 +137,7 @@ err_t sys_stat(const char* path, struct stat* buf);
 err_t sys_fstat(fd_t fd, struct stat* buf);
 err_t sys_lstat(const char* path, struct stat* buf);
 // TODO: What if we don't have statfs (and therefore struct statfs)
-err_t sys_fstatfs(fd_t fd, struct statfs* buf);
+err_t sys_fstatfs(fd_t fd, sys_statfs_t* buf);
 
 err_t sys_mkstemp(char* template_, fd_t* fd_out);
 
