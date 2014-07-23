@@ -7,7 +7,9 @@ module ChapelArray {
   use ChapelTuple;
   use ChapelLocale;
 
-  var numPrivateObjects: atomic int(32);
+  // Explicitly use a processor atomic, as most calls to this function are
+  // likely be on locale 0
+  var numPrivateObjects: atomic_int64;
 
   config param debugBulkTransfer = false;
   config param useBulkTransfer = true;
@@ -31,10 +33,10 @@ module ChapelArray {
       if hereID != here.id {
         newValue = parentValue.dsiPrivatize(privatizeData);
         __primitive("chpl_newPrivatizedClass", newValue, n);
-        newValue.pid = n:int(64);
+        newValue.pid = n;
       } else {
         __primitive("chpl_newPrivatizedClass", newValue, n);
-        newValue.pid = n:int(64);
+        newValue.pid = n;
       }
       cobegin {
         if chpl_localeTree.left then
@@ -46,7 +48,7 @@ module ChapelArray {
       }
     }
 
-    return n:int(64);
+    return n;
   }
 
   proc _reprivatize(value) {

@@ -3,7 +3,7 @@
 #include "chpl-mem.h"
 #include "chpl-tasks.h"
 
-static int32_t chpl_capPrivateObjects = 0;
+static int64_t chpl_capPrivateObjects = 0;
 static chpl_sync_aux_t privatizationSync;
 
 void** chpl_privateObjects;
@@ -12,7 +12,7 @@ void chpl_privatization_init(void) {
     chpl_sync_initAux(&privatizationSync);
 }
 
-void chpl_newPrivatizedClass(void* v, int32_t pid) {
+void chpl_newPrivatizedClass(void* v, int64_t pid) {
   // We need to lock around this operation so two calls in rapid succession
   // that pass the chpl_capPrivateObjects limit don't both try to create a new
   // array. If they do, one of the calls will be leaked and an invalid pointer
@@ -41,7 +41,7 @@ void chpl_newPrivatizedClass(void* v, int32_t pid) {
 }
 
 
-extern void* chpl_getPrivatizedClass(int32_t i) {
+extern void* chpl_getPrivatizedClass(int64_t i) {
   return chpl_privateObjects[i];
 }
 
