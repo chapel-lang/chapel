@@ -45,27 +45,11 @@ __all__ = ('main')
 
 def main():
     """Run the program!"""
-    args, unparsed_args = _parse_args()
-    _setup_logging(args.verbose)
-
-    logging.info('Num locales is: {0}'.format(args.numLocales))
-    logging.info('Walltime is set to: {0}'.format(args.walltime))
-
-    # The first item in argv is this script, so remove it. The rest should be
-    # the command to run.
-    test_command = _get_test_command(args, unparsed_args)
-    logging.debug('Test command is: {0}'.format(' '.join(test_command)))
-    if not test_command:
-        logging.error('No test command provided.')
-        raise ValueError('No test command found.')
-
-    # FIXME: Use the imminent AbstractJob.init_from_environment factory.
-    #        (thomasvandoren, 2014-07-23)
-    job = AbstractJob(test_command, args)
+    job = AbstractPbsJob.init_from_environment()
     print(job.launch_qsub(), end='')
 
 
-class AbstractJob(object):
+class AbstractPbsJob(object):
     """Abstract job runner implementation."""
 
     # FIXME: Implemented for Moab initially. (thomasvandoren, 2014-07-23)
@@ -89,7 +73,6 @@ class AbstractJob(object):
         self.hostlist = reservation_args.hostlist
 
         logging.debug('Created instance of: {0}'.format(self))
-        self.ensure_qsub()
 
     def __repr__(self):
         """Return string representation of this instance."""
@@ -249,16 +232,20 @@ class AbstractJob(object):
         return output
 
     @classmethod
-    def ensure_qsub(cls):
-        """Check that qsub is available on the current path. Raises RuntimeError if it
-        cannot be found.
-        """
-        def _qsub_not_found(ex):
-            error_msg = ('qsub error: "{0}". Make sure it is installed and '
-                         'available in the PATH.').format(ex)
-            logging.error(error_msg)
-            raise RuntimeError(error_msg)
+    def _detect_qsub_flavor(cls):
+        """Returns appropriate class based on the detected version of pbs in
+        the environment.
 
+        If qsub is not callable, raise RuntimeError.
+
+        If MOABHOMEDIR is set in the environment, assume moab and return
+        MoabJob type.
+
+        Otherwise, assume PBSPro (qsub is callable), and return PbsProJob type.
+
+        :rtype: type
+        :returns: MoabJob or PbsProJob depending on environment
+        """
         try:
             logging.debug('Starting qsub process to check availability.')
             qsub_proc = subprocess.Popen(
@@ -269,19 +256,37 @@ class AbstractJob(object):
             logging.debug('Communicating with qsub process.')
             stdout, stderr = qsub_proc.communicate()
         except OSError as ex:
-            _qsub_not_found(ex)
-
+            raise RuntimeError(ex)
         if qsub_proc.returncode != 0:
-            _qsub_not_found('Non-zero exit code when running qsub --version')
-
-        # FIXME: This moab specific... (thomasvandoren, 2014-07-23)
-        # TODO: probably should have a factory method
-        #       AbstractJob.init_from_environment that picks the correct class,
-        #       moab vs. pbspro, inits and returns it.
-        elif 'PBSPro' in stdout:
-            _qsub_not_found('PBSPro found. Moab/Torque is only supported at this time.')
+            raise RuntimeError('Non-zero exit code when running qsub --version.')
+        elif os.environ.has_key('MOABHOMEDIR'):
+            return MoabJob
         else:
-            logging.debug('Found qsub version: {0}'.format(stdout))
+            return PbsProJob
+
+    @classmethod
+    def init_from_environment(cls):
+        """Factory to initialize new job runner instance based on version of
+        pbs available and command line arguments.
+
+        :rtype: AbstractPbsJob
+        :returns: subclass of AbstractPbsJob based on environment
+        """
+        args, unparsed_args = cls._parse_args()
+        cls._setup_logging(args.verbose)
+
+        logging.info('Num locales is: {0}'.format(args.numLocales))
+        logging.info('Walltime is set to: {0}'.format(args.walltime))
+
+        test_command = cls._get_test_command(args, unparsed_args)
+        logging.debug('Test command is: {0}'.format(' '.join(test_command)))
+        if not test_command:
+            logging.error('No test command provided.')
+            raise ValueError('No test command found.')
+
+        qsub_flavor = cls._detect_qsub_flavor()
+        logging.info('Detected pbs flavor: {0}'.format(qsub_flavor))
+        return qsub_flavor(test_command, args)
 
     @classmethod
     def qstat(cls, job_id):
@@ -327,134 +332,141 @@ class AbstractJob(object):
             logging.error('XML output: {0}'.format(stdout))
             raise
 
+    @classmethod
+    def _cli_walltime(cls, walltime_str):
+        """Returns walltime_str if it can be parsed by one of the known walltime
+        formats. Raises ValueError if walltime_str does not match a known format.
 
-def _parse_args():
+        :type walltime_str: str
+        :arg walltime_str: walltime string from command line
 
-    """Parse and return command line arguments. Returns tuple of Namespace with
-    parsed args and unparsed args.
-    """
-    class OurFormatter(argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter):
-        pass
-
-    parser = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=OurFormatter)
-    parser.add_argument('-v', '--verbose', action='store_true',
-                        help='Verbose output.')
-    parser.add_argument('-nl', '--numLocales', type=int, default=-1,
-                        help='Number locales.')
-    parser.add_argument('--n', help='Placeholder')
-    parser.add_argument('--walltime', type=_cli_walltime,
-                        help='Timeout as walltime for qsub.')
-    parser.add_argument('--hostlist',
-                        help=('Optional hostlist specification for reserving '
-                              'specific nodes. Can also be set with env var CHPL_PBS_HOSTLIST'))
-
-    args, unparsed_args = parser.parse_known_args()
-
-    # Allow hostlist to be set in environment variable CHPL_PBS_HOSTLIST.
-    if args.hostlist is None:
-        args.hostlist = os.environ.get('CHPL_PBS_HOSTLIST')
-
-    # It is bad form to use a two character argument with only a single
-    # dash. Unfortunately, we support it. And unfortunately, python argparse
-    # thinks --n is the same thing. So, we pull out --n above so we can put it
-    # back in the unparsed args here.
-    if args.n:
-        logging.debug('Found a --n arg. Putting it back in the unparsed args.')
-        unparsed_args.append('--n={0}'.format(args.n))
-
-    return args, unparsed_args
-
-
-def _get_test_command(args, unparsed_args):
-    """Returns test command by folding walltime and numLocales args into unparsed
-    command line args.
-
-    :type args: argparse.Namespace
-    :arg args: Namespace from parsing original args
-
-    :type unparsed_args: list
-    :arg unparsed_args: list of unparsed command line args that make up test command
-
-    :rtype: list
-    :returns: command to be tested in qsub
-
-    """
-    logging.debug('Rebuilding test command from parsed args: {0} and '
-                  'unparsed args: {1}'.format(args, unparsed_args))
-    if args.numLocales >= 0:
-        unparsed_args.append('-nl')
-        unparsed_args.append(str(args.numLocales))
-    logging.debug('Rebuild test command: {0}'.format(unparsed_args))
-    return unparsed_args
-
-
-def _cli_walltime(walltime_str):
-    """Returns walltime_str if it can be parsed by one of the known walltime
-    formats. Raises ValueError if walltime_str does not match a known format.
-
-    :type walltime_str: str
-    :arg walltime_str: walltime string from command line
-
-    :rtype: str
-    :returns: valid walltime string from command line
-    """
-    try:
-        seconds = int(walltime_str)
-        logging.debug('Parsed walltime as integer seconds: {0}'.format(seconds))
-        return walltime_str
-    except ValueError:
-        pass
-
-    try:
-        seconds = float(walltime_str)
-        logging.debug('Parsed walltime as float seconds: {0}'.format(seconds))
-        return walltime_str
-    except ValueError:
-        pass
-
-    # http://www.csc.fi/english/pages/louhi_guide/batch_jobs/commands/qsub
-    known_formats = [
-        '%M:%S',
-        '%H:%M:%S',
-        '%M:%S.%f',
-        '%H:%M:%S.%f',
-    ]
-    for fmt in known_formats:
+        :rtype: str
+        :returns: valid walltime string from command line
+        """
         try:
-            walltime = datetime.datetime.strptime(walltime_str, fmt)
-            logging.debug('Parsed walltime as datetime with format {0}: {1}'.format(
-                fmt, walltime))
+            seconds = int(walltime_str)
+            logging.debug('Parsed walltime as integer seconds: {0}'.format(seconds))
             return walltime_str
         except ValueError:
             pass
 
-    raise ValueError('Did not recognize walltime: {0}'.format(walltime_str))
+        try:
+            seconds = float(walltime_str)
+            logging.debug('Parsed walltime as float seconds: {0}'.format(seconds))
+            return walltime_str
+        except ValueError:
+            pass
+
+        # http://www.csc.fi/english/pages/louhi_guide/batch_jobs/commands/qsub
+        known_formats = [
+            '%M:%S',
+            '%H:%M:%S',
+            '%M:%S.%f',
+            '%H:%M:%S.%f',
+        ]
+        for fmt in known_formats:
+            try:
+                walltime = datetime.datetime.strptime(walltime_str, fmt)
+                logging.debug('Parsed walltime as datetime with format {0}: {1}'.format(
+                    fmt, walltime))
+                return walltime_str
+            except ValueError:
+                pass
+
+        raise ValueError('Did not recognize walltime: {0}'.format(walltime_str))
+
+    @classmethod
+    def _get_test_command(cls, args, unparsed_args):
+        """Returns test command by folding walltime and numLocales args into unparsed
+        command line args.
+
+        :type args: argparse.Namespace
+        :arg args: Namespace from parsing original args
+
+        :type unparsed_args: list
+        :arg unparsed_args: list of unparsed command line args that make up test command
+
+        :rtype: list
+        :returns: command to be tested in qsub
+
+        """
+        logging.debug('Rebuilding test command from parsed args: {0} and '
+                      'unparsed args: {1}'.format(args, unparsed_args))
+        if args.numLocales >= 0:
+            unparsed_args.append('-nl')
+            unparsed_args.append(str(args.numLocales))
+        logging.debug('Rebuild test command: {0}'.format(unparsed_args))
+        return unparsed_args
+
+    @classmethod
+    def _parse_args(cls):
+        """Parse and return command line arguments. Returns tuple of Namespace with
+        parsed args and unparsed args.
+        """
+        class OurFormatter(argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter):
+            pass
+
+        parser = argparse.ArgumentParser(
+            description=__doc__,
+            formatter_class=OurFormatter)
+        parser.add_argument('-v', '--verbose', action='store_true',
+                            help='Verbose output.')
+        parser.add_argument('-nl', '--numLocales', type=int, default=-1,
+                            help='Number locales.')
+        parser.add_argument('--n', help='Placeholder')
+        parser.add_argument('--walltime', type=cls._cli_walltime,
+                            help='Timeout as walltime for qsub.')
+        parser.add_argument('--hostlist',
+                            help=('Optional hostlist specification for reserving '
+                                  'specific nodes. Can also be set with env var CHPL_PBS_HOSTLIST'))
+
+        args, unparsed_args = parser.parse_known_args()
+
+        # Allow hostlist to be set in environment variable CHPL_PBS_HOSTLIST.
+        if args.hostlist is None:
+            args.hostlist = os.environ.get('CHPL_PBS_HOSTLIST')
+
+        # It is bad form to use a two character argument with only a single
+        # dash. Unfortunately, we support it. And unfortunately, python argparse
+        # thinks --n is the same thing. So, we pull out --n above so we can put it
+        # back in the unparsed args here.
+        if args.n:
+            logging.debug('Found a --n arg. Putting it back in the unparsed args.')
+            unparsed_args.append('--n={0}'.format(args.n))
+
+        return args, unparsed_args
+
+    @classmethod
+    def _setup_logging(cls, verbose=False):
+        """Setup logging to console.
+
+        :type verbose: bool
+        :arg verbose: if True, set log level to DEBUG
+        """
+        # logging module configures default handlers when logging.debug/info/etc
+        # are called. In order for our basicConfig call to work, we need to get rid
+        # of those. This is generally a bad practice unless we are absolutely sure
+        # we are the top level script and we won't break other logging. That's
+        # probably true here.
+        #
+        # See note here: https://docs.python.org/2/library/logging.html#logging.log
+        logging.root.handlers = []
+
+        if verbose:
+            log_level = logging.DEBUG
+        else:
+            log_level = logging.WARN
+        logging.basicConfig(
+            level=log_level, format='[%(module)s] %(asctime)s [%(levelname)s] %(msg)s')
+        logging.debug('Verbose logging enabled.')
 
 
-def _setup_logging(verbose=False):
-    """Setup logging to console.
+class MoabJob(AbstractPbsJob):
+    """Moab implementation of pbs job runner."""
 
-    :type verbose: bool
-    :arg verbose: if True, set log level to DEBUG
-    """
-    # logging module configures default handlers when logging.debug/info/etc
-    # are called. In order for our basicConfig call to work, we need to get rid
-    # of those. This is generally a bad practice unless we are absolutely sure
-    # we are the top level script and we won't break other logging. That's
-    # probably true here.
-    #
-    # See note here: https://docs.python.org/2/library/logging.html#logging.log
-    logging.root.handlers = []
 
-    if verbose:
-        log_level = logging.DEBUG
-    else:
-        log_level = logging.WARN
-    logging.basicConfig(
-        level=log_level, format='[%(module)s] %(asctime)s [%(levelname)s] %(msg)s')
-    logging.debug('Verbose logging enabled.')
+class PbsProJob(AbstractPbsJob):
+    """PBSPro implementation of pbs job runner."""
 
 
 @contextlib.contextmanager
