@@ -1477,6 +1477,86 @@ module ChapelArray {
         for d in _value.dsiGetLocalSubdomains() do yield d;
     }
 
+    proc isVectorSafe() param {
+      return isRectangularArr(this) &&
+             this.rank == 1 &&
+             !this._value.stridable;
+    }
+
+    proc assertSingleArrayDomain(fnName: string) {
+      if this.domain._value._arrs.length != 1 then
+        halt("cannot call " + fnName +
+             " on an array defined over a domain with multiple arrays");
+    }
+
+    proc empty() /* where isVectorSafe() */ {
+      /* assertSingleArrayDomain("empty"); */
+      return this.numElements == 0;
+    }
+
+    proc front(): this._value.eltType /* where isVectorSafe() */ {
+      /* assertSingleArrayDomain("front"); */
+      return this[this.domain.low];
+    }
+
+    proc back(): this._value.eltType /* where isVectorSafe() */ {
+      /* assertSingleArrayDomain("back"); */
+      return this[this.domain.high];
+    }
+
+    proc pop_back() where isVectorSafe() {
+      assertSingleArrayDomain("pop_back");
+      const lo = this.domain.low,
+            hi = this.domain.high-1;
+      const newDom = {lo..hi};
+      on this._value do this._value.dsiReallocate(newDom);
+      this.domain.setIndices(newDom.getIndices());
+      on this._value do this._value.dsiPostReallocate();
+    }
+
+    proc push_back(val: this._value.eltType) where isVectorSafe() {
+      assertSingleArrayDomain("push_back");
+      const lo = this.domain.low,
+            hi = this.domain.high+1;
+      const newDom = {lo..hi};
+      on this._value do this._value.dsiReallocate(newDom);
+      this.domain.setIndices(newDom.getIndices());
+      on this._value do this._value.dsiPostReallocate();
+      this[hi] = val;
+    }
+
+    proc push_front(val: this._value.eltType) where isVectorSafe() {
+      assertSingleArrayDomain("push_front");
+      const lo = this.domain.low-1,
+            hi = this.domain.high;
+      const newDom = {lo..hi};
+      on this._value do this._value.dsiReallocate(newDom);
+      this.domain.setIndices(newDom.getIndices());
+      on this._value do this._value.dsiPostReallocate();
+      this[lo] = val;
+    }
+
+    proc pop_front() where isVectorSafe() {
+      assertSingleArrayDomain("pop_front");
+      const lo = this.domain.low+1,
+            hi = this.domain.high;
+      const newDom = {lo..hi};
+      on this._value do this._value.dsiReallocate(newDom);
+      this.domain.setIndices(newDom.getIndices());
+      on this._value do this._value.dsiPostReallocate();
+    }
+
+    proc insert(position: this._value.idxType, val: this._value.eltType) where isVectorSafe() {
+      assertSingleArrayDomain("insert");
+      const lo = this.domain.low,
+            hi = this.domain.high+1;
+      const newDom = {lo..hi};
+      on this._value do this._value.dsiReallocate(newDom);
+      this.domain.setIndices(newDom.getIndices());
+      on this._value do this._value.dsiPostReallocate();
+      for i in position..hi-1 by -1 do this[i+1] = this[i];
+      this[position] = val;
+    }
   }  // record _array
   
   //
@@ -1637,7 +1717,7 @@ module ChapelArray {
   proc =(ref d: domain, r: range(?)) {
     d = {r};
   }
-  
+
   //
   // Return true if t is a tuple of ranges that is legal to assign to
   // rectangular domain d
