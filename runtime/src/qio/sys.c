@@ -540,7 +540,6 @@ err_t sys_fstatfs(fd_t fd, sys_statfs_t* buf)
     err_t err_out;
     int got;
 
-    got = 0;
 #if SYS_HAS_STATFS
     struct statfs tmp;
     got = fstatfs(fd, &tmp);
@@ -576,6 +575,7 @@ err_t sys_fstatfs(fd_t fd, sys_statfs_t* buf)
     buf->f_files   = (uint64_t)tmp.f_files;
     buf->f_ffree   = (uint64_t)tmp.f_ffree;
 #endif
+    got = 0;
 #endif
     if (got != -1) {
         err_out = 0;
