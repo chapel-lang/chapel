@@ -5130,17 +5130,15 @@ GenRet CallExpr::codegen() {
     case PRIM_FINISH_RMEM_FENCE:
       ret = codegenBasicPrimitiveExpr(this);
       break;
-    case PRIM_NEW_PRIV_CLASS: 
+    case PRIM_NEW_PRIV_CLASS:
     {
       GenRet arg = get(1);
+      GenRet pid = codegenValue(get(2));
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         arg = codegenRaddr(arg);
-      codegenCall("chpl_newPrivatizedClass", arg);
+      codegenCall("chpl_newPrivatizedClass", arg, pid);
       break;
-    }                          
-    case PRIM_NUM_PRIV_CLASSES:
-      ret = codegenCallExpr("chpl_numPrivatizedClasses");
-      break;
+    }
     case PRIM_WARNING:
       // warning issued, continue codegen
       break;
