@@ -59,9 +59,10 @@ def main():
         raise ValueError('No test command found.')
 
     job_name = _get_job_name(test_command)
+    full_test_command = _get_full_test_command(test_command)
 
     _ensure_qsub()
-    print(_launch_qsub(test_command, job_name, args.numLocales, args.walltime, args.hostlist),
+    print(_launch_qsub(full_test_command, job_name, args.numLocales, args.walltime, args.hostlist),
           end='')
 
 
@@ -239,16 +240,32 @@ def _get_job_name(test_command):
     cmd_basename = os.path.basename(test_command[0])
     logging.debug('Test command basname: {0}'.format(cmd_basename))
 
-    # TODO: Are there job name restrictions for pbs? If so, implement them
-    #       here. (thomasvandoren, 2014-04-09)
+    # FIXME: PBSPro has a 15 character limit for job names.
+    #        (thomasvandoren, 2014-07-23)
 
     job_name = '{0}-{1}'.format(prefix, cmd_basename)
     logging.info('PBS job name is: {0}'.format(job_name))
     return job_name
 
 
-def _launch_qsub(test_command, job_name, num_locales, walltime, hostlist):
+def _get_full_test_command(test_command):
+    """Returns given test_command prefixed with command to change to
+    testing_dir. This is required to support both PBSPro and moab flavors of
+    PBS. Whereas moab provides a -d argument when calling qsub, both support the
+    $PBS_O_WORKDIR argument.
 
+    :type test_command: list
+    :arg test_command: command to run in qsub
+
+    :rtype: list
+    :returns: command to run in qsub with changedir call
+    """
+    full_test_command = ['cd', '$PBS_O_WORKDIR', '&&']
+    full_test_command.extend(test_command)
+    return full_test_command
+
+
+def _launch_qsub(test_command, job_name, num_locales, walltime, hostlist):
     """Run qsub batch job in subprocess and wait for job to complete. When
     finished, returns output as string.
 
@@ -279,7 +296,7 @@ def _launch_qsub(test_command, job_name, num_locales, walltime, hostlist):
                          job_name, num_locales, walltime, output_file))
 
         qsub_command = ['qsub', '-V', '-N', job_name, '-j', 'oe',
-                        '-o', output_file, '-d', testing_dir]
+                        '-o', output_file]
         if num_locales >= 0:
             qsub_command.append('-l')
             qsub_command.append('nodes={0}'.format(num_locales))
