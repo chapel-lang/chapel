@@ -29,11 +29,12 @@ studies/shootout/fannkuch-redux/bharshbarg/fannkuch-redux-iter]
 
 failures retrieving and storing perf data, started 7/19/14
 ----------------------------------------------------------
-These seem to be occurring for all testing:
+We are getting these messages, seemingly for all testing:
   ERROR svn-updating perf data before running tests.
   ERROR svn-updating perf data after running tests.
   ERROR svn-updating release over release perf data after running tests: 1
   ERROR svn-committing perf data.
+First reported 7/20/14; Thomas is looking
 There is a Bugzilla Bug: http://bugzilla.us.cray.com/show_bug.cgi?id=814934
 An attempt to fix this on the svn side the night of 7/22/14 failed.
 It is being escalated to github support.
@@ -222,6 +223,24 @@ Consistent timeout since associative domains/arrays were made safer (~6/20/2014)
 gasnet-everything regressions (other than the above)
 (Reviewed for accuracy 07/14/14)
 ====================================================
+
+expect this to be temporary; seems to be due to pull #39; passed to Lydia
+-------------------------------------------------------------------------
+[Error matching .bad file for users/ferguson/local-return]
+(7/23/14)
+
+expect this to be temporary; seems to be due to pull #38; passed to Tom
+-----------------------------------------------------------------------
+[Error matching compiler output for modules/hilde/test_module_Sort-baseline (compopts: 1)]
+(7/23/14)
+
+output ordering (?)
+-------------------
+[Error matching program output for studies/glob/test_glob (compopts: 1)]
+(started 7/22/14)
+Fails with both fifo and qthreads.
+Tim has been notified and is working on it.
+
 
 error: cannot create C string from remote string
 ------------------------------------------------
@@ -479,6 +498,9 @@ svn problem during the build
 ----------------------------
 First reported 7/20/14; Thomas is looking
 svn: Server sent unexpected return value (500 Internal Server Error) in response to PROPFIND request
+There is a Bugzilla Bug: http://bugzilla.us.cray.com/show_bug.cgi?id=814934
+An attempt to fix this on the svn side the night of 7/22/14 failed.
+It is being escalated to github support.
 
 
 ======================================
@@ -488,8 +510,7 @@ chpbld02 (PrgEnv/XE whitebox) failures
 
 svn problem during the build
 ----------------------------
-First reported 7/20/14; Thomas is looking
-svn: Server sent unexpected return value (500 Internal Server Error) in response to PROPFIND request
+see above, under "chpbld01"
 
 
 ==========================================================
@@ -616,6 +637,10 @@ undefined reference to chpl_bitops_debruijn64 (07/14/14)
 --------------------------------------------------------
 [Error matching compiler output for optimizations/cache-remote/ferguson/c_tests/chpl-cache-support-test (compopts: 1)]
 
+***GBT (07/23/14)
+-----------------
+[Error matching program output for optimizations/cache-remote/ferguson/c_tests/chpl-cache-support-test (compopts: 1)]
+
 glibc detected invalid next size (07/15/14)
 -------------------------------------------
 [Error matching program output for types/file/freadComplex]
@@ -669,6 +694,7 @@ intel-specific regressions (in addition to chpbld02 errors above)
 standard "missing empty directory" problems that should be fixed on next run (bradc)
 (please alert bradc if not resolved in runs after 7/16/14)
 (fixed in intel testing, 7/23/14)
+(fixed in prgenv-intel testing, 7/23/14)
 ------------------------------------------------------------------------------------
 [Error matching compiler output for compflags/bradc/readDirInsteadOfFile (compopts: 1)]
 [Error matching program output for io/bradc/testPath]
@@ -835,10 +861,6 @@ error matching
 qthreads.flat regressions
 (Reviewed for accuracy 07/15/14)
 ================================
-
-output ordering?  started 7/22/14;  Tim has been notified
----------------------------------------------------------
-[Error matching program output for studies/glob/test_glob (compopts: 1)]
 
 
 =======================================
