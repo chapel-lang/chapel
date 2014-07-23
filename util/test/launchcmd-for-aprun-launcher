@@ -122,7 +122,7 @@ class AbstractJob(object):
         prefix = os.environ.get('CHPL_PBS_NAME_PREFIX', 'Chpl')
         logging.debug('Job name prefix is: {0}'.format(prefix))
 
-        cmd_basename = os.path.basename(test_command[0])
+        cmd_basename = os.path.basename(self.test_command[0])
         logging.debug('Test command basname: {0}'.format(cmd_basename))
 
         # FIXME: PBSPro has a 15 character limit for job names.
