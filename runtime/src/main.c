@@ -21,8 +21,6 @@
 #include <time.h>
 #include <sys.h>
 
-extern int chpl_no_stdmodules;
-
 static const char myFilename[] = 
 #ifdef CHPL_DEVELOPER
   __FILE__;
@@ -84,18 +82,16 @@ static void chpl_main(void) {
 
     // Initialize the internal modules.
     chpl__init_PrintModuleInitOrder(0, myFilename);
-    if( ! chpl_no_stdmodules ) {
-      chpl__init_ChapelStandard(0, myFilename);
-      // Note that in general, module code can contain "on" clauses
-      // and should therefore not be called before the call to
-      // chpl_comm_startPollingTask().
+    chpl__init_ChapelStandard(0, myFilename);
+    // Note that in general, module code can contain "on" clauses
+    // and should therefore not be called before the call to
+    // chpl_comm_startPollingTask().
 
-      //
-      // Permit the tasking layer to do anything it would like to now that
-      // the standard modules are initialized.
-      //
-      CHPL_TASK_STD_MODULES_INITIALIZED();
-    }
+    //
+    // Permit the tasking layer to do anything it would like to now that
+    // the standard modules are initialized.
+    //
+    CHPL_TASK_STD_MODULES_INITIALIZED();
 
     //
     // Call the compiler-generated main() routine
