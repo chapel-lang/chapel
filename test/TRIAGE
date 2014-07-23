@@ -586,6 +586,12 @@ non-deterministic compilation timeouts with gasnet (UNASSIGNED)
 ---------------------------------------------------------------
 distributions/robust/arithmetic/kernels/hpl (cyclic, 6/12/13; block, 9/9/13)
 distributions/robust/arithmetic/performance/assignSlice (cyclic, 7/21/13)
+[Error: Timed out compilation for distributions/robust/arithmetic/collapsing/test_array_rank_change2] (cyclic, 7/23/14)
+[Error: Timed out compilation for distributions/robust/arithmetic/composite/test_composite1] (cyclic, 7/23/14)
+[Error: Timed out compilation for distributions/robust/arithmetic/modules/test_module_Norm] (cyclic, 7/23/14)
+[Error: Timed out compilation for distributions/robust/arithmetic/modules/test_module_Random] (cyclic, 7/23/14)
+[Error: Timed out compilation for distributions/robust/arithmetic/slicing/test_array_slicing2] (cyclic, 7/23/14)
+[Error: Timed out compilation for distributions/robust/arithmetic/trivial/test_dot_rank] (cyclic, 7/23/14)
 
 minus_equals nondeterminism (sungeun)
 ----------------------------------------

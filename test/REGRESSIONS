@@ -23,7 +23,9 @@ general regressions (seem to happen in most configurations)
 
 expect this to be temporary; Ben committed a fix the same day
 -------------------------------------------------------------
-[Error matching performance keys for studies/shootout/fannkuch-redux/bharshbarg/fannkuch-redux-iter] (7/22/14)
+[Error matching performance keys for
+studies/shootout/fannkuch-redux/bharshbarg/fannkuch-redux-iter]
+(7/22/14, fixed in 7/23/14 testing)
 
 failures retrieving and storing perf data, started 7/19/14
 ----------------------------------------------------------
@@ -32,6 +34,9 @@ These seem to be occurring for all testing:
   ERROR svn-updating perf data after running tests.
   ERROR svn-updating release over release perf data after running tests: 1
   ERROR svn-committing perf data.
+There is a Bugzilla Bug: http://bugzilla.us.cray.com/show_bug.cgi?id=814934
+An attempt to fix this on the svn side the night of 7/22/14 failed.
+It is being escalated to github support.
 
 
 ==============================================
@@ -663,6 +668,7 @@ intel-specific regressions (in addition to chpbld02 errors above)
 
 standard "missing empty directory" problems that should be fixed on next run (bradc)
 (please alert bradc if not resolved in runs after 7/16/14)
+(fixed in intel testing, 7/23/14)
 ------------------------------------------------------------------------------------
 [Error matching compiler output for compflags/bradc/readDirInsteadOfFile (compopts: 1)]
 [Error matching program output for io/bradc/testPath]
