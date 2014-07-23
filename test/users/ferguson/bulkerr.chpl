@@ -12,7 +12,7 @@
 ==16157==    by 0x45ECA6: main (main.c:161)
 */
 
-proc myread(inout args ...?k):bool {
+proc myread(inout args ...?k) {
   for param i in 1..k {
     writeln(args(i));
   }
@@ -21,7 +21,7 @@ proc myread(inout args ...?k):bool {
 /*
    Note - valgrind does not produce the error
    if we use the following function instead.
-proc myread(inout arg):bool {
+proc myread(inout arg) {
   writeln(arg);
 }
 */
