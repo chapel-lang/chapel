@@ -3929,26 +3929,22 @@ qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out)
   qioerr err = 0;
   int rc = 0;
   int64_t transfer_size = 0;
-  struct statfs s;
+  sys_statfs_t s;
 
   if (fl->fsfns && fl->fsfns->get_chunk) {
     err = fl->fsfns->get_chunk(fl->file_info, &transfer_size, fl->fs_info);
   } else {
 
     if (fl->fp){
-      rc = fstatfs(fileno(fl->fp), &s);
+      rc = sys_fstatfs(fileno(fl->fp), &s);
     } else if (fl->fd != -1) {
-      rc = fstatfs(fl->fd, &s);
+      rc = sys_fstatfs(fl->fd, &s);
     } else QIO_RETURN_CONSTANT_ERROR(ENOSYS, "Unable to get chunk size for file");
 
     if (rc)
       QIO_RETURN_CONSTANT_ERROR(ENOTSUP, "Unable to stat optimal transfer size for local file");
 
-#if defined(__APPLE__)
-    transfer_size = (int64_t)s.f_iosize;
-#else
-    transfer_size = (int64_t)s.f_bsize;
-#endif
+    transfer_size = s.f_bsize;
   }
 
   if (transfer_size == -1) { // undefined for this system
@@ -3971,19 +3967,22 @@ qioerr qio_locale_for_region(qio_file_t* fl, off_t start, off_t end, const char*
 
 qioerr qio_get_fs_type(qio_file_t* fl, int* out)
 {
-  struct statfs s;
+  sys_statfs_t s;
   int rc = -1;
 
   if (fl->fp)
-    rc = fstatfs(fileno(fl->fp), &s);
+    rc = sys_fstatfs(fileno(fl->fp), &s);
   else if (fl->fd != -1)
-    rc = fstatfs(fl->fd, &s);
+    rc = sys_fstatfs(fl->fd, &s);
 
   // can't stat, and we don't have a foreign FS
   if (rc == -1 && (fl->fsfns == NULL))
     QIO_RETURN_CONSTANT_ERROR(ENOTSUP, "Unable to find file system type");
 
-  if (s.f_type == LUSTRE_SUPER_MAGIC) { *out = 2; return 0; }
+  if (s.f_type == LUSTRE_SUPER_MAGIC) {
+    *out = 2;
+    return 0;
+  }
 
   if (fl->fsfns && fl->fsfns->fs_type) {
     *out = fl->fsfns->fs_type;

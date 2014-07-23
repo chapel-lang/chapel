@@ -471,7 +471,7 @@ err_t sys_lseek(fd_t fd, off_t offset, int whence, off_t* offset_out)
   got = lseek(fd, offset, whence);
   if( got != (off_t) -1 ) {
     *offset_out = got;
-    err_out = 0; 
+    err_out = 0;
   } else {
     *offset_out = got;
     err_out = errno;
@@ -522,6 +522,68 @@ err_t sys_lstat(const char* path, struct stat* buf)
   }
 
   return err_out;
+}
+
+// TAKZ - on Mac, the types in the statfs structure become signed or unsigned based
+// upon whether or not they have 64 bit inodes. This leads to some rather messy error
+// handling and checking, since we want to avoid overflow in the case that we have
+// either signed types (in the case of 32 bit inodes) or large (64 bit) unsigned
+// types (in the case of 64 bit inodes). We therefore use the linux convention for
+// statfs that fields that are undefined for a given file system are set to 0 (and we
+// handle this in safe_inode_cast32, safe_inode_cast_uint32, and safe_inode_cast64).
+#define safe_inode_cast32(t) (t == -1 ? 0 : (uint64_t)t)
+#define safe_inode_cast_uint32(t) (t == (uint32_t)-1 ? 0 : (uint64_t)t)
+#define safe_inode_cast64(t) (t == (uint64_t)-1 ? 0 : (uint64_t)t)
+
+err_t sys_fstatfs(fd_t fd, sys_statfs_t* buf)
+{
+    err_t err_out;
+    int got;
+
+    got = 0;
+#if SYS_HAS_STATFS
+    struct statfs tmp;
+    got = fstatfs(fd, &tmp);
+
+#if defined(__APPLE__)
+    buf->f_bsize   = (int64_t)tmp.f_iosize;
+#if defined(_DARWIN_FEATURE_64_BIT_INODE )
+    buf->f_type    = safe_inode_cast_uint32(tmp.f_type);
+    buf->f_blocks  = safe_inode_cast64(tmp.f_blocks);
+    buf->f_bfree   = safe_inode_cast64(tmp.f_bfree);
+    buf->f_bavail  = safe_inode_cast64(tmp.f_bavail);
+    buf->f_files   = safe_inode_cast64(tmp.f_files);
+    buf->f_ffree   = safe_inode_cast64(tmp.f_ffree);
+    buf->f_namelen = safe_inode_cast64(MNAMELEN);
+#else 
+    buf->f_type    = safe_inode_cast32(tmp.f_type);
+    buf->f_blocks  = safe_inode_cast32(tmp.f_blocks);
+    buf->f_bfree   = safe_inode_cast32(tmp.f_bfree);
+    buf->f_bavail  = safe_inode_cast32(tmp.f_bavail);
+    buf->f_files   = safe_inode_cast32(tmp.f_files);
+    buf->f_ffree   = safe_inode_cast32(tmp.f_ffree);
+    buf->f_namelen = safe_inode_cast32(MNAMELEN);
+#endif
+#else // linux 
+    // We don't have to deal with possible conversion from signed to unsiged numbers
+    // here, since in linux the field will be set to 0 if it is undefined for the FS.
+    buf->f_bsize   = (int64_t)tmp.f_bsize;
+    buf->f_namelen = (uint64_t)tmp.f_namelen;
+    buf->f_type    = (uint64_t)tmp.f_type;
+    buf->f_blocks  = (uint64_t)tmp.f_blocks;
+    buf->f_bfree   = (uint64_t)tmp.f_bfree;
+    buf->f_bavail  = (uint64_t)tmp.f_bavail;
+    buf->f_files   = (uint64_t)tmp.f_files;
+    buf->f_ffree   = (uint64_t)tmp.f_ffree;
+#endif
+#endif
+    if (got != -1) {
+        err_out = 0;
+    } else{
+        err_out = errno;
+    }
+
+    return err_out;
 }
 
 err_t sys_mkstemp(char* template_, fd_t* fd_out)
@@ -1142,23 +1204,23 @@ err_t sys_connect(fd_t sockfd, const sys_sockaddr_t* addr)
 
    -BLC */
 
-//  err_t sys_getaddrinfo(const char* node, const char* service, 
+//  err_t sys_getaddrinfo(const char* node, const char* service,
 //                       const sys_addrinfo_t* hints, sys_addrinfo_t ** res_out)
 //  {
 //    int got;
 //    err_t err_out;
-//  
+//
 //    STARTING_SLOW_SYSCALL;
-//  
+//
 //    got = getaddrinfo(node, service, hints, res_out);
 //    if( got == 0 ) {
 //      err_out = 0;
 //    } else {
 //      err_out = got + GAI_ERROR_OFFSET;
 //    }
-//  
+//
 //    DONE_SLOW_SYSCALL;
-//  
+//
 //    return err_out;
 //  }
 
@@ -1205,7 +1267,7 @@ err_t sys_getnameinfo(const sys_sockaddr_t* addr, char** host_out, char** serv_o
     host_buf = new_host_buf;
     serv_buf = new_serv_buf;
 
-    got = getnameinfo((const struct sockaddr*) & addr->addr, addr->len, 
+    got = getnameinfo((const struct sockaddr*) & addr->addr, addr->len,
                       host_buf, host_buf_sz,
                       serv_buf, serv_buf_sz,
                       flags);

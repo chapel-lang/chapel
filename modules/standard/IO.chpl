@@ -3742,24 +3742,19 @@ iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
 
 /************** Distributed File Systems ***************/
 
-enum ftype {
-  none   = 0,
-  hdfs   = 1,
-  lustre = 2,
-  curl   = 3,
-}
+extern const FTYPE_NONE   : c_int;
+extern const FTYPE_HDFS   : c_int;
+extern const FTYPE_LUSTRE : c_int;
+extern const FTYPE_CURL   : c_int;
 
-proc file.fstype():ftype {
+proc file.fstype():int {
   var t:c_int;
   var err:syserr = ENOERR;
   on this.home {
     err = qio_get_fs_type(this._file_internal, t);
   }
   if err then ioerror(err, "in file.fstype()");
-  if t == 3 then return ftype.curl;
-  if t == 2 then return ftype.lustre;
-  if t == 1 then return ftype.hdfs;
-  return ftype.none;
+  return t:int;
 }
 
 // Returns (chunk start, chunk end) for the first chunk in the file
@@ -3767,15 +3762,14 @@ proc file.fstype():ftype {
 // Returns (0,0) if no such value exists.
 proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(64)) {
   var err:syserr = ENOERR;
-  var entered: bool = false;
   var s = 0;
   var e = 0;
 
   on this.home {
     var real_end = min(end, this.length());
-    var t:ftype = this.fstype();
+    var t = this.fstype();
     var len:int(64);
-    if t != ftype.lustre then
+    if t != FTYPE_LUSTRE then
       err = qio_get_chunk(this._file_internal, len);
     else {
       /*var struc:c_void_ptr = alloc_lum();*/
@@ -3789,14 +3783,13 @@ proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(6
       for i in start..real_end by len {
         // Our stripes are too large, so we can't give back a range within the given
         // bounds
-        if i > end {
+        if i > end then
           break;
-        }
 
         if i >= start {
           var new_start = i;
           var new_end:int(64);
-          if (i / len + 1) * len >= real_end then  
+          if (i / len + 1) * len >= real_end then
             new_end = real_end;
           // rounding
           else new_end = (i / len + 1) * len;
@@ -3809,7 +3802,7 @@ proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(6
           }
         }
       }
-    } 
+    }
   }
   return (s, e);
 }
