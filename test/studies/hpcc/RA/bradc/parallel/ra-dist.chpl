@@ -61,7 +61,7 @@ proc verifyResults(T: [?TDom], UpdateSpace) {
 
   var lock: sync bool = true;
   forall (i,r) in zip(UpdateSpace, RAStream()) {
-    lock;
+    lock.readFE();
     atomic T(r & indexMask) ^= r;
     lock = true;
   }

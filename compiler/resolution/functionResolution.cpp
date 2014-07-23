@@ -2920,6 +2920,7 @@ resolveCall(CallExpr* call)
      case PRIM_TUPLE_EXPAND:        resolveTupleExpand(call);           break;
      case PRIM_SET_MEMBER:          resolveSetMember(call);             break;
      case PRIM_MOVE:                resolveMove(call);                  break;
+     case PRIM_TYPE_INIT:
      case PRIM_INIT:                resolveDefaultGenericType(call);    break;
      case PRIM_NEW:                 resolveNew(call);                   break;
     }
@@ -4353,7 +4354,8 @@ static Expr* resolvePrimInit(CallExpr* call)
     } 
     
     // No default value.
-
+#if 0
+    // I think we don't need this, as extern type blocks get removed later.
     if (se->var->hasFlag(FLAG_EXTERN))
     {
       INT_ASSERT(false); // Do we get here?
@@ -4363,6 +4365,7 @@ static Expr* resolvePrimInit(CallExpr* call)
       result = call;
       return result;
     }
+#endif
 
     if (type->defaultInitializer)
     {
@@ -4614,6 +4617,7 @@ preFold(Expr* expr) {
       }
 
     } else if (call->isPrimitive(PRIM_INIT)) {
+      INT_ASSERT(false); // This is now dead code.
       SymExpr* se = toSymExpr(call->get(1));
       INT_ASSERT(se);
       if (!se->var->hasFlag(FLAG_TYPE_VARIABLE))
@@ -7267,6 +7271,19 @@ static void removeRandomPrimitive(CallExpr* call)
         SET_LINENO(call->get(2));
         call->get(2)->replace(new SymExpr(sym));
       }
+    }
+    break;
+
+    // Maybe this can be pushed into the following case, where a PRIM_MOVE gets
+    // removed if its rhs is a type symbol.  That is, resolution of a
+    // PRIM_TYPE_INIT replaces the primitive with symexpr that contains a type symbol.
+    case PRIM_TYPE_INIT:
+    {
+      CallExpr* parent = toCallExpr(call->parentExpr);
+      if (parent->isPrimitive(PRIM_MOVE))
+        parent->remove();
+      else
+        INT_FATAL(parent, "expected parent of PRIM_TYPE_EXPR to be a PRIM_MOVE");
     }
     break;
 
