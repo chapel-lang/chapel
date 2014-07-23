@@ -3822,6 +3822,11 @@ proc file.locsforregion(start:int(64), end:int(64)) {
         ret += loc;
       }
     }
+    // We had no good locales, so return all the locales
+    if ret.numIndicies == 0 {
+      for loc in Locales do
+        ret += loc;
+    }
   }
   return ret;
 }
