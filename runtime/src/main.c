@@ -160,6 +160,12 @@ int main(int argc, char* argv[]) {
   // So that use of localtime_r is portable.
   tzset();
 
+  //
+  // Handle options that set the environment before doing any other
+  // runtime initialization.
+  //
+  parseArgs(parse_dash_E, &argc, argv);
+
   chpl_error_init();  // This does local-only initialization
   chpl_comm_init(&argc, &argv);
   chpl_mem_init();
@@ -172,7 +178,7 @@ int main(int argc, char* argv[]) {
   chpl_gen_main_arg.argv[0] = argv[0];
   chpl_gen_main_arg.argc = 1;
   chpl_gen_main_arg.return_value = 0;
-  parseArgs(&argc, argv);
+  parseArgs(parse_normally, &argc, argv);
   recordExecutionCommand(argc, argv);
 
   //

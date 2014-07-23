@@ -11,8 +11,13 @@
 extern int32_t blockreport;
 extern int32_t taskreport;
 
+typedef enum {
+  parse_normally,
+  parse_dash_E
+} chpl_parseArgsMode_t;
+
 void parseNumLocales(const char* numPtr, int32_t lineno, c_string filename);
-void parseArgs(int* argc, char* argv[]);
+void parseArgs(chpl_parseArgsMode_t mode, int* argc, char* argv[]);
 int32_t getArgNumLocales(void);
 int32_t chpl_baseUniqueLocaleID(int32_t r);
 int _runInGDB(void);

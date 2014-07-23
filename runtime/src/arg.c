@@ -26,6 +26,67 @@ int _runInGDB(void) {
   return gdbFlag;
 }
 
+
+
+//
+// defineEnvVar() needs to be able to call malloc(), because it runs
+// before the memory layer is initialized but needs to allocate memory
+// (for a copy of the var=value string).  So, we turn off the magic
+// warning macro here, and turn it back on after defineEnvVar().
+//
+#undef malloc
+
+static void defineEnvVar(const char* currentArg,
+			 int32_t lineno, c_string filename) {
+  static char errmsg[1000];
+  char* estr;
+  char* estr_eq;
+
+  //
+  // We want to put a duplicate of the given value in the environment,
+  // to avoid conflicts between unknown/hidden modifications of the
+  // original command line string by either command line processing or
+  // the system environment handling.  putenv(3) takes a var=value
+  // string and doesn't make a duplicate.  setenv(3) makes a duplicate
+  // but requires the var and value as as separate strings.  setenv(3)
+  // can also avoid setting the var if it's already set.  We do want
+  // to avoid that, but we also want to emit a warning rather than be
+  // silent, because it indicates misuse by the launcher.  Se, we have
+  // to call getenv(3) ourselves on the var name.  The upshot is that
+  // we make our own duplicate and use putenv(3).
+  //
+  if ((estr = malloc(strlen(currentArg) + 1)) == NULL) {
+    snprintf(errmsg, sizeof(errmsg),
+	     "Cannot duplicate -E argument: %s", strerror(errno));
+    chpl_error(errmsg, lineno, filename);
+  }
+
+  strcpy(estr, currentArg);
+
+  if ((estr_eq = strchr(estr, '=')) == NULL) {
+    chpl_error("-E argument must be of the form name=value", lineno, filename);
+  }
+
+  *estr_eq = '\0';
+
+  if (getenv(estr) != NULL) {
+    snprintf(errmsg, sizeof(errmsg),
+	     "-E env var %s is already set; ignoring -E", estr);
+    chpl_warning(errmsg, lineno, filename);
+  }
+  else {
+    *estr_eq = '=';
+    if (putenv(estr) != 0) {
+      snprintf(errmsg, sizeof(errmsg),
+	       "Cannot putenv(\"%s\"): %s", estr, strerror(errno));
+      chpl_error(errmsg, lineno, filename);
+    }
+  }
+}
+
+#define malloc dont_use_malloc_use_chpl_mem_allocMany_instead
+
+
 static void printHeaders(char thisType, char* lastType) {
   if (thisType != *lastType) {
     fprintf(stdout, "\n");
@@ -127,32 +188,7 @@ int32_t getArgNumLocales(void) {
 
 
 extern void chpl_program_about(void); // The generated code provides this
-
-
-static void defineEnvVar(const char* estr, int32_t lineno, c_string filename) {
-  //
-  // Note that you must pass a writable string to defineEnvVar(),
-  // because it relies on being able to replace the internal '='
-  // with a '\0' in order to have separate name and value strings
-  // to pass to setenv(3), which duplicates those.
-  //
-  static char errmsg[1000];
-  char* estr_val;
-
-  if ((estr_val = strchr(estr, '=')) == NULL) {
-    chpl_error("-E argument must be of the form name=value", lineno, filename);
-  }
-
-  *estr_val = '\0';
-  if (setenv(estr, estr_val + 1, 0) != 0) {
-    snprintf(errmsg, sizeof(errmsg),
-             "Cannot setenv(\"%s\"): %s", estr, strerror(errno));
-  }
-  *estr_val = '=';
-}
-
-
-void parseArgs(int* argc, char* argv[]) {
+void parseArgs(chpl_parseArgsMode_t mode, int* argc, char* argv[]) {
   int i;
   int printHelp = 0;
   int printAbout = 0;
@@ -176,11 +212,17 @@ void parseArgs(int* argc, char* argv[]) {
     }
 
     /* if the Chapel main takes arguments, then "--" is a magic argument that
-     * will prevent parsing of any additional arguments
+     * will prevent parsing of any additional arguments.  In addition, if we
+     * are just parsing -E arguments, we can quit looking at the command line
+     * entirely when we see "--".
      */
     if (mainHasArgs && strcmp(currentArg, "--") == 0) {
-      stop_parsing = 1;
-      continue;
+      if (mode == parse_dash_E) {
+	break;
+      } else {
+	stop_parsing = 1;
+	continue;
+      }
     }
 
     if (argLength < 2) {
@@ -193,7 +235,11 @@ void parseArgs(int* argc, char* argv[]) {
     case '-':
       switch (currentArg[1]) {
       case '-':
-        {
+	//
+	// As long as all "--" options consist of only a single
+	// command line argument, this simple check is sufficient.
+	//
+	if (mode != parse_dash_E) {
           const char* flag = currentArg + 2;
 
           if (strcmp(flag, "gdb") == 0) {
@@ -235,35 +281,44 @@ void parseArgs(int* argc, char* argv[]) {
           i += handlePossibleConfigVar(argc, argv, i, lineno, filename);
           break;
         }
+	break;
 
       case 'a':
-        if (currentArg[2] == '\0') {
-          printAbout = 1;
-        } else {
-          i += handleNonstandardArg(argc, argv, i, lineno, filename);
-        }
+	if (mode != parse_dash_E) {
+	  if (currentArg[2] == '\0') {
+	    printAbout = 1;
+	  } else {
+	    i += handleNonstandardArg(argc, argv, i, lineno, filename);
+	  }
+	}
         break;
 
       case 'b':
-        if (currentArg[2] == '\0') {
-          blockreport = 1;
-        } else {
-          i += handleNonstandardArg(argc, argv, i, lineno, filename);
-        }
+	if (mode != parse_dash_E) {
+	  if (currentArg[2] == '\0') {
+	    blockreport = 1;
+	  } else {
+	    i += handleNonstandardArg(argc, argv, i, lineno, filename);
+	  }
+	}
         break;
 
       case 'E':
-        if (currentArg[2] == '\0') {
-          i++;
-          if (i >= *argc) {
-            chpl_error("-f flag is missing <filename> argument", 
-                       lineno, filename);
-          }
-          currentArg = argv[i];
-          defineEnvVar(currentArg, lineno, filename);
-        } else {
-          defineEnvVar(currentArg + 2, lineno, filename);
-        }
+	if (currentArg[2] == '\0') {
+	  i++;
+	  currentArg = argv[i];
+	} else {
+	  currentArg = argv[i] + 2;
+	}
+
+	// We process -E on the parse_dash_E pass and ignore it after that.
+	if (mode == parse_dash_E) {
+	  if (i >= *argc) {
+	    chpl_error("-E flag is missing <name=value> argument", 
+		       i, filename);
+	  }
+	  defineEnvVar(currentArg, lineno, filename);
+	}
         break;
 
       case 'f':
