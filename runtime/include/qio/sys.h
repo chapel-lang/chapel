@@ -136,7 +136,6 @@ err_t sys_lseek(fd_t fd, off_t offset, int whence, off_t* offset_out);
 err_t sys_stat(const char* path, struct stat* buf);
 err_t sys_fstat(fd_t fd, struct stat* buf);
 err_t sys_lstat(const char* path, struct stat* buf);
-// TODO: What if we don't have statfs (and therefore struct statfs)
 err_t sys_fstatfs(fd_t fd, sys_statfs_t* buf);
 
 err_t sys_mkstemp(char* template_, fd_t* fd_out);
