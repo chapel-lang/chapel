@@ -471,7 +471,7 @@ err_t sys_lseek(fd_t fd, off_t offset, int whence, off_t* offset_out)
   got = lseek(fd, offset, whence);
   if( got != (off_t) -1 ) {
     *offset_out = got;
-    err_out = 0; 
+    err_out = 0;
   } else {
     *offset_out = got;
     err_out = errno;
@@ -522,6 +522,20 @@ err_t sys_lstat(const char* path, struct stat* buf)
   }
 
   return err_out;
+}
+
+err_t sys_fstatfs(fd_t fd, struct statfs* buf)
+{
+    err_t err_out;
+    int got;
+    got = fstatfs(fd, buf);
+    if (got != -1) {
+        err_out = 0;
+    } else{
+        err_out = errno;
+    }
+
+    return err_out;
 }
 
 err_t sys_mkstemp(char* template_, fd_t* fd_out)
@@ -1142,23 +1156,23 @@ err_t sys_connect(fd_t sockfd, const sys_sockaddr_t* addr)
 
    -BLC */
 
-//  err_t sys_getaddrinfo(const char* node, const char* service, 
+//  err_t sys_getaddrinfo(const char* node, const char* service,
 //                       const sys_addrinfo_t* hints, sys_addrinfo_t ** res_out)
 //  {
 //    int got;
 //    err_t err_out;
-//  
+//
 //    STARTING_SLOW_SYSCALL;
-//  
+//
 //    got = getaddrinfo(node, service, hints, res_out);
 //    if( got == 0 ) {
 //      err_out = 0;
 //    } else {
 //      err_out = got + GAI_ERROR_OFFSET;
 //    }
-//  
+//
 //    DONE_SLOW_SYSCALL;
-//  
+//
 //    return err_out;
 //  }
 
@@ -1205,7 +1219,7 @@ err_t sys_getnameinfo(const sys_sockaddr_t* addr, char** host_out, char** serv_o
     host_buf = new_host_buf;
     serv_buf = new_serv_buf;
 
-    got = getnameinfo((const struct sockaddr*) & addr->addr, addr->len, 
+    got = getnameinfo((const struct sockaddr*) & addr->addr, addr->len,
                       host_buf, host_buf_sz,
                       serv_buf, serv_buf_sz,
                       flags);

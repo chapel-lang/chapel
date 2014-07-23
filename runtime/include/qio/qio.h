@@ -23,15 +23,6 @@ extern "C" {
 // any mention of the token "mmap".  Most unfortunate. <hilde>
 #include <sys/mman.h>
 
-#if defined(__APPLE__)
-#include <sys/param.h>
-#include <sys/mount.h>
-#elif defined(__linux__)
-#include <sys/vfs.h>
-#endif
-// Magic value to be found in the statfs man page
-#define LUSTRE_SUPER_MAGIC     0x0BD00BD0
-
 #define DEBUG_QIO 0
 
 // synonym for iovec
@@ -46,6 +37,23 @@ typedef enum {
 } qio_fdflag_t;
 
 typedef uint32_t qio_hint_t;
+
+// TODO: make these better values
+#ifndef FTYPE_NONE
+#define FTYPE_NONE 0
+#endif
+
+#ifndef FTYPE_HDFS
+#define FTYPE_HDFS 1
+#endif
+
+#ifndef FTYPE_LUSTRE
+#define FTYPE_LUSTRE 2
+#endif
+
+#ifndef FTYPE_CURL
+#define FTYPE_CURL 3
+#endif
 
 // The qio lock must be re-entrant in order to handle
 // e.g. qio_printf, which has will lock the lock, then

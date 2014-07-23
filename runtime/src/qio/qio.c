@@ -3936,9 +3936,9 @@ qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out)
   } else {
 
     if (fl->fp){
-      rc = fstatfs(fileno(fl->fp), &s);
+      rc = sys_fstatfs(fileno(fl->fp), &s);
     } else if (fl->fd != -1) {
-      rc = fstatfs(fl->fd, &s);
+      rc = sys_fstatfs(fl->fd, &s);
     } else QIO_RETURN_CONSTANT_ERROR(ENOSYS, "Unable to get chunk size for file");
 
     if (rc)
@@ -3975,9 +3975,9 @@ qioerr qio_get_fs_type(qio_file_t* fl, int* out)
   int rc = -1;
 
   if (fl->fp)
-    rc = fstatfs(fileno(fl->fp), &s);
+    rc = sys_fstatfs(fileno(fl->fp), &s);
   else if (fl->fd != -1)
-    rc = fstatfs(fl->fd, &s);
+    rc = sys_fstatfs(fl->fd, &s);
 
   // can't stat, and we don't have a foreign FS
   if (rc == -1 && (fl->fsfns == NULL))

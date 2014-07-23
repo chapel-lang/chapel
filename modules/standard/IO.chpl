@@ -3742,24 +3742,19 @@ iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
 
 /************** Distributed File Systems ***************/
 
-enum ftype {
-  none   = 0,
-  hdfs   = 1,
-  lustre = 2,
-  curl   = 3,
-}
+extern const FTYPE_NONE   : c_int;
+extern const FTYPE_HDFS   : c_int;
+extern const FTYPE_LUSTRE : c_int;
+extern const FTYPE_CURL   : c_int;
 
-proc file.fstype():ftype {
+proc file.fstype():int {
   var t:c_int;
   var err:syserr = ENOERR;
   on this.home {
     err = qio_get_fs_type(this._file_internal, t);
   }
   if err then ioerror(err, "in file.fstype()");
-  if t == 3 then return ftype.curl;
-  if t == 2 then return ftype.lustre;
-  if t == 1 then return ftype.hdfs;
-  return ftype.none;
+  return t:int;
 }
 
 // Returns (chunk start, chunk end) for the first chunk in the file
@@ -3772,9 +3767,9 @@ proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(6
 
   on this.home {
     var real_end = min(end, this.length());
-    var t:ftype = this.fstype();
+    var t = this.fstype();
     var len:int(64);
-    if t != ftype.lustre then
+    if t != FTYPE_LUSTRE then
       err = qio_get_chunk(this._file_internal, len);
     else {
       /*var struc:c_void_ptr = alloc_lum();*/

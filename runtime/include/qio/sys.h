@@ -18,6 +18,18 @@ extern "C" {
 #include <unistd.h>
 #include <stdio.h>
 
+#if defined(__APPLE__)
+#include <sys/param.h>
+#include <sys/mount.h>
+#elif defined(__linux__)
+#include <sys/vfs.h>
+#endif
+
+#ifndef LUSTRE_SUPER_MAGIC
+// Magic value to be found in the statfs man page
+#define LUSTRE_SUPER_MAGIC     0x0BD00BD0
+#endif
+
 typedef int fd_t;
 
 // Do we have getaddrinfo?
@@ -61,7 +73,7 @@ typedef struct addrinfo* sys_addrinfo_ptr_t;
  */
 
 // TODO -- define these once we have appropriate qthreads integration.
-// These need to handle being run when the thread is already on 
+// These need to handle being run when the thread is already on
 // a system-call running pthread.
 #define STARTING_SLOW_SYSCALL { }
 #define DONE_SLOW_SYSCALL { }
@@ -103,6 +115,8 @@ err_t sys_lseek(fd_t fd, off_t offset, int whence, off_t* offset_out);
 err_t sys_stat(const char* path, struct stat* buf);
 err_t sys_fstat(fd_t fd, struct stat* buf);
 err_t sys_lstat(const char* path, struct stat* buf);
+// TODO: What if we don't have statfs (and therefore struct statfs)
+err_t sys_fstatfs(fd_t fd, struct statfs* buf);
 
 err_t sys_mkstemp(char* template_, fd_t* fd_out);
 
@@ -159,7 +173,7 @@ err_t sys_connect(fd_t sockfd, const sys_sockaddr_t* addr);
 
 #ifdef HAS_GETADDRINFO
 /* See comment about this being commented out in sys.c -BLC */
-//err_t sys_getaddrinfo(const char* node, const char* service, 
+//err_t sys_getaddrinfo(const char* node, const char* service,
 //                     const struct addrinfo* hints, struct addrinfo ** res);
 
 
