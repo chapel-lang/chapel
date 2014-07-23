@@ -232,7 +232,7 @@ static void removeDeadModule(ModuleSymbol* deadMod) {
     int vecIndex = modThatUsedDeadMod->modUseList.index(deadMod);
     int setIndex = modThatUsedDeadMod->modUseSet.index(deadMod);
     if (vecIndex >= 0 && setIndex >= 0) {
-      modThatUsedDeadMod->block->removeUse(deadMod);
+      modThatUsedDeadMod->block->moduleRemoveUse(deadMod);
       modThatUsedDeadMod->modUseSet.remove(setIndex);
       modThatUsedDeadMod->modUseList.remove(vecIndex);
        
@@ -241,7 +241,7 @@ static void removeDeadModule(ModuleSymbol* deadMod) {
       forv_Vec(ModuleSymbol, modUsedByDeadMod, deadMod->modUseList) {
         if (modThatUsedDeadMod->modUseList.index(modUsedByDeadMod) < 0) {
           SET_LINENO(modThatUsedDeadMod);
-          modThatUsedDeadMod->block->addUse(modUsedByDeadMod);
+          modThatUsedDeadMod->block->moduleAddUse(modUsedByDeadMod);
           modThatUsedDeadMod->modUseSet.set_add(modUsedByDeadMod);
           modThatUsedDeadMod->modUseList.add(modUsedByDeadMod);
         }

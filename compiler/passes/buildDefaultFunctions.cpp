@@ -405,11 +405,9 @@ static void build_chpl_entry_points(void) {
 
   chpl_gen_main->insertAtTail(new CallExpr("chpl_rt_preUserCodeHook"));
 
-  if( ! fNoInternalModules ) {
-    // We have to initialize the main module explicitly.
-    // It will initialize all the modules it uses, recursively.
-    chpl_gen_main->insertAtTail(new CallExpr(mainModule->initFn));
-  }
+  // We have to initialize the main module explicitly.
+  // It will initialize all the modules it uses, recursively.
+  chpl_gen_main->insertAtTail(new CallExpr(mainModule->initFn));
 
   bool main_ret_set = false;
 

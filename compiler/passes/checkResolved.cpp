@@ -302,17 +302,17 @@ checkReturnPaths(FnSymbol* fn) {
   //
   // Issue a warning if there is a path that has zero definitions or
   // there is a path that has one definition and the function has a
-  // specified return type; we care about there being a specified
-  // return type because this specified return type is used to
-  // initialize the return symbol but we don't want that to count as a
-  // definition of a return value.
+  // specified return type of a type we still default initialize; we care
+  // about there being a specified return type because this specified
+  // return type is used to initialize the return symbol but we don't want
+  // that to count as a definition of a return value.
   //
-  // We don't expect initialization code for an externally defined type,
-  // so if that is what we are returning, the only definition expected is
-  // actually a proper assignment
+  // The only types we still expect initialization code for are those marked
+  // with FLAG_IGNORE_NOINIT, so those are the only cases where a single
+  // definition means that the function writer neglected to return a value.
   if (result == 0 || (result == 1 && fn->hasFlag(FLAG_SPECIFIED_RETURN_TYPE) &&
-                      !fn->retType->symbol->hasFlag(FLAG_EXTERN)))
-    USR_WARN(fn->body, "control reaches end of function that returns a value");
+                      fn->retType->symbol->hasFlag(FLAG_IGNORE_NOINIT)))
+    USR_FATAL_CONT(fn->body, "control reaches end of function that returns a value");
 }
 
 

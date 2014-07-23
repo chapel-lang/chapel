@@ -8,52 +8,44 @@
 
 use AdvancedIters;
 
-config const N = 7;
+config const n = 7;
 
-assert(N >=3 && N <= 12, "N must be in 3..12");
+assert(n >=3 && n <= 12, "n must be in 3..12");
 
-const D = {0..N};
-const R = 0..#N;
+config const nchunks = 720;
+var Fact : [0..n] int;
 
-const nchunks = 720;
-var Fact : [D] int;
+var checks : atomic int;
+var flips : atomic int;
 
 proc main() {
   Fact[0] = 1;
-  for i in 1..N do
+  for i in 1..n do
     Fact[i] = Fact[i-1] * i;
 
-  var chunksz = (Fact[N] + nchunks - 1) / nchunks;
+  var chunksz = (Fact[n] + nchunks - 1) / nchunks;
   chunksz += chunksz%2;
 
-  const work = 0 .. (Fact[N] - chunksz) by chunksz;
-  
-  var flips : [work] int;
-  var checks : [work] int;
+  const work = 0 .. (Fact[n] - chunksz) by chunksz;
 
-  forall idx in dynamic(work, 1) {
-    (flips[idx], checks[idx]) = fannkuch(idx, idx+chunksz);
-  }
-
-  const c = + reduce checks;
-  const r = max reduce flips;
+  forall idx in dynamic(work, 1) do fannkuch(idx, idx+chunksz);
   
-  writeln(c, "\nPfannkuchen(", N, ") = ", r);
+  writeln(checks.read(), "\nPfannkuchen(", n, ") = ", flips.read());
 }
 
 proc fannkuch(idxMin:int, idxMax:int) {
-  var p, pp, count : [R] int;
-  p = R;
+  var p, pp, count : [0..#n] int;
+  p = 0..#n;
 
   // first permutation
   var idx = idxMin;
-  for i in 1..N-1 by -1 {
+  for i in 1..n-1 by -1 {
     const d = idx / Fact[i];
     count[i] = d;
     idx = idx % Fact[i];
 
     const slice = 0..#(i + 1);
-    pp(slice) = p(slice);
+    pp[slice] = p[slice];
     for j in 0..i {
       if j + d <= i then
         p[j] = pp[j+d];
@@ -70,13 +62,13 @@ proc fannkuch(idxMin:int, idxMax:int) {
   while true {
     if p[0] != 0 {
       //countFlips
-      var flips = 1;
+      var locflips = 1;
       var first = p[0];
 
       if p[first] != 0 {
         pp = p;
         do {
-          flips += 1;
+          locflips += 1;
           var lo = 1, hi = first - 1;
           while lo < hi {
             pp[lo] <=> pp[hi];
@@ -87,9 +79,9 @@ proc fannkuch(idxMin:int, idxMax:int) {
         } while pp[first] != 0;
       }
 
-      maxFlips = max(maxFlips, flips);
-      if idx%2 == 0 then checkSum += flips;
-      else checkSum -= flips;
+      maxFlips = max(maxFlips, locflips);
+      if idx%2 == 0 then checkSum += locflips;
+      else checkSum -= locflips;
     }
 
     idx += 1;
@@ -116,5 +108,9 @@ proc fannkuch(idxMin:int, idxMax:int) {
     }
   }
 
-  return (maxFlips, checkSum);
+  checks.add(checkSum);
+
+  var curMax = flips.read();
+  while curMax < maxFlips && !flips.compareExchange(curMax, maxFlips) do
+    curMax = flips.read();
 }

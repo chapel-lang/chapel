@@ -283,7 +283,6 @@ static void addToSymbolTable(Vec<DefExpr*>& defs) {
   }
 }
 
-
 /******************************** | *********************************
 *                                                                   *
 *                                                                   *
@@ -312,9 +311,9 @@ static void process_import_expr(CallExpr* call) {
   }
 
   if (call->getStmtExpr()->parentExpr == call->getModule()->initFn->body)
-    call->getModule()->block->addUse(mod);
+    call->getModule()->block->moduleAddUse(mod);
   else
-    getVisibilityBlock(call)->addUse(mod);
+    getVisibilityBlock(call)->moduleAddUse(mod);
 
   call->getStmtExpr()->remove();
 }

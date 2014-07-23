@@ -1,0 +1,6 @@
+bug: improve function return analysis
+
+This test (and similarly functions/deitz/test_return1.chpl) will always return
+a value because the while loop is never escaped except through a return.  Thus,
+the error message printed is inaccurate.  We should improve our analysis to
+allow cases like this to pass.
