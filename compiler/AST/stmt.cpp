@@ -402,19 +402,26 @@ BlockStmt::moduleAddUse(ModuleSymbol* mod) {
 
 // Remove a module from the list of modules used by the module this block
 // statement belongs to. The list of used modules is stored in modUses
-void
+bool
 BlockStmt::moduleRemoveUse(ModuleSymbol* mod) {
+  bool retval = false;
+
   if (modUses != NULL) {
     for_alist(expr, modUses->argList) {
       if (SymExpr* symExpr = toSymExpr(expr)) {
         if (ModuleSymbol* curMod = toModuleSymbol(symExpr->var)) {
           if (curMod == mod) {
-            symExpr->remove();  
+            symExpr->remove();
+            
+            retval = true;
+            break;
           }
         }
       }
     }
   }
+
+  return retval;
 }
 
 void BlockStmt::accept(AstVisitor* visitor) {

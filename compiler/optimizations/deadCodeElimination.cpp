@@ -218,45 +218,22 @@ static bool isDeadModule(ModuleSymbol* mod) {
 }
 
 
-// Removes a dead module. Because modules (such as the standard module) can
-// serve as groupings of other modules to include, you have to add all the
-// modules a dead module used to any module that used the dead one. 
-static void removeDeadModule(ModuleSymbol* deadMod) {
-  // remove the dead module and its initFn
-  deadMod->defPoint->remove();
-  deadMod->initFn->defPoint->remove();
-
-  // find all the modules that used the dead one, and remove the dead
-  // one from their modUseList, modUseSet and block. 
-  forv_Vec(ModuleSymbol, modThatUsedDeadMod, allModules) {
-    int vecIndex = modThatUsedDeadMod->modUseList.index(deadMod);
-    int setIndex = modThatUsedDeadMod->modUseSet.index(deadMod);
-    if (vecIndex >= 0 && setIndex >= 0) {
-      modThatUsedDeadMod->block->moduleRemoveUse(deadMod);
-      modThatUsedDeadMod->modUseSet.remove(setIndex);
-      modThatUsedDeadMod->modUseList.remove(vecIndex);
-       
-      // for each module that the dead module used, add that module to
-      // the current module's modUseList, modUseSet, and block
-      forv_Vec(ModuleSymbol, modUsedByDeadMod, deadMod->modUseList) {
-        if (modThatUsedDeadMod->modUseList.index(modUsedByDeadMod) < 0) {
-          SET_LINENO(modThatUsedDeadMod);
-          modThatUsedDeadMod->block->moduleAddUse(modUsedByDeadMod);
-          modThatUsedDeadMod->modUseSet.set_add(modUsedByDeadMod);
-          modThatUsedDeadMod->modUseList.add(modUsedByDeadMod);
-        }
-      }
-    }
-  }
-}
-
-
 // Eliminates all dead modules
 static void deadModuleElimination() {
   forv_Vec(ModuleSymbol, mod, allModules) {
-    if (isDeadModule(mod)) {
+    if (isDeadModule(mod) == true) {
       deadModuleCount++;
-      removeDeadModule(mod);
+
+      // remove the dead module and its initFn
+      mod->defPoint->remove();
+      mod->initFn->defPoint->remove();
+
+      // Inform every module about the dead module
+      forv_Vec(ModuleSymbol, modThatMightUse, allModules) {
+        if (modThatMightUse != mod) {
+          modThatMightUse->modUseDeadModule(mod);
+        }
+      }
     }
   }
 }

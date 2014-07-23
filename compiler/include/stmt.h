@@ -59,7 +59,7 @@ public:
   int             length()                                     const;
 
   void            moduleAddUse(ModuleSymbol* mod);
-  void            moduleRemoveUse(ModuleSymbol* mod);
+  bool            moduleRemoveUse(ModuleSymbol* mod);
 
   BlockTag        blockTag;
   AList           body;

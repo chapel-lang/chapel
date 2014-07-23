@@ -2372,6 +2372,68 @@ void ModuleSymbol::accept(AstVisitor* visitor) {
   }
 }
 
+void ModuleSymbol::modUseAddChapelStandard() {
+  SET_LINENO(this);
+
+  block->moduleAddUse(standardModule);
+
+  modUseAdd(standardModule);
+}
+
+//
+// MDN 2014/07/22
+//
+// There is currently a problem in functionResolve that this function
+// has a "temporary" work around for.
+
+// There is somewhere within that code that believes the order of items in
+// modUseList is an indicator of "dependence order" even though this list
+// does not and cannot maintain that information.
+//
+// Fortunately there are currently no tests that expose this fallacy so
+// long at ChapelStandard always appears first in the list
+void ModuleSymbol::modUseAdd(ModuleSymbol* mod) {
+  if (modUseList.index(mod) < 0) {
+    if (mod == standardModule) {
+      modUseList.insert(0, mod);
+    } else {
+      modUseList.add(mod);
+    }
+  }
+}
+
+// Notify this module that some other module is dead
+//
+// If the dead module is used by this module then purge
+// the references.
+
+// Because modules (such as the standard module) can serve
+// as groupings of other modules to include, add all the
+// modules that the dead module used.
+//
+void ModuleSymbol::modUseDeadModule(ModuleSymbol* deadMod) {
+  int index = modUseList.index(deadMod);
+
+  if (index >= 0) {
+    bool inBlock = block->moduleRemoveUse(deadMod);
+
+    modUseList.remove(index);
+
+    // The dead module may have used other modules.  If so add them
+    // to the current module
+    forv_Vec(ModuleSymbol, modUsedByDeadMod, deadMod->modUseList) {
+      if (modUseList.index(modUsedByDeadMod) < 0) {
+        SET_LINENO(this);
+
+        if (inBlock == true)
+          block->moduleAddUse(modUsedByDeadMod);
+
+        modUseList.add(modUsedByDeadMod);
+      }
+    }
+  }
+}
+
 /******************************** | *********************************
 *                                                                   *
 *                                                                   *
