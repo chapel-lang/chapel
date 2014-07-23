@@ -31,6 +31,7 @@
 #include "chpl-mem.h"
 #include "chplmemtrack.h"
 #include "chpl-prefetch.h"
+#include "chpl-privatization.h"
 #include "chplsys.h"
 #include "chpl-tasks.h"
 #include "chpltimers.h"
