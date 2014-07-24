@@ -29,7 +29,6 @@ execflags/bradc/gdbddash/declint2
 functions/deitz/iterators/test_zip_check1
 functions/deitz/iterators/test_zip_check2
 multilocale/bradc/referToLocaleOne
-nostdlib/classcast1
 sparse/bradc/outOfBounds
 sparse/parallel/sparse-csr-simple-dom-manips
 studies/590o/blerner/nilClassCheck

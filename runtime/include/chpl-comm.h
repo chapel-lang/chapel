@@ -22,18 +22,9 @@ extern c_nodeid_t chpl_nodeID; // unique ID for each node: 0, 1, 2, ...
 // (hopefully) unique to the running image, and never changed again.
 extern int32_t chpl_numNodes; // number of nodes
 
-extern int32_t chpl_numPrivateObjects;
-extern void** chpl_privateObjects; // privatized array and domain objects
-
 extern int chpl_verbose_comm;     // set via startVerboseComm
 extern int chpl_comm_diagnostics; // set via startCommDiagnostics
 extern int chpl_verbose_mem;      // set via startVerboseMem
-
-static ___always_inline
-int32_t chpl_numPrivatizedClasses(void) { return chpl_numPrivateObjects; }
-
-extern void chpl_newPrivatizedClass(void*);
-extern void* chpl_getPrivatizedClass(int32_t);
 
 size_t chpl_comm_getenvMaxHeapSize(void);
 

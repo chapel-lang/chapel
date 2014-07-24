@@ -44,51 +44,80 @@ void codegenStmt(Expr* stmt) {
 }
 
 
-Stmt::~Stmt() {}
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
+
+Stmt::Stmt(AstTag astTag) : Expr(astTag) {
+
+}
+Stmt::~Stmt() {
+
+}
+
+bool Stmt::isStmt() const { 
+  return true; 
+}
 
 
-BlockStmt::BlockStmt(Expr* init_body, BlockTag init_blockTag) :
+
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
+
+BlockStmt::BlockStmt(Expr* initBody, BlockTag initBlockTag) :
   Stmt(E_BlockStmt),
-  blockTag(init_blockTag),
-  body(),
+  blockTag(initBlockTag),
   blockInfo(NULL),
   modUses(NULL),
   breakLabel(NULL),
   continueLabel(NULL),
   userLabel(NULL),
-  byrefVars(NULL)
-{
+  byrefVars(NULL) {
+
   body.parent = this;
-  if (init_body)
-    body.insertAtTail(init_body);
+
+  if (initBody)
+    body.insertAtTail(initBody);
+
   gBlockStmts.add(this);
 }
 
 
-BlockStmt::~BlockStmt() { }
+BlockStmt::~BlockStmt() { 
 
+}
 
 void BlockStmt::verify() {
   Expr::verify();
+
   if (astTag != E_BlockStmt) {
-    INT_FATAL(this, "Bad BlockStmt::astTag");
+    INT_FATAL(this, "BlockStmt::verify. Bad astTag");
   }
+
   if (body.parent != this)
-    INT_FATAL(this, "Bad AList::parent in BlockStmt");
+    INT_FATAL(this, "BlockStmt::verify. Bad body.parent");
+
   for_alist(expr, body) {
     if (expr->parentExpr != this)
-      INT_FATAL(this, "Bad BlockStmt::body::parentExpr");
+      INT_FATAL(this, "BlockStmt::verify. Bad body.expr->parentExpr");
   }
+
   if (blockInfo && blockInfo->parentExpr != this)
-    INT_FATAL(this, "Bad BlockStmt::blockInfo::parentExpr");
-  if (modUses && modUses->parentExpr != this)
-    INT_FATAL(this, "Bad BlockStmt::blockInfo::parentExpr");
+    INT_FATAL(this, "BlockStmt::verify. Bad blockInfo->parentExpr");
+
+  if (modUses   && modUses->parentExpr   != this)
+    INT_FATAL(this, "BlockStmt::verify. Bad modUses->parentExpr");
+
   if (byrefVars) {
     if (byrefVars->parentExpr != this)
-      INT_FATAL(this, "Bad BlockStmt::byrefVars::parentExpr");
+      INT_FATAL(this, "BlockStmt::verify. Bad byrefVars->parentExpr");
+
     for_actuals(varExp, byrefVars) {
       if (!isSymExpr(varExp) && !isUnresolvedSymExpr(varExp))
-        INT_FATAL(this, "Bad expresion kind in BlockStmt::byrefVars");
+        INT_FATAL(this, "BlockStmt::verify. Bad expression kind in byrefVars");
     }
   }
 }
@@ -97,34 +126,47 @@ void BlockStmt::verify() {
 BlockStmt*
 BlockStmt::copyInner(SymbolMap* map) {
   BlockStmt* _this = new BlockStmt();
-  _this->blockTag = blockTag;
+
+  _this->blockTag      = blockTag;
+  _this->blockInfo     = COPY_INT(blockInfo);
+  _this->modUses       = COPY_INT(modUses);
+  _this->breakLabel    = breakLabel;
+  _this->continueLabel = continueLabel;
+  _this->byrefVars     = COPY_INT(byrefVars);
+
   for_alist(expr, body)
     _this->insertAtTail(COPY_INT(expr));
-  _this->blockInfo = COPY_INT(blockInfo);
-  _this->modUses = COPY_INT(modUses);
-  _this->breakLabel = breakLabel;
-  _this->continueLabel = continueLabel;
-  _this->byrefVars = COPY_INT(byrefVars);
+
   return _this;
 }
 
 
-void BlockStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
-  if (old_ast == blockInfo)
-    blockInfo = toCallExpr(new_ast);
-  else if (old_ast == modUses)
-    modUses = toCallExpr(new_ast);
-  else if (old_ast == byrefVars)
-    byrefVars = toCallExpr(new_ast);
+// Note that newAst can be NULL to reflect deletion
+void BlockStmt::replaceChild(Expr* oldAst, Expr* newAst) {
+  CallExpr* oldExpr = toCallExpr(oldAst);
+  CallExpr* newExpr = (newAst != NULL) ? toCallExpr(newAst) : NULL;
+
+  if (oldExpr == NULL)
+    INT_FATAL(this, "BlockStmt::replaceChild. oldAst is not a CallExpr");
+
+  else if (oldExpr == blockInfo)
+    blockInfo = newExpr;
+
+  else if (oldExpr == modUses)
+    modUses   = newExpr;
+
+  else if (oldExpr == byrefVars)
+    byrefVars = newExpr;
+
   else
-    INT_FATAL(this, "Unexpected case in BlockStmt::replaceChild");
+    INT_FATAL(this, "BlockStmt::replaceChild. Failed to match the oldAst ");
 }
 
 
 GenRet BlockStmt::codegen() {
-  GenInfo* info = gGenInfo;
-  FILE* outfile = info->cfile;
-  GenRet ret;
+  GenInfo* info    = gGenInfo;
+  FILE*    outfile = info->cfile;
+  GenRet   ret;
 
   codegenStmt(this);
 
@@ -157,6 +199,7 @@ GenRet BlockStmt::codegen() {
       info->cStatements.push_back(end);
     }
   } else {
+
 #ifdef HAVE_LLVM
     llvm::Function *func = info->builder->GetInsertBlock()->getParent();
 
@@ -353,34 +396,60 @@ BlockStmt::length() const {
 
 
 void
-BlockStmt::addUse(ModuleSymbol* mod) {
-  if (!modUses) {
+BlockStmt::moduleUseAdd(ModuleSymbol* mod) {
+  if (modUses == NULL) {
     modUses = new CallExpr(PRIM_USED_MODULES_LIST);
+
     if (parentSymbol)
       insert_help(modUses, this, parentSymbol);
   }
+
   modUses->insertAtTail(mod);
 }
 
 
 // Remove a module from the list of modules used by the module this block
 // statement belongs to. The list of used modules is stored in modUses
-void
-BlockStmt::removeUse(ModuleSymbol* mod) {
-  if (modUses) {
+bool
+BlockStmt::moduleUseRemove(ModuleSymbol* mod) {
+  bool retval = false;
+
+  if (modUses != NULL) {
     for_alist(expr, modUses->argList) {
       if (SymExpr* symExpr = toSymExpr(expr)) {
         if (ModuleSymbol* curMod = toModuleSymbol(symExpr->var)) {
           if (curMod == mod) {
-            symExpr->remove();  
+            symExpr->remove();
+            
+            retval = true;
+            break;
           }
         }
       }
     }
   }
+
+  return retval;
 }
 
-void BlockStmt::accept(AstVisitor* visitor) {
+void
+BlockStmt::moduleUseClear() {
+  if (modUses != 0) {
+
+    for_alist(expr, modUses->argList) {
+      expr->remove();
+    }
+
+    // It's possible that this use definition is not alive
+    if (isAlive(modUses))
+      modUses->remove();
+
+    modUses = 0;
+  }
+}
+
+void 
+BlockStmt::accept(AstVisitor* visitor) {
   if (visitor->enterBlockStmt(this) == true) {
     for_alist(next_ast, body)
       next_ast->accept(visitor);
@@ -397,6 +466,11 @@ void BlockStmt::accept(AstVisitor* visitor) {
     visitor->exitBlockStmt(this);
   }
 }
+
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
 
 CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
   Stmt(E_CondStmt),
@@ -639,6 +713,11 @@ void CondStmt::accept(AstVisitor* visitor) {
   }
 }
 
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
+
 GotoStmt::GotoStmt(GotoTag init_gotoTag, const char* init_label) :
   Stmt(E_GotoStmt),
   gotoTag(init_gotoTag),
@@ -822,6 +901,11 @@ void GotoStmt::accept(AstVisitor* visitor) {
     visitor->exitGotoStmt(this);
   }
 }
+
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
 
 ExternBlockStmt::ExternBlockStmt(const char* init_c_code) :
   Stmt(E_ExternBlockStmt),

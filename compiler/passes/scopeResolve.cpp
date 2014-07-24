@@ -283,7 +283,6 @@ static void addToSymbolTable(Vec<DefExpr*>& defs) {
   }
 }
 
-
 /******************************** | *********************************
 *                                                                   *
 *                                                                   *
@@ -305,16 +304,12 @@ static void process_import_expr(CallExpr* call) {
 
   ModuleSymbol* enclosingModule = call->getModule();
 
-  //  printf("Adding %s to %s's use list\n", mod->name, enclosingModule->name);
-  if (!enclosingModule->modUseSet.set_in(mod)) {
-    enclosingModule->modUseSet.set_add(mod);
-    enclosingModule->modUseList.add(mod);
-  }
+  enclosingModule->moduleUseAdd(mod);
 
   if (call->getStmtExpr()->parentExpr == call->getModule()->initFn->body)
-    call->getModule()->block->addUse(mod);
+    call->getModule()->block->moduleUseAdd(mod);
   else
-    getVisibilityBlock(call)->addUse(mod);
+    getVisibilityBlock(call)->moduleUseAdd(mod);
 
   call->getStmtExpr()->remove();
 }
@@ -1400,10 +1395,7 @@ static void resolveModuleCall(CallExpr* call, Vec<UnresolvedSymExpr*>& skipSet) 
       if (ModuleSymbol* mod = toModuleSymbol(se->var)) { 
         ModuleSymbol* enclosingModule = call->getModule();
 
-        if (!enclosingModule->modUseSet.set_in(mod)) {
-          enclosingModule->modUseSet.set_add(mod);
-          enclosingModule->modUseList.add(mod);
-        }
+        enclosingModule->moduleUseAdd(mod);
 
         SET_LINENO(call);
 
