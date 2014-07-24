@@ -1654,9 +1654,11 @@ static Symbol* lookup(BaseAST*       scope,
                       Vec<BaseAST*>* alreadyVisited,
                       bool           scanModuleUses);
 
+static void    buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules);
+
 static void    buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules,
-                                           Vec<ModuleSymbol*>* current     = NULL,
-                                           Vec<ModuleSymbol*>* alreadySeen = NULL);
+                                           Vec<ModuleSymbol*>* current,
+                                           Vec<ModuleSymbol*>* alreadySeen);
 
 static Symbol* lookup(BaseAST* scope, const char* name) {
   Vec<BaseAST*> nestedscopes;
@@ -1813,12 +1815,14 @@ static Symbol* lookup(BaseAST*       scope,
 static void buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules,
                                         Vec<ModuleSymbol*>* current,
                                         Vec<ModuleSymbol*>* alreadySeen) {
-  if (!alreadySeen) {
-    Vec<ModuleSymbol*> seen;
+  Vec<ModuleSymbol*> seen;
 
-    return buildBreadthFirstModuleList(modules, modules, &seen);
-  }
+  return buildBreadthFirstModuleList(modules, modules, &seen);
+}
 
+static void buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules,
+                                        Vec<ModuleSymbol*>* current,
+                                        Vec<ModuleSymbol*>* alreadySeen) {
   modules->add(NULL); // use NULL sentinel to identify modules of equal depth
 
   Vec<ModuleSymbol*> next;
