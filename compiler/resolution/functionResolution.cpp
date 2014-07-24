@@ -6681,9 +6681,6 @@ static void resolveRecordInitializers() {
       init->replace(distCall);
       resolveCall(distCall);
       resolveFns(distCall->isResolved());
-    } else if (type->symbol->hasFlag(FLAG_EXTERN)) {
-//          init->replace(init->get(1)->remove());
-      init->parentExpr->remove();
     } else {
       INT_ASSERT(type->defaultInitializer);
       CallExpr* call = new CallExpr(type->defaultInitializer);

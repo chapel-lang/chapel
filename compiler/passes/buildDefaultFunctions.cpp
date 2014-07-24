@@ -14,6 +14,7 @@ static void build_getter(AggregateType* ct, Symbol* field);
 static void build_union_assignment_function(AggregateType* ct);
 static void build_enum_assignment_function(EnumType* et);
 static void build_record_assignment_function(AggregateType* ct);
+static void build_extern_init_function(Type* type);
 static void build_extern_assignment_function(Type* type);
 static void build_record_cast_function(AggregateType* ct);
 static void build_record_copy_function(AggregateType* ct);
@@ -90,8 +91,10 @@ void buildDefaultFunctions(void) {
         // But to avoid putting a catch-all case there to implement assignment
         // for extern types that are simple (as far as we can tell), we build
         // definitions for those assignments here.
-        if (type->hasFlag(FLAG_EXTERN))
+        if (type->hasFlag(FLAG_EXTERN)) {
+          build_extern_init_function(type->type);
           build_extern_assignment_function(type->type);
+        }
       }
     }
   }
@@ -688,6 +691,36 @@ static void build_record_assignment_function(AggregateType* ct) {
   normalize(fn);
 }
 
+static void build_extern_init_function(Type* type)
+{
+  if (function_exists("_defaultOf", 1, type))
+    return;
+
+  // In the world where initialization lived entirely within the compiler,
+  // externs did not initialize themselves except in very rare cases (see
+  // c_strings).  This is the same as using noinit with the type instance.
+  // In the world of module default initializers, externs can be specified to
+  // use noinit here, while specific externs that differ can define their own
+  // default initialization in the modules.  If we had a way to determine that
+  // a type was extern from just the provided type, this code could also move
+  // to the modules.
+  FnSymbol* fn = new FnSymbol("_defaultOf");
+  fn->addFlag(FLAG_INLINE);
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "t", type);
+  arg->addFlag(FLAG_TYPE_VARIABLE);
+  fn->insertFormalAtTail(arg);
+  VarSymbol* ret = new VarSymbol("ret", type);
+  fn->insertAtTail(new CallExpr(PRIM_MOVE, ret,
+                                new CallExpr(PRIM_NO_INIT, new SymExpr(type->symbol))));
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, ret));
+  fn->insertAtHead(new DefExpr(ret));
+  fn->retType = type;
+  DefExpr* def = new DefExpr(fn);
+  type->symbol->defPoint->insertBefore(def);
+  reset_ast_loc(def, type->symbol);
+  normalize(fn);
+}
 
 static void build_extern_assignment_function(Type* type)
 {
