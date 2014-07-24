@@ -3767,15 +3767,10 @@ proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(6
 
   on this.home {
     var real_end = min(end, this.length());
-    var t = this.fstype();
     var len:int(64);
-    if t != FTYPE_LUSTRE then
-      err = qio_get_chunk(this._file_internal, len);
-    else {
-      /*var struc:c_void_ptr = alloc_lum();*/
-      /*err = chpl_lustre_get_stripe(this.path.c_str(), struc);*/
-      /*len = chpl_lustre_get_stripe_size(struc);*/
-    }
+
+    err = qio_get_chunk(this._file_internal, len);
+    if err then ioerror(err, "in file.getchunk(start:int(64), end:int(64))");
 
     if (len != 0 && (real_end > start)) {
       // TAKZ - Note that we are only wanting to return an inclusive range -- i.e., we
