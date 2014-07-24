@@ -153,6 +153,9 @@ inline proc _defaultOf(type t) param where (_isEnumeratedType(t)) {
   return _enum_first(t);
 }
 
+// Classes
+inline proc _defaultOf(type t) where (isClassType(t)) return nil:t;
+
 // Various types whose default value is known
 inline proc _defaultOf(type t) param where t: c_string return "":c_string;
 
