@@ -124,6 +124,11 @@ proc isProperSubtype(type sub, type super) param
 // Booleans
 inline proc _defaultOf(type t) param where (_isBooleanType(t)) return false:t;
 
+// String
+// defaultStringValue lives in runtime/include/chpl-string.h
+// strings will be records, so param is not possible for them
+inline proc _defaultOf(type t) where t: string return defaultStringValue;
+
 // ints, reals, imags
 inline proc _defaultOf(type t) param where (_isIntegralType(t)) return 0:t;
 // TODO: In order to make _defaultOf param for reals and imags we had to split
@@ -139,6 +144,9 @@ inline proc _defaultOf(type t) where (_isImagType(t) && t != imag(64)) return 0.
 inline proc _defaultOf(type t) param where (_isEnumeratedType(t)) {
   return _enum_first(t);
 }
+
+// Various types whose default value is known
+inline proc _defaultOf(type t) param where t: c_string return "":c_string;
 
 // Returns true if it is legal to coerce t1 to t2, false otherwise.
 proc chpl__legalIntCoerce(type t1, type t2) param
