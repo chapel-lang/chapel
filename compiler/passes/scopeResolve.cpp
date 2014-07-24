@@ -618,12 +618,6 @@ static void build_type_constructor(AggregateType* ct) {
                                           new CallExpr("chpl__initCopy",
                                                        new CallExpr(PRIM_INIT, arg))));
 
-          else
-            fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
-                                          fn->_this,
-                                          new_StringSymbol(field->name),
-                                          new CallExpr(PRIM_INIT, arg)));
-
         } else if (exprType) {
           CallExpr* newInit = new CallExpr(PRIM_INIT, exprType->copy());
           CallExpr* newSet  = new CallExpr(PRIM_SET_MEMBER, 
