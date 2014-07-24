@@ -119,6 +119,10 @@ proc isProperSubtype(type sub, type super) param
 proc isProperSubtype(type sub, type super) param
   return false;
 
+// What follows are the type _defaultOf methods, used to initialize types
+// Booleans
+inline proc _defaultOf(type t) param where (_isBooleanType(t)) return false:t;
+
 
 // Returns true if it is legal to coerce t1 to t2, false otherwise.
 proc chpl__legalIntCoerce(type t1, type t2) param
