@@ -3939,17 +3939,20 @@ qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out)
     err = fl->fsfns->get_chunk(fl->file_info, &transfer_size, fl->fs_info);
   } else {
 
-#ifdef QIO_HAS_LLAPI
+#ifdef SYS_HAS_LLAPI // This will be set in the lustre plugin if we have these available
     if (fl->fp)
       err = qio_file_path_for_fd(fileno(fl->fp), &path);
     else if (fl->fd != -1)
       err = qio_file_path_for_fd(fl->fd, &path);
     else QIO_RETURN_CONSTANT_ERROR(EBADF, "Unable to get chunk size for file -- no file descriptor or file pointer found");
 
-    if (err)
+    if (err)  {
+      qio_free(path);
       QIO_RETURN_CONSTANT_ERROR(qio_err_to_int(err), "Unable to get path for lustre file");
+    }
 
     err = chpl_lustre_get_stripe_size(path, &transfer_size);
+    qio_free(path);
 
     if (err)
       QIO_RETURN_CONSTANT_ERROR(ENOTSUP, "Unable to get stripe size for lustre file");
@@ -3994,13 +3997,19 @@ qioerr qio_get_fs_type(qio_file_t* fl, int* out)
   sys_statfs_t s;
   int rc = 1;
 
+  if (fl->fsfns && fl->fsfns->get_fs_type) {
+    *out = fl->fsfns->get_fs_type(fl->file_info, fl->fs_info);
+    return 0;
+  } 
+
+  // else
   if (fl->fp)
     rc = sys_fstatfs(fileno(fl->fp), &s);
   else if (fl->fd != -1)
     rc = sys_fstatfs(fl->fd, &s);
 
   // can't stat, and we don't have a foreign FS
-  if (rc != 0 && (fl->fsfns == NULL))
+  if (rc != 0)
     QIO_RETURN_CONSTANT_ERROR(ENOTSUP, "Unable to find file system type");
 
   if (s.f_type == LUSTRE_SUPER_MAGIC) {
@@ -4008,13 +4017,10 @@ qioerr qio_get_fs_type(qio_file_t* fl, int* out)
     return 0;
   }
 
-  if (fl->fsfns && fl->fsfns->fs_type) {
-    *out = fl->fsfns->fs_type;
-    return 0;
-  }
-
   // else
   *out = FTYPE_NONE;
   return 0;
+
+
 }
 

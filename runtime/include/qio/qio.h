@@ -118,6 +118,8 @@ typedef qioerr (*qio_close_fptr)(void*, void*); // file information, fs info
 
 typedef qioerr (*qio_fsync_fptr)(void*, void*); // file information, fs info
 
+typedef int (*qio_get_fs_type_fptr)(void*, void*); // file information, fs info
+
 typedef qioerr (*qio_getcwd_fptr)(void*,  // file information (maybe NULL)
                                           // (useful in proxying situations,
                                           // such as with a local channel for
@@ -155,7 +157,7 @@ typedef struct qio_file_functions_s {
 
   qio_fsync_fptr fsync;
   qio_getcwd_fptr getcwd;
-  int fs_type;
+  qio_get_fs_type_fptr get_fs_type;
 
   // multilocale API
   qio_get_chunk_fptr get_chunk;

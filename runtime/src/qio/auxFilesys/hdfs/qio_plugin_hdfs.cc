@@ -363,6 +363,11 @@ qioerr hdfs_get_chunk(void* fl, int64_t* len_out, void* fs)
   return 0;
 }
 
+int hdfs_get_fs_type(void* fl, void* fs) 
+{
+  return FTYPE_HDFS;
+}
+
 qio_file_functions_t hdfs_function_struct = {
   &hdfs_writev,
   &hdfs_readv,
@@ -375,7 +380,7 @@ qio_file_functions_t hdfs_function_struct = {
   &hdfs_getpath,
   &hdfs_fsync,
   &hdfs_getcwd,
-  FTYPE_HDFS,
+  &hdfs_get_fs_type,
   &hdfs_get_chunk,
   &hdfs_locales_for_range,
 };

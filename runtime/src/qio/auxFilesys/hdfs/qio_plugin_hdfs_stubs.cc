@@ -57,6 +57,8 @@ qioerr hdfs_getcwd(void* file, const char** path_out, void* fs) HDFS_ERROR(retur
 
 qioerr hdfs_getpath(void* file, const char** string_out, void* fs) HDFS_ERROR(return 0)
 
+int hdfs_get_fs_type(void* file, void* s) HDFS_ERROR(return 0)
+
 // ----- multilocale ------
 void hdfs_create_locale_mapping(char ***char_arr, int num, const char *loc_name) HDFS_ERROR(return)
 
@@ -84,7 +86,7 @@ qio_file_functions_t hdfs_function_struct = {
     &hdfs_getpath,
     &hdfs_fsync,
     &hdfs_getcwd,
-    FTYPE_HDFS,
+    &hdfs_get_fs_type,
     &hdfs_get_chunk,
     &hdfs_locales_for_range,
 };

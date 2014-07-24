@@ -52,6 +52,8 @@ qioerr hdfs_getlength(void* fl, int64_t* len_out, void* fs);
 
 qioerr hdfs_fsync(void* fl, void* fs);
 
+int hdfs_get_fs_type(void* fl, void* fs);
+
 qioerr hdfs_getcwd(void* file, const char** path_out, void* fs);
 
 qioerr hdfs_getpath(void* file, const char** string_out, void* fs);
