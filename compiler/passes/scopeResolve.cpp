@@ -63,8 +63,7 @@ static Vec<const char*> aliasFieldSet;
 static void     insertModuleInit();
 static void     addToSymbolTable(Vec<DefExpr*>& defs);
 static void     processImportExprs();
-static void     add_class_to_hierarchy(AggregateType*       ct, 
-                                       Vec<AggregateType*>* localSeenPtr = NULL);
+static void     addClassToHierarchy(AggregateType* ct);
 
 static void     resolveGotoLabels();
 static void     resolveUnresolvedSymExprs();
@@ -98,7 +97,7 @@ void scopeResolve() {
   // compute class hierarchy
   //
   forv_Vec(AggregateType, ct, gAggregateTypes) {
-    add_class_to_hierarchy(ct);
+    addClassToHierarchy(ct);
   }
 
   //
@@ -398,20 +397,25 @@ static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall) {
 *                                                                           *
 ************************************* | ************************************/
 
-static void add_class_to_hierarchy(AggregateType*       ct, 
-                                   Vec<AggregateType*>* localSeenPtr) {
+static void addClassToHierarchy(AggregateType*       ct, 
+                                Vec<AggregateType*>* localSeen);
+
+static void addClassToHierarchy(AggregateType* ct) {
+  Vec<AggregateType*> localSeen; // classes in potential cycle
+
+  return addClassToHierarchy(ct, &localSeen);
+}
+
+static void addClassToHierarchy(AggregateType*       ct, 
+                                Vec<AggregateType*>* localSeen) {
   static Vec<AggregateType*> globalSeen; // classes already in hierarchy
 
-  Vec<AggregateType*> localSeen;         // classes in potential cycle
-
-  if (!localSeenPtr)
-    localSeenPtr = &localSeen;
-
-  if (localSeenPtr->set_in(ct))
+  if (localSeen->set_in(ct))
     USR_FATAL(ct, "Class hierarchy is cyclic");
 
   if (globalSeen.set_in(ct))
     return;
+
   globalSeen.set_add(ct);
 
   add_root_type(ct);
@@ -450,9 +454,9 @@ static void add_class_to_hierarchy(AggregateType*       ct,
                 ct->symbol->name,
                 pt->symbol->name);
 
-    localSeenPtr->set_add(ct);
+    localSeen->set_add(ct);
 
-    add_class_to_hierarchy(pt, localSeenPtr);
+    addClassToHierarchy(pt, localSeen);
 
     ct->dispatchParents.add(pt);
 
