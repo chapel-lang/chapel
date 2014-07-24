@@ -238,11 +238,19 @@ module ChapelLocale {
       if locIdx==0 {
         // locale 0 has nothing else to do, so check flags
         while (true) {
+          // This fence ensures that writes to the count variables
+          // are available to this task. (Note that they aren't
+          // atomic if they're 128-bit writes though - so we
+          // have some risk of getting part of a wide pointer).
+          // Without this fence, there is a race condition on
+          // a weakly-ordered architecture.
+          atomic_fence();
           var count = 0;
           for f in flags do
             if f then count += 1;
           if count==numLocales-1 then break;
-          atomic_fence(); // race condition without fence.
+          // Give time to other tasks/threads/processes
+          // like we do in waitFor
           chpl_task_yield();
         }
         // Let the others go
