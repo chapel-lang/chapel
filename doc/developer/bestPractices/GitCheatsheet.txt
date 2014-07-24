@@ -165,6 +165,8 @@ Bring in changes from the main Chapel project to your feature branch:
     git fetch upstream
     git merge upstream/master
 
+    # or:
+    git pull upstream <branch_name>
 
 Contribute a feature branch to the main Chapel project:
 
