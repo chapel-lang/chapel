@@ -1,6 +1,6 @@
 // See runtime/include/atomics/README for more info about these functions
 
-/* Note that when compiling with --cache-enable, the compiler
+/* Note that when compiling with --cache-remote, the compiler
    will add fences to methods in atomic types with order arguments e.g.
     proc sub (... order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_sub_explicit_...(_v, value, order);
@@ -11,7 +11,7 @@
       on this do atomic_fetch_sub_explicit_...(_v, value, order);
       chpl_rmem_consist_maybe_acquire(order);
     }
-   In addition, when --cache-enable is activated, the normally required
+   In addition, when --cache-remote is activated, the normally required
    memory fence for an 'on' statement is omitted for these functions
    (since the maybe_release/maybe_acquire fence takes care of it).
 
@@ -23,8 +23,8 @@
    waitFor methods also do not need the fences written here -
    because they will be added if the cache is enabled - but they
    do need a thread fence after the loop of memory_order_relaxed
-   transactions in order to correctly single-locale compilation where
-   the 'on' statement is omitted.
+   transactions in order to correctly run in a comm=none compilation
+   where the 'on' statement is omitted.
 
    */
 
