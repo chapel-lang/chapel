@@ -21,11 +21,69 @@ general regressions (seem to happen in most configurations)
 (Reviewed for accuracy 07/15/14)
 ===========================================================
 
-expect this to be temporary; Ben committed a fix the same day
--------------------------------------------------------------
-[Error matching performance keys for
-studies/shootout/fannkuch-redux/bharshbarg/fannkuch-redux-iter]
-(7/22/14, fixed in 7/23/14 testing)
+pull #42 changed ChapelArray.chpl line numbers (7/24/14)
+--------------------------------------------------------
+[Error matching .bad file for types/records/const-checking/scenario-3-assoc-dom-of-record-with-const-fld]
+Sent to Kyle.
+
+pull #44 causes some segfaults (7/24/14)
+----------------------------------------
+[Error matching program output for io/tzakian/recordReader/test]
+[Error matching program output for regexp/ferguson/readfre]
+[Error matching program output for regexp/ferguson/rechan]
+[Error matching program output for regexp/ferguson/regex]
+[Error matching program output for studies/shootout/regex-dna/bharshbarg/regexdna]
+Lydia is looking at these.
+
+gcc update interference (7/24/14)
+---------------------------------
+Nightly/whitebox/cray-xe/day3-Wed-linux64.gnu.none.fifo.flat-std.log:
+  [Error (sub_test): Cannot find c compiler]
+  gripes about GLIBC version
+  etc.
+
+I/O (disk, NFS?, network?) problems? (7/24/14)
+----------------------------------------------
+gripes about unable to create already-existing directories, implying
+that an immediately preceding existence check failed even though the dir
+was there:
+  NightlyPerformance/chap15/day3-Wed-linux64.gnu.none.fifo.flat-prf.log:
+    [Error running sub_test in /var/tmp/jenkins/chapel-ci/workspace/vm-performance-test-chap15-default/test/functions/iterators/angeles (1)]
+    [Error running sub_test in /var/tmp/jenkins/chapel-ci/workspace/vm-performance-test-chap15-default/test/io/vass (1)]
+  NightlyPerformance/chap16/day3-Wed-linux64.gnu.none.fifo.flat-prf.log (chap16):
+    [Error creating performance test directory /data/sea/chapel/NightlyPerformance/chap16]
+    [Error running sub_test in /var/tmp/jenkins/chapel-ci/workspace/vm-performance-test-chap16-default/test/studies/lulesh/bradc (1)]
+    [Error running sub_test in /var/tmp/jenkins/chapel-ci/workspace/vm-performance-test-chap16-default/test/studies/parboil/SAD (1)]
+  NightlyPerformance/chap04/day4-Thu-linux64.gnu.none.fifo.flat-prf.log (chap04):
+    [Error running sub_test in /ptmp/jenkins/chapel-ci/workspace/performance-test-chap04-default/test/studies/shootout/nbody/bradc (1)]
+    [Error running sub_test in /ptmp/jenkins/chapel-ci/workspace/performance-test-chap04-default/test/studies/shootout/nbody/sidelnik (1)]
+  NightlyPerformance/chap03/day4-Thu-linux64.gnu.none.fifo.flat-prf.log (chap03):
+    [Error creating performance test directory /data/sea/chapel/NightlyPerformance/chap03]
+    [Error running sub_test in /var/tmp/jenkins/chapel-ci/workspace/performance-test-chap03-default/test/release/examples/benchmarks/hpcc (1)]
+    [Error running sub_test in /var/tmp/jenkins/chapel-ci/workspace/performance-test-chap03-default/test/release/examples/benchmarks/shootout (1)]
+  Nightly/day4-Thu-linux64.gnu.none.fifo.flat-fst.log (chap12):
+    [Error finding compiler performance keys for compflags/bradc/printstuff/copyright.]
+    [Error finding compiler performance keys for compflags/sungeun/configs/basic/configType.]
+    [Error running sub_test in /ptmp/jenkins/chapel-ci/workspace/correctness-chap12/test/compflags/bradc/html (1)]
+  Nightly/day4-Thu-linux64.gnu.none.fifo.flat-std.log (chap01):
+    [Error finding compiler performance keys for associative/waynew/indef8-fail2.]
+    [Error finding compiler performance keys for extern/bradc/opaque/opaqueInfer.]
+    [Error running sub_test in /ptmp/jenkins/chapel-ci/workspace/correctness-chap01/test/associative/waynew (1)]
+  Nightly/day4-Thu-linux64.gnu.none.fifo.flat-nlc.log (chap08):
+    [Error finding compiler performance keys for chpldoc/module/defaultModule.]
+    [Error finding compiler performance keys for trivial/shannon/exp.]
+    [Error running sub_test in /ptmp/jenkins/chapel-ci/workspace/correctness-chap08/test/trivial/shannon (1)]
+
+
+jenkins slave issues on bradc-lnx and lnx-vass (7/24/14)
+--------------------------------------------------------
+NightlyPerformance/bradc-lnx/day4-Thu-linux64.gnu.none.fifo.flat-prf.log:
+NightlyDists/day4-Thu-linux64.gnu.gasnet.fifo.flat-distblock.log:
+  unknown number of Tests
+  dist-block run: failed
+Thomas says: appears to have self-cured.
+Probably related to general SEA<-->CF connectivity issues around 1:00 am.
+Expect to work properly in 7/25 testing.
 
 failures retrieving and storing perf data, started 7/19/14
 ----------------------------------------------------------
@@ -38,6 +96,7 @@ First reported 7/20/14; Thomas is looking
 There is a Bugzilla Bug: http://bugzilla.us.cray.com/show_bug.cgi?id=814934
 An attempt to fix this on the svn side the night of 7/22/14 failed.
 It is being escalated to github support.
+7/24/14: Think we have a solution; expect good results for 7/25 testing.
 
 
 ==============================================
@@ -113,22 +172,6 @@ verify regressions
 following a pointer to GC'd AST nodes (07/16/14 -- noakes)
 ----------------------------------------------------------
 [Error cannot locate compiler output comparison file studies/ssca2/test-rmatalt/reproduc.good]
-[Error matching compiler output for modules/diten/test_use_chain_resolution3]
-[Error matching compiler output for modules/diten/test_use_chain_resolution]
-[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1)]
-[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 2)]
-[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 3)]
-[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 4)]
-[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5)]
-[Error matching compiler output for studies/graph500/kristyn/Graph500_1D_onV/main (compopts: 1)]
-[Error matching compiler output for studies/graph500/v3/main (compopts: 1)]
-[Error matching compiler output for studies/ssca2/graphio/graphio (compopts: 1)]
-[Error matching compiler output for studies/ssca2/rachels/SSCA2_test (compopts: 1)]
-[Error matching compiler output for studies/ssca2/rachels/SSCA2_test (compopts: 2)]
-[Error matching compiler output for studies/ssca2/rachels/SSCA2_test (compopts: 3)]
-[Error matching compiler output for studies/ssca2/rachels/SSCA2_test (compopts: 4)]
-[Error matching compiler output for studies/ssca2/rachels/SSCA2_test (compopts: 5)]
-[Error matching compiler output for studies/ssca2/test-rmatalt/nondet (compopts: 1)]
 
 
 ================================
@@ -224,22 +267,10 @@ gasnet-everything regressions (other than the above)
 (Reviewed for accuracy 07/14/14)
 ====================================================
 
-expect this to be temporary; seems to be due to pull #39; passed to Lydia
--------------------------------------------------------------------------
-[Error matching .bad file for users/ferguson/local-return]
-(7/23/14)
-
 expect this to be temporary; seems to be due to pull #38; passed to Tom
 -----------------------------------------------------------------------
 [Error matching compiler output for modules/hilde/test_module_Sort-baseline (compopts: 1)]
 (7/23/14)
-
-output ordering (?)
--------------------
-[Error matching program output for studies/glob/test_glob (compopts: 1)]
-(started 7/22/14)
-Fails with both fifo and qthreads.
-Tim has been notified and is working on it.
 
 
 error: cannot create C string from remote string
@@ -297,6 +328,11 @@ other comm count mismatches
 replicated distribution regressions
 (Reviewed for accuracy 07/15/14)
 ===================================
+
+SIGSEGV at execution time (started 7/24/14)
+-------------------------------------------
+NightlyDists/day4-Thu-linux64.gnu.gasnet.fifo.flat-distreplicated.log:
+  [Error matching program output for distributions/robust/arithmetic/kernels/hpl (compopts: 1)]
 
 See chapel_dev email thread starting 2/12/14 12:42:46 CST (David Iten) with
 subject "Re: FW: Cron Dist replicated (linux64.gnu.gasnet.fifo.flat) 60/0/60".
@@ -501,6 +537,7 @@ svn: Server sent unexpected return value (500 Internal Server Error) in response
 There is a Bugzilla Bug: http://bugzilla.us.cray.com/show_bug.cgi?id=814934
 An attempt to fix this on the svn side the night of 7/22/14 failed.
 It is being escalated to github support.
+7/24/14: Think we have a solution; expect good results for 7/25 testing.
 
 
 ======================================
