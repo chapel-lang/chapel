@@ -375,13 +375,17 @@ public:
   Vec<ModuleSymbol*>   getModules();
   Vec<AggregateType*>  getClasses();
 
+  void                 moduleUseAddChapelStandard();
+
+  void                 moduleUseAdd(ModuleSymbol* module);
+  void                 moduleUseRemove(ModuleSymbol* module);
+
   ModTag               modTag;
 
   BlockStmt*           block;
   FnSymbol*            initFn;
 
   Vec<ModuleSymbol*>   modUseList;
-  Vec<ModuleSymbol*>   modUseSet;
 
   const char*          filename;
   const char*          doc;
