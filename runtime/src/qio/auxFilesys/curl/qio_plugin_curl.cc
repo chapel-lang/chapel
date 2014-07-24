@@ -28,7 +28,6 @@ struct curl_handle {
   CURL*       curl;           // Curl handle
   const char* pathnm;         // Path/URL (etc.)
   ssize_t     length;         // length of what we are reading, -1 if we are not able to get the length
-  size_t      seek_offset;    // Offset to seek to, set in curl_seek -- set to 0 when nothing is set
   size_t      current_offset; // The current offset in the file
   int         seekable;       // Can we request byteranges from this URL?
 };
@@ -150,11 +149,6 @@ qioerr curl_readv(void* file, const struct iovec *vector, int count, ssize_t* nu
   write_vec.curr = 0;
 
   if (local_handle->seekable != -1)  // we can request byteranges
-    curl_easy_setopt(local_handle->curl, CURLOPT_RESUME_FROM_LARGE, local_handle->seek_offset);
-  else
-    write_vec.offset = local_handle->seek_offset;
-
-  if (local_handle->seek_offset == 0)
     curl_easy_setopt(local_handle->curl, CURLOPT_RESUME_FROM_LARGE, local_handle->current_offset);
   else
     write_vec.offset = local_handle->current_offset;
@@ -166,6 +160,7 @@ qioerr curl_readv(void* file, const struct iovec *vector, int count, ssize_t* nu
 
   // Read our data into the buf
   err = curl_easy_perform(local_handle->curl);
+
   DONE_SLOW_SYSCALL;
 
   got_total = write_vec.total_read;
@@ -344,15 +339,13 @@ qioerr curl_open(void** fd, const char* path, int* flags, mode_t mode, qio_hint_
   }
 
   to_curl_handle(fl)->pathnm = path;
-  to_curl_handle(fl)->length = (size_t)filelength;
+  to_curl_handle(fl)->length = (ssize_t)filelength;
   to_curl_handle(fl)->seekable = curl_seekable(fl);
-  to_curl_handle(fl)->seek_offset = 0;
   to_curl_handle(fl)->current_offset = 0;
   *fd = fl;
   return err_out;
 
 error:
-  curl_easy_cleanup(to_curl_handle(fl)->curl);
   qio_free(fl);
   return err_out;
 }
@@ -388,16 +381,16 @@ qioerr curl_seek(void* fl, off_t offset, int whence, off_t* offset_out, void* fs
 
   switch (whence) {
     case SEEK_CUR:
-      curl_local->seek_offset = curl_local->current_offset + offset;
+      curl_local->current_offset = curl_local->current_offset + offset;
       break;
     case SEEK_END:
       if (curl_local->length != -1)  // we have the length
-        curl_local->seek_offset = curl_local->length + offset;
+        curl_local->current_offset= curl_local->length + offset;
       else
         QIO_RETURN_CONSTANT_ERROR(ESPIPE, "Unable to SEEK_END for path with unkown length");
       break;
     case SEEK_SET:
-      curl_local->seek_offset = offset;
+      curl_local->current_offset = offset;
       break;
   }
 
@@ -470,6 +463,7 @@ qioerr chpl_curl_stream_string(qio_file_t* fl, const char** str)
   curl_easy_setopt(to_curl_handle(fl->file_info)->curl, CURLOPT_WRITEDATA, (void*)&chunk);
   res = curl_easy_perform(to_curl_handle(fl->file_info)->curl);
   DONE_SLOW_SYSCALL;
+
   *str = chunk.mem;
 
   if (res != CURLE_OK)
