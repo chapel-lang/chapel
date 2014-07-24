@@ -3930,11 +3930,31 @@ qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out)
   int rc = 0;
   int64_t transfer_size = 0;
   sys_statfs_t s;
+  // for lustre
+#ifdef QIO_HAS_LLAPI
+  const char* path;
+#endif
 
   if (fl->fsfns && fl->fsfns->get_chunk) {
     err = fl->fsfns->get_chunk(fl->file_info, &transfer_size, fl->fs_info);
   } else {
 
+#ifdef QIO_HAS_LLAPI
+    if (fl->fp)
+      err = qio_file_path_for_fd(fileno(fl->fp), &path);
+    else if (fl->fd != -1)
+      err = qio_file_path_for_fd(fl->fd, &path);
+    else QIO_RETURN_CONSTANT_ERROR(EBADF, "Unable to get chunk size for file -- no file descriptor or file pointer found");
+
+    if (err)
+      QIO_RETURN_CONSTANT_ERROR(qio_err_to_int(err), "Unable to get path for lustre file");
+
+    err = chpl_lustre_get_stripe_size(path, &transfer_size);
+
+    if (err)
+      QIO_RETURN_CONSTANT_ERROR(ENOTSUP, "Unable to get stripe size for lustre file");
+
+#else
     if (fl->fp){
       rc = sys_fstatfs(fileno(fl->fp), &s);
     } else if (fl->fd != -1) {
@@ -3945,6 +3965,7 @@ qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out)
       QIO_RETURN_CONSTANT_ERROR(ENOTSUP, "Unable to stat optimal transfer size for local file");
 
     transfer_size = s.f_bsize;
+#endif
   }
 
   if (transfer_size == 0) { // undefined for this system
