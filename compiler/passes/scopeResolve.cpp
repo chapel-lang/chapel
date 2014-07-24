@@ -285,7 +285,8 @@ static void addToSymbolTable(Vec<DefExpr*>& defs) {
 *                                                                           *
 ************************************* | ************************************/
 
-static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall = NULL);
+static ModuleSymbol* getUsedModule(Expr* expr);
+static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall);
 
 static void processImportExprs() {
   // handle "use mod;" where mod is a module
@@ -316,21 +317,25 @@ static void processImportExprs() {
 // Return the module imported by a use call.  The module returned could be
 // nested: e.g. "use outermost.middle.innermost;"
 //
+static ModuleSymbol* getUsedModule(Expr* expr) {
+  CallExpr* call = toCallExpr(expr);
+
+  if (!call)
+    INT_FATAL(call, "Bad use statement in getUsedModule");
+
+  if (!call->isPrimitive(PRIM_USE))
+    INT_FATAL(call, "Bad use statement in getUsedModule");
+
+  return getUsedModule(call->get(1), call);
+}
+
+//
+// Return the module imported by a use call.  The module returned could be
+// nested: e.g. "use outermost.middle.innermost;"
+//
 static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall) {
   ModuleSymbol* mod    = NULL;
   Symbol*       symbol = NULL;
-
-  if (!useCall) {
-    CallExpr* call = toCallExpr(expr);
-
-    if (!call)
-      INT_FATAL(call, "Bad use statement in getUsedModule");
-
-    if (!call->isPrimitive(PRIM_USE))
-      INT_FATAL(call, "Bad use statement in getUsedModule");
-
-    return getUsedModule(call->get(1), call);
-  }
 
   if (SymExpr* sym = toSymExpr(expr)) {
     Symbol* symbol = sym->var;
