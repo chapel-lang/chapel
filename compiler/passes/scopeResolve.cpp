@@ -1812,9 +1812,7 @@ static Symbol* lookup(BaseAST*       scope,
   return retval;
 }
 
-static void buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules,
-                                        Vec<ModuleSymbol*>* current,
-                                        Vec<ModuleSymbol*>* alreadySeen) {
+static void buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules) {
   Vec<ModuleSymbol*> seen;
 
   return buildBreadthFirstModuleList(modules, modules, &seen);
