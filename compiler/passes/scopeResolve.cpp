@@ -62,7 +62,7 @@ static Vec<const char*> aliasFieldSet;
 
 static void     insertModuleInit();
 static void     addToSymbolTable(Vec<DefExpr*>& defs);
-static void     process_import_expr(CallExpr* call);
+static void     processImportExprs();
 static void     add_class_to_hierarchy(AggregateType*       ct, 
                                        Vec<AggregateType*>* localSeenPtr = NULL);
 
@@ -90,14 +90,7 @@ void scopeResolve() {
   //
   addToSymbolTable(gDefExprs);
 
-  //
-  // handle "use mod;" where mod is a module
-  //
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIM_USE)) {
-      process_import_expr(call);
-    }
-  }
+  processImportExprs();
 
   enableModuleUsesCache = true;
 
@@ -287,33 +280,36 @@ static void addToSymbolTable(Vec<DefExpr*>& defs) {
 
 /************************************ | *************************************
 *                                                                           *
+* Transform module uses into calls to initialize functions; store the       *
+* relevant scoping information in BlockStmt::modUses                        *
 *                                                                           *
 ************************************* | ************************************/
 
 static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall = NULL);
 
-//
-// Transform module uses into calls to initialize functions; store the
-// relevant scoping information in BlockStmt::modUses
-//
-static void process_import_expr(CallExpr* call) {
-  SET_LINENO(call);
+static void processImportExprs() {
+  // handle "use mod;" where mod is a module
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_USE)) {
+      SET_LINENO(call);
 
-  ModuleSymbol* mod = getUsedModule(call);
+      ModuleSymbol* mod = getUsedModule(call);
 
-  if (!mod)
-    USR_FATAL(call, "Cannot find module");
+      if (!mod)
+        USR_FATAL(call, "Cannot find module");
 
-  ModuleSymbol* enclosingModule = call->getModule();
+      ModuleSymbol* enclosingModule = call->getModule();
 
-  enclosingModule->moduleUseAdd(mod);
+      enclosingModule->moduleUseAdd(mod);
 
-  if (call->getStmtExpr()->parentExpr == call->getModule()->initFn->body)
-    call->getModule()->block->moduleUseAdd(mod);
-  else
-    getVisibilityBlock(call)->moduleUseAdd(mod);
+      if (call->getStmtExpr()->parentExpr == call->getModule()->initFn->body)
+        call->getModule()->block->moduleUseAdd(mod);
+      else
+        getVisibilityBlock(call)->moduleUseAdd(mod);
 
-  call->getStmtExpr()->remove();
+      call->getStmtExpr()->remove();
+    }
+  }
 }
 
 //
