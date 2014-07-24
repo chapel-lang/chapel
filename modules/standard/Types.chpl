@@ -157,7 +157,14 @@ inline proc _defaultOf(type t) param where (_isEnumeratedType(t)) {
 inline proc _defaultOf(type t) where (isClassType(t)) return nil:t;
 
 // Various types whose default value is known
+inline proc _defaultOf(type t) param where t: void return _void;
 inline proc _defaultOf(type t) param where t: c_string return "":c_string;
+inline proc _defaultOf(type t) where t: opaque return _nullOpaque;
+inline proc _defaultOf(type t) where t: chpl_taskID_t return chpl_nullTaskID;
+inline proc _defaultOf(type t) where t: _sync_aux_t return _nullSyncVarAuxFields;
+inline proc _defaultOf(type t) where t: _single_aux_t return _nullSingleVarAuxFields;
+inline proc _defaultOf(type t) where t: _task_list return _nullTaskList;
+
 
 // Returns true if it is legal to coerce t1 to t2, false otherwise.
 proc chpl__legalIntCoerce(type t1, type t2) param
