@@ -175,6 +175,26 @@ proc _defaultOf(type t) where t:_distribution {
 }
 */
 
+// When I finish removing PRIM_INIT before initialization to a known value, then
+// this method should work.  Until then, my stopgap will be an external function
+// in the runtime.
+//inline proc _defaultOf(type t) where t: memory_order return memory_order_seq_cst;
+extern proc _defaultOfMemoryOrder(): memory_order;
+
+pragma "no instantiation limit"
+pragma "compiler generated"
+inline proc _defaultOf(type t) {
+  select t {
+    when memory_order {
+      return _defaultOfMemoryOrder();
+    }
+    otherwise {
+      return nil:t;
+    }
+  }
+}
+
+
 
 // Returns true if it is legal to coerce t1 to t2, false otherwise.
 proc chpl__legalIntCoerce(type t1, type t2) param
