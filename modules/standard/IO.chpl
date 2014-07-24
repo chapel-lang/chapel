@@ -166,8 +166,6 @@ extern const QBUFFER_PTR_NULL:qbuffer_ptr_t;
 
 extern type style_char_t = uint(8);
 
-extern type char_ptr_ptr; // char**
-
 extern const QIO_STRING_FORMAT_WORD:uint(8);
 extern const QIO_STRING_FORMAT_BASIC:uint(8);
 extern const QIO_STRING_FORMAT_CHPL:uint(8);
