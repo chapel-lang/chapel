@@ -1,6 +1,18 @@
 Git "cheat sheet" (with comparisons to svn)
 ===========================================
 
+See ContributorInfo.txt for more information about the process
+of contributing code to Chapel. The basic workflow is:
+ - Let the Chapel community know about any long-term or big efforts
+ - Use GitHub to fork the Chapel project
+ - Create a feature branch
+ - Develop your contribution locally
+ - Update your feature branch with changes from the main Chapel project
+ - Test your feature
+ - Push your work to your feature branch
+ - Create a pull request and work with your reviewers
+ - When satisfied, your reviewer accepts your pull request
+
 Additional docs available online at: http://git-scm.com/docs/
 
 Git help pages can be viewed with:
@@ -31,7 +43,20 @@ Update to specific revision number:
     # similar to:
     svn update -r<revision number>
 
+Create and switch to a feature branch:
+
+.. code-block:: bash
+
+    git checkout -b <branch_name>
+
+Push your changes to your feature branch on GitHub:
+
+.. code-block:: bash
+
+    git push origin <branch_name>
+
 Stage a file/dir for commit:
+(you probably want to be on a feature branch first)
 
 .. code-block:: bash
 
@@ -132,6 +157,27 @@ If there are conflicts, you will be asked to resolve them. Once the affected
 files have been fixed, stage them with ``git add``, and then call ``git
 commit`` to finish the merge process.
 
+
+Bring in changes from the main Chapel project to your feature branch:
+
+.. code-block:: bash
+
+    git fetch upstream
+    git merge upstream/master
+
+    # or:
+    git pull upstream <branch_name>
+
+Contribute a feature branch to the main Chapel project:
+
+After pushing your changes to your feature branch on GitHub,
+use the GitHub web interface to create a pull request.
+Visit https://github.com/<username>/chapel, navigate
+to your feature branch, and click the green Create Pull
+Request button. Your contribution will need to be tested and
+reviewed, and you will have to have signed a contributors
+agreement. See ContributorInfo.txt.
+
 .. _initial_git_setup:
 
 Initial Git Setup
@@ -144,6 +190,11 @@ Follow the GitHub directions to setup a new account.
 If you plan to use ssh to push/pull, setup SSH keys.
 
   https://help.github.com/categories/56/articles
+
+Use the GitHub web interface to create a fork of the Chapel
+repo by visiting https://github.com/chapel-lang/chapel
+and clicking the 'Fork' button. Then configure your local
+git and check out your fork:
 
 Here is the uncommented version of the commands:
 
@@ -167,3 +218,10 @@ Here is the uncommented version of the commands:
 
     # Or, if using HTTPS instead of SSH.
     git clone https://github.com/<github_username>/chapel.git
+
+    # Set up remotes for github
+    cd chapel
+    git remote add upstream https://github.com/chapel-lang/chapel.git
+    # Make sure it works, get up-to-date without modifying your files
+    git fetch upstream
+

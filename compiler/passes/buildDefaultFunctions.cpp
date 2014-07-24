@@ -21,6 +21,7 @@ static void build_record_hash_function(AggregateType* ct);
 static void build_record_equality_function(AggregateType* ct);
 static void build_record_inequality_function(AggregateType* ct);
 static void build_enum_cast_function(EnumType* et);
+static void build_enum_first_function(EnumType* et);
 static void build_enum_enumerate_function(EnumType* et);
 
 //static void buildDefaultReadFunction(AggregateType* type);
@@ -80,6 +81,7 @@ void buildDefaultFunctions(void) {
 
         build_enum_cast_function(et);
         build_enum_assignment_function(et);
+        build_enum_first_function(et);
         build_enum_enumerate_function(et);
       }
       else
@@ -512,6 +514,43 @@ static void build_record_inequality_function(AggregateType* ct) {
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
   reset_ast_loc(def, ct->symbol);
+  normalize(fn);
+}
+
+static void build_enum_first_function(EnumType* et) {
+  if (function_exists("_enum_first", 1, et))
+    return;
+  // Build a function that returns the first option for the enum
+  // specified, also known as the default.
+  FnSymbol* fn = new FnSymbol("_enum_first");
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+  // Making this compiler generated allows users to define what the
+  // default is for a particular enum.  They can also redefine the
+  // _defaultOf function for the enum to obtain this functionality (and
+  // that is the encouraged path to take).
+  fn->addFlag(FLAG_INLINE);
+  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "t", dtAny);
+  arg->addFlag(FLAG_MARKED_GENERIC);
+  arg->addFlag(FLAG_TYPE_VARIABLE);
+  fn->insertFormalAtTail(arg);
+  fn->retTag = RET_PARAM;
+
+  fn->where = new BlockStmt(new CallExpr("==", arg, et->symbol));
+
+  DefExpr* defExpr = toDefExpr(et->constants.head);
+  if (defExpr)
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, defExpr->sym));
+  else
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, dtVoid));
+  // If there are one or more enumerators for this type, return the first one
+  // listed.  Otherwise return void.
+
+  DefExpr* fnDef = new DefExpr(fn);
+  // needs to go in the base module because when called from _defaultOf(et),
+  // they are automatically inserted
+  baseModule->block->insertAtTail(fnDef);
+  reset_ast_loc(fnDef, et->symbol);
+
   normalize(fn);
 }
 
