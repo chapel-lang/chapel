@@ -165,6 +165,16 @@ inline proc _defaultOf(type t) where t: _sync_aux_t return _nullSyncVarAuxFields
 inline proc _defaultOf(type t) where t: _single_aux_t return _nullSingleVarAuxFields;
 inline proc _defaultOf(type t) where t: _task_list return _nullTaskList;
 
+/* Need new <alias>() for this to function
+proc _defaultOf(type t) where t:_distribution {
+  var ret: t = noinit;
+  type valType = __primitive("query type field", t, "_valueType");
+  var typeInstance = new <valType>();
+  ret = chpl__buildDistValue(typeInstance);
+  return ret;
+}
+*/
+
 
 // Returns true if it is legal to coerce t1 to t2, false otherwise.
 proc chpl__legalIntCoerce(type t1, type t2) param
