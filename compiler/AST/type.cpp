@@ -1300,14 +1300,14 @@ void initPrimitiveTypes(void) {
   dtSymbol = createPrimitiveType( "symbol", "_symbol"); 
 
   dtFile = createPrimitiveType ("_file", "_cfile");
-  dtFile->symbol->addFlag(FLAG_NO_CODEGEN);
+  dtFile->symbol->addFlag(FLAG_EXTERN);
   CREATE_DEFAULT_SYMBOL(dtFile, gFile, "NULL");
   // In codegen, this prevents the "&NULL" absurdity.
   gFile->addFlag(FLAG_EXTERN);
 
   dtOpaque = createPrimitiveType("opaque", "chpl_opaque");
   // Treat this as an extern to get the auto-genned assignment function.
-  dtOpaque->symbol->addFlag(FLAG_NO_CODEGEN);
+  dtOpaque->symbol->addFlag(FLAG_EXTERN);
   CREATE_DEFAULT_SYMBOL(dtOpaque, gOpaque, "_nullOpaque");
   gOpaque->cname = "NULL";
   // In codegen, this prevents the "&NULL" absurdity.
