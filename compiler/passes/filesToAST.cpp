@@ -196,17 +196,8 @@ void parse(void) {
 
   forv_Vec(ModuleSymbol, mod, allModules) {
     // Filter out modules that don't want to include ChapelStandard by default.
-    if (mod->hasFlag(FLAG_NO_USE_CHAPELSTANDARD))
-      continue;
-
-    // ChapelStandard is added implicity to the "use" list of all other modules.
-    {
-      SET_LINENO(mod);
-      mod->block->moduleAddUse(standardModule);
-      mod->modUseSet.clear();
-      mod->modUseList.clear();
-      mod->modUseSet.set_add(standardModule);
-      mod->modUseList.add(standardModule);
+    if (mod->hasFlag(FLAG_NO_USE_CHAPELSTANDARD) == false) {
+      mod->moduleUseAddChapelStandard();
     }
   }
 
@@ -216,7 +207,7 @@ void parse(void) {
   // variable).
   {
     SET_LINENO(baseModule);
-    baseModule->block->moduleAddUse(rootModule);
+    baseModule->block->moduleUseAdd(rootModule);
   }
 
   finishCountingTokens();
