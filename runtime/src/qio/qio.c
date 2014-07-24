@@ -3951,7 +3951,8 @@ qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out)
       QIO_RETURN_CONSTANT_ERROR(qio_err_to_int(err), "Unable to get path for lustre file");
     }
 
-    err = chpl_lustre_get_stripe_size(path, &transfer_size);
+    // This will get uncommented once we add in the Lustre plugin
+    /*err = chpl_lustre_get_stripe_size(path, &transfer_size);*/
     qio_free(path);
 
     if (err)
