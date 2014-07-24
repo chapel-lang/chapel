@@ -123,6 +123,16 @@ proc isProperSubtype(type sub, type super) param
 // Booleans
 inline proc _defaultOf(type t) param where (_isBooleanType(t)) return false:t;
 
+// ints, reals, imags
+inline proc _defaultOf(type t) param where (_isIntegralType(t)) return 0:t;
+// TODO: In order to make _defaultOf param for reals and imags we had to split
+// the cases into their default size and a non-param case.  It is hoped that
+// in the future, floating point numbers may be castable whilst param.  In that
+// world, we can again shrink these calls into the size-ignorant case.
+inline proc _defaultOf(type t) param where t == real(64) return 0.0:t;
+inline proc _defaultOf(type t) where (_isRealType(t) && t != real(64)) return 0.0:t;
+inline proc _defaultOf(type t) param where t == imag(64) return 0.0i:t;
+inline proc _defaultOf(type t) where (_isImagType(t) && t != imag(64)) return 0.0i:t;
 
 // Returns true if it is legal to coerce t1 to t2, false otherwise.
 proc chpl__legalIntCoerce(type t1, type t2) param
