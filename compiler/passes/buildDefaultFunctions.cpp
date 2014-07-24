@@ -903,7 +903,12 @@ static void build_record_init_function(AggregateType* ct) {
   if (ct->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
     // Preserving previous functionality
     fn->insertAtTail(new CallExpr(PRIM_RETURN, arg));
-  } else {
+  } else if (!ct->symbol->hasFlag(FLAG_TUPLE)) {
+    // Tuples are handled by generics.cpp because some of their information is
+    // not known at this point.  The function needs to exist prior to generic
+    // resolution, which is why its outer shell is created here, but its body
+    // is not capable of being created until then.
+
     // To default initialize, call the type specified default initializer
     CallExpr* call = new CallExpr(ct->defaultInitializer);
     // Need to insert all required arguments into this call
