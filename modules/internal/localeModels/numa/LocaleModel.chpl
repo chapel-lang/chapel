@@ -17,7 +17,7 @@ module LocaleModel {
 
   use ChapelLocale;
   use DefaultRectangular;
-  use ChapelNumLocales;
+  //  use ChapelNumLocales;
   use Sys;
 
   extern proc chpl_task_getRequestedSubloc(): int(32);
