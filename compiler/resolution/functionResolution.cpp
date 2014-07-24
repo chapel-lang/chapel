@@ -6383,7 +6383,7 @@ resolve() {
   visibilityBlockCache.clear();
 
   forv_Vec(BlockStmt, stmt, gBlockStmts) {
-    stmt->moduleClearUse();
+    stmt->moduleUseClear();
   }
 
   resolved = true;

@@ -396,7 +396,7 @@ BlockStmt::length() const {
 
 
 void
-BlockStmt::moduleAddUse(ModuleSymbol* mod) {
+BlockStmt::moduleUseAdd(ModuleSymbol* mod) {
   if (modUses == NULL) {
     modUses = new CallExpr(PRIM_USED_MODULES_LIST);
 
@@ -411,7 +411,7 @@ BlockStmt::moduleAddUse(ModuleSymbol* mod) {
 // Remove a module from the list of modules used by the module this block
 // statement belongs to. The list of used modules is stored in modUses
 bool
-BlockStmt::moduleRemoveUse(ModuleSymbol* mod) {
+BlockStmt::moduleUseRemove(ModuleSymbol* mod) {
   bool retval = false;
 
   if (modUses != NULL) {
@@ -433,7 +433,7 @@ BlockStmt::moduleRemoveUse(ModuleSymbol* mod) {
 }
 
 void
-BlockStmt::moduleClearUse() {
+BlockStmt::moduleUseClear() {
   if (modUses != 0) {
 
     for_alist(expr, modUses->argList) {

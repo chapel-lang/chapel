@@ -304,12 +304,12 @@ static void process_import_expr(CallExpr* call) {
 
   ModuleSymbol* enclosingModule = call->getModule();
 
-  enclosingModule->modUseAdd(mod);
+  enclosingModule->moduleUseAdd(mod);
 
   if (call->getStmtExpr()->parentExpr == call->getModule()->initFn->body)
-    call->getModule()->block->moduleAddUse(mod);
+    call->getModule()->block->moduleUseAdd(mod);
   else
-    getVisibilityBlock(call)->moduleAddUse(mod);
+    getVisibilityBlock(call)->moduleUseAdd(mod);
 
   call->getStmtExpr()->remove();
 }
@@ -1395,7 +1395,7 @@ static void resolveModuleCall(CallExpr* call, Vec<UnresolvedSymExpr*>& skipSet) 
       if (ModuleSymbol* mod = toModuleSymbol(se->var)) { 
         ModuleSymbol* enclosingModule = call->getModule();
 
-        enclosingModule->modUseAdd(mod);
+        enclosingModule->moduleUseAdd(mod);
 
         SET_LINENO(call);
 

@@ -231,7 +231,7 @@ static void deadModuleElimination() {
       // Inform every module about the dead module
       forv_Vec(ModuleSymbol, modThatMightUse, allModules) {
         if (modThatMightUse != mod) {
-          modThatMightUse->modUseDeadModule(mod);
+          modThatMightUse->moduleUseRemove(mod);
         }
       }
     }

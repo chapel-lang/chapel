@@ -2372,7 +2372,7 @@ void ModuleSymbol::accept(AstVisitor* visitor) {
   }
 }
 
-void ModuleSymbol::modUseAddChapelStandard() {
+void ModuleSymbol::moduleUseAddChapelStandard() {
   UnresolvedSymExpr* modRef = 0;
 
   SET_LINENO(this);
@@ -2393,7 +2393,7 @@ void ModuleSymbol::modUseAddChapelStandard() {
 //
 // Fortunately there are currently no tests that expose this fallacy so
 // long at ChapelStandard always appears first in the list
-void ModuleSymbol::modUseAdd(ModuleSymbol* mod) {
+void ModuleSymbol::moduleUseAdd(ModuleSymbol* mod) {
   if (modUseList.index(mod) < 0) {
     if (mod == standardModule) {
       modUseList.insert(0, mod);
@@ -2403,31 +2403,29 @@ void ModuleSymbol::modUseAdd(ModuleSymbol* mod) {
   }
 }
 
-// Notify this module that some other module is dead
+// If the specified module is currently used by the target
+// then remove the module from the use-state of this module
+// but introduce references to the children of the module
+// being dropped.
 //
-// If the dead module is used by this module then purge
-// the references.
-
-// Because modules (such as the standard module) can serve
-// as groupings of other modules to include, add all the
-// modules that the dead module used.
-//
-void ModuleSymbol::modUseDeadModule(ModuleSymbol* deadMod) {
-  int index = modUseList.index(deadMod);
+// At this time this is only used for deadCodeElimination and
+// it is not clear if there will be other uses.
+void ModuleSymbol::moduleUseRemove(ModuleSymbol* mod) {
+  int index = modUseList.index(mod);
 
   if (index >= 0) {
-    bool inBlock = block->moduleRemoveUse(deadMod);
+    bool inBlock = block->moduleUseRemove(mod);
 
     modUseList.remove(index);
 
     // The dead module may have used other modules.  If so add them
     // to the current module
-    forv_Vec(ModuleSymbol, modUsedByDeadMod, deadMod->modUseList) {
+    forv_Vec(ModuleSymbol, modUsedByDeadMod, mod->modUseList) {
       if (modUseList.index(modUsedByDeadMod) < 0) {
         SET_LINENO(this);
 
         if (inBlock == true)
-          block->moduleAddUse(modUsedByDeadMod);
+          block->moduleUseAdd(modUsedByDeadMod);
 
         modUseList.add(modUsedByDeadMod);
       }

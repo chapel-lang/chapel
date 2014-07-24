@@ -58,9 +58,9 @@ public:
   bool            isLoop()                                     const;
   int             length()                                     const;
 
-  void            moduleAddUse(ModuleSymbol* mod);
-  bool            moduleRemoveUse(ModuleSymbol* mod);
-  void            moduleClearUse();
+  void            moduleUseAdd(ModuleSymbol* mod);
+  bool            moduleUseRemove(ModuleSymbol* mod);
+  void            moduleUseClear();
 
   BlockTag        blockTag;
   AList           body;

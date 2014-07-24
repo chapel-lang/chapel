@@ -375,10 +375,10 @@ public:
   Vec<ModuleSymbol*>   getModules();
   Vec<AggregateType*>  getClasses();
 
-  void                 modUseAddChapelStandard();
+  void                 moduleUseAddChapelStandard();
 
-  void                 modUseAdd(ModuleSymbol* module);
-  void                 modUseDeadModule(ModuleSymbol* module);
+  void                 moduleUseAdd(ModuleSymbol* module);
+  void                 moduleUseRemove(ModuleSymbol* module);
 
   ModTag               modTag;
 
