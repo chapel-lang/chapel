@@ -3931,7 +3931,7 @@ qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out)
   int64_t transfer_size = 0;
   sys_statfs_t s;
   // for lustre
-#ifdef QIO_HAS_LLAPI
+#ifdef SYS_HAS_LLAPI
   const char* path;
 #endif
 
