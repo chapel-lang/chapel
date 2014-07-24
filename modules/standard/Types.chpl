@@ -39,6 +39,7 @@ pragma "no instantiation limit"
 proc _isUnsignedType(type t) param return
   (t == uint(8)) || (t == uint(16)) || (t == uint(32)) || (t == uint(64));
 
+pragma "no instantiation limit"
 proc _isEnumeratedType(type t) param {
   proc isEnum(type t: enumerated) param return true;
   proc isEnum(type t) param return false;
@@ -133,6 +134,11 @@ inline proc _defaultOf(type t) param where t == real(64) return 0.0:t;
 inline proc _defaultOf(type t) where (_isRealType(t) && t != real(64)) return 0.0:t;
 inline proc _defaultOf(type t) param where t == imag(64) return 0.0i:t;
 inline proc _defaultOf(type t) where (_isImagType(t) && t != imag(64)) return 0.0i:t;
+
+// Enums
+inline proc _defaultOf(type t) param where (_isEnumeratedType(t)) {
+  return _enum_first(t);
+}
 
 // Returns true if it is legal to coerce t1 to t2, false otherwise.
 proc chpl__legalIntCoerce(type t1, type t2) param
