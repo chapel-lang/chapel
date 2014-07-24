@@ -393,25 +393,37 @@ char* get_locale_name(char *loc)
   return strndup(loc, i);
 }
 
-qioerr hdfs_locales_for_range(void* file, off_t start_byte, off_t end_byte, const char*** loc_names_out, void* fs) 
+qioerr hdfs_locales_for_range(void* file, off_t start_byte, off_t end_byte, const char*** loc_names_out, int* num_locs_out, void* fs) 
 {
   int i = 0;
+  int j = 0;
   char*** info = NULL;
 
   info = hdfsGetHosts(to_hdfs_fs(fs)->hfs, to_hdfs_file(file)->pathnm, start_byte, end_byte);
 
   // unable to get hosts for this byte range
   if (!info || !info[0]) {
-    *good = 0;
-    goto end;
+    *num_locs_out = 0;
+    hdfsFreeHosts(info);
+    QIO_RETURN_CONSTANT_ERROR(EREMOTEIO, "Unable to get owners for byterange");
   }
 
-  *loc_names_out = info[0];
-  return 0;
+  while(info[0][i]) {
+    info[0][i] = get_locale_name(info[0][i]);
+    i++;
+  }
 
-end:
-  hdfsFreeHosts(info);
-  QIO_RETURN_CONSTANT_ERROR(EREMOTEIO, "Unable to get owners for byterange");
+  *num_locs_out = i - 1;
+  *loc_names_out = (const char**)info[0];
+
+  // Free the other hosts that we don't need
+  for (i = 1; info[i]; i++) {
+    for (j = 0; info[i][j]; j++)
+      qio_free(info[i][j]);
+    qio_free(info[i]);
+  }
+
+  return 0;
 }
 
 // char_arr is already allocated

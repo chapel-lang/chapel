@@ -132,7 +132,8 @@ typedef qioerr (*qio_get_chunk_fptr)(void*, // file info
 typedef qioerr (*qio_get_locales_for_region_fptr) (void*,       // file info
                                                    off_t,       // start
                                                    off_t,       // end
-                                                   char***, // locale names out
+                                                   const char***, // locale names out
+                                                   int*,        // number of locales that we got total
                                                    void*);      // fs info
 
 // The ordering of these fields is important due to struct initialization
@@ -524,7 +525,7 @@ qioerr qio_file_open_access_usr(qio_file_t** file_out, const char* pathname,
 
 qioerr qio_get_fs_type(qio_file_t* fl, int* out);
 qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out);
-qioerr qio_locales_for_region(qio_file_t* fl, off_t start, off_t end, char*** locale_names_out);
+qioerr qio_locales_for_region(qio_file_t* fl, off_t start, off_t end, const char*** locale_names_out, int* num_locs_out);
 
 // This can be called to run close and to check the return value.
 // That's important because some implementations (such as NFS)

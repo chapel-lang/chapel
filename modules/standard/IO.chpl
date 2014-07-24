@@ -301,7 +301,8 @@ extern proc qio_channel_write_bits(threadsafe:c_int, ch:qio_channel_ptr_t, v:uin
 extern proc qio_channel_flush_bits(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
 extern proc qio_channel_read_bits(threadsafe:c_int, ch:qio_channel_ptr_t, ref v:uint(64), nbits:int(8)):syserr;
 
-extern proc qio_locales_for_region(fl:qio_file_ptr_t, start:int(64), end:int(64), ref loc_names:char_ptr_ptr):syserr;
+extern proc qio_locales_for_region(fl:qio_file_ptr_t, start:int(64), end:int(64), ref
+    loc_names:c_ptr(c_string), ref num_locs_out:c_int):syserr;
 extern proc qio_get_chunk(fl:qio_file_ptr_t, ref len:int(64)):syserr;
 extern proc qio_get_fs_type(fl:qio_file_ptr_t, ref tp:c_int):syserr;
 
@@ -3804,6 +3805,14 @@ proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(6
   return (s, e);
 }
 
+proc findloc(loc:string, locs:c_ptr(c_string), end:int) {
+  for i in 0..end-1 {
+    if (loc == locs[i]) then 
+      return true;
+  }
+  return false;
+}
+
 // Returns the 'best' locales to run something working with this
 // region of the file. This *must* return the same result when
 // called from different locales. Returns a n-length array if
@@ -3812,11 +3821,22 @@ proc file.locsforregion(start:int(64), end:int(64)) {
   var ret: domain(locale);
   on this.home {
     var err:syserr;
-    var locs: char_ptr_ptr;
-    err = qio_locales_for_region(this._file_internal, start, end, locs);
+    var locs: c_ptr(c_string);
+    var num_hosts:c_int;
+    err = qio_locales_for_region(this._file_internal, start, end, locs, num_hosts);
+    // looping over Locales enforces the ordering constraint on the locales.
     for loc in Locales {
-      ret += loc;
+      if (findloc(loc.name, locs, num_hosts:int)) then
+        ret += loc;
     }
+    // We allocated memory in the runtime for this, so free it now
+    if num_hosts != 0 then
+      c_free(locs);
+
+    // We found no "good" locales. So any locale is just as good as the next
+    if ret.numIndices == 0 then 
+      for loc in Locales do 
+        ret += loc;
   }
   return ret;
 }
