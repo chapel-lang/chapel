@@ -32,6 +32,7 @@ import datetime
 import logging
 import os
 import os.path
+import re
 import shlex
 import shutil
 import subprocess
@@ -402,6 +403,46 @@ class AbstractPbsJob(object):
         return args, unparsed_args
 
     @classmethod
+    def _qstat(cls, job_id, args=None):
+        """Call qstat and return output from stdout.
+
+        Raises ValueError if exit code is non-zero.
+
+        :type job_id: str
+        :arg job_id: pbs job id
+
+        :type args: list
+        :arg args: additional arguments to pass qstat
+
+        :rtype: str
+        :returns: qsub job status
+        """
+        if args is None:
+            args = []
+
+        qstat_command = ['qstat'] + args + [job_id]
+        logging.debug('qstat command to run: {0}'.format(qstat_command))
+
+        logging.debug('Opening qstat subprocess.')
+        qstat_proc = subprocess.Popen(
+            qstat_command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            env=os.environ.copy()
+        )
+
+        logging.debug('Communicating with qstat subprocess.')
+        stdout, stderr = qstat_proc.communicate()
+        logging.debug('qstat process returned with status {0}, stdout: {1}, and stderr: {2}'.format(
+            qstat_proc.returncode, stdout, stderr))
+
+        if qstat_proc.returncode != 0:
+            raise ValueError('Non-zero exit code {0} from qstat: "{1}"'.format(
+                qstat_proc.returncode, stdout))
+        else:
+            return stdout
+
+    @classmethod
     def _setup_logging(cls, verbose=False):
         """Setup logging to console.
 
@@ -441,36 +482,17 @@ class MoabJob(AbstractPbsJob):
         :rtype: str
         :returns: qsub job status
         """
-        qstat_command = ['qstat', '-x', job_id]
-        logging.debug('qstat command to run: {0}'.format(qstat_command))
-
-        logging.debug('Opening qstat subprocess.')
-        qstat_proc = subprocess.Popen(
-            qstat_command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            env=os.environ.copy()
-        )
-
-        logging.debug('Communicating with qstat subprocess.')
-        stdout, stderr = qstat_proc.communicate()
-        logging.debug('qstat process returned with status {0}, stdout: {1}, and stderr: {2}'.format(
-            qstat_proc.returncode, stdout, stderr))
-
-        if qstat_proc.returncode != 0:
-            raise ValueError('Non-zero exit code {0} from qstat: "{1}"'.format(
-                qstat_proc.returncode, stdout))
-
+        output = cls._qstat(job_id, args=['-x'])
         try:
-            root = xml.etree.ElementTree.fromstring(stdout)
+            root = xml.etree.ElementTree.fromstring(output)
             return root.find('Job').find('job_state').text
         except AttributeError as ex:
             logging.exception('Could not find job_state element in xml output: {0}'.format(ex))
-            logging.error('XML output: {0}'.format(stdout))
+            logging.error('XML output: {0}'.format(output))
             raise
         except Exception as ex:
             logging.exception('Failed to parse qstat output: {0}'.format(ex))
-            logging.error('XML output: {0}'.format(stdout))
+            logging.error('XML output: {0}'.format(output))
             raise
 
 
@@ -481,13 +503,56 @@ class PbsProJob(AbstractPbsJob):
 
     @property
     def job_name(self):
-        # FIXME: PBSPro has a 15 character limit for job names.
-        #        (thomasvandoren, 2014-07-23)
-        raise NotImplementedError('job_name is not yet implemented for PBSPro.')
+        """Takes the job_name from the super class, AbstractJob, and returns
+        the last 15 characters. PBSPro limits job name to 15 characters.
+
+        :rtype: str
+        :returns: pbs job name
+        """
+        super_name = super(PbsProJob, self).job_name
+        job_name = super_name[-15:]
+        logging.info('PBSPro job name is: {0}'.format(job_name))
+        return job_name
 
     @classmethod
     def qstat(cls, job_id):
-        raise NotImplementedError('qstat is not yet implemented for PBSPro.')
+        """Query job status using qstat.
+
+        Assumes ``qstat <job_id>`` output is of the form:
+
+        ::
+
+            Job id            Name             User              Time Use S Queue
+            ----------------  ---------------- ----------------  -------- - -----
+            1889416.sdb       lj               tvandoren         00:00:03 R workq
+
+        :type job_id: str
+        :arg job_id: pbs job id
+
+        :rtype: str
+        :returns: qsub job status
+        """
+        output = cls._qstat(job_id)
+        lines = output.splitlines()
+
+        if len(lines) != 3:
+            logging.error('Unexpected number of lines in qstat output: {0}'.format(output))
+            raise ValueError('Expected 3 lines of qstat output, not {0}.'.format(len(output)))
+
+        header_line = lines[0]
+        job_line = lines[-1]
+
+        # Use regex to find position of status. Then extract the one character
+        # status from the job line.
+        pattern = re.compile('\sS\s')
+        match = pattern.search(header_line)
+        if match is not None:
+            status_char = match.start() + 1
+            return job_line[status_char]
+        else:
+            logging.error('Could not find S column in header line of qstat output.')
+            raise ValueError('Could not find {0} pattern in header line: {1}'.format(
+                pattern.pattern, header_line))
 
 
 @contextlib.contextmanager
