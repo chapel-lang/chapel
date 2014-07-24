@@ -544,8 +544,6 @@ err_t sys_fstatfs(fd_t fd, sys_statfs_t* buf)
 
 #if defined(__APPLE__)
     buf->f_bsize   = (int64_t)tmp.f_iosize;
-
-#if defined(_DARWIN_FEATURE_64_BIT_INODE)
     buf->f_type    = safe_inode_cast(tmp.f_type);
     buf->f_blocks  = safe_inode_cast(tmp.f_blocks);
     buf->f_bfree   = safe_inode_cast(tmp.f_bfree);
@@ -553,19 +551,11 @@ err_t sys_fstatfs(fd_t fd, sys_statfs_t* buf)
     buf->f_files   = safe_inode_cast(tmp.f_files);
     buf->f_ffree   = safe_inode_cast(tmp.f_ffree);
     buf->f_namelen = safe_inode_cast(MNAMELEN);
-#else
-    buf->f_type    = safe_inode_cast(tmp.f_type);
-    buf->f_blocks  = safe_inode_cast(tmp.f_blocks);
-    buf->f_bfree   = safe_inode_cast(tmp.f_bfree);
-    buf->f_bavail  = safe_inode_cast(tmp.f_bavail);
-    buf->f_files   = safe_inode_cast(tmp.f_files);
-    buf->f_ffree   = safe_inode_cast(tmp.f_ffree);
-    buf->f_namelen = safe_inode_cast(MNAMELEN);
-#endif
-
 #else // linux or cygwin
-    // We don't have to deal with possible conversion from signed to unsiged numbers
-    // here, since in linux the field will be set to 0 if it is undefined for the FS.
+    // We don't have to deal with possible conversion from signed to unsiged
+    // numbers here, since in linux the field will be set to 0 if it is
+    // undefined for the FS. Since we know the field is >= 0 we can get rid of
+    // all the branching logic that we had for apple
     buf->f_bsize   = (int64_t)tmp.f_bsize;
     buf->f_type    = (uint64_t)tmp.f_type;
     buf->f_blocks  = (uint64_t)tmp.f_blocks;
