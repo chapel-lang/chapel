@@ -494,7 +494,7 @@ qioerr chpl_curl_stream_file(qio_file_t* fl_curl, qio_file_t* fl_local)
   return err;
 }
 
-qio_file_functions_t glob_struct = {
+qio_file_functions_t curl_function_struct = {
     &curl_writev,    //writev
     &curl_readv,     //readv
     NULL,            //pwritev
@@ -509,4 +509,4 @@ qio_file_functions_t glob_struct = {
     /*3,*/           //fs_type
 };
 
-const qio_file_functions_ptr_t ptr_glob_struct = &glob_struct;
+const qio_file_functions_ptr_t curl_function_struct_ptr = &curl_function_struct;

@@ -24,7 +24,7 @@
   exit(EXIT_FAILURE);\
 }
 
-qio_file_functions_t glob_struct = {
+qio_file_functions_t curl_function_struct = {
     .writev = &curl_writev,
     .readv = &curl_readv,
     .pwritev = NULL,
@@ -38,7 +38,7 @@ qio_file_functions_t glob_struct = {
     .getcwd = NULL,
 };
 
-const qio_file_functions_ptr_t ptr_glob_struct = &glob_struct;
+const qio_file_functions_ptr_t curl_function_struct_ptr = &curl_function_struct;
 
 qioerr curl_readv(void* file, const struct iovec *vector, int count, ssize_t* num_read_out, void* fs) CURL_ERROR
 

@@ -12,8 +12,8 @@ extern "C" {
 typedef struct curl_handle curl_handle;
 typedef curl_handle* curl_handle_ptr;
 
-extern qio_file_functions_t glob_struct;
-extern const qio_file_functions_ptr_t ptr_glob_struct;
+extern qio_file_functions_t curl_function_struct;
+extern const qio_file_functions_ptr_t curl_function_struct_ptr;
 
 qioerr curl_readv(void* file, const struct iovec *vector, int count, ssize_t* num_read_out, void* fs);
 qioerr curl_preadv(void* file, const struct iovec *vector, int count, off_t offset, ssize_t* num_read_out, void* fs);
