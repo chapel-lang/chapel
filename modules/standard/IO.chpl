@@ -472,6 +472,7 @@ extern type fdflag_t = c_int;
 */
 extern type iohints = c_int;
 
+pragma "ignore noinit"
 record file {
   var home: locale = here;
   var _file_internal:qio_file_ptr_t = QIO_FILE_PTR_NULL;
@@ -757,6 +758,7 @@ proc openmem(style:iostyle = defaultIOStyle()):file {
 
 /* in the future, this will be an interface.
    */
+pragma "ignore noinit"
 record channel {
   param writing:bool;
   param kind:iokind;

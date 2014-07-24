@@ -825,8 +825,6 @@ static void codegen_header() {
 
   genGlobalInt("chpl_mem_numDescs", memDescsVec.n);
 
-  genGlobalInt("chpl_no_stdmodules", fNoInternalModules);
-
   //
   // add table of private-broadcast constants
   //
