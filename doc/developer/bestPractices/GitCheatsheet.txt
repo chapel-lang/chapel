@@ -7,7 +7,7 @@ of contributing code to Chapel. The basic workflow is:
  - Use GitHub to fork the Chapel project
  - Create a feature branch
  - Develop your contribution locally
- - Update your feature branch with to the main Chapel project
+ - Update your feature branch with changes from the main Chapel project
  - Test your feature
  - Push your work to your feature branch
  - Create a pull request and work with your reviewers
