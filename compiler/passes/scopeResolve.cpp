@@ -1669,143 +1669,145 @@ static Symbol* lookup(BaseAST*       scope,
                       Vec<BaseAST*>* alreadyVisited,
                       bool           scanModuleUses) {
   Vec<BaseAST*> nestedscopes;
+  Symbol*       retval = NULL;
 
   if (!scanModuleUses) {
     nestedscopes.copy(*alreadyVisited);
     alreadyVisited = &nestedscopes;
   }
 
-  if (alreadyVisited->set_in(scope))
-    return NULL;
+  if (!alreadyVisited->set_in(scope)) {
+    alreadyVisited->set_add(scope);
 
-  alreadyVisited->set_add(scope);
+    Vec<Symbol*> symbols;
 
-  Vec<Symbol*> symbols;
+    if (symbolTable.count(scope) != 0) {
+      SymbolTableEntry* entry = symbolTable[scope];
 
-  if (symbolTable.count(scope) != 0) {
-    SymbolTableEntry* entry = symbolTable[scope];
-
-    if (entry->count(name) != 0) {
-      Symbol* sym = (*entry)[name];
-      symbols.set_add(sym);
-    }
-  }
-
-  if (TypeSymbol* ts = toTypeSymbol(scope))
-    if (AggregateType* ct = toAggregateType(ts->type))
-      if (Symbol* sym = ct->getField(name, false))
+      if (entry->count(name) != 0) {
+        Symbol* sym = (*entry)[name];
         symbols.set_add(sym);
+      }
+    }
 
-  if (scanModuleUses && symbols.n == 0) {
-    if (BlockStmt* block = toBlockStmt(scope)) {
-      if (block->modUses) {
-        Vec<ModuleSymbol*>* modules = NULL;
+    if (TypeSymbol* ts = toTypeSymbol(scope))
+      if (AggregateType* ct = toAggregateType(ts->type))
+        if (Symbol* sym = ct->getField(name, false))
+          symbols.set_add(sym);
 
-        if (moduleUsesCache.count(block) == 0) {
-          modules = new Vec<ModuleSymbol*>();
+    if (scanModuleUses && symbols.n == 0) {
+      if (BlockStmt* block = toBlockStmt(scope)) {
+        if (block->modUses) {
+          Vec<ModuleSymbol*>* modules = NULL;
 
-          for_actuals(expr, block->modUses) {
-            SymExpr* se = toSymExpr(expr);
-            INT_ASSERT(se);
+          if (moduleUsesCache.count(block) == 0) {
+            modules = new Vec<ModuleSymbol*>();
 
-            ModuleSymbol* mod = toModuleSymbol(se->var);
-            INT_ASSERT(mod);
+            for_actuals(expr, block->modUses) {
+              SymExpr* se = toSymExpr(expr);
+              INT_ASSERT(se);
 
-            modules->add(mod);
-          }
+              ModuleSymbol* mod = toModuleSymbol(se->var);
+              INT_ASSERT(mod);
 
-          INT_ASSERT(modules->n);
-
-          buildBreadthFirstModuleList(modules);
-
-          if (enableModuleUsesCache)
-            moduleUsesCache[block] = modules;
-        } else {
-          modules = moduleUsesCache[block];
-        }
-
-        INT_ASSERT(modules);
-
-        forv_Vec(ModuleSymbol, mod, *modules) {
-          if (mod) {
-            if (mod != rootModule) {
-              if (Symbol* sym = lookup(mod->initFn->body, name, alreadyVisited, false))
-                symbols.set_add(sym);
-            } else {
-              if (Symbol* sym = lookup(mod->block, name, alreadyVisited, false))
-                symbols.set_add(sym);
+              modules->add(mod);
             }
+
+            INT_ASSERT(modules->n);
+
+            buildBreadthFirstModuleList(modules);
+
+            if (enableModuleUsesCache)
+              moduleUsesCache[block] = modules;
           } else {
-            //
-            // break on each new depth if a symbol has been found
-            //
-            if (symbols.n > 0)
-              break;
+            modules = moduleUsesCache[block];
+          }
+
+          INT_ASSERT(modules);
+
+          forv_Vec(ModuleSymbol, mod, *modules) {
+            if (mod) {
+              if (mod != rootModule) {
+                if (Symbol* sym = lookup(mod->initFn->body, name, alreadyVisited, false))
+                  symbols.set_add(sym);
+              } else {
+                if (Symbol* sym = lookup(mod->block, name, alreadyVisited, false))
+                  symbols.set_add(sym);
+              }
+            } else {
+              //
+              // break on each new depth if a symbol has been found
+              //
+              if (symbols.n > 0)
+                break;
+            }
           }
         }
       }
     }
-  }
 
-  if (scanModuleUses && symbols.n == 0) {
-    if (scope->getModule()->block == scope) {
-      ModuleSymbol* mod = scope->getModule();
-      Symbol*       sym = NULL;
+    if (scanModuleUses && symbols.n == 0) {
+      if (scope->getModule()->block == scope) {
+        ModuleSymbol* mod = scope->getModule();
+        Symbol*       sym = NULL;
 
-      if (mod == rootModule)
-        sym = lookup(mod->block, name, alreadyVisited, scanModuleUses);
-      else
-        sym = lookup(mod->initFn->body, name, alreadyVisited, scanModuleUses);
+        if (mod == rootModule)
+          sym = lookup(mod->block, name, alreadyVisited, scanModuleUses);
+        else
+          sym = lookup(mod->initFn->body, name, alreadyVisited, scanModuleUses);
 
-      if (sym)
-        symbols.set_add(sym);
+        if (sym)
+          symbols.set_add(sym);
         
-      if (symbols.n == 0 && getScope(scope)) {
-        sym = lookup(getScope(scope), name, alreadyVisited, scanModuleUses);
-
-        if (sym)
-          symbols.set_add(sym);
-      }
-    } else {
-      FnSymbol* fn = toFnSymbol(scope);
-
-      if (fn && fn->_this && toAggregateType(fn->_this->type)) {
-        AggregateType* ct  = toAggregateType(fn->_this->type);
-        Symbol*        sym = lookup(ct->symbol, name, alreadyVisited, scanModuleUses);
-
-        if (sym)
-          symbols.set_add(sym);
-        else {
+        if (symbols.n == 0 && getScope(scope)) {
           sym = lookup(getScope(scope), name, alreadyVisited, scanModuleUses);
 
           if (sym)
             symbols.set_add(sym);
         }
-      } else if (getScope(scope)) {
-        Symbol* sym = lookup(getScope(scope), name, alreadyVisited, scanModuleUses);
+      } else {
+        FnSymbol* fn = toFnSymbol(scope);
 
-        if (sym)
-          symbols.set_add(sym);
+        if (fn && fn->_this && toAggregateType(fn->_this->type)) {
+          AggregateType* ct  = toAggregateType(fn->_this->type);
+          Symbol*        sym = lookup(ct->symbol, name, alreadyVisited, scanModuleUses);
+
+          if (sym)
+            symbols.set_add(sym);
+          else {
+            sym = lookup(getScope(scope), name, alreadyVisited, scanModuleUses);
+
+            if (sym)
+              symbols.set_add(sym);
+          }
+        } else if (getScope(scope)) {
+          Symbol* sym = lookup(getScope(scope), name, alreadyVisited, scanModuleUses);
+
+          if (sym)
+            symbols.set_add(sym);
+        }
       }
     }
-  }
 
-  symbols.set_to_vec();
+    symbols.set_to_vec();
 
-  if (symbols.n == 1)
-    return symbols.v[0];
+    if (symbols.n == 1)
+      retval = symbols.v[0];
 
-  else if (symbols.n == 0)
-    return NULL;
+    else if (symbols.n == 0)
+      retval = NULL;
 
-  else {
-    forv_Vec(Symbol, sym, symbols) {
-      if (!isFnSymbol(sym))
-        USR_FATAL(sym, "Symbol %s multiply defined", name);
+    else {
+      forv_Vec(Symbol, sym, symbols) {
+        if (!isFnSymbol(sym))
+          USR_FATAL(sym, "Symbol %s multiply defined", name);
+      }
+
+      retval = NULL;
     }
-
-    return NULL;
   }
+
+  return retval;
 }
 
 static void buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules,
