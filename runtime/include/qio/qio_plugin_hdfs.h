@@ -73,7 +73,7 @@ hdfs_block_byte_map_t hdfs_index_array(hdfs_block_byte_map_t* locs, int index);
 
 qioerr hdfs_get_chunk(void* fl, int64_t* len_out, void* fs);
 
-qioerr hdfs_locales_for_range(void* file, off_t start_byte, off_t end_byte, const char* loc_name, int* good, void* fs);
+qioerr hdfs_locales_for_range(void* file, off_t start_byte, off_t end_byte, char*** loc_names_out, void* fs);
 
 #ifdef __cplusplus
 } // end extern "C"

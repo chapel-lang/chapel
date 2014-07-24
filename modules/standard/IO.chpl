@@ -166,6 +166,8 @@ extern const QBUFFER_PTR_NULL:qbuffer_ptr_t;
 
 extern type style_char_t = uint(8);
 
+extern type char_ptr_ptr; // char**
+
 extern const QIO_STRING_FORMAT_WORD:uint(8);
 extern const QIO_STRING_FORMAT_BASIC:uint(8);
 extern const QIO_STRING_FORMAT_CHPL:uint(8);
@@ -299,7 +301,7 @@ extern proc qio_channel_write_bits(threadsafe:c_int, ch:qio_channel_ptr_t, v:uin
 extern proc qio_channel_flush_bits(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
 extern proc qio_channel_read_bits(threadsafe:c_int, ch:qio_channel_ptr_t, ref v:uint(64), nbits:int(8)):syserr;
 
-extern proc qio_locale_for_region(fl:qio_file_ptr_t, start:int(64), end:int(64), loc_name:c_string, ref good:c_int):syserr;
+extern proc qio_locales_for_region(fl:qio_file_ptr_t, start:int(64), end:int(64), ref loc_names:char_ptr_ptr):syserr;
 extern proc qio_get_chunk(fl:qio_file_ptr_t, ref len:int(64)):syserr;
 extern proc qio_get_fs_type(fl:qio_file_ptr_t, ref tp:c_int):syserr;
 
@@ -3810,20 +3812,12 @@ proc file.locsforregion(start:int(64), end:int(64)) {
   var ret: domain(locale);
   on this.home {
     var err:syserr;
-    var good:c_int;
-
+    var locs: char_ptr_ptr;
+    err = qio_locales_for_region(this._file_internal, start, end, locs);
     for loc in Locales {
-      err = qio_locale_for_region(this._file_internal, start, end, loc.name.c_str(), good);
-      if good == 1 {
-        ret += loc;
-      }
-    }
-
-    // We had no good locales, so return all the locales
-    if ret.numIndices == 0 {
-      for loc in Locales do
-        ret += loc;
+      ret += loc;
     }
   }
   return ret;
 }
+

@@ -3977,11 +3977,11 @@ qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out)
   return err;
 }
 
-qioerr qio_locale_for_region(qio_file_t* fl, off_t start, off_t end, const char* loc_name, int* good)
+qioerr qio_locales_for_region(qio_file_t* fl, off_t start, off_t end, char*** loc_names_out)
 {
   qioerr err = 0;
-  if (fl->fsfns && fl->fsfns->get_locale_for_region) {
-    err = fl->fsfns->get_locale_for_region(fl->file_info, start, end, loc_name, good, fl->fs_info);
+  if (fl->fsfns && fl->fsfns->get_locales_for_region) {
+    err = fl->fsfns->get_locales_for_region(fl->file_info, start, end, loc_names_out, fl->fs_info);
     return err;
   } else QIO_RETURN_CONSTANT_ERROR(ENOSYS, "Unable to get locale for specified region of file");
 }

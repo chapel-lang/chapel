@@ -3,7 +3,6 @@ use IO, SysBasic, Error, UtilReplicatedVar;
 extern type qio_locale_map_ptr_t;     // array of locale to byte range mappings
 extern type qio_file_functions_ptr_t; // pointer to function ptr struct
 extern type qio_file_functions_t;     // function ptr struct
-extern type char_ptr_ptr;             // char**
 
 extern const QIO_LOCALE_MAP_PTR_T_NULL: qio_locale_map_ptr_t;
 extern const hdfs_function_struct:qio_file_functions_t;

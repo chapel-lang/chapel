@@ -70,7 +70,7 @@ hdfs_block_byte_map_t hdfs_index_array(hdfs_block_byte_map_t* locs, int index) H
 
 qioerr hdfs_get_chunk(void* fl, int64_t* len_out, void* fs) HDFS_ERROR(return 0)
 
-qioerr hdfs_locales_for_range(void* file, off_t start_byte, off_t end_byte, const char* loc_name, int* good, void* fs) HDFS_ERROR(return 0)
+qioerr hdfs_locales_for_range(void* file, off_t start_byte, off_t end_byte, char*** loc_name, void* fs) HDFS_ERROR(return 0)
 
 qio_file_functions_t hdfs_function_struct = {
     &hdfs_writev,

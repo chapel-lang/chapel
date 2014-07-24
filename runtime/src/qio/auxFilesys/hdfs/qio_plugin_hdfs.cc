@@ -393,7 +393,7 @@ char* get_locale_name(char *loc)
   return strndup(loc, i);
 }
 
-qioerr hdfs_locales_for_range(void* file, off_t start_byte, off_t end_byte, const char* loc_name, int* good, void* fs) 
+qioerr hdfs_locales_for_range(void* file, off_t start_byte, off_t end_byte, const char*** loc_names_out, void* fs) 
 {
   int i = 0;
   char*** info = NULL;
@@ -406,20 +406,12 @@ qioerr hdfs_locales_for_range(void* file, off_t start_byte, off_t end_byte, cons
     goto end;
   }
 
-  // look for the locale name in the "good" locales.
-  for (i = 0; info[0][i]; i++) {
-    if (strcmp(get_locale_name(info[0][i]), loc_name) == 0) {
-      *good = 1;
-      goto end;
-    }
-  }
-
-  // couldn't find it in the "good" locales 
-  *good = 0;
+  *loc_names_out = info[0];
+  return 0;
 
 end:
   hdfsFreeHosts(info);
-  return 0;
+  QIO_RETURN_CONSTANT_ERROR(EREMOTEIO, "Unable to get owners for byterange");
 }
 
 // char_arr is already allocated

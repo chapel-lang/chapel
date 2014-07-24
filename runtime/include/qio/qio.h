@@ -129,12 +129,11 @@ typedef qioerr (*qio_get_chunk_fptr)(void*, // file info
                                      int64_t*, // length
                                      void*); // fs info
 
-typedef qioerr (*qio_get_locale_for_region_fptr) (void*,       // file info
-                                                  off_t,       // start
-                                                  off_t,       // end
-                                                  const char*, // locale name
-                                                  int*,        // is this locale good or not
-                                                  void*);      // fs info
+typedef qioerr (*qio_get_locales_for_region_fptr) (void*,       // file info
+                                                   off_t,       // start
+                                                   off_t,       // end
+                                                   char***, // locale names out
+                                                   void*);      // fs info
 
 // The ordering of these fields is important due to struct initialization
 typedef struct qio_file_functions_s {
@@ -159,7 +158,7 @@ typedef struct qio_file_functions_s {
 
   // multilocale API
   qio_get_chunk_fptr get_chunk;
-  qio_get_locale_for_region_fptr get_locale_for_region;
+  qio_get_locales_for_region_fptr get_locales_for_region;
 
   // We used to store void* fs here, but it moved to the
   // qio file structure and an argument to qio file functions
@@ -525,7 +524,7 @@ qioerr qio_file_open_access_usr(qio_file_t** file_out, const char* pathname,
 
 qioerr qio_get_fs_type(qio_file_t* fl, int* out);
 qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out);
-qioerr qio_locale_for_region(qio_file_t* fl, off_t start, off_t end, const char* locale_name, int* good);
+qioerr qio_locales_for_region(qio_file_t* fl, off_t start, off_t end, char*** locale_names_out);
 
 // This can be called to run close and to check the return value.
 // That's important because some implementations (such as NFS)
