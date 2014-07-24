@@ -524,16 +524,14 @@ err_t sys_lstat(const char* path, struct stat* buf)
   return err_out;
 }
 
-// TAKZ - on Mac, the types in the statfs structure become signed or unsigned based
-// upon whether or not they have 64 bit inodes. This leads to some rather messy error
-// handling and checking, since we want to avoid overflow in the case that we have
-// either signed types (in the case of 32 bit inodes) or large (64 bit) unsigned
-// types (in the case of 64 bit inodes). We therefore use the linux convention for
-// statfs that fields that are undefined for a given file system are set to 0 (and we
-// handle this in safe_inode_cast32, safe_inode_cast_uint32, and safe_inode_cast64).
-#define safe_inode_cast32(t) (t == -1 ? 0 : (uint64_t)t)
-#define safe_inode_cast_uint32(t) (t == (uint32_t)-1 ? 0 : (uint64_t)t)
-#define safe_inode_cast64(t) (t == (uint64_t)-1 ? 0 : (uint64_t)t)
+// TAKZ - on Mac, the types in the statfs structure become signed or unsigned
+// based upon whether or not they have 64 bit inodes. This leads to some rather
+// messy error handling and checking, since we want to avoid overflow in the
+// case that we have either signed types (in the case of 32 bit inodes) or
+// large (64 bit) unsigned types (in the case of 64 bit inodes). We therefore
+// use the linux convention for statfs that fields that are undefined for a
+// given file system are set to 0 (and we handle this in safe_inode_cast).
+#define safe_inode_cast(t) (t < 0 ? 0 : (uint64_t)t)
 
 err_t sys_fstatfs(fd_t fd, sys_statfs_t* buf)
 {
@@ -548,21 +546,21 @@ err_t sys_fstatfs(fd_t fd, sys_statfs_t* buf)
     buf->f_bsize   = (int64_t)tmp.f_iosize;
 
 #if defined(_DARWIN_FEATURE_64_BIT_INODE)
-    buf->f_type    = safe_inode_cast_uint32(tmp.f_type);
-    buf->f_blocks  = safe_inode_cast64(tmp.f_blocks);
-    buf->f_bfree   = safe_inode_cast64(tmp.f_bfree);
-    buf->f_bavail  = safe_inode_cast64(tmp.f_bavail);
-    buf->f_files   = safe_inode_cast64(tmp.f_files);
-    buf->f_ffree   = safe_inode_cast64(tmp.f_ffree);
-    buf->f_namelen = safe_inode_cast64(MNAMELEN);
+    buf->f_type    = safe_inode_cast(tmp.f_type);
+    buf->f_blocks  = safe_inode_cast(tmp.f_blocks);
+    buf->f_bfree   = safe_inode_cast(tmp.f_bfree);
+    buf->f_bavail  = safe_inode_cast(tmp.f_bavail);
+    buf->f_files   = safe_inode_cast(tmp.f_files);
+    buf->f_ffree   = safe_inode_cast(tmp.f_ffree);
+    buf->f_namelen = safe_inode_cast(MNAMELEN);
 #else
-    buf->f_type    = safe_inode_cast32(tmp.f_type);
-    buf->f_blocks  = safe_inode_cast32(tmp.f_blocks);
-    buf->f_bfree   = safe_inode_cast32(tmp.f_bfree);
-    buf->f_bavail  = safe_inode_cast32(tmp.f_bavail);
-    buf->f_files   = safe_inode_cast32(tmp.f_files);
-    buf->f_ffree   = safe_inode_cast32(tmp.f_ffree);
-    buf->f_namelen = safe_inode_cast32(MNAMELEN);
+    buf->f_type    = safe_inode_cast(tmp.f_type);
+    buf->f_blocks  = safe_inode_cast(tmp.f_blocks);
+    buf->f_bfree   = safe_inode_cast(tmp.f_bfree);
+    buf->f_bavail  = safe_inode_cast(tmp.f_bavail);
+    buf->f_files   = safe_inode_cast(tmp.f_files);
+    buf->f_ffree   = safe_inode_cast(tmp.f_ffree);
+    buf->f_namelen = safe_inode_cast(MNAMELEN);
 #endif
 
 #else // linux or cygwin
