@@ -73,10 +73,7 @@ static void     destroyModuleUsesCaches();
 
 static void     renameDefaultTypesToReflectWidths();
 
-static Symbol*  lookup(BaseAST*       scope,
-                       const char*    name,
-                       Vec<BaseAST*>* alreadyVisited = NULL,
-                       bool           scanModuleUses = true);
+static Symbol*  lookup(BaseAST* scope, const char* name);
 
 static BaseAST* getScope(BaseAST* ast);
 
@@ -1206,7 +1203,7 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
 
   SET_LINENO(unresolvedSymExpr);
 
-  Symbol* sym = lookup(unresolvedSymExpr, name); //, NULL, false);
+  Symbol* sym = lookup(unresolvedSymExpr, name);
 
   //
   // handle function call without parentheses
@@ -1652,20 +1649,26 @@ static void renameDefaultType(Type* type, const char* newname) {
 *                                                                           *
 ************************************* | ************************************/
 
-static void buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules,
-                                        Vec<ModuleSymbol*>* current     = NULL,
-                                        Vec<ModuleSymbol*>* alreadySeen = NULL);
+static Symbol* lookup(BaseAST*       scope,
+                      const char*    name,
+                      Vec<BaseAST*>* alreadyVisited,
+                      bool           scanModuleUses);
+
+static void    buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules,
+                                           Vec<ModuleSymbol*>* current     = NULL,
+                                           Vec<ModuleSymbol*>* alreadySeen = NULL);
+
+static Symbol* lookup(BaseAST* scope, const char* name) {
+  Vec<BaseAST*> nestedscopes;
+
+  return lookup(scope, name, &nestedscopes, true);
+}
 
 static Symbol* lookup(BaseAST*       scope,
                       const char*    name,
                       Vec<BaseAST*>* alreadyVisited,
                       bool           scanModuleUses) {
   Vec<BaseAST*> nestedscopes;
-
-  if (!alreadyVisited) {
-    Symbol* result = lookup(scope, name, &nestedscopes, scanModuleUses);
-    return result;
-  }
 
   if (!scanModuleUses) {
     nestedscopes.copy(*alreadyVisited);
