@@ -18,17 +18,6 @@ extern "C" {
 #include <unistd.h>
 #include <stdio.h>
 
-#if defined(__APPLE__)
-#include <sys/param.h>
-#include <sys/mount.h>
-#define SYS_HAS_STATFS 1
-#elif defined(__linux__) || defined(__CYGWIN__)
-#include <sys/vfs.h>
-#define SYS_HAS_STATFS 1
-#else
-#define SYS_HAS_STATFS 0
-#endif
-
 #ifndef LUSTRE_SUPER_MAGIC
 // Magic value to be found in the statfs man page
 #define LUSTRE_SUPER_MAGIC     0x0BD00BD0

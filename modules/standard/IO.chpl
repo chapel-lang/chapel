@@ -3811,14 +3811,16 @@ proc file.locsforregion(start:int(64), end:int(64)) {
   on this.home {
     var err:syserr;
     var good:c_int;
+
     for loc in Locales {
       err = qio_locale_for_region(this._file_internal, start, end, loc.name.c_str(), good);
       if good == 1 {
         ret += loc;
       }
     }
+
     // We had no good locales, so return all the locales
-    if ret.numIndicies == 0 {
+    if ret.numIndices == 0 {
       for loc in Locales do
         ret += loc;
     }

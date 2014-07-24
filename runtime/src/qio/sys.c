@@ -24,6 +24,18 @@
 #include <string.h>
 #include <limits.h>
 
+#if defined(__APPLE__)
+#include <sys/param.h>
+#include <sys/mount.h>
+#define SYS_HAS_STATFS 1
+#elif defined(__linux__) || defined(__CYGWIN__)
+#include <sys/vfs.h>
+#define SYS_HAS_STATFS 1
+#else
+#define SYS_HAS_STATFS 0
+#endif
+
+
 // preadv/pwritev are available
 // only on linux/glibc 2.10 or later
 #ifdef __GLIBC__
