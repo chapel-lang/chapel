@@ -129,7 +129,7 @@ inline proc _defaultOf(type t) param where (_isBooleanType(t)) return false:t;
 // strings will be records, so param is not possible for them
 inline proc _defaultOf(type t) where t: string return defaultStringValue;
 
-// ints, reals, imags
+// ints, reals, imags, complexes
 inline proc _defaultOf(type t) param where (_isIntegralType(t)) return 0:t;
 // TODO: In order to make _defaultOf param for reals and imags we had to split
 // the cases into their default size and a non-param case.  It is hoped that
@@ -139,6 +139,14 @@ inline proc _defaultOf(type t) param where t == real(64) return 0.0:t;
 inline proc _defaultOf(type t) where (_isRealType(t) && t != real(64)) return 0.0:t;
 inline proc _defaultOf(type t) param where t == imag(64) return 0.0i:t;
 inline proc _defaultOf(type t) where (_isImagType(t) && t != imag(64)) return 0.0i:t;
+// Also, complexes cannot yet be parametized
+inline proc _defaultOf(type t): t where (_isComplexType(t)) {
+  var ret:t = noinit;
+  param floatwidth = numBits(t)/2;
+  ret.re = 0.0:real(floatwidth);
+  ret.im = 0.0:real(floatwidth);
+  return ret;
+}
 
 // Enums
 inline proc _defaultOf(type t) param where (_isEnumeratedType(t)) {
