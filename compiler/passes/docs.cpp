@@ -349,7 +349,7 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
     printTabs(file);
     *file << mod->doc << std::endl;
   }
-  Vec<VarSymbol*> configs = mod->getConfigVars();
+  Vec<VarSymbol*> configs = mod->getTopLevelConfigVars();
   if (fDocsAlphabetize)
     qsort(configs.v, configs.n, sizeof(configs.v[0]), compareNames);
   forv_Vec(VarSymbol, var, configs) {
@@ -363,7 +363,7 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
     printVarDocs(file, var);
   }
 
-  Vec<FnSymbol*> fns = mod->getFunctions();
+  Vec<FnSymbol*> fns = mod->getTopLevelFunctions();
   // If alphabetical option passed, fDocsAlphabetizes the output 
   if (fDocsAlphabetize) 
     qsort(fns.v, fns.n, sizeof(fns.v[0]), compareNames);
@@ -374,7 +374,7 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
     }
   }
 
-  Vec<AggregateType*> classes = mod->getClasses();
+  Vec<AggregateType*> classes = mod->getTopLevelClasses();
   if (fDocsAlphabetize)
     qsort(classes.v, classes.n, sizeof(classes.v[0]), compareClasses);
 
@@ -382,7 +382,7 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
     printClass(file, cl);
   }
 
-  Vec<ModuleSymbol*> mods = mod->getModules();
+  Vec<ModuleSymbol*> mods = mod->getTopLevelModules();
   if (fDocsAlphabetize)
     qsort(mods.v, mods.n, sizeof(mods.v[0]), compareNames);
   

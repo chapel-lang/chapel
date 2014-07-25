@@ -2257,7 +2257,7 @@ void ModuleSymbol::codegenDef() {
   flushStatements();
 }
  
-Vec<AggregateType*> ModuleSymbol::getClasses() {
+Vec<AggregateType*> ModuleSymbol::getTopLevelClasses() {
   Vec<AggregateType*> classes;
 
   for_alist(expr, block->body) {
@@ -2279,7 +2279,7 @@ Vec<AggregateType*> ModuleSymbol::getClasses() {
   return classes;
 }
 
-Vec<VarSymbol*> ModuleSymbol::getConfigVars() {
+Vec<VarSymbol*> ModuleSymbol::getTopLevelConfigVars() {
   Vec<VarSymbol*> configs;
 
   for_alist(expr, block->body) {
@@ -2302,21 +2302,7 @@ Vec<VarSymbol*> ModuleSymbol::getConfigVars() {
   return configs;
 }
 
-Vec<ModuleSymbol*> ModuleSymbol::getModules() {
-  Vec<ModuleSymbol*> mods;
-
-  for_alist(expr, block->body) {
-    if (DefExpr* def = toDefExpr(expr))
-      if (ModuleSymbol* mod = toModuleSymbol(def->sym)) {
-        if (strcmp(mod->defPoint->parentSymbol->name, name) == 0)
-          mods.add(mod);
-      }
-  }
-
-  return mods;
-}
-
-Vec<FnSymbol*> ModuleSymbol::getFunctions() {
+Vec<FnSymbol*> ModuleSymbol::getTopLevelFunctions() {
   Vec<FnSymbol*> fns;
 
   for_alist(expr, block->body) {
@@ -2354,6 +2340,20 @@ Vec<FnSymbol*> ModuleSymbol::getFunctions() {
   return fns;
 }
   
+Vec<ModuleSymbol*> ModuleSymbol::getTopLevelModules() {
+  Vec<ModuleSymbol*> mods;
+
+  for_alist(expr, block->body) {
+    if (DefExpr* def = toDefExpr(expr))
+      if (ModuleSymbol* mod = toModuleSymbol(def->sym)) {
+        if (strcmp(mod->defPoint->parentSymbol->name, name) == 0)
+          mods.add(mod);
+      }
+  }
+
+  return mods;
+}
+
 void ModuleSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == block) {
     block = toBlockStmt(new_ast);
