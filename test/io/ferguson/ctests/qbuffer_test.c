@@ -99,7 +99,7 @@ void test_qbuffer_iterators(qbuffer_t* buf, qbytes_t** qb, int num, int skip, in
     // check that flat has the right data in it.
     j = 0;
     for( i = 0; i < num; i++ ) {
-      assert( 0 == memcmp(flat->data + j, qb[i]->data + skip, qb[i]->len - skip - trunc) );
+      assert( 0 == memcmp((char*)flat->data + j, (char*)qb[i]->data + skip, qb[i]->len - skip - trunc) );
       j += qb[i]->len - skip - trunc;
     }
     assert( qbuffer_len(buf) == j );
@@ -128,7 +128,7 @@ void test_qbuffer_iterators(qbuffer_t* buf, qbytes_t** qb, int num, int skip, in
           ln--;
         }
         if( ln > 0 ) {
-          assert( 0 == memcmp(flat2->data + j, qb[i]->data + sk, ln) );
+          assert( 0 == memcmp((char*)flat2->data + j, (char*)qb[i]->data + sk, ln) );
           j += ln;
         }
       }
@@ -145,7 +145,7 @@ void test_qbuffer_iterators(qbuffer_t* buf, qbytes_t** qb, int num, int skip, in
       int64_t skip, len;
 
       qbuffer_iter_get(cur, end, &tmp, &skip, &len);
-      assert( 0 == memcmp(tmp->data + skip, flat->data + j, 1) );
+      assert( 0 == memcmp((char*)tmp->data + skip, (char*)flat->data + j, 1) );
 
       // check that binary search would lead us here too.
       search = qbuffer_iter_at(buf, cur.offset);
@@ -167,7 +167,7 @@ void test_qbuffer_iterators(qbuffer_t* buf, qbytes_t** qb, int num, int skip, in
         qbuffer_iter_advance(buf, &cur, -1);
 
         qbuffer_iter_get(cur, end, &tmp, &skip, &len);
-        assert( 0 == memcmp(tmp->data + skip, flat->data + j, 1) );
+        assert( 0 == memcmp((char*)tmp->data + skip, (char*)flat->data + j, 1) );
 
         j--;
       } while( ! qbuffer_iter_equals(cur, start) );
@@ -181,7 +181,7 @@ void test_qbuffer_iterators(qbuffer_t* buf, qbytes_t** qb, int num, int skip, in
     assert(!err);
 
     for( off = 0; off < zeros->len; off++ ) {
-      unsigned char byte = * (unsigned char*) (zeros->data + off);
+      unsigned char byte = * (unsigned char*) ((char*)zeros->data + off);
       assert(byte == 0);
     }
 
