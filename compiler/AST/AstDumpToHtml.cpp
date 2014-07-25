@@ -75,6 +75,8 @@ void AstDumpToHtml::view(const char* passName) {
   }
 
   fprintf(sIndexFP, "</TD></TR>");
+  // add a little bit of space between passes in the index file
+  fprintf(sIndexFP, "<TR height=6><TD></TD></TR>");
   fflush(sIndexFP);
 
   sPassIndex++;

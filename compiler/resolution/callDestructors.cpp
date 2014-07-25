@@ -755,10 +755,8 @@ static void insertGlobalAutoDestroyCalls() {
   SET_LINENO(baseModule);
   FnSymbol* fn = new FnSymbol(name);
   fn->retType = dtVoid;
-  if( ! fNoInternalModules ) {
-    chpl_gen_main->defPoint->insertBefore(new DefExpr(fn));
-    chpl_gen_main->insertBeforeReturnAfterLabel(new CallExpr(fn));
-  }
+  chpl_gen_main->defPoint->insertBefore(new DefExpr(fn));
+  chpl_gen_main->insertBeforeReturnAfterLabel(new CallExpr(fn));
   forv_Vec(DefExpr, def, gDefExprs) {
     if (isModuleSymbol(def->parentSymbol))
       if (def->parentSymbol != rootModule)

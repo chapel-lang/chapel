@@ -2,37 +2,40 @@
 //
 pragma "no use ChapelStandard"
 module ChapelArray {
-  
+
   use ChapelBase; // For opaque type.
   use ChapelTuple;
   use ChapelLocale;
 
-  var privatizeLock$: sync int;
-  
+  // Explicitly use a processor atomic, as most calls to this function are
+  // likely be on locale 0
+  var numPrivateObjects: atomic_int64;
+
   config param debugBulkTransfer = false;
   config param useBulkTransfer = true;
   config param useBulkTransferStride = false;
-  
+
   pragma "privatized class"
   proc _isPrivatized(value) param
     return !_local & ((_privatization & value.dsiSupportsPrivatization()) | value.dsiRequiresPrivatization());
-  
+
   proc _newPrivatizedClass(value) {
-    privatizeLock$.writeEF(true);
-    var n = __primitive("chpl_numPrivatizedClasses");
+
+    var n = numPrivateObjects.fetchAdd(1);
+
     var hereID = here.id;
     const privatizeData = value.dsiGetPrivatizeData();
     on Locales[0] do
       _newPrivatizedClassHelp(value, value, n, hereID, privatizeData);
-  
+
     proc _newPrivatizedClassHelp(parentValue, originalValue, n, hereID, privatizeData) {
       var newValue = originalValue;
       if hereID != here.id {
         newValue = parentValue.dsiPrivatize(privatizeData);
-        __primitive("chpl_newPrivatizedClass", newValue);
+        __primitive("chpl_newPrivatizedClass", newValue, n);
         newValue.pid = n;
       } else {
-        __primitive("chpl_newPrivatizedClass", newValue);
+        __primitive("chpl_newPrivatizedClass", newValue, n);
         newValue.pid = n;
       }
       cobegin {
@@ -44,18 +47,17 @@ module ChapelArray {
             _newPrivatizedClassHelp(newValue, originalValue, n, hereID, privatizeData);
       }
     }
-  
-    privatizeLock$.readFE();
+
     return n;
   }
-  
+
   proc _reprivatize(value) {
     var pid = value.pid;
     var hereID = here.id;
     const reprivatizeData = value.dsiGetReprivatizeData();
     on Locales[0] do
       _reprivatizeHelp(value, value, pid, hereID, reprivatizeData);
-  
+
     proc _reprivatizeHelp(parentValue, originalValue, pid, hereID, reprivatizeData) {
       var newValue = originalValue;
       if hereID != here.id {
@@ -541,6 +543,7 @@ module ChapelArray {
   // Distribution wrapper record
   //
   pragma "distribution"
+  pragma "ignore noinit"
   record _distribution {
     var _value;
     var _valueType;
@@ -642,6 +645,7 @@ module ChapelArray {
   //
   pragma "domain"
   pragma "has runtime type"
+  pragma "ignore noinit"
   record _domain {
     var _value;     // stores domain class, may be privatized
     var _valueType; // stores type of privatized domains
@@ -1205,6 +1209,7 @@ module ChapelArray {
   //
   pragma "array"
   pragma "has runtime type"
+  pragma "ignore noinit"
   record _array {
     var _value;     // stores array class, may be privatized
     var _valueType; // stores type of privatized arrays

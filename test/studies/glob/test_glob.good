@@ -1,0 +1,100 @@
+======== SERIAL ITERATORS (recursive) ==========
+-------- GLOB ----------
+a/a.c
+a/b/f.c
+a/b/h.c
+a/b.c
+globerator.chpl
+globerator.compopts
+globerator.notest
+globhelp.h
+-------- WORDEXP ----------
+a/a.c
+a/b/f.c
+a/b/h.c
+a/b.c
+globerator.chpl
+globerator.compopts
+globerator.notest
+globhelp.h
+-------- WORDEXP `zip` GLOB ----------
+(a/a.c, a/a.c)
+(a/b/f.c, a/b/f.c)
+(a/b/h.c, a/b/h.c)
+(a/b.c, a/b.c)
+(globerator.chpl, globerator.chpl)
+(globerator.compopts, globerator.compopts)
+(globerator.notest, globerator.notest)
+(globhelp.h, globhelp.h)
+======== SERIAL ITERATORS (non-recursive) ==========
+-------- GLOB ----------
+a
+globerator.chpl
+globerator.compopts
+globerator.notest
+globhelp.h
+-------- WORDEXP ----------
+a
+globerator.chpl
+globerator.compopts
+globerator.notest
+globhelp.h
+-------- WORDEXP `zip` GLOB ----------
+(a, a)
+(globerator.chpl, globerator.chpl)
+(globerator.compopts, globerator.compopts)
+(globerator.notest, globerator.notest)
+(globhelp.h, globhelp.h)
+======== PARALLEL ITERATORS (recursive) ==========
+-------- GLOB ----------
+a/
+globerator.chpl
+globerator.compopts
+globerator.notest
+globhelp.h
+a/a.c
+a/b/
+a/b.c
+a/b/f.c
+a/b/h.c
+-------- WORDEXP ----------
+a/
+globerator.chpl
+globerator.compopts
+globerator.notest
+globhelp.h
+a/a.c
+a/b/
+a/b.c
+a/b/f.c
+a/b/h.c
+-------- WORDEXP `zip` GLOB ----------
+(a/, a/)
+(globerator.chpl, globerator.chpl)
+(globerator.compopts, globerator.compopts)
+(globerator.notest, globerator.notest)
+(globhelp.h, globhelp.h)
+(a/a.c, a/a.c)
+(a/b/, a/b/)
+(a/b.c, a/b.c)
+(a/b/f.c, a/b/f.c)
+(a/b/h.c, a/b/h.c)
+======== PARALLEL ITERATORS (non-recursive) ==========
+-------- GLOB ----------
+a
+globerator.chpl
+globerator.compopts
+globerator.notest
+globhelp.h
+-------- WORDEXP ----------
+a
+globerator.chpl
+globerator.compopts
+globerator.notest
+globhelp.h
+-------- WORDEXP `zip` GLOB ----------
+(a, a)
+(globerator.chpl, globerator.chpl)
+(globerator.compopts, globerator.compopts)
+(globerator.notest, globerator.notest)
+(globhelp.h, globhelp.h)
