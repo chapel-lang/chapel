@@ -38,6 +38,23 @@ typedef enum {
 
 typedef uint32_t qio_hint_t;
 
+// TODO: make these better values
+#ifndef FTYPE_NONE
+#define FTYPE_NONE 0
+#endif
+
+#ifndef FTYPE_HDFS
+#define FTYPE_HDFS 1
+#endif
+
+#ifndef FTYPE_LUSTRE
+#define FTYPE_LUSTRE 2
+#endif
+
+#ifndef FTYPE_CURL
+#define FTYPE_CURL 3
+#endif
+
 // The qio lock must be re-entrant in order to handle
 // e.g. qio_printf, which has will lock the lock, then
 // call printf, which will call cookie write, and lock the lock again.
@@ -71,8 +88,8 @@ typedef qioerr (*qio_preadv_fptr) (void*, // plugin fp
 
 typedef qioerr (*qio_pwritev_fptr) (void*,//plugin fp
                 const struct iovec*,      // data to write from
-                int,                      // Number of elements in iovec 
-                off_t,                    // offset to write 
+                int,                      // Number of elements in iovec
+                off_t,                    // offset to write
                 ssize_t*,                 // Amount written on return
                 void*);                   // plugin filesystem pointer
 
@@ -82,7 +99,7 @@ typedef qioerr (*qio_seek_fptr)(void*,  // plugin fp
                                 off_t*, // Offset on return from seek
                                 void*); // plugin filesystem pointer
 
-typedef qioerr (*qio_filelength_fptr)(void*,     // file information 
+typedef qioerr (*qio_filelength_fptr)(void*,     // file information
                                       int64_t*,  // length on return
                                       void*);    // plugin filesystem pointer
 
@@ -101,6 +118,8 @@ typedef qioerr (*qio_close_fptr)(void*, void*); // file information, fs info
 
 typedef qioerr (*qio_fsync_fptr)(void*, void*); // file information, fs info
 
+typedef int (*qio_get_fs_type_fptr)(void*, void*); // file information, fs info
+
 typedef qioerr (*qio_getcwd_fptr)(void*,  // file information (maybe NULL)
                                           // (useful in proxying situations,
                                           // such as with a local channel for
@@ -108,8 +127,20 @@ typedef qioerr (*qio_getcwd_fptr)(void*,  // file information (maybe NULL)
                                   const char**,  // path on return
                                   void*); // plugin filesystem pointer
 
+typedef qioerr (*qio_get_chunk_fptr)(void*, // file info
+                                     int64_t*, // length
+                                     void*); // fs info
+
+typedef qioerr (*qio_get_locales_for_region_fptr) (void*,       // file info
+                                                   off_t,       // start
+                                                   off_t,       // end
+                                                   const char***, // locale names out
+                                                   int*,        // number of locales that we got total
+                                                   void*);      // fs info
+
+// The ordering of these fields is important due to struct initialization
 typedef struct qio_file_functions_s {
-  qio_writev_fptr  writev; 
+  qio_writev_fptr  writev;
   qio_readv_fptr   readv;
 
   qio_pwritev_fptr pwritev;
@@ -126,6 +157,11 @@ typedef struct qio_file_functions_s {
 
   qio_fsync_fptr fsync;
   qio_getcwd_fptr getcwd;
+  qio_get_fs_type_fptr get_fs_type;
+
+  // multilocale API
+  qio_get_chunk_fptr get_chunk;
+  qio_get_locales_for_region_fptr get_locales_for_region;
 
   // We used to store void* fs here, but it moved to the
   // qio file structure and an argument to qio file functions
@@ -347,7 +383,7 @@ char* qio_hints_to_string(qio_hint_t hint)
     }
   }
   if( !ok ) strcat(buf, "unknown_type");
- 
+
   if( method == QIO_METHOD_DEFAULT ) {
     strcat(buf, " default"); ok = 1;
   } else {
@@ -396,8 +432,8 @@ typedef struct qio_file_s {
   // and indicate how the file is backed.
   // We could potentially also support a "virtual file"
   // that handled pread/pwrite by calling some routine,
-  // but mostly 
-  // An (arguably) better solution is to put 
+  // but mostly
+  // An (arguably) better solution is to put
   FILE* fp; // set if this file wraps a FILE*
   fd_t fd; // -1 if not set
   int use_fp; // we only default to FREADFWRITE if this and fp are set.
@@ -422,7 +458,7 @@ typedef struct qio_file_s {
   //  but the mapping is fixed for the lifetime of
   //  the file. That's so that no locking is necessary
   //  on the file object itself).
-  
+
   // When writing files with buffered-mmap, we will mmap
   // the file in chunks. As a result, we might need to extend
   // the file to a size larger than the amount of data written
@@ -474,20 +510,24 @@ qioerr qio_file_open_mem(qio_file_t** file_out, qbuffer_t* buf, const qio_style_
 
 qioerr qio_file_open_tmp(qio_file_t** file_out, qio_hint_t iohints, const qio_style_t* style);
 
-qioerr qio_file_open_usr(qio_file_t** file_out, const char* pathname, 
-                        int flags, mode_t mode, qio_hint_t iohints, 
+qioerr qio_file_open_usr(qio_file_t** file_out, const char* pathname,
+                        int flags, mode_t mode, qio_hint_t iohints,
                         const qio_style_t* style, void* fs_info,
                         const qio_file_functions_t* s);
 
-qioerr qio_file_init_usr(qio_file_t** file_out, void* file_info, 
-                        qio_hint_t iohints, int flags, const qio_style_t* style, 
+qioerr qio_file_init_usr(qio_file_t** file_out, void* file_info,
+                        qio_hint_t iohints, int flags, const qio_style_t* style,
                         void* fs_info,
                         const qio_file_functions_t* fns);
 
-qioerr qio_file_open_access_usr(qio_file_t** file_out, const char* pathname, 
-                               const char* access, qio_hint_t iohints, 
+qioerr qio_file_open_access_usr(qio_file_t** file_out, const char* pathname,
+                               const char* access, qio_hint_t iohints,
                                const qio_style_t* style, void* fs_info,
                                const qio_file_functions_t* s);
+
+qioerr qio_get_fs_type(qio_file_t* fl, int* out);
+qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out);
+qioerr qio_locales_for_region(qio_file_t* fl, off_t start, off_t end, const char*** locale_names_out, int* num_locs_out);
 
 // This can be called to run close and to check the return value.
 // That's important because some implementations (such as NFS)
@@ -687,7 +727,7 @@ typedef struct qio_channel_s {
    * and then move right_mark_start forward
    * (that is in qio_buffered_read)
    *
-   * When writing, we 'require' then write to 
+   * When writing, we 'require' then write to
    * right_mark_start to (potentially) end_iter(heavy->buf)
    * and then move right_mark_start forward
    * (that is in qio_buffered_write)
@@ -718,7 +758,7 @@ typedef struct qio_channel_s {
    * |write-behind | user writeable/readable | read-ahead/buffer space|
    *             mark_stack[0]              av_end
    *             "av_start"
-   *                  mark_stack[mark_next-1] 
+   *                  mark_stack[mark_next-1]
    *                  "right_mark_start"
    * the available section is ready for user read/write.
    * Space to the right of av_end is allocated but not yet read from disk
@@ -999,7 +1039,7 @@ int64_t qio_channel_str_style(qio_channel_t* ch)
 }
 
 int64_t qio_channel_style_element(qio_channel_t* ch, int64_t element);
- 
+
 static ___always_inline
 qioerr qio_channel_write(const int threadsafe, qio_channel_t* restrict ch, const void* restrict ptr, ssize_t len, ssize_t* restrict amt_written )
 {
@@ -1218,7 +1258,7 @@ int64_t qio_channel_offset_unlocked(qio_channel_t* ch)
   return bytes_in_bits + ch->mark_stack[ch->mark_cur]; // _right_mark_start(ch);
 }
 
-/* 
+/*
  * Returns the end position of the channel.
  *  - If the channel is unbounded and we have not
  *    yet encountered an EOF when reading, returns MAX_INT64
@@ -1326,7 +1366,7 @@ qioerr qio_channel_revert(const int threadsafe, qio_channel_t* ch)
       return err;
     }
   }
-  
+
   qio_channel_revert_unlocked(ch);
 
   if( threadsafe ) {
@@ -1353,7 +1393,7 @@ qioerr qio_channel_commit(const int threadsafe, qio_channel_t* ch)
       return err;
     }
   }
-  
+
   qio_channel_commit_unlocked(ch);
 
   if( threadsafe ) {
@@ -1384,7 +1424,7 @@ qioerr qio_channel_write_bits(const int threadsafe, qio_channel_t* restrict ch, 
     // v must not have any extra bits set.
     QIO_RETURN_CONSTANT_ERROR(EINVAL, "no more bits");
   }
-  
+
   if( threadsafe ) {
     err = qio_lock(&ch->lock);
     if( err ) {
@@ -1518,7 +1558,7 @@ qioerr qio_channel_read_bits(const int threadsafe, qio_channel_t* restrict ch, u
         part_two_bits = qio_bitbuffer_unbe(part_two_bits); // host endian now.
         // now we need tmp_live top bits from tmp_bits
         // and the rest from part_two_bits.
-        
+
         // value we have now in bottom bits.
         value = qio_bitbuffer_topn(tmp_bits, tmp_live);
 
