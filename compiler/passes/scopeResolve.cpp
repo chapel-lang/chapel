@@ -1649,12 +1649,14 @@ static void renameDefaultType(Type* type, const char* newname) {
 *                                                                           *
 ************************************* | ************************************/
 
-static Symbol* lookup(BaseAST*       scope,
-                      const char*    name,
-                      Vec<BaseAST*>* alreadyVisited);
+static void  lookup(BaseAST*       scope,
+                    const char*    name,
+                    Vec<Symbol*>&  symbols,
+                    Vec<BaseAST*>& alreadyVisited);
 
-static Symbol* lookupSimple(BaseAST*       scope,
-                            const char*    name);
+static void lookupSimple(BaseAST*       scope,
+                         const char*    name,
+                         Vec<Symbol*>&  symbols);
 
 static void    buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules);
 
@@ -1662,24 +1664,40 @@ static void    buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules,
                                            Vec<ModuleSymbol*>* current,
                                            Vec<ModuleSymbol*>* alreadySeen);
 
-static Symbol* lookup(BaseAST* scope, const char* name) {
+static Symbol* lookup(BaseAST* scope, const char* name)
+{
+  Vec<Symbol*>  symbols;
   Vec<BaseAST*> nestedscopes;
+  lookup(scope, name, symbols, nestedscopes);
 
-  return lookup(scope, name, &nestedscopes);
+  symbols.set_to_vec();
+
+  if (symbols.n == 0)
+    // No symbols found.
+    return NULL;
+
+  if (symbols.n == 1)
+    // A unique symbol was found.
+    return symbols.v[0];
+
+  forv_Vec(Symbol, sym, symbols) {
+    if (!isFnSymbol(sym))
+      USR_FATAL_CONT(sym, "Symbol %s multiply defined", name);
+  }
+  USR_STOP();
+
+  return NULL;
 }
 
 // This version recurses through module uses.
-static Symbol* lookup(BaseAST*       scope,
-                      const char*    name,
-                      Vec<BaseAST*>* alreadyVisited)
+// Adds zero or more symbols to the passed-in symbols vector.
+static void lookup(BaseAST*       scope,
+                   const char*    name,
+                   Vec<Symbol*>&  symbols,
+                   Vec<BaseAST*>& alreadyVisited)
 {
-  Vec<BaseAST*> nestedscopes;
-  Symbol*       retval = NULL;
-
   if (!alreadyVisited->set_in(scope)) {
     alreadyVisited->set_add(scope);
-
-    Vec<Symbol*> symbols;
 
     if (symbolTable.count(scope) != 0) {
       SymbolTableEntry* entry = symbolTable[scope];
@@ -1723,16 +1741,12 @@ static Symbol* lookup(BaseAST*       scope,
             modules = moduleUsesCache[block];
           }
 
-          INT_ASSERT(modules);
-
           forv_Vec(ModuleSymbol, mod, *modules) {
             if (mod) {
               if (mod != rootModule) {
-                if (Symbol* sym = lookupSimple(mod->initFn->body, name))
-                  symbols.set_add(sym);
+                lookupSimple(mod->initFn->body, name, symbols);
               } else {
-                if (Symbol* sym = lookupSimple(mod->block, name))
-                  symbols.set_add(sym);
+                lookupSimple(mod->block, name, symbols);
               }
             } else {
               //
@@ -1749,75 +1763,36 @@ static Symbol* lookup(BaseAST*       scope,
     if (symbols.n == 0) {
       if (scope->getModule()->block == scope) {
         ModuleSymbol* mod = scope->getModule();
-        Symbol*       sym = NULL;
 
         if (mod == rootModule)
-          sym = lookup(mod->block, name, alreadyVisited);
+          lookup(mod->block, name, symbols, alreadyVisited);
         else
-          sym = lookup(mod->initFn->body, name, alreadyVisited);
+          lookup(mod->initFn->body, name, symbols, alreadyVisited);
 
-        if (sym)
-          symbols.set_add(sym);
-        
         if (symbols.n == 0 && getScope(scope)) {
-          sym = lookup(getScope(scope), name, alreadyVisited);
-
-          if (sym)
-            symbols.set_add(sym);
+          lookup(getScope(scope), name, symbols, alreadyVisited);
         }
       } else {
         FnSymbol* fn = toFnSymbol(scope);
+        AggregateType* ct  = toAggregateType(fn->_this->type);
+        if (fn && fn->_this && ct) {
+          lookup(ct->symbol, name, symbols, alreadyVisited);
 
-        if (fn && fn->_this && toAggregateType(fn->_this->type)) {
-          AggregateType* ct  = toAggregateType(fn->_this->type);
-          Symbol*        sym = lookup(ct->symbol, name, alreadyVisited);
-
-          if (sym)
-            symbols.set_add(sym);
-          else {
-            sym = lookup(getScope(scope), name, alreadyVisited);
-
-            if (sym)
-              symbols.set_add(sym);
-          }
+          if (symbols.n == 0)
+            lookup(getScope(scope), name, symbols, alreadyVisited);
         } else if (getScope(scope)) {
-          Symbol* sym = lookup(getScope(scope), name, alreadyVisited);
-
-          if (sym)
-            symbols.set_add(sym);
+          lookup(getScope(scope), name, symbols, alreadyVisited);
         }
       }
     }
-
-    symbols.set_to_vec();
-
-    if (symbols.n == 1)
-      retval = symbols.v[0];
-
-    else if (symbols.n == 0)
-      retval = NULL;
-
-    else {
-      forv_Vec(Symbol, sym, symbols) {
-        if (!isFnSymbol(sym))
-          USR_FATAL(sym, "Symbol %s multiply defined", name);
-      }
-
-      retval = NULL;
-    }
   }
-
-  return retval;
 }
 
 // This version does not recurse through module uses.
-static Symbol* lookupSimple(BaseAST*       scope,
-                            const char*    name)
+static void lookupSimple(BaseAST*       scope,
+                         const char*    name,
+                         Vec<Symbol*>&  symbols)
 {
-  Symbol*       retval = NULL;
-
-  Vec<Symbol*> symbols;
-
   if (symbolTable.count(scope) != 0) {
     SymbolTableEntry* entry = symbolTable[scope];
 
@@ -1831,25 +1806,6 @@ static Symbol* lookupSimple(BaseAST*       scope,
     if (AggregateType* ct = toAggregateType(ts->type))
       if (Symbol* sym = ct->getField(name, false))
         symbols.set_add(sym);
-
-  symbols.set_to_vec();
-
-  if (symbols.n == 1)
-    retval = symbols.v[0];
-
-  else if (symbols.n == 0)
-    retval = NULL;
-
-  else {
-    forv_Vec(Symbol, sym, symbols) {
-      if (!isFnSymbol(sym))
-        USR_FATAL(sym, "Symbol %s multiply defined", name);
-    }
-
-    retval = NULL;
-  }
-
-  return retval;
 }
 
 static void buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules) {
