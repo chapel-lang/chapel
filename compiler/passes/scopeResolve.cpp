@@ -1696,8 +1696,8 @@ static void lookup(BaseAST*       scope,
                    Vec<Symbol*>&  symbols,
                    Vec<BaseAST*>& alreadyVisited)
 {
-  if (!alreadyVisited->set_in(scope)) {
-    alreadyVisited->set_add(scope);
+  if (!alreadyVisited.set_in(scope)) {
+    alreadyVisited.set_add(scope);
 
     if (symbolTable.count(scope) != 0) {
       SymbolTableEntry* entry = symbolTable[scope];
@@ -1774,15 +1774,14 @@ static void lookup(BaseAST*       scope,
         }
       } else {
         FnSymbol* fn = toFnSymbol(scope);
-        AggregateType* ct  = toAggregateType(fn->_this->type);
-        if (fn && fn->_this && ct) {
-          lookup(ct->symbol, name, symbols, alreadyVisited);
-
-          if (symbols.n == 0)
-            lookup(getScope(scope), name, symbols, alreadyVisited);
-        } else if (getScope(scope)) {
-          lookup(getScope(scope), name, symbols, alreadyVisited);
+        if (fn && fn->_this)
+        {
+          AggregateType* ct = toAggregateType(fn->_this->type);
+          if (ct)
+            lookup(ct->symbol, name, symbols, alreadyVisited);
         }
+        if (symbols.n == 0)
+          lookup(getScope(scope), name, symbols, alreadyVisited);
       }
     }
   }
