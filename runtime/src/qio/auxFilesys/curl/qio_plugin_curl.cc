@@ -19,6 +19,8 @@
 #include "qio_plugin_curl.h"
 #include <curl/curl.h>
 
+#define to_curl_handle(f) ((curl_handle*)f)
+
 struct str_t {
   char*  mem;
   size_t size;
@@ -41,8 +43,6 @@ struct curl_iovec_t {
   int     curr;       // the index of the current buffer
 };
 
-#define to_curl_handle(f) ((curl_handle*)f)
-
 static
 size_t buf_writer(char* ptr_data, size_t size, size_t nmemb, void* userdata)
 {
@@ -50,7 +50,7 @@ size_t buf_writer(char* ptr_data, size_t size, size_t nmemb, void* userdata)
   size_t real_realsize = realsize;
   struct curl_iovec_t* ret = ((struct curl_iovec_t *)userdata);
 
-  // so that we can "seek"
+  // so that we can "seek" when we cannot request byteranges
   if (realsize < ret->offset) {
     ret->offset -= realsize;
     return realsize;
@@ -61,29 +61,34 @@ size_t buf_writer(char* ptr_data, size_t size, size_t nmemb, void* userdata)
     ret->offset = 0;
   }
 
-  // we need to go from one iovbuff to the other
+  // The amount that we have been given by curl is more than we can stick into a
+  // single iovbuff. So we need to go from one iovbuff to the other
   while (realsize > ret->vec[ret->curr].iov_len*size - ret->amt_read)  {
+    // This cast to char* is to get rid "subscript of pointer to incomplete type" warnings
     memcpy(&(((char*)ret->vec[ret->curr].iov_base)[ret->amt_read]), ptr_data, ret->vec[ret->curr].iov_len*size - ret->amt_read);
     ret->total_read += (ret->vec[ret->curr].iov_len*size - ret->amt_read);
     realsize -= ret->vec[ret->curr].iov_len*size - ret->amt_read;
     ptr_data = &(ptr_data[(ret->vec[ret->curr].iov_len*size - ret->amt_read)]);
+    // Reset the amount that we have read into this vector.
     ret->amt_read = 0;
-    if (ret->curr == ret->count-1) {
+    if (ret->curr == ret->count-1) { // last iovbuff in this vector, so stop reading
       return 0; // stop reading
-    } else {
+    } else { // go to the next buf in this vector
       ret->curr++;
     }
   }
 
-  // we won't be able to fully fill everything up at this point
+  // The amount of data that we have been given by curl is <= to the amount of space
+  // that we have left in this iovbuf. So we can simply read it all in.
   if (realsize <= (ret->vec[ret->curr].iov_len*size - ret->amt_read)) {
     memcpy(&(((char*)ret->vec[ret->curr].iov_base)[ret->amt_read]), ptr_data, realsize);
     ret->total_read += realsize;
     ret->amt_read += realsize;
+    // We have fully populated this iovbuf
     if (ret->vec[ret->curr].iov_len*size == ret->amt_read) {
-      if (ret->curr == ret->count -1)
+      if (ret->curr == ret->count -1) // last iovbuf in this vector
         return 0; // stop reading
-      else {
+      else { // else, step to the next buf.
         ret->curr++;
         ret->amt_read = 0;
       }
@@ -152,7 +157,7 @@ qioerr curl_readv(void* file, const struct iovec *vector, int count, ssize_t* nu
   write_vec.offset = 0;
   write_vec.curr = 0;
 
-  if (local_handle->seekable != -1)  // we can request byteranges
+  if (local_handle->seekable)  // we can request byteranges
     curl_easy_setopt(local_handle->curl, CURLOPT_RESUME_FROM_LARGE, local_handle->current_offset);
   else
     write_vec.offset = local_handle->current_offset;
@@ -195,7 +200,7 @@ qioerr curl_preadv(void* file, const struct iovec *vector, int count, off_t offs
   write_vec.offset = 0;
   write_vec.curr = 0;
 
-  if (local_handle->seekable != -1)  // we can request byteranges
+  if (local_handle->seekable)  // we can request byteranges
     curl_easy_setopt(local_handle->curl, CURLOPT_RESUME_FROM_LARGE, offset);
   else
     write_vec.offset = offset;
@@ -266,8 +271,9 @@ int curl_seekable(void* file)
   struct str_t buf;
   int ret = 0;
 
-
-  buf.mem = (char*)qio_calloc(1, 1); // doesn't really matter, we just want a place on the heap
+  // The size doesn't really matter, we just want a place on the heap. This will get
+  // expanded in curl_write_string
+  buf.mem = (char*)qio_calloc(1, 1);
   buf.size = 0;
 
   curl_easy_setopt(to_curl_handle(file)->curl, CURLOPT_WRITEFUNCTION, chpl_curl_write_string);
@@ -282,7 +288,7 @@ int curl_seekable(void* file)
 
   // Does this URL accept range requests?
   if (strstr(buf.mem, "Accept-Ranges") == NULL)
-      ret = -1;
+      ret = 0;
   else
       ret = 1;
 
@@ -326,7 +332,7 @@ qioerr curl_open(void** fd, const char* path, int* flags, mode_t mode, qio_hint_
   // Read the header in order to get the length of the thing we are reading
   if (*flags & O_WRONLY) {
     to_curl_handle(fl)->length = -1;
-    to_curl_handle(fl)->seekable = -1;
+    to_curl_handle(fl)->seekable = 0;
   } else {
     curl_easy_setopt(to_curl_handle(fl)->curl, CURLOPT_HEADER, 0L);
     curl_easy_setopt(to_curl_handle(fl)->curl, CURLOPT_NOBODY, 1L);
@@ -413,8 +419,8 @@ qioerr curl_getlength(void* fl, int64_t* len_out, void* fs)
   return 0;
 }
 
-// Blech, but in order to be modular, we need to essentially do what the Curl folks
-// did...
+// Blech, but in order to be modular (get the parametricity that we want), we need to
+// essentially do what the Curl folks did...
 qioerr chpl_curl_set_opt(qio_file_t* fl, int opt, ...)
 {
   qioerr err;
@@ -447,7 +453,7 @@ qioerr chpl_curl_perform(qio_file_t* fl)
   return err;
 }
 
-// str resides in heap
+// str resides on heap
 qioerr chpl_curl_stream_string(qio_file_t* fl, const char** str)
 {
   qioerr err = 0;
