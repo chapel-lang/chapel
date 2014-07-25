@@ -1617,10 +1617,9 @@ void do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
     if( index == -1 ) break;
     at = cache->pending_sequence_numbers[index];
     if( at <= sn ) {
-      // Wait for all requests with sequence number at.
-      last = cache->pending_len - 1;
-      if( last > cache->pending_last_entry && cache->pending_last_entry > index)
-        last = cache->pending_last_entry;
+      // Wait for some requests
+      last = cache->pending_last_entry;
+      if( last < index ) last = cache->pending_len - 1;
       while( cache->pending[index] ) {
         DEBUG_PRINT(("wait_for waiting %i..%i\n", index, last));
         // Wait for some requests to complete.
@@ -2637,7 +2636,7 @@ void wait_all(struct rdcache_s* cache)
   cache_seqn_t sn;
 
   index = cache->pending_last_entry;
-  if( index > 0 ) {
+  if( index >= 0 ) {
     sn = cache->pending_sequence_numbers[index];
     wait_for(cache, sn);
   }
@@ -2744,6 +2743,7 @@ void chpl_cache_fence(int acquire, int release, int ln, chpl_string fn)
     INFO_PRINT(("%i fence acquire %i release %i %s:%i\n", chpl_nodeID, acquire, release, fn, ln));
 
     TRACE_PRINT(("%d: task %d in chpl_cache_fence(acquire=%i,release=%i) on cache %p from %s:%d\n", chpl_nodeID, (int) chpl_task_getId(), acquire, release, cache, fn?fn:"", ln));
+    //printf("%d: task %d in chpl_cache_fence(acquire=%i,release=%i) on cache %p from %s:%d\n", chpl_nodeID, (int) chpl_task_getId(), acquire, release, cache, fn?fn:"", ln);
 
 #ifdef DUMP
     DEBUG_PRINT(("%d: task %d before fence\n", chpl_nodeID, (int) chpl_task_getId()));
