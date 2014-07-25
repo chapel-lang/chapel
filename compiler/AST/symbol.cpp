@@ -2256,63 +2256,105 @@ void ModuleSymbol::codegenDef() {
 
   flushStatements();
 }
+
+// Collect the top-level classes for this Module.
+//
+// 2014/07/25 MDN.  This function is currently only called by
+// docs.  Historically all of the top-level classes were buried
+// inside the prototypical module initFn.
+//
+// Installing The initFn is being moved forward but there are
+// still short periods of time when the classes will still be
+// buried inside the module initFn.
+//
+// Hence this function is currently able to handle the before
+// and after case.  The before case can be pulled out once the
+// construction of the initFn is cleaned up.
+//
  
 Vec<AggregateType*> ModuleSymbol::getTopLevelClasses() {
   Vec<AggregateType*> classes;
 
   for_alist(expr, block->body) {
-    if (DefExpr* def = toDefExpr(expr))
-      if (FnSymbol* fn = toFnSymbol(def->sym)) {
-        // Ignore external and prototype functions.
+    if (DefExpr* def = toDefExpr(expr)) {
+
+      if (TypeSymbol* type = toTypeSymbol(def->sym)) {
+        if (AggregateType* cl = toAggregateType(type->type)) {
+          classes.add(cl);
+        }
+
+      // Step in to the initFn
+      } else if (FnSymbol* fn = toFnSymbol(def->sym)) {
         if (fn->hasFlag(FLAG_MODULE_INIT)) {
           for_alist(expr2, fn->body->body) {
-            if (DefExpr* def2 = toDefExpr(expr2))
-              if (TypeSymbol* type = toTypeSymbol(def2->sym)) 
+            if (DefExpr* def2 = toDefExpr(expr2)) {
+              if (TypeSymbol* type = toTypeSymbol(def2->sym)) {
                 if (AggregateType* cl = toAggregateType(type->type)) {
                   classes.add(cl);
                 }
+              }
+            }
           }
         }
       }
+    }
   }
 
   return classes;
 }
 
+// Collect the top-level classes for this Module.
+//
+// See the comment on getTopLevelClasses()
 Vec<VarSymbol*> ModuleSymbol::getTopLevelConfigVars() {
   Vec<VarSymbol*> configs;
 
   for_alist(expr, block->body) {
-    if (DefExpr* def = toDefExpr(expr))
-      if (FnSymbol* fn = toFnSymbol(def->sym)) {
-        // Ignore external and prototype functions.
+    if (DefExpr* def = toDefExpr(expr)) {
+
+      if (VarSymbol* var = toVarSymbol(def->sym)) {
+        if (var->hasFlag(FLAG_CONFIG)) {
+          configs.add(var);
+        }
+
+      } else if (FnSymbol* fn = toFnSymbol(def->sym)) {
         if (fn->hasFlag(FLAG_MODULE_INIT)) {
           for_alist(expr2, fn->body->body) {
-            if (DefExpr* def2 = toDefExpr(expr2))
+            if (DefExpr* def2 = toDefExpr(expr2)) {
               if (VarSymbol* var = toVarSymbol(def2->sym)) {
                 if (var->hasFlag(FLAG_CONFIG)) {
                   configs.add(var);
                 }
               }
+            }
           }
         }
       }
+    }
   }
 
   return configs;
 }
 
+// Collect the top-level classes for this Module.
+//
+// This one is similar to getTopLevelModules() and
+// getTopLevelFunctions except that it collects any
+// functions and then steps in to initFn if it finds it.
+//
+
 Vec<FnSymbol*> ModuleSymbol::getTopLevelFunctions() {
   Vec<FnSymbol*> fns;
 
   for_alist(expr, block->body) {
-    if (DefExpr* def = toDefExpr(expr))
+    if (DefExpr* def = toDefExpr(expr)) {
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
         // Ignore external and prototype functions.
         if (!genExternPrototypes &&
             (fn->hasFlag(FLAG_EXTERN) ||
-             fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)))
+             fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))) {
           continue;
+        }
 
         fns.add(fn);
 
@@ -2324,17 +2366,21 @@ Vec<FnSymbol*> ModuleSymbol::getTopLevelFunctions() {
         // statement may be removed.
         if (fn->hasFlag(FLAG_MODULE_INIT)) {
           for_alist(expr2, fn->body->body) {
-            if (DefExpr* def2 = toDefExpr(expr2))
+            if (DefExpr* def2 = toDefExpr(expr2)) {
               if (FnSymbol* fn2 = toFnSymbol(def2->sym)) {
                 if (!genExternPrototypes &&
                     (fn->hasFlag(FLAG_EXTERN) ||
-                     fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)))
+                     fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))) {
                   continue;
+                }
+
                 fns.add(fn2);
               }
+            }
           }
         }
       }
+    }
   }
 
   return fns;
