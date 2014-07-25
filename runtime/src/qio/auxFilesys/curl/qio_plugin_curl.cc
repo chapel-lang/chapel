@@ -42,7 +42,6 @@ struct curl_iovec_t {
 };
 
 #define to_curl_handle(f) ((curl_handle*)f)
-#define min(a,b) a < b ? a : b
 
 static
 size_t buf_writer(char* ptr_data, size_t size, size_t nmemb, void* userdata)
@@ -100,7 +99,7 @@ size_t read_data(void *ptr, size_t size, size_t nmemb, void *userp)
   size_t len;
 
   if((size == 0) || (nmemb == 0) || ((size*nmemb) < 1) || (upload_ctx->curr >= upload_ctx->count)) {
-    return 0;
+    return 0; // stop putting data
   }
 
   len = upload_ctx->vec[upload_ctx->curr].iov_len*size;
@@ -231,10 +230,7 @@ qioerr curl_pwritev(void* fd, const struct iovec* iov, int iovcnt, off_t offset,
 qioerr curl_writev(void* fl, const struct iovec* iov, int iovcnt, ssize_t* num_written_out, void* fs)
 {
   CURLcode ret;
-  ssize_t got = 0;
-  ssize_t got_total = 0;
   qioerr err_out = 0;
-  int i;
   struct curl_iovec_t write_vec;
 
   write_vec.total_read = 0;
