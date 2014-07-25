@@ -3922,3 +3922,106 @@ int64_t qio_channel_style_element(qio_channel_t* ch, int64_t element)
   return 0;
 }
 
+qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out)
+{
+  // In the case where we do not have a Lustre or block type fs, we set the chunk
+  // size to be the optimal transfer block size
+  qioerr err = 0;
+  int rc = 0;
+  int64_t transfer_size = 0;
+  sys_statfs_t s;
+  // for lustre
+#ifdef SYS_HAS_LLAPI
+  const char* path;
+#endif
+
+  if (fl->fsfns && fl->fsfns->get_chunk) {
+    err = fl->fsfns->get_chunk(fl->file_info, &transfer_size, fl->fs_info);
+  } else {
+
+#ifdef SYS_HAS_LLAPI // This will be set in the lustre plugin if we have these available
+    if (fl->fp)
+      err = qio_file_path_for_fd(fileno(fl->fp), &path);
+    else if (fl->fd != -1)
+      err = qio_file_path_for_fd(fl->fd, &path);
+    else QIO_RETURN_CONSTANT_ERROR(EBADF, "Unable to get chunk size for file -- no file descriptor or file pointer found");
+
+    if (err)  {
+      qio_free(path);
+      QIO_RETURN_CONSTANT_ERROR(qio_err_to_int(err), "Unable to get path for lustre file");
+    }
+
+    // This will get uncommented once we add in the Lustre plugin
+    /*err = chpl_lustre_get_stripe_size(path, &transfer_size);*/
+    qio_free(path);
+
+    if (err)
+      QIO_RETURN_CONSTANT_ERROR(ENOTSUP, "Unable to get stripe size for lustre file");
+
+#else
+    if (fl->fp){
+      rc = sys_fstatfs(fileno(fl->fp), &s);
+    } else if (fl->fd != -1) {
+      rc = sys_fstatfs(fl->fd, &s);
+    } else QIO_RETURN_CONSTANT_ERROR(ENOSYS, "Unable to get chunk size for file");
+
+    if (rc)
+      QIO_RETURN_CONSTANT_ERROR(ENOTSUP, "Unable to stat optimal transfer size for local file");
+
+    transfer_size = s.f_bsize;
+#endif
+  }
+
+  if (transfer_size == 0) { // undefined for this system
+    *len_out = 0;
+    return err;
+  }
+
+  *len_out = transfer_size;
+  return err;
+}
+
+qioerr qio_locales_for_region(qio_file_t* fl, off_t start, off_t end, const char*** loc_names_out, int* num_locs_out)
+{ 
+  qioerr err = 0;
+  if (fl->fsfns && fl->fsfns->get_locales_for_region) {
+    err = fl->fsfns->get_locales_for_region(fl->file_info, start, end, loc_names_out, num_locs_out, fl->fs_info);
+    return err;
+  } else {
+    *num_locs_out = 0;
+    QIO_RETURN_CONSTANT_ERROR(ENOSYS, "Unable to get locale for specified region of file");
+  }
+}
+
+qioerr qio_get_fs_type(qio_file_t* fl, int* out)
+{
+  sys_statfs_t s;
+  int rc = 1;
+
+  if (fl->fsfns && fl->fsfns->get_fs_type) {
+    *out = fl->fsfns->get_fs_type(fl->file_info, fl->fs_info);
+    return 0;
+  } 
+
+  // else
+  if (fl->fp)
+    rc = sys_fstatfs(fileno(fl->fp), &s);
+  else if (fl->fd != -1)
+    rc = sys_fstatfs(fl->fd, &s);
+
+  // can't stat, and we don't have a foreign FS
+  if (rc != 0)
+    QIO_RETURN_CONSTANT_ERROR(ENOTSUP, "Unable to find file system type");
+
+  if (s.f_type == LUSTRE_SUPER_MAGIC) {
+    *out = FTYPE_LUSTRE;
+    return 0;
+  }
+
+  // else
+  *out = FTYPE_NONE;
+  return 0;
+
+
+}
+
