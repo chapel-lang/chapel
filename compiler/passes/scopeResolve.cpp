@@ -59,8 +59,6 @@ static bool enableModuleUsesCache = false;
 //
 static Vec<const char*> aliasFieldSet;
 
-
-static void     insertModuleInit();
 static void     addToSymbolTable(Vec<DefExpr*>& defs);
 static void     processImportExprs();
 static void     addClassToHierarchy(AggregateType* ct);
@@ -78,8 +76,6 @@ static Symbol*  lookup(BaseAST* scope, const char* name);
 static BaseAST* getScope(BaseAST* ast);
 
 void scopeResolve() {
-
-  insertModuleInit();
 
   //
   // add all program asts to the symbol table
@@ -187,46 +183,6 @@ void scopeResolve() {
 
 /************************************ | *************************************
 *                                                                           *
-* MDN 2014/07/15  This function is being moved from Parse to Normalize      *
-* It is resting here, for a day or so, while code is patched to support the *
-* migration.                                                                *
-*                                                                           *
-************************************* | ************************************/
-
-static void insertModuleInit() {
-  // Insert an init function into every module
-  forv_Vec(ModuleSymbol, mod, allModules) {
-    SET_LINENO(mod);
-
-    mod->initFn          = new FnSymbol(astr("chpl__init_", mod->name));
-    mod->initFn->retType = dtVoid;
-
-    mod->initFn->addFlag(FLAG_MODULE_INIT);
-    mod->initFn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
-
-    //
-    // move module-level statements into module's init function
-    //
-    for_alist(stmt, mod->block->body) {
-      if (stmt->isModuleDefinition() == false)
-        mod->initFn->insertAtTail(stmt->remove());
-    }
-
-    mod->block->insertAtHead(new DefExpr(mod->initFn));
-
-    //
-    // If the module has the EXPORT_INIT flag then
-    // propagate it to the module's init function
-    //
-    if (mod->hasFlag(FLAG_EXPORT_INIT) == true) {
-      mod->initFn->addFlag(FLAG_EXPORT);
-      mod->initFn->addFlag(FLAG_LOCAL_ARGS);
-    }
-  }
-}
-
-/************************************ | *************************************
-*                                                                           *
 * addToSymbolTable adds the asts in a vector to the global symbolTable such *
 * that symbol definitions are added to entries in the table and new         *
 * enclosing asts become entries                                             *
@@ -299,10 +255,7 @@ static void processImportExprs() {
 
       enclosingModule->moduleUseAdd(mod);
 
-      if (call->getStmtExpr()->parentExpr == call->getModule()->initFn->body)
-        call->getModule()->block->moduleUseAdd(mod);
-      else
-        getVisibilityBlock(call)->moduleUseAdd(mod);
+      getVisibilityBlock(call)->moduleUseAdd(mod);
 
       call->getStmtExpr()->remove();
     }
@@ -1420,28 +1373,12 @@ static void resolveModuleCall(CallExpr* call, Vec<UnresolvedSymExpr*>& skipSet) 
         Symbol*           sym      = NULL;
         const char*       mbr_name = get_string(call->get(2));
 
-        //Is it a variable?
-        //TODO: should we be using lookup here instead?
-        if (symbolTable.count(mod->initFn->body) != 0) {
-          entry = symbolTable[mod->initFn->body];
+        // Is it a variable or a method?
+        if (symbolTable.count(mod->block) != 0) {
+          entry = symbolTable[mod->block];
 
-          //Check first before accessing so that we don't
-          //  add a new, blank entry. (Blank entries break
-          //  attempts to add a new symbol if it
-          //  doesn't exist yet to support extern blocks.)
           if (entry->count(mbr_name) != 0) {
             sym = (*entry)[mbr_name];
-          }
-        }
-
-        if (!sym) {
-          //Is it a method?
-          if (symbolTable.count(mod->block) != 0) {
-            entry = symbolTable[mod->block];
-
-            if (entry->count(mbr_name) != 0) {
-              sym = (*entry)[mbr_name];
-            }
           }
         }
 
@@ -1729,13 +1666,10 @@ static Symbol* lookup(BaseAST*       scope,
 
           forv_Vec(ModuleSymbol, mod, *modules) {
             if (mod) {
-              if (mod != rootModule) {
-                if (Symbol* sym = lookup(mod->initFn->body, name, alreadyVisited, false))
-                  symbols.set_add(sym);
-              } else {
-                if (Symbol* sym = lookup(mod->block, name, alreadyVisited, false))
-                  symbols.set_add(sym);
-              }
+              Symbol* sym = lookup(mod->block, name, alreadyVisited, false);
+
+              if (sym != NULL)
+                symbols.set_add(sym);
             } else {
               //
               // break on each new depth if a symbol has been found
@@ -1753,10 +1687,7 @@ static Symbol* lookup(BaseAST*       scope,
         ModuleSymbol* mod = scope->getModule();
         Symbol*       sym = NULL;
 
-        if (mod == rootModule)
-          sym = lookup(mod->block, name, alreadyVisited, scanModuleUses);
-        else
-          sym = lookup(mod->initFn->body, name, alreadyVisited, scanModuleUses);
+        sym = lookup(mod->block, name, alreadyVisited, scanModuleUses);
 
         if (sym)
           symbols.set_add(sym);
