@@ -161,7 +161,7 @@ int main(int argc, char* argv[]) {
   // Handle options that set the environment before doing any other
   // runtime initialization.
   //
-  parseArgs(parse_dash_E, &argc, argv);
+  parseArgs(false, parse_dash_E, &argc, argv);
 
   chpl_error_init();  // This does local-only initialization
   chpl_comm_init(&argc, &argv);
@@ -175,7 +175,7 @@ int main(int argc, char* argv[]) {
   chpl_gen_main_arg.argv[0] = argv[0];
   chpl_gen_main_arg.argc = 1;
   chpl_gen_main_arg.return_value = 0;
-  parseArgs(parse_normally, &argc, argv);
+  parseArgs(false, parse_normally, &argc, argv);
   recordExecutionCommand(argc, argv);
 
   //

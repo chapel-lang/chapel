@@ -11,11 +11,12 @@
 #include "config.h"
 #include "error.h"
 
+#include <assert.h>
 #include <errno.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
 
 
 static int gdbFlag = 0;
@@ -37,7 +38,7 @@ int _runInGDB(void) {
 #undef malloc
 
 static void defineEnvVar(const char* currentArg,
-			 int32_t lineno, c_string filename) {
+                         int32_t lineno, c_string filename) {
   static char errmsg[1000];
   char* estr;
   char* estr_eq;
@@ -57,7 +58,7 @@ static void defineEnvVar(const char* currentArg,
   //
   if ((estr = malloc(strlen(currentArg) + 1)) == NULL) {
     snprintf(errmsg, sizeof(errmsg),
-	     "Cannot duplicate -E argument: %s", strerror(errno));
+             "Cannot duplicate -E argument: %s", strerror(errno));
     chpl_error(errmsg, lineno, filename);
   }
 
@@ -71,14 +72,14 @@ static void defineEnvVar(const char* currentArg,
 
   if (getenv(estr) != NULL) {
     snprintf(errmsg, sizeof(errmsg),
-	     "-E env var %s is already set; ignoring -E", estr);
+             "-E env var %s is already set; ignoring -E", estr);
     chpl_warning(errmsg, lineno, filename);
   }
   else {
     *estr_eq = '=';
     if (putenv(estr) != 0) {
       snprintf(errmsg, sizeof(errmsg),
-	       "Cannot putenv(\"%s\"): %s", estr, strerror(errno));
+               "Cannot putenv(\"%s\"): %s", estr, strerror(errno));
       chpl_error(errmsg, lineno, filename);
     }
   }
@@ -188,12 +189,15 @@ int32_t getArgNumLocales(void) {
 
 
 extern void chpl_program_about(void); // The generated code provides this
-void parseArgs(chpl_parseArgsMode_t mode, int* argc, char* argv[]) {
+void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
+               int* argc, char* argv[]) {
   int i;
   int printHelp = 0;
   int printAbout = 0;
   int origargc = *argc;
   int stop_parsing = 0;
+
+  assert( !(isLauncher && mode == parse_dash_E) );
 
   for (i = 1; i < *argc; i++) {
     const char* filename = "<command-line arg>";
@@ -218,10 +222,10 @@ void parseArgs(chpl_parseArgsMode_t mode, int* argc, char* argv[]) {
      */
     if (mainHasArgs && strcmp(currentArg, "--") == 0) {
       if (mode == parse_dash_E) {
-	break;
+        break;
       } else {
-	stop_parsing = 1;
-	continue;
+        stop_parsing = 1;
+        continue;
       }
     }
 
@@ -235,11 +239,11 @@ void parseArgs(chpl_parseArgsMode_t mode, int* argc, char* argv[]) {
     case '-':
       switch (currentArg[1]) {
       case '-':
-	//
-	// As long as all "--" options consist of only a single
-	// command line argument, this simple check is sufficient.
-	//
-	if (mode != parse_dash_E) {
+        //
+        // As long as all "--" options consist of only a single
+        // command line argument, this simple check is sufficient.
+        //
+        if (mode != parse_dash_E) {
           const char* flag = currentArg + 2;
 
           if (strcmp(flag, "gdb") == 0) {
@@ -281,44 +285,48 @@ void parseArgs(chpl_parseArgsMode_t mode, int* argc, char* argv[]) {
           i += handlePossibleConfigVar(argc, argv, i, lineno, filename);
           break;
         }
-	break;
+        break;
 
       case 'a':
-	if (mode != parse_dash_E) {
-	  if (currentArg[2] == '\0') {
-	    printAbout = 1;
-	  } else {
-	    i += handleNonstandardArg(argc, argv, i, lineno, filename);
-	  }
-	}
+        if (mode != parse_dash_E) {
+          if (currentArg[2] == '\0') {
+            printAbout = 1;
+          } else {
+            i += handleNonstandardArg(argc, argv, i, lineno, filename);
+          }
+        }
         break;
 
       case 'b':
-	if (mode != parse_dash_E) {
-	  if (currentArg[2] == '\0') {
-	    blockreport = 1;
-	  } else {
-	    i += handleNonstandardArg(argc, argv, i, lineno, filename);
-	  }
-	}
+        if (mode != parse_dash_E) {
+          if (currentArg[2] == '\0') {
+            blockreport = 1;
+          } else {
+            i += handleNonstandardArg(argc, argv, i, lineno, filename);
+          }
+        }
         break;
 
       case 'E':
-	if (currentArg[2] == '\0') {
-	  i++;
-	  currentArg = argv[i];
-	} else {
-	  currentArg = argv[i] + 2;
-	}
+        if (isLauncher) {
+          i += handleNonstandardArg(argc, argv, i, lineno, filename);
+        } else {
+          if (currentArg[2] == '\0') {
+            i++;
+            currentArg = argv[i];
+          } else {
+            currentArg = argv[i] + 2;
+          }
 
-	// We process -E on the parse_dash_E pass and ignore it after that.
-	if (mode == parse_dash_E) {
-	  if (i >= *argc) {
-	    chpl_error("-E flag is missing <name=value> argument", 
-		       i, filename);
-	  }
-	  defineEnvVar(currentArg, lineno, filename);
-	}
+          // We process -E on the parse_dash_E pass and ignore it after that.
+          if (mode == parse_dash_E) {
+            if (i >= *argc) {
+              chpl_error("-E flag is missing <name=value> argument", 
+                         i, filename);
+            }
+            defineEnvVar(currentArg, lineno, filename);
+          }
+        }
         break;
 
       case 'f':
