@@ -55,14 +55,14 @@ size_t buf_writer(char* ptr_data, size_t size, size_t nmemb, void* userdata)
     ret->offset -= realsize;
     return realsize;
   } else {
-    // nop when we are done
+    // nop when we are done -- non-zero the first time through
     ptr_data = &(ptr_data[ret->offset]);
     realsize -= ret->offset;
     ret->offset = 0;
   }
 
   // The amount that we have been given by curl is more than we can stick into a
-  // single iovbuff. So we need to go from one iovbuff to the other
+  // single iovbuf. So we need to go from one iovbuf to the other
   while (realsize > ret->vec[ret->curr].iov_len*size - ret->amt_read)  {
     // This cast to char* is to get rid "subscript of pointer to incomplete type" warnings
     memcpy(&(((char*)ret->vec[ret->curr].iov_base)[ret->amt_read]), ptr_data, ret->vec[ret->curr].iov_len*size - ret->amt_read);
@@ -71,7 +71,7 @@ size_t buf_writer(char* ptr_data, size_t size, size_t nmemb, void* userdata)
     ptr_data = &(ptr_data[(ret->vec[ret->curr].iov_len*size - ret->amt_read)]);
     // Reset the amount that we have read into this vector.
     ret->amt_read = 0;
-    if (ret->curr == ret->count-1) { // last iovbuff in this vector, so stop reading
+    if (ret->curr == ret->count-1) { // last iovbuf in this vector, so stop reading
       return 0; // stop reading
     } else { // go to the next buf in this vector
       ret->curr++;
