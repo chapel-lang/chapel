@@ -226,10 +226,7 @@ qioerr curl_preadv(void* file, const struct iovec *vector, int count, off_t offs
 
 qioerr curl_pwritev(void* fd, const struct iovec* iov, int iovcnt, off_t offset, ssize_t* num_read_out, void* fs)
 {
-  qioerr t = 0;
-  QIO_GET_CONSTANT_ERROR(t, ENOSYS, "pwrites in CURL are not supported");
-  fprintf(stderr, "positional writes in CURL are not supported");
-  return t;
+  QIO_RETURN_CONSTANT_ERROR(ENOSYS, "positional writes in CURL are not supported");
 }
 
 qioerr curl_writev(void* fl, const struct iovec* iov, int iovcnt, ssize_t* num_written_out, void* fs)
@@ -330,6 +327,8 @@ qioerr curl_open(void** fd, const char* path, int* flags, mode_t mode, qio_hint_
   }
 
   // Read the header in order to get the length of the thing we are reading
+  // If we are writing, it is illegal to try and get the header information, so don't
+  // try and get it. As well, trying to figure out its length isn't good either.
   if (*flags & O_WRONLY) {
     to_curl_handle(fl)->length = -1;
     to_curl_handle(fl)->seekable = 0;
@@ -419,7 +418,7 @@ qioerr curl_getlength(void* fl, int64_t* len_out, void* fs)
   return 0;
 }
 
-// Blech, but in order to be modular (get the parametricity that we want), we need to
+// Blech, but in order to be modular (and get the parametricity that we want), we need to
 // essentially do what the Curl folks did...
 qioerr chpl_curl_set_opt(qio_file_t* fl, int opt, ...)
 {

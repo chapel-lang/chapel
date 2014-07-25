@@ -366,6 +366,22 @@ extern proc qio_channel_scan_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, m
 extern proc qio_channel_print_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:c_string, len:ssize_t):syserr;
 extern proc qio_channel_print_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_void_ptr, len:ssize_t):syserr;
 
+
+/*************** Curl/HDFS support ***********/
+// Curl
+extern type curl_handle;
+extern const curl_function_struct:qio_file_functions_t;
+extern const curl_function_struct_ptr:qio_file_functions_ptr_t;
+extern proc chpl_curl_set_opt(fl:qio_file_ptr_t, opt:c_int, arg...):syserr;
+extern proc chpl_curl_perform(fl:qio_file_ptr_t):syserr;
+extern proc chpl_curl_stream_file(fl_curl:qio_file_ptr_t, fl_local:qio_file_ptr_t):syserr;
+extern proc chpl_curl_stream_string(fl_curl:qio_file_ptr_t, ref str:c_string):syserr;
+
+// HDFS
+extern const hdfs_function_struct_ptr:qio_file_functions_ptr_t;
+extern proc hdfs_connect(out fs: c_void_ptr, path: c_string, port: int): syserr; 
+// End
+
 extern record qio_conv_t {
   var preArg1:uint(8);
   var preArg2:uint(8);
@@ -674,20 +690,63 @@ proc _modestring(mode:iomode) {
   }
 }
 
+// hdfs paths are expected to be of the form: 
+// hdfs://<host>:<port>/<path>
+proc parse_hdfs_path(path:string): (string, int, string) {
+
+  var hostidx_start = path.indexOf("//");
+  var new_str = path.substring(hostidx_start+2..path.length);
+  var hostidx_end = new_str.indexOf(":");
+  var host = new_str.substring(0..hostidx_end-1);
+
+  new_str = new_str.substring(hostidx_end+1..new_str.length);
+
+  var portidx_end = new_str.indexOf("/");
+  var port = new_str.substring(0..portidx_end-1);
+
+  //the file path is whatever we have left
+  var file_path = new_str.substring(portidx_end+1..new_str.length);
+
+  return (host, port:int, file_path);
+}
+
 proc open(out error:syserr, path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
   var local_style = style;
   var ret:file;
   ret.home = here;
-  error = qio_file_open_access(ret._file_internal, path.c_str(), _modestring(mode).c_str(), hints, local_style);
-  // On return ret._file_internal.ref_cnt == 1.
-  return ret;
+
+  if (__primitive("string_contains", path, "hdfs://")) { // HDFS
+    var (host, port, file_path) = parse_hdfs_path(path);
+    writeln("HDFS___ HOST = ", host, " PORT = ", port, " PATH = ", file_path);
+    var fs:c_void_ptr;
+    error = hdfs_connect(fs, host.c_str(), port);
+    if error then ioerror(error, "Unable to connect to HDFS", host);
+    error = qio_file_open_access_usr(ret._file_internal, path, _modestring(mode),
+        hints, local_style, fs, hdfs_function_struct_ptr);
+    if error then ioerror(error, "Unable to open file in HDFS", path);
+    return ret;
+  } else if (__primitive("string_contains", path, "http://") || __primitive("string_contains", path, "https://") ||
+      __primitive("string_contains", path, "ftp://")  || __primitive("string_contains", path, "smtp://")  ||
+      __primitive("string_contains", path, "www."))  { // Curl
+    writeln("CURL___ URL = ", path);
+    error = qio_file_open_access_usr(ret._file_internal, path.c_str(),
+        _modestring(mode).c_str(), hints, local_style, c_nil, curl_function_struct_ptr);
+    if error then ioerror(error, "Unable to open URL", path);
+    return ret;
+  } else {
+    error = qio_file_open_access(ret._file_internal, path.c_str(), _modestring(mode).c_str(), hints, local_style);
+    // On return ret._file_internal.ref_cnt == 1.
+    return ret;
+  }
 }
+
 proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
   var err:syserr = ENOERR;
   var ret = open(err, path, mode, hints, style);
   if err then ioerror(err, "in open", path);
   return ret;
 }
+
 proc openfd(fd: fd_t, out error:syserr, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
   var local_style = style;
   var ret:file;
@@ -3733,16 +3792,6 @@ iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
   if error == EFORMAT || error == EEOF then error = ENOERR;
   if error then this._ch_ioerror(error, "in channel.matches");
 }
-
-/*************** Curl support ***********/
-
-extern type curl_handle;
-extern const curl_function_struct:qio_file_functions_t;
-extern const curl_function_struct_ptr:qio_file_functions_ptr_t;
-extern proc chpl_curl_set_opt(fl:qio_file_ptr_t, opt:c_int, arg...):syserr;
-extern proc chpl_curl_perform(fl:qio_file_ptr_t):syserr;
-extern proc chpl_curl_stream_file(fl_curl:qio_file_ptr_t, fl_local:qio_file_ptr_t):syserr;
-extern proc chpl_curl_stream_string(fl_curl:qio_file_ptr_t, ref str:c_string):syserr;
 
 proc copen(path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
     var err:syserr = ENOERR;
