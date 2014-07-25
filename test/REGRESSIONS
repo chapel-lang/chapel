@@ -21,11 +21,6 @@ general regressions (seem to happen in most configurations)
 (Reviewed for accuracy 07/15/14)
 ===========================================================
 
-pull #42 changed ChapelArray.chpl line numbers (7/24/14)
---------------------------------------------------------
-[Error matching .bad file for types/records/const-checking/scenario-3-assoc-dom-of-record-with-const-fld]
-Sent to Kyle.
-
 pull #44 causes some segfaults (7/24/14)
 ----------------------------------------
 [Error matching program output for io/tzakian/recordReader/test]
@@ -34,6 +29,13 @@ pull #44 causes some segfaults (7/24/14)
 [Error matching program output for regexp/ferguson/regex]
 [Error matching program output for studies/shootout/regex-dna/bharshbarg/regexdna]
 Lydia is looking at these.
+
+gcc update interference? (7/25/14)
+----------------------------------
+Nightly/whitebox/cray-xe/day4-Thu-cray-xe.cray-prgenv-gnu.none.fifo.flat--linux64.gnu-std.log (chpbld02)
+  [Error (sub_test): Cannot find c compiler]
+  gripes about GLIBC version
+  etc.
 
 gcc update interference (7/24/14)
 ---------------------------------
@@ -54,25 +56,6 @@ was there:
     [Error creating performance test directory /data/sea/chapel/NightlyPerformance/chap16]
     [Error running sub_test in /var/tmp/jenkins/chapel-ci/workspace/vm-performance-test-chap16-default/test/studies/lulesh/bradc (1)]
     [Error running sub_test in /var/tmp/jenkins/chapel-ci/workspace/vm-performance-test-chap16-default/test/studies/parboil/SAD (1)]
-  NightlyPerformance/chap04/day4-Thu-linux64.gnu.none.fifo.flat-prf.log (chap04):
-    [Error running sub_test in /ptmp/jenkins/chapel-ci/workspace/performance-test-chap04-default/test/studies/shootout/nbody/bradc (1)]
-    [Error running sub_test in /ptmp/jenkins/chapel-ci/workspace/performance-test-chap04-default/test/studies/shootout/nbody/sidelnik (1)]
-  NightlyPerformance/chap03/day4-Thu-linux64.gnu.none.fifo.flat-prf.log (chap03):
-    [Error creating performance test directory /data/sea/chapel/NightlyPerformance/chap03]
-    [Error running sub_test in /var/tmp/jenkins/chapel-ci/workspace/performance-test-chap03-default/test/release/examples/benchmarks/hpcc (1)]
-    [Error running sub_test in /var/tmp/jenkins/chapel-ci/workspace/performance-test-chap03-default/test/release/examples/benchmarks/shootout (1)]
-  Nightly/day4-Thu-linux64.gnu.none.fifo.flat-fst.log (chap12):
-    [Error finding compiler performance keys for compflags/bradc/printstuff/copyright.]
-    [Error finding compiler performance keys for compflags/sungeun/configs/basic/configType.]
-    [Error running sub_test in /ptmp/jenkins/chapel-ci/workspace/correctness-chap12/test/compflags/bradc/html (1)]
-  Nightly/day4-Thu-linux64.gnu.none.fifo.flat-std.log (chap01):
-    [Error finding compiler performance keys for associative/waynew/indef8-fail2.]
-    [Error finding compiler performance keys for extern/bradc/opaque/opaqueInfer.]
-    [Error running sub_test in /ptmp/jenkins/chapel-ci/workspace/correctness-chap01/test/associative/waynew (1)]
-  Nightly/day4-Thu-linux64.gnu.none.fifo.flat-nlc.log (chap08):
-    [Error finding compiler performance keys for chpldoc/module/defaultModule.]
-    [Error finding compiler performance keys for trivial/shannon/exp.]
-    [Error running sub_test in /ptmp/jenkins/chapel-ci/workspace/correctness-chap08/test/trivial/shannon (1)]
 
 
 jenkins slave issues on bradc-lnx and lnx-vass (7/24/14)
@@ -308,6 +291,11 @@ block distribution regressions
 cyclic distribution regressions
 (Reviewed for accuracy 07/15/14)
 ================================
+
+communication counts changed due to 004a287, Kyle-B (seen 07/25/14)
+-------------------------------------------------------------------
+[Error matching program output for distributions/robust/arithmetic/performance/multilocale/alloc_all]
+Kyle is working on this.
 
 communication counts changed due to r23004, gbt (03/30/14)
 ----------------------------------------------------------
