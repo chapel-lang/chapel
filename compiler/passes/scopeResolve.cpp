@@ -1373,33 +1373,6 @@ static void resolveModuleCall(CallExpr* call, Vec<UnresolvedSymExpr*>& skipSet) 
         Symbol*           sym      = NULL;
         const char*       mbr_name = get_string(call->get(2));
 
-#if 0
-        //Is it a variable?
-        //TODO: should we be using lookup here instead?
-        if (symbolTable.count(mod->initFn->body) != 0) {
-          entry = symbolTable[mod->initFn->body];
-
-          //Check first before accessing so that we don't
-          //  add a new, blank entry. (Blank entries break
-          //  attempts to add a new symbol if it
-          //  doesn't exist yet to support extern blocks.)
-          if (entry->count(mbr_name) != 0) {
-            sym = (*entry)[mbr_name];
-          }
-        }
-
-        if (!sym) {
-          //Is it a method?
-          if (symbolTable.count(mod->block) != 0) {
-            entry = symbolTable[mod->block];
-
-            if (entry->count(mbr_name) != 0) {
-              sym = (*entry)[mbr_name];
-            }
-          }
-        }
-#else
-
         // Is it a variable or a method?
         if (symbolTable.count(mod->block) != 0) {
           entry = symbolTable[mod->block];
@@ -1408,8 +1381,6 @@ static void resolveModuleCall(CallExpr* call, Vec<UnresolvedSymExpr*>& skipSet) 
             sym = (*entry)[mbr_name];
           }
         }
-
-#endif
 
         if (FnSymbol* fn = toFnSymbol(sym)) {
           if (!fn->_this && fn->hasFlag(FLAG_NO_PARENS)) {
