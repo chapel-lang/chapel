@@ -27,56 +27,7 @@ static int compareClasses(const void *v1, const void* v2) {
   return strcmp(t1->symbol->name, t2->symbol->name);
 }
 
-/************************************ | *************************************
-*                                                                           *
-* MDN 2014/07/24  This function is being moved from Parse to Normalize      *
-* It is resting here, for a day or so, while code is patched to support the *
-* migration.                                                                *
-*                                                                           *
-************************************* | ************************************/
-
-#include "stringutil.h"
-
-static void insertModuleInit() {
-  // Insert an init function into every module
-  forv_Vec(ModuleSymbol, mod, allModules) {
-    SET_LINENO(mod);
-
-    mod->initFn          = new FnSymbol(astr("chpl__init_", mod->name));
-    mod->initFn->retType = dtVoid;
-
-    mod->initFn->addFlag(FLAG_MODULE_INIT);
-    mod->initFn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
-
-    //
-    // move module-level statements into module's init function
-    //
-    for_alist(stmt, mod->block->body) {
-      if (stmt->isModuleDefinition() == false)
-        mod->initFn->insertAtTail(stmt->remove());
-    }
-
-    mod->block->insertAtHead(new DefExpr(mod->initFn));
-
-    //
-    // If the module has the EXPORT_INIT flag then
-    // propagate it to the module's init function
-    //
-    if (mod->hasFlag(FLAG_EXPORT_INIT) == true) {
-      mod->initFn->addFlag(FLAG_EXPORT);
-      mod->initFn->addFlag(FLAG_LOCAL_ARGS);
-    }
-  }
-}
-
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
-
 void docs(void) {
-
-  insertModuleInit();
 
   if (fDocs) {
     std::string folderName = (strlen(fDocsFolder) != 0) ? fDocsFolder : "docs";
