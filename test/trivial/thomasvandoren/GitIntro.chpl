@@ -26,7 +26,7 @@ const TheTeam = [
   ("Tim", "C", "free", "sorta kinda like"),
   ("TMac", "", "", ""),
   ("Tom", "", "", ""),
-  ("Vass", "", "", "")
+  ("Vass", "hammer", "empowered", "git")
 ];
 
 // Prologue
