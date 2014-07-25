@@ -2,14 +2,11 @@
 #define __STDC_FORMAT_MACROS
 #endif
 
-#include <cstdarg>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <inttypes.h>
-#include <stdint.h>   // required on Sun to define SCN?8
-#include "misc.h"
 #include "stringutil.h"
+
+#include "misc.h"
+
+#include <inttypes.h>
 
 static ChainHashMap<const char*, StringHashFns, const char*> chapelStringsTable;
 
