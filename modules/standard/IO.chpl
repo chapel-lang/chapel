@@ -690,7 +690,7 @@ proc _modestring(mode:iomode) {
   }
 }
 
-// hdfs paths are expected to be of the form: 
+// hdfs paths are expected to be of the form:
 // hdfs://<host>:<port>/<path>
 proc parse_hdfs_path(path:string): (string, int, string) {
 
@@ -711,33 +711,28 @@ proc parse_hdfs_path(path:string): (string, int, string) {
 }
 
 proc open(out error:syserr, path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
+
   var local_style = style;
   var ret:file;
   ret.home = here;
 
   if (__primitive("string_contains", path, "hdfs://")) { // HDFS
     var (host, port, file_path) = parse_hdfs_path(path);
-    writeln("HDFS___ HOST = ", host, " PORT = ", port, " PATH = ", file_path);
     var fs:c_void_ptr;
     error = hdfs_connect(fs, host.c_str(), port);
     if error then ioerror(error, "Unable to connect to HDFS", host);
-    error = qio_file_open_access_usr(ret._file_internal, path, _modestring(mode),
-        hints, local_style, fs, hdfs_function_struct_ptr);
+    error = qio_file_open_access_usr(ret._file_internal, path.c_str(), _modestring(mode).c_str(), hints, local_style, fs, hdfs_function_struct_ptr);
     if error then ioerror(error, "Unable to open file in HDFS", path);
-    return ret;
   } else if (__primitive("string_contains", path, "http://") || __primitive("string_contains", path, "https://") ||
-      __primitive("string_contains", path, "ftp://")  || __primitive("string_contains", path, "smtp://")  ||
-      __primitive("string_contains", path, "www."))  { // Curl
-    writeln("CURL___ URL = ", path);
-    error = qio_file_open_access_usr(ret._file_internal, path.c_str(),
-        _modestring(mode).c_str(), hints, local_style, c_nil, curl_function_struct_ptr);
+             __primitive("string_contains", path, "ftp://")  || __primitive("string_contains", path, "smtp://")  ||
+             __primitive("string_contains", path, "www."))  { // Curl
+    error = qio_file_open_access_usr(ret._file_internal, path.c_str(), _modestring(mode).c_str(), hints, local_style, c_nil, curl_function_struct_ptr);
     if error then ioerror(error, "Unable to open URL", path);
-    return ret;
   } else {
     error = qio_file_open_access(ret._file_internal, path.c_str(), _modestring(mode).c_str(), hints, local_style);
     // On return ret._file_internal.ref_cnt == 1.
-    return ret;
   }
+  return ret;
 }
 
 proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
@@ -3791,16 +3786,6 @@ iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
   // Don't report didn't find or end-of-file errors.
   if error == EFORMAT || error == EEOF then error = ENOERR;
   if error then this._ch_ioerror(error, "in channel.matches");
-}
-
-proc copen(path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
-    var err:syserr = ENOERR;
-    var local_style = style;
-    var ret:file;
-    ret.home = here;
-    err = qio_file_open_access_usr(ret._file_internal, path, _modestring(mode), hints, local_style, c_nil, curl_function_struct_ptr);
-    if err then ioerror(err, "Unable to connect to Curl", path);
-    return ret;
 }
 
 proc file.setopt(opt:c_int, arg):bool {
