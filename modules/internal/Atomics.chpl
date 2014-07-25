@@ -1117,7 +1117,6 @@ module Atomics {
     }
 
     inline proc waitFor(val:int(64), order:memory_order = memory_order_seq_cst) {
-      // chpl_rmem_consist_maybe_release(order); not needed - added
       on this {
         while (atomic_load_explicit_int_least64_t(_v, memory_order_relaxed)
                 != val) {
@@ -1125,7 +1124,6 @@ module Atomics {
         }
         atomic_thread_fence(order);
       }
-      //chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {
