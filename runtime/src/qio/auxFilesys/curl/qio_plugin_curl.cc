@@ -94,16 +94,21 @@ size_t buf_writer(char* ptr_data, size_t size, size_t nmemb, void* userdata)
 }
 
 static
-size_t read_data(void* ptr, size_t size, size_t nmemb, void* userp)
+size_t read_data(void *ptr, size_t size, size_t nmemb, void *userp)
 {
-  struct iovec* src = (struct iovec*)userp;
+  struct curl_iovec_t *upload_ctx = (struct curl_iovec_t *)userp;
+  size_t len;
 
-  if((size == 0) || (nmemb == 0) || ((size*nmemb) < 1)) {
+  if((size == 0) || (nmemb == 0) || ((size*nmemb) < 1) || (upload_ctx->curr >= upload_ctx->count)) {
     return 0;
   }
 
-  memcpy(ptr, src->iov_base, src->iov_len);
-  return src->iov_len;
+  len = upload_ctx->vec[upload_ctx->curr].iov_len*size;
+  memcpy(ptr, upload_ctx->vec[upload_ctx->curr].iov_base, len);
+  upload_ctx->curr++;
+  upload_ctx->total_read += len;
+
+  return len;
 }
 
 static
@@ -223,7 +228,6 @@ qioerr curl_pwritev(void* fd, const struct iovec* iov, int iovcnt, off_t offset,
   return t;
 }
 
-// TODO: TEST THIS
 qioerr curl_writev(void* fl, const struct iovec* iov, int iovcnt, ssize_t* num_written_out, void* fs)
 {
   CURLcode ret;
@@ -231,37 +235,30 @@ qioerr curl_writev(void* fl, const struct iovec* iov, int iovcnt, ssize_t* num_w
   ssize_t got_total = 0;
   qioerr err_out = 0;
   int i;
+  struct curl_iovec_t write_vec;
 
+  write_vec.total_read = 0;
+  write_vec.count = iovcnt;
+  write_vec.vec = (struct iovec*)iov;
+  write_vec.amt_read = 0;
+  write_vec.offset = 0;
+  write_vec.curr = 0;
 
   STARTING_SLOW_SYSCALL;
-    /*tell it to "upload" to the URL*/
-    curl_easy_setopt(to_curl_handle(fl)->curl, CURLOPT_UPLOAD, 1L);
-    // set it up to write over curl
-    curl_easy_setopt(to_curl_handle(fl)->curl, CURLOPT_READFUNCTION, read_data);
+  /*tell it to "upload" to the URL*/
+  curl_easy_setopt(to_curl_handle(fl)->curl, CURLOPT_UPLOAD, 1L);
+  // set it up to write over curl
+  curl_easy_setopt(to_curl_handle(fl)->curl, CURLOPT_READFUNCTION, read_data);
+  //curl_easy_setopt(to_curl_handle(fl)->curl, CURLOPT_INFILESIZE_LARGE, (curl_off_t)iov[i].iov_len);
+  curl_easy_setopt(to_curl_handle(fl)->curl, CURLOPT_READDATA, &write_vec);
+  ret = curl_easy_perform(to_curl_handle(fl)->curl);
+  *num_written_out = write_vec.total_read;
 
-  for (i = 0; i < iovcnt; i++) {
-    curl_easy_setopt(to_curl_handle(fl)->curl, CURLOPT_INFILESIZE_LARGE, (curl_off_t)iov[i].iov_len);
-    curl_easy_setopt(to_curl_handle(fl)->curl, CURLOPT_READDATA, &(iov[i]));
-    ret = curl_easy_perform(to_curl_handle(fl)->curl);
-    got += iov[i].iov_len;
+  if (ret != CURLE_OK)
+    err_out = qio_mkerror_errno();
 
-    if (ret != CURLE_OK)
-      err_out = qio_mkerror_errno();
-
-    if (got != -1)
-      got_total += got;
-    else {
-      err_out = qio_mkerror_errno();
-      break;
-    }
-
-    if (got != sys_iov_total_bytes(&iov[i], iov[i].iov_len))
-      break;
-  }
-  // no longer set as write
   curl_easy_setopt(to_curl_handle(fl)->curl, CURLOPT_UPLOAD, 0L);
 
-  *num_written_out = got_total;
   DONE_SLOW_SYSCALL;
 
   return err_out;
@@ -318,14 +315,6 @@ qioerr curl_open(void** fd, const char* path, int* flags, mode_t mode, qio_hint_
   // set URL
   curl_easy_setopt(to_curl_handle(fl)->curl, CURLOPT_URL, path);
 
-  // Read the header in order to get the length of the thing we are reading
-  curl_easy_setopt(to_curl_handle(fl)->curl, CURLOPT_HEADER, 0L);
-  curl_easy_setopt(to_curl_handle(fl)->curl, CURLOPT_NOBODY, 1L);
-  curl_easy_perform(to_curl_handle(fl)->curl);
-  curl_easy_getinfo(to_curl_handle(fl)->curl, CURLINFO_CONTENT_LENGTH_DOWNLOAD, &filelength);
-  curl_easy_setopt(to_curl_handle(fl)->curl, CURLOPT_NOBODY, 0L); // now we want to read the body
-
-  DONE_SLOW_SYSCALL;
 
   rc = *flags | ~O_ACCMODE;
   rc &= O_ACCMODE;
@@ -338,10 +327,24 @@ qioerr curl_open(void** fd, const char* path, int* flags, mode_t mode, qio_hint_
     *flags |= QIO_FDFLAG_WRITEABLE;
   }
 
+  // Read the header in order to get the length of the thing we are reading
+  if (*flags & O_WRONLY) {
+    to_curl_handle(fl)->length = -1;
+    to_curl_handle(fl)->seekable = -1;
+  } else {
+    curl_easy_setopt(to_curl_handle(fl)->curl, CURLOPT_HEADER, 0L);
+    curl_easy_setopt(to_curl_handle(fl)->curl, CURLOPT_NOBODY, 1L);
+    curl_easy_perform(to_curl_handle(fl)->curl);
+    curl_easy_getinfo(to_curl_handle(fl)->curl, CURLINFO_CONTENT_LENGTH_DOWNLOAD, &filelength);
+    curl_easy_setopt(to_curl_handle(fl)->curl, CURLOPT_NOBODY, 0L); // now we want to read the body
+    to_curl_handle(fl)->length = (ssize_t)filelength;
+    to_curl_handle(fl)->seekable = curl_seekable(fl);
+  }
+
   to_curl_handle(fl)->pathnm = path;
-  to_curl_handle(fl)->length = (ssize_t)filelength;
-  to_curl_handle(fl)->seekable = curl_seekable(fl);
   to_curl_handle(fl)->current_offset = 0;
+  DONE_SLOW_SYSCALL;
+
   *fd = fl;
   return err_out;
 
