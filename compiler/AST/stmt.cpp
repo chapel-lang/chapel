@@ -765,31 +765,49 @@ GotoStmt* getGotoLabelsIterResumeGoto(GotoStmt* gs) {
   return labsym ? labsym->iterResumeGoto : NULL;
 }
 
-
 void GotoStmt::verify() {
   Expr::verify();
+
   if (astTag != E_GotoStmt) {
     INT_FATAL(this, "Bad GotoStmt::astTag");
   }
+
   if (!label)
     INT_FATAL(this, "GotoStmt has no label");
+
   if (label->list)
     INT_FATAL(this, "GotoStmt::label is a list");
+
   if (label && label->parentExpr != this)
     INT_FATAL(this, "Bad GotoStmt::label::parentExpr");
+
+  // If the label has been resolved to a label
   if (SymExpr* se = toSymExpr(label)) {
     if (isLabelSymbol(se->var)) {
-      if (!isFnSymbol(se->var->defPoint->parentSymbol))
-        INT_FATAL(this, "goto label is not in a function");
+      Symbol* parent = se->var->defPoint->parentSymbol;
+
+      // The parent should either be a function or a
+      // module that does not yet have the initFn installed
+      if (isFnSymbol(parent) == false) {
+        ModuleSymbol* module = toModuleSymbol(parent);
+
+        if (module == 0 || module->initFn != 0) {
+          INT_FATAL(this, "goto label is not in a function");
+        }
+      }
+
       if (se->var->defPoint->parentSymbol != this->parentSymbol)
         INT_FATAL(this, "goto label is in a different function than the goto");
+
       GotoStmt* igs = getGotoLabelsIterResumeGoto(this);
+
       if ((gotoTag == GOTO_ITER_RESUME) == (igs == NULL))
         INT_FATAL(this,
-            "goto must be GOTO_ITER_RESUME iff its label has iterResumeGoto");
+                  "goto must be GOTO_ITER_RESUME iff its label has iterResumeGoto");
+
       if (gotoTag == GOTO_ITER_RESUME && igs != this)
         INT_FATAL(this,
-      "GOTO_ITER_RESUME goto's label's iterResumeGoto does not match the goto");
+                  "GOTO_ITER_RESUME goto's label's iterResumeGoto does not match the goto");
     }
   }
 }

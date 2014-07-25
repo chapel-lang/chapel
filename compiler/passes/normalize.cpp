@@ -885,11 +885,14 @@ fix_def_expr(VarSymbol* var) {
       var->defPoint->init->remove();
       initCall = new CallExpr(PRIM_MOVE, var,
                    new CallExpr(PRIM_NO_INIT, type->remove()));
+      stmt->insertAfter(initCall);
+      // Since the variable won't have been defined just yet (stmt is
+      // its def expression after all), insert the move after the defPoint
     } else {
       initCall = new CallExpr(PRIM_MOVE, typeTemp,
                    new CallExpr(PRIM_INIT, type->remove()));
+      stmt->insertBefore(initCall);
     }
-    stmt->insertBefore(initCall);
     if (init) {
       if (!isNoinit) {
         stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
