@@ -6559,6 +6559,10 @@ resolve() {
   visibleFunctionMap.clear();
   visibilityBlockCache.clear();
 
+  forv_Vec(BlockStmt, stmt, gBlockStmts) {
+    stmt->moduleUseClear();
+  }
+
   resolved = true;
 }
 

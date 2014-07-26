@@ -126,6 +126,15 @@ bool AstDumpToNode::enterModSym(ModuleSymbol* node)
 
 void AstDumpToNode::exitModSym(ModuleSymbol* node)
 {
+  if (node->modUseList.n > 0) {
+    newline();
+    fprintf(mFP, "ModUseList:");
+
+    forv_Vec(ModuleSymbol, mod, node->modUseList) {
+      fprintf(mFP, " %s", mod->name);
+    }
+  }
+
   mOffset = mOffset - 2;
   newline();
   fprintf(mFP, ">\n");

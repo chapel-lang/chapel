@@ -43,7 +43,6 @@ static void change_method_into_constructor(FnSymbol* fn);
 static void find_printModuleInit_stuff();
 
 void normalize(void) {
-
   // tag iterators and replace delete statements with calls to ~chpl_destroy
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_YIELD)) {
@@ -284,7 +283,6 @@ checkUseBeforeDefs() {
   }
 }
 
-
 static void
 moveGlobalDeclarationsToModuleScope() {
   bool move = false;
@@ -354,7 +352,7 @@ insertUseForExplicitModuleCalls(void) {
       BlockStmt* block = new BlockStmt();
       stmt->insertBefore(block);
       block->insertAtHead(stmt->remove());
-      block->moduleAddUse(mod);
+      block->moduleUseAdd(mod);
     }
   }
 }
@@ -561,6 +559,8 @@ static void normalize_returns(FnSymbol* fn) {
         fn->insertAtHead(new CallExpr(PRIM_MOVE, retval, initExpr));
       }
     }
+#if 0
+    // This clause is missing in master.  Do I still need it?
     else // fn->retTag == RET_VAR || !fn->retExprType
     {
       if (fn->retTag != RET_TYPE &&
@@ -571,6 +571,7 @@ static void normalize_returns(FnSymbol* fn) {
       fn->insertAtHead(new CallExpr(PRIM_MOVE, retval, initExpr));
       }
     }
+#endif
     fn->insertAtHead(new DefExpr(retval));
     fn->insertAtTail(new CallExpr(PRIM_RETURN, retval));
   }
@@ -929,15 +930,14 @@ fix_def_expr(VarSymbol* var) {
     // the initialization expression if it exists
     //
     bool isNoinit = init && init->isNoInitExpr();
-    if (isNoinit)
-    {
+    if (isNoinit) {
       var->defPoint->init->remove();
-        CallExpr* initCall = new CallExpr(PRIM_MOVE, var,
-                                new CallExpr(PRIM_NO_INIT, type->remove()));
-      stmt->insertBefore(initCall);
-    }
-    else
-    {
+      CallExpr* initCall = new CallExpr(PRIM_MOVE, var,
+                   new CallExpr(PRIM_NO_INIT, type->remove()));
+      // Since the variable won't have been defined just yet (stmt is
+      // its def expression after all), insert the move after the defPoint
+      stmt->insertAfter(initCall);
+    } else {
       // Is not noInit
 
       // Create an empty type block.
@@ -956,14 +956,10 @@ fix_def_expr(VarSymbol* var) {
         // This should be copy-initialization, not assignment.
         block->insertAtTail(new CallExpr("=", typeTemp, init->remove()));
         block->insertAtTail(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
-      }
-      else
-      {
+      } else {
         if (constTemp->hasFlag(FLAG_TYPE_VARIABLE))
-        {
           block->insertAtTail(new CallExpr(PRIM_MOVE, constTemp,
                                            new CallExpr(PRIM_TYPEOF, typeTemp)));
-        }
         else
         {
           block->insertAtTail(new CallExpr(PRIM_MOVE, constTemp, typeTemp));

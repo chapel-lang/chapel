@@ -2372,6 +2372,67 @@ void ModuleSymbol::accept(AstVisitor* visitor) {
   }
 }
 
+void ModuleSymbol::moduleUseAddChapelStandard() {
+  UnresolvedSymExpr* modRef = 0;
+
+  SET_LINENO(this);
+
+  modRef = new UnresolvedSymExpr("ChapelStandard");
+  block->insertAtHead(new CallExpr(PRIM_USE, modRef));
+}
+
+//
+// MDN 2014/07/22
+//
+// There is currently a problem in functionResolve that this function
+// has a "temporary" work around for.
+
+// There is somewhere within that code that believes the order of items in
+// modUseList is an indicator of "dependence order" even though this list
+// does not and cannot maintain that information.
+//
+// Fortunately there are currently no tests that expose this fallacy so
+// long at ChapelStandard always appears first in the list
+void ModuleSymbol::moduleUseAdd(ModuleSymbol* mod) {
+  if (modUseList.index(mod) < 0) {
+    if (mod == standardModule) {
+      modUseList.insert(0, mod);
+    } else {
+      modUseList.add(mod);
+    }
+  }
+}
+
+// If the specified module is currently used by the target
+// then remove the module from the use-state of this module
+// but introduce references to the children of the module
+// being dropped.
+//
+// At this time this is only used for deadCodeElimination and
+// it is not clear if there will be other uses.
+void ModuleSymbol::moduleUseRemove(ModuleSymbol* mod) {
+  int index = modUseList.index(mod);
+
+  if (index >= 0) {
+    bool inBlock = block->moduleUseRemove(mod);
+
+    modUseList.remove(index);
+
+    // The dead module may have used other modules.  If so add them
+    // to the current module
+    forv_Vec(ModuleSymbol, modUsedByDeadMod, mod->modUseList) {
+      if (modUseList.index(modUsedByDeadMod) < 0) {
+        SET_LINENO(this);
+
+        if (inBlock == true)
+          block->moduleUseAdd(modUsedByDeadMod);
+
+        modUseList.add(modUsedByDeadMod);
+      }
+    }
+  }
+}
+
 /******************************** | *********************************
 *                                                                   *
 *                                                                   *
