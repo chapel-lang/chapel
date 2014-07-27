@@ -6,16 +6,15 @@ Initializing Modules:
     Atomics
     NetworkAtomics
     AtomicsCommon
-    ChapelNumLocales
     ChapelThreads
     ChapelTuple
     ChapelRange
      ChapelRangeBase
-    ChapelLocale
-    DefaultRectangular
-     DSIUtil
-     ChapelArray
     LocaleModel
+     ChapelLocale
+     DefaultRectangular
+      DSIUtil
+      ChapelArray
      Sys
       SysBasic
        SysCTypes
