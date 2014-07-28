@@ -934,39 +934,40 @@ fix_def_expr(VarSymbol* var) {
     // initialize variable based on specified type and then assign it
     // the initialization expression if it exists
     //
-    VarSymbol* typeTemp = newTemp("type_tmp");
     bool isNoinit = init && init->isNoInitExpr();
-    if (!isNoinit)
-      stmt->insertBefore(new DefExpr(typeTemp));
-
-    CallExpr* initCall;
     if (isNoinit) {
       var->defPoint->init->remove();
-      initCall = new CallExpr(PRIM_MOVE, var,
+      CallExpr* initCall = new CallExpr(PRIM_MOVE, var,
                    new CallExpr(PRIM_NO_INIT, type->remove()));
-      stmt->insertAfter(initCall);
       // Since the variable won't have been defined just yet (stmt is
       // its def expression after all), insert the move after the defPoint
+      stmt->insertAfter(initCall);
     } else {
+
+      VarSymbol* typeTemp = newTemp("type_tmp");
+      stmt->insertBefore(new DefExpr(typeTemp));
+
+      CallExpr* initCall;
       initCall = new CallExpr(PRIM_MOVE, typeTemp,
                    new CallExpr(PRIM_INIT, type->remove()));
+
       stmt->insertBefore(initCall);
-    }
-    if (init) {
-      if (!isNoinit) {
+
+      if (init) {
+        // This should be copy-initialization, not assignment.
         stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
         stmt->insertAfter(new CallExpr("=", typeTemp, init->remove()));
-      }
-    } else {
-      if (constTemp->hasFlag(FLAG_TYPE_VARIABLE))
-        stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, new CallExpr(PRIM_TYPEOF, typeTemp)));
-      else {
-        CallExpr* moveToConst = new CallExpr(PRIM_MOVE, constTemp, typeTemp);
-        Expr* newExpr = moveToConst;
-        if (var->hasFlag(FLAG_EXTERN)) {
-          newExpr = new BlockStmt(moveToConst, BLOCK_TYPE);
+      } else {
+        if (constTemp->hasFlag(FLAG_TYPE_VARIABLE))
+          stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, new CallExpr(PRIM_TYPEOF, typeTemp)));
+        else
+        {
+          CallExpr* moveToConst = new CallExpr(PRIM_MOVE, constTemp, typeTemp);
+          Expr* newExpr = moveToConst;
+          if (var->hasFlag(FLAG_EXTERN))
+            newExpr = new BlockStmt(moveToConst, BLOCK_TYPE);
+          stmt->insertAfter(newExpr);
         }
-        stmt->insertAfter(newExpr);
       }
     }
 

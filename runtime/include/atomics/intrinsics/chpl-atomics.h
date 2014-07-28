@@ -31,6 +31,9 @@ typedef enum {
  memory_order_seq_cst
 } memory_order;
 
+static inline memory_order _defaultOfMemoryOrder(void) {
+  return memory_order_seq_cst;
+}
 
 // Cray does not support __sync_synchronize so we use a cray specific memory
 // fence. Cray also does not support __sync_bool_compare_and_swap so we 
