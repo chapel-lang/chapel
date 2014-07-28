@@ -518,11 +518,11 @@ static void build_record_inequality_function(AggregateType* ct) {
 }
 
 static void build_enum_first_function(EnumType* et) {
-  if (function_exists("_enum_first", 1, et))
+  if (function_exists("chpl_enum_first", 1, et))
     return;
   // Build a function that returns the first option for the enum
   // specified, also known as the default.
-  FnSymbol* fn = new FnSymbol("_enum_first");
+  FnSymbol* fn = new FnSymbol("chpl_enum_first");
   fn->addFlag(FLAG_COMPILER_GENERATED);
   // Making this compiler generated allows users to define what the
   // default is for a particular enum.  They can also redefine the
