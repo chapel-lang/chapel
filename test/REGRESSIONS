@@ -21,6 +21,66 @@ general regressions (seem to happen in most configurations)
 (Reviewed for accuracy 07/15/14)
 ===========================================================
 
+pull #44 causes some segfaults (7/24/14)
+----------------------------------------
+[Error matching program output for io/tzakian/recordReader/test]
+[Error matching program output for regexp/ferguson/readfre]
+[Error matching program output for regexp/ferguson/rechan]
+[Error matching program output for regexp/ferguson/regex]
+[Error matching program output for studies/shootout/regex-dna/bharshbarg/regexdna]
+Lydia is looking at these.
+
+gcc update interference? (7/25/14)
+----------------------------------
+Nightly/whitebox/cray-xe/day4-Thu-cray-xe.cray-prgenv-gnu.none.fifo.flat--linux64.gnu-std.log (chpbld02)
+  [Error (sub_test): Cannot find c compiler]
+  gripes about GLIBC version
+  etc.
+
+gcc update interference (7/24/14)
+---------------------------------
+Nightly/whitebox/cray-xe/day3-Wed-linux64.gnu.none.fifo.flat-std.log:
+  [Error (sub_test): Cannot find c compiler]
+  gripes about GLIBC version
+  etc.
+
+I/O (disk, NFS?, network?) problems? (7/24/14)
+----------------------------------------------
+gripes about unable to create already-existing directories, implying
+that an immediately preceding existence check failed even though the dir
+was there:
+  NightlyPerformance/chap15/day3-Wed-linux64.gnu.none.fifo.flat-prf.log:
+    [Error running sub_test in /var/tmp/jenkins/chapel-ci/workspace/vm-performance-test-chap15-default/test/functions/iterators/angeles (1)]
+    [Error running sub_test in /var/tmp/jenkins/chapel-ci/workspace/vm-performance-test-chap15-default/test/io/vass (1)]
+  NightlyPerformance/chap16/day3-Wed-linux64.gnu.none.fifo.flat-prf.log (chap16):
+    [Error creating performance test directory /data/sea/chapel/NightlyPerformance/chap16]
+    [Error running sub_test in /var/tmp/jenkins/chapel-ci/workspace/vm-performance-test-chap16-default/test/studies/lulesh/bradc (1)]
+    [Error running sub_test in /var/tmp/jenkins/chapel-ci/workspace/vm-performance-test-chap16-default/test/studies/parboil/SAD (1)]
+
+
+jenkins slave issues on bradc-lnx and lnx-vass (7/24/14)
+--------------------------------------------------------
+NightlyPerformance/bradc-lnx/day4-Thu-linux64.gnu.none.fifo.flat-prf.log:
+NightlyDists/day4-Thu-linux64.gnu.gasnet.fifo.flat-distblock.log:
+  unknown number of Tests
+  dist-block run: failed
+Thomas says: appears to have self-cured.
+Probably related to general SEA<-->CF connectivity issues around 1:00 am.
+Expect to work properly in 7/25 testing.
+
+failures retrieving and storing perf data, started 7/19/14
+----------------------------------------------------------
+We are getting these messages, seemingly for all testing:
+  ERROR svn-updating perf data before running tests.
+  ERROR svn-updating perf data after running tests.
+  ERROR svn-updating release over release perf data after running tests: 1
+  ERROR svn-committing perf data.
+First reported 7/20/14; Thomas is looking
+There is a Bugzilla Bug: http://bugzilla.us.cray.com/show_bug.cgi?id=814934
+An attempt to fix this on the svn side the night of 7/22/14 failed.
+It is being escalated to github support.
+7/24/14: Think we have a solution; expect good results for 7/25 testing.
+
 
 ==============================================
 linux64 regressions (in addition to the above)
@@ -67,6 +127,7 @@ tests time out nondeterministically since testing started b/c VMs are slower (07
 [Error: Timed out executing program release/examples/benchmarks/shootout/threadring]
 [Error: Timed out executing program studies/shootout/thread-ring/lydia/thread-ring-coforall]
 [Error: Timed out executing program studies/shootout/thread-ring/lydia/thread-ring-for-begin]
+should these maybe just move into TRIAGE?  -- gbt
 
 
 ================================
@@ -94,22 +155,6 @@ verify regressions
 following a pointer to GC'd AST nodes (07/16/14 -- noakes)
 ----------------------------------------------------------
 [Error cannot locate compiler output comparison file studies/ssca2/test-rmatalt/reproduc.good]
-[Error matching compiler output for modules/diten/test_use_chain_resolution3]
-[Error matching compiler output for modules/diten/test_use_chain_resolution]
-[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1)]
-[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 2)]
-[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 3)]
-[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 4)]
-[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5)]
-[Error matching compiler output for studies/graph500/kristyn/Graph500_1D_onV/main (compopts: 1)]
-[Error matching compiler output for studies/graph500/v3/main (compopts: 1)]
-[Error matching compiler output for studies/ssca2/graphio/graphio (compopts: 1)]
-[Error matching compiler output for studies/ssca2/rachels/SSCA2_test (compopts: 1)]
-[Error matching compiler output for studies/ssca2/rachels/SSCA2_test (compopts: 2)]
-[Error matching compiler output for studies/ssca2/rachels/SSCA2_test (compopts: 3)]
-[Error matching compiler output for studies/ssca2/rachels/SSCA2_test (compopts: 4)]
-[Error matching compiler output for studies/ssca2/rachels/SSCA2_test (compopts: 5)]
-[Error matching compiler output for studies/ssca2/test-rmatalt/nondet (compopts: 1)]
 
 
 ================================
@@ -205,6 +250,12 @@ gasnet-everything regressions (other than the above)
 (Reviewed for accuracy 07/14/14)
 ====================================================
 
+expect this to be temporary; seems to be due to pull #38; passed to Tom
+-----------------------------------------------------------------------
+[Error matching compiler output for modules/hilde/test_module_Sort-baseline (compopts: 1)]
+(7/23/14)
+
+
 error: cannot create C string from remote string
 ------------------------------------------------
 (due to r22900)
@@ -241,6 +292,11 @@ cyclic distribution regressions
 (Reviewed for accuracy 07/15/14)
 ================================
 
+communication counts changed due to 004a287, Kyle-B (seen 07/25/14)
+-------------------------------------------------------------------
+[Error matching program output for distributions/robust/arithmetic/performance/multilocale/alloc_all]
+Kyle is working on this.
+
 communication counts changed due to r23004, gbt (03/30/14)
 ----------------------------------------------------------
 [Error matching program output for distributions/robust/arithmetic/performance/multilocale/alloc]
@@ -260,6 +316,11 @@ other comm count mismatches
 replicated distribution regressions
 (Reviewed for accuracy 07/15/14)
 ===================================
+
+SIGSEGV at execution time (started 7/24/14)
+-------------------------------------------
+NightlyDists/day4-Thu-linux64.gnu.gasnet.fifo.flat-distreplicated.log:
+  [Error matching program output for distributions/robust/arithmetic/kernels/hpl (compopts: 1)]
 
 See chapel_dev email thread starting 2/12/14 12:42:46 CST (David Iten) with
 subject "Re: FW: Cron Dist replicated (linux64.gnu.gasnet.fifo.flat) 60/0/60".
@@ -457,11 +518,24 @@ chpbld01 (PrgEnv/XC whitebox) failures
 (Reviewed for accuracy 07/18/14)
 ======================================
 
+svn problem during the build
+----------------------------
+First reported 7/20/14; Thomas is looking
+svn: Server sent unexpected return value (500 Internal Server Error) in response to PROPFIND request
+There is a Bugzilla Bug: http://bugzilla.us.cray.com/show_bug.cgi?id=814934
+An attempt to fix this on the svn side the night of 7/22/14 failed.
+It is being escalated to github support.
+7/24/14: Think we have a solution; expect good results for 7/25 testing.
+
 
 ======================================
 chpbld02 (PrgEnv/XE whitebox) failures
 (Reviewed for accuracy 07/18/14)
 ======================================
+
+svn problem during the build
+----------------------------
+see above, under "chpbld01"
 
 
 ==========================================================
@@ -478,6 +552,12 @@ problem with static/dynamic linking?
 cray-prgenv-cray/cce-specific regressions
 (Reviewed for accuracy 07/16/14)
 =========================================
+
+***GBT
+[Error matching program output for optimizations/cache-remote/ferguson/c_tests/chpl-cache-support-test (compopts: 1)]
+whitebox/cray-xe/day0-Sun-cray-xe.cray-prgenv-cray.none.fifo.flat--linux64.gnu-std.log
+whitebox/cray-xe/day1-Mon-linux64.pgi.none.fifo.flat-std.log
+
 
 portability failures due to QIO refactoring (mppf)
 --------------------------------------------------
@@ -582,6 +662,10 @@ undefined reference to chpl_bitops_debruijn64 (07/14/14)
 --------------------------------------------------------
 [Error matching compiler output for optimizations/cache-remote/ferguson/c_tests/chpl-cache-support-test (compopts: 1)]
 
+***GBT (07/23/14)
+-----------------
+[Error matching program output for optimizations/cache-remote/ferguson/c_tests/chpl-cache-support-test (compopts: 1)]
+
 glibc detected invalid next size (07/15/14)
 -------------------------------------------
 [Error matching program output for types/file/freadComplex]
@@ -634,6 +718,8 @@ intel-specific regressions (in addition to chpbld02 errors above)
 
 standard "missing empty directory" problems that should be fixed on next run (bradc)
 (please alert bradc if not resolved in runs after 7/16/14)
+(fixed in intel testing, 7/23/14)
+(fixed in prgenv-intel testing, 7/23/14)
 ------------------------------------------------------------------------------------
 [Error matching compiler output for compflags/bradc/readDirInsteadOfFile (compopts: 1)]
 [Error matching program output for io/bradc/testPath]
