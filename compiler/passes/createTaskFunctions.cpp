@@ -234,7 +234,7 @@ void createTaskFunctions(void) {
       if( module->hasFlag(FLAG_ATOMIC_MODULE) ) {
         // we could do this with for_alist ... as in getFunctions()
         // instead of creating a copy of the list of functions here.
-        Vec<FnSymbol*> moduleFunctions = module->getTopLevelFunctions();
+        Vec<FnSymbol*> moduleFunctions = module->getTopLevelFunctions(false);
         forv_Vec(FnSymbol, fnSymbol, moduleFunctions) {
           ArgSymbol* order = NULL;
           // Does this function have an order= argument?

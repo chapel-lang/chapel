@@ -2343,15 +2343,16 @@ Vec<VarSymbol*> ModuleSymbol::getTopLevelConfigVars() {
 // functions and then steps in to initFn if it finds it.
 //
 
-Vec<FnSymbol*> ModuleSymbol::getTopLevelFunctions() {
+Vec<FnSymbol*> ModuleSymbol::getTopLevelFunctions(bool includeExterns) {
   Vec<FnSymbol*> fns;
 
   for_alist(expr, block->body) {
     if (DefExpr* def = toDefExpr(expr)) {
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
         // Ignore external and prototype functions.
-        if (fn->hasFlag(FLAG_EXTERN) ||
-            fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)) {
+        if (includeExterns == false && 
+            (fn->hasFlag(FLAG_EXTERN) ||
+             fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))) {
           continue;
         }
 
@@ -2367,8 +2368,9 @@ Vec<FnSymbol*> ModuleSymbol::getTopLevelFunctions() {
           for_alist(expr2, fn->body->body) {
             if (DefExpr* def2 = toDefExpr(expr2)) {
               if (FnSymbol* fn2 = toFnSymbol(def2->sym)) {
-                if (fn->hasFlag(FLAG_EXTERN) ||
-                    fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)) {
+                if (includeExterns == false &&
+                    (fn2->hasFlag(FLAG_EXTERN) ||
+                     fn2->hasFlag(FLAG_FUNCTION_PROTOTYPE))) {
                   continue;
                 }
 

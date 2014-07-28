@@ -314,7 +314,7 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
     printVarDocs(file, var);
   }
 
-  Vec<FnSymbol*> fns = mod->getTopLevelFunctions();
+  Vec<FnSymbol*> fns = mod->getTopLevelFunctions(true);
   // If alphabetical option passed, fDocsAlphabetizes the output 
   if (fDocsAlphabetize) 
     qsort(fns.v, fns.n, sizeof(fns.v[0]), compareNames);

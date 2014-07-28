@@ -372,7 +372,7 @@ public:
   // New interface
   Vec<AggregateType*>  getTopLevelClasses();
   Vec<VarSymbol*>      getTopLevelConfigVars();
-  Vec<FnSymbol*>       getTopLevelFunctions();
+  Vec<FnSymbol*>       getTopLevelFunctions(bool includeExterns);
   Vec<ModuleSymbol*>   getTopLevelModules();
 
   void                 moduleUseAddChapelStandard();
