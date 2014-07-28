@@ -124,11 +124,6 @@ proc isProperSubtype(type sub, type super) param
 // Booleans
 inline proc _defaultOf(type t) param where (_isBooleanType(t)) return false:t;
 
-// String
-// defaultStringValue lives in runtime/include/chpl-string.h
-// strings will be records, so param is not possible for them
-inline proc _defaultOf(type t) where t: string return defaultStringValue;
-
 // ints, reals, imags, complexes
 inline proc _defaultOf(type t) param where (_isIntegralType(t)) return 0:t;
 // TODO: In order to make _defaultOf param for reals and imags we had to split
@@ -158,7 +153,6 @@ inline proc _defaultOf(type t) where (isClassType(t)) return nil:t;
 
 // Various types whose default value is known
 inline proc _defaultOf(type t) param where t: void return _void;
-inline proc _defaultOf(type t) param where t: c_string return "":c_string;
 inline proc _defaultOf(type t) where t: opaque return _nullOpaque;
 inline proc _defaultOf(type t) where t: chpl_taskID_t return chpl_nullTaskID;
 inline proc _defaultOf(type t) where t: _sync_aux_t return _nullSyncVarAuxFields;
