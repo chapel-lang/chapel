@@ -59,8 +59,6 @@ static bool enableModuleUsesCache = false;
 //
 static Vec<const char*> aliasFieldSet;
 
-
-static void     insertModuleInit();
 static void     addToSymbolTable(Vec<DefExpr*>& defs);
 static void     processImportExprs();
 static void     addClassToHierarchy(AggregateType* ct);
@@ -78,8 +76,6 @@ static Symbol*  lookup(BaseAST* scope, const char* name);
 static BaseAST* getScope(BaseAST* ast);
 
 void scopeResolve() {
-
-  insertModuleInit();
 
   //
   // add all program asts to the symbol table
@@ -187,46 +183,6 @@ void scopeResolve() {
 
 /************************************ | *************************************
 *                                                                           *
-* MDN 2014/07/15  This function is being moved from Parse to Normalize      *
-* It is resting here, for a day or so, while code is patched to support the *
-* migration.                                                                *
-*                                                                           *
-************************************* | ************************************/
-
-static void insertModuleInit() {
-  // Insert an init function into every module
-  forv_Vec(ModuleSymbol, mod, allModules) {
-    SET_LINENO(mod);
-
-    mod->initFn          = new FnSymbol(astr("chpl__init_", mod->name));
-    mod->initFn->retType = dtVoid;
-
-    mod->initFn->addFlag(FLAG_MODULE_INIT);
-    mod->initFn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
-
-    //
-    // move module-level statements into module's init function
-    //
-    for_alist(stmt, mod->block->body) {
-      if (stmt->isModuleDefinition() == false)
-        mod->initFn->insertAtTail(stmt->remove());
-    }
-
-    mod->block->insertAtHead(new DefExpr(mod->initFn));
-
-    //
-    // If the module has the EXPORT_INIT flag then
-    // propagate it to the module's init function
-    //
-    if (mod->hasFlag(FLAG_EXPORT_INIT) == true) {
-      mod->initFn->addFlag(FLAG_EXPORT);
-      mod->initFn->addFlag(FLAG_LOCAL_ARGS);
-    }
-  }
-}
-
-/************************************ | *************************************
-*                                                                           *
 * addToSymbolTable adds the asts in a vector to the global symbolTable such *
 * that symbol definitions are added to entries in the table and new         *
 * enclosing asts become entries                                             *
@@ -299,10 +255,7 @@ static void processImportExprs() {
 
       enclosingModule->moduleUseAdd(mod);
 
-      if (call->getStmtExpr()->parentExpr == call->getModule()->initFn->body)
-        call->getModule()->block->moduleUseAdd(mod);
-      else
-        getVisibilityBlock(call)->moduleUseAdd(mod);
+      getVisibilityBlock(call)->moduleUseAdd(mod);
 
       call->getStmtExpr()->remove();
     }
@@ -1422,28 +1375,12 @@ static void resolveModuleCall(CallExpr* call, Vec<UnresolvedSymExpr*>& skipSet) 
         Symbol*           sym      = NULL;
         const char*       mbr_name = get_string(call->get(2));
 
-        //Is it a variable?
-        //TODO: should we be using lookup here instead?
-        if (symbolTable.count(mod->initFn->body) != 0) {
-          entry = symbolTable[mod->initFn->body];
+        // Is it a variable or a method?
+        if (symbolTable.count(mod->block) != 0) {
+          entry = symbolTable[mod->block];
 
-          //Check first before accessing so that we don't
-          //  add a new, blank entry. (Blank entries break
-          //  attempts to add a new symbol if it
-          //  doesn't exist yet to support extern blocks.)
           if (entry->count(mbr_name) != 0) {
             sym = (*entry)[mbr_name];
-          }
-        }
-
-        if (!sym) {
-          //Is it a method?
-          if (symbolTable.count(mod->block) != 0) {
-            entry = symbolTable[mod->block];
-
-            if (entry->count(mbr_name) != 0) {
-              sym = (*entry)[mbr_name];
-            }
           }
         }
 
@@ -1651,10 +1588,14 @@ static void renameDefaultType(Type* type, const char* newname) {
 *                                                                           *
 ************************************* | ************************************/
 
-static Symbol* lookup(BaseAST*       scope,
-                      const char*    name,
-                      Vec<BaseAST*>* alreadyVisited,
-                      bool           scanModuleUses);
+static void  lookup(BaseAST*       scope,
+                    const char*    name,
+                    Vec<Symbol*>&  symbols,
+                    Vec<BaseAST*>& alreadyVisited);
+
+static void lookupSimple(BaseAST*       scope,
+                         const char*    name,
+                         Vec<Symbol*>&  symbols);
 
 static void    buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules);
 
@@ -1662,28 +1603,40 @@ static void    buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules,
                                            Vec<ModuleSymbol*>* current,
                                            Vec<ModuleSymbol*>* alreadySeen);
 
-static Symbol* lookup(BaseAST* scope, const char* name) {
+static Symbol* lookup(BaseAST* scope, const char* name)
+{
+  Vec<Symbol*>  symbols;
   Vec<BaseAST*> nestedscopes;
+  lookup(scope, name, symbols, nestedscopes);
 
-  return lookup(scope, name, &nestedscopes, true);
+  symbols.set_to_vec();
+
+  if (symbols.n == 0)
+    // No symbols found.
+    return NULL;
+
+  if (symbols.n == 1)
+    // A unique symbol was found.
+    return symbols.v[0];
+
+  forv_Vec(Symbol, sym, symbols) {
+    if (!isFnSymbol(sym))
+      USR_FATAL_CONT(sym, "Symbol %s multiply defined", name);
+  }
+  USR_STOP();
+
+  return NULL;
 }
 
-static Symbol* lookup(BaseAST*       scope,
-                      const char*    name,
-                      Vec<BaseAST*>* alreadyVisited,
-                      bool           scanModuleUses) {
-  Vec<BaseAST*> nestedscopes;
-  Symbol*       retval = NULL;
-
-  if (!scanModuleUses) {
-    nestedscopes.copy(*alreadyVisited);
-    alreadyVisited = &nestedscopes;
-  }
-
-  if (!alreadyVisited->set_in(scope)) {
-    alreadyVisited->set_add(scope);
-
-    Vec<Symbol*> symbols;
+// This version recurses through module uses.
+// Adds zero or more symbols to the passed-in symbols vector.
+static void lookup(BaseAST*       scope,
+                   const char*    name,
+                   Vec<Symbol*>&  symbols,
+                   Vec<BaseAST*>& alreadyVisited)
+{
+  if (!alreadyVisited.set_in(scope)) {
+    alreadyVisited.set_add(scope);
 
     if (symbolTable.count(scope) != 0) {
       SymbolTableEntry* entry = symbolTable[scope];
@@ -1699,7 +1652,7 @@ static Symbol* lookup(BaseAST*       scope,
         if (Symbol* sym = ct->getField(name, false))
           symbols.set_add(sym);
 
-    if (scanModuleUses && symbols.n == 0) {
+    if (symbols.n == 0) {
       if (BlockStmt* block = toBlockStmt(scope)) {
         if (block->modUses) {
           Vec<ModuleSymbol*>* modules = NULL;
@@ -1727,17 +1680,9 @@ static Symbol* lookup(BaseAST*       scope,
             modules = moduleUsesCache[block];
           }
 
-          INT_ASSERT(modules);
-
           forv_Vec(ModuleSymbol, mod, *modules) {
             if (mod) {
-              if (mod != rootModule) {
-                if (Symbol* sym = lookup(mod->initFn->body, name, alreadyVisited, false))
-                  symbols.set_add(sym);
-              } else {
-                if (Symbol* sym = lookup(mod->block, name, alreadyVisited, false))
-                  symbols.set_add(sym);
-              }
+              lookupSimple(mod->block, name, symbols);
             } else {
               //
               // break on each new depth if a symbol has been found
@@ -1750,68 +1695,47 @@ static Symbol* lookup(BaseAST*       scope,
       }
     }
 
-    if (scanModuleUses && symbols.n == 0) {
+    if (symbols.n == 0) {
       if (scope->getModule()->block == scope) {
         ModuleSymbol* mod = scope->getModule();
-        Symbol*       sym = NULL;
+        lookup(mod->block, name, symbols, alreadyVisited);
 
-        if (mod == rootModule)
-          sym = lookup(mod->block, name, alreadyVisited, scanModuleUses);
-        else
-          sym = lookup(mod->initFn->body, name, alreadyVisited, scanModuleUses);
-
-        if (sym)
-          symbols.set_add(sym);
-        
         if (symbols.n == 0 && getScope(scope)) {
-          sym = lookup(getScope(scope), name, alreadyVisited, scanModuleUses);
-
-          if (sym)
-            symbols.set_add(sym);
+          lookup(getScope(scope), name, symbols, alreadyVisited);
         }
       } else {
         FnSymbol* fn = toFnSymbol(scope);
-
-        if (fn && fn->_this && toAggregateType(fn->_this->type)) {
-          AggregateType* ct  = toAggregateType(fn->_this->type);
-          Symbol*        sym = lookup(ct->symbol, name, alreadyVisited, scanModuleUses);
-
-          if (sym)
-            symbols.set_add(sym);
-          else {
-            sym = lookup(getScope(scope), name, alreadyVisited, scanModuleUses);
-
-            if (sym)
-              symbols.set_add(sym);
-          }
-        } else if (getScope(scope)) {
-          Symbol* sym = lookup(getScope(scope), name, alreadyVisited, scanModuleUses);
-
-          if (sym)
-            symbols.set_add(sym);
+        if (fn && fn->_this)
+        {
+          AggregateType* ct = toAggregateType(fn->_this->type);
+          if (ct)
+            lookup(ct->symbol, name, symbols, alreadyVisited);
         }
+        if (symbols.n == 0)
+          lookup(getScope(scope), name, symbols, alreadyVisited);
       }
     }
+  }
+}
 
-    symbols.set_to_vec();
+// This version does not recurse through module uses.
+static void lookupSimple(BaseAST*       scope,
+                         const char*    name,
+                         Vec<Symbol*>&  symbols)
+{
+  if (symbolTable.count(scope) != 0) {
+    SymbolTableEntry* entry = symbolTable[scope];
 
-    if (symbols.n == 1)
-      retval = symbols.v[0];
-
-    else if (symbols.n == 0)
-      retval = NULL;
-
-    else {
-      forv_Vec(Symbol, sym, symbols) {
-        if (!isFnSymbol(sym))
-          USR_FATAL(sym, "Symbol %s multiply defined", name);
-      }
-
-      retval = NULL;
+    if (entry->count(name) != 0) {
+      Symbol* sym = (*entry)[name];
+      symbols.set_add(sym);
     }
   }
 
-  return retval;
+  if (TypeSymbol* ts = toTypeSymbol(scope))
+    if (AggregateType* ct = toAggregateType(ts->type))
+      if (Symbol* sym = ct->getField(name, false))
+        symbols.set_add(sym);
 }
 
 static void buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules) {

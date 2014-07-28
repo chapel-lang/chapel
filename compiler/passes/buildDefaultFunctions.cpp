@@ -528,11 +528,11 @@ static void build_record_inequality_function(AggregateType* ct) {
 }
 
 static void build_enum_first_function(EnumType* et) {
-  if (function_exists("_enum_first", 1, et))
+  if (function_exists("chpl_enum_first", 1, et))
     return;
   // Build a function that returns the first option for the enum
   // specified, also known as the default.
-  FnSymbol* fn = new FnSymbol("_enum_first");
+  FnSymbol* fn = new FnSymbol("chpl_enum_first");
   fn->addFlag(FLAG_COMPILER_GENERATED);
   // Making this compiler generated allows users to define what the
   // default is for a particular enum.  They can also redefine the
@@ -566,8 +566,8 @@ static void build_enum_first_function(EnumType* et) {
 
 static void build_enum_enumerate_function(EnumType* et) {
   // Build a function that returns a tuple of the enum's values
-  // Each enum type has its own _enum_enumerate function.
-  FnSymbol* fn = new FnSymbol("_enum_enumerate");
+  // Each enum type has its own chpl_enum_enumerate function.
+  FnSymbol* fn = new FnSymbol("chpl_enum_enumerate");
 // TODO: This flag should be enabled, so a user-defined version of the enum
 //  enumerate function can override the compiler-generated version.
 //  fn->addFlag(FLAG_COMPILER_GENERATED);
