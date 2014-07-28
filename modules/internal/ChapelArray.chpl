@@ -604,7 +604,7 @@ module ChapelArray {
         if !noRefCount then
           _value.incRefCount();
       }
-      const enumTuple = _enum_enumerate(idxType);
+      const enumTuple = chpl_enum_enumerate(idxType);
       for param i in 1..enumTuple.size do
         x.dsiAdd(enumTuple(i));
       return x;

@@ -227,7 +227,7 @@ proc max(type t) where _isComplexType(t) {
 }
 
 iter chpl_enumerate(type t: enumerated) {
-  const enumTuple = _enum_enumerate(t);
+  const enumTuple = chpl_enum_enumerate(t);
   for i in 1..enumTuple.size do
     yield enumTuple(i);
 }
