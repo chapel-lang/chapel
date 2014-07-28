@@ -159,15 +159,6 @@ inline proc _defaultOf(type t) where t: _sync_aux_t return _nullSyncVarAuxFields
 inline proc _defaultOf(type t) where t: _single_aux_t return _nullSingleVarAuxFields;
 inline proc _defaultOf(type t) where t: _task_list return _nullTaskList;
 
-/* Need new <alias>() for this to function
-proc _defaultOf(type t) where t:_distribution {
-  var ret: t = noinit;
-  type valType = __primitive("query type field", t, "_valueType");
-  var typeInstance = new <valType>();
-  ret = chpl__buildDistValue(typeInstance);
-  return ret;
-}
-*/
 
 // When I finish removing PRIM_INIT before initialization to a known value, then
 // this method should work.  Until then, my stopgap will be an external function
