@@ -150,7 +150,7 @@ inline proc _defaultOf(type t): t where (_isComplexType(t)) {
 
 // Enums
 inline proc _defaultOf(type t) param where (_isEnumeratedType(t)) {
-  return _enum_first(t);
+  return chpl_enum_first(t);
 }
 
 // Classes
