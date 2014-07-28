@@ -1,1 +1,2 @@
 test_use_chain_resolution2.chpl:2: error: Symbol aaa multiply defined
+test_use_chain_resolution2.chpl:14: error: Symbol aaa multiply defined
