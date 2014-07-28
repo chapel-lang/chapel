@@ -311,7 +311,7 @@ insertUseForExplicitModuleCalls(void) {
       BlockStmt* block = new BlockStmt();
       stmt->insertBefore(block);
       block->insertAtHead(stmt->remove());
-      block->moduleAddUse(mod);
+      block->moduleUseAdd(mod);
     }
   }
 }
@@ -499,8 +499,22 @@ static void normalize_returns(FnSymbol* fn) {
         fn->retTag = RET_VAR;
       else
       {
-        CallExpr* initExpr =
-          new CallExpr(PRIM_INIT, retExprType->body.tail->remove());
+        CallExpr* initExpr;
+        // In most cases, we do not need to default initialize the return temps,
+        // as they will be assigned to before they are returned.  We cannot
+        // check against the specific types that do not allow the use of noinit
+        // here (that happens in function resolution), but we do know whether
+        // the function expects a param or type variable as its result and these
+        // cases would become confused if noinit was used with them (since
+        // noinit is not allowed on param or type variables).  So default
+        // initialize in those cases but in all others insert noinit and trust
+        // it will be handled correctly for types that do not allow it.
+        if (fn->retTag == RET_PARAM || fn->retTag == RET_TYPE) {
+          initExpr = new CallExpr(PRIM_INIT, retExprType->body.tail->remove());
+        } else {
+          initExpr = new CallExpr(PRIM_NO_INIT,
+                                  retExprType->body.tail->remove());
+        }
         fn->insertAtHead(new CallExpr(PRIM_MOVE, retval, initExpr));
       }
     }
@@ -871,11 +885,14 @@ fix_def_expr(VarSymbol* var) {
       var->defPoint->init->remove();
       initCall = new CallExpr(PRIM_MOVE, var,
                    new CallExpr(PRIM_NO_INIT, type->remove()));
+      stmt->insertAfter(initCall);
+      // Since the variable won't have been defined just yet (stmt is
+      // its def expression after all), insert the move after the defPoint
     } else {
       initCall = new CallExpr(PRIM_MOVE, typeTemp,
                    new CallExpr(PRIM_INIT, type->remove()));
+      stmt->insertBefore(initCall);
     }
-    stmt->insertBefore(initCall);
     if (init) {
       if (!isNoinit) {
         stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, typeTemp));

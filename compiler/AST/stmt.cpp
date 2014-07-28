@@ -86,37 +86,38 @@ BlockStmt::BlockStmt(Expr* initBody, BlockTag initBlockTag) :
 }
 
 
-BlockStmt::~BlockStmt() { }
+BlockStmt::~BlockStmt() { 
 
+}
 
 void BlockStmt::verify() {
   Expr::verify();
 
   if (astTag != E_BlockStmt) {
-    INT_FATAL(this, "Bad BlockStmt::astTag");
+    INT_FATAL(this, "BlockStmt::verify. Bad astTag");
   }
 
   if (body.parent != this)
-    INT_FATAL(this, "Bad AList::parent in BlockStmt");
+    INT_FATAL(this, "BlockStmt::verify. Bad body.parent");
 
   for_alist(expr, body) {
     if (expr->parentExpr != this)
-      INT_FATAL(this, "Bad BlockStmt::body::parentExpr");
+      INT_FATAL(this, "BlockStmt::verify. Bad body.expr->parentExpr");
   }
 
   if (blockInfo && blockInfo->parentExpr != this)
-    INT_FATAL(this, "Bad BlockStmt::blockInfo::parentExpr");
+    INT_FATAL(this, "BlockStmt::verify. Bad blockInfo->parentExpr");
 
-  if (modUses && modUses->parentExpr != this)
-    INT_FATAL(this, "Bad BlockStmt::blockInfo::parentExpr");
+  if (modUses   && modUses->parentExpr   != this)
+    INT_FATAL(this, "BlockStmt::verify. Bad modUses->parentExpr");
 
   if (byrefVars) {
     if (byrefVars->parentExpr != this)
-      INT_FATAL(this, "Bad BlockStmt::byrefVars::parentExpr");
+      INT_FATAL(this, "BlockStmt::verify. Bad byrefVars->parentExpr");
 
     for_actuals(varExp, byrefVars) {
       if (!isSymExpr(varExp) && !isUnresolvedSymExpr(varExp))
-        INT_FATAL(this, "Bad expresion kind in BlockStmt::byrefVars");
+        INT_FATAL(this, "BlockStmt::verify. Bad expression kind in byrefVars");
     }
   }
 }
@@ -140,18 +141,25 @@ BlockStmt::copyInner(SymbolMap* map) {
 }
 
 
-void BlockStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
-  if (old_ast == blockInfo)
-    blockInfo = toCallExpr(new_ast);
+// Note that newAst can be NULL to reflect deletion
+void BlockStmt::replaceChild(Expr* oldAst, Expr* newAst) {
+  CallExpr* oldExpr = toCallExpr(oldAst);
+  CallExpr* newExpr = (newAst != NULL) ? toCallExpr(newAst) : NULL;
 
-  else if (old_ast == modUses)
-    modUses = toCallExpr(new_ast);
+  if (oldExpr == NULL)
+    INT_FATAL(this, "BlockStmt::replaceChild. oldAst is not a CallExpr");
 
-  else if (old_ast == byrefVars)
-    byrefVars = toCallExpr(new_ast);
+  else if (oldExpr == blockInfo)
+    blockInfo = newExpr;
+
+  else if (oldExpr == modUses)
+    modUses   = newExpr;
+
+  else if (oldExpr == byrefVars)
+    byrefVars = newExpr;
 
   else
-    INT_FATAL(this, "Unexpected case in BlockStmt::replaceChild");
+    INT_FATAL(this, "BlockStmt::replaceChild. Failed to match the oldAst ");
 }
 
 
@@ -388,7 +396,7 @@ BlockStmt::length() const {
 
 
 void
-BlockStmt::moduleAddUse(ModuleSymbol* mod) {
+BlockStmt::moduleUseAdd(ModuleSymbol* mod) {
   if (modUses == NULL) {
     modUses = new CallExpr(PRIM_USED_MODULES_LIST);
 
@@ -402,22 +410,46 @@ BlockStmt::moduleAddUse(ModuleSymbol* mod) {
 
 // Remove a module from the list of modules used by the module this block
 // statement belongs to. The list of used modules is stored in modUses
-void
-BlockStmt::moduleRemoveUse(ModuleSymbol* mod) {
+bool
+BlockStmt::moduleUseRemove(ModuleSymbol* mod) {
+  bool retval = false;
+
   if (modUses != NULL) {
     for_alist(expr, modUses->argList) {
       if (SymExpr* symExpr = toSymExpr(expr)) {
         if (ModuleSymbol* curMod = toModuleSymbol(symExpr->var)) {
           if (curMod == mod) {
-            symExpr->remove();  
+            symExpr->remove();
+            
+            retval = true;
+            break;
           }
         }
       }
     }
   }
+
+  return retval;
 }
 
-void BlockStmt::accept(AstVisitor* visitor) {
+void
+BlockStmt::moduleUseClear() {
+  if (modUses != 0) {
+
+    for_alist(expr, modUses->argList) {
+      expr->remove();
+    }
+
+    // It's possible that this use definition is not alive
+    if (isAlive(modUses))
+      modUses->remove();
+
+    modUses = 0;
+  }
+}
+
+void 
+BlockStmt::accept(AstVisitor* visitor) {
   if (visitor->enterBlockStmt(this) == true) {
     for_alist(next_ast, body)
       next_ast->accept(visitor);
@@ -733,31 +765,49 @@ GotoStmt* getGotoLabelsIterResumeGoto(GotoStmt* gs) {
   return labsym ? labsym->iterResumeGoto : NULL;
 }
 
-
 void GotoStmt::verify() {
   Expr::verify();
+
   if (astTag != E_GotoStmt) {
     INT_FATAL(this, "Bad GotoStmt::astTag");
   }
+
   if (!label)
     INT_FATAL(this, "GotoStmt has no label");
+
   if (label->list)
     INT_FATAL(this, "GotoStmt::label is a list");
+
   if (label && label->parentExpr != this)
     INT_FATAL(this, "Bad GotoStmt::label::parentExpr");
+
+  // If the label has been resolved to a label
   if (SymExpr* se = toSymExpr(label)) {
     if (isLabelSymbol(se->var)) {
-      if (!isFnSymbol(se->var->defPoint->parentSymbol))
-        INT_FATAL(this, "goto label is not in a function");
+      Symbol* parent = se->var->defPoint->parentSymbol;
+
+      // The parent should either be a function or a
+      // module that does not yet have the initFn installed
+      if (isFnSymbol(parent) == false) {
+        ModuleSymbol* module = toModuleSymbol(parent);
+
+        if (module == 0 || module->initFn != 0) {
+          INT_FATAL(this, "goto label is not in a function");
+        }
+      }
+
       if (se->var->defPoint->parentSymbol != this->parentSymbol)
         INT_FATAL(this, "goto label is in a different function than the goto");
+
       GotoStmt* igs = getGotoLabelsIterResumeGoto(this);
+
       if ((gotoTag == GOTO_ITER_RESUME) == (igs == NULL))
         INT_FATAL(this,
-            "goto must be GOTO_ITER_RESUME iff its label has iterResumeGoto");
+                  "goto must be GOTO_ITER_RESUME iff its label has iterResumeGoto");
+
       if (gotoTag == GOTO_ITER_RESUME && igs != this)
         INT_FATAL(this,
-      "GOTO_ITER_RESUME goto's label's iterResumeGoto does not match the goto");
+                  "GOTO_ITER_RESUME goto's label's iterResumeGoto does not match the goto");
     }
   }
 }
