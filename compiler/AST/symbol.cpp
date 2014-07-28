@@ -1718,9 +1718,9 @@ GenRet FnSymbol::codegenCast(GenRet fnPtr) {
 void FnSymbol::codegenPrototype() {
   GenInfo *info = gGenInfo;
 
-  if (hasFlag(FLAG_EXTERN) && !genExternPrototypes) return;
+  if (hasFlag(FLAG_EXTERN))       return;
   if (hasFlag(FLAG_NO_PROTOTYPE)) return;
-  if (hasFlag(FLAG_NO_CODEGEN)) return;
+  if (hasFlag(FLAG_NO_CODEGEN))   return;
 
   if( breakOnCodegenCname[0] &&
       0 == strcmp(cname, breakOnCodegenCname) ) {
@@ -2350,9 +2350,8 @@ Vec<FnSymbol*> ModuleSymbol::getTopLevelFunctions() {
     if (DefExpr* def = toDefExpr(expr)) {
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
         // Ignore external and prototype functions.
-        if (!genExternPrototypes &&
-            (fn->hasFlag(FLAG_EXTERN) ||
-             fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))) {
+        if (fn->hasFlag(FLAG_EXTERN) ||
+            fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)) {
           continue;
         }
 
@@ -2368,9 +2367,8 @@ Vec<FnSymbol*> ModuleSymbol::getTopLevelFunctions() {
           for_alist(expr2, fn->body->body) {
             if (DefExpr* def2 = toDefExpr(expr2)) {
               if (FnSymbol* fn2 = toFnSymbol(def2->sym)) {
-                if (!genExternPrototypes &&
-                    (fn->hasFlag(FLAG_EXTERN) ||
-                     fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))) {
+                if (fn->hasFlag(FLAG_EXTERN) ||
+                    fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)) {
                   continue;
                 }
 
