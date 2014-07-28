@@ -670,6 +670,7 @@ proc file.path : string {
   var ret:string;
   ret = this.getPath(err);
   if err then ioerror(err, "in file.path");
+  return ret;
 }
 
 // these strings are here (vs in _modestring)
