@@ -556,8 +556,8 @@ static void build_enum_first_function(EnumType* et) {
 
 static void build_enum_enumerate_function(EnumType* et) {
   // Build a function that returns a tuple of the enum's values
-  // Each enum type has its own _enum_enumerate function.
-  FnSymbol* fn = new FnSymbol("_enum_enumerate");
+  // Each enum type has its own chpl_enum_enumerate function.
+  FnSymbol* fn = new FnSymbol("chpl_enum_enumerate");
 // TODO: This flag should be enabled, so a user-defined version of the enum
 //  enumerate function can override the compiler-generated version.
 //  fn->addFlag(FLAG_COMPILER_GENERATED);
