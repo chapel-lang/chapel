@@ -1690,6 +1690,12 @@ if ($gengraphs && $?CHPL_TEST_PERF_DIR) then
     endif
 endif
 
+set tempdir = "$CHPL_HOME/test/tmp/"
+if ( -d $tempdir ) then
+  echo "[Removing $CHPL_TOME/test/tmp/ directory]"
+  rm -r $tempdir
+endif
+
 # exit here if there were errors before running the tests
 err_exit:
 
