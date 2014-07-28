@@ -2,7 +2,7 @@
 
 for loc in 0 1 ; do
   echo "========== Locale $loc memLog ==========" >> $2
-  if [[ -f $1.memLog.$loc ]] ; then
+  if [ -f $1.memLog.$loc ] ; then
     sed -e 's/ allocate [0-9]*B / allocate <BYTES> /' \
 	-e 's/ at 0x[0-9a-f]*$/ at <ADDR>/' \
 	< $1.memLog.$loc \
