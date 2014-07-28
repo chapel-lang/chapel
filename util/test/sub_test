@@ -1353,6 +1353,9 @@ for testname in testsrc:
                 else:
                   sys.stdout.write('[Error: redirection file %s does not exist]\n'%(execOptRedirect))
                   break
+              else:
+                sys.stdout.write('[Error: a redirection file already exists: %s]\n'%(redirectin))
+                break
 
             #
             # Run program (with timeout)
