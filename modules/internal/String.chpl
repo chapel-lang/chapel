@@ -6,6 +6,12 @@ module String {
 
   pragma "default string value" extern var defaultStringValue: string = noinit;
 
+  // The following method is called by the compiler to determine the default
+  // value of a given type.  For strings, this should return the value
+  // defined above.
+  // strings will be records, so param is not possible for them
+  inline proc _defaultOf(type t) where t: string return defaultStringValue;
+
   // String concatenation
   inline proc +(s: string, x: string)
     // FIX ME: leak c_string
@@ -158,6 +164,10 @@ module String {
 // C strings
 //extern type c_string; is a built-in primitive type
 module CString {
+
+  // The following method is called by the compiler to determine the default
+  // value of a given type.
+  inline proc _defaultOf(type t) param where t: c_string return "":c_string;
 
   inline proc toString(cstr:c_string):string {
     return __primitive("string_from_c_string", cstr, 0, 0);

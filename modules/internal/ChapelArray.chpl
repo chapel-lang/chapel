@@ -604,7 +604,7 @@ module ChapelArray {
         if !noRefCount then
           _value.incRefCount();
       }
-      const enumTuple = _enum_enumerate(idxType);
+      const enumTuple = chpl_enum_enumerate(idxType);
       for param i in 1..enumTuple.size do
         x.dsiAdd(enumTuple(i));
       return x;
@@ -639,6 +639,17 @@ module ChapelArray {
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
   }  // record _distribution
   
+  // The following method is called by the compiler to determine the default
+  // value of a given type.
+  /* Need new <alias>() for this to function
+  proc _defaultOf(type t) where t:_distribution {
+    var ret: t = noinit;
+    type valType = __primitive("query type field", t, "_valueType");
+    var typeInstance = new <valType>();
+    ret = chpl__buildDistValue(typeInstance);
+    return ret;
+  }
+  */
   
   //
   // Domain wrapper record
