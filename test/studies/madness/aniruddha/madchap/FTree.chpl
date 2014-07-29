@@ -82,7 +82,7 @@ class LocTree {
 
      */
     proc this(node: Node) var {
-        oneAtATime$;
+      oneAtATime$.readFE();
         if !nodes.member(node) {
             if setter {
               nodes += node;
@@ -133,7 +133,7 @@ class LocTree {
     /** Check if there are coefficients in box (lvl, idx)
      */
     proc has_coeffs(node: Node) {
-        oneAtATime$;
+      oneAtATime$.readFE();
         const b = nodes.member(node);
         oneAtATime$ = true;
         return b;
@@ -143,7 +143,7 @@ class LocTree {
         does not exist, it is ignored.
      */
     proc remove(node: Node) {
-        oneAtATime$;
+      oneAtATime$.readFE();
         if nodes.member(node) then nodes.remove(node);
         oneAtATime$ = true;
     }

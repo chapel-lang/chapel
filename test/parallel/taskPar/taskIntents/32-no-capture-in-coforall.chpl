@@ -560,7 +560,7 @@ writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
   sbegin$ = 1;
 }
-sbegin$;
+sbegin$.readFE();
 /////////////////////////////////////////////////////////////////////////////
 writeln("=== in a cobegin ===");
 cobegin {

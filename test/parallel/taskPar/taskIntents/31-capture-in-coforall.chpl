@@ -215,7 +215,7 @@ writeln("arr2", " ", arr2);
   }
   else
   {
-    s$;
+    s$.readFE();
     writeln("coforall - jjjjj=2");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -459,7 +459,7 @@ writeln("arr2", " ", arr2);
   }
   else
   {
-    s$;
+    s$.readFE();
     writeln("coforall - jjjjj=2");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -706,7 +706,7 @@ writeln("arr2", " ", arr2);
   }
   else
   {
-    s$;
+    s$.readFE();
     writeln("coforall - jjjjj=2");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -776,7 +776,7 @@ writeln("arr2", " ", arr2);
 writeln("done");
   sbegin$ = 1;
 }
-sbegin$;
+sbegin$.readFE();
 /////////////////////////////////////////////////////////////////////////////
 writeln("=== in a cobegin ===");
 cobegin {
@@ -955,7 +955,7 @@ writeln("arr2", " ", arr2);
   }
   else
   {
-    s$;
+    s$.readFE();
     writeln("coforall - jjjjj=2");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -1202,7 +1202,7 @@ writeln("arr2", " ", arr2);
   }
   else
   {
-    s$;
+    s$.readFE();
     writeln("coforall - jjjjj=2");
 // write out all the variables
 writeln("b0", " ", b0);

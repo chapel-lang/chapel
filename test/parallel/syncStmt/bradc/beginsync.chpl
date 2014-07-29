@@ -9,7 +9,7 @@ begin sync {
 }
 writeln("A print me first");
 
-readyToGoOn$;
+readyToGoOn$.readFE();
 
 sync begin {
   sleep(1);

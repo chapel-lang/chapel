@@ -55,13 +55,13 @@ proc chpl_send_int(data: int, loc) {
     if b.head == nil then
       b.head = b.tail;
     b.signal$.writeXF(true);
-    b.lock$;
+    b.lock$.readFE();
   }
 }
 
 proc chpl_recv_int(out data: int, loc) {
   var b = buffer[here.id][loc];
-  b.signal$;
+  b.signal$.readFE();
   b.lock$ = true;
   data = b.head.data;
   var next = b.head.next;
@@ -71,5 +71,5 @@ proc chpl_recv_int(out data: int, loc) {
     b.tail = nil;
   else
     b.signal$.writeXF(true);
-  b.lock$;
+  b.lock$.readFE();
 }

@@ -8,7 +8,7 @@ proc work() {
   var b = 2;
 
   begin ref(b, c) {
-    go;
+    go.readFE();
     b = 2 * c;
     writeln("b is ", b);
     c = 2 * b;
@@ -22,7 +22,7 @@ proc jam_records() {
   cobegin {
     work();
     begin {
-      a;
+      a.readFE();
       work();
     }
   }

@@ -37,7 +37,7 @@ proc test() {
     s$ = 1;
   }
 
-  s$;
+  s$.readFE();
   writeln("after begin");
   writeln("dom1", " ", dom1, ".");
   writeln("dom2", " ", dom2, ".");

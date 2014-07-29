@@ -1,7 +1,7 @@
 var s$: sync bool = true;
 
 iter foo() {
-  s$;
+  s$.readFE();
   for i in 1..3 do
     yield i;
   s$ = true;
@@ -14,7 +14,7 @@ for i in foo() do
   writeln(i);
 
 iter bar() {
-  s$;
+  s$.readFE();
   var r = 1..3;
   s$ = true;
   for i in r do

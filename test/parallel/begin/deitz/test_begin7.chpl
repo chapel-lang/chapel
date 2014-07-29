@@ -16,6 +16,6 @@ begin {
   s;
   t = true;
 }
-t;
+t.readFE();
 
 writeln("finished");

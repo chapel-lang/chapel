@@ -2,8 +2,8 @@ use Time;
 
 var s: sync int = 1;
 
-s;
+s.readFE();
 begin {
   sleep(1);
 }
-s; // should deadlock here
+s.readFE(); // should deadlock here
