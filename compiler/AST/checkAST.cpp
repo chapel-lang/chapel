@@ -232,7 +232,6 @@ void checkPrimitives()
      case PRIM_RT_ERROR:
      case PRIM_RT_WARNING:
      case PRIM_NEW_PRIV_CLASS:
-     case PRIM_NUM_PRIV_CLASSES:
      case PRIM_GET_PRIV_CLASS:
      case PRIM_GET_USER_LINE:
      case PRIM_GET_USER_FILE:

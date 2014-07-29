@@ -4456,7 +4456,27 @@ preFold(Expr* expr) {
           // normal records/classes.  They may require special case
           // implementations, but were capable of being isolated from the new
           // cases that do work.
-          USR_WARN("type %s does not currently support noinit, using default initialization", type->symbol->name);
+
+          bool nowarn = false;
+          // In the case of temporary variables that use noinit (at this point
+          // only return variables), it is not useful to warn the user we are
+          // still default initializing the values as they weren't the ones to
+          // tell us to use noinit in the first place.  So squash the warning
+          // in this case.
+          if (call->parentExpr) {
+            CallExpr* parent = toCallExpr(call->parentExpr);
+            if (parent && parent->isPrimitive(PRIM_MOVE)) {
+              // Should always be true, but just in case...
+              if (SymExpr* holdsDest = toSymExpr(parent->get(1))) {
+                Symbol* dest = holdsDest->var;
+                if (dest->hasFlag(FLAG_TEMP) && !strcmp(dest->name, "ret")) {
+                  nowarn = true;
+                }
+              }
+            }
+          }
+          if (!nowarn)
+            USR_WARN("type %s does not currently support noinit, using default initialization", type->symbol->name);
           result = new CallExpr(PRIM_INIT, call->get(1)->remove());
           call->replace(result);
           inits.add((CallExpr *)result);
@@ -6361,6 +6381,10 @@ resolve() {
   }
   visibleFunctionMap.clear();
   visibilityBlockCache.clear();
+
+  forv_Vec(BlockStmt, stmt, gBlockStmts) {
+    stmt->moduleUseClear();
+  }
 
   resolved = true;
 }
