@@ -143,6 +143,7 @@ proc string.substring(m:reMatch) {
     are cached on a per-thread basis and are reference counted.
     To create a compiled regular expression, use the compile function.
   */
+pragma "ignore noinit"
 record regexp {
   var home: locale = here;
   var _regexp:qio_regexp_t = qio_regexp_null();

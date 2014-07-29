@@ -370,10 +370,14 @@ public:
   virtual void codegenDef();
 
   // New interface
-  Vec<VarSymbol*>      getConfigVars();
-  Vec<FnSymbol*>       getFunctions();
-  Vec<ModuleSymbol*>   getModules();
-  Vec<AggregateType*>  getClasses();
+  Vec<AggregateType*>  getTopLevelClasses();
+  Vec<VarSymbol*>      getTopLevelConfigVars();
+  Vec<FnSymbol*>       getTopLevelFunctions(bool includeExterns);
+  Vec<ModuleSymbol*>   getTopLevelModules();
+
+  void                 moduleUseAddChapelStandard();
+  void                 moduleUseAdd(ModuleSymbol* module);
+  void                 moduleUseRemove(ModuleSymbol* module);
 
   ModTag               modTag;
 
@@ -381,7 +385,6 @@ public:
   FnSymbol*            initFn;
 
   Vec<ModuleSymbol*>   modUseList;
-  Vec<ModuleSymbol*>   modUseSet;
 
   const char*          filename;
   const char*          doc;

@@ -1,1 +1,2 @@
 test_use_error.chpl:2: error: Symbol x multiply defined
+test_use_error.chpl:6: error: Symbol x multiply defined

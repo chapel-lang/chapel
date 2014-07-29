@@ -1718,9 +1718,9 @@ GenRet FnSymbol::codegenCast(GenRet fnPtr) {
 void FnSymbol::codegenPrototype() {
   GenInfo *info = gGenInfo;
 
-  if (hasFlag(FLAG_EXTERN) && !genExternPrototypes) return;
+  if (hasFlag(FLAG_EXTERN))       return;
   if (hasFlag(FLAG_NO_PROTOTYPE)) return;
-  if (hasFlag(FLAG_NO_CODEGEN)) return;
+  if (hasFlag(FLAG_NO_CODEGEN))   return;
 
   if( breakOnCodegenCname[0] &&
       0 == strcmp(cname, breakOnCodegenCname) ) {
@@ -2256,53 +2256,137 @@ void ModuleSymbol::codegenDef() {
 
   flushStatements();
 }
+
+// Collect the top-level classes for this Module.
+//
+// 2014/07/25 MDN.  This function is currently only called by
+// docs.  Historically all of the top-level classes were buried
+// inside the prototypical module initFn.
+//
+// Installing The initFn is being moved forward but there are
+// still short periods of time when the classes will still be
+// buried inside the module initFn.
+//
+// Hence this function is currently able to handle the before
+// and after case.  The before case can be pulled out once the
+// construction of the initFn is cleaned up.
+//
  
-Vec<AggregateType*> ModuleSymbol::getClasses() {
+Vec<AggregateType*> ModuleSymbol::getTopLevelClasses() {
   Vec<AggregateType*> classes;
 
   for_alist(expr, block->body) {
-    if (DefExpr* def = toDefExpr(expr))
-      if (FnSymbol* fn = toFnSymbol(def->sym)) {
-        // Ignore external and prototype functions.
+    if (DefExpr* def = toDefExpr(expr)) {
+
+      if (TypeSymbol* type = toTypeSymbol(def->sym)) {
+        if (AggregateType* cl = toAggregateType(type->type)) {
+          classes.add(cl);
+        }
+
+      // Step in to the initFn
+      } else if (FnSymbol* fn = toFnSymbol(def->sym)) {
         if (fn->hasFlag(FLAG_MODULE_INIT)) {
           for_alist(expr2, fn->body->body) {
-            if (DefExpr* def2 = toDefExpr(expr2))
-              if (TypeSymbol* type = toTypeSymbol(def2->sym)) 
+            if (DefExpr* def2 = toDefExpr(expr2)) {
+              if (TypeSymbol* type = toTypeSymbol(def2->sym)) {
                 if (AggregateType* cl = toAggregateType(type->type)) {
                   classes.add(cl);
                 }
+              }
+            }
           }
         }
       }
+    }
   }
 
   return classes;
 }
 
-Vec<VarSymbol*> ModuleSymbol::getConfigVars() {
+// Collect the top-level classes for this Module.
+//
+// See the comment on getTopLevelClasses()
+Vec<VarSymbol*> ModuleSymbol::getTopLevelConfigVars() {
   Vec<VarSymbol*> configs;
 
   for_alist(expr, block->body) {
-    if (DefExpr* def = toDefExpr(expr))
-      if (FnSymbol* fn = toFnSymbol(def->sym)) {
-        // Ignore external and prototype functions.
+    if (DefExpr* def = toDefExpr(expr)) {
+
+      if (VarSymbol* var = toVarSymbol(def->sym)) {
+        if (var->hasFlag(FLAG_CONFIG)) {
+          configs.add(var);
+        }
+
+      } else if (FnSymbol* fn = toFnSymbol(def->sym)) {
         if (fn->hasFlag(FLAG_MODULE_INIT)) {
           for_alist(expr2, fn->body->body) {
-            if (DefExpr* def2 = toDefExpr(expr2))
+            if (DefExpr* def2 = toDefExpr(expr2)) {
               if (VarSymbol* var = toVarSymbol(def2->sym)) {
                 if (var->hasFlag(FLAG_CONFIG)) {
                   configs.add(var);
                 }
               }
+            }
           }
         }
       }
+    }
   }
 
   return configs;
 }
 
-Vec<ModuleSymbol*> ModuleSymbol::getModules() {
+// Collect the top-level classes for this Module.
+//
+// This one is similar to getTopLevelModules() and
+// getTopLevelFunctions except that it collects any
+// functions and then steps in to initFn if it finds it.
+//
+
+Vec<FnSymbol*> ModuleSymbol::getTopLevelFunctions(bool includeExterns) {
+  Vec<FnSymbol*> fns;
+
+  for_alist(expr, block->body) {
+    if (DefExpr* def = toDefExpr(expr)) {
+      if (FnSymbol* fn = toFnSymbol(def->sym)) {
+        // Ignore external and prototype functions.
+        if (includeExterns == false && 
+            (fn->hasFlag(FLAG_EXTERN) ||
+             fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))) {
+          continue;
+        }
+
+        fns.add(fn);
+
+        // The following additional overhead and that present in getConfigVars 
+        // and getClasses is a result of the docs pass occurring before
+        // the functions/configvars/classes are taken out of the module
+        // initializer function and put on the same level as that function.
+        // If and when that changes, the code encapsulated in this if
+        // statement may be removed.
+        if (fn->hasFlag(FLAG_MODULE_INIT)) {
+          for_alist(expr2, fn->body->body) {
+            if (DefExpr* def2 = toDefExpr(expr2)) {
+              if (FnSymbol* fn2 = toFnSymbol(def2->sym)) {
+                if (includeExterns == false &&
+                    (fn2->hasFlag(FLAG_EXTERN) ||
+                     fn2->hasFlag(FLAG_FUNCTION_PROTOTYPE))) {
+                  continue;
+                }
+
+                fns.add(fn2);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return fns;
+}
+  
+Vec<ModuleSymbol*> ModuleSymbol::getTopLevelModules() {
   Vec<ModuleSymbol*> mods;
 
   for_alist(expr, block->body) {
@@ -2316,44 +2400,6 @@ Vec<ModuleSymbol*> ModuleSymbol::getModules() {
   return mods;
 }
 
-Vec<FnSymbol*> ModuleSymbol::getFunctions() {
-  Vec<FnSymbol*> fns;
-
-  for_alist(expr, block->body) {
-    if (DefExpr* def = toDefExpr(expr))
-      if (FnSymbol* fn = toFnSymbol(def->sym)) {
-        // Ignore external and prototype functions.
-        if (!genExternPrototypes &&
-            (fn->hasFlag(FLAG_EXTERN) ||
-             fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)))
-          continue;
-
-        fns.add(fn);
-
-        // The following additional overhead and that present in getConfigVars 
-        // and getClasses is a result of the docs pass occurring before
-        // the functions/configvars/classes are taken out of the module
-        // initializer function and put on the same level as that function.
-        // If and when that changes, the code encapsulated in this if
-        // statement may be removed.
-        if (fn->hasFlag(FLAG_MODULE_INIT)) {
-          for_alist(expr2, fn->body->body) {
-            if (DefExpr* def2 = toDefExpr(expr2))
-              if (FnSymbol* fn2 = toFnSymbol(def2->sym)) {
-                if (!genExternPrototypes &&
-                    (fn->hasFlag(FLAG_EXTERN) ||
-                     fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)))
-                  continue;
-                fns.add(fn2);
-              }
-          }
-        }
-      }
-  }
-
-  return fns;
-}
-  
 void ModuleSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == block) {
     block = toBlockStmt(new_ast);
@@ -2369,6 +2415,67 @@ void ModuleSymbol::accept(AstVisitor* visitor) {
       block->accept(visitor);
 
     visitor->exitModSym(this);
+  }
+}
+
+void ModuleSymbol::moduleUseAddChapelStandard() {
+  UnresolvedSymExpr* modRef = 0;
+
+  SET_LINENO(this);
+
+  modRef = new UnresolvedSymExpr("ChapelStandard");
+  block->insertAtHead(new CallExpr(PRIM_USE, modRef));
+}
+
+//
+// MDN 2014/07/22
+//
+// There is currently a problem in functionResolve that this function
+// has a "temporary" work around for.
+
+// There is somewhere within that code that believes the order of items in
+// modUseList is an indicator of "dependence order" even though this list
+// does not and cannot maintain that information.
+//
+// Fortunately there are currently no tests that expose this fallacy so
+// long at ChapelStandard always appears first in the list
+void ModuleSymbol::moduleUseAdd(ModuleSymbol* mod) {
+  if (modUseList.index(mod) < 0) {
+    if (mod == standardModule) {
+      modUseList.insert(0, mod);
+    } else {
+      modUseList.add(mod);
+    }
+  }
+}
+
+// If the specified module is currently used by the target
+// then remove the module from the use-state of this module
+// but introduce references to the children of the module
+// being dropped.
+//
+// At this time this is only used for deadCodeElimination and
+// it is not clear if there will be other uses.
+void ModuleSymbol::moduleUseRemove(ModuleSymbol* mod) {
+  int index = modUseList.index(mod);
+
+  if (index >= 0) {
+    bool inBlock = block->moduleUseRemove(mod);
+
+    modUseList.remove(index);
+
+    // The dead module may have used other modules.  If so add them
+    // to the current module
+    forv_Vec(ModuleSymbol, modUsedByDeadMod, mod->modUseList) {
+      if (modUseList.index(modUsedByDeadMod) < 0) {
+        SET_LINENO(this);
+
+        if (inBlock == true)
+          block->moduleUseAdd(modUsedByDeadMod);
+
+        modUseList.add(modUsedByDeadMod);
+      }
+    }
   }
 }
 

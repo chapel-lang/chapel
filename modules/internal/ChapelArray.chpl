@@ -2,37 +2,40 @@
 //
 pragma "no use ChapelStandard"
 module ChapelArray {
-  
+
   use ChapelBase; // For opaque type.
   use ChapelTuple;
   use ChapelLocale;
 
-  var privatizeLock$: sync int;
-  
+  // Explicitly use a processor atomic, as most calls to this function are
+  // likely be on locale 0
+  var numPrivateObjects: atomic_int64;
+
   config param debugBulkTransfer = false;
   config param useBulkTransfer = true;
   config param useBulkTransferStride = false;
-  
+
   pragma "privatized class"
   proc _isPrivatized(value) param
     return !_local & ((_privatization & value.dsiSupportsPrivatization()) | value.dsiRequiresPrivatization());
-  
+
   proc _newPrivatizedClass(value) {
-    privatizeLock$.writeEF(true);
-    var n = __primitive("chpl_numPrivatizedClasses");
+
+    var n = numPrivateObjects.fetchAdd(1);
+
     var hereID = here.id;
     const privatizeData = value.dsiGetPrivatizeData();
     on Locales[0] do
       _newPrivatizedClassHelp(value, value, n, hereID, privatizeData);
-  
+
     proc _newPrivatizedClassHelp(parentValue, originalValue, n, hereID, privatizeData) {
       var newValue = originalValue;
       if hereID != here.id {
         newValue = parentValue.dsiPrivatize(privatizeData);
-        __primitive("chpl_newPrivatizedClass", newValue);
+        __primitive("chpl_newPrivatizedClass", newValue, n);
         newValue.pid = n;
       } else {
-        __primitive("chpl_newPrivatizedClass", newValue);
+        __primitive("chpl_newPrivatizedClass", newValue, n);
         newValue.pid = n;
       }
       cobegin {
@@ -44,18 +47,17 @@ module ChapelArray {
             _newPrivatizedClassHelp(newValue, originalValue, n, hereID, privatizeData);
       }
     }
-  
-    privatizeLock$.readFE();
+
     return n;
   }
-  
+
   proc _reprivatize(value) {
     var pid = value.pid;
     var hereID = here.id;
     const reprivatizeData = value.dsiGetReprivatizeData();
     on Locales[0] do
       _reprivatizeHelp(value, value, pid, hereID, reprivatizeData);
-  
+
     proc _reprivatizeHelp(parentValue, originalValue, pid, hereID, reprivatizeData) {
       var newValue = originalValue;
       if hereID != here.id {
@@ -602,7 +604,7 @@ module ChapelArray {
         if !noRefCount then
           _value.incRefCount();
       }
-      const enumTuple = _enum_enumerate(idxType);
+      const enumTuple = chpl_enum_enumerate(idxType);
       for param i in 1..enumTuple.size do
         x.dsiAdd(enumTuple(i));
       return x;
@@ -637,6 +639,17 @@ module ChapelArray {
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
   }  // record _distribution
   
+  // The following method is called by the compiler to determine the default
+  // value of a given type.
+  /* Need new <alias>() for this to function
+  proc _defaultOf(type t) where t:_distribution {
+    var ret: t = noinit;
+    type valType = __primitive("query type field", t, "_valueType");
+    var typeInstance = new <valType>();
+    ret = chpl__buildDistValue(typeInstance);
+    return ret;
+  }
+  */
   
   //
   // Domain wrapper record
