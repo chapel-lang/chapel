@@ -589,7 +589,7 @@ err_t sys_fstatfs(fd_t fd, sys_statfs_t* buf)
     buf->f_files   = 0;
     buf->f_ffree   = 0;
     buf->f_namelen = 0;
-    got = 0;
+    got = ENOSYS;
 #endif
     if (got != -1) {
         err_out = 0;

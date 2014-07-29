@@ -48,12 +48,17 @@ typedef uint32_t qio_hint_t;
 #endif
 
 #ifndef FTYPE_LUSTRE
-#define FTYPE_LUSTRE 2
+#define FTYPE_LUSTRE LUSTRE_SUPER_MAGIC
 #endif
 
 #ifndef FTYPE_CURL
 #define FTYPE_CURL 3
 #endif
+
+// So that we can free c_strings from Chapel
+// This is temporary for now, one Sung's 'string_free' function goes in, this
+// and the use of it in IO.chpl can go away.
+#define qio_free_string(str) qio_free((char*)str)
 
 // The qio lock must be re-entrant in order to handle
 // e.g. qio_printf, which has will lock the lock, then

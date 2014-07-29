@@ -3939,25 +3939,13 @@ qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out)
     err = fl->fsfns->get_chunk(fl->file_info, &transfer_size, fl->fs_info);
   } else {
 
-#ifdef SYS_HAS_LLAPI // This will be set in the lustre plugin if we have these available
-    if (fl->fp)
-      err = qio_file_path_for_fd(fileno(fl->fp), &path);
-    else if (fl->fd != -1)
-      err = qio_file_path_for_fd(fl->fd, &path);
-    else QIO_RETURN_CONSTANT_ERROR(EBADF, "Unable to get chunk size for file -- no file descriptor or file pointer found");
-
-    if (err)  {
-      qio_free(path);
-      QIO_RETURN_CONSTANT_ERROR(qio_err_to_int(err), "Unable to get path for lustre file");
-    }
-
+#ifdef SYS_HAS_LLAPI 
+    // This will be set in the lustre plugin if we have Lustre support available
     // This will get uncommented once we add in the Lustre plugin
-    /*err = chpl_lustre_get_stripe_size(path, &transfer_size);*/
-    qio_free(path);
-
+    // This will use ioctl coupled with LL_IOC_LOV_GETSTRIPE in all likelihood
+    /*err = sys_lustre_get_stripe_size(fl, &transfer_size);*/
     if (err)
       QIO_RETURN_CONSTANT_ERROR(ENOTSUP, "Unable to get stripe size for lustre file");
-
 #else
     if (fl->fp){
       rc = sys_fstatfs(fileno(fl->fp), &s);
@@ -3970,11 +3958,6 @@ qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out)
 
     transfer_size = s.f_bsize;
 #endif
-  }
-
-  if (transfer_size == 0) { // undefined for this system
-    *len_out = 0;
-    return err;
   }
 
   *len_out = transfer_size;
