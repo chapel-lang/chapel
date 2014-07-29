@@ -716,22 +716,43 @@ proc open(out error:syserr, path:string, mode:iomode, hints:iohints=IOHINT_NONE,
   var local_style = style;
   var ret:file;
   ret.home = here;
+  if (CHPL_REGEXP == "re2") {
+    var re = compile("hdfs://(.*?):(.*?)/(.*?)");
+    var rec = compile("http|https|ftp|www|smtp");
+    var host: string;
+    var port:string;
+    var file_path:string;
 
-  if (__primitive("string_contains", path, "hdfs://")) { // HDFS
-    var (host, port, file_path) = parse_hdfs_path(path);
-    var fs:c_void_ptr;
-    error = hdfs_connect(fs, host.c_str(), port);
-    if error then ioerror(error, "Unable to connect to HDFS", host);
-    error = qio_file_open_access_usr(ret._file_internal, path.c_str(), _modestring(mode).c_str(), hints, local_style, fs, hdfs_function_struct_ptr);
-    if error then ioerror(error, "Unable to open file in HDFS", path);
-  } else if (__primitive("string_contains", path, "http://") || __primitive("string_contains", path, "https://") ||
-             __primitive("string_contains", path, "ftp://")  || __primitive("string_contains", path, "smtp://")  ||
-             __primitive("string_contains", path, "www."))  { // Curl
-    error = qio_file_open_access_usr(ret._file_internal, path.c_str(), _modestring(mode).c_str(), hints, local_style, c_nil, curl_function_struct_ptr);
-    if error then ioerror(error, "Unable to open URL", path);
+    if (path.match(re, host, port, file_path)) {
+      var fs:c_void_ptr;
+      error = hdfs_connect(fs, host.c_str(), port:int);
+      if error then ioerror(error, "Unable to connect to HDFS", host);
+      error = qio_file_open_access_usr(ret._file_internal, file_path.c_str(), _modestring(mode).c_str(), hints, local_style, fs, hdfs_function_struct_ptr);
+      if error then ioerror(error, "Unable to open file in HDFS", path);
+    } else if (path.match(rec)) {
+      error = qio_file_open_access_usr(ret._file_internal, path.c_str(), _modestring(mode).c_str(), hints, local_style, c_nil, curl_function_struct_ptr);
+      if error then ioerror(error, "Unable to open URL", path);
+    } else {
+      error = qio_file_open_access(ret._file_internal, path.c_str(), _modestring(mode).c_str(), hints, local_style);
+      // On return ret._file_internal.ref_cnt == 1.
+    }
   } else {
-    error = qio_file_open_access(ret._file_internal, path.c_str(), _modestring(mode).c_str(), hints, local_style);
-    // On return ret._file_internal.ref_cnt == 1.
+    if (__primitive("string_contains", path, "hdfs://")) { // HDFS
+      var (host, port, file_path) = parse_hdfs_path(path);
+      var fs:c_void_ptr;
+      error = hdfs_connect(fs, host.c_str(), port);
+      if error then ioerror(error, "Unable to connect to HDFS", host);
+      error = qio_file_open_access_usr(ret._file_internal, file_path.c_str(), _modestring(mode).c_str(), hints, local_style, fs, hdfs_function_struct_ptr);
+      if error then ioerror(error, "Unable to open file in HDFS", path);
+    } else if (__primitive("string_contains", path, "http://") || __primitive("string_contains", path, "https://") ||
+        __primitive("string_contains", path, "ftp://")  || __primitive("string_contains", path, "smtp://")  ||
+        __primitive("string_contains", path, "www."))  { // Curl
+      error = qio_file_open_access_usr(ret._file_internal, path.c_str(), _modestring(mode).c_str(), hints, local_style, c_nil, curl_function_struct_ptr);
+      if error then ioerror(error, "Unable to open URL", path);
+    } else {
+      error = qio_file_open_access(ret._file_internal, path.c_str(), _modestring(mode).c_str(), hints, local_style);
+      // On return ret._file_internal.ref_cnt == 1.
+    }
   }
   return ret;
 }
@@ -4002,5 +4023,6 @@ enum chapcurl {
   REDIR_PROTOCOLS = 0xb6,
   LASTENTRY = 0x27ea,
 }
+
 
 
