@@ -470,11 +470,11 @@ cray-prgenv-cray/cce-specific regressions
 (Reviewed for accuracy 07/16/14)
 =========================================
 
-***GBT
-[Error matching program output for optimizations/cache-remote/ferguson/c_tests/chpl-cache-support-test (compopts: 1)]
-whitebox/cray-xe/day0-Sun-cray-xe.cray-prgenv-cray.none.fifo.flat--linux64.gnu-std.log
-whitebox/cray-xe/day1-Mon-linux64.pgi.none.fifo.flat-std.log
 
+unexpected compiler output (listing the source files) (07/23/14)
+----------------------------------------------------------------
+[Error matching program output for optimizations/cache-remote/ferguson/c_tests/chpl-cache-support-test (compopts: 1)]
+gbt is working on getting rid of this
 
 portability failures due to QIO refactoring (mppf)
 --------------------------------------------------
@@ -578,10 +578,6 @@ pgi-specific regressions (in addition to chpbld02 errors above)
 undefined reference to chpl_bitops_debruijn64 (07/14/14)
 --------------------------------------------------------
 [Error matching compiler output for optimizations/cache-remote/ferguson/c_tests/chpl-cache-support-test (compopts: 1)]
-
-***GBT (07/23/14)
------------------
-[Error matching program output for optimizations/cache-remote/ferguson/c_tests/chpl-cache-support-test (compopts: 1)]
 
 glibc detected invalid next size (07/15/14)
 -------------------------------------------
