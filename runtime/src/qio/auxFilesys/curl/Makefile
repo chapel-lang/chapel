@@ -1,30 +1,18 @@
-RUNTIME_ROOT = ../..
-RUNTIME_SUBDIR = src/qio
+RUNTIME_ROOT = ../../../..
+RUNTIME_SUBDIR = src/qio/auxFilesys/curl
 
 ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(shell pwd)/$(RUNTIME_ROOT)/..
 endif
 
-#
-# standard header
-#
 include $(RUNTIME_ROOT)/make/Makefile.runtime.head
+ 
+AUXFS_CURL_OBJDIR = $(RUNTIME_OBJDIR)
 
-QIO_OBJDIR = $(RUNTIME_OBJDIR)
 include Makefile.share
 
-SUBDIRS = regexp/$(CHPL_MAKE_REGEXP)
-SUBDIRS += auxFilesys/hdfs
-SUBDIRS += auxFilesys/curl
-TARGETS = $(QIO_OBJS)
-
+TARGETS = $(AUXFS_CURL_OBJS)
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.subdirrules
 
-
-FORCE:
-
-#
-# standard footer
-#
 include $(RUNTIME_ROOT)/make/Makefile.runtime.foot

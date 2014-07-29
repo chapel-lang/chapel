@@ -1,3 +1,7 @@
+ifneq (,$(findstring curl,$(CHPL_MAKE_AUXFS)))
+	LIBS += -lcurl
+endif 
+
 ifneq (,$(findstring hdfs,$(CHPL_MAKE_AUXFS)))
 	GEN_LFLAGS += \
 		-I$(JAVA_INSTALL)/include \
@@ -7,4 +11,3 @@ ifneq (,$(findstring hdfs,$(CHPL_MAKE_AUXFS)))
 		-L$(HADOOP_INSTALL)/c++/Linux-amd64-64/lib 
 	LIBS += -lhdfs -ljvm
 endif 
-
