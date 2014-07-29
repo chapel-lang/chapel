@@ -53,11 +53,11 @@ void addModuleInitBlocks() {
       if (parent != theProgram && parent != rootModule)
         initBlock->insertAtTail(new CallExpr(parent->initFn));
 
-    // Now, traverse my use statements, and call the initializer for each
-    // module I use.
+    // Call the initializer for each module I use.
     forv_Vec(ModuleSymbol, usedMod, mod->modUseList) {
-      if (usedMod == standardModule) continue;
-      initBlock->insertAtTail(new CallExpr(usedMod->initFn));
+      if (usedMod != standardModule) {
+        initBlock->insertAtTail(new CallExpr(usedMod->initFn));
+      }
     }
 
     if (initBlock->body.length > 0) fn->insertAtHead(initBlock);

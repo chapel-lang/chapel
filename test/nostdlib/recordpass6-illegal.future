@@ -1,5 +1,0 @@
-bug: const checking for record fields
-
-This test shows that we permit assignment to a record field passed
-by blank intent; such records should be treated as const, so their
-fields should not be assignable.

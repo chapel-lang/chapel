@@ -164,12 +164,14 @@ void parse(void) {
 
   gatherWellKnownTypes();
 
-  int filenum = 0;
-  const char* inputFilename;
+  {
+    int         filenum       = 0;
+    const char* inputFilename = 0;
 
-  while ((inputFilename = nthFilename(filenum++))) {
-    if (isChplSource(inputFilename)) {
-      addModulePathFromFilename(inputFilename);
+    while ((inputFilename = nthFilename(filenum++))) {
+      if (isChplSource(inputFilename)) {
+        addModulePathFromFilename(inputFilename);
+      }
     }
   }
 
@@ -179,10 +181,14 @@ void parse(void) {
     printModuleSearchPath();
   }
 
-  filenum = 0;
-  while ((inputFilename = nthFilename(filenum++))) {
-    if (isChplSource(inputFilename)) {
-      ParseFile(inputFilename, MOD_MAIN);
+  {
+    int         filenum       = 0;
+    const char* inputFilename = 0;
+
+    while ((inputFilename = nthFilename(filenum++))) {
+      if (isChplSource(inputFilename)) {
+        ParseFile(inputFilename, MOD_MAIN);
+      }
     }
   }
 
@@ -190,17 +196,8 @@ void parse(void) {
 
   forv_Vec(ModuleSymbol, mod, allModules) {
     // Filter out modules that don't want to include ChapelStandard by default.
-    if (mod->hasFlag(FLAG_NO_USE_CHAPELSTANDARD))
-      continue;
-
-    // ChapelStandard is added implicity to the "use" list of all other modules.
-    {
-      SET_LINENO(mod);
-      mod->block->addUse(standardModule);
-      mod->modUseSet.clear();
-      mod->modUseList.clear();
-      mod->modUseSet.set_add(standardModule);
-      mod->modUseList.add(standardModule);
+    if (mod->hasFlag(FLAG_NO_USE_CHAPELSTANDARD) == false) {
+      mod->moduleUseAddChapelStandard();
     }
   }
 
@@ -210,7 +207,7 @@ void parse(void) {
   // variable).
   {
     SET_LINENO(baseModule);
-    baseModule->block->addUse(rootModule);
+    baseModule->block->moduleUseAdd(rootModule);
   }
 
   finishCountingTokens();

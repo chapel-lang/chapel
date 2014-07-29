@@ -2923,6 +2923,7 @@ resolveCall(CallExpr* call)
      case PRIM_SET_MEMBER:          resolveSetMember(call);             break;
      case PRIM_MOVE:                resolveMove(call);                  break;
      case PRIM_INIT:                resolveDefaultGenericType(call);    break;
+     case PRIM_NO_INIT:             resolveDefaultGenericType(call);    break;
      case PRIM_NEW:                 resolveNew(call);                   break;
     }
   }
@@ -4455,35 +4456,33 @@ preFold(Expr* expr) {
           // normal records/classes.  They may require special case
           // implementations, but were capable of being isolated from the new
           // cases that do work.
-          USR_WARN("type %s does not currently support noinit, using default initialization", type->symbol->name);
+
+          bool nowarn = false;
+          // In the case of temporary variables that use noinit (at this point
+          // only return variables), it is not useful to warn the user we are
+          // still default initializing the values as they weren't the ones to
+          // tell us to use noinit in the first place.  So squash the warning
+          // in this case.
+          if (call->parentExpr) {
+            CallExpr* parent = toCallExpr(call->parentExpr);
+            if (parent && parent->isPrimitive(PRIM_MOVE)) {
+              // Should always be true, but just in case...
+              if (SymExpr* holdsDest = toSymExpr(parent->get(1))) {
+                Symbol* dest = holdsDest->var;
+                if (dest->hasFlag(FLAG_TEMP) && !strcmp(dest->name, "ret")) {
+                  nowarn = true;
+                }
+              }
+            }
+          }
+          if (!nowarn)
+            USR_WARN("type %s does not currently support noinit, using default initialization", type->symbol->name);
           result = new CallExpr(PRIM_INIT, call->get(1)->remove());
           call->replace(result);
           inits.add((CallExpr *)result);
         } else {
-          // Replaces noinit with a call to the defaultTypeConstructor,
-          // providing the param and type arguments necessary to allocate
-          // space for the instantiation of this (potentially) generic type.
-          // defaultTypeConstructor calls are already cleaned up at the end of
-          // function resolution, so the noinit cleanup would be redundant.
-
-          CallExpr* res = new CallExpr(type->defaultTypeConstructor);
-          for_formals(formal, type->defaultTypeConstructor) {
-            Vec<Symbol *> keys;
-            // Finds each named argument in the type constructor and inserts
-            // the substitution provided.
-            type->substitutions.get_keys(keys);
-            // I don't think we can guarantee that the substitutions will be
-            // in the same order as the arguments for the defaultTypeConstructor.
-            // That would make this O(n) instead of potentially O(n*n)
-            forv_Vec(Symbol, key, keys) {
-              if (!strcmp(formal->name, key->name)) {
-                Symbol* formalVal = type->substitutions.get(key);
-                res->insertAtTail(new NamedExpr(formal->name,
-                                                new SymExpr(formalVal)));
-              }
-            }
-          }
-          call->get(1)->replace(res);
+          result = call;
+          inits.add(call);
         }
       }
 
@@ -4494,14 +4493,10 @@ preFold(Expr* expr) {
         USR_FATAL(call, "invalid type specification");
       Type* type = call->get(1)->getValType();
       
-      if (type->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
-        result = new CallExpr(PRIM_CAST, type->symbol, gNil);
-        call->replace(result);
-      } else if (type->defaultValue == gNil) {
-        result = new CallExpr("_cast", type->symbol, type->defaultValue);
-        call->replace(result);
-      } else if (type->defaultValue) {
-        result = new SymExpr(type->defaultValue);
+      if (type->defaultValue || type->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
+        // In these cases, the _defaultOf method for that type can be resolved
+        // now.  Otherwise, it needs to wait until resolveRecordInitializers
+        result = new CallExpr("_defaultOf", type->symbol);
         call->replace(result);
       } else {
         inits.add(call);
@@ -5293,11 +5288,12 @@ postFold(Expr* expr) {
           if (CallExpr* rhs = toCallExpr(call->get(2))) {
             if (rhs->isPrimitive(PRIM_NO_INIT)) {
               // If the lhs is a primitive, then we can safely just remove this
-              // value.  Currently, noinit does not work on arrays, domains,
-              // and types that allocate space for themselves.  However, when
-              // they do work, special effort will need to be made here to clean
-              // up.
-              makeNoop(call);
+              // value.  Otherwise the type needs to be resolved a little
+              // further and so this statement can't be removed until
+              // resolveRecordInitializers
+              if (!isAggregateType(rhs->get(1)->getValType())) {
+                makeNoop(call);
+              }
             }
           }
         }
@@ -6382,6 +6378,10 @@ resolve() {
   visibleFunctionMap.clear();
   visibilityBlockCache.clear();
 
+  forv_Vec(BlockStmt, stmt, gBlockStmts) {
+    stmt->moduleUseClear();
+  }
+
   resolved = true;
 }
 
@@ -6622,15 +6622,51 @@ static void resolveRecordInitializers() {
     if (type->symbol->hasFlag(FLAG_REF))
       type = type->getValType();
 
+    // Resolve the AggregateType that has noinit used on it.
+    if (init->isPrimitive(PRIM_NO_INIT)) {
+      // Replaces noinit with a call to the defaultTypeConstructor,
+      // providing the param and type arguments necessary to allocate
+      // space for the instantiation of this (potentially) generic type.
+      // defaultTypeConstructor calls are already cleaned up at the end of
+      // function resolution, so the noinit cleanup would be redundant.
+      SET_LINENO(init);
+      CallExpr* res = new CallExpr(type->defaultTypeConstructor);
+      for_formals(formal, type->defaultTypeConstructor) {
+        Vec<Symbol *> keys;
+        // Finds each named argument in the type constructor and inserts
+        // the substitution provided.
+        type->substitutions.get_keys(keys);
+        // I don't think we can guarantee that the substitutions will be
+        // in the same order as the arguments for the defaultTypeConstructor.
+        // That would make this O(n) instead of potentially O(n*n)
+        forv_Vec(Symbol, key, keys) {
+          if (!strcmp(formal->name, key->name)) {
+            Symbol* formalVal = type->substitutions.get(key);
+            res->insertAtTail(new NamedExpr(formal->name,
+                                            new SymExpr(formalVal)));
+          }
+        }
+      }
+      init->get(1)->replace(res);
+      resolveCall(res);
+      makeNoop((CallExpr *)init->parentExpr);
+      // Now that we've resolved the type constructor and thus resolved the
+      // generic type of the variable we were assigning to, the outer move
+      // is no longer needed, so remove it and continue to the next init.
+      continue;
+    }
+
     // This could be an assert...
     if (type->defaultValue)
       INT_FATAL(init, "PRIM_INIT should have been replaced already");
 
     SET_LINENO(init);
-    if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-      // why??  --sjd
-      init->replace(init->get(1)->remove());
-    } else if (type->symbol->hasFlag(FLAG_DISTRIBUTION)) {
+    if (type->symbol->hasFlag(FLAG_DISTRIBUTION)) {
+      // This initialization cannot be replaced by a _defaultOf function
+      // earlier in the compiler, there is not enough information to build a
+      // default function for it.  When we have the ability to call a
+      // constructor from a type alias, it can be moved directly into module
+      // code
       Symbol* tmp = newTemp("_distribution_tmp_");
       init->getStmtExpr()->insertBefore(new DefExpr(tmp));
       CallExpr* classCall = new CallExpr(type->getField("_valueType")->type->defaultInitializer);
@@ -6643,14 +6679,12 @@ static void resolveRecordInitializers() {
       init->replace(distCall);
       resolveCall(distCall);
       resolveFns(distCall->isResolved());
-    } else if (type->symbol->hasFlag(FLAG_EXTERN)) {
-//          init->replace(init->get(1)->remove());
-      init->parentExpr->remove();
     } else {
-      INT_ASSERT(type->defaultInitializer);
-      CallExpr* call = new CallExpr(type->defaultInitializer);
+      CallExpr* call = new CallExpr("_defaultOf", type->symbol);
       init->replace(call);
-      resolveCall(call);
+      resolveNormalCall(call);
+      // At this point in the compiler, we can resolve the _defaultOf function
+      // for the type, so do so.
       if (call->isResolved())
         resolveFns(call->isResolved());
     }
