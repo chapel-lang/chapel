@@ -178,7 +178,7 @@ arr2 = init2arr;
 //#include "var-writes.cpp"
   s$ = 1;
 }
-s$;
+s$.readFE();
 writeln("after begin");
 // write out all the variables
 writeln("b0", " ", b0);

@@ -66,7 +66,7 @@ sy$ = n;
 // This next statement blocks until last statement in the above begin
 // completes.
 //
-done$;
+done$.readFE();
 
 //
 // Example: simple split-phase barrier for tasks
@@ -80,7 +80,7 @@ coforall t in 1..n {
     write(".");
     count$ = myc-1;   // update the count, release the lock (state = full)
                       // we could do some work while waiting
-    release$;         // wait for everyone
+    release$.readFE();         // wait for everyone
   } else {            // last one here
     release$ = true;  // release everyone first (state = full)
     writeln("done");

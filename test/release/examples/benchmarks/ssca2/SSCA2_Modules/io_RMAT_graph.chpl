@@ -378,7 +378,7 @@ module io_RMAT_graph
     ww.close();
     sta.close();
 
-    if IOgate then IOgate$;
+    if IOgate then IOgate$.readFE();
   } // graphReaderReal
 
   proc readOneVertex(GRow, type VType, vCount, u, dON, dRow, dEdge, dstyle,

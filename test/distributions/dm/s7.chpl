@@ -88,7 +88,7 @@ forall (row,col) in AbD by blkSize do {
            replA.localSlice(cur1, 1..blkSize),
            replB.localSlice(1..blkSize, cur2));
     }
-    a$;
+    a$.readFE();
   } else {
     if verb then writeln((row, col), "  on ", here.id, "  skipped");
   }

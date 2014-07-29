@@ -61,7 +61,7 @@ proc computeHistogram(X: [] real, Y: [] int) {
       myY(1 + (x / (1.0 / numBuckets)): int) += 1;
     lock$ = true;
     Y += myY;
-    lock$;
+    lock$.readFE();
   }
 }
 

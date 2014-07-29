@@ -84,7 +84,7 @@ class Chameneos {
     if (spotsLeft % 2 == 0) {
       place.partner = this;
       place.spotsLeft$ = spotsLeft - 1;
-      meetingCompleted$;
+      meetingCompleted$.readFE();
     } else if (spotsLeft % 2 == 1) {
       partner = place.partner;
       place.spotsLeft$ = spotsLeft - 1;

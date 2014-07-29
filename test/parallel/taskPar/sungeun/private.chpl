@@ -29,7 +29,7 @@ class localePrivateData {
     var mytid = chpl_task_getId();
     var slot = (mytid:uint % (numTasks:uint)):int;
     // Would be nice to have CAS
-    var tid: chpl_taskID_t = temps[slot].tid$; // lock
+    var tid: chpl_taskID_t = temps[slot].tid$.readFE(); // lock
     while ((tid != chpl_nullTaskID) && (tid != mytid)) {
       temps[slot].tid$ = tid;                  // unlock
       slot = (slot+1)%numTasks;

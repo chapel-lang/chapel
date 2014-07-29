@@ -5,7 +5,7 @@ var s, t: sync bool;
 begin {
   s = true;
 }
-s;
+s.readFE();
 
 sleep(1);
 
@@ -16,6 +16,6 @@ begin {
 begin {
   s = true;
 }
-t;
+t.readFE();
 
 writeln("finished");

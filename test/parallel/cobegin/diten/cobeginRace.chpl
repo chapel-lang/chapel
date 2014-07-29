@@ -7,7 +7,7 @@ var done: single bool;
 proc timeout(n: uint) {
   use Time;
   begin { sleep(n); writeln("Timeout"); exit(1); }
-  begin { done; exit(0); }
+  begin { done.readFE(); exit(0); }
 }
 
 timeout(30); // exit after 30 seconds or when done is set.
