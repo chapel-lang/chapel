@@ -1,3 +1,11 @@
+inline proc |(param a: bool, param b: bool) param return __primitive("|", a, b);
+
+proc isInt(type t) param return
+  (t == int(8)) | (t == int(16)) | (t == int(32)) | (t == int(64));
+
+inline proc _defaultOf(type t) param where isInt(t) return 0:t;
+inline proc _defaultOf(type t) param where t: string return defaultStringValue;
+
 pragma "trivial assignment"
 inline proc =(ref a: int(?w), b: int(w)) { __primitive("=", a, b); }
 
