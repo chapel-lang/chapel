@@ -1358,14 +1358,6 @@ qioerr qio_file_length(qio_file_t* f, int64_t *len_out)
   return err;
 }
 
-// get the size of this channel
-qioerr qio_channel_get_channel_size(qio_channel_t* chan, int64_t* len_out) 
-{ 
-  *len_out = chan->end_pos - chan->start_pos;
-  return 0;
-}
-
-
 /* CHANNELS ----------------------------- */
 static
 qioerr _qio_channel_init(qio_channel_t* ch, qio_chtype_t type)

@@ -249,7 +249,7 @@ extern proc qio_file_unlock(f:qio_file_ptr_t);
 extern proc qio_file_sync(f:qio_file_ptr_t):syserr;
 
 //extern proc qio_file_style_ptr(f:qio_file_ptr_t):qio_style_ptr_t;
-extern proc qio_channel_get_channel_size(chan:qio_channel_ptr_t, ref len:int(64)):syserr;
+extern proc qio_channel_end_offset_unlocked(ch:qio_channel_ptr_t):int(64);
 extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyle);
 extern proc qio_file_set_style(f:qio_file_ptr_t, const ref style:iostyle);
 extern proc qio_file_length(f:qio_file_ptr_t, ref len:int(64)):syserr;
@@ -1512,8 +1512,9 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1):bool {
     var lentmp:int(64);
     var actlen:int(64);
 
-    err = qio_channel_get_channel_size(this._channel_internal, actlen);
-    if err then ioerror(err, "unable to get length in channel.readstring(ref str_out:string, len:int(64))"); 
+    this.lock();
+    actlen = qio_channel_end_offset_unlocked(this._channel_internal) - qio_channel_offset_unlocked(this._channel_internal);
+    this.unlock();
 
     // read the entire file
     if (len == -1) then 
