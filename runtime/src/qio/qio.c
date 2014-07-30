@@ -1358,10 +1358,11 @@ qioerr qio_file_length(qio_file_t* f, int64_t *len_out)
   return err;
 }
 
-// get the (total) length of the file that is backing this channel
-qioerr qio_channel_get_filelength(qio_channel_t* chan, int64_t* len_out) 
+// get the size of this channel
+qioerr qio_channel_get_channel_size(qio_channel_t* chan, int64_t* len_out) 
 { 
-  return qio_file_length(chan->file, len_out);
+  *len_out = chan->end_pos - chan->start_pos;
+  return 0;
 }
 
 

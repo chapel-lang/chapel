@@ -1601,7 +1601,7 @@ unlock:
 }
 
 // Returns the length of a file that backs a channel
-qioerr qio_channel_get_filelength(qio_channel_t* chan, int64_t* len_out);
+qioerr qio_channel_get_channel_size(qio_channel_t* chan, int64_t* len_out);
 
 #ifdef __cplusplus
 } // end extern "C"
