@@ -66,7 +66,7 @@ proc calculate(ref data : [] uint(8), size : int) {
       curArr[d] += 1;
       prev = d : int;
     }
-    lock;
+    lock.readFE();
     freqDom += curDom;
     for (k,v) in zip(curDom, curArr) do freqs[k] += v;
     lock = true;

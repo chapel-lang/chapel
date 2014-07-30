@@ -80,7 +80,7 @@ coforall t in 1..n {
     write(".");
     count$ = myc-1;   // update the count, release the lock (state = full)
                       // we could do some work while waiting
-    release$.readFE();         // wait for everyone
+    release$.readFF();         // wait for everyone
   } else {            // last one here
     release$ = true;  // release everyone first (state = full)
     writeln("done");

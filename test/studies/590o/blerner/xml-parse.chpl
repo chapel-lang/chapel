@@ -34,13 +34,13 @@ var parsedElements: [AllPairs] single XmlElement;
 proc main {
   forall z in AllIndices do {
     if sourceText.substring[z] == '<' then {
-      lock;
+      lock.readFE();
       StartIndices += z;
       if z > 1 && sourceText.substring[z-1] != ">" then EndIndices += z-1;
       lock = 0;
     }
     else if sourceText.substring[z] == '>' then {
-      lock;
+      lock.readFE();
       EndIndices += z;
       if z < (sourceText.length) && sourceText.substring[z+1] != "<" then StartIndices += z+1;
       lock = 0;
