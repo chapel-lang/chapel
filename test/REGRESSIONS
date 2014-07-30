@@ -21,6 +21,12 @@ general regressions (seem to happen in most configurations)
 (Reviewed for accuracy 07/15/14)
 ===========================================================
 
+regexp_test.cc:9:21: fatal error: re2/re2.h: No such file or directory
+----------------------------------------------------------------------
+[Error compiling C Regexp tests]
+Started 7/26/14.
+Greg's https://github.com/chapel-lang/chapel/pull/74 should fix this.
+
 
 ==============================================
 linux64 regressions (in addition to the above)
@@ -67,6 +73,7 @@ tests time out nondeterministically since testing started b/c VMs are slower (07
 [Error: Timed out executing program release/examples/benchmarks/shootout/threadring]
 [Error: Timed out executing program studies/shootout/thread-ring/lydia/thread-ring-coforall]
 [Error: Timed out executing program studies/shootout/thread-ring/lydia/thread-ring-for-begin]
+Maybe these should move into TRIAGE?  -- gbt
 
 
 ================================
@@ -94,52 +101,12 @@ verify regressions
 following a pointer to GC'd AST nodes (07/16/14 -- noakes)
 ----------------------------------------------------------
 [Error cannot locate compiler output comparison file studies/ssca2/test-rmatalt/reproduc.good]
-[Error matching compiler output for modules/diten/test_use_chain_resolution3]
-[Error matching compiler output for modules/diten/test_use_chain_resolution]
-[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1)]
-[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 2)]
-[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 3)]
-[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 4)]
-[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5)]
-[Error matching compiler output for studies/graph500/kristyn/Graph500_1D_onV/main (compopts: 1)]
-[Error matching compiler output for studies/graph500/v3/main (compopts: 1)]
-[Error matching compiler output for studies/ssca2/graphio/graphio (compopts: 1)]
-[Error matching compiler output for studies/ssca2/rachels/SSCA2_test (compopts: 1)]
-[Error matching compiler output for studies/ssca2/rachels/SSCA2_test (compopts: 2)]
-[Error matching compiler output for studies/ssca2/rachels/SSCA2_test (compopts: 3)]
-[Error matching compiler output for studies/ssca2/rachels/SSCA2_test (compopts: 4)]
-[Error matching compiler output for studies/ssca2/rachels/SSCA2_test (compopts: 5)]
-[Error matching compiler output for studies/ssca2/test-rmatalt/nondet (compopts: 1)]
 
 
 ================================
 valgrind-specific regressions
 (Reviewed for accuracy 07/14/14)
 ================================
-
-following a pointer to GC'd AST nodes (07/16/14 -- noakes)
-----------------------------------------------------------
-[Error matching program output for modules/diten/test_use_chain_resolution3]
-[Error matching program output for modules/diten/test_use_chain_resolution]
-[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1, execopts: 1)]
-[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 2, execopts: 1)]
-[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 3, execopts: 1)]
-[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 4, execopts: 1)]
-[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5, execopts: 1)]
-[Error matching program output for studies/graph500/kristyn/Graph500_1D_onV/main (compopts: 1)]
-[Error matching program output for studies/graph500/v3/main (compopts: 1)]
-[Error matching program output for studies/ssca2/graphio/graphio (compopts: 1)]
-[Error matching program output for studies/ssca2/rachels/SSCA2_test (compopts: 1, execopts: 1)]
-[Error matching program output for studies/ssca2/rachels/SSCA2_test (compopts: 2, execopts: 1)]
-[Error matching program output for studies/ssca2/rachels/SSCA2_test (compopts: 3, execopts: 1)]
-[Error matching program output for studies/ssca2/rachels/SSCA2_test (compopts: 4, execopts: 1)]
-[Error matching program output for studies/ssca2/rachels/SSCA2_test (compopts: 5, execopts: 1)]
-[Error matching program output for studies/ssca2/test-rmatalt/nondet (compopts: 1)]
-[Error matching program output for studies/ssca2/test-rmatalt/reproduc (compopts: 1, execopts: 1)]
-[Error matching program output for studies/ssca2/test-rmatalt/reproduc (compopts: 1, execopts: 2)]
-[Error matching program output for studies/ssca2/test-rmatalt/reproduc (compopts: 1, execopts: 3)]
-[Error matching program output for studies/ssca2/test-rmatalt/reproduc (compopts: 1, execopts: 4)]
-[Error matching program output for studies/ssca2/test-rmatalt/reproduc (compopts: 1, execopts: 5)]
 
 overlapping memcpy (root cause should be eliminated)
 ----------------------------------------------------
@@ -205,6 +172,12 @@ gasnet-everything regressions (other than the above)
 (Reviewed for accuracy 07/14/14)
 ====================================================
 
+expect this to be temporary; seems to be due to pull #38; passed to Tom
+-----------------------------------------------------------------------
+[Error matching compiler output for modules/hilde/test_module_Sort-baseline (compopts: 1)]
+(7/23/14)
+
+
 error: cannot create C string from remote string
 ------------------------------------------------
 (due to r22900)
@@ -260,6 +233,11 @@ other comm count mismatches
 replicated distribution regressions
 (Reviewed for accuracy 07/15/14)
 ===================================
+
+SIGSEGV at execution time (started 7/24/14)
+-------------------------------------------
+NightlyDists/day4-Thu-linux64.gnu.gasnet.fifo.flat-distreplicated.log:
+  [Error matching program output for distributions/robust/arithmetic/kernels/hpl (compopts: 1)]
 
 See chapel_dev email thread starting 2/12/14 12:42:46 CST (David Iten) with
 subject "Re: FW: Cron Dist replicated (linux64.gnu.gasnet.fifo.flat) 60/0/60".
@@ -457,11 +435,24 @@ chpbld01 (PrgEnv/XC whitebox) failures
 (Reviewed for accuracy 07/18/14)
 ======================================
 
+svn problem during the build
+----------------------------
+First reported 7/20/14; Thomas is looking
+svn: Server sent unexpected return value (500 Internal Server Error) in response to PROPFIND request
+There is a Bugzilla Bug: http://bugzilla.us.cray.com/show_bug.cgi?id=814934
+An attempt to fix this on the svn side the night of 7/22/14 failed.
+It is being escalated to github support.
+7/24/14: Think we have a solution; expect good results for 7/25 testing.
+
 
 ======================================
 chpbld02 (PrgEnv/XE whitebox) failures
 (Reviewed for accuracy 07/18/14)
 ======================================
+
+svn problem during the build
+----------------------------
+see above, under "chpbld01"
 
 
 ==========================================================
@@ -478,6 +469,12 @@ problem with static/dynamic linking?
 cray-prgenv-cray/cce-specific regressions
 (Reviewed for accuracy 07/16/14)
 =========================================
+
+
+unexpected compiler output (listing the source files) (07/23/14)
+----------------------------------------------------------------
+[Error matching program output for optimizations/cache-remote/ferguson/c_tests/chpl-cache-support-test (compopts: 1)]
+gbt is working on getting rid of this
 
 portability failures due to QIO refactoring (mppf)
 --------------------------------------------------
@@ -634,6 +631,8 @@ intel-specific regressions (in addition to chpbld02 errors above)
 
 standard "missing empty directory" problems that should be fixed on next run (bradc)
 (please alert bradc if not resolved in runs after 7/16/14)
+(fixed in intel testing, 7/23/14)
+(fixed in prgenv-intel testing, 7/23/14)
 ------------------------------------------------------------------------------------
 [Error matching compiler output for compflags/bradc/readDirInsteadOfFile (compopts: 1)]
 [Error matching program output for io/bradc/testPath]

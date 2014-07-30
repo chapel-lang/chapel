@@ -4494,14 +4494,10 @@ preFold(Expr* expr) {
         USR_FATAL(call, "invalid type specification");
       Type* type = call->get(1)->getValType();
       
-      if (type->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
-        result = new CallExpr(PRIM_CAST, type->symbol, gNil);
-        call->replace(result);
-      } else if (type->defaultValue == gNil) {
-        result = new CallExpr("_cast", type->symbol, type->defaultValue);
-        call->replace(result);
-      } else if (type->defaultValue) {
-        result = new SymExpr(type->defaultValue);
+      if (type->defaultValue || type->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
+        // In these cases, the _defaultOf method for that type can be resolved
+        // now.  Otherwise, it needs to wait until resolveRecordInitializers
+        result = new CallExpr("_defaultOf", type->symbol);
         call->replace(result);
       } else {
         inits.add(call);
@@ -6666,10 +6662,12 @@ static void resolveRecordInitializers() {
       INT_FATAL(init, "PRIM_INIT should have been replaced already");
 
     SET_LINENO(init);
-    if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-      // why??  --sjd
-      init->replace(init->get(1)->remove());
-    } else if (type->symbol->hasFlag(FLAG_DISTRIBUTION)) {
+    if (type->symbol->hasFlag(FLAG_DISTRIBUTION)) {
+      // This initialization cannot be replaced by a _defaultOf function
+      // earlier in the compiler, there is not enough information to build a
+      // default function for it.  When we have the ability to call a
+      // constructor from a type alias, it can be moved directly into module
+      // code
       Symbol* tmp = newTemp("_distribution_tmp_");
       init->getStmtExpr()->insertBefore(new DefExpr(tmp));
       CallExpr* classCall = new CallExpr(type->getField("_valueType")->type->defaultInitializer);
@@ -6682,14 +6680,12 @@ static void resolveRecordInitializers() {
       init->replace(distCall);
       resolveCall(distCall);
       resolveFns(distCall->isResolved());
-    } else if (type->symbol->hasFlag(FLAG_EXTERN)) {
-//          init->replace(init->get(1)->remove());
-      init->parentExpr->remove();
     } else {
-      INT_ASSERT(type->defaultInitializer);
-      CallExpr* call = new CallExpr(type->defaultInitializer);
+      CallExpr* call = new CallExpr("_defaultOf", type->symbol);
       init->replace(call);
-      resolveCall(call);
+      resolveNormalCall(call);
+      // At this point in the compiler, we can resolve the _defaultOf function
+      // for the type, so do so.
       if (call->isResolved())
         resolveFns(call->isResolved());
     }
