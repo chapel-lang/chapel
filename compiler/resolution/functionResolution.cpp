@@ -4487,7 +4487,6 @@ preFold(Expr* expr) {
       }
 
     } else if (call->isPrimitive(PRIM_INIT)) {
-      INT_ASSERT(false); // This is now dead code.
       SymExpr* se = toSymExpr(call->get(1));
       INT_ASSERT(se);
       if (!se->var->hasFlag(FLAG_TYPE_VARIABLE))
