@@ -15,8 +15,11 @@ include Makefile.share
 
 SUBDIRS = regexp/$(CHPL_MAKE_REGEXP)
 SUBDIRS += auxFilesys/hdfs
-SUBDIRS += auxFilesys/lustre
 TARGETS = $(QIO_OBJS)
+
+ifneq (,$(findstring lustre,$(CHPL_MAKE_AUXFS)))
+	RUNTIME_INCLS += -DSYS_HAS_LLAPI $(CHPL_AUXIO_INCLUDE) $(CHPL_AUXIO_LIBS)
+endif
 
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.subdirrules

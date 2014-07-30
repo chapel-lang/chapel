@@ -10,5 +10,4 @@
 #include "bulkget.h"
 #include "sys.h"
 #include "qio_plugin_hdfs.h"
-#include "qio_plugin_lustre.h"
 

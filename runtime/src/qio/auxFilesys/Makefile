@@ -13,7 +13,6 @@ include $(RUNTIME_ROOT)/make/Makefile.runtime.head
 TARGETS =
 
 SUBDIRS += hdfs
-SUBDIRS += lustre
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.emptydirrules
 
