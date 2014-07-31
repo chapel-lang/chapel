@@ -326,5 +326,5 @@ in, say, the verbose output produced by "-v" can be understood.
 
 At present there is only one launcher support option:
 
-  -E<name=value> : set the given environment variable "name" to
-                   "value".
+  -E<envVar>=<val> : set the given environment variable "envVar" to
+                     "val".
