@@ -1518,7 +1518,7 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1):bool {
   var err:syserr = ENOERR;
 
   on this.home {
-    var ret:string;
+    var ret:c_string;
     var lenread:int(64);
     var tx:c_string;
     var lentmp:int(64);
@@ -1537,8 +1537,8 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1):bool {
       err = qio_channel_read_string(false, this._style().byteorder, max(int(32)),
           this._channel_internal, tx, lenread, -1);
 
-      ret = toString(tx);
-      str_out += ret;
+      ret += tx;
+      chpl_free_c_string(tx);
 
       if (err == EEOF) then break; // done reading 
 
@@ -1551,9 +1551,12 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1):bool {
       err = qio_channel_read_string(false, this._style().byteorder, lentmp,
           this._channel_internal, tx, lenread, -1);
 
-      ret = toString(tx);
-      str_out += ret;
+      ret += tx;
+      chpl_free_c_string(tx);
     }
+    // FIX ME: could use a toString() that doesn't allocate space
+    str_out = toString(ret);
+    chpl_free_c_string(ret);
   }
 
   if (err == EEOF) then return false; // done reading
