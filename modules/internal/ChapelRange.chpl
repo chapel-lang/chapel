@@ -498,7 +498,8 @@ module ChapelRange {
     compilerError("offsets must be of integral type");
   }
 
-  // private, for use in interior/exterior
+  // Compute the alignment of the range returned by this.interior()
+  // and this.exterior(). Keep it private.
   inline proc range._effAlmt()       where stridable return _alignment;
          proc range._effAlmt() param where !stridable return 0;
   
@@ -510,7 +511,7 @@ module ChapelRange {
   }
   
   // TODO: hilde
-  // Alignment is set to true only if stridable is already set to true.
+  // Set _aligned to true only if stridable.
   proc range.interior(i: idxType)
   {
     if i < 0 then
@@ -838,9 +839,6 @@ module ChapelRange {
         // Now offset can be safely cast to idxType.
         result._alignment = al1:idxType + offset:idxType * st1:idxType / g:idxType;
       }
-    } else {
-      // !(result.stridable)
-      result._alignment = 0;
     }
   
     return result;
