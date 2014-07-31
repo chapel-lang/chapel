@@ -251,7 +251,8 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs) {
   if (BlockStmt* block = toBlockStmt(expr))
   {
     if (!block->blockInfo ||
-        block->blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP))
+        block->blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP) ||
+        block->blockInfo->isPrimitive(PRIM_BLOCK_LOCAL))
     {
       int result = 0;
       for_alist(e, block->body)
