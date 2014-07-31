@@ -7137,7 +7137,11 @@ static void removeRandomPrimitive(CallExpr* call)
     // PRIM_TYPE_INIT replaces the primitive with symexpr that contains a type symbol.
     case PRIM_TYPE_INIT:
     {
+      // A "type init" call that is in the tree should always have a callExpr
+      // parent, as guaranteed by CallExpr::verify().
       CallExpr* parent = toCallExpr(call->parentExpr);
+      // We expect all PRIM_TYPE_INIT primitives to have a PRIM_MOVE
+      // parent, following the insertion of call temps.
       if (parent->isPrimitive(PRIM_MOVE))
         parent->remove();
       else
