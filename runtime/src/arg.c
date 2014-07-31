@@ -81,10 +81,10 @@ static void defineEnvVar(const char* currentArg,
   // original command line string by either command line processing or
   // the system environment handling.  putenv(3) takes a var=value
   // string and doesn't make a duplicate.  setenv(3) makes a duplicate
-  // but requires the var and value as as separate strings.  setenv(3)
+  // but requires the var and value as separate strings.  setenv(3)
   // can also avoid setting the var if it's already set.  We do want
   // to avoid that, but we also want to emit a warning rather than be
-  // silent, because it indicates misuse by the launcher.  Se, we have
+  // silent, because it indicates misuse by the launcher.  So, we have
   // to call getenv(3) ourselves on the var name.  The upshot is that
   // we make our own duplicate and use putenv(3).
   //
