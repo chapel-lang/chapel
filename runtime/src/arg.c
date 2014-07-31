@@ -237,7 +237,8 @@ void printHelpTable(void) {
       for (p = flagList[i].description;
            (pNext = strchr(p, '\n')) != NULL;
            p = pNext + 1) {
-        fprintf(stdout, "%.*s\n%*s", pNext - p, p, longestFlag + 6, "");
+        fprintf(stdout, "%.*s\n%*s", (int) (pNext - p), p,
+                longestFlag + 6, "");
       }
       fprintf(stdout, "%s\n", p);
     }
