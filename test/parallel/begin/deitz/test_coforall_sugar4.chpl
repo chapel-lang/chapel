@@ -20,7 +20,7 @@ var count$: sync int = 0,
 for i in 1..n {
   const count = count$;
   if count == 0 then
-    flag$.readFE();
+    flag$;
   count$ = count + 1;
   begin {
     A(i) = 3000+i;
@@ -31,7 +31,7 @@ for i in 1..n {
   }
 }
 
-flag$.readFE();
+flag$;
 
 for (e,i) in zip(A,3001..) do
   if e != i then

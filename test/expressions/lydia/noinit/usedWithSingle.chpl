@@ -5,13 +5,13 @@ begin {
   waitOn();
 }
 sing$ = 4;
-sing2$.readFF();
+sing2$;
 writeln("Task 2 done!");
 writeln(sing$);
 writeln(sing2$);
 
 proc waitOn() {
-  sing$.readFF(); // waits until the single variable is full
+  sing$; // waits until the single variable is full
   writeln("Task 1 finishing");
-  sing2$.readFF() = true;
+  sing2$ = true;
 }

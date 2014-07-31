@@ -508,7 +508,7 @@ proc psReduce(blk, k) {
                 locResult.updateE(myResult);
                 maxRes.write(myResult.absmx);
               }
-              upd$.readFE();  // unlock
+              upd$;  // unlock
             }
           } // forall
       } // local

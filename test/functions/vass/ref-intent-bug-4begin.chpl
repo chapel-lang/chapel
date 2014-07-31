@@ -9,7 +9,7 @@ proc testDriver(): int {
   var localByRef: int;
   proc testNested(ref globalArg: int, ref localArg: int): void {
     begin ref(globalVar,globalArg,localVar,localArg) {
-      beginProceed$.readFE();
+      beginProceed$;
       globalVar = 200;
       globalArg = 3000;
       localVar = 40000;

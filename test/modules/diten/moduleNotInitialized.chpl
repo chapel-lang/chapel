@@ -11,7 +11,7 @@ module M1 {
     if (!raninit) {
       raninit = true;
       lock1 = false;
-      lock2.readFE();
+      lock2;
       a = new C(1);
     }
   }
@@ -25,7 +25,7 @@ module M2 {
       M1.init();
       b = a;
     }
-    lock1.readFE();
+    lock1;
     use M1;
     M1.init();
     c = a;

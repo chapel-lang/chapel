@@ -329,7 +329,7 @@ proc _CurrentLocaleToLocIDs(targetLocales): (targetLocales.rank*locIdT, bool)
     if loc == here {
       // if we get multiple matches, we do not specify which is returned
       // could add a pre-test if it were cheap: if !gotresult$.readXX()
-      gotresult$.readFE();
+      gotresult$;
       result = lls;
       gotresult$ = true;
     }

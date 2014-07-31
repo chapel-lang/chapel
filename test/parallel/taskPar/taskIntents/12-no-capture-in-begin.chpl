@@ -178,7 +178,7 @@ arr2 = init2arr;
 //#include "var-writes.cpp"
   s$ = 1;
 }
-s$.readFE();
+s$;
 writeln("after begin");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -350,7 +350,7 @@ arr2 = init2arr;
 //#include "var-writes.cpp"
   s$ = 1;
 }
-s$.readFE();
+s$;
 writeln("after begin");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -525,7 +525,7 @@ arr2 = init2arr;
 //#include "var-writes.cpp"
   s$ = 1;
 }
-s$.readFE();
+s$;
 writeln("after begin");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -560,7 +560,7 @@ writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
   sbegin$ = 1;
 }
-sbegin$.readFE();
+sbegin$;
 /////////////////////////////////////////////////////////////////////////////
 writeln("=== in a cobegin ===");
 cobegin {
@@ -702,7 +702,7 @@ arr2 = init2arr;
 //#include "var-writes.cpp"
   s$ = 1;
 }
-s$.readFE();
+s$;
 writeln("after begin");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -877,7 +877,7 @@ arr2 = init2arr;
 //#include "var-writes.cpp"
   s$ = 1;
 }
-s$.readFE();
+s$;
 writeln("after begin");
 // write out all the variables
 writeln("b0", " ", b0);

@@ -11,7 +11,7 @@ proc main {
       s = 1;
     }
     {
-      s.readFE();
+      s;
       z = x;
     }
   }

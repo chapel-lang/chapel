@@ -100,7 +100,7 @@ class Chameneos {
      with another Chameneos.  If it does, it will get the complement of the
      color of the Chameneos it met with, and change to that color. */
   proc start(place : MeetingPlace) {
-    lock$.readFE();
+    lock$;
     var otherColor : color;
     otherColor = place.meet(this);
     myColor = getComplement(myColor, otherColor);

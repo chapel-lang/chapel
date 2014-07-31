@@ -96,9 +96,6 @@ void normalize(void) {
   moveGlobalDeclarationsToModuleScope();
   insertUseForExplicitModuleCalls();
 
-// See what breaks if we just don't.
-// Will insertReturnTemps() in functionResolution take care of this?
-#if 0
   if (!fMinimalModules) {
     // Calls to _statementLevelSymbol() are inserted here and in
     // function resolution to ensure that sync vars are in the correct
@@ -112,7 +109,6 @@ void normalize(void) {
       }
     }
   }
-#endif
 
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
     if (arg->defPoint->parentSymbol)

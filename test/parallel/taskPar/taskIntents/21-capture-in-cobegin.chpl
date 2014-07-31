@@ -213,7 +213,7 @@ writeln("arr2", " ", arr2);
     s$ = 1;
   }
   {
-    s$.readFE();
+    s$;
     writeln("cobegin - the other stmt");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -455,7 +455,7 @@ writeln("arr2", " ", arr2);
     s$ = 1;
   }
   {
-    s$.readFE();
+    s$;
     writeln("cobegin - the other stmt");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -700,7 +700,7 @@ writeln("arr2", " ", arr2);
     s$ = 1;
   }
   {
-    s$.readFE();
+    s$;
     writeln("cobegin - the other stmt");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -770,7 +770,7 @@ writeln("arr2", " ", arr2);
 writeln("done");
   sbegin$ = 1;
 }
-sbegin$.readFE();
+sbegin$;
 /////////////////////////////////////////////////////////////////////////////
 writeln("=== in a cobegin ===");
 cobegin {
@@ -947,7 +947,7 @@ writeln("arr2", " ", arr2);
     s$ = 1;
   }
   {
-    s$.readFE();
+    s$;
     writeln("cobegin - the other stmt");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -1192,7 +1192,7 @@ writeln("arr2", " ", arr2);
     s$ = 1;
   }
   {
-    s$.readFE();
+    s$;
     writeln("cobegin - the other stmt");
 // write out all the variables
 writeln("b0", " ", b0);

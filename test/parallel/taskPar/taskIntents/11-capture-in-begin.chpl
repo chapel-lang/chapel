@@ -79,7 +79,7 @@ var arr2: ArrType2;
 str = "."; // patch up
 var s1$, s2$: sync int;
 begin {
-  s1$.readFE();
+  s1$;
   writeln("starting in begin");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -178,7 +178,7 @@ writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
 writeln("finished outside begin");
 s1$ = 1;
-s2$.readFE();
+s2$;
 /////////////////////////////////////////////////////////////////////////////
 writeln("=== in a function ===");
 proc test() {
@@ -219,7 +219,7 @@ var arr2: ArrType2;
 str = "."; // patch up
 var s1$, s2$: sync int;
 begin {
-  s1$.readFE();
+  s1$;
   writeln("starting in begin");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -318,7 +318,7 @@ writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
 writeln("finished outside begin");
 s1$ = 1;
- s2$.readFE();
+s2$;
 }
 test();
 /////////////////////////////////////////////////////////////////////////////
@@ -362,7 +362,7 @@ var arr2: ArrType2;
 str = "."; // patch up
 var s1$, s2$: sync int;
 begin {
-  s1$.readFE();
+  s1$;
   writeln("starting in begin");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -461,10 +461,10 @@ writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
 writeln("finished outside begin");
 s1$ = 1;
- s2$.readFE();
+s2$;
   sbegin$ = 1;
 }
-sbegin$.readFE();
+sbegin$;
 /////////////////////////////////////////////////////////////////////////////
 writeln("=== in a cobegin ===");
 cobegin {
@@ -507,7 +507,7 @@ var arr2: ArrType2;
 str = "."; // patch up
 var s1$, s2$: sync int;
 begin {
-  s1$.readFE();
+  s1$;
   writeln("starting in begin");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -606,7 +606,7 @@ writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
 writeln("finished outside begin");
 s1$ = 1;
- s2$.readFE();
+s2$;
   }
 }
 /////////////////////////////////////////////////////////////////////////////
@@ -650,7 +650,7 @@ var arr2: ArrType2;
 str = "."; // patch up
 var s1$, s2$: sync int;
 begin {
-  s1$.readFE();
+  s1$;
   writeln("starting in begin");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -749,7 +749,7 @@ writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
 writeln("finished outside begin");
 s1$ = 1;
-s2$.readFE();
+s2$;
   }
 }
 /////////////////////////////////////////////////////////////////////////////
