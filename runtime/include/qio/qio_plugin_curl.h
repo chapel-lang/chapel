@@ -8,7 +8,6 @@
 extern "C" {
 #endif
 
-#define QIO_LOCALE_MAP_PTR_T_NULL NULL
 typedef struct curl_handle curl_handle;
 typedef curl_handle* curl_handle_ptr;
 

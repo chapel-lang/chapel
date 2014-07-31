@@ -708,34 +708,34 @@ proc _modestring(mode:iomode) {
   }
 }
 
-// hdfs paths are expected to be of the form:
-// hdfs://<host>:<port>/<path>
-proc parse_hdfs_path(path:string): (string, int, string) {
-
-  var hostidx_start = path.indexOf("//");
-  var new_str = path.substring(hostidx_start+2..path.length);
-  var hostidx_end = new_str.indexOf(":");
-  var host = new_str.substring(0..hostidx_end-1);
-
-  new_str = new_str.substring(hostidx_end+1..new_str.length);
-
-  var portidx_end = new_str.indexOf("/");
-  var port = new_str.substring(0..portidx_end-1);
-
-  //the file path is whatever we have left
-  var file_path = new_str.substring(portidx_end+1..new_str.length);
-
-  return (host, port:int, file_path);
-}
-
 proc open(out error:syserr, path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
+
+  // hdfs paths are expected to be of the form:
+  // hdfs://<host>:<port>/<path>
+  proc parse_hdfs_path(path:string): (string, int, string) {
+
+    var hostidx_start = path.indexOf("//");
+    var new_str = path.substring(hostidx_start+2..path.length);
+    var hostidx_end = new_str.indexOf(":");
+    var host = new_str.substring(0..hostidx_end-1);
+
+    new_str = new_str.substring(hostidx_end+1..new_str.length);
+
+    var portidx_end = new_str.indexOf("/");
+    var port = new_str.substring(0..portidx_end-1);
+
+    //the file path is whatever we have left
+    var file_path = new_str.substring(portidx_end+1..new_str.length);
+
+    return (host, port:int, file_path);
+  }
 
   var local_style = style;
   var ret:file;
   ret.home = here;
   if (CHPL_REGEXP == "re2") {
     var re = compile("hdfs://(.*?):(.*?)/(.*?)");
-    var rec = compile("http|https|ftp|www|smtp");
+    var rec = compile("http://|https://|ftp://|www.|smtp://");
     var host: string;
     var port:string;
     var file_path:string;

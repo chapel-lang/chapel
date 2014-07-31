@@ -118,7 +118,9 @@ size_t read_data(void *ptr, size_t size, size_t nmemb, void *userp)
 static
 size_t chpl_curl_write(void* ptr, size_t size, size_t nmemb, void* fd_ptr)
 {
-  return write(*((int*)(intptr_t)fd_ptr), ptr, size*nmemb);
+  ssize_t num_written_out;
+  sys_write(*((int*)(intptr_t)fd_ptr), ptr, size*nmemb, &num_written_out);
+  return num_written_out;
 }
 
 static
