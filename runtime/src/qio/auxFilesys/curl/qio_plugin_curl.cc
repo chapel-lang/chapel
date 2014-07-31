@@ -451,7 +451,7 @@ qioerr curl_getlength(void* fl, int64_t* len_out, void* fs)
   return 0;
 }
 
-// Blech, but in order to be modular (and get the parametricity that we want), we need to
+// Blech, but in order to get the parametricity that we want, we need to
 // essentially do what the Curl folks did...
 qioerr chpl_curl_set_opt(qio_file_t* fl, int opt, ...)
 {
@@ -460,7 +460,7 @@ qioerr chpl_curl_set_opt(qio_file_t* fl, int opt, ...)
   va_start(argp, opt);
   STARTING_SLOW_SYSCALL;
 
-  // This reasoning about what to cast too is pulled from the libcurl source
+  // This reasoning is pulled from the libcurl source
   if (opt < CURLOPTTYPE_OBJECTPOINT) {
     long tmp = va_arg(argp, long);
     err = qio_int_to_err(curl_easy_setopt(to_curl_handle(fl->file_info)->curl, (CURLoption)opt, tmp));
@@ -543,7 +543,6 @@ qio_file_functions_t curl_function_struct = {
     &curl_getpath,   //getpath
     NULL,            //fsync
     NULL,            //getcwd
-    /*3,*/           //fs_type
 };
 
 const qio_file_functions_ptr_t curl_function_struct_ptr = &curl_function_struct;
