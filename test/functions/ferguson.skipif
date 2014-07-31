@@ -1,0 +1,7 @@
+# It suffices to test this directory only for one configuration -
+# so skip if it is not the standard configuration.
+CHPL_COMM != none
+COMPOPTS <= --baseline
+COMPOPTS <= --no-local
+CHPL_TEST_PERF == on
+CHPL_TEST_VGRND_EXE == on
