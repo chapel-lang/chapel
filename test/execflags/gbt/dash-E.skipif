@@ -6,4 +6,4 @@
 # fact necessary, to only test this when no launcher is in use.  Test(s)
 # to check that specific launchers properly forward the environment are
 # separate.
-CHPL_COMM == none
+CHPL_COMM != none
