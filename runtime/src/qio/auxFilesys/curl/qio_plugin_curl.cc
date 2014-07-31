@@ -100,19 +100,40 @@ size_t buf_writer(char* ptr_data, size_t size, size_t nmemb, void* userdata)
 static
 size_t read_data(void *ptr, size_t size, size_t nmemb, void *userp)
 {
-  struct curl_iovec_t *upload_ctx = (struct curl_iovec_t *)userp;
-  size_t len;
+  size_t realsize = size*nmemb;
+  struct curl_iovec_t* ret = ((struct curl_iovec_t *)userp);
 
-  if((size == 0) || (nmemb == 0) || ((size*nmemb) < 1) || (upload_ctx->curr >= upload_ctx->count)) {
+  if((size == 0) || (nmemb == 0) || ((size*nmemb) < 1) || (ret->curr >= ret->count)) {
     return 0; // stop putting data
   }
 
-  len = upload_ctx->vec[upload_ctx->curr].iov_len*size;
-  memcpy(ptr, upload_ctx->vec[upload_ctx->curr].iov_base, len);
-  upload_ctx->curr++;
-  upload_ctx->total_read += len;
+  // We can upload more than one iovbuf at once, so do it.
+  while (realsize > ret->vec[ret->curr].iov_len*size - ret->amt_read)  {
+    memcpy(ptr, &(((char*)ret->vec[ret->curr].iov_base)[ret->amt_read]), ret->vec[ret->curr].iov_len*size - ret->amt_read);
+    ret->total_read += (ret->vec[ret->curr].iov_len*size - ret->amt_read);
+    realsize -= ret->vec[ret->curr].iov_len*size - ret->amt_read;
+    ptr = &(((char*)ptr)[(ret->vec[ret->curr].iov_len*size - ret->amt_read)]);
+    // Reset the amount that we have read out of this vector.
+    ret->amt_read = 0;
+    // go to the next vector
+    ret->curr++;
+    if (ret->curr >= ret->count)
+      return ret->total_read;
+  }
 
-  return len;
+  // The amount of data that we need to hand to curl is <= the amount of space
+  // that we have left in this iovbuf, so we have to be careful not to exceed it
+  if (realsize <= (ret->vec[ret->curr].iov_len*size - ret->amt_read)) {
+    memcpy(ptr, &(((char*)ret->vec[ret->curr].iov_base)[ret->amt_read]), realsize);
+    ret->total_read += realsize;
+    ret->amt_read += realsize;
+    // We have fully read this iovbuf
+    if (ret->vec[ret->curr].iov_len*size == ret->amt_read) {
+      ret->curr++;
+      ret->amt_read = 0;
+    }
+  }
+  return ret->total_read;
 }
 
 static
@@ -180,6 +201,9 @@ qioerr curl_readv(void* file, const struct iovec *vector, int count, ssize_t* nu
   if ((err == CURLE_RANGE_ERROR ||  err == CURLE_OK) && got_total == 0 && sys_iov_total_bytes(vector, count) != 0)
     err_out = qio_int_to_err(EEOF);
 
+  curl_easy_setopt(local_handle->curl, CURLOPT_WRITEFUNCTION, NULL);
+  curl_easy_setopt(local_handle->curl, CURLOPT_WRITEDATA, NULL);
+
   *num_read_out = got_total;
   return err_out;
 }
@@ -222,6 +246,9 @@ qioerr curl_preadv(void* file, const struct iovec *vector, int count, off_t offs
   if ((err == CURLE_RANGE_ERROR ||  err == CURLE_OK) && got_total == 0 && sys_iov_total_bytes(vector, count) != 0)
     err_out = qio_int_to_err(EEOF);
 
+  curl_easy_setopt(local_handle->curl, CURLOPT_WRITEFUNCTION, NULL);
+  curl_easy_setopt(local_handle->curl, CURLOPT_WRITEDATA, NULL);
+
   *num_read_out = got_total;
   return err_out;
 }
@@ -249,7 +276,8 @@ qioerr curl_writev(void* fl, const struct iovec* iov, int iovcnt, ssize_t* num_w
   curl_easy_setopt(to_curl_handle(fl)->curl, CURLOPT_UPLOAD, 1L);
   // set it up to write over curl
   curl_easy_setopt(to_curl_handle(fl)->curl, CURLOPT_READFUNCTION, read_data);
-  //curl_easy_setopt(to_curl_handle(fl)->curl, CURLOPT_INFILESIZE_LARGE, (curl_off_t)iov[i].iov_len);
+  // Tell curl how much data to expect
+  curl_easy_setopt(to_curl_handle(fl)->curl, CURLOPT_INFILESIZE_LARGE,  (curl_off_t)sys_iov_total_bytes(iov, iovcnt));
   curl_easy_setopt(to_curl_handle(fl)->curl, CURLOPT_READDATA, &write_vec);
   ret = curl_easy_perform(to_curl_handle(fl)->curl);
   *num_written_out = write_vec.total_read;
@@ -258,6 +286,9 @@ qioerr curl_writev(void* fl, const struct iovec* iov, int iovcnt, ssize_t* num_w
     err_out = qio_mkerror_errno();
 
   curl_easy_setopt(to_curl_handle(fl)->curl, CURLOPT_UPLOAD, 0L);
+  curl_easy_setopt(to_curl_handle(fl)->curl, CURLOPT_INFILESIZE_LARGE, 0L);
+  curl_easy_setopt(to_curl_handle(fl)->curl, CURLOPT_READFUNCTION, NULL);
+  curl_easy_setopt(to_curl_handle(fl)->curl, CURLOPT_READDATA, NULL);
 
   DONE_SLOW_SYSCALL;
 
