@@ -21,6 +21,10 @@ ifneq (,$(findstring lustre,$(CHPL_MAKE_AUXFS)))
 	RUNTIME_INCLS += -DSYS_HAS_LLAPI $(CHPL_AUXIO_INCLUDE) $(CHPL_AUXIO_LIBS)
 endif
 
+ifneq (,$(findstring clang,$(CHPL_MAKE_TARGET_COMPILER)))
+	RUNTIME_INCLS += -Qunused-arguments
+endif
+
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.subdirrules
 
