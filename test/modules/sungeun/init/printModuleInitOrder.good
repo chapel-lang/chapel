@@ -10,7 +10,6 @@ Initializing Modules:
     ChapelThreads
     ChapelTuple
     ChapelRange
-     ChapelRangeBase
     ChapelLocale
     DefaultRectangular
      DSIUtil
