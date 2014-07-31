@@ -57,6 +57,28 @@ typedef enum {
 
 typedef uint32_t qio_hint_t;
 
+// TODO: make these better values
+#ifndef FTYPE_NONE
+#define FTYPE_NONE 0
+#endif
+
+#ifndef FTYPE_HDFS
+#define FTYPE_HDFS 1
+#endif
+
+#ifndef FTYPE_LUSTRE
+#define FTYPE_LUSTRE LUSTRE_SUPER_MAGIC
+#endif
+
+#ifndef FTYPE_CURL
+#define FTYPE_CURL 3
+#endif
+
+// So that we can free c_strings from Chapel
+// This is temporary for now, one Sung's 'string_free' function goes in, this
+// and the use of it in IO.chpl can go away.
+#define qio_free_string(str) qio_free((char*)str)
+
 // The qio lock must be re-entrant in order to handle
 // e.g. qio_printf, which has will lock the lock, then
 // call printf, which will call cookie write, and lock the lock again.
@@ -120,6 +142,8 @@ typedef qioerr (*qio_close_fptr)(void*, void*); // file information, fs info
 
 typedef qioerr (*qio_fsync_fptr)(void*, void*); // file information, fs info
 
+typedef int (*qio_get_fs_type_fptr)(void*, void*); // file information, fs info
+
 typedef qioerr (*qio_getcwd_fptr)(void*,  // file information (maybe NULL)
                                           // (useful in proxying situations,
                                           // such as with a local channel for
@@ -127,6 +151,18 @@ typedef qioerr (*qio_getcwd_fptr)(void*,  // file information (maybe NULL)
                                   const char**,  // path on return
                                   void*); // plugin filesystem pointer
 
+typedef qioerr (*qio_get_chunk_fptr)(void*, // file info
+                                     int64_t*, // length
+                                     void*); // fs info
+
+typedef qioerr (*qio_get_locales_for_region_fptr) (void*,       // file info
+                                                   off_t,       // start
+                                                   off_t,       // end
+                                                   const char***, // locale names out
+                                                   int*,        // number of locales that we got total
+                                                   void*);      // fs info
+
+// The ordering of these fields is important due to struct initialization
 typedef struct qio_file_functions_s {
   qio_writev_fptr  writev; 
   qio_readv_fptr   readv;
@@ -145,6 +181,11 @@ typedef struct qio_file_functions_s {
 
   qio_fsync_fptr fsync;
   qio_getcwd_fptr getcwd;
+  qio_get_fs_type_fptr get_fs_type;
+
+  // multilocale API
+  qio_get_chunk_fptr get_chunk;
+  qio_get_locales_for_region_fptr get_locales_for_region;
 
   // We used to store void* fs here, but it moved to the
   // qio file structure and an argument to qio file functions
@@ -507,6 +548,10 @@ qioerr qio_file_open_access_usr(qio_file_t** file_out, const char* pathname,
                                const char* access, qio_hint_t iohints, 
                                const qio_style_t* style, void* fs_info,
                                const qio_file_functions_t* s);
+
+qioerr qio_get_fs_type(qio_file_t* fl, int* out);
+qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out);
+qioerr qio_locales_for_region(qio_file_t* fl, off_t start, off_t end, const char*** locale_names_out, int* num_locs_out);
 
 // This can be called to run close and to check the return value.
 // That's important because some implementations (such as NFS)
@@ -1573,9 +1618,6 @@ unlock:
 
   return err;
 }
-
-// Returns the length of a file that backs a channel
-qioerr qio_channel_get_filelength(qio_channel_t* chan, int64_t* len_out);
 
 #ifdef __cplusplus
 } // end extern "C"

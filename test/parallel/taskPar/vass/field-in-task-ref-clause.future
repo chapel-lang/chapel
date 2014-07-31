@@ -1,0 +1,18 @@
+bug: compiler crashes when a task intent's ref clause includes a reference to a field
+
+Instead it should produce a user error like:
+  "cannot reference fields in a 'ref' clause of a task construct"
+or (to include the specific field name being referenced):
+  "referencing a field (myField) in a 'ref' clause of a task construct"
+
+That's because fields are not subject to forall intents.
+Even fields of a record.
+
+Also, my anticipated implementation of forall intents will likely hit
+the same issue.
+
+P.S. This should really be 8 distinct tests, to ensure that an error
+is generated for each case. The param 'if' I am using does not guarantee
+that - because the compiler may generate the error prior to resolution.
+So ideally split this into 6 tests once the bug is fixed,
+the add two for forall intents when those are working.

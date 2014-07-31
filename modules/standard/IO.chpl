@@ -268,9 +268,10 @@ extern proc qio_file_unlock(f:qio_file_ptr_t);
 extern proc qio_file_sync(f:qio_file_ptr_t):syserr;
 
 //extern proc qio_file_style_ptr(f:qio_file_ptr_t):qio_style_ptr_t;
-extern proc qio_channel_get_filelength(chan:qio_channel_ptr_t, ref len:int(64)):syserr;
+extern proc qio_channel_end_offset_unlocked(ch:qio_channel_ptr_t):int(64);
 extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyle);
 extern proc qio_file_set_style(f:qio_file_ptr_t, const ref style:iostyle);
+extern proc qio_file_length(f:qio_file_ptr_t, ref len:int(64)):syserr;
 
 pragma "no prototype" // FIXME
 extern proc qio_channel_create(ref ch:qio_channel_ptr_t, file:qio_file_ptr_t, hints:c_int, readable:c_int, writeable:c_int, start:int(64), end:int(64), const ref style:iostyle):syserr;
@@ -316,6 +317,12 @@ extern proc qio_channel_commit_unlocked(ch:qio_channel_ptr_t);
 extern proc qio_channel_write_bits(threadsafe:c_int, ch:qio_channel_ptr_t, v:uint(64), nbits:int(8)):syserr;
 extern proc qio_channel_flush_bits(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
 extern proc qio_channel_read_bits(threadsafe:c_int, ch:qio_channel_ptr_t, ref v:uint(64), nbits:int(8)):syserr;
+
+extern proc qio_locales_for_region(fl:qio_file_ptr_t, start:int(64), end:int(64), ref
+    loc_names:c_ptr(c_string), ref num_locs_out:c_int):syserr;
+extern proc qio_get_chunk(fl:qio_file_ptr_t, ref len:int(64)):syserr;
+extern proc qio_get_fs_type(fl:qio_file_ptr_t, ref tp:c_int):syserr;
+extern proc qio_free_string(arg:c_string);
 
 pragma "no prototype" // FIXME
 extern proc qio_file_path_for_fd(fd:fd_t, ref path:c_string):syserr;
@@ -664,6 +671,17 @@ proc file.path : string {
   var ret:string;
   ret = this.getPath(err);
   if err then ioerror(err, "in file.path");
+  return ret;
+}
+
+proc file.length():int(64) {
+  var err:syserr = ENOERR;
+  var len:int(64) = 0;
+  on this.home {
+    err = qio_file_length(this._file_internal, len);
+  }
+  if err then ioerror(err, "in file.length()");
+  return len;
 }
 
 // these strings are here (vs in _modestring)
@@ -1500,7 +1518,7 @@ proc channel.readline(ref arg:string):bool {
 // arg: str_out  -> The string to be read into
 // arg: len      -> The number of bytes to read from this channel. If nothing is
 //                  given, we read the entire channel starting at the current offset
-//                  in the channel. 
+//                  in the channel.
 // return: true  -> We have not encountered EOF
 //         false -> We have encountered EOF
 proc channel.readstring(ref str_out:string, len:int(64) = -1):bool {
@@ -1513,8 +1531,9 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1):bool {
     var lentmp:int(64);
     var actlen:int(64);
 
-    err = qio_channel_get_filelength(this._channel_internal, actlen);
-    if err then ioerror(err, "unable to get length in channel.readstring(ref str_out:string, len:int(64))"); 
+    this.lock();
+    actlen = qio_channel_end_offset_unlocked(this._channel_internal) - qio_channel_offset_unlocked(this._channel_internal);
+    this.unlock();
 
     // read the entire file
     if (len == -1) then 
@@ -3744,4 +3763,106 @@ iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
   if error then this._ch_ioerror(error, "in channel.matches");
 }
 
+/************** Distributed File Systems ***************/
+
+extern const FTYPE_NONE   : c_int;
+extern const FTYPE_HDFS   : c_int;
+extern const FTYPE_LUSTRE : c_int;
+extern const FTYPE_CURL   : c_int;
+
+proc file.fstype():int {
+  var t:c_int;
+  var err:syserr = ENOERR;
+  on this.home {
+    err = qio_get_fs_type(this._file_internal, t);
+  }
+  if err then ioerror(err, "in file.fstype()");
+  return t:int;
+}
+
+// Returns (chunk start, chunk end) for the first chunk in the file
+// containing data in the range [start, end].
+// Returns (0,0) if no such value exists.
+proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(64)) {
+  var err:syserr = ENOERR;
+  var s = 0;
+  var e = 0;
+
+  on this.home {
+    var real_end = min(end, this.length());
+    var len:int(64);
+
+    err = qio_get_chunk(this._file_internal, len);
+    if err then ioerror(err, "in file.getchunk(start:int(64), end:int(64))");
+
+    if (len != 0 && (real_end > start)) {
+      // TAKZ - Note that we are only wanting to return an inclusive range -- i.e., we
+      // will only return a non-zero start and end [n,m], iff n and m are in [start, end].
+      for i in start..real_end by len {
+        // Our stripes are too large, so we can't give back a range within the given
+        // bounds
+        if i > end then
+          break;
+
+        if i >= start {
+          var new_start = i;
+          var new_end:int(64);
+          if (i / len + 1) * len >= real_end then
+            new_end = real_end;
+          // rounding
+          else new_end = (i / len + 1) * len;
+          if new_start == new_end {
+            break;
+          } else {
+            s = new_start;
+            e = new_end;
+            break;
+          }
+        }
+      }
+    }
+  }
+  return (s, e);
+}
+
+// Returns the 'best' locales to run something working with this
+// region of the file. This *must* return the same result when
+// called from different locales. Returns a domain of locales that are "best" for the
+// given region. If no locales are "best" we return a domain containing all locales.
+proc file.localesForRegion(start:int(64), end:int(64)) {
+
+  proc findloc(loc:string, locs:c_ptr(c_string), end:int) {
+    for i in 0..end-1 {
+      if (loc == locs[i]) then 
+        return true;
+    }
+    return false;
+  }
+
+  var ret: domain(locale);
+  on this.home {
+    var err:syserr;
+    var locs: c_ptr(c_string);
+    var num_hosts:c_int;
+    err = qio_locales_for_region(this._file_internal, start, end, locs, num_hosts);
+    // looping over Locales enforces the ordering constraint on the locales.
+    for loc in Locales {
+      if (findloc(loc.name, locs, num_hosts:int)) then
+        ret += loc;
+    }
+
+    // We allocated memory in the runtime for this, so free it now
+    if num_hosts != 0 {
+      for i in 0..num_hosts-1 do
+        qio_free_string(locs[i]);
+      c_free(locs);
+    }
+
+    // We found no "good" locales. So any locale is just as good as the next
+    if ret.numIndices == 0 then 
+      for loc in Locales do 
+        ret += loc;
+  }
+  return ret;
+}
 
