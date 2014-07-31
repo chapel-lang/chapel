@@ -386,7 +386,7 @@ int main(int argc, char* argv[]) {
   chpl_gen_main_arg.return_value = 0;
 
   CreateConfigVarTable();
-  parseArgs(&argc, argv);
+  parseArgs(true, parse_normally, &argc, argv);
 
   execNumLocales = getArgNumLocales();
 
