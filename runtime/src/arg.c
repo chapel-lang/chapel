@@ -23,10 +23,42 @@ static int gdbFlag = 0;
 int32_t blockreport = 0; // report locations of blocked threads on SIGINT
 int32_t taskreport = 0;  // report thread hierarchy on SIGINT
 
+
+typedef struct _flagType {
+  const char* flagDash;
+  const char* subArg;
+  const char* flagDashDash;
+  const char* description;
+  const char headerType;
+} flagType;
+
+static const flagType flagList[] = {
+  { "h", "", "help", "print this message", 'g' },
+  { "a", "", "about", "print compilation information", 'g' },
+  { "nl", " <n>", "",
+    "run program using n locales\n"
+    "(equivalent to setting the numLocales config const)", 'g' },
+  { "q", "", "quiet", "run program in quiet mode", 'g' },
+  { "v", "", "verbose", "run program in verbose mode", 'g' },
+  { "b", "", "blockreport",
+    "report location of blocked threads on SIGINT", 'g' },
+  { "t", "", "taskreport",
+    "report list of pending and executing tasks on SIGINT", 'g' },
+  { "", "", "gdb", "run program in gdb", 'g' },
+  { "E", "<envVar>=<val>", "",
+    "set the value of an environment variable", 'g' },
+
+  { "s", "", "<cfgVar>=<val>", "set the value of a config var", 'c' },
+  { "f", "<filename>", "",
+    "read in a file of config var assignments", 'c' },
+};
+
+const int numFlags = sizeof(flagList) / sizeof(flagList[0]);
+
+
 int _runInGDB(void) {
   return gdbFlag;
 }
-
 
 
 //
@@ -88,6 +120,54 @@ static void defineEnvVar(const char* currentArg,
 #define malloc dont_use_malloc_use_chpl_mem_allocMany_instead
 
 
+static void parseDashEArgs(int* argc, char* argv[]) {
+  const char* filename = "<command-line arg>";
+
+  for (int i = 1; i < *argc; i++) {
+    int lineno = i;
+    const char* currentArg = argv[i];
+
+    if (currentArg[0] == '-' && currentArg[1] == 'E') {
+      //
+      // Current argument is '-E'.
+      //
+      if (currentArg[2] == '\0') {
+        i++;
+        if (i >= *argc) {
+          chpl_error("-E flag is missing <name=value> argument",
+                     lineno, filename);
+        }
+        currentArg = argv[i];
+        defineEnvVar(currentArg, lineno, filename);
+      } else {
+        defineEnvVar(currentArg + 2, lineno, filename);
+      }
+    } else {
+      //
+      // Current argument is something other than '-E'.
+      //
+      // Skip over it.  The only tricky bit here is deciding whether to
+      // skip one or two args for a short-form flag with a sub-argument.
+      // There are no long-form flags that take sub-args.
+      //
+      if (currentArg[0] == '-' && currentArg[1] != '-') {
+        currentArg++;
+        for (int fi = 0; fi < numFlags; fi++) {
+          int flagLen = strlen(flagList[fi].flagDash);
+          if (strncmp(currentArg, flagList[fi].flagDash, flagLen) == 0) {
+            if (flagList[fi].subArg[0] != '\0' &&
+                currentArg[flagLen] == '\0') {
+              i++;
+            }
+            break;
+          }
+        }
+      }
+    }
+  }
+}
+
+
 static void printHeaders(char thisType, char* lastType) {
   if (thisType != *lastType) {
     fprintf(stdout, "\n");
@@ -108,56 +188,59 @@ static void printHeaders(char thisType, char* lastType) {
 
 
 void printHelpTable(void) {
-  typedef struct _flagType {
-    const char* flag;
-    const char* description;
-    const char headerType;
-  } flagType;
-
-  static flagType flagList[] = {
-    {"-h, --help", "print this message", 'g'},
-    {"-a, --about", "print compilation information", 'g'},
-    {"-nl <n>", "run program using n locales", 'g'},
-    {"", "(equivalent to setting the numLocales config const)", 'g'},
-    {"-q, --quiet", "run program in quiet mode", 'g'},
-    {"-v, --verbose", "run program in verbose mode", 'g'},
-    {"-b, --blockreport", "report location of blocked threads on SIGINT", 'g'},
-    {"-t, --taskreport",
-     "report list of pending and executing tasks on SIGINT", 'g'},
-    {"--gdb", "run program in gdb", 'g'},
-    {"-E<name=value>", "set the value of an environment variable", 'g'},
-
-    {"-s, --<cfgVar>=<val>", "set the value of a config var", 'c'},    
-    {"-f<filename>", "read in a file of config var assignments", 'c'},
-
-    {NULL, NULL, ' '}
-  };
-
   int i = 0;
   int longestFlag = 0;
+  char flagBuf[100];
   char lastHeaderType = '\0';
 
   printAdditionalHelp();
 
-  while (flagList[i].flag) {
-    int thisFlag = strlen(flagList[i].flag);
-    if (longestFlag < thisFlag) {
-      longestFlag = thisFlag;
+  for (i = 0; i < numFlags; i++) {
+    int flagLen;
+    if (flagList[i].flagDash[0] == '\0') {
+      flagLen = 2 + strlen(flagList[i].flagDashDash);
+    } else {
+      if (flagList[i].flagDashDash[0] == '\0') {
+        flagLen = 1 + strlen(flagList[i].flagDash) +
+                  strlen(flagList[i].subArg);
+      } else {
+        flagLen = 1 + strlen(flagList[i].flagDash) +
+                  strlen(flagList[i].subArg) +
+                  2 + 2 + strlen(flagList[i].flagDashDash);
+      }
     }
-    i++;
+
+    if (longestFlag < flagLen) {
+      longestFlag = flagLen;
+    }
   }
 
-  i = 0;
-  while (flagList[i].flag) {
+  for (i = 0; i < numFlags; i++) {
     printHeaders(flagList[i].headerType, &lastHeaderType);
-    if (flagList[i].flag[0] == '\0') {
-      fprintf(stdout, "  %-*s    %s\n", longestFlag, flagList[i].flag,
-              flagList[i].description);
+    if (flagList[i].flagDash[0] == '\0') {
+      snprintf(flagBuf, sizeof(flagBuf), "--%s", flagList[i].flagDashDash);
     } else {
-      fprintf(stdout, "  %-*s  : %s\n", longestFlag, flagList[i].flag, 
-              flagList[i].description);
+      if (flagList[i].flagDashDash[0] == '\0') {
+        snprintf(flagBuf, sizeof(flagBuf), "-%s%s",
+                 flagList[i].flagDash, flagList[i].subArg);
+      } else {
+        snprintf(flagBuf, sizeof(flagBuf), "-%s%s, --%s",
+                 flagList[i].flagDash, flagList[i].subArg,
+                 flagList[i].flagDashDash);
+      }
     }
-    i++;
+
+    fprintf(stdout, "  %-*s  : ", longestFlag, flagBuf);
+    {
+      const char* p;
+      const char* pNext;
+      for (p = flagList[i].description;
+           (pNext = strchr(p, '\n')) != NULL;
+           p = pNext + 1) {
+        fprintf(stdout, "%.*s\n%*s", pNext - p, p, longestFlag + 6, "");
+      }
+      fprintf(stdout, "%s\n", p);
+    }
   }
   fprintf(stdout, "\n");
 }
@@ -170,7 +253,7 @@ void parseNumLocales(const char* numPtr, int32_t lineno, c_string filename) {
   char invalidChars[2] = "\0\0";
   _argNumLocales = c_string_to_int32_t_precise(numPtr, &invalid, invalidChars);
   if (invalid) {
-    char* message = chpl_glom_strings(3, "\"", numPtr, 
+    char* message = chpl_glom_strings(3, "\"", numPtr,
                                       "\" is not a valid number of locales");
     chpl_error(message, lineno, filename);
   }
@@ -197,7 +280,14 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
   int origargc = *argc;
   int stop_parsing = 0;
 
-  assert( !(isLauncher && mode == parse_dash_E) );
+  //
+  // Handle the pre-parse for '-E' arguments separately.
+  //
+  if (mode == parse_dash_E) {
+    assert(!isLauncher);
+    parseDashEArgs(argc, argv);
+    return;
+  }
 
   for (i = 1; i < *argc; i++) {
     const char* filename = "<command-line arg>";
@@ -216,21 +306,15 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
     }
 
     /* if the Chapel main takes arguments, then "--" is a magic argument that
-     * will prevent parsing of any additional arguments.  In addition, if we
-     * are just parsing -E arguments, we can quit looking at the command line
-     * entirely when we see "--".
+     * will prevent parsing of any additional arguments
      */
     if (mainHasArgs && strcmp(currentArg, "--") == 0) {
-      if (mode == parse_dash_E) {
-        break;
-      } else {
-        stop_parsing = 1;
-        continue;
-      }
+      stop_parsing = 1;
+      continue;
     }
 
     if (argLength < 2) {
-      const char* message = chpl_glom_strings(3, "\"", currentArg, 
+      const char* message = chpl_glom_strings(3, "\"", currentArg,
                                               "\" is not a valid argument");
       chpl_error(message, lineno, filename);
     }
@@ -239,18 +323,14 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
     case '-':
       switch (currentArg[1]) {
       case '-':
-        //
-        // As long as all "--" options consist of only a single
-        // command line argument, this simple check is sufficient.
-        //
-        if (mode != parse_dash_E) {
+        {
           const char* flag = currentArg + 2;
 
           if (strcmp(flag, "gdb") == 0) {
             gdbFlag = i;
             break;
           }
-            
+
           if (strcmp(flag, "help") == 0) {
             printHelp = 1;
             chpl_gen_main_arg.argv[chpl_gen_main_arg.argc] = "--help";
@@ -278,32 +358,27 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
             break;
           }
           if (argLength < 3) {
-            char* message = chpl_glom_strings(3, "\"", currentArg, 
+            char* message = chpl_glom_strings(3, "\"", currentArg,
                                               "\" is not a valid argument");
             chpl_error(message, lineno, filename);
           }
           i += handlePossibleConfigVar(argc, argv, i, lineno, filename);
           break;
         }
-        break;
 
       case 'a':
-        if (mode != parse_dash_E) {
-          if (currentArg[2] == '\0') {
-            printAbout = 1;
-          } else {
-            i += handleNonstandardArg(argc, argv, i, lineno, filename);
-          }
+        if (currentArg[2] == '\0') {
+          printAbout = 1;
+        } else {
+          i += handleNonstandardArg(argc, argv, i, lineno, filename);
         }
         break;
 
       case 'b':
-        if (mode != parse_dash_E) {
-          if (currentArg[2] == '\0') {
-            blockreport = 1;
-          } else {
-            i += handleNonstandardArg(argc, argv, i, lineno, filename);
-          }
+        if (currentArg[2] == '\0') {
+          blockreport = 1;
+        } else {
+          i += handleNonstandardArg(argc, argv, i, lineno, filename);
         }
         break;
 
@@ -311,20 +386,11 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
         if (isLauncher) {
           i += handleNonstandardArg(argc, argv, i, lineno, filename);
         } else {
+          //
+          // We parse -E only in parse_dash_E mode, which is handled above.
+          //
           if (currentArg[2] == '\0') {
             i++;
-            currentArg = argv[i];
-          } else {
-            currentArg = argv[i] + 2;
-          }
-
-          // We process -E on the parse_dash_E pass and ignore it after that.
-          if (mode == parse_dash_E) {
-            if (i >= *argc) {
-              chpl_error("-E flag is missing <name=value> argument", 
-                         i, filename);
-            }
-            defineEnvVar(currentArg, lineno, filename);
           }
         }
         break;
@@ -333,7 +399,7 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
         if (currentArg[2] == '\0') {
           i++;
           if (i >= *argc) {
-            chpl_error("-f flag is missing <filename> argument", 
+            chpl_error("-f flag is missing <filename> argument",
                        lineno, filename);
           }
           currentArg = argv[i];
@@ -359,7 +425,7 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
           if (currentArg[3] == '\0') {
             i++;
             if (i >= *argc) {
-              chpl_error("-nl flag is missing <numLocales> argument", 
+              chpl_error("-nl flag is missing <numLocales> argument",
                          lineno, filename);
             }
             currentArg = argv[i];
@@ -384,7 +450,7 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
       case 's':
         {
           if (argLength < 3) {
-            char* message = chpl_glom_strings(3, "\"", currentArg, 
+            char* message = chpl_glom_strings(3, "\"", currentArg,
                                               "\" is not a valid argument");
             chpl_error(message, lineno, filename);
           }
