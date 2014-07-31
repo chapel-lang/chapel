@@ -6,6 +6,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+#include <assert.h>
 #include "arg.h"
 #include "chpl-mem-hook.h"
 #include "chpltypes.h"
@@ -89,7 +90,8 @@ void chpl_mem_free(void* memAlloc, int32_t lineno, c_string filename) {
 // free a c_string, no error checking
 static ___always_inline
 void chpl_rt_free_c_string(c_string s, int32_t lineno, c_string filename)  {
-  if (s) chpl_mem_free((void *) s, lineno, filename);
+  assert(s!=NULL);
+  chpl_mem_free((void *) s, lineno, filename);
 }
 
 void chpl_mem_layerInit(void);
