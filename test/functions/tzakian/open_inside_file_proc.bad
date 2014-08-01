@@ -1,0 +1,5 @@
+open_inside_file_proc.chpl:1: In function 'dup':
+open_inside_file_proc.chpl:2: error: unresolved call 'file.open(path=string, mode=iomode, hints=int(32), style=iostyle)' [functionResolution.cpp:2417]
+$CHPL_HOME/modules/standard/IO.chpl:504: note: candidates are: file.open() [137431] [functionResolution.cpp:2432]
+$CHPL_HOME/modules/standard/IO.chpl:688: note:                 open(out error: syserr, path: string, mode: iomode, hints: iohints = IOHINT_NONE, style: iostyle = defaultIOStyle()) [138323] [functionResolution.cpp:2432]
+$CHPL_HOME/modules/standard/IO.chpl:696: note:                 open(path: string, mode: iomode, hints: iohints = IOHINT_NONE, style: iostyle = defaultIOStyle()) [138405] [functionResolution.cpp:2432]
