@@ -411,22 +411,25 @@ record regexp {
     var nmatches = 1 + captures;
     var pos:int;
     var endpos:int;
+    var textSize:int;
     on this.home {
       matches = _ddata_allocate(qio_regexp_string_piece_t, nmatches);
     }
     if t == stringPart {
       pos = text.offset;
       endpos = pos + text.length;
+      textSize = text.from.size;
     } else {
       pos = 0;
       endpos = text.size;
+      textSize = text.size;
     }
     var nfound = 0; 
     var cur = pos;
     while nfound < maxmatches && cur < endpos {
       var got:bool;
       on this.home {
-        got = qio_regexp_match(_regexp, text.c_str(), text.size, cur, endpos, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
+        got = qio_regexp_match(_regexp, text.c_str(), textSize, cur, endpos, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
       }
       if !got then break;
       param nret = captures+1;
