@@ -24,12 +24,12 @@ public:
 
 enum BlockTag {
 // Bits:
-  BLOCK_NORMAL		= 0,
-  BLOCK_SCOPELESS	= 1<<0, ///< does not introduce a new scope
-  BLOCK_TYPE_ONLY  	= 1<<1, ///< deleted after type resolution
-  BLOCK_EXTERN		= 1<<2, ///< init block for an extern var
+  BLOCK_NORMAL      = 0,
+  BLOCK_SCOPELESS   = 1<<0, ///< does not introduce a new scope
+  BLOCK_TYPE_ONLY   = 1<<1, ///< deleted after type resolution
+  BLOCK_EXTERN      = 1<<2, ///< init block for an extern var
 // Bit masks:
-  BLOCK_TYPE		= BLOCK_SCOPELESS | BLOCK_TYPE_ONLY,
+  BLOCK_TYPE        = BLOCK_SCOPELESS | BLOCK_TYPE_ONLY,
 };
 
 class BlockStmt : public Stmt {
