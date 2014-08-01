@@ -618,10 +618,10 @@ iter BlockCyclic1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
     compilerAssert(r1.boundedType == r2.boundedType);
     if !r1.stridable && r2.stridable && r2._stride != 1 then
       halt("range with non-unit stride is cast to non-stridable range");
-    r1._base._low       = r2._base._low: r1.idxType;
-    r1._base._high      = r2._base._high: r1.idxType;
-    r1._base._stride    = r2._base._stride: r1.strType;
-    r1._base._alignment = r2._base._alignment: r1.idxType;
+    r1._low       = r2._low: r1.idxType;
+    r1._high      = r2._high: r1.idxType;
+    r1._stride    = r2._stride: r1.strType;
+    r1._alignment = r2._alignment: r1.idxType;
     r1._aligned = r2._aligned;
   }
 

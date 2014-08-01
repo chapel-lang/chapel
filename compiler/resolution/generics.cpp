@@ -175,6 +175,37 @@ instantiate_tuple_hash( FnSymbol* fn) {
   normalize(fn);
 }
 
+static void
+instantiate_tuple_init(FnSymbol* fn) {
+  if (fn->numFormals() != 1)
+    INT_FATAL(fn, "tuple _defaultOf function has more than one argument");
+  ArgSymbol* arg = fn->getFormal(1);
+  if (!arg->hasFlag(FLAG_TYPE_VARIABLE))
+    INT_FATAL(fn, "_defaultOf function not provided a type argument");
+  AggregateType* ct = toAggregateType(arg->type);
+  // Similar to build_record_init_function in buildDefaultFunctions, we need
+  // to call the type specified default initializer
+  CallExpr* call = new CallExpr(ct->defaultInitializer);
+  BlockStmt* block = new BlockStmt();
+  
+  // Need to insert all required arguments into this call
+  for_formals(formal, ct->defaultInitializer) {
+    VarSymbol* tmp = newTemp(formal->name);
+    if (!strcmp(formal->name, "size"))
+      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_QUERY_PARAM_FIELD, arg, new_StringSymbol(formal->name))));
+    else if (!formal->hasFlag(FLAG_IS_MEME)) {
+      if (formal->isParameter()) {
+        tmp->addFlag(FLAG_PARAM);
+      }
+      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_INIT, formal->type->symbol)));
+    }
+    block->insertAtHead(new DefExpr(tmp));
+    call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
+  }
+  block->insertAtTail(new CallExpr(PRIM_RETURN, call));
+  fn->body->replace(block);
+  normalize(fn);
+}
 
 static void
 instantiate_tuple_initCopy(FnSymbol* fn) {
@@ -659,6 +690,10 @@ instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
   if (fn->hasFlag(FLAG_TUPLE)) {
     instantiate_tuple_signature(newFn);
   }
+
+  if (!strcmp(fn->name, "_defaultOf") &&
+      fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE))
+    instantiate_tuple_init(newFn);
 
   if (!strcmp(fn->name, "chpl__defaultHash") && fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE)) {
     instantiate_tuple_hash(newFn);

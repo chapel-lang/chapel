@@ -2,6 +2,7 @@ Initializing Modules:
    ChapelStandard
     ChapelBase
     String
+     CString
     MemConsistency
     Atomics
     NetworkAtomics
@@ -10,7 +11,6 @@ Initializing Modules:
     ChapelThreads
     ChapelTuple
     ChapelRange
-     ChapelRangeBase
     ChapelLocale
     DefaultRectangular
      DSIUtil

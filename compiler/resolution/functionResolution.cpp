@@ -2922,6 +2922,7 @@ resolveCall(CallExpr* call)
      case PRIM_TUPLE_EXPAND:        resolveTupleExpand(call);           break;
      case PRIM_SET_MEMBER:          resolveSetMember(call);             break;
      case PRIM_MOVE:                resolveMove(call);                  break;
+     case PRIM_TYPE_INIT:
      case PRIM_INIT:                resolveDefaultGenericType(call);    break;
      case PRIM_NO_INIT:             resolveDefaultGenericType(call);    break;
      case PRIM_NEW:                 resolveNew(call);                   break;
@@ -4493,14 +4494,10 @@ preFold(Expr* expr) {
         USR_FATAL(call, "invalid type specification");
       Type* type = call->get(1)->getValType();
       
-      if (type->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
-        result = new CallExpr(PRIM_CAST, type->symbol, gNil);
-        call->replace(result);
-      } else if (type->defaultValue == gNil) {
-        result = new CallExpr("_cast", type->symbol, type->defaultValue);
-        call->replace(result);
-      } else if (type->defaultValue) {
-        result = new SymExpr(type->defaultValue);
+      if (type->defaultValue || type->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
+        // In these cases, the _defaultOf method for that type can be resolved
+        // now.  Otherwise, it needs to wait until resolveRecordInitializers
+        result = new CallExpr("_defaultOf", type->symbol);
         call->replace(result);
       } else {
         inits.add(call);
@@ -6665,10 +6662,12 @@ static void resolveRecordInitializers() {
       INT_FATAL(init, "PRIM_INIT should have been replaced already");
 
     SET_LINENO(init);
-    if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-      // why??  --sjd
-      init->replace(init->get(1)->remove());
-    } else if (type->symbol->hasFlag(FLAG_DISTRIBUTION)) {
+    if (type->symbol->hasFlag(FLAG_DISTRIBUTION)) {
+      // This initialization cannot be replaced by a _defaultOf function
+      // earlier in the compiler, there is not enough information to build a
+      // default function for it.  When we have the ability to call a
+      // constructor from a type alias, it can be moved directly into module
+      // code
       Symbol* tmp = newTemp("_distribution_tmp_");
       init->getStmtExpr()->insertBefore(new DefExpr(tmp));
       CallExpr* classCall = new CallExpr(type->getField("_valueType")->type->defaultInitializer);
@@ -6681,14 +6680,12 @@ static void resolveRecordInitializers() {
       init->replace(distCall);
       resolveCall(distCall);
       resolveFns(distCall->isResolved());
-    } else if (type->symbol->hasFlag(FLAG_EXTERN)) {
-//          init->replace(init->get(1)->remove());
-      init->parentExpr->remove();
     } else {
-      INT_ASSERT(type->defaultInitializer);
-      CallExpr* call = new CallExpr(type->defaultInitializer);
+      CallExpr* call = new CallExpr("_defaultOf", type->symbol);
       init->replace(call);
-      resolveCall(call);
+      resolveNormalCall(call);
+      // At this point in the compiler, we can resolve the _defaultOf function
+      // for the type, so do so.
       if (call->isResolved())
         resolveFns(call->isResolved());
     }
@@ -7132,6 +7129,23 @@ static void removeRandomPrimitive(CallExpr* call)
         SET_LINENO(call->get(2));
         call->get(2)->replace(new SymExpr(sym));
       }
+    }
+    break;
+
+    // Maybe this can be pushed into the following case, where a PRIM_MOVE gets
+    // removed if its rhs is a type symbol.  That is, resolution of a
+    // PRIM_TYPE_INIT replaces the primitive with symexpr that contains a type symbol.
+    case PRIM_TYPE_INIT:
+    {
+      // A "type init" call that is in the tree should always have a callExpr
+      // parent, as guaranteed by CallExpr::verify().
+      CallExpr* parent = toCallExpr(call->parentExpr);
+      // We expect all PRIM_TYPE_INIT primitives to have a PRIM_MOVE
+      // parent, following the insertion of call temps.
+      if (parent->isPrimitive(PRIM_MOVE))
+        parent->remove();
+      else
+        INT_FATAL(parent, "expected parent of PRIM_TYPE_EXPR to be a PRIM_MOVE");
     }
     break;
 

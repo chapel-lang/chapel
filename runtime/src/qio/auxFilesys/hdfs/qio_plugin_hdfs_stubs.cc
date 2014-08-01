@@ -49,11 +49,15 @@ qioerr hdfs_close(void* fl, void* fs) HDFS_ERROR(return 0)
 
 qioerr hdfs_seek(void* fl, off_t offset, int whence, off_t* offset_out, void* fs) HDFS_ERROR(return 0)
 
+qioerr hdfs_getlength(void* fl, int64_t* len_out, void* fs) HDFS_ERROR(return 0)
+
 qioerr hdfs_fsync(void* fl, void* fs) HDFS_ERROR(return 0)
 
 qioerr hdfs_getcwd(void* file, const char** path_out, void* fs) HDFS_ERROR(return 0)
 
 qioerr hdfs_getpath(void* file, const char** string_out, void* fs) HDFS_ERROR(return 0)
+
+int hdfs_get_fs_type(void* file, void* s) HDFS_ERROR(return 0)
 
 // ----- multilocale ------
 void hdfs_create_locale_mapping(char ***char_arr, int num, const char *loc_name) HDFS_ERROR(return)
@@ -66,6 +70,10 @@ qioerr hdfs_get_owners(qio_file_t* file, hdfs_block_byte_map_t** loc, int* out_n
 
 hdfs_block_byte_map_t hdfs_index_array(hdfs_block_byte_map_t* locs, int index) HDFS_ERROR(return locs[0])
 
+qioerr hdfs_get_chunk(void* fl, int64_t* len_out, void* fs) HDFS_ERROR(return 0)
+
+qioerr hdfs_locales_for_range(void* file, off_t start_byte, off_t end_byte, const char*** loc_name, int* num_loc_out, void* fs) HDFS_ERROR(return 0)
+
 qio_file_functions_t hdfs_function_struct = {
     &hdfs_writev,
     &hdfs_readv,
@@ -74,10 +82,13 @@ qio_file_functions_t hdfs_function_struct = {
     &hdfs_close,
     &hdfs_open,
     &hdfs_seek,
-    NULL,
+    &hdfs_getlength,
     &hdfs_getpath,
     &hdfs_fsync,
     &hdfs_getcwd,
+    &hdfs_get_fs_type,
+    &hdfs_get_chunk,
+    &hdfs_locales_for_range,
 };
 
 const qio_file_functions_ptr_t hdfs_function_struct_ptr = &hdfs_function_struct;
