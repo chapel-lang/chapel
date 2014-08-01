@@ -3,6 +3,8 @@
 pragma "no use ChapelStandard"
 module ChapelLocale {
 
+  use LocaleModel;
+
   //
   // An abstract class. Specifies the required locale interface.
   // Each locale implementation must inherit from this class.
@@ -317,7 +319,7 @@ module ChapelLocale {
   const dummyLocale = new locale();
 
   extern proc chpl_task_getRequestedSubloc(): chpl_sublocID_t;
-  extern var chpl_nodeID: int(32);
+
   // Return the locale ID of the current locale
   inline proc here_id {
     return chpl_buildLocaleID(chpl_nodeID,chpl_task_getRequestedSubloc());
@@ -335,6 +337,46 @@ module ChapelLocale {
       // For code prior to rootLocale initialization
       return dummyLocale;
   }
+
+  //////////////////////////////////////////
+  //
+  // support for memory management
+  //
+
+  // The allocator pragma is used by scalar replacement.
+  pragma "allocator"
+  pragma "no sync demotion"
+  pragma "locale model alloc"
+  proc chpl_here_alloc(size:int, md:int(16)) {
+    pragma "insert line file info"
+      extern proc chpl_mem_alloc(size:int, md:int(16)) : opaque;
+    return chpl_mem_alloc(size, md + chpl_memhook_md_num());
+  }
+
+  pragma "allocator"
+  pragma "no sync demotion"
+  proc chpl_here_calloc(size:int, number:int, md:int(16)) {
+    pragma "insert line file info"
+      extern proc chpl_mem_calloc(number:int, size:int, md:int(16)) : opaque;
+    return chpl_mem_calloc(number, size, md + chpl_memhook_md_num());
+  }
+
+  pragma "allocator"
+  pragma "no sync demotion"
+  proc chpl_here_realloc(ptr:opaque, size:int, md:int(16)) {
+    pragma "insert line file info"
+      extern proc chpl_mem_realloc(ptr:opaque, size:int, md:int(16)) : opaque;
+    return chpl_mem_realloc(ptr, size, md + chpl_memhook_md_num());
+  }
+
+  pragma "no sync demotion"
+  pragma "locale model free"
+  proc chpl_here_free(ptr:opaque) {
+    pragma "insert line file info"
+      extern proc chpl_mem_free(ptr:opaque): void;
+    chpl_mem_free(ptr);
+  }
+
 
   pragma "insert line file info"
   extern proc chpl_memhook_malloc_pre(number:int, size:int, md:int(16)): void;
