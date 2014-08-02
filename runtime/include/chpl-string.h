@@ -17,8 +17,7 @@ int8_t ascii(c_string s) {
 }
 
 static ___always_inline
-int64_t
-string_length(c_string x) {
+int64_t string_length(c_string x) {
   return strlen(x);
 }
 
