@@ -313,13 +313,3 @@ string_contains(c_string x, c_string y) {
 }
 
 
-int32_t string_compare(c_string x, c_string y) {
-  return (int32_t)strcmp(x, y);
-}
-
-
-int64_t
-string_length(c_string x) {
-  return strlen(x);
-}
-

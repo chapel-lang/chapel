@@ -9,9 +9,21 @@ typedef const char* chpl_string;
 chpl_string defaultStringValue="";
 #endif
 
+#include <string.h>
+
 static ___always_inline
 int8_t ascii(c_string s) {
   return (int8_t) *s;
+}
+
+static ___always_inline
+int64_t string_length(c_string x) {
+  return strlen(x);
+}
+
+static ___always_inline
+int32_t string_compare(c_string x, c_string y) {
+  return (int32_t)strcmp(x, y);
 }
 
 struct chpl_chpl____wide_chpl_string_s;
@@ -34,8 +46,6 @@ c_string string_concat(c_string x, c_string y, int32_t lineno, c_string filename
 int string_index_of(c_string x, c_string y);
 c_string string_index(c_string x, int i, int32_t lineno, c_string filename);
 c_string string_select(c_string x, int low, int high, int stride, int32_t lineno, c_string filename);
-int32_t string_compare(c_string x, c_string y);
-int64_t string_length(c_string x);
 
 // implement string_from_c_string and c_string_from_string primitives.
 void string_from_c_string(chpl_string *ret, c_string str, int haslen, int64_t len, int32_t lineno, c_string filename);
