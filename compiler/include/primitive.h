@@ -15,6 +15,9 @@ enum PrimitiveTag {
   PRIM_MOVE,
   PRIM_INIT,
   PRIM_NO_INIT,
+  PRIM_TYPE_INIT,       // Used in a context where only a type is needed.
+                        // Establishes the type of the result without
+                        // generating code.
   PRIM_REF_TO_STRING,
   PRIM_RETURN,
   PRIM_YIELD,
@@ -200,7 +203,6 @@ enum PrimitiveTag {
   PRIM_RT_WARNING,
 
   PRIM_NEW_PRIV_CLASS,
-  PRIM_NUM_PRIV_CLASSES,
   PRIM_GET_PRIV_CLASS,
 
   PRIM_GET_USER_LINE,

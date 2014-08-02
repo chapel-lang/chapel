@@ -365,6 +365,7 @@ initPrimitive() {
   prim_def(PRIM_MOVE, "move", returnInfoVoid, false, true);
   prim_def(PRIM_INIT, "init", returnInfoFirstDeref);
   prim_def(PRIM_NO_INIT, "no init", returnInfoFirstDeref);
+  prim_def(PRIM_TYPE_INIT, "type init", returnInfoFirstDeref);
   prim_def(PRIM_REF_TO_STRING, "ref to string", returnInfoString);
   prim_def(PRIM_RETURN, "return", returnInfoFirst, true);
   prim_def(PRIM_YIELD, "yield", returnInfoFirst, true);
@@ -564,7 +565,6 @@ initPrimitive() {
   prim_def(PRIM_RT_WARNING, "chpl_warning", returnInfoVoid, true, true);
 
   prim_def(PRIM_NEW_PRIV_CLASS, "chpl_newPrivatizedClass", returnInfoVoid, true);
-  prim_def(PRIM_NUM_PRIV_CLASSES, "chpl_numPrivatizedClasses", returnInfoDefaultInt);
   prim_def(PRIM_GET_PRIV_CLASS, "chpl_getPrivatizedClass",  returnInfoFirst);
   
   prim_def(PRIM_GET_USER_LINE, "_get_user_line", returnInfoDefaultInt, true, true);

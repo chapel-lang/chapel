@@ -44,7 +44,7 @@ def print_mode(mode='list'):
         print_var('CHPL_TARGET_PLATFORM', target_platform, mode)
         print_var('CHPL_TARGET_COMPILER', target_compiler, mode)
 
-    if m != 'compiler' and m != 'runtime' and m != 'launcher':
+    if m != 'compiler' and m != 'launcher':
         target_arch = chpl_arch.get('target', mode == 'make')
         print_var('CHPL_TARGET_ARCH', target_arch, mode, 'arch')
 

@@ -63,7 +63,6 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_GET_SVEC_MEMBER:
   case PRIM_GET_PRIV_CLASS:
   case PRIM_NEW_PRIV_CLASS:
-  case PRIM_NUM_PRIV_CLASSES:
 
   case PRIM_CHECK_NIL:
   case PRIM_GET_REAL:
@@ -212,6 +211,7 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_NEW:
   case PRIM_INIT:
   case PRIM_NO_INIT:
+  case PRIM_TYPE_INIT:
   case PRIM_LOGICAL_FOLDER:
   case PRIM_TYPEOF:
   case PRIM_TYPE_TO_STRING:

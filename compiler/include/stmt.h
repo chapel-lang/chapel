@@ -1,13 +1,26 @@
 #ifndef _STMT_H_
 #define _STMT_H_
 
-#include <cstdio>
-#include "alist.h"
-#include "baseAST.h"
-#include "symbol.h"
 #include "expr.h"
 
-#include "genret.h"
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
+
+class Stmt : public Expr {
+public:
+                 Stmt(AstTag astTag);
+  virtual       ~Stmt();
+
+  // Interface to Expr
+  virtual bool   isStmt()                                      const;
+};
+
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
 
 enum BlockTag {
   BLOCK_NORMAL,
@@ -15,59 +28,57 @@ enum BlockTag {
   BLOCK_TYPE       // deleted after type resolution
 };
 
-
-class Stmt : public Expr {
-public:
-  Stmt(AstTag astTag) : Expr(astTag) {}
-  virtual ~Stmt();
-
-  virtual bool isStmt() const { return true; }
-  virtual void replaceChild(Expr* old_ast, Expr* new_ast) = 0;
-  virtual void verify()                                   = 0;
-};
-
-
 class BlockStmt : public Stmt {
 public:
-  BlockTag      blockTag;
-  AList         body;
-  CallExpr*     blockInfo;
-  CallExpr*     modUses;       // module uses via PRIM_USE
-  LabelSymbol*  breakLabel;
-  LabelSymbol*  continueLabel;
-  const char*   userLabel;
-  CallExpr*     byrefVars;     // 'ref' clause in begin/cobegin/coforall
-
-                BlockStmt(Expr* init_body = NULL, BlockTag init_blockTag = BLOCK_NORMAL);
-  virtual      ~BlockStmt();
+                  BlockStmt(Expr*    initBody     = NULL, 
+                            BlockTag initBlockTag = BLOCK_NORMAL);
+  virtual        ~BlockStmt();
 
   DECLARE_COPY(BlockStmt);
 
-  virtual void  replaceChild(Expr* old_ast, Expr* new_ast);
-  virtual void  verify();
-  virtual void  accept(AstVisitor* visitor);
-  GenRet        codegen();
+  // Interface to BaseAST
+  virtual GenRet  codegen();
+  virtual void    verify();
+  virtual void    accept(AstVisitor* visitor);
 
-  void          appendChapelStmt(BlockStmt* stmt);
+  // Interface to Expr
+  virtual void    replaceChild(Expr* oldAst, Expr* newAst);
 
-  void          insertAtHead(Expr* ast);
-  void          insertAtTail(Expr* ast);
-  void          insertAtTailBeforeGoto(Expr* ast);
+  // New interface
+  void            appendChapelStmt(BlockStmt* stmt);
 
-  void          insertAtHead(const char* format, ...);
-  void          insertAtTail(const char* format, ...);
+  void            insertAtHead(Expr* ast);
+  void            insertAtTail(Expr* ast);
+  void            insertAtTailBeforeGoto(Expr* ast);
 
-  bool          isScopeless()                           const;
-  bool          isLoop()                                const;
-  int           length()                                const;
+  void            insertAtHead(const char* format, ...);
+  void            insertAtTail(const char* format, ...);
 
-  void          addUse(ModuleSymbol* mod);
-  void          removeUse(ModuleSymbol* mod);
+  bool            isScopeless()                                const;
+  bool            isLoop()                                     const;
+  int             length()                                     const;
+
+  void            moduleUseAdd(ModuleSymbol* mod);
+  bool            moduleUseRemove(ModuleSymbol* mod);
+  void            moduleUseClear();
+
+  BlockTag        blockTag;
+  AList           body;
+  CallExpr*       blockInfo;
+  CallExpr*       modUses;       // module uses via PRIM_USE
+  LabelSymbol*    breakLabel;
+  LabelSymbol*    continueLabel;
+  const char*     userLabel;
+  CallExpr*       byrefVars;     // 'ref' clause in begin/cobegin/coforall
 
 private:
-  bool         canFlattenChapelStmt(const BlockStmt* stmt)    const;
+  bool            canFlattenChapelStmt(const BlockStmt* stmt)  const;
 };
 
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
 
 class CondStmt : public Stmt {
  public:
@@ -85,6 +96,10 @@ class CondStmt : public Stmt {
   GenRet codegen();
 };
 
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
 
 enum GotoTag {
   GOTO_NORMAL,
@@ -115,34 +130,51 @@ class GotoStmt : public Stmt {
   const char* getName();
 };
 
-class ExternBlockStmt : public Stmt {
- public:
-  const char* c_code;
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
 
-  ExternBlockStmt(const char* c_code);
-  DECLARE_COPY(ExternBlockStmt);
-  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
-  virtual void verify();
+class ExternBlockStmt : public Stmt {
+public:
+                  ExternBlockStmt(const char* c_code);
+
+  // Interface to BaseAST
+  virtual GenRet  codegen();
+  virtual void    verify();
   virtual void    accept(AstVisitor* visitor);
 
-  GenRet codegen();
+  DECLARE_COPY(ExternBlockStmt);
+
+  // Interface to Expr
+  virtual void    replaceChild(Expr* oldAst, Expr* newAst);
+
+  // Local interface
+  const char*     c_code;
 };
+
+
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
+
+extern Vec<LabelSymbol*>         removedIterResumeLabels;
+extern Map<GotoStmt*, GotoStmt*> copiedIterResumeGotos;
 
 
 // Probably belongs in Expr; doesn't really mean Stmt, but rather
 // statement-level expression.
-void codegenStmt(Expr* stmt);
+void         codegenStmt(Expr* stmt);
 
 // Extract (e.toGotoStmt)->(label.toSymExpr)->var and var->->iterResumeGoto,
 // if possible; NULL otherwise.
 LabelSymbol* getGotoLabelSymbol(GotoStmt* gs);
 GotoStmt*    getGotoLabelsIterResumeGoto(GotoStmt* gs);
 
-extern Vec<LabelSymbol*> removedIterResumeLabels;
-void removeDeadIterResumeGotos();
-void verifyNcleanRemovedIterResumeGotos();
+void         removeDeadIterResumeGotos();
+void         verifyNcleanRemovedIterResumeGotos();
 
-extern Map<GotoStmt*,GotoStmt*> copiedIterResumeGotos;
-void verifyNcleanCopiedIterResumeGotos();
+void         verifyNcleanCopiedIterResumeGotos();
 
 #endif

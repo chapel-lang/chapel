@@ -36,6 +36,8 @@ all:
     - Add static flag for performance testing (22992)
   05/08/14:
     - switched to gcc-4.7
+  07/19/14:
+    - no testing occurred, machine update
 
 chameneos-redux:
   07/08/13:
@@ -48,6 +50,10 @@ dgemm.128:
 dgemm.64:
   09/06/13:
     - LICM bug fixes
+
+fannkuch-redux:
+  07/22/14:
+    - Error due to cleaning up file incompletely
 
 fasta:
   01/14/14:
@@ -64,6 +70,8 @@ lulesh-dense:
 nbody:
   03/17/14:
     - removed extra formal temps
+  07/24/14:
+    - chap04 Subtest random glitch
 
 memleaks:
   11/13/13:
@@ -128,6 +136,10 @@ STREAM_performance:
     - chpl_localeID_t's ignore_subloc field minimized to 1 bit
   09/27/13:
     - Reversion of chpl_localeID_t's ignore subloc field being minimized to 1 bit
+
+stencil:
+  07/21/14:
+    - machine related (no commits on the day before)
 
 time_iterate:
   11/13/13:
