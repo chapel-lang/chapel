@@ -274,7 +274,7 @@ getVisibleFunctions(BlockStmt* block,
                     const char* name,
                     Vec<FnSymbol*>& visibleFns,
                     Vec<BlockStmt*>& visited);
-static Type* resolve_type_expr(Expr* expr);
+static Expr* resolve_type_expr(Expr* expr);
 static void makeNoop(CallExpr* call);
 static void resolveDefaultGenericType(CallExpr* call);
 
@@ -1015,7 +1015,12 @@ static void ensureEnumTypeResolved(EnumType* etype) {
     for_enums(def, etype) {
       if (def->init) {
         // Type* enumtype =
+        Expr* enumTypeExpr =
         resolve_type_expr(def->init);
+
+        Type* enumtype = enumTypeExpr->typeInfo();
+        if (enumtype == dtUnknown)
+          INT_FATAL(def->init, "Unable to resolve enumerator type expression");
 
         // printf("Type of %s.%s is %s\n", etype->symbol->name, def->sym->name,
         // enumtype->symbol->name);
@@ -2732,14 +2737,12 @@ static void handleCaptureArgs(CallExpr* call, FnSymbol* taskFn, CallInfo* info) 
 }
 
 
-static Type*
+static Expr*
 resolve_type_expr(Expr* expr) {
-  bool stop = false;
+  Expr* result = NULL;
   for_exprs_postorder(e, expr) {
-    if (expr == e)
-      stop = true;
-    e = preFold(e);
-    if (CallExpr* call = toCallExpr(e)) {
+    result = preFold(e);
+    if (CallExpr* call = toCallExpr(result)) {
       if (call->parentSymbol) {
         callStack.add(call);
         resolveCall(call);
@@ -2753,16 +2756,9 @@ resolve_type_expr(Expr* expr) {
         callStack.pop();
       }
     }
-    e = postFold(e);
-    if (stop) {
-      expr = e;
-      break;
-    }
+    result = postFold(result);
   }
-  Type* t = expr->typeInfo();
-  if (t == dtUnknown)
-    INT_FATAL(expr, "Unable to resolve type expression");
-  return t;
+  return result;
 }
 
 
