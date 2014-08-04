@@ -422,7 +422,7 @@ record regexp {
     } else {
       pos = 0;
       endpos = text.size;
-      textSize = text.size;
+      textSize = endpos;
     }
     var nfound = 0; 
     var cur = pos;
