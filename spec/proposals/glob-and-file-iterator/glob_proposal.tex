@@ -1,0 +1,240 @@
+\documentclass{article}
+\title{File and Glob iterator proposal}
+\input{macro-defs}
+\begin{document}
+\maketitle
+\lstMakeShortInline[]|
+
+The goal of this proposal is to show the interface that we are thinking of implementing
+(we being Brad and Tim). The intention of this iterator is to yield the directories
+and or files reachable from a given directory and is meant to model in some way,
+the semantics of |glob|, |wordexp|, and |listdir| (and functions along these lines).
+
+%args
+%----
+%startdir
+%pattern
+%? types (can we avoid?)
+%? skipdirs (intention: use to skip .svn directories, e.g. -- or could more
+             %specifically have a skipSCMDirs concept)
+
+%flags
+%-----
+%sorted=? (C glob defaults to true;
+           %cl glob defaults to false;
+                      %python: not sure)
+%recursive=false
+%expand=false
+%dirs=false
+%files=true
+%dotfiles=false
+%? symbolic links=false
+%? chunked=false (intention would be to return an assoc array mapping dir
+                  %names to file lists)
+%? warnings/verbose (intention would be to optionally print out problems)
+%??? append slash to dir names=true (would one ever want to do this?)
+\section{User facing interface}
+The interface to the user would be the following:
+\begin{lstlisting}
+iter glob(pattern   : string = "",
+          startdir  : string = "",
+          recursive : int    = 0,
+          files     : bool   = true,
+          sorted    : bool   = false,
+          dirs      : bool   = false,
+          expand    : bool   = false,
+          dotfiles  : bool   = false) : string
+\end{lstlisting}
+where
+\begin{itemize}
+\item |pattern| is a valid |glob| or |wordexp| glob pattern. More information on what
+exactly a valid glob pattern (or wordexp pattern) is, can be found on the |man(3)|
+page for |glob| and |wordexp|.
+\item |sorted| tells us whether we should return a sorted output. These would be
+sorted at the directory level, and using the \emph{full path} (starting from
+|startdir|) of the string yielded from te iterator.
+\item |dirs| Says whether we should yield directories or not.
+\item |files| Says whether we should yield files or not.
+\item |expand| Says whether we should expand environment variables, or run shell
+commands in |pattern| (a la |wordexp|). For more information on this, see the
+|man(3)| page for |wordexp|.
+\item |startdir| directory to start searching from.
+%\item |recursive| tells us whether we should recurse into subdirectories or not.
+\item |recursive| tells us whether we should be recursive or not. If |recursive| is
+set to $0$ we do not recurse into subdirectories, if |recursive| is set to $-1$ we
+recurse into all subdirectories. Otherwise, we recurse to a depth of |recursive| num.
+Whether or not we should do this or use a |bool| instead is an open
+issue. (see ~\ref{s:open_issues})
+\item |dotfiles| Should we yield dotfiles or not? By default, we do not yield
+dotfiles (or recurse into dot directories).
+\end{itemize}
+
+We would (of course) also expose a parallel version of this iterator.
+
+Other, additional flags have been discussed for the possible future. For a discussion
+on what these are see ~\ref{s:open_issues}.
+
+The general thinking that we had when designing this interface was the following:
+\emph{I want to...}
+\begin{itemize}
+\item ``iterate over dirs'' $\to$ |glob(dirs=true, rec=<num>)|
+\item ``give me everything'' $\to$ |glob(rec=<num>)|
+\item ``give me wordexp'' $\to$ |glob(pattern=..., expand=true)|
+\item ``give me C glob'' $\to$ |glob(pattern=..., sorted=true)|
+\item ``give me Python glob'' $\to$ |glob(pattern=...)|
+\item ``give me command-line glob''  $\to$ |glob(pattern=..., sorted=false)|
+\end{itemize}
+
+\section{Open Issues}\label{s:open_issues}
+The following are flags that we have discussed possibly putting in, however we are
+seeking opinions as to whether or not we should add these in.
+
+\begin{itemize}
+\item Is there a better name for this iterator other than |glob|. (We're open to
+suggestions).
+\item Support sorting for parallel invocations of the iterator. Since, in this case
+we would either have to synchronize at the directory level, or sort everything all at
+once.
+\item A flag to drop the final slash when yielding directories.
+\item A warning or verbose flag. The idea behind this flag would be to warn you about
+certain underlying problems. For instance, if we were using |glob| with |expand = true|
+and  |pattern = "$CHPL_HOME/*"| and we had not set |$CHPL_HOME|, we would generate a
+warning that we were using an undefined environment variable in expansion.
+%\item A |chunked| flag. The idea behind this being that we would return ``directory''
+%chunks out to the user as domains or arrays. For an example of what we are
+%envisioning this looking like see ~\ref{s:examples}.
+\item Add a |skipdirs| flag. The idea behind this being that if we wanted
+to avoid certain directory or file names (\eg |.svn| or |.git|), we would set this
+flag to the string we wanted to skip.
+\item Add a |symlinks| flag to say whether or not we should follow symbolic
+links. The main problems that we see with are (1) it add another flag, and (2) we
+could get ourselves into a possible infinite loop if a symlink points to a directory
+that contains the directory we are currently in.
+\item Should, |recursive| be a boolean. In this case we have two possible proposals:
+\begin{itemize}
+\item We simply support recursive or non-recursive searching. The depth to which we
+should recur is not specifiable.
+\item We add a |depth| flag that specifies the depth that we should recur to.
+(defaults to $0$)
+\end{itemize}
+\end{itemize}
+
+\section{Examples}\label{s:examples}
+\subsection{Example 1}
+\begin{lstlisting}
+// Yield all subdirectories of the current directory
+// Won't recurse (so we only get the children of of the current dir)
+// think: ls -l | egrep '^d'
+for dir in glob(dirs=true, files=false) {
+  writeln(dir);
+}
+\end{lstlisting}
+
+\subsection{Example 2}
+\begin{lstlisting}
+// Yield all subdirectories of the current directory
+// In this case we get all subdirectories
+// think: ls -l -R | egrep '^d'
+for dir in glob(dirs=true, files=false, recursive=-1) {
+  writeln(dir);
+}
+\end{lstlisting}
+
+\subsection{Example 3}
+\begin{lstlisting}
+// Yield all subdirectories of the current directory
+// In this case we get all subdirectories up to depth 10
+for dir in glob(dirs=true, files=false, recursive=10) {
+  writeln(dir);
+}
+\end{lstlisting}
+
+\subsection{Example 4}
+\begin{lstlisting}
+// Yield all files in the current directory
+// think: ls -l | egrep -v '^d'
+for fl in glob() {
+  writeln(fl);
+}
+\end{lstlisting}
+
+\subsection{Example 5}
+\begin{lstlisting}
+// Yield all files in and children of the current directory
+// think: ls
+for fl in glob(dirs=true) {
+  writeln(fl);
+}
+\end{lstlisting}
+
+\subsection{Example 6}
+\begin{lstlisting}
+// Yeild all .c files in the current directory
+// think: ls *.c
+for fl in glob(pattern="*.c") {
+  writeln(fl);
+}
+\end{lstlisting}
+
+\subsection{Example 7}
+\begin{lstlisting}
+// Yield all files in the current directory in sorted order.
+for fl in glob(sorted=true) {
+  writeln(fl);
+}
+\end{lstlisting}
+
+\subsection{Example 8}
+\begin{lstlisting}
+// Yield all .c files from this directory down
+// think: ls -R *.c
+for fl in glob(pattern="*.c", recursive=-1) {
+  writeln(fl);
+}
+\end{lstlisting}
+
+\subsection{Example 9}
+\begin{lstlisting}
+// Yield all [a-p] directories from this directory down
+// think: ls -R [a-p]
+for fl in glob(pattern="[a-p]", dirs=true, recursive=-1) {
+  writeln(fl);
+}
+\end{lstlisting}
+
+\subsection{Example 10}
+\begin{lstlisting}
+// Yield all [a-p] directories from this directory down. Yield them in sorted order.
+for fl in glob(pattern="[a-p]", dirs=true, recursive=-1, sorted=true) {
+  writeln(fl);
+}
+\end{lstlisting}
+
+\subsection{Example 11}
+\begin{lstlisting}
+// Yield all [a-p] directories from the $CHPL_HOME directory down. Yield them in sorted order.
+for fl in glob(pattern="$CHPL_HOME/[a-p]", dirs=true,
+               recursive=-1, sorted=true, expand=true) {
+  writeln(fl);
+}
+\end{lstlisting}
+
+\subsection{Example 12}
+\begin{lstlisting}
+// Yield all [a-p] directories from the $CHPL_HOME directory down. Ignore all
+// .git directories and files. Yield them in sorted order.
+for fl in glob(pattern="$CHPL_HOME/[a-p]", dirs=true,
+               recursive=-1, sorted=true, expand=true, skipdirs=".git") {
+  writeln(fl);
+}
+\end{lstlisting}
+
+%\subsection{Example 13}
+%\begin{lstlisting}
+%// Yield all [a-p] directories from this directory down. For each directory we
+%// enter, return an array/domain of all files that were found in that directory
+%for fl in glob(pattern="[a-p]", recursive=-1, chunked=true) {
+%// do something with the array of files handed back...
+%}
+%\end{lstlisting}
+\end{document}
