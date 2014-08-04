@@ -407,13 +407,15 @@ record regexp {
     var nmatches = 1 + captures;
     var pos:int;
     var endpos:int;
+    var textLength:int;
     on this.home {
       matches = _ddata_allocate(qio_regexp_string_piece_t, nmatches);
     }
 
     if t == stringPart then pos = text.offset;
     else pos = 0;
-    endpos = pos + text.length;
+    textLength = text.length;
+    endpos = pos + textLength;
 
     var nfound = 0; 
     var cur = pos;
@@ -421,7 +423,7 @@ record regexp {
       var got:bool;
       on this.home {
         // This doesn't have a case for stringPart.  Mistake?
-        got = qio_regexp_match(_regexp, text.c_str(), text.length, cur, endpos, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
+        got = qio_regexp_match(_regexp, text.c_str(), textLength, cur, endpos, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
       }
       if !got then break;
       param nret = captures+1;
