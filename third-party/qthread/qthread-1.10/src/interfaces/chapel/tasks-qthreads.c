@@ -41,6 +41,7 @@
 #include "qt_syncvar.h" // for blockreporting
 #include "qt_hash.h" /* for qt_key_t */
 #include "qt_atomics.h"      /* for SPINLOCK_BODY() */
+#include "qt_threadqueues.h" // for qthread_steal_disable
 #include "qt_envariables.h"
 #include "qt_debug.h"
 
@@ -320,6 +321,8 @@ void chpl_task_init(void)
     size_t    callStackSize;
     pthread_t initer;
     char      newenv_stack[100] = { 0 };
+    char *noWorkSteal;
+
 
     // Set up available hardware parallelism.
 
@@ -435,6 +438,12 @@ void chpl_task_init(void)
         if (signal(SIGINT, SIGINT_handler) == SIG_ERR) {
             perror("Could not register SIGINT handler");
         }
+    }
+
+    // Turn off work stealing if it was configured to be off
+    noWorkSteal = getenv("CHPL_QTHREAD_NO_WORK_STEALING");
+    if (noWorkSteal != NULL && strncmp(noWorkSteal, "yes", 3) == 0) {
+      qthread_steal_disable();
     }
 }
 
