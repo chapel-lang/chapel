@@ -1343,10 +1343,11 @@ for testname in testsrc:
                 args += lastexecopts
             # sys.stdout.write("args=%s\n"%(args))
 
-            if len(args) >= 2 and args[-2] == '<':
-              execOptRedirect = args[-1]
-              args.pop(-2)
-              args.pop(-1)
+            if len(args) >= 2 and '<' in args:
+              redirIdx = args.index('<')
+              execOptRedirect = args[redirIdx + 1]
+              args.pop(redirIdx+1)
+              args.pop(redirIdx)
               if redirectin == None or redirectin == "/dev/null":
                 if os.access(execOptRedirect, os.R_OK):
                   redirectin = execOptRedirect
