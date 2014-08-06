@@ -27,6 +27,8 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+//vass
+#include "view.h"
 
 
 //########################################################################
@@ -42,10 +44,12 @@ buildDefaultWrapper(FnSymbol* fn,
                     Vec<Symbol*>* defaults,
                     SymbolMap* paramMap,
                     CallInfo* info);
+/*
 static FnSymbol*
 buildOrderWrapper(FnSymbol* fn,
                   SymbolMap* order_map,
                   CallInfo* info);
+*/
 static FnSymbol*
 buildCoercionWrapper(FnSymbol* fn,
                      SymbolMap* coercion_map,
@@ -388,7 +392,7 @@ defaultWrap(FnSymbol* fn,
 //// order wrapper code
 ////
 
-
+/*
 static FnSymbol*
 buildOrderWrapper(FnSymbol* fn,
                   SymbolMap* order_map,
@@ -418,36 +422,50 @@ buildOrderWrapper(FnSymbol* fn,
   normalize(wrapper);
   return wrapper;
 }
-
+*/
 
 FnSymbol*
 orderWrap(FnSymbol* fn,
           Vec<ArgSymbol*>* actualFormals,
           CallInfo* info) {
+  int numArgs = actualFormals->n;
+  if (numArgs <= 1) {
+    // ordering cannot be an issue
+    return fn;
+  }
+
+printf("orderWrap %d %s  %s\n", info->call->id, fn->name, debugLoc(info->call));
   bool order_wrapper_required = false;
-  SymbolMap formals_to_formals;
+  int formals_to_formals[numArgs];
   int i = 0;
   for_formals(formal, fn) {
     i++;
+printf("  formal %d  id %d", i, formal->id);
 
     int j = 0;
     forv_Vec(ArgSymbol, af, *actualFormals) {
       j++;
       if (af == formal) {
+        printf("  af %d  id %d\n", j, af->id);
         if (i != j)
           order_wrapper_required = true;
-        formals_to_formals.put(formal, actualFormals->v[i-1]);
+        formals_to_formals[i-1] = j-1;
       }
     }
   }
   if (order_wrapper_required) {
-    FnSymbol* wrapper = checkCache(ordersCache, fn, &formals_to_formals);
-    if (wrapper == NULL) {
-      wrapper = buildOrderWrapper(fn, &formals_to_formals, info);
-      addCache(ordersCache, fn, wrapper, &formals_to_formals);
-    }
-    resolveFormals(wrapper);
-    return wrapper;
+    printf("BEFORE");
+    nprint_view(info->call);
+    Expr* savedActuals[numArgs];
+    int i = 0;
+    // remove all actuals in an order
+    for_actuals(actual, info->call)
+      savedActuals[i++] = actual->remove();
+    // reinsert them in the desired order
+    for (i = 0; i < numArgs; i++)
+      info->call->insertAtTail(savedActuals[formals_to_formals[i]]);
+    printf("AFTER");
+    nprint_view(info->call);
   }
   return fn;
 }
