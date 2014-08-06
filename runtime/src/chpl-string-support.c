@@ -1,3 +1,17 @@
+/*
+ * chpl-string-support.c
+ *
+ * This file provides utility functions for C strings (char *) and is
+ * used by the runtime, the Chapel generated code, as well as the
+ * launcher.
+ *
+ * Note that the naming here is not ideal and is a byproduct of when
+ * we used Chapel strings (chpl_string) and C strings (c_string)
+ * interchangeably.  When the Chapel string implementation is actually
+ * different than the runtime type c_string, we should go back and
+ * considering naming things more consistently.
+ *
+ */
 #include <stdarg.h>
 #include "chplrt.h"
 #include "sys_basic.h"

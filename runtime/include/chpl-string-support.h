@@ -1,5 +1,15 @@
 #ifndef _chpl_string_support_h_
 #define _chpl_string_support_h_
+/*
+ * chpl-string-support.h
+ *
+ * This file provides utility functions for C strings (char *) and is
+ * used by the runtime, the Chapel generated code, as well as the
+ * launcher.
+ *
+ * See comments at the top of chpl-string-support.c for more info.
+ *
+ */
 
 typedef const char* c_string;
 
