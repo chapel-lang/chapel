@@ -9,7 +9,6 @@ Initializing Modules:
     ChapelThreads
     ChapelTuple
     ChapelRange
-     ChapelRangeBase
     LocaleModel
      ChapelLocale
      DefaultRectangular
