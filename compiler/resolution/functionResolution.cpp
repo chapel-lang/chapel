@@ -4295,6 +4295,33 @@ static Type* resolveTypeAlias(SymExpr* se)
   return resolveTypeAlias(tse);
 }
 
+
+static CallExpr* generateConcreteConstructorCall(Type* type)
+{
+  // Assume that tuple types have already been resolved.
+  if (type->symbol->hasFlag(FLAG_TUPLE))
+    return new CallExpr(type->defaultInitializer);
+
+  UnresolvedSymExpr* ctorSym =
+    new UnresolvedSymExpr(type->defaultInitializer->name);
+  CallExpr* call = new CallExpr(ctorSym);
+
+  if (isAggregateType(type))
+  {
+    // Do what the default type constructor does for this type does by default.
+    form_Map(SymbolMapElem, sub, type->substitutions)
+    {
+      Symbol* field = sub->key;
+      SymExpr* typeExpr = new SymExpr(sub->value);
+      NamedExpr* arg = new NamedExpr(field->name, typeExpr);
+      call->insertAtTail(arg);
+    }
+  }
+
+  return call;
+}
+
+
 // Returns NULL if no substitution was made.  Otherwise, returns the expression
 // that replaced the PRIM_INIT (or PRIM_NO_INIT) expression.
 // Here, "replaced" means that the PRIM_INIT (or PRIM_NO_INIT) primitive is no
@@ -4375,7 +4402,7 @@ static Expr* resolvePrimInit(CallExpr* call)
         // default constructors.  So give up now!
         return result;
 
-      CallExpr* initCall = new CallExpr(type->defaultInitializer);
+      CallExpr* initCall = generateConcreteConstructorCall(type);
       call->replace(initCall);
       resolveCall(initCall);
       result = initCall;

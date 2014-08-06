@@ -492,7 +492,7 @@ param _oldioerr="This program is using old-style I/O which is no longer supporte
 proc file.file(filename:string="",
                mode:FileAccessMode=FileAccessMode.read,
                path:string=".") {
-  compilerError(_oldioerr);
+  //  compilerError(_oldioerr);
 }
 proc file.open() {
   compilerError(_oldioerr);
