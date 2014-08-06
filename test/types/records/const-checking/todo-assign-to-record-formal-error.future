@@ -1,0 +1,5 @@
+bug: an assignment to a field of a record-typed formal passed by blank intent is not flagged as an error
+
+Constness checking implemented in SVN r22963 needs to be extended to
+report an error in this code. That's because since a record passed
+by blank intent is considered "const", it should not be assignable.
