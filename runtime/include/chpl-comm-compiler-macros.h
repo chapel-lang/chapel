@@ -44,7 +44,7 @@ void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
 static ___always_inline
 void chpl_gen_comm_prefetch(c_nodeid_t node, void* raddr,
                             int32_t elemSize, int32_t typeIndex, int32_t len,
-                            int ln, chpl_string fn)
+                            int ln, c_string fn)
 {
   const int32_t MAX_BYTES_LOCAL_PREFETCH = 1024;
   int32_t offset;

@@ -219,6 +219,6 @@ typedef struct chpl_main_argument_s {
 /* This should be moved somewhere else, but where is the question */
 const char* chpl_get_argument_i(chpl_main_argument* args, int32_t i);
 
-#include "chpl-string.h"
+#include "chpl-string-support.h"
 
 #endif
