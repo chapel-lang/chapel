@@ -1,0 +1,37 @@
+semantic: Can user type names overload fundamental type names?
+
+This test used to work, because the type range(int) would resolve to
+the internal record range, while just range would resolve to the
+user's type.  Had the original test read
+
+record range {
+  var r: range;
+}
+var r: range;
+writeln(r);
+
+it might have failed at the field declaration due to the circular
+reference.  But in any case, writing it that way raises the question:
+whose "range" do we use there? the user's? or the compiler's?
+
+If we say that the user's type overrides the compiler's, then the
+output of the test could not have been "1..0".  To avoid such a
+paradox, I recommend treating "range" as a reserved word
+uniformly. <hilde>
+
+
+After the introduction of default constructor calls, it does not work
+anyway.  Since default constructor calls are resolved by name, the
+declaration at module scope resolves to the compiler's default constructor and
+the user's version is ignored.  
+
+Section 18.2 of the spec suggests that "range" names the compiler's range type.
+So unless there is text elsewhere in the spec that says a user-defined type can
+hide the compiler-defined type of the same name, what happens in the case is
+unspecified.  
+
+If it is decided that the user may override the compiler-supplied type, the
+compiler should uniformly select the user type definition over the internal
+one.  If it is decided that overriding is not allowed, then the compiler should
+diagnose the attempt.  In either case, the contents of the .good file (as it
+stands) cannot be correct.
