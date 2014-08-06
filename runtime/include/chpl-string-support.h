@@ -3,6 +3,7 @@
 
 typedef const char* c_string;
 
+#include "chpltypes.h"
 #include <string.h>
 
 static ___always_inline

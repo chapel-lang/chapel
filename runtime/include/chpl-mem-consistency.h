@@ -39,7 +39,7 @@
 // task.
 
 static ___always_inline
-void chpl_rmem_consist_release(int ln, chpl_string fn)
+void chpl_rmem_consist_release(int ln, c_string fn)
 {
 #ifdef HAS_CHPL_CACHE_FNS
   chpl_cache_release(ln, fn);
@@ -47,7 +47,7 @@ void chpl_rmem_consist_release(int ln, chpl_string fn)
 }
 
 static ___always_inline
-void chpl_rmem_consist_acquire(int ln, chpl_string fn)
+void chpl_rmem_consist_acquire(int ln, c_string fn)
 {
 #ifdef HAS_CHPL_CACHE_FNS
   chpl_cache_acquire(ln, fn);
@@ -60,8 +60,8 @@ void chpl_rmem_consist_acquire(int ln, chpl_string fn)
 // operations/fences. 
 
 static ___always_inline
-//void chpl_atomic_rmem_fence_pre(memory_order order, int ln, chpl_string fn) {
-void chpl_rmem_consist_maybe_release(memory_order order, int ln, chpl_string fn) {
+//void chpl_atomic_rmem_fence_pre(memory_order order, int ln, c_string fn) {
+void chpl_rmem_consist_maybe_release(memory_order order, int ln, c_string fn) {
   if(order==memory_order_acquire || order==memory_order_relaxed) {
     // do nothing
   } else {
@@ -70,8 +70,8 @@ void chpl_rmem_consist_maybe_release(memory_order order, int ln, chpl_string fn)
   }
 }
 static ___always_inline
-//void chpl_atomic_rmem_fence_post(memory_order order, int ln, chpl_string fn) {
-void chpl_rmem_consist_maybe_acquire(memory_order order, int ln, chpl_string fn) {
+//void chpl_atomic_rmem_fence_post(memory_order order, int ln, c_string fn) {
+void chpl_rmem_consist_maybe_acquire(memory_order order, int ln, c_string fn) {
   if(order==memory_order_release || order==memory_order_relaxed) {
     // do nothing
   } else {
@@ -81,8 +81,8 @@ void chpl_rmem_consist_maybe_acquire(memory_order order, int ln, chpl_string fn)
 }
 
 static ___always_inline
-//void chpl_atomic_rmem_fence(memory_order order, int ln, chpl_string fn) {
-void chpl_rmem_consist_fence(memory_order order, int ln, chpl_string fn) {
+//void chpl_atomic_rmem_fence(memory_order order, int ln, c_string fn) {
+void chpl_rmem_consist_fence(memory_order order, int ln, c_string fn) {
   if(order==memory_order_relaxed) {
     // do nothing
   } else {
