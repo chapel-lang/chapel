@@ -418,6 +418,7 @@ void reorderActuals(FnSymbol* fn,
     for (i = 0; i < numArgs; i++)
       info->call->insertAtTail(savedActuals[formals_to_formals[i]]);
     // reorder CallInfo data as well
+    // ideally this would be encapsulated in within the CallInfo class
     INT_ASSERT(info->actuals.n == numArgs);
     Symbol* ciActuals[numArgs];
     const char* ciActualNames[numArgs];
