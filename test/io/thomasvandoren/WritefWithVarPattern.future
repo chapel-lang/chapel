@@ -1,0 +1,16 @@
+bug: writef fails to resolve when first argument is var string instead of string literal
+
+This example highlights the issue:
+
+var outPattern = "%s\n";
+writef(outPattern, "i can haz format?");
+
+The compiler is unable to resolve writef. The canditate includes these options,
+which are fairly close to 'writef(string, "i can haz format?")':
+
+channel.writef(fmt: string, args ...?k)
+channel.writef(fmt: c_string, args ...?k)
+writef(fmt: c_string, args ...?k)
+
+However, it is notable that writef(fmt: string, args ...?k) is missing from the
+candidate list.
