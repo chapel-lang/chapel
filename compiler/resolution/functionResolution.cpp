@@ -4322,6 +4322,37 @@ static CallExpr* generateConcreteConstructorCall(Type* type)
 }
 
 
+// Substitution of runtime type values for types bearing that flag
+// depends on the type already having been stored in a variable, so we
+// cannot simply name the type as an actual argument and expect it to
+// be replaced by a runtime type value....
+// This function inserts a type temp for type arguments carrying the
+// HAS_RUNTIME_TYPE flag, so that runtime type handling can perform the rest of
+// the substitution.
+// As an alternative to this workaround, we could make the
+// handling of runtime types more robust...
+static void fixupRuntimeTypeArguments(CallExpr* call)
+{
+  for_actuals(actual, call)
+  {
+    NamedExpr* ne = toNamedExpr(actual);
+    SymExpr* se = toSymExpr(ne->actual);
+    if (TypeSymbol* ts = toTypeSymbol(se->var))
+    {
+      if (ts->hasFlag(FLAG_HAS_RUNTIME_TYPE))
+      {
+        Expr* stmt = call->getStmtExpr();
+        VarSymbol* typeTmp = newTemp(astr("_type_tmp_", ne->name), se->var->type);
+        typeTmp->addFlag(FLAG_TYPE_VARIABLE);
+        stmt->insertBefore(new DefExpr(typeTmp));
+        CallExpr* init = new CallExpr(PRIM_INIT, se->copy());
+        stmt->insertBefore(new CallExpr(PRIM_MOVE, new SymExpr(typeTmp), init));
+        ne->actual->replace(new SymExpr(typeTmp));
+      }
+    }
+  }
+}
+
 // Returns NULL if no substitution was made.  Otherwise, returns the expression
 // that replaced the PRIM_INIT (or PRIM_NO_INIT) expression.
 // Here, "replaced" means that the PRIM_INIT (or PRIM_NO_INIT) primitive is no
@@ -4404,7 +4435,9 @@ static Expr* resolvePrimInit(CallExpr* call)
 
       CallExpr* initCall = generateConcreteConstructorCall(type);
       call->replace(initCall);
+      fixupRuntimeTypeArguments(initCall);
       resolveCall(initCall);
+      resolveFns(initCall->isResolved());
       result = initCall;
       return result;
     }
@@ -6820,9 +6853,8 @@ static void resolveRecordInitializers() {
     Type* type = init->get(1)->typeInfo();
 
     // Don't resolve initializers for runtime types.
-    // I think this should be dead code because runtime type expressions
-    // are all resolved during resolution (and this function is called
-    // after that).
+    // These have to be resolved after runtime types are replaced by values in
+    // insertRuntimeInitTemps().
     if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))
       continue;
 
