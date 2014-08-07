@@ -3951,7 +3951,6 @@ qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out)
   // In the case where we do not have a Lustre or block type fs, we set the chunk
   // size to be the optimal transfer block size
   qioerr err = 0;
-  int ftype = 0;
   int fd = 0;
   sys_statfs_t s;
 
@@ -3962,15 +3961,18 @@ qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out)
     if (fl->fp) fd = fileno(fl->fp);
 
 #ifdef SYS_HAS_LLAPI 
-    // This will be set in the lustre plugin if we have Lustre support available
-    err = qio_get_fs_type(fl, &ftype);
-    if (ftype == FTYPE_LUSTRE) {
-      // lustre FS
-      err = qio_int_to_err(sys_lustre_get_stripe_size(fd, len_out));
-    } else {
-      // non-lustre FS
-      err = qio_int_to_err(sys_fstatfs(fd, &s));
-      *len_out = s.f_bsize;
+    {
+      int ftype = 0;
+      // This will be set in the lustre plugin if we have Lustre support available
+      err = qio_get_fs_type(fl, &ftype);
+      if (ftype == FTYPE_LUSTRE) {
+        // lustre FS
+        err = qio_int_to_err(sys_lustre_get_stripe_size(fd, len_out));
+      } else {
+        // non-lustre FS
+        err = qio_int_to_err(sys_fstatfs(fd, &s));
+        *len_out = s.f_bsize;
+      }
     }
 #else
     err = qio_int_to_err(sys_fstatfs(fd, &s));
