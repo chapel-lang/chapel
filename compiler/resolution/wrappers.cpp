@@ -27,6 +27,8 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+//vass
+#include "view.h"
 
 
 //########################################################################
@@ -411,6 +413,9 @@ orderWrap(FnSymbol* fn,
     }
   }
   if (order_wrapper_required) {
+printf("reordering call to %s   %d  %s\n", fn->name,
+       info->call->id, debugLoc(info->call));
+nprint_view(info->call);
     Expr* savedActuals[numArgs];
     int i = 0;
     // remove all actuals in an order
@@ -419,6 +424,20 @@ orderWrap(FnSymbol* fn,
     // reinsert them in the desired order
     for (i = 0; i < numArgs; i++)
       info->call->insertAtTail(savedActuals[formals_to_formals[i]]);
+    // reorder CallInfo data as well
+    INT_ASSERT(info->actuals.n == numArgs);
+    Symbol* ciActuals[numArgs];
+    const char* ciActualNames[numArgs];
+    for (i = 0; i < numArgs; i++)
+      printf("%d %s  ", info->actuals.v[i]->id, info->actualNames.v[i]),
+      ciActuals[i] = info->actuals.v[i],
+      ciActualNames[i] = info->actualNames.v[i];
+printf("\n");
+    for (i = 0; i < numArgs; i++)
+      info->actuals.v[i] = ciActuals[formals_to_formals[i]],
+      info->actualNames.v[i] = ciActualNames[formals_to_formals[i]],
+      printf("%d %s  ", info->actuals.v[i]->id, info->actualNames.v[i]);
+printf("\n");
   }
   return fn;
 }
