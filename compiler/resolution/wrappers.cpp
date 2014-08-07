@@ -27,8 +27,6 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
-//vass
-#include "view.h"
 
 
 //########################################################################
@@ -413,9 +411,6 @@ orderWrap(FnSymbol* fn,
     }
   }
   if (order_wrapper_required) {
-printf("reordering call to %s   %d  %s\n", fn->name,
-       info->call->id, debugLoc(info->call));
-nprint_view(info->call);
     Expr* savedActuals[numArgs];
     int i = 0;
     // remove all actuals in an order
@@ -429,15 +424,11 @@ nprint_view(info->call);
     Symbol* ciActuals[numArgs];
     const char* ciActualNames[numArgs];
     for (i = 0; i < numArgs; i++)
-      printf("%d %s  ", info->actuals.v[i]->id, info->actualNames.v[i]),
       ciActuals[i] = info->actuals.v[i],
       ciActualNames[i] = info->actualNames.v[i];
-printf("\n");
     for (i = 0; i < numArgs; i++)
       info->actuals.v[i] = ciActuals[formals_to_formals[i]],
-      info->actualNames.v[i] = ciActualNames[formals_to_formals[i]],
-      printf("%d %s  ", info->actuals.v[i]->id, info->actualNames.v[i]);
-printf("\n");
+      info->actualNames.v[i] = ciActualNames[formals_to_formals[i]];
   }
   return fn;
 }
