@@ -708,7 +708,7 @@ proc _modestring(mode:iomode) {
   }
 }
 
-proc open(out error:syserr, path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
+proc openurl(out error:syserr, path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
 
   // hdfs paths are expected to be of the form:
   // hdfs://<host>:<port>/<path>
@@ -754,16 +754,14 @@ proc open(out error:syserr, path:string, mode:iomode, hints:iohints=IOHINT_NONE,
       // On return ret._file_internal.ref_cnt == 1.
     }
   } else {
-    if (__primitive("string_contains", path, "hdfs://")) { // HDFS
+    if (path.startsWith("hdfs://")) { // HDFS
       var (host, port, file_path) = parse_hdfs_path(path);
       var fs:c_void_ptr;
       error = hdfs_connect(fs, host.c_str(), port);
       if error then ioerror(error, "Unable to connect to HDFS", host);
       error = qio_file_open_access_usr(ret._file_internal, file_path.c_str(), _modestring(mode).c_str(), hints, local_style, fs, hdfs_function_struct_ptr);
       if error then ioerror(error, "Unable to open file in HDFS", path);
-    } else if (__primitive("string_contains", path, "http://") || __primitive("string_contains", path, "https://") ||
-        __primitive("string_contains", path, "ftp://")  || __primitive("string_contains", path, "smtp://")  ||
-        __primitive("string_contains", path, "www."))  { // Curl
+    } else if (path.startsWith("http://", "https://", "ftp://", "smtp://"))  { // Curl
       error = qio_file_open_access_usr(ret._file_internal, path.c_str(), _modestring(mode).c_str(), hints, local_style, c_nil, curl_function_struct_ptr);
       if error then ioerror(error, "Unable to open URL", path);
     } else {
@@ -771,6 +769,14 @@ proc open(out error:syserr, path:string, mode:iomode, hints:iohints=IOHINT_NONE,
       // On return ret._file_internal.ref_cnt == 1.
     }
   }
+  return ret;
+}
+
+proc open(out error:syserr, path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
+  var local_style = style;
+  var ret:file;
+  ret.home = here;
+  error = qio_file_open_access(ret._file_internal, path.c_str(), _modestring(mode).c_str(), hints, local_style);
   return ret;
 }
 
@@ -1089,6 +1095,14 @@ proc channel._set_style(style:iostyle) {
     var local_style:iostyle = style;
     qio_channel_set_style(_channel_internal, local_style);
   }
+}
+
+proc openreader(path:string, mode:iomode, param kind=iokind.dynamic, param locking=true,
+    start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE) {
+  var err: syserr = ENOERR;
+  var fl:file = openurl(err, path, mode);
+  if err then ioerror(err, "in openreader(path:string, mode:iomode)");
+  return fl.reader(kind, locking, start, end, hints, fl._style);
 }
 
 // It is the responsibility of the caller to release the returned channel

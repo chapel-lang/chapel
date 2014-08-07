@@ -26,6 +26,9 @@ struct str_t {
   size_t size;
 };
 
+// Since a curl handle does not hold where it has read to, we need to do this here.
+// As well, since we can many times request byte-ranges (for HTTP/HTTPS) we keep
+// track of that here as well.
 struct curl_handle {
   CURL*       curl;           // Curl handle
   const char* pathnm;         // Path/URL (etc.)
@@ -34,8 +37,13 @@ struct curl_handle {
   int         seekable;       // Can we request byteranges from this URL?
 };
 
+// Since the callback is called many times from a call to curl_easy_perform, and
+// since we know the amount that we need to read into the iovec passed into
+// preadv/readv resp. we therefore put the entire iovec (that is passed into readv/preadv) into
+// the vec field of this struct since this way, we only call curl_easy_perform once
+// (and thus, get rid of the overhead that multiple calls could cause).
 struct curl_iovec_t {
-  struct  iovec* vec; // iovec to read into
+  struct  iovec* vec; // iovec to read into -- This is the iovec that is passed into curl_readv/curl_preadv
   size_t  total_read; // total amount read
   size_t  amt_read;   // How much we have read into the current iovec buffer
   int     count;      // number of buffers in the iovec
@@ -43,6 +51,8 @@ struct curl_iovec_t {
   int     curr;       // the index of the current buffer
 };
 
+// userdata, is a curl_iovec_t. This is set to be passed into this function, when we
+// call CURLOPT_WRITEDATA in curl_preadv and curl_readv.
 static
 size_t buf_writer(char* ptr_data, size_t size, size_t nmemb, void* userdata)
 {
@@ -97,6 +107,11 @@ size_t buf_writer(char* ptr_data, size_t size, size_t nmemb, void* userdata)
   return real_realsize;
 }
 
+// We want to upload data from the iovec passed into curl_writev. We populate a
+// curl_iovec_t in curl_writev, and set it to be passed in when we call
+// CURLOPT_READDATA. Note, that we can only return a chunk of memory at most
+// size*nmemb big to curl (i.e., sizeof(ptr) <= size*nmemb after this function is
+// called by CURL).
 static
 size_t read_data(void *ptr, size_t size, size_t nmemb, void *userp)
 {
@@ -136,6 +151,8 @@ size_t read_data(void *ptr, size_t size, size_t nmemb, void *userp)
   return ret->total_read;
 }
 
+// Write out to a file descriptor. ptr is the data we have from curl, and fd_ptr is
+// a pointer to the file descriptor of the file we want to write out to.
 static
 size_t chpl_curl_write(void* ptr, size_t size, size_t nmemb, void* fd_ptr)
 {
@@ -144,6 +161,9 @@ size_t chpl_curl_write(void* ptr, size_t size, size_t nmemb, void* fd_ptr)
   return num_written_out;
 }
 
+// Write from curl to a string. Note that userdata is a str_t, since nuch as we have
+// to keep track of how much we read in  buf_writer, we have to keep track of how
+// long our string is so that we cann lengthen it via realloc as we need to.
 static
 size_t chpl_curl_write_string(void *contents, size_t size, size_t nmemb, void *userp)
 {
@@ -181,13 +201,17 @@ qioerr curl_readv(void* file, const struct iovec *vector, int count, ssize_t* nu
   write_vec.curr = 0;
 
   if (local_handle->seekable)  // we can request byteranges
+    // Tell Curl we want to start reading from the current offset
     curl_easy_setopt(local_handle->curl, CURLOPT_RESUME_FROM_LARGE, local_handle->current_offset);
   else
     write_vec.offset = local_handle->current_offset;
 
+  // Set the function that we are going to use to write into our iovec buffer
+  // In this case, set buf_writer as our callback function
   curl_easy_setopt(local_handle->curl, CURLOPT_WRITEFUNCTION, buf_writer);
 
-  // Read into write_vec
+  // Read into write_vec. This is what is passed into the 'userdata' parameter for
+  // the callback function.
   curl_easy_setopt(local_handle->curl, CURLOPT_WRITEDATA, &write_vec);
 
   // Read our data into the buf
@@ -195,6 +219,7 @@ qioerr curl_readv(void* file, const struct iovec *vector, int count, ssize_t* nu
 
   DONE_SLOW_SYSCALL;
 
+  // Get the total amount that we were able to read from CURL into the iovec
   got_total = write_vec.total_read;
   local_handle->current_offset += got_total;
 

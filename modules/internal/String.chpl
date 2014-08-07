@@ -78,6 +78,18 @@ module String {
     return toString(this.c_str().substring(i));
   inline proc _string_contains(a: string, b: string)
     return _string_contains(a.c_str(), b.c_str());
+
+  /* args: any number of strings
+     return: Returns true if this starts with one of the strings specified in args
+   */
+  inline proc string.startsWith(args ...?k):bool {
+    for param i in 1..k {
+      if (__primitive("string_contains", this.substring(0..args(i).length), args(i)))
+        then return true;
+    }
+    return false;
+  }
+
   
   /* Returns the index of the first occurrence of a substring within a string,
       or 0 if the substring is not in the string.
