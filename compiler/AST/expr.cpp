@@ -3716,6 +3716,12 @@ GenRet CallExpr::codegen() {
       break;
     case PRIM_MOVE:
     {
+      if (isSymExpr(get(1)) &&
+          toSymExpr(get(1))->var->hasFlag(FLAG_TYPE_VARIABLE)) {
+        // Why are we getting here?
+        break;
+      }
+
       if (get(1)->typeInfo() == dtVoid) {
         ret = get(2)->codegen();
         break;

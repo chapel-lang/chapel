@@ -531,7 +531,14 @@ GenRet VarSymbol::codegen() {
 #ifdef HAVE_LLVM
 
     // for LLVM
-    
+
+    // Handle type variables.
+    if( hasFlag(FLAG_TYPE_VARIABLE) ) {
+      // code generate the type.
+      GenRet got = typeInfo();
+      return got;
+    }
+
     // for nil, generate a void pointer of chplType dtNil
     // to allow LLVM pointer cast
     // e.g. T = ( (locale) (nil) );
