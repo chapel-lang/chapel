@@ -382,6 +382,8 @@ const std::string runUtilScript(const char* script) {
 }
 
 const char* getIntermediateDirName() {
+  ensureTmpDirExists();
+
   return intDirName;
 }
 
