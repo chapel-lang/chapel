@@ -1,7 +1,7 @@
 ifneq (,$(findstring curl,$(CHPL_MAKE_AUXFS)))
-	AUXFS_SRCS = qio_plugin_curl.cc
+	AUXFS_SRCS = qio_plugin_curl.c
 else
-	AUXFS_SRCS = qio_plugin_curl_stubs.cc
+	AUXFS_SRCS = qio_plugin_curl_stubs.c
 endif 
 
 SVN_SRCS = $(AUXFS_SRCS)
@@ -17,4 +17,4 @@ RUNTIME_INCLS+= $(CHPL_AUXIO_INCLUDE) $(CHPL_AUXIO_LIBS)
 
 $(RUNTIME_OBJ_DIR)/qio_plugin_curl.o: $(AUXFS_SRCS) \
                                          $(RUNTIME_OBJ_DIR_STAMP)
-	$(CXX) -c $(RUNTIME_CXXFLAGS) $(RUNTIME_INCLS) -o $@ $<
+	$(CC) -c $(RUNTIME_CFLAGS) $(RUNTIME_INCLS) -o $@ $<
