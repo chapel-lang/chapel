@@ -1480,6 +1480,22 @@ proc channel.read(ref args ...?k,
   }
 }
 
+proc channel.readline(ref data: [] uint(8), ref numRead, inclusive = true) :bool {
+  var temp : uint(8);
+  for d in data {
+    var err : syserr;
+    var got = this.read(temp, err);
+    if !err {
+      if inclusive || (!inclusive && temp != 10) {
+        numRead += 1;
+        d = temp;
+      }
+      if temp == 10 then return true;
+    } else return false;
+  }
+  return true;
+}
+
 proc channel.readline(ref arg:string, out error:syserr):bool {
   if writing then compilerError("read on write-only channel");
   error = ENOERR;
