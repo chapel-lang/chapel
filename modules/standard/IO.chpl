@@ -772,6 +772,15 @@ proc openurl(out error:syserr, path:string, mode:iomode, hints:iohints=IOHINT_NO
   return ret;
 }
 
+proc openurl(path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
+  var err:syserr = ENOERR;
+  var ret = openurl(err, path, mode, hints, style);
+  if err then ioerror(err, "in openurl", path);
+  return ret;
+}
+
+
+
 proc open(out error:syserr, path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
   var local_style = style;
   var ret:file;
@@ -1097,12 +1106,24 @@ proc channel._set_style(style:iostyle) {
   }
 }
 
-proc openreader(path:string, mode:iomode, param kind=iokind.dynamic, param locking=true,
+// We can simply call channel.close() on these, since the underlying file will be
+// closed once we no longer have any references to it (which in this case, since we
+// only will have one reference, will be right after we close this channel
+// presumably).
+proc openreader(path:string, param kind=iokind.dynamic, param locking=true,
     start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE) {
   var err: syserr = ENOERR;
-  var fl:file = openurl(err, path, mode);
-  if err then ioerror(err, "in openreader(path:string, mode:iomode)");
+  var fl:file = openurl(err, path, iomode.r);
+  if err then ioerror(err, "in openreader");
   return fl.reader(kind, locking, start, end, hints, fl._style);
+}
+
+proc openwriter(path:string, param kind=iokind.dynamic, param locking=true,
+    start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE) {
+  var err: syserr = ENOERR;
+  var fl:file = openurl(err, path, iomode.cw);
+  if err then ioerror(err, "in openwriter");
+  return fl.writer(kind, locking, start, end, hints, fl._style);
 }
 
 // It is the responsibility of the caller to release the returned channel
