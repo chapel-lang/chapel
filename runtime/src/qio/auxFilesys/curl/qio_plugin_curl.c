@@ -321,33 +321,51 @@ qioerr curl_writev(void* fl, const struct iovec* iov, int iovcnt, ssize_t* num_w
 }
 
 static
+int startWith(const char *haystack, const char *needle)
+{
+  return strncmp(haystack, needle, strlen(needle)) == 0;
+}
+
+static
 int curl_seekable(void* file)
 {
   struct str_t buf;
   int ret = 0;
+  // We're on HTTP/HTTPS so we should look for byte ranges to see if we can request
+  // them
+  if (startWith(to_curl_handle(file)->pathnm, "http://") ||
+      startWith(to_curl_handle(file)->pathnm, "https://")) {
 
-  // The size doesn't really matter, we just want a place on the heap. This will get
-  // expanded in curl_write_string
-  buf.mem = (char*)qio_calloc(1, 1);
-  buf.size = 0;
+    // The size doesn't really matter, we just want a place on the heap. This will get
+    // expanded in curl_write_string.
+    // Headers tend to be ~800, although they can grow much larger than this. If it is
+    // larger than this, we'll take care of it in chpl_curl_write_string.
+    buf.mem = (char*)qio_calloc(800, 1);
+    buf.size = 0;
 
-  curl_easy_setopt(to_curl_handle(file)->curl, CURLOPT_WRITEFUNCTION, chpl_curl_write_string);
-  curl_easy_setopt(to_curl_handle(file)->curl, CURLOPT_HEADERDATA, &buf);
-  curl_easy_setopt(to_curl_handle(file)->curl, CURLOPT_NOBODY, 1L);
+    curl_easy_setopt(to_curl_handle(file)->curl, CURLOPT_WRITEFUNCTION, chpl_curl_write_string);
+    curl_easy_setopt(to_curl_handle(file)->curl, CURLOPT_HEADERDATA, &buf);
+    curl_easy_setopt(to_curl_handle(file)->curl, CURLOPT_NOBODY, 1L);
 
-  curl_easy_perform(to_curl_handle(file)->curl);
+    curl_easy_perform(to_curl_handle(file)->curl);
 
-  curl_easy_setopt(to_curl_handle(file)->curl, CURLOPT_NOBODY, 0L);
-  curl_easy_setopt(to_curl_handle(file)->curl, CURLOPT_WRITEFUNCTION, NULL);
-  curl_easy_setopt(to_curl_handle(file)->curl, CURLOPT_HEADERDATA, NULL);
+    curl_easy_setopt(to_curl_handle(file)->curl, CURLOPT_NOBODY, 0L);
+    curl_easy_setopt(to_curl_handle(file)->curl, CURLOPT_WRITEFUNCTION, NULL);
+    curl_easy_setopt(to_curl_handle(file)->curl, CURLOPT_HEADERDATA, NULL);
 
-  // Does this URL accept range requests?
-  if (strstr(buf.mem, "Accept-Ranges") == NULL)
+    // Does this URL accept range requests?
+    if (strstr(buf.mem, "Accept-Ranges") == NULL)
       ret = 0;
-  else
+    else
       ret = 1;
 
-  qio_free(buf.mem);
+    qio_free(buf.mem);
+  }
+
+  // We can always "seek" on ftp (with the REST command/RESUME_FROM_LARGE)
+  if (startWith(to_curl_handle(file)->pathnm, "ftp://"))
+    ret = 1;
+
   return ret;
 }
 
@@ -365,13 +383,15 @@ qioerr curl_open(void** fd, const char* path, int* flags, mode_t mode, qio_hint_
 
   // Assert that we opened the file
   if (to_curl_handle(fl)->curl == NULL) {
-    QIO_GET_CONSTANT_ERROR(err_out, ECONNREFUSED, "Unable to connect to Curl");
+    QIO_GET_CONSTANT_ERROR(err_out, ECONNREFUSED, "Unable to connect with Curl");
     goto error;
   }
 
   // set URL
   curl_easy_setopt(to_curl_handle(fl)->curl, CURLOPT_URL, path);
 
+  to_curl_handle(fl)->pathnm = path;
+  to_curl_handle(fl)->current_offset = 0;
 
   rc = *flags | ~O_ACCMODE;
   rc &= O_ACCMODE;
@@ -385,8 +405,8 @@ qioerr curl_open(void** fd, const char* path, int* flags, mode_t mode, qio_hint_
   }
 
   // Read the header in order to get the length of the thing we are reading
-  // If we are writing, it is illegal to try and get the header information, so don't
-  // try and get it. As well, trying to figure out its length isn't good either.
+  // If we are writing, we can't really get this information (even if we try to do a
+  // 0 length read).
   if (*flags & O_WRONLY) {
     to_curl_handle(fl)->length = -1;
     to_curl_handle(fl)->seekable = 0;
@@ -400,8 +420,6 @@ qioerr curl_open(void** fd, const char* path, int* flags, mode_t mode, qio_hint_
     to_curl_handle(fl)->seekable = curl_seekable(fl);
   }
 
-  to_curl_handle(fl)->pathnm = path;
-  to_curl_handle(fl)->current_offset = 0;
   DONE_SLOW_SYSCALL;
 
   *fd = fl;
@@ -517,7 +535,9 @@ qioerr chpl_curl_stream_string(qio_file_t* fl, const char** str)
   struct str_t chunk;
   CURLcode res;
 
-  chunk.mem = (char*)qio_calloc(1, 1); // doesn't really matter, we just want a place on the heap
+  chunk.mem = (char*)qio_calloc(800, 1); // No one *really* knows the average haeader
+                                         // size, but it seems as though values
+                                         // around this range are fairly common
   chunk.size = 0;
 
   STARTING_SLOW_SYSCALL;
@@ -571,3 +591,170 @@ qio_file_functions_t curl_function_struct = {
 };
 
 const qio_file_functions_ptr_t curl_function_struct_ptr = &curl_function_struct;
+
+const int curlopt_file                       = CURLOPT_FILE;
+const int curlopt_url                        = CURLOPT_URL;
+const int curlopt_port                       = CURLOPT_PORT;
+const int curlopt_proxy                      = CURLOPT_PROXY;
+const int curlopt_userpwd                    = CURLOPT_USERPWD;
+const int curlopt_proxyuserpwd               = CURLOPT_PROXYUSERPWD;
+const int curlopt_range                      = CURLOPT_RANGE;
+const int curlopt_infile                     = CURLOPT_INFILE;
+const int curlopt_errorbuffer                = CURLOPT_ERRORBUFFER;
+const int curlopt_writefunction              = CURLOPT_WRITEFUNCTION;
+const int curlopt_readfunction               = CURLOPT_READFUNCTION;
+const int curlopt_timeout                    = CURLOPT_TIMEOUT;
+const int curlopt_infilesize                 = CURLOPT_INFILESIZE;
+const int curlopt_postfields                 = CURLOPT_POSTFIELDS;
+const int curlopt_referer                    = CURLOPT_REFERER;
+const int curlopt_ftpport                    = CURLOPT_FTPPORT;
+const int curlopt_useragent                  = CURLOPT_USERAGENT;
+const int curlopt_low_speed_limit            = CURLOPT_LOW_SPEED_LIMIT;
+const int curlopt_low_speed_time             = CURLOPT_LOW_SPEED_TIME;
+const int curlopt_resume_from                = CURLOPT_RESUME_FROM;
+const int curlopt_cookie                     = CURLOPT_COOKIE;
+const int curlopt_httpheader                 = CURLOPT_HTTPHEADER;
+const int curlopt_httppost                   = CURLOPT_HTTPPOST;
+const int curlopt_sslcert                    = CURLOPT_SSLCERT;
+const int curlopt_keypasswd                  = CURLOPT_KEYPASSWD;
+const int curlopt_crlf                       = CURLOPT_CRLF;
+const int curlopt_quote                      = CURLOPT_QUOTE;
+const int curlopt_writeheader                = CURLOPT_WRITEHEADER;
+const int curlopt_cookiefile                 = CURLOPT_COOKIEFILE;
+const int curlopt_sslversion                 = CURLOPT_SSLVERSION;
+const int curlopt_timecondition              = CURLOPT_TIMECONDITION;
+const int curlopt_timevalue                  = CURLOPT_TIMEVALUE;
+const int curlopt_customrequest              = CURLOPT_CUSTOMREQUEST;
+const int curlopt_stderr                     = CURLOPT_STDERR;
+const int curlopt_postquote                  = CURLOPT_POSTQUOTE;
+const int curlopt_writeinfo                  = CURLOPT_WRITEINFO;
+const int curlopt_verbose                    = CURLOPT_VERBOSE;
+const int curlopt_header                     = CURLOPT_HEADER;
+const int curlopt_noprogress                 = CURLOPT_NOPROGRESS;
+const int curlopt_nobody                     = CURLOPT_NOBODY;
+const int curlopt_failonerror                = CURLOPT_FAILONERROR;
+const int curlopt_upload                     = CURLOPT_UPLOAD;
+const int curlopt_post                       = CURLOPT_POST;
+const int curlopt_dirlistonly                = CURLOPT_DIRLISTONLY;
+const int curlopt_append                     = CURLOPT_APPEND;
+const int curlopt_netrc                      = CURLOPT_NETRC;
+const int curlopt_followlocation             = CURLOPT_FOLLOWLOCATION;
+const int curlopt_transfertext               = CURLOPT_TRANSFERTEXT;
+const int curlopt_put                        = CURLOPT_PUT;
+const int curlopt_progressfunction           = CURLOPT_PROGRESSFUNCTION;
+const int curlopt_progressdata               = CURLOPT_PROGRESSDATA;
+const int curlopt_autoreferer                = CURLOPT_AUTOREFERER;
+const int curlopt_proxyport                  = CURLOPT_PROXYPORT;
+const int curlopt_postfieldsize              = CURLOPT_POSTFIELDSIZE;
+const int curlopt_httpproxytunnel            = CURLOPT_HTTPPROXYTUNNEL;
+const int curlopt_interface                  = CURLOPT_INTERFACE;
+const int curlopt_krblevel                   = CURLOPT_KRBLEVEL;
+const int curlopt_ssl_verifypeer             = CURLOPT_SSL_VERIFYPEER;
+const int curlopt_cainfo                     = CURLOPT_CAINFO;
+const int curlopt_maxredirs                  = CURLOPT_MAXREDIRS;
+const int curlopt_filetime                   = CURLOPT_FILETIME;
+const int curlopt_telnetoptions              = CURLOPT_TELNETOPTIONS;
+const int curlopt_maxconnects                = CURLOPT_MAXCONNECTS;
+const int curlopt_closepolicy                = CURLOPT_CLOSEPOLICY;
+const int curlopt_fresh_connect              = CURLOPT_FRESH_CONNECT;
+const int curlopt_forbid_reuse               = CURLOPT_FORBID_REUSE;
+const int curlopt_random_file                = CURLOPT_RANDOM_FILE;
+const int curlopt_egdsocket                  = CURLOPT_EGDSOCKET;
+const int curlopt_connecttimeout             = CURLOPT_CONNECTTIMEOUT;
+const int curlopt_headerfunction             = CURLOPT_HEADERFUNCTION;
+const int curlopt_httpget                    = CURLOPT_HTTPGET;
+const int curlopt_ssl_verifyhost             = CURLOPT_SSL_VERIFYHOST;
+const int curlopt_cookiejar                  = CURLOPT_COOKIEJAR;
+const int curlopt_ssl_cipher_list            = CURLOPT_SSL_CIPHER_LIST;
+const int curlopt_http_version               = CURLOPT_HTTP_VERSION;
+const int curlopt_ftp_use_epsv               = CURLOPT_FTP_USE_EPSV;
+const int curlopt_sslcerttype                = CURLOPT_SSLCERTTYPE;
+const int curlopt_sslkey                     = CURLOPT_SSLKEY;
+const int curlopt_sslkeytype                 = CURLOPT_SSLKEYTYPE;
+const int curlopt_sslengine                  = CURLOPT_SSLENGINE;
+const int curlopt_sslengine_default          = CURLOPT_SSLENGINE_DEFAULT;
+const int curlopt_dns_use_global_cache       = CURLOPT_DNS_USE_GLOBAL_CACHE;
+const int curlopt_dns_cache_timeout          = CURLOPT_DNS_CACHE_TIMEOUT;
+const int curlopt_prequote                   = CURLOPT_PREQUOTE;
+const int curlopt_debugfunction              = CURLOPT_DEBUGFUNCTION;
+const int curlopt_debugdata                  = CURLOPT_DEBUGDATA;
+const int curlopt_cookiesession              = CURLOPT_COOKIESESSION;
+const int curlopt_capath                     = CURLOPT_CAPATH;
+const int curlopt_buffersize                 = CURLOPT_BUFFERSIZE;
+const int curlopt_nosignal                   = CURLOPT_NOSIGNAL;
+const int curlopt_share                      = CURLOPT_SHARE;
+const int curlopt_proxytype                  = CURLOPT_PROXYTYPE;
+const int curlopt_encoding                   = CURLOPT_ENCODING;
+const int curlopt_private                    = CURLOPT_PRIVATE;
+const int curlopt_http200aliases             = CURLOPT_HTTP200ALIASES;
+const int curlopt_unrestricted_auth          = CURLOPT_UNRESTRICTED_AUTH;
+const int curlopt_ftp_use_eprt               = CURLOPT_FTP_USE_EPRT;
+const int curlopt_httpauth                   = CURLOPT_HTTPAUTH;
+const int curlopt_ssl_ctx_function           = CURLOPT_SSL_CTX_FUNCTION;
+const int curlopt_ssl_ctx_data               = CURLOPT_SSL_CTX_DATA;
+const int curlopt_ftp_create_missing_dirs    = CURLOPT_FTP_CREATE_MISSING_DIRS;
+const int curlopt_proxyauth                  = CURLOPT_PROXYAUTH;
+const int curlopt_ftp_response_timeout       = CURLOPT_FTP_RESPONSE_TIMEOUT;
+const int curlopt_ipresolve                  = CURLOPT_IPRESOLVE;
+const int curlopt_maxfilesize                = CURLOPT_MAXFILESIZE;
+const int curlopt_infilesize_large           = CURLOPT_INFILESIZE_LARGE;
+const int curlopt_resume_from_large          = CURLOPT_RESUME_FROM_LARGE;
+const int curlopt_maxfilesize_large          = CURLOPT_MAXFILESIZE_LARGE;
+const int curlopt_netrc_file                 = CURLOPT_NETRC_FILE;
+const int curlopt_use_ssl                    = CURLOPT_USE_SSL;
+const int curlopt_postfieldsize_large        = CURLOPT_POSTFIELDSIZE_LARGE;
+const int curlopt_tcp_nodelay                = CURLOPT_TCP_NODELAY;
+const int curlopt_ftpsslauth                 = CURLOPT_FTPSSLAUTH;
+const int curlopt_ioctlfunction              = CURLOPT_IOCTLFUNCTION;
+const int curlopt_ioctldata                  = CURLOPT_IOCTLDATA;
+const int curlopt_ftp_account                = CURLOPT_FTP_ACCOUNT;
+const int curlopt_cookielist                 = CURLOPT_COOKIELIST;
+const int curlopt_ignore_content_length      = CURLOPT_IGNORE_CONTENT_LENGTH;
+const int curlopt_ftp_skip_pasv_ip           = CURLOPT_FTP_SKIP_PASV_IP;
+const int curlopt_ftp_filemethod             = CURLOPT_FTP_FILEMETHOD;
+const int curlopt_localport                  = CURLOPT_LOCALPORT;
+const int curlopt_localportrange             = CURLOPT_LOCALPORTRANGE;
+const int curlopt_connect_only               = CURLOPT_CONNECT_ONLY;
+const int curlopt_conv_from_network_function = CURLOPT_CONV_FROM_NETWORK_FUNCTION;
+const int curlopt_conv_to_network_function   = CURLOPT_CONV_TO_NETWORK_FUNCTION;
+const int curlopt_conv_from_utf8_function    = CURLOPT_CONV_FROM_UTF8_FUNCTION;
+const int curlopt_max_send_speed_large       = CURLOPT_MAX_SEND_SPEED_LARGE;
+const int curlopt_max_recv_speed_large       = CURLOPT_MAX_RECV_SPEED_LARGE;
+const int curlopt_ftp_alternative_to_user    = CURLOPT_FTP_ALTERNATIVE_TO_USER;
+const int curlopt_sockoptfunction            = CURLOPT_SOCKOPTFUNCTION;
+const int curlopt_sockoptdata                = CURLOPT_SOCKOPTDATA;
+const int curlopt_ssl_sessionid_cache        = CURLOPT_SSL_SESSIONID_CACHE;
+const int curlopt_ssh_auth_types             = CURLOPT_SSH_AUTH_TYPES;
+const int curlopt_ssh_public_keyfile         = CURLOPT_SSH_PUBLIC_KEYFILE;
+const int curlopt_ssh_private_keyfile        = CURLOPT_SSH_PRIVATE_KEYFILE;
+const int curlopt_ftp_ssl_ccc                = CURLOPT_FTP_SSL_CCC;
+const int curlopt_timeout_ms                 = CURLOPT_TIMEOUT_MS;
+const int curlopt_connecttimeout_ms          = CURLOPT_CONNECTTIMEOUT_MS;
+const int curlopt_http_transfer_decoding     = CURLOPT_HTTP_TRANSFER_DECODING;
+const int curlopt_http_content_decoding      = CURLOPT_HTTP_CONTENT_DECODING;
+const int curlopt_new_file_perms             = CURLOPT_NEW_FILE_PERMS;
+const int curlopt_new_directory_perms        = CURLOPT_NEW_DIRECTORY_PERMS;
+const int curlopt_postredir                  = CURLOPT_POSTREDIR;
+const int curlopt_ssh_host_public_key_md5    = CURLOPT_SSH_HOST_PUBLIC_KEY_MD5;
+const int curlopt_opensocketfunction         = CURLOPT_OPENSOCKETFUNCTION;
+const int curlopt_opensocketdata             = CURLOPT_OPENSOCKETDATA;
+const int curlopt_copypostfields             = CURLOPT_COPYPOSTFIELDS;
+const int curlopt_proxy_transfer_mode        = CURLOPT_PROXY_TRANSFER_MODE;
+const int curlopt_seekfunction               = CURLOPT_SEEKFUNCTION;
+const int curlopt_seekdata                   = CURLOPT_SEEKDATA;
+const int curlopt_crlfile                    = CURLOPT_CRLFILE;
+const int curlopt_issuercert                 = CURLOPT_ISSUERCERT;
+const int curlopt_address_scope              = CURLOPT_ADDRESS_SCOPE;
+const int curlopt_certinfo                   = CURLOPT_CERTINFO;
+const int curlopt_username                   = CURLOPT_USERNAME;
+const int curlopt_password                   = CURLOPT_PASSWORD;
+const int curlopt_proxyusername              = CURLOPT_PROXYUSERNAME;
+const int curlopt_proxypassword              = CURLOPT_PROXYPASSWORD;
+const int curlopt_noproxy                    = CURLOPT_NOPROXY;
+const int curlopt_tftp_blksize               = CURLOPT_TFTP_BLKSIZE;
+const int curlopt_socks5_gssapi_service      = CURLOPT_SOCKS5_GSSAPI_SERVICE;
+const int curlopt_socks5_gssapi_nec          = CURLOPT_SOCKS5_GSSAPI_NEC;
+const int curlopt_protocols                  = CURLOPT_PROTOCOLS;
+const int curlopt_redir_protocols            = CURLOPT_REDIR_PROTOCOLS;
+const int curlopt_lastentry                  = CURLOPT_LASTENTRY;
+

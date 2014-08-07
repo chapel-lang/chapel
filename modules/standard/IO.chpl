@@ -708,8 +708,8 @@ proc _modestring(mode:iomode) {
   }
 }
 
-proc openurl(out error:syserr, path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
-
+proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
+    style:iostyle = defaultIOStyle(), url:string=""):file {
   // hdfs paths are expected to be of the form:
   // hdfs://<host>:<port>/<path>
   proc parse_hdfs_path(path:string): (string, int, string) {
@@ -733,65 +733,31 @@ proc openurl(out error:syserr, path:string, mode:iomode, hints:iohints=IOHINT_NO
   var local_style = style;
   var ret:file;
   ret.home = here;
-  if (CHPL_REGEXP == "re2") {
-    var re = compile("hdfs://(.*?):(.*?)/(.*?)");
-    var rec = compile("http://|https://|ftp://|www.|smtp://");
-    var host: string;
-    var port:string;
-    var file_path:string;
-
-    if (path.match(re, host, port, file_path)) {
-      var fs:c_void_ptr;
-      error = hdfs_connect(fs, host.c_str(), port:int);
-      if error then ioerror(error, "Unable to connect to HDFS", host);
-      error = qio_file_open_access_usr(ret._file_internal, file_path.c_str(), _modestring(mode).c_str(), hints, local_style, fs, hdfs_function_struct_ptr);
-      if error then ioerror(error, "Unable to open file in HDFS", path);
-    } else if (path.match(rec)) {
-      error = qio_file_open_access_usr(ret._file_internal, path.c_str(), _modestring(mode).c_str(), hints, local_style, c_nil, curl_function_struct_ptr);
-      if error then ioerror(error, "Unable to open URL", path);
-    } else {
-      error = qio_file_open_access(ret._file_internal, path.c_str(), _modestring(mode).c_str(), hints, local_style);
-      // On return ret._file_internal.ref_cnt == 1.
-    }
-  } else {
-    if (path.startsWith("hdfs://")) { // HDFS
-      var (host, port, file_path) = parse_hdfs_path(path);
+  if (url != "") {
+    if (url.startsWith("hdfs://")) { // HDFS
+      var (host, port, file_path) = parse_hdfs_path(url);
       var fs:c_void_ptr;
       error = hdfs_connect(fs, host.c_str(), port);
       if error then ioerror(error, "Unable to connect to HDFS", host);
       error = qio_file_open_access_usr(ret._file_internal, file_path.c_str(), _modestring(mode).c_str(), hints, local_style, fs, hdfs_function_struct_ptr);
-      if error then ioerror(error, "Unable to open file in HDFS", path);
-    } else if (path.startsWith("http://", "https://", "ftp://", "smtp://"))  { // Curl
-      error = qio_file_open_access_usr(ret._file_internal, path.c_str(), _modestring(mode).c_str(), hints, local_style, c_nil, curl_function_struct_ptr);
-      if error then ioerror(error, "Unable to open URL", path);
+      if error then ioerror(error, "Unable to open file in HDFS", url);
+    } else if (url.startsWith("http://", "https://", "ftp://", "smtp://"))  { // Curl
+      error = qio_file_open_access_usr(ret._file_internal, url.c_str(), _modestring(mode).c_str(), hints, local_style, c_nil, curl_function_struct_ptr);
+      if error then ioerror(error, "Unable to open URL", url);
     } else {
-      error = qio_file_open_access(ret._file_internal, path.c_str(), _modestring(mode).c_str(), hints, local_style);
-      // On return ret._file_internal.ref_cnt == 1.
+      ioerror(ENOENT:syserr, "Invalid URL passed to open");
     }
+  } else {
+    error = qio_file_open_access(ret._file_internal, path.c_str(), _modestring(mode).c_str(), hints, local_style);
   }
+
   return ret;
 }
 
-proc openurl(path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
+proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle =
+    defaultIOStyle(), url:string=""):file {
   var err:syserr = ENOERR;
-  var ret = openurl(err, path, mode, hints, style);
-  if err then ioerror(err, "in openurl", path);
-  return ret;
-}
-
-
-
-proc open(out error:syserr, path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
-  var local_style = style;
-  var ret:file;
-  ret.home = here;
-  error = qio_file_open_access(ret._file_internal, path.c_str(), _modestring(mode).c_str(), hints, local_style);
-  return ret;
-}
-
-proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
-  var err:syserr = ENOERR;
-  var ret = open(err, path, mode, hints, style);
+  var ret = open(err, path, mode, hints, style, url);
   if err then ioerror(err, "in open", path);
   return ret;
 }
@@ -1111,17 +1077,19 @@ proc channel._set_style(style:iostyle) {
 // only will have one reference, will be right after we close this channel
 // presumably).
 proc openreader(path:string, param kind=iokind.dynamic, param locking=true,
-    start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE) {
+    start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
+    url:string="") {
   var err: syserr = ENOERR;
-  var fl:file = openurl(err, path, iomode.r);
+  var fl:file = open(err, path, iomode.r, url=url);
   if err then ioerror(err, "in openreader");
   return fl.reader(kind, locking, start, end, hints, fl._style);
 }
 
 proc openwriter(path:string, param kind=iokind.dynamic, param locking=true,
-    start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE) {
+    start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
+    url:string="") {
   var err: syserr = ENOERR;
-  var fl:file = openurl(err, path, iomode.cw);
+  var fl:file = open(err, path, iomode.cw, url=url);
   if err then ioerror(err, "in openwriter");
   return fl.writer(kind, locking, start, end, hints, fl._style);
 }
@@ -1636,7 +1604,7 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1):bool {
     this.unlock();
 
     // read the entire file
-    if (len == -1) then 
+    if (len == -1) then
       lentmp = actlen;
     else // else, make a smart choice about how much we have to read
       lentmp = min(actlen, len);
@@ -4012,92 +3980,171 @@ proc file.get(ref str:string) {
   if err then ioerror(err, "in file.get(str:string)");
 }
 
-// These correspond to the CURLOPT_<name> for libcurl. These numbers correspond with
-// the numbers in libcurl, so DON'T TOUCH THE NUMBERS
-enum chapcurl {
-     FILE                       =   0x2711,   URL                          =   0x2712,
-     PORT                       =   0x3,      PROXY                        =   0x2714,
-     USERPWD                    =   0x2715,   PROXYUSERPWD                 =   0x2716,
-     RANGE                      =   0x2717,   INFILE                       =   0x2719,
-     ERRORBUFFER                =   0x271a,   WRITEFUNCTION                =   0x4e2b,
-     READFUNCTION               =   0x4e2c,   TIMEOUT                      =   0xd,
-     INFILESIZE                 =   0xe,      POSTFIELDS                   =   0x271f,
-     REFERER                    =   0x2720,   FTPPORT                      =   0x2721,
-     USERAGENT                  =   0x2722,   LOW_SPEED_LIMIT              =   0x13,
-     LOW_SPEED_TIME             =   0x14,     RESUME_FROM                  =   0x15,
-     COOKIE                     =   0x2726,   HTTPHEADER                   =   0x2727,
-     HTTPPOST                   =   0x2728,   SSLCERT                      =   0x2729,
-     KEYPASSWD                  =   0x272a,   CRLF                         =   0x1b,
-     QUOTE                      =   0x272c,   WRITEHEADER                  =   0x272d,
-     COOKIEFILE                 =   0x272f,   SSLVERSION                   =   0x20,
-     TIMECONDITION              =   0x21,     TIMEVALUE                    =   0x22,
-     CUSTOMREQUEST              =   0x2734,   STDERR                       =   0x2735,
-     POSTQUOTE                  =   0x2737,   WRITEINFO                    =   0x2738,
-     VERBOSE                    =   0x29,     HEADER                       =   0x2a,
-     NOPROGRESS                 =   0x2b,     NOBODY                       =   0x2c,
-     FAILONERROR                =   0x2d,     UPLOAD                       =   0x2e,
-     POST                       =   0x2f,     DIRLISTONLY                  =   0x30,
-     APPEND                     =   0x32,     NETRC                        =   0x33,
-     FOLLOWLOCATION             =   0x34,     TRANSFERTEXT                 =   0x35,
-     PUT                        =   0x36,     PROGRESSFUNCTION             =   0x4e58,
-     PROGRESSDATA               =   0x2749,   AUTOREFERER                  =   0x3a,
-     PROXYPORT                  =   0x3b,     POSTFIELDSIZE                =   0x3c,
-     HTTPPROXYTUNNEL            =   0x3d,     INTERFACE                    =   0x274e,
-     KRBLEVEL                   =   0x274f,   SSL_VERIFYPEER               =   0x40,
-     CAINFO                     =   0x2751,   MAXREDIRS                    =   0x44,
-     FILETIME                   =   0x45,     TELNETOPTIONS                =   0x2756,
-     MAXCONNECTS                =   0x47,     CLOSEPOLICY                  =   0x48,
-     FRESH_CONNECT              =   0x4a,     FORBID_REUSE                 =   0x4b,
-     RANDOM_FILE                =   0x275c,   EGDSOCKET                    =   0x275d,
-     CONNECTTIMEOUT             =   0x4e,     HEADERFUNCTION               =   0x4e6f,
-     HTTPGET                    =   0x50,     SSL_VERIFYHOST               =   0x51,
-     COOKIEJAR                  =   0x2762,   SSL_CIPHER_LIST              =   0x2763,
-     HTTP_VERSION               =   0x54,     FTP_USE_EPSV                 =   0x55,
-     SSLCERTTYPE                =   0x2766,   SSLKEY                       =   0x2767,
-     SSLKEYTYPE                 =   0x2768,   SSLENGINE                    =   0x2769,
-     SSLENGINE_DEFAULT          =   0x5a,     DNS_USE_GLOBAL_CACHE         =   0x5b,
-     DNS_CACHE_TIMEOUT          =   0x5c,     PREQUOTE                     =   0x276d,
-     DEBUGFUNCTION              =   0x4e7e,   DEBUGDATA                    =   0x276f,
-     COOKIESESSION              =   0x60,     CAPATH                       =   0x2771,
-     BUFFERSIZE                 =   0x62,     NOSIGNAL                     =   0x63,
-     SHARE                      =   0x2774,   PROXYTYPE                    =   0x65,
-     ENCODING                   =   0x2776,   PRIVATE                      =   0x2777,
-     HTTP200ALIASES             =   0x2778,   UNRESTRICTED_AUTH            =   0x69,
-     FTP_USE_EPRT               =   0x6a,     HTTPAUTH                     =   0x6b,
-     SSL_CTX_FUNCTION           =   0x4e8c,   SSL_CTX_DATA                 =   0x277d,
-     FTP_CREATE_MISSING_DIRS    =   0x6e,     PROXYAUTH                    =   0x6f,
-     FTP_RESPONSE_TIMEOUT       =   0x70,     IPRESOLVE                    =   0x71,
-     MAXFILESIZE                =   0x72,     INFILESIZE_LARGE             =   0x75a3,
-     RESUME_FROM_LARGE          =   0x75a4,   MAXFILESIZE_LARGE            =   0x75a5,
-     NETRC_FILE                 =   0x2786,   USE_SSL                      =   0x77,
-     POSTFIELDSIZE_LARGE        =   0x75a8,   TCP_NODELAY                  =   0x79,
-     FTPSSLAUTH                 =   0x81,     IOCTLFUNCTION                =   0x4ea2,
-     IOCTLDATA                  =   0x2793,   FTP_ACCOUNT                  =   0x2796,
-     COOKIELIST                 =   0x2797,   IGNORE_CONTENT_LENGTH        =   0x88,
-     FTP_SKIP_PASV_IP           =   0x89,     FTP_FILEMETHOD               =   0x8a,
-     LOCALPORT                  =   0x8b,     LOCALPORTRANGE               =   0x8c,
-     CONNECT_ONLY               =   0x8d,     CONV_FROM_NETWORK_FUNCTION   =   0x4eae,
-     CONV_TO_NETWORK_FUNCTION   =   0x4eaf,   CONV_FROM_UTF8_FUNCTION      =   0x4eb0,
-     MAX_SEND_SPEED_LARGE       =   0x75c1,   MAX_RECV_SPEED_LARGE         =   0x75c2,
-     FTP_ALTERNATIVE_TO_USER    =   0x27a3,   SOCKOPTFUNCTION              =   0x4eb4,
-     SOCKOPTDATA                =   0x27a5,   SSL_SESSIONID_CACHE          =   0x96,
-     SSH_AUTH_TYPES             =   0x97,     SSH_PUBLIC_KEYFILE           =   0x27a8,
-     SSH_PRIVATE_KEYFILE        =   0x27a9,   FTP_SSL_CCC                  =   0x9a,
-     TIMEOUT_MS                 =   0x9b,     CONNECTTIMEOUT_MS            =   0x9c,
-     HTTP_TRANSFER_DECODING     =   0x9d,     HTTP_CONTENT_DECODING        =   0x9e,
-     NEW_FILE_PERMS             =   0x9f,     NEW_DIRECTORY_PERMS          =   0xa0,
-     POSTREDIR                  =   0xa1,     SSH_HOST_PUBLIC_KEY_MD5      =   0x27b2,
-     OPENSOCKETFUNCTION         =   0x4ec3,   OPENSOCKETDATA               =   0x27b4,
-     COPYPOSTFIELDS             =   0x27b5,   PROXY_TRANSFER_MODE          =   0xa6,
-     SEEKFUNCTION               =   0x4ec7,   SEEKDATA                     =   0x27b8,
-     CRLFILE                    =   0x27b9,   ISSUERCERT                   =   0x27ba,
-     ADDRESS_SCOPE              =   0xab,     CERTINFO                     =   0xac,
-     USERNAME                   =   0x27bd,   PASSWORD                     =   0x27be,
-     PROXYUSERNAME              =   0x27bf,   PROXYPASSWORD                =   0x27c0,
-     NOPROXY                    =   0x27c1,   TFTP_BLKSIZE                 =   0xb2,
-     SOCKS5_GSSAPI_SERVICE      =   0x27c3,   SOCKS5_GSSAPI_NEC            =   0xb4,
-     PROTOCOLS                  =   0xb5,     REDIR_PROTOCOLS              =   0xb6,
-     LASTENTRY                  =   0x27ea,
-}
-
+// These are meant to be ued with the file.setopt() function. This way, a user has
+// access to the easy interface.
+extern const curlopt_file:c_int                       ;
+extern const curlopt_url:c_int                        ;
+extern const curlopt_port:c_int                       ;
+extern const curlopt_proxy:c_int                      ;
+extern const curlopt_userpwd:c_int                    ;
+extern const curlopt_proxyuserpwd:c_int               ;
+extern const curlopt_range:c_int                      ;
+extern const curlopt_infile:c_int                     ;
+extern const curlopt_errorbuffer:c_int                ;
+extern const curlopt_writefunction:c_int              ;
+extern const curlopt_readfunction:c_int               ;
+extern const curlopt_timeout:c_int                    ;
+extern const curlopt_infilesize:c_int                 ;
+extern const curlopt_postfields:c_int                 ;
+extern const curlopt_referer:c_int                    ;
+extern const curlopt_ftpport:c_int                    ;
+extern const curlopt_useragent:c_int                  ;
+extern const curlopt_low_speed_limit:c_int            ;
+extern const curlopt_low_speed_time:c_int             ;
+extern const curlopt_resume_from:c_int                ;
+extern const curlopt_cookie:c_int                     ;
+extern const curlopt_httpheader:c_int                 ;
+extern const curlopt_httppost:c_int                   ;
+extern const curlopt_sslcert:c_int                    ;
+extern const curlopt_keypasswd:c_int                  ;
+extern const curlopt_crlf:c_int                       ;
+extern const curlopt_quote:c_int                      ;
+extern const curlopt_writeheader:c_int                ;
+extern const curlopt_cookiefile:c_int                 ;
+extern const curlopt_sslversion:c_int                 ;
+extern const curlopt_timecondition:c_int              ;
+extern const curlopt_timevalue:c_int                  ;
+extern const curlopt_customrequest:c_int              ;
+extern const curlopt_stderr:c_int                     ;
+extern const curlopt_postquote:c_int                  ;
+extern const curlopt_writeinfo:c_int                  ;
+extern const curlopt_verbose:c_int                    ;
+extern const curlopt_header:c_int                     ;
+extern const curlopt_noprogress:c_int                 ;
+extern const curlopt_nobody:c_int                     ;
+extern const curlopt_failonerror:c_int                ;
+extern const curlopt_upload:c_int                     ;
+extern const curlopt_post:c_int                       ;
+extern const curlopt_dirlistonly:c_int                ;
+extern const curlopt_append:c_int                     ;
+extern const curlopt_netrc:c_int                      ;
+extern const curlopt_followlocation:c_int             ;
+extern const curlopt_transfertext:c_int               ;
+extern const curlopt_put:c_int                        ;
+extern const curlopt_progressfunction:c_int           ;
+extern const curlopt_progressdata:c_int               ;
+extern const curlopt_autoreferer:c_int                ;
+extern const curlopt_proxyport:c_int                  ;
+extern const curlopt_postfieldsize:c_int              ;
+extern const curlopt_httpproxytunnel:c_int            ;
+extern const curlopt_interface:c_int                  ;
+extern const curlopt_krblevel:c_int                   ;
+extern const curlopt_ssl_verifypeer:c_int             ;
+extern const curlopt_cainfo:c_int                     ;
+extern const curlopt_maxredirs:c_int                  ;
+extern const curlopt_filetime:c_int                   ;
+extern const curlopt_telnetoptions:c_int              ;
+extern const curlopt_maxconnects:c_int                ;
+extern const curlopt_closepolicy:c_int                ;
+extern const curlopt_fresh_connect:c_int              ;
+extern const curlopt_forbid_reuse:c_int               ;
+extern const curlopt_random_file:c_int                ;
+extern const curlopt_egdsocket:c_int                  ;
+extern const curlopt_connecttimeout:c_int             ;
+extern const curlopt_headerfunction:c_int             ;
+extern const curlopt_httpget:c_int                    ;
+extern const curlopt_ssl_verifyhost:c_int             ;
+extern const curlopt_cookiejar:c_int                  ;
+extern const curlopt_ssl_cipher_list:c_int            ;
+extern const curlopt_http_version:c_int               ;
+extern const curlopt_ftp_use_epsv:c_int               ;
+extern const curlopt_sslcerttype:c_int                ;
+extern const curlopt_sslkey:c_int                     ;
+extern const curlopt_sslkeytype:c_int                 ;
+extern const curlopt_sslengine:c_int                  ;
+extern const curlopt_sslengine_default:c_int          ;
+extern const curlopt_dns_use_global_cache:c_int       ;
+extern const curlopt_dns_cache_timeout:c_int          ;
+extern const curlopt_prequote:c_int                   ;
+extern const curlopt_debugfunction:c_int              ;
+extern const curlopt_debugdata:c_int                  ;
+extern const curlopt_cookiesession:c_int              ;
+extern const curlopt_capath:c_int                     ;
+extern const curlopt_buffersize:c_int                 ;
+extern const curlopt_nosignal:c_int                   ;
+extern const curlopt_share:c_int                      ;
+extern const curlopt_proxytype:c_int                  ;
+extern const curlopt_encoding:c_int                   ;
+extern const curlopt_private:c_int                    ;
+extern const curlopt_http200aliases:c_int             ;
+extern const curlopt_unrestricted_auth:c_int          ;
+extern const curlopt_ftp_use_eprt:c_int               ;
+extern const curlopt_httpauth:c_int                   ;
+extern const curlopt_ssl_ctx_function:c_int           ;
+extern const curlopt_ssl_ctx_data:c_int               ;
+extern const curlopt_ftp_create_missing_dirs:c_int    ;
+extern const curlopt_proxyauth:c_int                  ;
+extern const curlopt_ftp_response_timeout:c_int       ;
+extern const curlopt_ipresolve:c_int                  ;
+extern const curlopt_maxfilesize:c_int                ;
+extern const curlopt_infilesize_large:c_int           ;
+extern const curlopt_resume_from_large:c_int          ;
+extern const curlopt_maxfilesize_large:c_int          ;
+extern const curlopt_netrc_file:c_int                 ;
+extern const curlopt_use_ssl:c_int                    ;
+extern const curlopt_postfieldsize_large:c_int        ;
+extern const curlopt_tcp_nodelay:c_int                ;
+extern const curlopt_ftpsslauth:c_int                 ;
+extern const curlopt_ioctlfunction:c_int              ;
+extern const curlopt_ioctldata:c_int                  ;
+extern const curlopt_ftp_account:c_int                ;
+extern const curlopt_cookielist:c_int                 ;
+extern const curlopt_ignore_content_length:c_int      ;
+extern const curlopt_ftp_skip_pasv_ip:c_int           ;
+extern const curlopt_ftp_filemethod:c_int             ;
+extern const curlopt_localport:c_int                  ;
+extern const curlopt_localportrange:c_int             ;
+extern const curlopt_connect_only:c_int               ;
+extern const curlopt_conv_from_network_function:c_int ;
+extern const curlopt_conv_to_network_function:c_int   ;
+extern const curlopt_conv_from_utf8_function:c_int    ;
+extern const curlopt_max_send_speed_large:c_int       ;
+extern const curlopt_max_recv_speed_large:c_int       ;
+extern const curlopt_ftp_alternative_to_user:c_int    ;
+extern const curlopt_sockoptfunction:c_int            ;
+extern const curlopt_sockoptdata:c_int                ;
+extern const curlopt_ssl_sessionid_cache:c_int        ;
+extern const curlopt_ssh_auth_types:c_int             ;
+extern const curlopt_ssh_public_keyfile:c_int         ;
+extern const curlopt_ssh_private_keyfile:c_int        ;
+extern const curlopt_ftp_ssl_ccc:c_int                ;
+extern const curlopt_timeout_ms:c_int                 ;
+extern const curlopt_connecttimeout_ms:c_int          ;
+extern const curlopt_http_transfer_decoding:c_int     ;
+extern const curlopt_http_content_decoding:c_int      ;
+extern const curlopt_new_file_perms:c_int             ;
+extern const curlopt_new_directory_perms:c_int        ;
+extern const curlopt_postredir:c_int                  ;
+extern const curlopt_ssh_host_public_key_md5:c_int    ;
+extern const curlopt_opensocketfunction:c_int         ;
+extern const curlopt_opensocketdata:c_int             ;
+extern const curlopt_copypostfields:c_int             ;
+extern const curlopt_proxy_transfer_mode:c_int        ;
+extern const curlopt_seekfunction:c_int               ;
+extern const curlopt_seekdata:c_int                   ;
+extern const curlopt_crlfile:c_int                    ;
+extern const curlopt_issuercert:c_int                 ;
+extern const curlopt_address_scope:c_int              ;
+extern const curlopt_certinfo:c_int                   ;
+extern const curlopt_username:c_int                   ;
+extern const curlopt_password:c_int                   ;
+extern const curlopt_proxyusername:c_int              ;
+extern const curlopt_proxypassword:c_int              ;
+extern const curlopt_noproxy:c_int                    ;
+extern const curlopt_tftp_blksize:c_int               ;
+extern const curlopt_socks5_gssapi_service:c_int      ;
+extern const curlopt_socks5_gssapi_nec:c_int          ;
+extern const curlopt_protocols:c_int                  ;
+extern const curlopt_redir_protocols:c_int            ;
+extern const curlopt_lastentry:c_int                  ;
 
