@@ -532,8 +532,8 @@ GenRet VarSymbol::codegen() {
 
     // for LLVM
 
-    // Handle type variables.
-    if( hasFlag(FLAG_TYPE_VARIABLE) ) {
+    // Handle extern type variables.
+    if( hasFlag(FLAG_EXTERN) && hasFlag(FLAG_TYPE_VARIABLE) ) {
       // code generate the type.
       GenRet got = typeInfo();
       return got;

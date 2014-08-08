@@ -329,9 +329,7 @@ static void heapAllocateGlobalsTail(FnSymbol* heapAllocateGlobals,
   heapAllocateGlobals->insertAtTail(new CondStmt(new SymExpr(tmpBool), block));
   int i = 0;
   forv_Vec(Symbol, sym, heapVars) {
-    if( !sym->hasFlag(FLAG_TYPE_VARIABLE) )
-      heapAllocateGlobals->insertAtTail(
-         new CallExpr(PRIM_HEAP_REGISTER_GLOBAL_VAR, new_IntSymbol(i++), sym));
+      heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_HEAP_REGISTER_GLOBAL_VAR, new_IntSymbol(i++), sym));
   }
   heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_HEAP_BROADCAST_GLOBAL_VARS, new_IntSymbol(i)));
   heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
