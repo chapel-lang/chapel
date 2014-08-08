@@ -1,12 +1,18 @@
 
+var names = ["alice", "bob", "carl", "dana", "eric"];
+
 var dom : domain(string);
 var data : [dom] int;
 
-data["alice"] = 24;
-data["bob"] = 19;
-data["carl"] = 35;
+for name in names do data[name] = name.length;
 
-for (k, v) in zip(dom, data) do writeln(k, " => ", v);
+for name in names do
+  if !dom.member(name) {
+    writeln("FAILURE: name added via array did not exist in backing domain");
+    exit(1);
+  }
+
+writeln("SUCCESS");
 
 /*
 var illegal : [dom] string;
