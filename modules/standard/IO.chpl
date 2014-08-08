@@ -1484,9 +1484,9 @@ proc channel.readline(arg: [] uint(8), ref numRead, inclusive = true) : bool {
   if this.kind != ionative then halt("channel.readline([] uint(8), ...) \
       is only available for ionative channels");
   var e:syserr = ENOERR;
-  this.readline(arg, numRead, error=e, inclusive);
-  if !e then return true;
-  else if e == EEOF then return false;
+  var got = this.readline(arg, numRead, error=e, inclusive);
+  if !e && got then return true;
+  else if e == EEOF || !got then return false;
   else {
     this._ch_ioerror(e, "in channel.readline(ref arg:string)");
     return false;
@@ -1505,6 +1505,7 @@ proc channel.readline(arg: [] uint(8), ref numRead, out error:syserr, inclusive 
       is only available for ionative channels");
   var temp : uint(8);
   param newLineChar = 0x0A;
+  if arg.size == 0 then return false;
   for d in arg {
     var got = this.read(temp, error);
     if got && !error {
