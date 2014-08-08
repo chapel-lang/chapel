@@ -4314,7 +4314,7 @@ static CallExpr* generateConcreteConstructorCall(Type* type)
       Symbol* field = sub->key;
       SymExpr* typeExpr = new SymExpr(sub->value);
       Expr* init = typeExpr;
-      if (field->hasFlag(FLAG_GENERIC))
+      if (field->hasFlag(FLAG_GENERIC) && isTypeSymbol(typeExpr->var))
         // This argument expects a value (not a type expression).
         init = new CallExpr(PRIM_INIT, // This should be "_defaultOf".
                             typeExpr);
