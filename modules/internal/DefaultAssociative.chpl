@@ -217,27 +217,31 @@ module DefaultAssociative {
       return _findFilledSlot(idx)(1);
     }
   
-    proc dsiAdd(idx: idxType): index(tableDom) {
-      var slotNum: index(tableDom);
+    proc dsiAdd(idx: idxType, in slotNum : index(tableDom) = -1): index(tableDom) {
       on this {
         if parSafe then lockTable();
+        var findAgain = parSafe;
         if ((numEntries.read()+1)*2 > tableSize) {
           _resize(grow=true);
+          findAgain = true;
         }
-        slotNum = _add(idx);
+        if findAgain then slotNum = -1;
+        slotNum = _add(idx, slotNum);
         if parSafe then unlockTable();
       }
       return slotNum;
     }
-  
+
     // This routine adds new indices without checking the table size and
     //  is thus appropriate for use by routines like _resize().
     //
     // NOTE: Calls to this routine assume that the tableLock has been acquired.
     //
-    proc _add(idx: idxType): index(tableDom) {
-      const (foundSlot, slotNum) = _findEmptySlot(idx);
-      if (foundSlot) {
+    proc _add(idx: idxType, in slotNum : index(tableDom) = -1): index(tableDom) {
+      var foundSlot : bool = (slotNum != -1);
+      if !foundSlot then
+        (foundSlot, slotNum) = _findEmptySlot(idx);
+      if foundSlot {
         table[slotNum].status = chpl__hash_status.full;
         table[slotNum].idx = idx;
         numEntries.add(1);
@@ -373,19 +377,29 @@ module DefaultAssociative {
       
       _removeArrayBackups();
     }
-  
+
+    // Searches for 'idx' in a filled slot.
+    //
+    // Returns true if found, along with the first open slot that may be
+    // re-used for faster addition to the domain
     proc _findFilledSlot(idx: idxType, param haveLock = false) : (bool, index(tableDom)) {
       if parSafe && !haveLock then lockTable();
+      var firstOpen = -1;
       for slotNum in _lookForSlots(idx, table.domain.high+1) {
         const slotStatus = table[slotNum].status;
+        // if we encounter a slot that's empty, our element could not
+        // be found past this point.
         if (slotStatus == chpl__hash_status.empty) {
+          if firstOpen == -1 then firstOpen = slotNum;
           if parSafe && !haveLock then unlockTable();
-          return (false, -1);
+          return (false, firstOpen);
         } else if (slotStatus == chpl__hash_status.full) {
           if (table[slotNum].idx == idx) {
             if parSafe && !haveLock then unlockTable();
             return (true, slotNum);
           }
+        } else { // this entry was removed, but is the first slot we could use
+          if firstOpen == -1 then firstOpen = slotNum;
         }
       }
       if parSafe && !haveLock then unlockTable();
@@ -426,7 +440,6 @@ module DefaultAssociative {
     }
   }
   
-  
   class DefaultAssociativeArr: BaseArr {
     type eltType;
     type idxType;
@@ -448,12 +461,18 @@ module DefaultAssociative {
       const initval: eltType;
       dsiAccess(idx) = initval;
     }
-  
+
     proc dsiAccess(idx : idxType) var : eltType {
-      const (found, slotNum) = dom._findFilledSlot(idx, haveLock=true /* never lock here */);
-      if (found) then
+      var (found, slotNum) = dom._findFilledSlot(idx, haveLock=true);
+      const numArrs = dom._arrs.length;
+      if found then
         return data(slotNum);
-      else {
+      else if setter && slotNum != -1 { // do an insert using the slot we found
+        if numArrs != 1 {
+          halt("cannot implicitly add to an array's domain when the domain is used by more than one array: ", idx);
+          return data(0);
+        } else return data(dom.dsiAdd(idx, slotNum));
+      } else {
         halt("array index out of bounds: ", idx);
         return data(0);
       }
