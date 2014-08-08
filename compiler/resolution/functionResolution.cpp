@@ -4313,7 +4313,12 @@ static CallExpr* generateConcreteConstructorCall(Type* type)
     {
       Symbol* field = sub->key;
       SymExpr* typeExpr = new SymExpr(sub->value);
-      NamedExpr* arg = new NamedExpr(field->name, typeExpr);
+      Expr* init = typeExpr;
+      if (field->hasFlag(FLAG_GENERIC))
+        // This argument expects a value (not a type expression).
+        init = new CallExpr(PRIM_INIT, // This should be "_defaultOf".
+                            typeExpr);
+      NamedExpr* arg = new NamedExpr(field->name, init);
       call->insertAtTail(arg);
     }
   }
@@ -4342,16 +4347,39 @@ static void fixupRuntimeTypeArguments(CallExpr* call)
       if (ts->hasFlag(FLAG_HAS_RUNTIME_TYPE))
       {
         Expr* stmt = call->getStmtExpr();
-        VarSymbol* typeTmp = newTemp(astr("_type_tmp_", ne->name), se->var->type);
+        VarSymbol* typeTmp = newTemp(astr("_RTT_tmp_", ne->name), se->var->type);
         typeTmp->addFlag(FLAG_TYPE_VARIABLE);
         stmt->insertBefore(new DefExpr(typeTmp));
         CallExpr* init = new CallExpr(PRIM_INIT, se->copy());
         stmt->insertBefore(new CallExpr(PRIM_MOVE, new SymExpr(typeTmp), init));
-        ne->actual->replace(new SymExpr(typeTmp));
+        se->replace(new SymExpr(typeTmp));
       }
     }
   }
 }
+
+
+// generateConcreteConstructorCall() could have inserted call expressions into
+// the argument list for the call.  These need to be flattened and resolved.
+static void flattenAndResolveArgs(CallExpr* call)
+{
+  for_actuals(actual, call)
+  {
+    NamedExpr* ne = toNamedExpr(actual);
+    if (CallExpr* ce = toCallExpr(ne->actual))
+    {
+      Expr* stmt = call->getStmtExpr();
+      VarSymbol* typeTemp = newTemp(astr("_type_tmp_",  ne->name));
+      stmt->insertBefore(new DefExpr(typeTemp));
+      CallExpr* move = new CallExpr(PRIM_MOVE, new SymExpr(typeTemp),
+                                    ce->copy());
+      stmt->insertBefore(move);
+      resolveCall(move);
+      ce->replace(new SymExpr(typeTemp));
+    }
+  }
+}
+
 
 // Returns NULL if no substitution was made.  Otherwise, returns the expression
 // that replaced the PRIM_INIT (or PRIM_NO_INIT) expression.
@@ -4435,6 +4463,7 @@ static Expr* resolvePrimInit(CallExpr* call)
 
       CallExpr* initCall = generateConcreteConstructorCall(type);
       call->replace(initCall);
+      flattenAndResolveArgs(initCall);
       fixupRuntimeTypeArguments(initCall);
       resolveCall(initCall);
       resolveFns(initCall->isResolved());

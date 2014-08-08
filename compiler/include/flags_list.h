@@ -73,7 +73,9 @@ symbolFlag( FLAG_FIELD_ACCESSOR , npr, "field accessor" , "field setter/getter f
 symbolFlag( FLAG_FIRST_CLASS_FUNCTION_INVOCATION, npr, "first class function invocation" , "proxy for first-class function invocation" )
 symbolFlag( FLAG_FUNCTION_CLASS , npr, "function class" , "first-class function class representation" )
 symbolFlag( FLAG_FUNCTION_PROTOTYPE , npr, "function prototype" , "signature for function prototypes" )
-symbolFlag( FLAG_GENERIC , npr, "generic" , "generic types and functions" )
+// When applied to an argument, this flag means that the arg accepts a value
+// but has unspecified type.
+symbolFlag( FLAG_GENERIC , npr, "generic" , "generic types, functions and arguments" )
 symbolFlag( FLAG_GLOBAL_TYPE_SYMBOL, npr, "global type symbol", "is accessible through a global type variable")
 symbolFlag( FLAG_HAS_RUNTIME_TYPE , ypr, "has runtime type" , "type that has an associated runtime type" )
 
