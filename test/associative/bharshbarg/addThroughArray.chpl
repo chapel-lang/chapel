@@ -13,10 +13,3 @@ for name in names do
   }
 
 writeln("SUCCESS");
-
-/*
-var illegal : [dom] string;
-
-data["foo"] = 42;
-illegal["badKey"] = "you can't do this with multiple domains";
-*/
