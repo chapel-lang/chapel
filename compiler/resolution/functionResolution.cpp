@@ -1016,7 +1016,12 @@ static void ensureEnumTypeResolved(EnumType* etype) {
     // Make sure to resolve all enum types.
     for_enums(def, etype) {
       if (def->init) {
+        Expr* enumTypeExpr =
         resolve_type_expr(def->init);
+
+        Type* enumtype = enumTypeExpr->typeInfo();
+        if (enumtype == dtUnknown)
+          INT_FATAL(def->init, "Unable to resolve enumerator type expression");
 
         // printf("Type of %s.%s is %s\n", etype->symbol->name, def->sym->name,
         // enumtype->symbol->name);
@@ -2738,9 +2743,7 @@ static void handleCaptureArgs(CallExpr* call, FnSymbol* taskFn, CallInfo* info) 
 
 static Expr*
 resolve_type_expr(Expr* expr) {
-
   Expr* result = NULL;
-
   for_exprs_postorder(e, expr) {
     result = preFold(e);
     if (CallExpr* call = toCallExpr(result)) {
@@ -2759,7 +2762,6 @@ resolve_type_expr(Expr* expr) {
     }
     result = postFold(result);
   }
-
   return result;
 }
 
@@ -3043,7 +3045,7 @@ static void resolveNormalCall(CallExpr* call) {
     }
   } else {
     best->fn = defaultWrap(best->fn, &best->alignedFormals, &info);
-    best->fn = orderWrap(best->fn, &best->alignedFormals, &info);
+    reorderActuals(best->fn, &best->alignedFormals, &info);
     best->fn = coercionWrap(best->fn, &info);
     best->fn = promotionWrap(best->fn, &info);
   }
@@ -4712,14 +4714,10 @@ preFold(Expr* expr) {
         USR_FATAL(call, "invalid type specification");
       Type* type = call->get(1)->getValType();
       
-      if (type->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
-        result = new CallExpr(PRIM_CAST, type->symbol, gNil);
-        call->replace(result);
-      } else if (type->defaultValue == gNil) {
-        result = new CallExpr("_cast", type->symbol, type->defaultValue);
-        call->replace(result);
-      } else if (type->defaultValue) {
-        result = new SymExpr(type->defaultValue);
+      if (type->defaultValue || type->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
+        // In these cases, the _defaultOf method for that type can be resolved
+        // now.  Otherwise, it needs to wait until resolveRecordInitializers
+        result = new CallExpr("_defaultOf", type->symbol);
         call->replace(result);
       } else {
         inits.add(call);
@@ -6930,10 +6928,12 @@ static void resolveRecordInitializers() {
       INT_FATAL(init, "PRIM_INIT should have been replaced already");
 
     SET_LINENO(init);
-    if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-      // why??  --sjd
-      init->replace(init->get(1)->remove());
-    } else if (type->symbol->hasFlag(FLAG_DISTRIBUTION)) {
+    if (type->symbol->hasFlag(FLAG_DISTRIBUTION)) {
+      // This initialization cannot be replaced by a _defaultOf function
+      // earlier in the compiler, there is not enough information to build a
+      // default function for it.  When we have the ability to call a
+      // constructor from a type alias, it can be moved directly into module
+      // code
       Symbol* tmp = newTemp("_distribution_tmp_");
       init->getStmtExpr()->insertBefore(new DefExpr(tmp));
       CallExpr* classCall = new CallExpr(type->getField("_valueType")->type->defaultInitializer);
@@ -6946,14 +6946,12 @@ static void resolveRecordInitializers() {
       init->replace(distCall);
       resolveCall(distCall);
       resolveFns(distCall->isResolved());
-    } else if (type->symbol->hasFlag(FLAG_EXTERN)) {
-//          init->replace(init->get(1)->remove());
-      init->parentExpr->remove();
     } else {
-      INT_ASSERT(type->defaultInitializer);
-      CallExpr* call = new CallExpr(type->defaultInitializer);
+      CallExpr* call = new CallExpr("_defaultOf", type->symbol);
       init->replace(call);
-      resolveCall(call);
+      resolveNormalCall(call);
+      // At this point in the compiler, we can resolve the _defaultOf function
+      // for the type, so do so.
       if (call->isResolved())
         resolveFns(call->isResolved());
     }
@@ -7405,7 +7403,11 @@ static void removeRandomPrimitive(CallExpr* call)
     // PRIM_TYPE_INIT replaces the primitive with symexpr that contains a type symbol.
     case PRIM_TYPE_INIT:
     {
+      // A "type init" call that is in the tree should always have a callExpr
+      // parent, as guaranteed by CallExpr::verify().
       CallExpr* parent = toCallExpr(call->parentExpr);
+      // We expect all PRIM_TYPE_INIT primitives to have a PRIM_MOVE
+      // parent, following the insertion of call temps.
       if (parent->isPrimitive(PRIM_MOVE))
         parent->remove();
       else

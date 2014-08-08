@@ -4,6 +4,6 @@
 
 if [ "${1}" != "mandelbrot" ] ; then
     outfile=$2
-    cat $outfile | grep -v '/opt/cray/ccm/default/etc/cray-ccm-epilogue: line 95: echo: write error: Broken pipe' > $outfile.tmp
+    cat $outfile | grep -v -E '.*/cray-ccm-epilogue: line .*: echo: write error: Broken pipe' > $outfile.tmp
     mv $outfile.tmp $outfile
 fi

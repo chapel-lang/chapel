@@ -1,0 +1,8 @@
+--verify -s case=1
+--verify -s case=2
+--verify -s case=3
+--verify -s case=4
+--verify -s case=5
+--verify -s case=6
+--verify -s case=7
+--verify -s case=8

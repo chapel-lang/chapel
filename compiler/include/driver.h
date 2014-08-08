@@ -124,16 +124,16 @@ extern bool externC;
 extern char breakOnCodegenCname[256];
 
 enum { LS_DEFAULT=0, LS_STATIC, LS_DYNAMIC };
-extern int fLinkStyle;
 
-extern int debugParserLevel;
-extern int debugShortLoc;
+extern int  fLinkStyle;
+
+extern int  debugParserLevel;
+extern int  debugShortLoc;
 extern bool fLibraryCompile;
 extern bool no_codegen;
-extern bool genExternPrototypes;
 extern bool developer;
 extern bool fVerify;
-extern int num_constants_per_variable;
+extern int  num_constants_per_variable;
 extern bool printCppLineno;
 
 extern bool fDocs;
@@ -148,7 +148,7 @@ extern bool printModuleFiles;
 extern bool ignore_warnings;
 extern bool ignore_errors;
 extern bool ignore_errors_for_pass;
-extern int squelch_header_errors;
+extern int  squelch_header_errors;
 extern bool fWarnConstLoops;
 
 extern bool fReportOptimizedLoopIterators;

@@ -3,22 +3,25 @@
  *** This pass and function normalizes parsed and scope-resolved AST.
  ***/
 
+#include "passes.h"
+
 #include "astutil.h"
 #include "build.h"
 #include "expr.h"
-#include "passes.h"
+#include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+
 #include <cctype>
 #include <vector>
-#include "stlUtil.h"
 
 bool normalized = false;
 
 //
 // Static functions: forward declaration
 // 
+static void insertModuleInit();
 static void checkUseBeforeDefs();
 static void moveGlobalDeclarationsToModuleScope();
 static void insertUseForExplicitModuleCalls(void);
@@ -35,14 +38,20 @@ static void clone_parameterized_primitive_methods(FnSymbol* fn);
 static void clone_for_parameterized_primitive_formals(FnSymbol* fn,
                                                       DefExpr* def,
                                                       int width);
-static void replace_query_uses(ArgSymbol* formal, DefExpr* def, CallExpr* query,
+static void replace_query_uses(ArgSymbol* formal, 
+                               DefExpr*   def, 
+                               CallExpr*  query,
                                Vec<SymExpr*>& symExprs);
-static void add_to_where_clause(ArgSymbol* formal, Expr* expr, CallExpr* query);
+static void add_to_where_clause(ArgSymbol* formal, 
+                                Expr*      expr,
+                                CallExpr*  query);
 static void fixup_query_formals(FnSymbol* fn);
 static void change_method_into_constructor(FnSymbol* fn);
 static void find_printModuleInit_stuff();
 
-void normalize(void) {
+void normalize() {
+  insertModuleInit();
+
   // tag iterators and replace delete statements with calls to ~chpl_destroy
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_YIELD)) {
@@ -145,6 +154,56 @@ void normalize(void) {
 
   find_printModuleInit_stuff();
 }
+
+/************************************ | *************************************
+*                                                                           *
+* Insert the module initFn in to every module in allModules.  The current   *
+* implementation pulls the entire module in to the prototypical initFn and  *
+* then lets the reset of normalize sort things out.  The module looks       *
+* reasonable by the end of the pass but odd in the middle.                  *
+*                                                                           *
+* MDN 2014/07/25 At some point this transformation should be reworked to be *
+* more delicate e.g. insert an empty init function and then carefully       *
+* populate it so that the AST is well-behaved at all points.                *
+*                                                                           *
+************************************* | ************************************/
+
+static void insertModuleInit() {
+  // Insert an init function into every module
+  forv_Vec(ModuleSymbol, mod, allModules) {
+    SET_LINENO(mod);
+
+    mod->initFn          = new FnSymbol(astr("chpl__init_", mod->name));
+    mod->initFn->retType = dtVoid;
+
+    mod->initFn->addFlag(FLAG_MODULE_INIT);
+    mod->initFn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
+
+    //
+    // move module-level statements into module's init function
+    //
+    for_alist(stmt, mod->block->body) {
+      if (stmt->isModuleDefinition() == false)
+        mod->initFn->insertAtTail(stmt->remove());
+    }
+
+    mod->block->insertAtHead(new DefExpr(mod->initFn));
+
+    //
+    // If the module has the EXPORT_INIT flag then
+    // propagate it to the module's init function
+    //
+    if (mod->hasFlag(FLAG_EXPORT_INIT) == true) {
+      mod->initFn->addFlag(FLAG_EXPORT);
+      mod->initFn->addFlag(FLAG_LOCAL_ARGS);
+    }
+  }
+}
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
 
 // the following function is called from multiple places,
 // e.g., after generating default or wrapper functions

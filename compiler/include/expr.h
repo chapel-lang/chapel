@@ -232,8 +232,14 @@ void insertChplHereAlloc(Expr *call, bool insertAfter, Symbol *sym,
                          Type* t, VarSymbol* md = NULL);
 CallExpr* callChplHereFree(BaseAST* p);
 
-#define for_exprs_postorder(e, expr)                                         \
-  for (Expr *last = (expr), *e = getFirstExpr(last); e; e = (e != last) ? getNextExpr(e) : NULL)
+// Walk the subtree of expressions rooted at "expr" in postorder, returning the
+// current expression in "e", stopping after "expr" has been returned.
+// Assignments to e in the calling context will change the path taken by the
+// iterator, so should be avoided (unless you really know what you are doing).
+#define for_exprs_postorder(e, expr)                            \
+  for (Expr *last = (expr), *e = getFirstExpr(expr);            \
+       e;                                                       \
+       e = (e != last) ? getNextExpr(e) : NULL)
 
 Expr* getFirstExpr(Expr* expr);
 Expr* getNextExpr(Expr* expr);

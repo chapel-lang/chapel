@@ -749,7 +749,7 @@ module ChapelBase {
   class _EndCount {
     var i: atomic int,
         taskCnt: taskCntType,
-        taskList: _task_list = _nullTaskList;
+        taskList: _task_list = _defaultOf(_task_list);
   }
   
   // This function is called once by the initiating task.  No on

@@ -1,2 +1,0 @@
-local-return.chpl:1: In function 'go':
-local-return.chpl:1: error: control reaches end of function that returns a value
