@@ -15,13 +15,14 @@ var table : [1..128] uint(8);
 proc main() {
   var info : string;
   var temp : string;
+  var inFile = openfd(0); // stdin
+  const fileLen = inFile.length();
+  var data : [1..fileLen] uint(8);
+  var r = inFile.reader(kind=ionative, locking=false);
 
-  // Major leaks
-  while stdin.readline(temp) do info += temp;
-
-  // temporary while we wait for string features that 
-  // would allow us to modify the string in place.
-  var data = info.toBytes();
+  var numRead = 1;
+  const lineSize = 61;
+  while numRead <= fileLen && r.readline(data[numRead..fileLen], numRead) do {}
 
   forall i in 1..pairs.size by 2 {
     table[pairs[i]] = pairs[i+1];      // uppercase
