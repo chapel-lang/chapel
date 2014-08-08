@@ -54,8 +54,13 @@ hwloc-config: FORCE
 # newer than $(HWLOC_SUBDIR)/doc/doxygen-doc/hwloc.tag prevents make from
 # trying to do that step.
 #
+ifneq ($(CHPL_MAKE_PLATFORM), darwin)
 	touch -m -r $(HWLOC_SUBDIR)/doc/doxygen-doc/hwloc.tag -d '+1 sec' \
-	      $(HWLOC_SUBDIR)/README
+		$(HWLOC_SUBDIR)/README
+else
+	touch -m -r $(HWLOC_SUBDIR)/doc/doxygen-doc/hwloc.tag -A '01' \
+		$(HWLOC_SUBDIR)/README
+endif
 #
 # Then configure
 #
