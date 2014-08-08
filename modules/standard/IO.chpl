@@ -1480,6 +1480,44 @@ proc channel.read(ref args ...?k,
   }
 }
 
+proc channel.readline(arg: [] uint(8), ref numRead, inclusive = true) : bool {
+  if this.kind != ionative then halt("channel.readline([] uint(8), ...) \
+      is only available for ionative channels");
+  var e:syserr = ENOERR;
+  this.readline(arg, numRead, error=e, inclusive);
+  if !e then return true;
+  else if e == EEOF then return false;
+  else {
+    this._ch_ioerror(e, "in channel.readline(ref arg:string)");
+    return false;
+  }
+}
+
+// Read a line of bytes into a chapel array.
+//
+// numRead: The number of 'elType's read
+// inclusive: if true, will include the newline
+//
+// The 'kind' of the channel must be ionative, as we only read bytes. 
+// This limitation exists so that we can check for a newline.
+proc channel.readline(arg: [] uint(8), ref numRead, out error:syserr, inclusive = true) : bool {
+  if this.kind != ionative then halt("channel.readline([] uint(8), ...) \
+      is only available for ionative channels");
+  var temp : uint(8);
+  param newLineChar = 0x0A;
+  for d in arg {
+    var got = this.read(temp, error);
+    if got && !error {
+      if inclusive || (!inclusive && temp != newLineChar) {
+        numRead += 1;
+        d = temp;
+      }
+      if temp == newLineChar then return true;
+    } else return false;
+  }
+  return true;
+}
+
 proc channel.readline(ref arg:string, out error:syserr):bool {
   if writing then compilerError("read on write-only channel");
   error = ENOERR;
