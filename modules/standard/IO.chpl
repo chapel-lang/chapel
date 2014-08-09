@@ -1482,10 +1482,12 @@ proc channel.read(ref args ...?k,
 
 proc channel.readline(ref data: [] uint(8), ref numRead, inclusive = true) :bool {
   var temp : uint(8);
+  if data.size == 0 then return false;
   for d in data {
     var err : syserr;
-    var got = this.read(temp, err);
-    if !err {
+    var got = qio_channel_read_byte(false, this._channel_internal);
+    if got >= 0 {
+      temp = got:uint(8);
       if inclusive || (!inclusive && temp != 10) {
         numRead += 1;
         d = temp;
