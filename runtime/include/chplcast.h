@@ -97,6 +97,8 @@ c_string chpl_bool64_to_c_string(chpl_bool64 x) {
   return x ? "true" : "false";
 }
 
+#include "chpl-string.h"
+
 static ___always_inline
 c_string chpl_string_to_c_string(chpl_string s, int lineno, c_string filename) {
   c_string ret;

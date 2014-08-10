@@ -52,7 +52,7 @@ void resolveFormals(FnSymbol* fn);
 void resolveBlock(Expr* body);
 
 FnSymbol* defaultWrap(FnSymbol* fn, Vec<ArgSymbol*>* actualFormals,  CallInfo* info);
-FnSymbol* orderWrap(FnSymbol* fn, Vec<ArgSymbol*>* actualFormals,  CallInfo* info);
+void reorderActuals(FnSymbol* fn, Vec<ArgSymbol*>* actualFormals,  CallInfo* info);
 FnSymbol* coercionWrap(FnSymbol* fn, CallInfo* info);
 FnSymbol* promotionWrap(FnSymbol* fn, CallInfo* info);
 

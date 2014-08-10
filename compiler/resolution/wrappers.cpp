@@ -24,8 +24,8 @@
 //  default wrapper -- supplies a value for every argument in the called function
 //      substituting default values for actual arguments that are omitted.
 //      (C does not support default values for arguments.)
-//  order wrapper -- reorders named actual arguments to match the order expected
-//      by the inner function.
+//  reorder named actual arguments to match the order expected by the inner
+//      function, i.e. the order of the formals (used to be order wrapper)
 //      (C does not support named argument passing.)
 //  coercion wrapper -- add explicit casts to perform type coercions known only
 //      to Chapel.
@@ -61,10 +61,6 @@ buildDefaultWrapper(FnSymbol* fn,
                     Vec<Symbol*>* defaults,
                     SymbolMap* paramMap,
                     CallInfo* info);
-static FnSymbol*
-buildOrderWrapper(FnSymbol* fn,
-                  SymbolMap* order_map,
-                  CallInfo* info);
 static FnSymbol*
 buildCoercionWrapper(FnSymbol* fn,
                      SymbolMap* coercion_map,
@@ -387,7 +383,7 @@ defaultWrap(FnSymbol* fn,
 
     resolveFormals(wrapper);
 
-    // update actualFormals for use in orderWrap
+    // update actualFormals for use in reorderActuals
     int j = 1;
     for_formals(formal, fn) {
       for (int i = 0; i < actualFormals->n; i++) {
@@ -404,47 +400,19 @@ defaultWrap(FnSymbol* fn,
 
 
 ////
-//// order wrapper code
+//// reorder the actuals to match the order of the formals
+//// (this function is here because it used to create a wrapper)
 ////
 
-
-static FnSymbol*
-buildOrderWrapper(FnSymbol* fn,
-                  SymbolMap* order_map,
-                  CallInfo* info) {
-  SET_LINENO(fn);
-  FnSymbol* wrapper = buildEmptyWrapper(fn, info);
-  wrapper->cname = astr("_order_wrap_", fn->cname);
-  CallExpr* call = new CallExpr(fn);
-  call->square = info->call->square;
-  SymbolMap copy_map;
-  for_formals(formal, fn) {
-    SET_LINENO(formal);
-    ArgSymbol* wrapper_formal = copyFormalForWrapper(formal);
-    if (fn->_this == formal)
-      wrapper->_this = wrapper_formal;
-    copy_map.put(formal, wrapper_formal);
-  }
-  for_formals(formal, fn) {
-    SET_LINENO(formal);
-    wrapper->insertFormalAtTail(copy_map.get(order_map->get(formal)));
-    if (formal->hasFlag(FLAG_INSTANTIATED_PARAM))
-      call->insertAtTail(paramMap.get(formal));
-    else
-      call->insertAtTail(copy_map.get(formal));
-  }
-  insertWrappedCall(fn, wrapper, call);
-  normalize(wrapper);
-  return wrapper;
-}
-
-
-FnSymbol*
-orderWrap(FnSymbol* fn,
+void reorderActuals(FnSymbol* fn,
           Vec<ArgSymbol*>* actualFormals,
           CallInfo* info) {
-  bool order_wrapper_required = false;
-  SymbolMap formals_to_formals;
+  int numArgs = actualFormals->n;
+  if (numArgs <= 1)
+    return;  // no way we will need to reorder
+
+  bool need_to_reorder = false;
+  int formals_to_formals[numArgs];
   int i = 0;
   for_formals(formal, fn) {
     i++;
@@ -454,21 +422,33 @@ orderWrap(FnSymbol* fn,
       j++;
       if (af == formal) {
         if (i != j)
-          order_wrapper_required = true;
-        formals_to_formals.put(formal, actualFormals->v[i-1]);
+          need_to_reorder = true;
+        formals_to_formals[i-1] = j-1;
       }
     }
   }
-  if (order_wrapper_required) {
-    FnSymbol* wrapper = checkCache(ordersCache, fn, &formals_to_formals);
-    if (wrapper == NULL) {
-      wrapper = buildOrderWrapper(fn, &formals_to_formals, info);
-      addCache(ordersCache, fn, wrapper, &formals_to_formals);
-    }
-    resolveFormals(wrapper);
-    return wrapper;
+  if (need_to_reorder) {
+    Expr* savedActuals[numArgs];
+    int i = 0;
+    // remove all actuals in an order
+    for_actuals(actual, info->call)
+      savedActuals[i++] = actual->remove();
+    // reinsert them in the desired order
+    for (i = 0; i < numArgs; i++)
+      info->call->insertAtTail(savedActuals[formals_to_formals[i]]);
+    // reorder CallInfo data as well
+    // ideally this would be encapsulated in within the CallInfo class
+    INT_ASSERT(info->actuals.n == numArgs);
+    Symbol* ciActuals[numArgs];
+    const char* ciActualNames[numArgs];
+    for (i = 0; i < numArgs; i++)
+      ciActuals[i] = info->actuals.v[i],
+      ciActualNames[i] = info->actualNames.v[i];
+    for (i = 0; i < numArgs; i++)
+      info->actuals.v[i] = ciActuals[formals_to_formals[i]],
+      info->actualNames.v[i] = ciActualNames[formals_to_formals[i]];
   }
-  return fn;
+  return;
 }
 
 

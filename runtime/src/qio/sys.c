@@ -54,6 +54,10 @@
 #define SYS_HAS_STATFS 0
 #endif
 
+#if defined(SYS_HAS_LLAPI)
+#include <lustre/lustreapi.h>
+#include <sys/ioctl.h>
+#endif
 
 // preadv/pwritev are available
 // only on linux/glibc 2.10 or later
@@ -554,6 +558,35 @@ err_t sys_lstat(const char* path, struct stat* buf)
 
   return err_out;
 }
+
+#ifdef SYS_HAS_LLAPI
+err_t sys_lustre_get_stripe_size(fd_t fd, int64_t* size_out) 
+{
+  struct lov_user_md_v1 *lum;
+  size_t lum_size = sizeof(*lum) + LOV_MAX_STRIPE_COUNT * sizeof(struct lov_user_ost_data_v1);
+  int rc = 0;
+  err_t err = 0;
+
+  lum = qio_calloc(lum_size, 1);
+
+  lum->lmm_magic = LOV_USER_MAGIC_V1;
+  lum->lmm_stripe_count = LOV_MAX_STRIPE_COUNT;
+
+  STARTING_SLOW_SYSCALL;
+  rc = ioctl(fd, LL_IOC_LOV_GETSTRIPE, lum);
+  *size_out = lum->lmm_stripe_size;
+
+  if (rc < 0)  {
+    *size_out = 0;
+    err = errno;
+  }
+  DONE_SLOW_SYSCALL;
+
+  qio_free(lum);
+
+  return err;
+}
+#endif
 
 // TAKZ - on Mac, the types in the statfs structure become signed or unsigned
 // based upon whether or not they have 64 bit inodes. This leads to some rather

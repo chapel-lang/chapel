@@ -485,17 +485,16 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
 
   // In the suffix of the containing function, look for uses of the lhs of the
   // move containing the call to fn.
-  Vec<SymExpr*>* use;
+  Vec<SymExpr*> use;
   if (useMap.get(lhs) && useMap.get(lhs)->n == 1) {
-    use = useMap.get(lhs);
+    use = *useMap.get(lhs);
   } else {
-    use = new Vec<SymExpr *>();
     for (Expr* stmt = move->next; stmt; stmt = stmt->next) {
       Vec<SymExpr*> symExprs;
       collectSymExprs(stmt, symExprs);
       forv_Vec(SymExpr, se, symExprs) {
         if (se->var == lhs) {
-          use->add(se);
+          use.add(se);
         }
       }
     }
@@ -515,8 +514,8 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
   // where a call to useFn replaces the return that used to be at the end of
   // newFn.  The use function is expected to be assignment, initCopy or
   // autoCopy.  All other cases are ignored.
-  if (use->n > 0) {
-    SymExpr* firstUse = use->v[0];
+  if (use.n > 0) {
+    SymExpr* firstUse = use.v[0];
     // If this isn't a call expression, we've got problems.
     if (CallExpr* useCall = toCallExpr(firstUse->parentExpr)) {
       if (FnSymbol* useFn = useCall->isResolved()) {
@@ -639,7 +638,7 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
             // for each remaining use "se"
             //   replace se with deref of retArg, unless parent is accessing its
             //   address
-            forv_Vec(SymExpr, se, *use) {
+            forv_Vec(SymExpr, se, use) {
               // Because we've already handled the first use
               if (se != firstUse) {
                 CallExpr* parent = toCallExpr(se->parentExpr);

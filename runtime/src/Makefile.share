@@ -20,7 +20,7 @@ COMMON_LAUNCHER_SRCS = \
 	chplcast.c \
 	config.c \
 	error.c \
-	chpl-string.c \
+	chpl-string-support.c \
 	chpltypes.c \
 
 COMMON_NOGEN_SRCS = \
@@ -36,6 +36,7 @@ COMMON_NOGEN_SRCS = \
 	chpl-mem-hook.c \
 	chplmemtrack.c \
 	chpl-privatization.c \
+        chpl-string.c \
 	chplsys.c \
 	chpl-tasks.c \
 	chpl-timers.c \

@@ -3333,6 +3333,8 @@ void CallExpr::verify() {
   if (astTag != E_CallExpr) {
     INT_FATAL(this, "Bad CallExpr::astTag");
   }
+  if (! parentExpr)
+    INT_FATAL(this, "Every CallExpr is expected to have a parentExpr");
   if (argList.parent != this)
     INT_FATAL(this, "Bad AList::parent in CallExpr");
   if (baseExpr && baseExpr->parentExpr != this)
@@ -3380,6 +3382,10 @@ void CallExpr::verify() {
       break;
     case PRIM_BLOCK_UNLOCAL:
       INT_FATAL("PRIM_BLOCK_UNLOCAL between passes");
+      break;
+    case PRIM_TYPE_INIT:
+      // A "type init" call is always expected to have a parent.
+      INT_ASSERT(toCallExpr(this->parentExpr));
       break;
     default:
       break; // do nothing
@@ -3527,7 +3533,8 @@ void CallExpr::prettyPrint(std::ostream *o) {
       baseExpr->prettyPrint(o);
     }
   } else if (primitive != NULL) {
-    if (primitive->tag == PRIM_INIT) {
+    if (primitive->tag == PRIM_INIT ||
+      primitive->tag == PRIM_TYPE_INIT) {
       unusual = true;
       argList.head->prettyPrint(o);
     }

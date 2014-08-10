@@ -526,6 +526,7 @@ module ChapelIO {
     var tmpstring: c_string;
     tmpstring.write((...args));
     warning(tmpstring);
+    chpl_free_c_string(tmpstring);
   }
   
   proc _ddata.writeThis(f: Writer) {
@@ -545,7 +546,14 @@ module ChapelIO {
   
   class StringWriter: Writer {
     var s: c_string = "";
-    proc writePrimitive(x) { this.s += (x:c_string); }
+    proc writePrimitive(x) {
+      const orig = this.s;
+      this.s += (x:c_string);
+      if orig.length != 0 then chpl_free_c_string(orig);
+    }
+    proc ~StringWriter() {
+      if this.s.length != 0 then chpl_free_c_string(this.s);
+    }
   }
   
   // Convert 'x' to a string just the way it would be written out.
@@ -557,7 +565,7 @@ module ChapelIO {
     //if isNilObject(x) then "nil".writeThis(w);
     //else                   x.writeThis(w);
     w.write(x);
-    const result = w.s;
+    const result = __primitive("string_copy", w.s);
     delete w;
     return result;
   }
@@ -566,7 +574,8 @@ module ChapelIO {
   proc ref c_string.write(args ...?n) {
     var sc = new StringWriter(this);
     sc.write((...args));
-    this = sc.s;
+    // We need to copy this string because the destructor call below frees it
+    this = __primitive("string_copy", sc.s);
     delete sc;
   }
   
@@ -614,10 +623,12 @@ module ChapelIO {
     var afterdot = false;
     var dplaces = 0;
     for i in 1..sn {
-      if ((s.substring(i) == '#') & afterdot) then dplaces += 1;
-      if (s.substring(i) == '.') then afterdot=true;
+      const ss = s.substring(i);
+      if ((ss == '#') & afterdot) then dplaces += 1;
+      if (ss == '.') then afterdot=true;
+      chpl_free_c_string(ss);
     }
-  
+    // FIX ME: leak c_string due to concatenation
     return("%" + sn + "." + dplaces + "f");
   }
   

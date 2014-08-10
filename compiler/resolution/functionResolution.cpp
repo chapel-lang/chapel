@@ -293,7 +293,7 @@ getVisibleFunctions(BlockStmt* block,
                     const char* name,
                     Vec<FnSymbol*>& visibleFns,
                     Vec<BlockStmt*>& visited);
-static Type* resolve_type_expr(Expr* expr);
+static Expr* resolve_type_expr(Expr* expr);
 static void makeNoop(CallExpr* call);
 static void resolveDefaultGenericType(CallExpr* call);
 
@@ -1034,7 +1034,12 @@ static void ensureEnumTypeResolved(EnumType* etype) {
     for_enums(def, etype) {
       if (def->init) {
         // Type* enumtype =
+        Expr* enumTypeExpr =
         resolve_type_expr(def->init);
+
+        Type* enumtype = enumTypeExpr->typeInfo();
+        if (enumtype == dtUnknown)
+          INT_FATAL(def->init, "Unable to resolve enumerator type expression");
 
         // printf("Type of %s.%s is %s\n", etype->symbol->name, def->sym->name,
         // enumtype->symbol->name);
@@ -2751,14 +2756,12 @@ static void handleCaptureArgs(CallExpr* call, FnSymbol* taskFn, CallInfo* info) 
 }
 
 
-static Type*
+static Expr*
 resolve_type_expr(Expr* expr) {
-  bool stop = false;
+  Expr* result = NULL;
   for_exprs_postorder(e, expr) {
-    if (expr == e)
-      stop = true;
-    e = preFold(e);
-    if (CallExpr* call = toCallExpr(e)) {
+    result = preFold(e);
+    if (CallExpr* call = toCallExpr(result)) {
       if (call->parentSymbol) {
         callStack.add(call);
         resolveCall(call);
@@ -2772,16 +2775,9 @@ resolve_type_expr(Expr* expr) {
         callStack.pop();
       }
     }
-    e = postFold(e);
-    if (stop) {
-      expr = e;
-      break;
-    }
+    result = postFold(result);
   }
-  Type* t = expr->typeInfo();
-  if (t == dtUnknown)
-    INT_FATAL(expr, "Unable to resolve type expression");
-  return t;
+  return result;
 }
 
 
@@ -2941,6 +2937,7 @@ resolveCall(CallExpr* call)
      case PRIM_TUPLE_EXPAND:        resolveTupleExpand(call);           break;
      case PRIM_SET_MEMBER:          resolveSetMember(call);             break;
      case PRIM_MOVE:                resolveMove(call);                  break;
+     case PRIM_TYPE_INIT:
      case PRIM_INIT:                resolveDefaultGenericType(call);    break;
      case PRIM_NO_INIT:             resolveDefaultGenericType(call);    break;
      case PRIM_NEW:                 resolveNew(call);                   break;
@@ -3063,7 +3060,7 @@ static void resolveNormalCall(CallExpr* call) {
     }
   } else {
     best->fn = defaultWrap(best->fn, &best->alignedFormals, &info);
-    best->fn = orderWrap(best->fn, &best->alignedFormals, &info);
+    reorderActuals(best->fn, &best->alignedFormals, &info);
     best->fn = coercionWrap(best->fn, &info);
     best->fn = promotionWrap(best->fn, &info);
   }
@@ -7147,6 +7144,23 @@ static void removeRandomPrimitive(CallExpr* call)
         SET_LINENO(call->get(2));
         call->get(2)->replace(new SymExpr(sym));
       }
+    }
+    break;
+
+    // Maybe this can be pushed into the following case, where a PRIM_MOVE gets
+    // removed if its rhs is a type symbol.  That is, resolution of a
+    // PRIM_TYPE_INIT replaces the primitive with symexpr that contains a type symbol.
+    case PRIM_TYPE_INIT:
+    {
+      // A "type init" call that is in the tree should always have a callExpr
+      // parent, as guaranteed by CallExpr::verify().
+      CallExpr* parent = toCallExpr(call->parentExpr);
+      // We expect all PRIM_TYPE_INIT primitives to have a PRIM_MOVE
+      // parent, following the insertion of call temps.
+      if (parent->isPrimitive(PRIM_MOVE))
+        parent->remove();
+      else
+        INT_FATAL(parent, "expected parent of PRIM_TYPE_EXPR to be a PRIM_MOVE");
     }
     break;
 

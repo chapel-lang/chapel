@@ -26,7 +26,7 @@
 #include <string.h>
 #include <inttypes.h>
 
-
+// These should be moved to chpl-string.c and eventually go away.
 chpl_string chpl_refToString(void* ref) {
   char buff[32];
   sprintf(buff, "%p", ref);
