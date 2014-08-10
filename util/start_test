@@ -667,8 +667,8 @@ endif
 
 set datestr = `date +"%y%m%d.%H%M%S"`
 
-set host_platform = `$CHPL_HOME/util/chplenv/chpl_platform.py --host`
-set tgt_platform = `$CHPL_HOME/util/chplenv/chpl_platform.py --target`
+set host_platform = `$utildir/chplenv/chpl_platform.py --host`
+set tgt_platform = `$utildir/chplenv/chpl_platform.py --target`
 
 #
 # some sets to get locale, environment reasonable
@@ -709,8 +709,8 @@ set testnotests = 0
 set recurse = 1
 set tee = "tee"
 set numlocales = 0
-set comm = `$CHPL_HOME/util/chplenv/chpl_comm.py`
-set locMod = `$CHPL_HOME/util/chplenv/chpl_locale_model.py`
+set comm = `$utildir/chplenv/chpl_comm.py`
+set locMod = `$utildir/chplenv/chpl_locale_model.py`
 set suppressions = ""
 set optionerr = 0
 set chplHomeWarn = 1
@@ -1147,7 +1147,7 @@ setenv LAUNCHCMD "$launchcmd"
 
 echo \[comm: \"$comm\"\] |& $tee -a $logfile
 setenv CHPL_COMM $comm
-setenv CHPL_GASNET_SEGMENT `$CHPL_HOME/util/chplenv/chpl_comm_segment.py`
+setenv CHPL_GASNET_SEGMENT `$utildir/chplenv/chpl_comm_segment.py`
 
 echo \[localeModel: \"$locMod\"\] |& $tee -a $logfile
 setenv CHPL_LOCALE_MODEL $locMod
@@ -1208,9 +1208,9 @@ if ($performance || $gengraphs) then
     else
         set startdate_t = ""
     endif
-    set createCoolerGraphs = ($utildir/genGraphs $genGraphOpts)
-    set createGraphs = $utildir/createGraphs
-    set viewGraphs = $utildir/viewGraphs
+    set createCoolerGraphs = ($utildir/test/genGraphs $genGraphOpts)
+    set createGraphs = $utildir/test/createGraphs
+    set viewGraphs = $utildir/test/viewGraphs
 endif
 
 
@@ -1249,8 +1249,8 @@ if ($compperformance) then
         set startdate_t = ""
     endif
      
-    set createCoolerGraphs = ($utildir/genGraphs $genGraphOpts)
-    set combineCompPerf = $utildir/combineCompPerfData
+    set createCoolerGraphs = ($utildir/test/genGraphs $genGraphOpts)
+    set combineCompPerf = $utildir/test/combineCompPerfData
 endif
 
 
@@ -1274,7 +1274,7 @@ if ("$dirlist" == "" && "$testlist" == "") then
                 mkdir -p $perfdir
             endif
             echo \[Computing stats for spec examples\] |& $tee -a $logfile
-            $utildir/computePerfStats spectests "$perfdir" "$chplhome/test/spectests.perfkeys" "$chplhome/test/spectests.exec.out.tmp" >& $chplhome/test/spectests.perfStats.out.tmp
+            $utildir/test/computePerfStats spectests "$perfdir" "$chplhome/test/spectests.perfkeys" "$chplhome/test/spectests.exec.out.tmp" >& $chplhome/test/spectests.perfStats.out.tmp
             set exitval = $status
             if ( $exitval != 0 ) then
                 echo "[Error: Failed to compute perf stats for Spec tests.  Log file: $chplhome/test/spectests.perfStats.out.tmp]" |& $tee -a $logfile
@@ -1377,7 +1377,7 @@ endif
 if ($gengraphs) then
     echo ""
     echo "[Checking that all .graph files appear in $CHPL_HOME/test/GRAPHFILES and $CHPL_HOME/test/COMPGRAPHFILES]" |& $tee -a $logfile
-    $utildir/checkGraphfiles |& tee -a $logfile
+    $utildir/test/checkGraphfiles |& tee -a $logfile
 endif
 
 #
@@ -1385,13 +1385,13 @@ endif
 #
 echo "" | & $tee -a $logfile
 echo "### Chapel Environment ###" | & $tee -a $logfile
-$CHPL_HOME/util/printchplenv | & $tee -a $logfile
+$utildir/printchplenv | & $tee -a $logfile
 echo "##########################" | & $tee -a $logfile
 
 #
 # Utility functions
 #
-set gsub_test = $utildir/sub_test
+set gsub_test = $utildir/test/sub_test
 
 
 #####################################################
@@ -1412,7 +1412,7 @@ foreach test ($testlist)
     echo " " |& $tee -a $logfile
     echo "[Cleaning file $test]" |& $tee -a $logfile
 
-    set sub_clean = $utildir/sub_clean
+    set sub_clean = $utildir/test/sub_clean
     echo "[Starting $sub_clean $testname `date`]" |& $tee -a $logfile
 
     $sub_clean $testname |& $tee -a $logfile
@@ -1550,7 +1550,7 @@ foreach testType ($testTypes)
                 # Skip this directory if there is a SKIPIF file
                 # and the condition it contains evaluates to true.
                 if (-e ./SKIPIF) then
-                    set skiptest = `$utildir/testEnv ./SKIPIF`
+                    set skiptest = `$utildir/test/testEnv ./SKIPIF`
                     if ($skiptest == 1) then
                         echo "[Skipping directory based on SKIPIF environment settings]" |& $tee -a $logfile
                         continue
@@ -1564,7 +1564,7 @@ foreach testType ($testTypes)
                 while (! $pruneif && $cwd != $basedir)
                     set skipfilen = $cwd.skipif
                     if (-e $skipfilen) then
-                        set pruneif = `$utildir/testEnv $skipfilen`
+                        set pruneif = `$utildir/test/testEnv $skipfilen`
                     endif
                     cd ..
                 end
@@ -1587,7 +1587,7 @@ foreach testType ($testTypes)
                     (($CHPL_TEST_INTERP == "off") || \
                     (! -e ./NOINTERP && ! -e ./NOEXEC && ! -e ./EXECOPTS)))) then
                     # clean up
-                    set sub_clean = $utildir/sub_clean
+                    set sub_clean = $utildir/test/sub_clean
                     $sub_clean |& $tee -a $logfile
 
                     if ($clean_only == 0)  then
@@ -1719,7 +1719,7 @@ echo \[Test Summary - $datestr\] |& $tee $logfile.summary
 if ($clean_only == 0) then
     grep "$errormarker" $logfile |& $tee -a $logfile.summary
     if ($suppressions != "") then
-        $utildir/filterSuppressions $suppressions $logfile.summary
+        $utildir/test/filterSuppressions $suppressions $logfile.summary
     endif
 
     grep "$futuremarker" $logfile |& $tee -a $logfile.summary
