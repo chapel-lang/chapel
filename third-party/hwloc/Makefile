@@ -34,7 +34,6 @@ cleanall: FORCE
 clobber: FORCE
 	rm -rf build install
 
-
 hwloc-config: FORCE
 #
 # These first few lines touch a bunch of autoconf-oriented files in a
@@ -44,7 +43,7 @@ hwloc-config: FORCE
 # Qthreads release
 #
 	cd $(HWLOC_SUBDIR) && touch -c configure.ac
-	cd $(HWLOC_SUBDIR) && find . -name "*.m4" | xargs touch 
+	cd $(HWLOC_SUBDIR) && find . -name "*.m4" | xargs touch
 	cd $(HWLOC_SUBDIR) && touch -c aclocal.m4
 	cd $(HWLOC_SUBDIR) && touch configure
 	cd $(HWLOC_SUBDIR) && find . -name "*.in" | xargs touch
@@ -52,10 +51,16 @@ hwloc-config: FORCE
 # For reasons not yet understood, our use of a separate build dir breaks
 # the doxygen doc rebuild step.  Ensuring that $(HWLOC_SUBDIR)/README is
 # newer than $(HWLOC_SUBDIR)/doc/doxygen-doc/hwloc.tag prevents make from
-# trying to do that step.
-#
+# trying to do that step. The parameter for doing that varies from Linux to
+# BSD-based systems (OS X included).
+ifeq ($(shell uname -s), Linux)
 	touch -m -r $(HWLOC_SUBDIR)/doc/doxygen-doc/hwloc.tag -d '+1 sec' \
 	      $(HWLOC_SUBDIR)/README
+else
+	touch -m -r $(HWLOC_SUBDIR)/doc/doxygen-doc/hwloc.tag -A '01' \
+	      $(HWLOC_SUBDIR)/README
+endif
+
 #
 # Then configure
 #
