@@ -4,7 +4,7 @@ use AdvancedIters;
 extern proc memcpy(x : [], b, len:int);
 
 config const tableSize = 1 << 16;
-config const lineSize = 60;
+config const lineSize = 61;
 
 var tonum : [1..128] int;
 tonum[0x41] = 0; // A
@@ -145,7 +145,7 @@ proc main() {
   var dataDom = {1..fileLen-numRead};
   numRead = 1;
   var data : [dataDom] uint(8);
-  while myin.readline(data[numRead..], numRead, false) {}
+  while myin.readline(data, numRead, numRead, false) {}
 
   // Resize our array to the amount actually read
   dataDom = {1..numRead};
