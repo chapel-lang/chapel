@@ -13,7 +13,7 @@ Dependencies
 The Curl functionality in Chapel is dependent on libcurl. For information on how to
 install libcurl, see: http://curl.haxx.se/docs/install.html
 
-The environment variables CHPL_AUXIO_INCLUDES and CHPL_AUXIO_LIBS must be
+The environment variables CHPL_AUXIO_INCLUDE and CHPL_AUXIO_LIBS must be
 set to point to the include and lib directories for libcurl respectively. More
 information on these variables can be found in README.auxIO
 
