@@ -35,6 +35,7 @@ qio_file_functions_t curl_function_struct = {
     &curl_getpath,
     NULL,
     NULL,
+    &curl_get_fs_type,
 };
 
 const qio_file_functions_ptr_t curl_function_struct_ptr = &curl_function_struct;
@@ -64,6 +65,15 @@ qioerr chpl_curl_perform(qio_file_t* fl) CURL_ERROR(0)
 qioerr chpl_curl_stream_string(qio_file_t* fl, const char** str) CURL_ERROR(0)
 
 qioerr chpl_curl_stream_file(qio_file_t* fl_curl, qio_file_t* fl_local) CURL_ERROR(0)
+
+qioerr chpl_curl_slist_append(chpl_slist* list, const char* str) CURL_ERROR(0)
+
+int curl_get_fs_type(void* fl, void* fs) CURL_ERROR(0)
+
+void chpl_curl_slist_free(chpl_slist list) {
+  chpl_internal_error("No Curl Support");
+  return;
+}
 
 const int curlopt_file                       = 0;
 const int curlopt_url                        = 0;
@@ -230,3 +240,6 @@ const int curlopt_socks5_gssapi_nec          = 0;
 const int curlopt_protocols                  = 0;
 const int curlopt_redir_protocols            = 0;
 const int curlopt_lastentry                  = 0;
+const int curlopt_mail_from                  = 0;
+const int curlopt_mail_rcpt                  = 0;
+const int curlopt_mail_auth                  = 0;

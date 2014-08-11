@@ -494,6 +494,14 @@ qioerr curl_getlength(void* fl, int64_t* len_out, void* fs)
   return 0;
 }
 
+int curl_get_fs_type(void* fl, void* fs)
+{
+  // In the future, we could see this returning differently based upon whether we
+  // were using SSL, TLS etc. For now though, we just return that we are on CURL.
+  return FTYPE_CURL;
+}
+
+
 // Blech, but in order to get the parametricity that we want, we need to
 // essentially do what the Curl folks did...
 qioerr chpl_curl_set_opt(qio_file_t* fl, int opt, ...)
@@ -535,9 +543,8 @@ qioerr chpl_curl_stream_string(qio_file_t* fl, const char** str)
   struct str_t chunk;
   CURLcode res;
 
-  chunk.mem = (char*)qio_calloc(800, 1); // No one *really* knows the average haeader
-                                         // size, but it seems as though values
-                                         // around this range are fairly common
+  // There is no way for us to know how big the string is that we are streaming in.
+  chunk.mem = (char*)qio_calloc(1, 1);
   chunk.size = 0;
 
   STARTING_SLOW_SYSCALL;
@@ -576,6 +583,17 @@ qioerr chpl_curl_stream_file(qio_file_t* fl_curl, qio_file_t* fl_local)
   return err;
 }
 
+qioerr chpl_curl_slist_append(chpl_slist* list, const char* str) {
+  *list = curl_slist_append(*list, str);
+  if (*list == NULL)
+    return qio_int_to_err(ENODATA);
+  return 0;
+}
+
+void chpl_curl_slist_free(chpl_slist list) {
+  curl_slist_free_all(list);
+}
+
 qio_file_functions_t curl_function_struct = {
     &curl_writev,    //writev
     &curl_readv,     //readv
@@ -588,6 +606,7 @@ qio_file_functions_t curl_function_struct = {
     &curl_getpath,   //getpath
     NULL,            //fsync
     NULL,            //getcwd
+    &curl_get_fs_type, // get_fs_type
 };
 
 const qio_file_functions_ptr_t curl_function_struct_ptr = &curl_function_struct;
@@ -757,4 +776,7 @@ const int curlopt_socks5_gssapi_nec          = CURLOPT_SOCKS5_GSSAPI_NEC;
 const int curlopt_protocols                  = CURLOPT_PROTOCOLS;
 const int curlopt_redir_protocols            = CURLOPT_REDIR_PROTOCOLS;
 const int curlopt_lastentry                  = CURLOPT_LASTENTRY;
+const int curlopt_mail_from                  = CURLOPT_MAIL_FROM;
+const int curlopt_mail_rcpt                  = CURLOPT_MAIL_RCPT;
+const int curlopt_mail_auth                  = CURLOPT_MAIL_AUTH;
 
