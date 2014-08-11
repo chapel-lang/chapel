@@ -14,14 +14,16 @@ The HDFS functionality in Chapel is dependent upon both Hadoop and
 Java being installed.  Your HADOOP_INSTALL, JAVA_INSTALL and CLASSPATH
 environment variables must be set as described below in 'Setting up
 Hadoop.' Without this it will not compile with HDFS even if the flags
-are set.
+are set. As well, the HDFS functionality is also dependent upon the
+CHPL_AUXIO_INCLUDE and CHPL_AUXIO_LIBS being set properly. For more information on
+how to set these properly, see README.auxIO in this directory.
 
 
 Enabling HDFS Support
 ---------------------
 
 Once you have ensured that Hadoop and Java are installed and have the
-three variables above, defined, set the environment variable
+five variables above, defined, set the environment variable
 CHPL_AUX_FILESYS to 'hdfs' to enable HDFS support:
 
   export CHPL_AUX_FILESYS=hdfs
@@ -193,6 +195,10 @@ Here is a sample .bashrc for using Hadoop within Chapel:
 export HADOOP_INSTALL=<Place where you have Hadoop installed>
 export HADOOP_HOME=$HADOOP_INSTALL
 export HADOOP_VERSION=<Your Hadoop version number>
+# Note that these might contain more paths than these if you have more than one IO
+# system enabled. These, are all that you will need in order to use HDFS (only)
+export CHPL_AUXIO_INCLUDE="-I$JAVA_INSTALL/include -I$JAVA_INSTALL/include/linux  -I$HADOOP_INSTALL/src/c++/libhdfs"
+export CHPL_AUXIO_LIBS="-L$JAVA_INSTALL/jre/lib/amd64/server -L$HADOOP_INSTALL/c++/Linux-amd64-64/lib"
 
 #
 # So we can run things such as start-all.sh etc. from anywhere and
