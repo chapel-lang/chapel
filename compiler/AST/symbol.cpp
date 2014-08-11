@@ -1295,6 +1295,7 @@ FnSymbol::FnSymbol(const char* initName) :
   userString(NULL),
   valueFunction(NULL),
   codegenUniqueNum(1),
+  canReplaceRefTemps(true),
   doc(NULL),
   partialCopySource(NULL),
   retSymbol(NULL)

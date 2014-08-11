@@ -350,6 +350,16 @@ static bool isUse(SymExpr* se)
       return true;
      case PRIM_MOVE:
      case PRIM_ASSIGN:
+     case PRIM_ADD_ASSIGN:
+     case PRIM_SUBTRACT_ASSIGN:
+     case PRIM_MULT_ASSIGN:
+     case PRIM_DIV_ASSIGN:
+     case PRIM_MOD_ASSIGN:
+     case PRIM_LSH_ASSIGN:
+     case PRIM_RSH_ASSIGN:
+     case PRIM_AND_ASSIGN:
+     case PRIM_OR_ASSIGN:
+     case PRIM_XOR_ASSIGN:
       if (se == call->get(1))
         return false;
       return true;

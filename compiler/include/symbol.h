@@ -285,6 +285,7 @@ class FnSymbol : public Symbol {
   FnSymbol* valueFunction; // pointer to value function (created in
                            // resolve and used in cullOverReferences)
   int codegenUniqueNum;
+  bool canReplaceRefTemps;
   const char *doc;
   
   /// Used to keep track of symbol substitutions during partial copying.

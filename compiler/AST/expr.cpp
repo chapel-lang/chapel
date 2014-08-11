@@ -3587,7 +3587,15 @@ void codegenOpAssign(GenRet a, GenRet b, const char* op,
 {
   GenInfo* info = gGenInfo;
 
-  GenRet ap = codegenDeref(a);  // deref 'a' since it's a 'ref' argument
+  // deref 'a' if it is a 'ref' argument
+  GenRet ap;
+  if (a.chplType->symbol->hasFlag(FLAG_REF) ||
+      a.chplType->symbol->hasFlag(FLAG_WIDE) ||
+      a.chplType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+    ap = codegenDeref(a);
+  } else {
+    ap = a;
+  }
   GenRet bv = codegenValue(b);  // get the value of 'b'
 
   bool aIsRemote = ap.isLVPtr == GEN_WIDE_PTR;
@@ -4362,11 +4370,12 @@ GenRet CallExpr::codegen() {
       // optimizations depending on specifics of the RHS expression.)
 
       // PRIM_ASSIGN expects either a narrow or wide pointer as its LHS arg.
-      INT_ASSERT(get(1)->typeInfo()->symbol->hasFlag(FLAG_REF) ||
-                 get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE));
-
-      // Handle general cases of PRIM_ASSIGN.
-      codegenAssign(codegenDeref(get(1)), get(2));
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF) ||
+          get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+        codegenAssign(codegenDeref(get(1)), get(2));
+      } else {
+        codegenAssign(get(1), get(2));
+      }
       break;
     case PRIM_ADD_ASSIGN:
       codegenOpAssign(get(1), get(2), " += ", codegenAdd);

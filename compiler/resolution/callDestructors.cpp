@@ -936,9 +936,12 @@ static void insertReferenceTemps() {
         if (formal->type == actual->typeInfo()->refType) {
           SET_LINENO(call);
           VarSymbol* tmp = newTemp("_ref_tmp_", formal->type);
-          call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+          tmp->addFlag(FLAG_REF_TEMP);
+          DefExpr* tmpDef = new DefExpr(tmp);
+          call->getStmtExpr()->insertBefore(tmpDef);
           actual->replace(new SymExpr(tmp));
-          call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, actual)));
+          CallExpr* assign = new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, actual));
+          call->getStmtExpr()->insertBefore(assign);
         }
       }
     }

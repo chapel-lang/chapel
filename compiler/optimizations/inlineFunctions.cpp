@@ -17,6 +17,9 @@
  * limitations under the License.
  */
 
+#include <vector>
+
+#include "stlUtil.h"
 #include "astutil.h"
 #include "expr.h"
 #include "passes.h"
@@ -24,6 +27,9 @@
 #include "stringutil.h"
 #include "optimizations.h"
 
+
+static bool canRemoveRefTemps(FnSymbol* fn);
+static CallExpr* findRefTempInit(SymExpr* se);
 
 //
 // inlines the function called by 'call' at that call site
@@ -42,6 +48,18 @@ inlineCall(FnSymbol* fn, CallExpr* call) {
   for_formals_actuals(formal, actual, call) {
     SymExpr* se = toSymExpr(actual);
     INT_ASSERT(se);
+    if ((formal->intent & INTENT_REF) && fn->canReplaceRefTemps) {
+      if (se->var->hasFlag(FLAG_REF_TEMP)) {
+        if (CallExpr* move = findRefTempInit(se)) {
+          CallExpr* addrOf = toCallExpr(move->get(2));
+          SymExpr* origSym = toSymExpr(addrOf->get(1));
+          map.put(formal, origSym->var);
+          se->var->defPoint->remove();
+          move->remove();
+          continue;
+        }
+      }
+    }
     map.put(formal, se->var);
   }
 
@@ -71,6 +89,40 @@ inlineCall(FnSymbol* fn, CallExpr* call) {
     call->replace(return_value);
 }
 
+static bool canRemoveRefTemps(FnSymbol* fn) {
+  if (!fn) // primitive
+    return true;
+
+  std::vector<CallExpr*> callExprs;
+  collectCallExprsSTL(fn, callExprs);
+
+  for_vector(CallExpr, call, callExprs) {
+    if (!call->primitive)
+      return false;
+  }
+
+  return true;
+}
+
+static CallExpr* findRefTempInit(SymExpr* se) {
+  Expr* expr = se->var->defPoint->next;
+  while (expr) {
+    if (CallExpr* call = toCallExpr(expr)) {
+      if (call->isPrimitive(PRIM_MOVE)) {
+        if (se->var == toSymExpr(call->get(1))->var) {
+          if (CallExpr* nestedCall = toCallExpr(call->get(2))) {
+            if (!nestedCall->isPrimitive(PRIM_ADDR_OF)) {
+              return NULL;
+            }
+          }
+          return call;
+        }
+      }
+    }
+    expr = expr->next;
+  }
+  return NULL;
+}
 
 //
 // inline function fn at all call sites
@@ -81,6 +133,7 @@ inlineCall(FnSymbol* fn, CallExpr* call) {
 static void
 inlineFunction(FnSymbol* fn, Vec<FnSymbol*>& inlinedSet) {
   inlinedSet.set_add(fn);
+  fn->canReplaceRefTemps = canRemoveRefTemps(fn);
   Vec<CallExpr*> calls;
   collectFnCalls(fn, calls);
   forv_Vec(CallExpr, call, calls) {
