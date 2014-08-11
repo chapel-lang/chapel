@@ -434,8 +434,8 @@ static void codegen_aggregate_def(AggregateType* ct) {
 
 
 //
-// Produce compilation-time configuration info into a .h file and
-// #include that .h into the current codegen output file.
+// Produce compilation-time configuration info into a .c file and
+// #include that .c into the current codegen output file.
 //
 // Only put C data objects into this file, not Chapel ones, as it may
 // also be #include'd into a launcher, and those are C/C++ code.
@@ -445,7 +445,7 @@ static const char* sCfgFname = "chpl_compilation_config";
 static void codegen_header_compilation_config() {
   fileinfo cfgfile = { NULL, NULL, NULL };
 
-  openCFile(&cfgfile, sCfgFname, "h");
+  openCFile(&cfgfile, sCfgFname, "c");
 
   // follow convention of just not writing to the file if we can't open it
   if (cfgfile.fptr != NULL) {
@@ -454,6 +454,8 @@ static void codegen_header_compilation_config() {
     gGenInfo->cfile = cfgfile.fptr;
 
     genComment("Compilation Info");
+
+    fprintf(cfgfile.fptr, "\n#include <stdio.h>>\n");
 
     genGlobalString("chpl_compileCommand", compileCommand);
     genGlobalString("chpl_compileVersion", compileVersion);
@@ -666,12 +668,14 @@ static void codegen_header() {
     fprintf(hdrfile, "#include \"stdchpl.h\"\n");
 
     // Include the compilation config file
-    fprintf(hdrfile, "#include \"%s.h\"\n", sCfgFname);
+    fprintf(hdrfile, "#include \"%s.c\"\n", sCfgFname);
 
+#ifdef HAVE_LLVM
     //include generated extern C header file
     if (externC && gAllExternCode.filename != NULL) {
       fprintf(hdrfile, "%s", astr("#include \"", gAllExternCode.filename, "\"\n"));
     }
+#endif
   }
 
   genClassIDs(types);

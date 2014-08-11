@@ -113,8 +113,10 @@ bool lookupInExternBlock(ModuleSymbol* module, const char* name,
                              clang::NamedDecl** cDecl, Type** chplType);
 bool alreadyConvertedExtern(ModuleSymbol* module, const char* name);
 bool setAlreadyConvertedExtern(ModuleSymbol* module, const char* name);
-#endif // HAVE_LLVM
 
 extern fileinfo gAllExternCode;
+extern fileinfo gChplCompilationConfig;
+
+#endif // HAVE_LLVM
 
 #endif //CLANGUTIL_H
