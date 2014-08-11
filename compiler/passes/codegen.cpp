@@ -455,7 +455,7 @@ static void codegen_header_compilation_config() {
 
     genComment("Compilation Info");
 
-    fprintf(cfgfile.fptr, "\n#include <stdio.h>>\n");
+    fprintf(cfgfile.fptr, "\n#include <stdio.h>\n");
 
     genGlobalString("chpl_compileCommand", compileCommand);
     genGlobalString("chpl_compileVersion", compileVersion);
