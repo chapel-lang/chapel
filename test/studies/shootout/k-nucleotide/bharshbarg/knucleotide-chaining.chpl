@@ -4,7 +4,7 @@ use AdvancedIters;
 extern proc memcpy(x : [], b, len:int);
 
 config const tableSize = 1 << 16;
-config const lineSize = 60;
+config const lineSize = 61;
 
 var tonum : [1..128] int;
 tonum[0x41] = 0; // A
@@ -139,16 +139,17 @@ proc main() {
   // Read line-by-line until we see a line beginning with '>TH'
   var tempdata : [1..lineSize] uint(8);
   var numRead = 0;
-  while myin.readline(tempdata, numRead) && !startsWithThree(tempdata) {}
+  var total = 0;
+  while myin.readline(tempdata, numRead) && !startsWithThree(tempdata) { total += numRead; }
 
   // Read in the rest of the file
-  var dataDom = {1..fileLen-numRead};
-  numRead = 1;
+  var dataDom = {1..fileLen-total};
   var data : [dataDom] uint(8);
-  while myin.readline(data[numRead..#lineSize], numRead, false) {}
-
+  var idx = 1;
+  while myin.readline(data, numRead, idx, false) { idx += numRead; }
+  
   // Resize our array to the amount actually read
-  dataDom = {1..numRead};
+  dataDom = {1..idx};
 
   // Make everything uppercase
   forall d in data do d ^= 0x20;
