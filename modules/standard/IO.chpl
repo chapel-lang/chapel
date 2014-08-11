@@ -1480,11 +1480,13 @@ proc channel.read(ref args ...?k,
   }
 }
 
-proc channel.readline(arg: [] uint(8), ref numRead, inclusive = true) : bool {
+proc channel.readline(arg: [] uint(8), ref numRead, start = arg.domain.low, inclusive = true) : bool 
+where arg.domain.rank == 1
+{
   if this.kind != ionative then halt("channel.readline([] uint(8), ...) \
       is only available for ionative channels");
   var e:syserr = ENOERR;
-  var got = this.readline(arg, numRead, error=e, inclusive);
+  var got = this.readline(arg, numRead, start, error=e, inclusive);
   if !e && got then return true;
   else if e == EEOF || !got then return false;
   else {
@@ -1500,22 +1502,30 @@ proc channel.readline(arg: [] uint(8), ref numRead, inclusive = true) : bool {
 //
 // The 'kind' of the channel must be ionative, as we only read bytes. 
 // This limitation exists so that we can check for a newline.
-proc channel.readline(arg: [] uint(8), ref numRead, out error:syserr, inclusive = true) : bool {
+proc channel.readline(arg: [] uint(8), ref numRead, in start=arg.domain.low, out error:syserr, inclusive = true) : bool 
+where arg.domain.rank == 1
+{
   if this.kind != ionative then halt("channel.readline([] uint(8), ...) \
       is only available for ionative channels");
-  var temp : uint(8);
+  if arg.size == 0 || start > arg.domain.high then return false;
+  var got : int;
   param newLineChar = 0x0A;
-  if arg.size == 0 then return false;
-  for d in arg {
-    var got = this.read(temp, error);
-    if got && !error {
-      if inclusive || (!inclusive && temp != newLineChar) {
-        numRead += 1;
-        d = temp;
+  var idx = start;
+  while got != newLineChar {
+    got = qio_channel_read_byte(false, this._channel_internal);
+    if got >= 0 {
+      if inclusive || (!inclusive && got != newLineChar) {
+        arg[idx] = got:uint(8);
+        idx += 1;
       }
-      if temp == newLineChar then return true;
-    } else return false;
+    } else {
+      numRead = idx - start;
+      error = (-got):syserr;
+      return false;
+    }
   }
+  numRead = idx - start;
+  error = ENOERR;
   return true;
 }
 
