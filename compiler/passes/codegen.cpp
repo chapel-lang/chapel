@@ -1,14 +1,11 @@
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
 #endif
-#include <inttypes.h>
 
-#include <cctype>
-#include <cstring>
-#include <cstdio>
-
+#include "codegen.h"
 
 #include "astutil.h"
+#include "config.h"
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
@@ -17,15 +14,19 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "config.h"
-#include "codegen.h"
+
+#include <inttypes.h>
+
+#include <cctype>
+#include <cstring>
+#include <cstdio>
+
 
 // Global so that we don't have to pass around
 // to all of the codegen() routines
-GenInfo* gGenInfo;
-int gMaxVMT = -1;
-fileinfo gAllExternCode;
-int stmtCount = 0;
+GenInfo* gGenInfo   =  0;
+int      gMaxVMT    = -1;
+int      gStmtCount =  0;
 
 
 static const char*
@@ -439,53 +440,60 @@ static void codegen_aggregate_def(AggregateType* ct) {
 // Only put C data objects into this file, not Chapel ones, as it may
 // also be #include'd into a launcher, and those are C/C++ code.
 //
-static const char* cfg_fname = "chpl_compilation_config";
-static void codegen_header_compilation_config() {
-  int i;
-  GenInfo* info = gGenInfo;
-  FILE* save_cfile = info->cfile;
+static const char* sCfgFname = "chpl_compilation_config";
 
+static void codegen_header_compilation_config() {
   fileinfo cfgfile = { NULL, NULL, NULL };
 
-  openCFile(&cfgfile, cfg_fname, "h");
+  openCFile(&cfgfile, sCfgFname, "h");
 
-  if (!cfgfile.fptr) return; // follow convention of just not writing
-                             // to the file if we can't open it
+  // follow convention of just not writing to the file if we can't open it
+  if (cfgfile.fptr != NULL) {
+    FILE* save_cfile = gGenInfo->cfile;
 
-  info->cfile = cfgfile.fptr;
+    gGenInfo->cfile = cfgfile.fptr;
 
-  genComment("Compilation Info");
+    genComment("Compilation Info");
 
-  genGlobalString("chpl_compileCommand", compileCommand);
-  genGlobalString("chpl_compileVersion", compileVersion);
-  genGlobalString("CHPL_HOME", CHPL_HOME);
+    genGlobalString("chpl_compileCommand", compileCommand);
+    genGlobalString("chpl_compileVersion", compileVersion);
+    genGlobalString("CHPL_HOME",           CHPL_HOME);
 
-  for (i=0; i < num_chpl_env_vars; i++) {
-    genGlobalString(chpl_env_var_names[i], chpl_env_vars[i]);
+    for (int i = 0; i < num_chpl_env_vars; i++) {
+      genGlobalString(chpl_env_var_names[i], chpl_env_vars[i]);
+    }
+
+    genGlobalInt("CHPL_STACK_CHECKS", !fNoStackChecks);
+    genGlobalInt("CHPL_CACHE_REMOTE", fCacheRemote);
+
+    // generate the "about" function
+    fprintf(cfgfile.fptr, "\nvoid chpl_program_about(void);\n");
+    fprintf(cfgfile.fptr, "\nvoid chpl_program_about() {\n");
+
+    fprintf(cfgfile.fptr, 
+            "printf(\"Compilation command: %s\\n\");\n",
+            compileCommand);
+
+    fprintf(cfgfile.fptr,
+            "printf(\"Chapel compiler version: %s\\n\");\n",
+            compileVersion);
+
+    fprintf(cfgfile.fptr, "printf(\"Chapel environment:\\n\");\n");
+    fprintf(cfgfile.fptr, "printf(\"  CHPL_HOME: %s\\n\");\n", CHPL_HOME);
+
+    for (int i = 0; i < num_chpl_env_vars; i++) {
+      fprintf(cfgfile.fptr,
+              "printf(\"  %s: %s\\n\");\n",
+              chpl_env_var_names[i],
+              chpl_env_vars[i]);
+    }
+
+    fprintf(cfgfile.fptr, "}\n");
+
+    closeCFile(&cfgfile);
+
+    gGenInfo->cfile = save_cfile;
   }
-
-  genGlobalInt("CHPL_STACK_CHECKS", !fNoStackChecks);
-  genGlobalInt("CHPL_CACHE_REMOTE", fCacheRemote);
-
-  // generate the "about" function
-  fprintf(cfgfile.fptr, "\nvoid chpl_program_about(void);\n");
-  fprintf(cfgfile.fptr, "\nvoid chpl_program_about() {\n");
-  fprintf(cfgfile.fptr, "printf(\"Compilation command: %s\\n\");\n",
-          compileCommand);
-  fprintf(cfgfile.fptr, "printf(\"Chapel compiler version: %s\\n\");\n",
-          compileVersion);
-  fprintf(cfgfile.fptr, "printf(\"Chapel environment:\\n\");\n");
-  fprintf(cfgfile.fptr, "printf(\"  CHPL_HOME: %s\\n\");\n",
-          CHPL_HOME);
-  for (i=0; i < num_chpl_env_vars; i++) {
-    fprintf(cfgfile.fptr, "printf(\"  %s: %s\\n\");\n",
-            chpl_env_var_names[i], chpl_env_vars[i]);
-  }
-  fprintf(cfgfile.fptr, "}\n");
-
-  closeCFile(&cfgfile);
-
-  info->cfile = save_cfile;
 }
 
 
@@ -658,7 +666,7 @@ static void codegen_header() {
     fprintf(hdrfile, "#include \"stdchpl.h\"\n");
 
     // Include the compilation config file
-    fprintf(hdrfile, "#include \"%s.h\"\n", cfg_fname);
+    fprintf(hdrfile, "#include \"%s.h\"\n", sCfgFname);
 
     //include generated extern C header file
     if (externC && gAllExternCode.filename != NULL) {
@@ -1193,7 +1201,7 @@ void codegen(void) {
 
   if (fPrintEmittedCodeSize)
   {
-    fprintf(stderr, "Statements emitted: %d\n", stmtCount);
+    fprintf(stderr, "Statements emitted: %d\n", gStmtCount);
   }
 }
 

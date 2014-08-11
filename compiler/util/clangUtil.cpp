@@ -61,7 +61,9 @@ using namespace llvm;
 #include "CGRecordLayout.h"
 #include "clang/CodeGen/BackendUtil.h"
 
-static void setupForGlobalToWide(void);
+static void setupForGlobalToWide();
+
+fileinfo    gAllExternCode;
 
 static
 VarSymbol *minMaxConstant(int nbits, bool isSigned, bool isMin)
