@@ -648,15 +648,17 @@ proc file.getPath(out error:syserr) : string {
   check();
   var ret:string;
   on this.home {
-    var tmp:c_string; // FIX ME: leak c_string
+    var tmp:c_string;
     var tmp2:c_string;
     error = qio_file_path(_file_internal, tmp);
     if !error {
       error = qio_shortest_path(_file_internal, tmp2, tmp);
     }
+    chpl_free_c_string(tmp);
     if !error {
-    // FIX ME: leak c_string
+      // FIX ME: could use a toString() that doesn't allocate space
       ret = toString(tmp2);
+      chpl_free_c_string(tmp2);
     } else {
       ret = "unknown";
     }
@@ -779,7 +781,7 @@ proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle(
     var e2:syserr = ENOERR;
     e2 = qio_file_path_for_fd(fd, path);
     if e2 then path = "unknown".c_str();
-    // FIX ME: leak c_string
+    // FIX ME: could use a toString() that doesn't allocate space
     ioerror(err, "in openfd", toString(path));
   }
   return ret;
@@ -801,8 +803,8 @@ proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle
     var e2:syserr = ENOERR;
     e2 = qio_file_path_for_fp(fp, path);
     if e2 then path = "unknown".c_str();
-    // FIX ME: leak c_string
     ioerror(err, "in openfp", toString(path));
+    // c_string path leaked, but ioerror will exit
   }
   return ret;
 }
@@ -962,12 +964,12 @@ proc channel._ch_ioerror(error:syserr, msg:string) {
     var err:syserr = ENOERR;
     err = qio_channel_path_offset(locking, _channel_internal, tmp_path, tmp_offset);
     if !err {
-      // FIX ME: leak c_string
       path = toString(tmp_path);
       offset = tmp_offset;
     }
   }
   ioerror(error, msg, path, offset);
+  // c_string tmp_path leaked, but ioerror will exit
 }
 proc channel._ch_ioerror(errstr:string, msg:string) {
   var path:string = "unknown";
@@ -978,12 +980,12 @@ proc channel._ch_ioerror(errstr:string, msg:string) {
     var err:syserr = ENOERR;
     err = qio_channel_path_offset(locking, _channel_internal, tmp_path, tmp_offset);
     if !err {
-      // FIX ME: leak c_string
       path = toString(tmp_path);
       offset = tmp_offset;
     }
   }
   ioerror(errstr, msg, path, offset);
+  // c_string tmp_path leaked, but ioerror will exit
 }
 
 
@@ -1237,15 +1239,19 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
     var tx: c_string;
     var ret = qio_channel_scan_string(false, _channel_internal, tx, len, -1);
     if t == c_string then x = tx;
-    // FIX ME: leak c_string
-    else x = toString(tx);
+    else {
+      // FIX ME: could use a toString() that doesn't allocate space
+      x = toString(tx);
+      chpl_free_c_string(tx);
+    }
     return ret;
   } else if _isEnumeratedType(t) {
     var err:syserr = ENOERR;
     for i in chpl_enumerate(t) {
-      var str = i:c_string; // FIX ME: leak c_string
+      var str = i:c_string;
       var slen:ssize_t = str.length:ssize_t;
       err = qio_channel_scan_literal(false, _channel_internal, str, slen, 1);
+      // Do not free str, because enum literals are C string literals
       if !err {
         x = i;
         break;
@@ -1348,8 +1354,11 @@ inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param byt
     var tx: c_string;
     var ret = qio_channel_read_string(false, byteorder, qio_channel_str_style(_channel_internal), _channel_internal, tx, len, -1);
     if t == c_string then x = tx;
-    // FIX ME: leak c_string
-    else x = toString(tx);
+    else {
+      // FIX ME: could use a toString() that doesn't allocate space
+      x = toString(tx);
+      chpl_free_c_string(tx);
+    }
     return ret;
   } else if _isEnumeratedType(t) {
     var i:enum_mintype(t);
@@ -1503,11 +1512,14 @@ proc _args_to_proto(args ...?k,
     var name:c_string;
     if i <= _arg_to_proto_names.size then name = _arg_to_proto_names[i];
     else name = "x" + i:c_string;
+    // FIX ME: leak c_string due to concatenation
     err_args += preArg + name + ":" + typeToString(args(i).type);
     if i != k then err_args += ", ";
   }
-  // FIX ME: leak c_string
-  return toString(err_args);
+  // FIX ME: could use a toString() that doesn't allocate space
+  const ret = toString(err_args);
+  chpl_free_c_string(err_args);
+  return ret;
 }
 
 inline proc channel.read(ref args ...?k):bool {
@@ -1593,7 +1605,7 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1):bool {
   var err:syserr = ENOERR;
 
   on this.home {
-    var ret:string;
+    var ret:c_string;
     var lenread:int(64);
     var tx:c_string;
     var lentmp:int(64);
@@ -1613,8 +1625,8 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1):bool {
       err = qio_channel_read_string(false, this._style().byteorder, max(int(32)),
           this._channel_internal, tx, lenread, -1);
 
-      ret = toString(tx);
-      str_out += ret;
+      ret += tx;
+      chpl_free_c_string(tx);
 
       if (err == EEOF) then break; // done reading 
 
@@ -1627,9 +1639,12 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1):bool {
       err = qio_channel_read_string(false, this._style().byteorder, lentmp,
           this._channel_internal, tx, lenread, -1);
 
-      ret = toString(tx);
-      str_out += ret;
+      ret += tx;
+      chpl_free_c_string(tx);
     }
+    // FIX ME: could use a toString() that doesn't allocate space
+    str_out = toString(ret);
+    chpl_free_c_string(ret);
   }
 
   if (err == EEOF) then return false; // done reading
@@ -3482,8 +3497,8 @@ proc channel._extractMatch(m:reMatch, ref arg:string, ref error:syserr) {
     var gotlen:int(64);
     var ts: c_string;
     error = qio_channel_read_string(false, iokind.native, stringStyleExactLen(len), _channel_internal, ts, gotlen, len:ssize_t);
-    // FIX ME: leak c_string
     s = toString(ts);
+    chpl_free_c_string(ts);
   }
  
   if ! error {
