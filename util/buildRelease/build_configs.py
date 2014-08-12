@@ -26,10 +26,10 @@ def main():
     # TODO: Clean env... remove any existing chapel vars?
     # TODO: Set new chpl vars
 
-    build_chpl(opts.chpl_home, orig_env)
+    build_chpl(opts.chpl_home, orig_env, verbose=opts.verbose)
 
 
-def build_chpl(chpl_home, env):
+def build_chpl(chpl_home, env, verbose=False):
     """Build Chapel with the provided environment.
 
     :type chpl_home: str
@@ -38,18 +38,21 @@ def build_chpl(chpl_home, env):
     :type env: dict
     :arg env: Dictionary of key/value pairs to set as the environment.
 
+    :type verbose: bool
+    :arg verbose: if True, increase output
+
     :rtype: FIXME
     :returns: FIXME
     """
     config_name = 'default chapel build'
     logging.info('Starting {0} config FIXME...'.format(config_name))
     with elapsed_time('default chapel build'):
-        result = check_output('make', chpl_home, env)
+        result = check_output('make', chpl_home, env, verbose=verbose)
     logging.debug('Result: {0}'.format(result))
     logging.info('Finished {0} config FIXME...'.format(config_name))
 
 
-def check_output(command, chpl_home, env, stdin=None):
+def check_output(command, chpl_home, env, stdin=None, verbose=False):
     """Runs command in subprocess and returns result.
 
     :type command: str or list
@@ -64,15 +67,25 @@ def check_output(command, chpl_home, env, stdin=None):
     :type stdin: str
     :arg stdin: string to pass as stdin to process
 
+    :type verbose: bool
+    :arg verbose: if True, let stdout/stderr stream
+
     :rtype: FIXME
     :returns: FIXME
     """
     if isinstance(command, basestring):
         command = shlex.split(command)
+
+    stdout = None
+    stderr = None
+    if not verbose:
+        stdout = subprocess.PIPE
+        stderr = subprocess.STDOUT
+
     p = subprocess.Popen(
         command,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
+        stdout=stdout,
+        stderr=stderr,
         cwd=chpl_home,
         env=env,
     )
