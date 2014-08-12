@@ -22,12 +22,14 @@ for i in 1..n {
 }
 
 var base = 1;
+var numWrong = 0;
 for i in 1..n {
   for j in 1..#i do
-    if data[base+j-1]-48 != (j%10) then writeln("FAILED CHAR: got ", data[base+j-1]-48, " but expected ", j%10);
-  if data[base+i] != 0x0A then writeln("FAILED NEWLINE");
+    if data[base+j-1]-48 != (j%10) then numWrong += 1;
+  if data[base+i] != 0x0A then numWrong += 1;
   base += i+1;
 }
+if numWrong != 0 then writeln(numWrong, " out of ", numChars, " were read incorrectly");
 
 if total != numChars then writeln("FAILURE: read ", total, ", but expected ", numChars);
 else writeln("SUCCESS");
