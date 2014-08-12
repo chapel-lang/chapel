@@ -17,6 +17,7 @@
 #include "chplio.h"
 #include "chpl-mem.h"
 #include "chpl-prefetch.h"
+#include "chpl-string.h"
 #include "chpl-tasks.h"
 #include "chpltimers.h"
 #include "chpltypes.h"
