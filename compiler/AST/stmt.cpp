@@ -25,10 +25,12 @@ Vec<LabelSymbol*> removedIterResumeLabels;
 #endif
 
 void codegenStmt(Expr* stmt) {
-  GenInfo* info = gGenInfo;
-  FILE* outfile = info->cfile;
-  info->lineno = stmt->linenum();
+  GenInfo* info    = gGenInfo;
+  FILE*    outfile = info->cfile;
+
+  info->lineno   = stmt->linenum();
   info->filename = stmt->fname();
+
   if( outfile ) {
     if (stmt->linenum() > 0) {
       if (printCppLineno) {
@@ -37,10 +39,12 @@ void codegenStmt(Expr* stmt) {
             + " " + stmt->fname() + " */\n");
       } 
     }
+
     if (fGenIDS)
       info->cStatements.push_back("/* " + numToString(stmt->id) + "*/ ");
   }
-  ++stmtCount;
+
+  ++gStmtCount;
 }
 
 
