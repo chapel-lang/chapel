@@ -1,0 +1,5 @@
+bug: Calling a method on a record from an overloaded method is unresolved call
+
+Removing either call to method() makes this test compile.  Making C1 not be
+generic makes it compile.  I ran into this while writing a test that uses
+overloaded methods to call methods on generic arrays or lists.
