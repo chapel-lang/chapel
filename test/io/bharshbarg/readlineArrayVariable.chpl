@@ -2,7 +2,7 @@ config const n = 100;
 config const debug = false;
 
 var f = openmem();
-var r = f.reader(kind=ionative);
+var r = f.reader();
 var w = f.writer();
 
 var numChars = 0;

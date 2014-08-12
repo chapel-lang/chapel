@@ -1481,10 +1481,8 @@ proc channel.read(ref args ...?k,
 }
 
 proc channel.readline(arg: [] uint(8), ref numRead : int, start = arg.domain.low, inclusive = true) : bool
-where arg.domain.rank == 1
+where arg.rank == 1
 {
-  if this.kind != ionative then halt("channel.readline([] uint(8), ...) \
-      is only available for ionative channels");
   var e:syserr = ENOERR;
   var got = this.readline(arg, numRead, start, error=e, inclusive);
   if !e && got then return true;
@@ -1500,32 +1498,35 @@ where arg.domain.rank == 1
 // numRead: The number of 'elType's read
 // inclusive: if true, will include the newline
 //
+// start: The index to begin reading into
+//
 // The 'kind' of the channel must be ionative, as we only read bytes. 
 // This limitation exists so that we can check for a newline.
 proc channel.readline(arg: [] uint(8), ref numRead : int, start = arg.domain.low, out error:syserr, inclusive = true) : bool
-where arg.domain.rank == 1
+where arg.rank == 1
 {
-  if this.kind != ionative then halt("channel.readline([] uint(8), ...) \
-      is only available for ionative channels");
-  if arg.size == 0 || start > arg.domain.high then return false;
-  var got : int;
-  param newLineChar = 0x0A;
-  var idx = start;
-  while got != newLineChar {
-    got = qio_channel_read_byte(false, this._channel_internal);
-    if got >= 0 {
-      if inclusive || (!inclusive && got != newLineChar) {
-        arg[idx] = got:uint(8);
-        idx += 1;
-      }
-    } else {
-      numRead = idx - start;
-      error = (-got):syserr;
-      return false;
-    }
-  }
-  numRead = idx - start;
   error = ENOERR;
+  if arg.size == 0 || start > arg.domain.high then return false;
+  on this.home {
+    this.lock();
+    var got : int;
+    param newLineChar = 0x0A;
+    var idx = start;
+    while got != newLineChar {
+      got = qio_channel_read_byte(false, this._channel_internal);
+      if got >= 0 {
+        if inclusive || (!inclusive && got != newLineChar) {
+          arg[idx] = got:uint(8);
+          idx += 1;
+        }
+      } else {
+        error = (-got):syserr;
+        break;
+      }
+    }
+    numRead = idx - start;
+    this.unlock();
+  }
   return true;
 }
 
