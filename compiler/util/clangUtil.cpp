@@ -1467,8 +1467,9 @@ void makeBinaryLLVM(void) {
   }
 
   // Compile any C files.
-  { // Start with configuration settings
-    const char* inputFilename = chpl_compilation_config.pathname;
+  {
+    // Start with configuration settings
+    const char* inputFilename = gChplCompilationConfig.pathname;
     const char* objFilename = objectFileForCFile(inputFilename);
 
     mysystem(astr(clangInstall.c_str(),

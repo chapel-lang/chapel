@@ -129,9 +129,6 @@ extern GenInfo* gGenInfo;
 extern int      gMaxVMT;
 extern int      gStmtCount;
 
-// File storing configuration info for --about etc
-extern fileinfo chpl_compilation_config;
-
 #ifdef HAVE_LLVM
 void setupClang(GenInfo* info, std::string rtmain);
 #endif

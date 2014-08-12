@@ -440,14 +440,13 @@ static void codegen_aggregate_def(AggregateType* ct) {
 // Only put C data objects into this file, not Chapel ones, as it may
 // also be #include'd into a launcher, and those are C/C++ code.
 //
-static const char* cfg_fname = "chpl_compilation_config";
-fileinfo chpl_compilation_config;
+static const char* sCfgFname = "chpl_compilation_config";
 
 static void codegen_header_compilation_config() {
   fileinfo cfgfile = { NULL, NULL, NULL };
 
   openCFile(&cfgfile, sCfgFname, "c");
-  chpl_compilation_config = sCfgFname; // so LLVM backend can use it too.
+  gChplCompilationConfig = sCfgFname; // so LLVM backend can use it too.
 
   // follow convention of just not writing to the file if we can't open it
   if (cfgfile.fptr != NULL) {
