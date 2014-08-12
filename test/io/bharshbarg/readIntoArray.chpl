@@ -17,17 +17,19 @@ var data : [1..numChars] uint(8);
 var total : int = 0;
 for i in 1..n {
   var numRead : int;
-  r.readline(data[total+1..#(i+1)], numRead);
+  r.readline(data, numRead, total+1);
   total += numRead;
 }
 
 var base = 1;
+var numWrong = 0;
 for i in 1..n {
   for j in 1..#i do
-    if data[base+j-1]-48 != (j%10) then writeln("FAILED CHAR: got ", data[base+j-1]-48, " but expected ", j%10);
-  if data[base+i] != 0x0A then writeln("FAILED NEWLINE");
+    if data[base+j-1]-48 != (j%10) then numWrong += 1;
+  if data[base+i] != 0x0A then numWrong += 1;
   base += i+1;
 }
+if numWrong != 0 then writeln(numWrong, " out of ", numChars, " were read incorrectly");
 
 if total != numChars then writeln("FAILURE: read ", total, ", but expected ", numChars);
 else writeln("SUCCESS");
