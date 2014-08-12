@@ -21,6 +21,16 @@ def get():
                 launcher_val = 'aprun'
             elif has_slurm:
                 launcher_val = 'slurm-srun'
+            else:
+                # FIXME: Need to detect aprun/srun differently. On a cray
+                #        system with an eslogin node, it is possible that aprun
+                #        will not be available on the eslogin node (only on the
+                #        login node).
+                #
+                #        has_aprun and has_slurm should look other places
+                #        (maybe the modules?) to decide.
+                #        (thomasvandoren, 2014-08-12)
+                launcher_val = 'none'
         elif platform_val == 'marenostrum':
             launcher_val = 'marenostrum'
         elif compiler_val == 'tile-cc':
