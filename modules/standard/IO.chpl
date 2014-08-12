@@ -1480,7 +1480,7 @@ proc channel.read(ref args ...?k,
   }
 }
 
-proc channel.readline(arg: [] uint(8), ref numRead, start = arg.domain.low, inclusive = true) : bool 
+proc channel.readline(arg: [] uint(8), ref numRead : int, start = arg.domain.low, inclusive = true) : bool
 where arg.domain.rank == 1
 {
   if this.kind != ionative then halt("channel.readline([] uint(8), ...) \
@@ -1502,7 +1502,7 @@ where arg.domain.rank == 1
 //
 // The 'kind' of the channel must be ionative, as we only read bytes. 
 // This limitation exists so that we can check for a newline.
-proc channel.readline(arg: [] uint(8), ref numRead, in start=arg.domain.low, out error:syserr, inclusive = true) : bool 
+proc channel.readline(arg: [] uint(8), ref numRead : int, start = arg.domain.low, out error:syserr, inclusive = true) : bool
 where arg.domain.rank == 1
 {
   if this.kind != ionative then halt("channel.readline([] uint(8), ...) \
