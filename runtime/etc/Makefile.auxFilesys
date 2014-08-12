@@ -1,18 +1,7 @@
 ifneq (,$(findstring hdfs,$(CHPL_MAKE_AUXFS)))
-
-	CHPL_AUXIO_INCLUDE ?= \
-		-I$(JAVA_INSTALL)/include \
-		-I$(JAVA_INSTALL)/include/linux \
-		-I$(HADOOP_INSTALL)/src/c++/libhdfs \
-
-	CHPL_AUXIO_LIBS ?= \
-		-L$(JAVA_INSTALL)/jre/lib/amd64/server \
-		-L$(HADOOP_INSTALL)/c++/Linux-amd64-64/lib 
-
 	GEN_LFLAGS += \
 		$(CHPL_AUXIO_INCLUDE) \
 		$(CHPL_AUXIO_LIBS)
-
 	LIBS += -lhdfs -ljvm
 endif 
 

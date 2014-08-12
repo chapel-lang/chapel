@@ -9,15 +9,6 @@ SRCS = $(SVN_SRCS)
 
 AUXFS_HDFS_OBJS = $(addprefix $(AUXFS_HDFS_OBJDIR)/,$(addsuffix .o,$(basename qio_plugin_hdfs.cc)))\
 
-CHPL_AUXIO_INCLUDE ?= \
-	-I$(JAVA_INSTALL)/include \
-	-I$(JAVA_INSTALL)/include/linux \
-	-I$(HADOOP_INSTALL)/src/c++/libhdfs \
-
-CHPL_AUXIO_LIBS ?= \
-	-L$(JAVA_INSTALL)/jre/lib/amd64/server \
-	-L$(HADOOP_INSTALL)/c++/Linux-amd64-64/lib 
-
 RUNTIME_INCLS += \
 	$(CHPL_AUXIO_INCLUDE) \
 	$(CHPL_AUXIO_LIBS) 
