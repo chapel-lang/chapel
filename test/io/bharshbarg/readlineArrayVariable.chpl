@@ -25,7 +25,7 @@ var base = 1;
 var numWrong = 0;
 for i in 1..n {
   for j in 1..#i do
-    if data[base+j-1]-48 != (j%10) then numWrong += 1;
+    if data[base+j-1] != ascii((j%10):string) then numWrong += 1;
   if data[base+i] != 0x0A then numWrong += 1;
   base += i+1;
 }
