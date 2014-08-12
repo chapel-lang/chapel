@@ -478,7 +478,7 @@ static void codegen_header_compilation_config() {
           compileCommand);
   fprintf(cfgfile.fptr, "printf(\"%%s\", \"Chapel compiler version: %s\\n\");\n",
           compileVersion);
-  fprintf(cfgfile.fptr, "printf(\"%%s\", \"Chapel environment:\\n\");\n");
+  fprintf(cfgfile.fptr, "printf(\"Chapel environment:\\n\");\n");
   fprintf(cfgfile.fptr, "printf(\"%%s\", \"  CHPL_HOME: %s\\n\");\n",
           CHPL_HOME);
   for (i=0; i < num_chpl_env_vars; i++) {
