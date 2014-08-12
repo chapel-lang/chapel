@@ -3041,7 +3041,7 @@ static void resolveNormalCall(CallExpr* call) {
     }
   } else {
     best->fn = defaultWrap(best->fn, &best->alignedFormals, &info);
-    best->fn = orderWrap(best->fn, &best->alignedFormals, &info);
+    reorderActuals(best->fn, &best->alignedFormals, &info);
     best->fn = coercionWrap(best->fn, &info);
     best->fn = promotionWrap(best->fn, &info);
   }

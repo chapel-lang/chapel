@@ -8,3 +8,10 @@ ifneq (,$(findstring hdfs,$(CHPL_MAKE_AUXFS)))
 	LIBS += -lhdfs -ljvm
 endif 
 
+ifneq (,$(findstring lustre,$(CHPL_MAKE_AUXFS)))
+	GEN_LFLAGS += \
+		$(CHPL_AUXIO_INCLUDES) \
+		$(CHPL_AUXIO_LIBS)
+	LIBS += -DSYS_HAS_LLAPI -llustreapi
+endif 
+

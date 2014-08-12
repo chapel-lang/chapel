@@ -126,8 +126,8 @@ struct GenInfo {
 
 
 extern GenInfo* gGenInfo;
-extern int gMaxVMT;
-extern int stmtCount;
+extern int      gMaxVMT;
+extern int      gStmtCount;
 
 // File storing configuration info for --about etc
 extern fileinfo chpl_compilation_config;
