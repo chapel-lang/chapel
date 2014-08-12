@@ -446,7 +446,7 @@ static void codegen_header_compilation_config() {
   fileinfo cfgfile = { NULL, NULL, NULL };
 
   openCFile(&cfgfile, sCfgFname, "c");
-  gChplCompilationConfig = sCfgFname; // so LLVM backend can use it too.
+  gChplCompilationConfig = cfgfile; // so LLVM backend can use it too.
 
   // follow convention of just not writing to the file if we can't open it
   if (cfgfile.fptr != NULL) {
