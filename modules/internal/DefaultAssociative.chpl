@@ -217,17 +217,18 @@ module DefaultAssociative {
       return _findFilledSlot(idx)(1);
     }
   
-    proc dsiAdd(idx: idxType, in slotNum : index(tableDom) = -1): index(tableDom) {
+    proc dsiAdd(idx: idxType, in slotNum : index(tableDom) = -1, haveLock = !parSafe): index(tableDom) {
       on this {
-        if parSafe then lockTable();
-        var findAgain = parSafe;
+        const shouldLock = !haveLock && parSafe;
+        if shouldLock then lockTable();
+        var findAgain = shouldLock;
         if ((numEntries.read()+1)*2 > tableSize) {
           _resize(grow=true);
           findAgain = true;
         }
         if findAgain then slotNum = -1;
         slotNum = _add(idx, slotNum);
-        if parSafe then unlockTable();
+        if shouldLock then unlockTable();
       }
       return slotNum;
     }
@@ -260,8 +261,6 @@ module DefaultAssociative {
         if parSafe then lockTable();
         const (foundSlot, slotNum) = _findFilledSlot(idx, haveLock=parSafe);
         if (foundSlot) {
-          for a in _arrs do
-            a.clearEntry(idx);
           table[slotNum].status = chpl__hash_status.deleted;
           numEntries.sub(1);
         } else {
@@ -463,15 +462,21 @@ module DefaultAssociative {
     }
 
     proc dsiAccess(idx : idxType) var : eltType {
+      if dom.parSafe then dom.lockTable();
       var (found, slotNum) = dom._findFilledSlot(idx, haveLock=true);
-      const numArrs = dom._arrs.length;
-      if found then
+      if found {
+        if dom.parSafe then dom.unlockTable();
         return data(slotNum);
+      }
       else if setter && slotNum != -1 { // do an insert using the slot we found
-        if numArrs != 1 {
+        if dom._arrs.length != 1 {
           halt("cannot implicitly add to an array's domain when the domain is used by more than one array: ", idx);
           return data(0);
-        } else return data(dom.dsiAdd(idx, slotNum));
+        } else {
+          const newSlot = dom.dsiAdd(idx, slotNum, haveLock=true);
+          if dom.parSafe then dom.unlockTable();
+          return data(newSlot);
+        }
       } else {
         halt("array index out of bounds: ", idx);
         return data(0);
