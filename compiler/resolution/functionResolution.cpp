@@ -4431,7 +4431,18 @@ static Expr* resolvePrimInit(CallExpr* call)
 
     SET_LINENO(call);
 
+#define UserCtorsAndDefaultOfHack 1
     if (type->defaultValue) {
+      // In this case, the design choice I made was to use the default value if
+      // it was available, while the defaultOf implementation chooses to pipe
+      // everything through defaultOf.
+      // If we settle on the latter choice, it should be possible to eliminate
+      // the defaultValue field from the type respresentation, and just use
+      // _defaultOf to supply this in module code.
+#if UserCtorsAndDefaultOfHack
+      result = new CallExpr("_defaultOf", type->symbol);
+      call->replace(result);
+#else
       // Has a default value, so use it.
       result = new SymExpr(type->defaultValue);
       if (type->defaultValue == gNil) {
@@ -4439,6 +4450,7 @@ static Expr* resolvePrimInit(CallExpr* call)
         result = new CallExpr("_cast", type->symbol, result);
       }
       call->replace(result);
+#endif
       return result;
     } 
     
@@ -4468,6 +4480,34 @@ static Expr* resolvePrimInit(CallExpr* call)
       flattenAndResolveArgs(initCall);
       fixupRuntimeTypeArguments(initCall);
       resolveCall(initCall);
+
+#if UserCtorsAndDefaultOfHack
+      // Hack alert! This is a really lame way to get user default
+      // constructor calls  and _defaultOf to work together.  The basic idea is
+      // to use _defaultOf if we know that the implementation does not call a
+      // user default constructor and the user default constructor otherwise.
+      // The way that we test this is to go ahead and insert a call to the
+      // default construtor and resolve this.  If it turns out that the bound
+      // function is compiler-generated, then we switch to _defaultOf and
+      // resolve again.
+      // The way to use _defaultOf correctly is to insert a call to it at the
+      // beginning of every constructor (to perform value-initialization as
+      // guaranteed by the spec).  But in order to do this neatly, several
+      // changes must be made in how constructors are implemented.
+      // Primarily, statements that look like assignments to fields need to be
+      // converted to copy-initialization of those fields instead.  Also, it
+      // would probably be very handy to be able to invoke both _defaultOf and
+      // constructors themselves as methods.
+      FnSymbol* ctor = initCall->isResolved();
+      if (ctor->hasFlag(FLAG_COMPILER_GENERATED))
+      {
+        CallExpr* defOfCall = new CallExpr("_defaultOf", type->symbol);
+        initCall->replace(defOfCall);
+        resolveCall(defOfCall);
+        initCall = defOfCall;
+      }
+#endif
+
       resolveFns(initCall->isResolved());
       result = initCall;
       return result;

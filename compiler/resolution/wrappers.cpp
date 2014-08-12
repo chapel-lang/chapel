@@ -58,6 +58,8 @@ buildPromotionWrapper(FnSymbol* fn,
 static FnSymbol*
 buildEmptyWrapper(FnSymbol* fn, CallInfo* info) {
   FnSymbol* wrapper = new FnSymbol(fn->name);
+  // TODO: Make this less verbose by bulk-copying flags from the original
+  // function and then negating flags we don't want.
   wrapper->addFlag(FLAG_WRAPPER);
   wrapper->addFlag(FLAG_INVISIBLE_FN);
   wrapper->addFlag(FLAG_INLINE);
@@ -151,7 +153,7 @@ buildDefaultWrapper(FnSymbol* fn,
     !isSyncType(fn->_this->type) &&
     !fn->_this->type->symbol->hasFlag(FLAG_REF);
   if (specializeDefaultConstructor) {
-    wrapper->removeFlag(FLAG_COMPILER_GENERATED);
+//    wrapper->removeFlag(FLAG_COMPILER_GENERATED); // Dangerous business.
     wrapper->_this = fn->_this->copy();
     copy_map.put(fn->_this, wrapper->_this);
     wrapper->insertAtTail(new DefExpr(wrapper->_this));
