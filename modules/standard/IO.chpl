@@ -1480,7 +1480,7 @@ proc channel.read(ref args ...?k,
   }
 }
 
-proc channel.readline(arg: [] uint(8), ref numRead, start = arg.domain.low, inclusive = true) : bool 
+proc channel.readline(arg: [] uint(8), ref numRead : int, start = arg.domain.low, inclusive = true) : bool
 where arg.domain.rank == 1
 {
   if this.kind != ionative then halt("channel.readline([] uint(8), ...) \
@@ -1502,16 +1502,20 @@ where arg.domain.rank == 1
 //
 // The 'kind' of the channel must be ionative, as we only read bytes. 
 // This limitation exists so that we can check for a newline.
-proc channel.readline(arg: [] uint(8), ref numRead, in start=arg.domain.low, out error:syserr, inclusive = true) : bool 
+proc channel.readline(arg: [] uint(8), ref numRead : int, start=arg.domain.low, out error:syserr, inclusive = true) : bool 
 where arg.domain.rank == 1
 {
+  error = ENOERR;
   if this.kind != ionative then halt("channel.readline([] uint(8), ...) \
       is only available for ionative channels");
-  if arg.size == 0 || start > arg.domain.high then return false;
+  const maxIdx = arg.domain.high;
+  if arg.size == 0 || start > maxIdx then return false;
   var got : int;
   param newLineChar = 0x0A;
   var idx = start;
   while got != newLineChar {
+    if idx > maxIdx then halt("channel.readline([] uint(8), ref numRead : int, start=", start, ", ...): \
+      insufficient space to store line greater than ", idx-start-1, " characters");
     got = qio_channel_read_byte(false, this._channel_internal);
     if got >= 0 {
       if inclusive || (!inclusive && got != newLineChar) {
@@ -1525,7 +1529,6 @@ where arg.domain.rank == 1
     }
   }
   numRead = idx - start;
-  error = ENOERR;
   return true;
 }
 
