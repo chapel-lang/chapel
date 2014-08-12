@@ -22,7 +22,8 @@ proc main() {
 
   var numRead = 1;
   const lineSize = 61;
-  while numRead <= fileLen && r.readline(data[numRead..fileLen], numRead) do {}
+  var idx = 1;
+  while numRead <= fileLen && r.readline(data, numRead, idx) do { idx += numRead; }
 
   forall i in 1..pairs.size by 2 {
     table[pairs[i]] = pairs[i+1];      // uppercase
