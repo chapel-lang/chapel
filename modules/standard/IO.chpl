@@ -740,6 +740,9 @@ proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NO
       error = hdfs_connect(fs, host.c_str(), port);
       if error then ioerror(error, "Unable to connect to HDFS", host);
       error = qio_file_open_access_usr(ret._file_internal, file_path.c_str(), _modestring(mode).c_str(), hints, local_style, fs, hdfs_function_struct_ptr);
+      // Since we don't have an auto-destructor for this, we actually need to make
+      // the reference count 1 on this FS after we open this file so that we will
+      // disconnect once we close this file.
       hdfs_do_release(fs);
       if error then ioerror(error, "Unable to open file in HDFS", url);
     } else if (url.startsWith("http://", "https://", "ftp://", "ftps://", "smtp://", "smtps://", "imap://", "imaps://"))  { // Curl
@@ -1085,7 +1088,6 @@ proc openreader(out err: syserr, path:string="", param kind=iokind.dynamic, para
     url:string=""): channel(false, kind, locking) {
   var fl:file = open(err, path, iomode.r, url=url);
   var reader = fl.reader(kind, locking, start, end, hints, fl._style);
-  // I need to look at this some more and verify it:
   // If we decrement the ref count after we open this channel, ref_cnt fl == 1.
   // Then, when we leave this function, Chapel will view this file as leaving scope,
   // and not having any handles attached to it, it will close the underlying file for the channel.

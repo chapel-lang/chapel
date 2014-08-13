@@ -349,11 +349,41 @@ qioerr hdfs_getcwd(void* file, const char** path_out, void* fs)
   return err;
 }
 
-qioerr hdfs_getpath(void* file, const char** string_out, void* fs)
-{
-  if (asprintf((char**)string_out, "hdfs://%s:%d/%s", to_hdfs_fs(fs)->fs_name, to_hdfs_fs(fs)->fs_port, to_hdfs_file(file)->pathnm) == -1)
-    QIO_RETURN_CONSTANT_ERROR(ENOMEM, "Unable to allocate memory for file path");
-  return 0;
+qioerr hdfs_getpath(void* file, const char** string_out, void* fs)  {
+  // Speculatively allocate 128 bytes for the string
+  int sz = 128;
+  int left = 0;
+  char* buf;
+  char* got;
+  qioerr err = 0;
+
+  const char* host = to_hdfs_fs(fs)->fs_name;
+  int port = to_hdfs_fs(fs)->fs_port;
+  const char* path = to_hdfs_file(file)->pathnm;
+
+  buf = (char*) qio_malloc(sz);
+
+  if( !buf )
+    QIO_GET_CONSTANT_ERROR(err, ENOMEM, "Out of memory in hdfs_getpath");
+
+  while (1) {
+    left = snprintf(buf, sz, "hdfs://%s:%d/%s", host, port, path);
+    if (left > -1 && left < sz) {
+      break;
+    } else {
+      // keep looping but with bigger buffer.
+      // We know the size that we need now if n > -1
+      sz = left > -1 ? left + 1 : 2*sz;
+      got = (char*) qio_realloc(buf, sz);
+      if( ! got ) {
+        qio_free(buf);
+        QIO_GET_CONSTANT_ERROR(err, ENOMEM, "Out of memory in hdfs_getpath");
+      }
+    }
+  }
+
+  *string_out = buf;
+  return err;
 }
 
 qioerr hdfs_get_chunk(void* fl, int64_t* len_out, void* fs)
