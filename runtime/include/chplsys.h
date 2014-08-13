@@ -7,8 +7,8 @@
 
 uint64_t chpl_bytesPerLocale(void);
 size_t chpl_bytesAvailOnThisLocale(void);
-int chpl_getNumCoresOnThisNode(void);
 int chpl_getNumPUsOnThisNode(void);
+int chpl_getNumCoresOnThisNode(void);
 
 //
 // returns the name of a locale via uname -n or the like

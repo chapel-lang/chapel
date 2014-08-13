@@ -162,8 +162,8 @@ module LocaleModel {
       extern proc chpl_task_getCallStackSize(): size_t;
       callStackSize = chpl_task_getCallStackSize();
 
-      extern proc chpl_getNumCoresOnThisNode(): int;
-      numCores = chpl_getNumCoresOnThisNode();
+      extern proc chpl_getNumPUsOnThisNode(): int;
+      numCores = chpl_getNumPUsOnThisNode();
 
       extern proc chpl_task_getMaxPar(): c_int;
       maxTaskPar = chpl_task_getMaxPar();

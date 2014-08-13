@@ -138,50 +138,6 @@ static int getPUsPerCore(void) {
 #endif
 
 
-int chpl_getNumCoresOnThisNode(void) {
-#ifdef NO_CORES_PER_LOCALE
-  return 1;
-#elif defined __APPLE__
-#warning "This has not yet been tested."
-  //
-  // Apple
-  //
-  static int32_t numCores = 0;
-  if (numCores == 0) {
-    size_t len = sizeof(numCores);
-    if (sysctlbyname("hw.physicalcpu", &numCores, &len, NULL, 0))
-      chpl_internal_error("query of number of cores failed");
-  }
-  return numCores;
-#elif defined __CYGWIN__
-#warning "This has not yet been tested."
-  //
-  // Cygwin
-  //
-  static int numCores = 0;
-  if (numCores == 0)
-    numCores = sysconf(_SC_NPROCESSORS_ONLN);
-  return numCores;
-#elif defined __linux__
-  //
-  // Linux
-  //
-  static int numCores = 0;
-  if (numCores == 0) {
-    cpu_set_t m;
-    if (sched_getaffinity(0, sizeof(cpu_set_t), &m) != 0)
-      chpl_internal_error("sched_getaffinity() failed");
-    if ((numCores = CPU_COUNT(&m) /  getPUsPerCore()) == 0)
-      numCores = 1;
-  }
-  return numCores;
-#else
-#warning "Target architecture is not yet supported."
-  return 1;
-#endif
-}
-
-
 int chpl_getNumPUsOnThisNode(void) {
 #ifdef NO_CORES_PER_LOCALE
   return 1;
@@ -219,6 +175,45 @@ int chpl_getNumPUsOnThisNode(void) {
       numPUs = 1;
   }
   return numPUs;
+#else
+#warning "Target architecture is not yet supported."
+  return 1;
+#endif
+}
+
+
+int chpl_getNumCoresOnThisNode(void) {
+#ifdef NO_CORES_PER_LOCALE
+  return 1;
+#elif defined __APPLE__
+#warning "This has not yet been tested."
+  //
+  // Apple
+  //
+  static int32_t numCores = 0;
+  if (numCores == 0) {
+    size_t len = sizeof(numCores);
+    if (sysctlbyname("hw.physicalcpu", &numCores, &len, NULL, 0))
+      chpl_internal_error("query of number of cores failed");
+  }
+  return numCores;
+#elif defined __CYGWIN__
+#warning "This has not yet been tested."
+  //
+  // Cygwin
+  //
+  static int numCores = 0;
+  if (numCores == 0)
+    numCores = chpl_getNumPUsOnThisNode();
+  return numCores;
+#elif defined __linux__
+  //
+  // Linux
+  //
+  static int numCores = 0;
+  if (numCores == 0)
+    numCores = chpl_getNumPUsOnThisNode() / getPUsPerCore();
+  return numCores;
 #else
 #warning "Target architecture is not yet supported."
   return 1;
