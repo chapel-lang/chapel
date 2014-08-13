@@ -1,8 +1,10 @@
 use Time;
-
 extern proc memcpy(a:[], b, len);
 
 var barrier : atomic int;
+const lineLen = 60;
+param newLineChar = 0x0A;
+param greaterThan = 0x3E;
 
 proc string.toBytes() var {
    var b : [1..this.length] uint(8);
@@ -12,18 +14,17 @@ proc string.toBytes() var {
 
 const pairs = "ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n".toBytes();
 var table : [1..128] uint(8);
+var g : Timer;
 
 proc main() {
-  var info : string;
-  var temp : string;
   var inFile = openfd(0); // stdin
   const fileLen = inFile.length();
   var data : [1..fileLen] uint(8);
   var r = inFile.reader(kind=ionative, locking=false);
 
-  forall i in 1..pairs.size by 2 {
+  for i in 1..pairs.size by 2 {
     table[pairs[i]] = pairs[i+1];      // uppercase
-    if pairs[i] != ascii("\n") then
+    if pairs[i] != newLineChar then
       table[pairs[i] + 32] = pairs[i+1]; // lowercase
   }
 
@@ -33,58 +34,74 @@ proc main() {
   var start = 0;
   var t : Timer;
   t.start();
-  while r.readline(data, numRead, idx, false) {
-    if data[idx] == 0x3E {
+  while r.readline(data, numRead, idx) {
+    if data[idx] == greaterThan {
       if start == 0 then start = idx;
       else {
-        begin complement(data, start, idx);
+        stderr.writeln("starting another at ", t.elapsed());
+        begin process(data, start, idx-2);
         start = idx;
       }
     }
-    idx += numRead;
+    idx += numRead; 
   }
-  begin complement(data, start, idx);
   stderr.writeln("read took ", t.elapsed());
+  begin process(data,start, idx-2);
 
   var end = data.size - 1;
 
-  /*
-  while true {
-    var from = end;
-    while data[from] != ascii(">") do from -= 1;
-
-    begin process(data, from, end);
-
-    end = from - 2;
-    if end <= 0 then break;
-  }
-
-  */
   barrier.waitFor(3);
 
-  t.stop();
-  t.clear();
-  t.start();
   var f = openfd(1);
   var binout = f.writer(iokind.native, locking=false, hints=QIO_CH_ALWAYS_UNBUFFERED);
   binout.write(data);
-  stderr.writeln("writing took ", t.elapsed());
 }
 
-proc complement(ref data: [], in start : int, end : int) {
-  var t : Timer;
-  t.start();
-  for i in start..end {
-    data[i] = table[data[i]];
+proc revcomp(ref data : [],in from : int, in end : int) {
+  var size = end - from;
+  while size >= lineLen {
+    var near = from;
+    var far = end;
+
+    for i in 1..lineLen by 2 {
+      far -= 1;
+      data[near] = table[data[far]];
+      near += 1;
+    }
+
+    end -= lineLen;
+    from += lineLen;
+
+    if lineLen % 2 != 0 {
+      from += 1;
+      data[from] = data[end];
+      end -= 1;
+    }
+    data[from] = newLineChar;
+    from += 1;
+    size -= lineLen;
   }
-  stderr.writeln("complement ", start, " .. ", end, " took ", t.elapsed());
-  barrier.add(1);
+}
+
+inline proc roundBy(a : int, b : int) {
+  return a - a%b;
 }
 
 proc process(ref data : [],in from : int, end : int) {
+  var t : Timer;
+  t.start();
   while data[from] != 0xa do from += 1;
   from += 1;
+  
+  const size = from - end;
 
+  const tailLen = roundBy(size/2, lineLen);
+  const splitAt = end - tailLen;
+  cobegin {
+    revcomp(data, splitAt, end);
+    revcomp(data, from, splitAt);
+  }
+  /*
   const len = end - from;
   const off = 60 - (len % 61);
 
@@ -98,11 +115,13 @@ proc process(ref data : [],in from : int, end : int) {
   }
 
   const middle = (end-from)/2;
-  for i in 0 .. middle do {
+  for i in 0 .. middle {
     const c = table[data[from+i]];
     data[from+i] = table[data[end-i]];
     data[end-i] = c;
   }
+  */
+  stderr.writeln(from, " .. ", end, " took ", t.elapsed());
 
   barrier.add(1);
 }
