@@ -78,6 +78,18 @@ Dimensions = [
         help_text='Chapel communcation ({var_name}) value to build. (default: {default})',
     ),
     Dimension(
+        'task', 'CHPL_TASKS',
+        values=['fifo', 'qthreads'],
+        default='fifo',
+        help_text='Tasks ({var_name}) values to build. (default: {default})',
+    ),
+    Dimension(
+        'launcher', 'CHPL_LAUNCHER',
+        values=['none', 'pbs-aprun', 'aprun', 'slurm-srun'],
+        default='none',
+        help_text='Launcher ({var_name}) to build. (default: {default})',
+    ),
+    Dimension(
         'gmp', 'CHPL_GMP',
         values=['none', 'gmp', 'system'],
         default='none',
@@ -88,12 +100,6 @@ Dimensions = [
         values=['none', 're2'],
         default='none',
         help_text='Regular expression ({var_name}) values to buid. (default: {default})',
-    ),
-    Dimension(
-        'task', 'CHPL_TASKS',
-        values=['fifo', 'qthreads'],
-        default='fifo',
-        help_text='Tasks ({var_name}) values to build. (default: {default})',
     ),
 ]
 
