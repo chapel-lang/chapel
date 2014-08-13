@@ -247,7 +247,7 @@ def build_chpl(chpl_home, build_config, env, verbose=False):
 def check_output(command, chpl_home, env, stdin=None, verbose=False):
     """Runs command in subprocess and returns result.
 
-    :type command: str or list
+    :type command: str
     :arg command: command to run
 
     :type chpl_home: str
@@ -265,8 +265,7 @@ def check_output(command, chpl_home, env, stdin=None, verbose=False):
     :rtype: FIXME
     :returns: FIXME
     """
-    if isinstance(command, basestring):
-        command = shlex.split(command)
+    command = shlex.split(str(command))
 
     stdout = None
     stderr = None
