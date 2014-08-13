@@ -19,29 +19,35 @@ import time
 
 class Chapel(object):
 
-    comm = ['none', 'gasnet',]
+    communication = ['none', 'gasnet',]
+    gmp = ['none', 'gmp', 'system',]
     tasks = ['fifo', 'qthreads',]
 
     class defaults(object):
 
         communication = 'none'
+        gmp = 'none'
         tasks = 'fifo'
 
 
 class Config(object):
 
-    attrs = ['comm', 'tasks']
+    attrs = ['comm', 'gmp', 'tasks']
 
-    def __init__(self, comm=None, tasks=None):
+    def __init__(self, comm=None, gmp=None, tasks=None):
         """Initialize new configuration value.
 
         :type comm: str
         :arg comm: CHPL_COMM value
 
+        :type gmp: str
+        :arg gmp: CHPL_GMP value
+
         :type tasks: str
         :arg tasks: CHPL_TASKS value
         """
         self.comm = comm
+        self.gmp = gmp
         self.tasks = tasks
 
     def __repr__(self):
@@ -119,10 +125,11 @@ def get_configs(opts):
             return opt_value
 
     comm = get_value_with_default('communication')
+    gmp = get_value_with_default('gmp')
     tasks = get_value_with_default('tasks')
 
     # This is a big giant nested loop...
-    config_strings = itertools.product(comm, tasks)
+    config_strings = itertools.product(comm, gmp, tasks)
 
     configs = []
     for config_tuple in config_strings:
@@ -240,8 +247,13 @@ def parse_args():
         'Configuration options for building the Chapel compiler and runtime.')
     config_group.add_option(
         '--communication',
-        action='append', choices=Chapel.comm,
+        action='append', choices=Chapel.communication,
         help='Communication (CHPL_COMM) values to build. (default: {0})'.format(Chapel.defaults.communication)
+    )
+    config_group.add_option(
+        '--gmp',
+        action='append', choices=Chapel.gmp,
+        help='GMP (CHPL_GMP) values to build. (default: {0})'.format(Chapel.defaults.gmp)
     )
     config_group.add_option(
         '--tasks',
