@@ -104,19 +104,6 @@ Dimensions = [
 ]
 
 
-class Chapel(object):
-
-    communication = ['none', 'gasnet',]
-    gmp = ['none', 'gmp', 'system',]
-    tasks = ['fifo', 'qthreads',]
-
-    class defaults(object):
-
-        communication = 'none'
-        gmp = 'none'
-        tasks = 'fifo'
-
-
 class Config(object):
 
     def __init__(self, *args, **kwargs):
