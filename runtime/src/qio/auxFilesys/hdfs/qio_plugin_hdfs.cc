@@ -153,6 +153,7 @@ qioerr hdfs_preadv (void* file, const struct iovec *vector, int count, off_t off
   return err_out;
 }
 
+
 static
 qioerr hdfs_disconnect_and_free(void* fs)
 {
@@ -170,6 +171,11 @@ qioerr hdfs_disconnect_and_free(void* fs)
 
   qio_free(fs);
   return err;
+}
+
+void hdfs_do_release(void* fs)
+{
+  DO_RELEASE(to_hdfs_fs(fs), hdfs_disconnect_and_free);
 }
 
 qioerr hdfs_close(void* fl, void* fs)

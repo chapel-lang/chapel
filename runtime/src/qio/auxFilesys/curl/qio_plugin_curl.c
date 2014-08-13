@@ -1,17 +1,4 @@
-#define QIOPLUGIN_CURL_C
-
-#ifndef _DARWIN_C_SOURCE
-// get fcntl(F_GETPATH)
-#define _DARWIN_C_SOURCE
-#endif
-
-#ifndef _GNU_SOURCE
-// get O_DIRECT, fopencookie
-#define _GNU_SOURCE
-#endif
-
 #include <string.h>
-
 #ifndef SIMPLE_TEST
 #include "chplrt.h"
 #endif
@@ -151,16 +138,6 @@ size_t read_data(void *ptr, size_t size, size_t nmemb, void *userp)
   return ret->total_read;
 }
 
-// Write out to a file descriptor. ptr is the data we have from curl, and fd_ptr is
-// a pointer to the file descriptor of the file we want to write out to.
-static
-size_t chpl_curl_write(void* ptr, size_t size, size_t nmemb, void* fd_ptr)
-{
-  ssize_t num_written_out;
-  sys_write(*((int*)(intptr_t)fd_ptr), ptr, size*nmemb, &num_written_out);
-  return num_written_out;
-}
-
 // Write from curl to a string. Note that userdata is a str_t, since nuch as we have
 // to keep track of how much we read in  buf_writer, we have to keep track of how
 // long our string is so that we cann lengthen it via realloc as we need to.
@@ -182,7 +159,8 @@ size_t chpl_curl_write_string(void *contents, size_t size, size_t nmemb, void *u
   return realsize;
 }
 
-qioerr curl_readv(void* file, const struct iovec *vector, int count, ssize_t* num_read_out, void* fs)
+static
+qioerr  curl_preadv_internal(void* file, const struct iovec *vector, int count, off_t offset, ssize_t* num_read_out, void* fs)
 {
   CURLcode err;
   ssize_t got_total;
@@ -200,56 +178,8 @@ qioerr curl_readv(void* file, const struct iovec *vector, int count, ssize_t* nu
   write_vec.offset = 0;
   write_vec.curr = 0;
 
-  if (local_handle->seekable)  // we can request byteranges
-    // Tell Curl we want to start reading from the current offset
-    curl_easy_setopt(local_handle->curl, CURLOPT_RESUME_FROM_LARGE, local_handle->current_offset);
-  else
-    write_vec.offset = local_handle->current_offset;
-
-  // Set the function that we are going to use to write into our iovec buffer
-  // In this case, set buf_writer as our callback function
-  curl_easy_setopt(local_handle->curl, CURLOPT_WRITEFUNCTION, buf_writer);
-
-  // Read into write_vec. This is what is passed into the 'userdata' parameter for
-  // the callback function.
-  curl_easy_setopt(local_handle->curl, CURLOPT_WRITEDATA, &write_vec);
-
-  // Read our data into the buf
-  err = curl_easy_perform(local_handle->curl);
-
-  DONE_SLOW_SYSCALL;
-
-  // Get the total amount that we were able to read from CURL into the iovec
-  got_total = write_vec.total_read;
-  local_handle->current_offset += got_total;
-
-  if ((err == CURLE_RANGE_ERROR ||  err == CURLE_OK) && got_total == 0 && sys_iov_total_bytes(vector, count) != 0)
-    err_out = qio_int_to_err(EEOF);
-
-  curl_easy_setopt(local_handle->curl, CURLOPT_WRITEFUNCTION, NULL);
-  curl_easy_setopt(local_handle->curl, CURLOPT_WRITEDATA, NULL);
-
-  *num_read_out = got_total;
-  return err_out;
-}
-
-qioerr curl_preadv(void* file, const struct iovec *vector, int count, off_t offset, ssize_t* num_read_out, void* fs)
-{
-  CURLcode err;
-  ssize_t got_total;
-  qioerr err_out = 0;
-  struct curl_iovec_t write_vec;
-  curl_handle* local_handle = to_curl_handle(file);
-
-  STARTING_SLOW_SYSCALL;
-
-  got_total = 0;
-  write_vec.total_read = 0;
-  write_vec.count = count;
-  write_vec.vec = (struct iovec*)vector;
-  write_vec.amt_read = 0;
-  write_vec.offset = 0;
-  write_vec.curr = 0;
+  // offset = -1 if we want readv
+  offset = offset == -1 ? local_handle->current_offset : offset;
 
   if (local_handle->seekable)  // we can request byteranges
     curl_easy_setopt(local_handle->curl, CURLOPT_RESUME_FROM_LARGE, offset);
@@ -278,11 +208,20 @@ qioerr curl_preadv(void* file, const struct iovec *vector, int count, off_t offs
   return err_out;
 }
 
-qioerr curl_pwritev(void* fd, const struct iovec* iov, int iovcnt, off_t offset, ssize_t* num_read_out, void* fs)
+
+static
+qioerr curl_readv(void* file, const struct iovec *vector, int count, ssize_t* num_read_out, void* fs)
 {
-  QIO_RETURN_CONSTANT_ERROR(ENOSYS, "positional writes in CURL are not supported");
+  return curl_preadv_internal(file, vector, count, -1, num_read_out, fs);
 }
 
+static
+qioerr curl_preadv(void* file, const struct iovec *vector, int count, off_t offset, ssize_t* num_read_out, void* fs)
+{
+  return curl_preadv_internal(file, vector, count, offset, num_read_out, fs);
+}
+
+static
 qioerr curl_writev(void* fl, const struct iovec* iov, int iovcnt, ssize_t* num_written_out, void* fs)
 {
   CURLcode ret;
@@ -327,7 +266,7 @@ int startWith(const char *haystack, const char *needle)
 }
 
 static
-int curl_seekable(void* file)
+int curl_seekable(void* file, double* length_out)
 {
   struct str_t buf;
   int ret = 0;
@@ -362,6 +301,9 @@ int curl_seekable(void* file)
     qio_free(buf.mem);
   }
 
+  // This works for things other than http
+  curl_easy_getinfo(to_curl_handle(file)->curl, CURLINFO_CONTENT_LENGTH_DOWNLOAD, length_out);
+
   // We can always "seek" on ftp (with the REST command/RESUME_FROM_LARGE)
   if (startWith(to_curl_handle(file)->pathnm, "ftp://"))
     ret = 1;
@@ -369,6 +311,7 @@ int curl_seekable(void* file)
   return ret;
 }
 
+static
 qioerr curl_open(void** fd, const char* path, int* flags, mode_t mode, qio_hint_t iohints, void* fs)
 {
   qioerr err_out = 0;
@@ -393,6 +336,23 @@ qioerr curl_open(void** fd, const char* path, int* flags, mode_t mode, qio_hint_
   to_curl_handle(fl)->pathnm = path;
   to_curl_handle(fl)->current_offset = 0;
 
+
+  // Read the header in order to get the length of the thing we are reading
+  // If we are writing, we can't really get this information (even if we try to do a
+  // 0 length read).
+  if (*flags & O_WRONLY) {
+    to_curl_handle(fl)->length = -1;
+    to_curl_handle(fl)->seekable = 0;
+  } else {
+    to_curl_handle(fl)->seekable = curl_seekable(fl, &filelength);
+    to_curl_handle(fl)->length = (ssize_t)filelength;
+  }
+
+  DONE_SLOW_SYSCALL;
+
+  // Not seekable unless we specify otherwise
+  *flags &= ~QIO_FDFLAG_SEEKABLE;
+
   rc = *flags | ~O_ACCMODE;
   rc &= O_ACCMODE;
   if( rc == O_RDONLY ) {
@@ -404,23 +364,9 @@ qioerr curl_open(void** fd, const char* path, int* flags, mode_t mode, qio_hint_
     *flags |= QIO_FDFLAG_WRITEABLE;
   }
 
-  // Read the header in order to get the length of the thing we are reading
-  // If we are writing, we can't really get this information (even if we try to do a
-  // 0 length read).
-  if (*flags & O_WRONLY) {
-    to_curl_handle(fl)->length = -1;
-    to_curl_handle(fl)->seekable = 0;
-  } else {
-    curl_easy_setopt(to_curl_handle(fl)->curl, CURLOPT_HEADER, 0L);
-    curl_easy_setopt(to_curl_handle(fl)->curl, CURLOPT_NOBODY, 1L);
-    curl_easy_perform(to_curl_handle(fl)->curl);
-    curl_easy_getinfo(to_curl_handle(fl)->curl, CURLINFO_CONTENT_LENGTH_DOWNLOAD, &filelength);
-    curl_easy_setopt(to_curl_handle(fl)->curl, CURLOPT_NOBODY, 0L); // now we want to read the body
-    to_curl_handle(fl)->length = (ssize_t)filelength;
-    to_curl_handle(fl)->seekable = curl_seekable(fl);
-  }
-
-  DONE_SLOW_SYSCALL;
+  // We can seek
+  if (to_curl_handle(fl)->seekable)
+    *flags |= QIO_FDFLAG_SEEKABLE;
 
   *fd = fl;
   return err_out;
@@ -430,6 +376,7 @@ error:
   return err_out;
 }
 
+static
 qioerr curl_close(void* fl, void* fs)
 {
   qioerr err_out = 0;
@@ -452,6 +399,7 @@ qioerr curl_close(void* fl, void* fs)
 // Note: We could get rid of this requirement if we don't have getlength return
 // an error message in the case that we don't have the length (but this can cause
 // weird user level behaviour).
+static
 qioerr curl_seek(void* fl, off_t offset, int whence, off_t* offset_out, void* fs)
 {
   curl_handle* curl_local = to_curl_handle(fl);
@@ -478,15 +426,19 @@ qioerr curl_seek(void* fl, off_t offset, int whence, off_t* offset_out, void* fs
   return 0;
 }
 
+static
 qioerr curl_getpath(void* file, const char** string_out, void* fs)
 {
   *string_out = to_curl_handle(file)->pathnm;
   return 0;
 }
 
+static
 qioerr curl_getlength(void* fl, int64_t* len_out, void* fs)
 {
   if (to_curl_handle(fl)->length == -1) {
+    // This will set initial length to 0 in QIO
+    *len_out = 0;
     QIO_RETURN_CONSTANT_ERROR(ENOTSUP, "Unable to get length of curl URL");
   }
 
@@ -494,6 +446,7 @@ qioerr curl_getlength(void* fl, int64_t* len_out, void* fs)
   return 0;
 }
 
+static
 int curl_get_fs_type(void* fl, void* fs)
 {
   // In the future, we could see this returning differently based upon whether we
@@ -532,53 +485,6 @@ qioerr chpl_curl_perform(qio_file_t* fl)
   qioerr err;
   STARTING_SLOW_SYSCALL;
   err = qio_int_to_err(curl_easy_perform(to_curl_handle(fl->file_info)->curl));
-  DONE_SLOW_SYSCALL;
-  return err;
-}
-
-// str resides on heap
-qioerr chpl_curl_stream_string(qio_file_t* fl, const char** str)
-{
-  qioerr err = 0;
-  struct str_t chunk;
-  CURLcode res;
-
-  // There is no way for us to know how big the string is that we are streaming in.
-  chunk.mem = (char*)qio_calloc(1, 1);
-  chunk.size = 0;
-
-  STARTING_SLOW_SYSCALL;
-  curl_easy_setopt(to_curl_handle(fl->file_info)->curl, CURLOPT_WRITEFUNCTION, chpl_curl_write_string);
-  curl_easy_setopt(to_curl_handle(fl->file_info)->curl, CURLOPT_WRITEDATA, (void*)&chunk);
-  res = curl_easy_perform(to_curl_handle(fl->file_info)->curl);
-  DONE_SLOW_SYSCALL;
-
-  *str = chunk.mem;
-
-  if (res != CURLE_OK)
-    err = qio_int_to_err(errno);
-
-  return err;
-}
-
-// get the fp/fd and stream in
-qioerr chpl_curl_stream_file(qio_file_t* fl_curl, qio_file_t* fl_local)
-{
-  qioerr err = 0;
-  STARTING_SLOW_SYSCALL;
-  if (fl_local->fp) {
-    // curl defaults CURLOPT_WRITEFUNCTION = fwrite
-    curl_easy_setopt(to_curl_handle(fl_curl->file_info)->curl, CURLOPT_FILE, fl_local->fp);
-    err = qio_int_to_err(curl_easy_perform(to_curl_handle(fl_curl->file_info)->curl));
-    fflush(fl_local->fp);
-  } else if (fl_local->fd != -1) {
-    curl_easy_setopt(to_curl_handle(fl_curl->file_info)->curl, CURLOPT_WRITEFUNCTION, chpl_curl_write);
-    curl_easy_setopt(to_curl_handle(fl_curl->file_info)->curl, CURLOPT_FILE, (void*)((intptr_t)&fl_local->fd));
-    err = qio_int_to_err(curl_easy_perform(to_curl_handle(fl_curl->file_info)->curl));
-    err = qio_int_to_err(sys_fsync(fl_local->fd));
-  } else {
-    return err;
-  }
   DONE_SLOW_SYSCALL;
   return err;
 }

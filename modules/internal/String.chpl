@@ -98,7 +98,7 @@ module String {
    */
   inline proc string.startsWith(args ...?k):bool {
     for param i in 1..k {
-      if (__primitive("string_contains", this.substring(0..args(i).length), args(i)))
+      if (this.substring(0..args(i).length) == args(i))
         then return true;
     }
     return false;
