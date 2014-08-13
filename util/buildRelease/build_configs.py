@@ -10,7 +10,6 @@ from __future__ import absolute_import, print_function, unicode_literals
 import contextlib
 import itertools
 import logging
-import operator
 import optparse
 import os
 import shlex
@@ -59,66 +58,35 @@ class Dimension(object):
                 self.help_text))
 
 
-class _Dimensions(object):
-    """Dimensions that this script knows about for configuring chapel compiler and
-    runtime.
-
-    FIXME: Add details about creating new dimensions in this class!
-    """
-
-    comm = Dimension(
+"""Dimensions this script know about when compiling chapel. Order determines
+how they will show up in the usage and what order is used in iteractive mode.
+"""
+Dimensions = [
+    Dimension(
         'comm', 'CHPL_COMM',
         values=['none', 'gasnet'],
         default='none',
         help_text='Chapel communcation ({var_name}) value to build. (default: {default})',
-    )
-
-    gmp = Dimension(
+    ),
+    Dimension(
         'gmp', 'CHPL_GMP',
         values=['none', 'gmp', 'system'],
         default='none',
         help_text='GMP ({var_name}) values to build. (default: {default})',
-    )
-
-    regexp = Dimension(
+    ),
+    Dimension(
         'regexp', 'CHPL_REGEXP',
         values=['none', 're2'],
         default='none',
         help_text='Regular expression ({var_name}) values to buid. (default: {default})',
-    )
-
-    tasks = Dimension(
+    ),
+    Dimension(
         'task', 'CHPL_TASKS',
         values=['fifo', 'qthreads'],
         default='fifo',
         help_text='Tasks ({var_name}) values to build. (default: {default})',
-    )
-
-    @classmethod
-    def get_dims(cls):
-        """Returns list of the class attributes (aka the dimensions)."""
-        dims = []
-        for attr, value in sorted(cls.__dict__.iteritems(), key=operator.itemgetter(0)):
-            if not attr.startswith('_') and isinstance(value, Dimension):
-                dims.append(value)
-        return dims
-
-    def __iter__(self):
-        self._iter_index = 0
-        self._dims = self.get_dims()
-        return self
-
-    def next(self):
-        if self._iter_index < len(self._dims):
-            i = self._iter_index
-            self._iter_index += 1
-            return self._dims[i]
-        else:
-            raise StopIteration
-
-
-# Create instance of _Dimensions.
-Dimensions = _Dimensions()
+    ),
+]
 
 
 class Chapel(object):
