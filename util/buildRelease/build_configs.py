@@ -10,6 +10,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 import contextlib
 import itertools
 import logging
+import operator
 import optparse
 import os
 import shlex
@@ -90,7 +91,7 @@ class _Dimensions(object):
     def get_dims(cls):
         """Returns list of the class attributes (aka the dimensions)."""
         dims = []
-        for attr, value in cls.__dict__.iteritems():
+        for attr, value in sorted(cls.__dict__.iteritems(), key=operator.itemgetter(0)):
             if not attr.startswith('_') and isinstance(value, Dimension):
                 dims.append(value)
         return dims
