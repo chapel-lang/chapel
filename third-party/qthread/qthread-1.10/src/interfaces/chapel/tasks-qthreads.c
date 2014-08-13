@@ -330,6 +330,40 @@ static void *initializer(void *junk)
 }
 #endif /* ! QTHREAD_MULTINODE */
 
+static void set_qt_env_var(char* var, char* val, int32_t override) {
+    int32_t buffSize = 100;
+    char qt_env[buffSize];
+    char qthread_env[buffSize];
+    char *qt_val;
+    char * qthread_val;
+
+    strncpy(qt_env, "QT_", buffSize);
+    strncat(qt_env, var, buffSize);
+
+    strncpy(qthread_env, "QTHREAD_", buffSize);
+    strncat(qthread_env, var, buffSize);
+
+    qt_val = getenv(qt_env);
+    qthread_val = getenv(qthread_env);
+
+    if (override || (qt_val == NULL && qthread_val == NULL)) {
+        (void) setenv(qt_env, val, 1);
+    } else if (2 == verbosity) {
+        char* set_env = NULL;
+        char* set_val = NULL;
+        if (qt_val != NULL) {
+            set_env = qt_env;
+            set_val = qt_val;
+        } else {
+            set_env = qthread_env;
+            set_val = qthread_val;
+        }
+        printf("QTHREADS: Not setting %s because %s was already set to "
+               "%s\n", qt_env, set_env, set_val);
+    }
+}
+
+
 void chpl_task_init(void)
 {
     int32_t   numThreadsPerLocale;
