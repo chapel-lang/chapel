@@ -17,6 +17,94 @@ import subprocess
 import time
 
 
+class Dimension(object):
+    """Encapsulate information about a single dimension."""
+
+    def __init__(self, name, var_name, values=None, default=None, help_text=None):
+        """Initialize a new dimension."""
+        self.name = name
+        self.var_name = var_name
+        self.values = values
+        self.default = default
+        self.help_text = help_text.format(**locals())
+
+        self.validate()
+
+    def validate(self):
+        """Validate instance parameters. Raises ValueError if dimension values are not
+        valid."""
+        if not self.name and self.name != self.name.lower():
+            raise ValueError('name must be a lower case string: {0}'.format(
+                self.name))
+        if not self.var_name or self.var_name != self.var_name.upper():
+            raise ValueError('var_name must an upper case string: {0}'.format(
+                self.var_name))
+        if not self.values or not isinstance(self.values, list):
+            raise ValueError('values must be a non-empty list: {0}'.format(
+                self.values))
+        if not self.default or not isinstance(self.default, basestring):
+            raise ValueError('default must be a non-empty string: {0}'.format(
+                self.default))
+        if not self.help_text or not isinstance(self.help_text, basestring):
+            raise ValueError('help_text must be a non-empty string: {0}'.format(
+                self.help_text))
+
+
+class _Dimensions(object):
+    """Dimensions that this script knows about for configuring chapel compiler and
+    runtime.
+
+    FIXME: Add details about creating new dimensions in this class!
+    """
+
+    comm = Dimension(
+        'comm', 'CHPL_COMM',
+        values=['none', 'gasnet'],
+        default='none',
+        help_text='Chapel communcation ({var_name}) value to build. (default: {default})',
+    )
+
+    gmp = Dimension(
+        'gmp', 'CHPL_GMP',
+        values=['none', 'gmp', 'system'],
+        default='none',
+        help_text='GMP ({var_name}) values to build. (default: {default})',
+    )
+
+    tasks = Dimension(
+        'task', 'CHPL_TASKS',
+        values=['fifo', 'qthreads'],
+        default='fifo',
+        help_text='Tasks ({var_name}) values to build. (default: {default})',
+    )
+
+    @classmethod
+    def get_dims(cls):
+        """Returns list of the class attributes (aka the dimensions)."""
+        dims = []
+        for attr, value in cls.__dict__.iteritems():
+            if not attr.startswith('_') and isinstance(value, Dimension):
+                dims.append(value)
+        return dims
+
+    def __iter__(self):
+        self._iter_index = 0
+        self._dims = self.get_dims()
+        return self
+
+    def next(self):
+        if self._iter_index < len(self._dims):
+            i = self._iter_index
+            self._iter_index += 1
+            return self._dims[i]
+        else:
+            raise StopIteration
+
+
+# Create instance of _Dimensions.
+Dimensions = _Dimensions()
+
+
 class Chapel(object):
 
     communication = ['none', 'gasnet',]
