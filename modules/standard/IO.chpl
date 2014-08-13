@@ -1480,23 +1480,52 @@ proc channel.read(ref args ...?k,
   }
 }
 
-proc channel.readline(ref data: [] uint(8), ref numRead, start=data.domain.low, inclusive = true) :bool 
-where data.domain.rank == 1
+proc channel.readline(arg: [] uint(8), ref numRead : int, start = arg.domain.low, inclusive = true) : bool
+where arg.domain.rank == 1
 {
-  var temp : uint(8);
+  if this.kind != ionative then halt("channel.readline([] uint(8), ...) \
+      is only available for ionative channels");
+  var e:syserr = ENOERR;
+  var got = this.readline(arg, numRead, start, error=e, inclusive);
+  if !e && got then return true;
+  else if e == EEOF || !got then return false;
+  else {
+    this._ch_ioerror(e, "in channel.readline(ref arg:string)");
+    return false;
+  }
+}
+
+// Read a line of bytes into a chapel array.
+//
+// numRead: The number of 'elType's read
+// inclusive: if true, will include the newline
+//
+// The 'kind' of the channel must be ionative, as we only read bytes. 
+// This limitation exists so that we can check for a newline.
+proc channel.readline(arg: [] uint(8), ref numRead : int, start = arg.domain.low, out error:syserr, inclusive = true) : bool
+where arg.domain.rank == 1
+{
+  if this.kind != ionative then halt("channel.readline([] uint(8), ...) \
+      is only available for ionative channels");
+  if arg.size == 0 || start > arg.domain.high then return false;
+  var got : int;
+  param newLineChar = 0x0A;
   var idx = start;
-  if idx > data.domain.high then return false;
-  do {
-    var got = qio_channel_read_byte(false, this._channel_internal);
+  while got != newLineChar {
+    got = qio_channel_read_byte(false, this._channel_internal);
     if got >= 0 {
-      temp = got:uint(8);
-      if inclusive || (!inclusive && temp != 10) {
-        numRead += 1;
-        data[idx] = temp;
+      if inclusive || (!inclusive && got != newLineChar) {
+        arg[idx] = got:uint(8);
         idx += 1;
       }
-    } else return false;
-  } while temp != 10;
+    } else {
+      numRead = idx - start;
+      error = (-got):syserr;
+      return false;
+    }
+  }
+  numRead = idx - start;
+  error = ENOERR;
   return true;
 }
 
@@ -3383,15 +3412,28 @@ proc channel.readf(fmt:c_string) {
 proc writef(fmt:c_string, args ...?k):bool {
   return stdout.writef(fmt, (...args));
 }
+proc writef(fmt:string, args ...?k):bool {
+  return stdout.writef(fmt, (...args));
+}
 proc writef(fmt:c_string):bool {
+  return stdout.writef(fmt);
+}
+proc writef(fmt:string):bool {
   return stdout.writef(fmt);
 }
 proc readf(fmt:c_string, ref args ...?k):bool {
   return stdin.readf(fmt, (...args));
 }
+proc readf(fmt:string, ref args ...?k):bool {
+  return stdin.readf(fmt, (...args));
+}
 proc readf(fmt:c_string):bool {
   return stdin.readf(fmt);
 }
+proc readf(fmt:string):bool {
+  return stdin.readf(fmt);
+}
+
 
 
 use Regexp;

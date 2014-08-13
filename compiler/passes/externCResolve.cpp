@@ -156,7 +156,7 @@ static void convertMacroToChpl(ModuleSymbol* module, const char* name, Type* chp
   forv_Vec(Expr*, result, results) {
     if (!result->inTree()) {
       SET_LINENO(result);
-      module->initFn->insertAtHead(result);
+      module->block->insertAtHead(result);
     }
   }
   setAlreadyConvertedExtern(module, name);
@@ -291,7 +291,7 @@ void convertDeclToChpl(ModuleSymbol* module, const char* name, Vec<Expr*> & resu
   forv_Vec(Expr*, result, results) {
     if (!result->inTree()) {
       SET_LINENO(result);
-      module->initFn->insertAtHead(result);
+      module->block->insertAtHead(result);
     }
   }
 }
