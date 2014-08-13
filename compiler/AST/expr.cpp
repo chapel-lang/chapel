@@ -4370,7 +4370,10 @@ GenRet CallExpr::codegen() {
       // optimizations depending on specifics of the RHS expression.)
 
       // PRIM_ASSIGN expects either a narrow or wide pointer as its LHS arg.
-      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF) ||
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
+          get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+        codegenAssign(get(1), get(2));
+      } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF) ||
           get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
           get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         codegenAssign(codegenDeref(get(1)), get(2));

@@ -133,7 +133,6 @@ static CallExpr* findRefTempInit(SymExpr* se) {
 static void
 inlineFunction(FnSymbol* fn, Vec<FnSymbol*>& inlinedSet) {
   inlinedSet.set_add(fn);
-  fn->canReplaceRefTemps = canRemoveRefTemps(fn);
   Vec<CallExpr*> calls;
   collectFnCalls(fn, calls);
   forv_Vec(CallExpr, call, calls) {
@@ -178,6 +177,9 @@ inlineFunctions(void) {
   if (!fNoInline) {
     compute_call_sites();
     Vec<FnSymbol*> inlinedSet;
+    forv_Vec(FnSymbol, fn, gFnSymbols) {
+      fn->canReplaceRefTemps = canRemoveRefTemps(fn);
+    }
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->hasFlag(FLAG_INLINE) && !inlinedSet.set_in(fn))
         inlineFunction(fn, inlinedSet);
