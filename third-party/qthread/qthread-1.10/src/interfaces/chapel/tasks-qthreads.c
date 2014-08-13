@@ -316,7 +316,6 @@ void chpl_task_init(void)
     int32_t   numThreadsPerLocale;
     int32_t   commMaxThreads;
     int32_t   hwpar;
-    extern const int CHPL_STACK_CHECKS;
     size_t    callStackSize;
     pthread_t initer;
     char      newenv_stack[100] = { 0 };
