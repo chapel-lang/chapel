@@ -51,8 +51,13 @@ inlineCall(FnSymbol* fn, CallExpr* call) {
     if ((formal->intent & INTENT_REF) && fn->canReplaceRefTemps) {
       if (se->var->hasFlag(FLAG_REF_TEMP)) {
         if (CallExpr* move = findRefTempInit(se)) {
-          CallExpr* addrOf = toCallExpr(move->get(2));
-          SymExpr* origSym = toSymExpr(addrOf->get(1));
+          SymExpr* origSym = NULL;
+          if (CallExpr* addrOf = toCallExpr(move->get(2))) {
+            origSym = toSymExpr(addrOf->get(1));
+          } else {
+            origSym = toSymExpr(move->get(2));
+          }
+          INT_ASSERT(origSym);
           map.put(formal, origSym->var);
           se->var->defPoint->remove();
           move->remove();
