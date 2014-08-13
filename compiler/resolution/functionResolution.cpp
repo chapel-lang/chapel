@@ -5396,6 +5396,7 @@ requiresImplicitDestroy(CallExpr* call) {
         !fn->hasFlag(FLAG_DONOR_FN) &&
         !fn->hasFlag(FLAG_INIT_COPY_FN) &&
         strcmp(fn->name, "=") &&
+        strcmp(fn->name, "_defaultOf") &&
         !fn->hasFlag(FLAG_AUTO_II) &&
         !fn->hasFlag(FLAG_CONSTRUCTOR) &&
         !fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
