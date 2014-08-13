@@ -30,6 +30,14 @@ class Dimension(object):
 
         self.validate()
 
+    def __repr__(self):
+        """Stringify this dimsion."""
+        cls_name = self.__class__.__name__
+        attrs = ['name', 'var_name', 'values', 'default', 'help_text']
+        f = lambda x: '{0}={1!r}'.format(x, getattr(self, x, None))
+        attr_list = ', '.join(map(f, attrs))
+        return '{0}({1})'.format(cls_name, attr_list)
+
     def validate(self):
         """Validate instance parameters. Raises ValueError if dimension values are not
         valid."""
