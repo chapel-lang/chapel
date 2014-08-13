@@ -129,43 +129,30 @@ class Chapel(object):
 
 class Config(object):
 
-    attrs = ['comm', 'gmp', 'tasks']
-
-    def __init__(self, comm=None, gmp=None, tasks=None):
-        """Initialize new configuration value.
-
-        :type comm: str
-        :arg comm: CHPL_COMM value
-
-        :type gmp: str
-        :arg gmp: CHPL_GMP value
-
-        :type tasks: str
-        :arg tasks: CHPL_TASKS value
+    def __init__(self, *args, **kwargs):
+        """Initialize new configuration value. Arguments are based on the dimensions
+        object. Order is important and should also be based on the iteration
+        order of dimensions.
         """
-        self.comm = comm
-        self.gmp = gmp
-        self.tasks = tasks
+        for i, dim in enumerate(Dimensions):
+            setattr(self, dim.name, args[i])
 
     def __repr__(self):
         """Return stringified version of Configuration."""
         cls_name = self.__class__.__name__
-        attr_str = ', '.join(
-            map(lambda x: '{0}={1}'.format(x, getattr(self, x, None)), self.attrs)
-        )
-        return '{0}({1})'.format(cls_name, attr_str)
+        f = lambda x: '{0}={1!r}'.format(x, getattr(self, x))
+        attr_list = ', '.join(map(lambda dim: f(dim.name), Dimensions))
+        return '{0}({1})'.format(cls_name, attr_list)
 
     def __str__(self):
         """Return name string for this configuration."""
-        return ' '.join(
-            map(lambda x: '{0}={1}'.format(x, getattr(self, x, None)), self.attrs)
-        )
+        f = lambda x: '{0}={1}'.format(x, getattr(self, x))
+        return ' '.join(map(lambda dim: f(dim.name), Dimensions))
 
     def verbose_str(self):
         """Return verbose string of configs - one per line indented."""
-        return '\n'.join(
-            map(lambda x: '    {0}={1}'.format(x, getattr(self, x, None)), self.attrs)
-        )
+        f = lambda x: '    {0}={1}'.format(x, getattr(self, x))
+        return '\n'.join(map(lambda dim: f(dim.name), Dimensions))
 
     def get_env(self, orig_env):
         """Update and return an existing configuration with this configuration's
@@ -179,8 +166,8 @@ class Config(object):
         """
         new_env = orig_env.copy()
 
-        new_env['CHPL_COMM'] = self.comm
-        new_env['CHPL_TASKS'] = self.tasks
+        for dim in Dimensions:
+            new_env[dim.var_name] = getattr(self, dim.name)
 
         return new_env
 
