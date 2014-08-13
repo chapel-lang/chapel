@@ -352,21 +352,14 @@ def parse_args():
     config_group = optparse.OptionGroup(
         parser, 'Configuration Options',
         'Configuration options for building the Chapel compiler and runtime.')
-    config_group.add_option(
-        '--communication',
-        action='append', choices=Chapel.communication,
-        help='Communication (CHPL_COMM) values to build. (default: {0})'.format(Chapel.defaults.communication)
-    )
-    config_group.add_option(
-        '--gmp',
-        action='append', choices=Chapel.gmp,
-        help='GMP (CHPL_GMP) values to build. (default: {0})'.format(Chapel.defaults.gmp)
-    )
-    config_group.add_option(
-        '--tasks',
-        action='append', choices=Chapel.tasks,
-        help='Tasks (CHPL_TASKS) values to build. (default: {0})'.format(Chapel.defaults.tasks)
-    )
+
+    for dim in Dimensions:
+        config_group.add_option(
+            '--{0}'.format(dim.name),
+            action='append', choices=dim.values,
+            help=dim.help_text
+        )
+
     parser.add_option_group(config_group)
 
     opts, args = parser.parse_args()
