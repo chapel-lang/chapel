@@ -165,6 +165,10 @@ def main():
     opts, args = parse_args()
     setup_logging(opts.verbose)
 
+    if opts.show_configs:
+        print_configs()
+        return 0
+
     orig_env = os.environ.copy()
 
     build_configs = get_configs(opts)
@@ -318,6 +322,17 @@ def elapsed_time(timer_name):
         timer_name, elapsed))
 
 
+def print_configs():
+    """Print each configuration dimension and its possible values."""
+    for dim in Dimensions:
+        print('{name} - {help_text}'.format(name=dim.name, var_name=dim.var_name, help_text=dim.help_text))
+        print('    Default: {0}'.format(dim.default))
+        print('    Values:')
+        for value in dim.values:
+            print('      {0}'.format(value))
+        print()
+
+
 def parse_args():
     """Parse and return command line arguments."""
     parser = optparse.OptionParser(
@@ -336,6 +351,11 @@ def parse_args():
         '-v', '--verbose',
         action='store_true',
         help='Verbose output.'
+    )
+    parser.add_option(
+        '--show-configs',
+        action='store_true',
+        help='Print all possible values for all configurations.'
     )
     parser.add_option(
         '--chpl-home',
