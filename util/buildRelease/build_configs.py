@@ -3,7 +3,6 @@
 
 """Interactive CLI for building one or more Chapel configurations.
 
-TODO: Handle errors in build process better...
 TODO: Update defaults to take into account current env (i.e. if CHPL_REGEXP is set to re2 in environment, use that as default).
 TODO: Add flag to ignore env when picking defaults, maybe --ignore-environment.
 TODO: Add additional configuration flags.
@@ -19,6 +18,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 import contextlib
 import itertools
 import logging
+import operator
 import optparse
 import os
 import shlex
@@ -67,7 +67,7 @@ class Dimension(object):
                 self.help_text))
 
 
-"""Dimensions this script know about when compiling chapel. Order determines
+"""Dimensions this script knows about when compiling chapel. Order determines
 how they will show up in the usage and what order is used in iteractive mode.
 """
 Dimensions = [
@@ -157,13 +157,15 @@ class Config(object):
 
 
 def main():
-    """Main CLI function."""
+    """Main CLI function.
+
+    :rtype: int
+    :returns: exit code, which is sum of all exit codes
+    """
     opts, args = parse_args()
     setup_logging(opts.verbose)
 
     orig_env = os.environ.copy()
-
-    # TODO: Clean env... remove any existing chapel vars?
 
     build_configs = get_configs(opts)
     config_count_str = '{0} configuration{1}'.format(
@@ -172,14 +174,24 @@ def main():
     logging.info('Building {0}.'.format(config_count_str))
     logging.debug('Build configs: {0}'.format(build_configs))
 
+    statuses = []
     with elapsed_time('All {0}'.format(config_count_str)):
         for build_config in build_configs:
-            build_chpl(
+            result = build_chpl(
                 opts.chpl_home,
                 build_config,
                 orig_env,
                 verbose=opts.verbose
             )
+            statuses.append((build_config, result))
+
+    # Sum of all exit codes is the exit code from this program.
+    exit_code = reduce(
+        lambda a, b: a+b,
+        map(operator.itemgetter(1), statuses),
+        0
+    )
+    return exit_code
 
 
 def get_configs(opts):
@@ -232,16 +244,27 @@ def build_chpl(chpl_home, build_config, env, verbose=False):
     :type verbose: bool
     :arg verbose: if True, increase output
 
-    :rtype: FIXME
-    :returns: FIXME
+    :rtype: int
+    :returns: exit code from building configuration
     """
     build_env = build_config.get_env(env)
     logging.info('Building config: {0}'.format(build_config))
     with elapsed_time(build_config):
-        result = check_output('make', chpl_home, build_env, verbose=verbose)
+        result, output, error = check_output(
+            'make', chpl_home, build_env, verbose=verbose)
+        logging.debug('Exit code for config {0}: {1}'.format(
+            build_config, result))
     logging.info('Finished config:\n{0}'.format(build_config.verbose_str()))
 
-    # FIXME: handle non-success results...
+    if result != 0:
+        if output is not None:
+            logging.error('stdout:\n{0}'.format(output))
+        if error is not None:
+            logging.error('stderr:\n{0}'.format(error))
+        logging.error('Non-zero exit code when building config {0}: {1}'.format(
+            build_config, result))
+
+    return result
 
 
 def check_output(command, chpl_home, env, stdin=None, verbose=False):
@@ -262,8 +285,8 @@ def check_output(command, chpl_home, env, stdin=None, verbose=False):
     :type verbose: bool
     :arg verbose: if True, let stdout/stderr stream
 
-    :rtype: FIXME
-    :returns: FIXME
+    :rtype: tuple(int, str, str)
+    :returns: exit code/status from subcommand, stdout string, stderr string
     """
     command = shlex.split(str(command))
 
@@ -278,13 +301,12 @@ def check_output(command, chpl_home, env, stdin=None, verbose=False):
         stdout=stdout,
         stderr=stderr,
         cwd=chpl_home,
-        env=env,
+        env=env
     )
-    out, _ = p.communicate(input=stdin)
+    out, err = p.communicate(input=stdin)
+    retcode = p.poll()
 
-    # FIXME: handle non-zero exit statuses.
-
-    return out
+    return retcode, out, err
 
 
 @contextlib.contextmanager
@@ -350,4 +372,4 @@ def setup_logging(verbose=False):
 
 
 if __name__ == '__main__':
-    main()
+    exit(main())
