@@ -379,10 +379,20 @@ void chpl_task_init(void)
         qt_internal_unset_envstr("HWPAR");
         qt_internal_unset_envstr("NUM_SHEPHERDS");
         qt_internal_unset_envstr("NUM_WORKERS_PER_SHEPHERD");
-        
+
         // Set environment variable for Qthreads
         snprintf(newenv, sizeof(newenv), "%i", (int)hwpar);
         setenv("QT_HWPAR", newenv, 1);
+    }
+
+
+    // If the user compiled with no stack checks (either explicitly or
+    // implicitly) turn off qthread guard pages. If the qthread guard page env
+    // var was explicitly set by the user we don't override it.
+    if (CHPL_STACK_CHECKS == 0) {
+        if (getenv("QTHREAD_GUARD_PAGES") == NULL) {
+            (void) setenv("QT_GUARD_PAGES", "false", 0);
+        }
     }
 
     // Precedence (high-to-low):
