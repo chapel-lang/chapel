@@ -4499,7 +4499,8 @@ static Expr* resolvePrimInit(CallExpr* call)
       // would probably be very handy to be able to invoke both _defaultOf and
       // constructors themselves as methods.
       FnSymbol* ctor = initCall->isResolved();
-      if (ctor->hasFlag(FLAG_COMPILER_GENERATED))
+      if (ctor->hasFlag(FLAG_COMPILER_GENERATED) ||
+          ctor->hasFlag(FLAG_WAS_COMPILER_GENERATED))
       {
         CallExpr* defOfCall = new CallExpr("_defaultOf", type->symbol);
         initCall->replace(defOfCall);

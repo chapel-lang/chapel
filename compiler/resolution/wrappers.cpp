@@ -85,6 +85,8 @@ buildEmptyWrapper(FnSymbol* fn, CallInfo* info) {
   if (fn->hasFlag(FLAG_ASSIGNOP))
     wrapper->addFlag(FLAG_ASSIGNOP);
   wrapper->instantiationPoint = getVisibilityBlock(info->call);
+  if (fn->hasFlag(FLAG_COMPILER_GENERATED))
+    wrapper->addFlag(FLAG_WAS_COMPILER_GENERATED);
   wrapper->addFlag(FLAG_COMPILER_GENERATED);
   return wrapper;
 }
@@ -153,7 +155,7 @@ buildDefaultWrapper(FnSymbol* fn,
     !isSyncType(fn->_this->type) &&
     !fn->_this->type->symbol->hasFlag(FLAG_REF);
   if (specializeDefaultConstructor) {
-//    wrapper->removeFlag(FLAG_COMPILER_GENERATED); // Dangerous business.
+    wrapper->removeFlag(FLAG_COMPILER_GENERATED);
     wrapper->_this = fn->_this->copy();
     copy_map.put(fn->_this, wrapper->_this);
     wrapper->insertAtTail(new DefExpr(wrapper->_this));
@@ -558,6 +560,9 @@ buildPromotionWrapper(FnSymbol* fn,
   SET_LINENO(info->call);
   FnSymbol* wrapper = buildEmptyWrapper(fn, info);
   wrapper->addFlag(FLAG_PROMOTION_WRAPPER);
+  // Special case: When promoting a default constructor, the promotion wrapper
+  // itself is no longer a default constructor.
+  wrapper->removeFlag(FLAG_DEFAULT_CONSTRUCTOR);
   wrapper->cname = astr("_promotion_wrap_", fn->cname);
   CallExpr* indicesCall = new CallExpr("_build_tuple"); // destructured in build
   CallExpr* iteratorCall = new CallExpr("_build_tuple");
