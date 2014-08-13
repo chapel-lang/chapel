@@ -3,6 +3,15 @@
 
 """Interactive CLI for building one or more Chapel configurations.
 
+TODO: Handle errors in build process better...
+TODO: Update defaults to take into account current env (i.e. if CHPL_REGEXP is set to re2 in environment, use that as default).
+TODO: Add flag to ignore env when picking defaults, maybe --ignore-environment.
+TODO: Add additional configuration flags.
+TODO: Split up compile process into stages (compile, runtime, then third-party, etc).
+TODO: Parallelize build stages that are ammenable (e.g. runtime, third-party, etc).
+TODO: Add --all-configs (?) flag that will build all configurations.
+TODO: Figure out how to best support complex configs, like comm with substrate and segment values.
+TODO: Add interactive mode where user is asked what configs they want.
 """
 
 from __future__ import absolute_import, print_function, unicode_literals
