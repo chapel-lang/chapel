@@ -220,23 +220,24 @@ def get_configs(opts):
     :rtype: list of Config instances
     :returns: list of configurations to build
     """
-    logging.debug('opts is type: {0}'.format(type(opts)))
     logging.debug('Compiling configs from: {0}'.format(opts))
 
-    def get_value_with_default(config_str):
-        """Returns the option value. If value is None, returns the default."""
-        opt_value = getattr(opts, config_str, None)
-        if opt_value is None:
-            return [getattr(Chapel.defaults, config_str)]
+    # Create a list of lists. The inner lists are the values to build for each
+    # dimension (i.e. communcation). The outer list encapsulates all the
+    # dimensions.
+    dimension_values = []
+    for dim in Dimensions:
+        values = getattr(opts, dim.name)
+        if values is None:
+            logging.debug(
+                'No value specified for {0}, defaulting to: {1}'.format(
+                    dim.name, dim.default))
+            dimension_values.append([dim.default])
         else:
-            return opt_value
+            dimension_values.append(values)
 
-    comm = get_value_with_default('communication')
-    gmp = get_value_with_default('gmp')
-    tasks = get_value_with_default('tasks')
-
-    # This is a big giant nested loop...
-    config_strings = itertools.product(comm, gmp, tasks)
+    # Create the cross product of all dimension values.
+    config_strings = itertools.product(*dimension_values)
 
     configs = []
     for config_tuple in config_strings:
