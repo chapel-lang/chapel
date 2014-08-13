@@ -98,10 +98,20 @@ def main():
     # TODO: Clean env... remove any existing chapel vars?
 
     build_configs = get_configs(opts)
+    config_count_str = '{0} configuration{1}'.format(
+        len(build_configs),
+        's' if len(build_configs) > 1 else '')
+    logging.info('Building {0}.'.format(config_count_str))
     logging.debug('Build configs: {0}'.format(build_configs))
 
-    for build_config in build_configs:
-        build_chpl(opts.chpl_home, build_config, orig_env, verbose=opts.verbose)
+    with elapsed_time('All {0}'.format(config_count_str)):
+        for build_config in build_configs:
+            build_chpl(
+                opts.chpl_home,
+                build_config,
+                orig_env,
+                verbose=opts.verbose
+            )
 
 
 def get_configs(opts):
@@ -157,7 +167,7 @@ def build_chpl(chpl_home, build_config, env, verbose=False):
     :returns: FIXME
     """
     build_env = build_config.get_env(env)
-    logging.info('Starting config:\n{0}'.format(build_config.verbose_str()))
+    logging.info('Building config: {0}'.format(build_config))
     with elapsed_time(build_config):
         result = check_output('make', chpl_home, build_env, verbose=verbose)
     logging.info('Finished config:\n{0}'.format(build_config.verbose_str()))
