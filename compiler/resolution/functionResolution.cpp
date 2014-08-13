@@ -4440,8 +4440,11 @@ static Expr* resolvePrimInit(CallExpr* call)
       // the defaultValue field from the type respresentation, and just use
       // _defaultOf to supply this in module code.
 #if UserCtorsAndDefaultOfHack
-      result = new CallExpr("_defaultOf", type->symbol);
-      call->replace(result);
+      CallExpr* defOfCall = new CallExpr("_defaultOf", type->symbol);
+      call->replace(defOfCall);
+      resolveCall(defOfCall);
+      resolveFns(defOfCall->isResolved());
+      result = postFold(defOfCall);
 #else
       // Has a default value, so use it.
       result = new SymExpr(type->defaultValue);
