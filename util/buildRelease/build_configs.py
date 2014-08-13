@@ -3,7 +3,6 @@
 
 """Interactive CLI for building one or more Chapel configurations.
 
-TODO: Update defaults to take into account current env (i.e. if CHPL_REGEXP is set to re2 in environment, use that as default).
 TODO: Add flag to ignore env when picking defaults, maybe --ignore-environment.
 TODO: Add additional configuration flags.
 TODO: Split up compile process into stages (compile, runtime, then third-party, etc).
@@ -34,10 +33,21 @@ class Dimension(object):
         self.name = name
         self.var_name = var_name
         self.values = values
-        self.default = default
-        self.help_text = help_text.format(**locals())
+        self._default = default
+        self.help_text = self._get_help_text(help_text.format(**locals()))
 
         self.validate()
+
+    def _get_help_text(self, help_text):
+        """Returns help text with some additional content.
+
+        :type help_text: str
+        :arg help_text: original help text string (unformatted)
+
+        :rtype: str
+        :returns: formatted heljp text
+        """
+        return '{0} (default: {1})'.format(help_text, self.default)
 
     def __repr__(self):
         """Stringify this dimsion."""
@@ -46,6 +56,26 @@ class Dimension(object):
         f = lambda x: '{0}={1!r}'.format(x, getattr(self, x, None))
         attr_list = ', '.join(map(f, attrs))
         return '{0}({1})'.format(cls_name, attr_list)
+
+    @property
+    def default(self):
+        """Returns the default value for this instance. If the variable is defined in
+        the environment, that will be used. Otherwise, the _default value will
+        be used.
+
+        NOTE: This does not behave in the same way as chplenv scripts
+        necessarily. For example, something like CHPL_REGEXP can default to re2
+        in the chplenv scripts if re2 has been previously built. This does not
+        know about previous builds and it does not inspect the gen dir(s).
+
+        TODO: When/If chplenv becomes a legitimate python package, import it
+              and then just call the function to get the real
+              default. (thomasvandoren, 2014-08-13)
+        """
+        if os.environ.has_key(self.var_name):
+            return os.environ.get(self.var_name)
+        else:
+            return self._default
 
     def validate(self):
         """Validate instance parameters. Raises ValueError if dimension values are not
@@ -75,31 +105,31 @@ Dimensions = [
         'comm', 'CHPL_COMM',
         values=['none', 'gasnet'],
         default='none',
-        help_text='Chapel communcation ({var_name}) value to build. (default: {default})',
+        help_text='Chapel communcation ({var_name}) value to build.',
     ),
     Dimension(
         'task', 'CHPL_TASKS',
         values=['fifo', 'qthreads'],
         default='fifo',
-        help_text='Tasks ({var_name}) values to build. (default: {default})',
+        help_text='Tasks ({var_name}) values to build.',
     ),
     Dimension(
         'launcher', 'CHPL_LAUNCHER',
         values=['none', 'pbs-aprun', 'aprun', 'slurm-srun'],
         default='none',
-        help_text='Launcher ({var_name}) to build. (default: {default})',
+        help_text='Launcher ({var_name}) to build.',
     ),
     Dimension(
         'gmp', 'CHPL_GMP',
         values=['none', 'gmp', 'system'],
         default='none',
-        help_text='GMP ({var_name}) values to build. (default: {default})',
+        help_text='GMP ({var_name}) values to build.',
     ),
     Dimension(
         'regexp', 'CHPL_REGEXP',
         values=['none', 're2'],
         default='none',
-        help_text='Regular expression ({var_name}) values to buid. (default: {default})',
+        help_text='Regular expression ({var_name}) values to buid.',
     ),
 ]
 
