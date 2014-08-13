@@ -80,6 +80,13 @@ class _Dimensions(object):
         help_text='GMP ({var_name}) values to build. (default: {default})',
     )
 
+    regexp = Dimension(
+        'regexp', 'CHPL_REGEXP',
+        values=['none', 're2'],
+        default='none',
+        help_text='Regular expression ({var_name}) values to buid. (default: {default})',
+    )
+
     tasks = Dimension(
         'task', 'CHPL_TASKS',
         values=['fifo', 'qthreads'],
