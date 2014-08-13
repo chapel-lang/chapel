@@ -1,0 +1,23 @@
+#! /bin/sh
+#
+# This just creates an appropriate .good.
+#
+target=$($CHPL_HOME/util/chplenv/chpl_platform.py --target)
+tasks=$($CHPL_HOME/util/chplenv/chpl_tasks.py)
+
+case $tasks in
+  fifo)
+    case $target in
+      linux*)
+        PUs=$(grep -c '^processor[[:space:]]\+: ' /proc/cpuinfo)
+        cores1=$(grep -m 1 '^cpu cores[[:space:]]\+: ' /proc/cpuinfo |
+                 sed 's/^[^0-9]*\([0-9]\+\).*$/\1/')
+        sibs1=$(grep -m 1 '^siblings[[:space:]]\+: ' /proc/cpuinfo |
+                sed 's/^[^0-9]*\([0-9]\+\).*$/\1/')
+        echo $(($PUs*$sibs1/$cores1)) > $1.good;;
+      *)
+        echo Unexpected target platform $target > $1.good;;
+    esac;;
+  *)
+    echo Unexpected tasking layer $tasks > $1.good;;
+esac
