@@ -131,6 +131,12 @@ Dimensions = [
         default='none',
         help_text='Regular expression ({var_name}) values to buid.',
     ),
+    Dimension(
+        'llvm', 'CHPL_LLVM',
+        values=['none', 'llvm'],
+        default='none',
+        help_text='LLVM ({var_name}) values to build.',
+    ),
 ]
 
 
