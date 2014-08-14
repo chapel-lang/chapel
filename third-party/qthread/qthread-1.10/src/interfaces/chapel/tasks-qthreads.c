@@ -106,6 +106,10 @@ static void profile_print(void)
 # define PROFILE_INCR(counter,count)
 #endif /* CHAPEL_PROFILE */
 
+#ifndef QTHREAD_MULTINODE
+volatile int chpl_qthread_done_initializing;
+#endif
+
 // aka chpl_task_list_p
 struct chpl_task_list {
     chpl_fn_p        fun;
