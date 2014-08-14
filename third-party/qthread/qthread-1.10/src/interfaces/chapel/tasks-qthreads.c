@@ -660,6 +660,16 @@ void chpl_task_setSerial(chpl_bool state)
     PROFILE_INCR(profile_task_setSerial,1);
 }
 
+uint32_t chpl_task_getMaxPar(void) {
+    //
+    // We assume here that the caller (in the LocaleModel module code)
+    // is interested in the number of workers on the whole node, and
+    // will decide itself how much parallelism to create across and
+    // within sublocales, if there are any.
+    //
+    return qthread_num_workers();
+}
+
 c_sublocid_t chpl_task_getNumSublocales(void)
 {
     // FIXME: What we really want here is the number of NUMA
