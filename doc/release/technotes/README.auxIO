@@ -41,8 +41,9 @@ cc $CHPL_AUXIO_LIBS $CHPL_AUXIO_INCLUDE <any libraries> <the .c file>
 
 where <any libraries> might be -lcurl, -lhdfs, -ljvm etc.
 
-Note: you don't need to worry about telling Chapel about these library flags since we will
-      automatically include these if a system that require these flags is enabled.
+Note: It is not necessary to pass these library flags, or library/include paths to
+      the Chapel compiler invocations (chpl) as the values in CHPL_AUXIO_LIBS and
+      CHPL_AUXIO_INCLUDE will be used there as well as in building the Chapel runtime
 
 CHPL_AUX_FILESYS
 ----------------
@@ -88,7 +89,7 @@ file.getchunk(start:int(64), end:int(64)):(int(64), int(64))
    - On "local" file systems, it returns the first "optimal transfer block" (from
      fstatfs) inside this section of the file.
 
-file.getlocsforregion(start:int(64), end:int(64)):domain(locale)
+file.localesForRegion(start:int(64), end:int(64)):domain(locale)
  - This returns the "best locales" for a given chunk of the file. If no one, or set
    of locales are "best" (i.e., there is some sort of data affinity that we can
    exploit), we return all locales.
