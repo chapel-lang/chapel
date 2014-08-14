@@ -858,7 +858,7 @@ qioerr qio_file_init_usr(qio_file_t** file_out, void* file_info, qio_hint_t iohi
 
   if (fns->filelength) { // We can get length in our FS
     err = fns->filelength(file_info, &initial_length, fs_info);
-    // Disregard errors, in case it is not seekable (and if we need seek to get the
+    // Disregard errors in case it is not seekable (and if we need seek to get the
     // length). If we can't get the length, we'll set initial_pos below anyways.
     err = 0;
   }

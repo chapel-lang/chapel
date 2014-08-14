@@ -20,14 +20,18 @@ struct curl_handle {
   CURL*       curl;           // Curl handle
   const char* pathnm;         // Path/URL (etc.)
   ssize_t     length;         // length of what we are reading, -1 if we are not able to get the length
+  // Note: This is racy if we open up more than one channel on a given curl handle.
+  //       It is expected of the user that they will not open more than one channel at once
+  //       on a given Curl handle and use openreader() and openwriter() in order to open up
+  //       channels for Curl.
   size_t      current_offset; // The current offset in the file
   int         seekable;       // Can we request byteranges from this URL?
 };
 
 // Since the callback is called many times from a call to curl_easy_perform, and
 // since we know the amount that we need to read into the iovec passed into
-// preadv/readv resp. we therefore put the entire iovec (that is passed into readv/preadv) into
-// the vec field of this struct since this way, we only call curl_easy_perform once
+// preadv/readv resp. we put the entire iovec (that is passed into readv/preadv) into
+// the vec field of this struct. This way, we only call curl_easy_perform once
 // (and thus, get rid of the overhead that multiple calls could cause).
 struct curl_iovec_t {
   struct  iovec* vec; // iovec to read into -- This is the iovec that is passed into curl_readv/curl_preadv
@@ -40,6 +44,8 @@ struct curl_iovec_t {
 
 // userdata, is a curl_iovec_t. This is set to be passed into this function, when we
 // call CURLOPT_WRITEDATA in curl_preadv and curl_readv.
+// FUTURE: If we have filled the iovec, but have not finished reading from the curl
+// handle, pause it (i.e., return CURL_WRITE_PAUSE).
 static
 size_t buf_writer(char* ptr_data, size_t size, size_t nmemb, void* userdata)
 {

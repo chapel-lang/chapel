@@ -18,7 +18,7 @@ proc file.setopt(opt:c_int, arg):bool {
 
   if (arg.type == slist) && (slist.home != this.home) {
     ioerror(EFAULT:syserr, "in file.setopt(): slist, and curl handle do not reside on the same locale");
-    }
+  }
 
   on this.home {
     err = chpl_curl_set_opt(this._file_internal, opt, arg);
