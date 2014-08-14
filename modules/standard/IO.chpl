@@ -880,10 +880,9 @@ proc =(ref ret:channel, x:channel) {
   ret._channel_internal = x._channel_internal;
 }
 
-proc channel.channel(param writing:bool, param kind:iokind, param locking:bool, f:file, out error:syserr, hints:c_int, start:int(64), end:int(64), style:iostyle) {
+proc channel.channel(param writing:bool, param kind:iokind, param locking:bool, f:file, out error:syserr, hints:c_int, start:int(64), end:int(64), in local_style:iostyle) {
   on f.home {
     this.home = f.home;
-    var local_style = style;
     if kind != iokind.dynamic {
       local_style.binary = true;
       local_style.byteorder = kind:uint(8);
@@ -1147,16 +1146,16 @@ proc file.reader(param kind=iokind.dynamic, param locking=true, start:int(64) = 
 }
 
 // for convenience..
-proc file.lines(out error:syserr, param locking:bool = true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE, style:iostyle = this._style) {
+proc file.lines(out error:syserr, param locking:bool = true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE, in local_style:iostyle = this._style) {
   check();
 
-  style.string_format = QIO_STRING_FORMAT_TOEND;
-  style.string_end = 0x0a; // '\n'
+  local_style.string_format = QIO_STRING_FORMAT_TOEND;
+  local_style.string_end = 0x0a; // '\n'
 
   param kind = iokind.dynamic;
   var ret:ItemReader(string, kind, locking);
   on this.home {
-    var ch = new channel(false, kind, locking, this, error, hints, start, end, style);
+    var ch = new channel(false, kind, locking, this, error, hints, start, end, local_style);
     ret = new ItemReader(string, kind, locking, ch);
   }
   return ret;
@@ -3505,7 +3504,7 @@ proc readf(fmt:string):bool {
 
 
 use Regexp;
-extern proc qio_regexp_channel_match(ref re:qio_regexp_t, threadsafe:c_int, ch:qio_channel_ptr_t, maxlen:int(64), anchor:c_int, can_discard:bool, keep_unmatched:bool, keep_whole_pattern:bool, submatch:_ddata(qio_regexp_string_piece_t), nsubmatch:int(64)):syserr;
+extern proc qio_regexp_channel_match(const ref re:qio_regexp_t, threadsafe:c_int, ch:qio_channel_ptr_t, maxlen:int(64), anchor:c_int, can_discard:bool, keep_unmatched:bool, keep_whole_pattern:bool, submatch:_ddata(qio_regexp_string_piece_t), nsubmatch:int(64)):syserr;
 
 proc channel._extractMatch(m:reMatch, ref arg:reMatch, ref error:syserr) {
   // If the argument is a match record, just return it.

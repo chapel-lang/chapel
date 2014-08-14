@@ -17,14 +17,14 @@ extern proc qio_regexp_init_default_options(ref options:qio_regexp_options_t);
 extern proc qio_regexp_create_compile(str:c_string, strlen:int(64), ref options:qio_regexp_options_t, ref compiled:qio_regexp_t);
 extern proc qio_regexp_create_compile_flags(str:c_string, strlen:int(64), flags:c_string, flagslen:int(64), isUtf8:bool, ref compiled:qio_regexp_t);
 extern proc qio_regexp_create_compile_flags_2(str:c_void_ptr, strlen:int(64), flags:c_void_ptr, flagslen:int(64), isUtf8:bool, ref compiled:qio_regexp_t);
-extern proc qio_regexp_retain(ref compiled:qio_regexp_t);
+extern proc qio_regexp_retain(const ref compiled:qio_regexp_t);
 extern proc qio_regexp_release(ref compiled:qio_regexp_t);
 
-extern proc qio_regexp_get_options(ref regexp:qio_regexp_t, ref options: qio_regexp_options_t);
-extern proc qio_regexp_get_pattern(ref regexp:qio_regexp_t, ref pattern: c_string);
-extern proc qio_regexp_get_ncaptures(ref regexp:qio_regexp_t):int(64);
-extern proc qio_regexp_ok(ref regexp:qio_regexp_t):bool;
-extern proc qio_regexp_error(ref regexp:qio_regexp_t):c_string;
+extern proc qio_regexp_get_options(const ref regexp:qio_regexp_t, ref options: qio_regexp_options_t);
+extern proc qio_regexp_get_pattern(const ref regexp:qio_regexp_t, ref pattern: c_string);
+extern proc qio_regexp_get_ncaptures(const ref regexp:qio_regexp_t):int(64);
+extern proc qio_regexp_ok(const ref regexp:qio_regexp_t):bool;
+extern proc qio_regexp_error(const ref regexp:qio_regexp_t):c_string;
 
 extern const QIO_REGEXP_ANCHOR_UNANCHORED:c_int;
 extern const QIO_REGEXP_ANCHOR_START:c_int;
