@@ -349,7 +349,7 @@ void chpl_task_init(void)
 
         hwpar = numThreadsPerLocale;
 
-        numPUsPerLocale = chpl_numCoresOnThisLocale();
+        numPUsPerLocale = chpl_getNumPUsOnThisNode();
         if (0 < numPUsPerLocale && numPUsPerLocale < hwpar) {
             if (2 == verbosity) {
                 printf("QTHREADS: Reduced numThreadsPerLocale=%d to %d "
