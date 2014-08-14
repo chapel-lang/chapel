@@ -115,9 +115,7 @@ class argument_map(object):
                 return cls.gcc47.get(arch, '')
             if version >= 4.3:
                 return cls.gcc43.get(arch, '')
-            else:
-                stderr.write('Warning: Argument map not found for GCC version: "{0}"\n'.format(version))
-                return ''
+            return 'none'
         elif compiler == 'intel':
             return cls.intel.get(arch, '')
         elif compiler == 'clang':

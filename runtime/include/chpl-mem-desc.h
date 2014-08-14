@@ -23,8 +23,6 @@
 #define CHPL_MD_ALL_MEMDESCS(m)                                         \
         m(UNKNOWN = 0,                                                  \
           "unknown"),                                                   \
-        m(CHAPEL_CODE,                                                  \
-          "chapel runtime code data"),                                  \
         m(EXECUTION_COMMAND,                                            \
           "chapel execution command buffer"),                           \
         m(ARRAY_ELEMENTS,                                               \
@@ -69,10 +67,6 @@
           "comm layer private objects array"),                          \
         m(COMM_PRIVATE_BROADCAST_DATA,                                  \
           "comm layer private broadcast data"),                         \
-        m(GC_HEAP,                                                      \
-          "garbage collection heap"),                                   \
-        m(GC_SPACE_POINTER,                                             \
-          "garbage collection space pointer"),                          \
         m(GLOM_STRINGS_DATA,                                            \
           "glom strings data"),                                         \
         m(STRING_COPY_DATA,                                             \
@@ -87,8 +81,6 @@
           "config table data"),                                         \
         m(LOCALE_NAME_BUFFER,                                           \
           "locale name buffer"),                                        \
-        m(SERIAL_FLAG,                                                  \
-          "serial flag"),                                               \
         m(TASK_DESCRIPTOR,                                              \
           "task descriptor"),                                           \
         m(TASK_DESCRIPTOR_LINK,                                         \

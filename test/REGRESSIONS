@@ -21,12 +21,6 @@ general regressions (seem to happen in most configurations)
 (Reviewed for accuracy 07/15/14)
 ===========================================================
 
-regexp_test.cc:9:21: fatal error: re2/re2.h: No such file or directory
-----------------------------------------------------------------------
-[Error compiling C Regexp tests]
-Started 7/26/14.
-Greg's https://github.com/chapel-lang/chapel/pull/74 should fix this.
-
 
 ==============================================
 linux64 regressions (in addition to the above)

@@ -313,7 +313,6 @@ static void *initializer(void *junk)
 
 void chpl_task_init(void)
 {
-    chpl_bool we_set_worker_unit = false;
     int32_t   numThreadsPerLocale;
     int32_t   commMaxThreads;
     int32_t   hwpar;
@@ -321,13 +320,13 @@ void chpl_task_init(void)
     pthread_t initer;
     char      newenv_stack[100] = { 0 };
 
+
     // Set up available hardware parallelism.
 
     // Experience has shown that we hardly ever win by using more than
     // one PU per core, so default to that.  If this was explicitly
     // set by the user we won't override it, however.
     if (getenv("QTHREAD_WORKER_UNIT") == NULL) {
-        we_set_worker_unit = (getenv("QT_WORKER_UNIT") == NULL);
         (void) setenv("QT_WORKER_UNIT", "core", 0);
     }
 
@@ -372,7 +371,6 @@ void chpl_task_init(void)
 
     if (hwpar > 0) {
         char newenv[100];
-        char *sched;
 
         // Unset relevant Qthreads environment variables.  Currently
         // QTHREAD_HWPAR has precedence over the QTHREAD_NUM_* ones,
@@ -381,25 +379,19 @@ void chpl_task_init(void)
         qt_internal_unset_envstr("HWPAR");
         qt_internal_unset_envstr("NUM_SHEPHERDS");
         qt_internal_unset_envstr("NUM_WORKERS_PER_SHEPHERD");
-        
-        // The current check for scheduler and setting HWPAR or
-        // NUM_SHEPHERDS/WORKERS_PER_SHEPHERD is just to experiment with
-        // the performance of different schedulers. This is not production code
-        // and if it's around after July 2014, yell at Elliot.  
-        sched = getenv("CHPL_QTHREAD_SCHEDULER");
-        if (sched != NULL && strncmp(sched, "nemesis", 7) == 0) {
-            // Set environment variable for Qthreads
-            snprintf(newenv, sizeof(newenv), "%i", (int)hwpar);
-            setenv("QT_NUM_SHEPHERDS", newenv, 1);
-            setenv("QT_NUM_WORKERS_PER_SHEPHERD", "1", 1);
-            // Unset QT_WORKER_UNIT iff we set it.
-            if (we_set_worker_unit) {
-              (void) unsetenv("QT_WORKER_UNIT");
-            }
-        } else {
-            // Set environment variable for Qthreads
-            snprintf(newenv, sizeof(newenv), "%i", (int)hwpar);
-            setenv("QT_HWPAR", newenv, 1);
+
+        // Set environment variable for Qthreads
+        snprintf(newenv, sizeof(newenv), "%i", (int)hwpar);
+        setenv("QT_HWPAR", newenv, 1);
+    }
+
+
+    // If the user compiled with no stack checks (either explicitly or
+    // implicitly) turn off qthread guard pages. If the qthread guard page env
+    // var was explicitly set by the user we don't override it.
+    if (CHPL_STACK_CHECKS == 0) {
+        if (getenv("QTHREAD_GUARD_PAGES") == NULL) {
+            (void) setenv("QT_GUARD_PAGES", "false", 0);
         }
     }
 

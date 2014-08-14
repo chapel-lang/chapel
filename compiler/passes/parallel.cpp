@@ -443,11 +443,11 @@ replicateGlobalRecordWrappedVars(DefExpr *def) {
   bool found = false;
   // Try to find the first definition of this variable in the
   //   module initialization function
-  while (stmt->next && !found) {
-    stmt = stmt->next;
-    Vec<SymExpr*> symExprs;
-    collectSymExprs(stmt, symExprs);
-    forv_Vec(SymExpr, se, symExprs) {
+  while (stmt && !found)
+  {
+    std::vector<SymExpr*> symExprs;
+    collectSymExprsSTL(stmt, symExprs);
+    for_vector(SymExpr, se, symExprs) {
       if (se->var == currDefSym) {
         INT_ASSERT(se->parentExpr);
         int result = isDefAndOrUse(se);
@@ -487,8 +487,16 @@ replicateGlobalRecordWrappedVars(DefExpr *def) {
         }
       }
     }
+    if (found)
+      break;
+
+    stmt = stmt->next;
   }
-  stmt->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST, def->sym));
+  if (found)
+    stmt->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST, def->sym));
+  else
+    mod->initFn->insertBeforeReturn(new CallExpr
+                                    (PRIM_PRIVATE_BROADCAST, def->sym));
 }
 
 

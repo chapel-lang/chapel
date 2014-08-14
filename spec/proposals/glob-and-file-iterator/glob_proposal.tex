@@ -1,0 +1,307 @@
+\documentclass{article}
+\usepackage{listing}
+\title{File and Glob iterator proposal}
+\author{Tim Zakian and Brad Chamberlain}
+\input{macro-defs}
+\begin{document}
+\maketitle
+\lstMakeShortInline[]|
+
+\noindent The goal of this proposal is to describe the interface of an
+iterator that we are planning to implement as part of Chapel's
+standard libraries, and to solicit comments on it.  The intention of
+the iterator is to yield the names of files and/or directories
+reachable from a given start directory (defaulting to the current
+working directory).  This iterator is meant to model (to an extent)
+the capabilities of things like |glob|, |wordexp|, |listdir|, |ls [-R]|, 
+|find|, and the like.  The main design questions tend to be a
+struggle between capability and simplicity.
+
+%args
+%----
+%startdir
+%pattern
+%? types (can we avoid?)
+%? skipdirs (intention: use to skip .svn directories, e.g. -- or could more
+             %specifically have a skipSCMDirs concept)
+
+%flags
+%-----
+%sorted=? (C glob defaults to true;
+           %cl glob defaults to false;
+                      %python: not sure)
+%recursive=false
+%expand=false
+%dirs=false
+%files=true
+%dotfiles=false
+%? symbolic links=false
+%? chunked=false (intention would be to return an assoc array mapping dir
+                  %names to file lists)
+%? warnings/verbose (intention would be to optionally print out problems)
+%??? append slash to dir names=true (would one ever want to do this?)
+\section{User-facing interface}
+The proposed user interface for this iterator is as follows:
+\begin{lstlisting}
+iter glob(pattern   : string = "*",
+          startdir  : string = "",
+          recursive : bool   = false,
+          files     : bool   = true,
+          dirs      : bool   = false,
+          dotfiles  : bool   = false,
+          sorted    : bool   = false,
+          expand    : bool   = false
+         ) : string
+\end{lstlisting}
+where
+\begin{itemize}
+\item |pattern| is a valid |glob| or |wordexp| glob pattern used to
+  filter the filenames and/or directory names yielded by the iterator.
+  Note that while the |pattern| affects what is yielded, we do not
+  expect it to filter which subdirectories are traversed in a
+  recursive crawl. More information on what exactly a valid pattern is
+  can be found on the |man(3)| page for |glob| and |wordexp|.
+
+\item |startdir| is the directory from which to start the search.
+  Filenames and directory names yielded by the iterator will be
+  relative to this string and include the string as a prefix.  The
+  empty string |""| starts from the current working directory just
+  like |"."| but has the effect of yielding names without |"./"|
+  prefixed to them.
+
+\item |recursive| indicates whether the iterator should recursively
+  consider subdirectories or not.  There is an open issue about
+  whether the iterator should take a |depth| argument in addition to
+  (or in place of) |recursive| to limit the recursion at a particular
+  subdirectory depth (see Section~\ref{s:open_issues}).
+
+\item |files| says whether the iterator should yield filenames or not.
+
+\item |dirs| says whether the iterator should yield directory names or not.
+
+\item |dotfiles| tells whether the iterator should yield dotfiles or
+  not.  It also indicates whether the iterator should recursively
+  descend into dot directories.
+
+\item |sorted| tells whether the iterator should yield its output in
+  lexicographically sorted order.
+
+\item |expand| says whether the iterator should expand environment
+  variables, or run shell commands in |pattern| and |startdir| (a la
+  |wordexp|). For more information on this capability, see the
+  |man(3)| page for |wordexp|.
+
+\end{itemize}
+
+Additional flags have been discussed as possibilities. For a discussion
+of these, see Section~\ref{s:open_issues}.
+
+Note that while this is an argument-rich iterator, we expect that
+typical uses will only need to supply a few arguments due to the heavy
+use of default argument values and Chapel's support for keyword-based
+argument passing.  For example, here are some sample use cases:
+
+\begin{itemize}
+%\item ``give me all files in \$PWD'' $\to$ |glob()|
+\item ``give me all files in \$PWD and its descendents'' $\to$ |glob(recursive=true)|
+\item ``give me all files and directories in \$PWD'' $\to$ |glob(dirs=true)|
+%\item ``give me all directories in \$PWD'' $\to$ |glob(dirs=true, files=false)|
+\item ``give me Python glob'' $\to$ |glob(pattern=...)|
+\item ``give me C glob'' $\to$ |glob(pattern=..., sorted=true)|
+\item ``give me C wordexp'' $\to$ |glob(pattern=..., expand=true)|
+\end{itemize}
+
+We anticipate having a parallel version of this iterator that supports
+invocation with |forall| loops.  It is currently expected that
+|sorted| will not be a valid option when using the parallel version.
+
+
+\section{Open Issues}\label{s:open_issues}
+The following are open issues that we are wrestling with, and for
+which we are seeking opinions (though opinions on anything in this
+proposal are fair game).
+
+\begin{itemize}
+\item Is there a better name for this iterator than |glob|?  On one
+  hand, |glob| is short, sweet, and unambiguous; on the other hand,
+  this iterator is also a lot like |ls [-R]|, and is not particularly
+  glob-like if no argument is provided.
+
+\item Should |sorted| be true by default?  This is arguably a
+  productivity vs. performance issue (the implementation would have to
+  sort a directory's local contents before yielding them or doing any
+  recursion; though these are arguably going to be small/quick sorts).
+  Ironically, it seems that C defaults to sorting while Python does
+  not.
+
+\item Should we add a |depth| argument to limit the depth of the
+  recursion?  Or alternatively, replace |recursive| with a |depth|
+  argument?  The main downside to the first proposal is that it uses
+  two flags to indicate one logical thing; the main downside to the
+  second proposal is that it makes the very common case of unbounded
+  recursion uglier (e.g., requiring |max(int)| or a sentinel value
+  like |-1| to be passed in rather than simply |recursive=true|).
+
+\item Should we support an argument to control dropping the final
+  slash when yielding directory names?  (i.e., we expect directory
+  names to be yielded in the form |"subdir/"| by default).
+
+\item Should we add a |symlinks| argument to say whether or not we
+  should follow symbolic links? The main problems that we anticipate
+  are (1) it adds another flag, and (2) without care, the iterator
+  could get into a possible infinite loop if a symlink points to a
+  directory that contains the directory we are currently in.
+
+\item For recursive mode, should we support an argument indicating a
+  subdirectory name to avoid recursively descending into?  The idea
+  behind this being that if we wanted to avoid certain directory names
+  (\eg |.svn| or |.git|), we could set this flag to the string (or
+  strings?) we wanted to skip.  Alternatively, we could have a boolean
+  indicating whether or not to skip over commmon SCM-based directory
+  names.  On one hand, this feels like a reasonably fiddly option to
+  support; on the other hand, Brad is always happy when tools bother
+  to support it rather than trying to build the equivalent himself
+  with more general features.
+
+\item Should we support an argument for enabling warnings or a verbose
+  mode?  The idea behind this flag would be to warn you about certain
+  underlying problems. For instance, if we were using |glob| with
+  |expand = true| and |pattern = "$CHPL_HOME/*"| and we had not set
+  |$CHPL_HOME|, we would generate a warning that we were using an
+  undefined environment variable in expansion rather than just
+  expanding it to the empty string.
+
+\item Is it reasonable for the parallel version of the iterator to not
+  support sorting?  Implementing it would either require tricky
+  synchronization within the iterator, or else gathering all the
+  results and then sorting them (which is expensive and can trivially
+  be expressed outside of the iterator).  Note that, in general,
+  Chapel iterators that generate sorted results in their serial form
+  (like |for i in 1..n|) are not necessarily sorted in their |forall|
+  forms.
+
+\item Should we support a multi-locale version of the parallel
+  version?  If so, what scheduling policy should be used?  Should one
+  be able to select between single- and multi-locale implementations
+  via an argument?  What should the default be?
+
+\item What should the iterator do by default in the event of special
+  files like block special files, character special files, named
+  pipes, or sockets?  Would we want to support additional arguments
+  (or a bit vector) to control this behavior?
+
+\end{itemize}
+
+%If |recursive| is
+%set to $0$ we do not recurse into subdirectories, if |recursive| is set to $-1$ we
+%recurse into all subdirectories. Otherwise, we recurse to a depth of |recursive| num.
+%Whether or not we should do this or use a |bool| instead is an open
+
+
+\section{Examples}\label{s:examples}
+\subsection{Example 1}
+\begin{lstlisting}
+// Print all files in the current directory
+// think: ls -F | grep -v /  (though potentially unsorted)
+for fl in glob() do
+  writeln(fl);
+\end{lstlisting}
+
+\subsection{Example 2}
+\begin{lstlisting}
+// Print all files in the current directory in sorted order.
+// think: ls -F | grep -v /
+for fl in glob(sorted=true) do
+  writeln(fl);
+\end{lstlisting}
+
+\subsection{Example 3}
+\begin{lstlisting}
+// Print all files and directories in the current directory
+// think: ls
+for fl in glob(dirs=true) do
+  writeln(fl);
+\end{lstlisting}
+
+\subsection{Example 4}
+\begin{lstlisting}
+// Print all subdirectories of the current directory.
+// Won't recurse (so we only get the children of of the current dir)
+// think: ls -F | grep /
+for dir in glob(dirs=true, files=false) do
+  writeln(dir);
+\end{lstlisting}
+
+\subsection{Example 5}
+\begin{lstlisting}
+// Print all subdirectories of the current directory, recursively.
+for dir in glob(dirs=true, files=false, recursive=true) do
+  writeln(dir);
+\end{lstlisting}
+
+\subsection{Example 6}
+\begin{lstlisting}
+// Print all .c files in the current directory
+// think: ls *.c
+for fl in glob(pattern="*.c") do
+  writeln(fl);
+\end{lstlisting}
+
+\subsection{Example 7}
+\begin{lstlisting}
+// Print all .c files in this directory or any of its subdirectories
+// think: ls -R *.c
+for fl in glob(pattern="*.c", recursive=true) do
+  writeln(fl);
+\end{lstlisting}
+
+\subsection{Example 8}
+\begin{lstlisting}
+// Print all [a-p] directories and files from this directory down
+for fl in glob(pattern="[a-p]", dirs=true, recursive=true) do
+  writeln(fl);
+\end{lstlisting}
+
+\subsection{Example 9}
+\begin{lstlisting}
+// Print all [a-p] directories and files from this directory down.
+// Print them in sorted order.
+for fl in glob(pattern="[a-p]", dirs=true, recursive=true, sorted=true) do
+  writeln(fl);
+\end{lstlisting}
+
+\subsection{Example 10}
+\begin{lstlisting}
+// Print all [a-p] directories and files from the $CHPL_HOME directory down.
+// Print them in sorted order.
+for fl in glob(pattern="[a-p]", startdir="$CHPL_HOME", dirs=true,
+               recursive=true, sorted=true, expand=true) do
+  writeln(fl);
+\end{lstlisting}
+
+\subsection{Example 11 (uses open issue)}
+\begin{lstlisting}
+// Print all [a-p] directories and files from $CHPL_HOME down.
+// Ignore all .git directories and files. Print them in sorted order.
+for fl in glob(pattern="[a-p]", dirs=true, startdir="$CHPL_HOME"
+               recursive=true, sorted=true, expand=true, skipdirs=".git") do
+  writeln(fl);
+\end{lstlisting}
+
+\subsection{Example 12 (uses open issue)}
+\begin{lstlisting}
+// Print all subdirectories of the current directory
+// In this case we'd get all subdirectories up to depth 10
+for dir in glob(dirs=true, files=false, depth=10) do
+  writeln(dir);
+\end{lstlisting}
+
+
+%\subsection{Example 13}
+%\begin{lstlisting}
+%// Yield all [a-p] directories from this directory down. For each directory we
+%// enter, return an array/domain of all files that were found in that directory
+%for fl in glob(pattern="[a-p]", recursive=true, chunked=true) do
+%// do something with the array of files handed back...
+%\end{lstlisting}
+\end{document}

@@ -3480,15 +3480,28 @@ proc channel.readf(fmt:c_string) {
 proc writef(fmt:c_string, args ...?k):bool {
   return stdout.writef(fmt, (...args));
 }
+proc writef(fmt:string, args ...?k):bool {
+  return stdout.writef(fmt, (...args));
+}
 proc writef(fmt:c_string):bool {
+  return stdout.writef(fmt);
+}
+proc writef(fmt:string):bool {
   return stdout.writef(fmt);
 }
 proc readf(fmt:c_string, ref args ...?k):bool {
   return stdin.readf(fmt, (...args));
 }
+proc readf(fmt:string, ref args ...?k):bool {
+  return stdin.readf(fmt, (...args));
+}
 proc readf(fmt:c_string):bool {
   return stdin.readf(fmt);
 }
+proc readf(fmt:string):bool {
+  return stdin.readf(fmt);
+}
+
 
 
 use Regexp;
