@@ -440,6 +440,8 @@ static void codegen_aggregate_def(AggregateType* ct) {
 // Only put C data objects into this file, not Chapel ones, as it may
 // also be #include'd into a launcher, and those are C/C++ code.
 //
+// New generated variables should be added to runtime/include/chplcgfns.h
+//
 static const char* sCfgFname = "chpl_compilation_config";
 
 static void codegen_header_compilation_config() {
