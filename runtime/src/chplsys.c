@@ -142,7 +142,6 @@ int chpl_getNumPUsOnThisNode(void) {
 #ifdef NO_CORES_PER_LOCALE
   return 1;
 #elif defined __APPLE__
-#warning "This has not yet been tested."
   //
   // Apple
   //
@@ -154,9 +153,10 @@ int chpl_getNumPUsOnThisNode(void) {
   }
   return numPUs;
 #elif defined __CYGWIN__
-#warning "This has not yet been tested."
   //
   // Cygwin
+  //
+  // WARNING: This has not yet been tested.
   //
   static int numPUs = 0;
   if (numPUs == 0)
@@ -186,7 +186,6 @@ int chpl_getNumCoresOnThisNode(void) {
 #ifdef NO_CORES_PER_LOCALE
   return 1;
 #elif defined __APPLE__
-#warning "This has not yet been tested."
   //
   // Apple
   //
@@ -198,7 +197,6 @@ int chpl_getNumCoresOnThisNode(void) {
   }
   return numCores;
 #elif defined __CYGWIN__
-#warning "This has not yet been tested."
   //
   // Cygwin
   //

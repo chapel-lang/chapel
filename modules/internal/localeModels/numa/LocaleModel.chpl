@@ -220,12 +220,13 @@ module LocaleModel {
       extern proc chpl_task_getNumSublocales(): int(32);
       numSublocales = chpl_task_getNumSublocales();
 
-      maxTaskPar = numSublocales;
+      extern proc chpl_task_getMaxPar(): uint(32);
+      maxTaskPar = if numSublocales==0 then chpl_task_getMaxPar()
+                                       else numSublocales;
 
       if numSublocales >= 1 {
         childSpace = {0..#numSublocales};
         const numCoresPerNumaDomain = numCores/numSublocales;
-        extern proc chpl_task_getMaxPar(): uint(32);
         const maxTaskParPerNumaDomain = chpl_task_getMaxPar()/numSublocales;
         const origSubloc = chpl_task_getRequestedSubloc(); // this should be any
         for i in childSpace {
