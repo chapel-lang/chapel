@@ -373,21 +373,21 @@ module ChapelLocale {
 
   proc locale.totalThreads() {
     var totalThreads: int;
-    extern proc chpl_task_getNumThreads() : int;
+    extern proc chpl_task_getNumThreads() : uint(32);
     on this do totalThreads = chpl_task_getNumThreads();
     return totalThreads;
   }
   
   proc locale.idleThreads() {
     var idleThreads: int;
-    extern proc chpl_task_getNumIdleThreads() : int;
+    extern proc chpl_task_getNumIdleThreads() : uint(32);
     on this do idleThreads = chpl_task_getNumIdleThreads();
     return idleThreads;
   }
   
   proc locale.queuedTasks() {
     var queuedTasks: int;
-    extern proc chpl_task_getNumQueuedTasks() : int;
+    extern proc chpl_task_getNumQueuedTasks() : uint(32);
     on this do queuedTasks = chpl_task_getNumQueuedTasks();
     return queuedTasks;
   }
@@ -398,7 +398,7 @@ module ChapelLocale {
   
   proc locale.blockedTasks() {
     var blockedTasks: int;
-    extern proc chpl_task_getNumBlockedTasks() : int;
+    extern proc chpl_task_getNumBlockedTasks() : int(32);
     on this do blockedTasks = chpl_task_getNumBlockedTasks();
     return blockedTasks;
   }

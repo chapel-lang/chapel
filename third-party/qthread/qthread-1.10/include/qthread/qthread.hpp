@@ -236,7 +236,7 @@ inline T qthread_incr(T       *operand,
             return qthread_incr64((uint64_t *)operand, incr);
 
         default:
-            *(int *)(0) = 0;
+            *(volatile int *)(0) = 0;
     }
     return T(0);                       // never hit - keep compiler happy
 }
