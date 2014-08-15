@@ -177,7 +177,7 @@ void chpl_sync_unlock(chpl_sync_aux_t *s)
     // shepherds we are either setting up or tearing down in which case the
     // pthread unlock will guarantee progress. When qthread_yield() is called
     // from a non-qthread it's just a no-op.
-    if ((qthread_incr(&s->lockers_out, 1) & 0xFFF) == 0) {
+    if ((qthread_incr(&s->lockers_out, 1) & 0xFFF) == 0xFFE) {
         qthread_yield();
     }
 }
