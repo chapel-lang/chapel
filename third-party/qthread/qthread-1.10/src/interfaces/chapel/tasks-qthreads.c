@@ -164,26 +164,22 @@ void chpl_sync_unlock(chpl_sync_aux_t *s)
 {
     PROFILE_INCR(profile_sync_unlock, 1);
 
-    qthread_incr(&s->lockers_out, 1);
-
+   
     // TODO I need to document the reason/rational better
-    // TODO see if 1024 is a good number after some performance results get in
+    // TODO see if this is a good number after some performance results get in
     //
     // Give other tasks that are waiting on a sync variable a chance to run.
-    // Currently this is every 1024 unlocks. [x % 2n == x & (2n - 1)] This
-    // number was chosen with a little trial and error. 32 led to too many
-    // yields, hurting performance, 256 still seemed like too much yielding and
-    // 1024 seemed to be a non-scientific sweet spot.
+    // Currently this is every 4096 unlocks. [x % 2n == x & (2n - 1)] This
+    // number was chosen with a little trial and error. 
     //
     // qthread_yield is used over chpl_task_yield. chpl_task_yield just adds
     // calling a sched yield if there are no shepherds. If we don't have any
     // shepherds we are either setting up or tearing down in which case the
     // pthread unlock will guarantee progress. When qthread_yield() is called
     // from a non-qthread it's just a no-op.
-    if (s->lockers_out & 0x3FF) {
+    if ((qthread_incr(&s->lockers_out, 1) & 0xFFF) == 0) {
         qthread_yield();
     }
-
 }
 
 static inline void about_to_block(int32_t  lineno,
