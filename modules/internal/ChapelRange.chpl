@@ -310,21 +310,20 @@ module ChapelRange {
     // to negate one of the strides (shouldn't matter which).
     if stridable {
       if (stride > 0 && other.stride < 0) || (stride < 0 && other.stride > 0)
-        then return _memberHelp(this, other, thisFirst = true);
+        then return _memberHelp(this, other);
     } else {
       if other.stride < 0
-        then return _memberHelp(other, this, thisFirst = false);
+        then return _memberHelp(this, other);
     }
     return other == this(other);
   }
 
   // This helper takes one arg by 'in', i.e. explicitly creating a copy,
   // so it can be modified.
-  inline proc _memberHelp(in arg1: range(?), arg2: range(?), param thisFirst) {
-    compilerAssert(arg1.stridable);
-    arg1._stride = -arg1._stride;
-    if thisFirst then return arg2 == arg1(arg2);
-    else              return arg1 == arg2(arg1);
+  inline proc _memberHelp(arg1: range(?), in arg2: range(?)) {
+    compilerAssert(arg2.stridable);
+    arg2._stride = -arg2._stride;
+    return arg2 == arg1(arg2);
   }
   
   // Returns true if the two ranges have the same represented sequence, or if

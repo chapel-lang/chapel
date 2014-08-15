@@ -2809,9 +2809,9 @@ static bool checkAndUpdateIfLegalFieldOfThis(CallExpr* call, Expr* actual) {
   return false;
 }
 
-// If 'call' is an access to a const thing, for example
-// const fields or fields of const records, set flag(s)
-// on the symbol that's the result of the access involved.
+// If 'call' is an access to a const thing, for example a const field
+// or a field of a const record, set const flag(s) on the symbol
+// that stores the result of 'call'.
 static void setFlagsForConstAccess(CallExpr* call, FnSymbol* resolvedFn)
 {
   // Is the outcome of 'call' a reference to a const?
