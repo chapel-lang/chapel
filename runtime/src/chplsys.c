@@ -90,7 +90,7 @@ size_t chpl_bytesAvailOnThisLocale(void) {
 }
 
 
-#ifndef __APPLE__
+#ifdef __linux__
 static int getPUsPerCore(void) {
   FILE* f;
   char buf[100];
@@ -110,13 +110,13 @@ static int getPUsPerCore(void) {
     // the same number of cores and siblings on every physical CPU.
     // It will probably need to become more complicated in the future.
     //
-    if (sscanf(buf, "cpu cores       : %i", &cpuCoresTmp) == 1) {
+    if (sscanf(buf, "cpu cores : %i", &cpuCoresTmp) == 1) {
       if (cpuCores == 0)
 	cpuCores = cpuCoresTmp;
       else if (cpuCoresTmp != cpuCores)
 	chpl_internal_error("varying number of cpu cores");
     }
-    else if (sscanf(buf, "siblings        : %i", &siblingsTmp) == 1) {
+    else if (sscanf(buf, "siblings : %i", &siblingsTmp) == 1) {
       if (siblings == 0)
 	siblings = siblingsTmp;
       else if (siblingsTmp != siblings)
@@ -151,7 +151,7 @@ int chpl_getNumPUsOnThisNode(void) {
     if (sysctlbyname("hw.logicalcpu", &numPUs, &len, NULL, 0))
       chpl_internal_error("query of number of PUs failed");
   }
-  return numPUs;
+  return (int) numPUs;
 #elif defined __CYGWIN__
   //
   // Cygwin
@@ -195,7 +195,7 @@ int chpl_getNumCoresOnThisNode(void) {
     if (sysctlbyname("hw.physicalcpu", &numCores, &len, NULL, 0))
       chpl_internal_error("query of number of cores failed");
   }
-  return numCores;
+  return (int) numCores;
 #elif defined __CYGWIN__
   //
   // Cygwin

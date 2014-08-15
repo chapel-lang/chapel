@@ -483,7 +483,7 @@ uint32_t chpl_task_getMaxPar(void) {
   // from gaining by using them.  So, we just return the number of
   // cores.
   //
-  return chpl_getNumCoresOnThisNode();
+  return (uint32_t) chpl_getNumCoresOnThisNode();
 }
 
 c_sublocid_t chpl_task_getNumSublocales(void)

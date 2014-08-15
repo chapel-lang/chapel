@@ -654,7 +654,7 @@ uint32_t chpl_task_getMaxPar(void) {
     // will decide itself how much parallelism to create across and
     // within sublocales, if there are any.
     //
-    return qthread_num_workers();
+    return (uint32_t) qthread_num_workers();
 }
 
 c_sublocid_t chpl_task_getNumSublocales(void)
