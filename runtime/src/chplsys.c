@@ -112,15 +112,15 @@ static int getPUsPerCore(void) {
     //
     if (sscanf(buf, "cpu cores : %i", &cpuCoresTmp) == 1) {
       if (cpuCores == 0)
-	cpuCores = cpuCoresTmp;
+        cpuCores = cpuCoresTmp;
       else if (cpuCoresTmp != cpuCores)
-	chpl_internal_error("varying number of cpu cores");
+        chpl_internal_error("varying number of cpu cores");
     }
     else if (sscanf(buf, "siblings : %i", &siblingsTmp) == 1) {
       if (siblings == 0)
-	siblings = siblingsTmp;
+        siblings = siblingsTmp;
       else if (siblingsTmp != siblings)
-	chpl_internal_error("varying number of siblings");
+        chpl_internal_error("varying number of siblings");
     }
 
     while (buf[buf_len - 1] != '\n' && fgets(buf, sizeof(buf), f) != NULL)
