@@ -364,7 +364,7 @@ void chpl_task_init(void)
 
         hwpar = numThreadsPerLocale;
 
-        numPUsPerLocale = chpl_numCoresOnThisLocale();
+        numPUsPerLocale = chpl_getNumPUsOnThisNode();
         if (0 < numPUsPerLocale && numPUsPerLocale < hwpar) {
             if (2 == verbosity) {
                 printf("QTHREADS: Reduced numThreadsPerLocale=%d to %d "
@@ -660,6 +660,16 @@ void chpl_task_setSerial(chpl_bool state)
     data->chpl_data.prvdata.serial_state = state;
 
     PROFILE_INCR(profile_task_setSerial,1);
+}
+
+uint32_t chpl_task_getMaxPar(void) {
+    //
+    // We assume here that the caller (in the LocaleModel module code)
+    // is interested in the number of workers on the whole node, and
+    // will decide itself how much parallelism to create across and
+    // within sublocales, if there are any.
+    //
+    return (uint32_t) qthread_num_workers();
 }
 
 c_sublocid_t chpl_task_getNumSublocales(void)

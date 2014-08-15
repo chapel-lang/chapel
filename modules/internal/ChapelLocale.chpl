@@ -23,6 +23,8 @@ module ChapelLocale {
     // Modified in RootLocale.init().
     var numCores: int;
 
+    var maxTaskPar: int; // max parallelism tasking layer expects to deliver
+
     proc id : int return chpl_id();  // just the node part
     proc localeid : chpl_localeID_t return chpl_localeid(); // full locale id
     proc name return chpl_name();
