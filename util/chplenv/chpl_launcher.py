@@ -30,7 +30,9 @@ def get():
                 #        has_aprun and has_slurm should look other places
                 #        (maybe the modules?) to decide.
                 #        (thomasvandoren, 2014-08-12)
-                launcher_val = 'none'
+                sys.stderr.write(
+                    'Warning: Cannot detect launcher on this system. Please '
+                    'set CHPL_LAUNCHER in the environment.\n')
         elif platform_val == 'marenostrum':
             launcher_val = 'marenostrum'
         elif compiler_val == 'tile-cc':
@@ -60,6 +62,10 @@ def get():
             launcher_val = 'mpirun'
         else:
             launcher_val = 'none'
+
+    if launcher_val is None:
+        launcher_val = 'none'
+
     return launcher_val
 
 
