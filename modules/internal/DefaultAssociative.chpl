@@ -228,8 +228,6 @@ module DefaultAssociative {
         }
         if findAgain then slotNum = -1;
         slotNum = _add(idx, slotNum);
-        for a in _arrs do
-          a.clearEntry(idx, true);
         if shouldLock then unlockTable();
       }
       return slotNum;
@@ -263,6 +261,8 @@ module DefaultAssociative {
         if parSafe then lockTable();
         const (foundSlot, slotNum) = _findFilledSlot(idx, haveLock=parSafe);
         if (foundSlot) {
+          for a in _arrs do
+            a.clearEntry(idx, true);
           table[slotNum].status = chpl__hash_status.deleted;
           numEntries.sub(1);
         } else {
@@ -473,7 +473,7 @@ module DefaultAssociative {
       }
       else if setter && slotNum != -1 { // do an insert using the slot we found
         if dom._arrs.length != 1 {
-          halt("cannot implicitly add to an array's domain when the domain is used by more than one array: ", idx);
+          halt("cannot implicitly add to an array's domain when the domain is used by more than one array: ", dom._arrs.length);
           return data(0);
         } else {
           const newSlot = dom.dsiAdd(idx, slotNum, haveLock=true);
