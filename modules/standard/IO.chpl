@@ -1597,7 +1597,7 @@ proc channel.read(ref args ...?k,
 }
 
 proc channel.readline(arg: [] uint(8), ref numRead : int, start = arg.domain.low, inclusive = true) : bool
-where arg.rank == 1
+where arg.rank == 1 && isRectangularArr(arg)
 {
   var e:syserr = ENOERR;
   var got = this.readline(arg, numRead, start, error=e, inclusive);
@@ -1609,17 +1609,18 @@ where arg.rank == 1
   }
 }
 
-// Read a line of bytes into a chapel array.
+// Read a line of bytes into a Chapel array.
 //
-// numRead: The number of 'elType's read
-// inclusive: if true, will include the newline
+// arg:       A 1D DefaultRectangular array which must have at least 1 element.
+// numRead:   The number of bytes read
+// start:     Index to begin reading into
+// inclusive: If true, will include the newline
 //
-// start: The index to begin reading into
-//
-// The 'kind' of the channel must be ionative, as we only read bytes. 
-// This limitation exists so that we can check for a newline.
-proc channel.readline(arg: [] uint(8), ref numRead : int, start = arg.domain.low, out error:syserr, inclusive = true) : bool
-where arg.rank == 1
+// Returns true if bytes were read without error. Returns false if an error
+// occurred, the array is of zero size, or the start index is beyond the 
+// array's domain.
+proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low, out error:syserr, inclusive = true) : bool
+where arg.rank == 1 && isRectangularArr(arg)
 {
   error = ENOERR;
   if arg.size == 0 || start > arg.domain.high then return false;
@@ -1643,7 +1644,7 @@ where arg.rank == 1
     numRead = idx - start;
     this.unlock();
   }
-  return true;
+  return !error;
 }
 
 proc channel.readline(ref arg:string, out error:syserr):bool {
