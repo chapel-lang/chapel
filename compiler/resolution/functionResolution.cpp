@@ -4431,7 +4431,6 @@ static Expr* resolvePrimInit(CallExpr* call)
 
     SET_LINENO(call);
 
-#define UserCtorsAndDefaultOfHack 1
     if (type->defaultValue) {
       // In this case, the design choice I made was to use the default value if
       // it was available, while the defaultOf implementation chooses to pipe
@@ -4439,21 +4438,11 @@ static Expr* resolvePrimInit(CallExpr* call)
       // If we settle on the latter choice, it should be possible to eliminate
       // the defaultValue field from the type respresentation, and just use
       // _defaultOf to supply this in module code.
-#if UserCtorsAndDefaultOfHack
       CallExpr* defOfCall = new CallExpr("_defaultOf", type->symbol);
       call->replace(defOfCall);
       resolveCall(defOfCall);
       resolveFns(defOfCall->isResolved());
       result = postFold(defOfCall);
-#else
-      // Has a default value, so use it.
-      result = new SymExpr(type->defaultValue);
-      if (type->defaultValue == gNil) {
-        // If the default value is "nil", we have to cast it to the right type.
-        result = new CallExpr("_cast", type->symbol, result);
-      }
-      call->replace(result);
-#endif
       return result;
     } 
     
@@ -4470,6 +4459,7 @@ static Expr* resolvePrimInit(CallExpr* call)
       fixupRuntimeTypeArguments(initCall);
       resolveCall(initCall);
 
+#define UserCtorsAndDefaultOfHack 1
 #if UserCtorsAndDefaultOfHack
       // Hack alert! This is a really lame way to get user default
       // constructor calls  and _defaultOf to work together.  The basic idea is
