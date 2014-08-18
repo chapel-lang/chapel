@@ -45,6 +45,8 @@ qioerr hdfs_disconnect(void* fs) HDFS_ERROR(return 0)
 
 qioerr hdfs_open(void** file, const char* path, int* flags, mode_t mode, qio_hint_t iohints, void* fs) HDFS_ERROR(return 0)
 
+void hdfs_do_release(void* fs) HDFS_ERROR(return)
+
 qioerr hdfs_close(void* fl, void* fs) HDFS_ERROR(return 0)
 
 qioerr hdfs_seek(void* fl, off_t offset, int whence, off_t* offset_out, void* fs) HDFS_ERROR(return 0)

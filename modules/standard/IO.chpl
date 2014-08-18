@@ -157,6 +157,9 @@ const IOHINT_PARALLEL = QIO_HINT_PARALLEL;
 extern type qio_file_ptr_t;
 extern const QIO_FILE_PTR_NULL:qio_file_ptr_t;
 
+extern type qio_file_functions_ptr_t; // pointer to function ptr struct
+extern type qio_file_functions_t;     // function ptr struct
+
 extern type qio_channel_ptr_t;
 extern const QIO_CHANNEL_PTR_NULL:qio_channel_ptr_t;
 
@@ -239,6 +242,12 @@ extern proc qio_file_init(ref file_out:qio_file_ptr_t, fp:_file, fd:fd_t, iohint
 extern proc qio_file_open_access(ref file_out:qio_file_ptr_t, path:c_string, access:c_string, iohints:c_int, const ref style:iostyle):syserr;
 extern proc qio_file_open_tmp(ref file_out:qio_file_ptr_t, iohints:c_int, const ref style:iostyle):syserr;
 extern proc qio_file_open_mem(ref file_out:qio_file_ptr_t, buf:qbuffer_ptr_t, const ref style:iostyle):syserr;
+
+// Same as qio_file_open_access in, except this time we pass though our
+// struct that will initilize the file with the appropriate functions for that FS
+extern proc qio_file_open_access_usr(out file_out:qio_file_ptr_t, path:string,
+                                     access:string, iohints:c_int, /*const*/ ref style:iostyle,
+                                     fs:c_void_ptr, s: qio_file_functions_ptr_t):syserr;
 
 extern proc qio_file_close(f:qio_file_ptr_t):syserr;
 
@@ -363,6 +372,20 @@ extern proc qio_channel_scan_literal(threadsafe:c_int, ch:qio_channel_ptr_t, con
 extern proc qio_channel_scan_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_void_ptr, len:ssize_t, skipws:c_int):syserr;
 extern proc qio_channel_print_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:c_string, len:ssize_t):syserr;
 extern proc qio_channel_print_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_void_ptr, len:ssize_t):syserr;
+
+
+/*********************** Curl/HDFS support ******************/
+
+/***************** C U R L *******************/
+extern type curl_handle;
+extern const curl_function_struct:qio_file_functions_t;
+extern const curl_function_struct_ptr:qio_file_functions_ptr_t;
+
+/****************** H D F S ******************/
+extern const hdfs_function_struct_ptr:qio_file_functions_ptr_t;
+extern proc hdfs_connect(out fs: c_void_ptr, path: c_string, port: int): syserr; 
+extern proc hdfs_do_release(fs:c_void_ptr);
+// End
 
 extern record qio_conv_t {
   var preArg1:uint(8);
@@ -685,20 +708,67 @@ proc _modestring(mode:iomode) {
   }
 }
 
-proc open(out error:syserr, path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
+proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
+    style:iostyle = defaultIOStyle(), url:string=""):file {
+  // hdfs paths are expected to be of the form:
+  // hdfs://<host>:<port>/<path>
+  proc parse_hdfs_path(path:string): (string, int, string) {
+
+    var hostidx_start = path.indexOf("//");
+    var new_str = path.substring(hostidx_start+2..path.length);
+    var hostidx_end = new_str.indexOf(":");
+    var host = new_str.substring(0..hostidx_end-1);
+
+    new_str = new_str.substring(hostidx_end+1..new_str.length);
+
+    var portidx_end = new_str.indexOf("/");
+    var port = new_str.substring(0..portidx_end-1);
+
+    //the file path is whatever we have left
+    var file_path = new_str.substring(portidx_end+1..new_str.length);
+
+    return (host, port:int, file_path);
+  }
+
   var local_style = style;
   var ret:file;
   ret.home = here;
-  error = qio_file_open_access(ret._file_internal, path.c_str(), _modestring(mode).c_str(), hints, local_style);
-  // On return ret._file_internal.ref_cnt == 1.
+  if (url != "") {
+    if (url.startsWith("hdfs://")) { // HDFS
+      var (host, port, file_path) = parse_hdfs_path(url);
+      var fs:c_void_ptr;
+      error = hdfs_connect(fs, host.c_str(), port);
+      if error then ioerror(error, "Unable to connect to HDFS", host);
+      error = qio_file_open_access_usr(ret._file_internal, file_path.c_str(), _modestring(mode).c_str(), hints, local_style, fs, hdfs_function_struct_ptr);
+      // Since we don't have an auto-destructor for this, we actually need to make
+      // the reference count 1 on this FS after we open this file so that we will
+      // disconnect once we close this file.
+      hdfs_do_release(fs);
+      if error then ioerror(error, "Unable to open file in HDFS", url);
+    } else if (url.startsWith("http://", "https://", "ftp://", "ftps://", "smtp://", "smtps://", "imap://", "imaps://"))  { // Curl
+      error = qio_file_open_access_usr(ret._file_internal, url.c_str(), _modestring(mode).c_str(), hints, local_style, c_nil, curl_function_struct_ptr);
+      if error then ioerror(error, "Unable to open URL", url);
+    } else {
+      ioerror(ENOENT:syserr, "Invalid URL passed to open");
+    }
+  } else {
+    if (path == "") then
+      ioerror(ENOENT:syserr, "in open: Both path and url were path");
+
+    error = qio_file_open_access(ret._file_internal, path.c_str(), _modestring(mode).c_str(), hints, local_style);
+  }
+
   return ret;
 }
-proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
+
+proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle =
+    defaultIOStyle(), url:string=""):file {
   var err:syserr = ENOERR;
-  var ret = open(err, path, mode, hints, style);
+  var ret = open(err, path, mode, hints, style, url);
   if err then ioerror(err, "in open", path);
   return ret;
 }
+
 proc openfd(fd: fd_t, out error:syserr, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
   var local_style = style;
   var ret:file;
@@ -810,10 +880,9 @@ proc =(ref ret:channel, x:channel) {
   ret._channel_internal = x._channel_internal;
 }
 
-proc channel.channel(param writing:bool, param kind:iokind, param locking:bool, f:file, out error:syserr, hints:c_int, start:int(64), end:int(64), style:iostyle) {
+proc channel.channel(param writing:bool, param kind:iokind, param locking:bool, f:file, out error:syserr, hints:c_int, start:int(64), end:int(64), in local_style:iostyle) {
   on f.home {
     this.home = f.home;
-    var local_style = style;
     if kind != iokind.dynamic {
       local_style.binary = true;
       local_style.byteorder = kind:uint(8);
@@ -1009,6 +1078,53 @@ proc channel._set_style(style:iostyle) {
   }
 }
 
+// We can simply call channel.close() on these, since the underlying file will be
+// closed once we no longer have any references to it (which in this case, since we
+// only will have one reference, will be right after we close this channel
+// presumably).
+proc openreader(out err: syserr, path:string="", param kind=iokind.dynamic, param locking=true,
+    start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
+    url:string=""): channel(false, kind, locking) {
+  var fl:file = open(err, path, iomode.r, url=url);
+  var reader = fl.reader(kind, locking, start, end, hints, fl._style);
+  // If we decrement the ref count after we open this channel, ref_cnt fl == 1.
+  // Then, when we leave this function, Chapel will view this file as leaving scope,
+  // and not having any handles attached to it, it will close the underlying file for the channel.
+  /*qio_file_release(fl._file_internal);*/
+  return reader;
+}
+
+proc openreader(path:string="", param kind=iokind.dynamic, param locking=true,
+    start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
+    url:string=""):channel(false, kind, locking) {
+  var err:syserr = ENOERR;
+  var reader = openreader(err=err, path=path, kind=kind, locking=locking, start=start, end=end, hints=hints, url=url);
+  if err then ioerror(err, "in openreader()");
+  return reader;
+}
+
+proc openwriter(out err: syserr, path:string="", param kind=iokind.dynamic, param locking=true,
+    start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
+    url:string=""): channel(true, kind, locking) {
+  var fl:file = open(err, path, iomode.cw, url=url);
+  var writer = fl.writer(kind, locking, start, end, hints, fl._style);
+  // Need to look at this some more and verify it:
+  // If we decrement the ref count after we open this channel, ref_cnt fl == 1.
+  // Then, when we leave this function, Chapel will view this file as leaving scope,
+  // and not having any handles attached to it, it will close the underlying file for the channel.
+  /*qio_file_release(fl._file_internal);*/
+  return writer;
+}
+
+proc openwriter(path:string="", param kind=iokind.dynamic, param locking=true,
+    start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
+    url:string=""): channel(true, kind, locking) {
+  var err: syserr = ENOERR;
+  var writer = openwriter(err=err, path=path, kind=kind, locking=locking, start=start, end=end, hints=hints, url=url);
+  if err then ioerror(err, "in openwriter()");
+  return writer;
+}
+
 // It is the responsibility of the caller to release the returned channel
 // if the error code is nonzero.
 // The return error code should be checked to avoid double-deletion errors.
@@ -1030,16 +1146,16 @@ proc file.reader(param kind=iokind.dynamic, param locking=true, start:int(64) = 
 }
 
 // for convenience..
-proc file.lines(out error:syserr, param locking:bool = true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE, style:iostyle = this._style) {
+proc file.lines(out error:syserr, param locking:bool = true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE, in local_style:iostyle = this._style) {
   check();
 
-  style.string_format = QIO_STRING_FORMAT_TOEND;
-  style.string_end = 0x0a; // '\n'
+  local_style.string_format = QIO_STRING_FORMAT_TOEND;
+  local_style.string_end = 0x0a; // '\n'
 
   param kind = iokind.dynamic;
   var ret:ItemReader(string, kind, locking);
   on this.home {
-    var ch = new channel(false, kind, locking, this, error, hints, start, end, style);
+    var ch = new channel(false, kind, locking, this, error, hints, start, end, local_style);
     ret = new ItemReader(string, kind, locking, ch);
   }
   return ret;
@@ -1529,7 +1645,7 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1):bool {
     this.unlock();
 
     // read the entire file
-    if (len == -1) then 
+    if (len == -1) then
       lentmp = actlen;
     else // else, make a smart choice about how much we have to read
       lentmp = min(actlen, len);
@@ -3363,19 +3479,32 @@ proc channel.readf(fmt:c_string) {
 proc writef(fmt:c_string, args ...?k):bool {
   return stdout.writef(fmt, (...args));
 }
+proc writef(fmt:string, args ...?k):bool {
+  return stdout.writef(fmt, (...args));
+}
 proc writef(fmt:c_string):bool {
+  return stdout.writef(fmt);
+}
+proc writef(fmt:string):bool {
   return stdout.writef(fmt);
 }
 proc readf(fmt:c_string, ref args ...?k):bool {
   return stdin.readf(fmt, (...args));
 }
+proc readf(fmt:string, ref args ...?k):bool {
+  return stdin.readf(fmt, (...args));
+}
 proc readf(fmt:c_string):bool {
+  return stdin.readf(fmt);
+}
+proc readf(fmt:string):bool {
   return stdin.readf(fmt);
 }
 
 
+
 use Regexp;
-extern proc qio_regexp_channel_match(ref re:qio_regexp_t, threadsafe:c_int, ch:qio_channel_ptr_t, maxlen:int(64), anchor:c_int, can_discard:bool, keep_unmatched:bool, keep_whole_pattern:bool, submatch:_ddata(qio_regexp_string_piece_t), nsubmatch:int(64)):syserr;
+extern proc qio_regexp_channel_match(const ref re:qio_regexp_t, threadsafe:c_int, ch:qio_channel_ptr_t, maxlen:int(64), anchor:c_int, can_discard:bool, keep_unmatched:bool, keep_whole_pattern:bool, submatch:_ddata(qio_regexp_string_piece_t), nsubmatch:int(64)):syserr;
 
 proc channel._extractMatch(m:reMatch, ref arg:reMatch, ref error:syserr) {
   // If the argument is a match record, just return it.
@@ -3861,4 +3990,3 @@ proc file.localesForRegion(start:int(64), end:int(64)) {
   }
   return ret;
 }
-
