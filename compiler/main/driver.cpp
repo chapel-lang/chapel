@@ -97,7 +97,7 @@ bool fNoLiveAnalysis = false;
 bool fNoBoundsChecks = false;
 bool fNoLocalChecks = false;
 bool fNoNilChecks = false;
-bool fNoStackChecks = true;
+bool fNoStackChecks = false;
 
 bool  printPasses     = false;
 FILE* printPassesFile = NULL;

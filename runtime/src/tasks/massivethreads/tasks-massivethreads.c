@@ -476,6 +476,16 @@ void chpl_task_setSerial(chpl_bool new_state) {
   getTaskPrivateData()->prvdata.serial_state = new_state;
 }
 
+uint32_t chpl_task_getMaxPar(void) {
+  //
+  // We expect that even if the cores have multiple hardware threads,
+  // cache and pipeline conflicts will typically prevent applications
+  // from gaining by using them.  So, we just return the number of
+  // cores.
+  //
+  return (uint32_t) chpl_getNumCoresOnThisNode();
+}
+
 c_sublocid_t chpl_task_getNumSublocales(void)
 {
 #ifdef CHPL_LOCALE_MODEL_NUM_SUBLOCALES
