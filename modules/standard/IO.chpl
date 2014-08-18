@@ -508,35 +508,6 @@ record file {
   var _file_internal:qio_file_ptr_t = QIO_FILE_PTR_NULL;
 }
 
-// used for giving old warnings anyways...
-enum FileAccessMode { read, write };
-
-param _oldioerr="This program is using old-style I/O which is no longer supported.\n" +
-                "See doc/README.io.\n" +
-                "You'll probably want something like:\n" +
-                "var f = open(filename, iomode.w).writer()\n" + 
-                "or\n" + 
-                "var f = open(filename, iomode.r).reader()\n";
-
-// This file constructor exists to throw an error for old I/O code.
-proc file.file(filename:string="",
-               mode:FileAccessMode=FileAccessMode.read,
-               path:string=".") {
-  compilerError(_oldioerr);
-}
-proc file.open() {
-  compilerError(_oldioerr);
-}
-proc file.filename : string {
-  compilerError(_oldioerr + "file.filename is no longer supported");
-}
-proc file.mode {
-  compilerError(_oldioerr + "file.mode is no longer supported");
-}
-proc file.isOpen: bool {
-  compilerError(_oldioerr + "file.isOpen is no longer supported");
-}
-
 // TODO -- shouldn't have to write this this way!
 pragma "init copy fn"
 proc chpl__initCopy(x: file) {
