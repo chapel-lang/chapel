@@ -538,13 +538,6 @@ proc file.check() {
   }
 }
 
-/*
-proc file.file() {
-  this.home = here;
-  this._file_internal = QIO_FILE_PTR_NULL;
-}
-*/
-
 proc file.~file() {
   on this.home {
     qio_file_release(_file_internal);
