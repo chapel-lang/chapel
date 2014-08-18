@@ -4457,20 +4457,6 @@ static Expr* resolvePrimInit(CallExpr* call)
       return result;
     } 
     
-    // No default value.
-#if 0
-    // I think we don't need this, as extern type blocks get removed later.
-    if (se->var->hasFlag(FLAG_EXTERN))
-    {
-      INT_ASSERT(false); // Do we get here?
-      makeNoop(call);
-      // This seems to work.  May have to replace with
-      // call->getStmtExpr()->remove();
-      result = call;
-      return result;
-    }
-#endif
-
     if (type->defaultInitializer)
     {
       if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD))
@@ -4750,22 +4736,6 @@ preFold(Expr* expr) {
         inits.add(call);
       }
 
-    } else if (call->isPrimitive(PRIM_INIT)) {
-      INT_ASSERT(false); // This is now dead code.
-      SymExpr* se = toSymExpr(call->get(1));
-      INT_ASSERT(se);
-      if (!se->var->hasFlag(FLAG_TYPE_VARIABLE))
-        USR_FATAL(call, "invalid type specification");
-      Type* type = call->get(1)->getValType();
-      
-      if (type->defaultValue || type->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
-        // In these cases, the _defaultOf method for that type can be resolved
-        // now.  Otherwise, it needs to wait until resolveRecordInitializers
-        result = new CallExpr("_defaultOf", type->symbol);
-        call->replace(result);
-      } else {
-        inits.add(call);
-      }
     } else if (call->isPrimitive(PRIM_TYPEOF)) {
       Type* type = call->get(1)->getValType();
       if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
@@ -7869,28 +7839,7 @@ static void replaceInitPrims(Vec<BaseAST*>& asts)
         else
         {
           Expr* expr = resolvePrimInit(call);
-#if 0
-// Types which are not runtime types should be resolved earlier.
-          if (!expr && rt->defaultInitializer)
-          {
-            if (!rt->defaultInitializer->defPoint->parentSymbol)
-            {
-              // The initializer function is not in the tree, so we have to
-              // insert it.
-              SET_LINENO(rt->defaultInitializer);
-              DefExpr* def = new DefExpr(rt->defaultInitializer);
-              rt->symbol->defPoint->insertBefore(def);
-            }
 
-            SET_LINENO(call);
-            CallExpr* init = new CallExpr(rt->defaultInitializer);
-            call->replace(init);
-            expr = init;
-            resolveCall(init);
-            if (init->isResolved())
-              resolveFns(init->isResolved());
-          }
-#endif
           if (! expr)
           {
             // This PRIM_INIT could not be resolved.

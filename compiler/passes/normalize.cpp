@@ -614,19 +614,6 @@ static void normalize_returns(FnSymbol* fn) {
         fn->insertAtHead(new CallExpr(PRIM_MOVE, retval, initExpr));
       }
     }
-#if 0
-    // This clause is missing in master.  Do I still need it?
-    else // fn->retTag == RET_VAR || !fn->retExprType
-    {
-      if (fn->retTag != RET_TYPE &&
-          fn->retType != dtVoid && fn->retType != dtUnknown)
-      {
-      CallExpr* initExpr =
-        new CallExpr(PRIM_INIT, new SymExpr(fn->retType->symbol));
-      fn->insertAtHead(new CallExpr(PRIM_MOVE, retval, initExpr));
-      }
-    }
-#endif
     fn->insertAtHead(new DefExpr(retval));
     fn->insertAtTail(new CallExpr(PRIM_RETURN, retval));
   }
