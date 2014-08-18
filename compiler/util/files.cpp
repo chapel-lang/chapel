@@ -82,7 +82,7 @@ static void removeSpacesFromString(char* str)
 }
 
 
-static void ensureTmpDirExists(void) {
+static void ensureTmpDirExists() {
   if (saveCDir[0] == '\0') {
     if (tmpdirname == NULL) {
       const char* tmpdirprefix = "/tmp/chpl-";
@@ -382,6 +382,8 @@ const std::string runUtilScript(const char* script) {
 }
 
 const char* getIntermediateDirName() {
+  ensureTmpDirExists();
+
   return intDirName;
 }
 

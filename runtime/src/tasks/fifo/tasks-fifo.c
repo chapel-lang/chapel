@@ -176,9 +176,11 @@ static void sync_wait_and_lock(chpl_sync_aux_t *s,
 
   chpl_thread_mutexLock(&s->lock);
 
-  // If true, we want to use conditionals, otherwise we want to spin
+  // If we're oversubscribing the hardware, we wait using conditionals
+  // in order to ensure fairness and thus progress.  If we're not, we
+  // can spin-wait.
   suspend_using_cond = (chpl_thread_getNumThreads() >=
-                        chpl_numCoresOnThisLocale());
+                        chpl_getNumPUsOnThisNode());
 
   while (s->is_full != want_full) {
     if (!suspend_using_cond) {
@@ -822,6 +824,16 @@ chpl_bool chpl_task_getSerial(void) {
 
 void chpl_task_setSerial(chpl_bool state) {
   get_current_ptask()->chpl_data.prvdata.serial_state = state;
+}
+
+uint32_t chpl_task_getMaxPar(void) {
+  //
+  // We expect that even if the cores have multiple hardware threads,
+  // cache and pipeline conflicts will typically prevent applications
+  // from gaining by using them.  So, we just return the number of
+  // cores.
+  //
+  return (uint32_t) chpl_getNumCoresOnThisNode();
 }
 
 c_sublocid_t chpl_task_getNumSublocales(void) {

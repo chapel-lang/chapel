@@ -43,16 +43,16 @@ void qio_regexp_create_compile_flags_2(void* str, int64_t str_len, void* flags, 
   qio_regexp_create_compile_flags((const char*) str, str_len, (const char*) flags, flags_len, isUtf8, compiled);
 }
 
-void qio_regexp_retain(qio_regexp_t* regexp);
+void qio_regexp_retain(const qio_regexp_t* regexp);
 void qio_regexp_release(qio_regexp_t* regexp);
 
-void qio_regexp_get_options(qio_regexp_t* regexp, qio_regexp_options_t* options);
+void qio_regexp_get_options(const qio_regexp_t* regexp, qio_regexp_options_t* options);
 
-void qio_regexp_get_pattern(qio_regexp_t* regexp, const char** pattern);
+void qio_regexp_get_pattern(const qio_regexp_t* regexp, const char** pattern);
 
-int64_t qio_regexp_get_ncaptures(qio_regexp_t* regexp);
-qio_bool qio_regexp_ok(qio_regexp_t* regexp);
-const char* qio_regexp_error(qio_regexp_t* regexp);
+int64_t qio_regexp_get_ncaptures(const qio_regexp_t* regexp);
+qio_bool qio_regexp_ok(const qio_regexp_t* regexp);
+const char* qio_regexp_error(const qio_regexp_t* regexp);
 
 enum {
   QIO_REGEXP_ANCHOR_UNANCHORED = 0,
@@ -116,6 +116,6 @@ int64_t qio_regexp_replace(qio_regexp_t* regexp, const char* repl, int64_t repl_
 //  - if there was a match, put it after the match
 //  - if there was an error, we do not adjust the channel position afterwards
 //
-qioerr qio_regexp_channel_match(qio_regexp_t* regexp, const int threadsafe, struct qio_channel_s* ch, int64_t maxlen, int anchor, qio_bool can_discard, qio_bool keep_unmatched, qio_bool keep_whole_pattern, qio_regexp_string_piece_t* submatch, int64_t nsubmatch);
+qioerr qio_regexp_channel_match(const qio_regexp_t* regexp, const int threadsafe, struct qio_channel_s* ch, int64_t maxlen, int anchor, qio_bool can_discard, qio_bool keep_unmatched, qio_bool keep_whole_pattern, qio_regexp_string_piece_t* submatch, int64_t nsubmatch);
 
 #endif
