@@ -1,23 +1,20 @@
 \sekshun{Special Functions}
 
-Special functions constitute the standard interface through which the Chapel
-compiler manipulates an instance of a type.  This interface provides for
-value-initialization, default-construction, fieldwise-construction,
-copy-construction, assignment and destruction.
+Special functions are functions for which the compiler provides default definitions.  
+Together, these special functions support
+value-initialization, default-construction,
+copy-construction, destruction, assignment, fieldwise-construction and equality comparisons.
+The first four of these are required by the Chapel
+compiler.  The remainder are provided as a convenience
+to the user.  The compiler-generated version of a special function may always be
+overridden by an explicity user-defined version.
 
-Because the compiler creates calls to these functions to implement the semantics
-it promises with respect to variable creation and reclamation, assignment and
-function call interfaces, it provides internal definitions for all of these functions for
-all fundamental types.  In addition, it provides compiler-generated definitions
-for these functions for user-defined types.  The compiler-generated version is
-overridden if the user supplies an explicit version.
-
-With the exception of assignment, these special functions are associated with a
-transition among states in the object lifecycle, as described in the following subsection.
-The remaining sections describe each of the six special functions in turn.
-Each section details the interface, semantics and visibility rules of each
-function, and summarizes which language elements cause the compiler to generate
-a call to that special function.
+Of the special functions required by the compiler, all but assignment are associated with
+a state transition in the object lifecycle.  These associations are detailed in the
+following subsection.  The remaining sections describe each of the special functions in
+turn.  Each section details the interface, semantics and visibility rules of each
+function, and for the required special functions, indicates which language elements cause
+the compiler to generate a call to that special function.
 
 \subsection{The Object Lifecycle}
 
@@ -159,7 +156,7 @@ of a \chpl{memset( , 0, );} or performing the object allocation using \chpl{call
 The \chpl{_defaultOf()} function must be invoked with an operand that evaluates
 to a concrete type $T$.  Generic instantiation rules are applied to all
 user-defined definitions of \chpl{_defaultOf()} with compatible
-signatures\footnote{That is, functions named _defaultOf that can accept a type
+signatures\footnote{That is, functions named \chpl{_defaultOf} that can accept a type
   argument as their first argument and whose other arguments all have default
   values associated with them.} to generate a candidate set.  If the candidate
 set is non-empty, normal resolution rules are applied to select the best
@@ -493,12 +490,12 @@ The destructor for a type T is a method that takes no arguments and has the name
 proc T.~T();
 \end{chapel}
 
-\begin{issue}
+\begin{openissue}
 Polymorphic behavior for destructors is not yet specified, but is essential for
 supporting inhomogeneous containers.  It may be sufficient to specify that
 destructors are always dynamically dispatched, though this carries some
 unnecessary overhead when the destructor can be statically bound.
-\end{issue}
+\end{openissue}
 
 \subsection{Semantics}
 
