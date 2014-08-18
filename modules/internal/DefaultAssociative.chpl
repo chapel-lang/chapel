@@ -228,6 +228,8 @@ module DefaultAssociative {
         }
         if findAgain then slotNum = -1;
         slotNum = _add(idx, slotNum);
+        for a in _arrs do
+          a.clearEntry(idx, true);
         if shouldLock then unlockTable();
       }
       return slotNum;
@@ -456,16 +458,17 @@ module DefaultAssociative {
   
     proc dsiGetBaseDom() return dom;
   
-    proc clearEntry(idx: idxType) {
+    proc clearEntry(idx: idxType, haveLock = false) {
       const initval: eltType;
-      dsiAccess(idx) = initval;
+      dsiAccess(idx, haveLock) = initval;
     }
 
-    proc dsiAccess(idx : idxType) var : eltType {
-      if dom.parSafe then dom.lockTable();
+    proc dsiAccess(idx : idxType, haveLock = false) var {
+      const shouldLock = dom.parSafe && !haveLock;
+      if shouldLock then dom.lockTable();
       var (found, slotNum) = dom._findFilledSlot(idx, haveLock=true);
       if found {
-        if dom.parSafe then dom.unlockTable();
+        if shouldLock then dom.unlockTable();
         return data(slotNum);
       }
       else if setter && slotNum != -1 { // do an insert using the slot we found
@@ -474,7 +477,7 @@ module DefaultAssociative {
           return data(0);
         } else {
           const newSlot = dom.dsiAdd(idx, slotNum, haveLock=true);
-          if dom.parSafe then dom.unlockTable();
+          if shouldLock then dom.unlockTable();
           return data(newSlot);
         }
       } else {
