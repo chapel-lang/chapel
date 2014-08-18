@@ -4300,10 +4300,6 @@ static Type* resolveTypeAlias(SymExpr* se)
 
 static CallExpr* generateConcreteConstructorCall(Type* type)
 {
-  // Assume that tuple types have already been resolved.
-  if (type->symbol->hasFlag(FLAG_TUPLE))
-    return new CallExpr(type->defaultInitializer);
-
   UnresolvedSymExpr* ctorSym =
     new UnresolvedSymExpr(type->defaultInitializer->name);
   CallExpr* call = new CallExpr(ctorSym);
@@ -4422,13 +4418,10 @@ static Expr* resolvePrimInit(CallExpr* call)
 
   SET_LINENO(call);
 
-  if (type->defaultValue) {
-    // In this case, the design choice I made was to use the default value if
-    // it was available, while the defaultOf implementation chooses to pipe
-    // everything through defaultOf.
-    // If we settle on the latter choice, it should be possible to eliminate
-    // the defaultValue field from the type respresentation, and just use
-    // _defaultOf to supply this in module code.
+  if (type->defaultValue ||
+      type->symbol->hasFlag(FLAG_TUPLE)) {
+    // It should be possible to eliminate the defaultValue field from the type
+    // respresentation, and just use _defaultOf to supply this in module code.
     CallExpr* defOfCall = new CallExpr("_defaultOf", type->symbol);
     call->replace(defOfCall);
     resolveCall(defOfCall);
