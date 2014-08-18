@@ -1,0 +1,530 @@
+\sekshun{Special Functions}
+
+Special functions constitute the standard interface through which the Chapel
+compiler manipulates an instance of a type.  This interface provides for
+value-initialization, default-construction, fieldwise-construction,
+copy-construction, assignment and destruction.
+
+Because the compiler creates calls to these functions to implement the semantics
+it promises with respect to variable creation and reclamation, assignment and
+function call interfaces, it provides internal definitions for all of these functions for
+all fundamental types.  In addition, it provides compiler-generated definitions
+for these functions for user-defined types.  The compiler-generated version is
+overridden if the user supplies an explicit version.
+
+With the exception of assignment, these special functions are associated with a
+transition among states in the object lifecycle, as described in the following subsection.
+The remaining sections describe each of the six special functions in turn.
+Each section details the interface, semantics and visibility rules of each
+function, and summarizes which language elements cause the compiler to generate
+a call to that special function.
+
+\subsection{The Object Lifecycle}
+
+In general, the states an object can be in are:
+\begin{enumerate}
+\item Undefined
+\item Uninitialized
+\item Value-Initialized
+\item Field-Initialized
+\item Fully-Initialized (a.k.a. Constructed)
+\item Destroyed
+\item Reclaimed
+\end{enumerate}
+
+Before an object has been allocated, it is in the ``undefined'' state.  This is
+equivalent to represent its storage with a null pointer; the object per se does
+not exist.
+
+Once memory sufficient to represent the object has been allocated, the object
+moves to the ``uninitialized'' state.  The name of the object (or the class
+variable) refers to actual memory, but that memory is in an unknown state.
+
+Value-initialization moves the object to the ``value-initialized'' state.  Each
+field within a compound object is in an initial state consistent with its type,
+but neither the fields nor the object as a whole has been ``constructed''.
+Value-initialization may be applied knowing only the type of the object --- or
+just the types of the fundamental leaves of an aggregate type.  In particular,
+neither the constructors nor the field initializers are consulted in creating a
+value-initialized object.\footnote{This can be stated more simply using just the
+  restriction against consulting constructors, since field-initialization
+  depends upon construction.}
+
+Field-initialization consists of bringing each field in an aggregate type into a
+state consistent with the field declarations.  If the field is declared without
+a specified initializer, then the default constructor (for the type of that
+field) is called; otherwise, the copy constructor is called, passing the
+initialization expression for that field as its operand.
+
+Following field-initialization, the actions specified in the body of the
+constructor are called.  In many cases, the body of the constructor is empty,
+because the actions of value- and field-initialization bring the object into a
+state consistent with the desired class invariants.  In any case, after the body
+of one of its constructors has run to completeion, the object is
+fully-initialized (i.e. constructed).
+
+When an object is destroyed it transitions to the destroyed state.  This state
+is equivalent to ``uninitialized'', meaning that its contents cannot be relied
+upon.  An implementation may reuse a destroyed object without first returning it
+to the heap through deallocation.\footnote{After its destruction, an object may
+  still be accessible through the name or reference used to call the
+  destructor.  But since its contents cannot be relied upon, it represents a
+  programming error to attempt to read or write an object in this state.}
+
+Once an object has been destroyed, an implementation may reuse or reclaim it.
+This may happen immediately or at some unspecified future time.  After it has
+been reclaimed, the object returns to the undefined stat.
+
+\section{Value Initialization}
+
+Value-initialization is provided by the \chpl{_defaultOf()} function.
+This function is called wherever the compiler needs to provide value initialization
+for an instance of the corresponding type.  
+
+Value-initialization brings the object into a known initial state before
+construction is applied.  For fundamental types (including numericals, strings,
+enums and ranges) as well as sync/single variables and atomics, this is the
+value specified in section 8.1.1 [Default Initialization].  The remaining type
+classes (classes, records, arrays and tuples) will be handled specifically below.
+% TODO: Default initialziation as discussed in that section should actually be
+% interpreted as default construction.  Default construction is
+% value-initialization followed by the actions specified in the constructor
+% body.  But since the body of the constructor for every fundamental type is
+% empty, the distinction between value-initialization and default-initialization
+% is moot.
+% The TODO involves separating the concepts of value-initialization and
+% default-construction.  Default-initialization is then naturally a combination
+% of the two.
+For records, arrays and tuples, value-initialization consists of
+value-initialization applied element-wise (recursively).  For class variables,
+value-initialization sets the variable equal to \chpl{nil}.
+
+In terms of the object lifecycle, value-initialization performs the second step.  
+
+\subsection{Interface}
+
+The \chpl{_defaultOf} function has
+the following signature.
+\begin{chapel}
+proc _defaultOf(type t) : t ;
+\end{chapel}
+
+\begin{future}
+
+Currently, the interface to \chpl{_defaultOf()} takes a single type argument and
+returns an instance that is properly value-initialized.  This means that
+creation of an initialized object in general involves either assignment or
+copy-construction.  Otherwise, the construction of an object cannot be described
+in terms of the language itself.
+
+In the future, it is desired to restate the interface to \chpl{_defaultOf()} as
+a member function.  This will permit objects to be initialized in-place, which
+will simplify the generated code and improve run-time efficiency.
+
+Rendering the \chpl{_defaultOf()} function in method form will also support
+calling \chpl{_defaultOf()} before entering the constructor, rather than calling
+it as part of the constructor.  This delineation is important, because the
+recursive definitions of \chpl{_defaultOf()} and the compiler-supplied
+constructors can then be kept distinct (as opposed to being mutually dependent).
+
+\end{future}
+
+\subsection{Semantics}
+
+Value initializtion is more fundamental than construction.  It is equivalent to
+the language concept of default initialization (also known as guaranteed
+initialization).  
+
+Value-initialization and construction of an object take place in sequence.  When
+an object is created, it starts out as uninitialized storage.  Value
+initialization places the object (or each field of a compound object,
+recursively) into a known initial state.  Implicitly, it is possible to
+determine the initial value for each field in object based solely on its type, whereas
+construction may establish relationships between fields that require treating
+the object as a whole (and may involve external knowledge as well).
+
+\begin{note}
+At present, the order in which value-initialization is carried out among the
+fields is unspecified.  This is intended to give an implementation considerable
+flexibility in implementing value-initialization.
+
+Unless overridden, value-initialization can most-often be found (at compile
+time) to be equivalent to zero-initialization.  If this is the case, the
+provision for value-initialization can be satisfied by emitting the equivalent
+of a \chpl{memset( , 0, );} or performing the object allocation using \chpl{calloc()}.
+\end{note}
+
+\subsection{Visibility}
+
+The \chpl{_defaultOf()} function must be invoked with an operand that evaluates
+to a concrete type $T$.  Generic instantiation rules are applied to all
+user-defined definitions of \chpl{_defaultOf()} with compatible
+signatures\footnote{That is, functions named _defaultOf that can accept a type
+  argument as their first argument and whose other arguments all have default
+  values associated with them.} to generate a candidate set.  If the candidate
+set is non-empty, normal resolution rules are applied to select the best
+candidate.
+
+\subsection{Usage}
+
+To enforce value-initialization within a constructor, a call to \chpl{_defaultOf()} is
+inserted by the compiler at the start of every (user-supplied as well as
+compiler-generated) constructor.  The \chpl{_defaultOf()} function should not be
+invoked directly from user code.
+
+\begin{rationale}
+
+The \chpl{_defaultOf()} function may assume that its operand is not yet
+value-initialized.  This condition can only occur within a constructor.  But since
+\chpl{_defaultOf()} is automatically invoked at (or preferably, before) the
+beginning of every constructor, it would be pointless to invoke it explicitly in
+that context. Fields in an aggregate type being constructed have also already been
+value-initialized through recursive calls to \chpl{_defaultOf()}.
+
+\end{rationale}
+
+\section{Default Construction}
+
+Default construction for a given type is provided by any constructor compatible
+with that type that can be called with an empty argument list (i.e. ``no
+arguments'' or ``zero arguments'').  In particular, a generic constructor may be
+compatible with many concrete types, and a constructor with one or more formals
+may be called with no arguments so long as each argument has an associated
+default value.
+
+\subsection{Interface}
+
+The default constructor for a type $T$ has the following signature.
+\begin{chapel}
+proc T.T();
+\end{chapel}
+When the compiler supplies a default constructor, it will have exactly this
+signature.  However, as explained above, any user-defined signature that can be
+called with an empty argument list will serve as a default constructor.
+
+\subsection{Semantics}
+
+The intended semantics of the default constructor are to take an object from the
+value-initialized state to an initialized state consistent with the
+corresponding type.  For a user-defined type, this typically means adjusting the
+initialization of the object to satisfy the class (or record) invariants.
+
+Construction proceeds in two phases: field-initialization and
+instance-initialization.  Field-initialization moves the object from the
+value-initialized state to the field-initialized state.  This is done by
+recursively applying either the default constructor or the copy constructor to
+each contained field, depending on whether the field is declared without an
+initializer or with an initializer, respectively.  Instance-initialization
+creates further relationships between the fields in an object, to establish the
+invariants that are common to all fully-initialized objects in that class.
+
+To remain consistent with current behavior, field-initialization is performed
+sequentially, in the order that the variables are declared in the class or
+record definition.  This naturally satisfies the authors expectations, through
+comparison with the order of initialization of successive declarations appearing
+inside a procedure definition.
+
+When present, the compiler-generated constructor for a class or record type
+consists of field-initialization followed by an empty constructor body.  That
+is, instance-initialization is trivial.
+\footnote{At present, there is no way to specify that the compiler should not generate a
+default constructor if no user-callable version is provided.  Thus, in order to
+prevent the creation of a default-valued object, the user must currently define
+a default constructor that generates a compile-time error.}
+This choice is reasonable for the
+compiler's default behavior, since the compiler cannot infer any relationships
+among the fields bases solely on their types.  If such relationships
+(invariants) are to be established, they must be provided explicitly by the
+class author.
+
+\begin{note}
+
+Following field-initialization, each field in an aggregate object is considered
+to be initialized.  Therefore, updates to these fields in the body of a
+constructor are performed using assignment.
+
+\end{note}
+
+\subsection{Visibility}
+
+If no user-defined constructors are supplied for a given type, then the compiler
+provides an all-fields constructor as detailed below.  Because the all-fields
+constructor may be invoked with an empty argument list, it implements the
+default constructor in this case.
+
+If the user-defined type defines at least one constructor, then the compiler
+will provide a default constructor (as defined above).  During resolution of a
+constructor called with no arguments, the user-defined constructors for that
+concrete type will be considered first (including ones contributed from
+compatible generic types).  If no matching constructor is found in that set,
+then the compiler-generated default constructor is considered.
+
+\subsection{Usage}
+
+The compiler implicitly invokes the default constructor when a variable is
+declared without an explicit initializer.  Also, it is used in the recursive
+definition of the default constructor for an aggregate type.
+
+\section{Copy Construction}
+
+Copy construction for a given type is provided by any constructor compatible
+with that type that can be called with an argument list consisting of a single
+object of that type.  The selected definition may involve generic types for both
+the object and the operand.  The definition may also involve other arguments, so
+long as all but one of the arguments has a default value associated with it, and
+the type of the remaining formal argument can bind to an actual argumet of the
+object type.
+
+\subsection{Interface}
+
+The copy constructor for a type $T$ has the following signature
+\begin{chapel}
+proc T.T(const ref T);
+\end{chapel}
+When the compiler supplies a copy constructor, it will have exactly this
+signature.  However, as explained above, any user-defined signature that can be
+called with an argument list containing just one argument coercible to the
+object type will serve.
+
+\subsection{Semantics}
+
+The intended semantics of the copy constructor are to create a fully-constructed
+object that is a verbatim copy of the operand.  The compiler uses copy
+construction to implemnt pass-by-value and return-by-value semantics.  This
+corresponds to formal arguments whose concrete intent resolves to \chpl{in}, and
+to records and other value types when they are returned by value.\footnote{For
+  example, the return intent \chpl{var} causes the return value to instead be
+  returned by reference.}
+
+As with default construction, copy construction proceeds in two phases:
+field-initialization followed by instance-initialization.  Field initialization
+is exactly the same as for default construction described above.  Instance
+initialization then provides the copy semantics and provides the invariants
+required by the class design.  As with the body of the default constructor
+updates to fields within the object are treated as assignments (initialization
+already having been performed during field-initialization).
+
+When present, the compiler-generated copy constructor for a class or record type
+performs a field-by-field copy of the fields in the operand into the
+corresponding fields in the object being initialized.  
+
+\begin{note}
+It may be observed that the compiler-generated copy constructor overwrites every
+field, even though they have already been initialized during
+field-initialization.  So long as the semantics remain unchanged, the compiler
+may skip field-initialization and use copy-initialization instead to establish
+the value of each field.
+
+This optimization cannot be applied in the general case, where the behavior of
+default-initialization, copy-initialization or assignment has been overridden by
+the user for the type of a given field.  But it may safely be applied where
+assignment and the default constructor (for default-initialization) or the copy
+constructor (for copy-initialization) have been supplied by the compiler for the
+corresponding field type.
+\end{note}
+
+\subsection{Visibility}
+
+The compiler provides copy constructor for every type, defined as specified
+above.  During resolution of a constructor call, the compiler-supplied copy
+constructor is considered only if there are no candidates among the user-defined
+constructors applicable to that object type.
+
+\subsection{Usage}
+
+The compiler implicitly invokes the copy constructor to initialize a formal
+argument with in intent from the corresponding actual argument.  It is also used
+to initialize the returned value temporary variable (in the calling context)
+from the return value expression in a called routine.
+
+\section{All-Fields Construction}
+
+The all-fields constructor is provided by the compiler as a convenience.  It
+supports rapid prototyping by allowing client code to specify the initial states
+of fields within an object being constructed, without requiring the class author
+to supply this capability explicitly.
+
+The all-fields constructor is provided only if no user-specified constructors
+have been defined for that type.  
+
+\begin{rationale}
+
+It is a useful prototyping feature to be able to structure data (as in a C
+\chpl{struct}) without having to write a constructor and accessor functions to
+support its initialization and use.
+
+On the other hand, allowing client code direct access to the fields in a class
+or record defeats encapsulation.  The compromise is to provide the all-fields
+constructor when no user-defined constructors are present, but to hide this
+after any user-defined constructor is provided.  The operative assumption is
+that a user who is adding constructors to a class will be aware of the
+all-fields constructor and the conditions under which it is provided.
+
+\end{rationale}
+
+\subsection{Interface}
+
+For a class or record type, the signature of the all-fields constructor contains
+one formal argument for each field in the aggregate, arranged in declaration
+order.  The name of each formal is exactly the same as the name of the
+corresponding field.  Each formal is provided with a default value in the same
+manner as for field-initialization.  That is, default construction provides the
+initial value for formals whose fields are declared without an initializer, and
+copy construction provides the initial value for formals whose fields are
+declared with an initializer. 
+
+\subsection{Semantics}
+
+All-fields construction proceeds in two phases: field-initialization followed by
+instance-initialization.  Field-initialization is provided as described above.
+Instance initialization consists of overwriting each field with the value of the
+corresponding formal.
+
+\begin{note}
+
+As with the copy constructor, it can be observed that field-initialization is
+essentially moot, because the semantics of the all-fields constructor cause each
+field to be overwritten in the body of the constructor.
+
+Similarly, if assignment and copy construction or default construction
+(corresponding to whether the associated field has an initializer or not) are
+not overridden by the user, the difference between performing field
+initialization or not for that field will not be observable by the user.  Under
+those conditions, the initialization of that field may be elided.
+
+\end{note}
+
+\subsection{Visibility}
+
+The all-fields constructor is visible only if no user-defined constructors have
+been provided for the corresponding class or record type.
+
+\subsection{Usage}
+
+The compiler does not generate any calls to the all-fields constructor.
+
+\section{Assignment}
+
+Assignment is provided by the procedure named ``='' whose left and right
+operands are compatible with the object type.  Assignment is used to replace the
+value of a field or variable that has already been initialized.  It is used by
+the compiler to update the value of a field in the body of a copy constructor or
+the all-fields constructor.  It is also used to update the value of the return
+value temporary prior to its return to the caller.
+
+\begin{future}
+
+In addition to the two-argument form, it is desirable to support assignment as a
+method.  Given that the canonical form for assignment has been updated to pass
+the left operand by reference, the two forms are equivalent in behavior and
+efficiency.
+
+The return value variable is useful in determining the type of the return value
+of a routine where that is unspecified.  However, by using the semantics that a
+return statement directly calls a copy-constructor to transfer the result to the
+calling context would eliminate an unnecessary assignment from the semantics of
+that statement.
+
+\end{future}
+
+\subsection{Interface}
+
+The canonical two-argument form for assignment is:
+\begin{chapel}
+proc =(ref lhs, rhs) : void ;
+\end{chapel}
+
+\subsection{Semantics}
+
+Excluding class variables, the semantics of assignment are to replace the
+contents of the lhs operand with the contents of the rhs operand.  For class
+variables, the class instance reference held by lhs operand is replaced by a
+copy of the reference held by the rhs operand.  The object referenced by the rhs
+thus becomes shared through the lhs, and the object formerly accessible through
+the lhs operand is no longer accessible through that name (though it may be
+accessible through other paths).
+
+For fundamental types (excluding strings),
+assignment can be accomplished by a bitwise copy.  
+Depending on how strings are implemented, a bitwise copy may or may not suffice.
+
+When provided, the compiler-supplied version of record assignment consists of a
+(recursive) field-wise assignment from the fields in the right operand to the
+fields in the left operand.
+
+\begin{note}
+
+As with the copy and all-fields constructors, it can be observed that a bitwise
+copy will suffice as long as none of the fields (recursively) have types that
+have user-defined assignment operators associated with them.  The definition of
+the compiler-generated record assignment operator can be seen to be equivalent
+ot a bitwise copy.
+
+\end{note}
+
+\subsection{Visibility}
+
+A compiler-generated assignment operator is provided for every type except class
+types.  However, a compatible user-defined assignment operator will always
+override the compiler-generated one.
+
+\subsection{Usage}
+
+The compiler currently generates assignments to implement the bodies of the copy
+constructor and all-fields constructor.  Also, as mentioned above, it is used
+to establish the value of the return value temporary, prior to its return to the
+caller.
+
+\section{Destruction}
+
+Destruction is provided by the destructor.  Its purpose is to move a
+fully-constructed object into the destroyed state.  Before transitioning to this
+state, an object should release all resource dynamically attached to it during
+the course of execution.
+
+Once an object is destroyed, it is available for reclamation, so its contents
+should not be relied upon.  It is a programming error to read or write an object
+that has already been destroyed.
+
+\subsection{Interface}
+
+The destructor for a type T is a method that takes no arguments and has the name ~T.
+\begin{chapel}
+proc T.~T();
+\end{chapel}
+
+\begin{issue}
+Polymorphic behavior for destructors is not yet specified, but is essential for
+supporting inhomogeneous containers.  It may be sufficient to specify that
+destructors are always dynamically dispatched, though this carries some
+unnecessary overhead when the destructor can be statically bound.
+\end{issue}
+
+\subsection{Semantics}
+
+The semantics of the destructor are to release any resources owned by the object
+before the object itself is release.  Once release, the object may (though need
+not necessarily be reclaimed.  Reclamation involves placing the memory formerly
+allocated to the object back on the heap (for dynamically allocated objects).
+Reclamation and reuse of the memory happens automatically when the object is
+allocated on the stack.
+
+Since the compiler cannot know about additional resources allocated to the
+object during execution, the compiler-generated destructor is trivial.
+
+\subsection{Visibility}
+
+The compiler-generated destructor is supplied for every type.  However during
+resolution, if a compatible user-defined destructor is available, it is always
+selected in preference to the compiler-generated one.
+
+\subsection{Usage}
+
+The compiler calls the destructor for non-class objects when execution exits the
+scope in which the name bound to each such object is defined.  Variables defined
+at global (module) scope are destroyed before the program terminates.  For class
+objects, the destructor is invoked explicitly using the \chpl{delete} operator.
+
+
+
+
