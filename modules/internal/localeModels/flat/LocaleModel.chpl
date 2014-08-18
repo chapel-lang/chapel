@@ -17,7 +17,7 @@ module LocaleModel {
 
   use ChapelLocale;
   use DefaultRectangular;
-  //  use ChapelNumLocales;
+  use ChapelNumLocales;
   use Sys;
 
   config param debugLocaleModel = false;
@@ -47,15 +47,6 @@ module LocaleModel {
   proc chpl__initCopy(initial: chpl_localeID_t): chpl_localeID_t;
 
   extern var chpl_nodeID: chpl_nodeID_t;
-
-////////// ChapelNumLocales.chpl inlined here //////////
-  extern proc chpl_comm_default_num_locales(): int;
-  
-  //
-  // the number of locales on which to run the program
-  //
-  config const numLocales = chpl_comm_default_num_locales();
-////////// end ChapelNumLocales.chpl inlining //////////  
 
   // Runtime interface for manipulating global locale IDs.
   extern
