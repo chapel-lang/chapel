@@ -46,6 +46,8 @@ qioerr hdfs_open(void** file, const char* path, int* flags, mode_t mode, qio_hin
 
 qioerr hdfs_close(void* fl, void* fs);
 
+void hdfs_do_release(void* fs);
+
 qioerr hdfs_seek(void* fl, off_t offset, int whence, off_t* offset_out, void* fs);
 
 qioerr hdfs_getlength(void* fl, int64_t* len_out, void* fs);

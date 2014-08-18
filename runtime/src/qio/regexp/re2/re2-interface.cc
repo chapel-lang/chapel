@@ -211,7 +211,7 @@ void qio_regexp_create_compile_flags(const char* str, int64_t str_len, const cha
   return qio_regexp_create_compile(str, str_len, &opt, compiled);
 }
 
-void qio_regexp_retain(qio_regexp_t* compiled)
+void qio_regexp_retain(const qio_regexp_t* compiled)
 {
   re_t* re = (re_t*) compiled->regexp;
   //fprintf(stdout, "Retain %p\n", re);
@@ -226,31 +226,31 @@ void qio_regexp_release(qio_regexp_t* compiled)
   compiled->regexp = NULL;
 }
 
-void qio_regexp_get_options(qio_regexp_t* regexp, qio_regexp_options_t* options)
+void qio_regexp_get_options(const qio_regexp_t* regexp, qio_regexp_options_t* options)
 {
   RE2* re2 = (RE2*) regexp->regexp;
   const RE2::Options& opts = re2->options();
   re2_options_to_qio_re_options(&opts, options);
 }
 
-void qio_regexp_get_pattern(qio_regexp_t* regexp, const char** pattern)
+void qio_regexp_get_pattern(const qio_regexp_t* regexp, const char** pattern)
 {
   RE2* re2 = (RE2*) regexp->regexp;
   *pattern = qio_strdup(re2->pattern().c_str());
 }
 
-int64_t qio_regexp_get_ncaptures(qio_regexp_t* regexp)
+int64_t qio_regexp_get_ncaptures(const qio_regexp_t* regexp)
 {
   RE2* re2 = (RE2*) regexp->regexp;
   return re2->NumberOfCapturingGroups();
 }
-qio_bool qio_regexp_ok(qio_regexp_t* regexp)
+qio_bool qio_regexp_ok(const qio_regexp_t* regexp)
 {
   RE2* re2 = (RE2*) regexp->regexp;
   return re2->ok();
 }
 
-const char* qio_regexp_error(qio_regexp_t* regexp)
+const char* qio_regexp_error(const qio_regexp_t* regexp)
 {
   RE2* re2 = (RE2*) regexp->regexp;
   return qio_strdup(re2->error().c_str());
@@ -360,7 +360,7 @@ void qio_regexp_channel_discard(qio_channel_s* ch, int64_t cur, int64_t min)
 }
 
 
-qioerr qio_regexp_channel_match(qio_regexp_t* regexp, const int threadsafe, struct qio_channel_s* ch, int64_t maxlen, int anchor, qio_bool can_discard, qio_bool keep_unmatched, qio_bool keep_whole_pattern, qio_regexp_string_piece_t* captures, int64_t ncaptures)
+qioerr qio_regexp_channel_match(const qio_regexp_t* regexp, const int threadsafe, struct qio_channel_s* ch, int64_t maxlen, int anchor, qio_bool can_discard, qio_bool keep_unmatched, qio_bool keep_whole_pattern, qio_regexp_string_piece_t* captures, int64_t ncaptures)
 {
   RE2* re = (RE2*) regexp->regexp;
   qioerr err;
