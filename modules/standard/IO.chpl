@@ -257,10 +257,8 @@ extern proc qio_file_unlock(f:qio_file_ptr_t);
 /* The general way to make sure data is written without error */
 extern proc qio_file_sync(f:qio_file_ptr_t):syserr;
 
-//extern proc qio_file_style_ptr(f:qio_file_ptr_t):qio_style_ptr_t;
 extern proc qio_channel_end_offset_unlocked(ch:qio_channel_ptr_t):int(64);
 extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyle);
-extern proc qio_file_set_style(f:qio_file_ptr_t, const ref style:iostyle);
 extern proc qio_file_length(f:qio_file_ptr_t, ref len:int(64)):syserr;
 
 pragma "no prototype" // FIXME
