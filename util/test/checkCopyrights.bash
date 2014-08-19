@@ -41,6 +41,7 @@ files_wo_copy=$(find $source_dirs \
     -name \*.lex -o \
     -name \*.y -o \
     -name \*.ypp | \
+    grep -v compiler/parser/lex.yy.cpp | \
     grep -v compiler/parser/chapel.tab.h | \
     grep -v compiler/parser/chapel.tab.cpp | \
     xargs grep -i -L "${copyright_pattern}")
