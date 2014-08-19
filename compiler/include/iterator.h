@@ -27,6 +27,8 @@ public:
   FnSymbol*      zip4;
   FnSymbol*      hasMore;
   FnSymbol*      getValue;
+  FnSymbol*      init;
+  FnSymbol*      incr;
 };
 
 void lowerIterator(FnSymbol* fn);
