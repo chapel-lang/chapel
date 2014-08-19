@@ -880,10 +880,9 @@ proc =(ref ret:channel, x:channel) {
   ret._channel_internal = x._channel_internal;
 }
 
-proc channel.channel(param writing:bool, param kind:iokind, param locking:bool, f:file, out error:syserr, hints:c_int, start:int(64), end:int(64), style:iostyle) {
+proc channel.channel(param writing:bool, param kind:iokind, param locking:bool, f:file, out error:syserr, hints:c_int, start:int(64), end:int(64), in local_style:iostyle) {
   on f.home {
     this.home = f.home;
-    var local_style = style;
     if kind != iokind.dynamic {
       local_style.binary = true;
       local_style.byteorder = kind:uint(8);
@@ -1147,16 +1146,16 @@ proc file.reader(param kind=iokind.dynamic, param locking=true, start:int(64) = 
 }
 
 // for convenience..
-proc file.lines(out error:syserr, param locking:bool = true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE, style:iostyle = this._style) {
+proc file.lines(out error:syserr, param locking:bool = true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE, in local_style:iostyle = this._style) {
   check();
 
-  style.string_format = QIO_STRING_FORMAT_TOEND;
-  style.string_end = 0x0a; // '\n'
+  local_style.string_format = QIO_STRING_FORMAT_TOEND;
+  local_style.string_end = 0x0a; // '\n'
 
   param kind = iokind.dynamic;
   var ret:ItemReader(string, kind, locking);
   on this.home {
-    var ch = new channel(false, kind, locking, this, error, hints, start, end, style);
+    var ch = new channel(false, kind, locking, this, error, hints, start, end, local_style);
     ret = new ItemReader(string, kind, locking, ch);
   }
   return ret;
@@ -1597,53 +1596,55 @@ proc channel.read(ref args ...?k,
   }
 }
 
-proc channel.readline(arg: [] uint(8), ref numRead : int, start = arg.domain.low, inclusive = true) : bool 
-where arg.domain.rank == 1
+proc channel.readline(arg: [] uint(8), ref numRead : int, start = arg.domain.low, inclusive = true) : bool
+where arg.rank == 1 && isRectangularArr(arg)
 {
-  if this.kind != ionative then halt("channel.readline([] uint(8), ...) \
-      is only available for ionative channels");
   var e:syserr = ENOERR;
   var got = this.readline(arg, numRead, start, error=e, inclusive);
   if !e && got then return true;
   else if e == EEOF || !got then return false;
   else {
-    this._ch_ioerror(e, "in channel.readline(ref arg:string)");
+    this._ch_ioerror(e, "in channel.readline(arg : [] uint(8))");
     return false;
   }
 }
 
-// Read a line of bytes into a chapel array.
+// Read a line of bytes into a Chapel array.
 //
-// numRead: The number of 'elType's read
-// inclusive: if true, will include the newline
+// arg:       A 1D DefaultRectangular array which must have at least 1 element.
+// numRead:   The number of bytes read
+// start:     Index to begin reading into
+// inclusive: If true, will include the newline
 //
-// The 'kind' of the channel must be ionative, as we only read bytes. 
-// This limitation exists so that we can check for a newline.
-proc channel.readline(arg: [] uint(8), ref numRead : int, start = arg.domain.low, out error:syserr, inclusive = true) : bool
-where arg.domain.rank == 1
+// Returns true if bytes were read without error. Returns false if an error
+// occurred, the array is of zero size, or the start index is beyond the 
+// array's domain.
+proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low, out error:syserr, inclusive = true) : bool
+where arg.rank == 1 && isRectangularArr(arg)
 {
-  if this.kind != ionative then halt("channel.readline([] uint(8), ...) \
-      is only available for ionative channels");
-  if arg.size == 0 || start > arg.domain.high then return false;
-  var got : int;
-  param newLineChar = 0x0A;
-  var idx = start;
-  while got != newLineChar {
-    got = qio_channel_read_byte(false, this._channel_internal);
-    if got >= 0 {
-      if inclusive || (!inclusive && got != newLineChar) {
-        arg[idx] = got:uint(8);
-        idx += 1;
-      }
-    } else {
-      numRead = idx - start;
-      error = (-got):syserr;
-      return false;
-    }
-  }
-  numRead = idx - start;
   error = ENOERR;
-  return true;
+  if arg.size == 0 || start > arg.domain.high then return false;
+  on this.home {
+    this.lock();
+    var got : int;
+    param newLineChar = 0x0A;
+    var idx = start;
+    while got != newLineChar {
+      got = qio_channel_read_byte(false, this._channel_internal);
+      if got >= 0 {
+        if inclusive || (!inclusive && got != newLineChar) {
+          arg[idx] = got:uint(8);
+          idx += 1;
+        }
+      } else {
+        error = (-got):syserr;
+        break;
+      }
+    }
+    numRead = idx - start;
+    this.unlock();
+  }
+  return !error;
 }
 
 proc channel.readline(ref arg:string, out error:syserr):bool {
@@ -3541,7 +3542,7 @@ proc readf(fmt:c_string):bool {
 
 
 use Regexp;
-extern proc qio_regexp_channel_match(ref re:qio_regexp_t, threadsafe:c_int, ch:qio_channel_ptr_t, maxlen:int(64), anchor:c_int, can_discard:bool, keep_unmatched:bool, keep_whole_pattern:bool, submatch:_ddata(qio_regexp_string_piece_t), nsubmatch:int(64)):syserr;
+extern proc qio_regexp_channel_match(const ref re:qio_regexp_t, threadsafe:c_int, ch:qio_channel_ptr_t, maxlen:int(64), anchor:c_int, can_discard:bool, keep_unmatched:bool, keep_whole_pattern:bool, submatch:_ddata(qio_regexp_string_piece_t), nsubmatch:int(64)):syserr;
 
 proc channel._extractMatch(m:reMatch, ref arg:reMatch, ref error:syserr) {
   // If the argument is a match record, just return it.

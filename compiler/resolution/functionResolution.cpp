@@ -709,6 +709,8 @@ protoIteratorClass(FnSymbol* fn) {
   ii->zip4 = protoIteratorMethod(ii, "zip4", dtVoid);
   ii->hasMore = protoIteratorMethod(ii, "hasMore", dtInt[INT_SIZE_DEFAULT]);
   ii->getValue = protoIteratorMethod(ii, "getValue", fn->retType);
+  ii->init = protoIteratorMethod(ii, "init", dtVoid);
+  ii->incr = protoIteratorMethod(ii, "incr", dtVoid);
 
   ii->irecord->defaultInitializer = fn;
   ii->irecord->scalarPromotionType = fn->retType;
@@ -724,6 +726,8 @@ protoIteratorClass(FnSymbol* fn) {
   fn->iteratorInfo->advance->addFlag(FLAG_RESOLVED);
   fn->iteratorInfo->hasMore->addFlag(FLAG_RESOLVED);
   fn->iteratorInfo->getValue->addFlag(FLAG_RESOLVED);
+  fn->iteratorInfo->init->addFlag(FLAG_RESOLVED);
+  fn->iteratorInfo->incr->addFlag(FLAG_RESOLVED);
 
   ii->getIterator = new FnSymbol("_getIterator");
   ii->getIterator->addFlag(FLAG_AUTO_II);
@@ -2809,6 +2813,66 @@ static bool checkAndUpdateIfLegalFieldOfThis(CallExpr* call, Expr* actual) {
   return false;
 }
 
+// If 'call' is an access to a const thing, for example a const field
+// or a field of a const record, set const flag(s) on the symbol
+// that stores the result of 'call'.
+static void setFlagsForConstAccess(CallExpr* call, FnSymbol* resolvedFn)
+{
+  // Is the outcome of 'call' a reference to a const?
+  bool refConst = resolvedFn->hasFlag(FLAG_REF_TO_CONST);
+
+  // ... except do a couple of adjustments for field accesses.
+  // Do we really need FLAG_FIELD_ACCESSOR here? Perhaps we do,
+  // in order to treat field accesses to const records specially.
+
+  // The symbol whose field is accessed, if applicable:
+  Symbol* baseSym = NULL;
+
+  if (resolvedFn->hasFlag(FLAG_FIELD_ACCESSOR) &&
+      // promotion wrappers are not handled currently
+      !resolvedFn->hasFlag(FLAG_PROMOTION_WRAPPER))
+  {
+    SymExpr* baseExpr = toSymExpr(call->get(2));
+    INT_ASSERT(baseExpr); // otherwise, cannot do the checking
+    // the symbol whose field is accessed
+    baseSym = baseExpr->var;
+
+    // Do not consider it const if it is an access to 'this'
+    // in a constructor. Todo: will need to reconcile with UMM.
+    if (refConst && baseSym->hasFlag(FLAG_ARG_THIS) &&
+        isInConstructorLikeFunction(call)) {
+      refConst = false;
+    } else {
+      // See if the variable being accessed is const.
+      if (baseSym->isConstant() ||
+          baseSym->hasFlag(FLAG_REF_TO_CONST)
+      ) {
+        // Todo: fine-tuning may be desired, e.g.
+        // if FLAG_CONST then baseType = baseSym->type.
+        Type* baseType = baseSym->type->getValType();
+        // Exclude classes: even if a class variable is const,
+        // its non-const fields are OK to modify.
+        if (isRecord(baseType) || isUnion(baseType))
+          refConst = true;
+        else
+          INT_ASSERT(isClass(baseType));
+      }
+    }
+  }
+
+  if (refConst) {
+    if (CallExpr* parent = toCallExpr(call->parentExpr)) {
+      if (parent->isPrimitive(PRIM_MOVE)) {
+        SymExpr* dest = toSymExpr(parent->get(1));
+        INT_ASSERT(dest); // what else can it be?
+        dest->var->addFlag(FLAG_REF_TO_CONST);
+        if (baseSym && baseSym->hasFlag(FLAG_ARG_THIS))
+          dest->var->addFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS);
+      }
+    }
+  }
+}
+
 // If 'fn' is the default assignment for a record type, return
 // the name of that record type; otherwise return NULL.
 static const char* defaultRecordAssignmentTo(FnSymbol* fn) {
@@ -3076,48 +3140,7 @@ static void resolveNormalCall(CallExpr* call) {
     call->baseExpr->replace(new SymExpr(resolvedFn));
   }
 
-  if (resolvedFn->hasFlag(FLAG_FIELD_ACCESSOR)) {
-    SymExpr* baseExpr = toSymExpr(call->get(2));
-    INT_ASSERT(baseExpr); // otherwise, cannot do the checking
-    Symbol* baseSym = baseExpr->var;
-    // Is the outcome of 'call' a reference to a const?
-    bool refConst = false;
-
-    if (resolvedFn->hasFlag(FLAG_REF_TO_CONST)) {
-      // 'call' accesses a const field.
-      refConst = true;
-      // Do not consider it const if it is an access to 'this'
-      // in a constructor. Todo: will need to reconcile with UMM.
-      if (baseSym->hasFlag(FLAG_ARG_THIS) &&
-          isInConstructorLikeFunction(call))
-        refConst = false;
-    } else {
-      // See if the variable being accessed is const.
-      if (baseSym->hasFlag(FLAG_CONST) ||
-          baseSym->hasFlag(FLAG_REF_TO_CONST)
-        ) {
-        // Todo: fine-tuning may be desired, e.g.
-        // if FLAG_CONST then baseType = baseSym->type.
-        Type* baseType = baseSym->type->getValType();
-        // Exclude classes: even if a class variable is const,
-        // its non-const fields are OK to modify.
-        if (isRecord(baseType) || isUnion(baseType))
-          refConst = true;
-      }
-    }
-
-    if (refConst) {
-      if (CallExpr* parent = toCallExpr(call->parentExpr)) {
-        if (parent->isPrimitive(PRIM_MOVE)) {
-          SymExpr* dest = toSymExpr(parent->get(1));
-          INT_ASSERT(dest); // what else can it be?
-          dest->var->addFlag(FLAG_REF_TO_CONST);
-          if (baseSym->hasFlag(FLAG_ARG_THIS))
-            dest->var->addFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS);
-        }
-      }
-    }
-  }
+  setFlagsForConstAccess(call, resolvedFn);
 
   if (resolvedFn->hasFlag(FLAG_MODIFIES_CONST_FIELDS))
     // Not allowed if it is not called directly from a constructor.
