@@ -15,6 +15,7 @@ Initializing Modules:
      DefaultRectangular
       DSIUtil
       ChapelArray
+     ChapelNumLocales
      Sys
       SysBasic
        SysCTypes
