@@ -709,6 +709,8 @@ protoIteratorClass(FnSymbol* fn) {
   ii->zip4 = protoIteratorMethod(ii, "zip4", dtVoid);
   ii->hasMore = protoIteratorMethod(ii, "hasMore", dtInt[INT_SIZE_DEFAULT]);
   ii->getValue = protoIteratorMethod(ii, "getValue", fn->retType);
+  ii->init = protoIteratorMethod(ii, "init", dtVoid);
+  ii->incr = protoIteratorMethod(ii, "incr", dtVoid);
 
   ii->irecord->defaultInitializer = fn;
   ii->irecord->scalarPromotionType = fn->retType;
@@ -724,6 +726,8 @@ protoIteratorClass(FnSymbol* fn) {
   fn->iteratorInfo->advance->addFlag(FLAG_RESOLVED);
   fn->iteratorInfo->hasMore->addFlag(FLAG_RESOLVED);
   fn->iteratorInfo->getValue->addFlag(FLAG_RESOLVED);
+  fn->iteratorInfo->init->addFlag(FLAG_RESOLVED);
+  fn->iteratorInfo->incr->addFlag(FLAG_RESOLVED);
 
   ii->getIterator = new FnSymbol("_getIterator");
   ii->getIterator->addFlag(FLAG_AUTO_II);
