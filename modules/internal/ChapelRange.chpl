@@ -1068,7 +1068,14 @@ module ChapelRange {
     var start = low;
     var end = high;
 
-    while __primitive("C for loop", i, start, end, stride) {
+    // TODO PRIM_MOVE and i = i + stride are used over PRIM_ASSIGN and i +=
+    // stride because of the ref temps that are currently introduced with
+    // PRIM_ASSIGN and op= operations. Once those are gone this should be
+    // fixed
+    while __primitive("C for loop",
+                      __primitive("move", i, start),
+                      __primitive("<=", i, end),
+                      __primitive("move", i, __primitive("+", i, stride))) {
       yield i;
     }
   }
