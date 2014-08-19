@@ -211,7 +211,17 @@ chpl_task_prvData_t* chpl_task_getPrvData(void);
 #endif
 
 //
-// Returns the the number of sublocales the tasking layer knows about,
+// Returns the maximum width of parallelism the tasking layer expects
+// to be able to provide on the calling (sub)locale.  With some
+// exceptions for uncommon cases, this is the greatest parallel
+// speedup a program should expect to achieve.  Running more active
+// tasks than this will typically add overhead but not concurrency,
+// and thus increase execution wall time rather than decrease it.
+//
+uint32_t chpl_task_getMaxPar(void);
+
+//
+// Returns the number of sublocales the tasking layer knows about,
 // within the span of hardware it is managing tasks on.
 //
 c_sublocid_t chpl_task_getNumSublocales(void);

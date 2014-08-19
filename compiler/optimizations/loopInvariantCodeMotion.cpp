@@ -113,9 +113,26 @@ class Loop {
     // "preheader" of the loop, 
     void insertBefore(Expr* expr) {
       if(header->exprs.size() != 0) {
+        // find the first expr in the header, and get it's parent expr (for
+        // most cases it will be the surrounding block statement of the loop)
         if(BlockStmt* blockStmt = toBlockStmt(header->exprs.at(0)->parentExpr)) {
-          if(blockStmt->isLoop())
+          if(blockStmt->isLoop()) {
             blockStmt->insertBefore(expr->remove());
+          } else {
+            // for c for loops, the header is the test segment of the c for loop
+            // primitive which is still in the primitive. In this case we need
+            // to first get the primitive and then get its parent which will be
+            // the surrounding block stmt of the loop.
+            if (CallExpr* call = toCallExpr(blockStmt->parentExpr)) {
+              if (call->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
+                if (BlockStmt* outer = toBlockStmt(call->parentExpr)) {
+                  if (outer->blockInfo == call) {
+                    outer->insertBefore(expr->remove());
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }

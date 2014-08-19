@@ -181,8 +181,11 @@ module LocaleModel {
       extern proc chpl_task_getCallStackSize(): size_t;
       callStackSize = chpl_task_getCallStackSize();
 
-      extern proc chpl_numCoresOnThisLocale(): int;
-      numCores = chpl_numCoresOnThisLocale();
+      extern proc chpl_getNumPUsOnThisNode(): c_int;
+      numCores = chpl_getNumPUsOnThisNode();
+
+      extern proc chpl_task_getMaxPar(): uint(32);
+      maxTaskPar = chpl_task_getMaxPar();
     }
     //------------------------------------------------------------------------}
   }
@@ -202,6 +205,7 @@ module LocaleModel {
     proc RootLocale() {
       parent = nil;
       numCores = 0;
+      maxTaskPar = 0;
     }
 
     // The init() function must use initOnLocales() to iterate (in
@@ -212,6 +216,7 @@ module LocaleModel {
         const node = new LocaleModel(this);
         myLocales[locIdx] = node;
         numCores += node.numCores;
+        maxTaskPar += node.maxTaskPar;
       }
 
       here.runningTaskCntSet(0);  // locale init parallelism mis-sets this

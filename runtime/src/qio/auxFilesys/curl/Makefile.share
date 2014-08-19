@@ -1,0 +1,20 @@
+ifneq (,$(findstring curl,$(CHPL_MAKE_AUXFS)))
+	AUXFS_SRCS = qio_plugin_curl.c
+else
+	AUXFS_SRCS = qio_plugin_curl_stubs.c
+endif 
+
+SVN_SRCS = $(AUXFS_SRCS)
+SRCS = $(SVN_SRCS)
+
+AUXFS_CURL_OBJS = $(addprefix $(AUXFS_CURL_OBJDIR)/,$(addsuffix .o,$(basename qio_plugin_curl.c)))
+
+ifneq (,$(findstring clang,$(CHPL_MAKE_TARGET_COMPILER)))
+  RUNTIME_INCLS+= -Qunused-arguments
+endif
+
+RUNTIME_INCLS+= $(CHPL_AUXIO_INCLUDE) $(CHPL_AUXIO_LIBS)
+
+$(RUNTIME_OBJ_DIR)/qio_plugin_curl.o: $(AUXFS_SRCS) \
+                                         $(RUNTIME_OBJ_DIR_STAMP)
+	$(CC) -c $(RUNTIME_CFLAGS) $(RUNTIME_INCLS) -o $@ $<

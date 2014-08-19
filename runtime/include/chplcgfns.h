@@ -34,16 +34,35 @@
 
 /* This header file is for routines that are in the generated code */
 
-/* defined in chpl__header.h: */
-
+/* defined in chpl_compilation_config.c: */
 extern const char* chpl_compileCommand;
 extern const char* chpl_compileVersion;
+extern const char* CHPL_HOME;
 extern const char* CHPL_HOST_PLATFORM;
-extern const char* CHPL_TARGET_PLATFORM;
 extern const char* CHPL_HOST_COMPILER;
+extern const char* CHPL_TARGET_PLATFORM;
 extern const char* CHPL_TARGET_COMPILER;
-extern const char* CHPL_THREADS;
+extern const char* CHPL_TARGET_ARCH;
+extern const char* CHPL_LOCALE_MODEL;
 extern const char* CHPL_COMM;
+extern const char* CHPL_COMM_SUBSTRATE;
+extern const char* CHPL_GASNET_SEGMENT;
+extern const char* CHPL_TASKS;
+extern const char* CHPL_THREADS;
+extern const char* CHPL_LAUNCHER;
+extern const char* CHPL_TIMERS;
+extern const char* CHPL_MEM;
+extern const char* CHPL_MAKE;
+extern const char* CHPL_ATOMICS;
+extern const char* CHPL_NETWORK_ATOMICS;
+extern const char* CHPL_GMP;
+extern const char* CHPL_HWLOC;
+extern const char* CHPL_REGEXP;
+extern const char* CHPL_WIDE_POINTERS;
+extern const char* CHPL_LLVM;
+extern const char* CHPL_AUX_FILESYS;
+extern const int CHPL_STACK_CHECKS;
+extern const int CHPL_CACHE_REMOTE;
 
 /* defined in main.c */
 extern char* chpl_executionCommand;

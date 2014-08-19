@@ -29,7 +29,9 @@ include $(RUNTIME_ROOT)/make/Makefile.runtime.head
 
 TARGETS =
 
-SUBDIRS += hdfs
+SUBDIRS = \
+	hdfs \
+	curl \
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.emptydirrules
 

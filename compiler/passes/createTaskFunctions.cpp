@@ -309,6 +309,7 @@ void createTaskFunctions(void) {
                info->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
                info->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP) ||
                info->isPrimitive(PRIM_BLOCK_FOR_LOOP) ||
+               info->isPrimitive(PRIM_BLOCK_C_FOR_LOOP) ||
                info->isPrimitive(PRIM_BLOCK_LOCAL) ||
                info->isPrimitive(PRIM_BLOCK_UNLOCAL))
         ; // Not a parallel block construct, so do nothing special.

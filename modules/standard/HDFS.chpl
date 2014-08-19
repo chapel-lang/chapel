@@ -20,8 +20,6 @@
 use IO, SysBasic, Error, UtilReplicatedVar;
 
 extern type qio_locale_map_ptr_t;     // array of locale to byte range mappings
-extern type qio_file_functions_ptr_t; // pointer to function ptr struct
-extern type qio_file_functions_t;     // function ptr struct
 extern type char_ptr_ptr;             // char**
 
 extern const QIO_LOCALE_MAP_PTR_T_NULL: qio_locale_map_ptr_t;
@@ -50,13 +48,7 @@ extern proc hdfs_create_locale_mapping(ref arr: char_ptr_ptr, num: int, loc_name
 // Return arr[i]
 extern proc hdfs_index_array(locs: qio_locale_map_ptr_t, i: int): hdfs_block_byte_map_t;
 
-// Same as qio_file_open_access in IO.chpl, except this time we pass though our
-// struct that will initilize the file with the appropriate functions for that FS
-extern proc qio_file_open_access_usr(out file_out:qio_file_ptr_t, path:string, 
-                                     access:string, iohints:c_int, /*const*/ ref style:iostyle,
-                                     fs:c_void_ptr, s: qio_file_functions_ptr_t):syserr;
-
-// Get block owners. 
+// Get block owners.
 // Returns an array of hdfs_block_byte_map_t's
 extern proc hdfs_get_owners(f: qio_file_ptr_t, out locales: qio_locale_map_ptr_t, out num_blocks: c_int, arr: char_ptr_ptr, loc_nums:int): syserr;
 

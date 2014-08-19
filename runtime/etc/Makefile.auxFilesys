@@ -15,13 +15,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+ifneq (,$(findstring curl,$(CHPL_MAKE_AUXFS)))
+	GEN_LFLAGS += \
+		$(CHPL_AUXIO_INCLUDE) \
+		$(CHPL_AUXIO_LIBS)
+	LIBS += -lcurl
+endif 
+
 ifneq (,$(findstring hdfs,$(CHPL_MAKE_AUXFS)))
 	GEN_LFLAGS += \
-		-I$(JAVA_INSTALL)/include \
-		-I$(JAVA_INSTALL)/include/linux \
-		-I$(HADOOP_INSTALL)/src/c++/libhdfs \
-		-L$(JAVA_INSTALL)/jre/lib/amd64/server \
-		-L$(HADOOP_INSTALL)/c++/Linux-amd64-64/lib 
+		$(CHPL_AUXIO_INCLUDE) \
+		$(CHPL_AUXIO_LIBS)
 	LIBS += -lhdfs -ljvm
 endif 
 

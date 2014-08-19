@@ -80,7 +80,10 @@ using namespace llvm;
 #include "CGRecordLayout.h"
 #include "clang/CodeGen/BackendUtil.h"
 
-static void setupForGlobalToWide(void);
+static void setupForGlobalToWide();
+
+fileinfo    gAllExternCode;
+fileinfo    gChplCompilationConfig;
 
 static
 VarSymbol *minMaxConstant(int nbits, bool isSigned, bool isMin)
@@ -1483,6 +1486,22 @@ void makeBinaryLLVM(void) {
   }
 
   // Compile any C files.
+  { 
+    // Start with configuration settings
+    const char* inputFilename = gChplCompilationConfig.pathname;
+    const char* objFilename   = objectFileForCFile(inputFilename);
+
+      mysystem(astr(clangInstall.c_str(),
+                    "/bin/clang -c -o ", 
+                    objFilename,
+                    " ", 
+                    inputFilename, 
+                    cargs.c_str()),
+               "Compile C File");
+
+      dotOFiles.push_back(objFilename);
+   }
+
   int filenum = 0;
   while (const char* inputFilename = nthFilename(filenum++)) {
     if (isCSource(inputFilename)) {

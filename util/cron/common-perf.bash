@@ -9,5 +9,4 @@ source $(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)/common-fast.bash
 # It is tempting to use hostname --short, but macs only support the short form
 # of the argument.
 export CHPL_NIGHTLY_LOGDIR=$logdir_prefix/NightlyPerformance/$(hostname -s)
-export CHPL_NIGHTLY_STATDIR=$CHPL_NIGHTLY_LOGDIR/Stats
 export CHPL_NIGHTLY_CRON_LOGDIR=$CHPL_NIGHTLY_LOGDIR
