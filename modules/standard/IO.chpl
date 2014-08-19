@@ -1623,7 +1623,7 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
 where arg.rank == 1 && isRectangularArr(arg)
 {
   error = ENOERR;
-  if arg.size == 0 || start > arg.domain.high then return false;
+  if arg.size == 0 || !arg.domain.member(start) then return false;
   on this.home {
     this.lock();
     var got : int;
