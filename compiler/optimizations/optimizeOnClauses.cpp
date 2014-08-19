@@ -265,6 +265,7 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_BLOCK_WHILEDO_LOOP:
   case PRIM_BLOCK_DOWHILE_LOOP:
   case PRIM_BLOCK_FOR_LOOP:
+  case PRIM_BLOCK_C_FOR_LOOP:
     return true;
  
    // These don't block in the Chapel sense, but they may require a system

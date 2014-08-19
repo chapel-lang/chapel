@@ -105,6 +105,10 @@ static void profile_print(void)
 # define PROFILE_INCR(counter,count)
 #endif /* CHAPEL_PROFILE */
 
+#ifndef QTHREAD_MULTINODE
+volatile int chpl_qthread_done_initializing;
+#endif
+
 // aka chpl_task_list_p
 struct chpl_task_list {
     chpl_fn_p        fun;
@@ -160,7 +164,22 @@ void chpl_sync_unlock(chpl_sync_aux_t *s)
 {
     PROFILE_INCR(profile_sync_unlock, 1);
 
-    qthread_incr(&s->lockers_out, 1);
+
+    // TODO I need to document the reason/rational better
+    // TODO see if this is a good number after some performance results get in
+    //
+    // Give other tasks that are waiting on a sync variable a chance to run.
+    // Currently this is every 4096 unlocks. [x % 2n == x & (2n - 1)] This
+    // number was chosen with a little trial and error.
+    //
+    // qthread_yield is used over chpl_task_yield. chpl_task_yield just adds
+    // calling a sched yield if there are no shepherds. If we don't have any
+    // shepherds we are either setting up or tearing down in which case the
+    // pthread unlock will guarantee progress. When qthread_yield() is called
+    // from a non-qthread it's just a no-op.
+    if ((qthread_incr(&s->lockers_out, 1) & 0xFFF) == 0xFFF) {
+        qthread_yield();
+    }
 }
 
 static inline void about_to_block(int32_t  lineno,
@@ -345,7 +364,7 @@ void chpl_task_init(void)
 
         hwpar = numThreadsPerLocale;
 
-        numPUsPerLocale = chpl_numCoresOnThisLocale();
+        numPUsPerLocale = chpl_getNumPUsOnThisNode();
         if (0 < numPUsPerLocale && numPUsPerLocale < hwpar) {
             if (2 == verbosity) {
                 printf("QTHREADS: Reduced numThreadsPerLocale=%d to %d "
@@ -641,6 +660,16 @@ void chpl_task_setSerial(chpl_bool state)
     data->chpl_data.prvdata.serial_state = state;
 
     PROFILE_INCR(profile_task_setSerial,1);
+}
+
+uint32_t chpl_task_getMaxPar(void) {
+    //
+    // We assume here that the caller (in the LocaleModel module code)
+    // is interested in the number of workers on the whole node, and
+    // will decide itself how much parallelism to create across and
+    // within sublocales, if there are any.
+    //
+    return (uint32_t) qthread_num_workers();
 }
 
 c_sublocid_t chpl_task_getNumSublocales(void)

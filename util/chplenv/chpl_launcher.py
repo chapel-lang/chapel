@@ -21,6 +21,18 @@ def get():
                 launcher_val = 'aprun'
             elif has_slurm:
                 launcher_val = 'slurm-srun'
+            else:
+                # FIXME: Need to detect aprun/srun differently. On a cray
+                #        system with an eslogin node, it is possible that aprun
+                #        will not be available on the eslogin node (only on the
+                #        login node).
+                #
+                #        has_aprun and has_slurm should look other places
+                #        (maybe the modules?) to decide.
+                #        (thomasvandoren, 2014-08-12)
+                sys.stderr.write(
+                    'Warning: Cannot detect launcher on this system. Please '
+                    'set CHPL_LAUNCHER in the environment.\n')
         elif platform_val == 'marenostrum':
             launcher_val = 'marenostrum'
         elif compiler_val == 'tile-cc':
@@ -50,6 +62,10 @@ def get():
             launcher_val = 'mpirun'
         else:
             launcher_val = 'none'
+
+    if launcher_val is None:
+        launcher_val = 'none'
+
     return launcher_val
 
 
