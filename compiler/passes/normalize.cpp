@@ -1458,9 +1458,7 @@ static void change_method_into_constructor(FnSymbol* fn) {
   fn->formals.get(1)->remove();
   update_symbols(fn, &map);
 
-  fn->name = astr("_construct_", fn->name);
-  // Save a string?
-  INT_ASSERT(!strcmp(fn->name, ct->defaultInitializer->name));
+  fn->name = ct->defaultInitializer->name;
   fn->addFlag(FLAG_CONSTRUCTOR);
   // Hide the compiler-generated initializer 
   // which also serves as the default constructor.
