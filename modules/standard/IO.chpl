@@ -1604,7 +1604,7 @@ where arg.rank == 1 && isRectangularArr(arg)
   if !e && got then return true;
   else if e == EEOF || !got then return false;
   else {
-    this._ch_ioerror(e, "in channel.readline(ref arg:string)");
+    this._ch_ioerror(e, "in channel.readline(arg : [] uint(8))");
     return false;
   }
 }
