@@ -17,33 +17,6 @@
 #include "AstVisitor.h"
 
 
-TypeSymbol*    symbol;
-AggregateType* refType;            // pointer to references for non-reference types
-Vec<FnSymbol*> methods;
-
-bool           hasGenericDefaults; // all generic fields have defaults
-
-Symbol*        defaultValue;
-FnSymbol*      defaultInitializer; // This is the compiler-supplied default-initializer.
-                                   // It provides initial values for the
-                                   // fields in an aggregate type.
-FnSymbol*      defaultTypeConstructor;
-FnSymbol*      destructor;
-
-// Used only in PrimitiveType; replace with flag?
-bool           isInternalType;
-
-Type*          instantiatedFrom;
-Type*          scalarPromotionType;
-
-SymbolMap      substitutions;
-Vec<Type*>     dispatchChildren;   // dispatch hierarchy
-Vec<Type*>     dispatchParents;    // dispatch hierarchy
-
-
-
-
-
 Type::Type(AstTag astTag, Symbol* init_defaultVal) :
   BaseAST(astTag),
 
@@ -57,9 +30,7 @@ Type::Type(AstTag astTag, Symbol* init_defaultVal) :
   isInternalType(false),
   instantiatedFrom(NULL),
   scalarPromotionType(NULL) {
-
 }
-
 
 Type::~Type() {
 
