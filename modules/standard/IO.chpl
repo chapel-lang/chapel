@@ -1596,7 +1596,7 @@ proc channel.read(ref args ...?k,
   }
 }
 
-proc channel.readline(arg: [] uint(8), ref numRead : int, start = arg.domain.low, inclusive = true) : bool
+proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low, inclusive = true) : bool
 where arg.rank == 1 && isRectangularArr(arg)
 {
   var e:syserr = ENOERR;
