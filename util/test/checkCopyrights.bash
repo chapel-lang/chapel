@@ -44,6 +44,8 @@ files_wo_copy=$(find $source_dirs \
     grep -v compiler/parser/lex.yy.cpp | \
     grep -v compiler/parser/chapel.tab.h | \
     grep -v compiler/parser/chapel.tab.cpp | \
+    grep -v compiler/passes/reservedSymbolNames.h | \
+    grep -v modules/standard/gen/ | \
     xargs grep -i -L "${copyright_pattern}")
 
 # Now check the Make* files in CHPL_HOME.
