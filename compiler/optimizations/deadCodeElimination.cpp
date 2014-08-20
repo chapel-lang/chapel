@@ -21,6 +21,26 @@ static void deadBlockElimination(FnSymbol* fn);
 static unsigned deadBlockCount;
 static unsigned deadModuleCount;
 
+
+// Determines if an expr is used inside of the header for a c for loop. c for
+// loop header is of the form '"c for loop" {inits}, {test}, {incrs}'
+//
+// Only returns true for exprs in the init, test, incr blocks, not for the
+// blocks themselves.
+//
+// TODO should this be updated to only look for exprs in the test segment that
+// are conditional primitives?
+static bool isInCForLoopHeader(Expr* expr) {
+  if (expr->parentExpr && expr->parentExpr->parentExpr) {
+    if (CallExpr* call = toCallExpr(expr->parentExpr->parentExpr)) {
+      if (call->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 //
 // Removes local variables that are only targets for moves, but are
 // never used anywhere.
@@ -87,6 +107,9 @@ void deadExpressionElimination(FnSymbol* fn) {
     if (expr && expr->parentExpr == NULL) // expression already removed
       continue;
     if (SymExpr* expr = toSymExpr(ast)) {
+      if (isInCForLoopHeader(expr)) {
+        continue;
+      }
       if (expr == expr->getStmtExpr())
         expr->remove();
     } else if (CallExpr* expr = toCallExpr(ast)) {
@@ -126,6 +149,9 @@ void deadCodeElimination(FnSymbol* fn)
       Vec<BaseAST*> asts;
       collect_asts(expr, asts);
       forv_Vec(BaseAST, ast, asts) {
+        if (isInCForLoopHeader(expr)) {
+          essential = true;
+        }
         if (CallExpr* call = toCallExpr(ast)) {
           // mark function calls and essential primitives as essential
           if (call->isResolved() ||

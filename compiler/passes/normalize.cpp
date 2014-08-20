@@ -340,14 +340,51 @@ checkUseBeforeDefs() {
 
 static void
 moveGlobalDeclarationsToModuleScope() {
+  bool move = false;
   forv_Vec(ModuleSymbol, mod, allModules) {
     for_alist(expr, mod->initFn->body->body) {
+      // If the last iteration set "move" to true, move this block to the end
+      // of the module (see below).
+      if (move)
+      {
+        INT_ASSERT(isBlockStmt(expr));
+        mod->block->insertAtTail(expr->remove());
+        move = false;
+        continue;
+      }
+
       if (DefExpr* def = toDefExpr(expr)) {
-        // FLAG_TEMP selects non-compiler-generated variables in the module init
-        // function to be moved out to module scope.
-        if ((toVarSymbol(def->sym) && !def->sym->hasFlag(FLAG_TEMP)) ||
-            toTypeSymbol(def->sym) ||
-            toFnSymbol(def->sym)) {
+
+        // Non-temporary variable declarations are moved out to module scope.
+        if (VarSymbol* vs = toVarSymbol(def->sym))
+        {
+          // Ignore compiler-inserted temporaries.
+          // Only non-compiler-generated variables in the module init
+          // function are moved out to module scope.
+          if (vs->hasFlag(FLAG_TEMP))
+            continue;
+
+          // If the var declaration is an extern, we want to move its
+          // initializer block with it.
+          if (vs->hasFlag(FLAG_EXTERN))
+          {
+            BlockStmt* block = toBlockStmt(def->next);
+            if (block)
+            {
+              // Mark this as a type block, so it is removed later.
+              // Casts are because C++ is lame.
+              (unsigned&)(block->blockTag) |= (unsigned) BLOCK_TYPE_ONLY;
+              // Set the flag, so we move it out to module scope.
+              move = true;
+            }
+          }
+
+          mod->block->insertAtTail(def->remove());
+        }
+        
+        // All type and function symbols are moved out to module scope.
+        if (isTypeSymbol(def->sym) || isFnSymbol(def->sym))
+        {
           mod->block->insertAtTail(def->remove());
         }
       }
@@ -943,32 +980,37 @@ fix_def_expr(VarSymbol* var) {
       // its def expression after all), insert the move after the defPoint
       stmt->insertAfter(initCall);
     } else {
+      // Is not noInit
+
+      // Create an empty type block.
+      BlockStmt* block = new BlockStmt(NULL, BLOCK_SCOPELESS);
 
       VarSymbol* typeTemp = newTemp("type_tmp");
-      stmt->insertBefore(new DefExpr(typeTemp));
+      block->insertAtTail(new DefExpr(typeTemp));
 
       CallExpr* initCall;
       initCall = new CallExpr(PRIM_MOVE, typeTemp,
                    new CallExpr(PRIM_INIT, type->remove()));
 
-      stmt->insertBefore(initCall);
+      block->insertAtTail(initCall);
 
       if (init) {
         // This should be copy-initialization, not assignment.
-        stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
-        stmt->insertAfter(new CallExpr("=", typeTemp, init->remove()));
+        block->insertAtTail(new CallExpr("=", typeTemp, init->remove()));
+        block->insertAtTail(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
       } else {
         if (constTemp->hasFlag(FLAG_TYPE_VARIABLE))
-          stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, new CallExpr(PRIM_TYPEOF, typeTemp)));
+          block->insertAtTail(new CallExpr(PRIM_MOVE, constTemp,
+                                           new CallExpr(PRIM_TYPEOF, typeTemp)));
         else
         {
-          CallExpr* moveToConst = new CallExpr(PRIM_MOVE, constTemp, typeTemp);
-          Expr* newExpr = moveToConst;
-          if (var->hasFlag(FLAG_EXTERN))
-            newExpr = new BlockStmt(moveToConst, BLOCK_TYPE);
-          stmt->insertAfter(newExpr);
+          block->insertAtTail(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
+          if (constTemp->hasFlag(FLAG_EXTERN))
+            (unsigned&) block->blockTag |= BLOCK_EXTERN | BLOCK_TYPE;
         }
       }
+
+      stmt->insertAfter(block);
     }
 
   } else {
@@ -1416,9 +1458,7 @@ static void change_method_into_constructor(FnSymbol* fn) {
   fn->formals.get(1)->remove();
   update_symbols(fn, &map);
 
-  fn->name = astr("_construct_", fn->name);
-  // Save a string?
-  INT_ASSERT(!strcmp(fn->name, ct->defaultInitializer->name));
+  fn->name = ct->defaultInitializer->name;
   fn->addFlag(FLAG_CONSTRUCTOR);
   // Hide the compiler-generated initializer 
   // which also serves as the default constructor.
