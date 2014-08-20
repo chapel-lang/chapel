@@ -36,33 +36,6 @@
 #include "AstVisitor.h"
 
 
-TypeSymbol*    symbol;
-AggregateType* refType;            // pointer to references for non-reference types
-Vec<FnSymbol*> methods;
-
-bool           hasGenericDefaults; // all generic fields have defaults
-
-Symbol*        defaultValue;
-FnSymbol*      defaultInitializer; // This is the compiler-supplied default-initializer.
-                                   // It provides initial values for the
-                                   // fields in an aggregate type.
-FnSymbol*      defaultTypeConstructor;
-FnSymbol*      destructor;
-
-// Used only in PrimitiveType; replace with flag?
-bool           isInternalType;
-
-Type*          instantiatedFrom;
-Type*          scalarPromotionType;
-
-SymbolMap      substitutions;
-Vec<Type*>     dispatchChildren;   // dispatch hierarchy
-Vec<Type*>     dispatchParents;    // dispatch hierarchy
-
-
-
-
-
 Type::Type(AstTag astTag, Symbol* init_defaultVal) :
   BaseAST(astTag),
 
@@ -76,9 +49,7 @@ Type::Type(AstTag astTag, Symbol* init_defaultVal) :
   isInternalType(false),
   instantiatedFrom(NULL),
   scalarPromotionType(NULL) {
-
 }
-
 
 Type::~Type() {
 
@@ -1312,9 +1283,9 @@ void initPrimitiveTypes(void) {
 
   dtStringC = createPrimitiveType( "c_string", "c_string" );
   dtStringC->defaultValue = new_StringSymbol("");
+  dtStringC->symbol->addFlag(FLAG_NO_CODEGEN);
   dtString = createPrimitiveType( "string", "chpl_string");
   dtString->defaultValue = NULL;
-  dtStringC->symbol->addFlag(FLAG_EXTERN);
 
   dtSymbol = createPrimitiveType( "symbol", "_symbol"); 
 
@@ -1325,15 +1296,13 @@ void initPrimitiveTypes(void) {
   gFile->addFlag(FLAG_EXTERN);
 
   dtOpaque = createPrimitiveType("opaque", "chpl_opaque");
-  // Treat this as an extern to get the auto-genned assignment function.
-  dtOpaque->symbol->addFlag(FLAG_EXTERN);
   CREATE_DEFAULT_SYMBOL(dtOpaque, gOpaque, "_nullOpaque");
   gOpaque->cname = "NULL";
   // In codegen, this prevents the "&NULL" absurdity.
   gOpaque->addFlag(FLAG_EXTERN);
 
   dtTaskID = createPrimitiveType("chpl_taskID_t", "chpl_taskID_t");
-  dtTaskID->symbol->addFlag(FLAG_EXTERN);
+  dtTaskID->symbol->addFlag(FLAG_NO_CODEGEN);
   CREATE_DEFAULT_SYMBOL(dtTaskID, gTaskID, "chpl_nullTaskID");
 
   dtSyncVarAuxFields = createPrimitiveType( "_sync_aux_t", "chpl_sync_aux_t");

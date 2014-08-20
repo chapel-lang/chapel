@@ -276,10 +276,8 @@ extern proc qio_file_unlock(f:qio_file_ptr_t);
 /* The general way to make sure data is written without error */
 extern proc qio_file_sync(f:qio_file_ptr_t):syserr;
 
-//extern proc qio_file_style_ptr(f:qio_file_ptr_t):qio_style_ptr_t;
 extern proc qio_channel_end_offset_unlocked(ch:qio_channel_ptr_t):int(64);
 extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyle);
-extern proc qio_file_set_style(f:qio_file_ptr_t, const ref style:iostyle);
 extern proc qio_file_length(f:qio_file_ptr_t, ref len:int(64)):syserr;
 
 pragma "no prototype" // FIXME
@@ -527,35 +525,6 @@ record file {
   var _file_internal:qio_file_ptr_t = QIO_FILE_PTR_NULL;
 }
 
-// used for giving old warnings anyways...
-enum FileAccessMode { read, write };
-
-param _oldioerr="This program is using old-style I/O which is no longer supported.\n" +
-                "See doc/README.io.\n" +
-                "You'll probably want something like:\n" +
-                "var f = open(filename, iomode.w).writer()\n" + 
-                "or\n" + 
-                "var f = open(filename, iomode.r).reader()\n";
-
-// This file constructor exists to throw an error for old I/O code.
-proc file.file(filename:string="",
-               mode:FileAccessMode=FileAccessMode.read,
-               path:string=".") {
-  compilerError(_oldioerr);
-}
-proc file.open() {
-  compilerError(_oldioerr);
-}
-proc file.filename : string {
-  compilerError(_oldioerr + "file.filename is no longer supported");
-}
-proc file.mode {
-  compilerError(_oldioerr + "file.mode is no longer supported");
-}
-proc file.isOpen: bool {
-  compilerError(_oldioerr + "file.isOpen is no longer supported");
-}
-
 // TODO -- shouldn't have to write this this way!
 pragma "init copy fn"
 proc chpl__initCopy(x: file) {
@@ -585,13 +554,6 @@ proc file.check() {
     halt("Operation attempted on an invalid file");
   }
 }
-
-/*
-proc file.file() {
-  this.home = here;
-  this._file_internal = QIO_FILE_PTR_NULL;
-}
-*/
 
 proc file.~file() {
   on this.home {

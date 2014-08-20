@@ -82,6 +82,8 @@ static void     addToSymbolTable(Vec<DefExpr*>& defs);
 static void     processImportExprs();
 static void     addClassToHierarchy(AggregateType* ct);
 
+static void addRecordDefaultConstruction();
+
 static void     resolveGotoLabels();
 static void     resolveUnresolvedSymExprs();
 static void     resolveEnumeratedTypes();
@@ -150,6 +152,8 @@ void scopeResolve() {
       }
     }
   }
+
+  addRecordDefaultConstruction();
 
   //
   // build constructors (type and value versions)
@@ -495,6 +499,35 @@ void add_root_type(AggregateType* ct)
   }
 }
 
+static void addRecordDefaultConstruction()
+{
+  forv_Vec(DefExpr, def, gDefExprs)
+  {
+    // We're only interested in declarations that do not have initializers.
+    if (def->init)
+      continue;
+
+    if (VarSymbol* var = toVarSymbol(def->sym))
+    {
+      if (AggregateType* at = toAggregateType(var->type))
+      {
+        if (!at->isRecord())
+          continue;
+
+        // No initializer for extern records.
+        if (at->symbol->hasFlag(FLAG_EXTERN))
+          continue;
+
+        SET_LINENO(def);
+        CallExpr* ctor_call = new CallExpr(new SymExpr(at->symbol));
+        def->init = new CallExpr(PRIM_NEW, ctor_call);
+        insert_help(def->init, def, def->parentSymbol);
+      }
+    }
+  }
+}
+ 
+
 /************************************ | *************************************
 *                                                                           *
 *                                                                           *
@@ -691,12 +724,10 @@ static void build_constructor(AggregateType* ct) {
 
   // Create the default constructor function symbol,
   FnSymbol* fn = new FnSymbol(astr("_construct_", ct->symbol->name));
+  fn->cname = fn->name;
 
   fn->addFlag(FLAG_DEFAULT_CONSTRUCTOR);
   fn->addFlag(FLAG_CONSTRUCTOR);
-
-  fn->cname = astr("_construct_", ct->symbol->cname);
-
   fn->addFlag(FLAG_COMPILER_GENERATED);
 
   if (ct->symbol->hasFlag(FLAG_REF))
@@ -898,6 +929,10 @@ static void build_constructor(AggregateType* ct) {
     }
 
     if (field->hasFlag(FLAG_TYPE_VARIABLE))
+      // Args with this flag are removed after resolution.
+      // Note that in the default type constructor, this flag is also applied
+      // (along with FLAG_GENERIC) to arguments whose type is unknown, but would
+      // not be pruned in resolution.
       arg->addFlag(FLAG_TYPE_VARIABLE);
 
     if (!exprType && arg->type == dtUnknown)
@@ -972,6 +1007,7 @@ static ArgSymbol* create_generic_arg(VarSymbol* field)
   if (field->hasFlag(FLAG_PARAM))
     arg->intent = INTENT_PARAM;
   else
+    // Both type arguments and arguments of unspecified type get this flag.
     arg->addFlag(FLAG_TYPE_VARIABLE);
 
   // Copy the field type if it exists.
@@ -986,7 +1022,11 @@ static ArgSymbol* create_generic_arg(VarSymbol* field)
 
   // Translate an unknown field type into an unspecified arg type.
   if (!exprType && arg->type == dtUnknown)
+  {
+    if (! field->hasFlag(FLAG_TYPE_VARIABLE))
+      arg->addFlag(FLAG_GENERIC);
     arg->type = dtAny;
+  }
 
   return arg;
 }
@@ -1173,6 +1213,7 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
   if (!strcmp(name, "."))
     return;
 
+  // Skip unresolveds that are not in the tree.
   if (!unresolvedSymExpr->parentSymbol)
     return;
 

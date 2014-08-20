@@ -92,7 +92,9 @@ symbolFlag( FLAG_FIELD_ACCESSOR , npr, "field accessor" , "field setter/getter f
 symbolFlag( FLAG_FIRST_CLASS_FUNCTION_INVOCATION, npr, "first class function invocation" , "proxy for first-class function invocation" )
 symbolFlag( FLAG_FUNCTION_CLASS , npr, "function class" , "first-class function class representation" )
 symbolFlag( FLAG_FUNCTION_PROTOTYPE , npr, "function prototype" , "signature for function prototypes" )
-symbolFlag( FLAG_GENERIC , npr, "generic" , "generic types and functions" )
+// When applied to an argument, this flag means that the arg accepts a value
+// but has unspecified type.
+symbolFlag( FLAG_GENERIC , npr, "generic" , "generic types, functions and arguments" )
 symbolFlag( FLAG_GLOBAL_TYPE_SYMBOL, npr, "global type symbol", "is accessible through a global type variable")
 symbolFlag( FLAG_HAS_RUNTIME_TYPE , ypr, "has runtime type" , "type that has an associated runtime type" )
 
@@ -222,6 +224,9 @@ symbolFlag( FLAG_TYPE_CONSTRUCTOR , npr, "type constructor" , ncm )
 symbolFlag( FLAG_TYPE_VARIABLE , npr, "type variable" , "contains a type instead of a value" )
 symbolFlag( FLAG_USER_NAMED , npr, "user named" , "named by the user" /* so leave it alone */ )
 symbolFlag( FLAG_VIRTUAL , npr, "virtual" , ncm )
+// Used to mark where a compiler generated flag was removed (but is desired
+// elsewhere).
+symbolFlag( FLAG_WAS_COMPILER_GENERATED, npr, "was compiler generated", "used to be marked compiler generated")
 symbolFlag( FLAG_WIDE , npr, "wide" , ncm )
 symbolFlag( FLAG_WIDE_CLASS , npr, "wide class" , ncm )
 symbolFlag( FLAG_WRAPPER , npr, "wrapper" , "wrapper function" )

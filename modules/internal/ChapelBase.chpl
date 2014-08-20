@@ -229,6 +229,8 @@ module ChapelBase {
   inline proc =(ref a: imag(?w), b: imag(w)) { __primitive("=", a, b); }
   pragma "trivial assignment"
   inline proc =(ref a: complex(?w), b: complex(w)) { __primitive("=", a, b); }
+  pragma "trivial assignment"
+  inline proc =(ref a:opaque, b:opaque) {__primitive("=", a, b); }
 
   inline proc =(ref a, b: a.type) where isClassType(a.type)
   { __primitive("=", a, b); }

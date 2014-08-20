@@ -77,6 +77,8 @@ buildPromotionWrapper(FnSymbol* fn,
 static FnSymbol*
 buildEmptyWrapper(FnSymbol* fn, CallInfo* info) {
   FnSymbol* wrapper = new FnSymbol(fn->name);
+  // TODO: Make this less verbose by bulk-copying flags from the original
+  // function and then negating flags we don't want.
   wrapper->addFlag(FLAG_WRAPPER);
   wrapper->addFlag(FLAG_INVISIBLE_FN);
   wrapper->addFlag(FLAG_INLINE);
@@ -106,6 +108,10 @@ buildEmptyWrapper(FnSymbol* fn, CallInfo* info) {
   if (fn->hasFlag(FLAG_ASSIGNOP))
     wrapper->addFlag(FLAG_ASSIGNOP);
   wrapper->instantiationPoint = getVisibilityBlock(info->call);
+  if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
+    wrapper->addFlag(FLAG_DEFAULT_CONSTRUCTOR);
+  if (fn->hasFlag(FLAG_COMPILER_GENERATED))
+    wrapper->addFlag(FLAG_WAS_COMPILER_GENERATED);
   wrapper->addFlag(FLAG_COMPILER_GENERATED);
   return wrapper;
 }
@@ -579,6 +585,9 @@ buildPromotionWrapper(FnSymbol* fn,
   SET_LINENO(info->call);
   FnSymbol* wrapper = buildEmptyWrapper(fn, info);
   wrapper->addFlag(FLAG_PROMOTION_WRAPPER);
+  // Special case: When promoting a default constructor, the promotion wrapper
+  // itself is no longer a default constructor.
+  wrapper->removeFlag(FLAG_DEFAULT_CONSTRUCTOR);
   wrapper->cname = astr("_promotion_wrap_", fn->cname);
   CallExpr* indicesCall = new CallExpr("_build_tuple"); // destructured in build
   CallExpr* iteratorCall = new CallExpr("_build_tuple");

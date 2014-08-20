@@ -467,6 +467,7 @@ static void codegen_header_compilation_config() {
   fileinfo cfgfile = { NULL, NULL, NULL };
 
   openCFile(&cfgfile, sCfgFname, "c");
+  gChplCompilationConfig = cfgfile; // so LLVM backend can use it too.
 
   // follow convention of just not writing to the file if we can't open it
   if (cfgfile.fptr != NULL) {
@@ -493,20 +494,19 @@ static void codegen_header_compilation_config() {
     fprintf(cfgfile.fptr, "\nvoid chpl_program_about(void);\n");
     fprintf(cfgfile.fptr, "\nvoid chpl_program_about() {\n");
 
-    fprintf(cfgfile.fptr, 
-            "printf(\"Compilation command: %s\\n\");\n",
-            compileCommand);
-
     fprintf(cfgfile.fptr,
-            "printf(\"Chapel compiler version: %s\\n\");\n",
+            "printf(\"%%s\", \"Compilation command: %s\\n\");\n",
+            compileCommand);
+    fprintf(cfgfile.fptr,
+            "printf(\"%%s\", \"Chapel compiler version: %s\\n\");\n",
             compileVersion);
-
     fprintf(cfgfile.fptr, "printf(\"Chapel environment:\\n\");\n");
-    fprintf(cfgfile.fptr, "printf(\"  CHPL_HOME: %s\\n\");\n", CHPL_HOME);
-
+    fprintf(cfgfile.fptr,
+            "printf(\"%%s\", \"  CHPL_HOME: %s\\n\");\n",
+            CHPL_HOME);
     for (int i = 0; i < num_chpl_env_vars; i++) {
       fprintf(cfgfile.fptr,
-              "printf(\"  %s: %s\\n\");\n",
+              "printf(\"%%s\", \"  %s: %s\\n\");\n",
               chpl_env_var_names[i],
               chpl_env_vars[i]);
     }

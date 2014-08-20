@@ -602,21 +602,10 @@ void qio_file_unlock(qio_file_t* f)
   qio_unlock(&f->lock);
 }
 
-// You should lock/ get ptr/ unlock
-static inline
-qio_style_t* qio_file_style_ptr(qio_file_t* f)
-{
-  return &f->style;
-}
 static inline
 void qio_file_get_style(qio_file_t* f, qio_style_t* style)
 {
   *style = f->style;
-}
-static inline
-void qio_file_set_style(qio_file_t* f, const qio_style_t* style)
-{
-  f->style = *style;
 }
 
 // Return the current length of a file.
