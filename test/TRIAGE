@@ -255,6 +255,14 @@ cygwin timeout
 [Error: Timed out compilation for release/examples/benchmarks/lulesh/lulesh (compopts: 1)] (1/13/14, 1/16/14, 1/20/14)
 [Error: Timed out compilation for release/examples/primers/distributions] (1/19/14)
 
+This one "times out", but often times the timedexec script fails to actually
+kill it leaving the job hung until someone manually kills the process in
+windows land (which could take days if nobody notices). Added a skipif so the
+test will not run on cygwin until the issue can be investigated further.
+
+[Error: Timed out executing program parallel/taskPar/sungeun/private] (8/19/14)
+
+
 
 PrgEnv-gnu compilation timeout
 ==============================

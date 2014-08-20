@@ -3,6 +3,8 @@
 pragma "no use ChapelStandard"
 module ChapelLocale {
 
+  use LocaleModel;
+
   //
   // An abstract class. Specifies the required locale interface.
   // Each locale implementation must inherit from this class.
@@ -330,7 +332,7 @@ module ChapelLocale {
   const dummyLocale = new locale();
 
   extern proc chpl_task_getRequestedSubloc(): chpl_sublocID_t;
-  extern var chpl_nodeID: int(32);
+
   // Return the locale ID of the current locale
   inline proc here_id {
     return chpl_buildLocaleID(chpl_nodeID,chpl_task_getRequestedSubloc());
@@ -348,6 +350,7 @@ module ChapelLocale {
       // For code prior to rootLocale initialization
       return dummyLocale;
   }
+
 
   pragma "insert line file info"
   extern proc chpl_memhook_malloc_pre(number:int, size:int, md:int(16)): void;

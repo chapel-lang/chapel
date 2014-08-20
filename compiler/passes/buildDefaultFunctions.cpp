@@ -389,7 +389,6 @@ static void build_chpl_entry_points(void) {
   // It invokes the user's code.
   //
   chpl_gen_main = new FnSymbol("chpl_gen_main");
-  chpl_gen_main->addFlag(FLAG_COMPILER_GENERATED);
 
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_arg", dtMainArgument);
   chpl_gen_main->insertFormalAtTail(arg);
