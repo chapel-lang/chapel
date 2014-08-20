@@ -336,6 +336,7 @@ static void addAllToVirtualMaps(FnSymbol* fn, AggregateType* ct);
 static void buildVirtualMaps();
 static void
 addVirtualMethodTableEntry(Type* type, FnSymbol* fn, bool exclusive = false);
+static void resolveTypedefedArgTypes(FnSymbol* fn);
 static void computeStandardModuleSet();
 static void unmarkDefaultedGenerics();
 static void resolveUses(ModuleSymbol* mod);
@@ -365,6 +366,7 @@ static void replaceTypeArgsWithFormalTypeTemps();
 static void replaceValuesWithRuntimeTypes();
 static void removeWhereClauses();
 static void replaceReturnedValuesWithRuntimeTypes();
+static Expr* resolvePrimInit(CallExpr* call);
 static void insertRuntimeInitTemps();
 static void removeInitFields();
 static void removeMootFields();
@@ -709,6 +711,8 @@ protoIteratorClass(FnSymbol* fn) {
   ii->zip4 = protoIteratorMethod(ii, "zip4", dtVoid);
   ii->hasMore = protoIteratorMethod(ii, "hasMore", dtInt[INT_SIZE_DEFAULT]);
   ii->getValue = protoIteratorMethod(ii, "getValue", fn->retType);
+  ii->init = protoIteratorMethod(ii, "init", dtVoid);
+  ii->incr = protoIteratorMethod(ii, "incr", dtVoid);
 
   ii->irecord->defaultInitializer = fn;
   ii->irecord->scalarPromotionType = fn->retType;
@@ -724,6 +728,8 @@ protoIteratorClass(FnSymbol* fn) {
   fn->iteratorInfo->advance->addFlag(FLAG_RESOLVED);
   fn->iteratorInfo->hasMore->addFlag(FLAG_RESOLVED);
   fn->iteratorInfo->getValue->addFlag(FLAG_RESOLVED);
+  fn->iteratorInfo->init->addFlag(FLAG_RESOLVED);
+  fn->iteratorInfo->incr->addFlag(FLAG_RESOLVED);
 
   ii->getIterator = new FnSymbol("_getIterator");
   ii->getIterator->addFlag(FLAG_AUTO_II);
@@ -1014,7 +1020,6 @@ static void ensureEnumTypeResolved(EnumType* etype) {
     // Make sure to resolve all enum types.
     for_enums(def, etype) {
       if (def->init) {
-        // Type* enumtype =
         Expr* enumTypeExpr =
         resolve_type_expr(def->init);
 
@@ -1656,6 +1661,8 @@ filterConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
 
   if (!currCandidate->fn) return;
   
+  resolveTypedefedArgTypes(currCandidate->fn);
+
   if (!currCandidate->computeAlignment(info)) {
     return;
   }
@@ -2625,7 +2632,8 @@ getVisibleFunctions(BlockStmt* block,
   //
   if (visited.set_in(block))
     return NULL;
-  else if (isModuleSymbol(block->parentSymbol))
+
+  if (isModuleSymbol(block->parentSymbol))
     visited.set_add(block);
 
   bool canSkipThisBlock = true;
@@ -2807,6 +2815,66 @@ static bool checkAndUpdateIfLegalFieldOfThis(CallExpr* call, Expr* actual) {
           return true;
       }
   return false;
+}
+
+// If 'call' is an access to a const thing, for example a const field
+// or a field of a const record, set const flag(s) on the symbol
+// that stores the result of 'call'.
+static void setFlagsForConstAccess(CallExpr* call, FnSymbol* resolvedFn)
+{
+  // Is the outcome of 'call' a reference to a const?
+  bool refConst = resolvedFn->hasFlag(FLAG_REF_TO_CONST);
+
+  // ... except do a couple of adjustments for field accesses.
+  // Do we really need FLAG_FIELD_ACCESSOR here? Perhaps we do,
+  // in order to treat field accesses to const records specially.
+
+  // The symbol whose field is accessed, if applicable:
+  Symbol* baseSym = NULL;
+
+  if (resolvedFn->hasFlag(FLAG_FIELD_ACCESSOR) &&
+      // promotion wrappers are not handled currently
+      !resolvedFn->hasFlag(FLAG_PROMOTION_WRAPPER))
+  {
+    SymExpr* baseExpr = toSymExpr(call->get(2));
+    INT_ASSERT(baseExpr); // otherwise, cannot do the checking
+    // the symbol whose field is accessed
+    baseSym = baseExpr->var;
+
+    // Do not consider it const if it is an access to 'this'
+    // in a constructor. Todo: will need to reconcile with UMM.
+    if (refConst && baseSym->hasFlag(FLAG_ARG_THIS) &&
+        isInConstructorLikeFunction(call)) {
+      refConst = false;
+    } else {
+      // See if the variable being accessed is const.
+      if (baseSym->isConstant() ||
+          baseSym->hasFlag(FLAG_REF_TO_CONST)
+      ) {
+        // Todo: fine-tuning may be desired, e.g.
+        // if FLAG_CONST then baseType = baseSym->type.
+        Type* baseType = baseSym->type->getValType();
+        // Exclude classes: even if a class variable is const,
+        // its non-const fields are OK to modify.
+        if (isRecord(baseType) || isUnion(baseType))
+          refConst = true;
+        else
+          INT_ASSERT(isClass(baseType));
+      }
+    }
+  }
+
+  if (refConst) {
+    if (CallExpr* parent = toCallExpr(call->parentExpr)) {
+      if (parent->isPrimitive(PRIM_MOVE)) {
+        SymExpr* dest = toSymExpr(parent->get(1));
+        INT_ASSERT(dest); // what else can it be?
+        dest->var->addFlag(FLAG_REF_TO_CONST);
+        if (baseSym && baseSym->hasFlag(FLAG_ARG_THIS))
+          dest->var->addFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS);
+      }
+    }
+  }
 }
 
 // If 'fn' is the default assignment for a record type, return
@@ -3076,48 +3144,7 @@ static void resolveNormalCall(CallExpr* call) {
     call->baseExpr->replace(new SymExpr(resolvedFn));
   }
 
-  if (resolvedFn->hasFlag(FLAG_FIELD_ACCESSOR)) {
-    SymExpr* baseExpr = toSymExpr(call->get(2));
-    INT_ASSERT(baseExpr); // otherwise, cannot do the checking
-    Symbol* baseSym = baseExpr->var;
-    // Is the outcome of 'call' a reference to a const?
-    bool refConst = false;
-
-    if (resolvedFn->hasFlag(FLAG_REF_TO_CONST)) {
-      // 'call' accesses a const field.
-      refConst = true;
-      // Do not consider it const if it is an access to 'this'
-      // in a constructor. Todo: will need to reconcile with UMM.
-      if (baseSym->hasFlag(FLAG_ARG_THIS) &&
-          isInConstructorLikeFunction(call))
-        refConst = false;
-    } else {
-      // See if the variable being accessed is const.
-      if (baseSym->hasFlag(FLAG_CONST) ||
-          baseSym->hasFlag(FLAG_REF_TO_CONST)
-        ) {
-        // Todo: fine-tuning may be desired, e.g.
-        // if FLAG_CONST then baseType = baseSym->type.
-        Type* baseType = baseSym->type->getValType();
-        // Exclude classes: even if a class variable is const,
-        // its non-const fields are OK to modify.
-        if (isRecord(baseType) || isUnion(baseType))
-          refConst = true;
-      }
-    }
-
-    if (refConst) {
-      if (CallExpr* parent = toCallExpr(call->parentExpr)) {
-        if (parent->isPrimitive(PRIM_MOVE)) {
-          SymExpr* dest = toSymExpr(parent->get(1));
-          INT_ASSERT(dest); // what else can it be?
-          dest->var->addFlag(FLAG_REF_TO_CONST);
-          if (baseSym->hasFlag(FLAG_ARG_THIS))
-            dest->var->addFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS);
-        }
-      }
-    }
-  }
+  setFlagsForConstAccess(call, resolvedFn);
 
   if (resolvedFn->hasFlag(FLAG_MODIFIES_CONST_FIELDS))
     // Not allowed if it is not called directly from a constructor.
@@ -4270,6 +4297,215 @@ isNormalField(Symbol* field)
   return true;
 }
 
+// Recursively resolve typedefs
+static Type* resolveTypeAlias(SymExpr* se)
+{
+  if (! se)
+    return NULL;
+
+  // Quick exit if the type is already known.
+  Type* result = se->getValType();
+  if (result != dtUnknown)
+    return result;
+
+  VarSymbol* var = toVarSymbol(se->var);
+  if (! var)
+    return NULL;
+
+  DefExpr* def = var->defPoint;
+  SET_LINENO(def);
+  Expr* typeExpr = resolve_type_expr(def->init);
+  SymExpr* tse = toSymExpr(typeExpr);
+  
+  return resolveTypeAlias(tse);
+}
+
+
+static CallExpr* generateConcreteConstructorCall(Type* type)
+{
+  UnresolvedSymExpr* ctorSym =
+    new UnresolvedSymExpr(type->defaultInitializer->name);
+  CallExpr* call = new CallExpr(ctorSym);
+
+  if (isAggregateType(type))
+  {
+    // Do what the default type constructor does for this type does by default.
+    form_Map(SymbolMapElem, sub, type->substitutions)
+    {
+      Symbol* field = sub->key;
+      SymExpr* typeExpr = new SymExpr(sub->value);
+      Expr* init = typeExpr;
+      if (field->hasFlag(FLAG_GENERIC) && isTypeSymbol(typeExpr->var))
+        // This argument expects a value (not a type expression).
+        init = new CallExpr(PRIM_INIT, // This should be "_defaultOf".
+                            typeExpr);
+      NamedExpr* arg = new NamedExpr(field->name, init);
+      call->insertAtTail(arg);
+    }
+  }
+
+  return call;
+}
+
+
+// Substitution of runtime type values for types bearing that flag
+// depends on the type already having been stored in a variable, so we
+// cannot simply name the type as an actual argument and expect it to
+// be replaced by a runtime type value....
+// This function inserts a type temp for type arguments carrying the
+// HAS_RUNTIME_TYPE flag, so that runtime type handling can perform the rest of
+// the substitution.
+// As an alternative to this workaround, we could make the
+// handling of runtime types more robust...
+static void fixupRuntimeTypeArguments(CallExpr* call)
+{
+  for_actuals(actual, call)
+  {
+    NamedExpr* ne = toNamedExpr(actual);
+    SymExpr* se = toSymExpr(ne->actual);
+    if (TypeSymbol* ts = toTypeSymbol(se->var))
+    {
+      if (ts->hasFlag(FLAG_HAS_RUNTIME_TYPE))
+      {
+        Expr* stmt = call->getStmtExpr();
+        VarSymbol* typeTmp = newTemp(astr("_RTT_tmp_", ne->name), se->var->type);
+        typeTmp->addFlag(FLAG_TYPE_VARIABLE);
+        stmt->insertBefore(new DefExpr(typeTmp));
+        CallExpr* init = new CallExpr(PRIM_INIT, se->copy());
+        stmt->insertBefore(new CallExpr(PRIM_MOVE, new SymExpr(typeTmp), init));
+        se->replace(new SymExpr(typeTmp));
+      }
+    }
+  }
+}
+
+
+// generateConcreteConstructorCall() could have inserted call expressions into
+// the argument list for the call.  These need to be flattened and resolved.
+static void flattenAndResolveArgs(CallExpr* call)
+{
+  for_actuals(actual, call)
+  {
+    NamedExpr* ne = toNamedExpr(actual);
+    if (CallExpr* ce = toCallExpr(ne->actual))
+    {
+      Expr* stmt = call->getStmtExpr();
+      VarSymbol* typeTemp = newTemp(astr("_type_tmp_",  ne->name));
+      stmt->insertBefore(new DefExpr(typeTemp));
+      CallExpr* move = new CallExpr(PRIM_MOVE, new SymExpr(typeTemp),
+                                    ce->copy());
+      stmt->insertBefore(move);
+      resolveCall(move);
+      ce->replace(new SymExpr(typeTemp));
+    }
+  }
+}
+
+
+// Returns NULL if no substitution was made.  Otherwise, returns the expression
+// that replaced the PRIM_INIT (or PRIM_NO_INIT) expression.
+// Here, "replaced" means that the PRIM_INIT (or PRIM_NO_INIT) primitive is no
+// longer in the tree.
+static Expr* resolvePrimInit(CallExpr* call)
+{
+  Expr* result = NULL;
+
+  // ('init' foo) --> A default value or the result of an initializer call.
+  // ('no_init' foo) --> Ditto, only in some cases a simpler default value.
+
+  // The argument is expected to be a type variable.
+  SymExpr* se = toSymExpr(call->get(1));
+  INT_ASSERT(se);
+  if (!se->var->hasFlag(FLAG_TYPE_VARIABLE))
+    USR_FATAL(call, "invalid type specification");
+
+  Type* type = resolveTypeAlias(se);
+
+  // Do not resolve PRIM_INIT on extern types.
+  // These are removed later.
+  // It is useful to leave them in the tree, because PRIM_INIT behaves like an
+  // expression and has a type.
+  if (type->symbol->hasFlag(FLAG_EXTERN))
+  {
+    CallExpr* stmt = toCallExpr(call->parentExpr);
+    INT_ASSERT(stmt->isPrimitive(PRIM_MOVE));
+//    makeNoop(stmt);
+//    result = stmt;
+    return result;
+  }
+
+  // Do not resolve runtime type values yet.
+  // Let these flow through to replaceInitPrims().
+  if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))
+    return result;
+
+  SET_LINENO(call);
+
+  if (type->defaultValue ||
+      type->symbol->hasFlag(FLAG_TUPLE)) {
+    // It should be possible to eliminate the defaultValue field from the type
+    // respresentation, and just use _defaultOf to supply this in module code.
+    CallExpr* defOfCall = new CallExpr("_defaultOf", type->symbol);
+    call->replace(defOfCall);
+    resolveCall(defOfCall);
+    resolveFns(defOfCall->isResolved());
+    result = postFold(defOfCall);
+    return result;
+  } 
+    
+  if (type->defaultInitializer)
+  {
+    if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+      // defaultInitializers for iterator record types cannot be called as
+      // default constructors.  So give up now!
+      return result;
+
+    CallExpr* initCall = generateConcreteConstructorCall(type);
+    call->replace(initCall);
+    flattenAndResolveArgs(initCall);
+    fixupRuntimeTypeArguments(initCall);
+    resolveCall(initCall);
+
+#define UserCtorsAndDefaultOfHack 1
+#if UserCtorsAndDefaultOfHack
+    // Hack alert! This is a really lame way to get user default
+    // constructor calls  and _defaultOf to work together.  The basic idea is
+    // to use _defaultOf if we know that the implementation does not call a
+    // user default constructor and the user default constructor otherwise.
+    // The way that we test this is to go ahead and insert a call to the
+    // default construtor and resolve this.  If it turns out that the bound
+    // function is compiler-generated, then we switch to _defaultOf and
+    // resolve again.
+    // The way to use _defaultOf correctly is to insert a call to it at the
+    // beginning of every constructor (to perform value-initialization as
+    // guaranteed by the spec).  But in order to do this neatly, several
+    // changes must be made in how constructors are implemented.
+    // Primarily, statements that look like assignments to fields need to be
+    // converted to copy-initialization of those fields instead.  Also, it
+    // would probably be very handy to be able to invoke both _defaultOf and
+    // constructors themselves as methods.
+    FnSymbol* ctor = initCall->isResolved();
+    if (ctor->hasFlag(FLAG_COMPILER_GENERATED) ||
+        ctor->hasFlag(FLAG_WAS_COMPILER_GENERATED))
+    {
+      CallExpr* defOfCall = new CallExpr("_defaultOf", type->symbol);
+      initCall->replace(defOfCall);
+      resolveCall(defOfCall);
+      initCall = defOfCall;
+    }
+#endif
+
+    resolveFns(initCall->isResolved());
+    result = initCall;
+    return result;
+  }
+
+  // If we reach here, we'll fall through and report an error in
+  // replaceInitPrims().
+  return result;
+}
+
+
 static Expr*
 preFold(Expr* expr) {
   Expr* result = expr;
@@ -4441,6 +4677,16 @@ preFold(Expr* expr) {
           }
         }
       }
+    }
+    else if (call->isPrimitive(PRIM_INIT))
+    {
+      if (Expr* expr = resolvePrimInit(call))
+      {
+        // call was replaced by expr.
+        result = expr;
+      }
+      // No default value yet, so defer resolution of this init
+      // primitive until record initializer resolution.
     } else if (call->isPrimitive(PRIM_NO_INIT)) {
       SymExpr* se = toSymExpr(call->get(1));
       INT_ASSERT(se);
@@ -4481,23 +4727,10 @@ preFold(Expr* expr) {
           result = call;
           inits.add(call);
         }
-      }
 
-    } else if (call->isPrimitive(PRIM_INIT)) {
-      SymExpr* se = toSymExpr(call->get(1));
-      INT_ASSERT(se);
-      if (!se->var->hasFlag(FLAG_TYPE_VARIABLE))
-        USR_FATAL(call, "invalid type specification");
-      Type* type = call->get(1)->getValType();
-      
-      if (type->defaultValue || type->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
-        // In these cases, the _defaultOf method for that type can be resolved
-        // now.  Otherwise, it needs to wait until resolveRecordInitializers
-        result = new CallExpr("_defaultOf", type->symbol);
-        call->replace(result);
-      } else {
         inits.add(call);
       }
+
     } else if (call->isPrimitive(PRIM_TYPEOF)) {
       Type* type = call->get(1)->getValType();
       if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
@@ -5128,6 +5361,7 @@ requiresImplicitDestroy(CallExpr* call) {
         !fn->hasFlag(FLAG_DONOR_FN) &&
         !fn->hasFlag(FLAG_INIT_COPY_FN) &&
         strcmp(fn->name, "=") &&
+        strcmp(fn->name, "_defaultOf") &&
         !fn->hasFlag(FLAG_AUTO_II) &&
         !fn->hasFlag(FLAG_CONSTRUCTOR) &&
         !fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
@@ -5743,11 +5977,13 @@ insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
     if (call->parentSymbol == fn) {
       if (call->isPrimitive(PRIM_MOVE)) {
         if (SymExpr* lhs = toSymExpr(call->get(1))) {
+          Type* lhsType = lhs->var->type;
+          if (lhsType != dtUnknown) {
           Expr* rhs = call->get(2);
           Type* rhsType = rhs->typeInfo();
-          if (rhsType != lhs->var->type &&
-              rhsType->refType != lhs->var->type &&
-              rhsType != lhs->var->type->refType) {
+          if (rhsType != lhsType &&
+              rhsType->refType != lhsType &&
+              rhsType != lhsType->refType) {
             SET_LINENO(rhs);
             rhs->remove();
             Symbol* tmp = NULL;
@@ -5758,9 +5994,10 @@ insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
               call->insertBefore(new DefExpr(tmp));
               call->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs));
             }
-            CallExpr* cast = new CallExpr("_cast", lhs->var->type->symbol, tmp);
+            CallExpr* cast = new CallExpr("_cast", lhsType->symbol, tmp);
             call->insertAtTail(cast);
             casts.add(cast);
+          }
           }
         }
       }
@@ -6289,6 +6526,48 @@ parseExplainFlag(char* flag, int* line, ModuleSymbol** module) {
 }
 
 
+static void resolveExternVarSymbols()
+{
+  forv_Vec(VarSymbol, vs, gVarSymbols)
+  {
+    if (! vs->hasFlag(FLAG_EXTERN))
+      continue;
+
+    DefExpr* def = vs->defPoint;
+    Expr* init = def->next;
+    // We expect the expression following the DefExpr for an extern to be a
+    // type block that initializes the variable.
+    BlockStmt* block = toBlockStmt(init);
+    if (block)
+      resolveBlock(block);
+  }
+}
+
+
+static void resolveTypedefedArgTypes(FnSymbol* fn)
+{
+  for_formals(formal, fn)
+  {
+    INT_ASSERT(formal->type); // Should be *something*.
+    if (formal->type != dtUnknown)
+      continue;
+
+    if (BlockStmt* block = formal->typeExpr)
+    {
+      if (SymExpr* se = toSymExpr(block->body.first()))
+      {
+        if (se->var->hasFlag(FLAG_TYPE_VARIABLE))
+        {
+          Type* type = resolveTypeAlias(toSymExpr(se));
+          INT_ASSERT(type);
+          formal->type = type;
+        }
+      }
+    }
+  }
+}
+
+
 static void
 computeStandardModuleSet() {
   standardModuleSet.set_add(rootModule->block);
@@ -6332,6 +6611,8 @@ resolve() {
   }
 
   unmarkDefaultedGenerics();
+
+  resolveExternVarSymbols();
 
   resolveUses(mainModule);
   resolveUses(printModuleInitModule);
@@ -6609,9 +6890,8 @@ static void resolveRecordInitializers() {
     Type* type = init->get(1)->typeInfo();
 
     // Don't resolve initializers for runtime types.
-    // I think this should be dead code because runtime type expressions
-    // are all resolved during resolution (and this function is called
-    // after that).
+    // These have to be resolved after runtime types are replaced by values in
+    // insertRuntimeInitTemps().
     if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))
       continue;
 
@@ -7233,8 +7513,10 @@ static void removeTypeBlocks()
       continue;
 
     // Remove type blocks--code that exists only to determine types
-    if (block->blockTag == BLOCK_TYPE)
+    if (block->blockTag & BLOCK_TYPE_ONLY)
+    {
       block->remove();
+    }
   }
 }
 
@@ -7548,8 +7830,30 @@ static void replaceInitPrims(Vec<BaseAST*>& asts)
           // keyword; it should be removed when possible
           //
           call->getStmtExpr()->remove();
-        } else {
-          INT_FATAL(call, "PRIM_INIT should have already been handled");
+        }
+        else
+        {
+          Expr* expr = resolvePrimInit(call);
+
+          if (! expr)
+          {
+            // This PRIM_INIT could not be resolved.
+
+            // But that's OK if it's an extern type.
+            // (We don't expect extern types to have initializers.)
+            // Also, we don't generate initializers for iterator records.
+            // Maybe we can avoid adding PRIM_INIT for these cases in the first
+            // place....
+            if (rt->symbol->hasFlag(FLAG_EXTERN) ||
+                rt->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+            {
+              INT_ASSERT(toCallExpr(call->parentExpr)->isPrimitive(PRIM_MOVE));
+              makeNoop(toCallExpr(call->parentExpr));
+              continue;
+            }
+
+            INT_FATAL(call, "PRIM_INIT should have already been handled");
+          }
         }
       }
     } 

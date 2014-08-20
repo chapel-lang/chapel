@@ -154,20 +154,15 @@ bool AstDumpToNode::enterBlockStmt(BlockStmt* node)
     if (node == fn->where)
       write(false, "where ", false);
 
-  switch (node->blockTag)
-  {
-    case BLOCK_NORMAL:
-      write(false, "#<BlockStmt ",           true);
-      break;
+  write(false, "#<BlockStmt ",           true);
 
-    case BLOCK_SCOPELESS:
-      write(false, "#<BlockStmt scopeless ", true);
-      break;
-
-    case BLOCK_TYPE:
-      write(false, "#<BlockStmt type ",      true);
-      break;
-  }
+  // Show blockTag bits.
+  if (node->blockTag & BLOCK_EXTERN)
+    write(false, "extern ", true);
+  if (node->blockTag & BLOCK_SCOPELESS)
+    write(false, "scopeless ", true);
+  if (node->blockTag & BLOCK_TYPE_ONLY)
+    write(false, "type_only ", true);
 
   mOffset = mOffset + 2;
 
