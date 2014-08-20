@@ -1596,11 +1596,11 @@ proc channel.read(ref args ...?k,
   }
 }
 
-proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low, inclusive = true) : bool
+proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low, amount = arg.domain.high - start, inclusive = true) : bool
 where arg.rank == 1 && isRectangularArr(arg)
 {
   var e:syserr = ENOERR;
-  var got = this.readline(arg, numRead, start, error=e, inclusive);
+  var got = this.readline(arg, numRead, start, amount, error=e, inclusive);
   if !e && got then return true;
   else if e == EEOF || !got then return false;
   else {
@@ -1619,29 +1619,31 @@ where arg.rank == 1 && isRectangularArr(arg)
 // Returns true if bytes were read without error. Returns false if an error
 // occurred, the array is of zero size, or the start index is beyond the 
 // array's domain.
-proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low, out error:syserr, inclusive = true) : bool
+proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low, amount = arg.domain.high - start, out error:syserr, inclusive = true) : bool
 where arg.rank == 1 && isRectangularArr(arg)
 {
   error = ENOERR;
-  if arg.size == 0 || !arg.domain.member(start) then return false;
+
+  // Make sure the arguments are valid
+  if arg.size == 0 || !arg.domain.member(start) || amount <= 0 || (start + amount > arg.domain.high)  then return false;
+
   on this.home {
     this.lock();
     var got : int;
     param newLineChar = 0x0A;
-    var idx = start;
-    while got != newLineChar {
+    for i in start .. #amount+1 {
       got = qio_channel_read_byte(false, this._channel_internal);
       if got >= 0 {
         if inclusive || (!inclusive && got != newLineChar) {
-          arg[idx] = got:uint(8);
-          idx += 1;
+          arg[i] = got:uint(8);
+          numRead += 1;
         }
+        if got == newLineChar then break;
       } else {
         error = (-got):syserr;
         break;
       }
     }
-    numRead = idx - start;
     this.unlock();
   }
   return !error;
