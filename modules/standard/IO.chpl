@@ -702,23 +702,20 @@ proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NO
       var (host, port, file_path) = parse_hdfs_path(url);
       var fs:c_void_ptr;
       error = hdfs_connect(fs, host.c_str(), port);
-      if error then ioerror(error, "Unable to connect to HDFS", host);
+      if error then return ret;
+      // connect fully specifies the error message so all we'd need to do is
+      // return.
       error = qio_file_open_access_usr(ret._file_internal, file_path.c_str(), _modestring(mode).c_str(), hints, local_style, fs, hdfs_function_struct_ptr);
       // Since we don't have an auto-destructor for this, we actually need to make
       // the reference count 1 on this FS after we open this file so that we will
       // disconnect once we close this file.
       hdfs_do_release(fs);
-      if error then ioerror(error, "Unable to open file in HDFS", url);
     } else if (url.startsWith("http://", "https://", "ftp://", "ftps://", "smtp://", "smtps://", "imap://", "imaps://"))  { // Curl
       error = qio_file_open_access_usr(ret._file_internal, url.c_str(), _modestring(mode).c_str(), hints, local_style, c_nil, curl_function_struct_ptr);
-      if error then ioerror(error, "Unable to open URL", url);
     } else {
-      ioerror(ENOENT:syserr, "Invalid URL passed to open");
+      error = ENOENT:syserr; // Invalid URL provided
     }
   } else {
-    if (path == "") then
-      ioerror(ENOENT:syserr, "in open: Both path and url were path");
-
     error = qio_file_open_access(ret._file_internal, path.c_str(), _modestring(mode).c_str(), hints, local_style);
   }
 
