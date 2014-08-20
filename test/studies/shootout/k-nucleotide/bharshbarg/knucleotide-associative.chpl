@@ -106,7 +106,7 @@ proc main() {
   var dataDom = {1..fileLen-total};
   var data : [dataDom] uint(8);
   var idx = 1;
-  while myin.readline(data, numRead, idx, false) { idx += numRead; }
+  while myin.readline(data, numRead, idx, inclusive=false) { idx += numRead; }
   
   // Resize our array to the amount actually read
   dataDom = {1..idx};
