@@ -373,7 +373,7 @@ moveGlobalDeclarationsToModuleScope() {
             {
               // Mark this as a type block, so it is removed later.
               // Casts are because C++ is lame.
-              (uint&)(block->blockTag) |= (uint) BLOCK_TYPE_ONLY;
+              (unsigned&)(block->blockTag) |= (unsigned) BLOCK_TYPE_ONLY;
               // Set the flag, so we move it out to module scope.
               move = true;
             }
@@ -1006,7 +1006,7 @@ fix_def_expr(VarSymbol* var) {
         {
           block->insertAtTail(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
           if (constTemp->hasFlag(FLAG_EXTERN))
-            (uint&) block->blockTag |= BLOCK_EXTERN | BLOCK_TYPE;
+            (unsigned&) block->blockTag |= BLOCK_EXTERN | BLOCK_TYPE;
         }
       }
 
