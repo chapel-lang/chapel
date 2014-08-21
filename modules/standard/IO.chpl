@@ -1577,6 +1577,56 @@ proc channel.read(ref args ...?k,
   }
 }
 
+proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low, amount = arg.domain.high - start) : bool
+where arg.rank == 1 && isRectangularArr(arg)
+{
+  var e:syserr = ENOERR;
+  var got = this.readline(arg, numRead, start, amount, error=e);
+  if !e && got then return true;
+  else if e == EEOF || !got then return false;
+  else {
+    this._ch_ioerror(e, "in channel.readline(arg : [] uint(8))");
+    return false;
+  }
+}
+
+/*
+  Read a line of bytes into a Chapel array.
+
+  arg:       A 1D DefaultRectangular array which must have at least 1 element.
+  numRead:   The number of bytes read.
+  start:     Index to begin reading into.
+  amount:    The maximum amount of bytes to read.
+
+  Returns true if bytes were read without error.
+*/
+proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low, amount = arg.domain.high - start, out error:syserr) : bool
+where arg.rank == 1 && isRectangularArr(arg)
+{
+  error = ENOERR;
+
+  // Make sure the arguments are valid
+  if arg.size == 0 || !arg.domain.member(start) || amount <= 0 || (start + amount > arg.domain.high)  then return false;
+
+  on this.home {
+    this.lock();
+    param newLineChar = 0x0A;
+    var got : int;
+    var i = start;
+    const maxIdx = start + amount;
+    while i <= maxIdx {
+      got = qio_channel_read_byte(false, this._channel_internal);
+      arg[i] = got:uint(8);
+      i += 1;
+      if got < 0 || got == newLineChar then break;
+    }
+    numRead = i - start;
+    if got < 0 then error = (-got):syserr;
+    this.unlock();
+  }
+  return !error;
+}
+
 proc channel.readline(ref arg:string, out error:syserr):bool {
   if writing then compilerError("read on write-only channel");
   error = ENOERR;
