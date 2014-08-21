@@ -4341,6 +4341,14 @@ static CallExpr* generateConcreteConstructorCall(Type* type)
                             typeExpr);
       NamedExpr* arg = new NamedExpr(field->name, init);
       call->insertAtTail(arg);
+
+      // Special handling for nested record types:
+      // If the field name is "outer", we assume it is the outer class or
+      // record pointer.  In that case, we have to convert the constructor call
+      // into a method call, because that is what the enclosing class or record
+      // expects.
+      if (!strcmp(field->name, "outer"))
+        call->insertAtHead(gMethodToken);
     }
   }
 
@@ -4361,6 +4369,11 @@ static void fixupRuntimeTypeArguments(CallExpr* call)
 {
   for_actuals(actual, call)
   {
+    // Skip the method token, if present.
+    if (SymExpr* se = toSymExpr(actual))
+      if (se->var == gMethodToken)
+        continue;
+
     NamedExpr* ne = toNamedExpr(actual);
     SymExpr* se = toSymExpr(ne->actual);
     if (TypeSymbol* ts = toTypeSymbol(se->var))
@@ -4386,6 +4399,11 @@ static void flattenAndResolveArgs(CallExpr* call)
 {
   for_actuals(actual, call)
   {
+    // Skip the method token, if present.
+    if (SymExpr* se = toSymExpr(actual))
+      if (se->var == gMethodToken)
+        continue;
+
     NamedExpr* ne = toNamedExpr(actual);
     if (CallExpr* ce = toCallExpr(ne->actual))
     {
@@ -4443,6 +4461,20 @@ static Expr* resolvePrimInit(CallExpr* call)
 
   if (type->defaultValue ||
       type->symbol->hasFlag(FLAG_TUPLE)) {
+    // Very special case for the method token.
+    // Unfortunately, dtAny cannot (currently) bind to dtMethodToken, so
+    // inline proc _defaultOf(type t) where t==_MT cannot be written in module
+    // code.
+    // Maybe it would be better to indicate which calls are method calls
+    // through the use of a flag.  Until then, we just fake in the needed
+    // result and short-circuit the resolution of _defaultOf(type _MT).
+    if (type == dtMethodToken)
+    {
+      result = new SymExpr(gMethodToken);
+      call->replace(result);
+      return result;
+    }
+    
     // It should be possible to eliminate the defaultValue field from the type
     // respresentation, and just use _defaultOf to supply this in module code.
     CallExpr* defOfCall = new CallExpr("_defaultOf", type->symbol);

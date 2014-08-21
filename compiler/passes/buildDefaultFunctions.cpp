@@ -862,10 +862,22 @@ static void build_record_copy_function(AggregateType* ct) {
   arg->addFlag(FLAG_MARKED_GENERIC);
   fn->insertFormalAtTail(arg);
   CallExpr* call = new CallExpr(ct->defaultInitializer);
-  for_fields(tmp, ct) {
-    if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD))
-      if (strcmp("_promotionType", tmp->name))
-        call->insertAtTail(new NamedExpr(tmp->name, new CallExpr(".", arg, new_StringSymbol(tmp->name))));
+  for_fields(tmp, ct)
+  {
+    // Weed out implicit alias and promotion type fields.
+    if (tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD))
+      continue;
+    // TODO: This needs to be done uniformly, using an ignore_field flag or...
+    if (!strcmp("_promotionType", tmp->name))
+      continue;
+
+    CallExpr* init = new CallExpr(".", arg, new_StringSymbol(tmp->name));
+    call->insertAtTail(new NamedExpr(tmp->name, init));
+
+    // Special handling for nested record types:
+    // We need to convert the constructor call into a method call.
+    if (!strcmp(tmp->name, "outer"))
+      call->insertAtHead(gMethodToken);
   }
   fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
   DefExpr* def = new DefExpr(fn);
@@ -973,7 +985,8 @@ static void build_record_init_function(AggregateType* ct) {
             // There are no substitutions for var fields, so if a defaultExpr
             // has been provided, we don't need to worry about copying values
             // over.
-            if (formal->type && formal->type != dtAny) {
+            if (formal->type && formal->type != dtAny &&
+                strcmp(formal->name, "outer") != 0) {
               // We know the type already, make use of it
               fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_INIT, formal->type->symbol)));
             } else {
@@ -989,7 +1002,10 @@ static void build_record_init_function(AggregateType* ct) {
               fn->insertAtHead(new DefExpr(typeTemp));
             }
             fn->insertAtHead(new DefExpr(tmp));
-            call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
+            if (formal->type == dtMethodToken)
+              call->insertAtTail(gMethodToken);
+            else
+              call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
           }
         }
       }
