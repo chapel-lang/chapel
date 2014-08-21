@@ -1609,16 +1609,17 @@ where arg.rank == 1 && isRectangularArr(arg)
   }
 }
 
-// Read a line of bytes into a Chapel array.
-//
-// arg:       A 1D DefaultRectangular array which must have at least 1 element.
-// numRead:   The number of bytes read
-// start:     Index to begin reading into
-// inclusive: If true, will include the newline
-//
-// Returns true if bytes were read without error. Returns false if an error
-// occurred, the array is of zero size, or the start index is beyond the 
-// array's domain.
+/*
+  Read a line of bytes into a Chapel array.
+
+  arg:       A 1D DefaultRectangular array which must have at least 1 element.
+  numRead:   The number of bytes read.
+  start:     Index to begin reading into.
+  amount:    The maximum amount of bytes to read.
+  inclusive: If true, will include the newline.
+
+  Returns true if bytes were read without error.
+*/
 proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low, amount = arg.domain.high - start, out error:syserr, inclusive = true) : bool
 where arg.rank == 1 && isRectangularArr(arg)
 {
