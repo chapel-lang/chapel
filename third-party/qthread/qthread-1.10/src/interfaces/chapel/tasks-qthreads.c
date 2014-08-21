@@ -277,11 +277,11 @@ static void chapel_display_thread(qt_key_t     addr,
 
     if (rep) {
         if ((rep->lock_lineno > 0) && rep->lock_filename) {
-            fprintf(stderr, "Waiting at: %s:%d (task %s:%d)\n", rep->lock_filename, rep->lock_lineno, rep->task_filename, rep->task_lineno);
+            fprintf(stderr, "Waiting at: %s:%zu (task %s:%zu)\n", rep->lock_filename, rep->lock_lineno, rep->task_filename, rep->task_lineno);
         } else if (rep->lock_lineno == 0 && rep->lock_filename) {
-            fprintf(stderr, "Waiting for more work (line 0? file:%s) (task %s:%d)\n", rep->lock_filename, rep->task_filename, rep->task_lineno);
+            fprintf(stderr, "Waiting for more work (line 0? file:%s) (task %s:%zu)\n", rep->lock_filename, rep->task_filename, rep->task_lineno);
         } else if (rep->lock_lineno == 0) {
-            fprintf(stderr, "Waiting for dependencies (uninitialized task %s:%d)\n", rep->task_filename, rep->task_lineno);
+            fprintf(stderr, "Waiting for dependencies (uninitialized task %s:%zu)\n", rep->task_filename, rep->task_lineno);
         }
         fflush(stderr);
     }
