@@ -1,0 +1,28 @@
+domainSetOps.chpl:1: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+domainSetOps.chpl:2: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+domainSetOps.chpl:3: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+domainSetOps.chpl:17: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+domainSetOps.chpl:21: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+domainSetOps.chpl:23: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+x = {c, a, b, d}
+y = {c, e, f, d}
+z = {c, d}
+Union: x | y = 
+	{c, e, a, f, b, d}
+Intersection: x & y = 
+	{c, d}
+Difference: x - y = 
+	{a, b}
+XOR: x ^ y = 
+	{e, a, f, b}
+x - x = {}
+z is subset of x: true
+z is subset of y: true
+x |= y: 
+	{c, e, a, f, b, d}
+x -= z: 
+	{e, a, f, b}
+y &= z: 
+	{c, d}
+x ^= y: 
+	{c, e, a, f, b, d}
