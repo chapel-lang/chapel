@@ -31,4 +31,4 @@ for i in 1..n {
 }
 if numWrong != 0 then writeln(numWrong, " out of ", numChars, " were read incorrectly");
 
-if total-1 != numChars then writeln("FAILURE: read ", total, ", but expected ", numChars);
+if total-1 != numChars then writeln("FAILURE: read ", total - 1,", but expected ", numChars);
