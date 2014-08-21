@@ -303,7 +303,7 @@ def Fatal(message):
 # the timer script. If the file is improperly formatted the default timer is
 # used, and if the timer is not executable or can't be found 'time -p' is used
 def GetTimer(f):
-    timersdir = os.path.join(utildir, 'timers')
+    timersdir = os.path.join(utildir, 'test', 'timers')
     defaultTimer = os.path.join(timersdir, 'defaultTimer')
 
     lines = ReadFileWithComments(f)
