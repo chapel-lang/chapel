@@ -281,6 +281,7 @@ extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyle);
 extern proc qio_file_length(f:qio_file_ptr_t, ref len:int(64)):syserr;
 
 extern proc qio_file_rename(oldname: c_string, newname: c_string):syserr;
+extern proc qio_file_remove(name: c_string):syserr;
 
 pragma "no prototype" // FIXME
 extern proc qio_channel_create(ref ch:qio_channel_ptr_t, file:qio_file_ptr_t, hints:c_int, readable:c_int, writeable:c_int, start:int(64), end:int(64), const ref style:iostyle):syserr;
@@ -846,6 +847,22 @@ proc renameFile(oldname, newname: string) {
   if err then ioerror(err, "in rename", oldname);
 }
 
+/* Removes the file or directory specified by name, returning an error
+   if one occurred via an out parameter.
+   err: a syserr used to indicate if an error occurred during removal
+   name: the name of the file/directory to remove */
+proc removeFile(out err: syserr, name: string) {
+  err = qio_file_remove(name.c_str());
+}
+
+/* Removes the file or directory specified by name, generating an error
+   if one occurred.
+   name: the name of the file/directory to remove */
+proc removeFile(name: string) {
+  var err:syserr = ENOERR;
+  removeFile(err, name);
+  if err then ioerror(err, "in remove", name);
+}
 
 /* in the future, this will be an interface.
    */

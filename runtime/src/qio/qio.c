@@ -1068,6 +1068,15 @@ qioerr qio_file_rename(const char* oldname, const char* newname) {
   return err;
 }
 
+/* Removes the file specified, returning a qioerr if one occurred. */
+qioerr qio_file_remove(const char* name) {
+  qioerr err = 0;
+  int exitStatus = remove(name);
+  if (exitStatus)
+    err = qio_mkerror_errno();
+  return err;
+}
+
 static
 qioerr open_flags_for_string(const char* s, int *flags_out)
 {
