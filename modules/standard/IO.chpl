@@ -1596,11 +1596,11 @@ proc channel.read(ref args ...?k,
   }
 }
 
-proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low, amount = arg.domain.high - start, inclusive = true) : bool
+proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low, amount = arg.domain.high - start) : bool
 where arg.rank == 1 && isRectangularArr(arg)
 {
   var e:syserr = ENOERR;
-  var got = this.readline(arg, numRead, start, amount, error=e, inclusive);
+  var got = this.readline(arg, numRead, start, amount, error=e);
   if !e && got then return true;
   else if e == EEOF || !got then return false;
   else {
@@ -1616,11 +1616,10 @@ where arg.rank == 1 && isRectangularArr(arg)
   numRead:   The number of bytes read.
   start:     Index to begin reading into.
   amount:    The maximum amount of bytes to read.
-  inclusive: If true, will include the newline.
 
   Returns true if bytes were read without error.
 */
-proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low, amount = arg.domain.high - start, out error:syserr, inclusive = true) : bool
+proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low, amount = arg.domain.high - start, out error:syserr) : bool
 where arg.rank == 1 && isRectangularArr(arg)
 {
   error = ENOERR;
@@ -1630,21 +1629,18 @@ where arg.rank == 1 && isRectangularArr(arg)
 
   on this.home {
     this.lock();
-    var got : int;
     param newLineChar = 0x0A;
-    for i in start .. #amount+1 {
+    var got : int;
+    var i = start;
+    const maxIdx = start + amount;
+    while i <= maxIdx {
       got = qio_channel_read_byte(false, this._channel_internal);
-      if got >= 0 {
-        if inclusive || (!inclusive && got != newLineChar) {
-          arg[i] = got:uint(8);
-          numRead += 1;
-        }
-        if got == newLineChar then break;
-      } else {
-        error = (-got):syserr;
-        break;
-      }
+      arg[i] = got:uint(8);
+      i += 1;
+      if got < 0 || got == newLineChar then break;
     }
+    numRead = i - start;
+    if got < 0 then error = (-got):syserr;
     this.unlock();
   }
   return !error;
