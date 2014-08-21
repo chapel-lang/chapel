@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 /* "channel" I/O contributed by Michael Ferguson
 
    Future Work:
@@ -260,6 +279,8 @@ extern proc qio_file_sync(f:qio_file_ptr_t):syserr;
 extern proc qio_channel_end_offset_unlocked(ch:qio_channel_ptr_t):int(64);
 extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyle);
 extern proc qio_file_length(f:qio_file_ptr_t, ref len:int(64)):syserr;
+
+extern proc qio_file_rename(oldname: c_string, newname: c_string):syserr;
 
 pragma "no prototype" // FIXME
 extern proc qio_channel_create(ref ch:qio_channel_ptr_t, file:qio_file_ptr_t, hints:c_int, readable:c_int, writeable:c_int, start:int(64), end:int(64), const ref style:iostyle):syserr;
@@ -806,6 +827,24 @@ proc openmem(style:iostyle = defaultIOStyle()):file {
   return ret;
 }
 
+/* Renames the file specified by oldname to newname, returning an error
+   if one occured.  The file is not opened during this operation.
+   error: a syserr used to indicate if an error occured during renaming.
+   oldname: current name of the file
+   newname: name which should refer to the file in the future.*/
+proc renameFile(out error: syserr, oldname, newname: string) {
+  error = qio_file_rename(oldname.c_str(), newname.c_str());
+}
+
+/* Renames the file specified by oldname to newname, generating an error
+   if one occured.  The file is not opened during this operation.
+   oldname: current name of the file
+   newname: name which should refer to the file in the future.*/
+proc renameFile(oldname, newname: string) {
+  var err:syserr = ENOERR;
+  renameFile(err, oldname, newname);
+  if err then ioerror(err, "in rename", oldname);
+}
 
 
 /* in the future, this will be an interface.
@@ -1558,11 +1597,11 @@ proc channel.read(ref args ...?k,
   }
 }
 
-proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low, amount = arg.domain.high - start, inclusive = true) : bool
+proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low, amount = arg.domain.high - start) : bool
 where arg.rank == 1 && isRectangularArr(arg)
 {
   var e:syserr = ENOERR;
-  var got = this.readline(arg, numRead, start, amount, error=e, inclusive);
+  var got = this.readline(arg, numRead, start, amount, error=e);
   if !e && got then return true;
   else if e == EEOF || !got then return false;
   else {
@@ -1571,17 +1610,17 @@ where arg.rank == 1 && isRectangularArr(arg)
   }
 }
 
-// Read a line of bytes into a Chapel array.
-//
-// arg:       A 1D DefaultRectangular array which must have at least 1 element.
-// numRead:   The number of bytes read
-// start:     Index to begin reading into
-// inclusive: If true, will include the newline
-//
-// Returns true if bytes were read without error. Returns false if an error
-// occurred, the array is of zero size, or the start index is beyond the 
-// array's domain.
-proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low, amount = arg.domain.high - start, out error:syserr, inclusive = true) : bool
+/*
+  Read a line of bytes into a Chapel array.
+
+  arg:       A 1D DefaultRectangular array which must have at least 1 element.
+  numRead:   The number of bytes read.
+  start:     Index to begin reading into.
+  amount:    The maximum amount of bytes to read.
+
+  Returns true if bytes were read without error.
+*/
+proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low, amount = arg.domain.high - start, out error:syserr) : bool
 where arg.rank == 1 && isRectangularArr(arg)
 {
   error = ENOERR;
@@ -1591,21 +1630,18 @@ where arg.rank == 1 && isRectangularArr(arg)
 
   on this.home {
     this.lock();
-    var got : int;
     param newLineChar = 0x0A;
-    for i in start .. #amount+1 {
+    var got : int;
+    var i = start;
+    const maxIdx = start + amount;
+    while i <= maxIdx {
       got = qio_channel_read_byte(false, this._channel_internal);
-      if got >= 0 {
-        if inclusive || (!inclusive && got != newLineChar) {
-          arg[i] = got:uint(8);
-          numRead += 1;
-        }
-        if got == newLineChar then break;
-      } else {
-        error = (-got):syserr;
-        break;
-      }
+      arg[i] = got:uint(8);
+      i += 1;
+      if got < 0 || got == newLineChar then break;
     }
+    numRead = i - start;
+    if got < 0 then error = (-got):syserr;
     this.unlock();
   }
   return !error;

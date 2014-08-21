@@ -15,10 +15,10 @@ for i in 1..n {
 
 var data : [1..numChars] uint(8);
 
-var total : int = 0;
+var total : int = 1;
 for i in 1..n {
   var numRead : int;
-  r.readline(data, numRead, total+1);
+  r.readline(data, numRead, total);
   total += numRead;
 }
 
@@ -35,5 +35,4 @@ for i in 1..n {
 
 if numWrong != 0 then writeln(numWrong, " out of ", numChars, " characters were wrong");
 
-if total != numChars then writeln("FAILURE: read ", total, ", but expected ", numChars);
-else writeln("SUCCESS");
+if total - 1 != numChars then writeln("FAILURE: read ", total - 1, ", but expected ", numChars);
