@@ -829,8 +829,8 @@ proc openmem(style:iostyle = defaultIOStyle()):file {
 }
 
 /* Renames the file specified by oldname to newname, returning an error
-   if one occured.  The file is not opened during this operation.
-   error: a syserr used to indicate if an error occured during renaming.
+   if one occurred.  The file is not opened during this operation.
+   error: a syserr used to indicate if an error occurred during renaming.
    oldname: current name of the file
    newname: name which should refer to the file in the future.*/
 proc renameFile(out error: syserr, oldname, newname: string) {
@@ -838,7 +838,7 @@ proc renameFile(out error: syserr, oldname, newname: string) {
 }
 
 /* Renames the file specified by oldname to newname, generating an error
-   if one occured.  The file is not opened during this operation.
+   if one occurred.  The file is not opened during this operation.
    oldname: current name of the file
    newname: name which should refer to the file in the future.*/
 proc renameFile(oldname, newname: string) {
