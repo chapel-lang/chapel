@@ -302,7 +302,7 @@ def get(location, map_to_compiler=False, get_lcd=False):
     if get_lcd:
         stderr.write("Warning: Getting the lowest common denominator "
                      "architecture is only supported for the Chapel module on "
-                     "cray systems.\n")
+                     "Cray platforms.\n")
 
     # Only try to do any auto-detection or verification when:
     # comm == none  -- The inverse means that we are probably cross-compiling.
