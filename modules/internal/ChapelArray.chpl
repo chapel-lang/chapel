@@ -874,6 +874,14 @@ module ChapelArray {
       return member(i);
     }
 
+    proc subset(d : domain)
+      where isAssociativeDom(this) && d.type == this.type {
+
+      for k in d do if !this.member(k) then return false;
+
+      return true;
+    }
+
     // 1/5/10: do we want to support order() and position()?
     proc indexOrder(i) return _value.dsiIndexOrder(_makeIndexTuple(rank, i));
   
@@ -1149,10 +1157,19 @@ module ChapelArray {
     d.remove(i);
     return d;
   }
+
+  proc -(d1: domain, d2: domain) where
+                                   isAssociativeDom(d1) &&
+                                   (d1.type == d2.type) {
+    var d3 : d1.type;
+    for e in d1 do d3.add(e);
+    for e in d2 do if d3.member(e) then d3.remove(e);
+    return d3;
+  }
   
   proc -(d1: domain, d2: domain) where
                                    (d1.type == d2.type) &&
-                                   (isIrregularDom(d1) && isIrregularDom(d2)) {
+                                   (isSparseDom(d1) || isOpaqueDom(d1)) {
     var d3: d1.type;
     // These should eventually become forall loops
     for e in d1 do d3.add(e);
@@ -1510,7 +1527,75 @@ module ChapelArray {
     }
 
   }  // record _array
+
+  // promototion for associative array addition doesn't really make sense. instead,
+  // we really just want a union
+  proc +(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    return a | b;
+  }
+
+  proc |(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    var newDom : a.domain.type;
+    var ret : [newDom] a._value.eltType;
+    for (k,v) in zip(a.domain, a) do ret[k] = v;
+    for (k,v) in zip(b.domain, b) do ret[k] = v;
+    return ret;
+  }
+
+  proc &(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    var newDom : a.domain.type;
+    var ret : [newDom] a._value.eltType;
+
+    for k in a.domain do
+      if b.domain.member(k) then ret[k] = a[k];
+    return ret;
+  }
+
+  proc -(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    var newDom : a.domain.type;
+    var ret : [newDom] a._value.eltType;
+
+    for k in a.domain do
+      if !b.domain.member(k) then ret[k] = a[k];
+
+    return ret;
+  }
+
+
+  proc ^(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    var newDom : a.domain.type;
+    var ret : [newDom] a._value.eltType;
+
+    for k in a.domain do
+      if !b.domain.member(k) then ret[k] = a[k];
+    for k in b.domain do
+      if !a.domain.member(k) then ret[k] = b[k];
+
+    return ret;
+  }
   
+  proc |(a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
+    return a + b;
+  }
+
+  proc &(a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
+    var newDom : a.type;
+
+    for k in a do
+      if b.member(k) then newDom += k;
+    return newDom;
+  }
+
+  proc ^(a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
+    var newDom : a.type;
+
+    for k in a do
+      if !b.member(k) then newDom.add(k);
+    for k in b do
+      if !a.member(k) then newDom.add(k);
+
+    return newDom;
+  }
   //
   // Helper functions
   //
