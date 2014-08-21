@@ -741,7 +741,7 @@ extern void gasneti_trace_init(int *pargc, char ***pargv) {
 
   { time_t ltime;
     int i;
-    char temp[1024];
+    char temp[10240];
     char *p;
     time(&ltime); 
     strcpy(temp, ctime(&ltime));
