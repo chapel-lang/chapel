@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 // ChapelRange.chpl
 //
 pragma "no use ChapelStandard"
@@ -45,7 +64,7 @@ module ChapelRange {
     var _stride: strType = 1;                      // signed stride of range
     var _alignment: idxType = 0;                   // alignment
     var _aligned : bool = false;
-  
+
     proc strType type return chpl__signedType(idxType);
     inline proc low  return _low;
     inline proc high return _high;
@@ -82,28 +101,17 @@ module ChapelRange {
     this._high = _high;
     if stridable then this._stride = _stride;
     this._alignment = _alignment;
-  
-    if warnMaximalRange
-    {
-      if boundedType == BoundedRangeType.bounded
-      {
-        if _low <= _high && this.last + stride : idxType == this.first then
-          warning("Maximal range declared.  " +
-          "A for loop on this range will execute zero times.  " +
-          "Try using a wider index type.");
-      }
-    }
-  
+
     // todo: remove the check for boundsChecking once assert is no-op upon --fast
     if !stridable && boundsChecking then
       assert(_stride == 1);
 
     this._aligned = _aligned;
   }
-  
+
   /////////////////////////////////
   // for debugging
-  
+
   proc range.displayRepresentation(msg: string = ""): void {
     writeln(msg, "(", typeToString(idxType), ",", boundedType, ",", stridable,
             " : ", low, ",", high, ",", stride, ",",
@@ -310,12 +318,20 @@ module ChapelRange {
     // to negate one of the strides (shouldn't matter which).
     if stridable {
       if (stride > 0 && other.stride < 0) || (stride < 0 && other.stride > 0)
-        then  _stride = -_stride;
+        then return _memberHelp(this, other);
     } else {
       if other.stride < 0
-        then other._stride = -other._stride;
+        then return _memberHelp(this, other);
     }
     return other == this(other);
+  }
+
+  // This helper takes one arg by 'in', i.e. explicitly creating a copy,
+  // so it can be modified.
+  inline proc _memberHelp(arg1: range(?), in arg2: range(?)) {
+    compilerAssert(arg2.stridable);
+    arg2._stride = -arg2._stride;
+    return arg2 == arg1(arg2);
   }
   
   // Returns true if the two ranges have the same represented sequence, or if
@@ -949,54 +965,115 @@ module ChapelRange {
                   typeToString(count.type));
     return r;
   }
-  
-  
+
+  // This function is intended to replace the previous isMaximal checks that
+  // existed before. Note that it is currently unused. It is intended to be
+  // used in the bounded range iterators. Ideally it would be used in the
+  // constructor, but currently the stride gets set after the constructor is
+  // called (by the "by" method.) This was also a problem with the previous
+  // isMaximal check, it just went unnoticed. The actual warnings messages
+  // aren't useful yet, but the logic for checking should be good.
+  proc range.withinBounds() {
+    if (_isSignedType(idxType)) {
+      if (stride >= 0) {
+        if (stride > (max(idxType) - _high)) {
+          warning("Signed overflow for range iterator detected\n");
+          return false;
+        }
+      } else {
+        if (_stride < min(idxType) - _low) {
+          warning("Signed underflow for range iterator detected\n");
+          return false;
+        }
+      }
+    } else if (_isUnsignedType(idxType)) {
+      if (stride > 0) {
+        if (_high + stride < _high) {
+          warning("Unsigned overflow for range iterator detected\n");
+          return false;
+        }
+      } else {
+        if (_low + stride > _low) {
+          warning("Unsigned underflow for range iterator detected\n");
+          return false;
+        }
+      }
+
+    } else {
+      warning("Unsupported Type\n");
+      return false;
+    }
+    return true;
+  }
+
   //################################################################################
   //# Iterators
   //#
-  //# 
-  
-  // Default iterator optimized for unit stride
-  iter range.these()
-  {
+  //# TODO The bounded and strided range iterator needs to use a c for loop. In
+  //# order to do that c for loops have to be able to take a user defined test
+  //# operator. Unbounded iterators should also use c for loops.
+  //# What are the isAmbiguous() calls really doing?
+
+  // An unbounded range iterator
+  iter range.these() where boundedType != BoundedRangeType.bounded {
+
+    if boundedType == BoundedRangeType.boundedNone then
+      compilerError("iteration over a range with no bounds");
+
     // TODO: hilde
     // Does this test nesting affect performance?
     // Inline and remove the test if so.
     if this.isAmbiguous() then
       __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
 
-    if boundedType != BoundedRangeType.bounded
-    {
-      if boundedType == BoundedRangeType.boundedNone then
-        compilerError("iteration over a range with no bounds");
-  
-      if ! hasFirst() then
-        halt("iteration over range that has no first index");
-  
-      var i = this.first;
-      while true
-      {
-        yield i;
-        i = i + stride:idxType;
-      }
-    }
-    else
-    {
-      // a bounded range ...
-  
-      // This case is written so that the only control is the loop test.
-      // Zippered iterator inlining currently requires this.
-  
-      var i = this.first;
-      var end : idxType = if _low > _high then i else this.last + stride:idxType;
-      while i != end
-      {
-        yield i;
-        i = i + stride:idxType;
-      }
+    if ! hasFirst() then
+      halt("iteration over range that has no first index");
+
+    var i = this.first;
+    while true {
+      yield i;
+      i = i + stride:idxType;
     }
   }
-  
+
+  // A bounded and strided range iterator
+  iter range.these()
+    where boundedType == BoundedRangeType.bounded && stridable == true {
+
+    // TODO: hilde
+    // Does this test nesting affect performance?
+    // Inline and remove the test if so.
+    if this.isAmbiguous() then
+      __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
+
+    // This case is written so that the only control is the loop test.
+    // Zippered iterator inlining currently requires this.
+    var i = this.first;
+    var end : idxType = if _low > _high then i else this.last + stride:idxType;
+
+    while i != end
+    {
+      yield i;
+      i = i + stride:idxType;
+    }
+  }
+
+  // A bounded and non-strided (stride = 1) range iterator
+  iter range.these()
+    where boundedType == BoundedRangeType.bounded && stridable == false {
+
+    // This case is written so that the only control is the loop test.
+    // Zippered iterator inlining currently requires this.
+    var i: idxType;
+    var start = low;
+    var end = high;
+
+    while __primitive("C for loop", i, start, end, stride) {
+      yield i;
+    }
+  }
+
+
   iter range.these(param tag: iterKind) where tag == iterKind.leader
   {
     if this.isAmbiguous() then

@@ -20,7 +20,6 @@ CONFIG VAR FLAGS:
 CONFIG VARS:
 ============
        printModuleInitOrder: bool
-                 numLocales: int(64)
       dataParTasksPerLocale: int(64)
   dataParIgnoreRunningTasks: bool
       dataParMinGranularity: int(64)
@@ -32,3 +31,4 @@ CONFIG VARS:
                memThreshold: uint(64)
                      memLog: c_string
                 memLeaksLog: c_string
+                 numLocales: int(64)

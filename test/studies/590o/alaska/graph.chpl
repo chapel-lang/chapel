@@ -504,7 +504,7 @@ proc DFS(G){
 // This function reads a new graph returns
 //
 proc readGraph(filename) {
-  // Create and open  an input file with the specified filename in read (FileAccessMode.read) mode
+  // Create and open  an input file with the specified filename in read (iomode.r) mode
   var infile = open(filename, iomode.r);
   var reader = infile.reader();
 

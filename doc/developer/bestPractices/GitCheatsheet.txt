@@ -225,3 +225,50 @@ Here is the uncommented version of the commands:
     # Make sure it works, get up-to-date without modifying your files
     git fetch upstream
 
+Other Useful Commands
+---------------------
+
+To view only the commits that happened on master (in other words, the old svn
+commits and the merge commits for pull requests):
+
+.. code-block:: bash
+
+    git log --first-parent
+
+To include files changed:
+
+.. code-block:: bash
+
+    git log --first-parent -m --stat
+
+For something similar to the svn log with files changed:
+
+.. code-block:: bash
+
+    git log --first-parent -m --name-status
+
+To view commits grouped by author (for example, show me commits by author from
+1.9.0.1 tag to now):
+
+.. code-block:: bash
+
+    git shortlog --numbered --no-merges
+
+    # With commit sha1 and relative date:
+    git shortlog --numbered --no-merges \
+      --format='* %Cred[%h]%Creset %s %Cgreen(%cr)%Creset'
+
+    # Set alias
+    git config --global alias.sl \
+      'shortlog --numbered --no-merges \
+       --format=\'* %Cred[%h]%Creset %s %Cgreen(%cr)%Creset\''
+
+    # Show commits by author between 1.8.0 and 1.9.0.1 releases:
+    git sl 1.8.0..1.9.0.1
+
+To view "dirty" files, or all those files that are not tracked (includes
+ignored files):
+
+.. code-block:: bash
+
+    git ls-files --others

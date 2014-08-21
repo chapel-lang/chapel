@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #define _QIO_C
 
 #ifndef _DARWIN_C_SOURCE
@@ -856,14 +875,17 @@ qioerr qio_file_init_usr(qio_file_t** file_out, void* file_info, qio_hint_t iohi
     seekable = 1;
   }
 
+  if (fns->filelength) { // We can get length in our FS
+    err = fns->filelength(file_info, &initial_length, fs_info);
+    // Disregard errors in case it is not seekable (and if we need seek to get the
+    // length). If we can't get the length, we'll set initial_pos below anyways.
+    err = 0;
+  }
+
   if( seekable ) {
     // seekable.
     flags = (qio_fdflag_t) (flags | QIO_FDFLAG_SEEKABLE);
     initial_pos = seek_ret;
-    if (fns->filelength) { // We can get length in our FS
-      err = fns->filelength(file_info, &initial_length, fs_info);
-      if( err ) return err;
-    }
   } else {
      // Not seekable.
     initial_pos = 0;

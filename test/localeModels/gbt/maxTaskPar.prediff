@@ -1,0 +1,45 @@
+#! /bin/bash -norc
+#
+# This just creates an appropriate .good.
+#
+target=$($CHPL_HOME/util/chplenv/chpl_platform.py --target)
+locModel=$($CHPL_HOME/util/chplenv/chpl_locale_model.py)
+tasks=$($CHPL_HOME/util/chplenv/chpl_tasks.py)
+
+case $target in
+  linux*|cray-xc|cray-xe)
+    case $locModel-$tasks in
+      *-fifo|*-massivethreads|flat-qthreads)
+        numPUs=$( grep -c '^processor[[:space:]]\+: ' /proc/cpuinfo )
+        numCores1=$( grep -m 1 '^cpu cores[[:space:]]\+: ' /proc/cpuinfo |
+                     sed 's/^[^0-9]*\([0-9]\+\).*$/\1/' )
+        numSibs1=$( grep -m 1 '^siblings[[:space:]]\+: ' /proc/cpuinfo |
+                    sed 's/^[^0-9]*\([0-9]\+\).*$/\1/' )
+        sibsPerCore=$(( $numSibs1 / $numCores1 ))
+        numCores=$(( $numPUs / $sibsPerCore ))
+        echo $numCores > $1.good;;
+      numa-qthreads)
+        hwld=$( $CHPL_HOME/util/config/compileline --libraries |
+                tr ' ' '\n' |
+                grep '^[-]L.*/hwloc/install/' |
+                sed -e 's,^-L,,' -e 's,/lib$,,' )
+        if [[ -n $hwld && -d $hwld/bin ]] ; then
+          numNuma=$( $hwld/bin/lstopo --only numa | wc -l )
+          numCores=$( $hwld/bin/lstopo --only cores | wc -l )
+          echo $numNuma > $1.good
+          for (( i=0 ; $i < $numNuma ; i++ )) ; do
+            echo $(( $numCores / $numNuma )) >> $1.good
+          done
+        else
+          echo Need hwloc lstopo utility, but do not have it > $1.good
+        fi;;
+      *)
+        echo Unexpected configuration $target-$locModel-$tasks > $1.good;;
+    esac;;
+
+  darwin)
+    echo $( sysctl -n hw.physicalcpu ) > $1.good;;
+
+  *)
+    echo Unexpected target $target > $1.good;;
+esac

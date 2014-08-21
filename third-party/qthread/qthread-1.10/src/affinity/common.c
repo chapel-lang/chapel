@@ -48,7 +48,15 @@ void INTERNAL qt_topology_init(qthread_shepherd_id_t * nshepherds,
     qt_affinity_init(&num_sheps, &num_wps, &num_workers);
 
     /* Adjust logical topology */
-    if (num_workers != 0) {
+    if (THREADQUEUE_POLICY_TRUE == qt_threadqueue_policy(SINGLE_WORKER)) { 
+        if (num_workers != 0) {
+            num_sheps = num_workers;
+        } else {
+            num_workers = num_sheps * num_wps;
+            num_sheps = num_workers;
+        }
+        num_wps = 1;
+    } else if (num_workers != 0) {
         if ((num_workers < num_sheps) || (num_workers == 1)) {
             num_wps = 1;
             num_sheps      = num_workers;

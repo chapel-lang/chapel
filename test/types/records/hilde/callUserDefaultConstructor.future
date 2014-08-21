@@ -1,8 +1,0 @@
-bug: User-defined default constructor should override internal version.
-
-The implementation prefers the compiler-generated default-constructor when
-initializing variables of record type.  This is because the code for creating
-the initializer uses the compiler-generated initializer function stored in the
-"initializer" field in the ClassType rather than resolving the constructor call
-normally (by name).
-
