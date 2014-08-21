@@ -1057,6 +1057,17 @@ void _qio_file_destroy(qio_file_t* f)
   qio_free(f);
 }
 
+/* Renames the file from oldname to newname, returning a qioerr if one
+   occured. */
+qioerr qio_file_rename(const char* oldname, const char* newname) {
+  qioerr err = 0;
+  int exitStatus = rename(oldname, newname);
+  // utilizes the C library function rename.
+  if (exitStatus)
+    err = qio_mkerror_errno();
+  return err;
+}
+
 static
 qioerr open_flags_for_string(const char* s, int *flags_out)
 {
@@ -1104,16 +1115,7 @@ int flags_for_mmap_open(int flags)
   return acc | rest;
 }
 
-/* Renames the file from oldname to newname, returning a qioerr if one
-   occured. */
-qioerr qio_file_rename(const char* oldname, const char* newname) {
-  qioerr err = 0;
-  int exitStatus = rename(oldname, newname);
-  // utilizes the C library function rename.
-  if (exitStatus)
-    err = qio_mkerror_errno();
-  return err;
-}
+
 
 // mode should default to S_IRUSR | S_IWUSR | S_IRGRP |  S_IWGRP |  S_IROTH  |  S_IWOTH
 // iohints should default to 0
