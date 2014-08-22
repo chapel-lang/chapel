@@ -382,10 +382,11 @@ static void chpl_qt_setenv(char* var, char* val, int32_t override) {
 // HWPAR, they are saying they want to use HWPAR many workers, but let the
 // runtime figure out the details. If they explicitly set NUM_SHEPHERDS and/or
 // NUM_WORKERS_PER_SHEPHERD then they must have specific reasons for doing so.
-// Returns 0 if no Qthreas env vars related to the number of threads were set,
+// Returns 0 if no Qthreads env vars related to the number of threads were set,
 // what HWPAR was set to if it was set, or -1 if NUM_SHEP and/or NUM_WPS were
-// since we can't figure out before Qthreads init what this will actually turn
-// into without duplicating Qthreads logic.
+// set since we can't figure out before Qthreads init what this will actually
+// turn into without duplicating Qthreads logic (-1 is a sentinel for don't
+// adjust the values, and give them as is to Qthreads.)
 static int32_t chpl_qt_getenv_num_workers() {
     int32_t  hwpar;
     int32_t  num_wps;
