@@ -157,7 +157,7 @@ void chpl_sync_lock(chpl_sync_aux_t *s)
     PROFILE_INCR(profile_sync_lock, 1);
 
     l = qthread_incr(&s->lockers_in, 1);
-    while (l != s->lockers_out) SPINLOCK_BODY();
+    while (l != s->lockers_out) qthread_yield();
 }
 
 void chpl_sync_unlock(chpl_sync_aux_t *s)
