@@ -240,8 +240,7 @@ int AMUDP_SPMDSshSpawn(int nproc, int argc, char **argv) {
   const char *ssh_remote_path;
   char cwd[1024];
   const char *p;
-  char *cmd1,*cmd2;
-  int cmd1_sz,cmd2_sz;
+  char cmd1[1024],cmd2[1024];
   int pid;
 
   if (!AMUDP_SPMDSpawnRunning) {
@@ -281,18 +280,14 @@ int AMUDP_SPMDSshSpawn(int nproc, int argc, char **argv) {
 
   ssh_options = AMUDP_getenv_prefixed_withdefault("SSH_OPTIONS","");
 
-  {
-    int cmd1_i;
-    for (i = 0, cmd1_sz = 1; i < argc; i++) {
-      AMUDP_assert(argv[i] != NULL);
-      cmd1_sz += 1 + strlen(argv[i]) + 2;    // see sprintf() below
-    }
-    AMUDP_assert(!argv[i]);
-    cmd1 = (char *)AMUDP_malloc(cmd1_sz);
-    cmd1[0] = '\0';
-    for (i = 0, cmd1_i = 0; i < argc; i++)
-      cmd1_i += sprintf(&cmd1[cmd1_i], "'%s' ", argv[i]);
+  cmd1[0] = '\0';
+  for (i = 0; i < argc; i++) {
+    AMUDP_assert(argv[i] != NULL);
+    strcat(cmd1,"'");
+    strcat(cmd1,argv[i]);
+    strcat(cmd1,"' ");
   }
+  AMUDP_assert(!argv[i]);
 
   p = ssh_servers;
   for (i = 0; i < nproc; i++) { /* check we have enough servers */
@@ -308,9 +303,6 @@ int AMUDP_SPMDSshSpawn(int nproc, int argc, char **argv) {
     else p = end;
   } 
 
-  cmd2_sz = cmd1_sz + 1024;    // estimated
-  cmd2 = (char *)AMUDP_malloc(cmd2_sz);
-
   p = ssh_servers;
   for (i = 0; i < nproc; i++) {
     char ssh_server[255];
@@ -323,7 +315,7 @@ int AMUDP_SPMDSshSpawn(int nproc, int argc, char **argv) {
     ssh_server[end-p] = '\0'; 
 
     /* build the ssh command */
-    snprintf(cmd2, cmd2_sz, "%s %s %s %s %s %s \" %s cd '%s' ; %s\" "
+    sprintf(cmd2, "%s %s %s %s %s %s \" %s cd '%s' ; %s\" "
       " || ( echo \"connection to %s failed.\" ; kill %i ) "
       "%s", 
       ssh_cmd,
@@ -359,17 +351,11 @@ int AMUDP_SPMDSshSpawn(int nproc, int argc, char **argv) {
       printf("system(%s)\n", cmd2); fflush(stdout);
     if (system(cmd2) == -1) {
       printf("Failed to call system() to spawn");
-      AMUDP_free(cmd1);
-      AMUDP_free(cmd2);
       return FALSE;
     }
-
     if (*end) p = end+1;
     else p = end;
   } 
-
-  AMUDP_free(cmd1);
-  AMUDP_free(cmd2);
 
   return TRUE;
 }
