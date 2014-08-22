@@ -378,13 +378,14 @@ static void chpl_qt_setenv(char* var, char* val, int32_t override) {
     }
 }
 
-// Determine the number of workers based on environment settings. If a user
-// set HWPAR, they are saying they want to use HWPAR many workers, but let
-// qthreads figure out the details. If they explicitly set
-// NUM_WORKERS_PER_SHEPHERD and/or NUM_SHEPHERDS then they must have specific
-// reasons for doing so. We don't want to make adjustments to their settings
-// then. Return the number of workers to use, -1 if we are unsure and should
-// let qthreads figure it out, and 0 if the user didn't specify.
+// Determine the number of workers based on environment settings. If a user set
+// HWPAR, they are saying they want to use HWPAR many workers, but let the
+// runtime figure out the details. If they explicitly set NUM_SHEPHERDS and/or
+// NUM_WORKERS_PER_SHEPHERD then they must have specific reasons for doing so.
+// Returns 0 if no Qthreas env vars related to the number of threads were set,
+// what HWPAR was set to if it was set, or -1 if NUM_SHEP and/or NUM_WPS were
+// since we can't figure out before Qthreads init what this will actually turn
+// into without duplicating Qthreads logic.
 static int32_t chpl_qt_getenv_num_workers() {
     int32_t  hwpar;
     int32_t  num_wps;
@@ -409,10 +410,10 @@ static void setupAvailableParallelism(int32_t maxThreads) {
     int32_t   hwpar;
     char      newenv_workers[QT_ENV_S] = { 0 };
 
-    // Experience has shown that qhtreads generally performs best with
+    // Experience has shown that Qthreads generally performs best with
     // num_workers = numCores (and thus worker_unit = core) but if the user has
-    // explictly requested more threads through the chapel or qthread env vars,
-    // we override the default.
+    // explicitly requested more threads through the chapel or Qthread env
+    // vars, we override the default.
     numThreadsPerLocale = chpl_task_getenvNumThreadsPerLocale();
     qtEnvThreads = chpl_qt_getenv_num_workers();
     hwpar = 0;
@@ -438,9 +439,6 @@ static void setupAvailableParallelism(int32_t maxThreads) {
     }
     // User set qthreads level env var
     // (HWPAR or (NUM_SHEPHERDS and NUM_WORKERS_PER_SHEPHERD))
-    // 0 means they didn't set any, > 0 means they set HWPAR, -1 means either
-    // NUM_SHEPHERDS and/or NUM_WORKERS_PER_SHEPHERD was set and we won't try
-    // to override then.
     else if (qtEnvThreads != 0) {
         hwpar = qtEnvThreads;
     }
@@ -449,20 +447,23 @@ static void setupAvailableParallelism(int32_t maxThreads) {
         hwpar = chpl_getNumCoresOnThisNode();
     }
 
-    // Limit the parallelism to the maximum imposed by the comm layer.
-    if (0 < maxThreads && maxThreads < hwpar) {
-        hwpar = maxThreads;
-    }
-
-    // If there is more parallelism requested than the number of cores, set the
-    // worker unit to pu, otherwise core.
-    if (hwpar > 0 && hwpar <= chpl_getNumCoresOnThisNode()) {
-      chpl_qt_setenv("WORKER_UNIT", "core", 0);
-    } else if (hwpar > chpl_getNumCoresOnThisNode()) {
-      chpl_qt_setenv("WORKER_UNIT", "pu", 0);
-    }
-
+    // hwpar will only be <= 0 if the user set QT_NUM_SHEPHERDS and/or
+    // QT_NUM_WORKERS_PER_SHEPHERD in which case we assume as "expert" user and
+    // don't impose any thread limits or set worker_unit.
     if (hwpar > 0) {
+        // Limit the parallelism to the maximum imposed by the comm layer.
+        if (0 < maxThreads && maxThreads < hwpar) {
+            hwpar = maxThreads;
+        }
+
+        // If there is more parallelism requested than the number of cores, set the
+        // worker unit to pu, otherwise core.
+        if (hwpar > chpl_getNumCoresOnThisNode()) {
+          chpl_qt_setenv("WORKER_UNIT", "pu", 0);
+        } else {
+          chpl_qt_setenv("WORKER_UNIT", "core", 0);
+        }
+
         // Unset relevant Qthreads environment variables.
         qt_internal_unset_envstr("HWPAR");
         qt_internal_unset_envstr("NUM_SHEPHERDS");
@@ -515,7 +516,7 @@ void chpl_task_init(void)
 
     commMaxThreads = chpl_comm_getMaxThreads();
 
-    // Setup hardware paralleism and call stack size/checks
+    // Setup hardware parallelism, the stack size, and stack guards
     setupAvailableParallelism(commMaxThreads);
     setupCallStacks();
 
@@ -529,7 +530,7 @@ void chpl_task_init(void)
     // that the number of workers is less than any comm layer limit. This is
     // mainly need for the case where a user set QT_NUM_SHEPHERDS and/or
     // QT_NUM_WORKERS_PER_SHEPHERD in which case we don't impose any limits on
-    // the number of threads qthreads creates, as we can't know that beforehand
+    // the number of threads qthreads creates beforehand
     assert(0 == commMaxThreads || qthread_num_workers() < commMaxThreads);
 
     if (blockreport || taskreport) {
