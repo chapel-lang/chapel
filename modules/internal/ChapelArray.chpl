@@ -1534,12 +1534,20 @@ module ChapelArray {
     return a | b;
   }
 
+  proc +=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    a |= b;
+  }
+
   proc |(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
     var newDom : a.domain.type;
     var ret : [newDom] a._value.eltType;
     for (k,v) in zip(a.domain, a) do ret[k] = v;
     for (k,v) in zip(b.domain, b) do ret[k] = v;
     return ret;
+  }
+
+  proc |=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    for (k,v) in zip(b.domain, b) do a[k] = v;
   }
 
   proc &(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
@@ -1551,6 +1559,11 @@ module ChapelArray {
     return ret;
   }
 
+  proc &=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    for k in a.domain do
+      if !b.domain.member(k) then a.domain.remove(k);
+  }
+
   proc -(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
     var newDom : a.domain.type;
     var ret : [newDom] a._value.eltType;
@@ -1559,6 +1572,11 @@ module ChapelArray {
       if !b.domain.member(k) then ret[k] = a[k];
 
     return ret;
+  }
+
+  proc -=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    for k in a.domain do
+      if b.domain.member(k) then a.domain.remove(k);
   }
 
 
@@ -1572,6 +1590,12 @@ module ChapelArray {
       if !a.domain.member(k) then ret[k] = b[k];
 
     return ret;
+  }
+
+  proc ^=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    for k in b.domain do
+      if a.domain.member(k) then a.domain.remove(k);
+      else a[k] = b[k];
   }
   
   proc |(a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
