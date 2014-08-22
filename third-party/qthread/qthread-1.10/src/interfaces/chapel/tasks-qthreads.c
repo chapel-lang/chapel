@@ -330,6 +330,54 @@ static void *initializer(void *junk)
 }
 #endif /* ! QTHREAD_MULTINODE */
 
+
+// Helper function to set a qthreads env var. This is meant to mirror setenv
+// functionality, but qthreads has two environment variables for every setting:
+// a QT_ and a QTHREAD_ version. We often forget to think about both so this
+// wraps the overriding logic. In verbose mode it prints out if we overrode
+// values, or if we were prevented from setting values because they existed
+// (and override was 0.)
+static void chpl_qt_setenv(char* var, char* val, int32_t override) {
+    int32_t   buffSize = 100;
+    char      qt_env[buffSize];
+    char      qthread_env[buffSize];
+    char      *qt_val;
+    char      *qthread_val;
+    chpl_bool eitherSet = false;
+
+    strncpy(qt_env, "QT_", buffSize);
+    strncat(qt_env, var, buffSize);
+
+    strncpy(qthread_env, "QTHREAD_", buffSize);
+    strncat(qthread_env, var, buffSize);
+
+    qt_val = getenv(qt_env);
+    qthread_val = getenv(qthread_env);
+    eitherSet = (qt_val != NULL || qthread_val != NULL);
+
+    if (override || !eitherSet) {
+        if (2 == verbosity && override && eitherSet) {
+            printf("QTHREADS: Overriding the value of %s and %s "
+                   "with %s\n", qt_env, qthread_env, val);
+        }
+        (void) setenv(qt_env, val, 1);
+        (void) setenv(qthread_env, val, 1);
+    } else if (2 == verbosity) {
+        char* set_env = NULL;
+        char* set_val = NULL;
+        if (qt_val != NULL) {
+            set_env = qt_env;
+            set_val = qt_val;
+        } else {
+            set_env = qthread_env;
+            set_val = qthread_val;
+        }
+        printf("QTHREADS: Not setting %s to %s because %s is set to %s and "
+               "overriding was not requested\n", qt_env, val, set_env, set_val);
+    }
+}
+
+
 void chpl_task_init(void)
 {
     int32_t   numThreadsPerLocale;
@@ -343,11 +391,8 @@ void chpl_task_init(void)
     // Set up available hardware parallelism.
 
     // Experience has shown that we hardly ever win by using more than
-    // one PU per core, so default to that.  If this was explicitly
-    // set by the user we won't override it, however.
-    if (getenv("QTHREAD_WORKER_UNIT") == NULL) {
-        (void) setenv("QT_WORKER_UNIT", "core", 0);
-    }
+    // one PU per core, so default to that.
+    chpl_qt_setenv("WORKER_UNIT", "core", 0);
 
     // Determine the thread count.  CHPL_RT_NUM_THREADS_PER_LOCALE has
     // the highest precedence but we limit it to the number of PUs.
@@ -401,17 +446,14 @@ void chpl_task_init(void)
 
         // Set environment variable for Qthreads
         snprintf(newenv, sizeof(newenv), "%i", (int)hwpar);
-        setenv("QT_HWPAR", newenv, 1);
+        chpl_qt_setenv("HWPAR", newenv, 1);
     }
 
 
     // If the user compiled with no stack checks (either explicitly or
-    // implicitly) turn off qthread guard pages. If the qthread guard page env
-    // var was explicitly set by the user we don't override it.
+    // implicitly) turn off qthread guard pages.
     if (CHPL_STACK_CHECKS == 0) {
-        if (getenv("QTHREAD_GUARD_PAGES") == NULL) {
-            (void) setenv("QT_GUARD_PAGES", "false", 0);
-        }
+        chpl_qt_setenv("GUARD_PAGES", "false", 0);
     }
 
     // Precedence (high-to-low):
@@ -423,11 +465,18 @@ void chpl_task_init(void)
     if (callStackSize <= 0)
         callStackSize = 1024 * 1024 * sizeof(size_t);
     snprintf(newenv_stack, 99, "%zu", callStackSize);
-    setenv("QT_STACK_SIZE", newenv_stack, 1);
+
+    // TODO We currently always override QT_/QTHREAD_STACK_SIZE. The only way
+    // to set stack size is through CHPL_RT_CALL_STACK_SIZE. The function
+    // chpl_task_getMinCallStackSize should be broken up like the one for
+    // NUM_THREADS_PER_LOCALE. Our policy is to override third party env vars
+    // iff a chapel equivalent env var was set, but to not override with our
+    // default values
+    chpl_qt_setenv("STACK_SIZE", newenv_stack, 1);
 
     // Turn on informative Qthreads setting messages with Chapel's verbose flag
     if (verbosity == 2) {
-        setenv("QT_INFO", "1", 1);
+        chpl_qt_setenv("INFO", "1", 0);
     }
 
     pthread_create(&initer, NULL, initializer, NULL);
