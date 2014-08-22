@@ -964,6 +964,15 @@ static void build_record_init_function(AggregateType* ct) {
     // Need to insert all required arguments into this call
     for_formals(formal, ct->defaultInitializer) {
       if (!formal->hasFlag(FLAG_IS_MEME)) {
+        // If the initializer function is a method, we must call it as a
+        // method.  So just pass the method token along.  (No need to create a
+        // formal temp, etc.)
+        if (formal->type == dtMethodToken)
+        {
+          call->insertAtTail(gMethodToken);
+          continue;
+        }
+
         VarSymbol* tmp = newTemp(formal->name);
         if (formal->isParameter()) {
           // Param and type fields are specific to the generic instantiation
@@ -1002,10 +1011,7 @@ static void build_record_init_function(AggregateType* ct) {
               fn->insertAtHead(new DefExpr(typeTemp));
             }
             fn->insertAtHead(new DefExpr(tmp));
-            if (formal->type == dtMethodToken)
-              call->insertAtTail(gMethodToken);
-            else
-              call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
+            call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
           }
         }
       }
