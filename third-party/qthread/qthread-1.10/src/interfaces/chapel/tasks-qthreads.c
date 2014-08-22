@@ -54,9 +54,6 @@
 #ifdef CHAPEL_PROFILE
 # define PROFILE_INCR(counter,count) do { (void)qthread_incr(&counter,count); } while (0)
 
-// Make qt env sizes uniform. Same as qt, but they use the literal everywhere
-#define QT_ENV_S 100
-
 /* Tasks */
 static aligned_t profile_task_yield = 0;
 static aligned_t profile_task_addToTaskList = 0;
@@ -112,6 +109,9 @@ static void profile_print(void)
 #ifndef QTHREAD_MULTINODE
 volatile int chpl_qthread_done_initializing;
 #endif
+
+// Make qt env sizes uniform. Same as qt, but they use the literal everywhere
+#define QT_ENV_S 100
 
 // aka chpl_task_list_p
 struct chpl_task_list {
