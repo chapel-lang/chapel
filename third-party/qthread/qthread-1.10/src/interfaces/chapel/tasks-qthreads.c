@@ -330,17 +330,20 @@ static void *initializer(void *junk)
 }
 #endif /* ! QTHREAD_MULTINODE */
 
+
 // Helper function to set a qthreads env var. This is meant to mirror setenv
 // functionality, but qthreads has two environment variables for every setting:
 // a QT_ and a QTHREAD_ version. We often forget to think about both so this
-// wraps the overriding logic, and in verbose mode prints out if we overrode
-// values, or if we were prevented from setting values because they existed.
+// wraps the overriding logic. In verbose mode it prints out if we overrode
+// values, or if we were prevented from setting values because they existed
+// (and override was 0.)
 static void chpl_qt_setenv(char* var, char* val, int32_t override) {
     int32_t buffSize = 100;
     char    qt_env[buffSize];
     char    qthread_env[buffSize];
     char    *qt_val;
     char    *qthread_val;
+    int32_t eitherSet = false;
 
     strncpy(qt_env, "QT_", buffSize);
     strncat(qt_env, var, buffSize);
@@ -350,11 +353,12 @@ static void chpl_qt_setenv(char* var, char* val, int32_t override) {
 
     qt_val = getenv(qt_env);
     qthread_val = getenv(qthread_env);
+    eitherSet = (qt_val != NULL || qthread_val != NULL);
 
-    if (override || (qt_val == NULL && qthread_val == NULL)) {
-        if (override && 2 == verbosity) {
+    if (override || !eitherSet) {
+        if (2 == verbosity && override && eitherSet) {
             printf("QTHREADS: Overriding the value of %s and %s "
-                   " with %s\n", qt_env, qthread_env, val);
+                   "with %s\n", qt_env, qthread_env, val);
         }
         (void) setenv(qt_env, val, 1);
         (void) setenv(qthread_env, val, 1);
@@ -368,8 +372,8 @@ static void chpl_qt_setenv(char* var, char* val, int32_t override) {
             set_env = qthread_env;
             set_val = qthread_val;
         }
-        printf("QTHREADS: Not setting %s because %s was already set to "
-               "%s\n", qt_env, set_env, set_val);
+        printf("QTHREADS: Not setting %s to %s because %s is set to %s and "
+               "overriding was not requested\n", qt_env, val, set_env, set_val);
     }
 }
 
@@ -466,7 +470,7 @@ void chpl_task_init(void)
     // to set stack size is through CHPL_RT_CALL_STACK_SIZE. The function
     // chpl_task_getMinCallStackSize should be broken up like the one for
     // NUM_THREADS_PER_LOCALE. Our policy is to override third party env vars
-    // iff a chapel equivalent env var was set, but to not override with out
+    // iff a chapel equivalent env var was set, but to not override with our
     // default values
     chpl_qt_setenv("STACK_SIZE", newenv_stack, 1);
 
