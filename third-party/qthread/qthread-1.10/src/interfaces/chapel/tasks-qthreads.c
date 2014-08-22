@@ -427,6 +427,7 @@ void chpl_task_init(void)
     qtEnvThreads = chpl_qt_getenv_num_workers();
     hwpar = 0;
     // User set chapel level env var (CHPL_RT_NUM_THREADS_PER_LOCALE)
+    // This is limited to numPusPerLocale
     if (numThreadsPerLocale != 0) {
         int32_t numPUsPerLocale;
 
