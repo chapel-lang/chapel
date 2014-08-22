@@ -575,6 +575,8 @@ qioerr qio_file_sync(qio_file_t* f);
 // Renames the file from oldname to newname, returning a qioerr if one
 // occured.
 qioerr qio_file_rename(const char* oldname, const char* newname);
+// Removes the file specified, returning a qioerr if one occurred
+qioerr qio_file_remove(const char* name);
 
 // This one gets called automatically.
 void _qio_file_destroy(qio_file_t* f);

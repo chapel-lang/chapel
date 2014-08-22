@@ -1,5 +1,2 @@
 #!/bin/bash
-mv rename_fileNew.txt rename_fileOld.txt
-if [ $? -ne 0 ]; then
-    echo "Error: did not move text file prior to run!" > rename_file.exec.out.tmp
-fi
+mv rename_fileNew.txt rename_fileOld.txt 2> rename_file.exec.out.tmp

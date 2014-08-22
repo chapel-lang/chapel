@@ -1058,11 +1058,20 @@ void _qio_file_destroy(qio_file_t* f)
 }
 
 /* Renames the file from oldname to newname, returning a qioerr if one
-   occured. */
+   occurred. */
 qioerr qio_file_rename(const char* oldname, const char* newname) {
   qioerr err = 0;
   int exitStatus = rename(oldname, newname);
   // utilizes the C library function rename.
+  if (exitStatus)
+    err = qio_mkerror_errno();
+  return err;
+}
+
+/* Removes the file specified, returning a qioerr if one occurred. */
+qioerr qio_file_remove(const char* name) {
+  qioerr err = 0;
+  int exitStatus = remove(name);
   if (exitStatus)
     err = qio_mkerror_errno();
   return err;
