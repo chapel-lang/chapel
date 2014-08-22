@@ -338,12 +338,12 @@ static void *initializer(void *junk)
 // values, or if we were prevented from setting values because they existed
 // (and override was 0.)
 static void chpl_qt_setenv(char* var, char* val, int32_t override) {
-    int32_t buffSize = 100;
-    char    qt_env[buffSize];
-    char    qthread_env[buffSize];
-    char    *qt_val;
-    char    *qthread_val;
-    int32_t eitherSet = false;
+    int32_t   buffSize = 100;
+    char      qt_env[buffSize];
+    char      qthread_env[buffSize];
+    char      *qt_val;
+    char      *qthread_val;
+    chpl_bool eitherSet = false;
 
     strncpy(qt_env, "QT_", buffSize);
     strncat(qt_env, var, buffSize);
