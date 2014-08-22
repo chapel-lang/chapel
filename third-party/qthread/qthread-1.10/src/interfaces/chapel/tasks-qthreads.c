@@ -17,17 +17,17 @@
 #include "chplrt.h"
 #include "chplsys.h"
 #include "tasks-qthreads.h"
-#include "chplcgfns.h" // for chpl_ftable()
-#include "chpl-comm.h" // for chpl_nodeID
-#include "chpl-locale-model.h" // for sublocale information
+#include "chplcgfns.h"           // for chpl_ftable()
+#include "chpl-comm.h"           // for chpl_nodeID
+#include "chpl-locale-model.h"   // for sublocale information
 #include "chpl-tasks.h"
-#include "config.h"   // for chpl_config_get_value()
-#include "error.h"    // for chpl_warning()
-#include "arg.h"      // for blockreport and taskreport
-#include "signal.h"   // for signal
-#include "chplexit.h" // for chpl_exit_any()
+#include "config.h"              // for chpl_config_get_value()
+#include "error.h"               // for chpl_warning()
+#include "arg.h"                 // for blockreport and taskreport
+#include "signal.h"              // for signal
+#include "chplexit.h"            // for chpl_exit_any()
 #include <stdio.h>
-#include <stdlib.h> // for setenv()
+#include <stdlib.h>              // for setenv()
 #include <assert.h>
 #include <inttypes.h>
 #include <errno.h>
@@ -37,10 +37,11 @@
 
 #include "qthread/qthread.h"
 #include "qthread/qtimer.h"
-#include "qt_feb.h" // for blockreporting
-#include "qt_syncvar.h" // for blockreporting
-#include "qt_hash.h" /* for qt_key_t */
-#include "qt_atomics.h"      /* for SPINLOCK_BODY() */
+#include "qt_feb.h"              // for blockreporting
+#include "qt_syncvar.h"          // for blockreporting
+#include "qt_hash.h"             // for qt_key_t
+#include "qt_atomics.h"          // for SPINLOCK_BODY()
+#include "qt_shepherd_innards.h" // for qt_threadqueue_policy()
 #include "qt_envariables.h"
 #include "qt_debug.h"
 
@@ -52,6 +53,9 @@
 
 #ifdef CHAPEL_PROFILE
 # define PROFILE_INCR(counter,count) do { (void)qthread_incr(&counter,count); } while (0)
+
+// Make qt env sizes uniform. Same as qt, but they use the literal everywhere
+#define QT_ENV_S 100
 
 /* Tasks */
 static aligned_t profile_task_yield = 0;
@@ -338,31 +342,30 @@ static void *initializer(void *junk)
 // values, or if we were prevented from setting values because they existed
 // (and override was 0.)
 static void chpl_qt_setenv(char* var, char* val, int32_t override) {
-    int32_t   buffSize = 100;
-    char      qt_env[buffSize];
-    char      qthread_env[buffSize];
+    char      qt_env[QT_ENV_S]  = { 0 };
+    char      qthread_env[QT_ENV_S] = { 0 };
     char      *qt_val;
     char      *qthread_val;
     chpl_bool eitherSet = false;
 
-    strncpy(qt_env, "QT_", buffSize);
-    strncat(qt_env, var, buffSize);
+    strncpy(qt_env, "QT_", QT_ENV_S);
+    strncat(qt_env, var, QT_ENV_S);
 
-    strncpy(qthread_env, "QTHREAD_", buffSize);
-    strncat(qthread_env, var, buffSize);
+    strncpy(qthread_env, "QTHREAD_", QT_ENV_S);
+    strncat(qthread_env, var, QT_ENV_S);
 
     qt_val = getenv(qt_env);
     qthread_val = getenv(qthread_env);
     eitherSet = (qt_val != NULL || qthread_val != NULL);
 
     if (override || !eitherSet) {
-        if (2 == verbosity && override && eitherSet) {
+        if (verbosity == 2 && override && eitherSet) {
             printf("QTHREADS: Overriding the value of %s and %s "
                    "with %s\n", qt_env, qthread_env, val);
         }
         (void) setenv(qt_env, val, 1);
         (void) setenv(qthread_env, val, 1);
-    } else if (2 == verbosity) {
+    } else if (verbosity == 2) {
         char* set_env = NULL;
         char* set_val = NULL;
         if (qt_val != NULL) {
@@ -378,32 +381,52 @@ static void chpl_qt_setenv(char* var, char* val, int32_t override) {
 }
 
 
+// Determine the number of workers based on environment settings. HWPAR has
+// precedence followed by num workers per shepherd and num shepherds, but only
+// if both are set.
+static int32_t chpl_qt_getenv_num_workers() {
+    int32_t  hwpar;
+    int32_t  num_wps;
+    int32_t  num_sheps;
+
+    hwpar = qt_internal_get_env_num("HWPAR", 0, 0);
+    num_wps = qt_internal_get_env_num("NUM_WORKERS_PER_SHEPHERD", 0, 0);
+    num_sheps = qt_internal_get_env_num("NUM_SHEPHERDS", 0, 0);
+
+    if (hwpar) {
+        return hwpar;
+    } else if (num_wps && num_sheps) {
+        return num_wps * num_sheps;
+    }
+    return 0;
+}
+
+
 void chpl_task_init(void)
 {
     int32_t   numThreadsPerLocale;
     int32_t   commMaxThreads;
+    int32_t   qtEnvThreads;
     int32_t   hwpar;
     size_t    callStackSize;
     pthread_t initer;
-    char      newenv_stack[100] = { 0 };
+    char      newenv_stack[QT_ENV_S] = { 0 };
+    char      newenv_workers[QT_ENV_S] = { 0 };
 
 
+    //
     // Set up available hardware parallelism.
+    //
 
-    // Experience has shown that we hardly ever win by using more than
-    // one PU per core, so default to that.
-    chpl_qt_setenv("WORKER_UNIT", "core", 0);
-
-    // Determine the thread count.  CHPL_RT_NUM_THREADS_PER_LOCALE has
-    // the highest precedence but we limit it to the number of PUs.
-    // QTHREAD_HWPAR has the next precedence.  We don't impose the
-    // same limit on it, so it can be used to overload the hardware.
-    // In either case the number of threads can be no greater than any
-    // maximum imposed by the comm layer.  This limit is imposed
-    // silently.
+    // Experience has shown that qhtreads generally performs best with
+    // num_workers = numCores (and thus worker_unit = core) but if the user has
+    // explictly requested more threads through the chapel or qthread env vars,
+    // we override the default.
     numThreadsPerLocale = chpl_task_getenvNumThreadsPerLocale();
     commMaxThreads = chpl_comm_getMaxThreads();
+    qtEnvThreads = chpl_qt_getenv_num_workers();
     hwpar = 0;
+    // User set chapel level env var (CHPL_RT_NUM_THREADS_PER_LOCALE)
     if (numThreadsPerLocale != 0) {
         int32_t numPUsPerLocale;
 
@@ -411,7 +434,7 @@ void chpl_task_init(void)
 
         numPUsPerLocale = chpl_getNumPUsOnThisNode();
         if (0 < numPUsPerLocale && numPUsPerLocale < hwpar) {
-            if (2 == verbosity) {
+            if (verbosity == 2) {
                 printf("QTHREADS: Reduced numThreadsPerLocale=%d to %d "
                        "to prevent oversubscription of the system.\n",
                        hwpar, numPUsPerLocale);
@@ -420,38 +443,54 @@ void chpl_task_init(void)
             // Do not oversubscribe the system, use all available resources.
             hwpar = numPUsPerLocale;
         }
+    }
+    // User set qthreads level env var
+    // (HWPAR or (NUM_SHEPHERDS and NUM_WORKERS_PER_SHEPHERD))
+    else if (qtEnvThreads != 0) {
+        hwpar = qtEnvThreads;
+    }
+    // User did not set chapel or qthreads vars -- our default
+    else {
+        hwpar = chpl_getNumCoresOnThisNode();
+    }
 
-        if (0 < commMaxThreads && commMaxThreads < hwpar) {
-            hwpar = commMaxThreads;
-        }
+    // Limit the parallelism to the maximum imposed by the comm layer.
+    if (0 < commMaxThreads && commMaxThreads < hwpar) {
+        hwpar = commMaxThreads;
+    }
+
+    // If there is more parallelism than the number of cores, set the worker
+    // unit to pu, otherwise core.
+    if (hwpar > (int32_t)chpl_getNumCoresOnThisNode()) {
+      chpl_qt_setenv("WORKER_UNIT", "pu", 0);
     } else {
-        if (0 < commMaxThreads) {
-            hwpar = qt_internal_get_env_num("HWPAR", 0, 0);
-            if (commMaxThreads < hwpar) {
-                hwpar = commMaxThreads;
-            }
-        }
+      chpl_qt_setenv("WORKER_UNIT", "core", 0);
     }
 
-    if (hwpar > 0) {
-        char newenv[100];
+    // Unset relevant Qthreads environment variables. Note that above we
+    // check if the user set chpl level variables that should override these or
+    // we check if they set these variables (and limit to commMaxThreads) so it
+    // is always safe to unset these.
+    qt_internal_unset_envstr("HWPAR");
+    qt_internal_unset_envstr("NUM_SHEPHERDS");
+    qt_internal_unset_envstr("NUM_WORKERS_PER_SHEPHERD");
 
-        // Unset relevant Qthreads environment variables.  Currently
-        // QTHREAD_HWPAR has precedence over the QTHREAD_NUM_* ones,
-        // but that isn't documented and may not be true forever, so
-        // we unset them all.
-        qt_internal_unset_envstr("HWPAR");
-        qt_internal_unset_envstr("NUM_SHEPHERDS");
-        qt_internal_unset_envstr("NUM_WORKERS_PER_SHEPHERD");
-
-        // Set environment variable for Qthreads
-        snprintf(newenv, sizeof(newenv), "%i", (int)hwpar);
-        chpl_qt_setenv("HWPAR", newenv, 1);
+    snprintf(newenv_workers, sizeof(newenv_workers), "%i", (int)hwpar);
+    if (THREADQUEUE_POLICY_TRUE == qt_threadqueue_policy(SINGLE_WORKER)) {
+        chpl_qt_setenv("NUM_SHEPHERDS", newenv_workers, 1);
+        chpl_qt_setenv("NUM_WORKERS_PER_SHEPHERD", "1", 1);
+    } else {
+        chpl_qt_setenv("HWPAR", newenv_workers, 1);
     }
 
+
+    //
+    // Setup call stacks
+    //
 
     // If the user compiled with no stack checks (either explicitly or
-    // implicitly) turn off qthread guard pages.
+    // implicitly) turn off qthread guard pages. TODO there should also be a
+    // chpl level env var backing this at runtime (can be the same var.)
     if (CHPL_STACK_CHECKS == 0) {
         chpl_qt_setenv("GUARD_PAGES", "false", 0);
     }
@@ -479,16 +518,12 @@ void chpl_task_init(void)
         chpl_qt_setenv("INFO", "1", 0);
     }
 
+    // Initialize qthreads
     pthread_create(&initer, NULL, initializer, NULL);
     while (chpl_qthread_done_initializing == 0) SPINLOCK_BODY();
 
-    // Now that Qthreads is up and running, make sure that the number
-    // of workers is less than any comm layer limit.  This is mainly
-    // checking that the default thread count without QTHREAD_HWPAR
-    // being set is within any comm layer limit, because we can't
-    // determine that default ahead of time.  Secondarily, it's a
-    // sanity check on the thread count versus comm limit logic
-    // above.
+    // Now that Qthreads is up and running, do a sanity check and make sure
+    // that the number of workers is less than any comm layer limit.
     assert(0 == commMaxThreads || qthread_num_workers() < commMaxThreads);
 
     if (blockreport || taskreport) {
