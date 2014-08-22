@@ -624,6 +624,27 @@ proc file.fsync() {
   if err then ioerror(err, "in file.fsync", this.tryGetPath());
 }
 
+/* Removes the underlying file stored by this file, if it exists.
+   If an error did not occur, the file will set _file_internal to
+   QIO_FILE_PTR_NULL, otherwise it will remain unchanged (in case
+   the user wishes to try again).
+   err: a syserr indicating if remove was performed successfully. */
+proc file.remove(out err: syserr) {
+  var path = this.getPath(err);
+  if err then return;
+  removeFile(err, path);
+  if err then return;
+  this._file_internal = QIO_FILE_PTR_NULL;
+}
+
+/* Removes the underlying file stored by this file, if it exists.
+   If something went wrong, generate an error.  Otherwise, the file
+   will have its _file_internal field set to QIO_FILE_PTR_NULL. */
+proc file.remove() {
+  var err: syserr = ENOERR;
+  this.remove(err);
+  if err then ioerror(err, "in file.remove");
+}
 
 /* Get the path to a file. */
 proc file.getPath(out error:syserr) : string {
