@@ -263,6 +263,61 @@ static std::string codegenCForLoopHeaderSegment(BlockStmt* block) {
   return seg;
 }
 
+#ifdef HAVE_LLVM
+static void codegenCForLoopConditionalPre(Expr* expr)
+{
+  GenInfo* info    = gGenInfo;
+  // Generate def expressions at the top of the function
+  if (DefExpr* defExpr = toDefExpr(expr)) {
+    defExpr->codegen();
+    return;
+  }
+  CallExpr* call = toCallExpr(expr);
+  if( call && (call->isPrimitive(PRIM_LESSOREQUAL)
+               || call->isPrimitive(PRIM_LESS))) {
+    SymExpr* endsym = toSymExpr(call->get(2));
+    if( endsym ) {
+      GenRet end = codegenValue(endsym); // code generate rhs
+      // save in lvt endsym->cname = end value. for use in conditional
+      info->lvt->addValue(endsym->var->cname, end.val, end.isLVPtr, end.isUnsigned);
+    }
+  } else if (call) {
+    for_actuals(actual, call) {
+      codegenCForLoopConditionalPre(actual);
+    }
+  }
+}
+
+static CallExpr* codegenCForLoopFindConditional(Expr* expr)
+{
+  if (toDefExpr(expr) || toSymExpr(expr)) {
+    // def expressions in conditional should already be generated.
+    return NULL;
+  }
+
+  CallExpr* call = toCallExpr(expr);
+  if( call && call->isPrimitive(PRIM_MOVE) )
+    return codegenCForLoopFindConditional(call->get(2));
+  return call;
+}
+
+static GenRet codegenCForLoopConditional(BlockStmt* block)
+{
+  CallExpr* the_call = NULL;
+  for_alist(expr, block->body) {
+    CallExpr* call = codegenCForLoopFindConditional(expr);
+    if( call ) {
+      // There can only be one call, and it must either be to
+      // a 'should-continue' function or to a conditional!
+      assert(the_call == NULL);
+      the_call = call;
+    }
+  }
+  assert(the_call);
+  return codegenValue(the_call);
+}
+#endif
+
 GenRet BlockStmt::codegen() {
   GenInfo* info    = gGenInfo;
   FILE*    outfile = info->cfile;
@@ -282,16 +337,17 @@ GenRet BlockStmt::codegen() {
         info->cStatements.push_back(hdr);
       } else if (blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
         BlockStmt* initBlock = toBlockStmt(blockInfo->get(1));
-        std::string init = codegenCForLoopHeaderSegment(initBlock->copy());
+        std::string init = codegenCForLoopHeaderSegment(initBlock);
 
         BlockStmt* testBlock = toBlockStmt(blockInfo->get(2));
-        std::string test = codegenCForLoopHeaderSegment(testBlock->copy());
+        GenRet testgen = codegenCForLoopConditional(testBlock);
+        std::string test = testgen.c;
         // wrap the test with paren. Could probably check if it already has
         // outer paren to make the code a little cleaner.
         if (test != "") test = "(" + test + ")";
 
         BlockStmt* incrBlock = toBlockStmt(blockInfo->get(3));
-        std::string incr = codegenCForLoopHeaderSegment(incrBlock->copy());
+        std::string incr = codegenCForLoopHeaderSegment(incrBlock);
 
         std::string hdr = "for (" + init + "; " + test + "; " + incr + ") ";
         info->cStatements.push_back(hdr);
@@ -320,19 +376,130 @@ GenRet BlockStmt::codegen() {
 
     getFunction()->codegenUniqueNum++;
 
+    llvm::BasicBlock *blockStmtInit = NULL;
     llvm::BasicBlock *blockStmtCond = NULL;
     llvm::BasicBlock *blockStmtBody = NULL;
     llvm::BasicBlock *blockStmtEndCond = NULL;
     llvm::BasicBlock *blockStmtEnd = NULL;
- 
+
+    //llvm::SmallVector<llvm::PHINode*, 4> phiNodes;
+
     blockStmtBody = llvm::BasicBlock::Create(
         info->module->getContext(), FNAME("blk_body"));
    
     if(blockInfo) {
       blockStmtEnd = llvm::BasicBlock::Create(
           info->module->getContext(), FNAME("blk_end"));
-      if (blockInfo->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
-          blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)) {
+      if (blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
+        // C for loop...
+        // blockInfo->get(1) is the initialization block 
+        // blockInfo->get(2) is the test block 
+        // blockInfo->get(3) is the increment block
+
+        // The induction variables may not be
+        //  - used after the loop
+        //  - assigned to within the loop
+        // and so it makes sense for them to be LLVM "registers"
+        // which are static single assignment..
+
+        // Generate an optimized 'for' loop in LLVM
+        // an optimized loop looks like this, for the example
+        // for (i=4,j=2; i<10; i++,j+=3 ) 
+        //
+        // br entry
+        // entry:
+        //   ; we could handle stores in the loop setup here
+        //   ; check the condition under the initial conditions
+        //   starti = 4
+        //   startj = 2
+        //   loopcond = cmp lt %i, 10
+        //   br %loopcond, label %loop, label %afterloop
+        // loop:
+        //   locali = phi [ starti, %entry ], [ %nexti, %loop ]
+        //   localj = phi [ startj, %entry ], [ %nextj, %loop ]
+        //   <loop body using i=locali and j=localj>
+        //   ; any step operations
+        //   %nexti = add %locali, 1
+        //   %nextj = add %localj, 3
+        //   ; termination test
+        //   %loopcond = cmp lt %i, 10
+        //   br %loopcond, label %loop, label %afterloop
+        // afterloop:
+        //   ; we can no longer use i,j
+        //   ; (we could store to i,j if necessary here)
+        //
+
+        BlockStmt* initBlock = toBlockStmt(blockInfo->get(1));
+        BlockStmt* testBlock = toBlockStmt(blockInfo->get(2));
+        BlockStmt* incrBlock = toBlockStmt(blockInfo->get(3));
+
+        assert(initBlock && testBlock && incrBlock);
+
+        // Create the init basic block
+        blockStmtInit = llvm::BasicBlock::Create(
+            info->module->getContext(), FNAME("blk_c_for_init"));
+        func->getBasicBlockList().push_back(blockStmtInit);
+
+        // Insert an explicit branch from the current block to the init block
+        info->builder->CreateBr(blockStmtInit);
+
+        // Now switch to the init block for code generation
+        info->builder->SetInsertPoint(blockStmtInit);
+
+        llvm::SmallVector<const char*, 4> valueNames;
+        llvm::SmallVector<GenRet, 4> startValues;
+
+        // Gather the induction variables in the init block and
+        // set their initial values
+        for_alist(expr, initBlock->body) {
+          CallExpr* call = toCallExpr(expr);
+          assert(call && call->primitive->tag == PRIM_MOVE);
+          SymExpr* var = toSymExpr(call->get(1)); // lhs
+          assert(var);
+          valueNames.push_back(var->var->cname);
+          GenRet val = codegenValue(call->get(2)); // code generate rhs
+          startValues.push_back(val);
+          // save in lvt var->cname = val. for use in conditional
+          info->lvt->addValue(var->var->cname, val.val, val.isLVPtr, val.isUnsigned);
+        }
+ 
+        // Code generate end points in the conditional as values
+        // so that we don't add loads within the loop.
+        for_alist(expr, testBlock->body) {
+          codegenCForLoopConditionalPre(expr);
+        }
+        
+        // Add the loop condition to figure out if we run the loop at all.
+        GenRet test = codegenCForLoopConditional(testBlock);
+        // Add a branch based on test.
+        llvm::Value* condValue = test.val;
+        // Normalize it to boolean
+        if( condValue->getType() !=
+            llvm::Type::getInt1Ty(info->module->getContext()) ) {
+          condValue = info->builder->CreateICmpNE(
+              condValue,
+              llvm::ConstantInt::get(condValue->getType(), 0),
+              FNAME("condition"));
+        }
+        // Create the conditional branch
+        info->builder->CreateCondBr(condValue, blockStmtBody, blockStmtEnd);
+
+        // Now switch to code generating the start of the loop.
+        info->builder->SetInsertPoint(blockStmtBody);
+        // Generate the phi nodes...
+        for( size_t i = 0; i < startValues.size(); i++ ) {
+          const char* name = valueNames[i];
+          GenRet init = startValues[i];
+          llvm::PHINode* phi =
+            info->builder->CreatePHI(init.val->getType(), 2, name);
+          phi->addIncoming(init.val, blockStmtInit);
+          //phiNodes.push_back(phi);
+          // save in lvt var->cname = val. for use in loop body
+          info->lvt->addValue(name, phi, init.isLVPtr, init.isUnsigned);
+        }
+
+      } else if (blockInfo->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
+                 blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)) {
         // Add the condition block.
         blockStmtCond = llvm::BasicBlock::Create(
             info->module->getContext(), FNAME("blk_cond"));
@@ -342,12 +509,15 @@ GenRet BlockStmt::codegen() {
         // Now switch to the condition for code generation 
         info->builder->SetInsertPoint(blockStmtCond);
 
-        llvm::Value *condValue =
-          info->builder->CreateLoad(blockInfo->get(1)->codegen().val);
-        condValue = info->builder->CreateICmpNE(
-            condValue,
-            llvm::ConstantInt::get(condValue->getType(), 0),
-            FNAME("condition"));
+        GenRet condValueRet = codegenValue(blockInfo->get(1));
+        llvm::Value *condValue = condValueRet.val;
+        if( condValue->getType() !=
+            llvm::Type::getInt1Ty(info->module->getContext()) ) {
+          condValue = info->builder->CreateICmpNE(
+              condValue,
+              llvm::ConstantInt::get(condValue->getType(), 0),
+              FNAME("condition"));
+        }
 
         // Now we might do either to the Body or to the End.
         info->builder->CreateCondBr(condValue, blockStmtBody, blockStmtEnd);
@@ -368,7 +538,54 @@ GenRet BlockStmt::codegen() {
     info->lvt->removeLayer();
     
     if(blockInfo) {
-      if(blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP)) {
+      if(blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
+        // Generate the step operations and the termination test
+        // after the loop body
+        BlockStmt* testBlock = toBlockStmt(blockInfo->get(2));
+        BlockStmt* incrBlock = toBlockStmt(blockInfo->get(3));
+
+        // Step operations.
+        for_alist(expr, incrBlock->body) {
+          CallExpr* call = toCallExpr(expr);
+          llvm::PHINode* phi = NULL;
+          if(call && call->primitive->tag == PRIM_MOVE) {
+            SymExpr* var = toSymExpr(call->get(1)); // lhs
+            if( var ) {
+              GenRet ivar = info->lvt->getValue(var->var->cname);
+              assert(ivar.val);
+              phi = llvm::dyn_cast<llvm::PHINode>(ivar.val);
+              // Only consider PHI nodes that are part of the for loop...
+              if( phi && phi->getParent() != blockStmtBody ) phi = NULL; 
+              if( phi ) {
+                GenRet val = codegenValue(call->get(2)); // code generate rhs
+                assert(val.val);
+                // update PHI node
+                phi->addIncoming(val.val, info->builder->GetInsertBlock());
+                // save new value in lvt var->cname = val. for use in conditional.
+                info->lvt->addValue(var->var->cname, val.val, val.isLVPtr, val.isUnsigned);
+              }
+            }
+          }
+          if( !phi ) {
+            // If we didn't already code generate this one, code generate it!
+            expr->codegen();
+          }
+        }
+ 
+        GenRet test = codegenCForLoopConditional(testBlock);
+        // Add a branch based on test.
+        llvm::Value* condValue = test.val;
+        // Normalize it to boolean
+        if( condValue->getType() !=
+            llvm::Type::getInt1Ty(info->module->getContext()) ) {
+          condValue = info->builder->CreateICmpNE(
+              condValue,
+              llvm::ConstantInt::get(condValue->getType(), 0),
+              FNAME("condition"));
+        }
+        // Create the conditional branch
+        info->builder->CreateCondBr(condValue, blockStmtBody, blockStmtEnd);
+      } else if(blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP)) {
         // Add the condition block.
         blockStmtEndCond = llvm::BasicBlock::Create(
             info->module->getContext(), FNAME("blk_end_cond"));
@@ -377,12 +594,15 @@ GenRet BlockStmt::codegen() {
         info->builder->CreateBr(blockStmtEndCond);
         // set insert point
         info->builder->SetInsertPoint(blockStmtEndCond);
-        llvm::Value *condValue =
-          info->builder->CreateLoad(blockInfo->get(1)->codegen().val);
-        condValue = info->builder->CreateICmpNE(
-            condValue,
-            llvm::ConstantInt::get(condValue->getType(), 0),
-            FNAME("condition"));
+        GenRet condValueRet = codegenValue(blockInfo->get(1));
+        llvm::Value *condValue = condValueRet.val;
+        if( condValue->getType() !=
+            llvm::Type::getInt1Ty(info->module->getContext()) ) {
+          condValue = info->builder->CreateICmpNE(
+              condValue,
+              llvm::ConstantInt::get(condValue->getType(), 0),
+              FNAME("condition"));
+        }
         info->builder->CreateCondBr(condValue, blockStmtBody, blockStmtEnd);
       } else if( blockStmtCond ) {
         info->builder->CreateBr(blockStmtCond);
@@ -772,13 +992,15 @@ GenRet CondStmt::codegen() {
     func->getBasicBlockList().push_back(condStmtIf);
     info->builder->SetInsertPoint(condStmtIf);
     
-    llvm::Value *condValue = condExpr->codegen().val;
-
-    condValue = info->builder->CreateLoad(condValue, FNAME("condValue"));
-    condValue = info->builder->CreateICmpNE(
-        condValue,
-        llvm::ConstantInt::get(condValue->getType(), 0),
-        FNAME("condition"));
+    GenRet condValueRet = codegenValue(condExpr);
+    llvm::Value *condValue = condValueRet.val;
+    if( condValue->getType() !=
+        llvm::Type::getInt1Ty(info->module->getContext()) ) {
+      condValue = info->builder->CreateICmpNE(
+          condValue,
+          llvm::ConstantInt::get(condValue->getType(), 0),
+          FNAME("condition"));
+    }
     info->builder->CreateCondBr(
         condValue,
         condStmtThen,
