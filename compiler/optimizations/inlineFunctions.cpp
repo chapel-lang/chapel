@@ -35,7 +35,7 @@ static CallExpr* findRefTempInit(SymExpr* se);
 // inlines the function called by 'call' at that call site
 //
 static void
-inlineCall(FnSymbol* fn, CallExpr* call) {
+inlineCall(FnSymbol* fn, CallExpr* call, Vec<FnSymbol*>& canRemoveRefTempSet) {
   INT_ASSERT(call->isResolved() == fn);
   SET_LINENO(call);
 
@@ -48,7 +48,7 @@ inlineCall(FnSymbol* fn, CallExpr* call) {
   for_formals_actuals(formal, actual, call) {
     SymExpr* se = toSymExpr(actual);
     INT_ASSERT(se);
-    if ((formal->intent & INTENT_REF) && fn->canReplaceRefTemps) {
+    if ((formal->intent & INTENT_REF) && canRemoveRefTempSet.set_in(fn)) {
       if (se->var->hasFlag(FLAG_REF_TEMP)) {
         if (CallExpr* move = findRefTempInit(se)) {
           SymExpr* origSym = NULL;
@@ -94,6 +94,10 @@ inlineCall(FnSymbol* fn, CallExpr* call) {
     call->replace(return_value);
 }
 
+// Ideally we would compute this after inling all nested functions, but that
+// doesn't work due to some cases that explictly expect a ref and have deref
+// calls. Future work would be to find those cases and make change this check
+// to support nested inling if possible.
 static bool canRemoveRefTemps(FnSymbol* fn) {
   if (!fn) // primitive
     return true;
@@ -136,7 +140,7 @@ static CallExpr* findRefTempInit(SymExpr* se) {
 // should be inlined first
 //
 static void
-inlineFunction(FnSymbol* fn, Vec<FnSymbol*>& inlinedSet) {
+inlineFunction(FnSymbol* fn, Vec<FnSymbol*>& inlinedSet, Vec<FnSymbol*>& canRemoveRefTempSet) {
   inlinedSet.set_add(fn);
   Vec<CallExpr*> calls;
   collectFnCalls(fn, calls);
@@ -146,7 +150,7 @@ inlineFunction(FnSymbol* fn, Vec<FnSymbol*>& inlinedSet) {
       if (fn->hasFlag(FLAG_INLINE)) {
         if (inlinedSet.set_in(fn))
           INT_FATAL(call, "recursive inlining detected");
-        inlineFunction(fn, inlinedSet);
+        inlineFunction(fn, inlinedSet, canRemoveRefTempSet);
       }
     }
   }
@@ -164,7 +168,7 @@ inlineFunction(FnSymbol* fn, Vec<FnSymbol*>& inlinedSet) {
   }
   forv_Vec(CallExpr, call, *fn->calledBy) {
     if (call->isResolved()) {
-      inlineCall(fn, call);
+      inlineCall(fn, call, canRemoveRefTempSet);
       if (report_inlining)
         printf("chapel compiler: reporting inlining"
                ", %s function was inlined\n", fn->cname);
@@ -182,12 +186,15 @@ inlineFunctions(void) {
   if (!fNoInline) {
     compute_call_sites();
     Vec<FnSymbol*> inlinedSet;
+    Vec<FnSymbol*> canRemoveRefTempSet;
     forv_Vec(FnSymbol, fn, gFnSymbols) {
-      fn->canReplaceRefTemps = canRemoveRefTemps(fn);
+      if (canRemoveRefTemps(fn)) {
+        canRemoveRefTempSet.set_add(fn);
+      }
     }
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->hasFlag(FLAG_INLINE) && !inlinedSet.set_in(fn))
-        inlineFunction(fn, inlinedSet);
+        inlineFunction(fn, inlinedSet, canRemoveRefTempSet);
     }
   }
 

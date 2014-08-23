@@ -937,11 +937,10 @@ static void insertReferenceTemps() {
           SET_LINENO(call);
           VarSymbol* tmp = newTemp("_ref_tmp_", formal->type);
           tmp->addFlag(FLAG_REF_TEMP);
-          DefExpr* tmpDef = new DefExpr(tmp);
-          call->getStmtExpr()->insertBefore(tmpDef);
+          call->getStmtExpr()->insertBefore(new DefExpr(tmp));
           actual->replace(new SymExpr(tmp));
-          CallExpr* assign = new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, actual));
-          call->getStmtExpr()->insertBefore(assign);
+          call->getStmtExpr()->insertBefore(
+              new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, actual)));
         }
       }
     }
