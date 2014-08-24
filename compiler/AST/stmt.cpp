@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "stmt.h"
 
 #include "astutil.h"
@@ -11,6 +30,7 @@
 #include "AstVisitor.h"
 
 #include <cstring>
+#include <algorithm>
 
 // remember these so we can update their labels' iterResumeGoto
 Map<GotoStmt*,GotoStmt*> copiedIterResumeGotos;
@@ -167,6 +187,82 @@ void BlockStmt::replaceChild(Expr* oldAst, Expr* newAst) {
 }
 
 
+// This function is used to codegen the init, test, and incr segments of c for
+// loops. In c for loops instead of using statements comma operators must be
+// used. So for the init instead of generating something like:
+//   i = 4;
+//   j = 4;
+//
+// We need to generate:
+// i = 4, j = 4
+static std::string codegenCForLoopHeaderSegment(BlockStmt* block) {
+  GenInfo* info = gGenInfo;
+  std::string seg = "";
+
+  for_alist(expr, block->body) {
+    CallExpr* call = toCallExpr(expr);
+
+    // Generate defExpr normally (they always get codegenned at the top of a
+    // function currently, if that changes this code will probably be wrong.)
+    if (DefExpr* defExpr = toDefExpr(expr)) {
+      defExpr->codegen();
+    }
+
+    // If inlining is off, the init, test, and incr are just functions and we
+    // need to generate them inline so we use codegenValue. The semicolon is
+    // added so it can be replaced with the comma later. If inlinining is on
+    // the test will be a <= and it also needs to be codegenned with
+    // codegenValue.
+    //
+    // TODO when the test operator is user specifiable and not just <= this
+    // will need to be updated to include all possible conditionals. (I'm
+    // imagining we'll want a separate function that can check if a primitive
+    // is a conditional as I think we'll need that info elsewhere.)
+    else if (call && (call->isResolved() || call->isPrimitive(PRIM_LESSOREQUAL)
+                                         || call->isPrimitive(PRIM_LESS))) {
+      std::string callStr = codegenValue(call).c;
+      if (callStr != "") {
+        seg += callStr + ';';
+      }
+
+    }
+    // Similar to above, generate symExprs
+    else if (SymExpr* symExpr = toSymExpr(expr)) {
+      std::string symStr = codegenValue(symExpr).c;
+      if (symStr != "") {
+        seg += symStr + ';';
+      }
+    }
+    // Everything else is just a bunch of statements. We do normal codegen() on
+    // them which ends up putting whatever got codegenned into CStatements. We
+    // pop all of those back off (note that the order we pop and attach to our
+    // segment is important.)
+    else {
+      int prevStatements = (int)info->cStatements.size();
+      expr->codegen();
+      int newStatements = (int)info->cStatements.size() - prevStatements;
+      for (std::vector<std::string>::iterator it = info->cStatements.end() -
+          newStatements; it != info->cStatements.end(); ++it) {
+        seg += *it;
+      }
+      info->cStatements.erase(info->cStatements.end()-newStatements,
+          info->cStatements.end());
+    }
+  }
+
+  // replace all the semicolons (from "statements") with commas
+  std::replace(seg.begin(), seg.end(), ';', ',');
+
+  // remove all the newlines
+  seg.erase(std::remove(seg.begin(), seg.end(), '\n'), seg.end());
+
+  // remove the last character if any were generated (it's a trailing comma
+  // since we previously had an appropriate "trailing" semicolon
+  if (seg.size () > 0)  seg.resize (seg.size () - 1);
+
+  return seg;
+}
+
 GenRet BlockStmt::codegen() {
   GenInfo* info    = gGenInfo;
   FILE*    outfile = info->cfile;
@@ -183,6 +279,21 @@ GenRet BlockStmt::codegen() {
         info->cStatements.push_back("do ");
       } else if (blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)) {
         std::string hdr = "for (;" + codegenValue(blockInfo->get(1)).c + ";) ";
+        info->cStatements.push_back(hdr);
+      } else if (blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
+        BlockStmt* initBlock = toBlockStmt(blockInfo->get(1));
+        std::string init = codegenCForLoopHeaderSegment(initBlock->copy());
+
+        BlockStmt* testBlock = toBlockStmt(blockInfo->get(2));
+        std::string test = codegenCForLoopHeaderSegment(testBlock->copy());
+        // wrap the test with paren. Could probably check if it already has
+        // outer paren to make the code a little cleaner.
+        if (test != "") test = "(" + test + ")";
+
+        BlockStmt* incrBlock = toBlockStmt(blockInfo->get(3));
+        std::string incr = codegenCForLoopHeaderSegment(incrBlock->copy());
+
+        std::string hdr = "for (" + init + "; " + test + "; " + incr + ") ";
         info->cStatements.push_back(hdr);
       }
     }
@@ -389,7 +500,8 @@ BlockStmt::isLoop() const {
           (blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP) ||
            blockInfo->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
            blockInfo->isPrimitive(PRIM_BLOCK_PARAM_LOOP) ||
-           blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)));
+           blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP) ||
+           blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)));
 }
 
 

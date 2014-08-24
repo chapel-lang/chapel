@@ -1,0 +1,24 @@
+feature request: Make readline a wrapper around a new 'readUntil' function which would take a ascii character to stop reading at.
+
+IO's readline code could be easily adapted into a new 'readUntil' function
+that would take a uint(8) argument representing the ascii character to
+stop reading at. 'readline' could then become a simple wrapper around
+'readUntil', passing 0x0A as an argument.
+
+A couple of questions to consider:
+
+- is 'readUntil' a good name?
+- Do we want to accept a string argument to be used with the 'ascii'
+function? This is probably a general question in chapel about how we want
+users to deal with single characters.
+
+Ex: readUntil(dataStr, 0x3E);    vs    readUntil(dataStr, ">");
+
+It also occurs to me that a new user might try something like this:
+
+readUntil(dataStr, "foo");
+
+Expecting to get everything up until "foo", which is something I think may
+be more appropriate for regex. Unfortunately, I'm not sure how to do this
+with re2, as it doesn't support lookaheads. We could always assert that
+the string must be of length 1.

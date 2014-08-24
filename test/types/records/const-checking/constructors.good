@@ -4,7 +4,9 @@ If/when the latter changes, the .good should be adjusted.
 
 RECTYPE.initialize()
 RECTYPE.initRT()
-(VARFIELD = 1, CONSTFIELD = 1)
+RECTYPE constructor
+RECTYPE.initRT()
+(VARFIELD = 401, CONSTFIELD = 901)
 
 RECTYPE.initialize()
 RECTYPE.initRT()

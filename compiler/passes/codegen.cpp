@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
 #endif
@@ -440,12 +459,17 @@ static void codegen_aggregate_def(AggregateType* ct) {
 // Only put C data objects into this file, not Chapel ones, as it may
 // also be #include'd into a launcher, and those are C/C++ code.
 //
+// New generated variables should be added to runtime/include/chplcgfns.h
+//
 static const char* sCfgFname = "chpl_compilation_config";
 
 static void codegen_header_compilation_config() {
   fileinfo cfgfile = { NULL, NULL, NULL };
 
   openCFile(&cfgfile, sCfgFname, "c");
+#ifdef HAVE_LLVM
+  gChplCompilationConfig = cfgfile; // so LLVM backend can use it too.
+#endif
 
   // follow convention of just not writing to the file if we can't open it
   if (cfgfile.fptr != NULL) {
@@ -472,20 +496,19 @@ static void codegen_header_compilation_config() {
     fprintf(cfgfile.fptr, "\nvoid chpl_program_about(void);\n");
     fprintf(cfgfile.fptr, "\nvoid chpl_program_about() {\n");
 
-    fprintf(cfgfile.fptr, 
-            "printf(\"Compilation command: %s\\n\");\n",
-            compileCommand);
-
     fprintf(cfgfile.fptr,
-            "printf(\"Chapel compiler version: %s\\n\");\n",
+            "printf(\"%%s\", \"Compilation command: %s\\n\");\n",
+            compileCommand);
+    fprintf(cfgfile.fptr,
+            "printf(\"%%s\", \"Chapel compiler version: %s\\n\");\n",
             compileVersion);
-
     fprintf(cfgfile.fptr, "printf(\"Chapel environment:\\n\");\n");
-    fprintf(cfgfile.fptr, "printf(\"  CHPL_HOME: %s\\n\");\n", CHPL_HOME);
-
+    fprintf(cfgfile.fptr,
+            "printf(\"%%s\", \"  CHPL_HOME: %s\\n\");\n",
+            CHPL_HOME);
     for (int i = 0; i < num_chpl_env_vars; i++) {
       fprintf(cfgfile.fptr,
-              "printf(\"  %s: %s\\n\");\n",
+              "printf(\"%%s\", \"  %s: %s\\n\");\n",
               chpl_env_var_names[i],
               chpl_env_vars[i]);
     }

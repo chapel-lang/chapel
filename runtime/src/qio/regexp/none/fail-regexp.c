@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -23,7 +42,7 @@ void qio_regexp_create_compile_flags(const char* str, int64_t str_len, const cha
   chpl_internal_error("No Regexp Support");
 }
 
-void qio_regexp_retain(qio_regexp_t* compiled)
+void qio_regexp_retain(const qio_regexp_t* compiled)
 {
 }
 void qio_regexp_release(qio_regexp_t* compiled)
@@ -31,24 +50,24 @@ void qio_regexp_release(qio_regexp_t* compiled)
 }
 
 
-void qio_regexp_get_options(qio_regexp_t* regexp, qio_regexp_options_t* options)
+void qio_regexp_get_options(const qio_regexp_t* regexp, qio_regexp_options_t* options)
 {
 }
 
-void qio_regexp_get_pattern(qio_regexp_t* regexp, const char** pattern)
+void qio_regexp_get_pattern(const qio_regexp_t* regexp, const char** pattern)
 {
 }
 
-int64_t qio_regexp_get_ncaptures(qio_regexp_t* regexp)
+int64_t qio_regexp_get_ncaptures(const qio_regexp_t* regexp)
 {
   return 0;
 }
 
-qio_bool qio_regexp_ok(qio_regexp_t* regexp)
+qio_bool qio_regexp_ok(const qio_regexp_t* regexp)
 {
   return false;
 }
-const char* qio_regexp_error(qio_regexp_t* regexp)
+const char* qio_regexp_error(const qio_regexp_t* regexp)
 {
   return qio_strdup("No Regexp Support");
 }
@@ -65,7 +84,7 @@ int64_t qio_regexp_replace(qio_regexp_t* regexp, const char* repl, int64_t repl_
   return 0;
 }
 
-qioerr qio_regexp_channel_match(qio_regexp_t* regexp, const int threadsafe, struct qio_channel_s* ch, int64_t maxlen, int anchor, qio_bool can_discard, qio_bool keep_unmatched, qio_bool keep_whole_pattern, qio_regexp_string_piece_t* submatch, int64_t nsubmatch)
+qioerr qio_regexp_channel_match(const qio_regexp_t* regexp, const int threadsafe, struct qio_channel_s* ch, int64_t maxlen, int anchor, qio_bool can_discard, qio_bool keep_unmatched, qio_bool keep_whole_pattern, qio_regexp_string_piece_t* submatch, int64_t nsubmatch)
 {
   chpl_internal_error("No Regexp Support");
   return 0;

@@ -35,7 +35,7 @@ writeln("If/when the latter changes, the .good should be adjusted.");
 writeln();
 
 var r1: RECTYPE;
-writeln(r1);  //(1,1)
+writeln(r1);  //(401,901)
 writeln();
 
 var r2 = new RECTYPE();

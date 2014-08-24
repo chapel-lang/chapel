@@ -1,0 +1,1 @@
+test_distribution_syntax2.chpl:6: error: attempt to dereference nil

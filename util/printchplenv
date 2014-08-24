@@ -19,6 +19,7 @@ def print_mode(mode='list'):
         m = 'make'
 
     chpl_home = os.environ.get('CHPL_HOME', '')
+    chpl_module_home = os.environ.get('CHPL_MODULE_HOME', '')
 
     if m == 'list':
         stdout.write("machine info: {0} {1} {2} {3} {4}\n".format(*os.uname()))
@@ -44,8 +45,10 @@ def print_mode(mode='list'):
         print_var('CHPL_TARGET_PLATFORM', target_platform, mode)
         print_var('CHPL_TARGET_COMPILER', target_compiler, mode)
 
+    get_module_lcd = ( (chpl_home == chpl_module_home) and (chpl_home != '') and
+                     (mode == 'runtime' or mode == 'make') )
     if m != 'compiler' and m != 'launcher':
-        target_arch = chpl_arch.get('target', mode == 'make')
+        target_arch = chpl_arch.get('target', mode == 'make', get_module_lcd)
         print_var('CHPL_TARGET_ARCH', target_arch, mode, 'arch')
 
     if m != 'compiler':
@@ -112,7 +115,9 @@ def print_mode(mode='list'):
 
     aux_filesys = chpl_aux_filesys.get()
     if mode == 'make' or mode == 'runtime':
-        aux_filesys = aux_filesys.replace(' ', '_')
+        tmp = aux_filesys.split(' ')
+        tmp.sort()
+        aux_filesys = "_".join(tmp)
     print_var('CHPL_AUX_FILESYS', aux_filesys, mode, 'fs', ('runtime',))
 
     # NOT using `m` here, 'simple' does not need these values

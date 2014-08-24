@@ -4,7 +4,7 @@ use AdvancedIters;
 extern proc memcpy(x : [], b, len:int);
 
 config const tableSize = 1 << 16;
-config const lineSize = 60;
+config const lineSize = 61;
 
 var tonum : [1..128] int;
 tonum[0x41] = 0; // A
@@ -51,9 +51,9 @@ proc calculate(data : [] uint(8), size : int) {
     for i in tid .. data.size-size by ntasks {
       curArr[hash(data, i, sizeRange)] += 1;
     }
-    lock;
+    lock; // acquire lock
     for (k,v) in zip(curDom, curArr) do freqs[k] += v;
-    lock = true;
+    lock = true; // free lock
   }
 
   return freqs;
@@ -66,12 +66,11 @@ proc write_frequencies(data : [] uint(8), size : int) {
   // sort by frequencies
   var arr : [1..freqs.size] (int, uint);
   for (a, k, v) in zip(arr, freqs.domain, freqs) do
-    a = (-v,k); // '-' for descending order
-  QuickSort(arr);
+    a = (v,k);
+  QuickSort(arr, reverse=true);
 
-  for (c, e) in arr {
-    writef("%s %.3dr\n", decode(e, size), (100.0 * -c) / sum);
-  }
+  for (f, s) in arr do
+    writef("%s %.3dr\n", decode(s, size), (100.0 * f) / sum);
 }
 
 proc write_count(data : [] uint(8), str : string) {
@@ -99,16 +98,17 @@ proc main() {
   // Read line-by-line until we see a line beginning with '>TH'
   var tempdata : [1..lineSize] uint(8);
   var numRead = 0;
-  while myin.readline(tempdata, numRead) && !startsWithThree(tempdata) {}
+  var total = 0;
+  while myin.readline(tempdata, numRead) && !startsWithThree(tempdata) { total += numRead; }
 
   // Read in the rest of the file
-  var dataDom = {1..fileLen-numRead};
-  numRead = 1;
+  var dataDom = {1..fileLen-total};
   var data : [dataDom] uint(8);
-  while myin.readline(data[numRead..#lineSize], numRead, false) {}
-
+  var idx = 1;
+  while myin.readline(data, numRead, idx) { idx += numRead - 1; }
+  
   // Resize our array to the amount actually read
-  dataDom = {1..numRead};
+  dataDom = {1..idx};
 
   // Make everything uppercase
   forall d in data do d ^= 0x20;

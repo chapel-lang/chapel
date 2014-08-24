@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 // DefaultAssociative.chpl
 //
 pragma "no use ChapelStandard"
@@ -217,17 +236,18 @@ module DefaultAssociative {
       return _findFilledSlot(idx)(1);
     }
   
-    proc dsiAdd(idx: idxType, in slotNum : index(tableDom) = -1): index(tableDom) {
+    proc dsiAdd(idx: idxType, in slotNum : index(tableDom) = -1, haveLock = !parSafe): index(tableDom) {
       on this {
-        if parSafe then lockTable();
-        var findAgain = parSafe;
+        const shouldLock = !haveLock && parSafe;
+        if shouldLock then lockTable();
+        var findAgain = shouldLock;
         if ((numEntries.read()+1)*2 > tableSize) {
           _resize(grow=true);
           findAgain = true;
         }
         if findAgain then slotNum = -1;
         slotNum = _add(idx, slotNum);
-        if parSafe then unlockTable();
+        if shouldLock then unlockTable();
       }
       return slotNum;
     }
@@ -261,7 +281,7 @@ module DefaultAssociative {
         const (foundSlot, slotNum) = _findFilledSlot(idx, haveLock=parSafe);
         if (foundSlot) {
           for a in _arrs do
-            a.clearEntry(idx);
+            a.clearEntry(idx, true);
           table[slotNum].status = chpl__hash_status.deleted;
           numEntries.sub(1);
         } else {
@@ -457,21 +477,28 @@ module DefaultAssociative {
   
     proc dsiGetBaseDom() return dom;
   
-    proc clearEntry(idx: idxType) {
+    proc clearEntry(idx: idxType, haveLock = false) {
       const initval: eltType;
-      dsiAccess(idx) = initval;
+      dsiAccess(idx, haveLock) = initval;
     }
 
-    proc dsiAccess(idx : idxType) var : eltType {
+    proc dsiAccess(idx : idxType, haveLock = false) var {
+      const shouldLock = dom.parSafe && !haveLock;
+      if shouldLock then dom.lockTable();
       var (found, slotNum) = dom._findFilledSlot(idx, haveLock=true);
-      const numArrs = dom._arrs.length;
-      if found then
+      if found {
+        if shouldLock then dom.unlockTable();
         return data(slotNum);
+      }
       else if setter && slotNum != -1 { // do an insert using the slot we found
-        if numArrs != 1 {
-          halt("cannot implicitly add to an array's domain when the domain is used by more than one array: ", idx);
+        if dom._arrs.length != 1 {
+          halt("cannot implicitly add to an array's domain when the domain is used by more than one array: ", dom._arrs.length);
           return data(0);
-        } else return data(dom.dsiAdd(idx, slotNum));
+        } else {
+          const newSlot = dom.dsiAdd(idx, slotNum, haveLock=true);
+          if shouldLock then dom.unlockTable();
+          return data(newSlot);
+        }
       } else {
         halt("array index out of bounds: ", idx);
         return data(0);
