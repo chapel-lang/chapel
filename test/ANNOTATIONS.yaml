@@ -141,6 +141,10 @@ stencil:
   07/21/14:
     - machine related (no commits on the day before)
 
+time_array_vs_ddata:
+  05/31/14:
+    - specializing binaries to target architectures
+
 time_iterate:
   11/13/13:
     - disabled optimizations based on no arithmetic flow (22290)
