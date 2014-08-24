@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "chplrt.h"
 
 #include "arg.h"
@@ -71,50 +90,34 @@ int _runInGDB(void) {
 
 static void defineEnvVar(const char* currentArg,
                          int32_t lineno, c_string filename) {
-  static char errmsg[1000];
-  char* estr;
-  char* estr_eq;
+  char* eqp;
 
   //
   // We want to put a duplicate of the given value in the environment,
   // to avoid conflicts between unknown/hidden modifications of the
   // original command line string by either command line processing or
-  // the system environment handling.  putenv(3) takes a var=value
-  // string and doesn't make a duplicate.  setenv(3) makes a duplicate
-  // but requires the var and value as separate strings.  setenv(3)
-  // can also avoid setting the var if it's already set.  We do want
-  // to avoid that, but we also want to emit a warning rather than be
-  // silent, because it indicates misuse by the launcher.  So, we have
-  // to call getenv(3) ourselves on the var name.  The upshot is that
-  // we make our own duplicate and use putenv(3).
+  // the system environment handling.  We also don't want to set any
+  // variable that is already set, because already-set vars are either
+  // specific to the compute node and we shouldn't override them, or
+  // they're the result of other software forwarding the environment
+  // for us.  putenv(3) doesn't make a duplicate and will override a
+  // setting that is already present.  setenv(3) makes a duplicate and
+  // can avoid overriding, but it needs the var and value as separate
+  // strings.  We can provide these if we change "<var>=<value>" to
+  // "<var>\0<value>" in the original environment.  Here we assume
+  // that we can do this, but if we have trouble with modifying the
+  // environment like this we may have to revisit this decision.  (We
+  // do put the '=' back after we're done.)
   //
-  if ((estr = malloc(strlen(currentArg) + 1)) == NULL) {
-    snprintf(errmsg, sizeof(errmsg),
-             "Cannot duplicate -E argument: %s", strerror(errno));
-    chpl_error(errmsg, lineno, filename);
-  }
-
-  strcpy(estr, currentArg);
-
-  if ((estr_eq = strchr(estr, '=')) == NULL) {
+  if ((eqp = strchr(currentArg, '=')) == NULL) {
     chpl_error("-E argument must be of the form name=value", lineno, filename);
   }
 
-  *estr_eq = '\0';
-
-  if (getenv(estr) != NULL) {
-    snprintf(errmsg, sizeof(errmsg),
-             "-E env var %s is already set; ignoring -E", estr);
-    chpl_warning(errmsg, lineno, filename);
+  *eqp = '\0';
+  if (setenv(currentArg, eqp + 1, 0) != 0) {
+    chpl_error("Cannot setenv() -E argument", lineno, filename);
   }
-  else {
-    *estr_eq = '=';
-    if (putenv(estr) != 0) {
-      snprintf(errmsg, sizeof(errmsg),
-               "Cannot putenv(\"%s\"): %s", estr, strerror(errno));
-      chpl_error(errmsg, lineno, filename);
-    }
-  }
+  *eqp = '=';
 }
 
 #define malloc dont_use_malloc_use_chpl_mem_allocMany_instead

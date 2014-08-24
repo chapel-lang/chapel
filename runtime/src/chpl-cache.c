@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 /* Remote Data Cache for Chapel.
 
 == Introduction ==
@@ -1909,7 +1928,7 @@ void cache_put(struct rdcache_s* cache,
                 unsigned char* addr,
                 c_nodeid_t node, raddr_t raddr, int32_t size,
                 cache_seqn_t last_acquire,
-                int ln, chpl_string fn)
+                int ln, c_string fn)
 {
   struct cache_entry_s* entry;
   raddr_t ra_first_page;
@@ -2069,7 +2088,7 @@ void cache_get(struct rdcache_s* cache,
                 c_nodeid_t node, raddr_t raddr, int32_t size,
                 cache_seqn_t last_acquire,
                 int sequential_readahead_length,
-                int ln, chpl_string fn);
+                int ln, c_string fn);
 
 static
 void cache_get_trigger_readahead(struct rdcache_s* cache,
@@ -2080,7 +2099,7 @@ void cache_get_trigger_readahead(struct rdcache_s* cache,
                                  readahead_distance_t skip,
                                  readahead_distance_t len,
                                  cache_seqn_t last_acquire,
-                                 int ln, chpl_string fn)
+                                 int ln, c_string fn)
 {
   int next_ra_length;
   int ok;
@@ -2211,7 +2230,7 @@ void cache_get(struct rdcache_s* cache,
                 c_nodeid_t node, raddr_t raddr, int32_t size,
                 cache_seqn_t last_acquire,
                 int sequential_readahead_length,
-                int ln, chpl_string fn)
+                int ln, c_string fn)
 {
   struct cache_entry_s* entry;
   raddr_t ra_first_page;
@@ -2733,7 +2752,7 @@ void chpl_cache_exit(void)
 }
 
 
-void chpl_cache_fence(int acquire, int release, int ln, chpl_string fn)
+void chpl_cache_fence(int acquire, int release, int ln, c_string fn)
 {
   if( acquire == 0 && release == 0 ) return;
   if( CHPL_CACHE_REMOTE ) {
@@ -2769,7 +2788,7 @@ void chpl_cache_fence(int acquire, int release, int ln, chpl_string fn)
 
 void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
                          int32_t elemSize, int32_t typeIndex, int32_t len,
-                         int ln, chpl_string fn)
+                         int ln, c_string fn)
 {
   //printf("put len %d node %d raddr %p\n", (int) len * elemSize, node, raddr);
   struct rdcache_s* cache = tls_cache_remote_data();
@@ -2791,7 +2810,7 @@ void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
 
 void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
                          int32_t elemSize, int32_t typeIndex, int32_t len,
-                         int ln, chpl_string fn)
+                         int ln, c_string fn)
 {
   //printf("get len %d node %d raddr %p\n", (int) len * elemSize, node, raddr);
   struct rdcache_s* cache = tls_cache_remote_data();
@@ -2812,7 +2831,7 @@ void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
 
 void chpl_cache_comm_prefetch(c_nodeid_t node, void* raddr,
                               int32_t elemSize, int32_t typeIndex, int32_t len,
-                              int ln, chpl_string fn)
+                              int ln, c_string fn)
 {
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
@@ -2828,7 +2847,7 @@ void  chpl_cache_comm_get_strd(
                    void *addr, void *dststr, c_nodeid_t node, void *raddr,
                    void *srcstr, void *count, int32_t strlevels, 
                    int32_t elemSize, int32_t typeIndex,
-                   int ln, chpl_string fn) {
+                   int ln, c_string fn) {
   TRACE_PRINT(("%d: in chpl_cache_comm_get_strd\n", chpl_nodeID));
   // do a full fence - so that:
   // 1) any pending writes are completed (in case they were to the
@@ -2849,7 +2868,7 @@ void  chpl_cache_comm_put_strd(
                       void *addr, void *dststr, c_nodeid_t node, void *raddr,
                       void *srcstr, void *count, int32_t strlevels, 
                       int32_t elemSize, int32_t typeIndex,
-                      int ln, chpl_string fn) {
+                      int ln, c_string fn) {
   TRACE_PRINT(("%d: in chpl_cache_comm_put_strd\n", chpl_nodeID));
   // do a full fence - so that:
   // 1) any pending writes are completed (in case they were to the

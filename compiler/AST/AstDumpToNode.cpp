@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "AstDumpToNode.h"
 
 #include "driver.h"
@@ -154,20 +173,15 @@ bool AstDumpToNode::enterBlockStmt(BlockStmt* node)
     if (node == fn->where)
       write(false, "where ", false);
 
-  switch (node->blockTag)
-  {
-    case BLOCK_NORMAL:
-      write(false, "#<BlockStmt ",           true);
-      break;
+  write(false, "#<BlockStmt ",           true);
 
-    case BLOCK_SCOPELESS:
-      write(false, "#<BlockStmt scopeless ", true);
-      break;
-
-    case BLOCK_TYPE:
-      write(false, "#<BlockStmt type ",      true);
-      break;
-  }
+  // Show blockTag bits.
+  if (node->blockTag & BLOCK_EXTERN)
+    write(false, "extern ", true);
+  if (node->blockTag & BLOCK_SCOPELESS)
+    write(false, "scopeless ", true);
+  if (node->blockTag & BLOCK_TYPE_ONLY)
+    write(false, "type_only ", true);
 
   mOffset = mOffset + 2;
 

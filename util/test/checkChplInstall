@@ -132,7 +132,7 @@ cp $TESTS $TMP_TEST_DIR/
 # Move to the temp directory and run the tests!
 (
     cd $TMP_TEST_DIR
-    export CHPL_TEST_UTIL_DIR=$CHPL_HOME/util/test
+    export CHPL_TEST_UTIL_DIR=$CHPL_HOME/util
 
     # Run the tests.
     echo "Running the hello world tests found in: $TEST_DIR"

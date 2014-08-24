@@ -45,9 +45,14 @@ It is being escalated to github support.
 Intermittent: got a lot of these early in the week of 7/20, fewer on 7/25,
               but then more again on 7/26, only a few on 7/27, etc.
 
+CCE errors building runtime with 8.4 (The identifier "__func__" is undefined.)
+---------------------------------------------------------------------
+Bug http://bugzilla.us.cray.com/show_bug.cgi?id=815301
+
 *** Caught a fatal signal: SIGSEGV(11) on node 3/4: gasnet.qthreads.numa
 ------------------------------------------------------------------------
 [Error matching program output for distributions/diten/oneOrMoreLocales/testCyclicDist]
+[Error matching program output for release/examples/programs/quicksort]
 
 gasnet.qthreads.numa is getting a timeout mail per night, approximately
 -----------------------------------------------------------------------
@@ -249,6 +254,14 @@ cygwin timeout
 ==============
 [Error: Timed out compilation for release/examples/benchmarks/lulesh/lulesh (compopts: 1)] (1/13/14, 1/16/14, 1/20/14)
 [Error: Timed out compilation for release/examples/primers/distributions] (1/19/14)
+
+This one "times out", but often times the timedexec script fails to actually
+kill it leaving the job hung until someone manually kills the process in
+windows land (which could take days if nobody notices). Added a skipif so the
+test will not run on cygwin until the issue can be investigated further.
+
+[Error: Timed out executing program parallel/taskPar/sungeun/private] (8/19/14)
+
 
 
 PrgEnv-gnu compilation timeout

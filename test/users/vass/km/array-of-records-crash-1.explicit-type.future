@@ -1,0 +1,3 @@
+bug: Initialization is not assignment (again).
+
+This is a duplicate of the problem discussed in array-of-records-crash-1.future (q.v.).
