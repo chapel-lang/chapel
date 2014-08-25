@@ -214,9 +214,11 @@ proc isPrimitive(e) param  return isPrimitiveValue(e);
 proc isRange(e)     param  return isRangeValue(e);
 proc isReal(e)      param  return isRealValue(e);
 proc isRecord(e)    param  return isRecordValue(e);
-proc isSingle(e)    param  return isSingleValue(e);
+proc isSingle(e: single) param  return true; // workaround: not isSingleValue
+proc isSingle(e)         param  return false;
 proc isString(e)    param  return isStringValue(e);
-proc isSync(e)      param  return isSyncValue(e);
+proc isSync(e: sync)     param  return true; // workaround: not isSyncValue
+proc isSync(e)           param  return false;
 proc isTuple(e)     param  return isTupleValue(e);
 proc isUnion(e)     param  return isUnionValue(e);
 proc isUint(e)      param  return isUintValue(e);
