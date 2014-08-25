@@ -23,7 +23,6 @@ pragma "no use ChapelStandard"
 module ChapelRange {
   
   use Math; // for abs().
-  
   // Turns on range iterator debugging.
   config param debugChapelRange = false;
   
@@ -1029,11 +1028,15 @@ module ChapelRange {
     if ! hasFirst() then
       halt("iteration over range that has no first index");
 
-    var i = this.first;
-    while true {
+    var i :idxType;
+    var start = this.first;
+    while __primitive("C for loop",
+                      __primitive("move", i, start),
+                      true,
+                      __primitive("move", i, __primitive("+", i, stride))) {
       yield i;
-      i = i + stride:idxType;
     }
+
   }
 
   // A bounded and strided range iterator
@@ -1048,14 +1051,36 @@ module ChapelRange {
 
     // This case is written so that the only control is the loop test.
     // Zippered iterator inlining currently requires this.
-    var i = this.first;
-    var end : idxType = if _low > _high then i else this.last + stride:idxType;
-
-    while i != end
-    {
+    var i :idxType;
+    var start = this.first;
+    var end : idxType = if _low > _high then start else this.last + stride;
+    while __primitive("C for loop",
+                      __primitive("move", i, start),
+                      __primitive("!=", i, end),
+                      __primitive("move", i, __primitive("+", i, stride))) {
       yield i;
-      i = i + stride:idxType;
     }
+  }
+
+  iter range.posStrideIter() {
+    // TODO: hilde
+    // Does this test nesting affect performance?
+    // Inline and remove the test if so.
+    if this.isAmbiguous() then
+      __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
+
+    // This case is written so that the only control is the loop test.
+    // Zippered iterator inlining currently requires this.
+    var i :idxType;
+    var start = this.alignedLow;
+    var end = this.alignedHigh;
+    while __primitive("C for loop",
+                      __primitive("move", i, start),
+                      __primitive("<=", i, end),
+                      __primitive("move", i, __primitive("+", i, stride))) {
+      yield i;
+    }
+
   }
 
   // A bounded and non-strided (stride = 1) range iterator

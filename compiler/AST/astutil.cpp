@@ -365,7 +365,7 @@ bool isOpEqualPrim(CallExpr* call) {
 
 
 //
-// Checks if a callExpr is a relational operator (==, !=, <=, >=, <, >)
+// Check if a callExpr is a relational operator primitive (==, !=, <=, >=, <, >)
 //
 bool isRelationalOperator(CallExpr* call) {
   if (call->isPrimitive(PRIM_EQUAL)          ||

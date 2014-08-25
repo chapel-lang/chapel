@@ -600,11 +600,14 @@ module DefaultRectangular {
           // or negatively strided to get additional performance
           // benefits.
           //
-          var i = first;
-          while (i != last) {
+          for i in (first..last-step by step).posStrideIter() {
             yield theData(i);
-            i += step;
           }
+//          var i = first;
+//          while (i != last) {
+//            yield theData(i);
+//            i += step;
+//          }
         } else {
           const stride = dom.ranges(1).stride: idxType,
                 start  = dom.ranges(1).first,
