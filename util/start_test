@@ -1692,7 +1692,7 @@ endif
 
 set tempdir = "$CHPL_HOME/test/tmp/"
 if ( -d $tempdir ) then
-  echo "[Removing $CHPL_TOME/test/tmp/ directory]"
+  echo "[Removing $tempdir directory]"
   rm -r $tempdir
 endif
 
