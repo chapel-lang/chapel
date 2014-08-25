@@ -9,7 +9,7 @@ testtype(uint(32));
 
 proc testtype(type T) {
   writeln("testing ", typeToString(T));
-  for x in (if _isSignedType(T) then -11 else 0) .. 11 {
+  for x in (if isIntType(T) then -11 else 0) .. 11 {
     for y in 1 .. 11  {
       var a = x:T;
       var b = y:bcdPosInt;

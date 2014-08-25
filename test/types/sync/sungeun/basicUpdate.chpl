@@ -2,7 +2,7 @@ config const n = 100;
 config type myType = real;
 
 var T: [1..n] real;
-[i in 1..n] T[i] = if _isIntegralType(myType) then i else i*0.5;
+[i in 1..n] T[i] = if isIntegralType(myType) then i else i*0.5;
 
 proc foo(type myType) {
   var A = T:myType;

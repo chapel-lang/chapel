@@ -18,7 +18,7 @@ proc t2(arg) {
   writeln("densifySelf ", arg, " -> ", result,
           " : ", typeToString(result.type));
 
-  if chpl__isDomain(arg) {
+  if isDomain(arg) {
     const doublecheck = computeZeroBasedDomain(arg);
     if result != doublecheck then
       writeln("  ERROR on doublecheck");
@@ -26,7 +26,7 @@ proc t2(arg) {
     for param i in 1..arg.size do
       if result(i) != shouldbe(arg(i)) then
         writeln("  ERROR on tuple/", i);
-  } else if chpl__isRange(arg) {
+  } else if isRange(arg) {
     if result != shouldbe(arg) then
       writeln("  ERROR on range");
   } else {

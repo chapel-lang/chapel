@@ -48,11 +48,11 @@ module ChapelSyncvar {
       }
     }
 
-  proc _isSyncType(type t) param
+  proc isSyncType(type t) param
     return __primitive("is sync type", t);
 
-  proc _isSync(x: sync) param return true;
-  proc _isSync(x) param return false;
+  proc isSyncValue(x: sync) param return true;
+  proc isSyncValue(x) param return false;
 
   // The operations are:
   //  readFE - wait for full, leave empty
@@ -189,11 +189,11 @@ module ChapelSyncvar {
       }
     }
 
-  proc _isSingleType(type t) param
+  proc isSingleType(type t) param
     return __primitive("is single type", t);
 
-  proc _isSingle(x: single) param return true;
-  proc _isSingle(x) param return false;
+  proc isSingleValue(x: single) param return true;
+  proc isSingleValue(x) param return false;
 
   // Wait for full. Set and signal full.
   proc _singlevar.readFF() {

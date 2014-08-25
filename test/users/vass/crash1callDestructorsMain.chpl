@@ -35,7 +35,7 @@ type stoSzT  = uint(32); // ... local storage size and indices (0-based)
 
 param invalidLocID =
   // encode 'max(t)' as a compile-time expression
-  (2 ** (numBits(locIdT) - 1 - _isSignedType(locIdT):bool)):int(64);
+  (2 ** (numBits(locIdT) - 1 - isIntType(locIdT):bool)):int(64);
 
 
 /// class declarations //////////////////////////////////////////////////////

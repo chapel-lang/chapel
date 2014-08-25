@@ -234,7 +234,7 @@ module ChapelArray {
   config param CHPL_WARN_DOMAIN_LITERAL = "unset";
   proc chpl__buildArrayExpr( elems:?t ...?k ) {
 
-    if CHPL_WARN_DOMAIN_LITERAL == "true" && chpl__isRange(elems(1)) {
+    if CHPL_WARN_DOMAIN_LITERAL == "true" && isRange(elems(1)) {
       compilerWarning("Encountered an array literal with range element(s).",
                       " Did you mean a domain literal here?",
                       " If so, use {...} instead of [...]."); 
@@ -515,7 +515,7 @@ module ChapelArray {
   proc isAssociativeArr(a: []) param return isAssociativeDom(a.domain);
   
   proc isEnumDom(d: domain) param {
-    return isAssociativeDom(d) && _isEnumeratedType(d._value.idxType);
+    return isAssociativeDom(d) && isEnumType(d._value.idxType);
   }
   
   proc isEnumArr(a: []) param return isEnumDom(a.domain);
@@ -616,7 +616,7 @@ module ChapelArray {
     }
   
     proc newAssociativeDom(type idxType, param parSafe: bool=true)
-    where _isEnumeratedType(idxType) {
+    where isEnumType(idxType) {
       var x = _value.dsiNewAssociativeDom(idxType, parSafe);
       if x.linksDistribution() {
         _value.add_dom(x);
@@ -1510,6 +1510,39 @@ module ChapelArray {
     }
 
   }  // record _array
+
+
+  //
+  // isXxxType, isXxxValue
+  //
+
+  proc isDmapType(type t) param {
+    proc isDmapHelp(type t: _distribution) param  return true;
+    proc isDmapHelp(type t)                param  return false;
+    return isDmapHelp(t);
+  }
+
+  proc isDmapValue(e: _distribution) param  return true;
+  proc isDmapValue(e)                param  return false;
+
+  proc isDomainType(type t) param {
+    proc isDomainHelp(type t: _domain) param  return true;
+    proc isDomainHelp(type t)          param  return false;
+    return isDomainHelp(t);
+  }
+  
+  proc isDomainValue(e: domain) param  return true;
+  proc isDomainValue(e)         param  return false;
+
+  proc isArrayType(type t) param {
+    proc isArrayHelp(type t: _array) param  return true;
+    proc isArrayHelp(type t)         param  return false;
+    return isArrayHelp(t);
+  }
+
+  proc isArrayValue(e: []) param  return true;
+  proc isArrayValue(e)     param  return false;
+
   
   //
   // Helper functions
@@ -1547,9 +1580,6 @@ module ChapelArray {
     return help(1);
   }
   
-  proc chpl__isRange(r: range(?)) param return true;
-  proc chpl__isRange(r) param return false;
-  
   proc _getRankChangeRanges(args) {
     proc _tupleize(x) {
       var y: 1*x.type;
@@ -1559,7 +1589,7 @@ module ChapelArray {
     proc collectRanges(param dim: int) {
       if dim > args.size then
         compilerError("domain slice requires a range in at least one dimension");
-      if chpl__isRange(args(dim)) then
+      if isRange(args(dim)) then
         return collectRanges(dim+1, _tupleize(args(dim)));
       else
         return collectRanges(dim+1);
@@ -1568,12 +1598,12 @@ module ChapelArray {
       if dim > args.size {
         return x;
       } else if dim < args.size {
-        if chpl__isRange(args(dim)) then
+        if isRange(args(dim)) then
           return collectRanges(dim+1, ((...x), args(dim)));
         else
           return collectRanges(dim+1, x);
       } else {
-        if chpl__isRange(args(dim)) then
+        if isRange(args(dim)) then
           return ((...x), args(dim));
         else
           return x;
@@ -1581,18 +1611,6 @@ module ChapelArray {
     }
     return collectRanges(1);
   }
-  
-  //
-  // Support for += and -= over domains
-  //
-  proc chpl__isDomain(x: domain) param return true;
-  proc chpl__isDomain(x) param return false;
-  
-  proc chpl__isArray(x: []) param return true;
-  proc chpl__isArray(x) param return false;
-  
-  proc chpl__isDmap(x: _distribution) param return true;
-  proc chpl__isDmap(x) param return false;
   
   //
   // Assignment of domains and arrays
@@ -1676,8 +1694,6 @@ module ChapelArray {
   //
   proc chpl__isLegalRectTupDomAssign(d, t) param {
     proc isRangeTuple(a) param {
-      proc isRange(r: range(?e,?b,?s)) param return true;
-      proc isRange(r) param return false;
       proc peelArgs(first, rest...) param {
         return if rest.size > 1 then
                  isRange(first) && peelArgs((...rest))
@@ -1710,7 +1726,7 @@ module ChapelArray {
   }
   
   proc chpl__serializeAssignment(a: [], b) param {
-    if a.rank != 1 && chpl__isRange(b) then
+    if a.rank != 1 && isRange(b) then
       return true;
   
     // Sparse and Opaque arrays do not yet support parallel iteration.  We
@@ -1718,7 +1734,7 @@ module ChapelArray {
     // single assignment statement which feels like overkill
     //
     if ((!isRectangularArr(a) && !isAssociativeArr(a) && !isSparseArr(a)) ||
-        (chpl__isArray(b) &&
+        (isArray(b) &&
          !isRectangularArr(b) && !isAssociativeArr(b) && !isSparseArr(b))) then
       return true;
     return false;
@@ -1753,8 +1769,9 @@ module ChapelArray {
   proc chpl__supportedDataTypeForBulkTransfer(x: domain) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: []) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: _distribution) param return true;
-  proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where _isComplexType(t) return true;
-  proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where t: value return false;
+  proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where isComplexType(t) return true;
+  proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where isRecordType(t) return false;
+  proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where isUnionType(t) return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: object) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x) param return true;
   
@@ -2109,7 +2126,7 @@ module ChapelArray {
   //
   proc chpl__staticFastFollowCheck(x) param {
     pragma "no copy" const lead = x;
-    if chpl__isDomain(lead) || chpl__isArray(lead) then
+    if isDomain(lead) || isArray(lead) then
       return chpl__staticFastFollowCheck(x, lead);
     else
       return false;
@@ -2125,7 +2142,7 @@ module ChapelArray {
   
   proc chpl__staticFastFollowCheckZip(x: _tuple) param {
     pragma "no copy" const lead = x(1);
-    if chpl__isDomain(lead) || chpl__isArray(lead) then
+    if isDomain(lead) || isArray(lead) then
       return chpl__staticFastFollowCheckZip(x, lead);
     else
       return false;

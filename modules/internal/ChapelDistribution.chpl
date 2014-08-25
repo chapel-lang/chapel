@@ -79,7 +79,7 @@ module ChapelDistribution {
     }
   
     proc dsiNewAssociativeDom(type idxType, param parSafe: bool)
-    where _isEnumeratedType(idxType) {
+    where isEnumType(idxType) {
       compilerError("enumerated domains not supported by this distribution");
     }
   

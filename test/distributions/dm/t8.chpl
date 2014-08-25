@@ -138,7 +138,7 @@ proc testsuite(type T, initphase) {
   test({ 5:T..11:T, 12:T..12:T} dmapped dm);
 
   proc cmb1(param sgnOnly, r1, r2, m1, m2) {
-    if !sgnOnly || _isSignedType(T) then
+    if !sgnOnly || isIntType(T) then
       test({r1, r2} dmapped dm);
     else {
       leapphase();

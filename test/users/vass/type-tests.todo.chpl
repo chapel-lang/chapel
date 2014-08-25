@@ -11,8 +11,8 @@ proc test(param msg, ref v) {
   compilerWarning(msg + " is a class:  " + isClassType(v.type):c_string);
   compilerWarning(msg + " is a record: " + isRecordType(v.type):c_string);
   compilerWarning(msg + " is a union:  " + isUnionType(v.type):c_string);
-  compilerWarning(msg + " is a sync:   " + _isSyncType(v.type):c_string
-                  + " / " + _isSync(v));
-  compilerWarning(msg + " is a single: " + _isSingleType(v.type):c_string
-                  + " / " + _isSingle(v));
+  compilerWarning(msg + " is a sync:   " + isSyncType(v.type):c_string
+                  + " / " + isSync(v));
+  compilerWarning(msg + " is a single: " + isSingleType(v.type):c_string
+                  + " / " + isSingle(v));
 }

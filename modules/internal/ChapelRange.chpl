@@ -146,6 +146,15 @@ module ChapelRange {
   //################################################################################
   //# Predicates
   //#
+
+  proc isRangeType(type t) param {
+    proc isRangeHelp(type t: range) param  return true;
+    proc isRangeHelp(type t)        param  return false;
+    return isRangeHelp(t);
+  }
+
+  proc isRangeValue(r: range(?)) param  return true;
+  proc isRangeValue(r)           param  return false;
   
   // isBoundedRange(r) = true if 'r' is a (fully) bounded range
   
@@ -219,7 +228,7 @@ module ChapelRange {
     if ! isBoundedRange(this) then
       compilerError("length is not defined on unbounded ranges");
   
-    if _isUnsignedType(idxType)
+    if isUintType(idxType)
     {
       // assumes alignedHigh/alignLow always work, even for an empty range
       const ah = this.alignedHigh,
@@ -805,7 +814,7 @@ module ChapelRange {
   
     // If the result type is unsigned, don't let the low bound go negative.
     // This is a kludge.  We should really obey type coercion rules. (hilde)
-    if (_isUnsignedType(idxType)) { if (lo1 < 0) then lo1 = 0; }
+    if (isUintType(idxType)) { if (lo1 < 0) then lo1 = 0; }
   
     // We inherit the sign of the stride from this.stride.
     var newStride: strType = this.stride;
@@ -974,7 +983,7 @@ module ChapelRange {
   // isMaximal check, it just went unnoticed. The actual warnings messages
   // aren't useful yet, but the logic for checking should be good.
   proc range.withinBounds() {
-    if (_isSignedType(idxType)) {
+    if (isIntType(idxType)) {
       if (stride >= 0) {
         if (stride > (max(idxType) - _high)) {
           warning("Signed overflow for range iterator detected\n");
@@ -986,7 +995,7 @@ module ChapelRange {
           return false;
         }
       }
-    } else if (_isUnsignedType(idxType)) {
+    } else if (isUintType(idxType)) {
       if (stride > 0) {
         if (_high + stride < _high) {
           warning("Unsigned overflow for range iterator detected\n");
@@ -1352,7 +1361,7 @@ module ChapelRange {
   
   inline proc range.chpl__unTranslate(i)
   {
-    if _isSignedType(i.type) then
+    if isIntType(i.type) then
       return this - i;
     else
       return this + abs(i);
@@ -1386,7 +1395,7 @@ module ChapelRange {
     }
   
     var tmp = dividend % m;
-    if _isSignedType(dividend.type) then
+    if isIntType(dividend.type) then
       if tmp < 0 then tmp += m;
   
     return tmp;
@@ -1434,7 +1443,7 @@ module ChapelRange {
   // We might wish to add dialable run-time warning messages.
   proc chpl__add(a: ?t, b: t, type resultType)
   {
-    if !_isIntegralType(t) then
+    if !isIntegralType(t) then
       compilerError("Values must be of integral type.");
   
     if a > 0 && b > 0 && b > max(t) - a then return max(resultType);
@@ -1442,7 +1451,7 @@ module ChapelRange {
   
     // If the result is unsigned, check for a negative result and peg
     // the result to 0 if the sum is going to be negative.
-    if _isUnsignedType(resultType) {
+    if isUintType(resultType) {
       if ((a < 0 && b > 0 && (a == min(t) || abs(a) > abs(b))) ||
           (a > 0 && b < 0 && (b == min(t) || abs(b) > abs(a)))) then
         return 0:resultType;

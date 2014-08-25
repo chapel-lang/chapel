@@ -742,7 +742,7 @@ handleArrayTypeCase(FnSymbol* fn, Expr* indices, Expr* iteratorExpr, Expr* expr)
   indicesBlock->blockTag = BLOCK_SCOPELESS;
   isArrayTypeFn->insertAtTail(indicesBlock);
   isArrayTypeFn->insertAtTail(new CondStmt(
-                                new CallExpr("chpl__isType", expr->copy()),
+                                new CallExpr("isType", expr->copy()),
                                 new CallExpr(PRIM_MOVE, isArrayType, gTrue),
                                 new CallExpr(PRIM_MOVE, isArrayType, gFalse)));
   fn->insertAtTail(new DefExpr(isArrayTypeFn));

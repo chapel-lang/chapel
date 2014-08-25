@@ -138,7 +138,7 @@ module String {
     const cs = _cast(c_string, x);
     // FIX ME: could use a toString() that doesn't allocate space
     const ret = toString(cs);
-    if !_isBooleanType(x.type) && !_isEnumeratedType(x.type) then
+    if !isBoolType(x.type) && !isEnumType(x.type) then
       // The string was allocated in new space
       chpl_free_c_string(cs);
     return ret;
@@ -154,13 +154,13 @@ module String {
   //
   // casts to complex
   //
-  inline proc _cast(type t, x: c_string) where _isComplexType(t)
+  inline proc _cast(type t, x: c_string) where isComplexType(t)
     return __primitive("cast", t, x);
   
   //
   // casts to imag
   //
-  inline proc _cast(type t, x: c_string) where _isImagType(t)
+  inline proc _cast(type t, x: c_string) where isImagType(t)
     return __primitive("cast", t, x);
   
   //

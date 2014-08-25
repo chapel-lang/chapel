@@ -43,7 +43,7 @@ type stoSzT  = uint(32);
 
 param invalidLocID =
   // encode 'max(locIdT)' as a compile-time expression
-  (2 ** (numBits(locIdT) - 1 - _isSignedType(locIdT):int)):int(64);
+  (2 ** (numBits(locIdT) - 1 - isIntType(locIdT):int)):int(64);
 
 
 /// class declarations //////////////////////////////////////////////////////

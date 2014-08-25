@@ -42,8 +42,8 @@ proc test(param msg, ref v) {
   if isDomainType(v.type) then compilerWarning(msg + " is a domain");
   if isArrayType(v.type)  then compilerWarning(msg + " is an array");
   if isAtomicType(v.type) then compilerWarning(msg + " is an atomic");
-  if _isSyncType(v.type)  then compilerWarning(msg + " is a sync");
-  if _isSingleType(v.type)then compilerWarning(msg + " is a single");
+  if isSyncType(v.type)   then compilerWarning(msg + " is a sync");
+  if isSingleType(v.type) then compilerWarning(msg + " is a single");
 // Todo: would be nice to add versions of the above tests on variables
 // instead of types, e.g. isTuple(v) in addition to isTupleType(v.type).
 }
@@ -61,6 +61,6 @@ proc test(param msg, type tp) {
   if isDomainType(tp)  then compilerWarning(msg + " is domain");
   if isArrayType(tp)   then compilerWarning(msg + " is array");
   if isAtomicType(tp)  then compilerWarning(msg + " is atomic");
-  if _isSyncType(tp)   then compilerWarning(msg + " is sync");
-  if _isSingleType(tp) then compilerWarning(msg + " is single");
+  if isSyncType(tp)    then compilerWarning(msg + " is sync");
+  if isSingleType(tp)  then compilerWarning(msg + " is single");
 }

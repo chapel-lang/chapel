@@ -366,7 +366,7 @@ proc WrapperRectDom.dsiBuildArray(type eltType) {
 }
 
 proc WrapperArr.dsiAccess(indexx) var: eltType {
-  const ixt = if _isIntegralType(indexx.type) then (indexx,) else indexx;
+  const ixt = if isIntegralType(indexx.type) then (indexx,) else indexx;
   return origArr.dsiAccess(origIx(ixt));
 }
 
@@ -719,7 +719,7 @@ proc WrapperDist._origIxFrom(userIx, param origDim, param userDim)
     if collapsed {
       const origInd = sliceDef(origDim);
       // If we start from ranges, gotta produce ranges e.g. for dsiSetIndices.
-      return if chpl__isRange(userIx(1))
+      return if isRange(userIx(1))
              then (origInd..origInd): userIx(1).type
              else origInd;
     } else {
