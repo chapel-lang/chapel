@@ -38,7 +38,7 @@
 //#  (move y x)
 //#  ("foo" ... x ... )
 //# That is, cut out the middle man.  If it then happens that y is unused, its
-//# declaration and the moved that defines it can be removed (by
+//# declaration and the move that defines it can be removed (by
 //# deadVariableElimination).
 //#
 //# Clearly, we can only make the substitution if neither x nor y is reassigned
@@ -102,6 +102,25 @@
 //# the entire function.
 //#############################################################################
 
+//#############################################################################
+//# CAVEAT:
+//#
+//# Reference tracking currently does not traverse record field assignments, so
+//# given:
+//#  (move rx (addr_of x))
+//#  (.= record field rx)
+//#  (move rx2 (.v record field))
+//#  (move x 3)                    // Creates pair (x, 3)
+//#  (move (deref rx2) 7)          // Should kill (x, 3) but doesn't
+//# the current implementation does not discover that x has been overwritten
+//# through rx2.  This can lead to the generation of incorrect code.
+//#
+//# Because scalar replacement unwraps records, it eliminates many (if not all)
+//# of the cases that could cause this error to occur.  But the fact that some
+//# test cases fail (e.g. test_nested_var_iterator3) when scalar propagation is
+//# turned off means this is a known weakness that should be addressed.
+//#############################################################################
+
 
 static size_t s_repl_count; ///< The number of pairs replaced by GCP this pass.
 static size_t s_ref_repl_count; ///< The number of references replaced this pass.
@@ -153,7 +172,14 @@ static void extractReferences(Expr* expr,
   // We're only interested in call expressions.
   if (CallExpr* call = toCallExpr(expr))
   {
-    // Only the move primitive creates an available pair.
+    // Consider primitives that can create aliases:
+    // 1. An assign or move primitive that has ref variables on both sides.
+    // 2. An assign or move that has an 'addr of' primitive on its rhs.
+    // 3. A field assignment or extraction that has ref variables on both
+    //    sides. (not implemented)
+    // 4. A field assignment that has an 'addr of' primitive on its rhs. (not
+    //    implemented)
+    // 5. An assign or move that has a PRIM_GET_MEMBER on the rhs. (not implemented)
     if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
     {
       SymExpr* lhe = toSymExpr(call->get(1)); // Left-Hand Expression
