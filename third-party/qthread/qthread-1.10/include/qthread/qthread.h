@@ -1550,7 +1550,7 @@ static QINLINE void *qthread_cas_ptr_(void **addr,
 #  error The size of void* either could not be determined, or is very unusual.
     /* This should never happen, so deliberately cause a seg fault for
      * corefile analysis */
-    *(int *)(0) = 0;
+    *(volatile int *)(0) = 0;
     return NULL;                       /* compiler check */
 # endif  // if (SIZEOF_VOIDP == 4)
 } /*}}}*/

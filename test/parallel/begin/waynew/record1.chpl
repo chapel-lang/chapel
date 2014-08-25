@@ -8,7 +8,7 @@ var r = new R();
 r.x = 7;
 writeln( r);
 
-begin {
+begin ref(r) {
   r.x = 14;
   writeln( r);
 }

@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 // scopeResolve.cpp
 //
 
@@ -62,6 +81,8 @@ static Vec<const char*> aliasFieldSet;
 static void     addToSymbolTable(Vec<DefExpr*>& defs);
 static void     processImportExprs();
 static void     addClassToHierarchy(AggregateType* ct);
+
+static void addRecordDefaultConstruction();
 
 static void     resolveGotoLabels();
 static void     resolveUnresolvedSymExprs();
@@ -131,6 +152,8 @@ void scopeResolve() {
       }
     }
   }
+
+  addRecordDefaultConstruction();
 
   //
   // build constructors (type and value versions)
@@ -476,6 +499,35 @@ void add_root_type(AggregateType* ct)
   }
 }
 
+static void addRecordDefaultConstruction()
+{
+  forv_Vec(DefExpr, def, gDefExprs)
+  {
+    // We're only interested in declarations that do not have initializers.
+    if (def->init)
+      continue;
+
+    if (VarSymbol* var = toVarSymbol(def->sym))
+    {
+      if (AggregateType* at = toAggregateType(var->type))
+      {
+        if (!at->isRecord())
+          continue;
+
+        // No initializer for extern records.
+        if (at->symbol->hasFlag(FLAG_EXTERN))
+          continue;
+
+        SET_LINENO(def);
+        CallExpr* ctor_call = new CallExpr(new SymExpr(at->symbol));
+        def->init = new CallExpr(PRIM_NEW, ctor_call);
+        insert_help(def->init, def, def->parentSymbol);
+      }
+    }
+  }
+}
+ 
+
 /************************************ | *************************************
 *                                                                           *
 *                                                                           *
@@ -548,7 +600,7 @@ static void build_type_constructor(AggregateType* ct) {
           new BlockStmt(
             new CallExpr(PRIM_SET_MEMBER, fn->_this, 
               new_StringSymbol(field->name),
-              new CallExpr(PRIM_INIT, exprType->remove())),
+              new CallExpr(PRIM_TYPE_INIT, exprType->remove())),
             BLOCK_TYPE));
 
       } else {
@@ -572,11 +624,12 @@ static void build_type_constructor(AggregateType* ct) {
 
           else if (arg->type == dtAny &&
                    !ct->symbol->hasFlag(FLAG_REF))
+            // It would be nice to be able to remove this case.
             fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
                                           fn->_this,
                                           new_StringSymbol(field->name),
                                           new CallExpr("chpl__initCopy",
-                                                       new CallExpr(PRIM_INIT, arg))));
+                                                       new CallExpr(PRIM_TYPE_INIT, arg))));
           #if 0
           // Leaving this case in for Tom's work.  He will remove it if it is
           // unnecessary
@@ -584,10 +637,10 @@ static void build_type_constructor(AggregateType* ct) {
             fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
                                           fn->_this,
                                           new_StringSymbol(field->name),
-                                          new CallExpr(PRIM_INIT, arg)));
+                                          new CallExpr(PRIM_TYPE_INIT, arg)));
           #endif
         } else if (exprType) {
-          CallExpr* newInit = new CallExpr(PRIM_INIT, exprType->copy());
+          CallExpr* newInit = new CallExpr(PRIM_TYPE_INIT, exprType->copy());
           CallExpr* newSet  = new CallExpr(PRIM_SET_MEMBER, 
                                            fn->_this,
                                            new_StringSymbol(field->name),
@@ -610,7 +663,7 @@ static void build_type_constructor(AggregateType* ct) {
             insert_help(exprType, init->parentExpr, init->parentSymbol);
 
             // Now do the same as above in the 'if (exprType)' case
-            CallExpr* newInit = new CallExpr(PRIM_INIT, exprType->copy());
+            CallExpr* newInit = new CallExpr(PRIM_TYPE_INIT, exprType->copy());
             CallExpr* newSet  = new CallExpr(PRIM_SET_MEMBER,
                                              fn->_this,
                                              new_StringSymbol(field->name),
@@ -671,12 +724,10 @@ static void build_constructor(AggregateType* ct) {
 
   // Create the default constructor function symbol,
   FnSymbol* fn = new FnSymbol(astr("_construct_", ct->symbol->name));
+  fn->cname = fn->name;
 
   fn->addFlag(FLAG_DEFAULT_CONSTRUCTOR);
   fn->addFlag(FLAG_CONSTRUCTOR);
-
-  fn->cname = astr("_construct_", ct->symbol->cname);
-
   fn->addFlag(FLAG_COMPILER_GENERATED);
 
   if (ct->symbol->hasFlag(FLAG_REF))
@@ -878,6 +929,10 @@ static void build_constructor(AggregateType* ct) {
     }
 
     if (field->hasFlag(FLAG_TYPE_VARIABLE))
+      // Args with this flag are removed after resolution.
+      // Note that in the default type constructor, this flag is also applied
+      // (along with FLAG_GENERIC) to arguments whose type is unknown, but would
+      // not be pruned in resolution.
       arg->addFlag(FLAG_TYPE_VARIABLE);
 
     if (!exprType && arg->type == dtUnknown)
@@ -952,6 +1007,7 @@ static ArgSymbol* create_generic_arg(VarSymbol* field)
   if (field->hasFlag(FLAG_PARAM))
     arg->intent = INTENT_PARAM;
   else
+    // Both type arguments and arguments of unspecified type get this flag.
     arg->addFlag(FLAG_TYPE_VARIABLE);
 
   // Copy the field type if it exists.
@@ -966,7 +1022,11 @@ static ArgSymbol* create_generic_arg(VarSymbol* field)
 
   // Translate an unknown field type into an unspecified arg type.
   if (!exprType && arg->type == dtUnknown)
+  {
+    if (! field->hasFlag(FLAG_TYPE_VARIABLE))
+      arg->addFlag(FLAG_GENERIC);
     arg->type = dtAny;
+  }
 
   return arg;
 }
@@ -995,7 +1055,7 @@ static void move_constructor_to_outer(FnSymbol* fn, AggregateType* outerType)
   outerType->methods.add(fn);
 
   fn->_outer = new ArgSymbol(INTENT_BLANK, "outer", outerType);
-
+  fn->_outer->addFlag(FLAG_GENERIC); // Arg expects a real object :-P.
   fn->insertFormalAtHead(new DefExpr(fn->_outer));
   fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK,
                                                    "_mt",
@@ -1153,6 +1213,7 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
   if (!strcmp(name, "."))
     return;
 
+  // Skip unresolveds that are not in the tree.
   if (!unresolvedSymExpr->parentSymbol)
     return;
 

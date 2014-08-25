@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef _chpl_mem_H_
 #define _chpl_mem_H_
 
@@ -6,6 +25,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+#include <assert.h>
 #include "arg.h"
 #include "chpl-mem-hook.h"
 #include "chpltypes.h"
@@ -86,6 +106,12 @@ void chpl_mem_free(void* memAlloc, int32_t lineno, c_string filename) {
   chpl_free(memAlloc);
 }
 
+// free a c_string, no error checking
+static ___always_inline
+void chpl_rt_free_c_string(c_string s, int32_t lineno, c_string filename)  {
+  assert(s!=NULL);
+  chpl_mem_free((void *) s, lineno, filename);
+}
 
 void chpl_mem_layerInit(void);
 void chpl_mem_layerExit(void);

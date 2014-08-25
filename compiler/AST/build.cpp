@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "build.h"
 
 #include "astutil.h"
@@ -504,8 +523,61 @@ CallExpr* buildLetExpr(BlockStmt* decls, Expr* expr) {
   return new CallExpr(new DefExpr(fn));
 }
 
+static BlockStmt* buildCForLoopStmt(CallExpr* call, BlockStmt* body) {
+  BlockStmt* loop = new BlockStmt();
+
+  // C for loops currently have the form:
+  //   __primitive("C for loop", i, start, end, stride)
+  //
+  // The following code creates the init, test, and incr expr from that and
+  // wraps them in block stmts creating something like:
+  //   __primitive("C for loop", {i = start}, {i <= end}, {i = i + stride})
+  //
+  // Note: This currently forces the test condition to be <= and the stride
+  // operator to be +. At least the condition will need to be user specifiable
+  // in the near future.  Two current ideas are to add the condition's
+  // primitive string value to the "C for loop" and parse that. Another (and
+  // the one I prefer) would be to allow primitives to take other primitives as
+  // arguments and use that to build the init, test, and incr exprs and just
+  // wrap them with block stmts here.
+  //
+  // TODO PRIM_MOVE and i = i + stride are used over PRIM_ASSIGN and i +=
+  // stride because of the ref temps that are currently introduced with
+  // PRIM_ASSIGN and op= operations. Once those are gone this should be fixed
+
+  Expr* index = call->get(1)->copy();
+  call->get(1)->replace(new BlockStmt(new CallExpr(PRIM_MOVE, index->copy(), call->get(2)->copy())));
+  call->get(2)->replace(new BlockStmt(new CallExpr(PRIM_LESSOREQUAL, index->copy(), call->get(3)->copy())));
+  call->get(3)->replace(new BlockStmt(new CallExpr(PRIM_MOVE, index->copy(), new CallExpr(PRIM_ADD, index->copy(),call->get(4)->copy()))));
+  call->get(4)->remove();
+
+  // Regular loop setup
+  loop->blockInfo = call;
+  LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
+  continueLabel->addFlag(FLAG_COMPILER_GENERATED);
+  continueLabel->addFlag(FLAG_LABEL_CONTINUE);
+  body->blockTag = BLOCK_SCOPELESS;
+  loop->insertAtTail(body);
+  body->continueLabel = continueLabel;
+  LabelSymbol* breakLabel = new LabelSymbol("_breakLabel");
+  breakLabel->addFlag(FLAG_COMPILER_GENERATED);
+  breakLabel->addFlag(FLAG_LABEL_BREAK);
+  body->breakLabel = breakLabel;
+  body->insertAtTail(new DefExpr(continueLabel));
+  BlockStmt* stmts = buildChapelStmt();
+  stmts->insertAtTail(loop);
+  stmts->insertAtTail(new DefExpr(breakLabel));
+  return stmts;
+}
+
 
 BlockStmt* buildWhileDoLoopStmt(Expr* cond, BlockStmt* body) {
+  if (CallExpr* call = toCallExpr(cond)) {
+    if (call->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
+      BlockStmt* loop = buildCForLoopStmt(call, body);
+      return loop;
+    }
+  }
   cond = new CallExpr("_cond_test", cond);
   VarSymbol* condVar = newTemp();
   body = new BlockStmt(body);

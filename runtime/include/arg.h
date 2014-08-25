@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef _arg_H_
 #define _arg_H_
 
@@ -11,8 +30,14 @@
 extern int32_t blockreport;
 extern int32_t taskreport;
 
+typedef enum {
+  parse_normally,
+  parse_dash_E
+} chpl_parseArgsMode_t;
+
 void parseNumLocales(const char* numPtr, int32_t lineno, c_string filename);
-void parseArgs(int* argc, char* argv[]);
+void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
+               int* argc, char* argv[]);
 int32_t getArgNumLocales(void);
 int32_t chpl_baseUniqueLocaleID(int32_t r);
 int _runInGDB(void);

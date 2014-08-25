@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef _PRIM_H_
 #define _PRIM_H_
 
@@ -15,6 +34,9 @@ enum PrimitiveTag {
   PRIM_MOVE,
   PRIM_INIT,
   PRIM_NO_INIT,
+  PRIM_TYPE_INIT,       // Used in a context where only a type is needed.
+                        // Establishes the type of the result without
+                        // generating code.
   PRIM_REF_TO_STRING,
   PRIM_RETURN,
   PRIM_YIELD,
@@ -153,6 +175,7 @@ enum PrimitiveTag {
   PRIM_BLOCK_WHILEDO_LOOP,      // BlockStmt::blockInfo - while do loop (cond)
   PRIM_BLOCK_DOWHILE_LOOP,      // BlockStmt::blockInfo - do while loop (cond)
   PRIM_BLOCK_FOR_LOOP,          // BlockStmt::blockInfo - for loop (index, iterator)
+  PRIM_BLOCK_C_FOR_LOOP,        // BlockStmt::blockInfo - c for loop (i, lo, hi, strd)
   PRIM_BLOCK_BEGIN,             // BlockStmt::blockInfo - begin block
   PRIM_BLOCK_COBEGIN,           // BlockStmt::blockInfo - cobegin block
   PRIM_BLOCK_COFORALL,          // BlockStmt::blockInfo - coforall block
