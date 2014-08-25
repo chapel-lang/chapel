@@ -33,6 +33,16 @@ case $target in
         else
           echo Need hwloc lstopo utility, but do not have it > $1.good
         fi;;
+      flat-muxed)
+        launcher=$($CHPL_HOME/util/chplenv/chpl_launcher.py)
+        if [[ $launcher =~ slurm* ]] ; then
+          numPUs=$( sinfo --exact '--format=%c' '--sort=+=#c' --noheader \
+                    --responding |
+                    head -1 )
+        else
+          numPUs=$( cnselect -L numcores | head -1 )
+        fi
+        echo $(( $numPUs * 16 )) > $1.good;;
       *)
         echo Unexpected configuration $target-$locModel-$tasks > $1.good;;
     esac;;

@@ -1,0 +1,6 @@
+#! /bin/bash -norc
+#
+# Ignore everything except the expected output.  If we get that, assume
+# the test worked properly.
+#
+grep '^Hello,world$' < $2 > $2.tmp && mv $2.tmp $2
