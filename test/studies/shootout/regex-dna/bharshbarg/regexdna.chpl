@@ -24,37 +24,33 @@ proc main() {
     ("V", "(a|c|g)"), ("W", "(a|t)"), ("Y", "(c|t)")
   ];
 
-  var total, copy : string;
-  stdin.readstring(total); // reads the entire file in
-  const initLen = total.length;
+  var data, copy : string;
+  stdin.readstring(data); // reads the entire file in
+  const initLen = data.length;
 
   // remove newlines
-  var noLines = compile(">.*\n|\n");
-  total = noLines.sub("", total);
-  const noLineLen = total.length; 
+  data = compile(">.*\n|\n").sub("", data);
+  const noLineLen = data.length;
 
-  copy = total; // grab a copy so we can replace in parallel
+  copy = data; // grab a copy so we can replace in parallel
 
   var results : [variants.domain] int;
 
-  var isDone : sync bool;
-
-  // fire off a thread to do replacing
-  begin ref(copy) {
-    for (f, r) in subst {
-      const re = compile(f);
-      copy = re.sub(r, copy);
+  // waits for tasks to finish
+  sync {
+    // fire off a thread to do replacing
+    begin ref(copy) {
+      for (f, r) in subst {
+        const re = compile(f);
+        copy = re.sub(r, copy);
+      }
     }
-    isDone = true; // set the 'full' state
-  }
 
-  // count patterns
-  forall (pattern, result) in zip(variants, results) {
-    var re = compile(pattern);
-    for m in re.matches(total) do result += 1;
-  }
 
-  isDone; // waits for the 'full' state
+    // count patterns
+    forall (pattern, result) in zip(variants, results) do
+      for m in compile(pattern).matches(data) do result += 1;
+  }
 
   // print results
   for (p,r) in zip(variants, results) do writeln(p, " ", r);
