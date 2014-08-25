@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Note: This is not safe for parallel testing
+
 # Only run this script when doing a perf run
 if [ -n "$CHPL_TEST_PERF" ]; then
 
