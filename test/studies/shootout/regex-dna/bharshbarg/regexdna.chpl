@@ -1,3 +1,10 @@
+/* The Computer Language Benchmarks Game
+ * http://benchmarksgame.alioth.debian.org/
+ *
+ * contributed by Ben Harshbarger
+ * based on C++ RE2 implementation by Alexey Zolotov
+ */
+
 proc main() {
   var variants = [
     "agggtaaa|tttaccct",
@@ -17,28 +24,38 @@ proc main() {
     ("V", "(a|c|g)"), ("W", "(a|t)"), ("Y", "(c|t)")
   ];
 
-  var total : string;
-  stdin.readstring(total);
-  const initLen = total.length;
+  var data, copy : string;
+  stdin.readstring(data); // reads the entire file in
+  const initLen = data.length;
 
-  var noLines = compile(">.*\n|\n");
-  total = noLines.sub("", total);
-  const noLineLen = total.length;
+  // remove newlines
+  data = compile(">.*\n|\n").sub("", data);
+  const noLineLen = data.length;
+
+  copy = data; // grab a copy so we can replace in parallel
 
   var results : [variants.domain] int;
 
-  forall (pattern, result) in zip(variants, results) {
-    var re = compile(pattern);
-    for match in re.matches(total) do result += 1;
+  // waits for tasks to finish
+  sync {
+    // fire off a thread to do replacing
+    begin ref(copy) {
+      for (f, r) in subst {
+        const re = compile(f);
+        copy = re.sub(r, copy);
+      }
+    }
+
+
+    // count patterns
+    forall (pattern, result) in zip(variants, results) do
+      for m in compile(pattern).matches(data) do result += 1;
   }
 
+  // print results
   for (p,r) in zip(variants, results) do writeln(p, " ", r);
 
-  for (f, r) in subst {
-    const re = compile(f);
-    total = re.sub(r, total);
-  }
   writeln("\n", initLen);
   writeln(noLineLen);
-  writeln(total.length);
+  writeln(copy.length);
 }

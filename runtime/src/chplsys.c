@@ -188,7 +188,7 @@ int chpl_getNumPUsOnThisNode(void) {
   static int numPUs = 0;
   if (numPUs == 0) {
     cpu_set_t m;
-    if (sched_getaffinity(0, sizeof(cpu_set_t), &m) != 0)
+    if (sched_getaffinity(getpid(), sizeof(cpu_set_t), &m) != 0)
       chpl_internal_error("sched_getaffinity() failed");
     if ((numPUs = CPU_COUNT(&m)) == 0)
       numPUs = 1;
