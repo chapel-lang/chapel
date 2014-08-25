@@ -31,6 +31,9 @@ studies/shootout/nbody/nbody.graph
 studies/shootout/fasta/fasta.graph
 studies/shootout/mandelbrot/mandelbrot.graph
 studies/shootout/meteor/kbrady/meteor.graph
+studies/shootout/k-nucleotide/knucleotide.graph
+studies/shootout/regex-dna/regexdna.graph
+studies/shootout/reverse-complement/revcomp.graph
 arrays/diten/time_iterate.graph
 performance/bradc/parOpEquals.graph
 performance/sungeun/dgemm.128.graph
@@ -67,6 +70,9 @@ studies/shootout/thread-ring/thread-ring.graph
 studies/shootout/mandelbrot/mandelbrot.graph
 studies/shootout/pidigits/pidigits.graph
 studies/shootout/meteor/kbrady/meteor.graph
+studies/shootout/k-nucleotide/knucleotide.graph
+studies/shootout/regex-dna/regexdna.graph
+studies/shootout/reverse-complement/revcomp.graph
 # suite: Shootout extras
 studies/shootout/binary-trees/binary-trees-extras.graph
 studies/shootout/chameneos-redux/hannah/chameneos-redux-all.graph
