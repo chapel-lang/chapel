@@ -1,6 +1,6 @@
 extern proc memcpy(a:[], b, len);
 
-proc string.toBytes() var {
+proc string.toBytes() {
    var b : [1..this.length] uint(8);
    memcpy(b, this, this.length);
    return b;
