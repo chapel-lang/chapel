@@ -326,16 +326,17 @@ void chpl_task_init(void) {
     if ((lim = atoi(env)) > 0)
       numThreadsPerLocale = lim;
   }
-  // override by --numThreadsPerLocale
-  if ((lim=chpl_task_getenvNumThreadsPerLocale()) > 0)
-    numThreadsPerLocale = lim;
+  // override by CHPL_RT_NUM_THREADS_PER_LOCALE
+  if ((lim=chpl_task_getenvNumThreadsPerLocale())>0)
+    numThreadsPerLocale=lim;
   // limit by comm layer limit
-  if ((lim = chpl_comm_getMaxThreads()) > 0){
-    numThreadsPerLocale = (numThreadsPerLocale > lim)?lim:numThreadsPerLocale;
+  if ((lim=chpl_comm_getMaxThreads())>0){
+    numThreadsPerLocale=(numThreadsPerLocale > lim)?lim:numThreadsPerLocale;
   }
 
   s_num_workers = numThreadsPerLocale;
-  s_stack_size = chpl_task_getMinCallStackSize();
+  if ((s_stack_size=chpl_task_getEnvCallStackSize())==0)
+    s_stack_size=chpl_task_getDefaultCallStackSize();
   assert(s_stack_size > 0);
   assert(!is_worker_in_cs());
   s_tld = chpl_mem_allocMany(numThreadsPerLocale + numCommTasks,
