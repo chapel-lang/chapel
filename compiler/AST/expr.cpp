@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
 #endif
@@ -157,47 +176,63 @@ bool Expr::isNoInitExpr() const {
 }
 
 static void
-callReplaceChild(Expr* expr, Expr* new_ast) {
+callReplaceChild(Expr* expr, Expr* newAst) {
+
   if (expr->parentExpr) {
-    expr->parentExpr->replaceChild(expr, new_ast);
+    expr->parentExpr->replaceChild(expr, newAst);
+
+
+  } else if (expr->parentSymbol) {
+    expr->parentSymbol->replaceChild(expr, newAst);
+
+
   } else {
-    expr->parentSymbol->replaceChild(expr, new_ast);
+    INT_FATAL(expr, "Expr %12d does not have a parent", expr->id);
   }
 }
 
 void Expr::prettyPrint(std::ostream *o) {
   if (BlockStmt *stmt = toBlockStmt(this))
     printf("blockstmt %s", stmt->userLabel);
+
   else if (CondStmt *stmt = toCondStmt(this))
     printf("condstmt %s", stmt->condExpr->parentSymbol->name);
+
   else if (GotoStmt *stmt = toGotoStmt(this))
     printf("gotostmt %s", stmt->label->parentSymbol->name);
+
   printf("Oh no! This method hasn't been defined for this class!\n");
 }
 
-Expr* Expr::remove(void) {
-  if (!this)
-    return this;
-  if (list) {
-    if (next)
-      next->prev = prev;
-    else
-      list->tail = prev;
-    if (prev)
-      prev->next = next;
-    else
-      list->head = next;
-    list->length--;
-    next = NULL;
-    prev = NULL;
-    list = NULL;
-  } else {
-    callReplaceChild(this, NULL);
+Expr* Expr::remove() {
+  if (this != NULL) {
+    if (list) {
+      if (next)
+        next->prev = prev;
+      else
+        list->tail = prev;
+
+      if (prev)
+        prev->next = next;
+      else
+        list->head = next;
+
+      list->length--;
+
+      next = NULL;
+      prev = NULL;
+      list = NULL;
+    } else {
+      callReplaceChild(this, NULL);
+    }
+
+    if (parentSymbol) {
+      remove_help(this, 'r');
+    } else {
+      trace_remove(this, 'R');
+    }
   }
-  if (parentSymbol)
-    remove_help(this, 'r');
-  else
-    trace_remove(this, 'R');
+
   return this;
 }
 
@@ -296,13 +331,13 @@ void SymExpr::verify() {
   Expr::verify();
 
   if (astTag != E_SymExpr)
-    INT_FATAL(this, "Bad SymExpr::astTag");
+    INT_FATAL(this, "SymExpr::verify %12d: Bad astTag", id);
 
-  if (!var)
-    INT_FATAL(this, "SymExpr::var is NULL");
+  if (var == NULL)
+    INT_FATAL(this, "SymExpr::verify %12d: var is NULL", id);
 
-  if (var && var->defPoint && !var->defPoint->parentSymbol)
-    INT_FATAL(this, "SymExpr::var::defPoint is not in AST");
+  if (var != NULL && var->defPoint != NULL && var->defPoint->parentSymbol == NULL)
+    INT_FATAL(this, "SymExpr::verify %12d:  var->defPoint is not in AST", id);
 }
 
 SymExpr* SymExpr::copyInner(SymbolMap* map) {
@@ -3298,6 +3333,8 @@ void CallExpr::verify() {
   if (astTag != E_CallExpr) {
     INT_FATAL(this, "Bad CallExpr::astTag");
   }
+  if (! parentExpr)
+    INT_FATAL(this, "Every CallExpr is expected to have a parentExpr");
   if (argList.parent != this)
     INT_FATAL(this, "Bad AList::parent in CallExpr");
   if (baseExpr && baseExpr->parentExpr != this)
@@ -3345,6 +3382,10 @@ void CallExpr::verify() {
       break;
     case PRIM_BLOCK_UNLOCAL:
       INT_FATAL("PRIM_BLOCK_UNLOCAL between passes");
+      break;
+    case PRIM_TYPE_INIT:
+      // A "type init" call is always expected to have a parent.
+      INT_ASSERT(toCallExpr(this->parentExpr));
       break;
     default:
       break; // do nothing
@@ -3492,7 +3533,8 @@ void CallExpr::prettyPrint(std::ostream *o) {
       baseExpr->prettyPrint(o);
     }
   } else if (primitive != NULL) {
-    if (primitive->tag == PRIM_INIT) {
+    if (primitive->tag == PRIM_INIT ||
+      primitive->tag == PRIM_TYPE_INIT) {
       unusual = true;
       argList.head->prettyPrint(o);
     }
@@ -5130,17 +5172,15 @@ GenRet CallExpr::codegen() {
     case PRIM_FINISH_RMEM_FENCE:
       ret = codegenBasicPrimitiveExpr(this);
       break;
-    case PRIM_NEW_PRIV_CLASS: 
+    case PRIM_NEW_PRIV_CLASS:
     {
       GenRet arg = get(1);
+      GenRet pid = codegenValue(get(2));
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         arg = codegenRaddr(arg);
-      codegenCall("chpl_newPrivatizedClass", arg);
+      codegenCall("chpl_newPrivatizedClass", arg, pid);
       break;
-    }                          
-    case PRIM_NUM_PRIV_CLASSES:
-      ret = codegenCallExpr("chpl_numPrivatizedClasses");
-      break;
+    }
     case PRIM_WARNING:
       // warning issued, continue codegen
       break;

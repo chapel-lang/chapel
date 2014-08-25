@@ -1,3 +1,20 @@
+# Copyright 2004-2014 Cray Inc.
+# Other additional copyright holders may be indicated within.
+# 
+# The entirety of this work is licensed under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+# 
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # Define the -I options for using the runtime.
 # This is used both when building the runtime and
 # when building Chapel programs.
@@ -25,6 +42,19 @@ endif
 ifeq ($(OPTIMIZE),1)
 RUNTIME_DEFS += -DCHPL_OPTIMIZE
 endif
+
+# For HDFS support (and backwards compatibility)
+ifneq (,$(findstring hdfs,$(CHPL_MAKE_AUXFS)))
+	CHPL_AUXIO_INCLUDE ?= \
+		-I$(JAVA_INSTALL)/include \
+		-I$(JAVA_INSTALL)/include/linux \
+		-I$(HADOOP_INSTALL)/src/c++/libhdfs \
+
+	CHPL_AUXIO_LIBS ?= \
+		-L$(JAVA_INSTALL)/jre/lib/amd64/server \
+		-L$(HADOOP_INSTALL)/c++/Linux-amd64-64/lib 
+endif 
+
 
 # Some tasking layers put something in RUNTIME_INCLS first.
 RUNTIME_INCLS += \

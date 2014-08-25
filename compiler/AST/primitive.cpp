@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "primitive.h"
 
 #include "expr.h"
@@ -365,6 +384,7 @@ initPrimitive() {
   prim_def(PRIM_MOVE, "move", returnInfoVoid, false, true);
   prim_def(PRIM_INIT, "init", returnInfoFirstDeref);
   prim_def(PRIM_NO_INIT, "no init", returnInfoFirstDeref);
+  prim_def(PRIM_TYPE_INIT, "type init", returnInfoFirstDeref);
   prim_def(PRIM_REF_TO_STRING, "ref to string", returnInfoString);
   prim_def(PRIM_RETURN, "return", returnInfoFirst, true);
   prim_def(PRIM_YIELD, "yield", returnInfoFirst, true);
@@ -508,6 +528,7 @@ initPrimitive() {
   prim_def(PRIM_BLOCK_WHILEDO_LOOP, "while...do loop", returnInfoVoid);
   prim_def(PRIM_BLOCK_DOWHILE_LOOP, "do...while loop", returnInfoVoid);
   prim_def(PRIM_BLOCK_FOR_LOOP, "for loop", returnInfoVoid);
+  prim_def(PRIM_BLOCK_C_FOR_LOOP, "C for loop", returnInfoVoid);
   prim_def(PRIM_BLOCK_BEGIN, "begin block", returnInfoVoid);
   prim_def(PRIM_BLOCK_COBEGIN, "cobegin block", returnInfoVoid);
   prim_def(PRIM_BLOCK_COFORALL, "coforall loop", returnInfoVoid);
@@ -564,7 +585,6 @@ initPrimitive() {
   prim_def(PRIM_RT_WARNING, "chpl_warning", returnInfoVoid, true, true);
 
   prim_def(PRIM_NEW_PRIV_CLASS, "chpl_newPrivatizedClass", returnInfoVoid, true);
-  prim_def(PRIM_NUM_PRIV_CLASSES, "chpl_numPrivatizedClasses", returnInfoDefaultInt);
   prim_def(PRIM_GET_PRIV_CLASS, "chpl_getPrivatizedClass",  returnInfoFirst);
   
   prim_def(PRIM_GET_USER_LINE, "_get_user_line", returnInfoDefaultInt, true, true);

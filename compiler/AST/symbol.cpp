@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
 #endif
@@ -74,19 +93,10 @@ Map<FnSymbol*,int> virtualMethodMap;
 Map<FnSymbol*,Vec<FnSymbol*>*> virtualChildrenMap;
 Map<FnSymbol*,Vec<FnSymbol*>*> virtualRootsMap;
 
-
-
-
-  Type*              type;
-  FlagSet            flags;
-
-  const char*        name;
-  const char*        cname;    // Name of symbol for generating C code
-
-  DefExpr*           defPoint; // Point of definition
-
-
-
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
 
 Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   BaseAST(astTag),
@@ -190,6 +200,10 @@ bool Symbol::isImmediate() const {
   return false;
 }
 
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
 
 VarSymbol::VarSymbol(const char *init_name,
                      Type    *init_type) :
@@ -537,6 +551,13 @@ GenRet VarSymbol::codegen() {
 
     // for LLVM
     
+    // Handle extern type variables.
+    if( hasFlag(FLAG_EXTERN) && hasFlag(FLAG_TYPE_VARIABLE) ) {
+      // code generate the type.
+      GenRet got = typeInfo();
+      return got;
+    }
+
     // for nil, generate a void pointer of chplType dtNil
     // to allow LLVM pointer cast
     // e.g. T = ( (locale) (nil) );
@@ -793,6 +814,11 @@ void VarSymbol::accept(AstVisitor* visitor) {
   visitor->visitVarSym(this);
 }
 
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
+
 ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName, 
                      Type* iType, Expr* iTypeExpr,
                      Expr* iDefaultExpr, Expr* iVariableExpr) :
@@ -1006,6 +1032,11 @@ void ArgSymbol::accept(AstVisitor* visitor) {
     visitor->exitArgSym(this);
   }
 }
+
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
 
 TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
   Symbol(E_TypeSymbol, init_name, init_type),
@@ -1238,6 +1269,11 @@ void TypeSymbol::accept(AstVisitor* visitor) {
     visitor->exitTypeSym(this);
   }
 }
+
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
 
 FnSymbol::FnSymbol(const char* initName) :
   Symbol(E_FnSymbol, initName),
@@ -1708,9 +1744,9 @@ GenRet FnSymbol::codegenCast(GenRet fnPtr) {
 void FnSymbol::codegenPrototype() {
   GenInfo *info = gGenInfo;
 
-  if (hasFlag(FLAG_EXTERN) && !genExternPrototypes) return;
+  if (hasFlag(FLAG_EXTERN))       return;
   if (hasFlag(FLAG_NO_PROTOTYPE)) return;
-  if (hasFlag(FLAG_NO_CODEGEN)) return;
+  if (hasFlag(FLAG_NO_CODEGEN))   return;
 
   if( breakOnCodegenCname[0] &&
       0 == strcmp(cname, breakOnCodegenCname) ) {
@@ -2104,6 +2140,11 @@ void FnSymbol::accept(AstVisitor* visitor) {
   }
 }
 
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
+
 EnumSymbol::EnumSymbol(const char* init_name) :
   Symbol(E_EnumSymbol, init_name)
 {
@@ -2147,15 +2188,22 @@ void EnumSymbol::accept(AstVisitor* visitor) {
   visitor->visitEnumSym(this);
 }
 
-ModuleSymbol::ModuleSymbol(const char* iName, ModTag iModTag, BlockStmt* iBlock)
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
+
+ModuleSymbol::ModuleSymbol(const char* iName,
+                           ModTag      iModTag,
+                           BlockStmt*  iBlock)
   : Symbol(E_ModuleSymbol, iName),
     modTag(iModTag),
     block(iBlock),
     initFn(NULL),
     filename(NULL),
     doc(NULL),
-    extern_info(NULL)
-{
+    extern_info(NULL) {
+
   block->parentSymbol = this;
   registerModule(this);
   gModuleSymbols.add(this);
@@ -2167,11 +2215,14 @@ ModuleSymbol::~ModuleSymbol() { }
 
 void ModuleSymbol::verify() {
   Symbol::verify();
+
   if (astTag != E_ModuleSymbol) {
     INT_FATAL(this, "Bad ModuleSymbol::astTag");
   }
+
   if (block && block->parentSymbol != this)
     INT_FATAL(this, "Bad ModuleSymbol::block::parentSymbol");
+
   if (initFn && !toFnSymbol(initFn))
     INT_FATAL(this, "Bad ModuleSymbol::initFn");
 }
@@ -2180,6 +2231,7 @@ void ModuleSymbol::verify() {
 ModuleSymbol*
 ModuleSymbol::copyInner(SymbolMap* map) {
   INT_FATAL(this, "Illegal call to ModuleSymbol::copy");
+
   return NULL;
 }
 
@@ -2187,10 +2239,13 @@ ModuleSymbol::copyInner(SymbolMap* map) {
 static int compareLineno(const void* v1, const void* v2) {
   FnSymbol* fn1 = *(FnSymbol* const *)v1;
   FnSymbol* fn2 = *(FnSymbol* const *)v2;
+
   if (fn1->linenum() > fn2->linenum())
     return 1;
+
   else if (fn1->linenum() < fn2->linenum())
     return -1;
+
   else
     return 0;
 }
@@ -2200,11 +2255,13 @@ void ModuleSymbol::codegenDef() {
   GenInfo* info = gGenInfo;
 
   info->filename = fname();
-  info->lineno = linenum();
+  info->lineno   = linenum();
+
   info->cStatements.clear();
   info->cLocalDecls.clear();
  
   Vec<FnSymbol*> fns;
+
   for_alist(expr, block->body) {
     if (DefExpr* def = toDefExpr(expr))
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
@@ -2212,81 +2269,121 @@ void ModuleSymbol::codegenDef() {
         if (fn->hasFlag(FLAG_EXTERN) ||
             fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))
           continue;
+
         fns.add(fn);
       }
   }
+
   qsort(fns.v, fns.n, sizeof(fns.v[0]), compareLineno);
+
   forv_Vec(FnSymbol, fn, fns) {
     fn->codegenDef();
   }
+
   flushStatements();
-  return;
 }
+
+// Collect the top-level classes for this Module.
+//
+// 2014/07/25 MDN.  This function is currently only called by
+// docs.  Historically all of the top-level classes were buried
+// inside the prototypical module initFn.
+//
+// Installing The initFn is being moved forward but there are
+// still short periods of time when the classes will still be
+// buried inside the module initFn.
+//
+// Hence this function is currently able to handle the before
+// and after case.  The before case can be pulled out once the
+// construction of the initFn is cleaned up.
+//
  
-Vec<AggregateType*> ModuleSymbol::getClasses() {
+Vec<AggregateType*> ModuleSymbol::getTopLevelClasses() {
   Vec<AggregateType*> classes;
+
   for_alist(expr, block->body) {
-    if (DefExpr* def = toDefExpr(expr))
-      if (FnSymbol* fn = toFnSymbol(def->sym)) {
-        // Ignore external and prototype functions.
+    if (DefExpr* def = toDefExpr(expr)) {
+
+      if (TypeSymbol* type = toTypeSymbol(def->sym)) {
+        if (AggregateType* cl = toAggregateType(type->type)) {
+          classes.add(cl);
+        }
+
+      // Step in to the initFn
+      } else if (FnSymbol* fn = toFnSymbol(def->sym)) {
         if (fn->hasFlag(FLAG_MODULE_INIT)) {
           for_alist(expr2, fn->body->body) {
-            if (DefExpr* def2 = toDefExpr(expr2))
-              if (TypeSymbol* type = toTypeSymbol(def2->sym)) 
+            if (DefExpr* def2 = toDefExpr(expr2)) {
+              if (TypeSymbol* type = toTypeSymbol(def2->sym)) {
                 if (AggregateType* cl = toAggregateType(type->type)) {
                   classes.add(cl);
                 }
+              }
+            }
           }
         }
       }
+    }
   }
+
   return classes;
 }
 
-Vec<VarSymbol*> ModuleSymbol::getConfigVars() {
+// Collect the top-level classes for this Module.
+//
+// See the comment on getTopLevelClasses()
+Vec<VarSymbol*> ModuleSymbol::getTopLevelConfigVars() {
   Vec<VarSymbol*> configs;
+
   for_alist(expr, block->body) {
-    if (DefExpr* def = toDefExpr(expr))
-      if (FnSymbol* fn = toFnSymbol(def->sym)) {
-        // Ignore external and prototype functions.
+    if (DefExpr* def = toDefExpr(expr)) {
+
+      if (VarSymbol* var = toVarSymbol(def->sym)) {
+        if (var->hasFlag(FLAG_CONFIG)) {
+          configs.add(var);
+        }
+
+      } else if (FnSymbol* fn = toFnSymbol(def->sym)) {
         if (fn->hasFlag(FLAG_MODULE_INIT)) {
           for_alist(expr2, fn->body->body) {
-            if (DefExpr* def2 = toDefExpr(expr2))
+            if (DefExpr* def2 = toDefExpr(expr2)) {
               if (VarSymbol* var = toVarSymbol(def2->sym)) {
                 if (var->hasFlag(FLAG_CONFIG)) {
                   configs.add(var);
                 }
               }
+            }
           }
         }
       }
+    }
   }
+
   return configs;
 }
 
-Vec<ModuleSymbol*> ModuleSymbol::getModules() {
-  Vec<ModuleSymbol*> mods;
-  for_alist(expr, block->body) {
-    if (DefExpr* def = toDefExpr(expr))
-      if (ModuleSymbol* mod = toModuleSymbol(def->sym)) {
-        if (strcmp(mod->defPoint->parentSymbol->name, name) == 0)
-          mods.add(mod);
-      }
-  }
-  return mods;
-}
+// Collect the top-level classes for this Module.
+//
+// This one is similar to getTopLevelModules() and
+// getTopLevelFunctions except that it collects any
+// functions and then steps in to initFn if it finds it.
+//
 
-Vec<FnSymbol*> ModuleSymbol::getFunctions() {
+Vec<FnSymbol*> ModuleSymbol::getTopLevelFunctions(bool includeExterns) {
   Vec<FnSymbol*> fns;
+
   for_alist(expr, block->body) {
-    if (DefExpr* def = toDefExpr(expr))
+    if (DefExpr* def = toDefExpr(expr)) {
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
         // Ignore external and prototype functions.
-        if (!genExternPrototypes &&
+        if (includeExterns == false && 
             (fn->hasFlag(FLAG_EXTERN) ||
-             fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)))
+             fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))) {
           continue;
+        }
+
         fns.add(fn);
+
         // The following additional overhead and that present in getConfigVars 
         // and getClasses is a result of the docs pass occurring before
         // the functions/configvars/classes are taken out of the module
@@ -2295,21 +2392,40 @@ Vec<FnSymbol*> ModuleSymbol::getFunctions() {
         // statement may be removed.
         if (fn->hasFlag(FLAG_MODULE_INIT)) {
           for_alist(expr2, fn->body->body) {
-            if (DefExpr* def2 = toDefExpr(expr2))
+            if (DefExpr* def2 = toDefExpr(expr2)) {
               if (FnSymbol* fn2 = toFnSymbol(def2->sym)) {
-                if (!genExternPrototypes &&
-                    (fn->hasFlag(FLAG_EXTERN) ||
-                     fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)))
+                if (includeExterns == false &&
+                    (fn2->hasFlag(FLAG_EXTERN) ||
+                     fn2->hasFlag(FLAG_FUNCTION_PROTOTYPE))) {
                   continue;
+                }
+
                 fns.add(fn2);
               }
+            }
           }
         }
       }
+    }
   }
+
   return fns;
 }
   
+Vec<ModuleSymbol*> ModuleSymbol::getTopLevelModules() {
+  Vec<ModuleSymbol*> mods;
+
+  for_alist(expr, block->body) {
+    if (DefExpr* def = toDefExpr(expr))
+      if (ModuleSymbol* mod = toModuleSymbol(def->sym)) {
+        if (strcmp(mod->defPoint->parentSymbol->name, name) == 0)
+          mods.add(mod);
+      }
+  }
+
+  return mods;
+}
+
 void ModuleSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == block) {
     block = toBlockStmt(new_ast);
@@ -2327,6 +2443,72 @@ void ModuleSymbol::accept(AstVisitor* visitor) {
     visitor->exitModSym(this);
   }
 }
+
+void ModuleSymbol::moduleUseAddChapelStandard() {
+  UnresolvedSymExpr* modRef = 0;
+
+  SET_LINENO(this);
+
+  modRef = new UnresolvedSymExpr("ChapelStandard");
+  block->insertAtHead(new CallExpr(PRIM_USE, modRef));
+}
+
+//
+// MDN 2014/07/22
+//
+// There is currently a problem in functionResolve that this function
+// has a "temporary" work around for.
+
+// There is somewhere within that code that believes the order of items in
+// modUseList is an indicator of "dependence order" even though this list
+// does not and cannot maintain that information.
+//
+// Fortunately there are currently no tests that expose this fallacy so
+// long at ChapelStandard always appears first in the list
+void ModuleSymbol::moduleUseAdd(ModuleSymbol* mod) {
+  if (modUseList.index(mod) < 0) {
+    if (mod == standardModule) {
+      modUseList.insert(0, mod);
+    } else {
+      modUseList.add(mod);
+    }
+  }
+}
+
+// If the specified module is currently used by the target
+// then remove the module from the use-state of this module
+// but introduce references to the children of the module
+// being dropped.
+//
+// At this time this is only used for deadCodeElimination and
+// it is not clear if there will be other uses.
+void ModuleSymbol::moduleUseRemove(ModuleSymbol* mod) {
+  int index = modUseList.index(mod);
+
+  if (index >= 0) {
+    bool inBlock = block->moduleUseRemove(mod);
+
+    modUseList.remove(index);
+
+    // The dead module may have used other modules.  If so add them
+    // to the current module
+    forv_Vec(ModuleSymbol, modUsedByDeadMod, mod->modUseList) {
+      if (modUseList.index(modUsedByDeadMod) < 0) {
+        SET_LINENO(this);
+
+        if (inBlock == true)
+          block->moduleUseAdd(modUsedByDeadMod);
+
+        modUseList.add(modUsedByDeadMod);
+      }
+    }
+  }
+}
+
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
 
 LabelSymbol::LabelSymbol(const char* init_name) :
   Symbol(E_LabelSymbol, init_name, NULL),
@@ -2386,6 +2568,11 @@ void LabelSymbol::codegenDef() { }
 void LabelSymbol::accept(AstVisitor* visitor) {
   visitor->visitLabelSym(this);
 }
+
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
 
 static int literal_id = 1;
 HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;

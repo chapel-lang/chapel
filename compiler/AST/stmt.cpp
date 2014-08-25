@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "stmt.h"
 
 #include "astutil.h"
@@ -11,6 +30,7 @@
 #include "AstVisitor.h"
 
 #include <cstring>
+#include <algorithm>
 
 // remember these so we can update their labels' iterResumeGoto
 Map<GotoStmt*,GotoStmt*> copiedIterResumeGotos;
@@ -25,10 +45,12 @@ Vec<LabelSymbol*> removedIterResumeLabels;
 #endif
 
 void codegenStmt(Expr* stmt) {
-  GenInfo* info = gGenInfo;
-  FILE* outfile = info->cfile;
-  info->lineno = stmt->linenum();
+  GenInfo* info    = gGenInfo;
+  FILE*    outfile = info->cfile;
+
+  info->lineno   = stmt->linenum();
   info->filename = stmt->fname();
+
   if( outfile ) {
     if (stmt->linenum() > 0) {
       if (printCppLineno) {
@@ -37,58 +59,89 @@ void codegenStmt(Expr* stmt) {
             + " " + stmt->fname() + " */\n");
       } 
     }
+
     if (fGenIDS)
       info->cStatements.push_back("/* " + numToString(stmt->id) + "*/ ");
   }
-  ++stmtCount;
+
+  ++gStmtCount;
 }
 
 
-Stmt::~Stmt() {}
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
+
+Stmt::Stmt(AstTag astTag) : Expr(astTag) {
+
+}
+Stmt::~Stmt() {
+
+}
+
+bool Stmt::isStmt() const { 
+  return true; 
+}
 
 
-BlockStmt::BlockStmt(Expr* init_body, BlockTag init_blockTag) :
+
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
+
+BlockStmt::BlockStmt(Expr* initBody, BlockTag initBlockTag) :
   Stmt(E_BlockStmt),
-  blockTag(init_blockTag),
-  body(),
+  blockTag(initBlockTag),
   blockInfo(NULL),
   modUses(NULL),
   breakLabel(NULL),
   continueLabel(NULL),
   userLabel(NULL),
-  byrefVars(NULL)
-{
+  byrefVars(NULL) {
+
   body.parent = this;
-  if (init_body)
-    body.insertAtTail(init_body);
+
+  if (initBody)
+    body.insertAtTail(initBody);
+
   gBlockStmts.add(this);
 }
 
 
-BlockStmt::~BlockStmt() { }
+BlockStmt::~BlockStmt() { 
 
+}
 
 void BlockStmt::verify() {
   Expr::verify();
+
   if (astTag != E_BlockStmt) {
-    INT_FATAL(this, "Bad BlockStmt::astTag");
+    INT_FATAL(this, "BlockStmt::verify. Bad astTag");
   }
+
   if (body.parent != this)
-    INT_FATAL(this, "Bad AList::parent in BlockStmt");
+    INT_FATAL(this, "BlockStmt::verify. Bad body.parent");
+
   for_alist(expr, body) {
     if (expr->parentExpr != this)
-      INT_FATAL(this, "Bad BlockStmt::body::parentExpr");
+      INT_FATAL(this, "BlockStmt::verify. Bad body.expr->parentExpr");
   }
+
   if (blockInfo && blockInfo->parentExpr != this)
-    INT_FATAL(this, "Bad BlockStmt::blockInfo::parentExpr");
-  if (modUses && modUses->parentExpr != this)
-    INT_FATAL(this, "Bad BlockStmt::blockInfo::parentExpr");
+    INT_FATAL(this, "BlockStmt::verify. Bad blockInfo->parentExpr");
+
+  if (modUses   && modUses->parentExpr   != this)
+    INT_FATAL(this, "BlockStmt::verify. Bad modUses->parentExpr");
+
   if (byrefVars) {
     if (byrefVars->parentExpr != this)
-      INT_FATAL(this, "Bad BlockStmt::byrefVars::parentExpr");
+      INT_FATAL(this, "BlockStmt::verify. Bad byrefVars->parentExpr");
+
     for_actuals(varExp, byrefVars) {
       if (!isSymExpr(varExp) && !isUnresolvedSymExpr(varExp))
-        INT_FATAL(this, "Bad expresion kind in BlockStmt::byrefVars");
+        INT_FATAL(this, "BlockStmt::verify. Bad expression kind in byrefVars");
     }
   }
 }
@@ -97,34 +150,123 @@ void BlockStmt::verify() {
 BlockStmt*
 BlockStmt::copyInner(SymbolMap* map) {
   BlockStmt* _this = new BlockStmt();
-  _this->blockTag = blockTag;
+
+  _this->blockTag      = blockTag;
+  _this->blockInfo     = COPY_INT(blockInfo);
+  _this->modUses       = COPY_INT(modUses);
+  _this->breakLabel    = breakLabel;
+  _this->continueLabel = continueLabel;
+  _this->byrefVars     = COPY_INT(byrefVars);
+
   for_alist(expr, body)
     _this->insertAtTail(COPY_INT(expr));
-  _this->blockInfo = COPY_INT(blockInfo);
-  _this->modUses = COPY_INT(modUses);
-  _this->breakLabel = breakLabel;
-  _this->continueLabel = continueLabel;
-  _this->byrefVars = COPY_INT(byrefVars);
+
   return _this;
 }
 
 
-void BlockStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
-  if (old_ast == blockInfo)
-    blockInfo = toCallExpr(new_ast);
-  else if (old_ast == modUses)
-    modUses = toCallExpr(new_ast);
-  else if (old_ast == byrefVars)
-    byrefVars = toCallExpr(new_ast);
+// Note that newAst can be NULL to reflect deletion
+void BlockStmt::replaceChild(Expr* oldAst, Expr* newAst) {
+  CallExpr* oldExpr = toCallExpr(oldAst);
+  CallExpr* newExpr = (newAst != NULL) ? toCallExpr(newAst) : NULL;
+
+  if (oldExpr == NULL)
+    INT_FATAL(this, "BlockStmt::replaceChild. oldAst is not a CallExpr");
+
+  else if (oldExpr == blockInfo)
+    blockInfo = newExpr;
+
+  else if (oldExpr == modUses)
+    modUses   = newExpr;
+
+  else if (oldExpr == byrefVars)
+    byrefVars = newExpr;
+
   else
-    INT_FATAL(this, "Unexpected case in BlockStmt::replaceChild");
+    INT_FATAL(this, "BlockStmt::replaceChild. Failed to match the oldAst ");
 }
 
 
-GenRet BlockStmt::codegen() {
+// This function is used to codegen the init, test, and incr segments of c for
+// loops. In c for loops instead of using statements comma operators must be
+// used. So for the init instead of generating something like:
+//   i = 4;
+//   j = 4;
+//
+// We need to generate:
+// i = 4, j = 4
+static std::string codegenCForLoopHeaderSegment(BlockStmt* block) {
   GenInfo* info = gGenInfo;
-  FILE* outfile = info->cfile;
-  GenRet ret;
+  std::string seg = "";
+
+  for_alist(expr, block->body) {
+    CallExpr* call = toCallExpr(expr);
+
+    // Generate defExpr normally (they always get codegenned at the top of a
+    // function currently, if that changes this code will probably be wrong.)
+    if (DefExpr* defExpr = toDefExpr(expr)) {
+      defExpr->codegen();
+    }
+
+    // If inlining is off, the init, test, and incr are just functions and we
+    // need to generate them inline so we use codegenValue. The semicolon is
+    // added so it can be replaced with the comma later. If inlinining is on
+    // the test will be a <= and it also needs to be codegenned with
+    // codegenValue.
+    //
+    // TODO when the test operator is user specifiable and not just <= this
+    // will need to be updated to include all possible conditionals. (I'm
+    // imagining we'll want a separate function that can check if a primitive
+    // is a conditional as I think we'll need that info elsewhere.)
+    else if (call && (call->isResolved() || call->isPrimitive(PRIM_LESSOREQUAL)
+                                         || call->isPrimitive(PRIM_LESS))) {
+      std::string callStr = codegenValue(call).c;
+      if (callStr != "") {
+        seg += callStr + ';';
+      }
+
+    }
+    // Similar to above, generate symExprs
+    else if (SymExpr* symExpr = toSymExpr(expr)) {
+      std::string symStr = codegenValue(symExpr).c;
+      if (symStr != "") {
+        seg += symStr + ';';
+      }
+    }
+    // Everything else is just a bunch of statements. We do normal codegen() on
+    // them which ends up putting whatever got codegenned into CStatements. We
+    // pop all of those back off (note that the order we pop and attach to our
+    // segment is important.)
+    else {
+      int prevStatements = (int)info->cStatements.size();
+      expr->codegen();
+      int newStatements = (int)info->cStatements.size() - prevStatements;
+      for (std::vector<std::string>::iterator it = info->cStatements.end() -
+          newStatements; it != info->cStatements.end(); ++it) {
+        seg += *it;
+      }
+      info->cStatements.erase(info->cStatements.end()-newStatements,
+          info->cStatements.end());
+    }
+  }
+
+  // replace all the semicolons (from "statements") with commas
+  std::replace(seg.begin(), seg.end(), ';', ',');
+
+  // remove all the newlines
+  seg.erase(std::remove(seg.begin(), seg.end(), '\n'), seg.end());
+
+  // remove the last character if any were generated (it's a trailing comma
+  // since we previously had an appropriate "trailing" semicolon
+  if (seg.size () > 0)  seg.resize (seg.size () - 1);
+
+  return seg;
+}
+
+GenRet BlockStmt::codegen() {
+  GenInfo* info    = gGenInfo;
+  FILE*    outfile = info->cfile;
+  GenRet   ret;
 
   codegenStmt(this);
 
@@ -137,6 +279,21 @@ GenRet BlockStmt::codegen() {
         info->cStatements.push_back("do ");
       } else if (blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)) {
         std::string hdr = "for (;" + codegenValue(blockInfo->get(1)).c + ";) ";
+        info->cStatements.push_back(hdr);
+      } else if (blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
+        BlockStmt* initBlock = toBlockStmt(blockInfo->get(1));
+        std::string init = codegenCForLoopHeaderSegment(initBlock->copy());
+
+        BlockStmt* testBlock = toBlockStmt(blockInfo->get(2));
+        std::string test = codegenCForLoopHeaderSegment(testBlock->copy());
+        // wrap the test with paren. Could probably check if it already has
+        // outer paren to make the code a little cleaner.
+        if (test != "") test = "(" + test + ")";
+
+        BlockStmt* incrBlock = toBlockStmt(blockInfo->get(3));
+        std::string incr = codegenCForLoopHeaderSegment(incrBlock->copy());
+
+        std::string hdr = "for (" + init + "; " + test + "; " + incr + ") ";
         info->cStatements.push_back(hdr);
       }
     }
@@ -157,6 +314,7 @@ GenRet BlockStmt::codegen() {
       info->cStatements.push_back(end);
     }
   } else {
+
 #ifdef HAVE_LLVM
     llvm::Function *func = info->builder->GetInsertBlock()->getParent();
 
@@ -342,7 +500,8 @@ BlockStmt::isLoop() const {
           (blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP) ||
            blockInfo->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
            blockInfo->isPrimitive(PRIM_BLOCK_PARAM_LOOP) ||
-           blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)));
+           blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP) ||
+           blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)));
 }
 
 
@@ -353,34 +512,60 @@ BlockStmt::length() const {
 
 
 void
-BlockStmt::addUse(ModuleSymbol* mod) {
-  if (!modUses) {
+BlockStmt::moduleUseAdd(ModuleSymbol* mod) {
+  if (modUses == NULL) {
     modUses = new CallExpr(PRIM_USED_MODULES_LIST);
+
     if (parentSymbol)
       insert_help(modUses, this, parentSymbol);
   }
+
   modUses->insertAtTail(mod);
 }
 
 
 // Remove a module from the list of modules used by the module this block
 // statement belongs to. The list of used modules is stored in modUses
-void
-BlockStmt::removeUse(ModuleSymbol* mod) {
-  if (modUses) {
+bool
+BlockStmt::moduleUseRemove(ModuleSymbol* mod) {
+  bool retval = false;
+
+  if (modUses != NULL) {
     for_alist(expr, modUses->argList) {
       if (SymExpr* symExpr = toSymExpr(expr)) {
         if (ModuleSymbol* curMod = toModuleSymbol(symExpr->var)) {
           if (curMod == mod) {
-            symExpr->remove();  
+            symExpr->remove();
+            
+            retval = true;
+            break;
           }
         }
       }
     }
   }
+
+  return retval;
 }
 
-void BlockStmt::accept(AstVisitor* visitor) {
+void
+BlockStmt::moduleUseClear() {
+  if (modUses != 0) {
+
+    for_alist(expr, modUses->argList) {
+      expr->remove();
+    }
+
+    // It's possible that this use definition is not alive
+    if (isAlive(modUses))
+      modUses->remove();
+
+    modUses = 0;
+  }
+}
+
+void 
+BlockStmt::accept(AstVisitor* visitor) {
   if (visitor->enterBlockStmt(this) == true) {
     for_alist(next_ast, body)
       next_ast->accept(visitor);
@@ -397,6 +582,11 @@ void BlockStmt::accept(AstVisitor* visitor) {
     visitor->exitBlockStmt(this);
   }
 }
+
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
 
 CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
   Stmt(E_CondStmt),
@@ -639,6 +829,11 @@ void CondStmt::accept(AstVisitor* visitor) {
   }
 }
 
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
+
 GotoStmt::GotoStmt(GotoTag init_gotoTag, const char* init_label) :
   Stmt(E_GotoStmt),
   gotoTag(init_gotoTag),
@@ -686,31 +881,49 @@ GotoStmt* getGotoLabelsIterResumeGoto(GotoStmt* gs) {
   return labsym ? labsym->iterResumeGoto : NULL;
 }
 
-
 void GotoStmt::verify() {
   Expr::verify();
+
   if (astTag != E_GotoStmt) {
     INT_FATAL(this, "Bad GotoStmt::astTag");
   }
+
   if (!label)
     INT_FATAL(this, "GotoStmt has no label");
+
   if (label->list)
     INT_FATAL(this, "GotoStmt::label is a list");
+
   if (label && label->parentExpr != this)
     INT_FATAL(this, "Bad GotoStmt::label::parentExpr");
+
+  // If the label has been resolved to a label
   if (SymExpr* se = toSymExpr(label)) {
     if (isLabelSymbol(se->var)) {
-      if (!isFnSymbol(se->var->defPoint->parentSymbol))
-        INT_FATAL(this, "goto label is not in a function");
+      Symbol* parent = se->var->defPoint->parentSymbol;
+
+      // The parent should either be a function or a
+      // module that does not yet have the initFn installed
+      if (isFnSymbol(parent) == false) {
+        ModuleSymbol* module = toModuleSymbol(parent);
+
+        if (module == 0 || module->initFn != 0) {
+          INT_FATAL(this, "goto label is not in a function");
+        }
+      }
+
       if (se->var->defPoint->parentSymbol != this->parentSymbol)
         INT_FATAL(this, "goto label is in a different function than the goto");
+
       GotoStmt* igs = getGotoLabelsIterResumeGoto(this);
+
       if ((gotoTag == GOTO_ITER_RESUME) == (igs == NULL))
         INT_FATAL(this,
-            "goto must be GOTO_ITER_RESUME iff its label has iterResumeGoto");
+                  "goto must be GOTO_ITER_RESUME iff its label has iterResumeGoto");
+
       if (gotoTag == GOTO_ITER_RESUME && igs != this)
         INT_FATAL(this,
-      "GOTO_ITER_RESUME goto's label's iterResumeGoto does not match the goto");
+                  "GOTO_ITER_RESUME goto's label's iterResumeGoto does not match the goto");
     }
   }
 }
@@ -822,6 +1035,11 @@ void GotoStmt::accept(AstVisitor* visitor) {
     visitor->exitGotoStmt(this);
   }
 }
+
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
 
 ExternBlockStmt::ExternBlockStmt(const char* init_c_code) :
   Stmt(E_ExternBlockStmt),

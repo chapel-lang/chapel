@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 // checkResolved.cpp
 
 #include "passes.h"
@@ -251,7 +270,8 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs) {
   if (BlockStmt* block = toBlockStmt(expr))
   {
     if (!block->blockInfo ||
-        block->blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP))
+        block->blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP) ||
+        block->blockInfo->isPrimitive(PRIM_BLOCK_LOCAL))
     {
       int result = 0;
       for_alist(e, block->body)
@@ -302,16 +322,16 @@ checkReturnPaths(FnSymbol* fn) {
   //
   // Issue a warning if there is a path that has zero definitions or
   // there is a path that has one definition and the function has a
-  // specified return type; we care about there being a specified
-  // return type because this specified return type is used to
-  // initialize the return symbol but we don't want that to count as a
-  // definition of a return value.
+  // specified return type of a type we still default initialize; we care
+  // about there being a specified return type because this specified
+  // return type is used to initialize the return symbol but we don't want
+  // that to count as a definition of a return value.
   //
-  // We don't expect initialization code for an externally defined type,
-  // so if that is what we are returning, the only definition expected is
-  // actually a proper assignment
+  // The only types we still expect initialization code for are those marked
+  // with FLAG_IGNORE_NOINIT, so those are the only cases where a single
+  // definition means that the function writer neglected to return a value.
   if (result == 0 || (result == 1 && fn->hasFlag(FLAG_SPECIFIED_RETURN_TYPE) &&
-                      !fn->retType->symbol->hasFlag(FLAG_EXTERN)))
+                      fn->retType->symbol->hasFlag(FLAG_IGNORE_NOINIT)))
     USR_FATAL_CONT(fn->body, "control reaches end of function that returns a value");
 }
 

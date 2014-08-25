@@ -477,15 +477,15 @@ proc Stencil.dsiCreateReindexDist(newSpace, oldSpace) {
     var newHigh = newSpace(r).high;
     var valid: bool;
     if oldLow != newLow {
-      (myNewBbox(r)._base._low,valid) = adjustBound(myNewBbox(r).low,oldLow,newLow);
+      (myNewBbox(r)._low,valid) = adjustBound(myNewBbox(r).low,oldLow,newLow);
       if !valid then // try with high
-        (myNewBbox(r)._base._low,valid) = adjustBound(myNewBbox(r).low,oldHigh,newHigh);
+        (myNewBbox(r)._low,valid) = adjustBound(myNewBbox(r).low,oldHigh,newHigh);
       if !valid then
         halt("invalid reindex for Stencil: distribution bounding box (low) out of range in dimension ", r);
 
-      (myNewBbox(r)._base._high,valid) = adjustBound(myNewBbox(r).high,oldHigh,newHigh);
+      (myNewBbox(r)._high,valid) = adjustBound(myNewBbox(r).high,oldHigh,newHigh);
       if !valid then
-        (myNewBbox(r)._base._high,valid) = adjustBound(myNewBbox(r).high,oldLow,newLow);
+        (myNewBbox(r)._high,valid) = adjustBound(myNewBbox(r).high,oldLow,newLow);
       if !valid then // try with low
         halt("invalid reindex for Stencil: distribution bounding box (high) out of range in dimension ", r);
     }

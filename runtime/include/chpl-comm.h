@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef _chpl_comm_h_
 #define _chpl_comm_h_
 
@@ -22,18 +41,9 @@ extern c_nodeid_t chpl_nodeID; // unique ID for each node: 0, 1, 2, ...
 // (hopefully) unique to the running image, and never changed again.
 extern int32_t chpl_numNodes; // number of nodes
 
-extern int32_t chpl_numPrivateObjects;
-extern void** chpl_privateObjects; // privatized array and domain objects
-
 extern int chpl_verbose_comm;     // set via startVerboseComm
 extern int chpl_comm_diagnostics; // set via startCommDiagnostics
 extern int chpl_verbose_mem;      // set via startVerboseMem
-
-static ___always_inline
-int32_t chpl_numPrivatizedClasses(void) { return chpl_numPrivateObjects; }
-
-extern void chpl_newPrivatizedClass(void*);
-extern void* chpl_getPrivatizedClass(int32_t);
 
 size_t chpl_comm_getenvMaxHeapSize(void);
 

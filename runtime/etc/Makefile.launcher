@@ -1,3 +1,20 @@
+# Copyright 2004-2014 Cray Inc.
+# Other additional copyright holders may be indicated within.
+# 
+# The entirety of this work is licensed under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+# 
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 CHPL_MAKE_HOST_TARGET = --host
 MAKE_LAUNCHER = 1
 REAL_SUFFIX = _real
@@ -22,7 +39,7 @@ all: FORCE
 	echo "#include \"chplcgfns.h\"" > $(LAUNCHER_SRC_NAME)
 	echo "#include \"config.h\"" >> $(LAUNCHER_SRC_NAME)
 	echo "#include \"_config.c\"" >> $(LAUNCHER_SRC_NAME)
-	echo "#include \"chpl_compilation_config.h\"" >> $(LAUNCHER_SRC_NAME)
+	echo "#include \"chpl_compilation_config.c\"" >> $(LAUNCHER_SRC_NAME)
 	echo "const char launcher_real_suffix[] = \"$(REAL_SUFFIX)\";" >> $(LAUNCHER_SRC_NAME)
 	echo "const char launcher_exe_suffix[] = \"$(EXE_SUFFIX)\";" >> $(LAUNCHER_SRC_NAME)
 	$(CC) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) -c -o $(TMPBINNAME)_launcher.o $(CHAPEL_LN_INCS) -I. $(LAUNCHER_SRC_NAME)

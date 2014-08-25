@@ -32,13 +32,13 @@ if [[ -z $CHPL_HOME ]]; then
 fi
 
 export CHPL_HOME_ORIG=$CHPL_HOME
-export CHPL_TEST_UTIL_DIR=$CHPL_HOME_ORIG/util/test
+export CHPL_TEST_UTIL_DIR=$CHPL_HOME_ORIG/util
 
 #
 # This is a place where all releases will be unpacked and built with
 # optimizations on, debugging off.
 #
-export chpl_release_home=/data/cf/gtmp/chapel/chapel-releases
+export chpl_release_home=/data/cf/chapel/chapel-releases
 
 if [[ -z $CHPL_TEST_PERF_DIR ]]; then
     export CHPL_TEST_PERF_DIR=$CHPL_HOME/test/perfdat-releases
@@ -82,6 +82,6 @@ testReleasePerformance
 # data from the nightly file.
 #
 
-export -n CHPL_TEST_PERF_DATE
-export CHPL_HOME=$CHPL_HOME_ORIG
-testReleasePerformance
+#export -n CHPL_TEST_PERF_DATE
+#export CHPL_HOME=$CHPL_HOME_ORIG
+#testReleasePerformance

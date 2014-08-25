@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 //
 // Shared code for different comm implementations in
 //  comm/<commlayer>/comm-<commlayer>.c
@@ -13,38 +32,10 @@
 
 int32_t chpl_nodeID = -1;
 int32_t chpl_numNodes = -1;
-int32_t chpl_numPrivateObjects = 0;
-static int32_t chpl_capPrivateObjects = 0;
-void** chpl_privateObjects;
 
 int chpl_verbose_comm;
 int chpl_comm_diagnostics;
 int chpl_verbose_mem;
-
-void chpl_newPrivatizedClass(void* v) {
-  chpl_numPrivateObjects += 1;
-  if (chpl_numPrivateObjects == 1) {
-    chpl_capPrivateObjects = 8;
-    // "private" means "node-private", so we can use the system allocator.
-    chpl_privateObjects = chpl_mem_allocMany(chpl_capPrivateObjects, sizeof(void*), CHPL_RT_MD_COMM_PRIVATE_OBJECTS_ARRAY, 0, "");
-  } else {
-    if (chpl_numPrivateObjects > chpl_capPrivateObjects) {
-      void** tmp;
-      chpl_capPrivateObjects *= 2;
-      tmp = chpl_mem_allocMany(chpl_capPrivateObjects, sizeof(void*), CHPL_RT_MD_COMM_PRIVATE_OBJECTS_ARRAY, 0, "");
-      memcpy((void*)tmp, (void*)chpl_privateObjects, (chpl_numPrivateObjects-1)*sizeof(void*));
-      chpl_privateObjects = tmp;
-      // purposely leak old copies of chpl_privateObject to avoid the need to
-      // lock chpl_getPrivatizedClass; to do: fix with lock free data structure
-    }
-  }
-  chpl_privateObjects[chpl_numPrivateObjects-1] = v;
-}
-
-
-extern void* chpl_getPrivatizedClass(int32_t i) {
-  return chpl_privateObjects[i];
-}
 
 void chpl_startCommDiagnostics(void); // this one implemented by comm layers
 void chpl_gen_startCommDiagnostics(void); // this one implemented in chpl-comm.c

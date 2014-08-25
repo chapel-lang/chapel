@@ -1,8 +1,25 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 use IO, SysBasic, Error, UtilReplicatedVar;
 
 extern type qio_locale_map_ptr_t;     // array of locale to byte range mappings
-extern type qio_file_functions_ptr_t; // pointer to function ptr struct
-extern type qio_file_functions_t;     // function ptr struct
 extern type char_ptr_ptr;             // char**
 
 extern const QIO_LOCALE_MAP_PTR_T_NULL: qio_locale_map_ptr_t;
@@ -31,13 +48,7 @@ extern proc hdfs_create_locale_mapping(ref arr: char_ptr_ptr, num: int, loc_name
 // Return arr[i]
 extern proc hdfs_index_array(locs: qio_locale_map_ptr_t, i: int): hdfs_block_byte_map_t;
 
-// Same as qio_file_open_access in IO.chpl, except this time we pass though our
-// struct that will initilize the file with the appropriate functions for that FS
-extern proc qio_file_open_access_usr(out file_out:qio_file_ptr_t, path:string, 
-                                     access:string, iohints:c_int, /*const*/ ref style:iostyle,
-                                     fs:c_void_ptr, s: qio_file_functions_ptr_t):syserr;
-
-// Get block owners. 
+// Get block owners.
 // Returns an array of hdfs_block_byte_map_t's
 extern proc hdfs_get_owners(f: qio_file_ptr_t, out locales: qio_locale_map_ptr_t, out num_blocks: c_int, arr: char_ptr_ptr, loc_nums:int): syserr;
 

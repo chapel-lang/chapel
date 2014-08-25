@@ -5,7 +5,6 @@
 #
 unsetenv CHPL_HOME
 unsetenv CHPL_NIGHTLY_LOGDIR
-unsetenv CHPL_NIGHTLY_STATDIR
 unsetenv CHPL_DEVELOPER
 unsetenv CHPL_HOST_PLATFORM
 unsetenv CHPL_TARGET_PLATFORM
@@ -30,6 +29,12 @@ source util/setchplenv.csh
 set tmpstatus = $status
 if ($tmpstatus != 0) then
     echo "ERROR: source of setchplenv.csh failed"
+    exit($tmpstatus)
+endif
+$mymake check
+set tmpstatus = $status
+if ($tmpstatus != 0) then
+    echo "ERROR: make check failed"
     exit($tmpstatus)
 endif
 chpl -o hello examples/hello.chpl
