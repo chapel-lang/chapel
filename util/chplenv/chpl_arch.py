@@ -244,7 +244,8 @@ class InvalidLocationError(ValueError):
 # each one. However, we put the cpu architecture that the module was built with
 # in the gen directory so we need a way to get the proper path no matter what
 # cpu architecture is actually loaded. Note that this MUST be kept in sync with
-# what we have in the module build script.
+# what we have in the module build script. get_lcd has no affect on non cray
+# systems
 def get_module_lcd_arch(platform_val, arch):
     if arch == 'knc':
         return arch
@@ -298,11 +299,6 @@ def get(location, map_to_compiler=False, get_lcd=False):
         return 'none'
     elif 'ibm' in compiler_val:
         return 'none'
-
-    if get_lcd:
-        stderr.write("Warning: Getting the lowest common denominator "
-                     "architecture is only supported for the Chapel module on "
-                     "Cray platforms.\n")
 
     # Only try to do any auto-detection or verification when:
     # comm == none  -- The inverse means that we are probably cross-compiling.
