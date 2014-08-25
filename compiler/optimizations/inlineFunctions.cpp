@@ -53,6 +53,7 @@ inlineCall(FnSymbol* fn, CallExpr* call, Vec<FnSymbol*>& canRemoveRefTempSet) {
         if (CallExpr* move = findRefTempInit(se)) {
           SymExpr* origSym = NULL;
           if (CallExpr* addrOf = toCallExpr(move->get(2))) {
+            INT_ASSERT(addrOf->isPrimitive(PRIM_ADDR_OF));
             origSym = toSymExpr(addrOf->get(1));
           } else {
             origSym = toSymExpr(move->get(2));
@@ -113,6 +114,10 @@ static bool canRemoveRefTemps(FnSymbol* fn) {
   return true;
 }
 
+// Search for the first assingment (a PRIM_MOVE) to a ref temp. If found, the
+// CallExpr doing the assignment will be returned, otherwise NULL. This works
+// because a ref temp's DefExpr and inital assignment are inserted togther
+// inside of insertReferenceTemps.
 static CallExpr* findRefTempInit(SymExpr* se) {
   Expr* expr = se->var->defPoint->next;
   while (expr) {
