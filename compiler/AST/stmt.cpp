@@ -348,8 +348,8 @@ GenRet BlockStmt::codegen() {
         // outer paren to make the code a little cleaner.
         if (test != "") test = "(" + test + ")";
 
-        BlockStmt* incrBlock = toBlockStmt(blockInfo->get(3)->copy());
-        std::string incr = codegenCForLoopHeaderSegment(incrBlock);
+        BlockStmt* incrBlock = toBlockStmt(blockInfo->get(3));
+        std::string incr = codegenCForLoopHeaderSegment(incrBlock->copy());
 
         std::string hdr = "for (" + init + "; " + test + "; " + incr + ") ";
         info->cStatements.push_back(hdr);
