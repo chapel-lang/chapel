@@ -337,16 +337,18 @@ GenRet BlockStmt::codegen() {
         info->cStatements.push_back(hdr);
       } else if (blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
         BlockStmt* initBlock = toBlockStmt(blockInfo->get(1));
-        std::string init = codegenCForLoopHeaderSegment(initBlock);
+        // Elliot tells me this copy is needed or else values get
+        // code generated twice.
+        std::string init = codegenCForLoopHeaderSegment(initBlock->copy());
 
         BlockStmt* testBlock = toBlockStmt(blockInfo->get(2));
-        GenRet testgen = codegenCForLoopConditional(testBlock);
+        GenRet testgen = codegenCForLoopConditional(testBlock->copy());
         std::string test = testgen.c;
         // wrap the test with paren. Could probably check if it already has
         // outer paren to make the code a little cleaner.
         if (test != "") test = "(" + test + ")";
 
-        BlockStmt* incrBlock = toBlockStmt(blockInfo->get(3));
+        BlockStmt* incrBlock = toBlockStmt(blockInfo->get(3)->copy());
         std::string incr = codegenCForLoopHeaderSegment(incrBlock);
 
         std::string hdr = "for (" + init + "; " + test + "; " + incr + ") ";
@@ -396,6 +398,12 @@ GenRet BlockStmt::codegen() {
         // blockInfo->get(2) is the test block 
         // blockInfo->get(3) is the increment block
 
+        // In order to track more easily with the C backend
+        // and because mem2reg should optimize all of these
+        // cases, we generate a for loop as the same
+        // as if(cond) do { body; step; } while(cond).
+
+        // The comment below is old and wrong.
         // The induction variables may not be
         //  - used after the loop
         //  - assigned to within the loop
@@ -446,6 +454,33 @@ GenRet BlockStmt::codegen() {
         // Now switch to the init block for code generation
         info->builder->SetInsertPoint(blockStmtInit);
 
+        // Code generate the init block.
+        initBlock->body.codegen("");
+
+        // Code generate end points in the conditional as values
+        // so that we don't add loads within the loop.
+        // This is optional...
+        //for_alist(expr, testBlock->body) {
+        //  codegenCForLoopConditionalPre(expr);
+        //}
+ 
+        // Add the loop condition to figure out if we run the loop at all.
+        GenRet test = codegenCForLoopConditional(testBlock);
+        // Add a branch based on test.
+        llvm::Value* condValue = test.val;
+        // Normalize it to boolean
+        if( condValue->getType() !=
+            llvm::Type::getInt1Ty(info->module->getContext()) ) {
+          condValue = info->builder->CreateICmpNE(
+              condValue,
+              llvm::ConstantInt::get(condValue->getType(), 0),
+              FNAME("condition"));
+        }
+        // Create the conditional branch
+        info->builder->CreateCondBr(condValue, blockStmtBody, blockStmtEnd);
+
+
+        /*
         llvm::SmallVector<const char*, 4> valueNames;
         llvm::SmallVector<GenRet, 4> startValues;
 
@@ -497,7 +532,7 @@ GenRet BlockStmt::codegen() {
           // save in lvt var->cname = val. for use in loop body
           info->lvt->addValue(name, phi, init.isLVPtr, init.isUnsigned);
         }
-
+*/
       } else if (blockInfo->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
                  blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)) {
         // Add the condition block.
@@ -544,6 +579,11 @@ GenRet BlockStmt::codegen() {
         BlockStmt* testBlock = toBlockStmt(blockInfo->get(2));
         BlockStmt* incrBlock = toBlockStmt(blockInfo->get(3));
 
+        // Code generate the step operations.
+        incrBlock->body.codegen("");
+
+        /*
+
         // Step operations.
         for_alist(expr, incrBlock->body) {
           CallExpr* call = toCallExpr(expr);
@@ -570,7 +610,7 @@ GenRet BlockStmt::codegen() {
             // If we didn't already code generate this one, code generate it!
             expr->codegen();
           }
-        }
+        }*/
  
         GenRet test = codegenCForLoopConditional(testBlock);
         // Add a branch based on test.
