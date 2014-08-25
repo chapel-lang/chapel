@@ -1162,8 +1162,8 @@ module ChapelArray {
                                    isAssociativeDom(d1) &&
                                    (d1.type == d2.type) {
     var d3 : d1.type;
-    for e in d1 do d3.add(e);
-    for e in d2 do if d3.member(e) then d3.remove(e);
+    for e in d1 do
+      if !d2.member(e) then d3.add(e);
     return d3;
   }
   
