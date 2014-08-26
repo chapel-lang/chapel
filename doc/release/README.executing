@@ -127,7 +127,13 @@ at execution time and the call stack size, among other things.  In many
 cases third-party packages used by Chapel define their own environment
 variables to provide the same or similar control.  For Chapel programs,
 Chapel environment variables always take precedence over third-party
-ones when both control the same thing.
+ones when both control the same thing.  However, a third-party setting
+will still override a Chapel default, if those differ.
+
+As an example, the Chapel CHPL_RT_CALL_STACK_SIZE environment variable
+will override the Qthreads QT_STACK_SIZE environment variable if both
+are set.  However, if only QT_STACK_SIZE is set it will override the
+Chapel default call stack size of 8 MiB if it differs from that.
 
 The Chapel environment variables that control execution time behavior
 are as follows:
