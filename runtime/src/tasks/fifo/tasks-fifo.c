@@ -846,7 +846,8 @@ void chpl_task_setSerial(chpl_bool state) {
 }
 
 uint32_t chpl_task_getMaxPar(void) {
-  uint32_t max, max2;
+  uint32_t max;
+  uint32_t maxThreads;
 
   //
   // We expect that even if the cores have multiple hardware threads,
@@ -855,8 +856,9 @@ uint32_t chpl_task_getMaxPar(void) {
   // number of cores, and whatever the threading layer says it can do.
   //
   max = (uint32_t) chpl_getNumCoresOnThisNode();
-  if ((max2 = chpl_thread_getMaxThreads()) < max && max2 > 0)
-    max = max2;
+  maxThreads = chpl_thread_getMaxThreads();
+  if (maxThreads < max && maxThreads > 0)
+    max = maxThreads;
   return max;
 }
 
