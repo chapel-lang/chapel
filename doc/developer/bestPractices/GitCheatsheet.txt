@@ -194,6 +194,9 @@ commits and the merge commits for pull requests):
 
     git log --first-parent
 
+    # or with line wrapping
+    git log --first-parent | less
+
     # or including files changed
     git log --first-parent -m --stat
 
