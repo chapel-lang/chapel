@@ -139,7 +139,7 @@ The Chapel environment variables that control execution time behavior
 are as follows:
 
   CHPL_RT_CALL_STACK_SIZE           size of the call stack for a task
-                                    (see README.tasks)
+                                    (documented below)
   CHPL_RT_MAX_HEAP_SIZE             size of the heap used for dynamic
                                     allocation in multilocale programs
                                     on Cray systems (see README.cray)
