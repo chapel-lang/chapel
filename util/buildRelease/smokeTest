@@ -45,5 +45,11 @@ if [ "$(uname -s)" = "Darwin" -a "$(uname -r)" = "9.8.0" ] ; then
     export CHPL_TASKS=fifo
 fi
 
+# Special case 32bit systems. Set the runtime stack size to 2M (defaults to 8M)
+# to avoid using too much memory.
+if [ "$($CHPL_HOME/util/chplenv/chpl_platform.py)" = "linux32" ] ; then
+    export CHPL_RT_CALL_STACK_SIZE=2M
+fi
+
 # Compile chapel and make sure the hello world examples run.
 make -C $CHPL_HOME check
