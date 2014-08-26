@@ -246,9 +246,17 @@ web interface to create a pull request.  Visit
 
   https://github.com/<username>/chapel
 
-and navigate to your feature branch, and click the green "Create Pull Request"
-button. Your contribution will need to be tested and reviewed, and you will
-have to have signed a contributors agreement. See ContributorInfo.txt for more
+and look for a "Compare & pull request" button for your feature branch.
+Alternatively, navigate to your feature branch, and click the green icon
+next to the branch dropdown to "Compare, review, create a pull request".
+
+Next, put in a message to your reviewer about the purpose of your pull
+request and give the pull request a useful title. It's a good time to
+draft the commit message that you will need when merging the pull request
+in step (J).
+
+Your contribution will need to be tested and reviewed, and you will have to
+have signed a contributors agreement. See ContributorInfo.txt for more
 information.
 
 Your pull request will be available at a URL like:
