@@ -1,2 +1,0 @@
-bug: Seg fault in getVisibilityBlock() during function resolution.
-

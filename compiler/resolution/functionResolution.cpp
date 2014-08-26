@@ -6916,12 +6916,21 @@ static void insertRuntimeTypeTemps() {
   }
 }
 
-static void resolveAutoCopies() {
-  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if ((isRecord(ts->type) ||
-         getSyncFlags(ts).any()) &&
-        !ts->hasFlag(FLAG_GENERIC) &&
-        !ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
+static void resolveAutoCopies()
+{
+  forv_Vec(TypeSymbol, ts, gTypeSymbols)
+  {
+    if (!ts->defPoint->parentSymbol)
+      continue; // Type is not in tree
+    if (ts->hasFlag(FLAG_GENERIC))
+      continue; // Consider only concrete types.
+    if (ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION))
+      continue; // Skip the "dmapped" pseudo-type.
+
+    if (isRecord(ts->type) || getSyncFlags(ts).any())
+    {
+      // Sync types are records, too.
+      INT_ASSERT(isRecord(ts->type));
       resolveAutoCopy(ts->type);
       resolveAutoDestroy(ts->type);
     }
