@@ -233,6 +233,10 @@ Push your changes to your feature branch on GitHub:
 
     git push origin <branch_name>
 
+    # if you forgot your branch name, you can get it by running
+    git branch
+
+    # it is the starred one...
 
 (I) Create a pull request and work with your reviewers
 ------------------------------------------------------
