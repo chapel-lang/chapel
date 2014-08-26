@@ -93,9 +93,6 @@ system("cd $tmpdir && svn export -q $svnroot $reldir");
 
 chdir "$rootdir";
 
-print "Tagging the files with copyright messages...\n";
-system("make -f make/Makefile.release");
-
 print "Generating the bison/flex files...\n";
 system("cd compiler/parser && make lex.yy.cpp > /dev/null");
 

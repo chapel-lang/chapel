@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "chplrt.h"
 
 #include "arg.h"
@@ -10,6 +29,7 @@
 #include "chpl-main.h"
 #include "chpl-mem.h"
 #include "chplmemtrack.h"
+#include "chpl-privatization.h"
 #include "chpl-tasks.h"
 #include "chplsys.h"
 #include "config.h"
@@ -20,8 +40,6 @@
 #include <locale.h>
 #include <time.h>
 #include <sys.h>
-
-extern int chpl_no_stdmodules;
 
 static const char myFilename[] = 
 #ifdef CHPL_DEVELOPER
@@ -84,18 +102,16 @@ static void chpl_main(void) {
 
     // Initialize the internal modules.
     chpl__init_PrintModuleInitOrder(0, myFilename);
-    if( ! chpl_no_stdmodules ) {
-      chpl__init_ChapelStandard(0, myFilename);
-      // Note that in general, module code can contain "on" clauses
-      // and should therefore not be called before the call to
-      // chpl_comm_startPollingTask().
+    chpl__init_ChapelStandard(0, myFilename);
+    // Note that in general, module code can contain "on" clauses
+    // and should therefore not be called before the call to
+    // chpl_comm_startPollingTask().
 
-      //
-      // Permit the tasking layer to do anything it would like to now that
-      // the standard modules are initialized.
-      //
-      CHPL_TASK_STD_MODULES_INITIALIZED();
-    }
+    //
+    // Permit the tasking layer to do anything it would like to now that
+    // the standard modules are initialized.
+    //
+    CHPL_TASK_STD_MODULES_INITIALIZED();
 
     //
     // Call the compiler-generated main() routine
@@ -160,6 +176,12 @@ int main(int argc, char* argv[]) {
   // So that use of localtime_r is portable.
   tzset();
 
+  //
+  // Handle options that set the environment before doing any other
+  // runtime initialization.
+  //
+  parseArgs(false, parse_dash_E, &argc, argv);
+
   chpl_error_init();  // This does local-only initialization
   chpl_comm_init(&argc, &argv);
   chpl_mem_init();
@@ -172,7 +194,7 @@ int main(int argc, char* argv[]) {
   chpl_gen_main_arg.argv[0] = argv[0];
   chpl_gen_main_arg.argc = 1;
   chpl_gen_main_arg.return_value = 0;
-  parseArgs(&argc, argv);
+  parseArgs(false, parse_normally, &argc, argv);
   recordExecutionCommand(argc, argv);
 
   //
@@ -196,6 +218,9 @@ int main(int argc, char* argv[]) {
   // Initialize the task management layer.
   //
   chpl_task_init();
+
+  // Initialize privatization, needs to happen before hitting module init
+  chpl_privatization_init();
 
   //
   // Some comm layer initialization has to wait until after the

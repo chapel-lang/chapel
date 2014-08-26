@@ -1,0 +1,6 @@
+perfkeys: real
+files: regexdna.dat
+graphkeys: regexdna
+graphtitle: Regex-dna Shootout Benchmark
+ylabel: Time (seconds)
+graphname: regexdna

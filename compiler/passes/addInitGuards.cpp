@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 // addInitCalls.c
 //////////////////////////////////////////////////////////////////////////////////
 // Add module initialization calls and  guards to the module init functions.
@@ -53,11 +72,11 @@ void addModuleInitBlocks() {
       if (parent != theProgram && parent != rootModule)
         initBlock->insertAtTail(new CallExpr(parent->initFn));
 
-    // Now, traverse my use statements, and call the initializer for each
-    // module I use.
+    // Call the initializer for each module I use.
     forv_Vec(ModuleSymbol, usedMod, mod->modUseList) {
-      if (usedMod == standardModule) continue;
-      initBlock->insertAtTail(new CallExpr(usedMod->initFn));
+      if (usedMod != standardModule) {
+        initBlock->insertAtTail(new CallExpr(usedMod->initFn));
+      }
     }
 
     if (initBlock->body.length > 0) fn->insertAtHead(initBlock);

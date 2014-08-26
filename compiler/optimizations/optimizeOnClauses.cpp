@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 //
 // Mark On statements/blocks as "fast" (no communication, small, etc.)
 //
@@ -63,7 +82,6 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_GET_SVEC_MEMBER:
   case PRIM_GET_PRIV_CLASS:
   case PRIM_NEW_PRIV_CLASS:
-  case PRIM_NUM_PRIV_CLASSES:
 
   case PRIM_CHECK_NIL:
   case PRIM_GET_REAL:
@@ -212,6 +230,7 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_NEW:
   case PRIM_INIT:
   case PRIM_NO_INIT:
+  case PRIM_TYPE_INIT:
   case PRIM_LOGICAL_FOLDER:
   case PRIM_TYPEOF:
   case PRIM_TYPE_TO_STRING:
@@ -265,6 +284,7 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_BLOCK_WHILEDO_LOOP:
   case PRIM_BLOCK_DOWHILE_LOOP:
   case PRIM_BLOCK_FOR_LOOP:
+  case PRIM_BLOCK_C_FOR_LOOP:
     return true;
  
    // These don't block in the Chapel sense, but they may require a system

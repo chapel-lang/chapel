@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "passes.h"
 
 #include "astutil.h"
@@ -94,9 +113,26 @@ class Loop {
     // "preheader" of the loop, 
     void insertBefore(Expr* expr) {
       if(header->exprs.size() != 0) {
+        // find the first expr in the header, and get it's parent expr (for
+        // most cases it will be the surrounding block statement of the loop)
         if(BlockStmt* blockStmt = toBlockStmt(header->exprs.at(0)->parentExpr)) {
-          if(blockStmt->isLoop())
+          if(blockStmt->isLoop()) {
             blockStmt->insertBefore(expr->remove());
+          } else {
+            // for c for loops, the header is the test segment of the c for loop
+            // primitive which is still in the primitive. In this case we need
+            // to first get the primitive and then get its parent which will be
+            // the surrounding block stmt of the loop.
+            if (CallExpr* call = toCallExpr(blockStmt->parentExpr)) {
+              if (call->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
+                if (BlockStmt* outer = toBlockStmt(call->parentExpr)) {
+                  if (outer->blockInfo == call) {
+                    outer->insertBefore(expr->remove());
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }

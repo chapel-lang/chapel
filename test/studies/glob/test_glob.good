@@ -1,220 +1,100 @@
 ======== SERIAL ITERATORS (recursive) ==========
 -------- GLOB ----------
+a/a.c
+a/b/f.c
+a/b/h.c
+a/b.c
 globerator.chpl
 globerator.compopts
 globerator.notest
 globhelp.h
-one/a.c
-one/b.c
-one/two/f.c
-one/two/y.c
-recursive-par-glob.chpl
-recursive-par-glob.notest
-t
-t.c
-test_glob
-test_glob.chpl
-test_glob.compopts
-test_glob.exec.out.tmp
-test_glob.good
-tt
 -------- WORDEXP ----------
+a/a.c
+a/b/f.c
+a/b/h.c
+a/b.c
 globerator.chpl
 globerator.compopts
 globerator.notest
 globhelp.h
-one/a.c
-one/b.c
-one/two/f.c
-one/two/y.c
-recursive-par-glob.chpl
-recursive-par-glob.notest
-t
-t.c
-test_glob
-test_glob.chpl
-test_glob.compopts
-test_glob.exec.out.tmp
-test_glob.good
-tt
 -------- WORDEXP `zip` GLOB ----------
+(a/a.c, a/a.c)
+(a/b/f.c, a/b/f.c)
+(a/b/h.c, a/b/h.c)
+(a/b.c, a/b.c)
 (globerator.chpl, globerator.chpl)
 (globerator.compopts, globerator.compopts)
 (globerator.notest, globerator.notest)
 (globhelp.h, globhelp.h)
-(one/a.c, one/a.c)
-(one/b.c, one/b.c)
-(one/two/f.c, one/two/f.c)
-(one/two/y.c, one/two/y.c)
-(recursive-par-glob.chpl, recursive-par-glob.chpl)
-(recursive-par-glob.notest, recursive-par-glob.notest)
-(t, t)
-(t.c, t.c)
-(test_glob, test_glob)
-(test_glob.chpl, test_glob.chpl)
-(test_glob.compopts, test_glob.compopts)
-(test_glob.exec.out.tmp, test_glob.exec.out.tmp)
-(test_glob.good, test_glob.good)
-(tt, tt)
 ======== SERIAL ITERATORS (non-recursive) ==========
 -------- GLOB ----------
+a
 globerator.chpl
 globerator.compopts
 globerator.notest
 globhelp.h
-one
-recursive-par-glob.chpl
-recursive-par-glob.notest
-t
-t.c
-test_glob
-test_glob.chpl
-test_glob.compopts
-test_glob.exec.out.tmp
-test_glob.good
-tt
 -------- WORDEXP ----------
+a
 globerator.chpl
 globerator.compopts
 globerator.notest
 globhelp.h
-one
-recursive-par-glob.chpl
-recursive-par-glob.notest
-t
-t.c
-test_glob
-test_glob.chpl
-test_glob.compopts
-test_glob.exec.out.tmp
-test_glob.good
-tt
 -------- WORDEXP `zip` GLOB ----------
+(a, a)
 (globerator.chpl, globerator.chpl)
 (globerator.compopts, globerator.compopts)
 (globerator.notest, globerator.notest)
 (globhelp.h, globhelp.h)
-(one, one)
-(recursive-par-glob.chpl, recursive-par-glob.chpl)
-(recursive-par-glob.notest, recursive-par-glob.notest)
-(t, t)
-(t.c, t.c)
-(test_glob, test_glob)
-(test_glob.chpl, test_glob.chpl)
-(test_glob.compopts, test_glob.compopts)
-(test_glob.exec.out.tmp, test_glob.exec.out.tmp)
-(test_glob.good, test_glob.good)
-(tt, tt)
 ======== PARALLEL ITERATORS (recursive) ==========
 -------- GLOB ----------
+a/
 globerator.chpl
 globerator.compopts
 globerator.notest
 globhelp.h
-one/
-recursive-par-glob.chpl
-recursive-par-glob.notest
-t
-t.c
-test_glob
-test_glob.chpl
-test_glob.compopts
-test_glob.exec.out.tmp
-test_glob.good
-tt
-one/a.c
-one/b.c
-one/two/
-one/two/f.c
-one/two/y.c
+a/a.c
+a/b/
+a/b.c
+a/b/f.c
+a/b/h.c
 -------- WORDEXP ----------
+a/
 globerator.chpl
 globerator.compopts
 globerator.notest
 globhelp.h
-one/
-recursive-par-glob.chpl
-recursive-par-glob.notest
-t
-t.c
-test_glob
-test_glob.chpl
-test_glob.compopts
-test_glob.exec.out.tmp
-test_glob.good
-tt
-one/a.c
-one/b.c
-one/two/
-one/two/f.c
-one/two/y.c
+a/a.c
+a/b/
+a/b.c
+a/b/f.c
+a/b/h.c
 -------- WORDEXP `zip` GLOB ----------
+(a/, a/)
 (globerator.chpl, globerator.chpl)
 (globerator.compopts, globerator.compopts)
 (globerator.notest, globerator.notest)
 (globhelp.h, globhelp.h)
-(one/, one/)
-(recursive-par-glob.chpl, recursive-par-glob.chpl)
-(recursive-par-glob.notest, recursive-par-glob.notest)
-(t, t)
-(t.c, t.c)
-(test_glob, test_glob)
-(test_glob.chpl, test_glob.chpl)
-(test_glob.compopts, test_glob.compopts)
-(test_glob.exec.out.tmp, test_glob.exec.out.tmp)
-(test_glob.good, test_glob.good)
-(tt, tt)
-(one/a.c, one/a.c)
-(one/b.c, one/b.c)
-(one/two/, one/two/)
-(one/two/f.c, one/two/f.c)
-(one/two/y.c, one/two/y.c)
+(a/a.c, a/a.c)
+(a/b/, a/b/)
+(a/b.c, a/b.c)
+(a/b/f.c, a/b/f.c)
+(a/b/h.c, a/b/h.c)
 ======== PARALLEL ITERATORS (non-recursive) ==========
 -------- GLOB ----------
+a
 globerator.chpl
 globerator.compopts
 globerator.notest
 globhelp.h
-one
-recursive-par-glob.chpl
-recursive-par-glob.notest
-t
-t.c
-test_glob
-test_glob.chpl
-test_glob.compopts
-test_glob.exec.out.tmp
-test_glob.good
-tt
 -------- WORDEXP ----------
+a
 globerator.chpl
 globerator.compopts
 globerator.notest
 globhelp.h
-one
-recursive-par-glob.chpl
-recursive-par-glob.notest
-t
-t.c
-test_glob
-test_glob.chpl
-test_glob.compopts
-test_glob.exec.out.tmp
-test_glob.good
-tt
 -------- WORDEXP `zip` GLOB ----------
+(a, a)
 (globerator.chpl, globerator.chpl)
 (globerator.compopts, globerator.compopts)
 (globerator.notest, globerator.notest)
 (globhelp.h, globhelp.h)
-(one, one)
-(recursive-par-glob.chpl, recursive-par-glob.chpl)
-(recursive-par-glob.notest, recursive-par-glob.notest)
-(t, t)
-(t.c, t.c)
-(test_glob, test_glob)
-(test_glob.chpl, test_glob.chpl)
-(test_glob.compopts, test_glob.compopts)
-(test_glob.exec.out.tmp, test_glob.exec.out.tmp)
-(test_glob.good, test_glob.good)
-(tt, tt)

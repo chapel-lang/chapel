@@ -16,7 +16,7 @@ if ($build_version_file eq "") {
 }
 
 if (-r "$build_version_file") {
-    $last_build_version = `cat $build_version_file`;
+    $last_build_version = `sed -e 's/"//g' $build_version_file`; # remove quotes
     chomp($last_build_version);
 } else {
     $last_build_version = "!!!";

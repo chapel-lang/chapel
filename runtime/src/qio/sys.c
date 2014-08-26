@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 // squelch warning on Mac OS X
 #ifdef _POSIX_C_SOURCE
 #undef _POSIX_C_SOURCE
@@ -23,6 +42,22 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+
+#if defined(__APPLE__)
+#include <sys/param.h>
+#include <sys/mount.h>
+#define SYS_HAS_STATFS 1
+#elif defined(__linux__) || defined(__CYGWIN__)
+#include <sys/vfs.h>
+#define SYS_HAS_STATFS 1
+#else
+#define SYS_HAS_STATFS 0
+#endif
+
+#if defined(SYS_HAS_LLAPI)
+#include <lustre/lustreapi.h>
+#include <sys/ioctl.h>
+#endif
 
 // preadv/pwritev are available
 // only on linux/glibc 2.10 or later
@@ -522,6 +557,99 @@ err_t sys_lstat(const char* path, struct stat* buf)
   }
 
   return err_out;
+}
+
+#ifdef SYS_HAS_LLAPI
+err_t sys_lustre_get_stripe_size(fd_t fd, int64_t* size_out) 
+{
+  struct lov_user_md_v1 *lum;
+  size_t lum_size = sizeof(*lum) + LOV_MAX_STRIPE_COUNT * sizeof(struct lov_user_ost_data_v1);
+  int rc = 0;
+  err_t err = 0;
+
+  lum = qio_calloc(lum_size, 1);
+
+  lum->lmm_magic = LOV_USER_MAGIC_V1;
+  lum->lmm_stripe_count = LOV_MAX_STRIPE_COUNT;
+
+  STARTING_SLOW_SYSCALL;
+  rc = ioctl(fd, LL_IOC_LOV_GETSTRIPE, lum);
+  *size_out = lum->lmm_stripe_size;
+
+  if (rc < 0)  {
+    *size_out = 0;
+    err = errno;
+  }
+  DONE_SLOW_SYSCALL;
+
+  qio_free(lum);
+
+  return err;
+}
+#endif
+
+// TAKZ - on Mac, the types in the statfs structure become signed or unsigned
+// based upon whether or not they have 64 bit inodes. This leads to some rather
+// messy error handling and checking, since we want to avoid overflow in the
+// case that we have either signed types (in the case of 32 bit inodes) or
+// large (64 bit) unsigned types (in the case of 64 bit inodes). We therefore
+// use the linux convention for statfs that fields that are undefined for a
+// given file system are set to 0 (and we handle this in safe_inode_cast).
+#define safe_inode_cast(t) (t < 0 ? 0 : (uint64_t)t)
+
+err_t sys_fstatfs(fd_t fd, sys_statfs_t* buf)
+{
+    err_t err_out;
+    int got;
+
+#if SYS_HAS_STATFS
+    struct statfs tmp;
+    got = fstatfs(fd, &tmp);
+
+#if defined(__APPLE__)
+    buf->f_bsize   = (int64_t)tmp.f_iosize;
+    buf->f_type    = safe_inode_cast(tmp.f_type);
+    buf->f_blocks  = safe_inode_cast(tmp.f_blocks);
+    buf->f_bfree   = safe_inode_cast(tmp.f_bfree);
+    buf->f_bavail  = safe_inode_cast(tmp.f_bavail);
+    buf->f_files   = safe_inode_cast(tmp.f_files);
+    buf->f_ffree   = safe_inode_cast(tmp.f_ffree);
+    buf->f_namelen = safe_inode_cast(MNAMELEN);
+#else // linux or cygwin
+    // We don't have to deal with possible conversion from signed to unsiged
+    // numbers here, since in linux the field will be set to 0 if it is
+    // undefined for the FS. Since we know the field is >= 0 we can get rid of
+    // all the branching logic that we had for apple
+    buf->f_bsize   = (int64_t)tmp.f_bsize;
+    buf->f_type    = (uint64_t)tmp.f_type;
+    buf->f_blocks  = (uint64_t)tmp.f_blocks;
+    buf->f_bfree   = (uint64_t)tmp.f_bfree;
+    buf->f_bavail  = (uint64_t)tmp.f_bavail;
+    buf->f_files   = (uint64_t)tmp.f_files;
+    buf->f_ffree   = (uint64_t)tmp.f_ffree;
+    buf->f_namelen = (uint64_t)tmp.f_namelen;
+#endif
+
+#else
+    // unable to get fstatfs, so set all the fields of the struct to be 0 to say
+    // that we were unable to get any information
+    buf->f_bsize   = 0;
+    buf->f_type    = 0;
+    buf->f_blocks  = 0;
+    buf->f_bfree   = 0;
+    buf->f_bavail  = 0;
+    buf->f_files   = 0;
+    buf->f_ffree   = 0;
+    buf->f_namelen = 0;
+    got = ENOSYS;
+#endif
+    if (got != -1) {
+        err_out = 0;
+    } else{
+        err_out = errno;
+    }
+
+    return err_out;
 }
 
 err_t sys_mkstemp(char* template_, fd_t* fd_out)

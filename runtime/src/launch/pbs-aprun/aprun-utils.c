@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 //
 // This file is used by both the aprun and pbs-aprun launcher code
 //
@@ -189,13 +208,13 @@ int getCPUsPerCU() {
 // This function allocates and returns a NULL terminated argument list
 // with the aprun command to be run
 //
+static char _nbuf[16];
+static char _dbuf[16];
+static char _Nbuf[16];
+static char _jbuf[16];
 extern const char *CHPL_TARGET_ARCH; // supplied by the generated code
 char** chpl_create_aprun_cmd(int argc, char* argv[],
                              int32_t numLocales, const char* _ccArg) {
-  char _nbuf[16];
-  char _dbuf[16];
-  char _Nbuf[16];
-  char _jbuf[16];
   char *largv[8];
   int largc = 0;
   const char *ccArg = _ccArg ? _ccArg : "none";

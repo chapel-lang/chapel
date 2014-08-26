@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include <map>
 #include <iostream>
 #include <fstream>
@@ -28,6 +47,7 @@ static int compareClasses(const void *v1, const void* v2) {
 }
 
 void docs(void) {
+
   if (fDocs) {
     std::string folderName = (strlen(fDocsFolder) != 0) ? fDocsFolder : "docs";
 
@@ -299,7 +319,7 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
     printTabs(file);
     *file << mod->doc << std::endl;
   }
-  Vec<VarSymbol*> configs = mod->getConfigVars();
+  Vec<VarSymbol*> configs = mod->getTopLevelConfigVars();
   if (fDocsAlphabetize)
     qsort(configs.v, configs.n, sizeof(configs.v[0]), compareNames);
   forv_Vec(VarSymbol, var, configs) {
@@ -313,7 +333,7 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
     printVarDocs(file, var);
   }
 
-  Vec<FnSymbol*> fns = mod->getFunctions();
+  Vec<FnSymbol*> fns = mod->getTopLevelFunctions(true);
   // If alphabetical option passed, fDocsAlphabetizes the output 
   if (fDocsAlphabetize) 
     qsort(fns.v, fns.n, sizeof(fns.v[0]), compareNames);
@@ -324,7 +344,7 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
     }
   }
 
-  Vec<AggregateType*> classes = mod->getClasses();
+  Vec<AggregateType*> classes = mod->getTopLevelClasses();
   if (fDocsAlphabetize)
     qsort(classes.v, classes.n, sizeof(classes.v[0]), compareClasses);
 
@@ -332,7 +352,7 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
     printClass(file, cl);
   }
 
-  Vec<ModuleSymbol*> mods = mod->getModules();
+  Vec<ModuleSymbol*> mods = mod->getTopLevelModules();
   if (fDocsAlphabetize)
     qsort(mods.v, mods.n, sizeof(mods.v[0]), compareNames);
   

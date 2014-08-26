@@ -1,24 +1,46 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 /*** normalize
  ***
  *** This pass and function normalizes parsed and scope-resolved AST.
  ***/
 
+#include "passes.h"
+
 #include "astutil.h"
 #include "build.h"
 #include "expr.h"
-#include "passes.h"
+#include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+
 #include <cctype>
 #include <vector>
-#include "stlUtil.h"
 
 bool normalized = false;
 
 //
 // Static functions: forward declaration
 // 
+static void insertModuleInit();
 static void checkUseBeforeDefs();
 static void moveGlobalDeclarationsToModuleScope();
 static void insertUseForExplicitModuleCalls(void);
@@ -35,14 +57,20 @@ static void clone_parameterized_primitive_methods(FnSymbol* fn);
 static void clone_for_parameterized_primitive_formals(FnSymbol* fn,
                                                       DefExpr* def,
                                                       int width);
-static void replace_query_uses(ArgSymbol* formal, DefExpr* def, CallExpr* query,
+static void replace_query_uses(ArgSymbol* formal, 
+                               DefExpr*   def, 
+                               CallExpr*  query,
                                Vec<SymExpr*>& symExprs);
-static void add_to_where_clause(ArgSymbol* formal, Expr* expr, CallExpr* query);
+static void add_to_where_clause(ArgSymbol* formal, 
+                                Expr*      expr,
+                                CallExpr*  query);
 static void fixup_query_formals(FnSymbol* fn);
 static void change_method_into_constructor(FnSymbol* fn);
 static void find_printModuleInit_stuff();
 
-void normalize(void) {
+void normalize() {
+  insertModuleInit();
+
   // tag iterators and replace delete statements with calls to ~chpl_destroy
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_YIELD)) {
@@ -145,6 +173,56 @@ void normalize(void) {
 
   find_printModuleInit_stuff();
 }
+
+/************************************ | *************************************
+*                                                                           *
+* Insert the module initFn in to every module in allModules.  The current   *
+* implementation pulls the entire module in to the prototypical initFn and  *
+* then lets the reset of normalize sort things out.  The module looks       *
+* reasonable by the end of the pass but odd in the middle.                  *
+*                                                                           *
+* MDN 2014/07/25 At some point this transformation should be reworked to be *
+* more delicate e.g. insert an empty init function and then carefully       *
+* populate it so that the AST is well-behaved at all points.                *
+*                                                                           *
+************************************* | ************************************/
+
+static void insertModuleInit() {
+  // Insert an init function into every module
+  forv_Vec(ModuleSymbol, mod, allModules) {
+    SET_LINENO(mod);
+
+    mod->initFn          = new FnSymbol(astr("chpl__init_", mod->name));
+    mod->initFn->retType = dtVoid;
+
+    mod->initFn->addFlag(FLAG_MODULE_INIT);
+    mod->initFn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
+
+    //
+    // move module-level statements into module's init function
+    //
+    for_alist(stmt, mod->block->body) {
+      if (stmt->isModuleDefinition() == false)
+        mod->initFn->insertAtTail(stmt->remove());
+    }
+
+    mod->block->insertAtHead(new DefExpr(mod->initFn));
+
+    //
+    // If the module has the EXPORT_INIT flag then
+    // propagate it to the module's init function
+    //
+    if (mod->hasFlag(FLAG_EXPORT_INIT) == true) {
+      mod->initFn->addFlag(FLAG_EXPORT);
+      mod->initFn->addFlag(FLAG_LOCAL_ARGS);
+    }
+  }
+}
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
 
 // the following function is called from multiple places,
 // e.g., after generating default or wrapper functions
@@ -281,14 +359,51 @@ checkUseBeforeDefs() {
 
 static void
 moveGlobalDeclarationsToModuleScope() {
+  bool move = false;
   forv_Vec(ModuleSymbol, mod, allModules) {
     for_alist(expr, mod->initFn->body->body) {
+      // If the last iteration set "move" to true, move this block to the end
+      // of the module (see below).
+      if (move)
+      {
+        INT_ASSERT(isBlockStmt(expr));
+        mod->block->insertAtTail(expr->remove());
+        move = false;
+        continue;
+      }
+
       if (DefExpr* def = toDefExpr(expr)) {
-        // FLAG_TEMP selects non-compiler-generated variables in the module init
-        // function to be moved out to module scope.
-        if ((toVarSymbol(def->sym) && !def->sym->hasFlag(FLAG_TEMP)) ||
-            toTypeSymbol(def->sym) ||
-            toFnSymbol(def->sym)) {
+
+        // Non-temporary variable declarations are moved out to module scope.
+        if (VarSymbol* vs = toVarSymbol(def->sym))
+        {
+          // Ignore compiler-inserted temporaries.
+          // Only non-compiler-generated variables in the module init
+          // function are moved out to module scope.
+          if (vs->hasFlag(FLAG_TEMP))
+            continue;
+
+          // If the var declaration is an extern, we want to move its
+          // initializer block with it.
+          if (vs->hasFlag(FLAG_EXTERN))
+          {
+            BlockStmt* block = toBlockStmt(def->next);
+            if (block)
+            {
+              // Mark this as a type block, so it is removed later.
+              // Casts are because C++ is lame.
+              (unsigned&)(block->blockTag) |= (unsigned) BLOCK_TYPE_ONLY;
+              // Set the flag, so we move it out to module scope.
+              move = true;
+            }
+          }
+
+          mod->block->insertAtTail(def->remove());
+        }
+        
+        // All type and function symbols are moved out to module scope.
+        if (isTypeSymbol(def->sym) || isFnSymbol(def->sym))
+        {
           mod->block->insertAtTail(def->remove());
         }
       }
@@ -311,7 +426,7 @@ insertUseForExplicitModuleCalls(void) {
       BlockStmt* block = new BlockStmt();
       stmt->insertBefore(block);
       block->insertAtHead(stmt->remove());
-      block->addUse(mod);
+      block->moduleUseAdd(mod);
     }
   }
 }
@@ -499,8 +614,22 @@ static void normalize_returns(FnSymbol* fn) {
         fn->retTag = RET_VAR;
       else
       {
-        CallExpr* initExpr =
-          new CallExpr(PRIM_INIT, retExprType->body.tail->remove());
+        CallExpr* initExpr;
+        // In most cases, we do not need to default initialize the return temps,
+        // as they will be assigned to before they are returned.  We cannot
+        // check against the specific types that do not allow the use of noinit
+        // here (that happens in function resolution), but we do know whether
+        // the function expects a param or type variable as its result and these
+        // cases would become confused if noinit was used with them (since
+        // noinit is not allowed on param or type variables).  So default
+        // initialize in those cases but in all others insert noinit and trust
+        // it will be handled correctly for types that do not allow it.
+        if (fn->retTag == RET_PARAM || fn->retTag == RET_TYPE) {
+          initExpr = new CallExpr(PRIM_INIT, retExprType->body.tail->remove());
+        } else {
+          initExpr = new CallExpr(PRIM_NO_INIT,
+                                  retExprType->body.tail->remove());
+        }
         fn->insertAtHead(new CallExpr(PRIM_MOVE, retval, initExpr));
       }
     }
@@ -861,37 +990,46 @@ fix_def_expr(VarSymbol* var) {
     // initialize variable based on specified type and then assign it
     // the initialization expression if it exists
     //
-    VarSymbol* typeTemp = newTemp("type_tmp");
     bool isNoinit = init && init->isNoInitExpr();
-    if (!isNoinit)
-      stmt->insertBefore(new DefExpr(typeTemp));
-
-    CallExpr* initCall;
     if (isNoinit) {
       var->defPoint->init->remove();
-      initCall = new CallExpr(PRIM_MOVE, var,
+      CallExpr* initCall = new CallExpr(PRIM_MOVE, var,
                    new CallExpr(PRIM_NO_INIT, type->remove()));
+      // Since the variable won't have been defined just yet (stmt is
+      // its def expression after all), insert the move after the defPoint
+      stmt->insertAfter(initCall);
     } else {
+      // Is not noInit
+
+      // Create an empty type block.
+      BlockStmt* block = new BlockStmt(NULL, BLOCK_SCOPELESS);
+
+      VarSymbol* typeTemp = newTemp("type_tmp");
+      block->insertAtTail(new DefExpr(typeTemp));
+
+      CallExpr* initCall;
       initCall = new CallExpr(PRIM_MOVE, typeTemp,
                    new CallExpr(PRIM_INIT, type->remove()));
-    }
-    stmt->insertBefore(initCall);
-    if (init) {
-      if (!isNoinit) {
-        stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
-        stmt->insertAfter(new CallExpr("=", typeTemp, init->remove()));
-      }
-    } else {
-      if (constTemp->hasFlag(FLAG_TYPE_VARIABLE))
-        stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, new CallExpr(PRIM_TYPEOF, typeTemp)));
-      else {
-        CallExpr* moveToConst = new CallExpr(PRIM_MOVE, constTemp, typeTemp);
-        Expr* newExpr = moveToConst;
-        if (var->hasFlag(FLAG_EXTERN)) {
-          newExpr = new BlockStmt(moveToConst, BLOCK_TYPE);
+
+      block->insertAtTail(initCall);
+
+      if (init) {
+        // This should be copy-initialization, not assignment.
+        block->insertAtTail(new CallExpr("=", typeTemp, init->remove()));
+        block->insertAtTail(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
+      } else {
+        if (constTemp->hasFlag(FLAG_TYPE_VARIABLE))
+          block->insertAtTail(new CallExpr(PRIM_MOVE, constTemp,
+                                           new CallExpr(PRIM_TYPEOF, typeTemp)));
+        else
+        {
+          block->insertAtTail(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
+          if (constTemp->hasFlag(FLAG_EXTERN))
+            (unsigned&) block->blockTag |= BLOCK_EXTERN | BLOCK_TYPE;
         }
-        stmt->insertAfter(newExpr);
       }
+
+      stmt->insertAfter(block);
     }
 
   } else {
@@ -1339,9 +1477,7 @@ static void change_method_into_constructor(FnSymbol* fn) {
   fn->formals.get(1)->remove();
   update_symbols(fn, &map);
 
-  fn->name = astr("_construct_", fn->name);
-  // Save a string?
-  INT_ASSERT(!strcmp(fn->name, ct->defaultInitializer->name));
+  fn->name = ct->defaultInitializer->name;
   fn->addFlag(FLAG_CONSTRUCTOR);
   // Hide the compiler-generated initializer 
   // which also serves as the default constructor.

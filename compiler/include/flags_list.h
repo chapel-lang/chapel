@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 // These are flags for Symbols - see flags.h for details.
 // The format is:
 //   symbolFlag(NAME, PRAGMA, MAPNAME, COMMENT)
@@ -73,7 +92,9 @@ symbolFlag( FLAG_FIELD_ACCESSOR , npr, "field accessor" , "field setter/getter f
 symbolFlag( FLAG_FIRST_CLASS_FUNCTION_INVOCATION, npr, "first class function invocation" , "proxy for first-class function invocation" )
 symbolFlag( FLAG_FUNCTION_CLASS , npr, "function class" , "first-class function class representation" )
 symbolFlag( FLAG_FUNCTION_PROTOTYPE , npr, "function prototype" , "signature for function prototypes" )
-symbolFlag( FLAG_GENERIC , npr, "generic" , "generic types and functions" )
+// When applied to an argument, this flag means that the arg accepts a value
+// but has unspecified type.
+symbolFlag( FLAG_GENERIC , npr, "generic" , "generic types, functions and arguments" )
 symbolFlag( FLAG_GLOBAL_TYPE_SYMBOL, npr, "global type symbol", "is accessible through a global type variable")
 symbolFlag( FLAG_HAS_RUNTIME_TYPE , ypr, "has runtime type" , "type that has an associated runtime type" )
 
@@ -197,12 +218,16 @@ symbolFlag( FLAG_SUPER_CLASS , npr, "super class" , ncm )
 symbolFlag( FLAG_SYNC , ypr, "sync" , ncm )
 symbolFlag( FLAG_SYNTACTIC_DISTRIBUTION , ypr, "syntactic distribution" , ncm )
 symbolFlag( FLAG_TEMP , npr, "temp" , "compiler-inserted temporary" )
+symbolFlag( FLAG_REF_TEMP , npr, "ref temp" , "compiler-inserted reference temporary" )
 symbolFlag( FLAG_TRIVIAL_ASSIGNMENT, ypr, "trivial assignment", "an assignment which may be replaced by a bulk copy without changing its semantics")
 symbolFlag( FLAG_TUPLE , ypr, "tuple" , ncm )
 symbolFlag( FLAG_TYPE_CONSTRUCTOR , npr, "type constructor" , ncm )
 symbolFlag( FLAG_TYPE_VARIABLE , npr, "type variable" , "contains a type instead of a value" )
 symbolFlag( FLAG_USER_NAMED , npr, "user named" , "named by the user" /* so leave it alone */ )
 symbolFlag( FLAG_VIRTUAL , npr, "virtual" , ncm )
+// Used to mark where a compiler generated flag was removed (but is desired
+// elsewhere).
+symbolFlag( FLAG_WAS_COMPILER_GENERATED, npr, "was compiler generated", "used to be marked compiler generated")
 symbolFlag( FLAG_WIDE , npr, "wide" , ncm )
 symbolFlag( FLAG_WIDE_CLASS , npr, "wide class" , ncm )
 symbolFlag( FLAG_WRAPPER , npr, "wrapper" , "wrapper function" )

@@ -1,6 +1,25 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 // See runtime/include/atomics/README for more info about these functions
 
-/* Note that when compiling with --cache-enable, the compiler
+/* Note that when compiling with --cache-remote, the compiler
    will add fences to methods in atomic types with order arguments e.g.
     proc sub (... order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_sub_explicit_...(_v, value, order);
@@ -11,7 +30,7 @@
       on this do atomic_fetch_sub_explicit_...(_v, value, order);
       chpl_rmem_consist_maybe_acquire(order);
     }
-   In addition, when --cache-enable is activated, the normally required
+   In addition, when --cache-remote is activated, the normally required
    memory fence for an 'on' statement is omitted for these functions
    (since the maybe_release/maybe_acquire fence takes care of it).
 
@@ -20,11 +39,11 @@
    order argument is not explicitly specified (because the relevant
    pass runs before function resolution).
 
-   waitFor methods retain the fences written here so that the
-   implementation is correct even if the cache is not enabled
-   (and we want to use relaxed ordering in the waitFor loop). We
-   also must call atomic_thread_fence after the loop in order
-   to correctly single-locale compilation where the 'on' statement is omitted.
+   waitFor methods also do not need the fences written here -
+   because they will be added if the cache is enabled - but they
+   do need a thread fence after the loop of memory_order_relaxed
+   transactions in order to correctly run in a comm=none compilation
+   where the 'on' statement is omitted.
 
    */
 
@@ -300,15 +319,15 @@ module Atomics {
     }
 
     inline proc waitFor(val:bool, order:memory_order = memory_order_seq_cst) {
-      chpl_rmem_consist_maybe_release(order);
       on this {
-        while (read(memory_order_relaxed) != val) do chpl_task_yield();
+        while (atomic_load_explicit_flag(_v, memory_order_relaxed) != val) {
+          chpl_task_yield();
+        }
         // After waiting for the value, do a thread fence
         // in order to guarantee e.g. an acquire barrier even
         // if the on statement is not included.
         atomic_thread_fence(order);
       }
-      chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {
@@ -404,12 +423,13 @@ module Atomics {
     }
 
     inline proc waitFor(val:uint(8), order:memory_order = memory_order_seq_cst) {
-      chpl_rmem_consist_maybe_release(order);
       on this {
-        while (read(memory_order_relaxed) != val) do chpl_task_yield();
+        while (atomic_load_explicit_uint_least8_t(_v, memory_order_relaxed)
+                != val) {
+          chpl_task_yield();
+        }
         atomic_thread_fence(order);
       }
-      chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {
@@ -505,12 +525,13 @@ module Atomics {
     }
 
     inline proc waitFor(val:uint(16), order:memory_order = memory_order_seq_cst) {
-      chpl_rmem_consist_maybe_release(order);
       on this {
-        while (read(memory_order_relaxed) != val) do chpl_task_yield();
+        while (atomic_load_explicit_uint_least16_t(_v, memory_order_relaxed)
+                != val) {
+          chpl_task_yield();
+        }
         atomic_thread_fence(order);
       }
-      chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {
@@ -606,12 +627,13 @@ module Atomics {
     }
 
     inline proc waitFor(val:uint(32), order:memory_order = memory_order_seq_cst) {
-      chpl_rmem_consist_maybe_release(order);
       on this {
-        while (read(memory_order_relaxed) != val) do chpl_task_yield();
+        while (atomic_load_explicit_uint_least32_t(_v,memory_order_relaxed)
+                != val) {
+          chpl_task_yield();
+        }
         atomic_thread_fence(order);
       }
-      chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {
@@ -707,12 +729,13 @@ module Atomics {
     }
 
     inline proc waitFor(val:uint(64), order:memory_order = memory_order_seq_cst) {
-      chpl_rmem_consist_maybe_release(order);
       on this {
-        while (read(memory_order_relaxed) != val) do chpl_task_yield();
+        while (atomic_load_explicit_uint_least64_t(_v, memory_order_relaxed)
+                 != val) {
+          chpl_task_yield();
+        }
         atomic_thread_fence(order);
       }
-      chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {
@@ -808,12 +831,13 @@ module Atomics {
     }
 
     inline proc waitFor(val:int(8), order:memory_order = memory_order_seq_cst) {
-      chpl_rmem_consist_maybe_release(order);
       on this {
-        while (read(memory_order_relaxed) != val) do chpl_task_yield();
+        while (atomic_load_explicit_int_least8_t(_v, memory_order_relaxed)
+                != val) {
+          chpl_task_yield();
+        }
         atomic_thread_fence(order);
       }
-      chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {
@@ -909,12 +933,13 @@ module Atomics {
     }
 
     inline proc waitFor(val:int(16), order:memory_order = memory_order_seq_cst) {
-      chpl_rmem_consist_maybe_release(order);
       on this {
-        while (read(memory_order_relaxed) != val) do chpl_task_yield();
+        while (atomic_load_explicit_int_least16_t(_v,memory_order_relaxed)
+                != val) {
+          chpl_task_yield();
+        }
         atomic_thread_fence(order);
       }
-      chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {
@@ -1010,12 +1035,12 @@ module Atomics {
     }
 
     inline proc waitFor(val:int(32), order:memory_order = memory_order_seq_cst) {
-      chpl_rmem_consist_maybe_release(order);
       on this {
-        while (read(memory_order_relaxed) != val) do chpl_task_yield();
+        while (atomic_load_explicit_int_least32_t(_v, memory_order_relaxed)
+                != val) { chpl_task_yield();
+        }
         atomic_thread_fence(order);
       }
-      chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {
@@ -1111,12 +1136,13 @@ module Atomics {
     }
 
     inline proc waitFor(val:int(64), order:memory_order = memory_order_seq_cst) {
-      chpl_rmem_consist_maybe_release(order);
       on this {
-        while (read(memory_order_relaxed) != val) do chpl_task_yield();
+        while (atomic_load_explicit_int_least64_t(_v, memory_order_relaxed)
+                != val) {
+          chpl_task_yield();
+        }
         atomic_thread_fence(order);
       }
-      chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {
@@ -1189,12 +1215,13 @@ module Atomics {
       on this do atomic_fetch_sub_explicit__real64(_v, value, order);
     }
     inline proc waitFor(val:real(64), order:memory_order = memory_order_seq_cst) {
-      chpl_rmem_consist_maybe_release(order);
       on this {
-        while (read(memory_order_relaxed) != val) do chpl_task_yield();
+        while (atomic_load_explicit__real64(_v, memory_order_relaxed)
+                != val) {
+          chpl_task_yield();
+        }
         atomic_thread_fence(order);
       }
-      chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {
@@ -1267,12 +1294,12 @@ module Atomics {
       on this do atomic_fetch_sub_explicit__real32(_v, value, order);
     }
     inline proc waitFor(val:real(32), order:memory_order = memory_order_seq_cst) {
-      chpl_rmem_consist_maybe_release(order);
       on this {
-        while (read(memory_order_relaxed) != val) do chpl_task_yield();
+        while (atomic_load_explicit__real32(_v, memory_order_relaxed) != val) {
+          chpl_task_yield();
+        }
         atomic_thread_fence(order);
       }
-      chpl_rmem_consist_maybe_acquire(order);
     }
 
     inline proc peek() {
