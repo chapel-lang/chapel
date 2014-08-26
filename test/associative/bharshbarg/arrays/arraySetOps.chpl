@@ -1,35 +1,37 @@
+const n = 20;
 
-var foo = ["a" => 1, "b" => 2, "c" => 3, "d" => 4];
-var bar = ["c" => 4, "d" => 4, "e" => 5, "f" => 6];
+var ad, bd, cd : domain(int);
+var a : [ad] int;
+var b : [bd] int;
+var c : [cd] int;
+for i in 1..n by 2 {
+  ad.add(i);
+  bd.add(i + 1);
+}
+for i in 1..n/2 do cd.add(i);
+a = 1;
+b = 2;
+c = 3;
 
-proc pretty(a : []) {
-  write("{ ");
-  var first = true;
-  for k in a.domain.sorted() {
-    if !first then write(", ", k, " => ", a[k]);
-    else {
-      write(k, " => ", a[k]);
-      first = false;
-    }
-  }
-  writeln(" }");
+// contains all in 1..n
+var q = a + b;
+for i in 1..n {
+  assert(q.domain.member(i));
+  if i % 2 == 0 then assert(q[i] == 2);
+  else assert(q[i] == 1);
 }
 
-write("foo = ");
-pretty(foo);
-write("bar = ");
-pretty(bar);
-writeln();
+// a and b are disjoint, so r == a
+var r = a - b;
+assert(r == a);
 
-// Union
-write("Union: foo | bar = \n\t");
-pretty(foo | bar);
+var s = a ^ b;
+assert(s == q);
 
-write("Intersection: foo & bar = \n\t");
-pretty(foo & bar);
+// all indices should be less than n/2
+var t = a & c;
+for i in t.domain do assert(i <= n/2);
 
-write("Difference: foo - bar = \n\t");
-pretty(foo - bar);
-
-write("Xor: foo ^ bar = \n\t");
-pretty(foo ^ bar);
+var u = b ^ c;
+for i in u.domain do
+  if i < n/2 then assert(i % 2 == 1);
