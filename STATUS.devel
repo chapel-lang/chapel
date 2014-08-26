@@ -386,12 +386,9 @@ Classes, Records, and Unions
   # classes/bradc/initialize-secondary.future
   # classes/vass/nested-class-with-user-defined-constructor-1.future
   # classes/constructors/base-class-generic-args.future
-  # types/records/hilde/newUserDefCtorInFn.future
-  # types/records/hilde/newUserDefaultCtor.future
   # users/hilde/refcnt.future
 - User-defined constructors do not override the default constructor.
   # classes/claridge/baseConstructorCall.future
-  # types/records/hilde/callUserDefaultConstructor.future
 - User-defined copy constructors are not supported.
   # classes/diten/test_destructor3.future
 - Declaring class members using type aliases may result in unresolved
@@ -429,10 +426,6 @@ Classes, Records, and Unions
   # types/records/vass/method-of-parent-record-1.future
 - Nested record inheritance results in a compilation error.
   # types/records/vass/nested-record-with-outer-1.future
-- A record declared in a class results in a failure to resolve the
-  record's copy constructor.
-  # classes/bradc/innerGeneric/innerRecord.future
-  # types/records/bharshbarger/nestedRecordInClass1.future
 - Unused records defined in procedures result in an internal compiler error.
   # types/records/vass/unused-decl-in-proc-1.future
   # types/records/vass/unused-decl-in-proc-2.future
