@@ -5,7 +5,7 @@
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common-perf.bash
 source $CWD/common-qthreads.bash
-export CHPL_QTHREAD_NO_GUARD_PAGES=yes
+export CHPL_MEM=tcmalloc
 # releasePerformance still generates results based on the fifo timings. It's
 # run here again, otherwise syncing the qthreads results blows away the
 # directory with the releaseOverRelease graphs in
