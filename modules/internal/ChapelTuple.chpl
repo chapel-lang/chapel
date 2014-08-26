@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 // ChapelTuple.chpl
 //
 // tuple data implementation as a record
@@ -188,14 +207,18 @@ module ChapelTuple {
   // tuple casts to complex(64) and complex(128)
   //
   inline proc _cast(type t, x: (?,?)) where t == complex(64) {
-    var c: complex(64);
+    var c: complex(64) = noinit;
+    // There is no point allowing this to default initialize, we're just going
+    // to overwrite it anyways
     c.re = x(1):real(32);
     c.im = x(2):real(32);
     return c;
   }
   
   inline proc _cast(type t, x: (?,?)) where t == complex(128) {
-    var c: complex(128);
+    var c: complex(128) = noinit;
+    // There is no point allowing this to default initialize, we're just going
+    // to overwrite it anyways
     c.re = x(1):real(64);
     c.im = x(2):real(64);
     return c;

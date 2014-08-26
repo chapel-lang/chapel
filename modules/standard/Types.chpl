@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 // Types.chpl
 //
 // Standard type routines.
@@ -39,6 +58,7 @@ pragma "no instantiation limit"
 proc _isUnsignedType(type t) param return
   (t == uint(8)) || (t == uint(16)) || (t == uint(32)) || (t == uint(64));
 
+pragma "no instantiation limit"
 proc _isEnumeratedType(type t) param {
   proc isEnum(type t: enumerated) param return true;
   proc isEnum(type t) param return false;
@@ -118,6 +138,66 @@ proc isProperSubtype(type sub, type super) param
   return true;
 proc isProperSubtype(type sub, type super) param
   return false;
+
+// What follows are the type _defaultOf methods, used to initialize types
+// Booleans
+inline proc _defaultOf(type t) param where (_isBooleanType(t)) return false:t;
+
+// ints, reals, imags, complexes
+inline proc _defaultOf(type t) param where (_isIntegralType(t)) return 0:t;
+// TODO: In order to make _defaultOf param for reals and imags we had to split
+// the cases into their default size and a non-param case.  It is hoped that
+// in the future, floating point numbers may be castable whilst param.  In that
+// world, we can again shrink these calls into the size-ignorant case.
+inline proc _defaultOf(type t) param where t == real(64) return 0.0:t;
+inline proc _defaultOf(type t) where (_isRealType(t) && t != real(64)) return 0.0:t;
+inline proc _defaultOf(type t) param where t == imag(64) return 0.0i:t;
+inline proc _defaultOf(type t) where (_isImagType(t) && t != imag(64)) return 0.0i:t;
+// Also, complexes cannot yet be parametized
+inline proc _defaultOf(type t): t where (_isComplexType(t)) {
+  var ret:t = noinit;
+  param floatwidth = numBits(t)/2;
+  ret.re = 0.0:real(floatwidth);
+  ret.im = 0.0:real(floatwidth);
+  return ret;
+}
+
+// Enums
+inline proc _defaultOf(type t) param where (_isEnumeratedType(t)) {
+  return chpl_enum_first(t);
+}
+
+// Classes
+inline proc _defaultOf(type t) where (isClassType(t)) return nil:t;
+
+// Various types whose default value is known
+inline proc _defaultOf(type t) param where t: void return _void;
+inline proc _defaultOf(type t) where t: opaque return _nullOpaque;
+inline proc _defaultOf(type t) where t: chpl_taskID_t return chpl_nullTaskID;
+inline proc _defaultOf(type t) where t: _sync_aux_t return _nullSyncVarAuxFields;
+inline proc _defaultOf(type t) where t: _single_aux_t return _nullSingleVarAuxFields;
+inline proc _defaultOf(type t) where t: _task_list return _nullTaskList;
+
+
+// When I finish removing PRIM_INIT before initialization to a known value, then
+// this method should work.  Until then, my stopgap will be an external function
+// in the runtime.
+//inline proc _defaultOf(type t) where t: memory_order return memory_order_seq_cst;
+extern proc _defaultOfMemoryOrder(): memory_order;
+
+pragma "no instantiation limit"
+pragma "compiler generated"
+inline proc _defaultOf(type t) {
+  select t {
+    when memory_order {
+      return _defaultOfMemoryOrder();
+    }
+    otherwise {
+      return nil:t;
+    }
+  }
+}
+
 
 
 // Returns true if it is legal to coerce t1 to t2, false otherwise.
@@ -227,7 +307,7 @@ proc max(type t) where _isComplexType(t) {
 }
 
 iter chpl_enumerate(type t: enumerated) {
-  const enumTuple = _enum_enumerate(t);
+  const enumTuple = chpl_enum_enumerate(t);
   for i in 1..enumTuple.size do
     yield enumTuple(i);
 }

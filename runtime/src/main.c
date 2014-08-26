@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "chplrt.h"
 
 #include "arg.h"
@@ -157,6 +176,12 @@ int main(int argc, char* argv[]) {
   // So that use of localtime_r is portable.
   tzset();
 
+  //
+  // Handle options that set the environment before doing any other
+  // runtime initialization.
+  //
+  parseArgs(false, parse_dash_E, &argc, argv);
+
   chpl_error_init();  // This does local-only initialization
   chpl_comm_init(&argc, &argv);
   chpl_mem_init();
@@ -169,7 +194,7 @@ int main(int argc, char* argv[]) {
   chpl_gen_main_arg.argv[0] = argv[0];
   chpl_gen_main_arg.argc = 1;
   chpl_gen_main_arg.return_value = 0;
-  parseArgs(&argc, argv);
+  parseArgs(false, parse_normally, &argc, argv);
   recordExecutionCommand(argc, argv);
 
   //

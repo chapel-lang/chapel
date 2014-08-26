@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 //
 // Block-cyclic dimension specifier - for use with DimensionalDist2D.
 //
@@ -618,10 +637,10 @@ iter BlockCyclic1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
     compilerAssert(r1.boundedType == r2.boundedType);
     if !r1.stridable && r2.stridable && r2._stride != 1 then
       halt("range with non-unit stride is cast to non-stridable range");
-    r1._base._low       = r2._base._low: r1.idxType;
-    r1._base._high      = r2._base._high: r1.idxType;
-    r1._base._stride    = r2._base._stride: r1.strType;
-    r1._base._alignment = r2._base._alignment: r1.idxType;
+    r1._low       = r2._low: r1.idxType;
+    r1._high      = r2._high: r1.idxType;
+    r1._stride    = r2._stride: r1.strType;
+    r1._alignment = r2._alignment: r1.idxType;
     r1._aligned = r2._aligned;
   }
 

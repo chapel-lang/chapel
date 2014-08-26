@@ -1,0 +1,6 @@
+bug: We would like to support parallel recursive iterators.
+
+We can currently use recursive serial iterators in Chapel. However, if we try doing
+the same thing in a leader-follower iterator, we get an error at compile time with:
+error: unable to resolve return type of function '_toLeader' in functionResolution.
+

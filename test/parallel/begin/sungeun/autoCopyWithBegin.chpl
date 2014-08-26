@@ -6,7 +6,7 @@ record R {
 
 pragma "donor fn"
 pragma "auto copy fn"
-proc chpl__autoCopy(r: R) {
+proc chpl__autoCopy(in r: R) {
   begin ref(r) r.x = getCurrentTime();
   return r;
 }

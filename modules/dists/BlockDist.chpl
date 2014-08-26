@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 //
 // The Block distribution is defined with six classes:
 //
@@ -453,15 +472,15 @@ proc Block.dsiCreateReindexDist(newSpace, oldSpace) {
     var newHigh = newSpace(r).high;
     var valid: bool;
     if oldLow != newLow {
-      (myNewBbox(r)._base._low,valid) = adjustBound(myNewBbox(r).low,oldLow,newLow);
+      (myNewBbox(r)._low,valid) = adjustBound(myNewBbox(r).low,oldLow,newLow);
       if !valid then // try with high
-        (myNewBbox(r)._base._low,valid) = adjustBound(myNewBbox(r).low,oldHigh,newHigh);
+        (myNewBbox(r)._low,valid) = adjustBound(myNewBbox(r).low,oldHigh,newHigh);
       if !valid then
         halt("invalid reindex for Block: distribution bounding box (low) out of range in dimension ", r);
 
-      (myNewBbox(r)._base._high,valid) = adjustBound(myNewBbox(r).high,oldHigh,newHigh);
+      (myNewBbox(r)._high,valid) = adjustBound(myNewBbox(r).high,oldHigh,newHigh);
       if !valid then
-        (myNewBbox(r)._base._high,valid) = adjustBound(myNewBbox(r).high,oldLow,newLow);
+        (myNewBbox(r)._high,valid) = adjustBound(myNewBbox(r).high,oldLow,newLow);
       if !valid then // try with low
         halt("invalid reindex for Block: distribution bounding box (high) out of range in dimension ", r);
     }
