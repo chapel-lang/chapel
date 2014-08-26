@@ -846,13 +846,18 @@ void chpl_task_setSerial(chpl_bool state) {
 }
 
 uint32_t chpl_task_getMaxPar(void) {
+  uint32_t max, max2;
+
   //
   // We expect that even if the cores have multiple hardware threads,
   // cache and pipeline conflicts will typically prevent applications
-  // from gaining by using them.  So, we just return the number of
-  // cores.
+  // from gaining by using them.  So, we just return the lesser of the
+  // number of cores, and whatever the threading layer says it can do.
   //
-  return (uint32_t) chpl_getNumCoresOnThisNode();
+  max = (uint32_t) chpl_getNumCoresOnThisNode();
+  if ((max2 = chpl_thread_getMaxThreads()) < max && max2 > 0)
+    max = max2;
+  return max;
 }
 
 c_sublocid_t chpl_task_getNumSublocales(void) {
