@@ -227,7 +227,7 @@ To do the most basic testing, you'd do:
 (H) Push your work to your feature branch
 -----------------------------------------
 
-Push your changes to your feature branch on GitHub:
+Push your changes to your feature branch on GitHub
 
 .. code-block:: bash
 
@@ -237,6 +237,10 @@ Push your changes to your feature branch on GitHub:
     git branch
 
     # it is the starred one...
+
+Note that if you have already created a pull request from a
+feature branch, pushing your work to that feature branch will
+update the pull request.
 
 (I) Create a pull request and work with your reviewers
 ------------------------------------------------------
@@ -263,6 +267,10 @@ Your pull request will be available at a URL like:
   https://github.com/chapel-lang/chapel/pull/<number>
 
 and you can discuss the patch with your reviewers there.
+
+In working with your reviewers, you will no doubt change your pull
+request. Just do your local development and then update your feature
+branch as in (H) and the pull request will change.
 
 (J) Once your reviewers are satisfied, merge in your pull request
 -----------------------------------------------------------------
