@@ -1,24 +1,30 @@
-var x = {"a", "b", "c", "d"};
-var y = {"c","d","e","f"};
-var z = {"c", "d"};
+const n = 20;
 
-writeln("x = ", x);
-writeln("y = ", y);
-writeln("z = ", z);
+var a, b, c : domain(int);
+for i in 1..n by 2 {
+  a.add(i);
+  b.add(i + 1);
+}
+for i in 1..n/2 do c.add(i);
 
-writeln("Union: x | y = \n\t", x | y);
-writeln("Intersection: x & y = \n\t", x & y);
-writeln("Difference: x - y = \n\t", x - y);
-writeln("XOR: x ^ y = \n\t", x ^ y);
-writeln("x - x = ", x - x);
-writeln("z is subset of x: ", x.subset(z));
-writeln("z is subset of y: ", y.subset(z));
+// contains all in 1..n
+var q = a + b;
+for i in 1..n do
+  assert(q.member(i));
 
-x |= y;
-writeln("x |= y: \n\t", x);
-x -= z;
-writeln("x -= z: \n\t", x);
-y &= z;
-writeln("y &= z: \n\t", y);
-x ^= y;
-writeln("x ^= y: \n\t", x);
+// a and b are disjoint, so r == a
+var r = a - b;
+assert(r == a);
+
+// a and b ar disjoint, so a&b has no elements
+var s = a & b;
+assert(s.size == 0);
+
+// c contains all elements <= n/2, t should have all elements above n/2
+var t = a - c;
+for i in t do assert(i > n/2);
+
+// if an element is below n/2, it should be odd
+var u = b ^ c;
+for i in u do
+  assert(i > n/2 || (i <= n/2 && i%2 != 0));
