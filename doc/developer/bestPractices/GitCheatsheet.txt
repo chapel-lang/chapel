@@ -1,25 +1,25 @@
 Git "cheat sheet" (with comparisons to svn)
 ===========================================
 
-See ContributorInfo.txt for more information about the process
-of contributing code to Chapel. The basic workflow is:
- (A) Let the Chapel community know about any long-term or big efforts
- (B) Use GitHub to fork the Chapel project
- (C) Create a and switch to a feature branch
- (D) Develop your contribution locally
- (E) Update your feature branch with changes from the main Chapel project
- (F) Read commit messages for changes from the main Chapel project
- (G) Test your feature
- (H) Push your work to your feature branch
- (I) Create a pull request and work with your reviewers
- (J) Once your reviewers are satisfied, merge in your pull request
+See ContributorInfo.txt for more information about the process of contributing
+code to Chapel. The basic workflow is:
+
+ - (A) Let the Chapel community know about any long-term or big efforts
+ - (B) Use GitHub to fork the Chapel project
+ - (C) Create and switch to a feature branch
+ - (D) Develop your contribution locally
+ - (E) Update your feature branch with changes from the main Chapel project
+ - (F) Read commit messages for changes from the main Chapel project
+ - (G) Test your feature
+ - (H) Push your work to your feature branch
+ - (I) Create a pull request and work with your reviewers
+ - (J) Once your reviewers are satisfied, merge in your pull request
 
 
 (A) Let the Chapel community know about long-term or big efforts
 ----------------------------------------------------------------
 
-Email chapel-developers@lists.sourceforge.net -- see
-ContributorInfo.txt
+Email chapel-developers@lists.sourceforge.net -- see ContributorInfo.txt
 
 (B) Use GitHub to fork the Chapel project
 -----------------------------------------
@@ -28,8 +28,9 @@ See Initial Git Setup below for information on getting a GitHub account and
 setting up Git.
 
 Use the GitHub web interface to create a fork of the Chapel repo by visiting
-https://github.com/chapel-lang/chapel and clicking the 'Fork' button. Then
-configure your local git and check out your fork:
+ https://github.com/chapel-lang/chapel
+and clicking the 'Fork' button. Then configure your local git and check out
+your fork:
 
 .. code-block:: bash
 
@@ -218,10 +219,10 @@ To do the most basic testing, you'd do:
     make check
 
     # run tests that end up in $CHPL_HOME/examples
-    ../util/start_test test/release/examples
+    start_test test/release/examples
 
     # run all tests
-    ../util/start_test test/
+    start_test test/
 
 
 (H) Push your work to your feature branch
@@ -245,19 +246,18 @@ update the pull request.
 (I) Create a pull request and work with your reviewers
 ------------------------------------------------------
 
-After pushing your changes to your feature branch on GitHub, use the GitHub
-web interface to create a pull request.  Visit
+After pushing your changes to your feature branch on GitHub, use the GitHub web
+interface to create a pull request.  Visit
 
   https://github.com/<username>/chapel
 
 and look for a "Compare & pull request" button for your feature branch.
-Alternatively, navigate to your feature branch, and click the green icon
-next to the branch dropdown to "Compare, review, create a pull request".
+Alternatively, navigate to your feature branch, and click the green icon next
+to the branch dropdown to "Compare, review, create a pull request".
 
-Next, put in a message to your reviewer about the purpose of your pull
-request and give the pull request a useful title. It's a good time to
-draft the commit message that you will need when merging the pull request
-in step (J).
+Next, put in a message to your reviewer about the purpose of your pull request
+and give the pull request a useful title. It's a good time to draft the commit
+message that you will need when merging the pull request in step (J).
 
 Your contribution will need to be tested and reviewed, and you will have to
 have signed a contributors agreement. See ContributorInfo.txt for more
@@ -268,25 +268,26 @@ Your pull request will be available at a URL like:
 
 and you can discuss the patch with your reviewers there.
 
-In working with your reviewers, you will no doubt change your pull
-request. Just do your local development and then update your feature
-branch as in (H) and the pull request will change.
+In working with your reviewers, you will no doubt change your pull request.
+Just do your local development and then update your feature branch as in (H)
+and the pull request will change.
 
 (J) Once your reviewers are satisfied, merge in your pull request
 -----------------------------------------------------------------
 
-After you and your reviewers agree upon the final version of your
-change, navigate to the pull request you created:
+After you and your reviewers agree upon the final version of your change,
+navigate to the pull request you created:
 
 go to 
   https://github.com/chapel-lang/chapel/pulls
 or
   https://github.com/chapel-lang/chapel/pull/<number>
 
-and click the friendly green button "Merge pull request"
-(it is possible to merge the pull request from the command line
- also and the pull request page has details). When you click
-"Merge pull request", you will need to enter a commit message.
+and click the friendly green button "Merge pull request" (it is possible to
+merge the pull request from the command line also and the pull request page has
+details). When you click "Merge pull request", you will need to enter a commit
+message.
+
 This commit message should:
  - start with a single topic line with at most 75 characters
  - then have a blank line
@@ -302,7 +303,7 @@ This commit message should:
 .. _initial_git_setup:
 
 Initial Git Setup
-================
+=================
 
 Follow the GitHub directions to setup a new account.
 
