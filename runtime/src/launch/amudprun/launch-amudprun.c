@@ -27,8 +27,8 @@
 #define WRAP_TO_STR(x) TO_STR(x)
 #define TO_STR(x) #x
 
+extern char** environ;
 static void add_env_options(int* argc, char** argv[]) {
-  extern char** environ;
   int envc;
   int new_argc;
   char** new_argv;
@@ -59,7 +59,7 @@ static void add_env_options(int* argc, char** argv[]) {
   // Add a -E option for each environment variable.
   //
   for (i = 0; i < envc; i++) {
-    new_argv[*argc + 2 * i + 0] = "-E";
+    new_argv[*argc + 2 * i + 0] = (char*) "-E";
     new_argv[*argc + 2 * i + 1] = environ[i];
   }
 

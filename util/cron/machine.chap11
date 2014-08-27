@@ -3,18 +3,7 @@
 CWD=$(cd $(dirname $0) ; pwd)
 
 source $CWD/common.bash
+source $CWD/common-fifo.bash
 
-# qthreads + flat + none
-$CWD/nightly.qthreads -full
-
-# TODO: Uncomment the below and remove the above once qthreads is the
-#       default. Also be sure to split the below into two separate scripts and
-#       create separate jenkins jobs for them. (thomasvandoren, 2014-07-01)
-
-# # fifo + flat + none + full suite
-# $CWD/nightly.fifo -full
-
-# source $CWD/common-gasnet.bash
-
-# # fifo + flat + gasnet + examples
-# $CWD/nightly.fifo -examples
+# fifo + flat + none
+$CWD/nightly.fifo -full

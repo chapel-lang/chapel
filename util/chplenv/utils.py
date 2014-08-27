@@ -4,7 +4,9 @@ from distutils.spawn import find_executable
 def memoize(func):
     cache = func.cache = {}
 
-    def memoize_wrapper(*args):
+    def memoize_wrapper(*args, **kwargs):
+        if kwargs:
+            return func(*args, **kwargs)
         if args not in cache:
             cache[args] = func(*args)
         return cache[args]

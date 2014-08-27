@@ -2,4 +2,4 @@
 // because no_such_fileOld.txt does not exist.
 var oldname = "no_such_fileOld.txt";
 var newname = "no_such_fileNew.txt";
-renameFile(oldname, newname);
+rename(oldname, newname);

@@ -326,16 +326,17 @@ void chpl_task_init(void) {
     if ((lim = atoi(env)) > 0)
       numThreadsPerLocale = lim;
   }
-  // override by --numThreadsPerLocale
-  if ((lim=chpl_task_getenvNumThreadsPerLocale()) > 0)
-    numThreadsPerLocale = lim;
+  // override by CHPL_RT_NUM_THREADS_PER_LOCALE
+  if ((lim=chpl_task_getenvNumThreadsPerLocale())>0)
+    numThreadsPerLocale=lim;
   // limit by comm layer limit
-  if ((lim = chpl_comm_getMaxThreads()) > 0){
-    numThreadsPerLocale = (numThreadsPerLocale > lim)?lim:numThreadsPerLocale;
+  if ((lim=chpl_comm_getMaxThreads())>0){
+    numThreadsPerLocale=(numThreadsPerLocale > lim)?lim:numThreadsPerLocale;
   }
 
   s_num_workers = numThreadsPerLocale;
-  s_stack_size = chpl_task_getMinCallStackSize();
+  if ((s_stack_size=chpl_task_getEnvCallStackSize())==0)
+    s_stack_size=chpl_task_getDefaultCallStackSize();
   assert(s_stack_size > 0);
   assert(!is_worker_in_cs());
   s_tld = chpl_mem_allocMany(numThreadsPerLocale + numCommTasks,
@@ -496,13 +497,18 @@ void chpl_task_setSerial(chpl_bool new_state) {
 }
 
 uint32_t chpl_task_getMaxPar(void) {
+  uint32_t max;
+
   //
   // We expect that even if the cores have multiple hardware threads,
   // cache and pipeline conflicts will typically prevent applications
-  // from gaining by using them.  So, we just return the number of
-  // cores.
+  // from gaining by using them.  So, we just return the lesser of the
+  // number of cores, and the number of workers we have.
   //
-  return (uint32_t) chpl_getNumCoresOnThisNode();
+  max = (uint32_t) chpl_getNumCoresOnThisNode();
+  if ((uint32_t) s_num_workers < max)
+    max = (uint32_t) s_num_workers;
+  return max;
 }
 
 c_sublocid_t chpl_task_getNumSublocales(void)
