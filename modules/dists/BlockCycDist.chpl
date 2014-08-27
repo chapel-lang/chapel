@@ -127,7 +127,7 @@ class BlockCyclic : BaseDist {
         locDist(locid) = new LocBlockCyclic(rank, idxType, locid, this);
 
     if tasksPerLocale == 0 then
-      this.tasksPerLocale = 1;   // TODO: here.numCores;
+      this.tasksPerLocale = 1;   // TODO: here.maxTaskPar;
     else
       this.tasksPerLocale = tasksPerLocale;
 
