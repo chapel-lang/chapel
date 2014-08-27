@@ -3,13 +3,8 @@
 CWD=$(cd $(dirname $0) ; pwd)
 
 source $CWD/common.bash
+source $CWD/common-fifo.bash
+source $CWD/common-gasnet.bash
 
-# This should be common-gasnet.bash, but since it also sources
-# common.bash, we copy it here
-export CHPL_COMM=gasnet
-export GASNET_SPAWNFN=L
-export GASNET_ROUTE_OUTPUT=0
-export CHPL_GASNET_CFG_OPTIONS=--disable-ibv
-
-# qthreads + flat + gasnet + multilocale suite
-$CWD/nightly.qthreads -full
+# fifo + flat + gasnet
+$CWD/nightly.fifo -full
