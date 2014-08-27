@@ -386,9 +386,6 @@ Classes, Records, and Unions
   # classes/bradc/initialize-secondary.future
   # classes/vass/nested-class-with-user-defined-constructor-1.future
   # classes/constructors/base-class-generic-args.future
-  # users/hilde/refcnt.future
-- User-defined constructors do not override the default constructor.
-  # classes/claridge/baseConstructorCall.future
 - User-defined copy constructors are not supported.
   # classes/diten/test_destructor3.future
 - Declaring class members using type aliases may result in unresolved
@@ -397,8 +394,6 @@ Classes, Records, and Unions
   # classes/diten/type_order_problem.future
   # types/records/bharshbarger/nestedRecordInClass2.future
 - Cannot call 'new' on type aliases for classes and records
-  # types/typedefs/bradc/newTypedef.future
-  # types/typedefs/lydia/def-new-on-type-alias.future
   # types/typedefs/tzakian/classConstructorsFromTypes.future
 - Iterator methods may not obey dynamic dispatch.
   # trivial/jturner/iter_overload_simple.future
