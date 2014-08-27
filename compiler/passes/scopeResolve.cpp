@@ -1055,7 +1055,7 @@ static void move_constructor_to_outer(FnSymbol* fn, AggregateType* outerType)
   outerType->methods.add(fn);
 
   fn->_outer = new ArgSymbol(INTENT_BLANK, "outer", outerType);
-
+  fn->_outer->addFlag(FLAG_GENERIC); // Arg expects a real object :-P.
   fn->insertFormalAtHead(new DefExpr(fn->_outer));
   fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK,
                                                    "_mt",

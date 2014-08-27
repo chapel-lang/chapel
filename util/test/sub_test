@@ -299,11 +299,11 @@ def Fatal(message):
     sys.exit(-1)
 
 # Attempts to find an appropriate timer to use. The timer must be in
-# utildir/timers/. Expects to be passed a file containing only the name of
+# util/test/timers/. Expects to be passed a file containing only the name of
 # the timer script. If the file is improperly formatted the default timer is
 # used, and if the timer is not executable or can't be found 'time -p' is used
 def GetTimer(f):
-    timersdir = os.path.join(utildir, 'timers')
+    timersdir = os.path.join(utildir, 'test', 'timers')
     defaultTimer = os.path.join(timersdir, 'defaultTimer')
 
     lines = ReadFileWithComments(f)

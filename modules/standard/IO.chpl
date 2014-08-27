@@ -280,6 +280,9 @@ extern proc qio_channel_end_offset_unlocked(ch:qio_channel_ptr_t):int(64);
 extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyle);
 extern proc qio_file_length(f:qio_file_ptr_t, ref len:int(64)):syserr;
 
+extern proc qio_file_rename(oldname: c_string, newname: c_string):syserr;
+extern proc qio_file_remove(name: c_string):syserr;
+
 pragma "no prototype" // FIXME
 extern proc qio_channel_create(ref ch:qio_channel_ptr_t, file:qio_file_ptr_t, hints:c_int, readable:c_int, writeable:c_int, start:int(64), end:int(64), const ref style:iostyle):syserr;
 
@@ -825,7 +828,41 @@ proc openmem(style:iostyle = defaultIOStyle()):file {
   return ret;
 }
 
+/* Renames the file specified by oldname to newname, returning an error
+   if one occurred.  The file is not opened during this operation.
+   error: a syserr used to indicate if an error occurred during renaming.
+   oldname: current name of the file
+   newname: name which should refer to the file in the future.*/
+proc rename(out error: syserr, oldname, newname: string) {
+  error = qio_file_rename(oldname.c_str(), newname.c_str());
+}
 
+/* Renames the file specified by oldname to newname, generating an error
+   if one occurred.  The file is not opened during this operation.
+   oldname: current name of the file
+   newname: name which should refer to the file in the future.*/
+proc rename(oldname, newname: string) {
+  var err:syserr = ENOERR;
+  rename(err, oldname, newname);
+  if err then ioerror(err, "in rename", oldname);
+}
+
+/* Removes the file or directory specified by name, returning an error
+   if one occurred via an out parameter.
+   err: a syserr used to indicate if an error occurred during removal
+   name: the name of the file/directory to remove */
+proc remove(out err: syserr, name: string) {
+  err = qio_file_remove(name.c_str());
+}
+
+/* Removes the file or directory specified by name, generating an error
+   if one occurred.
+   name: the name of the file/directory to remove */
+proc remove(name: string) {
+  var err:syserr = ENOERR;
+  remove(err, name);
+  if err then ioerror(err, "in remove", name);
+}
 
 /* in the future, this will be an interface.
    */
@@ -1575,6 +1612,56 @@ proc channel.read(ref args ...?k,
                         "style:iostyle)");
     return false;
   }
+}
+
+proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low, amount = arg.domain.high - start) : bool
+where arg.rank == 1 && isRectangularArr(arg)
+{
+  var e:syserr = ENOERR;
+  var got = this.readline(arg, numRead, start, amount, error=e);
+  if !e && got then return true;
+  else if e == EEOF || !got then return false;
+  else {
+    this._ch_ioerror(e, "in channel.readline(arg : [] uint(8))");
+    return false;
+  }
+}
+
+/*
+  Read a line of bytes into a Chapel array.
+
+  arg:       A 1D DefaultRectangular array which must have at least 1 element.
+  numRead:   The number of bytes read.
+  start:     Index to begin reading into.
+  amount:    The maximum amount of bytes to read.
+
+  Returns true if bytes were read without error.
+*/
+proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low, amount = arg.domain.high - start, out error:syserr) : bool
+where arg.rank == 1 && isRectangularArr(arg)
+{
+  error = ENOERR;
+
+  // Make sure the arguments are valid
+  if arg.size == 0 || !arg.domain.member(start) || amount <= 0 || (start + amount > arg.domain.high)  then return false;
+
+  on this.home {
+    this.lock();
+    param newLineChar = 0x0A;
+    var got : int;
+    var i = start;
+    const maxIdx = start + amount;
+    while i <= maxIdx {
+      got = qio_channel_read_byte(false, this._channel_internal);
+      arg[i] = got:uint(8);
+      i += 1;
+      if got < 0 || got == newLineChar then break;
+    }
+    numRead = i - start;
+    if got < 0 then error = (-got):syserr;
+    this.unlock();
+  }
+  return !error;
 }
 
 proc channel.readline(ref arg:string, out error:syserr):bool {
