@@ -349,7 +349,7 @@ proc defaultNumTasks(nTasks:int)
 {
   var dnTasks=nTasks;
   if nTasks==0 then {
-    if dataParTasksPerLocale==0 then dnTasks=here.maxTaskPar; 
+    if dataParTasksPerLocale==0 then dnTasks=here.maxTaskPar;
       else dnTasks=dataParTasksPerLocale;
   } else if nTasks<0 then {
     halt("'numTasks' is negative");
