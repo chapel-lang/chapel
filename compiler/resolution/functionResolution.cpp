@@ -6929,8 +6929,6 @@ static void resolveAutoCopies()
 
     if (isRecord(ts->type) || getSyncFlags(ts).any())
     {
-      // Sync types are records, too.
-      INT_ASSERT(isRecord(ts->type));
       resolveAutoCopy(ts->type);
       resolveAutoDestroy(ts->type);
     }
