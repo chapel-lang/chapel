@@ -5,22 +5,15 @@ set -e
 # Note: This is not safe for parallel testing
 
 # Only run this script when doing a perf run
-if [ -n "$CHPL_TEST_PERF" ]; then
+if [ -n "$CHPL_TEST_PERF" ] && [ ! -f $CHPL_TEST_TMP_DIR/fasta.big ]; then
+  # '$3' is the compiler given to us by sub_test
+  $3 $CHPL_HOME/test/studies/shootout/fasta/kbrady/fasta-printf.chpl --fast -o tmpFasta
+  
+  # needed by k-nucleotide and reverse-complement
+  ./tmpFasta --n=25000000 > $CHPL_TEST_TMP_DIR/fasta.big
 
-  if [ ! -d $CHPL_HOME/test/tmp ]; then
-    mkdir $CHPL_HOME/test/tmp
-  fi
+  # needed by regex-dna
+  ./tmpFasta --n=5000000 > $CHPL_TEST_TMP_DIR/fasta.mid
 
-  if [ ! -f $CHPL_HOME/test/tmp/fasta.big ]; then
-    # '$3' is the compiler given to us by sub_test
-    $3 $CHPL_HOME/test/studies/shootout/fasta/kbrady/fasta-printf.chpl --fast -o tmpFasta
-    
-    # needed by k-nucleotide and reverse-complement
-    ./tmpFasta --n=25000000 > $CHPL_HOME/test/tmp/fasta.big
-
-    # needed by regex-dna
-    ./tmpFasta --n=5000000 > $CHPL_HOME/test/tmp/fasta.mid
-
-    rm ./tmpFasta
-  fi
+  rm ./tmpFasta
 fi
