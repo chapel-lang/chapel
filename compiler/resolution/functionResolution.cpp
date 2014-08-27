@@ -7516,6 +7516,10 @@ static void removeParamArgs()
         // Remove the argument from the call site.
         forv_Vec(CallExpr, call, *fn->calledBy)
         {
+          // Don't bother with calls that are not in the tree.
+          if (! call->parentSymbol)
+            continue;
+
           // Performance note: AList::get(int) also performs a linear search.
           for_formals_actuals(cf, ca, call)
           {
