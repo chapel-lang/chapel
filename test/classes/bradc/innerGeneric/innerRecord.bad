@@ -1,2 +1,0 @@
-innerRecord.chpl:14: error: unresolved call 'B(T=type int(64), v=int(64), c=int(64), outer=A(int(64)))'
-innerRecord.chpl:5: note: candidates are: B(_mt: _MT, outer: A, type T, v: T, c)

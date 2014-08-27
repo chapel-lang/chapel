@@ -481,8 +481,7 @@ static void setupAvailableParallelism(int32_t maxThreads) {
 }
 
 static void setupCallStacks(void) {
-    size_t    callStackSize;
-    char      newenv_stack[QT_ENV_S] = { 0 };
+    size_t callStackSize;
 
     // If the user compiled with no stack checks (either explicitly or
     // implicitly) turn off qthread guard pages. TODO there should also be a
@@ -492,22 +491,16 @@ static void setupCallStacks(void) {
     }
 
     // Precedence (high-to-low):
-    // 1) Chapel minimum
+    // 1) Chapel environment (CHPL_RT_CALL_STACK_SIZE)
     // 2) QTHREAD_STACK_SIZE
-    // In practice we never get to #2, because the Chapel minimum is
-    // always > 0, but we cover that case as a backstop.
-    callStackSize = chpl_task_getMinCallStackSize();
-    if (callStackSize <= 0)
-        callStackSize = 1024 * 1024 * sizeof(size_t);
-    snprintf(newenv_stack, 99, "%zu", callStackSize);
-
-    // TODO We currently always override QT_/QTHREAD_STACK_SIZE. The only way
-    // to set stack size is through CHPL_RT_CALL_STACK_SIZE. The function
-    // chpl_task_getMinCallStackSize should be broken up like the one for
-    // NUM_THREADS_PER_LOCALE. Our policy is to override third party env vars
-    // iff a chapel equivalent env var was set, but to not override with our
-    // default values
-    chpl_qt_setenv("STACK_SIZE", newenv_stack, 1);
+    // 3) Chapel default
+    if ((callStackSize = chpl_task_getEnvCallStackSize()) > 0 ||
+        (qt_internal_get_env_num("STACK_SIZE", 0, 0) == 0 &&
+         (callStackSize = chpl_task_getDefaultCallStackSize()) > 0)) {
+        char newenv_stack[QT_ENV_S];
+        snprintf(newenv_stack, sizeof(newenv_stack), "%zu", callStackSize);
+        chpl_qt_setenv("STACK_SIZE", newenv_stack, 1);
+    }
 }
 
 void chpl_task_init(void)

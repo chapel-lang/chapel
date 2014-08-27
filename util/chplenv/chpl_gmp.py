@@ -10,7 +10,7 @@ def get():
     if not gmp_val:
         target_platform = chpl_platform.get('target')
         target_compiler = chpl_compiler.get('target')
-        target_arch = chpl_arch.get('target')
+        target_arch = chpl_arch.get('target', get_lcd=True)
 
         if target_platform.startswith('cray-x'):
             gmp_val = 'system'
