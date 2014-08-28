@@ -1168,15 +1168,6 @@ module ChapelArray {
     d.remove(i);
     return d;
   }
-
-  proc -(d1: domain, d2: domain) where
-                                   isAssociativeDom(d1) &&
-                                   (d1.type == d2.type) {
-    var d3 : d1.type;
-    for e in d1 do
-      if !d2.member(e) then d3.add(e);
-    return d3;
-  }
   
   proc -(d1: domain, d2: domain) where
                                    (d1.type == d2.type) &&
@@ -1543,6 +1534,33 @@ module ChapelArray {
     }
 
   }  // record _array
+  
+  /*
+     The following functions define set operations on associative arrays.
+
+     The supported functions (and their op= variations) are:
+       + or |    Union
+       &         Intersection
+       -         Difference
+       ^         Symmetric Difference
+
+     Consider the following code where 'a' and 'b' are associative arrays:
+
+     var c = a op b;
+
+     The result 'c' is a new associative array backed by a new associative
+     domain. The domains of 'a' and 'b' are not modified by 'op'.
+
+     Consider the following code where 'a' and 'b' are associative arrays:
+
+     a op= b;
+
+     'a' must not share its domain with another array, otherwise the program
+     will halt with an error message.
+     
+     For the += and |= operators, the value from 'b' will overwrite the
+     existing value when indices overlap.
+  */
 
   // promototion for associative array addition doesn't really make sense. instead,
   // we really just want a union
@@ -1617,6 +1635,25 @@ module ChapelArray {
     for k in b.domain do
       if a.domain.member(k) then a.domain.remove(k);
       else a[k] = b[k];
+  }
+
+  /*
+     The following functions define set operations on associative domains.
+
+     The supported functions are:
+       + or |    Union
+       &         Intersection
+       -         Difference
+       ^         Symmetric Difference
+
+     For each operator, a new domain is returned and the arguments unmodified.
+  */
+
+  proc -(a :domain, b :domain) where (a.type == b.type) && isAssociativeDom(a) {
+    var newDom : a.type;
+    for e in a do
+      if !b.member(e) then newDom.add(e);
+    return newDom;
   }
   
   proc |(a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
