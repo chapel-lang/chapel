@@ -882,6 +882,17 @@ module ChapelArray {
       return true;
     }
 
+    proc subset(d : domain) where !isAssociativeDom(this) {
+      if isRectangularDom(this) then
+        compilerError("subset not supported on rectangular domains");
+      else if isOpaqueDom(this) then
+        compilerError("subset not supported on opaque domains");
+      else if isSparseDom(this) then
+        compilerError("subset not supported on sparse domains");
+      else
+        compilerError("subset not supported on this domain type");
+    }
+
     // 1/5/10: do we want to support order() and position()?
     proc indexOrder(i) return _value.dsiIndexOrder(_makeIndexTuple(rank, i));
   
