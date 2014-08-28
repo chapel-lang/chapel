@@ -297,7 +297,6 @@ class AbstractPbsJob(object):
         else:
             return PbsProJob
 
-
     @classmethod
     def init_from_environment(cls):
         """Factory to initialize new job runner instance based on version of
