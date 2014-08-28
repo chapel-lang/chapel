@@ -467,14 +467,13 @@ static bool needToAddCoercion(Type* actualType, Symbol* actualSym,
            isDispatchParent(actualType, formalType);
 }
 
-// Adds a coercion and replaces *prevActualP and *actualSymP
-// with the result of the coercion, as an actual to 'call'
+// Add a coercion; replace prevActual and actualSym - the actual to 'call' -
+// with the result of the coercion.
 static void addArgCoercion(FnSymbol* fn, CallExpr* call, ArgSymbol* formal,
-                           Expr** prevActualP, Symbol** actualSymP,
-                           bool* checkAgainP)
+                           Expr*& actualExpr, Symbol*& actualSym,
+                           bool& checkAgain)
 {
-  Expr* prevActual = *prevActualP;
-  Symbol* actualSym = *actualSymP;
+  Expr* prevActual = actualExpr;
   SET_LINENO(prevActual);
   TypeSymbol* ats = actualSym->type->symbol;
   TypeSymbol* fts = formal->type->symbol;
@@ -498,12 +497,27 @@ static void addArgCoercion(FnSymbol* fn, CallExpr* call, ArgSymbol* formal,
   }
   // Now 'prevActual' has been removed+replaced and is ready to be passed
   // as an actual to a cast or some such.
-  // And, we can update callee info right away.
-  *prevActualP = newActual;
-  *actualSymP  = castTemp;
+  // We can update addArgCoercion's caller right away.
+  actualExpr = newActual;
+  actualSym  = castTemp;
 
   if (getSyncFlags(ats).any()) {
-    *checkAgainP = true;
+
+    // Tom notes: Ultimately, I hope to push all code related to sync
+    // variable implementation into module code.  Moving the special
+    // handling of sync demotion (i.e. extracting the underlying value
+    // from a sync variable) into module code would render this
+    // special-case code in the compiler moot.
+
+    // Here we will often strip the type of its sync-ness.
+    // After that we may need another coercion(s), e.g.
+    //   _syncvar(int) --readFE()-> _ref(int) --(dereference)-> int --> real
+    // or
+    //   _syncvar(_syncvar(int))  -->...  _syncvar(int)  -->  [as above]
+    //
+    // We warn addArgCoercion's caller about that via checkAgain:
+    checkAgain = true;
+
     //
     // apply readFF or readFE to single or sync actual unless this
     // is a member access of the sync or single actual
@@ -530,9 +544,14 @@ static void addArgCoercion(FnSymbol* fn, CallExpr* call, ArgSymbol* formal,
 
   } else if (ats->hasFlag(FLAG_REF)) {
     //
-    // dereference reference actual
+    // dereference a reference actual
     //
-    *checkAgainP = true;
+    // after dereferencing we may need another coercion, e.g.
+    //   _ref(int)  --coerce->  int  --coerce->  real
+    // or
+    //   _ref(_syncvar(int)) --> _syncvar(int) --> _ref(int) --> int --> real
+    //
+    checkAgain = true;
     castCall = new CallExpr(PRIM_DEREF, prevActual);
 
   } else {
@@ -619,7 +638,8 @@ void coerceActuals(FnSymbol* fn, CallInfo* info) {
       c2 = false;
       Type* actualType = actualSym->type;
       if (needToAddCoercion(actualType, actualSym, formalType, fn)) {
-        addArgCoercion(fn, info->call, formal, &currActual, &actualSym, &c2);
+        // addArgCoercion() updates currActual, actualSym, c2
+        addArgCoercion(fn, info->call, formal, currActual, actualSym, c2);
       }
     } while (c2 && --checksLeft > 0);
 
