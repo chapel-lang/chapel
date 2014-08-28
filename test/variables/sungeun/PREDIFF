@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+cat $2
+out=`grep "internal error" $2`
+echo $out
+if [ $? == "0" ]; then echo "internal error" > $2; fi
