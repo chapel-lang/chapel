@@ -62,11 +62,6 @@ buildDefaultWrapper(FnSymbol* fn,
                     SymbolMap* paramMap,
                     CallInfo* info);
 static FnSymbol*
-buildCoercionWrapper(FnSymbol* fn,
-                     SymbolMap* coercion_map,
-                     Map<ArgSymbol*,bool>* coercions,
-                     CallInfo* info);
-static FnSymbol*
 buildPromotionWrapper(FnSymbol* fn,
                       SymbolMap* promotion_subs,
                       CallInfo* info);
@@ -462,115 +457,176 @@ void reorderActuals(FnSymbol* fn,
 }
 
 
-////
-//// coercion wrapper code
-////
+// do we need to add some coercion from the actual to the formal?
+static bool needToAddCoercion(Type* actualType, Symbol* actualSym,
+                              Type* formalType, FnSymbol* fn) {
+  if (actualType == formalType)
+    return false;
+  else
+    return canCoerce(actualType, actualSym, formalType, fn) ||
+           isDispatchParent(actualType, formalType);
+}
 
+// Adds a coercion and replaces *prevActualP and *actualSymP
+// with the result of the coercion, as an actual to 'call'
+static void addArgCoercion(FnSymbol* fn, CallExpr* call, ArgSymbol* formal,
+                           Expr** prevActualP, Symbol** actualSymP,
+                           bool* checkAgainP)
+{
+  Expr* prevActual = *prevActualP;
+  Symbol* actualSym = *actualSymP;
+  SET_LINENO(prevActual);
+  TypeSymbol* ats = actualSym->type->symbol;
+  TypeSymbol* fts = formal->type->symbol;
+  CallExpr* castCall;
+  VarSymbol* castTemp = newTemp("coerce_tmp"); // ..., formal->type ?
+  castTemp->addFlag(FLAG_COERCE_TEMP);
+  // gotta preserve this-ness, so can write to this's fields in constructors
+  if (actualSym->hasFlag(FLAG_ARG_THIS) &&
+      isDispatchParent(actualSym->type, formal->type))
+    castTemp->addFlag(FLAG_ARG_THIS);
 
-static FnSymbol*
-buildCoercionWrapper(FnSymbol* fn,
-                     SymbolMap* coercion_map,
-                     Map<ArgSymbol*,bool>* coercions,
-                     CallInfo* info) {
-  SET_LINENO(fn);
-  FnSymbol* wrapper = buildEmptyWrapper(fn, info);
-
-  //
-  // stopgap: important for, for example, --no-local on
-  // test/parallel/cobegin/bradc/varsEscape-workaround.chpl; when
-  // function resolution is out-of-order, disabling this for
-  // unspecified return types may not be necessary
-  //
-  if (fn->hasFlag(FLAG_SPECIFIED_RETURN_TYPE) && !fn->hasFlag(FLAG_ITERATOR_FN))
-    wrapper->retType = fn->retType;
-
-  wrapper->cname = astr("_coerce_wrap_", fn->cname);
-  CallExpr* call = new CallExpr(fn);
-  call->square = info->call->square;
-  for_formals(formal, fn) {
-    SET_LINENO(formal);
-    ArgSymbol* wrapperFormal = copyFormalForWrapper(formal);
-    if (fn->_this == formal)
-      wrapper->_this = wrapperFormal;
-    wrapper->insertFormalAtTail(wrapperFormal);
-    if (coercions->get(formal)) {
-      TypeSymbol *ts = toTypeSymbol(coercion_map->get(formal));
-      INT_ASSERT(ts);
-      wrapperFormal->type = ts->type;
-      if (getSyncFlags(ts).any()) {
-        //
-        // apply readFF or readFE to single or sync actual unless this
-        // is a member access of the sync or single actual
-        //
-        if (fn->numFormals() == 3 &&
-            !strcmp(fn->name, "free"))
-          // Special case: Don't insert a readFE or readFF when deleting a sync/single.
-          call->insertAtTail(new CallExpr("_cast", formal->type->symbol, wrapperFormal));
-        else if (fn->numFormals() >= 2 &&
-            fn->getFormal(1)->type == dtMethodToken &&
-            formal == fn->_this)
-          call->insertAtTail(new CallExpr("value", gMethodToken, wrapperFormal));
-        else if (ts->hasFlag(FLAG_SINGLE))
-          call->insertAtTail(new CallExpr("readFF", gMethodToken, wrapperFormal));
-        else if (ts->hasFlag(FLAG_SYNC))
-          call->insertAtTail(new CallExpr("readFE", gMethodToken, wrapperFormal));
-        else
-          INT_ASSERT(false);    // Unhandled case.
-      } else if (ts->hasFlag(FLAG_REF)) {
-        //
-        // dereference reference actual
-        //
-        call->insertAtTail(new CallExpr(PRIM_DEREF, wrapperFormal));
-      } else if (wrapperFormal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-        call->insertAtTail(new CallExpr("_cast", formal->type->symbol, paramMap.get(formal)));
-        /*** } else if ((ts->type == dtStringC) && (formal->typeInfo() == dtString)) {
-             call->insertAtTail(new CallExpr("_cast", formal->type->symbol, wrapperFormal)); ***/
-        } else {
-        call->insertAtTail(new CallExpr("_cast", formal->type->symbol, wrapperFormal));
-      }
-    } else {
-      if (Symbol* actualTypeSymbol = coercion_map->get(formal))
-        wrapperFormal->type = actualTypeSymbol->type;
-      call->insertAtTail(wrapperFormal);
-    }
+  Expr* newActual = new SymExpr(castTemp);
+  if (NamedExpr* namedActual = toNamedExpr(prevActual)) {
+    // preserve the named portion
+    Expr* newCurrActual = namedActual->actual;
+    newCurrActual->replace(newActual);
+    newActual = prevActual;
+    prevActual = newCurrActual;
+  } else {
+    prevActual->replace(newActual);
   }
-  insertWrappedCall(fn, wrapper, call);
-  normalize(wrapper);
-  return wrapper;
+  // Now 'prevActual' has been removed+replaced and is ready to be passed
+  // as an actual to a cast or some such.
+  // And, we can update callee info right away.
+  *prevActualP = newActual;
+  *actualSymP  = castTemp;
+
+  if (getSyncFlags(ats).any()) {
+    *checkAgainP = true;
+    //
+    // apply readFF or readFE to single or sync actual unless this
+    // is a member access of the sync or single actual
+    //
+    if (fn->numFormals() == 3 &&
+        !strcmp(fn->name, "free"))
+      // Don't insert a readFE or readFF when deleting a sync/single.
+      castCall = NULL;
+
+    else if (fn->numFormals() >= 2 &&
+             fn->getFormal(1)->type == dtMethodToken &&
+             formal == fn->_this)
+      // NB if this case is removed, reduce the checksLeft number below.
+      castCall = new CallExpr("value",  gMethodToken, prevActual);
+
+    else if (ats->hasFlag(FLAG_SYNC))
+      castCall = new CallExpr("readFE", gMethodToken, prevActual);
+
+    else if (ats->hasFlag(FLAG_SINGLE))
+      castCall = new CallExpr("readFF", gMethodToken, prevActual);
+
+    else
+      INT_ASSERT(false);    // Unhandled case.
+
+  } else if (ats->hasFlag(FLAG_REF)) {
+    //
+    // dereference reference actual
+    //
+    *checkAgainP = true;
+    castCall = new CallExpr(PRIM_DEREF, prevActual);
+
+  } else {
+    // There was code to handle the case when the flag *is* present.
+    // I deleted that code. The assert ensures it wouldn't apply anyway.
+    INT_ASSERT(!actualSym->hasFlag(FLAG_INSTANTIATED_PARAM));
+    castCall = NULL;
+  }
+
+  if (castCall == NULL)
+    // the common case
+    castCall = new CallExpr("_cast", fts, prevActual);
+
+  // move the result to the temp
+  CallExpr* castMove = new CallExpr(PRIM_MOVE, castTemp, castCall);
+
+  call->getStmtExpr()->insertBefore(new DefExpr(castTemp));
+  call->getStmtExpr()->insertBefore(castMove);
+
+  resolveCall(castCall);
+  if (castCall->isResolved())
+    resolveFns(castCall->isResolved());
+
+  resolveCall(castMove);
 }
 
 
-FnSymbol*
-coercionWrap(FnSymbol* fn, CallInfo* info) {
-  SymbolMap subs;
-  Map<ArgSymbol*,bool> coercions;
+////
+//// add coercions on the actuals
+//// (this function is here because it used to create a wrapper)
+////
+
+void coerceActuals(FnSymbol* fn, CallInfo* info) {
+  if (info->actuals.n < 1)
+    return; // nothing to do
+
+  if (fn->retTag == RET_PARAM)
+    //
+    // This call will be tossed in postFold(), so why bother with coercions?
+    //
+    // Most importantly, we don't want a readFE-like coercion in this case,
+    // because the coercion will stick around even if the call is removed.
+    //
+    // Todo: postFold() will remove some other calls, too. However we don't
+    // know which - until 'fn' is resolved, which here it may not be, yet.
+    // So for now we act only if fn has the param retTag.
+    //
+    // The runner-up todo would be 'type' functions, which actually
+    // may need to be invoked at run time if they return a runtime type.
+    // Therefore "coercions" might also be needed, e.g., to readFE from
+    // a sync var actual to determine the size of the array type's domain.
+    // So we will keep the coercions uniformly for now, as if they are
+    // a part of type functions' semantics.
+    //
+    return;
+
   int j = -1;
+  Expr* currActual = info->call->get(1);
   for_formals(formal, fn) {
     j++;
-    Type* actualType = info->actuals.v[j]->type;
     Symbol* actualSym = info->actuals.v[j];
-    if (actualType != formal->type) {
-      if (canCoerce(actualType, actualSym, formal->type, fn) || isDispatchParent(actualType, formal->type)) {
-        subs.put(formal, actualType->symbol);
-        coercions.put(formal,true);
-      } else {
-        subs.put(formal, actualType->symbol);
+    Type* formalType = formal->type;
+    bool c2; // will we need to check again?
+
+    // There does not seem to be a limit of how many coercions will be
+    // needed for a given actual. For example, in myExpr.someFun(...),
+    // each level of _syncvar(T) in myExpr's type adds two coercions,
+    // PRIM_DEREF and CallExpr("value",...), to the coercions needed by T.
+    //
+    // Note: if we take away the special handling of a sync/single actual
+    // when it is the receiver to 'fn' (the "value" case above), fewer
+    // coercions will suffice for the same number of _syncvar layers.
+    //
+    // We could have the do-loop below terminate only upon !c2. For now,
+    // I am putting a limit on the number of iterations just in case.
+    // I am capping it at 6 arbitrarily. This allows for the 5 coercions
+    // plus 1 last check in the case of a receiver actual of the type
+    // _ref(_syncvar(_syncvar(int))), e.g. an array element "sync sync int".
+    // -vass 8'2014
+    //
+    int checksLeft = 6;
+
+    do {
+      c2 = false;
+      Type* actualType = actualSym->type;
+      if (needToAddCoercion(actualType, actualSym, formalType, fn)) {
+        addArgCoercion(fn, info->call, formal, &currActual, &actualSym, &c2);
       }
-    }
-  }
+    } while (c2 && --checksLeft > 0);
 
-  if (coercions.n > 0) {  // Any coercions?
-    FnSymbol* wrapper = checkCache(coercionsCache, fn, &subs);
-    if (wrapper == NULL) {
-      wrapper = buildCoercionWrapper(fn, &subs, &coercions, info);
-      addCache(coercionsCache, fn, wrapper, &subs);
-    }
-    resolveFormals(wrapper);
-    return wrapper;
+    INT_ASSERT(!c2); // otherwise need to increase checksLeft
+    currActual = currActual->next;
   }
-
-  return fn;  
-}
+}  // coerceActuals()
 
 
 ////

@@ -64,6 +64,21 @@ refNecessary(SymExpr* se,
         // If we are extracting a field from the wide pointer, we need to keep it as a pointer.
         // Dereferencing would be premature.
         return true;
+      } else if (call->isPrimitive(PRIM_DEREF) &&
+                 isRecordWrappedType(se->var->type->getValType())) {
+        // Heuristic: if we are dereferencing an array reference,
+        // that reference may still be needed.
+        Expr* callParent = call->parentExpr;
+        INT_ASSERT(callParent);
+        if (CallExpr* callParentCall = toCallExpr(callParent)) {
+          if (callParentCall->isPrimitive(PRIM_MOVE)) {
+            INT_ASSERT(call == callParentCall->get(2));
+            SymExpr* dest = toSymExpr(callParentCall->get(1));
+            INT_ASSERT(dest);
+            if (dest->var->hasFlag(FLAG_COERCE_TEMP))
+              return true;
+          }
+        }
       }
     }
   }

@@ -50,10 +50,12 @@ void      instantiateBody(FnSymbol* fn);
 
 void resolveFormals(FnSymbol* fn);
 void resolveBlock(Expr* body);
+void resolveCall(CallExpr* call);
+void resolveFns(FnSymbol* fn);
 
 FnSymbol* defaultWrap(FnSymbol* fn, Vec<ArgSymbol*>* actualFormals,  CallInfo* info);
 void reorderActuals(FnSymbol* fn, Vec<ArgSymbol*>* actualFormals,  CallInfo* info);
-FnSymbol* coercionWrap(FnSymbol* fn, CallInfo* info);
+void coerceActuals(FnSymbol* fn, CallInfo* info);
 FnSymbol* promotionWrap(FnSymbol* fn, CallInfo* info);
 
 FnSymbol* getAutoCopy(Type* t);

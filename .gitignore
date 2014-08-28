@@ -105,6 +105,8 @@ gen
 /test/Logs
 /test/**/perfdat
 
+/test/arrays/vass/setter-assigned-to-a-var.exec.out.tmp.save
+
 /test/chpldoc/**/docs
 /test/chpldoc/**/*.good
 
