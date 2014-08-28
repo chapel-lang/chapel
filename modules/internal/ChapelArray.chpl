@@ -1576,45 +1576,51 @@ module ChapelArray {
   proc |(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
     var newDom : a.domain.type;
     var ret : [newDom] a.eltType;
-    for (k,v) in zip(a.domain, a) do ret[k] = v;
-    for (k,v) in zip(b.domain, b) do ret[k] = v;
+    serial newDom._value.parSafe {
+      forall (k,v) in zip(a.domain, a) do ret[k] = v;
+      forall (k,v) in zip(b.domain, b) do ret[k] = v;
+    }
     return ret;
   }
 
   proc |=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
     a.assertSingleArrayDomain("|=");
-    for (k,v) in zip(b.domain, b) do a[k] = v;
+    serial a.domain._value.parSafe do forall (k,v) in zip(b.domain, b) do a[k] = v;
   }
 
   proc &(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
     var newDom : a.domain.type;
     var ret : [newDom] a.eltType;
 
-    for k in a.domain do
-      if b.domain.member(k) then ret[k] = a[k];
+    serial newDom._value.parSafe do
+      forall k in a.domain do
+        if b.domain.member(k) then ret[k] = a[k];
     return ret;
   }
 
   proc &=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
     a.assertSingleArrayDomain("&=");
-    for k in a.domain do
-      if !b.domain.member(k) then a.domain.remove(k);
+    serial a.domain._value.parSafe do
+      forall k in a.domain do
+        if !b.domain.member(k) then a.domain.remove(k);
   }
 
   proc -(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
     var newDom : a.domain.type;
     var ret : [newDom] a.eltType;
 
-    for k in a.domain do
-      if !b.domain.member(k) then ret[k] = a[k];
+    serial newDom._value.parSafe do
+      forall k in a.domain do
+        if !b.domain.member(k) then ret[k] = a[k];
 
     return ret;
   }
 
   proc -=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
     a.assertSingleArrayDomain("-=");
-    for k in a.domain do
-      if b.domain.member(k) then a.domain.remove(k);
+    serial a.domain._value.parSafe do
+      forall k in a.domain do
+        if b.domain.member(k) then a.domain.remove(k);
   }
 
 
@@ -1622,19 +1628,22 @@ module ChapelArray {
     var newDom : a.domain.type;
     var ret : [newDom] a.eltType;
 
-    for k in a.domain do
-      if !b.domain.member(k) then ret[k] = a[k];
-    for k in b.domain do
-      if !a.domain.member(k) then ret[k] = b[k];
+    serial newDom._value.parSafe {
+      forall k in a.domain do
+        if !b.domain.member(k) then ret[k] = a[k];
+      forall k in b.domain do
+        if !a.domain.member(k) then ret[k] = b[k];
+    }
 
     return ret;
   }
 
   proc ^=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
     a.assertSingleArrayDomain("^=");
-    for k in b.domain do
-      if a.domain.member(k) then a.domain.remove(k);
-      else a[k] = b[k];
+    serial a.domain._value.parSafe do
+      forall k in b.domain do
+        if a.domain.member(k) then a.domain.remove(k);
+        else a[k] = b[k];
   }
 
   /*
@@ -1651,8 +1660,9 @@ module ChapelArray {
 
   proc -(a :domain, b :domain) where (a.type == b.type) && isAssociativeDom(a) {
     var newDom : a.type;
-    for e in a do
-      if !b.member(e) then newDom.add(e);
+    serial newDom._value.parSafe do
+      forall e in a do
+        if !b.member(e) then newDom.add(e);
     return newDom;
   }
   
@@ -1663,18 +1673,21 @@ module ChapelArray {
   proc &(a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
     var newDom : a.type;
 
-    for k in a do
-      if b.member(k) then newDom += k;
+    serial newDom._value.parSafe do 
+      forall k in a do
+        if b.member(k) then newDom += k;
     return newDom;
   }
 
   proc ^(a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
     var newDom : a.type;
 
-    for k in a do
-      if !b.member(k) then newDom.add(k);
-    for k in b do
-      if !a.member(k) then newDom.add(k);
+    serial newDom._value.parSafe {
+      forall k in a do
+        if !b.member(k) then newDom.add(k);
+      forall k in b do
+        if !a.member(k) then newDom.add(k);
+    }
 
     return newDom;
   }
