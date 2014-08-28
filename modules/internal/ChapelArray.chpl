@@ -1388,6 +1388,11 @@ module ChapelArray {
         if !_value.dom.dsiDim(i).boundsCheck(args(i)) then
           halt("array slice out of bounds in dimension ", i, ": ", args(i));
     }
+
+    proc assertSingleArrayDomain(fnName : string) {
+      if this.domain._value._arrs.length != 1 then
+        halt("Cannot call ", fnName, " on an array defined over a domain with multiple arrays");
+    }
   
     // Special cases of local slices for DefaultRectangularArrs because
     // we can't take an alias of the ddata class within that class
@@ -1546,24 +1551,26 @@ module ChapelArray {
   }
 
   proc +=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    a.assertSingleArrayDomain("+=");
     a |= b;
   }
 
   proc |(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
     var newDom : a.domain.type;
-    var ret : [newDom] a._value.eltType;
+    var ret : [newDom] a.eltType;
     for (k,v) in zip(a.domain, a) do ret[k] = v;
     for (k,v) in zip(b.domain, b) do ret[k] = v;
     return ret;
   }
 
   proc |=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    a.assertSingleArrayDomain("|=");
     for (k,v) in zip(b.domain, b) do a[k] = v;
   }
 
   proc &(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
     var newDom : a.domain.type;
-    var ret : [newDom] a._value.eltType;
+    var ret : [newDom] a.eltType;
 
     for k in a.domain do
       if b.domain.member(k) then ret[k] = a[k];
@@ -1571,13 +1578,14 @@ module ChapelArray {
   }
 
   proc &=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    a.assertSingleArrayDomain("&=");
     for k in a.domain do
       if !b.domain.member(k) then a.domain.remove(k);
   }
 
   proc -(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
     var newDom : a.domain.type;
-    var ret : [newDom] a._value.eltType;
+    var ret : [newDom] a.eltType;
 
     for k in a.domain do
       if !b.domain.member(k) then ret[k] = a[k];
@@ -1586,6 +1594,7 @@ module ChapelArray {
   }
 
   proc -=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    a.assertSingleArrayDomain("-=");
     for k in a.domain do
       if b.domain.member(k) then a.domain.remove(k);
   }
@@ -1593,7 +1602,7 @@ module ChapelArray {
 
   proc ^(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
     var newDom : a.domain.type;
-    var ret : [newDom] a._value.eltType;
+    var ret : [newDom] a.eltType;
 
     for k in a.domain do
       if !b.domain.member(k) then ret[k] = a[k];
@@ -1604,6 +1613,7 @@ module ChapelArray {
   }
 
   proc ^=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    a.assertSingleArrayDomain("^=");
     for k in b.domain do
       if a.domain.member(k) then a.domain.remove(k);
       else a[k] = b[k];
