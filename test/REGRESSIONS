@@ -22,6 +22,87 @@ general regressions (seem to happen in most configurations)
 ===========================================================
 
 
+
+-- MDN New on Tue Aug 26, 2014
+[Error cannot locate compiler output comparison file release/examples/benchmarks/shootout/threadring.good]
+
+This test has qualified .good files that are controlled by execopts.  However the compiler failed
+due to a qthread config issue and so the system expected to find the the standard .good file  This
+should be fixed on the Wed night build.
+
+However it will probably reverts to an execution timeout error instead.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- MDN New on Tue Aug 26, 2014
+[Error matching .bad file for parallel/begin/sungeun/autoCopyWithBegin (compopts: 1)]
+[Error matching .bad file for parallel/begin/sungeun/initCopyWithBegin]
+  Error message includes the Chapel version number. Fixed for Aug 26 nightlies
+
+-- MDN New on Sat Aug 23, 2014
+[Error matching .bad file for types/records/bharshbarger/nestedRecordInClass1]
+This was a future with defined output but has started generating an internal error
+  > nestedRecordInClass1.chpl:9: internal error: FUN7513 chpl Version 1.10.0.-999
+
+-- MDN New on Fri Aug 22, 2014
+[Error matching program output for classes/bradc/arrayInClass/genericArrayInClass-otharrs]
+  Compiler  hangs: timedexec: target program died with signal 11, without coredump
+
+-- MDN New on Fri Aug 22, 2014
+[Error matching compiler output for studies/madness/aniruddha/madchap/recordBug/test_likepy]
+  > ./FTree.chpl:81: internal error: EXP5319 chpl Version 1.10.0.-999
+
+-- MDN New on Thu Aug 21, 2014.  Ben missed this and has fixed.  Should be clean for Aug 26 nightlies
+  [Error cannot locate compiler output comparison file io/bharshbarg/readUntil.good]
+
+-- MDN New on Thu Aug 21, 2014.
+[Error matching .bad file for functions/iterators/tzakian/par_iter_recursive]
+  Line number for the error message has changed.  Fixed for Aug 26 nightlies.
+
+-- MDN New on Thu Aug 21, 2014.
+[Error matching .bad file for users/vass/div-ceil-on-more-int-types]
+  Line numbers for the error messages have changed.  Fixed for Aug 26 nightlies.
+
+-- MDN New on Tue Aug 19, 2014.  Expected by Elliot due to C-for Loop work
+[Error matching program output for trivial/deitz/test_max_range_iteration]
+  test_max_range_iteration.chpl:8: error: halt reached - expected number of iterations exceeded
+
+-- MDN New on Tue Aug 19, 2014.  Expected by Elliot due to C-for Loop work
+[Error matching program output for types/range/hilde/maximalRange (compopts: 1)]
+  Should produce a compilation error.  Instead it tries to run.
+
+-- MDN Tests fail intermittently on several configs.  The first instance I can easily see it Aug 13.
+[Error matching program output for domains/sungeun/assoc/stress.numthr (compopts: 1, execopts: 1)]
+[Error: Timed out executing program domains/sungeun/assoc/stress (compopts: 1, execopts: 2)]
+  Execution hangs: timedexec: target program died with signal 11, without coredump
+
+  chap01> more stress.numthr.compopts 
+  -sparSafe=true --no-stack-checks
+  -sparSafe=false --no-stack-checks
+
+  chap01> more stress.numthr.execopts 
+  --doSerial=false
+
+  Currently on Chap01 I am reliably seeing the correct program output followed by a pause and then a seg fault
+
+
+
+
 ==============================================
 linux64 regressions (in addition to the above)
 (Reviewed for accuracy 07/15/14)
@@ -75,6 +156,8 @@ Maybe these should move into TRIAGE?  -- gbt
 (Reviewed for accuracy 07/15/14)
 ================================
 
+-- Unsure when it started.  Unresolved         MDN
+[Error matching compiler output for io/ferguson/io_test]
 
 ================================
 memory leaks regressions
@@ -152,6 +235,11 @@ no-local regressions
 (Reviewed for accuracy 07/15/14)
 ================================
 
+-- MDN New on Tue Aug 26, 2014
+[Error matching program output for types/scalar/bradc/bools2]
+[Error matching program output for types/scalar/bradc/bools]
+  Large number of differences in output
+
 Memory use increased by 8 bytes on 7/11/14 (r23794 -- mppf)
 -----------------------------------------------------------
 [Error matching program output for memory/shannon/printFinalMemStat]
@@ -165,6 +253,15 @@ Consistent timeout since associative domains/arrays were made safer (~6/20/2014)
 gasnet-everything regressions (other than the above)
 (Reviewed for accuracy 07/14/14)
 ====================================================
+
+-- MDN New on Tue Aug 26, 2014
+[Error matching program output for execflags/gbt/getenv]
+  > *** Caught a fatal signal: SIGSEGV(11) on node 0/2
+
+-- MDN New on Tue Aug 26, 2014
+[Error matching program output for studies/ssca2/performance/SSCA2_commDiags (compopts: 1)]
+  > This test generates a large number of Comm diagnostic counts. The number of get/put
+  increased by 7 for Kernel 2.
 
 expect this to be temporary; seems to be due to pull #38; passed to Tom
 -----------------------------------------------------------------------
@@ -297,6 +394,8 @@ subject "Re: FW: Cron Dist replicated (linux64.gnu.gasnet.fifo.flat) 60/0/60".
 [Error matching program output for distributions/robust/arithmetic/trivial/test_tuple_to_array]
 [Error matching program output for distributions/robust/arithmetic/trivial/test_writeln]
 
+[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains]
+[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_array]
 
 ========================================
 darwin (see below for compiler specific)
@@ -568,6 +667,13 @@ compilation timeouts (since at least 02/23/14)
 pgi-specific regressions (in addition to chpbld02 errors above)
 (Reviewed for accuracy 07/15/14)
 ===============================================================
+
+-- MDN New on Tue Aug 26, 2014 198 failures
+  View this job at:
+     http://chapel-ci.us.cray.com/job/correctness-test-whitebox-cray-xc-examples/COMPILER=pgi,COMP_TYPE=HOST-TARGET-no-PrgEnv,label_exp=chpbld01/54/
+
+  Elliot checked in a change that is expected to fix this.
+
 
 undefined reference to chpl_bitops_debruijn64 (07/14/14)
 --------------------------------------------------------

@@ -21,10 +21,6 @@
 # all failed) it will not be displayed.
 
 all:
-  02/04/14:
-    - flipped default value of dataParIgnoreRunningTasks
-  02/27/14:
-    - copy propagation rework r22796
   10/14/13:
     - locale ID changes
   10/17/13:
@@ -32,12 +28,18 @@ all:
     - variety of multilocale performance changes
   10/29/13:
     - reversion of sync change to threads
+  02/04/14:
+    - flipped default value of dataParIgnoreRunningTasks
+  02/27/14:
+    - copy propagation rework r22796
   03/28/14:
     - Add static flag for performance testing (22992)
   05/08/14:
     - switched to gcc-4.7
   07/19/14:
     - no testing occurred, machine update
+  08/26/14:
+    - switched default tasking layer to qthreads from fifo
 
 chameneos-redux:
   07/08/13:
@@ -110,6 +112,12 @@ mandelbrot:
 jacobi:
   03/07/14:
     - Added a "trivial assignment" optimization to replace field-by-field assignment with a bulk copy.
+  08/19/14:
+    - C for loops initial commit
+  08/20/14:
+    - Tom's use of user-defined default constructors
+  08/26/14:
+    - Kyle's ref temp peephole optimization
 
 parOpEquals:
   09/06/13:
@@ -140,6 +148,18 @@ STREAM_performance:
 stencil:
   07/21/14:
     - machine related (no commits on the day before)
+
+testSerialReductions:
+  08/16/14:
+    - result of Greg's commit to let the tasking layer determine parallelism
+
+time_array_vs_tuple:
+  08/19/14:
+    - C for loops initial commit
+
+time_array_vs_ddata:
+  05/31/14:
+    - specializing binaries to target architectures
 
 time_iterate:
   11/13/13:

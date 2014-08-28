@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 /* "channel" I/O contributed by Michael Ferguson
 
    Future Work:
@@ -257,11 +276,12 @@ extern proc qio_file_unlock(f:qio_file_ptr_t);
 /* The general way to make sure data is written without error */
 extern proc qio_file_sync(f:qio_file_ptr_t):syserr;
 
-//extern proc qio_file_style_ptr(f:qio_file_ptr_t):qio_style_ptr_t;
 extern proc qio_channel_end_offset_unlocked(ch:qio_channel_ptr_t):int(64);
 extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyle);
-extern proc qio_file_set_style(f:qio_file_ptr_t, const ref style:iostyle);
 extern proc qio_file_length(f:qio_file_ptr_t, ref len:int(64)):syserr;
+
+extern proc qio_file_rename(oldname: c_string, newname: c_string):syserr;
+extern proc qio_file_remove(name: c_string):syserr;
 
 pragma "no prototype" // FIXME
 extern proc qio_channel_create(ref ch:qio_channel_ptr_t, file:qio_file_ptr_t, hints:c_int, readable:c_int, writeable:c_int, start:int(64), end:int(64), const ref style:iostyle):syserr;
@@ -508,35 +528,6 @@ record file {
   var _file_internal:qio_file_ptr_t = QIO_FILE_PTR_NULL;
 }
 
-// used for giving old warnings anyways...
-enum FileAccessMode { read, write };
-
-param _oldioerr="This program is using old-style I/O which is no longer supported.\n" +
-                "See doc/README.io.\n" +
-                "You'll probably want something like:\n" +
-                "var f = open(filename, iomode.w).writer()\n" + 
-                "or\n" + 
-                "var f = open(filename, iomode.r).reader()\n";
-
-// This file constructor exists to throw an error for old I/O code.
-proc file.file(filename:string="",
-               mode:FileAccessMode=FileAccessMode.read,
-               path:string=".") {
-  compilerError(_oldioerr);
-}
-proc file.open() {
-  compilerError(_oldioerr);
-}
-proc file.filename : string {
-  compilerError(_oldioerr + "file.filename is no longer supported");
-}
-proc file.mode {
-  compilerError(_oldioerr + "file.mode is no longer supported");
-}
-proc file.isOpen: bool {
-  compilerError(_oldioerr + "file.isOpen is no longer supported");
-}
-
 // TODO -- shouldn't have to write this this way!
 pragma "init copy fn"
 proc chpl__initCopy(x: file) {
@@ -566,13 +557,6 @@ proc file.check() {
     halt("Operation attempted on an invalid file");
   }
 }
-
-/*
-proc file.file() {
-  this.home = here;
-  this._file_internal = QIO_FILE_PTR_NULL;
-}
-*/
 
 proc file.~file() {
   on this.home {
@@ -844,7 +828,41 @@ proc openmem(style:iostyle = defaultIOStyle()):file {
   return ret;
 }
 
+/* Renames the file specified by oldname to newname, returning an error
+   if one occurred.  The file is not opened during this operation.
+   error: a syserr used to indicate if an error occurred during renaming.
+   oldname: current name of the file
+   newname: name which should refer to the file in the future.*/
+proc rename(out error: syserr, oldname, newname: string) {
+  error = qio_file_rename(oldname.c_str(), newname.c_str());
+}
 
+/* Renames the file specified by oldname to newname, generating an error
+   if one occurred.  The file is not opened during this operation.
+   oldname: current name of the file
+   newname: name which should refer to the file in the future.*/
+proc rename(oldname, newname: string) {
+  var err:syserr = ENOERR;
+  rename(err, oldname, newname);
+  if err then ioerror(err, "in rename", oldname);
+}
+
+/* Removes the file or directory specified by name, returning an error
+   if one occurred via an out parameter.
+   err: a syserr used to indicate if an error occurred during removal
+   name: the name of the file/directory to remove */
+proc remove(out err: syserr, name: string) {
+  err = qio_file_remove(name.c_str());
+}
+
+/* Removes the file or directory specified by name, generating an error
+   if one occurred.
+   name: the name of the file/directory to remove */
+proc remove(name: string) {
+  var err:syserr = ENOERR;
+  remove(err, name);
+  if err then ioerror(err, "in remove", name);
+}
 
 /* in the future, this will be an interface.
    */
@@ -880,10 +898,9 @@ proc =(ref ret:channel, x:channel) {
   ret._channel_internal = x._channel_internal;
 }
 
-proc channel.channel(param writing:bool, param kind:iokind, param locking:bool, f:file, out error:syserr, hints:c_int, start:int(64), end:int(64), style:iostyle) {
+proc channel.channel(param writing:bool, param kind:iokind, param locking:bool, f:file, out error:syserr, hints:c_int, start:int(64), end:int(64), in local_style:iostyle) {
   on f.home {
     this.home = f.home;
-    var local_style = style;
     if kind != iokind.dynamic {
       local_style.binary = true;
       local_style.byteorder = kind:uint(8);
@@ -1147,16 +1164,16 @@ proc file.reader(param kind=iokind.dynamic, param locking=true, start:int(64) = 
 }
 
 // for convenience..
-proc file.lines(out error:syserr, param locking:bool = true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE, style:iostyle = this._style) {
+proc file.lines(out error:syserr, param locking:bool = true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE, in local_style:iostyle = this._style) {
   check();
 
-  style.string_format = QIO_STRING_FORMAT_TOEND;
-  style.string_end = 0x0a; // '\n'
+  local_style.string_format = QIO_STRING_FORMAT_TOEND;
+  local_style.string_end = 0x0a; // '\n'
 
   param kind = iokind.dynamic;
   var ret:ItemReader(string, kind, locking);
   on this.home {
-    var ch = new channel(false, kind, locking, this, error, hints, start, end, style);
+    var ch = new channel(false, kind, locking, this, error, hints, start, end, local_style);
     ret = new ItemReader(string, kind, locking, ch);
   }
   return ret;
@@ -1595,6 +1612,56 @@ proc channel.read(ref args ...?k,
                         "style:iostyle)");
     return false;
   }
+}
+
+proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low, amount = arg.domain.high - start) : bool
+where arg.rank == 1 && isRectangularArr(arg)
+{
+  var e:syserr = ENOERR;
+  var got = this.readline(arg, numRead, start, amount, error=e);
+  if !e && got then return true;
+  else if e == EEOF || !got then return false;
+  else {
+    this._ch_ioerror(e, "in channel.readline(arg : [] uint(8))");
+    return false;
+  }
+}
+
+/*
+  Read a line of bytes into a Chapel array.
+
+  arg:       A 1D DefaultRectangular array which must have at least 1 element.
+  numRead:   The number of bytes read.
+  start:     Index to begin reading into.
+  amount:    The maximum amount of bytes to read.
+
+  Returns true if bytes were read without error.
+*/
+proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low, amount = arg.domain.high - start, out error:syserr) : bool
+where arg.rank == 1 && isRectangularArr(arg)
+{
+  error = ENOERR;
+
+  // Make sure the arguments are valid
+  if arg.size == 0 || !arg.domain.member(start) || amount <= 0 || (start + amount > arg.domain.high)  then return false;
+
+  on this.home {
+    this.lock();
+    param newLineChar = 0x0A;
+    var got : int;
+    var i = start;
+    const maxIdx = start + amount;
+    while i <= maxIdx {
+      got = qio_channel_read_byte(false, this._channel_internal);
+      arg[i] = got:uint(8);
+      i += 1;
+      if got < 0 || got == newLineChar then break;
+    }
+    numRead = i - start;
+    if got < 0 then error = (-got):syserr;
+    this.unlock();
+  }
+  return !error;
 }
 
 proc channel.readline(ref arg:string, out error:syserr):bool {
@@ -3505,7 +3572,7 @@ proc readf(fmt:string):bool {
 
 
 use Regexp;
-extern proc qio_regexp_channel_match(ref re:qio_regexp_t, threadsafe:c_int, ch:qio_channel_ptr_t, maxlen:int(64), anchor:c_int, can_discard:bool, keep_unmatched:bool, keep_whole_pattern:bool, submatch:_ddata(qio_regexp_string_piece_t), nsubmatch:int(64)):syserr;
+extern proc qio_regexp_channel_match(const ref re:qio_regexp_t, threadsafe:c_int, ch:qio_channel_ptr_t, maxlen:int(64), anchor:c_int, can_discard:bool, keep_unmatched:bool, keep_whole_pattern:bool, submatch:_ddata(qio_regexp_string_piece_t), nsubmatch:int(64)):syserr;
 
 proc channel._extractMatch(m:reMatch, ref arg:reMatch, ref error:syserr) {
   // If the argument is a match record, just return it.

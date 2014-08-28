@@ -1,0 +1,1 @@
+bug: Compiler internal error when using a ref var that has not yet be initialized to reference a normal var

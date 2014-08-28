@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 // copyPropagation.cpp
 //
 #include "astutil.h"
@@ -19,7 +38,7 @@
 //#  (move y x)
 //#  ("foo" ... x ... )
 //# That is, cut out the middle man.  If it then happens that y is unused, its
-//# declaration and the moved that defines it can be removed (by
+//# declaration and the move that defines it can be removed (by
 //# deadVariableElimination).
 //#
 //# Clearly, we can only make the substitution if neither x nor y is reassigned
@@ -83,6 +102,25 @@
 //# the entire function.
 //#############################################################################
 
+//#############################################################################
+//# CAVEAT:
+//#
+//# Reference tracking currently does not traverse record field assignments, so
+//# given:
+//#  (move rx (addr_of x))
+//#  (.= record field rx)
+//#  (move rx2 (.v record field))
+//#  (move x 3)                    // Creates pair (x, 3)
+//#  (move (deref rx2) 7)          // Should kill (x, 3) but doesn't
+//# the current implementation does not discover that x has been overwritten
+//# through rx2.  This can lead to the generation of incorrect code.
+//#
+//# Because scalar replacement unwraps records, it eliminates many (if not all)
+//# of the cases that could cause this error to occur.  But the fact that some
+//# test cases fail (e.g. test_nested_var_iterator3) when scalar propagation is
+//# turned off means this is a known weakness that should be addressed.
+//#############################################################################
+
 
 static size_t s_repl_count; ///< The number of pairs replaced by GCP this pass.
 static size_t s_ref_repl_count; ///< The number of references replaced this pass.
@@ -134,7 +172,14 @@ static void extractReferences(Expr* expr,
   // We're only interested in call expressions.
   if (CallExpr* call = toCallExpr(expr))
   {
-    // Only the move primitive creates an available pair.
+    // Consider primitives that can create aliases:
+    // 1. An assign or move primitive that has ref variables on both sides.
+    // 2. An assign or move that has an 'addr of' primitive on its rhs.
+    // 3. A field assignment or extraction that has ref variables on both
+    //    sides. (not implemented)
+    // 4. A field assignment that has an 'addr of' primitive on its rhs. (not
+    //    implemented)
+    // 5. An assign or move that has a PRIM_GET_MEMBER on the rhs. (not implemented)
     if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
     {
       SymExpr* lhe = toSymExpr(call->get(1)); // Left-Hand Expression
@@ -331,6 +376,16 @@ static bool isUse(SymExpr* se)
       return true;
      case PRIM_MOVE:
      case PRIM_ASSIGN:
+     case PRIM_ADD_ASSIGN:
+     case PRIM_SUBTRACT_ASSIGN:
+     case PRIM_MULT_ASSIGN:
+     case PRIM_DIV_ASSIGN:
+     case PRIM_MOD_ASSIGN:
+     case PRIM_LSH_ASSIGN:
+     case PRIM_RSH_ASSIGN:
+     case PRIM_AND_ASSIGN:
+     case PRIM_OR_ASSIGN:
+     case PRIM_XOR_ASSIGN:
       if (se == call->get(1))
         return false;
       return true;

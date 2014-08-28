@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 // wrappers.cpp
 ////////////////////////////////////////////////////////////////////////////////{
 // Wrappers are used to lower the Chapel idea of a function call to something
@@ -58,6 +77,8 @@ buildPromotionWrapper(FnSymbol* fn,
 static FnSymbol*
 buildEmptyWrapper(FnSymbol* fn, CallInfo* info) {
   FnSymbol* wrapper = new FnSymbol(fn->name);
+  // TODO: Make this less verbose by bulk-copying flags from the original
+  // function and then negating flags we don't want.
   wrapper->addFlag(FLAG_WRAPPER);
   wrapper->addFlag(FLAG_INVISIBLE_FN);
   wrapper->addFlag(FLAG_INLINE);
@@ -73,6 +94,10 @@ buildEmptyWrapper(FnSymbol* fn, CallInfo* info) {
     wrapper->addFlag(FLAG_NO_PARENS);
   if (fn->hasFlag(FLAG_CONSTRUCTOR))
     wrapper->addFlag(FLAG_CONSTRUCTOR);
+  if (fn->hasFlag(FLAG_FIELD_ACCESSOR))
+    wrapper->addFlag(FLAG_FIELD_ACCESSOR);
+  if (fn->hasFlag(FLAG_REF_TO_CONST))
+    wrapper->addFlag(FLAG_REF_TO_CONST);
   if (!fn->hasFlag(FLAG_ITERATOR_FN)) { // getValue is var, not iterator
     wrapper->retTag = fn->retTag;
     if (fn->setter)
@@ -83,6 +108,10 @@ buildEmptyWrapper(FnSymbol* fn, CallInfo* info) {
   if (fn->hasFlag(FLAG_ASSIGNOP))
     wrapper->addFlag(FLAG_ASSIGNOP);
   wrapper->instantiationPoint = getVisibilityBlock(info->call);
+  if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
+    wrapper->addFlag(FLAG_DEFAULT_CONSTRUCTOR);
+  if (fn->hasFlag(FLAG_COMPILER_GENERATED))
+    wrapper->addFlag(FLAG_WAS_COMPILER_GENERATED);
   wrapper->addFlag(FLAG_COMPILER_GENERATED);
   return wrapper;
 }
@@ -556,6 +585,9 @@ buildPromotionWrapper(FnSymbol* fn,
   SET_LINENO(info->call);
   FnSymbol* wrapper = buildEmptyWrapper(fn, info);
   wrapper->addFlag(FLAG_PROMOTION_WRAPPER);
+  // Special case: When promoting a default constructor, the promotion wrapper
+  // itself is no longer a default constructor.
+  wrapper->removeFlag(FLAG_DEFAULT_CONSTRUCTOR);
   wrapper->cname = astr("_promotion_wrap_", fn->cname);
   CallExpr* indicesCall = new CallExpr("_build_tuple"); // destructured in build
   CallExpr* iteratorCall = new CallExpr("_build_tuple");

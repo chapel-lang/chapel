@@ -258,16 +258,6 @@ if ($debug == 1 && $logdir eq "") {
         print "Error: CHPL_NIGHTLY_LOGDIR ($logdir) not accessible\n";
     }
 }
-$statdir = $ENV{'CHPL_NIGHTLY_STATDIR'};
-if ($debug == 1 && $statdir eq "") {
-    $statdir = $logdir."/Stats";
-    if (! -e $statdir) {
-        mysystem("mkdir $statdir > /dev/null", "creating log dir", 1, 1);
-    } elsif (! (-r $statdir and -w $statdir and -d $statdir)) {
-        print "Error: CHPL_NIGHTLY_STATDIR ($statdir) not accessible\n";
-        exit 1;
-    }
-}
 
 
 $testbindirname = dirname($0);
@@ -320,36 +310,6 @@ print "\$chplhomedir = $chplhomedir\n";
 
 
 $launchcmd = "$ENV{'CHPL_APP_LAUNCH_CMD'}";
-
-if ($debug == 1) {
-    if ($performance == 1) {
-        $statfile = "$statdir/nightly-perf.$fullplatform-debug.dat";
-    } elsif ($baseline == 1) {
-        $statfile = "$statdir/nightly-baseline.$fullplatform-debug.dat";
-    } elsif ($fast == 1) {
-        $statfile = "$statdir/nightly-fast.$fullplatform-debug.dat";
-    } elsif ($nolocal == 1) {
-        $statfile = "$statdir/nightly-nolocal.$fullplatform-debug.dat";
-    } elsif ($verify == 1) {
-        $statfile = "$statdir/nightly-verify.$fullplatform-debug.dat";
-    } else {
-        $statfile = "$statdir/nightly.$fullplatform-debug.dat";
-    }
-} else {
-    if ($performance == 1) {
-        $statfile = "$statdir/nightly-perf.$fullplatform-cron.dat";
-    } elsif ($baseline == 1) {
-        $statfile = "$statdir/nightly-baseline.$fullplatform-cron.dat";
-    } elsif ($fast == 1) {
-        $statfile = "$statdir/nightly-fast.$fullplatform-cron.dat";
-    } elsif ($nolocal == 1) {
-        $statfile = "$statdir/nightly-nolocal.$fullplatform-cron.dat";
-    } elsif ($verify == 1) {
-        $statfile = "$statdir/nightly-verify.$fullplatform-cron.dat";
-    } else {
-        $statfile = "$statdir/nightly.$fullplatform-cron.dat";
-    }
-}
 
 #Cron (linux64-gnu-none-none): 0 new failures (39/105 total failures/futures)
 
@@ -711,7 +671,7 @@ if ($runtests == 0) {
         # FIXME: Update this logic to work with git repo that manages perf
         #        data. (thomasvandoren, 2014-07-10)
 
-        mysystem("cd $svnPerfDir && svn update", "svn-updating perf data before running tests" . $svnPerfMsgXtra, 0, 1, 1);
+        mysystem("cd $svnPerfDir && svn update", "svn-updating perf data before running tests" . $svnPerfMsgXtra, 0, 0, 1);
     }
 
     $ENV{'CHPL_HOME'} = $chplhomedir;
@@ -772,9 +732,9 @@ if ($runtests == 0) {
 
 
     if ($performance == 1 or $compperformance == 1) {
-        mysystem("cd $svnPerfDir && svn update", "svn-updating perf data after running tests" . $svnPerfMsgXtra, 0, 1, 1);
+        mysystem("cd $svnPerfDir && svn update", "svn-updating perf data after running tests" . $svnPerfMsgXtra, 0, 0, 1);
         mysystem("cd $svnPerfDir && find . -name '*.dat' -print0 | xargs -0 svn add  --parents 2>&1 | grep -v '^svn: warning: .* is already under version control\$'", "svn-adding perf data files", 0, 0, 1);  # can fail easily - ignore failures
-        mysystem("cd $svnPerfDir && svn commit -m \"Subject: Perf data update $host  `date '+%F %T'`  $revision\n\nDescription: <empty>\n\"", "svn-committing perf data" . $svnPerfMsgXtra, 0, 1, 1);
+        mysystem("cd $svnPerfDir && svn commit -m \"Subject: Perf data update $host  `date '+%F %T'`  $revision\n\nDescription: <empty>\n\"", "svn-committing perf data" . $svnPerfMsgXtra, 0, 0, 1);
 
         # sync the performance graphs over to sourceforge 
         $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnPerfBaseDir/ $host --logFile $logdir/syncToSourceForge.errors";
@@ -785,7 +745,7 @@ if ($runtests == 0) {
   
     if ($releasePerformance == 1) {
         my $svnReleasePerfDir = "$svnPerfDir/releaseOverRelease/";
-        mysystem("cd $svnReleasePerfDir && svn update", "svn-updating release over release perf data after running tests" , 0, 1, 1);
+        mysystem("cd $svnReleasePerfDir && svn update", "svn-updating release over release perf data after running tests" , 0, 0, 1);
 
         # check to make sure there is a release over release directory
         if (not -e "$svnReleasePerfDir") {
@@ -919,24 +879,6 @@ if ($runtests == 0) {
     
     
 #
-# write stats and build new graph for linux only
-#
-    if ($knownumtests == 1) {
-        $testcol = "$curnumtests";
-    } else {
-        $testcol = "-";
-    }
-    if ($valgrind == 0) {
-        $col = "$cursucc";
-        $vgrcol = "-";
-    } else {
-        $col = "-";
-        $vgrcol = "$cursucc";
-    }
-    `echo "$statdate\t-\t$testcol\t$col\t$vgrcol" >> $statfile`;
-    commitstats();
-
-#
 # analyze memory leaks tests
 #
     if (!($memleaks eq "")) {
@@ -990,31 +932,8 @@ sub mysystem {
 	    close(MAIL);
 	}
 
-	if ($fatal != 0) {
-            `echo "$statdate\t1" >> $statfile`;
-            commitstats();
-	    exit 1;
-	}
     }
     $status;
-}
-
-sub commitstats {
-  if ($performance == 0) {
-    if ($debug == 0) {
-        print "Checking in $statfile\n";
-        system("ci -l -m'automated nightly checkin' $statfile");
-    }
-    $makeplot = $statdir."/makeplot";
-    if (! -x $makeplot) {
-        print "skipping makeplot step\n";
-    } else {
-        if ($hostplatform eq "linux64") {
-            print "Running cd $statdir && ./makeplot\n";
-            system("cd $statdir && ./makeplot");
-        }
-    }
-  }
 }
 
 sub numsuccesses {

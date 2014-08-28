@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
 #endif
@@ -3568,7 +3587,15 @@ void codegenOpAssign(GenRet a, GenRet b, const char* op,
 {
   GenInfo* info = gGenInfo;
 
-  GenRet ap = codegenDeref(a);  // deref 'a' since it's a 'ref' argument
+  // deref 'a' if it is a 'ref' argument
+  GenRet ap;
+  if (a.chplType->symbol->hasFlag(FLAG_REF) ||
+      a.chplType->symbol->hasFlag(FLAG_WIDE) ||
+      a.chplType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+    ap = codegenDeref(a);
+  } else {
+    ap = a;
+  }
   GenRet bv = codegenValue(b);  // get the value of 'b'
 
   bool aIsRemote = ap.isLVPtr == GEN_WIDE_PTR;
@@ -4343,11 +4370,24 @@ GenRet CallExpr::codegen() {
       // optimizations depending on specifics of the RHS expression.)
 
       // PRIM_ASSIGN expects either a narrow or wide pointer as its LHS arg.
-      INT_ASSERT(get(1)->typeInfo()->symbol->hasFlag(FLAG_REF) ||
-                 get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE));
-
-      // Handle general cases of PRIM_ASSIGN.
-      codegenAssign(codegenDeref(get(1)), get(2));
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
+          get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+        codegenAssign(get(1), get(2));
+      } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
+                 !get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+        // This case was taken from PRIM_MOVE unfortunately
+        if (get(2)->typeInfo() != dtString)
+          codegenAssign(get(1), codegenAddrOf(codegenWideHere(get(2))));
+        else
+          codegenCall("chpl_string_widen", codegenAddrOf(get(1)), get(2),
+                      get(3), get(4));
+      } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF) ||
+          get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+          get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+        codegenAssign(codegenDeref(get(1)), get(2));
+      } else {
+        codegenAssign(get(1), get(2));
+      }
       break;
     case PRIM_ADD_ASSIGN:
       codegenOpAssign(get(1), get(2), " += ", codegenAdd);

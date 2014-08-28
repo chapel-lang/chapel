@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "iterator.h"
 
 #include "astutil.h"
@@ -31,7 +50,9 @@ IteratorInfo::IteratorInfo() :
   zip3(NULL),
   zip4(NULL),
   hasMore(NULL),
-  getValue(NULL)
+  getValue(NULL),
+  init(NULL),
+  incr(NULL)
 {}
 
 
@@ -96,6 +117,7 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
         } else if (BlockStmt* block = toBlockStmt(call->parentExpr)) {
           if (block->blockInfo &&
               (block->blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP) ||
+               block->blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP) ||
                block->blockInfo->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP))) {
             singleYield = call;
           } else {
@@ -111,6 +133,7 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
         if (singleFor) {
           return NULL;
         } else if ((block->blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP) ||
+                    block->blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP) ||
                     block->blockInfo->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP)) &&
                    block->parentExpr == fn->body) {
           singleFor = block;
@@ -376,11 +399,13 @@ buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
       zip1body->insertAtTail(expr->copy(&map));
   }
 
-  // Check for more
+  // Check for more (only for non c for loops)
   CallExpr* blockInfo = singleLoop->blockInfo->copy(&map);
-  zip1body->insertAtTail(new CondStmt(blockInfo->get(1)->remove(),
-                                      new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this, ii->iclass->getField("more"), new_IntSymbol(1)),
-                                      new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this, ii->iclass->getField("more"), new_IntSymbol(0))));
+  if (!blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
+    zip1body->insertAtTail(new CondStmt(blockInfo->get(1)->remove(),
+                                        new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this, ii->iclass->getField("more"), new_IntSymbol(1)),
+                                        new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this, ii->iclass->getField("more"), new_IntSymbol(0))));
+  }
   zip1body->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
   ii->zip1->body->replace(zip1body);
@@ -456,12 +481,14 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
     if (!isDefExpr(expr))
       zip3body->insertAtTail(expr->copy(&map));
   }
- 
-  // Check for more
+
+  // Check for more (only for non c for loops)
   CallExpr* blockInfo = singleLoop->blockInfo->copy(&map);
-  zip3body->insertAtTail(new CondStmt(blockInfo->get(1)->remove(),
-                                      new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this, ii->iclass->getField("more"), new_IntSymbol(1)),
-                                      new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this, ii->iclass->getField("more"), new_IntSymbol(0))));
+  if (!blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
+    zip3body->insertAtTail(new CondStmt(blockInfo->get(1)->remove(),
+                                        new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this, ii->iclass->getField("more"), new_IntSymbol(1)),
+                                        new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this, ii->iclass->getField("more"), new_IntSymbol(0))));
+  }
   zip3body->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
   ii->zip3->body->replace(zip3body);
@@ -572,13 +599,34 @@ buildAdvance(FnSymbol* fn,
 
 // Build hasMore function.
 static void
-buildHasMore(IteratorInfo* ii) {
-  VarSymbol* tmp = newTemp(ii->hasMore->retType);
+buildHasMore(IteratorInfo* ii, BlockStmt* singleLoop) {
+  // In copied expressions, replace _ic with hasMore->_this .
+  SymbolMap map;
+  Symbol* ic = ii->advance->getFormal(1);
+  map.put(ic, ii->hasMore->_this);
+
   // This block will replace the stubbed-in body of ii->hasMore.
   BlockStmt* hasMoreBody = new BlockStmt();
+  VarSymbol* tmp = newTemp(ii->hasMore->retType);
   hasMoreBody->insertAtTail(new DefExpr(tmp));
-  hasMoreBody->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, ii->hasMore->getFormal(1), ii->iclass->getField("more"))));
+
+  CallExpr* blockInfo = NULL;
+  if (singleLoop) blockInfo = singleLoop->blockInfo->copy(&map);
+  if (blockInfo && blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
+    if (BlockStmt* testSeg = toBlockStmt(blockInfo->get(2))) {
+      for_alist(expr, testSeg->body) {
+        if (expr != testSeg->body.tail) {
+          hasMoreBody->insertAtTail(expr->copy(&map));
+        }
+      }
+      hasMoreBody->insertAtTail(new CallExpr(PRIM_MOVE, tmp, testSeg->body.tail->copy(&map)));
+    }
+
+  } else {
+    hasMoreBody->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, ii->hasMore->getFormal(1), ii->iclass->getField("more"))));
+  }
   hasMoreBody->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
+
   ii->hasMore->body->replace(hasMoreBody);
 }
 
@@ -594,6 +642,54 @@ buildGetValue(IteratorInfo* ii) {
   getMoreBody->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
   ii->getValue->body->replace(getMoreBody);
 }
+
+static void
+buildInit(IteratorInfo* ii, BlockStmt* singleLoop) {
+  // In copied expressions, replace _ic with init->_this .
+  SymbolMap map;
+  Symbol* ic = ii->advance->getFormal(1);
+  map.put(ic, ii->init->_this);
+
+  // This block will replace the stubbed-in body of ii->init.
+  BlockStmt* initBody = new BlockStmt();
+
+  CallExpr* blockInfo = NULL;
+  if (singleLoop) blockInfo = singleLoop->blockInfo->copy(&map);
+  if (blockInfo && blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
+    if (BlockStmt* initSeg = toBlockStmt(blockInfo->get(1))) {
+      for_alist(expr, initSeg->body) {
+        initBody->insertAtTail(expr->copy(&map));
+      }
+    }
+  }
+  initBody->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  ii->init->body->replace(initBody);
+}
+
+
+static void
+buildIncr(IteratorInfo* ii, BlockStmt* singleLoop) {
+  // In copied expressions, replace _ic with incr->_this .
+  SymbolMap map;
+  Symbol* ic = ii->advance->getFormal(1);
+  map.put(ic, ii->incr->_this);
+
+  // This block will replace the stubbed-in body of ii->incr.
+  BlockStmt* incrBody = new BlockStmt();
+
+  CallExpr* blockInfo = NULL;
+  if (singleLoop) blockInfo = singleLoop->blockInfo->copy(&map);
+  if (blockInfo && blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
+    if (BlockStmt* incrSeg = toBlockStmt(blockInfo->get(3))) {
+      for_alist(expr, incrSeg->body) {
+        incrBody->insertAtTail(expr->copy(&map));
+      }
+    }
+  }
+  incrBody->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  ii->incr->body->replace(incrBody);
+}
+
 
 
 // Collect local variables that are live at the point of any yield.
@@ -1057,8 +1153,15 @@ void lowerIterator(FnSymbol* fn) {
 //      ii->zip4->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
     }
     buildAdvance(fn, asts, local2field, locals);
-    buildHasMore(ii);
+    // Note that buildInit and buildIncr are essentially no-ops for non c for
+    // loops and that the behavior of buildHasMore changes for C for loops.
+    // For c for loops these basically just takes the init, test, and incr
+    // expressions from the c for loop primitives and put them in the iterator
+    // functions.
+    buildHasMore(ii, singleLoop);
     buildGetValue(ii);
+    buildInit(ii, singleLoop);
+    buildIncr(ii, singleLoop);
   }
   rebuildIterator(ii, local2rfield, locals);
   rebuildGetIterator(ii);

@@ -1,7 +1,0 @@
-bug: Task function must capture r and prevent its being released in call_test_one().
-
-Compile this test with the --no-local flag and then run it under valgrind.  You
-should observe a number of reads/writes in freed memory.
-
-The .good file is only a guess and will need to be resolved when this bug is
-resolved.

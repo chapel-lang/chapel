@@ -1,1 +1,2 @@
-assoc_array_access_oob.chpl:4: error: halt reached - array index out of bounds: 5
+indices is: {5}
+elems is: 1.0

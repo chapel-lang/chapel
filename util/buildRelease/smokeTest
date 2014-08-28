@@ -30,14 +30,25 @@ perl -c $CHPL_HOME/util/cron/nightly
 perl -c $CHPL_HOME/util/cron/start_opt_test
 perl -c $CHPL_HOME/util/tokencount/tokctnightly
 
+# Check copyrights in source files.
+$CHPL_HOME/util/test/checkCopyrights.bash
+
 # Source common.bash, which sets up a bunch of environment variables like
 # CHPL_DEVELOPER, CHPL_GMP, etc. that are required for nightly testing.
 source $CHPL_HOME/util/cron/common.bash
 
 # Special case for older mac we use for testing. Warnings from arch.py and as
-# need to be filtered.
+# need to be filtered. Qthreads is not supported for mac os version < 10, so
+# use fifo instead.
 if [ "$(uname -s)" = "Darwin" -a "$(uname -r)" = "9.8.0" ] ; then
     export CHPL_START_TEST_ARGS="--syspreexec ${CHPL_HOME}/util/test/preexec-for-old-macs"
+    export CHPL_TASKS=fifo
+fi
+
+# Special case 32bit systems. Set the runtime stack size to 2M (defaults to 8M)
+# to avoid using too much memory.
+if [ "$($CHPL_HOME/util/chplenv/chpl_platform.py)" = "linux32" ] ; then
+    export CHPL_RT_CALL_STACK_SIZE=2M
 fi
 
 # Compile chapel and make sure the hello world examples run.

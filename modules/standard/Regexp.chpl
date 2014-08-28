@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 extern type qio_regexp_t;
 
 extern record qio_regexp_options_t {
@@ -17,14 +36,14 @@ extern proc qio_regexp_init_default_options(ref options:qio_regexp_options_t);
 extern proc qio_regexp_create_compile(str:c_string, strlen:int(64), ref options:qio_regexp_options_t, ref compiled:qio_regexp_t);
 extern proc qio_regexp_create_compile_flags(str:c_string, strlen:int(64), flags:c_string, flagslen:int(64), isUtf8:bool, ref compiled:qio_regexp_t);
 extern proc qio_regexp_create_compile_flags_2(str:c_void_ptr, strlen:int(64), flags:c_void_ptr, flagslen:int(64), isUtf8:bool, ref compiled:qio_regexp_t);
-extern proc qio_regexp_retain(ref compiled:qio_regexp_t);
+extern proc qio_regexp_retain(const ref compiled:qio_regexp_t);
 extern proc qio_regexp_release(ref compiled:qio_regexp_t);
 
-extern proc qio_regexp_get_options(ref regexp:qio_regexp_t, ref options: qio_regexp_options_t);
-extern proc qio_regexp_get_pattern(ref regexp:qio_regexp_t, ref pattern: c_string);
-extern proc qio_regexp_get_ncaptures(ref regexp:qio_regexp_t):int(64);
-extern proc qio_regexp_ok(ref regexp:qio_regexp_t):bool;
-extern proc qio_regexp_error(ref regexp:qio_regexp_t):c_string;
+extern proc qio_regexp_get_options(const ref regexp:qio_regexp_t, ref options: qio_regexp_options_t);
+extern proc qio_regexp_get_pattern(const ref regexp:qio_regexp_t, ref pattern: c_string);
+extern proc qio_regexp_get_ncaptures(const ref regexp:qio_regexp_t):int(64);
+extern proc qio_regexp_ok(const ref regexp:qio_regexp_t):bool;
+extern proc qio_regexp_error(const ref regexp:qio_regexp_t):c_string;
 
 extern const QIO_REGEXP_ANCHOR_UNANCHORED:c_int;
 extern const QIO_REGEXP_ANCHOR_START:c_int;

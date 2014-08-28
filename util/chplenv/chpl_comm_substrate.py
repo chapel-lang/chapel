@@ -10,7 +10,7 @@ def get():
     if not substrate_val:
         comm_val = chpl_comm.get()
         platform_val = chpl_platform.get('target')
-        arch_val = chpl_arch.get('target')
+        arch_val = chpl_arch.get('target', get_lcd=True)
 
         if comm_val == 'gasnet':
             if platform_val == 'cray-xt':
