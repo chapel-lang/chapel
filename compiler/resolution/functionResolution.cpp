@@ -6916,10 +6916,8 @@ static void insertRuntimeTypeTemps() {
   }
 }
 
-static void resolveAutoCopies()
-{
-  forv_Vec(TypeSymbol, ts, gTypeSymbols)
-  {
+static void resolveAutoCopies() {
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (!ts->defPoint->parentSymbol)
       continue; // Type is not in tree
     if (ts->hasFlag(FLAG_GENERIC))
