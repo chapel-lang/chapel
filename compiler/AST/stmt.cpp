@@ -288,6 +288,8 @@ static void codegenCForLoopConditionalPre(Expr* expr)
   }
 }
 
+#endif
+
 static CallExpr* codegenCForLoopFindConditional(Expr* expr)
 {
   if (toDefExpr(expr) || toSymExpr(expr)) {
@@ -300,6 +302,7 @@ static CallExpr* codegenCForLoopFindConditional(Expr* expr)
     return codegenCForLoopFindConditional(call->get(2));
   return call;
 }
+
 
 static GenRet codegenCForLoopConditional(BlockStmt* block)
 {
@@ -316,7 +319,6 @@ static GenRet codegenCForLoopConditional(BlockStmt* block)
   assert(the_call);
   return codegenValue(the_call);
 }
-#endif
 
 GenRet BlockStmt::codegen() {
   GenInfo* info    = gGenInfo;
