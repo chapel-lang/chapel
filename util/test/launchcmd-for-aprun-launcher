@@ -98,6 +98,35 @@ class AbstractPbsJob(object):
         return full_test_command
 
     @property
+    def detect_num_cpus(self):
+        """Returns the number of cpus that qsub should reserve. PBSPro requires
+        the cpu reservation be given to both qsub, and aprun.
+
+        If cnselect is not callable, raise RuntimeError.
+
+        :rtype: type
+        :returns: Number of cpus to reserve, or -1 if there was no cnselect output
+        """
+        try:
+            logging.debug('Checking for number of cpus to reserve.')
+            cnselect_proc = subprocess.Popen(
+                ['cnselect', '-Lnumcores'],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT)
+
+            logging.debug('Communicating with cnselect process.')
+            stdout, stderr = cnselect_proc.communicate()
+        except OSError as ex:
+            raise RuntimeError(ex)
+        first_line = stdout.split('\n')[0]
+        if first_line:
+            return int(first_line)
+        else:
+            msg = 'cnselect -Lnumcores had no output.'
+            logging.error(msg)
+            raise ValueError(msg)
+
+    @property
     def job_name(self):
         """Returns job name string from test command and CHPL_PBS_NAME_PREFIX env var.
 
@@ -145,8 +174,9 @@ class AbstractPbsJob(object):
                 qsub_command.append('{0}={1}'.format(
                     self.hostlist_resource, self.hostlist))
             if self.num_cpus_resource is not None:
+                qsub_command.append('-l')
                 qsub_command.append('{0}={1}'.format(
-                    self.self.num_cpus_resource, self._detect_num_cpus))
+                    self.num_cpus_resource, self.detect_num_cpus))
 
             logging.debug('qsub command to run: {0}'.format(qsub_command))
 
@@ -267,34 +297,6 @@ class AbstractPbsJob(object):
         else:
             return PbsProJob
 
-    @classmethod
-    def _detect_num_cpus(cls):
-        """Returns the number of cpus that qsub should reserve. PBSPro requires
-        the cpu reservation be given to both qsub, and aprun.
-
-        If cnselect is not callable, raise RuntimeError.
-
-        :rtype: type
-        :returns: Number of cpus to reserve, or -1 if there was no cnselect output
-        """
-        try:
-            logging.debug('Checking for number of cpus to reserve.')
-            cnselect_proc = subprocess.Popen(
-                ['cnselect', '-Lnumcores'],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT)
-
-            logging.debug('Communicating with cnselect process.')
-            stdout, stderr = cnselect_proc.communicate()
-        except OSError as ex:
-            raise RuntimeError(ex)
-        first_line = stdout.split('\n')[0] != ''
-        if first_line:
-            return int(first_line)
-        else
-            msg = 'cnselect -Lnumcores had no output.'
-            logging.error(msg)
-              raise ValueError(msg)
 
     @classmethod
     def init_from_environment(cls):
