@@ -20,8 +20,6 @@ config const numChameneos2 : int(32) = 10; // size of population 2
 enum Color {blue=0, red=1, yellow=2};
 enum Digit {zero, one, two, three, four,
             five, six, seven, eight, nine};
-config const verbose = false;
-// if verbose is true, prints out non-det output, otherwise prints det output
 config param CHAMENEOS_IDX_MASK = 0xFF: uint(32);
 config param MEET_COUNT_SHIFT = 8;
 
@@ -194,29 +192,6 @@ proc run(population : [] Chameneos, meetingPlace : MeetingPlace) {
   meetingPlace.reset();
 }
 
-proc runQuiet(population : [] Chameneos, meetingPlace : MeetingPlace) {
-  coforall i in population {
-    i.start(population, meetingPlace);
-  }
-  meetingPlace.reset();
-
-  const totalMeetings = + reduce population.meetings;
-  const totalMeetingsWithSelf = + reduce population.meetingsWithSelf;
-  if (totalMeetings == numMeetings*2) {
-    writeln("total meetings PASS");
-  } else {
-    writeln("total meetings actual = ", totalMeetings, ", total meetings expected = ", numMeetings*2);
-  }
-
-  if (totalMeetingsWithSelf == 0) {
-    writeln("total meetings with self PASS");
-  } else {
-    writeln("total meetings with self actual = ", totalMeetingsWithSelf, ", total meetings with self expected = 0");
-  }
-
-  writeln();
-}
-
 proc printInfo(population : [] Chameneos) {
   for i in population {
     write(i.meetings);
@@ -247,16 +222,11 @@ proc main() {
     const population1 = populate(numChameneos1);
     const population2 = populate(numChameneos2);
 
-    if (verbose) {
-      run(population1, forest);
-      printInfo(population1);
+    run(population1, forest);
+    printInfo(population1);
 
-      run(population2, forest);
-      printInfo(population2);
-    } else {
-      runQuiet(population1, forest);
-      runQuiet(population2, forest);
-    }
+    run(population2, forest);
+    printInfo(population2);
   }
 }
 
