@@ -406,9 +406,9 @@ static int32_t chpl_qt_getenv_num_workers() {
 }
 
 
-// Sets up and returns the amount of hardware parallelism to use limited to
+// Sets up and returns the amount of hardware parallelism to use, limited to
 // maxThreads. Returns -1 if we did not setup parallelism because a user
-// explicitly requested a layout from qthreads.
+// explicitly requested a specific layout from qthreads.
 static int32_t setupAvailableParallelism(int32_t maxThreads) {
     int32_t   numThreadsPerLocale;
     int32_t   qtEnvThreads;
@@ -508,7 +508,7 @@ static void setupCallStacks(int32_t hwpar) {
 
         // Qthreads sets up memory pools expecting the item_size to be small.
         // Stacks are allocated in this manner too, but our default stack size
-        // is quite large, so we limit the max memory allocated at a  shot. We
+        // is quite large, so we limit the max memory allocated for a pool. We
         // default to a multiple of callStackSize and hwpar, with the thought
         // that available memory is generally proportional to the amount of
         // parallelism. For some architectures, this isn't true so we set a max
@@ -516,7 +516,7 @@ static void setupCallStacks(int32_t hwpar) {
         // limit all qthreads pool allocations to a small value, so we have a
         // lower bound as well. Note that qthread stacks are slightly larger
         // than specified to store a book keeping structure and possibly guard
-        // pages so we thrown an extra MB on to deal with that.
+        // pages, so we thrown an extra MB.
         if (hwpar > 0) {
             const size_t oneMB = 1024 * 1024;
             const size_t allocSizeLowerBound =  33 * oneMB;
