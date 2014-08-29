@@ -1,0 +1,12 @@
+feature request: should the value of a sync/single variable be read when it is the receiver calling a method on the underlying type?
+
+For uniformity, when I pass a "sync int"-typed variable to a function
+expecting an "int", esp. by 'in' intent, I assume that the variable
+will be readFE()-read, regardless whether it is passed to the 'this'
+formal or not.
+
+However, the compiler currently has a special case that bypasses
+readFE when a sync variable is passed to the 'this' formal.
+while performing readFE for non-receiver formals. This seems incorrect to me.
+
+Ditto single types.
