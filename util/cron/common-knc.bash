@@ -10,11 +10,9 @@ fi
 module load intel
 
 # Unload things that conflict with craype-intel-knc.
-existing_cpu_module=$(module list -t 2>&1 | grep craype- | grep -v network || :)
-if [ -n "${existing_cpu_module}" ] ; then
-    module unload $existing_cpu_module
-fi
-module unload atp cray-libsci
+knc_conflicts=$(module show craype-intel-knc 2>&1 | \
+    grep conflict | sed 's/conflict\s*//')
+module unload $knc_conflicts
 
 # Setup environment to build knc.
 export CHPL_TARGET_COMPILER=intel
