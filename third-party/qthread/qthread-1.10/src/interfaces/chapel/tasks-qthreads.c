@@ -347,10 +347,10 @@ static void chpl_qt_setenv(char* var, char* val, int32_t override) {
     chpl_bool eitherSet = false;
 
     strncpy(qt_env, "QT_", sizeof(qt_env));
-    strncat(qt_env, var, sizeof(qt_env));
+    strncat(qt_env, var, sizeof(qt_env) - 1);
 
     strncpy(qthread_env, "QTHREAD_", sizeof(qthread_env));
-    strncat(qthread_env, var, sizeof(qthread_env));
+    strncat(qthread_env, var, sizeof(qthread_env) - 1);
 
     qt_val = getenv(qt_env);
     qthread_val = getenv(qthread_env);
@@ -405,7 +405,11 @@ static int32_t chpl_qt_getenv_num_workers() {
     return 0;
 }
 
-static void setupAvailableParallelism(int32_t maxThreads) {
+
+// Sets up and returns the amount of hardware parallelism to use, limited to
+// maxThreads. Returns -1 if we did not setup parallelism because a user
+// explicitly requested a specific layout from qthreads.
+static int32_t setupAvailableParallelism(int32_t maxThreads) {
     int32_t   numThreadsPerLocale;
     int32_t   qtEnvThreads;
     int32_t   hwpar;
@@ -478,9 +482,10 @@ static void setupAvailableParallelism(int32_t maxThreads) {
             chpl_qt_setenv("HWPAR", newenv_workers, 1);
         }
     }
+    return hwpar;
 }
 
-static void setupCallStacks(void) {
+static void setupCallStacks(int32_t hwpar) {
     size_t callStackSize;
 
     // If the user compiled with no stack checks (either explicitly or
@@ -500,19 +505,48 @@ static void setupCallStacks(void) {
         char newenv_stack[QT_ENV_S];
         snprintf(newenv_stack, sizeof(newenv_stack), "%zu", callStackSize);
         chpl_qt_setenv("STACK_SIZE", newenv_stack, 1);
+
+        // Qthreads sets up memory pools expecting the item_size to be small.
+        // Stacks are allocated in this manner too, but our default stack size
+        // is quite large, so we limit the max memory allocated for a pool. We
+        // default to a multiple of callStackSize and hwpar, with the thought
+        // that available memory is generally proportional to the amount of
+        // parallelism. For some architectures, this isn't true so we set a max
+        // upper bound. And if the callStackSize is small, we don't want to
+        // limit all qthreads pool allocations to a small value, so we have a
+        // lower bound as well. Note that qthread stacks are slightly larger
+        // than specified to store a book keeping structure and possibly guard
+        // pages, so we thrown an extra MB.
+        if (hwpar > 0) {
+            const size_t oneMB = 1024 * 1024;
+            const size_t allocSizeLowerBound =  33 * oneMB;
+            const size_t allocSizeUpperBound = 513 * oneMB;
+            size_t maxPoolAllocSize;
+            char newenv_alloc[QT_ENV_S];
+
+            maxPoolAllocSize = 2 * hwpar * callStackSize + oneMB;
+            if (maxPoolAllocSize < allocSizeLowerBound) {
+                maxPoolAllocSize = allocSizeLowerBound;
+            } else if (maxPoolAllocSize > allocSizeUpperBound) {
+                maxPoolAllocSize = allocSizeUpperBound;
+            }
+            snprintf(newenv_alloc, sizeof(newenv_alloc), "%zu", maxPoolAllocSize);
+            chpl_qt_setenv("MAX_POOL_ALLOC_SIZE", newenv_alloc, 0);
+        }
     }
 }
 
 void chpl_task_init(void)
 {
     int32_t   commMaxThreads;
+    int32_t   hwpar;
     pthread_t initer;
 
     commMaxThreads = chpl_comm_getMaxThreads();
 
     // Setup hardware parallelism, the stack size, and stack guards
-    setupAvailableParallelism(commMaxThreads);
-    setupCallStacks();
+    hwpar = setupAvailableParallelism(commMaxThreads);
+    setupCallStacks(hwpar);
 
     if (verbosity >= 2) { chpl_qt_setenv("INFO", "1", 0); }
 
