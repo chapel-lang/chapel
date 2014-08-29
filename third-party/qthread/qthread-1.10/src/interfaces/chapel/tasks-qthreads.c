@@ -482,6 +482,7 @@ static void setupAvailableParallelism(int32_t maxThreads) {
 
 static void setupCallStacks(void) {
     size_t callStackSize;
+    size_t maxAllocSize;
 
     // If the user compiled with no stack checks (either explicitly or
     // implicitly) turn off qthread guard pages. TODO there should also be a
@@ -498,8 +499,45 @@ static void setupCallStacks(void) {
         (qt_internal_get_env_num("STACK_SIZE", 0, 0) == 0 &&
          (callStackSize = chpl_task_getDefaultCallStackSize()) > 0)) {
         char newenv_stack[QT_ENV_S];
+        char newenv_alloc[QT_ENV_S];
+
         snprintf(newenv_stack, sizeof(newenv_stack), "%zu", callStackSize);
         chpl_qt_setenv("STACK_SIZE", newenv_stack, 1);
+
+        // Qthreads sets up memory pools expecting the item_size to be small.
+        // Stacks are allocated in this manner too, but our default stack size
+        // is quite large, so we limit the max memory allocated in one shot. A
+        // little over 32MB seems like a good value with our default stack size
+        // of 8MB to allow at least 4 stacks to be allocated. Has to be
+        // slightly over 32 to account for per stack bookkeeping cost, and
+        // potentially guard pages.
+        maxAllocSize = 32 * 1024 * 1024 * 1.1;
+        snprintf(newenv_alloc, sizeof(newenv_alloc), "%zu", maxAllocSize);
+        chpl_qt_setenv("MAX_ALLOC_SIZE", newenv_alloc, 0);
+
+        // TODO Hey greg, I was wondering if it seems worthwhile to make
+        // MAX_ALLOC_SIZE = hwpar * callStackSize * 1.1 instead of just 32MB.
+        // You would still want to place lower and upper bounds around this
+        // (maybe 16MB and 256MB or something) I like this because it seems
+        // like amount of memory and number of cores will usually be
+        // proportional, and we just have to be careful for things like mic
+        // where theres many many cores, but little memory (hence the upper
+        // limit) and make sure we don't set too small of a limit if a user
+        // requests a small stack size. Does this seem better to you? It does
+        // mean that we have to pass hwpar into this function, and have
+        // setupHWPAR return it.
+        /*
+          maxAllocSize = hwpar * callStackSize * 1.1;
+          if (maxAllocSize < (16 * 1024 * 1024 * 1.1)) {
+              maxAllocSize =  16 * 1024 * 1024 * 1.1;
+          } else if (maxAllocSize > (256 * 1024 * 1024 * 1.1)) {
+              maxAllocSize = 256 * 1024 * 1024 * 1.1;
+          }
+
+          snprintf(newenv_alloc, sizeof(newenv_alloc), "%zu", maxAllocSize);
+          chpl_qt_setenv("MAX_ALLOC_SIZE", newenv_alloc, 0);
+        */
+
     }
 }
 
