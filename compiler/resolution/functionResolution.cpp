@@ -302,7 +302,6 @@ gatherCandidates(Vec<ResolutionCandidate*>& candidates,
                  Vec<FnSymbol*>& visibleFns,
                  CallInfo& info);
 
-static void resolveCall(CallExpr* call);
 static void resolveNormalCall(CallExpr* call);
 static void lvalueCheck(CallExpr* call);
 static void resolveTupleAndExpand(CallExpr* call);
@@ -343,7 +342,6 @@ replaceSetterArgWithFalse(BaseAST* ast, FnSymbol* fn, Symbol* ret);
 static void
 insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts);
 static void buildValueFunction(FnSymbol* fn);
-static void resolveFns(FnSymbol* fn);
 static bool
 possible_signature_match(FnSymbol* fn, FnSymbol* gn);
 static bool signature_match(FnSymbol* fn, FnSymbol* gn);
@@ -2993,7 +2991,7 @@ gatherCandidates(Vec<ResolutionCandidate*>& candidates,
 }
 
 
-static void
+void
 resolveCall(CallExpr* call)
 {
   if (call->primitive)
@@ -3018,7 +3016,7 @@ resolveCall(CallExpr* call)
 }
 
 
-static void resolveNormalCall(CallExpr* call) {
+void resolveNormalCall(CallExpr* call) {
     
   resolveDefaultGenericType(call);
     
@@ -3129,7 +3127,7 @@ static void resolveNormalCall(CallExpr* call) {
   } else {
     best->fn = defaultWrap(best->fn, &best->alignedFormals, &info);
     reorderActuals(best->fn, &best->alignedFormals, &info);
-    best->fn = coercionWrap(best->fn, &info);
+    coerceActuals(best->fn, &info);
     best->fn = promotionWrap(best->fn, &info);
   }
 
@@ -3951,6 +3949,7 @@ static AggregateType* createAndInsertFunParentClass(CallExpr *call, const char *
   parent_super->addFlag(FLAG_SUPER_CLASS);
   parent->fields.insertAtHead(new DefExpr(parent_super));
   build_constructors(parent);
+  buildDefaultDestructor(parent);
 
   return parent;
 }
@@ -4172,6 +4171,7 @@ createFunctionAsValue(CallExpr *call) {
   ct->fields.insertAtHead(new DefExpr(super));
 
   build_constructors(ct);
+  buildDefaultDestructor(ct);
 
   FnSymbol *thisMethod = new FnSymbol("this");
   thisMethod->addFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION);
@@ -6167,7 +6167,7 @@ static void resolveReturnType(FnSymbol* fn)
 }
 
 
-static void
+void
 resolveFns(FnSymbol* fn) {
   if (fn->isResolved())
     return;
@@ -6271,12 +6271,20 @@ resolveFns(FnSymbol* fn) {
           !ct->symbol->hasFlag(FLAG_REF)) {
         VarSymbol* tmp = newTemp(ct);
         CallExpr* call = new CallExpr("~chpl_destroy", gMethodToken, tmp);
-        fn->insertAtHead(new CallExpr(call));
+        fn->insertAtHead(call);
         fn->insertAtHead(new DefExpr(tmp));
         resolveCall(call);
         
         resolveFns(call->isResolved());
         ct->destructor = call->isResolved();
+        // Ensure that resolveFns() above did not insert anything
+        // prior to 'call' and 'tmp->defPoint'. If it did, we'd need
+        // to remove those things too. For that, we could march+remove
+        // from fn->body->body.head until call->next, exclusively,
+        // or put 'call' and 'tmp->defPoint' in their own BlockStmt
+        // and remove that one here.
+        INT_ASSERT(call->prev == tmp->defPoint);
+        INT_ASSERT(tmp->defPoint == fn->body->body.head);
         call->remove();
         tmp->defPoint->remove();
       }

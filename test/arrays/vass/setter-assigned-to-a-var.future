@@ -1,0 +1,8 @@
+bug: memory corruption at run time when an array is return from a 'var' function
+
+Currently this program results in memory corruption.
+Upon a short investigation, the corruption is due to 'anArray' being
+autoDestroy'ed one time too many in accessorFun().
+
+If we remove 'var' in accessorFun's header, the array is still returned
+by reference, and memory corruption goes away.
