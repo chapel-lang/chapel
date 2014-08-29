@@ -539,8 +539,10 @@ static void addArgCoercion(FnSymbol* fn, CallExpr* call, ArgSymbol* formal,
     else if (ats->hasFlag(FLAG_SINGLE))
       castCall = new CallExpr("readFF", gMethodToken, prevActual);
 
-    else
+    else {
       INT_ASSERT(false);    // Unhandled case.
+      castCall = NULL;      // make gcc happy
+    }
 
   } else if (ats->hasFlag(FLAG_REF)) {
     //
