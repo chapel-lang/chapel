@@ -54,7 +54,7 @@ class AbstractPbsJob(object):
     """Abstract job runner implementation."""
 
     # NOTE: These class attributes are intentionally left commented. They will
-    #       cause AttributeError if they is accessed from this class. They
+    #       cause AttributeError if they are accessed from this class. They
     #       *should only* be accessed from a sub class.
     #hostlist_resource = None
     #num_nodes_resource = None
