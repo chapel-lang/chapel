@@ -161,12 +161,26 @@ void chpl_sync_lock(chpl_sync_aux_t *s)
     PROFILE_INCR(profile_sync_lock, 1);
 
     l = qthread_incr(&s->lockers_in, 1);
+
     // Yield if somebody else has the lock. If the current task can't get the
     // lock then it can't make progress until the lock is released, so let
-    // somebody else work. Might be better to yield only after X number of
-    // failures to acquire the lock, but we didn't see any performance impacts
-    // of doing it every time. If real qthreads sync vars were used, this
-    // wouldn't be needed.
+    // somebody else do some work. It might be better to yield only after X
+    // number of failures to acquire the lock for cases where the lock would be
+    // released "soon", but we didn't see any performance impacts of doing it
+    // every time.
+    //
+    // A core issue is that it's possible that a task scheduled on the same
+    // worker could be the one responsible for unlocking the sync var. For
+    // instance if a task locked the sync var, then does a chpl_task_yield, it
+    // could now be scheduled to run after the current task so this task must
+    // yield in order to prevent deadlock. However, if the task that will
+    // unlock is on another worker, then a spinloop would result in lower
+    // latency. That tension between deadlock avoidance and latency
+    // minimization is what pushes us to even consider spinning in addition to
+    // yielding, and to worry about how much of it we should do.
+    //
+    // If real qthreads sync vars were used, it's possible this wouldn't be
+    // needed.
     while (l != s->lockers_out) qthread_yield();
 }
 
