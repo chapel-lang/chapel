@@ -53,10 +53,12 @@ def main():
 class AbstractPbsJob(object):
     """Abstract job runner implementation."""
 
-    # NOTE: This class attribute is intentionally left commented. This will
-    #       cause AttributeError if it is accessed from this class. It *should
-    #       only* be accessed from a sub class.
+    # NOTE: These class attributes are intentionally left commented. They will
+    #       cause AttributeError if they are accessed from this class. They
+    #       *should only* be accessed from a sub class.
     #hostlist_resource = None
+    #num_nodes_resource = None
+    #num_cpus_resource = None
 
     def __init__(self, test_command, reservation_args):
         """Initialize new job runner.
@@ -96,6 +98,35 @@ class AbstractPbsJob(object):
         return full_test_command
 
     @property
+    def num_cpus(self):
+        """Returns the number of cpus that qsub should reserve. PBSPro requires
+        the cpu reservation be given to both qsub, and aprun.
+
+        If cnselect is not callable, raise RuntimeError.
+
+        :rtype: int
+        :returns: Number of cpus to reserve, or -1 if there was no cnselect output
+        """
+        try:
+            logging.debug('Checking for number of cpus to reserve.')
+            cnselect_proc = subprocess.Popen(
+                ['cnselect', '-Lnumcores'],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT)
+
+            logging.debug('Communicating with cnselect process.')
+            stdout, stderr = cnselect_proc.communicate()
+        except OSError as ex:
+            raise RuntimeError(ex)
+        first_line = stdout.split('\n')[0]
+        if first_line:
+            return int(first_line)
+        else:
+            msg = 'cnselect -Lnumcores had no output.'
+            logging.error(msg)
+            raise ValueError(msg)
+
+    @property
     def job_name(self):
         """Returns job name string from test command and CHPL_PBS_NAME_PREFIX env var.
 
@@ -133,7 +164,8 @@ class AbstractPbsJob(object):
                             '-o', output_file]
             if self.num_locales >= 0:
                 qsub_command.append('-l')
-                qsub_command.append('nodes={0}'.format(self.num_locales))
+                qsub_command.append('{0}={1}'.format(
+                    self.num_nodes_resource, self.num_locales))
             if self.walltime is not None:
                 qsub_command.append('-l')
                 qsub_command.append('walltime={0}'.format(self.walltime))
@@ -141,6 +173,10 @@ class AbstractPbsJob(object):
                 qsub_command.append('-l')
                 qsub_command.append('{0}={1}'.format(
                     self.hostlist_resource, self.hostlist))
+            if self.num_cpus_resource is not None:
+                qsub_command.append('-l')
+                qsub_command.append('{0}={1}'.format(
+                    self.num_cpus_resource, self.num_cpus))
 
             logging.debug('qsub command to run: {0}'.format(qsub_command))
 
@@ -471,6 +507,8 @@ class MoabJob(AbstractPbsJob):
     """Moab implementation of pbs job runner."""
 
     hostlist_resource = 'hostlist'
+    num_nodes_resource = 'nodes'
+    num_cpus_resource = None
 
     @classmethod
     def qstat(cls, job_id):
@@ -500,6 +538,8 @@ class PbsProJob(AbstractPbsJob):
     """PBSPro implementation of pbs job runner."""
 
     hostlist_resource = 'mppnodes'
+    num_nodes_resource = 'mppwidth'
+    num_cpus_resource = 'mppdepth'
 
     @property
     def job_name(self):
