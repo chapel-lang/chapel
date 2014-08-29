@@ -161,6 +161,26 @@ void chpl_sync_lock(chpl_sync_aux_t *s)
     PROFILE_INCR(profile_sync_lock, 1);
 
     l = qthread_incr(&s->lockers_in, 1);
+
+    // Yield if somebody else has the lock. If the current task can't get the
+    // lock then it can't make progress until the lock is released, so let
+    // somebody else do some work. It might be better to yield only after X
+    // number of failures to acquire the lock for cases where the lock would be
+    // released "soon", but we didn't see any performance impacts of doing it
+    // every time.
+    //
+    // A core issue is that it's possible that a task scheduled on the same
+    // worker could be the one responsible for unlocking the sync var. For
+    // instance if a task locked the sync var, then does a chpl_task_yield, it
+    // could now be scheduled to run after the current task so this task must
+    // yield in order to prevent deadlock. However, if the task that will
+    // unlock is on another worker, then a spinloop would result in lower
+    // latency. That tension between deadlock avoidance and latency
+    // minimization is what pushes us to even consider spinning in addition to
+    // yielding, and to worry about how much of it we should do.
+    //
+    // If real qthreads sync vars were used, it's possible this wouldn't be
+    // needed.
     while (l != s->lockers_out) qthread_yield();
 }
 
@@ -168,19 +188,43 @@ void chpl_sync_unlock(chpl_sync_aux_t *s)
 {
     PROFILE_INCR(profile_sync_unlock, 1);
 
-
-    // TODO I need to document the reason/rational better
-    // TODO see if this is a good number after some performance results get in
-    //
-    // Give other tasks that are waiting on a sync variable a chance to run.
+    // Give other tasks that might be waiting on a sync var a chance to run.
     // Currently this is every 1024 unlocks. [x % 2n == x & (2n - 1)] This
-    // number was chosen with a little trial and error.
+    // number was chosen with trial and error and is a good balance of
+    // not hurting performance and allowing progress. Determined by modifying
+    // the value over several days and examining performance and correctness
+    // testing.
+    //
+    // It's possible that two tasks can deadlock if they are both on the same
+    // worker and the running task relies on the work the second task is
+    // supposed to do to make progress. The first task will never yield
+    // automatically, so this forces a yield on sync var unlock every so often
+    // to allow progress.
+    //
+    // Consider this example:
+    //
+    // var alreadySet: [1..10] bool;
+    // while (syncVar.readXX() != 10) {
+    //   for i in 1..10 {
+    //     if alreadySet[i] == false then
+    //       begin syncVar += 1;
+    //     alreadySet[i] = true;
+    //   }
+    // }
+    //
+    // Some of the incrementing tasks might get placed on the same worker as
+    // the task waiting for the syncVar to be 10. That task will never yield,
+    // so the value would never get set to 10 and we'd be stuck in the loop
     //
     // qthread_yield is used over chpl_task_yield. chpl_task_yield just adds
     // calling a sched yield if there are no shepherds. If we don't have any
     // shepherds we are either setting up or tearing down in which case the
     // pthread unlock will guarantee progress. When qthread_yield() is called
     // from a non-qthread it's just a no-op.
+    //
+    // I believe this is still necessary even if we used real qthread sync
+    // vars. As the second task would never get a chance to try and acquire the
+    // lock, so other tasks wouldn't know a task is waiting on the sync var.
     if ((qthread_incr(&s->lockers_out, 1) & 0x3FF) == 0x3FF) {
         qthread_yield();
     }
