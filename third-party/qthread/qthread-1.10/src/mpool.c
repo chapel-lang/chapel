@@ -140,7 +140,7 @@ qt_mpool INTERNAL qt_mpool_create_aligned(size_t item_size,
      * at least two items can be allocated. */
     static size_t max_alloc_size = 0;
     if (max_alloc_size == 0 ) {
-        max_alloc_size = qt_internal_get_env_num("MAX_ALLOC_SIZE", SIZE_MAX, 0);
+        max_alloc_size = qt_internal_get_env_num("MAX_POOL_ALLOC_SIZE", SIZE_MAX, 0);
     }
 
     qthread_debug(MPOOL_CALLS, "item_size:%u alignment:%u\n", (unsigned)item_size, (unsigned)alignment);
@@ -160,11 +160,9 @@ qt_mpool INTERNAL qt_mpool_create_aligned(size_t item_size,
     if (item_size % alignment) {
         item_size += alignment - (item_size % alignment);
     }
-    printf("item_size is %zu, max_alloc_size is %zu\n", item_size, max_alloc_size);
     if (item_size * 2 >= max_alloc_size) {
         max_alloc_size = item_size * 2;
     }
-    printf("item_size is %zu, max_alloc_size is %zu\n", item_size, max_alloc_size);
 
     pool->item_size = item_size;
     pool->alignment = alignment;
@@ -174,7 +172,6 @@ qt_mpool INTERNAL qt_mpool_create_aligned(size_t item_size,
      * that the allocation size will be a multiple of pagesize (fast!
      * efficient!). */
     alloc_size = qt_lcm(item_size, pagesize);
-    
     if (alloc_size == 0) {             /* degenerative case */
         if (item_size > pagesize) {
             alloc_size = item_size;
@@ -182,14 +179,13 @@ qt_mpool INTERNAL qt_mpool_create_aligned(size_t item_size,
             alloc_size = pagesize;
         }
     } else {
+        while ((alloc_size / item_size < 128) && (alloc_size <= max_alloc_size / 2)) {
+            alloc_size *= 2;
+        }
         while (alloc_size < pagesize * 16) {
             alloc_size *= 2;
         }
-        while ((alloc_size / item_size < 128) && (alloc_size * 2 <= max_alloc_size)) {
-            alloc_size *= 2;
-        }
     }
-    printf("alloc_size is %zu\n\n", alloc_size);
     pool->alloc_size      = alloc_size;
     pool->items_per_alloc = alloc_size / item_size;
     pool->reuse_pool      = NULL;
