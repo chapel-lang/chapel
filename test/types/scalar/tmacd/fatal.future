@@ -1,0 +1,1 @@
+bug: (int)(real_variable) causes a fatal error rather than a compiler error.
