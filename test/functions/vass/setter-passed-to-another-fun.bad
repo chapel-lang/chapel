@@ -10,10 +10,10 @@ int by const ref false
 
 arr drop result  false
 arr assign to    true
-arr by blank     false
-arr by in        false
+arr by blank     true
+arr by in        true
 arr by inout     true
 arr by out       true
 arr by ref       true
-arr by const in  false
-arr by const ref false
+arr by const in  true
+arr by const ref true
