@@ -119,6 +119,12 @@ export CHPL_NIGHTLY_CRON_LOGDIR=$CHPL_NIGHTLY_LOGDIR
 export CHPL_TEST_PERF_DIR=$logdir_prefix/NightlyPerformance/$(hostname -s)
 export CHPL_TEST_COMP_PERF_DIR=$logdir_prefix/NightlyPerformance/$(hostname -s)
 
+# temporary measure that will print out warnings for tests that took longer
+# than 60 seconds to execute. Elliot is using this to identify stress tests
+# that may need guard pages turned off, or applications that may need timeouts
+# added.
+export CHPL_TEST_EXEC_TIME_WARN_LIMIT=60
+
 # When module function is available, ie on a cray, load the subversion module.
 if [ -f /etc/modules/bash ] ; then
     log_info "Initializing module command."

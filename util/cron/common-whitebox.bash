@@ -102,6 +102,12 @@ export CHPL_COMM=none
 export CHPL_NIGHTLY_LOGDIR=/data/sea/chapel/Nightly/whitebox/${platform}
 export CHPL_NIGHTLY_CRON_LOGDIR="$CHPL_NIGHTLY_LOGDIR"
 
+# temporary measure that will print out warnings for tests that took longer
+# than 60 seconds to execute. Elliot is using this to identify stress tests
+# that may need guard pages turned off, or applications that may need timeouts
+# added.
+export CHPL_TEST_EXEC_TIME_WARN_LIMIT=60
+
 # Ensure that one of the CPU modules is loaded.
 my_arch=$($CHPL_HOME/util/chplenv/chpl_arch.py 2> /dev/null)
 if [ "${my_arch}" = "none" ] ; then
