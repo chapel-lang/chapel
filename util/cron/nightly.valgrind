@@ -4,10 +4,6 @@ CWD=$(cd $(dirname $0) ; pwd)
 
 source $CWD/common.bash
 
-# common.bash sets this so Elliot can temporarily gather some results. We don't
-# want results for valgrind, as the execution time is skewed
-export CHPL_TEST_EXEC_TIME_WARN_LIMIT=0
-
 export CHPL_RT_NUM_THREADS_PER_LOCALE=100
 log_info "Testing valgrind."
 
