@@ -637,9 +637,12 @@ static bool allOperandsAreLoopInvariant(Expr* expr, std::set<SymExpr*>& loopInva
     bool isWideRef = symExpr->var->type->symbol->hasFlag(FLAG_WIDE);
     bool isWideStr = isWideString(symExpr->var->type);
     if(isWideObj || isWideRef || isWideStr) {
-      return false;
+      //return false;
     }
-  
+ 
+   
+
+
     //If the operand is invariant (0 defs in the loop, or constant)
     //it is invariant 
     if(loopInvariants.count(symExpr) == 1) {
@@ -902,6 +905,11 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
         }
       }
     }
+    // Where the variable is defined.
+    Symbol* defScope = symExpr->var->defPoint->parentSymbol;
+    if (isModuleSymbol(defScope)) {
+      mightHaveBeenDeffedElseWhere = true;
+    }
     //if there were no defs of the symbol, it is invariant 
     if(actualDefs.count(symExpr) == 0 && !mightHaveBeenDeffedElseWhere) {
       loopInvariantOperands.insert(symExpr);
@@ -1143,6 +1151,9 @@ void loopInvariantCodeMotion(void) {
   //TODO use stl routine here
   forv_Vec(FnSymbol, fn, gFnSymbols) {
      
+    if (strncmp(fn->name, "doit", 4) ==0) {
+      continue;
+    }
     //build the basic blocks, where the first bb is the entry block 
     startTimer(buildBBTimer);
     buildBasicBlocks(fn);
