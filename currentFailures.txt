@@ -1,0 +1,5 @@
+No Local:
+  types/atomic/sungeun/atomic_vars
+
+Gasnet:
+  not tested yet
