@@ -153,3 +153,53 @@ void c_string_from_wide_string(c_string* ret, chpl____wide_chpl_string* str, int
   *ret = str->addr;
 }
 
+//
+// Support for the new string record implementation
+//
+// NOTE: strings of length 0 are assumed to be the literal ""
+
+/* This function returns a new initialized C string that a copy of ns,
+ * reusing buffer os if possible, otherwise freeing it.
+ *
+ *     os: old string
+ *     olen: old string length
+ *     ns: new string
+ *     nlen: new string length
+ */
+c_string initString(c_string os, int64_t olen, c_string ns, int64_t nlen,
+                    int32_t lineno, c_string filename) {
+  char* ret;
+  assert(os);
+  assert(ns);
+  assert(nlen>0);
+
+  if (nlen+1 < olen) {
+    // If the new string is shorter than the old string, reuse the buffer
+    ret = (char *) os;
+  } else {
+    if (olen != 0) chpl_mem_free((void*)os, lineno, filename);
+    ret = chpl_mem_alloc(nlen+1, CHPL_RT_MD_STRING_INIT_DATA,
+                         lineno, filename);
+  }
+  sprintf(ret, "%s", ns);
+  return (c_string)ret;
+}
+
+/* This function returns a string from src_locale located at src_addr.
+ *
+ *     src_locale: node id
+ *     src_addr: string address on remote node
+ *     src_len: length
+ *
+ */
+c_string remoteStringCopy(c_nodeid_t src_locale,
+                          c_string src_addr, int64_t src_len,
+                          int32_t lineno, c_string filename) {
+  char* ret;
+  if (src_addr == NULL) return NULL;
+  ret = chpl_mem_alloc(src_len+1, CHPL_RT_MD_STRING_COPY_REMOTE,
+                       lineno, filename);
+  chpl_gen_comm_get((void*)ret, src_locale, (void*)src_addr, sizeof(char),
+                    CHPL_TYPE_uint8_t, src_len+1, lineno, filename);
+  return (c_string)ret;
+}

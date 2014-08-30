@@ -41,4 +41,11 @@ void wide_string_from_c_string(struct chpl_chpl____wide_chpl_string_s *ret, c_st
 void c_string_from_string(c_string* ret, chpl_string* str, int32_t lineno, c_string filename);
 void c_string_from_wide_string(c_string* ret, struct chpl_chpl____wide_chpl_string_s* str, int32_t lineno, c_string filename);
 
+// Chapel string support functions
+c_string initString(c_string os, int64_t olen, c_string ns, int64_t nlen,
+                    int32_t lineno, c_string filename);
+c_string remoteStringCopy(c_nodeid_t src_locale,
+                          c_string src_addr, int64_t src_len,
+                          int32_t lineno, c_string filename);
+
 #endif
