@@ -1,2 +1,2 @@
--sparSafe=true --no-stack-checks
--sparSafe=false --no-stack-checks
+-sparSafe=true
+-sparSafe=false
