@@ -874,12 +874,22 @@ module ChapelArray {
       return member(i);
     }
 
-    proc subset(d : domain)
-      where isAssociativeDom(this) && d.type == this.type {
+    /*
+       Returns true if this domain is a subset of 'super'
+    */
+    proc isSubset(super : domain)
+      where isAssociativeDom(this) && super.type == this.type {
 
-      for k in d do if !this.member(k) then return false;
+      return && reduce forall i in this do super.member(i);
+    }
 
-      return true;
+    /*
+       Returns true if this domain is a superset of 'sub'
+    */
+    proc isSuper(sub : domain)
+      where isAssociativeDom(this) && sub.type == this.type {
+
+      return && reduce forall i in sub do this.member(i);
     }
 
     proc subset(d : domain) where !isAssociativeDom(this) {
