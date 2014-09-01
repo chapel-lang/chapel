@@ -1598,7 +1598,7 @@ module ChapelArray {
     var ret : [newDom] a.eltType;
     serial !newDom._value.parSafe {
       forall (k,v) in zip(a.domain, a) do ret[k] = v;
-      forall (k,v) in zip(b.domain, b) do ret[k] = v;
+      ret |= b;
     }
     return ret;
   }
