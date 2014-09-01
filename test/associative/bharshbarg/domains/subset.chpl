@@ -1,7 +1,26 @@
-var a = {1, 2, 3, 4, 5};
-var b = {5, 4, 1};
-var c = {1, 4, 5};
+config const n = 1000;
 
-assert(a.isSuper(b));
-assert(a.isSuper(c));
-assert(c.isSuper(b));
+var all : domain(int) = 1..n;
+
+assert(all.isSubset(all));
+assert(all.isSuper(all));
+
+{
+  var sub : domain(int) = 1..n by 5;
+  assert(sub.isSubset(all));
+  assert(all.isSuper(sub));
+}
+
+{
+  var sub : domain(int) = 1..n;
+  sub += n..#10;
+  assert(!sub.isSubset(all));
+  assert(sub.isSuper(all));
+}
+
+{
+  var sub : domain(int) = 1..n/2;
+  assert(sub.isSubset(all));
+  assert(all.isSuper(sub));
+  assert(!sub.isSuper(all));
+}
