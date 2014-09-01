@@ -1,0 +1,1 @@
+badSubsetCall.chpl:3: error: isSubset not supported on rectangular domains
