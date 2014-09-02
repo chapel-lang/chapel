@@ -1,0 +1,1 @@
+../chpl-mode.el
