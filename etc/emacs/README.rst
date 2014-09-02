@@ -20,7 +20,8 @@ so that they appear under your Chapel release as follows::
        emacs/     -- this directory
 
 In which case, you should be able to use these modes by adding the
-following lines to your standard `.emacs` or `.emacs.d/init.el` file:
+following lines to your standard ``.emacs`` or ``.emacs.d/init.el`` file:
+
 
 .. code-block:: emacs-lisp
 
