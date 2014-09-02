@@ -134,7 +134,7 @@ proc isSorted(A, n) {
   return true;
 }
 
-config param printTimes = false;
+config const printTimes = false;
 
 proc output(name: string, time: real) {
   if printTimes then
