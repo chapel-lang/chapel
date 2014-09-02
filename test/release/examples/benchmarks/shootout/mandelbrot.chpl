@@ -1,3 +1,10 @@
+/* The Computer Language Benchmarks Game
+   http://benchmarksgame.alioth.debian.org/
+
+   contributed by Jacob Nelson
+   modified by Lydia Duncan, Brad Chamberlain, and Ben Harshbarger
+*/
+
 use UtilMath;                      // get the int ceil function, divceilpos()
 use AdvancedIters;
 
