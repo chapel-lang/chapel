@@ -30,29 +30,21 @@ if !exists("c_no_utf")
 endif
 if exists("c_no_cformat")
   syn region	cString		start=+L\="+ skip=+\\\\\|\\"+ end=+"+ contains=cSpecial,@Spell
+  syn region	cString		start=+L\='+ skip=+\\\\\|\\'+ end=+'+ contains=cSpecial,@Spell
   " cCppString: same as cString, but ends at end of line
   syn region	cCppString	start=+L\="+ skip=+\\\\\|\\"\|\\$+ excludenl end=+"+ end='$' contains=cSpecial,@Spell
+  syn region	cCppString	start=+L\='+ skip=+\\\\\|\\'\|\\$+ excludenl end=+'+ end='$' contains=cSpecial,@Spell
 else
   syn match	cFormat		display "%\(\d\+\$\)\=[-+' #0*]*\(\d*\|\*\|\*\d\+\$\)\(\.\(\d*\|\*\|\*\d\+\$\)\)\=\([hjlLtz]\|ll\)\=\([bdiuoxXDOUfeEgGcCsSpn]\|\[\^\=.[^]]*\]\)" contained
   syn match	cFormat		display "%%" contained
   syn region	cString		start=+L\="+ skip=+\\\\\|\\"+ end=+"+ contains=cSpecial,cFormat,@Spell
+  syn region	cString		start=+L\='+ skip=+\\\\\|\\'+ end=+'+ contains=cSpecial,cFormat,@Spell
   " cCppString: same as cString, but ends at end of line
   syn region	cCppString	start=+L\="+ skip=+\\\\\|\\"\|\\$+ excludenl end=+"+ end='$' contains=cSpecial,cFormat,@Spell
+  syn region	cCppString	start=+L\='+ skip=+\\\\\|\\'\|\\$+ excludenl end=+'+ end='$' contains=cSpecial,cFormat,@Spell
 endif
 
-syn match	cCharacter	"L\='[^\\]'"
-syn match	cCharacter	"L'[^']*'" contains=cSpecial
-if exists("c_gnu")
-  syn match	cSpecialError	"L\='\\[^'\"?\\abefnrtv]'"
-  syn match	cSpecialCharacter "L\='\\['\"?\\abefnrtv]'"
-else
-  syn match	cSpecialError	"L\='\\[^'\"?\\abfnrtv]'"
-  syn match	cSpecialCharacter "L\='\\['\"?\\abfnrtv]'"
-endif
-syn match	cSpecialCharacter display "L\='\\\o\{1,3}'"
-syn match	cSpecialCharacter display "'\\x\x\{1,2}'"
-syn match	cSpecialCharacter display "L'\\x\x\+'"
-
+"
 "when wanted, highlight trailing white space
 if exists("c_space_errors")
   if !exists("c_no_trail_space_error")
@@ -254,14 +246,13 @@ syn keyword chplStatement	goto break return continue compilerWarning delete noin
 syn keyword chplStatement	new delete this these use module yield compilerError zip
 syn keyword chplIntent		param type in out inout ref
 syn keyword chplStorageClass    const config export extern var
-syn keyword chplType            domain sparse subdomain range index imag complex int uint real bool file string opaque integral numeric enumerated
+syn keyword chplType            domain sparse subdomain range index imag complex int uint real bool
+syn keyword chplType            file string opaque integral numeric enumerated
 syn keyword chplType            locale sync atomic single dmapped
 syn keyword chplOperator	on reduce scan by
-" syn match chplCast		"\<\(const\|static\|dynamic\|reinterpret\)_cast\s*<"me=e-1
-" syn match chplCast		"\<\(const\|static\|dynamic\|reinterpret\)_cast\s*$"
 syn keyword chplStructure	class record union enum
-syn keyword chplStructure	proc iter cobegin begin local sync let select where pragma
-" syn keyword chplNumber		NPOS
+syn keyword chplStructure	proc iter cobegin begin local sync let select where
+syn keyword chplStructure	pragma inline with
 syn keyword chplBoolean		true false
 syn keyword chplConditional	if then else
 syn keyword chplConstant	nil
