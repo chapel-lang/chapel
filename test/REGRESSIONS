@@ -54,11 +54,6 @@ However it will probably reverts to an execution timeout error instead.
 [Error matching .bad file for parallel/begin/sungeun/initCopyWithBegin]
   Error message includes the Chapel version number. Fixed for Aug 26 nightlies
 
--- MDN New on Sat Aug 23, 2014
-[Error matching .bad file for types/records/bharshbarger/nestedRecordInClass1]
-This was a future with defined output but has started generating an internal error
-  > nestedRecordInClass1.chpl:9: internal error: FUN7513 chpl Version 1.10.0.-999
-
 -- MDN New on Fri Aug 22, 2014
 [Error matching program output for classes/bradc/arrayInClass/genericArrayInClass-otharrs]
   Compiler  hangs: timedexec: target program died with signal 11, without coredump
@@ -67,16 +62,9 @@ This was a future with defined output but has started generating an internal err
 [Error matching compiler output for studies/madness/aniruddha/madchap/recordBug/test_likepy]
   > ./FTree.chpl:81: internal error: EXP5319 chpl Version 1.10.0.-999
 
--- MDN New on Thu Aug 21, 2014.  Ben missed this and has fixed.  Should be clean for Aug 26 nightlies
-  [Error cannot locate compiler output comparison file io/bharshbarg/readUntil.good]
-
 -- MDN New on Thu Aug 21, 2014.
 [Error matching .bad file for functions/iterators/tzakian/par_iter_recursive]
   Line number for the error message has changed.  Fixed for Aug 26 nightlies.
-
--- MDN New on Thu Aug 21, 2014.
-[Error matching .bad file for users/vass/div-ceil-on-more-int-types]
-  Line numbers for the error messages have changed.  Fixed for Aug 26 nightlies.
 
 -- MDN New on Tue Aug 19, 2014.  Expected by Elliot due to C-for Loop work
 [Error matching program output for trivial/deitz/test_max_range_iteration]
