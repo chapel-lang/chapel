@@ -112,6 +112,12 @@ mandelbrot:
 jacobi:
   03/07/14:
     - Added a "trivial assignment" optimization to replace field-by-field assignment with a bulk copy.
+  08/19/14:
+    - C for loops initial commit
+  08/20/14:
+    - Tom's use of user-defined default constructors
+  08/26/14:
+    - Kyle's ref temp peephole optimization
 
 parOpEquals:
   09/06/13:
@@ -142,6 +148,14 @@ STREAM_performance:
 stencil:
   07/21/14:
     - machine related (no commits on the day before)
+
+testSerialReductions:
+  08/16/14:
+    - result of Greg's commit to let the tasking layer determine parallelism
+
+time_array_vs_tuple:
+  08/19/14:
+    - C for loops initial commit
 
 time_array_vs_ddata:
   05/31/14:

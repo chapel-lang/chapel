@@ -30,6 +30,7 @@
 #include "chpl-comm.h"
 #include "chpl-locale-model.h"
 #include "chpl-mem.h"
+#include "chplsys.h"
 #include "chpl-tasks.h"
 #include "error.h"
 #include <assert.h>

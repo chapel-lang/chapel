@@ -1,0 +1,19 @@
+int drop result  false
+int assign to    true
+int by blank     false
+int by in        false
+int by inout     true
+int by out       true
+int by ref       true
+int by const in  false
+int by const ref true
+
+arr drop result  false
+arr assign to    true
+arr by blank     true
+arr by in        false
+arr by inout     true
+arr by out       true
+arr by ref       true
+arr by const in  false
+arr by const ref true

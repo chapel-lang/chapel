@@ -500,6 +500,13 @@ if os.getenv('CHPL_TEST_VGRND_COMP')=='on':
     globalTimeout=1000
 else:
     globalTimeout=300
+
+# get a threshold for which to report long running tests
+if os.getenv("CHPL_TEST_EXEC_TIME_WARN_LIMIT"):
+    execTimeWarnLimit = int(os.getenv('CHPL_TEST_EXEC_TIME_WARN_LIMIT', '0'))
+else:
+    execTimeWarnLimit = 0
+
 # directory level timeout
 if os.access('./TIMEOUT',os.R_OK):
     directoryTimeout = ReadIntegerValue('./TIMEOUT', localdir)
@@ -1368,6 +1375,7 @@ for testname in testsrc:
                 sys.stdout.write(']\n')
                 sys.stdout.flush()
 
+                execstart = time.time()
                 if useLauncherTimeout:
                     if redirectin == None:
                         my_stdin = None
@@ -1444,6 +1452,11 @@ for testname in testsrc:
                         KillProc(p, killtimeout)
 
                     status = p.returncode
+
+                execend = time.time()
+                if execTimeWarnLimit and execend - execstart > execTimeWarnLimit:
+                    sys.stdout.write('[Warning: %s/%s took over %.0f seconds to '
+                        'execute]\n' %(localdir, execname, execTimeWarnLimit))
 
                 if catfiles:
                     sys.stdout.write('[Concatenating extra files: %s]\n'%

@@ -52,8 +52,6 @@ static void buildDefaultReadWriteFunctions(AggregateType* type);
 
 static void buildStringCastFunction(EnumType* type);
 
-static void buildDefaultDestructor(AggregateType* ct);
-
 static void buildFieldAccessorFunctions(AggregateType* at);
 
 
@@ -1165,7 +1163,7 @@ static void buildStringCastFunction(EnumType* et) {
 }
 
 
-static void buildDefaultDestructor(AggregateType* ct) {
+void buildDefaultDestructor(AggregateType* ct) {
   if (function_exists("~chpl_destroy", 2, dtMethodToken, ct))
     return;
 

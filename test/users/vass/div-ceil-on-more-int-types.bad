@@ -1,2 +1,2 @@
-$CHPL_HOME/modules/standard/Math.chpl:243: In function 'divceil':
-$CHPL_HOME/modules/standard/Math.chpl:245: error: illegal use of '+' on operands of type uint(64) and signed integer
+$CHPL_HOME/modules/standard/Math.chpl:262: In function 'divceil':
+$CHPL_HOME/modules/standard/Math.chpl:264: error: illegal use of '+' on operands of type uint(64) and signed integer
