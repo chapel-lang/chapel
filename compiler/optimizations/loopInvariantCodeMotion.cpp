@@ -1075,10 +1075,12 @@ static bool containsSynchronizationVar(BaseAST* ast) {
     
     if(isVarSymbol(symExpr->var) || isArgSymbol(symExpr->var)) {
       Type* symType = symExpr->var->type;
-      if (isSyncType(symType) || isAtomicType(symType)) {
+      Type* valType = symType->getValType();
+      if (isSyncType(symType) || isAtomicType(symType) ||
+          isSyncType(valType) || isAtomicType(valType)) {
         return true;
       }
-    }  
+    }
   }
   return false;
 }
@@ -1150,10 +1152,7 @@ void loopInvariantCodeMotion(void) {
     
   //TODO use stl routine here
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-     
-    if (strncmp(fn->name, "doit", 4) ==0) {
-      continue;
-    }
+
     //build the basic blocks, where the first bb is the entry block 
     startTimer(buildBBTimer);
     buildBasicBlocks(fn);
