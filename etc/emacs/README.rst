@@ -13,7 +13,7 @@ The sources in this subdirectory are licensed under the GPL.  See the
 COPYING file in this directory for more information.
 
 To use these modes, it is suggested that you install these directories
-so that they appear under your Chapel release as follows:
+so that they appear under your Chapel release as follows::
 
    $CHPL_HOME/    -- the location of your normal Chapel installation
      etc/
