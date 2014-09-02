@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sys, os, optparse
 
-import chpl_comm, chpl_comm_segment
+import chpl_comm, chpl_comm_segment, chpl_compiler
 from utils import memoize
 
 @memoize
@@ -12,6 +12,10 @@ def get(flag='host'):
         mem_val = os.environ.get('CHPL_MEM')
         if not mem_val:
             comm_val = chpl_comm.get()
+            tcmallocCompat = ["gnu", "clang", "intel"]
+
+            # true if tcmalloc is compatible with the target compiler
+            useTC =  any(sub in chpl_compiler.get() for sub in tcmallocCompat)
             if comm_val == 'gasnet':
                 segment_val = chpl_comm_segment.get()
                 if segment_val == 'fast' or segment_val == 'large':
@@ -22,6 +26,8 @@ def get(flag='host'):
                 mem_val = 'tcmalloc'
             else:
                 mem_val = 'default'
+            if useTC:
+                mem_val = 'tcmalloc'
     else:
         raise ValueError("Invalid flag: '{0}'".format(flag))
     return mem_val
