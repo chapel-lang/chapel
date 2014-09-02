@@ -158,31 +158,23 @@ void c_string_from_wide_string(c_string* ret, chpl____wide_chpl_string* str, int
 //
 // NOTE: strings of length 0 are assumed to be the literal ""
 
-/* This function returns a new initialized C string that a copy of ns,
- * reusing buffer os if possible, otherwise freeing it.
- *
- *     os: old string
- *     olen: old string length
- *     ns: new string
- *     nlen: new string length
+/* This function copies src into dest.  If dest == "", allocate a new
+ * buffer for the string.  Return the moved string.
  */
-c_string initString(c_string os, int64_t olen, c_string ns, int64_t nlen,
+c_string stringMove(c_string dest, c_string src, int64_t len,
                     int32_t lineno, c_string filename) {
-  char* ret;
-  assert(os);
-  assert(ns);
-  assert(nlen>0);
+  char *ret;
+  assert(src);
 
-  if (nlen+1 < olen) {
-    // If the new string is shorter than the old string, reuse the buffer
-    ret = (char *) os;
+  if (!strcmp(dest, "")) {
+    ret = chpl_mem_alloc(len+1, CHPL_RT_MD_STRING_MOVE_DATA, lineno, filename);
   } else {
-    if (olen != 0) chpl_mem_free((void*)os, lineno, filename);
-    ret = chpl_mem_alloc(nlen+1, CHPL_RT_MD_STRING_INIT_DATA,
-                         lineno, filename);
+    // reuse the buffer
+    ret = (char *) dest;
   }
-  sprintf(ret, "%s", ns);
-  return (c_string)ret;
+
+  snprintf(ret, len+1, "%s", src);
+  return (c_string) ret;
 }
 
 /* This function returns a string from src_locale located at src_addr.
