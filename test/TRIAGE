@@ -231,6 +231,24 @@ since 6/22/14, e.g.
   whitebox-cray-xe/cray-xe.cray-prgenv-pgi.none.fifo.flat--linux64.gnu
   whitebox-cray-xe/linux64.pgi.none.fifo.flat
 
+pgi on XC execution timeouts (2014-08-28)
+-----------------------------------------
+
+with PrgEnv-pgi as host and target compiler:
+
+[Error: Timed out executing program release/examples/primers/reductions]
+[Error: Timed out executing program release/examples/primers/syncsingle]
+
+with PrgEnv-pgi as target compiler and gcc as host compiler:
+
+[Error: Timed out executing program release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 2)]
+[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/singleVar]
+
+vanilla pgi:
+
+[Error: Timed out executing program release/examples/benchmarks/hpcc/stream-ep]
+[Error: Timed out executing program release/examples/programs/quicksort]
+
 =========================================================
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
