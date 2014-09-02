@@ -121,7 +121,7 @@ $(RUNTIME_LIB): $(RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP)
 	@rm -f $@
 	$(AR) -rc $@ $(RUNTIME_OBJS)
 	$(RANLIB) $@
-	-@(which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && echo "Updating TAGS..." && $(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(ALL_SRCS) $(CURDIR)/include/*.h $(CURDIR)/include/tasks/$(CHPL_MAKE_TASKS)/*.h $(CURDIR)/include/threads/$(CHPL_MAKE_THREADS)/*.h) || echo "$(CHPL_TAGS_UTIL) not available"
+	-@(which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && echo "Updating TAGS..." && $(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(ALL_SRCS) $(CURDIR)/include/*.h) || echo "$(CHPL_TAGS_UTIL) not available"
 
 $(RUNTIME_DIR)/main.o: src/$(RUNTIME_OBJDIR)/main.o
 	cp $< $@
