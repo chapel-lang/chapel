@@ -109,6 +109,14 @@ module String {
     if cs.length != 0 then chpl_free_c_string(cs);
     return ret;
   }
+  inline proc string.substring(r: range(?)) {
+    const cs = this.c_str().substring(r);
+    // FIX ME: could use a toString() that doesn't allocate space
+    const ret = toString(cs);
+    if cs.length != 0 then chpl_free_c_string(cs);
+    return ret;
+  }
+  
   inline proc _string_contains(a: string, b: string)
     return _string_contains(a.c_str(), b.c_str());
 
@@ -361,6 +369,13 @@ module CString {
   inline proc c_string.size return this.length;
   inline proc c_string.substring(i: int)
     return __primitive("string_index", this, i);
+  inline proc c_string.substring(r: range(?)) {
+    var r2 = r[1..this.length];  // This may warn about ambiguously aligned ranges.
+    if r2.isEmpty() then return "";
+    var lo:int = r2.alignedLow, hi:int = r2.alignedHigh;
+    return __primitive("string_select", this, lo, hi, r2.stride);
+  }
+
   inline proc _string_contains(a: string, b: string)
     return __primitive("string_contains", a, b);
 
