@@ -44,6 +44,7 @@ module test_fully_blocked_elemental_cholesky {
     writeln ("   Number of Locales         : ", numLocales );
    if !reproducible_output then
     writeln ("   Number of cores per locale: ", Locales.numCores );
+    writeln ("   Max tasking parallelism   : ", Locales.maxTaskPar );
 
     // ---------------------------------------------------------------
     // create a test problem, starting with a random general matrix B.

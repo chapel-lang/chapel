@@ -22,7 +22,7 @@ config const maxSteps = 50;
 // 
 // The number of tasks we should spawn.
 //
-config const numTasks = here.numCores; // Cores on LOCALE0.
+config const numTasks = here.maxTaskPar; // tasking layer max parallelism
 
 
 proc main() {

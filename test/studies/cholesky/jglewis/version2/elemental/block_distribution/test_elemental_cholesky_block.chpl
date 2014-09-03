@@ -50,6 +50,7 @@ module cholesky_test_elemental_symmetric_ranges {
     writeln ("   Number of Locales         : ", numLocales );
    if !reproducible_output then
     writeln ("   Number of cores per locale: ", Locales.numCores );
+    writeln ("   Max tasking parallelism   : ", Locales.maxTaskPar );
 
     // ---------------------------------------------------------------
     // create a test problem, starting with a random general matrix B.
