@@ -16,6 +16,8 @@ config var n = 10;
 
 //
 // Chapel provides two base domain types: rectangular and associative.
+// For more information about associative domains, see the Associative
+// primer (associative.chpl).
 //
 // Rectangular domains are used to represent rectangular index sets.
 // Each dimesion of a rectangular domain is specified by a range and
