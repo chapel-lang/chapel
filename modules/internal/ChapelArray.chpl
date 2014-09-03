@@ -877,8 +877,19 @@ module ChapelArray {
     /*
        Returns true if this domain is a subset of 'super'
     */
-    proc isSubset(super : domain)
-      where isAssociativeDom(this) && super.type == this.type {
+    proc isSubset(super : domain) {
+      if !isAssociativeDom(this) {
+        if isRectangularDom(this) then
+          compilerError("isSubset not supported on rectangular domains");
+        else if isOpaqueDom(this) then
+          compilerError("isSubset not supported on opaque domains");
+        else if isSparseDom(this) then
+          compilerError("isSubset not supported on sparse domains");
+        else
+          compilerError("isSubset not supported on this domain type");
+      }
+      if super.type != this.type then
+        compilerError("isSuper called with different associative domain types");
 
       return && reduce forall i in this do super.member(i);
     }
@@ -886,33 +897,23 @@ module ChapelArray {
     /*
        Returns true if this domain is a superset of 'sub'
     */
-    proc isSuper(sub : domain)
-      where isAssociativeDom(this) && sub.type == this.type {
+    proc isSuper(sub : domain) {
+      if !isAssociativeDom(this) {
+        if isRectangularDom(this) then
+          compilerError("isSuper not supported on rectangular domains");
+        else if isOpaqueDom(this) then
+          compilerError("isSuper not supported on opaque domains");
+        else if isSparseDom(this) then
+          compilerError("isSuper not supported on sparse domains");
+        else
+          compilerError("isSuper not supported on the domain type ", this.type);
+      }
+      if sub.type != this.type then
+        compilerError("isSuper called with different associative domain types");
 
       return && reduce forall i in sub do this.member(i);
     }
 
-    proc isSubset(super : domain) where !isAssociativeDom(this) {
-      if isRectangularDom(this) then
-        compilerError("isSubset not supported on rectangular domains");
-      else if isOpaqueDom(this) then
-        compilerError("isSubset not supported on opaque domains");
-      else if isSparseDom(this) then
-        compilerError("isSubset not supported on sparse domains");
-      else
-        compilerError("isSubset not supported on this domain type");
-    }
-
-    proc isSuper(sub : domain) where !isAssociativeDom(this) {
-      if isRectangularDom(this) then
-        compilerError("isSuper not supported on rectangular domains");
-      else if isOpaqueDom(this) then
-        compilerError("isSuper not supported on opaque domains");
-      else if isSparseDom(this) then
-        compilerError("isSuper not supported on sparse domains");
-      else
-        compilerError("isSuper not supported on this domain type");
-    }
     // 1/5/10: do we want to support order() and position()?
     proc indexOrder(i) return _value.dsiIndexOrder(_makeIndexTuple(rank, i));
   
