@@ -59,6 +59,7 @@
 #include "llvm/Transforms/Utils/ValueMapper.h"
 
 #include <cstdio>
+#include <list>
 
 using namespace llvm;
 

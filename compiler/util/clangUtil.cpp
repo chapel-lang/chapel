@@ -640,6 +640,23 @@ void setupClang(GenInfo* info, std::string mainFile)
 
   {
     // Make sure we include clang's internal header dir
+#if HAVE_LLVM_VER >= 34
+    SmallString<128> P;
+    P = clangexe;
+    // Remove /clang from foo/bin/clang
+    P = sys::path::parent_path(P);
+    // Remove /bin   from foo/bin
+    P = sys::path::parent_path(P);
+
+    if( ! P.equals("") ) {
+      // Get foo/lib/clang/<version>/
+      sys::path::append(P, "lib");
+      sys::path::append(P, "clang");
+      sys::path::append(P, CLANG_VERSION_STRING);
+    }
+    CI->getHeaderSearchOpts().ResourceDir = P.str();
+    sys::path::append(P, "include");
+#else
     sys::Path P(clangexe);
     if (!P.isEmpty()) {
       P.eraseComponent();  // Remove /clang from foo/bin/clang
@@ -653,6 +670,7 @@ void setupClang(GenInfo* info, std::string mainFile)
     CI->getHeaderSearchOpts().ResourceDir = P.str();
     sys::Path P2(P);
     P.appendComponent("include");
+#endif
 #if HAVE_LLVM_VER >= 33
     CI->getHeaderSearchOpts().AddPath(
         P.str(), frontend::System,false, false);
@@ -1438,7 +1456,7 @@ void makeBinaryLLVM(void) {
     OwningPtr<tool_output_file> output (
         new tool_output_file(preOptFilename.c_str(),
                              errorInfo,
-                             raw_fd_ostream::F_Binary));
+                             sys::fs::F_None));
     WriteBitcodeToFile(info->module, output->os());
     output->keep();
     output->os().flush();
@@ -1448,7 +1466,7 @@ void makeBinaryLLVM(void) {
   OwningPtr<tool_output_file> output (
       new tool_output_file(moduleFilename.c_str(),
                            errorInfo,
-                           raw_fd_ostream::F_Binary));
+                           sys::fs::F_None));
  
   static bool addedGlobalExts = false;
   if( ! addedGlobalExts ) {
