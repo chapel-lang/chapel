@@ -1,3 +1,0 @@
-bug: Compiler internal error for record autocopy functions that take a ref arg
-
-recordWithRefCopyFns.chpl:25: internal error: actual formal type mismatch for chpl__autoCopy: myR != _ref(myR) [checks.cpp:627]
