@@ -39,7 +39,7 @@ proc main() {
   // waits for tasks to finish
   sync {
     // fire off a thread to do replacing
-    begin ref(copy) {
+    begin with (ref copy) {
       for (f, r) in subst {
         const re = compile(f);
         copy = re.sub(r, copy);
