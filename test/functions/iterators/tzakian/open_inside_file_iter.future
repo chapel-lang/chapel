@@ -1,5 +1,0 @@
-bug: When calling open from inside an iterator, we look for file.open as opposed to 'open'
-
-When we are inside an iterator body and call a method that constructs the type of
-that method, we get an error in function resolution since we are looking for the
-wrong type of function. See the .bad file for specifics.
