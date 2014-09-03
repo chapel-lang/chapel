@@ -80,11 +80,11 @@ capabilities in the interest of a simple and clean build.
    Once you are comfortable with Chapel and interested in using a
    full-featured version:
 
-   a) open up a new shell to avoid inheriting the previous environment
+   a) Open up a new shell to avoid inheriting the previous environment
       settings.
 
-   b) repeat steps 1-6 above, substituting a util/setchplenv.* script
-      for the util/quickstart/setchplenv.* script in step 2.
+   b) Repeat steps 1-6 above -- except in Step 2, use util/setchplenv.*
+      instead of util/quickstart/setchplenv.*
 
    This will set up your environment to use Chapel in the preferred
    configuration.  Making this configuration will involve building one
