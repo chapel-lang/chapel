@@ -16,7 +16,7 @@ for i in 1..n do
 var r = a - b;
 assert(r == a);
 
-// a and b ar disjoint, so a&b has no elements
+// a and b are disjoint, so a&b has no elements
 var s = a & b;
 assert(s.size == 0);
 
