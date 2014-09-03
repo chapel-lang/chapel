@@ -40,6 +40,8 @@ Future (bug: Recursive iterator gets confused by a container class.) [Success ma
   (day2-Tue-linux64.gnu.gasnet.fifo.flat-std.log)
   (whitebox/cray-xe/day1-Mon-linux64.pgi.none.qthreads.flat-std.log)
 Future (bug: When calling open from inside an iterator, we look for file.open as opposed to 'open') [Success matching program output for functions/iterators/tzakian/open_inside_file_iter]
+  (still failing on 08/19)
+  (started passing on 08/20)
   (day2-Tue-linux64.gnu.gasnet-fast.qthreads.flat.dlmalloc-std.log)
   (day2-Tue-linux64.gnu.gasnet.fifo.flat-std.log)
 Future (bug: promoting a function over an array from a var function fails) [Success matching program output for functions/diten/test_promote_var_fn]
@@ -68,7 +70,7 @@ Error matching .bad file
   (whitebox/cray-xe/day1-Mon-linux64.pgi.none.qthreads.flat-std.log)
 [Error matching .bad file for users/vass/type-tests.todo]
   (day2-Tue-linux64.gnu.gasnet-fast.qthreads.flat.dlmalloc-std.log 2014/09/02)
-  (day2-Tue-linux64.gnu.gasnet.fifo.flat-std.log)
+  (day2-Tue-linux64.gnu.gasnet.fifo.flat-std.log 2014/09/03)
   (whitebox/cray-xe/day1-Mon-linux64.pgi.none.qthreads.flat-std.log)
 [Error matching .bad file for distributions/deitz/test_distribution_syntax2]
   (day2-Tue-linux64.gnu.gasnet-fast.qthreads.flat.dlmalloc-std.log 2014/09/02)
@@ -189,7 +191,7 @@ Maybe these should move into TRIAGE?  -- gbt
 (Reviewed for accuracy 07/15/14)
 ================================
 
--- Unsure when it started.  Unresolved         MDN
+-- Unsure when it started.  Unresolved         MDN.  Still present 2014/09/02
 [Error matching compiler output for io/ferguson/io_test]
 
 ================================
@@ -212,6 +214,21 @@ Blows the stack under qthreads (09/02/14 hilde)
 verify regressions
 (Reviewed for accuracy 07/15/14)
 ================================
+
+internal error (hilde)
+--------------
+[Error matching compiler output for types/records/sungeun/recordWithRefCopyFns]
+  (2014/09/03 -- .future file removed 09/02)
+
+./FTree.chpl:81: internal error: EXP5319 (hilde)
+----------------------------------------
+[Error matching compiler output for studies/madness/aniruddha/madchap/recordBug/test_likepy]
+  (2014/09/03)
+
+Segmentation Fault
+------------------
+[Error matching program output for classes/bradc/arryInClass/genericArrayInClass-otharrs]
+  (2014/09/03)
 
 following a pointer to GC'd AST nodes (07/16/14 -- noakes)
 ----------------------------------------------------------

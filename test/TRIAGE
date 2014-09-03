@@ -60,6 +60,7 @@ gasnet.qthreads.numa is getting a timeout mail per night, approximately
 [Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains]
 [Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_array]
 [Error: Timed out executing program release/examples/programs/quicksort]
+  (still present: 2014/09/03)
 
 7/6: hpl
 7/7: jacobi
@@ -87,7 +88,7 @@ gasnet.qthreads.flat is getting an occasional timeout mail as well
 7/10: hpl, test_many_domains
 7/14: nestedForall3
 9/2: test_10k_coforall (this appears as an error, but is actually a timeout)
-
+9/3: hpl, ptrans, SSCA2_main*3
 
 
 cray-xe.cray-prgenv-cray.none.fifo.flat--linux64.gnu
@@ -249,7 +250,8 @@ with PrgEnv-pgi as target compiler and gcc as host compiler:
 vanilla pgi:
 
 [Error: Timed out executing program release/examples/benchmarks/hpcc/stream-ep]
-[Error: Timed out executing program release/examples/programs/quicksort]
+[Error: Timed out executing program release/examples/programs/quicksort] (2014/09/03)
+[Error: Timed out executing program release/examples/benchmarks/lulesh/lulesh (compopts: 1,execopts: 4)] (2014/09/03)
 
 =========================================================
 Problems analyzed and assigned that should be fixed soon:
