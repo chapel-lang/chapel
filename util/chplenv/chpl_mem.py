@@ -15,7 +15,8 @@ def get(flag='host'):
             tcmallocCompat = ["gnu", "clang", "intel"]
 
             # true if tcmalloc is compatible with the target compiler
-            useTC =  any(sub in chpl_compiler.get('target') for sub in tcmallocCompat)
+            if any(sub in chpl_compiler.get('target') for sub in tcmallocCompat):
+              return 'tcmalloc'
             if comm_val == 'gasnet':
                 segment_val = chpl_comm_segment.get()
                 if segment_val == 'fast' or segment_val == 'large':
@@ -26,8 +27,6 @@ def get(flag='host'):
                 mem_val = 'tcmalloc'
             else:
                 mem_val = 'default'
-            if useTC:
-                mem_val = 'tcmalloc'
     else:
         raise ValueError("Invalid flag: '{0}'".format(flag))
     return mem_val
