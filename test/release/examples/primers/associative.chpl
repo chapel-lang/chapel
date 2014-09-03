@@ -117,7 +117,9 @@ assert(Names.member("Gary"));
 // Here, Ages and Scores are backed by the same associative domain, Names.
 // We can no longer write something like
 //   Ages["Mark"] = 18;
-// if "Mark" is not a valid index.
+// or
+//   Score["Sam"] = 10;
+// if "Mark" or "Sam" are not a valid indices in the 'Names' domain.
 //
 var Ages : [Names] int;
 
