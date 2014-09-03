@@ -137,6 +137,7 @@ static PassInfo sPassList[] = {
                                 // _distribution records
   RUN(removeEmptyRecords),      // remove empty records
   RUN(localizeGlobals),         // pull out global constants from loop runs
+  RUN(loopInvariantCodeMotion), // move loop invarient code above loop runs
   RUN(prune2),                  // prune AST of dead functions and types again
 
   RUN(returnStarTuplesByRefArgs),
@@ -144,7 +145,6 @@ static PassInfo sPassList[] = {
   RUN(insertWideReferences),    // inserts wide references for on clauses
   RUN(optimizeOnClauses),       // Optimize on clauses
   RUN(addInitCalls),            // Add module init calls and guards.
-  RUN(loopInvariantCodeMotion), // move loop invarient code above loop runs
 
   // AST to C or LLVM
   RUN(insertLineNumbers),       // insert line numbers for error messages

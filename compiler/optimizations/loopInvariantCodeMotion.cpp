@@ -341,7 +341,7 @@ rhsAlias(CallExpr* call) {
       Type* symType = symExpr->var->type->symbol->type;
       bool isWideClass = symExpr->var->type->symbol->hasFlag(FLAG_WIDE_CLASS);
       bool isWideRef = symExpr->var->type->symbol->hasFlag(FLAG_WIDE);
-      bool isWideStr = isWideString(symExpr->var->type);
+      bool isWideStr = false;//isWideString(symExpr->var->type);
       if(isReferenceType(symType) || isRecordWrappedType(symType) ||
         isWideClass || isWideRef || isWideStr) {
         hasRef = true;
@@ -635,7 +635,7 @@ static bool allOperandsAreLoopInvariant(Expr* expr, std::set<SymExpr*>& loopInva
     //do not hoist things that are wide 
     bool isWideObj = symExpr->var->type->symbol->hasFlag(FLAG_WIDE_CLASS);
     bool isWideRef = symExpr->var->type->symbol->hasFlag(FLAG_WIDE);
-    bool isWideStr = isWideString(symExpr->var->type);
+    bool isWideStr = false;//isWideString(symExpr->var->type);
     if(isWideObj || isWideRef || isWideStr) {
       //return false;
     }
@@ -894,13 +894,18 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
     bool mightHaveBeenDeffedElseWhere = false;
     //assume that anything passed in by ref has been changed elsewhere 
     if(ArgSymbol* argSymbol = toArgSymbol(symExpr->var)) {
-      if(argSymbol->intent == INTENT_REF) {
+      if(argSymbol->intent == INTENT_REF ||
+         argSymbol->intent == INTENT_CONST_REF ||
+         isRecordWrappedType(argSymbol->type) || 
+         (argSymbol->type == argSymbol->type->getRefType())) {
         mightHaveBeenDeffedElseWhere = true;
       }
     }
     for_set(Symbol, aliasSym, aliases[symExpr->var]) {
       if(ArgSymbol* argSymbol = toArgSymbol(aliasSym)) {
-        if(argSymbol->intent == INTENT_REF) {
+        if(argSymbol->intent == INTENT_REF ||
+           argSymbol->intent == INTENT_CONST_REF ||
+           isRecordWrappedType(argSymbol->type)) {
           mightHaveBeenDeffedElseWhere = true;
         }
       }

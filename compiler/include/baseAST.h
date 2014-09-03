@@ -204,6 +204,7 @@ public:
   FnSymbol*         getFunction();
   ModuleSymbol*     getModule();
   Type*             getValType();
+  Type*             getRefType();
 
   const char*       astTagAsString()                             const;
 
@@ -218,7 +219,6 @@ protected:
 private:
                     BaseAST();
 
-  Type*             getRefType();
   Type*             getWideRefType();
 };
 
