@@ -1400,7 +1400,7 @@ module ChapelArray {
           halt("array slice out of bounds in dimension ", i, ": ", args(i));
     }
 
-    proc assertSingleArrayDomain(fnName : string) {
+    inline proc assertSingleArrayDomain(fnName : string) {
       if this.domain._value._arrs.length != 1 then
         halt("Cannot call ", fnName, " on an array defined over a domain with multiple arrays");
     }
