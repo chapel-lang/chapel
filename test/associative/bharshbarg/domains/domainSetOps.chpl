@@ -1,4 +1,4 @@
-const n = 20;
+const n = 1000;
 
 var a, b, c : domain(int);
 for i in 1..n by 2 {
