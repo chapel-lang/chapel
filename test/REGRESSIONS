@@ -15,6 +15,67 @@
 # directory, a wildcard is more appropriate.
 # The date the entry is added is also useful.
 
+=======
+Futures
+=======
+(The status of failing future tests is detailed in ../STATUS.devel)
+
+
+===============
+Passing Futures
+===============
+Future (bug: "no auto destroy" flag not propagated through temporaries.) [Success matching program output for performance/hilde/userSync]
+  (day2-Tue-linux64.gnu.gasnet.fifo.flat-std.log)
+
+Future (bug: (feature request?): it would be nice if int-to-uint coercion worked for parameters.) [Success matching program output for param/nelson/coercion]
+  (day2-Tue-linux64.gnu.gasnet-fast.qthreads.flat.dlmalloc-std.log)
+  (day2-Tue-linux64.gnu.gasnet.fifo.flat-std.log)
+  (whitebox/cray-xe/day1-Mon-linux64.pgi.none.qthreads.flat-std.log)
+Future (bug: Compiler internal error for record autocopy functions that take a ref arg) [Success matching program output for types/records/sungeun/recordWithRefCopyFns]
+  (day2-Tue-linux64.gnu.gasnet-fast.qthreads.flat.dlmalloc-std.log)
+  (day2-Tue-linux64.gnu.gasnet.fifo.flat-std.log)
+  (whitebox/cray-xe/day1-Mon-linux64.pgi.none.qthreads.flat-std.log)
+Future (bug: Recursive iterator gets confused by a container class.) [Success matching program output for functions/iterators/claridge/recursiveIterTypeBug]
+  (day2-Tue-linux64.gnu.gasnet-fast.qthreads.flat.dlmalloc-std.log)
+  (day2-Tue-linux64.gnu.gasnet.fifo.flat-std.log)
+  (whitebox/cray-xe/day1-Mon-linux64.pgi.none.qthreads.flat-std.log)
+Future (bug: When calling open from inside an iterator, we look for file.open as opposed to 'open') [Success matching program output for functions/iterators/tzakian/open_inside_file_iter]
+  (day2-Tue-linux64.gnu.gasnet-fast.qthreads.flat.dlmalloc-std.log)
+  (day2-Tue-linux64.gnu.gasnet.fifo.flat-std.log)
+Future (bug: promoting a function over an array from a var function fails) [Success matching program output for functions/diten/test_promote_var_fn]
+  (day2-Tue-linux64.gnu.gasnet-fast.qthreads.flat.dlmalloc-std.log)
+  (day2-Tue-linux64.gnu.gasnet.fifo.flat-std.log)
+  (whitebox/cray-xe/day1-Mon-linux64.pgi.none.qthreads.flat-std.log)
+Future (performance: Pass arguments to on functions in a coforall by const ref by default.) [Success matching program output for performance/hilde/coforallOnByRef]
+  (day2-Tue-linux64.gnu.gasnet-fast.qthreads.flat.dlmalloc-std.log)
+  (day2-Tue-linux64.gnu.gasnet.fifo.flat-std.log)
+Future (semantic: Can user type names overload fundamental type names?) [Success matching program output for types/records/sungeun/chapelTypes/record_range]
+  (day2-Tue-linux64.gnu.gasnet-fast.qthreads.flat.dlmalloc-std.log)
+  (day2-Tue-linux64.gnu.gasnet.fifo.flat-std.log)
+  (whitebox/cray-xe/day1-Mon-linux64.pgi.none.qthreads.flat-std.log)
+
+
+========================
+Error matching .bad file
+========================
+[Error matching .bad file for functions/tzakian/open_inside_file_proc]
+  (day2-Tue-linux64.gnu.gasnet-fast.qthreads.flat.dlmalloc-std.log 2014/09/02)
+  (day2-Tue-linux64.gnu.gasnet.fifo.flat-std.log)
+  (whitebox/cray-xe/day1-Mon-linux64.pgi.none.qthreads.flat-std.log)
+[Error matching .bad file for functions/iterators/tzakian/par_iter_recursive]
+  (day2-Tue-linux64.gnu.gasnet-fast.qthreads.flat.dlmalloc-std.log 2014/09/02)
+  (day2-Tue-linux64.gnu.gasnet.fifo.flat-std.log)
+  (whitebox/cray-xe/day1-Mon-linux64.pgi.none.qthreads.flat-std.log)
+[Error matching .bad file for users/vass/type-tests.todo]
+  (day2-Tue-linux64.gnu.gasnet-fast.qthreads.flat.dlmalloc-std.log 2014/09/02)
+  (day2-Tue-linux64.gnu.gasnet.fifo.flat-std.log)
+  (whitebox/cray-xe/day1-Mon-linux64.pgi.none.qthreads.flat-std.log)
+[Error matching .bad file for distributions/deitz/test_distribution_syntax2]
+  (day2-Tue-linux64.gnu.gasnet-fast.qthreads.flat.dlmalloc-std.log 2014/09/02)
+  (day2-Tue-linux64.gnu.gasnet.fifo.flat-std.log)
+[Error matching .bad file for functions/tzakian/open_inside_file_iter]
+  (whitebox/cray-xe/day1-Mon-linux64.pgi.none.qthreads.flat-std.log)
+
 
 ===========================================================
 general regressions (seem to happen in most configurations)
@@ -31,22 +92,6 @@ due to a qthread config issue and so the system expected to find the the standar
 should be fixed on the Wed night build.
 
 However it will probably reverts to an execution timeout error instead.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 -- MDN New on Tue Aug 26, 2014
@@ -157,6 +202,11 @@ Setting a config that isn't supported for --minimal-modules (1/23/14 - bradc)
 [Error matching program output for compflags/bradc/minimalModules/minModDeclPrint]
 [Error matching program output for compflags/bradc/minimalModules/minModFnRefArg]
 
+Blows the stack under qthreads (09/02/14 hilde)
+-----------------------------------------------------------------------------
+[Error matching program output for parallel/cobegin/deitz/test_big_recursive_cobegin]
+[Error matching program output for parallel/taskPool/figueroa/ManyThreads (compopts: 1)]
+
 
 ================================
 verify regressions
@@ -250,12 +300,6 @@ gasnet-everything regressions (other than the above)
 [Error matching program output for studies/ssca2/performance/SSCA2_commDiags (compopts: 1)]
   > This test generates a large number of Comm diagnostic counts. The number of get/put
   increased by 7 for Kernel 2.
-
-expect this to be temporary; seems to be due to pull #38; passed to Tom
------------------------------------------------------------------------
-[Error matching compiler output for modules/hilde/test_module_Sort-baseline (compopts: 1)]
-(7/23/14)
-
 
 error: cannot create C string from remote string
 ------------------------------------------------
