@@ -1541,12 +1541,16 @@ expand_for_loop(CallExpr* call) {
       // Get the current value of the iterator.
       block->insertAtHead(buildIteratorCall(indices.v[i], GETVALUE, iterators.v[i], children));
 
+      BlockStmt* initBlock;
+      BlockStmt* incrBlock;
       if (isNotDynIter) {
         // add the init, and incr functions to the init, and incr blocks of the
         // c for loop. If the underlying iterator does not have a c for loop,
         // these blocks will be empty
-        toBlockStmt(call->get(1))->insertAtTail(buildIteratorCall(NULL, INIT, iterators.v[i], children));
-        toBlockStmt(call->get(3))->insertAtTail(buildIteratorCall(NULL, INCR, iterators.v[i], children));
+        initBlock = buildIteratorCall(NULL, INIT, iterators.v[i], children);
+        toBlockStmt(call->get(1))->insertAtTail(initBlock);
+        incrBlock = buildIteratorCall(NULL, INCR, iterators.v[i], children);
+        toBlockStmt(call->get(3))->insertAtTail(incrBlock);
       } else {
         // for dynamically dispatched iterators, conditional checks and other
         // code are added in buildIteratorCall. These constructs aren't legal
@@ -1587,12 +1591,14 @@ expand_for_loop(CallExpr* call) {
           block->insertBefore(new DefExpr(isFinished));
           block->insertBefore(new DefExpr(hasMore));
 
+          incrBlock->insertAtTail(buildIteratorCall(hasMore, HASMORE, iterators.v[i], children));
+          initBlock->insertAtTail(buildIteratorCall(hasMore, HASMORE, iterators.v[i], children));
           block->insertAtHead(new CondStmt(new SymExpr(isFinished), new CallExpr(PRIM_RT_ERROR, new_StringSymbol("zippered iterations have non-equal lengths"))));
           block->insertAtHead(new CallExpr(PRIM_MOVE, isFinished, new CallExpr(PRIM_UNARY_LNOT, hasMore)));
-          block->insertAtHead(buildIteratorCall(hasMore, HASMORE, iterators.v[i], children));
+          //block->insertAtHead(buildIteratorCall(hasMore, HASMORE, iterators.v[i], children));
 
           block->insertAfter(new CondStmt(new SymExpr(hasMore), new CallExpr(PRIM_RT_ERROR, new_StringSymbol("zippered iterations have non-equal lengths"))));
-          block->insertAfter(buildIteratorCall(hasMore, HASMORE, iterators.v[i], children));
+          //block->insertAfter(buildIteratorCall(hasMore, HASMORE, iterators.v[i], children));
         }
       }
 
