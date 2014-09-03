@@ -339,11 +339,7 @@ rhsAlias(CallExpr* call) {
   for_alist(expr, call->argList) {
     if(SymExpr* symExpr = toSymExpr(expr)) {
       Type* symType = symExpr->var->type->symbol->type;
-      bool isWideClass = symExpr->var->type->symbol->hasFlag(FLAG_WIDE_CLASS);
-      bool isWideRef = symExpr->var->type->symbol->hasFlag(FLAG_WIDE);
-      bool isWideStr = false;//isWideString(symExpr->var->type);
-      if(isReferenceType(symType) || isRecordWrappedType(symType) ||
-        isWideClass || isWideRef || isWideStr) {
+      if(isReferenceType(symType) || isRecordWrappedType(symType)) {
         hasRef = true;
       }
     }
@@ -632,17 +628,6 @@ static bool allOperandsAreLoopInvariant(Expr* expr, std::set<SymExpr*>& loopInva
     return false;
   } else if(SymExpr* symExpr = toSymExpr(expr)) {
   
-    //do not hoist things that are wide 
-    bool isWideObj = symExpr->var->type->symbol->hasFlag(FLAG_WIDE_CLASS);
-    bool isWideRef = symExpr->var->type->symbol->hasFlag(FLAG_WIDE);
-    bool isWideStr = false;//isWideString(symExpr->var->type);
-    if(isWideObj || isWideRef || isWideStr) {
-      //return false;
-    }
- 
-   
-
-
     //If the operand is invariant (0 defs in the loop, or constant)
     //it is invariant 
     if(loopInvariants.count(symExpr) == 1) {
@@ -892,12 +877,14 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
     }
 
     bool mightHaveBeenDeffedElseWhere = false;
-    //assume that anything passed in by ref has been changed elsewhere 
+    // assume that anything passed in by ref has been changed elsewhere
+    // Note that not all things that are passed by ref will have the ref intent
+    // flag, and may just be ref variables. This is a known bug, see comments
+    // in addVarsToFormals(): flattenFunctions.cpp.
     if(ArgSymbol* argSymbol = toArgSymbol(symExpr->var)) {
       if(argSymbol->intent == INTENT_REF ||
          argSymbol->intent == INTENT_CONST_REF ||
-         isRecordWrappedType(argSymbol->type) || 
-         (argSymbol->type == argSymbol->type->getRefType())) {
+         isReferenceType(argSymbol->type)) {
         mightHaveBeenDeffedElseWhere = true;
       }
     }
@@ -905,7 +892,7 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
       if(ArgSymbol* argSymbol = toArgSymbol(aliasSym)) {
         if(argSymbol->intent == INTENT_REF ||
            argSymbol->intent == INTENT_CONST_REF ||
-           isRecordWrappedType(argSymbol->type)) {
+           isReferenceType(argSymbol->type)) {
           mightHaveBeenDeffedElseWhere = true;
         }
       }
