@@ -539,7 +539,7 @@ class PbsProJob(AbstractPbsJob):
 
     hostlist_resource = 'mppnodes'
     num_nodes_resource = 'mppwidth'
-    num_cpus_resource = 'mppdepth'
+    num_cpus_resource = 'mppdepth' if 'CHPL_PBSPRO_NO_MPPDEPTH' not in os.environ else None
 
     @property
     def job_name(self):
