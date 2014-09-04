@@ -12,7 +12,7 @@ proc foo() {
   printf("%s\n", here.id + " x=" + x);
   x += 1;
   on Locales(1) {
-    begin ref(x) {
+    begin with (ref x) {
       sleep(2);
       printf("%s\n", here.id + " x=" + x);
       x += 1;

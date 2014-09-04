@@ -9,11 +9,11 @@
 #include "var-decls.cpp"
 var s$: sync int;
 
-begin ref(
-#define lvar(name, type, init) name,
+begin with (
+#define lvar(name, type, init) ref name,
 #include "var-types.h"
 #undef lvar
-          s$)
+          ref s$)
 {
   writeln("in begin");
 #include "var-writes.cpp"

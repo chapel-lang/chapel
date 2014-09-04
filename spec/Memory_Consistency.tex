@@ -93,7 +93,7 @@ if false { // }
 \end{chapelpre}
 \begin{chapel}
 var x: int;
-cobegin ref(x) {
+cobegin with (ref x) {
   while x != 1 do ;  // spin wait
   x = 1;
 }

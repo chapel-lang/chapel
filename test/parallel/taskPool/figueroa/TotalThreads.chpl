@@ -3,14 +3,14 @@ use Time;
 var b: bool;
 var b1, b2, b3: single bool;
 
-begin ref(b) {b1 = true; b = b3;}
+begin with (ref b) {b1 = true; b = b3;}
 
-begin ref(b) {b2 = b1; b = b3;}
+begin with (ref b) {b2 = b1; b = b3;}
 
 if b2 {
   var s: bool;
   var s1, s2: single bool;
-  cobegin ref(s) {
+  cobegin with (ref s) {
     {s1 = true; s = s2;}
     s2 = s1;
   }

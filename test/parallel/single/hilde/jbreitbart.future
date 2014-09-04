@@ -10,3 +10,7 @@ with a lack of compelling use cases.
 
 This is the same as
   parallel/sync/diten/syncArrOfSync.future
+
+P.S. Currently sync and single are allowed on sync/single types,
+by virtue of the latter being implemented as classes.
+Are we OK with that?

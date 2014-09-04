@@ -1,0 +1,6 @@
+bug: passing a 'sync int' actual to a 'ref x: int' formal is allowed
+
+This is a variation on ref-sync-1.chpl, giving the 'ref' formal the 'int' type.
+
+This shouldn't be allowed because reading/writing to an 'int' within
+the callee is not the same as reading/writing to the 'sync int' actual.

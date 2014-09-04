@@ -41,7 +41,7 @@ proc consumer() {
   var blk = t.remove();
   while (blk != nil) {
     const copyofblk = blk;
-    cobegin ref(blk) {
+    cobegin with (ref blk) {
       buildjk_atom4(copyofblk);
       blk = t.remove();
     }
