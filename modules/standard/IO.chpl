@@ -280,6 +280,7 @@ extern proc qio_channel_end_offset_unlocked(ch:qio_channel_ptr_t):int(64);
 extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyle);
 extern proc qio_file_length(f:qio_file_ptr_t, ref len:int(64)):syserr;
 
+extern proc qio_mkdir(name: c_string, mode: int, parents: bool):syserr;
 extern proc qio_file_rename(oldname: c_string, newname: c_string):syserr;
 extern proc qio_file_remove(name: c_string):syserr;
 
@@ -672,6 +673,66 @@ proc file.length():int(64) {
   }
   if err then ioerror(err, "in file.length()");
   return len;
+}
+
+/* These are constant values of the form S_I[R | W | X][USR | GRP | OTH],
+   S_IRWX[U | G | O], S_ISUID, S_ISGID, or S_ISVTX, where R corresponds to
+   readable, W corresponds to writable, X corresponds to executable, USR and
+   U correspond to user, GRP and G correspond to group, OTH and O correspond
+   to other, directly tied to the C idea of these constants.  They are intended
+   for use with functions that alter the permissions of files or directories.
+*/
+extern var S_IRUSR: int;
+extern var S_IWUSR: int;
+extern var S_IXUSR: int;
+extern var S_IRWXU: int;
+
+extern var S_IRGRP: int;
+extern var S_IWGRP: int;
+extern var S_IXGRP: int;
+extern var S_IRWXG: int;
+
+extern var S_IROTH: int;
+extern var S_IWOTH: int;
+extern var S_IXOTH: int;
+extern var S_IRWXO: int;
+
+extern var S_ISUID: int;
+extern var S_ISGID: int;
+extern var S_ISVTX: int;
+
+/* Attempt to create a directory with the given path.  If parents is true,
+   will attempt to create any directory in the path that did not previously
+   exist.  Returns any errors that occurred via an out parameter
+   err: a syserr used to indicate if an error occurred
+   name: the name of the directory to be created, fully specified.
+   mode: an integer representing the permissions desired for the file
+         in question.  See description of the provided constants for potential
+         values.
+   parents: a boolean indicating if parent directories should be created.
+            If set to false, any nonexistent parent will cause an error to
+            occur.
+*/
+proc mkdir(out err: syserr, name: string, mode: int = 511,
+           parents: bool=false) {
+  err = qio_mkdir(name.c_str(), mode, parents);
+}
+
+/* Attempt to create a directory with the given path.  If parents is true,
+   will attempt to create any directory in the path that did not previously
+   exist.  Generates an error if one occurred.
+   name: the name of the directory to be created, fully specified.
+   mode: an integer representing the permissions desired for the file
+         in question.  See description of the provided constants for potential
+         values.
+   parents: a boolean indicating if parent directories should be created.
+            If set to false, any nonexistent parent will cause an error to
+            occur.
+*/
+proc mkdir(name: string, mode: int = 511, parents: bool=false) {
+  var err: syserr = ENOERR;
+  mkdir(err, name, mode, parents);
+  if err then ioerror(err, "in mkdir", name);
 }
 
 // these strings are here (vs in _modestring)
