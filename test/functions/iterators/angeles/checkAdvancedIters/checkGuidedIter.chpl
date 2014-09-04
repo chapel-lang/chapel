@@ -1,7 +1,7 @@
 // Test to check the correctness of the guided() Iterator from the AdvancedIters module
 use AdvancedIters;
 
-config const nTasks=4;       //here.numCores;
+config const nTasks=4;       //here.numCores; should be here.maxTaskPar?
 config const n:int=1000;     // The size of the range
 var rng:range=1..n;          // The ranges
 var rngs=rng by 2;

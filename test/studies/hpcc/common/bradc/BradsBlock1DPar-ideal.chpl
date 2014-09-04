@@ -392,7 +392,7 @@ class LocBlock1DDom {
   //
   iter newThese(param iterator: IteratorType)
         where iterator == IteratorType.leader {
-    const numChunks = here.numCores();
+    const numChunks = here.maxTaskPar();
     coforall (core, blk) in (numChunks, BlockSchedule(myBlock, numChunks)) do
       yield blk - wholeDom.whole.low;
   }
