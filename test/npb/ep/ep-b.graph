@@ -1,0 +1,4 @@
+perfkeys:  Time in seconds =
+files: ep.B.dat
+graphkeys: runtime - B
+graphtitle: NAS Parallel Benchmarks: EP timings - size B
