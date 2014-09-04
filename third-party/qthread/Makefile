@@ -70,6 +70,12 @@ CHPL_QTHREAD_CFG_OPTIONS += --disable-spawn-cache
 # reduce performance penalty in cases where numChapelTasks < numQthreadWorkers
 CHPL_QTHREAD_CFG_OPTIONS += --enable-condwait-queue
 
+# pgi doesn't support the proper atomic intrinsics that are required for
+# spinlocks to be fast, so disable them for pgi, and PrgEnv-pgi
+ifneq (, $(filter $(CHPL_MAKE_TARGET_COMPILER),pgi cray-prgenv-pgi))
+CHPL_QTHREAD_CFG_OPTIONS += --disable-internal-spinlock
+endif
+
 CHPL_QTHREAD_CFG_OPTIONS += $(CHPL_QTHREAD_MORE_CFG_OPTIONS)
 
 default: all
