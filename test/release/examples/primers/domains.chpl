@@ -1,9 +1,13 @@
 /*
  * Domains primer
  *
- * This primer showcases Chapel domains.  For other uses of domains
- * see the Arrays primer (arrays.chpl) and the Sparse arrays primer
- * (sparse.chpl).
+ * This primer showcases Chapel domains as abstract concepts, primarily
+ * within the context of rectangular domains.  For other uses of domains
+ * see the following primers: 
+ *  - Arrays primer (arrays.chpl)
+ *  - Sparse arrays primer (sparse.chpl)
+ *  - Opaque arrays primer (opaque.chpl)
+ *  - Associative arrays primer (associative.chpl)
  *
  */
 
@@ -14,10 +18,6 @@ config var n = 10;
 // such as slicing.
 //
 
-//
-// Chapel provides two base domain types: rectangular and associative.
-// For more information about associative domains, see the Associative
-// primer (associative.chpl).
 //
 // Rectangular domains are used to represent rectangular index sets.
 // Each dimesion of a rectangular domain is specified by a range and
