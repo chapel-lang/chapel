@@ -1,0 +1,20 @@
+This directory contains a sample performance test which is used to
+illustrate the example given in bestPractices/TestSystem.txt.  Note
+that the test itself is bogus and is designed simply to illustrate the
+mechanisms required to create a simple Chapel vs. C performance
+comparison.
+
+If something changes here, it probably needs to change in the .txt file too.
+
+
+foo.chpl       : the (bogus) performance test written in Chapel
+foo.good       : the expected output for a correctness test
+foo.execopts   : the execution options to be used for a correctness test; this
+                 turns off the output that will (usually) vary from run-to-run
+foo.perfkeys   : the performance keys to look for in the test output
+
+foo-c.test.c   : a "C version" to compare against in our performance graph
+foo-c.good     : the expected output for the C correctness test
+foo-c.perfkeys : the performance keys to look for in the C test output
+
+foo.graph      : the graph file for comparing these two

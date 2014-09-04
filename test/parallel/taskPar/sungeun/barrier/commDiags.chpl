@@ -10,7 +10,7 @@ proc remoteTestBasic(ref b, numRemoteTasks) {
   var B: [{barSpace} dmapped new dmap(new Block({barSpace}))] int = -1;
   resetCommDiagnostics();
   startCommDiagnostics();
-  coforall t in barSpace ref(b) do on A.domain.dist.idxToLocale(t) {
+  coforall t in barSpace with (ref b) do on A.domain.dist.idxToLocale(t) {
     B[t] = A[t];
     b.barrier();
   }
@@ -25,7 +25,7 @@ proc remoteTestSplitPhase(ref b, numRemoteTasks) {
   var B: [{barSpace} dmapped new dmap(new Block({barSpace}))] int = -1;
   resetCommDiagnostics();
   startCommDiagnostics();
-  coforall t in barSpace ref(b) do on A.domain.dist.idxToLocale(t) {
+  coforall t in barSpace with (ref b) do on A.domain.dist.idxToLocale(t) {
     B[t] = A[t];
     b.notify();
     if t!=hi {            // Use an 'on' to get same results for atomics

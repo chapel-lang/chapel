@@ -833,7 +833,7 @@ proc openmem(style:iostyle = defaultIOStyle()):file {
    error: a syserr used to indicate if an error occurred during renaming.
    oldname: current name of the file
    newname: name which should refer to the file in the future.*/
-proc renameFile(out error: syserr, oldname, newname: string) {
+proc rename(out error: syserr, oldname, newname: string) {
   error = qio_file_rename(oldname.c_str(), newname.c_str());
 }
 
@@ -841,9 +841,9 @@ proc renameFile(out error: syserr, oldname, newname: string) {
    if one occurred.  The file is not opened during this operation.
    oldname: current name of the file
    newname: name which should refer to the file in the future.*/
-proc renameFile(oldname, newname: string) {
+proc rename(oldname, newname: string) {
   var err:syserr = ENOERR;
-  renameFile(err, oldname, newname);
+  rename(err, oldname, newname);
   if err then ioerror(err, "in rename", oldname);
 }
 
@@ -851,16 +851,16 @@ proc renameFile(oldname, newname: string) {
    if one occurred via an out parameter.
    err: a syserr used to indicate if an error occurred during removal
    name: the name of the file/directory to remove */
-proc removeFile(out err: syserr, name: string) {
+proc remove(out err: syserr, name: string) {
   err = qio_file_remove(name.c_str());
 }
 
 /* Removes the file or directory specified by name, generating an error
    if one occurred.
    name: the name of the file/directory to remove */
-proc removeFile(name: string) {
+proc remove(name: string) {
   var err:syserr = ENOERR;
-  removeFile(err, name);
+  remove(err, name);
   if err then ioerror(err, "in remove", name);
 }
 

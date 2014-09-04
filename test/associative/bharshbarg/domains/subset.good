@@ -1,0 +1,2 @@
+subset.chpl:3: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+subset.chpl:9: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)

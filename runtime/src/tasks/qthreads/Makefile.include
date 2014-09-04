@@ -19,6 +19,11 @@ TASKS_SUBDIR = src/tasks/$(CHPL_MAKE_TASKS)
 
 TASKS_OBJDIR = $(RUNTIME_ROOT)/$(TASKS_SUBDIR)/$(RUNTIME_OBJDIR)
 
-ALL_SRCS += $(CURDIR)/$(TASKS_SUBDIR)/*.c
+#
+# point to sources under third-party, at least until they're
+# contributed back to the usual local directory
+#
+ALL_SRCS += $(QTHREAD_SUBDIR)/src/interfaces/chapel/*.c \
+	$(QTHREAD_SUBDIR)/src/interfaces/chapel/*.h
 
 include $(RUNTIME_ROOT)/$(TASKS_SUBDIR)/Makefile.share

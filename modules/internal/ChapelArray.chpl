@@ -874,6 +874,46 @@ module ChapelArray {
       return member(i);
     }
 
+    /*
+       Returns true if this domain is a subset of 'super'
+    */
+    proc isSubset(super : domain) {
+      if !isAssociativeDom(this) {
+        if isRectangularDom(this) then
+          compilerError("isSubset not supported on rectangular domains");
+        else if isOpaqueDom(this) then
+          compilerError("isSubset not supported on opaque domains");
+        else if isSparseDom(this) then
+          compilerError("isSubset not supported on sparse domains");
+        else
+          compilerError("isSubset not supported on this domain type");
+      }
+      if super.type != this.type then
+        compilerError("isSuper called with different associative domain types");
+
+      return && reduce forall i in this do super.member(i);
+    }
+
+    /*
+       Returns true if this domain is a superset of 'sub'
+    */
+    proc isSuper(sub : domain) {
+      if !isAssociativeDom(this) {
+        if isRectangularDom(this) then
+          compilerError("isSuper not supported on rectangular domains");
+        else if isOpaqueDom(this) then
+          compilerError("isSuper not supported on opaque domains");
+        else if isSparseDom(this) then
+          compilerError("isSuper not supported on sparse domains");
+        else
+          compilerError("isSuper not supported on the domain type ", this.type);
+      }
+      if sub.type != this.type then
+        compilerError("isSuper called with different associative domain types");
+
+      return && reduce forall i in sub do this.member(i);
+    }
+
     // 1/5/10: do we want to support order() and position()?
     proc indexOrder(i) return _value.dsiIndexOrder(_makeIndexTuple(rank, i));
   
@@ -1152,7 +1192,7 @@ module ChapelArray {
   
   proc -(d1: domain, d2: domain) where
                                    (d1.type == d2.type) &&
-                                   (isIrregularDom(d1) && isIrregularDom(d2)) {
+                                   (isSparseDom(d1) || isOpaqueDom(d1)) {
     var d3: d1.type;
     // These should eventually become forall loops
     for e in d1 do d3.add(e);
@@ -1359,6 +1399,11 @@ module ChapelArray {
       for param i in 1..args.size do
         if !_value.dom.dsiDim(i).boundsCheck(args(i)) then
           halt("array slice out of bounds in dimension ", i, ": ", args(i));
+    }
+
+    inline proc assertSingleArrayDomain(fnName : string) {
+      if this.domain._value._arrs.length != 1 then
+        halt("Cannot call ", fnName, " on an array defined over a domain with multiple arrays");
     }
   
     // Special cases of local slices for DefaultRectangularArrs because
@@ -1591,6 +1636,162 @@ module ChapelArray {
     }
   }  // record _array
   
+  /*
+     The following functions define set operations on associative arrays.
+
+     The supported functions (and their op= variations) are:
+       + or |    Union
+       &         Intersection
+       -         Difference
+       ^         Symmetric Difference
+
+     Consider the following code where 'a' and 'b' are associative arrays:
+
+     var c = a op b;
+
+     The result 'c' is a new associative array backed by a new associative
+     domain. The domains of 'a' and 'b' are not modified by 'op'.
+
+     Consider the following code where 'a' and 'b' are associative arrays:
+
+     a op= b;
+
+     'a' must not share its domain with another array, otherwise the program
+     will halt with an error message.
+     
+     For the += and |= operators, the value from 'b' will overwrite the
+     existing value when indices overlap.
+  */
+
+  // promototion for associative array addition doesn't really make sense. instead,
+  // we really just want a union
+  proc +(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    return a | b;
+  }
+
+  proc +=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    a.assertSingleArrayDomain("+=");
+    a |= b;
+  }
+
+  proc |(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    var newDom : a.domain.type;
+    var ret : [newDom] a.eltType;
+    serial !newDom._value.parSafe {
+      forall (k,v) in zip(a.domain, a) do ret[k] = v;
+      ret |= b;
+    }
+    return ret;
+  }
+
+  proc |=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    a.assertSingleArrayDomain("|=");
+    serial !a.domain._value.parSafe do forall (k,v) in zip(b.domain, b) do a[k] = v;
+  }
+
+  proc &(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    var newDom : a.domain.type;
+    var ret : [newDom] a.eltType;
+
+    serial !newDom._value.parSafe do
+      forall k in a.domain do
+        if b.domain.member(k) then ret[k] = a[k];
+    return ret;
+  }
+
+  proc &=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    a.assertSingleArrayDomain("&=");
+    serial !a.domain._value.parSafe do
+      forall k in a.domain do
+        if !b.domain.member(k) then a.domain.remove(k);
+  }
+
+  proc -(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    var newDom : a.domain.type;
+    var ret : [newDom] a.eltType;
+
+    serial !newDom._value.parSafe do
+      forall k in a.domain do
+        if !b.domain.member(k) then ret[k] = a[k];
+
+    return ret;
+  }
+
+  proc -=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    a.assertSingleArrayDomain("-=");
+    serial !a.domain._value.parSafe do
+      forall k in a.domain do
+        if b.domain.member(k) then a.domain.remove(k);
+  }
+
+
+  proc ^(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    var newDom : a.domain.type;
+    var ret : [newDom] a.eltType;
+
+    serial !newDom._value.parSafe {
+      forall k in a.domain do
+        if !b.domain.member(k) then ret[k] = a[k];
+      forall k in b.domain do
+        if !a.domain.member(k) then ret[k] = b[k];
+    }
+
+    return ret;
+  }
+
+  proc ^=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    a.assertSingleArrayDomain("^=");
+    serial !a.domain._value.parSafe do
+      forall k in b.domain do
+        if a.domain.member(k) then a.domain.remove(k);
+        else a[k] = b[k];
+  }
+
+  /*
+     The following functions define set operations on associative domains.
+
+     The supported functions are:
+       + or |    Union
+       &         Intersection
+       -         Difference
+       ^         Symmetric Difference
+
+     For each operator, a new domain is returned.
+  */
+
+  proc -(a :domain, b :domain) where (a.type == b.type) && isAssociativeDom(a) {
+    var newDom : a.type;
+    serial !newDom._value.parSafe do
+      forall e in a do
+        if !b.member(e) then newDom.add(e);
+    return newDom;
+  }
+  
+  proc |(a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
+    return a + b;
+  }
+
+  proc &(a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
+    var newDom : a.type;
+
+    serial !newDom._value.parSafe do 
+      forall k in a do
+        if b.member(k) then newDom += k;
+    return newDom;
+  }
+
+  proc ^(a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
+    var newDom : a.type;
+
+    serial !newDom._value.parSafe {
+      forall k in a do
+        if !b.member(k) then newDom.add(k);
+      forall k in b do
+        if !a.member(k) then newDom.add(k);
+    }
+
+    return newDom;
+  }
   //
   // Helper functions
   //

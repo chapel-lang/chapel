@@ -1,7 +1,0 @@
-bug: Compiler reports an error when a record is declared inside a class
-
-
-Compiler output:
-nestedRecordInClass1.chpl:9: In function 'chpl__initCopy':
-nestedRecordInClass1.chpl:9: error: unresolved call 'myR(x=int(64), outer=Bar)'
-nestedRecordInClass1.chpl:9: note: candidates are: myR(_mt: _MT, outer: Bar, x: int(64))

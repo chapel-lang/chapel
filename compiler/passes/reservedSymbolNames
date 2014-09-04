@@ -58,6 +58,8 @@
   open
   pow
   printf
+  remove
+  rename
   scanf
   sync
   quad
