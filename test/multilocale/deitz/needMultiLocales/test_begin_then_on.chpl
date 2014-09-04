@@ -1,7 +1,7 @@
 proc main {
   var s, t: sync int;
   var x, y: int;
-  begin ref(x,y) {
+  begin with (ref x, ref y) {
     t.readFE();
     x = 2;
     y = 2;

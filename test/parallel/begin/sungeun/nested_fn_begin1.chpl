@@ -4,7 +4,7 @@ use Time;
 proc foo() {
   var x: int = 2;
   proc bar() {
-    begin ref(x) {
+    begin with (ref x) {
       sleep(1);
       writeln(x);
       x = 3;
