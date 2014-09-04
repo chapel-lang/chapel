@@ -72,7 +72,7 @@ CHPL_QTHREAD_CFG_OPTIONS += --enable-condwait-queue
 
 # pgi doesn't support the proper atomic intrinsics that are required for
 # spinlocks to be fast, so disable them for pgi, and PrgEnv-pgi
-ifneq (, $(filter $(CHPL_MAKE_TARGET_COMPILER),pgi cray-prgenv-pgi))
+ifneq (, $(findstring pgi,$(CHPL_MAKE_TARGET_COMPILER)))
 CHPL_QTHREAD_CFG_OPTIONS += --disable-internal-spinlock
 endif
 
