@@ -1,4 +1,4 @@
 make
-recursive
-new
-directory
+make/recursive
+make/recursive/new
+make/recursive/new/directory
