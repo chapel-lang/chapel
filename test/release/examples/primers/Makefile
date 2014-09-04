@@ -5,6 +5,7 @@ CHPL = chpl
 
 TARGETS = \
 	arrays \
+        associative \
 	atomics \
 	chpldoc \
 	classes \
