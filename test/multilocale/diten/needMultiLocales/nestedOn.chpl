@@ -8,7 +8,7 @@ proc main() {
   on Locales(1) {
     var i = 0;
     var r: sync int;
-    cobegin ref(i,s) {
+    cobegin with (ref i, ref s) {
       { r; while (s != "done") { i += 1; } }
       on s.locale {
         s = "done"; r = 1;

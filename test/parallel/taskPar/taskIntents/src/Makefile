@@ -93,7 +93,7 @@ $(INSTALL_DIR)/%.good: %.good.o
 # run the C preprocessor on Chapel code
 #  $(INTERIM_CHPL) $(SAMPLE_FILES):
 %.o: %.cpp
-	gcc -MMD -E -C -CC -P $(DBG) $< | removeEmptyLines > $@
+	gcc -MMD -E -C -CC -P $(DBG) $< | ./removeEmptyLines > $@
 	[ -r $<.patch ] && patch < $<.patch || true
 
 # install Chapel files

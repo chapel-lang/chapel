@@ -1,7 +1,7 @@
 var a: sync int;
 var b = 0;
 
-cobegin ref(b) {
+cobegin with (ref b) {
   {
     b = 1;
     while (a < 3) {

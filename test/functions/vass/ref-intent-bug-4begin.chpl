@@ -8,7 +8,7 @@ proc testDriver(): int {
   var localVar: int;
   var localByRef: int;
   proc testNested(ref globalArg: int, ref localArg: int): void {
-    begin ref(globalVar,globalArg,localVar,localArg) {
+    begin with (ref globalVar, ref globalArg, ref localVar, ref localArg) {
       beginProceed$;
       globalVar = 200;
       globalArg = 3000;

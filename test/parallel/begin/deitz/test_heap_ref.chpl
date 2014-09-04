@@ -2,7 +2,7 @@ var A: [1..3] int;
 
 sync {
   for e in A {
-    begin ref(e) {
+    begin with (ref e) {
       e = 2;
     }
   }
