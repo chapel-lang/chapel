@@ -43,7 +43,6 @@ static void insertWideCastTemps();
 static void derefWideStringActuals();
 static void derefWideRefsToWideClasses();
 static void widenGetPrivClass();
-static void moveAddressSourcesToTemp(void);
 
 AggregateType* wideStringType = NULL;
 
@@ -391,10 +390,6 @@ insertWideReferences(void) {
   widenGetPrivClass();
   heapAllocateGlobalsTail(heapAllocateGlobals, heapVars);
   handleLocalBlocks();
-  narrowWideReferences();
-
-  // TODO: Test if this step is really necessary.  If it is, document why.
-  moveAddressSourcesToTemp();
 }
 
 
@@ -872,29 +867,3 @@ static void widenGetPrivClass()
 }
 
 
-// In every move:
-//   if the LHS type has the WIDE or REF flag
-//   and its value type is a wide class
-//   and the RHS type is the same as the contents of the wide pointer:
-//     Create a temp copy of the RHS, and
-//     replace the RHS of the move with the temp.
-static void moveAddressSourcesToTemp()
-{
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
-      if ((call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
-           call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) &&
-          call->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
-          call->get(2)->typeInfo() == call->get(1)->getValType()->getField("addr")->type) {
-        //
-        // widen rhs class
-        //
-        SET_LINENO(call);
-        VarSymbol* tmp = newTemp(call->get(1)->getValType());
-        call->insertBefore(new DefExpr(tmp));
-        call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(2)->remove()));
-        call->insertAtTail(tmp);
-      }
-    }
-  }
-}
