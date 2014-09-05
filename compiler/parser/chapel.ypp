@@ -1110,16 +1110,14 @@ task_intent_ls:
 ;
 
 intent_expr:
-| TREF ident_expr        { $$ = $2; }
-| ident_expr             { USR_FATAL($1, "Blank intents are not currently supported in with clauses"); }
-| TIN ident_expr         { USR_FATAL($2, "'in' intents are not currently supported in with clauses"); }
-| TINOUT ident_expr      { USR_FATAL($2, "'inout' intents are not currently supported in with clauses"); }
-| TOUT ident_expr        { USR_FATAL($2, "'out' intents are not currently supported in with clauses"); }
-| TCONST ident_expr      { USR_FATAL($2, "'const' intents are not currently supported in with clauses"); }
-| TCONST TIN ident_expr  { USR_FATAL($3, "'const in' intents are not currently supported in with clauses"); }
-| TCONST TREF ident_expr { USR_FATAL($3, "'const ref' intents are not currently supported in with clauses"); }
-| TPARAM ident_expr      { USR_FATAL($2, "'param' intents are not currently supported in with clauses"); }
-| TTYPE ident_expr       { USR_FATAL($2, "'type' intents are not currently supported in with clauses"); }
+  opt_intent_tag ident_expr
+    {
+      if ($1 != INTENT_REF) {
+        USR_FATAL($2, "Only 'ref' intents are currently supported in with clauses");
+      } else {
+        $$ = $2;
+      }
+    }
 ;
 
 ref_var_ls:

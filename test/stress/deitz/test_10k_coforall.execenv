@@ -1,5 +1,5 @@
 CHPL_RT_NUM_THREADS_PER_LOCALE=255
-
+CHPL_RT_CALL_STACK_SIZE=256K
 #
 # We turn off guard pages for this test as it creates many little tasks
 #

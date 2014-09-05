@@ -13,10 +13,10 @@ files: ep.A.dat
 graphkeys: runtime - A
 graphtitle: NAS Parallel Benchmarks: EP timings - size A
 
-perfkeys:  Time in seconds =
-files: ep.B.dat
-graphkeys: runtime - B
-graphtitle: NAS Parallel Benchmarks: EP timings - size B
+#perfkeys:  Time in seconds =
+#files: ep.B.dat
+#graphkeys: runtime - B
+#graphtitle: NAS Parallel Benchmarks: EP timings - size B
 
 #perfkeys:  Time in seconds =
 #files: ep.C.dat
