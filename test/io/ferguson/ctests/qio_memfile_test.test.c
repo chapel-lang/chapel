@@ -64,6 +64,8 @@ int main(int argc, char** argv)
   qbytes_release(b);
   qbuffer_release(buf);
 
+  printf("qio_memfile_test PASS\n");
+
   return 0;
 }
 

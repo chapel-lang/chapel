@@ -560,6 +560,8 @@ int main(int argc, char** argv)
 
   test_qbuffer_edges();
 
+  printf("qbuffer_test PASS\n");
+
   return 0;
 }
 

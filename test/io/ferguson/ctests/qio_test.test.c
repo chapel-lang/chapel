@@ -2,6 +2,8 @@
 #include <assert.h>
 #include <stdio.h>
 
+int verbose = 0;
+
 unsigned char data_at(int64_t offset)
 {
   return offset + (offset >> 2) + 'a' + (offset % 7);
@@ -67,7 +69,8 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
 
   fhints = qio_hints_to_string(file_hints);
   chhints = qio_hints_to_string(ch_hints);
-  printf("check_channel(threadsafe=%i, type=%i, start=%lli, len=%lli, chunksz=%lli, file_hints=%s, ch_hints=%s, unbounded=%i, reopen=%i)\n",
+  if( verbose ) {
+    printf("check_channel(threadsafe=%i, type=%i, start=%lli, len=%lli, chunksz=%lli, file_hints=%s, ch_hints=%s, unbounded=%i, reopen=%i)\n",
          (int) threadsafe,
          (int) type,
          (long long int) start,
@@ -77,6 +80,7 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
          chhints,
          (int) unbounded_channels,
          (int) reopen );
+  }
   free(fhints);
   free(chhints);
 
@@ -358,6 +362,8 @@ void check_paths(void)
 int main(int argc, char** argv)
 {
 
+  if( argc != 1 ) verbose = 1;
+
   // use smaller mmap chunks for testing.
   qio_mmap_chunk_iobufs = 1;
 
@@ -368,6 +374,8 @@ int main(int argc, char** argv)
 
   check_channels();
 
+
+  printf("qio_test PASS\n");
 
   return 0;
 }
