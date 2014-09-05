@@ -365,7 +365,7 @@ proc WrapperRectDom.dsiBuildArray(type eltType) {
   return result;
 }
 
-proc WrapperArr.dsiAccess(indexx) var: eltType {
+proc WrapperArr.dsiAccess(indexx) ref: eltType {
   const ixt = if _isIntegralType(indexx.type) then (indexx,) else indexx;
   return origArr.dsiAccess(origIx(ixt));
 }
@@ -572,7 +572,7 @@ iter WrapperRectDom.these(param tag: iterKind, followThis) where tag == iterKind
 
 //== iterators - array
 
-iter WrapperArr.these() var where isReindexing() {
+iter WrapperArr.these() ref where isReindexing() {
   // not affected by reindexing
   for a in origArr.these() do
     yield a;
@@ -584,7 +584,7 @@ iter WrapperArr.these(param tag: iterKind) where tag == iterKind.leader && isRei
     yield followThis;
 }
 
-iter WrapperArr.these(param tag: iterKind, followThis) var where tag == iterKind.follower && isReindexing() {
+iter WrapperArr.these(param tag: iterKind, followThis) ref where tag == iterKind.follower && isReindexing() {
 
   // reindexing does not affect densified indices
   for v in origArr.these(tag, followThis) do
@@ -922,7 +922,7 @@ proc WrapperRectDom._userToOrigDenseFT(denseUserFT, origdom, debug_msg) where is
 
 //== iterators - array
 
-iter WrapperArr.these() var where isRankChange() {
+iter WrapperArr.these() ref where isRankChange() {
   // todo: is it possible to make this more efficient?
   for ix in this.dom.whole do
     yield this.dsiAccess(ix);
@@ -934,7 +934,7 @@ iter WrapperArr.these(param tag: iterKind) where tag == iterKind.leader && isRan
     yield followThis;
 }
 
-iter WrapperArr.these(param tag: iterKind, followThis) var where tag == iterKind.follower && isRankChange() {
+iter WrapperArr.these(param tag: iterKind, followThis) ref where tag == iterKind.follower && isRankChange() {
 
   reportNewArr("WrapperArr follower on " + followThis:string, this);
   for v in origArr.these(tag, this.dom._userToOrigDenseFT(followThis, this.origArr.dom, "WrapperArr follower")) do
