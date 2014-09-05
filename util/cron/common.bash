@@ -8,7 +8,7 @@ source $CWD/functions.bash
 
 # For our internal testing, this is necessary to get the latest version of gcc
 # on the system.
-if [ -z "${CHPL_SOURCED_BASHRC}" ] ; then
+if [ -z "${CHPL_SOURCED_BASHRC}" -a -f ~/.bashrc ] ; then
     source ~/.bashrc
     export CHPL_SOURCED_BASHRC=true
 fi
