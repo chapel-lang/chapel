@@ -466,7 +466,6 @@ unlock:
 qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict * restrict out, int64_t* restrict len_out, ssize_t maxlen)
 {
   qioerr err;
-  qioerr ret_err = 0;
   char* restrict ret = NULL;
   size_t ret_len = 0;
   size_t ret_max = 0;
@@ -725,9 +724,6 @@ qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch,
 
   }
 
-  // Save the error so we can return it even if it's EOF
-  ret_err = err;
-
   // Now we'll ignore EOF for some styles.
   if(style->string_format == QIO_STRING_FORMAT_WORD ||
      style->string_format == QIO_STRING_FORMAT_TOEND ||
@@ -755,8 +751,7 @@ unlock:
     }
   }
 
-  if( err ) return err;
-  return ret_err;
+  return err;
 }
 
 qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch, const char* restrict match, ssize_t len, int skipws)
