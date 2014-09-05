@@ -191,6 +191,38 @@ qioerr _peek_until_byte(qio_channel_t* restrict ch, uint8_t term_byte, int64_t* 
 }
 
 static
+qioerr _peek_until_len(qio_channel_t* restrict ch, ssize_t len, int64_t* restrict amt_read_out)
+{
+  qioerr err;
+  int64_t mark_offset = 0;
+  int64_t end_offset = 0;
+  uint64_t num = 0;
+  uint8_t byte = 0;
+  ssize_t count;
+
+  mark_offset = qio_channel_offset_unlocked(ch);
+
+  err = qio_channel_mark(false, ch);
+  if( err ) return err;
+
+  for( count = 0; count < len; count++ ) {
+    err = qio_channel_read_uint8(false, ch, &byte);
+    if( err ) break;
+    count++;
+  }
+
+  end_offset = qio_channel_offset_unlocked(ch);
+
+  qio_channel_revert_unlocked(ch);
+
+  num = end_offset - mark_offset;
+
+  *amt_read_out = num;
+  return err;
+}
+
+
+static
 qioerr _getc_after_whitespace(qio_channel_t* restrict ch, int32_t* restrict got_chr)
 {
   qioerr err = 0;
@@ -297,6 +329,7 @@ qioerr _append_char(char* restrict * restrict buf, size_t* restrict buf_len, siz
 // -8 -- 8 bytes of length before
 // -10 -- variable byte length before (hi-bit 1 means more, little endian)
 // -0x01XX -- read until terminator XX is read
+// -0xff00 -- read until the end of the file
 //  + -- nonzero positive -- read exactly this length.
 qioerr qio_channel_read_string(const int threadsafe, const int byteorder, const int64_t str_style, qio_channel_t* restrict ch, const char* restrict* restrict out, int64_t* restrict len_out, ssize_t maxlen)
 {
@@ -312,6 +345,9 @@ qioerr qio_channel_read_string(const int threadsafe, const int byteorder, const 
   ssize_t len=0;
   ssize_t amt = 0;
   err_t errcode;
+  int until_end = 0;
+  int32_t got_byte;
+  int64_t mark_offset, end_offset;
 
   if( maxlen <= 0 ) maxlen = SSIZE_MAX - 1;
 
@@ -348,6 +384,14 @@ qioerr qio_channel_read_string(const int threadsafe, const int byteorder, const 
       if( str_style >= 0 ) {
         // just read the suggested length
         num = str_style;
+      } else if( str_style == -0xff00 ) {
+        // read until the end of the file.
+        // Figure out how many bytes are available.
+        until_end = 1;
+        err = _peek_until_len(ch, maxlen, &peek_amt);
+        num = peek_amt;
+        // Ignore EOF errors.
+        if( err && qio_err_to_int(err) == EEOF ) err = 0;
       } else {
         // read a terminated amount.
         term = (-str_style) + QIO_STRSTYLE_NULL_TERMINATED;
@@ -370,6 +414,7 @@ qioerr qio_channel_read_string(const int threadsafe, const int byteorder, const 
   }
   len = num;
 
+ 
   // Now read that many bytes into an allocated area.
   ret = qio_malloc(len + 1); // room for \0.
   if( ! ret ) {
