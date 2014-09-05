@@ -35,7 +35,7 @@ record Date {
 class Calendar {
   var year, month: int;
 
-  proc type Calendar.fromDate(d: Date): Calendar {
+  proc type fromDate(d: Date): Calendar {
     return new Calendar(d.year, d.month);
   }
 }
