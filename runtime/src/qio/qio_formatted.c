@@ -345,7 +345,6 @@ qioerr qio_channel_read_string(const int threadsafe, const int byteorder, const 
   ssize_t len=0;
   ssize_t amt = 0;
   err_t errcode;
-  int until_end = 0;
 
   if( maxlen <= 0 ) maxlen = SSIZE_MAX - 1;
 
@@ -381,7 +380,6 @@ qioerr qio_channel_read_string(const int threadsafe, const int byteorder, const 
     case QIO_BINARY_STRING_STYLE_TOEOF:
       // read until the end of the file.
       // Figure out how many bytes are available.
-      until_end = 1;
       err = _peek_until_len(ch, maxlen, &peek_amt);
       num = peek_amt;
       // Ignore EOF errors.
@@ -468,7 +466,7 @@ unlock:
 qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict * restrict out, int64_t* restrict len_out, ssize_t maxlen)
 {
   qioerr err;
-  qioerr ret_err;
+  qioerr ret_err = 0;
   char* restrict ret = NULL;
   size_t ret_len = 0;
   size_t ret_max = 0;
