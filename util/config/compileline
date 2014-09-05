@@ -59,6 +59,6 @@ for my $arg (@ARGV) {
     ($key, $val) = split('=', $arg, 2);
     $ENV{$key} = $val;
   } else {
-    print "Unknown argument; try --compile or --link or --includes-and-defines\n";
+    print "Unknown argument; try --compile or --libraries or --includes-and-defines\n";
   }
 }
