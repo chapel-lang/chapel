@@ -104,7 +104,7 @@ Leftovers: (I didn't know how to categorize these,
 test/           -- regression tests
   Bin/          -- binaries used in running the test system
   Logs/         -- default location for log files to be written out
-  Samples/      -- sample tests (not run by default, use -startdir to test)
+  Samples/      -- sample tests
   Share/        -- designed for sharing tests that aren't ready for primetime
   -----------
   classes/      -- tests using classes/OO

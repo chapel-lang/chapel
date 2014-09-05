@@ -45,7 +45,7 @@ proc consumer() {
   bI = task;
   while (bI.ilo != 0) {
     copyofbI = bI;
-    cobegin ref(bI) {
+    cobegin with (ref bI) {
       buildjk_atom4(copyofbI);
       bI = task;
     }

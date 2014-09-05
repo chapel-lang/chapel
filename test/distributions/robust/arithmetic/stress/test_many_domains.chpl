@@ -1,6 +1,6 @@
 use driver;
 
-config const n: int = 10000;
+config const n: int = 500;
 
 for i in 1..n do
   foo(i);

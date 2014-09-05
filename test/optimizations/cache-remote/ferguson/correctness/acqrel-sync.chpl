@@ -17,7 +17,7 @@ proc doit(a:locale, b:locale, c:locale)
     stopgob = true;
 
     sync {
-      begin ref(x) on b {
+      begin with (ref x) on b {
         for i in 0..max by 2 {
           var z = stopgob; // wait for it
           assert( x == i );
@@ -26,7 +26,7 @@ proc doit(a:locale, b:locale, c:locale)
         }
       }
 
-      begin ref(x) on c {
+      begin with (ref x) on c {
         for i in 1..max by 2 {
           var z = stopgoc; // wait for it
           assert( x == i );

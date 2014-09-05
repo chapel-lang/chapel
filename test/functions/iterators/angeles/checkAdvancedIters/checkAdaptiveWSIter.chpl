@@ -1,7 +1,7 @@
 // Test to check the correctness of the adaptive() Iterator from the AdvancedIters module
 use AdvancedIters;
 
-config const nTasks=4;           // here.numCores;
+config const nTasks=4;           // here.numCores; should be here.maxTaskPar?
 config const n:int=10000;        // The size of the range
 var rng:range=1..n;              // The ranges
 var rngs=rng by 2;

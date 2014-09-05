@@ -1091,7 +1091,7 @@ module ChapelRange {
       const tasksPerLocale = dataParTasksPerLocale;
       const ignoreRunning = dataParIgnoreRunningTasks;
       const minIndicesPerTask = dataParMinGranularity;
-      const dptpl = if tasksPerLocale==0 then here.numCores
+      const dptpl = if tasksPerLocale==0 then here.maxTaskPar
                     else tasksPerLocale;
 
       // Make sure we don't use more sublocales than the numbers of
@@ -1333,15 +1333,6 @@ module ChapelRange {
       }
     }
   }
-  
-  // Return a substring of a string with a range of indices.
-  inline proc string.substring(r: range(?)) {
-    var r2 = r[1..this.length];  // This may warn about ambiguously aligned ranges.
-    if r2.isEmpty() then return "";
-    var lo:int = r2.alignedLow, hi:int = r2.alignedHigh;
-    return __primitive("string_select", this, lo, hi, r2.stride);
-  }
-  
   
   //################################################################################
   //# Internal helper functions.

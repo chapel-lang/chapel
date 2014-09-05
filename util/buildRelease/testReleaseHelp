@@ -31,6 +31,12 @@ if ($tmpstatus != 0) then
     echo "ERROR: make failed"
     exit($tmpstatus)
 endif
+rehash   # required for csh only; if we convert this to bash, drop this
+set tmpstatus = $status
+if ($tmpstatus != 0) then
+    echo "ERROR: make failed"
+    exit($tmpstatus)
+endif
 $mymake check
 set tmpstatus = $status
 if ($tmpstatus != 0) then
