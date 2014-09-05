@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sys, os, optparse
 
-import chpl_comm, chpl_comm_segment, chpl_compiler
+import chpl_comm, chpl_comm_segment, chpl_compiler, chpl_platform
 from utils import memoize
 
 @memoize
@@ -12,10 +12,11 @@ def get(flag='host'):
         mem_val = os.environ.get('CHPL_MEM')
         if not mem_val:
             comm_val = chpl_comm.get()
+            platform_val = chpl_platform.get('target')
             tcmallocCompat = ["gnu", "clang", "intel"]
 
             # true if tcmalloc is compatible with the target compiler
-            if any(sub in chpl_compiler.get('target') for sub in tcmallocCompat):
+            if platform_val is not 'cygwin' and  any(sub in chpl_compiler.get('target') for sub in tcmallocCompat):
               return 'tcmalloc'
             if comm_val == 'gasnet':
                 segment_val = chpl_comm_segment.get()
