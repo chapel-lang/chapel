@@ -208,7 +208,6 @@ qioerr _peek_until_len(qio_channel_t* restrict ch, ssize_t len, int64_t* restric
   for( count = 0; count < len; count++ ) {
     err = qio_channel_read_uint8(false, ch, &byte);
     if( err ) break;
-    count++;
   }
 
   end_offset = qio_channel_offset_unlocked(ch);
@@ -323,13 +322,14 @@ qioerr _append_char(char* restrict * restrict buf, size_t* restrict buf_len, siz
 }
 
 // string binary style:
-// -1 -- 1 byte of length before
-// -2 -- 2 bytes of length before
-// -4 -- 4 bytes of length before
-// -8 -- 8 bytes of length before
-// -10 -- variable byte length before (hi-bit 1 means more, little endian)
-// -0x01XX -- read until terminator XX is read
-// -0xff00 -- read until the end of the file
+// QIO_BINARY_STRING_STYLE_LEN1B_DATA -1 -- 1 byte of length before
+// QIO_BINARY_STRING_STYLE_LEN2B_DATA -2 -- 2 bytes of length before
+// QIO_BINARY_STRING_STYLE_LEN4B_DATA -4 -- 4 bytes of length before
+// QIO_BINARY_STRING_STYLE_LEN8B_DATA -8 -- 8 bytes of length before
+// QIO_BINARY_STRING_STYLE_LENvB_DATA -10 -- variable byte length before
+//                                        (hi-bit 1 means more, little endian)
+// QIO_BINARY_STRING_STYLE_TOEOF -0xff00 -- read until end or up to maxlen
+// BINARY_STRING_STYLE_DATA_NULL|0xXX -0x01XX -- read until terminator XX
 //  + -- nonzero positive -- read exactly this length.
 qioerr qio_channel_read_string(const int threadsafe, const int byteorder, const int64_t str_style, qio_channel_t* restrict ch, const char* restrict* restrict out, int64_t* restrict len_out, ssize_t maxlen)
 {
@@ -346,8 +346,6 @@ qioerr qio_channel_read_string(const int threadsafe, const int byteorder, const 
   ssize_t amt = 0;
   err_t errcode;
   int until_end = 0;
-  int32_t got_byte;
-  int64_t mark_offset, end_offset;
 
   if( maxlen <= 0 ) maxlen = SSIZE_MAX - 1;
 
@@ -362,36 +360,37 @@ qioerr qio_channel_read_string(const int threadsafe, const int byteorder, const 
 
   // read a string length.
   switch (str_style) {
-    case -1:
+    case QIO_BINARY_STRING_STYLE_LEN1B_DATA:
       err = qio_channel_read_uint8(false, ch, &num8);
       num = num8;
       break;
-    case -2:
+    case QIO_BINARY_STRING_STYLE_LEN2B_DATA:
       err = qio_channel_read_uint16(false, byteorder, ch, &num16);
       num = num16;
       break;
-    case -4:
+    case QIO_BINARY_STRING_STYLE_LEN4B_DATA:
       err = qio_channel_read_uint32(false, byteorder, ch, &num32);
       num = num32;
       break;
-    case -8:
+    case QIO_BINARY_STRING_STYLE_LEN8B_DATA:
       err = qio_channel_read_uint64(false, byteorder, ch, &num);
       break;
-    case -10:
+    case QIO_BINARY_STRING_STYLE_LENvB_DATA:
       err = qio_channel_read_uvarint(false, ch, &num);
+      break;
+    case QIO_BINARY_STRING_STYLE_TOEOF:
+      // read until the end of the file.
+      // Figure out how many bytes are available.
+      until_end = 1;
+      err = _peek_until_len(ch, maxlen, &peek_amt);
+      num = peek_amt;
+      // Ignore EOF errors.
+      if( err && qio_err_to_int(err) == EEOF ) err = 0;
       break;
     default:
       if( str_style >= 0 ) {
         // just read the suggested length
         num = str_style;
-      } else if( str_style == -0xff00 ) {
-        // read until the end of the file.
-        // Figure out how many bytes are available.
-        until_end = 1;
-        err = _peek_until_len(ch, maxlen, &peek_amt);
-        num = peek_amt;
-        // Ignore EOF errors.
-        if( err && qio_err_to_int(err) == EEOF ) err = 0;
       } else {
         // read a terminated amount.
         term = (-str_style) + QIO_STRSTYLE_NULL_TERMINATED;
@@ -469,6 +468,7 @@ unlock:
 qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict * restrict out, int64_t* restrict len_out, ssize_t maxlen)
 {
   qioerr err;
+  qioerr ret_err;
   char* restrict ret = NULL;
   size_t ret_len = 0;
   size_t ret_max = 0;
@@ -541,6 +541,12 @@ qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch,
     handle_0x = 0;
     handle_u = 0;
     stop_space = 0;
+  } else if( style->string_format == QIO_STRING_FORMAT_TOEOF ) {
+    handle_back = 0;
+    handle_0x = 0;
+    handle_u = 0;
+    stop_space = 0;
+    term_chr = -1;
   } else {
     handle_back = 1;
     handle_0x = 1;
@@ -555,7 +561,8 @@ qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch,
 
     // If we're using FORMAT_WORD, skip any whitespace at the beginning
     if( nread == 0 ) {
-      while( style->string_format != QIO_STRING_FORMAT_TOEND &&
+      while( !(style->string_format == QIO_STRING_FORMAT_TOEND ||
+               style->string_format == QIO_STRING_FORMAT_TOEOF) &&
              iswspace(chr) ) {
         // Read the next character!
         err = qio_channel_read_char(false, ch, &chr);
@@ -564,7 +571,8 @@ qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch,
       if( err ) break;
 
       if( style->string_format == QIO_STRING_FORMAT_WORD ||
-          style->string_format == QIO_STRING_FORMAT_TOEND ) {
+          style->string_format == QIO_STRING_FORMAT_TOEND ||
+          style->string_format == QIO_STRING_FORMAT_TOEOF ) {
         // OK, use the character we have
       } else if( chr == style->string_start ) {
         // Read the next character!
@@ -717,6 +725,15 @@ qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch,
       goto unlock;
     }
 
+  }
+
+  // Save the error so we can return it even if it's EOF
+  ret_err = err;
+
+  // Now we'll ignore EOF for some styles.
+  if(style->string_format == QIO_STRING_FORMAT_WORD ||
+     style->string_format == QIO_STRING_FORMAT_TOEND ||
+     style->string_format == QIO_STRING_FORMAT_TOEOF) {
     // Not an error to reach EOF with these ones.
     if( ret_len > 0 && qio_err_to_int(err) == EEOF ) err = 0;
   }
@@ -740,7 +757,8 @@ unlock:
     }
   }
 
-  return err;
+  if( err ) return err;
+  return ret_err;
 }
 
 qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch, const char* restrict match, ssize_t len, int skipws)
@@ -884,13 +902,16 @@ qioerr qio_channel_print_literal_2(const int threadsafe, qio_channel_t* ch, void
   return qio_channel_write_amt(threadsafe, ch, ptr, len);
 }
 
+
 // string binary style:
-// -1 -- 1 byte of length before
-// -2 -- 2 bytes of length before
-// -4 -- 4 bytes of length before
-// -8 -- 8 bytes of length before
-// -10 -- variable byte length before (hi-bit 1 means more, little endian)
-// -0x01XX -- read until terminator XX is read
+// QIO_BINARY_STRING_STYLE_LEN1B_DATA -1 -- 1 byte of length before
+// QIO_BINARY_STRING_STYLE_LEN2B_DATA -2 -- 2 bytes of length before
+// QIO_BINARY_STRING_STYLE_LEN4B_DATA -4 -- 4 bytes of length before
+// QIO_BINARY_STRING_STYLE_LEN8B_DATA -8 -- 8 bytes of length before
+// QIO_BINARY_STRING_STYLE_LENvB_DATA -10 -- variable byte length before
+//                                        (hi-bit 1 means more, little endian)
+// QIO_BINARY_STRING_STYLE_TOEOF -0xff00 -- read until end or up to maxlen
+// BINARY_STRING_STYLE_DATA_NULL|0xXX -0x01XX -- read until terminator XX
 //  + -- nonzero positive -- read exactly this length.
 qioerr qio_channel_write_string(const int threadsafe, const int byteorder, const int64_t str_style, qio_channel_t* restrict ch, const char* restrict ptr, ssize_t len)
 {
@@ -912,36 +933,38 @@ qioerr qio_channel_write_string(const int threadsafe, const int byteorder, const
 
   // write a string length if necessary.
   switch (str_style) {
-    case -1:
+    case QIO_BINARY_STRING_STYLE_LEN1B_DATA:
       num8 = len;
       if( (ssize_t) num8 != len ) {
         QIO_GET_CONSTANT_ERROR(err, EOVERFLOW, "overflow in string length");
       } else err = qio_channel_write_uint8(false, ch, num8);
       break;
-    case -2:
+    case QIO_BINARY_STRING_STYLE_LEN2B_DATA:
       num16 = len;
       if( (ssize_t) num16 != len ) {
         QIO_GET_CONSTANT_ERROR(err, EOVERFLOW, "overflow in string length");
       } else err = qio_channel_write_uint16(false, byteorder, ch, num16);
       break;
-    case -4:
+    case QIO_BINARY_STRING_STYLE_LEN4B_DATA:
       num32 = len;
       if( (ssize_t) num32 != len ) {
         QIO_GET_CONSTANT_ERROR(err, EOVERFLOW, "overflow in string length");
       } else err = qio_channel_write_uint32(false, byteorder, ch, num32);
       break;
-    case -8:
+    case QIO_BINARY_STRING_STYLE_LEN8B_DATA:
       num64 = len;
       if( (ssize_t) num64 != len ) {
         QIO_GET_CONSTANT_ERROR(err, EOVERFLOW, "overflow in string length");
       } else err = qio_channel_write_uint64(false, byteorder, ch, num64);
       break;
-    case -10:
+    case QIO_BINARY_STRING_STYLE_LENvB_DATA:
       num64 = len;
       if( (ssize_t) num64 != len ) {
         QIO_GET_CONSTANT_ERROR(err, EOVERFLOW, "overflow in string length");
       } else err = qio_channel_write_uvarint(false, ch, num64);
       break;
+    case QIO_BINARY_STRING_STYLE_TOEOF:
+      // Just don't worry about the length - write len bytes.
     default:
       if( str_style >= 0 ) {
         // MPF - perhaps we should allow writing a string
