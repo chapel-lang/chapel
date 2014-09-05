@@ -519,6 +519,9 @@ AggregateType::copyInner(SymbolMap* map) {
 
 static void
 addDeclaration(AggregateType* ct, DefExpr* def, bool tail) {
+  if (def->sym->hasFlag(FLAG_REF_VAR)) {
+      USR_FATAL_CONT(def, "References cannot be members of classes or records yet.");
+  }
   if (FnSymbol* fn = toFnSymbol(def->sym)) {
     ct->methods.add(fn);
     if (fn->_this) {
