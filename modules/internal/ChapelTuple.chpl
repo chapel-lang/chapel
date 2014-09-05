@@ -103,7 +103,7 @@ module ChapelTuple {
   //
   // homogeneous tuple accessor
   //
-  proc _tuple.this(i : integral) var {
+  proc _tuple.this(i : integral) ref {
     if !isHomogeneousTuple(this) then
       compilerError("invalid access of non-homogeneous tuple by runtime value");
     if boundsChecking then

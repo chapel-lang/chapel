@@ -844,7 +844,7 @@ inline proc _remoteAccessData.getDataIndex(param stridable, ind: rank*idxType) {
 }
 
 
-inline proc BlockArr.dsiLocalAccess(i: rank*idxType) var {
+inline proc BlockArr.dsiLocalAccess(i: rank*idxType) ref {
   return myLocArr.this(i);
 }
 
@@ -853,7 +853,7 @@ inline proc BlockArr.dsiLocalAccess(i: rank*idxType) var {
 //
 // TODO: Do we need a global bounds check here or in targetLocsIdx?
 //
-proc BlockArr.dsiAccess(i: rank*idxType) var {
+proc BlockArr.dsiAccess(i: rank*idxType) ref {
   local {
     if myLocArr != nil && myLocArr.locDom.member(i) then
       return myLocArr.this(i);
@@ -895,10 +895,10 @@ proc BlockArr.dsiAccess(i: rank*idxType) var {
   return locArr(dom.dist.targetLocsIdx(i))(i);
 }
 
-proc BlockArr.dsiAccess(i: idxType...rank) var
+proc BlockArr.dsiAccess(i: idxType...rank) ref
   return dsiAccess(i);
 
-iter BlockArr.these() var {
+iter BlockArr.these() ref {
   for i in dom do
     yield dsiAccess(i);
 }
@@ -922,7 +922,7 @@ proc BlockArr.dsiDynamicFastFollowCheck(lead: [])
 proc BlockArr.dsiDynamicFastFollowCheck(lead: domain)
   return lead._value == this.dom;
 
-iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) var where tag == iterKind.follower {
+iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) ref where tag == iterKind.follower {
   proc anyStridable(rangeTuple, param i: int = 1) param
       return if i == rangeTuple.size then rangeTuple(i).stridable
              else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
@@ -970,7 +970,7 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) v
     //
     // we don't necessarily own all the elements we're following
     //
-    proc accessHelper(i) var {
+    proc accessHelper(i) ref {
       if myLocArr then local {
         if myLocArr.locDom.member(i) then
           return myLocArr.this(i);
@@ -1190,7 +1190,7 @@ proc BlockArr.setRADOpt(val=true) {
 //
 // the accessor for the local array -- assumes the index is local
 //
-proc LocBlockArr.this(i) var {
+proc LocBlockArr.this(i) ref {
   return myElems(i);
 }
 
