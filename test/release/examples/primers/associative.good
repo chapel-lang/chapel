@@ -1,27 +1,40 @@
-associative.chpl:58: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
-associative.chpl:174: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
+associative.chpl:59: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+associative.chpl:70: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+associative.chpl:139: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
+associative.chpl:197: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
+associative.chpl:301: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+associative.chpl:302: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+associative.chpl:304: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+associative.chpl:309: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+associative.chpl:310: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+associative.chpl:326: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
+associative.chpl:327: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
+associative.chpl:348: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
+associative.chpl:374: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
 An empty associative domain: {}
 
 A populated associative domain of strings: {Dana, Alice, Frank, Clark, Bob, Ellen}
 
 Removed 'Bob' and 'Frank', added 'Robert': {Dana, Alice, Clark, Robert, Ellen}
 
-Our first associative array: 0 0 0 0 0
-Our first array, pretty-printed: { Alice => 0, Clark => 0, Dana => 0, Ellen => 0, Robert => 0 }
+Our 'Scores' associative array: 0 0 0 0 0
+Our 'Scores' array, pretty-printed: [ Alice => 0, Clark => 0, Dana => 0, Ellen => 0, Robert => 0 ]
 
-Our 'Scores' array initialized with some values: { Alice => 75, Clark => 100, Dana => 91, Ellen => 100, Robert => 85 }
+Our 'Scores' array initialized with some values: [ Alice => 42, Clark => 100, Dana => 91, Ellen => 100, Robert => 33 ]
 
-The average score is 90
+The average score is 73
 
-Our updated 'Scores' array after adding some more names: { Alice => 75, Clark => 100, Dana => 91, Ellen => 100, Gary => 10, John => 76, Robert => 85 }
+Our updated 'Scores' array after adding some more names: [ Alice => 42, Clark => 100, Dana => 91, Ellen => 100, Gary => 10, John => 76, Robert => 33 ]
 
-Integers from 1..n composed of odds | evens: 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20
-Odd integers below n/2: odds & lowerHalf = 1 3 5 7 9
-Another way to get the same result: lowerHalf - evens = 1 3 5 7 9
-Even below n/2, odd above: lowerHalf ^ odds = 2 4 6 8 10 11 13 15 17 19
+Some primes in the fibonnaci sequence: {5, 13, 3, 2}
+Some primes not in the fibonnaci sequence: {7, 17, 11}
 
-Some simple associative arrays:
-A = { a => true, b => false, c => true }
-B = { b => true, c => false, d => true }
-C is the union of A and B; C = A | B : { a => true, b => true, c => false, d => true }
-A becomes the union of A and B; A |= B: { a => true, b => true, c => false, d => true }
+Women = {Dana, Alice, Ellen}
+Men = {John, Gary, Clark, Robert, Mark}
+
+Who had a passing grade?
+	[ Alice => false, Clark => true, Dana => true, Ellen => true, Gary => false, John => true, Mark => true, Nancy => false, Robert => false ]
+
+Which numbers are in the fibonnaci sequence?
+	[ 0 => true, 1 => true, 2 => true, 3 => true, 5 => true, 7 => false, 8 => true, 11 => false, 13 => true, 17 => false ]
+

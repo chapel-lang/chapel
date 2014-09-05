@@ -16,6 +16,7 @@
 //
 // The current implementation supports most Chapel types, and will eventually
 // support any language-defined type.
+//
 {
   var A : domain(int);     // a domain of integers
   var B : domain(string);  // a domain of strings
@@ -58,6 +59,20 @@ writeln();
 var Days = {"Sunday", "Wednesday", "Saturday"};
 
 //
+// Duplicate indices do not exist in associative domains. This means that if
+// we have duplicate indices in a domain-literal, then only one of the
+// duplicate indices will be present in the domain.
+//
+// In the example below, "Sunday" will only occur once in the 'DuplicateDays'
+// domain. This makes 'DuplicateDays' equivalent to 'Days'.
+//
+
+var DuplicateDays = {"Sunday", "Sunday", "Wednesday", "Saturday"};
+
+if Days != DuplicateDays then
+  halt("Days and DuplicateDays should be equivalent");
+
+//
 // The '+=' operator can be used to add indices to an associative domain.
 //
 Names += "Alice";
@@ -78,16 +93,15 @@ writeln();
 
 //
 // Below we can add a range of integers with the '+=' or 'add' operators
-// because of what is called 'promotion'. Those functions take integer
-// arguments, which the Chapel compiler recognizes and then 'promotes' the code
-// to handle iteration and invokation of the function.
+// because of 'promotion'. Those functions take integer arguments, and because
+// a range consists of integers the Chapel compiler is able to 'promote' the
+// code to handle iteration and invokation of the function with the range's
+// values as arguments.
 //
-// This promotion will work with anything that can be iterated over in a 
-// for loop.
+// Promotion works with common Chapel types like ranges, domains, and arrays.
 //
 var DaysInJune : domain(int);
 DaysInJune += 1..30;
-
 
 //
 // The '-=' operator is used to remove indices from an associative domain.
@@ -119,17 +133,26 @@ if Names.member("Frank") then
 var Scores : [Names] int;
 
 //
+// Like other arrays, we can initialize associative arrays with a default value
+// when declared.
+//
+var HoursInDay : [Days] int = 24;
+for hours in HoursInDay do
+  if hours != 24 then
+    halt("HoursInDay's values should have all been initialized to '24'");
+
+//
 // We could also use the array-literal syntax to create an associative
 // array.
 //
-// Below, 'Months' is an associative array of strings to integers.
+// Below, 'DaysInMonth' is an associative array of strings to integers.
 //
-var Months = ["June" => 30, "January" => 31, "September" => 30];
+var DaysInMonth = ["June" => 30, "January" => 31, "September" => 30];
 
 //
 // All array elements are initialized to the default value for that type.
 //
-writeln("Our first associative array: ", Scores);
+writeln("Our 'Scores' associative array: ", Scores);
 
 //
 // Printing an array only prints its values. Let's write a function that 
@@ -161,7 +184,7 @@ proc prettyPrint(arr : [?dom]) {
 //
 // Using our new routine, print our array.
 //
-write("Our first array, pretty-printed: ");
+write("Our 'Scores' array, pretty-printed: ");
 prettyPrint(Scores);
 writeln();
 
@@ -171,9 +194,10 @@ writeln();
 // Traditional array operations like whole-array assignment and indexing
 // are supported for associative arrays.
 //
-Scores = 100;
-Scores["Robert"] = 85;
-Scores["Alice"] = 75;
+Scores = 100; // every value in 'Scores' is now '100'.
+
+Scores["Robert"] = 33;
+Scores["Alice"] = 42;
 Scores["Dana"] = 91;
 write("Our 'Scores' array initialized with some values: ");
 prettyPrint(Scores);
@@ -255,13 +279,14 @@ Ages["Mark"] = 33;
 Scores["Mark"] = 81;
 
 //
-// The program will still halt if one tries to access an index
-// not in the domain:
+// The program will still halt if one tries to access an index not in the
+// domain:
 //   writeln(Scores["Sally"]);
 //
 
 //
 // Set operations are available only on associative domains and arrays.
+// These operations work with any supported index type.
 //
 // The supported set operations are:
 //   Union (| or +)
@@ -273,53 +298,68 @@ Scores["Mark"] = 81;
 // otherwise stated.
 //
 
+var primeDom = {2, 3, 5, 7, 11, 13, 17};  // some prime numbers
+var fibDom   = {0, 1, 1, 2, 3, 5, 8, 13}; // part of the fibonnaci sequence
+
+var primeAndFib = primeDom & fibDom;
+writeln("Some primes in the fibonnaci sequence: ", primeAndFib);
+writeln("Some primes not in the fibonnaci sequence: ", primeDom - primeAndFib);
+writeln();
+
+var Women = {"Alice", "Dana", "Ellen"};
+var Men = Names - Women;
+
+writeln("Women = ", Women);
+writeln("Men = ", Men);
+writeln();
+
+if (Men | Women) != Names then
+  halt("The union of the 'Men' and 'Women' sets should be equivalent to 'Names'");
 
 //
-// TODO: Better examples that aren't duplicating the abilities of ranges.
+// Let's create some new associative arrays.
 //
-// We'll use domains of integers for convenience, but 
-// these set operations work for any domain type.
-//
+var AboveFifty : domain(string);
+for (name, score) in zip(Names, Scores) do
+  if score > 50 then AboveFifty.add(name);
 
-config const n = 20;
-
-var odds, evens, lowerHalf : domain(int);
-odds += 1..n by 2;
-evens += 1..n by 2 align 2;
-lowerHalf += 1..(n/2);
+var Passing : [AboveFifty] bool = true;
+var Failing : [Names - AboveFifty] bool = false;
 
 //
-// Note: When printing the result of an iterator in this way, the results are
-// coalesced into a Default Rectangular array of the indices.
+// 'PassedClass' is a new associative array with its own domain. While it currently
+// happens to share the same indices as the 'Names' domain, they are not the
+// same domain object. This means we can use the implicit index addition
+// syntax to add to the 'PassedClass' array.
 //
-writeln("Integers from 1..n composed of odds | evens: ", (odds | evens).sorted());
-writeln("Odd integers below n/2: odds & lowerHalf = ", (odds & lowerHalf).sorted());
-writeln("Another way to get the same result: lowerHalf - evens = ", (lowerHalf - evens).sorted());
-writeln("Even below n/2, odd above: lowerHalf ^ odds = ", (lowerHalf ^ odds).sorted());
+var PassedClass = Passing | Failing;
+PassedClass["Nancy"] = false;
+write("Who had a passing grade?\n\t");
+prettyPrint(PassedClass);
+writeln();
+
+if Names.member("Nancy") then
+  halt("Error: 'Names' domain should not have been modified by adding an index to 'PassedClass'");
+
+//
+// Let's use our 'primes' and 'fibs' domains to define associative arrays.
+//
+var Primes : [primeDom] bool;
+var Fibs : [fibDom] bool = true;
+
+//
+// 'IsFib' is an associative array of integers to bools, where the boolean
+// value is true if the number is in the fibonnaci sequence. When performing
+// a union between two arrays with overlapping indices, the values of the 
+// second array take precedence.
+//
+var IsFib  = Primes | Fibs;
+write("Which numbers are in the fibonnaci sequence?\n\t");
+prettyPrint(IsFib);
 writeln();
 
 //
-// Let's use the array-literal syntax to create a couple of arrays to use 
-// as examples for set operations.
-//
-var A = ["a" => true, "b" => false, "c" => true];
-var B = ["b" => true, "c" => false, "d" => true];
-writeln("Some simple associative arrays:");
-write("A = ");
-prettyPrint(A);
-write("B = ");
-prettyPrint(B);
-
-//
-// When performing a union between two arrays with overlapping indices, the
-// values of the second array take precedence.
-//
-var C = A | B;
-write("C is the union of A and B; C = A | B : ");
-prettyPrint(C);
-
-//
-// The op= variants are supported for associative arrays:
+// op= variants of set operations are supported for associative arrays:
 // 
 // Union: +=, |=
 // Intersection: &=
@@ -329,6 +369,20 @@ prettyPrint(C);
 // However, this is only permitted when the array's domain is not shared with
 // other arrays.
 //
-A |= B;
-write("A becomes the union of A and B; A |= B: ");
-prettyPrint(A);
+// Let's construct an array identical to 'PassedClass' using |=.
+//
+var PC : [Names - AboveFifty] bool = false;
+PC |= Passing;
+PC["Nancy"] = false;
+
+for (a, b) in zip(PassedClass, PC) do
+  if a != b then
+    halt("PassedClass and PC are different, but shouldn't be.");
+
+//
+// Future Directions
+//
+// Today, associative domains cannot be distributed across multiple locales.
+// A prototype domain map exists, and if users are interested more effort can
+// be made to move from a prototype to a polished feature.
+//
