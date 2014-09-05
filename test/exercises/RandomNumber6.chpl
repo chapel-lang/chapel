@@ -19,7 +19,7 @@ proc RealRandomNumber () {
 config const numberOfIterations = 10000;
 
 proc test {
-  coforall i in 1..numberOfIterations ref(seed) do
+  coforall i in 1..numberOfIterations with (ref seed) do
     // Cast RandomNumber's return value to whatever seed's type is
     seed = RandomNumber(seed) : seed.type;
 

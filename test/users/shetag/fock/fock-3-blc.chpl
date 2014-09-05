@@ -11,7 +11,7 @@ const matD : domain(2) = {1..n, 1..n};
 const dmat : [matD] elemType = [(i,j) in matD] 1.0/(i+j); 
 var jmat2, kmat2, jmat2T, kmat2T : [matD] elemType; 
 
-config const numConsumers = max(1, (+ reduce Locales.numCores) - 1),
+config const numConsumers = max(1, (+ reduce Locales.maxTaskPar) - 1),
              poolSize = numConsumers;
 const t = new taskpool(poolSize);
 
@@ -43,7 +43,7 @@ proc consumer() {
   var blk = t.remove();
   while (blk != nil) {
     const copyofblk = blk;
-    cobegin ref(blk) {
+    cobegin with (ref blk) {
       buildjk_atom4(copyofblk);
       blk = t.remove();
     }

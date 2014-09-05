@@ -15,10 +15,9 @@
 #
 # $CHPL_HOME/test/
 #   Logs/    -- logs of testing runs go here by default
-#   Samples/ -- sample tests go here; these are for illustration only
-#               and won't be run by default.  To try running the
-#               test system against these samples, use:
-#                      start_test ./Samples
+#   Samples/ -- sample tests go here; these are for illustration
+#               purposes and are intended to complement the
+#               TestSystem.txt best practices documentation.
 #   Share/   -- a place to put codes to share with other developers.
 #               These will not be run by default.
 #   */       -- all other directories will contain tests
@@ -1534,7 +1533,7 @@ foreach testType ($testTypes)
         # Recursively list all directories, ignoring some (should we really do
         # this?  Maybe add NOTEST files instead?)
         if ($recurse == 1) then
-            set dirs = `find . -name ".svn" -prune -o -name ".git" -prune -o -name Logs -prune -o -name Samples -prune -o -name Share -prune -o -name perfdat -prune -o -type d -print`
+            set dirs = `find . -name ".svn" -prune -o -name ".git" -prune -o -name Logs -prune -o -name Share -prune -o -name perfdat -prune -o -type d -print`
         else
             set dirs = (./)
         endif

@@ -45,7 +45,7 @@ proc eval_AtA_times_u(u,AtAu,v : [] real, inRange, range1, range2 : int)
 
 proc main() {
   var tmp, u, v : [0..#n] real;
-  var numThreads = here.numCores;
+  var numThreads = here.maxTaskPar;
   var chunk = n / numThreads;
 
   u = 1.0;
