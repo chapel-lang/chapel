@@ -249,7 +249,7 @@ if !Names.member("Gary") then
 
 //
 // If we were to define another array with 'Names' as the backing domain,
-// then we could no longer use this convenient syntax.
+// then we could no longer use this convenient feature.
 //
 var Ages : [Names] int;
 
@@ -330,7 +330,7 @@ var Failing : [Names - AboveFifty] bool = false;
 // 'PassedClass' is a new associative array with its own domain. While it currently
 // happens to share the same indices as the 'Names' domain, they are not the
 // same domain object. This means we can use the implicit index addition
-// syntax to add to the 'PassedClass' array.
+// feature to add to the 'PassedClass' array.
 //
 var PassedClass = Passing | Failing;
 PassedClass["Nancy"] = false;
