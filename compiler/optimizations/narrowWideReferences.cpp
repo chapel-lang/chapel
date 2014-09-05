@@ -89,10 +89,10 @@ static Map<Symbol*,WideInfo*>* wideInfoMap;
 static void populateWideInfoMap();
 static void narrowVarsArgsFieldsInMap(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                                       Map<Symbol*,Vec<SymExpr*>*>& useMap);
-static void doNarrowing(SymExprTypeMap*);
-static void pruneNarrowedActuals(SymExprTypeMap*);
+static void doNarrowing(SymExprTypeMap&);
+static void pruneNarrowedActuals(SymExprTypeMap&);
 static void printNarrowEffectSummary();
-static void insertWideReferenceTemps(SymExprTypeMap*);
+static void insertWideReferenceTemps(SymExprTypeMap&);
 static void moveAddressSourcesToTemp();
 
 //
@@ -433,13 +433,13 @@ narrowWideReferences() {
 
   narrowVarsArgsFieldsInMap(defMap, useMap);
 
-  doNarrowing(widenMap);
+  doNarrowing(*widenMap);
 
-  pruneNarrowedActuals(widenMap);
+  pruneNarrowedActuals(*widenMap);
 
   printNarrowEffectSummary();
 
-  insertWideReferenceTemps(widenMap);
+  insertWideReferenceTemps(*widenMap);
 
   //
   // Free WideInfo class instances and def and use maps.
@@ -509,7 +509,7 @@ static void narrowVarsArgsFieldsInMap(Map<Symbol*,Vec<SymExpr*>*>& defMap,
 }
 
 
-static void doNarrowing(SymExprTypeMap* widenMap)
+static void doNarrowing(SymExprTypeMap& widenMap)
 {
   // Now, traverse the wideInfoMap, and perform the narrowings it calls for.
   // Uses of the variable or argument requiring widening are added to widenMap.
@@ -521,7 +521,7 @@ static void doNarrowing(SymExprTypeMap* widenMap)
       // add exprs to widen to the widen map
       //
       forv_Vec(SymExpr, actual, wi->exprsToWiden) {
-        widenMap->put(actual, wi->sym->type);
+        widenMap.put(actual, wi->sym->type);
       }
 
       //
@@ -550,7 +550,7 @@ static void doNarrowing(SymExprTypeMap* widenMap)
 }
 
 
-static void pruneNarrowedActuals(SymExprTypeMap* widenMap)
+static void pruneNarrowedActuals(SymExprTypeMap& widenMap)
 {
   //
   // Prune the map of expressions to widen because of arguments that
@@ -563,7 +563,7 @@ static void pruneNarrowedActuals(SymExprTypeMap* widenMap)
         FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
         forv_Vec(CallExpr, call, *fn->calledBy) {
           SymExpr* actual = toSymExpr(formal_to_actual(call, arg));
-          widenMap->put(actual, NULL);
+          widenMap.put(actual, NULL);
         }
       }
     }
@@ -593,13 +593,13 @@ static void printNarrowEffectSummary()
 }
 
 
-static void insertWideReferenceTemps(SymExprTypeMap* widenMap)
+static void insertWideReferenceTemps(SymExprTypeMap& widenMap)
 {
   //
   // Insert a wide reference temporary if we narrowed a wide reference
   // that is passed to a function that expects a wide reference.
   //
-  form_Map(SymExprTypeMapElem, e, *widenMap) {
+  form_Map(SymExprTypeMapElem, e, widenMap) {
     SymExpr* key = e->key;
     Type* value = e->value;
     if (value && key->var->type != value) { // can this be an assert?
