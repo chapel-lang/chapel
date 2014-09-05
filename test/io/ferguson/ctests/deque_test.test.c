@@ -459,6 +459,7 @@ int main(int argc, char** argv)
   }
   test_deque(1 << 15);
 
+  printf("deque_test PASS\n");
   return 0;
 }
 

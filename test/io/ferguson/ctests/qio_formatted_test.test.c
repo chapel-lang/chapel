@@ -4,6 +4,8 @@
 #include <locale.h>
 #include <langinfo.h>
 
+int verbose = 0;
+
 void test_endian(void)
 {
   // We write (hex) 00 0102 03040506 0708091011121314
@@ -29,7 +31,7 @@ void test_endian(void)
   int b_order;
   const char* expect;
 
-  printf("Testing endian functions\n");
+  if( verbose ) printf("Testing endian functions\n");
 
   err = qio_file_open_tmp(&f, 0, NULL);
   assert(!err);
@@ -102,7 +104,7 @@ void test_readwriteint(void)
   char got[16];
   int i,j,k;
 
-  printf("Testing binary integer I/O\n");
+  if( verbose ) printf("Testing binary integer I/O\n");
 
   // Open a temporary file.
   err = qio_file_open_tmp(&f, 0, NULL);
@@ -234,7 +236,7 @@ void test_printscan_int(void)
   ssize_t amt_read;
   int i,j;
 
-  printf("Testing text integer I/O\n");
+  if( verbose ) printf("Testing text integer I/O\n");
 
   for( i = 0; i < NSTYLES; i++ ) {
     qio_style_init_default(&styles[i]);
@@ -602,7 +604,7 @@ void test_printscan_float(void)
   qio_file_release(f);
   f = NULL;
 
-  printf("PASS: text float I/O\n");
+  if( verbose ) printf("PASS: text float I/O\n");
 #undef NSTYLES
 }
 
@@ -637,7 +639,7 @@ void test_verybasic()
 	qio_file_release(f);
 	f = NULL;
 
-	printf("PASS: test_verybasic\n");
+	if( verbose ) printf("PASS: test_verybasic\n");
 }
 
 typedef struct string_test_s{
@@ -699,7 +701,7 @@ void string_escape_tests()
 
             {
               const char* got = NULL;
-              ssize_t got_len = 0;
+              int64_t got_len = 0;
               err = qio_channel_scan_string(true, reading, &got, &got_len, -1);
               assert(!err);
 
@@ -716,7 +718,7 @@ void string_escape_tests()
 
         qio_file_release(f);
 
-        printf("PASS: simple escape\n");
+        if( verbose ) printf("PASS: simple escape\n");
 }
 
 void write_65k_test()
@@ -729,7 +731,7 @@ void write_65k_test()
         qio_channel_t *writing = NULL;
         qio_style_t style = qio_style_default();
 	int buflen = 65535;
-        ssize_t out_len = 0;
+        int64_t out_len = 0;
 
         err = qio_file_open_tmp(&f, 0, NULL);
         assert(!err);
@@ -766,7 +768,7 @@ void write_65k_test()
 
         qio_channel_release(reading);
 
-	printf("PASS: wrote 65k to file, read it back ok.\n");
+	if( verbose ) printf("PASS: wrote 65k to file, read it back ok.\n");
 
         qio_file_release(f);
         f = NULL;
@@ -780,7 +782,7 @@ void write_65k_test()
 void max_width_test()
 {
         const char *out = NULL;
-        ssize_t out_len = 0;
+        int64_t out_len = 0;
         qioerr err;
         qio_file_t *f = NULL;
         qio_channel_t *reading = NULL;
@@ -830,7 +832,7 @@ void max_width_test()
 void min_width_test()
 {
         const char *out = NULL;
-        ssize_t out_len = 0;
+        int64_t out_len = 0;
         qioerr err;
         qio_file_t *f = NULL;
         qio_channel_t *reading = NULL;
@@ -875,7 +877,7 @@ void min_width_test()
 void basicstring_test()
 { 
  	const char *out = NULL;
-        ssize_t out_len = 0;
+        int64_t out_len = 0;
         qioerr err;
 	int x,y=0;
         qio_file_t *f = NULL;
@@ -892,7 +894,7 @@ void basicstring_test()
 				  }; 
         int NUM_STRINGS = sizeof(strings)/sizeof(string_test_t);
 
-        printf("Testing basic string writing/reading\n");
+        if( verbose ) printf("Testing basic string writing/reading\n");
 
         err = qio_file_open_tmp(&f, 0, NULL);
 	assert(!err);
@@ -977,7 +979,7 @@ void basicstring_test()
         qio_file_release(f);
         f = NULL;
        
-        printf("PASS: basic string test\n");
+        if( verbose ) printf("PASS: basic string test\n");
 #undef NUM_STR_STYLES
 #define NUM_STRINGS 1
 }
@@ -1150,7 +1152,8 @@ void do_test_utf8(int wchar, char* utf8)
 
 void test_utf8(void)
 {
-  printf("Testing UTF-8 glocale_utf8=%i qbytes_iobuf_size=%i\n",
+  if( verbose )
+    printf("Testing UTF-8 glocale_utf8=%i qbytes_iobuf_size=%i\n",
          qio_glocale_utf8, (int) qbytes_iobuf_size);
 
   do_test_utf8(0x0024, "\x24");
@@ -1391,7 +1394,7 @@ void test_quoted_string_maxlength(void)
 
   qio_file_release(f);
 
-  printf("PASS: quoted max length\n");
+  if( verbose ) printf("PASS: quoted max length\n");
 }
 
 int main(int argc, char** argv)
@@ -1400,8 +1403,10 @@ int main(int argc, char** argv)
 
   setlocale(LC_CTYPE,"");
 
-  printf("Sizeof of qio_style_t is %i\n", (int) sizeof(qio_style_t));
-  printf("Sizeof of qio_channel_t is %i\n", (int) sizeof(qio_channel_t));
+  if( verbose ) {
+    printf("Sizeof of qio_style_t is %i\n", (int) sizeof(qio_style_t));
+    printf("Sizeof of qio_channel_t is %i\n", (int) sizeof(qio_channel_t));
+  }
 
   for( int i = 0; sizes[i] != 0; i++ ) {
     char* codeset = nl_langinfo(CODESET); 
@@ -1418,8 +1423,8 @@ int main(int argc, char** argv)
   for( int i = 0; sizes[i] != 0; i++ ) {
     qbytes_iobuf_size = sizes[i];
 
-    printf("Testing formatted I/O qbytes_iobuf_size=%i\n",
-          (int) qbytes_iobuf_size);
+    if( verbose ) printf("Testing formatted I/O qbytes_iobuf_size=%i\n",
+                         (int) qbytes_iobuf_size);
     basicstring_test();
 
     test_verybasic();
@@ -1434,6 +1439,8 @@ int main(int argc, char** argv)
 
     test_quoted_string_maxlength();
   }
+
+  printf("qio_formatted_test PASS\n");
 
   return 0;
 }

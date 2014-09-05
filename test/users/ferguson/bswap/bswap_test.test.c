@@ -64,6 +64,8 @@ int bswap_test(int n)
   c = le64toh(c);
   assert(c == n);
 
+  printf("bswap_test PASS\n");
+
   return 0;
 }
 

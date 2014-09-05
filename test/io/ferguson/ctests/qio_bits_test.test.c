@@ -193,9 +193,11 @@ void check_write_read_pat(int width, int num, int pat, qio_chtype_t type, qio_hi
 
   fhints = qio_hints_to_string(file_hints);
   chhints = qio_hints_to_string(ch_hints);
-  printf("check_write_read_pat(width=%i, num=%i, pat=%i, type=%i, file_hints=%s %i, ch_hints=%s %i, reopen=%i)\n",
+  if( verbose )
+    printf("check_write_read_pat(width=%i, num=%i, pat=%i, type=%i, file_hints=%s %i, ch_hints=%s %i, reopen=%i)\n",
          width, num, pat, type,
          fhints, (int) file_hints, chhints, (int) ch_hints,  (int) reopen);
+
   free(fhints);
   free(chhints);
 
@@ -379,6 +381,8 @@ int main(int argc, char** argv)
 
     qio_file_release(f);
   }
+
+  printf("qio_bits_test PASS\n");
 
   return 0;
 }

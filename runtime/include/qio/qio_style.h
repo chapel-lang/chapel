@@ -47,6 +47,7 @@ typedef uint8_t style_char_t;
 #define QIO_STRING_FORMAT_CHPL 2
 #define QIO_STRING_FORMAT_JSON 3
 #define QIO_STRING_FORMAT_TOEND 4
+#define QIO_STRING_FORMAT_TOEOF 5
 
 #define QIO_COMPLEX_FORMAT_READ_ANY 0
 #define QIO_COMPLEX_FORMAT_READ_STRICT 0x10
@@ -114,6 +115,8 @@ typedef struct qio_style_s {
        QIO_STRING_FORMAT_JSON  escape string_end " and \ with \,
                                and nonprinting characters c = \uABCD
        QIO_STRING_FORMAT_TOEND string is as-is; reading reads until string_end;
+                               returned string includes string_end.
+       QIO_STRING_FORMAT_TOEOF string is as-is; reading reads until EOF;
                                returned string includes string_end.
      */
   uint8_t string_format;
