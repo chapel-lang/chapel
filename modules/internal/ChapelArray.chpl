@@ -1554,35 +1554,32 @@ module ChapelArray {
         for d in _value.dsiGetLocalSubdomains() do yield d;
     }
 
-    proc isVectorSafe() param {
+    proc chpl__isVectorSafe() param {
       return isRectangularArr(this) &&
              this.rank == 1 &&
              !this._value.stridable;
     }
 
-    proc assertSingleArrayDomain(fnName: string) {
+    proc chpl__assertSingleArrayDomain(fnName: string) {
       if this.domain._value._arrs.length != 1 then
         halt("cannot call " + fnName +
              " on an array defined over a domain with multiple arrays");
     }
 
-    proc empty() /* where isVectorSafe() */ {
-      /* assertSingleArrayDomain("empty"); */
+    proc empty(): bool {
       return this.numElements == 0;
     }
 
-    proc front(): this._value.eltType /* where isVectorSafe() */ {
-      /* assertSingleArrayDomain("front"); */
+    proc front(): this._value.eltType {
       return this[this.domain.low];
     }
 
-    proc back(): this._value.eltType /* where isVectorSafe() */ {
-      /* assertSingleArrayDomain("back"); */
+    proc back(): this._value.eltType {
       return this[this.domain.high];
     }
 
-    proc pop_back() where isVectorSafe() {
-      assertSingleArrayDomain("pop_back");
+    proc pop_back() where chpl__isVectorSafe() {
+      chpl__assertSingleArrayDomain("pop_back");
       const lo = this.domain.low,
             hi = this.domain.high-1;
       const newDom = {lo..hi};
@@ -1591,8 +1588,8 @@ module ChapelArray {
       on this._value do this._value.dsiPostReallocate();
     }
 
-    proc push_back(val: this._value.eltType) where isVectorSafe() {
-      assertSingleArrayDomain("push_back");
+    proc push_back(val: this._value.eltType) where chpl__isVectorSafe() {
+      chpl__assertSingleArrayDomain("push_back");
       const lo = this.domain.low,
             hi = this.domain.high+1;
       const newDom = {lo..hi};
@@ -1602,8 +1599,8 @@ module ChapelArray {
       this[hi] = val;
     }
 
-    proc push_front(val: this._value.eltType) where isVectorSafe() {
-      assertSingleArrayDomain("push_front");
+    proc push_front(val: this._value.eltType) where chpl__isVectorSafe() {
+      chpl__assertSingleArrayDomain("push_front");
       const lo = this.domain.low-1,
             hi = this.domain.high;
       const newDom = {lo..hi};
@@ -1613,8 +1610,8 @@ module ChapelArray {
       this[lo] = val;
     }
 
-    proc pop_front() where isVectorSafe() {
-      assertSingleArrayDomain("pop_front");
+    proc pop_front() where chpl__isVectorSafe() {
+      chpl__assertSingleArrayDomain("pop_front");
       const lo = this.domain.low+1,
             hi = this.domain.high;
       const newDom = {lo..hi};
@@ -1623,8 +1620,8 @@ module ChapelArray {
       on this._value do this._value.dsiPostReallocate();
     }
 
-    proc insert(position: this._value.idxType, val: this._value.eltType) where isVectorSafe() {
-      assertSingleArrayDomain("insert");
+    proc insert(position: this._value.idxType, val: this._value.eltType) where chpl__isVectorSafe() {
+      chpl__assertSingleArrayDomain("insert");
       const lo = this.domain.low,
             hi = this.domain.high+1;
       const newDom = {lo..hi};
@@ -1633,6 +1630,43 @@ module ChapelArray {
       on this._value do this._value.dsiPostReallocate();
       for i in position..hi-1 by -1 do this[i+1] = this[i];
       this[position] = val;
+    }
+
+    proc remove(position: this._value.idxType) where chpl__isVectorSafe() {
+      chpl__assertSingleArrayDomain("remove");
+      const lo = this.domain.low,
+            hi = this.domain.high-1;
+      const newDom = {lo..hi};
+      for i in position..hi {
+        this[i] = this[i+1];
+      }
+      on this._value do this._value.dsiReallocate(newDom);
+      this.domain.setIndices(newDom.getIndices());
+      on this._value do this._value.dsiPostReallocate();
+    }
+
+    proc reverse() where chpl__isVectorSafe() {
+      const lo = this.domain.low,
+            mid = this.domain.size / 2,
+            hi = this.domain.high;
+      for i in 0..#mid {
+        this[lo + i] <=> this[hi - i];
+      }
+    }
+
+    proc clear() where chpl__isVectorSafe() {
+      chpl__assertSingleArrayDomain("clear");
+      const newDom = {1..0};
+      on this._value do this._value.dsiReallocate(newDom);
+      this.domain.setIndices(newDom.getIndices());
+      on this._value do this._value.dsiPostReallocate();
+    }
+
+    proc find(val: this._value.eltType): (bool, this._value.idxType) {
+      for i in this.domain {
+        if this[i] == val then return (true, i);
+      }
+      return (false, 0);
     }
   }  // record _array
   
