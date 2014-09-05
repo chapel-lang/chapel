@@ -147,7 +147,7 @@ proc nocapture() {
   var s$: sync bool;
   var q$: single bool;
 
-  cobegin ref(i) {
+  cobegin with (ref i) {
     {
       s$;
       i = 5;
@@ -170,7 +170,7 @@ proc captureManually() {
   var s$: sync bool;
   var q$: single bool;
 
-  cobegin ref(i) {
+  cobegin with (ref i) {
     {
       s$;
       i = 5;
@@ -194,7 +194,7 @@ proc noCaptureWithIntent() {
   var s$: sync bool;
   var q$: single bool;
 
-  cobegin ref(i) {
+  cobegin with (ref i) {
     {
       s$;
       i = 5;
@@ -222,7 +222,7 @@ proc captureWithIntent() {
   var s$: sync bool;
   var q$: single bool;
 
-  cobegin ref(i) {
+  cobegin with (ref i) {
     {
       s$;
       i = 5;

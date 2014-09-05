@@ -11,7 +11,7 @@ const matD : domain(2) = [1..n, 1..n];
 const dmat : [matD] elemType = [(i,j) in matD] 1.0/(i+j); 
 var jmat2, kmat2, jmat2T, kmat2T : [matD] elemType; 
 
-config const numConsumers = max(1, (+ reduce Locale.numCores) - 1),
+config const numConsumers = max(1, (+ reduce Locale.maxTaskPar) - 1),
              poolSize = numConsumers;
 const t = taskpool(poolSize);
 

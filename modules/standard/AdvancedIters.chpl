@@ -81,7 +81,7 @@ where tag == iterKind.leader
     var curIndex : atomic remain.low.type;
     curIndex.write(remain.low);
 
-    coforall tid in 0..#nTasks ref(remain, moreWork,curIndex) do {
+    coforall tid in 0..#nTasks with (ref remain, ref moreWork, ref curIndex) do {
       while moreWork do {
         // There is local work in remain
         const low = curIndex.fetchAdd(chunkSize);
@@ -154,7 +154,7 @@ where tag == iterKind.leader
     const factor=nTasks;
     var lock : vlock;
 
-    coforall tid in 0..#nTasks ref(remain,undone, lock) do {
+    coforall tid in 0..#nTasks with (ref remain, ref undone, ref lock) do {
       while undone do {
         // There is local work in remain(tid)
         const current:rType=adaptSplit(remain, factor, undone, lock); 
@@ -240,7 +240,7 @@ where tag == iterKind.leader
     var barrier : atomic int;
 
     // Start the parallel work
-    coforall tid in 0..#nTasks ref(localWork, moreLocalWork, moreWork, r) do { 
+    coforall tid in 0..#nTasks with (ref localWork, ref moreLocalWork, ref moreWork, ref r) do { 
 
       // Step 1: Initial range per Thread/Task
 
@@ -349,7 +349,7 @@ proc defaultNumTasks(nTasks:int)
 {
   var dnTasks=nTasks;
   if nTasks==0 then {
-    if dataParTasksPerLocale==0 then dnTasks=here.numCores; 
+    if dataParTasksPerLocale==0 then dnTasks=here.maxTaskPar;
       else dnTasks=dataParTasksPerLocale;
   } else if nTasks<0 then {
     halt("'numTasks' is negative");

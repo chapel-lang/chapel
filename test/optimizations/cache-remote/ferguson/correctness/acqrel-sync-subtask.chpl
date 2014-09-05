@@ -17,22 +17,22 @@ proc doit(a:locale, b:locale, c:locale)
     stopgob = true;
 
     sync {
-      begin ref(x) on b {
+      begin with (ref x) on b {
         for i in 0..max by 2 {
           var z = stopgob; // wait for it
           assert( x == i );
-          sync begin ref(x) {
+          sync begin with (ref x) {
             x = i + 1;
           }
           stopgoc = true; // signal
         }
       }
 
-      begin ref(x) on c {
+      begin with (ref x) on c {
         for i in 1..max by 2 {
           var z = stopgoc; // wait for it
           assert( x == i );
-          sync begin ref(x) {
+          sync begin with (ref x) {
             x = i + 1;
           }
           stopgob = true; // signal

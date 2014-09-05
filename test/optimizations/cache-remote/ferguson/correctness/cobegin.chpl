@@ -10,7 +10,7 @@ proc doit(a:locale, b:locale, c:locale)
     var x = 17;
     var y = 29;
     on b {
-      cobegin ref(x,y) {
+      cobegin with (ref x, ref y) {
         { x = 99; }
         { y = 124; }
       }

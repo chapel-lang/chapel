@@ -133,7 +133,7 @@ module ChapelTuple {
       where tag == iterKind.leader 
   {
 
-    const numTasks = if dataParTasksPerLocale==0 then here.numCores
+    const numTasks = if dataParTasksPerLocale==0 then here.maxTaskPar
                      else dataParTasksPerLocale;
     const ignoreRunning = dataParIgnoreRunningTasks;
     const minIndicesPerTask = dataParMinGranularity;

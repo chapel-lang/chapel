@@ -32,12 +32,12 @@ deadCodeElimination :
 removeWrapRecords :
 removeEmptyRecords :
 localizeGlobals :
+loopInvariantCodeMotion :
 prune2 :
 returnStarTuplesByRefArgs :
 insertWideReferences :
 optimizeOnClauses :
 addInitCalls :
-loopInvariantCodeMotion :
 insertLineNumbers :
 codegen :
 makeBinary :

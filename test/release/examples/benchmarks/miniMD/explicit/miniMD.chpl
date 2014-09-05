@@ -44,7 +44,7 @@ proc main() {
     writeln("# Performance Summary:");
     writeln("# Locales Tasks numSteps numAtoms t_total, t_force t_neigh t_comm");
     writef("   %i      %i     %i     %i  %.6dr %.6dr %.6dr %.6dr\n", numLocales,
-        + reduce Locales.numCores, numSteps, numAtoms, 
+        + reduce Locales.maxTaskPar, numSteps, numAtoms, 
         totalTime, forceTime, buildTime, commTime);
   }
   cleanup();
