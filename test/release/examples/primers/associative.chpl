@@ -138,13 +138,13 @@ writeln("Our first associative array: ", Scores);
 
 //
 // Given an array, print in the following format:
-// { idx => val, ... }
+// [ idx => val, ... ]
 //
 // We'll use the 'sorted' iterator to print in a consistent order. Otherwise,
 // the order in which indices are yielded is nondeterministic.
 //
 proc prettyPrint(arr : [?dom]) {
-  write("{ ");
+  write("[ ");
   var first = true;
   for k in dom.sorted() {
     if !first {
@@ -154,7 +154,7 @@ proc prettyPrint(arr : [?dom]) {
       first = false;
     }
   }
-  writeln(" }");
+  writeln(" ]");
 }
 
 
