@@ -406,7 +406,7 @@ void printFunction(std::ofstream *file, FnSymbol *fn) {
   }
   *file << ")"; 
   switch (fn->retTag) {
-  case RET_VAR:
+  case RET_REF:
     *file << " var"; break;
   case RET_PARAM:
     *file << " param"; break;
