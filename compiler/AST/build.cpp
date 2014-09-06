@@ -734,6 +734,7 @@ handleArrayTypeCase(FnSymbol* fn, Expr* indices, Expr* iteratorExpr, Expr* expr)
   isArrayTypeFn->insertAtTail(new CallExpr(PRIM_MOVE, iteratorSym,
                                 new CallExpr("_getIterator", iteratorExpr->copy())));
   VarSymbol* index = newTemp("_indexOfInterest");
+  index->addFlag(FLAG_INDEX_OF_INTEREST);
   isArrayTypeFn->insertAtTail(new DefExpr(index));
   isArrayTypeFn->insertAtTail(new CallExpr(PRIM_MOVE, index,
                                 new CallExpr("iteratorIndex", iteratorSym)));
@@ -1020,6 +1021,7 @@ BlockStmt* buildForLoopStmt(Expr* indices,
   }
 
   VarSymbol* index = newTemp("_indexOfInterest");
+  index->addFlag(FLAG_INDEX_OF_INTEREST);
   stmts->insertAtTail(new DefExpr(index));
   stmts->insertAtTail(new BlockStmt(
     new CallExpr(PRIM_MOVE, index,

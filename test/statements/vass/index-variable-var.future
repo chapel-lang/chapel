@@ -1,0 +1,17 @@
+Feature request: allow an index variable in a loop over a non-'var' iterator to be mutable.
+
+For example, using a 'var' keyword in the loop header.
+Assuming myIter() is a non-var iterator:
+
+  for     myVar in myIter() do myVar += 1; // error: myVar is 'const'
+
+  for var myVar in myIter() do myVar += 1; // OK!
+
+The following tests were assuming that the index variable is mutable,
+and at present contain a workaround, which is an explicit variable
+declaration assigned from an index variable first thing in the loop:
+
+  test/regexp/ferguson/rechan.chpl
+  test/release/examples/benchmarks/miniMD/explicit/helpers/forces.chpl
+  test/release/examples/benchmarks/miniMD/helpers/forces.chpl
+  test/studies/glob/Glob.chpl

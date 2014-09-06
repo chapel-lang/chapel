@@ -3466,6 +3466,21 @@ static void resolveMove(CallExpr* call) {
     }
   }
 
+  // If this assigns into a loop index variable from a non-var iterator,
+  // mark the variable constant.
+  if (SymExpr* rhsSE = toSymExpr(rhs)) {
+    if (rhsSE->var->hasFlag(FLAG_INDEX_OF_INTEREST)) {
+      // If RHS is this special variable...
+      INT_ASSERT(lhs->hasFlag(FLAG_INDEX_VAR));
+      if (!isReferenceType(rhsSE->var->type)) {
+        // ... and not of a reference type, mark LHS constant.
+        // todo: differentiate based on ref-ness, not _ref type
+        // todo: not all const if it is zippered and one of iterators is var
+        lhs->addFlag(FLAG_CONST);
+      }
+    }
+  }
+
   if (lhs->type == dtUnknown || lhs->type == dtNil)
     lhs->type = rhsType;
 
@@ -4703,30 +4718,65 @@ preFold(Expr* expr) {
           Type* indexType = call->get(3)->getValType();
           if (!is_int_type(indexType) && !is_uint_type(indexType))
             USR_FATAL(call, "tuple indexing expression is not of integral type");
+
           int64_t index;
           uint64_t uindex;
+          char field[8];
           if (get_int(call->get(3), &index)) {
-            char field[8];
             sprintf(field, "x%" PRId64, index);
             if (index <= 0 || index >= toAggregateType(t)->fields.length)
               USR_FATAL(call, "tuple index out-of-bounds error (%ld)", index);
-            if (toAggregateType(t)->getField(field)->type->symbol->hasFlag(FLAG_REF))
-              result = new CallExpr(PRIM_GET_MEMBER_VALUE, base->var, new_StringSymbol(field));
-            else
-              result = new CallExpr(PRIM_GET_MEMBER, base->var, new_StringSymbol(field));
-            call->replace(result);
           } else if (get_uint(call->get(3), &uindex)) {
-            char field[8];
             sprintf(field, "x%" PRIu64, uindex);
             if (uindex <= 0 || uindex >= (unsigned long)toAggregateType(t)->fields.length)
               USR_FATAL(call, "tuple index out-of-bounds error (%lu)", uindex);
-            if (toAggregateType(t)->getField(field)->type->symbol->hasFlag(FLAG_REF))
+          } else {
+            field[0] = '\0'; // marker
+          }
+
+          if (field[0]) {
+            Type* fieldType = toAggregateType(t)->getField(field)->type;
+
+            // Decomposing into a loop index variable from a non-var iterator?
+            // In some cases, extract the value and mark constant.
+            bool intoIndexVarByVal = false;
+
+            // If decomposing this special variable
+            // or another tuple that we just decomposed.
+            if (base->var->hasFlag(FLAG_INDEX_OF_INTEREST)) {
+              // Find the destination.
+              CallExpr* move = toCallExpr(call->parentExpr);
+              INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
+              SymExpr* destSE = toSymExpr(move->get(1));
+              INT_ASSERT(destSE);
+
+              if (!isReferenceType(base->var->type) &&
+                  !isReferenceType(fieldType)) {
+                if (destSE->var->hasFlag(FLAG_INDEX_VAR)) {
+                  // The destination is constant only if both the tuple
+                  // and the current component are non-references.
+                  destSE->var->addFlag(FLAG_CONST);
+                } else {
+                  INT_ASSERT(destSE->var->hasFlag(FLAG_TEMP));
+                  // We are detupling into another tuple,
+                  // which will be detupled later.
+                  destSE->var->addFlag(FLAG_INDEX_OF_INTEREST);
+                }
+              }
+
+              if (!isReferenceType(base->var->type))
+                // If either a non-var iterator or zippered,
+                // extract with PRIM_GET_MEMBER_VALUE.
+                intoIndexVarByVal = true;
+            }
+
+            if (isReferenceType(fieldType) || intoIndexVarByVal)
               result = new CallExpr(PRIM_GET_MEMBER_VALUE, base->var, new_StringSymbol(field));
             else
               result = new CallExpr(PRIM_GET_MEMBER, base->var, new_StringSymbol(field));
             call->replace(result);
           }
-        }
+        } // if FLAG_TUPLE
       }
     }
     else if (call->isPrimitive(PRIM_INIT))

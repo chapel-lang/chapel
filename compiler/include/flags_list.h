@@ -107,6 +107,7 @@ symbolFlag( FLAG_HAS_USER_INIT_COPY_FN , npr, "has user init copy fn" , "applied
 symbolFlag( FLAG_HEAP , npr, "heap" , ncm )
 symbolFlag( FLAG_IMPLICIT_ALIAS_FIELD , npr, "implicit alias field" , ncm )
 symbolFlag( FLAG_INDEX_VAR , npr, "index var" , ncm )
+symbolFlag( FLAG_INDEX_OF_INTEREST , npr, "_indexOfInterest var or its intermediate detupling" , ncm )
 symbolFlag( FLAG_INIT_COPY_FN,  ypr, "init copy fn" , "init copy function" )
 symbolFlag( FLAG_INLINE , npr, "inline" , ncm )
 symbolFlag( FLAG_INLINE_ITERATOR , npr, "inline iterator" , "iterators that are always inlined, e.g., leaders" )
