@@ -26,7 +26,9 @@ module ChapelRange {
   
   // Turns on range iterator debugging.
   config param debugChapelRange = false;
-  
+
+  config param useOptimizedRangeIterators = true;
+
   enum BoundedRangeType { bounded, boundedLow, boundedHigh, boundedNone };
   
   //
@@ -976,43 +978,47 @@ module ChapelRange {
   }
 
 
-  // These functions are intended to replace the previous isMaximal checks that
-  // existed before. Note that they are currently unused. They are intended to
-  // be used by bounded iterators. The actual logic should be good, but the
-  // error messages aren't helpful yet.
-  proc range.iterWillOverFlow() where isIntType(idxType) {
-    if (this.last > 0 && stride > 0) {
-      if (stride > (max(idxType) - this.last)) {
-        warning("Signed overflow for range iterator detected\n");
-        return true;
-      }
-    } else if (this.last < 0 && stride < 0) {
-      if (stride < (min(idxType) - this.last)) {
-        warning("Signed underflow for range iterator detected\n");
-        return true;
+  // This function checks if a bounded iterator will overflow. This is basic
+  // signed/unsigned overflow checking for the last index + stride. Either
+  // returns whether overflow will occur or not, or halts with an error
+  // message. It would be nice to use the safeAdd function in ChapelUtil but
+  // unsigned ranges still have a signed stride, and safeAdd doesn't handle
+  // that case.
+  proc range.checkIfIterWillOverflow(shouldHalt=true) {
+    var willOverFlow = false;
+
+    if (isIntType(idxType)) {
+      if (this.last > 0 && stride > 0) {
+        if (stride > (max(idxType) - this.last)) {
+          willOverFlow = true;
+        }
+      } else if (this.last < 0 && stride < 0) {
+        if (stride < (min(idxType) - this.last)) {
+          willOverFlow = true;
+        }
       }
     }
-    return false;
-  }
-
-  proc range.iterWillOverFlow() where isUintType(idxType) {
-    if (stride > 0) {
-      if ((this.last + stride:idxType) < this.last) {
-        warning("Unsigned overflow for range iterator detected\n");
-        return true;
-      }
-    } else if (stride < 0) {
-      if ((this.last + stride):idxType > this.last) {
-        warning("Unsigned underflow for range iterator detected\n");
-        return true;
-      }
+    else if (isUintType(idxType)) {
+      if (stride > 0) {
+          if ((this.last + stride:idxType) < this.last) {
+            willOverFlow = true;
+          }
+        } else if (stride < 0) {
+          if ((this.last + stride):idxType > this.last) {
+            willOverFlow = true;
+          }
+        }
     }
-    return false;
-  }
+    else {
+      compilerError("Iterator overflow checking is only supported ",
+                    "for integral types");
+    }
 
-  proc range.iterWillOverFlow() {
-    compilerError("Optimized range iterators only support iteration over integral types");
-    return true;
+    if (willOverFlow && shouldHalt) {
+      halt("Overflow detected for iteration over a bounded range. See ",
+           "note in $CHPL_HOME/STATUS.)");
+    }
+    return willOverFlow;
   }
 
 
@@ -1051,40 +1057,54 @@ module ChapelRange {
   // A bounded and strided range iterator
   iter range.these()
     where boundedType == BoundedRangeType.bounded && stridable == true {
+    if (useOptimizedRangeIterators) {
+      if boundsChecking then checkIfIterWillOverflow();
 
-    if this.isAmbiguous() then
-      __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
+      if this.isAmbiguous() then
+        __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
 
-    // must use first/last since we have no knowledge of stride
-    // must check if low > high (something like 10..1) because of the !=
-    // relational operator. Such ranges are supposed to iterate 0 times
-    var i: idxType;
-    const start = this.first;
-    const end: idxType = if this.low > this.high then start else this.last + stride: idxType;
-    while __primitive("C for loop",
-                      __primitive( "=", i, start),
-                      __primitive("!=", i, end),
-                      __primitive("+=", i, stride: idxType)) {
-      yield i;
+      // must use first/last since we have no knowledge of stride
+      // must check if low > high (something like 10..1) because of the !=
+      // relational operator. Such ranges are supposed to iterate 0 times
+      var i: idxType;
+      const start = this.first;
+      const end: idxType = if this.low > this.high then start else this.last + stride: idxType;
+      while __primitive("C for loop",
+                        __primitive( "=", i, start),
+                        __primitive("!=", i, end),
+                        __primitive("+=", i, stride: idxType)) {
+        yield i;
+      }
+    } else {
+      for i in this.generalIterator() {
+        yield i;
+      }
     }
   }
 
   // A bounded and non-strided (stride = 1) range iterator
   iter range.these()
     where boundedType == BoundedRangeType.bounded && stridable == false {
+    if (useOptimizedRangeIterators) {
+      if boundsChecking then checkIfIterWillOverflow();
 
-    // don't need to check if isAmbigous since stride is one
+      // don't need to check if isAmbigous since stride is one
 
-    // can use low/high instead of first/last since stride is one
-    var i: idxType;
-    const start = this.low;
-    const end = this.high;
+      // can use low/high instead of first/last since stride is one
+      var i: idxType;
+      const start = this.low;
+      const end = this.high;
 
-    while __primitive("C for loop",
-                      __primitive( "=", i, start),
-                      __primitive("<=", i, end),
-                      __primitive("+=", i, stride: idxType)) {
-      yield i;
+      while __primitive("C for loop",
+                        __primitive( "=", i, start),
+                        __primitive("<=", i, end),
+                        __primitive("+=", i, stride: idxType)) {
+        yield i;
+      }
+    } else {
+      for i in this.generalIterator() {
+        yield i;
+      }
     }
   }
 
@@ -1098,19 +1118,49 @@ module ChapelRange {
   // call an optimized iterator until there is a better way to assert the sign
   // of the stride at compile time.
   iter range.posStrideIter() {
+    if (useOptimizedRangeIterators) {
+      if boundsChecking then checkIfIterWillOverflow();
 
+      if this.isAmbiguous() then
+        __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
+
+      // can use alignedLow/alignedHigh instead of first/last since stride is pos
+      var i :idxType;
+      const start = this.alignedLow;
+      const end = this.alignedHigh;
+      while __primitive("C for loop",
+                        __primitive( "=", i, start),
+                        __primitive("<=", i, end),
+                        __primitive("+=", i, stride: idxType)) {
+        yield i;
+      }
+    } else {
+      for i in this.generalIterator() {
+        yield i;
+      }
+    }
+  }
+
+  // The bounded iterators are all optimized versions that can't handle
+  // iterating over ranges like max(int)-10..max(int). This iterator is
+  // designed to be able to iterate over any range, though it will be much
+  // slower. It will be slower because it breaks the singleLoopIterator
+  // optimization. In this form it can still be inlined, but that only helps
+  // for non-zippered iterators.
+  iter range.generalIterator() {
     if this.isAmbiguous() then
       __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
 
-    // can use alignedLow/alignedHigh instead of first/last since stride is pos
-    var i :idxType;
-    const start = this.alignedLow;
-    const end = this.alignedHigh;
+    var i: idxType;
+    const start = this.first;
+    const end = if this.low > this.high then start else this.last;
+
     while __primitive("C for loop",
                       __primitive( "=", i, start),
-                      __primitive("<=", i, end),
+                      __primitive(">=", high, low),  // execute at least once?
                       __primitive("+=", i, stride: idxType)) {
       yield i;
+      if i == end then break;
     }
   }
 

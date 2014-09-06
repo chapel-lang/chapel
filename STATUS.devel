@@ -328,7 +328,19 @@ Ranges
   # types/range/hilde/needRangeCountType.future
   # types/range/hilde/countError.future
   # types/scalar/hilde/absMinInt.future
-
+- The default iterators do not support positively strided ranges whose
+  last index is max(indexType) or negatively strided ranges whose last
+  index is min(indexType). E.G "for i in max(int)-10 .. max(int)"
+   - Consider using a wider type if possible or try modifying your
+     loop to do one less iteration and handle the last iteration
+     afterwards. If you are iterating directly over over a range you
+     can explicitly call range.generalIterator (be warned it is much
+     slower.) If performance is NOT at all important, consider
+     compiling with useOptimizedRangeIterators=false, which will force
+     all range iterators to use the generalIterator.
+  # no futures, I don't see real way around this. At best I think we
+  # can provide finer grain control instead of the global flag to turn
+  # off optimized iterators.
 
 Classes, Records, and Unions
 ----------------------------
