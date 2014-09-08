@@ -1,7 +1,7 @@
 use Random;
 
 config const n = 100000,
-             tasksPerLocale = here.numCores,
+             tasksPerLocale = here.maxTaskPar,
              seed = 589494289;
 
 writeln("Number of locales   = ", numLocales);

@@ -145,7 +145,7 @@ uint64_t binStr2uint64(const char* str) {
     INT_FATAL("NULL string passed to binStrToUint64()");
   }
   int len = strlen(str);
-  if (len < 3 || str[0] != '0' || str[1] != 'b') {
+  if (len < 3 || str[0] != '0' || (str[1] != 'b' && str[1] != 'B')) {
     INT_FATAL("Illegal string passed to binStrToUint64()");
   }
   uint64_t val = 0;
@@ -170,7 +170,7 @@ uint64_t hexStr2uint64(const char* str) {
     INT_FATAL("NULL string passed to binStrToUint64()");
   }
   int len = strlen(str);
-  if (len < 3 || str[0] != '0' || str[1] != 'x') {
+  if (len < 3 || str[0] != '0' || (str[1] != 'x' && str[1] != 'X')) {
     INT_FATAL("Illegal string passed to binStrToUint64()");
   }
   uint64_t val;
