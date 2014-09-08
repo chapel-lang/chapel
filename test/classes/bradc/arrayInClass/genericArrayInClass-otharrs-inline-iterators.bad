@@ -1,0 +1,76 @@
+In file included from /tmp/chpl-hilde-2684.deleteme/_main.c:18:
+/tmp/chpl-hilde-2684.deleteme/DefaultRectangular.c: In function 'dsiReallocate13':
+/tmp/chpl-hilde-2684.deleteme/DefaultRectangular.c:11966: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultRectangular.c:11971: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultRectangular.c:11984: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultRectangular.c:11989: error: used struct type value where scalar is required
+In file included from /tmp/chpl-hilde-2684.deleteme/_main.c:20:
+/tmp/chpl-hilde-2684.deleteme/ChapelArray.c: In function 'coforall_fn11':
+/tmp/chpl-hilde-2684.deleteme/ChapelArray.c:9016: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/ChapelArray.c:9021: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/ChapelArray.c:9034: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/ChapelArray.c:9039: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/ChapelArray.c: In function 'coforall_fn21':
+/tmp/chpl-hilde-2684.deleteme/ChapelArray.c:14973: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/ChapelArray.c:14978: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/ChapelArray.c:14991: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/ChapelArray.c:14996: error: used struct type value where scalar is required
+In file included from /tmp/chpl-hilde-2684.deleteme/_main.c:24:
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c: In function '_backupArray8':
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:40545: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:40550: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:40563: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:40568: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:40998: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:41003: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:41016: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:41021: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c: In function '_backupArray9':
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:42050: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:42055: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:42068: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:42073: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:42503: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:42508: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:42521: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:42526: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c: In function '_backupArray10':
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:43555: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:43560: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:43573: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:43578: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:44008: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:44013: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:44026: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:44031: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c: In function '_preserveArrayElement8':
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:61175: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:61180: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:61193: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:61198: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c: In function '_preserveArrayElement9':
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:61384: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:61389: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:61402: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:61407: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c: In function '_preserveArrayElement10':
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:61593: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:61598: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:61611: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultAssociative.c:61616: error: used struct type value where scalar is required
+In file included from /tmp/chpl-hilde-2684.deleteme/_main.c:25:
+/tmp/chpl-hilde-2684.deleteme/DefaultSparse.c: In function 'sparseShiftArray3':
+/tmp/chpl-hilde-2684.deleteme/DefaultSparse.c:3946: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultSparse.c:3951: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultSparse.c:3964: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultSparse.c:3969: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultSparse.c:4144: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultSparse.c:4149: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultSparse.c:4162: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultSparse.c:4167: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultSparse.c:4250: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultSparse.c:4255: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultSparse.c:4268: error: used struct type value where scalar is required
+/tmp/chpl-hilde-2684.deleteme/DefaultSparse.c:4273: error: used struct type value where scalar is required
+gmake: *** [/tmp/chpl-hilde-2684.deleteme/genericArrayInClass-otharrs-inline-iterators.tmp] Error 1
+error: compiling generated source
