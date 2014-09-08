@@ -282,6 +282,8 @@ extern proc qio_channel_end_offset_unlocked(ch:qio_channel_ptr_t):int(64);
 extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyle);
 extern proc qio_file_length(f:qio_file_ptr_t, ref len:int(64)):syserr;
 
+extern proc qio_chdir(name: c_string):syserr;
+extern proc qio_cwd(ref working_dir:c_string);
 extern proc qio_file_rename(oldname: c_string, newname: c_string):syserr;
 extern proc qio_file_remove(name: c_string):syserr;
 
@@ -595,6 +597,34 @@ proc file._style:iostyle {
     qio_file_get_style(_file_internal, local_style);
     ret = local_style;
   }
+  return ret;
+}
+
+/* Change the current working directory to the specified name. Returns any
+   errors that occurred via an out parameter.
+   err: a syserr used to indicate if an error occurred
+   name: a string indicating a new directory
+*/
+proc chdir(out err: syserr, name: string) {
+  err = qio_chdir(name.c_str());
+}
+
+/* Change the current working directory to the specified name. Generates an
+   error if one occurred.
+   name: a string indicating a new directory
+*/
+proc chdir(name: string) {
+  var err: syserr = ENOERR;
+  chdir(err, name);
+  if err then ioerror(err, "in chdir", name);
+}
+
+/* Returns the current working directory. */
+proc cwd(): string {
+  var tmp:c_string, ret:string;
+  qio_cwd(tmp);
+  ret = toString(tmp);
+  chpl_free_c_string(tmp);
   return ret;
 }
 
