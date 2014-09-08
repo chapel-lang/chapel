@@ -1103,11 +1103,9 @@ buildForallLoopStmt(Expr* indices,
   VarSymbol* followIdx = newTemp("chpl__followIdx");
   VarSymbol* followIter = newTemp("chpl__followIter");
   iter->addFlag(FLAG_EXPR_TEMP);
+  followIdx->addFlag(FLAG_INDEX_OF_INTEREST);
   leadIdxCopy->addFlag(FLAG_INDEX_VAR);
   leadIdxCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
-
-  Symbol* T1 = newTemp(); T1->addFlag(FLAG_EXPR_TEMP); T1->addFlag(FLAG_MAYBE_PARAM);
-  Symbol* T2 = newTemp(); T2->addFlag(FLAG_EXPR_TEMP); T2->addFlag(FLAG_MAYBE_PARAM);
 
   BlockStmt* leadBlock = buildChapelStmt();
   leadBlock->insertAtTail(new DefExpr(iter));
@@ -1135,6 +1133,9 @@ buildForallLoopStmt(Expr* indices,
   BlockStmt* followBlock = buildFollowLoop(iter, leadIdxCopy, followIter,
           followIdx, indices, loopBody->copy(), false, zippered);
   if (!fNoFastFollowers) {
+    Symbol* T1 = newTemp(); T1->addFlag(FLAG_EXPR_TEMP); T1->addFlag(FLAG_MAYBE_PARAM);
+    Symbol* T2 = newTemp(); T2->addFlag(FLAG_EXPR_TEMP); T2->addFlag(FLAG_MAYBE_PARAM);
+
     leadBody->insertAtTail(new DefExpr(T1));
     leadBody->insertAtTail(new DefExpr(T2));
 
