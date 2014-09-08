@@ -574,7 +574,7 @@ qioerr qio_file_sync(qio_file_t* f);
 
 qioerr qio_chdir(const char* name);
 
-void qio_cwd(const char** working_dir);
+qioerr qio_cwd(const char** working_dir);
 
 // Renames the file from oldname to newname, returning a qioerr if one
 // occured.
