@@ -1065,10 +1065,17 @@ qioerr qio_chdir(const char* name) {
   return err;
 }
 
-void qio_cwd(const char** working_dir) {
-  char* pathbuf = (char *)qio_malloc(MAXPATHLEN*sizeof(char));
-  getwd(pathbuf);
-  *working_dir = pathbuf;
+qioerr qio_cwd(const char** working_dir) {
+  qioerr err = 0;
+  size_t bufsize = MAXPATHLEN*sizeof(char);
+  char* bufptr;
+  char* pathbuf = (char *)qio_malloc(bufsize);
+  bufptr = getcwd(pathbuf, bufsize);
+  if (bufptr == NULL)
+    err = qio_mkerror_errno();
+  else
+    *working_dir = pathbuf;
+  return err;
 }
 
 /* Renames the file from oldname to newname, returning a qioerr if one
