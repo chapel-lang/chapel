@@ -217,3 +217,22 @@ inline proc VerifySort(Data: [?Dom] ?elType, str: string, param reverse=false) {
     if chpl_sort_cmp(Data(i+1), Data(i), reverse) then
       halt(str, " did not sort properly (", i, "): ", Data);
 }
+
+
+//
+// This is my first draft "sorterator" which is designed to take some
+// other iterator/iterable and yield its elements, sorted.  The main
+// improvement I have in mind for this is that it should put some sort
+// of constraint on 'x'; and there should be some way to say "y is an
+// array" without saying how big it is or what element type it is (or
+// else a way to query that information from 'x' in a generic way).
+// As a result, the current status of the sorterator is that it works
+// when it works and probably goes off the rails when it doesn't.
+//
+iter sorter(x) {
+  var y = x;
+  QuickSort(y);
+  for i in y do
+    yield i;
+}
+
