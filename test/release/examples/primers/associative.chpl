@@ -17,17 +17,20 @@
 // The current implementation supports most Chapel types, and will eventually
 // support any language-defined type.
 //
+// The following block contains some examples of associative domains with
+// various index types.
+//
 {
-  var A : domain(int);     // a domain of integers
-  var B : domain(string);  // a domain of strings
-  var C : domain(real);    // a domain of reals
+  var A : domain(int);     // a domain (set) whose indices are integers
+  var B : domain(string);  // a domain (set) whose indices are strings
+  var C : domain(real);    // a domain (set) whose indices are reals
 
   class X {
     var x : int;
   }
   
   //
-  // A domain whose indices are classes of type 'X'. The indices are hashed on
+  // A domain whose indices are classes of type 'X'. The indices are hashed by
   // identity.
   //
   var D : domain(X);
@@ -37,7 +40,7 @@
   }
 
   //
-  // A domain whose indices are records of type 'Y'. The indices are hashed on
+  // A domain whose indices are records of type 'Y'. The indices are hashed by
   // value.
   //
   var E : domain(Y);
@@ -52,25 +55,21 @@ writeln("An empty associative domain: ", Names);
 writeln();
 
 //
+// We can use the 'size' method to confirm the emptiness of the 'Names' domain.
+//
+writeln("The initial size of the 'Names' domain is ", Names.size);
+writeln();
+
+//
 // We can also use the domain-literal syntax to create an associative domain.
 //
 // Below, 'Days' is an associative domain of strings.
 //
+// Note that this is declaration of 'Days' relies on Chapel's type inference,
+// and is equivalent to:
+//   var Days : domain(string) = {"Sunday", ...};
+//
 var Days = {"Sunday", "Wednesday", "Saturday"};
-
-//
-// Duplicate indices do not exist in associative domains. This means that if
-// we have duplicate indices in a domain-literal, then only one of the
-// duplicate indices will be present in the domain.
-//
-// In the example below, "Sunday" will only occur once in the 'DuplicateDays'
-// domain. This makes 'DuplicateDays' equivalent to 'Days'.
-//
-
-var DuplicateDays = {"Sunday", "Sunday", "Wednesday", "Saturday"};
-
-if Days != DuplicateDays then
-  halt("Days and DuplicateDays should be equivalent");
 
 //
 // The '+=' operator can be used to add indices to an associative domain.
@@ -92,16 +91,23 @@ writeln("A populated associative domain of strings: ", Names);
 writeln();
 
 //
+// Associative domains cannot contain duplicate indices.
+//
+const PreviousNamesSize = Names.size;
+Names.add("Alice");
+if Names.size != PreviousNamesSize then
+  halt("Error: Added duplicate index, but size of domain changed");
+
+//
 // Below we can add a range of integers with the '+=' or 'add' operators
-// because of 'promotion'. Those functions take integer arguments, and because
-// a range consists of integers the Chapel compiler is able to 'promote' the
-// code to handle iteration and invokation of the function with the range's
-// values as arguments.
+// because of Chapel's standard function promotion semantics. Those functions
+// take integer arguments, and because  a range is a collection of integers
+// Chapel promotes the routine, calling it for each integer represented by the
+// range.
 //
-// Promotion works with common Chapel types like ranges, domains, and arrays.
-//
-var DaysInJune : domain(int);
-DaysInJune += 1..30;
+var PrimaryColors : [1..3] string = ["Red", "Green", "Blue"];
+var ColorSet : domain(string);
+ColorSet += PrimaryColors;
 
 //
 // The '-=' operator is used to remove indices from an associative domain.
@@ -128,13 +134,13 @@ if Names.member("Frank") then
 // found in other languages. Where 'Names' provides the keys, 'Scores' provides
 // the values.
 //
-// Scores: an associative array of strings to integers.
+// Scores: an associative array mapping strings to integers.
 //
 var Scores : [Names] int;
 
 //
-// Like other arrays, we can initialize associative arrays with a default value
-// when declared.
+// Like other arrays, we can initialize associative array elements to have
+// an initial value.
 //
 var HoursInDay : [Days] int = 24;
 for hours in HoursInDay do
@@ -145,7 +151,7 @@ for hours in HoursInDay do
 // We could also use the array-literal syntax to create an associative
 // array.
 //
-// Below, 'DaysInMonth' is an associative array of strings to integers.
+// Below, 'DaysInMonth' is an associative array mapping strings to integers.
 //
 var DaysInMonth = ["June" => 30, "January" => 31, "September" => 30];
 
@@ -212,8 +218,8 @@ writeln();
 //
 // Because Chapel arrays are updated when their domain is changed, we can
 // add indices after the array is declared. When we add an index to the 
-// defining domain, the value in the array is initialized to the default
-// value for that type.
+// defining domain, the array is extended to support an element for that index.
+// The new element is initialized to the default value of its type.
 //
 Names += "John";
 if Scores["John"] != 0 then
@@ -254,12 +260,12 @@ if !Names.member("Gary") then
 var Ages : [Names] int;
 
 //
-// Here, 'Ages and Scores' are backed by the same associative domain: 'Names'.
-// We can no longer write something like
+// Here, since 'Ages' and 'Scores' are backed by the same associative domain,
+// we can no longer write something like
 //   Ages["Mark"] = 33;
 // or
 //   Score["Sam"] = 42;
-// if "Mark" or "Sam" are not valid indices in the 'Names' domain.
+// since "Mark" or "Sam" are not valid indices in the 'Names' domain.
 //
 
 //
@@ -279,23 +285,19 @@ Ages["Mark"] = 33;
 Scores["Mark"] = 81;
 
 //
-// The program will still halt if one tries to access an index not in the
-// domain:
+// The program will still halt with an out-of-bounds error if one tries to
+// access an index not in the domain:
 //   writeln(Scores["Sally"]);
 //
 
 //
-// Set operations are available only on associative domains and arrays.
-// These operations work with any supported index type.
+// Set operations are available on associative domains and arrays.
 //
 // The supported set operations are:
 //   Union (| or +)
 //   Intersection (&)
 //   Difference (-)
 //   Symmetric Difference (^)
-//
-// For other array and domain types, these operators are promoted unless
-// otherwise stated.
 //
 
 var primeDom = {2, 3, 5, 7, 11, 13, 17};  // some prime numbers
@@ -317,7 +319,7 @@ if (Men | Women) != Names then
   halt("The union of the 'Men' and 'Women' sets should be equivalent to 'Names'");
 
 //
-// Let's create some new associative arrays.
+// Let's create some new associative domains and arrays.
 //
 var AboveFifty : domain(string);
 for (name, score) in zip(Names, Scores) do
@@ -348,7 +350,7 @@ var Primes : [primeDom] bool;
 var Fibs : [fibDom] bool = true;
 
 //
-// 'IsFib' is an associative array of integers to bools, where the boolean
+// 'IsFib' is an associative array mapping integers to bools, where the boolean
 // value is true if the number is in the fibonnaci sequence. When performing
 // a union between two arrays with overlapping indices, the values of the 
 // second array take precedence.
@@ -383,6 +385,6 @@ for (a, b) in zip(PassedClass, PC) do
 // Future Directions
 //
 // Today, associative domains cannot be distributed across multiple locales.
-// A prototype domain map exists, and if users are interested more effort can
-// be made to move from a prototype to a polished feature.
+// A prototype domain map exists, and the effort to make it a polished feature
+// could be accelerated with sufficient user interest.
 //

@@ -1,17 +1,18 @@
-associative.chpl:59: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
-associative.chpl:70: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
-associative.chpl:139: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
-associative.chpl:197: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
-associative.chpl:301: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
-associative.chpl:302: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+associative.chpl:72: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+associative.chpl:145: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
+associative.chpl:203: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
+associative.chpl:303: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
 associative.chpl:304: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
-associative.chpl:309: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
-associative.chpl:310: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
-associative.chpl:326: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
-associative.chpl:327: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
-associative.chpl:348: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
-associative.chpl:374: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
+associative.chpl:306: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+associative.chpl:311: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+associative.chpl:312: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+associative.chpl:328: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
+associative.chpl:329: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
+associative.chpl:350: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
+associative.chpl:376: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
 An empty associative domain: {}
+
+The initial size of the 'Names' domain is 0
 
 A populated associative domain of strings: {Dana, Alice, Frank, Clark, Bob, Ellen}
 
