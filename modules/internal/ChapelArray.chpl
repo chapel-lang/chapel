@@ -1554,7 +1554,7 @@ module ChapelArray {
         for d in _value.dsiGetLocalSubdomains() do yield d;
     }
 
-    proc chpl__isVectorSafe() param {
+    proc chpl__isDense1DArray() param {
       return isRectangularArr(this) &&
              this.rank == 1 &&
              !this._value.stridable;
@@ -1578,7 +1578,7 @@ module ChapelArray {
       return this[this.domain.high];
     }
 
-    proc pop_back() where chpl__isVectorSafe() {
+    proc pop_back() where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("pop_back");
       const lo = this.domain.low,
             hi = this.domain.high-1;
@@ -1588,7 +1588,7 @@ module ChapelArray {
       on this._value do this._value.dsiPostReallocate();
     }
 
-    proc push_back(val: this._value.eltType) where chpl__isVectorSafe() {
+    proc push_back(val: this._value.eltType) where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("push_back");
       const lo = this.domain.low,
             hi = this.domain.high+1;
@@ -1599,7 +1599,7 @@ module ChapelArray {
       this[hi] = val;
     }
 
-    proc push_front(val: this._value.eltType) where chpl__isVectorSafe() {
+    proc push_front(val: this._value.eltType) where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("push_front");
       const lo = this.domain.low-1,
             hi = this.domain.high;
@@ -1610,7 +1610,7 @@ module ChapelArray {
       this[lo] = val;
     }
 
-    proc pop_front() where chpl__isVectorSafe() {
+    proc pop_front() where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("pop_front");
       const lo = this.domain.low+1,
             hi = this.domain.high;
@@ -1620,7 +1620,7 @@ module ChapelArray {
       on this._value do this._value.dsiPostReallocate();
     }
 
-    proc insert(position: this._value.idxType, val: this._value.eltType) where chpl__isVectorSafe() {
+    proc insert(position: this._value.idxType, val: this._value.eltType) where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("insert");
       const lo = this.domain.low,
             hi = this.domain.high+1;
@@ -1632,7 +1632,7 @@ module ChapelArray {
       this[position] = val;
     }
 
-    proc remove(position: this._value.idxType) where chpl__isVectorSafe() {
+    proc remove(position: this._value.idxType) where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("remove");
       const lo = this.domain.low,
             hi = this.domain.high-1;
@@ -1645,7 +1645,27 @@ module ChapelArray {
       on this._value do this._value.dsiPostReallocate();
     }
 
-    proc reverse() where chpl__isVectorSafe() {
+    proc remove(position: this._value.idxType, count: this._value.idxType) where chpl__isDense1DArray() {
+      chpl__assertSingleArrayDomain("remove count");
+      const lo = this.domain.low,
+            hi = this.domain.high-count;
+      if position+count > this.domain.high then
+        halt("index ", position+count, " is outside the supported range");
+      const newDom = {lo..hi};
+      for i in position..hi {
+        this[i] = this[i+count];
+      }
+      on this._value do this._value.dsiReallocate(newDom);
+      this.domain.setIndices(newDom.getIndices());
+      on this._value do this._value.dsiPostReallocate();
+    }
+
+    proc remove(positions: range(this._value.idxType, stridable=false)) where chpl__isDense1DArray() {
+      chpl__assertSingleArrayDomain("remove range");
+      remove(positions.low, positions.size);
+    }
+
+    proc reverse() where chpl__isDense1DArray() {
       const lo = this.domain.low,
             mid = this.domain.size / 2,
             hi = this.domain.high;
@@ -1654,7 +1674,7 @@ module ChapelArray {
       }
     }
 
-    proc clear() where chpl__isVectorSafe() {
+    proc clear() where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("clear");
       const newDom = {1..0};
       on this._value do this._value.dsiReallocate(newDom);

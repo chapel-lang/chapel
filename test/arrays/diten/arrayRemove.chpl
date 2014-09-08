@@ -13,3 +13,7 @@ while !A.empty() {
   A.remove(A.domain.high);
   writeln(A);
 }
+
+for i in 1..10 do A.push_back(i);
+A.remove(4..7);
+writeln(A);
