@@ -99,11 +99,11 @@ if Names.size != PreviousNamesSize then
   halt("Error: Added duplicate index, but size of domain changed");
 
 //
-// Below we can add a range of integers with the '+=' or 'add' operators
-// because of Chapel's standard function promotion semantics. Those functions
-// take integer arguments, and because  a range is a collection of integers
-// Chapel promotes the routine, calling it for each integer represented by the
-// range.
+// Below we can add an array of strings with the '+=' or 'add' operators
+// because of Chapel's standard function promotion semantics. For the
+// 'ColorSet' domain, those functions take string arguments. Because
+// 'PrimaryColors' is a collection of strings Chapel promotes the routine,
+// calling it for each string represented in the array.
 //
 var PrimaryColors : [1..3] string = ["Red", "Green", "Blue"];
 var ColorSet : domain(string);
@@ -298,6 +298,9 @@ Scores["Mark"] = 81;
 //   Intersection (&)
 //   Difference (-)
 //   Symmetric Difference (^)
+//
+// For both associative domains and arrays, the op= variants are supported:
+//   |=, +=, &=, -=, and ^=
 //
 
 var primeDom = {2, 3, 5, 7, 11, 13, 17};  // some prime numbers
