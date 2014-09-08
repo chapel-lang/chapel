@@ -1320,6 +1320,7 @@ module ChapelArray {
     }
   
     proc eltType type return _value.eltType;
+    proc idxType type return _value.idxType;
     proc _dom return _getDomain(_value.dom);
     proc rank param return this.domain.rank;
   
@@ -1566,29 +1567,26 @@ module ChapelArray {
              " on an array defined over a domain with multiple arrays");
     }
 
+    /* Return true if the array has no elements */
     proc isEmpty(): bool {
       return this.numElements == 0;
     }
 
+    /* Return the first value in the array */
     proc head(): this._value.eltType {
       return this[this.domain.low];
     }
 
+    /* Return the last value in the array */
     proc tail(): this._value.eltType {
       return this[this.domain.high];
     }
 
-    proc pop_back() where chpl__isDense1DArray() {
-      chpl__assertSingleArrayDomain("pop_back");
-      const lo = this.domain.low,
-            hi = this.domain.high-1;
-      const newDom = {lo..hi};
-      on this._value do this._value.dsiReallocate(newDom);
-      this.domain.setIndices(newDom.getIndices());
-      on this._value do this._value.dsiPostReallocate();
-    }
-
-    proc push_back(val: this._value.eltType) where chpl__isDense1DArray() {
+    /* Add element 'val' to the back of the array, extending the array's
+       domain by one. If the domain was {1..5} it will become {1..6}.
+       val: the value to add to the back of the array
+     */
+    proc push_back(val: this.eltType) where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("push_back");
       const lo = this.domain.low,
             hi = this.domain.high+1;
@@ -1599,7 +1597,24 @@ module ChapelArray {
       this[hi] = val;
     }
 
-    proc push_front(val: this._value.eltType) where chpl__isDense1DArray() {
+    /* Remove the last element from the array, reducing the size of the
+       domain by one. If the domain was {1..5} it will become {1..4}
+     */
+    proc pop_back() where chpl__isDense1DArray() {
+      chpl__assertSingleArrayDomain("pop_back");
+      const lo = this.domain.low,
+            hi = this.domain.high-1;
+      const newDom = {lo..hi};
+      on this._value do this._value.dsiReallocate(newDom);
+      this.domain.setIndices(newDom.getIndices());
+      on this._value do this._value.dsiPostReallocate();
+    }
+
+    /* Add element 'val' to the front of the array, extending the array's
+       domain by one. If the domain was {1..5} it will become {0..5}.
+       val: the value to add to the front of the array
+     */
+    proc push_front(val: this.eltType) where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("push_front");
       const lo = this.domain.low-1,
             hi = this.domain.high;
@@ -1610,6 +1625,9 @@ module ChapelArray {
       this[lo] = val;
     }
 
+    /* Remove the first element of the array reducing the size of the
+       domain by one.  If the domain was {1..5} it will become {2..5}.
+     */
     proc pop_front() where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("pop_front");
       const lo = this.domain.low+1,
@@ -1620,7 +1638,13 @@ module ChapelArray {
       on this._value do this._value.dsiPostReallocate();
     }
 
-    proc insert(pos: this._value.idxType, val: this._value.eltType) where chpl__isDense1DArray() {
+    /* Insert element 'val' into the array at index 'pos'. Shift the array
+       elements above 'pos' up one index. If the domain was {1..5} it will
+       become {1..6}.
+       val: the value to add to the array
+       pos: the index at which the value should be added
+     */
+    proc insert(pos: this.idxType, val: this.eltType) where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("insert");
       const lo = this.domain.low,
             hi = this.domain.high+1;
@@ -1632,7 +1656,12 @@ module ChapelArray {
       this[pos] = val;
     }
 
-    proc remove(pos: this._value.idxType) where chpl__isDense1DArray() {
+    /* Remove the element at index 'pos' from the array and shift the array
+       elements above 'pos' down one index. If the domain was {1..5} it will
+       become {1..4}.
+       pos: the index at which the value should be removed
+     */
+    proc remove(pos: this.idxType) where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("remove");
       const lo = this.domain.low,
             hi = this.domain.high-1;
@@ -1645,7 +1674,12 @@ module ChapelArray {
       on this._value do this._value.dsiPostReallocate();
     }
 
-    proc remove(pos: this._value.idxType, count: this._value.idxType) where chpl__isDense1DArray() {
+    /* Remove 'count' elements from the array starting at index 'pos' and
+       shift elements above 'pos+count' down by 'count' indices.
+       pos: The index to start removing from
+       count: The number of array elements to remove
+     */
+    proc remove(pos: this.idxType, count: this.idxType) where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("remove count");
       const lo = this.domain.low,
             hi = this.domain.high-count;
@@ -1660,11 +1694,19 @@ module ChapelArray {
       on this._value do this._value.dsiPostReallocate();
     }
 
-    proc remove(pos: range(this._value.idxType, stridable=false)) where chpl__isDense1DArray() {
+    /* Remove the elements at the indices in the 'pos' range and shift the
+       array elements down by 'pos.size' elements. If the domain was {1..5}
+       and this is called with 2..3 as an argument, the new domain would be
+       {1..3} and the array would contain the elements formerly at positions
+       1, 4, 5.
+       pos: a dense range of indices to remove
+     */
+    proc remove(pos: range(this.idxType, stridable=false)) where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("remove range");
       remove(pos.low, pos.size);
     }
 
+    /* Reverse the order of the values in the array. */
     proc reverse() where chpl__isDense1DArray() {
       const lo = this.domain.low,
             mid = this.domain.size / 2,
@@ -1674,6 +1716,9 @@ module ChapelArray {
       }
     }
 
+    /* Remove all elements from the array leaving the domain empty. If the
+       domain was {5..10} it will become {5..4}.
+     */
     proc clear() where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("clear");
       const lo = this.domain.low,
@@ -1685,14 +1730,22 @@ module ChapelArray {
       on this._value do this._value.dsiPostReallocate();
     }
 
-    proc find(val: this._value.eltType): (bool, this._value.idxType) {
+    /* Return a tuple containing true and the index of the first instance of
+       'val' in the array, or if 'val' is not found, a tuple containing false
+       and an unspecified value is returned.
+       val: the value to locate
+     */
+    proc find(val: this.eltType): (bool, this.idxType) {
       for i in this.domain {
         if this[i] == val then return (true, i);
       }
       return (false, 0);
     }
 
-    proc count(val: this._value.eltType): int {
+    /* Return the number of times 'val' occurs in the array.
+       val: the value to count
+     */
+    proc count(val: this.eltType): int {
       return + reduce (this == val);
     }
   }  // record _array
