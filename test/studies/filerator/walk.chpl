@@ -6,6 +6,7 @@ iter walkdirs(path: string=".", topdown=true, depth=max(int), dotfiles=false, fo
   extern proc opendir(name: c_string): DIRptr;
   extern proc readdir(dirp: DIRptr): direntptr;
   extern proc closedir(dirp: DIRptr): c_int;
+  extern proc chpl_rt_isDir(pathname: c_string): c_int;
 
   proc direntptr.d_name(): c_string {
     extern proc chpl_rt_direntptr_getname(d: direntptr): c_string;
@@ -13,11 +14,13 @@ iter walkdirs(path: string=".", topdown=true, depth=max(int), dotfiles=false, fo
     return chpl_rt_direntptr_getname(this);
   }
 
+  /* This was not portable
   proc direntptr.isDir() {
     extern proc chpl_rt_direntptr_isDir(d: direntptr): bool;
 
     return chpl_rt_direntptr_isDir(this);
   }
+  */
 
   if (topdown) then
     yield path;
@@ -32,16 +35,19 @@ iter walkdirs(path: string=".", topdown=true, depth=max(int), dotfiles=false, fo
       ent = readdir(dir);
       while (!is_c_nil(ent)) {
         const filename = ent.d_name();
-        if (ent.isDir() && filename != "." && filename != "..") {
-          if debug then
-            writeln("***It's a dir!");
-          if (dotfiles || filename.substring(1) != '.') {
-            const fullpath = path + "/" + filename;
-            //
-            // feature request: This is a nice place for a yieldall concept
-            //
-            for dirname in walkdirs(fullpath, topdown, depth-1, dotfiles, followlinks) do
-              yield dirname;
+        if (filename != "." && filename != "..") {
+          const fullpath = path + "/" + filename;
+          
+          if (chpl_rt_isDir(fullpath:c_string)!=0) {
+            if debug then
+              writeln("***It's a dir!");
+            if (dotfiles || filename.substring(1) != '.') {
+              //
+              // feature request: This is a nice place for a yieldall concept
+              //
+              for dirname in walkdirs(fullpath, topdown, depth-1, dotfiles, followlinks) do
+                yield dirname;
+            }
           }
         }
         ent = readdir(dir);

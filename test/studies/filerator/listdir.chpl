@@ -4,6 +4,7 @@ iter listdir(path: string, recur = false, dotfiles=false, nosvn=true): string {
   extern proc opendir(name: c_string): DIRptr;
   extern proc readdir(dirp: DIRptr): direntptr;
   extern proc closedir(dirp: DIRptr): c_int;
+  extern proc chpl_rt_isDir(pathname: c_string): c_int;
 
   proc direntptr.d_name(): c_string {
     extern proc chpl_rt_direntptr_getname(d: direntptr): c_string;
@@ -11,11 +12,13 @@ iter listdir(path: string, recur = false, dotfiles=false, nosvn=true): string {
     return chpl_rt_direntptr_getname(this);
   }
 
+  /* Not portable (for example to Debian)
   proc direntptr.isDir() {
     extern proc chpl_rt_direntptr_isDir(d: direntptr): bool;
 
     return chpl_rt_direntptr_isDir(this);
   }
+  */
 
   var dir: DIRptr;
   var ent: direntptr;
@@ -28,7 +31,7 @@ iter listdir(path: string, recur = false, dotfiles=false, nosvn=true): string {
       if (dotfiles || filename.substring(1) != '.') {
         if (!nosvn || filename != '.svn') {
           const fullpath = path + "/" + filename;
-          if (!ent.isDir()) {
+          if (!chpl_rt_isDir(fullpath:c_string)) {
             yield fullpath;
           } else {
             //        writeln("^^^ it's a directory!");
