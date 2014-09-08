@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 // Uncommented when this becomes the default string implementation
 // pragma "no use ChapelStandard"
 
@@ -157,8 +176,6 @@ module NewString {
     inline proc length return len;
     inline proc size return len;
 
-    inline proc substringHelp(x) {
-    }
     // Returns a string containing the character at the given index of
     // the string, or an empty string if the index is out of bounds.
     inline proc substring(i: int) {
@@ -191,7 +208,7 @@ module NewString {
         const cs = sbase.substring(r);
         if cs != _defaultOf(baseType) {
           ret.base = cs;
-          ret.len = r.size;
+          ret.len = cs.length;
           ret.incRefCntNoAlias();
         }
         if sremote then free_baseType(sbase);
@@ -470,7 +487,6 @@ module NewString {
                              param op: relType) {
     inline proc doOp(a: baseType, b: baseType, param op: relType) {
       select op {
-        when relType.eq do return a==b;
         when relType.eq do return a==b;
         when relType.neq do return a!=b;
         when relType.lt do return a<b;

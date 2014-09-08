@@ -44,6 +44,8 @@
   acos
   asin
   atan
+  chdir
+  cwd
   floor
   sqrt
   conjg

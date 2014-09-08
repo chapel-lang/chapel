@@ -12,11 +12,11 @@ def get(flag='host'):
         mem_val = os.environ.get('CHPL_MEM')
         if not mem_val:
             comm_val = chpl_comm.get()
-            platform_val = chpl_platform.get('target')
+            platform_val = chpl_platform.get('host')
             tcmallocCompat = ["gnu", "clang", "intel"]
 
             # true if tcmalloc is compatible with the target compiler
-            if platform_val is not 'cygwin' and  any(sub in chpl_compiler.get('target') for sub in tcmallocCompat):
+            if (platform_val != "cygwin") and  any(sub in chpl_compiler.get('target') for sub in tcmallocCompat):
               return 'tcmalloc'
             if comm_val == 'gasnet':
                 segment_val = chpl_comm_segment.get()
