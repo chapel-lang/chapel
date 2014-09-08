@@ -283,7 +283,7 @@ extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyle);
 extern proc qio_file_length(f:qio_file_ptr_t, ref len:int(64)):syserr;
 
 extern proc qio_chdir(name: c_string):syserr;
-extern proc qio_cwd(ref working_dir:c_string);
+extern proc qio_cwd(ref working_dir:c_string):syserr;
 extern proc qio_file_rename(oldname: c_string, newname: c_string):syserr;
 extern proc qio_file_remove(name: c_string):syserr;
 
@@ -619,12 +619,23 @@ proc chdir(name: string) {
   if err then ioerror(err, "in chdir", name);
 }
 
-/* Returns the current working directory. */
-proc cwd(): string {
+/* Returns the current working directory.
+   err: a syserr used to indicate if an error occurred
+*/
+proc cwd(out err: syserr): string {
   var tmp:c_string, ret:string;
-  qio_cwd(tmp);
+  err = qio_cwd(tmp);
+  if err then return "";
   ret = toString(tmp);
   chpl_free_c_string(tmp);
+  return ret;
+}
+
+/* Returns the current working directory. Generates an error if one occurred. */
+proc cwd(): string {
+  var err: syserr = ENOERR;
+  var ret = cwd(err);
+  if err then ioerror(err, "in cwd");
   return ret;
 }
 
