@@ -21,11 +21,28 @@ module FileratorHelp {
     return chpl_rt_direntptr_isDir(this);
   }
   */
-
 }
 
 iter listdir(path: string, recur = false, dotfiles=false, nosvn=true): string {
-  use FileratorHelp;
+  // This does not work:
+  //  use FileratorHelp;
+
+  //
+  // So inline its contents directly instead:
+  //
+  extern type DIRptr;
+  extern type direntptr;
+  extern proc opendir(name: c_string): DIRptr;
+  extern proc readdir(dirp: DIRptr): direntptr;
+  extern proc closedir(dirp: DIRptr): c_int;
+  extern proc chpl_rt_isDir(pathname: c_string): c_int;
+
+  proc direntptr.d_name(): c_string {
+    extern proc chpl_rt_direntptr_getname(d: direntptr): c_string;
+
+    return chpl_rt_direntptr_getname(this);
+  }
+  // End inlining
 
   var dir: DIRptr;
   var ent: direntptr;
@@ -63,7 +80,25 @@ iter listdir(path: string, recur = false, dotfiles=false, nosvn=true): string {
 
 
 iter walkdirs(path: string=".", topdown=true, depth=max(int), dotfiles=false, followlinks=false): string {
-  use FileratorHelp;
+  // This does not work:
+  //  use FileratorHelp;
+
+  //
+  // So inline its contents directly instead:
+  //
+  extern type DIRptr;
+  extern type direntptr;
+  extern proc opendir(name: c_string): DIRptr;
+  extern proc readdir(dirp: DIRptr): direntptr;
+  extern proc closedir(dirp: DIRptr): c_int;
+  extern proc chpl_rt_isDir(pathname: c_string): c_int;
+
+  proc direntptr.d_name(): c_string {
+    extern proc chpl_rt_direntptr_getname(d: direntptr): c_string;
+
+    return chpl_rt_direntptr_getname(this);
+  }
+  // End inlining
 
   if (topdown) then
     yield path;
