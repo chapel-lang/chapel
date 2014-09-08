@@ -1,4 +1,4 @@
-bug: unclear error message
+bug: Internal error for incorrect method declaration
 
 This incorrect method declaration currently fails with an obscure error message.
 The problem should probably be caught closer to parsing so a more reasonable
