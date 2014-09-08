@@ -8,7 +8,7 @@
 
 const NCHUNKS = 150;
 config const n : int = 7;
-const ntasks = 0..#here.numCores;
+const ntasks = 0..#here.maxTaskPar;
 
 var Fact : [0..n] int;
 Fact[0] = 1;

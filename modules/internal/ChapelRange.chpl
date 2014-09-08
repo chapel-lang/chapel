@@ -1091,7 +1091,7 @@ module ChapelRange {
       const tasksPerLocale = dataParTasksPerLocale;
       const ignoreRunning = dataParIgnoreRunningTasks;
       const minIndicesPerTask = dataParMinGranularity;
-      const dptpl = if tasksPerLocale==0 then here.numCores
+      const dptpl = if tasksPerLocale==0 then here.maxTaskPar
                     else tasksPerLocale;
 
       // Make sure we don't use more sublocales than the numbers of

@@ -64,7 +64,7 @@ const log2nkeys = ClassNkeys (probClass);
 var range:    int = 1 << log2range;	// left shift for power of 2 values
 var nkeys:    int = 1 << log2nkeys;
 var npes:     int = numLocales*(if dataParTasksPerLocale==0
-                                then here.numCores
+                                then here.maxTaskPar
                                   else dataParTasksPerLocale);  // npes is the total number of tasks
 var nbuckets: int = if distType==ISDistType.block then npes else 4*npes;
 
