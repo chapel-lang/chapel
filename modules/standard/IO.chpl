@@ -95,6 +95,7 @@ enum iostringstyle {
   len4b_data = -4,
   len8b_data = -8,
   lenVb_data = -10,
+  data_toeof = -0xff00,
   data_null = -0x0100,
 }
 proc stringStyleTerminated(terminator:uint(8)) {
@@ -193,6 +194,7 @@ extern const QIO_STRING_FORMAT_BASIC:uint(8);
 extern const QIO_STRING_FORMAT_CHPL:uint(8);
 extern const QIO_STRING_FORMAT_JSON:uint(8);
 extern const QIO_STRING_FORMAT_TOEND:uint(8);
+extern const QIO_STRING_FORMAT_TOEOF:uint(8);
 
 extern record iostyle { // aka qio_style_t
   var binary:uint(8) = 0;
@@ -280,6 +282,8 @@ extern proc qio_channel_end_offset_unlocked(ch:qio_channel_ptr_t):int(64);
 extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyle);
 extern proc qio_file_length(f:qio_file_ptr_t, ref len:int(64)):syserr;
 
+extern proc qio_chdir(name: c_string):syserr;
+extern proc qio_cwd(ref working_dir:c_string);
 extern proc qio_file_rename(oldname: c_string, newname: c_string):syserr;
 extern proc qio_file_remove(name: c_string):syserr;
 
@@ -593,6 +597,34 @@ proc file._style:iostyle {
     qio_file_get_style(_file_internal, local_style);
     ret = local_style;
   }
+  return ret;
+}
+
+/* Change the current working directory to the specified name. Returns any
+   errors that occurred via an out parameter.
+   err: a syserr used to indicate if an error occurred
+   name: a string indicating a new directory
+*/
+proc chdir(out err: syserr, name: string) {
+  err = qio_chdir(name.c_str());
+}
+
+/* Change the current working directory to the specified name. Generates an
+   error if one occurred.
+   name: a string indicating a new directory
+*/
+proc chdir(name: string) {
+  var err: syserr = ENOERR;
+  chdir(err, name);
+  if err then ioerror(err, "in chdir", name);
+}
+
+/* Returns the current working directory. */
+proc cwd(): string {
+  var tmp:c_string, ret:string;
+  qio_cwd(tmp);
+  ret = toString(tmp);
+  chpl_free_c_string(tmp);
   return ret;
 }
 
@@ -1693,60 +1725,69 @@ proc channel.readline(ref arg:string):bool {
 
 // channel.readstring: read a given amount of bytes from a channel
 // arg: str_out  -> The string to be read into
-// arg: len      -> The number of bytes to read from this channel. If nothing is
-//                  given, we read the entire channel starting at the current offset
-//                  in the channel.
+// arg: len      -> Read up to len bytes from the channel, up until EOF
+//                  (or some kind of I/O error). If the default value of -1
+//                  is provided, read until EOF starting from the channel's
+//                  current offset.
+// arg: out error-> On completion, the error code (possibly EOF)
 // return: true  -> We have not encountered EOF
-//         false -> We have encountered EOF
-proc channel.readstring(ref str_out:string, len:int(64) = -1):bool {
-  var err:syserr = ENOERR;
-
+//         false -> We have encountered EOF or another error
+proc channel.readstring(ref str_out:string, len:int(64) = -1, out error:syserr):bool {
+  error = ENOERR;
   on this.home {
     var ret:c_string;
     var lenread:int(64);
     var tx:c_string;
     var lentmp:int(64);
     var actlen:int(64);
+    var uselen:ssize_t;
+
+    if len == -1 then uselen = max(ssize_t);
+    else {
+      uselen = len:ssize_t;
+      if ssize_t != int(64) then assert( len == uselen );
+    }
 
     this.lock();
-    actlen = qio_channel_end_offset_unlocked(this._channel_internal) - qio_channel_offset_unlocked(this._channel_internal);
+
+    var binary:uint(8) = qio_channel_binary(_channel_internal);
+    var byteorder:uint(8) = qio_channel_byteorder(_channel_internal);
+
+    if binary { 
+      error = qio_channel_read_string(false, byteorder,
+                                      iostringstyle.data_toeof,
+                                      this._channel_internal, tx,
+                                      lenread, uselen);
+    } else {
+      var save_style = this._style();
+      var style = this._style();
+      style.string_format = QIO_STRING_FORMAT_TOEOF;
+      this._set_style(style);
+
+      error = qio_channel_scan_string(false,
+                                      this._channel_internal, tx,
+                                      lenread, uselen);
+      this._set_style(save_style);
+    }
+
     this.unlock();
 
-    // read the entire file
-    if (len == -1) then
-      lentmp = actlen;
-    else // else, make a smart choice about how much we have to read
-      lentmp = min(actlen, len);
-
-    while (lentmp > max(int(32))) {
-      err = qio_channel_read_string(false, this._style().byteorder, max(int(32)),
-          this._channel_internal, tx, lenread, -1);
-
-      ret += tx;
-      chpl_free_c_string(tx);
-
-      if (err == EEOF) then break; // done reading 
-
-      if err then ioerror(err, "in channel.readstring(ref str_out:string, len:int(64)"); // else, we actually do have an error.
-      lentmp = lentmp - max(int(32));
-    }
-
-    // len <= max(int(32))
-    if (!err) {
-      err = qio_channel_read_string(false, this._style().byteorder, lentmp,
-          this._channel_internal, tx, lenread, -1);
-
-      ret += tx;
-      chpl_free_c_string(tx);
-    }
-    // FIX ME: could use a toString() that doesn't allocate space
-    str_out = toString(ret);
-    chpl_free_c_string(ret);
+    str_out = toString(tx);
+    chpl_free_c_string(tx);
   }
 
-  if (err == EEOF) then return false; // done reading
-  if err then ioerror(err, "in channel.readstring(ref str_out:string, len:int(64)"); // else, we actually do have an error.
-  return true;
+  return !error;
+}
+
+proc channel.readstring(ref str_out:string, len:int(64) = -1):bool {
+  var e:syserr = ENOERR;
+  this.readstring(str_out, len, error=e);
+  if !e then return true;
+  else if e == EEOF then return false;
+  else {
+    this._ch_ioerror(e, "in channel.readstring(ref str_out:string, len:int(64))");
+    return false;
+  }
 }
 
 inline proc channel.readbits(out v:uint(64), nbits:int(8), out error:syserr):bool {

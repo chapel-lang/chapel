@@ -152,7 +152,7 @@ module DefaultAssociative {
     iter these(param tag: iterKind) where tag == iterKind.leader {
       if debugDefaultAssoc then
         writeln("*** In domain leader code:");
-      const numTasks = if dataParTasksPerLocale==0 then here.numCores
+      const numTasks = if dataParTasksPerLocale==0 then here.maxTaskPar
                        else dataParTasksPerLocale;
       const ignoreRunning = dataParIgnoreRunningTasks;
       const minIndicesPerTask = dataParMinGranularity;

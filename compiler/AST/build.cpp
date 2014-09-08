@@ -223,9 +223,9 @@ Expr* buildFormalArrayType(Expr* iterator, Expr* eltType, Expr* index) {
 
 Expr* buildIntLiteral(const char* pch) {
   uint64_t ull;
-  if (!strncmp("0b", pch, 2))
+  if (!strncmp("0b", pch, 2) || !strncmp("0B", pch, 2))
     ull = binStr2uint64(pch);
-  else if (!strncmp("0x", pch, 2))
+  else if (!strncmp("0x", pch, 2) || !strncmp("0X", pch, 2))
     ull = hexStr2uint64(pch);
   else
     ull = str2uint64(pch);
