@@ -319,69 +319,6 @@ if (Men | Women) != Names then
   halt("The union of the 'Men' and 'Women' sets should be equivalent to 'Names'");
 
 //
-// Let's create some new associative domains and arrays.
-//
-var AboveFifty : domain(string);
-for (name, score) in zip(Names, Scores) do
-  if score > 50 then AboveFifty.add(name);
-
-var Passing : [AboveFifty] bool = true;
-var Failing : [Names - AboveFifty] bool = false;
-
-//
-// 'PassedClass' is a new associative array with its own domain. While it currently
-// happens to share the same indices as the 'Names' domain, they are not the
-// same domain object. This means we can use the implicit index addition
-// feature to add to the 'PassedClass' array.
-//
-var PassedClass = Passing | Failing;
-PassedClass["Nancy"] = false;
-write("Who had a passing grade?\n\t");
-prettyPrint(PassedClass);
-writeln();
-
-if Names.member("Nancy") then
-  halt("Error: 'Names' domain should not have been modified by adding an index to 'PassedClass'");
-
-//
-// Let's use our 'primes' and 'fibs' domains to define associative arrays.
-//
-var Primes : [primeDom] bool;
-var Fibs : [fibDom] bool = true;
-
-//
-// 'IsFib' is an associative array mapping integers to bools, where the boolean
-// value is true if the number is in the fibonnaci sequence. When performing
-// a union between two arrays with overlapping indices, the values of the 
-// second array take precedence.
-//
-var IsFib  = Primes | Fibs;
-write("Which numbers are in the fibonnaci sequence?\n\t");
-prettyPrint(IsFib);
-writeln();
-
-//
-// op= variants of set operations are supported for associative arrays:
-// 
-// Union: +=, |=
-// Intersection: &=
-// Difference: -=
-// Symmetric Difference: ^=
-//
-// However, this is only permitted when the array's domain is not shared with
-// other arrays.
-//
-// Let's construct an array identical to 'PassedClass' using |=.
-//
-var PC : [Names - AboveFifty] bool = false;
-PC |= Passing;
-PC["Nancy"] = false;
-
-for (a, b) in zip(PassedClass, PC) do
-  if a != b then
-    halt("PassedClass and PC are different, but shouldn't be.");
-
-//
 // Future Directions
 //
 // Today, associative domains cannot be distributed across multiple locales.

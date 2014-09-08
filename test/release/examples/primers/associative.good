@@ -6,10 +6,6 @@ associative.chpl:304: warning: whole-domain assignment has been serialized (see 
 associative.chpl:306: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
 associative.chpl:311: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
 associative.chpl:312: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
-associative.chpl:328: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
-associative.chpl:329: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
-associative.chpl:350: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
-associative.chpl:376: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
 An empty associative domain: {}
 
 The initial size of the 'Names' domain is 0
@@ -32,10 +28,4 @@ Some primes not in the fibonnaci sequence: {7, 17, 11}
 
 Women = {Dana, Alice, Ellen}
 Men = {John, Gary, Clark, Robert, Mark}
-
-Who had a passing grade?
-	[ Alice => false, Clark => true, Dana => true, Ellen => true, Gary => false, John => true, Mark => true, Nancy => false, Robert => false ]
-
-Which numbers are in the fibonnaci sequence?
-	[ 0 => true, 1 => true, 2 => true, 3 => true, 5 => true, 7 => false, 8 => true, 11 => false, 13 => true, 17 => false ]
 
