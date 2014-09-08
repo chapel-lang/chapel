@@ -157,8 +157,6 @@ module NewString {
     inline proc length return len;
     inline proc size return len;
 
-    inline proc substringHelp(x) {
-    }
     // Returns a string containing the character at the given index of
     // the string, or an empty string if the index is out of bounds.
     inline proc substring(i: int) {
@@ -191,7 +189,7 @@ module NewString {
         const cs = sbase.substring(r);
         if cs != _defaultOf(baseType) {
           ret.base = cs;
-          ret.len = r.size;
+          ret.len = cs.length;
           ret.incRefCntNoAlias();
         }
         if sremote then free_baseType(sbase);
@@ -470,7 +468,6 @@ module NewString {
                              param op: relType) {
     inline proc doOp(a: baseType, b: baseType, param op: relType) {
       select op {
-        when relType.eq do return a==b;
         when relType.eq do return a==b;
         when relType.neq do return a!=b;
         when relType.lt do return a<b;
