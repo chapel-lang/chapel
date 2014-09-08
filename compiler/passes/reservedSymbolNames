@@ -44,6 +44,7 @@
   acos
   asin
   atan
+  cwd
   floor
   sqrt
   conjg

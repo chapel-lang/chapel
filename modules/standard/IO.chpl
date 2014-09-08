@@ -282,6 +282,7 @@ extern proc qio_channel_end_offset_unlocked(ch:qio_channel_ptr_t):int(64);
 extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyle);
 extern proc qio_file_length(f:qio_file_ptr_t, ref len:int(64)):syserr;
 
+extern proc qio_cwd(ref working_dir:c_string);
 extern proc qio_file_rename(oldname: c_string, newname: c_string):syserr;
 extern proc qio_file_remove(name: c_string):syserr;
 
@@ -595,6 +596,15 @@ proc file._style:iostyle {
     qio_file_get_style(_file_internal, local_style);
     ret = local_style;
   }
+  return ret;
+}
+
+/* Returns the current working directory. */
+proc cwd(): string {
+  var tmp:c_string, ret:string;
+  qio_cwd(tmp);
+  ret = toString(tmp);
+  chpl_free_c_string(tmp);
   return ret;
 }
 
