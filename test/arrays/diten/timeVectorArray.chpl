@@ -39,7 +39,7 @@ class PushFront: Runner {
 
 class PopBack: Runner {
   proc run(A: [] int) {
-    while !A.empty() {
+    while !A.isEmpty() {
       A.pop_back();
     }
   }
@@ -47,7 +47,7 @@ class PopBack: Runner {
 
 class PopFront: Runner {
   proc run(A: [] int) {
-    while !A.empty() {
+    while !A.isEmpty() {
       A.pop_front();
     }
   }

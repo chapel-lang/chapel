@@ -1566,15 +1566,15 @@ module ChapelArray {
              " on an array defined over a domain with multiple arrays");
     }
 
-    proc empty(): bool {
+    proc isEmpty(): bool {
       return this.numElements == 0;
     }
 
-    proc front(): this._value.eltType {
+    proc head(): this._value.eltType {
       return this[this.domain.low];
     }
 
-    proc back(): this._value.eltType {
+    proc tail(): this._value.eltType {
       return this[this.domain.high];
     }
 
@@ -1620,7 +1620,7 @@ module ChapelArray {
       on this._value do this._value.dsiPostReallocate();
     }
 
-    proc insert(position: this._value.idxType, val: this._value.eltType) where chpl__isDense1DArray() {
+    proc insert(pos: this._value.idxType, val: this._value.eltType) where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("insert");
       const lo = this.domain.low,
             hi = this.domain.high+1;
@@ -1628,16 +1628,16 @@ module ChapelArray {
       on this._value do this._value.dsiReallocate(newDom);
       this.domain.setIndices(newDom.getIndices());
       on this._value do this._value.dsiPostReallocate();
-      for i in position..hi-1 by -1 do this[i+1] = this[i];
-      this[position] = val;
+      for i in pos..hi-1 by -1 do this[i+1] = this[i];
+      this[pos] = val;
     }
 
-    proc remove(position: this._value.idxType) where chpl__isDense1DArray() {
+    proc remove(pos: this._value.idxType) where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("remove");
       const lo = this.domain.low,
             hi = this.domain.high-1;
       const newDom = {lo..hi};
-      for i in position..hi {
+      for i in pos..hi {
         this[i] = this[i+1];
       }
       on this._value do this._value.dsiReallocate(newDom);
@@ -1645,14 +1645,14 @@ module ChapelArray {
       on this._value do this._value.dsiPostReallocate();
     }
 
-    proc remove(position: this._value.idxType, count: this._value.idxType) where chpl__isDense1DArray() {
+    proc remove(pos: this._value.idxType, count: this._value.idxType) where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("remove count");
       const lo = this.domain.low,
             hi = this.domain.high-count;
-      if position+count > this.domain.high then
-        halt("index ", position+count, " is outside the supported range");
+      if pos+count > this.domain.high then
+        halt("index ", pos+count, " is outside the supported range");
       const newDom = {lo..hi};
-      for i in position..hi {
+      for i in pos..hi {
         this[i] = this[i+count];
       }
       on this._value do this._value.dsiReallocate(newDom);
@@ -1660,9 +1660,9 @@ module ChapelArray {
       on this._value do this._value.dsiPostReallocate();
     }
 
-    proc remove(positions: range(this._value.idxType, stridable=false)) where chpl__isDense1DArray() {
+    proc remove(pos: range(this._value.idxType, stridable=false)) where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("remove range");
-      remove(positions.low, positions.size);
+      remove(pos.low, pos.size);
     }
 
     proc reverse() where chpl__isDense1DArray() {

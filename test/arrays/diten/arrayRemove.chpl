@@ -1,7 +1,7 @@
 var A: [1..10] int = [i in 1..10] i;
 
 writeln(A);
-while !A.empty() {
+while !A.isEmpty() {
   A.remove(1);
   writeln(A);
 }
@@ -9,7 +9,7 @@ while !A.empty() {
 for i in 1..10 do A.push_back(i);
 
 writeln(A);
-while !A.empty() {
+while !A.isEmpty() {
   A.remove(A.domain.high);
   writeln(A);
 }
