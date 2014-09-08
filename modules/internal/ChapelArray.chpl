@@ -1676,7 +1676,10 @@ module ChapelArray {
 
     proc clear() where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("clear");
-      const newDom = {1..0};
+      const lo = this.domain.low,
+            hi = this.domain.low-1;
+      assert(hi < lo, "overflow occured subtracting 1 from low bound in clear");
+      const newDom = {lo..hi};
       on this._value do this._value.dsiReallocate(newDom);
       this.domain.setIndices(newDom.getIndices());
       on this._value do this._value.dsiPostReallocate();
@@ -1687,6 +1690,10 @@ module ChapelArray {
         if this[i] == val then return (true, i);
       }
       return (false, 0);
+    }
+
+    proc count(val: this._value.eltType): int {
+      return + reduce (this == val);
     }
   }  // record _array
   
