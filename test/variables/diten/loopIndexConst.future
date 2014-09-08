@@ -1,0 +1,4 @@
+bug: assignment allowed to loop index variable that should be const
+
+The loop index variable should be const if the iterator the loop is
+iterating over is not a 'var' iterator.

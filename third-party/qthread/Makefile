@@ -52,11 +52,31 @@ endif
 
 CHPL_QTHREAD_CFG_OPTIONS += --enable-static --disable-shared
 
-CHPL_QTHREAD_CFG_OPTIONS += $(CHPL_QTHREAD_MORE_CFG_OPTIONS)
-
-ifneq (, $(CHPL_QTHREAD_SCHEDULER))
-CHPL_QTHREAD_CFG_OPTIONS += --with-scheduler=$(CHPL_QTHREAD_SCHEDULER)
+# determine which scheduler to use. Default to nemesis, except for numa where
+# we want sherwood. Override with a user provided option if they requested one
+SCHEDULER = nemesis
+ifeq ($(CHPL_MAKE_LOCALE_MODEL),numa)
+SCHEDULER = sherwood
 endif
+ifneq (, $(CHPL_QTHREAD_SCHEDULER))
+SCHEDULER = $(CHPL_QTHREAD_SCHEDULER)
+endif
+CHPL_QTHREAD_CFG_OPTIONS += --with-scheduler=$(SCHEDULER)
+
+# spawn-caching has a semantic mismatch with chapel (and leads to deadlock with
+# some applications.) Qthreads team tends to build with spawn cache off too
+CHPL_QTHREAD_CFG_OPTIONS += --disable-spawn-cache
+
+# reduce performance penalty in cases where numChapelTasks < numQthreadWorkers
+CHPL_QTHREAD_CFG_OPTIONS += --enable-condwait-queue
+
+# pgi doesn't support the proper atomic intrinsics that are required for
+# spinlocks to be fast, so disable them for pgi, and PrgEnv-pgi
+ifneq (, $(findstring pgi,$(CHPL_MAKE_TARGET_COMPILER)))
+CHPL_QTHREAD_CFG_OPTIONS += --disable-internal-spinlock
+endif
+
+CHPL_QTHREAD_CFG_OPTIONS += $(CHPL_QTHREAD_MORE_CFG_OPTIONS)
 
 default: all
 
@@ -89,7 +109,7 @@ qthread-config: FORCE
 # Then configure
 #
 	mkdir -p $(QTHREAD_BUILD_DIR)
-	cd $(QTHREAD_BUILD_DIR) && $(QTHREAD_SUBDIR)/configure CC='$(CC)' CFLAGS='$(CFLAGS)' CXX='$(CXX)'  CXXFLAGS='$(CFLAGS)' --prefix=$(QTHREAD_INSTALL_DIR) --enable-interfaces=chapel CHPL_HOME=$(CHPL_MAKE_HOME) $(CHPL_QTHREAD_CFG_OPTIONS) --disable-spawn-cache
+	cd $(QTHREAD_BUILD_DIR) && $(QTHREAD_SUBDIR)/configure CC='$(CC)' CFLAGS='$(CFLAGS)' CXX='$(CXX)'  CXXFLAGS='$(CFLAGS)' --prefix=$(QTHREAD_INSTALL_DIR) --enable-interfaces=chapel CHPL_HOME=$(CHPL_MAKE_HOME) $(CHPL_QTHREAD_CFG_OPTIONS) 
 
 qthread-build: FORCE
 	cd $(QTHREAD_BUILD_DIR) && $(MAKE)

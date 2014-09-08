@@ -30,7 +30,7 @@ proc main {
 // this function writes a square array out to a file
 //
 proc writeSquareArray(n, X, filename) {
-  // Create an output file with the specified filename in write (FileAccessMode.write) mode
+  // Create an output file with the specified filename in write (iomode.cw) mode
   var outfile = open(filename, iomode.cw);
   var writer = outfile.writer();
 
@@ -50,7 +50,7 @@ proc writeSquareArray(n, X, filename) {
 // This function reads a new array out of a file and returns it
 //
 proc readArray(filename) {
-  // Create an input file with the specified filename in read (FileAccessMode.read) mode
+  // Create an input file with the specified filename in read (iomode.r) mode
   var infile = open(filename, iomode.r);
   var reader = infile.reader();
 

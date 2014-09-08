@@ -1,3 +1,20 @@
+# Copyright 2004-2014 Cray Inc.
+# Other additional copyright holders may be indicated within.
+# 
+# The entirety of this work is licensed under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+# 
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 #
 # Makefile: builds Chapel runtime
 #
@@ -55,7 +72,9 @@ RUNTIME_OBJS = \
 	$(MEM_COMMON_OBJS) \
 	$(QIO_OBJS) \
 	$(REGEXP_OBJS) \
-	$(AUXFS_HDFS_OBJS)
+	$(AUXFS_HDFS_OBJS) \
+	$(AUXFS_CURL_OBJS)
+
 
 LAUNCH_LIB_OBJS = \
 	$(COMMON_LAUNCHER_OBJS) \
@@ -102,7 +121,7 @@ $(RUNTIME_LIB): $(RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP)
 	@rm -f $@
 	$(AR) -rc $@ $(RUNTIME_OBJS)
 	$(RANLIB) $@
-	-@(which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && echo "Updating TAGS..." && $(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(ALL_SRCS) $(CURDIR)/include/*.h $(CURDIR)/include/tasks/$(CHPL_MAKE_TASKS)/*.h $(CURDIR)/include/threads/$(CHPL_MAKE_THREADS)/*.h) || echo "$(CHPL_TAGS_UTIL) not available"
+	-@(which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && echo "Updating TAGS..." && $(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(ALL_SRCS) $(CURDIR)/include/*.h) || echo "$(CHPL_TAGS_UTIL) not available"
 
 $(RUNTIME_DIR)/main.o: src/$(RUNTIME_OBJDIR)/main.o
 	cp $< $@

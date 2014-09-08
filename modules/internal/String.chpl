@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 pragma "no use ChapelStandard"
 
 // Chapel Strings
@@ -90,8 +109,28 @@ module String {
     if cs.length != 0 then chpl_free_c_string(cs);
     return ret;
   }
+  inline proc string.substring(r: range(?)) {
+    const cs = this.c_str().substring(r);
+    // FIX ME: could use a toString() that doesn't allocate space
+    const ret = toString(cs);
+    if cs.length != 0 then chpl_free_c_string(cs);
+    return ret;
+  }
+  
   inline proc _string_contains(a: string, b: string)
     return _string_contains(a.c_str(), b.c_str());
+
+  /* args: any number of strings
+     return: Returns true if this starts with one of the strings specified in args
+   */
+  inline proc string.startsWith(args ...?k):bool {
+    for param i in 1..k {
+      if (this.substring(0..args(i).length) == args(i))
+        then return true;
+    }
+    return false;
+  }
+
   
   /* Returns the index of the first occurrence of a substring within a string,
       or 0 if the substring is not in the string.
@@ -330,6 +369,13 @@ module CString {
   inline proc c_string.size return this.length;
   inline proc c_string.substring(i: int)
     return __primitive("string_index", this, i);
+  inline proc c_string.substring(r: range(?)) {
+    var r2 = r[1..this.length];  // This may warn about ambiguously aligned ranges.
+    if r2.isEmpty() then return "";
+    var lo:int = r2.alignedLow, hi:int = r2.alignedHigh;
+    return __primitive("string_select", this, lo, hi, r2.stride);
+  }
+
   inline proc _string_contains(a: string, b: string)
     return __primitive("string_contains", a, b);
 

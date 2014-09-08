@@ -171,6 +171,7 @@ module Graph500_main
     coforall loc in Locales do on loc {
       writeln("Locale ID: ", loc.id, " of ", numLocales);
       writeln("Locale ID: ", loc.id, " Number of cores " , loc.numCores);
+      writeln("Locale ID: ", loc.id, " Max task parallelism " , loc.maxTaskPar);
     }
   }
 

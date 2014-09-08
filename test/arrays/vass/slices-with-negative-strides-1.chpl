@@ -22,7 +22,7 @@ writeln(oth.boundsCheck(ths));
 writeln(oth.boundsCheck(oth));
 writeln();
 
-const bt = ths._base, bo = oth._base;
+const bt = ths, bo = oth;
 writeln(bo);
 writeln(bt.this(bo));
 writeln(bt.member(bo));

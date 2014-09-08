@@ -1,0 +1,255 @@
+
+%%====================================================================================================
+
+% \usepackage{url}
+% \usepackage{code}
+% \usepackage{graphicx}
+% \usepackage{enumerate}
+% \usepackage{latexsym}
+% \usepackage{amsmath}
+% \usepackage{amssymb}
+% \usepackage{amstext}
+
+\usepackage{comment}
+\usepackage{graphicx}
+\usepackage{moresize}
+
+% \usepackage{hyperref}
+% \hypersetup{colorlinks,%
+%             citecolor=black,%
+%             filecolor=black,%
+%             linkcolor=black,%
+%             urlcolor=blue,%
+%             pdftex}
+
+\usepackage{url}
+% \usepackage{multicol}
+% \usepackage{subfigure}
+
+%%====================================================================================================
+%%  Listings package and configuration:
+
+\usepackage{listings}
+% \usepackage{listings-1.4/listings}
+% \usepackage{listings-1.4/lstdoc}
+% \usepackage{listings-1.4/lstlang1}
+% \usepackage{listings-1.4/lstmisc}
+% \input{listings-1.4/listings.sty}
+
+\ExecuteOptions{letter}
+
+\newenvironment{commentenv}[1]{\begin{list}{}{}\item[]{\sc [#1:}
+  }{{\rm {\sc End of comment.]}} \end{list}}
+
+  \long\gdef\comment#1#2{{\color{red} [\textsc{#1}: \textsf{#2}]}}
+  %\long\gdef\comment#1#2{}
+
+  % \newcommand{\code}[1]{\lstinline[basicstyle=\sffamily]{#1}}
+  \newcommand{\func}[1]{\lstinline[basicstyle=\sffamily]{#1()}}
+  \newcommand{\keyword}[1]{\emph{#1}}
+
+  \newcommand{\concept}[1]{{\sc #1}}
+
+  % ----------------------------------------
+
+  \lstdefinestyle{basic}{showstringspaces=false,columns=fullflexible,language=C++,escapechar=@,xleftmargin=1pc,%
+    %basicstyle=\small\bfseries\itshape,%
+    %keywordstyle=\underbar,
+    basicstyle=\small\sffamily,
+    commentstyle=\mdseries,
+    moredelim=**[is][\color{white}]{~}{~},
+    morekeywords={concept,model,require,where},
+    literate={->}{{$\rightarrow\;$}}1 {<-}{{$\leftarrow\;$}}1 {=>}{{$\Rightarrow\;$}}1,
+  }
+
+  \usepackage{color}
+  \definecolor{darkgreen}{rgb}{0,0.5,0}
+  \definecolor{darkred}{rgb}{0.5,0,0}
+
+  \lstloadlanguages{C++}
+  \lstnewenvironment{code}
+  {\lstset{}%
+  \csname lst@SetFirstLabel\endcsname}
+  {\csname lst@SaveFirstLabel\endcsname}
+  \lstset{
+    language=C++,
+    basicstyle=\small\ttfamily,
+    %basicstyle=\footnotesize\ttfamily,
+    flexiblecolumns=true,
+    %      basicstyle=\ssmall\ttfamily,
+    flexiblecolumns=false,
+    numbers=left,
+    basewidth={0.5em,0.45em},
+    keywordstyle=\color{blue},
+    commentstyle=\color{darkgreen},
+    stringstyle=\ttfamily\color{darkred},
+    escapechar=\@,
+    xleftmargin=2mm,
+    morekeywords={cilk_for,cilk_spawn,cilk_sync, ivar_payload_t,
+      __cilkrts_ivar, ivar_payload_t,
+      align, atomic,
+      begin, bool, break, by,
+      class, cobegin, coforall, complex, config,
+      const, continue,
+      delete, dmapped, do, domain,
+      else, enum, extern, export,
+      false, for, forall,
+      if, imag, in, index,
+      inline, inout, int,
+      iter,
+      label, lambda,
+      let, local,
+      locale,
+      module,
+      new,
+      nil,
+      on,
+      opaque,
+      otherwise,
+      out,
+      param,
+      proc,
+      range,
+      real,
+      record,
+      reduce,
+      ref,
+      return,
+      scan,
+      select,
+      serial,
+      single,
+      sparse,
+      string,
+      subdomain,
+      sync,
+      then,
+      true,
+      type,
+      uint,
+      union,
+      use,
+      var,
+      when,
+      where,
+      while,
+      yield,
+    zip},
+    %      literate={dotdotdot}{{$\ldots$}}3
+    literate={...}{{$\dots$}}3
+    %               {cilk_spawn}{\bf{\texttt cilk\_spawn}}8
+    %               {cilk_spawn}{{cilkpawn}}10
+    %
+    % literate={+}{{$+$}}1 {/}{{$/$}}1 {*}{{$*$}}1 % {=}{{$=$}}1
+    %          {>}{{$>$}}1 {<}{{$<$}}1 {\\}{{$\lambda$}}1
+    %          {\\\\}{{\char`\\\char`\\}}1
+    %          {->}{{$\rightarrow$}}2 {>=}{{$\geq$}}2 {<-}{{$\leftarrow$}}2
+    %          {<=}{{$\leq$}}2 {=>}{{$\Rightarrow$}}2 
+    %          {\ .}{{$\circ$}}2 {\ .\ }{{$\circ$}}2
+    %          {>>}{{>>}}2 {>>=}{{>>=}}2 {=<<}{{=<<}}2
+    %          {|}{{$\mid$}}1               
+    %          {dotdotdot}{{$\ldots$}}3
+  }
+
+
+  %\input{code.sty}
+
+  %%====================================================================================================
+
+
+  \makeatletter
+
+  \renewenvironment{thebibliography}[1]
+  {\section*{\refname
+    \@mkboth{\MakeUppercase\refname}{\MakeUppercase\refname}}%
+    \list{\@biblabel{\@arabic\c@enumiv}}%
+    {\settowidth\labelwidth{\@biblabel{#1}}%
+      \leftmargin\labelwidth
+      \advance\leftmargin\labelsep
+      \@openbib@code
+      \usecounter{enumiv}%
+      \let\p@enumiv\@empty
+    \renewcommand\theenumiv{\@arabic\c@enumiv}}%
+    \sloppy\clubpenalty4000\widowpenalty4000%
+  \sfcode`\.\@m}
+  {\def\@noitemerr
+    {\@latex@warning{Empty `thebibliography' environment}}%
+  \endlist}
+
+  \def\Box{{\ \vbox{\hrule\hbox{%                                            
+        \vrule height1.3ex\hskip0.8ex\vrule}\hrule
+  }}\par}
+
+  % \input{squeeze}
+
+
+
+  \if{0}
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  % A subfigure environment that can hold verbatim text %
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  \newbox\subfigbox % Create a box to hold the subfigure. 
+  \makeatletter 
+  \newenvironment{subfloat}% % Create the new environment. 
+  {\def\caption##1{\gdef\subcapsave{\relax##1}}% 
+    \let\subcapsave=\@empty % Save the subcaption text. 
+    \let\sf@oldlabel=\label 
+    \def\label##1{\xdef\sublabsave{\noexpand\label{##1}}}% 
+    \let\sublabsave\relax % Save the label key. 
+    \setbox\subfigbox\hbox 
+  \bgroup}% % Open the box... 
+  {\egroup % ... close the box and call \subfigure. 
+    \let\label=\sf@oldlabel 
+  \subfigure[\subcapsave]{\box\subfigbox}}% 
+  \makeatother 
+  \fi{}
+
+  %%====================================================================================================
+  %%   EXTRA DEFS FOR THIS PROPOSAL:
+
+
+  %% ============================================================
+
+  \newcommand{\nix}[1]{\textcolor{darkred}{#1}}
+  \newcommand{\fixme}[1]{{\bf\textcolor{darkred}{#1}}}
+
+  % % [2011.07.09] Hmm.  Having a problem with the code environment not being teletype.
+  % \newenvironment{mycode}
+  % {% This is the begin code
+  %   \noindent
+  %   \begin{code}\noindent\vspace{-1mm}
+  %   \footnotesize
+  % }
+  % %  \begin{code}\noindent}
+  % {% This is the end code
+  %   \end{code} 
+  % }
+
+  % \newenvironment{inlinecode}
+  % {
+  %   \begin{center}
+  %   \begin{minipage}{4in}
+  %   \begin{mycode}
+  % } 
+  % {
+  %   \end{mycode}
+  %   \end{minipage}
+  %   \end{center}
+  %   \vspace{-1.5ex}
+  % }
+
+
+  % \newcommand{\myhref}[2]{\href{#1}{\underline{#2}}}
+  \newcommand{\myhref}[2]{\href{#1}{\underbar{\smash{#2}}}}
+
+  %% ================================================================================
+
+  %% Proper nouns:
+
+  \newcommand{\ccilk}{Concurrent Cilk}
+  \newcommand{\eg}{\textit{e.g. }}
+  \newcommand{\ie}{\textit{i.e. }}
+
+
+  %% ================================================================================

@@ -1,0 +1,6 @@
+perfkeys: real
+files: revcomp-begin.dat
+graphkeys: revcomp-begin
+graphtitle: Reverse-complement Shootout Benchmark
+ylabel: Time (seconds)
+graphname: revcomp

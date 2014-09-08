@@ -1,9 +1,6 @@
-
 extern proc memcpy(a:[], b, len);
 
-var barrier : atomic int;
-
-proc string.toBytes() var {
+proc string.toBytes() {
    var b : [1..this.length] uint(8);
    memcpy(b, this, this.length);
    return b;
@@ -13,42 +10,53 @@ const pairs = "ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n".toBytes();
 var table : [1..128] uint(8);
 
 proc main() {
-  var info : string;
-  var temp : string;
+  param newLineChar = 0x0A;
+  param greaterThan = 0x3E;
+  var inFile = openfd(0); // stdin
+  const fileLen = inFile.length();
+  var data : [1..fileLen] uint(8);
+  var r = inFile.reader(locking=false);
 
-  // Major leaks
-  while stdin.readline(temp) do info += temp;
-
-  // temporary while we wait for string features that 
-  // would allow us to modify the string in place.
-  var data = info.toBytes();
-
-  forall i in 1..pairs.size by 2 {
+  // initialize complement table
+  for i in 1..pairs.size by 2 {
     table[pairs[i]] = pairs[i+1];      // uppercase
-    if pairs[i] != ascii("\n") then
+    if pairs[i] != newLineChar then
       table[pairs[i] + 32] = pairs[i+1]; // lowercase
   }
 
-  var end = data.size - 1;
+  var numRead  : int;
+  var idx = 1;
+  var start = 0;
 
-  while true {
-    var from = end;
-    while data[from] != ascii(">") do from -= 1;
+  // sync statements wait for all tasks inside them to complete
+  sync {
+    while r.readline(data, numRead, idx) {
 
-    begin process(data, from, end);
+      // Look for the start of a section, and if possible 
+      // spawn a task to start work on the previous section.
+      if data[idx] == greaterThan {
+        if start == 0 then start = idx;
+        else {
+          begin process(data, start, idx-2);
+          start = idx;
+        }
+      }
+      idx += numRead; 
+    }
 
-    end = from - 2;
-    if end <= 0 then break;
+    // work on the last section
+    process(data, start, idx-2);
   }
 
-  barrier.waitFor(3);
-
-  var f = openfd(1);
-  var binout = f.writer(iokind.native, locking=false);
+  // Open a binary writer to stdout
+  var binout = openfd(1).writer(iokind.native, locking=false, 
+                                hints=QIO_CH_ALWAYS_UNBUFFERED);
   binout.write(data);
 }
 
-proc process(ref data : [],in from : int, end : int) {
+proc process(ref data : [], in from : int, end : int) {
+
+  // Skip the header information
   while data[from] != 0xa do from += 1;
   from += 1;
 
@@ -65,11 +73,9 @@ proc process(ref data : [],in from : int, end : int) {
   }
 
   const middle = (end-from)/2;
-  for i in 0 .. middle do {
+  for i in 0 .. middle {
     const c = table[data[from+i]];
     data[from+i] = table[data[end-i]];
     data[end-i] = c;
   }
-
-  barrier.add(1);
 }

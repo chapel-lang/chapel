@@ -1,9 +1,0 @@
-bug: Destructor called too many times for a record var with explicit new.
-
-A record variable at module scope is initialized with an explicit new.  The
-user's default constructor is called, but the destructor is called twice.  This
-would be an error with a reference-counted type, since it could lead to
-double-deletion unless the reference counting implementation protects for this
-internally.
-
-

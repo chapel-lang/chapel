@@ -8,10 +8,10 @@ files: ft.W.dat
 graphkeys: runtime - W
 graphtitle: NAS Parallel Benchmarks: FT timings - size W
 
-perfkeys:  Time in seconds =
-files: ft.A.dat
-graphkeys: runtime - A
-graphtitle: NAS Parallel Benchmarks: FT timings - size A
+#perfkeys:  Time in seconds =
+#files: ft.A.dat
+#graphkeys: runtime - A
+#graphtitle: NAS Parallel Benchmarks: FT timings - size A
 
 #perfkeys:  Time in seconds =
 #files: ft.B.dat

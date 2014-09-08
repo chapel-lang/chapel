@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef _chpl_comm_compiler_macros_h_
 #define _chpl_comm_compiler_macros_h_
 
@@ -44,7 +63,7 @@ void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
 static ___always_inline
 void chpl_gen_comm_prefetch(c_nodeid_t node, void* raddr,
                             int32_t elemSize, int32_t typeIndex, int32_t len,
-                            int ln, chpl_string fn)
+                            int ln, c_string fn)
 {
   const int32_t MAX_BYTES_LOCAL_PREFETCH = 1024;
   int32_t offset;

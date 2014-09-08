@@ -1,0 +1,17 @@
+bug: Privatized class indices need a distinguished value to represent nil ...
+
+... and uninitialized privatized classes need to be initialized to a valid value.
+
+Following the introduction of calls to user default constructors, variables of
+_distribution type are default-initialized so their _value field (when
+privatized) is zero.  This is then treated as a privatized class index, so
+(apparently) multiple uninitialized variables of distribution type will all
+point to the same structure.
+
+The error manifests when assignment is used to update one of these.  The
+assignment operator (ChapelArray.chpl:1588) refuses to update the domain field
+in a distribution if it already has a length.
+
+This problem may also be present in the implementation of privatized domain
+classes.
+

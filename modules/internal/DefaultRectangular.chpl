@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 // DefaultRectangular.chpl
 //
 pragma "no use ChapelStandard"
@@ -138,7 +157,7 @@ module DefaultRectangular {
 
       if localeModelHasSublocales && numSublocs != 0 {
         
-        const dptpl = if tasksPerLocale==0 then here.numCores
+        const dptpl = if tasksPerLocale==0 then here.maxTaskPar
                       else tasksPerLocale;
         // Make sure we don't use more sublocales than the numbers of
         // tasksPerLocale requested
@@ -179,7 +198,7 @@ module DefaultRectangular {
               }
               // Divide the locale's tasks approximately evenly
               // among the sublocales
-              const numCoreTasks = dptpl/numChunks +
+              const numSublocTasks = dptpl/numChunks +
                 if chunk==numChunks-1 then dptpl%numChunks else 0;
               var locBlock: rank*range(idxType);
               for param i in 1..rank do
@@ -191,7 +210,7 @@ module DefaultRectangular {
                                             locBlock(parDim).low,
                                             locBlock(parDim).low);
               followMe(parDim) = lo..hi;
-              const (numChunks2, parDim2) = _computeChunkStuff(numCoreTasks,
+              const (numChunks2, parDim2) = _computeChunkStuff(numSublocTasks,
                                                                ignoreRunning,
                                                                minIndicesPerTask,
                                                                followMe);
@@ -219,7 +238,7 @@ module DefaultRectangular {
 
         if debugDefaultDist then
           writeln("*** In domain/array leader code:"); // this = ", this);
-        const numTasks = if tasksPerLocale==0 then here.numCores
+        const numTasks = if tasksPerLocale==0 then here.maxTaskPar
                          else tasksPerLocale;
   
         if debugDefaultDist then

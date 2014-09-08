@@ -1,0 +1,2 @@
+ref-sync-2.chpl:5: error: unresolved call 'MYPROC(_syncvar(int(64)))'
+ref-sync-2.chpl:8: note: candidates are: MYPROC(ref FORMAL: int)

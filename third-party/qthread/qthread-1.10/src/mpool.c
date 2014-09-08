@@ -134,6 +134,14 @@ qt_mpool INTERNAL qt_mpool_create_aligned(size_t item_size,
     qt_mpool pool = (qt_mpool)MALLOC(sizeof(struct qt_mpool_s));
 
     size_t alloc_size = 0;
+    /* Allow a user to specify a max_alloc_size. If no limit was specified
+     * default to SIZE_MAX. Note that max_alloc_size will be bumped to at least
+     * item_size * 2 after item_size has been adjusted for alignment, so that
+     * at least two items can be allocated. */
+    static size_t max_alloc_size = 0;
+    if (max_alloc_size == 0 ) {
+        max_alloc_size = qt_internal_get_env_num("MAX_POOL_ALLOC_SIZE", SIZE_MAX, 0);
+    }
 
     qthread_debug(MPOOL_CALLS, "item_size:%u alignment:%u\n", (unsigned)item_size, (unsigned)alignment);
     qassert_ret((pool != NULL), NULL);
@@ -152,10 +160,14 @@ qt_mpool INTERNAL qt_mpool_create_aligned(size_t item_size,
     if (item_size % alignment) {
         item_size += alignment - (item_size % alignment);
     }
+    if (item_size * 2 >= max_alloc_size) {
+        max_alloc_size = item_size * 2;
+    }
+
     pool->item_size = item_size;
     pool->alignment = alignment;
     /* next, we find the least-common-multiple in sizes between item_size and
-     * pagesize. If this is less than ten items (an arbitrary number), we
+     * pagesize. If this is less than 128 items (an arbitrary number), we
      * increase the alloc_size until it is at least that big. This guarantees
      * that the allocation size will be a multiple of pagesize (fast!
      * efficient!). */
@@ -167,7 +179,7 @@ qt_mpool INTERNAL qt_mpool_create_aligned(size_t item_size,
             alloc_size = pagesize;
         }
     } else {
-        while (alloc_size / item_size < 128) {
+        while ((alloc_size / item_size < 128) && (alloc_size <= max_alloc_size / 2)) {
             alloc_size *= 2;
         }
         while (alloc_size < pagesize * 16) {

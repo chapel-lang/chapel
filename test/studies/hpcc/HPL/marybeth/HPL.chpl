@@ -111,7 +111,7 @@ proc testSolution(A: [?ADom], x: [?xDom], in eps: real,
   norms = (errNorm, ANormInf, ANorm1, xNormInf, xNorm1);
 }
 
-proc errorResults(ofile, TEST, resid: 3*real, norms: 5*real) {
+proc errorResults(ofile, in TEST, resid: 3*real, norms: 5*real) {
  
   var thresh = TEST.Thresh;
   if (max((...resid)) < thresh) 

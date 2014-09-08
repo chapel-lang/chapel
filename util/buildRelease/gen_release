@@ -87,14 +87,12 @@ system("cd $tmpdir && svn export -q $svnroot $reldir");
     "util/chplenv",
     "util/config",
     "util/docs",
+    "util/quickstart",
     "util/test"
 );
 
 
 chdir "$rootdir";
-
-print "Tagging the files with copyright messages...\n";
-system("make -f make/Makefile.release");
 
 print "Generating the bison/flex files...\n";
 system("cd compiler/parser && make lex.yy.cpp > /dev/null");

@@ -173,7 +173,7 @@ proc DimensionalDist.DimensionalDist(
   dataParMinGranularity: int      = getDataParMinGranularity()
 ) {
   this.name = name;
-  this.dataParTasksPerLocale = if dataParTasksPerLocale==0 then here.numCores
+  this.dataParTasksPerLocale = if dataParTasksPerLocale==0 then here.maxTaskPar
                                else dataParTasksPerLocale;
   this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;
   this.dataParMinGranularity = dataParMinGranularity;

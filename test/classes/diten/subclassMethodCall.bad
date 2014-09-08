@@ -1,0 +1,3 @@
+subclassMethodCall.chpl:17: In function 'method':
+subclassMethodCall.chpl:18: error: unresolved call 'C2.foo()'
+subclassMethodCall.chpl:9: note: candidates are: C1.foo()

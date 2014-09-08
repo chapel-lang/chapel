@@ -6,11 +6,11 @@
 
 //
 // Specify the number of tasks to create via a config const.  By
-// default, we use the number of processor cores on the current
-// locale ('here').  This default can be overridden on the executable
-// command line (e.g., using --numTasks=3).
+// default, we use the tasking layer's estimate of maximum parallelism
+// on the current locale ('here').  This default can be overridden on
+// the executable command line (e.g., using --numTasks=3).
 //
-config const numTasks = here.numCores;
+config const numTasks = here.maxTaskPar;
 
 
 //

@@ -96,28 +96,28 @@ proc plotToFile(NumSteps: [?Dom], outfile) {
   select (imgType) {
     when imageType.bw {
       for i in Dom.dim(1) {
-	for j in Dom.dim(2) {
-	  outfile.write(if NumSteps[i,j] then 0 else 1, " ");
-	}
-	outfile.writeln();
+        for j in Dom.dim(2) {
+          outfile.write(if NumSteps[i,j] then 0 else 1, " ");
+        }
+        outfile.writeln();
       }
     }
 
     when imageType.grey {
       for i in Dom.dim(1) {
-	for j in Dom.dim(2) {
-	  outfile.write((maxColor*NumSteps[i,j])/maxSteps, " ");
-	}
-	outfile.writeln();
+        for j in Dom.dim(2) {
+          outfile.write((maxColor*NumSteps[i,j])/maxSteps, " ");
+        }
+        outfile.writeln();
       }
     }
 
     when imageType.color {
       for i in Dom.dim(1) {
-	for j in Dom.dim(2) {
-	  outfile.write((maxColor*NumSteps[i,j])/maxSteps, " ", 0, " ", 0, " ");
-	}
-	outfile.writeln();
+        for j in Dom.dim(2) {
+          outfile.write((maxColor*NumSteps[i,j])/maxSteps, " ", 0, " ", 0, " ");
+        }
+        outfile.writeln();
       }
     }
   }

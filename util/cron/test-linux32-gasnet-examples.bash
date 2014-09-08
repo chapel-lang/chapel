@@ -4,4 +4,5 @@
 
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common-gasnet.bash
+
 $CWD/nightly -cron -examples

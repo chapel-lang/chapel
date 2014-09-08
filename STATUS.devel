@@ -48,9 +48,7 @@ General (see also portability section at the bottom of this file)
   ask us for help with interpreting the message.
   # compflags/bradc/badConfigParamOverride.future
   # sparse/bradc/accumInds-forexpr.future
-  # functions/vass/resolution/need-missing-return-error-1.future
   # functions/vass/resolution/need-missing-return-error-2.future
-  # users/ferguson/recordassignstring.future
 - Compiler and runtime and errors may report incorrect line numbers,
   may not be formatted correctly, or may be garbled.  If needed,
   please ask us for help finding the line in question.
@@ -103,9 +101,6 @@ Types, Params, Variables, and Consts
 - The default value for the locale type is incorrect.
   # types/locale/bradc/defaultLocaleVal.future
   # multilocale/sungeun/locale_default.future
-- Types declared within a param conditional block may result in an
-  internal compiler error.
-  # trivial/sungeun/config_param.future
 - Type inferred for a variable initialized to 'nil' is not 'object'
   # classes/deitz/test_infer_nil.future
 - Multiple configuration parameters with different types declared in a
@@ -124,7 +119,6 @@ Types, Params, Variables, and Consts
   # domains/bradc/modDomQuery.future
   # domains/bradc/assignConstDom.future
   # classes/bradc/arrayInClass/arrayDomInClassRecord-illegal.future
-  # nostdlib/recordpass6-illegal.future
   # statements/bradc/loops/modifyIndices.future
   # types/records/const-checking/todo-multiple-asgn-errors.future
 
@@ -193,7 +187,6 @@ Modules
 Functions and Iterators
 -----------------------
 - Invalid where clauses may result in an internal compiler error.
-  # functions/vass/where-clause-bug-1.future
   # functions/bradc/resolution/uintParamInWhere.future
 - Querying the type of a function is not supported and currently
   returns an internal type.
@@ -254,7 +247,6 @@ Functions and Iterators
   # functions/vass/closure-outlives-captured-vars.future
 - Recursive iterators may not work correctly.
   # functions/iterators/vass/recursive-iterator-in-expr-context.future
-  # functions/iterators/claridge/recursiveIterTypeBug.future
 - Iterators in records cannot change fields in that record.
   # functions/deitz/iterators/test_record_iterator.future
 - The implicit 'setter' argument does not work in var iterators.
@@ -269,14 +261,9 @@ Functions and Iterators
 
 Strings
 -------
-- Fixed length strings are not implemented.
-  # trivial/jturner/fixedStringEquals.future
 - String assignment across locales is by reference rather than value.
   # distributions/bradc/block1Dlocale.future
   # multilocale/diten/needMultiLocales/remoteString3.future
-- Extern functions that use strings may not function properly for
-  multilocale execution.
-  # users/ferguson/extern_string_test2.future
 
 
 Tuples
@@ -378,7 +365,6 @@ Classes, Records, and Unions
   # classes/vass/generic-method-with-param-arg-1.future
   # classes/vass/generic-method-with-param-arg-2.future
   # classes/vass/generic-method-with-param-arg-3.future
-  # classes/vass/generic-method-with-param-arg-4.future
 - Function resolution may be overly conservative for methods of subclasses.
   # classes/bradc/compilerErrorInMethod/testClear.future
 - User-defined constructors and destructors are not robust.
@@ -386,12 +372,6 @@ Classes, Records, and Unions
   # classes/bradc/initialize-secondary.future
   # classes/vass/nested-class-with-user-defined-constructor-1.future
   # classes/constructors/base-class-generic-args.future
-  # types/records/hilde/newUserDefCtorInFn.future
-  # types/records/hilde/newUserDefaultCtor.future
-  # users/hilde/refcnt.future
-- User-defined constructors do not override the default constructor.
-  # classes/claridge/baseConstructorCall.future
-  # types/records/hilde/callUserDefaultConstructor.future
 - User-defined copy constructors are not supported.
   # classes/diten/test_destructor3.future
 - Declaring class members using type aliases may result in unresolved
@@ -400,8 +380,6 @@ Classes, Records, and Unions
   # classes/diten/type_order_problem.future
   # types/records/bharshbarger/nestedRecordInClass2.future
 - Cannot call 'new' on type aliases for classes and records
-  # types/typedefs/bradc/newTypedef.future
-  # types/typedefs/lydia/def-new-on-type-alias.future
   # types/typedefs/tzakian/classConstructorsFromTypes.future
 - Iterator methods may not obey dynamic dispatch.
   # trivial/jturner/iter_overload_simple.future
@@ -429,10 +407,6 @@ Classes, Records, and Unions
   # types/records/vass/method-of-parent-record-1.future
 - Nested record inheritance results in a compilation error.
   # types/records/vass/nested-record-with-outer-1.future
-- A record declared in a class results in a failure to resolve the
-  record's copy constructor.
-  # classes/bradc/innerGeneric/innerRecord.future
-  # types/records/bharshbarger/nestedRecordInClass1.future
 - Unused records defined in procedures result in an internal compiler error.
   # types/records/vass/unused-decl-in-proc-1.future
   # types/records/vass/unused-decl-in-proc-2.future
@@ -585,9 +559,6 @@ Data Parallelism
   # domains/vass/aligned-domain-forall.future
   # arrays/vass/slice-align-bug-1.future
 - Arrays and domains of different ranks can be zippered serially.
-- Promoting a function over an array returned by a var function fails
-  to compile.
-  # functions/diten/test_promote_var_fn.future
 - Reductions and scans of arrays of arrays may result in errors.
   # arrays/sungeun/array_of_arrays/bxor_reduce.future
   # arrays/sungeun/array_of_arrays/max_reduce.future
@@ -681,9 +652,6 @@ Miscellaneous
 #  b/c the future is terse, and I have no idea what is wrong
 # OMITTED: memory/shannon/memstatEquals.future
 #  b/c it's pretty benign and probably will not cause a problem
-- Extern functions declared in a class result in an internal error
-  (should be an error message).
-  # extern/sungeun/externProcInClassShouldBeError.future
 - Nil extern class references not properly handled.
   # users/ferguson/extern_class_test.future
 - Boolean literals do not preserve their sizes.
@@ -740,7 +708,6 @@ Performance
   # multilocale/lydia/checkNumTasks.future
 - Mechanisms for program tear-down can be better optimized.
   # parallel/taskPar/sungeun/endCountTest.future
-  # parallel/taskPar/sungeun/taskCount.future
 
 
 Developer

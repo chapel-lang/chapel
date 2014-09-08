@@ -331,7 +331,7 @@ module SSCA2_kernels
 
         var barrier = new Barrier();
 
-        coforall loc in Locales ref(remaining,barrier) do on loc {
+        coforall loc in Locales with (ref remaining, ref barrier) do on loc {
           Active_Level[here.id].Members.clear();
           Active_Level[here.id].next.Members.clear();
           if vertex_domain.dist.idxToLocale(s) == here {

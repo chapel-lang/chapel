@@ -16,7 +16,7 @@ proc doit(a:locale, b:locale, c:locale)
     on b {
       x = 64;
       y = 22;
-      cobegin ref(x,y) {
+      cobegin with (ref x, ref y) {
         { assert(x == 64); x = 99; assert(x == 99); }
         { assert(y == 22); y = 124; assert(y==124); }
       }

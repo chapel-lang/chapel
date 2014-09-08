@@ -1,8 +1,0 @@
-bug: Destructor called twice for record var with explicit new.
-
-A record variable at function scope is initialized with an explicit new.  The
-user's default constructor is called, but the destructor is called twice.
-Protecting against negative reference counts will not help in this case.  It is
-just plain wrong.
-
-
