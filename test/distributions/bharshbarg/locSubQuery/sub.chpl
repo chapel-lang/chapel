@@ -16,9 +16,6 @@ test(C);
 const BC = Space dmapped BlockCyclic(startIdx = Space.low, blocksize = (2,2));
 test(BC);
 
-const R = Space dmapped ReplicatedDist();
-test(R);
-
 proc test(Dist) {
   const Data : [Dist] int;
 
