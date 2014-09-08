@@ -1058,7 +1058,7 @@ void _qio_file_destroy(qio_file_t* f)
 }
 
 /* Creates a directory with the given name and settings if possible,
-   returning a qioerr if not. If parents == 0, then the callee wishes
+   returning a qioerr if not. If parents != 0, then the callee wishes
    to create all interim directories necessary as well. */
 qioerr qio_mkdir(const char* name, int mode, int parents) {
   qioerr err = 0;
