@@ -1,0 +1,5 @@
+unimplemented feature: References cannot be members of classes or records
+
+Once we have some sort of syntax analogous to initializer lists we should
+look at what is needed to make reference members work correctly in classes
+and records.
