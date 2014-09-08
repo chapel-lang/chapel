@@ -149,10 +149,10 @@ inline proc _defaultOf(type t) param where (_isIntegralType(t)) return 0:t;
 // the cases into their default size and a non-param case.  It is hoped that
 // in the future, floating point numbers may be castable whilst param.  In that
 // world, we can again shrink these calls into the size-ignorant case.
-inline proc _defaultOf(type t) param where t == real(64) return 0.0:t;
-inline proc _defaultOf(type t) where (_isRealType(t) && t != real(64)) return 0.0:t;
-inline proc _defaultOf(type t) param where t == imag(64) return 0.0i:t;
-inline proc _defaultOf(type t) where (_isImagType(t) && t != imag(64)) return 0.0i:t;
+inline proc _defaultOf(type t) param where t == real return 0.0;
+inline proc _defaultOf(type t) where (_isRealType(t) && t != real) return 0.0:t;
+inline proc _defaultOf(type t) param where t == imag return 0.0i;
+inline proc _defaultOf(type t) where (_isImagType(t) && t != imag) return 0.0i:t;
 // Also, complexes cannot yet be parametized
 inline proc _defaultOf(type t): t where (_isComplexType(t)) {
   var ret:t = noinit;

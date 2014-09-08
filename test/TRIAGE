@@ -30,6 +30,18 @@
 New problems
 ============
 
+[Error: Timed out executing program studies/shootout/binary-trees/binary-trees_iter (execopts: 2)]
+--------------------------------------------------------------------------------------------------
+(2014/09/08)
+  Appears to be a simple timeout.  The test ran successfully in the 19 runs immediately 
+  preceding the timeout.  Increase the timeout time?
+
+> timedexec: target program died with signal 11, without coredump
+[Error matching program output for parallel/begin/deitz/test_string_cat] (unassigned)
+------------------------------------------------------------------------
+linux64.gnu.none.qthreads.flat.tcmalloc-npt (baseline) (2014/09/08)
+  [not investigated]
+
 failures retrieving and storing perf data, started 7/19/14
 ----------------------------------------------------------
 We are getting these messages, seemingly for all testing (not just perf):
