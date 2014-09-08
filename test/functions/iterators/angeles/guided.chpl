@@ -7,7 +7,7 @@
 // Contributed by Angeles Navarro 
 use AdvancedIters;
 extern proc usleep(val:uint);
-config const nTasks:int=4; //here.numCores;
+config const nTasks:int=4; //here.numCores; should be here.maxTaskPar?
 writeln("Working with ", nTasks, " Threads");
 
 // Adding timing

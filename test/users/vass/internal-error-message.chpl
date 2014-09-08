@@ -355,6 +355,7 @@ module cholesky_scalar_algorithms {
     writeln ("Parallel Environment");
     writeln ("   Number of Locales         : ", numLocales );
     writeln ("   Number of cores per locale: ", Locales.numCores );
+    writeln ("   Max tasking parallelism   : ", Locales.maxTaskPar );
  
 
     // ---------------------------------------------------------------

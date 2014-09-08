@@ -128,8 +128,6 @@ int string_index_of(c_string haystack, c_string needle) {
 
 // It is up to the caller to make sure low and high are within the string
 // bounds and that stride is not 0.
-// FIXME: This can't return a statically allocated empty string once strings
-// are garbage collected.
 c_string
 string_select(c_string x, int low, int high, int stride, int32_t lineno, c_string filename) {
   char* result = NULL;
@@ -165,8 +163,6 @@ string_select(c_string x, int low, int high, int stride, int32_t lineno, c_strin
 
 // Returns a string containing the character at the given index of the input
 // string, or an empty string if the index is out of bounds.
-// FIXME: This can't return a statically allocated empty string once strings
-// are garbage collected.
 c_string
 string_index(c_string x, int i, int32_t lineno, c_string filename) {
   char* buffer;
