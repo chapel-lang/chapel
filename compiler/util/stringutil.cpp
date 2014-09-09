@@ -172,8 +172,9 @@ uint64_t octStr2uint64(const char* str) {
   if (len < 3 || str[0] != '0' || (str[1] != 'o' && str[1] != 'O')) {
     INT_FATAL("Illegal string passed to octStrToUint64()");
   }
-  uint64_t val = strtoll(str+2, NULL, 8);
-  // Strtol converts the string to a number with base provided, in this case 8
+  uint64_t val = strtoul(str+2, NULL, 8);
+  // strtoul() converts the string to a number with base provided, in this
+  // case 8
   return val;
 }
 
