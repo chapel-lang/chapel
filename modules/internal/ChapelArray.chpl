@@ -1762,7 +1762,9 @@ module ChapelArray {
        val: the value to count
      */
     proc count(val: this.eltType): int {
-      return + reduce (this == val);
+      var total: int = 0;
+      for i in this do if i == val then total += 1;
+      return total;
     }
   }  // record _array
   
