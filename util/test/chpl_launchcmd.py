@@ -2,10 +2,9 @@
 
 """Run Chapel test (execution only) inside pbs batch job using qsub.
 
-The job name is set from the environment variable CHPL_PBS_NAME_PREFIX
-(defaulting to Chpl) and the name of the program being executing. For
-example, running launchcmd-for-aprun-launcher ./hello would use the name
-Chpl-hello.
+The job name is set from the environment variable CHPL_LAUNCHCMD_NAME_PREFIX
+(defaulting to Chpl) and the name of the program being executing. For example,
+running `chpl_launchcmd.py ./hello` would use the name Chpl-hello.
 
 The high level overview of what this does:
 
@@ -46,19 +45,32 @@ __all__ = ('main')
 
 def main():
     """Run the program!"""
-    job = AbstractPbsJob.init_from_environment()
-    print(job.launch_qsub(), end='')
+    job = AbstractJob.init_from_environment()
+    print(job.run(), end='')
 
 
-class AbstractPbsJob(object):
+class AbstractJob(object):
     """Abstract job runner implementation."""
 
-    # NOTE: These class attributes are intentionally left commented. They will
-    #       cause AttributeError if they are accessed from this class. They
-    #       *should only* be accessed from a sub class.
-    #hostlist_resource = None
-    #num_nodes_resource = None
-    #num_cpus_resource = None
+    # These class attributes should always be None on the AbstractJob
+    # class. They *should only* be defined on and accessed from a sub class.
+
+    # submit_bin is the program used to submit jobs (i.e. qsub).
+    submit_bin = None
+
+    # status_bin is the program used to query the status of jobs (i.e. qstat,
+    # squeue)
+    status_bin = None
+
+    # argument name to use when specifying specific nodes (i.e. hostlist,
+    # mppnodes)
+    hostlist_resource = None
+
+    # argument name for specifying number of nodes (i.e. nodes, mppwidth)
+    num_nodes_resource = None
+
+    # argument name for specifying number of cpus (i.e. mppdepth)
+    num_cpus_resource = None
 
     def __init__(self, test_command, reservation_args):
         """Initialize new job runner.
@@ -128,61 +140,64 @@ class AbstractPbsJob(object):
 
     @property
     def job_name(self):
-        """Returns job name string from test command and CHPL_PBS_NAME_PREFIX env var.
+        """Returns job name string from test command and CHPL_LAUNCHCMD_NAME_PREFIX
+        env var.
 
         :rtype: str
-        :returns: pbs job name
+        :returns: job name
         """
-        prefix = os.environ.get('CHPL_PBS_NAME_PREFIX', 'Chpl')
+        prefix = os.environ.get('CHPL_LAUNCHCMD_NAME_PREFIX', 'Chpl')
         logging.debug('Job name prefix is: {0}'.format(prefix))
 
         cmd_basename = os.path.basename(self.test_command[0])
         logging.debug('Test command basname: {0}'.format(cmd_basename))
 
         job_name = '{0}-{1}'.format(prefix, cmd_basename)
-        logging.info('PBS job name is: {0}'.format(job_name))
+        logging.info('Job name is: {0}'.format(job_name))
         return job_name
 
-    def launch_qsub(self):
-        """Run qsub batch job in subprocess and wait for job to complete. When
-        finished, returns output as string.
+    def run(self):
+        """Run batch job in subprocess and wait for job to complete. When finished,
+        returns output as string.
 
         :rtype: str
         :returns: stdout/stderr from job
+
         """
         with _temp_dir() as working_dir:
             output_file = os.path.join(working_dir, 'test_output.log')
             testing_dir = os.getcwd()
 
             logging.info(
-                'Starting qsub job "{0}" on {1} nodes with walltime {2} '
-                'and output file: {3}'.format(
-                    self.job_name, self.num_locales, self.walltime, output_file))
+                'Starting {0} job "{1}" on {2} nodes with walltime {3} '
+                'and output file: {4}'.format(
+                    self.submit_bin, self.job_name, self.num_locales,
+                    self.walltime, output_file))
 
             # TODO: create self._qsub_command property. (thomasvandoren, 2014-07-23)
-            qsub_command = ['qsub', '-V', '-N', self.job_name, '-j', 'oe',
+            submit_command = [self.submit_bin, '-V', '-N', self.job_name, '-j', 'oe',
                             '-o', output_file]
             if self.num_locales >= 0:
-                qsub_command.append('-l')
-                qsub_command.append('{0}={1}'.format(
+                submit_command.append('-l')
+                submit_command.append('{0}={1}'.format(
                     self.num_nodes_resource, self.num_locales))
             if self.walltime is not None:
-                qsub_command.append('-l')
-                qsub_command.append('walltime={0}'.format(self.walltime))
+                submit_command.append('-l')
+                submit_command.append('walltime={0}'.format(self.walltime))
             if self.hostlist is not None:
-                qsub_command.append('-l')
-                qsub_command.append('{0}={1}'.format(
+                submit_command.append('-l')
+                submit_command.append('{0}={1}'.format(
                     self.hostlist_resource, self.hostlist))
             if self.num_cpus_resource is not None:
-                qsub_command.append('-l')
-                qsub_command.append('{0}={1}'.format(
+                submit_command.append('-l')
+                submit_command.append('{0}={1}'.format(
                     self.num_cpus_resource, self.num_cpus))
 
-            logging.debug('qsub command to run: {0}'.format(qsub_command))
+            logging.debug('submit command to run: {0}'.format(submit_command))
 
-            logging.debug('Opening qsub subprocess.')
-            qsub_proc = subprocess.Popen(
-                qsub_command,
+            logging.debug('Opening {0} subprocess.'.format(self.submit_bin))
+            submit_proc = subprocess.Popen(
+                submit_command,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
@@ -191,15 +206,15 @@ class AbstractPbsJob(object):
             )
 
             test_command_str = ' '.join(self.full_test_command)
-            logging.debug('Communicating with qsub subprocess. Sending test command on stdin: {0}'.format(
-                test_command_str))
-            stdout, stderr = qsub_proc.communicate(input=test_command_str)
-            logging.debug('qsub process returned with status {0}, stdout: {1} stderr: {2}'.format(
-                qsub_proc.returncode, stdout, stderr))
+            logging.debug('Communicating with {0} subprocess. Sending test command on stdin: {1}'.format(
+                self.submit_bin, test_command_str))
+            stdout, stderr = submit_proc.communicate(input=test_command_str)
+            logging.debug('{0} process returned with status {1}, stdout: {2} stderr: {3}'.format(
+                self.submit_bin, submit_proc.returncode, stdout, stderr))
 
-            if qsub_proc.returncode != 0:
-                msg = 'qsub failed with exit code {0} and output: {1}'.format(
-                    qsub_proc.returncode, stdout)
+            if submit_proc.returncode != 0:
+                msg = '{0} failed with exit code {1} and output: {2}'.format(
+                    self.submit_bin, submit_proc.returncode, stdout)
                 logging.error(msg)
                 raise ValueError(msg)
 
@@ -228,15 +243,15 @@ class AbstractPbsJob(object):
             def is_done(job_id, output_file):
                 """Returns True when one of two events occur:
 
-                 1) _qstat(job_id) returns 'C' indicating the job is complete.
+                 1) status(job_id) returns 'C' indicating the job is complete.
 
-                 2) _qstat(job_id) raises a ValueError, which can indicate that the
+                 2) status(job_id) raises a ValueError, which can indicate that the
                     job has completed *and* been dequeued, AND the output file
                     exists. If the output file exists and the job has been
                     dequeued, it is safe to assume it completed.
                 """
                 try:
-                    job_status = self.qstat(job_id)
+                    job_status = self.status(job_id)
                     return job_status == 'C'
                 except ValueError as ex:
                     # ValueError may indicate that the job completed and was
@@ -249,12 +264,13 @@ class AbstractPbsJob(object):
 
             while not is_done(job_id, output_file):
                 time.sleep(1.0)
-            logging.debug('qstat reports job {0} as complete.'.format(job_id))
+            logging.debug('{0} reports job {1} as complete.'.format(
+                self.status_bin, job_id))
 
             if not os.path.exists(output_file):
-                logging.error('Output file from pbs job does not exist at: {0}'.format(
+                logging.error('Output file from job does not exist at: {0}'.format(
                     output_file))
-                raise ValueError('[Error: output file from pbs job (id: {0}) does not exist at: {1}]'.format(
+                raise ValueError('[Error: output file from job (id: {0}) does not exist at: {1}]'.format(
                     job_id, output_file))
 
             logging.debug('Reading output file.')
@@ -302,8 +318,8 @@ class AbstractPbsJob(object):
         """Factory to initialize new job runner instance based on version of
         pbs available and command line arguments.
 
-        :rtype: AbstractPbsJob
-        :returns: subclass of AbstractPbsJob based on environment
+        :rtype: AbstractJob
+        :returns: subclass of AbstractJob based on environment
         """
         args, unparsed_args = cls._parse_args()
         cls._setup_logging(args.verbose)
@@ -322,8 +338,8 @@ class AbstractPbsJob(object):
         return qsub_flavor(test_command, args)
 
     @classmethod
-    def qstat(cls, job_id):
-        """Query job stat using qstat. AbstractJob does not implement this
+    def status(cls, job_id):
+        """Query job stat using ``status_bin``. AbstractJob does not implement this
         method. It is the responsibility of the sub class.
 
         :type job_id: str
@@ -332,7 +348,7 @@ class AbstractPbsJob(object):
         :rtype: str
         :returns: qsub job status
         """
-        raise NotImplementedError('qstat class method is implemented by sub classes.')
+        raise NotImplementedError('status class method is implemented by sub classes.')
 
     @classmethod
     def _cli_walltime(cls, walltime_str):
@@ -390,7 +406,6 @@ class AbstractPbsJob(object):
 
         :rtype: list
         :returns: command to be tested in qsub
-
         """
         logging.debug('Rebuilding test command from parsed args: {0} and '
                       'unparsed args: {1}'.format(args, unparsed_args))
@@ -420,13 +435,14 @@ class AbstractPbsJob(object):
                             help='Timeout as walltime for qsub.')
         parser.add_argument('--hostlist',
                             help=('Optional hostlist specification for reserving '
-                                  'specific nodes. Can also be set with env var CHPL_PBS_HOSTLIST'))
+                                  'specific nodes. Can also be set with env var '
+                                  'CHPL_LAUNCHCMD_HOSTLIST'))
 
         args, unparsed_args = parser.parse_known_args()
 
-        # Allow hostlist to be set in environment variable CHPL_PBS_HOSTLIST.
+        # Allow hostlist to be set in environment variable CHPL_LAUNCHCMD_HOSTLIST.
         if args.hostlist is None:
-            args.hostlist = os.environ.get('CHPL_PBS_HOSTLIST')
+            args.hostlist = os.environ.get('CHPL_LAUNCHCMD_HOSTLIST')
 
         # It is bad form to use a two character argument with only a single
         # dash. Unfortunately, we support it. And unfortunately, python argparse
@@ -503,15 +519,17 @@ class AbstractPbsJob(object):
         logging.debug('Verbose logging enabled.')
 
 
-class MoabJob(AbstractPbsJob):
+class MoabJob(AbstractJob):
     """Moab implementation of pbs job runner."""
 
+    submit_bin = 'qsub'
+    status_bin = 'qstat'
     hostlist_resource = 'hostlist'
     num_nodes_resource = 'nodes'
     num_cpus_resource = None
 
     @classmethod
-    def qstat(cls, job_id):
+    def status(cls, job_id):
         """Query job status using qstat.
 
         :type job_id: str
@@ -534,9 +552,11 @@ class MoabJob(AbstractPbsJob):
             raise
 
 
-class PbsProJob(AbstractPbsJob):
+class PbsProJob(AbstractJob):
     """PBSPro implementation of pbs job runner."""
 
+    submit_bin = 'qsub'
+    status_bin = 'qstat'
     hostlist_resource = 'mppnodes'
     num_nodes_resource = 'mppwidth'
 
@@ -561,7 +581,7 @@ class PbsProJob(AbstractPbsJob):
         return job_name
 
     @classmethod
-    def qstat(cls, job_id):
+    def status(cls, job_id):
         """Query job status using qstat.
 
         Assumes ``qstat <job_id>`` output is of the form:
