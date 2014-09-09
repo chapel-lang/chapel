@@ -286,6 +286,7 @@ extern proc qio_chdir(name: c_string):syserr;
 extern proc qio_cwd(ref working_dir:c_string):syserr;
 extern proc qio_file_rename(oldname: c_string, newname: c_string):syserr;
 extern proc qio_file_remove(name: c_string):syserr;
+extern proc qio_is_dir(ref result:c_int, name: c_string):syserr;
 extern proc qio_mkdir(name: c_string, mode: int, parents: bool):syserr;
 
 pragma "no prototype" // FIXME
@@ -716,6 +717,27 @@ proc file.length():int(64) {
   }
   if err then ioerror(err, "in file.length()");
   return len;
+}
+
+/* Returns true if the name corresponds to a directory, false otherwise.
+   err: a syserr used to indicate if an error occurred
+   name: a string that could be the name of a directory.
+*/
+proc isDir(out err:syserr, name:string):bool {
+  var ret:c_int;
+  err = qio_is_dir(ret, name.c_str());
+  return ret == 1;
+}
+
+/* Returns true if the name corresponds to a directory, false otherwise.
+   Generates an error if one occurrs.
+   name: a string that could be the name of a directory.
+*/
+proc isDir(name:string):bool {
+  var err:syserr;
+  var ret = isDir(err, name);
+  if err then ioerror(err, "in isDir", name);
+  return ret;
 }
 
 /* These are constant values of the form S_I[R | W | X][USR | GRP | OTH],

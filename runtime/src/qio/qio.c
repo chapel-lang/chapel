@@ -1057,6 +1057,15 @@ void _qio_file_destroy(qio_file_t* f)
   qio_free(f);
 }
 
+qioerr qio_is_dir(int* ret, const char* name) {
+  struct stat buf;
+  int exitStatus = stat(name, &buf);
+  if (exitStatus)
+    return qio_mkerror_errno();
+  *ret = (buf.st_mode&S_IFDIR) != 0;
+  return 0;
+}
+
 /* Creates a directory with the given name and settings if possible,
    returning a qioerr if not. If parents != 0, then the callee wishes
    to create all interim directories necessary as well. */
