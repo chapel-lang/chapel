@@ -1402,11 +1402,6 @@ module ChapelArray {
           halt("array slice out of bounds in dimension ", i, ": ", args(i));
     }
 
-    inline proc assertSingleArrayDomain(fnName : string) {
-      if this.domain._value._arrs.length != 1 then
-        halt("Cannot call ", fnName, " on an array defined over a domain with multiple arrays");
-    }
-  
     // Special cases of local slices for DefaultRectangularArrs because
     // we can't take an alias of the ddata class within that class
     proc localSlice(r: range(?)... rank) where _value.type: DefaultRectangularArr {
@@ -1561,7 +1556,7 @@ module ChapelArray {
              !this._value.stridable;
     }
 
-    proc chpl__assertSingleArrayDomain(fnName: string) {
+    inline proc chpl__assertSingleArrayDomain(fnName: string) {
       if this.domain._value._arrs.length != 1 then
         halt("cannot call " + fnName +
              " on an array defined over a domain with multiple arrays");
@@ -1816,7 +1811,7 @@ module ChapelArray {
   }
 
   proc +=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
-    a.assertSingleArrayDomain("+=");
+    a.chpl__assertSingleArrayDomain("+=");
     a |= b;
   }
 
@@ -1831,7 +1826,7 @@ module ChapelArray {
   }
 
   proc |=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
-    a.assertSingleArrayDomain("|=");
+    a.chpl__assertSingleArrayDomain("|=");
     serial !a.domain._value.parSafe do forall (k,v) in zip(b.domain, b) do a[k] = v;
   }
 
@@ -1846,7 +1841,7 @@ module ChapelArray {
   }
 
   proc &=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
-    a.assertSingleArrayDomain("&=");
+    a.chpl__assertSingleArrayDomain("&=");
     serial !a.domain._value.parSafe do
       forall k in a.domain do
         if !b.domain.member(k) then a.domain.remove(k);
@@ -1864,7 +1859,7 @@ module ChapelArray {
   }
 
   proc -=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
-    a.assertSingleArrayDomain("-=");
+    a.chpl__assertSingleArrayDomain("-=");
     serial !a.domain._value.parSafe do
       forall k in a.domain do
         if b.domain.member(k) then a.domain.remove(k);
@@ -1886,7 +1881,7 @@ module ChapelArray {
   }
 
   proc ^=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
-    a.assertSingleArrayDomain("^=");
+    a.chpl__assertSingleArrayDomain("^=");
     serial !a.domain._value.parSafe do
       forall k in b.domain do
         if a.domain.member(k) then a.domain.remove(k);
