@@ -17,7 +17,7 @@ class PushBack: Runner {
   }
 }
 
-class SumReduce: Runner {
+class SumElements: Runner {
   const n: int;
   proc run(A: [] int) {
     var sum = 0;
@@ -148,7 +148,7 @@ proc main {
   var r: Runner;
 
   r = new PushBack(n); output("PushBack", timeRun(r, A)); delete r;
-  r = new SumReduce(n); output("SumReduce", timeRun(r, A)); delete r;
+  r = new SumElements(n); output("SumElements", timeRun(r, A)); delete r;
   r = new PopBack(); output("PopBack", timeRun(r, A)); delete r;
 
   r = new PushFront(n); output("PushFront", timeRun(r, A)); delete r;

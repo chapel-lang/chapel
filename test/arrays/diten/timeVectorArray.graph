@@ -1,4 +1,4 @@
-perfkeys: PushBack, SumReduce, PopBack, PushFront, PopFront, InsertR, InsertSB, InsertSL, ListAppend, ListReduce, ListDest
+perfkeys: PushBack, SumElements, PopBack, PushFront, PopFront, InsertR, InsertSB, InsertSL, ListAppend, ListReduce, ListDest
 files: timeVectorArray.dat
 ylabel: Time (seconds)
 graphname: timeVectorArray
