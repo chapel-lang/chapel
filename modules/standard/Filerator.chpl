@@ -2,13 +2,31 @@ config const debug = false;
 
 use Sort;
 
-iter listdir(path: string, dotfiles=false, dirs=true, files=false): string {
+//
+// This module defines several iterators that are designed to help
+// support reasoning about directory and file contents.  At present,
+// all are serial.
+//
+
+//
+//  iter listdir(path: string, dotfiles=false, dirs=true, files=false): string
+//
+//  listdir() lists the contents of a directory, similar to 'ls'
+//    * path: the directory to list
+//    * dotfiles: should dotfiles be included?
+//    * dirs: should dirs be listed?
+//    * files: should files be listed?
+//
+// By default it lists all directories in the current directory as
+// long as they don't start with '.'
+//
+iter listdir(path: string, dotfiles=false, dirs=true, files=true, listlinks=true): string {
   extern type DIRptr;
   extern type direntptr;
   extern proc opendir(name: c_string): DIRptr;
   extern proc readdir(dirp: DIRptr): direntptr;
   extern proc closedir(dirp: DIRptr): c_int;
-  extern proc chpl_rt_isDir(pathname: c_string): c_int;
+  extern proc chpl_rt_isDir(pathname: c_string, followLinks: bool): c_int;
 
   proc direntptr.d_name(): c_string {
     extern proc chpl_rt_direntptr_getname(d: direntptr): c_string;
@@ -28,7 +46,7 @@ iter listdir(path: string, dotfiles=false, dirs=true, files=false): string {
       if (dotfiles || filename.substring(1) != '.') {
         if (filename != "." && filename != "..") {
           const fullpath = path + "/" + filename;
-          if (chpl_rt_isDir(fullpath:c_string)) {
+          if (chpl_rt_isDir(fullpath:c_string, listlinks)) {
             if (dirs) then
               yield filename;
           } else {
@@ -46,8 +64,20 @@ iter listdir(path: string, dotfiles=false, dirs=true, files=false): string {
   }
 }
 
-
-iter walkdirs(path: string=".", topdown=true, depth=max(int), dotfiles=false, followlinks=false, sort = false): string {
+//
+// iter walkdirs(path: string=".", topdown=true, depth=max(int), dotfiles=false, 
+//              followlinks=false, sort = false): string {
+//
+// walkdirs() recursively walks a directory structure, yielding directory names
+//   * path: the directory to start from
+//   * topdown: indicates whether to yield the directories using a preorder traversal
+//   * depth: indicates the maximal depth of recursion to use
+//   * dotfiles: indicates whether to enter directories with dotfile names
+//   * followlinks: indicates whether to follow symbolic links or not
+//   * sort: indicates whether to consider subdirectories in sorted order or not
+//
+iter walkdirs(path: string=".", topdown=true, depth=max(int), dotfiles=false, 
+              followlinks=false, sort = false): string {
   //  writeln("topdown = ", topdown);
   //  writeln("walkdirs() called with ", path, " depth=",depth);
 
@@ -55,7 +85,7 @@ iter walkdirs(path: string=".", topdown=true, depth=max(int), dotfiles=false, fo
     yield path;
 
   if (depth) {
-    var subdirs = listdir(path, dotfiles=dotfiles, dirs=true);
+    var subdirs = listdir(path, dotfiles=dotfiles, files=false, listlinks=followlinks);
     if (sort) then
       QuickSort(subdirs);
     for subdir in subdirs {
@@ -71,6 +101,10 @@ iter walkdirs(path: string=".", topdown=true, depth=max(int), dotfiles=false, fo
     yield path;
 }
 
+//
+// wordexp() gives a glob-like capability, implemented with C's wordexp()
+// * pattern: the pattern to match against
+//
 iter wordexp(pattern="*") {
   extern type wordexp_t;
   //  extern proc chpl_wordexp(pattern:c_string, flags:c_int, ref ret_glob:wordexp_t):c_int;
@@ -90,6 +124,10 @@ iter wordexp(pattern="*") {
   wordfree(glb);
 }
 
+//
+// glob() gives glob() capabilities and is implemented using C's glob()
+// * pattern: the pattern to match against
+//
 iter glob(pattern="*") {
   extern type glob_t;
   //  extern proc chpl_glob(pattern:c_string, flags:c_int, ref ret_glob:glob_t):c_int;
@@ -108,39 +146,18 @@ iter glob(pattern="*") {
   globfree(glb);
 }
 
+//
+// findfiles() is a simple find-like utility implemented using the above routines
+// * startdir: where to start when looking for files
+// * recur: tells whether or not to descend recurisvely
+// * dotfiles: tells whether or not to yield dotfiles
+//
 iter findfiles(startdir = ".", recur=false, dotfiles=false) {
   if (recur) then
     for subdir in walkdirs(startdir, dotfiles=dotfiles) do
-      for file in listdir(subdir, dotfiles=dotfiles, dirs=false, files=true) do
+      for file in listdir(subdir, dotfiles=dotfiles, dirs=false, files=true, listlinks=true) do
         yield subdir+"/"+file;
   else
-    for file in listdir(startdir, dotfiles=dotfiles, dirs=false, files=true) do
+    for file in listdir(startdir, dotfiles=dotfiles, dirs=false, files=true, listlinks=false) do
       yield startdir+"/"+file;
 }
-
-/* An incomplete start at putting together the routine in the proposal
- *
-iter findfiles(pattern="*",
-               startdir=".",
-               depth=max(int),
-               files=true,
-               dirs=false,
-               dotfiles=false,
-               sorted=false,
-               expand=false) {
-  if (expand) then
-    halt("not yet implemented: findfiles(..., expand=true)");
-  if (pattern.substring(1) == "/") then
-    for file in glob(pattern) do
-      yield file;
-  else
-    for subdir in walkdirs(startdir, true, depth, dotfiles, false, sorted) {
-      const subdirslash = subdir + "/";
-      if (dirs) then
-        yield subdirslash;
-      for file in glob(subdirslash + pattern) do
-        yield file;
-    }
-}
-*/
-               
