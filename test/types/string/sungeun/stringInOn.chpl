@@ -5,7 +5,7 @@ var l0: atomic int;
 var l1: atomic int;
 
 writeln(s0);
-begin ref(s0) {
+begin with (ref s0) {
   l0.waitFor(1);
   s0 = "bang bang";
   l1.write(1);

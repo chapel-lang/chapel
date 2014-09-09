@@ -4987,9 +4987,10 @@ preFold(Expr* expr) {
               if (rhs->var->hasFlag(FLAG_EXPR_TEMP) || rhs->var->isConstant() || rhs->var->isParameter()) {
                 if (lhs && lhs->var->hasFlag(FLAG_REF_VAR)) {
                   if (rhs->var->isImmediate()) {
-                    USR_FATAL_CONT(call, "Can not set a non-const reference to a literal value.");
+                    USR_FATAL_CONT(call, "Cannot set a non-const reference to a literal value.");
                   } else {
-                    USR_FATAL_CONT(call, "Can not set a non-const reference to a const variable.");
+                    // We should not fall into this case... should be handled in normalize
+                    INT_FATAL(call, "Cannot set a non-const reference to a const variable.");
                   }
                 } else {
                   // This probably indicates that an invalid 'addr of' primitive
