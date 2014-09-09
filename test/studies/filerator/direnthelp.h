@@ -18,4 +18,9 @@ typedef struct dirent64* direntptr;
 // Note: This is not portable; more generally, need to use lstat() or similar;
 // see the readdir() man page for notes
 //
-#define chpl_rt_direntptr_isDir(x)   ((x)->d_type == DT_DIR)
+// #define chpl_rt_direntptr_isDir(x)   ((x)->d_type == DT_DIR)
+
+//
+// Here's a more portable routine
+//
+int chpl_rt_isDir(const char* pathname);
