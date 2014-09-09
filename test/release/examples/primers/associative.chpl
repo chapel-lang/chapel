@@ -304,11 +304,11 @@ Scores["Mark"] = 81;
 //
 
 var primeDom = {2, 3, 5, 7, 11, 13, 17};  // some prime numbers
-var fibDom   = {0, 1, 1, 2, 3, 5, 8, 13}; // part of the fibonnaci sequence
+var fibDom   = {0, 1, 1, 2, 3, 5, 8, 13}; // part of the Fibonacci sequence
 
 var primeAndFib = primeDom & fibDom;
-writeln("Some primes in the fibonnaci sequence: ", primeAndFib);
-writeln("Some primes not in the fibonnaci sequence: ", primeDom - primeAndFib);
+writeln("Some primes in the Fibonacci sequence: ", primeAndFib);
+writeln("Some primes not in the Fibonacci sequence: ", primeDom - primeAndFib);
 writeln();
 
 var Women = {"Alice", "Dana", "Ellen"};
@@ -322,9 +322,19 @@ if (Men | Women) != Names then
   halt("The union of the 'Men' and 'Women' sets should be equivalent to 'Names'");
 
 //
+// Special rules exist for associative array set operations.
+//
+// If performing a union on two associative arrays with overlapping indices,
+// the value of the second array takes precedence.
+//
+// For the op= variants on associative arrays, the array must not share its
+// domain with another array.
+//
+
+//
 // Future Directions
 //
 // Today, associative domains cannot be distributed across multiple locales.
-// A prototype domain map exists, and the effort to make it a polished feature
-// could be accelerated with sufficient user interest.
+// A prototype domain map for this exists, and the effort to make it a polished
+// feature could be accelerated with sufficient user interest.
 //
