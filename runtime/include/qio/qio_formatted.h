@@ -378,23 +378,35 @@ qioerr qio_channel_write_complex(const int threadsafe, const int byteorder, qio_
   return err;
 }
 
+#define QIO_BINARY_STRING_STYLE_LEN1B_DATA -1
+#define QIO_BINARY_STRING_STYLE_LEN2B_DATA -2
+#define QIO_BINARY_STRING_STYLE_LEN4B_DATA -4
+#define QIO_BINARY_STRING_STYLE_LEN8B_DATA -8
+#define QIO_BINARY_STRING_STYLE_LENvB_DATA -10
+#define QIO_BINARY_STRING_STYLE_DATA_NULL -0x0100
+#define QIO_BINARY_STRING_STYLE_TOEOF -0xff00
+
 // string binary style:
-// -1 -- 1 byte of length before
-// -2 -- 2 bytes of length before
-// -4 -- 4 bytes of length before
-// -8 -- 8 bytes of length before
-// -10 -- variable byte length before (hi-bit 1 means more, little endian)
-// -0x01XX -- read until terminator XX is read
+// QIO_BINARY_STRING_STYLE_LEN1B_DATA -1 -- 1 byte of length before
+// QIO_BINARY_STRING_STYLE_LEN2B_DATA -2 -- 2 bytes of length before
+// QIO_BINARY_STRING_STYLE_LEN4B_DATA -4 -- 4 bytes of length before
+// QIO_BINARY_STRING_STYLE_LEN8B_DATA -8 -- 8 bytes of length before
+// QIO_BINARY_STRING_STYLE_LENvB_DATA -10 -- variable byte length before
+//                                        (hi-bit 1 means more, little endian)
+// QIO_BINARY_STRING_STYLE_TOEOF -0xff00 -- read until end or up to maxlen
+// BINARY_STRING_STYLE_DATA_NULL|0xXX -0x01XX -- read until terminator XX
 //  + -- nonzero positive -- read exactly this length.
 qioerr qio_channel_read_string(const int threadsafe, const int byteorder, const int64_t str_style, qio_channel_t* restrict ch, const char* restrict * restrict out, int64_t* restrict len_out, ssize_t maxlen);
 
 // string binary style:
-// -1 -- 1 byte of length before
-// -2 -- 2 bytes of length before
-// -4 -- 4 bytes of length before
-// -8 -- 8 bytes of length before
-// -10 -- variable byte length before (hi-bit 1 means more, little endian)
-// -0x01XX -- read until terminator XX is read
+// QIO_BINARY_STRING_STYLE_LEN1B_DATA -1 -- 1 byte of length before
+// QIO_BINARY_STRING_STYLE_LEN2B_DATA -2 -- 2 bytes of length before
+// QIO_BINARY_STRING_STYLE_LEN4B_DATA -4 -- 4 bytes of length before
+// QIO_BINARY_STRING_STYLE_LEN8B_DATA -8 -- 8 bytes of length before
+// QIO_BINARY_STRING_STYLE_LENvB_DATA -10 -- variable byte length before
+//                                        (hi-bit 1 means more, little endian)
+// QIO_BINARY_STRING_STYLE_TOEOF -0xff00 -- read until end or up to maxlen
+// BINARY_STRING_STYLE_DATA_NULL|0xXX -0x01XX -- read until terminator XX
 //  + -- nonzero positive -- read exactly this length.
 qioerr qio_channel_write_string(const int threadsafe, const int byteorder, const int64_t str_style, qio_channel_t* restrict ch, const char* restrict ptr, ssize_t len);
 

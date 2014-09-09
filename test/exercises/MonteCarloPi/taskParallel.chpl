@@ -1,7 +1,7 @@
 use Random;
 
 config const n = 100000,
-       tasks = here.numCores,
+       tasks = here.maxTaskPar,
        seed = 589494289;
 
 writeln("Number of points    = ", n);

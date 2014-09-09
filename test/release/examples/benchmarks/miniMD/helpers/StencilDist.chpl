@@ -232,7 +232,6 @@ class LocStencilArr {
 
 proc makeZero(param rank : int) {
   var ret : rank*int;
-  for i in ret do i = 0;
   return ret;
 }
 
@@ -271,7 +270,7 @@ proc Stencil.Stencil(boundingBox: domain,
   // NOTE: When these knobs stop using the global defaults, we will need
   // to add checks to make sure dataParTasksPerLocale<0 and
   // dataParMinGranularity<0
-  this.dataParTasksPerLocale = if dataParTasksPerLocale==0 then here.numCores
+  this.dataParTasksPerLocale = if dataParTasksPerLocale==0 then here.maxTaskPar
                                else dataParTasksPerLocale;
   this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;
   this.dataParMinGranularity = dataParMinGranularity;
