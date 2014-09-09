@@ -1,4 +1,6 @@
-#include "chpltypes.h"
+#ifndef _CHPL_DIRENT_H_
+#define _CHPL_DIRENT_H_
+
 #include "dirent.h"
 
 typedef DIR* DIRptr;
@@ -21,7 +23,4 @@ typedef struct dirent64* direntptr;
 //
 // #define chpl_rt_direntptr_isDir(x)   ((x)->d_type == DT_DIR)
 
-//
-// Here's a more portable routine
-//
-int chpl_rt_isDir(const char* pathname, chpl_bool followLinks);
+#endif

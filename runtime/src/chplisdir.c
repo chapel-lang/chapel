@@ -1,7 +1,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "chpldirent.h"
+#include "chplisdir.h"
 #include "chplrt.h"
 
 int chpl_rt_isDir(const char* pathname, chpl_bool followLinks) {
