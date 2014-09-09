@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if [ ! -d goDown ]; then
+   mkdir goDown
+fi
+if [ ! -d goUp ]; then
+   mkdir goUp
+fi
