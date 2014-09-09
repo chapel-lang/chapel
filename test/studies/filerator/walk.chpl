@@ -1,4 +1,4 @@
-use Filerator, Sort;
+use Filerator;
 
 config const startdir = "subdir";
 config const topdown = true;
@@ -10,16 +10,8 @@ config const sort = true;
 config const defaults = false;
 
 if defaults then
-  if sort then
-    for filename in sorter(walkdirs()) do
-      writeln(filename);
- else
-   for filename in walkdirs() do
-     writeln(filename);
+  for filename in walkdirs(sort=sort) do
+    writeln(filename);
 else
-  if sort then
-    for filename in sorter(walkdirs(startdir, topdown, depth, dotfiles, followlinks)) do
-      writeln(filename);
- else
-   for filename in walkdirs(startdir, topdown, depth, dotfiles, followlinks) do
-     writeln(filename);
+  for filename in walkdirs(startdir, topdown, depth, dotfiles, followlinks, sort=sort) do
+    writeln(filename);
