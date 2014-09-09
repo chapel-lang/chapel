@@ -118,7 +118,7 @@ proc _computeNumChunks(maxTasks, ignoreRunning, minSize, numElems): int {
 proc _computeNumChunks(numElems): int {
   // copy some machinery from DefaultRectangularDom
   var numTasks = if dataParTasksPerLocale==0
-                 then here.numCores
+                 then here.maxTaskPar
                  else dataParTasksPerLocale;
   var ignoreRunning = dataParIgnoreRunningTasks;
   var minIndicesPerTask = dataParMinGranularity;

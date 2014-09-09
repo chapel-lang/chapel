@@ -1,0 +1,3 @@
+setterMtInWhere.chpl:13: error: ambiguous call 'foo.blah()'
+setterMtInWhere.chpl:4: note: candidates are: foo.blah()
+setterMtInWhere.chpl:7: note:                 foo.blah()

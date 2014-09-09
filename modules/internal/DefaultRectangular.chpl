@@ -157,7 +157,7 @@ module DefaultRectangular {
 
       if localeModelHasSublocales && numSublocs != 0 {
         
-        const dptpl = if tasksPerLocale==0 then here.numCores
+        const dptpl = if tasksPerLocale==0 then here.maxTaskPar
                       else tasksPerLocale;
         // Make sure we don't use more sublocales than the numbers of
         // tasksPerLocale requested
@@ -198,7 +198,7 @@ module DefaultRectangular {
               }
               // Divide the locale's tasks approximately evenly
               // among the sublocales
-              const numCoreTasks = dptpl/numChunks +
+              const numSublocTasks = dptpl/numChunks +
                 if chunk==numChunks-1 then dptpl%numChunks else 0;
               var locBlock: rank*range(idxType);
               for param i in 1..rank do
@@ -210,7 +210,7 @@ module DefaultRectangular {
                                             locBlock(parDim).low,
                                             locBlock(parDim).low);
               followMe(parDim) = lo..hi;
-              const (numChunks2, parDim2) = _computeChunkStuff(numCoreTasks,
+              const (numChunks2, parDim2) = _computeChunkStuff(numSublocTasks,
                                                                ignoreRunning,
                                                                minIndicesPerTask,
                                                                followMe);
@@ -238,7 +238,7 @@ module DefaultRectangular {
 
         if debugDefaultDist then
           writeln("*** In domain/array leader code:"); // this = ", this);
-        const numTasks = if tasksPerLocale==0 then here.numCores
+        const numTasks = if tasksPerLocale==0 then here.maxTaskPar
                          else tasksPerLocale;
   
         if debugDefaultDist then

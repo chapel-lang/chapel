@@ -1,0 +1,1 @@
+bad_reduce_expr.chpl:6: error: iterator or promoted expression _ir_== used in if or while condition

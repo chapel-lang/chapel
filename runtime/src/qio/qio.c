@@ -1057,6 +1057,27 @@ void _qio_file_destroy(qio_file_t* f)
   qio_free(f);
 }
 
+qioerr qio_chdir(const char* name) {
+  qioerr err = 0;
+  int exitStatus = chdir(name);
+  if (exitStatus)
+    err = qio_mkerror_errno();
+  return err;
+}
+
+qioerr qio_cwd(const char** working_dir) {
+  qioerr err = 0;
+  size_t bufsize = MAXPATHLEN*sizeof(char);
+  char* bufptr;
+  char* pathbuf = (char *)qio_malloc(bufsize);
+  bufptr = getcwd(pathbuf, bufsize);
+  if (bufptr == NULL)
+    err = qio_mkerror_errno();
+  else
+    *working_dir = pathbuf;
+  return err;
+}
+
 /* Renames the file from oldname to newname, returning a qioerr if one
    occurred. */
 qioerr qio_file_rename(const char* oldname, const char* newname) {

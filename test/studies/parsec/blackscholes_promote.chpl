@@ -29,7 +29,7 @@ config const ERR_CHK = false;
 config const filename = "optionData.txt";
 
 const Dist = new dmap(new Block(rank=1, idxType=int(64), boundingBox={0..#numOptions},
-                                dataParTasksPerLocale=here.numCores));
+                                dataParTasksPerLocale=here.maxTaskPar));
 const Dom : domain(1, int(64)) dmapped Dist = {0..#numOptions};
 
 var data : [Dom] OptionData;

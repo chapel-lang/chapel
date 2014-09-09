@@ -1,1 +1,1 @@
-ref-to-literal.chpl:1: error: Can not set a non-const reference to a literal value.
+ref-to-literal.chpl:1: error: Cannot set a non-const reference to a literal value.
