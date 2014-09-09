@@ -68,7 +68,8 @@ iter wordexp(param tag:iterKind, pattern:string, recursive:bool = false,
     // Now spawn off tasks for each dir
     coforall dir in dirBuff {
       dirBuff -= dir;
-      for fl in wordexp(pattern, false, flags, dir) {
+      for flConst in wordexp(pattern, false, flags, dir) {
+        var fl = flConst;
         if recursive && chpl_isdir(fl.c_str()) == 1 {
           fl += "/";
           dirBuff += fl;
@@ -121,7 +122,8 @@ iter glob(param tag:iterKind, pattern:string, recursive:bool = false,
     // Now spawn off tasks for each dir
     coforall dir in dirBuff {
       dirBuff -= dir;
-      for fl in glob(pattern, false, flags, dir) {
+      for flConst in glob(pattern, false, flags, dir) {
+        var fl = flConst;
         if recursive && chpl_isdir(fl.c_str()) == 1 {
           fl += "/";
           dirBuff += fl;
