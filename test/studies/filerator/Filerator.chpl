@@ -71,6 +71,43 @@ iter walkdirs(path: string=".", topdown=true, depth=max(int), dotfiles=false, fo
     yield path;
 }
 
+iter wordexp(pattern="*") {
+  extern type wordexp_t;
+  //  extern proc chpl_wordexp(pattern:c_string, flags:c_int, ref ret_glob:wordexp_t):c_int;
+  extern proc wordexp(pattern:c_string, ref ret_glob: wordexp_t, flags_c_int): c_int;
+  extern proc chpl_wordexp_num(x:wordexp_t): size_t;
+  extern proc chpl_wordexp_index(x:wordexp_t, idx:size_t): c_string;
+  extern proc wordfree(ref glb:wordexp_t);
+
+  var glb : wordexp_t;
+
+  const err = wordexp(pattern:c_string, glb, 0);
+
+  for i in 0..chpl_wordexp_num(glb)-1 {
+    yield chpl_wordexp_index(glb, i): string;
+  }
+
+  wordfree(glb);
+}
+
+iter glob(pattern="*") {
+  extern type glob_t;
+  //  extern proc chpl_glob(pattern:c_string, flags:c_int, ref ret_glob:glob_t):c_int;
+  extern proc glob(pattern:c_string, flags: c_int, errfunc:c_void_ptr, ref ret_glob:glob_t):c_int;
+  extern proc chpl_glob_num(x:glob_t): size_t;
+  extern proc chpl_glob_index(x:glob_t, idx:size_t): c_string;
+  extern proc globfree(ref glb:glob_t);
+
+  var glb : glob_t;
+
+  const err = glob(pattern:c_string, 0, c_nil, glb);
+
+  for i in 0..chpl_glob_num(glb) - 1 do
+    yield chpl_glob_index(glb, i): string;
+
+  globfree(glb);
+}
+
 iter findfiles(startdir = ".", recur=false, dotfiles=false) {
   if (recur) then
     for subdir in walkdirs(startdir, dotfiles=dotfiles) do
