@@ -209,10 +209,10 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       fprintf(slurmFile, "#SBATCH --account=%s\n", account);
     }
  
-    // set the output name to either the user specified.<jobID>.out 
+    // set the output name to either the user specified
     // or to the binaryName.<jobID>.out if none specified
     if (outputfn!=NULL) {
-      fprintf(slurmFile, "#SBATCH --output=%s.%%j.out\n", outputfn);
+      fprintf(slurmFile, "#SBATCH --output=%s\n", outputfn);
     }
     else {
       fprintf(slurmFile, "#SBATCH --output=%s.%%j.out\n", argv[0]);
