@@ -587,24 +587,22 @@ module DefaultRectangular {
         if !dom.stridable {
           // This is specialized because the strided version disables the
           // "single loop iterator" optimization
-          var first = getDataIndex(dom.dsiLow);
-          var second = getDataIndex(dom.dsiLow+1);
-          var step = (second-first);
-          var last = first + (dom.dsiNumIndices) * step;
-          //
-          // We could equivalently use: 'for i in first..last by step'
-          // here, but that results in a bunch of general cases for
-          // strided ranges that we don't need since we know the stride will
-          // be positive.  This begs the question of whether a range
-          // should be able to declare itself as known to be positively
-          // or negatively strided to get additional performance
-          // benefits.
-          //
-          var i = first;
-          while (i != last) {
+          const first = getDataIndex(dom.dsiLow);
+          const second = getDataIndex(dom.dsiLow+1);
+          const step = (second-first);
+          const last = first + (dom.dsiNumIndices-1) * step;
+
+          // Since we know the stride is positive, we want to avoid just using
+          // 'for i in first..last by step' since that results in a slower and
+          // more general case iterator. For now we call into a special
+          // iterator that is optimized for when you know the stride is
+          // positive. This is meant to be a temporary use of this iterator
+          // until there is a more robust and user friendly way to declare a
+          // range as positively strided.
+          for i in (first..last by step).posStrideIter() {
             yield theData(i);
-            i += step;
           }
+
         } else {
           const stride = dom.ranges(1).stride: idxType,
                 start  = dom.ranges(1).first,
